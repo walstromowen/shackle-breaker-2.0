@@ -1,7 +1,7 @@
 import { AssetLoader } from "./core/assetLoader.js";
 import { SceneManager } from "./core/sceneManager.js";
 import { GameLoop } from "./core/gameLoop.js";
-import { CONFIG } from "../../shared/data/constatnts.js";
+import { CONFIG } from "../../shared/data/constants.js";
 
 const assetLoader = new AssetLoader();
 const ASSET_MANIFEST = {

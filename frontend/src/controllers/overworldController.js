@@ -1,10 +1,9 @@
-import { MAP } from '../../../shared/data/map.js';
-
+// 1. REMOVE the static MAP import - we use the worldManager passed from SceneManager
 export class OverworldController {
-    constructor(input, config) {
+    constructor(input, config, worldManager) {
         this.input = input;
         this.config = config;
-        this.map = MAP;
+        this.worldManager = worldManager; // Added this
 
         this.player = {
             id: "player",
@@ -17,7 +16,6 @@ export class OverworldController {
             sourceY: 0,
             destX: 0,
             destY: 0,
-            // Animation State
             animFrame: 0,
             animTimer: 0,
             spriteKey: 'spritesheet'
@@ -27,34 +25,23 @@ export class OverworldController {
     }
 
     update(dt) {
-        // 1. Process Movement Logic
         if (this.player.isMoving) {
             this.continueMoving(dt);
         } else {
             this.checkForNewMove();
         }
-
-        // 2. Update Camera (Must happen after player moves to prevent "lag")
         this.updateCamera();
     }
 
     updateCamera() {
         const { CANVAS_WIDTH, CANVAS_HEIGHT, GAME_SCALE, TILE_SIZE } = this.config;
         
-        // Window size in world units
         const viewW = CANVAS_WIDTH / GAME_SCALE;
         const viewH = CANVAS_HEIGHT / GAME_SCALE;
 
-        // Perfect center target (Decimal)
-        let targetX = this.player.x - (viewW / 2) + (TILE_SIZE / 2);
-        let targetY = this.player.y - (viewH / 2) + (TILE_SIZE / 2);
-
-        // Clamp to Map Bounds
-        const mapW = this.map.tiles[0].length * TILE_SIZE;
-        const mapH = this.map.tiles.length * TILE_SIZE;
-
-        this.camera.x = Math.max(0, Math.min(targetX, mapW - viewW));
-        this.camera.y = Math.max(0, Math.min(targetY, mapH - viewH));
+        // 2. REMOVE CLAMPING - In an infinite world, the camera has no boundaries
+        this.camera.x = this.player.x - (viewW / 2) + (TILE_SIZE / 2);
+        this.camera.y = this.player.y - (viewH / 2) + (TILE_SIZE / 2);
     }
 
     checkForNewMove() {
@@ -65,7 +52,6 @@ export class OverworldController {
         let nextX = this.player.x;
         let nextY = this.player.y;
 
-        // Face the direction immediately even if blocked
         this.player.direction = dir;
 
         if (dir === "UP")    nextY -= TILE_SIZE;
@@ -84,10 +70,8 @@ export class OverworldController {
     }
 
     continueMoving(dt) {
-        // Advance progress (Speed controlled by WALK_DURATION)
         this.player.moveProgress += dt / this.config.WALK_DURATION;
 
-        // Animation Cycle (0.1s per frame)
         this.player.animTimer += dt;
         if (this.player.animTimer > 0.1) {
             this.player.animTimer = 0;
@@ -95,48 +79,58 @@ export class OverworldController {
         }
 
         if (this.player.moveProgress >= 1) {
-            // Snap to destination and clear decimals
             this.player.x = Math.round(this.player.destX);
             this.player.y = Math.round(this.player.destY);
             this.player.isMoving = false;
             this.player.moveProgress = 0;
 
-            // --- IMMEDIATE HANDOFF ---
-            // Fixes the jitter when holding down a key
+            // 3. CHECK FOR AMBUSH after the step is finished
+            this.checkTileEvents();
+
             const dir = this.input.direction;
             if (dir) {
                 this.checkForNewMove();
             } else {
-                this.player.animFrame = 0; // Return to idle
+                this.player.animFrame = 0; 
             }
         } else {
-            // Smooth Interpolation
             this.player.x = this.player.sourceX + (this.player.destX - this.player.sourceX) * this.player.moveProgress;
             this.player.y = this.player.sourceY + (this.player.destY - this.player.sourceY) * this.player.moveProgress;
         }
     }
 
+    // 4. UPDATED to use WorldManager
     isSpaceFree(pixelX, pixelY) {
-        const { TILE_SIZE } = this.config;
+        const { TILE_SIZE, TILE_TYPES } = this.config;
         const col = Math.floor(pixelX / TILE_SIZE);
         const row = Math.floor(pixelY / TILE_SIZE);
 
-        // Bounds Check
-        if (row < 0 || row >= this.map.tiles.length || col < 0 || col >= this.map.tiles[0].length) {
-            return false;
-        }
+        // No more Bounds Check! The world is infinite.
+        const tileId = this.worldManager.getTileAt(col, row);
+        
+        // Return true if tile is NOT a wall or water
+        return (tileId !== TILE_TYPES.WALL && tileId !== TILE_TYPES.WATER);
+    }
 
-        // Collision Check (Assuming WALL/WATER are blocking)
-        const tileId = this.map.tiles[row][col];
-        return (tileId !== this.config.TILE_TYPES.WALL && tileId !== this.config.TILE_TYPES.WATER);
+    // 5. NEW logic for Invisible Ambushes
+    checkTileEvents() {
+        const { TILE_SIZE, TILE_TYPES } = this.config;
+        const col = Math.floor(this.player.x / TILE_SIZE);
+        const row = Math.floor(this.player.y / TILE_SIZE);
+        
+        const tileId = this.worldManager.getTileAt(col, row);
+
+        if (tileId === TILE_TYPES.HIGH_GRASS) {
+            if (Math.random() < 0.10) { // 10% Chance
+                console.log("💥 AMBUSH in the high grass!");
+                // Future: this.sceneManager.changeScene('battle');
+            }
+        }
     }
 
     getState() {
         return {
-            // We return the player inside an array so the EntityRenderer 
-            // can handle them alongside NPCs later
             entities: [this.player],
-            map: this.map.tiles,
             camera: this.camera
         };
     }
