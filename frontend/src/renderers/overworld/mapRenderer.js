@@ -4,38 +4,68 @@ export class MapRenderer {
         this.ctx = canvas.getContext('2d');
         this.loader = loader;
         this.config = config;
-        
-        this.showDebug = false;
         this.ctx.imageSmoothingEnabled = false;
 
-        // Standard 47-tile blob lookup for autotiling
-        this.blobMap = new Map([
-            [0, 0], [255, 1], [1, 2], [4, 3], [16, 4], [64, 5], [17, 6], [68, 7],
-            [5, 8], [20, 9], [80, 10], [65, 11], [21, 12], [84, 13], [81, 14], [69, 15],
-            [85, 16], [27, 17], [253, 18], [247, 19], [223, 20], [127, 21], [251, 22], [239, 23],
-            [125, 24], [215, 25], [95, 26], [123, 27], [222, 28], [191, 29], [7, 30], [28, 31],
-            [112, 32], [193, 33], [119, 34], [213, 35], [31, 36], [124, 37], [241, 38], [199, 39],
-            [23, 40], [92, 41], [113, 42], [197, 43], [71, 44], [29, 45], [254, 46], [47, 47]
-        ]);
+        // 1. YOUR FULLY VERIFIED 47-TILE BASE SET
+       const TILE_LOOKUP = {
+    // --- 16 Cardinals ---
+    0: 42, 1: 32, 4: 43, 16: 24, 64: 44, 
+    17: 40, 68: 41, 5: 11, 20: 3, 80: 4, 
+    65: 12, 21: 1, 84: 8, 81: 2, 69: 16, 85: 38,
+
+    // --- 9 Solids ---
+    7: 21, 28: 5, 112: 7, 193: 23, 31: 13, 
+    124: 6, 241: 15, 199: 22, 255: 14,
+
+    // --- 22 Complex / Inner-Corner Junctions ---
+    23: 25, 29: 33, 
+    71: 18, 
+    87: 27, 92: 10, 
+    93: 19, 95: 39, 113: 34, 116: 9, 
+    117: 20, 119: 36, 121: 46, 125: 46, 
+    127: 47, 
+    197: 17, 209: 26, 213: 28, 
+    215: 30, // <--- FIXED: Now mapping to Index 30
+    221: 35, 
+    223: 31, 
+    245: 37, 
+    247: 29, 
+    251: 15, 
+    253: 45, 
+    254: 31
+};
+        this.blobMap = new Map();
+        
+        // 2. THE MATHEMATICAL CLEANER
+        // This ensures all 256 combinations map to your 47 base cases
+        for (let i = 0; i < 256; i++) {
+            let cleanMask = i;
+            // Strip diagonals that don't have cardinal legs
+            if (!(i & 1) || !(i & 4))   cleanMask &= ~2;   // Top-Right
+            if (!(i & 4) || !(i & 16))  cleanMask &= ~8;   // Bottom-Right
+            if (!(i & 16) || !(i & 64)) cleanMask &= ~32;  // Bottom-Left
+            if (!(i & 64) || !(i & 1))  cleanMask &= ~128; // Top-Left
+
+            // Map to your specific index, default to solid center (14)
+            const finalIndex = TILE_LOOKUP[cleanMask] ?? 14;
+            this.blobMap.set(i, finalIndex);
+        }
     }
 
     /**
      * Helper to draw a specific tile type and mask to the screen.
-     * Uses BLOB_OFFSETS from config to find the correct biome row.
      */
     drawTile(tileId, mask, dx, dy) {
-        const tileset = this.loader.get('tileset');
         const { TILE_SIZE, TILE_PADDING, GAME_SCALE, BLOB_OFFSETS } = this.config;
-        const SLOT_SIZE = TILE_SIZE + (TILE_PADDING * 2);
-        const drawSize = TILE_SIZE * GAME_SCALE;
+        const tileset = this.loader.get('tileset');
+        
+        // Use the pre-calculated map. 
+        // It already handles cleaning and diagonal slashes!
+        const index = this.blobMap.get(mask) ?? 0; 
 
-        // 1. Get the local index (0-47) within the biome block
-        const index = this.blobMap.get(mask) ?? 0;
+        const SLOT_SIZE = TILE_SIZE + (TILE_PADDING * 2);
         const localCol = index % 8;
         const localRow = Math.floor(index / 8);
-
-        // 2. Dynamic Row Offset Lookup
-        // This maps the ID (e.g., 2 for Grass) to the start row (e.g., 25)
         const blockStartRow = BLOB_OFFSETS[tileId] ?? 0;
 
         const sx = (localCol * SLOT_SIZE) + TILE_PADDING;
@@ -44,13 +74,12 @@ export class MapRenderer {
         this.ctx.drawImage(
             tileset,
             sx, sy, TILE_SIZE, TILE_SIZE,
-            dx, dy, drawSize, drawSize
+            dx, dy, TILE_SIZE * GAME_SCALE, TILE_SIZE * GAME_SCALE
         );
     }
 
     /**
      * The Layered Render Engine.
-     * Stacks tiles mathematically based on depth.
      */
     renderMap(worldManager, camera) {
         const { TILE_SIZE, GAME_SCALE, TILE_TYPES, TILE_DEPTH } = this.config;
@@ -58,10 +87,8 @@ export class MapRenderer {
 
         if (!worldManager) return;
 
-        // 1. Calculate render order: Lowest depth (Water) to Highest (Wall)
         const renderOrder = Object.values(TILE_TYPES).sort((a, b) => TILE_DEPTH[a] - TILE_DEPTH[b]);
 
-        // 2. Visible grid calculation
         const startCol = Math.floor(camera.x / TILE_SIZE);
         const startRow = Math.floor(camera.y / TILE_SIZE);
         const tilesVisibleX = Math.ceil(this.canvas.width / drawSize);
@@ -73,23 +100,18 @@ export class MapRenderer {
                 const dx = Math.round((col * TILE_SIZE - camera.x) * GAME_SCALE);
                 const dy = Math.round((row * TILE_SIZE - camera.y) * GAME_SCALE);
 
-                // Identify what the "top" tile is at this position
                 const currentTileId = worldManager.getTileAt(col, row);
                 const currentDepth = TILE_DEPTH[currentTileId] ?? 0;
 
-                // 3. Stacking Pass
-                // We draw every layer that is equal to or below the current depth
                 for (const typeId of renderOrder) {
                     const layerDepth = TILE_DEPTH[typeId];
 
                     if (currentDepth >= layerDepth) {
-                        // Calculate mask for this specific layer
                         const mask = worldManager.getSpecificMask(col, row, typeId);
                         this.drawTile(typeId, mask, dx, dy);
                     }
                 }
 
-                // 4. Corrected Debug Pass
                 if (this.showDebug) {
                     this.renderDebugInfo(worldManager, currentTileId, col, row, dx, dy, drawSize);
                 }
@@ -97,20 +119,30 @@ export class MapRenderer {
         }
     }
 
-    /**
-     * Fixed Debug Info: Now correctly recalculates mask for dominant tile.
-     */
     renderDebugInfo(worldManager, tileId, col, row, dx, dy, drawSize) {
+        // 1. Get the raw mask calculated from neighbors
         const mask = worldManager.getSpecificMask(col, row, tileId);
+        
+        // 2. Look up which 47-tile index that mask maps to
+        const index = this.blobMap.get(mask) ?? "??";
 
-        this.ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-        this.ctx.fillRect(dx + 2, dy + 2, drawSize - 4, 24);
+        // Draw the background box (slightly taller to fit the 3rd line)
+        this.ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+        this.ctx.fillRect(dx + 2, dy + 2, drawSize - 4, 32);
 
         this.ctx.font = "bold 8px monospace";
-        this.ctx.fillStyle = "#00ffff"; // Cyan for visibility
         this.ctx.textAlign = "center";
         
+        // ID: The tile type (grass, water, etc)
+        this.ctx.fillStyle = "#ffffff";
         this.ctx.fillText(`ID:${tileId}`, dx + drawSize/2, dy + 10);
+
+        // M: The calculated bitmask (0-255)
+        this.ctx.fillStyle = "#00ffff"; // Cyan
         this.ctx.fillText(`M:${mask}`, dx + drawSize/2, dy + 20);
+
+        // IDX: The final spritesheet index (0-47)
+        this.ctx.fillStyle = "#ffff00"; // Yellow for clarity
+        this.ctx.fillText(`IDX:${index}`, dx + drawSize/2, dy + 30);
     }
 }

@@ -44,105 +44,109 @@ Root
 
 
 
-To make this perfectly accurate for your plains.png spritesheet, I have added the +1 Row Offset to the Y-coordinates.
+Mask: 0, Index: 42
+Mask: 1, Index: 32
+Mask: 4, Index: 43
+Mask: 16, Index: 24
+Mask: 64, Index: 44
+Mask: 17, Index: 40
+Mask: 68, Index: 41
+Mask: 5, Index: 11
+Mask: 20, Index: 3
+Mask: 80, Index: 4
+Mask: 65, Index: 12
+Mask: 21, Index: 1
+Mask: 84, Index: 8
+Mask: 81, Index: 2
+Mask: 69, Index: 16
+Mask: 85, Index: 38
 
-In this list, Y=0 is your Header (Grass/Portals), and the Wall Block begins at Y=1.
+Mask: 7, Index: 21
+Mask: 28, Index: 5
+Mask: 112, Index: 7
+Mask: 193, Index: 23
+Mask: 31, Index: 13
+Mask: 124, Index: 6
+Mask: 241, Index: 15
+Mask: 199, Index: 22
+Mask: 255, Index: 14
 
-The Final 8-Column Master List (With Header Offset)
-This list assumes your Walls start at Row 1. If you are drawing Water, add +6 to every Y value.
+Mask: 23, Index: 25
+Mask: 29, Index: 33
+Mask: 71, Index: 17
+Mask: 87, Index: 27
+Mask: 92, Index: 10
+Mask: 93, Index: 19
+Mask: 95, Index: 39
+Mask: 113, Index: 34
+Mask: 117, Index: 20
+Mask: 119, Index: 36
+Mask: 125, Index: 46
+Mask: 127, Index: 39
+Mask: 197, Index: 17
+Mask: 209, Index: 26
+Mask: 213, Index: 28
+Mask: 223, Index: 30
 
-0: [0, 1] Isolated — Touching Different Type on all 4 sides. (Full Border).
+Mask: 247, Index: 47
+Mask: 253, Index: 29
+Mask: 254, Index: 31
 
-1: [1, 1] Center — Touching Same Type on all 4 sides. (No Borders).
+Mask: 121, Index: 46
+Mask: 245, Index: 45
+Mask: 251, Index: 31
 
-2: [2, 1] N-End — Touching Same Type on Top. Bordered on E, S, W.
 
-3: [3, 1] E-End — Touching Same Type on Right. Bordered on N, S, W.
 
-4: [4, 1] S-End — Touching Same Type on Bottom. Bordered on N, E, W.
+Mask	Neighbors Present (Walls)	Visual Shape	Your Index
+0	None	Isolated / Single Block	
+1	Top	Bottom Cap (Vertical End)	
+4	Right	Left Cap (Horizontal End)	
+16	Bottom	Top Cap (Vertical End)	
+64	Left	Right Cap (Horizontal End)	
+17	Top, Bottom	Vertical Shaft	
+68	Left, Right	Horizontal Shaft	
+5	Top, Right	L-Corner (Bottom-Left)	
+20	Right, Bottom	L-Corner (Top-Left)	
+80	Bottom, Left	L-Corner (Top-Right)	
+65	Left, Top	L-Corner (Bottom-Right)	
+21	Top, Right, Bottom	T-Junction (Open Left)	
+84	Right, Bottom, Left	T-Junction (Open Top)	
+81	Bottom, Left, Top	T-Junction (Open Right)	
+69	Left, Top, Right	T-Junction (Open Bottom)	
+85	Top, Right, Bottom, Left	Cross Junction (+)
 
-5: [5, 1] W-End — Touching Same Type on Left. Bordered on N, E, S.
 
-6: [6, 1] V-Straight — Touching Same Type on Top & Bottom. Bordered on E, W.
+7	Top, Right, Top-Right	Outer Corner (Bot-Left)	
+28	Right, Bottom, Bot-Right	Outer Corner (Top-Left)	
+112	Bottom, Left, Bot-Left	Outer Corner (Top-Right)	
+193	Left, Top, Top-Left	Outer Corner (Bot-Right)	
+31	Top, Right, Bottom, TR, BR	Side Wall (Right)	
+124	Right, Bottom, Left, BR, BL	Side Wall (Bottom)	
+241	Bottom, Left, Top, BL, TL	Side Wall (Left)	
+199	Left, Top, Right, TL, TR	Side Wall (Top)	
+255	All 8 Neighbors	Solid Center
 
-7: [7, 1] H-Straight — Touching Same Type on Left & Right. Bordered on N, S.
 
-8: [0, 2] TR-Corner — Touching Same Type on Top & Right. Bordered S, W.
-
-9: [1, 2] RB-Corner — Touching Same Type on Right & Bottom. Bordered N, W.
-
-10: [2, 2] BL-Corner — Touching Same Type on Bottom & Left. Bordered N, E.
-
-11: [3, 2] LT-Corner — Touching Same Type on Left & Top. Bordered E, S.
-
-12: [4, 2] T-Right — Touching Same Type on Top, Right, Bottom. Bordered West.
-
-13: [5, 2] T-Down — Touching Same Type on East, West, Bottom. Bordered North.
-
-14: [6, 2] T-Left — Touching Same Type on Top, Left, Bottom. Bordered East.
-
-15: [7, 2] T-Up — Touching Same Type on East, West, Top. Bordered South.
-
-16: [0, 3] Cross (+) — Touching Same Type on North, South, East, West.
-
-17: [1, 3] Filler — Pure solid wall texture.
-
-18: [2, 3] i-TR — Solid wall, but Different Type on the Top-Right Diagonal.
-
-19: [3, 3] i-RB — Solid wall, but Different Type on the Bottom-Right Diagonal.
-
-20: [4, 3] i-BL — Solid wall, but Different Type on the Bottom-Left Diagonal.
-
-21: [5, 3] i-LT — Solid wall, but Different Type on the Top-Left Diagonal.
-
-22: [6, 3] 2i-R/B — Different Type on both Right-side Diagonals.
-
-23: [7, 3] 2i-L/B — Different Type on both Left-side Diagonals.
-
-24: [0, 4] 2i-T/B — Different Type on both Top-side Diagonals.
-
-25: [1, 4] 2i-Opposite — Different Type on Top-Left and Bottom-Right Diagonals.
-
-26: [2, 4] 3i-TRB — Different Type on 3 diagonals (except Top-Left).
-
-27: [3, 4] 3i-RBL — Different Type on 3 diagonals (except Top-Right).
-
-28: [4, 4] 3i-BLT — Different Type on 3 diagonals (except Bottom-Right).
-
-29: [5, 4] 3i-LTR — Different Type on 3 diagonals (except Bottom-Left).
-
-30: [6, 4] Edge-N — Touching Same Type on E, S, W. Border on Top.
-
-31: [7, 4] Edge-E — Touching Same Type on N, S, W. Border on East.
-
-32: [0, 5] Edge-S — Touching Same Type on N, E, W. Border on South.
-
-33: [1, 5] Edge-W — Touching Same Type on N, E, S. Border on West.
-
-34: [2, 5] Slash-1 — Diagonal connection from Top-Left to Bottom-Right.
-
-35: [3, 5] Slash-2 — Diagonal connection from Top-Right to Bottom-Left.
-
-36: [4, 5] U-Up — Touching Same Type only on Top.
-
-37: [5, 5] U-Right — Touching Same Type only on Right.
-
-38: [6, 5] U-Down — Touching Same Type only on Bottom.
-
-39: [7, 5] U-Left — Touching Same Type only on Left.
-
-40: [0, 6] Thick-TR — Chunky Top-Right corner.
-
-41: [1, 6] Thick-RB — Chunky Bottom-Right corner.
-
-42: [2, 6] Thick-BL — Chunky Bottom-Left corner.
-
-43: [3, 6] Thick-LT — Chunky Top-Left corner.
-
-44: [4, 6] Step-H — Horizontal transition.
-
-45: [5, 6] Step-V — Vertical transition.
-
-46: [6, 6] 4i-All — Solid, but Different Type on all 4 diagonals.
-
-47: [7, 6] Empty — Blank tile.
+23	T, TR, R, B	BR, BL, L, TL	
+29	T, R, BR, B	TR, BL, L, TL	
+71	L, TL, T, R	TR, BR, B, BL	
+87	T, TR, R, B, L	BR, BL, TL	
+92	R, BR, B, L	T, TR, BL, TL	
+93	T, R, BR, B, L	TR, BL, TL	
+95	T, TR, R, BR, B, L	BL, TL	
+113	T, B, BL, L	TR, R, BR, TL	
+117	T, R, B, BL, L	TR, BR, TL	
+119	T, TR, R, B, BL, L	BR, TL	
+125	T, R, BR, B, BL, L	TR, TL	
+127	T, TR, R, BR, B, BL, L	TL	
+195	L, TL, T	TR, R, BR, B, BL	
+197	L, TL, T, R	TR, BR, B, BL	
+209	B, L, TL, T	TR, R, BR, BL	
+213	R, B, L, TL, T	TR, BR, BL	
+223	TR, R, B, L, TL, T	BR, BL	
+244	R, BR, B, BL, L	T, TR, TL	
+245	T, R, BR, B, BL, L	TR, TL	
+247	TR, R, BR, B, BL, L, T	TL	
+253	R, B, BL, L, TL, T, TR	BR	
+254	T, TR, R, BR, B, L, TL	BL

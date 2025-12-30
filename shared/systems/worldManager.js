@@ -5,28 +5,26 @@ export class WorldManager {
         this.seed = seed;
         this.currentContext = 'OVERWORLD';
         this.TILES = CONFIG.TILE_TYPES;
+        // Performance cache to store tile IDs for the current frame
+        this._cache = new Map();
     }
 
     /**
      * Determines if a neighbor should be considered "connected" to the target.
-     * Higher-level tiles (like Grass) connect to lower-level tiles (like Sand)
-     * to ensure the lower textures "fill in" underneath.
      */
     connects(targetId, neighborId) {
-        // If neighbor is the same tile, obviously connect
         if (targetId === neighborId) return true;
 
-        const targetDepth = CONFIG.TILE_DEPTH[targetId];
-        const neighborDepth = CONFIG.TILE_DEPTH[neighborId];
+        const targetDepth = CONFIG.TILE_DEPTH[targetId] || 0;
+        const neighborDepth = CONFIG.TILE_DEPTH[neighborId] || 0;
 
         // THE RULE: A tile connects to any neighbor that is at its depth OR HIGHER.
-        // This makes the "lower" tile hide its border when a "higher" tile is next to it.
         return neighborDepth >= targetDepth;
     }
 
-        /**
-         * The primary data fetch for the current tile coordinate.
-         */
+    /**
+     * The primary data fetch for the current tile coordinate.
+     */
     getTileData(col, row) {
         const tileId = this.getTileAt(col, row);
         const isBlob = CONFIG.BLOB_TILES.includes(tileId);
@@ -41,45 +39,53 @@ export class WorldManager {
             id: tileId, 
             mask: mask, 
             isBlob: true,
+            // Centralized check for wall-like properties
             isWall: tileId === this.TILES.WALL 
         };
     }
 
     /**
-     * NEW: Calculates a mask for a specific tile type at any coordinate.
-     * This is what makes the "Layered" rendering possible.
+     * Calculates a mask for a specific tile type at any coordinate.
      */
     getSpecificMask(col, row, targetId) {
         const check = (c, r) => this.connects(targetId, this.getTileAt(c, r));
 
-        const T  = check(col, row - 1);
-        const TR = check(col + 1, row - 1);
-        const R  = check(col + 1, row);
-        const BR = check(col + 1, row + 1);
-        const B  = check(col, row + 1);
-        const BL = check(col - 1, row + 1);
-        const L  = check(col - 1, row);
-        const TL = check(col - 1, row - 1);
-
         let mask = 0;
-        if (T) mask += BITMASK.TOP;
-        if (R) mask += BITMASK.RIGHT;
-        if (B) mask += BITMASK.BOTTOM;
-        if (L) mask += BITMASK.LEFT;
-
-        if (TR && T && R) mask += BITMASK.TOP_RIGHT;
-        if (BR && B && R) mask += BITMASK.BOTTOM_RIGHT;
-        if (BL && B && L) mask += BITMASK.BOTTOM_LEFT;
-        if (TL && T && L) mask += BITMASK.TOP_LEFT;
+        if (check(col, row - 1))      mask |= BITMASK.TOP;          // 1
+        if (check(col + 1, row - 1))  mask |= BITMASK.TOP_RIGHT;    // 2
+        if (check(col + 1, row))      mask |= BITMASK.RIGHT;        // 4
+        if (check(col + 1, row + 1))  mask |= BITMASK.BOTTOM_RIGHT; // 8
+        if (check(col, row + 1))      mask |= BITMASK.BOTTOM;       // 16
+        if (check(col - 1, row + 1))  mask |= BITMASK.BOTTOM_LEFT;  // 32
+        if (check(col - 1, row))      mask |= BITMASK.LEFT;         // 64
+        if (check(col - 1, row - 1))  mask |= BITMASK.TOP_LEFT;     // 128
 
         return mask;
     }
 
+    /**
+     * Optimized: Checks cache before running noise generation.
+     */
     getTileAt(col, row) {
+        const key = `${col},${row}`;
+        if (this._cache.has(key)) return this._cache.get(key);
+
+        let tileId;
         if (this.currentContext === 'OVERWORLD') {
-            return this.generateOverworld(col, row);
+            tileId = this.generateOverworld(col, row);
+        } else {
+            tileId = this.TILES.GRASS;
         }
-        return this.TILES.GRASS;
+
+        this._cache.set(key, tileId);
+        return tileId;
+    }
+
+    /**
+     * CRITICAL: Call this at the very beginning of your main draw/update loop
+     */
+    clearCache() {
+        this._cache.clear();
     }
 
     generateOverworld(col, row) {
@@ -88,11 +94,13 @@ export class WorldManager {
 
         if (n < 0.20) return this.TILES.WATER;       
         if (n < 0.28) return this.TILES.SAND;      
-        if (n < 0.65) return this.TILES.GRASS; 
-        if (n < 0.78) return this.TILES.HIGH_GRASS; 
+        if (n < 0.78) return this.TILES.GRASS; 
+       
 
-        return this.TILES.WALL;                    
+        return this.TILES.WALL;                     
     }
+
+    // --- NOISE ENGINE ---
 
     getSmoothNoise(x, y) {
         const x_int = Math.floor(x);
@@ -125,11 +133,11 @@ export class WorldManager {
 
     isSolid(col, row) {
         const id = this.getTileAt(col, row);
-        // Walls and Deep Water are solid
         return id === this.TILES.WALL || id === this.TILES.WATER;
     }
 
     switchContext(newContext) {
         this.currentContext = newContext;
+        this.clearCache(); // Clear cache when swapping maps
     }
 }
