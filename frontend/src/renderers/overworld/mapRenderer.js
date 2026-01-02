@@ -90,22 +90,22 @@ export class MapRenderer {
                 // 2. Sand / Grass Stacking
                 if (depth >= TILE_DEPTH[TILE_TYPES.GRASS]) {
                     if (targetId === TILE_TYPES.GRASS) {
-                        const sandMask = worldManager.getSpecificMask(col, row, TILE_TYPES.SAND);
+                        const sandMask = worldManager.getSpecificMask(col, row, TILE_TYPES.DIRT); // CHANGED: Was SAND
                         const sandIndex = this.blobMap.get(sandMask) ?? 14;
-                        this.drawTile(TILE_TYPES.SAND, sandIndex, dx, dy);
+                        this.drawTile(TILE_TYPES.DIRT, sandIndex, dx, dy); // CHANGED: Was SAND
                     } else {
                         // Under walls/grass, sand is solid
-                        this.drawTile(TILE_TYPES.SAND, 14, dx, dy);
+                        this.drawTile(TILE_TYPES.DIRT, 14, dx, dy); // CHANGED: Was SAND
                     }
                 }
 
                 // 3. Wall Stacking (Underlay)
                 // Draw layers beneath high walls to avoid holes
-                if (depth >= TILE_DEPTH[TILE_TYPES.WALL]) {
+                if (depth >= TILE_DEPTH[TILE_TYPES.WALL_LOW]) { // CHANGED: Was WALL
                     this.drawTile(TILE_TYPES.GRASS, 14, dx, dy);
                 }
                 if (depth >= TILE_DEPTH[TILE_TYPES.WALL_MID]) {
-                    this.drawTile(TILE_TYPES.WALL, 14, dx, dy);
+                    this.drawTile(TILE_TYPES.WALL_LOW, 14, dx, dy); // CHANGED: Was WALL
                 }
                 if (depth >= TILE_DEPTH[TILE_TYPES.WALL_HIGH]) {
                     this.drawTile(TILE_TYPES.WALL_MID, 14, dx, dy);
@@ -138,7 +138,7 @@ export class MapRenderer {
                     if (belowDepth >= myDepth) break;
 
                     // 2. FLOOR CHECK: If tile below is ANY Wall type, treat it as solid ground.
-                    const isHittingWallFloor = (belowDepth >= TILE_DEPTH[TILE_TYPES.WALL]);
+                    const isHittingWallFloor = (belowDepth >= TILE_DEPTH[TILE_TYPES.WALL_LOW]); // CHANGED: Was WALL
                     
                     const isFoot = (d === safeHeight) || isHittingWallFloor;
 

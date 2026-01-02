@@ -18,36 +18,36 @@ export const CONFIG = {
     FRAME_TIME: 0.15,       
     
     SHEET_WIDTH: 512, 
-    SHEET_HEIGHT: 512,
+    SHEET_HEIGHT: 2048,
 
     // --- Asset Keys ---
     TILE_TYPES: {
-        WATER: 0,
-        SAND: 1,
-        GRASS: 2,
-        WALL: 3,      // Level 1 Wall
+        WALL_HIGH: 5,  // Level 3 Wall (Added)
         WALL_MID: 4,  // Level 2 Wall (Added)
-        WALL_HIGH: 5  // Level 3 Wall (Added)
+        WALL_LOW: 3,      // Level 1 Wall
+        GRASS: 2,
+        DIRT: 1,
+        WATER: 0,
     },
 
     // Defines the physical stacking order (Visual Height)
     TILE_DEPTH: {
-        0: 0, // Water
-        1: 1, // Sand
-        2: 2, // Grass
-        3: 3, // Wall
+        5: 5, // Wall High
         4: 4, // Wall Mid
-        5: 5  // Wall High
+        3: 3, // Wall Low
+        2: 2, // Grass
+        1: 1, // dirt
+        0: 0, // Water
     },
 
     // Texture Y-Offsets (Row numbers in the sprite sheet)
     BLOB_OFFSETS: {
-        0: 25,  // WATER
-        3: 1,   // WALL (Low)
-        4: 1,   // WALL (Mid)  -> Reusing Wall texture
-        5: 1,   // WALL (High) -> Reusing Wall texture
-        2: 9,   // GRASS
-        1: 17   // SAND
+        5: 1,
+        4: 9,
+        3: 17,
+        2: 25,
+        1: 33,
+        0: 41,
     },
 
     // Ensure our new walls are treated as blobs

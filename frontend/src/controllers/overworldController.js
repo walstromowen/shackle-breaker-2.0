@@ -5,7 +5,6 @@ export class OverworldController {
         this.worldManager = worldManager; 
 
         // 1. Ask the WorldManager for a safe spot
-        // It returns { col, row } coordinates (e.g., col: 12, row: 8)
         const spawn = this.worldManager.findSpawnPoint();
 
         this.player = {
@@ -17,7 +16,7 @@ export class OverworldController {
             moveProgress: 0,
             direction: "DOWN",
             
-            // Initialize source/dest to the spawn point too, just to be safe
+            // Initialize source/dest to the spawn point
             sourceX: spawn.col * config.TILE_SIZE, 
             sourceY: spawn.row * config.TILE_SIZE,
             destX: spawn.col * config.TILE_SIZE, 
@@ -76,7 +75,6 @@ export class OverworldController {
     }
 
     continueMoving(dt) {
-        // Standard movement math
         this.player.moveProgress += dt / this.config.WALK_DURATION;
         this.player.animTimer += dt;
         
@@ -95,8 +93,7 @@ export class OverworldController {
             this.player.isMoving = false;
             this.player.moveProgress = 0;
             
-            // 3. CHECK EVENTS (FIXED LINE)
-            // We call the class method, not the player object method
+            // 3. CHECK EVENTS
             this.checkTileEvents(); 
 
             // 4. Input Buffer / Chain Movement
@@ -113,22 +110,40 @@ export class OverworldController {
         }
     }
 
+    /**
+     * UPDATED: Now uses worldManager.isSolid() to check for ALL wall types.
+     */
     isSpaceFree(pixelX, pixelY) {
         const { TILE_SIZE, TILE_TYPES } = this.config;
         const col = Math.floor(pixelX / TILE_SIZE);
         const row = Math.floor(pixelY / TILE_SIZE);
+        
+        // 1. Check bounds (Optional but good practice)
+        // if (col < 0 || row < 0) return false;
+
+        // 2. Check Walls (using the manager's central logic)
+        if (this.worldManager.isSolid(col, row)) {
+            return false;
+        }
+
+        // 3. Check Water (Manual check since water isn't always "solid" in all contexts, but here it is)
         const tileId = this.worldManager.getTileAt(col, row);
-        return (tileId !== TILE_TYPES.WALL && tileId !== TILE_TYPES.WATER);
+        if (tileId === TILE_TYPES.WATER) {
+            return false;
+        }
+
+        return true;
     }
 
-    checkTileEvents() { // Renamed slightly to match usage
+    checkTileEvents() {
         const { TILE_SIZE, TILE_TYPES } = this.config;
         const col = Math.floor(this.player.x / TILE_SIZE);
         const row = Math.floor(this.player.y / TILE_SIZE);
         const tileId = this.worldManager.getTileAt(col, row);
 
-        if (tileId === TILE_TYPES.HIGH_GRASS && Math.random() < 0.10) { 
-            console.log("💥 AMBUSH in the high grass!");
+        // UPDATED: 'HIGH_GRASS' didn't exist in constants, swapped to 'GRASS'
+        if (tileId === TILE_TYPES.GRASS && Math.random() < 0.10) { 
+            console.log("💥 AMBUSH in the grass!");
         }
     }
 
