@@ -4,20 +4,33 @@ export class OverworldController {
         this.config = config;
         this.worldManager = worldManager; 
 
+        // 1. Ask the WorldManager for a safe spot
+        // It returns { col, row } coordinates (e.g., col: 12, row: 8)
+        const spawn = this.worldManager.findSpawnPoint();
+
         this.player = {
             id: "player",
-            x: config.TILE_SIZE * 5,
-            y: config.TILE_SIZE * 5,
+            // 2. Convert grid coordinates to pixel coordinates
+            x: spawn.col * config.TILE_SIZE,
+            y: spawn.row * config.TILE_SIZE,
             isMoving: false,
             moveProgress: 0,
             direction: "DOWN",
-            sourceX: 0, sourceY: 0,
-            destX: 0, destY: 0,
+            
+            // Initialize source/dest to the spawn point too, just to be safe
+            sourceX: spawn.col * config.TILE_SIZE, 
+            sourceY: spawn.row * config.TILE_SIZE,
+            destX: spawn.col * config.TILE_SIZE, 
+            destY: spawn.row * config.TILE_SIZE,
+            
             animFrame: 0, animTimer: 0,
             spriteKey: 'spritesheet'
         };
         
         this.camera = { x: 0, y: 0 };
+        
+        // Immediately center camera on the new spawn
+        this.updateCamera();
     }
 
     update(dt) {
@@ -63,6 +76,7 @@ export class OverworldController {
     }
 
     continueMoving(dt) {
+        // Standard movement math
         this.player.moveProgress += dt / this.config.WALK_DURATION;
         this.player.animTimer += dt;
         
@@ -71,19 +85,29 @@ export class OverworldController {
             this.player.animFrame = (this.player.animFrame + 1) % 4;
         }
 
+        // --- MOVEMENT FINISHED ---
         if (this.player.moveProgress >= 1) {
+            // 1. Snap to grid
             this.player.x = Math.round(this.player.destX);
             this.player.y = Math.round(this.player.destY);
+            
+            // 2. Reset State
             this.player.isMoving = false;
             this.player.moveProgress = 0;
-            this.checkTileEvents();
+            
+            // 3. CHECK EVENTS (FIXED LINE)
+            // We call the class method, not the player object method
+            this.checkTileEvents(); 
 
+            // 4. Input Buffer / Chain Movement
             if (this.input.direction) {
                 this.checkForNewMove();
             } else {
                 this.player.animFrame = 0; 
             }
-        } else {
+        } 
+        // --- STILL MOVING ---
+        else {
             this.player.x = this.player.sourceX + (this.player.destX - this.player.sourceX) * this.player.moveProgress;
             this.player.y = this.player.sourceY + (this.player.destY - this.player.sourceY) * this.player.moveProgress;
         }
@@ -97,7 +121,7 @@ export class OverworldController {
         return (tileId !== TILE_TYPES.WALL && tileId !== TILE_TYPES.WATER);
     }
 
-    checkTileEvents() {
+    checkTileEvents() { // Renamed slightly to match usage
         const { TILE_SIZE, TILE_TYPES } = this.config;
         const col = Math.floor(this.player.x / TILE_SIZE);
         const row = Math.floor(this.player.y / TILE_SIZE);

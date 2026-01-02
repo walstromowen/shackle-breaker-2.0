@@ -1,36 +1,90 @@
 import { CONFIG, BITMASK } from '../data/constants.js';
 
 export class WorldManager {
-    constructor(seed = 12345) { // Changed default seed for a nice starting island
+    constructor(seed = 12345) {
         this.seed = seed;
         this.currentContext = 'OVERWORLD';
         this.TILES = CONFIG.TILE_TYPES;
+        
+        // --- GENERATION SETTINGS ---
+        
+        // SCALE: 0.05 = "Zoomed In" / "Gradual"
+        // This spreads the biomes out significantly.
+        // It physically forces the sequence: Water -> Sand -> Grass -> Wall
+        // preventing Walls from ever generating directly next to Water.
+        this.noiseScale = 0.05; 
+
         this._cache = new Map();
+
+        // Simple Thresholds for Biomes
+        this.BIOMES = [
+            // Water ends at 0.35
+            { threshold: 0.35, id: this.TILES.WATER }, 
+            
+            // Sand is now very thin (0.35 to 0.40)
+            { threshold: 0.40, id: this.TILES.SAND },
+
+            // Grass is narrower (0.40 to 0.60)
+            { threshold: 0.60, id: this.TILES.GRASS },
+
+            // Wall starts earlier (0.60+)
+            { threshold: 2.00, id: this.TILES.WALL } 
+        ];
     }
 
     /**
-     * Determines if a neighbor should be considered "connected" to the target.
+     * Finds the nearest safe tile (Grass or Sand) starting from (0,0).
+     * Returns an object { col, row }.
+     * Used by the Controller to place the player safely.
      */
+    findSpawnPoint() {
+        let radius = 0;
+        const maxRadius = 200; // Safety break
+
+        while (radius < maxRadius) {
+            // Check a square ring around (0,0)
+            for (let r = -radius; r <= radius; r++) {
+                for (let c = -radius; c <= radius; c++) {
+                    
+                    // Optimization: Only check the outer edge (the new ring)
+                    if (Math.abs(r) !== radius && Math.abs(c) !== radius) continue;
+
+                    // 1. Is it solid? (Wall)
+                    if (this.isSolid(c, r)) continue;
+
+                    // 2. Is it water? (Optional: prevent swimming spawn)
+                    const tileId = this.getTileAt(c, r);
+                    if (tileId === this.TILES.WATER) continue;
+
+                    // 3. Found safe ground!
+                    return { col: c, row: r };
+                }
+            }
+            radius++;
+        }
+
+        return { col: 0, row: 0 }; // Fallback
+    }
+
+    // --- TILE & MASK RETRIEVAL ---
+
     connects(targetId, neighborId) {
         if (targetId === neighborId) return true;
-
         const targetDepth = CONFIG.TILE_DEPTH[targetId] || 0;
         const neighborDepth = CONFIG.TILE_DEPTH[neighborId] || 0;
-
-        // Rule: A tile connects to any neighbor that is at its depth OR HIGHER.
         return neighborDepth >= targetDepth;
     }
 
     getTileData(col, row) {
         const tileId = this.getTileAt(col, row);
-        const isBlob = CONFIG.BLOB_TILES.includes(tileId);
+        const isBlob = CONFIG.BLOB_TILES && CONFIG.BLOB_TILES.includes(tileId);
 
         if (!isBlob) {
             return { id: tileId, mask: 0, isBlob: false, isWall: false };
         }
 
         const mask = this.getSpecificMask(col, row, tileId);
-
+        
         return { 
             id: tileId, 
             mask: mask, 
@@ -63,7 +117,7 @@ export class WorldManager {
         if (this.currentContext === 'OVERWORLD') {
             tileId = this.generateOverworld(col, row);
         } else {
-            tileId = this.TILES.GRASS;
+            tileId = this.TILES.GRASS; // Placeholder for interiors
         }
 
         this._cache.set(key, tileId);
@@ -74,38 +128,29 @@ export class WorldManager {
         this._cache.clear();
     }
 
-    /**
-     * SIMPLIFIED GENERATION
-     * Creates large, smooth blobs of terrain.
-     */
+    // --- GENERATION LOGIC ---
+
     generateOverworld(col, row) {
-        // --- Optional Debug Bench (Row -5) ---
-        // Keeps a safe spot to test rendering logic if you walk up
-        if (row === -5 && col > -5 && col < 5) return this.TILES.WALL;
+        // 1. Get Smooth Noise
+        const noiseValue = this.getSmoothNoise(col * this.noiseScale, row * this.noiseScale);
 
-        // 1. SCALE (The "Zoom")
-        // 0.15 = Normal
-        // 0.05 = Large, zoomed-in continents (Simpler)
-        const scale = 0.05; 
-
-        // 2. NOISE GENERATION
-        // We only use ONE layer now. This removes the "roughness".
-        const noiseValue = this.getSmoothNoise(col * scale, row * scale);
-
-        // 3. THRESHOLDS (The "Biomes")
-        // < 0.25 : Water (Ocean)
-        // < 0.35 : Sand  (Wide Beaches)
-        // < 0.70 : Grass (Large Plains)
-        // > 0.70 : Wall  (Plateaus)
+        // 2. Direct Mapping (No neighbor checks needed due to low scale)
+        const biome = this.BIOMES.find(b => noiseValue < b.threshold);
         
-        if (noiseValue < 0.25) return this.TILES.WATER;
-        if (noiseValue < 0.35) return this.TILES.SAND; 
-        if (noiseValue < 0.90) return this.TILES.GRASS;
-        
-        return this.TILES.WALL;
+        return biome ? biome.id : this.TILES.WALL;
     }
 
-    // --- NOISE ENGINE (Unchanged) ---
+    isSolid(col, row) {
+        const id = this.getTileAt(col, row);
+        return id === this.TILES.WALL;
+    }
+
+    switchContext(newContext) {
+        this.currentContext = newContext;
+        this.clearCache(); 
+    }
+
+    // --- MATH HELPERS ---
 
     getSmoothNoise(x, y) {
         const x_int = Math.floor(x);
@@ -134,15 +179,5 @@ export class WorldManager {
         const dot = x * 12.9898 + y * 78.233;
         const sn = Math.sin(dot + this.seed) * 43758.5453123;
         return sn - Math.floor(sn);
-    }
-
-    isSolid(col, row) {
-        const id = this.getTileAt(col, row);
-        return id === this.TILES.WALL;
-    }
-
-    switchContext(newContext) {
-        this.currentContext = newContext;
-        this.clearCache(); 
     }
 }

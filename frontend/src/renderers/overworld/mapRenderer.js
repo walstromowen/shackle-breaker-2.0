@@ -82,10 +82,20 @@ export class MapRenderer {
         const drawSize = TILE_SIZE * GAME_SCALE;
         const safeHeight = WALL_HEIGHT || 1;
 
-        const startCol = Math.floor(camera.x / TILE_SIZE) - 1;
-        const startRow = Math.floor(camera.y / TILE_SIZE) - 1 - safeHeight;
-        const tilesX = Math.ceil(this.canvas.width / drawSize) + 2;
-        const tilesY = Math.ceil(this.canvas.height / drawSize) + 2 + safeHeight;
+        // --- VIEW BUFFER ---
+        // Draws extra tiles off-screen to prevent "pop-in"
+        const VIEW_BUFFER = 2; 
+
+        const startCol = Math.floor(camera.x / TILE_SIZE) - VIEW_BUFFER;
+        const startRow = Math.floor(camera.y / TILE_SIZE) - VIEW_BUFFER - safeHeight;
+        
+        // Calculate width/height based on canvas + buffer on BOTH sides
+        const tilesX = Math.ceil(this.canvas.width / drawSize) + (VIEW_BUFFER * 2);
+        const tilesY = Math.ceil(this.canvas.height / drawSize) + (VIEW_BUFFER * 2) + safeHeight;
+
+        // Clear the canvas before drawing
+        this.ctx.fillStyle = '#000000'; // Default background color
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         // --- PASS 1: Ground Layers ---
         for (let row = startRow; row < startRow + tilesY; row++) {
@@ -95,12 +105,12 @@ export class MapRenderer {
                 const dy = Math.floor((row * TILE_SIZE - camera.y) * GAME_SCALE);
 
                 // --- LAYER 1: WATER FOUNDATION ---
-                // Prevents black holes. Always drawn.
+                // Prevents black holes. Always drawn underneath everything.
                 this.drawTile(TILE_TYPES.WATER, 14, dx, dy);
 
                 // --- LAYER 2: SAND BASE ---
-                // We calculate a specific mask for Sand. 
-                // This lets Sand connect to neighbor Sand, even if the Grass above doesn't.
+                // "Smart Sand": We pretend we are Sand to get the correct connecting shape.
+                // This prevents the sand from curving away from the grass (which would reveal water).
                 if (targetTileId === TILE_TYPES.GRASS) {
                     const sandMask = worldManager.getSpecificMask(col, row, TILE_TYPES.SAND);
                     const sandIndex = this.blobMap.get(sandMask) ?? 14;
@@ -122,6 +132,7 @@ export class MapRenderer {
         }
 
         // --- PASS 2: Walls (Bodies) ---
+        // Drawn afterwards so they overlap the tiles behind them correctly (z-indexing)
         for (let row = startRow; row < startRow + tilesY; row++) {
             for (let col = startCol; col < startCol + tilesX; col++) {
                 const targetTileId = worldManager.getTileAt(col, row);
@@ -133,6 +144,8 @@ export class MapRenderer {
 
                 for (let d = 1; d <= safeHeight; d++) {
                     const tileBelow = worldManager.getTileAt(col, row + d);
+                    
+                    // Stop if we hit another wall (don't draw over another roof)
                     if (tileBelow === TILE_TYPES.WALL) break;
 
                     const isFoot = (d === safeHeight);
