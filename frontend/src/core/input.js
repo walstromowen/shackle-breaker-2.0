@@ -6,12 +6,14 @@ export class Input {
         // Setup listeners
         window.addEventListener("keydown", (e) => {
             // 1. Movement Polling
+            // We only track "held" status for movement keys (WASD/Arrows)
             if (this.isValidKey(e.code)) {
                 this.heldKeys.add(e.code);
             }
 
             // 2. Single-Press Events
-            // This "shouts" to the SceneManager that a key was tapped
+            // We emit ALL key presses so the SceneManager can catch
+            // special keys like 'Backquote' (~) or 'Enter'
             this.emit('keyPressed', e.code);
         });
 
@@ -38,6 +40,9 @@ export class Input {
         }
     }
 
+    /**
+     * Strict filter for Movement keys only
+     */
     isValidKey(code) {
         return [
             "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight",

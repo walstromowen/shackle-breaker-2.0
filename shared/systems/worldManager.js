@@ -1,11 +1,10 @@
 import { CONFIG, BITMASK } from '../data/constants.js';
 
 export class WorldManager {
-    constructor(seed = 12345) {
+    constructor(seed = 12345) { // Changed default seed for a nice starting island
         this.seed = seed;
         this.currentContext = 'OVERWORLD';
         this.TILES = CONFIG.TILE_TYPES;
-        // Performance cache to store tile IDs for the current frame
         this._cache = new Map();
     }
 
@@ -18,13 +17,10 @@ export class WorldManager {
         const targetDepth = CONFIG.TILE_DEPTH[targetId] || 0;
         const neighborDepth = CONFIG.TILE_DEPTH[neighborId] || 0;
 
-        // THE RULE: A tile connects to any neighbor that is at its depth OR HIGHER.
+        // Rule: A tile connects to any neighbor that is at its depth OR HIGHER.
         return neighborDepth >= targetDepth;
     }
 
-    /**
-     * The primary data fetch for the current tile coordinate.
-     */
     getTileData(col, row) {
         const tileId = this.getTileAt(col, row);
         const isBlob = CONFIG.BLOB_TILES.includes(tileId);
@@ -39,33 +35,26 @@ export class WorldManager {
             id: tileId, 
             mask: mask, 
             isBlob: true,
-            // Centralized check for wall-like properties
             isWall: tileId === this.TILES.WALL 
         };
     }
 
-    /**
-     * Calculates a mask for a specific tile type at any coordinate.
-     */
     getSpecificMask(col, row, targetId) {
         const check = (c, r) => this.connects(targetId, this.getTileAt(c, r));
 
         let mask = 0;
-        if (check(col, row - 1))      mask |= BITMASK.TOP;          // 1
-        if (check(col + 1, row - 1))  mask |= BITMASK.TOP_RIGHT;    // 2
-        if (check(col + 1, row))      mask |= BITMASK.RIGHT;        // 4
-        if (check(col + 1, row + 1))  mask |= BITMASK.BOTTOM_RIGHT; // 8
-        if (check(col, row + 1))      mask |= BITMASK.BOTTOM;       // 16
-        if (check(col - 1, row + 1))  mask |= BITMASK.BOTTOM_LEFT;  // 32
-        if (check(col - 1, row))      mask |= BITMASK.LEFT;         // 64
-        if (check(col - 1, row - 1))  mask |= BITMASK.TOP_LEFT;     // 128
+        if (check(col, row - 1))      mask |= BITMASK.TOP;          
+        if (check(col + 1, row - 1))  mask |= BITMASK.TOP_RIGHT;    
+        if (check(col + 1, row))      mask |= BITMASK.RIGHT;        
+        if (check(col + 1, row + 1))  mask |= BITMASK.BOTTOM_RIGHT; 
+        if (check(col, row + 1))      mask |= BITMASK.BOTTOM;       
+        if (check(col - 1, row + 1))  mask |= BITMASK.BOTTOM_LEFT;  
+        if (check(col - 1, row))      mask |= BITMASK.LEFT;         
+        if (check(col - 1, row - 1))  mask |= BITMASK.TOP_LEFT;     
 
         return mask;
     }
 
-    /**
-     * Optimized: Checks cache before running noise generation.
-     */
     getTileAt(col, row) {
         const key = `${col},${row}`;
         if (this._cache.has(key)) return this._cache.get(key);
@@ -81,26 +70,42 @@ export class WorldManager {
         return tileId;
     }
 
-    /**
-     * CRITICAL: Call this at the very beginning of your main draw/update loop
-     */
     clearCache() {
         this._cache.clear();
     }
 
+    /**
+     * SIMPLIFIED GENERATION
+     * Creates large, smooth blobs of terrain.
+     */
     generateOverworld(col, row) {
-        const scale = 18.0; 
-        const n = this.getSmoothNoise(col / scale, row / scale);
+        // --- Optional Debug Bench (Row -5) ---
+        // Keeps a safe spot to test rendering logic if you walk up
+        if (row === -5 && col > -5 && col < 5) return this.TILES.WALL;
 
-        if (n < 0.20) return this.TILES.WATER;       
-        if (n < 0.28) return this.TILES.SAND;      
-        if (n < 0.78) return this.TILES.GRASS; 
-       
+        // 1. SCALE (The "Zoom")
+        // 0.15 = Normal
+        // 0.05 = Large, zoomed-in continents (Simpler)
+        const scale = 0.05; 
 
-        return this.TILES.WALL;                     
+        // 2. NOISE GENERATION
+        // We only use ONE layer now. This removes the "roughness".
+        const noiseValue = this.getSmoothNoise(col * scale, row * scale);
+
+        // 3. THRESHOLDS (The "Biomes")
+        // < 0.25 : Water (Ocean)
+        // < 0.35 : Sand  (Wide Beaches)
+        // < 0.70 : Grass (Large Plains)
+        // > 0.70 : Wall  (Plateaus)
+        
+        if (noiseValue < 0.25) return this.TILES.WATER;
+        if (noiseValue < 0.35) return this.TILES.SAND; 
+        if (noiseValue < 0.90) return this.TILES.GRASS;
+        
+        return this.TILES.WALL;
     }
 
-    // --- NOISE ENGINE ---
+    // --- NOISE ENGINE (Unchanged) ---
 
     getSmoothNoise(x, y) {
         const x_int = Math.floor(x);
@@ -133,11 +138,11 @@ export class WorldManager {
 
     isSolid(col, row) {
         const id = this.getTileAt(col, row);
-        return id === this.TILES.WALL || id === this.TILES.WATER;
+        return id === this.TILES.WALL;
     }
 
     switchContext(newContext) {
         this.currentContext = newContext;
-        this.clearCache(); // Clear cache when swapping maps
+        this.clearCache(); 
     }
 }

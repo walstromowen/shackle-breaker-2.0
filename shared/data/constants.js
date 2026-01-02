@@ -7,7 +7,8 @@ export const CONFIG = {
     TILE_PADDING: 1,        // Standardized padding (1px border = 2px total between tiles)
     GAME_SCALE: 1,          
     CANVAS_WIDTH: 800, 
-    CANVAS_HEIGHT: 450,     
+    CANVAS_HEIGHT: 450, 
+    WALL_HEIGHT: 2,    
 
     // --- Movement & Physics ---
     WALK_DURATION: 0.4,     
@@ -24,27 +25,24 @@ export const CONFIG = {
     WATER: 0,
     SAND: 1,
     GRASS: 2,
-    HIGH_GRASS: 3,
-    WALL: 4
+    WALL: 3
     },
 
     TILE_DEPTH: {
         0: 0, // Water (Bottom)
         1: 1, // Sand
         2: 2, // Grass
-        3: 3, // High Grass
-        4: 4  // Wall (Top)
+        3: 3  // Wall (Top)
     },
 
     BLOB_OFFSETS: {
-        0: 7,  // WATER starts Row 7
-        1: 13, // SAND starts Row 13
-        2: 25, // GRASS starts Row 25
-        3: 19, // HIGH_GRASS starts Row 19
-        4: 1   // WALL starts Row 1
+        0: 25,  // WATER: Starts at Row 0 (Only 1 row used)
+        3: 1,  // WALL:  Starts at Row 1 (Rows 1-7)
+        2: 9,  // GRASS: Starts at Row 8 (Rows 8-14)
+        1: 17  // SAND:  Starts at Row 15 (Wait! We hit the 512px limit here)
     },
 
-    BLOB_TILES: [0, 1, 2, 3, 4],
+    BLOB_TILES: [1, 2, 3],
 };
 
 export const BITMASK = {

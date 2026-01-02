@@ -25,7 +25,7 @@ export class SceneManager {
 
         this.currentScene = 'overworld';
 
-        // --- NEW: SYSTEM-WIDE KEY HANDLING ---
+        // --- SYSTEM-WIDE KEY HANDLING ---
         this.setupKeyHandlers();
     }
 
@@ -84,7 +84,8 @@ export class SceneManager {
             case 'overworld':
                 const state = this.overworldController.getState();
                 
-                // Sync renderer debug state with our manager logic
+                // Render Map (Pass WorldManager and Camera)
+                // The renderer checks its own internal 'showDebug' flag here
                 this.mapRenderer.renderMap(this.worldManager, state.camera);
                 this.entityRenderer.render(this.ctx, state.entities, state.camera);
                 break;
