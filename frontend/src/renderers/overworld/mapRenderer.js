@@ -6,9 +6,6 @@ export class MapRenderer {
         this.config = config;
         this.ctx.imageSmoothingEnabled = false;
 
-        // The flag that SceneManager toggles
-        this.showDebug = false; 
-
         this.blobMap = new Map();
         
         this.BITS = { 
@@ -16,7 +13,6 @@ export class MapRenderer {
             BOTTOM: 16, BOTTOM_LEFT: 32, LEFT: 64, TOP_LEFT: 128
         };
 
-        // Standard Blob 47 mapping
         const TILE_LOOKUP = {
             0: 42, 1: 32, 4: 43, 16: 24, 64: 44, 17: 40, 68: 41, 5: 11, 20: 3, 80: 4, 
             65: 12, 21: 1, 84: 8, 81: 2, 69: 16, 85: 38, 7: 21, 28: 5, 112: 7, 193: 23, 
@@ -36,20 +32,17 @@ export class MapRenderer {
         }
     }
 
-    /**
-     * Determines which face to draw based on neighbors.
-     */
     getFaceIndex(mask, isFoot) {
         const hasLeft = !!(mask & this.BITS.LEFT);
         const hasRight = !!(mask & this.BITS.RIGHT);
         
-        // Keeping your logic: Feet at 56, Body at 48
+        // 56 is the "Foot" Row, 48 is the "Body" Row
         const rowStart = isFoot ? 56 : 48; 
 
-        if (hasLeft && hasRight) return rowStart + 1; // Middle
-        if (!hasLeft && hasRight) return rowStart + 0; // Left Cap
-        if (hasLeft && !hasRight) return rowStart + 2; // Right Cap
-        return rowStart + 3; // Pillar
+        if (hasLeft && hasRight) return rowStart + 1; 
+        if (!hasLeft && hasRight) return rowStart + 0; 
+        if (hasLeft && !hasRight) return rowStart + 2; 
+        return rowStart + 3; 
     }
 
     drawTile(typeId, index, dx, dy) {
@@ -58,100 +51,101 @@ export class MapRenderer {
         const drawSize = TILE_SIZE * GAME_SCALE;
         const SLOT_SIZE = TILE_SIZE + (TILE_PADDING * 2);
 
+        const startRow = BLOB_OFFSETS[typeId] !== undefined ? BLOB_OFFSETS[typeId] : 0;
         const sx = ((index % 8) * SLOT_SIZE) + TILE_PADDING;
-        const sy = ((Math.floor(index / 8) + (BLOB_OFFSETS[typeId] ?? 0)) * SLOT_SIZE) + TILE_PADDING;
+        const sy = ((Math.floor(index / 8) + startRow) * SLOT_SIZE) + TILE_PADDING;
 
         this.ctx.drawImage(tileset, sx, sy, TILE_SIZE, TILE_SIZE, dx, dy, drawSize, drawSize);
-
-        if (this.showDebug) {
-            this.ctx.save();
-            this.ctx.font = 'bold 10px monospace';
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
-            this.ctx.strokeStyle = 'black';
-            this.ctx.lineWidth = 3;
-            this.ctx.strokeText(index, dx + drawSize / 2, dy + drawSize / 2);
-            this.ctx.fillStyle = 'white';
-            this.ctx.fillText(index, dx + drawSize / 2, dy + drawSize / 2);
-            this.ctx.restore();
-        }
     }
 
     renderMap(worldManager, camera) {
-        const { TILE_SIZE, GAME_SCALE, TILE_TYPES, WALL_HEIGHT } = this.config;
+        const { TILE_SIZE, GAME_SCALE, TILE_TYPES, TILE_DEPTH, WALL_HEIGHT } = this.config;
         const drawSize = TILE_SIZE * GAME_SCALE;
-        const safeHeight = WALL_HEIGHT || 1;
-
-        // --- VIEW BUFFER ---
-        // Draws extra tiles off-screen to prevent "pop-in"
+        const safeHeight = WALL_HEIGHT || 1; 
         const VIEW_BUFFER = 2; 
 
         const startCol = Math.floor(camera.x / TILE_SIZE) - VIEW_BUFFER;
         const startRow = Math.floor(camera.y / TILE_SIZE) - VIEW_BUFFER - safeHeight;
         
-        // Calculate width/height based on canvas + buffer on BOTH sides
         const tilesX = Math.ceil(this.canvas.width / drawSize) + (VIEW_BUFFER * 2);
         const tilesY = Math.ceil(this.canvas.height / drawSize) + (VIEW_BUFFER * 2) + safeHeight;
 
-        // Clear the canvas before drawing
-        this.ctx.fillStyle = '#000000'; // Default background color
+        this.ctx.fillStyle = '#000000'; 
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // --- PASS 1: Ground Layers ---
+        // --- PASS 1: Ground Layers & Roofs ---
         for (let row = startRow; row < startRow + tilesY; row++) {
             for (let col = startCol; col < startCol + tilesX; col++) {
-                const targetTileId = worldManager.getTileAt(col, row);
+                
+                const tileData = worldManager.getTileData(col, row);
+                const targetId = tileData.id;
+                const depth = TILE_DEPTH[targetId] || 0;
+
                 const dx = Math.floor((col * TILE_SIZE - camera.x) * GAME_SCALE);
                 const dy = Math.floor((row * TILE_SIZE - camera.y) * GAME_SCALE);
 
-                // --- LAYER 1: WATER FOUNDATION ---
-                // Prevents black holes. Always drawn underneath everything.
+                // 1. Water Base
                 this.drawTile(TILE_TYPES.WATER, 14, dx, dy);
 
-                // --- LAYER 2: SAND BASE ---
-                // "Smart Sand": We pretend we are Sand to get the correct connecting shape.
-                // This prevents the sand from curving away from the grass (which would reveal water).
-                if (targetTileId === TILE_TYPES.GRASS) {
-                    const sandMask = worldManager.getSpecificMask(col, row, TILE_TYPES.SAND);
-                    const sandIndex = this.blobMap.get(sandMask) ?? 14;
-                    this.drawTile(TILE_TYPES.SAND, sandIndex, dx, dy);
-                } 
-                else if (targetTileId === TILE_TYPES.WALL) {
-                    // Walls sit on solid Sand & Grass
-                    this.drawTile(TILE_TYPES.SAND, 14, dx, dy);
-                    this.drawTile(TILE_TYPES.GRASS, 14, dx, dy);
+                // 2. Sand / Grass Stacking
+                if (depth >= TILE_DEPTH[TILE_TYPES.GRASS]) {
+                    if (targetId === TILE_TYPES.GRASS) {
+                        const sandMask = worldManager.getSpecificMask(col, row, TILE_TYPES.SAND);
+                        const sandIndex = this.blobMap.get(sandMask) ?? 14;
+                        this.drawTile(TILE_TYPES.SAND, sandIndex, dx, dy);
+                    } else {
+                        // Under walls/grass, sand is solid
+                        this.drawTile(TILE_TYPES.SAND, 14, dx, dy);
+                    }
                 }
 
-                // --- LAYER 3: THE TILE ITSELF ---
-                if (targetTileId !== TILE_TYPES.WATER) {
-                    const mask = worldManager.getSpecificMask(col, row, targetTileId);
-                    const index = this.blobMap.get(mask) ?? 14;
-                    this.drawTile(targetTileId, index, dx, dy);
+                // 3. Wall Stacking (Underlay)
+                // Draw layers beneath high walls to avoid holes
+                if (depth >= TILE_DEPTH[TILE_TYPES.WALL]) {
+                    this.drawTile(TILE_TYPES.GRASS, 14, dx, dy);
+                }
+                if (depth >= TILE_DEPTH[TILE_TYPES.WALL_MID]) {
+                    this.drawTile(TILE_TYPES.WALL, 14, dx, dy);
+                }
+                if (depth >= TILE_DEPTH[TILE_TYPES.WALL_HIGH]) {
+                    this.drawTile(TILE_TYPES.WALL_MID, 14, dx, dy);
+                }
+
+                // 4. Actual Top Tile (Roof)
+                if (targetId !== TILE_TYPES.WATER) {
+                    const index = this.blobMap.get(tileData.mask) ?? 14;
+                    this.drawTile(targetId, index, dx, dy);
                 }
             }
         }
 
-        // --- PASS 2: Walls (Bodies) ---
-        // Drawn afterwards so they overlap the tiles behind them correctly (z-indexing)
+        // --- PASS 2: Vertical Wall Faces ---
         for (let row = startRow; row < startRow + tilesY; row++) {
             for (let col = startCol; col < startCol + tilesX; col++) {
-                const targetTileId = worldManager.getTileAt(col, row);
-                if (targetTileId !== TILE_TYPES.WALL) continue;
+                
+                const tileData = worldManager.getTileData(col, row);
+                if (!tileData.isWall) continue;
 
+                const myDepth = TILE_DEPTH[tileData.id];
                 const dx = Math.floor((col * TILE_SIZE - camera.x) * GAME_SCALE);
                 const dy = Math.floor((row * TILE_SIZE - camera.y) * GAME_SCALE);
-                const mask = worldManager.getSpecificMask(col, row, targetTileId);
-
+                
                 for (let d = 1; d <= safeHeight; d++) {
-                    const tileBelow = worldManager.getTileAt(col, row + d);
-                    
-                    // Stop if we hit another wall (don't draw over another roof)
-                    if (tileBelow === TILE_TYPES.WALL) break;
+                    const tileBelowId = worldManager.getTileAt(col, row + d);
+                    const belowDepth = TILE_DEPTH[tileBelowId] || 0;
 
-                    const isFoot = (d === safeHeight);
-                    const faceIdx = this.getFaceIndex(mask, isFoot);
+                    // 1. HIDDEN CHECK: If tile below is TALLER or SAME, we are hidden behind it.
+                    if (belowDepth >= myDepth) break;
+
+                    // 2. FLOOR CHECK: If tile below is ANY Wall type, treat it as solid ground.
+                    const isHittingWallFloor = (belowDepth >= TILE_DEPTH[TILE_TYPES.WALL]);
                     
-                    this.drawTile(targetTileId, faceIdx, dx, dy + (d * drawSize));
+                    const isFoot = (d === safeHeight) || isHittingWallFloor;
+
+                    const faceIdx = this.getFaceIndex(tileData.mask, isFoot);
+                    this.drawTile(tileData.id, faceIdx, dx, dy + (d * drawSize));
+                    
+                    // If we hit a floor/wall, stop drawing this column.
                     if (isFoot) break;
                 }
             }
