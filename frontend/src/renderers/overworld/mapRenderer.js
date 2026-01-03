@@ -32,11 +32,14 @@ export class MapRenderer {
         }
     }
 
+    /**
+     * Standard logic for Body (Row 48) and Standard Foot (Row 56).
+     */
     getFaceIndex(mask, isFoot) {
         const hasLeft = !!(mask & this.BITS.LEFT);
         const hasRight = !!(mask & this.BITS.RIGHT);
         
-        // 56 is the "Foot" Row, 48 is the "Body" Row
+        // 56 = Standard Foot, 48 = Standard Body
         const rowStart = isFoot ? 56 : 48; 
 
         if (hasLeft && hasRight) return rowStart + 1; 
@@ -90,22 +93,20 @@ export class MapRenderer {
                 // 2. Sand / Grass Stacking
                 if (depth >= TILE_DEPTH[TILE_TYPES.GRASS]) {
                     if (targetId === TILE_TYPES.GRASS) {
-                        const sandMask = worldManager.getSpecificMask(col, row, TILE_TYPES.DIRT); // CHANGED: Was SAND
+                        const sandMask = worldManager.getSpecificMask(col, row, TILE_TYPES.DIRT);
                         const sandIndex = this.blobMap.get(sandMask) ?? 14;
-                        this.drawTile(TILE_TYPES.DIRT, sandIndex, dx, dy); // CHANGED: Was SAND
+                        this.drawTile(TILE_TYPES.DIRT, sandIndex, dx, dy);
                     } else {
-                        // Under walls/grass, sand is solid
-                        this.drawTile(TILE_TYPES.DIRT, 14, dx, dy); // CHANGED: Was SAND
+                        this.drawTile(TILE_TYPES.DIRT, 14, dx, dy);
                     }
                 }
 
                 // 3. Wall Stacking (Underlay)
-                // Draw layers beneath high walls to avoid holes
-                if (depth >= TILE_DEPTH[TILE_TYPES.WALL_LOW]) { // CHANGED: Was WALL
+                if (depth >= TILE_DEPTH[TILE_TYPES.WALL_LOW]) {
                     this.drawTile(TILE_TYPES.GRASS, 14, dx, dy);
                 }
                 if (depth >= TILE_DEPTH[TILE_TYPES.WALL_MID]) {
-                    this.drawTile(TILE_TYPES.WALL_LOW, 14, dx, dy); // CHANGED: Was WALL
+                    this.drawTile(TILE_TYPES.WALL_LOW, 14, dx, dy);
                 }
                 if (depth >= TILE_DEPTH[TILE_TYPES.WALL_HIGH]) {
                     this.drawTile(TILE_TYPES.WALL_MID, 14, dx, dy);
@@ -130,22 +131,41 @@ export class MapRenderer {
                 const dx = Math.floor((col * TILE_SIZE - camera.x) * GAME_SCALE);
                 const dy = Math.floor((row * TILE_SIZE - camera.y) * GAME_SCALE);
                 
+                // Draw faces extending downwards
                 for (let d = 1; d <= safeHeight; d++) {
                     const tileBelowId = worldManager.getTileAt(col, row + d);
                     const belowDepth = TILE_DEPTH[tileBelowId] || 0;
 
-                    // 1. HIDDEN CHECK: If tile below is TALLER or SAME, we are hidden behind it.
+                    // 1. HIDDEN CHECK
                     if (belowDepth >= myDepth) break;
 
-                    // 2. FLOOR CHECK: If tile below is ANY Wall type, treat it as solid ground.
-                    const isHittingWallFloor = (belowDepth >= TILE_DEPTH[TILE_TYPES.WALL_LOW]); // CHANGED: Was WALL
-                    
+                    // 2. FLOOR CHECK
+                    const isHittingWallFloor = (belowDepth >= TILE_DEPTH[TILE_TYPES.WALL_LOW]);
                     const isFoot = (d === safeHeight) || isHittingWallFloor;
 
-                    const faceIdx = this.getFaceIndex(tileData.mask, isFoot);
+                    let faceIdx;
+
+                    if (isFoot) {
+                        // --- FOOT LOGIC ---
+                        if (d === 1) {
+                            // CASE A: No Middle Face (Immediate Foot) -> Use Special Indices 61-63
+                            const hasLeft = !!(tileData.mask & this.BITS.LEFT);
+                            const hasRight = !!(tileData.mask & this.BITS.RIGHT);
+
+                            if (!hasLeft && hasRight) faceIdx = 61;      // BL
+                            else if (hasLeft && !hasRight) faceIdx = 63; // BR
+                            else faceIdx = 62;                           // Center
+                        } else {
+                            // CASE B: Has Middle Face (Normal Foot) -> Use Standard Row 56
+                            faceIdx = this.getFaceIndex(tileData.mask, true);
+                        }
+                    } else {
+                        // --- BODY LOGIC (Row 48) ---
+                        faceIdx = this.getFaceIndex(tileData.mask, false);
+                    }
+
                     this.drawTile(tileData.id, faceIdx, dx, dy + (d * drawSize));
                     
-                    // If we hit a floor/wall, stop drawing this column.
                     if (isFoot) break;
                 }
             }

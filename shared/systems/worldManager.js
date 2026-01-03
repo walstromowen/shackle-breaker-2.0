@@ -13,9 +13,9 @@ export class WorldManager {
         // Updated Biome Thresholds
         this.BIOMES = [
             { threshold: 0.35, id: this.TILES.WATER }, 
-            { threshold: 0.40, id: this.TILES.DIRT },     // CHANGED: Was SAND
+            { threshold: 0.40, id: this.TILES.DIRT },
             { threshold: 0.60, id: this.TILES.GRASS },
-            { threshold: 0.75, id: this.TILES.WALL_LOW }, // CHANGED: Was WALL
+            { threshold: 0.75, id: this.TILES.WALL_LOW },
             { threshold: 0.85, id: this.TILES.WALL_MID },
             { threshold: 2.00, id: this.TILES.WALL_HIGH } 
         ];
@@ -55,7 +55,7 @@ export class WorldManager {
 
         // Helper to identify ANY wall type
         const isWall = (
-            tileId === this.TILES.WALL_LOW || // CHANGED: Was WALL
+            tileId === this.TILES.WALL_LOW || 
             tileId === this.TILES.WALL_MID || 
             tileId === this.TILES.WALL_HIGH
         );
@@ -117,7 +117,7 @@ export class WorldManager {
     isSolid(col, row) {
         const id = this.getTileAt(col, row);
         return (
-            id === this.TILES.WALL_LOW || // CHANGED: Was WALL
+            id === this.TILES.WALL_LOW || 
             id === this.TILES.WALL_MID || 
             id === this.TILES.WALL_HIGH
         );
