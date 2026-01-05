@@ -5,6 +5,7 @@ export class OverworldController {
         this.worldManager = worldManager; 
 
         // 1. Ask the WorldManager for a safe spot
+        // (Note: This might now return a Wall Roof coordinate, which is valid!)
         const spawn = this.worldManager.findSpawnPoint();
 
         this.player = {
@@ -111,28 +112,25 @@ export class OverworldController {
     }
 
     /**
-     * UPDATED: Now uses worldManager.isSolid() to check for ALL wall types.
+     * UPDATED: Now checks Elevation transition instead of just "Is Solid?"
      */
-    isSpaceFree(pixelX, pixelY) {
-        const { TILE_SIZE, TILE_TYPES } = this.config;
-        const col = Math.floor(pixelX / TILE_SIZE);
-        const row = Math.floor(pixelY / TILE_SIZE);
-        
-        // 1. Check bounds (Optional but good practice)
-        // if (col < 0 || row < 0) return false;
+    isSpaceFree(targetPixelX, targetPixelY) {
+        const { TILE_SIZE } = this.config;
 
-        // 2. Check Walls (using the manager's central logic)
-        if (this.worldManager.isSolid(col, row)) {
-            return false;
-        }
+        // 1. Where are we NOW? (Source)
+        const startCol = Math.floor(this.player.x / TILE_SIZE);
+        const startRow = Math.floor(this.player.y / TILE_SIZE);
 
-        // 3. Check Water (Manual check since water isn't always "solid" in all contexts, but here it is)
-        const tileId = this.worldManager.getTileAt(col, row);
-        if (tileId === TILE_TYPES.WATER) {
-            return false;
-        }
+        // 2. Where do we want to GO? (Destination)
+        const endCol = Math.floor(targetPixelX / TILE_SIZE);
+        const endRow = Math.floor(targetPixelY / TILE_SIZE);
 
-        return true;
+        // 3. Ask WorldManager if this specific move is allowed
+        // This handles:
+        // - Water (Always blocked)
+        // - Elevation Mismatch (Blocked)
+        // - Same Elevation (Allowed, even on roofs)
+        return this.worldManager.canMove(startCol, startRow, endCol, endRow);
     }
 
     checkTileEvents() {
@@ -141,7 +139,6 @@ export class OverworldController {
         const row = Math.floor(this.player.y / TILE_SIZE);
         const tileId = this.worldManager.getTileAt(col, row);
 
-        // UPDATED: 'HIGH_GRASS' didn't exist in constants, swapped to 'GRASS'
         if (tileId === TILE_TYPES.GRASS && Math.random() < 0.10) { 
             console.log("💥 AMBUSH in the grass!");
         }

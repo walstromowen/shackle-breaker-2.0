@@ -7,6 +7,7 @@ const assetLoader = new AssetLoader();
 const ASSET_MANIFEST = {
     tileset: './assets/tilesets/plains.png',
     spritesheet: './assets/sprites/hero.png',
+    mapObjects: 'assets/tilesets/objects.png'
 };
 
 let sceneManager;

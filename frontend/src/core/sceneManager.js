@@ -12,7 +12,7 @@ export class SceneManager {
         this.config = config;
 
         this.input = new Input();
-        this.worldManager = new WorldManager(12345); 
+        this.worldManager = new WorldManager(); 
 
         this.overworldController = new OverworldController(
             this.input, 
