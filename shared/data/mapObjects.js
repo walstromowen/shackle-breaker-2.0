@@ -52,5 +52,11 @@ export const MAP_OBJECTS = {
         width: 1,
         height: 1, 
         isSolid: false
-    }
+    },
+    OAK_TREE_1:{
+        spriteKey: 'OAK_TREE_1', // <--- Points to the Costume
+        width: 2, 
+        height: 2, 
+        isSolid: true
+    },
 };

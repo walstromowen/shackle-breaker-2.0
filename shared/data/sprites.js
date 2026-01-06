@@ -12,4 +12,5 @@ export const SPRITES = {
     TULIPS_RED: { x: 3, y: 0, w: 1, h: 1 },
     WOODEN_CHEST: { x: 4, y: 0, w: 1, h: 1 },
     SMALL_ROCKS: { x: 5, y: 0, w: 1, h: 1 },
+    OAK_TREE_1: { x: 0, y: 3, w: 2, h: 2 },
 };

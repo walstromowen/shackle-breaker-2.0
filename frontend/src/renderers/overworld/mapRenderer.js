@@ -9,19 +9,11 @@ export class MapRenderer {
         this.ctx.imageSmoothingEnabled = false;
 
         this.tilesetImage = this.loader.get('tileset'); 
-        this.objectImage = this.loader.get('mapObjects') || this.loader.get('spritesheet'); 
-
-        // --- SHADOW INDICES (Row 0 of Tileset) ---
-        // 0: Top Strip (South Shadow)
-        // 1: Left Strip (East Shadow)
-        // 2: Top-Left Dot (Diagonal/Inner Corner)
-        // 3: Inverted 'L' Shape (Merged Top + Left Strips)
-        this.SHADOW_S = 0;
-        this.SHADOW_E = 1;
-        this.SHADOW_SE = 2;
-        this.SHADOW_CORNER_L = 3;
+        this.objectImage = this.loader.get('mapObjects') || this.loader.get('spritesheet');
+        this.shadowImage = this.loader.get('shadows'); 
 
         this.blobMap = new Map();
+        this.shadowOverrides = new Map();
         
         // Bitmask constants for Autotiling
         this.BITS = { 
@@ -29,7 +21,7 @@ export class MapRenderer {
             BOTTOM: 16, BOTTOM_LEFT: 32, LEFT: 64, TOP_LEFT: 128
         };
         
-        // Standard Blob Lookup Table
+        // Standard Blob Lookup Table (Mapping 8-bit mask to 47-tile ID)
         const TILE_LOOKUP = {
             0: 42, 1: 32, 4: 43, 16: 24, 64: 44, 17: 40, 68: 41, 5: 11, 20: 3, 80: 4, 
             65: 12, 21: 1, 84: 8, 81: 2, 69: 16, 85: 38, 7: 21, 28: 5, 112: 7, 193: 23, 
@@ -39,16 +31,29 @@ export class MapRenderer {
             247: 29, 251: 15, 253: 45, 254: 31
         };
 
-        // Initialize Blob Map
+        // 1. STANDARD BLOB MAP (Strict - Used for Terrain/Walls)
+        // Removes diagonal corners if cardinal neighbors are missing to prevent bad wall geometry.
         for (let i = 0; i < 256; i++) {
             let cleanMask = i;
-            // Remove corner bits if adjacent cardinal bits are missing
             if (!(i & 1) || !(i & 4))   cleanMask &= ~2;   // Top-Right
             if (!(i & 4) || !(i & 16))  cleanMask &= ~8;   // Bottom-Right
             if (!(i & 16) || !(i & 64)) cleanMask &= ~32;  // Bottom-Left
             if (!(i & 64) || !(i & 1))  cleanMask &= ~128; // Top-Left
             this.blobMap.set(i, TILE_LOOKUP[cleanMask] ?? 14);
         }
+
+        // 2. SHADOW OVERRIDES (Loose - Used ONLY for Shadows)
+        // Forces diagonal bits to resolve to corner tiles instead of falling back to Pillar (42).
+        this.shadowOverrides.set(2, 26);   // Top-Right Only
+        this.shadowOverrides.set(8, 29);   // Bottom-Right Only
+        this.shadowOverrides.set(32, 28);  // Bottom-Left Only
+        this.shadowOverrides.set(128, 27); // Top-Left Only
+        
+        this.shadowOverrides.set(10, 29);  // TR + BR
+        this.shadowOverrides.set(40, 29);  // BR + BL
+        this.shadowOverrides.set(160, 28); // BL + TL
+        this.shadowOverrides.set(130, 27); // TL + TR
+        this.shadowOverrides.set(170, 26); // 4-way Diagonal
     }
 
     /**
@@ -58,7 +63,7 @@ export class MapRenderer {
         const hasLeft = !!(mask & this.BITS.LEFT);
         const hasRight = !!(mask & this.BITS.RIGHT);
         
-        // Body starts at Row 6 (48), Foot starts at Row 7 (56)
+        // Body starts at Row 6 (48), Foot starts at Row 7 (56) in the tileset logic
         const rowStart = isFoot ? 56 : 48; 
         
         if (hasLeft && hasRight) return rowStart + 1; // Middle
@@ -86,146 +91,107 @@ export class MapRenderer {
         this.ctx.drawImage(this.objectImage, sx, sy, sW, sH, dx, dy - heightOffset, dW, dH);
     }
 
-    drawTile(typeId, index, dx, dy) {
+    drawTile(typeId, index, dx, dy, imageKey = 'tileset') {
         const { TILE_SIZE, TILE_PADDING, GAME_SCALE, BLOB_OFFSETS } = CONFIG;
-        const tileset = this.tilesetImage; 
-        if (!tileset) return;
+        
+        // Select source image
+        let sourceImage = this.tilesetImage;
+        if (imageKey === 'shadows') sourceImage = this.shadowImage;
+        if (!sourceImage) return;
 
         const drawSize = TILE_SIZE * GAME_SCALE;
         const SLOT_SIZE = TILE_SIZE + (TILE_PADDING * 2);
 
-        // Shadows use typeId=null, which defaults to Offset 0
-        const startRow = (typeId !== null && BLOB_OFFSETS[typeId] !== undefined) ? BLOB_OFFSETS[typeId] : 0;
+        // Determine Row Offset
+        let startRow = 0;
+        if (imageKey === 'tileset' && typeId !== null && BLOB_OFFSETS[typeId] !== undefined) {
+            startRow = BLOB_OFFSETS[typeId];
+        }
         
         const sx = ((index % 8) * SLOT_SIZE) + TILE_PADDING;
         const sy = ((Math.floor(index / 8) + startRow) * SLOT_SIZE) + TILE_PADDING;
 
-        this.ctx.drawImage(tileset, sx, sy, TILE_SIZE, TILE_SIZE, dx, dy, drawSize, drawSize);
+        this.ctx.drawImage(sourceImage, sx, sy, TILE_SIZE, TILE_SIZE, dx, dy, drawSize, drawSize);
     }
 
     drawShadows(worldManager, col, row, dx, dy, currentDepth) {
         const { TILE_TYPES, TILE_DEPTH } = CONFIG;
 
-        // 1. Water/Void never receives shadows
-        if (currentDepth === TILE_DEPTH[TILE_TYPES.LAYER_0]) return;
+        // 1. Exclusion: Water and Lowest Dirt layer don't receive shadows
+        if (currentDepth === TILE_DEPTH[TILE_TYPES.LAYER_0] || 
+            currentDepth === TILE_DEPTH[TILE_TYPES.LAYER_1]) {
+            return;
+        }
 
-        // Helper: Get depth safely
         const getDepth = (c, r) => {
             const t = worldManager.getTileAt(c, r);
             return (t !== null && t !== undefined) ? (TILE_DEPTH[t] || 0) : 0;
         };
 
-        const DEPTH_L3 = TILE_DEPTH[TILE_TYPES.LAYER_3]; // 2 Faces Tall
-        const DEPTH_L4 = TILE_DEPTH[TILE_TYPES.LAYER_4]; // 1 Face Tall
-        const DEPTH_L5 = TILE_DEPTH[TILE_TYPES.LAYER_5]; // 1 Face Tall
+        const DEPTH_L3 = TILE_DEPTH[TILE_TYPES.LAYER_3]; 
+        const DEPTH_L4 = TILE_DEPTH[TILE_TYPES.LAYER_4]; 
+        const DEPTH_L5 = TILE_DEPTH[TILE_TYPES.LAYER_5]; 
 
-        // --- 2. FACE GUARD (CRITICAL FIX) ---
-        // If we are sitting on a tile that is visually occupied by a neighbor's "Face",
-        // we must NOT draw shadows here. Shadows belong on the ground, not on walls.
-        
-        const nDepth1 = getDepth(col, row - 1); // Neighbor directly North
-        const nDepth2 = getDepth(col, row - 2); // Neighbor 2 steps North
+        // 2. Face Guard: Prevent shadows from drawing on top of vertical wall faces
+        const nDepth1 = getDepth(col, row - 1);
+        const nDepth2 = getDepth(col, row - 2);
 
-        // A. Are we the face of a 1-Tall Wall (L4 or L5) directly North?
-        if (nDepth1 > currentDepth && (nDepth1 === DEPTH_L4 || nDepth1 === DEPTH_L5)) return;
-
-        // B. Are we the Top Face of a 2-Tall Wall (L3) directly North?
-        if (nDepth1 > currentDepth && nDepth1 === DEPTH_L3) return;
-
-        // C. Are we the Bottom Face of a 2-Tall Wall (L3) two steps North?
+        if (nDepth1 > currentDepth && (nDepth1 === DEPTH_L4 || nDepth1 === DEPTH_L5 || nDepth1 === DEPTH_L3)) return;
         if (nDepth2 > currentDepth && nDepth2 === DEPTH_L3) return;
 
+        // 3. Obstruction Check
+        const castsShadow = (tx, ty) => {
+            const d0 = getDepth(tx, ty);
+            if (d0 > currentDepth) return true;
 
-        // --- 3. SHADOW CASTING LOGIC ---
-        // If we reached here, we are definitely a visible Floor.
-        
-        const isTall = (d) => (d > currentDepth) && (d >= DEPTH_L3);
-
-        // --- CHECK WEST (East Shadow) ---
-        let isWWall = false;
-        
-        // Is the tile to the West a Roof?
-        if (isTall(getDepth(col - 1, row))) {
-            isWWall = true;
-        } 
-        // Is the tile to the West a Face of a wall above it? (Check West's North neighbors)
-        else {
-            const wDepth1 = getDepth(col - 1, row - 1);
-            const wDepth2 = getDepth(col - 1, row - 2);
+            const d1 = getDepth(tx, ty - 1);
+            if (d1 > currentDepth && (d1 === DEPTH_L4 || d1 === DEPTH_L5 || d1 === DEPTH_L3)) return true;
             
-            // Face of L4/L5 at y-1
-            if (isTall(wDepth1) && (wDepth1 === DEPTH_L4 || wDepth1 === DEPTH_L5)) isWWall = true;
-            // Top Face of L3 at y-1
-            else if (isTall(wDepth1) && wDepth1 === DEPTH_L3) isWWall = true;
-            // Bottom Face of L3 at y-2
-            else if (isTall(wDepth2) && wDepth2 === DEPTH_L3) isWWall = true;
-        }
+            const d2 = getDepth(tx, ty - 2);
+            if (d2 > currentDepth && d2 === DEPTH_L3) return true;
 
-        // --- CHECK NORTH (South Shadow) ---
-        // We look "over" the faces to find the roof casting the shadow.
-        let isNWall = false;
+            return false;
+        };
 
-        // Check for 1-Tall Roof (L4/L5) at row-2
-        if (isTall(nDepth2) && (nDepth2 === DEPTH_L4 || nDepth2 === DEPTH_L5)) {
-            isNWall = true;
-        }
-        // Check for 2-Tall Roof (L3) at row-3
-        const nDepth3 = getDepth(col, row - 3);
-        if (!isNWall && isTall(nDepth3) && nDepth3 === DEPTH_L3) {
-            isNWall = true;
-        }
+        // 4. Build Bitmask
+        let mask = 0;
+        const bits = this.BITS;
 
-        // --- CHECK DIAGONAL (Inner Corner) ---
-        let isNWWall = false;
-        if (!isNWall && !isWWall) {
-             // Check diagonal for 1-Tall (L4/L5)
-            const nwDepth2 = getDepth(col - 1, row - 2);
-            if (isTall(nwDepth2) && (nwDepth2 === DEPTH_L4 || nwDepth2 === DEPTH_L5)) {
-                isNWWall = true;
-            }
-            // Check diagonal for 2-Tall (L3)
-            const nwDepth3 = getDepth(col - 1, row - 3);
-            if (!isNWWall && isTall(nwDepth3) && nwDepth3 === DEPTH_L3) {
-                isNWWall = true;
-            }
-        }
+        if (castsShadow(col, row - 1))     mask |= bits.TOP;
+        if (castsShadow(col + 1, row - 1)) mask |= bits.TOP_RIGHT;
+        if (castsShadow(col + 1, row))     mask |= bits.RIGHT;
+        if (castsShadow(col + 1, row + 1)) mask |= bits.BOTTOM_RIGHT;
+        if (castsShadow(col, row + 1))     mask |= bits.BOTTOM;
+        if (castsShadow(col - 1, row + 1)) mask |= bits.BOTTOM_LEFT;
+        if (castsShadow(col - 1, row))     mask |= bits.LEFT;
+        if (castsShadow(col - 1, row - 1)) mask |= bits.TOP_LEFT;
 
-        // --- DRAW ---
-        if (isNWall && isWWall) {
-            this.drawTile(null, this.SHADOW_CORNER_L, dx, dy);
-        }
-        else if (isNWall) {
-            this.drawTile(null, this.SHADOW_S, dx, dy);
-        }
-        else if (isWWall) {
-            this.drawTile(null, this.SHADOW_E, dx, dy);
-        }
-        else if (isNWWall) {
-            this.drawTile(null, this.SHADOW_SE, dx, dy);
-        }
+        if (mask === 0) return;
+
+        // 5. Select Tile: Check Overrides (Loose) first, then BlobMap (Strict)
+        const shadowIndex = this.shadowOverrides.get(mask) ?? this.blobMap.get(mask) ?? 14; 
+        
+        this.drawTile(null, shadowIndex, dx, dy, 'shadows');
     }
 
     renderMap(worldManager, camera, entities = []) {
         const { TILE_SIZE, GAME_SCALE, TILE_TYPES, TILE_DEPTH, WALL_HEIGHT } = CONFIG;
         const drawSize = TILE_SIZE * GAME_SCALE;
         
-        // Render buffer to prevent popping at edges
         const VIEW_BUFFER = 2; 
         const safeHeight = WALL_HEIGHT || 2; 
 
-        // Calculate viewport range
         const startCol = Math.floor(camera.x / TILE_SIZE) - VIEW_BUFFER;
-        const startRow = Math.floor(camera.y / TILE_SIZE) - VIEW_BUFFER - safeHeight; // Scan higher for tall walls
+        const startRow = Math.floor(camera.y / TILE_SIZE) - VIEW_BUFFER - safeHeight;
         
         const tilesX = Math.ceil(this.canvas.width / drawSize) + (VIEW_BUFFER * 2);
         const tilesY = Math.ceil(this.canvas.height / drawSize) + (VIEW_BUFFER * 2) + safeHeight;
 
-        // Clear Screen
         this.ctx.fillStyle = '#000000'; 
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         // ========================================================
-        // PASS 1: FLOORS & SHADOWS (Flat Layers)
+        // PASS 1: FLOORS & SHADOWS
         // ========================================================
         for (let row = startRow; row < startRow + tilesY; row++) {
             for (let col = startCol; col < startCol + tilesX; col++) {
@@ -237,34 +203,32 @@ export class MapRenderer {
                 const dx = Math.floor((col * TILE_SIZE - camera.x) * GAME_SCALE);
                 const dy = Math.floor((row * TILE_SIZE - camera.y) * GAME_SCALE);
 
-                // 1. Draw Water Base (Layer 0)
+                // Draw Base Layer (Water)
                 this.drawTile(TILE_TYPES.LAYER_0, 14, dx, dy);
 
-                // 2. Draw Sand (Layer 1) if needed
+                // Draw Sand/Layer 1 (Special Masking)
                 if (depth >= TILE_DEPTH[TILE_TYPES.LAYER_2]) {
                     if (targetId === TILE_TYPES.LAYER_2) {
-                        // If we are Grass, we need transition tiles for the Sand underneath
                         const sandMask = worldManager.getSpecificMask(col, row, TILE_TYPES.LAYER_1);
-                        const sandIndex = this.blobMap.get(sandMask) ?? 14;
+                        const sandIndex = this.blobMap.get(sandMask) ?? 14; // Strict map OK here
                         this.drawTile(TILE_TYPES.LAYER_1, sandIndex, dx, dy);
                     } else {
-                        // Otherwise just fill sand
                         this.drawTile(TILE_TYPES.LAYER_1, 14, dx, dy);
                     }
                 }
                 
-                // 3. Layer Stacking Logic (Fill beneath higher layers)
+                // Draw Stacking Layers
                 if (depth >= TILE_DEPTH[TILE_TYPES.LAYER_3]) this.drawTile(TILE_TYPES.LAYER_2, 14, dx, dy);
                 if (depth >= TILE_DEPTH[TILE_TYPES.LAYER_4]) this.drawTile(TILE_TYPES.LAYER_3, 14, dx, dy);
                 if (depth >= TILE_DEPTH[TILE_TYPES.LAYER_5]) this.drawTile(TILE_TYPES.LAYER_4, 14, dx, dy);
 
-                // 4. Draw The Actual Tile (If not water)
+                // Draw Actual Tile (Grass/Walls)
                 if (targetId !== TILE_TYPES.LAYER_0) {
                     const index = this.blobMap.get(tileData.mask) ?? 14;
                     this.drawTile(targetId, index, dx, dy);
                 }
 
-                // 5. Draw Shadows (Calculated dynamically)
+                // Draw Shadows (On top of floor, but behind Pass 2)
                 this.drawShadows(worldManager, col, row, dx, dy, depth);
             }
         }
@@ -272,7 +236,6 @@ export class MapRenderer {
         // ========================================================
         // PASS 2: SORTED RENDER LIST (Faces, Objects, Entities)
         // ========================================================
-        // We collect everything that has height/depth and sort by Y position
         const renderList = [];
 
         for (let row = startRow; row < startRow + tilesY; row++) {
@@ -281,26 +244,22 @@ export class MapRenderer {
                 const dx = Math.floor((col * TILE_SIZE - camera.x) * GAME_SCALE);
                 const dy = Math.floor((row * TILE_SIZE - camera.y) * GAME_SCALE);
 
-                // --- WALL RENDERING ---
+                // --- WALL FACES ---
                 if (tileData.isWall) {
                     const myDepth = TILE_DEPTH[tileData.id];
                     
-                    // Loop downwards to draw the wall "Faces" (Front view)
                     for (let d = 1; d <= safeHeight; d++) {
                         const tileBelowId = worldManager.getTileAt(col, row + d);
                         const belowDepth = TILE_DEPTH[tileBelowId] || 0;
 
-                        // Stop if we hit a wall of equal or greater height
                         if (belowDepth >= myDepth) break;
 
-                        // Check if we hit the floor to decide if it's a "Foot" or "Body"
                         const isHittingWallFloor = (belowDepth >= TILE_DEPTH[TILE_TYPES.LAYER_3]);
                         const isFoot = (d === safeHeight) || isHittingWallFloor;
                         
                         const faceIdx = this.getFaceIndex(tileData.mask, isFoot);
                         const drawY = dy + (d * drawSize);
                         
-                        // Add to render list sorted by the Y-coordinate of the BASE of the tile
                         renderList.push({
                             y: (row + d + 1) * TILE_SIZE * GAME_SCALE, 
                             type: 'WALL_FACE',
@@ -311,7 +270,7 @@ export class MapRenderer {
                     }
                 }
 
-                // --- OBJECT RENDERING ---
+                // --- MAP OBJECTS ---
                 if (tileData.object && tileData.object.isAnchor !== false) {
                     renderList.push({
                         y: (row + 1) * TILE_SIZE * GAME_SCALE,
@@ -322,18 +281,22 @@ export class MapRenderer {
             }
         }
 
-        // --- ENTITY RENDERING ---
+        // --- ENTITIES (Players, NPCs) ---
         entities.forEach(entity => {
             if (entity && typeof entity.draw === 'function') {
+                // Sort by FEET (Y + Height) to fix depth issues
+                const entityHeight = entity.height || TILE_SIZE;
+                const sortY = (entity.y + entityHeight) * GAME_SCALE;
+
                 renderList.push({
-                    y: entity.y * GAME_SCALE, 
+                    y: sortY, 
                     type: 'ENTITY',
                     draw: () => entity.draw(this.ctx, camera)
                 });
             }
         });
 
-        // --- SORT AND EXECUTE ---
+        // --- SORT BY Y AND DRAW ---
         renderList.sort((a, b) => a.y - b.y);
         for (const item of renderList) item.draw();
     }
