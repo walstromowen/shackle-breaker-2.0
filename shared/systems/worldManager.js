@@ -318,22 +318,35 @@ export class WorldManager {
     }
 
     getSolidObjectAt(col, row) {
-        const MAX_W = 2; 
-        const MAX_H = 3; 
+        // Optimization: Scan a range large enough for your biggest object (e.g., 3x3)
+        const SEARCH_LIMIT = 3; 
 
-        for (let dy = 0; dy <= MAX_H; dy++) {
-            for (let dx = 0; dx <= MAX_W; dx++) {
+        for (let dy = 0; dy <= SEARCH_LIMIT; dy++) {
+            for (let dx = 0; dx <= SEARCH_LIMIT; dx++) {
                 
+                // 1. Look North/West to find the "Anchor" of a potential object
                 const anchorCol = col - dx; 
-                const anchorRow = row + dy; 
+                const anchorRow = row - dy; 
 
                 const obj = this.getObject(anchorCol, anchorRow);
 
                 if (obj && obj.isSolid) {
-                    const widthInTiles = Math.ceil(obj.w / CONFIG.TILE_SIZE);
-                    const heightInTiles = Math.ceil(obj.h / CONFIG.TILE_SIZE);
+                    
+                    // 2. Determine Collision Dimensions
+                    // Default to full size if no hitbox is defined
+                    const hitW = obj.hitbox ? obj.hitbox.w : obj.width;
+                    const hitH = obj.hitbox ? obj.hitbox.h : obj.height;
 
-                    if (dx < widthInTiles && dy < heightInTiles) {
+                    // 3. Calculate "Empty Top"
+                    // If visual height is 2 and hitbox is 1, the top 1 row is empty.
+                    const emptyTopRows = obj.height - hitH;
+
+                    // 4. Check Collision
+                    // We only collide if:
+                    // A. We are within the width (dx < hitW)
+                    // B. We are below the empty top area (dy >= emptyTopRows)
+                    // C. We are not below the object entirely (dy < obj.height)
+                    if (dx < hitW && dy >= emptyTopRows && dy < obj.height) {
                         return obj; 
                     }
                 }

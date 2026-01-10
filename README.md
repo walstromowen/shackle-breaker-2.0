@@ -30,12 +30,14 @@ Root
 |   |   ├── constants.js
 |   |   ├── entities.js
 |   |   ├── items.js
-|   |   ├── map.js
+|   |   ├── mapObjects.js
+|   |   ├──sprites.js
 |   ├── systems
 |   |   ├── combat
 |   |   ├── factories
 |   |   |   ├── entityFactory.js
 |   |   |   └── itemFactory.js
+|   |   ├── worldManager.js
 ├── .gitignore/ 
 ├── LISCENSE/ 
 ├── package-lock.json 

@@ -7,8 +7,8 @@ const assetLoader = new AssetLoader();
 const ASSET_MANIFEST = {
     tileset: './assets/tilesets/plains.png',
     spritesheet: './assets/sprites/hero.png',
-    mapObjects: 'assets/tilesets/objects.png',
-    shadows: 'assets/tilesets/shadows.png'
+    mapObjects: './assets/tilesets/objects.png',
+    shadows: './assets/tilesets/shadows.png'
 };
 
 let sceneManager;

@@ -261,7 +261,8 @@ export class MapRenderer {
                         const drawY = dy + (d * drawSize);
                         
                         renderList.push({
-                            y: (row + d + 1) * TILE_SIZE * GAME_SCALE, 
+                            // FIX: Added +0.1 so walls draw ON TOP of entities at same depth
+                            y: ((row + d + 1) * TILE_SIZE * GAME_SCALE) + 0.1, 
                             type: 'WALL_FACE',
                             draw: () => this.drawTile(tileData.id, faceIdx, dx, drawY)
                         });
@@ -273,7 +274,8 @@ export class MapRenderer {
                 // --- MAP OBJECTS ---
                 if (tileData.object && tileData.object.isAnchor !== false) {
                     renderList.push({
-                        y: (row + 1) * TILE_SIZE * GAME_SCALE,
+                        // FIX: Added +0.1 so trees draw ON TOP of entities at same depth
+                        y: ((row + 1) * TILE_SIZE * GAME_SCALE) + 0.1,
                         type: 'OBJECT',
                         draw: () => this.drawObject(tileData.object, dx, dy)
                     });
