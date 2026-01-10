@@ -20,6 +20,9 @@ export class WorldManager {
         this._cache = new Map();
         this.objects = new Map(); 
 
+        // PERFORMANCE: We track when to prune objects
+        this.lastPruneTime = 0;
+
         this.initNoise(this.seed);
     }
 
@@ -55,8 +58,6 @@ export class WorldManager {
     getTileData(col, row) {
         const tileId = this.getTileAt(col, row);
         const isBlob = CONFIG.BLOB_TILES && CONFIG.BLOB_TILES.includes(tileId);
-        
-        // Wall check updated for Layer 3, 4, 5
         const isWall = (tileId >= this.TILES.LAYER_3 && tileId <= this.TILES.LAYER_5);
 
         let data = { 
@@ -67,6 +68,7 @@ export class WorldManager {
             object: null 
         };
 
+        // Note: bitmask calculation is expensive, only do it if necessary
         if (isBlob) data.mask = this.getSpecificMask(col, row, tileId);
         
         const obj = this.getObject(col, row);
@@ -76,78 +78,171 @@ export class WorldManager {
     }
 
     // =========================================================
-    // SECTION 2: OBJECT MANAGEMENT
+    // SECTION 2: OBJECT MANAGEMENT (OPTIMIZED)
     // =========================================================
 
-    getObject(col, row) {
-        if (this.objects.has(`${col},${row}`)) {
-            return this.objects.get(`${col},${row}`);
-        }
-        return this.generateProceduralObject(col, row);
+    /**
+     * PERFORMANCE CRITICAL:
+     * Returns a simple array of all objects currently existing in the world memory.
+     * The Renderer uses this to draw "Wide" objects without scanning the grid.
+     */
+    getActiveObjects() {
+        return Array.from(this.objects.values());
     }
 
-    generateProceduralObject(col, row) {
-        // 1. OCCLUSION CHECK: Is this tile covered by a wall from the NORTH?
+    /**
+     * PERFORMANCE CRITICAL:
+     * Removes objects that are very far away to keep the array size small.
+     * Call this from your GameLoop every few seconds (not every frame).
+     */
+    pruneObjects(cameraX, cameraY) {
+        const TILE_SIZE = CONFIG.TILE_SIZE;
+        // Distance to keep objects (e.g., 30 tiles). Anything further is deleted.
+        const KEEP_DISTANCE = 30 * TILE_SIZE; 
+        
+        // Convert map to iterator to safely delete while iterating
+        for (const [key, obj] of this.objects) {
+            // Calculate Manhattan distance (faster than Math.sqrt)
+            const objX = obj.col * TILE_SIZE;
+            const objY = obj.row * TILE_SIZE;
+            const dist = Math.abs(objX - cameraX) + Math.abs(objY - cameraY);
+
+            if (dist > KEEP_DISTANCE) {
+                this.objects.delete(key);
+            }
+        }
+    }
+
+    getObject(col, row) {
+        const key = `${col},${row}`;
+        
+        // Debug Campfire (Remove when done testing)
+        if (col === 22 && row === 22 && !this.objects.has(key)) {
+            this.placeObject(22, 22, 'CAMPFIRE'); 
+            return this.objects.get(key);
+        }
+
+        if (this.objects.has(key)) return this.objects.get(key);
+
+        const newObj = this.generateProceduralObject(col, row);
+        
+        if (newObj) this.objects.set(key, newObj);
+        
+        return newObj;
+    }
+
+    // Returns the ID string (e.g. 'LARGE_HOUSE') or null
+    decideObject(col, row) {
+        // 1. Terrain Checks
         if (this.isBlockedByFace(col, row)) return null;
-
-        // 2. CLIFF FACE CHECK: Is this tile acting as a vertical wall face itself?
         if (this.isCliffFace(col, row)) return null;
-
-        // 3. BIOME EDGE CHECK: Is this a "transition" tile (half-grass/half-dirt)?
-        // If so, it looks ugly to place objects here.
         if (this.isBiomeEdge(col, row)) return null;
 
         const tileId = this.getTileAt(col, row);
         const rng = this.pseudoRandom(col, row);
 
-        // === GRASS BIOME (LAYER_2) ===
+        // === GRASS BIOME ===
         if (tileId === this.TILES.LAYER_2) {
-            if (rng < 0.001) return this.createObjectInstance(col, row, 'WOODEN_CHEST');
-            if (rng < 0.04) return this.createObjectInstance(col, row, 'PINE_TREE');
-            if (rng > 0.04 && rng < 0.07) return this.createObjectInstance(col, row, 'SMALL_ROCKS');
+            if (rng < 0.001) return 'WOODEN_CHEST';
+            
+            // Testing Campfire
+            if (rng < 0.005) return 'CAMPFIRE';
+
+            if (rng < 0.004) {
+                if (this.isFootprintValid(col, row, 4)) return 'LARGE_HOUSE';
+                return null;
+            }
+            if (rng < 0.014) {
+                 if (this.isFootprintValid(col, row, 2)) return 'OAK_TREE_1';
+                 return null;
+            }
+            if (rng < 0.044) return 'PINE_TREE';
+            if (rng < 0.074) return 'SMALL_ROCKS';
+            
             if (rng >= 0.10 && rng < 0.20) {
-                const flowerPick = Math.floor(rng * 1000) % 3;
-                if (flowerPick === 0) return this.createObjectInstance(col, row, 'TULIPS_RED');
-                if (flowerPick === 1) return this.createObjectInstance(col, row, 'TULIPS_WHITE');
-                return this.createObjectInstance(col, row, 'TULIPS_ORANGE');
+                const p = Math.floor(rng * 1000) % 3;
+                if (p === 0) return 'TULIPS_RED';
+                if (p === 1) return 'TULIPS_WHITE';
+                return 'TULIPS_ORANGE';
             }
+            
             if (rng >= 0.30 && rng < 0.50) {
-                const grassPick = Math.floor(rng * 1000) % 3;
-                if (grassPick === 0) return this.createObjectInstance(col, row, 'GRASS_COVERAGE_1');
-                if (grassPick === 1) return this.createObjectInstance(col, row, 'GRASS_COVERAGE_2');
-                return this.createObjectInstance(col, row, 'GRASS_COVERAGE_3');
+                const p = Math.floor(rng * 1000) % 3;
+                if (p === 0) return 'GRASS_COVERAGE_1';
+                if (p === 1) return 'GRASS_COVERAGE_2';
+                return 'GRASS_COVERAGE_3';
             }
         }
 
-        // === DIRT BIOME (LAYER_1) ===
         if (tileId === this.TILES.LAYER_1) {
-            if (rng < 0.15) return this.createObjectInstance(col, row, 'SMALL_ROCKS');
+            if (rng < 0.15) return 'SMALL_ROCKS';
         }
 
-        // === MOUNTAINS / WALL ROOFS (LAYER_3 to LAYER_5) ===
         if (tileId >= this.TILES.LAYER_3 && tileId <= this.TILES.LAYER_5) {
-            if (rng < 0.05) return this.createObjectInstance(col, row, 'PINE_TREE');
-            if (rng > 0.05 && rng < 0.10) return this.createObjectInstance(col, row, 'SMALL_ROCKS');
+            if (rng < 0.05) return 'PINE_TREE';
+            if (rng > 0.05 && rng < 0.10) return 'SMALL_ROCKS';
             if (rng > 0.15 && rng < 0.30) {
-                const grassPick = Math.floor(rng * 1000) % 3;
-                if (grassPick === 0) return this.createObjectInstance(col, row, 'GRASS_COVERAGE_1');
-                if (grassPick === 1) return this.createObjectInstance(col, row, 'GRASS_COVERAGE_2');
-                return this.createObjectInstance(col, row, 'GRASS_COVERAGE_3');
+                 const p = Math.floor(rng * 1000) % 3;
+                 if (p === 0) return 'GRASS_COVERAGE_1';
+                 return 'GRASS_COVERAGE_2';
             }
         }
 
         return null;
     }
 
+    isOccupied(col, row) {
+        const SCAN = 4; 
+        for (let r = row; r <= row + SCAN; r++) {
+            for (let c = col - SCAN; c <= col; c++) {
+                if (c === col && r === row) continue;
+
+                const neighborId = this.decideObject(c, r);
+                
+                if (neighborId) {
+                    const config = MAP_OBJECTS[neighborId];
+                    if (!config) continue; 
+
+                    const w = config.width || config.w || 1;
+                    const h = config.height || config.h || 1;
+
+                    const left = c;
+                    const right = c + w - 1;
+                    const bottom = r;
+                    const top = r - h + 1;
+
+                    if (col >= left && col <= right && row <= bottom && row >= top) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    generateProceduralObject(col, row) {
+        if (this.isOccupied(col, row)) return null;
+        const objectId = this.decideObject(col, row);
+        if (objectId) {
+            return this.createObjectInstance(col, row, objectId);
+        }
+        return null;
+    }
+
     createObjectInstance(col, row, objectId) {
         const config = MAP_OBJECTS[objectId];
-        if (!config) return null;
+        if (!config) {
+            console.warn(`WorldManager: ID '${objectId}' returned by decideObject but missing in MAP_OBJECTS.`);
+            return null;
+        }
         
-        const width = config.width || config.w || CONFIG.TILE_SIZE;
-        const height = config.height || config.h || CONFIG.TILE_SIZE;
+        const width = config.width || config.w || 1; 
+        const height = config.height || config.h || 1;
         
         return {
             ...config,
+            type: objectId,
+            spriteKey: config.spriteKey || objectId, 
             col: col,
             row: row,
             w: width,
@@ -167,12 +262,14 @@ export class WorldManager {
         const config = MAP_OBJECTS[objectId];
         if (!config) return;
         
-        const width = config.width || config.w || CONFIG.TILE_SIZE;
-        const height = config.height || config.h || CONFIG.TILE_SIZE;
+        const width = config.width || config.w || 1;
+        const height = config.height || config.h || 1;
 
         const masterId = `${col},${row}`; 
         const masterObject = { 
             ...config, 
+            type: objectId,
+            spriteKey: config.spriteKey || objectId, 
             col, row, 
             w: width, h: height,
             instanceId: masterId, 
@@ -193,7 +290,6 @@ export class WorldManager {
     // =========================================================
     // SECTION 3: BITMASKING
     // =========================================================
-
     getSpecificMask(col, row, targetId) {
         const check = (c, r) => this.connects(targetId, this.getTileAt(c, r));
         let mask = 0;
@@ -210,20 +306,15 @@ export class WorldManager {
 
     connects(targetId, neighborId) {
         if (targetId === neighborId) return true;
-        
         const getWallRank = (id) => {
-            if (id === this.TILES.LAYER_5) return 3; // High Wall
-            if (id === this.TILES.LAYER_4) return 2; // Mid Wall
-            if (id === this.TILES.LAYER_3) return 1; // Low Wall
+            if (id === this.TILES.LAYER_5) return 3; 
+            if (id === this.TILES.LAYER_4) return 2; 
+            if (id === this.TILES.LAYER_3) return 1; 
             return 0; 
         };
-        
         const tr = getWallRank(targetId);
         const nr = getWallRank(neighborId);
-        
-        // If both are walls, higher walls connect to lower ones
         if (tr > 0 && nr > 0) return nr >= tr;
-        
         const td = CONFIG.TILE_DEPTH[targetId] || 0;
         const nd = CONFIG.TILE_DEPTH[neighborId] || 0;
         return nd >= td;
@@ -232,123 +323,92 @@ export class WorldManager {
     // =========================================================
     // SECTION 4: COLLISION & ELEVATION
     // =========================================================
-
     getElevation(col, row) {
         const id = this.getTileAt(col, row);
-        if (id === this.TILES.LAYER_0) return -999; // Water
-        if (id === this.TILES.LAYER_3) return 1;    // Low Wall
-        if (id === this.TILES.LAYER_4) return 2;    // Mid Wall
-        if (id === this.TILES.LAYER_5) return 3;    // High Wall
-        return 0; // Dirt (Layer 1) & Grass (Layer 2)
+        if (id === this.TILES.LAYER_0) return -999; 
+        if (id === this.TILES.LAYER_3) return 1;    
+        if (id === this.TILES.LAYER_4) return 2;    
+        if (id === this.TILES.LAYER_5) return 3;    
+        return 0; 
     }
 
     getWallFaceDepth(tileId) {
-        if (tileId === this.TILES.LAYER_3) return 2; // Low Wall
-        if (tileId === this.TILES.LAYER_4) return 1; // Mid Wall
-        if (tileId === this.TILES.LAYER_5) return 2; // High Wall
+        if (tileId === this.TILES.LAYER_3) return 2; 
+        if (tileId === this.TILES.LAYER_4) return 1; 
+        if (tileId === this.TILES.LAYER_5) return 2; 
         return 0;
     }
 
-    /**
-     * Checks if this tile is being covered by a wall from the NORTH.
-     */
     isBlockedByFace(col, row) {
         const myElev = this.getElevation(col, row);
-        
         const nTile = this.getTileAt(col, row - 1);
         const nElev = this.getElevation(col, row - 1);
         const nHeight = this.getWallFaceDepth(nTile);
-
         if (nElev > myElev && nHeight >= 1) return true;
-
         const nnTile = this.getTileAt(col, row - 2);
         const nnElev = this.getElevation(col, row - 2);
         const nnHeight = this.getWallFaceDepth(nnTile);
-
         if (nnElev > myElev && nnHeight >= 2) return true;
-
         return false;
     }
 
-    /**
-     * Checks if THIS tile is part of the vertical cliff face itself.
-     */
     isCliffFace(col, row) {
         const myTile = this.getTileAt(col, row);
         const myElev = this.getElevation(col, row);
-
         if (myElev <= 0) return false;
-
         const faceDepth = this.getWallFaceDepth(myTile);
-        
         for (let i = 1; i <= faceDepth; i++) {
             const neighborElev = this.getElevation(col, row + i);
             if (neighborElev < myElev) {
                 return true; 
             }
         }
-
         return false;
     }
 
-    /**
-     * NEW: Checks if this tile borders a LOWER biome type.
-     * If I am Grass, and my neighbor is Dirt, I am an "Edge" tile.
-     * Edge tiles usually have transition textures (half/half), so we shouldn't spawn objects on them.
-     */
+    isFootprintValid(col, row, width) {
+        const anchorElev = this.getElevation(col, row);
+        for (let i = 0; i < width; i++) {
+            const c = col + i;
+            const r = row;
+            if (this.getElevation(c, r) !== anchorElev) return false;
+            if (this.isBlockedByFace(c, r)) return false;
+            if (this.isCliffFace(c, r)) return false;
+            if (this.isBiomeEdge(c, r)) return false;
+        }
+        return true;
+    }
+
     isBiomeEdge(col, row) {
         const myId = this.getTileAt(col, row);
         const myDepth = CONFIG.TILE_DEPTH[myId] || 0;
-
-        // Helper to check one neighbor
         const isLower = (c, r) => {
             const nId = this.getTileAt(c, r);
             const nDepth = CONFIG.TILE_DEPTH[nId] || 0;
-            // If neighbor has LOWER depth (e.g. Dirt=1 vs Grass=2), then I am an edge.
             return nDepth < myDepth;
         };
-
-        // Check 4 cardinal directions
-        if (isLower(col, row - 1)) return true; // Top
-        if (isLower(col + 1, row)) return true; // Right
-        if (isLower(col, row + 1)) return true; // Bottom
-        if (isLower(col - 1, row)) return true; // Left
-
+        if (isLower(col, row - 1)) return true;
+        if (isLower(col + 1, row)) return true;
+        if (isLower(col, row + 1)) return true;
+        if (isLower(col - 1, row)) return true;
         return false;
     }
 
     getSolidObjectAt(col, row) {
-        // Optimization: Scan a range large enough for your biggest object (e.g., 3x3)
-        const SEARCH_LIMIT = 3; 
-
-        for (let dy = 0; dy <= SEARCH_LIMIT; dy++) {
-            for (let dx = 0; dx <= SEARCH_LIMIT; dx++) {
-                
-                // 1. Look North/West to find the "Anchor" of a potential object
-                const anchorCol = col - dx; 
-                const anchorRow = row - dy; 
-
-                const obj = this.getObject(anchorCol, anchorRow);
-
-                if (obj && obj.isSolid) {
-                    
-                    // 2. Determine Collision Dimensions
-                    // Default to full size if no hitbox is defined
-                    const hitW = obj.hitbox ? obj.hitbox.w : obj.width;
-                    const hitH = obj.hitbox ? obj.hitbox.h : obj.height;
-
-                    // 3. Calculate "Empty Top"
-                    // If visual height is 2 and hitbox is 1, the top 1 row is empty.
-                    const emptyTopRows = obj.height - hitH;
-
-                    // 4. Check Collision
-                    // We only collide if:
-                    // A. We are within the width (dx < hitW)
-                    // B. We are below the empty top area (dy >= emptyTopRows)
-                    // C. We are not below the object entirely (dy < obj.height)
-                    if (dx < hitW && dy >= emptyTopRows && dy < obj.height) {
-                        return obj; 
-                    }
+        const RADIUS = 3; 
+        for (let r = row; r <= row + RADIUS; r++) { 
+            for (let c = col - RADIUS; c <= col; c++) { 
+                const obj = this.getObject(c, r); 
+                if (!obj || !obj.isSolid) continue;
+                const hitW = obj.hitbox ? obj.hitbox.w : (obj.w || 1);
+                const left = c; 
+                const right = c + hitW - 1;
+                if (col < left || col > right) continue;
+                const hitH = obj.hitbox ? obj.hitbox.h : (obj.h || 1);
+                const bottom = r; 
+                const top = r - hitH + 1;
+                if (row <= bottom && row >= top) {
+                    return obj;
                 }
             }
         }
@@ -358,15 +418,11 @@ export class WorldManager {
     canMove(fromCol, fromRow, toCol, toRow) {
         const fromElev = this.getElevation(fromCol, fromRow);
         const toElev = this.getElevation(toCol, toRow);
-        
         if (toElev === -999) return false; 
         if (fromElev !== toElev) return false; 
-        
         if (this.getSolidObjectAt(toCol, toRow)) return false;
-
         if (this.isBlockedByFace(toCol, toRow)) return false;
         if (this.isCliffFace(toCol, toRow)) return false;
-
         return true;
     }
 
@@ -377,13 +433,11 @@ export class WorldManager {
             for (let r = -radius; r <= radius; r++) {
                 for (let c = -radius; c <= radius; c++) {
                     if (Math.abs(r) !== radius && Math.abs(c) !== radius) continue;
-                    
                     const id = this.getTileAt(c, r);
-                    
-                    if (id === this.TILES.LAYER_2) { // Grass
+                    if (id === this.TILES.LAYER_2) { 
                         if (!this.getSolidObjectAt(c, r) && 
                             !this.isBlockedByFace(c, r) &&
-                            !this.isBiomeEdge(c, r)) { // Don't spawn player on edges either
+                            !this.isBiomeEdge(c, r)) { 
                             return { col: c, row: r };
                         }
                     }
@@ -395,7 +449,35 @@ export class WorldManager {
     }
 
     // =========================================================
-    // SECTION 5: NOISE ENGINE
+    // SECTION 5: UTILITIES FOR RENDERERS (RE-OPTIMIZED)
+    // =========================================================
+
+    /**
+     * OPTIMIZED: This now filters the known object list instead of scanning tiles.
+     * Use this for LightingRenderer.
+     */
+    getVisibleObjects(camera, canvasWidth, canvasHeight) {
+        const GAME_SCALE = CONFIG.GAME_SCALE || 1;
+        const TILE_SIZE = CONFIG.TILE_SIZE;
+        const SCREEN_W = canvasWidth / GAME_SCALE;
+        const SCREEN_H = canvasHeight / GAME_SCALE;
+
+        // Expanded bounds for lights
+        const minX = camera.x - (TILE_SIZE * 4);
+        const maxX = camera.x + SCREEN_W + (TILE_SIZE * 4);
+        const minY = camera.y - (TILE_SIZE * 4);
+        const maxY = camera.y + SCREEN_H + (TILE_SIZE * 4);
+
+        // Filter the active list - FAST (Iterating ~100 items vs scanning ~1200 tiles)
+        return Array.from(this.objects.values()).filter(obj => {
+            const px = obj.col * TILE_SIZE;
+            const py = obj.row * TILE_SIZE;
+            return (px >= minX && px <= maxX && py >= minY && py <= maxY);
+        });
+    }
+
+    // =========================================================
+    // SECTION 6: NOISE ENGINE
     // =========================================================
 
     initNoise(seed) {
@@ -445,22 +527,22 @@ export class WorldManager {
         const y = (row * SCALE) + this.offsetY;
         const value = this.noise(x, y);
 
-        if (value < -0.30) return this.TILES.LAYER_0; // Water
-        if (value < -0.15) return this.TILES.LAYER_1; // Dirt
-        if (value < 0.25)  return this.TILES.LAYER_2; // Grass
-        if (value < 0.50)  return this.TILES.LAYER_3; // Wall Low
-        if (value < 0.75)  return this.TILES.LAYER_4; // Wall Mid
-        return this.TILES.LAYER_5;                    // Wall High
+        if (value < -0.30) return this.TILES.LAYER_0; 
+        if (value < -0.15) return this.TILES.LAYER_1; 
+        if (value < 0.25)  return this.TILES.LAYER_2; 
+        if (value < 0.50)  return this.TILES.LAYER_3; 
+        if (value < 0.75)  return this.TILES.LAYER_4; 
+        return this.TILES.LAYER_5;                     
     }
 
     generateDebugMap(col, row) {
         const cx = 20; const cy = 20;
         const dist = Math.sqrt((col-cx)**2 + (row-cy)**2);
-        if (dist < 2) return this.TILES.LAYER_0; // Water
-        if (dist < 3) return this.TILES.LAYER_1; // Dirt
-        if (dist < 4) return this.TILES.LAYER_2; // Grass
-        if (dist < 5) return this.TILES.LAYER_3; // Wall Low
-        if (dist < 6) return this.TILES.LAYER_4; // Wall Mid
-        return this.TILES.LAYER_5;               // Wall High
+        if (dist < 2) return this.TILES.LAYER_0; 
+        if (dist < 3) return this.TILES.LAYER_1; 
+        if (dist < 4) return this.TILES.LAYER_2; 
+        if (dist < 5) return this.TILES.LAYER_3; 
+        if (dist < 6) return this.TILES.LAYER_4; 
+        return this.TILES.LAYER_5;               
     }
 }

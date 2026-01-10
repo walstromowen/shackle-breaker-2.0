@@ -5,11 +5,12 @@ export class OverworldController {
         this.worldManager = worldManager; 
 
         // 1. Ask the WorldManager for a safe spot
-        // (Note: This might now return a Wall Roof coordinate, which is valid!)
         const spawn = this.worldManager.findSpawnPoint();
 
         this.player = {
             id: "player",
+            isPlayer: true, // Useful flag for the renderer
+
             // 2. Convert grid coordinates to pixel coordinates
             x: spawn.col * config.TILE_SIZE,
             y: spawn.row * config.TILE_SIZE,
@@ -24,7 +25,17 @@ export class OverworldController {
             destY: spawn.row * config.TILE_SIZE,
             
             animFrame: 0, animTimer: 0,
-            spriteKey: 'spritesheet'
+            spriteKey: 'spritesheet',
+
+            // --- LIGHTING CONFIGURATION ---
+            // The LightingRenderer looks for this specific object
+            light: {
+                hasLight: true,        // Turn this off to hide the light
+                radius: 4,             // 4 Tiles wide
+                color: '255, 200, 100', // Warm Lantern Yellow
+                maxAlpha: 0.5,         // 50% opacity at center
+                flickerAmp: 0.1        // Slight breathing effect
+            }
         };
         
         this.camera = { x: 0, y: 0 };
@@ -111,9 +122,6 @@ export class OverworldController {
         }
     }
 
-    /**
-     * UPDATED: Now checks Elevation transition instead of just "Is Solid?"
-     */
     isSpaceFree(targetPixelX, targetPixelY) {
         const { TILE_SIZE } = this.config;
 
@@ -125,11 +133,6 @@ export class OverworldController {
         const endCol = Math.floor(targetPixelX / TILE_SIZE);
         const endRow = Math.floor(targetPixelY / TILE_SIZE);
 
-        // 3. Ask WorldManager if this specific move is allowed
-        // This handles:
-        // - Water (Always blocked)
-        // - Elevation Mismatch (Blocked)
-        // - Same Elevation (Allowed, even on roofs)
         return this.worldManager.canMove(startCol, startRow, endCol, endRow);
     }
 

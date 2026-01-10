@@ -39,7 +39,15 @@ export class GameLoop {
         }
 
         const interpolationFactor = this.timeAccumulator / this.fixedTimeStep;
-        this.render(interpolationFactor);
+        
+        // --- ADD THIS ---
+        // 1. Convert timestamp to Seconds (for animation math)
+        const totalTime = currentTimeStamp / 1000; 
+
+        // 2. Pass 'totalTime' as the SECOND argument
+        this.render(interpolationFactor, totalTime); 
+        // ----------------
+        
         requestAnimationFrame((timeStamp) => this.fireGameLoop(timeStamp));
     }
 }

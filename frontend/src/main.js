@@ -20,9 +20,12 @@ async function initialize() {
     canvas.width = 800;
     canvas.height = 450;
     sceneManager = new SceneManager(canvas, assetLoader, CONFIG);
+    
     gameLoop = new GameLoop(
         (deltaTime) => sceneManager.update(deltaTime), 
-        (interpolation) => sceneManager.render(interpolation)
+        
+        // --- UPDATED HERE ---
+        (interpolation, totalTime) => sceneManager.render(interpolation, totalTime)
     );
 
     gameLoop.start();

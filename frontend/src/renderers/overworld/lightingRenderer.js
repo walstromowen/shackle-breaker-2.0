@@ -1,76 +1,114 @@
+import { SPRITES } from '../../../../shared/data/sprites.js';
+
 export class LightingRenderer {
     constructor(config) {
         this.config = config;
-
-        this.lightingCanvas = document.createElement('canvas');
-        this.lightingCtx = this.lightingCanvas.getContext('2d');
-        
-        this.width = 0;
-        this.height = 0;
+        this.overlay = document.createElement('canvas');
+        this.oCtx = this.overlay.getContext('2d');
     }
 
-    render(mainCtx, ambientColor, camera, visibleEntities) {
-        // 1. If it's basically fully bright, don't draw anything
-        if (ambientColor.a <= 0.01) return;
+    render(ctx, ambientData, camera, entities, mapObjects = []) {
+        // 1. If bright day (alpha 0 or less), do nothing
+        if (ambientData.a <= 0) return;
 
-        // 2. Sync Buffer Size
-        if (this.width !== mainCtx.canvas.width || this.height !== mainCtx.canvas.height) {
-            this.width = mainCtx.canvas.width;
-            this.height = mainCtx.canvas.height;
-            this.lightingCanvas.width = this.width;
-            this.lightingCanvas.height = this.height;
+        const { width, height } = ctx.canvas;
+        const { TILE_SIZE } = this.config;
+
+        // Resize overlay if window changed
+        if (this.overlay.width !== width || this.overlay.height !== height) {
+            this.overlay.width = width;
+            this.overlay.height = height;
         }
 
-        // 3. Clear & Fill Darkness
-        this.lightingCtx.clearRect(0, 0, this.width, this.height);
-        this.lightingCtx.fillStyle = `rgba(${ambientColor.r}, ${ambientColor.g}, ${ambientColor.b}, ${ambientColor.a})`;
-        this.lightingCtx.fillRect(0, 0, this.width, this.height);
+        // 2. Fill Darkness
+        this.oCtx.clearRect(0, 0, width, height);
+        this.oCtx.fillStyle = `rgba(${ambientData.r}, ${ambientData.g}, ${ambientData.b}, ${ambientData.a})`;
+        this.oCtx.fillRect(0, 0, width, height);
 
-        // 4. Punch Holes (Lights)
-        this.lightingCtx.globalCompositeOperation = 'destination-out';
+        // 3. Cut Holes
+        this.oCtx.globalCompositeOperation = 'destination-out';
 
-        // -- Light 1: The Player --
-        const cx = this.width / 2;
-        const cy = this.height / 2;
-        
-        const baseRadius = 140; 
+        // --- A. GENERIC ENTITY LIGHTS (Player, Enemies, NPCs) ---
+        if (entities) {
+            entities.forEach(ent => {
+                // Check if the entity has the new 'light' config object
+                if (ent.light && ent.light.hasLight) {
+                    // Calculate center of entity in PIXELS
+                    // (Assuming ent.x/y are top-left)
+                    const centerX = ent.x + (ent.width || TILE_SIZE) / 2;
+                    const centerY = ent.y + (ent.height || TILE_SIZE) / 2;
 
-        // --- DYNAMIC GEOMETRY FIX ---
-        // Calculate the distance from center to the furthest corner of the screen.
-        // This ensures the circle is ALWAYS big enough to cover the screen at 0% darkness.
-        const maxDist = Math.sqrt(Math.pow(this.width / 2, 2) + Math.pow(this.height / 2, 2));
-        
-        // Calculate the 'gap' between the tight night circle and the screen corner
-        const maxExpansion = maxDist - baseRadius;
+                    this.drawLightPoint(this.oCtx, camera, centerX, centerY, ent.light);
+                }
+            });
+        }
 
-        // Map the Alpha (Darkness Level) to the Radius.
-        // Alpha 0.0 (Day) -> Expansion is Max (Circle touches corners).
-        // Alpha 1.0 (Night) -> Expansion is 0 (Circle is tight 140px).
-        const expansion = (1.0 - ambientColor.a) * maxExpansion;
+        // --- B. GENERIC MAP OBJECT LIGHTS (Campfires, Lamps) ---
+        if (mapObjects) {
+            mapObjects.forEach(obj => {
+                // Check if the object has the new 'light' config object
+                if (obj.light && obj.light.hasLight) {
+                    // Calculate center of object in PIXELS
+                    // (Assuming obj.col/row are grid coordinates)
+                    const pixelX = (obj.col * TILE_SIZE) + (obj.w * TILE_SIZE / 2);
+                    const pixelY = (obj.row * TILE_SIZE) + (obj.h * TILE_SIZE / 2);
 
-        this.drawLightGradient(cx, cy, baseRadius + expansion); 
+                    this.drawLightPoint(this.oCtx, camera, pixelX, pixelY, obj.light);
+                }
+            });
+        }
 
-        // 5. Draw Buffer to Main Screen
-        this.lightingCtx.globalCompositeOperation = 'source-over';
-        mainCtx.drawImage(this.lightingCanvas, 0, 0);
+        // 4. Draw to Screen
+        this.oCtx.globalCompositeOperation = 'source-over'; 
+        ctx.drawImage(this.overlay, 0, 0);
     }
 
-    drawLightGradient(x, y, radius) {
-        // Safety check to prevent crashing on negative radius
-        if (radius < 0) radius = 0;
+    /**
+     * Draws a light at a specific PIXEL location in the world.
+     * Updated to support the 'lightConfig' object and Sine-wave flicker.
+     */
+    drawLightPoint(ctx, camera, worldPixelX, worldPixelY, lightConfig) {
+        const { GAME_SCALE, TILE_SIZE } = this.config;
 
-        const gradient = this.lightingCtx.createRadialGradient(x, y, 0, x, y, radius);
-        
-        // 0% - 50%: Pure Clear (Player can see themselves clearly)
-        gradient.addColorStop(0.0, 'rgba(255, 255, 255, 1.0)'); 
-        gradient.addColorStop(0.5, 'rgba(255, 255, 255, 1.0)'); 
-        
-        // 100%: Fades into the darkness
-        gradient.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)'); 
+        // 1. Calculate Screen Position (Pixels)
+        const screenX = Math.floor((worldPixelX - camera.x) * GAME_SCALE);
+        const screenY = Math.floor((worldPixelY - camera.y) * GAME_SCALE);
 
-        this.lightingCtx.fillStyle = gradient;
-        this.lightingCtx.beginPath();
-        this.lightingCtx.arc(x, y, radius, 0, Math.PI * 2);
-        this.lightingCtx.fill();
+        // 2. Base Radius calculation
+        let finalRadius = lightConfig.radius * TILE_SIZE;
+
+        // 3. Apply Smooth Flicker (Sine Wave Math)
+        if (lightConfig.flickerAmp) {
+            const time = Date.now() * 0.005; 
+            // Combine two waves for organic "fire" noise
+            const noise = (Math.sin(time) + Math.sin(time * 3) * 0.5) * 0.1; 
+            finalRadius += (noise * lightConfig.flickerAmp * TILE_SIZE);
+        }
+
+        // Safety: Prevent negative radius crashes
+        if (finalRadius < 0) finalRadius = 0;
+
+        // 4. Scale Radius for the Canvas
+        const scaledRadius = finalRadius * GAME_SCALE;
+
+        // 5. Draw Gradient
+        try {
+            const gradient = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, scaledRadius);
+            
+            // 'destination-out' uses Alpha to determine how much darkness to remove.
+            // Alpha 1.0 = Fully remove darkness (Brightest)
+            // Alpha 0.0 = Remove no darkness (Darkest)
+            const maxAlpha = lightConfig.maxAlpha || 1.0;
+            
+            gradient.addColorStop(0, `rgba(0, 0, 0, ${maxAlpha})`); 
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, scaledRadius, 0, Math.PI * 2);
+            ctx.fill();
+        } catch (e) {
+            // Suppress radius errors silently
+        }
     }
 }

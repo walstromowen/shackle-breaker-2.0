@@ -7,7 +7,11 @@ Root
 │   ├── src/
 |   |   ├── assets/
 |   |   |   ├── sprites/
-|   |   |   └── tilesets/
+|   |   |   |   └── hero.png
+|   |   |   ├── tilesets/
+|   |   |   |   ├── objects.png
+|   |   |   |   ├── plains.png
+|   |   |   |   └── shadows.png
 |   |   ├── controllers/
 |   |   |   ├── battleController.js
 |   |   |   └── overworldController.js
@@ -19,6 +23,7 @@ Root
 |   |   ├── renderers.js
 |   |   |   ├── overworld/
 |   |   |   |   ├── entityRenderer.js
+|   |   |   |   ├── lightingRenderer.js
 |   |   |   |   └── mapRenderer.js
 |   |   ├── index.html
 |   |   ├── main.js
@@ -37,6 +42,7 @@ Root
 |   |   ├── factories
 |   |   |   ├── entityFactory.js
 |   |   |   └── itemFactory.js
+|   |   ├── timeSystem.js
 |   |   ├── worldManager.js
 ├── .gitignore/ 
 ├── LISCENSE/ 

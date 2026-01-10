@@ -2,10 +2,10 @@ export class TimeSystem {
     constructor() {
         // --- CONFIGURATION ---
         // 10 = 10 game minutes per real second
-        this.GAME_MINUTES_PER_REAL_SEC = 10; 
+        this.GAME_MINUTES_PER_REAL_SEC = 1; 
         
         // Start at 17:00 (5:00 PM) to see the Golden Hour begin
-        this.time = 17 * 60; 
+        this.time = 19 * 60; 
         this.MAX_TIME = 24 * 60; 
 
         // --- COLOR PALETTE ---
@@ -21,10 +21,10 @@ export class TimeSystem {
             
             // GOLDEN HOUR: Bright, luminous yellow-orange. 
             // High RGB values (255) ensure we don't darken the map too much.
-            GOLDEN:  { r: 255, g: 190, b: 60,  a: 0.25 },
+            GOLDEN:  { r: 255, g: 190, b: 60,  a: 0.05 },
 
             // DUSK: The "Red Sky" moment. Darker, deeper orange.
-            DUSK:    { r: 200, g: 80,  b: 40,  a: 0.55 }  
+            DUSK:    { r: 200, g: 80,  b: 40,  a: 0.05 }  
         };
 
         this.keyframes = [

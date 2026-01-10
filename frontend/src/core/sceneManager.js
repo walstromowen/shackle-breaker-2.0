@@ -1,7 +1,6 @@
 import { OverworldController } from '../controllers/overworldController.js';
 import { MapRenderer } from '../renderers/overworld/mapRenderer.js';
-import { EntityRenderer } from '../renderers/overworld/entityRenderer.js';
-import { LightingRenderer } from '../renderers/overworld/lightingRenderer.js'; // New Import
+import { LightingRenderer } from '../renderers/overworld/lightingRenderer.js'; 
 import { Input } from './input.js';
 import { WorldManager } from '../../../shared/systems/worldManager.js'; 
 import { TimeSystem } from '../../../shared/systems/timeSystem.js';
@@ -23,10 +22,11 @@ export class SceneManager {
             this.worldManager
         );
 
-        // --- RENDERERS ---
+        // MapRenderer handles visual world + sprite animations
         this.mapRenderer = new MapRenderer(this.canvas, this.loader, this.config);
-        this.entityRenderer = new EntityRenderer(this.loader, this.config);
-        this.lightingRenderer = new LightingRenderer(this.config); // New Instance
+        
+        // LightingRenderer handles darkness overlay + vignettes/glows
+        this.lightingRenderer = new LightingRenderer(this.config); 
 
         this.currentScene = 'overworld';
         this.setupKeyHandlers();
@@ -53,7 +53,7 @@ export class SceneManager {
         }
     }
 
-    render(interpolation) {
+    render(interpolation, totalTime) { 
         if (!this.loader.isDone()) return;
 
         // 1. Clear Screen
@@ -63,13 +63,33 @@ export class SceneManager {
             case 'overworld':
                 const state = this.overworldController.getState();
                 
-                // 2. Render World Layers
-                this.mapRenderer.renderMap(this.worldManager, state.camera);
-                this.entityRenderer.render(this.ctx, state.entities, state.camera);
+                // 2. Render World & Entities (Base Layer)
+                this.mapRenderer.renderMap(
+                    this.worldManager, 
+                    state.camera, 
+                    state.entities,
+                    totalTime 
+                );
 
-                // 3. Render Lighting (Delegated)
+                // 3. Render Lighting (Overlay Layer)
+                // Get the ambient color (e.g., dark blue for night)
                 const ambientColor = this.timeSystem.getCurrentColorData();
-                this.lightingRenderer.render(this.ctx, ambientColor, state.camera, state.entities);
+                
+                // --- INTEGRATION FIX ---
+                // Fetch only the objects currently visible on screen (Campfires, torches, etc.)
+                const visibleObjects = this.worldManager.getVisibleObjects(
+                    state.camera,
+                    this.canvas.width,
+                    this.canvas.height
+                );
+
+                this.lightingRenderer.render(
+                    this.ctx, 
+                    ambientColor, 
+                    state.camera, 
+                    state.entities, // Player/NPCs (for handheld torches if implemented)
+                    visibleObjects  // Static objects (Campfires, Houses) <--- CRITICAL FIX
+                );
 
                 // 4. Render UI
                 this.renderUI();
