@@ -10,7 +10,9 @@ export const SPRITES = {
     "GRASS_COVERAGE_2": { x: 7, y: 0, w: 1, h: 1 },
     "GRASS_COVERAGE_3": { x: 8, y: 0, w: 1, h: 1 },
     
-    "SMALL_ROCKS":      { x: 5, y: 0, w: 1, h: 1 },
+    "BOULDER_1":          { x: 0, y: 0, w: 1, h: 1 },
+    "SMALL_ROCKS_1":      { x: 4, y: 0, w: 1, h: 1 },
+    "SMALL_ROCKS_2":      { x: 5, y: 0, w: 1, h: 1 },
     
     // --- FLOWERS (Added sway: true) ---
     "TULIPS_ORANGE":    { x: 1, y: 0, w: 1, h: 1},
@@ -28,7 +30,7 @@ export const SPRITES = {
 
     // --- BUILDINGS ---
     // Drawn from the bottom-left anchor point.
-    "LARGE_HOUSE": { 
+    "SMALL_HOUSE_1": { 
         x: 0, y: 7, 
         w: 4, h: 3,
         // OPTIONAL: If the house sprite feels slightly off-center in the tile,

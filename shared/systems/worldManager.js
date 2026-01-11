@@ -131,7 +131,7 @@ export class WorldManager {
         return newObj;
     }
 
-    // Returns the ID string (e.g. 'LARGE_HOUSE') or null
+    // Returns the ID string (e.g. 'SMALL_HOUSE_1') or null
     decideObject(col, row) {
         // 1. Terrain Checks
         if (this.isBlockedByFace(col, row)) return null;
@@ -149,7 +149,7 @@ export class WorldManager {
             if (rng < 0.005) return 'CAMPFIRE';
 
             if (rng < 0.004) {
-                if (this.isFootprintValid(col, row, 4)) return 'LARGE_HOUSE';
+                if (this.isFootprintValid(col, row, 4)) return 'SMALL_HOUSE_1';
                 return null;
             }
             if (rng < 0.014) {
@@ -157,7 +157,7 @@ export class WorldManager {
                  return null;
             }
             if (rng < 0.044) return 'PINE_TREE';
-            if (rng < 0.074) return 'SMALL_ROCKS';
+            if (rng < 0.074) return 'SMALL_ROCKS_1';
             
             if (rng >= 0.10 && rng < 0.20) {
                 const p = Math.floor(rng * 1000) % 3;
@@ -175,12 +175,12 @@ export class WorldManager {
         }
 
         if (tileId === this.TILES.LAYER_1) {
-            if (rng < 0.15) return 'SMALL_ROCKS';
+            if (rng < 0.15) return 'SMALL_ROCKS_1';
         }
 
         if (tileId >= this.TILES.LAYER_3 && tileId <= this.TILES.LAYER_5) {
             if (rng < 0.05) return 'PINE_TREE';
-            if (rng > 0.05 && rng < 0.10) return 'SMALL_ROCKS';
+            if (rng > 0.05 && rng < 0.10) return 'SMALL_ROCKS_1';
             if (rng > 0.15 && rng < 0.30) {
                  const p = Math.floor(rng * 1000) % 3;
                  if (p === 0) return 'GRASS_COVERAGE_1';

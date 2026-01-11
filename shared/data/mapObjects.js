@@ -57,8 +57,22 @@ export const MAP_OBJECTS = {
         isSolid: true,
         hitbox: { w: 1, h: 1 } 
     },
-    SMALL_ROCKS: {
-        spriteKey: 'SMALL_ROCKS',
+    BOULDER_1: {
+        spriteKey: 'BOULDER_1',
+        width: 1, 
+        height: 1, 
+        isSolid: true,
+        hitbox: { w: 1, h: 1 } 
+    },
+    SMALL_ROCKS_1: {
+        spriteKey: 'SMALL_ROCKS_1',
+        width: 1,
+        height: 1, 
+        isSolid: false,
+        isGround: true 
+    },
+      SMALL_ROCKS_2: {
+        spriteKey: 'SMALL_ROCKS_2',
         width: 1,
         height: 1, 
         isSolid: false,
@@ -71,9 +85,9 @@ export const MAP_OBJECTS = {
         isSolid: true,
         hitbox: { w: 2, h: 1 } // Hitbox is only the bottom row (Trunk)
     },
-    LARGE_HOUSE: {
+    SMALL_HOUSE_1: {
         // FIX: Must match the key in SPRITES.js exactly
-        spriteKey: 'LARGE_HOUSE', 
+        spriteKey: 'SMALL_HOUSE_1', 
         width: 4, 
         height: 3, 
         isSolid: true,
