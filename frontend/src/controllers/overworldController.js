@@ -4,71 +4,77 @@ export class OverworldController {
         this.config = config;
         this.worldManager = worldManager; 
 
-        // 1. Ask the WorldManager for a safe spot
+        // 1. Setup Player State
         const spawn = this.worldManager.findSpawnPoint();
-
-        this.player = {
-            id: "player",
-            isPlayer: true, // Useful flag for the renderer
-
-            // 2. Convert grid coordinates to pixel coordinates
-            x: spawn.col * config.TILE_SIZE,
-            y: spawn.row * config.TILE_SIZE,
-            isMoving: false,
-            moveProgress: 0,
-            direction: "DOWN",
-            
-            // Initialize source/dest to the spawn point
-            sourceX: spawn.col * config.TILE_SIZE, 
-            sourceY: spawn.row * config.TILE_SIZE,
-            destX: spawn.col * config.TILE_SIZE, 
-            destY: spawn.row * config.TILE_SIZE,
-            
-            animFrame: 0, animTimer: 0,
-            spriteKey: 'spritesheet',
-
-            // --- LIGHTING CONFIGURATION ---
-            // The LightingRenderer looks for this specific object
-            light: {
-                hasLight: true,        // Turn this off to hide the light
-                radius: 4,             // 4 Tiles wide
-                color: '255, 200, 100', // Warm Lantern Yellow
-                maxAlpha: 0.5,         // 50% opacity at center
-                flickerAmp: 0.1        // Slight breathing effect
-            }
-        };
+        this.player = this.createPlayerEntity(spawn);
         
+        // 2. Setup Camera
         this.camera = { x: 0, y: 0 };
-        
-        // Immediately center camera on the new spawn
         this.updateCamera();
     }
 
+    /**
+     * --- NEW: EVENT RECEIVER ---
+     * The SceneManager calls this when a key is pressed ONCE.
+     */
+    handleKeyDown(code) {
+        // Interact Actions
+        if (code === 'Space' || code === 'Enter') {
+            this.interact();
+        }
+        
+        // Context Actions (Example: Open Inventory)
+        if (code === 'KeyI') {
+            console.log("Opening Inventory...");
+        }
+    }
+
+    /**
+     * --- CONTINUOUS LOOP ---
+     * Checks for held keys (movement) every frame.
+     */
     update(dt) {
         if (this.player.isMoving) {
             this.continueMoving(dt);
         } else {
+            // Only check for new input if we aren't currently moving
             this.checkForNewMove();
         }
         this.updateCamera();
     }
 
-    updateCamera() {
-        const { CANVAS_WIDTH, CANVAS_HEIGHT, GAME_SCALE, TILE_SIZE } = this.config;
-        const viewW = CANVAS_WIDTH / GAME_SCALE;
-        const viewH = CANVAS_HEIGHT / GAME_SCALE;
-        this.camera.x = this.player.x - (viewW / 2) + (TILE_SIZE / 2);
-        this.camera.y = this.player.y - (viewH / 2) + (TILE_SIZE / 2);
+    // --- LOGIC: MOVEMENT & INTERACTION ---
+
+    interact() {
+        if (this.player.isMoving) return;
+
+        // 1. Calculate the tile we are facing
+        const { TILE_SIZE } = this.config;
+        let targetX = this.player.x;
+        let targetY = this.player.y;
+
+        if (this.player.direction === "UP")    targetY -= TILE_SIZE;
+        if (this.player.direction === "DOWN")  targetY += TILE_SIZE;
+        if (this.player.direction === "LEFT")  targetX -= TILE_SIZE;
+        if (this.player.direction === "RIGHT") targetX += TILE_SIZE;
+
+        const col = Math.floor(targetX / TILE_SIZE);
+        const row = Math.floor(targetY / TILE_SIZE);
+
+        console.log(`Trying to interact with tile at [${col}, ${row}]`);
+        console.log(this.worldManager.getSolidObjectAt(col, row));
     }
 
     checkForNewMove() {
-        const dir = this.input.direction;
+        // Polling the dumb Input class for state
+        const dir = this.input.direction; 
         if (!dir) return;
 
         const { TILE_SIZE } = this.config;
         let nextX = this.player.x;
         let nextY = this.player.y;
 
+        // Update facing direction immediately
         this.player.direction = dir;
 
         if (dir === "UP")    nextY -= TILE_SIZE;
@@ -77,52 +83,71 @@ export class OverworldController {
         if (dir === "RIGHT") nextX += TILE_SIZE;
 
         if (this.isSpaceFree(nextX, nextY)) {
-            this.player.sourceX = this.player.x;
-            this.player.sourceY = this.player.y;
-            this.player.destX = nextX;
-            this.player.destY = nextY;
-            this.player.moveProgress = 0;
-            this.player.isMoving = true;
+            this.startMove(nextX, nextY);
         }
     }
 
+    startMove(nextX, nextY) {
+        this.player.sourceX = this.player.x;
+        this.player.sourceY = this.player.y;
+        this.player.destX = nextX;
+        this.player.destY = nextY;
+        this.player.moveProgress = 0;
+        this.player.isMoving = true;
+    }
+
     continueMoving(dt) {
-        this.player.moveProgress += dt / this.config.WALK_DURATION;
-        this.player.animTimer += dt;
+        // 1. Update Progress
+        const moveSpeed = this.config.WALK_DURATION; // Could check for Sprint key here!
+        this.player.moveProgress += dt / moveSpeed;
         
+        // 2. Animate Sprite
+        this.player.animTimer += dt;
         if (this.player.animTimer > 0.1) {
             this.player.animTimer = 0;
             this.player.animFrame = (this.player.animFrame + 1) % 4;
         }
 
-        // --- MOVEMENT FINISHED ---
+        // 3. Check Completion
         if (this.player.moveProgress >= 1) {
-            // 1. Snap to grid
-            this.player.x = Math.round(this.player.destX);
-            this.player.y = Math.round(this.player.destY);
-            
-            // 2. Reset State
-            this.player.isMoving = false;
-            this.player.moveProgress = 0;
-            
-            // 3. CHECK EVENTS
-            this.checkTileEvents(); 
-
-            // 4. Input Buffer / Chain Movement
-            if (this.input.direction) {
-                this.checkForNewMove();
-            } else {
-                this.player.animFrame = 0; 
-            }
-        } 
-        // --- STILL MOVING ---
-        else {
+            this.finishMove();
+        } else {
+            // Lerp Position
             this.player.x = this.player.sourceX + (this.player.destX - this.player.sourceX) * this.player.moveProgress;
             this.player.y = this.player.sourceY + (this.player.destY - this.player.sourceY) * this.player.moveProgress;
         }
     }
 
-    isSpaceFree(targetPixelX, targetPixelY) {
+    finishMove() {
+        this.player.x = Math.round(this.player.destX);
+        this.player.y = Math.round(this.player.destY);
+        this.player.isMoving = false;
+        this.player.moveProgress = 0;
+
+        // Trigger Step Events (Grass, Portal, etc)
+        this.checkTileEvents();
+
+        // Input Buffering: If key is still held, keep moving immediately
+        if (this.input.direction) {
+            this.checkForNewMove();
+        } else {
+            this.player.animFrame = 0; // Idle frame
+        }
+    }
+
+    // --- HELPERS ---
+
+    checkTileEvents() {
+        const col = Math.floor(this.player.x / this.config.TILE_SIZE);
+        const row = Math.floor(this.player.y / this.config.TILE_SIZE);
+        const tileId = this.worldManager.getTileAt(col, row);
+
+        if (tileId === this.config.TILE_TYPES.GRASS && Math.random() < 0.10) { 
+            console.log("💥 AMBUSH in the grass!");
+        }
+    }
+
+    isSpaceFree(targetX, targetY) {
         const { TILE_SIZE } = this.config;
 
         // 1. Where are we NOW? (Source)
@@ -130,27 +155,42 @@ export class OverworldController {
         const startRow = Math.floor(this.player.y / TILE_SIZE);
 
         // 2. Where do we want to GO? (Destination)
-        const endCol = Math.floor(targetPixelX / TILE_SIZE);
-        const endRow = Math.floor(targetPixelY / TILE_SIZE);
+        const endCol = Math.floor(targetX / TILE_SIZE);
+        const endRow = Math.floor(targetY / TILE_SIZE);
 
+        // 3. Pass all 4 coordinates like your original code did
         return this.worldManager.canMove(startCol, startRow, endCol, endRow);
     }
 
-    checkTileEvents() {
-        const { TILE_SIZE, TILE_TYPES } = this.config;
-        const col = Math.floor(this.player.x / TILE_SIZE);
-        const row = Math.floor(this.player.y / TILE_SIZE);
-        const tileId = this.worldManager.getTileAt(col, row);
-
-        if (tileId === TILE_TYPES.GRASS && Math.random() < 0.10) { 
-            console.log("💥 AMBUSH in the grass!");
-        }
+    updateCamera() {
+        const { CANVAS_WIDTH, CANVAS_HEIGHT, GAME_SCALE, TILE_SIZE } = this.config;
+        // Center player in viewport
+        this.camera.x = this.player.x - (CANVAS_WIDTH / GAME_SCALE / 2) + (TILE_SIZE / 2);
+        this.camera.y = this.player.y - (CANVAS_HEIGHT / GAME_SCALE / 2) + (TILE_SIZE / 2);
     }
 
     getState() {
+        return { entities: [this.player], camera: this.camera };
+    }
+
+    createPlayerEntity(spawn) {
         return {
-            entities: [this.player],
-            camera: this.camera
+            id: "player",
+            isPlayer: true,
+            x: spawn.col * this.config.TILE_SIZE,
+            y: spawn.row * this.config.TILE_SIZE,
+            direction: "DOWN",
+            isMoving: false,
+            animFrame: 0, 
+            animTimer: 0,
+            spriteKey: 'spritesheet',
+            light: {
+                hasLight: true,
+                radius: 4,
+                color: '255, 200, 100',
+                maxAlpha: 0.5,
+                flickerAmp: 0.1
+            }
         };
     }
 }

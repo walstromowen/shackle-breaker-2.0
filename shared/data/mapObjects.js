@@ -55,7 +55,11 @@ export const MAP_OBJECTS = {
         width: 1, 
         height: 1, 
         isSolid: true,
-        hitbox: { w: 1, h: 1 } 
+        hitbox: { w: 1, h: 1 },
+        interaction: {
+            type: 'TEXT',
+            data: "Welcome to the procedurally generated world!"
+        } 
     },
     BOULDER_1: {
         spriteKey: 'BOULDER_1',

@@ -2,10 +2,10 @@ export class TimeSystem {
     constructor() {
         // --- CONFIGURATION ---
         // 10 = 10 game minutes per real second
-        this.GAME_MINUTES_PER_REAL_SEC = 1; 
+        this.GAME_MINUTES_PER_REAL_SEC = 10; 
         
         // Start at 17:00 (5:00 PM) to see the Golden Hour begin
-        this.time = 19 * 60; 
+        this.time = 5 * 60; 
         this.MAX_TIME = 24 * 60; 
 
         // --- COLOR PALETTE ---

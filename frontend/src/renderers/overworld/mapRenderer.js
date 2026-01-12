@@ -16,61 +16,179 @@ export class MapRenderer {
         this.blobMap = new Map();
         this.shadowOverrides = new Map();
         
-        // Bitmask constants for Autotiling
-        this.BITS = { 
-            TOP: 1, TOP_RIGHT: 2, RIGHT: 4, BOTTOM_RIGHT: 8,
-            BOTTOM: 16, BOTTOM_LEFT: 32, LEFT: 64, TOP_LEFT: 128
-        };
-        
-        // Standard Blob Lookup Table
-        const TILE_LOOKUP = {
-            0: 42, 1: 32, 4: 43, 16: 24, 64: 44, 17: 40, 68: 41, 5: 11, 20: 3, 80: 4, 
-            65: 12, 21: 1, 84: 8, 81: 2, 69: 16, 85: 38, 7: 21, 28: 5, 112: 7, 193: 23, 
-            31: 13, 124: 6, 241: 15, 199: 22, 255: 14, 23: 25, 29: 33, 71: 18, 87: 27, 
-            92: 10, 93: 19, 95: 39, 113: 34, 116: 9, 117: 20, 119: 36, 121: 46, 125: 46, 
-            127: 47, 197: 17, 209: 26, 213: 28, 215: 30, 221: 35, 223: 31, 245: 37, 
-            247: 29, 251: 15, 253: 45, 254: 31
-        };
-
-        // 1. STANDARD BLOB MAP
-        for (let i = 0; i < 256; i++) {
-            let cleanMask = i;
-            if (!(i & 1) || !(i & 4))   cleanMask &= ~2;   
-            if (!(i & 4) || !(i & 16))  cleanMask &= ~8;   
-            if (!(i & 16) || !(i & 64)) cleanMask &= ~32;  
-            if (!(i & 64) || !(i & 1))  cleanMask &= ~128; 
-            this.blobMap.set(i, TILE_LOOKUP[cleanMask] ?? 14);
-        }
-
-        // 2. SHADOW OVERRIDES
-        this.shadowOverrides.set(2, 26);   
-        this.shadowOverrides.set(8, 29);   
-        this.shadowOverrides.set(32, 28);  
-        this.shadowOverrides.set(128, 27); 
-        this.shadowOverrides.set(10, 29);  
-        this.shadowOverrides.set(40, 29);  
-        this.shadowOverrides.set(160, 28); 
-        this.shadowOverrides.set(130, 27); 
-        this.shadowOverrides.set(170, 26); 
+        // Initialize Lookups (Bitmasks & Blobs)
+        this.initBlobTables();
     }
 
-    getFaceIndex(mask, isFoot) {
-        const hasLeft = !!(mask & this.BITS.LEFT);
-        const hasRight = !!(mask & this.BITS.RIGHT);
+    // ==========================================
+    // 1. MAIN RENDER PIPELINE
+    // ==========================================
+
+    renderMap(worldManager, camera, entities = [], totalTime = 0) {
+        // 1. Clear Screen
+        this.ctx.fillStyle = '#000000';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // 2. Calculate View Bounds (Culling)
+        const bounds = this.getViewBounds(camera);
+
+        // 3. PASS 1: Flat Terrain (Ground, Water, Shadows, Rugs)
+        this.renderTerrainPass(worldManager, camera, bounds, totalTime);
+
+        // 4. PASS 2: Vertical Sort (Walls, Objects, Entities)
+        this.renderSortedPass(worldManager, camera, bounds, entities, totalTime);
+    }
+
+    // ==========================================
+    // 2. PASS: TERRAIN (Unsorted / Flat)
+    // ==========================================
+
+    renderTerrainPass(worldManager, camera, bounds, totalTime) {
+        const { TILE_TYPES, TILE_DEPTH } = this.config;
+
+        for (let row = bounds.startRow; row < bounds.endRow; row++) {
+            for (let col = bounds.startCol; col < bounds.endCol; col++) {
+                
+                const tileData = worldManager.getTileData(col, row);
+                const depth = TILE_DEPTH[tileData.id] || 0;
+                const coords = this.getDrawCoords(col, row, camera);
+
+                // A. Water (Base Layer)
+                const waterFrame = this.getWaterFrame(col, row, totalTime);
+                this.drawTile(TILE_TYPES.LAYER_0, waterFrame, coords.x, coords.y);
+
+                // B. Layer 1 (Sand/Dirt)
+                if (depth >= TILE_DEPTH[TILE_TYPES.LAYER_2]) {
+                    const isSand = (tileData.id === TILE_TYPES.LAYER_2);
+                    const idx = isSand 
+                        ? (this.blobMap.get(worldManager.getSpecificMask(col, row, TILE_TYPES.LAYER_1)) ?? 14)
+                        : 14;
+                    this.drawTile(TILE_TYPES.LAYER_1, idx, coords.x, coords.y);
+                }
+
+                // C. Stacked Cliff Layers (Underlay)
+                if (depth >= TILE_DEPTH[TILE_TYPES.LAYER_3]) this.drawTile(TILE_TYPES.LAYER_2, 14, coords.x, coords.y);
+                if (depth >= TILE_DEPTH[TILE_TYPES.LAYER_4]) this.drawTile(TILE_TYPES.LAYER_3, 14, coords.x, coords.y);
+                if (depth >= TILE_DEPTH[TILE_TYPES.LAYER_5]) this.drawTile(TILE_TYPES.LAYER_4, 14, coords.x, coords.y);
+
+                // D. The Actual Tile Surface
+                if (tileData.id !== TILE_TYPES.LAYER_0) {
+                    const idx = this.blobMap.get(tileData.mask) ?? 14;
+                    this.drawTile(tileData.id, idx, coords.x, coords.y);
+                }
+
+                // E. Shadows & Ground Objects
+                this.drawShadows(worldManager, col, row, coords.x, coords.y, depth);
+
+                if (tileData.object && tileData.object.isGround) {
+                    this.drawObject(tileData.object, coords.x, coords.y, totalTime);
+                }
+            }
+        }
+    }
+
+    // ==========================================
+    // 3. PASS: SORTED (Vertical Elements)
+    // ==========================================
+
+    renderSortedPass(worldManager, camera, bounds, entities, totalTime) {
+        const renderList = [];
+        const { TILE_SIZE, GAME_SCALE } = this.config;
+
+        // A. Collect Wall Faces
+        this.collectWallFaces(worldManager, bounds, camera, renderList);
+
+        // B. Collect Objects
+        const objects = worldManager.getActiveObjects ? worldManager.getActiveObjects() : [];
+        for (const obj of objects) {
+            if (obj.isGround || !obj.isAnchor) continue; // Skip rugs or parts
+            if (this.isInBounds(obj.col, obj.row, bounds)) {
+                const coords = this.getDrawCoords(obj.col, obj.row, camera);
+                renderList.push({
+                    y: ((obj.row + 1) * TILE_SIZE * GAME_SCALE) + 0.1,
+                    type: 'OBJECT',
+                    data: obj,
+                    x: coords.x,
+                    dy: coords.y
+                });
+            }
+        }
+
+        // C. Collect Entities
+        for (const entity of entities) {
+            renderList.push({
+                y: (entity.y + TILE_SIZE) * GAME_SCALE,
+                type: 'ENTITY',
+                data: entity
+            });
+        }
+
+        // D. Sort & Draw
+        renderList.sort((a, b) => a.y - b.y);
+
+        for (const item of renderList) {
+            if (item.type === 'WALL_FACE') {
+                this.drawTile(item.data.id, item.data.idx, item.x, item.dy);
+            } else if (item.type === 'OBJECT') {
+                this.drawObject(item.data, item.x, item.dy, totalTime);
+            } else if (item.type === 'ENTITY') {
+                this.drawEntity(item.data, camera);
+            }
+        }
+    }
+
+    // ==========================================
+    // 4. DRAWING PRIMITIVES
+    // ==========================================
+
+    drawTile(typeId, index, dx, dy, imageKey = 'tileset') {
+        const { TILE_SIZE, TILE_PADDING, GAME_SCALE, BLOB_OFFSETS } = this.config;
+        const source = (imageKey === 'shadows') ? this.shadowImage : this.tilesetImage;
+        if (!source) return;
+
+        const drawSize = TILE_SIZE * GAME_SCALE;
+        const slotSize = TILE_SIZE + (TILE_PADDING * 2);
+
+        let startRow = 0;
+        if (imageKey === 'tileset' && BLOB_OFFSETS?.[typeId] !== undefined) {
+            startRow = BLOB_OFFSETS[typeId];
+        }
+
+        const sx = ((index % 8) * slotSize) + TILE_PADDING;
+        const sy = ((Math.floor(index / 8) + startRow) * slotSize) + TILE_PADDING;
+
+        this.ctx.drawImage(source, sx, sy, TILE_SIZE, TILE_SIZE, dx, dy, drawSize, drawSize);
+    }
+
+    drawObject(obj, dx, dy, totalTime = 0) {
+        const sprite = SPRITES[obj.spriteKey];
+        if (!this.objectImage || !sprite) return;
+
+        const { OBJECT_SIZE, TILE_SIZE, GAME_SCALE } = this.config;
+        let frameOffset = 0;
+
+        if (sprite.frames > 1) {
+            const speed = sprite.speed || 0.2;
+            frameOffset = Math.floor(totalTime / speed) % sprite.frames;
+        }
+
+        const sx = (sprite.x + frameOffset) * OBJECT_SIZE;
+        const sy = sprite.y * OBJECT_SIZE;
+        const dW = sprite.w * OBJECT_SIZE * GAME_SCALE;
+        const dH = sprite.h * OBJECT_SIZE * GAME_SCALE;
         
-        const rowStart = isFoot ? 56 : 48; 
-        
-        if (hasLeft && hasRight) return rowStart + 1; 
-        if (!hasLeft && hasRight) return rowStart + 0; 
-        if (hasLeft && !hasRight) return rowStart + 2; 
-        return rowStart + 3; 
+        // Anchor to bottom-left of tile
+        const heightOffset = dH - (TILE_SIZE * GAME_SCALE);
+
+        this.ctx.drawImage(this.objectImage, sx, sy, sprite.w * OBJECT_SIZE, sprite.h * OBJECT_SIZE, 
+                           Math.floor(dx), Math.floor(dy - heightOffset), dW, dH);
     }
 
     drawEntity(entity, camera) {
-        const { TILE_SIZE, GAME_SCALE } = this.config;
         const sprite = this.loader.get(entity.spriteKey);
         if (!sprite) return;
 
+        const { TILE_SIZE, GAME_SCALE } = this.config;
         const dx = Math.round((entity.x - camera.x) * GAME_SCALE);
         const dy = Math.round((entity.y - camera.y) * GAME_SCALE);
         const drawSize = TILE_SIZE * GAME_SCALE;
@@ -80,62 +198,6 @@ export class MapRenderer {
         const sy = (rowMap[entity.direction] ?? 0) * TILE_SIZE;
 
         this.ctx.drawImage(sprite, sx, sy, TILE_SIZE, TILE_SIZE, dx, dy, drawSize, drawSize);
-    }
-
-    drawObject(obj, dx, dy, totalTime = 0) {
-        const sourceImage = this.objectImage; 
-        const sprite = SPRITES[obj.spriteKey];
-        if (!sourceImage || !sprite) return;
-
-        const { OBJECT_SIZE, TILE_SIZE, GAME_SCALE } = this.config;
-
-        let frameOffset = 0;
-        if (sprite.frames && sprite.frames > 1) {
-            const speed = sprite.speed || 0.2; 
-            frameOffset = Math.floor(totalTime / speed) % sprite.frames;
-        }
-
-        const sx = (sprite.x + frameOffset) * OBJECT_SIZE;
-        const sy = sprite.y * OBJECT_SIZE;
-        const sW = sprite.w * OBJECT_SIZE;
-        const sH = sprite.h * OBJECT_SIZE;
-
-        const dW = sW * GAME_SCALE;
-        const dH = sH * GAME_SCALE;
-        const drawSize = TILE_SIZE * GAME_SCALE;
-
-        const heightOffset = dH - drawSize;
-        const widthOffset = 0; 
-
-        this.ctx.drawImage(
-            sourceImage, 
-            sx, sy, 
-            sW, sH, 
-            Math.floor(dx - widthOffset), 
-            Math.floor(dy - heightOffset), 
-            dW, dH
-        );
-    }
-
-    drawTile(typeId, index, dx, dy, imageKey = 'tileset') {
-        const { TILE_SIZE, TILE_PADDING, GAME_SCALE, BLOB_OFFSETS } = this.config;
-        
-        let sourceImage = this.tilesetImage;
-        if (imageKey === 'shadows') sourceImage = this.shadowImage;
-        if (!sourceImage) return;
-
-        const drawSize = TILE_SIZE * GAME_SCALE;
-        const SLOT_SIZE = TILE_SIZE + (TILE_PADDING * 2);
-
-        let startRow = 0;
-        if (imageKey === 'tileset' && typeId !== null && BLOB_OFFSETS && BLOB_OFFSETS[typeId] !== undefined) {
-            startRow = BLOB_OFFSETS[typeId];
-        }
-        
-        const sx = ((index % 8) * SLOT_SIZE) + TILE_PADDING;
-        const sy = ((Math.floor(index / 8) + startRow) * SLOT_SIZE) + TILE_PADDING;
-
-        this.ctx.drawImage(sourceImage, sx, sy, TILE_SIZE, TILE_SIZE, dx, dy, drawSize, drawSize);
     }
 
     drawShadows(worldManager, col, row, dx, dy, currentDepth) {
@@ -183,183 +245,127 @@ export class MapRenderer {
 
         if (mask === 0) return;
 
-        const shadowIndex = this.shadowOverrides.get(mask) ?? this.blobMap.get(mask) ?? 14; 
-        this.drawTile(null, shadowIndex, dx, dy, 'shadows');
+        const idx = this.shadowOverrides.get(mask) ?? this.blobMap.get(mask) ?? 14; 
+        this.drawTile(null, idx, dx, dy, 'shadows');
     }
 
-    // --- OPTIMIZED RENDER LOOP ---
-    renderMap(worldManager, camera, entities = [], totalTime = 0) {
-        const { TILE_SIZE, GAME_SCALE, TILE_TYPES, TILE_DEPTH, WALL_HEIGHT, WATER_ANIMATION } = this.config;
+    // ==========================================
+    // 5. HELPERS
+    // ==========================================
+
+    getViewBounds(camera) {
+        const { TILE_SIZE, GAME_SCALE, WALL_HEIGHT } = this.config;
         const drawSize = TILE_SIZE * GAME_SCALE;
+        const VIEW_PAD = 2;
+        const OBJ_PAD = 8;
+        const h = WALL_HEIGHT || 2;
+
+        const tilesX = Math.ceil(this.canvas.width / drawSize) + (VIEW_PAD * 2);
+        const tilesY = Math.ceil(this.canvas.height / drawSize) + (VIEW_PAD * 2) + h;
         
-        const VIEW_BUFFER = 2; 
-        const OBJECT_BUFFER = 8; 
-        const safeHeight = WALL_HEIGHT || 2; 
+        const startCol = Math.floor(camera.x / TILE_SIZE) - VIEW_PAD;
+        const startRow = Math.floor(camera.y / TILE_SIZE) - VIEW_PAD - h;
 
-        // -- Bounds for Terrain --
-        const startCol = Math.floor(camera.x / TILE_SIZE) - VIEW_BUFFER;
-        const startRow = Math.floor(camera.y / TILE_SIZE) - VIEW_BUFFER - safeHeight;
-        const tilesX = Math.ceil(this.canvas.width / drawSize) + (VIEW_BUFFER * 2);
-        const tilesY = Math.ceil(this.canvas.height / drawSize) + (VIEW_BUFFER * 2) + safeHeight;
+        return {
+            startCol, startRow,
+            endCol: startCol + tilesX,
+            endRow: startRow + tilesY,
+            // Object specific bounds (slightly larger)
+            objStartCol: startCol - (OBJ_PAD - VIEW_PAD),
+            objEndCol: startCol + tilesX + (OBJ_PAD - VIEW_PAD),
+            objStartRow: startRow - (OBJ_PAD - VIEW_PAD),
+            objEndRow: startRow + tilesY + (OBJ_PAD - VIEW_PAD)
+        };
+    }
 
-        // -- Bounds for Objects --
-        const objStartCol = Math.floor(camera.x / TILE_SIZE) - OBJECT_BUFFER;
-        const objEndCol   = objStartCol + tilesX + (OBJECT_BUFFER * 2);
-        const objStartRow = Math.floor(camera.y / TILE_SIZE) - OBJECT_BUFFER - safeHeight;
-        const objEndRow   = objStartRow + tilesY + (OBJECT_BUFFER * 2);
+    isInBounds(col, row, bounds) {
+        return col >= bounds.objStartCol && col <= bounds.objEndCol &&
+               row >= bounds.objStartRow && row <= bounds.objEndRow;
+    }
 
-        this.ctx.fillStyle = '#000000'; 
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    getDrawCoords(col, row, camera) {
+        const { TILE_SIZE, GAME_SCALE } = this.config;
+        return {
+            x: Math.floor((col * TILE_SIZE - camera.x) * GAME_SCALE),
+            y: Math.floor((row * TILE_SIZE - camera.y) * GAME_SCALE)
+        };
+    }
 
-        // ========================================================
-        // (NOTE: Removed Pre-Calculated Water here for Sparkle Effect)
-        // ========================================================
+    getWaterFrame(col, row, totalTime) {
+        const { WATER_ANIMATION } = this.config;
+        if (!WATER_ANIMATION) return 0;
+        
+        // Math.abs fixes black tile glitch by preventing negative indices
+        const hash = Math.abs(Math.sin(col * 12.9898 + row * 78.233) * 43758.5453);
+        const adjustedTime = totalTime + hash;
+        const step = Math.floor(adjustedTime / WATER_ANIMATION.SPEED);
+        
+        const frames = WATER_ANIMATION.FRAMES;
+        return frames[step % frames.length];
+    }
 
-        // ========================================================
-        // PASS 1: TERRAIN (Tight Loop - High Performance)
-        // ========================================================
-        for (let row = startRow; row < startRow + tilesY; row++) {
-            for (let col = startCol; col < startCol + tilesX; col++) {
-                
-                const tileData = worldManager.getTileData(col, row);
-                const targetId = tileData.id;
-                const depth = TILE_DEPTH[targetId] || 0;
+    collectWallFaces(worldManager, bounds, camera, list) {
+        const { TILE_TYPES, TILE_DEPTH, WALL_HEIGHT, TILE_SIZE, GAME_SCALE } = this.config;
+        const drawSize = TILE_SIZE * GAME_SCALE;
 
-                const dx = Math.floor((col * TILE_SIZE - camera.x) * GAME_SCALE);
-                const dy = Math.floor((row * TILE_SIZE - camera.y) * GAME_SCALE);
-
-                // =======================================================
-                // 1. Base Layer: WATER (Random Sparkle)
-                // =======================================================
-                let waterFrameIndex = 0;
-
-                if (WATER_ANIMATION) {
-                    const { SPEED, FRAMES } = WATER_ANIMATION;
-                    
-                    // RANDOM HASH: Generates a deterministic random offset based on position
-                    // This makes (10,10) always sparkle at the same rate, but differently from (10,11)
-                    const randomHash = Math.sin(col * 12.9898 + row * 78.233) * 43758.5453;
-                    
-                    // Add hash to time to desync this specific tile
-                    const adjustedTime = totalTime + randomHash;
-
-                    // Calculate frame
-                    const frameStep = Math.floor(adjustedTime / SPEED) % FRAMES.length;
-                    
-                    // Safety modulo for negative numbers (rare, but safe)
-                    const safeIndex = (frameStep + FRAMES.length) % FRAMES.length;
-                    
-                    waterFrameIndex = FRAMES[safeIndex];
-                }
-
-                // Draw Water with the calculated frame for THIS tile
-                this.drawTile(TILE_TYPES.LAYER_0, waterFrameIndex, dx, dy);
-                // =======================================================
-
-                // 2. Layer 1 (Dirt/Sand)
-                if (depth >= TILE_DEPTH[TILE_TYPES.LAYER_2]) {
-                    if (targetId === TILE_TYPES.LAYER_2) {
-                        const sandMask = worldManager.getSpecificMask(col, row, TILE_TYPES.LAYER_1);
-                        const sandIndex = this.blobMap.get(sandMask) ?? 14; 
-                        this.drawTile(TILE_TYPES.LAYER_1, sandIndex, dx, dy);
-                    } else {
-                        this.drawTile(TILE_TYPES.LAYER_1, 14, dx, dy);
-                    }
-                }
-                
-                // 3. Stacking Layers
-                if (depth >= TILE_DEPTH[TILE_TYPES.LAYER_3]) this.drawTile(TILE_TYPES.LAYER_2, 14, dx, dy);
-                if (depth >= TILE_DEPTH[TILE_TYPES.LAYER_4]) this.drawTile(TILE_TYPES.LAYER_3, 14, dx, dy);
-                if (depth >= TILE_DEPTH[TILE_TYPES.LAYER_5]) this.drawTile(TILE_TYPES.LAYER_4, 14, dx, dy);
-
-                // 4. Actual Tile (Grass, Walls, etc)
-                // Note: We skip LAYER_0 here because we drew it manually above
-                if (targetId !== TILE_TYPES.LAYER_0) {
-                    const index = this.blobMap.get(tileData.mask) ?? 14;
-                    this.drawTile(targetId, index, dx, dy);
-                }
-
-                // 5. Shadows
-                this.drawShadows(worldManager, col, row, dx, dy, depth);
-
-                // 6. Ground Objects (Rugs, Traps)
-                if (tileData.object && tileData.object.isGround) {
-                     this.drawObject(tileData.object, dx, dy, totalTime);
-                }
-            }
-        }
-
-        // ========================================================
-        // PASS 2: SORTED RENDER LIST
-        // ========================================================
-        const renderList = [];
-
-        // A. WALL FACES
-        for (let row = startRow; row < startRow + tilesY; row++) {
-            for (let col = startCol; col < startCol + tilesX; col++) {
+        for (let row = bounds.startRow; row < bounds.endRow; row++) {
+            for (let col = bounds.startCol; col < bounds.endCol; col++) {
                 const tileData = worldManager.getTileData(col, row);
                 if (!tileData.isWall) continue;
 
-                const dx = Math.floor((col * TILE_SIZE - camera.x) * GAME_SCALE);
-                const dy = Math.floor((row * TILE_SIZE - camera.y) * GAME_SCALE);
                 const myDepth = TILE_DEPTH[tileData.id];
-                
-                for (let d = 1; d <= safeHeight; d++) {
-                    const tileBelowId = worldManager.getTileAt(col, row + d);
-                    const belowDepth = TILE_DEPTH[tileBelowId] || 0;
+                const coords = this.getDrawCoords(col, row, camera);
 
-                    if (belowDepth >= myDepth) break;
+                // Check downward for cliff faces
+                for (let d = 1; d <= (WALL_HEIGHT || 2); d++) {
+                    const belowId = worldManager.getTileAt(col, row + d);
+                    const belowDepth = TILE_DEPTH[belowId] || 0;
 
-                    const isHittingWallFloor = (belowDepth >= TILE_DEPTH[TILE_TYPES.LAYER_3]);
-                    const isFoot = (d === safeHeight) || isHittingWallFloor;
-                    
+                    if (belowDepth >= myDepth) break; // Floor met
+
+                    const isFoot = (d === (WALL_HEIGHT || 2)) || (belowDepth >= TILE_DEPTH[TILE_TYPES.LAYER_3]);
                     const faceIdx = this.getFaceIndex(tileData.mask, isFoot);
-                    const drawY = dy + (d * drawSize);
-                    
-                    renderList.push({
-                        y: ((row + d + 1) * TILE_SIZE * GAME_SCALE) + 0.1, 
+
+                    list.push({
+                        y: ((row + d + 1) * TILE_SIZE * GAME_SCALE) + 0.1,
                         type: 'WALL_FACE',
-                        draw: () => this.drawTile(tileData.id, faceIdx, dx, drawY)
+                        data: { id: tileData.id, idx: faceIdx },
+                        x: coords.x,
+                        dy: coords.y + (d * drawSize)
                     });
 
                     if (isFoot) break;
                 }
             }
         }
+    }
 
-        // B. OBJECTS
-        const mapObjects = worldManager.getActiveObjects ? worldManager.getActiveObjects() : [];
-        for (const obj of mapObjects) {
-            if (obj.isGround || obj.isAnchor === false) continue;
+    getFaceIndex(mask, isFoot) {
+        const { LEFT, RIGHT } = this.BITS;
+        const rowStart = isFoot ? 56 : 48;
+        const hasLeft = !!(mask & LEFT);
+        const hasRight = !!(mask & RIGHT);
 
-            if (obj.col >= objStartCol && obj.col <= objEndCol && 
-                obj.row >= objStartRow && obj.row <= objEndRow) {
-                
-                const dx = Math.floor((obj.col * TILE_SIZE - camera.x) * GAME_SCALE);
-                const dy = Math.floor((obj.row * TILE_SIZE - camera.y) * GAME_SCALE);
+        if (hasLeft && hasRight) return rowStart + 1; 
+        if (!hasLeft && hasRight) return rowStart + 0; 
+        if (hasLeft && !hasRight) return rowStart + 2; 
+        return rowStart + 3; 
+    }
 
-                renderList.push({
-                    y: ((obj.row + 1) * TILE_SIZE * GAME_SCALE) + 0.1,
-                    type: 'OBJECT',
-                    draw: () => this.drawObject(obj, dx, dy, totalTime)
-                });
-            }
+    initBlobTables() {
+        this.BITS = { TOP: 1, TOP_RIGHT: 2, RIGHT: 4, BOTTOM_RIGHT: 8, BOTTOM: 16, BOTTOM_LEFT: 32, LEFT: 64, TOP_LEFT: 128 };
+        const TILE_LOOKUP = { 0: 42, 1: 32, 4: 43, 16: 24, 64: 44, 17: 40, 68: 41, 5: 11, 20: 3, 80: 4, 65: 12, 21: 1, 84: 8, 81: 2, 69: 16, 85: 38, 7: 21, 28: 5, 112: 7, 193: 23, 31: 13, 124: 6, 241: 15, 199: 22, 255: 14, 23: 25, 29: 33, 71: 18, 87: 27, 92: 10, 93: 19, 95: 39, 113: 34, 116: 9, 117: 20, 119: 36, 121: 46, 125: 46, 127: 47, 197: 17, 209: 26, 213: 28, 215: 30, 221: 35, 223: 31, 245: 37, 247: 29, 251: 15, 253: 45, 254: 31 };
+
+        for (let i = 0; i < 256; i++) {
+            let m = i;
+            if (!(i & 1) || !(i & 4)) m &= ~2; 
+            if (!(i & 4) || !(i & 16)) m &= ~8; 
+            if (!(i & 16) || !(i & 64)) m &= ~32; 
+            if (!(i & 64) || !(i & 1)) m &= ~128; 
+            this.blobMap.set(i, TILE_LOOKUP[m] ?? 14);
         }
 
-        // C. ENTITIES
-        if (entities) {
-            entities.forEach(entity => {
-                const sortY = (entity.y + TILE_SIZE) * GAME_SCALE;
-                renderList.push({
-                    y: sortY, 
-                    type: 'ENTITY',
-                    draw: () => this.drawEntity(entity, camera)
-                });
-            });
-        }
-
-        // --- SORT BY Y AND DRAW ---
-        renderList.sort((a, b) => a.y - b.y);
-        for (const item of renderList) item.draw();
+        const overrides = [[2,26],[8,29],[32,28],[128,27],[10,29],[40,29],[160,28],[130,27],[170,26]];
+        overrides.forEach(([k, v]) => this.shadowOverrides.set(k, v));
     }
 }
