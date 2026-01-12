@@ -51,6 +51,22 @@ Root
 └── README.md 
 
 
+Methods needed in worldManager
+
+overworldController.js
+    this.worldManager.getTileAt()
+    this.worldManager.canMove()
+    this.worldManager.findSpawnPoint()
+
+mapRenderer.js
+    worldManager.getTileAt()
+    worldManager.getTileData();
+    worldManager.getSpecificMask();
+    worldManager.getActiveObjects()
+
+sceneManager.js
+    this.worldManager.getVisibleObjects()
+
 
 Mask: 0, Index: 42
 Mask: 1, Index: 32
@@ -159,22 +175,6 @@ Mask	Neighbors Present (Walls)	Visual Shape	Your Index
 253	R, B, BL, L, TL, T, TR	BR	
 254	T, TR, R, BR, B, L, TL	BL
 
-
-Methods needed in worldManager
-
-overworldController.js
-    this.worldManager.getTileAt()
-    this.worldManager.canMove()
-    this.worldManager.findSpawnPoint()
-
-mapRenderer.js
-    worldManager.getTileAt()
-    worldManager.getTileData();
-    worldManager.getSpecificMask();
-    worldManager.getActiveObjects()
-
-sceneManager.js
-    this.worldManager.getVisibleObjects()
 
 
 

@@ -57,9 +57,10 @@ export const MAP_OBJECTS = {
         isSolid: true,
         hitbox: { w: 1, h: 1 },
         interaction: {
-            type: 'TEXT',
-            data: "Welcome to the procedurally generated world!"
-        } 
+            type: 'ENCOUNTER',
+            encounterId: 'WOODEN_CHEST_1', // Points to a separate narrative file
+            isRepeatable: false             // Should it trigger every time?
+        }
     },
     BOULDER_1: {
         spriteKey: 'BOULDER_1',
@@ -75,7 +76,7 @@ export const MAP_OBJECTS = {
         isSolid: false,
         isGround: true 
     },
-      SMALL_ROCKS_2: {
+    SMALL_ROCKS_2: {
         spriteKey: 'SMALL_ROCKS_2',
         width: 1,
         height: 1, 
@@ -107,7 +108,7 @@ export const MAP_OBJECTS = {
         height: 1, 
         isSolid: true,
         // Campfires usually have a smaller hitbox so you can walk near them
-        hitbox: { w: 0.8, h: 0.8 },
+        hitbox: { w: 1, h: 1 },
         
         // --- NEW LIGHTING CONFIGURATION ---
         light: {

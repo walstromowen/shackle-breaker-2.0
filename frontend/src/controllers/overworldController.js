@@ -61,8 +61,17 @@ export class OverworldController {
         const col = Math.floor(targetX / TILE_SIZE);
         const row = Math.floor(targetY / TILE_SIZE);
 
-        console.log(`Trying to interact with tile at [${col}, ${row}]`);
-        console.log(this.worldManager.getSolidObjectAt(col, row));
+        // 2. Priority Check: Is there a Large Object here? (e.g. House, Big Tree)
+        let obj = this.worldManager.getSolidObjectAt(col, row);
+
+        // 3. Fallback: If no large object, check for a single-tile object (e.g. Flower, Sign)
+        if (!obj) {
+            obj = this.worldManager.getObject(col, row);
+        }
+         console.log(obj);
+        //if(obj.interaction)
+
+       
     }
 
     checkForNewMove() {
