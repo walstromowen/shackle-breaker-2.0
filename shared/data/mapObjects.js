@@ -22,11 +22,10 @@ export const MAP_OBJECTS = {
     },
     PINE_TREE: {
         spriteKey: 'PINE_TREE_SMALL',
-        // LOGIC HEIGHT: 1 (The footprint on the ground)
-        // VISUAL HEIGHT: 2 (Handled by SPRITES.js)
         width: 1, 
         height: 1, 
         isSolid: true,
+        isGround: false,
         hitbox: { w: 1, h: 1 } 
     },
     TULIPS_ORANGE: {
@@ -55,11 +54,12 @@ export const MAP_OBJECTS = {
         width: 1, 
         height: 1, 
         isSolid: true,
+        isGround: false,
         hitbox: { w: 1, h: 1 },
         interaction: {
             type: 'ENCOUNTER',
-            encounterId: 'WOODEN_CHEST_1', // Points to a separate narrative file
-            isRepeatable: false             // Should it trigger every time?
+            id: 'WOODEN_CHEST_1', // Changed 'encounterId' to 'id' to match SceneManager logic
+            isRepeatable: false            
         }
     },
     BOULDER_1: {
@@ -67,6 +67,7 @@ export const MAP_OBJECTS = {
         width: 1, 
         height: 1, 
         isSolid: true,
+        isGround: false,
         hitbox: { w: 1, h: 1 } 
     },
     SMALL_ROCKS_1: {
@@ -88,18 +89,21 @@ export const MAP_OBJECTS = {
         width: 2, 
         height: 2, 
         isSolid: true,
-        hitbox: { w: 2, h: 1 } // Hitbox is only the bottom row (Trunk)
+        isGround: false,
+        hitbox: { w: 2, h: 1 }, // Hitbox is only the bottom row (Trunk)
+        
+        // --- ADDED INTERACTION ---
+        interaction: {
+            type: 'ENCOUNTER',
+            id: 'oakTree',
+        }
     },
     SMALL_HOUSE_1: {
-        // FIX: Must match the key in SPRITES.js exactly
         spriteKey: 'SMALL_HOUSE_1', 
         width: 4, 
         height: 3, 
         isSolid: true,
         isGround: false, 
-        
-        // Physics engine will push this to the bottom
-        // Result: Roof is walkable-behind, Walls are solid
         hitbox: { w: 4, h: 1 } 
     },
     CAMPFIRE: {
@@ -107,17 +111,22 @@ export const MAP_OBJECTS = {
         width: 1, 
         height: 1, 
         isSolid: true,
-        // Campfires usually have a smaller hitbox so you can walk near them
+        isGround: false,
         hitbox: { w: 1, h: 1 },
         
-        // --- NEW LIGHTING CONFIGURATION ---
+        // --- ADDED INTERACTION ---
+        interaction: {
+            type: 'ENCOUNTER',
+            id: 'bonfire',
+        },
+
         light: {
             hasLight: true,
-            radius: 5.5,          // Size of the glow in tiles
-            color: '255, 100, 0', // Warm Orange
-            maxAlpha: 0.8,        // Brightness at center
-            flickerSpeed: 0.1,    // Speed of jitter
-            flickerAmp: 0.5       // Intensity of jitter (radius variance)
+            radius: 5.5,          
+            color: '255, 100, 0', 
+            maxAlpha: 0.8,        
+            flickerSpeed: 0.1,    
+            flickerAmp: 0.5       
         }
     }
 };

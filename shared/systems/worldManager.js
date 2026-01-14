@@ -1,5 +1,6 @@
 import { CONFIG, BITMASK } from '../data/constants.js';
 import { MAP_OBJECTS } from '../data/mapObjects.js';
+import { gameState } from '../state/gameState.js';
 
 // ==========================================
 // CONFIGURATION: SPAWN RULES
@@ -26,8 +27,13 @@ const SPAWN_TABLE = {
 };
 
 export class WorldManager {
-    constructor(seed) {
-        this.seed = (typeof seed === 'number') ? seed : Math.floor(Math.random() * 1000000);
+    constructor() {
+        // LINKED: Get Seed from State, or generate and save if missing
+        if (!gameState.seed) {
+            gameState.seed = Math.floor(Math.random() * 1000000);
+        }
+        this.seed = gameState.seed;
+
         console.log(`%c[WorldManager] Seed: ${this.seed}`, 'color: #00ff00; font-weight: bold;');
 
         this.offsetX = this.seed * 9973;
@@ -73,29 +79,28 @@ export class WorldManager {
         return true;
     }
 
-    // --- NEW: Helper to check if a specific tile is totally safe ---
-    isTileFree(col, row) {
-        // 1. Check Terrain
-        const tileId = this.getTileAt(col, row);
-        if (tileId === this.TILES.LAYER_0) return false; // Water
-        if (tileId >= this.TILES.LAYER_3 && tileId <= this.TILES.LAYER_5) return false; // Walls
+    // --- SAFETY CHECK: Ensures tile is 100% valid for spawning ---
+    // shared/world/WorldManager.js
 
-        // 2. Check Biome Edge/Cliffs
-        if (this.isBlockedByFace(col, row)) return false;
-        if (this.isBiomeEdge(col, row)) return false;
+isTileFree(col, row) {
+    // 1. Check Terrain
+    const tileId = this.getTileAt(col, row);
+    if (tileId === this.TILES.LAYER_0) return false; 
+    if (tileId >= this.TILES.LAYER_3 && tileId <= this.TILES.LAYER_5) return false; 
 
-        // 3. Check for Object ON this tile
-        // IMPORTANT: We must call getObject to FORCE generation if it doesn't exist yet
-        const obj = this.getObject(col, row);
-        if (obj && obj.isSolid) return false;
+    // 2. Check Biome Edge/Cliffs
+    if (this.isBlockedByFace(col, row)) return false;
+    if (this.isBiomeEdge(col, row)) return false;
 
-        // 4. Check for Overlapping Objects (Big trees nearby)
-        if (this.getSolidObjectAt(col, row)) return false;
+    // 3. REMOVED: Check for Object ON this tile 
+    // (Redundant because step 4 checks the center tile too!)
 
-        return true;
-    }
+    // 4. Check for Overlapping Objects (Neighbor check + Center check)
+    if (this.getSolidObjectAt(col, row)) return false;
 
-    // --- NEW: Helper to find nearest safe spot to a target ---
+    return true;
+}
+
     findSafeSpawn(startCol, startRow) {
         if (this.isTileFree(startCol, startRow)) {
             return { x: startCol, y: startRow };
@@ -119,15 +124,27 @@ export class WorldManager {
     findSpawnPoint() {
         let radius = 0;
         const maxRadius = 500;
+        let fallback = null; // Store first valid grass tile as backup
+
         while (radius < maxRadius) {
             for (let r = -radius; r <= radius; r++) {
                 for (let c = -radius; c <= radius; c++) {
                     if (Math.abs(r) !== radius && Math.abs(c) !== radius) continue;
                     
+                    const tileId = this.getTileAt(c, r);
+
                     // Only spawn on Grass (Layer 2)
-                    if (this.getTileAt(c, r) === this.TILES.LAYER_2) {
-                        // Use the new strict check
+                    if (tileId === this.TILES.LAYER_2) {
+                        
+                        // Save the first piece of dry land we find, just in case
+                        if (!fallback) fallback = { col: c, row: r };
+
+                        // Strict Check: No trees, no rocks, no cliffs
                         if (this.isTileFree(c, r)) {
+                            // LINKED: Update Game State
+                            gameState.player.col = c;
+                            gameState.player.row = r;
+                            console.log(`[WorldManager] Spawn locked at: ${c}, ${r}`);
                             return { col: c, row: r };
                         }
                     }
@@ -135,6 +152,15 @@ export class WorldManager {
             }
             radius++;
         }
+
+        // If perfect spot fails, use fallback (Grass with object overlap risk is better than Water)
+        if (fallback) {
+            console.warn(`[WorldManager] Using fallback spawn at ${fallback.col}, ${fallback.row}`);
+            gameState.player.col = fallback.col;
+            gameState.player.row = fallback.row;
+            return fallback;
+        }
+
         return { col: 0, row: 0 };
     }
 
@@ -192,38 +218,53 @@ export class WorldManager {
     // INTERNAL: OBJECTS & PHYSICS
     // ==========================================
 
+    // 1. FACTORY: Get or Create object based on stateless rules
     getObject(col, row) {
         const key = `${col},${row}`;
         if (this.objects.has(key)) return this.objects.get(key);
-        const newObj = this.generateProceduralObject(col, row);
-        if (newObj) this.objects.set(key, newObj);
-        return newObj;
+
+        // Stateless Check: What SHOULD be here?
+        const potentialId = this.getPotentialObjectId(col, row);
+        
+        if (potentialId) {
+            const newObj = this.createObjectInstance(col, row, potentialId);
+            this.objects.set(key, newObj);
+            return newObj;
+        }
+        return null;
     }
 
-    generateProceduralObject(col, row) {
-        // Prevent spawning on top of existing multi-tile objects
-        if (this.getSolidObjectAt(col, row)) return null;
+    // 2. MATH: Pure deterministic check. No object creation, no recursion.
+    getPotentialObjectId(col, row) {
+        // A. Hard constraints
         if (this.isBlockedByFace(col, row) || this.isCliffFace(col, row) || this.isBiomeEdge(col, row)) return null;
 
+        // B. Get Rules
         const tileId = this.getTileAt(col, row);
         let rules = SPAWN_TABLE[tileId];
         if (!rules && (tileId >= this.TILES.LAYER_3 && tileId <= this.TILES.LAYER_5)) {
             rules = SPAWN_TABLE._WALLS;
         }
-
         if (!rules) return null;
+
+        // C. RNG
         const rng = this.pseudoRandom(col, row);
 
+        // D. Check Probabilities
         for (const rule of rules) {
             if (rule.rangeStart && rng < rule.rangeStart) continue;
+            
             if (rng < rule.chance) {
                 let selectedId = rule.id;
                 if (rule.pool) {
                     const idx = Math.floor(rng * 1000) % rule.pool.length;
                     selectedId = rule.pool[idx];
                 }
+
+                // E. Check Terrain Footprint (But DO NOT check for other objects here to avoid loops)
                 if (rule.footprint && !this.isFootprintValid(col, row, rule.footprint)) return null;
-                return this.createObjectInstance(col, row, selectedId);
+
+                return selectedId;
             }
         }
         return null;
@@ -239,7 +280,7 @@ export class WorldManager {
             w: config.width || config.w || 1, 
             h: config.height || config.h || 1,
             instanceId: `proc_${col}_${row}`,
-            isAnchor: true, // Ensures it renders in sorted pass
+            isAnchor: true, 
             interaction: config.interaction || null 
         };
     }
@@ -253,19 +294,50 @@ export class WorldManager {
         }
     }
 
+    // 3. COLLISION: Stateless Neighbor Lookup
+   // 3. COLLISION: Stateless Neighbor Lookup
     getSolidObjectAt(col, row) {
+        // We look at the neighbors. If the math says "Tree here", we check if that tree hits us.
         const RADIUS = 3; 
-        for (let r = row; r <= row + RADIUS; r++) { 
+
+        for (let r = row - RADIUS; r <= row; r++) { 
             for (let c = col - RADIUS; c <= col; c++) { 
-                const obj = this.objects.get(`${c},${r}`); 
-                if (!obj || !obj.isSolid) continue;
-                const hitW = obj.hitbox ? obj.hitbox.w : (obj.width || obj.w || 1);
-                const hitH = obj.hitbox ? obj.hitbox.h : (obj.height || obj.h || 1);
-                const left = c;
-                const right = c + hitW - 1;
-                const top = r - hitH + 1;
-                const bottom = r; 
-                if (col >= left && col <= right && row <= bottom && row >= top) return obj;
+                
+                // FAST: Check math only. Does not create objects.
+                const potentialId = this.getPotentialObjectId(c, r);
+                if (!potentialId) continue;
+
+                // Check Config
+                const config = MAP_OBJECTS[potentialId];
+                if (!config || !config.isSolid) continue;
+
+                // --- FIX STARTS HERE ---
+                // Prioritize 'hitbox' dimensions if they exist, otherwise use full image size
+                let hitW, hitH, offX, offY;
+
+                if (config.hitbox) {
+                    hitW = config.hitbox.w;
+                    hitH = config.hitbox.h;
+                    offX = config.hitbox.x || 0; // Support offsets if you ever add them
+                    offY = config.hitbox.y || 0;
+                } else {
+                    hitW = config.width || config.w || 1;
+                    hitH = config.height || config.h || 1;
+                    offX = 0;
+                    offY = 0;
+                }
+                // --- FIX ENDS HERE ---
+
+                const left = c + offX;
+                const right = c + offX + hitW - 1;
+                const top = r + offY;
+                const bottom = r + offY + hitH - 1; 
+
+                // Check if our target tile (col, row) is inside this neighbor's hitbox
+                if (col >= left && col <= right && row >= top && row <= bottom) {
+                    // Collision found! Now we can safely request/create the object to return it.
+                    return this.getObject(c, r);
+                }
             }
         }
         return null;

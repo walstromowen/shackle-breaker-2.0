@@ -1,3 +1,6 @@
+import { events } from '../core/eventBus.js';
+import { gameState } from '../../../shared/state/gameState.js';
+
 export class OverworldController {
     constructor(input, config, worldManager) {
         this.input = input;
@@ -5,8 +8,8 @@ export class OverworldController {
         this.worldManager = worldManager; 
 
         // 1. Setup Player State
-        const spawn = this.worldManager.findSpawnPoint();
-        this.player = this.createPlayerEntity(spawn);
+        // We now check GameState first. If it's empty/default, we look for a spawn point.
+        this.player = this.createPlayerEntity();
         
         // 2. Setup Camera
         this.camera = { x: 0, y: 0 };
@@ -14,7 +17,7 @@ export class OverworldController {
     }
 
     /**
-     * --- NEW: EVENT RECEIVER ---
+     * --- EVENT RECEIVER ---
      * The SceneManager calls this when a key is pressed ONCE.
      */
     handleKeyDown(code) {
@@ -22,10 +25,10 @@ export class OverworldController {
         if (code === 'Space' || code === 'Enter') {
             this.interact();
         }
-        
         // Context Actions (Example: Open Inventory)
         if (code === 'KeyI') {
             console.log("Opening Inventory...");
+            // events.emit('OPEN_MENU', 'inventory'); // Future hook
         }
     }
 
@@ -68,10 +71,10 @@ export class OverworldController {
         if (!obj) {
             obj = this.worldManager.getObject(col, row);
         }
-         console.log(obj);
-        //if(obj.interaction)
-
-       
+         
+        if (obj && obj.interaction) {
+            events.emit('INTERACT', obj.interaction);
+        }
     }
 
     checkForNewMove() {
@@ -107,7 +110,7 @@ export class OverworldController {
 
     continueMoving(dt) {
         // 1. Update Progress
-        const moveSpeed = this.config.WALK_DURATION; // Could check for Sprint key here!
+        const moveSpeed = this.config.WALK_DURATION; 
         this.player.moveProgress += dt / moveSpeed;
         
         // 2. Animate Sprite
@@ -133,6 +136,12 @@ export class OverworldController {
         this.player.isMoving = false;
         this.player.moveProgress = 0;
 
+        // --- UPDATED: SYNC TO NEW GAME STATE ---
+        // We convert Pixels back to Grid Coordinates for the state
+        gameState.player.col = Math.floor(this.player.x / this.config.TILE_SIZE);
+        gameState.player.row = Math.floor(this.player.y / this.config.TILE_SIZE);
+        gameState.player.direction = this.player.direction;
+
         // Trigger Step Events (Grass, Portal, etc)
         this.checkTileEvents();
 
@@ -153,6 +162,7 @@ export class OverworldController {
 
         if (tileId === this.config.TILE_TYPES.GRASS && Math.random() < 0.10) { 
             console.log("💥 AMBUSH in the grass!");
+            // Future: events.emit('BATTLE_START');
         }
     }
 
@@ -167,7 +177,6 @@ export class OverworldController {
         const endCol = Math.floor(targetX / TILE_SIZE);
         const endRow = Math.floor(targetY / TILE_SIZE);
 
-        // 3. Pass all 4 coordinates like your original code did
         return this.worldManager.canMove(startCol, startRow, endCol, endRow);
     }
 
@@ -182,13 +191,37 @@ export class OverworldController {
         return { entities: [this.player], camera: this.camera };
     }
 
-    createPlayerEntity(spawn) {
+    createPlayerEntity() {
+        // --- UPDATED: READ FROM NEW GAME STATE ---
+        let startX, startY;
+
+        // 1. Try to load from Game State (Saved Position)
+        // We check if either col or row is non-zero (or specifically set)
+        const savedCol = gameState.player.col;
+        const savedRow = gameState.player.row;
+
+        // If WorldManager already ran, these should be set to a valid spawn
+        if (savedCol !== 0 || savedRow !== 0) {
+            startX = savedCol * this.config.TILE_SIZE;
+            startY = savedRow * this.config.TILE_SIZE;
+        } 
+        // 2. Fallback: Ask WorldManager directly (Just in case State is empty)
+        else {
+            const spawn = this.worldManager.findSpawnPoint();
+            startX = spawn.col * this.config.TILE_SIZE;
+            startY = spawn.row * this.config.TILE_SIZE;
+            
+            // Sync initial spawn to state immediately
+            gameState.player.col = spawn.col;
+            gameState.player.row = spawn.row;
+        }
+
         return {
             id: "player",
             isPlayer: true,
-            x: spawn.col * this.config.TILE_SIZE,
-            y: spawn.row * this.config.TILE_SIZE,
-            direction: "DOWN",
+            x: startX,
+            y: startY,
+            direction: gameState.player.direction || "DOWN",
             isMoving: false,
             animFrame: 0, 
             animTimer: 0,

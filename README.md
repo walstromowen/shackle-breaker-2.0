@@ -13,14 +13,20 @@ Root
 |   |   |   |   ├── plains.png
 |   |   |   |   └── shadows.png
 |   |   ├── controllers/
+|   |   |   ├── encounterController.js
 |   |   |   ├── battleController.js
 |   |   |   └── overworldController.js
 |   |   ├── core/
 |   |   |   ├── assetLoader.js
+|   |   |   ├── eventBus.js
 |   |   |   ├── gameLoop.js
 |   |   |   ├── input.js
 |   |   |   └── sceneManager.js
 |   |   ├── renderers.js
+|   |   |   ├── encounter/
+|   |   |   |   ├── encounterRenderer.js
+|   |   |   ├── transitions/
+|   |   |   |   ├── transitionRenderer.js
 |   |   |   ├── overworld/
 |   |   |   |   ├── entityRenderer.js
 |   |   |   |   ├── lightingRenderer.js
@@ -30,15 +36,21 @@ Root
 |   |   └── styles.css
 │   └── package.json      
 ├── shared/ 
-|   ├── data
+|   ├── data/
+|   |   ├── encounters/
+|   |   |   ├── bonfire.js
+|   |   |   ├── oaktree.js
 |   |   ├── abilities.js
 |   |   ├── constants.js
 |   |   ├── entities.js
 |   |   ├── items.js
 |   |   ├── mapObjects.js
-|   |   ├──sprites.js
-|   ├── systems
-|   |   ├── combat
+|   |   ├── sprites.js
+|   ├── registries/
+|   |   ├── encounterRegistry.js
+|   ├── state/
+|   |   ├── gameState.js
+|   ├── systems/
 |   |   ├── factories
 |   |   |   ├── entityFactory.js
 |   |   |   └── itemFactory.js
