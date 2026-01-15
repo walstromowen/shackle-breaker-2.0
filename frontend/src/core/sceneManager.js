@@ -38,7 +38,8 @@ export class SceneManager {
 
         this.encounterController = new EncounterController(
             this.input,
-            this.config
+            this.config,
+            this.worldManager 
         );
 
         // 3. Renderers
@@ -49,6 +50,11 @@ export class SceneManager {
 
         // 4. State Management
         this.currentScene = 'overworld'; 
+        
+        // --- OPTIMIZATION: Memory Timer ---
+        this.pruneTimer = 0;
+        this.PRUNE_INTERVAL = 2000; // Check every 2 seconds
+        // ----------------------------------
 
         this.setupInputRouting();
         this.setupEventListeners();
@@ -74,6 +80,13 @@ export class SceneManager {
 
             this.transitionRenderer.start(() => {
                 // This runs when the screen is fully black
+                
+                // 1. Clean up the data BEHIND the black screen
+                if (this.encounterController.cleanup) {
+                    this.encounterController.cleanup();
+                }
+
+                // 2. Swap the scene
                 this.currentScene = 'overworld';
             });
         });
@@ -111,6 +124,20 @@ export class SceneManager {
         if (this.currentScene === 'overworld') {
             this.timeSystem.update(dt); 
             this.overworldController.update(dt);
+
+            // --- OPTIMIZATION: Memory Pruning ---
+            this.pruneTimer += dt;
+            if (this.pruneTimer > this.PRUNE_INTERVAL) {
+                // Retrieve the camera from the controller so we know where the player is
+                const camera = this.overworldController.getState().camera;
+                
+                // Clean up distant objects
+                this.worldManager.prune(camera.x, camera.y);
+                
+                // Reset timer
+                this.pruneTimer = 0;
+            }
+            // ------------------------------------
         }
     }
 
@@ -143,6 +170,8 @@ export class SceneManager {
         );
 
         const ambientColor = this.timeSystem.getCurrentColorData();
+        
+        // OPTIMIZATION: Arguments are already correct here!
         const visibleObjects = this.worldManager.getVisibleObjects(
             state.camera,
             this.canvas.width,

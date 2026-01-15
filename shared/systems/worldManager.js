@@ -3,7 +3,7 @@ import { MAP_OBJECTS } from '../data/mapObjects.js';
 import { gameState } from '../state/gameState.js';
 
 // ==========================================
-// CONFIGURATION: SPAWN RULES
+// CONFIGURATION
 // ==========================================
 const SPAWN_TABLE = {
     [CONFIG.TILE_TYPES.LAYER_2]: [ 
@@ -16,9 +16,7 @@ const SPAWN_TABLE = {
         { chance: 0.20, rangeStart: 0.10, pool: ['TULIPS_RED', 'TULIPS_WHITE', 'TULIPS_ORANGE'] },
         { chance: 0.50, rangeStart: 0.30, pool: ['GRASS_COVERAGE_1', 'GRASS_COVERAGE_2', 'GRASS_COVERAGE_3'] }
     ],
-    [CONFIG.TILE_TYPES.LAYER_1]: [
-        { chance: 0.15, id: 'SMALL_ROCKS_1' }
-    ],
+    [CONFIG.TILE_TYPES.LAYER_1]: [ { chance: 0.15, id: 'SMALL_ROCKS_1' } ],
     _WALLS: [
         { chance: 0.05, id: 'PINE_TREE' },
         { chance: 0.10, id: 'SMALL_ROCKS_1' },
@@ -26,26 +24,43 @@ const SPAWN_TABLE = {
     ]
 };
 
+const MASK_DIRECTIONS = [
+    { c: 0,  r: -1, bit: BITMASK.TOP },
+    { c: 1,  r: -1, bit: BITMASK.TOP_RIGHT },
+    { c: 1,  r: 0,  bit: BITMASK.RIGHT },
+    { c: 1,  r: 1,  bit: BITMASK.BOTTOM_RIGHT },
+    { c: 0,  r: 1,  bit: BITMASK.BOTTOM },
+    { c: -1, r: 1,  bit: BITMASK.BOTTOM_LEFT },
+    { c: -1, r: 0,  bit: BITMASK.LEFT },
+    { c: -1, r: -1, bit: BITMASK.TOP_LEFT }
+];
+
 export class WorldManager {
     constructor() {
-        // LINKED: Get Seed from State, or generate and save if missing
-        if (!gameState.seed) {
-            gameState.seed = Math.floor(Math.random() * 1000000);
-        }
-        this.seed = gameState.seed;
+        if (!gameState.seed) gameState.seed = Math.floor(Math.random() * 1000000);
+        if (!gameState.world.changes) gameState.world.changes = {};
 
+        this.seed = gameState.seed;
         console.log(`%c[WorldManager] Seed: ${this.seed}`, 'color: #00ff00; font-weight: bold;');
 
         this.offsetX = this.seed * 9973;
         this.offsetY = this.seed * 10007;
-
         this.TILES = CONFIG.TILE_TYPES;
         
-        this._cache = new Map();
+        // --- PERFORMANCE CACHES ---
+        this._tileCache = new Map();
+        this._procCache = new Map(); 
         this.objects = new Map();
-        this.lastPruneTime = 0;
 
-        this.initNoise(this.seed);
+        this.noiseGen = new PerlinNoise(this.seed);
+    }
+
+    _k(col, row) {
+        return (col & 0xFFFF) << 16 | (row & 0xFFFF);
+    }
+    
+    _s(col, row) {
+        return `${col},${row}`;
     }
 
     // ==========================================
@@ -53,115 +68,82 @@ export class WorldManager {
     // ==========================================
 
     getTileAt(col, row) {
-        const key = `${col},${row}`;
-        if (this._cache.has(key)) return this._cache.get(key);
-        const tileId = this.generateOverworld(col, row);
-        this._cache.set(key, tileId);
+        const key = this._k(col, row);
+        if (this._tileCache.has(key)) return this._tileCache.get(key);
+        
+        const val = this.noiseGen.get((col * 0.06) + this.offsetX, (row * 0.06) + this.offsetY);
+        
+        let tileId;
+        if (val < -0.30) tileId = this.TILES.LAYER_0;
+        else if (val < -0.15) tileId = this.TILES.LAYER_1;
+        else if (val < 0.25)  tileId = this.TILES.LAYER_2;
+        else if (val < 0.50)  tileId = this.TILES.LAYER_3;
+        else if (val < 0.75)  tileId = this.TILES.LAYER_4;
+        else tileId = this.TILES.LAYER_5;
+
+        this._tileCache.set(key, tileId);
         return tileId;
     }
 
     canMove(fromCol, fromRow, toCol, toRow) {
-        const fromElev = this.getElevation(fromCol, fromRow);
         const toElev = this.getElevation(toCol, toRow);
-
-        // 1. Void Check
+        
         if (toElev === -999) return false;
+        if (this.getElevation(fromCol, fromRow) !== toElev) return false;
         
-        // 2. Elevation Check 
-        if (fromElev !== toElev) return false;
-        
-        // 3. Solid Objects
-        if (this.getSolidObjectAt(toCol, toRow)) return false;
-        
-        // 4. North-facing Walls (Cliff collisions)
         if (this.isBlockedByFace(toCol, toRow)) return false;
-
+        if (this.getSolidObjectAt(toCol, toRow)) return false; 
+        
         return true;
-    }
-
-    // --- SAFETY CHECK: Ensures tile is 100% valid for spawning ---
-    // shared/world/WorldManager.js
-
-isTileFree(col, row) {
-    // 1. Check Terrain
-    const tileId = this.getTileAt(col, row);
-    if (tileId === this.TILES.LAYER_0) return false; 
-    if (tileId >= this.TILES.LAYER_3 && tileId <= this.TILES.LAYER_5) return false; 
-
-    // 2. Check Biome Edge/Cliffs
-    if (this.isBlockedByFace(col, row)) return false;
-    if (this.isBiomeEdge(col, row)) return false;
-
-    // 3. REMOVED: Check for Object ON this tile 
-    // (Redundant because step 4 checks the center tile too!)
-
-    // 4. Check for Overlapping Objects (Neighbor check + Center check)
-    if (this.getSolidObjectAt(col, row)) return false;
-
-    return true;
-}
-
-    findSafeSpawn(startCol, startRow) {
-        if (this.isTileFree(startCol, startRow)) {
-            return { x: startCol, y: startRow };
-        }
-
-        const radius = 6; 
-        for (let r = 1; r <= radius; r++) {
-            for (let y = -r; y <= r; y++) {
-                for (let x = -r; x <= r; x++) {
-                    const c = startCol + x;
-                    const r_ = startRow + y;
-                    if (this.isTileFree(c, r_)) {
-                        return { x: c, y: r_ };
-                    }
-                }
-            }
-        }
-        return { x: startCol, y: startRow }; // Fallback
     }
 
     findSpawnPoint() {
         let radius = 0;
-        const maxRadius = 500;
-        let fallback = null; // Store first valid grass tile as backup
-
-        while (radius < maxRadius) {
+        while(radius < 500) {
             for (let r = -radius; r <= radius; r++) {
                 for (let c = -radius; c <= radius; c++) {
                     if (Math.abs(r) !== radius && Math.abs(c) !== radius) continue;
-                    
-                    const tileId = this.getTileAt(c, r);
-
-                    // Only spawn on Grass (Layer 2)
-                    if (tileId === this.TILES.LAYER_2) {
-                        
-                        // Save the first piece of dry land we find, just in case
-                        if (!fallback) fallback = { col: c, row: r };
-
-                        // Strict Check: No trees, no rocks, no cliffs
-                        if (this.isTileFree(c, r)) {
-                            // LINKED: Update Game State
-                            gameState.player.col = c;
-                            gameState.player.row = r;
-                            console.log(`[WorldManager] Spawn locked at: ${c}, ${r}`);
-                            return { col: c, row: r };
-                        }
-                    }
+                    if (this.isTileFree(c, r) && this.getElevation(c, r) === 1) return { col: c, row: r };
                 }
             }
             radius++;
         }
+        return { col: 0, row: 0 };
+    }
 
-        // If perfect spot fails, use fallback (Grass with object overlap risk is better than Water)
-        if (fallback) {
-            console.warn(`[WorldManager] Using fallback spawn at ${fallback.col}, ${fallback.row}`);
-            gameState.player.col = fallback.col;
-            gameState.player.row = fallback.row;
-            return fallback;
+    // ==========================================
+    // API: MEMORY MANAGEMENT (NEW)
+    // ==========================================
+
+    /**
+     * Removes objects and cache data that are far away from the player.
+     * Call this every ~2 seconds.
+     */
+    prune(cameraX, cameraY) {
+        const TILE_SIZE = CONFIG.TILE_SIZE;
+        // Distance in pixels to keep objects (e.g., 2000px radius)
+        const SAFE_DISTANCE = 2500; 
+        const distSq = SAFE_DISTANCE * SAFE_DISTANCE;
+
+        // 1. Prune Instantiated Objects
+        for (const [key, obj] of this.objects) {
+            // Calculate distance from object to camera
+            const dx = (obj.col * TILE_SIZE) - cameraX;
+            const dy = (obj.row * TILE_SIZE) - cameraY;
+            
+            // If too far, delete from Map
+            if ((dx * dx + dy * dy) > distSq) {
+                this.objects.delete(key);
+            }
         }
 
-        return { col: 0, row: 0 };
+        // 2. Clear caches if they get too massive
+        // (It is faster to clear all and regenerate than to search/prune bitwise keys individually)
+        if (this._procCache.size > 20000) {
+            console.log(`[WorldManager] Pruning Memory: Cleared ${this._procCache.size} cached tiles.`);
+            this._procCache.clear();
+            this._tileCache.clear();
+        }
     }
 
     // ==========================================
@@ -170,172 +152,173 @@ isTileFree(col, row) {
 
     getTileData(col, row) {
         const tileId = this.getTileAt(col, row);
-        const isBlob = CONFIG.BLOB_TILES && CONFIG.BLOB_TILES.includes(tileId);
-        const isWall = (tileId >= this.TILES.LAYER_3 && tileId <= this.TILES.LAYER_5);
-
+        const isBlob = CONFIG.BLOB_TILES?.includes(tileId);
+        
         return { 
             id: tileId, 
             mask: isBlob ? this.getSpecificMask(col, row, tileId) : 0, 
-            isBlob: isBlob,
-            isWall: isWall,
-            object: this.getObject(col, row)
+            isBlob: isBlob, 
+            isWall: (tileId >= this.TILES.LAYER_3 && tileId <= this.TILES.LAYER_5), 
+            object: this.getObject(col, row) 
         };
     }
 
     getSpecificMask(col, row, targetId) {
-        const check = (c, r) => this.connects(targetId, this.getTileAt(c, r));
         let mask = 0;
-        if (check(col, row-1)) mask |= BITMASK.TOP;
-        if (check(col+1, row-1)) mask |= BITMASK.TOP_RIGHT;
-        if (check(col+1, row)) mask |= BITMASK.RIGHT;
-        if (check(col+1, row+1)) mask |= BITMASK.BOTTOM_RIGHT;
-        if (check(col, row+1)) mask |= BITMASK.BOTTOM;
-        if (check(col-1, row+1)) mask |= BITMASK.BOTTOM_LEFT;
-        if (check(col-1, row)) mask |= BITMASK.LEFT;
-        if (check(col-1, row-1)) mask |= BITMASK.TOP_LEFT;
+        for (const d of MASK_DIRECTIONS) {
+            const nId = this.getTileAt(col + d.c, row + d.r);
+            if (targetId === nId || (CONFIG.TILE_DEPTH[nId] || 0) >= (CONFIG.TILE_DEPTH[targetId] || 0)) {
+                mask |= d.bit;
+            }
+        }
         return mask;
     }
 
-    getActiveObjects() { return Array.from(this.objects.values()); }
+    getActiveObjects() { 
+        return Array.from(this.objects.values()); 
+    }
 
     getVisibleObjects(camera, canvasWidth, canvasHeight) {
-        const GAME_SCALE = CONFIG.GAME_SCALE || 1;
         const TILE_SIZE = CONFIG.TILE_SIZE;
-        const pad = TILE_SIZE * 4;
-        const minX = camera.x - pad;
-        const maxX = camera.x + (canvasWidth / GAME_SCALE) + pad;
-        const minY = camera.y - pad;
-        const maxY = camera.y + (canvasHeight / GAME_SCALE) + pad;
+        const scale = CONFIG.GAME_SCALE || 1;
+        
+        const startCol = Math.floor((camera.x) / TILE_SIZE) - 2;
+        const endCol = startCol + Math.ceil((canvasWidth / scale) / TILE_SIZE) + 4;
+        const startRow = Math.floor((camera.y) / TILE_SIZE) - 2;
+        const endRow = startRow + Math.ceil((canvasHeight / scale) / TILE_SIZE) + 4;
 
-        return Array.from(this.objects.values()).filter(obj => {
-            const px = obj.col * TILE_SIZE;
-            const py = obj.row * TILE_SIZE;
-            return (px >= minX && px <= maxX && py >= minY && py <= maxY);
-        });
+        const visible = [];
+
+        for (let r = startRow; r <= endRow; r++) {
+            for (let c = startCol; c <= endCol; c++) {
+                const obj = this.getObject(c, r);
+                if (obj) visible.push(obj);
+            }
+        }
+        return visible;
     }
 
     // ==========================================
-    // INTERNAL: OBJECTS & PHYSICS
+    // LOGIC: OBJECTS & SPAWNING
     // ==========================================
 
-    // 1. FACTORY: Get or Create object based on stateless rules
     getObject(col, row) {
-        const key = `${col},${row}`;
+        const key = this._s(col, row);
         if (this.objects.has(key)) return this.objects.get(key);
 
-        // Stateless Check: What SHOULD be here?
-        const potentialId = this.getPotentialObjectId(col, row);
-        
-        if (potentialId) {
-            const newObj = this.createObjectInstance(col, row, potentialId);
+        const id = this.getPotentialObjectId(col, row);
+        if (id) {
+            const newObj = this.createObjectInstance(col, row, id);
             this.objects.set(key, newObj);
             return newObj;
         }
         return null;
     }
 
-    // 2. MATH: Pure deterministic check. No object creation, no recursion.
     getPotentialObjectId(col, row) {
-        // A. Hard constraints
+        const key = this._s(col, row);
+        if (gameState.world.changes?.[key] !== undefined) {
+            return gameState.world.changes[key];
+        }
+
+        const cacheKey = this._k(col, row);
+        if (this._procCache.has(cacheKey)) return this._procCache.get(cacheKey);
+
+        const result = this._calculatePotentialObjectId(col, row);
+        
+        this._procCache.set(cacheKey, result);
+        return result;
+    }
+
+    _calculatePotentialObjectId(col, row) {
+        const MAX_LOOKBACK = 4;
+        for (let r = row - MAX_LOOKBACK; r <= row; r++) {
+            for (let c = col - MAX_LOOKBACK; c <= col; c++) {
+                if (c === col && r === row) continue;
+
+                const nId = this._getRawProceduralId(c, r);
+                if (nId) {
+                    const cfg = MAP_OBJECTS[nId];
+                    const w = cfg.w || cfg.width || 1;
+                    const h = cfg.h || cfg.height || 1;
+                    if (c + w > col && r + h > row) return null; 
+                }
+            }
+        }
+        return this._getRawProceduralId(col, row);
+    }
+
+    _getRawProceduralId(col, row) {
         if (this.isBlockedByFace(col, row) || this.isCliffFace(col, row) || this.isBiomeEdge(col, row)) return null;
 
-        // B. Get Rules
         const tileId = this.getTileAt(col, row);
-        let rules = SPAWN_TABLE[tileId];
-        if (!rules && (tileId >= this.TILES.LAYER_3 && tileId <= this.TILES.LAYER_5)) {
-            rules = SPAWN_TABLE._WALLS;
-        }
+        const rules = SPAWN_TABLE[tileId] || ((tileId >= this.TILES.LAYER_3 && tileId <= this.TILES.LAYER_5) ? SPAWN_TABLE._WALLS : null);
+        
         if (!rules) return null;
 
-        // C. RNG
         const rng = this.pseudoRandom(col, row);
 
-        // D. Check Probabilities
         for (const rule of rules) {
             if (rule.rangeStart && rng < rule.rangeStart) continue;
             
             if (rng < rule.chance) {
-                let selectedId = rule.id;
-                if (rule.pool) {
-                    const idx = Math.floor(rng * 1000) % rule.pool.length;
-                    selectedId = rule.pool[idx];
-                }
-
-                // E. Check Terrain Footprint (But DO NOT check for other objects here to avoid loops)
+                let id = rule.id;
+                if (rule.pool) id = rule.pool[Math.floor(rng * 1000) % rule.pool.length];
+                
                 if (rule.footprint && !this.isFootprintValid(col, row, rule.footprint)) return null;
-
-                return selectedId;
+                
+                return id;
             }
         }
         return null;
     }
 
-    createObjectInstance(col, row, objectId) {
-        const config = MAP_OBJECTS[objectId];
+    createObjectInstance(col, row, id) {
+        const config = MAP_OBJECTS[id];
         if (!config) return null;
         return {
             ...config,
-            type: objectId,
-            col, row,
-            w: config.width || config.w || 1, 
+            type: id, col, row,
+            w: config.width || config.w || 1,
             h: config.height || config.h || 1,
             instanceId: `proc_${col}_${row}`,
-            isAnchor: true, 
-            interaction: config.interaction || null 
+            isAnchor: true,
+            interaction: config.interaction || null
         };
     }
 
-    pruneObjects(cameraX, cameraY) {
-        const LIMIT = 30 * CONFIG.TILE_SIZE;
-        for (const [key, obj] of this.objects) {
-            const dx = Math.abs((obj.col * CONFIG.TILE_SIZE) - cameraX);
-            const dy = Math.abs((obj.row * CONFIG.TILE_SIZE) - cameraY);
-            if (dx > LIMIT || dy > LIMIT) this.objects.delete(key);
-        }
+    modifyWorld(col, row, newValue) {
+        const key = this._s(col, row);
+        gameState.world.changes[key] = newValue;
+        
+        this.objects.delete(key); 
+        this._procCache.delete(this._k(col, row));
     }
 
-    // 3. COLLISION: Stateless Neighbor Lookup
-   // 3. COLLISION: Stateless Neighbor Lookup
+    // ==========================================
+    // LOGIC: PHYSICS & COLLISION
+    // ==========================================
+
     getSolidObjectAt(col, row) {
-        // We look at the neighbors. If the math says "Tree here", we check if that tree hits us.
-        const RADIUS = 3; 
-
-        for (let r = row - RADIUS; r <= row; r++) { 
-            for (let c = col - RADIUS; c <= col; c++) { 
+        const RADIUS = 3;
+        for (let r = row - RADIUS; r <= row; r++) {
+            for (let c = col - RADIUS; c <= col; c++) {
                 
-                // FAST: Check math only. Does not create objects.
-                const potentialId = this.getPotentialObjectId(c, r);
-                if (!potentialId) continue;
+                const id = this.getPotentialObjectId(c, r);
+                if (!id) continue;
 
-                // Check Config
-                const config = MAP_OBJECTS[potentialId];
-                if (!config || !config.isSolid) continue;
+                const cfg = MAP_OBJECTS[id];
+                if (!cfg?.isSolid) continue;
 
-                // --- FIX STARTS HERE ---
-                // Prioritize 'hitbox' dimensions if they exist, otherwise use full image size
-                let hitW, hitH, offX, offY;
-
-                if (config.hitbox) {
-                    hitW = config.hitbox.w;
-                    hitH = config.hitbox.h;
-                    offX = config.hitbox.x || 0; // Support offsets if you ever add them
-                    offY = config.hitbox.y || 0;
-                } else {
-                    hitW = config.width || config.w || 1;
-                    hitH = config.height || config.h || 1;
-                    offX = 0;
-                    offY = 0;
-                }
-                // --- FIX ENDS HERE ---
+                const hitW = cfg.hitbox?.w ?? (cfg.width || cfg.w || 1);
+                const hitH = cfg.hitbox?.h ?? (cfg.height || cfg.h || 1);
+                const offX = cfg.hitbox?.x || 0;
+                const offY = cfg.hitbox?.y || 0;
 
                 const left = c + offX;
-                const right = c + offX + hitW - 1;
-                const top = r + offY;
-                const bottom = r + offY + hitH - 1; 
+                const top  = r + offY;
 
-                // Check if our target tile (col, row) is inside this neighbor's hitbox
-                if (col >= left && col <= right && row >= top && row <= bottom) {
-                    // Collision found! Now we can safely request/create the object to return it.
+                if (col >= left && col < left + hitW && row >= top && row < top + hitH) {
                     return this.getObject(c, r);
                 }
             }
@@ -343,6 +326,27 @@ isTileFree(col, row) {
         return null;
     }
 
+    isTileFree(col, row) {
+        const tileId = this.getTileAt(col, row);
+        if (tileId === this.TILES.LAYER_0) return false;
+        if (tileId >= this.TILES.LAYER_3 && tileId <= this.TILES.LAYER_5) return false;
+        if (this.isBlockedByFace(col, row) || this.isBiomeEdge(col, row)) return false;
+        if (this.getSolidObjectAt(col, row)) return false;
+        return true;
+    }
+
+    isFootprintValid(col, row, width) {
+        const elev = this.getElevation(col, row);
+        for (let i = 1; i < width; i++) {
+            const c = col + i;
+            if (this.getElevation(c, row) !== elev || 
+                this.isBlockedByFace(c, row) || 
+                this.isCliffFace(c, row) || 
+                this.isBiomeEdge(c, row)) return false;
+        }
+        return true;
+    }
+    
     getElevation(col, row) {
         const id = this.getTileAt(col, row);
         if (id === this.TILES.LAYER_0) return -999;
@@ -352,20 +356,18 @@ isTileFree(col, row) {
 
     getWallFaceDepth(tileId) {
         const depth = CONFIG.TILE_DEPTH[tileId] || 0;
-        if (depth >= 3) return depth - 1; 
-        if (depth === 2) return 1;
-        return 0;
+        return (depth >= 3) ? depth - 1 : (depth === 2 ? 1 : 0);
     }
 
     isBlockedByFace(col, row) {
-       const myElev = this.getElevation(col, row);
-       const nTile = this.getTileAt(col, row - 1);
-       if (this.getElevation(col, row - 1) > myElev && this.getWallFaceDepth(nTile) >= 1) return true;
-       const nnTile = this.getTileAt(col, row - 2);
-       if (this.getElevation(col, row - 2) > myElev && this.getWallFaceDepth(nnTile) >= 2) return true;
-       return false;
+        const myElev = this.getElevation(col, row);
+        const check = (rOffset, depthReq) => {
+            const nTile = this.getTileAt(col, row - rOffset);
+            return (this.getElevation(col, row - rOffset) > myElev && this.getWallFaceDepth(nTile) >= depthReq);
+        };
+        return check(1, 1) || check(2, 2);
     }
-
+    
     isCliffFace(col, row) {
         const elev = this.getElevation(col, row);
         if (elev <= 0) return false;
@@ -377,42 +379,9 @@ isTileFree(col, row) {
     }
 
     isBiomeEdge(col, row) {
-        const d = CONFIG.TILE_DEPTH[this.getTileAt(col, row)] || 0;
-        const lower = (c, r) => (CONFIG.TILE_DEPTH[this.getTileAt(c, r)] || 0) < d;
-        return lower(col, row-1) || lower(col+1, row) || lower(col, row+1) || lower(col-1, row);
-    }
-
-    isFootprintValid(col, row, width) {
-        const elev = this.getElevation(col, row);
-        for (let i = 0; i < width; i++) {
-            const c = col + i;
-            if (this.getElevation(c, row) !== elev) return false;
-            if (this.isBlockedByFace(c, row)) return false;
-            if (this.isCliffFace(c, row)) return false;
-            if (this.isBiomeEdge(c, row)) return false;
-        }
-        return true;
-    }
-
-    connects(tId, nId) {
-        if (tId === nId) return true;
-        const d1 = CONFIG.TILE_DEPTH[tId] || 0;
-        const d2 = CONFIG.TILE_DEPTH[nId] || 0;
-        return d2 >= d1;
-    }
-
-    // ==========================================
-    // MATH & NOISE ENGINE
-    // ==========================================
-
-    generateOverworld(col, row) {
-        const val = this.noise((col * 0.06) + this.offsetX, (row * 0.06) + this.offsetY);
-        if (val < -0.30) return this.TILES.LAYER_0;
-        if (val < -0.15) return this.TILES.LAYER_1;
-        if (val < 0.25)  return this.TILES.LAYER_2;
-        if (val < 0.50)  return this.TILES.LAYER_3;
-        if (val < 0.75)  return this.TILES.LAYER_4;
-        return this.TILES.LAYER_5;
+        const myD = CONFIG.TILE_DEPTH[this.getTileAt(col, row)] || 0;
+        const check = (c, r) => (CONFIG.TILE_DEPTH[this.getTileAt(c, r)] || 0) < myD;
+        return check(col, row-1) || check(col+1, row) || check(col, row+1) || check(col-1, row);
     }
 
     pseudoRandom(col, row) {
@@ -420,8 +389,10 @@ isTileFree(col, row) {
         const sin = Math.sin(dot) * 43758.5453;
         return sin - Math.floor(sin);
     }
+}
 
-    initNoise(seed) {
+class PerlinNoise {
+    constructor(seed) {
         this.p = new Uint8Array(512);
         this.perm = new Uint8Array(256);
         for (let i = 0; i < 256; i++) this.perm[i] = i;
@@ -440,7 +411,7 @@ isTileFree(col, row) {
         const h = hash & 15; const u = h < 8 ? x : y; const v = h < 4 ? y : (h === 12 || h === 14 ? x : 0);
         return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);
     }
-    noise(x, y) {
+    get(x, y) {
         const X = Math.floor(x) & 255; const Y = Math.floor(y) & 255;
         x -= Math.floor(x); y -= Math.floor(y);
         const u = this.fade(x); const v = this.fade(y);

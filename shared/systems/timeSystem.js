@@ -8,10 +8,10 @@ export class TimeSystem {
         this.MAX_TIME = 24 * 60; 
 
         // 2. SYNC ON LOAD
-        // If the state is 0 (New Game), set the default starting time (19:00).
+        // If the state is 0 (New Game), set the default starting time (8:00).
         // If we loaded a save file, this line skips, preserving the saved time.
         if (gameState.world.time === 0) {
-            gameState.world.time = 19 * 60; 
+            gameState.world.time = 8 * 60; 
         }
 
         // --- COLOR PALETTE ---

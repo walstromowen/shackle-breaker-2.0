@@ -25,6 +25,9 @@ export class OverworldController {
         if (code === 'Space' || code === 'Enter') {
             this.interact();
         }
+        if (code === 'KeyP') {
+            gameState.world.time += 720; // Advance 2 in-game hours
+        }
         // Context Actions (Example: Open Inventory)
         if (code === 'KeyI') {
             console.log("Opening Inventory...");
@@ -51,7 +54,7 @@ export class OverworldController {
     interact() {
         if (this.player.isMoving) return;
 
-        // 1. Calculate the tile we are facing
+        // 1. Calculate the tile we are facing (Target Tile)
         const { TILE_SIZE } = this.config;
         let targetX = this.player.x;
         let targetY = this.player.y;
@@ -61,18 +64,40 @@ export class OverworldController {
         if (this.player.direction === "LEFT")  targetX -= TILE_SIZE;
         if (this.player.direction === "RIGHT") targetX += TILE_SIZE;
 
-        const col = Math.floor(targetX / TILE_SIZE);
-        const row = Math.floor(targetY / TILE_SIZE);
+        const lookCol = Math.floor(targetX / TILE_SIZE);
+        const lookRow = Math.floor(targetY / TILE_SIZE);
 
         // 2. Priority Check: Is there a Large Object here? (e.g. House, Big Tree)
-        let obj = this.worldManager.getSolidObjectAt(col, row);
+        // Note: 'obj' will contain the object's ANCHOR coordinates (obj.col, obj.row),
+        // which might be different from where we are looking (lookCol, lookRow).
+        let obj = this.worldManager.getSolidObjectAt(lookCol, lookRow);
 
         // 3. Fallback: If no large object, check for a single-tile object (e.g. Flower, Sign)
         if (!obj) {
-            obj = this.worldManager.getObject(col, row);
+            obj = this.worldManager.getObject(lookCol, lookRow);
         }
          
+        // 4. Trigger Interaction
         if (obj && obj.interaction) {
+            console.log(`[Overworld] Interacting with ${obj.type} at ${obj.col},${obj.row}`);
+
+            // A. Populate Encounter State
+            gameState.encounter.activeData = obj.interaction; 
+            gameState.encounter.currentStageId = "start";
+            
+            // B. Save Context (CRITICAL for modifying the world later)
+            // We save obj.col/row (the anchor), not lookCol/lookRow (the hitbox).
+            gameState.encounter.context = {
+                col: obj.col,
+                row: obj.row,
+                objectId: obj.type
+            };
+
+            // C. Switch Engine Mode
+            // The Main Loop will detect this and switch to EncounterController next frame
+            gameState.mode = "ENCOUNTER";
+            
+            // D. (Optional) Emit event if UI needs to react immediately
             events.emit('INTERACT', obj.interaction);
         }
     }
