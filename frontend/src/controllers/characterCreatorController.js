@@ -1,9 +1,10 @@
 import { gameState } from '../../../shared/state/gameState.js';
 import { EntityFactory } from '../../../shared/systems/factories/entityFactory.js';
+import { events } from '../core/eventBus.js';
 
 export class CharacterCreatorController {
-    constructor(sceneManager) {
-        this.sceneManager = sceneManager;
+    // 1. Removed sceneManager dependency
+    constructor() {
         this.currentRow = 0;
         
         this.draft = {
@@ -80,9 +81,8 @@ export class CharacterCreatorController {
 
     triggerStartGame() {
         console.log("[CharCreator] Initiating Factory Creation...");
-        this.sceneManager.transitionRenderer.start(() => {
-            this.finalizeCharacter();
-        });
+        // 2. Logic runs first, then we request the transition
+        this.finalizeCharacter();
     }
 
     /**
@@ -123,7 +123,7 @@ export class CharacterCreatorController {
 
         console.log(`[Success] Character Created: ${hero.name} (${classLabel})`);
         
-        // 5. CHANGE SCENE
-        this.sceneManager.changeScene('overworld');
+        // 5. CHANGE SCENE via Event Bus
+        events.emit('CHANGE_SCENE', { scene: 'overworld' });
     }
 }

@@ -47,9 +47,9 @@ export class SceneManager {
             this.worldManager 
         );
 
-        // Pass 'this' so it can call changeScene()
-        this.characterCreatorController = new CharacterCreatorController(this); 
-        this.partyController = new PartyController(this);
+        // UPDATED: No dependency injection needed for these anymore
+        this.characterCreatorController = new CharacterCreatorController(); 
+        this.partyController = new PartyController();
 
 
         // 3. Renderers
@@ -72,7 +72,7 @@ export class SceneManager {
     }
 
     /**
-     * NEW: Central method to switch scenes.
+     * Central method to switch scenes.
      */
     changeScene(sceneName) {
         console.log(`[SceneManager] Switching to: ${sceneName}`);
@@ -80,7 +80,22 @@ export class SceneManager {
     }
 
     setupEventListeners() {
-        // A. Entering an Encounter
+        // --- STANDARD SCENE CHANGE EVENT ---
+        // This handles the transition and cleanup for ANY controller that emits CHANGE_SCENE
+        events.on('CHANGE_SCENE', ({ scene }) => {
+            this.transitionRenderer.start(() => {
+                // Automatic Cleanup: If we are leaving an encounter, clean it up
+                if (this.currentScene === 'encounter' && this.encounterController.cleanup) {
+                    this.encounterController.cleanup();
+                }
+
+                // Perform the switch
+                this.changeScene(scene);
+            });
+        });
+
+        // --- SPECIFIC: INTERACTION EVENT ---
+        // We keep this specific because it carries the 'interaction data' needed to bootstrap the encounter
         events.on('INTERACT', (data) => {
             if (data.type === 'ENCOUNTER') {
                 this.transitionRenderer.start(() => {
@@ -88,25 +103,6 @@ export class SceneManager {
                     this.changeScene('encounter');
                 });
             }
-        });
-
-        // B. Exiting an Encounter
-        events.on('ENCOUNTER_END', () => {
-            this.transitionRenderer.start(() => {
-                if (this.encounterController.cleanup) {
-                    this.encounterController.cleanup();
-                }
-                this.changeScene('overworld');
-            });
-        });
-
-        events.on('PARTY', () => {
-            this.transitionRenderer.start(() => {
-                if (this.encounterController.cleanup) {
-                    this.encounterController.cleanup();
-                }
-                this.changeScene('party');
-            });
         });
     }
 
@@ -130,12 +126,11 @@ export class SceneManager {
                     this.encounterController.handleKeyDown(e.code);
                     break;
 
-                // *** CHANGE: Added routing for Character Creator ***
                 case 'character-creator':
                     this.characterCreatorController.handleKeyDown(e.code);
                     break;
 
-                case 'party': // NEW: Routing for Party Screen
+                case 'party': 
                     this.partyController.handleKeyDown(e.code);
                     break;
             }
@@ -153,8 +148,8 @@ export class SceneManager {
             this.handlePruning(dt);
         }
         
-        // *** CHANGE: Removed Character Creator update() call ***
-        // It is now fully event-driven via setupInputRouting above.
+        // Note: Character Creator and Party are fully event-driven, 
+        // so they don't need a per-frame update loop here.
     }
 
     render(interpolation, totalTime) { 
@@ -171,7 +166,6 @@ export class SceneManager {
             this.renderOverworld(totalTime);
         }
         else if (this.currentScene === 'party') {
-            // NEW: Render the party screen when active
             const state = this.partyController.getState();
             this.partyRenderer.render(state);
         }

@@ -10,14 +10,21 @@ export class EncounterController {
         this.selectedIndex = 0;
     }
 
+    /**
+     * Called by SceneManager when switching to this scene.
+     * @param {string} encounterId - The ID from the Interaction component.
+     */
     start(encounterId) {
         const data = EncounterRegistry.get(encounterId);
+        
+        // Safety: If ID is wrong, go back immediately
         if (!data) {
             console.error(`[Encounter] ID '${encounterId}' not found.`);
-            events.emit('ENCOUNTER_END'); 
+            events.emit('CHANGE_SCENE', { scene: 'overworld' });
             return;
         }
 
+        // Initialize State
         gameState.encounter = {
             ...gameState.encounter, 
             activeData: data,       
@@ -38,22 +45,26 @@ export class EncounterController {
 
     handleKeyDown(key) {
         const { activeData, currentStageId } = gameState.encounter;
-        // SAFETY: If data is wiped, ignore input (prevents errors during fade)
+        
+        // SAFETY: If data is wiped (during fade out), ignore input
         if (!activeData) return; 
 
         const stage = activeData.stages[currentStageId];
         const options = stage.decisions;
 
+        // Escape Key -> Exit immediately (optional, or opens menu)
         if (key === "Escape") {
-             this.endEncounter(); // Changed to call method
+             this.endEncounter(); 
         } 
 
+        // Navigation
         if (key === "ArrowUp" || key === "KeyW") {
             this.selectedIndex = (this.selectedIndex - 1 + options.length) % options.length;
         } 
         else if (key === "ArrowDown" || key === "KeyS") {
             this.selectedIndex = (this.selectedIndex + 1) % options.length;
         } 
+        // Selection
         else if (key === "Enter" || key === "Space") {
             this.selectOption(options[this.selectedIndex]);
         }
@@ -62,10 +73,9 @@ export class EncounterController {
     selectOption(decision) {
         if (!decision) return;
 
-        // Logic for checks/rewards...
+        // Placeholder: Skill Check Logic would go here
         if (decision.type === "CHECK") {
-            // ... (keep your existing check logic)
-            // For brevity, assuming success flows to resolveOutcome
+            // Example: const success = RollDice(gameState.party.members[0].attributes.strength);
         }
 
         this.resolveOutcome(decision);
@@ -74,18 +84,20 @@ export class EncounterController {
     resolveOutcome(outcomeNode) {
         if (!outcomeNode) return;
 
-        // 1. World Modifications
+        // 1. World Modifications (e.g., removing the object you interacted with)
         if (outcomeNode.outcome === "DESTROY_OBJECT") {
             const ctx = gameState.encounter.context;
+            // We use the Context saved by the OverworldController during interaction
             if (ctx && ctx.col !== null && ctx.row !== null) {
                 this.worldManager.modifyWorld(ctx.col, ctx.row, null);
             }
         }
 
-        // 2. Navigation
+        // 2. Navigation Logic
         if (outcomeNode.type === "EXIT" || outcomeNode.nextStage === "EXIT") {
             this.endEncounter();
         } else if (outcomeNode.nextStage) {
+            // Advance to next stage
             gameState.encounter.currentStageId = outcomeNode.nextStage;
             this.selectedIndex = 0;
         }
@@ -93,20 +105,20 @@ export class EncounterController {
 
     /**
      * PHASE 1: Trigger the Transition
-     * We do NOT clear the state here. We want the text to remain visible
-     * while the screen fades to black.
+     * We emit the event. The SceneManager hears this, fades the screen,
+     * and THEN calls our cleanup() method.
      */
     endEncounter() {
         console.log("[Encounter] Signaling end...");
-        events.emit('ENCOUNTER_END');
+        events.emit('CHANGE_SCENE', { scene: 'overworld' });
     }
 
     /**
      * PHASE 2: The Cleanup
-     * This is called by SceneManager ONLY when the screen is fully black.
+     * Called by SceneManager during the black-screen transition.
      */
     cleanup() {
-        console.log("[Encounter] Wiping data (Hidden by transition).");
+        console.log("[Encounter] Wiping data.");
         gameState.encounter = { 
             activeData: null, 
             currentStageId: null, 

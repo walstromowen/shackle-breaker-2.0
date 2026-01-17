@@ -27,17 +27,17 @@ export class OverworldController {
         }
 
         // --- NEW: TOGGLE PARTY MENU ---
-        // Instead of advancing time, we switch the game mode to PARTY
+        // STANDARDIZED: Emit generic scene change event
         if (code === 'KeyP') {
             console.log("[Overworld] Opening Party Menu...");
             gameState.mode = "PARTY";
-            events.emit('PARTY', {});
+            events.emit('CHANGE_SCENE', { scene: 'party' });
         }
 
         // Context Actions (Example: Open Inventory)
         if (code === 'KeyI') {
             console.log("Opening Inventory...");
-            // events.emit('OPEN_MENU', 'inventory'); 
+            // events.emit('CHANGE_SCENE', { scene: 'inventory' }); 
         }
         
     }
@@ -83,7 +83,7 @@ export class OverworldController {
         if (!obj) {
             obj = this.worldManager.getObject(lookCol, lookRow);
         }
-         
+            
         // 4. Trigger Interaction
         if (obj && obj.interaction) {
             console.log(`[Overworld] Interacting with ${obj.type} at ${obj.col},${obj.row}`);
@@ -104,7 +104,9 @@ export class OverworldController {
             // The Main Loop will detect this and switch to EncounterController next frame
             gameState.mode = "ENCOUNTER";
             
-            // D. (Optional) Emit event if UI needs to react immediately
+            // D. Emit event with payload. 
+            // We keep 'INTERACT' here because it carries specific data (the encounter ID)
+            // that the SceneManager needs to bootstrap the encounter controller.
             events.emit('INTERACT', obj.interaction);
         }
     }
@@ -194,7 +196,7 @@ export class OverworldController {
 
         if (tileId === this.config.TILE_TYPES.GRASS && Math.random() < 0.10) { 
             console.log("💥 AMBUSH in the grass!");
-            // Future: events.emit('BATTLE_START');
+            // Future: events.emit('CHANGE_SCENE', { scene: 'battle' });
         }
     }
 
