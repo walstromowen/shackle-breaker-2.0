@@ -38,3 +38,5 @@ async function initialize() {
 }
 
 initialize();
+import { gameState } from '../../shared/state/gameState.js';
+window.gameState = gameState; // Add this line!sss

@@ -5,62 +5,74 @@ Root
 ├── backend/
 ├── frontend/                  
 │   ├── src/
-|   |   ├── assets/
-|   |   |   ├── sprites/
-|   |   |   |   └── hero.png
-|   |   |   ├── tilesets/
-|   |   |   |   ├── objects.png
-|   |   |   |   ├── plains.png
-|   |   |   |   └── shadows.png
-|   |   ├── controllers/
-|   |   |   ├── encounterController.js
-|   |   |   ├── battleController.js
-|   |   |   └── overworldController.js
-|   |   ├── core/
-|   |   |   ├── assetLoader.js
-|   |   |   ├── eventBus.js
-|   |   |   ├── gameLoop.js
-|   |   |   ├── input.js
-|   |   |   └── sceneManager.js
-|   |   ├── renderers.js
-|   |   |   ├── encounter/
-|   |   |   |   ├── encounterRenderer.js
-|   |   |   ├── transitions/
-|   |   |   |   ├── transitionRenderer.js
-|   |   |   ├── overworld/
-|   |   |   |   ├── entityRenderer.js
-|   |   |   |   ├── lightingRenderer.js
-|   |   |   |   └── mapRenderer.js
-|   |   ├── index.html
-|   |   ├── main.js
-|   |   └── styles.css
+│   │   ├── assets/
+│   │   │   ├── sprites/
+│   │   │   └── tilesets/
+│   │   ├── controllers/            
+│   │   │   ├── encounterController.js
+│   │   │   ├── battleController.js
+│   │   │   ├── characterCreatorController.js
+│   │   │   └── overworldController.js
+│   │   ├── core/
+│   │   │   ├── assetLoader.js
+│   │   │   ├── eventBus.js
+│   │   │   ├── gameLoop.js
+│   │   │   ├── input.js
+│   │   │   └── sceneManager.js
+│   │   ├── renderers/
+│   │   │   ├── encounter/
+│   │   │   ├── transitions/
+│   │   │   │    ├── transitionRenderer.js
+│   │   │   └── overworld/
+│   │   │   │    ├── entityRenderer.js
+│   │   │   │    ├── lightningRenderer.js
+│   │   │   │    ├── mapRenderer.js
+│   │   │   ├── characterCreator/        
+│   │   │   │    └── characterCreatorRenderer.js
+│   │   ├── index.html
+│   │   ├── main.js
+│   │   └── styles.css
 │   └── package.json      
 ├── shared/ 
-|   ├── data/
-|   |   ├── encounters/
-|   |   |   ├── bonfire.js
-|   |   |   ├── oaktree.js
-|   |   ├── abilities.js
-|   |   ├── constants.js
-|   |   ├── entities.js
-|   |   ├── items.js
-|   |   ├── mapObjects.js
-|   |   ├── sprites.js
-|   ├── registries/
-|   |   ├── encounterRegistry.js
-|   ├── state/
-|   |   ├── gameState.js
-|   ├── systems/
-|   |   ├── factories
-|   |   |   ├── entityFactory.js
-|   |   |   └── itemFactory.js
-|   |   ├── timeSystem.js
-|   |   ├── worldManager.js
+│   ├── data/                       
+│   │   ├── encounters/
+│   │   ├── abilityDefinitions.js   
+│   │   ├── constants.js
+│   │   ├── entityDefinitions.js    
+│   │   ├── itemDefinitions.js      
+│   │   ├── mapObjects.js
+│   │   └── sprites.js
+│   ├── models/                    
+│   │   ├── entityModel.js               
+│   │   └── itemModel.js                 
+│   ├── registries/
+│   │   └── encounterRegistry.js
+│   ├── state/
+│   │   └── gameState.js            
+│   ├── systems/
+│   │   ├── factories/              
+│   │   │   ├── entityFactory.js    
+│   │   │   └── itemFactory.js
+│   │   ├── partyManager.js         
+│   │   ├── timeSystem.js
+│   │   └── worldManager.js
 ├── .gitignore/ 
-├── LISCENSE/ 
+├── LICENSE/ 
 ├── package-lock.json 
 ├── package.json
-└── README.md 
+└── README.md
+
+
+Does it handle keyboard/mouse? -> Controller.
+
+Does it save/load global data (Gold, Party)? -> Manager.
+
+Is it a rule of the universe (Gravity, Time, Light)? -> System.
+
+Is it a specific object (Sword, Enemy, Player)? -> Model.
+
+Is it a tiny function for a specific event? -> Handler.
+
 
 
 Methods needed in worldManager
@@ -133,60 +145,89 @@ Mask: 245, Index: 45
 Mask: 251, Index: 31
 
 
+        this.name 
+        this.type 
+        this.appearance 
+        this.size 
+        this.level
+        this.vigor 
+        this.strength 
+        this.dexterity
+        this.intelligence
+        this.attunement 
 
-Mask	Neighbors Present (Walls)	Visual Shape	Your Index
-0	None	Isolated / Single Block	
-1	Top	Bottom Cap (Vertical End)	
-4	Right	Left Cap (Horizontal End)	
-16	Bottom	Top Cap (Vertical End)	
-64	Left	Right Cap (Horizontal End)	
-17	Top, Bottom	Vertical Shaft	
-68	Left, Right	Horizontal Shaft	
-5	Top, Right	L-Corner (Bottom-Left)	
-20	Right, Bottom	L-Corner (Top-Left)	
-80	Bottom, Left	L-Corner (Top-Right)	
-65	Left, Top	L-Corner (Bottom-Right)	
-21	Top, Right, Bottom	T-Junction (Open Left)	
-84	Right, Bottom, Left	T-Junction (Open Top)	
-81	Bottom, Left, Top	T-Junction (Open Right)	
-69	Left, Top, Right	T-Junction (Open Bottom)	
-85	Top, Right, Bottom, Left	Cross Junction (+)
+       
+        this.maxHP 
+        this.maxStamina 
+        this.maxMagic 
+        this.baseHpRecovery 
+        this.baseStaminaRecovery 
+        this.baseMagicRecovery 
+        this.baseBluntAttack 
+        this.basePierceAttack 
+        this.baseArcaneAttack 
+        this.baseElementalAttack 
+        this.baseBluntDefense 
+        this.basePierceDefense 
+        this.baseArcaneDefense 
+        this.baseElementalDefense 
+        this.baseBluntResistance 
+        this.basePierceResistance 
+        this.baseArcaneResistance 
+        this.baseElementalResistance
+        this.baseSpeed 
+        this.baseEvasion 
+        this.baseCritical 
+
+        
+       
+        this.currentHP 
+        this.currentStamina 
+        this.currentMagic 
+        this.currentHpRecovery 
+        this.currentStaminaRecovery 
+        this.currentMagicRecovery 
+        this.currentBluntAttack 
+        this.currentPierceAttack 
+        this.currentArcaneAttack 
+        this.currentElementalAttack 
+        this.currentBluntDefense 
+        this.currentPierceDefense
+        this.currentArcaneDefense 
+        this.currentElementalDefense 
+        this.currentBluntResistance 
+        this.currentPierceResistance 
+        this.currentArcaneResistance 
+        this.currentElementalResistance 
 
 
-7	Top, Right, Top-Right	Outer Corner (Bot-Left)	
-28	Right, Bottom, Bot-Right	Outer Corner (Top-Left)	
-112	Bottom, Left, Bot-Left	Outer Corner (Top-Right)	
-193	Left, Top, Top-Left	Outer Corner (Bot-Right)	
-31	Top, Right, Bottom, TR, BR	Side Wall (Right)	
-124	Right, Bottom, Left, BR, BL	Side Wall (Bottom)	
-241	Bottom, Left, Top, BL, TL	Side Wall (Left)	
-199	Left, Top, Right, TL, TR	Side Wall (Top)	
-255	All 8 Neighbors	Solid Center
+        this.currentSpeed 
+        this.currentEvasion 
+        this.currentCritical 
+        this.currentCorruption 
 
+        this.currentXP = config.currentXP || 0;
+        this.skillPoints = config.skillPoints || 0;
 
-23	T, TR, R, B	BR, BL, L, TL	
-29	T, R, BR, B	TR, BL, L, TL	
-71	L, TL, T, R	TR, BR, B, BL	
-87	T, TR, R, B, L	BR, BL, TL	
-92	R, BR, B, L	T, TR, BL, TL	
-93	T, R, BR, B, L	TR, BL, TL	
-95	T, TR, R, BR, B, L	BL, TL	
-113	T, B, BL, L	TR, R, BR, TL	
-117	T, R, B, BL, L	TR, BR, TL	
-119	T, TR, R, B, BL, L	BR, TL	
-125	T, R, BR, B, BL, L	TR, TL	
-127	T, TR, R, BR, B, BL, L	TL	
-195	L, TL, T	TR, R, BR, B, BL	
-197	L, TL, T, R	TR, BR, B, BL	
-209	B, L, TL, T	TR, R, BR, BL	
-213	R, B, L, TL, T	TR, BR, BL	
-223	TR, R, B, L, TL, T	BR, BL	
-244	R, BR, B, BL, L	T, TR, TL	
-245	T, R, BR, B, BL, L	TR, TL	
-247	TR, R, BR, B, BL, L, T	TL	
-253	R, B, BL, L, TL, T, TR	BR	
-254	T, TR, R, BR, B, L, TL	BL
+        this.equipment = config.equipment || 
+        {
+            mainHand: '',
+            offhand: '',
+            head: '',
+            torso: '',
+            arms: '',
+            legs: '',
+            feet: '',
+        }; 
+        this.statusEffectArray
 
+        this.abilityArray 
+        this.uuid
+        
+        this.immunities 
+        this.factions ss
+        this.lootTable 
+        
 
 
 

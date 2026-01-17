@@ -1,73 +1,91 @@
 export const gameState = {
-    // 0. WORLD GENERATION
-    // Set by WorldManager on first load
     seed: null, 
-
-    // 1. ENGINE STATE
-    // Options: "OVERWORLD" | "ENCOUNTER" | "BATTLE" | "MENU"
     mode: "OVERWORLD", 
-
-    // 2. PLAYER POSITION
+    
+    // Player Position in the World
     player: {
         col: 0, 
         row: 0,
         direction: 'down' 
     },
 
-    // 3. WORLD STATE
     world: {
         mapId: "procedural_forest",
         time: 0, 
         day: 1,
-        
-        // --- THE DIFF LAYER ---
-        // Stores permanent changes to the map.
-        // Key: "col,row" (string)
-        // Value: null (if deleted) OR "OBJECT_ID" (if added)
         changes: {}, 
-        // ---------------------
-
         discoveredChunks: [] 
     },
 
-    // 4. PARTY & PLAYER DATA
     party: {
-        inventory: [], 
+        // Shared Inventory (Backpack)
+        inventory: ["POTION_HP", "MAP_FRAGMENT"], 
         gold: 0,
+        
+        // The Characters
         members: [
             {
-                id: "hero",
+                // --- IDENTITY ---
+                instanceId: "hero_placeholder",
+                entityId: "PLAYER", // Refers to the Blueprint
+                type: "PLAYER",
                 name: "Wanderer",
+                class: "Novice",    // Job/Class (if you use a Job system)
+                origin: "Wanderer", // NEW: Added
+                traits: [],         // NEW: Added
                 isLeader: true, 
-                stats: {
-                    hp: { current: 100, max: 100 },
-                    stamina: { current: 50, max: 50 },
-                    insight: { current: 10, max: 20 },
-                    strength: { current: 5, max: 10 },
-                    survival: { current: 4, max: 10 }
+                
+                // --- VISUALS (Matches EntityDefinitions) ---
+                sprite: "hero_map_walk",      
+                battleSprite: "hero_combat_idle", 
+                portrait: "hero_face_large", 
+
+                // --- PROGRESSION ---
+                level: 1,
+                xp: 0,
+                skillPoints: 0,
+
+                // --- ATTRIBUTES ---
+                attributes: {
+                    vigor: 10,       
+                    attunement: 5,   
+                    strength: 5,     
+                    dexterity: 5,    
+                    intelligence: 5  
+                },
+
+                // --- LIVE STATS (Flattened - No 'vitals' object) ---
+                // We store CURRENT values. MAX values are calculated dynamically by the Class.
+                currentHp: 100,
+                currentStamina: 50,
+                currentInsight: 50,
+                corruption: 0,
+                isDead: false,
+                statusEffects: [],
+
+                // --- EQUIPMENT ---
+                // Matches the structure in EntityDefinitions
+                equipment: {
+                    head: null, 
+                    body: "RAGS", 
+                    arms: null, 
+                    legs: null, 
+                    feet: null,
+                    mainHand: null, 
+                    offHand: null, 
+                    accessory: null
                 }
             }
         ]
     },
 
-    // 5. ENCOUNTER STATE
     encounter: {
         activeData: null,    
         currentStageId: null, 
         history: [],
-        
-        // --- ADDED: CONTEXT ---
-        // Stores "Where" and "What" triggered the encounter.
-        // The OverworldController fills this when you press interact.
-        // The EncounterController uses this to update the Diff Layer (gameState.world.changes) on success.
-        context: { 
-            col: null, 
-            row: null, 
-            objectId: null 
-        } 
+        context: { col: null, row: null, objectId: null } 
     },
 
-    // 6. UI STATE
     ui: {
         selectedDecisionIndex: 0, 
         isMenuOpen: false

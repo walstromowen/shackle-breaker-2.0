@@ -1,11 +1,19 @@
 import { events } from './eventBus.js'; 
+import { Input } from './input.js';
+
+// --- CONTROLLERS ---
 import { OverworldController } from '../controllers/overworldController.js';
 import { EncounterController } from '../controllers/encounterController.js'; 
+import { CharacterCreatorController } from '../controllers/characterCreatorController.js'; 
+import { PartyController } from '../controllers/partyController.js';
+
+// --- RENDERERS ---
 import { MapRenderer } from '../renderers/overworld/mapRenderer.js';
 import { LightingRenderer } from '../renderers/overworld/lightingRenderer.js'; 
-import { Input } from './input.js';
 import { EncounterRenderer } from '../renderers/encounter/encounterRenderer.js'; 
 import { TransitionRenderer } from '../renderers/transitions/transitionRenderer.js';
+import { CharacterCreatorRenderer } from '../renderers/characterCreator/characterCreatorRenderer.js'; 
+import { PartyRenderer } from '../renderers/party/partyRenderer.js';
 
 // --- SHARED IMPORTS ---
 import { WorldManager } from '../../../shared/systems/worldManager.js'; 
@@ -21,12 +29,9 @@ export class SceneManager {
 
         // 1. Systems
         this.input = new Input();
-        
-        // initializing WorldManager checks/sets gameState.seed automatically
         this.worldManager = new WorldManager(); 
         this.timeSystem = new TimeSystem();
 
-        // Debug Log: Confirm we are looking at the same state
         console.log(`%c[SceneManager] State Linked. Seed: ${gameState.seed}`, 'color: #00aaaa');
 
         // 2. Controllers
@@ -42,52 +47,65 @@ export class SceneManager {
             this.worldManager 
         );
 
+        // Pass 'this' so it can call changeScene()
+        this.characterCreatorController = new CharacterCreatorController(this); 
+        this.partyController = new PartyController(this);
+
+
         // 3. Renderers
         this.mapRenderer = new MapRenderer(this.canvas, this.loader, this.config);
         this.lightingRenderer = new LightingRenderer(this.config); 
         this.encounterRenderer = new EncounterRenderer(this.config);
         this.transitionRenderer = new TransitionRenderer(this.config);
+        this.characterCreatorRenderer = new CharacterCreatorRenderer(this.config, this.loader);
+        this.partyRenderer = new PartyRenderer(this.ctx);
 
         // 4. State Management
-        this.currentScene = 'overworld'; 
+        this.currentScene = 'character-creator'; 
         
         // --- OPTIMIZATION: Memory Timer ---
         this.pruneTimer = 0;
-        this.PRUNE_INTERVAL = 2000; // Check every 2 seconds
-        // ----------------------------------
+        this.PRUNE_INTERVAL = 2000;
 
         this.setupInputRouting();
         this.setupEventListeners();
     }
 
+    /**
+     * NEW: Central method to switch scenes.
+     */
+    changeScene(sceneName) {
+        console.log(`[SceneManager] Switching to: ${sceneName}`);
+        this.currentScene = sceneName;
+    }
+
     setupEventListeners() {
-        // A. Entering an Encounter (Fade Out -> Switch -> Fade In)
+        // A. Entering an Encounter
         events.on('INTERACT', (data) => {
             if (data.type === 'ENCOUNTER') {
-                console.log("[SceneManager] Starting Transition to:", data.id);
-                
                 this.transitionRenderer.start(() => {
-                    // This runs when the screen is fully black
                     this.encounterController.start(data.id);
-                    this.currentScene = 'encounter';
+                    this.changeScene('encounter');
                 });
             }
         });
 
-        // B. Exiting an Encounter (Fade Out -> Switch -> Fade In)
+        // B. Exiting an Encounter
         events.on('ENCOUNTER_END', () => {
-            console.log("[SceneManager] Returning to Overworld");
-
             this.transitionRenderer.start(() => {
-                // This runs when the screen is fully black
-                
-                // 1. Clean up the data BEHIND the black screen
                 if (this.encounterController.cleanup) {
                     this.encounterController.cleanup();
                 }
+                this.changeScene('overworld');
+            });
+        });
 
-                // 2. Swap the scene
-                this.currentScene = 'overworld';
+        events.on('PARTY', () => {
+            this.transitionRenderer.start(() => {
+                if (this.encounterController.cleanup) {
+                    this.encounterController.cleanup();
+                }
+                this.changeScene('party');
             });
         });
     }
@@ -111,6 +129,15 @@ export class SceneManager {
                 case 'encounter':
                     this.encounterController.handleKeyDown(e.code);
                     break;
+
+                // *** CHANGE: Added routing for Character Creator ***
+                case 'character-creator':
+                    this.characterCreatorController.handleKeyDown(e.code);
+                    break;
+
+                case 'party': // NEW: Routing for Party Screen
+                    this.partyController.handleKeyDown(e.code);
+                    break;
             }
         });
     }
@@ -119,26 +146,15 @@ export class SceneManager {
         // 1. Update Transition Animation
         this.transitionRenderer.update(dt);
 
-        // 2. Only run World Logic if we are in the Overworld
-        // (This pauses the Time System when in Encounter mode)
+        // 2. Scene Logic
         if (this.currentScene === 'overworld') {
             this.timeSystem.update(dt); 
             this.overworldController.update(dt);
-
-            // --- OPTIMIZATION: Memory Pruning ---
-            this.pruneTimer += dt;
-            if (this.pruneTimer > this.PRUNE_INTERVAL) {
-                // Retrieve the camera from the controller so we know where the player is
-                const camera = this.overworldController.getState().camera;
-                
-                // Clean up distant objects
-                this.worldManager.prune(camera.x, camera.y);
-                
-                // Reset timer
-                this.pruneTimer = 0;
-            }
-            // ------------------------------------
+            this.handlePruning(dt);
         }
+        
+        // *** CHANGE: Removed Character Creator update() call ***
+        // It is now fully event-driven via setupInputRouting above.
     }
 
     render(interpolation, totalTime) { 
@@ -146,16 +162,26 @@ export class SceneManager {
 
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // 1. Render Overworld (Always in background)
-        this.renderOverworld(totalTime);
-
-        // 2. Render Encounter UI (if active)
-        if (this.currentScene === 'encounter') {
+        // --- SCENE RENDERING ---
+        if (this.currentScene === 'character-creator') {
+            const state = this.characterCreatorController.getState();
+            this.characterCreatorRenderer.render(this.ctx, state);
+        }
+        else if (this.currentScene === 'overworld') {
+            this.renderOverworld(totalTime);
+        }
+        else if (this.currentScene === 'party') {
+            // NEW: Render the party screen when active
+            const state = this.partyController.getState();
+            this.partyRenderer.render(state);
+        }
+        else if (this.currentScene === 'encounter') {
+            this.renderOverworld(totalTime); 
             const encounterState = this.encounterController.getState();
             this.encounterRenderer.render(this.ctx, encounterState);
         }
 
-        // 3. Render Transition Overlay (Draws on top of EVERYTHING)
+        // --- OVERLAYS ---
         this.transitionRenderer.render(this.ctx);
     }
 
@@ -170,8 +196,6 @@ export class SceneManager {
         );
 
         const ambientColor = this.timeSystem.getCurrentColorData();
-        
-        // OPTIMIZATION: Arguments are already correct here!
         const visibleObjects = this.worldManager.getVisibleObjects(
             state.camera,
             this.canvas.width,
@@ -185,5 +209,14 @@ export class SceneManager {
             state.entities, 
             visibleObjects
         );
+    }
+
+    handlePruning(dt) {
+        this.pruneTimer += dt;
+        if (this.pruneTimer > this.PRUNE_INTERVAL) {
+            const camera = this.overworldController.getState().camera;
+            this.worldManager.prune(camera.x, camera.y);
+            this.pruneTimer = 0;
+        }
     }
 }

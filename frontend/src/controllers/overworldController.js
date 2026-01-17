@@ -25,14 +25,21 @@ export class OverworldController {
         if (code === 'Space' || code === 'Enter') {
             this.interact();
         }
+
+        // --- NEW: TOGGLE PARTY MENU ---
+        // Instead of advancing time, we switch the game mode to PARTY
         if (code === 'KeyP') {
-            gameState.world.time += 720; // Advance 2 in-game hours
+            console.log("[Overworld] Opening Party Menu...");
+            gameState.mode = "PARTY";
+            events.emit('PARTY', {});
         }
+
         // Context Actions (Example: Open Inventory)
         if (code === 'KeyI') {
             console.log("Opening Inventory...");
-            // events.emit('OPEN_MENU', 'inventory'); // Future hook
+            // events.emit('OPEN_MENU', 'inventory'); 
         }
+        
     }
 
     /**
