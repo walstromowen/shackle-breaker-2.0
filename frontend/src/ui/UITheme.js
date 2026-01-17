@@ -1,35 +1,36 @@
 export const UITheme = {
     colors: {
         // Backgrounds
-        background: "#111111",       // Main screen background (Deep Charcoal)
-        panelBg: "rgba(0, 0, 0, 0.8)", // Semi-transparent overlay for menus over game world
+        background: "#050505", // The deep void black
+        panelBg: "rgba(20, 20, 20, 0.95)", // Slightly transparent panels
         
         // Borders & Lines
-        panelBorder: "#ffffff",      // Wireframe lines
+        border: "#4a4a4a",
+        borderHighlight: "#ffffff",
+
+        // Text
+        textMain: "#e0e0e0",      // Primary reading color
+        textMuted: "#888888",     // Descriptions, empty slots
+        textHighlight: "#FFD700", // Gold for selection
         
-        // Text Colors
-        textMain: "#ffffff",         // Standard text
-        textMuted: "#888888",        // Unselected options or secondary info
-        textHighlight: "#000000",    // Text inside a white selection box (must contrast with highlightBg)
-        
-        // Interaction
-        highlightBg: "#ffffff",      // The white box behind selected menu items
-        accent: "#4488ff",           // Special highlights (Mana bars, magic effects, etc.)
-        danger: "#ff4444"            // Error messages or Health bars
+        // Gameplay Indicators
+        accent: "#4fc3f7",  // Origin/Class text
+        danger: "#ff5555",  // HP Low / Attacks
+        success: "#55ff55", // Stamina / Healing
+        magic: "#5555ff",   // Mana
     },
-    
+
     fonts: {
-        // Font strings compatible with ctx.font
-        header: '24px "Gothic", sans-serif',
-        body: '18px "Gothic", sans-serif',
-        small: '16px "Gothic", sans-serif',
-        bold: 'bold 18px "Gothic", sans-serif'
+        header: "bold 24px serif",
+        body: "16px sans-serif",
+        bold: "bold 16px sans-serif",
+        small: "12px sans-serif",
+        mono: "14px monospace" // Good for stats
     },
-    
+
     layout: {
-        padding: 20,          // Standard spacing from edges
-        lineWidth: 2,         // Thickness of the wireframe borders
-        headerHeight: 40,     // Height of top title bars
-        lineHeight: 24        // Standard text line spacing
+        padding: 20,
+        headerHeight: 50,
+        cornerRadius: 4
     }
 };

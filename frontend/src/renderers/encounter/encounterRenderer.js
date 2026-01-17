@@ -1,13 +1,11 @@
+import { CanvasUI } from '../../ui/canvasUI.js';
+import { UITheme } from '../../ui/UITheme.js';
+
 export class EncounterRenderer {
     constructor(config) {
         this.config = config;
     }
 
-    /**
-     * Renders the Encounter UI Overlay
-     * @param {CanvasRenderingContext2D} ctx 
-     * @param {Object} state - The global game state
-     */
     render(ctx, state) {
         // 1. Safety Check
         if (!state.encounter?.activeData) return;
@@ -15,178 +13,173 @@ export class EncounterRenderer {
         const { activeData, currentStageId } = state.encounter;
         const currentStage = activeData.stages[currentStageId];
         const selectedIndex = state.ui.selectedDecisionIndex || 0;
-
         const { CANVAS_WIDTH, CANVAS_HEIGHT } = this.config;
 
-        ctx.save();
-        
-        // --- BACKGROUND ---
-        ctx.fillStyle = "#111111"; 
-        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        // 2. Initialize UI Helper
+        const ui = new CanvasUI(ctx);
+        ui.clearScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
 
-        // --- GRID CONFIGURATION ---
-        const padding = 20; 
+        const p = UITheme.layout.padding;
+
+        // --- LAYOUT CALCULATIONS ---
+        // Side Columns (Portraits)
         const columnWidth = CANVAS_WIDTH * 0.14; 
         
-        // Portrait Setup
-        const portraitHeight = columnWidth * 1.6; 
-        const nameplateHeight = 30; 
+        // Center Area (Narrative + Decisions)
+        const centerWidth = CANVAS_WIDTH - (columnWidth * 2) - (p * 4);
+        const centerX = columnWidth + (p * 2);
+
+        // Vertical Spacing
+        const headerHeight = UITheme.layout.headerHeight;
+        const startY = p + headerHeight + p; // Content starts below header
+
+        // Narrative Box Height (approx 20% of screen)
+        const narrativeHeight = CANVAS_HEIGHT * 0.20;
         
-        // Vitals Config
-        const symbolRadius = 18;
-        const vOffset = 10; 
+        // Decision Box (Remaining space minus bottom padding)
+        const decisionY = startY + narrativeHeight + p;
+        const decisionHeight = CANVAS_HEIGHT - decisionY - p;
 
-        // --- VERTICAL CALCULATIONS ---
-        const portraitTopY = padding + (nameplateHeight / 2);
-        const portraitCenterY = portraitTopY + (portraitHeight / 2);
-        const lowestVitalPoint = portraitCenterY + (portraitHeight / 2) + vOffset + symbolRadius;
-        const panelY = lowestVitalPoint + 20; 
-        const bottomBaseline = CANVAS_HEIGHT - 40; 
-        const panelHeight = bottomBaseline - panelY;
+        ctx.save();
 
-        // --- CENTER COLUMN CALCULATIONS ---
-        const narrativeWidth = CANVAS_WIDTH - (columnWidth * 2) - (padding * 6); 
-        const headerWidth = CANVAS_WIDTH * 0.35;
-        const headerHeight = 40;
-        const narrativeHeight = CANVAS_HEIGHT * 0.18; 
-        const narrativeY = padding + headerHeight + 80; 
-
-        // Decision Box
-        const decisionY = narrativeY + narrativeHeight + 20;
-        const decisionHeight = bottomBaseline - decisionY; 
-
-        // --- DRAWING SETTINGS ---
-        ctx.strokeStyle = "white"; 
-        ctx.lineWidth = 2;
-
-        // --- HELPER: DRAW PORTRAIT STACK ---
-        const drawPortraitStack = (centerX, label) => {
-            ctx.beginPath();
-            ctx.ellipse(centerX, portraitCenterY, columnWidth / 2, portraitHeight / 2, 0, 0, Math.PI * 2);
-            ctx.stroke();
-
-            const nameplateWidth = columnWidth * 0.9; 
-            const nameplateY = portraitTopY - (nameplateHeight / 2);
-            const nameplateX = centerX - (nameplateWidth / 2);
-
-            ctx.fillStyle = "#111111"; 
-            ctx.fillRect(nameplateX, nameplateY, nameplateWidth, nameplateHeight);
-            ctx.strokeRect(nameplateX, nameplateY, nameplateWidth, nameplateHeight);
-            
-            ctx.fillStyle = "white";
-            ctx.font = "12px sans-serif";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(label, centerX, nameplateY + (nameplateHeight/2));
-        };
-
-        // --- HELPER: DRAW VITALS ---
-        const drawVitals = (centerX) => {
-            const vitals = [
-                { x: centerX - (columnWidth / 2.5), y: portraitCenterY + (portraitHeight / 2.5) }, 
-                { x: centerX, y: portraitCenterY + (portraitHeight / 2) + vOffset },            
-                { x: centerX + (columnWidth / 2.5), y: portraitCenterY + (portraitHeight / 2.5) }  
-            ];
-
-            vitals.forEach(v => {
-                ctx.fillStyle = "#111111"; 
-                ctx.beginPath();
-                ctx.arc(v.x, v.y, symbolRadius, 0, Math.PI * 2);
-                ctx.fill(); 
-                ctx.stroke();
-                ctx.strokeRect(v.x - 10, v.y - 10, 20, 20);
-            });
-        };
-
-        // 1. LEFT COLUMN (PLAYER)
-        const playerCenterX = padding + (columnWidth / 2);
-        drawPortraitStack(playerCenterX, "Player");
-        drawVitals(playerCenterX);
-        ctx.strokeRect(padding, panelY, columnWidth, panelHeight); 
-
-        // 2. RIGHT COLUMN (ENEMY/TARGET)
-        const rightColX = CANVAS_WIDTH - columnWidth - padding;
-        const enemyCenterX = rightColX + (columnWidth / 2);
-        drawPortraitStack(enemyCenterX, "Target");
-        ctx.strokeRect(rightColX, panelY, columnWidth, panelHeight); 
-
-        // 3. CENTER COLUMN (FRAMES)
-        const headerX = (CANVAS_WIDTH - headerWidth) / 2;
-        ctx.strokeRect(headerX, padding, headerWidth, headerHeight); 
+        // --- SECTION 1: HEADER ---
+        // Centered header panel
+        const headerW = CANVAS_WIDTH * 0.4;
+        const headerX = (CANVAS_WIDTH / 2) - (headerW / 2);
         
-        // Header Text
-        ctx.fillStyle = "white";
-        ctx.font = "20px serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle"; // Center vertically in header
-        ctx.fillText(activeData.title, CANVAS_WIDTH / 2, padding + (headerHeight/2));
+        ui.drawPanel(headerX, p, headerW, headerHeight);
+        ui.drawText(
+            activeData.title, 
+            CANVAS_WIDTH / 2, 
+            p + (headerHeight/2), 
+            UITheme.fonts.header, 
+            UITheme.colors.textMain, 
+            "center",
+            "middle"
+        );
 
-        const narrativeX = (CANVAS_WIDTH - narrativeWidth) / 2;
-        ctx.strokeRect(narrativeX, narrativeY, narrativeWidth, narrativeHeight); 
-        ctx.strokeRect(narrativeX, decisionY, narrativeWidth, decisionHeight);     
-
-        // ============================================================
-        // 4. DRAW CONTENT: NARRATIVE TEXT
-        // ============================================================
-        ctx.textAlign = "left";
-        ctx.textBaseline = "top";
-        ctx.font = "16px sans-serif";
-        ctx.fillStyle = "#dddddd";
+        // --- SECTION 2: LEFT COLUMN (PLAYER) ---
+        // Draw Container Panel
+        ui.drawPanel(p, startY, columnWidth, CANVAS_HEIGHT - startY - p);
         
-        // Add internal padding so text doesn't touch the border
-        this.drawWrappedText(ctx, currentStage.narrative, narrativeX + 20, narrativeY + 20, narrativeWidth - 40, 24);
+        // Draw Custom Graphics (Portrait/Vitals)
+        // Note: We still pass 'ctx' to these helpers for custom shape drawing, 
+        // but we use UITheme colors inside them now.
+        this.drawPortraitStack(ctx, p + (columnWidth/2), startY + 60, columnWidth, "Player");
+        this.drawVitals(ctx, p + (columnWidth/2), startY + 140);
 
-        // ============================================================
-        // 5. DRAW CONTENT: DECISIONS
-        // ============================================================
-        const decisions = currentStage.decisions;
-        const btnHeight = 40; 
-        const btnStartY = decisionY + 30; // 30px padding from top of decision box
+        // --- SECTION 3: RIGHT COLUMN (TARGET) ---
+        const rightColX = CANVAS_WIDTH - columnWidth - p;
+        // Draw Container Panel
+        ui.drawPanel(rightColX, startY, columnWidth, CANVAS_HEIGHT - startY - p);
+        // Draw Custom Graphics
+        this.drawPortraitStack(ctx, rightColX + (columnWidth/2), startY + 60, columnWidth, "Target");
 
-        decisions.forEach((opt, index) => {
-            const btnY = btnStartY + (index * btnHeight);
+        // --- SECTION 4: CENTER (NARRATIVE) ---
+        ui.drawPanel(centerX, startY, centerWidth, narrativeHeight);
+        
+        // Narrative Text (Wrapped)
+        ui.drawWrappedText(
+            currentStage.narrative, 
+            centerX + 20, 
+            startY + 20, 
+            centerWidth - 40
+        );
+
+        // --- SECTION 5: CENTER (DECISIONS) ---
+        ui.drawPanel(centerX, decisionY, centerWidth, decisionHeight);
+
+        const btnHeight = 40;
+        const btnStartY = decisionY + 30;
+
+        currentStage.decisions.forEach((opt, index) => {
+            const btnY = btnStartY + (index * 50); // 50px spacing
+            const btnX = centerX + 20;
+            const btnW = centerWidth - 40;
 
             if (index === selectedIndex) {
-                // Highlight Box
-                ctx.fillStyle = "#ffffff"; 
-                ctx.fillRect(narrativeX + 20, btnY, narrativeWidth - 40, 30);
+                // -- SELECTED --
+                // Highlight Background
+                ui.drawFilledPanel(btnX, btnY, btnW, btnHeight, UITheme.colors.borderHighlight);
                 
-                // Text (Black because background is white)
-                ctx.fillStyle = "#000000";
-                ctx.font = "bold 16px sans-serif";
-                ctx.fillText(`> ${opt.text}`, narrativeX + 30, btnY + 5);
+                // Text (High Contrast/Highlight Color)
+                ui.drawText(
+                    `> ${opt.text}`, 
+                    btnX + 15, 
+                    btnY + (btnHeight/2), 
+                    UITheme.fonts.bold, 
+                    UITheme.colors.textHighlight, // Gold/Yellow
+                    "left",
+                    "middle"
+                );
             } else {
-                // Normal Text
-                ctx.fillStyle = "#888888";
-                ctx.font = "16px sans-serif";
-                ctx.fillText(`  ${opt.text}`, narrativeX + 30, btnY + 5);
+                // -- UNSELECTED --
+                // Text (Muted Color)
+                ui.drawText(
+                    opt.text, 
+                    btnX + 15, 
+                    btnY + (btnHeight/2), 
+                    UITheme.fonts.body, 
+                    UITheme.colors.textMuted,
+                    "left",
+                    "middle"
+                );
             }
         });
 
         ctx.restore();
     }
 
-    /**
-     * Helper to wrap text within a specific width
-     */
-    drawWrappedText(ctx, text, x, y, maxWidth, lineHeight) {
-        if (!text) return;
-        const words = text.split(' ');
-        let line = '';
+    // --- HELPER METHODS (Custom Graphics) ---
 
-        for (let n = 0; n < words.length; n++) {
-            const testLine = line + words[n] + ' ';
-            const metrics = ctx.measureText(testLine);
-            const testWidth = metrics.width;
+    drawPortraitStack(ctx, centerX, centerY, width, label) {
+        const radiusX = width / 2.5;
+        const radiusY = width / 2; // Ellipse
+
+        ctx.strokeStyle = UITheme.colors.border;
+        ctx.lineWidth = 2;
+        
+        // Draw Ellipse Portrait
+        ctx.beginPath();
+        ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Draw Nameplate
+        const plateW = width * 0.9;
+        const plateH = 24;
+        const plateX = centerX - (plateW / 2);
+        const plateY = centerY - radiusY - (plateH / 2);
+
+        // Use Theme Background
+        ctx.fillStyle = UITheme.colors.panelBg;
+        ctx.fillRect(plateX, plateY, plateW, plateH);
+        ctx.strokeRect(plateX, plateY, plateW, plateH);
+
+        // Name Text
+        ctx.fillStyle = UITheme.colors.textMain;
+        ctx.font = UITheme.fonts.small;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(label, centerX, plateY + (plateH/2));
+    }
+
+    drawVitals(ctx, centerX, startY) {
+        const radius = 8;
+        const spacing = 30;
+        const vitals = [
+            { x: centerX - spacing, y: startY, color: UITheme.colors.danger },  // HP
+            { x: centerX,           y: startY + 10, color: UITheme.colors.success }, // Stamina
+            { x: centerX + spacing, y: startY, color: UITheme.colors.magic }   // Mana
+        ];
+
+        vitals.forEach(v => {
+            ctx.fillStyle = v.color;
+            ctx.beginPath();
+            ctx.arc(v.x, v.y, radius, 0, Math.PI * 2);
+            ctx.fill();
             
-            if (testWidth > maxWidth && n > 0) {
-                ctx.fillText(line, x, y);
-                line = words[n] + ' ';
-                y += lineHeight;
-            } else {
-                line = testLine;
-            }
-        }
-        ctx.fillText(line, x, y);
+            ctx.strokeStyle = UITheme.colors.border;
+            ctx.stroke();
+        });
     }
 }

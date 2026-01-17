@@ -2,87 +2,69 @@ import { UITheme } from './UITheme.js';
 
 export class CanvasUI {
     /**
-     * @param {CanvasRenderingContext2D} ctx
+     * @param {CanvasRenderingContext2D} ctx 
      */
     constructor(ctx) {
         this.ctx = ctx;
     }
 
-    /**
-     * Fills the entire screen with the theme's background color.
-     * @param {number} width 
-     * @param {number} height 
-     */
+    // --- SCREEN MANAGEMENT ---
+    
     clearScreen(width, height) {
         this.ctx.fillStyle = UITheme.colors.background;
         this.ctx.fillRect(0, 0, width, height);
     }
 
-    /**
-     * Draws a wireframe box (stroke only).
-     * Used for container borders.
-     * @param {number} x 
-     * @param {number} y 
-     * @param {number} w 
-     * @param {number} h 
-     */
-    drawPanel(x, y, w, h) {
-        this.ctx.strokeStyle = UITheme.colors.panelBorder;
-        this.ctx.lineWidth = UITheme.layout.lineWidth;
+    // --- PANELS & BOXES ---
+
+    drawPanel(x, y, w, h, filled = true) {
+        this.ctx.save();
+        this.ctx.strokeStyle = UITheme.colors.border;
+        this.ctx.lineWidth = 2;
+
+        if (filled) {
+            this.ctx.fillStyle = UITheme.colors.panelBg;
+            this.ctx.fillRect(x, y, w, h);
+        }
+        
         this.ctx.strokeRect(x, y, w, h);
+        this.ctx.restore();
     }
 
-    /**
-     * Draws a solid filled box.
-     * Used for highlighting selected buttons or backgrounds.
-     * @param {number} x 
-     * @param {number} y 
-     * @param {number} w 
-     * @param {number} h 
-     * @param {string} color - Optional override (defaults to theme highlight)
-     */
-    drawFilledPanel(x, y, w, h, color = UITheme.colors.highlightBg) {
+    drawFilledPanel(x, y, w, h, color = UITheme.colors.borderHighlight) {
+        this.ctx.save();
         this.ctx.fillStyle = color;
         this.ctx.fillRect(x, y, w, h);
+        this.ctx.restore();
     }
 
-    /**
-     * Draws a single line of text.
-     * @param {string} text 
-     * @param {number} x 
-     * @param {number} y 
-     * @param {string} font - CSS font string (from UITheme)
-     * @param {string} color - Hex color (from UITheme)
-     * @param {string} align - "left", "center", or "right"
-     */
-    drawText(text, x, y, font = UITheme.fonts.body, color = UITheme.colors.textMain, align = "left") {
+    // --- TEXT RENDERING ---
+
+    drawText(text, x, y, font = UITheme.fonts.body, color = UITheme.colors.textMain, align = "left", baseline = "alphabetic") {
+        this.ctx.save();
         this.ctx.font = font;
         this.ctx.fillStyle = color;
         this.ctx.textAlign = align;
-        this.ctx.textBaseline = "middle"; 
+        this.ctx.textBaseline = baseline;
         this.ctx.fillText(text, x, y);
+        this.ctx.restore();
     }
 
     /**
-     * Automatically wraps text to fit within a specific width.
-     * Used for narrative text and descriptions.
-     * @param {string} text 
-     * @param {number} x 
-     * @param {number} y 
-     * @param {number} maxWidth 
-     * @param {number} lineHeight 
+     * Wraps text within a specific width.
      */
-    drawWrappedText(text, x, y, maxWidth, lineHeight = 24) {
+    drawWrappedText(text, x, y, maxWidth, lineHeight = 24, font = UITheme.fonts.body, color = UITheme.colors.textMain) {
         if (!text) return;
-        
-        this.ctx.font = UITheme.fonts.small;
-        this.ctx.fillStyle = UITheme.colors.textMuted;
+
+        this.ctx.save();
+        this.ctx.font = font;
+        this.ctx.fillStyle = color;
         this.ctx.textAlign = "left";
-        this.ctx.textBaseline = "top"; // Top align makes multi-line math easier
+        this.ctx.textBaseline = "top";
 
         const words = text.split(' ');
         let line = '';
-        let currentY = y;
+        let cursorY = y;
 
         for (let n = 0; n < words.length; n++) {
             const testLine = line + words[n] + ' ';
@@ -90,14 +72,59 @@ export class CanvasUI {
             const testWidth = metrics.width;
             
             if (testWidth > maxWidth && n > 0) {
-                this.ctx.fillText(line, x, currentY);
+                this.ctx.fillText(line, x, cursorY);
                 line = words[n] + ' ';
-                currentY += lineHeight;
+                cursorY += lineHeight;
             } else {
                 line = testLine;
             }
         }
-        // Draw the last remaining line
-        this.ctx.fillText(line, x, currentY);
+        this.ctx.fillText(line, x, cursorY);
+        this.ctx.restore();
+    }
+
+    // --- GAMEPLAY ELEMENTS ---
+
+    drawBar(x, y, w, h, current, max, color = UITheme.colors.danger) {
+        const fill = Math.max(0, Math.min(1, current / max)); // Clamp between 0 and 1
+        
+        this.ctx.save();
+        // Background
+        this.ctx.fillStyle = "#222";
+        this.ctx.fillRect(x, y, w, h);
+
+        // Fill
+        this.ctx.fillStyle = color;
+        this.ctx.fillRect(x, y, w * fill, h);
+
+        // Border
+        this.ctx.strokeStyle = UITheme.colors.border;
+        this.ctx.strokeRect(x, y, w, h);
+        this.ctx.restore();
+    }
+
+    drawPortraitCircle(x, y, radius, label) {
+        this.ctx.save();
+        
+        // Circle
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, radius, 0, Math.PI * 2);
+        this.ctx.strokeStyle = UITheme.colors.border;
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+
+        // Optional: Draw a placeholder background inside
+        this.ctx.fillStyle = "#111";
+        this.ctx.fill();
+
+        // Nameplate (optional label)
+        if (label) {
+            const plateW = radius * 2.5;
+            const plateH = 24;
+            this.drawPanel(x - (plateW/2), y + radius - 12, plateW, plateH);
+            this.drawText(label, x, y + radius, UITheme.fonts.small, UITheme.colors.textMain, "center", "middle");
+        }
+        
+        this.ctx.restore();
     }
 }
