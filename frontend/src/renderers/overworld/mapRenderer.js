@@ -193,7 +193,14 @@ export class MapRenderer {
         const dy = Math.round((entity.y - camera.y) * GAME_SCALE);
         const drawSize = TILE_SIZE * GAME_SCALE;
 
-        const rowMap = { "UP": 0, "DOWN": 1, "LEFT": 2, "RIGHT": 3 };
+        // FIXED: Swapped UP (1) and DOWN (0)
+        const rowMap = { 
+            "UP": 1,    // Row 1 = Back View (Moving Up)
+            "DOWN": 0,  // Row 0 = Front View (Moving Down)
+            "LEFT": 2, 
+            "RIGHT": 3 
+        };
+        
         const sx = (entity.animFrame || 0) * TILE_SIZE;
         const sy = (rowMap[entity.direction] ?? 0) * TILE_SIZE;
 

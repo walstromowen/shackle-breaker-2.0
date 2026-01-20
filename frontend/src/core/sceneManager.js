@@ -28,7 +28,8 @@ export class SceneManager {
         this.config = config;
 
         // 1. Systems
-        this.input = new Input();
+        // UPDATED: Pass canvas to Input for mouse coordinate calculation
+        this.input = new Input(this.canvas);
         this.worldManager = new WorldManager(); 
         this.timeSystem = new TimeSystem();
 
@@ -47,7 +48,6 @@ export class SceneManager {
             this.worldManager 
         );
 
-        // UPDATED: No dependency injection needed for these anymore
         this.characterCreatorController = new CharacterCreatorController(); 
         this.partyController = new PartyController();
 
@@ -81,10 +81,9 @@ export class SceneManager {
 
     setupEventListeners() {
         // --- STANDARD SCENE CHANGE EVENT ---
-        // This handles the transition and cleanup for ANY controller that emits CHANGE_SCENE
         events.on('CHANGE_SCENE', ({ scene }) => {
             this.transitionRenderer.start(() => {
-                // Automatic Cleanup: If we are leaving an encounter, clean it up
+                // Automatic Cleanup
                 if (this.currentScene === 'encounter' && this.encounterController.cleanup) {
                     this.encounterController.cleanup();
                 }
@@ -95,7 +94,6 @@ export class SceneManager {
         });
 
         // --- SPECIFIC: INTERACTION EVENT ---
-        // We keep this specific because it carries the 'interaction data' needed to bootstrap the encounter
         events.on('INTERACT', (data) => {
             if (data.type === 'ENCOUNTER') {
                 this.transitionRenderer.start(() => {
@@ -127,7 +125,8 @@ export class SceneManager {
                     break;
 
                 case 'character-creator':
-                    this.characterCreatorController.handleKeyDown(e.code);
+                    // UPDATED: Pass full event for text entry
+                    this.characterCreatorController.handleKeyDown(e);
                     break;
 
                 case 'party': 
@@ -138,18 +137,27 @@ export class SceneManager {
     }
 
     update(dt) {
-        // 1. Update Transition Animation
+        // 1. Handle Mouse Input (Check for clicks every frame)
+        // UPDATED: New logic to route mouse clicks to controllers
+        const click = this.input.getAndResetClick();
+        if (click) {
+            if (this.currentScene === 'character-creator') {
+                // Pass click coordinates AND the renderer (to check hitboxes)
+                this.characterCreatorController.handleMouseDown(click.x, click.y, this.characterCreatorRenderer);
+            }
+        }
+
+        // 2. Update Transition Animation
         this.transitionRenderer.update(dt);
 
-        // 2. Scene Logic
+        // 3. Scene Logic
         if (this.currentScene === 'overworld') {
             this.timeSystem.update(dt); 
             this.overworldController.update(dt);
             this.handlePruning(dt);
         }
         
-        // Note: Character Creator and Party are fully event-driven, 
-        // so they don't need a per-frame update loop here.
+        // Note: Character Creator and Party are fully event-driven (or updated via mouse/key above)
     }
 
     render(interpolation, totalTime) { 

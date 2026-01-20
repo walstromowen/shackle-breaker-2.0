@@ -52,6 +52,7 @@ export class CanvasUI {
 
     /**
      * Wraps text within a specific width.
+     * UPDATED: Now handles manual \n newlines correctly.
      */
     drawWrappedText(text, x, y, maxWidth, lineHeight = 24, font = UITheme.fonts.body, color = UITheme.colors.textMain) {
         if (!text) return;
@@ -62,24 +63,36 @@ export class CanvasUI {
         this.ctx.textAlign = "left";
         this.ctx.textBaseline = "top";
 
-        const words = text.split(' ');
-        let line = '';
+        // 1. Split by Newlines first (Paragraphs)
+        const paragraphs = text.split('\n');
         let cursorY = y;
 
-        for (let n = 0; n < words.length; n++) {
-            const testLine = line + words[n] + ' ';
-            const metrics = this.ctx.measureText(testLine);
-            const testWidth = metrics.width;
-            
-            if (testWidth > maxWidth && n > 0) {
-                this.ctx.fillText(line, x, cursorY);
-                line = words[n] + ' ';
-                cursorY += lineHeight;
-            } else {
-                line = testLine;
+        paragraphs.forEach(paragraph => {
+            // 2. Split by spaces (Words)
+            const words = paragraph.split(' ');
+            let line = '';
+
+            for (let n = 0; n < words.length; n++) {
+                const testLine = line + words[n] + ' ';
+                const metrics = this.ctx.measureText(testLine);
+                const testWidth = metrics.width;
+                
+                // If line is too long and not the very first word
+                if (testWidth > maxWidth && n > 0) {
+                    this.ctx.fillText(line, x, cursorY);
+                    line = words[n] + ' ';
+                    cursorY += lineHeight;
+                } else {
+                    line = testLine;
+                }
             }
-        }
-        this.ctx.fillText(line, x, cursorY);
+            // Draw the last line of this paragraph
+            this.ctx.fillText(line, x, cursorY);
+            
+            // Move cursor down for the next paragraph
+            cursorY += lineHeight;
+        });
+
         this.ctx.restore();
     }
 
@@ -89,15 +102,10 @@ export class CanvasUI {
         const fill = Math.max(0, Math.min(1, current / max)); // Clamp between 0 and 1
         
         this.ctx.save();
-        // Background
         this.ctx.fillStyle = "#222";
         this.ctx.fillRect(x, y, w, h);
-
-        // Fill
         this.ctx.fillStyle = color;
         this.ctx.fillRect(x, y, w * fill, h);
-
-        // Border
         this.ctx.strokeStyle = UITheme.colors.border;
         this.ctx.strokeRect(x, y, w, h);
         this.ctx.restore();
@@ -105,19 +113,14 @@ export class CanvasUI {
 
     drawPortraitCircle(x, y, radius, label) {
         this.ctx.save();
-        
-        // Circle
         this.ctx.beginPath();
         this.ctx.arc(x, y, radius, 0, Math.PI * 2);
         this.ctx.strokeStyle = UITheme.colors.border;
         this.ctx.lineWidth = 2;
         this.ctx.stroke();
-
-        // Optional: Draw a placeholder background inside
         this.ctx.fillStyle = "#111";
         this.ctx.fill();
 
-        // Nameplate (optional label)
         if (label) {
             const plateW = radius * 2.5;
             const plateH = 24;
@@ -126,5 +129,19 @@ export class CanvasUI {
         }
         
         this.ctx.restore();
+    }
+
+    // --- INPUT HELPERS ---
+
+    /**
+     * Static helper to check if a point (mouse) is inside a defined rectangle.
+     * @param {number} x - Mouse X
+     * @param {number} y - Mouse Y
+     * @param {Object} rect - { x, y, w, h }
+     * @returns {boolean}
+     */
+    static isPointInRect(x, y, rect) {
+        return (x >= rect.x && x <= rect.x + rect.w &&
+                y >= rect.y && y <= rect.y + rect.h);
     }
 }

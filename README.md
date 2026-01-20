@@ -56,6 +56,8 @@ Root
 │   │   ├── partyManager.js         
 │   │   ├── timeSystem.js
 │   │   └── worldManager.js
+│   ├── utils/
+│   │   ├── textEntry.js
 ├── .gitignore/ 
 ├── LICENSE/ 
 ├── package-lock.json 
