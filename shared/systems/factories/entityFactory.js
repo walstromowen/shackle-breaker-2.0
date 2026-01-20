@@ -1,68 +1,91 @@
 import { ENTITY_DEFINITIONS } from '../../data/entityDefinitions.js';
-import { Entity } from '../../../shared/models/entityModel.js';
+import { EntityModel } from '../../models/entityModel.js';
 
 export class EntityFactory {
     
     /**
      * Creates a living Entity instance based on a static definition.
-     * @param {string} entityId - The key in ENTITY_DEFINITIONS (e.g., "PLAYER")
-     * @param {Object} overrides - Custom values (name, attributes, etc.)
-     * @returns {Entity} A new Entity instance
+     * @param {string} entityId - The key in ENTITY_DEFINITIONS (e.g., "HUMANOID")
+     * @param {Object} overrides - Custom values to merge on top of the blueprint
+     * @returns {EntityModel} A new, fully initialized Entity instance
      */
     static create(entityId, overrides = {}) {
         const blueprint = ENTITY_DEFINITIONS[entityId];
+        
         if (!blueprint) {
             console.error(`EntityFactory Error: ID '${entityId}' not found in definitions.`);
             return null;
         }
 
-        // 1. Deep Clone Blueprint to avoid modifying the original definition
-        const state = JSON.parse(JSON.stringify(blueprint));
+        // 1. Deep Clone Blueprint
+        // We use structuredClone for a cleaner, modern deep copy.
+        // This 'config' object will become the initial state of the model.
+        const config = structuredClone(blueprint);
 
         // 2. Apply Identity Overrides
-        if (overrides.name) state.name = overrides.name;
-        if (overrides.origin) state.origin = overrides.origin;
-        if (overrides.spriteIndex !== undefined) state.spriteIndex = overrides.spriteIndex;
+        if (overrides.name) config.name = overrides.name;
+        if (overrides.sprite) config.sprite = overrides.sprite;
+        if (overrides.portrait) config.portrait = overrides.portrait;
 
-        // Merge Attributes (Combine Blueprint + Override)
+        // 3. Merge Arrays & Objects (The "Smart Merge")
+
+        // TAGS: Combine original tags with override tags (No duplicates)
+        if (overrides.tags) {
+            const existingTags = config.tags || [];
+            config.tags = [...new Set([...existingTags, ...overrides.tags])];
+        }
+
+        // ATTRIBUTES: Shallow merge (allows tweaking just 'strength' while keeping 'vigor')
         if (overrides.attributes) {
-            state.attributes = { ...state.attributes, ...overrides.attributes };
+            config.attributes = { ...config.attributes, ...overrides.attributes };
         }
 
-        // Merge Traits
-        if (overrides.traits) {
-            state.traits = overrides.traits;
-        } else if (!state.traits) {
-            state.traits = []; 
+        // BASE STATS: Shallow merge 
+        // (Allows creating a "Fast Bear" by passing { baseStats: { speed: 10 } })
+        if (overrides.baseStats) {
+            config.baseStats = { ...config.baseStats, ...overrides.baseStats };
         }
 
-        // Merge Equipment
+        // EQUIPMENT: Merge specific slots
         if (overrides.equipment) {
-            state.equipment = { ...state.equipment, ...overrides.equipment };
+            config.equipment = { ...config.equipment, ...overrides.equipment };
         }
-        if (!state.equipment) state.equipment = {}; 
+        // Ensure equipment object exists if blueprint didn't have it
+        if (!config.equipment) config.equipment = {}; 
 
-        // Merge Inventory
+        // INVENTORY (Backpack):
+        // Definitions usually have 'lootTable', but instances need an 'inventory'.
         if (overrides.inventory) {
-            state.inventory = overrides.inventory;
+            config.inventory = overrides.inventory;
         }
-        if (!state.inventory) state.inventory = [];
+        if (!config.inventory) config.inventory = [];
 
-        // 3. Initialize Unique ID
-        state.instanceId = (typeof crypto !== 'undefined' && crypto.randomUUID) 
+        // TRAITS: Overwrite or Default
+        if (overrides.traits) {
+            config.traits = overrides.traits;
+        } else if (!config.traits) {
+            config.traits = []; 
+        }
+
+        // 4. Initialize Unique ID
+        // Changed from 'instanceId' to 'id' to match EntityModel getter
+        config.id = (typeof crypto !== 'undefined' && crypto.randomUUID) 
             ? crypto.randomUUID() 
             : `id_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-        // 4. Create the Entity Wrapper
-        // We do this now so we can access the getters (maxHp, etc.) in the next step
-        const entity = new Entity(state);
+        // 5. Create the Entity Model
+        // The Model wraps this config object and protects it.
+        const entity = new EntityModel(config);
 
-        // 5. Initialize Live State
-        // This pulls the calculated values directly from entityModel.js
-        state.currentHp = entity.maxHp; 
-        state.currentStamina = entity.maxStamina;
-        state.currentInsight = entity.maxInsight;
-        state.isDead = false;
+        // 6. Fill Resources (The "Spawn Logic")
+        // We use the Model's setters to ensure values are clamped correctly.
+        // (e.g., You can't start with 100 HP if MaxHP is only 20)
+        entity.hp = entity.maxHp; 
+        entity.stamina = entity.maxStamina;
+        entity.insight = entity.maxInsight;
+        
+        // Initialize State Flags
+        config.isDead = false;
 
         return entity;
     }

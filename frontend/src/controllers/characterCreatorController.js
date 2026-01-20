@@ -4,8 +4,9 @@ import { events } from '../core/eventBus.js';
 import { TextEntry } from '../../../shared/utils/textEntry.js';
 
 // --- CONFIGURATION DATA ---
+// We keep this data structure as you defined it. 
+// It maps perfectly to the Factory overrides.
 const CREATION_DATA = {
-    // ... (Keep existing data for Backgrounds, Origins, etc.) ...
     BACKGROUNDS: [
         { 
             id: "MERCENARY", label: "Mercenary", 
@@ -32,7 +33,7 @@ const CREATION_DATA = {
         { label: "Sunken Coast", tag: "LANG_AQUAN", desc: "You understand the tides." }
     ],
     APPEARANCES: [
-        { label: "Style A", sprite: "spritesheet", portrait: "spritesheet" },
+        { label: "Style A", sprite: "spritesheet", portrait: "spritesheet" }, // Updated to match definitions
         { label: "Style B", sprite: "hero_style_b", portrait: "hero_face_b" },
         { label: "Style C", sprite: "hero_style_c", portrait: "hero_face_c" }
     ],
@@ -69,13 +70,12 @@ export class CharacterCreatorController {
         this.menuOrder = ['name', 'background', 'origin', 'appearance', 'keepsake', 'companion', 'difficulty', 'start'];
         this.currentRow = 0;
 
-        // CHANGED: Default name is now "Shackle Breaker"
         this.nameInput = new TextEntry("Shackle Breaker", 16); 
         this.isEditingName = false;
 
         // Selection State
         this.state = {
-            name: "Shackle Breaker", // CHANGED: Matches input default
+            name: "Shackle Breaker",
             backgroundIdx: 0,
             originIdx: 0,
             appearanceIdx: 0,
@@ -136,7 +136,6 @@ export class CharacterCreatorController {
     }
 
     validateName() {
-        // CHANGED: Fallback to "Shackle Breaker" if user leaves it empty
         if (this.nameInput.value.trim() === "") {
             this.nameInput.reset("Shackle Breaker");
             this.state.name = "Shackle Breaker";
@@ -173,7 +172,6 @@ export class CharacterCreatorController {
 
     handleAction() {
         const step = this.menuOrder[this.currentRow];
-
         if (step === 'name') {
             this.isEditingName = true; 
         } else if (step === 'start') {
@@ -182,14 +180,14 @@ export class CharacterCreatorController {
     }
 
     finalizeCharacter() {
-        // Validation: Ensure name isn't empty before starting
+        // Validation
         if (!this.state.name || this.state.name.trim() === "") {
-            this.currentRow = 0; // Jump to Name
-            this.isEditingName = true; // Force edit
+            this.currentRow = 0; 
+            this.isEditingName = true; 
             return;
         }
 
-        console.log("[CharCreator] Finalizing...");
+        console.log("[CharCreator] Generating Entity Instances...");
 
         const bg = CREATION_DATA.BACKGROUNDS[this.state.backgroundIdx];
         const origin = CREATION_DATA.ORIGINS[this.state.originIdx];
@@ -198,34 +196,54 @@ export class CharacterCreatorController {
         const comp = CREATION_DATA.COMPANIONS[this.state.companionIdx];
         const diff = CREATION_DATA.DIFFICULTIES[this.state.difficultyIdx];
 
-        // 1. Create Player
+        // --- 1. CREATE PLAYER ---
         const playerOverrides = {
             name: this.state.name, 
-            attributes: bg.attributes,
-            equipment: bg.equipment,
+            attributes: { ...bg.attributes }, // Clone to avoid reference issues
+            equipment: { ...bg.equipment },
             sprite: app.sprite,
             portrait: app.portrait,
             inventory: keep.itemId ? [keep.itemId] : [],
+            tags: [origin.tag] // Factory merges this with Humanoid tags
         };
 
         const player = EntityFactory.create("HUMANOID", playerOverrides);
-        if (player) player.state.tags.push(origin.tag);
 
-        // 2. Create Companion
-        const companion = EntityFactory.create(comp.speciesId, {
+        // --- 2. CREATE COMPANION ---
+        const companionOverrides = {
             name: comp.label,
-            attributes: comp.attributes,
-            equipment: comp.equipment
-        });
+            attributes: { ...comp.attributes },
+            equipment: { ...comp.equipment }
+        };
 
-        // 3. Inject into Game State
+        const companion = EntityFactory.create(comp.speciesId, companionOverrides);
+
+        // --- 3. INJECT INTO GAME STATE ---
+        if (!player || !companion) {
+            console.error("Critical Error: Factory failed to produce entities.");
+            return;
+        }
+
         gameState.party.members = [player, companion];
         gameState.party.gold = 100;
-        
-        // --- SAVE DIFFICULTY ---
+
         if (!gameState.settings) gameState.settings = {};
         gameState.settings.difficulty = diff.id; 
+
+        // --- 4. DEBUG: VERIFY THE MATH ---
+        // This proves your EntityModel and Definitions are working.
+        console.log("--- DEBUG: ENTITY GENERATION ---");
         
+        console.log(`PLAYER: ${player.name} (Lvl ${player.level})`);
+        console.log(`HP: ${player.hp}/${player.maxHp}`); // Should be derived from Vigor (if logic exists) or Base
+        console.log(`ATTRIBUTES: Vigor ${player.attributes.vigor}, Str ${player.attributes.strength}`);
+        console.log("DEFENSE (Calc):", player.defense); // Should show { blunt: 0, ... } (items are strings, so 0 stats for now)
+        
+        console.log(`COMPANION: ${companion.name} (${companion.state.tags.join(', ')})`);
+        console.log(`SPEED: ${companion.state.baseStats.speed}`);
+        console.log("--------------------------------");
+
+        // --- 5. START GAME ---
         events.emit('CHANGE_SCENE', { scene: 'overworld' });
     }
 }
