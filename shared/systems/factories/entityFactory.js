@@ -1,5 +1,7 @@
 import { ENTITY_DEFINITIONS } from '../../data/entityDefinitions.js';
 import { EntityModel } from '../../models/entityModel.js';
+// [NEW] Import the system to calculate XP curves correctly
+import { ExperienceSystem } from '../experienceSystem.js'; 
 
 export class EntityFactory {
     
@@ -66,6 +68,28 @@ export class EntityFactory {
         } else if (!config.traits) {
             config.traits = []; 
         }
+
+        // --- [NEW] PROGRESSION LOGIC ---
+        // Handle Level overrides and calculate derived XP stats
+        
+        // A. Determine final Level (Override takes priority -> Config default -> Fallback 1)
+        const level = overrides.level ?? config.level ?? 1;
+        config.level = level;
+
+        // B. Calculate correct MaxXP for this level using your Exponential Curve
+        // If an override is provided for maxXp, use it; otherwise calculate it.
+        if (overrides.maxXp) {
+            config.maxXp = overrides.maxXp;
+        } else {
+            // Use the shared math formula so a Lvl 10 wolf has the correct XP cap
+            config.maxXp = ExperienceSystem.getMaxXP(level);
+        }
+
+        // C. Ensure defaults for new progression properties
+        config.xp = overrides.xp ?? config.xp ?? 0;
+        config.skillPoints = overrides.skillPoints ?? config.skillPoints ?? 0;
+
+        // -------------------------------
 
         // 4. Initialize Unique ID
         // Changed from 'instanceId' to 'id' to match EntityModel getter

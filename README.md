@@ -53,6 +53,7 @@ Root
 │   │   ├── factories/              
 │   │   │   ├── entityFactory.js    
 │   │   │   └── itemFactory.js
+│   │   ├── experienceSystem.js     
 │   │   ├── partyManager.js         
 │   │   ├── timeSystem.js
 │   │   └── worldManager.js

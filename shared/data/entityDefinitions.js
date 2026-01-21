@@ -1,7 +1,10 @@
 export const ENTITY_DEFINITIONS = {
     "HUMANOID": {
         name: "Humanoid",
-        level: 1, // Added Level
+        level: 1, 
+        xp: 0,            // [NEW] Current Experience
+        maxXp: 100,       // [NEW] Experience to next level
+        skillPoints: 0,   // [NEW] Unspent points
 
         // --- VISUALS ---
         sprite: "hero_base",
@@ -25,7 +28,6 @@ export const ENTITY_DEFINITIONS = {
             corruption: 0,
 
             // RENAMED: baseDefense (Flat Armor)
-            // Humans usually have 0 natural armor.
             baseDefense: {
                 blunt: 0, slash: 0, pierce: 0,
                 fire: 0, water: 0, lightning: 0, earth: 0, wind: 0,
@@ -38,7 +40,6 @@ export const ENTITY_DEFINITIONS = {
             },
 
             // RENAMED: baseAttack (Natural/Unarmed Damage)
-            // Used when no weapon is equipped.
             baseAttack: {
                 blunt: 1, // A simple punch
                 slash: 0,
@@ -47,7 +48,6 @@ export const ENTITY_DEFINITIONS = {
         },
 
         // --- RESOURCES (The Tanks) ---
-        // Factory uses these max values to fill current HP/Stamina
         stats: {
             hp: 0,          
             maxHp: 20,      
@@ -69,7 +69,6 @@ export const ENTITY_DEFINITIONS = {
             accessory: null
         },
 
-        // CHANGED: 'inventory' -> 'lootTable'
         lootTable: [], 
 
         abilities: [],
@@ -80,6 +79,9 @@ export const ENTITY_DEFINITIONS = {
     "BEAST": {
         name: "Beast",
         level: 1,
+        xp: 0,            // [NEW]
+        maxXp: 100,       // [NEW]
+        skillPoints: 0,   // [NEW]
         
         sprite: "dog_idle",
         portrait: "dog_face",
@@ -104,7 +106,6 @@ export const ENTITY_DEFINITIONS = {
                 blunt: 4, 
                 slash: 2, 
                 pierce: 1,
-                // Natural warmth?
                 water: 2 // Resistance to cold/water
             },
 
@@ -133,7 +134,7 @@ export const ENTITY_DEFINITIONS = {
             accessory: null,
         },
 
-        lootTable: [], // Future: ["WOLF_PELT"]
+        lootTable: [], 
 
         abilities: [],
         tags: ["BIOLOGICAL", "BEAST"]
@@ -142,6 +143,9 @@ export const ENTITY_DEFINITIONS = {
     "AVIAN": {
         name: "Avian",
         level: 1,
+        xp: 0,            // [NEW]
+        maxXp: 100,       // [NEW]
+        skillPoints: 0,   // [NEW]
         
         sprite: "bird_idle",
         portrait: "bird_face",

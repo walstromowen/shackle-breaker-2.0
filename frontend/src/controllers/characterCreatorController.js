@@ -4,8 +4,8 @@ import { events } from '../core/eventBus.js';
 import { TextEntry } from '../../../shared/utils/textEntry.js';
 
 // --- CONFIGURATION DATA ---
-// We keep this data structure as you defined it. 
-// It maps perfectly to the Factory overrides.
+const TEST_PARTY_SIZE = 6; 
+
 const CREATION_DATA = {
     BACKGROUNDS: [
         { 
@@ -33,7 +33,7 @@ const CREATION_DATA = {
         { label: "Sunken Coast", tag: "LANG_AQUAN", desc: "You understand the tides." }
     ],
     APPEARANCES: [
-        { label: "Style A", sprite: "spritesheet", portrait: "spritesheet" }, // Updated to match definitions
+        { label: "Style A", sprite: "spritesheet", portrait: "spritesheet" }, 
         { label: "Style B", sprite: "hero_style_b", portrait: "hero_face_b" },
         { label: "Style C", sprite: "hero_style_c", portrait: "hero_face_c" }
     ],
@@ -199,48 +199,73 @@ export class CharacterCreatorController {
         // --- 1. CREATE PLAYER ---
         const playerOverrides = {
             name: this.state.name, 
-            attributes: { ...bg.attributes }, // Clone to avoid reference issues
+            attributes: { ...bg.attributes }, 
             equipment: { ...bg.equipment },
             sprite: app.sprite,
             portrait: app.portrait,
             inventory: keep.itemId ? [keep.itemId] : [],
-            tags: [origin.tag] // Factory merges this with Humanoid tags
+            tags: [origin.tag],
+            level: 1, // Explicitly set level 1
+            xp: 0,
+            skillPoints: 0
         };
 
         const player = EntityFactory.create("HUMANOID", playerOverrides);
 
-        // --- 2. CREATE COMPANION ---
-        const companionOverrides = {
-            name: comp.label,
-            attributes: { ...comp.attributes },
-            equipment: { ...comp.equipment }
-        };
-
-        const companion = EntityFactory.create(comp.speciesId, companionOverrides);
-
-        // --- 3. INJECT INTO GAME STATE ---
-        if (!player || !companion) {
-            console.error("Critical Error: Factory failed to produce entities.");
+        if (!player) {
+            console.error("Critical Error: Factory failed to produce player.");
             return;
         }
 
-        gameState.party.members = [player, companion];
+        // Initialize party with player
+        const finalParty = [player];
+
+        // --- 2. CREATE COMPANION CLONES TO FILL PARTY ---
+        while (finalParty.length < TEST_PARTY_SIZE) {
+            
+            const slotNumber = finalParty.length; 
+            
+            // [DEBUG] Stagger XP so we can see the progress bars working differently
+            const randomStartXP = Math.floor(Math.random() * 50);
+
+            const companionOverrides = {
+                name: `${comp.label} ${slotNumber}`,
+                attributes: { ...comp.attributes },
+                equipment: { ...comp.equipment },
+                xp: randomStartXP // Pass this to factory
+            };
+
+            const companionInstance = EntityFactory.create(comp.speciesId, companionOverrides);
+
+            if (companionInstance) {
+                finalParty.push(companionInstance);
+            } else {
+                console.error("Failed to create companion instance.");
+                break; 
+            }
+        }
+
+        // --- 3. INJECT INTO GAME STATE ---
+        gameState.party.members = finalParty;
         gameState.party.gold = 100;
 
         if (!gameState.settings) gameState.settings = {};
         gameState.settings.difficulty = diff.id; 
 
         // --- 4. DEBUG: VERIFY THE MATH ---
-        // This proves your EntityModel and Definitions are working.
-        console.log("--- DEBUG: ENTITY GENERATION ---");
+        console.log("--- DEBUG: PARTY GENERATION ---");
         
+        // Log Player
         console.log(`PLAYER: ${player.name} (Lvl ${player.level})`);
-        console.log(`HP: ${player.hp}/${player.maxHp}`); // Should be derived from Vigor (if logic exists) or Base
-        console.log(`ATTRIBUTES: Vigor ${player.attributes.vigor}, Str ${player.attributes.strength}`);
-        console.log("DEFENSE (Calc):", player.defense); // Should show { blunt: 0, ... } (items are strings, so 0 stats for now)
+        console.log(`HP: ${player.hp}/${player.maxHp}`);
         
-        console.log(`COMPANION: ${companion.name} (${companion.state.tags.join(', ')})`);
-        console.log(`SPEED: ${companion.state.baseStats.speed}`);
+        // Log Companion Details
+        gameState.party.members.forEach((member, index) => {
+            if (index === 0) return; // Skip player
+            // Log the random XP we assigned
+            console.log(`SLOT ${index}: ${member.name} | XP: ${member.xp}/${member.maxXp}`);
+        });
+
         console.log("--------------------------------");
 
         // --- 5. START GAME ---

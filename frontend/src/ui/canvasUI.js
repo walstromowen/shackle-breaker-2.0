@@ -31,10 +31,52 @@ export class CanvasUI {
         this.ctx.restore();
     }
 
-    drawFilledPanel(x, y, w, h, color = UITheme.colors.borderHighlight) {
+    // --- INTERACTIVE ELEMENTS (NEW) ---
+
+    /**
+     * Draws a standardized button.
+     * @param {string} text - Label
+     * @param {number} x 
+     * @param {number} y 
+     * @param {number} w 
+     * @param {number} h 
+     * @param {boolean} isHovered - Changes color if true
+     * @param {boolean} isActive - Changes border if true (e.g. selected)
+     */
+    drawButton(text, x, y, w, h, isHovered = false, isActive = false) {
         this.ctx.save();
-        this.ctx.fillStyle = color;
+
+        // 1. Determine Colors based on State
+        let bgColor = UITheme.colors.panelBg;
+        let borderColor = UITheme.colors.border;
+        let textColor = UITheme.colors.textMain;
+
+        if (isActive) {
+            borderColor = UITheme.colors.borderHighlight; // Gold/Yellow
+            bgColor = '#333';
+        } else if (isHovered) {
+            bgColor = '#444'; // Lighter grey
+            textColor = '#fff';
+        }
+
+        // 2. Draw Box
+        this.ctx.fillStyle = bgColor;
         this.ctx.fillRect(x, y, w, h);
+        
+        this.ctx.strokeStyle = borderColor;
+        this.ctx.lineWidth = isActive ? 3 : 2;
+        this.ctx.strokeRect(x, y, w, h);
+
+        // 3. Draw Text (Centered)
+        this.ctx.font = UITheme.fonts.body;
+        this.ctx.fillStyle = textColor;
+        this.ctx.textAlign = "center";
+        this.ctx.textBaseline = "middle";
+        
+        // Center X = x + w/2
+        // Center Y = y + h/2
+        this.ctx.fillText(text, x + (w / 2), y + (h / 2));
+
         this.ctx.restore();
     }
 
@@ -50,10 +92,6 @@ export class CanvasUI {
         this.ctx.restore();
     }
 
-    /**
-     * Wraps text within a specific width.
-     * UPDATED: Now handles manual \n newlines correctly.
-     */
     drawWrappedText(text, x, y, maxWidth, lineHeight = 24, font = UITheme.fonts.body, color = UITheme.colors.textMain) {
         if (!text) return;
 
@@ -63,22 +101,18 @@ export class CanvasUI {
         this.ctx.textAlign = "left";
         this.ctx.textBaseline = "top";
 
-        // 1. Split by Newlines first (Paragraphs)
         const paragraphs = text.split('\n');
         let cursorY = y;
 
         paragraphs.forEach(paragraph => {
-            // 2. Split by spaces (Words)
             const words = paragraph.split(' ');
             let line = '';
 
             for (let n = 0; n < words.length; n++) {
                 const testLine = line + words[n] + ' ';
                 const metrics = this.ctx.measureText(testLine);
-                const testWidth = metrics.width;
                 
-                // If line is too long and not the very first word
-                if (testWidth > maxWidth && n > 0) {
+                if (metrics.width > maxWidth && n > 0) {
                     this.ctx.fillText(line, x, cursorY);
                     line = words[n] + ' ';
                     cursorY += lineHeight;
@@ -86,10 +120,7 @@ export class CanvasUI {
                     line = testLine;
                 }
             }
-            // Draw the last line of this paragraph
             this.ctx.fillText(line, x, cursorY);
-            
-            // Move cursor down for the next paragraph
             cursorY += lineHeight;
         });
 
@@ -99,13 +130,15 @@ export class CanvasUI {
     // --- GAMEPLAY ELEMENTS ---
 
     drawBar(x, y, w, h, current, max, color = UITheme.colors.danger) {
-        const fill = Math.max(0, Math.min(1, current / max)); // Clamp between 0 and 1
+        const fill = Math.max(0, Math.min(1, current / max));
         
         this.ctx.save();
         this.ctx.fillStyle = "#222";
         this.ctx.fillRect(x, y, w, h);
+        
         this.ctx.fillStyle = color;
         this.ctx.fillRect(x, y, w * fill, h);
+        
         this.ctx.strokeStyle = UITheme.colors.border;
         this.ctx.strokeRect(x, y, w, h);
         this.ctx.restore();
@@ -124,6 +157,7 @@ export class CanvasUI {
         if (label) {
             const plateW = radius * 2.5;
             const plateH = 24;
+            // Use drawPanel recursively for consistency!
             this.drawPanel(x - (plateW/2), y + radius - 12, plateW, plateH);
             this.drawText(label, x, y + radius, UITheme.fonts.small, UITheme.colors.textMain, "center", "middle");
         }
@@ -133,13 +167,6 @@ export class CanvasUI {
 
     // --- INPUT HELPERS ---
 
-    /**
-     * Static helper to check if a point (mouse) is inside a defined rectangle.
-     * @param {number} x - Mouse X
-     * @param {number} y - Mouse Y
-     * @param {Object} rect - { x, y, w, h }
-     * @returns {boolean}
-     */
     static isPointInRect(x, y, rect) {
         return (x >= rect.x && x <= rect.x + rect.w &&
                 y >= rect.y && y <= rect.y + rect.h);

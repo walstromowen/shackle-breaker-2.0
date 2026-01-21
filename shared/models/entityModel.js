@@ -7,7 +7,8 @@ export class EntityModel {
         this.state = structuredClone(config);
 
         // 2. Default Structure Enforcement
-        // Ensure stats object exists so getters don't crash
+        
+        // --- CORE STATS ---
         if (!this.state.stats) {
             this.state.stats = {
                 hp: 10, maxHp: 10,
@@ -16,12 +17,19 @@ export class EntityModel {
             };
         }
 
-        // Ensure equipment object exists
+        // --- PROGRESSION DEFAULTS (New) ---
+        // Ensure these exist to prevent UI NaN errors
+        if (typeof this.state.xp === 'undefined') this.state.xp = 0;
+        if (typeof this.state.maxXp === 'undefined') this.state.maxXp = 100;
+        if (typeof this.state.skillPoints === 'undefined') this.state.skillPoints = 0;
+        if (typeof this.state.level === 'undefined') this.state.level = 1;
+
+        // --- INVENTORY ---
         if (!this.state.equipment) {
             this.state.equipment = {};
         }
 
-        // Ensure baseStats structure exists (prevents crashes if file uses "Empty Look")
+        // --- COMBAT BASE STATS ---
         if (!this.state.baseStats) this.state.baseStats = {};
         if (!this.state.baseStats.baseDefense) this.state.baseStats.baseDefense = {};
         if (!this.state.baseStats.baseResistance) this.state.baseStats.baseResistance = {};
@@ -37,10 +45,20 @@ export class EntityModel {
 
     get portrait() { return this.state.portrait; }
     
-    get level() { return this.state.level || 1; }
+    get level() { return this.state.level; }
     set level(val) { this.state.level = val; }
 
-    get attributes() { return this.state.attributes; }
+    // [NEW] Progression Accessors
+    get xp() { return this.state.xp; }
+    set xp(val) { this.state.xp = val; }
+
+    get maxXp() { return this.state.maxXp; }
+    set maxXp(val) { this.state.maxXp = val; }
+
+    get skillPoints() { return this.state.skillPoints; }
+    set skillPoints(val) { this.state.skillPoints = val; }
+
+    get attributes() { return this.state.attributes || {}; }
 
     // --- DERIVED COMBAT STATS (The "Magic" Part) ---
     // Calculated on-demand. No imports needed.
@@ -133,12 +151,14 @@ export class EntityModel {
         this.state.stats.stamina = Math.max(0, Math.min(val, this.maxStamina)); 
     }
     get maxStamina() { return this.state.stats.maxStamina; }
+    set maxStamina(val) { this.state.stats.maxStamina = val; } // Added setter for leveling
 
     get insight() { return this.state.stats.insight; }
     set insight(val) { 
         this.state.stats.insight = Math.max(0, Math.min(val, this.maxInsight)); 
     }
     get maxInsight() { return this.state.stats.maxInsight; }
+    set maxInsight(val) { this.state.stats.maxInsight = val; } // Added setter for leveling
 
     // --- HELPER METHODS ---
 

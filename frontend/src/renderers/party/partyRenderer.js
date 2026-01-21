@@ -2,125 +2,196 @@ import { UITheme } from '../../ui/UITheme.js';
 import { CanvasUI } from '../../ui/canvasUI.js';
 
 export class PartyRenderer {
-    /**
-     * @param {CanvasRenderingContext2D} ctx 
-     * @param {AssetLoader} loader - REQUIRED for portraits
-     */
     constructor(ctx, loader) {
         this.ctx = ctx;
         this.loader = loader; 
         this.ui = new CanvasUI(ctx);
         
-        // --- LAYOUT CONFIG ---
         this.layout = {
-            cardW: 340,
-            cardH: 120,
-            gapX: 20,
-            gapY: 20,
-            startX: 60,
-            startY: 100
+            cardW: 230,
+            cardH: 140,     
+            gapX: 15,       
+            gapY: 20,   
+            startY: 90      
+        };
+
+        // --- NEW: SHARED MENU CONFIG ---
+        this.menuConfig = {
+            width: 120,
+            btnHeight: 35,
+            padding: 10
         };
     }
 
     render(state) {
-        const { members, selectedIndex, gold } = state;
+        const { members, selectedIndex, swappingIdx, menuOpen, menuOptions, menuIndex } = state; 
         const width = this.ctx.canvas.width;
         const height = this.ctx.canvas.height;
 
-        // 1. Background
         this.ui.clearScreen(width, height);
+        this.ui.drawText("Party Members", width / 2, 50, UITheme.fonts.header, UITheme.colors.textMain, "center");
 
-        // 2. Header
-        this.ui.drawText("Party Members", 60, 60, UITheme.fonts.header, UITheme.colors.textMain);
-        this.ui.drawText(`Gold: ${gold}g`, width - 150, 60, UITheme.fonts.header, UITheme.colors.textHighlight);
-
-        // 3. Grid Render
         members.forEach((member, index) => {
-            const col = index % 2; 
-            const row = Math.floor(index / 2);
-
-            const x = this.layout.startX + (col * (this.layout.cardW + this.layout.gapX));
-            const y = this.layout.startY + (row * (this.layout.cardH + this.layout.gapY));
-            
-            this.drawCard(member, x, y, index === selectedIndex);
+            if (index >= 6) return; 
+            const pos = this.getCardPosition(index, width);
+            const isCursor = (index === selectedIndex);
+            const isBeingMoved = (index === swappingIdx);
+            this.drawCard(member, pos.x, pos.y, isCursor, isBeingMoved);
         });
 
-        // 4. Footer Guide
-        this.ui.drawText("[ARROWS] Navigate   [ENT] Select   [ESC] Back", 60, height - 30, UITheme.fonts.mono, UITheme.colors.textMuted);
+        // 4. Context Menu (Using centralized UI)
+        if (menuOpen) {
+            this.drawContextMenu(selectedIndex, menuOptions, menuIndex, width);
+        }
+
+        let guide = menuOpen ? "[UP/DOWN] Choose   [ENT/CLICK] Select   [ESC] Cancel" :
+                    (swappingIdx !== null) ? "[ARROWS] Move to Slot   [ENT/CLICK] Place   [ESC] Cancel" :
+                    "[ARROWS] Navigate   [ENT/CLICK] Menu   [ESC] Back";
+        
+        this.ui.drawText(guide, width / 2, height - 30, UITheme.fonts.mono, UITheme.colors.textMuted, "center");
     }
 
-    drawCard(member, x, y, isSelected) {
+    // --- SHARED HELPER FOR MENU POSITIONING ---
+    getMenuLayout(cardIndex, canvasWidth) {
+        const cardPos = this.getCardPosition(cardIndex, canvasWidth);
+        const { width, btnHeight, padding } = this.menuConfig;
+        const totalH = (3 * btnHeight) + (padding * 2); // Assuming 3 options
+
+        return {
+            x: cardPos.x + (this.layout.cardW / 2) - (width / 2),
+            y: cardPos.y + (this.layout.cardH / 2) - (totalH / 2),
+            w: width,
+            h: totalH
+        };
+    }
+
+    drawContextMenu(cardIndex, options, highlightIndex, canvasWidth) {
+        const layout = this.getMenuLayout(cardIndex, canvasWidth);
+        
+        // 1. Draw Menu Panel Background
+        this.ui.drawPanel(layout.x, layout.y, layout.w, layout.h);
+
+        // 2. Draw Buttons using CanvasUI
+        options.forEach((opt, i) => {
+            const isHovered = (i === highlightIndex);
+            const btnY = layout.y + this.menuConfig.padding + (i * this.menuConfig.btnHeight);
+            
+            this.ui.drawButton(
+                opt, 
+                layout.x + 5, 
+                btnY, 
+                layout.w - 10, 
+                this.menuConfig.btnHeight - 4, 
+                isHovered
+            );
+        });
+    }
+
+    // --- UPDATED HIT DETECTION ---
+    getMenuHit(mouseX, mouseY, cardIndex) {
+        const width = this.ctx.canvas.width;
+        const layout = this.getMenuLayout(cardIndex, width);
+
+        // First check if click is inside the menu panel at all
+        if (!CanvasUI.isPointInRect(mouseX, mouseY, layout)) return -1;
+
+        // Calculate which button was hit relative to the top of the list
+        const relY = mouseY - (layout.y + this.menuConfig.padding);
+        const index = Math.floor(relY / this.menuConfig.btnHeight);
+
+        if (index >= 0 && index < 3) return index;
+        return -1;
+    }
+
+    getHitIndex(mouseX, mouseY) {
+        const width = this.ctx.canvas.width;
+        for (let i = 0; i < 6; i++) {
+            const pos = this.getCardPosition(i, width);
+            const rect = { x: pos.x, y: pos.y, w: this.layout.cardW, h: this.layout.cardH };
+            if (CanvasUI.isPointInRect(mouseX, mouseY, rect)) return i;
+        }
+        return -1;
+    }
+
+    getCardPosition(index, canvasWidth) {
+        const COLS = 3;
+        const { cardW, cardH, gapX, gapY, startY } = this.layout;
+        const totalGridWidth = (COLS * cardW) + ((COLS - 1) * gapX);
+        const startX = (canvasWidth - totalGridWidth) / 2;
+        const col = index % 3;            
+        const row = Math.floor(index / 3); 
+        return {
+            x: startX + (col * (cardW + gapX)),
+            y: startY + (row * (cardH + gapY))
+        };
+    }
+
+    drawCard(member, x, y, isCursor, isBeingMoved) {
         const ctx = this.ctx;
         const { cardW, cardH } = this.layout;
 
-        // --- A. Card Background ---
         ctx.save();
-        // If selected, use a slightly lighter background
-        ctx.fillStyle = isSelected ? "#2a2a2a" : UITheme.colors.panelBg;
+        if (isBeingMoved) {
+            ctx.fillStyle = "#1a3a1a"; 
+            ctx.strokeStyle = "#00ff00";
+            ctx.lineWidth = 2;
+        } else if (isCursor) {
+            ctx.fillStyle = "#2a2a2a";
+            ctx.strokeStyle = UITheme.colors.textHighlight;
+            ctx.lineWidth = 2;
+        } else {
+            ctx.fillStyle = UITheme.colors.panelBg;
+            ctx.strokeStyle = UITheme.colors.border;
+            ctx.lineWidth = 1;
+        }
         ctx.fillRect(x, y, cardW, cardH);
-        
-        // Border: Gold/Green if selected, Dark Gray if not
-        ctx.strokeStyle = isSelected ? UITheme.colors.textHighlight : UITheme.colors.border;
-        ctx.lineWidth = isSelected ? 2 : 1;
         ctx.strokeRect(x, y, cardW, cardH);
         ctx.restore();
 
-        // --- B. Portrait ---
-        // Retrieve image from AssetLoader using the key stored in entity state
-        const portraitKey = member.state.portrait; 
-        const portraitImg = this.loader ? this.loader.get(portraitKey) : null;
-        
-        const pSize = 90;
-        const pX = x + 15;
-        const pY = y + 15;
+        const pSize = 64; 
+        const pX = x + 10;
+        const pY = y + 20; 
+        const portraitImg = this.loader ? this.loader.get(member.portrait) : null;
 
         if (portraitImg) {
             ctx.drawImage(portraitImg, pX, pY, pSize, pSize);
-            ctx.strokeStyle = UITheme.colors.border;
-            ctx.strokeRect(pX, pY, pSize, pSize);
         } else {
-            // Fallback (Gray Box) if asset isn't loaded/found
             ctx.fillStyle = "#111";
             ctx.fillRect(pX, pY, pSize, pSize);
         }
+        ctx.strokeStyle = UITheme.colors.border;
+        ctx.strokeRect(pX, pY, pSize, pSize);
 
-        // --- C. Text Info ---
-        const infoX = x + 120;
-        this.ui.drawText(member.name, infoX, y + 30, UITheme.fonts.bold, UITheme.colors.textMain);
-        
-        // Optional Subtext (Class/Level)
-        const subtext = `Lvl ${member.level || 1} ${member.state.class || 'Unknown'}`;
-        this.ui.drawText(subtext, infoX, y + 50, UITheme.fonts.small, UITheme.colors.textMuted);
+        const infoX = pX + pSize + 12; 
+        const numberWidth = 45;
+        const barW = cardW - (pSize + 25) - 25 - numberWidth;
 
-        // --- D. Stat Bars ---
-        const barW = 180;
-        const barH = 8;
-        const spacing = 18;
-        let currentY = y + 65;
+        this.ui.drawText(member.name, infoX, y + 25, UITheme.fonts.bold, UITheme.colors.textMain);
+        this.ui.drawText(`Lvl ${member.level} ${member.speciesId || ''}`, infoX, y + 42, UITheme.fonts.small, UITheme.colors.textMuted);
 
-        // HP (Red)
-        this.drawStatRow("HP", member.hp, member.maxHp, infoX, currentY, barW, barH, UITheme.colors.danger);
-        
-        // Stamina (Gold/Yellow)
-        currentY += spacing;
-        this.drawStatRow("STM", member.stamina, member.maxStamina, infoX, currentY, barW, barH, "#fbc02d");
+        // XP Bar
+        const xpY = y + 47; 
+        this.ui.drawText("XP", infoX, xpY + 5, "9px monospace", UITheme.colors.textMuted);
+        this.ui.drawBar(infoX + 22, xpY, barW, 4, member.xp, member.maxXp, "#9370DB");
 
-        // Insight (Magic Blue/Purple)
-        currentY += spacing;
-        this.drawStatRow("INS", member.insight, member.maxInsight, infoX, currentY, barW, barH, UITheme.colors.magic);
+        // Stat Rows
+        let currentY = y + 60;
+        this.drawStatRow("HP", member.hp, member.maxHp, infoX, currentY, barW, 4, numberWidth, UITheme.colors.danger);
+        currentY += 12;
+        this.drawStatRow("STM", member.stamina, member.maxStamina, infoX, currentY, barW, 4, numberWidth, "#fbc02d");
+        currentY += 12;
+        this.drawStatRow("INS", member.insight, member.maxInsight, infoX, currentY, barW, 4, numberWidth, UITheme.colors.magic);
     }
 
-    drawStatRow(label, current, max, x, y, w, h, color) {
-        // Label
-        this.ui.drawText(label, x, y + 7, "10px monospace", UITheme.colors.textMuted);
+    drawStatRow(label, current, max, x, y, barW, h, numW, color) {
+        this.ui.drawText(label, x, y + 5, "9px monospace", UITheme.colors.textMuted);
+        this.ui.drawBar(x + 22, y, barW, h, current, max, color);
         
-        // Bar (Offset to right of label)
-        const barOffsetX = x + 30;
-        const barActualWidth = w - 30;
-        this.ui.drawBar(barOffsetX, y, barActualWidth, h, current, max, color);
-
-        // Numeric Overlay
-        // const valText = `${Math.floor(current)}/${Math.floor(max)}`;
-        // this.ui.drawText(valText, barOffsetX + barActualWidth + 5, y + 7, "10px monospace", UITheme.colors.textMain);
+        this.ctx.save();
+        this.ctx.textAlign = "right";
+        this.ctx.fillStyle = UITheme.colors.textMuted;
+        this.ctx.font = "9px monospace";
+        this.ctx.fillText(`${Math.floor(current)}/${max}`, x + 22 + barW + numW, y + 5);
+        this.ctx.restore();
     }
 }

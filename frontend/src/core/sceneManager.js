@@ -5,7 +5,6 @@ import { Input } from './input.js';
 import { OverworldController } from '../controllers/overworldController.js';
 import { EncounterController } from '../controllers/encounterController.js'; 
 import { CharacterCreatorController } from '../controllers/characterCreatorController.js'; 
-// 1. IMPORT PARTY CONTROLLER
 import { PartyController } from '../controllers/partyController.js';
 
 // --- RENDERERS ---
@@ -14,7 +13,6 @@ import { LightingRenderer } from '../renderers/overworld/lightingRenderer.js';
 import { EncounterRenderer } from '../renderers/encounter/encounterRenderer.js'; 
 import { TransitionRenderer } from '../renderers/transitions/transitionRenderer.js';
 import { CharacterCreatorRenderer } from '../renderers/characterCreator/characterCreatorRenderer.js'; 
-// 2. IMPORT PARTY RENDERER
 import { PartyRenderer } from '../renderers/party/partyRenderer.js';
 
 import { WorldManager } from '../../../shared/systems/worldManager.js'; 
@@ -113,19 +111,31 @@ export class SceneManager {
     }
 
     update(dt) {
-        // Mouse Check
+        // --- 1. MOUSE CHECK ---
+        // Get the click from Input.js (which handles the coordinate scaling)
         const click = this.input.getAndResetClick();
-        if (click && this.currentScene === 'character-creator') {
-            this.characterCreatorController.handleMouseDown(click.x, click.y, this.characterCreatorRenderer);
+        
+        if (click) {
+            // ROUTING: Decide who gets the click based on the current scene
+            if (this.currentScene === 'character-creator') {
+                this.characterCreatorController.handleMouseDown(click.x, click.y, this.characterCreatorRenderer);
+            } 
+            else if (this.currentScene === 'party') {
+                // >>> THE FIX: Route clicks to PartyController <<<
+                // We pass 'this.partyRenderer' because the controller needs it for hit detection
+                this.partyController.handleMouseDown(click.x, click.y, this.partyRenderer);
+            }
         }
 
+        // --- 2. REGULAR UPDATES ---
         this.transitionRenderer.update(dt);
 
         if (this.currentScene === 'overworld') {
             this.timeSystem.update(dt); 
             this.overworldController.update(dt);
         }
-        // Party & Character Creator are event-driven, no frame update needed
+        
+        // Note: 'party' scene does not need a loop update, it only reacts to events.
     }
 
     render(interpolation, totalTime) { 
