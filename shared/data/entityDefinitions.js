@@ -7,8 +7,8 @@ export const ENTITY_DEFINITIONS = {
         skillPoints: 0,   // [NEW] Unspent points
 
         // --- VISUALS ---
-        sprite: "hero_base",
-        portrait: "hero_face",
+        sprite: "humanoid_base",
+        portrait: "humanoid_face",
         traits: [],
         statusEffects: [],
         

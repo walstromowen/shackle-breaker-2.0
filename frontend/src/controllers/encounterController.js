@@ -13,8 +13,9 @@ export class EncounterController {
     /**
      * Called by SceneManager when switching to this scene.
      * @param {string} encounterId - The ID from the Interaction component.
+     * @param {object} context - { row, col } of the object triggering this.
      */
-    start(encounterId) {
+    start(encounterId, context = null) {
         const data = EncounterRegistry.get(encounterId);
         
         // Safety: If ID is wrong, go back immediately
@@ -29,7 +30,8 @@ export class EncounterController {
             ...gameState.encounter, 
             activeData: data,       
             currentStageId: data.initialStage, 
-            history: []             
+            history: [],
+            context: context // <--- STORE THE CONTEXT HERE
         };
 
         this.selectedIndex = 0;
@@ -37,8 +39,16 @@ export class EncounterController {
     }
 
     getState() {
+        // Flatten the state for the Renderer
+        // The Renderer expects: { data, currentStage, ui }
+        const { activeData, currentStageId } = gameState.encounter;
+        
+        // Safety check to prevent Renderer crash during transitions
+        if (!activeData) return { data: null, currentStage: null, ui: {} };
+
         return {
-            encounter: gameState.encounter,
+            data: activeData,
+            currentStage: activeData.stages[currentStageId],
             ui: { selectedDecisionIndex: this.selectedIndex }
         };
     }
@@ -87,9 +97,13 @@ export class EncounterController {
         // 1. World Modifications (e.g., removing the object you interacted with)
         if (outcomeNode.outcome === "DESTROY_OBJECT") {
             const ctx = gameState.encounter.context;
-            // We use the Context saved by the OverworldController during interaction
+            
+            // Now this check will pass because we stored 'context' in start()
             if (ctx && ctx.col !== null && ctx.row !== null) {
+                console.log(`[Encounter] Destroying object at ${ctx.col}, ${ctx.row}`);
                 this.worldManager.modifyWorld(ctx.col, ctx.row, null);
+            } else {
+                console.warn("[Encounter] DESTROY_OBJECT called but no context found.");
             }
         }
 

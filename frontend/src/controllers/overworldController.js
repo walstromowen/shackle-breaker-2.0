@@ -8,7 +8,6 @@ export class OverworldController {
         this.worldManager = worldManager; 
 
         // 1. Setup Player State
-        // We now check GameState first. If it's empty/default, we look for a spawn point.
         this.player = this.createPlayerEntity();
         
         // 2. Setup Camera
@@ -18,7 +17,6 @@ export class OverworldController {
 
     /**
      * --- EVENT RECEIVER ---
-     * The SceneManager calls this when a key is pressed ONCE.
      */
     handleKeyDown(code) {
         // Interact Actions
@@ -26,31 +24,26 @@ export class OverworldController {
             this.interact();
         }
 
-        // --- NEW: TOGGLE PARTY MENU ---
-        // STANDARDIZED: Emit generic scene change event
+        // Toggle Party Menu
         if (code === 'KeyP') {
             console.log("[Overworld] Opening Party Menu...");
             gameState.mode = "PARTY";
             events.emit('CHANGE_SCENE', { scene: 'party' });
         }
 
-        // Context Actions (Example: Open Inventory)
+        // Context Actions (Inventory)
         if (code === 'KeyI') {
             console.log("Opening Inventory...");
-            // events.emit('CHANGE_SCENE', { scene: 'inventory' }); 
         }
-        
     }
 
     /**
      * --- CONTINUOUS LOOP ---
-     * Checks for held keys (movement) every frame.
      */
     update(dt) {
         if (this.player.isMoving) {
             this.continueMoving(dt);
         } else {
-            // Only check for new input if we aren't currently moving
             this.checkForNewMove();
         }
         this.updateCamera();
@@ -61,7 +54,7 @@ export class OverworldController {
     interact() {
         if (this.player.isMoving) return;
 
-        // 1. Calculate the tile we are facing (Target Tile)
+        // 1. Calculate the tile we are facing
         const { TILE_SIZE } = this.config;
         let targetX = this.player.x;
         let targetY = this.player.y;
@@ -74,12 +67,10 @@ export class OverworldController {
         const lookCol = Math.floor(targetX / TILE_SIZE);
         const lookRow = Math.floor(targetY / TILE_SIZE);
 
-        // 2. Priority Check: Is there a Large Object here? (e.g. House, Big Tree)
-        // Note: 'obj' will contain the object's ANCHOR coordinates (obj.col, obj.row),
-        // which might be different from where we are looking (lookCol, lookRow).
+        // 2. Priority Check: Is there a Large Object here?
         let obj = this.worldManager.getSolidObjectAt(lookCol, lookRow);
 
-        // 3. Fallback: If no large object, check for a single-tile object (e.g. Flower, Sign)
+        // 3. Fallback: Single-tile object
         if (!obj) {
             obj = this.worldManager.getObject(lookCol, lookRow);
         }
@@ -88,31 +79,21 @@ export class OverworldController {
         if (obj && obj.interaction) {
             console.log(`[Overworld] Interacting with ${obj.type} at ${obj.col},${obj.row}`);
 
-            // A. Populate Encounter State
-            gameState.encounter.activeData = obj.interaction; 
-            gameState.encounter.currentStageId = "start";
-            
-            // B. Save Context (CRITICAL for modifying the world later)
-            // We save obj.col/row (the anchor), not lookCol/lookRow (the hitbox).
-            gameState.encounter.context = {
-                col: obj.col,
-                row: obj.row,
-                objectId: obj.type
-            };
-
-            // C. Switch Engine Mode
-            // The Main Loop will detect this and switch to EncounterController next frame
-            gameState.mode = "ENCOUNTER";
-            
-            // D. Emit event with payload. 
-            // We keep 'INTERACT' here because it carries specific data (the encounter ID)
-            // that the SceneManager needs to bootstrap the encounter controller.
-            events.emit('INTERACT', obj.interaction);
+            // >>> THE FIX IS HERE <<<
+            // We must bundle the coordinates (context) into the event payload.
+            // SceneManager will extract this 'context' and pass it to EncounterController.
+            events.emit('INTERACT', {
+                ...obj.interaction,       // Spreads: { type: 'ENCOUNTER', id: 'oakTree' }
+                context: {                // Adds:    { col: 10, row: 5 }
+                    col: obj.col,
+                    row: obj.row,
+                    objectId: obj.type
+                }
+            });
         }
     }
 
     checkForNewMove() {
-        // Polling the dumb Input class for state
         const dir = this.input.direction; 
         if (!dir) return;
 
@@ -170,20 +151,17 @@ export class OverworldController {
         this.player.isMoving = false;
         this.player.moveProgress = 0;
 
-        // --- UPDATED: SYNC TO NEW GAME STATE ---
-        // We convert Pixels back to Grid Coordinates for the state
+        // Sync to Game State
         gameState.player.col = Math.floor(this.player.x / this.config.TILE_SIZE);
         gameState.player.row = Math.floor(this.player.y / this.config.TILE_SIZE);
         gameState.player.direction = this.player.direction;
 
-        // Trigger Step Events (Grass, Portal, etc)
         this.checkTileEvents();
 
-        // Input Buffering: If key is still held, keep moving immediately
         if (this.input.direction) {
             this.checkForNewMove();
         } else {
-            this.player.animFrame = 0; // Idle frame
+            this.player.animFrame = 0; 
         }
     }
 
@@ -196,18 +174,15 @@ export class OverworldController {
 
         if (tileId === this.config.TILE_TYPES.GRASS && Math.random() < 0.10) { 
             console.log("💥 AMBUSH in the grass!");
-            // Future: events.emit('CHANGE_SCENE', { scene: 'battle' });
         }
     }
 
     isSpaceFree(targetX, targetY) {
         const { TILE_SIZE } = this.config;
 
-        // 1. Where are we NOW? (Source)
         const startCol = Math.floor(this.player.x / TILE_SIZE);
         const startRow = Math.floor(this.player.y / TILE_SIZE);
 
-        // 2. Where do we want to GO? (Destination)
         const endCol = Math.floor(targetX / TILE_SIZE);
         const endRow = Math.floor(targetY / TILE_SIZE);
 
@@ -216,7 +191,6 @@ export class OverworldController {
 
     updateCamera() {
         const { CANVAS_WIDTH, CANVAS_HEIGHT, GAME_SCALE, TILE_SIZE } = this.config;
-        // Center player in viewport
         this.camera.x = this.player.x - (CANVAS_WIDTH / GAME_SCALE / 2) + (TILE_SIZE / 2);
         this.camera.y = this.player.y - (CANVAS_HEIGHT / GAME_SCALE / 2) + (TILE_SIZE / 2);
     }
@@ -226,26 +200,20 @@ export class OverworldController {
     }
 
     createPlayerEntity() {
-        // --- UPDATED: READ FROM NEW GAME STATE ---
         let startX, startY;
 
-        // 1. Try to load from Game State (Saved Position)
-        // We check if either col or row is non-zero (or specifically set)
         const savedCol = gameState.player.col;
         const savedRow = gameState.player.row;
 
-        // If WorldManager already ran, these should be set to a valid spawn
         if (savedCol !== 0 || savedRow !== 0) {
             startX = savedCol * this.config.TILE_SIZE;
             startY = savedRow * this.config.TILE_SIZE;
         } 
-        // 2. Fallback: Ask WorldManager directly (Just in case State is empty)
         else {
             const spawn = this.worldManager.findSpawnPoint();
             startX = spawn.col * this.config.TILE_SIZE;
             startY = spawn.row * this.config.TILE_SIZE;
             
-            // Sync initial spawn to state immediately
             gameState.player.col = spawn.col;
             gameState.player.row = spawn.row;
         }

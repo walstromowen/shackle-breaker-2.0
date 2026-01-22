@@ -1,20 +1,21 @@
-export const ITEMS = {
-    'iron_sword': {
-        name: 'Iron Sword',
-        description: 'A reliable blade of forged iron.',
-        type: 'WEAPON',
-        baseAtk: 10,
-        rarity: 'common',
-        price: 100,
-        abilityIds: ['slash'] // Links to the abilities blueprint
+export const ItemDefinitions = {
+    "wooden_stick": {
+        id: "wooden_stick",
+        name: "Wooden Stick",
+        slot: "mainHand",
+        type: "weapon",
+        damage: { blunt: 3 },
+        value: 5,
+        description: "A sturdy branch found on the forest floor."
     },
-    'lava_sword': {
-        name: 'Lava Sword',
-        description: 'A glowing blade that pulses with heat.',
-        type: 'WEAPON',
-        baseAtk: 25,
-        rarity: 'rare',
-        price: 1500,
-        abilityIds: ['fire_slash', 'burn_touch']
+    "tattered_shirt": {
+        id: "tattered_shirt",
+        name: "Tattered Shirt",
+        slot: "torso",
+        type: "armor",
+        defense: { blunt: 1 },
+        value: 2,
+        description: "It has more holes than fabric."
     }
+    // Add other starting items here (potions, etc.)
 };

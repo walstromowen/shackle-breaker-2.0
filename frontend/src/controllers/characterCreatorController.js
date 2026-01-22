@@ -2,6 +2,8 @@ import { gameState } from '../../../shared/state/gameState.js';
 import { EntityFactory } from '../../../shared/systems/factories/entityFactory.js';
 import { events } from '../core/eventBus.js';
 import { TextEntry } from '../../../shared/utils/textEntry.js';
+// [NEW] Import ItemFactory
+import { ItemFactory } from '../../../shared/systems/factories/itemFactory.js';
 
 // --- CONFIGURATION DATA ---
 const TEST_PARTY_SIZE = 6; 
@@ -12,19 +14,21 @@ const CREATION_DATA = {
             id: "MERCENARY", label: "Mercenary", 
             desc: "A soldier of fortune.\n+Str +Vigor",
             attributes: { vigor: 14, strength: 14, dexterity: 10, intelligence: 8, attunement: 8 },
-            equipment: { mainHand: "SWORD_IRON", torso: "MAIL_RUSTY" }
+            // [UPDATE] Using IDs that exist in your ItemDefinitions.js
+            equipment: { mainHand: "wooden_stick", torso: "tattered_shirt" }
         },
         { 
             id: "SCHOLAR", label: "Scholar", 
             desc: "Seeker of forbidden knowledge.\n+Int +Attunement",
             attributes: { vigor: 8, strength: 6, dexterity: 10, intelligence: 16, attunement: 12 },
-            equipment: { mainHand: "STAFF_OAK", torso: "ROBE_LINEN" }
+            // Placeholder IDs - Ensure these exist in definitions or they won't appear
+            equipment: { mainHand: "wooden_stick", torso: "tattered_shirt" } 
         },
         { 
             id: "SCOUT", label: "Scout", 
             desc: "Survivalist and pathfinder.\n+Dex +Speed",
             attributes: { vigor: 10, strength: 10, dexterity: 16, intelligence: 10, attunement: 8 },
-            equipment: { mainHand: "BOW_SHORT", torso: "LEATHER_VEST" }
+            equipment: { mainHand: "wooden_stick", torso: "tattered_shirt" }
         }
     ],
     ORIGINS: [
@@ -39,22 +43,22 @@ const CREATION_DATA = {
     ],
     KEEPSAKES: [
         { label: "None", itemId: null, desc: "You carry nothing but your burden." },
-        { label: "Old Coin", itemId: "COIN_ANCIENT", desc: "A lucky coin from a dead empire." },
-        { label: "Iron Key", itemId: "KEY_RUSTY", desc: "Opens a door you have yet to find." },
-        { label: "Amber Resin", itemId: "RESIN_HEALING", desc: "A single use healing item." }
+        { label: "Old Coin", itemId: "wooden_stick", desc: "A lucky stick (Placeholder)." }, // [UPDATE] mapped to stick for testing
+        { label: "Iron Key", itemId: "wooden_stick", desc: "Opens a door (Placeholder)." },
+        { label: "Amber Resin", itemId: "wooden_stick", desc: "Healing item (Placeholder)." }
     ],
     COMPANIONS: [
         { 
             label: "War Dog", speciesId: "BEAST", 
             desc: "Loyal and sturdy.",
             attributes: { vigor: 12, strength: 10 },
-            equipment: { accessory: "COLLAR_LEATHER" }
+            equipment: { accessory: "tattered_shirt" } // Placeholder
         },
         { 
             label: "Hunting Hawk", speciesId: "AVIAN", 
             desc: "Fast and watchful.",
             attributes: { dexterity: 16, speed: 10 },
-            equipment: { accessory: "ANKLET_BELL" }
+            equipment: { accessory: "tattered_shirt" } // Placeholder
         }
     ],
     DIFFICULTIES: [
@@ -179,6 +183,28 @@ export class CharacterCreatorController {
         }
     }
 
+    // --- HELPER TO CONVERT STRING IDs TO ITEM MODELS ---
+    _resolveEquipment(equipmentIdMap) {
+        const resolved = {};
+        if (!equipmentIdMap) return resolved;
+
+        for (const [slot, itemId] of Object.entries(equipmentIdMap)) {
+            // Use Factory to create the real object
+            const item = ItemFactory.createItem(itemId);
+            if (item) {
+                resolved[slot] = item;
+            }
+        }
+        return resolved;
+    }
+
+    _resolveInventory(itemIdList) {
+        if (!itemIdList || itemIdList.length === 0) return [];
+        return itemIdList
+            .map(id => ItemFactory.createItem(id)) // Create items
+            .filter(item => item !== null);        // Remove nulls (invalid IDs)
+    }
+
     finalizeCharacter() {
         // Validation
         if (!this.state.name || this.state.name.trim() === "") {
@@ -196,16 +222,21 @@ export class CharacterCreatorController {
         const comp = CREATION_DATA.COMPANIONS[this.state.companionIdx];
         const diff = CREATION_DATA.DIFFICULTIES[this.state.difficultyIdx];
 
-        // --- 1. CREATE PLAYER ---
+        // --- 1. PREPARE ITEMS (Factory Conversion) ---
+        const playerEquipment = this._resolveEquipment(bg.equipment);
+        const playerInventory = this._resolveInventory(keep.itemId ? [keep.itemId] : []);
+        const companionEquipment = this._resolveEquipment(comp.equipment);
+
+        // --- 2. CREATE PLAYER ---
         const playerOverrides = {
             name: this.state.name, 
             attributes: { ...bg.attributes }, 
-            equipment: { ...bg.equipment },
+            equipment: playerEquipment, // Pass real objects
             sprite: app.sprite,
             portrait: app.portrait,
-            inventory: keep.itemId ? [keep.itemId] : [],
+            inventory: playerInventory, // Pass real objects
             tags: [origin.tag],
-            level: 1, // Explicitly set level 1
+            level: 1, 
             xp: 0,
             skillPoints: 0
         };
@@ -220,19 +251,21 @@ export class CharacterCreatorController {
         // Initialize party with player
         const finalParty = [player];
 
-        // --- 2. CREATE COMPANION CLONES TO FILL PARTY ---
+        // --- 3. CREATE COMPANION CLONES ---
         while (finalParty.length < TEST_PARTY_SIZE) {
-            
             const slotNumber = finalParty.length; 
-            
-            // [DEBUG] Stagger XP so we can see the progress bars working differently
             const randomStartXP = Math.floor(Math.random() * 50);
+
+            // Clone the equipment object so they don't share the same reference in memory
+            // (ItemFactory.createItem returns a new instance, but we need to call it again or clone)
+            // Ideally, we create new items for every companion:
+            const newCompEquip = this._resolveEquipment(comp.equipment);
 
             const companionOverrides = {
                 name: `${comp.label} ${slotNumber}`,
                 attributes: { ...comp.attributes },
-                equipment: { ...comp.equipment },
-                xp: randomStartXP // Pass this to factory
+                equipment: newCompEquip, 
+                xp: randomStartXP
             };
 
             const companionInstance = EntityFactory.create(comp.speciesId, companionOverrides);
@@ -240,35 +273,34 @@ export class CharacterCreatorController {
             if (companionInstance) {
                 finalParty.push(companionInstance);
             } else {
-                console.error("Failed to create companion instance.");
                 break; 
             }
         }
 
-        // --- 3. INJECT INTO GAME STATE ---
+        // --- 4. INJECT INTO GAME STATE ---
         gameState.party.members = finalParty;
+        // Move any starting inventory items to the shared party bag
+        // (If your design uses a shared bag, we pull items out of player.inventory)
+        gameState.party.inventory = []; 
+        if (player.inventory) {
+             gameState.party.inventory.push(...player.inventory);
+             player.inventory = []; // Clear personal inventory if using shared bag
+        }
+        
         gameState.party.gold = 100;
 
         if (!gameState.settings) gameState.settings = {};
         gameState.settings.difficulty = diff.id; 
 
-        // --- 4. DEBUG: VERIFY THE MATH ---
+        // --- 5. DEBUG ---
         console.log("--- DEBUG: PARTY GENERATION ---");
-        
-        // Log Player
-        console.log(`PLAYER: ${player.name} (Lvl ${player.level})`);
-        console.log(`HP: ${player.hp}/${player.maxHp}`);
-        
-        // Log Companion Details
-        gameState.party.members.forEach((member, index) => {
-            if (index === 0) return; // Skip player
-            // Log the random XP we assigned
-            console.log(`SLOT ${index}: ${member.name} | XP: ${member.xp}/${member.maxXp}`);
-        });
-
+        console.log(`PLAYER: ${player.name}`);
+        // Log to verify items are Objects, not Strings
+        console.log("Player Equip:", player.state.equipment); 
+        console.log("Party Bag:", gameState.party.inventory);
         console.log("--------------------------------");
 
-        // --- 5. START GAME ---
+        // --- 6. START GAME ---
         events.emit('CHANGE_SCENE', { scene: 'overworld' });
     }
 }

@@ -1,4 +1,4 @@
-import { events } from './eventBus.js'; 
+import { events } from './eventBus.js';
 import { Input } from './input.js';
 
 // --- CONTROLLERS ---
@@ -6,6 +6,7 @@ import { OverworldController } from '../controllers/overworldController.js';
 import { EncounterController } from '../controllers/encounterController.js'; 
 import { CharacterCreatorController } from '../controllers/characterCreatorController.js'; 
 import { PartyController } from '../controllers/partyController.js';
+import { CharacterSummaryController } from '../controllers/characterSummaryController.js'; 
 
 // --- RENDERERS ---
 import { MapRenderer } from '../renderers/overworld/mapRenderer.js';
@@ -14,6 +15,7 @@ import { EncounterRenderer } from '../renderers/encounter/encounterRenderer.js';
 import { TransitionRenderer } from '../renderers/transitions/transitionRenderer.js';
 import { CharacterCreatorRenderer } from '../renderers/characterCreator/characterCreatorRenderer.js'; 
 import { PartyRenderer } from '../renderers/party/partyRenderer.js';
+import { CharacterSummaryRenderer } from '../renderers/characterSummary/characterSummaryRenderer.js'; 
 
 import { WorldManager } from '../../../shared/systems/worldManager.js'; 
 import { TimeSystem } from '../../../shared/systems/timeSystem.js';
@@ -37,9 +39,8 @@ export class SceneManager {
         this.overworldController = new OverworldController(this.input, this.config, this.worldManager);
         this.encounterController = new EncounterController(this.input, this.config, this.worldManager);
         this.characterCreatorController = new CharacterCreatorController(); 
-        
-        // 3. INIT PARTY CONTROLLER
         this.partyController = new PartyController();
+        this.characterSummaryController = null; // Initialized on demand
 
         // --- RENDERERS ---
         this.mapRenderer = new MapRenderer(this.canvas, this.loader, this.config);
@@ -47,9 +48,10 @@ export class SceneManager {
         this.encounterRenderer = new EncounterRenderer(this.config);
         this.transitionRenderer = new TransitionRenderer(this.config);
         this.characterCreatorRenderer = new CharacterCreatorRenderer(this.config, this.loader);
-        
-        // 4. INIT PARTY RENDERER (Pass 'this.loader')
         this.partyRenderer = new PartyRenderer(this.ctx, this.loader);
+        
+        // [FIX] Pass this.loader here so the renderer can draw portraits
+        this.characterSummaryRenderer = new CharacterSummaryRenderer(this.ctx, this.loader); 
 
         // State
         this.currentScene = 'character-creator'; 
@@ -64,12 +66,21 @@ export class SceneManager {
     }
 
     setupEventListeners() {
-        events.on('CHANGE_SCENE', ({ scene }) => {
+        // [UPDATE] Destructure 'data' from the payload
+        events.on('CHANGE_SCENE', ({ scene, data }) => {
             this.transitionRenderer.start(() => {
-                // Cleanup specific scenes if needed
+                
+                // Cleanup
                 if (this.currentScene === 'encounter' && this.encounterController.cleanup) {
                     this.encounterController.cleanup();
                 }
+
+                // [NEW] Logic for Character Summary
+                if (scene === 'character_summary') {
+                    // We must re-instantiate the controller to pass the new 'data' (memberIndex)
+                    this.characterSummaryController = new CharacterSummaryController(this.input, data);
+                }
+
                 this.changeScene(scene);
             });
         });
@@ -77,7 +88,7 @@ export class SceneManager {
         events.on('INTERACT', (data) => {
             if (data.type === 'ENCOUNTER') {
                 this.transitionRenderer.start(() => {
-                    this.encounterController.start(data.id);
+                    this.encounterController.start(data.id, data.context);
                     this.changeScene('encounter');
                 });
             }
@@ -86,10 +97,7 @@ export class SceneManager {
 
     setupInputRouting() {
         window.addEventListener('keydown', (e) => {
-            // Block input during transitions
             if (this.transitionRenderer.isActive && this.transitionRenderer.state === 'FADE_OUT') return;
-
-            // Debug Toggle
             if (e.code === 'Backquote') this.mapRenderer.showDebug = !this.mapRenderer.showDebug;
 
             switch (this.currentScene) {
@@ -102,9 +110,14 @@ export class SceneManager {
                 case 'character-creator':
                     this.characterCreatorController.handleKeyDown(e);
                     break;
-                // 5. ROUTE INPUT TO PARTY
                 case 'party': 
                     this.partyController.handleKeyDown(e.code);
+                    break;
+                // [NEW] Route input to Summary Controller
+                case 'character_summary':
+                    if (this.characterSummaryController) {
+                        this.characterSummaryController.handleKeyDown(e.code);
+                    }
                     break;
             }
         });
@@ -112,19 +125,16 @@ export class SceneManager {
 
     update(dt) {
         // --- 1. MOUSE CHECK ---
-        // Get the click from Input.js (which handles the coordinate scaling)
         const click = this.input.getAndResetClick();
         
         if (click) {
-            // ROUTING: Decide who gets the click based on the current scene
             if (this.currentScene === 'character-creator') {
                 this.characterCreatorController.handleMouseDown(click.x, click.y, this.characterCreatorRenderer);
             } 
             else if (this.currentScene === 'party') {
-                // >>> THE FIX: Route clicks to PartyController <<<
-                // We pass 'this.partyRenderer' because the controller needs it for hit detection
                 this.partyController.handleMouseDown(click.x, click.y, this.partyRenderer);
             }
+            // Note: Character Summary is currently Keyboard only, so no mouse handler needed yet
         }
 
         // --- 2. REGULAR UPDATES ---
@@ -134,8 +144,6 @@ export class SceneManager {
             this.timeSystem.update(dt); 
             this.overworldController.update(dt);
         }
-        
-        // Note: 'party' scene does not need a loop update, it only reacts to events.
     }
 
     render(interpolation, totalTime) { 
@@ -143,7 +151,6 @@ export class SceneManager {
 
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // 6. RENDER LOOP SWITCH
         switch (this.currentScene) {
             case 'character-creator':
                 const ccState = this.characterCreatorController.getState();
@@ -160,9 +167,17 @@ export class SceneManager {
                 break;
 
             case 'encounter':
-                this.renderOverworld(totalTime); // Render world behind encounter
+                this.renderOverworld(totalTime);
                 const encState = this.encounterController.getState();
                 this.encounterRenderer.render(this.ctx, encState);
+                break;
+
+            // [NEW] Render Character Summary
+            case 'character_summary':
+                if (this.characterSummaryController) {
+                    const csState = this.characterSummaryController.getState();
+                    this.characterSummaryRenderer.render(csState);
+                }
                 break;
         }
 
