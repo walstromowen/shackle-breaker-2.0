@@ -29,6 +29,8 @@ Root
 │   │   │   │    ├── mapRenderer.js
 │   │   │   ├── characterCreator/        
 │   │   │   │    └── characterCreatorRenderer.js
+│   │   │   ├── characterSummary/
+│   │   │   │    └── characterSummaryRenderer.js
 │   │   ├── index.html
 │   │   ├── main.js
 │   │   └── styles.css

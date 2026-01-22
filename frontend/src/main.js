@@ -11,7 +11,7 @@ const ASSET_MANIFEST = {
     spritesheet: './assets/sprites/hero.png',
     mapObjects: './assets/tilesets/objects.png',
     shadows: './assets/tilesets/shadows.png',
-    
+    "knight-1": './assets/portraits/knight-1.jpg',
     // Add the specific image defined in your bonfire.js data
     bonfire_bg: './assets/sprites/hero.png', 
 };

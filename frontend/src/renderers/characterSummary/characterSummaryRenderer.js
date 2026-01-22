@@ -12,10 +12,9 @@ export class CharacterSummaryRenderer {
     render(state) {
         const { member, slots, selectedSlotIndex, isChoosingItem, filteredInventory, inventoryIndex } = state;
         
-        // [DEBUG] Print the character instance as requested
-        // Check your console to see the 'sprite' property!
+        // [DEBUG] Log character state
         if (member) {
-            console.log("Current Character:", member);
+            // console.log("Current Character:", member);
         }
 
         const w = this.ctx.canvas.width;
@@ -120,26 +119,25 @@ export class CharacterSummaryRenderer {
         this.ctx.lineWidth = 2;
         this.ctx.strokeRect(centerX - (portraitSize/2), currentY, portraitSize, portraitSize);
 
-        // --- [FIX] SPRITE LOGIC ---
-        // 1. Try to get the key from the member, or default to 'hero'
-        let spriteKey = member.sprite || 'hero'; 
+        // --- SPRITE / PORTRAIT LOGIC ---
+        // We prioritize a 'portrait' property if you add one later, otherwise fall back to 'sprite'
+        let assetKey = member.portrait || member.sprite || 'hero'; 
         
-        // 2. SAFETY CHECK: If the loader doesn't have 'hero', use your test file 'spritesheet'
-        if (!this.loader.get(spriteKey)) {
-            // This fixes your current issue where the manifest says 'spritesheet' 
-            // but the character says 'hero'
-            spriteKey = 'spritesheet';
+        // Safety Fallback (keeps your test working)
+        if (!this.loader.get(assetKey)) {
+            assetKey = 'spritesheet';
         }
 
-        const img = this.loader.get(spriteKey);
+        const img = this.loader.get(assetKey);
 
         if (img) {
-            this.ctx.imageSmoothingEnabled = false; // Keep pixel art crisp
+            this.ctx.imageSmoothingEnabled = false; 
 
-            // Draw only the top-left 32x32 pixels (The "Face" or "Idle" frame)
+            // [CHANGE] RENDER FULL IMAGE
+            // We removed the source crop arguments (0, 0, 32, 32).
+            // Now it draws the WHOLE image scaled to fit the box.
             this.ctx.drawImage(
                 img, 
-                0, 0, 32, 32,                       // Source: x, y, w, h
                 centerX - (portraitSize/2),         // Dest: x
                 currentY,                           // Dest: y
                 portraitSize,                       // Dest: w

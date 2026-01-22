@@ -37,7 +37,7 @@ const CREATION_DATA = {
         { label: "Sunken Coast", tag: "LANG_AQUAN", desc: "You understand the tides." }
     ],
     APPEARANCES: [
-        { label: "Style A", sprite: "spritesheet", portrait: "spritesheet" }, 
+        { label: "Style A", sprite: "spritesheet", portrait: "knight-1" }, 
         { label: "Style B", sprite: "hero_style_b", portrait: "hero_face_b" },
         { label: "Style C", sprite: "hero_style_c", portrait: "hero_face_c" }
     ],
