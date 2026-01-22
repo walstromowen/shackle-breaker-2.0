@@ -11,9 +11,9 @@ export class CharacterSummaryController {
         // 'INVENTORY': Selecting an item to equip (Right Column)
         this.state = 'SLOTS'; 
         
-        // The equipment slots available on the character
+        // The equipment slots available on twssshe character
         this.equipmentSlots = [
-            'head', 'torso', 'legs', 'feet', 
+            'head', 'torso', 'arms','legs', 'feet', 
             'mainHand', 'offHand', 'accessory'
         ];
         this.slotIndex = 0; // Currently highlighted slot
