@@ -2,63 +2,70 @@ import { gameState } from '../../../shared/state/gameState.js';
 import { EntityFactory } from '../../../shared/systems/factories/entityFactory.js';
 import { events } from '../core/eventBus.js';
 import { TextEntry } from '../../../shared/utils/textEntry.js';
-// [NEW] Import ItemFactory
 import { ItemFactory } from '../../../shared/systems/factories/itemFactory.js';
-
-// --- CONFIGURATION DATA ---
-const TEST_PARTY_SIZE = 6; 
 
 const CREATION_DATA = {
     BACKGROUNDS: [
         { 
-            id: "MERCENARY", label: "Mercenary", 
-            desc: "A soldier of fortune.\n+Str +Vigor",
+            id: "TRAVELER", label: "Traveler", 
+            desc: "Travelers from far and wide came to see the incredible discovery of what was magic in the Altus Kingdom. Those first to arive were amazed by what they saw. Those last to arrive were horrified.",
             attributes: { vigor: 14, strength: 14, dexterity: 10, intelligence: 8, attunement: 8 },
-            // [UPDATE] Using IDs that exist in your ItemDefinitions.js
+            equipment: { mainHand: "wooden_stick", torso: "tattered_shirt" }
+        },
+        { 
+            id: "BLACKSMITH", label: "Blacksmith", 
+            desc: "The honest trade of blacksmithing is a profession that was held in high esteem by Alterians, and Panzerians alike. After the discovery of magic, most blacksmiths found themselves unable to find work, but with their sanity intact.",
+            attributes: { vigor: 14, strength: 14, dexterity: 10, intelligence: 8, attunement: 8 },
+            equipment: { mainHand: "wooden_stick", torso: "tattered_shirt" }
+        },
+        { 
+            id: "RANGER", label: "Ranger", 
+            desc: "Not all were enamored with the discovery of magic. A select few of the populance sought an escape from the people's obsession of it. Many of those that left became rangers, hunting wild animals and later more unnatural things.",
+            attributes: { vigor: 14, strength: 14, dexterity: 10, intelligence: 8, attunement: 8 },
             equipment: { mainHand: "wooden_stick", torso: "tattered_shirt" }
         },
         { 
             id: "SCHOLAR", label: "Scholar", 
-            desc: "Seeker of forbidden knowledge.\n+Int +Attunement",
-            attributes: { vigor: 8, strength: 6, dexterity: 10, intelligence: 16, attunement: 12 },
-            // Placeholder IDs - Ensure these exist in definitions or they won't appear
-            equipment: { mainHand: "wooden_stick", torso: "tattered_shirt" } 
-        },
-        { 
-            id: "SCOUT", label: "Scout", 
-            desc: "Survivalist and pathfinder.\n+Dex +Speed",
-            attributes: { vigor: 10, strength: 10, dexterity: 16, intelligence: 10, attunement: 8 },
+            desc: "Almost overnight, the scholars and philosophers of the Altus kingdom abandoned their studies to begin research of magic. Some saw magic as a science, others as life itself.",
+            attributes: { vigor: 14, strength: 14, dexterity: 10, intelligence: 8, attunement: 8 },
             equipment: { mainHand: "wooden_stick", torso: "tattered_shirt" }
-        }
+        },
+        
     ],
     ORIGINS: [
-        { label: "Imperial City", tag: "LANG_COMMON", desc: "You speak the trade tongue." },
-        { label: "Northern Tribes", tag: "LANG_NORTH", desc: "You speak the dialects of ice." },
-        { label: "Sunken Coast", tag: "LANG_AQUAN", desc: "You understand the tides." }
+        { label: "Alterian", tag: "LANG_ALTERIAN", desc: "Alterians are the oldest people of the known world and the first to discover magic. They are a fearless and adventurous people who hail from the ancient Altus kingdom. They value strength, honor, and loyalty to one's family. Or at least, they use to." },
+        { label: "Panzerian", tag: "LANG_PANZERIAN", desc: "Panzerians are a creative and powerful people from the icy mountains of Panzeria. They are master engineers who have acomplished a variety of impressive technolgical and architectural feats. Most notably being their weapons of war, all of which were eventually used against them." },
+        { label: "Namuh", tag: "LANG_NAMUH", desc: "The Namuh are a silent and mysterious people who communicate only through a form sign language. Not much is known about the Namuh people except for rumors, many of which speaking of a great tragedy befalling the Namuh people and the becoming of a shadow of their former selves." }
     ],
     APPEARANCES: [
         { label: "Style A", sprite: "spritesheet", portrait: "knight-1" }, 
-        { label: "Style B", sprite: "hero_style_b", portrait: "hero_face_b" },
-        { label: "Style C", sprite: "hero_style_c", portrait: "hero_face_c" }
+        { label: "Style B", sprite: "spritesheet_panzerian", portrait: "hero_face_b" },
+        { label: "Style C", sprite: "spritesheet_namuh", portrait: "hero_face_c" }
     ],
     KEEPSAKES: [
         { label: "None", itemId: null, desc: "You carry nothing but your burden." },
-        { label: "Old Coin", itemId: "wooden_stick", desc: "A lucky stick (Placeholder)." }, // [UPDATE] mapped to stick for testing
+        { label: "Old Coin", itemId: "wooden_stick", desc: "A lucky stick (Placeholder)." }, 
         { label: "Iron Key", itemId: "wooden_stick", desc: "Opens a door (Placeholder)." },
         { label: "Amber Resin", itemId: "wooden_stick", desc: "Healing item (Placeholder)." }
     ],
     COMPANIONS: [
+        // [UPDATE] Added "None" option
+        { 
+            label: "None", speciesId: null, 
+            desc: "Walk the path alone.",
+            attributes: {}, equipment: {}
+        },
         { 
             label: "War Dog", speciesId: "BEAST", 
             desc: "Loyal and sturdy.",
             attributes: { vigor: 12, strength: 10 },
-            equipment: { accessory: "tattered_shirt" } // Placeholder
+            equipment: { accessory: "tattered_shirt" } 
         },
         { 
             label: "Hunting Hawk", speciesId: "AVIAN", 
             desc: "Fast and watchful.",
             attributes: { dexterity: 16, speed: 10 },
-            equipment: { accessory: "tattered_shirt" } // Placeholder
+            equipment: { accessory: "tattered_shirt" } 
         }
     ],
     DIFFICULTIES: [
@@ -183,13 +190,11 @@ export class CharacterCreatorController {
         }
     }
 
-    // --- HELPER TO CONVERT STRING IDs TO ITEM MODELS ---
     _resolveEquipment(equipmentIdMap) {
         const resolved = {};
         if (!equipmentIdMap) return resolved;
 
         for (const [slot, itemId] of Object.entries(equipmentIdMap)) {
-            // Use Factory to create the real object
             const item = ItemFactory.createItem(itemId);
             if (item) {
                 resolved[slot] = item;
@@ -201,12 +206,11 @@ export class CharacterCreatorController {
     _resolveInventory(itemIdList) {
         if (!itemIdList || itemIdList.length === 0) return [];
         return itemIdList
-            .map(id => ItemFactory.createItem(id)) // Create items
-            .filter(item => item !== null);        // Remove nulls (invalid IDs)
+            .map(id => ItemFactory.createItem(id)) 
+            .filter(item => item !== null);       
     }
 
     finalizeCharacter() {
-        // Validation
         if (!this.state.name || this.state.name.trim() === "") {
             this.currentRow = 0; 
             this.isEditingName = true; 
@@ -222,19 +226,18 @@ export class CharacterCreatorController {
         const comp = CREATION_DATA.COMPANIONS[this.state.companionIdx];
         const diff = CREATION_DATA.DIFFICULTIES[this.state.difficultyIdx];
 
-        // --- 1. PREPARE ITEMS (Factory Conversion) ---
+        // --- 1. PREPARE ITEMS ---
         const playerEquipment = this._resolveEquipment(bg.equipment);
         const playerInventory = this._resolveInventory(keep.itemId ? [keep.itemId] : []);
-        const companionEquipment = this._resolveEquipment(comp.equipment);
 
         // --- 2. CREATE PLAYER ---
         const playerOverrides = {
             name: this.state.name, 
             attributes: { ...bg.attributes }, 
-            equipment: playerEquipment, // Pass real objects
+            equipment: playerEquipment,
             sprite: app.sprite,
             portrait: app.portrait,
-            inventory: playerInventory, // Pass real objects
+            inventory: playerInventory,
             tags: [origin.tag],
             level: 1, 
             xp: 0,
@@ -248,43 +251,36 @@ export class CharacterCreatorController {
             return;
         }
 
-        // Initialize party with player
         const finalParty = [player];
 
-        // --- 3. CREATE COMPANION CLONES ---
-        while (finalParty.length < TEST_PARTY_SIZE) {
-            const slotNumber = finalParty.length; 
-            const randomStartXP = Math.floor(Math.random() * 50);
-
-            // Clone the equipment object so they don't share the same reference in memory
-            // (ItemFactory.createItem returns a new instance, but we need to call it again or clone)
-            // Ideally, we create new items for every companion:
+        // --- 3. CREATE SINGLE COMPANION (If Selected) ---
+        // [UPDATE] Logic changed: Check speciesId. If valid, add ONE companion.
+        if (comp.speciesId) {
             const newCompEquip = this._resolveEquipment(comp.equipment);
 
             const companionOverrides = {
-                name: `${comp.label} ${slotNumber}`,
+                name: comp.label, // Just "War Dog", not "War Dog 1"
                 attributes: { ...comp.attributes },
                 equipment: newCompEquip, 
-                xp: randomStartXP
+                xp: 0 
             };
 
             const companionInstance = EntityFactory.create(comp.speciesId, companionOverrides);
 
             if (companionInstance) {
                 finalParty.push(companionInstance);
-            } else {
-                break; 
+                console.log(`[CharCreator] Companion added: ${companionInstance.name}`);
             }
+        } else {
+             console.log("[CharCreator] No companion selected.");
         }
 
         // --- 4. INJECT INTO GAME STATE ---
         gameState.party.members = finalParty;
-        // Move any starting inventory items to the shared party bag
-        // (If your design uses a shared bag, we pull items out of player.inventory)
         gameState.party.inventory = []; 
         if (player.inventory) {
              gameState.party.inventory.push(...player.inventory);
-             player.inventory = []; // Clear personal inventory if using shared bag
+             player.inventory = []; 
         }
         
         gameState.party.gold = 100;
@@ -295,9 +291,7 @@ export class CharacterCreatorController {
         // --- 5. DEBUG ---
         console.log("--- DEBUG: PARTY GENERATION ---");
         console.log(`PLAYER: ${player.name}`);
-        // Log to verify items are Objects, not Strings
-        console.log("Player Equip:", player.state.equipment); 
-        console.log("Party Bag:", gameState.party.inventory);
+        console.log("Party Size:", finalParty.length);
         console.log("--------------------------------");
 
         // --- 6. START GAME ---
