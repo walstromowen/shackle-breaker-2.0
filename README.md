@@ -162,16 +162,16 @@ Mask: 251, Index: 31
         this.attunement 
 
        
-        this.maxHP 
-        this.maxStamina 
-        this.maxMagic 
-        this.baseHpRecovery 
-        this.baseStaminaRecovery 
-        this.baseMagicRecovery 
-        this.baseBluntAttack 
-        this.basePierceAttack 
-        this.baseArcaneAttack 
-        this.baseElementalAttack 
+        maxHP 
+        maxStamina 
+        maxMagic 
+        baseHpRecovery 
+        baseStaminaRecovery 
+        baseMagicRecovery 
+        baseBluntAttack 
+        basePierceAttack 
+        baseArcaneAttack 
+        baseElementalAttack 
         this.baseBluntDefense 
         this.basePierceDefense 
         this.baseArcaneDefense 

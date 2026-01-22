@@ -13,7 +13,8 @@ const ASSET_MANIFEST = {
     shadows: './assets/tilesets/shadows.png',
     "knight-1": './assets/portraits/knight-1.jpg',
     // Add the specific image defined in your bonfire.js data
-    bonfire_bg: './assets/sprites/hero.png', 
+    bonfire_bg: './assets/sprites/hero.png',
+    items: './assets/icons/items.png', 
 };
 
 let sceneManager;

@@ -1,5 +1,7 @@
 import { UITheme } from '../../ui/UITheme.js';
 import { CanvasUI } from '../../ui/canvasUI.js';
+import { CONFIG } from '../../../../shared/data/constants.js'; 
+import { StatCalculator } from '../../../../shared/systems/statCalculator.js';
 
 export class CharacterSummaryRenderer {
     constructor(ctx, loader) {
@@ -7,186 +9,250 @@ export class CharacterSummaryRenderer {
         this.loader = loader; 
         this.ui = new CanvasUI(ctx);
         this.padding = 15; 
+        
+        this.ICON_SIZE = CONFIG.TILE_SIZE || 32; 
+        this.ICON_PADDING = CONFIG.TILE_PADDING || 0; 
+        this.RENDER_SIZE = 32; 
     }
 
     render(state) {
-        // We still accept 'slots' from state as a fallback, 
-        // but we will prioritize the member's specific data below.
         const { member, slots, selectedSlotIndex, isChoosingItem, filteredInventory, inventoryIndex } = state;
         const w = this.ctx.canvas.width;
         const h = this.ctx.canvas.height;
 
+        // 1. Force crisp pixels
+        this.ctx.imageSmoothingEnabled = false;
+
         this.ui.clearScreen(w, h);
 
-        // --- LAYOUT CONSTANTS ---
-        const leftW = w * 0.28;
-        const centerW = w * 0.37;
+        // [NEW] Calculate fresh stats for this frame
+        const derivedStats = StatCalculator.calculate(member);
+
+        // Adjusted widths to fit the table in the left column
+        const leftW = w * 0.32; 
+        const centerW = w * 0.33;
         const rightW = w * 0.35;
 
         const col1X = 0;
-        const col2X = leftW;
-        const col3X = leftW + centerW;
+        const col2X = Math.floor(leftW);
+        const col3X = Math.floor(leftW + centerW);
 
         // Backgrounds
         this.ctx.fillStyle = "#111"; 
-        this.ctx.fillRect(col1X, 0, leftW, h);
-        this.ctx.fillRect(col3X, 0, rightW, h);
+        this.ctx.fillRect(col1X, 0, Math.floor(leftW), h);
+        this.ctx.fillRect(col3X, 0, Math.floor(rightW), h);
         
-        // Vertical Separators
+        // Separators
         this.ctx.strokeStyle = "#333";
         this.ctx.lineWidth = 1;
         this.ctx.beginPath();
-        this.ctx.moveTo(col2X, 0); this.ctx.lineTo(col2X, h);
-        this.ctx.moveTo(col3X, 0); this.ctx.lineTo(col3X, h);
+        this.ctx.moveTo(col2X + 0.5, 0); this.ctx.lineTo(col2X + 0.5, h);
+        this.ctx.moveTo(col3X + 0.5, 0); this.ctx.lineTo(col3X + 0.5, h);
         this.ctx.stroke();
 
         if (member) {
-            this.drawLeftColumn(member, col1X + this.padding, this.padding, leftW - (this.padding*2));
-            
-            // [UPDATE] Pass the fallback slots, but the method will check member first
+            // [NEW] Pass derivedStats to left column
+            this.drawLeftColumn(member, derivedStats, col1X + this.padding, this.padding, leftW - (this.padding*2));
             this.drawCenterColumn(member, slots, selectedSlotIndex, isChoosingItem, col2X, this.padding, centerW, h);
-            
             this.drawRightColumn(filteredInventory, inventoryIndex, isChoosingItem, col3X + this.padding, this.padding, rightW - (this.padding*2));
         }
 
         this.drawFooter(w, h, isChoosingItem);
     }
 
-    // =========================================================
-    // COLUMN 1: STATS
-    // =========================================================
-    drawLeftColumn(member, x, y, w) {
-        let currentY = y + 20;
+    drawItemIcon(item, x, y) {
+        if (!item) return;
 
-        // Header
-        this.ui.drawText(member.name, x, currentY, "bold 20px sans-serif", UITheme.colors.textMain, "left");
-        currentY += 22;
-        this.ui.drawText(`Lvl ${member.level} ${member.type || 'Adventurer'}`, x, currentY, "14px sans-serif", UITheme.colors.textMuted, "left");
-        currentY += 30; 
+        const sheet = this.loader.get('items');
+        if (!sheet) return; 
 
-        // Vitals
-        const vitalSpacing = 20;
-        this.drawStatRow("HP", `${member.hp} / ${member.maxHp}`, x, currentY, UITheme.colors.danger);
-        currentY += vitalSpacing;
-        this.drawStatRow("XP", `${member.xp} / ${member.maxXp}`, x, currentY, "#9370DB");
-        currentY += vitalSpacing;
-        this.drawStatRow("Stamina", `${member.stamina} / ${member.maxStamina}`, x, currentY, "#32CD32");
-        currentY += 35; 
-
-        // Attributes (Compact Grid)
-        this.ui.drawText("Attributes", x, currentY, "bold 16px sans-serif", UITheme.colors.textHighlight, "left");
-        currentY += 25;
+        const iconData = item.icon || (item.definition ? item.definition.icon : { col: 0, row: 0 });
         
-        const attrs = member.attributes || (member.state && member.state.attributes) || {};
-        
-        for (const [key, val] of Object.entries(attrs)) {
-            const label = key.charAt(0).toUpperCase() + key.slice(1);
-            this.drawStatRow(label, val, x, currentY);
-            currentY += 18; 
-        }
-        currentY += 20;
+        const totalSize = this.ICON_SIZE + this.ICON_PADDING;
+        const srcX = (iconData.col * totalSize) + this.ICON_PADDING; 
+        const srcY = (iconData.row * totalSize) + this.ICON_PADDING; 
 
-        // Combat
-        this.ui.drawText("Combat", x, currentY, "bold 16px sans-serif", UITheme.colors.textHighlight, "left");
-        currentY += 25;
-
-        const attack = member.attack || {};
-        let atkStr = Object.entries(attack).map(([type, val]) => `${val}`).join(', ') || "0";
-        this.drawStatRow("Attack", atkStr, x, currentY);
-        currentY += 18;
-
-        const defense = member.defense || {};
-        let defStr = Object.values(defense).reduce((a, b) => a + b, 0);
-        this.drawStatRow("Defense", defStr, x, currentY);
+        this.ctx.drawImage(
+            sheet,
+            srcX, srcY, this.ICON_SIZE, this.ICON_SIZE, 
+            Math.floor(x), Math.floor(y), this.RENDER_SIZE, this.RENDER_SIZE 
+        );
     }
 
-    // =========================================================
-    // COLUMN 2: PORTRAIT & DYNAMIC SLOTS
-    // =========================================================
-    drawCenterColumn(member, defaultSlots, selectedIndex, isChoosingItem, x, y, w, h) {
-        const centerX = x + (w / 2);
-        let currentY = y + 10; // Start slightly higher
+    // [NEW] Completely overhauled for Table View
+    drawLeftColumn(member, stats, x, y, w) {
+        let currentY = y + 20;
 
-        // 1. PORTRAIT (Reduced to 64px to save space)
-        const portraitSize = 64; 
+        // 1. Header (Name & Level)
+        this.ui.drawText(member.name, x, currentY, "bold 18px sans-serif", UITheme.colors.textMain, "left");
+        this.ui.drawText(`Lvl ${member.level}`, x + w, currentY, "14px sans-serif", UITheme.colors.accent, "right");
+        currentY += 25;
+
+        // 2. Vitals (HP / XP / STM)
+        this.ui.drawText(`HP: ${member.hp}/${member.maxHp}`, x, currentY, "12px monospace", UITheme.colors.danger, "left");
+        this.ui.drawText(`XP: ${member.xp}`, x + w, currentY, "12px monospace", "#9370DB", "right");
+        currentY += 15;
+        this.ui.drawText(`STM: ${member.stamina}/${member.maxStamina}`, x, currentY, "12px monospace", "#32CD32", "left");
+        currentY += 25;
+
+        // ---------------------------------------------------------
+        // 3. [NEW] ATTRIBUTES GRID
+        // ---------------------------------------------------------
+        // We use a 2-column layout to save vertical space
+        const attrs = member.attributes || {};
+        const attrKeys = Object.keys(attrs);
+
+        if (attrKeys.length > 0) {
+            this.ui.drawText("Attributes", x, currentY, "bold 12px sans-serif", "#888", "left");
+            currentY += 15;
+
+            const colWidth = w / 2;
+            
+            attrKeys.forEach((key, i) => {
+                const val = attrs[key];
+                // Abbreviate to 3 chars (e.g., "Strength" -> "STR") for compact UI
+                const label = key.substring(0, 3).toUpperCase();
+                
+                // Determine column (Left or Right)
+                const colX = (i % 2 === 0) ? x : x + colWidth;
+                
+                this.ui.drawText(label, colX, currentY, "11px sans-serif", "#aaa", "left");
+                this.ui.drawText(val.toString(), colX + 30, currentY, "11px monospace", "#fff", "left");
+
+                // Only move down after the second column (Right side)
+                if (i % 2 !== 0) currentY += 14;
+            });
+            
+            // If we ended on an odd number (left column), push Y down to complete the row
+            if (attrKeys.length % 2 !== 0) currentY += 14;
+            currentY += 10; // Spacer before next section
+        }
+
+        // 4. "Other" Stats (Speed, Crit, Corruption)
+        const rowY = currentY;
+        this.ui.drawText("Spd:", x, rowY, "11px sans-serif", "#aaa", "left");
+        this.ui.drawText(stats.other.speed.toString(), x + 25, rowY, "11px monospace", "#fff", "left");
         
+        this.ui.drawText("Crit:", x + 55, rowY, "11px sans-serif", "#aaa", "left");
+        this.ui.drawText(stats.other.critical + "%", x + 85, rowY, "11px monospace", "#fff", "left");
+        
+        this.ui.drawText("Corr:", x + 130, rowY, "11px sans-serif", "#aaa", "left");
+        this.ui.drawText(stats.other.corruption.toString(), x + 160, rowY, "11px monospace", "#d00", "left");
+        
+        currentY += 25;
+
+        // 5. THE STAT TABLE HEADER
+        const col1 = x;       // Type Name
+        const col2 = x + 70;  // Atk
+        const col3 = x + 115; // Def
+        const col4 = x + 160; // Res
+
+        this.ctx.fillStyle = "#222";
+        this.ctx.fillRect(x - 5, currentY - 12, w + 10, 16);
+        
+        this.ui.drawText("TYPE", col1, currentY, "bold 10px monospace", "#888", "left");
+        this.ui.drawText("ATK", col2, currentY, "bold 10px monospace", "#e66", "left");
+        this.ui.drawText("DEF", col3, currentY, "bold 10px monospace", "#66e", "left");
+        this.ui.drawText("RES", col4, currentY, "bold 10px monospace", "#ea6", "left");
+        
+        currentY += 15;
+
+        // 6. DRAW STAT ROWS
+        const types = StatCalculator.DAMAGE_TYPES; 
+        
+        types.forEach((type, index) => {
+            // Zebra Striping
+            if (index % 2 === 0) {
+                this.ctx.fillStyle = "rgba(255, 255, 255, 0.03)";
+                this.ctx.fillRect(x - 5, currentY - 10, w + 10, 14);
+            }
+
+            const label = type.charAt(0).toUpperCase() + type.slice(1);
+            const atk = stats.attacks[type] || 0;
+            const def = stats.defenses[type] || 0;
+            const res = stats.resistances[type] || 0;
+
+            // Grey out zeros for readability
+            const cAtk = atk > 0 ? "#faa" : "#444";
+            const cDef = def > 0 ? "#aaf" : "#444";
+            const cRes = res > 0 ? "#fea" : "#444";
+
+            this.ui.drawText(label, col1, currentY, "11px monospace", "#bbb", "left");
+            this.ui.drawText(atk.toString(), col2, currentY, "11px monospace", cAtk, "left");
+            this.ui.drawText(def.toString(), col3, currentY, "11px monospace", cDef, "left");
+            this.ui.drawText(`${res}%`, col4, currentY, "11px monospace", cRes, "left");
+
+            currentY += 14; 
+        });
+    }
+
+    drawCenterColumn(member, defaultSlots, selectedIndex, isChoosingItem, x, y, w, h) {
+        const centerX = Math.floor(x + (w / 2));
+        let currentY = y + 10; 
+
+        // 1. PORTRAIT
+        const portraitSize = 128; 
+        const pX = Math.floor(centerX - (portraitSize/2));
+
         this.ctx.strokeStyle = UITheme.colors.border;
         this.ctx.lineWidth = 2;
-        this.ctx.strokeRect(centerX - (portraitSize/2), currentY, portraitSize, portraitSize);
+        this.ctx.strokeRect(pX, currentY, portraitSize, portraitSize);
 
-        // Load Image
         let assetKey = member.portrait || member.sprite || 'hero'; 
         if (!this.loader.get(assetKey)) assetKey = 'spritesheet';
         const img = this.loader.get(assetKey);
 
         if (img) {
-            this.ctx.imageSmoothingEnabled = false; 
             this.ctx.drawImage(
                 img, 
-                centerX - (portraitSize/2), currentY, 
+                pX, currentY, 
                 portraitSize, portraitSize
             );
-        } else {
-            this.ui.drawText("No Img", centerX, currentY + 35, "10px sans-serif", "#666", "center");
         }
         
-        // Tighten gap between portrait and first slot
-        currentY += portraitSize + 15;
+        currentY += portraitSize + 20;
 
-        // 2. DYNAMIC EQUIPMENT SLOTS
+        // 2. EQUIPMENT SLOTS
         const activeSlots = member.slots || defaultSlots;
-
-        const equipData = (member.state && member.state.equipment) 
-                          ? member.state.equipment 
-                          : (member.equipment || {});
+        const equipData = (member.state && member.state.equipment) ? member.state.equipment : (member.equipment || {});
 
         activeSlots.forEach((slotName, index) => {
             const isSelected = (index === selectedIndex);
             
-            // [TWEAK] Ultra-compact Box Height
-            const boxH = 28; 
-            const boxW = w * 0.95; // Slightly wider to fit text
-            const boxX = centerX - (boxW / 2);
+            const boxH = 34; 
+            const boxW = Math.floor(w * 0.95); 
+            const boxX = Math.floor(centerX - (boxW / 2));
 
             let borderColor = isSelected 
                 ? (isChoosingItem ? UITheme.colors.primary : UITheme.colors.accent) 
                 : "#333";
-            
             let boxColor = isSelected 
                 ? (isChoosingItem ? "rgba(255, 255, 255, 0.05)" : "rgba(255, 255, 255, 0.1)") 
                 : "transparent";
 
-            // Draw Box
             this.ctx.fillStyle = boxColor;
             this.ctx.fillRect(boxX, currentY, boxW, boxH);
             this.ctx.strokeStyle = borderColor;
             this.ctx.lineWidth = isSelected ? 2 : 1;
             this.ctx.strokeRect(boxX, currentY, boxW, boxH);
 
-            // Text Centering (Box is 28px, text is ~12px high, so offset is ~19px)
-            const textY = currentY + 19; 
+            const textY = Math.floor(currentY + (boxH / 2) + 4);
             
-            // Slot Label (Smaller Font)
             this.ui.drawText(slotName.toUpperCase(), boxX + 6, textY, "10px monospace", UITheme.colors.primary, "left");
 
-            // Item Name
             const item = equipData[slotName];
-            let realName = "---";
             if (item) {
-                realName = item.name || (item.definition ? item.definition.name : "Unknown");
+                const iconX = Math.floor(boxX + boxW - 4 - this.RENDER_SIZE);
+                const iconY = Math.floor(currentY + (boxH - this.RENDER_SIZE) / 2);
+                this.drawItemIcon(item, iconX, iconY);
+            } else {
+                this.ui.drawText("---", boxX + boxW - 6, textY, "12px sans-serif", "#555", "right");
             }
 
-            const itemColor = item ? "#ffffff" : "#555";
-            this.ui.drawText(realName, boxX + boxW - 6, textY, "12px sans-serif", itemColor, "right");
-
-            // [TWEAK] Tiny gap between slots (4px)
             currentY += boxH + 4; 
         });
     }
 
-    // =========================================================
-    // COLUMN 3: INVENTORY
-    // =========================================================
     drawRightColumn(inventory, selectedIndex, isActive, x, y, w) {
         let currentY = y + 20;
 
@@ -194,7 +260,7 @@ export class CharacterSummaryRenderer {
         currentY += 10;
         
         this.ctx.fillStyle = "#444";
-        this.ctx.fillRect(x, currentY + 10, w, 2);
+        this.ctx.fillRect(Math.floor(x), currentY + 10, Math.floor(w), 2);
         currentY += 25;
 
         if (!inventory || inventory.length === 0) {
@@ -204,25 +270,29 @@ export class CharacterSummaryRenderer {
 
         inventory.forEach((item, index) => {
             const isSelected = (isActive && index === selectedIndex);
-            const rowHeight = 25;
+            const rowHeight = 34; 
 
             if (isSelected) {
                 this.ctx.fillStyle = "rgba(255, 215, 0, 0.1)"; 
-                this.ctx.fillRect(x - 5, currentY - 18, w + 10, rowHeight);
+                this.ctx.fillRect(Math.floor(x - 5), Math.floor(currentY - 18), Math.floor(w + 10), rowHeight);
                 this.ui.drawText(">", x - 12, currentY, "13px sans-serif", UITheme.colors.accent, "left");
             }
 
+            const iconY = Math.floor(currentY - 16);
+            this.drawItemIcon(item, Math.floor(x), iconY);
+
+            const textX = Math.floor(x + this.RENDER_SIZE + 8);
             const color = isSelected ? "#ffffff" : "#aaaaaa";
             const name = item.name || (item.definition ? item.definition.name : "Unknown");
             
-            this.ui.drawText(name, x, currentY, "13px sans-serif", color, "left");
+            this.ui.drawText(name, textX, currentY, "13px sans-serif", color, "left");
             
-            // Show stats on selection
             if (isSelected) {
                 const data = item.definition || item;
+                // Simple summary of item stats
                 let statText = "";
-                if (data.damage) statText = `Atk: ${data.damage.min}-${data.damage.max}`;
-                if (data.defense) statText = `Def: ${JSON.stringify(data.defense)}`;
+                if (data.damage) statText = `Atk ${Object.values(data.damage)[0] || 0}`;
+                else if (data.defense) statText = `Def ${Object.values(data.defense)[0] || 0}`;
                 
                 if (statText) {
                     this.ui.drawText(statText, x + w, currentY, "11px monospace", "#888", "right");
@@ -240,13 +310,9 @@ export class CharacterSummaryRenderer {
 
     drawFooter(w, h, isChoosingItem) {
         const y = h - 15;
-        let text = "";
-        
-        if (isChoosingItem) {
-            text = "Navigate: [ARROWS]   Equip: [ENTER]   Cancel: [ESC]";
-        } else {
-            text = "Select: [W/S]   Bag: [ENTER]   Unequip: [X]   Next: [TAB]   Exit: [ESC]";
-        }
+        const text = isChoosingItem 
+            ? "Navigate: [ARROWS]   Equip: [ENTER]   Cancel: [ESC]"
+            : "Select: [W/S]   Bag: [ENTER]   Unequip: [X]   Next: [TAB]   Exit: [ESC]";
         this.ui.drawText(text, w / 2, y, "12px monospace", "#666", "center");
     }
 }

@@ -6,7 +6,9 @@ export const ItemDefinitions = {
         type: "weapon",
         damage: { blunt: 3 },
         value: 5,
-        description: "A sturdy branch found on the forest floor."
+        description: "A sturdy branch found on the forest floor.",
+        // [NEW] Visual Data: Column 0, Row 0 on the items.png
+        icon: { col: 0, row: 0 } 
     },
     "tattered_shirt": {
         id: "tattered_shirt",
@@ -15,7 +17,8 @@ export const ItemDefinitions = {
         type: "armor",
         defense: { blunt: 1 },
         value: 2,
-        description: "It has more holes than fabric."
+        description: "It has more holes than fabric.",
+        // [NEW] Visual Data: Column 1, Row 0
+        icon: { col: 1, row: 0 } 
     }
-    // Add other starting items here (potions, etc.)
 };

@@ -30,8 +30,8 @@ export const ENTITY_DEFINITIONS = {
             // RENAMED: baseDefense (Flat Armor)
             baseDefense: {
                 blunt: 0, slash: 0, pierce: 0,
-                fire: 0, water: 0, lightning: 0, earth: 0, wind: 0,
-                light: 0, shadow: 0, psychic: 0, poison: 0, void: 0
+                fire: 0, water: 0, lightning: 0, earth: 0, wind: 0, poison: 0,
+                light: 0, shadow: 0, arcane: 0,  
             },
 
             // RENAMED: baseResistance (% Reduction)
