@@ -1,4 +1,10 @@
+/**
+ * shared/models/entityModel.js
+ */
 import { StatCalculator } from '../../shared/systems/statCalculator.js';
+
+// [NEW] Required to generate abilities when equipping items
+import { AbilityFactory } from '../systems/factories/abilityFactory.js';
 
 export class EntityModel {
     /**
@@ -30,6 +36,11 @@ export class EntityModel {
 
         // --- COMBAT BASE STATS ---
         if (!this.state.baseStats) this.state.baseStats = {};
+
+        // --- [NEW] RUNTIME ABILITY CONTAINER ---
+        // We do NOT store complex Ability objects in 'this.state' (which is for saving JSON).
+        // Instead, they live on the instance. The Factory populates this.
+        this.abilities = []; 
     }
 
     // --- GETTERS & SETTERS (The Proxy Layer) ---
@@ -55,7 +66,11 @@ export class EntityModel {
 
     // Ensure we return the raw object so the Calculator can read it
     get attributes() { return this.state.attributes || {}; }
+    
+    // We modify this via equipItem(), but the getter is needed for the Calculator
     get equipment() { return this.state.equipment || {}; }
+    
+    get statusEffects() { return this.state.statusEffects || []; }
 
     // =========================================================
     // ✅ MIGRATION: USE THE CALCULATOR
@@ -68,16 +83,13 @@ export class EntityModel {
         return StatCalculator.calculate(this);
     }
 
-    // [FIXED] Mapped correctly to StatCalculator output
-    get attack() { return this.stats.attack; }         // Was .attacks (plural), now .attack (singular)
-    get defense() { return this.stats.defenses; }      // Matches Calculator
-    get resistance() { return this.stats.resistances; }// Matches Calculator
+    get attack() { return this.stats.attack; }         
+    get defense() { return this.stats.defenses; }      
+    get resistance() { return this.stats.resistances; }
     
-    // [FIXED] Removed .other nesting. These are now root properties.
     get speed() { return this.stats.speed; }           
     get corruption() { return this.stats.corruption; } 
 
-    // [UPDATED] StatCalculator returns critChance separately
     get critical() { return this.stats.critChance; }   
     get critMultiplier() { return this.stats.critMultiplier; }
 
@@ -106,6 +118,74 @@ export class EntityModel {
     }
     get maxInsight() { return this.state.stats.maxInsight; }
     set maxInsight(val) { this.state.stats.maxInsight = val; }
+
+    // =========================================================
+    // --- [NEW] ABILITY MANAGEMENT ---
+    // =========================================================
+
+    /**
+     * Adds abilities to the entity, tagged with a source.
+     * @param {Array<AbilityModel>} abilityList - List of instantiated abilities
+     * @param {String} source - 'innate', 'mainHand', 'accessory', etc.
+     */
+    addAbilities(abilityList, source = 'innate') {
+        if (!abilityList || abilityList.length === 0) return;
+
+        // Tag each ability so we know where it came from (for removal later)
+        abilityList.forEach(ability => {
+            ability.source = source; 
+        });
+
+        this.abilities.push(...abilityList);
+    }
+
+    /**
+     * Removes all abilities associated with a specific source.
+     */
+    removeAbilitiesBySource(source) {
+        if (source === 'innate') {
+            console.warn("[EntityModel] Warning: Attempting to remove innate abilities.");
+        }
+        this.abilities = this.abilities.filter(a => a.source !== source);
+    }
+
+    // =========================================================
+    // --- [NEW] EQUIPMENT MANAGEMENT ---
+    // =========================================================
+
+    /**
+     * Equips an item into a slot, handling ability swaps.
+     * @param {string} slot - 'mainHand', 'head', etc.
+     * @param {ItemModel} itemModel - The item instance
+     */
+    equipItem(slot, itemModel) {
+        // 1. Remove old item & its abilities
+        this.unequipItem(slot);
+
+        // 2. Set new item in state
+        this.state.equipment[slot] = itemModel;
+
+        // 3. Add new abilities (if the item has any)
+        if (itemModel && itemModel.grantedAbilities) {
+            // Use Factory to convert strings ["cleave"] -> Objects [AbilityModel]
+            const newMoves = AbilityFactory.createAbilities(itemModel.grantedAbilities);
+            
+            // Add them with the slot as the source
+            this.addAbilities(newMoves, slot);
+        }
+    }
+
+    /**
+     * Unequips an item from a slot.
+     * @param {string} slot 
+     */
+    unequipItem(slot) {
+        // 1. Remove abilities linked to this slot
+        this.removeAbilitiesBySource(slot);
+        
+        // 2. Clear item from state
+        this.state.equipment[slot] = null;
+    }
 
     // --- HELPER METHODS ---
 

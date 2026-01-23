@@ -44,7 +44,8 @@ Root
 │   │   ├── itemDefinitions.js      
 │   │   ├── mapObjects.js
 │   │   └── sprites.js
-│   ├── models/                    
+│   ├── models/ 
+|   │   ├── abilityModel.js                     
 │   │   ├── entityModel.js               
 │   │   └── itemModel.js                 
 │   ├── registries/
@@ -52,7 +53,8 @@ Root
 │   ├── state/
 │   │   └── gameState.js            
 │   ├── systems/
-│   │   ├── factories/              
+│   │   ├── factories/  
+│   │   │   ├── abilityFactory.js                
 │   │   │   ├── entityFactory.js    
 │   │   │   └── itemFactory.js
 │   │   ├── experienceSystem.js     
@@ -234,5 +236,19 @@ Mask: 251, Index: 31
         this.lootTable 
         
 
+Weather
+Biome
+Structures (can go inside)
+Battles
+Abillities
+Damage calculations
+trait integration
+
+status effects
+encounter rolling
+encounter results
+
+refactoing of encounters
+refactoring of mapObjects
 
 

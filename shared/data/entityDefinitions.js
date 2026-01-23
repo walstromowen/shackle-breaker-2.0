@@ -1,10 +1,13 @@
+/**
+ * shared/data/entityDefinitions.js
+ */
 export const ENTITY_DEFINITIONS = {
     "HUMANOID": {
         name: "Humanoid",
         level: 1, 
-        xp: 0,            // [NEW] Current Experience
-        maxXp: 100,       // [NEW] Experience to next level
-        skillPoints: 0,   // [NEW] Unspent points
+        xp: 0,            
+        maxXp: 100,       
+        skillPoints: 0,   
 
         // --- VISUALS ---
         sprite: "humanoid_base",
@@ -21,33 +24,25 @@ export const ENTITY_DEFINITIONS = {
             attunement: 10
         },
         
-        // --- BASE STATS (The "Naked" Values) ---
+        // --- BASE STATS ---
         baseStats: {
             speed: 5,
             critical: 5,
             corruption: 0,
-
-            // RENAMED: baseDefense (Flat Armor)
             baseDefense: {
                 blunt: 0, slash: 0, pierce: 0,
                 fire: 0, water: 0, lightning: 0, earth: 0, wind: 0, poison: 0,
                 light: 0, shadow: 0, arcane: 0,  
             },
-
-            // RENAMED: baseResistance (% Reduction)
-            baseResistance: {
-                // Humans are neutral (0% resistance to everything)
-            },
-
-            // RENAMED: baseAttack (Natural/Unarmed Damage)
+            baseResistance: {},
             baseAttack: {
-                blunt: 1, // A simple punch
+                blunt: 1, 
                 slash: 0,
                 pierce: 0
             }
         },
 
-        // --- RESOURCES (The Tanks) ---
+        // --- RESOURCES ---
         stats: {
             hp: 0,          
             maxHp: 20,      
@@ -71,7 +66,8 @@ export const ENTITY_DEFINITIONS = {
 
         lootTable: [], 
 
-        abilities: [],
+        // [UPDATED] Innate Abilities (Always available)
+        abilities: ["rest", "punch"],
         tags: ["BIOLOGICAL", "HUMANOID"]
     },
 
@@ -79,9 +75,9 @@ export const ENTITY_DEFINITIONS = {
     "BEAST": {
         name: "Beast",
         level: 1,
-        xp: 0,            // [NEW]
-        maxXp: 100,       // [NEW]
-        skillPoints: 0,   // [NEW]
+        xp: 0,            
+        maxXp: 100,       
+        skillPoints: 0,   
         
         sprite: "dog_idle",
         portrait: "dog_face",
@@ -100,29 +96,23 @@ export const ENTITY_DEFINITIONS = {
             speed: 7,
             critical: 10,
             corruption: 0,
-
-            // Beast Hide provides natural protection
             baseDefense: {
                 blunt: 4, 
                 slash: 2, 
                 pierce: 1,
-                water: 2 // Resistance to cold/water
+                water: 2 
             },
-
             baseResistance: {
-                fire: -0.2, // 20% WEAK to fire (fur burns)
-                poison: 0.1 // Slight resistance to natural toxins
+                fire: -0.2, 
+                poison: 0.1 
             },
-
-            // Natural Weapons (Claws/Bite)
             baseAttack: {
                 blunt: 6,
-                slash: 8, // Claws
-                pierce: 4 // Bite
+                slash: 8, 
+                pierce: 4 
             }
         },
 
-        // Beast Resources: High HP, Low Stamina, No Magic
         stats: {
             hp: 0, maxHp: 30,
             stamina: 0, maxStamina: 8,
@@ -136,16 +126,17 @@ export const ENTITY_DEFINITIONS = {
 
         lootTable: [], 
 
-        abilities: [],
+        // [UPDATED] Beast Innate Abilities
+        abilities: ["bite", "howl"],
         tags: ["BIOLOGICAL", "BEAST"]
     },
 
     "AVIAN": {
         name: "Avian",
         level: 1,
-        xp: 0,            // [NEW]
-        maxXp: 100,       // [NEW]
-        skillPoints: 0,   // [NEW]
+        xp: 0,            
+        maxXp: 100,       
+        skillPoints: 0,   
         
         sprite: "bird_idle",
         portrait: "bird_face",
@@ -156,24 +147,20 @@ export const ENTITY_DEFINITIONS = {
         
         baseStats: {
             speed: 10, critical: 15, corruption: 0,
-
             baseDefense: {
                 blunt: 0, slash: 0, pierce: 0,
-                earth: 5 // Hard to hit with ground attacks?
+                earth: 5 
             },
-
             baseResistance: {
-                wind: 0.5,  // 50% Resistant to Wind
+                wind: 0.5,  
                 earth: 0.2
             },
-
             baseAttack: {
-                slash: 4,  // Talons
-                pierce: 4  // Beak
+                slash: 4,  
+                pierce: 4  
             }
         },
 
-        // Avian Resources: Low HP, High Stamina
         stats: {
             hp: 0, maxHp: 12,
             stamina: 0, maxStamina: 15,
@@ -186,7 +173,8 @@ export const ENTITY_DEFINITIONS = {
 
         lootTable: [],
 
-        abilities: [],
+        // [UPDATED] Avian Innate Abilities
+        abilities: ["peck", "screech"],
         tags: ["BIOLOGICAL", "AVIAN"]
     },
 };
