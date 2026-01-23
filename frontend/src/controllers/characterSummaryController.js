@@ -13,6 +13,9 @@ export class CharacterSummaryController {
         this.state = 'SLOTS'; 
         this.viewMode = 'STATS'; 
         
+        // [NEW] Scroll offset for the details panel
+        this.detailsScrollOffset = 0;
+
         this.DEFAULT_SLOTS = [
             'head', 'torso', 'arms','legs', 'feet', 
             'mainHand', 'offHand', 'accessory'
@@ -25,12 +28,26 @@ export class CharacterSummaryController {
         this.updateActiveSlots();
     }
 
+    // [NEW] Handle Scroll Input
+    handleScroll(delta) {
+        // Only scroll if we are looking at items (where the long text is)
+        // Adjust sensitivity (delta is usually +/- 100)
+        const speed = 0.5; 
+        this.detailsScrollOffset += delta * speed;
+
+        // Clamp to top (cannot scroll up past 0)
+        if (this.detailsScrollOffset < 0) this.detailsScrollOffset = 0;
+        
+        // Note: We don't strictly clamp the bottom here because the Controller 
+        // doesn't know the exact pixel height of the text. 
+        // The Renderer's scrollbar math will handle the visual bounds.
+    }
+
     get currentMember() { return gameState.party.members[this.memberIndex]; }
     get currentSlots() { return this.activeSlots; }
 
     updateActiveSlots() {
         const member = this.currentMember;
-        // Read-only check for slots
         const equipData = (member.state && member.state.equipment) ? member.state.equipment : (member.equipment || {});
         const availableSlots = Object.keys(equipData);
 
@@ -47,6 +64,10 @@ export class CharacterSummaryController {
         if (this.slotIndex >= this.activeSlots.length) {
             this.slotIndex = Math.max(0, this.activeSlots.length - 1);
         }
+        
+        // Reset scroll when changing slots/context
+        this.detailsScrollOffset = 0;
+        
         this.updateFilteredInventory();
     }
 
@@ -55,6 +76,7 @@ export class CharacterSummaryController {
         this.memberIndex = (this.memberIndex + direction + count) % count;
         this.updateActiveSlots(); 
         this.state = 'SLOTS';
+        this.detailsScrollOffset = 0; // Reset scroll
     }
 
     handleKeyDown(code) {
@@ -72,6 +94,12 @@ export class CharacterSummaryController {
             return;
         }
 
+        // Reset scroll if user navigates with keys
+        if (code === 'ArrowUp' || code === 'ArrowDown' || code === 'KeyW' || code === 'KeyS') {
+             // Optional: Reset scroll on navigation? 
+             // this.detailsScrollOffset = 0; 
+        }
+
         if (this.state === 'SLOTS') {
             this.handleSlotNavigation(code);
         } else if (this.state === 'INVENTORY') {
@@ -87,15 +115,18 @@ export class CharacterSummaryController {
         if (code === 'ArrowUp' || code === 'KeyW') {
             this.slotIndex = (this.slotIndex > 0) ? this.slotIndex - 1 : this.activeSlots.length - 1;
             this.updateFilteredInventory();
+            this.detailsScrollOffset = 0; // Reset scroll on new item
         } 
         else if (code === 'ArrowDown' || code === 'KeyS') {
             this.slotIndex = (this.slotIndex < this.activeSlots.length - 1) ? this.slotIndex + 1 : 0;
             this.updateFilteredInventory();
+            this.detailsScrollOffset = 0; 
         }
         else if (code === 'Enter' || code === 'Space') {
             if (this.filteredInventory.length > 0) {
                 this.state = 'INVENTORY';
                 this.inventoryIndex = 0;
+                this.detailsScrollOffset = 0;
             } else {
                 console.log("No items available for this slot.");
             }
@@ -110,9 +141,11 @@ export class CharacterSummaryController {
 
         if (code === 'ArrowUp' || code === 'KeyW') {
             this.inventoryIndex = Math.max(0, this.inventoryIndex - 1);
+            this.detailsScrollOffset = 0;
         } 
         else if (code === 'ArrowDown' || code === 'KeyS') {
             this.inventoryIndex = Math.min(this.filteredInventory.length - 1, this.inventoryIndex + 1);
+            this.detailsScrollOffset = 0;
         }
         else if (code === 'Enter' || code === 'Space') {
             const itemToEquip = this.filteredInventory[this.inventoryIndex];
@@ -131,18 +164,12 @@ export class CharacterSummaryController {
         this.inventoryIndex = 0;
     }
 
-    // [FIXED] Use this when READING data safely (prevents crashes)
     getEquipmentObject(member) {
         return (member.state && member.state.equipment) ? member.state.equipment : (member.equipment || {});
     }
 
-    // [NEW] Use this when WRITING data (ensures persistence)
     ensureEquipmentState(member) {
         if (!member.state) member.state = {};
-        
-        // If state.equipment doesn't exist, create it.
-        // IMPORTANT: We must clone any default 'equipment' props into this new state object
-        // so we don't lose the items the character started with.
         if (!member.state.equipment) {
             member.state.equipment = Object.assign({}, member.equipment || {});
         }
@@ -153,14 +180,11 @@ export class CharacterSummaryController {
         const member = this.currentMember;
         const slotName = this.activeSlots[this.slotIndex];
         
-        // [FIXED] Get a writable object attached to the member
         const equipmentObj = this.ensureEquipmentState(member);
-        
         const currentEquip = equipmentObj[slotName];
 
         if (currentEquip) gameState.party.inventory.push(currentEquip);
         
-        // Now this assignment actually saves to the member
         equipmentObj[slotName] = inventoryItem;
 
         const bagIdx = gameState.party.inventory.indexOf(inventoryItem);
@@ -174,9 +198,7 @@ export class CharacterSummaryController {
         const member = this.currentMember;
         const slotName = this.activeSlots[this.slotIndex];
         
-        // [FIXED] Get a writable object attached to the member
         const equipmentObj = this.ensureEquipmentState(member);
-        
         const currentEquip = equipmentObj[slotName];
 
         if (currentEquip) {
@@ -205,7 +227,9 @@ export class CharacterSummaryController {
             filteredInventory: this.filteredInventory,
             inventoryIndex: this.inventoryIndex,
             viewMode: this.viewMode,
-            focusedItem: this.getSelectedItem()
+            focusedItem: this.getSelectedItem(),
+            // [NEW] Pass scroll state to renderer
+            scrollOffset: this.detailsScrollOffset 
         };
     }
 }

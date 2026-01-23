@@ -127,6 +127,9 @@ export class SceneManager {
         // --- 1. MOUSE CHECK ---
         const click = this.input.getAndResetClick();
         
+        // [NEW] Scroll Check
+        const scroll = this.input.getAndResetScroll();
+
         if (click) {
             if (this.currentScene === 'character-creator') {
                 this.characterCreatorController.handleMouseDown(click.x, click.y, this.characterCreatorRenderer);
@@ -134,7 +137,12 @@ export class SceneManager {
             else if (this.currentScene === 'party') {
                 this.partyController.handleMouseDown(click.x, click.y, this.partyRenderer);
             }
-            // Note: Character Summary is currently Keyboard only, so no mouse handler needed yet
+        }
+
+        // [NEW] Handle Scrolling
+        if (scroll !== 0 && this.currentScene === 'character_summary') {
+            // We pass the scroll value to the controller
+            this.characterSummaryController.handleScroll(scroll);
         }
 
         // --- 2. REGULAR UPDATES ---

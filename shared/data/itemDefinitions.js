@@ -16,7 +16,7 @@ export const ItemDefinitions = {
         attack: { blunt: 3 }, 
         
         // [CHANGED] "smash" sounds more impactful than "bonk"
-        grantedAbilities: ["smash"] 
+        grantedAbilities: ["smash", "magic_missile", "earthquake", ", flurry", "cleave"] 
     },
 
     "rusty_dagger": {

@@ -80,6 +80,50 @@ export class CanvasUI {
         this.ctx.restore();
     }
 
+    // --- SCROLLING ---
+
+    /**
+     * Draws a vertical scrollbar.
+     * @param {number} x - The X position of the scrollbar track.
+     * @param {number} y - The Y position of the scrollbar track.
+     * @param {number} height - The visible height of the container.
+     * @param {number} totalContentHeight - The full height of the content.
+     * @param {number} currentScrollY - The current scroll offset (positive number).
+     */
+    drawScrollBar(x, y, height, totalContentHeight, currentScrollY) {
+        // If content fits, no scrollbar needed
+        if (totalContentHeight <= height) return;
+
+        const trackWidth = 6;
+        const thumbColor = "#777"; // Neutral grey
+        const trackColor = "rgba(0,0,0,0.3)"; // Subtle dark track
+
+        this.ctx.save();
+
+        // 1. Draw Track
+        this.ctx.fillStyle = trackColor;
+        this.ctx.fillRect(x, y, trackWidth, height);
+
+        // 2. Calculate Thumb Height & Position
+        // The thumb represents the ratio of visible content to total content
+        const viewRatio = height / totalContentHeight;
+        const thumbHeight = Math.max(20, height * viewRatio); // Min height 20px so it's always visible
+        
+        // Calculate scroll ratio (0.0 to 1.0)
+        const maxScroll = totalContentHeight - height;
+        // Clamp ratio between 0 and 1 just in case
+        const scrollRatio = Math.min(1, Math.max(0, currentScrollY / maxScroll));
+        
+        // Position thumb within the available track space
+        const thumbY = y + (scrollRatio * (height - thumbHeight));
+
+        // 3. Draw Thumb
+        this.ctx.fillStyle = thumbColor;
+        this.ctx.fillRect(x + 1, thumbY, trackWidth - 2, thumbHeight);
+
+        this.ctx.restore();
+    }
+
     // --- TEXT RENDERING ---
 
     drawText(text, x, y, font = UITheme.fonts.body, color = UITheme.colors.textMain, align = "left", baseline = "alphabetic") {
