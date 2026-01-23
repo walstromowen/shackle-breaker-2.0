@@ -20,10 +20,13 @@ export class ItemModel {
     get description() { return this.definition.description; }
     get slot() { return this.definition.slot; }
     get type() { return this.definition.type; }
-    get damage() { return this.definition.damage || {}; }
+    
+    // [CHANGED] Renamed from 'damage' to 'attack' to match your new schema
+    get attack() { return this.definition.attack || {}; } 
+    
     get defense() { return this.definition.defense || {}; }
     get value() { return this.definition.value; }
 
-    // [NEW] Expose the icon coordinates
+    // Expose the icon coordinates
     get icon() { return this.definition.icon || { col: 0, row: 0 }; }
 }

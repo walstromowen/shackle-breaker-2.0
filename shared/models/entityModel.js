@@ -30,7 +30,6 @@ export class EntityModel {
 
         // --- COMBAT BASE STATS ---
         if (!this.state.baseStats) this.state.baseStats = {};
-        // We no longer need deep defaults here because StatCalculator handles missing keys safely
     }
 
     // --- GETTERS & SETTERS (The Proxy Layer) ---
@@ -64,21 +63,23 @@ export class EntityModel {
     
     /**
      * The single source of calculated stats.
-     * Returns: { attacks, defenses, resistances, other }
      */
     get stats() {
         return StatCalculator.calculate(this);
     }
 
-    // Proxies for backward compatibility (if your combat system calls .attack)
-    get attack() { return this.stats.attacks; }
-    get defense() { return this.stats.defenses; }
-    get resistance() { return this.stats.resistances; }
+    // [FIXED] Mapped correctly to StatCalculator output
+    get attack() { return this.stats.attack; }         // Was .attacks (plural), now .attack (singular)
+    get defense() { return this.stats.defenses; }      // Matches Calculator
+    get resistance() { return this.stats.resistances; }// Matches Calculator
     
-    // New derived stats that didn't exist before
-    get speed() { return this.stats.other.speed; }
-    get critical() { return this.stats.other.critical; }
-    get corruption() { return this.stats.other.corruption; }
+    // [FIXED] Removed .other nesting. These are now root properties.
+    get speed() { return this.stats.speed; }           
+    get corruption() { return this.stats.corruption; } 
+
+    // [UPDATED] StatCalculator returns critChance separately
+    get critical() { return this.stats.critChance; }   
+    get critMultiplier() { return this.stats.critMultiplier; }
 
     // =========================================================
     // --- FLATTENED RESOURCES ---

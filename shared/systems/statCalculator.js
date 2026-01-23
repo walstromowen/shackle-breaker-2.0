@@ -1,86 +1,88 @@
-// shared/systems/StatCalculator.js
 export class StatCalculator {
     
-    static DAMAGE_TYPES = [
-        "blunt", "slash", "pierce", 
-        "fire", "water", "lightning", "earth", "wind", 
-        "light", "shadow", "arcane"
-    ];
+    static get DAMAGE_TYPES() {
+        return [
+            "blunt", "slash", "pierce", 
+            "fire", "ice", "lightning", "water", "earth", "wind", 
+            "light", "dark", "arcane"
+        ];
+    }
 
-    /**
-     * returns { attacks, defenses, resistances, other }
-     */
     static calculate(character) {
         // 1. Base State
         const attrs = character.attributes || {};
-        const equipment = (character.state && character.state.equipment) ? character.state.equipment : {};
+        const equipment = (character.state && character.state.equipment) ? character.state.equipment : (character.equipment || {});
 
         // 2. Initialize Structure
         const stats = {
-            attacks: {},
+            attack: {}, 
             defenses: {},
             resistances: {},
-            other: {
-                speed: 0,
-                critical: 0,
-                corruption: character.state?.corruption || 0
-            }
+            
+            speed: (attrs.speed || 0),
+            critChance: (attrs.dexterity || 0) * 0.01,
+            critMultiplier: 1.5,
+            corruption: character.state?.corruption || 0
         };
 
-        // Zero out all types
+        // Zero out
         this.DAMAGE_TYPES.forEach(type => {
-            stats.attacks[type] = 0;
+            stats.attack[type] = 0; 
             stats.defenses[type] = 0;
             stats.resistances[type] = 0;
         });
 
-        // 3. Apply Attribute Bonuses (Example Logic - Tweak as needed)
-        // Strength adds Physical Dmg
-        stats.attacks.blunt += (attrs.strength || 0);
-        stats.attacks.slash += (attrs.strength || 0);
-        
-        // Dexterity adds Critical & Speed
-        stats.other.critical += (attrs.dexterity || 0) * 0.5;
-        stats.other.speed += (attrs.agility || 0);
+        // 3. Apply Attribute Scaling (Attributes -> Attack)
+        const str = attrs.strength || 0;
+        stats.attack.blunt += str;
+        stats.attack.slash += str;
+        stats.attack.pierce += str;
 
-        // Intelligence adds Elemental Dmg
-        stats.attacks.fire += (attrs.intelligence || 0);
-        stats.attacks.arcane += (attrs.intelligence || 0);
+        const int = attrs.intelligence || 0;
+        stats.attack.fire += int;     
+        stats.attack.ice += int;       
+        stats.attack.lightning += int; 
+        stats.attack.arcane += int;    
 
-        // Endurance adds Physical Defense
-        stats.defenses.blunt += (attrs.endurance || 0);
-        stats.defenses.slash += (attrs.endurance || 0);
+        const end = attrs.endurance || 0;
+        stats.defenses.blunt += end;
+        stats.defenses.slash += end;
+        stats.defenses.pierce += end;
+
+        const dex = attrs.dexterity || 0;
+        stats.speed += dex; 
 
         // 4. Apply Equipment
         Object.values(equipment).forEach(item => {
             if (!item) return;
-            const def = item.definition || item; // Handle model or raw definition
+            const def = item.definition || item; 
 
-            // Add Damage
-            if (def.damage) {
-                for (const [type, val] of Object.entries(def.damage)) {
-                    if (stats.attacks[type] !== undefined) stats.attacks[type] += val;
+            // STRICTLY CHECK FOR 'attack'
+            if (def.attack) {
+                for (const [type, val] of Object.entries(def.attack)) {
+                    if (stats.attack[type] !== undefined) stats.attack[type] += val;
                 }
             }
 
-            // Add Defense
             if (def.defense) {
                 for (const [type, val] of Object.entries(def.defense)) {
                     if (stats.defenses[type] !== undefined) stats.defenses[type] += val;
                 }
             }
 
-            // Add Resistances (Assume defined in item.resistance)
             if (def.resistance) {
                 for (const [type, val] of Object.entries(def.resistance)) {
                     if (stats.resistances[type] !== undefined) stats.resistances[type] += val;
                 }
             }
             
-            // Add Bonuses (Speed/Crit on items)
+            if (def.attributes) {
+                if (def.attributes.speed) stats.speed += def.attributes.speed;
+            }
+            
             if (def.bonuses) {
-                if (def.bonuses.speed) stats.other.speed += def.bonuses.speed;
-                if (def.bonuses.critical) stats.other.critical += def.bonuses.critical;
+                if (def.bonuses.critChance) stats.critChance += def.bonuses.critChance;
+                if (def.bonuses.critMultiplier) stats.critMultiplier += def.bonuses.critMultiplier;
             }
         });
 
