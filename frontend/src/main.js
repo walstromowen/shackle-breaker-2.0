@@ -11,10 +11,12 @@ const ASSET_MANIFEST = {
     spritesheet: './assets/sprites/hero.png',
     mapObjects: './assets/tilesets/objects.png',
     shadows: './assets/tilesets/shadows.png',
-    "knight-1": './assets/portraits/knight-1.jpg',
+    "alterian-legionary": './assets/portraits/alterian-legionary.png',
+    "namuh-nightblade": './assets/portraits/namuh-nightblade.png',
     // Add the specific image defined in your bonfire.js data
     bonfire_bg: './assets/sprites/hero.png',
     items: './assets/icons/items.png', 
+    abilities: './assets/icons/abilities.png', 
 };
 
 let sceneManager;

@@ -1,5 +1,7 @@
 import { gameState } from '../../../shared/state/gameState.js';
 import { events } from '../../src/core/eventBus.js';
+// [FIX] Added missing import
+import { StatCalculator } from '../../../shared/systems/statCalculator.js';
 
 const SLOT_ORDER = [
     'head', 'torso', 'arms', 'mainHand', 'offHand', 'legs', 'feet', 'accessory'
@@ -13,7 +15,7 @@ export class CharacterSummaryController {
         this.state = 'SLOTS'; 
         this.viewMode = 'STATS'; 
         
-        // [NEW] Scroll offset for the details panel
+        // Scroll offset for the details panel
         this.detailsScrollOffset = 0;
 
         this.DEFAULT_SLOTS = [
@@ -28,19 +30,18 @@ export class CharacterSummaryController {
         this.updateActiveSlots();
     }
 
-    // [NEW] Handle Scroll Input
+    // Handle Scroll Input
     handleScroll(delta) {
-        // Only scroll if we are looking at items (where the long text is)
-        // Adjust sensitivity (delta is usually +/- 100)
+        // Adjust sensitivity
         const speed = 0.5; 
         this.detailsScrollOffset += delta * speed;
 
-        // Clamp to top (cannot scroll up past 0)
+        // Clamp to top
         if (this.detailsScrollOffset < 0) this.detailsScrollOffset = 0;
         
-        // Note: We don't strictly clamp the bottom here because the Controller 
-        // doesn't know the exact pixel height of the text. 
-        // The Renderer's scrollbar math will handle the visual bounds.
+        // Note: We cannot clamp the bottom here because the Controller 
+        // doesn't know the content height. The Renderer will clamp it 
+        // using the setter in getState() below.
     }
 
     get currentMember() { return gameState.party.members[this.memberIndex]; }
@@ -76,7 +77,7 @@ export class CharacterSummaryController {
         this.memberIndex = (this.memberIndex + direction + count) % count;
         this.updateActiveSlots(); 
         this.state = 'SLOTS';
-        this.detailsScrollOffset = 0; // Reset scroll
+        this.detailsScrollOffset = 0; 
     }
 
     handleKeyDown(code) {
@@ -92,12 +93,6 @@ export class CharacterSummaryController {
         if (code === 'ShiftLeft' || code === 'ShiftRight') {
             this.viewMode = (this.viewMode === 'STATS') ? 'ITEM' : 'STATS';
             return;
-        }
-
-        // Reset scroll if user navigates with keys
-        if (code === 'ArrowUp' || code === 'ArrowDown' || code === 'KeyW' || code === 'KeyS') {
-             // Optional: Reset scroll on navigation? 
-             // this.detailsScrollOffset = 0; 
         }
 
         if (this.state === 'SLOTS') {
@@ -219,6 +214,44 @@ export class CharacterSummaryController {
     }
 
     getState() {
+        const self = this;
+        const member = this.currentMember;
+        
+        // 1. Calculate Totals (Base + Gear + Traits)
+        // This gives us the final values (e.g., maxHp: 70)
+        const totalStats = StatCalculator.calculate(member);
+
+        // 2. Determine Base Values
+        // We look for the "naked" stats on the entity or its definition.
+        // This ensures we have the starting point before gear/traits.
+        const baseSource = member.baseStats || (member.definition ? member.definition.stats : {}) || {};
+        
+        const baseHp = baseSource.maxHp || baseSource.hp || 10;
+        const baseStam = baseSource.maxStamina || baseSource.stamina || 10;
+        const baseIns = baseSource.maxInsight || baseSource.insight || 0;
+
+        // 3. Construct the Breakdown Object
+        // We override the simple numbers with objects containing { base, bonus, total }
+        const derivedStats = {
+            ...totalStats, // Copy all other stats (Attack, Defense, etc.)
+            
+            maxHp: { 
+                base: baseHp, 
+                bonus: totalStats.maxHp - baseHp, 
+                total: totalStats.maxHp 
+            },
+            maxStamina: { 
+                base: baseStam, 
+                bonus: totalStats.maxStamina - baseStam, 
+                total: totalStats.maxStamina 
+            },
+            maxInsight: { 
+                base: baseIns, 
+                bonus: totalStats.maxInsight - baseIns, 
+                total: totalStats.maxInsight 
+            }
+        };
+
         return {
             member: this.currentMember,
             slots: this.activeSlots,
@@ -228,8 +261,17 @@ export class CharacterSummaryController {
             inventoryIndex: this.inventoryIndex,
             viewMode: this.viewMode,
             focusedItem: this.getSelectedItem(),
-            // [NEW] Pass scroll state to renderer
-            scrollOffset: this.detailsScrollOffset 
+            
+            // [UPDATED] Pass the structured stats with breakdowns
+            derivedStats: derivedStats,
+
+            // Scroll syncing
+            get scrollOffset() { 
+                return self.detailsScrollOffset; 
+            },
+            set scrollOffset(val) { 
+                self.detailsScrollOffset = val; 
+            }
         };
     }
 }

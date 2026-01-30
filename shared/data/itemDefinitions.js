@@ -1,6 +1,3 @@
-/**
- * shared/data/itemDefinitions.js
- */
 export const ItemDefinitions = {
     // --- WEAPONS ---
     "wooden_stick": {
@@ -12,25 +9,39 @@ export const ItemDefinitions = {
         value: 5,
         icon: { col: 0, row: 0 },
         
-        // Adds to raw damage
+        // Matches Standard
         attack: { blunt: 3 }, 
         
-        // [CHANGED] "smash" sounds more impactful than "bonk"
-        grantedAbilities: ["smash", "magic_missile", "earthquake", ", flurry", "cleave"] 
+        // Fixed typo: removed leading comma in "flurry"
+        grantedAbilities: ["smash", "magic_missile", "earthquake", "flurry", "cleave"] 
     },
 
-    "rusty_dagger": {
-        id: "rusty_dagger",
-        name: "Rusty Dagger",
+    "shortsword": {
+        id: "shortsword",
+        name: "Shortsword",
         slot: "mainHand",
         type: "weapon",
-        description: "Sharp enough to cut, dirty enough to infect.",
-        value: 15,
-        icon: { col: 2, row: 0 },
+        description: "A short blade.",
+        value: 20,
+        icon: { col: 1, row: 0 },
 
-        attack: { pierce: 4, slash: 2 },
+        // Matches Standard
+        attack: { pierce: 3, slash: 3 },
         
-        // A fast, piercing move
+        grantedAbilities: ["quick_stab"] 
+    },
+      "insight_of_fire": {
+        id: "insight_of_fire",
+        name: "Insight of Fire ",
+        slot: "mainHand",
+        type: "weapon",
+        description: "An insight into a firey truth.",
+        value: 20,
+        icon: { col: 0, row: 1 },
+
+        // Matches Standard
+        attack: { fire: 5,  arcane: 2},
+        
         grantedAbilities: ["quick_stab"] 
     },
 
@@ -42,8 +53,7 @@ export const ItemDefinitions = {
         type: "armor",
         description: "It has more holes than fabric.",
         value: 2,
-        icon: { col: 1, row: 0 },
-
+        icon: { col: 0, row: 2 },
         defense: { blunt: 1, slash: 1 } 
     },
 
@@ -57,10 +67,8 @@ export const ItemDefinitions = {
         value: 50,
         icon: { col: 3, row: 0 },
 
-        // Test item for stat boosting
         attributes: { 
             strength: 2,
-            vigor: 1
         }
     },
 
@@ -73,7 +81,27 @@ export const ItemDefinitions = {
         value: 10,
         icon: { col: 4, row: 0 },
 
-        // Links to the healing spell logic
         useAbility: "heal_minor" 
-    }
+    },
+
+    "amulet_of_wisdom": {
+        id: "amulet_of_wisdom",
+        name: "Amulet of Wisdom",
+        slot: "accessory",
+        type: "accessory",
+        description: "Tests Vigor and Attunement scaling.",
+        value: 100,
+        icon: { col: 3, row: 1 }, // Ensure this icon exists or pick another
+
+        attributes: { 
+            vigor: 2,       // Should add +10 Max HP
+            attunement: 5,  // Should add +10 Max Insight (Mana)
+            intelligence: 3 // Should add +3 Magic Attack / +1 Magic Res
+        },
+        
+        // Test flat resource bonuses too
+        resources: {
+            maxStamina: 10 // Should add +10 Max Stamina directly
+        }
+    },
 };

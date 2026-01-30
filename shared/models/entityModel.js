@@ -1,20 +1,11 @@
-/**
- * shared/models/entityModel.js
- */
 import { StatCalculator } from '../../shared/systems/statCalculator.js';
-
-// [NEW] Required to generate abilities when equipping items
 import { AbilityFactory } from '../systems/factories/abilityFactory.js';
 
 export class EntityModel {
-    /**
-     * @param {Object} config - The raw JSON data (stats, name, etc.)
-     */
     constructor(config) {
-        // 1. Single Source of Truth
         this.state = structuredClone(config);
 
-        // --- CORE STATS ---
+        // 1. Initialize Base Resources
         if (!this.state.stats) {
             this.state.stats = {
                 hp: 10, maxHp: 10,
@@ -23,171 +14,157 @@ export class EntityModel {
             };
         }
 
-        // --- PROGRESSION DEFAULTS ---
+        // 2. [NEW] Initialize Attributes to prevent Calculator crashes
+        if (!this.state.attributes) {
+            this.state.attributes = {
+                vigor: 0,
+                strength: 0,
+                dexterity: 0,
+                intelligence: 0,
+                attunement: 0
+            };
+        }
+
+        // 3. Ensure arrays exist
+        if (!this.state.traits) this.state.traits = [];
+        if (!this.state.equipment) this.state.equipment = {};
+        if (!this.state.baseStats) this.state.baseStats = {};
+
+        // 4. Progression Defaults
         if (typeof this.state.xp === 'undefined') this.state.xp = 0;
         if (typeof this.state.maxXp === 'undefined') this.state.maxXp = 100;
         if (typeof this.state.skillPoints === 'undefined') this.state.skillPoints = 0;
         if (typeof this.state.level === 'undefined') this.state.level = 1;
 
-        // --- INVENTORY ---
-        if (!this.state.equipment) {
-            this.state.equipment = {};
-        }
-
-        // --- COMBAT BASE STATS ---
-        if (!this.state.baseStats) this.state.baseStats = {};
-
-        // --- [NEW] RUNTIME ABILITY CONTAINER ---
-        // We do NOT store complex Ability objects in 'this.state' (which is for saving JSON).
-        // Instead, they live on the instance. The Factory populates this.
         this.abilities = []; 
     }
 
-    // --- GETTERS & SETTERS (The Proxy Layer) ---
-
+    // --- GETTERS & SETTERS ---
     get id() { return this.state.id; }
-    
     get name() { return this.state.name; }
     set name(val) { this.state.name = val; }
-
     get portrait() { return this.state.portrait; }
-    
     get level() { return this.state.level; }
     set level(val) { this.state.level = val; }
-
     get xp() { return this.state.xp; }
     set xp(val) { this.state.xp = val; }
-
     get maxXp() { return this.state.maxXp; }
     set maxXp(val) { this.state.maxXp = val; }
-
     get skillPoints() { return this.state.skillPoints; }
     set skillPoints(val) { this.state.skillPoints = val; }
-
-    // Ensure we return the raw object so the Calculator can read it
-    get attributes() { return this.state.attributes || {}; }
     
-    // We modify this via equipItem(), but the getter is needed for the Calculator
-    get equipment() { return this.state.equipment || {}; }
-    
+    // Direct Access (Careful, modifying this directly bypasses calculators)
+    get attributes() { return this.state.attributes; }
+    get equipment() { return this.state.equipment; }
     get statusEffects() { return this.state.statusEffects || []; }
+    get traits() { return this.state.traits; }
 
-    // =========================================================
-    // ✅ MIGRATION: USE THE CALCULATOR
-    // =========================================================
-    
-    /**
-     * The single source of calculated stats.
-     */
+    // --- CALCULATED STATS ---
+    // This is the "Brain" connection. It runs fresh math every time you ask for .stats
     get stats() {
         return StatCalculator.calculate(this);
     }
 
+    // Convenience Getters for UI/Combat
     get attack() { return this.stats.attack; }         
     get defense() { return this.stats.defenses; }      
-    get resistance() { return this.stats.resistances; }
-    
+    get resistance() { return this.stats.resistance; }
     get speed() { return this.stats.speed; }           
-    get corruption() { return this.stats.corruption; } 
-
     get critical() { return this.stats.critChance; }   
     get critMultiplier() { return this.stats.critMultiplier; }
 
-    // =========================================================
-    // --- FLATTENED RESOURCES ---
-    // =========================================================
+    // --- RESOURCES (HP / STAMINA / INSIGHT) ---
 
+    // HP
     get hp() { return this.state.stats.hp; }
     set hp(val) { 
         this.state.stats.hp = Math.max(0, Math.min(val, this.maxHp)); 
     }
-
-    get maxHp() { return this.state.stats.maxHp; }
+    
+    get maxHp() { 
+        const bonus = this.stats.maxHpBonus || 0; // Comes from Vigor/Gear
+        return (this.state.stats.maxHp || 10) + bonus; 
+    }
     set maxHp(val) { this.state.stats.maxHp = val; }
 
+    // STAMINA
     get stamina() { return this.state.stats.stamina; }
     set stamina(val) { 
         this.state.stats.stamina = Math.max(0, Math.min(val, this.maxStamina)); 
     }
-    get maxStamina() { return this.state.stats.maxStamina; }
+
+    get maxStamina() { 
+        const bonus = this.stats.maxStaminaBonus || 0;
+        return (this.state.stats.maxStamina || 10) + bonus;
+    }
     set maxStamina(val) { this.state.stats.maxStamina = val; }
 
+    // INSIGHT (MANA)
     get insight() { return this.state.stats.insight; }
     set insight(val) { 
         this.state.stats.insight = Math.max(0, Math.min(val, this.maxInsight)); 
     }
-    get maxInsight() { return this.state.stats.maxInsight; }
+
+    // [UPDATED] Fixed: Now includes Attunement bonus
+    get maxInsight() { 
+        const bonus = this.stats.maxInsightBonus || 0; 
+        return (this.state.stats.maxInsight || 10) + bonus; 
+    }
     set maxInsight(val) { this.state.stats.maxInsight = val; }
 
+
     // =========================================================
-    // --- [NEW] ABILITY MANAGEMENT ---
+    // TRAIT MANAGEMENT
+    // =========================================================
+    
+    addTrait(traitId) {
+        if (!this.state.traits.includes(traitId)) {
+            this.state.traits.push(traitId);
+        }
+    }
+
+    removeTrait(traitId) {
+        const idx = this.state.traits.indexOf(traitId);
+        if (idx > -1) {
+            this.state.traits.splice(idx, 1);
+        }
+    }
+
+    // =========================================================
+    // ABILITY & ITEM MANAGEMENT
     // =========================================================
 
-    /**
-     * Adds abilities to the entity, tagged with a source.
-     * @param {Array<AbilityModel>} abilityList - List of instantiated abilities
-     * @param {String} source - 'innate', 'mainHand', 'accessory', etc.
-     */
     addAbilities(abilityList, source = 'innate') {
         if (!abilityList || abilityList.length === 0) return;
-
-        // Tag each ability so we know where it came from (for removal later)
         abilityList.forEach(ability => {
             ability.source = source; 
         });
-
         this.abilities.push(...abilityList);
     }
 
-    /**
-     * Removes all abilities associated with a specific source.
-     */
     removeAbilitiesBySource(source) {
         if (source === 'innate') {
             console.warn("[EntityModel] Warning: Attempting to remove innate abilities.");
+            return;
         }
         this.abilities = this.abilities.filter(a => a.source !== source);
     }
 
-    // =========================================================
-    // --- [NEW] EQUIPMENT MANAGEMENT ---
-    // =========================================================
-
-    /**
-     * Equips an item into a slot, handling ability swaps.
-     * @param {string} slot - 'mainHand', 'head', etc.
-     * @param {ItemModel} itemModel - The item instance
-     */
     equipItem(slot, itemModel) {
-        // 1. Remove old item & its abilities
         this.unequipItem(slot);
-
-        // 2. Set new item in state
         this.state.equipment[slot] = itemModel;
-
-        // 3. Add new abilities (if the item has any)
+        
+        // Grant abilities from the item (e.g., Sword grants "Slash")
         if (itemModel && itemModel.grantedAbilities) {
-            // Use Factory to convert strings ["cleave"] -> Objects [AbilityModel]
             const newMoves = AbilityFactory.createAbilities(itemModel.grantedAbilities);
-            
-            // Add them with the slot as the source
             this.addAbilities(newMoves, slot);
         }
     }
 
-    /**
-     * Unequips an item from a slot.
-     * @param {string} slot 
-     */
     unequipItem(slot) {
-        // 1. Remove abilities linked to this slot
         this.removeAbilitiesBySource(slot);
-        
-        // 2. Clear item from state
         this.state.equipment[slot] = null;
     }
-
-    // --- HELPER METHODS ---
 
     isDead() {
         return this.hp <= 0;

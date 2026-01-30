@@ -21,11 +21,9 @@ export const CONFIG = {
     SHEET_WIDTH: 512, 
     SHEET_HEIGHT: 2048,
 
-    // ===============================================
-    // ✅ ADD THIS MISSING BLOCK TO ENABLE WAVES
-    // ===============================================
+    // --- Water Animation ---
     WATER_ANIMATION: {
-        SPEED: 0.8,           // Seconds per frame (higher = slower waves)
+        SPEED: 0.8,           // Seconds per frame
         FRAMES: [0, 1, 2, 3, 4, 5, 6, 7]  // The first 4 tiles on the Water Row (Row 41)
     },
 
@@ -74,4 +72,31 @@ export const CONFIG = {
 export const BITMASK = {
     TOP: 1, TOP_RIGHT: 2, RIGHT: 4, BOTTOM_RIGHT: 8,
     BOTTOM: 16, BOTTOM_LEFT: 32, LEFT: 64, TOP_LEFT: 128
+};
+
+// ===============================================
+// ✅ NEW: COMBAT & STATS CONSTANTS
+// ===============================================
+
+// 1. The Source of Truth for Logic (StatCalculator uses this)
+export const DAMAGE_TYPES = [ 
+    "blunt", "slash", "pierce", 
+    "fire", "ice", "lightning", "water", "earth", "wind", 
+    "light", "dark", "arcane" 
+];
+
+// 2. The Source of Truth for UI (Renderers use this)
+export const DAMAGE_TYPE_LABELS = {
+    blunt: "BNT",
+    slash: "SLS",
+    pierce: "PRC",
+    fire: "FIR",
+    ice: "ICE",
+    lightning: "LIG",
+    water: "WAT",
+    earth: "ERT",
+    wind: "WND",
+    light: "LGT", 
+    dark: "DRK",
+    arcane: "ARC",
 };

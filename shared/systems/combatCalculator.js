@@ -57,7 +57,7 @@ export class CombatCalculator {
         // --- STEP 1: DEFENSE (Optional) ---
         // Insight/Stamina damage often ignores thick armor.
         if (useDefense) {
-            const defenseStat = defStats.defenses[type] || 0;
+            const defenseStat = defStats.defense[type] || 0;
             const ARMOR_SCALING = 100;
             const mitigation = ARMOR_SCALING / (ARMOR_SCALING + defenseStat);
             currentDamage *= mitigation;
@@ -65,7 +65,7 @@ export class CombatCalculator {
 
         // --- STEP 2: RESISTANCE (Always applied?) ---
         // Fire Resistance should probably help against "Fire Stamina Drain"
-        const resStat = defStats.resistances[type] || 0;
+        const resStat = defStats.resistance[type] || 0;
         const resistanceMultiplier = 1 - (resStat / 100);
         
         currentDamage *= resistanceMultiplier;

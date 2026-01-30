@@ -38,6 +38,7 @@ Root
 ├── shared/ 
 │   ├── data/                       
 │   │   ├── encounters/
+│   │   ├── traitDefinitions.js 
 │   │   ├── abilityDefinitions.js   
 │   │   ├── constants.js
 │   │   ├── entityDefinitions.js    
@@ -57,7 +58,9 @@ Root
 │   │   │   ├── abilityFactory.js                
 │   │   │   ├── entityFactory.js    
 │   │   │   └── itemFactory.js
-│   │   ├── experienceSystem.js     
+│   │   ├── combatCalculator.js  
+│   │   ├── experienceSystem.js  
+│   │   ├── statCalculator.js    
 │   │   ├── partyManager.js         
 │   │   ├── timeSystem.js
 │   │   └── worldManager.js
