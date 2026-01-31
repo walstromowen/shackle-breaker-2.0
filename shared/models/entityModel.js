@@ -14,7 +14,7 @@ export class EntityModel {
             };
         }
 
-        // 2. [NEW] Initialize Attributes to prevent Calculator crashes
+        // 2. Initialize Attributes to prevent Calculator crashes
         if (!this.state.attributes) {
             this.state.attributes = {
                 vigor: 0,
@@ -78,13 +78,15 @@ export class EntityModel {
     // HP
     get hp() { return this.state.stats.hp; }
     set hp(val) { 
+        // We use the getter for maxHp to ensure we don't heal past the calculated max
         this.state.stats.hp = Math.max(0, Math.min(val, this.maxHp)); 
     }
     
+    // [FIXED] Trust the Calculator for the Total
     get maxHp() { 
-        const bonus = this.stats.maxHpBonus || 0; // Comes from Vigor/Gear
-        return (this.state.stats.maxHp || 10) + bonus; 
+        return this.stats.maxHp || this.state.stats.maxHp || 10; 
     }
+    // Set base only (StatCalculator adds bonuses on top of this)
     set maxHp(val) { this.state.stats.maxHp = val; }
 
     // STAMINA
@@ -93,9 +95,9 @@ export class EntityModel {
         this.state.stats.stamina = Math.max(0, Math.min(val, this.maxStamina)); 
     }
 
+    // [FIXED] Trust the Calculator for the Total
     get maxStamina() { 
-        const bonus = this.stats.maxStaminaBonus || 0;
-        return (this.state.stats.maxStamina || 10) + bonus;
+        return this.stats.maxStamina || this.state.stats.maxStamina || 10;
     }
     set maxStamina(val) { this.state.stats.maxStamina = val; }
 
@@ -105,10 +107,9 @@ export class EntityModel {
         this.state.stats.insight = Math.max(0, Math.min(val, this.maxInsight)); 
     }
 
-    // [UPDATED] Fixed: Now includes Attunement bonus
+    // [FIXED] Trust the Calculator for the Total
     get maxInsight() { 
-        const bonus = this.stats.maxInsightBonus || 0; 
-        return (this.state.stats.maxInsight || 10) + bonus; 
+        return this.stats.maxInsight || this.state.stats.maxInsight || 0; 
     }
     set maxInsight(val) { this.state.stats.maxInsight = val; }
 

@@ -31,8 +31,8 @@ export const ENTITY_DEFINITIONS = {
             corruption: 0,
             baseDefense: {
                 blunt: 0, slash: 0, pierce: 0,
-                fire: 0, water: 0, lightning: 0, earth: 0, wind: 0, poison: 0,
-                light: 0, shadow: 0, arcane: 0,  
+                fire: 0, ice: 0, lightning: 0, earth: 0, wind: 0, water: 0,
+                light: 0, dark: 0, arcane: 0,  
             },
             baseResistance: {},
             baseAttack: {
@@ -104,7 +104,7 @@ export const ENTITY_DEFINITIONS = {
             },
             baseResistance: {
                 fire: -0.2, 
-                poison: 0.1 
+                
             },
             baseAttack: {
                 blunt: 6,

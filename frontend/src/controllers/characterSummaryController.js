@@ -1,6 +1,5 @@
 import { gameState } from '../../../shared/state/gameState.js';
 import { events } from '../../src/core/eventBus.js';
-// [FIX] Added missing import
 import { StatCalculator } from '../../../shared/systems/statCalculator.js';
 
 const SLOT_ORDER = [
@@ -40,8 +39,7 @@ export class CharacterSummaryController {
         if (this.detailsScrollOffset < 0) this.detailsScrollOffset = 0;
         
         // Note: We cannot clamp the bottom here because the Controller 
-        // doesn't know the content height. The Renderer will clamp it 
-        // using the setter in getState() below.
+        // doesn't know the content height. The Renderer will clamp it.
     }
 
     get currentMember() { return gameState.party.members[this.memberIndex]; }
@@ -49,7 +47,8 @@ export class CharacterSummaryController {
 
     updateActiveSlots() {
         const member = this.currentMember;
-        const equipData = (member.state && member.state.equipment) ? member.state.equipment : (member.equipment || {});
+        // [UPDATED] Use the getter from EntityModel
+        const equipData = member.equipment || {}; 
         const availableSlots = Object.keys(equipData);
 
         if (availableSlots.length > 0) {
@@ -110,7 +109,7 @@ export class CharacterSummaryController {
         if (code === 'ArrowUp' || code === 'KeyW') {
             this.slotIndex = (this.slotIndex > 0) ? this.slotIndex - 1 : this.activeSlots.length - 1;
             this.updateFilteredInventory();
-            this.detailsScrollOffset = 0; // Reset scroll on new item
+            this.detailsScrollOffset = 0; 
         } 
         else if (code === 'ArrowDown' || code === 'KeyS') {
             this.slotIndex = (this.slotIndex < this.activeSlots.length - 1) ? this.slotIndex + 1 : 0;
@@ -159,29 +158,21 @@ export class CharacterSummaryController {
         this.inventoryIndex = 0;
     }
 
-    getEquipmentObject(member) {
-        return (member.state && member.state.equipment) ? member.state.equipment : (member.equipment || {});
-    }
-
-    ensureEquipmentState(member) {
-        if (!member.state) member.state = {};
-        if (!member.state.equipment) {
-            member.state.equipment = Object.assign({}, member.equipment || {});
-        }
-        return member.state.equipment;
-    }
-
+    // [UPDATED] Use EntityModel methods for safety
     equipItem(inventoryItem) {
         const member = this.currentMember;
         const slotName = this.activeSlots[this.slotIndex];
         
-        const equipmentObj = this.ensureEquipmentState(member);
-        const currentEquip = equipmentObj[slotName];
-
-        if (currentEquip) gameState.party.inventory.push(currentEquip);
+        // 1. Check if something is already there to return to inventory
+        const currentEquip = member.equipment[slotName];
+        if (currentEquip) {
+            gameState.party.inventory.push(currentEquip);
+        }
         
-        equipmentObj[slotName] = inventoryItem;
+        // 2. Use Model method (handles Ability granting, etc)
+        member.equipItem(slotName, inventoryItem);
 
+        // 3. Remove new item from inventory
         const bagIdx = gameState.party.inventory.indexOf(inventoryItem);
         if (bagIdx > -1) gameState.party.inventory.splice(bagIdx, 1);
 
@@ -189,16 +180,20 @@ export class CharacterSummaryController {
         this.updateFilteredInventory(); 
     }
 
+    // [UPDATED] Use EntityModel methods for safety
     unequipCurrentSlot() {
         const member = this.currentMember;
         const slotName = this.activeSlots[this.slotIndex];
         
-        const equipmentObj = this.ensureEquipmentState(member);
-        const currentEquip = equipmentObj[slotName];
+        const currentEquip = member.equipment[slotName];
 
         if (currentEquip) {
+            // 1. Return to inventory
             gameState.party.inventory.push(currentEquip);
-            equipmentObj[slotName] = null;
+            
+            // 2. Use Model method (handles Ability removal)
+            member.unequipItem(slotName);
+            
             this.updateFilteredInventory(); 
         }
     }
@@ -208,8 +203,8 @@ export class CharacterSummaryController {
             return this.filteredInventory[this.inventoryIndex] || null;
         } else {
             const slotName = this.activeSlots[this.slotIndex];
-            const equip = this.getEquipmentObject(this.currentMember);
-            return equip[slotName] || null;
+            // [UPDATED] Use getter
+            return this.currentMember.equipment[slotName] || null;
         }
     }
 
@@ -218,22 +213,22 @@ export class CharacterSummaryController {
         const member = this.currentMember;
         
         // 1. Calculate Totals (Base + Gear + Traits)
-        // This gives us the final values (e.g., maxHp: 70)
-        const totalStats = StatCalculator.calculate(member);
+        // Uses the new EntityModel .stats getter which calls StatCalculator
+        const totalStats = member.stats;
 
         // 2. Determine Base Values
-        // We look for the "naked" stats on the entity or its definition.
-        // This ensures we have the starting point before gear/traits.
-        const baseSource = member.baseStats || (member.definition ? member.definition.stats : {}) || {};
+        // EntityModel stores the raw "Base" values in .state.stats
+        // We fallback to definition or defaults just in case, but .state.stats should be authoritative
+        const baseSource = member.state.stats || {};
         
-        const baseHp = baseSource.maxHp || baseSource.hp || 10;
-        const baseStam = baseSource.maxStamina || baseSource.stamina || 10;
-        const baseIns = baseSource.maxInsight || baseSource.insight || 0;
+        // The property names in state.stats are `maxHp`, `maxStamina`, `maxInsight`
+        const baseHp = baseSource.maxHp || 10;
+        const baseStam = baseSource.maxStamina || 10;
+        const baseIns = baseSource.maxInsight || 0;
 
         // 3. Construct the Breakdown Object
-        // We override the simple numbers with objects containing { base, bonus, total }
         const derivedStats = {
-            ...totalStats, // Copy all other stats (Attack, Defense, etc.)
+            ...totalStats, 
             
             maxHp: { 
                 base: baseHp, 
@@ -262,7 +257,7 @@ export class CharacterSummaryController {
             viewMode: this.viewMode,
             focusedItem: this.getSelectedItem(),
             
-            // [UPDATED] Pass the structured stats with breakdowns
+            // Pass the structured stats with breakdowns
             derivedStats: derivedStats,
 
             // Scroll syncing

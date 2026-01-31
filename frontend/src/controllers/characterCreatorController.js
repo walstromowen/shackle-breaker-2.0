@@ -126,41 +126,45 @@ export class CharacterCreatorController {
             level: 1
         };
 
+        // This returns an EntityModel instance
         return EntityFactory.create("HUMANOID", playerOverrides);
     }
 
-    // --- FIX: Explicitly Calculate Bonus = Total - Base ---
     _calculatePreviewStats() {
         try {
             const tempEntity = this._createHeroEntity(this.state);
             if (!tempEntity) return null;
 
-            // 1. Get TOTALS from Calculator (Base + Gear + Traits)
-            const calculated = StatCalculator.calculate(tempEntity);
+            // 1. Get TOTALS using the EntityModel getter (which runs StatCalculator)
+            const totalStats = tempEntity.stats;
 
-            // 2. Get Base Values (safely check nested structures)
-            const baseStats = tempEntity.state?.stats || {};
-            const baseHp = baseStats.maxHp || baseStats.hp || 10;
-            const baseStam = baseStats.maxStamina || baseStats.stamina || 10;
-            const baseIns = baseStats.maxInsight || baseStats.insight || 0;
+            // 2. Get Base Values
+            // We read from .state.stats to get the raw values before modifiers.
+            // If the background uses "attributes" (vigor) to drive stats (hp), 
+            // the base stats might be empty or default.
+            const baseStats = tempEntity.state.stats || {};
+            
+            const baseHp = baseStats.maxHp || 10;
+            const baseStam = baseStats.maxStamina || 10;
+            const baseIns = baseStats.maxInsight || 0;
 
             // 3. Construct breakdown
             return {
                 attributes: tempEntity.attributes, // The background attributes
                 hp: { 
                     base: baseHp, 
-                    bonus: calculated.maxHp - baseHp,
-                    total: calculated.maxHp
+                    bonus: totalStats.maxHp - baseHp,
+                    total: totalStats.maxHp
                 },
                 stamina: {
                     base: baseStam,
-                    bonus: calculated.maxStamina - baseStam,
-                    total: calculated.maxStamina
+                    bonus: totalStats.maxStamina - baseStam,
+                    total: totalStats.maxStamina
                 },
                 insight: {
                     base: baseIns,
-                    bonus: calculated.maxInsight - baseIns,
-                    total: calculated.maxInsight
+                    bonus: totalStats.maxInsight - baseIns,
+                    total: totalStats.maxInsight
                 }
             };
 
@@ -275,18 +279,18 @@ export class CharacterCreatorController {
         if (!player) return;
 
         // 2. Finalize Stats 
-        // We recalculate one last time to get the "final" values
-        const calculated = StatCalculator.calculate(player);
-        player.derivedStats = calculated;
+        // We get the calculated totals via the getter
+        const calculated = player.stats;
         
-        // Apply Totals directly so player starts full
+        // 3. Initialize Vitals to Full
+        // Use setters to fill the buckets based on the calculated maximums
         player.currentHP = calculated.maxHp;
         player.currentStamina = calculated.maxStamina;
         player.currentInsight = calculated.maxInsight;
 
         const finalParty = [player];
 
-        // 3. Create Companion
+        // 4. Create Companion
         const comp = CREATION_DATA.COMPANIONS[this.state.companionIdx];
         if (comp.speciesId) {
             const companionOverrides = {
@@ -297,14 +301,21 @@ export class CharacterCreatorController {
             };
             const companionInstance = EntityFactory.create(comp.speciesId, companionOverrides);
             if (companionInstance) {
+                // Also heal companion to full
+                const compStats = companionInstance.stats;
+                companionInstance.currentHP = compStats.maxHp;
+                companionInstance.currentStamina = compStats.maxStamina;
+                
                 finalParty.push(companionInstance);
             }
         }
 
-        // 4. Inject State
+        // 5. Inject State
         gameState.party.members = finalParty;
         gameState.party.inventory = []; 
-        if (player.inventory) {
+        
+        // Move starting inventory to shared party bag
+        if (player.inventory && player.inventory.length > 0) {
              gameState.party.inventory.push(...player.inventory);
              player.inventory = []; 
         }
