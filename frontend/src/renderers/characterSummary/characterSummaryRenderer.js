@@ -129,8 +129,6 @@ export class CharacterSummaryRenderer {
         const mx = state.mouse ? state.mouse.x : -1000;
         const my = state.mouse ? state.mouse.y : -1000;
 
-        // Use the newly added getHitZone logic internally if we want, 
-        // or just scan hitboxes like before.
         const hitId = this.getHitZone(mx, my);
         const hitBox = this.hitboxes.find(b => b.id === hitId);
 
@@ -139,30 +137,107 @@ export class CharacterSummaryRenderer {
         if (hitBox.type === 'trait') {
             const def = TRAIT_DEFINITIONS[hitBox.id] || { name: hitBox.id, description: "Unknown trait." };
             
-            const tipW = 220;
+            // --- 1. Recursive Helper to Flatten Nested Stats ---
+            // This turns { resistances: { fire: 5 } } into [{ key: "Fire Resistances", val: 5 }]
+            const effects = [];
+            
+            const flattenStats = (obj, parentKey = '') => {
+                if (!obj) return;
+                
+                Object.entries(obj).forEach(([key, val]) => {
+                    // Skip internal IDs or metadata (optional filter)
+                    if (key === 'id' || key === 'icon') return;
+
+                    if (typeof val === 'object' && val !== null) {
+                        // RECURSION: If it's an object, dive deeper
+                        // We append the parent key to keep context (e.g. "Attack" + "Blunt")
+                        flattenStats(val, parentKey ? `${parentKey} ${key}` : key);
+                    } else if (typeof val === 'number' && val !== 0) {
+                        // BASE CASE: If it's a non-zero number, add it
+                        const finalLabel = parentKey ? `${parentKey} ${key}` : key;
+                        effects.push({ key: finalLabel, val });
+                    }
+                });
+            };
+
+            // Scan common property locations
+            flattenStats(def.attributes); // STR, DEX, etc
+            flattenStats(def.stats);      // maxHP, speed, etc
+            flattenStats(def.bonuses);    // If you store flat bonuses here
+            
+            // --- 2. Helper to Format Text (camelCase -> Title Case) ---
+            // e.g., "maxHP" -> "Max HP", "bluntAttack" -> "Blunt Attack"
+            const formatLabel = (str) => {
+                // specific overrides for abbreviations
+                const map = { 'hp': 'HP', 'mp': 'MP', 'stm': 'STM', 'str': 'STR', 'dex': 'DEX', 'int': 'INT' };
+                
+                return str
+                    .replace(/([A-Z])/g, ' $1') // Add space before capitals
+                    .replace(/[_\-]/g, ' ')     // Replace underscores/dashes with space
+                    .split(' ')
+                    .map(word => map[word.toLowerCase()] || (word.charAt(0).toUpperCase() + word.slice(1)))
+                    .join(' ')
+                    .trim();
+            };
+
+            // --- 3. Calculate Dimensions ---
+            const tipW = 230; // Slightly wider for full stat names
             const padding = 10;
             const descFont = "11px sans-serif";
+            const statFont = UITheme.fonts.mono || "10px monospace";
 
             const descLines = this.ui.getWrappedLines(def.description, tipW - (padding*2), descFont);
-            const tipH = padding + 16 + 8 + (descLines.length * 14) + padding;
+            
+            // Base height calculation
+            let tipH = padding + 16 + 8 + (descLines.length * 14) + padding;
+            if (effects.length > 0) {
+                tipH += 8; // Spacer
+                tipH += (effects.length * 14); // Stat rows
+            }
 
+            // --- 4. Position Tooltip (Clamp to Screen) ---
             let tipX = mx + 15;
             let tipY = my + 15;
-            
             if (tipX + tipW > this.ctx.canvas.width) tipX = mx - tipW - 10;
             if (tipY + tipH > this.ctx.canvas.height) tipY = my - tipH - 10;
 
+            // --- 5. Render Background & Title ---
             this.ui.drawRect(tipX, tipY, tipW, tipH, "rgba(20, 20, 25, 0.95)"); 
             this.ui.drawRect(tipX, tipY, tipW, tipH, UITheme.colors.accent, false); 
 
             this.ui.drawText(def.name, tipX + padding, tipY + padding + 10, "bold 12px sans-serif", UITheme.colors.accent, "left");
             this.ui.drawLine(tipX + padding, tipY + padding + 18, tipX + tipW - padding, tipY + padding + 18, "#555");
 
+            // --- 6. Render Description ---
             let textY = tipY + padding + 32;
             descLines.forEach(line => {
                 this.ui.drawText(line, tipX + padding, textY, descFont, "#ddd", "left");
                 textY += 14;
             });
+
+            // --- 7. Render Flattened Effects ---
+            if (effects.length > 0) {
+                this.ui.drawLine(tipX + padding, textY + 4, tipX + tipW - padding, textY + 4, "#444");
+                textY += 16;
+
+                effects.forEach(eff => {
+                    const label = formatLabel(eff.key);
+                    const isPositive = eff.val > 0;
+                    const sign = isPositive ? "+" : "";
+                    const valStr = `${sign}${eff.val}`;
+                    
+                    // Logic: Positive HP is Green, Negative Speed is Red, etc.
+                    const valColor = isPositive ? UITheme.colors.success : UITheme.colors.danger;
+
+                    // Draw Label (Left)
+                    this.ui.drawText(label, tipX + padding, textY, statFont, "#aaa", "left");
+                    
+                    // Draw Value (Right)
+                    this.ui.drawText(valStr, tipX + tipW - padding, textY, statFont, valColor, "right");
+
+                    textY += 14;
+                });
+            }
         }
     }
 
@@ -209,7 +284,7 @@ export class CharacterSummaryRenderer {
     drawStatsPanel(member, stats, x, startY, w) {
         let currentY = startY;
 
-        // 1. Attributes
+        // --- 1. Attributes ---
         this.ui.drawText("Attributes", x, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
         currentY += 15;
 
@@ -242,36 +317,41 @@ export class CharacterSummaryRenderer {
         }
         currentY += 15;
 
-        // 2. Combat Properties
-        this.ui.drawText("Combat Properties", x, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
+        // --- 2. Stats (Renamed from Combat Properties) ---
+        this.ui.drawText("Stats", x, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
         currentY += 15;
 
-        const drawProp = (label, val, color) => {
+        const drawRow = (label, val, color) => {
             this.ui.drawText(label, x, currentY, UITheme.fonts.mono, "#bbb", "left");
             this.ui.drawText(val, x + 70, currentY, UITheme.fonts.mono, color, "left");
             currentY += 14;
         };
 
+        // Speed -> SPD
         const speed = stats.speed || member.attributes?.speed || 0;
-        drawProp("Speed", `${speed}`, UITheme.colors.accent);
+        drawRow("SPD", `${speed}`, UITheme.colors.accent);
 
+        // Crit Chance -> CRT %
         const critChance = (stats.critChance || 0) * 100;
-        const critMult = (stats.critMultiplier !== undefined) ? stats.critMultiplier : 1.5;
-        drawProp("Crit Chance", `${critChance.toFixed(0)}%`, UITheme.colors.insight);
-        drawProp("Crit Dmg", `x${critMult}`, "#aa7");
+        drawRow("CRT %", `${critChance.toFixed(0)}%`, UITheme.colors.insight);
 
+        // Crit Damage -> CRT Dmg
+        const critMult = (stats.critMultiplier !== undefined) ? stats.critMultiplier : 1.5;
+        drawRow("CRT Dmg", `x${critMult}`, "#aa7");
+
+        // Corruption -> COR
         const corruption = member.corruption || stats.corruption || 0;
-        drawProp("Corruption", `${corruption}`, "#b0f");
+        drawRow("COR", `${corruption}`, "#b0f");
         
         currentY += 10;
 
-        // 3. Combined Table (Atk/Def/Res)
+        // --- 3. Combined Table (Atk/Def/Res) ---
+        // (Kept identical to your previous version, just ensuring flow continues)
         const colType = x;
         const colAtk = x + 70;
         const colDef = x + 105;
         const colRes = x + 140;
 
-        // Headers
         const headerFont = "bold 10px sans-serif";
         this.ui.drawText("TYPE", colType, currentY, headerFont, "#666", "left");
         this.ui.drawText("ATK", colAtk, currentY, headerFont, UITheme.colors.danger, "center");
@@ -292,11 +372,12 @@ export class CharacterSummaryRenderer {
             const defense = stats.defense[type] || 0;
             const res = stats.resistance[type] || 0;
             
+            // Skip rows that are completely empty to save space (optional)
+            if (atk === 0 && defense === 0 && res === 0) return;
+
             const label = this.getAbbreviation(type);
-            const isZeroRow = (atk === 0 && defense === 0 && res === 0);
-            const labelColor = isZeroRow ? "#444" : "#bbb";
             
-            this.ui.drawText(label, colType, currentY, UITheme.fonts.mono, labelColor, "left");
+            this.ui.drawText(label, colType, currentY, UITheme.fonts.mono, "#bbb", "left");
             this.ui.drawText(`${atk}`, colAtk, currentY, UITheme.fonts.mono, atk > 0 ? "#f88" : "#444", "center");
             this.ui.drawText(`${defense}`, colDef, currentY, UITheme.fonts.mono, defense > 0 ? "#aaf" : "#444", "center");
             this.ui.drawText(`${res}%`, colRes, currentY, UITheme.fonts.mono, res > 0 ? "#fea" : "#444", "center");
@@ -333,22 +414,34 @@ export class CharacterSummaryRenderer {
         const name = def.name || "Unknown Item";
         const type = (def.slot || def.type || "Item").toUpperCase();
         
-        // --- 1. Header ---
+        // --- 1. Header (FIXED LAYOUT) ---
         this.ui.drawRect(x, currentY, w, 2, UITheme.colors.border);
         currentY += 15;
 
+        // Draw Icon
         this.drawItemIcon(item, x, currentY);
         
+        // Calculate offset for text so it sits to the right of the icon
+        const iconSize = this.RENDER_SIZE; // 32
+        const textOffsetX = x + iconSize + 12; // Icon width + padding
+        const textWidth = w - (iconSize + 12);
+
+        // Draw Name
         const nameFont = UITheme.fonts.bold;
-        const nameLines = this.ui.getWrappedLines(name, w - 40, nameFont);
+        const nameLines = this.ui.getWrappedLines(name, textWidth, nameFont);
         
-        nameLines.forEach((line, i) => {
-            this.ui.drawText(line, x + 40, currentY + 12 + (i*18), nameFont, "#fff", "left");
+        let textCursorY = currentY;
+        nameLines.forEach((line) => {
+            this.ui.drawText(line, textOffsetX, textCursorY + 10, nameFont, "#fff", "left");
+            textCursorY += 18;
         });
         
-        currentY += Math.max(40, nameLines.length * 18 + 5); 
-        this.ui.drawText(type, x, currentY, UITheme.fonts.mono, UITheme.colors.accent, "left");
-        currentY += 20;
+        // Draw Slot Type (Below name, aligned with name)
+        this.ui.drawText(type, textOffsetX, textCursorY + 5, UITheme.fonts.mono, UITheme.colors.accent, "left");
+
+        // Move currentY down past the icon or the text, whichever is taller
+        const headerHeight = Math.max(iconSize + 10, (nameLines.length * 18) + 20);
+        currentY += headerHeight;
 
         this.ui.drawRect(x, currentY, w, 1, "#333");
         currentY += 15;
@@ -414,14 +507,12 @@ export class CharacterSummaryRenderer {
                 if (!ab) return;
 
                 const pad = 6;
-                const iconSize = this.RENDER_SIZE; 
-                
                 const descFont = "italic 10px sans-serif";
                 const shortDesc = ab.description || "No description.";
                 const descLines = this.ui.getWrappedLines(shortDesc, w - (pad*2), descFont);
                 
                 const descAreaHeight = (descLines.length * 12);
-                const iconSectionHeight = iconSize; 
+                const iconSectionHeight = this.RENDER_SIZE; 
                 const bufferHeight = 12; 
                 const statsSectionHeight = (14 * 2) + 6;
                 const dividerHeight = 8; 
@@ -433,7 +524,7 @@ export class CharacterSummaryRenderer {
                 this.drawAbilityIcon(ab, x + pad, currentY + pad);
 
                 // Header Info
-                const textStartX = x + pad + iconSize + 8;
+                const textStartX = x + pad + this.RENDER_SIZE + 8;
                 const headerTextY = currentY + pad + 14; 
                 this.ui.drawText(ab.name || abilityId, textStartX, headerTextY, "bold 13px sans-serif", "#fff", "left");
 
