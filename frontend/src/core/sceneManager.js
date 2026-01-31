@@ -50,7 +50,7 @@ export class SceneManager {
         this.characterCreatorRenderer = new CharacterCreatorRenderer(this.config, this.loader);
         this.partyRenderer = new PartyRenderer(this.ctx, this.loader);
         
-        // [FIX] Pass this.loader here so the renderer can draw portraits
+        // Pass this.loader here so the renderer can draw portraits
         this.characterSummaryRenderer = new CharacterSummaryRenderer(this.ctx, this.loader); 
 
         // State
@@ -66,7 +66,6 @@ export class SceneManager {
     }
 
     setupEventListeners() {
-        // [UPDATE] Destructure 'data' from the payload
         events.on('CHANGE_SCENE', ({ scene, data }) => {
             this.transitionRenderer.start(() => {
                 
@@ -75,7 +74,7 @@ export class SceneManager {
                     this.encounterController.cleanup();
                 }
 
-                // [NEW] Logic for Character Summary
+                // Logic for Character Summary initialization
                 if (scene === 'character_summary') {
                     // We must re-instantiate the controller to pass the new 'data' (memberIndex)
                     this.characterSummaryController = new CharacterSummaryController(this.input, data);
@@ -113,7 +112,6 @@ export class SceneManager {
                 case 'party': 
                     this.partyController.handleKeyDown(e.code);
                     break;
-                // [NEW] Route input to Summary Controller
                 case 'character_summary':
                     if (this.characterSummaryController) {
                         this.characterSummaryController.handleKeyDown(e.code);
@@ -126,23 +124,41 @@ export class SceneManager {
     update(dt) {
         // --- 1. MOUSE CHECK ---
         const click = this.input.getAndResetClick();
-        
-        // [NEW] Scroll Check
         const scroll = this.input.getAndResetScroll();
+        const mousePos = this.input.getMousePosition(); // {x, y}
 
-        if (click) {
+        // --- Handle Input per Scene ---
+        if (this.currentScene === 'character_summary' && this.characterSummaryController) {
+            
+            // A. Update Raw Mouse Pos (Internal tracking)
+            this.characterSummaryController.handleMouseMove(mousePos.x, mousePos.y);
+
+            // B. Hit Testing (The "Bridge")
+            // Ask Renderer: "What is under the mouse?"
+            const hitZoneId = this.characterSummaryRenderer.getHitZone(mousePos.x, mousePos.y);
+            
+            // C. Pass Hover ID to Controller (for Tooltips)
+            this.characterSummaryController.handleHover(hitZoneId);
+
+            // D. Handle Interactions (Clicks)
+            if (click && hitZoneId) {
+                // Controller only receives the ID string, not the renderer!
+                this.characterSummaryController.handleInteraction(hitZoneId);
+            }
+
+            // E. Handle Scroll
+            if (scroll !== 0) {
+                this.characterSummaryController.handleScroll(scroll);
+            }
+        } 
+        else if (click) {
+            // Legacy handling for other scenes (refactor these later if desired)
             if (this.currentScene === 'character-creator') {
                 this.characterCreatorController.handleMouseDown(click.x, click.y, this.characterCreatorRenderer);
             } 
             else if (this.currentScene === 'party') {
                 this.partyController.handleMouseDown(click.x, click.y, this.partyRenderer);
             }
-        }
-
-        // [NEW] Handle Scrolling
-        if (scroll !== 0 && this.currentScene === 'character_summary') {
-            // We pass the scroll value to the controller
-            this.characterSummaryController.handleScroll(scroll);
         }
 
         // --- 2. REGULAR UPDATES ---
@@ -180,7 +196,6 @@ export class SceneManager {
                 this.encounterRenderer.render(this.ctx, encState);
                 break;
 
-            // [NEW] Render Character Summary
             case 'character_summary':
                 if (this.characterSummaryController) {
                     const csState = this.characterSummaryController.getState();

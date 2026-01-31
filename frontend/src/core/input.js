@@ -6,7 +6,8 @@ export class Input {
         this.canvas = canvas;
         this.heldKeys = new Set();
         this.lastClick = null; 
-        this.scrollDelta = 0; // [NEW] Track scroll amount
+        this.scrollDelta = 0;
+        this.mousePosition = { x: 0, y: 0 }; // [NEW] Track continuous mouse position
 
         // --- KEYBOARD LISTENERS ---
         window.addEventListener("keydown", (e) => {
@@ -19,6 +20,7 @@ export class Input {
 
         // --- MOUSE LISTENERS ---
         if (this.canvas) {
+            // 1. Mouse Down (Clicks)
             this.canvas.addEventListener("mousedown", (e) => {
                 const rect = this.canvas.getBoundingClientRect();
                 const scaleX = this.canvas.width / rect.width;
@@ -30,7 +32,19 @@ export class Input {
                 };
             });
 
-            // [NEW] Wheel Listener
+            // 2. [NEW] Mouse Move (Hovering/Tooltips)
+            this.canvas.addEventListener("mousemove", (e) => {
+                const rect = this.canvas.getBoundingClientRect();
+                const scaleX = this.canvas.width / rect.width;
+                const scaleY = this.canvas.height / rect.height;
+
+                this.mousePosition = {
+                    x: (e.clientX - rect.left) * scaleX,
+                    y: (e.clientY - rect.top) * scaleY
+                };
+            });
+
+            // 3. Wheel Listener (Scrolling)
             this.canvas.addEventListener("wheel", (e) => {
                 // Prevent browser zooming/scrolling while over canvas
                 e.preventDefault(); 
@@ -48,11 +62,15 @@ export class Input {
         return click;
     }
 
-    // [NEW] Get scroll amount and reset
     getAndResetScroll() {
         const val = this.scrollDelta;
         this.scrollDelta = 0;
         return val;
+    }
+
+    // [NEW] Get current mouse coordinates
+    getMousePosition() {
+        return this.mousePosition;
     }
 
     // --- KEYBOARD API ---

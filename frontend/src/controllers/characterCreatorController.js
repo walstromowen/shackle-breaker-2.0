@@ -89,6 +89,7 @@ export class CharacterCreatorController {
         this.state.backgroundIdx = getIdx(this.state.backgroundIdx, CREATION_DATA.BACKGROUNDS);
         this.state.traitIdx = getIdx(this.state.traitIdx, CREATION_DATA.TRAITS);
 
+        // Only recalculate stats if something changed
         if (this.isDirty) {
             this.cachedStats = this._calculatePreviewStats();
             this.isDirty = false;
@@ -111,12 +112,13 @@ export class CharacterCreatorController {
         const keep = CREATION_DATA.KEEPSAKES[currentSelections.keepsakeIdx];
         const trait = CREATION_DATA.TRAITS[currentSelections.traitIdx];
 
+        // Resolve string IDs to actual Item instances
         const playerEquipment = this._resolveEquipment(bg.equipment);
         const playerInventory = this._resolveInventory(keep.itemId ? [keep.itemId] : []);
 
         const playerOverrides = {
             name: currentSelections.name, 
-            attributes: { ...bg.attributes }, 
+            attributes: { ...bg.attributes }, // Background attributes are the base
             equipment: playerEquipment,
             sprite: app.sprite,
             portrait: app.portrait,
@@ -132,45 +134,24 @@ export class CharacterCreatorController {
 
     _calculatePreviewStats() {
         try {
+            // 1. Create a "Mock" Entity
+            // We use the factory so this mock entity looks EXACTLY like the real player will.
+            // This ensures equipment, traits, and background attributes are all merged correctly.
             const tempEntity = this._createHeroEntity(this.state);
+            
             if (!tempEntity) return null;
 
-            // 1. Get TOTALS using the EntityModel getter (which runs StatCalculator)
-            const totalStats = tempEntity.stats;
-
-            // 2. Get Base Values
-            // We read from .state.stats to get the raw values before modifiers.
-            // If the background uses "attributes" (vigor) to drive stats (hp), 
-            // the base stats might be empty or default.
-            const baseStats = tempEntity.state.stats || {};
-            
-            const baseHp = baseStats.maxHp || 10;
-            const baseStam = baseStats.maxStamina || 10;
-            const baseIns = baseStats.maxInsight || 0;
-
-            // 3. Construct breakdown
-            return {
-                attributes: tempEntity.attributes, // The background attributes
-                hp: { 
-                    base: baseHp, 
-                    bonus: totalStats.maxHp - baseHp,
-                    total: totalStats.maxHp
-                },
-                stamina: {
-                    base: baseStam,
-                    bonus: totalStats.maxStamina - baseStam,
-                    total: totalStats.maxStamina
-                },
-                insight: {
-                    base: baseIns,
-                    bonus: totalStats.maxInsight - baseIns,
-                    total: totalStats.maxInsight
-                }
-            };
+            // 2. Delegate to the Calculator's Detailed Pipeline
+            // This returns the structure: 
+            // { 
+            //    attributes: { vigor: 12, ... }, 
+            //    maxHp: { base: 100, bonus: 10, total: 110 } 
+            // }
+            return StatCalculator.calculateDetailed(tempEntity);
 
         } catch (e) {
-            console.warn("Preview Calculation Failed:", e);
-            return null;
+            console.error("Preview Calculation CRASHED:", e);
+            return null; 
         }
     }
 
@@ -274,19 +255,20 @@ export class CharacterCreatorController {
             this.currentRow = 0; this.isEditingName = true; return;
         }
 
-        // 1. Create Player
+        // 1. Create the Final Player Entity
         const player = this._createHeroEntity(this.state);
         if (!player) return;
 
-        // 2. Finalize Stats 
-        // We get the calculated totals via the getter
-        const calculated = player.stats;
+        // 2. Recalculate Stats (Source of Truth)
+        // EntityFactory creates it, but we ensure stats are fresh
+        // Note: EntityModel likely runs StatCalculator.calculate() internally on access
+        const finalStats = player.stats; 
         
         // 3. Initialize Vitals to Full
-        // Use setters to fill the buckets based on the calculated maximums
-        player.currentHP = calculated.maxHp;
-        player.currentStamina = calculated.maxStamina;
-        player.currentInsight = calculated.maxInsight;
+        // We set the current HP (mutable) to the calculated Max HP (derived)
+        player.hp = finalStats.maxHp;
+        player.stamina = finalStats.maxStamina;
+        player.insight = finalStats.maxInsight;
 
         const finalParty = [player];
 
@@ -301,20 +283,20 @@ export class CharacterCreatorController {
             };
             const companionInstance = EntityFactory.create(comp.speciesId, companionOverrides);
             if (companionInstance) {
-                // Also heal companion to full
+                // Heal companion to full
                 const compStats = companionInstance.stats;
-                companionInstance.currentHP = compStats.maxHp;
-                companionInstance.currentStamina = compStats.maxStamina;
+                companionInstance.hp = compStats.maxHp;
+                companionInstance.stamina = compStats.maxStamina;
                 
                 finalParty.push(companionInstance);
             }
         }
 
-        // 5. Inject State
+        // 5. Inject State into Global Game State
         gameState.party.members = finalParty;
         gameState.party.inventory = []; 
         
-        // Move starting inventory to shared party bag
+        // Move starting personal inventory to shared party bag
         if (player.inventory && player.inventory.length > 0) {
              gameState.party.inventory.push(...player.inventory);
              player.inventory = []; 
@@ -324,6 +306,7 @@ export class CharacterCreatorController {
         if (!gameState.settings) gameState.settings = {};
         gameState.settings.difficulty = CREATION_DATA.DIFFICULTIES[this.state.difficultyIdx].id; 
 
+        // 6. Transition
         events.emit('CHANGE_SCENE', { scene: 'overworld' });
     }
 }

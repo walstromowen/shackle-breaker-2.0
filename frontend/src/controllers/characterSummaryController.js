@@ -1,6 +1,5 @@
 import { gameState } from '../../../shared/state/gameState.js';
-import { events } from '../../src/core/eventBus.js';
-import { StatCalculator } from '../../../shared/systems/statCalculator.js';
+import { events } from '../core/eventBus.js'; 
 
 const SLOT_ORDER = [
     'head', 'torso', 'arms', 'mainHand', 'offHand', 'legs', 'feet', 'accessory'
@@ -10,11 +9,13 @@ export class CharacterSummaryController {
     constructor(input, data) {
         this.memberIndex = data ? data.memberIndex : 0;
         
-        // State tracking
         this.state = 'SLOTS'; 
         this.viewMode = 'STATS'; 
         
-        // Scroll offset for the details panel
+        // Input State (Only data needed for the view to render tooltips)
+        this.mouse = { x: 0, y: 0 };
+        this.hoveredElement = null; 
+
         this.detailsScrollOffset = 0;
 
         this.DEFAULT_SLOTS = [
@@ -29,25 +30,93 @@ export class CharacterSummaryController {
         this.updateActiveSlots();
     }
 
-    // Handle Scroll Input
-    handleScroll(delta) {
-        // Adjust sensitivity
-        const speed = 0.5; 
-        this.detailsScrollOffset += delta * speed;
+    // --- Input Handling ---
 
-        // Clamp to top
-        if (this.detailsScrollOffset < 0) this.detailsScrollOffset = 0;
-        
-        // Note: We cannot clamp the bottom here because the Controller 
-        // doesn't know the content height. The Renderer will clamp it.
+    handleMouseMove(x, y) {
+        this.mouse.x = x;
+        this.mouse.y = y;
     }
+
+    handleHover(elementData) {
+        this.hoveredElement = elementData;
+    }
+
+    // REFACTOR: No Renderer here. We only receive the ID of what was clicked.
+    handleInteraction(elementId) {
+        if (!elementId) return;
+
+        // 1. Navigation
+        if (elementId === 'BTN_PREV_CHAR') {
+            this.cycleMember(-1);
+            return;
+        }
+        if (elementId === 'BTN_NEXT_CHAR') {
+            this.cycleMember(1);
+            return;
+        }
+        if (elementId === 'BTN_BACK') {
+            events.emit('CHANGE_SCENE', { scene: 'party' });
+            return;
+        }
+
+        // 2. View Mode
+        if (elementId === 'BTN_TAB_STATS') {
+            this.viewMode = 'STATS';
+            return;
+        }
+        if (elementId === 'BTN_TAB_ITEM') {
+            this.viewMode = 'ITEM';
+            return;
+        }
+        if (elementId === 'BTN_UNEQUIP') {
+            this.unequipCurrentSlot();
+            return;
+        }
+
+        // 3. Equipment Slots
+        if (elementId.startsWith('SLOT_')) {
+            const slotName = elementId.replace('SLOT_', '');
+            const newIndex = this.activeSlots.indexOf(slotName);
+            
+            if (newIndex !== -1) {
+                if (this.slotIndex === newIndex && this.state === 'SLOTS') {
+                    if (this.filteredInventory.length > 0) {
+                        this.state = 'INVENTORY';
+                        this.inventoryIndex = 0;
+                    }
+                } else {
+                    this.slotIndex = newIndex;
+                    this.state = 'SLOTS';
+                    this.updateFilteredInventory();
+                    this.detailsScrollOffset = 0;
+                }
+            }
+            return;
+        }
+
+        // 4. Inventory Items
+        if (this.state === 'INVENTORY' && elementId.startsWith('INV_ITEM_')) {
+            const idx = parseInt(elementId.split('_')[2], 10);
+            if (!isNaN(idx) && idx < this.filteredInventory.length) {
+                this.inventoryIndex = idx;
+                this.equipItem(this.filteredInventory[idx]);
+            }
+        }
+    }
+
+    handleScroll(delta) {
+        const speed = 20; 
+        this.detailsScrollOffset += delta * speed;
+        if (this.detailsScrollOffset < 0) this.detailsScrollOffset = 0;
+    }
+
+    // --- Logic & State ---
 
     get currentMember() { return gameState.party.members[this.memberIndex]; }
     get currentSlots() { return this.activeSlots; }
 
     updateActiveSlots() {
         const member = this.currentMember;
-        // [UPDATED] Use the getter from EntityModel
         const equipData = member.equipment || {}; 
         const availableSlots = Object.keys(equipData);
 
@@ -65,9 +134,7 @@ export class CharacterSummaryController {
             this.slotIndex = Math.max(0, this.activeSlots.length - 1);
         }
         
-        // Reset scroll when changing slots/context
         this.detailsScrollOffset = 0;
-        
         this.updateFilteredInventory();
     }
 
@@ -88,7 +155,6 @@ export class CharacterSummaryController {
             }
             return;
         }
-
         if (code === 'ShiftLeft' || code === 'ShiftRight') {
             this.viewMode = (this.viewMode === 'STATS') ? 'ITEM' : 'STATS';
             return;
@@ -102,10 +168,7 @@ export class CharacterSummaryController {
     }
 
     handleSlotNavigation(code) {
-        if (code === 'Tab') {
-            this.cycleMember(1);
-            return;
-        }
+        if (code === 'Tab') { this.cycleMember(1); return; }
         if (code === 'ArrowUp' || code === 'KeyW') {
             this.slotIndex = (this.slotIndex > 0) ? this.slotIndex - 1 : this.activeSlots.length - 1;
             this.updateFilteredInventory();
@@ -121,8 +184,6 @@ export class CharacterSummaryController {
                 this.state = 'INVENTORY';
                 this.inventoryIndex = 0;
                 this.detailsScrollOffset = 0;
-            } else {
-                console.log("No items available for this slot.");
             }
         }
         else if (code === 'KeyX' || code === 'Delete') {
@@ -142,37 +203,28 @@ export class CharacterSummaryController {
             this.detailsScrollOffset = 0;
         }
         else if (code === 'Enter' || code === 'Space') {
-            const itemToEquip = this.filteredInventory[this.inventoryIndex];
-            this.equipItem(itemToEquip);
+            this.equipItem(this.filteredInventory[this.inventoryIndex]);
         }
     }
 
     updateFilteredInventory() {
+        if (!this.activeSlots[this.slotIndex]) return;
         const slotName = this.activeSlots[this.slotIndex];
         this.filteredInventory = gameState.party.inventory.filter(item => {
             if (!item) return false;
-            if (item.slot === slotName) return true;
-            if (item.definition && item.definition.slot === slotName) return true;
-            return false;
+            const iSlot = item.slot || (item.definition ? item.definition.slot : null);
+            return iSlot === slotName;
         });
         this.inventoryIndex = 0;
     }
 
-    // [UPDATED] Use EntityModel methods for safety
     equipItem(inventoryItem) {
         const member = this.currentMember;
         const slotName = this.activeSlots[this.slotIndex];
-        
-        // 1. Check if something is already there to return to inventory
         const currentEquip = member.equipment[slotName];
-        if (currentEquip) {
-            gameState.party.inventory.push(currentEquip);
-        }
         
-        // 2. Use Model method (handles Ability granting, etc)
+        if (currentEquip) gameState.party.inventory.push(currentEquip);
         member.equipItem(slotName, inventoryItem);
-
-        // 3. Remove new item from inventory
         const bagIdx = gameState.party.inventory.indexOf(inventoryItem);
         if (bagIdx > -1) gameState.party.inventory.splice(bagIdx, 1);
 
@@ -180,20 +232,14 @@ export class CharacterSummaryController {
         this.updateFilteredInventory(); 
     }
 
-    // [UPDATED] Use EntityModel methods for safety
     unequipCurrentSlot() {
         const member = this.currentMember;
         const slotName = this.activeSlots[this.slotIndex];
-        
         const currentEquip = member.equipment[slotName];
 
         if (currentEquip) {
-            // 1. Return to inventory
             gameState.party.inventory.push(currentEquip);
-            
-            // 2. Use Model method (handles Ability removal)
             member.unequipItem(slotName);
-            
             this.updateFilteredInventory(); 
         }
     }
@@ -203,48 +249,24 @@ export class CharacterSummaryController {
             return this.filteredInventory[this.inventoryIndex] || null;
         } else {
             const slotName = this.activeSlots[this.slotIndex];
-            // [UPDATED] Use getter
             return this.currentMember.equipment[slotName] || null;
         }
     }
 
     getState() {
         const self = this;
-        const member = this.currentMember;
-        
-        // 1. Calculate Totals (Base + Gear + Traits)
-        // Uses the new EntityModel .stats getter which calls StatCalculator
+        const member = this.currentMember; 
         const totalStats = member.stats;
-
-        // 2. Determine Base Values
-        // EntityModel stores the raw "Base" values in .state.stats
-        // We fallback to definition or defaults just in case, but .state.stats should be authoritative
         const baseSource = member.state.stats || {};
-        
-        // The property names in state.stats are `maxHp`, `maxStamina`, `maxInsight`
         const baseHp = baseSource.maxHp || 10;
         const baseStam = baseSource.maxStamina || 10;
         const baseIns = baseSource.maxInsight || 0;
 
-        // 3. Construct the Breakdown Object
         const derivedStats = {
-            ...totalStats, 
-            
-            maxHp: { 
-                base: baseHp, 
-                bonus: totalStats.maxHp - baseHp, 
-                total: totalStats.maxHp 
-            },
-            maxStamina: { 
-                base: baseStam, 
-                bonus: totalStats.maxStamina - baseStam, 
-                total: totalStats.maxStamina 
-            },
-            maxInsight: { 
-                base: baseIns, 
-                bonus: totalStats.maxInsight - baseIns, 
-                total: totalStats.maxInsight 
-            }
+            ...totalStats,
+            maxHp: { base: baseHp, bonus: totalStats.maxHp - baseHp, total: totalStats.maxHp },
+            maxStamina: { base: baseStam, bonus: totalStats.maxStamina - baseStam, total: totalStats.maxStamina },
+            maxInsight: { base: baseIns, bonus: totalStats.maxInsight - baseIns, total: totalStats.maxInsight }
         };
 
         return {
@@ -256,17 +278,11 @@ export class CharacterSummaryController {
             inventoryIndex: this.inventoryIndex,
             viewMode: this.viewMode,
             focusedItem: this.getSelectedItem(),
-            
-            // Pass the structured stats with breakdowns
             derivedStats: derivedStats,
-
-            // Scroll syncing
-            get scrollOffset() { 
-                return self.detailsScrollOffset; 
-            },
-            set scrollOffset(val) { 
-                self.detailsScrollOffset = val; 
-            }
+            mouse: this.mouse, 
+            hoveredElement: this.hoveredElement, 
+            get scrollOffset() { return self.detailsScrollOffset; },
+            set scrollOffset(val) { self.detailsScrollOffset = val; }
         };
     }
 }

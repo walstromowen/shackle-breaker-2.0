@@ -3,6 +3,7 @@ import { CanvasUI } from '../../ui/canvasUI.js';
 import { CONFIG } from '../../../../shared/data/constants.js'; 
 import { StatCalculator } from '../../../../shared/systems/statCalculator.js'; 
 import { AbilityDefinitions } from '../../../../shared/data/abilityDefinitions.js';
+import { TRAIT_DEFINITIONS } from '../../../../shared/data/traitDefinitions.js'; 
 
 export class CharacterSummaryRenderer {
     constructor(ctx, loader) {
@@ -16,16 +17,35 @@ export class CharacterSummaryRenderer {
         
         this.itemContentHeight = 0;
         this.lastItemId = null;
+
+        // --- Interaction State ---
+        this.hitboxes = [];
+    }
+
+    // --- NEW: The method SceneManager is looking for ---
+    getHitZone(x, y) {
+        // Iterate backwards (LIFO) so we catch elements drawn on top first
+        for (let i = this.hitboxes.length - 1; i >= 0; i--) {
+            const box = this.hitboxes[i];
+            if (x >= box.x && x <= box.x + box.w && y >= box.y && y <= box.y + box.h) {
+                return box.id;
+            }
+        }
+        return null;
     }
 
     render(state) {
+        // 1. Reset hitboxes every frame
+        this.hitboxes = [];
+        
         const { member, slots, selectedSlotIndex, isChoosingItem, filteredInventory, inventoryIndex, viewMode, focusedItem, derivedStats } = state;
         
         const w = this.ctx.canvas.width;
         const h = this.ctx.canvas.height;
         
         this.ui.clearScreen(w, h);
-
+        
+        // Calculate stats if not pre-calculated in state
         const stats = derivedStats || StatCalculator.calculate(member);
 
         // Layout Columns
@@ -37,26 +57,29 @@ export class CharacterSummaryRenderer {
         const col2X = leftW;
         const col3X = leftW + centerW;
 
-        // Backgrounds (using Theme)
+        // Backgrounds & Borders
         this.ui.drawRect(col1X, 0, leftW, h, "#111"); 
         this.ui.drawRect(col3X, 0, rightW, h, "#111");
-        
-        // Separators
         this.ui.drawLine(col2X, 0, col2X, h, UITheme.colors.border);
         this.ui.drawLine(col3X, 0, col3X, h, UITheme.colors.border);
 
         if (member) {
             this.drawLeftColumn(member, stats, viewMode, focusedItem, col1X + this.padding, this.padding, leftW - (this.padding*2), h, state);
+            
             this.drawCenterColumn(member, stats, slots, selectedSlotIndex, isChoosingItem, col2X, this.padding, centerW, h);
+            
             this.drawRightColumn(filteredInventory, inventoryIndex, isChoosingItem, col3X + this.padding, this.padding, rightW - (this.padding*2));
+            
+            // Optional: Draw a footer or back button if needed
+            // this.drawFooter(w, h);
         }
 
-        // Optional footer if needed
-        // this.drawFooter(...)
+        // 2. Draw Tooltips LAST so they overlay everything
+        this.drawTooltips(state);
     }
 
     // ===========================================
-    // HELPER METHODS
+    // HELPERS
     // ===========================================
 
     getAbbreviation(text) {
@@ -69,7 +92,6 @@ export class CharacterSummaryRenderer {
             lightning: "LIG", water: "WAT", earth: "ERT", wind: "WND", light: "LGT", dark: "DRK", arcane: "ARC",
             maxhp: "HP", maxstamina: "STM", maxinsight: "INS"
         };
-
         return map[lower] || text.substring(0, 3).toUpperCase();
     }
 
@@ -100,12 +122,57 @@ export class CharacterSummaryRenderer {
     }
 
     // ===========================================
+    // INTERACTION & TOOLTIPS
+    // ===========================================
+
+    drawTooltips(state) {
+        const mx = state.mouse ? state.mouse.x : -1000;
+        const my = state.mouse ? state.mouse.y : -1000;
+
+        // Use the newly added getHitZone logic internally if we want, 
+        // or just scan hitboxes like before.
+        const hitId = this.getHitZone(mx, my);
+        const hitBox = this.hitboxes.find(b => b.id === hitId);
+
+        if (!hitBox) return;
+
+        if (hitBox.type === 'trait') {
+            const def = TRAIT_DEFINITIONS[hitBox.id] || { name: hitBox.id, description: "Unknown trait." };
+            
+            const tipW = 220;
+            const padding = 10;
+            const descFont = "11px sans-serif";
+
+            const descLines = this.ui.getWrappedLines(def.description, tipW - (padding*2), descFont);
+            const tipH = padding + 16 + 8 + (descLines.length * 14) + padding;
+
+            let tipX = mx + 15;
+            let tipY = my + 15;
+            
+            if (tipX + tipW > this.ctx.canvas.width) tipX = mx - tipW - 10;
+            if (tipY + tipH > this.ctx.canvas.height) tipY = my - tipH - 10;
+
+            this.ui.drawRect(tipX, tipY, tipW, tipH, "rgba(20, 20, 25, 0.95)"); 
+            this.ui.drawRect(tipX, tipY, tipW, tipH, UITheme.colors.accent, false); 
+
+            this.ui.drawText(def.name, tipX + padding, tipY + padding + 10, "bold 12px sans-serif", UITheme.colors.accent, "left");
+            this.ui.drawLine(tipX + padding, tipY + padding + 18, tipX + tipW - padding, tipY + padding + 18, "#555");
+
+            let textY = tipY + padding + 32;
+            descLines.forEach(line => {
+                this.ui.drawText(line, tipX + padding, textY, descFont, "#ddd", "left");
+                textY += 14;
+            });
+        }
+    }
+
+    // ===========================================
     // LEFT COLUMN (Stats/Items)
     // ===========================================
 
     drawLeftColumn(member, stats, viewMode, focusedItem, x, y, w, h, state) {
         let currentY = y + 10;
-
+        
         // --- TABS ---
         const tabW = w / 2;
         const tabH = 24;
@@ -113,14 +180,20 @@ export class CharacterSummaryRenderer {
         // Stats Tab
         const statsActive = viewMode === 'STATS';
         this.ui.drawRect(x, y, tabW, tabH, statsActive ? "#333" : "#111");
-        this.ui.drawRect(x, y, tabW, tabH, statsActive ? "#666" : "#222", false); // Stroke
+        this.ui.drawRect(x, y, tabW, tabH, statsActive ? "#666" : "#222", false);
         this.ui.drawText("STATS", x + tabW/2, y + 12, UITheme.fonts.small, statsActive ? "#fff" : "#555", "center", "middle");
+        
+        // [HITBOX] Stats Tab
+        this.hitboxes.push({ id: 'TAB_STATS', x, y, w: tabW, h: tabH, type: 'tab' });
 
         // Item Tab
         const itemActive = viewMode === 'ITEM';
         this.ui.drawRect(x + tabW, y, tabW, tabH, itemActive ? "#333" : "#111");
-        this.ui.drawRect(x + tabW, y, tabW, tabH, itemActive ? "#666" : "#222", false); // Stroke
+        this.ui.drawRect(x + tabW, y, tabW, tabH, itemActive ? "#666" : "#222", false);
         this.ui.drawText("ITEM", x + tabW + tabW/2, y + 12, UITheme.fonts.small, itemActive ? "#fff" : "#555", "center", "middle");
+
+        // [HITBOX] Item Tab
+        this.hitboxes.push({ id: 'TAB_ITEM', x: x + tabW, y, w: tabW, h: tabH, type: 'tab' });
 
         currentY += tabH + 20;
 
@@ -145,13 +218,20 @@ export class CharacterSummaryRenderer {
 
         if (attrKeys.length > 0) {
             const colWidth = w / 2;
+            
             attrKeys.forEach((key, i) => {
-                const val = attrs[key];
+                const baseVal = attrs[key];      
+                const finalVal = stats[key];     
+                
+                const displayVal = (finalVal !== undefined) ? finalVal : baseVal;
+                const isBuffed = displayVal > baseVal;
+                const valColor = isBuffed ? UITheme.colors.accent : "#fff"; 
+
                 const label = this.getAbbreviation(key);
                 const colX = (i % 2 === 0) ? x : x + colWidth;
                 
                 this.ui.drawText(label, colX, currentY, UITheme.fonts.small, "#aaa", "left");
-                this.ui.drawText(val.toString(), colX + 30, currentY, UITheme.fonts.mono, "#fff", "left");
+                this.ui.drawText(displayVal.toString(), colX + 30, currentY, UITheme.fonts.mono, valColor, "left");
                 
                 if (i % 2 !== 0) currentY += 14;
             });
@@ -166,7 +246,6 @@ export class CharacterSummaryRenderer {
         this.ui.drawText("Combat Properties", x, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
         currentY += 15;
 
-        // Helper to draw row
         const drawProp = (label, val, color) => {
             this.ui.drawText(label, x, currentY, UITheme.fonts.mono, "#bbb", "left");
             this.ui.drawText(val, x + 70, currentY, UITheme.fonts.mono, color, "left");
@@ -210,19 +289,16 @@ export class CharacterSummaryRenderer {
         
         types.forEach((type) => {
             const atk = (stats.attack || {})[type] || 0;
-            const def = stats.defense[type] || 0;
+            const defense = stats.defense[type] || 0;
             const res = stats.resistance[type] || 0;
             
-            // Skip rows that are completely empty to save space (optional, keeps UI clean)
-            // if (atk === 0 && def === 0 && res === 0) return; 
-
             const label = this.getAbbreviation(type);
-            const isZeroRow = (atk === 0 && def === 0 && res === 0);
+            const isZeroRow = (atk === 0 && defense === 0 && res === 0);
             const labelColor = isZeroRow ? "#444" : "#bbb";
             
             this.ui.drawText(label, colType, currentY, UITheme.fonts.mono, labelColor, "left");
             this.ui.drawText(`${atk}`, colAtk, currentY, UITheme.fonts.mono, atk > 0 ? "#f88" : "#444", "center");
-            this.ui.drawText(`${def}`, colDef, currentY, UITheme.fonts.mono, def > 0 ? "#aaf" : "#444", "center");
+            this.ui.drawText(`${defense}`, colDef, currentY, UITheme.fonts.mono, defense > 0 ? "#aaf" : "#444", "center");
             this.ui.drawText(`${res}%`, colRes, currentY, UITheme.fonts.mono, res > 0 ? "#fea" : "#444", "center");
             currentY += 14; 
         });
@@ -234,7 +310,7 @@ export class CharacterSummaryRenderer {
             return;
         }
 
-        // Logic: Reset Scroll
+        // Logic: Reset Scroll if item changed
         const itemId = item.id || (item.definition ? item.definition.id : null);
         if (itemId !== this.lastItemId) {
             this.itemContentHeight = 0;
@@ -248,7 +324,7 @@ export class CharacterSummaryRenderer {
         if (state.scrollOffset < 0) state.scrollOffset = 0;
 
         // Render: Clip Viewport
-        this.ui.startClip(x, startY, w + 10, viewportH); // +10 for scrollbar width buffer
+        this.ui.startClip(x, startY, w + 10, viewportH);
 
         let currentY = startY - state.scrollOffset;
         const contentStartY = currentY;
@@ -340,7 +416,6 @@ export class CharacterSummaryRenderer {
                 const pad = 6;
                 const iconSize = this.RENDER_SIZE; 
                 
-                // Layout Calculation (using UI wrapper)
                 const descFont = "italic 10px sans-serif";
                 const shortDesc = ab.description || "No description.";
                 const descLines = this.ui.getWrappedLines(shortDesc, w - (pad*2), descFont);
@@ -352,15 +427,14 @@ export class CharacterSummaryRenderer {
                 const dividerHeight = 8; 
                 const totalHeight = pad + iconSectionHeight + bufferHeight + statsSectionHeight + dividerHeight + descAreaHeight + pad;
 
-                // Background
+                // Ability Box Background
                 this.ui.drawRect(x, currentY, w, totalHeight, "rgba(0, 0, 0, 0.3)");
                 
-                // Icon
                 this.drawAbilityIcon(ab, x + pad, currentY + pad);
 
                 // Header Info
                 const textStartX = x + pad + iconSize + 8;
-                const headerTextY = currentY + pad + 14; // Approximate text baseline
+                const headerTextY = currentY + pad + 14; 
                 this.ui.drawText(ab.name || abilityId, textStartX, headerTextY, "bold 13px sans-serif", "#fff", "left");
 
                 // Cost
@@ -426,7 +500,6 @@ export class CharacterSummaryRenderer {
         this.ui.endClip();
 
         // --- SCROLLBAR ---
-        // Pass the calculated heights to the UI to draw the scrollbar
         const scrollX = x + w + 4;
         this.ui.drawScrollBar(scrollX, startY, viewportH, this.itemContentHeight, state.scrollOffset);
     }
@@ -446,7 +519,6 @@ export class CharacterSummaryRenderer {
         const vitalY = headerY + 58;
         const gap = 12;
         
-        // --- FIX: Helper to extract number from object ---
         const getVal = (v) => {
             if (v && typeof v === 'object') return v.total || v.value || v.base || 0;
             return Number(v) || 0;
@@ -455,15 +527,14 @@ export class CharacterSummaryRenderer {
         const totalMaxHp = getVal(stats.maxHp) || getVal(member.maxHp); 
         const totalMaxStm = getVal(stats.maxStamina) || getVal(member.maxStamina);
         const totalMaxIns = getVal(stats.maxInsight) || getVal(member.maxInsight);
-        // ------------------------------------------------
 
         const hpText = `HP ${member.hp}/${totalMaxHp}`;
         const stmText = `STM ${member.stamina}/${totalMaxStm}`;
         const insText = `INS ${member.insight || 0}/${totalMaxIns}`; 
         const xpText = `XP ${member.xp}/${member.xpToNext || 100}`; 
 
-        // Center the vitals row manually since it's multiple elements
-        this.ctx.font = UITheme.fonts.mono; // Need to measure to center
+        // Center the vitals row manually
+        this.ctx.font = UITheme.fonts.mono; 
         const hpW = this.ctx.measureText(hpText).width;
         const stmW = this.ctx.measureText(stmText).width;
         const insW = this.ctx.measureText(insText).width;
@@ -517,9 +588,20 @@ export class CharacterSummaryRenderer {
             let borderColor = isSelected ? (isChoosingItem ? UITheme.colors.accent : UITheme.colors.textHighlight) : "#333";
             let boxColor = isSelected ? (isChoosingItem ? "rgba(255, 255, 255, 0.05)" : "rgba(255, 255, 255, 0.1)") : "rgba(0,0,0,0.3)";
 
+            // [HITBOX] Add Hitbox for Slot
+            // ID Format: "SLOT_head", "SLOT_torso"
+            this.hitboxes.push({
+                id: `SLOT_${slotName}`,
+                x: slotX, y: slotY, w: slotW, h: SLOT_HEIGHT,
+                type: 'slot'
+            });
+
             this.ui.drawRect(slotX, slotY, slotW, SLOT_HEIGHT, boxColor); // Fill
-            this.ctx.lineWidth = isSelected ? 2 : 1; // Manual line width override for emphasis
+            
+            // --- Lighting/Stroke Fix ---
+            this.ctx.lineWidth = isSelected ? 2 : 1; 
             this.ui.drawRect(slotX, slotY, slotW, SLOT_HEIGHT, borderColor, false); // Stroke
+            this.ctx.lineWidth = 1; // RESET LINE WIDTH
 
             const item = equipData[slotName];
             let itemName = "Unknown";
@@ -597,7 +679,9 @@ export class CharacterSummaryRenderer {
         this.ctx.font = "11px sans-serif"; // For measuring
 
         traits.forEach(traitId => {
-            const label = traitId.charAt(0).toUpperCase() + traitId.slice(1);
+            const def = TRAIT_DEFINITIONS[traitId] || { name: traitId, description: "Unknown trait." };
+            const label = def.name; 
+            
             const textWidth = this.ctx.measureText(label).width;
             const badgeWidth = textWidth + (xPadding * 2);
 
@@ -611,9 +695,23 @@ export class CharacterSummaryRenderer {
             this.ui.drawRect(currentX, currentY, badgeWidth, badgeHeight, "#555", false);
             this.ui.drawText(label, currentX + (badgeWidth/2), currentY + 15, "11px sans-serif", "#ccc", "center");
 
+            // [HITBOX] Trait
+            this.hitboxes.push({
+                type: 'trait',
+                id: traitId,
+                x: currentX,
+                y: currentY,
+                w: badgeWidth,
+                h: badgeHeight
+            });
+
             currentX += badgeWidth + gap;
         });
     }
+
+    // ===========================================
+    // RIGHT COLUMN (Inventory)
+    // ===========================================
 
     drawRightColumn(inventory, inventoryIndex, isChoosingItem, x, y, w) {
         let currentY = y + 20;
@@ -632,6 +730,17 @@ export class CharacterSummaryRenderer {
             const isSelected = (isChoosingItem && index === inventoryIndex);
             const rowHeight = 34; 
             
+            // [HITBOX] Inventory Item
+            // ID Format: "INV_ITEM_0", "INV_ITEM_1"
+            this.hitboxes.push({
+                id: `INV_ITEM_${index}`,
+                x: x - 5, 
+                y: currentY - 18, 
+                w: w + 10, 
+                h: rowHeight,
+                type: 'inventory'
+            });
+
             if (isSelected) {
                 this.ui.drawRect(x - 5, currentY - 18, w + 10, rowHeight, "rgba(255, 215, 0, 0.1)");
                 this.ui.drawText(">", x - 12, currentY, "13px sans-serif", UITheme.colors.accent, "left");
@@ -654,18 +763,10 @@ export class CharacterSummaryRenderer {
             
             // Count
             if (item.count > 1) {
-                this.ui.drawText(`x${item.count}`, x + w, currentY, "13px monospace", "#fff", "right");
+                 this.ui.drawText(`x${item.count}`, x + w - 5, currentY, "12px sans-serif", "#888", "right");
             }
-            
-            currentY += rowHeight + 4;
-        });
-    }
 
-    drawFooter(w, h, isChoosingItem) {
-        const footerY = h - 30;
-        let text = "[WASD] Navigate   [SPACE] Select Slot   [ESC] Back";
-        if (isChoosingItem) text = "[UP/DOWN] Select Item   [ENTER] Equip   [ESC] Cancel";
-        
-        this.ui.drawText(text, w / 2, footerY, "12px sans-serif", "#666", "center");
+            currentY += rowHeight + 2;
+        });
     }
 }

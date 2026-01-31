@@ -10,7 +10,6 @@ export class PartyController {
         this.state = 'NAVIGATING'; 
 
         // --- MENU DATA ---
-        // UPDATED: 'Summary' is now the primary action
         this.menuOptions = ['Summary', 'Move', 'Exile'];
         this.menuIndex = 0;
 
@@ -89,8 +88,12 @@ export class PartyController {
         }
         else if (code === 'ArrowDown' || code === 'KeyS') {
             const target = this.selectedIndex + this.gridColumns;
-            if (target < memberCount) this.selectedIndex = target;
-            else if (target >= memberCount && this.selectedIndex < memberCount - 1) this.selectedIndex = memberCount - 1;
+            if (target < memberCount) {
+                this.selectedIndex = target;
+            } else if (target >= memberCount && this.selectedIndex < memberCount - 1) {
+                // Snap to last item if moving down into empty space
+                this.selectedIndex = memberCount - 1;
+            }
         }
         else if (code === 'ArrowUp' || code === 'KeyW') {
             if (this.selectedIndex - this.gridColumns >= 0) this.selectedIndex -= this.gridColumns;
@@ -135,9 +138,7 @@ export class PartyController {
         const option = this.menuOptions[index];
 
         if (option === 'Summary') {
-            // >>> THE CRITICAL UPDATE <<<
-            // We tell the SceneManager to switch to the new 'summary' scene.
-            // We pass 'data' containing the index so the new controller knows who to display.
+            // Transition to Summary Scene, passing the current member index
             console.log(`[Party] Opening Summary for member ${this.selectedIndex}`);
             
             events.emit('CHANGE_SCENE', { 
@@ -145,7 +146,7 @@ export class PartyController {
                 data: { memberIndex: this.selectedIndex } 
             });
             
-            // We stay in 'MENU' state or reset to 'NAVIGATING' so when we come back, it's clean
+            // Reset state so it's clean when we return
             this.state = 'NAVIGATING'; 
         }
         else if (option === 'Move') {
@@ -178,7 +179,6 @@ export class PartyController {
     //            STATE 3: SWAPPING
     // ==========================================
     handleSwappingKeys(code) {
-        // ... (Existing navigation logic) ...
         const memberCount = gameState.party.members.length;
         const col = this.selectedIndex % this.gridColumns;
 
@@ -189,8 +189,13 @@ export class PartyController {
              if (col > 0) this.selectedIndex--;
         }
         else if (code === 'ArrowDown' || code === 'KeyS') {
-             const t = this.selectedIndex + this.gridColumns;
-             if (t < memberCount) this.selectedIndex = t;
+             const target = this.selectedIndex + this.gridColumns;
+             if (target < memberCount) {
+                 this.selectedIndex = target;
+             } else if (target >= memberCount && this.selectedIndex < memberCount - 1) {
+                 // Consistent UX: Snap to last item if moving down
+                 this.selectedIndex = memberCount - 1;
+             }
         }
         else if (code === 'ArrowUp' || code === 'KeyW') {
              if (this.selectedIndex - this.gridColumns >= 0) this.selectedIndex -= this.gridColumns;

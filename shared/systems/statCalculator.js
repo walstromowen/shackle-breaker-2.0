@@ -5,57 +5,108 @@ export class StatCalculator {
 
     static get DAMAGE_TYPES() { return DAMAGE_TYPES || ['blunt', 'slash', 'pierce', 'fire', 'ice', 'lightning', 'dark', 'light']; }
 
+    /**
+     * STANDARD METHOD: Used by the Game Engine / Combat
+     * Returns a flat object with final totals.
+     */
     static calculate(character) {
-        // --- 1. INITIALIZE SAFE DEFAULTS ---
-        // We do this BEFORE checking if character exists, so we never return an empty object.
-        const stats = {
+        const details = this._runPipeline(character);
+        return details.finalStats;
+    }
+
+    /**
+     * PREVIEW METHOD: Used by Character Creator / UI
+     * Returns { attributes: {}, maxHp: { base, bonus, total }, ... }
+     */
+    static calculateDetailed(character) {
+        const { finalStats, breakdown } = this._runPipeline(character);
+
+        // Map the internal results to the structure the Renderer expects
+        return {
+            attributes: finalStats, // Includes vigor, strength, etc.
+            
+            // Resources with breakdown
+            maxHp: { 
+                base: breakdown.resources.base.hp + breakdown.resources.derived.hp, 
+                bonus: breakdown.resources.flat.hp, 
+                total: finalStats.maxHp 
+            },
+            maxStamina: { 
+                base: breakdown.resources.base.stamina + breakdown.resources.derived.stamina, 
+                bonus: breakdown.resources.flat.stamina, 
+                total: finalStats.maxStamina 
+            },
+            maxInsight: { 
+                base: breakdown.resources.base.insight + breakdown.resources.derived.insight, 
+                bonus: breakdown.resources.flat.insight, 
+                total: finalStats.maxInsight 
+            },
+
+            // Combat Stats (Optional: Add breakdowns here if your UI needs them)
+            attack: finalStats.attack,
+            defense: finalStats.defense,
+            resistance: finalStats.resistance,
+            speed: finalStats.speed,
+            critChance: finalStats.critChance
+        };
+    }
+
+    /**
+     * THE SINGLE SOURCE OF TRUTH
+     * Performs the 4-Step Pipeline and tracks sources separately.
+     */
+    static _runPipeline(character) {
+        // --- 1. INITIALIZE ACCUMULATORS ---
+        const finalStats = {
             attack: {}, defense: {}, resistance: {},
             vigor: 0, strength: 0, dexterity: 0, intelligence: 0, attunement: 0,
             speed: 0, critChance: 0, critMultiplier: 1.5,
-            maxHp: 10, maxStamina: 10, maxInsight: 0
+            maxHp: 0, maxStamina: 0, maxInsight: 0
         };
 
-        // Populate Damage Type Maps (prevents "cannot read property 'blunt' of undefined")
+        // Initialize maps
         this.DAMAGE_TYPES.forEach(t => {
-            stats.attack[t] = 0; 
-            stats.defense[t] = 0; 
-            stats.resistance[t] = 0;
+            finalStats.attack[t] = 0; 
+            finalStats.defense[t] = 0; 
+            finalStats.resistance[t] = 0;
         });
 
-        // If no character is provided (e.g., empty party slot), return the zeroed stats immediately.
-        if (!character) return stats;
+        // Trackers for the "Detailed" view
+        const breakdown = {
+            resources: {
+                base: { hp: 0, stamina: 0, insight: 0 },
+                derived: { hp: 0, stamina: 0, insight: 0 },
+                flat: { hp: 0, stamina: 0, insight: 0 }
+            }
+        };
 
-        // --- 2. IDENTIFY SOURCES OF TRUTH ---
+        if (!character) return { finalStats, breakdown };
+
+        // Helper to grab deep properties safely
         const definition = character.definition || {};
         const isRawObject = character.constructor === Object;
+
+        // --- STEP 1: BASE ENTITY (Origin / Species) ---
+        // "Origin acts as the players starting base attribute levels"
         
-        const baseSource = definition.stats 
-            || character.baseStats 
-            || (isRawObject ? character.stats : null)
-            || {};
+        // A. Base Resources (e.g., Human starts with 10 HP)
+        const baseSource = definition.stats || character.baseStats || (isRawObject ? character.stats : null) || {};
+        breakdown.resources.base.hp = baseSource.maxHp || baseSource.hp || 10;
+        breakdown.resources.base.stamina = baseSource.maxStamina || baseSource.stamina || 10;
+        breakdown.resources.base.insight = baseSource.maxInsight || baseSource.insight || 0;
 
-        const combatSource = definition.baseStats 
-            || character.baseStats 
-            || (isRawObject ? character.baseStats : null) 
-            || {};
+        // B. Base Combat Stats
+        const combatSource = definition.baseStats || character.baseStats || (isRawObject ? character.baseStats : null) || {};
+        finalStats.speed = combatSource.speed || 0;
+        finalStats.critChance = (combatSource.critical || 0) * 0.01;
 
-        // --- 3. APPLY BASELINE (Species/Class Defaults) ---
-        stats.maxHp = baseSource.maxHp || baseSource.hp || 10;
-        stats.maxStamina = baseSource.maxStamina || baseSource.stamina || 10;
-        stats.maxInsight = baseSource.maxInsight || baseSource.insight || 0;
+        if (combatSource.baseDefense) this.DAMAGE_TYPES.forEach(t => finalStats.defense[t] = combatSource.baseDefense[t] || 0);
+        if (combatSource.baseAttack) this.DAMAGE_TYPES.forEach(t => finalStats.attack[t] = combatSource.baseAttack[t] || 0);
 
-        stats.speed = combatSource.speed || 0;
-        stats.critChance = (combatSource.critical || 0) * 0.01;
-
-        if (combatSource.baseDefense) {
-            this.DAMAGE_TYPES.forEach(t => stats.defense[t] = combatSource.baseDefense[t] || 0);
-        }
-        if (combatSource.baseAttack) {
-            this.DAMAGE_TYPES.forEach(t => stats.attack[t] = combatSource.baseAttack[t] || 0);
-        }
-
-        // --- 4. GATHER ATTRIBUTES ---
-        const activeAttributes = { ...(character.attributes || {}) };
+        // --- STEP 2: CALCULATE ATTRIBUTES (Base + Equipment + Traits) ---
+        // We sum attributes first because Derived Stats rely on the FINAL attribute totals.
+        
+        const activeAttributes = { ...(character.attributes || {}) }; // Start with any hard-set attributes
         const equipment = character.state?.equipment || character.equipment || {};
         const traitIds = character.state?.traits || character.traits || [];
 
@@ -66,69 +117,109 @@ export class StatCalculator {
             }
         };
 
+        // 2a. Merge Attributes from Equipment
         Object.values(equipment).forEach(item => {
             if (item) mergeAttributes(item.definition || item);
         });
 
+        // 2b. Merge Attributes from Traits
         traitIds.forEach(tid => {
             const def = TRAIT_DEFINITIONS[tid];
-            if (def) mergeAttributes(def.stats);
+            if (def) mergeAttributes(def); 
         });
 
-        Object.assign(stats, activeAttributes);
+        // Apply final attributes to the stats object
+        Object.assign(finalStats, activeAttributes);
 
-        // --- 5. CALCULATE DERIVED STATS (Scaling) ---
+        // --- STEP 3: DERIVED RESOURCES (Scaling from Attributes) ---
+        // Vigor -> HP, etc.
+
+        // HP
+        const hpFromVigor = (finalStats.vigor * 5);
+        breakdown.resources.derived.hp = hpFromVigor;
         
-        // Strength (Physical)
-        const str = stats.strength;
-        stats.attack.blunt  += str;
-        stats.attack.slash  += str;
-        stats.attack.pierce += str;
-        
-        stats.defense.blunt  += Math.floor(str * 0.5);
-        stats.defense.slash  += Math.floor(str * 0.5);
-        stats.defense.pierce += Math.floor(str * 0.5);
+        // Stamina
+        const stmFromVigor = (finalStats.vigor * 2);
+        breakdown.resources.derived.stamina = stmFromVigor;
 
-        // Dexterity (Speed/Crit)
-        stats.speed += stats.dexterity;
-        stats.critChance += (stats.dexterity * 0.01);
+        // Insight
+        const insFromAtt = (finalStats.attunement * 2);
+        breakdown.resources.derived.insight = insFromAtt;
 
-        // Intelligence (Magic)
+        // Derived Combat Stats (Attack/Defense from Str/Dex/Int)
+        // Strength
+        const str = finalStats.strength;
+        finalStats.attack.blunt  += str;
+        finalStats.attack.slash  += str;
+        finalStats.attack.pierce += str;
+        finalStats.defense.blunt  += Math.floor(str * 0.5);
+        finalStats.defense.slash  += Math.floor(str * 0.5);
+        finalStats.defense.pierce += Math.floor(str * 0.5);
+
+        // Dexterity
+        finalStats.speed += finalStats.dexterity;
+        finalStats.critChance += (finalStats.dexterity * 0.01);
+
+        // Intelligence
         const physicalTypes = ["blunt", "slash", "pierce"];
         this.DAMAGE_TYPES.forEach(type => {
             if (!physicalTypes.includes(type)) {
-                stats.attack[type] += stats.intelligence;
-                stats.resistance[type] += Math.floor(stats.intelligence * 0.5);
+                finalStats.attack[type] += finalStats.intelligence;
+                finalStats.resistance[type] += Math.floor(finalStats.intelligence * 0.5);
             }
         });
 
-        // Resources (Scaling)
-        stats.maxHp += (stats.vigor * 5);
-        stats.maxStamina += (stats.vigor * 2); 
-        stats.maxInsight += (stats.attunement * 2);
+        // --- STEP 4: FLAT BONUSES (Equipment & Traits) ---
+        // Direct additions like "+10 HP" from a ring.
+        
+        const applyFlat = (source) => {
+            // Apply combat modifiers (speed, crit, etc.)
+            this.applyModifiers(finalStats, source);
 
-        // --- 6. APPLY FLAT BONUSES (Equipment/Traits) ---
+            // Capture Resource Bonuses for Breakdown
+            if (source.resources) {
+                if (source.resources.maxHp) breakdown.resources.flat.hp += source.resources.maxHp;
+                if (source.resources.maxStamina) breakdown.resources.flat.stamina += source.resources.maxStamina;
+                if (source.resources.maxInsight) breakdown.resources.flat.insight += source.resources.maxInsight;
+            }
+            // Handling legacy/root level resource definitions
+            if (source.maxHp) breakdown.resources.flat.hp += source.maxHp;
+        };
+
+        // 4a. Flat from Equipment
         Object.values(equipment).forEach(item => {
-            if (item) this.applyModifiers(stats, item.definition || item);
+            if (item) applyFlat(item.definition || item);
         });
+
+        // 4b. Flat from Traits (including conditionals)
+        const currentHp = character.state?.stats?.hp || breakdown.resources.base.hp; // Approx fallback
+        const currentMaxHp = breakdown.resources.base.hp + breakdown.resources.derived.hp; // Temp max for check
 
         traitIds.forEach(tid => {
             const def = TRAIT_DEFINITIONS[tid];
             if (!def) return;
             
-            if (def.stats) this.applyModifiers(stats, def.stats);
+            if (def.stats) applyFlat(def.stats);
             
-            const currentHp = character.state?.stats?.hp || 0;
-            if (def.conditionalStats && this.checkCondition(def.conditionalStats.condition, currentHp, stats.maxHp)) {
-                this.applyModifiers(stats, def.conditionalStats.stats);
+            if (def.conditionalStats && this.checkCondition(def.conditionalStats.condition, currentHp, currentMaxHp)) {
+                applyFlat(def.conditionalStats.stats);
             }
         });
 
-        return stats;
+        // --- FINAL SUMMATION ---
+        finalStats.maxHp = breakdown.resources.base.hp + breakdown.resources.derived.hp + breakdown.resources.flat.hp;
+        finalStats.maxStamina = breakdown.resources.base.stamina + breakdown.resources.derived.stamina + breakdown.resources.flat.stamina;
+        finalStats.maxInsight = breakdown.resources.base.insight + breakdown.resources.derived.insight + breakdown.resources.flat.insight;
+
+        return { finalStats, breakdown };
     }
 
+    /**
+     * Applies simple flat modifiers to the stats object.
+     * (Helper used in Step 4)
+     */
     static applyModifiers(stats, source) {
-        const map = { attack: 'attack', defense: 'defense', defense: 'defense', resistance: 'resistance' };
+        const map = { attack: 'attack', defense: 'defense', resistance: 'resistance' };
         
         Object.keys(map).forEach(k => {
             if (source[k]) {
@@ -145,13 +236,6 @@ export class StatCalculator {
             if (source.combat.critMultiplier) stats.critMultiplier += source.combat.critMultiplier;
         }
 
-        if (source.resources) {
-            if (source.resources.maxHp) stats.maxHp += source.resources.maxHp;
-            if (source.resources.maxStamina) stats.maxStamina += source.resources.maxStamina;
-            if (source.resources.maxInsight) stats.maxInsight += source.resources.maxInsight;
-        }
-
-        if (source.maxHp) stats.maxHp += source.maxHp;
         if (source.defense && typeof source.defense === 'number') {
              stats.defense.blunt += source.defense;
              stats.defense.slash += source.defense;

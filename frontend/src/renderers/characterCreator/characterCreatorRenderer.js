@@ -21,6 +21,9 @@ export class CharacterCreatorRenderer {
     render(ctx, controllerState) {
         this.hotspots = [];
 
+        // Safety check to prevent crashes if state isn't ready
+        if (!controllerState || !controllerState.data || !controllerState.selections) return;
+
         const ui = new CanvasUI(ctx);
         const { CANVAS_WIDTH, CANVAS_HEIGHT } = this.config;
         const { selections, data, currentStep, isEditingName, previewStats } = controllerState;
@@ -38,7 +41,10 @@ export class CharacterCreatorRenderer {
         // --- 1. LEFT COLUMN ---
         ui.drawPanel(p, startY, colW, panelHeight);
         
-        const appData = data.APPEARANCES[selections.appearanceIdx];
+        // Safe access for appearance data
+        const appIdx = selections.appearanceIdx || 0;
+        const appData = data.APPEARANCES ? data.APPEARANCES[appIdx] : null;
+        
         const centerX = p + colW / 2;
         let curY = startY + 30;
 
@@ -55,63 +61,76 @@ export class CharacterCreatorRenderer {
         const totalVisualWidth = (visualSize * 2) + visualGap;
         const startVisualX = p + (colW - totalVisualWidth) / 2;
 
-        const portraitImg = this.loader.get(appData.portrait);
-        if (portraitImg) {
-            ctx.drawImage(portraitImg, startVisualX, curY, visualSize, visualSize);
-            ctx.strokeStyle = UITheme.colors.border;
-            ctx.lineWidth = 2;
-            ctx.strokeRect(startVisualX, curY, visualSize, visualSize);
-        }
+        if (appData) {
+            ctx.save();
+            const portraitImg = this.loader.get(appData.portrait);
+            if (portraitImg) {
+                ctx.drawImage(portraitImg, startVisualX, curY, visualSize, visualSize);
+                ctx.strokeStyle = UITheme.colors.border;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(startVisualX, curY, visualSize, visualSize);
+            }
 
-        const spriteImg = this.loader.get(appData.sprite);
-        if (spriteImg) {
-            ctx.fillStyle = "rgba(0,0,0,0.5)";
-            ctx.fillRect(startVisualX + visualSize + visualGap, curY, visualSize, visualSize);
-            ctx.imageSmoothingEnabled = false; 
-            ctx.drawImage(spriteImg, 0, 0, 32, 32, startVisualX + visualSize + visualGap + 8, curY + 8, 64, 64);
-            ctx.strokeStyle = UITheme.colors.border;
-            ctx.strokeRect(startVisualX + visualSize + visualGap, curY, visualSize, visualSize);
+            const spriteImg = this.loader.get(appData.sprite);
+            if (spriteImg) {
+                ctx.fillStyle = "rgba(0,0,0,0.5)";
+                ctx.fillRect(startVisualX + visualSize + visualGap, curY, visualSize, visualSize);
+                ctx.imageSmoothingEnabled = false; 
+                ctx.drawImage(spriteImg, 0, 0, 32, 32, startVisualX + visualSize + visualGap + 8, curY + 8, 64, 64);
+                ctx.strokeStyle = UITheme.colors.border;
+                ctx.strokeRect(startVisualX + visualSize + visualGap, curY, visualSize, visualSize);
+            }
+            ctx.restore();
         }
         
         curY += visualSize + SPACING_LG;
 
-        // --- D. STATS TABLE (FIXED) ---
+        // --- D. STATS TABLE ---
         if (previewStats) {
             const thirdW = (colW - 40) / 3;
             const vX = p + 20;
             const RES_FONT = UITheme.fonts.small; 
 
-            // Helper to draw "Total (+Bonus)"
-            const drawStatBlock = (label, dataObj, xOffset, colorLabel) => {
-                // dataObj is { base, bonus, total }
-                if (!dataObj) return;
+            // FIX: Robust Stat Block Handler
+            // Handles both complex objects { total: 10, bonus: 2 } AND simple numbers (10)
+            const drawStatBlock = (label, valueOrObj, xOffset, colorLabel) => {
+                if (valueOrObj === undefined || valueOrObj === null) return;
+                
+                let total = 0;
+                let bonus = 0;
+
+                if (typeof valueOrObj === 'object') {
+                    total = valueOrObj.total || 0;
+                    bonus = valueOrObj.bonus || 0;
+                } else {
+                    total = valueOrObj; // It's just a number
+                }
                 
                 // Label (HP, STM, INS)
                 ui.drawText(label, vX + xOffset, curY, RES_FONT, colorLabel, "left");
                 
                 // Draw Total
-                const totalStr = `${dataObj.total}`;
                 const totalX = vX + xOffset + thirdW - 10;
-                ui.drawText(totalStr, totalX, curY, UITheme.fonts.bold, UITheme.colors.textMain, "right");
+                ui.drawText(`${total}`, totalX, curY, UITheme.fonts.bold, UITheme.colors.textMain, "right");
                 
-                // Draw Bonus if exists (e.g. "+2")
-                if (dataObj.bonus > 0) {
-                    const bonusStr = `(+${dataObj.bonus})`;
-                    // Draw slightly above or below, or smaller next to it. 
-                    // Let's draw it smaller below the main number
-                    ui.drawText(bonusStr, totalX, curY + 14, "10px monospace", UITheme.colors.success, "right");
+                // Draw Bonus only if it exists
+                if (bonus > 0) {
+                    ui.drawText(`(+${bonus})`, totalX, curY + 14, "10px monospace", UITheme.colors.success, "right");
                 }
             };
 
-            drawStatBlock("HP", previewStats.hp, 0, UITheme.colors.danger);
-            drawStatBlock("STM", previewStats.stamina, thirdW, UITheme.colors.success);
-            drawStatBlock("INS", previewStats.insight, thirdW * 2, "#b19cd9");
+            // Try reading distinct stats, fallback to standard names
+            drawStatBlock("HP", previewStats.maxHp || previewStats.hp, 0, UITheme.colors.danger);
+            drawStatBlock("STM", previewStats.maxStamina || previewStats.stamina, thirdW, UITheme.colors.success);
+            drawStatBlock("INS", previewStats.maxInsight || previewStats.insight, thirdW * 2, "#b19cd9");
 
-            // Add extra spacing because of the bonus text below the numbers
             curY += SPACING_LG + 10; 
 
-            // Attributes
-            const attrSource = previewStats.attributes || {};
+            // FIX: Robust Attribute Source
+            // 1. Try `previewStats.attributes`
+            // 2. Fallback to `previewStats` root (if flat structure)
+            const attrSource = previewStats.attributes || previewStats;
+
             const attrs = [
                 { label: "Vigor", val: attrSource.vigor },
                 { label: "Strength", val: attrSource.strength },
@@ -134,7 +153,10 @@ export class CharacterCreatorRenderer {
                 }
 
                 ui.drawText(attr.label, leftX, rowY, ATTR_FONT, UITheme.colors.textMuted, "left");
-                ui.drawText(attr.val || 0, rightX, rowY, ATTR_FONT, UITheme.colors.textMain, "right");
+                
+                // Ensure we print '0' instead of undefined if missing
+                const valToDraw = (attr.val !== undefined) ? attr.val : 0;
+                ui.drawText(valToDraw, rightX, rowY, ATTR_FONT, UITheme.colors.textMain, "right");
             });
         }
 
@@ -191,20 +213,24 @@ export class CharacterCreatorRenderer {
                 ctx.restore(); 
             } else {
                 let valStr = "";
-                if (key === 'background') valStr = data.BACKGROUNDS[selections.backgroundIdx].label;
-                else if (key === 'origin') valStr = data.ORIGINS[selections.originIdx].label;
-                else if (key === 'appearance') valStr = data.APPEARANCES[selections.appearanceIdx].label;
-                else if (key === 'keepsake') valStr = data.KEEPSAKES[selections.keepsakeIdx].label;
-                else if (key === 'companion') valStr = data.COMPANIONS[selections.companionIdx].label;
-                else if (key === 'trait') valStr = data.TRAITS[selections.traitIdx].label; 
-                else if (key === 'difficulty') {
-                    const diffLabel = data.DIFFICULTIES[selections.difficultyIdx].label;
+                // Safety Checks
+                if (key === 'background' && data.BACKGROUNDS) valStr = data.BACKGROUNDS[selections.backgroundIdx]?.label;
+                else if (key === 'origin' && data.ORIGINS) valStr = data.ORIGINS[selections.originIdx]?.label;
+                else if (key === 'appearance' && data.APPEARANCES) valStr = data.APPEARANCES[selections.appearanceIdx]?.label;
+                else if (key === 'keepsake' && data.KEEPSAKES) valStr = data.KEEPSAKES[selections.keepsakeIdx]?.label;
+                else if (key === 'companion' && data.COMPANIONS) valStr = data.COMPANIONS[selections.companionIdx]?.label;
+                else if (key === 'trait' && data.TRAITS) valStr = data.TRAITS[selections.traitIdx]?.label; 
+                else if (key === 'difficulty' && data.DIFFICULTIES) {
+                    const diffLabel = data.DIFFICULTIES[selections.difficultyIdx]?.label;
                     if (diffLabel === "Easy") ui.drawText(diffLabel, menuStartX + midW - 20, menuY, UITheme.fonts.body, UITheme.colors.success, "right");
                     else if (diffLabel === "Hard") ui.drawText(diffLabel, menuStartX + midW - 20, menuY, UITheme.fonts.body, UITheme.colors.warning, "right");
                     else if (diffLabel === "Nightmare") ui.drawText(diffLabel, menuStartX + midW - 20, menuY, UITheme.fonts.body, UITheme.colors.danger, "right");
-                    else ui.drawText(diffLabel, menuStartX + midW - 20, menuY, UITheme.fonts.body, color, "right");
+                    else ui.drawText(diffLabel || "", menuStartX + midW - 20, menuY, UITheme.fonts.body, color, "right");
                 }
-                if (valStr) ui.drawText(valStr, menuStartX + midW - 20, menuY, UITheme.fonts.body, color, "right");
+                
+                if (valStr && key !== 'difficulty') {
+                    ui.drawText(valStr, menuStartX + midW - 20, menuY, UITheme.fonts.body, color, "right");
+                }
             }
             menuY += MENU_ITEM_HEIGHT;
         });
@@ -215,19 +241,24 @@ export class CharacterCreatorRenderer {
         ui.drawText("DETAILS", rightColX + colW/2, startY + 30, UITheme.fonts.body, UITheme.colors.textMuted, "center");
 
         const desc = this.getDescription(controllerState);
-        ui.drawWrappedText(desc, rightColX + 20, startY + 60, colW - 40, 28, UITheme.fonts.body, UITheme.colors.textMain);
+        if (desc) {
+            ui.drawWrappedText(desc, rightColX + 20, startY + 60, colW - 40, 28, UITheme.fonts.body, UITheme.colors.textMain);
+        }
     }
 
     getDescription({ currentStep, selections, data, isEditingName }) {
+        if (!data) return "";
+        
         if (currentStep === 'name') return isEditingName ? "Type your name using the keyboard.\nPress Enter to confirm." : "Select to edit your character's name.";
         if (currentStep === 'start') return "Finalize your choices and venture forth into the unknown.";
-        if (currentStep === 'background') return data.BACKGROUNDS[selections.backgroundIdx].desc;
-        if (currentStep === 'origin') return data.ORIGINS[selections.originIdx].desc;
+        
+        if (currentStep === 'background') return data.BACKGROUNDS?.[selections.backgroundIdx]?.desc;
+        if (currentStep === 'origin') return data.ORIGINS?.[selections.originIdx]?.desc;
         if (currentStep === 'appearance') return "Choose the physical form you shall take in this realm.";
-        if (currentStep === 'keepsake') return data.KEEPSAKES[selections.keepsakeIdx].desc;
-        if (currentStep === 'companion') return data.COMPANIONS[selections.companionIdx].desc;
-        if (currentStep === 'trait') return data.TRAITS[selections.traitIdx].desc; 
-        if (currentStep === 'difficulty') return data.DIFFICULTIES[selections.difficultyIdx].desc;
+        if (currentStep === 'keepsake') return data.KEEPSAKES?.[selections.keepsakeIdx]?.desc;
+        if (currentStep === 'companion') return data.COMPANIONS?.[selections.companionIdx]?.desc;
+        if (currentStep === 'trait') return data.TRAITS?.[selections.traitIdx]?.desc; 
+        if (currentStep === 'difficulty') return data.DIFFICULTIES?.[selections.difficultyIdx]?.desc;
         return "";
     }
 }

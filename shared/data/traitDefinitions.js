@@ -12,10 +12,11 @@ export const TRAIT_DEFINITIONS = {
     'inquisitive': {
         name: "Inquisitive",
         description: "A keen mind that grasps the arcane quickly.",
-        stats: {
-            attributes: { 
-                intelligence: 2 
-            }
+        // [FIX] Moved 'attributes' to the root level. 
+        // Attributes are inputs, whereas 'stats' are usually derived outputs.
+        attributes: { 
+            intelligence: 2 ,
+            attunement: 1 
         }
     },
     'brawler': {
@@ -23,7 +24,7 @@ export const TRAIT_DEFINITIONS = {
         description: "Prefers brute force over finesse.",
         stats: {
             attack: { blunt: 3 },
-            defense: { slash: -2 } // Standardized to plural 'defense'
+            defense: { slash: -2 } 
         }
     },
     'tough': { 
@@ -31,7 +32,7 @@ export const TRAIT_DEFINITIONS = {
         description: "Hardy and resilient.",
         stats: {
             resources: { 
-                maxHp: 20 // Standardized: 'resources.maxHp'
+                maxHp: 20 
             }
         }
     },
@@ -49,7 +50,6 @@ export const TRAIT_DEFINITIONS = {
     },
 
     // --- TRIGGER TRAITS ---
-    // (These don't use the StatCalculator directly, so they stay structure-agnostic)
     'ambush_predator': {
         name: "Ambush Predator",
         description: "Starts battles with increased initiative.",
@@ -94,7 +94,6 @@ export const TRAIT_DEFINITIONS = {
         conditionalStats: {
             condition: "hp_below_50_percent",
             stats: {
-                // Fully Standardized Structure
                 attack: { slash: 10, blunt: 10 },
                 combat: { speed: 4 },
                 defense: { slash: -5 }
