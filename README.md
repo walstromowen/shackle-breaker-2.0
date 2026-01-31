@@ -30,7 +30,13 @@ Root
 │   │   │   ├── characterCreator/        
 │   │   │   │    └── characterCreatorRenderer.js
 │   │   │   ├── characterSummary/
-│   │   │   │    └── characterSummaryRenderer.js
+│   │   │   │    ├── characterSummaryRenderer.js
+│   │   │   │    ├── components/
+│   │   │   │    │    ├── statsPanel.js                
+│   │   │   │    │    ├── itemDetailPanel.js          
+│   │   │   │    │    ├── equipmentPanel.js            
+│   │   │   │    │    ├── inventoryPanel.js            
+│   │   │   │    │    └── tooltipSystem.js             
 │   │   ├── index.html
 │   │   ├── main.js
 │   │   └── styles.css
@@ -66,6 +72,7 @@ Root
 │   │   └── worldManager.js
 │   ├── utils/
 │   │   ├── textEntry.js
+│   │   ├── formatting.js
 ├── .gitignore/ 
 ├── LICENSE/ 
 ├── package-lock.json 

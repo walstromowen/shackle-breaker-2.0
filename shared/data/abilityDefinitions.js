@@ -60,7 +60,7 @@ export const AbilityDefinitions = {
         id: "quick_stab",
         name: "Quick Stab",
         description: "A fast thrust. Hard to dodge.",
-        icon: { col: 3, row: 0 }, // Dagger thrust
+        icon: { col: 0, row: 0 }, // Dagger thrust
         speedModifier: 1.5, 
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 5 },
