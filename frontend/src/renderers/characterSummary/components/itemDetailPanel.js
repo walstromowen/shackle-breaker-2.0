@@ -23,25 +23,22 @@ export class ItemDetailPanel {
         // 1. Header (Icon + Name + Type)
         this._drawHeader(item, def, centerX, currentY);
         
-        // Increased space between Slot Type and Description
         // Icon (64) + Name Offset (20) + Text Lines (~25) + Extra Gap (20)
         currentY += this.ICON_SIZE + 65; 
 
         // 2. Description / Flavor
         currentY = this._drawDescription(def, x + 15, currentY, w - 30);
+        
+        // Add a little padding after description since we removed the line
+        currentY += 15;
 
-        // 3. Divider & Spacing (Greatly Reduced)
-        currentY += 4; // Tiny gap after text
-        this.ui.drawRect(x + 10, currentY, w - 20, 1, "#333");
-        currentY += 6; // Tiny gap after divider before next header
-
-        // 4. Main Stats (Attack / Defense)
+        // 3. Main Stats (Attack / Defense)
         currentY = this._drawMainStats(def, x + 20, currentY, w - 40);
 
-        // 5. Attribute Bonuses
+        // 4. Attribute Bonuses
         currentY = this._drawAttributeBonuses(def, x + 20, currentY, w - 40);
 
-        // 6. Abilities (Card Design)
+        // 5. Abilities (Card Design)
         currentY = this._drawAbilities(def, x + 15, currentY, w - 30);
     }
 
@@ -83,7 +80,7 @@ export class ItemDetailPanel {
         let currentY = y;
         let hasContent = false;
 
-        // Effect Text
+        // Effect Text (Functional description)
         if (def.effectDescription) {
             const lines = this.ui.getWrappedLines(def.effectDescription, contentW, UITheme.fonts.body);
             lines.forEach(line => {
@@ -93,7 +90,7 @@ export class ItemDetailPanel {
             hasContent = true;
         }
 
-        // Flavor Text
+        // Flavor Text (Italicized)
         if (def.description) {
             if (hasContent) currentY += 8;
             const lines = this.ui.getWrappedLines(def.description, contentW, "italic 11px sans-serif");
@@ -110,6 +107,7 @@ export class ItemDetailPanel {
         let currentY = y;
         const stats = def.stats || {};
         
+        // Primary integer stats
         const primaryStats = [
             { key: 'damage', label: 'DMG', color: UITheme.colors.danger },
             { key: 'defense', label: 'DEF', color: UITheme.colors.magic },
@@ -123,6 +121,7 @@ export class ItemDetailPanel {
             if (val) {
                 this.ui.drawText(stat.label, x, currentY, UITheme.fonts.bold, stat.color, "left");
                 let valStr = val;
+                // Handle Min-Max objects
                 if (typeof val === 'object' && val.min) valStr = `${val.min}-${val.max}`;
                 this.ui.drawText(valStr.toString(), x + w, currentY, UITheme.fonts.mono, "#fff", "right");
                 currentY += 16;
@@ -130,14 +129,17 @@ export class ItemDetailPanel {
             }
         });
 
-        // Elemental Stats
+        // Elemental Sub-stats
         ['attack', 'defense', 'resistance'].forEach(category => {
             if (!stats[category]) return;
             const subStats = stats[category];
+            
             Object.keys(subStats).forEach(k => {
                 if (subStats[k] === 0) return;
+                
                 const label = `${Formatting.getAbbreviation(k)} ${category === 'resistance' ? 'RES' : (category === 'defense' ? 'DEF' : 'DMG')}`;
                 const color = category === 'attack' ? "#f88" : (category === 'defense' ? "#aaf" : "#fea");
+                
                 this.ui.drawText(label, x, currentY, UITheme.fonts.small, color, "left");
                 this.ui.drawText(subStats[k].toString(), x + w, currentY, UITheme.fonts.mono, "#fff", "right");
                 currentY += 14;
@@ -145,7 +147,7 @@ export class ItemDetailPanel {
             });
         });
 
-        return hasPrinted ? currentY + 8 : currentY; // Reduced bottom margin
+        return hasPrinted ? currentY + 8 : currentY; 
     }
 
     _drawAttributeBonuses(def, x, y, w) {
@@ -156,31 +158,40 @@ export class ItemDetailPanel {
         if (keys.length === 0) return currentY;
 
         this.ui.drawText("Bonuses", x, currentY, "bold 10px sans-serif", "#888", "left");
-        currentY += 14; // Slightly reduced
+        currentY += 14; 
 
         keys.forEach(key => {
             const val = bonuses[key];
             if (val === 0) return;
+            
             const label = Formatting.getAbbreviation(key);
             const valStr = Formatting.formatSigned(val);
             const color = val > 0 ? UITheme.colors.success : UITheme.colors.danger;
+            
             this.ui.drawText(label, x + 10, currentY, UITheme.fonts.mono, "#ccc", "left");
             this.ui.drawText(valStr, x + w, currentY, UITheme.fonts.mono, color, "right");
             currentY += 14;
         });
 
-        return currentY + 8; // Reduced bottom margin
+        return currentY + 8;
     }
 
     _drawAbilities(def, x, y, w) {
         let currentY = y;
+        // Combine abilities granted by item OR specific "use" ability
         const abilityList = def.grantedAbilities || (def.useAbility ? [def.useAbility] : []);
         
         if (abilityList.length > 0) {
-            // Tight header spacing
             const label = def.useAbility ? "On Use" : "Granted Abilities";
-            this.ui.drawText(label, x, currentY, UITheme.fonts.bold, UITheme.colors.accent, "left");
-            currentY += 16;
+            
+            // --- HEADER ---
+            // Changed color to textMuted to match Attributes/Stats panels
+            this.ui.drawText(label, x, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
+            
+            // --- UNDERLINE ---
+            currentY += 5;
+            this.ui.drawRect(x, currentY, w, 1, "#333");
+            currentY += 15; // Gap before cards start
 
             abilityList.forEach(abilityId => {
                 const ab = AbilityDefinitions[abilityId];
@@ -199,6 +210,7 @@ export class ItemDetailPanel {
                     ? this.ui.getWrappedLines(ab.description, contentW, descFont) 
                     : [];
                 
+                // Calculate dynamic height based on text
                 const headerHeight = 14; 
                 const statsHeight = 14; 
                 const dividerHeight = 6;
@@ -207,20 +219,20 @@ export class ItemDetailPanel {
                 
                 const cardHeight = Math.max(contentHeight, iconSize) + (cardPadding * 2);
 
-                // BG
+                // Card Background
                 this.ui.drawRect(x, currentY, w, cardHeight, "rgba(0, 0, 0, 0.4)"); 
                 this.ui.drawRect(x, currentY, w, cardHeight, "#444", false);
 
-                // Icon
+                // Ability Icon
                 const iconY = currentY + cardPadding;
                 this.ui.drawRect(iconX, iconY, iconSize, iconSize, "rgba(0,0,0,0.5)");
                 this._drawAbilityIcon(ab, iconX, iconY);
                 this.ui.drawRect(iconX, iconY, iconSize, iconSize, "#555", false);
 
-                // Content
+                // Card Content
                 let cursorY = currentY + cardPadding + 10; 
 
-                // Name/Cost
+                // 1. Name and Cost
                 this.ui.drawText(ab.name || abilityId, contentX, cursorY, "bold 12px sans-serif", "#fff", "left");
                 
                 if (ab.cost) {
@@ -233,7 +245,7 @@ export class ItemDetailPanel {
                 }
                 cursorY += 16;
 
-                // Stats
+                // 2. Stats Row (Power, Accuracy, Speed)
                 let statX = contentX;
                 const drawStat = (label, value, color) => {
                     const txt = `${label} ${value}`;
@@ -250,7 +262,7 @@ export class ItemDetailPanel {
 
                 cursorY += 6; 
 
-                // Description
+                // 3. Description
                 if (descLines.length > 0) {
                     this.ui.drawRect(contentX, cursorY, contentW, 1, "rgba(255,255,255,0.1)");
                     cursorY += 12;

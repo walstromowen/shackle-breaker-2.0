@@ -11,35 +11,40 @@ export class Formatting {
         const k = key.toLowerCase();
         
         const map = {
-            // Attributes
+            // --- ATTRIBUTES ---
+            vigor: "VIG",
             strength: "STR",
             dexterity: "DEX",
-            agility: "AGI",
             intelligence: "INT",
-            wisdom: "WIS",
-            willpower: "WIL",
-            vitality: "VIT",
-            luck: "LUK",
+            attunement: "ATN",
             speed: "SPD",
 
-            // Damage Types
-            physical: "PHY",
+            // --- COMBAT ---
+            // [FIX] Keys must be lowercase to match 'k'
+            critchance: "Crit %",   
+            critdamage: "Crit Dmg", 
+
+            // --- DAMAGE TYPES ---
             blunt: "BLT",
             slash: "SLS",
             pierce: "PRC",
-            magic: "MAG",
+
             fire: "FIR",
             ice: "ICE",
-            lightning: "LIT", // or LIG
-            light: "LGT", // or HLY (Holy)
-            dark: "DRK",
-            poison: "PSN",
-            bleed: "BLD",
+            lightning: "LNG", 
+            water: "WAT",
+            earth: "ERT",
+            wind: "WND",
 
-            // Vitals
-            maxHp: "HP",
-            maxStamina: "STM",
-            maxInsight: "INS",
+            light: "LGT", 
+            dark: "DRK",
+            arcane: "ARC",
+
+            // --- VITALS ---
+            // [FIX] Keys must be lowercase
+            maxhp: "Max HP",       
+            maxstamina: "Max STM", 
+            maxinsight: "Max INS", 
             xp: "XP"
         };
 

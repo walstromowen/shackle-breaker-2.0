@@ -1,5 +1,9 @@
 export const UITheme = {
     colors: {
+        // --- [NEW] Background Scale (Required for Column Renderers) ---
+        // 0: Darkest (Side Columns), 1: Lighter (Center), 2: Highlight (Active Tabs)
+        bgScale: ["#0a0a0a", "#141414", "#1f1f1f", "#2a2a2a"], 
+
         // Backgrounds
         background: "#050505", 
         panelBg: "rgba(20, 20, 20, 0.95)", 
@@ -19,7 +23,7 @@ export const UITheme = {
         success: "#55ff55", 
         magic: "#5555ff",   
         
-        // [NEW] Added for Ability Costs & Scrolling
+        // Ability Costs & Scrolling
         insight: "#ffd700",        // Gold color for 'Insight' costs
         scrollTrack: "rgba(0,0,0,0.3)", 
         scrollThumb: "#666666"

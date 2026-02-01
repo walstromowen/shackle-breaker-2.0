@@ -5,19 +5,18 @@ import { Formatting } from '../../../../../shared/utils/formatting.js';
 export class TooltipSystem {
     constructor(ui) {
         this.ui = ui;
-        this.WIDTH = 240;
-        this.PADDING = 12;
+        this.WIDTH = 220; // Reduced width slightly to match smaller text
+        this.PADDING = 10;
     }
 
     render(state, hitboxes) {
-        const { input, member, filteredInventory } = state;
+        const { mouse, member, filteredInventory } = state;
         
-        // 1. Basic Validation
-        if (!input || !input.mouse) return;
-        const mx = input.mouse.x;
-        const my = input.mouse.y;
+        if (!mouse) return;
+        const mx = mouse.x;
+        const my = mouse.y;
 
-        // 2. Find Hovered Hitbox (LIFO - Last rendered is on top)
+        // 1. Find Hovered Hitbox (LIFO)
         let hovered = null;
         for (let i = hitboxes.length - 1; i >= 0; i--) {
             const b = hitboxes[i];
@@ -29,22 +28,23 @@ export class TooltipSystem {
 
         if (!hovered) return;
 
-        // 3. Determine Content based on Type
+        // 2. Resolve Content based on Type
         let content = null;
-
+        
         if (hovered.type === 'trait') {
             content = this._getTraitContent(hovered.id);
+        
         } else if (hovered.type === 'inventory') {
-            const item = filteredInventory[hovered.index]; // index stored in hitbox
+            const item = filteredInventory[hovered.index];
             if (item) content = this._getItemContent(item);
+        
         } else if (hovered.type === 'slot') {
-            // Find item in equipment
             const equip = (member.state && member.state.equipment) ? member.state.equipment : member.equipment;
-            const item = equip ? equip[hovered.slotId] : null; // slotId stored in hitbox
+            const item = equip ? equip[hovered.slotId] : null; 
             content = this._getItemContent(item, hovered.slotId);
         }
 
-        // 4. Draw Tooltip
+        // 3. Draw
         if (content) {
             this._drawTooltip(content, mx, my);
         }
@@ -52,22 +52,85 @@ export class TooltipSystem {
 
     _getTraitContent(traitId) {
         const def = TRAIT_DEFINITIONS[traitId] || { name: traitId, description: "Unknown trait." };
+        const lines = [];
+
+        // A. Attributes
+        if (def.attributes) {
+            const attrParts = [];
+            for (const [key, val] of Object.entries(def.attributes)) {
+                attrParts.push(`${Formatting.getAbbreviation(key)} ${Formatting.formatSigned(val)}`);
+            }
+            if (attrParts.length > 0) lines.push(attrParts.join(", "));
+        }
+
+        // B. Stats
+        if (def.stats) {
+            const statParts = [];
+            const categories = ['combat', 'resources', 'attack', 'defense'];
+            
+            categories.forEach(cat => {
+                if (def.stats[cat]) {
+                    for (const [key, val] of Object.entries(def.stats[cat])) {
+                        if (typeof val === 'number' && val !== 0) {
+                            let label = Formatting.getAbbreviation(key);
+                            if (cat === 'attack') label = `${Formatting.capitalize(key)} Atk`;
+                            if (cat === 'defense') label = `${Formatting.capitalize(key)} Def`;
+                            
+                            statParts.push(`${label} ${Formatting.formatSigned(val)}`);
+                        }
+                    }
+                }
+            });
+            if (statParts.length > 0) lines.push(statParts.join(", "));
+        }
+
+        // C. Description
+        if (def.description) {
+            if (lines.length > 0) lines.push("---");
+            lines.push(def.description);
+        }
+
+        // D. Triggers
+        if (def.triggers) {
+            lines.push("---");
+            for (const [triggerName, effectObj] of Object.entries(def.triggers)) {
+                const cleanTrigger = triggerName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                lines.push(`${cleanTrigger}: ${this._formatEffect(effectObj)}`);
+            }
+        }
+
+        // E. Conditionals
+        if (def.conditionalStats) {
+            lines.push("---");
+            const cond = def.conditionalStats.condition.replace(/_/g, ' '); 
+            lines.push(`Condition: ${cond}`);
+            if (def.conditionalStats.stats) {
+                lines.push("(Active stats hidden)");
+            }
+        }
+
         return {
             title: def.name,
             type: "Trait",
             color: UITheme.colors.accent,
-            lines: [def.description]
+            lines: lines
         };
+    }
+
+    _formatEffect(effectObj) {
+        if (typeof effectObj === 'string') return effectObj;
+        const name = effectObj.effect ? effectObj.effect.replace(/_/g, ' ') : 'Effect';
+        const val = effectObj.value ? `(${effectObj.value})` : '';
+        return `${name} ${val}`;
     }
 
     _getItemContent(item, slotName) {
         if (!item) {
-            // Empty Slot Case
             if (slotName) {
                 return {
                     title: "Empty Slot",
                     type: slotName.toUpperCase(),
-                    color: "#666",
+                    color: UITheme.colors.textMuted,
                     lines: ["No item equipped."]
                 };
             }
@@ -77,25 +140,33 @@ export class TooltipSystem {
         const def = item.definition || item;
         const lines = [];
 
-        // Stats summary
+        // 1. Basic Stats
         if (def.stats) {
-            if (def.stats.damage) lines.push(`DMG: ${def.stats.damage}`);
-            if (def.stats.defense) lines.push(`DEF: ${def.stats.defense.physical || def.stats.defense}`);
-            
-            // Add attribute bonuses
+            const statsArr = [];
+            if (def.stats.damage) statsArr.push(`DMG ${def.stats.damage}`);
+            if (def.stats.block)  statsArr.push(`BLK ${def.stats.block}`);
+
             if (def.stats.attributes) {
-                const attrs = [];
                 for (const [key, val] of Object.entries(def.stats.attributes)) {
-                    if (val !== 0) attrs.push(`${Formatting.getAbbreviation(key)} ${Formatting.formatSigned(val)}`);
+                     statsArr.push(`${Formatting.getAbbreviation(key)} ${Formatting.formatSigned(val)}`);
                 }
-                if (attrs.length > 0) lines.push(attrs.join(", "));
             }
+            if (statsArr.length > 0) lines.push(statsArr.join(", "));
         }
 
-        // Description
+        // 2. Description
         if (def.description) {
-            lines.push("---"); // Separator
+            lines.push("---");
             lines.push(def.description);
+        }
+        
+        // 3. Granted Abilities
+        if (def.grantedAbilities || def.useAbility) {
+            lines.push("---");
+            const abilities = def.grantedAbilities || [def.useAbility];
+            abilities.forEach(ab => {
+                 lines.push(`Grants: ${ab}`);
+            });
         }
 
         return {
@@ -109,19 +180,23 @@ export class TooltipSystem {
     _drawTooltip(content, mx, my) {
         const { title, type, color, lines } = content;
         
-        // Calculate Height dynamically
-        this.ui.ctx.font = UITheme.fonts.body;
-        const lineHeight = 16;
-        let contentHeight = 40; // Title + Type padding
-
-        const wrappedLines = [];
+        // --- UPDATED FONTS FOR SMALLER SIZE ---
+        const headerFont = "bold 11px sans-serif"; // Was UITheme.fonts.bold
+        const typeFont   = "9px sans-serif";       // Was UITheme.fonts.small
+        const bodyFont   = "10px sans-serif";      // Was UITheme.fonts.body
+        const lineHeight = 12;                     // Was 16
         
+        this.ui.ctx.font = bodyFont;
+        let contentHeight = 35; // Initial height adjusted down
+
+        // 1. Calculate Height & Wrap Text
+        const wrappedLines = [];
         lines.forEach(rawLine => {
             if (rawLine === "---") {
-                contentHeight += 10;
+                contentHeight += 6; // Smaller gap
                 wrappedLines.push({ text: "---", isSeparator: true });
             } else {
-                const wLines = this.ui.getWrappedLines(rawLine, this.WIDTH - (this.PADDING * 2), UITheme.fonts.body);
+                const wLines = this.ui.getWrappedLines(rawLine, this.WIDTH - (this.PADDING * 2), bodyFont);
                 wLines.forEach(l => {
                     wrappedLines.push({ text: l, isSeparator: false });
                     contentHeight += lineHeight;
@@ -129,36 +204,35 @@ export class TooltipSystem {
             }
         });
 
-        // Smart Positioning (Clamp to screen)
+        // 2. Smart Positioning
         const screenW = this.ui.ctx.canvas.width;
         const screenH = this.ui.ctx.canvas.height;
         
         let tx = mx + 15;
         let ty = my + 15;
 
-        // Flip left if too far right
         if (tx + this.WIDTH > screenW) tx = mx - this.WIDTH - 15;
-        // Flip up if too far down
         if (ty + contentHeight > screenH) ty = screenH - contentHeight - 10;
 
-        // Draw Background
-        this.ui.drawRect(tx, ty, this.WIDTH, contentHeight, "rgba(10, 12, 16, 0.95)");
-        this.ui.drawRect(tx, ty, this.WIDTH, contentHeight, UITheme.colors.border, false); // Stroke
+        // 3. Draw Background
+        this.ui.drawRect(tx, ty, this.WIDTH, contentHeight, "rgba(18, 18, 20, 0.98)");
+        this.ui.drawRect(tx, ty, this.WIDTH, contentHeight, UITheme.colors.border, false);
 
-        // Draw Header
-        this.ui.drawText(title, tx + this.PADDING, ty + 20, "bold 13px sans-serif", color, "left");
-        this.ui.drawText(type, tx + this.WIDTH - this.PADDING, ty + 20, "10px monospace", "#666", "right");
+        // 4. Draw Header
+        this.ui.drawText(title, tx + this.PADDING, ty + 18, headerFont, color, "left");
+        this.ui.drawText(type, tx + this.WIDTH - this.PADDING, ty + 18, typeFont, UITheme.colors.textMuted, "right");
 
-        this.ui.drawRect(tx + this.PADDING, ty + 28, this.WIDTH - (this.PADDING * 2), 1, "#333");
+        // Header Separator
+        this.ui.drawRect(tx + this.PADDING, ty + 24, this.WIDTH - (this.PADDING * 2), 1, "#333");
 
-        // Draw Body
-        let curY = ty + 42;
+        // 5. Draw Body
+        let curY = ty + 36;
         wrappedLines.forEach(lineObj => {
             if (lineObj.isSeparator) {
-                this.ui.drawRect(tx + this.PADDING + 10, curY - 4, this.WIDTH - (this.PADDING * 2) - 20, 1, "#222");
-                curY += 8;
+                this.ui.drawRect(tx + this.PADDING + 10, curY - 3, this.WIDTH - (this.PADDING * 2) - 20, 1, "#222");
+                curY += 6;
             } else {
-                this.ui.drawText(lineObj.text, tx + this.PADDING, curY, UITheme.fonts.body, "#ccc", "left");
+                this.ui.drawText(lineObj.text, tx + this.PADDING, curY, bodyFont, "#ccc", "left");
                 curY += lineHeight;
             }
         });
