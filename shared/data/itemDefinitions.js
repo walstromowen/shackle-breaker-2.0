@@ -86,22 +86,51 @@ export const ItemDefinitions = {
 
     "amulet_of_wisdom": {
         id: "amulet_of_wisdom",
-        name: "Amulet of Wisdom",
+        name: "Amulet of the Developer", // Renamed to suit its power
         slot: "accessory",
         type: "accessory",
-        description: "Tests Vigor and Attunement scaling.",
-        value: 100,
-        icon: { col: 3, row: 1 }, // Ensure this icon exists or pick another
+        description: "A testing artifact that buffs EVERYTHING.",
+        value: 9999,
+        icon: { col: 0, row: 0 },
 
+        // 1. ATTRIBUTES (Tests Scaling)
         attributes: { 
-            vigor: 2,       // Should add +10 Max HP
-            attunement: 5,  // Should add +10 Max Insight (Mana)
-            intelligence: 3 // Should add +3 Magic Attack / +1 Magic Res
+            vigor: 10,          // +HP
+            strength: 10,       // +Phys Dmg
+            dexterity: 10,      // +Crit / Speed
+            intelligence: 10,   // +Magic Dmg
+            attunement: 10      // +Mana
         },
         
-        // Test flat resource bonuses too
+        // 2. FLAT RESOURCES (Tests Direct Adds)
         resources: {
-            maxStamina: 10 // Should add +10 Max Stamina directly
-        }
+            maxHp: 100,         // Should add on top of Vigor
+            maxStamina: 50,     // Should add on top of base
+            maxInsight: 50      // Should add on top of Attunement
+        },
+
+        // 3. ATTACK (Tests Damage Aggregation)
+        // Even though it's an accessory, these should add to your total power
+        attack: {
+            blunt: 5, slash: 5, pierce: 5,       // Physical
+            fire: 5, ice: 5, lightning: 5,       // Elemental
+            arcane: 5,                  // Exotic
+        },
+
+        // 4. DEFENSE (Tests Armor Aggregation)
+        defense: {
+            blunt: 5, slash: 5, pierce: 5
+        },
+
+        // 5. RESISTANCE (Tests Magic Defense)
+        resistance: {
+            fire: 5, ice: 5, lightning: 5,
+            arcane: 5,
+        },
+
+        // 6. SECONDARY (Tests misc stats if calculator supports them)
+        critChance: 0.10,       // +10% Crit
+        critMultiplier: 0.50,   // +50% Crit Dmg
+        speed: 5                // +5 Flat Speed
     },
 };

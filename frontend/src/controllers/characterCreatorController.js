@@ -109,12 +109,13 @@ export class CharacterCreatorController {
         const bg = CREATION_DATA.BACKGROUNDS[currentSelections.backgroundIdx];
         const origin = CREATION_DATA.ORIGINS[currentSelections.originIdx];
         const app = CREATION_DATA.APPEARANCES[currentSelections.appearanceIdx];
-        const keep = CREATION_DATA.KEEPSAKES[currentSelections.keepsakeIdx];
         const trait = CREATION_DATA.TRAITS[currentSelections.traitIdx];
 
-        // Resolve string IDs to actual Item instances
+        // Resolve string IDs to actual Item instances (Only Equipment)
         const playerEquipment = this._resolveEquipment(bg.equipment);
-        const playerInventory = this._resolveInventory(keep.itemId ? [keep.itemId] : []);
+
+        // NOTE: We do NOT create inventory here anymore. 
+        // Inventory is shared by the party and handled in finalizeCharacter.
 
         const playerOverrides = {
             name: currentSelections.name, 
@@ -122,7 +123,6 @@ export class CharacterCreatorController {
             equipment: playerEquipment,
             sprite: app.sprite,
             portrait: app.portrait,
-            inventory: playerInventory,
             tags: [origin.tag],
             traits: [trait.id], 
             level: 1
@@ -135,18 +135,11 @@ export class CharacterCreatorController {
     _calculatePreviewStats() {
         try {
             // 1. Create a "Mock" Entity
-            // We use the factory so this mock entity looks EXACTLY like the real player will.
-            // This ensures equipment, traits, and background attributes are all merged correctly.
             const tempEntity = this._createHeroEntity(this.state);
             
             if (!tempEntity) return null;
 
             // 2. Delegate to the Calculator's Detailed Pipeline
-            // This returns the structure: 
-            // { 
-            //    attributes: { vigor: 12, ... }, 
-            //    maxHp: { base: 100, bonus: 10, total: 110 } 
-            // }
             return StatCalculator.calculateDetailed(tempEntity);
 
         } catch (e) {
@@ -245,8 +238,16 @@ export class CharacterCreatorController {
 
     _resolveInventory(itemIdList) {
         if (!itemIdList || itemIdList.length === 0) return [];
+        
         return itemIdList.map(id => {
-            try { return ItemFactory.createItem(id); } catch (e) { return null; }
+            try { 
+                const item = ItemFactory.createItem(id); 
+                if (!item) console.warn(`[CharCreator] ItemFactory returned null for ID: '${id}'. Check ItemDefinitions!`);
+                return item;
+            } catch (e) { 
+                console.error(`[CharCreator] Error creating item '${id}':`, e);
+                return null; 
+            }
         }).filter(item => item !== null);       
     }
 
@@ -255,17 +256,23 @@ export class CharacterCreatorController {
             this.currentRow = 0; this.isEditingName = true; return;
         }
 
-        // 1. Create the Final Player Entity
-        const player = this._createHeroEntity(this.state);
-        if (!player) return;
+        console.log("--- START FINALIZE ---");
 
-        // 2. Recalculate Stats (Source of Truth)
-        // EntityFactory creates it, but we ensure stats are fresh
-        // Note: EntityModel likely runs StatCalculator.calculate() internally on access
-        const finalStats = player.stats; 
+        // 1. Resolve Starting Inventory DIRECTLY here (Decoupled from Entity)
+        const keep = CREATION_DATA.KEEPSAKES[this.state.keepsakeIdx];
+        const startingItems = this._resolveInventory(keep.itemId ? [keep.itemId] : []);
+        console.log(`[Inv] Resolved ${startingItems.length} starting items.`);
+
+        // 2. Create the Final Player Entity
+        const player = this._createHeroEntity(this.state);
         
-        // 3. Initialize Vitals to Full
-        // We set the current HP (mutable) to the calculated Max HP (derived)
+        if (!player) {
+            console.error("FATAL: Player entity failed to create.");
+            return;
+        }
+
+        // 3. Recalculate Stats to ensure they are fresh
+        const finalStats = player.stats; 
         player.hp = finalStats.maxHp;
         player.stamina = finalStats.maxStamina;
         player.insight = finalStats.maxInsight;
@@ -283,25 +290,25 @@ export class CharacterCreatorController {
             };
             const companionInstance = EntityFactory.create(comp.speciesId, companionOverrides);
             if (companionInstance) {
-                // Heal companion to full
                 const compStats = companionInstance.stats;
                 companionInstance.hp = compStats.maxHp;
                 companionInstance.stamina = compStats.maxStamina;
-                
                 finalParty.push(companionInstance);
             }
         }
 
         // 5. Inject State into Global Game State
         gameState.party.members = finalParty;
-        gameState.party.inventory = []; 
         
-        // Move starting personal inventory to shared party bag
-        if (player.inventory && player.inventory.length > 0) {
-             gameState.party.inventory.push(...player.inventory);
-             player.inventory = []; 
-        }
+        // --- DIRECT ASSIGNMENT ---
+        // Since inventory is shared, we push the items directly to the global state.
+        // We do not pass them through the player entity anymore.
+        gameState.party.inventory = [...startingItems]; 
+        // -------------------------
         
+        console.log("--- FINAL GLOBAL STATE ---");
+        console.log("GameState Inventory:", gameState.party.inventory);
+
         gameState.party.gold = 100;
         if (!gameState.settings) gameState.settings = {};
         gameState.settings.difficulty = CREATION_DATA.DIFFICULTIES[this.state.difficultyIdx].id; 

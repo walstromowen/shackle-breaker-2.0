@@ -3,6 +3,7 @@ import { AbilityFactory } from '../systems/factories/abilityFactory.js';
 
 export class EntityModel {
     constructor(config) {
+        // Deep clone to safely detach from the source definition
         this.state = structuredClone(config);
 
         // 1. Initialize Base Resources
@@ -14,21 +15,24 @@ export class EntityModel {
             };
         }
 
-        // 2. Initialize Attributes to prevent Calculator crashes
+        // 2. Initialize Attributes
         if (!this.state.attributes) {
             this.state.attributes = {
-                vigor: 0,
-                strength: 0,
-                dexterity: 0,
-                intelligence: 0,
-                attunement: 0
+                vigor: 0, strength: 0, dexterity: 0, intelligence: 0, attunement: 0
             };
         }
 
-        // 3. Ensure arrays exist
+        // 3. Ensure Arrays & Objects Exist
         if (!this.state.traits) this.state.traits = [];
         if (!this.state.equipment) this.state.equipment = {};
         if (!this.state.baseStats) this.state.baseStats = {};
+
+        // --- THE FIX: Initialize Inventory Correctly ---
+        // If config has inventory, keep it. Otherwise, start empty.
+        if (!Array.isArray(this.state.inventory)) {
+            this.state.inventory = [];
+        }
+        // -----------------------------------------------
 
         // 4. Progression Defaults
         if (typeof this.state.xp === 'undefined') this.state.xp = 0;

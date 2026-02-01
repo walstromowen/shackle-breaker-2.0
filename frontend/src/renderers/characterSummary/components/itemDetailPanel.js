@@ -1,3 +1,6 @@
+/**
+ * ui/panels/ItemDetailPanel.js
+ */
 import { UITheme } from '../../../ui/UITheme.js';
 import { Formatting } from '../../../../../shared/utils/formatting.js';
 import { AbilityDefinitions } from '../../../../../shared/data/abilityDefinitions.js';
@@ -21,15 +24,16 @@ export class ItemDetailPanel {
         const centerX = Math.floor(x + w / 2);
 
         // 1. Header (Icon + Name + Type)
-        this._drawHeader(item, def, centerX, currentY);
+        // Pass 'w' to handle text wrapping; returns the new Y position
+        currentY = this._drawHeader(item, def, centerX, currentY, w);
         
-        // Icon (64) + Name Offset (20) + Text Lines (~25) + Extra Gap (20)
-        currentY += this.ICON_SIZE + 65; 
+        // Add padding between Header and Description
+        currentY += 15;
 
         // 2. Description / Flavor
         currentY = this._drawDescription(def, x + 15, currentY, w - 30);
         
-        // Add a little padding after description since we removed the line
+        // Add a little padding after description
         currentY += 15;
 
         // 3. Main Stats (Attack / Defense)
@@ -42,7 +46,7 @@ export class ItemDetailPanel {
         currentY = this._drawAbilities(def, x + 15, currentY, w - 30);
     }
 
-    _drawHeader(item, def, centerX, y) {
+    _drawHeader(item, def, centerX, y, w) {
         // Icon Box
         const iconX = centerX - (this.ICON_SIZE / 2);
         this.ui.drawRect(iconX, y, this.ICON_SIZE, this.ICON_SIZE, "rgba(0,0,0,0.5)");
@@ -61,14 +65,32 @@ export class ItemDetailPanel {
             }
         }
 
-        // Name
-        const nameY = y + this.ICON_SIZE + 20;
+        // --- NAME WRAPPING LOGIC ---
+        let currentY = y + this.ICON_SIZE + 20;
+        
+        // Calculate max width for text (Panel Width - Padding)
+        const maxTextWidth = w - 40; 
+        
+        // Get wrapped lines
+        const nameLines = this.ui.getWrappedLines(def.name, maxTextWidth, UITheme.fonts.header);
         const rarityColor = this._getRarityColor(def.rarity);
-        this.ui.drawText(def.name, centerX, nameY, UITheme.fonts.header, rarityColor, "center");
+        
+        // Draw each line of the name
+        const lineHeight = 20; // Adjust based on your header font size
+        nameLines.forEach(line => {
+            this.ui.drawText(line, centerX, currentY, UITheme.fonts.header, rarityColor, "center");
+            currentY += lineHeight;
+        });
 
-        // Type
+        // --- TYPE TEXT ---
+        // Add small gap between name and type
+        currentY += 4; 
+        
         const typeText = `${(def.type || "Item").toUpperCase()} ${def.slot ? " - " + def.slot.toUpperCase() : ""}`;
-        this.ui.drawText(typeText, centerX, nameY + 16, "bold 10px monospace", "#666", "center");
+        this.ui.drawText(typeText, centerX, currentY, "bold 10px monospace", "#666", "center");
+
+        // Return the bottom-most Y coordinate so the next section knows where to start
+        return currentY + 10;
     }
 
     _drawDescription(def, x, y, w) {
@@ -105,9 +127,11 @@ export class ItemDetailPanel {
 
     _drawMainStats(def, x, y, w) {
         let currentY = y;
-        const stats = def.stats || {};
         
-        // Primary integer stats
+        // Support both 'stats' object and root-level properties
+        const source = def.stats || def; 
+
+        // Primary integer stats (if they exist at root or in stats)
         const primaryStats = [
             { key: 'damage', label: 'DMG', color: UITheme.colors.danger },
             { key: 'defense', label: 'DEF', color: UITheme.colors.magic },
@@ -117,27 +141,48 @@ export class ItemDetailPanel {
         let hasPrinted = false;
 
         primaryStats.forEach(stat => {
-            const val = stats[stat.key];
-            if (val) {
-                this.ui.drawText(stat.label, x, currentY, UITheme.fonts.bold, stat.color, "left");
-                let valStr = val;
-                // Handle Min-Max objects
-                if (typeof val === 'object' && val.min) valStr = `${val.min}-${val.max}`;
-                this.ui.drawText(valStr.toString(), x + w, currentY, UITheme.fonts.mono, "#fff", "right");
-                currentY += 16;
-                hasPrinted = true;
+            const val = source[stat.key];
+            
+            // 1. If value doesn't exist, skip
+            if (val === undefined || val === null) return;
+
+            // 2. SAFETY CHECK: If it's an object but missing 'min', treat it as a container 
+            // for sub-stats (handled below) rather than a main stat value.
+            if (typeof val === 'object' && typeof val.min === 'undefined') return;
+
+            this.ui.drawText(stat.label, x, currentY, UITheme.fonts.bold, stat.color, "left");
+            
+            let valStr = val;
+            // Handle Min-Max objects
+            if (typeof val === 'object' && val.min !== undefined) {
+                valStr = `${val.min}-${val.max}`;
             }
+
+            this.ui.drawText(valStr.toString(), x + w, currentY, UITheme.fonts.mono, "#fff", "right");
+            currentY += 16;
+            hasPrinted = true;
         });
 
-        // Elemental Sub-stats
+        // Elemental Sub-stats (attack: { fire: 5 }, defense: { fire: 5 }, etc)
+        // This picks up the specific keys inside your Amulet's defense object
         ['attack', 'defense', 'resistance'].forEach(category => {
-            if (!stats[category]) return;
-            const subStats = stats[category];
+            if (!source[category]) return;
+            const subStats = source[category];
             
+            // If subStats is just a number (simple defense), we already handled it above.
+            if (typeof subStats !== 'object') return;
+
             Object.keys(subStats).forEach(k => {
+                // Ignore min/max keys so we don't duplicate the main line
+                if (k === 'min' || k === 'max') return; 
                 if (subStats[k] === 0) return;
                 
-                const label = `${Formatting.getAbbreviation(k)} ${category === 'resistance' ? 'RES' : (category === 'defense' ? 'DEF' : 'DMG')}`;
+                // Format Label: "Fire RES", "Blunt DEF", "Ice DMG"
+                const typeAbbr = Formatting.getAbbreviation ? Formatting.getAbbreviation(k) : k.substring(0,3).toUpperCase();
+                const catAbbr = category === 'resistance' ? 'RES' : (category === 'defense' ? 'DEF' : 'DMG');
+                const label = `${typeAbbr} ${catAbbr}`;
+                
+                // Color coding
                 const color = category === 'attack' ? "#f88" : (category === 'defense' ? "#aaf" : "#fea");
                 
                 this.ui.drawText(label, x, currentY, UITheme.fonts.small, color, "left");
@@ -152,23 +197,53 @@ export class ItemDetailPanel {
 
     _drawAttributeBonuses(def, x, y, w) {
         let currentY = y;
-        const bonuses = (def.stats && def.stats.attributes) ? def.stats.attributes : {};
-        const keys = Object.keys(bonuses);
 
-        if (keys.length === 0) return currentY;
+        // 1. Fetch Attributes (Check root first, then stats.attributes)
+        const attributes = def.attributes || (def.stats ? def.stats.attributes : {}) || {};
+        const attrKeys = Object.keys(attributes);
 
+        // 2. Fetch Flat Resources (Check root)
+        const resources = def.resources || {};
+        const resKeys = Object.keys(resources);
+
+        // If nothing to show, exit
+        if (attrKeys.length === 0 && resKeys.length === 0) return currentY;
+
+        // Header
         this.ui.drawText("Bonuses", x, currentY, "bold 10px sans-serif", "#888", "left");
         currentY += 14; 
 
-        keys.forEach(key => {
-            const val = bonuses[key];
+        // --- DRAW ATTRIBUTES ---
+        attrKeys.forEach(key => {
+            const val = attributes[key];
             if (val === 0) return;
             
-            const label = Formatting.getAbbreviation(key);
+            const label = Formatting.getAbbreviation ? Formatting.getAbbreviation(key) : key.substring(0,3).toUpperCase();
             const valStr = Formatting.formatSigned(val);
             const color = val > 0 ? UITheme.colors.success : UITheme.colors.danger;
             
             this.ui.drawText(label, x + 10, currentY, UITheme.fonts.mono, "#ccc", "left");
+            this.ui.drawText(valStr, x + w, currentY, UITheme.fonts.mono, color, "right");
+            currentY += 14;
+        });
+
+        // --- DRAW RESOURCES ---
+        resKeys.forEach(key => {
+            const val = resources[key];
+            if (val === 0) return;
+
+            // Manual readable labels for resources
+            let label = key;
+            if (key === 'maxHp') label = "Max HP";
+            else if (key === 'maxStamina') label = "Max SP";
+            else if (key === 'maxInsight') label = "Max INS";
+            else label = key;
+
+            const valStr = Formatting.formatSigned(val);
+            // Use Insight color (purple/blue) for resource boosts to distinguish them
+            const color = val > 0 ? UITheme.colors.insight : UITheme.colors.danger;
+
+            this.ui.drawText(label, x + 10, currentY, UITheme.fonts.mono, "#aaf", "left");
             this.ui.drawText(valStr, x + w, currentY, UITheme.fonts.mono, color, "right");
             currentY += 14;
         });
@@ -185,7 +260,6 @@ export class ItemDetailPanel {
             const label = def.useAbility ? "On Use" : "Granted Abilities";
             
             // --- HEADER ---
-            // Changed color to textMuted to match Attributes/Stats panels
             this.ui.drawText(label, x, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
             
             // --- UNDERLINE ---
