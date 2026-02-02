@@ -258,9 +258,18 @@ export class CharacterCreatorController {
 
         console.log("--- START FINALIZE ---");
 
-        // 1. Resolve Starting Inventory DIRECTLY here (Decoupled from Entity)
+        // 1. Resolve Starting Inventory
         const keep = CREATION_DATA.KEEPSAKES[this.state.keepsakeIdx];
         const startingItems = this._resolveInventory(keep.itemId ? [keep.itemId] : []);
+        
+        // --- SCROLLBAR TEST: ADD 20 AMULETS ---
+        console.log("[Test] Injecting 20 Amulets of Wisdom for Scroll Testing...");
+        for(let i=0; i<20; i++) {
+             const testItem = ItemFactory.createItem("amulet_of_wisdom");
+             if(testItem) startingItems.push(testItem);
+        }
+        // --------------------------------------
+
         console.log(`[Inv] Resolved ${startingItems.length} starting items.`);
 
         // 2. Create the Final Player Entity

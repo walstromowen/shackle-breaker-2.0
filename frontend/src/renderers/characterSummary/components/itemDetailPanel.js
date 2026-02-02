@@ -16,7 +16,16 @@ export class ItemDetailPanel {
         this.totalContentHeight = 0;
     }
 
-    render(item, x, y, w, h, state) {
+    /**
+     * @param {Object} item 
+     * @param {number} x 
+     * @param {number} y 
+     * @param {number} w 
+     * @param {number} h 
+     * @param {Object} state 
+     * @param {Array} hitboxes - (NEW) Array to register interactive zones
+     */
+    render(item, x, y, w, h, state, hitboxes) {
         if (!item) {
             this.ui.drawText("No item selected", x + w / 2, y + 50, UITheme.fonts.body, "#555", "center");
             return;
@@ -34,17 +43,18 @@ export class ItemDetailPanel {
             this.totalContentHeight = 0;
         }
 
-        // --- THE FIX: Bridge to Controller ---
+        // --- Bridge to Controller ---
         // Calculate the maximum allowed scroll based on the content height.
         const maxScroll = Math.max(0, this.totalContentHeight - h);
         
-        // Export this limit to the Controller via the shared 'layout' object
+        // Export these metrics to the Controller via the shared 'layout' object
         if (state.layout) {
+            state.layout.detailBounds = { x: x, y: y, w: w + 20, h: h };
             state.layout.detailMaxScroll = maxScroll;
+            state.layout.detailViewportH = h; // <--- CRITICAL: Used for drag ratio physics
         }
 
         // Strictly clamp the offset immediately for THIS render frame.
-        // This prevents visual jitter while the Controller catches up next frame.
         if (state.scrollOffset > maxScroll) state.scrollOffset = maxScroll;
         if (state.scrollOffset < 0) state.scrollOffset = 0;
 
@@ -89,14 +99,13 @@ export class ItemDetailPanel {
         // --- 3. Draw Scrollbar ---
         // Only draw if content is taller than the viewport
         if (this.totalContentHeight > h) {
-            this.drawScrollBar(x + w + 6, y, h, this.totalContentHeight, state.scrollOffset);
+            this.drawScrollBar(x + w + 6, y, h, this.totalContentHeight, state.scrollOffset, hitboxes);
         }
     }
 
     // --- Helper: Scrollbar ---
-    drawScrollBar(x, y, viewportH, contentH, scrollOffset) {
+    drawScrollBar(x, y, viewportH, contentH, scrollOffset, hitboxes) {
         // Draw Track
-        // We can add an ID here if we want to detect clicks on the track specifically
         this.ui.drawRect(x, y, this.SCROLLBAR_WIDTH, viewportH, "#222"); 
         
         const viewRatio = viewportH / contentH;
@@ -111,6 +120,18 @@ export class ItemDetailPanel {
 
         // Draw Thumb
         this.ui.drawRect(x, thumbY, this.SCROLLBAR_WIDTH, thumbH, "#666");
+
+        // --- HITBOX REGISTRATION (NEW) ---
+        if (hitboxes) {
+            hitboxes.push({
+                id: 'SCROLLBAR_THUMB', // The ID the controller looks for to start dragging
+                type: 'ui',
+                x: x - 4, // Make the hit zone wider than the visual line for easier clicking
+                y: y,     // Cover the whole track height so clicking jump-scrolls works (if supported) or just dragging
+                w: this.SCROLLBAR_WIDTH + 8, 
+                h: viewportH 
+            });
+        }
     }
 
     // --- Existing Detailed Draw Methods (Unchanged) ---

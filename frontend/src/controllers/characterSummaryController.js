@@ -23,18 +23,24 @@ export class CharacterSummaryController {
         
         // --- Visual/Input State ---
         this.detailsScrollOffset = 0;
+        this.inventoryScrollOffset = 0; // <--- NEW: Track inventory scroll
         this.mouse = { x: 0, y: 0 };
         this.hoveredElement = null;
 
-        // --- Layout / Drag State ---
-        // We create a persistent object so the Renderer can write layout metrics 
-        // (like max scroll height) back to us for the next frame's logic.
-        this.layout = { detailMaxScroll: 0 }; 
+        // --- Layout Bridge ---
+        this.layout = { 
+            detailMaxScroll: 0,
+            detailViewportH: 300,
+            inventoryMaxScroll: 0, // <--- NEW: Defaults for inventory
+            inventoryViewportH: 300 
+        }; 
         
         this.dragState = {
             active: false,
+            target: null, // <--- NEW: 'details' or 'inventory'
             startY: 0,
-            startScroll: 0
+            startScroll: 0,
+            wasMouseDown: false
         };
 
         // Initialize
@@ -66,39 +72,76 @@ export class CharacterSummaryController {
     // INPUT HANDLING
     // ========================================================
 
-    /**
-     * @param {number} x 
-     * @param {number} y 
-     * @param {boolean} isMouseDown - Comes from SceneManager via Input.js
-     */
     handleMouseMove(x, y, isMouseDown) {
         this.mouse.x = x;
         this.mouse.y = y;
 
+        // Detect fresh click
+        const isClickStart = isMouseDown && !this.dragState.wasMouseDown;
+        this.dragState.wasMouseDown = isMouseDown;
+
         // --- DRAG LOGIC ---
         if (!isMouseDown) {
-            // Mouse released: Stop dragging
             this.dragState.active = false;
+            this.dragState.target = null;
         } 
         else if (this.dragState.active) {
-            // Currently Dragging
-            const deltaY = y - this.dragState.startY;
-            
-            // Calculate Ratio: If the content is huge, a small mouse move scrolls a lot.
-            // Simplified approximation: 
-            const contentHeight = 300 + this.layout.detailMaxScroll; // 300 is approx view height
-            const ratio = contentHeight / 300; 
+            // 1. Calculate how far mouse moved
+            const mouseDelta = y - this.dragState.startY;
 
-            // Calculate new position
-            const newOffset = this.dragState.startScroll + (deltaY * ratio);
+            // 2. Determine Context (Inventory vs Details)
+            let viewportH, maxScroll, currentStartScroll;
             
-            this.setScroll(newOffset);
+            if (this.dragState.target === 'inventory') {
+                viewportH = this.layout.inventoryViewportH || 100;
+                maxScroll = this.layout.inventoryMaxScroll || 1;
+                currentStartScroll = this.dragState.startScroll;
+            } else {
+                // Default to details
+                viewportH = this.layout.detailViewportH || 100;
+                maxScroll = this.layout.detailMaxScroll || 1;
+                currentStartScroll = this.dragState.startScroll;
+            }
+
+            const contentH = maxScroll + viewportH;
+
+            // 3. Calculate Physics Ratio
+            const scrollRatio = contentH / viewportH;
+
+            // 4. Calculate New Offset
+            let newOffset = currentStartScroll + (mouseDelta * scrollRatio);
+
+            // 5. Clamp
+            if (newOffset < 0) newOffset = 0;
+            if (newOffset > maxScroll) newOffset = maxScroll;
+
+            // 6. Apply back to state
+            if (this.dragState.target === 'inventory') {
+                this.inventoryScrollOffset = newOffset;
+            } else {
+                this.detailsScrollOffset = newOffset;
+            }
         } 
-        else if (this.hoveredElement && (this.hoveredElement.id === 'SCROLLBAR_THUMB' || this.hoveredElement.id === 'SCROLLBAR_TRACK')) {
-            // Clicked on scrollbar: Start Dragging
-            this.dragState.active = true;
-            this.dragState.startY = y;
-            this.dragState.startScroll = this.detailsScrollOffset;
+        else if (isClickStart) {
+            // --- NORMALIZE ID CHECK ---
+            const targetId = this.hoveredElement && this.hoveredElement.id 
+                ? this.hoveredElement.id 
+                : this.hoveredElement;
+
+            // CHECK: Details Scrollbar
+            if (targetId === 'SCROLLBAR_THUMB') {
+                this.dragState.active = true;
+                this.dragState.target = 'details';
+                this.dragState.startY = y;
+                this.dragState.startScroll = this.detailsScrollOffset;
+            }
+            // CHECK: Inventory Scrollbar (NEW)
+            else if (targetId === 'INV_SCROLLBAR_THUMB') {
+                this.dragState.active = true;
+                this.dragState.target = 'inventory';
+                this.dragState.startY = y;
+                this.dragState.startScroll = this.inventoryScrollOffset;
+            }
         }
     }
 
@@ -137,7 +180,8 @@ export class CharacterSummaryController {
         if (code === 'Escape' || code === 'Backspace') {
             if (this.state === 'INVENTORY') {
                 this.state = 'SLOTS'; // Cancel item selection
-                this.resetScroll();
+                // No resetScroll here usually, so user keeps place in list, 
+                // but can be added if desired.
             } else {
                 events.emit('CHANGE_SCENE', { scene: 'party' }); // Exit scene
             }
@@ -161,30 +205,48 @@ export class CharacterSummaryController {
 
     /**
      * Handles Mouse Wheel Scrolling.
-     * @param {number} delta - Positive (down) or Negative (up)
+     * Note: Currently only supports Details panel. 
+     * To support Inventory wheel, we'd need to detect hover context.
      */
     handleScroll(delta) {
-        // Only scroll if we are looking at the Item tab
-        if (this.viewMode !== 'ITEM') return;
+        const mx = this.mouse.x;
+        const my = this.mouse.y;
+        const layout = this.layout;
 
-        // Use helper to enforce limits immediately
-        this.setScroll(this.detailsScrollOffset + delta);
-    }
+        // 1. Check Inventory Panel Bounds
+        if (layout.inventoryBounds && 
+            mx >= layout.inventoryBounds.x && 
+            mx <= layout.inventoryBounds.x + layout.inventoryBounds.w &&
+            my >= layout.inventoryBounds.y && 
+            my <= layout.inventoryBounds.y + layout.inventoryBounds.h) {
+            
+            const max = layout.inventoryMaxScroll || 0;
+            // Add delta to current offset
+            let newScroll = this.inventoryScrollOffset + delta;
+            
+            // Clamp
+            this.inventoryScrollOffset = Math.max(0, Math.min(newScroll, max));
+            return; // Stop here so we don't scroll both at once
+        }
 
-    /**
-     * Sets scroll with strict clamping.
-     * Prevents "catch up" bug by ensuring the number never exceeds real content.
-     */
-    setScroll(value) {
-        // 1. Get the limit calculated by the Renderer in the previous frame
-        const max = this.layout.detailMaxScroll || 0;
-        
-        // 2. Clamp
-        this.detailsScrollOffset = Math.max(0, Math.min(value, max));
+        // 2. Check Item Details Panel Bounds
+        if (this.viewMode === 'ITEM' && layout.detailBounds && 
+            mx >= layout.detailBounds.x && 
+            mx <= layout.detailBounds.x + layout.detailBounds.w &&
+            my >= layout.detailBounds.y && 
+            my <= layout.detailBounds.y + layout.detailBounds.h) {
+            
+            const max = layout.detailMaxScroll || 0;
+            let newScroll = this.detailsScrollOffset + delta;
+            
+            // Clamp
+            this.detailsScrollOffset = Math.max(0, Math.min(newScroll, max));
+        }
     }
 
     resetScroll() {
         this.detailsScrollOffset = 0;
+        this.inventoryScrollOffset = 0; // Reset both on major context changes
     }
 
     // ========================================================
@@ -249,7 +311,7 @@ export class CharacterSummaryController {
             if (this.filteredInventory.length > 0) {
                 this.state = 'INVENTORY';
                 this.inventoryIndex = 0;
-                this.resetScroll();
+                // Don't reset scroll here so they keep their spot if they were browsing
             }
         }
         else if (code === 'KeyX' || code === 'Delete') {
@@ -262,11 +324,10 @@ export class CharacterSummaryController {
 
         if (code === 'ArrowUp' || code === 'KeyW') {
             this.inventoryIndex = Math.max(0, this.inventoryIndex - 1);
-            this.resetScroll();
+            // Auto-scroll could be added here later
         } 
         else if (code === 'ArrowDown' || code === 'KeyS') {
             this.inventoryIndex = Math.min(this.filteredInventory.length - 1, this.inventoryIndex + 1);
-            this.resetScroll();
         }
         else if (code === 'Enter' || code === 'Space') {
             this.equipItem(this.filteredInventory[this.inventoryIndex]);
@@ -285,12 +346,10 @@ export class CharacterSummaryController {
         const member = this.currentMember;
         if (!member) return;
 
-        // Get slots defined on the character, or fallback to default
         const equipData = member.equipment || {}; 
         const availableSlots = Object.keys(equipData);
 
         if (availableSlots.length > 0) {
-            // Sort slots based on standard UI order
             this.activeSlots = availableSlots.sort((a, b) => {
                 const indexA = SLOT_ORDER.indexOf(a);
                 const indexB = SLOT_ORDER.indexOf(b);
@@ -300,7 +359,6 @@ export class CharacterSummaryController {
             this.activeSlots = [...SLOT_ORDER]; 
         }
 
-        // Validate index
         if (this.slotIndex >= this.activeSlots.length) {
             this.slotIndex = 0;
         }
@@ -315,10 +373,8 @@ export class CharacterSummaryController {
             return;
         }
 
-        // Filter global inventory for items matching this slot
         this.filteredInventory = gameState.party.inventory.filter(item => {
             if (!item) return false;
-            // Handle both flat item objects and definition-based items
             const iSlot = item.slot || (item.definition ? item.definition.slot : null);
             return iSlot === slotName;
         });
@@ -330,22 +386,18 @@ export class CharacterSummaryController {
         const member = this.currentMember;
         const slotName = this.activeSlots[this.slotIndex];
         
-        // 1. Remove currently equipped item and return to bag
         const currentEquip = member.equipment[slotName];
         if (currentEquip) {
             gameState.party.inventory.push(currentEquip);
         }
 
-        // 2. Remove new item from bag
         const bagIdx = gameState.party.inventory.indexOf(inventoryItem);
         if (bagIdx > -1) {
             gameState.party.inventory.splice(bagIdx, 1);
         }
 
-        // 3. Equip new item
         member.equipItem(slotName, inventoryItem);
 
-        // 4. Return control to Slot view
         this.state = 'SLOTS';
         this.updateFilteredInventory();
         this.resetScroll();
@@ -364,35 +416,20 @@ export class CharacterSummaryController {
         }
     }
 
-    /**
-     * returns the item to be displayed in the detail panel
-     */
     getFocusedItem() {
-        // Priority 1: Mouse Hover
         if (this.hoveredElement && this.hoveredElement.type === 'item') {
             return this.hoveredElement.item;
         }
-
-        // Priority 2: Inventory Selection
         if (this.state === 'INVENTORY') {
             return this.filteredInventory[this.inventoryIndex] || null;
         } 
-        
-        // Priority 3: Equipment Slot Selection
         const slotName = this.activeSlots[this.slotIndex];
         return this.currentMember.equipment[slotName] || null;
     }
 
-    /**
-     * Prepares the View Model for the Renderer.
-     */
     getState() {
         const member = this.currentMember; 
-        
-        // Calculate fresh stats (includes equipment bonuses)
         const computedStats = StatCalculator.calculate(member);
-
-        // Create structure for Vitals display (Base vs Bonus)
         const baseSource = member.state ? member.state.stats : (member.attributes || {});
         
         const formatStat = (key, currentVal) => {
@@ -415,7 +452,6 @@ export class CharacterSummaryController {
             member,
             derivedStats,
             
-            // Selection / Navigation
             slots: this.activeSlots,
             selectedSlotIndex: this.slotIndex,
             isChoosingItem: (this.state === 'INVENTORY'),
@@ -423,15 +459,12 @@ export class CharacterSummaryController {
             inventoryIndex: this.inventoryIndex,
             viewMode: this.viewMode,
             
-            // Detail / Tooltip Data
             focusedItem: this.getFocusedItem(),
             scrollOffset: this.detailsScrollOffset, 
+            inventoryScrollOffset: this.inventoryScrollOffset, // <--- NEW: Pass to Renderer
             mouse: this.mouse,
             hoveredElement: this.hoveredElement,
 
-            // Layout Passing (The Bridge)
-            // We pass the reference to our layout object so the Renderer
-            // can update 'detailMaxScroll' inside it.
             layout: this.layout 
         };
     }
