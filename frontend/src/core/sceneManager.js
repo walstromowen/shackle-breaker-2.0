@@ -56,6 +56,9 @@ export class SceneManager {
         // State
         this.currentScene = 'character-creator'; 
         
+        // Bind the router so we can remove it later
+        this._handleGlobalKeydown = this._handleGlobalKeydown.bind(this);
+
         this.setupInputRouting();
         this.setupEventListeners();
     }
@@ -69,14 +72,15 @@ export class SceneManager {
         events.on('CHANGE_SCENE', ({ scene, data }) => {
             this.transitionRenderer.start(() => {
                 
-                // Cleanup
+                // Cleanup specific to exiting scenes
                 if (this.currentScene === 'encounter' && this.encounterController.cleanup) {
                     this.encounterController.cleanup();
                 }
 
                 // Logic for Character Summary initialization
                 if (scene === 'character_summary') {
-                    // We must re-instantiate the controller to pass the new 'data' (memberIndex)
+                    // We re-instantiate to pass fresh data (e.g. memberIndex)
+                    // Note: We pass 'this.input' so the controller can check button states directly
                     this.characterSummaryController = new CharacterSummaryController(this.input, data);
                 }
 
@@ -95,30 +99,33 @@ export class SceneManager {
     }
 
     setupInputRouting() {
-        window.addEventListener('keydown', (e) => {
-            if (this.transitionRenderer.isActive && this.transitionRenderer.state === 'FADE_OUT') return;
-            if (e.code === 'Backquote') this.mapRenderer.showDebug = !this.mapRenderer.showDebug;
+        // We use a named reference now so we can remove it in destroy()
+        window.addEventListener('keydown', this._handleGlobalKeydown);
+    }
 
-            switch (this.currentScene) {
-                case 'overworld':
-                    this.overworldController.handleKeyDown(e.code);
-                    break;
-                case 'encounter':
-                    this.encounterController.handleKeyDown(e.code);
-                    break;
-                case 'character-creator':
-                    this.characterCreatorController.handleKeyDown(e);
-                    break;
-                case 'party': 
-                    this.partyController.handleKeyDown(e.code);
-                    break;
-                case 'character_summary':
-                    if (this.characterSummaryController) {
-                        this.characterSummaryController.handleKeyDown(e.code);
-                    }
-                    break;
-            }
-        });
+    _handleGlobalKeydown(e) {
+        if (this.transitionRenderer.isActive && this.transitionRenderer.state === 'FADE_OUT') return;
+        if (e.code === 'Backquote') this.mapRenderer.showDebug = !this.mapRenderer.showDebug;
+
+        switch (this.currentScene) {
+            case 'overworld':
+                this.overworldController.handleKeyDown(e.code);
+                break;
+            case 'encounter':
+                this.encounterController.handleKeyDown(e.code);
+                break;
+            case 'character-creator':
+                this.characterCreatorController.handleKeyDown(e);
+                break;
+            case 'party': 
+                this.partyController.handleKeyDown(e.code);
+                break;
+            case 'character_summary':
+                if (this.characterSummaryController) {
+                    this.characterSummaryController.handleKeyDown(e.code);
+                }
+                break;
+        }
     }
 
     update(dt) {
@@ -126,33 +133,33 @@ export class SceneManager {
         const click = this.input.getAndResetClick();
         const scroll = this.input.getAndResetScroll();
         const mousePos = this.input.getMousePosition(); // {x, y}
+        const isMouseDown = this.input.getIsMouseDown ? this.input.getIsMouseDown() : false;
 
         // --- Handle Input per Scene ---
         if (this.currentScene === 'character_summary' && this.characterSummaryController) {
             
-            // A. Update Raw Mouse Pos (Internal tracking)
-            this.characterSummaryController.handleMouseMove(mousePos.x, mousePos.y);
+            // A. Update Raw Mouse Pos & Drag State
+            // We pass isMouseDown here to help the controller handle dragging logic
+            this.characterSummaryController.handleMouseMove?.(mousePos.x, mousePos.y, isMouseDown);
 
             // B. Hit Testing (The "Bridge")
-            // Ask Renderer: "What is under the mouse?"
             const hitZoneId = this.characterSummaryRenderer.getHitZone(mousePos.x, mousePos.y);
             
             // C. Pass Hover ID to Controller (for Tooltips)
-            this.characterSummaryController.handleHover(hitZoneId);
+            this.characterSummaryController.handleHover?.(hitZoneId);
 
             // D. Handle Interactions (Clicks)
             if (click && hitZoneId) {
-                // Controller only receives the ID string, not the renderer!
                 this.characterSummaryController.handleInteraction(hitZoneId);
             }
 
             // E. Handle Scroll
             if (scroll !== 0) {
-                this.characterSummaryController.handleScroll(scroll);
+                this.characterSummaryController.handleScroll?.(scroll);
             }
         } 
         else if (click) {
-            // Legacy handling for other scenes (refactor these later if desired)
+            // Legacy handling for other scenes
             if (this.currentScene === 'character-creator') {
                 this.characterCreatorController.handleMouseDown(click.x, click.y, this.characterCreatorRenderer);
             } 
@@ -231,5 +238,15 @@ export class SceneManager {
             state.entities, 
             visibleObjects
         );
+    }
+
+    /**
+     * Clean up event listeners. 
+     * Call this if destroying the game instance or hot-reloading.
+     */
+    destroy() {
+        this.input.destroy();
+        // Fix: Remove the global listener we added
+        window.removeEventListener('keydown', this._handleGlobalKeydown);
     }
 }

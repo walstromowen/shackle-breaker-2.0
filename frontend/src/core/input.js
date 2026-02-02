@@ -1,59 +1,92 @@
+/**
+ * core/Input.js
+ */
 export class Input {
     /**
-     * @param {HTMLCanvasElement} canvas - Required to calculate mouse coordinates
+     * @param {HTMLCanvasElement} canvas 
      */
     constructor(canvas) {
         this.canvas = canvas;
         this.heldKeys = new Set();
         this.lastClick = null; 
+        
+        // New: Track drag state
+        this.isMouseDown = false; 
+
         this.scrollDelta = 0;
-        this.mousePosition = { x: 0, y: 0 }; // [NEW] Track continuous mouse position
+        this.mousePosition = { x: 0, y: 0 }; 
 
-        // --- KEYBOARD LISTENERS ---
-        window.addEventListener("keydown", (e) => {
-            this.heldKeys.add(e.code);
-        });
+        this._onKeyDown = this._onKeyDown.bind(this);
+        this._onKeyUp = this._onKeyUp.bind(this);
+        this._onMouseDown = this._onMouseDown.bind(this);
+        this._onMouseUp = this._onMouseUp.bind(this); // New
+        this._onMouseMove = this._onMouseMove.bind(this);
+        this._onWheel = this._onWheel.bind(this);
 
-        window.addEventListener("keyup", (e) => {
-            this.heldKeys.delete(e.code);
-        });
+        // --- ATTACH LISTENERS ---
+        window.addEventListener("keydown", this._onKeyDown);
+        window.addEventListener("keyup", this._onKeyUp);
+        
+        // Listen for mouseup on WINDOW so dragging doesn't get stuck 
+        // if the user releases the mouse outside the canvas.
+        window.addEventListener("mouseup", this._onMouseUp);
 
-        // --- MOUSE LISTENERS ---
         if (this.canvas) {
-            // 1. Mouse Down (Clicks)
-            this.canvas.addEventListener("mousedown", (e) => {
-                const rect = this.canvas.getBoundingClientRect();
-                const scaleX = this.canvas.width / rect.width;
-                const scaleY = this.canvas.height / rect.height;
-
-                this.lastClick = {
-                    x: (e.clientX - rect.left) * scaleX,
-                    y: (e.clientY - rect.top) * scaleY
-                };
-            });
-
-            // 2. [NEW] Mouse Move (Hovering/Tooltips)
-            this.canvas.addEventListener("mousemove", (e) => {
-                const rect = this.canvas.getBoundingClientRect();
-                const scaleX = this.canvas.width / rect.width;
-                const scaleY = this.canvas.height / rect.height;
-
-                this.mousePosition = {
-                    x: (e.clientX - rect.left) * scaleX,
-                    y: (e.clientY - rect.top) * scaleY
-                };
-            });
-
-            // 3. Wheel Listener (Scrolling)
-            this.canvas.addEventListener("wheel", (e) => {
-                // Prevent browser zooming/scrolling while over canvas
-                e.preventDefault(); 
-                this.scrollDelta += e.deltaY;
-            }, { passive: false });
+            this.canvas.addEventListener("mousedown", this._onMouseDown);
+            this.canvas.addEventListener("mousemove", this._onMouseMove);
+            this.canvas.addEventListener("wheel", this._onWheel, { passive: false });
         }
     }
 
-    // --- MOUSE API ---
+    // --- EVENT HANDLERS ---
+
+    _onKeyDown(e) { this.heldKeys.add(e.code); }
+    _onKeyUp(e) { this.heldKeys.delete(e.code); }
+
+    _getMouseCoords(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+        return {
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY
+        };
+    }
+
+    _onMouseDown(e) {
+        this.isMouseDown = true; // Start Dragging
+        this.lastClick = this._getMouseCoords(e);
+    }
+
+    _onMouseUp(e) {
+        this.isMouseDown = false; // Stop Dragging
+    }
+
+    _onMouseMove(e) {
+        this.mousePosition = this._getMouseCoords(e);
+    }
+
+    _onWheel(e) {
+        e.preventDefault(); 
+        const delta = e.deltaY > 0 ? 1 : -1;
+        this.scrollDelta += (delta * 30); 
+        this.mousePosition = this._getMouseCoords(e);
+    }
+
+    // --- CLEANUP ---
+    destroy() {
+        window.removeEventListener("keydown", this._onKeyDown);
+        window.removeEventListener("keyup", this._onKeyUp);
+        window.removeEventListener("mouseup", this._onMouseUp); // Cleanup
+
+        if (this.canvas) {
+            this.canvas.removeEventListener("mousedown", this._onMouseDown);
+            this.canvas.removeEventListener("mousemove", this._onMouseMove);
+            this.canvas.removeEventListener("wheel", this._onWheel);
+        }
+    }
+
+    // --- PUBLIC API ---
 
     getAndResetClick() {
         if (!this.lastClick) return null;
@@ -68,12 +101,15 @@ export class Input {
         return val;
     }
 
-    // [NEW] Get current mouse coordinates
     getMousePosition() {
         return this.mousePosition;
     }
 
-    // --- KEYBOARD API ---
+    // Expose this for the Controller
+    getIsMouseDown() {
+        return this.isMouseDown;
+    }
+
     get direction() {
         const keys = Array.from(this.heldKeys);
         for (let i = keys.length - 1; i >= 0; i--) {

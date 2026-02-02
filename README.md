@@ -23,7 +23,7 @@ Root
 │   │   │   ├── encounter/
 │   │   │   ├── transitions/
 │   │   │   │    ├── transitionRenderer.js
-│   │   │   └── overworld/
+│   │   │   ├── overworld/
 │   │   │   │    ├── entityRenderer.js
 │   │   │   │    ├── lightningRenderer.js
 │   │   │   │    ├── mapRenderer.js
@@ -36,7 +36,10 @@ Root
 │   │   │   │    │    ├── itemDetailPanel.js          
 │   │   │   │    │    ├── equipmentPanel.js            
 │   │   │   │    │    ├── inventoryPanel.js            
-│   │   │   │    │    └── tooltipSystem.js             
+│   │   │   │    │    └── tooltipSystem.js   
+|   |   │   ├── ui 
+│   │   │   │    ├── UITheme.js
+│   │   │   │    └── canvasUI.js      
 │   │   ├── index.html
 │   │   ├── main.js
 │   │   └── styles.css

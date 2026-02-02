@@ -26,6 +26,17 @@ export class CharacterSummaryController {
         this.mouse = { x: 0, y: 0 };
         this.hoveredElement = null;
 
+        // --- Layout / Drag State ---
+        // We create a persistent object so the Renderer can write layout metrics 
+        // (like max scroll height) back to us for the next frame's logic.
+        this.layout = { detailMaxScroll: 0 }; 
+        
+        this.dragState = {
+            active: false,
+            startY: 0,
+            startScroll: 0
+        };
+
         // Initialize
         this.updateActiveSlots();
         this.setupInteractionHandlers();
@@ -33,7 +44,6 @@ export class CharacterSummaryController {
 
     /**
      * Map UI IDs to specific controller functions.
-     * This replaces the giant if/else block in handleInteraction.
      */
     setupInteractionHandlers() {
         this.handlers = {
@@ -56,9 +66,40 @@ export class CharacterSummaryController {
     // INPUT HANDLING
     // ========================================================
 
-    handleMouseMove(x, y) {
+    /**
+     * @param {number} x 
+     * @param {number} y 
+     * @param {boolean} isMouseDown - Comes from SceneManager via Input.js
+     */
+    handleMouseMove(x, y, isMouseDown) {
         this.mouse.x = x;
         this.mouse.y = y;
+
+        // --- DRAG LOGIC ---
+        if (!isMouseDown) {
+            // Mouse released: Stop dragging
+            this.dragState.active = false;
+        } 
+        else if (this.dragState.active) {
+            // Currently Dragging
+            const deltaY = y - this.dragState.startY;
+            
+            // Calculate Ratio: If the content is huge, a small mouse move scrolls a lot.
+            // Simplified approximation: 
+            const contentHeight = 300 + this.layout.detailMaxScroll; // 300 is approx view height
+            const ratio = contentHeight / 300; 
+
+            // Calculate new position
+            const newOffset = this.dragState.startScroll + (deltaY * ratio);
+            
+            this.setScroll(newOffset);
+        } 
+        else if (this.hoveredElement && (this.hoveredElement.id === 'SCROLLBAR_THUMB' || this.hoveredElement.id === 'SCROLLBAR_TRACK')) {
+            // Clicked on scrollbar: Start Dragging
+            this.dragState.active = true;
+            this.dragState.startY = y;
+            this.dragState.startScroll = this.detailsScrollOffset;
+        }
     }
 
     handleHover(elementData) {
@@ -96,6 +137,7 @@ export class CharacterSummaryController {
         if (code === 'Escape' || code === 'Backspace') {
             if (this.state === 'INVENTORY') {
                 this.state = 'SLOTS'; // Cancel item selection
+                this.resetScroll();
             } else {
                 events.emit('CHANGE_SCENE', { scene: 'party' }); // Exit scene
             }
@@ -105,6 +147,7 @@ export class CharacterSummaryController {
         // Tab Switching
         if (code === 'ShiftLeft' || code === 'ShiftRight') {
             this.viewMode = (this.viewMode === 'STATS') ? 'ITEM' : 'STATS';
+            this.resetScroll();
             return;
         }
 
@@ -116,9 +159,32 @@ export class CharacterSummaryController {
         }
     }
 
+    /**
+     * Handles Mouse Wheel Scrolling.
+     * @param {number} delta - Positive (down) or Negative (up)
+     */
     handleScroll(delta) {
-        const speed = 20;
-        this.detailsScrollOffset = Math.max(0, this.detailsScrollOffset + (delta * speed));
+        // Only scroll if we are looking at the Item tab
+        if (this.viewMode !== 'ITEM') return;
+
+        // Use helper to enforce limits immediately
+        this.setScroll(this.detailsScrollOffset + delta);
+    }
+
+    /**
+     * Sets scroll with strict clamping.
+     * Prevents "catch up" bug by ensuring the number never exceeds real content.
+     */
+    setScroll(value) {
+        // 1. Get the limit calculated by the Renderer in the previous frame
+        const max = this.layout.detailMaxScroll || 0;
+        
+        // 2. Clamp
+        this.detailsScrollOffset = Math.max(0, Math.min(value, max));
+    }
+
+    resetScroll() {
+        this.detailsScrollOffset = 0;
     }
 
     // ========================================================
@@ -127,7 +193,7 @@ export class CharacterSummaryController {
 
     setViewMode(mode) {
         this.viewMode = mode;
-        this.detailsScrollOffset = 0;
+        this.resetScroll();
     }
 
     cycleMember(direction) {
@@ -136,7 +202,7 @@ export class CharacterSummaryController {
         
         // Reset state for new character
         this.state = 'SLOTS';
-        this.detailsScrollOffset = 0;
+        this.resetScroll();
         this.updateActiveSlots();
     }
 
@@ -155,7 +221,7 @@ export class CharacterSummaryController {
             this.slotIndex = newIndex;
             this.state = 'SLOTS';
             this.updateFilteredInventory();
-            this.detailsScrollOffset = 0;
+            this.resetScroll();
         }
     }
 
@@ -172,18 +238,18 @@ export class CharacterSummaryController {
         if (code === 'ArrowUp' || code === 'KeyW') {
             this.slotIndex = (this.slotIndex > 0) ? this.slotIndex - 1 : this.activeSlots.length - 1;
             this.updateFilteredInventory();
-            this.detailsScrollOffset = 0;
+            this.resetScroll();
         } 
         else if (code === 'ArrowDown' || code === 'KeyS') {
             this.slotIndex = (this.slotIndex < this.activeSlots.length - 1) ? this.slotIndex + 1 : 0;
             this.updateFilteredInventory();
-            this.detailsScrollOffset = 0;
+            this.resetScroll();
         }
         else if (code === 'Enter' || code === 'Space') {
             if (this.filteredInventory.length > 0) {
                 this.state = 'INVENTORY';
                 this.inventoryIndex = 0;
-                this.detailsScrollOffset = 0;
+                this.resetScroll();
             }
         }
         else if (code === 'KeyX' || code === 'Delete') {
@@ -196,11 +262,11 @@ export class CharacterSummaryController {
 
         if (code === 'ArrowUp' || code === 'KeyW') {
             this.inventoryIndex = Math.max(0, this.inventoryIndex - 1);
-            this.detailsScrollOffset = 0;
+            this.resetScroll();
         } 
         else if (code === 'ArrowDown' || code === 'KeyS') {
             this.inventoryIndex = Math.min(this.filteredInventory.length - 1, this.inventoryIndex + 1);
-            this.detailsScrollOffset = 0;
+            this.resetScroll();
         }
         else if (code === 'Enter' || code === 'Space') {
             this.equipItem(this.filteredInventory[this.inventoryIndex]);
@@ -282,6 +348,7 @@ export class CharacterSummaryController {
         // 4. Return control to Slot view
         this.state = 'SLOTS';
         this.updateFilteredInventory();
+        this.resetScroll();
     }
 
     unequipCurrentSlot() {
@@ -293,6 +360,7 @@ export class CharacterSummaryController {
             gameState.party.inventory.push(currentEquip);
             member.unequipItem(slotName);
             this.updateFilteredInventory();
+            this.resetScroll();
         }
     }
 
@@ -317,7 +385,6 @@ export class CharacterSummaryController {
 
     /**
      * Prepares the View Model for the Renderer.
-     * Calculates derived stats here so the View is purely presentation.
      */
     getState() {
         const member = this.currentMember; 
@@ -358,9 +425,14 @@ export class CharacterSummaryController {
             
             // Detail / Tooltip Data
             focusedItem: this.getFocusedItem(),
-            scrollOffset: this.detailsScrollOffset,
+            scrollOffset: this.detailsScrollOffset, 
             mouse: this.mouse,
-            hoveredElement: this.hoveredElement
+            hoveredElement: this.hoveredElement,
+
+            // Layout Passing (The Bridge)
+            // We pass the reference to our layout object so the Renderer
+            // can update 'detailMaxScroll' inside it.
+            layout: this.layout 
         };
     }
 }

@@ -42,17 +42,17 @@ export const AbilityDefinitions = {
         ]
     },
 
-    "smash": {
-        id: "smash",
-        name: "Smash",
-        description: "A heavy, unrefined blow.",
+    "strike": {
+        id: "strike",
+        name: "Strike",
+        description: "Strike a target with the blunt edge of one's weapon.",
         icon: { col: 0, row: 0 }, // Club/Hammer
         speedModifier: 1.0, 
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 8 },
         accuracy: 0.85, 
         effects: [
-            { type: "damage", element: "blunt", power: 1.2 } 
+            { type: "damage", element: "blunt", power: 1.0 } 
         ]
     },
 

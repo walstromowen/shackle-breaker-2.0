@@ -13,7 +13,7 @@ export const ItemDefinitions = {
         attack: { blunt: 3 }, 
         
         // Fixed typo: removed leading comma in "flurry"
-        grantedAbilities: ["smash", "magic_missile", "earthquake", "flurry", "cleave"] 
+        grantedAbilities: ["strike", "magic_missile", "earthquake", "flurry", "cleave"] 
     },
 
     "shortsword": {
@@ -21,14 +21,14 @@ export const ItemDefinitions = {
         name: "Shortsword",
         slot: "mainHand",
         type: "weapon",
-        description: "A short blade.",
+        description: 'A standard shortsword. Standard issue shortsword of the Altus legion. "A shortsword is a faster longsword" - Commander Mentoras.',
         value: 20,
         icon: { col: 1, row: 0 },
 
         // Matches Standard
         attack: { pierce: 3, slash: 3 },
         
-        grantedAbilities: ["quick_stab"] 
+        grantedAbilities: ["strike", "quick_stab"] 
     },
       "insight_of_fire": {
         id: "insight_of_fire",
