@@ -17,14 +17,16 @@ export class CharacterSummaryController {
         this.filteredInventory = [];
         this.inventoryIndex = 0;
         
+        // INTERACTION STATES
         this.heldItem = null; 
+        this.potentialDrag = null; 
+        this.DRAG_THRESHOLD_SQ = 25; 
 
         this.detailsScrollOffset = 0;
         this.inventoryScrollOffset = 0; 
         this.mouse = { x: 0, y: 0 };
         this.hoveredElement = null;
 
-        // NEW: Store hitboxes to detect drops even if the item blocks the mouse
         this.lastRenderedHitboxes = [];
 
         this.layout = { 
@@ -68,12 +70,23 @@ export class CharacterSummaryController {
         this.mouse.x = x;
         this.mouse.y = y;
 
+        // DRAG THRESHOLD CHECK
+        if (this.potentialDrag && !this.heldItem) {
+            const dx = x - this.potentialDrag.startX;
+            const dy = y - this.potentialDrag.startY;
+            
+            if ((dx * dx) + (dy * dy) > this.DRAG_THRESHOLD_SQ) {
+                this.heldItem = this.potentialDrag; 
+                this.potentialDrag = null;          
+            }
+        }
+
         const isClickStart = isMouseDown && !this.dragState.wasMouseDown;
         const isClickEnd = !isMouseDown && this.dragState.wasMouseDown; 
         
         this.dragState.wasMouseDown = isMouseDown;
 
-        if (isClickEnd && this.heldItem) {
+        if (isClickEnd) {
             this.handleMouseUp(x, y);
         }
 
@@ -133,7 +146,6 @@ export class CharacterSummaryController {
         this.hoveredElement = elementData;
     }
 
-    // NEW: Call this from the Renderer to sync positions
     updateHitboxes(hitboxes) {
         this.lastRenderedHitboxes = hitboxes;
     }
@@ -148,7 +160,6 @@ export class CharacterSummaryController {
         }
 
         if (id.startsWith('SLOT_')) {
-            // Handle both simple ID string or object with slotId
             const slotId = (input.slotId) ? input.slotId : id.replace('SLOT_', '');
             this.handleSlotClick(slotId);
             return;
@@ -166,41 +177,37 @@ export class CharacterSummaryController {
     // ========================================================
 
     handleMouseUp(x, y) {
-        if (!this.heldItem) return;
-
-        let dropTarget = this.hoveredElement ? this.hoveredElement.id : null;
-        let slotName = this.hoveredElement ? this.hoveredElement.slotId : null;
-        
-        // --- 1. FALLBACK HITBOX CHECK ---
-        // If the dropTarget is the dragged item itself (self-occlusion) or null,
-        // we check coordinates against known slot hitboxes.
-        const isBlocked = !dropTarget || dropTarget.startsWith('ITEM_') || dropTarget.startsWith('INV_ITEM');
-
-        if (isBlocked && this.lastRenderedHitboxes.length > 0) {
-            const hit = this.lastRenderedHitboxes.find(box => 
-                (box.type === 'slot' || (box.id && box.id.startsWith('SLOT_'))) && 
-                x >= box.x && x <= box.x + box.w &&
-                y >= box.y && y <= box.y + box.h
-            );
+        if (this.heldItem) {
+            let dropTarget = this.hoveredElement ? this.hoveredElement.id : null;
+            let slotName = this.hoveredElement ? this.hoveredElement.slotId : null;
             
-            if (hit) {
-                dropTarget = hit.id;
-                slotName = hit.slotId; // Use the specific slot ID from the hitbox
+            const isBlocked = !dropTarget || dropTarget.startsWith('ITEM_') || dropTarget.startsWith('INV_ITEM');
+            if (isBlocked && this.lastRenderedHitboxes.length > 0) {
+                const hit = this.lastRenderedHitboxes.find(box => 
+                    (box.type === 'slot' || (box.id && box.id.startsWith('SLOT_'))) && 
+                    x >= box.x && x <= box.x + box.w &&
+                    y >= box.y && y <= box.y + box.h
+                );
+                
+                if (hit) {
+                    dropTarget = hit.id;
+                    slotName = hit.slotId; 
+                }
+            }
+
+            if (dropTarget && dropTarget.indexOf('SLOT_') === 0) {
+                const finalSlot = slotName || dropTarget.substring(5);
+                this._attemptEquipDrop(finalSlot);
+            }
+            else if (this._isMouseOverInventory(dropTarget)) {
+                this._attemptInventoryDrop();
+            }
+            else {
+                this._cancelDrag();
             }
         }
-
-        // --- 2. EXECUTE DROP ---
-        if (dropTarget && dropTarget.indexOf('SLOT_') === 0) {
-            // Use slotName if available, otherwise robust extraction
-            const finalSlot = slotName || dropTarget.substring(5);
-            this._attemptEquipDrop(finalSlot);
-        }
-        else if (this._isMouseOverInventory(dropTarget)) {
-            this._attemptInventoryDrop();
-        }
-        else {
-            this._cancelDrag();
-        }
+        
+        this.potentialDrag = null;
     }
 
     _isMouseOverInventory(targetId) {
@@ -218,6 +225,7 @@ export class CharacterSummaryController {
 
     _cancelDrag() {
         this.heldItem = null;
+        this.potentialDrag = null;
         this.updateFilteredInventory();
     }
 
@@ -227,15 +235,12 @@ export class CharacterSummaryController {
         const item = this.heldItem.item;
         const def = item.definition || item;
         
-        // --- 1. NORMALIZE STRINGS ---
-        // Remove spaces (e.g., "Main Hand" -> "mainhand") for cleaner comparison
         const itemSlot = (def.slot || def.type || '').toLowerCase().replace(/\s/g, '');
         const slotKey = targetSlotRaw.toLowerCase().replace(/\s/g, '');
 
-        // --- 2. VALIDATION CHECK ---
         const isValid = (itemSlot === slotKey) || 
                         (slotKey === 'mainhand' && (itemSlot === 'weapon' || itemSlot === 'tool')) ||
-                        (slotKey === 'offhand' && (itemSlot === 'shield' || itemSlot === 'weapon'));
+                        (slotKey === 'offhand' && (itemSlot === 'shield' || itemKey === 'weapon'));
 
         if (!isValid) {
             console.warn(`[EquipDrop] Invalid Slot. Item: ${itemSlot}, Target: ${slotKey}`);
@@ -243,11 +248,8 @@ export class CharacterSummaryController {
             return;
         }
 
-        // --- 3. FIND CANONICAL SLOT NAME ---
-        // Map back to 'MainHand' (or whatever is in activeSlots)
         const canonicalSlot = this.activeSlots.find(s => s.toLowerCase().replace(/\s/g, '') === slotKey) || targetSlotRaw;
 
-        // --- 4. EXECUTE EQUIP ---
         this.equipItem(item, canonicalSlot);
         this.heldItem = null;
     }
@@ -342,6 +344,7 @@ export class CharacterSummaryController {
         this.memberIndex = (this.memberIndex + direction + count) % count;
         this.state = 'SLOTS';
         this.heldItem = null;
+        this.potentialDrag = null; 
         this.resetScroll();
         this.updateActiveSlots();
     }
@@ -364,12 +367,14 @@ export class CharacterSummaryController {
         this.resetScroll();
 
         if (currentEquip) {
-            this.heldItem = {
+            this.potentialDrag = {
                 item: currentEquip,
                 source: 'equipment',
-                originSlot: slotName
+                originSlot: slotName,
+                startX: this.mouse.x,
+                startY: this.mouse.y
             };
-            this.viewMode = 'ITEM';
+            // REMOVED: this.viewMode = 'ITEM';
         }
     }
 
@@ -383,18 +388,19 @@ export class CharacterSummaryController {
 
         const targetItem = this.filteredInventory[idx];
         if (targetItem) {
-            this.heldItem = {
+            this.inventoryIndex = idx;
+            this.state = 'INVENTORY';
+            // REMOVED: this.viewMode = 'ITEM'; 
+            this.updateFilteredInventory(); 
+
+            this.potentialDrag = {
                 item: targetItem,
                 source: 'inventory',
                 originIndex: idx,
-                realIndex: gameState.party.inventory.indexOf(targetItem)
+                realIndex: gameState.party.inventory.indexOf(targetItem),
+                startX: this.mouse.x,
+                startY: this.mouse.y
             };
-            
-            this.inventoryIndex = idx;
-            this.state = 'INVENTORY';
-            this.viewMode = 'ITEM';
-            
-            this.updateFilteredInventory(); 
         }
     }
 
@@ -591,11 +597,7 @@ export class CharacterSummaryController {
             hoveredElement: this.hoveredElement,
             heldItem: this.heldItem, 
             layout: this.layout,
-            
-            // NEW: Export dropTarget so Renderer can distinguish "Selected" vs "Hovered"
             dropTarget: this.heldItem ? this.hoveredElement : null,
-
-            // NEW: Callback for Renderer to report hitboxes back to Controller
             onLayoutUpdate: (hitboxes) => this.updateHitboxes(hitboxes)
         };
     }
