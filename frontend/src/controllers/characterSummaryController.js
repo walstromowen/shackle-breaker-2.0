@@ -6,64 +6,56 @@ const SLOT_ORDER = ['head', 'torso', 'arms', 'mainHand', 'offHand', 'legs', 'fee
 
 export class CharacterSummaryController {
     constructor(input, data) {
-        // --- Core Data ---
         this.memberIndex = data ? data.memberIndex : 0;
         
-        // --- Navigation State ---
-        this.state = 'SLOTS'; // 'SLOTS' | 'INVENTORY'
-        this.viewMode = 'STATS'; // 'STATS' | 'ITEM'
+        this.state = 'SLOTS'; 
+        this.viewMode = 'STATS'; 
         
-        // --- Selection State ---
         this.activeSlots = [];
         this.slotIndex = 0;
         
-        // --- Inventory State ---
         this.filteredInventory = [];
         this.inventoryIndex = 0;
         
-        // --- Visual/Input State ---
+        this.heldItem = null; 
+
         this.detailsScrollOffset = 0;
-        this.inventoryScrollOffset = 0; // <--- NEW: Track inventory scroll
+        this.inventoryScrollOffset = 0; 
         this.mouse = { x: 0, y: 0 };
         this.hoveredElement = null;
 
-        // --- Layout Bridge ---
+        // NEW: Store hitboxes to detect drops even if the item blocks the mouse
+        this.lastRenderedHitboxes = [];
+
         this.layout = { 
             detailMaxScroll: 0,
             detailViewportH: 300,
-            inventoryMaxScroll: 0, // <--- NEW: Defaults for inventory
-            inventoryViewportH: 300 
+            inventoryMaxScroll: 0, 
+            inventoryViewportH: 300,
+            inventoryBounds: null 
         }; 
         
         this.dragState = {
             active: false,
-            target: null, // <--- NEW: 'details' or 'inventory'
+            target: null, 
             startY: 0,
             startScroll: 0,
             wasMouseDown: false
         };
 
-        // Initialize
         this.updateActiveSlots();
         this.setupInteractionHandlers();
     }
 
-    /**
-     * Map UI IDs to specific controller functions.
-     */
     setupInteractionHandlers() {
         this.handlers = {
             'BTN_PREV_CHAR': () => this.cycleMember(-1),
             'BTN_NEXT_CHAR': () => this.cycleMember(1),
             'BTN_BACK': () => events.emit('CHANGE_SCENE', { scene: 'party' }),
-            
-            // Tabs
             'TAB_STATS': () => this.setViewMode('STATS'),
             'BTN_TAB_STATS': () => this.setViewMode('STATS'),
             'TAB_ITEM': () => this.setViewMode('ITEM'),
             'BTN_TAB_ITEM': () => this.setViewMode('ITEM'),
-            
-            // Actions
             'BTN_UNEQUIP': () => this.unequipCurrentSlot(),
         };
     }
@@ -76,20 +68,22 @@ export class CharacterSummaryController {
         this.mouse.x = x;
         this.mouse.y = y;
 
-        // Detect fresh click
         const isClickStart = isMouseDown && !this.dragState.wasMouseDown;
+        const isClickEnd = !isMouseDown && this.dragState.wasMouseDown; 
+        
         this.dragState.wasMouseDown = isMouseDown;
 
-        // --- DRAG LOGIC ---
+        if (isClickEnd && this.heldItem) {
+            this.handleMouseUp(x, y);
+        }
+
+        // Scrollbar Drag Logic
         if (!isMouseDown) {
             this.dragState.active = false;
             this.dragState.target = null;
         } 
         else if (this.dragState.active) {
-            // 1. Calculate how far mouse moved
             const mouseDelta = y - this.dragState.startY;
-
-            // 2. Determine Context (Inventory vs Details)
             let viewportH, maxScroll, currentStartScroll;
             
             if (this.dragState.target === 'inventory') {
@@ -97,25 +91,18 @@ export class CharacterSummaryController {
                 maxScroll = this.layout.inventoryMaxScroll || 1;
                 currentStartScroll = this.dragState.startScroll;
             } else {
-                // Default to details
                 viewportH = this.layout.detailViewportH || 100;
                 maxScroll = this.layout.detailMaxScroll || 1;
                 currentStartScroll = this.dragState.startScroll;
             }
 
             const contentH = maxScroll + viewportH;
-
-            // 3. Calculate Physics Ratio
             const scrollRatio = contentH / viewportH;
-
-            // 4. Calculate New Offset
             let newOffset = currentStartScroll + (mouseDelta * scrollRatio);
 
-            // 5. Clamp
             if (newOffset < 0) newOffset = 0;
             if (newOffset > maxScroll) newOffset = maxScroll;
 
-            // 6. Apply back to state
             if (this.dragState.target === 'inventory') {
                 this.inventoryScrollOffset = newOffset;
             } else {
@@ -123,19 +110,16 @@ export class CharacterSummaryController {
             }
         } 
         else if (isClickStart) {
-            // --- NORMALIZE ID CHECK ---
             const targetId = this.hoveredElement && this.hoveredElement.id 
                 ? this.hoveredElement.id 
                 : this.hoveredElement;
 
-            // CHECK: Details Scrollbar
             if (targetId === 'SCROLLBAR_THUMB') {
                 this.dragState.active = true;
                 this.dragState.target = 'details';
                 this.dragState.startY = y;
                 this.dragState.startScroll = this.detailsScrollOffset;
             }
-            // CHECK: Inventory Scrollbar (NEW)
             else if (targetId === 'INV_SCROLLBAR_THUMB') {
                 this.dragState.active = true;
                 this.dragState.target = 'inventory';
@@ -149,53 +133,164 @@ export class CharacterSummaryController {
         this.hoveredElement = elementData;
     }
 
+    // NEW: Call this from the Renderer to sync positions
+    updateHitboxes(hitboxes) {
+        this.lastRenderedHitboxes = hitboxes;
+    }
+
     handleInteraction(input) {
         if (!input) return;
-
-        // Handle both simple string IDs and object payloads from Renderer
         const id = (typeof input === 'object' && input.id) ? input.id : input;
         
-        // 1. Check Exact Matches (Buttons, Tabs)
         if (this.handlers[id]) {
             this.handlers[id]();
             return;
         }
 
-        // 2. Check Dynamic Slots (SLOT_head, SLOT_torso, etc)
         if (id.startsWith('SLOT_')) {
-            this.handleSlotClick(id.replace('SLOT_', ''));
+            // Handle both simple ID string or object with slotId
+            const slotId = (input.slotId) ? input.slotId : id.replace('SLOT_', '');
+            this.handleSlotClick(slotId);
             return;
         }
 
-        // 3. Check Dynamic Inventory Items (INV_ITEM_0, INV_ITEM_1)
-        if (this.state === 'INVENTORY' && id.startsWith('INV_ITEM_')) {
+        if (id.startsWith('INV_ITEM_')) {
             const idx = parseInt(id.split('_')[2], 10);
             this.handleInventoryClick(idx);
             return;
         }
     }
 
+    // ========================================================
+    // LOGIC: DRAG & DROP
+    // ========================================================
+
+    handleMouseUp(x, y) {
+        if (!this.heldItem) return;
+
+        let dropTarget = this.hoveredElement ? this.hoveredElement.id : null;
+        let slotName = this.hoveredElement ? this.hoveredElement.slotId : null;
+        
+        // --- 1. FALLBACK HITBOX CHECK ---
+        // If the dropTarget is the dragged item itself (self-occlusion) or null,
+        // we check coordinates against known slot hitboxes.
+        const isBlocked = !dropTarget || dropTarget.startsWith('ITEM_') || dropTarget.startsWith('INV_ITEM');
+
+        if (isBlocked && this.lastRenderedHitboxes.length > 0) {
+            const hit = this.lastRenderedHitboxes.find(box => 
+                (box.type === 'slot' || (box.id && box.id.startsWith('SLOT_'))) && 
+                x >= box.x && x <= box.x + box.w &&
+                y >= box.y && y <= box.y + box.h
+            );
+            
+            if (hit) {
+                dropTarget = hit.id;
+                slotName = hit.slotId; // Use the specific slot ID from the hitbox
+            }
+        }
+
+        // --- 2. EXECUTE DROP ---
+        if (dropTarget && dropTarget.indexOf('SLOT_') === 0) {
+            // Use slotName if available, otherwise robust extraction
+            const finalSlot = slotName || dropTarget.substring(5);
+            this._attemptEquipDrop(finalSlot);
+        }
+        else if (this._isMouseOverInventory(dropTarget)) {
+            this._attemptInventoryDrop();
+        }
+        else {
+            this._cancelDrag();
+        }
+    }
+
+    _isMouseOverInventory(targetId) {
+        if (targetId && (targetId.startsWith('INV_') || targetId === 'SCROLLBAR_INV')) {
+            return true;
+        }
+        if (this.layout.inventoryBounds) {
+            const { x, y, w, h } = this.layout.inventoryBounds;
+            const mx = this.mouse.x;
+            const my = this.mouse.y;
+            return (mx >= x && mx <= x + w && my >= y && my <= y + h);
+        }
+        return false;
+    }
+
+    _cancelDrag() {
+        this.heldItem = null;
+        this.updateFilteredInventory();
+    }
+
+    _attemptEquipDrop(targetSlotRaw) {
+        if (!this.heldItem) return;
+
+        const item = this.heldItem.item;
+        const def = item.definition || item;
+        
+        // --- 1. NORMALIZE STRINGS ---
+        // Remove spaces (e.g., "Main Hand" -> "mainhand") for cleaner comparison
+        const itemSlot = (def.slot || def.type || '').toLowerCase().replace(/\s/g, '');
+        const slotKey = targetSlotRaw.toLowerCase().replace(/\s/g, '');
+
+        // --- 2. VALIDATION CHECK ---
+        const isValid = (itemSlot === slotKey) || 
+                        (slotKey === 'mainhand' && (itemSlot === 'weapon' || itemSlot === 'tool')) ||
+                        (slotKey === 'offhand' && (itemSlot === 'shield' || itemSlot === 'weapon'));
+
+        if (!isValid) {
+            console.warn(`[EquipDrop] Invalid Slot. Item: ${itemSlot}, Target: ${slotKey}`);
+            this._cancelDrag();
+            return;
+        }
+
+        // --- 3. FIND CANONICAL SLOT NAME ---
+        // Map back to 'MainHand' (or whatever is in activeSlots)
+        const canonicalSlot = this.activeSlots.find(s => s.toLowerCase().replace(/\s/g, '') === slotKey) || targetSlotRaw;
+
+        // --- 4. EXECUTE EQUIP ---
+        this.equipItem(item, canonicalSlot);
+        this.heldItem = null;
+    }
+
+    _attemptInventoryDrop() {
+        if (!this.heldItem) return;
+
+        if (this.heldItem.source === 'equipment') {
+            const member = this.currentMember;
+            const slot = this.heldItem.originSlot;
+            
+            member.equipment[slot] = null;
+            gameState.party.inventory.push(this.heldItem.item);
+        }
+        
+        this.heldItem = null;
+        this.updateFilteredInventory();
+    }
+
+    // ========================================================
+    // STANDARD NAVIGATION
+    // ========================================================
+
     handleKeyDown(code) {
-        // Global Esc/Back
         if (code === 'Escape' || code === 'Backspace') {
+            if (this.heldItem) {
+                this._cancelDrag();
+                return;
+            }
             if (this.state === 'INVENTORY') {
-                this.state = 'SLOTS'; // Cancel item selection
-                // No resetScroll here usually, so user keeps place in list, 
-                // but can be added if desired.
+                this.state = 'SLOTS'; 
             } else {
-                events.emit('CHANGE_SCENE', { scene: 'party' }); // Exit scene
+                events.emit('CHANGE_SCENE', { scene: 'party' }); 
             }
             return;
         }
 
-        // Tab Switching
         if (code === 'ShiftLeft' || code === 'ShiftRight') {
             this.viewMode = (this.viewMode === 'STATS') ? 'ITEM' : 'STATS';
             this.resetScroll();
             return;
         }
 
-        // Context-Specific Navigation
         if (this.state === 'SLOTS') {
             this.handleSlotNavigation(code);
         } else {
@@ -203,17 +298,11 @@ export class CharacterSummaryController {
         }
     }
 
-    /**
-     * Handles Mouse Wheel Scrolling.
-     * Note: Currently only supports Details panel. 
-     * To support Inventory wheel, we'd need to detect hover context.
-     */
     handleScroll(delta) {
         const mx = this.mouse.x;
         const my = this.mouse.y;
         const layout = this.layout;
 
-        // 1. Check Inventory Panel Bounds
         if (layout.inventoryBounds && 
             mx >= layout.inventoryBounds.x && 
             mx <= layout.inventoryBounds.x + layout.inventoryBounds.w &&
@@ -221,15 +310,11 @@ export class CharacterSummaryController {
             my <= layout.inventoryBounds.y + layout.inventoryBounds.h) {
             
             const max = layout.inventoryMaxScroll || 0;
-            // Add delta to current offset
             let newScroll = this.inventoryScrollOffset + delta;
-            
-            // Clamp
             this.inventoryScrollOffset = Math.max(0, Math.min(newScroll, max));
-            return; // Stop here so we don't scroll both at once
+            return; 
         }
 
-        // 2. Check Item Details Panel Bounds
         if (this.viewMode === 'ITEM' && layout.detailBounds && 
             mx >= layout.detailBounds.x && 
             mx <= layout.detailBounds.x + layout.detailBounds.w &&
@@ -238,20 +323,14 @@ export class CharacterSummaryController {
             
             const max = layout.detailMaxScroll || 0;
             let newScroll = this.detailsScrollOffset + delta;
-            
-            // Clamp
             this.detailsScrollOffset = Math.max(0, Math.min(newScroll, max));
         }
     }
 
     resetScroll() {
         this.detailsScrollOffset = 0;
-        this.inventoryScrollOffset = 0; // Reset both on major context changes
+        this.inventoryScrollOffset = 0; 
     }
-
-    // ========================================================
-    // LOGIC: NAVIGATION & SELECTION
-    // ========================================================
 
     setViewMode(mode) {
         this.viewMode = mode;
@@ -261,36 +340,61 @@ export class CharacterSummaryController {
     cycleMember(direction) {
         const count = gameState.party.members.length;
         this.memberIndex = (this.memberIndex + direction + count) % count;
-        
-        // Reset state for new character
         this.state = 'SLOTS';
+        this.heldItem = null;
         this.resetScroll();
         this.updateActiveSlots();
     }
 
     handleSlotClick(slotName) {
+        if (this.heldItem) {
+            this._attemptEquipDrop(slotName);
+            return;
+        }
+
         const newIndex = this.activeSlots.indexOf(slotName);
         if (newIndex === -1) return;
 
-        // If clicking the ALREADY selected slot, toggle inventory selection
-        if (this.slotIndex === newIndex && this.state === 'SLOTS') {
-            if (this.filteredInventory.length > 0) {
-                this.state = 'INVENTORY';
-                this.inventoryIndex = 0;
-            }
-        } else {
-            // Otherwise, just select the slot
-            this.slotIndex = newIndex;
-            this.state = 'SLOTS';
-            this.updateFilteredInventory();
-            this.resetScroll();
+        const member = this.currentMember;
+        const currentEquip = member.equipment[slotName];
+
+        this.slotIndex = newIndex;
+        this.state = 'SLOTS';
+        this.updateFilteredInventory();
+        this.resetScroll();
+
+        if (currentEquip) {
+            this.heldItem = {
+                item: currentEquip,
+                source: 'equipment',
+                originSlot: slotName
+            };
+            this.viewMode = 'ITEM';
         }
     }
 
     handleInventoryClick(idx) {
-        if (!isNaN(idx) && idx < this.filteredInventory.length) {
+        if (isNaN(idx) || idx >= this.filteredInventory.length) return;
+        
+        if (this.heldItem) {
+            this._attemptInventoryDrop();
+            return;
+        }
+
+        const targetItem = this.filteredInventory[idx];
+        if (targetItem) {
+            this.heldItem = {
+                item: targetItem,
+                source: 'inventory',
+                originIndex: idx,
+                realIndex: gameState.party.inventory.indexOf(targetItem)
+            };
+            
             this.inventoryIndex = idx;
-            this.equipItem(this.filteredInventory[idx]);
+            this.state = 'INVENTORY';
+            this.viewMode = 'ITEM';
+            
+            this.updateFilteredInventory(); 
         }
     }
 
@@ -311,7 +415,6 @@ export class CharacterSummaryController {
             if (this.filteredInventory.length > 0) {
                 this.state = 'INVENTORY';
                 this.inventoryIndex = 0;
-                // Don't reset scroll here so they keep their spot if they were browsing
             }
         }
         else if (code === 'KeyX' || code === 'Delete') {
@@ -324,7 +427,6 @@ export class CharacterSummaryController {
 
         if (code === 'ArrowUp' || code === 'KeyW') {
             this.inventoryIndex = Math.max(0, this.inventoryIndex - 1);
-            // Auto-scroll could be added here later
         } 
         else if (code === 'ArrowDown' || code === 'KeyS') {
             this.inventoryIndex = Math.min(this.filteredInventory.length - 1, this.inventoryIndex + 1);
@@ -333,10 +435,6 @@ export class CharacterSummaryController {
             this.equipItem(this.filteredInventory[this.inventoryIndex]);
         }
     }
-
-    // ========================================================
-    // LOGIC: DATA & STATE MANAGEMENT
-    // ========================================================
 
     get currentMember() { 
         return gameState.party.members[this.memberIndex]; 
@@ -353,7 +451,13 @@ export class CharacterSummaryController {
             this.activeSlots = availableSlots.sort((a, b) => {
                 const indexA = SLOT_ORDER.indexOf(a);
                 const indexB = SLOT_ORDER.indexOf(b);
-                return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
+                const indexALower = SLOT_ORDER.findIndex(s => s.toLowerCase() === a.toLowerCase());
+                const indexBLower = SLOT_ORDER.findIndex(s => s.toLowerCase() === b.toLowerCase());
+                
+                const finalA = (indexA !== -1) ? indexA : (indexALower !== -1 ? indexALower : 99);
+                const finalB = (indexB !== -1) ? indexB : (indexBLower !== -1 ? indexBLower : 99);
+
+                return finalA - finalB;
             });
         } else {
             this.activeSlots = [...SLOT_ORDER]; 
@@ -375,18 +479,39 @@ export class CharacterSummaryController {
 
         this.filteredInventory = gameState.party.inventory.filter(item => {
             if (!item) return false;
+
+            if (this.heldItem && this.heldItem.source === 'inventory' && this.heldItem.item === item) {
+                return false;
+            }
+
             const iSlot = item.slot || (item.definition ? item.definition.slot : null);
-            return iSlot === slotName;
+            const slotKey = slotName.toLowerCase();
+            const itemKey = (iSlot || '').toLowerCase();
+            
+            if (itemKey === slotKey) return true;
+            if (slotKey === 'mainhand' && (itemKey === 'weapon' || itemKey === 'tool')) return true;
+            if (slotKey === 'offhand' && (itemKey === 'shield' || itemKey === 'weapon')) return true;
+            
+            return false;
         });
         
-        this.inventoryIndex = 0;
+        if (this.inventoryIndex >= this.filteredInventory.length) {
+            this.inventoryIndex = 0;
+        }
     }
 
-    equipItem(inventoryItem) {
+    equipItem(inventoryItem, targetSlotOverride = null) {
         const member = this.currentMember;
-        const slotName = this.activeSlots[this.slotIndex];
         
+        let slotName = targetSlotOverride || this.activeSlots[this.slotIndex];
+        
+        const newIndex = this.activeSlots.indexOf(slotName);
+        if (newIndex !== -1) {
+            this.slotIndex = newIndex;
+        }
+
         const currentEquip = member.equipment[slotName];
+        
         if (currentEquip) {
             gameState.party.inventory.push(currentEquip);
         }
@@ -417,6 +542,8 @@ export class CharacterSummaryController {
     }
 
     getFocusedItem() {
+        if (this.heldItem) return this.heldItem.item;
+        
         if (this.hoveredElement && this.hoveredElement.type === 'item') {
             return this.hoveredElement.item;
         }
@@ -451,21 +578,25 @@ export class CharacterSummaryController {
         return {
             member,
             derivedStats,
-            
             slots: this.activeSlots,
             selectedSlotIndex: this.slotIndex,
             isChoosingItem: (this.state === 'INVENTORY'),
             filteredInventory: this.filteredInventory,
             inventoryIndex: this.inventoryIndex,
             viewMode: this.viewMode,
-            
             focusedItem: this.getFocusedItem(),
             scrollOffset: this.detailsScrollOffset, 
-            inventoryScrollOffset: this.inventoryScrollOffset, // <--- NEW: Pass to Renderer
+            inventoryScrollOffset: this.inventoryScrollOffset,
             mouse: this.mouse,
             hoveredElement: this.hoveredElement,
+            heldItem: this.heldItem, 
+            layout: this.layout,
+            
+            // NEW: Export dropTarget so Renderer can distinguish "Selected" vs "Hovered"
+            dropTarget: this.heldItem ? this.hoveredElement : null,
 
-            layout: this.layout 
+            // NEW: Callback for Renderer to report hitboxes back to Controller
+            onLayoutUpdate: (hitboxes) => this.updateHitboxes(hitboxes)
         };
     }
 }
