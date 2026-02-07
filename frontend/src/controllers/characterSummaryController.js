@@ -78,10 +78,9 @@ export class CharacterSummaryController {
         const ITEM_H = this.layout.itemHeight || 40; 
         const VIEW_H = this.layout.inventoryViewportH || 300;
         
-        // FIX: Calculate theoretical max scroll immediately based on current list size.
-        // This prevents the scrollbar from getting stuck on the "old" size before render.
+        // Ensure layout is up-to-date before scrolling
         const contentHeight = this.filteredInventory.length * ITEM_H;
-        const theoreticalMaxScroll = Math.max(0, contentHeight - VIEW_H);
+        this.layout.inventoryMaxScroll = Math.max(0, contentHeight - VIEW_H);
         
         const itemTop = index * ITEM_H;
         const itemBottom = itemTop + ITEM_H;
@@ -102,8 +101,8 @@ export class CharacterSummaryController {
             }
         }
         
-        // FIX: Clamp using theoreticalMaxScroll instead of this.layout.inventoryMaxScroll
-        this.inventoryScrollOffset = Math.max(0, Math.min(this.inventoryScrollOffset, theoreticalMaxScroll));
+        // Clamp to the newly updated max scroll
+        this.inventoryScrollOffset = Math.max(0, Math.min(this.inventoryScrollOffset, this.layout.inventoryMaxScroll));
     }
 
     // ========================================================
@@ -581,10 +580,17 @@ export class CharacterSummaryController {
             this.inventoryIndex = 0;
         }
 
-        const maxScroll = this.layout.inventoryMaxScroll || 0; 
-        if (this.inventoryScrollOffset > maxScroll && maxScroll > 0) {
-            this.inventoryScrollOffset = maxScroll;
-        }
+        // FIX: Update layout property immediately
+        // This ensures that when the View calls getState(), it gets the correct max scroll
+        // instead of the stale one from the previous frame.
+        const ITEM_H = this.layout.itemHeight || 40;
+        const VIEW_H = this.layout.inventoryViewportH || 300;
+        
+        const contentHeight = this.filteredInventory.length * ITEM_H;
+        this.layout.inventoryMaxScroll = Math.max(0, contentHeight - VIEW_H);
+
+        // Clamp the current offset using this new authoritative value
+        this.inventoryScrollOffset = Math.max(0, Math.min(this.inventoryScrollOffset, this.layout.inventoryMaxScroll));
     }
 
     equipItem(inventoryItem, targetSlotOverride = null) {
@@ -644,6 +650,8 @@ export class CharacterSummaryController {
             this.updateFilteredInventory();
             
             // FIND NEW INDEX AND CENTER IT
+            // Note: Since we updated layout in updateFilteredInventory, 
+            // scrollToItem will work correctly against the new max bounds.
             const newIndex = this.filteredInventory.indexOf(currentEquip);
             if (newIndex !== -1) {
                 this.inventoryIndex = newIndex;

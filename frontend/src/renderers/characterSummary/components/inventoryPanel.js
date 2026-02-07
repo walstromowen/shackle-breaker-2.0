@@ -7,6 +7,7 @@ export class InventoryPanel {
         
         this.RENDER_SIZE = 32;
         this.ROW_HEIGHT = 40; 
+        this.ROW_PADDING = 2; // Extracted this to a constant for math consistency
         
         // Layout Constants
         this.HEADER_HEIGHT = 50; 
@@ -28,57 +29,62 @@ export class InventoryPanel {
         // --- 2. Calculate Viewport Metrics ---
         const listY = y + this.HEADER_HEIGHT;
         const listH = h - this.HEADER_HEIGHT;
-        
         const cardW = w; 
 
-        // --- 3. Scroll Calculation ---
+        // --- 3. Scroll Calculation (FIXED) ---
+        // CRITICAL FIX: Calculate height NOW, based on the current list, 
+        // not the stale value from the previous frame.
+        const itemCount = inventory ? inventory.length : 0;
+        const currentContentHeight = itemCount * (this.ROW_HEIGHT + this.ROW_PADDING);
+        
         const scrollOffset = state.inventoryScrollOffset || 0;
-        const maxScroll = Math.max(0, this.totalContentHeight - listH);
+        const maxScroll = Math.max(0, currentContentHeight - listH);
 
+        // Update layout state immediately for the Controller to see next frame
         if (state.layout) {
             state.layout.inventoryBounds = { x: x, y: y, w: w + 20, h: h };
             state.layout.inventoryMaxScroll = maxScroll;
             state.layout.inventoryViewportH = listH; 
+            state.layout.itemHeight = this.ROW_HEIGHT + this.ROW_PADDING; // Allow controller to know total item height
         }
 
+        // Clamp using the FRESH maxScroll value
         let renderScroll = scrollOffset;
         if (renderScroll > maxScroll) renderScroll = maxScroll;
         if (renderScroll < 0) renderScroll = 0;
 
         // --- 4. Draw Scrolling Content ---
         this.ui.ctx.save();
-        
         this.ui.startClip(x, listY, w + 15, listH); 
 
         let currentY = listY - renderScroll;
-        const initialDrawY = currentY;
+        // const initialDrawY = currentY; // No longer needed for height calc
 
         if (!inventory || inventory.length === 0) {
             this.ui.drawText("- Empty -", centerX, currentY + 30, "italic 12px sans-serif", UITheme.colors.textMuted, "center");
-            currentY += 50; 
         } 
         else {
             inventory.forEach((item, index) => {
                 // Optimization: Skip off-screen
                 if (currentY > listY + listH) {
-                    currentY += this.ROW_HEIGHT + 2;
+                    currentY += this.ROW_HEIGHT + this.ROW_PADDING;
                     return; 
                 }
                 if (currentY + this.ROW_HEIGHT < listY) {
-                    currentY += this.ROW_HEIGHT + 2;
+                    currentY += this.ROW_HEIGHT + this.ROW_PADDING;
                     return;
                 }
 
                 // --- GHOSTING CHECK ---
-                // Check if this specific item instance is the one being held
                 const isHeld = state.heldItem && state.heldItem.item === item;
 
                 const isSelected = (index === inventoryIndex);
                 const bgAlpha = isSelected ? (isChoosingItem ? 0.15 : 0.05) : 0;
                 const bgColor = isSelected ? "255, 215, 0" : "255, 255, 255"; 
                 
-                const isVisible = (currentY + this.ROW_HEIGHT >= listY) && (currentY <= listY + listH);
-                if (isVisible) {
+                // Hitbox Registration
+                // Only register if actually visible in viewport
+                if (currentY + this.ROW_HEIGHT >= listY && currentY <= listY + listH) {
                     hitboxes.push({
                         id: `INV_ITEM_${index}`,
                         x: x,
@@ -90,20 +96,19 @@ export class InventoryPanel {
                     });
                 }
 
-                // Draw Selection Background (Full Width)
+                // Draw Selection Background
                 if (isSelected) {
                     this.ui.drawRect(x, currentY, cardW, this.ROW_HEIGHT, `rgba(${bgColor}, ${bgAlpha})`);
                     this.ui.drawRect(x, currentY, 4, this.ROW_HEIGHT, isChoosingItem ? UITheme.colors.accent : UITheme.colors.textHighlight);
                 }
 
-                // Draw Icon (Only if not held)
+                // Draw Icon
                 const iconX = x + 15;
                 const iconY = currentY + 4;
                 
                 if (!isHeld) {
                     this._drawIcon(item, iconX, iconY);
                 } else {
-                    // Draw a faint placeholder box if held, just to keep alignment visual
                     this.ui.drawRect(iconX, iconY, this.RENDER_SIZE, this.RENDER_SIZE, "rgba(0,0,0,0.1)");
                 }
 
@@ -112,13 +117,8 @@ export class InventoryPanel {
                 const textY = currentY + 14;
                 
                 const name = item.name || item.definition?.name || "Unknown Item";
-                
-                // If held, make text dark grey. If selected, white. Otherwise normal.
-                let nameColor = UITheme.colors.textMain;
-                if (isHeld) nameColor = "#444"; 
-                else if (isSelected) nameColor = "#fff";
+                let nameColor = isHeld ? "#444" : (isSelected ? "#fff" : UITheme.colors.textMain);
 
-                // Text Clipping
                 this.ui.ctx.save();
                 this.ui.ctx.beginPath();
                 this.ui.ctx.rect(x, currentY, cardW - 20, this.ROW_HEIGHT); 
@@ -129,7 +129,6 @@ export class InventoryPanel {
                 // Subtext
                 const def = item.definition || item;
                 const subText = (def.slot || def.type || "").toUpperCase();
-                // If held, hide subtext or make it very faint
                 const subTextColor = isHeld ? "rgba(0,0,0,0)" : UITheme.colors.textMuted;
                 
                 this.ui.drawText(subText, textX, textY + 14, "10px monospace", subTextColor, "left");
@@ -139,11 +138,12 @@ export class InventoryPanel {
                     this.ui.drawText(`x${item.count}`, x + cardW - 10, currentY + (this.ROW_HEIGHT/2) + 4, UITheme.fonts.bold, UITheme.colors.accent, "right");
                 }
 
-                currentY += this.ROW_HEIGHT + 2; 
+                currentY += this.ROW_HEIGHT + this.ROW_PADDING; 
             });
         }
 
-        this.totalContentHeight = currentY - initialDrawY; 
+        // Store this for the scrollbar to use immediately below
+        this.totalContentHeight = currentContentHeight; 
 
         this.ui.endClip();
         this.ui.ctx.restore();
@@ -174,16 +174,17 @@ export class InventoryPanel {
                 id: 'INV_SCROLLBAR_THUMB', 
                 type: 'ui',
                 x: x - 4, 
-                y: y, 
+                // BUG FIX: The hitbox Y and H should match the THUMB, not the whole track.
+                // If you want the whole track to be clickable, use a separate 'INV_SCROLLBAR_TRACK' ID.
+                y: thumbY, 
                 w: this.SCROLLBAR_WIDTH + 8, 
-                h: viewportH 
+                h: thumbH 
             });
         }
     }
 
     _drawIcon(item, x, y) {
         if (!item) return;
-        // Ensure this matches your specific sprite sheet name in the loader!
         const sheet = this.loader.get('icons') || this.loader.get('items'); 
         if (!sheet) return;
 
