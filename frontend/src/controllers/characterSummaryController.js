@@ -12,7 +12,7 @@ export class CharacterSummaryController {
         this.viewMode = 'STATS'; 
         
         this.activeSlots = [];
-        this.slotIndex = 0;
+        this.slotIndex = -1; 
         
         this.filteredInventory = [];
         this.inventoryIndex = 0;
@@ -20,6 +20,7 @@ export class CharacterSummaryController {
         // INTERACTION STATES
         this.heldItem = null; 
         this.potentialDrag = null; 
+        this.pendingSlotClick = null; 
         this.DRAG_THRESHOLD_SQ = 25; 
 
         this.detailsScrollOffset = 0;
@@ -34,7 +35,8 @@ export class CharacterSummaryController {
             detailViewportH: 300,
             inventoryMaxScroll: 0, 
             inventoryViewportH: 300,
-            inventoryBounds: null 
+            inventoryBounds: null,
+            itemHeight: 40 
         }; 
         
         this.dragState = {
@@ -63,6 +65,48 @@ export class CharacterSummaryController {
     }
 
     // ========================================================
+    // SCROLL HELPERS (UPDATED)
+    // ========================================================
+
+    /**
+     * @param {number} index - The index of the item in filteredInventory
+     * @param {boolean} center - If true, puts the item in the middle of the view.
+     */
+    scrollToItem(index, center = false) {
+        if (index < 0 || index >= this.filteredInventory.length) return;
+
+        const ITEM_H = this.layout.itemHeight || 40; 
+        const VIEW_H = this.layout.inventoryViewportH || 300;
+        
+        // FIX: Calculate theoretical max scroll immediately based on current list size.
+        // This prevents the scrollbar from getting stuck on the "old" size before render.
+        const contentHeight = this.filteredInventory.length * ITEM_H;
+        const theoreticalMaxScroll = Math.max(0, contentHeight - VIEW_H);
+        
+        const itemTop = index * ITEM_H;
+        const itemBottom = itemTop + ITEM_H;
+
+        if (center) {
+            // Calculate position to center the item
+            const itemCenter = itemTop + (ITEM_H / 2);
+            const viewCenter = VIEW_H / 2;
+            this.inventoryScrollOffset = itemCenter - viewCenter;
+        } 
+        else {
+            // Standard "Keep Visible" logic (for arrow keys)
+            if (itemTop < this.inventoryScrollOffset) {
+                this.inventoryScrollOffset = itemTop;
+            }
+            else if (itemBottom > this.inventoryScrollOffset + VIEW_H) {
+                this.inventoryScrollOffset = itemBottom - VIEW_H;
+            }
+        }
+        
+        // FIX: Clamp using theoreticalMaxScroll instead of this.layout.inventoryMaxScroll
+        this.inventoryScrollOffset = Math.max(0, Math.min(this.inventoryScrollOffset, theoreticalMaxScroll));
+    }
+
+    // ========================================================
     // INPUT HANDLING
     // ========================================================
 
@@ -70,14 +114,14 @@ export class CharacterSummaryController {
         this.mouse.x = x;
         this.mouse.y = y;
 
-        // DRAG THRESHOLD CHECK
         if (this.potentialDrag && !this.heldItem) {
             const dx = x - this.potentialDrag.startX;
             const dy = y - this.potentialDrag.startY;
             
             if ((dx * dx) + (dy * dy) > this.DRAG_THRESHOLD_SQ) {
                 this.heldItem = this.potentialDrag; 
-                this.potentialDrag = null;          
+                this.potentialDrag = null;
+                this.pendingSlotClick = null;
             }
         }
 
@@ -90,7 +134,6 @@ export class CharacterSummaryController {
             this.handleMouseUp(x, y);
         }
 
-        // Scrollbar Drag Logic
         if (!isMouseDown) {
             this.dragState.active = false;
             this.dragState.target = null;
@@ -139,6 +182,9 @@ export class CharacterSummaryController {
                 this.dragState.startY = y;
                 this.dragState.startScroll = this.inventoryScrollOffset;
             }
+            else if (!targetId) {
+                 this.deselectSlot();
+            }
         }
     }
 
@@ -172,11 +218,20 @@ export class CharacterSummaryController {
         }
     }
 
-    // ========================================================
-    // LOGIC: DRAG & DROP
-    // ========================================================
+    deselectSlot() {
+        if (this.slotIndex !== -1) {
+            this.slotIndex = -1;
+            this.updateFilteredInventory();
+            this.resetScroll();
+        }
+    }
 
     handleMouseUp(x, y) {
+        if (this.pendingSlotClick) {
+            this._applySlotFilter(this.pendingSlotClick);
+            this.pendingSlotClick = null;
+        }
+
         if (this.heldItem) {
             let dropTarget = this.hoveredElement ? this.hoveredElement.id : null;
             let slotName = this.hoveredElement ? this.hoveredElement.slotId : null;
@@ -260,18 +315,23 @@ export class CharacterSummaryController {
         if (this.heldItem.source === 'equipment') {
             const member = this.currentMember;
             const slot = this.heldItem.originSlot;
-            
+            const item = this.heldItem.item;
+
             member.equipment[slot] = null;
-            gameState.party.inventory.push(this.heldItem.item);
+            gameState.party.inventory.push(item);
+            
+            this.updateFilteredInventory();
+            
+            // FIND NEW INDEX AND CENTER IT
+            const newIndex = this.filteredInventory.indexOf(item);
+            if (newIndex !== -1) {
+                this.inventoryIndex = newIndex;
+                this.scrollToItem(newIndex, true); // True = Center
+            }
         }
         
         this.heldItem = null;
-        this.updateFilteredInventory();
     }
-
-    // ========================================================
-    // STANDARD NAVIGATION
-    // ========================================================
 
     handleKeyDown(code) {
         if (code === 'Escape' || code === 'Backspace') {
@@ -289,7 +349,6 @@ export class CharacterSummaryController {
 
         if (code === 'ShiftLeft' || code === 'ShiftRight') {
             this.viewMode = (this.viewMode === 'STATS') ? 'ITEM' : 'STATS';
-            this.resetScroll();
             return;
         }
 
@@ -336,7 +395,6 @@ export class CharacterSummaryController {
 
     setViewMode(mode) {
         this.viewMode = mode;
-        this.resetScroll();
     }
 
     cycleMember(direction) {
@@ -345,6 +403,7 @@ export class CharacterSummaryController {
         this.state = 'SLOTS';
         this.heldItem = null;
         this.potentialDrag = null; 
+        this.pendingSlotClick = null;
         this.resetScroll();
         this.updateActiveSlots();
     }
@@ -355,18 +414,11 @@ export class CharacterSummaryController {
             return;
         }
 
-        const newIndex = this.activeSlots.indexOf(slotName);
-        if (newIndex === -1) return;
-
         const member = this.currentMember;
         const currentEquip = member.equipment[slotName];
 
-        this.slotIndex = newIndex;
-        this.state = 'SLOTS';
-        this.updateFilteredInventory();
-        this.resetScroll();
-
         if (currentEquip) {
+            this.pendingSlotClick = slotName;
             this.potentialDrag = {
                 item: currentEquip,
                 source: 'equipment',
@@ -374,8 +426,24 @@ export class CharacterSummaryController {
                 startX: this.mouse.x,
                 startY: this.mouse.y
             };
-            // REMOVED: this.viewMode = 'ITEM';
+        } else {
+            this._applySlotFilter(slotName);
         }
+    }
+
+    _applySlotFilter(slotName) {
+        const newIndex = this.activeSlots.indexOf(slotName);
+        if (newIndex === -1) return;
+
+        if (this.slotIndex === newIndex) {
+            this.deselectSlot();
+            return;
+        }
+
+        this.slotIndex = newIndex;
+        this.state = 'SLOTS';
+        this.updateFilteredInventory();
+        this.resetScroll();
     }
 
     handleInventoryClick(idx) {
@@ -390,7 +458,6 @@ export class CharacterSummaryController {
         if (targetItem) {
             this.inventoryIndex = idx;
             this.state = 'INVENTORY';
-            // REMOVED: this.viewMode = 'ITEM'; 
             this.updateFilteredInventory(); 
 
             this.potentialDrag = {
@@ -433,9 +500,11 @@ export class CharacterSummaryController {
 
         if (code === 'ArrowUp' || code === 'KeyW') {
             this.inventoryIndex = Math.max(0, this.inventoryIndex - 1);
+            this.scrollToItem(this.inventoryIndex, false); // False = Just keep visible
         } 
         else if (code === 'ArrowDown' || code === 'KeyS') {
             this.inventoryIndex = Math.min(this.filteredInventory.length - 1, this.inventoryIndex + 1);
+            this.scrollToItem(this.inventoryIndex, false); // False = Just keep visible
         }
         else if (code === 'Enter' || code === 'Space') {
             this.equipItem(this.filteredInventory[this.inventoryIndex]);
@@ -477,45 +546,73 @@ export class CharacterSummaryController {
     }
 
     updateFilteredInventory() {
-        const slotName = this.activeSlots[this.slotIndex];
-        if (!slotName) {
-            this.filteredInventory = [];
-            return;
-        }
-
-        this.filteredInventory = gameState.party.inventory.filter(item => {
-            if (!item) return false;
-
-            if (this.heldItem && this.heldItem.source === 'inventory' && this.heldItem.item === item) {
-                return false;
+        let newList = [];
+        if (this.slotIndex === -1) {
+            newList = gameState.party.inventory.filter(item => {
+                if (!item) return false;
+                if (this.heldItem && this.heldItem.source === 'inventory' && this.heldItem.item === item) {
+                    return false;
+                }
+                return true;
+            });
+        } else {
+            const slotName = this.activeSlots[this.slotIndex];
+            if (slotName) {
+                newList = gameState.party.inventory.filter(item => {
+                    if (!item) return false;
+                    if (this.heldItem && this.heldItem.source === 'inventory' && this.heldItem.item === item) {
+                        return false;
+                    }
+                    const iSlot = item.slot || (item.definition ? item.definition.slot : null);
+                    const slotKey = slotName.toLowerCase();
+                    const itemKey = (iSlot || '').toLowerCase();
+                    
+                    if (itemKey === slotKey) return true;
+                    if (slotKey === 'mainhand' && (itemKey === 'weapon' || itemKey === 'tool')) return true;
+                    if (slotKey === 'offhand' && (itemKey === 'shield' || itemKey === 'weapon')) return true;
+                    return false;
+                });
             }
-
-            const iSlot = item.slot || (item.definition ? item.definition.slot : null);
-            const slotKey = slotName.toLowerCase();
-            const itemKey = (iSlot || '').toLowerCase();
-            
-            if (itemKey === slotKey) return true;
-            if (slotKey === 'mainhand' && (itemKey === 'weapon' || itemKey === 'tool')) return true;
-            if (slotKey === 'offhand' && (itemKey === 'shield' || itemKey === 'weapon')) return true;
-            
-            return false;
-        });
+        }
         
+        this.filteredInventory = newList;
+
         if (this.inventoryIndex >= this.filteredInventory.length) {
             this.inventoryIndex = 0;
+        }
+
+        const maxScroll = this.layout.inventoryMaxScroll || 0; 
+        if (this.inventoryScrollOffset > maxScroll && maxScroll > 0) {
+            this.inventoryScrollOffset = maxScroll;
         }
     }
 
     equipItem(inventoryItem, targetSlotOverride = null) {
         const member = this.currentMember;
         
-        let slotName = targetSlotOverride || this.activeSlots[this.slotIndex];
+        let slotName = targetSlotOverride;
         
-        const newIndex = this.activeSlots.indexOf(slotName);
-        if (newIndex !== -1) {
-            this.slotIndex = newIndex;
+        if (!slotName && this.slotIndex === -1) {
+            const def = inventoryItem.definition || inventoryItem;
+            const itemSlot = (def.slot || def.type || '').toLowerCase();
+            
+            slotName = this.activeSlots.find(s => {
+                const sKey = s.toLowerCase();
+                if (sKey === itemSlot) return true;
+                if (sKey === 'mainhand' && (itemSlot === 'weapon' || itemSlot === 'tool')) return true;
+                if (sKey === 'offhand' && (itemSlot === 'shield' || itemSlot === 'weapon')) return true;
+                return false;
+            });
+            
+            if (!slotName) {
+                console.warn("Could not auto-determine slot for item in Unfiltered mode.");
+                return;
+            }
+        } 
+        else if (!slotName) {
+            slotName = this.activeSlots[this.slotIndex];
         }
-
+        
         const currentEquip = member.equipment[slotName];
         
         if (currentEquip) {
@@ -531,19 +628,27 @@ export class CharacterSummaryController {
 
         this.state = 'SLOTS';
         this.updateFilteredInventory();
-        this.resetScroll();
     }
 
     unequipCurrentSlot() {
+        if (this.slotIndex === -1) return;
+
         const member = this.currentMember;
         const slotName = this.activeSlots[this.slotIndex];
         const currentEquip = member.equipment[slotName];
 
         if (currentEquip) {
-            gameState.party.inventory.push(currentEquip);
             member.unequipItem(slotName);
+            gameState.party.inventory.push(currentEquip);
+            
             this.updateFilteredInventory();
-            this.resetScroll();
+            
+            // FIND NEW INDEX AND CENTER IT
+            const newIndex = this.filteredInventory.indexOf(currentEquip);
+            if (newIndex !== -1) {
+                this.inventoryIndex = newIndex;
+                this.scrollToItem(newIndex, true); // True = Center
+            }
         }
     }
 
@@ -556,6 +661,11 @@ export class CharacterSummaryController {
         if (this.state === 'INVENTORY') {
             return this.filteredInventory[this.inventoryIndex] || null;
         } 
+        
+        if (this.slotIndex === -1) {
+            return null;
+        }
+
         const slotName = this.activeSlots[this.slotIndex];
         return this.currentMember.equipment[slotName] || null;
     }
