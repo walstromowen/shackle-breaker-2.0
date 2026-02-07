@@ -18,7 +18,7 @@ export class CharacterSummaryController {
         this.inventoryIndex = 0;
         
         // --- GRID CONFIGURATION ---
-        this.COLS = 4; // UPDATED: Matches InventoryPanel (4 cols)
+        this.COLS = 4; 
         
         // INTERACTION STATES
         this.heldItem = null; 
@@ -39,7 +39,7 @@ export class CharacterSummaryController {
             inventoryMaxScroll: 0, 
             inventoryViewportH: 300,
             inventoryBounds: null,
-            itemHeight: 48 // UPDATED: 40px Slot + 8px Padding
+            itemHeight: 48 
         }; 
         
         this.dragState = {
@@ -225,10 +225,25 @@ export class CharacterSummaryController {
     }
 
     deselectSlot() {
-        if (this.slotIndex !== -1) {
+        // We deselect if:
+        // 1. We have a slot filter active (slotIndex != -1)
+        // 2. OR we are in 'INVENTORY' mode (browsing items)
+        // 3. OR we have an item visually selected (inventoryIndex != -1)
+        const wasFiltered = (this.slotIndex !== -1);
+        const hasSelection = (this.state === 'INVENTORY' || this.inventoryIndex !== -1);
+
+        if (wasFiltered || hasSelection) {
             this.slotIndex = -1;
+            this.state = 'SLOTS';
+            this.inventoryIndex = -1; // Reset selection to nothing
+            
             this.updateFilteredInventory();
-            this.resetScroll();
+            
+            // Only reset scroll if we changed the list context (Filtered -> Unfiltered).
+            // If we are just deselecting an item in the existing list, keep scroll position.
+            if (wasFiltered) {
+                this.resetScroll();
+            }
         }
     }
 
@@ -493,7 +508,7 @@ export class CharacterSummaryController {
         else if (code === 'Enter' || code === 'Space') {
             if (this.filteredInventory.length > 0) {
                 this.state = 'INVENTORY';
-                this.inventoryIndex = 0;
+                this.inventoryIndex = 0; // Reset to 0 when entering via keyboard
             }
         }
         else if (code === 'KeyX' || code === 'Delete') {
