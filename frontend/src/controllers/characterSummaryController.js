@@ -17,6 +17,9 @@ export class CharacterSummaryController {
         this.filteredInventory = [];
         this.inventoryIndex = 0;
         
+        // --- GRID CONFIGURATION ---
+        this.COLS = 4; // UPDATED: Matches InventoryPanel (4 cols)
+        
         // INTERACTION STATES
         this.heldItem = null; 
         this.potentialDrag = null; 
@@ -36,7 +39,7 @@ export class CharacterSummaryController {
             inventoryMaxScroll: 0, 
             inventoryViewportH: 300,
             inventoryBounds: null,
-            itemHeight: 40 
+            itemHeight: 48 // UPDATED: 40px Slot + 8px Padding
         }; 
         
         this.dragState = {
@@ -65,7 +68,7 @@ export class CharacterSummaryController {
     }
 
     // ========================================================
-    // SCROLL HELPERS (UPDATED)
+    // SCROLL HELPERS (GRID AWARE)
     // ========================================================
 
     /**
@@ -75,24 +78,28 @@ export class CharacterSummaryController {
     scrollToItem(index, center = false) {
         if (index < 0 || index >= this.filteredInventory.length) return;
 
-        const ITEM_H = this.layout.itemHeight || 40; 
+        const ROW_H = this.layout.itemHeight || 48; 
         const VIEW_H = this.layout.inventoryViewportH || 300;
         
-        // Ensure layout is up-to-date before scrolling
-        const contentHeight = this.filteredInventory.length * ITEM_H;
+        // GRID MATH: Calculate which row the item is in
+        const rowIndex = Math.floor(index / this.COLS);
+        const totalRows = Math.ceil(this.filteredInventory.length / this.COLS);
+
+        // Update Max Scroll based on ROWS, not items
+        const contentHeight = totalRows * ROW_H;
         this.layout.inventoryMaxScroll = Math.max(0, contentHeight - VIEW_H);
         
-        const itemTop = index * ITEM_H;
-        const itemBottom = itemTop + ITEM_H;
+        const itemTop = rowIndex * ROW_H;
+        const itemBottom = itemTop + ROW_H;
 
         if (center) {
             // Calculate position to center the item
-            const itemCenter = itemTop + (ITEM_H / 2);
+            const itemCenter = itemTop + (ROW_H / 2);
             const viewCenter = VIEW_H / 2;
             this.inventoryScrollOffset = itemCenter - viewCenter;
         } 
         else {
-            // Standard "Keep Visible" logic (for arrow keys)
+            // Standard "Keep Visible" logic
             if (itemTop < this.inventoryScrollOffset) {
                 this.inventoryScrollOffset = itemTop;
             }
@@ -294,7 +301,7 @@ export class CharacterSummaryController {
 
         const isValid = (itemSlot === slotKey) || 
                         (slotKey === 'mainhand' && (itemSlot === 'weapon' || itemSlot === 'tool')) ||
-                        (slotKey === 'offhand' && (itemSlot === 'shield' || itemKey === 'weapon'));
+                        (slotKey === 'offhand' && (itemSlot === 'shield' || itemSlot === 'weapon'));
 
         if (!isValid) {
             console.warn(`[EquipDrop] Invalid Slot. Item: ${itemSlot}, Target: ${slotKey}`);
@@ -497,13 +504,23 @@ export class CharacterSummaryController {
     handleInventoryNavigation(code) {
         if (this.filteredInventory.length === 0) return;
 
+        // Up/Down: Move by ROW (Cols)
         if (code === 'ArrowUp' || code === 'KeyW') {
-            this.inventoryIndex = Math.max(0, this.inventoryIndex - 1);
-            this.scrollToItem(this.inventoryIndex, false); // False = Just keep visible
+            this.inventoryIndex = Math.max(0, this.inventoryIndex - this.COLS);
+            this.scrollToItem(this.inventoryIndex, false);
         } 
         else if (code === 'ArrowDown' || code === 'KeyS') {
-            this.inventoryIndex = Math.min(this.filteredInventory.length - 1, this.inventoryIndex + 1);
-            this.scrollToItem(this.inventoryIndex, false); // False = Just keep visible
+            this.inventoryIndex = Math.min(this.filteredInventory.length - 1, this.inventoryIndex + this.COLS);
+            this.scrollToItem(this.inventoryIndex, false);
+        }
+        // Left/Right: Move by ITEM (1)
+        else if (code === 'ArrowLeft' || code === 'KeyA') {
+             this.inventoryIndex = Math.max(0, this.inventoryIndex - 1);
+             this.scrollToItem(this.inventoryIndex, false);
+        }
+        else if (code === 'ArrowRight' || code === 'KeyD') {
+             this.inventoryIndex = Math.min(this.filteredInventory.length - 1, this.inventoryIndex + 1);
+             this.scrollToItem(this.inventoryIndex, false);
         }
         else if (code === 'Enter' || code === 'Space') {
             this.equipItem(this.filteredInventory[this.inventoryIndex]);
@@ -580,13 +597,14 @@ export class CharacterSummaryController {
             this.inventoryIndex = 0;
         }
 
-        // FIX: Update layout property immediately
-        // This ensures that when the View calls getState(), it gets the correct max scroll
-        // instead of the stale one from the previous frame.
-        const ITEM_H = this.layout.itemHeight || 40;
+        // GRID MATH UPDATE
+        const ROW_H = this.layout.itemHeight || 48;
         const VIEW_H = this.layout.inventoryViewportH || 300;
         
-        const contentHeight = this.filteredInventory.length * ITEM_H;
+        // Calculate total grid rows
+        const totalRows = Math.ceil(this.filteredInventory.length / this.COLS);
+        const contentHeight = totalRows * ROW_H;
+        
         this.layout.inventoryMaxScroll = Math.max(0, contentHeight - VIEW_H);
 
         // Clamp the current offset using this new authoritative value
@@ -650,12 +668,10 @@ export class CharacterSummaryController {
             this.updateFilteredInventory();
             
             // FIND NEW INDEX AND CENTER IT
-            // Note: Since we updated layout in updateFilteredInventory, 
-            // scrollToItem will work correctly against the new max bounds.
             const newIndex = this.filteredInventory.indexOf(currentEquip);
             if (newIndex !== -1) {
                 this.inventoryIndex = newIndex;
-                this.scrollToItem(newIndex, true); // True = Center
+                this.scrollToItem(newIndex, true); 
             }
         }
     }
