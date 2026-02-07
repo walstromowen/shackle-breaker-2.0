@@ -10,6 +10,9 @@ export class Input {
         this.heldKeys = new Set();
         this.lastClick = null; 
         
+        // New: Track right click specifically
+        this.lastRightClick = null; 
+
         // New: Track drag state
         this.isMouseDown = false; 
 
@@ -19,9 +22,12 @@ export class Input {
         this._onKeyDown = this._onKeyDown.bind(this);
         this._onKeyUp = this._onKeyUp.bind(this);
         this._onMouseDown = this._onMouseDown.bind(this);
-        this._onMouseUp = this._onMouseUp.bind(this); // New
+        this._onMouseUp = this._onMouseUp.bind(this); 
         this._onMouseMove = this._onMouseMove.bind(this);
         this._onWheel = this._onWheel.bind(this);
+        
+        // New: Bind context menu handler
+        this._onContextMenu = this._onContextMenu.bind(this);
 
         // --- ATTACH LISTENERS ---
         window.addEventListener("keydown", this._onKeyDown);
@@ -30,6 +36,9 @@ export class Input {
         // Listen for mouseup on WINDOW so dragging doesn't get stuck 
         // if the user releases the mouse outside the canvas.
         window.addEventListener("mouseup", this._onMouseUp);
+
+        // New: Prevent default browser context menu
+        window.addEventListener("contextmenu", this._onContextMenu);
 
         if (this.canvas) {
             this.canvas.addEventListener("mousedown", this._onMouseDown);
@@ -42,6 +51,9 @@ export class Input {
 
     _onKeyDown(e) { this.heldKeys.add(e.code); }
     _onKeyUp(e) { this.heldKeys.delete(e.code); }
+    
+    // New: Prevent default menu
+    _onContextMenu(e) { e.preventDefault(); }
 
     _getMouseCoords(e) {
         const rect = this.canvas.getBoundingClientRect();
@@ -55,7 +67,13 @@ export class Input {
 
     _onMouseDown(e) {
         this.isMouseDown = true; // Start Dragging
-        this.lastClick = this._getMouseCoords(e);
+        
+        // MODIFIED: Check button (0 = Left, 2 = Right)
+        if (e.button === 2) {
+            this.lastRightClick = this._getMouseCoords(e);
+        } else {
+            this.lastClick = this._getMouseCoords(e);
+        }
     }
 
     _onMouseUp(e) {
@@ -77,7 +95,8 @@ export class Input {
     destroy() {
         window.removeEventListener("keydown", this._onKeyDown);
         window.removeEventListener("keyup", this._onKeyUp);
-        window.removeEventListener("mouseup", this._onMouseUp); // Cleanup
+        window.removeEventListener("mouseup", this._onMouseUp); 
+        window.removeEventListener("contextmenu", this._onContextMenu); // Cleanup
 
         if (this.canvas) {
             this.canvas.removeEventListener("mousedown", this._onMouseDown);
@@ -92,6 +111,14 @@ export class Input {
         if (!this.lastClick) return null;
         const click = { ...this.lastClick };
         this.lastClick = null; 
+        return click;
+    }
+
+    // New: API for right clicks
+    getAndResetRightClick() {
+        if (!this.lastRightClick) return null;
+        const click = { ...this.lastRightClick };
+        this.lastRightClick = null;
         return click;
     }
 

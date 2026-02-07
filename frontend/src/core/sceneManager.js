@@ -131,6 +131,7 @@ export class SceneManager {
     update(dt) {
         // --- 1. MOUSE CHECK ---
         const click = this.input.getAndResetClick();
+        const rightClick = this.input.getAndResetRightClick(); // New: Get Right Click
         const scroll = this.input.getAndResetScroll();
         const mousePos = this.input.getMousePosition(); // {x, y}
         const isMouseDown = this.input.getIsMouseDown ? this.input.getIsMouseDown() : false;
@@ -148,12 +149,19 @@ export class SceneManager {
             // C. Pass Hover ID to Controller (for Tooltips)
             this.characterSummaryController.handleHover?.(hitZoneId);
 
-            // D. Handle Interactions (Clicks)
+            // D. Handle Interactions (Left Clicks)
             if (click && hitZoneId) {
                 this.characterSummaryController.handleInteraction(hitZoneId);
             }
 
-            // E. Handle Scroll
+            // E. Handle Right Click (Context Menu Verification)
+            if (rightClick) {
+                // Determine what was specifically under the right-click coordinates
+                const rightClickZoneId = this.characterSummaryRenderer.getHitZone(rightClick.x, rightClick.y);
+                this.characterSummaryController.handleRightClick(rightClickZoneId);
+            }
+
+            // F. Handle Scroll
             if (scroll !== 0) {
                 this.characterSummaryController.handleScroll?.(scroll);
             }

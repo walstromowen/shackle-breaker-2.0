@@ -1,8 +1,6 @@
 import { gameState } from '../../../shared/state/gameState.js';
 import { events } from '../core/eventBus.js';
 import { StatCalculator } from '../../../shared/systems/statCalculator.js';
-
-// NEW IMPORTS
 import { ItemDefinitions } from '../../../shared/data/itemDefinitions.js';
 import { InventorySystem } from '../../../shared/systems/inventorySystem.js';
 
@@ -29,6 +27,9 @@ export class CharacterSummaryController {
         this.potentialDrag = null; 
         this.pendingSlotClick = null; 
         this.DRAG_THRESHOLD_SQ = 25; 
+
+        // NEW: Context Menu State
+        this.contextMenu = null; // { x, y, options: [], item, source, sourceKey }
 
         this.detailsScrollOffset = 0;
         this.inventoryScrollOffset = 0; 
@@ -63,33 +64,131 @@ export class CharacterSummaryController {
             'BTN_PREV_CHAR': () => this.cycleMember(-1),
             'BTN_NEXT_CHAR': () => this.cycleMember(1),
             'BTN_BACK': () => events.emit('CHANGE_SCENE', { scene: 'party' }),
+            'BTN_UNEQUIP': () => this.unequipCurrentSlot(),
+            // Tabs
             'TAB_STATS': () => this.setViewMode('STATS'),
             'BTN_TAB_STATS': () => this.setViewMode('STATS'),
             'TAB_ITEM': () => this.setViewMode('ITEM'),
             'BTN_TAB_ITEM': () => this.setViewMode('ITEM'),
-            'BTN_UNEQUIP': () => this.unequipCurrentSlot(),
         };
+    }
+
+    // ========================================================
+    // CONTEXT MENU & DROP LOGIC
+    // ========================================================
+
+    handleRightClick(input) {
+        // If a menu is already open, close it first to avoid overlap/state issues
+        if (this.contextMenu) {
+            this.contextMenu = null;
+        }
+
+        if (!input) return;
+        const id = (typeof input === 'object' && input.id) ? input.id : input;
+        
+        let targetItem = null;
+        let source = '';
+        let sourceKey = ''; // Slot name or Inventory Index
+
+        // 1. Identify Target
+        if (id.startsWith('SLOT_')) {
+            const slotName = (typeof input === 'object' && input.slotId) ? input.slotId : id.replace('SLOT_', '');
+            targetItem = this.currentMember.equipment[slotName];
+            source = 'equipment';
+            sourceKey = slotName;
+        }
+        else if (id.startsWith('INV_ITEM_')) {
+            const idx = parseInt(id.split('_')[2], 10);
+            targetItem = this.filteredInventory[idx];
+            source = 'inventory';
+            sourceKey = idx;
+        }
+
+        if (!targetItem) return;
+
+        // 2. Build Options based on Item Data
+        const options = [];
+        const isStackable = (targetItem.qty !== undefined && targetItem.qty > 1);
+
+        if (isStackable) {
+            options.push({ label: 'Drop 1', action: 'DROP_ONE' });
+            options.push({ label: 'Drop All', action: 'DROP_ALL' });
+        } else {
+            options.push({ label: 'Drop', action: 'DROP_ONE' }); // Non-stackable "Drop" acts like Drop 1
+        }
+
+        // 3. Open Menu
+        this.contextMenu = {
+            x: this.mouse.x,
+            y: this.mouse.y,
+            item: targetItem,
+            source,
+            sourceKey,
+            options
+        };
+    }
+
+    handleMenuAction(actionIndex) {
+        if (!this.contextMenu) return;
+
+        const { item, source, sourceKey, options } = this.contextMenu;
+        const action = options[actionIndex].action;
+
+        // Determine quantity to remove
+        let qtyToRemove = 1;
+        if (action === 'DROP_ALL') {
+            qtyToRemove = item.qty || 1;
+        }
+
+        // --- PERFORM REMOVAL ---
+        
+        if (source === 'equipment') {
+            // Remove from equipment slot
+            this.currentMember.equipment[sourceKey] = null;
+
+            // Handle stackable equipment edge case (rare, but possible):
+            // If we only dropped 1 but had 10 equipped, put the rest back.
+            if (item.qty > qtyToRemove) {
+                item.qty -= qtyToRemove;
+                this.currentMember.equipment[sourceKey] = item;
+            }
+        } 
+        else if (source === 'inventory') {
+            // Find the *real* index in the main inventory array (not the filtered one)
+            // Note: The item reference is the same object, so we can find it directly.
+            const realIndex = gameState.party.inventory.indexOf(item);
+            
+            if (realIndex > -1) {
+                if (item.qty > qtyToRemove) {
+                    // Reduce stack
+                    gameState.party.inventory[realIndex].qty -= qtyToRemove;
+                } else {
+                    // Remove entirely
+                    gameState.party.inventory.splice(realIndex, 1);
+                }
+            }
+        }
+
+        console.log(`Dropped ${qtyToRemove} x ${item.defId}`);
+
+        // Cleanup
+        this.contextMenu = null;
+        this.updateFilteredInventory();
     }
 
     // ========================================================
     // SCROLL HELPERS (GRID AWARE)
     // ========================================================
 
-    /**
-     * @param {number} index - The index of the item in filteredInventory
-     * @param {boolean} center - If true, puts the item in the middle of the view.
-     */
     scrollToItem(index, center = false) {
         if (index < 0 || index >= this.filteredInventory.length) return;
 
         const ROW_H = this.layout.itemHeight || 48; 
         const VIEW_H = this.layout.inventoryViewportH || 300;
         
-        // GRID MATH: Calculate which row the item is in
         const rowIndex = Math.floor(index / this.COLS);
         const totalRows = Math.ceil(this.filteredInventory.length / this.COLS);
 
-        // Update Max Scroll based on ROWS, not items
         const contentHeight = totalRows * ROW_H;
         this.layout.inventoryMaxScroll = Math.max(0, contentHeight - VIEW_H);
         
@@ -97,13 +196,11 @@ export class CharacterSummaryController {
         const itemBottom = itemTop + ROW_H;
 
         if (center) {
-            // Calculate position to center the item
             const itemCenter = itemTop + (ROW_H / 2);
             const viewCenter = VIEW_H / 2;
             this.inventoryScrollOffset = itemCenter - viewCenter;
         } 
         else {
-            // Standard "Keep Visible" logic
             if (itemTop < this.inventoryScrollOffset) {
                 this.inventoryScrollOffset = itemTop;
             }
@@ -112,7 +209,6 @@ export class CharacterSummaryController {
             }
         }
         
-        // Clamp to the newly updated max scroll
         this.inventoryScrollOffset = Math.max(0, Math.min(this.inventoryScrollOffset, this.layout.inventoryMaxScroll));
     }
 
@@ -123,6 +219,9 @@ export class CharacterSummaryController {
     handleMouseMove(x, y, isMouseDown) {
         this.mouse.x = x;
         this.mouse.y = y;
+
+        // If context menu is open, don't process dragging
+        if (this.contextMenu) return;
 
         if (this.potentialDrag && !this.heldItem) {
             const dx = x - this.potentialDrag.startX;
@@ -210,6 +309,20 @@ export class CharacterSummaryController {
         if (!input) return;
         const id = (typeof input === 'object' && input.id) ? input.id : input;
         
+        // 1. Context Menu Handling
+        if (this.contextMenu) {
+            // Assume the renderer gives IDs like CTX_OPT_0, CTX_OPT_1
+            if (id.startsWith('CTX_OPT_')) {
+                const optIndex = parseInt(id.split('_')[2], 10);
+                this.handleMenuAction(optIndex);
+                return;
+            }
+            // If we clicked anything else while menu was open, close it.
+            this.contextMenu = null;
+            // We intentionally do NOT return here, so the click can pass through 
+            // to the underlying element (e.g. clicking a different item immediately).
+        }
+
         if (this.handlers[id]) {
             this.handlers[id]();
             return;
@@ -246,6 +359,9 @@ export class CharacterSummaryController {
     }
 
     handleMouseUp(x, y) {
+        // If context menu is open, swallow mouse up
+        if (this.contextMenu) return;
+
         if (this.pendingSlotClick) {
             this._applySlotFilter(this.pendingSlotClick);
             this.pendingSlotClick = null;
@@ -307,7 +423,6 @@ export class CharacterSummaryController {
         if (!this.heldItem) return;
 
         const item = this.heldItem.item;
-        // CHANGED: Use ItemDefinitions to look up data
         const def = ItemDefinitions[item.defId]; 
         
         if (!def) {
@@ -344,19 +459,20 @@ export class CharacterSummaryController {
 
             member.equipment[slot] = null;
             
-            // CHANGED: Use InventorySystem to handle stacking
             InventorySystem.addItem(item.defId, item.qty);
             
             this.updateFilteredInventory();
-            
-            // NOTE: We cannot easily scroll to the new item because 
-            // InventorySystem might have merged it into a stack at a different index.
         }
         
         this.heldItem = null;
     }
 
     handleKeyDown(code) {
+        // Close menu on keypress
+        if (this.contextMenu) {
+            this.contextMenu = null;
+        }
+
         if (code === 'Escape' || code === 'Backspace') {
             if (this.heldItem) {
                 this._cancelDrag();
@@ -427,6 +543,7 @@ export class CharacterSummaryController {
         this.heldItem = null;
         this.potentialDrag = null; 
         this.pendingSlotClick = null;
+        this.contextMenu = null; // Close menu on switch
         this.resetScroll();
         this.updateActiveSlots();
     }
@@ -510,7 +627,7 @@ export class CharacterSummaryController {
         else if (code === 'Enter' || code === 'Space') {
             if (this.filteredInventory.length > 0) {
                 this.state = 'INVENTORY';
-                this.inventoryIndex = 0; // Reset to 0 when entering via keyboard
+                this.inventoryIndex = 0; 
             }
         }
         else if (code === 'KeyX' || code === 'Delete') {
@@ -521,7 +638,6 @@ export class CharacterSummaryController {
     handleInventoryNavigation(code) {
         if (this.filteredInventory.length === 0) return;
 
-        // Up/Down: Move by ROW (Cols)
         if (code === 'ArrowUp' || code === 'KeyW') {
             this.inventoryIndex = Math.max(0, this.inventoryIndex - this.COLS);
             this.scrollToItem(this.inventoryIndex, false);
@@ -530,7 +646,6 @@ export class CharacterSummaryController {
             this.inventoryIndex = Math.min(this.filteredInventory.length - 1, this.inventoryIndex + this.COLS);
             this.scrollToItem(this.inventoryIndex, false);
         }
-        // Left/Right: Move by ITEM (1)
         else if (code === 'ArrowLeft' || code === 'KeyA') {
              this.inventoryIndex = Math.max(0, this.inventoryIndex - 1);
              this.scrollToItem(this.inventoryIndex, false);
@@ -596,7 +711,6 @@ export class CharacterSummaryController {
                     if (this.heldItem && this.heldItem.source === 'inventory' && this.heldItem.item === item) {
                         return false;
                     }
-                    // CHANGED: Lookup Slot via Definitions
                     const def = ItemDefinitions[item.defId];
                     const iSlot = def ? (def.slot || def.type) : null;
                     
@@ -617,7 +731,6 @@ export class CharacterSummaryController {
             this.inventoryIndex = 0;
         }
 
-        // GRID MATH UPDATE
         const ROW_H = this.layout.itemHeight || 48;
         const VIEW_H = this.layout.inventoryViewportH || 300;
         
@@ -633,8 +746,6 @@ export class CharacterSummaryController {
         const member = this.currentMember;
         
         let slotName = targetSlotOverride;
-        
-        // CHANGED: Lookup Slot via Definitions
         const def = ItemDefinitions[inventoryItem.defId];
 
         if (!slotName && this.slotIndex === -1) {
@@ -660,7 +771,6 @@ export class CharacterSummaryController {
         const currentEquip = member.equipment[slotName];
         
         if (currentEquip) {
-            // CHANGED: Use InventorySystem to handle return stack logic
             InventorySystem.addItem(currentEquip.defId, currentEquip.qty);
         }
 
@@ -684,18 +794,13 @@ export class CharacterSummaryController {
 
         if (currentEquip) {
             member.unequipItem(slotName);
-            
-            // CHANGED: Use InventorySystem for stacking
             InventorySystem.addItem(currentEquip.defId, currentEquip.qty);
-            
             this.updateFilteredInventory();
-            
-            // Note: We removed the "Center on new item" logic here because 
-            // we don't know where the InventorySystem placed it (it might have merged).
         }
     }
 
     getFocusedItem() {
+        if (this.contextMenu) return this.contextMenu.item;
         if (this.heldItem) return this.heldItem.item;
         
         if (this.hoveredElement && this.hoveredElement.type === 'item') {
@@ -750,6 +855,8 @@ export class CharacterSummaryController {
             hoveredElement: this.hoveredElement,
             heldItem: this.heldItem, 
             layout: this.layout,
+            // NEW: Context Menu State
+            contextMenu: this.contextMenu,
             dropTarget: this.heldItem ? this.hoveredElement : null,
             onLayoutUpdate: (hitboxes) => this.updateHitboxes(hitboxes)
         };

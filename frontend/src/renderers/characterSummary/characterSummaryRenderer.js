@@ -97,14 +97,19 @@ export class CharacterSummaryRenderer {
         }
 
         // D. Tooltips (Overlay)
-        // We only draw tooltips if we are NOT dragging an item (cleaner visual)
-        if (!state.heldItem) {
+        // We only draw tooltips if we are NOT dragging an item AND not in a menu
+        if (!state.heldItem && !state.contextMenu) {
             this.tooltipSystem.render(state, this.hitboxes);
         }
 
-        // E. Held Item (Floating Cursor) - Rendered Absolutely Last
+        // E. Held Item (Floating Cursor)
         if (state.heldItem) {
             this._drawHeldItem(state);
+        }
+
+        // F. Context Menu (Right-Click Menu) - Always Draw Last (Topmost)
+        if (state.contextMenu) {
+            this._drawContextMenu(state.contextMenu);
         }
     }
 
@@ -163,7 +168,6 @@ export class CharacterSummaryRenderer {
         const item = heldItem.item;
         
         // --- CONFIGURATION ---
-        // Ensure this key matches your sprite sheet name in the loader!
         const iconSheet = this.loader.get('icons'); 
         
         const iconSize = 32; // Source tile size
@@ -201,11 +205,67 @@ export class CharacterSummaryRenderer {
         this.ctx.restore();
     }
 
+    /**
+     * Draws the Context Menu (Drop, Drop All, etc)
+     * Matches the IDs generated in Controller (CTX_OPT_0, etc)
+     */
+    _drawContextMenu(menu) {
+        if (!menu || !menu.options) return;
+
+        const optionH = 32;
+        const menuW = 120;
+        const menuH = menu.options.length * optionH;
+        
+        const x = menu.x;
+        const y = menu.y;
+
+        // Background
+        this.ui.drawRect(x, y, menuW, menuH, UITheme.colors.bgScale[3]); // Dark background
+        this.ui.drawRect(x, y, menuW, menuH, UITheme.colors.borderHighlight, false); // Light border
+
+        // Draw Options
+        menu.options.forEach((opt, index) => {
+            const optY = y + (index * optionH);
+            
+            // Highlight on hover (handled generically or simple rect check here if needed)
+            // For now, clean simple list
+            
+            this.ui.drawText(
+                opt.label, 
+                x + 10, 
+                optY + (optionH/2) + 5, 
+                UITheme.fonts.body, 
+                UITheme.colors.textMain
+            );
+
+            // Divider line (except for last)
+            if (index < menu.options.length - 1) {
+                this.ui.drawLine(x, optY + optionH, x + menuW, optY + optionH, UITheme.colors.bgScale[1]);
+            }
+
+            // Important: Register Hitbox so Controller detects click
+            this.hitboxes.push({
+                id: `CTX_OPT_${index}`,
+                type: 'context_opt',
+                x: x,
+                y: optY,
+                w: menuW,
+                h: optionH
+            });
+        });
+    }
+
+    /**
+     * Used by SceneManager to determine what was clicked (Left or Right click).
+     * Returns the string ID of the UI element (e.g. 'INV_ITEM_1', 'SLOT_head').
+     */
     getHitZone(x, y) {
+        // Iterate backwards to prioritize elements drawn on top (Z-order)
         for (let i = this.hitboxes.length - 1; i >= 0; i--) {
             const box = this.hitboxes[i];
             if (x >= box.x && x <= box.x + box.w && y >= box.y && y <= box.y + box.h) {
-                return box.type === 'inventory' ? box.id : (box.id || box); 
+                // Ensure we return the ID string to the controller
+                if (box.id) return box.id;
             }
         }
         return null;
