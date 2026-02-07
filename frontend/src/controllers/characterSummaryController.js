@@ -17,7 +17,7 @@ export class CharacterSummaryController {
         this.slotIndex = -1; 
         
         this.filteredInventory = [];
-        this.inventoryIndex = 0;
+        this.inventoryIndex = -1; 
         
         // --- GRID CONFIGURATION ---
         this.COLS = 4; 
@@ -28,8 +28,8 @@ export class CharacterSummaryController {
         this.pendingSlotClick = null; 
         this.DRAG_THRESHOLD_SQ = 25; 
 
-        // NEW: Context Menu State
-        this.contextMenu = null; // { x, y, options: [], item, source, sourceKey }
+        // Context Menu State
+        this.contextMenu = null; 
 
         this.detailsScrollOffset = 0;
         this.inventoryScrollOffset = 0; 
@@ -63,7 +63,7 @@ export class CharacterSummaryController {
         this.handlers = {
             'BTN_PREV_CHAR': () => this.cycleMember(-1),
             'BTN_NEXT_CHAR': () => this.cycleMember(1),
-            'BTN_BACK': () => events.emit('CHANGE_SCENE', { scene: 'party' }),
+            'BTN_BACK': () => this._handleBack(),
             'BTN_UNEQUIP': () => this.unequipCurrentSlot(),
             // Tabs
             'TAB_STATS': () => this.setViewMode('STATS'),
@@ -74,11 +74,10 @@ export class CharacterSummaryController {
     }
 
     // ========================================================
-    // CONTEXT MENU & DROP LOGIC
+    // CONTEXT MENU LOGIC
     // ========================================================
 
     handleRightClick(input) {
-        // If a menu is already open, close it first to avoid overlap/state issues
         if (this.contextMenu) {
             this.contextMenu = null;
         }
@@ -86,45 +85,73 @@ export class CharacterSummaryController {
         if (!input) return;
         const id = (typeof input === 'object' && input.id) ? input.id : input;
         
-        let targetItem = null;
-        let source = '';
-        let sourceKey = ''; // Slot name or Inventory Index
-
-        // 1. Identify Target
         if (id.startsWith('SLOT_')) {
             const slotName = (typeof input === 'object' && input.slotId) ? input.slotId : id.replace('SLOT_', '');
-            targetItem = this.currentMember.equipment[slotName];
-            source = 'equipment';
-            sourceKey = slotName;
+            const item = this.currentMember.equipment[slotName];
+            if (item) this._openContextMenu(item, 'equipment', slotName);
         }
         else if (id.startsWith('INV_ITEM_')) {
             const idx = parseInt(id.split('_')[2], 10);
-            targetItem = this.filteredInventory[idx];
-            source = 'inventory';
-            sourceKey = idx;
+            const item = this.filteredInventory[idx];
+            if (item) this._openContextMenu(item, 'inventory', idx);
         }
+    }
 
-        if (!targetItem) return;
-
-        // 2. Build Options based on Item Data
+    /**
+     * Updated to calculate position based on HITBOXES, not just mouse.
+     */
+    _openContextMenu(item, source, sourceKey) {
         const options = [];
-        const isStackable = (targetItem.qty !== undefined && targetItem.qty > 1);
+        const isStackable = (item.qty !== undefined && item.qty > 1);
+
+        if (source === 'equipment') {
+            options.push({ label: 'Equip', action: 'NAV_TO_INV' });
+            options.push({ label: 'Unequip', action: 'UNEQUIP_AND_NAV' });
+        } 
+        else if (source === 'inventory') {
+            if (this._canEquipItem(item)) {
+                options.push({ label: 'Equip', action: 'EQUIP' });
+            }
+        }
 
         if (isStackable) {
             options.push({ label: 'Drop 1', action: 'DROP_ONE' });
             options.push({ label: 'Drop All', action: 'DROP_ALL' });
         } else {
-            options.push({ label: 'Drop', action: 'DROP_ONE' }); // Non-stackable "Drop" acts like Drop 1
+            options.push({ label: 'Drop', action: 'DROP_ONE' }); 
         }
 
-        // 3. Open Menu
+        // --- POSITION CALCULATION START ---
+        // Default to mouse or arbitrary point
+        let menuX = this.mouse.x || 100;
+        let menuY = this.mouse.y || 100;
+
+        // Try to find the Rendered Hitbox for this item
+        let targetId = null;
+        if (source === 'equipment') {
+            targetId = `SLOT_${sourceKey}`;
+        } else if (source === 'inventory') {
+            targetId = `INV_ITEM_${sourceKey}`;
+        }
+
+        if (targetId && this.lastRenderedHitboxes.length > 0) {
+            const hit = this.lastRenderedHitboxes.find(h => h.id === targetId);
+            if (hit) {
+                // Position at the bottom-center of the item
+                menuX = Math.floor(hit.x + (hit.w / 2));
+                menuY = Math.floor(hit.y + (hit.h / 2));
+            }
+        }
+        // --- POSITION CALCULATION END ---
+
         this.contextMenu = {
-            x: this.mouse.x,
-            y: this.mouse.y,
-            item: targetItem,
+            x: menuX,
+            y: menuY,
+            item: item,
             source,
             sourceKey,
-            options
+            options,
+            selectedIndex: 0
         };
     }
 
@@ -134,93 +161,200 @@ export class CharacterSummaryController {
         const { item, source, sourceKey, options } = this.contextMenu;
         const action = options[actionIndex].action;
 
-        // Determine quantity to remove
+        // --- NAVIGATION ACTIONS ---
+        if (action === 'NAV_TO_INV') {
+            this.state = 'INVENTORY';
+            this.inventoryIndex = 0;
+            this.scrollToItem(0);
+        }
+        else if (action === 'UNEQUIP_AND_NAV') {
+            const defId = item.defId;
+            
+            this.currentMember.unequipItem(sourceKey);
+            InventorySystem.addItem(defId, item.qty);
+            
+            this.updateFilteredInventory();
+            
+            // Search backwards to find the newly added item (at end of list)
+            const newIndex = this._findNewestInventoryIndex(defId);
+            
+            this.state = 'INVENTORY';
+            this.inventoryIndex = (newIndex !== -1) ? newIndex : 0;
+            this.scrollToItem(this.inventoryIndex, true);
+        }
+        
+        // --- STANDARD ACTIONS ---
+        else if (action === 'EQUIP') {
+            this.equipItem(item); 
+        }
+        else if (action === 'DROP_ONE' || action === 'DROP_ALL') {
+            this._handleDropAction(action, item, source, sourceKey);
+        }
+
+        this.contextMenu = null;
+        this.updateFilteredInventory();
+    }
+
+    _handleDropAction(action, item, source, sourceKey) {
         let qtyToRemove = 1;
         if (action === 'DROP_ALL') {
             qtyToRemove = item.qty || 1;
         }
 
-        // --- PERFORM REMOVAL ---
-        
         if (source === 'equipment') {
-            // Remove from equipment slot
             this.currentMember.equipment[sourceKey] = null;
-
-            // Handle stackable equipment edge case (rare, but possible):
-            // If we only dropped 1 but had 10 equipped, put the rest back.
             if (item.qty > qtyToRemove) {
                 item.qty -= qtyToRemove;
                 this.currentMember.equipment[sourceKey] = item;
             }
         } 
         else if (source === 'inventory') {
-            // Find the *real* index in the main inventory array (not the filtered one)
-            // Note: The item reference is the same object, so we can find it directly.
             const realIndex = gameState.party.inventory.indexOf(item);
-            
             if (realIndex > -1) {
                 if (item.qty > qtyToRemove) {
-                    // Reduce stack
                     gameState.party.inventory[realIndex].qty -= qtyToRemove;
                 } else {
-                    // Remove entirely
                     gameState.party.inventory.splice(realIndex, 1);
                 }
             }
         }
-
-        console.log(`Dropped ${qtyToRemove} x ${item.defId}`);
-
-        // Cleanup
-        this.contextMenu = null;
-        this.updateFilteredInventory();
     }
 
-    // ========================================================
-    // SCROLL HELPERS (GRID AWARE)
-    // ========================================================
-
-    scrollToItem(index, center = false) {
-        if (index < 0 || index >= this.filteredInventory.length) return;
-
-        const ROW_H = this.layout.itemHeight || 48; 
-        const VIEW_H = this.layout.inventoryViewportH || 300;
+    _canEquipItem(item) {
+        const def = ItemDefinitions[item.defId];
+        if (!def) return false;
         
-        const rowIndex = Math.floor(index / this.COLS);
-        const totalRows = Math.ceil(this.filteredInventory.length / this.COLS);
-
-        const contentHeight = totalRows * ROW_H;
-        this.layout.inventoryMaxScroll = Math.max(0, contentHeight - VIEW_H);
+        const itemSlot = (def.slot || def.type || '').toLowerCase().replace(/\s/g, '');
         
-        const itemTop = rowIndex * ROW_H;
-        const itemBottom = itemTop + ROW_H;
-
-        if (center) {
-            const itemCenter = itemTop + (ROW_H / 2);
-            const viewCenter = VIEW_H / 2;
-            this.inventoryScrollOffset = itemCenter - viewCenter;
-        } 
-        else {
-            if (itemTop < this.inventoryScrollOffset) {
-                this.inventoryScrollOffset = itemTop;
-            }
-            else if (itemBottom > this.inventoryScrollOffset + VIEW_H) {
-                this.inventoryScrollOffset = itemBottom - VIEW_H;
-            }
-        }
-        
-        this.inventoryScrollOffset = Math.max(0, Math.min(this.inventoryScrollOffset, this.layout.inventoryMaxScroll));
+        return this.activeSlots.some(s => {
+            const slotKey = s.toLowerCase().replace(/\s/g, '');
+            return (itemSlot === slotKey) || 
+                   (slotKey === 'mainhand' && (itemSlot === 'weapon' || itemSlot === 'tool')) ||
+                   (slotKey === 'offhand' && (itemSlot === 'shield' || itemSlot === 'weapon'));
+        });
     }
 
     // ========================================================
     // INPUT HANDLING
     // ========================================================
 
+    handleKeyDown(code) {
+        // --- PRIORITY 1: CONTEXT MENU NAVIGATION ---
+        if (this.contextMenu) {
+            const len = this.contextMenu.options.length;
+            
+            if (code === 'Escape') {
+                this.contextMenu = null;
+                return;
+            }
+            if (code === 'ArrowUp' || code === 'KeyW') {
+                this.contextMenu.selectedIndex = (this.contextMenu.selectedIndex - 1 + len) % len;
+                return;
+            }
+            if (code === 'ArrowDown' || code === 'KeyS') {
+                this.contextMenu.selectedIndex = (this.contextMenu.selectedIndex + 1) % len;
+                return;
+            }
+            if (code === 'Space' || code === 'Enter') {
+                this.handleMenuAction(this.contextMenu.selectedIndex);
+                return;
+            }
+            return; 
+        }
+
+        // --- PRIORITY 2: DRAGGING / BACK ---
+        if (code === 'Escape' || code === 'Backspace') {
+            this._handleBack();
+            return;
+        }
+
+        // --- PRIORITY 3: GLOBAL TABS ---
+        if (code === 'Tab') { this.cycleMember(1); return; }
+        if (code === 'ShiftLeft' || code === 'ShiftRight') {
+            this.viewMode = (this.viewMode === 'STATS') ? 'ITEM' : 'STATS';
+            return;
+        }
+
+        // --- PRIORITY 4: STANDARD NAV ---
+        if (this.state === 'SLOTS') {
+            this.handleSlotNavigation(code);
+        } else {
+            this.handleInventoryNavigation(code);
+        }
+    }
+
+    _handleBack() {
+        if (this.heldItem) {
+            this._cancelDrag();
+            return;
+        }
+        
+        if (this.state === 'INVENTORY') {
+            this.state = 'SLOTS'; 
+            this.inventoryIndex = -1;
+            this.updateFilteredInventory();
+        } else {
+            events.emit('CHANGE_SCENE', { scene: 'party' }); 
+        }
+    }
+
+    handleSlotNavigation(code) {
+        if (code === 'ArrowUp' || code === 'KeyW') {
+            this.slotIndex = (this.slotIndex > 0) ? this.slotIndex - 1 : this.activeSlots.length - 1;
+        } 
+        else if (code === 'ArrowDown' || code === 'KeyS') {
+            this.slotIndex = (this.slotIndex < this.activeSlots.length - 1) ? this.slotIndex + 1 : 0;
+        }
+        else if (code === 'Enter' || code === 'Space') {
+            const slotName = this.activeSlots[this.slotIndex];
+            const item = this.currentMember.equipment[slotName];
+
+            if (item) {
+                this._openContextMenu(item, 'equipment', slotName);
+            } else {
+                this._activateSlotButDontFilter(slotName);
+            }
+        }
+        else if (code === 'KeyX' || code === 'Delete') {
+            this.unequipCurrentSlot();
+        }
+    }
+
+    handleInventoryNavigation(code) {
+        if (this.filteredInventory.length === 0) return;
+
+        if (code === 'ArrowUp' || code === 'KeyW') {
+            this.inventoryIndex = Math.max(0, this.inventoryIndex - this.COLS);
+            this.scrollToItem(this.inventoryIndex, false);
+        } 
+        else if (code === 'ArrowDown' || code === 'KeyS') {
+            this.inventoryIndex = Math.min(this.filteredInventory.length - 1, this.inventoryIndex + this.COLS);
+            this.scrollToItem(this.inventoryIndex, false);
+        }
+        else if (code === 'ArrowLeft' || code === 'KeyA') {
+             this.inventoryIndex = Math.max(0, this.inventoryIndex - 1);
+             this.scrollToItem(this.inventoryIndex, false);
+        }
+        else if (code === 'ArrowRight' || code === 'KeyD') {
+             this.inventoryIndex = Math.min(this.filteredInventory.length - 1, this.inventoryIndex + 1);
+             this.scrollToItem(this.inventoryIndex, false);
+        }
+        else if (code === 'Enter' || code === 'Space') {
+            const item = this.filteredInventory[this.inventoryIndex];
+            if (item) {
+                this._openContextMenu(item, 'inventory', this.inventoryIndex);
+            }
+        }
+    }
+
+    // ========================================================
+    // MOUSE & DRAG HANDLING
+    // ========================================================
+
     handleMouseMove(x, y, isMouseDown) {
         this.mouse.x = x;
         this.mouse.y = y;
 
-        // If context menu is open, don't process dragging
         if (this.contextMenu) return;
 
         if (this.potentialDrag && !this.heldItem) {
@@ -231,6 +365,7 @@ export class CharacterSummaryController {
                 this.heldItem = this.potentialDrag; 
                 this.potentialDrag = null;
                 this.pendingSlotClick = null;
+                this.updateFilteredInventory();
             }
         }
 
@@ -243,57 +378,105 @@ export class CharacterSummaryController {
             this.handleMouseUp(x, y);
         }
 
-        if (!isMouseDown) {
+        if (isClickStart) {
+            this.handleMouseDown(x, y);
+        }
+        
+        if (this.dragState.active && isMouseDown) {
+            this.handleScrollDrag(y);
+        } else if (!isMouseDown) {
             this.dragState.active = false;
-            this.dragState.target = null;
-        } 
-        else if (this.dragState.active) {
-            const mouseDelta = y - this.dragState.startY;
-            let viewportH, maxScroll, currentStartScroll;
+        }
+    }
+
+    handleMouseDown(x, y) {
+        const targetId = this.hoveredElement ? (this.hoveredElement.id || this.hoveredElement) : null;
+
+        if (targetId === 'SCROLLBAR_THUMB') {
+            this.dragState.active = true;
+            this.dragState.target = 'details';
+            this.dragState.startY = y;
+            this.dragState.startScroll = this.detailsScrollOffset;
+        }
+        else if (targetId === 'INV_SCROLLBAR_THUMB') {
+            this.dragState.active = true;
+            this.dragState.target = 'inventory';
+            this.dragState.startY = y;
+            this.dragState.startScroll = this.inventoryScrollOffset;
+        }
+        else if (!targetId) {
+             this.deselectSlot();
+        }
+    }
+
+    handleScrollDrag(y) {
+        const mouseDelta = y - this.dragState.startY;
+        let viewportH, maxScroll, currentStartScroll;
+        
+        if (this.dragState.target === 'inventory') {
+            viewportH = this.layout.inventoryViewportH || 100;
+            maxScroll = this.layout.inventoryMaxScroll || 1;
+            currentStartScroll = this.dragState.startScroll;
+        } else {
+            viewportH = this.layout.detailViewportH || 100;
+            maxScroll = this.layout.detailMaxScroll || 1;
+            currentStartScroll = this.dragState.startScroll;
+        }
+
+        const contentH = maxScroll + viewportH;
+        const scrollRatio = contentH / viewportH; 
+        let newOffset = currentStartScroll + (mouseDelta * scrollRatio);
+
+        if (newOffset < 0) newOffset = 0;
+        if (newOffset > maxScroll) newOffset = maxScroll;
+
+        if (this.dragState.target === 'inventory') {
+            this.inventoryScrollOffset = newOffset;
+        } else {
+            this.detailsScrollOffset = newOffset;
+        }
+    }
+
+    handleMouseUp(x, y) {
+        if (this.contextMenu) return;
+
+        if (this.pendingSlotClick) {
+            this.pendingSlotClick = null;
+        }
+
+        if (this.heldItem) {
+            this.handleItemDrop(x, y);
+        }
+        
+        this.potentialDrag = null;
+    }
+
+    handleItemDrop(x, y) {
+        let dropTarget = this.hoveredElement ? this.hoveredElement.id : null;
+        let slotName = this.hoveredElement ? this.hoveredElement.slotId : null;
+        
+        if ((!dropTarget || dropTarget.startsWith('ITEM_') || dropTarget.startsWith('INV_ITEM')) && this.lastRenderedHitboxes.length > 0) {
+            const hit = this.lastRenderedHitboxes.find(box => 
+                (box.type === 'slot' || (box.id && box.id.startsWith('SLOT_'))) && 
+                x >= box.x && x <= box.x + box.w &&
+                y >= box.y && y <= box.y + box.h
+            );
             
-            if (this.dragState.target === 'inventory') {
-                viewportH = this.layout.inventoryViewportH || 100;
-                maxScroll = this.layout.inventoryMaxScroll || 1;
-                currentStartScroll = this.dragState.startScroll;
-            } else {
-                viewportH = this.layout.detailViewportH || 100;
-                maxScroll = this.layout.detailMaxScroll || 1;
-                currentStartScroll = this.dragState.startScroll;
+            if (hit) {
+                dropTarget = hit.id;
+                slotName = hit.slotId; 
             }
+        }
 
-            const contentH = maxScroll + viewportH;
-            const scrollRatio = contentH / viewportH;
-            let newOffset = currentStartScroll + (mouseDelta * scrollRatio);
-
-            if (newOffset < 0) newOffset = 0;
-            if (newOffset > maxScroll) newOffset = maxScroll;
-
-            if (this.dragState.target === 'inventory') {
-                this.inventoryScrollOffset = newOffset;
-            } else {
-                this.detailsScrollOffset = newOffset;
-            }
-        } 
-        else if (isClickStart) {
-            const targetId = this.hoveredElement && this.hoveredElement.id 
-                ? this.hoveredElement.id 
-                : this.hoveredElement;
-
-            if (targetId === 'SCROLLBAR_THUMB') {
-                this.dragState.active = true;
-                this.dragState.target = 'details';
-                this.dragState.startY = y;
-                this.dragState.startScroll = this.detailsScrollOffset;
-            }
-            else if (targetId === 'INV_SCROLLBAR_THUMB') {
-                this.dragState.active = true;
-                this.dragState.target = 'inventory';
-                this.dragState.startY = y;
-                this.dragState.startScroll = this.inventoryScrollOffset;
-            }
-            else if (!targetId) {
-                 this.deselectSlot();
-            }
+        if (dropTarget && dropTarget.indexOf('SLOT_') === 0) {
+            const finalSlot = slotName || dropTarget.substring(5);
+            this._attemptEquipDrop(finalSlot);
+        }
+        else if (this._isMouseOverInventory(dropTarget)) {
+            this._attemptInventoryDrop();
+        }
+        else {
+            this._cancelDrag();
         }
     }
 
@@ -309,18 +492,13 @@ export class CharacterSummaryController {
         if (!input) return;
         const id = (typeof input === 'object' && input.id) ? input.id : input;
         
-        // 1. Context Menu Handling
         if (this.contextMenu) {
-            // Assume the renderer gives IDs like CTX_OPT_0, CTX_OPT_1
             if (id.startsWith('CTX_OPT_')) {
                 const optIndex = parseInt(id.split('_')[2], 10);
                 this.handleMenuAction(optIndex);
                 return;
             }
-            // If we clicked anything else while menu was open, close it.
             this.contextMenu = null;
-            // We intentionally do NOT return here, so the click can pass through 
-            // to the underlying element (e.g. clicking a different item immediately).
         }
 
         if (this.handlers[id]) {
@@ -341,64 +519,9 @@ export class CharacterSummaryController {
         }
     }
 
-    deselectSlot() {
-        const wasFiltered = (this.slotIndex !== -1);
-        const hasSelection = (this.state === 'INVENTORY' || this.inventoryIndex !== -1);
-
-        if (wasFiltered || hasSelection) {
-            this.slotIndex = -1;
-            this.state = 'SLOTS';
-            this.inventoryIndex = -1; 
-            
-            this.updateFilteredInventory();
-            
-            if (wasFiltered) {
-                this.resetScroll();
-            }
-        }
-    }
-
-    handleMouseUp(x, y) {
-        // If context menu is open, swallow mouse up
-        if (this.contextMenu) return;
-
-        if (this.pendingSlotClick) {
-            this._applySlotFilter(this.pendingSlotClick);
-            this.pendingSlotClick = null;
-        }
-
-        if (this.heldItem) {
-            let dropTarget = this.hoveredElement ? this.hoveredElement.id : null;
-            let slotName = this.hoveredElement ? this.hoveredElement.slotId : null;
-            
-            const isBlocked = !dropTarget || dropTarget.startsWith('ITEM_') || dropTarget.startsWith('INV_ITEM');
-            if (isBlocked && this.lastRenderedHitboxes.length > 0) {
-                const hit = this.lastRenderedHitboxes.find(box => 
-                    (box.type === 'slot' || (box.id && box.id.startsWith('SLOT_'))) && 
-                    x >= box.x && x <= box.x + box.w &&
-                    y >= box.y && y <= box.y + box.h
-                );
-                
-                if (hit) {
-                    dropTarget = hit.id;
-                    slotName = hit.slotId; 
-                }
-            }
-
-            if (dropTarget && dropTarget.indexOf('SLOT_') === 0) {
-                const finalSlot = slotName || dropTarget.substring(5);
-                this._attemptEquipDrop(finalSlot);
-            }
-            else if (this._isMouseOverInventory(dropTarget)) {
-                this._attemptInventoryDrop();
-            }
-            else {
-                this._cancelDrag();
-            }
-        }
-        
-        this.potentialDrag = null;
-    }
+    // ========================================================
+    // LOGIC HELPERS
+    // ========================================================
 
     _isMouseOverInventory(targetId) {
         if (targetId && (targetId.startsWith('INV_') || targetId === 'SCROLLBAR_INV')) {
@@ -438,12 +561,27 @@ export class CharacterSummaryController {
                         (slotKey === 'offhand' && (itemSlot === 'shield' || itemSlot === 'weapon'));
 
         if (!isValid) {
-            console.warn(`[EquipDrop] Invalid Slot. Item: ${itemSlot}, Target: ${slotKey}`);
             this._cancelDrag();
             return;
         }
 
         const canonicalSlot = this.activeSlots.find(s => s.toLowerCase().replace(/\s/g, '') === slotKey) || targetSlotRaw;
+
+        // --- DUPLICATION FIX START ---
+        if (this.heldItem.source === 'equipment') {
+            const originSlot = this.heldItem.originSlot;
+            
+            if (originSlot === canonicalSlot) {
+                this._cancelDrag();
+                return;
+            }
+
+            this.currentMember.equipment[originSlot] = null;
+            this.equipItem(item, canonicalSlot);
+            this.heldItem = null;
+            return;
+        }
+        // --- DUPLICATION FIX END ---
 
         this.equipItem(item, canonicalSlot);
         this.heldItem = null;
@@ -452,50 +590,78 @@ export class CharacterSummaryController {
     _attemptInventoryDrop() {
         if (!this.heldItem) return;
 
+        // Handle Unequip (Equipment -> Inventory)
         if (this.heldItem.source === 'equipment') {
             const member = this.currentMember;
             const slot = this.heldItem.originSlot;
             const item = this.heldItem.item;
+            const defId = item.defId;
 
+            // Perform unequip
             member.equipment[slot] = null;
+            InventorySystem.addItem(defId, item.qty);
             
-            InventorySystem.addItem(item.defId, item.qty);
-            
+            this.heldItem = null;
             this.updateFilteredInventory();
+
+            // FIX: Search backwards to find the item that was just added to the end
+            const newIndex = this._findNewestInventoryIndex(defId);
+            
+            this.state = 'INVENTORY';
+            this.inventoryIndex = (newIndex !== -1) ? newIndex : 0;
+            this.slotIndex = -1; 
+            this.scrollToItem(this.inventoryIndex, true);
+            return;
         }
-        
+
+        // Handle Inventory -> Inventory
         this.heldItem = null;
+        this.updateFilteredInventory();
     }
 
-    handleKeyDown(code) {
-        // Close menu on keypress
-        if (this.contextMenu) {
-            this.contextMenu = null;
-        }
-
-        if (code === 'Escape' || code === 'Backspace') {
-            if (this.heldItem) {
-                this._cancelDrag();
-                return;
+    _findNewestInventoryIndex(defId) {
+        for (let i = this.filteredInventory.length - 1; i >= 0; i--) {
+            if (this.filteredInventory[i].defId === defId) {
+                return i;
             }
-            if (this.state === 'INVENTORY') {
-                this.state = 'SLOTS'; 
-            } else {
-                events.emit('CHANGE_SCENE', { scene: 'party' }); 
+        }
+        return -1;
+    }
+
+    // ========================================================
+    // STATE & DATA MANAGEMENT
+    // ========================================================
+
+    scrollToItem(index, center = false) {
+        if (index < 0 || index >= this.filteredInventory.length) return;
+
+        const ROW_H = this.layout.itemHeight || 48; 
+        const VIEW_H = this.layout.inventoryViewportH || 300;
+        
+        const rowIndex = Math.floor(index / this.COLS);
+        const totalRows = Math.ceil(this.filteredInventory.length / this.COLS);
+
+        const contentHeight = totalRows * ROW_H;
+        this.layout.inventoryMaxScroll = Math.max(0, contentHeight - VIEW_H);
+        
+        const itemTop = rowIndex * ROW_H;
+        const itemBottom = itemTop + ROW_H;
+
+        if (center) {
+            const itemCenter = itemTop + (ROW_H / 2);
+            const viewCenter = VIEW_H / 2;
+            this.inventoryScrollOffset = itemCenter - viewCenter;
+        } 
+        else {
+            if (itemTop < this.inventoryScrollOffset) {
+                this.inventoryScrollOffset = itemTop;
             }
-            return;
+            else if (itemBottom > this.inventoryScrollOffset + VIEW_H) {
+                this.inventoryScrollOffset = itemBottom - VIEW_H;
+            }
         }
-
-        if (code === 'ShiftLeft' || code === 'ShiftRight') {
-            this.viewMode = (this.viewMode === 'STATS') ? 'ITEM' : 'STATS';
-            return;
-        }
-
-        if (this.state === 'SLOTS') {
-            this.handleSlotNavigation(code);
-        } else {
-            this.handleInventoryNavigation(code);
-        }
+        
+        this.inventoryScrollOffset = Math.max(0, Math.min(this.inventoryScrollOffset, this.layout.inventoryMaxScroll));
     }
 
     handleScroll(delta) {
@@ -543,7 +709,8 @@ export class CharacterSummaryController {
         this.heldItem = null;
         this.potentialDrag = null; 
         this.pendingSlotClick = null;
-        this.contextMenu = null; // Close menu on switch
+        this.contextMenu = null; 
+        this.inventoryIndex = -1;
         this.resetScroll();
         this.updateActiveSlots();
     }
@@ -552,6 +719,13 @@ export class CharacterSummaryController {
         if (this.heldItem) {
             this._attemptEquipDrop(slotName);
             return;
+        }
+
+        const newIndex = this.activeSlots.indexOf(slotName);
+        if (newIndex !== -1) {
+            this.slotIndex = newIndex;
+            this.state = 'SLOTS'; 
+            this.inventoryIndex = -1;
         }
 
         const member = this.currentMember;
@@ -566,24 +740,30 @@ export class CharacterSummaryController {
                 startX: this.mouse.x,
                 startY: this.mouse.y
             };
-        } else {
-            this._applySlotFilter(slotName);
+        } 
+    }
+
+    _activateSlotButDontFilter(slotName) {
+        const newIndex = this.activeSlots.indexOf(slotName);
+        if (newIndex !== -1) {
+            this.slotIndex = newIndex;
+        }
+        
+        this.state = 'INVENTORY';
+        if (this.filteredInventory.length > 0) {
+            this.inventoryIndex = 0;
+            this.scrollToItem(0);
         }
     }
 
-    _applySlotFilter(slotName) {
-        const newIndex = this.activeSlots.indexOf(slotName);
-        if (newIndex === -1) return;
-
-        if (this.slotIndex === newIndex) {
-            this.deselectSlot();
-            return;
+    deselectSlot() {
+        const hasSelection = (this.slotIndex !== -1 || this.inventoryIndex !== -1);
+        if (hasSelection) {
+            this.slotIndex = -1;
+            this.state = 'SLOTS';
+            this.inventoryIndex = -1; 
+            this.updateFilteredInventory();
         }
-
-        this.slotIndex = newIndex;
-        this.state = 'SLOTS';
-        this.updateFilteredInventory();
-        this.resetScroll();
     }
 
     handleInventoryClick(idx) {
@@ -598,6 +778,7 @@ export class CharacterSummaryController {
         if (targetItem) {
             this.inventoryIndex = idx;
             this.state = 'INVENTORY';
+            
             this.updateFilteredInventory(); 
 
             this.potentialDrag = {
@@ -608,54 +789,6 @@ export class CharacterSummaryController {
                 startX: this.mouse.x,
                 startY: this.mouse.y
             };
-        }
-    }
-
-    handleSlotNavigation(code) {
-        if (code === 'Tab') { this.cycleMember(1); return; }
-        
-        if (code === 'ArrowUp' || code === 'KeyW') {
-            this.slotIndex = (this.slotIndex > 0) ? this.slotIndex - 1 : this.activeSlots.length - 1;
-            this.updateFilteredInventory();
-            this.resetScroll();
-        } 
-        else if (code === 'ArrowDown' || code === 'KeyS') {
-            this.slotIndex = (this.slotIndex < this.activeSlots.length - 1) ? this.slotIndex + 1 : 0;
-            this.updateFilteredInventory();
-            this.resetScroll();
-        }
-        else if (code === 'Enter' || code === 'Space') {
-            if (this.filteredInventory.length > 0) {
-                this.state = 'INVENTORY';
-                this.inventoryIndex = 0; 
-            }
-        }
-        else if (code === 'KeyX' || code === 'Delete') {
-            this.unequipCurrentSlot();
-        }
-    }
-
-    handleInventoryNavigation(code) {
-        if (this.filteredInventory.length === 0) return;
-
-        if (code === 'ArrowUp' || code === 'KeyW') {
-            this.inventoryIndex = Math.max(0, this.inventoryIndex - this.COLS);
-            this.scrollToItem(this.inventoryIndex, false);
-        } 
-        else if (code === 'ArrowDown' || code === 'KeyS') {
-            this.inventoryIndex = Math.min(this.filteredInventory.length - 1, this.inventoryIndex + this.COLS);
-            this.scrollToItem(this.inventoryIndex, false);
-        }
-        else if (code === 'ArrowLeft' || code === 'KeyA') {
-             this.inventoryIndex = Math.max(0, this.inventoryIndex - 1);
-             this.scrollToItem(this.inventoryIndex, false);
-        }
-        else if (code === 'ArrowRight' || code === 'KeyD') {
-             this.inventoryIndex = Math.min(this.filteredInventory.length - 1, this.inventoryIndex + 1);
-             this.scrollToItem(this.inventoryIndex, false);
-        }
-        else if (code === 'Enter' || code === 'Space') {
-            this.equipItem(this.filteredInventory[this.inventoryIndex]);
         }
     }
 
@@ -694,41 +827,21 @@ export class CharacterSummaryController {
     }
 
     updateFilteredInventory() {
-        let newList = [];
-        if (this.slotIndex === -1) {
-            newList = gameState.party.inventory.filter(item => {
-                if (!item) return false;
-                if (this.heldItem && this.heldItem.source === 'inventory' && this.heldItem.item === item) {
-                    return false;
-                }
-                return true;
-            });
-        } else {
-            const slotName = this.activeSlots[this.slotIndex];
-            if (slotName) {
-                newList = gameState.party.inventory.filter(item => {
-                    if (!item) return false;
-                    if (this.heldItem && this.heldItem.source === 'inventory' && this.heldItem.item === item) {
-                        return false;
-                    }
-                    const def = ItemDefinitions[item.defId];
-                    const iSlot = def ? (def.slot || def.type) : null;
-                    
-                    const slotKey = slotName.toLowerCase();
-                    const itemKey = (iSlot || '').toLowerCase();
-                    
-                    if (itemKey === slotKey) return true;
-                    if (slotKey === 'mainhand' && (itemKey === 'weapon' || itemKey === 'tool')) return true;
-                    if (slotKey === 'offhand' && (itemKey === 'shield' || itemKey === 'weapon')) return true;
-                    return false;
-                });
+        this.filteredInventory = gameState.party.inventory.filter(item => {
+            if (!item) return false;
+            // Hide item being dragged
+            if (this.heldItem && this.heldItem.source === 'inventory' && this.heldItem.item === item) {
+                return false;
             }
-        }
-        
-        this.filteredInventory = newList;
+            return true;
+        });
 
         if (this.inventoryIndex >= this.filteredInventory.length) {
-            this.inventoryIndex = 0;
+            this.inventoryIndex = Math.max(0, this.filteredInventory.length - 1);
+        }
+        
+        if (this.filteredInventory.length === 0) {
+            this.inventoryIndex = -1;
         }
 
         const ROW_H = this.layout.itemHeight || 48;
@@ -738,17 +851,15 @@ export class CharacterSummaryController {
         const contentHeight = totalRows * ROW_H;
         
         this.layout.inventoryMaxScroll = Math.max(0, contentHeight - VIEW_H);
-
         this.inventoryScrollOffset = Math.max(0, Math.min(this.inventoryScrollOffset, this.layout.inventoryMaxScroll));
     }
 
     equipItem(inventoryItem, targetSlotOverride = null) {
         const member = this.currentMember;
-        
         let slotName = targetSlotOverride;
         const def = ItemDefinitions[inventoryItem.defId];
 
-        if (!slotName && this.slotIndex === -1) {
+        if (!slotName) {
             const itemSlot = def ? (def.slot || def.type || '').toLowerCase() : '';
             
             slotName = this.activeSlots.find(s => {
@@ -760,17 +871,15 @@ export class CharacterSummaryController {
             });
             
             if (!slotName) {
-                console.warn("Could not auto-determine slot for item in Unfiltered mode.");
+                console.warn("Could not auto-determine slot for item.");
                 return;
             }
-        } 
-        else if (!slotName) {
-            slotName = this.activeSlots[this.slotIndex];
         }
         
         const currentEquip = member.equipment[slotName];
         
-        if (currentEquip) {
+        // --- DUPLICATION SAFETY ---
+        if (currentEquip && currentEquip !== inventoryItem) {
             InventorySystem.addItem(currentEquip.defId, currentEquip.qty);
         }
 
@@ -781,7 +890,14 @@ export class CharacterSummaryController {
 
         member.equipItem(slotName, inventoryItem);
 
+        // Focus logic
+        const newSlotIndex = this.activeSlots.indexOf(slotName);
+        if (newSlotIndex !== -1) {
+            this.slotIndex = newSlotIndex;
+        }
+
         this.state = 'SLOTS';
+        this.inventoryIndex = -1; 
         this.updateFilteredInventory();
     }
 
@@ -794,7 +910,11 @@ export class CharacterSummaryController {
 
         if (currentEquip) {
             member.unequipItem(slotName);
-            InventorySystem.addItem(currentEquip.defId, currentEquip.qty);
+            InventorySystem.addItem(currentEquip.defId, currentEquip.qty || 1);
+            
+            this.state = 'SLOTS';
+            this.inventoryIndex = -1; 
+
             this.updateFilteredInventory();
         }
     }
@@ -810,12 +930,12 @@ export class CharacterSummaryController {
             return this.filteredInventory[this.inventoryIndex] || null;
         } 
         
-        if (this.slotIndex === -1) {
-            return null;
+        if (this.slotIndex !== -1) {
+            const slotName = this.activeSlots[this.slotIndex];
+            return this.currentMember.equipment[slotName] || null;
         }
 
-        const slotName = this.activeSlots[this.slotIndex];
-        return this.currentMember.equipment[slotName] || null;
+        return null;
     }
 
     getState() {
@@ -839,11 +959,13 @@ export class CharacterSummaryController {
             maxInsight: formatStat('maxInsight', computedStats.maxInsight || member.maxInsight)
         };
 
+        const viewSelectedSlot = (this.state === 'INVENTORY') ? -1 : this.slotIndex;
+
         return {
             member,
             derivedStats,
             slots: this.activeSlots,
-            selectedSlotIndex: this.slotIndex,
+            selectedSlotIndex: viewSelectedSlot,
             isChoosingItem: (this.state === 'INVENTORY'),
             filteredInventory: this.filteredInventory,
             inventoryIndex: this.inventoryIndex,
@@ -855,7 +977,6 @@ export class CharacterSummaryController {
             hoveredElement: this.hoveredElement,
             heldItem: this.heldItem, 
             layout: this.layout,
-            // NEW: Context Menu State
             contextMenu: this.contextMenu,
             dropTarget: this.heldItem ? this.hoveredElement : null,
             onLayoutUpdate: (hitboxes) => this.updateHitboxes(hitboxes)

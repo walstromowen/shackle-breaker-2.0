@@ -59,7 +59,6 @@ export class CharacterSummaryRenderer {
         this.renderLeftColumn(state, leftW, h, member, stats);
 
         // B. Center Column (Equipment & Vitals)
-        // We pass 'heldItem' so the panel can highlight valid slots!
         this.equipPanel.render(
             member, 
             stats, 
@@ -73,9 +72,8 @@ export class CharacterSummaryRenderer {
 
         // C. Right Column (Inventory Grid)
         const invX = leftW + centerW + this.padding;
-        const invY = 0;
+        const invY = 0; 
         const invW = rightW - (this.padding * 2);
-        const invH = h; 
 
         this.invPanel.render(
             state.filteredInventory, 
@@ -84,32 +82,34 @@ export class CharacterSummaryRenderer {
             invX,                    
             invY,                    
             invW,                    
-            invH,                    
+            h,                    
             state,                   
             this.hitboxes            
         );
 
-        // --- 5. Report Hitboxes to Controller (Critical for Drop Detection) ---
-        // This closes the loop so the controller knows where items are, 
-        // even if the mouse is blocked by a dragged icon.
-        if (state.onLayoutUpdate) {
-            state.onLayoutUpdate(this.hitboxes);
-        }
-
-        // D. Tooltips (Overlay)
-        // We only draw tooltips if we are NOT dragging an item AND not in a menu
-        if (!state.heldItem && !state.contextMenu) {
-            this.tooltipSystem.render(state, this.hitboxes);
-        }
-
-        // E. Held Item (Floating Cursor)
+        // D. Held Item (Floating Cursor)
         if (state.heldItem) {
             this._drawHeldItem(state);
         }
 
-        // F. Context Menu (Right-Click Menu) - Always Draw Last (Topmost)
+        // E. Context Menu (Right-Click Menu) 
+        // Pass the selectedIndex to support Keyboard highlighting
         if (state.contextMenu) {
-            this._drawContextMenu(state.contextMenu);
+            this._drawContextMenu(state.contextMenu, state.contextMenu.selectedIndex);
+        }
+
+        // F. Tooltips (Overlay)
+        if (!state.heldItem && !state.contextMenu) {
+            this.tooltipSystem.render(state, this.hitboxes);
+        }
+
+        // G. Input Prompts (Visual feedback for available keys)
+        this._drawInputPrompts(state, w, h);
+
+        // --- 5. Report Hitboxes to Controller ---
+        // This closes the loop so the controller knows where items are
+        if (state.onLayoutUpdate) {
+            state.onLayoutUpdate(this.hitboxes);
         }
     }
 
@@ -158,20 +158,14 @@ export class CharacterSummaryRenderer {
         }
     }
 
-    /**
-     * Draws the item currently being dragged attached to the mouse cursor.
-     */
     _drawHeldItem(state) {
         const { heldItem, mouse } = state;
         if (!heldItem || !heldItem.item) return;
 
         const item = heldItem.item;
-        
-        // --- CONFIGURATION ---
         const iconSheet = this.loader.get('icons'); 
-        
-        const iconSize = 32; // Source tile size
-        const drawSize = 32; // On-screen size
+        const iconSize = 32; 
+        const drawSize = 32; 
         
         // Center the icon on the mouse cursor
         const x = mouse.x - (drawSize / 2);
@@ -179,7 +173,7 @@ export class CharacterSummaryRenderer {
 
         this.ctx.save();
 
-        // 1. Draw Drop Shadow (gives it "lift")
+        // 1. Draw Drop Shadow
         this.ctx.fillStyle = "rgba(0,0,0,0.5)";
         this.ctx.fillRect(x + 4, y + 4, drawSize, drawSize);
 
@@ -187,55 +181,70 @@ export class CharacterSummaryRenderer {
         if (iconSheet && item.icon) {
             const sx = item.icon.col * iconSize;
             const sy = item.icon.row * iconSize;
-            
-            this.ctx.drawImage(
-                iconSheet, 
-                sx, sy, iconSize, iconSize, 
-                x, y, drawSize, drawSize
-            );
+            this.ctx.drawImage(iconSheet, sx, sy, iconSize, iconSize, x, y, drawSize, drawSize);
         } else {
-            // Fallback if image missing
-            this.ctx.fillStyle = '#a83232'; // Red placeholder
+            this.ctx.fillStyle = '#a83232'; 
             this.ctx.fillRect(x, y, drawSize, drawSize);
         }
 
-        // 3. Draw "Holding" Border (Gold/White)
+        // 3. Draw "Holding" Border
         this.ui.drawRect(x, y, drawSize, drawSize, '#ffffff', false, 2);
-
         this.ctx.restore();
     }
 
     /**
-     * Draws the Context Menu (Drop, Drop All, etc)
-     * Matches the IDs generated in Controller (CTX_OPT_0, etc)
+     * Draws the Context Menu with smart clamping to ensure it stays on screen.
      */
-    _drawContextMenu(menu) {
+    _drawContextMenu(menu, selectedIndex = 0) {
         if (!menu || !menu.options) return;
 
         const optionH = 32;
         const menuW = 120;
         const menuH = menu.options.length * optionH;
-        
-        const x = menu.x;
-        const y = menu.y;
+
+        // --- BOUNDARY CHECKS ---
+        const screenW = this.ctx.canvas.width;
+        const screenH = this.ctx.canvas.height;
+
+        let x = menu.x;
+        let y = menu.y;
+
+        // Clamp Right: If menu goes past right edge, shift left
+        if (x + menuW > screenW) {
+            x = screenW - menuW - 5; // 5px padding
+        }
+
+        // Clamp Bottom: If menu goes past bottom edge, shift up
+        if (y + menuH > screenH) {
+            y = screenH - menuH - 5; 
+        }
+
+        // Clamp Left/Top: Don't let it go off top-left
+        if (x < 5) x = 5;
+        if (y < 5) y = 5;
 
         // Background
-        this.ui.drawRect(x, y, menuW, menuH, UITheme.colors.bgScale[3]); // Dark background
-        this.ui.drawRect(x, y, menuW, menuH, UITheme.colors.borderHighlight, false); // Light border
+        this.ui.drawRect(x, y, menuW, menuH, UITheme.colors.bgScale[3]); 
+        this.ui.drawRect(x, y, menuW, menuH, UITheme.colors.borderHighlight, false);
 
         // Draw Options
         menu.options.forEach((opt, index) => {
             const optY = y + (index * optionH);
+            const isSelected = (index === selectedIndex);
             
-            // Highlight on hover (handled generically or simple rect check here if needed)
-            // For now, clean simple list
-            
+            // Highlight Bar for Keyboard Nav
+            if (isSelected) {
+                this.ui.drawRect(x, optY, menuW, optionH, UITheme.colors.bgScale[1]);
+                // Little indicator arrow
+                this.ui.drawText(">", x + 8, optY + (optionH/2) + 4, UITheme.fonts.small, UITheme.colors.accent);
+            }
+
             this.ui.drawText(
                 opt.label, 
-                x + 10, 
+                x + 25, // Indent text slightly
                 optY + (optionH/2) + 5, 
                 UITheme.fonts.body, 
-                UITheme.colors.textMain
+                isSelected ? UITheme.colors.textHighlight : UITheme.colors.textMain
             );
 
             // Divider line (except for last)
@@ -243,28 +252,44 @@ export class CharacterSummaryRenderer {
                 this.ui.drawLine(x, optY + optionH, x + menuW, optY + optionH, UITheme.colors.bgScale[1]);
             }
 
-            // Important: Register Hitbox so Controller detects click
             this.hitboxes.push({
                 id: `CTX_OPT_${index}`,
                 type: 'context_opt',
-                x: x,
-                y: optY,
-                w: menuW,
-                h: optionH
+                x: x, y: optY, w: menuW, h: optionH
             });
         });
     }
 
     /**
-     * Used by SceneManager to determine what was clicked (Left or Right click).
-     * Returns the string ID of the UI element (e.g. 'INV_ITEM_1', 'SLOT_head').
+     * Helper to show valid hotkeys for the current state.
      */
+    _drawInputPrompts(state, w, h) {
+        let prompts = "";
+
+        if (state.contextMenu) {
+            prompts = "[W/S] Nav   [SPACE] Select   [ESC] Close";
+        } else if (state.heldItem) {
+            prompts = "[ARROWS] Move   [SPACE] Drop/Swap   [ESC] Cancel";
+        } else if (state.isChoosingItem) {
+            prompts = "[WASD] Select Item   [SPACE] Confirm   [ESC] Cancel";
+        } else {
+            prompts = "[WASD] Navigate   [SPACE] Menu/Equip   [ESC] Close";
+        }
+
+        this.ui.drawText(
+            prompts, 
+            w - 20, 
+            h - 15, 
+            UITheme.fonts.small, 
+            UITheme.colors.textMuted, 
+            "right"
+        );
+    }
+
     getHitZone(x, y) {
-        // Iterate backwards to prioritize elements drawn on top (Z-order)
         for (let i = this.hitboxes.length - 1; i >= 0; i--) {
             const box = this.hitboxes[i];
             if (x >= box.x && x <= box.x + box.w && y >= box.y && y <= box.y + box.h) {
-                // Ensure we return the ID string to the controller
                 if (box.id) return box.id;
             }
         }
