@@ -1,6 +1,8 @@
 import { UITheme } from '../../../ui/UITheme.js';
 import { Formatting } from '../../../../../shared/utils/formatting.js';
 import { AbilityDefinitions } from '../../../../../shared/data/abilityDefinitions.js';
+// NEW IMPORT
+import { ItemDefinitions } from '../../../../../shared/data/itemDefinitions.js';
 
 export class ItemDetailPanel {
     constructor(ui, loader) {
@@ -31,7 +33,20 @@ export class ItemDetailPanel {
             return;
         }
 
-        const def = item.definition || item;
+        // CHANGED: Resolve definition via defId if present
+        let def = item;
+        if (item.defId) {
+            def = ItemDefinitions[item.defId];
+        } else if (item.definition) {
+            def = item.definition;
+        }
+        
+        // Safety check if def isn't found
+        if (!def) {
+             this.ui.drawText("Unknown Item", x + w / 2, y + 50, UITheme.fonts.body, "#555", "center");
+             return;
+        }
+
         const itemId = def.id || "unknown";
 
         // --- 1. Scroll Management Logic ---
@@ -72,7 +87,8 @@ export class ItemDetailPanel {
         // --- Detailed Rendering Logic ---
 
         // A. Header (Icon + Name + Type)
-        currentY = this._drawHeader(item, def, centerX, currentY, w);
+        // CHANGED: Pass 'def' instead of 'item' to ensure we have the static data
+        currentY = this._drawHeader(def, def, centerX, currentY, w);
         currentY += 15;
 
         // B. Description / Flavor

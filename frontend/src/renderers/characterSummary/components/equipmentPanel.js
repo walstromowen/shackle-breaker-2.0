@@ -1,5 +1,7 @@
 import { UITheme } from '../../../ui/UITheme.js';
 import { TRAIT_DEFINITIONS } from '../../../../../shared/data/traitDefinitions.js';
+// NEW IMPORT
+import { ItemDefinitions } from '../../../../../shared/data/itemDefinitions.js';
 
 export class EquipmentPanel {
     constructor(ui, loader) {
@@ -90,16 +92,19 @@ export class EquipmentPanel {
             let isValidDrop = false;
             if (heldItem) {
                 const item = heldItem.item;
-                const def = item.definition || item;
+                // CHANGED: Look up definition for held item
+                const def = ItemDefinitions[item.defId];
                 
-                // Normalization: Lowercase + remove spaces (mainHand -> mainhand, Main Hand -> mainhand)
-                const iSlot = (def.slot || def.type || '').toLowerCase().replace(/\s/g, '');
-                const sSlot = slotName.toLowerCase().replace(/\s/g, '');
+                if (def) {
+                    // Normalization
+                    const iSlot = (def.slot || def.type || '').toLowerCase().replace(/\s/g, '');
+                    const sSlot = slotName.toLowerCase().replace(/\s/g, '');
 
-                // Robust validation logic
-                isValidDrop = (iSlot === sSlot) ||
-                              (sSlot === 'mainhand' && (iSlot === 'weapon' || iSlot === 'tool')) ||
-                              (sSlot === 'offhand' && (iSlot === 'shield' || iSlot === 'weapon'));
+                    // Validation logic
+                    isValidDrop = (iSlot === sSlot) ||
+                                  (sSlot === 'mainhand' && (iSlot === 'weapon' || iSlot === 'tool')) ||
+                                  (sSlot === 'offhand' && (iSlot === 'shield' || iSlot === 'weapon'));
+                }
             }
 
             // --- DYNAMIC STYLING ---
@@ -109,8 +114,8 @@ export class EquipmentPanel {
 
             if (isValidDrop) {
                 // Highlighting for valid drag target
-                borderColor = UITheme.colors.success; // Green border
-                boxColor = "rgba(46, 204, 113, 0.15)"; // Light green bg
+                borderColor = UITheme.colors.success; 
+                boxColor = "rgba(46, 204, 113, 0.15)"; 
                 lineWidth = 2;
             } else if (isSelected) {
                 // Normal selection
@@ -135,14 +140,21 @@ export class EquipmentPanel {
                 item = null; 
             }
 
-            const itemName = item ? (item.name || item.definition?.name) : "Empty";
+            // CHANGED: Look up Definition
+            let def = null;
+            if (item && item.defId) {
+                def = ItemDefinitions[item.defId];
+            }
+
+            const itemName = def ? def.name : "Empty";
             
             const iconX = isLeft ? (slotX + slotW - 36) : (slotX + 4);
             const textX = isLeft ? (slotX + slotW - 42) : (slotX + 42);
             const textW = slotW - 48;
             const align = isLeft ? "right" : "left";
 
-            if (item) this._drawIcon(item, iconX, slotY + 8);
+            // CHANGED: Pass definition to drawIcon
+            if (def) this._drawIcon(def, iconX, slotY + 8);
 
             // Draw Label
             this.ui.drawText(slotName.toUpperCase(), textX, slotY + 10, "bold 8px monospace", "#666", align);
@@ -194,11 +206,13 @@ export class EquipmentPanel {
         });
     }
 
-    _drawIcon(item, x, y) {
-        if (!item) return;
+    _drawIcon(def, x, y) {
+        if (!def) return;
         const sheet = this.loader.get('icons') || this.loader.get('items'); 
         if (!sheet) return;
-        const iconData = item.icon || item.definition?.icon || {col:0, row:0};
+        
+        // CHANGED: Use def.icon directly
+        const iconData = def.icon || {col:0, row:0};
         
         this.ui.drawSprite(sheet, iconData.col*32, iconData.row*32, 32, 32, x, y, 32, 32);
     }

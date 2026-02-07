@@ -1,4 +1,6 @@
 import { UITheme } from '../../../ui/UITheme.js';
+// NEW IMPORT
+import { Formatting } from '../../../../../shared/utils/formatting.js';
 
 export class StatsPanel {
     constructor(ui) {
@@ -35,7 +37,9 @@ export class StatsPanel {
                 const displayVal = (finalVal !== undefined) ? finalVal : baseVal;
                 const isBuffed = displayVal > baseVal;
                 const valColor = isBuffed ? UITheme.colors.accent : "#fff"; 
-                const label = this._getAbbreviation(key);
+                
+                // CHANGED: Use shared Formatting utility
+                const label = Formatting.getAbbreviation(key);
                 
                 const colX = (i % 2 === 0) ? x : x + colWidth;
                 
@@ -113,28 +117,21 @@ export class StatsPanel {
         ];
         
         types.forEach((type) => {
+            // CHANGED: Added safety checks (|| {}) to prevent crashes if keys are missing
             const atk = (stats.attack || {})[type] || 0;
-            const defense = stats.defense[type] || 0;
-            const res = stats.resistance[type] || 0;
+            const defense = (stats.defense || {})[type] || 0;
+            const res = (stats.resistance || {})[type] || 0;
             
             if (atk === 0 && defense === 0 && res === 0) return;
 
-            const label = this._getAbbreviation(type);
+            // CHANGED: Use shared Formatting utility
+            const label = Formatting.getAbbreviation(type);
+            
             this.ui.drawText(label, colType, currentY, UITheme.fonts.mono, "#bbb", "left");
             this.ui.drawText(`${atk}`, colAtk, currentY, UITheme.fonts.mono, atk > 0 ? "#f88" : "#444", "center");
             this.ui.drawText(`${defense}`, colDef, currentY, UITheme.fonts.mono, defense > 0 ? "#aaf" : "#444", "center");
             this.ui.drawText(`${res}%`, colRes, currentY, UITheme.fonts.mono, res > 0 ? "#fea" : "#444", "center");
             currentY += 14; 
         });
-    }
-
-    _getAbbreviation(text) {
-        if (!text) return "";
-        const map = {
-            strength: "STR", dexterity: "DEX", intelligence: "INT", vigor: "VGR", attunement: "ATN",
-            blunt: "BNT", slash: "SLS", pierce: "PRC", fire: "FIR", ice: "ICE", 
-            lightning: "LIG", water: "WAT", earth: "ERT", wind: "WND", light: "LGT", dark: "DRK", arcane: "ARC"
-        };
-        return map[text.toLowerCase()] || text.substring(0, 3).toUpperCase();
     }
 }

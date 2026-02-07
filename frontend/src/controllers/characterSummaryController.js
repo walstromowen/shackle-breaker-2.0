@@ -2,6 +2,10 @@ import { gameState } from '../../../shared/state/gameState.js';
 import { events } from '../core/eventBus.js';
 import { StatCalculator } from '../../../shared/systems/statCalculator.js';
 
+// NEW IMPORTS
+import { ItemDefinitions } from '../../../shared/data/itemDefinitions.js';
+import { InventorySystem } from '../../../shared/systems/inventorySystem.js';
+
 const SLOT_ORDER = ['head', 'torso', 'arms', 'mainHand', 'offHand', 'legs', 'feet', 'accessory'];
 
 export class CharacterSummaryController {
@@ -225,22 +229,16 @@ export class CharacterSummaryController {
     }
 
     deselectSlot() {
-        // We deselect if:
-        // 1. We have a slot filter active (slotIndex != -1)
-        // 2. OR we are in 'INVENTORY' mode (browsing items)
-        // 3. OR we have an item visually selected (inventoryIndex != -1)
         const wasFiltered = (this.slotIndex !== -1);
         const hasSelection = (this.state === 'INVENTORY' || this.inventoryIndex !== -1);
 
         if (wasFiltered || hasSelection) {
             this.slotIndex = -1;
             this.state = 'SLOTS';
-            this.inventoryIndex = -1; // Reset selection to nothing
+            this.inventoryIndex = -1; 
             
             this.updateFilteredInventory();
             
-            // Only reset scroll if we changed the list context (Filtered -> Unfiltered).
-            // If we are just deselecting an item in the existing list, keep scroll position.
             if (wasFiltered) {
                 this.resetScroll();
             }
@@ -309,8 +307,14 @@ export class CharacterSummaryController {
         if (!this.heldItem) return;
 
         const item = this.heldItem.item;
-        const def = item.definition || item;
+        // CHANGED: Use ItemDefinitions to look up data
+        const def = ItemDefinitions[item.defId]; 
         
+        if (!def) {
+            this._cancelDrag();
+            return;
+        }
+
         const itemSlot = (def.slot || def.type || '').toLowerCase().replace(/\s/g, '');
         const slotKey = targetSlotRaw.toLowerCase().replace(/\s/g, '');
 
@@ -339,16 +343,14 @@ export class CharacterSummaryController {
             const item = this.heldItem.item;
 
             member.equipment[slot] = null;
-            gameState.party.inventory.push(item);
+            
+            // CHANGED: Use InventorySystem to handle stacking
+            InventorySystem.addItem(item.defId, item.qty);
             
             this.updateFilteredInventory();
             
-            // FIND NEW INDEX AND CENTER IT
-            const newIndex = this.filteredInventory.indexOf(item);
-            if (newIndex !== -1) {
-                this.inventoryIndex = newIndex;
-                this.scrollToItem(newIndex, true); // True = Center
-            }
+            // NOTE: We cannot easily scroll to the new item because 
+            // InventorySystem might have merged it into a stack at a different index.
         }
         
         this.heldItem = null;
@@ -594,7 +596,10 @@ export class CharacterSummaryController {
                     if (this.heldItem && this.heldItem.source === 'inventory' && this.heldItem.item === item) {
                         return false;
                     }
-                    const iSlot = item.slot || (item.definition ? item.definition.slot : null);
+                    // CHANGED: Lookup Slot via Definitions
+                    const def = ItemDefinitions[item.defId];
+                    const iSlot = def ? (def.slot || def.type) : null;
+                    
                     const slotKey = slotName.toLowerCase();
                     const itemKey = (iSlot || '').toLowerCase();
                     
@@ -616,13 +621,11 @@ export class CharacterSummaryController {
         const ROW_H = this.layout.itemHeight || 48;
         const VIEW_H = this.layout.inventoryViewportH || 300;
         
-        // Calculate total grid rows
         const totalRows = Math.ceil(this.filteredInventory.length / this.COLS);
         const contentHeight = totalRows * ROW_H;
         
         this.layout.inventoryMaxScroll = Math.max(0, contentHeight - VIEW_H);
 
-        // Clamp the current offset using this new authoritative value
         this.inventoryScrollOffset = Math.max(0, Math.min(this.inventoryScrollOffset, this.layout.inventoryMaxScroll));
     }
 
@@ -631,9 +634,11 @@ export class CharacterSummaryController {
         
         let slotName = targetSlotOverride;
         
+        // CHANGED: Lookup Slot via Definitions
+        const def = ItemDefinitions[inventoryItem.defId];
+
         if (!slotName && this.slotIndex === -1) {
-            const def = inventoryItem.definition || inventoryItem;
-            const itemSlot = (def.slot || def.type || '').toLowerCase();
+            const itemSlot = def ? (def.slot || def.type || '').toLowerCase() : '';
             
             slotName = this.activeSlots.find(s => {
                 const sKey = s.toLowerCase();
@@ -655,7 +660,8 @@ export class CharacterSummaryController {
         const currentEquip = member.equipment[slotName];
         
         if (currentEquip) {
-            gameState.party.inventory.push(currentEquip);
+            // CHANGED: Use InventorySystem to handle return stack logic
+            InventorySystem.addItem(currentEquip.defId, currentEquip.qty);
         }
 
         const bagIdx = gameState.party.inventory.indexOf(inventoryItem);
@@ -678,16 +684,14 @@ export class CharacterSummaryController {
 
         if (currentEquip) {
             member.unequipItem(slotName);
-            gameState.party.inventory.push(currentEquip);
+            
+            // CHANGED: Use InventorySystem for stacking
+            InventorySystem.addItem(currentEquip.defId, currentEquip.qty);
             
             this.updateFilteredInventory();
             
-            // FIND NEW INDEX AND CENTER IT
-            const newIndex = this.filteredInventory.indexOf(currentEquip);
-            if (newIndex !== -1) {
-                this.inventoryIndex = newIndex;
-                this.scrollToItem(newIndex, true); 
-            }
+            // Note: We removed the "Center on new item" logic here because 
+            // we don't know where the InventorySystem placed it (it might have merged).
         }
     }
 

@@ -10,11 +10,18 @@ export class ItemModel {
         this.defId = defId;
         this.definition = definition;
         
+        // Unique ID for this specific item instance (persists across saves)
         this.instanceId = instanceState.instanceId || crypto.randomUUID(); 
+        
+        // Quantity defaults to 1
         this.qty = instanceState.qty || 1;
     }
 
-    // --- BASIC GETTERS ---
+    // --- STACKING SETTINGS ---
+    get stackable() { return this.definition.stackable || false; }
+    get maxStack() { return this.definition.maxStack || 1; }
+
+    // --- BASIC INFO ---
     get name() { return this.definition.name; }
     get description() { return this.definition.description; }
     get type() { return this.definition.type; }
@@ -23,23 +30,23 @@ export class ItemModel {
     get slot() { return this.definition.slot || null; }
     get icon() { return this.definition.icon || { col: 0, row: 0 }; }
 
-    // --- STANDARDIZED STAT GETTERS ---
-    // These now point exactly to the keys the StatCalculator expects
+    // --- STATS ---
+    // These align with StatCalculator expectations
     
     get attack() { return this.definition.attack || {}; } 
     
-    // [CHANGED] Standardized to plural 'defenses'
-    get defenses() { return this.definition.defenses || {}; }
+    // Fixed: Now uses singular 'defense' to match ItemDefinitions
+    get defense() { return this.definition.defense || {}; }
 
-    // [NEW] Standardized to 'resistances'
     get resistances() { return this.definition.resistances || {}; }
-
-    // [NEW] Standardized to 'combat' (Speed, Crit, etc)
+    
+    // Secondary combat stats (crit, speed, etc.)
     get combat() { return this.definition.combat || {}; }
 
-    // [NEW] Standardized to 'resources' (HP, Stamina)
+    // Resource modifiers (maxHp, maxStamina, etc.)
     get resources() { return this.definition.resources || {}; }
 
+    // Core attributes (strength, intelligence, etc.)
     get attributes() { return this.definition.attributes || {}; }
 
     // --- ABILITIES ---

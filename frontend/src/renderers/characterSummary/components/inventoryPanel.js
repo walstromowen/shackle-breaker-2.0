@@ -1,4 +1,6 @@
 import { UITheme } from '../../../ui/UITheme.js';
+// NEW IMPORT
+import { ItemDefinitions } from '../../../../../shared/data/itemDefinitions.js';
 
 export class InventoryPanel {
     constructor(ui, loader) {
@@ -71,6 +73,9 @@ export class InventoryPanel {
         } 
         else {
             inventory.forEach((item, index) => {
+                // CHANGED: Look up definition
+                const def = ItemDefinitions[item.defId];
+
                 const col = index % this.COLS;
                 const row = Math.floor(index / this.COLS);
 
@@ -122,15 +127,17 @@ export class InventoryPanel {
                 // Center icon in slot
                 const iconOffset = (this.SLOT_SIZE - 32) / 2;
                 if (!isHeld) {
-                    this._drawIcon(item, itemX + iconOffset, itemY + iconOffset);
+                    // CHANGED: Pass definition, not item
+                    this._drawIcon(def, itemX + iconOffset, itemY + iconOffset);
                 } else {
                     // Ghost if held
                     this.ui.drawRect(itemX + iconOffset, itemY + iconOffset, 32, 32, "rgba(0,0,0,0.1)");
                 }
 
                 // Count
-                if (item.count > 1 && !isHeld) {
-                    this.ui.drawText(`${item.count}`, itemX + this.SLOT_SIZE - 2, itemY + this.SLOT_SIZE - 2, "10px sans-serif", UITheme.colors.accent, "right");
+                // CHANGED: Use item.qty instead of item.count
+                if (item.qty > 1 && !isHeld) {
+                    this.ui.drawText(`${item.qty}`, itemX + this.SLOT_SIZE - 2, itemY + this.SLOT_SIZE - 2, "10px sans-serif", UITheme.colors.accent, "right");
                 }
             });
         }
@@ -171,12 +178,13 @@ export class InventoryPanel {
         }
     }
 
-    _drawIcon(item, x, y) {
-        if (!item) return;
+    _drawIcon(def, x, y) {
+        if (!def) return;
         const sheet = this.loader.get('icons') || this.loader.get('items'); 
         if (!sheet) return;
 
-        const iconData = item.icon || item.definition?.icon || { col: 0, row: 0 };
+        // CHANGED: Use def.icon directly
+        const iconData = def.icon || { col: 0, row: 0 };
         const ICON_SIZE = 32; 
         
         const srcX = (iconData.col * ICON_SIZE);

@@ -1,6 +1,8 @@
 import { UITheme } from '../../../ui/UITheme.js';
 import { TRAIT_DEFINITIONS } from '../../../../../shared/data/traitDefinitions.js';
 import { Formatting } from '../../../../../shared/utils/formatting.js';
+// NEW IMPORT
+import { ItemDefinitions } from '../../../../../shared/data/itemDefinitions.js';
 
 export class TooltipSystem {
     constructor(ui) {
@@ -137,7 +139,17 @@ export class TooltipSystem {
             return null;
         }
 
-        const def = item.definition || item;
+        // CHANGED: Resolve definition via defId if present
+        let def = item;
+        if (item.defId) {
+            def = ItemDefinitions[item.defId];
+        } else if (item.definition) {
+            def = item.definition;
+        }
+
+        // Safety check if def isn't found
+        if (!def) return null;
+
         const lines = [];
 
         // 1. Basic Stats

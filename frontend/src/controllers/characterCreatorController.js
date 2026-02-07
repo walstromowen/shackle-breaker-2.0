@@ -2,9 +2,12 @@ import { gameState } from '../../../shared/state/gameState.js';
 import { EntityFactory } from '../../../shared/systems/factories/entityFactory.js';
 import { events } from '../core/eventBus.js';
 import { TextEntry } from '../../../shared/utils/textEntry.js';
-import { ItemFactory } from '../../../shared/systems/factories/itemFactory.js';
 import { StatCalculator } from '../../../shared/systems/statCalculator.js';
 import { TRAIT_DEFINITIONS } from '../../../shared/data/traitDefinitions.js';
+
+// NEW IMPORTS
+import { ItemModel } from '../../../shared/models/itemModel.js';
+import { InventorySystem } from '../../../shared/systems/inventorySystem.js';
 
 const ALLOWED_TRAITS = ['quick', 'inquisitive', 'brawler', 'tough'];
 const UI_TRAITS = ALLOWED_TRAITS.map(key => ({
@@ -113,9 +116,6 @@ export class CharacterCreatorController {
 
         // Resolve string IDs to actual Item instances (Only Equipment)
         const playerEquipment = this._resolveEquipment(bg.equipment);
-
-        // NOTE: We do NOT create inventory here anymore. 
-        // Inventory is shared by the party and handled in finalizeCharacter.
 
         const playerOverrides = {
             name: currentSelections.name, 
@@ -227,28 +227,17 @@ export class CharacterCreatorController {
     _resolveEquipment(equipmentIdMap) {
         const resolved = {};
         if (!equipmentIdMap) return resolved;
+        
         for (const [slot, itemId] of Object.entries(equipmentIdMap)) {
             try {
-                const item = ItemFactory.createItem(itemId);
+                // Use ItemModel directly now
+                const item = new ItemModel(itemId);
                 if (item) resolved[slot] = item;
-            } catch (err) { console.warn(`[CharCreator] Failed to load equipment: ${itemId}`, err); }
+            } catch (err) { 
+                console.warn(`[CharCreator] Failed to load equipment: ${itemId}`, err); 
+            }
         }
         return resolved;
-    }
-
-    _resolveInventory(itemIdList) {
-        if (!itemIdList || itemIdList.length === 0) return [];
-        
-        return itemIdList.map(id => {
-            try { 
-                const item = ItemFactory.createItem(id); 
-                if (!item) console.warn(`[CharCreator] ItemFactory returned null for ID: '${id}'. Check ItemDefinitions!`);
-                return item;
-            } catch (e) { 
-                console.error(`[CharCreator] Error creating item '${id}':`, e);
-                return null; 
-            }
-        }).filter(item => item !== null);       
     }
 
     finalizeCharacter() {
@@ -258,21 +247,40 @@ export class CharacterCreatorController {
 
         console.log("--- START FINALIZE ---");
 
-        // 1. Resolve Starting Inventory
+        // 1. Initialize Global Inventory (Clear it out)
+        gameState.party.inventory = [];
+
+        // 2. Add Keepsake
         const keep = CREATION_DATA.KEEPSAKES[this.state.keepsakeIdx];
-        const startingItems = this._resolveInventory(keep.itemId ? [keep.itemId] : []);
+        if (keep.itemId) {
+            InventorySystem.addItem(keep.itemId, 1);
+        }
         
         // --- SCROLLBAR TEST: ADD 20 AMULETS ---
-        console.log("[Test] Injecting 20 Amulets of Wisdom for Scroll Testing...");
-        for(let i=0; i<20; i++) {
-             const testItem = ItemFactory.createItem("amulet_of_wisdom");
-             if(testItem) startingItems.push(testItem);
-        }
+        console.log("[Test] Injecting 20 Amulets of Wisdom...");
+        InventorySystem.addItem("amulet_of_wisdom", 20); 
+
+        // --- NEW: ADD 20 SOFTWOOD ---
+        console.log("[Test] Injecting 20 Softwood...");
+        InventorySystem.addItem("soft_wood", 20);
         // --------------------------------------
 
-        console.log(`[Inv] Resolved ${startingItems.length} starting items.`);
+        // --- DEBUG: CONFIRM INVENTORY CONTENTS ---
+        console.log("=== INVENTORY DEBUG DUMP ===");
+        if (gameState.party.inventory.length === 0) {
+            console.log("Inventory is EMPTY.");
+        } else {
+            gameState.party.inventory.forEach((slot, index) => {
+                // Handle different item structure (referenced vs instantiated)
+                const defId = slot.defId || (slot.definition ? slot.definition.id : "unknown");
+                const name = slot.name || (slot.definition ? slot.definition.name : "Unknown Item");
+                const qty = slot.count || 1;
+                console.log(`[Slot ${index}] ${name} (ID: ${defId}) x${qty}`);
+            });
+        }
+        console.log("============================");
 
-        // 2. Create the Final Player Entity
+        // 3. Create the Final Player Entity
         const player = this._createHeroEntity(this.state);
         
         if (!player) {
@@ -280,7 +288,7 @@ export class CharacterCreatorController {
             return;
         }
 
-        // 3. Recalculate Stats to ensure they are fresh
+        // 4. Recalculate Stats to ensure they are fresh
         const finalStats = player.stats; 
         player.hp = finalStats.maxHp;
         player.stamina = finalStats.maxStamina;
@@ -288,7 +296,7 @@ export class CharacterCreatorController {
 
         const finalParty = [player];
 
-        // 4. Create Companion
+        // 5. Create Companion
         const comp = CREATION_DATA.COMPANIONS[this.state.companionIdx];
         if (comp.speciesId) {
             const companionOverrides = {
@@ -306,23 +314,14 @@ export class CharacterCreatorController {
             }
         }
 
-        // 5. Inject State into Global Game State
+        // 6. Inject State into Global Game State
         gameState.party.members = finalParty;
-        
-        // --- DIRECT ASSIGNMENT ---
-        // Since inventory is shared, we push the items directly to the global state.
-        // We do not pass them through the player entity anymore.
-        gameState.party.inventory = [...startingItems]; 
-        // -------------------------
-        
-        console.log("--- FINAL GLOBAL STATE ---");
-        console.log("GameState Inventory:", gameState.party.inventory);
-
         gameState.party.gold = 100;
+        
         if (!gameState.settings) gameState.settings = {};
         gameState.settings.difficulty = CREATION_DATA.DIFFICULTIES[this.state.difficultyIdx].id; 
 
-        // 6. Transition
+        // 7. Transition
         events.emit('CHANGE_SCENE', { scene: 'overworld' });
     }
 }
