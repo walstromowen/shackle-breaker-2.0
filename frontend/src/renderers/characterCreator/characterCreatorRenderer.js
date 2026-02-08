@@ -8,129 +8,173 @@ export class CharacterCreatorRenderer {
         this.hotspots = []; 
     }
 
-    getHitZone(mouseX, mouseY) {
-        for (let i = this.hotspots.length - 1; i >= 0; i--) {
-            const zone = this.hotspots[i];
-            if (CanvasUI.isPointInRect(mouseX, mouseY, zone.rect)) {
-                return zone.id;
-            }
-        }
-        return null;
-    }
-
     render(ctx, controllerState) {
         this.hotspots = [];
-
-        // Safety check to prevent crashes if state isn't ready
         if (!controllerState || !controllerState.data || !controllerState.selections) return;
 
         const ui = new CanvasUI(ctx);
         const { CANVAS_WIDTH, CANVAS_HEIGHT } = this.config;
-        const { selections, data, currentStep, isEditingName, previewStats } = controllerState;
+        const { selections, data, currentStep, isEditingName, previewStats, hoveredElement } = controllerState;
 
         ui.clearScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
 
+        // --- 1. GLOBAL LAYOUT: 20px PADDING ---
         const p = 20; 
+        const startY = 20; 
+        const panelHeight = CANVAS_HEIGHT - (startY * 2); 
+        
         const colW = CANVAS_WIDTH * 0.3; 
         const midW = CANVAS_WIDTH - (colW * 2) - (p * 4);
-        const startY = 40; 
-        const panelHeight = CANVAS_HEIGHT - startY - 40;
         
-        const SPACING_LG = 30; 
+        const TITLE_OFFSET_Y = 25; 
+        const TITLE_Y = startY + TITLE_OFFSET_Y;
+        const CONTENT_START_Y = TITLE_Y + 25; 
+        
+        // ========================================================
+        // 1. LEFT COLUMN (Identity & Stats)
+        // Background: Darkest (bgScale[0])
+        // ========================================================
+        ui.drawPanel(p, startY, colW, panelHeight, UITheme.colors.bgScale[0]);
+        
+        const leftCenterX = p + colW / 2;
+        let curY = CONTENT_START_Y;
 
-        // --- 1. LEFT COLUMN ---
-        ui.drawPanel(p, startY, colW, panelHeight);
+        // A. Title
+        ui.drawText("IDENTITY", leftCenterX, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "center");
+
+        // B. Name Input
+        const nameInputW = colW - 40;
+        const nameInputX = p + 20;
+        const nameInputH = 32;
+        const inputId = "INPUT_NAME";
+
+        this.hotspots.push({ id: inputId, x: nameInputX, y: curY, w: nameInputW, h: nameInputH });
+
+        const isNameHovered = hoveredElement && hoveredElement.id === inputId;
+        const isNameSelected = (currentStep === 'name');
         
-        // Safe access for appearance data
+        ctx.fillStyle = isNameSelected ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.3)';
+        if (isEditingName) ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'; 
+        ctx.fillRect(nameInputX, curY, nameInputW, nameInputH);
+        
+        // Standardize border color
+        ctx.strokeStyle = (isNameSelected || isEditingName || isNameHovered) ? UITheme.colors.textMain : UITheme.colors.border;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(nameInputX, curY, nameInputW, nameInputH);
+
+        let valStr = selections.name;
+        // CHANGED: Standardized to textMain to avoid yellow/gold highlights
+        let nameColor = UITheme.colors.textMain;
+
+        if (isEditingName) {
+            nameColor = UITheme.colors.textMain; 
+            if (Math.floor(Date.now() / 500) % 2 === 0) valStr += "|"; 
+        } else if (!valStr) {
+            valStr = "Enter Name..."; 
+            nameColor = UITheme.colors.textMuted;
+        }
+
+        ctx.save(); 
+        ctx.beginPath(); ctx.rect(nameInputX, curY, nameInputW, nameInputH); ctx.clip(); 
+        ui.drawText(valStr, nameInputX + (nameInputW/2), curY + 22, UITheme.fonts.header, nameColor, "center");
+        ctx.restore();
+
+        const nameBottomY = curY + nameInputH;
+
+        // --- C. VISUALS (Balanced Spacing) ---
+        const VITALS_OFFSET = 180; 
+        const VITALS_START_Y = nameBottomY + VITALS_OFFSET; 
+
+        // Dimensions
+        const portraitSize = 128;
+        const spriteDisplaySize = 64; 
+        const visualGap = 20;
+        
+        const totalVisualWidth = portraitSize + visualGap + spriteDisplaySize;
+        const startVisualX = p + (colW - totalVisualWidth) / 2;
+
+        // Vertical centering
+        const portraitY = nameBottomY + (VITALS_OFFSET / 2) - (portraitSize / 2);
+        const spriteY = nameBottomY + (VITALS_OFFSET / 2) - (spriteDisplaySize / 2);
+
         const appIdx = selections.appearanceIdx || 0;
         const appData = data.APPEARANCES ? data.APPEARANCES[appIdx] : null;
-        
-        const centerX = p + colW / 2;
-        let curY = startY + 30;
-
-        // Title & Name
-        ui.drawText("IDENTITY", centerX, curY, UITheme.fonts.body, UITheme.colors.textMuted, "center");
-        curY += SPACING_LG;
-        const displayName = selections.name || "Unknown";
-        ui.drawText(displayName, centerX, curY, UITheme.fonts.header, UITheme.colors.textHighlight, "center");
-        curY += SPACING_LG;
-
-        // Visuals
-        const visualSize = 80;
-        const visualGap = 20;
-        const totalVisualWidth = (visualSize * 2) + visualGap;
-        const startVisualX = p + (colW - totalVisualWidth) / 2;
 
         if (appData) {
             ctx.save();
+            
+            // 1. Draw Portrait
             const portraitImg = this.loader.get(appData.portrait);
             if (portraitImg) {
-                ctx.drawImage(portraitImg, startVisualX, curY, visualSize, visualSize);
+                ctx.drawImage(portraitImg, startVisualX, portraitY, portraitSize, portraitSize);
                 ctx.strokeStyle = UITheme.colors.border;
                 ctx.lineWidth = 2;
-                ctx.strokeRect(startVisualX, curY, visualSize, visualSize);
+                ctx.strokeRect(startVisualX, portraitY, portraitSize, portraitSize);
+            } else {
+                ctx.fillStyle = "rgba(0,0,0,0.2)";
+                ctx.fillRect(startVisualX, portraitY, portraitSize, portraitSize);
+                ctx.strokeStyle = UITheme.colors.border;
+                ctx.strokeRect(startVisualX, portraitY, portraitSize, portraitSize);
             }
 
+            // 2. Draw Sprite
+            const spriteX = startVisualX + portraitSize + visualGap;
             const spriteImg = this.loader.get(appData.sprite);
+            
+            ctx.fillStyle = "rgba(0,0,0,0.3)";
+            ctx.fillRect(spriteX, spriteY, spriteDisplaySize, spriteDisplaySize);
+            
             if (spriteImg) {
-                ctx.fillStyle = "rgba(0,0,0,0.5)";
-                ctx.fillRect(startVisualX + visualSize + visualGap, curY, visualSize, visualSize);
                 ctx.imageSmoothingEnabled = false; 
-                ctx.drawImage(spriteImg, 0, 0, 32, 32, startVisualX + visualSize + visualGap + 8, curY + 8, 64, 64);
-                ctx.strokeStyle = UITheme.colors.border;
-                ctx.strokeRect(startVisualX + visualSize + visualGap, curY, visualSize, visualSize);
+                ctx.drawImage(spriteImg, 0, 0, 32, 32, spriteX, spriteY, spriteDisplaySize, spriteDisplaySize);
             }
+            
+            ctx.strokeStyle = UITheme.colors.border;
+            ctx.lineWidth = 1;
+            ctx.strokeRect(spriteX, spriteY, spriteDisplaySize, spriteDisplaySize);
+
             ctx.restore();
         }
         
-        curY += visualSize + SPACING_LG;
-
         // --- D. STATS TABLE ---
+        curY = VITALS_START_Y;
+
         if (previewStats) {
-            const thirdW = (colW - 40) / 3;
-            const vX = p + 20;
+            const innerMargin = 20;
+            const fullW = colW - (innerMargin * 2);
+            const thirdW = fullW / 3;
+            const vX = p + innerMargin;
             const RES_FONT = UITheme.fonts.small; 
 
-            // FIX: Robust Stat Block Handler
-            // Handles both complex objects { total: 10, bonus: 2 } AND simple numbers (10)
-            const drawStatBlock = (label, valueOrObj, xOffset, colorLabel) => {
+            const drawStatBlock = (label, valueOrObj, slotIndex, colorLabel) => {
                 if (valueOrObj === undefined || valueOrObj === null) return;
                 
-                let total = 0;
-                let bonus = 0;
-
-                if (typeof valueOrObj === 'object') {
-                    total = valueOrObj.total || 0;
-                    bonus = valueOrObj.bonus || 0;
-                } else {
-                    total = valueOrObj; // It's just a number
-                }
+                let total = typeof valueOrObj === 'object' ? (valueOrObj.total || 0) : valueOrObj;
+                let bonus = typeof valueOrObj === 'object' ? (valueOrObj.bonus || 0) : 0;
                 
-                // Label (HP, STM, INS)
-                ui.drawText(label, vX + xOffset, curY, RES_FONT, colorLabel, "left");
+                const slotCenterX = vX + (slotIndex * thirdW) + (thirdW / 2);
                 
-                // Draw Total
-                const totalX = vX + xOffset + thirdW - 10;
-                ui.drawText(`${total}`, totalX, curY, UITheme.fonts.bold, UITheme.colors.textMain, "right");
+                // 1. Label
+                ui.drawText(label, slotCenterX - 6, curY, RES_FONT, colorLabel, "right");
                 
-                // Draw Bonus only if it exists
+                // 2. Main Value
+                ui.drawText(`${total}`, slotCenterX + 6, curY, UITheme.fonts.bold, UITheme.colors.textMain, "left");
+                
+                // 3. Bonus (Below Main Value)
                 if (bonus > 0) {
-                    ui.drawText(`(+${bonus})`, totalX, curY + 14, "10px monospace", UITheme.colors.success, "right");
+                    ui.drawText(`(+${bonus})`, slotCenterX + 6, curY + 12, UITheme.fonts.small, UITheme.colors.success, "left");
                 }
             };
 
-            // Try reading distinct stats, fallback to standard names
-            drawStatBlock("HP", previewStats.maxHp || previewStats.hp, 0, UITheme.colors.danger);
-            drawStatBlock("STM", previewStats.maxStamina || previewStats.stamina, thirdW, UITheme.colors.success);
-            drawStatBlock("INS", previewStats.maxInsight || previewStats.insight, thirdW * 2, "#b19cd9");
+            // Using Normalized Theme Colors
+            drawStatBlock("HP", previewStats.maxHp || previewStats.hp, 0, UITheme.colors.hp);
+            drawStatBlock("STM", previewStats.maxStamina || previewStats.stamina, 1, UITheme.colors.stm);
+            drawStatBlock("INS", previewStats.maxInsight || previewStats.insight, 2, UITheme.colors.ins);
 
-            curY += SPACING_LG + 10; 
+            curY += 35; 
 
-            // FIX: Robust Attribute Source
-            // 1. Try `previewStats.attributes`
-            // 2. Fallback to `previewStats` root (if flat structure)
+            // E. Attributes
             const attrSource = previewStats.attributes || previewStats;
-
             const attrs = [
                 { label: "Vigor", val: attrSource.vigor },
                 { label: "Strength", val: attrSource.strength },
@@ -153,96 +197,132 @@ export class CharacterCreatorRenderer {
                 }
 
                 ui.drawText(attr.label, leftX, rowY, ATTR_FONT, UITheme.colors.textMuted, "left");
-                
-                // Ensure we print '0' instead of undefined if missing
-                const valToDraw = (attr.val !== undefined) ? attr.val : 0;
-                ui.drawText(valToDraw, rightX, rowY, ATTR_FONT, UITheme.colors.textMain, "right");
+                ui.drawText(attr.val || 0, rightX, rowY, ATTR_FONT, UITheme.colors.textMain, "right");
             });
         }
 
-        // --- 2. CENTER COLUMN: MENU ---
+        // ========================================================
+        // 2. CENTER COLUMN: MENU
+        // Background: Lighter (bgScale[1])
+        // ========================================================
         const menuStartX = p + colW + p;
-        let menuY = startY + 30;
+        let menuY = CONTENT_START_Y;
 
-        ui.drawPanel(menuStartX, startY, midW, panelHeight);
-        ui.drawText("CUSTOMIZE", CANVAS_WIDTH/2, menuY, UITheme.fonts.body, UITheme.colors.textMuted, "center");
-        menuY += SPACING_LG; 
+        ui.drawPanel(menuStartX, startY, midW, panelHeight, UITheme.colors.bgScale[1]);
+        ui.drawText("CUSTOMIZE", menuStartX + midW/2, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "center");
 
         const labels = {
-            name: "Name", background: "Background", origin: "Origin", appearance: "Look",
-            keepsake: "Keepsake", companion: "Companion", trait: "Trait", difficulty: "Difficulty", start: "Begin Journey"
+            background: "BACKGROUND", origin: "ORIGIN", appearance: "LOOK",
+            keepsake: "KEEPSAKE", companion: "COMPANION", trait: "TRAIT", difficulty: "DIFFICULTY"
         };
         
         const MENU_ITEM_HEIGHT = 35; 
-        const menuSteps = ['name', 'background', 'origin', 'appearance', 'keepsake', 'companion', 'trait', 'difficulty', 'start'];
+        const ROW_GAP = 2;           
+        const menuSteps = ['background', 'origin', 'appearance', 'keepsake', 'companion', 'trait', 'difficulty', 'start'];
 
         menuSteps.forEach((key) => {
             const isSelected = (key === currentStep);
-            let color = isSelected ? UITheme.colors.textHighlight : UITheme.colors.textMuted;
-            const prefix = isSelected ? "> " : "  ";
-            ui.drawText(prefix + labels[key], menuStartX + 20, menuY, UITheme.fonts.body, color);
+            const rowId = `ROW_${key}`;
+            const isRowHovered = hoveredElement && hoveredElement.id === rowId;
+            const centerColX = menuStartX + (midW / 2);
 
-            if (key === 'name') {
-                const labelSpace = 120;
-                const fieldX = menuStartX + labelSpace; 
-                const fieldW = Math.min(220, midW - labelSpace - 20);
-                const fieldH = 26; 
-                const fieldY = menuY - 18; 
+            if (key === 'start') {
+                const btnId = "BTN_START";
+                const isBtnHovered = hoveredElement && hoveredElement.id === btnId;
+                const btnY = menuY + 5; 
 
-                this.hotspots.push({ id: "NAME_INPUT", rect: { x: fieldX, y: fieldY, w: fieldW, h: fieldH } });
+                this.hotspots.push({ id: btnId, x: menuStartX + 40, y: btnY, w: midW - 80, h: MENU_ITEM_HEIGHT });
 
-                ctx.fillStyle = isSelected ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.3)';
-                if (isEditingName) ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'; 
-                ctx.fillRect(fieldX, fieldY, fieldW, fieldH);
-                ctx.strokeStyle = (isSelected || isEditingName) ? UITheme.colors.accent : UITheme.colors.border;
-                ctx.lineWidth = 1;
-                ctx.strokeRect(fieldX, fieldY, fieldW, fieldH);
-
-                let valStr = selections.name;
-                if (isEditingName) {
-                    color = UITheme.colors.accent; 
-                    if (Math.floor(Date.now() / 500) % 2 === 0) valStr += "|"; 
-                } else if (!valStr) {
-                    valStr = "Type Name..."; 
-                    color = UITheme.colors.textMuted;
-                }
-
-                ctx.save(); 
-                ctx.beginPath(); ctx.rect(fieldX, fieldY, fieldW, fieldH); ctx.clip(); 
-                ui.drawText(valStr, fieldX + 10, menuY, UITheme.fonts.body, color, "left");
-                ctx.restore(); 
-            } else {
-                let valStr = "";
-                // Safety Checks
-                if (key === 'background' && data.BACKGROUNDS) valStr = data.BACKGROUNDS[selections.backgroundIdx]?.label;
-                else if (key === 'origin' && data.ORIGINS) valStr = data.ORIGINS[selections.originIdx]?.label;
-                else if (key === 'appearance' && data.APPEARANCES) valStr = data.APPEARANCES[selections.appearanceIdx]?.label;
-                else if (key === 'keepsake' && data.KEEPSAKES) valStr = data.KEEPSAKES[selections.keepsakeIdx]?.label;
-                else if (key === 'companion' && data.COMPANIONS) valStr = data.COMPANIONS[selections.companionIdx]?.label;
-                else if (key === 'trait' && data.TRAITS) valStr = data.TRAITS[selections.traitIdx]?.label; 
-                else if (key === 'difficulty' && data.DIFFICULTIES) {
-                    const diffLabel = data.DIFFICULTIES[selections.difficultyIdx]?.label;
-                    if (diffLabel === "Easy") ui.drawText(diffLabel, menuStartX + midW - 20, menuY, UITheme.fonts.body, UITheme.colors.success, "right");
-                    else if (diffLabel === "Hard") ui.drawText(diffLabel, menuStartX + midW - 20, menuY, UITheme.fonts.body, UITheme.colors.warning, "right");
-                    else if (diffLabel === "Nightmare") ui.drawText(diffLabel, menuStartX + midW - 20, menuY, UITheme.fonts.body, UITheme.colors.danger, "right");
-                    else ui.drawText(diffLabel || "", menuStartX + midW - 20, menuY, UITheme.fonts.body, color, "right");
-                }
+                // CHANGED: Use textMain (Standard) instead of accent
+                const btnColor = (isSelected || isBtnHovered) ? UITheme.colors.textMain : UITheme.colors.textMuted;
                 
-                if (valStr && key !== 'difficulty') {
-                    ui.drawText(valStr, menuStartX + midW - 20, menuY, UITheme.fonts.body, color, "right");
+                // CHANGED: Use white overlay instead of Gold/Yellow hue
+                ctx.fillStyle = (isSelected || isBtnHovered) ? "rgba(255, 255, 255, 0.1)" : "rgba(0,0,0,0.5)";
+                ctx.fillRect(menuStartX + 40, btnY, midW - 80, MENU_ITEM_HEIGHT);
+                
+                ctx.strokeStyle = btnColor;
+                ctx.strokeRect(menuStartX + 40, btnY, midW - 80, MENU_ITEM_HEIGHT);
+
+                // CHANGED: Text updated to "START"
+                ui.drawText("START", centerColX, btnY + (MENU_ITEM_HEIGHT/2) + 1, UITheme.fonts.body, btnColor, "center", "middle");
+                return; 
+            }
+
+            this.hotspots.push({ id: rowId, x: menuStartX + 10, y: menuY, w: midW - 20, h: MENU_ITEM_HEIGHT });
+
+            if (isSelected || isRowHovered) {
+                ctx.fillStyle = isSelected ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)";
+                ctx.fillRect(menuStartX + 10, menuY, midW - 20, MENU_ITEM_HEIGHT);
+
+                // White border for focus
+                if (isSelected) {
+                    ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(menuStartX + 10, menuY, midW - 20, MENU_ITEM_HEIGHT);
                 }
             }
-            menuY += MENU_ITEM_HEIGHT;
+
+            const labelY = menuY + 10;
+            ui.drawText(labels[key], centerColX, labelY, "9px serif", UITheme.colors.textMuted, "center");
+
+            let valStr = "";
+            let valColor = UITheme.colors.textMain;
+
+            if (key === 'background') valStr = data.BACKGROUNDS?.[selections.backgroundIdx]?.label;
+            else if (key === 'origin') valStr = data.ORIGINS?.[selections.originIdx]?.label;
+            else if (key === 'appearance') valStr = data.APPEARANCES?.[selections.appearanceIdx]?.label;
+            else if (key === 'keepsake') valStr = data.KEEPSAKES?.[selections.keepsakeIdx]?.label;
+            else if (key === 'companion') valStr = data.COMPANIONS?.[selections.companionIdx]?.label;
+            else if (key === 'trait') valStr = data.TRAITS?.[selections.traitIdx]?.label; 
+            else if (key === 'difficulty') {
+                const d = data.DIFFICULTIES?.[selections.difficultyIdx];
+                valStr = d?.label;
+            }
+
+            if (valStr) {
+                const valY = menuY + 26; 
+
+                const prevId = `BTN_PREV_${key}`;
+                const nextId = `BTN_NEXT_${key}`;
+                const isPrevHover = hoveredElement && hoveredElement.id === prevId;
+                const isNextHover = hoveredElement && hoveredElement.id === nextId;
+
+                const leftArrowX = menuStartX + 30; 
+                const rightArrowX = menuStartX + midW - 30;
+                const textMaxWidth = midW - 140; 
+                const arrowSize = 5; 
+
+                // CHANGED: Use textMain instead of accent for arrows
+                const arrowColorPrev = isPrevHover ? UITheme.colors.textMain : UITheme.colors.textMuted;
+                const arrowColorNext = isNextHover ? UITheme.colors.textMain : UITheme.colors.textMuted;
+
+                ui.drawArrow(leftArrowX, valY - 4, arrowSize, 'left', arrowColorPrev);
+                ui.drawArrow(rightArrowX, valY - 4, arrowSize, 'right', arrowColorNext);
+
+                this.hotspots.push({ id: prevId, x: leftArrowX - 20, y: valY - 20, w: 40, h: 40 });
+                this.hotspots.push({ id: nextId, x: rightArrowX - 20, y: valY - 20, w: 40, h: 40 });
+
+                ui.drawText(valStr, centerColX, valY, UITheme.fonts.body, valColor, "center", "alphabetic", textMaxWidth);
+            }
+            
+            menuY += MENU_ITEM_HEIGHT + ROW_GAP; 
         });
 
-        // --- 3. RIGHT COLUMN ---
+        // ========================================================
+        // 3. RIGHT COLUMN (Details)
+        // Background: Darkest (bgScale[0])
+        // ========================================================
         const rightColX = CANVAS_WIDTH - colW - p;
-        ui.drawPanel(rightColX, startY, colW, panelHeight);
-        ui.drawText("DETAILS", rightColX + colW/2, startY + 30, UITheme.fonts.body, UITheme.colors.textMuted, "center");
+        ui.drawPanel(rightColX, startY, colW, panelHeight, UITheme.colors.bgScale[0]);
+        ui.drawText("DETAILS", rightColX + colW/2, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "center");
 
         const desc = this.getDescription(controllerState);
         if (desc) {
-            ui.drawWrappedText(desc, rightColX + 20, startY + 60, colW - 40, 28, UITheme.fonts.body, UITheme.colors.textMain);
+            ui.drawWrappedText(desc, rightColX + 20, CONTENT_START_Y, colW - 40, 28, UITheme.fonts.body, UITheme.colors.textMain);
+        }
+
+        if (controllerState.onLayoutUpdate) {
+            controllerState.onLayoutUpdate(this.hotspots);
         }
     }
 

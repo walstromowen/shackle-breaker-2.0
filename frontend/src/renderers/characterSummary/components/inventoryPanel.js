@@ -1,5 +1,4 @@
 import { UITheme } from '../../../ui/UITheme.js';
-// NEW IMPORT
 import { ItemDefinitions } from '../../../../../shared/data/itemDefinitions.js';
 
 export class InventoryPanel {
@@ -66,14 +65,16 @@ export class InventoryPanel {
 
         // --- 4. Draw Grid Content ---
         this.ui.ctx.save();
-        this.ui.startClip(x, listY, w + 15, listH); 
+        
+        // CHANGED: Expanded clip area slightly (listY - 2) to prevent the top border 
+        // of the first row from being clipped (which made it look thinner).
+        this.ui.startClip(x, listY - 2, w + 15, listH + 4); 
 
         if (!inventory || inventory.length === 0) {
             this.ui.drawText("- Empty -", centerX, listY + 30, "italic 12px sans-serif", UITheme.colors.textMuted, "center");
         } 
         else {
             inventory.forEach((item, index) => {
-                // CHANGED: Look up definition
                 const def = ItemDefinitions[item.defId];
 
                 const col = index % this.COLS;
@@ -90,12 +91,18 @@ export class InventoryPanel {
                 const isHeld = state.heldItem && state.heldItem.item === item;
                 const isSelected = (index === inventoryIndex);
                 
-                // Colors
-                const bgAlpha = isSelected ? (isChoosingItem ? 0.2 : 0.1) : 0.05;
-                const bgColor = isSelected ? "255, 215, 0" : "0, 0, 0"; 
-                const borderColor = isSelected 
-                    ? (isChoosingItem ? UITheme.colors.accent : UITheme.colors.textHighlight) 
-                    : "#333";
+                // Colors (Standardized)
+                let bgFill = UITheme.colors.bgScale[1]; // Darkest grey
+                let borderFill = UITheme.colors.border; // Standard grey
+                let lineWidth = 1;
+
+                if (isSelected) {
+                     // CHANGED: Use subtle misty white tint for selection background
+                     bgFill = "rgba(240, 240, 240, 0.05)"; 
+                     // CHANGED: Use selectedWhite for the border
+                     borderFill = UITheme.colors.selectedWhite;
+                     lineWidth = 2;
+                }
 
                 // Hitbox Registration
                 if (itemY + this.SLOT_SIZE >= listY && itemY <= listY + listH) {
@@ -112,14 +119,14 @@ export class InventoryPanel {
 
                 // --- DRAW SLOT ---
                 // Background
-                this.ui.drawRect(itemX, itemY, this.SLOT_SIZE, this.SLOT_SIZE, `rgba(${bgColor}, ${bgAlpha})`);
+                this.ui.drawRect(itemX, itemY, this.SLOT_SIZE, this.SLOT_SIZE, bgFill);
                 
                 // Border (Fixed drawStrokeRect)
                 if (this.ui.drawStrokeRect) {
-                     this.ui.drawStrokeRect(itemX, itemY, this.SLOT_SIZE, this.SLOT_SIZE, borderColor, isSelected ? 2 : 1);
+                     this.ui.drawStrokeRect(itemX, itemY, this.SLOT_SIZE, this.SLOT_SIZE, borderFill, lineWidth);
                 } else {
-                    this.ui.ctx.strokeStyle = borderColor;
-                    this.ui.ctx.lineWidth = isSelected ? 2 : 1;
+                    this.ui.ctx.strokeStyle = borderFill;
+                    this.ui.ctx.lineWidth = lineWidth;
                     this.ui.ctx.strokeRect(itemX, itemY, this.SLOT_SIZE, this.SLOT_SIZE);
                 }
 
@@ -127,7 +134,6 @@ export class InventoryPanel {
                 // Center icon in slot
                 const iconOffset = (this.SLOT_SIZE - 32) / 2;
                 if (!isHeld) {
-                    // CHANGED: Pass definition, not item
                     this._drawIcon(def, itemX + iconOffset, itemY + iconOffset);
                 } else {
                     // Ghost if held
@@ -135,9 +141,9 @@ export class InventoryPanel {
                 }
 
                 // Count
-                // CHANGED: Use item.qty instead of item.count
                 if (item.qty > 1 && !isHeld) {
-                    this.ui.drawText(`${item.qty}`, itemX + this.SLOT_SIZE - 2, itemY + this.SLOT_SIZE - 2, "10px sans-serif", UITheme.colors.accent, "right");
+                    // Used textHighlight (Gold) for count visibility
+                    this.ui.drawText(`${item.qty}`, itemX + this.SLOT_SIZE - 2, itemY + this.SLOT_SIZE - 2, "10px sans-serif", UITheme.colors.textHighlight, "right");
                 }
             });
         }
@@ -155,7 +161,8 @@ export class InventoryPanel {
     }
 
     drawScrollBar(x, y, viewportH, contentH, scrollOffset, hitboxes) {
-        this.ui.drawRect(x, y, this.SCROLLBAR_WIDTH, viewportH, "#222"); 
+        // Track: Darkest background
+        this.ui.drawRect(x, y, this.SCROLLBAR_WIDTH, viewportH, UITheme.colors.bgScale[0]); 
         
         const viewRatio = viewportH / contentH;
         let thumbH = Math.max(20, viewportH * viewRatio);
@@ -164,7 +171,8 @@ export class InventoryPanel {
         const trackSpace = viewportH - thumbH;
         const thumbY = y + (scrollRatio * trackSpace);
 
-        this.ui.drawRect(x, thumbY, this.SCROLLBAR_WIDTH, thumbH, "#666");
+        // Thumb: Muted text color (Grey)
+        this.ui.drawRect(x, thumbY, this.SCROLLBAR_WIDTH, thumbH, UITheme.colors.textMuted);
 
         if (hitboxes) {
             hitboxes.push({
@@ -183,7 +191,6 @@ export class InventoryPanel {
         const sheet = this.loader.get('icons') || this.loader.get('items'); 
         if (!sheet) return;
 
-        // CHANGED: Use def.icon directly
         const iconData = def.icon || { col: 0, row: 0 };
         const ICON_SIZE = 32; 
         

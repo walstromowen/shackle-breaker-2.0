@@ -131,49 +131,56 @@ export class SceneManager {
     update(dt) {
         // --- 1. MOUSE CHECK ---
         const click = this.input.getAndResetClick();
-        const rightClick = this.input.getAndResetRightClick(); // New: Get Right Click
+        const rightClick = this.input.getAndResetRightClick();
         const scroll = this.input.getAndResetScroll();
-        const mousePos = this.input.getMousePosition(); // {x, y}
+        const mousePos = this.input.getMousePosition(); 
         const isMouseDown = this.input.getIsMouseDown ? this.input.getIsMouseDown() : false;
 
-        // --- Handle Input per Scene ---
-        if (this.currentScene === 'character_summary' && this.characterSummaryController) {
-            
-            // A. Update Raw Mouse Pos & Drag State
-            // We pass isMouseDown here to help the controller handle dragging logic
-            this.characterSummaryController.handleMouseMove?.(mousePos.x, mousePos.y, isMouseDown);
+        // ============================================================
+        // SCENE SPECIFIC UPDATES
+        // ============================================================
 
-            // B. Hit Testing (The "Bridge")
-            const hitZoneId = this.characterSummaryRenderer.getHitZone(mousePos.x, mousePos.y);
+        // --- A. CHARACTER CREATOR ---
+        if (this.currentScene === 'character-creator') {
+            // 1. Pass Mouse Move (CRITICAL: specific for Hover effects)
+            if (this.characterCreatorController.handleMouseMove) {
+                this.characterCreatorController.handleMouseMove(mousePos.x, mousePos.y);
+            }
+
+            // 2. Pass Click
+            if (click) {
+                this.characterCreatorController.handleMouseDown(click.x, click.y);
+            }
+        }
+
+        // --- B. CHARACTER SUMMARY ---
+        else if (this.currentScene === 'character_summary' && this.characterSummaryController) {
+            this.characterSummaryController.handleMouseMove?.(mousePos.x, mousePos.y, isMouseDown);
             
-            // C. Pass Hover ID to Controller (for Tooltips)
+            // Hit Testing "Bridge" for legacy renderer checks if needed
+            const hitZoneId = this.characterSummaryRenderer.getHitZone(mousePos.x, mousePos.y);
             this.characterSummaryController.handleHover?.(hitZoneId);
 
-            // D. Handle Interactions (Left Clicks)
             if (click && hitZoneId) {
                 this.characterSummaryController.handleInteraction(hitZoneId);
             }
-
-            // E. Handle Right Click (Context Menu Verification)
+            
             if (rightClick) {
-                // Determine what was specifically under the right-click coordinates
                 const rightClickZoneId = this.characterSummaryRenderer.getHitZone(rightClick.x, rightClick.y);
                 this.characterSummaryController.handleRightClick(rightClickZoneId);
             }
 
-            // F. Handle Scroll
             if (scroll !== 0) {
                 this.characterSummaryController.handleScroll?.(scroll);
             }
         } 
+        
+        // --- C. LEGACY / OTHER SCENES ---
         else if (click) {
-            // Legacy handling for other scenes
-            if (this.currentScene === 'character-creator') {
-                this.characterCreatorController.handleMouseDown(click.x, click.y, this.characterCreatorRenderer);
-            } 
-            else if (this.currentScene === 'party') {
+            if (this.currentScene === 'party') {
                 this.partyController.handleMouseDown(click.x, click.y, this.partyRenderer);
             }
+            // Add other legacy click-only scenes here if needed
         }
 
         // --- 2. REGULAR UPDATES ---

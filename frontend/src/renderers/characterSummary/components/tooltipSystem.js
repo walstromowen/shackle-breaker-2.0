@@ -1,7 +1,6 @@
 import { UITheme } from '../../../ui/UITheme.js';
 import { TRAIT_DEFINITIONS } from '../../../../../shared/data/traitDefinitions.js';
 import { Formatting } from '../../../../../shared/utils/formatting.js';
-// NEW IMPORT
 import { ItemDefinitions } from '../../../../../shared/data/itemDefinitions.js';
 
 export class TooltipSystem {
@@ -139,7 +138,7 @@ export class TooltipSystem {
             return null;
         }
 
-        // CHANGED: Resolve definition via defId if present
+        // Resolve definition via defId if present
         let def = item;
         if (item.defId) {
             def = ItemDefinitions[item.defId];
@@ -193,19 +192,20 @@ export class TooltipSystem {
         const { title, type, color, lines } = content;
         
         // --- UPDATED FONTS FOR SMALLER SIZE ---
-        const headerFont = "bold 11px sans-serif"; // Was UITheme.fonts.bold
-        const typeFont   = "9px sans-serif";       // Was UITheme.fonts.small
-        const bodyFont   = "10px sans-serif";      // Was UITheme.fonts.body
-        const lineHeight = 12;                     // Was 16
+        const headerFont = "bold 11px sans-serif"; 
+        const typeFont   = "9px sans-serif";       
+        const bodyFont   = "10px sans-serif";      
+        const lineHeight = 12;                     
         
         this.ui.ctx.font = bodyFont;
-        let contentHeight = 35; // Initial height adjusted down
-
+        
         // 1. Calculate Height & Wrap Text
+        let contentHeight = 35; 
         const wrappedLines = [];
+        
         lines.forEach(rawLine => {
             if (rawLine === "---") {
-                contentHeight += 6; // Smaller gap
+                contentHeight += 6; // Smaller gap for separator
                 wrappedLines.push({ text: "---", isSeparator: true });
             } else {
                 const wLines = this.ui.getWrappedLines(rawLine, this.WIDTH - (this.PADDING * 2), bodyFont);

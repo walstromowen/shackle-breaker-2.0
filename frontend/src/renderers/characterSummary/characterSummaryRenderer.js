@@ -41,12 +41,15 @@ export class CharacterSummaryRenderer {
         const rightW = w - leftW - centerW;
 
         // 3. Draw Global Backgrounds & Borders
+        // Left & Right: Darker (bgScale[0])
+        // Center: Lighter (bgScale[1])
         this.ui.drawRect(0, 0, leftW, h, UITheme.colors.bgScale[0]);
         this.ui.drawRect(leftW, 0, centerW, h, UITheme.colors.bgScale[1]);
         this.ui.drawRect(leftW + centerW, 0, rightW, h, UITheme.colors.bgScale[0]);
         
-        this.ui.drawLine(leftW, 0, leftW, h, UITheme.colors.border);
-        this.ui.drawLine(leftW + centerW, 0, leftW + centerW, h, UITheme.colors.border);
+        // Use selectedWhite for the main column dividers
+        this.ui.drawLine(leftW, 0, leftW, h, UITheme.colors.selectedWhite);
+        this.ui.drawLine(leftW + centerW, 0, leftW + centerW, h, UITheme.colors.selectedWhite);
 
         if (!member) return;
 
@@ -124,8 +127,11 @@ export class CharacterSummaryRenderer {
         const tabW = contentW / 2;
         
         const drawTab = (label, tx, isActive, id) => {
+            // Active: Lightest (bgScale[2]), Inactive: Darkest (bgScale[0])
             const bg = isActive ? UITheme.colors.bgScale[2] : UITheme.colors.bgScale[0];
-            const border = isActive ? UITheme.colors.borderHighlight : UITheme.colors.border;
+            
+            // Active tab border uses selectedWhite
+            const border = isActive ? UITheme.colors.selectedWhite : UITheme.colors.border;
             const text = isActive ? UITheme.colors.textMain : UITheme.colors.textMuted;
             
             this.ui.drawRect(tx, y, tabW, tabH, bg);
@@ -173,8 +179,8 @@ export class CharacterSummaryRenderer {
 
         this.ctx.save();
 
-        // 1. Draw Drop Shadow
-        this.ctx.fillStyle = "rgba(0,0,0,0.5)";
+        // 1. Draw Drop Shadow (Use Theme ScrollTrack for transparency)
+        this.ctx.fillStyle = UITheme.colors.scrollTrack;
         this.ctx.fillRect(x + 4, y + 4, drawSize, drawSize);
 
         // 2. Draw Icon
@@ -183,12 +189,12 @@ export class CharacterSummaryRenderer {
             const sy = item.icon.row * iconSize;
             this.ctx.drawImage(iconSheet, sx, sy, iconSize, iconSize, x, y, drawSize, drawSize);
         } else {
-            this.ctx.fillStyle = '#a83232'; 
+            this.ctx.fillStyle = UITheme.colors.failure; 
             this.ctx.fillRect(x, y, drawSize, drawSize);
         }
 
         // 3. Draw "Holding" Border
-        this.ui.drawRect(x, y, drawSize, drawSize, '#ffffff', false, 2);
+        this.ui.drawRect(x, y, drawSize, drawSize, UITheme.colors.selectedWhite, false, 2);
         this.ctx.restore();
     }
 
@@ -223,9 +229,11 @@ export class CharacterSummaryRenderer {
         if (x < 5) x = 5;
         if (y < 5) y = 5;
 
-        // Background
-        this.ui.drawRect(x, y, menuW, menuH, UITheme.colors.bgScale[3]); 
-        this.ui.drawRect(x, y, menuW, menuH, UITheme.colors.borderHighlight, false);
+        // Background - Use bgScale[2] (Highest Elevation/Lightest)
+        this.ui.drawRect(x, y, menuW, menuH, UITheme.colors.bgScale[2]); 
+        
+        // Context Menu Border uses selectedWhite
+        this.ui.drawRect(x, y, menuW, menuH, UITheme.colors.selectedWhite, false);
 
         // Draw Options
         menu.options.forEach((opt, index) => {
@@ -234,9 +242,10 @@ export class CharacterSummaryRenderer {
             
             // Highlight Bar for Keyboard Nav
             if (isSelected) {
+                // Use slightly darker/lighter contrast for selection
                 this.ui.drawRect(x, optY, menuW, optionH, UITheme.colors.bgScale[1]);
                 // Little indicator arrow
-                this.ui.drawText(">", x + 8, optY + (optionH/2) + 4, UITheme.fonts.small, UITheme.colors.accent);
+                this.ui.drawText(">", x + 8, optY + (optionH/2) + 4, UITheme.fonts.small, UITheme.colors.selectedWhite);
             }
 
             this.ui.drawText(
@@ -244,12 +253,13 @@ export class CharacterSummaryRenderer {
                 x + 25, // Indent text slightly
                 optY + (optionH/2) + 5, 
                 UITheme.fonts.body, 
-                isSelected ? UITheme.colors.textHighlight : UITheme.colors.textMain
+                // Selected text color uses selectedWhite
+                isSelected ? UITheme.colors.selectedWhite : UITheme.colors.textMain
             );
 
             // Divider line (except for last)
             if (index < menu.options.length - 1) {
-                this.ui.drawLine(x, optY + optionH, x + menuW, optY + optionH, UITheme.colors.bgScale[1]);
+                this.ui.drawLine(x, optY + optionH, x + menuW, optY + optionH, UITheme.colors.border);
             }
 
             this.hitboxes.push({
@@ -276,13 +286,14 @@ export class CharacterSummaryRenderer {
             prompts = "[WASD] Navigate   [SPACE] Menu/Equip   [ESC] Close";
         }
 
+        // CHANGED: Center Alignment
         this.ui.drawText(
             prompts, 
-            w - 20, 
-            h - 15, 
+            w / 2,         // X: Center
+            h - 15,        // Y
             UITheme.fonts.small, 
             UITheme.colors.textMuted, 
-            "right"
+            "center"       // Align: center
         );
     }
 

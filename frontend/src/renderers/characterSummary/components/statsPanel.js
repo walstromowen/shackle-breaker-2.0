@@ -1,5 +1,4 @@
 import { UITheme } from '../../../ui/UITheme.js';
-// NEW IMPORT
 import { Formatting } from '../../../../../shared/utils/formatting.js';
 
 export class StatsPanel {
@@ -18,7 +17,7 @@ export class StatsPanel {
         
         // --- Underline Header ---
         currentY += 5; 
-        this.ui.drawRect(x, currentY, w, 1, "#333"); 
+        this.ui.drawRect(x, currentY, w, 1, UITheme.colors.border); 
         currentY += 15; // Space between line and content
 
         const attrs = member.attributes || {};
@@ -29,62 +28,64 @@ export class StatsPanel {
             const numRows = Math.ceil(attrKeys.length / 2);
 
             attrKeys.forEach((key, i) => {
-                const rowIndex = Math.floor(i / 2);
-                const itemY = currentY + (rowIndex * rowHeight);
+                const col = i % 2;
+                const row = Math.floor(i / 2);
+                
+                const itemX = x + (col * colWidth);
+                const itemY = currentY + (row * rowHeight);
                 
                 const baseVal = attrs[key];      
                 const finalVal = stats[key];     
+                
                 const displayVal = (finalVal !== undefined) ? finalVal : baseVal;
                 const isBuffed = displayVal > baseVal;
-                const valColor = isBuffed ? UITheme.colors.accent : "#fff"; 
+                const isDebuffed = displayVal < baseVal;
                 
-                // CHANGED: Use shared Formatting utility
+                let valColor = UITheme.colors.textMain;
+                if (isBuffed) valColor = UITheme.colors.accent; 
+                if (isDebuffed) valColor = UITheme.colors.danger; 
+
                 const label = Formatting.getAbbreviation(key);
                 
-                const colX = (i % 2 === 0) ? x : x + colWidth;
-                
-                this.ui.drawText(label, colX, itemY, UITheme.fonts.small, "#aaa", "left");
-                this.ui.drawText(displayVal.toString(), colX + 30, itemY, UITheme.fonts.mono, valColor, "left");
+                this.ui.drawText(label, itemX, itemY, UITheme.fonts.small, UITheme.colors.textMuted, "left");
+                this.ui.drawText(displayVal.toString(), itemX + 30, itemY, UITheme.fonts.mono, valColor, "left");
             });
 
             currentY += (numRows * rowHeight);
         } else {
-            this.ui.drawText("None", x, currentY, "italic 11px sans-serif", "#555", "left");
+            this.ui.drawText("None", x, currentY, "italic 11px sans-serif", UITheme.colors.textMuted, "left");
             currentY += rowHeight;
         }
 
-        // Add padding before next section starts
         currentY += 20;
-
 
         // ==========================================
         // 2. COMBAT STATS SECTION
         // ==========================================
         this.ui.drawText("Combat Stats", x, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
 
-        // --- Underline Header ---
         currentY += 5; 
-        this.ui.drawRect(x, currentY, w, 1, "#333");
-        currentY += 15; // Space between line and content
+        this.ui.drawRect(x, currentY, w, 1, UITheme.colors.border);
+        currentY += 15; 
 
         const drawRow = (label, val, color) => {
-            this.ui.drawText(label, x, currentY, UITheme.fonts.mono, "#bbb", "left");
+            this.ui.drawText(label, x, currentY, UITheme.fonts.mono, UITheme.colors.textMuted, "left");
             this.ui.drawText(val, x + 70, currentY, UITheme.fonts.mono, color, "left");
             currentY += rowHeight; 
         };
 
         const speed = stats.speed || member.attributes?.speed || 0;
-        drawRow("SPD", `${speed}`, UITheme.colors.accent);
+        drawRow("SPD", `${speed}`, UITheme.colors.textMain);
 
         const critChance = (stats.critChance || 0) * 100;
-        drawRow("CRT %", `${critChance.toFixed(0)}%`, UITheme.colors.insight);
+        // CHANGED: Use textMain (Default) instead of insight color
+        drawRow("CRT %", `${critChance.toFixed(0)}%`, UITheme.colors.textMain);
 
         const critMult = (stats.critMultiplier !== undefined) ? stats.critMultiplier : 1.5;
-        drawRow("CRT Dmg", `x${critMult}`, "#aa7");
+        // CHANGED: Use textMain (Default) instead of custom gold
+        drawRow("CRT Dmg", `x${critMult}`, UITheme.colors.textMain);
 
-        // Add padding before next section starts
         currentY += 20;
-
 
         // ==========================================
         // 3. RESISTANCE TABLE
@@ -94,20 +95,21 @@ export class StatsPanel {
 
     _drawResistanceTable(stats, x, y, w) {
         let currentY = y;
+        
         const colType = x;
-        const colAtk = x + 70;
-        const colDef = x + 105;
-        const colRes = x + 140;
+        const colAtk = x + (w * 0.45);
+        const colDef = x + (w * 0.65);
+        const colRes = x + (w * 0.85);
 
         const headerFont = "bold 10px sans-serif";
-        this.ui.drawText("TYPE", colType, currentY, headerFont, "#666", "left");
+        this.ui.drawText("TYPE", colType, currentY, headerFont, UITheme.colors.textMuted, "left");
         this.ui.drawText("ATK", colAtk, currentY, headerFont, UITheme.colors.danger, "center");
         this.ui.drawText("DEF", colDef, currentY, headerFont, UITheme.colors.magic, "center");
-        this.ui.drawText("RES", colRes, currentY, headerFont, UITheme.colors.insight, "center");
+        // CHANGED: Header for RES is now textMuted (default gray) to match the request for "default color"
+        this.ui.drawText("RES", colRes, currentY, headerFont, UITheme.colors.textMuted, "center");
         
-        // Underline for Table Header
         currentY += 5;
-        this.ui.drawRect(x, currentY, w - 5, 1, "#444");
+        this.ui.drawRect(x, currentY, w, 1, UITheme.colors.border);
         currentY += 15;
 
         const types = [
@@ -117,20 +119,38 @@ export class StatsPanel {
         ];
         
         types.forEach((type) => {
-            // CHANGED: Added safety checks (|| {}) to prevent crashes if keys are missing
             const atk = (stats.attack || {})[type] || 0;
             const defense = (stats.defense || {})[type] || 0;
             const res = (stats.resistance || {})[type] || 0;
             
             if (atk === 0 && defense === 0 && res === 0) return;
 
-            // CHANGED: Use shared Formatting utility
             const label = Formatting.getAbbreviation(type);
             
-            this.ui.drawText(label, colType, currentY, UITheme.fonts.mono, "#bbb", "left");
-            this.ui.drawText(`${atk}`, colAtk, currentY, UITheme.fonts.mono, atk > 0 ? "#f88" : "#444", "center");
-            this.ui.drawText(`${defense}`, colDef, currentY, UITheme.fonts.mono, defense > 0 ? "#aaf" : "#444", "center");
-            this.ui.drawText(`${res}%`, colRes, currentY, UITheme.fonts.mono, res > 0 ? "#fea" : "#444", "center");
+            this.ui.drawText(label, colType, currentY, UITheme.fonts.mono, UITheme.colors.textMuted, "left");
+            
+            const formatVal = (val, color) => {
+                 const display = val > 0 ? `${val}` : "-";
+                 const displayColor = val > 0 ? color : UITheme.colors.textMuted;
+                 return { text: display, color: displayColor };
+            };
+
+            // ATK (Danger/Red)
+            const atkData = formatVal(atk, UITheme.colors.danger);
+            this.ui.drawText(atkData.text, colAtk, currentY, UITheme.fonts.mono, atkData.color, "center");
+            
+            // DEF (Magic/Blue)
+            const defData = formatVal(defense, UITheme.colors.magic);
+            this.ui.drawText(defData.text, colDef, currentY, UITheme.fonts.mono, defData.color, "center");
+            
+            // RES (Default/White)
+            // CHANGED: Use textMain instead of insight color for value
+            const resData = (res !== 0) 
+                ? { text: `${res}%`, color: UITheme.colors.textMain } 
+                : { text: "-", color: UITheme.colors.textMuted };
+                
+            this.ui.drawText(resData.text, colRes, currentY, UITheme.fonts.mono, resData.color, "center");
+
             currentY += 14; 
         });
     }

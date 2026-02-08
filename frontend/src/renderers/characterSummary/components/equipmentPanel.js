@@ -1,6 +1,5 @@
 import { UITheme } from '../../../ui/UITheme.js';
 import { TRAIT_DEFINITIONS } from '../../../../../shared/data/traitDefinitions.js';
-// NEW IMPORT
 import { ItemDefinitions } from '../../../../../shared/data/itemDefinitions.js';
 
 export class EquipmentPanel {
@@ -18,7 +17,7 @@ export class EquipmentPanel {
 
         // 1. Name & Level
         this.ui.drawText(member.name, centerX, headerY + 15, UITheme.fonts.header, UITheme.colors.textMain, "center");
-        this.ui.drawText(`Level ${member.level}`, centerX, headerY + 36, UITheme.fonts.body, UITheme.colors.accent, "center");
+        this.ui.drawText(`Level ${member.level}`, centerX, headerY + 36, UITheme.fonts.body, UITheme.colors.textHighlight, "center");
 
         // 2. Vitals
         this._drawVitals(member, stats, centerX, headerY + 58, x, w);
@@ -55,12 +54,14 @@ export class EquipmentPanel {
             startX += width + gap;
         };
 
-        drawVital(hpText, UITheme.colors.danger);
-        drawVital(stmText, UITheme.colors.success);
-        drawVital(insText, UITheme.colors.insight);
-        drawVital(xpText, "#9370DB");
+        // Standardized Colors from UITheme
+        drawVital(hpText, UITheme.colors.hp);
+        drawVital(stmText, UITheme.colors.stm);
+        drawVital(insText, UITheme.colors.ins); 
+        drawVital(xpText, UITheme.colors.xp); 
 
-        this.ui.drawRect(fullX + 20, y + 15, fullW - 40, 1, "#333");
+        // Divider Line
+        this.ui.drawRect(fullX + 20, y + 15, fullW - 40, 1, UITheme.colors.border);
     }
 
     _drawEquipmentLayout(member, activeSlots, selectedIndex, isChoosingItem, centerX, startY, w, hitboxes, heldItem) {
@@ -92,15 +93,12 @@ export class EquipmentPanel {
             let isValidDrop = false;
             if (heldItem) {
                 const item = heldItem.item;
-                // CHANGED: Look up definition for held item
                 const def = ItemDefinitions[item.defId];
                 
                 if (def) {
-                    // Normalization
                     const iSlot = (def.slot || def.type || '').toLowerCase().replace(/\s/g, '');
                     const sSlot = slotName.toLowerCase().replace(/\s/g, '');
 
-                    // Validation logic
                     isValidDrop = (iSlot === sSlot) ||
                                   (sSlot === 'mainhand' && (iSlot === 'weapon' || iSlot === 'tool')) ||
                                   (sSlot === 'offhand' && (iSlot === 'shield' || iSlot === 'weapon'));
@@ -108,19 +106,20 @@ export class EquipmentPanel {
             }
 
             // --- DYNAMIC STYLING ---
-            let borderColor = "#333";
-            let boxColor = "rgba(0,0,0,0.3)";
+            let borderColor = UITheme.colors.border;
+            let boxColor = UITheme.colors.scrollTrack; // Transparent dark
             let lineWidth = 1;
 
             if (isValidDrop) {
-                // Highlighting for valid drag target
+                // Highlighting for valid drag target (Keep Green for "Safety/Success")
                 borderColor = UITheme.colors.success; 
                 boxColor = "rgba(46, 204, 113, 0.15)"; 
                 lineWidth = 2;
             } else if (isSelected) {
-                // Normal selection
-                borderColor = isChoosingItem ? UITheme.colors.accent : UITheme.colors.textHighlight;
-                boxColor = "rgba(255, 255, 255, 0.1)";
+                // CHANGED: Use selectedWhite (Misty White) for the selection cursor
+                borderColor = UITheme.colors.selectedWhite;
+                // Subtle white tint for the background of selected item
+                boxColor = "rgba(240, 240, 240, 0.05)"; 
                 lineWidth = 2;
             }
 
@@ -140,7 +139,6 @@ export class EquipmentPanel {
                 item = null; 
             }
 
-            // CHANGED: Look up Definition
             let def = null;
             if (item && item.defId) {
                 def = ItemDefinitions[item.defId];
@@ -153,11 +151,10 @@ export class EquipmentPanel {
             const textW = slotW - 48;
             const align = isLeft ? "right" : "left";
 
-            // CHANGED: Pass definition to drawIcon
             if (def) this._drawIcon(def, iconX, slotY + 8);
 
             // Draw Label
-            this.ui.drawText(slotName.toUpperCase(), textX, slotY + 10, "bold 8px monospace", "#666", align);
+            this.ui.drawText(slotName.toUpperCase(), textX, slotY + 10, "bold 8px monospace", UITheme.colors.textMuted, align);
 
             // Draw Item Name
             const nameFont = "11px sans-serif";
@@ -167,7 +164,9 @@ export class EquipmentPanel {
 
             nameLines.forEach((line, i) => {
                 if (i < 2) {
-                    this.ui.drawText(line, textX, nameY + (i * 12), nameFont, item ? "#fff" : "#444", align);
+                    // Item Name: Main (whiteish) if item exists, Muted (grey) if empty
+                    const color = item ? UITheme.colors.textMain : UITheme.colors.textMuted;
+                    this.ui.drawText(line, textX, nameY + (i * 12), nameFont, color, align);
                 }
             });
         };
@@ -178,14 +177,14 @@ export class EquipmentPanel {
 
     _drawTraitBadges(member, x, y, w, hitboxes) {
         const centerX = x + (w / 2);
-        this.ui.drawText("Traits", centerX, y, UITheme.fonts.bold, "#666", "center");
+        this.ui.drawText("Traits", centerX, y, UITheme.fonts.bold, UITheme.colors.textMuted, "center");
         
         let currentX = x + 30;
         let currentY = y + 20;
         const traits = member.traits || [];
 
         if (traits.length === 0) {
-            this.ui.drawText("None", centerX, currentY, "italic 11px sans-serif", "#444", "center");
+            this.ui.drawText("None", centerX, currentY, "italic 11px sans-serif", UITheme.colors.textMuted, "center");
             return;
         }
 
@@ -200,8 +199,8 @@ export class EquipmentPanel {
 
             hitboxes.push({ id: traitId, x: currentX, y: currentY, w: width, h: 22, type: 'trait' });
 
-            this.ui.drawRect(currentX, currentY, width, 22, "rgba(255,255,255,0.1)");
-            this.ui.drawText(def.name, currentX + width/2, currentY + 15, "11px sans-serif", "#ccc", "center");
+            this.ui.drawRect(currentX, currentY, width, 22, UITheme.colors.bgScale[1]);
+            this.ui.drawText(def.name, currentX + width/2, currentY + 15, "11px sans-serif", UITheme.colors.textMain, "center");
             currentX += width + 8;
         });
     }
@@ -211,9 +210,7 @@ export class EquipmentPanel {
         const sheet = this.loader.get('icons') || this.loader.get('items'); 
         if (!sheet) return;
         
-        // CHANGED: Use def.icon directly
         const iconData = def.icon || {col:0, row:0};
-        
         this.ui.drawSprite(sheet, iconData.col*32, iconData.row*32, 32, 32, x, y, 32, 32);
     }
 }
