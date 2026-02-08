@@ -41,19 +41,15 @@ export class CharacterSummaryRenderer {
         const rightW = w - leftW - centerW;
 
         // 3. Draw Global Backgrounds & Borders
-        // Left & Right: Darker (bgScale[0])
-        // Center: Lighter (bgScale[1])
         this.ui.drawRect(0, 0, leftW, h, UITheme.colors.bgScale[0]);
         this.ui.drawRect(leftW, 0, centerW, h, UITheme.colors.bgScale[1]);
         this.ui.drawRect(leftW + centerW, 0, rightW, h, UITheme.colors.bgScale[0]);
         
-        // Use selectedWhite for the main column dividers
         this.ui.drawLine(leftW, 0, leftW, h, UITheme.colors.selectedWhite);
         this.ui.drawLine(leftW + centerW, 0, leftW + centerW, h, UITheme.colors.selectedWhite);
 
         if (!member) return;
 
-        // Ensure stats are calculated once per frame
         const stats = derivedStats || StatCalculator.calculate(member);
 
         // --- 4. Render Components ---
@@ -95,22 +91,20 @@ export class CharacterSummaryRenderer {
             this._drawHeldItem(state);
         }
 
-        // E. Context Menu (Right-Click Menu) 
-        // Pass the selectedIndex to support Keyboard highlighting
+        // E. Context Menu
         if (state.contextMenu) {
             this._drawContextMenu(state.contextMenu, state.contextMenu.selectedIndex);
         }
 
-        // F. Tooltips (Overlay)
+        // F. Tooltips
         if (!state.heldItem && !state.contextMenu) {
             this.tooltipSystem.render(state, this.hitboxes);
         }
 
-        // G. Input Prompts (Visual feedback for available keys)
+        // G. Input Prompts
         this._drawInputPrompts(state, w, h);
 
-        // --- 5. Report Hitboxes to Controller ---
-        // This closes the loop so the controller knows where items are
+        // --- 5. Report Hitboxes ---
         if (state.onLayoutUpdate) {
             state.onLayoutUpdate(this.hitboxes);
         }
@@ -122,15 +116,12 @@ export class CharacterSummaryRenderer {
         const y = this.padding;
         const contentW = w - (this.padding * 2);
 
-        // --- Tabs Drawing Logic ---
+        // --- Tabs ---
         const tabH = 28;
         const tabW = contentW / 2;
         
         const drawTab = (label, tx, isActive, id) => {
-            // Active: Lightest (bgScale[2]), Inactive: Darkest (bgScale[0])
             const bg = isActive ? UITheme.colors.bgScale[2] : UITheme.colors.bgScale[0];
-            
-            // Active tab border uses selectedWhite
             const border = isActive ? UITheme.colors.selectedWhite : UITheme.colors.border;
             const text = isActive ? UITheme.colors.textMain : UITheme.colors.textMuted;
             
@@ -173,17 +164,13 @@ export class CharacterSummaryRenderer {
         const iconSize = 32; 
         const drawSize = 32; 
         
-        // Center the icon on the mouse cursor
         const x = mouse.x - (drawSize / 2);
         const y = mouse.y - (drawSize / 2);
 
         this.ctx.save();
-
-        // 1. Draw Drop Shadow (Use Theme ScrollTrack for transparency)
         this.ctx.fillStyle = UITheme.colors.scrollTrack;
         this.ctx.fillRect(x + 4, y + 4, drawSize, drawSize);
 
-        // 2. Draw Icon
         if (iconSheet && item.icon) {
             const sx = item.icon.col * iconSize;
             const sy = item.icon.row * iconSize;
@@ -193,71 +180,47 @@ export class CharacterSummaryRenderer {
             this.ctx.fillRect(x, y, drawSize, drawSize);
         }
 
-        // 3. Draw "Holding" Border
         this.ui.drawRect(x, y, drawSize, drawSize, UITheme.colors.selectedWhite, false, 2);
         this.ctx.restore();
     }
 
-    /**
-     * Draws the Context Menu with smart clamping to ensure it stays on screen.
-     */
     _drawContextMenu(menu, selectedIndex = 0) {
         if (!menu || !menu.options) return;
 
         const optionH = 32;
         const menuW = 120;
         const menuH = menu.options.length * optionH;
-
-        // --- BOUNDARY CHECKS ---
         const screenW = this.ctx.canvas.width;
         const screenH = this.ctx.canvas.height;
 
         let x = menu.x;
         let y = menu.y;
 
-        // Clamp Right: If menu goes past right edge, shift left
-        if (x + menuW > screenW) {
-            x = screenW - menuW - 5; // 5px padding
-        }
-
-        // Clamp Bottom: If menu goes past bottom edge, shift up
-        if (y + menuH > screenH) {
-            y = screenH - menuH - 5; 
-        }
-
-        // Clamp Left/Top: Don't let it go off top-left
+        if (x + menuW > screenW) x = screenW - menuW - 5;
+        if (y + menuH > screenH) y = screenH - menuH - 5; 
         if (x < 5) x = 5;
         if (y < 5) y = 5;
 
-        // Background - Use bgScale[2] (Highest Elevation/Lightest)
         this.ui.drawRect(x, y, menuW, menuH, UITheme.colors.bgScale[2]); 
-        
-        // Context Menu Border uses selectedWhite
         this.ui.drawRect(x, y, menuW, menuH, UITheme.colors.selectedWhite, false);
 
-        // Draw Options
         menu.options.forEach((opt, index) => {
             const optY = y + (index * optionH);
             const isSelected = (index === selectedIndex);
             
-            // Highlight Bar for Keyboard Nav
             if (isSelected) {
-                // Use slightly darker/lighter contrast for selection
                 this.ui.drawRect(x, optY, menuW, optionH, UITheme.colors.bgScale[1]);
-                // Little indicator arrow
                 this.ui.drawText(">", x + 8, optY + (optionH/2) + 4, UITheme.fonts.small, UITheme.colors.selectedWhite);
             }
 
             this.ui.drawText(
                 opt.label, 
-                x + 25, // Indent text slightly
+                x + 25, 
                 optY + (optionH/2) + 5, 
                 UITheme.fonts.body, 
-                // Selected text color uses selectedWhite
                 isSelected ? UITheme.colors.selectedWhite : UITheme.colors.textMain
             );
 
-            // Divider line (except for last)
             if (index < menu.options.length - 1) {
                 this.ui.drawLine(x, optY + optionH, x + menuW, optY + optionH, UITheme.colors.border);
             }
@@ -270,30 +233,46 @@ export class CharacterSummaryRenderer {
         });
     }
 
-    /**
-     * Helper to show valid hotkeys for the current state.
-     */
     _drawInputPrompts(state, w, h) {
         let prompts = "";
 
         if (state.contextMenu) {
             prompts = "[W/S] Nav   [SPACE] Select   [ESC] Close";
-        } else if (state.heldItem) {
-            prompts = "[ARROWS] Move   [SPACE] Drop/Swap   [ESC] Cancel";
-        } else if (state.isChoosingItem) {
-            prompts = "[WASD] Select Item   [SPACE] Confirm   [ESC] Cancel";
-        } else {
-            prompts = "[WASD] Navigate   [SPACE] Menu/Equip   [ESC] Close";
+        } 
+        else if (state.heldItem) {
+            prompts = "[MOUSE] Place   [ESC] Cancel";
+        } 
+        else if (state.isChoosingItem) {
+            prompts = "[WASD] Grid   [SHIFT] View   [SPACE] Menu   [ESC] Back";
+        } 
+        else {
+            // --- Equipment Slots active ---
+            const slot = (state.slots && state.slots[state.selectedSlotIndex]) || null;
+            const hasSlotItem = slot && slot.item;
+            const hasInvItems = state.filteredInventory && state.filteredInventory.length > 0;
+
+            let parts = ["[WASD] Slot", "[Q/E] Char", "[SHIFT] View"];
+
+            // Logic: 
+            // 1. If we have an item in the slot, SPACE opens the context menu (Unequip etc).
+            // 2. If the slot is empty, SPACE jumps to Inventory (Equip). This is ONLY valid if inventory has items.
+            if (hasSlotItem) {
+                parts.push("[SPACE] Menu");
+            } else if (hasInvItems) {
+                parts.push("[SPACE] Equip");
+            }
+
+            parts.push("[ESC] Back");
+            prompts = parts.join("   ");
         }
 
-        // CHANGED: Center Alignment
         this.ui.drawText(
             prompts, 
-            w / 2,         // X: Center
-            h - 15,        // Y
+            w / 2,         
+            h - 15,        
             UITheme.fonts.small, 
             UITheme.colors.textMuted, 
-            "center"       // Align: center
+            "center"       
         );
     }
 

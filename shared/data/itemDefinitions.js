@@ -67,9 +67,9 @@ export const ItemDefinitions = {
         id: "healing_herb",
         name: "Healing Herb",
         type: "consumable", 
-        description: "Chew on this to close wounds.",
+        description: "A simple herb that can be used to treat minor wounds.",
         value: 10,
-        icon: { col: 4, row: 0 },
+        icon: { col: 2, row: 0 },
         useAbility: "heal_minor",
 
         // NEW PROPERTIES
@@ -78,8 +78,8 @@ export const ItemDefinitions = {
     },
 
     // --- ACCESSORIES ---
-    "amulet_of_wisdom": {
-        id: "amulet_of_wisdom",
+    "amulet_of_the_dev": {
+        id: "amulet_of_the_dev",
         name: "Amulet of the Developer", 
         slot: "accessory",
         type: "accessory",
@@ -92,7 +92,7 @@ export const ItemDefinitions = {
         defense: { blunt: 5, slash: 5, pierce: 5 },
         resistance: { fire: 5, ice: 5, lightning: 5, arcane: 5 },
         critChance: 0.10, 
-        critMultiplier: 0.50, 
+        critMultiplier: 0.50, //Is this even applying?????
         speed: 5 
     },
 };

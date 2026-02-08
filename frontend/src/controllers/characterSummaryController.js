@@ -97,15 +97,15 @@ export class CharacterSummaryController {
         }
     }
 
-    /**
-     * Updated to calculate position based on HITBOXES, not just mouse.
-     */
     _openContextMenu(item, source, sourceKey) {
         const options = [];
         const isStackable = (item.qty !== undefined && item.qty > 1);
 
         if (source === 'equipment') {
-            options.push({ label: 'Equip', action: 'NAV_TO_INV' });
+            // Guard: Only show Equip (swap) if there are items to swap with
+            if (this.filteredInventory.length > 0) {
+                options.push({ label: 'Equip', action: 'NAV_TO_INV' });
+            }
             options.push({ label: 'Unequip', action: 'UNEQUIP_AND_NAV' });
         } 
         else if (source === 'inventory') {
@@ -122,11 +122,9 @@ export class CharacterSummaryController {
         }
 
         // --- POSITION CALCULATION START ---
-        // Default to mouse or arbitrary point
         let menuX = this.mouse.x || 100;
         let menuY = this.mouse.y || 100;
 
-        // Try to find the Rendered Hitbox for this item
         let targetId = null;
         if (source === 'equipment') {
             targetId = `SLOT_${sourceKey}`;
@@ -137,7 +135,6 @@ export class CharacterSummaryController {
         if (targetId && this.lastRenderedHitboxes.length > 0) {
             const hit = this.lastRenderedHitboxes.find(h => h.id === targetId);
             if (hit) {
-                // Position at the bottom-center of the item
                 menuX = Math.floor(hit.x + (hit.w / 2));
                 menuY = Math.floor(hit.y + (hit.h / 2));
             }
@@ -157,8 +154,15 @@ export class CharacterSummaryController {
 
     handleMenuAction(actionIndex) {
         if (!this.contextMenu) return;
-
+        
         const { item, source, sourceKey, options } = this.contextMenu;
+        
+        // Safety check if index is out of bounds (though unlikely)
+        if (!options[actionIndex]) {
+            this.contextMenu = null;
+            return;
+        }
+
         const action = options[actionIndex].action;
 
         // --- NAVIGATION ACTIONS ---
@@ -175,7 +179,6 @@ export class CharacterSummaryController {
             
             this.updateFilteredInventory();
             
-            // Search backwards to find the newly added item (at end of list)
             const newIndex = this._findNewestInventoryIndex(defId);
             
             this.state = 'INVENTORY';
@@ -268,8 +271,10 @@ export class CharacterSummaryController {
             return;
         }
 
-        // --- PRIORITY 3: GLOBAL TABS ---
-        if (code === 'Tab') { this.cycleMember(1); return; }
+        // --- PRIORITY 3: GLOBAL TABS (Q/E) ---
+        if (code === 'KeyQ') { this.cycleMember(-1); return; }
+        if (code === 'KeyE') { this.cycleMember(1); return; }
+
         if (code === 'ShiftLeft' || code === 'ShiftRight') {
             this.viewMode = (this.viewMode === 'STATS') ? 'ITEM' : 'STATS';
             return;
@@ -312,6 +317,9 @@ export class CharacterSummaryController {
             if (item) {
                 this._openContextMenu(item, 'equipment', slotName);
             } else {
+                // GUARD: Don't activate inventory mode if empty
+                if (this.filteredInventory.length === 0) return;
+
                 this._activateSlotButDontFilter(slotName);
             }
         }
@@ -498,6 +506,7 @@ export class CharacterSummaryController {
                 this.handleMenuAction(optIndex);
                 return;
             }
+            // If clicking elsewhere while menu is open, close it
             this.contextMenu = null;
         }
 
