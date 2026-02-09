@@ -23,7 +23,7 @@ const CREATION_DATA = {
             id: "TRAVELER", label: "Traveler", 
             desc: "Travelers from far and wide came to see the incredible discovery of what was magic in the Altus Kingdom.",
             attributes: { vigor: 12, strength: 12, dexterity: 12, intelligence: 10, attunement: 10 },
-            equipment: { mainHand: "shortsword", torso: "tattered_shirt" }
+            equipment: { mainHand: "shortsword", torso: "tattered_shirt"}
         },
         { 
             id: "BLACKSMITH", label: "Blacksmith", 
@@ -58,7 +58,7 @@ const CREATION_DATA = {
     KEEPSAKES: [
         { label: "None", itemId: null, desc: "You carry nothing but your burden." },
         { label: "Merchant's Bag", desc: "Start with a small supply of materials.", items: [{ id: "soft_wood", qty: 3 }] },
-        { label: "Healer's Pouch", desc: "Start with a small supply of healing herbs.", items: [{ id: "healing_herb", qty: 3 }] },
+        { label: "Healer's Pouch", desc: "Start with a small supply of healing herbs.", items: [{ id: "healing_herb", qty: 3 }, { id: "amulet_of_the_dev", qty: 1 },{ id: "kurtus_brew", qty: 1 }] },
     ],
         COMPANIONS: [
         { label: "None", speciesId: null, desc: "Walk the path alone.", attributes: {}, equipment: {} },
@@ -373,10 +373,11 @@ export class CharacterCreatorController {
             return;
         }
 
-        const finalStats = player.stats; 
-        player.hp = finalStats.maxHp;
-        player.stamina = finalStats.maxStamina;
-        player.insight = finalStats.maxInsight;
+        // [FIXED] Use Direct Getters instead of player.stats
+        // player.maxHp calls the calculator, giving us the correct total.
+        player.hp = player.maxHp;
+        player.stamina = player.maxStamina;
+        player.insight = player.maxInsight;
 
         const finalParty = [player];
 
@@ -390,9 +391,9 @@ export class CharacterCreatorController {
             };
             const companionInstance = EntityFactory.create(comp.speciesId, companionOverrides);
             if (companionInstance) {
-                const compStats = companionInstance.stats;
-                companionInstance.hp = compStats.maxHp;
-                companionInstance.stamina = compStats.maxStamina;
+                // [FIXED] Use Direct Getters here too
+                companionInstance.hp = companionInstance.maxHp;
+                companionInstance.stamina = companionInstance.maxStamina;
                 finalParty.push(companionInstance);
             }
         }

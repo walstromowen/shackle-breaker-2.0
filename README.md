@@ -1,6 +1,10 @@
 # [ShackleBreaker Legacy](https://shackle-breaker-frontend.onrender.com/)
 Roguelike turnbased adventure game based on the Shackle Breaker story by Owen Walstrom
 
+
+
+TODO ADD USE ITEM TO CERTAIN ITEMS IN SUMMARY. ABILITIES, ENTITIES, ITEMS are ready to go just need to change summary renderer and controller. Can revert to before use item logic update if needed by reseting
+
 Root
 ├── backend/
 ├── frontend/                  

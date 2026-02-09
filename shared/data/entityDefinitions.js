@@ -24,8 +24,14 @@ export const ENTITY_DEFINITIONS = {
             attunement: 10
         },
         
-        // --- BASE STATS ---
+        // --- BASE STATS (The "Naked" Potential) ---
         baseStats: {
+            // [MOVED HERE] Resources now live in baseStats
+            maxHp: 20,      
+            maxStamina: 10, 
+            maxInsight: 10,
+
+            // Combat Stats
             speed: 5,
             critical: 5,
             corruption: 0,
@@ -42,15 +48,9 @@ export const ENTITY_DEFINITIONS = {
             }
         },
 
-        // --- RESOURCES ---
-        stats: {
-            hp: 0,          
-            maxHp: 20,      
-            stamina: 0,
-            maxStamina: 10, 
-            insight: 0,
-            maxInsight: 10
-        },
+        // [REMOVED] 'stats' object is no longer needed in definitions.
+        // The EntityModel will automatically create: 
+        // stats: { hp: 20, stamina: 10, insight: 10 }
 
         // --- EQUIPMENT & DROPS ---
         equipment: {
@@ -65,8 +65,6 @@ export const ENTITY_DEFINITIONS = {
         },
 
         lootTable: [], 
-
-        // [UPDATED] Innate Abilities (Always available)
         abilities: ["rest", "punch"],
         tags: ["BIOLOGICAL", "HUMANOID"]
     },
@@ -85,38 +83,27 @@ export const ENTITY_DEFINITIONS = {
         statusEffects: [],
         
         attributes: {
-            vigor: 12,
-            strength: 8,
-            dexterity: 14,
-            intelligence: 3,
-            attunement: 5
+            vigor: 12, strength: 8, dexterity: 14, intelligence: 3, attunement: 5
         },
         
         baseStats: {
+            // [MOVED HERE]
+            maxHp: 30,
+            maxStamina: 8,
+            maxInsight: 0,
+
             speed: 7,
             critical: 10,
             corruption: 0,
             baseDefense: {
-                blunt: 4, 
-                slash: 2, 
-                pierce: 1,
-                water: 2 
+                blunt: 4, slash: 2, pierce: 1, water: 2 
             },
             baseResistance: {
                 fire: -0.2, 
-                
             },
             baseAttack: {
-                blunt: 6,
-                slash: 8, 
-                pierce: 4 
+                blunt: 6, slash: 8, pierce: 4 
             }
-        },
-
-        stats: {
-            hp: 0, maxHp: 30,
-            stamina: 0, maxStamina: 8,
-            insight: 0, maxInsight: 0
         },
 
         equipment: {
@@ -125,8 +112,6 @@ export const ENTITY_DEFINITIONS = {
         },
 
         lootTable: [], 
-
-        // [UPDATED] Beast Innate Abilities
         abilities: ["bite", "howl"],
         tags: ["BIOLOGICAL", "BEAST"]
     },
@@ -146,25 +131,21 @@ export const ENTITY_DEFINITIONS = {
         attributes: { vigor: 6, strength: 4, dexterity: 16, intelligence: 6, attunement: 8 },
         
         baseStats: {
+            // [MOVED HERE]
+            maxHp: 12,
+            maxStamina: 15,
+            maxInsight: 5,
+
             speed: 10, critical: 15, corruption: 0,
             baseDefense: {
-                blunt: 0, slash: 0, pierce: 0,
-                earth: 5 
+                blunt: 0, slash: 0, pierce: 0, earth: 5 
             },
             baseResistance: {
-                wind: 0.5,  
-                earth: 0.2
+                wind: 0.5, earth: 0.2
             },
             baseAttack: {
-                slash: 4,  
-                pierce: 4  
+                slash: 4, pierce: 4  
             }
-        },
-
-        stats: {
-            hp: 0, maxHp: 12,
-            stamina: 0, maxStamina: 15,
-            insight: 0, maxInsight: 5
         },
 
         equipment: {
@@ -172,8 +153,6 @@ export const ENTITY_DEFINITIONS = {
         },
 
         lootTable: [],
-
-        // [UPDATED] Avian Innate Abilities
         abilities: ["peck", "screech"],
         tags: ["BIOLOGICAL", "AVIAN"]
     },

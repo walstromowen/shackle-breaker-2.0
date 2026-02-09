@@ -3,6 +3,7 @@ import { events } from '../core/eventBus.js';
 import { StatCalculator } from '../../../shared/systems/statCalculator.js';
 import { ItemDefinitions } from '../../../shared/data/itemDefinitions.js';
 import { InventorySystem } from '../../../shared/systems/inventorySystem.js';
+import { AbilitySystem } from '../../../shared/systems/abilitySystem.js';
 
 const SLOT_ORDER = ['head', 'torso', 'arms', 'mainHand', 'offHand', 'legs', 'feet', 'accessory'];
 
@@ -98,9 +99,26 @@ export class CharacterSummaryController {
     }
 
     _openContextMenu(item, source, sourceKey) {
+        const def = ItemDefinitions[item.defId];
         const options = [];
         const isStackable = (item.qty !== undefined && item.qty > 1);
 
+        // --- DEBUG LOG START ---
+        console.log("--- OPENING CONTEXT MENU ---");
+        console.log("Item:", def ? def.name : "Unknown Item", item);
+        console.log("Source:", source);
+        console.log("Type:", def ? def.type : "N/A");
+        console.log("Category:", def ? def.category : "N/A");
+        console.log("Is Usable (Check):", this._isItemUsableInMenu(def));
+        // --- DEBUG LOG END ---
+
+        // --- 1. USE OPTION ---
+        // Checks gameState.mode against item.usability
+        if (this._isItemUsableInMenu(def)) {
+            options.push({ label: 'Use', action: 'USE' });
+        }
+
+        // --- 2. EQUIP / UNEQUIP OPTIONS ---
         if (source === 'equipment') {
             // Guard: Only show Equip (swap) if there are items to swap with
             if (this.filteredInventory.length > 0) {
@@ -114,6 +132,7 @@ export class CharacterSummaryController {
             }
         }
 
+        // --- 3. DROP OPTIONS ---
         if (isStackable) {
             options.push({ label: 'Drop 1', action: 'DROP_ONE' });
             options.push({ label: 'Drop All', action: 'DROP_ALL' });
@@ -150,6 +169,8 @@ export class CharacterSummaryController {
             options,
             selectedIndex: 0
         };
+        
+        console.log("Generated Options:", options);
     }
 
     handleMenuAction(actionIndex) {
@@ -157,7 +178,7 @@ export class CharacterSummaryController {
         
         const { item, source, sourceKey, options } = this.contextMenu;
         
-        // Safety check if index is out of bounds (though unlikely)
+        // Safety check if index is out of bounds
         if (!options[actionIndex]) {
             this.contextMenu = null;
             return;
@@ -165,8 +186,13 @@ export class CharacterSummaryController {
 
         const action = options[actionIndex].action;
 
+        // --- USE ACTION ---
+        if (action === 'USE') {
+            this.useItem(item);
+        }
+
         // --- NAVIGATION ACTIONS ---
-        if (action === 'NAV_TO_INV') {
+        else if (action === 'NAV_TO_INV') {
             this.state = 'INVENTORY';
             this.inventoryIndex = 0;
             this.scrollToItem(0);
@@ -196,6 +222,87 @@ export class CharacterSummaryController {
 
         this.contextMenu = null;
         this.updateFilteredInventory();
+    }
+
+    useItem(item) {
+        const def = ItemDefinitions[item.defId];
+        
+        // 1. Validation
+        if (!def) return;
+        
+        // If the item doesn't have a linked ability (like "heal_minor"), we can't use it.
+        // (Make sure your potion definition has: useAbility: 'heal_minor')
+        if (!def.useAbility) {
+            console.log(`Item ${def.name} is not usable directly.`);
+            return;
+        }
+
+        console.log(`Attempting to use: ${def.name}`);
+
+        // 2. Execute Logic (Delegate to System)
+        // logic: AbilitySystem.execute(abilityId, source, target)
+        // In the menu, source and target are the same (the current character).
+        const result = AbilitySystem.execute(def.useAbility, this.currentMember, this.currentMember);
+
+        // 3. Handle Result
+        if (result.success) {
+            // --- SUCCESS: Consume & Feedback ---
+            
+            // A. Use InventorySystem to safely remove 1
+            InventorySystem.removeItem(item.defId, 1);
+
+            // B. Visual Feedback
+            events.emit('TEXT_POPUP', {
+                text: result.message, // e.g. "+20 HP"
+                x: this.currentMember.x || 400, // Fallback if entity has no world position
+                y: (this.currentMember.y || 300) - 40,
+                color: '#00ff00' 
+            });
+
+            // C. Refresh UI Lists
+            this.updateFilteredInventory();
+            
+            // Fix selection index so it doesn't go out of bounds
+            if (this.inventoryIndex >= this.filteredInventory.length) {
+                this.inventoryIndex = Math.max(0, this.filteredInventory.length - 1);
+            }
+            if (this.filteredInventory.length === 0) {
+                this.inventoryIndex = -1;
+            }
+
+        } else {
+            // --- FAILURE: Do NOT consume item ---
+            console.warn(`Item used failed: ${result.message}`);
+            
+            events.emit('TEXT_POPUP', {
+                text: result.message, // e.g. "HP Full"
+                x: 400,
+                y: 300,
+                color: '#ffffff' 
+            });
+        }
+    }
+
+    _isItemUsableInMenu(def) {
+        if (!def) return false;
+
+        // 1. Get the current Game Mode
+        const currentMode = (gameState.mode || 'overworld').toLowerCase();
+
+        // 2. Check specific usability rules (if they exist)
+        if (def.usability && Array.isArray(def.usability)) {
+            return def.usability.includes(currentMode);
+        }
+
+        // 3. Fallback for Consumables (Case-Insensitive Fix)
+        const itemType = (def.type || '').toLowerCase();
+        const itemCategory = (def.category || '').toLowerCase();
+
+        if (itemType === 'consumable' || itemCategory === 'consumable') {
+            return true;
+        }
+
+        return false;
     }
 
     _handleDropAction(action, item, source, sourceKey) {

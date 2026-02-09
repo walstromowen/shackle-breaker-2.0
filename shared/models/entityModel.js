@@ -6,48 +6,71 @@ export class EntityModel {
         // Deep clone to safely detach from the source definition
         this.state = structuredClone(config);
 
-        // 1. Initialize Base Resources
-        if (!this.state.stats) {
-            this.state.stats = {
-                hp: 10, maxHp: 10,
-                stamina: 10, maxStamina: 10,
-                insight: 0, maxInsight: 10
+        // =========================================================
+        // 1. INITIALIZATION
+        // =========================================================
+        
+        // A. Initialize Base Stats (The "Naked" Potential)
+        // These are the stats used by the Calculator as the starting point.
+        if (!this.state.baseStats) {
+            this.state.baseStats = {
+                maxHp: 10,
+                maxStamina: 10,
+                maxInsight: 10,
+                speed: 0,
+                critical: 5, // 5% base crit
+                baseAttack: { blunt: 0, slash: 0, pierce: 0 },
+                baseDefense: { blunt: 0, slash: 0, pierce: 0 }
             };
         }
 
-        // 2. Initialize Attributes
+        // B. Initialize Current Stats (The "Live" Values)
+        // These track current health, mana, etc.
+        if (!this.state.stats) {
+            this.state.stats = {
+                hp: this.state.baseStats.maxHp,
+                stamina: this.state.baseStats.maxStamina,
+                insight: this.state.baseStats.maxInsight
+            };
+        }
+
+        // C. Initialize Attributes
         if (!this.state.attributes) {
             this.state.attributes = {
                 vigor: 0, strength: 0, dexterity: 0, intelligence: 0, attunement: 0
             };
         }
 
-        // 3. Ensure Arrays & Objects Exist
+        // D. Initialize Containers
         if (!this.state.traits) this.state.traits = [];
         if (!this.state.equipment) this.state.equipment = {};
-        if (!this.state.baseStats) this.state.baseStats = {};
+        if (!Array.isArray(this.state.inventory)) this.state.inventory = [];
+        if (!this.state.statusEffects) this.state.statusEffects = [];
 
-        // --- THE FIX: Initialize Inventory Correctly ---
-        // If config has inventory, keep it. Otherwise, start empty.
-        if (!Array.isArray(this.state.inventory)) {
-            this.state.inventory = [];
-        }
-        // -----------------------------------------------
-
-        // 4. Progression Defaults
+        // E. Progression Defaults
         if (typeof this.state.xp === 'undefined') this.state.xp = 0;
         if (typeof this.state.maxXp === 'undefined') this.state.maxXp = 100;
         if (typeof this.state.skillPoints === 'undefined') this.state.skillPoints = 0;
         if (typeof this.state.level === 'undefined') this.state.level = 1;
 
+        // F. Runtime Properties (Not saved to State)
         this.abilities = []; 
+        
+        // Load initial abilities if provided in config
+        if (config.abilities) {
+             const newMoves = AbilityFactory.createAbilities(config.abilities);
+             this.addAbilities(newMoves, 'innate');
+        }
     }
 
-    // --- GETTERS & SETTERS ---
+    // =========================================================
+    // GETTERS & SETTERS (Identity & Progression)
+    // =========================================================
     get id() { return this.state.id; }
     get name() { return this.state.name; }
     set name(val) { this.state.name = val; }
     get portrait() { return this.state.portrait; }
+    
     get level() { return this.state.level; }
     set level(val) { this.state.level = val; }
     get xp() { return this.state.xp; }
@@ -57,66 +80,88 @@ export class EntityModel {
     get skillPoints() { return this.state.skillPoints; }
     set skillPoints(val) { this.state.skillPoints = val; }
     
-    // Direct Access (Careful, modifying this directly bypasses calculators)
+    // Direct Access
     get attributes() { return this.state.attributes; }
     get equipment() { return this.state.equipment; }
-    get statusEffects() { return this.state.statusEffects || []; }
+    get statusEffects() { return this.state.statusEffects; }
     get traits() { return this.state.traits; }
 
-    // --- CALCULATED STATS ---
-    // This is the "Brain" connection. It runs fresh math every time you ask for .stats
-    get stats() {
+    // **CRITICAL**: Expose Base Stats for the Calculator
+    get baseStats() { return this.state.baseStats; }
+
+    // =========================================================
+    // CALCULATED STATS (The "Brain")
+    // =========================================================
+    /**
+     * Returns { maxHp, maxStamina, attack, defense, speed, ... }
+     * Fully calculated based on Base + Attributes + Gear + Buffs
+     */
+    get calculatedStats() {
         return StatCalculator.calculate(this);
     }
 
-    // Convenience Getters for UI/Combat
-    get attack() { return this.stats.attack; }         
-    get defense() { return this.stats.defenses; }      
-    get resistance() { return this.stats.resistance; }
-    get speed() { return this.stats.speed; }           
-    get critical() { return this.stats.critChance; }   
-    get critMultiplier() { return this.stats.critMultiplier; }
+    // Convenience Getters for UI/Combat (Read-Only from Calculator)
+    get attack() { return this.calculatedStats.attack; }         
+    get defense() { return this.calculatedStats.defense; }      
+    get resistance() { return this.calculatedStats.resistance; }
+    get speed() { return this.calculatedStats.speed; }           
+    get critical() { return this.calculatedStats.critChance; }   
+    get critMultiplier() { return this.calculatedStats.critMultiplier; }
 
-    // --- RESOURCES (HP / STAMINA / INSIGHT) ---
+    // =========================================================
+    // RESOURCES (HP / STAMINA / INSIGHT)
+    // =========================================================
 
-    // HP
+    /**
+     * Unified method to modify HP, Stamina, or Insight.
+     * @param {string} resourceId - 'hp', 'stamina', or 'insight'
+     * @param {number} amount - The value to add (negative for damage/cost)
+     * @param {boolean} isPercent - If true, treats 'amount' as a percentage (0-100) of MAX
+     */
+    modifyResource(resourceId, amount, isPercent = false) {
+        if (this[resourceId] === undefined) {
+            console.warn(`[EntityModel] Resource '${resourceId}' not found.`);
+            return 0;
+        }
+
+        let finalChange = amount;
+
+        if (isPercent) {
+            // Use the getters below to find the true calculated Max
+            const maxKey = `max${resourceId.charAt(0).toUpperCase() + resourceId.slice(1)}`;
+            const maxVal = this[maxKey] || 0;
+            finalChange = Math.trunc(maxVal * (amount / 100));
+        }
+
+        const oldValue = this[resourceId];
+
+        // Apply Change (Setters handle clamping automatically)
+        this[resourceId] += finalChange;
+        
+        return this[resourceId] - oldValue;
+    }
+
+    // --- HP ---
     get hp() { return this.state.stats.hp; }
     set hp(val) { 
-        // We use the getter for maxHp to ensure we don't heal past the calculated max
+        // Clamps between 0 and Calculated Max
         this.state.stats.hp = Math.max(0, Math.min(val, this.maxHp)); 
     }
-    
-    // [FIXED] Trust the Calculator for the Total
-    get maxHp() { 
-        return this.stats.maxHp || this.state.stats.maxHp || 10; 
-    }
-    // Set base only (StatCalculator adds bonuses on top of this)
-    set maxHp(val) { this.state.stats.maxHp = val; }
+    get maxHp() { return this.calculatedStats.maxHp; }
 
-    // STAMINA
+    // --- STAMINA ---
     get stamina() { return this.state.stats.stamina; }
     set stamina(val) { 
         this.state.stats.stamina = Math.max(0, Math.min(val, this.maxStamina)); 
     }
+    get maxStamina() { return this.calculatedStats.maxStamina; }
 
-    // [FIXED] Trust the Calculator for the Total
-    get maxStamina() { 
-        return this.stats.maxStamina || this.state.stats.maxStamina || 10;
-    }
-    set maxStamina(val) { this.state.stats.maxStamina = val; }
-
-    // INSIGHT (MANA)
+    // --- INSIGHT (MANA) ---
     get insight() { return this.state.stats.insight; }
     set insight(val) { 
         this.state.stats.insight = Math.max(0, Math.min(val, this.maxInsight)); 
     }
-
-    // [FIXED] Trust the Calculator for the Total
-    get maxInsight() { 
-        return this.stats.maxInsight || this.state.stats.maxInsight || 0; 
-    }
-    set maxInsight(val) { this.state.stats.maxInsight = val; }
-
+    get maxInsight() { return this.calculatedStats.maxInsight; }
 
     // =========================================================
     // TRAIT MANAGEMENT
@@ -159,7 +204,6 @@ export class EntityModel {
         this.unequipItem(slot);
         this.state.equipment[slot] = itemModel;
         
-        // Grant abilities from the item (e.g., Sword grants "Slash")
         if (itemModel && itemModel.grantedAbilities) {
             const newMoves = AbilityFactory.createAbilities(itemModel.grantedAbilities);
             this.addAbilities(newMoves, slot);

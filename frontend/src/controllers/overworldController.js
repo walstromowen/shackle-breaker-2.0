@@ -27,7 +27,6 @@ export class OverworldController {
         // Toggle Party Menu
         if (code === 'KeyP') {
             console.log("[Overworld] Opening Party Menu...");
-            gameState.mode = "PARTY";
             events.emit('CHANGE_SCENE', { scene: 'party' });
         }
 

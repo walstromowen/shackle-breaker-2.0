@@ -15,7 +15,6 @@ export class AbilityModel {
         if (!this.config) {
             console.error(`AbilityModel: ID "${abilityId}" not found in definitions.`);
             // Fallback to a basic move to prevent crash
-            // We use 'punch' as the safe default since it is the basic humanoid move
             this.config = AbilityDefinitions['punch'] || { 
                 name: "Unknown", 
                 cost: {}, 
@@ -54,37 +53,38 @@ export class AbilityModel {
 
     /**
      * Checks if the user has enough HP, Stamina, Insight, or Items to use this.
-     * @param {Object} user - The combatant entity using the move.
+     * @param {Object} user - The EntityModel instance.
      * @param {Object} inventory - (Optional) The party inventory system.
      * @returns {Boolean}
      */
     canPayCost(user, inventory = null) {
         // 1. Stamina
-        if (this.cost.stamina && user.stats.stamina.current < this.cost.stamina) {
+        // We access user.stamina directly (EntityModel getter)
+        if (this.cost.stamina && user.stamina < this.cost.stamina) {
             return false;
         }
 
         // 2. Insight (Magic/Mental Resource)
-        if (this.cost.insight && user.stats.insight.current < this.cost.insight) {
+        if (this.cost.insight && user.insight < this.cost.insight) {
             return false;
         }
 
         // 3. HP Cost (Blood Magic / Physical Toll)
         if (this.cost.hp) {
             // Prevent suicide by cost unless specified otherwise
-            if (user.stats.hp.current <= this.cost.hp) {
+            if (user.hp <= this.cost.hp) {
                 return false;
             }
         }
 
         // 4. Item Cost (Consumables)
-        // If the ability costs an item (e.g. "potion_hp_qty"), we check the inventory
+        // Checks if we have the specific item ID in inventory
         if (this.cost.item) {
             if (!inventory) {
                 console.warn(`AbilityModel: Item cost check failed. Inventory system missing.`);
                 return false;
             }
-            // Check inventory count for this item ID
+            // Logic assumes inventory.getItemCount(itemId) exists
             const count = inventory.getItemCount(this.cost.item);
             return count >= (this.cost.amount || 1);
         }
@@ -98,18 +98,20 @@ export class AbilityModel {
      * @param {Object} inventory 
      */
     payCost(user, inventory = null) {
+        // We use modifyResource with a negative value to deduct cost
         if (this.cost.stamina) {
-            user.modifyStat('stamina', -this.cost.stamina);
+            user.modifyResource('stamina', -this.cost.stamina);
         }
         
         if (this.cost.insight) {
-            user.modifyStat('insight', -this.cost.insight);
+            user.modifyResource('insight', -this.cost.insight);
         }
 
         if (this.cost.hp) {
-            user.modifyStat('hp', -this.cost.hp);
+            user.modifyResource('hp', -this.cost.hp);
         }
 
+        // Remove the item from inventory
         if (this.cost.item && inventory) {
             inventory.removeItem(this.cost.item, this.cost.amount || 1);
         }
@@ -129,6 +131,7 @@ export class AbilityModel {
         const scope = this.targeting.scope;
 
         // 1. Dead Unit Checks (Resurrection)
+        // EntityModel has an isDead() method
         if (target.isDead()) {
             return scope === 'dead_ally';
         }
@@ -137,6 +140,7 @@ export class AbilityModel {
         if (scope === 'dead_ally') return false; 
 
         // 3. Team Logic
+        // Assumes entities have a 'team' property (e.g. 'player', 'enemy')
         const isAlly = (attacker.team === target.team);
         
         switch (scope) {
@@ -183,5 +187,4 @@ export class AbilityModel {
     isSummon() {
         return this.effects.some(eff => eff.type === 'summon');
     }
-
 }

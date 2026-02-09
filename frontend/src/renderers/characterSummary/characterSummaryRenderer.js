@@ -196,11 +196,13 @@ export class CharacterSummaryRenderer {
         let x = menu.x;
         let y = menu.y;
 
+        // Clamp to screen
         if (x + menuW > screenW) x = screenW - menuW - 5;
         if (y + menuH > screenH) y = screenH - menuH - 5; 
         if (x < 5) x = 5;
         if (y < 5) y = 5;
 
+        // Draw Menu Background
         this.ui.drawRect(x, y, menuW, menuH, UITheme.colors.bgScale[2]); 
         this.ui.drawRect(x, y, menuW, menuH, UITheme.colors.selectedWhite, false);
 
@@ -208,11 +210,13 @@ export class CharacterSummaryRenderer {
             const optY = y + (index * optionH);
             const isSelected = (index === selectedIndex);
             
+            // Draw Selection Highlight
             if (isSelected) {
                 this.ui.drawRect(x, optY, menuW, optionH, UITheme.colors.bgScale[1]);
                 this.ui.drawText(">", x + 8, optY + (optionH/2) + 4, UITheme.fonts.small, UITheme.colors.selectedWhite);
             }
 
+            // Draw Option Label
             this.ui.drawText(
                 opt.label, 
                 x + 25, 
@@ -221,10 +225,12 @@ export class CharacterSummaryRenderer {
                 isSelected ? UITheme.colors.selectedWhite : UITheme.colors.textMain
             );
 
+            // Draw Separator
             if (index < menu.options.length - 1) {
                 this.ui.drawLine(x, optY + optionH, x + menuW, optY + optionH, UITheme.colors.border);
             }
 
+            // Register Hitbox
             this.hitboxes.push({
                 id: `CTX_OPT_${index}`,
                 type: 'context_opt',
@@ -246,16 +252,13 @@ export class CharacterSummaryRenderer {
             prompts = "[WASD] Grid   [SHIFT] View   [SPACE] Menu   [ESC] Back";
         } 
         else {
-            // --- Equipment Slots active ---
-            const slot = (state.slots && state.slots[state.selectedSlotIndex]) || null;
-            const hasSlotItem = slot && slot.item;
+            const slotName = (state.slots && state.slots[state.selectedSlotIndex]) || null;
+            const hasSlotItem = slotName && state.member.equipment[slotName];
+            
             const hasInvItems = state.filteredInventory && state.filteredInventory.length > 0;
 
             let parts = ["[WASD] Slot", "[Q/E] Char", "[SHIFT] View"];
 
-            // Logic: 
-            // 1. If we have an item in the slot, SPACE opens the context menu (Unequip etc).
-            // 2. If the slot is empty, SPACE jumps to Inventory (Equip). This is ONLY valid if inventory has items.
             if (hasSlotItem) {
                 parts.push("[SPACE] Menu");
             } else if (hasInvItems) {
@@ -268,11 +271,11 @@ export class CharacterSummaryRenderer {
 
         this.ui.drawText(
             prompts, 
-            w / 2,         
+            w / 2,        
             h - 15,        
             UITheme.fonts.small, 
             UITheme.colors.textMuted, 
-            "center"       
+            "center"      
         );
     }
 

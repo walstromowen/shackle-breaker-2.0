@@ -30,6 +30,10 @@ export class ItemModel {
     get slot() { return this.definition.slot || null; }
     get icon() { return this.definition.icon || { col: 0, row: 0 }; }
 
+    // --- USABILITY (New) ---
+    // Returns array of contexts, e.g. ['menu', 'battle']
+    get usability() { return this.definition.usability || []; }
+
     // --- STATS ---
     // These align with StatCalculator expectations
     

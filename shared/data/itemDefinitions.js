@@ -1,5 +1,5 @@
 export const ItemDefinitions = {
-    // --- WEAPONS (No changes needed, defaults to unstackable) ---
+    // --- WEAPONS (No changes needed) ---
     "wooden_stick": {
         id: "wooden_stick",
         name: "Wooden Stick",
@@ -26,7 +26,7 @@ export const ItemDefinitions = {
 
     "insight_of_fire": {
         id: "insight_of_fire",
-        name: "Insight of Fire ",
+        name: "Insight of Fire", // Removed accidental trailing space
         slot: "mainHand",
         type: "weapon",
         description: "An insight into a firey truth.",
@@ -48,7 +48,7 @@ export const ItemDefinitions = {
         defense: { blunt: 1, slash: 1 } 
     },
 
-    // --- MATERIALS (Add Stackable) ---
+    // --- MATERIALS ---
     "soft_wood": {
         id: "soft_wood",
         name: "Soft Wood",
@@ -56,13 +56,11 @@ export const ItemDefinitions = {
         description: "A piece of soft wood.",
         value: 5,
         icon: { col: 0, row: 3 },
-        
-        // NEW PROPERTIES
         stackable: true,
         maxStack: 99
     },
 
-    // --- CONSUMABLES (Add Stackable) ---
+    // --- CONSUMABLES ---
     "healing_herb": {
         id: "healing_herb",
         name: "Healing Herb",
@@ -71,10 +69,21 @@ export const ItemDefinitions = {
         value: 10,
         icon: { col: 2, row: 0 },
         useAbility: "heal_minor",
-
-        // NEW PROPERTIES
+        
+        // UPDATED: Now uses 'overworld' instead of 'menu' to match gameState.mode
+        usability: ['overworld', 'battle'], 
+        
         stackable: true,
         maxStack: 20
+    },
+
+    "kurtus_brew": {
+        name: "Kurtus's Brew of Madness",
+        type: "consumable", // It's an item
+        useAbility: "brew_of_madness", // Links to the logic below
+        description: "Smells like ozone and bad decisions. Sets HP to 1, fills Insight.",
+        icon: { col: 1, row: 2 }, // Use a different icon index
+        stackable: true
     },
 
     // --- ACCESSORIES ---
@@ -92,7 +101,7 @@ export const ItemDefinitions = {
         defense: { blunt: 5, slash: 5, pierce: 5 },
         resistance: { fire: 5, ice: 5, lightning: 5, arcane: 5 },
         critChance: 0.10, 
-        critMultiplier: 0.50, //Is this even applying?????
+        critMultiplier: 0.50, 
         speed: 5 
     },
 };

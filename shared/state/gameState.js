@@ -1,6 +1,6 @@
 export const gameState = {
     seed: null, 
-    mode: "OVERWORLD", 
+    mode: "overworld", 
     
     // Player Position in the World
     player: {
