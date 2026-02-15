@@ -1,85 +1,86 @@
+import { StatCalculator } from './statCalculator.js';
+
 export class CombatCalculator {
 
     /**
-     * @param {Object} attacker 
-     * @param {Object} defender 
-     * @param {Object} ability 
+     * Calculates the raw outcome of a physical attack.
+     * Does NOT modify the entities. Just returns the numbers.
      */
-    static calculateAttack(attacker, defender, ability) {
-        const attStats = attacker.stats;
-        
-        // --- 1. HANDLE MULTIPLE EFFECTS ---
-        // If the ability has a complex 'effects' array, use that.
-        // Otherwise, normalize the simple ability into a single effect.
-        const effects = ability.effects || [{
-            resource: 'hp',             // Default target
-            type: ability.damageType || 'blunt',
-            power: ability.power || 1.0,
-            useDefense: true            // Default: Armor applies
-        }];
+    static calculatePhysical(attacker, defender, power = 10, type = 'blunt') {
+        const result = {
+            hit: false,
+            crit: false,
+            damage: 0,
+            message: ""
+        };
 
-        const results = [];
+        // 1. Get Stats (using your existing StatCalculator)
+        // We use the 'combat' stats snapshot usually, but recalculating ensures accuracy
+        const attStats = attacker.baseStats; 
+        const defStats = defender.baseStats;
 
-        for (const effect of effects) {
-            // A. Calculate Raw Power
-            const rawPool = attStats.attack[effect.type] || 0;
-            let rawDamage = rawPool * effect.power;
+        // 2. Hit Check
+        // Formula: Base Hit (95%) * (Accuracy / Evasion)
+        // Using a simple standard RPG formula here
+        const accuracy = attStats.accuracy || 100;
+        const evasion = defStats.evasion || 100; // Prevent divide by zero
+        const hitChance = 0.95 * (accuracy / evasion);
 
-            // B. Apply Crit (Applies to all parts of the attack usually)
-            const isCrit = Math.random() < attStats.critChance;
-            if (isCrit) rawDamage *= attStats.critMultiplier;
+        if (Math.random() > hitChance) {
+            result.message = "Missed!";
+            return result; // hit is false by default
+        }
+        result.hit = true;
 
-            // C. Process Mitigation
-            const result = this.processDamage(defender, rawDamage, effect.type, {
-                useDefense: effect.useDefense !== false, // Default true
-                targetResource: effect.resource
-            });
-
-            results.push(result);
+        // 3. Crit Check
+        const critChance = attStats.critChance || 0.05;
+        if (Math.random() < critChance) {
+            result.crit = true;
         }
 
-        return results;
+        // 4. Damage Calculation
+        // Formula: (Attack * Power / Defense) * RandomVariance
+        const attackVal = attacker.getAttack(type); // Uses your CombatantModel getter
+        const defenseVal = defender.getDefense(type); // Uses your CombatantModel getter
+        
+        let damage = (attackVal * power) / Math.max(1, defenseVal);
+
+        // Apply Crit Multiplier (1.5x standard)
+        if (result.crit) {
+            damage *= (attStats.critMultiplier || 1.5);
+        }
+
+        // Apply Variance (±10%)
+        const variance = 0.9 + (Math.random() * 0.2); 
+        damage *= variance;
+
+        result.damage = Math.floor(Math.max(1, damage)); // Always deal at least 1 dmg
+        
+        return result;
     }
 
     /**
-     * Universal Mitigation Calculator
-     * @param {Object} defender 
-     * @param {Number} incomingDamage 
-     * @param {String} type (fire, blunt, etc)
-     * @param {Object} options { useDefense: boolean, targetResource: string }
+     * Calculates Magic/Elemental damage (Simpler: No miss check usually)
      */
-    static processDamage(defender, incomingDamage, type, options = {}) {
-        const defStats = defender.stats;
-        const useDefense = options.useDefense !== false; // Default true
+    static calculateMagic(attacker, defender, power = 10, element = 'fire') {
+        const result = { hit: true, crit: false, damage: 0, message: "" };
         
-        let currentDamage = incomingDamage;
+        const attStats = attacker.baseStats;
+        
+        // Magic Attack vs Resistance
+        const magAtk = attStats.attributes.intelligence || 10;
+        const magRes = defender.baseStats.resistance[element] || 0;
 
-        // --- STEP 1: DEFENSE (Optional) ---
-        // Insight/Stamina damage often ignores thick armor.
-        if (useDefense) {
-            const defenseStat = defStats.defense[type] || 0;
-            const ARMOR_SCALING = 100;
-            const mitigation = ARMOR_SCALING / (ARMOR_SCALING + defenseStat);
-            currentDamage *= mitigation;
+        // Simple subtraction formula for magic
+        let damage = (magAtk + power) - (magRes / 2);
+        
+        // Crit check
+        if (Math.random() < (attStats.critChance || 0.05)) {
+            result.crit = true;
+            damage *= 1.5;
         }
 
-        // --- STEP 2: RESISTANCE (Always applied?) ---
-        // Fire Resistance should probably help against "Fire Stamina Drain"
-        const resStat = defStats.resistance[type] || 0;
-        const resistanceMultiplier = 1 - (resStat / 100);
-        
-        currentDamage *= resistanceMultiplier;
-
-        // --- FINAL CLAMP ---
-        // Allow 0 damage if it's a secondary resource (like stamina)
-        const minDamage = options.targetResource === 'hp' ? 1 : 0;
-        
-        const finalAmount = Math.floor(Math.max(minDamage, currentDamage));
-
-        return {
-            resource: options.targetResource || 'hp',
-            amount: finalAmount,
-            type: type
-        };
+        result.damage = Math.floor(Math.max(0, damage));
+        return result;
     }
 }

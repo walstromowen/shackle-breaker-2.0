@@ -82,7 +82,7 @@ export const ItemDefinitions = {
         type: "consumable", // It's an item
         useAbility: "brew_of_madness", // Links to the logic below
         description: "Smells like ozone and bad decisions. Sets HP to 1, fills Insight.",
-        icon: { col: 1, row: 2 }, // Use a different icon index
+        icon: { col: 0, row: 1 },
         stackable: true
     },
 

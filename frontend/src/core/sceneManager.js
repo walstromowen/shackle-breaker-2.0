@@ -7,6 +7,7 @@ import { EncounterController } from '../controllers/encounterController.js';
 import { CharacterCreatorController } from '../controllers/characterCreatorController.js'; 
 import { PartyController } from '../controllers/partyController.js';
 import { CharacterSummaryController } from '../controllers/characterSummaryController.js'; 
+import { BattleController } from '../controllers/battleController.js';
 
 // --- RENDERERS ---
 import { MapRenderer } from '../renderers/overworld/mapRenderer.js';
@@ -16,6 +17,7 @@ import { TransitionRenderer } from '../renderers/transitions/transitionRenderer.
 import { CharacterCreatorRenderer } from '../renderers/characterCreator/characterCreatorRenderer.js'; 
 import { PartyRenderer } from '../renderers/party/partyRenderer.js';
 import { CharacterSummaryRenderer } from '../renderers/characterSummary/characterSummaryRenderer.js'; 
+import { BattleRenderer } from '../renderers/battle/battleRenderer.js';
 
 import { WorldManager } from '../../../shared/systems/worldManager.js'; 
 import { TimeSystem } from '../../../shared/systems/timeSystem.js';
@@ -42,6 +44,9 @@ export class SceneManager {
         this.partyController = new PartyController();
         this.characterSummaryController = null; // Initialized on demand
 
+        // 1. INITIALIZE BATTLE CONTROLLER
+        this.battleController = new BattleController(this.input, this.config, this.worldManager);
+
         // --- RENDERERS ---
         this.mapRenderer = new MapRenderer(this.canvas, this.loader, this.config);
         this.lightingRenderer = new LightingRenderer(this.config); 
@@ -52,6 +57,9 @@ export class SceneManager {
         
         // Pass this.loader here so the renderer can draw portraits
         this.characterSummaryRenderer = new CharacterSummaryRenderer(this.ctx, this.loader); 
+
+        // 2. INITIALIZE BATTLE RENDERER
+        this.battleRenderer = new BattleRenderer(this.ctx, this.config, this.loader);
 
         // State
         this.currentScene = 'character-creator'; 
@@ -69,18 +77,21 @@ export class SceneManager {
     }
 
     setupEventListeners() {
+        // 1. General Scene Switching (Menus, etc.)
         events.on('CHANGE_SCENE', ({ scene, data }) => {
             this.transitionRenderer.start(() => {
                 
-                // Cleanup specific to exiting scenes
-                if (this.currentScene === 'encounter' && this.encounterController.cleanup) {
-                    this.encounterController.cleanup();
+                // Reset Input to prevent stuck keys
+                this.input.reset(); 
+
+                // Unlock Overworld if returning
+                if (scene === 'overworld') {
+                    // console.log("[SceneManager] Unlocking Overworld");
+                    this.overworldController.isLocked = false;
                 }
 
-                // Logic for Character Summary initialization
+                // Handle Scene Specific Data
                 if (scene === 'character_summary') {
-                    // We re-instantiate to pass fresh data (e.g. memberIndex)
-                    // Note: We pass 'this.input' so the controller can check button states directly
                     this.characterSummaryController = new CharacterSummaryController(this.input, data);
                 }
 
@@ -88,13 +99,29 @@ export class SceneManager {
             });
         });
 
+        // 2. Physical Interactions (Chests, NPCs, Signs)
         events.on('INTERACT', (data) => {
             if (data.type === 'ENCOUNTER') {
                 this.transitionRenderer.start(() => {
+                    // This is likely for Dialogue/Text interactions
                     this.encounterController.start(data.id, data.context);
                     this.changeScene('encounter');
                 });
             }
+        });
+
+        // 3. Combat Triggers (Ambush, Scripted Bosses)
+        events.on('START_BATTLE', (data) => {
+            this.transitionRenderer.start(() => {
+                console.log("[SceneManager] Handing off entities to BattleController:", data.enemies);
+                
+                // --- FIX: Pass the 'enemies' array directly ---
+                // The Overworld has already created the instances (Factory) and 
+                // mutated them (HP/Name) if needed.
+                this.battleController.start(data.enemies, data.context);
+                
+                this.changeScene('battle');
+            });
         });
     }
 
@@ -114,6 +141,12 @@ export class SceneManager {
             case 'encounter':
                 this.encounterController.handleKeyDown(e.code);
                 break;
+            
+            // 3. ROUTE INPUT TO BATTLE
+            case 'battle':
+                this.battleController.handleKeyDown(e.code);
+                break;
+
             case 'character-creator':
                 this.characterCreatorController.handleKeyDown(e);
                 break;
@@ -180,7 +213,6 @@ export class SceneManager {
             if (this.currentScene === 'party') {
                 this.partyController.handleMouseDown(click.x, click.y, this.partyRenderer);
             }
-            // Add other legacy click-only scenes here if needed
         }
 
         // --- 2. REGULAR UPDATES ---
@@ -189,6 +221,11 @@ export class SceneManager {
         if (this.currentScene === 'overworld') {
             this.timeSystem.update(dt); 
             this.overworldController.update(dt);
+        }
+        
+        // 4. UPDATE BATTLE
+        if (this.currentScene === 'battle' && this.battleController.update) {
+            this.battleController.update(dt);
         }
     }
 
@@ -216,6 +253,14 @@ export class SceneManager {
                 this.renderOverworld(totalTime);
                 const encState = this.encounterController.getState();
                 this.encounterRenderer.render(this.ctx, encState);
+                break;
+
+            // 5. RENDER BATTLE
+            case 'battle':
+                // We render the overworld behind the battle for context
+                this.renderOverworld(totalTime);
+                const batState = this.battleController.getState();
+                this.battleRenderer.render(batState);
                 break;
 
             case 'character_summary':

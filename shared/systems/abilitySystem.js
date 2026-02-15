@@ -1,57 +1,104 @@
 import { AbilityDefinitions } from '../data/abilityDefinitions.js';
 import { StatCalculator } from './statCalculator.js';
-// import { CombatCalculator } from './combatCalculator.js'; 
+import { CombatCalculator } from './combatCalculator.js'; 
 
 export class AbilitySystem {
 
     /**
-     * Executes an ability logic based on its defined effects.
-     * @param {string} abilityId - The ID of the ability to use
-     * @param {EntityModel} source - The entity using the ability
-     * @param {EntityModel} target - The entity receiving the effect
+     * Executes an ability logic and returns a standard CombatResult object.
+     * @param {string} abilityId 
+     * @param {EntityModel} source 
+     * @param {EntityModel} target 
+     * @returns {CombatResult}
      */
     static execute(abilityId, source, target) {
         const def = AbilityDefinitions[abilityId];
         if (!def) return { success: false, message: "Invalid Ability" };
 
-        console.log(`[AbilitySystem] Executing: ${abilityId}`);
-
-        const context = { success: false, messages: [], totalValue: 0 };
+        // 1. Initialize the Standard Contract Object
+        const result = {
+            success: false,
+            outcome: 'NONE',   // 'HIT', 'MISS', 'CRIT', 'HEAL'
+            delta: 0,          // The raw numerical change (negative for dmg)
+            resource: 'hp',    // The resource affected
+            message: "",       // Text log
+            addedTags: []      // Status effects applied
+        };
 
         if (def.effects && Array.isArray(def.effects)) {
             for (const effect of def.effects) {
                 
+                // --- HANDLER: DAMAGE (Connected to Calculator) ---
+                if (effect.type === 'damage') {
+                    const calc = this._handleDamage(effect, source, target);
+                    
+                    // Update the Result Object
+                    result.success = calc.hit;
+                    result.outcome = calc.crit ? 'CRIT' : (calc.hit ? 'HIT' : 'MISS');
+                    result.delta = -calc.damage; // Damage is a negative change
+                    result.message = calc.message;
+
+                    // If a main attack misses, we usually stop processing effects
+                    if (!calc.hit) break; 
+                }
+
                 // --- HANDLER: RECOVER (Heal/Restore) ---
-                if (effect.type === 'recover') {
+                else if (effect.type === 'recover') {
                     const subResult = this._handleRecover(effect, source, target);
                     if (subResult.success) {
-                        context.success = true;
-                        context.messages.push(subResult.message);
+                        result.success = true;
+                        result.outcome = 'HEAL';
+                        result.delta = subResult.amount;
+                        result.resource = effect.resource;
+                        result.message = subResult.message;
                     }
                 }
                 
-                // --- HANDLER: SET (New! For specific values like 1 HP) ---
+                // --- HANDLER: SET (Utility) ---
                 else if (effect.type === 'set') {
                     const subResult = this._handleSet(effect, target);
                     if (subResult.success) {
-                        context.success = true;
-                        context.messages.push(subResult.message);
+                        result.success = true;
+                        result.message = subResult.message;
                     }
                 }
             }
         }
 
-        if (context.success) {
-            return {
-                success: true,
-                message: context.messages.join(", "),
-                value: 0
-            };
+        // Fallback message if one wasn't generated
+        if (result.success && !result.message) {
+            result.message = "Ability used successfully.";
+        } else if (!result.success && !result.message) {
+            result.message = "But it failed!";
         }
-        return { success: false, message: "No effect" };
+
+        return result;
     }
 
     // --- LOGIC HANDLERS ---
+
+    static _handleDamage(effect, source, target) {
+        // 1. Ask the Calculator for the numbers (No state change yet)
+        const calc = CombatCalculator.calculatePhysical(
+            source, 
+            target, 
+            effect.power || 10,
+            effect.damageType || 'blunt'
+        );
+
+        // 2. Apply the State Change (Mutation)
+        if (calc.hit) {
+            target.modifyResource('hp', -calc.damage);
+
+            // 3. Generate the Text Log
+            const critText = calc.crit ? " (Critical!)" : "";
+            calc.message = `${target.name} takes ${calc.damage} damage!${critText}`;
+        } else {
+            calc.message = `${source.name}'s attack missed!`;
+        }
+
+        return calc;
+    }
 
     static _handleRecover(effect, source, target) {
         let amount = 0;
@@ -63,35 +110,25 @@ export class AbilitySystem {
             const stats = StatCalculator.calculate(source);
             amount = effect.power + Math.floor((stats.attributes[effect.attribute] || 0) * (effect.scaling || 0));
         }
-        // NEW: Handle "Max" calculation (Fill to 100%)
         else if (effect.calculation === 'max') {
-            amount = 9999; // EntityModel clamps this automatically
+            amount = 9999; 
         }
 
         const actualChange = target.modifyResource(effect.resource, amount);
 
-        if (actualChange !== 0) {
-            return {
-                success: true,
-                message: `+${actualChange} ${effect.resource.toUpperCase()}`
-            };
-        }
-        return { success: false };
+        return {
+            success: actualChange !== 0,
+            amount: actualChange,
+            message: actualChange !== 0 ? `+${actualChange} ${effect.resource.toUpperCase()}` : "Recover failed"
+        };
     }
 
     static _handleSet(effect, target) {
-        // 1. Get current value
-        // We assume EntityModel has resources inside 'stats' or at root. 
-        // Adjust this getter based on your specific EntityModel structure!
         const currentVal = target.stats ? target.stats[effect.resource] : target[effect.resource];
-
-        // 2. Calculate difference to reach target value
-        // Target: 1, Current: 100. Diff: -99
         const diff = effect.value - currentVal;
 
         if (diff === 0) return { success: false };
 
-        // 3. Apply change
         target.modifyResource(effect.resource, diff);
 
         return {

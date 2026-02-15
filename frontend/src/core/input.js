@@ -136,6 +136,14 @@ export class Input {
     getIsMouseDown() {
         return this.isMouseDown;
     }
+    
+    reset() {
+        this.heldKeys.clear();
+        this.lastClick = null;
+        this.lastRightClick = null;
+        this.isMouseDown = false;
+        this.scrollDelta = 0;
+    }
 
     get direction() {
         const keys = Array.from(this.heldKeys);

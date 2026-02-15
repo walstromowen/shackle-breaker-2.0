@@ -1,12 +1,10 @@
 import { gameState } from '../../../shared/state/gameState.js';
 import { EntityFactory } from '../../../shared/systems/factories/entityFactory.js';
+import { ItemFactory } from '../../../shared/systems/factories/itemFactory.js'; 
 import { events } from '../core/eventBus.js';
 import { TextEntry } from '../../../shared/utils/textEntry.js';
 import { StatCalculator } from '../../../shared/systems/statCalculator.js';
 import { TRAIT_DEFINITIONS } from '../../../shared/data/traitDefinitions.js';
-
-// NEW IMPORTS
-import { ItemModel } from '../../../shared/models/itemModel.js';
 import { InventorySystem } from '../../../shared/systems/inventorySystem.js';
 
 const ALLOWED_TRAITS = ['quick', 'inquisitive', 'brawler', 'tough'];
@@ -49,18 +47,21 @@ const CREATION_DATA = {
         { label: "Panzerian", tag: "LANG_PANZERIAN", desc: "Panzerians are a creative and powerful people from the icy mountains." },
         { label: "Namuh", tag: "LANG_NAMUH", desc: "The Namuh are a silent and mysterious people." }
     ],
+    
+    // Maps UI selection to the EntityModel properties
     APPEARANCES: [
-        { label: "Style A", sprite: "spritesheet", portrait: "alterian-legionary" }, 
-        { label: "Style B", sprite: "spritesheet_panzerian", portrait: "hero_face_b" },
-        { label: "Style C", sprite: "spritesheet_namuh", portrait: "namuh-nightblade" }
+        { label: "Style A", spritePortrait: "legionaryHeroPortrait", spriteOverworld: "legionaryHeroSprite" }, 
+        { label: "Style B", spritePortrait: "warlordHeroPortrait", spriteOverworld: "warlordHeroSprite" },
+        { label: "Style C", spritePortrait: "nightbladeHeroPortrait", spriteOverworld: "nightbladeHeroSprite" }
     ],
+    
     TRAITS: UI_TRAITS,
     KEEPSAKES: [
         { label: "None", itemId: null, desc: "You carry nothing but your burden." },
         { label: "Merchant's Bag", desc: "Start with a small supply of materials.", items: [{ id: "soft_wood", qty: 3 }] },
         { label: "Healer's Pouch", desc: "Start with a small supply of healing herbs.", items: [{ id: "healing_herb", qty: 3 }, { id: "amulet_of_the_dev", qty: 1 },{ id: "kurtus_brew", qty: 1 }] },
     ],
-        COMPANIONS: [
+    COMPANIONS: [
         { label: "None", speciesId: null, desc: "Walk the path alone.", attributes: {}, equipment: {} },
         { label: "War Dog", speciesId: "BEAST", desc: "Loyal and sturdy.", attributes: { vigor: 12, strength: 10 }, equipment: { accessory: "tattered_shirt" } },
         { label: "Hunting Hawk", speciesId: "AVIAN", desc: "Fast and watchful.", attributes: { dexterity: 16, speed: 10 }, equipment: { accessory: "tattered_shirt" } }
@@ -89,7 +90,7 @@ export class CharacterCreatorController {
         this.cachedStats = null;
         this.isDirty = true; 
 
-        // --- NEW: INTERACTION STATE ---
+        // --- INTERACTION STATE ---
         this.mouse = { x: 0, y: 0 };
         this.lastRenderedHitboxes = [];
         this.hoveredElement = null;
@@ -236,7 +237,6 @@ export class CharacterCreatorController {
         
         // Cancel / Exit
         else if (code === "Escape") {
-             // Optional: Go back to main menu
              // events.emit('CHANGE_SCENE', { scene: 'mainMenu' });
         }
     }
@@ -304,14 +304,20 @@ export class CharacterCreatorController {
         const app = CREATION_DATA.APPEARANCES[currentSelections.appearanceIdx];
         const trait = CREATION_DATA.TRAITS[currentSelections.traitIdx];
 
+        // 1. Convert Equipment Strings to Actual Items
         const playerEquipment = this._resolveEquipment(bg.equipment);
 
+        // 2. Prepare Factory Overrides
+        // We use spritePortrait/spriteOverworld to align with the new EntityModel
         const playerOverrides = {
             name: currentSelections.name, 
             attributes: { ...bg.attributes }, 
             equipment: playerEquipment,
-            sprite: app.sprite,
-            portrait: app.portrait,
+            
+            // Visuals
+            spritePortrait: app.spritePortrait,        
+            spriteOverworld: app.spriteOverworld,  
+
             tags: [origin.tag],
             traits: [trait.id], 
             level: 1
@@ -322,6 +328,7 @@ export class CharacterCreatorController {
 
     _calculatePreviewStats() {
         try {
+            // We create a temporary entity just to run calculations
             const tempEntity = this._createHeroEntity(this.state);
             if (!tempEntity) return null;
             return StatCalculator.calculateDetailed(tempEntity);
@@ -336,12 +343,9 @@ export class CharacterCreatorController {
         if (!equipmentIdMap) return resolved;
         
         for (const [slot, itemId] of Object.entries(equipmentIdMap)) {
-            try {
-                const item = new ItemModel(itemId);
-                if (item) resolved[slot] = item;
-            } catch (err) { 
-                console.warn(`[CharCreator] Failed to load equipment: ${itemId}`, err); 
-            }
+            // Use the Factory to create real item instances
+            const item = ItemFactory.createItem(itemId);
+            if (item) resolved[slot] = item;
         }
         return resolved;
     }
@@ -353,10 +357,11 @@ export class CharacterCreatorController {
 
         console.log("--- START FINALIZE ---");
 
+        // 1. Reset Global Inventory
         gameState.party.inventory = [];
 
+        // 2. Add Keepsakes to Inventory
         const keep = CREATION_DATA.KEEPSAKES[this.state.keepsakeIdx];
-        
         if (keep.items) {
             keep.items.forEach(i => {
                 InventorySystem.addItem(i.id, i.qty);
@@ -366,6 +371,7 @@ export class CharacterCreatorController {
             InventorySystem.addItem(keep.itemId, 1);
         }
         
+        // 3. Create Player
         const player = this._createHeroEntity(this.state);
         
         if (!player) {
@@ -373,14 +379,14 @@ export class CharacterCreatorController {
             return;
         }
 
-        // [FIXED] Use Direct Getters instead of player.stats
-        // player.maxHp calls the calculator, giving us the correct total.
+        // 4. Fill Player Resources (Start Fresh)
         player.hp = player.maxHp;
         player.stamina = player.maxStamina;
         player.insight = player.maxInsight;
 
         const finalParty = [player];
 
+        // 5. Create Companion
         const comp = CREATION_DATA.COMPANIONS[this.state.companionIdx];
         if (comp.speciesId) {
             const companionOverrides = {
@@ -388,16 +394,17 @@ export class CharacterCreatorController {
                 attributes: { ...comp.attributes },
                 equipment: this._resolveEquipment(comp.equipment), 
                 xp: 0 
+                // Visuals will default to the EntityDefinition (BEAST/AVIAN)
             };
             const companionInstance = EntityFactory.create(comp.speciesId, companionOverrides);
             if (companionInstance) {
-                // [FIXED] Use Direct Getters here too
                 companionInstance.hp = companionInstance.maxHp;
                 companionInstance.stamina = companionInstance.maxStamina;
                 finalParty.push(companionInstance);
             }
         }
 
+        // 6. Commit to Game State
         gameState.party.members = finalParty;
         gameState.party.gold = 100;
         

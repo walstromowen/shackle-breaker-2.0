@@ -25,7 +25,7 @@ export const gameState = {
         // The Characters
         members: []
     },
-
+//FOR ENCOUNTERS LIKELy NEEDS REWORK
     encounter: {
         activeData: null,    
         currentStageId: null, 

@@ -64,7 +64,6 @@ export class PartyRenderer {
     }
 
     // --- MENU LOGIC ---
-    // Added 'itemCount' to calculate dynamic height
     getMenuLayout(cardIndex, canvasWidth, itemCount = 3) {
         const cardPos = this.getCardPosition(cardIndex, canvasWidth);
         const { width, btnHeight, padding } = this.menuConfig;
@@ -80,7 +79,6 @@ export class PartyRenderer {
     }
 
     drawContextMenu(cardIndex, options, highlightIndex, canvasWidth) {
-        // Pass options.length to ensure background box fits content
         const layout = this.getMenuLayout(cardIndex, canvasWidth, options.length);
         
         // 1. Draw Menu Panel Background
@@ -104,7 +102,6 @@ export class PartyRenderer {
     // --- HIT DETECTION ---
     getMenuHit(mouseX, mouseY, cardIndex) {
         const width = this.ctx.canvas.width;
-        // Default to 3 items for hit testing if length isn't passed (standard case)
         const layout = this.getMenuLayout(cardIndex, width, 3);
 
         if (!this.isPointInRect(mouseX, mouseY, layout)) return -1;
@@ -112,7 +109,6 @@ export class PartyRenderer {
         const relY = mouseY - (layout.y + this.menuConfig.padding);
         const index = Math.floor(relY / this.menuConfig.btnHeight);
 
-        // Check against standard menu size (0-2)
         if (index >= 0 && index < 3) return index;
         return -1;
     }
@@ -145,10 +141,13 @@ export class PartyRenderer {
     }
 
     drawCard(member, x, y, isCursor, isBeingMoved) {
+        console.log(member)
         const ctx = this.ctx;
         const { cardW, cardH } = this.layout;
 
         ctx.save();
+        
+        // 1. Draw Card Background/Border
         if (isBeingMoved) {
             ctx.fillStyle = UITheme.colors.stmDim; 
             ctx.strokeStyle = UITheme.colors.stm;
@@ -167,32 +166,39 @@ export class PartyRenderer {
         ctx.strokeRect(x, y, cardW, cardH);
         ctx.restore();
 
-        // Portrait
+        // 2. Draw Portrait
         const pSize = 64; 
         const pX = x + 10;
         const pY = y + 20; 
         
-        // Safety check for loader
-        const portraitImg = (this.loader && member.portrait) ? this.loader.get(member.portrait) : null;
+        // [UPDATED] Use standardized property from EntityModel
+        const imagePath = member.spritePortrait; 
+        const masterSheet = this.loader.get(imagePath);
 
-        if (portraitImg) {
-            ctx.drawImage(portraitImg, pX, pY, pSize, pSize);
-        } else {
-            // Placeholder if image missing
-            ctx.fillStyle = "rgba(0,0,0,0.3)";
-            ctx.fillRect(pX, pY, pSize, pSize);
+        // Draw Background for Portrait placeholder
+        ctx.fillStyle = "rgba(0,0,0,0.3)";
+        ctx.fillRect(pX, pY, pSize, pSize);
+
+        if (masterSheet) {
+            // [NOTE] Assumes the Master Sheet has the face at 0,0, 128x128
+            ctx.drawImage(
+                masterSheet, 
+                0, 0, 128, 128, 
+                pX, pY, pSize, pSize
+            );
         }
         
         ctx.strokeStyle = UITheme.colors.border;
         ctx.strokeRect(pX, pY, pSize, pSize);
 
-        // Info Column
+        // 3. Info Column
         const infoX = pX + pSize + 12; 
         const numberWidth = 45;
         const barW = cardW - (pSize + 25) - 25 - numberWidth;
 
         this.ui.drawText(member.name, infoX, y + 25, UITheme.fonts.bold, UITheme.colors.textMain);
-        this.ui.drawText(`Lvl ${member.level} ${member.speciesId || ''}`, infoX, y + 42, UITheme.fonts.small, UITheme.colors.textMuted);
+        
+        
 
         // XP Bar
         const xpY = y + 47; 

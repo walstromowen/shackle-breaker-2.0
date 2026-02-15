@@ -66,7 +66,7 @@ export const PartyManager = {
      * @param {string} entityId - The ID from entityDefinitions
      */
     addMember(entityId) {
-        const MAX_PARTY_SIZE = 4;
+        const MAX_PARTY_SIZE = 6;
 
         if (gameState.party.members.length >= MAX_PARTY_SIZE) {
             console.warn("[PartyManager] Party is full.");

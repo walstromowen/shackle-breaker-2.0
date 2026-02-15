@@ -11,10 +11,22 @@ const ASSET_MANIFEST = {
     spritesheet: './assets/sprites/hero.png',
     mapObjects: './assets/tilesets/objects.png',
     shadows: './assets/tilesets/shadows.png',
-    "alterian-legionary": './assets/portraits/alterian-legionary.png',
-    "namuh-nightblade": './assets/portraits/namuh-nightblade.png',
-    // Add the specific image defined in your bonfire.js data
-    bonfire_bg: './assets/sprites/hero.png',
+
+    legionaryHeroPortrait: './assets/sprites/legionary_hero/legionary_hero_portrait.png',
+    warlordHeroPortrait: './assets/sprites/warlord_hero/warlord_hero_portrait.png',
+    nightbladeHeroPortrait: './assets/sprites/nightblade_hero/nightblade_hero_portrait.png',
+
+    legionaryHeroSprite: './assets/sprites/legionary_hero/legionary_hero_sprite.png',
+    warlordHeroSprite: './assets/sprites/warlord_hero/warlord_hero_sprite.png',
+    nightbladeHeroSprite: './assets/sprites/nightblade_hero/nightblade_hero_sprite.png',
+
+    legionaryPortrait: './assets/sprites/legionary/legionary_portrait.png',
+    wolfPortrait: './assets/sprites/wolf/wolf_portrait.png',
+    madmanPortrait: './assets/sprites/madman/madman_portrait.png',
+    arcKnightPortrait: './assets/sprites/arc_knight/arc_knight_portrait.png',
+    madMagePortrait: './assets/sprites/mad_mage/mad_mage_portrait.png',
+
+    //bonfire_bg: './assets/sprites/bonfire.png',
     items: './assets/icons/items.png', 
     abilities: './assets/icons/abilities.png', 
 };

@@ -3,7 +3,8 @@ Roguelike turnbased adventure game based on the Shackle Breaker story by Owen Wa
 
 
 
-TODO ADD USE ITEM TO CERTAIN ITEMS IN SUMMARY. ABILITIES, ENTITIES, ITEMS are ready to go just need to change summary renderer and controller. Can revert to before use item logic update if needed by reseting
+TODO: Controlls freexe on switching from the overworld: return to a locked overworld (cannot move)
+Just incorporated spritesheet portrait.
 
 Root
 ├── backend/
@@ -12,10 +13,12 @@ Root
 │   │   ├── assets/
 │   │   │   ├── sprites/
 │   │   │   └── tilesets/
-│   │   ├── controllers/            
+│   │   ├── controllers/       
+│   │   │   ├── characterSummaryController.js     
 │   │   │   ├── encounterController.js
 │   │   │   ├── battleController.js
 │   │   │   ├── characterCreatorController.js
+|   |   │   ├── partyController.js
 │   │   │   └── overworldController.js
 │   │   ├── core/
 │   │   │   ├── assetLoader.js
@@ -24,7 +27,10 @@ Root
 │   │   │   ├── input.js
 │   │   │   └── sceneManager.js
 │   │   ├── renderers/
+│   │   │   ├── battle/
+│   │   │   │    ├── battleRenderer.js
 │   │   │   ├── encounter/
+│   │   │   │    ├── encounterRenderer.js
 │   │   │   ├── transitions/
 │   │   │   │    ├── transitionRenderer.js
 │   │   │   ├── overworld/
@@ -59,18 +65,22 @@ Root
 │   │   ├── mapObjects.js
 │   │   └── sprites.js
 │   ├── models/ 
+|   │   ├── combatantModel.js
+|   │   ├── battlePartyModel.js
 |   │   ├── abilityModel.js                     
 │   │   ├── entityModel.js               
 │   │   └── itemModel.js                 
 │   ├── registries/
 │   │   └── encounterRegistry.js
 │   ├── state/
+|   │   ├── battleState.js
 │   │   └── gameState.js            
 │   ├── systems/
 │   │   ├── factories/  
 │   │   │   ├── abilityFactory.js                
 │   │   │   ├── entityFactory.js    
 │   │   │   └── itemFactory.js
+│   │   ├── abilitySystem.js
 │   │   ├── combatCalculator.js  
 │   │   ├── experienceSystem.js  
 │   │   ├── statCalculator.js    
@@ -85,7 +95,7 @@ Root
 ├── package-lock.json 
 ├── package.json
 └── README.md
-
+ 
 
 Does it handle keyboard/mouse? -> Controller.
 

@@ -1,5 +1,6 @@
 import { events } from '../core/eventBus.js';
 import { gameState } from '../../../shared/state/gameState.js';
+import { EntityFactory } from '../../../shared/systems/factories/entityFactory.js';
 
 export class OverworldController {
     constructor(input, config, worldManager) {
@@ -13,12 +14,19 @@ export class OverworldController {
         // 2. Setup Camera
         this.camera = { x: 0, y: 0 };
         this.updateCamera();
+
+        // 3. LOCK FLAG (New)
+        // Prevents inputs and updates during transitions
+        this.isLocked = false;
     }
 
     /**
      * --- EVENT RECEIVER ---
      */
     handleKeyDown(code) {
+        // IGNORE INPUT IF LOCKED
+        if (this.isLocked) return;
+
         // Interact Actions
         if (code === 'Space' || code === 'Enter') {
             this.interact();
@@ -27,6 +35,7 @@ export class OverworldController {
         // Toggle Party Menu
         if (code === 'KeyP') {
             console.log("[Overworld] Opening Party Menu...");
+            this.isLocked = true; // Freeze while switching scenes
             events.emit('CHANGE_SCENE', { scene: 'party' });
         }
 
@@ -40,6 +49,9 @@ export class OverworldController {
      * --- CONTINUOUS LOOP ---
      */
     update(dt) {
+        // STOP UPDATES IF LOCKED
+        if (this.isLocked) return;
+
         if (this.player.isMoving) {
             this.continueMoving(dt);
         } else {
@@ -51,7 +63,7 @@ export class OverworldController {
     // --- LOGIC: MOVEMENT & INTERACTION ---
 
     interact() {
-        if (this.player.isMoving) return;
+        if (this.player.isMoving || this.isLocked) return;
 
         // 1. Calculate the tile we are facing
         const { TILE_SIZE } = this.config;
@@ -78,12 +90,12 @@ export class OverworldController {
         if (obj && obj.interaction) {
             console.log(`[Overworld] Interacting with ${obj.type} at ${obj.col},${obj.row}`);
 
-            // >>> THE FIX IS HERE <<<
-            // We must bundle the coordinates (context) into the event payload.
-            // SceneManager will extract this 'context' and pass it to EncounterController.
+            // FREEZE THE GAME
+            this.isLocked = true;
+
             events.emit('INTERACT', {
-                ...obj.interaction,       // Spreads: { type: 'ENCOUNTER', id: 'oakTree' }
-                context: {                // Adds:    { col: 10, row: 5 }
+                ...obj.interaction,       
+                context: {                
                     col: obj.col,
                     row: obj.row,
                     objectId: obj.type
@@ -155,7 +167,12 @@ export class OverworldController {
         gameState.player.row = Math.floor(this.player.y / this.config.TILE_SIZE);
         gameState.player.direction = this.player.direction;
 
+        // Check for Ambush
         this.checkTileEvents();
+
+        // CRITICAL FIX: If checkTileEvents locked us (ambush triggered), stop here!
+        // Do not allow checking for a new move.
+        if (this.isLocked) return;
 
         if (this.input.direction) {
             this.checkForNewMove();
@@ -165,14 +182,23 @@ export class OverworldController {
     }
 
     // --- HELPERS ---
-
+    // 10% Chance on Grass      if (tileId === this.config.TILE_TYPES.GRASS && Math.random() < 0.10) {if (tileId === this.config.TILE_TYPES.GRASS && Math.random() < 0.10) {
     checkTileEvents() {
         const col = Math.floor(this.player.x / this.config.TILE_SIZE);
         const row = Math.floor(this.player.y / this.config.TILE_SIZE);
-        const tileId = this.worldManager.getTileAt(col, row);
+        // Note: You removed tileId checks in your snippet, keeping logic as requested
+        
+        // 10% Chance
+        if (Math.random() < 0.20) {
+            
+            // FREEZE THE GAME
+            this.isLocked = true;
+            this.player.isMoving = false;
+            this.player.moveProgress = 0;
 
-        if (tileId === this.config.TILE_TYPES.GRASS && Math.random() < 0.10) { 
-            console.log("💥 AMBUSH in the grass!");
+            events.emit('START_BATTLE', {
+                enemies: [EntityFactory.create('LEGIONARY'), EntityFactory.create('WOLF'), EntityFactory.create('LEGIONARY')], //Currently needs to pass an array of enemy IDs, but this can be reworked later to be more flexiblity depeding on biome, chance, time etc
+            });
         }
     }
 
@@ -226,7 +252,8 @@ export class OverworldController {
             isMoving: false,
             animFrame: 0, 
             animTimer: 0,
-            spriteKey: 'spritesheet',
+            spriteKey: 'legionaryHeroSprite',
+            //spriteKey: PartyManager.getMembers()[0].spriteOverworld, TODO map is currently generated before character creation, so we need to assign a default sprite for now. We can reassign this after character creation is complete.
             light: {
                 hasLight: true,
                 radius: 4,

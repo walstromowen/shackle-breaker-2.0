@@ -11,21 +11,19 @@ export class EntityModel {
         // =========================================================
         
         // A. Initialize Base Stats (The "Naked" Potential)
-        // These are the stats used by the Calculator as the starting point.
         if (!this.state.baseStats) {
             this.state.baseStats = {
                 maxHp: 10,
                 maxStamina: 10,
                 maxInsight: 10,
                 speed: 0,
-                critical: 5, // 5% base crit
+                critical: 5, 
                 baseAttack: { blunt: 0, slash: 0, pierce: 0 },
                 baseDefense: { blunt: 0, slash: 0, pierce: 0 }
             };
         }
 
         // B. Initialize Current Stats (The "Live" Values)
-        // These track current health, mana, etc.
         if (!this.state.stats) {
             this.state.stats = {
                 hp: this.state.baseStats.maxHp,
@@ -41,19 +39,24 @@ export class EntityModel {
             };
         }
 
-        // D. Initialize Containers
+        // D. Initialize Visuals 
+        // Ensure defaults exist if missing from config
+        if (!this.state.spriteOverworld) this.state.spriteOverworld = "missing_texture";
+        if (!this.state.spritePortrait) this.state.spritePortrait = "missing_face";
+
+        // E. Initialize Containers
         if (!this.state.traits) this.state.traits = [];
         if (!this.state.equipment) this.state.equipment = {};
         if (!Array.isArray(this.state.inventory)) this.state.inventory = [];
         if (!this.state.statusEffects) this.state.statusEffects = [];
 
-        // E. Progression Defaults
+        // F. Progression Defaults
         if (typeof this.state.xp === 'undefined') this.state.xp = 0;
         if (typeof this.state.maxXp === 'undefined') this.state.maxXp = 100;
         if (typeof this.state.skillPoints === 'undefined') this.state.skillPoints = 0;
         if (typeof this.state.level === 'undefined') this.state.level = 1;
 
-        // F. Runtime Properties (Not saved to State)
+        // G. Runtime Properties (Not saved to State)
         this.abilities = []; 
         
         // Load initial abilities if provided in config
@@ -69,8 +72,16 @@ export class EntityModel {
     get id() { return this.state.id; }
     get name() { return this.state.name; }
     set name(val) { this.state.name = val; }
-    get portrait() { return this.state.portrait; }
     
+    // --- VISUALS ---
+    
+    // Convenience: Returns the key for the Portrait UI
+    get spritePortrait() { return this.state.spritePortrait; }
+    
+    // Convenience: Returns the overworld sprite key
+    get spriteOverworld() { return this.state.spriteOverworld; }
+
+    // --- LEVELING ---
     get level() { return this.state.level; }
     set level(val) { this.state.level = val; }
     get xp() { return this.state.xp; }

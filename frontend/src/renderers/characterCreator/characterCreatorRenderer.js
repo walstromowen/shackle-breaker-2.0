@@ -57,13 +57,11 @@ export class CharacterCreatorRenderer {
         if (isEditingName) ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'; 
         ctx.fillRect(nameInputX, curY, nameInputW, nameInputH);
         
-        // Standardize border color
         ctx.strokeStyle = (isNameSelected || isEditingName || isNameHovered) ? UITheme.colors.textMain : UITheme.colors.border;
         ctx.lineWidth = 1;
         ctx.strokeRect(nameInputX, curY, nameInputW, nameInputH);
 
         let valStr = selections.name;
-        // CHANGED: Standardized to textMain to avoid yellow/gold highlights
         let nameColor = UITheme.colors.textMain;
 
         if (isEditingName) {
@@ -103,30 +101,47 @@ export class CharacterCreatorRenderer {
         if (appData) {
             ctx.save();
             
-            // 1. Draw Portrait
-            const portraitImg = this.loader.get(appData.portrait);
-            if (portraitImg) {
-                ctx.drawImage(portraitImg, startVisualX, portraitY, portraitSize, portraitSize);
+          
+   
+            const masterSheet = this.loader.get(appData.spritePortrait);
+            
+            if (masterSheet) {
+                // SRC: x=0, y=0, w=128, h=128 (Top-Left Face)
+                // DST: startVisualX, portraitY, size, size
+                ctx.drawImage(
+                    masterSheet, 
+                    0, 0, 128, 128, 
+                    startVisualX, portraitY, portraitSize, portraitSize
+                );
+                
                 ctx.strokeStyle = UITheme.colors.border;
                 ctx.lineWidth = 2;
                 ctx.strokeRect(startVisualX, portraitY, portraitSize, portraitSize);
             } else {
+                // Fallback placeholder
                 ctx.fillStyle = "rgba(0,0,0,0.2)";
                 ctx.fillRect(startVisualX, portraitY, portraitSize, portraitSize);
                 ctx.strokeStyle = UITheme.colors.border;
                 ctx.strokeRect(startVisualX, portraitY, portraitSize, portraitSize);
             }
 
-            // 2. Draw Sprite
+            // 2. Draw Sprite (FROM OVERWORLD SHEET)
             const spriteX = startVisualX + portraitSize + visualGap;
-            const spriteImg = this.loader.get(appData.sprite);
+            const overworldSheet = this.loader.get(appData.spriteOverworld);
             
+            // Background box for sprite
             ctx.fillStyle = "rgba(0,0,0,0.3)";
             ctx.fillRect(spriteX, spriteY, spriteDisplaySize, spriteDisplaySize);
             
-            if (spriteImg) {
+            if (overworldSheet) {
                 ctx.imageSmoothingEnabled = false; 
-                ctx.drawImage(spriteImg, 0, 0, 32, 32, spriteX, spriteY, spriteDisplaySize, spriteDisplaySize);
+                // SRC: x=0, y=0, w=32, h=32 (Frame 1)
+                // DST: Scaled up to 64x64
+                ctx.drawImage(
+                    overworldSheet, 
+                    0, 0, 32, 32, 
+                    spriteX, spriteY, spriteDisplaySize, spriteDisplaySize
+                );
             }
             
             ctx.strokeStyle = UITheme.colors.border;
@@ -166,7 +181,6 @@ export class CharacterCreatorRenderer {
                 }
             };
 
-            // Using Normalized Theme Colors
             drawStatBlock("HP", previewStats.maxHp || previewStats.hp, 0, UITheme.colors.hp);
             drawStatBlock("STM", previewStats.maxStamina || previewStats.stamina, 1, UITheme.colors.stm);
             drawStatBlock("INS", previewStats.maxInsight || previewStats.insight, 2, UITheme.colors.ins);
@@ -233,17 +247,14 @@ export class CharacterCreatorRenderer {
 
                 this.hotspots.push({ id: btnId, x: menuStartX + 40, y: btnY, w: midW - 80, h: MENU_ITEM_HEIGHT });
 
-                // CHANGED: Use textMain (Standard) instead of accent
                 const btnColor = (isSelected || isBtnHovered) ? UITheme.colors.textMain : UITheme.colors.textMuted;
                 
-                // CHANGED: Use white overlay instead of Gold/Yellow hue
                 ctx.fillStyle = (isSelected || isBtnHovered) ? "rgba(255, 255, 255, 0.1)" : "rgba(0,0,0,0.5)";
                 ctx.fillRect(menuStartX + 40, btnY, midW - 80, MENU_ITEM_HEIGHT);
                 
                 ctx.strokeStyle = btnColor;
                 ctx.strokeRect(menuStartX + 40, btnY, midW - 80, MENU_ITEM_HEIGHT);
 
-                // CHANGED: Text updated to "START"
                 ui.drawText("START", centerColX, btnY + (MENU_ITEM_HEIGHT/2) + 1, UITheme.fonts.body, btnColor, "center", "middle");
                 return; 
             }
@@ -254,7 +265,6 @@ export class CharacterCreatorRenderer {
                 ctx.fillStyle = isSelected ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)";
                 ctx.fillRect(menuStartX + 10, menuY, midW - 20, MENU_ITEM_HEIGHT);
 
-                // White border for focus
                 if (isSelected) {
                     ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
                     ctx.lineWidth = 1;
@@ -292,7 +302,6 @@ export class CharacterCreatorRenderer {
                 const textMaxWidth = midW - 140; 
                 const arrowSize = 5; 
 
-                // CHANGED: Use textMain instead of accent for arrows
                 const arrowColorPrev = isPrevHover ? UITheme.colors.textMain : UITheme.colors.textMuted;
                 const arrowColorNext = isNextHover ? UITheme.colors.textMain : UITheme.colors.textMuted;
 

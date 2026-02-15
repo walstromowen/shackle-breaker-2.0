@@ -71,14 +71,23 @@ export class EquipmentPanel {
         // Portrait
         const pX = Math.floor(centerX - (this.PORTRAIT_SIZE / 2));
         const pY = startY + 10;
-        
+
         this.ui.drawRect(pX, pY, this.PORTRAIT_SIZE, this.PORTRAIT_SIZE, UITheme.colors.border, false);
-        
-        let assetKey = member.portrait || member.sprite || 'hero';
-        const img = this.loader.get(assetKey) || this.loader.get('spritesheet');
+
+        let assetKey = member.spritePortrait;
+        const img = this.loader.get(assetKey);
+
         if(img) {
-            this.ui.drawSprite(img, 0, 0, img.width, img.height, pX, pY, this.PORTRAIT_SIZE, this.PORTRAIT_SIZE);
+            // Updated to match your previous logic: 
+            // Crops the 128x128 face from the top-left and scales to PORTRAIT_SIZE
+            this.ui.drawSprite(
+                img, 
+                0, 0, 128, 128,                         // Source: Top-left 128px square
+                pX, pY,                                 // Destination: Centered X, startY+10
+                this.PORTRAIT_SIZE, this.PORTRAIT_SIZE  // Destination Size: Scaled down
+            );
         }
+        
 
         // --- SLOT DRAWING HELPER ---
         const drawSlot = (slotName, index, isLeft) => {
