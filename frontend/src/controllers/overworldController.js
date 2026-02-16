@@ -252,8 +252,6 @@ export class OverworldController {
             isMoving: false,
             animFrame: 0, 
             animTimer: 0,
-            spriteKey: 'legionaryHeroSprite',
-            //spriteKey: PartyManager.getMembers()[0].spriteOverworld, TODO map is currently generated before character creation, so we need to assign a default sprite for now. We can reassign this after character creation is complete.
             light: {
                 hasLight: true,
                 radius: 4,

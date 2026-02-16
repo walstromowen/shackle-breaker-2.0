@@ -76,8 +76,8 @@ const BEAST_TEMPLATE = {
     name: "Beast",
     
     // Visuals
-    spriteOverworld: "spritesheet",
-    spritePortrait: "legionaryPortrait", // Placeholder
+    spriteOverworld: "germanSheepherdSprite", // Placeholder
+    spritePortrait: "germanSheepherdPortrait", // Placeholder
     
     attributes: {
         vigor: 12, strength: 8, dexterity: 14, intelligence: 3, attunement: 5
@@ -153,7 +153,7 @@ export const ENTITY_DEFINITIONS = {
 
         // Visuals
               spriteOverworld: "legionarySprite",
-        spritePortrait: "legionaryPortrait",
+        spritePortrait: "wolfPortrait",
 
         // OVERRIDES: Wolves are faster and have higher crit than generic beasts
         attributes: {
@@ -196,8 +196,8 @@ export const ENTITY_DEFINITIONS = {
         name: "Avian",
         
         // Visuals
-        spriteOverworld: "bird_idle",
-        spritePortrait: "bird_face",
+        spriteOverworld: "spritesheet",
+        spritePortrait: "hawkPortrait",
         
         attributes: { 
             vigor: 6, strength: 4, dexterity: 16, intelligence: 6, attunement: 8 

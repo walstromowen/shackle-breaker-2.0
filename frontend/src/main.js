@@ -25,6 +25,11 @@ const ASSET_MANIFEST = {
     madmanPortrait: './assets/sprites/madman/madman_portrait.png',
     arcKnightPortrait: './assets/sprites/arc_knight/arc_knight_portrait.png',
     madMagePortrait: './assets/sprites/mad_mage/mad_mage_portrait.png',
+    germanSheepherdSprite: './assets/sprites/dogs/german_sheepherd_sprite.png',
+    germanSheepherdPortrait: './assets/sprites/dogs/german_sheepherd_portrait.png',
+    hawkPortrait: './assets/sprites/hawk/hawk_portrait.png',
+    
+  
 
     //bonfire_bg: './assets/sprites/bonfire.png',
     items: './assets/icons/items.png', 

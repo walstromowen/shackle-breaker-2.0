@@ -185,7 +185,7 @@ export class MapRenderer {
     }
 
     drawEntity(entity, camera) {
-        const sprite = this.loader.get(entity.spriteKey);
+        const sprite = this.loader.get(gameState.party.members[0].spriteOverworld);
         if (!sprite) return;
 
         const { TILE_SIZE, GAME_SCALE } = this.config;
