@@ -175,12 +175,9 @@ export class SceneManager {
 
         // --- A. CHARACTER CREATOR ---
         if (this.currentScene === 'character-creator') {
-            // 1. Pass Mouse Move (CRITICAL: specific for Hover effects)
             if (this.characterCreatorController.handleMouseMove) {
                 this.characterCreatorController.handleMouseMove(mousePos.x, mousePos.y);
             }
-
-            // 2. Pass Click
             if (click) {
                 this.characterCreatorController.handleMouseDown(click.x, click.y);
             }
@@ -190,7 +187,6 @@ export class SceneManager {
         else if (this.currentScene === 'character_summary' && this.characterSummaryController) {
             this.characterSummaryController.handleMouseMove?.(mousePos.x, mousePos.y, isMouseDown);
             
-            // Hit Testing "Bridge" for legacy renderer checks if needed
             const hitZoneId = this.characterSummaryRenderer.getHitZone(mousePos.x, mousePos.y);
             this.characterSummaryController.handleHover?.(hitZoneId);
 
@@ -223,9 +219,16 @@ export class SceneManager {
             this.overworldController.update(dt);
         }
         
-        // 4. UPDATE BATTLE
-        if (this.currentScene === 'battle' && this.battleController.update) {
-            this.battleController.update(dt);
+        // 4. UPDATE BATTLE [DEBUGGING THIS SECTION]
+        if (this.currentScene === 'battle') {
+            // Check 1: Does the method exist?
+            if (typeof this.battleController.update !== 'function') {
+                console.error("CRITICAL ERROR: BattleController is missing 'update()' method! Please save BattleController.js and refresh.");
+            } else {
+                // Check 2: Is it running?
+                // console.log("Battle updating... DT:", dt); // Uncomment this to flood console and prove it runs
+                this.battleController.update(dt);
+            }
         }
     }
 

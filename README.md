@@ -65,8 +65,6 @@ Root
 │   │   ├── mapObjects.js
 │   │   └── sprites.js
 │   ├── models/ 
-|   │   ├── combatantModel.js
-|   │   ├── battlePartyModel.js
 |   │   ├── abilityModel.js                     
 │   │   ├── entityModel.js               
 │   │   └── itemModel.js                 
@@ -95,187 +93,46 @@ Root
 ├── package-lock.json 
 ├── package.json
 └── README.md
+
+
  
+Phase 1: The Basics
+[ ] Cost Deduction: Stamina, Insight, and Items.
 
-Does it handle keyboard/mouse? -> Controller.
+[ ] Targeting Scopes: Single, Random, Splash (adjacent), All Enemies, All Allies, Self.
 
-Does it save/load global data (Gold, Party)? -> Manager.
+[ ] Accuracy/Evasion: Calculating hit chance before applying effects.
 
-Is it a rule of the universe (Gravity, Time, Light)? -> System.
+Phase 2: Health & Damage
+[ ] Standard Damage: Power multipliers, Elemental typing.
 
-Is it a specific object (Sword, Enemy, Player)? -> Model.
+[ ] Alternate Damage: Stat scaling overrides (e.g., Defense vs Defense), Percent of Current HP.
 
-Is it a tiny function for a specific event? -> Handler.
+[ ] Healing & Recovery: Flat recovery, Percent of Max recovery, Setting exact values (e.g., set HP to 1).
 
+[ ] Damage Modifiers: Conditional bonuses (e.g., target HP < 30%), Lifesteal/Drain, Recoil damage.
 
+Phase 3: Action Economy & Turn Order
+[ ] Speed Modifiers: Altering turn priority for specific moves.
 
-Methods needed in worldManager
+[ ] Multi-Hit & Multi-Target: Hitting repeatedly or distributing hits among random targets.
 
-overworldController.js
-    this.worldManager.getTileAt()
-    this.worldManager.canMove()
-    this.worldManager.findSpawnPoint()
+[ ] Multi-Turn Actions: Charging on Turn 1 and executing on Turn 2.
 
-mapRenderer.js
-    worldManager.getTileAt()
-    worldManager.getTileData();
-    worldManager.getSpecificMask();
-    worldManager.getActiveObjects()
+[ ] Recharge Penalties: Forcing the user to skip their next turn after a massive attack.
 
-sceneManager.js
-    this.worldManager.getVisibleObjects()
+Phase 4: Status Effects
+[ ] Target Debuffs: Applying ailments (Poison, Bleed, Bound) and stat drops.
 
+[ ] Self Buffs: Applying positive statuses (Evasion Up, Counter Ready, Trap Set).
 
-Mask: 0, Index: 42
-Mask: 1, Index: 32
-Mask: 4, Index: 43
-Mask: 16, Index: 24
-Mask: 64, Index: 44
-Mask: 17, Index: 40
-Mask: 68, Index: 41
-Mask: 5, Index: 11
-Mask: 20, Index: 3
-Mask: 80, Index: 4
-Mask: 65, Index: 12
-Mask: 21, Index: 1
-Mask: 84, Index: 8
-Mask: 81, Index: 2
-Mask: 69, Index: 16
-Mask: 85, Index: 38
+[ ] Purify: Dispelling specific ailment tags.
 
-Mask: 7, Index: 21
-Mask: 28, Index: 5
-Mask: 112, Index: 7
-Mask: 193, Index: 23
-Mask: 31, Index: 13
-Mask: 124, Index: 6
-Mask: 241, Index: 15
-Mask: 199, Index: 22
-Mask: 255, Index: 14
+Phase 5: Advanced Tactics
+[ ] Party Switching: Standard swapping, Hit & Run, and Baton Pass (transferring buffs).
 
-Mask: 23, Index: 25
-Mask: 29, Index: 33
-Mask: 71, Index: 17
-Mask: 87, Index: 27
-Mask: 92, Index: 10
-Mask: 93, Index: 19
-Mask: 95, Index: 39
-Mask: 113, Index: 34
-Mask: 117, Index: 20
-Mask: 119, Index: 36
-Mask: 125, Index: 46
-Mask: 127, Index: 39
-Mask: 197, Index: 17
-Mask: 209, Index: 26
-Mask: 213, Index: 28
-Mask: 223, Index: 30
+[ ] Summons: Spawning new autonomous entities onto the field.
 
-Mask: 247, Index: 47
-Mask: 253, Index: 29
-Mask: 254, Index: 31
+[ ] Transformations: Temporarily replacing the user's stats and sprites.
 
-Mask: 121, Index: 46
-Mask: 245, Index: 45
-Mask: 251, Index: 31
-
-
-        this.name 
-        this.type 
-        this.appearance 
-        this.size 
-        this.level
-        this.vigor 
-        this.strength 
-        this.dexterity
-        this.intelligence
-        this.attunement 
-
-       
-        maxHP 
-        maxStamina 
-        maxMagic 
-        baseHpRecovery 
-        baseStaminaRecovery 
-        baseMagicRecovery 
-        baseBluntAttack 
-        basePierceAttack 
-        baseArcaneAttack 
-        baseElementalAttack 
-        this.baseBluntDefense 
-        this.basePierceDefense 
-        this.baseArcaneDefense 
-        this.baseElementalDefense 
-        this.baseBluntResistance 
-        this.basePierceResistance 
-        this.baseArcaneResistance 
-        this.baseElementalResistance
-        this.baseSpeed 
-        this.baseEvasion 
-        this.baseCritical 
-
-        
-       
-        this.currentHP 
-        this.currentStamina 
-        this.currentMagic 
-        this.currentHpRecovery 
-        this.currentStaminaRecovery 
-        this.currentMagicRecovery 
-        this.currentBluntAttack 
-        this.currentPierceAttack 
-        this.currentArcaneAttack 
-        this.currentElementalAttack 
-        this.currentBluntDefense 
-        this.currentPierceDefense
-        this.currentArcaneDefense 
-        this.currentElementalDefense 
-        this.currentBluntResistance 
-        this.currentPierceResistance 
-        this.currentArcaneResistance 
-        this.currentElementalResistance 
-
-
-        this.currentSpeed 
-        this.currentEvasion 
-        this.currentCritical 
-        this.currentCorruption 
-
-        this.currentXP = config.currentXP || 0;
-        this.skillPoints = config.skillPoints || 0;
-
-        this.equipment = config.equipment || 
-        {
-            mainHand: '',
-            offhand: '',
-            head: '',
-            torso: '',
-            arms: '',
-            legs: '',
-            feet: '',
-        }; 
-        this.statusEffectArray
-
-        this.abilityArray 
-        this.uuid
-        
-        this.immunities 
-        this.factions ss
-        this.lootTable 
-        
-
-Weather
-Biome
-Structures (can go inside)
-Battles
-Abillities
-Damage calculations
-trait integration
-
-status effects
-encounter rolling
-encounter results
-
-refactoing of encounters
-refactoring of mapObjects
-
-
+[ ] Fleeing: Attempting to escape the battle.
