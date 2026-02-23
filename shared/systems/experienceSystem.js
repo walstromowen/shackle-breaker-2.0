@@ -36,14 +36,21 @@ export const ExperienceSystem = {
     applyLevelUpStats(entity) {
         console.log(`[RPG] ${entity.name} reached Level ${entity.level}!`);
         
-        // 1. Grant Skill Point
+        // 1. Grant Skill Points
         if (typeof entity.skillPoints === 'undefined') entity.skillPoints = 0;
         entity.skillPoints += 1;
 
-        // 2. Stat Growth (Increase the CAPS only)
-        // We do NOT refill the current values here.
-        entity.maxHp += 10 + Math.floor(entity.level * 0.5);
-        entity.maxStamina += 2;
-        entity.maxInsight += 1;
+        // 2. Upgrade the raw base stats
+        if (entity.baseStats) {
+            entity.baseStats.maxHp += 10 + Math.floor(entity.level * 0.5);
+            entity.baseStats.maxStamina += 2;
+            entity.baseStats.maxInsight += 1;
+            
+            // Optional: Heal the entity upon leveling up using the NEW calculated max
+            entity.hp = entity.maxHp; 
+        } else {
+            console.warn(`[RPG] Level Up Error: Could not find baseStats for ${entity.name}`);
+        }
     }
+    
 };

@@ -1,6 +1,13 @@
 import { gameState } from '../../../shared/state/gameState.js';
 import { StatCalculator } from '../../../shared/systems/statCalculator.js';
 import { AbilityFactory } from '../../../shared/systems/factories/abilityFactory.js';
+import { CombatCalculator } from '../../../shared/systems/combatCalculator.js';
+import { ItemFactory } from '../../../shared/systems/factories/itemFactory.js'; 
+import { ExperienceSystem } from '../../../shared/systems/experienceSystem.js';
+import { InventorySystem } from '../../../shared/systems/inventorySystem.js';
+
+// NEW: Import the event bus to handle decoupling
+import { events } from '../core/eventBus.js'; 
 
 export class BattleController {
     constructor(input, config, worldManager) {
@@ -11,8 +18,10 @@ export class BattleController {
         this.timer = 0; 
     }
 
-    start(enemies, context) {
+    start(enemies, context = {}) {
         console.log(`[BattleController] Received Entities:`, enemies);
+        
+        const maxActive = context.maxActive || 3; 
 
         const party = gameState.party.members.map(member => this.createCombatant(member, 'party'));
         const preparedEnemies = enemies.map(enemy => this.createCombatant(enemy, 'enemy'));
@@ -20,8 +29,12 @@ export class BattleController {
         this.state = {
             active: true,
             phase: 'INTRO', 
-            party: party,    
-            enemies: preparedEnemies,
+            
+            partyRoster: party,              
+            enemyRoster: preparedEnemies,    
+            activeParty: party.slice(0, maxActive),           
+            activeEnemies: preparedEnemies.slice(0, maxActive), 
+            
             activePartyIndex: 0,   
             selectedAction: null, 
             turnQueue: [],         
@@ -34,7 +47,6 @@ export class BattleController {
     }
 
     createCombatant(entity, teamAllegiance) {
-        // Stats Logic
         const detailedStats = StatCalculator.calculateDetailed(entity);
         const calculatedMaxHp = detailedStats.maxHp.total;
         const calculatedMaxStamina = detailedStats.maxStamina?.total || 10;
@@ -49,60 +61,49 @@ export class BattleController {
         currentInsight = Math.min(currentInsight, calculatedMaxInsight);
 
         const abilityIdSet = new Set();
-
-        // --- DEBUG: Check the incoming entity ---
         console.log(`\n[Battle Debug] --- Processing ${entity.name} ---`);
-        console.log(`[Battle Debug] Raw equipment object:`, entity.equipment);
 
-        // Strict check for innate abilities
-        if (Array.isArray(entity.abilities)) {
-            entity.abilities.forEach(a => {
+        const baseAbilities = entity.abilities || entity.state?.abilities || entity.definition?.abilities || [];
+        if (Array.isArray(baseAbilities)) {
+            baseAbilities.forEach(a => {
                 const id = typeof a === 'string' ? a : a.id;
                 if (id) abilityIdSet.add(id);
             });
         }
 
-        // Strict check for equipment abilities
-        if (entity.equipment) {
-            Object.entries(entity.equipment).forEach(([slot, item]) => {
-                if (!item) return;
+        const equipment = entity.equipment || entity.state?.equipment || entity.definition?.equipment || {};
+        Object.entries(equipment).forEach(([slot, item]) => {
+            if (!item) return;
+            let itemDef = item;
+            if (typeof item === 'string') {
+                itemDef = ItemFactory.createItem(item); 
+            } else {
+                itemDef = item.definition || item;
+            }
 
-                // --- DEBUG: Check each item ---
-                console.log(`[Battle Debug] Slot '${slot}' holds item:`, item.name || item.id || item);
+            if (!itemDef) return;
 
-                // FIX: Point to the nested definition object where the item data actually lives
-                const itemDef = item.definition || item;
+            const extractId = (a) => {
+                const id = typeof a === 'string' ? a : a?.id;
+                if (id) abilityIdSet.add(id);
+            };
 
-                // Helper to safely extract string IDs, even if they are passed as objects
-                const extractId = (a) => {
-                    const id = typeof a === 'string' ? a : a?.id;
-                    if (id) abilityIdSet.add(id);
-                };
-
-                if (itemDef.grantedAbilities && Array.isArray(itemDef.grantedAbilities)) {
-                    itemDef.grantedAbilities.forEach(extractId);
-                }
-                if (itemDef.grantedAbility) extractId(itemDef.grantedAbility);
-                if (itemDef.useAbility) extractId(itemDef.useAbility);
-            });
-        }
+            if (itemDef.grantedAbilities && Array.isArray(itemDef.grantedAbilities)) {
+                itemDef.grantedAbilities.forEach(extractId);
+            }
+            if (itemDef.grantedAbility) extractId(itemDef.grantedAbility);
+            if (itemDef.useAbility) extractId(itemDef.useAbility);
+        });
 
         if (abilityIdSet.size === 0) {
             abilityIdSet.add('punch'); 
         }
 
         const abilityArray = Array.from(abilityIdSet);
-        
-        // --- DEBUG: Check the extracted IDs ---
-        console.log(`[Battle Debug] Final Extracted IDs for Factory:`, abilityArray);
-
         const resolvedAbilities = AbilityFactory.createAbilities(abilityArray);
-        
-        // --- DEBUG: Check what the factory actually created ---
-        console.log(`[Battle Debug] Factory output:`, resolvedAbilities);
 
         return {
-            originalEntity: entity, 
+            originalEntity: entity, // <-- Crucial: this holds the persistent object!
             name: entity.name,
             team: teamAllegiance, 
             spritePortrait: entity.spritePortrait, 
@@ -116,9 +117,11 @@ export class BattleController {
             stats: detailedStats,
             abilities: resolvedAbilities,
 
-            isDead() {
-                return this.hp <= 0;
-            },
+            get baseStats() { return this.stats; },
+            getAttack(type) { return this.stats.attack?.[type] || 0; },
+            getDefense(type) { return this.stats.defense?.[type] || 0; },
+
+            isDead() { return this.hp <= 0; },
             modifyResource(resource, amount) {
                 if (this[resource] !== undefined) {
                     const maxProp = 'max' + resource.charAt(0).toUpperCase() + resource.slice(1);
@@ -130,22 +133,19 @@ export class BattleController {
 
     handleKeyDown(key) {
         if (!this.state || !this.state.active) return;
-        
-        if (this.state.phase === 'INTRO' || this.state.phase === 'RESOLVE') return;
+        if (this.state.phase === 'INTRO' || this.state.phase === 'RESOLVE' || this.state.phase === 'VICTORY' || this.state.phase === 'DEFEAT') return;
 
         if (this.state.phase === 'SELECT_ACTION') {
             this.handleActionSelection(key);
-        } 
-        else if (this.state.phase === 'SELECT_TARGET') {
+        } else if (this.state.phase === 'SELECT_TARGET') {
             this.handleTargetSelection(key);
-        }
-        else if (key === 'Escape') {
-             this.state.active = false;
+        } else if (key === 'Escape') {
+            this.state.active = false;
         }
     }
 
     handleActionSelection(key) {
-        const activeChar = this.state.party[this.state.activePartyIndex];
+        const activeChar = this.state.activeParty[this.state.activePartyIndex];
         const abilityCount = activeChar.abilities.length;
 
         if (key === 'ArrowRight') {
@@ -155,7 +155,15 @@ export class BattleController {
             this.state.menuIndex = (this.state.menuIndex - 1 + abilityCount) % abilityCount;
         }
         else if (key === 'Enter') {
-            this.state.selectedAction = activeChar.abilities[this.state.menuIndex];
+            const attemptedAction = activeChar.abilities[this.state.menuIndex];
+
+            if (!attemptedAction.canPayCost(activeChar)) {
+                this.state.message = `Not enough resources to use ${attemptedAction.name}!`;
+                return; 
+            }
+
+            this.state.selectedAction = attemptedAction;
+            this.state.message = `Select a target for ${attemptedAction.name}`; 
             
             if (this.state.selectedAction.targeting && this.state.selectedAction.targeting.scope === 'self') {
                 this.commitAction(activeChar);
@@ -167,7 +175,7 @@ export class BattleController {
     }
 
     handleTargetSelection(key) {
-        const enemyCount = this.state.enemies.length;
+        const enemyCount = this.state.activeEnemies.length;
 
         if (key === 'ArrowDown' || key === 'ArrowRight') {
             this.state.targetIndex = (this.state.targetIndex + 1) % enemyCount;
@@ -176,7 +184,7 @@ export class BattleController {
             this.state.targetIndex = (this.state.targetIndex - 1 + enemyCount) % enemyCount;
         }
         else if (key === 'Enter') {
-            const target = this.state.enemies[this.state.targetIndex];
+            const target = this.state.activeEnemies[this.state.targetIndex];
             this.commitAction(target);
         }
         else if (key === 'Escape') {
@@ -186,12 +194,9 @@ export class BattleController {
     }
 
     commitAction(target) {
-        const activeChar = this.state.party[this.state.activePartyIndex];
+        const activeChar = this.state.activeParty[this.state.activePartyIndex];
 
-        if (!this.state.selectedAction.canPayCost(activeChar)) {
-            console.log(`Not enough resources to use ${this.state.selectedAction.name}!`);
-            return;
-        }
+        if (!this.state.selectedAction.canPayCost(activeChar)) return;
 
         this.state.turnQueue.push({
             actor: activeChar,
@@ -199,7 +204,7 @@ export class BattleController {
             target: target
         });
 
-        if (this.state.activePartyIndex < this.state.party.length - 1) {
+        if (this.state.activePartyIndex < this.state.activeParty.length - 1) {
             this.state.activePartyIndex++;
             this.state.phase = 'SELECT_ACTION';
             this.state.menuIndex = 0;
@@ -215,27 +220,27 @@ export class BattleController {
     }
 
     queueEnemyActions() {
-        this.state.enemies.forEach(enemy => {
+        this.state.activeEnemies.forEach(enemy => {
             if (enemy.isDead()) return;
 
-            // SMART AI: Filter abilities to only those the enemy can actually afford to use!
-            const affordableAbilities = enemy.abilities.filter(ability => ability.canPayCost(enemy));
+            let validAIAbilities = enemy.abilities.filter(ability => ability.canPayCost(enemy));
+            validAIAbilities = validAIAbilities.filter(a => a.id !== 'rest' && a.id !== 'punch');
 
-            if (affordableAbilities.length === 0) {
-                // If the enemy is completely out of stamina/insight and has no free moves, they skip.
-                console.log(`${enemy.name} is too exhausted to act!`);
+            if (validAIAbilities.length === 0) {
+                const restAbility = AbilityFactory.createAbilities(['rest'])[0];
+                this.state.turnQueue.push({
+                    actor: enemy,
+                    action: restAbility,
+                    target: enemy 
+                });
                 return; 
             }
 
-            // Pick a random affordable ability
-            const randomAbility = affordableAbilities[Math.floor(Math.random() * affordableAbilities.length)];
+            const randomAbility = validAIAbilities[Math.floor(Math.random() * validAIAbilities.length)];
+            const livingParty = this.state.activeParty.filter(p => !p.isDead());
             
-            // Pick a random living party member to attack
-            // TODO (Future): Enhance this to check randomAbility.targeting.scope to heal allies vs attack players
-            const livingParty = this.state.party.filter(p => !p.isDead());
             if (livingParty.length > 0) {
                 const randomTarget = livingParty[Math.floor(Math.random() * livingParty.length)];
-                
                 this.state.turnQueue.push({
                     actor: enemy,
                     action: randomAbility,
@@ -268,83 +273,325 @@ export class BattleController {
             }
         }
         
-        // NEW: The Resolve Loop added to update
-        if (this.state.phase === 'RESOLVE') {
+        // Let the update loop process the queue during Resolve, Victory, AND Defeat phases
+        if (this.state.phase === 'RESOLVE' || this.state.phase === 'VICTORY' || this.state.phase === 'DEFEAT') {
             this.timer += dt;
-            
             if (this.timer >= 1.5) {
                 this.timer = 0;
-
                 if (this.state.turnQueue.length > 0) {
                     const currentTurn = this.state.turnQueue.shift();
                     this.executeTurn(currentTurn);
-                } else {
+                } else if (this.state.phase === 'RESOLVE') {
+                    // Only run status checks if we are still actively fighting
                     this.checkBattleStatus();
                 }
             }
         }
     }
 
-    // NEW: Execute the logic and apply damage
     executeTurn(turn) {
-        const { actor, action, target } = turn;
+        // --- NARRATIVE MESSAGES ---
+        if (turn.type === 'VICTORY_MESSAGE' || turn.type === 'DEFEAT_MESSAGE') {
+            this.state.message = turn.message;
+            return;
+        }
+
+        // --- NEW: STAT SYNC AND BATTLE END VIA EVENT BUS ---
+        if (turn.type === 'BATTLE_END') {
+            // 1. Sync the final battle stats back to the persistent entities
+            this.state.partyRoster.forEach(combatant => {
+                combatant.originalEntity.hp = combatant.hp;
+                combatant.originalEntity.stamina = combatant.stamina;
+                combatant.originalEntity.insight = combatant.insight;
+            });
+
+            // 2. Shut down the battle
+            this.state.active = false;
+            
+            // 3. Emit the event to the Scene Manager
+            const isVictory = this.state.partyRoster.some(p => !p.isDead());
+            events.emit('BATTLE_ENDED', { victory: isVictory });
+            return;
+        }
+
+        // --- DEATH & REINFORCEMENT ---
+        if (turn.type === 'DEATH_MESSAGE') {
+            this.state.message = turn.message;
+            return;
+        }
+        
+        if (turn.type === 'REINFORCEMENT') {
+            const activeArray = turn.team === 'party' ? this.state.activeParty : this.state.activeEnemies;
+            activeArray[turn.slotIndex] = turn.replacement; 
+            this.state.message = turn.message;
+            return;
+        }
+
+        // --- STANDARD COMBAT LOGIC ---
+        let { actor, action, target } = turn;
 
         if (actor.isDead()) return; 
+        
         if (target.isDead()) {
-            this.state.message = `${actor.name}'s target is already down!`;
-            return;
+            const targetTeam = target.team === 'party' ? this.state.activeParty : this.state.activeEnemies;
+            const newTarget = targetTeam.find(t => !t.isDead());
+            
+            if (newTarget) {
+                target = newTarget;
+            } else {
+                this.state.message = `But there were no targets left!`;
+                return;
+            }
+        }
+
+        if (!action.canPayCost(actor)) {
+            action = AbilityFactory.createAbilities(['rest'])[0]; 
+            target = actor; 
         }
 
         action.payCost(actor, null);
 
         let totalDamage = 0;
-        let totalHeal = 0;
+        let totalHeal = 0; 
+        let missed = false;
+        let critMsg = "";
 
-        action.effects.forEach(effect => {
+        action.effects.forEach((effect) => {
             if (effect.type === 'damage') {
-                const attackStat = actor.stats?.attack?.total || 10;
-                const defenseStat = target.stats?.defense?.total || 5;
+                let calcResult;
+                const element = effect.element || (action.type === 'magic' ? 'fire' : 'blunt');
+                const abilityAccuracy = action.accuracy ?? 1.0;
+
+                if (action.type === 'physical') {
+                    calcResult = CombatCalculator.calculatePhysical(actor, target, effect.power, element, abilityAccuracy);
+                } else if (action.type === 'magic') {
+                    calcResult = CombatCalculator.calculateMagic(actor, target, effect.power, element, abilityAccuracy);
+                } else {
+                    calcResult = { hit: true, crit: false, damage: effect.power || 1, message: "" };
+                }
+
+                if (!calcResult.hit) {
+                    missed = true;
+                    return; 
+                }
+
+                if (calcResult.crit) critMsg = " Critical hit!";
+
+                target.modifyResource('hp', -calcResult.damage);
+                totalDamage += calcResult.damage;
                 
-                let rawDamage = (attackStat * effect.power) - (defenseStat * 0.5);
-                rawDamage = Math.max(1, Math.floor(rawDamage)); 
-                
-                target.modifyResource('hp', -rawDamage);
-                totalDamage += rawDamage;
+                if (target.isDead()) {
+                    this.handleDeath(target);
+                }
             } 
             else if (effect.type === 'recover') {
-                const healAmount = Math.floor((target.maxHp || 100) * effect.power);
-                target.modifyResource('hp', healAmount);
-                totalHeal += healAmount;
+                const resourceType = effect.resource || 'hp'; 
+                const maxStatName = 'max' + resourceType.charAt(0).toUpperCase() + resourceType.slice(1);
+                const maxResource = target[maxStatName] || target.stats?.[maxStatName]?.total || 100;
+                let healAmount = effect.amount ? effect.amount : Math.floor(maxResource * effect.power);
+
+                target.modifyResource(resourceType, healAmount);
+                if (resourceType === 'hp') totalHeal += healAmount;
+            }
+            else if (effect.type === 'resource_damage') {
+                const resourceType = effect.resource || 'insight';
+                const drain = effect.amount || effect.power;
+                target.modifyResource(resourceType, -drain);
             }
         });
 
-        if (totalDamage > 0) {
-            this.state.message = `${actor.name} used ${action.name} for ${totalDamage} damage!`;
+        if (missed) {
+             this.state.message = `${actor.name} used ${action.name} but missed!`;
+        } else if (action.id === 'rest') {
+             this.state.message = `${actor.name} had to rest!`;
+        } else if (totalDamage > 0) {
+             this.state.message = `${actor.name} used ${action.name} for ${totalDamage} damage!${critMsg}`;
         } else if (totalHeal > 0) {
-            this.state.message = `${actor.name} used ${action.name} and recovered ${totalHeal} HP!`;
+             this.state.message = `${actor.name} used ${action.name} and recovered ${totalHeal} HP!`;
         } else {
-            this.state.message = `${actor.name} used ${action.name}!`;
+             this.state.message = `${actor.name} used ${action.name}!`;
         }
     }
 
-    // NEW: Check if anyone won, or loop back to selection phase
+    handleDeath(combatant) {
+        this.state.turnQueue = this.state.turnQueue.filter(turn => turn.actor !== combatant);
+        
+        const isParty = combatant.team === 'party';
+        const activeArray = isParty ? this.state.activeParty : this.state.activeEnemies;
+        const rosterArray = isParty ? this.state.partyRoster : this.state.enemyRoster;
+        
+        const slotIndex = activeArray.indexOf(combatant);
+        if (slotIndex === -1) return;
+
+        const replacement = rosterArray.find(member => 
+            !member.isDead() && 
+            !activeArray.includes(member) &&
+            !this.state.turnQueue.some(turn => turn.replacement === member) 
+        );
+
+        if (replacement) {
+            this.state.turnQueue.unshift({
+                type: 'REINFORCEMENT',
+                team: combatant.team,
+                slotIndex: slotIndex,
+                replacement: replacement,
+                message: `${replacement.name} joins the battle!`
+            });
+        }
+
+        this.state.turnQueue.unshift({
+            type: 'DEATH_MESSAGE',
+            message: `${combatant.name} has been slain!`
+        });
+    }
+
+    calculateEnemyXp(enemy) {
+        if (enemy.originalEntity.xpReward) return enemy.originalEntity.xpReward;
+        
+        const stats = enemy.stats;
+        let statSum = enemy.maxHp;
+        
+        if (stats.attack) {
+            statSum += Object.values(stats.attack).reduce((a, b) => a + b, 0);
+        }
+        if (stats.defense) {
+            statSum += Object.values(stats.defense).reduce((a, b) => a + b, 0);
+        }
+        
+        statSum += (stats.speed?.total || 10);
+        
+        const levelMultiplier = (enemy.originalEntity.level || 1) * 10;
+        return Math.floor(statSum * 0.15) + levelMultiplier;
+    }
+
+    handleVictory() {
+        this.state.phase = 'VICTORY';
+        this.state.turnQueue = []; 
+        
+        let totalXp = 0;
+        let totalCurrency = 0;
+        let droppedItems = [];
+
+        // 1. Calculate all rewards from the enemy roster
+        this.state.enemyRoster.forEach(enemy => {
+            const entityDef = enemy.originalEntity;
+            
+            // Calculate XP
+            totalXp += this.calculateEnemyXp(enemy);
+
+            // Calculate Currency
+            const currencyDef = entityDef.currencyReward || { min: 0, max: 0 };
+            if (currencyDef.max > 0) {
+                totalCurrency += Math.floor(Math.random() * (currencyDef.max - currencyDef.min + 1)) + currencyDef.min;
+            }
+
+            // Calculate Item Drops
+            const lootTable = entityDef.lootTable || [];
+            lootTable.forEach(loot => {
+                if (Math.random() <= loot.dropRate) {
+                    droppedItems.push(loot.id);
+                }
+            });
+        });
+
+        // 2. Push XP Message & Apply Level Ups
+        this.state.turnQueue.push({
+            type: 'VICTORY_MESSAGE',
+            message: `Victory! The party gained ${totalXp} XP.`
+        });
+
+        const aliveParty = this.state.partyRoster.filter(member => !member.isDead());
+        const xpPerMember = Math.floor(totalXp / aliveParty.length);
+
+        aliveParty.forEach(member => {
+            const leveledUp = ExperienceSystem.addXp(member.originalEntity, xpPerMember);
+            if (leveledUp) {
+                this.state.turnQueue.push({
+                    type: 'VICTORY_MESSAGE',
+                    message: `${member.name} reached Level ${member.originalEntity.level}!`
+                });
+            }
+        });
+
+        // 3. Apply Currency and push message
+        if (totalCurrency > 0) {
+            // Ensure the party wallet exists, then add to it
+            gameState.party.currency = (gameState.party.currency || 0) + totalCurrency;
+            this.state.turnQueue.push({
+                type: 'VICTORY_MESSAGE',
+                message: `The party found ${totalCurrency} currency!`
+            });
+        }
+
+        // 4. Apply Loot and push message
+        if (droppedItems.length > 0) {
+            // Group duplicates into an object first: { "wolf_pelt": 2, "beast_fang": 1 }
+            const itemCounts = droppedItems.reduce((acc, curr) => {
+                acc[curr] = (acc[curr] || 0) + 1;
+                return acc;
+            }, {});
+
+            const lootStrings = [];
+
+            // Iterate through our grouped items
+            Object.entries(itemCounts).forEach(([itemId, count]) => {
+                // Delegate to your inventory system to handle stacks and models!
+                InventorySystem.addItem(itemId, count);
+
+                // Format the string for the player message (e.g. "wolf pelt x2")
+                const readableName = itemId.replace(/_/g, ' '); 
+                lootStrings.push(count > 1 ? `${readableName} x${count}` : readableName);
+            });
+
+            this.state.turnQueue.push({
+                type: 'VICTORY_MESSAGE',
+                message: `Loot recovered: ${lootStrings.join(', ')}`
+            });
+        } else {
+            // Only show this if they got absolutely nothing (no items, no coins)
+            if (totalCurrency === 0) {
+                this.state.turnQueue.push({
+                    type: 'VICTORY_MESSAGE',
+                    message: `The enemies left nothing useful behind.`
+                });
+            }
+        }
+
+        // 5. Finally, tell the queue to wrap up the battle
+        this.state.turnQueue.push({
+            type: 'BATTLE_END'
+        });
+    }
+
+    handleDefeat() {
+        this.state.phase = 'DEFEAT';
+        this.state.turnQueue = [];
+
+        this.state.turnQueue.push({
+            type: 'DEFEAT_MESSAGE',
+            message: "The party has fallen..."
+        });
+
+        this.state.turnQueue.push({
+            type: 'BATTLE_END'
+        });
+    }
+
     checkBattleStatus() {
-        const enemiesAlive = this.state.enemies.filter(e => !e.isDead());
-        const partyAlive = this.state.party.filter(p => !p.isDead());
+        const enemiesAlive = this.state.enemyRoster.filter(e => !e.isDead());
+        const partyAlive = this.state.partyRoster.filter(p => !p.isDead());
 
         if (enemiesAlive.length === 0) {
-            this.state.message = "Victory!";
-            this.state.phase = 'VICTORY';
+            this.handleVictory(); // Trigger the victory sequence!
         } else if (partyAlive.length === 0) {
-            this.state.message = "The party has fallen...";
-            this.state.phase = 'DEFEAT';
+            this.handleDefeat(); // Trigger the defeat sequence!
         } else {
             this.state.phase = 'SELECT_ACTION';
             this.state.activePartyIndex = 0;
             this.state.menuIndex = 0;
             this.state.message = "What will you do?";
             
-            while(this.state.party[this.state.activePartyIndex] && this.state.party[this.state.activePartyIndex].isDead()) {
+            while(this.state.activeParty[this.state.activePartyIndex] && this.state.activeParty[this.state.activePartyIndex].isDead()) {
                 this.state.activePartyIndex++;
             }
         }

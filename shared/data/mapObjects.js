@@ -22,11 +22,11 @@ export const MAP_OBJECTS = {
     },
     PINE_TREE: {
         spriteKey: 'PINE_TREE_SMALL',
-        width: 1, 
-        height: 1, 
+        width: 2, 
+        height: 2, 
         isSolid: true,
         isGround: false,
-        hitbox: { w: 1, h: 1 } 
+        hitbox: { w: 2, h: 1 } 
     },
     TULIPS_ORANGE: {
         spriteKey: 'TULIPS_ORANGE',
@@ -86,11 +86,11 @@ export const MAP_OBJECTS = {
     },
     OAK_TREE_1: {
         spriteKey: 'OAK_TREE_1',
-        width: 2, 
-        height: 2, 
+        width: 3, 
+        height: 3, 
         isSolid: true,
         isGround: false,
-        hitbox: { w: 2, h: 1 }, // Hitbox is only the bottom row (Trunk)
+        hitbox: { w: 3, h: 2 }, // Hitbox is only the bottom row (Trunk)
         
         // --- ADDED INTERACTION ---
         interaction: {

@@ -1,13 +1,6 @@
-/**
- * shared/systems/factories/entityFactory.js
- */
-
 import { ENTITY_DEFINITIONS } from '../../data/entityDefinitions.js';
 import { EntityModel } from '../../models/entityModel.js';
 import { ExperienceSystem } from '../experienceSystem.js'; 
-// Note: AbilityFactory import is no longer strictly needed here if the Model handles hydration, 
-// but kept if you need it for other logic.
-import { AbilityFactory } from './abilityFactory.js';
 
 export class EntityFactory {
     
@@ -39,6 +32,12 @@ export class EntityFactory {
             config.tags = [...new Set([...existingTags, ...overrides.tags])];
         }
 
+        // **NEW**: Merge custom injected abilities
+        if (overrides.abilities) {
+            const existingAbilities = config.abilities || [];
+            config.abilities = [...new Set([...existingAbilities, ...overrides.abilities])];
+        }
+
         if (overrides.attributes) {
             config.attributes = { ...config.attributes, ...overrides.attributes };
         }
@@ -51,9 +50,6 @@ export class EntityFactory {
             config.equipment = { ...config.equipment, ...overrides.equipment };
         }
         if (!config.equipment) config.equipment = {}; 
-
-        // [REMOVED] Individual Inventory
-        // Since inventory is shared, entities don't need their own storage.
 
         if (overrides.traits) {
             config.traits = overrides.traits;
@@ -82,6 +78,12 @@ export class EntityFactory {
         // 5. Create the Entity Model
         // The EntityModel constructor now handles mapping visuals and hydrating abilities automatically.
         const entity = new EntityModel(config);
+
+        // --- NEW: Ensure reward data survives instantiation ---
+        if (config.lootTable) entity.lootTable = config.lootTable;
+        if (config.currencyReward) entity.currencyReward = config.currencyReward;
+        if (config.xpReward) entity.xpReward = config.xpReward;
+        // ------------------------------------------------------
 
         // 6. Fill Resources (Start at max health/stamina)
         // We do this after creation so the StatCalculator can determine the Max values first.

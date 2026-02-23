@@ -115,13 +115,23 @@ export class SceneManager {
             this.transitionRenderer.start(() => {
                 console.log("[SceneManager] Handing off entities to BattleController:", data.enemies);
                 
-                // --- FIX: Pass the 'enemies' array directly ---
-                // The Overworld has already created the instances (Factory) and 
-                // mutated them (HP/Name) if needed.
+                // Keep it decoupled: Pass data natively. No callbacks needed!
                 this.battleController.start(data.enemies, data.context);
                 
                 this.changeScene('battle');
             });
+        });
+
+        // 4. NEW: Listen for the end of the battle to handle routing cleanly
+        events.on('BATTLE_ENDED', (data) => {
+            if (data.victory) {
+                console.log("[SceneManager] Victory! Transitioning back to Overworld.");
+                events.emit('CHANGE_SCENE', { scene: 'overworld' });
+            } else {
+                console.log("[SceneManager] The party was defeated! Routing to Game Over...");
+                // NOTE: When you build your Game Over scene, route it here:
+                // events.emit('CHANGE_SCENE', { scene: 'game_over' }); 
+            }
         });
     }
 

@@ -55,6 +55,17 @@ export class BattleRenderer {
         };
     }
 
+    // --- NEW: Helper to keep dead bodies visible until their death message plays ---
+    isEntityVisible(entity, state) {
+        if (!entity) return false;
+        if (entity.hp > 0) return true;
+        
+        // If they are dead, check if we are still waiting to announce it
+        return state.turnQueue.some(
+            turn => turn.type === 'DEATH_MESSAGE' && turn.message.includes(entity.name)
+        );
+    }
+
     render(state) {
         if (!state) return;
         const { CANVAS_WIDTH, CANVAS_HEIGHT } = this.config;
@@ -65,15 +76,14 @@ export class BattleRenderer {
         this.ctx.fillStyle = "#212121"; 
         this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-        // 2. Draw Units
-        this.drawGroup(state.enemies, false);
-        this.drawGroup(state.party, true);
+        // 2. Draw Units (Pass state so they can check the queue)
+        this.drawGroup(state.activeEnemies, false, state);
+        this.drawGroup(state.activeParty, true, state);
 
         // 3. Draw HUD
         this.drawHUD(state);
 
-        // 4. INTERFACE LAYERS (Based on Phase)
-        // NEW: Added VICTORY and DEFEAT to the dialogue check
+        // 4. INTERFACE LAYERS
         if (state.phase === 'INTRO' || state.phase === 'RESOLVE' || state.phase === 'VICTORY' || state.phase === 'DEFEAT') {
             if (state.message) {
                 this.drawDialogueBox(state.message);
@@ -89,11 +99,12 @@ export class BattleRenderer {
         }
     }
 
-    drawGroup(entities, isPlayer) {
+    drawGroup(entities, isPlayer, state) {
         if (!entities) return;
 
         let renderables = entities.map((entity, index) => {
-            if (entity.hp <= 0 || index >= 3) return null;
+            // UPDATED: Check visibility logic instead of strictly HP <= 0
+            if (!this.isEntityVisible(entity, state) || index >= 3) return null;
             
             const layout = isPlayer ? this.LAYOUT.PLAYER[index] : this.LAYOUT.ENEMY[index];
             if (!layout) return null;
@@ -153,12 +164,12 @@ export class BattleRenderer {
     }
 
     drawHUD(state) {
-        if (state.party && state.party.length > 0) {
-            this.drawPartyCards(state.party);
+        if (state.activeParty && state.activeParty.length > 0) {
+            this.drawPartyCards(state.activeParty);
         }
 
-        if (state.enemies && state.enemies.length > 0) {
-            this.drawEnemyCards(state.enemies);
+        if (state.activeEnemies && state.activeEnemies.length > 0) {
+            this.drawEnemyCards(state.activeEnemies, state);
         }
     }
 
@@ -168,6 +179,8 @@ export class BattleRenderer {
         const spacingY = 9;
         
         party.forEach((member, index) => {
+            if (!member) return; // Safety check
+
             const y = startY + (index * (this.HUD.CARD_H + this.HUD.GAP));
             
             this.ui.drawPanel(startX, y, this.HUD.CARD_W, this.HUD.CARD_H);
@@ -203,7 +216,7 @@ export class BattleRenderer {
         this.ctx.fillText(`${Math.floor(current)}/${max}`, barX + this.HUD.BAR_WIDTH + 5, barY + 5);
     }
 
-    drawEnemyCards(enemies) {
+    drawEnemyCards(enemies, state) {
         const ENEMY_CARD_H = 38; 
         const stackHeight = (enemies.length * ENEMY_CARD_H) + ((enemies.length - 1) * this.HUD.GAP);
         const bottomMargin = 90; 
@@ -212,7 +225,8 @@ export class BattleRenderer {
         const startY = this.config.CANVAS_HEIGHT - bottomMargin - stackHeight;
 
         enemies.forEach((enemy, index) => {
-            if (enemy.hp <= 0) return; 
+            // UPDATED: Use the new visibility checker so the HUD doesn't vanish early either
+            if (!this.isEntityVisible(enemy, state)) return; 
 
             const y = startY + (index * (ENEMY_CARD_H + this.HUD.GAP));
 
@@ -226,7 +240,6 @@ export class BattleRenderer {
             const barX = (startX + this.HUD.CARD_W - this.HUD.PADDING_X) - this.HUD.BAR_WIDTH;
             const barY = y + 20;
 
-            // FIX: Changed UITheme.colors.danger to UITheme.colors.hp here
             this.ui.drawBar(barX, barY, this.HUD.BAR_WIDTH, this.HUD.BAR_HEIGHT, currentHp, maxHp, UITheme.colors.hp, UITheme.colors.hpDim);
             
             this.ctx.font = "9px monospace";
@@ -238,7 +251,7 @@ export class BattleRenderer {
     }
 
     drawActionMenu(state) {
-        const activeChar = state.party[state.activePartyIndex];
+        const activeChar = state.activeParty[state.activePartyIndex];
         
         if (!activeChar || !activeChar.abilities) return;
 
@@ -269,7 +282,8 @@ export class BattleRenderer {
 
         activeChar.abilities.forEach((ability, index) => {
             const isSelected = (index === state.menuIndex);
-            
+            const canAfford = ability.canPayCost(activeChar); 
+
             const row = Math.floor(index / columns);
             const col = index % columns;
 
@@ -279,11 +293,16 @@ export class BattleRenderer {
             if (isSelected) {
                 this.ctx.fillStyle = this.COLORS.highlight;
                 this.ctx.fillRect(drawX, drawY, itemW, itemH);
-                this.ctx.strokeStyle = "#fff";
+                
+                this.ctx.strokeStyle = canAfford ? "#fff" : "#e74c3c"; 
                 this.ctx.strokeRect(drawX, drawY, itemW, itemH);
             } else {
                 this.ctx.fillStyle = "#333";
                 this.ctx.fillRect(drawX, drawY, itemW, itemH);
+            }
+
+            if (!canAfford) {
+                this.ctx.globalAlpha = 0.4; 
             }
 
             const iconSize = 32;
@@ -292,11 +311,19 @@ export class BattleRenderer {
             
             this.drawIcon(this.ctx, ability.icon, iconX, iconY, iconSize);
 
-            const textColor = isSelected ? "#000" : "#fff";
+            let textColor = "#fff";
+            if (isSelected) {
+                textColor = canAfford ? "#000" : "#555"; 
+            } else if (!canAfford) {
+                textColor = "#aaa"; 
+            }
+
             this.ctx.fillStyle = textColor;
             this.ctx.font = UITheme.fonts.body || "12px sans-serif";
             this.ctx.textAlign = "left";
             this.ctx.fillText(ability.name, iconX + iconSize + 8, iconY + iconSize/2 + 4);
+
+            this.ctx.globalAlpha = 1.0; 
         });
     }
 
@@ -321,9 +348,10 @@ export class BattleRenderer {
 
     drawTargetCursor(state) {
         const index = state.targetIndex;
-        const enemy = state.enemies[index];
+        const enemy = state.activeEnemies[index];
         
-        if (!enemy || enemy.hp <= 0) return; 
+        // Use the visibility checker here too!
+        if (!this.isEntityVisible(enemy, state)) return; 
         
         const layout = this.LAYOUT.ENEMY[index];
         if(!layout) return;

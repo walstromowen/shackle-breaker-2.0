@@ -2,85 +2,108 @@ import { StatCalculator } from './statCalculator.js';
 
 export class CombatCalculator {
 
-    /**
-     * Calculates the raw outcome of a physical attack.
-     * Does NOT modify the entities. Just returns the numbers.
-     */
-    static calculatePhysical(attacker, defender, power = 10, type = 'blunt') {
-        const result = {
-            hit: false,
-            crit: false,
-            damage: 0,
-            message: ""
-        };
+    static calculatePhysical(attacker, defender, power = 1.0, type = 'blunt', abilityAccuracy = 1.0) { 
+        const result = { hit: false, crit: false, damage: 0, message: "" };
 
-        // 1. Get Stats (using your existing StatCalculator)
-        // We use the 'combat' stats snapshot usually, but recalculating ensures accuracy
         const attStats = attacker.baseStats; 
         const defStats = defender.baseStats;
 
-        // 2. Hit Check
-        // Formula: Base Hit (95%) * (Accuracy / Evasion)
-        // Using a simple standard RPG formula here
-        const accuracy = attStats.accuracy || 100;
-        const evasion = defStats.evasion || 100; // Prevent divide by zero
-        const hitChance = 0.95 * (accuracy / evasion);
+        // --- 1. Hit Check ---
+        const attackerAcc = attStats.accuracy || 100;
+        const defenderEvasion = defStats.evasion || 100; 
+        const hitChance = abilityAccuracy * (attackerAcc / defenderEvasion);
+        const hitRoll = Math.random();
+        
+        console.log(`[MATH DEBUG] Physical Hit Check -> Acc:${abilityAccuracy} * (AtkAcc:${attackerAcc} / DefEva:${defenderEvasion}) = ${(hitChance * 100).toFixed(1)}% | Roll: ${(hitRoll * 100).toFixed(1)}% | Hit: ${hitRoll <= hitChance}`);
 
-        if (Math.random() > hitChance) {
+        if (hitRoll > hitChance) {
             result.message = "Missed!";
-            return result; // hit is false by default
+            return result; 
         }
         result.hit = true;
 
-        // 3. Crit Check
+        // --- 2. Crit Check ---
         const critChance = attStats.critChance || 0.05;
-        if (Math.random() < critChance) {
-            result.crit = true;
-        }
+        if (Math.random() < critChance) result.crit = true;
 
-        // 4. Damage Calculation
-        // Formula: (Attack * Power / Defense) * RandomVariance
-        const attackVal = attacker.getAttack(type); // Uses your CombatantModel getter
-        const defenseVal = defender.getDefense(type); // Uses your CombatantModel getter
+        // --- 3. Damage Calculation ---
+        const attackVal = attacker.getAttack(type) || 0; 
+        const defenseVal = defender.getDefense(type) || 0; 
+        const resistanceVal = defStats.resistance?.[type] || 0;
         
-        let damage = (attackVal * power) / Math.max(1, defenseVal);
+        const a = attackVal * power;
+        const r_modifier = 1 - resistanceVal;
+        const d = defenseVal;
 
-        // Apply Crit Multiplier (1.5x standard)
+        let damage = (a * r_modifier) - d;
+
+        // Single-line breakdown for the raw formula
+        console.log(`[MATH DEBUG] Physical Damage (${type}) -> a:${a.toFixed(1)} (atk:${attackVal}*pwr:${power}) | r:${r_modifier.toFixed(2)} (res:${resistanceVal}) | d:${d} (def) || Formula: (${a.toFixed(1)} * ${r_modifier.toFixed(2)}) - ${d} = ${damage.toFixed(2)}`);
+
+        // Apply Modifiers
         if (result.crit) {
-            damage *= (attStats.critMultiplier || 1.5);
+            const multi = attStats.critMultiplier || 1.5;
+            damage *= multi;
+            console.log(`[MATH DEBUG] CRITICAL HIT! (x${multi}) -> Raw Dmg: ${damage.toFixed(2)}`);
         }
 
-        // Apply Variance (±10%)
         const variance = 0.9 + (Math.random() * 0.2); 
         damage *= variance;
-
-        result.damage = Math.floor(Math.max(1, damage)); // Always deal at least 1 dmg
+        
+        result.damage = Math.floor(Math.max(1, damage)); 
+        console.log(`[MATH DEBUG] Final Physical Damage (after variance x${variance.toFixed(2)}): ${result.damage}`);
         
         return result;
     }
 
-    /**
-     * Calculates Magic/Elemental damage (Simpler: No miss check usually)
-     */
-    static calculateMagic(attacker, defender, power = 10, element = 'fire') {
-        const result = { hit: true, crit: false, damage: 0, message: "" };
+    static calculateMagic(attacker, defender, power = 1.0, element = 'fire', abilityAccuracy = 1.0) { 
+        const result = { hit: false, crit: false, damage: 0, message: "" };
         
         const attStats = attacker.baseStats;
-        
-        // Magic Attack vs Resistance
-        const magAtk = attStats.attributes.intelligence || 10;
-        const magRes = defender.baseStats.resistance[element] || 0;
+        const defStats = defender.baseStats;
 
-        // Simple subtraction formula for magic
-        let damage = (magAtk + power) - (magRes / 2);
+        // --- 1. Hit Check ---
+        const attackerAcc = attStats.accuracy || 100;
+        const defenderEvasion = defStats.evasion || 100; 
+        const hitChance = abilityAccuracy * (attackerAcc / defenderEvasion);
+        const hitRoll = Math.random();
         
-        // Crit check
+        console.log(`[MATH DEBUG] Magic Hit Check -> Acc:${abilityAccuracy} * (AtkAcc:${attackerAcc} / DefEva:${defenderEvasion}) = ${(hitChance * 100).toFixed(1)}% | Roll: ${(hitRoll * 100).toFixed(1)}% | Hit: ${hitRoll <= hitChance}`);
+
+        if (hitRoll > hitChance) {
+            result.message = "Missed!";
+            return result;
+        }
+        result.hit = true;
+        
+        // --- 2. Damage Calculation ---
+        const magAtk = attStats.attributes?.intelligence || 10;
+        const resistanceVal = defStats.resistance?.[element] || 0;
+        const defenseVal = defender.getDefense(element) || 0;
+
+        const a = magAtk * power;
+        const r_modifier = 1 - resistanceVal;
+        const d = defenseVal;
+
+        let damage = (a * r_modifier) - d;
+
+        // Single-line breakdown for the raw formula
+        console.log(`[MATH DEBUG] Magic Damage (${element}) -> a:${a.toFixed(1)} (matk:${magAtk}*pwr:${power}) | r:${r_modifier.toFixed(2)} (res:${resistanceVal}) | d:${d} (def) || Formula: (${a.toFixed(1)} * ${r_modifier.toFixed(2)}) - ${d} = ${damage.toFixed(2)}`);
+        
+        // --- 3. Crit Check & Modifiers ---
         if (Math.random() < (attStats.critChance || 0.05)) {
             result.crit = true;
-            damage *= 1.5;
+            const multi = attStats.critMultiplier || 1.5;
+            damage *= multi;
+            console.log(`[MATH DEBUG] MAGIC CRIT! (x${multi}) -> Raw Dmg: ${damage.toFixed(2)}`);
         }
 
-        result.damage = Math.floor(Math.max(0, damage));
+        const variance = 0.9 + (Math.random() * 0.2); 
+        damage *= variance;
+        
+        result.damage = Math.floor(Math.max(1, damage)); 
+        console.log(`[MATH DEBUG] Final Magic Damage (after variance x${variance.toFixed(2)}): ${result.damage}`);
+
         return result;
     }
 }

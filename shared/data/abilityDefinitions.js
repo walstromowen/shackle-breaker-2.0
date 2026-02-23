@@ -470,8 +470,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "self", select: "auto" },
         accuracy: 1.0,
         effects: [
-            { type: "recover", resource: "hp", power: 0.25 },
-            { type: "recover", resource: "stamina", power: 0.50 },
+            { type: "recover", resource: "stamina", power: 0.25 },
             { type: "recover", resource: "insight", power: 0.25 }
         ]
     },

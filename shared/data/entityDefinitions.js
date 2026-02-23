@@ -1,5 +1,4 @@
 // 1. THE MASTER TEMPLATE
-// Every entity in the game starts with these defaults.
 const BASE_ENTITY = {
     name: "Unknown Entity",
     level: 1, 
@@ -8,13 +7,13 @@ const BASE_ENTITY = {
     skillPoints: 0,   
 
     // --- VISUALS ---
-    spriteOverworld: "missing_texture",  // Map walking & Combat sprite
-    spritePortrait: "missing_face",      // Dialogue & Menu face
+    spriteOverworld: "missing_texture",  
+    spritePortrait: "missing_face",      
     
     traits: [],
     statusEffects: [],
     
-    // --- ATTRIBUTES (Safe Defaults) ---
+    // --- ATTRIBUTES ---
     attributes: {
         vigor: 1, strength: 1, dexterity: 1, intelligence: 1, attunement: 1
     },
@@ -32,31 +31,28 @@ const BASE_ENTITY = {
         baseAttack: { blunt: 1, slash: 0, pierce: 0 }
     },
 
-    // --- EQUIPMENT & DROPS ---
     equipment: {
         mainHand: null, offHand: null,  
         head: null, torso: null, arms: null, legs: null, feet: null,  
         accessory: null
     },
 
-    lootTable: [], 
-    abilities: ["rest"],
+    // --- NEW: WEIGHTED LOOT & CURRENCY ---
+    currencyReward: { min: 0, max: 0 }, 
+    lootTable: [], // Format: { id: "item_id", dropRate: 0.0 to 1.0 }
+    
+    abilities: ["rest"], 
     tags: ["ENTITY"]
 };
 
-// 2. THE HUMANOID TEMPLATE (Extends Base)
+// 2. THE HUMANOID TEMPLATE
 const HUMANOID_TEMPLATE = {
-    ...BASE_ENTITY, // Inherit defaults
-    
+    ...BASE_ENTITY,
     name: "Humanoid",
-    
-    // Visuals
     spriteOverworld: "spritesheet",
     spritePortrait: "legionaryPortrait",
 
-    attributes: {
-        vigor: 10, strength: 10, dexterity: 10, intelligence: 10, attunement: 10
-    },
+    attributes: { vigor: 10, strength: 10, dexterity: 10, intelligence: 10, attunement: 10 },
     
     baseStats: {
         ...BASE_ENTITY.baseStats,
@@ -65,23 +61,21 @@ const HUMANOID_TEMPLATE = {
         baseAttack: { blunt: 1, slash: 0, pierce: 0 }
     },
 
-    abilities: ["rest", "punch"],
+    // Humanoids usually carry some pocket change
+    currencyReward: { min: 1, max: 10 },
+
+    abilities: [...BASE_ENTITY.abilities, "punch"],
     tags: ["BIOLOGICAL", "HUMANOID"]
 };
 
-// 3. THE BEAST TEMPLATE (Extends Base)
+// 3. THE BEAST TEMPLATE
 const BEAST_TEMPLATE = {
     ...BASE_ENTITY,
-
     name: "Beast",
+    spriteOverworld: "germanSheepherdSprite",
+    spritePortrait: "germanSheepherdPortrait",
     
-    // Visuals
-    spriteOverworld: "germanSheepherdSprite", // Placeholder
-    spritePortrait: "germanSheepherdPortrait", // Placeholder
-    
-    attributes: {
-        vigor: 12, strength: 8, dexterity: 14, intelligence: 3, attunement: 5
-    },
+    attributes: { vigor: 12, strength: 8, dexterity: 14, intelligence: 3, attunement: 5 },
     
     baseStats: {
         ...BASE_ENTITY.baseStats,
@@ -92,28 +86,25 @@ const BEAST_TEMPLATE = {
         baseAttack: { blunt: 6, slash: 8, pierce: 4 }
     },
 
-    abilities: ["bite", "howl"],
+    // Beasts rarely carry money
+    currencyReward: { min: 0, max: 0 },
+
+    abilities: [...BASE_ENTITY.abilities, "bite"],
     tags: ["BIOLOGICAL", "BEAST"]
 };
 
 // 4. EXPORTED DEFINITIONS
 export const ENTITY_DEFINITIONS = {
-    
-    // --- HUMANOIDS ---
-    
     "HUMANOID": HUMANOID_TEMPLATE,
 
     "LEGIONARY": {
         ...HUMANOID_TEMPLATE, 
-        
         name: "Legionary",
-        level: 2,
+        level: 1,
         
-        // Visuals
         spriteOverworld: "legionarySprite",
         spritePortrait: "legionaryPortrait",
 
-        // Soldier Stats
         attributes: {
             ...HUMANOID_TEMPLATE.attributes,
             vigor: 14, strength: 14, intelligence: 6
@@ -121,8 +112,7 @@ export const ENTITY_DEFINITIONS = {
 
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 40,
-            maxStamina: 20,
+            maxHp: 40, maxStamina: 20,
             baseDefense: {
                 ...HUMANOID_TEMPLATE.baseStats.baseDefense,
                 slash: 2, pierce: 2, blunt: 1
@@ -131,78 +121,58 @@ export const ENTITY_DEFINITIONS = {
 
         equipment: {
             ...HUMANOID_TEMPLATE.equipment,
-            mainHand: "iron_sword",
-            torso: "iron_breastplate",
-            head: "iron_helmet"
+            mainHand: "shortsword",
         },
 
-        lootTable: ["gold_coin", "rations"],
-        abilities: ["slash", "shield_bash"],
+        // Better currency, rare chance to drop their sword or a ration
+        currencyReward: { min: 5, max: 15 },
+        lootTable: [
+            { id: "healing_herb", dropRate: 1 }, // 15% chance
+            { id: "shortsword", dropRate: 0.05 }    // 5% chance
+        ],
+        abilities: [...HUMANOID_TEMPLATE.abilities],
         tags: [...HUMANOID_TEMPLATE.tags, "SOLDIER"]
     },
-
-    // --- CREATURES ---
 
     "BEAST": BEAST_TEMPLATE,
 
     "WOLF": {
         ...BEAST_TEMPLATE, 
-
         name: "Grey Wolf",
-        level: 3,
+        level: 1,
 
-        // Visuals
-              spriteOverworld: "legionarySprite",
+        spriteOverworld: "legionarySprite",
         spritePortrait: "wolfPortrait",
 
-        // OVERRIDES: Wolves are faster and have higher crit than generic beasts
         attributes: {
             ...BEAST_TEMPLATE.attributes,
-            dexterity: 16, 
-            strength: 10
+            dexterity: 16, strength: 10
         },
 
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
-            maxHp: 28, 
-            maxStamina: 18, 
-            speed: 9,       // Faster than generic beast (7)
-            critical: 15,   // Higher crit than generic beast (10)
-            
-            baseDefense: { 
-                ...BEAST_TEMPLATE.baseStats.baseDefense,
-                ice: 4 // Natural fur coat
-            },
-            
-            baseResistance: { 
-                ...BEAST_TEMPLATE.baseStats.baseResistance,
-                fire: -0.25, // Flammable
-                ice: 0.25    // Warm
-            },
-
-            baseAttack: { 
-                blunt: 0, slash: 5, pierce: 7 
-            }
+            maxHp: 28, maxStamina: 18, 
+            speed: 9, critical: 15, 
+            baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, ice: 4 },
+            baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, fire: -0.25, ice: 0.25 },
+            baseAttack: { blunt: 0, slash: 5, pierce: 7 }
         },
 
-        lootTable: ["wolf_pelt", "beast_fang"],
-        abilities: ["bite", "howl", "lunge"],
+        // No money, but moderate chance for crafting/vendor trash
+        currencyReward: { min: 0, max: 0 },
+        lootTable: [
+            { id: "healing_herb", dropRate: 0.15 } // 15% chance
+        ],
+        abilities: [...BEAST_TEMPLATE.abilities],
         tags: [...BEAST_TEMPLATE.tags, "CANINE"]
     },
 
     "AVIAN": {
         ...BASE_ENTITY,
-
         name: "Avian",
-        
-        // Visuals
         spriteOverworld: "spritesheet",
         spritePortrait: "hawkPortrait",
-        
-        attributes: { 
-            vigor: 6, strength: 4, dexterity: 16, intelligence: 6, attunement: 8 
-        },
-        
+        attributes: { vigor: 6, strength: 4, dexterity: 16, intelligence: 6, attunement: 8 },
         baseStats: {
             ...BASE_ENTITY.baseStats,
             maxHp: 12, maxStamina: 15, maxInsight: 5,
@@ -211,8 +181,11 @@ export const ENTITY_DEFINITIONS = {
             baseResistance: { wind: 0.5, earth: 0.2 },
             baseAttack: { slash: 4, pierce: 4 }
         },
-
-        abilities: ["peck", "screech"],
+        currencyReward: { min: 0, max: 0 },
+        lootTable: [
+            { id: "feather", dropRate: 0.40 } // 40% chance
+        ],
+        abilities: [...BASE_ENTITY.abilities, "peck", "screech"],
         tags: ["BIOLOGICAL", "AVIAN"]
     }
 };

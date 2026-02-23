@@ -1,12 +1,15 @@
-/**
- * shared/logic/StatCalculator.js
- */
 import { TRAIT_DEFINITIONS } from '../../shared/data/traitDefinitions.js';
 import { DAMAGE_TYPES } from '../../shared/data/constants.js';
 
 export class StatCalculator {
 
-    static get DAMAGE_TYPES() { return DAMAGE_TYPES || ['blunt', 'slash', 'pierce', 'fire', 'ice', 'lightning', 'dark', 'light']; }
+    static get DAMAGE_TYPES() { 
+        return DAMAGE_TYPES || [ 
+            "blunt", "slash", "pierce", 
+            "fire", "ice", "lightning", "water", "earth", "wind", 
+            "light", "dark", "arcane" 
+        ];
+    }
 
     static calculate(character) {
         const details = this._runPipeline(character);
@@ -33,12 +36,14 @@ export class StatCalculator {
                 bonus: breakdown.resources.flat.insight, 
                 total: finalStats.maxInsight 
             },
-            // Pass through combat stats for the UI
+            // Pass through combat stats for the UI and CombatCalculator
             attack: finalStats.attack,
             defense: finalStats.defense,
             resistance: finalStats.resistance,
             speed: finalStats.speed,
-            critChance: finalStats.critChance
+            critChance: finalStats.critChance,
+            accuracy: finalStats.accuracy, 
+            evasion: finalStats.evasion    
         };
     }
 
@@ -47,6 +52,7 @@ export class StatCalculator {
             attack: {}, defense: {}, resistance: {},
             vigor: 0, strength: 0, dexterity: 0, intelligence: 0, attunement: 0,
             speed: 0, critChance: 0, critMultiplier: 1.5,
+            accuracy: 100, evasion: 100, // STANDARDIZED: Base 100 for entity hit math
             maxHp: 0, maxStamina: 0, maxInsight: 0
         };
 
@@ -66,11 +72,10 @@ export class StatCalculator {
 
         if (!character) return { finalStats, breakdown };
 
-        // [FIX]: Safe fallback if 'definition' doesn't exist on EntityModel
+        // Safe fallback if 'definition' doesn't exist on EntityModel
         const definition = character.definition || {}; 
         
         // --- STEP 1: BASE ENTITY ---
-        // [FIX]: specific checks for EntityModel getters (character.baseStats)
         const baseSource = character.baseStats || definition.stats || {};
         
         breakdown.resources.base.hp = baseSource.maxHp || baseSource.hp || 10;
@@ -80,15 +85,20 @@ export class StatCalculator {
         const combatSource = character.baseStats || definition.baseStats || {};
         finalStats.speed = combatSource.speed || 0;
         finalStats.critChance = (combatSource.critical || 0) * 0.01;
+        
+        // Parse explicitly defined base accuracy/evasion, otherwise keep 100
+        if (combatSource.accuracy !== undefined) finalStats.accuracy = combatSource.accuracy;
+        if (combatSource.evasion !== undefined) finalStats.evasion = combatSource.evasion;
 
         if (combatSource.baseDefense) this.DAMAGE_TYPES.forEach(t => finalStats.defense[t] = combatSource.baseDefense[t] || 0);
         if (combatSource.baseAttack) this.DAMAGE_TYPES.forEach(t => finalStats.attack[t] = combatSource.baseAttack[t] || 0);
+        
+        // FIX: Load base resistances from the entity template
+        if (combatSource.baseResistance) this.DAMAGE_TYPES.forEach(t => finalStats.resistance[t] = combatSource.baseResistance[t] || 0);
 
         // --- STEP 2: CALCULATE ATTRIBUTES ---
-        // [FIX]: specific check for EntityModel getter (character.attributes)
         const activeAttributes = { ...(character.attributes || {}) }; 
         
-        // [FIX]: EntityModel getter 'equipment' returns { slot: ItemModel }
         const equipment = character.equipment || character.state?.equipment || {};
         const traitIds = character.traits || character.state?.traits || [];
 
@@ -100,7 +110,6 @@ export class StatCalculator {
         };
 
         Object.values(equipment).forEach(item => {
-            // [FIX]: ItemModel might be the source itself, or contain a definition
             if (item) mergeAttributes(item.definition || item);
         });
 
@@ -140,7 +149,8 @@ export class StatCalculator {
         this.DAMAGE_TYPES.forEach(type => {
             if (!physicalTypes.includes(type)) {
                 finalStats.attack[type] += finalStats.intelligence;
-                finalStats.resistance[type] += Math.floor(finalStats.intelligence * 0.5);
+                // FIX: Scale resistance as a decimal (1 Int = 1% resistance = 0.01), not a flat integer!
+                finalStats.resistance[type] += (finalStats.intelligence * 0.01);
             }
         });
 
@@ -161,7 +171,6 @@ export class StatCalculator {
             if (item) applyFlat(item.definition || item);
         });
 
-        // [FIX]: Get current HP safely from EntityModel OR State
         const currentHp = character.hp ?? character.state?.stats?.hp ?? breakdown.resources.base.hp;
         const currentMaxHp = breakdown.resources.base.hp + breakdown.resources.derived.hp; 
 
@@ -203,6 +212,9 @@ export class StatCalculator {
             if (source.combat.speed) stats.speed += source.combat.speed;
             if (source.combat.critChance) stats.critChance += source.combat.critChance;
             if (source.combat.critMultiplier) stats.critMultiplier += source.combat.critMultiplier;
+            // Apply flat modifiers for accuracy and evasion
+            if (source.combat.accuracy) stats.accuracy += source.combat.accuracy;
+            if (source.combat.evasion) stats.evasion += source.combat.evasion;
         }
         
         // Legacy flat defense handling

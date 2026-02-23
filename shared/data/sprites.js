@@ -25,8 +25,8 @@ export const SPRITES = {
     // --- TREES (Added sway: true) ---
     // Note: These are taller than 1 tile (h > 1).
     // The renderer automatically shifts them UP so their feet sit on the tile.
-    "PINE_TREE_SMALL":  { x: 0, y: 1, w: 1, h: 2},
-    "OAK_TREE_1":       { x: 0, y: 3, w: 2, h: 2},
+    "PINE_TREE_SMALL":  { x: 3, y: 1, w: 2, h: 2},
+    "OAK_TREE_1":       { x: 0, y: 1, w: 3, h: 3},
 
     // --- BUILDINGS ---
     // Drawn from the bottom-left anchor point.

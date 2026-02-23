@@ -406,7 +406,7 @@ export class CharacterCreatorController {
 
         // 6. Commit to Game State
         gameState.party.members = finalParty;
-        gameState.party.gold = 100;
+        gameState.party.currency = 100;
         
         if (!gameState.settings) gameState.settings = {};
         gameState.settings.difficulty = CREATION_DATA.DIFFICULTIES[this.state.difficultyIdx].id; 

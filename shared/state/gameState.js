@@ -20,7 +20,7 @@ export const gameState = {
     party: {
         // Shared Inventory (Backpack)
         inventory: [], 
-        gold: 0,
+        currency: 0,
         
         // The Characters
         members: []

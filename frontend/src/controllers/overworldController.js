@@ -186,9 +186,8 @@ export class OverworldController {
     checkTileEvents() {
         const col = Math.floor(this.player.x / this.config.TILE_SIZE);
         const row = Math.floor(this.player.y / this.config.TILE_SIZE);
-        // Note: You removed tileId checks in your snippet, keeping logic as requested
         
-        // 10% Chance
+        // 20% Chance (based on < 0.20)
         if (Math.random() < 0.20) {
             
             // FREEZE THE GAME
@@ -196,8 +195,21 @@ export class OverworldController {
             this.player.isMoving = false;
             this.player.moveProgress = 0;
 
+            // --- TEST ROSTER SETUP ---
+            const enemyParty = [];
+            for (let i = 0; i < 4; i++) {
+                const legionary = EntityFactory.create('LEGIONARY');
+                legionary.name = `Legionary ${i + 1}`; // Makes console debugging much easier
+                legionary.hp = 1;                      // Force HP to 1 for quick kills
+                legionary.stamina = 15;                // Keeping your stamina override
+                
+                enemyParty.push(legionary);
+            }
+
+            // Emit the battle event with the full roster of 6
             events.emit('START_BATTLE', {
-                enemies: [EntityFactory.create('LEGIONARY'), EntityFactory.create('WOLF'), EntityFactory.create('LEGIONARY')], //Currently needs to pass an array of enemy IDs, but this can be reworked later to be more flexiblity depeding on biome, chance, time etc
+                enemies: enemyParty,
+                // maxActive: 3 // (Optional) You can pass this here if you update your event listener to pass context!
             });
         }
     }

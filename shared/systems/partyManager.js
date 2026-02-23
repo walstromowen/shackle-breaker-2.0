@@ -26,7 +26,7 @@ export const PartyManager = {
      * Returns total Gold
      */
     getGold() {
-        return gameState.party.gold || 0;
+        return gameState.party.currency || 0;
     },
 
     // --- WRITE OPERATIONS (Setters / Actions) ---
@@ -42,7 +42,7 @@ export const PartyManager = {
 
         // 1. Clear existing data (Reset for new game)
         gameState.party.members = [];
-        gameState.party.gold = 0;
+        gameState.party.currency = 0;
         gameState.party.inventory = [];
 
         // 2. Create the Hero using the Factory

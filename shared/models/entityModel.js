@@ -59,10 +59,21 @@ export class EntityModel {
         // G. Runtime Properties (Not saved to State)
         this.abilities = []; 
         
-        // Load initial abilities if provided in config
-        if (config.abilities) {
-             const newMoves = AbilityFactory.createAbilities(config.abilities);
-             this.addAbilities(newMoves, 'innate');
+        // Load initial abilities (Innate Biology)
+        if (this.state.abilities) {
+             const innateMoves = AbilityFactory.createAbilities(this.state.abilities);
+             this.addAbilities(innateMoves, 'innate');
+        }
+
+        // Load Equipment Abilities (If spawning with gear)
+        if (this.state.equipment) {
+            Object.entries(this.state.equipment).forEach(([slot, item]) => {
+                // Ensure item is an object and has grantedAbilities before processing
+                if (item && typeof item === 'object' && item.grantedAbilities) {
+                    const gearMoves = AbilityFactory.createAbilities(item.grantedAbilities);
+                    this.addAbilities(gearMoves, slot);
+                }
+            });
         }
     }
 
@@ -74,11 +85,7 @@ export class EntityModel {
     set name(val) { this.state.name = val; }
     
     // --- VISUALS ---
-    
-    // Convenience: Returns the key for the Portrait UI
     get spritePortrait() { return this.state.spritePortrait; }
-    
-    // Convenience: Returns the overworld sprite key
     get spriteOverworld() { return this.state.spriteOverworld; }
 
     // --- LEVELING ---
@@ -103,15 +110,7 @@ export class EntityModel {
     // =========================================================
     // CALCULATED STATS (The "Brain")
     // =========================================================
-    /**
-     * Returns { maxHp, maxStamina, attack, defense, speed, ... }
-     * Fully calculated based on Base + Attributes + Gear + Buffs
-     */
-    get calculatedStats() {
-        return StatCalculator.calculate(this);
-    }
-
-    // Convenience Getters for UI/Combat (Read-Only from Calculator)
+    get calculatedStats() { return StatCalculator.calculate(this); }
     get attack() { return this.calculatedStats.attack; }         
     get defense() { return this.calculatedStats.defense; }      
     get resistance() { return this.calculatedStats.resistance; }
@@ -122,13 +121,6 @@ export class EntityModel {
     // =========================================================
     // RESOURCES (HP / STAMINA / INSIGHT)
     // =========================================================
-
-    /**
-     * Unified method to modify HP, Stamina, or Insight.
-     * @param {string} resourceId - 'hp', 'stamina', or 'insight'
-     * @param {number} amount - The value to add (negative for damage/cost)
-     * @param {boolean} isPercent - If true, treats 'amount' as a percentage (0-100) of MAX
-     */
     modifyResource(resourceId, amount, isPercent = false) {
         if (this[resourceId] === undefined) {
             console.warn(`[EntityModel] Resource '${resourceId}' not found.`);
@@ -138,46 +130,32 @@ export class EntityModel {
         let finalChange = amount;
 
         if (isPercent) {
-            // Use the getters below to find the true calculated Max
             const maxKey = `max${resourceId.charAt(0).toUpperCase() + resourceId.slice(1)}`;
             const maxVal = this[maxKey] || 0;
             finalChange = Math.trunc(maxVal * (amount / 100));
         }
 
         const oldValue = this[resourceId];
-
-        // Apply Change (Setters handle clamping automatically)
         this[resourceId] += finalChange;
         
         return this[resourceId] - oldValue;
     }
 
-    // --- HP ---
     get hp() { return this.state.stats.hp; }
-    set hp(val) { 
-        // Clamps between 0 and Calculated Max
-        this.state.stats.hp = Math.max(0, Math.min(val, this.maxHp)); 
-    }
+    set hp(val) { this.state.stats.hp = Math.max(0, Math.min(val, this.maxHp)); }
     get maxHp() { return this.calculatedStats.maxHp; }
 
-    // --- STAMINA ---
     get stamina() { return this.state.stats.stamina; }
-    set stamina(val) { 
-        this.state.stats.stamina = Math.max(0, Math.min(val, this.maxStamina)); 
-    }
+    set stamina(val) { this.state.stats.stamina = Math.max(0, Math.min(val, this.maxStamina)); }
     get maxStamina() { return this.calculatedStats.maxStamina; }
 
-    // --- INSIGHT (MANA) ---
     get insight() { return this.state.stats.insight; }
-    set insight(val) { 
-        this.state.stats.insight = Math.max(0, Math.min(val, this.maxInsight)); 
-    }
+    set insight(val) { this.state.stats.insight = Math.max(0, Math.min(val, this.maxInsight)); }
     get maxInsight() { return this.calculatedStats.maxInsight; }
 
     // =========================================================
     // TRAIT MANAGEMENT
     // =========================================================
-    
     addTrait(traitId) {
         if (!this.state.traits.includes(traitId)) {
             this.state.traits.push(traitId);
@@ -194,13 +172,15 @@ export class EntityModel {
     // =========================================================
     // ABILITY & ITEM MANAGEMENT
     // =========================================================
-
     addAbilities(abilityList, source = 'innate') {
         if (!abilityList || abilityList.length === 0) return;
         abilityList.forEach(ability => {
             ability.source = source; 
+            // Only add if not already in the list
+            if (!this.abilities.find(a => a.id === ability.id)) {
+                this.abilities.push(ability);
+            }
         });
-        this.abilities.push(...abilityList);
     }
 
     removeAbilitiesBySource(source) {
