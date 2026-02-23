@@ -36,6 +36,11 @@ export class StatCalculator {
                 bonus: breakdown.resources.flat.insight, 
                 total: finalStats.maxInsight 
             },
+            // NEW: Expose recovery stats for UI/Combat
+            hpRecovery: finalStats.hpRecovery,
+            staminaRecovery: finalStats.staminaRecovery,
+            insightRecovery: finalStats.insightRecovery,
+
             // Pass through combat stats for the UI and CombatCalculator
             attack: finalStats.attack,
             defense: finalStats.defense,
@@ -53,7 +58,8 @@ export class StatCalculator {
             vigor: 0, strength: 0, dexterity: 0, intelligence: 0, attunement: 0,
             speed: 0, critChance: 0, critMultiplier: 1.5,
             accuracy: 100, evasion: 100, // STANDARDIZED: Base 100 for entity hit math
-            maxHp: 0, maxStamina: 0, maxInsight: 0
+            maxHp: 0, maxStamina: 0, maxInsight: 0,
+            hpRecovery: 0, staminaRecovery: 0, insightRecovery: 0 // NEW
         };
 
         this.DAMAGE_TYPES.forEach(t => {
@@ -81,6 +87,11 @@ export class StatCalculator {
         breakdown.resources.base.hp = baseSource.maxHp || baseSource.hp || 10;
         breakdown.resources.base.stamina = baseSource.maxStamina || baseSource.stamina || 10;
         breakdown.resources.base.insight = baseSource.maxInsight || baseSource.insight || 0;
+
+        // NEW: Load base recovery stats
+        finalStats.hpRecovery = baseSource.hpRecovery || 0;
+        finalStats.staminaRecovery = baseSource.staminaRecovery || 0;
+        finalStats.insightRecovery = baseSource.insightRecovery || 0;
 
         const combatSource = character.baseStats || definition.baseStats || {};
         finalStats.speed = combatSource.speed || 0;
@@ -163,8 +174,18 @@ export class StatCalculator {
                 if (source.resources.maxHp) breakdown.resources.flat.hp += source.resources.maxHp;
                 if (source.resources.maxStamina) breakdown.resources.flat.stamina += source.resources.maxStamina;
                 if (source.resources.maxInsight) breakdown.resources.flat.insight += source.resources.maxInsight;
+                
+                // NEW: Apply flat recovery bonuses from nested `resources` objects
+                if (source.resources.hpRecovery) finalStats.hpRecovery += source.resources.hpRecovery;
+                if (source.resources.staminaRecovery) finalStats.staminaRecovery += source.resources.staminaRecovery;
+                if (source.resources.insightRecovery) finalStats.insightRecovery += source.resources.insightRecovery;
             }
             if (source.maxHp) breakdown.resources.flat.hp += source.maxHp;
+            
+            // NEW: Apply flat recovery bonuses from the root of the source object
+            if (source.hpRecovery) finalStats.hpRecovery += source.hpRecovery;
+            if (source.staminaRecovery) finalStats.staminaRecovery += source.staminaRecovery;
+            if (source.insightRecovery) finalStats.insightRecovery += source.insightRecovery;
         };
 
         Object.values(equipment).forEach(item => {

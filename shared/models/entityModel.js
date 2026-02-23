@@ -16,6 +16,9 @@ export class EntityModel {
                 maxHp: 10,
                 maxStamina: 10,
                 maxInsight: 10,
+                hpRecovery: 0,       // NEW
+                staminaRecovery: 0,  // NEW
+                insightRecovery: 0,  // NEW
                 speed: 0,
                 critical: 5, 
                 baseAttack: { blunt: 0, slash: 0, pierce: 0 },
@@ -117,6 +120,11 @@ export class EntityModel {
     get speed() { return this.calculatedStats.speed; }           
     get critical() { return this.calculatedStats.critChance; }   
     get critMultiplier() { return this.calculatedStats.critMultiplier; }
+
+    // NEW: Recovery Getters (fall back to baseStats if Calculator doesn't handle them yet)
+    get hpRecovery() { return this.calculatedStats.hpRecovery ?? this.state.baseStats.hpRecovery; }
+    get staminaRecovery() { return this.calculatedStats.staminaRecovery ?? this.state.baseStats.staminaRecovery; }
+    get insightRecovery() { return this.calculatedStats.insightRecovery ?? this.state.baseStats.insightRecovery; }
 
     // =========================================================
     // RESOURCES (HP / STAMINA / INSIGHT)

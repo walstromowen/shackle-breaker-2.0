@@ -21,6 +21,7 @@ const BASE_ENTITY = {
     // --- BASE STATS ---
     baseStats: {
         maxHp: 1, maxStamina: 1, maxInsight: 0,
+        hpRecovery: 0, staminaRecovery: 0, insightRecovery: 0, // NEW
         speed: 1, critical: 0, corruption: 0,
         baseDefense: {
             blunt: 0, slash: 0, pierce: 0,
@@ -57,6 +58,7 @@ const HUMANOID_TEMPLATE = {
     baseStats: {
         ...BASE_ENTITY.baseStats,
         maxHp: 20, maxStamina: 10, maxInsight: 10,
+        staminaRecovery: 1, // Let humanoids naturally regen a bit of stamina
         speed: 5, critical: 5,
         baseAttack: { blunt: 1, slash: 0, pierce: 0 }
     },
@@ -80,6 +82,7 @@ const BEAST_TEMPLATE = {
     baseStats: {
         ...BASE_ENTITY.baseStats,
         maxHp: 30, maxStamina: 8, maxInsight: 0,
+        staminaRecovery: 2, // Beasts recover stamina slightly faster
         speed: 7, critical: 10,
         baseDefense: { blunt: 4, slash: 2, pierce: 1, water: 2 },
         baseResistance: { fire: -0.2 },
@@ -176,6 +179,7 @@ export const ENTITY_DEFINITIONS = {
         baseStats: {
             ...BASE_ENTITY.baseStats,
             maxHp: 12, maxStamina: 15, maxInsight: 5,
+            staminaRecovery: 3, // Birds recover fast!
             speed: 10, critical: 15,
             baseDefense: { earth: 5 }, 
             baseResistance: { wind: 0.5, earth: 0.2 },

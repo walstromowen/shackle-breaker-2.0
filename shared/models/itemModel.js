@@ -29,7 +29,8 @@ export class ItemModel {
     get rarity() { return this.definition.rarity || 'common'; }
     get slot() { return this.definition.slot || null; }
     get icon() { return this.definition.icon || { col: 0, row: 0 }; }
-
+    get level() { return this.definition.level || 1; } // NEW: Item Level
+    
     // --- USABILITY (New) ---
     // Returns array of contexts, e.g. ['menu', 'battle']
     get usability() { return this.definition.usability || []; }
