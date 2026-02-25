@@ -197,19 +197,22 @@ export class OverworldController {
 
             // --- TEST ROSTER SETUP ---
             const enemyParty = [];
-            for (let i = 0; i < 4; i++) {
+            for (let i = 0; i < 3; i++) {
                 const legionary = EntityFactory.create('LEGIONARY');
-                legionary.name = `Legionary ${i + 1}`; // Makes console debugging much easier
-                legionary.hp = 1;                      // Force HP to 1 for quick kills
-                legionary.stamina = 15;                // Keeping your stamina override
+                legionary.name = `Legionary ${i + 1}`; 
+                legionary.hp = 30;                      
+                legionary.stamina = 1;                
+                
+                // --- FORCE STATUS EFFECT ---
+                // The BattleController parses this array and applies the effects automatically
+                legionary.startingStatuses = ['poison']; 
                 
                 enemyParty.push(legionary);
             }
 
-            // Emit the battle event with the full roster of 6
+            // Emit the battle event with the full roster
             events.emit('START_BATTLE', {
                 enemies: enemyParty,
-                // maxActive: 3 // (Optional) You can pass this here if you update your event listener to pass context!
             });
         }
     }

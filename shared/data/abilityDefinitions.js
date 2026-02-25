@@ -56,7 +56,7 @@ export const AbilityDefinitions = {
     "quick_stab": {
         id: "quick_stab",
         name: "Quick Stab",
-        description: "A fast thrust. Hard to dodge.",
+        description: "A fast thrust. Hard to dodge. Has a chance to poison the target.",
         icon: { col: 0, row: 0 },
         speedModifier: 1.5, 
         targeting: { scope: "enemy", select: "single" },
@@ -64,6 +64,10 @@ export const AbilityDefinitions = {
         accuracy: 0.98, 
         effects: [
             { type: "damage", element: "pierce", power: 0.85 } 
+        ],
+        // [NEW]: Added a chance to apply the 'poison' status effect
+        statusEffects: [
+            { id: "poison", chance: 1, duration: 3 } 
         ]
     },
 
@@ -163,7 +167,8 @@ export const AbilityDefinitions = {
         name: "Wild Swing",
         description: "Swing blindly, hitting a random enemy.",
         icon: { col: 5, row: 1 },
-        targeting: { scope: "enemy", select: "random", count: 1 },
+        // [UPDATED]: Changed scope from "enemy" to "random_enemy" to sync with resolver
+        targeting: { scope: "random_enemy", select: "random", count: 1 },
         cost: { stamina: 5 },
         accuracy: 0.70, 
         effects: [
@@ -214,7 +219,8 @@ export const AbilityDefinitions = {
         description: "Strike a target and one adjacent enemy.",
         icon: { col: 0, row: 3 },
         animation: { attacker: "ally-attack", effect: "swipe-right", audio: "blade-swipe" },
-        targeting: { scope: "enemy", select: "single", area: "splash", count: 2 },
+        // [UPDATED]: Changed to a standard AoE to work instantly with your current setup
+        targeting: { scope: "all_enemies", select: "auto" }, 
         cost: { stamina: 15 },
         accuracy: 0.85,
         effects: [
@@ -222,7 +228,7 @@ export const AbilityDefinitions = {
         ]
     },
 
-    "flurry": {
+    "flurry": {//Hit the same target multiple times
         id: "flurry",
         name: "Flurry",
         description: "Slash a target with a series of quick strikes.",
@@ -258,7 +264,7 @@ export const AbilityDefinitions = {
     // 4. INSIGHT ARCANUM (Spells)
     // =========================================================================
 
-    "magic_missile": {
+    "magic_missile": { //Hit a single target multiple times, with UI support for selecting multiple targets if desired
         id: "magic_missile",
         name: "Magic Missile",
         description: "Fire three bolts. Can hit the same target multiple times.",
@@ -356,19 +362,6 @@ export const AbilityDefinitions = {
         accuracy: 1.0,
         effects: [
             { type: "recover", resource: "hp", power: 0.3 }
-        ]
-    },
-
-    "resurrect": {
-        id: "resurrect",
-        name: "Resurrect",
-        description: "Revive a fallen ally.",
-        icon: { col: 3, row: 5 },
-        targeting: { scope: "dead_ally", select: "single" },
-        cost: { insight: 50 },
-        accuracy: 1.0,
-        effects: [
-            { type: "recover", resource: "hp", power: 0.5, revive: true }
         ]
     },
 
@@ -498,29 +491,25 @@ export const AbilityDefinitions = {
     // =========================================================================
     // 8. CONSUMABLES (Items)
     // =========================================================================
-    // [FIX]: Removed "AP" costs (resource doesn't exist). 
-    // [FIX]: Changed "xyz_qty" strings to actual Item IDs (e.g. "poison_knife").
 
     "heal_minor": {
         id: "heal_minor",
         name: "Minor Heal",
         description: "Restores a small amount of health.",
         icon: { col: 0, row: 8 },
-        // No Cost: The item (healing_herb) is the cost
         targeting: { scope: "ally", select: "single" }, 
         accuracy: 1.0,
         effects: [
             { type: "recover", resource: "hp", power: 10, calculation: "flat" }
         ]
     },
+    
     "brew_of_madness": {
         id: "brew_of_madness",
         name: "Madness Brew",
         targeting: { scope: "self" },
         effects: [
-            // 1. Set HP to 1 (New Logic)
             { type: "set", resource: "hp", value: 1 },
-            // 2. Fill Insight to Max (New Logic)
             { type: "recover", resource: "insight", calculation: "max" }
         ]
     },

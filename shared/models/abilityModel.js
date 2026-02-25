@@ -37,7 +37,10 @@ export class AbilityModel {
     get effects() { return this.config.effects || []; }
     get statusEffects() { return this.config.statusEffects || []; }
     get cost() { return this.config.cost || {}; }
-    
+    get multihit() { return this.config.multihit || null; }
+    get targetCount() { 
+        return this.config.targeting?.count || 1; 
+    }
     // Stats
     get speedModifier() { return this.config.speedModifier || 1.0; }
     get accuracy() { return this.config.accuracy !== undefined ? this.config.accuracy : 1.0; }

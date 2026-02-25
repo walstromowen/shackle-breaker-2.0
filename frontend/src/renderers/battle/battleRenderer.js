@@ -1,5 +1,6 @@
 import { CanvasUI } from '../../ui/canvasUI.js';
 import { UITheme } from '../../ui/UITheme.js';
+import { TargetingResolver } from '../../../../shared/systems/targetingResolver.js';
 
 export class BattleRenderer {
     constructor(ctx, config, loader) {
@@ -55,7 +56,7 @@ export class BattleRenderer {
         };
     }
 
-    // --- NEW: Helper to keep dead bodies visible until their death message plays ---
+    // --- Helper to keep dead bodies visible until their death message plays ---
     isEntityVisible(entity, state) {
         if (!entity) return false;
         if (entity.hp > 0) return true;
@@ -84,7 +85,7 @@ export class BattleRenderer {
         this.drawHUD(state);
 
         // 4. INTERFACE LAYERS
-        if (state.phase === 'INTRO' || state.phase === 'RESOLVE' || state.phase === 'VICTORY' || state.phase === 'DEFEAT') {
+        if (['INTRO', 'RESOLVE', 'VICTORY', 'DEFEAT'].includes(state.phase)) {
             if (state.message) {
                 this.drawDialogueBox(state.message);
             }
@@ -95,7 +96,7 @@ export class BattleRenderer {
         }
         else if (state.phase === 'SELECT_TARGET') {
             this.drawActionMenu(state);
-            this.drawTargetCursor(state);
+            this.drawTargetCursor(state); 
         }
     }
 
@@ -103,7 +104,6 @@ export class BattleRenderer {
         if (!entities) return;
 
         let renderables = entities.map((entity, index) => {
-            // UPDATED: Check visibility logic instead of strictly HP <= 0
             if (!this.isEntityVisible(entity, state) || index >= 3) return null;
             
             const layout = isPlayer ? this.LAYOUT.PLAYER[index] : this.LAYOUT.ENEMY[index];
@@ -163,6 +163,19 @@ export class BattleRenderer {
         ctx.fillText(text, x + size / 2, y + size / 2 + 2);
     }
 
+    drawStatusEffects(entity, startX, startY) {
+        if (!entity.statusEffects || entity.statusEffects.length === 0) return;
+
+        const iconSize = 16;
+        const spacing = 4;
+
+        entity.statusEffects.forEach((effect, index) => {
+            const x = startX + (index * (iconSize + spacing));
+            const iconData = effect.icon || '✨'; 
+            this.drawIcon(this.ctx, iconData, x, startY, iconSize);
+        });
+    }
+
     drawHUD(state) {
         if (state.activeParty && state.activeParty.length > 0) {
             this.drawPartyCards(state.activeParty);
@@ -179,11 +192,19 @@ export class BattleRenderer {
         const spacingY = 9;
         
         party.forEach((member, index) => {
-            if (!member) return; // Safety check
+            if (!member) return; 
 
             const y = startY + (index * (this.HUD.CARD_H + this.HUD.GAP));
             
             this.ui.drawPanel(startX, y, this.HUD.CARD_W, this.HUD.CARD_H);
+
+            // Draw Name
+            this.ui.drawText(member.name, startX + this.HUD.PADDING_X, y + 12, UITheme.fonts.small, UITheme.colors.textMain);
+
+            // Draw Status Effects
+            this.ctx.font = UITheme.fonts.small;
+            const nameWidth = this.ctx.measureText(member.name).width;
+            this.drawStatusEffects(member, startX + this.HUD.PADDING_X + nameWidth + 8, y + 2);
 
             const maxHp = member.maxHp || 10; 
             const currentHp = member.hp || 0;
@@ -191,8 +212,6 @@ export class BattleRenderer {
             const currStam = member.stamina || 0;
             const maxIns = member.maxInsight || 10;
             const currIns = member.insight || 0;
-
-            this.ui.drawText(member.name, startX + this.HUD.PADDING_X, y + 12, UITheme.fonts.small, UITheme.colors.textMain);
 
             const barX = startX + this.HUD.PADDING_X;
             let currentY = y + 18;
@@ -225,17 +244,20 @@ export class BattleRenderer {
         const startY = this.config.CANVAS_HEIGHT - bottomMargin - stackHeight;
 
         enemies.forEach((enemy, index) => {
-            // UPDATED: Use the new visibility checker so the HUD doesn't vanish early either
             if (!this.isEntityVisible(enemy, state)) return; 
 
             const y = startY + (index * (ENEMY_CARD_H + this.HUD.GAP));
 
             this.ui.drawPanel(startX, y, this.HUD.CARD_W, ENEMY_CARD_H);
 
+            // Draw Name
+            this.ui.drawText(enemy.name, startX + this.HUD.CARD_W - this.HUD.PADDING_X, y + 14, UITheme.fonts.small, UITheme.colors.textMain, "right");
+
+            // Draw Status Effects (Left-aligned)
+            this.drawStatusEffects(enemy, startX + this.HUD.PADDING_X, y + 4);
+
             const maxHp = enemy.maxHp || 10;
             const currentHp = enemy.hp || 0;
-
-            this.ui.drawText(enemy.name, startX + this.HUD.CARD_W - this.HUD.PADDING_X, y + 14, UITheme.fonts.small, UITheme.colors.textMain, "right");
 
             const barX = (startX + this.HUD.CARD_W - this.HUD.PADDING_X) - this.HUD.BAR_WIDTH;
             const barY = y + 20;
@@ -252,7 +274,6 @@ export class BattleRenderer {
 
     drawActionMenu(state) {
         const activeChar = state.activeParty[state.activePartyIndex];
-        
         if (!activeChar || !activeChar.abilities) return;
 
         const itemW = 160;   
@@ -282,7 +303,7 @@ export class BattleRenderer {
 
         activeChar.abilities.forEach((ability, index) => {
             const isSelected = (index === state.menuIndex);
-            const canAfford = ability.canPayCost(activeChar); 
+            const canAfford = ability.canPayCost ? ability.canPayCost(activeChar) : true; 
 
             const row = Math.floor(index / columns);
             const col = index % columns;
@@ -347,29 +368,101 @@ export class BattleRenderer {
     }
 
     drawTargetCursor(state) {
-        const index = state.targetIndex;
-        const enemy = state.activeEnemies[index];
-        
-        // Use the visibility checker here too!
-        if (!this.isEntityVisible(enemy, state)) return; 
-        
-        const layout = this.LAYOUT.ENEMY[index];
-        if(!layout) return;
+        const activeChar = state.activeParty?.[state.activePartyIndex];
+        if (!activeChar) return;
 
-        const x = Math.floor(layout.x * this.config.CANVAS_WIDTH);
-        const y = Math.floor(layout.y * this.config.CANVAS_HEIGHT);
-        const size = Math.floor(this.FRAME_SIZE * this.SPRITE_SCALE);
+        const selectedAbility = state.selectedAction || activeChar.abilities[state.menuIndex];
+        if (!selectedAbility) return;
 
-        const arrowX = x - (size/2) - 20; 
+        // 1. DRAW LOCKED-IN MULTI-TARGETS (Magic Missile partial selections)
+        if (state.selectedTargets && state.selectedTargets.length > 0) {
+            const targetCounts = new Map();
+            state.selectedTargets.forEach(t => {
+                targetCounts.set(t, (targetCounts.get(t) || 0) + 1);
+            });
+
+            targetCounts.forEach((count, target) => {
+                if (!this.isEntityVisible(target, state)) return;
+
+                const isEnemy = state.activeEnemies.includes(target);
+                const index = isEnemy ? state.activeEnemies.indexOf(target) : state.activeParty.indexOf(target);
+                const layout = isEnemy ? this.LAYOUT.ENEMY[index] : this.LAYOUT.PLAYER[index];
+                if (!layout) return;
+
+                const x = Math.floor(layout.x * this.config.CANVAS_WIDTH);
+                const y = Math.floor(layout.y * this.config.CANVAS_HEIGHT);
+                const size = Math.floor(this.FRAME_SIZE * this.SPRITE_SCALE);
+
+                const badgeX = isEnemy ? x + (size/4) : x - (size/4);
+                const badgeY = y - (size/2) + 10;
+
+                this.ctx.fillStyle = this.COLORS.highlight;
+                this.ctx.beginPath();
+                this.ctx.arc(badgeX, badgeY, 14, 0, Math.PI * 2);
+                this.ctx.fill();
+
+                this.ctx.fillStyle = "#000";
+                this.ctx.font = "bold 14px monospace";
+                this.ctx.textAlign = "center";
+                this.ctx.textBaseline = "middle";
+                this.ctx.fillText(`x${count}`, badgeX, badgeY + 1);
+            });
+        }
+
+        // 2. DRAW CURRENT HOVER CURSOR
+        const scope = selectedAbility?.targeting?.scope || 'enemy';
+        const isAllyTargeting = ['ally', 'all_allies', 'self'].includes(scope);
         
-        this.ctx.fillStyle = "#e74c3c"; 
-        this.ctx.beginPath();
-        this.ctx.moveTo(arrowX + 15, y);
-        this.ctx.lineTo(arrowX, y - 10);
-        this.ctx.lineTo(arrowX, y + 10);
-        this.ctx.fill();
-        
-        this.ui.drawText("TARGET", arrowX - 50, y + 5, UITheme.fonts.small, "#e74c3c");
+        let primaryTarget;
+        if (isAllyTargeting) {
+            primaryTarget = state.activeParty[state.targetIndex];
+        } else {
+            primaryTarget = state.activeEnemies[state.targetIndex];
+        }
+
+        const targets = TargetingResolver.resolve(selectedAbility, activeChar, primaryTarget, state) || [];
+
+        targets.forEach(target => {
+            if (!this.isEntityVisible(target, state)) return;
+
+            let isTargetEnemy = false;
+            let index = state.activeParty.indexOf(target);
+            let layout = index !== -1 ? this.LAYOUT.PLAYER[index] : null;
+
+            if (index === -1) {
+                index = state.activeEnemies.indexOf(target);
+                layout = index !== -1 ? this.LAYOUT.ENEMY[index] : null;
+                isTargetEnemy = true;
+            }
+
+            if (!layout) return; 
+
+            const x = Math.floor(layout.x * this.config.CANVAS_WIDTH);
+            const y = Math.floor(layout.y * this.config.CANVAS_HEIGHT);
+            const size = Math.floor(this.FRAME_SIZE * this.SPRITE_SCALE);
+
+            if (isTargetEnemy) {
+                const arrowX = x - (size/2) - 20; 
+                this.ctx.fillStyle = "#e74c3c"; // Red
+                this.ctx.beginPath();
+                this.ctx.moveTo(arrowX + 15, y);
+                this.ctx.lineTo(arrowX, y - 10);
+                this.ctx.lineTo(arrowX, y + 10);
+                this.ctx.fill();
+                
+                this.ui.drawText("TARGET", arrowX - 50, y + 5, UITheme.fonts.small, "#e74c3c");
+            } else {
+                const arrowY = y - (size/2) - 20; 
+                this.ctx.fillStyle = "#2ecc71"; // Green
+                this.ctx.beginPath();
+                this.ctx.moveTo(x, arrowY + 15);
+                this.ctx.lineTo(x - 10, arrowY);
+                this.ctx.lineTo(x + 10, arrowY);
+                this.ctx.fill();
+
+                this.ui.drawText("TARGET", x - 20, arrowY - 5, UITheme.fonts.small, "#2ecc71");
+            }
+        });
     }
 
     drawDialogueBox(text) {

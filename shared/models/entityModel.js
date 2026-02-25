@@ -214,6 +214,52 @@ export class EntityModel {
         this.state.equipment[slot] = null;
     }
 
+    // =========================================================
+    // STATUS EFFECT MANAGEMENT
+    // =========================================================
+    
+    /**
+     * Applies a new status effect or updates an existing one.
+     * @param {Object} activeEffect - The instantiated effect object from StatusEffectFactory.
+     */
+    applyStatusEffect(activeEffect) {
+        // 1. Check if the entity already has this effect
+        const existingEffect = this.state.statusEffects.find(e => e.id === activeEffect.id);
+
+        if (existingEffect) {
+            // 2. If it exists, usually we refresh the duration/charges
+            // (You can also add stacking logic here later if you want Poison x2)
+            existingEffect.charges = activeEffect.charges; 
+            console.log(`[EntityModel] Refreshed ${activeEffect.name} on ${this.name}.`);
+        } else {
+            // 3. If it's new, add it to the state
+            this.state.statusEffects.push(activeEffect);
+            console.log(`[EntityModel] Applied ${activeEffect.name} to ${this.name}.`);
+        }
+    }
+
+    /**
+     * Removes a status effect by its ID.
+     * @param {string} effectId - The ID of the effect to remove (e.g., 'poison').
+     */
+    removeStatusEffect(effectId) {
+        const initialLength = this.state.statusEffects.length;
+        this.state.statusEffects = this.state.statusEffects.filter(e => e.id !== effectId);
+        
+        if (this.state.statusEffects.length < initialLength) {
+            console.log(`[EntityModel] Removed ${effectId} from ${this.name}.`);
+        }
+    }
+
+    /**
+     * Checks if the entity currently has a specific status effect.
+     * @param {string} effectId 
+     * @returns {boolean}
+     */
+    hasStatusEffect(effectId) {
+        return this.state.statusEffects.some(e => e.id === effectId);
+    }
+
     isDead() {
         return this.hp <= 0;
     }

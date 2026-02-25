@@ -59,6 +59,7 @@ Root
 │   │   ├── encounters/
 │   │   ├── traitDefinitions.js 
 │   │   ├── abilityDefinitions.js   
+│   │   ├── statusEffectDefinitions.js 
 │   │   ├── constants.js
 │   │   ├── entityDefinitions.js    
 │   │   ├── itemDefinitions.js      
@@ -66,7 +67,8 @@ Root
 │   │   └── sprites.js
 │   ├── models/ 
 |   │   ├── abilityModel.js                     
-│   │   ├── entityModel.js               
+│   │   ├── entityModel.js 
+│   │   ├── statusEffectModel.js                
 │   │   └── itemModel.js                 
 │   ├── registries/
 │   │   └── encounterRegistry.js
@@ -76,9 +78,11 @@ Root
 │   ├── systems/
 │   │   ├── factories/  
 │   │   │   ├── abilityFactory.js                
-│   │   │   ├── entityFactory.js    
+│   │   │   ├── entityFactory.js 
+│   │   │   ├── statusEffectFactory.js     
 │   │   │   └── itemFactory.js
 │   │   ├── abilitySystem.js
+│   │   ├── targetingResolver.js
 │   │   ├── combatCalculator.js  
 │   │   ├── experienceSystem.js  
 │   │   ├── statCalculator.js    
@@ -97,14 +101,13 @@ Root
 
  
 Phase 1: The Basics
-[ ] Cost Deduction: Stamina, Insight, and Items.
+
 
 [ ] Targeting Scopes: Single, Random, Splash (adjacent), All Enemies, All Allies, Self.
 
-[ ] Accuracy/Evasion: Calculating hit chance before applying effects.
+
 
 Phase 2: Health & Damage
-[ ] Standard Damage: Power multipliers, Elemental typing.
 
 [ ] Alternate Damage: Stat scaling overrides (e.g., Defense vs Defense), Percent of Current HP.
 
