@@ -9,7 +9,7 @@ export const ItemDefinitions = {
         value: 5,
         icon: { col: 0, row: 0 },
         attack: { blunt: 3 }, 
-        grantedAbilities: ["wild_swing","strike", "magic_missile", "earthquake", "flurry", "cleave"] 
+        grantedAbilities: ["acid_pool","wild_swing","strike", "magic_missile", "earthquake", "flurry", "cleave"] 
     },
 
     "shortsword": {
@@ -21,7 +21,7 @@ export const ItemDefinitions = {
         value: 20,
         icon: { col: 1, row: 0 },
         attack: { pierce: 3, slash: 3 },
-        grantedAbilities: ["quick_stab"] 
+        grantedAbilities: ["slash", "thrust", "quick_stab", "flurry", "cleave"] 
     },
 
     "insight_of_fire": {

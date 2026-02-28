@@ -15,8 +15,7 @@ export class BattleRenderer {
         this.FRAME_SIZE = 128;
         
         // Icon Config
-        this.ICON_SHEET_KEY = 'ability_icons'; 
-        this.SRC_SIZE = 32; 
+        this.SRC_SIZE = 32; // The pixel size of icons on the raw spritesheet
 
         // --- HUD CONFIGURATION ---
         this.HUD = {
@@ -133,9 +132,9 @@ export class BattleRenderer {
         });
     }
 
-    drawIcon(ctx, iconData, x, y, size = 32) {
+    drawIcon(ctx, iconData, sheetKey, x, y, size = 32) {
         if (typeof iconData === 'object' && iconData !== null) {
-            const sheet = this.loader.get ? this.loader.get(this.ICON_SHEET_KEY) : this.loader.getAsset(this.ICON_SHEET_KEY);
+            const sheet = this.loader.get ? this.loader.get(sheetKey) : this.loader.getAsset(sheetKey);
             
             if (sheet) {
                 const srcX = iconData.col * this.SRC_SIZE;
@@ -155,12 +154,15 @@ export class BattleRenderer {
         }
     }
 
+    // FIXED: Added save/restore to prevent canvas alignment state from leaking to progress bars
     drawFallbackEmoji(ctx, text, x, y, size) {
+        ctx.save();
         ctx.fillStyle = 'white';
         ctx.font = `${Math.floor(size * 0.7)}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(text, x + size / 2, y + size / 2 + 2);
+        ctx.restore();
     }
 
     drawStatusEffects(entity, startX, startY) {
@@ -172,7 +174,7 @@ export class BattleRenderer {
         entity.statusEffects.forEach((effect, index) => {
             const x = startX + (index * (iconSize + spacing));
             const iconData = effect.icon || '✨'; 
-            this.drawIcon(this.ctx, iconData, x, startY, iconSize);
+            this.drawIcon(this.ctx, iconData, 'statusEffects', x, startY, iconSize);
         });
     }
 
@@ -186,6 +188,7 @@ export class BattleRenderer {
         }
     }
 
+    // FIXED: Rewrote to anchor status effects to the right side of the card, avoiding long names
     drawPartyCards(party) {
         const startX = 10;
         const startY = 10;
@@ -201,10 +204,13 @@ export class BattleRenderer {
             // Draw Name
             this.ui.drawText(member.name, startX + this.HUD.PADDING_X, y + 12, UITheme.fonts.small, UITheme.colors.textMain);
 
-            // Draw Status Effects
-            this.ctx.font = UITheme.fonts.small;
-            const nameWidth = this.ctx.measureText(member.name).width;
-            this.drawStatusEffects(member, startX + this.HUD.PADDING_X + nameWidth + 8, y + 2);
+            // Draw Status Effects anchored to the right
+            const effectCount = member.statusEffects ? member.statusEffects.length : 0;
+            const iconSpaceNeeded = effectCount * 20; 
+            const statusStartX = startX + this.HUD.CARD_W - this.HUD.PADDING_X - iconSpaceNeeded;
+            const safeStatusX = Math.max(startX + 80, statusStartX); // Prevents overlap with long names entirely
+            
+            this.drawStatusEffects(member, safeStatusX, y + 4);
 
             const maxHp = member.maxHp || 10; 
             const currentHp = member.hp || 0;
@@ -229,10 +235,15 @@ export class BattleRenderer {
         });
     }
 
+    // FIXED: Added save/restore and explicit left-alignment to guarantee bars don't jump around
     drawBarText(current, max, barX, barY) {
+        this.ctx.save();
         this.ctx.font = "9px monospace";
         this.ctx.fillStyle = "#aaa";
+        this.ctx.textAlign = "left";
+        this.ctx.textBaseline = "alphabetic";
         this.ctx.fillText(`${Math.floor(current)}/${max}`, barX + this.HUD.BAR_WIDTH + 5, barY + 5);
+        this.ctx.restore();
     }
 
     drawEnemyCards(enemies, state) {
@@ -264,11 +275,12 @@ export class BattleRenderer {
 
             this.ui.drawBar(barX, barY, this.HUD.BAR_WIDTH, this.HUD.BAR_HEIGHT, currentHp, maxHp, UITheme.colors.hp, UITheme.colors.hpDim);
             
+            this.ctx.save();
             this.ctx.font = "9px monospace";
             this.ctx.fillStyle = "#aaa";
             this.ctx.textAlign = "right";
             this.ctx.fillText(`${Math.floor(currentHp)}/${maxHp}`, barX - 5, barY + 5);
-            this.ctx.textAlign = "left"; 
+            this.ctx.restore();
         });
     }
 
@@ -276,19 +288,19 @@ export class BattleRenderer {
         const activeChar = state.activeParty[state.activePartyIndex];
         if (!activeChar || !activeChar.abilities) return;
 
-        const itemW = 160;   
-        const itemH = 40;    
-        const margin = 10;   
+        // --- ICON-ONLY CONFIG ---
+        const itemSize = 32; // Both the icon size and the item bounding box
+        const margin = 12;   // Gap between icons
         const paddingX = 20; 
         const headerH = 35;  
 
         const availableWidth = this.config.CANVAS_WIDTH - (paddingX * 2);
-        const columns = Math.floor(availableWidth / (itemW + margin));
+        const columns = Math.floor(availableWidth / (itemSize + margin));
         
         const totalItems = activeChar.abilities.length;
         const rows = Math.ceil(totalItems / columns);
 
-        const contentHeight = (rows * itemH) + ((rows - 1) * margin);
+        const contentHeight = (rows * itemSize) + ((rows - 1) * margin);
         const minHeight = 80;
         const h = Math.max(minHeight, contentHeight + headerH + 20); 
 
@@ -308,41 +320,27 @@ export class BattleRenderer {
             const row = Math.floor(index / columns);
             const col = index % columns;
 
-            const drawX = paddingX + (col * (itemW + margin));
-            const drawY = startY + (row * (itemH + margin));
+            const drawX = paddingX + (col * (itemSize + margin));
+            const drawY = startY + (row * (itemSize + margin));
 
+            // Draw a tight highlight box around the selected icon
             if (isSelected) {
                 this.ctx.fillStyle = this.COLORS.highlight;
-                this.ctx.fillRect(drawX, drawY, itemW, itemH);
+                // Expanding the background 2px in all directions to frame the icon
+                this.ctx.fillRect(drawX - 2, drawY - 2, itemSize + 4, itemSize + 4);
                 
                 this.ctx.strokeStyle = canAfford ? "#fff" : "#e74c3c"; 
-                this.ctx.strokeRect(drawX, drawY, itemW, itemH);
-            } else {
-                this.ctx.fillStyle = "#333";
-                this.ctx.fillRect(drawX, drawY, itemW, itemH);
-            }
+                this.ctx.strokeRect(drawX - 2, drawY - 2, itemSize + 4, itemSize + 4);
+            } 
 
             if (!canAfford) {
                 this.ctx.globalAlpha = 0.4; 
             }
 
-            const iconSize = 32;
-            const iconX = drawX + 4;
-            const iconY = drawY + 4; 
-            
-            this.drawIcon(this.ctx, ability.icon, iconX, iconY, iconSize);
+            // Draw the icon exactly at the grid position
+            this.drawIcon(this.ctx, ability.icon, 'abilities', drawX, drawY, itemSize);
 
-            let textColor = "#fff";
-            if (isSelected) {
-                textColor = canAfford ? "#000" : "#555"; 
-            } else if (!canAfford) {
-                textColor = "#aaa"; 
-            }
-
-            this.ctx.fillStyle = textColor;
-            this.ctx.font = UITheme.fonts.body || "12px sans-serif";
-            this.ctx.textAlign = "left";
-            this.ctx.fillText(ability.name, iconX + iconSize + 8, iconY + iconSize/2 + 4);
+            // (Text rendering has been entirely removed)
 
             this.ctx.globalAlpha = 1.0; 
         });
@@ -374,7 +372,7 @@ export class BattleRenderer {
         const selectedAbility = state.selectedAction || activeChar.abilities[state.menuIndex];
         if (!selectedAbility) return;
 
-        // 1. DRAW LOCKED-IN MULTI-TARGETS (Magic Missile partial selections)
+        // 1. DRAW LOCKED-IN MULTI-TARGETS
         if (state.selectedTargets && state.selectedTargets.length > 0) {
             const targetCounts = new Map();
             state.selectedTargets.forEach(t => {
@@ -394,7 +392,8 @@ export class BattleRenderer {
                 const size = Math.floor(this.FRAME_SIZE * this.SPRITE_SCALE);
 
                 const badgeX = isEnemy ? x + (size/4) : x - (size/4);
-                const badgeY = y - (size/2) + 10;
+                // FIXED: Dropped the badge Y coordinate down to horizontally center with the sprite 
+                const badgeY = y; 
 
                 this.ctx.fillStyle = this.COLORS.highlight;
                 this.ctx.beginPath();
@@ -415,7 +414,6 @@ export class BattleRenderer {
         
         let primaryTarget;
         
-        // FIX: Explicitly handle the 'ALL' case so the index isn't passed as undefined
         if (state.targetIndex === 'ALL') {
             primaryTarget = 'ALL';
         } else if (isAllyTargeting) {

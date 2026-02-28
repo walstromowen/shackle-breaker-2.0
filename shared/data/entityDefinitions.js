@@ -82,7 +82,7 @@ const BEAST_TEMPLATE = {
     baseStats: {
         ...BASE_ENTITY.baseStats,
         maxHp: 30, maxStamina: 8, maxInsight: 0,
-        staminaRecovery: 2, // Beasts recover stamina slightly faster
+        staminaRecovery: 10, // Beasts recover stamina slightly faster
         speed: 7, critical: 10,
         baseDefense: { blunt: 4, slash: 2, pierce: 1, water: 2 },
         baseResistance: { fire: -0.2 },

@@ -115,7 +115,10 @@ export class AbilitySystem {
             calc.message = `${target.name} takes ${calc.damage} damage!${critText}`;
 
             if (target.statusEffects && Array.isArray(target.statusEffects)) {
-                target.statusEffects.forEach(status => {
+                // CHANGED: Loop backwards safely handle array splicing mid-iteration
+                for (let i = target.statusEffects.length - 1; i >= 0; i--) {
+                    const status = target.statusEffects[i];
+                    
                     const reaction = status.onEvent('ON_DAMAGE_RECEIVED', target, { 
                         attacker: source, 
                         damage: calc.damage 
@@ -128,7 +131,7 @@ export class AbilitySystem {
                     if (status.isExpired()) {
                         target.removeStatusEffect(status.id);
                     }
-                });
+                }
             }
             
         } else {

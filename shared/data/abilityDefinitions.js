@@ -13,29 +13,30 @@ export const AbilityDefinitions = {
         id: "punch",
         name: "Punch",
         description: "A simple unarmed strike.",
-        icon: { col: 0, row: 0 },
+        icon: { col: 0, row: 12 },
         speedModifier: 1.2,
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 5 },
-        accuracy: 0.95, 
+        accuracy: 0.98, 
         effects: [
             { type: "damage", element: "blunt", power: 0.5 } 
         ]
     },
 
-    "bite": {
-        id: "bite",
-        name: "Bite",
-        description: "Tear at the target with sharp fangs.",
-        icon: { col: 1, row: 0 },
+    "slash": {
+        id: "slash",
+        name: "Slash",
+        description: "A horizontal strike with a sharp blade. Has a chance to cause bleeding.",
+        icon: { col: 0, row: 0 },
+        speedModifier: 1, 
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 10 },
-        accuracy: 0.90, 
+        accuracy: 0.98, 
         effects: [
-            { type: "damage", element: "pierce", power: 1.0 }
+            { type: "damage", element: "pierce", power: 1.0 } 
         ],
         statusEffects: [
-            { id: "bleed", chance: 0.20, duration: 2 } 
+            { id: "bleed", chance: 0.1, duration: 3 } 
         ]
     },
 
@@ -43,30 +44,47 @@ export const AbilityDefinitions = {
         id: "strike",
         name: "Strike",
         description: "Strike a target with the blunt edge of one's weapon.",
-        icon: { col: 0, row: 0 },
+        icon: { col: 0, row: 1 },
         speedModifier: 1.0, 
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 8 },
-        accuracy: 0.85, 
+        accuracy: 0.98, 
         effects: [
             { type: "damage", element: "blunt", power: 1.0 } 
+        ],
+        
+    },
+
+    "thrust": {
+        id: "thrust",
+        name: "Thrust",
+        description: "A forward thrust. Has a chance to bleed the target.",
+        icon: { col: 0, row: 2 },
+        speedModifier: 1, 
+        targeting: { scope: "enemy", select: "single" },
+        cost: { stamina: 10 },
+        accuracy: 0.98, 
+        effects: [
+            { type: "damage", element: "pierce", power: 1.0 } 
+        ],
+        statusEffects: [
+            { id: "bleed", chance: 0.1, duration: 3 } 
         ]
     },
 
-    "quick_stab": {
-        id: "quick_stab",
-        name: "Quick Stab",
-        description: "A fast thrust. Hard to dodge. Has a chance to poison the target.",
-        icon: { col: 0, row: 0 },
-        speedModifier: 1.5, 
+    "bite": {
+        id: "bite",
+        name: "Bite",
+        description: "Tear at the target with sharp fangs.",
+        icon: { col: 1, row: 12 },
         targeting: { scope: "enemy", select: "single" },
-        cost: { stamina: 5 },
-        accuracy: 0.04, 
+        cost: { stamina: 10 },
+        accuracy: 0.98, 
         effects: [
-            { type: "damage", element: "pierce", power: 0.85 } 
+            { type: "damage", element: "pierce", power: 0.85 }
         ],
         statusEffects: [
-            { id: "poison", chance: 0.5, duration: 3 } 
+            { id: "bleed", chance: 0.15, duration: 3 } 
         ]
     },
 
@@ -74,18 +92,18 @@ export const AbilityDefinitions = {
     // 1. PHYSICAL AGGRESSION
     // =========================================================================
     
-    "quick_jab": {
-        id: "quick_jab",
-        name: "Quick Jab",
+    "quick_stab": {
+        id: "quick_stab",
+        name: "Quick Stab",
         description: "A fast, weak strike that often hits first.",
-        icon: { col: 0, row: 1 },
+        icon: { col: 1, row: 2 },
         speedModifier: 1.5,
         animation: { attacker: "ally-attack", effect: "bump", audio: "punch-light" },
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 5 },
         accuracy: 0.95, 
         effects: [
-            { type: "damage", element: "blunt", power: 0.75 }
+            { type: "damage", element: "pierce", power: 0.75 }
         ]
     },
 
@@ -100,7 +118,7 @@ export const AbilityDefinitions = {
         cost: { stamina: 20 },
         accuracy: 0.85, 
         effects: [
-            { type: "damage", element: "blunt", power: 1.5 }
+            { type: "damage", element: "slash", power: 1.25 }
         ],
         statusEffects: [
             { id: "knocked_down", chance: 0.20 } 
@@ -215,7 +233,7 @@ export const AbilityDefinitions = {
         id: "cleave",
         name: "Cleave",
         description: "Strike a target and one adjacent enemy.",
-        icon: { col: 0, row: 3 },
+        icon: { col: 1, row: 0 },
         animation: { attacker: "ally-attack", effect: "swipe-right", audio: "blade-swipe" },
         targeting: { scope: "all_enemies", select: "auto" }, 
         cost: { stamina: 15 },
@@ -229,7 +247,7 @@ export const AbilityDefinitions = {
         id: "flurry",
         name: "Flurry",
         description: "Slash a target with a series of quick strikes.",
-        icon: { col: 1, row: 3 },
+        icon: { col: 2, row: 0 },
         animation: { attacker: "ally-attack", effect: "quick-slash", audio: "woosh-fast" },
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 25 },
@@ -247,13 +265,30 @@ export const AbilityDefinitions = {
         id: "earthquake",
         name: "Earthquake",
         description: "Shake the ground to damage the entire enemy party.",
-        icon: { col: 2, row: 3 },
+        icon: { col: 0, row: 6 },
         animation: { attacker: "stomp", effect: "screen_shake", audio: "rumble" },
         targeting: { scope: "all_enemies", select: "auto" },
         cost: { stamina: 30 },
         accuracy: 0.90,
         effects: [
             { type: "damage", element: "earth", power: 1.0 }
+        ]
+    },
+
+    "acid_pool": {
+        id: "acid_pool",
+        name: "Acid Pool",
+        description: "Create a pool of acid that damages all enemies in the area. High chance to poison.",
+        icon: { col: 1, row: 6 },
+        animation: { attacker: "cast-fast", effect: "acid-splash", audio: "acid-splash" },
+        targeting: { scope: "all_enemies", select: "auto" },
+        cost: { stamina: 20, insight: 20 },
+        accuracy: 0.90,
+        effects: [
+            { type: "damage", element: "earth", power: 0.5 }
+        ],
+        statusEffects: [
+            { id: "poison", chance: 0.5 }
         ]
     },
 
@@ -265,7 +300,7 @@ export const AbilityDefinitions = {
         id: "magic_missile",
         name: "Magic Missile",
         description: "Fire three bolts. Can hit the same target multiple times.",
-        icon: { col: 0, row: 4 },
+        icon: { col: 1, row: 9 },
         animation: { attacker: "cast-fast", effect: "sparkle-hit", audio: "magic-blip" },
         targeting: { scope: "enemy", select: "multiple", count: 3, allowRepeats: true },
         cost: { insight: 12 }, 
@@ -473,7 +508,7 @@ export const AbilityDefinitions = {
         id: "retreat",
         name: "Retreat",
         description: "Escape the battle.",
-        icon: { col: 4, row: 7 },
+        icon: { col: 2, row: 12 },
         targeting: { scope: "self", select: "auto" },
         behavior: "flee_battle",
         accuracy: 1.0

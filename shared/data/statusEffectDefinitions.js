@@ -2,17 +2,27 @@ export const StatusEffectDefinitions = {
     poison: {
         id: 'poison',
         name: 'Poison',
-        icon: { col: 2, row: 4 }, 
+        icon: { col: 0, row: 0 }, 
         defaultCharges: 3,
         maxStacks: 1, 
         effects: [
             { trigger: 'ON_TURN_END', modify: 'hp', value: -5, element: 'dark' } 
         ]
     },
+    bleed: {
+        id: 'bleed',
+        name: 'Bleed',
+        icon: { col: 1, row: 0 }, 
+        defaultCharges: 3,
+        maxStacks: 1, 
+        effects: [
+            { trigger: 'ON_TURN_END', modify: 'stamina', value: -5, element: 'slash' } 
+        ]
+    },
     frozen: {
         id: 'frozen',
         name: 'Frozen',
-        icon: { col: 4, row: 2 },
+        icon: { col: 2, row: 0 },
         defaultCharges: 1,
         maxStacks: 1,
         effects: [
@@ -22,7 +32,7 @@ export const StatusEffectDefinitions = {
     thorns: {
         id: 'thorns',
         name: 'Thorns',
-        icon: { col: 1, row: 5 },
+        icon: { col: 3, row: 0 },
         defaultCharges: 5, 
         maxStacks: 1,
         effects: [

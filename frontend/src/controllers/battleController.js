@@ -440,21 +440,25 @@ export class BattleController {
             action = AbilityFactory.createAbilities(['rest'])[0]; 
             resolvedTargets = [actor]; 
         }
+        
         this.state.message = action.id === 'rest' ? `${actor.name} had to rest!` : `${actor.name} used ${action.name}!`;
         action.payCost(actor, null);
         
         // DELEGATE TO ABILITY SYSTEM
-        resolvedTargets.forEach(target => {
+        // CHANGED: Use for...of instead of forEach so we can 'break' if the attacker dies mid-attack
+        for (let target of resolvedTargets) {
             let actualTarget = target;
             
             if (actualTarget.isDead()) {
                 const fallbackPool = actualTarget.team === 'party' ? this.state.activeParty : this.state.activeEnemies;
                 const livingTargets = fallbackPool.filter(t => t && !t.isDead());
-                if (livingTargets.length === 0) return; 
+                if (livingTargets.length === 0) continue; 
                 actualTarget = livingTargets[Math.floor(Math.random() * livingTargets.length)];
             }
             
-            const wasDead = actualTarget.isDead();
+            const wasTargetDead = actualTarget.isDead();
+            const wasActorDead = actor.isDead(); // Track actor state BEFORE the hit resolves
+
             const result = AbilitySystem.execute(action.id, actor, actualTarget);
             
             if (result.message) {
@@ -464,12 +468,22 @@ export class BattleController {
                 });
             }
 
-            if (!wasDead && actualTarget.isDead()) {
+            // Check if the target died
+            if (!wasTargetDead && actualTarget.isDead()) {
                 this.handleDeath(actualTarget);
             }
-        });
 
-        this.processStatusEffects(actor, 'ON_TURN_END');
+            // CHANGED: Check if the ACTOR died (e.g., from hitting a target with Thorns/Living Bomb)
+            if (!wasActorDead && actor.isDead()) {
+                this.handleDeath(actor);
+                break; // Stop processing further targets because the attacker is dead!
+            }
+        }
+
+        // Only process end of turn effects if the actor survived their own attack
+        if (!actor.isDead()) {
+            this.processStatusEffects(actor, 'ON_TURN_END');
+        }
     }
 
     // --- COMBAT RESOLUTION ---
