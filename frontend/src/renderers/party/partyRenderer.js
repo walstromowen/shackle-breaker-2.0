@@ -24,12 +24,15 @@ export class PartyRenderer {
     }
 
     render(state) {
-        const { members, selectedIndex, swappingIdx, menuOpen, menuOptions, menuIndex } = state; 
+        const { members, selectedIndex, swappingIdx, menuOpen, menuOptions, menuIndex, mode = 'DEFAULT', activeIndices = [] } = state; 
         const width = this.ctx.canvas.width;
         const height = this.ctx.canvas.height;
 
         this.ui.clearScreen(width, height);
-        this.ui.drawText("Party Members", width / 2, 50, UITheme.fonts.header, UITheme.colors.textMain, "center");
+        
+        // Context-aware Header
+        const headerText = mode === 'BATTLE_SELECT' ? "Select Reserve to Swap In" : "Party Members";
+        this.ui.drawText(headerText, width / 2, 50, UITheme.fonts.header, UITheme.colors.textMain, "center");
 
         // 1. Draw Cards
         members.forEach((member, index) => {
@@ -39,7 +42,12 @@ export class PartyRenderer {
             const isCursor = (index === selectedIndex);
             const isBeingMoved = (index === swappingIdx);
             
-            this.drawCard(member, pos.x, pos.y, isCursor, isBeingMoved);
+            // Check availability for Battle mode
+            const isActive = activeIndices.includes(index);
+            const isDead = member.hp <= 0;
+            const isUnavailable = mode === 'BATTLE_SELECT' && (isActive || isDead);
+
+            this.drawCard(member, pos.x, pos.y, isCursor, isBeingMoved, isUnavailable, isActive, mode);
         });
 
         // 2. Context Menu (Draw on top)
@@ -47,12 +55,17 @@ export class PartyRenderer {
             this.drawContextMenu(selectedIndex, menuOptions, menuIndex, width);
         }
 
-        // 3. Guide Text
-        let guide = "[ARROWS] Navigate   [ENT/CLICK] Menu   [ESC] Back";
-        if (menuOpen) {
-            guide = "[UP/DOWN] Choose   [ENT/CLICK] Select   [ESC] Cancel";
-        } else if (swappingIdx !== null) {
-            guide = "[ARROWS] Move to Slot   [ENT/CLICK] Place   [ESC] Cancel";
+        // 3. Guide Text (Context Aware)
+        let guide = "";
+        if (mode === 'BATTLE_SELECT') {
+             guide = "[ARROWS] Navigate   [ENT/CLICK] Select   [ESC] Cancel";
+        } else {
+            guide = "[ARROWS] Navigate   [ENT/CLICK] Menu   [ESC] Back";
+            if (menuOpen) {
+                guide = "[UP/DOWN] Choose   [ENT/CLICK] Select   [ESC] Cancel";
+            } else if (swappingIdx !== null) {
+                guide = "[ARROWS] Move to Slot   [ENT/CLICK] Place   [ESC] Cancel";
+            }
         }
         
         this.ui.drawText(guide, width / 2, height - 30, UITheme.fonts.mono, UITheme.colors.textMuted, "center");
@@ -140,8 +153,7 @@ export class PartyRenderer {
         };
     }
 
-    drawCard(member, x, y, isCursor, isBeingMoved) {
-        console.log(member)
+    drawCard(member, x, y, isCursor, isBeingMoved, isUnavailable, isActive, mode) {
         const ctx = this.ctx;
         const { cardW, cardH } = this.layout;
 
@@ -153,8 +165,9 @@ export class PartyRenderer {
             ctx.strokeStyle = UITheme.colors.stm;
             ctx.lineWidth = 2;
         } else if (isCursor) {
-            ctx.fillStyle = UITheme.colors.bgScale[2];
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.5)"; 
+            // Red cursor if selecting an unavailable target
+            ctx.fillStyle = isUnavailable ? 'rgba(255, 0, 0, 0.2)' : UITheme.colors.bgScale[2];
+            ctx.strokeStyle = isUnavailable ? 'rgba(255, 0, 0, 0.8)' : "rgba(255, 255, 255, 0.5)"; 
             ctx.lineWidth = 2;
         } else {
             ctx.fillStyle = UITheme.colors.panelBg;
@@ -164,14 +177,18 @@ export class PartyRenderer {
         
         ctx.fillRect(x, y, cardW, cardH);
         ctx.strokeRect(x, y, cardW, cardH);
-        ctx.restore();
+        
+        // Dim the whole card slightly if unavailable in battle
+        if (isUnavailable) {
+             ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+             ctx.fillRect(x, y, cardW, cardH);
+        }
 
         // 2. Draw Portrait
         const pSize = 64; 
         const pX = x + 10;
         const pY = y + 20; 
         
-        // [UPDATED] Use standardized property from EntityModel
         const imagePath = member.spritePortrait; 
         const masterSheet = this.loader.get(imagePath);
 
@@ -180,7 +197,6 @@ export class PartyRenderer {
         ctx.fillRect(pX, pY, pSize, pSize);
 
         if (masterSheet) {
-            // [NOTE] Assumes the Master Sheet has the face at 0,0, 128x128
             ctx.drawImage(
                 masterSheet, 
                 0, 0, 128, 128, 
@@ -196,9 +212,14 @@ export class PartyRenderer {
         const numberWidth = 45;
         const barW = cardW - (pSize + 25) - 25 - numberWidth;
 
-        this.ui.drawText(member.name, infoX, y + 25, UITheme.fonts.bold, UITheme.colors.textMain);
-        
-        
+        // Draw "ACTIVE" or "FAINTED" over the name if applicable
+        if (isActive && mode === 'BATTLE_SELECT') {
+             this.ui.drawText("ACTIVE", infoX, y + 25, UITheme.fonts.bold, UITheme.colors.hp);
+        } else if (member.hp <= 0) {
+             this.ui.drawText("FAINTED", infoX, y + 25, UITheme.fonts.bold, "red");
+        } else {
+             this.ui.drawText(member.name, infoX, y + 25, UITheme.fonts.bold, UITheme.colors.textMain);
+        }
 
         // XP Bar
         const xpY = y + 47; 
@@ -212,6 +233,8 @@ export class PartyRenderer {
         this.drawStatRow("STM", member.stamina, member.maxStamina, infoX, currentY, barW, 4, numberWidth, UITheme.colors.stm, UITheme.colors.stmDim);
         currentY += 12;
         this.drawStatRow("INS", member.insight, member.maxInsight, infoX, currentY, barW, 4, numberWidth, UITheme.colors.ins, UITheme.colors.insDim);
+        
+        ctx.restore();
     }
 
     drawStatRow(label, current, max, x, y, barW, h, numW, color, dimColor) {

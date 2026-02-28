@@ -198,10 +198,16 @@ export class OverworldController {
             // --- TEST ROSTER SETUP ---
             const enemyParty = [];
             for (let i = 0; i < 3; i++) {
+                if(Math.random() < 0.3) {
+                    const wolf = EntityFactory.create('WOLF');
+                    wolf.name = `Wolf ${i + 1}`;
+                    enemyParty.push(wolf);
+                    continue;
+                }
                 const legionary = EntityFactory.create('LEGIONARY');
                 legionary.name = `Legionary ${i + 1}`; 
-                legionary.hp = 30;                      
-                legionary.stamina = 1;                
+                //legionary.hp = 30;                      
+                //legionary.stamina = 1;                
                 
                 // --- FORCE STATUS EFFECT ---
                 // The BattleController parses this array and applies the effects automatically

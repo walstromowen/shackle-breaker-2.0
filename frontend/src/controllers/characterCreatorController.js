@@ -386,21 +386,25 @@ export class CharacterCreatorController {
 
         const finalParty = [player];
 
-        // 5. Create Companion
+        // 5. Create Companions (MODIFIED FOR TESTING: Creates 3 duplicates)
         const comp = CREATION_DATA.COMPANIONS[this.state.companionIdx];
         if (comp.speciesId) {
-            const companionOverrides = {
-                name: comp.label, 
-                attributes: { ...comp.attributes },
-                equipment: this._resolveEquipment(comp.equipment), 
-                xp: 0 
-                // Visuals will default to the EntityDefinition (BEAST/AVIAN)
-            };
-            const companionInstance = EntityFactory.create(comp.speciesId, companionOverrides);
-            if (companionInstance) {
-                companionInstance.hp = companionInstance.maxHp;
-                companionInstance.stamina = companionInstance.maxStamina;
-                finalParty.push(companionInstance);
+            // Loop 3 times to create 3 separate instances
+            for (let i = 1; i <= 3; i++) {
+                const companionOverrides = {
+                    name: `${comp.label} ${i}`, // e.g., "War Dog 1", "War Dog 2"
+                    attributes: { ...comp.attributes },
+                    equipment: this._resolveEquipment(comp.equipment), 
+                    xp: 0 
+                };
+                
+                // Create a fresh instance for each duplicate
+                const companionInstance = EntityFactory.create(comp.speciesId, companionOverrides);
+                if (companionInstance) {
+                    companionInstance.hp = companionInstance.maxHp;
+                    companionInstance.stamina = companionInstance.maxStamina;
+                    finalParty.push(companionInstance);
+                }
             }
         }
 

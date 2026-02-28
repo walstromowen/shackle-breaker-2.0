@@ -86,7 +86,6 @@ export class SceneManager {
 
                 // Unlock Overworld if returning
                 if (scene === 'overworld') {
-                    // console.log("[SceneManager] Unlocking Overworld");
                     this.overworldController.isLocked = false;
                 }
 
@@ -95,15 +94,20 @@ export class SceneManager {
                     this.characterSummaryController = new CharacterSummaryController(this.input, data);
                 }
 
+                // --- ADD THIS BLOCK ---
+                if (scene === 'party') {
+                    // Wipe any old battle data by re-initializing with overworld defaults
+                    this.partyController.init(data || {}); 
+                }
+                // ----------------------
+
                 this.changeScene(scene);
             });
         });
-
         // 2. Physical Interactions (Chests, NPCs, Signs)
         events.on('INTERACT', (data) => {
             if (data.type === 'ENCOUNTER') {
                 this.transitionRenderer.start(() => {
-                    // This is likely for Dialogue/Text interactions
                     this.encounterController.start(data.id, data.context);
                     this.changeScene('encounter');
                 });
@@ -114,29 +118,37 @@ export class SceneManager {
         events.on('START_BATTLE', (data) => {
             this.transitionRenderer.start(() => {
                 console.log("[SceneManager] Handing off entities to BattleController:", data.enemies);
-                
-                // Keep it decoupled: Pass data natively. No callbacks needed!
                 this.battleController.start(data.enemies, data.context);
-                
                 this.changeScene('battle');
             });
         });
 
-        // 4. NEW: Listen for the end of the battle to handle routing cleanly
+        // 4. Listen for the end of the battle to handle routing cleanly
         events.on('BATTLE_ENDED', (data) => {
             if (data.victory) {
                 console.log("[SceneManager] Victory! Transitioning back to Overworld.");
                 events.emit('CHANGE_SCENE', { scene: 'overworld' });
             } else {
                 console.log("[SceneManager] The party was defeated! Routing to Game Over...");
-                // NOTE: When you build your Game Over scene, route it here:
                 // events.emit('CHANGE_SCENE', { scene: 'game_over' }); 
             }
+        });
+
+        // 5. Party Swap Routing
+        events.on('REQUEST_PARTY_SWAP', (data) => {
+            this.transitionRenderer.start(() => {
+                this.partyController.init({
+                    // UPDATED: Dynamically use the mode passed, or fallback to BATTLE_SELECT
+                    mode: data.mode || 'BATTLE_SELECT', 
+                    activeIndices: data.activeIndices,
+                    callback: data.callback 
+                });
+                this.changeScene('party');
+            });
         });
     }
 
     setupInputRouting() {
-        // We use a named reference now so we can remove it in destroy()
         window.addEventListener('keydown', this._handleGlobalKeydown);
     }
 
@@ -151,12 +163,9 @@ export class SceneManager {
             case 'encounter':
                 this.encounterController.handleKeyDown(e.code);
                 break;
-            
-            // 3. ROUTE INPUT TO BATTLE
             case 'battle':
                 this.battleController.handleKeyDown(e.code);
                 break;
-
             case 'character-creator':
                 this.characterCreatorController.handleKeyDown(e);
                 break;
@@ -183,7 +192,6 @@ export class SceneManager {
         // SCENE SPECIFIC UPDATES
         // ============================================================
 
-        // --- A. CHARACTER CREATOR ---
         if (this.currentScene === 'character-creator') {
             if (this.characterCreatorController.handleMouseMove) {
                 this.characterCreatorController.handleMouseMove(mousePos.x, mousePos.y);
@@ -192,8 +200,6 @@ export class SceneManager {
                 this.characterCreatorController.handleMouseDown(click.x, click.y);
             }
         }
-
-        // --- B. CHARACTER SUMMARY ---
         else if (this.currentScene === 'character_summary' && this.characterSummaryController) {
             this.characterSummaryController.handleMouseMove?.(mousePos.x, mousePos.y, isMouseDown);
             
@@ -213,8 +219,6 @@ export class SceneManager {
                 this.characterSummaryController.handleScroll?.(scroll);
             }
         } 
-        
-        // --- C. LEGACY / OTHER SCENES ---
         else if (click) {
             if (this.currentScene === 'party') {
                 this.partyController.handleMouseDown(click.x, click.y, this.partyRenderer);
@@ -229,14 +233,10 @@ export class SceneManager {
             this.overworldController.update(dt);
         }
         
-        // 4. UPDATE BATTLE [DEBUGGING THIS SECTION]
         if (this.currentScene === 'battle') {
-            // Check 1: Does the method exist?
             if (typeof this.battleController.update !== 'function') {
                 console.error("CRITICAL ERROR: BattleController is missing 'update()' method! Please save BattleController.js and refresh.");
             } else {
-                // Check 2: Is it running?
-                // console.log("Battle updating... DT:", dt); // Uncomment this to flood console and prove it runs
                 this.battleController.update(dt);
             }
         }
@@ -252,30 +252,23 @@ export class SceneManager {
                 const ccState = this.characterCreatorController.getState();
                 this.characterCreatorRenderer.render(this.ctx, ccState);
                 break;
-
             case 'overworld':
                 this.renderOverworld(totalTime);
                 break;
-
             case 'party':
                 const pState = this.partyController.getState();
                 this.partyRenderer.render(pState);
                 break;
-
             case 'encounter':
                 this.renderOverworld(totalTime);
                 const encState = this.encounterController.getState();
                 this.encounterRenderer.render(this.ctx, encState);
                 break;
-
-            // 5. RENDER BATTLE
             case 'battle':
-                // We render the overworld behind the battle for context
                 this.renderOverworld(totalTime);
                 const batState = this.battleController.getState();
                 this.battleRenderer.render(batState);
                 break;
-
             case 'character_summary':
                 if (this.characterSummaryController) {
                     const csState = this.characterSummaryController.getState();
@@ -313,13 +306,8 @@ export class SceneManager {
         );
     }
 
-    /**
-     * Clean up event listeners. 
-     * Call this if destroying the game instance or hot-reloading.
-     */
     destroy() {
         this.input.destroy();
-        // Fix: Remove the global listener we added
         window.removeEventListener('keydown', this._handleGlobalKeydown);
     }
 }

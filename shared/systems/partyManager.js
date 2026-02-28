@@ -25,7 +25,7 @@ export const PartyManager = {
     /**
      * Returns total Gold
      */
-    getGold() {
+    getCurrency() {
         return gameState.party.currency || 0;
     },
 

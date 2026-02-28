@@ -6,6 +6,11 @@ export class PartyController {
         this.selectedIndex = 0;
         this.gridColumns = 3; 
         
+        // --- CONTEXT ---
+        this.mode = 'DEFAULT'; // 'DEFAULT' or 'BATTLE_SELECT'
+        this.activeIndices = []; // Tracks who is currently active in battle
+        this.callback = null;    // <-- ADDED: Stores the callback from the SceneManager
+
         // --- STATE MACHINE ---
         this.state = 'NAVIGATING'; // Options: 'NAVIGATING', 'MENU', 'SWAPPING'
 
@@ -15,6 +20,19 @@ export class PartyController {
 
         // --- SWAP DATA ---
         this.swappingIdx = null; 
+    }
+
+    /**
+     * Called by sceneManager when transitioning TO this scene.
+     */
+    init(data = {}) {
+        this.mode = data.mode || 'DEFAULT';
+        this.activeIndices = data.activeIndices || [];
+        this.callback = data.callback || null; // <-- ADDED: Save the callback
+        this.state = 'NAVIGATING';
+        this.selectedIndex = 0;
+        this.swappingIdx = null;
+        this.menuIndex = 0;
     }
 
     /**
@@ -43,7 +61,6 @@ export class PartyController {
         
         // --- 1. MENU INTERACTION ---
         if (this.state === 'MENU') {
-            // Check if we clicked a specific menu button
             const menuActionIndex = renderer.getMenuHit(x, y, this.selectedIndex);
             
             if (menuActionIndex !== -1) {
@@ -51,21 +68,16 @@ export class PartyController {
                 return;
             } 
             
-            // If we didn't click the menu, check if we clicked a DIFFERENT card.
-            // This allows the user to jump from Card A's menu to Card B's menu in one click.
             const cardIndex = renderer.getHitIndex(x, y);
 
             if (cardIndex !== -1 && cardIndex < party.length) {
                 if (cardIndex !== this.selectedIndex) {
                     this.selectedIndex = cardIndex;
-                    // Reset to navigating so the new selection is active immediately
                     this.state = 'NAVIGATING';
                 } else {
-                    // Clicked the *same* card outside the menu buttons -> Close menu
                     this.state = 'NAVIGATING';
                 }
             } else {
-                // Clicked empty void -> Close menu
                 this.state = 'NAVIGATING';
             }
             return; 
@@ -74,16 +86,13 @@ export class PartyController {
         // --- 2. CARD INTERACTION (NAVIGATING / SWAPPING) ---
         const clickedIndex = renderer.getHitIndex(x, y);
 
-        // BOUNDS CHECK: Ignore clicks on empty slots (prevents Summary crash on undefined members)
         if (clickedIndex === -1 || clickedIndex >= party.length) return; 
 
         if (this.state === 'NAVIGATING') {
             if (this.selectedIndex !== clickedIndex) {
-                // Just select the new card
                 this.selectedIndex = clickedIndex;
             } else {
-                // Clicked the already-selected card -> Open Menu
-                this.openMenu();
+                this.confirmSelection(); // Context-aware click
             }
         } 
         else if (this.state === 'SWAPPING') {
@@ -111,7 +120,6 @@ export class PartyController {
             if (target < memberCount) {
                 this.selectedIndex = target;
             } else if (target >= memberCount && this.selectedIndex < memberCount - 1) {
-                // Snap to last item if moving down into empty space
                 this.selectedIndex = memberCount - 1;
             }
         }
@@ -119,13 +127,56 @@ export class PartyController {
             if (this.selectedIndex - this.gridColumns >= 0) this.selectedIndex -= this.gridColumns;
         }
         
-        // Open Menu
+        // Action Confirm
         else if (code === 'Enter' || code === 'Space') {
-            this.openMenu();
+            this.confirmSelection();
         }
 
-        // Return to Overworld
+        // Return / Cancel
         else if (code === 'KeyP' || code === 'Escape' || code === 'Tab') {
+            this.cancelAndReturn();
+        }
+    }
+
+    /**
+     * Context-aware selection logic.
+     */
+    confirmSelection() {
+        if (this.mode === 'BATTLE_SELECT') {
+            const member = gameState.party.members[this.selectedIndex];
+            const isDead = member.hp <= 0;
+            const isActive = this.activeIndices.includes(this.selectedIndex);
+
+            if (isDead || isActive) {
+                console.log("[Party] Cannot select this member for battle.");
+                // Optionally emit a sound event here: events.emit('PLAY_SOUND', 'error');
+                return; 
+            }
+
+            // --- THE FIX: Trigger callback natively instead of using the EventBus ---
+            if (this.callback) {
+                this.callback(this.selectedIndex);
+            }
+
+            events.emit('CHANGE_SCENE', { scene: 'battle' });
+        } else {
+            this.openMenu();
+        }
+    }
+
+    /**
+     * Context-aware cancellation logic.
+     */
+    cancelAndReturn() {
+        if (this.mode === 'BATTLE_SELECT') {
+            
+            // --- THE FIX: Send null to let BattleController know we backed out ---
+            if (this.callback) {
+                this.callback(null);
+            }
+
+            events.emit('CHANGE_SCENE', { scene: 'battle' });
+        } else {
             events.emit('CHANGE_SCENE', { scene: 'overworld' });
         }
     }
@@ -148,7 +199,6 @@ export class PartyController {
         else if (code === 'Enter' || code === 'Space') {
             this.selectMenuOption(this.menuIndex);
         }
-        // UX: Allow Left/Escape to close menu
         else if (code === 'Escape' || code === 'Backspace' || code === 'ArrowLeft') {
             this.state = 'NAVIGATING';
         }
@@ -158,7 +208,6 @@ export class PartyController {
         const option = this.menuOptions[index];
         const member = gameState.party.members[this.selectedIndex];
 
-        // Safety check
         if (!member) { 
             this.state = 'NAVIGATING';
             return; 
@@ -166,9 +215,6 @@ export class PartyController {
 
         if (option === 'Summary') {
             console.log(`[Party] Opening Summary for ${member.name}`);
-            
-            // Pass the FULL character object. 
-            // This prevents the "Summary Bug" where the scene might try to look up an invalid index.
             events.emit('CHANGE_SCENE', { 
                 scene: 'character_summary', 
                 data: { 
@@ -176,7 +222,6 @@ export class PartyController {
                     character: member 
                 } 
             });
-            
             this.state = 'NAVIGATING'; 
         }
         else if (option === 'Move') {
@@ -200,7 +245,6 @@ export class PartyController {
         console.log(`[Party] Exiled ${party[index].name}`);
         party.splice(index, 1);
 
-        // Clamp selection to ensure we don't point to an empty slot
         if (this.selectedIndex >= party.length) {
             this.selectedIndex = Math.max(0, party.length - 1);
         }
@@ -213,7 +257,6 @@ export class PartyController {
         const memberCount = gameState.party.members.length;
         const col = this.selectedIndex % this.gridColumns;
 
-        // Same navigation logic as Navigating
         if (code === 'ArrowRight' || code === 'KeyD') {
              if (col < this.gridColumns - 1 && this.selectedIndex + 1 < memberCount) this.selectedIndex++;
         }
@@ -231,8 +274,6 @@ export class PartyController {
         else if (code === 'ArrowUp' || code === 'KeyW') {
              if (this.selectedIndex - this.gridColumns >= 0) this.selectedIndex -= this.gridColumns;
         }
-
-        // Actions
         else if (code === 'Enter' || code === 'Space') {
             this.completeSwap();
         }
@@ -243,7 +284,6 @@ export class PartyController {
     }
 
     completeSwap() {
-        // Only swap if indices are different
         if (this.swappingIdx !== null && this.swappingIdx !== this.selectedIndex) {
             this.swapMembers(this.swappingIdx, this.selectedIndex);
         }
@@ -253,7 +293,6 @@ export class PartyController {
 
     swapMembers(from, to) {
         const p = gameState.party.members;
-        // Simple array swap
         [p[from], p[to]] = [p[to], p[from]];
     }
 
@@ -267,7 +306,9 @@ export class PartyController {
             swappingIdx: this.swappingIdx,
             menuOpen: (this.state === 'MENU'),
             menuOptions: this.menuOptions,
-            menuIndex: this.menuIndex
+            menuIndex: this.menuIndex,
+            mode: this.mode,                     // Exporting Mode
+            activeIndices: this.activeIndices    // Exporting Active indices
         };
     }
 }
