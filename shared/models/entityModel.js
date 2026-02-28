@@ -252,6 +252,23 @@ export class EntityModel {
     }
 
     /**
+     * Safely removes all status effects. 
+     * Useful for post-battle cleanup or "Purify" type abilities.
+     */
+    clearAllStatusEffects() {
+        if (this.state.statusEffects.length === 0) return;
+
+        // Optional: If your Status Effects have an "onRemove" or cleanup logic, 
+        // you can loop through and trigger them here before clearing.
+        // for (const effect of this.state.statusEffects) {
+        //     if (typeof effect.onRemove === 'function') effect.onRemove(this);
+        // }
+
+        this.state.statusEffects = [];
+        console.log(`[EntityModel] All status effects cleared from ${this.name}.`);
+    }
+
+    /**
      * Checks if the entity currently has a specific status effect.
      * @param {string} effectId 
      * @returns {boolean}

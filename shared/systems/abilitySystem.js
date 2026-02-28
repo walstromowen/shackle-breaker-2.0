@@ -5,184 +5,212 @@ import { AbilityDefinitions } from '../data/abilityDefinitions.js';
 
 export class AbilitySystem {
 
-    static execute(abilityId, source, target) {
-        const def = AbilityDefinitions[abilityId];
-        if (!def) return { success: false, message: "Invalid Ability" };
+    static execute(abilityId, source, target) {
+        const def = AbilityDefinitions[abilityId];
+        if (!def) return { success: false, message: "Invalid Ability" };
 
-        const result = {
-            success: false,
-            outcome: 'NONE',   
-            delta: 0,          
-            resource: 'hp',    
-            message: "",       
-            addedTags: []      
-        };
+        // --- NEW: Intercept Flee Behavior (Evasion-Based) ---
+        if (def.behavior === 'flee_battle') {
+            // Get the character's stats (fallback to 100 if something goes wrong)
+            const stats = source.baseStats || source.stats || {};
+            const evasion = stats.evasion || 100;
+            
+            // Base 100 evasion = 1.0 (100% chance). 80 evasion = 0.8 (80% chance).
+            const abilityAcc = def.accuracy !== undefined ? def.accuracy : 1.0;
+            let fleeChance = abilityAcc * (evasion / 100);
+            
+            // Cap the minimum and maximum chance so it's never 0% or >100%
+            fleeChance = Math.max(0.05, Math.min(1.0, fleeChance)); 
 
-        let attackHit = true;
+            const roll = Math.random();
+            const isSuccess = roll <= fleeChance;
 
-        // 1. Process Main Effects (Damage, Heal, etc.)
-        if (def.effects && Array.isArray(def.effects)) {
-            for (const effect of def.effects) {
-                
-                if (effect.type === 'damage') {
-                    const calc = this._handleDamage(effect, source, target);
-                    
-                    result.success = calc.hit;
-                    result.outcome = calc.crit ? 'CRIT' : (calc.hit ? 'HIT' : 'MISS');
-                    result.delta = -calc.damage;
-                    result.message = calc.message;
+            console.log(`[MATH DEBUG] Flee Check -> Evasion: ${evasion} | Chance: ${(fleeChance * 100).toFixed(1)}% | Roll: ${(roll * 100).toFixed(1)}% | Success: ${isSuccess}`);
 
-                    if (!calc.hit) {
-                        attackHit = false; // Mark as missed!
-                        break; 
-                    }
-                }
-                else if (effect.type === 'recover') {
-                    const subResult = this._handleRecover(effect, source, target);
-                    if (subResult.success) {
-                        result.success = true;
-                        result.outcome = 'HEAL';
-                        result.delta = subResult.amount;
-                        result.resource = effect.resource;
-                        result.message = subResult.message;
-                    }
-                }
-                else if (effect.type === 'set') {
-                    const subResult = this._handleSet(effect, target);
-                    if (subResult.success) {
-                        result.success = true;
-                        result.message = subResult.message;
-                    }
-                }
-            }
-        }
+            return {
+                success: isSuccess,
+                fled: isSuccess, // The BattleController looks for this flag!
+                outcome: isSuccess ? 'FLEE_SUCCESS' : 'FLEE_FAIL',
+                delta: 0,
+                message: isSuccess ? `${source.name} successfully escaped!` : `Failed to escape!`,
+                addedTags: []
+            };
+        }
 
-        // 2. Process Status Effects (Only if the attack didn't miss!)
-        console.log(`[Debug] Checking status effects for ${def.name}. attackHit: ${attackHit}, statusEffects:`, def.statusEffects);
+        const result = {
+            success: false,
+            outcome: 'NONE',   
+            delta: 0,          
+            resource: 'hp',    
+            message: "",       
+            addedTags: []      
+        };
 
-        if (attackHit && def.statusEffects && Array.isArray(def.statusEffects)) {
-            for (const statusDef of def.statusEffects) {
-                const roll = Math.random();
-                const chance = statusDef.chance !== undefined ? statusDef.chance : 1.0;
-                
-                console.log(`[Debug] Rolling for ${statusDef.id}. Rolled: ${roll.toFixed(2)}, Needed: <= ${chance}`);
+        let attackHit = true;
 
-                if (roll <= chance) {
-                    console.log(`[Debug] Roll successful! Creating effect: ${statusDef.id} with duration: ${statusDef.duration}`);
-                    
-                    const activeEffect = StatusEffectFactory.createEffect(
-                        statusDef.id, 
-                        statusDef.duration, 
-                        source
-                    );
+        // 1. Process Main Effects (Damage, Heal, etc.)
+        if (def.effects && Array.isArray(def.effects)) {
+            for (const effect of def.effects) {
+                
+                if (effect.type === 'damage') {
+                    const calc = this._handleDamage(effect, source, target);
+                    
+                    result.success = calc.hit;
+                    result.outcome = calc.crit ? 'CRIT' : (calc.hit ? 'HIT' : 'MISS');
+                    result.delta = -calc.damage;
+                    result.message = calc.message;
 
-                    console.log(`[Debug] Factory returned:`, activeEffect);
+                    if (!calc.hit) {
+                        attackHit = false; // Mark as missed!
+                        break; 
+                    }
+                }
+                else if (effect.type === 'recover') {
+                    const subResult = this._handleRecover(effect, source, target);
+                    if (subResult.success) {
+                        result.success = true;
+                        result.outcome = 'HEAL';
+                        result.delta = subResult.amount;
+                        result.resource = effect.resource;
+                        result.message = subResult.message;
+                    }
+                }
+                else if (effect.type === 'set') {
+                    const subResult = this._handleSet(effect, target);
+                    if (subResult.success) {
+                        result.success = true;
+                        result.message = subResult.message;
+                    }
+                }
+            }
+        }
 
-                    if (activeEffect) {
-                        target.applyStatusEffect(activeEffect);
-                        
-                        result.success = true; 
+        // 2. Process Status Effects (Only if the attack didn't miss!)
+        console.log(`[Debug] Checking status effects for ${def.name}. attackHit: ${attackHit}, statusEffects:`, def.statusEffects);
 
-                        result.addedTags.push(statusDef.id);
-                        result.message += ` ${target.name} was inflicted with ${activeEffect.name}!`;
-                    } else {
-                        console.error(`[Debug] Factory failed to create the effect! Check StatusEffectFactory.`);
-                    }
-                } else {
-                    console.log(`[Debug] Roll failed for ${statusDef.id}.`);
-                }
-            }
-        }
+        if (attackHit && def.statusEffects && Array.isArray(def.statusEffects)) {
+            for (const statusDef of def.statusEffects) {
+                const roll = Math.random();
+                const chance = statusDef.chance !== undefined ? statusDef.chance : 1.0;
+                
+                console.log(`[Debug] Rolling for ${statusDef.id}. Rolled: ${roll.toFixed(2)}, Needed: <= ${chance}`);
 
-        // Return the final data payload back to the BattleController
-        return result;
-    }
+                if (roll <= chance) {
+                    console.log(`[Debug] Roll successful! Creating effect: ${statusDef.id} with duration: ${statusDef.duration}`);
+                    
+                    const activeEffect = StatusEffectFactory.createEffect(
+                        statusDef.id, 
+                        statusDef.duration, 
+                        source
+                    );
 
-    // --- LOGIC HANDLERS ---
+                    console.log(`[Debug] Factory returned:`, activeEffect);
 
-    static _handleDamage(effect, source, target) {
-        const calc = CombatCalculator.calculatePhysical(
-            source, 
-            target, 
-            effect.power || 10,
-            effect.damageType || 'blunt'
-        );
+                    if (activeEffect) {
+                        target.applyStatusEffect(activeEffect);
+                        
+                        result.success = true; 
 
-        if (calc.hit) {
-            target.modifyResource('hp', -calc.damage);
+                        result.addedTags.push(statusDef.id);
+                        result.message += ` ${target.name} was inflicted with ${activeEffect.name}!`;
+                    } else {
+                        console.error(`[Debug] Factory failed to create the effect! Check StatusEffectFactory.`);
+                    }
+                } else {
+                    console.log(`[Debug] Roll failed for ${statusDef.id}.`);
+                }
+            }
+        }
 
-            const critText = calc.crit ? " (Critical!)" : "";
-            calc.message = `${target.name} takes ${calc.damage} damage!${critText}`;
+        // Return the final data payload back to the BattleController
+        return result;
+    }
 
-            if (target.statusEffects && Array.isArray(target.statusEffects)) {
-                // CHANGED: Loop backwards safely handle array splicing mid-iteration
-                for (let i = target.statusEffects.length - 1; i >= 0; i--) {
-                    const status = target.statusEffects[i];
-                    
-                    const reaction = status.onEvent('ON_DAMAGE_RECEIVED', target, { 
-                        attacker: source, 
-                        damage: calc.damage 
-                    });
-                    
-                    if (reaction.messages && reaction.messages.length > 0) {
-                        calc.message += ` ${reaction.messages.join(' ')}`;
-                    }
-                    
-                    if (status.isExpired()) {
-                        target.removeStatusEffect(status.id);
-                    }
-                }
-            }
-            
-        } else {
-            calc.message = `${source.name}'s attack missed!`;
-        }
+    // --- LOGIC HANDLERS ---
 
-        return calc;
-    }
+    static _handleDamage(effect, source, target) {
+        const calc = CombatCalculator.calculatePhysical(
+            source, 
+            target, 
+            effect.power || 10,
+            effect.damageType || 'blunt'
+        );
 
-    static _handleRecover(effect, source, target) {
-        let amount = 0;
+        if (calc.hit) {
+            target.modifyResource('hp', -calc.damage);
 
-        if (effect.calculation === 'flat') {
-            amount = effect.power;
-        } 
-        else if (effect.calculation === 'attribute') {
-            const stats = StatCalculator.calculate(source);
-            amount = effect.power + Math.floor((stats.attributes[effect.attribute] || 0) * (effect.scaling || 0));
-        }
-        else if (effect.calculation === 'percent') {
-            // Capitalize the first letter to find the max stat dynamically
-            const maxProp = 'max' + effect.resource.charAt(0).toUpperCase() + effect.resource.slice(1);
-            const maxValue = target[maxProp] || 1; 
-            
-            // Calculate the percentage and round down to a whole number
-            amount = Math.floor(maxValue * effect.power);
-        }
-        else if (effect.calculation === 'max') {
-            amount = 9999; 
-        }
+            const critText = calc.crit ? " (Critical!)" : "";
+            calc.message = `${target.name} takes ${calc.damage} damage!${critText}`;
 
-        const actualChange = target.modifyResource(effect.resource, amount);
+            if (target.statusEffects && Array.isArray(target.statusEffects)) {
+                // CHANGED: Loop backwards safely handle array splicing mid-iteration
+                for (let i = target.statusEffects.length - 1; i >= 0; i--) {
+                    const status = target.statusEffects[i];
+                    
+                    const reaction = status.onEvent('ON_DAMAGE_RECEIVED', target, { 
+                        attacker: source, 
+                        damage: calc.damage 
+                    });
+                    
+                    if (reaction.messages && reaction.messages.length > 0) {
+                        calc.message += ` ${reaction.messages.join(' ')}`;
+                    }
+                    
+                    if (status.isExpired()) {
+                        target.removeStatusEffect(status.id);
+                    }
+                }
+            }
+            
+        } else {
+            calc.message = `${source.name}'s attack missed!`;
+        }
 
-        return {
-            success: actualChange !== 0,
-            amount: actualChange,
-            message: actualChange !== 0 ? `+${actualChange} ${effect.resource.toUpperCase()}` : "Recover failed"
-        };
-    }
+        return calc;
+    }
 
-    static _handleSet(effect, target) {
-        const currentVal = target.stats ? target.stats[effect.resource] : target[effect.resource];
-        const diff = effect.value - currentVal;
+    static _handleRecover(effect, source, target) {
+        let amount = 0;
 
-        if (diff === 0) return { success: false };
+        if (effect.calculation === 'flat') {
+            amount = effect.power;
+        } 
+        else if (effect.calculation === 'attribute') {
+            const stats = StatCalculator.calculate(source);
+            amount = effect.power + Math.floor((stats.attributes[effect.attribute] || 0) * (effect.scaling || 0));
+        }
+        else if (effect.calculation === 'percent') {
+            // Capitalize the first letter to find the max stat dynamically
+            const maxProp = 'max' + effect.resource.charAt(0).toUpperCase() + effect.resource.slice(1);
+            const maxValue = target[maxProp] || 1; 
+            
+            // Calculate the percentage and round down to a whole number
+            amount = Math.floor(maxValue * effect.power);
+        }
+        else if (effect.calculation === 'max') {
+            amount = 9999; 
+        }
 
-        target.modifyResource(effect.resource, diff);
+        const actualChange = target.modifyResource(effect.resource, amount);
 
-        return {
-            success: true,
-            message: `${effect.resource.toUpperCase()} set to ${effect.value}`
-        };
-    }
+        return {
+            success: actualChange !== 0,
+            amount: actualChange,
+            message: actualChange !== 0 ? `+${actualChange} ${effect.resource.toUpperCase()}` : "Recover failed"
+        };
+    }
+
+    static _handleSet(effect, target) {
+        const currentVal = target.stats ? target.stats[effect.resource] : target[effect.resource];
+        const diff = effect.value - currentVal;
+
+        if (diff === 0) return { success: false };
+
+        target.modifyResource(effect.resource, diff);
+
+        return {
+            success: true,
+            message: `${effect.resource.toUpperCase()} set to ${effect.value}`
+        };
+    }
 }

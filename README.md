@@ -73,7 +73,6 @@ Root
 │   ├── registries/
 │   │   └── encounterRegistry.js
 │   ├── state/
-|   │   ├── battleState.js
 │   │   └── gameState.js            
 │   ├── systems/
 │   │   ├── factories/  

@@ -190,4 +190,8 @@ export class AbilityModel {
     isSummon() {
         return this.effects.some(eff => eff.type === 'summon');
     }
+
+    isFlee() {
+        return this.config.behavior === 'flee_battle';
+    }
 }
