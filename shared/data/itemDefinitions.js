@@ -9,7 +9,7 @@ export const ItemDefinitions = {
         value: 5,
         icon: { col: 0, row: 0 },
         attack: { blunt: 3 }, 
-        grantedAbilities: ["strike", "magic_missile", "earthquake", "flurry", "cleave"] 
+        grantedAbilities: ["wild_swing","strike", "magic_missile", "earthquake", "flurry", "cleave"] 
     },
 
     "shortsword": {

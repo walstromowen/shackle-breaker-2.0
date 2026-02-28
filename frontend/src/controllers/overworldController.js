@@ -205,7 +205,7 @@ export class OverworldController {
                 
                 // --- FORCE STATUS EFFECT ---
                 // The BattleController parses this array and applies the effects automatically
-                legionary.startingStatuses = ['poison']; 
+                //legionary.startingStatuses = ['poison']; 
                 
                 enemyParty.push(legionary);
             }

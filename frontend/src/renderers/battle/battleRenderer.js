@@ -414,7 +414,11 @@ export class BattleRenderer {
         const isAllyTargeting = ['ally', 'all_allies', 'self'].includes(scope);
         
         let primaryTarget;
-        if (isAllyTargeting) {
+        
+        // FIX: Explicitly handle the 'ALL' case so the index isn't passed as undefined
+        if (state.targetIndex === 'ALL') {
+            primaryTarget = 'ALL';
+        } else if (isAllyTargeting) {
             primaryTarget = state.activeParty[state.targetIndex];
         } else {
             primaryTarget = state.activeEnemies[state.targetIndex];

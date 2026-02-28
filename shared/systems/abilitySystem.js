@@ -1,5 +1,4 @@
 import { StatCalculator } from './statCalculator.js';
-// (Assuming CombatCalculator and StatusEffectFactory are imported here as well based on your previous file structure)
 import { CombatCalculator } from './combatCalculator.js';
 import { StatusEffectFactory } from './factories/statusEffectFactory.js';
 import { AbilityDefinitions } from '../data/abilityDefinitions.js';
@@ -16,10 +15,9 @@ export class AbilitySystem {
             delta: 0,          
             resource: 'hp',    
             message: "",       
-            addedTags: []      // We will push status effect IDs in here!
+            addedTags: []      
         };
 
-        // We need to know if a physical/magic attack missed so we don't apply poison on a whiff.
         let attackHit = true;
 
         // 1. Process Main Effects (Damage, Heal, etc.)
@@ -59,46 +57,50 @@ export class AbilitySystem {
             }
         }
 
-        // 2. [NEW] Process Status Effects (Only if the attack didn't miss!)
+        // 2. Process Status Effects (Only if the attack didn't miss!)
+        console.log(`[Debug] Checking status effects for ${def.name}. attackHit: ${attackHit}, statusEffects:`, def.statusEffects);
+
         if (attackHit && def.statusEffects && Array.isArray(def.statusEffects)) {
             for (const statusDef of def.statusEffects) {
-                // Roll the dice against the chance (default to 100% if undefined)
                 const roll = Math.random();
                 const chance = statusDef.chance !== undefined ? statusDef.chance : 1.0;
+                
+                console.log(`[Debug] Rolling for ${statusDef.id}. Rolled: ${roll.toFixed(2)}, Needed: <= ${chance}`);
 
                 if (roll <= chance) {
-                    // Create the live effect model
+                    console.log(`[Debug] Roll successful! Creating effect: ${statusDef.id} with duration: ${statusDef.duration}`);
+                    
                     const activeEffect = StatusEffectFactory.createEffect(
                         statusDef.id, 
-                        statusDef.duration, // Mapped to initialCharges
+                        statusDef.duration, 
                         source
                     );
 
+                    console.log(`[Debug] Factory returned:`, activeEffect);
+
                     if (activeEffect) {
-                        // Apply it to the target
                         target.applyStatusEffect(activeEffect);
                         
-                        // Update the combat result so the UI knows to show "Poisoned!"
+                        result.success = true; 
+
                         result.addedTags.push(statusDef.id);
                         result.message += ` ${target.name} was inflicted with ${activeEffect.name}!`;
+                    } else {
+                        console.error(`[Debug] Factory failed to create the effect! Check StatusEffectFactory.`);
                     }
+                } else {
+                    console.log(`[Debug] Roll failed for ${statusDef.id}.`);
                 }
             }
         }
 
-        if (result.success && !result.message) {
-            result.message = "Ability used successfully.";
-        } else if (!result.success && !result.message) {
-            result.message = "But it failed!";
-        }
-
+        // Return the final data payload back to the BattleController
         return result;
     }
 
     // --- LOGIC HANDLERS ---
 
     static _handleDamage(effect, source, target) {
-        // 1. Ask the Calculator for the numbers (No state change yet)
         const calc = CombatCalculator.calculatePhysical(
             source, 
             target, 
@@ -106,29 +108,23 @@ export class AbilitySystem {
             effect.damageType || 'blunt'
         );
 
-        // 2. Apply the State Change (Mutation)
         if (calc.hit) {
             target.modifyResource('hp', -calc.damage);
 
-            // 3. Generate the Text Log
             const critText = calc.crit ? " (Critical!)" : "";
             calc.message = `${target.name} takes ${calc.damage} damage!${critText}`;
 
-            // --- 4. NEW: TRIGGER REACTIVE STATUS EFFECTS ---
             if (target.statusEffects && Array.isArray(target.statusEffects)) {
-                // We use a copy of the array or standard iteration since `removeStatusEffect` filters the main array
                 target.statusEffects.forEach(status => {
                     const reaction = status.onEvent('ON_DAMAGE_RECEIVED', target, { 
                         attacker: source, 
                         damage: calc.damage 
                     });
                     
-                    // Append reaction messages (e.g., "Attacker takes 5 PIERCE HP from Thorns!")
                     if (reaction.messages && reaction.messages.length > 0) {
                         calc.message += ` ${reaction.messages.join(' ')}`;
                     }
                     
-                    // Clean up if it consumed its last charge (like Living Bomb popping)
                     if (status.isExpired()) {
                         target.removeStatusEffect(status.id);
                     }
@@ -151,6 +147,14 @@ export class AbilitySystem {
         else if (effect.calculation === 'attribute') {
             const stats = StatCalculator.calculate(source);
             amount = effect.power + Math.floor((stats.attributes[effect.attribute] || 0) * (effect.scaling || 0));
+        }
+        else if (effect.calculation === 'percent') {
+            // Capitalize the first letter to find the max stat dynamically
+            const maxProp = 'max' + effect.resource.charAt(0).toUpperCase() + effect.resource.slice(1);
+            const maxValue = target[maxProp] || 1; 
+            
+            // Calculate the percentage and round down to a whole number
+            amount = Math.floor(maxValue * effect.power);
         }
         else if (effect.calculation === 'max') {
             amount = 9999; 

@@ -31,9 +31,10 @@ const ASSET_MANIFEST = {
     
   
 
-    //bonfire_bg: './assets/sprites/bonfire.png',
+    
     items: './assets/icons/items.png', 
     abilities: './assets/icons/abilities.png', 
+    statusEffects: './assets/icons/status_effects.png',
 };
 
 let sceneManager;

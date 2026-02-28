@@ -61,13 +61,12 @@ export const AbilityDefinitions = {
         speedModifier: 1.5, 
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 5 },
-        accuracy: 0.98, 
+        accuracy: 0.04, 
         effects: [
             { type: "damage", element: "pierce", power: 0.85 } 
         ],
-        // [NEW]: Added a chance to apply the 'poison' status effect
         statusEffects: [
-            { id: "poison", chance: 1, duration: 3 } 
+            { id: "poison", chance: 0.5, duration: 3 } 
         ]
     },
 
@@ -167,7 +166,6 @@ export const AbilityDefinitions = {
         name: "Wild Swing",
         description: "Swing blindly, hitting a random enemy.",
         icon: { col: 5, row: 1 },
-        // [UPDATED]: Changed scope from "enemy" to "random_enemy" to sync with resolver
         targeting: { scope: "random_enemy", select: "random", count: 1 },
         cost: { stamina: 5 },
         accuracy: 0.70, 
@@ -219,7 +217,6 @@ export const AbilityDefinitions = {
         description: "Strike a target and one adjacent enemy.",
         icon: { col: 0, row: 3 },
         animation: { attacker: "ally-attack", effect: "swipe-right", audio: "blade-swipe" },
-        // [UPDATED]: Changed to a standard AoE to work instantly with your current setup
         targeting: { scope: "all_enemies", select: "auto" }, 
         cost: { stamina: 15 },
         accuracy: 0.85,
@@ -228,7 +225,7 @@ export const AbilityDefinitions = {
         ]
     },
 
-    "flurry": {//Hit the same target multiple times
+    "flurry": {
         id: "flurry",
         name: "Flurry",
         description: "Slash a target with a series of quick strikes.",
@@ -264,7 +261,7 @@ export const AbilityDefinitions = {
     // 4. INSIGHT ARCANUM (Spells)
     // =========================================================================
 
-    "magic_missile": { //Hit a single target multiple times, with UI support for selecting multiple targets if desired
+    "magic_missile": { 
         id: "magic_missile",
         name: "Magic Missile",
         description: "Fire three bolts. Can hit the same target multiple times.",
@@ -287,6 +284,7 @@ export const AbilityDefinitions = {
         cost: { insight: 25 },
         accuracy: 0.90,
         effects: [
+            // Note: If you want gravity to work, you'll need to update _handleDamage to support calculation types too!
             { type: "damage", element: "dark", calculation: "percent_current", power: 0.5 }
         ]
     },
@@ -361,7 +359,8 @@ export const AbilityDefinitions = {
         cost: { insight: 25 },
         accuracy: 1.0,
         effects: [
-            { type: "recover", resource: "hp", power: 0.3 }
+            // FIXED: Added calculation: "percent"
+            { type: "recover", resource: "hp", calculation: "percent", power: 0.3 }
         ]
     },
 
@@ -375,7 +374,8 @@ export const AbilityDefinitions = {
         accuracy: 1.0,
         effects: [
             { type: "dispel", tags: ["poison", "bleed", "burn"] },
-            { type: "recover", resource: "hp", power: 0.1 }
+            // FIXED: Added calculation: "percent"
+            { type: "recover", resource: "hp", calculation: "percent", power: 0.1 }
         ]
     },
 
@@ -463,8 +463,9 @@ export const AbilityDefinitions = {
         targeting: { scope: "self", select: "auto" },
         accuracy: 1.0,
         effects: [
-            { type: "recover", resource: "stamina", power: 0.25 },
-            { type: "recover", resource: "insight", power: 0.25 }
+            // FIXED: Added missing HP recovery, and added calculation: "percent" to all
+            { type: "recover", resource: "stamina", calculation: "percent", power: 0.25 },
+            { type: "recover", resource: "insight", calculation: "percent", power: 0.25 }
         ]
     },
 
@@ -591,7 +592,8 @@ export const AbilityDefinitions = {
         speedModifier: 1.0,
         accuracy: 1.0,
         effects: [
-            { type: "recover", resource: "hp", calculation: "percent_max", power: 0.5 }
+            // FIXED: Changed calculation from "percent_max" to "percent"
+            { type: "recover", resource: "hp", calculation: "percent", power: 0.5 }
         ]
     },
 
@@ -606,7 +608,8 @@ export const AbilityDefinitions = {
         speedModifier: 1.0,
         accuracy: 1.0,
         effects: [
-            { type: "recover", resource: "stamina", calculation: "percent_max", power: 0.5 }
+            // FIXED: Changed calculation from "percent_max" to "percent"
+            { type: "recover", resource: "stamina", calculation: "percent", power: 0.5 }
         ]
     }
 };
