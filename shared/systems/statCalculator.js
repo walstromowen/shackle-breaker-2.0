@@ -153,9 +153,9 @@ export class StatCalculator {
 
 
         // --- STEP 3: DERIVED RESOURCES ---
-        breakdown.resources.derived.hp = (finalStats.vigor * 5);
-        breakdown.resources.derived.stamina = (finalStats.vigor * 2);
-        breakdown.resources.derived.insight = (finalStats.attunement * 2);
+        breakdown.resources.derived.hp = (finalStats.vigor * 3);
+        breakdown.resources.derived.stamina = (finalStats.vigor * 3);
+        breakdown.resources.derived.insight = (finalStats.attunement * 3);
 
         const str = finalStats.strength;
         finalStats.attack.blunt  += str;

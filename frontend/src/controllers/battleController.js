@@ -25,7 +25,8 @@ const TURN_TYPES = {
     MESSAGE_DEATH: 'DEATH_MESSAGE',
     BATTLE_END: 'BATTLE_END',
     REINFORCEMENT: 'REINFORCEMENT',
-    PROMPT_REINFORCEMENT: 'PROMPT_REINFORCEMENT' // NEW: Pause queue to ask player
+    PROMPT_REINFORCEMENT: 'PROMPT_REINFORCEMENT',
+    APPLY_ABILITY_EFFECTS: 'APPLY_ABILITY_EFFECTS' // <--- NEW: Defer stats/damage to after animation
 };
 
 export class BattleController {
@@ -142,7 +143,62 @@ export class BattleController {
         
         return AbilityFactory.createAbilities(Array.from(abilityIdSet)).filter(Boolean);
     }
+    _applyAbilityEffects(turn) {
+        let { actor, action, targets } = turn;
 
+        // Pay the ability cost NOW so the Stamina/Insight bars update at the same time as the HP bar
+        action.payCost(actor, null);
+
+        for (let target of targets) {
+            let actualTarget = target;
+            
+            if (actualTarget.isDead()) {
+                const fallbackPool = actualTarget.team === 'party' ? this.state.activeParty : this.state.activeEnemies;
+                const livingTargets = fallbackPool.filter(t => t && !t.isDead());
+                if (livingTargets.length === 0) continue; 
+                actualTarget = livingTargets[Math.floor(Math.random() * livingTargets.length)];
+            }
+            
+            const wasTargetDead = actualTarget.isDead();
+            const wasActorDead = actor.isDead(); 
+
+            // Calculate damage and update HP here
+            const result = AbilitySystem.execute(action.id, actor, actualTarget);
+            
+            if (result.fled) {
+                this.state.fled = true; 
+                this.state.turnQueue = [
+                    { type: TURN_TYPES.MESSAGE_STATUS, message: `${actor.name}'s party escapes!` },
+                    { type: TURN_TYPES.BATTLE_END }
+                ];
+                break; 
+            }
+
+            if (result.message) {
+                this.state.turnQueue.unshift({
+                    type: TURN_TYPES.MESSAGE_STATUS,
+                    message: result.message
+                });
+            }
+
+            if (!wasTargetDead && actualTarget.isDead()) {
+                this.handleDeath(actualTarget);
+            }
+
+            if (!wasActorDead && actor.isDead()) {
+                this.handleDeath(actor);
+                break; 
+            }
+        }
+
+        if (!actor.isDead() && !this.state.fled) {
+            this.processStatusEffects(actor, 'ON_TURN_END');
+        }
+
+        // IMPORTANT: Instantly pull the next turn (which is the damage message we just queued).
+        // This ensures the damage text and the HP bar reduction appear at the exact same moment!
+        this._processNextTurnInQueue();
+    }
     _applyStartingStatuses(entity, combatant) {
         if (!Array.isArray(entity.startingStatuses)) return;
         entity.startingStatuses.forEach(statusId => {
@@ -417,16 +473,18 @@ export class BattleController {
     }
 
     update(dt) {
-        if (!this.state?.active || this.state.isPausedForUI) return;
+        if (!this.state?.active || this.state.isPausedForUI) return;
 
-        if (this.state.phase === PHASE.INTRO) {
-            this.timer += dt; 
-            if (this.timer > 1.5) this._startActionPhase();
-        } else if ([PHASE.RESOLVE, PHASE.VICTORY, PHASE.DEFEAT].includes(this.state.phase)) {
-            this.timer += dt;
-            if (this.timer >= 1.5) this._processNextTurnInQueue();
-        }
-    }
+        this.state.timer = this.timer; // <--- NEW: Expose timer for the Renderer
+
+        if (this.state.phase === PHASE.INTRO) {
+            this.timer += dt; 
+            if (this.timer > 1.5) this._startActionPhase();
+        } else if ([PHASE.RESOLVE, PHASE.VICTORY, PHASE.DEFEAT].includes(this.state.phase)) {
+            this.timer += dt;
+            if (this.timer >= 1.5) this._processNextTurnInQueue();
+        }
+    }
 
     _startActionPhase() {
         this.state.menuIndex = 0;
@@ -452,14 +510,18 @@ export class BattleController {
         this.state.message = "What will you do? [P] for Party"; 
     }
 
-    _processNextTurnInQueue() {
-        this.timer = 0;
-        if (this.state.turnQueue.length > 0) {
-            this.executeTurn(this.state.turnQueue.shift());
-        } else if (this.state.phase === PHASE.RESOLVE) {
-            this._checkBattleStatus();
-        }
-    }
+  _processNextTurnInQueue() {
+        this.timer = 0;
+        
+        // NEW: Clear the previous turn's animation so it doesn't carry over!
+        this.state.activeAnimation = null; 
+
+        if (this.state.turnQueue.length > 0) {
+            this.executeTurn(this.state.turnQueue.shift());
+        } else if (this.state.phase === PHASE.RESOLVE) {
+            this._checkBattleStatus();
+        }
+    }
 
     // --- EFFECT RESOLUTION ---
 
@@ -494,7 +556,6 @@ export class BattleController {
             return;
         }
 
-        // --- NEW: Triggered if a party member dies mid-resolve phase ---
         if (turn.type === TURN_TYPES.PROMPT_REINFORCEMENT) {
             this._requestPartySwap(true, turn.slotIndex);
             return; 
@@ -509,6 +570,13 @@ export class BattleController {
             return;
         }
 
+        // --- NEW: Phase 2 - Apply the actual damage and costs AFTER the animation ---
+        if (turn.type === TURN_TYPES.APPLY_ABILITY_EFFECTS) {
+            this._applyAbilityEffects(turn);
+            return;
+        }
+
+        // --- Phase 1 - Setup Animation and Text ---
         let { actor, action, target: primaryTarget } = turn;
         if (actor.isDead()) return; 
 
@@ -531,53 +599,23 @@ export class BattleController {
         }
         
         this.state.message = action.id === 'rest' ? `${actor.name} had to rest!` : `${actor.name} used ${action.name}!`;
-        action.payCost(actor, null);
+        // NOTE: action.payCost has been moved to _applyAbilityEffects so the stamina/insight bars delay too!
         
-        for (let target of resolvedTargets) {
-            let actualTarget = target;
-            
-            if (actualTarget.isDead()) {
-                const fallbackPool = actualTarget.team === 'party' ? this.state.activeParty : this.state.activeEnemies;
-                const livingTargets = fallbackPool.filter(t => t && !t.isDead());
-                if (livingTargets.length === 0) continue; 
-                actualTarget = livingTargets[Math.floor(Math.random() * livingTargets.length)];
-            }
-            
-            const wasTargetDead = actualTarget.isDead();
-            const wasActorDead = actor.isDead(); 
+        this.state.activeAnimation = {
+            type: 'ABILITY',
+            actionId: action.id,
+            actor: actor,
+            targets: resolvedTargets,
+            duration: 1.5 
+        };
 
-            const result = AbilitySystem.execute(action.id, actor, actualTarget);
-            
-            if (result.fled) {
-                this.state.fled = true; 
-
-                this.state.turnQueue = [
-                    { type: TURN_TYPES.MESSAGE_STATUS, message: `${actor.name}'s party escapes!` },
-                    { type: TURN_TYPES.BATTLE_END }
-                ];
-                break; 
-            }
-
-            if (result.message) {
-                this.state.turnQueue.unshift({
-                    type: TURN_TYPES.MESSAGE_STATUS,
-                    message: result.message
-                });
-            }
-
-            if (!wasTargetDead && actualTarget.isDead()) {
-                this.handleDeath(actualTarget);
-            }
-
-            if (!wasActorDead && actor.isDead()) {
-                this.handleDeath(actor);
-                break; 
-            }
-        }
-
-        if (!actor.isDead() && !this.state.fled) {
-            this.processStatusEffects(actor, 'ON_TURN_END');
-        }
+        // NEW: Queue up the actual effect application to happen next, once the 1.5s timer resolves
+        this.state.turnQueue.unshift({
+            type: TURN_TYPES.APPLY_ABILITY_EFFECTS,
+            actor: actor,
+            action: action,
+            targets: resolvedTargets
+        });
     }
 
     // --- COMBAT RESOLUTION ---
@@ -731,6 +769,8 @@ export class BattleController {
         });
 
         this.state.active = false;
+
+
 
         events.emit('BATTLE_ENDED', { 
             victory: this.state.partyRoster.some(p => !p.isDead()),
