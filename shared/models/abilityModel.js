@@ -46,8 +46,8 @@ export class AbilityModel {
     get accuracy() { return this.config.accuracy !== undefined ? this.config.accuracy : 1.0; }
 
     // Visuals
-    get animation() { 
-        return this.config.animation || { attacker: "attack", effect: "hit", audio: "hit" }; 
+    get animationId() { 
+        return this.config.animationId || "default_attack"; 
     }
 
     // =========================================================================

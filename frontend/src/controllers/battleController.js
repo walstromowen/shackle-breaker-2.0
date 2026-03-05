@@ -8,6 +8,7 @@ import { events } from '../core/eventBus.js';
 import { TargetingResolver } from '../../../shared/systems/targetingResolver.js';
 import { StatusEffectFactory } from '../../../shared/systems/factories/statusEffectFactory.js';
 import { AbilitySystem } from '../../../shared/systems/abilitySystem.js'; 
+import { BattleAnimationFactory } from '../../../shared/systems/factories/battleAnimationFactory.js';
 
 const PHASE = {
     INTRO: 'INTRO',
@@ -26,7 +27,7 @@ const TURN_TYPES = {
     BATTLE_END: 'BATTLE_END',
     REINFORCEMENT: 'REINFORCEMENT',
     PROMPT_REINFORCEMENT: 'PROMPT_REINFORCEMENT',
-    APPLY_ABILITY_EFFECTS: 'APPLY_ABILITY_EFFECTS' // <--- NEW: Defer stats/damage to after animation
+    APPLY_ABILITY_EFFECTS: 'APPLY_ABILITY_EFFECTS'
 };
 
 export class BattleController {
@@ -44,7 +45,7 @@ export class BattleController {
 
         this.state = {
             active: true,
-            isPausedForUI: false, // --- NEW: Halt updates/input when Party UI is open
+            isPausedForUI: false,
             phase: PHASE.INTRO, 
             partyRoster: party,              
             enemyRoster: preparedEnemies,    
@@ -143,6 +144,7 @@ export class BattleController {
         
         return AbilityFactory.createAbilities(Array.from(abilityIdSet)).filter(Boolean);
     }
+
     _applyAbilityEffects(turn) {
         let { actor, action, targets } = turn;
 
@@ -195,10 +197,10 @@ export class BattleController {
             this.processStatusEffects(actor, 'ON_TURN_END');
         }
 
-        // IMPORTANT: Instantly pull the next turn (which is the damage message we just queued).
-        // This ensures the damage text and the HP bar reduction appear at the exact same moment!
+        // Instantly pull the next turn (damage message). Ensures text & HP bar reduction sync perfectly.
         this._processNextTurnInQueue();
     }
+
     _applyStartingStatuses(entity, combatant) {
         if (!Array.isArray(entity.startingStatuses)) return;
         entity.startingStatuses.forEach(statusId => {
@@ -210,7 +212,6 @@ export class BattleController {
     // --- INPUT HANDLING ---
 
     handleKeyDown(key) {
-        
         if (!this.state?.active || this.state.isPausedForUI) return;
         
         const ignorePhases = [PHASE.INTRO, PHASE.RESOLVE, PHASE.VICTORY, PHASE.DEFEAT];
@@ -240,8 +241,8 @@ export class BattleController {
             }
 
             this._setupTargetSelection(attemptedAction, activeChar);
-        } else if (key === 'KeyP') { // <--- UPDATE THIS LINE
-            // NEW: Voluntary Party Swap during Turn
+        } else if (key === 'KeyP') { 
+            // Voluntary Party Swap during Turn
             this._requestPartySwap(false, this.state.activePartyIndex);
         }
     }
@@ -339,7 +340,7 @@ export class BattleController {
         this.state.selectedTargets = [];
     }
 
-    // --- NEW: PARTY SWAP LOGIC ---
+    // --- PARTY SWAP LOGIC ---
 
     _requestPartySwap(isForced = false, slotIndex = -1) {
         // Collect indices of currently active members so the UI can dim them
@@ -347,7 +348,7 @@ export class BattleController {
             p ? this.state.partyRoster.indexOf(p) : -1
         ).filter(i => i !== -1);
 
-        // --- THE FIX: Add pending replacements currently waiting in the turn queue ---
+        // Include pending replacements currently waiting in the turn queue
         this.state.turnQueue.forEach(turn => {
             if (turn.type === TURN_TYPES.REINFORCEMENT && turn.team === 'party' && turn.replacement) {
                 const pendingIndex = this.state.partyRoster.indexOf(turn.replacement);
@@ -473,18 +474,28 @@ export class BattleController {
     }
 
     update(dt) {
-        if (!this.state?.active || this.state.isPausedForUI) return;
+        if (!this.state?.active || this.state.isPausedForUI) return;
 
-        this.state.timer = this.timer; // <--- NEW: Expose timer for the Renderer
+        this.state.timer = this.timer; 
 
-        if (this.state.phase === PHASE.INTRO) {
-            this.timer += dt; 
-            if (this.timer > 1.5) this._startActionPhase();
-        } else if ([PHASE.RESOLVE, PHASE.VICTORY, PHASE.DEFEAT].includes(this.state.phase)) {
-            this.timer += dt;
-            if (this.timer >= 1.5) this._processNextTurnInQueue();
-        }
-    }
+        if (this.state.phase === PHASE.INTRO) {
+            this.timer += dt; 
+            if (this.timer > 1.5) this._startActionPhase();
+        } else if ([PHASE.RESOLVE, PHASE.VICTORY, PHASE.DEFEAT].includes(this.state.phase)) {
+            this.timer += dt;
+            
+            // Determine how long we should wait before processing the next item in the queue
+            let waitTime = 1.5; // Default for text messages/turn setup
+            if (this.state.activeAnimation) {
+                waitTime = this.state.activeAnimation.duration;
+            }
+
+            // If timer surpasses the required wait time, pull next event
+            if (this.timer >= waitTime) {
+                this._processNextTurnInQueue();
+            }
+        }
+    }
 
     _startActionPhase() {
         this.state.menuIndex = 0;
@@ -498,7 +509,6 @@ export class BattleController {
         }
 
         if (this.state.activePartyIndex >= this.state.activeParty.length) {
-            // Automatically push through to enemies' turns if there is no living active party member right now
             this._queueEnemyActions();
             this._sortTurnQueue();
             this.state.phase = PHASE.RESOLVE;
@@ -511,17 +521,17 @@ export class BattleController {
     }
 
   _processNextTurnInQueue() {
-        this.timer = 0;
+        this.timer = 0;
         
-        // NEW: Clear the previous turn's animation so it doesn't carry over!
-        this.state.activeAnimation = null; 
+        // Clear the previous turn's animation so it doesn't carry over
+        this.state.activeAnimation = null; 
 
-        if (this.state.turnQueue.length > 0) {
-            this.executeTurn(this.state.turnQueue.shift());
-        } else if (this.state.phase === PHASE.RESOLVE) {
-            this._checkBattleStatus();
-        }
-    }
+        if (this.state.turnQueue.length > 0) {
+            this.executeTurn(this.state.turnQueue.shift());
+        } else if (this.state.phase === PHASE.RESOLVE) {
+            this._checkBattleStatus();
+        }
+    }
 
     // --- EFFECT RESOLUTION ---
 
@@ -570,13 +580,13 @@ export class BattleController {
             return;
         }
 
-        // --- NEW: Phase 2 - Apply the actual damage and costs AFTER the animation ---
+        // Phase 2 - Apply the actual damage and costs AFTER the animation
         if (turn.type === TURN_TYPES.APPLY_ABILITY_EFFECTS) {
             this._applyAbilityEffects(turn);
             return;
         }
 
-        // --- Phase 1 - Setup Animation and Text ---
+        // Phase 1 - Setup Animation and Text
         let { actor, action, target: primaryTarget } = turn;
         if (actor.isDead()) return; 
 
@@ -599,17 +609,15 @@ export class BattleController {
         }
         
         this.state.message = action.id === 'rest' ? `${actor.name} had to rest!` : `${actor.name} used ${action.name}!`;
-        // NOTE: action.payCost has been moved to _applyAbilityEffects so the stamina/insight bars delay too!
         
-        this.state.activeAnimation = {
-            type: 'ABILITY',
-            actionId: action.id,
-            actor: actor,
-            targets: resolvedTargets,
-            duration: 1.5 
-        };
+        // Use the Factory to create the real animation model
+        this.state.activeAnimation = BattleAnimationFactory.create(
+            action.animationId, // Reads "melee_lunge" or defaults to "default_attack"
+            actor,
+            resolvedTargets
+        );
 
-        // NEW: Queue up the actual effect application to happen next, once the 1.5s timer resolves
+        // Queue up the actual effect application to happen next, once the animation timer resolves
         this.state.turnQueue.unshift({
             type: TURN_TYPES.APPLY_ABILITY_EFFECTS,
             actor: actor,
@@ -640,7 +648,7 @@ export class BattleController {
         
         if (livingReserves.length > 0) {
             if (isParty) {
-                // NEW: Push Prompt instead of Auto-Picking
+                // Push Prompt instead of Auto-Picking
                 this.state.turnQueue.unshift({
                     type: TURN_TYPES.PROMPT_REINFORCEMENT,
                     slotIndex
@@ -769,8 +777,6 @@ export class BattleController {
         });
 
         this.state.active = false;
-
-
 
         events.emit('BATTLE_ENDED', { 
             victory: this.state.partyRoster.some(p => !p.isDead()),

@@ -2,6 +2,9 @@ import { CanvasUI } from '../../ui/canvasUI.js';
 import { UITheme } from '../../ui/UITheme.js';
 import { TargetingResolver } from '../../../../shared/systems/targetingResolver.js';
 
+// Note: You don't necessarily need to import the Factory/Model here if your game controller 
+// handles creating the animation and passing it into state.activeAnimation.
+
 export class BattleRenderer {
     constructor(ctx, config, loader) {
         this.ctx = ctx;
@@ -15,29 +18,29 @@ export class BattleRenderer {
         this.FRAME_SIZE = 128;
         
         // Icon Config
-        this.SRC_SIZE = 32; // The pixel size of icons on the raw spritesheet
+        this.SRC_SIZE = 32; 
 
         // --- HUD CONFIGURATION ---
         this.HUD = {
             CARD_W: 155,      
-            CARD_H: 42,       // SLIMMED DOWN: Was 58
-            GAP: 4,           // SLIMMED DOWN: Was 6
+            CARD_H: 42,       
+            GAP: 4,           
             
             // Bar Dimensions
             BAR_HEIGHT: 5,    
             BAR_WIDTH: 70,    
             
             PADDING_X: 8,
-            PADDING_Y: 4      // SLIMMED DOWN: Was 8
+            PADDING_Y: 4      
         };
 
         // --- COLORS ---
         this.COLORS = {
-            stamina: "#2ecc71",     // Green
+            stamina: "#2ecc71",     
             staminaDim: "#1e8449",
-            insight: "#9b59b6",     // Purple
+            insight: "#9b59b6",     
             insightDim: "#6c3483",
-            highlight: "#f1c40f"    // Yellow (Selection Cursor)
+            highlight: "#f1c40f"    
         };
 
         // --- LAYOUT CONFIGURATION ---
@@ -56,15 +59,13 @@ export class BattleRenderer {
         this.displayStats = new WeakMap(); 
         this.lastTime = performance.now();
         this.dt = 0;
-        this.BAR_LERP_SPEED = 5.0; // Higher is faster. 5.0 takes ~0.5s to catch up
+        this.BAR_LERP_SPEED = 5.0; 
     }
 
-    // --- Helper to keep dead bodies visible until their death message plays ---
     isEntityVisible(entity, state) {
         if (!entity) return false;
         if (entity.hp > 0) return true;
         
-        // If they are dead, check if we are still waiting to announce it
         return state.turnQueue.some(
             turn => turn.type === 'DEATH_MESSAGE' && turn.message.includes(entity.name)
         );
@@ -75,7 +76,6 @@ export class BattleRenderer {
         const { CANVAS_WIDTH, CANVAS_HEIGHT } = this.config;
 
         const now = performance.now();
-        // Cap dt at 0.1s to prevent huge jumps if the user changes browser tabs
         this.dt = Math.min((now - (this.lastTime || now)) / 1000, 0.1); 
         this.lastTime = now;
 
@@ -85,9 +85,12 @@ export class BattleRenderer {
         this.ctx.fillStyle = "#212121"; 
         this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-        // 2. Draw Units (Pass state so they can check the queue)
+        // 2. Draw Units
         this.drawGroup(state.activeEnemies, false, state);
         this.drawGroup(state.activeParty, true, state);
+
+        // NEW: Draw Projectiles on top of units
+        this.drawProjectiles(state); 
 
         // 3. Draw HUD
         this.drawHUD(state);
@@ -108,10 +111,77 @@ export class BattleRenderer {
         }
     }
 
+    // NEW HELPER: Finds the center coordinate of an entity
+    getEntityPosition(entity, state) {
+        let isPlayer = true;
+        let index = state.activeParty ? state.activeParty.indexOf(entity) : -1;
+        
+        if (index === -1) {
+            index = state.activeEnemies ? state.activeEnemies.indexOf(entity) : -1;
+            isPlayer = false;
+        }
+        if (index === -1) return null;
+        
+        const layout = isPlayer ? this.LAYOUT.PLAYER[index] : this.LAYOUT.ENEMY[index];
+        if (!layout) return null;
+
+        return {
+            x: Math.floor(layout.x * this.config.CANVAS_WIDTH),
+            y: Math.floor(layout.y * this.config.CANVAS_HEIGHT)
+        };
+    }
+
+    // NEW: Draws moving projectiles interpolating between actor and target
+    drawProjectiles(state) {
+        const anim = state.activeAnimation;
+        if (!anim || typeof anim.getActiveProjectiles !== 'function') return;
+
+        // Calculate global animation progress
+        const progress = state.timer ? Math.min(state.timer / anim.duration, 1) : 0;
+        const projectiles = anim.getActiveProjectiles(progress);
+        
+        if (!projectiles || projectiles.length === 0) return;
+
+        const sourcePos = this.getEntityPosition(anim.actor, state);
+        if (!anim.targets || anim.targets.length === 0) return;
+        const targetPos = this.getEntityPosition(anim.targets[0], state); // Aim at first target for now
+
+        if (!sourcePos || !targetPos) return;
+
+        projectiles.forEach(p => {
+            const { flightProgress, def } = p;
+            
+            // Linear interpolation (Lerp) between Actor and Target
+            let currentX = sourcePos.x + (targetPos.x - sourcePos.x) * flightProgress;
+            let currentY = sourcePos.y + (targetPos.y - sourcePos.y) * flightProgress;
+
+            // Apply the Arc (Parabola: 0 -> 1 -> 0 multiplier)
+            if (def.arc) {
+                const arcPeak = Math.sin(flightProgress * Math.PI); 
+                // Using -= instead of += so the arc goes UPwards in canvas space
+                currentY -= arcPeak * def.arc; 
+            }
+
+            // Draw the projectile
+            this.ctx.save();
+            this.ctx.fillStyle = def.color || '#ffffff';
+            this.ctx.beginPath();
+            this.ctx.arc(currentX, currentY, def.size || 5, 0, Math.PI * 2);
+            this.ctx.fill();
+            
+            // Add a slight glow effect based on its color
+            this.ctx.shadowColor = def.color || '#ffffff';
+            this.ctx.shadowBlur = 10;
+            this.ctx.fill();
+
+            this.ctx.restore();
+        });
+    }
+
     drawGroup(entities, isPlayer, state) {
         if (!entities) return;
 
-        // --- NEW: Animation Context ---
+        // Note: We expect state.activeAnimation to be an instance of BattleAnimationModel
         const anim = state.activeAnimation;
         const progress = anim && state.timer ? Math.min(state.timer / anim.duration, 1) : 0;
 
@@ -124,39 +194,31 @@ export class BattleRenderer {
             let x = Math.floor(layout.x * this.config.CANVAS_WIDTH);
             let y = Math.floor(layout.y * this.config.CANVAS_HEIGHT);
             const size = Math.floor(this.FRAME_SIZE * this.SPRITE_SCALE);
+            let filter = 'none';
 
-            // --- NEW: Apply Animation Offsets ---
-            if (anim) {
-                // Attacker Lunges Forward (0.0 to 0.3s)
-                if (anim.actor === entity && progress < 0.3) {
-                    const lungePeak = Math.sin((progress / 0.3) * Math.PI); // Creates a smooth 0 -> 1 -> 0 curve
-                    const direction = isPlayer ? 1 : -1; // Players go right, enemies go left
-                    x += direction * (lungePeak * 40); 
-                }
-                
-                // Target Shakes upon impact (0.2 to 0.5s)
-                if (anim.targets.includes(entity) && progress > 0.2 && progress < 0.5) {
-                    x += (Math.random() - 0.5) * 12; // Jitter X
-                    y += (Math.random() - 0.5) * 12; // Jitter Y
-                }
+            // --- DELEGATE ANIMATION TO THE MODEL ---
+            if (anim && typeof anim.getTransform === 'function') {
+                const transform = anim.getTransform(entity, progress, isPlayer);
+                x += transform.xOffset || 0;
+                y += transform.yOffset || 0;
+                filter = transform.filter || 'none';
             }
 
-            return { entity, x, y, size, isTarget: anim?.targets.includes(entity) };
+            return { entity, x, y, size, filter };
         }).filter(item => item !== null);
 
         renderables.sort((a, b) => a.y - b.y);
 
         renderables.forEach(item => {
-            const { entity, x, y, size, isTarget } = item;
+            const { entity, x, y, size, filter } = item;
             const assetKey = entity.spritePortrait || entity.spriteOverworld;
             const img = this.loader.get ? this.loader.get(assetKey) : this.loader.getAsset(assetKey);
 
             this.ctx.save();
 
-            // --- NEW: Target Flash Effect ---
-            if (isTarget && progress > 0.2 && progress < 0.4) {
-                // Apply a brief brightness filter to "flash" the sprite when hit
-                this.ctx.filter = 'brightness(200%) sepia(100%) hue-rotate(300deg) saturate(300%)'; 
+            // Apply the filter dynamically provided by the animation model
+            if (filter !== 'none') {
+                this.ctx.filter = filter;
             }
 
             if (img) {
@@ -229,7 +291,7 @@ export class BattleRenderer {
     drawPartyCards(party) {
         const startX = 10;
         const startY = 10;
-        const spacingY = 8; // SLIMMED DOWN: Was 9
+        const spacingY = 8; 
         
         party.forEach((member, index) => {
             if (!member) return; 
@@ -238,14 +300,12 @@ export class BattleRenderer {
             
             this.ui.drawPanel(startX, y, this.HUD.CARD_W, this.HUD.CARD_H);
 
-            // Draw Name (SLIMMED DOWN: Y offset reduced to 10)
             this.ui.drawText(member.name, startX + this.HUD.PADDING_X, y + 10, UITheme.fonts.small, UITheme.colors.textMain);
 
-            // Draw Status Effects anchored to the right
             const effectCount = member.statusEffects ? member.statusEffects.length : 0;
             const iconSpaceNeeded = effectCount * 20; 
             const statusStartX = startX + this.HUD.CARD_W - this.HUD.PADDING_X - iconSpaceNeeded;
-            const safeStatusX = Math.max(startX + 80, statusStartX); // Prevents overlap with long names entirely
+            const safeStatusX = Math.max(startX + 80, statusStartX); 
             
             this.drawStatusEffects(member, safeStatusX, y + 4);
 
@@ -262,7 +322,7 @@ export class BattleRenderer {
             const displayIns = this.getDisplayStat(member, 'insight', targetIns);
 
             const barX = startX + this.HUD.PADDING_X;
-            let currentY = y + 16; // SLIMMED DOWN: Was 18
+            let currentY = y + 16; 
 
             // Draw HP
             this.ui.drawBar(barX, currentY, this.HUD.BAR_WIDTH, this.HUD.BAR_HEIGHT, displayHp, maxHp, UITheme.colors.hp, UITheme.colors.hpDim);
@@ -291,7 +351,7 @@ export class BattleRenderer {
     }
 
     drawEnemyCards(enemies, state) {
-        const ENEMY_CARD_H = 28; // SLIMMED DOWN: Was 38
+        const ENEMY_CARD_H = 28; 
         const stackHeight = (enemies.length * ENEMY_CARD_H) + ((enemies.length - 1) * this.HUD.GAP);
         const bottomMargin = 90; 
         
@@ -305,10 +365,8 @@ export class BattleRenderer {
 
             this.ui.drawPanel(startX, y, this.HUD.CARD_W, ENEMY_CARD_H);
 
-            // Draw Name (SLIMMED DOWN: Y offset reduced to 12)
             this.ui.drawText(enemy.name, startX + this.HUD.CARD_W - this.HUD.PADDING_X, y + 12, UITheme.fonts.small, UITheme.colors.textMain, "right");
 
-            // Draw Status Effects (Left-aligned)
             this.drawStatusEffects(enemy, startX + this.HUD.PADDING_X, y + 4);
 
             const maxHp = enemy.maxHp || 10;
@@ -316,7 +374,7 @@ export class BattleRenderer {
             const displayHp = this.getDisplayStat(enemy, 'hp', targetHp);
 
             const barX = (startX + this.HUD.CARD_W - this.HUD.PADDING_X) - this.HUD.BAR_WIDTH;
-            const barY = y + 16; // SLIMMED DOWN: Was 20
+            const barY = y + 16; 
 
             this.ui.drawBar(barX, barY, this.HUD.BAR_WIDTH, this.HUD.BAR_HEIGHT, displayHp, maxHp, UITheme.colors.hp, UITheme.colors.hpDim);
             
@@ -333,7 +391,6 @@ export class BattleRenderer {
         const activeChar = state.activeParty[state.activePartyIndex];
         if (!activeChar || !activeChar.abilities) return;
 
-        // --- ICON-ONLY CONFIG ---
         const itemSize = 32; 
         const margin = 12;   
         const paddingX = 20; 

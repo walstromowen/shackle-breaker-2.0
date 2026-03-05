@@ -55,7 +55,8 @@ Root
 │   │   └── styles.css
 │   └── package.json      
 ├── shared/ 
-│   ├── data/                       
+│   ├── data/  
+│   │   ├── battleAnimationDefinitions.js                     
 │   │   ├── encounters/
 │   │   ├── traitDefinitions.js 
 │   │   ├── abilityDefinitions.js   
@@ -66,7 +67,8 @@ Root
 │   │   ├── mapObjects.js
 │   │   └── sprites.js
 │   ├── models/ 
-|   │   ├── abilityModel.js                     
+|   │   ├── abilityModel.js   
+│   │   ├── battleAnimationModel.js                  
 │   │   ├── entityModel.js 
 │   │   ├── statusEffectModel.js                
 │   │   └── itemModel.js                 
@@ -76,7 +78,8 @@ Root
 │   │   └── gameState.js            
 │   ├── systems/
 │   │   ├── factories/  
-│   │   │   ├── abilityFactory.js                
+│   │   │   ├── abilityFactory.js   
+│   │   │   ├── battleAnimationFactory.js             
 │   │   │   ├── entityFactory.js 
 │   │   │   ├── statusEffectFactory.js     
 │   │   │   └── itemFactory.js

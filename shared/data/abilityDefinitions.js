@@ -18,6 +18,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 5 },
         accuracy: 0.98, 
+        animationId: "melee_lunge",
         effects: [
             { type: "damage", element: "blunt", power: 0.5 } 
         ]
@@ -32,6 +33,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 10 },
         accuracy: 0.98, 
+        animationId: "melee_lunge",
         effects: [
             { type: "damage", element: "pierce", power: 1.0 } 
         ],
@@ -49,6 +51,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 8 },
         accuracy: 0.98, 
+        animationId: "melee_lunge",
         effects: [
             { type: "damage", element: "blunt", power: 1.0 } 
         ],
@@ -64,6 +67,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 10 },
         accuracy: 0.98, 
+        animationId: "melee_lunge",
         effects: [
             { type: "damage", element: "pierce", power: 1.0 } 
         ],
@@ -80,6 +84,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 10 },
         accuracy: 0.98, 
+        animationId: "melee_lunge",
         effects: [
             { type: "damage", element: "pierce", power: 0.85 }
         ],
@@ -98,10 +103,10 @@ export const AbilityDefinitions = {
         description: "A fast, weak strike that often hits first.",
         icon: { col: 1, row: 2 },
         speedModifier: 1.5,
-        animation: { attacker: "ally-attack", effect: "bump", audio: "punch-light" },
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 5 },
         accuracy: 0.95, 
+        animationId: "melee_lunge",
         effects: [
             { type: "damage", element: "pierce", power: 0.75 }
         ]
@@ -113,10 +118,10 @@ export const AbilityDefinitions = {
         description: "A heavy strike that can knock opponents down.",
         icon: { col: 1, row: 1 },
         speedModifier: 1.0, 
-        animation: { attacker: "ally-attack", effect: "swipe-up", audio: "punch-heavy" },
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 20 },
         accuracy: 0.85, 
+        animationId: "melee_lunge",
         effects: [
             { type: "damage", element: "slash", power: 1.25 }
         ],
@@ -133,6 +138,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 10 },
         accuracy: 0.90,
+        animationId: "melee_lunge",
         effects: [
             { 
                 type: "damage", 
@@ -151,6 +157,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 20 },
         accuracy: 0.95, 
+        animationId: "melee_lunge",
         effects: [
             { 
                 type: "damage", 
@@ -169,6 +176,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 15 },
         accuracy: 0.80, 
+        animationId: "melee_lunge",
         effects: [
             { 
                 type: "damage", 
@@ -187,6 +195,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "random_enemy", select: "random", count: 1 },
         cost: { stamina: 5 },
         accuracy: 0.70, 
+        animationId: "melee_lunge",
         effects: [
             { type: "damage", element: "blunt", power: 1.5 }
         ]
@@ -205,6 +214,7 @@ export const AbilityDefinitions = {
         cost: { stamina: 20 },
         speedModifier: 1.2,
         accuracy: 0.95,
+        animationId: "melee_lunge",
         effects: [
             { type: "damage", element: "slash", power: 0.8 },
             { type: "switch_self", method: "menu" }
@@ -220,6 +230,7 @@ export const AbilityDefinitions = {
         cost: { insight: 15 },
         speedModifier: 1.0,
         accuracy: 1.0, 
+        animationId: "melee_lunge",
         effects: [
             { type: "switch_self", method: "menu", keepBuffs: true }
         ]
@@ -234,7 +245,7 @@ export const AbilityDefinitions = {
         name: "Cleave",
         description: "Strike a target and one adjacent enemy.",
         icon: { col: 1, row: 0 },
-        animation: { attacker: "ally-attack", effect: "swipe-right", audio: "blade-swipe" },
+        animationId: "melee_lunge",
         targeting: { scope: "all_enemies", select: "auto" }, 
         cost: { stamina: 15 },
         accuracy: 0.85,
@@ -248,7 +259,7 @@ export const AbilityDefinitions = {
         name: "Flurry",
         description: "Slash a target with a series of quick strikes.",
         icon: { col: 2, row: 0 },
-        animation: { attacker: "ally-attack", effect: "quick-slash", audio: "woosh-fast" },
+        animationId: "melee_lunge",
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 25 },
         accuracy: 0.75, 
@@ -266,7 +277,7 @@ export const AbilityDefinitions = {
         name: "Earthquake",
         description: "Shake the ground to damage the entire enemy party.",
         icon: { col: 0, row: 6 },
-        animation: { attacker: "stomp", effect: "screen_shake", audio: "rumble" },
+        animationId: "melee_lunge",
         targeting: { scope: "all_enemies", select: "auto" },
         cost: { stamina: 30 },
         accuracy: 0.90,
@@ -280,7 +291,7 @@ export const AbilityDefinitions = {
         name: "Acid Pool",
         description: "Create a pool of acid that damages all enemies in the area. High chance to poison.",
         icon: { col: 1, row: 6 },
-        animation: { attacker: "cast-fast", effect: "acid-splash", audio: "acid-splash" },
+        animationId: "heavy_spell",
         targeting: { scope: "all_enemies", select: "auto" },
         cost: { stamina: 20, insight: 20 },
         accuracy: 0.90,
@@ -301,7 +312,7 @@ export const AbilityDefinitions = {
         name: "Magic Missile",
         description: "Fire three bolts. Can hit the same target multiple times.",
         icon: { col: 1, row: 9 },
-        animation: { attacker: "cast-fast", effect: "sparkle-hit", audio: "magic-blip" },
+        animationId: "magic_missile",
         targeting: { scope: "enemy", select: "multiple", count: 3, allowRepeats: true },
         cost: { insight: 12 }, 
         accuracy: 1.0, 
@@ -318,8 +329,8 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { insight: 25 },
         accuracy: 0.90,
+        animationId: "melee_lunge",
         effects: [
-            // Note: If you want gravity to work, you'll need to update _handleDamage to support calculation types too!
             { type: "damage", element: "dark", calculation: "percent_current", power: 0.5 }
         ]
     },
@@ -332,6 +343,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { insight: 20 }, 
         accuracy: 0.95,
+        animationId: "melee_lunge",
         effects: [
             { type: "damage", element: "arcane", power: 2.5 }
         ],
@@ -349,6 +361,7 @@ export const AbilityDefinitions = {
         cost: { insight: 15 }, 
         accuracy: 1.0, 
         behavior: "charge_attack", 
+        animationId: "melee_lunge",
         chargeConfig: {
             statusId: "charging_solar",
             damageEffect: { type: "damage", element: "light", power: 2.0 }
@@ -367,6 +380,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { insight: 15 },
         accuracy: 1.0, 
+        animationId: "melee_lunge",
         effects: [
             { type: "damage", element: "dark", power: 1.0, drain: 0.5 }
         ]
@@ -380,6 +394,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 5 },
         accuracy: 1.0,
+        animationId: "melee_lunge",
         effects: [
             { type: "damage", resource: "insight", power: 0.5, drain: 1.0 }
         ]
@@ -393,8 +408,8 @@ export const AbilityDefinitions = {
         targeting: { scope: "all_allies", select: "auto" },
         cost: { insight: 25 },
         accuracy: 1.0,
+        animationId: "melee_lunge",
         effects: [
-            // FIXED: Added calculation: "percent"
             { type: "recover", resource: "hp", calculation: "percent", power: 0.3 }
         ]
     },
@@ -407,9 +422,9 @@ export const AbilityDefinitions = {
         targeting: { scope: "ally", select: "single" },
         cost: { insight: 10 },
         accuracy: 1.0,
+        animationId: "melee_lunge",
         effects: [
             { type: "dispel", tags: ["poison", "bleed", "burn"] },
-            // FIXED: Added calculation: "percent"
             { type: "recover", resource: "hp", calculation: "percent", power: 0.1 }
         ]
     },
@@ -426,6 +441,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "space", select: "auto" },
         cost: { insight: 30 },
         accuracy: 1.0,
+        animationId: "melee_lunge",
         effects: [
             { type: "summon", entityId: "skeleton_warrior", levelScale: 1.0, maxActive: 2 }
         ]
@@ -439,6 +455,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "self", select: "auto" },
         cost: { insight: 20 },
         accuracy: 1.0,
+        animationId: "melee_lunge",
         effects: [
             { type: "summon", entityId: "dire_bear", replaceUser: true, revertOnDeath: true }
         ]
@@ -457,6 +474,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "self", select: "auto" },
         cost: { stamina: 15 },
         accuracy: 1.0,
+        animationId: "melee_lunge",
         statusEffects: [
             { id: "counter_ready", chance: 1.0, duration: 1 }
         ]
@@ -470,6 +488,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "all_enemies", select: "auto" },
         cost: { stamina: 10 },
         accuracy: 1.0, 
+        animationId: "melee_lunge",
         effects: [], 
         statusEffects: [
             { id: "attack_down", chance: 1.0, duration: 3 }
@@ -481,7 +500,7 @@ export const AbilityDefinitions = {
         name: "Hide",
         description: "Attempt to hide. Raises evasion.",
         icon: { col: 2, row: 7 },
-        animation: { attacker: "crouch", effect: "smoke", audio: "poof" },
+        animationId: "melee_lunge",
         targeting: { scope: "self", select: "auto" },
         cost: { stamina: 10 },
         accuracy: 1.0,
@@ -497,8 +516,8 @@ export const AbilityDefinitions = {
         icon: { col: 3, row: 7 },
         targeting: { scope: "self", select: "auto" },
         accuracy: 1.0,
+        animationId: "melee_lunge",
         effects: [
-            // FIXED: Added missing HP recovery, and added calculation: "percent" to all
             { type: "recover", resource: "stamina", calculation: "percent", power: 0.25 },
             { type: "recover", resource: "insight", calculation: "percent", power: 0.25 }
         ]
@@ -511,6 +530,7 @@ export const AbilityDefinitions = {
         icon: { col: 2, row: 12 },
         targeting: { scope: "self", select: "auto" },
         behavior: "flee_battle",
+        animationId: "melee_lunge",
         accuracy: 1.0
     },
 
@@ -521,6 +541,7 @@ export const AbilityDefinitions = {
         icon: { col: 5, row: 7 },
         targeting: { scope: "ally", select: "menu" },
         behavior: "switch_party",
+        animationId: "melee_lunge",
         accuracy: 1.0
     },
 
@@ -535,6 +556,7 @@ export const AbilityDefinitions = {
         icon: { col: 0, row: 8 },
         targeting: { scope: "ally", select: "single" }, 
         accuracy: 1.0,
+        animationId: "melee_lunge",
         effects: [
             { type: "recover", resource: "hp", power: 10, calculation: "flat" }
         ]
@@ -544,6 +566,7 @@ export const AbilityDefinitions = {
         id: "brew_of_madness",
         name: "Madness Brew",
         targeting: { scope: "self" },
+        animationId: "melee_lunge",
         effects: [
             { type: "set", resource: "hp", value: 1 },
             { type: "recover", resource: "insight", calculation: "max" }
@@ -556,7 +579,7 @@ export const AbilityDefinitions = {
         description: "Throw a coated blade. Causes poison.",
         icon: { col: 1, row: 8 },
         cost: { item: "poison_knife", amount: 1 }, 
-        animation: { attacker: "ally-attack", effect: "swipe-right", audio: "arrow-hit" },
+        animationId: "melee_lunge",
         targeting: { scope: "enemy", select: "single" },
         speedModifier: 1.25,
         accuracy: 0.95, 
@@ -574,7 +597,7 @@ export const AbilityDefinitions = {
         description: "Set a trap that snaps on the next attacker.",
         icon: { col: 2, row: 8 },
         cost: { item: "bear_trap", amount: 1 },
-        animation: { attacker: "crouch", effect: "implode", audio: "metal-clank" },
+        animationId: "melee_lunge",
         targeting: { scope: "self", select: "auto" }, 
         speedModifier: 1.25,
         accuracy: 1.0, 
@@ -589,7 +612,7 @@ export const AbilityDefinitions = {
         description: "Entangle the target, preventing movement.",
         icon: { col: 3, row: 8 },
         cost: { item: "throw_net", amount: 1 },
-        animation: { attacker: "ally-attack", effect: "stick-right", audio: "arrow-hit" },
+        animationId: "melee_lunge",
         targeting: { scope: "enemy", select: "single" },
         speedModifier: 1.25,
         accuracy: 0.90, 
@@ -607,7 +630,7 @@ export const AbilityDefinitions = {
         description: "Create a smoke screen to increase evasion.",
         icon: { col: 4, row: 8 },
         cost: { item: "smoke_bomb", amount: 1 },
-        animation: { attacker: "throw", effect: "explode", audio: "explosion-small" },
+        animationId: "melee_lunge",
         targeting: { scope: "ally", select: "single" }, 
         speedModifier: 1.25,
         accuracy: 1.0,
@@ -622,12 +645,11 @@ export const AbilityDefinitions = {
         description: "Restores 50% of Health.",
         icon: { col: 5, row: 8 },
         cost: { item: "health_potion", amount: 1 },
-        animation: { attacker: "drink", effect: "sparkle-up", audio: "drink-gulp" },
+        animationId: "melee_lunge",
         targeting: { scope: "ally", select: "single" }, 
         speedModifier: 1.0,
         accuracy: 1.0,
         effects: [
-            // FIXED: Changed calculation from "percent_max" to "percent"
             { type: "recover", resource: "hp", calculation: "percent", power: 0.5 }
         ]
     },
@@ -638,12 +660,11 @@ export const AbilityDefinitions = {
         description: "Restores 50% of Stamina.",
         icon: { col: 6, row: 8 },
         cost: { item: "stamina_potion", amount: 1 },
-        animation: { attacker: "drink", effect: "energy-up", audio: "energy-sound" },
+        animationId: "melee_lunge",
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
         accuracy: 1.0,
         effects: [
-            // FIXED: Changed calculation from "percent_max" to "percent"
             { type: "recover", resource: "stamina", calculation: "percent", power: 0.5 }
         ]
     }
