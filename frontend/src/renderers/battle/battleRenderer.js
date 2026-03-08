@@ -61,6 +61,15 @@ export class BattleRenderer {
         this.lastTime = performance.now();
         this.dt = 0;
         this.BAR_LERP_SPEED = 5.0; 
+
+        // --- NEW: Floating Combat Text Setup ---
+        this.floatingTexts = [];
+        this.currentState = null; // Cache the state so the event listener can read it
+
+        events.on('SPAWN_FCT', (payload) => {
+            if (!this.currentState) return; // Don't spawn if the renderer hasn't drawn a frame yet
+            this.spawnFloatingText(payload);
+        });
     }
 
     isEntityVisible(entity, state) {
@@ -74,6 +83,8 @@ export class BattleRenderer {
 
     render(state) {
         if (!state) return;
+        this.currentState = state; // NEW: Save for the Event Bus to use
+
         const { CANVAS_WIDTH, CANVAS_HEIGHT } = this.config;
 
         const now = performance.now();
@@ -125,6 +136,9 @@ export class BattleRenderer {
             this.drawActionMenu(state);
             this.drawTargetCursor(state); 
         }
+
+        // --- NEW: Draw Floating Combat Text Last (On top of everything) ---
+        this.drawFloatingTexts(this.dt);
     }
 
     // NEW HELPER: Finds the center coordinate of an entity
@@ -613,5 +627,81 @@ export class BattleRenderer {
             }
         }
         return stats[statKey];
+    }
+
+    // ==========================================
+    // FLOATING COMBAT TEXT (FCT)
+    // ==========================================
+
+    spawnFloatingText({ target, value, resource, text, type, isCritical }) {
+        const pos = this.getEntityPosition(target, this.currentState);
+        if (!pos) return;
+
+        let displayText = text;
+        let color = '#ffffff';
+        let fontSize = isCritical ? 32 : 24; // Crits get bigger text
+
+        // Handle Numerical Resource Changes (Damage / Healing / Cost)
+        if (value !== undefined) {
+            const isGain = value > 0;
+            const prefix = isGain ? '+' : '';
+            displayText = `${prefix}${Math.round(value)}`;
+
+            // Match colors based on resource type
+            if (resource === 'hp') color = isGain ? UITheme.colors.hp : '#e74c3c';
+            else if (resource === 'stamina') color = isGain ? this.COLORS.stamina : '#e67e22';
+            else if (resource === 'insight') color = isGain ? this.COLORS.insight : '#e056fd';
+            
+            // Optional: Override color for critical hits (e.g., make it gold)
+            if (isCritical) color = this.COLORS.highlight; 
+        } 
+        // Handle Status Strings (Miss, Evade, etc.)
+        else if (type === 'status') {
+            color = '#bdc3c7'; // Light gray for misses/dodges
+        }
+
+        this.floatingTexts.push({
+            text: displayText,
+            color,
+            fontSize, // Store the dynamic font size
+            x: pos.x + (Math.random() * 40 - 20), // Random spread
+            y: pos.y - 40, // Start above the character's center
+            life: 1.5,
+            maxLife: 1.5,
+            velocityY: isCritical ? -45 : -35 // Crits jump a bit faster
+        });
+    }
+
+    drawFloatingTexts(dt) {
+        for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
+            const ft = this.floatingTexts[i];
+            
+            ft.life -= dt;
+            ft.y += ft.velocityY * dt;
+
+            if (ft.life <= 0) {
+                this.floatingTexts.splice(i, 1);
+                continue;
+            }
+
+            this.ctx.save();
+            // Fade out smoothly over its lifespan
+            this.ctx.globalAlpha = Math.max(0, ft.life / ft.maxLife);
+            
+            // ✅ UPDATED: Use the dynamic fontSize stored in the text object
+            this.ctx.font = `bold ${ft.fontSize}px monospace`; 
+            this.ctx.textAlign = "center";
+            this.ctx.textBaseline = "middle";
+            
+            // Draw a thick black outline for readability
+            this.ctx.strokeStyle = "#000000";
+            this.ctx.lineWidth = 4;
+            this.ctx.strokeText(ft.text, ft.x, ft.y);
+            
+            // Draw the colored text
+            this.ctx.fillStyle = ft.color;
+            this.ctx.fillText(ft.text, ft.x, ft.y);
+            this.ctx.restore();
+        }
     }
 }

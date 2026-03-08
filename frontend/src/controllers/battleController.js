@@ -99,7 +99,19 @@ export class BattleController {
                 const originalValue = this[resource]; 
                 
                 this[resource] = Math.max(0, Math.min(this[maxProp], this[resource] + amount));
-                return this[resource] - originalValue; 
+                const actualDifference = this[resource] - originalValue; 
+
+                // ✅ Added: Emit FCT event for damage/healing/resource usage
+                if (actualDifference !== 0) {
+                    events.emit('SPAWN_FCT', {
+                        target: this,
+                        value: actualDifference,
+                        resource: resource, // 'hp', 'stamina', 'insight'
+                        isCritical: false   // You can pass critical hit flags here later
+                    });
+                }
+
+                return actualDifference; 
             },
 
             applyStatusEffect(effect) { this.originalEntity.applyStatusEffect(effect); },
@@ -145,12 +157,11 @@ export class BattleController {
     _applyAbilityEffects(turn) {
         let { actor, action, targets, isFirstTarget, isLastTarget } = turn;
 
-        // Pay cost once
         if (isFirstTarget) action.payCost(actor, null);
 
         for (let target of targets) {
             const actualTarget = this._getValidTarget(target);
-            if (!actualTarget) continue; // No living targets available
+            if (!actualTarget) continue; 
             
             const wasTargetDead = actualTarget.isDead();
             const wasActorDead = actor.isDead(); 
@@ -162,17 +173,23 @@ export class BattleController {
                 break; 
             }
 
+            // ✅ Added: Emit FCT event for Dodges or Misses
+            if (result.missed || result.evaded) {
+                events.emit('SPAWN_FCT', {
+                    target: actualTarget,
+                    text: result.evaded ? 'Evade!' : 'Miss!',
+                    type: 'status'
+                });
+            }
+
             if (result.message) this._queueMessage(result.message);
 
-            // Check for deaths
             if (!wasTargetDead && actualTarget.isDead()) this.handleDeath(actualTarget);
             if (!wasActorDead && actor.isDead()) {
                 this.handleDeath(actor);
                 break; 
             }
         }
-
-        // ✅ Step 2: Removed isLastTarget status effect triggering from here
 
         this._processNextTurnInQueue();
     }
