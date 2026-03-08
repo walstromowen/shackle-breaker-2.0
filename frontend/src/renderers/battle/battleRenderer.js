@@ -3,9 +3,6 @@ import { UITheme } from '../../ui/UITheme.js';
 import { TargetingResolver } from '../../../../shared/systems/targetingResolver.js';
 import { events } from '../../../src/core/eventBus.js';
 
-// Note: You don't necessarily need to import the Factory/Model here if your game controller 
-// handles creating the animation and passing it into state.activeAnimation.
-
 export class BattleRenderer {
     constructor(ctx, config, loader) {
         this.ctx = ctx;
@@ -35,13 +32,13 @@ export class BattleRenderer {
             PADDING_Y: 4      
         };
 
-        // --- COLORS ---
+        // --- COLORS (Now Mapped to UITheme) ---
         this.COLORS = {
-            stamina: "#2ecc71",     
-            staminaDim: "#1e8449",
-            insight: "#9b59b6",     
-            insightDim: "#6c3483",
-            highlight: "#f1c40f"    
+            stamina: UITheme.colors.stm,     
+            staminaDim: UITheme.colors.stmDim,
+            insight: UITheme.colors.ins,     
+            insightDim: UITheme.colors.insDim,
+            highlight: UITheme.colors.textHighlight    
         };
 
         // --- LAYOUT CONFIGURATION ---
@@ -62,12 +59,12 @@ export class BattleRenderer {
         this.dt = 0;
         this.BAR_LERP_SPEED = 5.0; 
 
-        // --- NEW: Floating Combat Text Setup ---
+        // --- Floating Combat Text Setup ---
         this.floatingTexts = [];
-        this.currentState = null; // Cache the state so the event listener can read it
+        this.currentState = null; 
 
         events.on('SPAWN_FCT', (payload) => {
-            if (!this.currentState) return; // Don't spawn if the renderer hasn't drawn a frame yet
+            if (!this.currentState) return; 
             this.spawnFloatingText(payload);
         });
     }
@@ -83,7 +80,7 @@ export class BattleRenderer {
 
     render(state) {
         if (!state) return;
-        this.currentState = state; // NEW: Save for the Event Bus to use
+        this.currentState = state; 
 
         const { CANVAS_WIDTH, CANVAS_HEIGHT } = this.config;
 
@@ -91,7 +88,7 @@ export class BattleRenderer {
         this.dt = Math.min((now - (this.lastTime || now)) / 1000, 0.1); 
         this.lastTime = now;
 
-        // --- NEW: Audio Sync Logic ---
+        // --- Audio Sync Logic ---
         const anim = state.activeAnimation;
         if (anim) {
             const progress = state.timer ? Math.min(state.timer / anim.duration, 1) : 0;
@@ -108,15 +105,15 @@ export class BattleRenderer {
 
         this.ctx.imageSmoothingEnabled = false;
 
-        // 1. Solid Background
-        this.ctx.fillStyle = "#212121"; 
+        // 1. Solid Background (Using theme scale 2 for a dark gray)
+        this.ctx.fillStyle = UITheme.colors.bgScale[2]; 
         this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
         // 2. Draw Units
         this.drawGroup(state.activeEnemies, false, state);
         this.drawGroup(state.activeParty, true, state);
 
-        // NEW: Draw Projectiles on top of units
+        // Draw Projectiles on top of units
         this.drawProjectiles(state); 
 
         // 3. Draw HUD
@@ -137,11 +134,10 @@ export class BattleRenderer {
             this.drawTargetCursor(state); 
         }
 
-        // --- NEW: Draw Floating Combat Text Last (On top of everything) ---
+        // Draw Floating Combat Text Last (On top of everything)
         this.drawFloatingTexts(this.dt);
     }
 
-    // NEW HELPER: Finds the center coordinate of an entity
     getEntityPosition(entity, state) {
         let isPlayer = true;
         let index = state.activeParty ? state.activeParty.indexOf(entity) : -1;
@@ -161,12 +157,10 @@ export class BattleRenderer {
         };
     }
 
-    // NEW: Draws moving projectiles interpolating between actor and target
     drawProjectiles(state) {
         const anim = state.activeAnimation;
         if (!anim || typeof anim.getActiveProjectiles !== 'function') return;
 
-        // Calculate global animation progress
         const progress = state.timer ? Math.min(state.timer / anim.duration, 1) : 0;
         const projectiles = anim.getActiveProjectiles(progress);
         
@@ -174,33 +168,28 @@ export class BattleRenderer {
 
         const sourcePos = this.getEntityPosition(anim.actor, state);
         if (!anim.targets || anim.targets.length === 0) return;
-        const targetPos = this.getEntityPosition(anim.targets[0], state); // Aim at first target for now
+        const targetPos = this.getEntityPosition(anim.targets[0], state); 
 
         if (!sourcePos || !targetPos) return;
 
         projectiles.forEach(p => {
             const { flightProgress, def } = p;
             
-            // Linear interpolation (Lerp) between Actor and Target
             let currentX = sourcePos.x + (targetPos.x - sourcePos.x) * flightProgress;
             let currentY = sourcePos.y + (targetPos.y - sourcePos.y) * flightProgress;
 
-            // Apply the Arc (Parabola: 0 -> 1 -> 0 multiplier)
             if (def.arc) {
                 const arcPeak = Math.sin(flightProgress * Math.PI); 
-                // Using -= instead of += so the arc goes UPwards in canvas space
                 currentY -= arcPeak * def.arc; 
             }
 
-            // Draw the projectile
             this.ctx.save();
-            this.ctx.fillStyle = def.color || '#ffffff';
+            this.ctx.fillStyle = def.color || UITheme.colors.selectedWhite;
             this.ctx.beginPath();
             this.ctx.arc(currentX, currentY, def.size || 5, 0, Math.PI * 2);
             this.ctx.fill();
             
-            // Add a slight glow effect based on its color
-            this.ctx.shadowColor = def.color || '#ffffff';
+            this.ctx.shadowColor = def.color || UITheme.colors.selectedWhite;
             this.ctx.shadowBlur = 10;
             this.ctx.fill();
 
@@ -211,7 +200,6 @@ export class BattleRenderer {
     drawGroup(entities, isPlayer, state) {
         if (!entities) return;
 
-        // Note: We expect state.activeAnimation to be an instance of BattleAnimationModel
         const anim = state.activeAnimation;
         const progress = anim && state.timer ? Math.min(state.timer / anim.duration, 1) : 0;
 
@@ -226,7 +214,6 @@ export class BattleRenderer {
             const size = Math.floor(this.FRAME_SIZE * this.SPRITE_SCALE);
             let filter = 'none';
 
-            // --- DELEGATE ANIMATION TO THE MODEL ---
             if (anim && typeof anim.getTransform === 'function') {
                 const transform = anim.getTransform(entity, progress, isPlayer);
                 x += transform.xOffset || 0;
@@ -246,7 +233,6 @@ export class BattleRenderer {
 
             this.ctx.save();
 
-            // Apply the filter dynamically provided by the animation model
             if (filter !== 'none') {
                 this.ctx.filter = filter;
             }
@@ -287,7 +273,7 @@ export class BattleRenderer {
 
     drawFallbackEmoji(ctx, text, x, y, size) {
         ctx.save();
-        ctx.fillStyle = 'white';
+        ctx.fillStyle = UITheme.colors.selectedWhite;
         ctx.font = `${Math.floor(size * 0.7)}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -329,7 +315,6 @@ export class BattleRenderer {
             const y = startY + (index * (this.HUD.CARD_H + this.HUD.GAP));
             
             this.ui.drawPanel(startX, y, this.HUD.CARD_W, this.HUD.CARD_H);
-
             this.ui.drawText(member.name, startX + this.HUD.PADDING_X, y + 10, UITheme.fonts.small, UITheme.colors.textMain);
 
             const effectCount = member.statusEffects ? member.statusEffects.length : 0;
@@ -373,7 +358,7 @@ export class BattleRenderer {
     drawBarText(current, max, barX, barY) {
         this.ctx.save();
         this.ctx.font = "9px monospace";
-        this.ctx.fillStyle = "#aaa";
+        this.ctx.fillStyle = UITheme.colors.textMuted;
         this.ctx.textAlign = "left";
         this.ctx.textBaseline = "alphabetic";
         this.ctx.fillText(`${Math.floor(current)}/${max}`, barX + this.HUD.BAR_WIDTH + 5, barY + 5);
@@ -410,7 +395,7 @@ export class BattleRenderer {
             
             this.ctx.save();
             this.ctx.font = "9px monospace";
-            this.ctx.fillStyle = "#aaa";
+            this.ctx.fillStyle = UITheme.colors.textMuted;
             this.ctx.textAlign = "right";
             this.ctx.fillText(`${Math.round(displayHp)}/${maxHp}`, barX - 5, barY + 5); 
             this.ctx.restore();
@@ -443,7 +428,7 @@ export class BattleRenderer {
 
         this.ui.drawPanel(x, y, w, h);
 
-        this.ui.drawText(`${activeChar.name}'s Action`, x + paddingX, y + 20, UITheme.fonts.small, "#aaa");
+        this.ui.drawText(`${activeChar.name}'s Action`, x + paddingX, y + 20, UITheme.fonts.small, UITheme.colors.textMuted);
 
         activeChar.abilities.forEach((ability, index) => {
             const isSelected = (index === state.menuIndex);
@@ -459,7 +444,7 @@ export class BattleRenderer {
                 this.ctx.fillStyle = this.COLORS.highlight;
                 this.ctx.fillRect(drawX - 2, drawY - 2, itemSize + 4, itemSize + 4);
                 
-                this.ctx.strokeStyle = canAfford ? "#fff" : "#e74c3c"; 
+                this.ctx.strokeStyle = canAfford ? UITheme.colors.selectedWhite : UITheme.colors.failure; 
                 this.ctx.strokeRect(drawX - 2, drawY - 2, itemSize + 4, itemSize + 4);
             } 
 
@@ -525,7 +510,7 @@ export class BattleRenderer {
                 this.ctx.arc(badgeX, badgeY, 14, 0, Math.PI * 2);
                 this.ctx.fill();
 
-                this.ctx.fillStyle = "#000";
+                this.ctx.fillStyle = UITheme.colors.bgScale[0];
                 this.ctx.font = "bold 14px monospace";
                 this.ctx.textAlign = "center";
                 this.ctx.textBaseline = "middle";
@@ -569,24 +554,24 @@ export class BattleRenderer {
 
             if (isTargetEnemy) {
                 const arrowX = x - (size/2) - 20; 
-                this.ctx.fillStyle = "#e74c3c"; // Red
+                this.ctx.fillStyle = UITheme.colors.hp; 
                 this.ctx.beginPath();
                 this.ctx.moveTo(arrowX + 15, y);
                 this.ctx.lineTo(arrowX, y - 10);
                 this.ctx.lineTo(arrowX, y + 10);
                 this.ctx.fill();
                 
-                this.ui.drawText("TARGET", arrowX - 50, y + 5, UITheme.fonts.small, "#e74c3c");
+                this.ui.drawText("TARGET", arrowX - 50, y + 5, UITheme.fonts.small, UITheme.colors.hp);
             } else {
                 const arrowY = y - (size/2) - 20; 
-                this.ctx.fillStyle = "#2ecc71"; // Green
+                this.ctx.fillStyle = UITheme.colors.success; 
                 this.ctx.beginPath();
                 this.ctx.moveTo(x, arrowY + 15);
                 this.ctx.lineTo(x - 10, arrowY);
                 this.ctx.lineTo(x + 10, arrowY);
                 this.ctx.fill();
 
-                this.ui.drawText("TARGET", x - 20, arrowY - 5, UITheme.fonts.small, "#2ecc71");
+                this.ui.drawText("TARGET", x - 20, arrowY - 5, UITheme.fonts.small, UITheme.colors.success);
             }
         });
     }
@@ -638,8 +623,8 @@ export class BattleRenderer {
         if (!pos) return;
 
         let displayText = text;
-        let color = '#ffffff';
-        let fontSize = isCritical ? 32 : 24; // Crits get bigger text
+        let color = UITheme.colors.textMain;
+        let fontSize = isCritical ? 32 : 24; 
 
         // Handle Numerical Resource Changes (Damage / Healing / Cost)
         if (value !== undefined) {
@@ -647,28 +632,38 @@ export class BattleRenderer {
             const prefix = isGain ? '+' : '';
             displayText = `${prefix}${Math.round(value)}`;
 
-            // Match colors based on resource type
-            if (resource === 'hp') color = isGain ? UITheme.colors.hp : '#e74c3c';
-            else if (resource === 'stamina') color = isGain ? this.COLORS.stamina : '#e67e22';
-            else if (resource === 'insight') color = isGain ? this.COLORS.insight : '#e056fd';
+            // Match colors based on resource type & gain/loss
+            if (resource === 'hp') color = isGain ? UITheme.colors.success : UITheme.colors.hp;
+            else if (resource === 'stamina') color = isGain ? this.COLORS.stamina : UITheme.colors.attack;
+            else if (resource === 'insight') color = isGain ? this.COLORS.insight : this.COLORS.insightDim;
             
-            // Optional: Override color for critical hits (e.g., make it gold)
             if (isCritical) color = this.COLORS.highlight; 
         } 
         // Handle Status Strings (Miss, Evade, etc.)
         else if (type === 'status') {
-            color = '#bdc3c7'; // Light gray for misses/dodges
+            color = UITheme.colors.textMuted; 
+        }
+
+        // --- OVERLAP PREVENTION LOGIC ---
+        let targetX = pos.x + (Math.random() * 40 - 20); // Base random spread
+        let targetY = pos.y - 40; // Base height
+
+        // Check against existing text elements. If there's a collision, stack it upwards.
+        for (const ft of this.floatingTexts) {
+            if (Math.abs(ft.x - targetX) < 30 && Math.abs(ft.y - targetY) < 25) {
+                targetY -= 25; // Bump up to avoid overlap
+            }
         }
 
         this.floatingTexts.push({
             text: displayText,
             color,
-            fontSize, // Store the dynamic font size
-            x: pos.x + (Math.random() * 40 - 20), // Random spread
-            y: pos.y - 40, // Start above the character's center
+            fontSize,
+            x: targetX,
+            y: targetY, 
             life: 1.5,
             maxLife: 1.5,
-            velocityY: isCritical ? -45 : -35 // Crits jump a bit faster
+            velocityY: isCritical ? -45 : -35 
         });
     }
 
@@ -685,20 +680,17 @@ export class BattleRenderer {
             }
 
             this.ctx.save();
-            // Fade out smoothly over its lifespan
             this.ctx.globalAlpha = Math.max(0, ft.life / ft.maxLife);
             
-            // ✅ UPDATED: Use the dynamic fontSize stored in the text object
             this.ctx.font = `bold ${ft.fontSize}px monospace`; 
             this.ctx.textAlign = "center";
             this.ctx.textBaseline = "middle";
             
-            // Draw a thick black outline for readability
-            this.ctx.strokeStyle = "#000000";
+            // Draw a thick outline using the deepest background shade for readability
+            this.ctx.strokeStyle = UITheme.colors.bgScale[0];
             this.ctx.lineWidth = 4;
             this.ctx.strokeText(ft.text, ft.x, ft.y);
             
-            // Draw the colored text
             this.ctx.fillStyle = ft.color;
             this.ctx.fillText(ft.text, ft.x, ft.y);
             this.ctx.restore();
