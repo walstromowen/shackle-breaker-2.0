@@ -71,9 +71,24 @@ export class SceneManager {
         this.setupEventListeners();
     }
 
+    resolveTargetBGM(targetScene) {
+        if (targetScene === 'battle') {
+            return 'plainsBattle1';
+        }
+        
+        // If it's the overworld, party screen, or character summary, 
+        // we just keep playing the overworld theme!
+        return 'plainsOverworldDay';
+    }
+
     changeScene(sceneName) {
         console.log(`[SceneManager] Switching to: ${sceneName}`);
         this.currentScene = sceneName;
+        // Figure out what music should be playing for this scene
+        const targetBGM = this.resolveTargetBGM(sceneName);
+        
+        // Tell the audio manager to play it. (It will ignore this if it's already playing)
+        events.emit('PLAY_MUSIC', { id: targetBGM, fadeTime: 1.0 });
     }
 
     setupEventListeners() {

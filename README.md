@@ -2,10 +2,6 @@
 Roguelike turnbased adventure game based on the Shackle Breaker story by Owen Walstrom
 
 
-
-TODO: Controlls freexe on switching from the overworld: return to a locked overworld (cannot move)
-Just incorporated spritesheet portrait.
-
 Root
 ├── backend/
 ├── frontend/                  

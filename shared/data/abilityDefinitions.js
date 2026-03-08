@@ -33,7 +33,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 10 },
         accuracy: 0.98, 
-        animationId: "melee_lunge",
+        animationId: "slash",
         effects: [
             { type: "damage", element: "pierce", power: 1.0 } 
         ],
@@ -51,7 +51,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 8 },
         accuracy: 0.98, 
-        animationId: "melee_lunge",
+        animationId: "strike",
         effects: [
             { type: "damage", element: "blunt", power: 1.0 } 
         ],
@@ -67,7 +67,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 10 },
         accuracy: 0.98, 
-        animationId: "melee_lunge",
+        animationId: "stab",
         effects: [
             { type: "damage", element: "pierce", power: 1.0 } 
         ],
@@ -84,7 +84,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 10 },
         accuracy: 0.98, 
-        animationId: "melee_lunge",
+        animationId: "bite",
         effects: [
             { type: "damage", element: "pierce", power: 0.85 }
         ],
@@ -106,7 +106,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 5 },
         accuracy: 0.95, 
-        animationId: "melee_lunge",
+        animationId: "stab",
         effects: [
             { type: "damage", element: "pierce", power: 0.75 }
         ]
@@ -513,7 +513,7 @@ export const AbilityDefinitions = {
         id: "rest",
         name: "Rest",
         description: "Recover health, stamina, and insight.",
-        icon: { col: 3, row: 7 },
+        icon: { col: 3, row: 12 },
         targeting: { scope: "self", select: "auto" },
         accuracy: 1.0,
         animationId: "melee_lunge",

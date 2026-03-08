@@ -1,6 +1,7 @@
 import { CanvasUI } from '../../ui/canvasUI.js';
 import { UITheme } from '../../ui/UITheme.js';
 import { TargetingResolver } from '../../../../shared/systems/targetingResolver.js';
+import { events } from '../../../src/core/eventBus.js';
 
 // Note: You don't necessarily need to import the Factory/Model here if your game controller 
 // handles creating the animation and passing it into state.activeAnimation.
@@ -78,6 +79,21 @@ export class BattleRenderer {
         const now = performance.now();
         this.dt = Math.min((now - (this.lastTime || now)) / 1000, 0.1); 
         this.lastTime = now;
+
+        // --- NEW: Audio Sync Logic ---
+        const anim = state.activeAnimation;
+        if (anim) {
+            const progress = state.timer ? Math.min(state.timer / anim.duration, 1) : 0;
+            const audioCues = anim.getAudioTriggers(progress);
+            
+            audioCues.forEach(cue => {
+                events.emit('PLAY_SFX', { 
+                    id: cue.key, 
+                    volume: cue.volume || 1.0, 
+                    pitch: cue.pitch || 1.0 
+                });
+            });
+        }
 
         this.ctx.imageSmoothingEnabled = false;
 

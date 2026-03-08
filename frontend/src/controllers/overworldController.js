@@ -188,7 +188,7 @@ export class OverworldController {
         const row = Math.floor(this.player.y / this.config.TILE_SIZE);
         
         // 20% Chance (based on < 0.20)
-        if (Math.random() < 0.20) {
+        if (Math.random() < 0.05) {
             
             // FREEZE THE GAME
             this.isLocked = true;

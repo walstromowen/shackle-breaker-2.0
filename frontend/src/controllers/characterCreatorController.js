@@ -21,7 +21,7 @@ const CREATION_DATA = {
             id: "TRAVELER", label: "Traveler", 
             desc: "Travelers from far and wide came to see the incredible discovery of what was magic in the Altus Kingdom.",
             attributes: { vigor: 12, strength: 12, dexterity: 12, intelligence: 10, attunement: 10 },
-            equipment: { mainHand: "shortsword", torso: "tattered_shirt"}
+            equipment: { mainHand: "wooden_stick", torso: "tattered_shirt"}
         },
         { 
             id: "BLACKSMITH", label: "Blacksmith", 
@@ -50,20 +50,24 @@ const CREATION_DATA = {
     
     // Maps UI selection to the EntityModel properties
     APPEARANCES: [
-        { label: "Style A", spritePortrait: "legionaryHeroPortrait", spriteOverworld: "legionaryHeroSprite" }, 
-        { label: "Style B", spritePortrait: "warlordHeroPortrait", spriteOverworld: "warlordHeroSprite" },
-        { label: "Style C", spritePortrait: "nightbladeHeroPortrait", spriteOverworld: "nightbladeHeroSprite" }
+        { label: "Legionary", spritePortrait: "legionaryHeroPortrait", spriteOverworld: "legionaryHeroSprite" }, 
+        { label: "Warlord", spritePortrait: "warlordHeroPortrait", spriteOverworld: "warlordHeroSprite" },
+        { label: "Nightblade", spritePortrait: "nightbladeHeroPortrait", spriteOverworld: "nightbladeHeroSprite" },
+
+        { label: "Artificer", spritePortrait: "artificerHeroPortrait", spriteOverworld: "legionaryHeroSprite" }, 
+        { label: "Avalancher", spritePortrait: "avalancherHeroPortrait", spriteOverworld: "warlordHeroSprite" },
+        { label: "Shadow Caster", spritePortrait: "shadowCasterHeroPortrait", spriteOverworld: "nightbladeHeroSprite" }
     ],
     
     TRAITS: UI_TRAITS,
     KEEPSAKES: [
         { label: "None", itemId: null, desc: "You carry nothing but your burden." },
         { label: "Merchant's Bag", desc: "Start with a small supply of materials.", items: [{ id: "soft_wood", qty: 3 }] },
-        { label: "Healer's Pouch", desc: "Start with a small supply of healing herbs.", items: [{ id: "healing_herb", qty: 3 }, { id: "amulet_of_the_dev", qty: 1 },{ id: "kurtus_brew", qty: 1 }] },
+        { label: "Healer's Pouch", desc: "Start with a small supply of healing herbs.", items: [{ id: "healing_herb", qty: 3 }] },
     ],
     COMPANIONS: [
         { label: "None", speciesId: null, desc: "Walk the path alone.", attributes: {}, equipment: {} },
-        { label: "War Dog", speciesId: "BEAST", desc: "Loyal and sturdy.", attributes: { vigor: 12, strength: 10 }, equipment: { accessory: "tattered_shirt" } },
+        { label: "War Dog", speciesId: "BEAST", desc: "Loyal and sturdy.", attributes: { vigor: 12, strength: 10 }  },
         { label: "Hunting Hawk", speciesId: "AVIAN", desc: "Fast and watchful.", attributes: { dexterity: 16, speed: 10 }, equipment: { accessory: "tattered_shirt" } }
     ],
     DIFFICULTIES: [

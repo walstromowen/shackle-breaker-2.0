@@ -5,7 +5,26 @@ export class BattleAnimationModel {
         this.def = definition;
         this.actor = actor;
         this.targets = targets || [];
+
+        // NEW: Keep track of audio cues we've already fired
+        this.playedAudio = new Set();
     }
+    
+    getAudioTriggers(progress) {
+        if (!this.def.audio) return [];
+
+        const triggers = [];
+        this.def.audio.forEach((soundDef, index) => {
+            // If we've passed the start time, and haven't played it yet...
+            if (progress >= soundDef.start && !this.playedAudio.has(index)) {
+                this.playedAudio.add(index); // Mark as played
+                triggers.push(soundDef);
+            }
+        });
+        
+        return triggers;
+    }
+
     getActiveProjectiles(progress) {
         if (!this.def.projectiles || this.def.projectiles.length === 0) {
             return [];

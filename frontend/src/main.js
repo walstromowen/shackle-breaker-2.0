@@ -1,7 +1,9 @@
 import { AssetLoader } from "./core/assetLoader.js";
 import { SceneManager } from "./core/sceneManager.js";
 import { GameLoop } from "./core/gameLoop.js";
+import { audioManager } from './core/audioManager.js';
 import { CONFIG } from "../../shared/data/constants.js";
+import { gameState } from '../../shared/state/gameState.js'; // Moved to top for clean imports
 
 const assetLoader = new AssetLoader();
 
@@ -19,6 +21,10 @@ const ASSET_MANIFEST = {
     legionaryHeroSprite: './assets/sprites/legionary_hero/legionary_hero_sprite.png',
     warlordHeroSprite: './assets/sprites/warlord_hero/warlord_hero_sprite.png',
     nightbladeHeroSprite: './assets/sprites/nightblade_hero/nightblade_hero_sprite.png',
+    
+    artificerHeroPortrait: './assets/sprites/artificer_hero/artificer_hero_portrait.png',
+    avalancherHeroPortrait: './assets/sprites/avalancher_hero/avalancher_hero_portrait.png',
+    shadowCasterHeroPortrait: './assets/sprites/shadow_caster_hero/shadow_caster_hero_portrait.png',
 
     legionaryPortrait: './assets/sprites/legionary/legionary_portrait.png',
     wolfPortrait: './assets/sprites/wolf/wolf_portrait.png',
@@ -29,18 +35,33 @@ const ASSET_MANIFEST = {
     germanSheepherdPortrait: './assets/sprites/dogs/german_sheepherd_portrait.png',
     hawkPortrait: './assets/sprites/hawk/hawk_portrait.png',
     
-  
-
-    
     items: './assets/icons/items.png', 
     abilities: './assets/icons/abilities.png', 
     statusEffects: './assets/icons/status_effects.png',
+
+    // --- NEW: Audio Assets go here! ---
+    plainsBattle1: './assets/audio/music/plains_battle_1.mp3',
+    plainsOverworldDay: './assets/audio/music/plains_overworld_day.mp3',  
+
+    arcaneDartSFX: './assets/audio/sfx/arcane_dart.wav',
+    swordSlashSFX: './assets/audio/sfx/sword_slash.wav',
+    cleaveSFX: './assets/audio/sfx/cleave.wav',
+    cannonShotSFX: './assets/audio/sfx/cannon_shot.wav',
+    crunchSFX: './assets/audio/sfx/crunch.wav',
+    magicCast1SFX: './assets/audio/sfx/magic_cast_1.wav',
+    spearStabSFX: './assets/audio/sfx/spear_stab.wav',
+    strikeSFX: './assets/audio/sfx/strike.wav',
+    swordSlashSFX: './assets/audio/sfx/sword_slash.wav',
 };
 
 let sceneManager;
 let gameLoop;
 
 async function initialize() {
+    // 1. Link the AudioManager to the loader so it can fetch decoded audio buffers
+    audioManager.init(assetLoader);
+
+    // 2. Load all assets (Images AND Audio)
     await assetLoader.loadAll(ASSET_MANIFEST);
     
     const canvas = document.getElementById('game-canvas'); 
@@ -59,5 +80,5 @@ async function initialize() {
 }
 
 initialize();
-import { gameState } from '../../shared/state/gameState.js';
-window.gameState = gameState; // Add this line!sss
+
+window.gameState = gameState; // Add this line! Expose for console debugging
