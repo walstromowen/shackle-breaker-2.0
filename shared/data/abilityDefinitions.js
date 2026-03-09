@@ -17,7 +17,7 @@ export const AbilityDefinitions = {
         speedModifier: 1.2,
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 5 },
-        accuracy: 0.98, 
+        accuracy: 1.0, 
         animationId: "melee_lunge",
         effects: [
             { type: "damage", element: "blunt", power: 0.5 } 
@@ -32,7 +32,7 @@ export const AbilityDefinitions = {
         speedModifier: 1, 
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 10 },
-        accuracy: 0.98, 
+        accuracy: 1.0, 
         animationId: "slash",
         effects: [
             { type: "damage", element: "pierce", power: 1.0 } 
@@ -50,7 +50,7 @@ export const AbilityDefinitions = {
         speedModifier: 1.0, 
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 8 },
-        accuracy: 0.98, 
+        accuracy: 1.0, 
         animationId: "strike",
         effects: [
             { type: "damage", element: "blunt", power: 1.0 } 
@@ -66,7 +66,7 @@ export const AbilityDefinitions = {
         speedModifier: 1, 
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 10 },
-        accuracy: 0.98, 
+        accuracy: 1.0, 
         animationId: "stab",
         effects: [
             { type: "damage", element: "pierce", power: 1.0 } 
@@ -83,7 +83,7 @@ export const AbilityDefinitions = {
         icon: { col: 1, row: 12 },
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 10 },
-        accuracy: 0.98, 
+        accuracy: 1.0, 
         animationId: "bite",
         effects: [
             { type: "damage", element: "pierce", power: 0.85 }
@@ -105,7 +105,7 @@ export const AbilityDefinitions = {
         speedModifier: 1.5,
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 5 },
-        accuracy: 0.95, 
+        accuracy: 0.8, 
         animationId: "stab",
         effects: [
             { type: "damage", element: "pierce", power: 0.75 }

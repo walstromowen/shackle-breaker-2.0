@@ -70,10 +70,11 @@ export class BattleController {
 
     // --- ENTITY SETUP ---
     _createCombatant(entity, teamAllegiance) {
-        const detailedStats = StatCalculator.calculateDetailed(entity);
-        const maxHp = detailedStats.maxHp?.total || 1;
-        const maxStamina = detailedStats.maxStamina?.total || 10;
-        const maxInsight = detailedStats.maxInsight?.total || 10;
+        // We still need a quick initial calculation just to set starting HP/MaxHP correctly
+        const initialStats = StatCalculator.calculateDetailed(entity);
+        const maxHp = initialStats.maxHp?.total || 1;
+        const maxStamina = initialStats.maxStamina?.total || 10;
+        const maxInsight = initialStats.maxInsight?.total || 10;
 
         const combatant = {
             originalEntity: entity, 
@@ -84,14 +85,20 @@ export class BattleController {
             maxHp, hp: Math.min(entity.hp ?? maxHp, maxHp),
             maxStamina, stamina: Math.min(entity.stamina ?? maxStamina, maxStamina),
             maxInsight, insight: Math.min(entity.insight ?? maxInsight, maxInsight),
-            stats: detailedStats,
             abilities: this._extractAndResolveAbilities(entity, teamAllegiance),
             _deathHandled: false,
 
+            // --- THE FIX: Make these dynamically pull live data ---
             get statusEffects() { return this.originalEntity.statusEffects; },
-            get baseStats() { return this.stats; },
+            
+            // Calculates fresh stats on-demand, incorporating active mid-fight status effects!
+            get stats() { return StatCalculator.calculateDetailed(this.originalEntity); },
+            get baseStats() { return this.originalEntity.baseStats; },
+            
             getAttack(type) { return this.stats.attack?.[type] || 0; },
             getDefense(type) { return this.stats.defense?.[type] || 0; },
+            // ------------------------------------------------------
+
             isDead() { return this.hp <= 0; },
 
             modifyResource(resource, amount) {
@@ -103,13 +110,13 @@ export class BattleController {
                 this[resource] = Math.max(0, Math.min(this[maxProp], this[resource] + amount));
                 const actualDifference = this[resource] - originalValue; 
 
-                // ✅ Added: Emit FCT event for damage/healing/resource usage
+                // Emit FCT event for UI
                 if (actualDifference !== 0) {
                     events.emit('SPAWN_FCT', {
                         target: this,
                         value: actualDifference,
-                        resource: resource, // 'hp', 'stamina', 'insight'
-                        isCritical: false   // You can pass critical hit flags here later
+                        resource: resource, 
+                        isCritical: false 
                     });
                 }
 
