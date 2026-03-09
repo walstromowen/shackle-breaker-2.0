@@ -12,7 +12,7 @@ export class BattleRenderer {
         this.ui = new CanvasUI(ctx);
 
         // --- VISUAL CONFIG ---
-        this.SPRITE_SCALE = 2;   
+        this.SPRITE_SCALE = 1;   
         this.FRAME_SIZE = 128;
         
         // Icon Config
@@ -44,14 +44,14 @@ export class BattleRenderer {
         // --- LAYOUT CONFIGURATION ---
         this.LAYOUT = {
             PLAYER: [
-                { x: 0.38, y: 0.62 }, 
-                { x: 0.24, y: 0.54 }, 
-                { x: 0.10, y: 0.46 }  
+                { x: 0.30, y: 0.55 }, // Lead: Raised up higher on the screen
+                { x: 0.15, y: 0.65 }, // Slot 2 (Left): Raised and placed exactly -0.15 away from lead
+                { x: 0.45, y: 0.65 }  // Slot 3 (Right): Raised and placed exactly +0.15 away from lead
             ],
             ENEMY: [
-                { x: 0.62, y: 0.25 }, 
-                { x: 0.76, y: 0.33 }, 
-                { x: 0.90, y: 0.41 }  
+                { x: 0.70, y: 0.45 }, // Lead: Lowered further down toward the midline
+                { x: 0.85, y: 0.35 }, // Slot 2 (Right): Lowered, exactly +0.15 away from lead
+                { x: 0.55, y: 0.35 }  // Slot 3 (Left): Lowered, exactly -0.15 away from lead (Mirrors Slot 2!)
             ]
         };
         this.displayStats = new WeakMap(); 
@@ -105,9 +105,20 @@ export class BattleRenderer {
 
         this.ctx.imageSmoothingEnabled = false;
 
-        // 1. Solid Background (Using theme scale 2 for a dark gray)
-        this.ctx.fillStyle = UITheme.colors.bgScale[2]; 
-        this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        // ==========================================
+        // 1. Background
+        // ==========================================
+        const bgKey = state.backgroundId || 'plainsBattleDayBg';
+        const bgImg = this.loader.get ? this.loader.get(bgKey) : this.loader.getAsset(bgKey);
+
+        if (bgImg) {
+            // Draw background image scaled to fill the canvas
+            this.ctx.drawImage(bgImg, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        } else {
+            // Fallback: Solid Background (Using theme scale 2 for a dark gray)
+            this.ctx.fillStyle = UITheme.colors.bgScale[2]; 
+            this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        }
 
         // 2. Draw Units
         this.drawGroup(state.activeEnemies, false, state);
@@ -175,26 +186,137 @@ export class BattleRenderer {
         projectiles.forEach(p => {
             const { flightProgress, def } = p;
             
-            let currentX = sourcePos.x + (targetPos.x - sourcePos.x) * flightProgress;
-            let currentY = sourcePos.y + (targetPos.y - sourcePos.y) * flightProgress;
+            this.ctx.save();
 
-            if (def.arc) {
-                const arcPeak = Math.sin(flightProgress * Math.PI); 
-                currentY -= arcPeak * def.arc; 
+            // 1. Setup Base Variables
+            let currentX, currentY;
+            let currentRotation = typeof def.rotation === 'number' ? (def.rotation * Math.PI) / 180 : 0;
+            let currentScale = def.scale || 1.0;
+            let currentAlpha = 1.0;
+
+            // 2. Apply Special Blend Modes (Great for glowing/slashing effects)
+            if (def.blendMode) {
+                if (def.blendMode === 'screen') this.ctx.globalCompositeOperation = 'screen';
+                if (def.blendMode === 'add') this.ctx.globalCompositeOperation = 'lighter';
             }
 
-            this.ctx.save();
-            this.ctx.fillStyle = def.color || UITheme.colors.selectedWhite;
-            this.ctx.beginPath();
-            this.ctx.arc(currentX, currentY, def.size || 5, 0, Math.PI * 2);
-            this.ctx.fill();
-            
-            this.ctx.shadowColor = def.color || UITheme.colors.selectedWhite;
-            this.ctx.shadowBlur = 10;
-            this.ctx.fill();
+            // 3. Determine Positioning & Movement based on 'Type'
+            if (def.type === 'overlay') {
+                // OVERLAY: Pins to the target's position
+                currentX = targetPos.x;
+                currentY = targetPos.y;
+
+                // Apply predefined movement animations over the flight duration
+                if (def.movement === 'swipe_diagonal') {
+                    // Sweeps from top-left to bottom-right across the target
+                    const offset = 40; 
+                    currentX += -offset + (offset * 2 * flightProgress);
+                    currentY += -offset + (offset * 2 * flightProgress);
+                } 
+                else if (def.movement === 'expand_and_fade') {
+                    // Blows up and fades out (perfect for impacts)
+                    currentScale *= (0.5 + flightProgress * 1.5); 
+                    currentAlpha = 1.0 - flightProgress; 
+                } 
+                else if (def.movement === 'float_up_and_pop') {
+                    // Starts low, rises up, pops at the end (poison bubbles)
+                    currentY += (20 - (flightProgress * 40)); 
+                    if (flightProgress > 0.8) {
+                        currentScale *= 1.5;
+                        currentAlpha = (1.0 - flightProgress) * 5; // Fast fade
+                    }
+                }
+            } else {
+                // TRAVEL: Interpolates between Actor and Target
+                currentX = sourcePos.x + (targetPos.x - sourcePos.x) * flightProgress;
+                currentY = sourcePos.y + (targetPos.y - sourcePos.y) * flightProgress;
+
+                // Handle Arc
+                if (def.arc) {
+                    const arcPeak = Math.sin(flightProgress * Math.PI); 
+                    currentY -= arcPeak * def.arc; 
+                }
+
+                // Handle Auto-Rotation (Points the image along the travel path)
+                if (def.rotation === 'auto') {
+                    let nextFlightProgress = Math.min(flightProgress + 0.05, 1.0);
+                    let nextX = sourcePos.x + (targetPos.x - sourcePos.x) * nextFlightProgress;
+                    let nextY = sourcePos.y + (targetPos.y - sourcePos.y) * nextFlightProgress;
+                    
+                    if (def.arc) {
+                        const nextArcPeak = Math.sin(nextFlightProgress * Math.PI);
+                        nextY -= nextArcPeak * def.arc;
+                    }
+                    
+                    currentRotation = Math.atan2(nextY - currentY, nextX - currentX);
+                }
+            }
+
+            // 4. Apply Canvas Transformations
+            this.ctx.translate(currentX, currentY);
+            this.ctx.rotate(currentRotation);
+            this.ctx.globalAlpha = Math.max(0, Math.min(1, currentAlpha));
+
+            // 5. Draw the Image from Spritesheet (or Fallback)
+            let sheet = null;
+            if (def.sheetKey) {
+                sheet = this.loader.get ? this.loader.get(def.sheetKey) : this.loader.getAsset(def.sheetKey);
+            }
+
+            if (sheet && def.frame) {
+                // Spritesheet rendering
+                const frameSize = def.frameSize || 32; 
+                const srcX = def.frame.col * frameSize;
+                const srcY = def.frame.row * frameSize;
+                
+                const w = frameSize * currentScale;
+                const h = frameSize * currentScale;
+
+                // drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
+                this.ctx.drawImage(
+                    sheet, 
+                    srcX, srcY, frameSize, frameSize, // Cut out the specific frame
+                    -w/2, -h/2, w, h                  // Draw it centered on the current transform
+                );
+            } else {
+                // Fallback: The classic glowing orb if the sheet fails to load
+                this.ctx.fillStyle = def.color || UITheme.colors.selectedWhite;
+                this.ctx.shadowColor = def.color || UITheme.colors.selectedWhite;
+                this.ctx.shadowBlur = 10;
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, (def.size || 5) * currentScale, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
 
             this.ctx.restore();
         });
+    }
+
+    drawShadow(x, y, size) {
+        this.ctx.save();
+        // Semi-transparent black for the shadow
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'; 
+        this.ctx.beginPath();
+        
+        // Calculate the shadow's dimensions based on the sprite size
+        const shadowWidth = size * 0.35; 
+        const shadowHeight = size * 0.1; // Squashed to look isometric/perspective
+        
+        // Offset Y slightly so the shadow rests at the "feet" of the sprite 
+        // (y is the center, so y + size * 0.45 pushes it to the bottom edge)
+        const shadowY = y + (size * 0.45);
+
+        // Draw an ellipse (x, y, radiusX, radiusY, rotation, startAngle, endAngle)
+        this.ctx.ellipse(x, shadowY, shadowWidth, shadowHeight, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Optional: Add a slight blur to soften the edges 
+        // (Note: remove these two lines if performance drops)
+        this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        this.ctx.shadowBlur = 4;
+        this.ctx.fill(); 
+
+        this.ctx.restore();
     }
 
     drawGroup(entities, isPlayer, state) {
@@ -230,6 +352,9 @@ export class BattleRenderer {
             const { entity, x, y, size, filter } = item;
             const assetKey = entity.spritePortrait || entity.spriteOverworld;
             const img = this.loader.get ? this.loader.get(assetKey) : this.loader.getAsset(assetKey);
+
+            // ---> NEW: Draw shadow beneath the character <---
+            this.drawShadow(x, y, size);
 
             this.ctx.save();
 

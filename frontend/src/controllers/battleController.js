@@ -721,7 +721,7 @@ export class BattleController {
             resolvedTargets = [actor]; 
         }
         
-        this.state.message = action.id === 'rest' ? `${actor.name} had to rest!` : `${actor.name} used ${action.name}!`;
+        this.state.message = action.id === 'rest' ? `${actor.name} recovers!` : `${actor.name} used ${action.name}!`;
 
         const isAoE = ['all_enemies', 'all_allies'].includes(action.targeting?.scope) || action.targeting?.isAoE;
 

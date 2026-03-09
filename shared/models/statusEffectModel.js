@@ -75,8 +75,7 @@ export class StatusEffectModel {
                     target.modifyResource(effect.modify, amount);
 
                     const actionWord = amount < 0 ? 'loses' : 'gains';
-                    const elementText = effect.element ? ` ${effect.element}` : '';
-                    result.messages.push(`${target.name} ${actionWord} ${Math.abs(amount)}${elementText} ${effect.modify.toUpperCase()} from ${this.name}!`);
+                    result.messages.push(`${target.name} ${actionWord} ${Math.abs(amount)} ${effect.modify.toUpperCase()} from ${this.name}!`);
                 }
 
                 // If the effect says it should instantly consume a charge (like exploding on hit)

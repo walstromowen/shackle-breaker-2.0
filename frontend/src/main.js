@@ -7,7 +7,6 @@ import { gameState } from '../../shared/state/gameState.js'; // Moved to top for
 
 const assetLoader = new AssetLoader();
 
-// 1. UPDATE: Add the Encounter Background to the manifest
 const ASSET_MANIFEST = {
     tileset: './assets/tilesets/plains.png',
     spritesheet: './assets/sprites/hero.png',
@@ -38,16 +37,25 @@ const ASSET_MANIFEST = {
     items: './assets/icons/items.png', 
     abilities: './assets/icons/abilities.png', 
     statusEffects: './assets/icons/status_effects.png',
+    battleProjectiles: './assets/icons/battle_projectiles.png',
+
+    plainsBattleDayBg: './assets/backgrounds/plains_battle_day_bg.png',
+    plainsBattleDuskBg: './assets/backgrounds/plains_battle_dusk_bg.png',
+    plainsBattleNightBg: './assets/backgrounds/plains_battle_night_bg.png',
 
     // --- NEW: Audio Assets go here! ---
     plainsBattle1: './assets/audio/music/plains_battle_1.mp3',
     plainsOverworldDay: './assets/audio/music/plains_overworld_day.mp3',  
 
     arcaneDartSFX: './assets/audio/sfx/arcane_dart.wav',
+    bubbleSFX: './assets/audio/sfx/bubble.wav',
     swordSlashSFX: './assets/audio/sfx/sword_slash.wav',
     cleaveSFX: './assets/audio/sfx/cleave.wav',
     cannonShotSFX: './assets/audio/sfx/cannon_shot.wav',
     crunchSFX: './assets/audio/sfx/crunch.wav',
+    earthquake1SFX: './assets/audio/sfx/earthquake_1.wav',
+    earthquake2SFX: './assets/audio/sfx/earthquake_2.wav',
+    earthquake3SFX: './assets/audio/sfx/earthquake_3.wav',
     magicCast1SFX: './assets/audio/sfx/magic_cast_1.wav',
     spearStabSFX: './assets/audio/sfx/spear_stab.wav',
     strikeSFX: './assets/audio/sfx/strike.wav',

@@ -2,7 +2,7 @@ export const StatusEffectDefinitions = {
     poison: {
         id: 'poison',
         name: 'Poison',
-        animationId: "bite",
+        animationId: "poison",
         icon: { col: 0, row: 0 }, 
         defaultCharges: 3,
         maxStacks: 1, 

@@ -277,7 +277,7 @@ export const AbilityDefinitions = {
         name: "Earthquake",
         description: "Shake the ground to damage the entire enemy party.",
         icon: { col: 0, row: 6 },
-        animationId: "melee_lunge",
+        animationId: "earthquake",
         targeting: { scope: "all_enemies", select: "auto" },
         cost: { stamina: 30 },
         accuracy: 0.90,
