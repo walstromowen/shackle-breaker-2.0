@@ -29,7 +29,9 @@ const TURN_TYPES = {
     PROMPT_REINFORCEMENT: 'PROMPT_REINFORCEMENT',
     PLAY_ANIMATION: 'PLAY_ANIMATION',
     APPLY_ABILITY_EFFECTS: 'APPLY_ABILITY_EFFECTS',
-    END_ACTOR_TURN: 'END_ACTOR_TURN' // ✅ Step 1: Added new turn type
+    END_ACTOR_TURN: 'END_ACTOR_TURN', // ✅ Step 1: Added new turn type
+    EXECUTE_ACTION: 'EXECUTE_ACTION',            // ✅ Added
+    APPLY_STATUS_EFFECT: 'APPLY_STATUS_EFFECT'   // ✅ Added
 };
 
 export class BattleController {
@@ -530,38 +532,85 @@ export class BattleController {
         }
     }
 
-    processStatusEffects(combatant, triggerEvent, context = {}) {
-        if (!combatant || combatant.isDead()) return false;
-        let skipTurn = false;
-        let statusTurns = []; 
+    _queueStatusEffects(combatant, triggerEvent, context = {}) {
+        if (!combatant || combatant.isDead()) return;
 
-        for (let i = combatant.statusEffects.length - 1; i >= 0; i--) {
-            const status = combatant.statusEffects[i];
-            const result = status.onEvent(triggerEvent, combatant, context);
-            
-            if (result.cancelAction) skipTurn = true;
+        for (let i = combatant.statusEffects.length - 1; i >= 0; i--) {
+            const status = combatant.statusEffects[i];
+            
+            // ✅ Check if the status has an explicit effect for this trigger
+            const hasActiveTrigger = status.effects && status.effects.some(e => e.trigger === triggerEvent);
 
-            if (result.messages?.length > 0) {
-                result.messages.forEach(msg => {
-                    statusTurns.push({ type: TURN_TYPES.MESSAGE_STATUS, message: msg });
-                });
-            }
+            // 2. Queue Apply (Executes AFTER animation finishes, triggers FCT)
+            // We always queue this so ON_TURN_END can silently tick down charges in the background.
+            this.state.turnQueue.unshift({
+                type: TURN_TYPES.APPLY_STATUS_EFFECT,
+                actor: combatant,
+                status: status,
+                triggerEvent: triggerEvent,
+                context: context
+            });
 
-            if (combatant.isDead()) {
-                this.handleDeath(combatant); 
-                break; 
-            }
+            // 1. Queue Animation (Executes FIRST) - ONLY if there's an active trigger
+            if (hasActiveTrigger) {
+                const animId = status.animationId || status.definition?.animationId || status.config?.animationId;
+                if (animId) {
+                    this.state.turnQueue.unshift({
+                        type: TURN_TYPES.PLAY_ANIMATION,
+                        actor: combatant,
+                        target: combatant,
+                        animationId: animId
+                    });
+                }
+            }
+        }
+    }
 
-            if (context.attacker?.isDead()) this.handleDeath(context.attacker);
-            if (status.isExpired()) combatant.removeStatusEffect(status.id);
-        }
+    _unpackBaseTurn(turn) {
+        let { actor, action, target } = turn;
+        if (actor.isDead()) return this._processNextTurnInQueue();
 
-        if (statusTurns.length > 0) {
-            this.state.turnQueue.unshift(...statusTurns);
-        }
+        actor._skipAction = false; // Reset stun/skip flag
 
-        return skipTurn;
-    }
+        // Unshift drops things at the FRONT of the queue, so we add them in reverse order:
+        
+        // 3. The End Turn Phase
+        this.state.turnQueue.unshift({ type: TURN_TYPES.END_ACTOR_TURN, actor: actor });
+        
+        // 2. The Main Action
+        this.state.turnQueue.unshift({ type: TURN_TYPES.EXECUTE_ACTION, actor, action, target });
+
+        // 1. Start Turn Statuses
+        this._queueStatusEffects(actor, 'ON_TURN_START');
+
+        this._processNextTurnInQueue();
+    }
+
+    _applyStatusEffectTurn(turn) {
+        const { actor, status, triggerEvent, context } = turn;
+        if (actor.isDead() || status.isExpired()) return this._processNextTurnInQueue();
+
+        // 💥 THIS is where damage natively modifies HP and FCT spawns
+        const result = status.onEvent(triggerEvent, actor, context);
+        
+        // If the effect causes a skip (like Stun), flag the actor
+        if (result.cancelAction) actor._skipAction = true;
+
+        if (result.messages?.length > 0) {
+            // Inject messages immediately so they appear simultaneously with the FCT
+            const messageTurns = result.messages.map(msg => ({
+                type: TURN_TYPES.MESSAGE_STATUS, 
+                message: msg
+            }));
+            this.state.turnQueue.unshift(...messageTurns);
+        }
+
+        if (actor.isDead()) this.handleDeath(actor);
+        if (context.attacker?.isDead()) this.handleDeath(context.attacker);
+        if (status.isExpired()) actor.removeStatusEffect(status.id);
+
+        this._processNextTurnInQueue();
+    }
 
     executeTurn(turn) {
         // Handle immediate message types
@@ -571,12 +620,22 @@ export class BattleController {
             return;
         }
         switch (turn.type) {
-            // ✅ Step 4: Handle the END_ACTOR_TURN to safely trigger the final status effects
-            case TURN_TYPES.END_ACTOR_TURN:
-                if (!turn.actor.isDead() && !this.state.fled) {
-                    this.processStatusEffects(turn.actor, 'ON_TURN_END');
-                }
-                return this._processNextTurnInQueue();
+            case TURN_TYPES.APPLY_STATUS_EFFECT:
+                return this._applyStatusEffectTurn(turn);
+
+            case TURN_TYPES.EXECUTE_ACTION:
+                // Catch Stuns/Skips here before the action fires
+                if (turn.actor._skipAction || turn.actor.isDead()) {
+                    turn.actor._skipAction = false; 
+                    return this._processNextTurnInQueue();
+                }
+                return this._handleActionExecution(turn);
+
+            case TURN_TYPES.END_ACTOR_TURN:
+                if (!turn.actor.isDead() && !this.state.fled) {
+                    this._queueStatusEffects(turn.actor, 'ON_TURN_END');
+                }
+                return this._processNextTurnInQueue();
 
             case TURN_TYPES.PROMPT_REINFORCEMENT:
                 return this._requestPartySwap(true, turn.slotIndex);
@@ -597,80 +656,77 @@ export class BattleController {
                 return this._applyAbilityEffects(turn);
             
             default: // Base turn (Phase 1)
-                return this._handleActionExecution(turn);
+               return this._unpackBaseTurn(turn);
         }
     }
 
     _handleAnimationTurn(turn) {
-        const targetList = turn.targets || [turn.target];
-        const validTargets = [];
-        // Track which apply turns we've already redirected to prevent double-modifying
-        const redirectedTurns = new Set();
+        const targetList = turn.targets || [turn.target];
+        const validTargets = [];
+        const redirectedTurns = new Set();
 
-        for (let target of targetList) {
-            let actualTarget = this._getValidTarget(target);
-            if (!actualTarget) continue; 
-            
-            // Redirect the corresponding APPLY turn in the queue if target changed
-            if (actualTarget !== target) {
-                const nextApplyTurn = this.state.turnQueue.find(t => 
-                    t.type === TURN_TYPES.APPLY_ABILITY_EFFECTS && 
-                    t.targets?.includes(target) &&
-                    !redirectedTurns.has(t) 
-                );
-                
-                if (nextApplyTurn) {
-                    nextApplyTurn.targets = [actualTarget];
-                    redirectedTurns.add(nextApplyTurn); 
-                }
-            }
-            
-            if (!validTargets.includes(actualTarget)) validTargets.push(actualTarget);
-        }
+        for (let target of targetList) {
+            let actualTarget = this._getValidTarget(target);
+            if (!actualTarget) continue; 
+            
+            if (actualTarget !== target) {
+                const nextApplyTurn = this.state.turnQueue.find(t => 
+                    t.type === TURN_TYPES.APPLY_ABILITY_EFFECTS && 
+                    t.targets?.includes(target) &&
+                    !redirectedTurns.has(t) 
+                );
+                
+                if (nextApplyTurn) {
+                    nextApplyTurn.targets = [actualTarget];
+                    redirectedTurns.add(nextApplyTurn); 
+                }
+            }
+            
+            if (!validTargets.includes(actualTarget)) validTargets.push(actualTarget);
+        }
 
-        if (validTargets.length === 0) {
-            return this._processNextTurnInQueue(); 
-        }
+        if (validTargets.length === 0) {
+            return this._processNextTurnInQueue(); 
+        }
 
-        this.state.activeAnimation = BattleAnimationFactory.create(turn.action.animationId, turn.actor, validTargets);
-    }
+        // ✅ Modify this line to fall back to a direct turn.animationId
+        const animId = turn.animationId || turn.action?.animationId;
+        this.state.activeAnimation = BattleAnimationFactory.create(animId, turn.actor, validTargets);
+    }
 
     _handleActionExecution(turn) {
-        let { actor, action, target: primaryTarget } = turn;
-        if (actor.isDead()) return; 
+        let { actor, action, target: primaryTarget } = turn;
 
-        if (this.processStatusEffects(actor, 'ON_TURN_START')) {
-            this.processStatusEffects(actor, 'ON_TURN_END');
-            return; 
-        }
+        // If the actor died before their action fires, skip their action
+        if (actor.isDead()) return this._processNextTurnInQueue();
 
-        let resolvedTargets = TargetingResolver.resolve(action, actor, primaryTarget, this.state);
+        let resolvedTargets = TargetingResolver.resolve(action, actor, primaryTarget, this.state);
 
-        if (resolvedTargets.length === 0) {
-            this.state.message = `${actor.name} tried to use ${action.name}, but there were no targets left!`;
-            return this.processStatusEffects(actor, 'ON_TURN_END');
-        }
+        // If targets are dead/gone, the action fizzles
+        if (resolvedTargets.length === 0) {
+            this.state.message = `${actor.name} tried to use ${action.name}, but there were no targets left!`;
+            return this._processNextTurnInQueue();
+        }
 
-        if (!action.canPayCost(actor)) {
-            action = AbilityFactory.createAbilities(['rest'])[0]; 
-            resolvedTargets = [actor]; 
-        }
-        
-        this.state.message = action.id === 'rest' ? `${actor.name} had to rest!` : `${actor.name} used ${action.name}!`;
+        // Check resources; fallback to rest if drained
+        if (!action.canPayCost(actor)) {
+            action = AbilityFactory.createAbilities(['rest'])[0]; 
+            resolvedTargets = [actor]; 
+        }
+        
+        this.state.message = action.id === 'rest' ? `${actor.name} had to rest!` : `${actor.name} used ${action.name}!`;
 
-        const isAoE = ['all_enemies', 'all_allies'].includes(action.targeting?.scope) || action.targeting?.isAoE;
+        const isAoE = ['all_enemies', 'all_allies'].includes(action.targeting?.scope) || action.targeting?.isAoE;
 
-        // ✅ Step 3: Queue the END_ACTOR_TURN first so it goes to the absolute back of the sequence
-        this.state.turnQueue.unshift({ type: TURN_TYPES.END_ACTOR_TURN, actor: actor });
-
-        if (isAoE) {
-            this._queueAoEAction(actor, action, resolvedTargets);
-        } else {
-            this._queueMultiAction(actor, action, resolvedTargets);
-        }
-        
-        this._processNextTurnInQueue();
-    }
+        // Queue the visual and mechanical application of the ability
+        if (isAoE) {
+            this._queueAoEAction(actor, action, resolvedTargets);
+        } else {
+            this._queueMultiAction(actor, action, resolvedTargets);
+        }
+        
+        this._processNextTurnInQueue();
+    }
 
     _queueAoEAction(actor, action, targets) {
         for (let i = targets.length - 1; i >= 0; i--) {
