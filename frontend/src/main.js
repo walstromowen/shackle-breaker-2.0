@@ -15,6 +15,9 @@ const ASSET_MANIFEST = {
     spritesheet: './assets/sprites/hero.png',
     shadows: './assets/tilesets/shadows.png',
 
+    //Weather textures:
+    //fogWeather: 'assets/weather/fog.png',
+
     legionaryHeroPortrait: './assets/sprites/legionary_hero/legionary_hero_portrait.png',
     warlordHeroPortrait: './assets/sprites/warlord_hero/warlord_hero_portrait.png',
     nightbladeHeroPortrait: './assets/sprites/nightblade_hero/nightblade_hero_portrait.png',

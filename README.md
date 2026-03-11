@@ -61,13 +61,14 @@ Root
 │   │   ├── entityDefinitions.js    
 │   │   ├── itemDefinitions.js      
 │   │   ├── mapObjectDefinitions.js
-│   │   └── 
+│   │   └── weatherDefinitions.js
 │   ├── models/ 
 |   │   ├── abilityModel.js   
 │   │   ├── battleAnimationModel.js                  
 │   │   ├── entityModel.js 
 │   │   ├── statusEffectModel.js 
-│   │   ├── mapObjectModel.js                
+│   │   ├── mapObjectModel.js    
+│   │   ├── weatherModel.js             
 │   │   └── itemModel.js                 
 │   ├── registries/
 │   │   └── encounterRegistry.js
@@ -79,7 +80,8 @@ Root
 │   │   │   ├── battleAnimationFactory.js             
 │   │   │   ├── entityFactory.js 
 │   │   │   ├── statusEffectFactory.js 
-│   │   │   ├── mapObjectFactory.js     
+│   │   │   ├── mapObjectFactory.js 
+│   │   │   ├── weatherFactory.js      
 │   │   │   └── itemFactory.js
 │   │   ├── abilitySystem.js
 │   │   ├── targetingResolver.js

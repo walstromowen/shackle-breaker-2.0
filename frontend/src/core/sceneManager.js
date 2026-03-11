@@ -12,6 +12,7 @@ import { BattleController } from '../controllers/battleController.js';
 // --- RENDERERS ---
 import { MapRenderer } from '../renderers/overworld/mapRenderer.js';
 import { LightingRenderer } from '../renderers/overworld/lightingRenderer.js'; 
+import { WeatherRenderer } from '../renderers/overworld/weatherRenderer.js'; // <-- ADD THIS
 import { EncounterRenderer } from '../renderers/encounter/encounterRenderer.js'; 
 import { TransitionRenderer } from '../renderers/transitions/transitionRenderer.js';
 import { CharacterCreatorRenderer } from '../renderers/characterCreator/characterCreatorRenderer.js'; 
@@ -50,6 +51,7 @@ export class SceneManager {
         // --- RENDERERS ---
         this.mapRenderer = new MapRenderer(this.canvas, this.loader, this.config);
         this.lightingRenderer = new LightingRenderer(this.config); 
+       this.weatherRenderer = new WeatherRenderer(this.canvas, this.ctx, this.config, this.loader);
         this.encounterRenderer = new EncounterRenderer(this.config);
         this.transitionRenderer = new TransitionRenderer(this.config);
         this.characterCreatorRenderer = new CharacterCreatorRenderer(this.config, this.loader);
@@ -119,6 +121,7 @@ export class SceneManager {
                 this.changeScene(scene);
             });
         });
+        
         // 2. Physical Interactions (Chests, NPCs, Signs)
         events.on('INTERACT', (data) => {
             if (data.type === 'ENCOUNTER') {
@@ -196,13 +199,16 @@ export class SceneManager {
     }
 
     update(dt) {
-        // --- 1. MOUSE CHECK ---
+        // 1. UPDATE GLOBAL SYSTEMS (Runs in every scene)
         const click = this.input.getAndResetClick();
         const rightClick = this.input.getAndResetRightClick();
         const scroll = this.input.getAndResetScroll();
         const mousePos = this.input.getMousePosition(); 
         const isMouseDown = this.input.getIsMouseDown ? this.input.getIsMouseDown() : false;
-
+        
+        this.transitionRenderer.update(dt);
+        this.timeSystem.update(dt); // Time passes during battles too
+        
         // ============================================================
         // SCENE SPECIFIC UPDATES & INPUT HANDLING
         // ============================================================
@@ -253,6 +259,9 @@ export class SceneManager {
         if (this.currentScene === 'overworld') {
             this.timeSystem.update(dt); 
             this.overworldController.update(dt);
+            if (this.weatherRenderer.update) {
+                this.weatherRenderer.update(dt, this.overworldController.getState().camera);
+            }
         }
         
         if (this.currentScene === 'battle') {
@@ -305,6 +314,7 @@ export class SceneManager {
     renderOverworld(totalTime) {
         const state = this.overworldController.getState();
         
+        // 1. Draw Base Map & Entities
         this.mapRenderer.renderMap(
             this.worldManager, 
             state.camera, 
@@ -312,6 +322,14 @@ export class SceneManager {
             totalTime 
         );
 
+        // --- ADD THIS: 2. Draw Weather Layer ---
+        this.weatherRenderer.render(
+            this.ctx, 
+            state.camera, 
+            totalTime
+        );
+
+        // 3. Draw Ambient Lighting Layer (tints both map and weather)
         const ambientColor = this.timeSystem.getCurrentColorData();
         const visibleObjects = this.worldManager.getVisibleObjects(
             state.camera,
