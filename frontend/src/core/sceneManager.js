@@ -204,40 +204,47 @@ export class SceneManager {
         const isMouseDown = this.input.getIsMouseDown ? this.input.getIsMouseDown() : false;
 
         // ============================================================
-        // SCENE SPECIFIC UPDATES
+        // SCENE SPECIFIC UPDATES & INPUT HANDLING
         // ============================================================
 
-        if (this.currentScene === 'character-creator') {
-            if (this.characterCreatorController.handleMouseMove) {
-                this.characterCreatorController.handleMouseMove(mousePos.x, mousePos.y);
-            }
-            if (click) {
-                this.characterCreatorController.handleMouseDown(click.x, click.y);
-            }
-        }
-        else if (this.currentScene === 'character_summary' && this.characterSummaryController) {
-            this.characterSummaryController.handleMouseMove?.(mousePos.x, mousePos.y, isMouseDown);
-            
-            const hitZoneId = this.characterSummaryRenderer.getHitZone(mousePos.x, mousePos.y);
-            this.characterSummaryController.handleHover?.(hitZoneId);
+        switch (this.currentScene) {
+            case 'character-creator':
+                if (this.characterCreatorController.handleMouseMove) {
+                    this.characterCreatorController.handleMouseMove(mousePos.x, mousePos.y);
+                }
+                if (click) {
+                    this.characterCreatorController.handleMouseDown(click.x, click.y);
+                }
+                break;
 
-            if (click && hitZoneId) {
-                this.characterSummaryController.handleInteraction(hitZoneId);
-            }
-            
-            if (rightClick) {
-                const rightClickZoneId = this.characterSummaryRenderer.getHitZone(rightClick.x, rightClick.y);
-                this.characterSummaryController.handleRightClick(rightClickZoneId);
-            }
+            case 'character_summary':
+                if (this.characterSummaryController) {
+                    this.characterSummaryController.handleMouseMove?.(mousePos.x, mousePos.y, isMouseDown);
+                    
+                    const hitZoneId = this.characterSummaryRenderer.getHitZone(mousePos.x, mousePos.y);
+                    this.characterSummaryController.handleHover?.(hitZoneId);
 
-            if (scroll !== 0) {
-                this.characterSummaryController.handleScroll?.(scroll);
-            }
-        } 
-        else if (click) {
-            if (this.currentScene === 'party') {
-                this.partyController.handleMouseDown(click.x, click.y, this.partyRenderer);
-            }
+                    if (click && hitZoneId) {
+                        this.characterSummaryController.handleInteraction(hitZoneId);
+                    }
+                    if (rightClick) {
+                        const rightClickZoneId = this.characterSummaryRenderer.getHitZone(rightClick.x, rightClick.y);
+                        this.characterSummaryController.handleRightClick(rightClickZoneId);
+                    }
+                    if (scroll !== 0) {
+                        this.characterSummaryController.handleScroll?.(scroll);
+                    }
+                }
+                break;
+
+            case 'party':
+                if (click) {
+                    this.partyController.handleMouseDown(click.x, click.y, this.partyRenderer);
+                }
+                break;
+                
+            // Note: overworld and battle handle their own input inside their update() loops, 
+            // so we don't need to explicitly pass click data to them here unless they require it.
         }
 
         // --- 2. REGULAR UPDATES ---

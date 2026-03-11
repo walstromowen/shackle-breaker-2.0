@@ -1,28 +1,11 @@
 import { CONFIG, BITMASK } from '../data/constants.js';
 import { MAP_OBJECTS } from '../data/mapObjects.js';
 import { gameState } from '../state/gameState.js';
+import { biomeFactory } from './factories/biomeFactory.js';
 
 // ==========================================
 // CONFIGURATION
 // ==========================================
-const SPAWN_TABLE = {
-    [CONFIG.TILE_TYPES.LAYER_2]: [ 
-        { chance: 0.001, id: 'WOODEN_CHEST' },
-        { chance: 0.004, id: 'CAMPFIRE' },
-        { chance: 0.004, id: 'SMALL_HOUSE_1', footprint: 4 },
-        { chance: 0.014, id: 'OAK_TREE_1', footprint: 2 },
-        { chance: 0.044, id: 'PINE_TREE' },
-        { chance: 0.074, id: 'SMALL_ROCKS_1' },
-        { chance: 0.20, rangeStart: 0.10, pool: ['TULIPS_RED', 'TULIPS_WHITE', 'TULIPS_ORANGE'] },
-        { chance: 0.50, rangeStart: 0.30, pool: ['GRASS_COVERAGE_1', 'GRASS_COVERAGE_2', 'GRASS_COVERAGE_3'] }
-    ],
-    [CONFIG.TILE_TYPES.LAYER_1]: [ { chance: 0.15, id: 'SMALL_ROCKS_1' } ],
-    _WALLS: [
-        { chance: 0.05, id: 'PINE_TREE' },
-        { chance: 0.10, id: 'SMALL_ROCKS_1' },
-        { chance: 0.30, rangeStart: 0.15, pool: ['GRASS_COVERAGE_1', 'GRASS_COVERAGE_2'] }
-    ]
-};
 
 const MASK_DIRECTIONS = [
     { c: 0,  r: -1, bit: BITMASK.TOP },
@@ -52,7 +35,10 @@ export class WorldManager {
         this._procCache = new Map(); 
         this.objects = new Map();
 
-        this.noiseGen = new PerlinNoise(this.seed);
+        // --- NOISE GENERATORS ---
+        this.elevationNoise = new PerlinNoise(this.seed);
+        this.temperatureNoise = new PerlinNoise(this.seed + 12345);
+        this.moistureNoise = new PerlinNoise(this.seed + 54321); 
     }
 
     _k(col, row) {
@@ -67,30 +53,56 @@ export class WorldManager {
     // API: OVERWORLD CONTROLLER
     // ==========================================
 
+    getBiomeAt(col, row) {
+        // 1. INCREASED SCALE: Bumped 0.01 to 0.03 so biomes aren't impossibly massive
+        const rawTemp = this.temperatureNoise.get((col * 0.01) + this.offsetX, (row * 0.01) + this.offsetY);
+        const rawMoist = this.moistureNoise.get((col * 0.01) + this.offsetX, (row * 0.01) + this.offsetY);
+        
+        // 2. FIXED MATH: Shift the -0.5 to 0.5 range directly to 0.0 to 1.0. 
+        // We use slightly wider division to smooth out extreme peaks.
+        const tempVal = Math.min(1, Math.max(0, (rawTemp + 0.5)));
+        const moistVal = Math.min(1, Math.max(0, (rawMoist + 0.5)));
+        
+        // 3. DEBUG: Uncomment this if you want to watch the values change!
+        // console.log(`Normalized Temp: ${tempVal.toFixed(2)}, Moist: ${moistVal.toFixed(2)}`);
+
+        // 4. Pass the normalized 0.0 - 1.0 values to the factory
+        return biomeFactory.determineBiome(tempVal, moistVal);
+    }
+
     getTileAt(col, row) {
         const key = this._k(col, row);
         if (this._tileCache.has(key)) return this._tileCache.get(key);
         
-        const val = this.noiseGen.get((col * 0.06) + this.offsetX, (row * 0.06) + this.offsetY);
+        const elevVal = this.elevationNoise.get((col * 0.06) + this.offsetX, (row * 0.06) + this.offsetY);
+        const biome = this.getBiomeAt(col, row);
         
-        let tileId;
-        if (val < -0.30) tileId = this.TILES.LAYER_0;
-        else if (val < -0.15) tileId = this.TILES.LAYER_1;
-        else if (val < 0.25)  tileId = this.TILES.LAYER_2;
-        else if (val < 0.50)  tileId = this.TILES.LAYER_3;
-        else if (val < 0.75)  tileId = this.TILES.LAYER_4;
-        else tileId = this.TILES.LAYER_5;
+        const tileId = biome.getTileId(elevVal);
 
         this._tileCache.set(key, tileId);
         return tileId;
     }
 
     canMove(fromCol, fromRow, toCol, toRow) {
+        const fromElev = this.getElevation(fromCol, fromRow);
         const toElev = this.getElevation(toCol, toRow);
         
-        if (toElev === -999) return false;
-        if (this.getElevation(fromCol, fromRow) !== toElev) return false;
+        // 1. Cannot walk into water
+        if (toElev === -999) return false; 
         
+        // 2. Fetch the specific depths for Layer 1 (Dirt) and Layer 2 (Surface)
+        const depthL1 = CONFIG.TILE_DEPTH[this.TILES.LAYER_1] || 1;
+        const depthL2 = CONFIG.TILE_DEPTH[this.TILES.LAYER_2] || 2;
+        
+        // 3. Allow movement if elevations are identical, OR if stepping between Dirt and Surface
+        const isDirtToGrass = (fromElev === depthL1 && toElev === depthL2) || 
+                              (fromElev === depthL2 && toElev === depthL1);
+        
+        if (fromElev !== toElev && !isDirtToGrass) {
+            return false;
+        }
+        
+        // 4. Normal wall and object collision checks
         if (this.isBlockedByFace(toCol, toRow)) return false;
         if (this.getSolidObjectAt(toCol, toRow)) return false; 
         
@@ -112,33 +124,23 @@ export class WorldManager {
     }
 
     // ==========================================
-    // API: MEMORY MANAGEMENT (NEW)
+    // API: MEMORY MANAGEMENT
     // ==========================================
 
-    /**
-     * Removes objects and cache data that are far away from the player.
-     * Call this every ~2 seconds.
-     */
     prune(cameraX, cameraY) {
         const TILE_SIZE = CONFIG.TILE_SIZE;
-        // Distance in pixels to keep objects (e.g., 2000px radius)
         const SAFE_DISTANCE = 2500; 
         const distSq = SAFE_DISTANCE * SAFE_DISTANCE;
 
-        // 1. Prune Instantiated Objects
         for (const [key, obj] of this.objects) {
-            // Calculate distance from object to camera
             const dx = (obj.col * TILE_SIZE) - cameraX;
             const dy = (obj.row * TILE_SIZE) - cameraY;
             
-            // If too far, delete from Map
             if ((dx * dx + dy * dy) > distSq) {
                 this.objects.delete(key);
             }
         }
 
-        // 2. Clear caches if they get too massive
-        // (It is faster to clear all and regenerate than to search/prune bitwise keys individually)
         if (this._procCache.size > 20000) {
             console.log(`[WorldManager] Pruning Memory: Cleared ${this._procCache.size} cached tiles.`);
             this._procCache.clear();
@@ -152,6 +154,7 @@ export class WorldManager {
 
     getTileData(col, row) {
         const tileId = this.getTileAt(col, row);
+        const biome = this.getBiomeAt(col, row); // Needed for sheetId
         const isBlob = CONFIG.BLOB_TILES?.includes(tileId);
         
         return { 
@@ -159,16 +162,43 @@ export class WorldManager {
             mask: isBlob ? this.getSpecificMask(col, row, tileId) : 0, 
             isBlob: isBlob, 
             isWall: (tileId >= this.TILES.LAYER_3 && tileId <= this.TILES.LAYER_5), 
-            object: this.getObject(col, row) 
+            object: this.getObject(col, row),
+            biomeId: biome.id,
+            sheetId: biome.sheetId,
+            objectSheetId: biome.objectSheetId // NEW: Expose the object sheet ID
         };
     }
 
     getSpecificMask(col, row, targetId) {
         let mask = 0;
+        const myBiome = this.getBiomeAt(col, row);
+
         for (const d of MASK_DIRECTIONS) {
-            const nId = this.getTileAt(col + d.c, row + d.r);
-            if (targetId === nId || (CONFIG.TILE_DEPTH[nId] || 0) >= (CONFIG.TILE_DEPTH[targetId] || 0)) {
-                mask |= d.bit;
+            const nCol = col + d.c;
+            const nRow = row + d.r;
+            
+            const nId = this.getTileAt(nCol, nRow);
+            const nBiome = this.getBiomeAt(nCol, nRow);
+
+            const targetDepth = CONFIG.TILE_DEPTH[targetId] || 0;
+            const neighborDepth = CONFIG.TILE_DEPTH[nId] || 0;
+
+            // 1. Structural layers (Water, Dirt, Cliffs) form the solid earth. 
+            // They should ALWAYS connect to each other across biome boundaries!
+            const isStructuralLayer = (targetId !== this.TILES.LAYER_2);
+
+            // 2. Surface layer (Grass/Sand) splits across biomes to reveal dirt paths.
+            // BUT, if it hits a Cliff (higher elevation) in a neighboring biome, 
+            // it should flush up against it so we don't get weird dirt gaps at mountain bases.
+            const isConnectingUpward = (neighborDepth > targetDepth);
+
+            // Connect ONLY IF:
+            // - It's a structural layer OR the same biome OR flushing against a cliff
+            if (isStructuralLayer || myBiome.id === nBiome.id || isConnectingUpward) {
+                // Standard autotile rule: connect if neighbor is same tile or higher elevation
+                if (targetId === nId || neighborDepth >= targetDepth) {
+                    mask |= d.bit;
+                }
             }
         }
         return mask;
@@ -252,30 +282,29 @@ export class WorldManager {
         if (this.isBlockedByFace(col, row) || this.isCliffFace(col, row) || this.isBiomeEdge(col, row)) return null;
 
         const tileId = this.getTileAt(col, row);
-        const rules = SPAWN_TABLE[tileId] || ((tileId >= this.TILES.LAYER_3 && tileId <= this.TILES.LAYER_5) ? SPAWN_TABLE._WALLS : null);
-        
-        if (!rules) return null;
+        const biome = this.getBiomeAt(col, row);
+        const isWall = (tileId >= this.TILES.LAYER_3 && tileId <= this.TILES.LAYER_5);
 
         const rng = this.pseudoRandom(col, row);
+        
+        const spawnData = biome.getSpawnId(tileId, rng, isWall);
 
-        for (const rule of rules) {
-            if (rule.rangeStart && rng < rule.rangeStart) continue;
-            
-            if (rng < rule.chance) {
-                let id = rule.id;
-                if (rule.pool) id = rule.pool[Math.floor(rng * 1000) % rule.pool.length];
-                
-                if (rule.footprint && !this.isFootprintValid(col, row, rule.footprint)) return null;
-                
-                return id;
-            }
+        if (!spawnData) return null;
+
+        if (spawnData.footprint && !this.isFootprintValid(col, row, spawnData.footprint)) {
+            return null;
         }
-        return null;
+        
+        return spawnData.id;
     }
 
     createObjectInstance(col, row, id) {
         const config = MAP_OBJECTS[id];
         if (!config) return null;
+
+        // NEW: Fetch the biome to get the object spritesheet ID
+        const biome = this.getBiomeAt(col, row);
+
         return {
             ...config,
             type: id, col, row,
@@ -283,6 +312,7 @@ export class WorldManager {
             h: config.height || config.h || 1,
             instanceId: `proc_${col}_${row}`,
             isAnchor: true,
+            sheetId: biome.objectSheetId, // NEW: Attach the sheet ID directly to the object!
             interaction: config.interaction || null
         };
     }
@@ -337,20 +367,23 @@ export class WorldManager {
 
     isFootprintValid(col, row, width) {
         const elev = this.getElevation(col, row);
-        for (let i = 1; i < width; i++) {
-            const c = col + i;
-            if (this.getElevation(c, row) !== elev || 
-                this.isBlockedByFace(c, row) || 
-                this.isCliffFace(c, row) || 
-                this.isBiomeEdge(c, row)) return false;
+        // Proper 2D loop to ensure the whole X/Y grid footprint is on flat ground
+        for (let r = row; r < row + width; r++) {
+            for (let c = col; c < col + width; c++) {
+                if (c === col && r === row) continue; // Skip anchor
+                
+                if (this.getElevation(c, r) !== elev || 
+                    this.isBlockedByFace(c, r) || 
+                    this.isCliffFace(c, r) || 
+                    this.isBiomeEdge(c, r)) return false;
+            }
         }
         return true;
     }
     
     getElevation(col, row) {
         const id = this.getTileAt(col, row);
-        if (id === this.TILES.LAYER_0) return -999;
-        if (id === this.TILES.LAYER_1 || id === this.TILES.LAYER_2) return 1;
+        if (id === this.TILES.LAYER_0) return -999; 
         return CONFIG.TILE_DEPTH[id] || 0;
     }
 
@@ -379,8 +412,15 @@ export class WorldManager {
     }
 
     isBiomeEdge(col, row) {
+        const myBiomeId = this.getBiomeAt(col, row).id;
         const myD = CONFIG.TILE_DEPTH[this.getTileAt(col, row)] || 0;
-        const check = (c, r) => (CONFIG.TILE_DEPTH[this.getTileAt(c, r)] || 0) < myD;
+        
+        const check = (c, r) => {
+            // It is an edge if the elevation drops OR the biome changes
+            return ((CONFIG.TILE_DEPTH[this.getTileAt(c, r)] || 0) < myD) || 
+                   (this.getBiomeAt(c, r).id !== myBiomeId);
+        };
+        
         return check(col, row-1) || check(col+1, row) || check(col, row+1) || check(col-1, row);
     }
 

@@ -8,9 +8,11 @@ import { gameState } from '../../shared/state/gameState.js'; // Moved to top for
 const assetLoader = new AssetLoader();
 
 const ASSET_MANIFEST = {
-    tileset: './assets/tilesets/plains.png',
+    plains: './assets/tilesets/plains.png',
+    desert: './assets/tilesets/desert.png',
+    plainsMapObjects: './assets/tilesets/plains_map_objects.png',
+    desertMapObjects: './assets/tilesets/plains_map_objects.png',
     spritesheet: './assets/sprites/hero.png',
-    mapObjects: './assets/tilesets/objects.png',
     shadows: './assets/tilesets/shadows.png',
 
     legionaryHeroPortrait: './assets/sprites/legionary_hero/legionary_hero_portrait.png',

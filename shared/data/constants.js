@@ -1,6 +1,40 @@
-/**
- * Global Game Configuration
- */
+// ===============================================
+// TILE REGISTRY
+// ===============================================
+const TILE_DEFINITIONS = {
+    // ID remains the same everywhere. Depth remains the same everywhere.
+    // The offset is the default row on the sprite sheet.
+    LAYER_5: { id: 5, depth: 5, defaultOffset: 1,  isBlob: true },  // High Wall
+    LAYER_4: { id: 4, depth: 4, defaultOffset: 9,  isBlob: true },  // Mid Wall
+    LAYER_3: { id: 3, depth: 3, defaultOffset: 17, isBlob: true },  // Low Wall
+    LAYER_2: { id: 2, depth: 2, defaultOffset: 25, isBlob: true },  // Ground 2 (Grass/Sand)
+    LAYER_1: { id: 1, depth: 1, defaultOffset: 33, isBlob: true },  // Ground 1 (Dirt/Wet Sand)
+    LAYER_0: { id: 0, depth: 0, defaultOffset: 41, isBlob: false }, // Water
+};
+
+// --- Auto-generate the configuration objects from the registry ---
+const buildTileConfig = () => {
+    const types = {};
+    const depth = {};
+    const defaultOffsets = {};
+    const blobs = [];
+
+    for (const [key, config] of Object.entries(TILE_DEFINITIONS)) {
+        types[key] = config.id;
+        depth[config.id] = config.depth;
+        defaultOffsets[config.id] = config.defaultOffset;
+        if (config.isBlob) blobs.push(config.id);
+    }
+
+    return { types, depth, defaultOffsets, blobs };
+};
+
+const processedTiles = buildTileConfig();
+
+
+// ===============================================
+// GLOBAL CONFIGURATION
+// ===============================================
 export const CONFIG = {
     // --- Visuals & Display ---
     TILE_SIZE: 32,
@@ -27,55 +61,26 @@ export const CONFIG = {
         FRAMES: [0, 1, 2, 3, 4, 5, 6, 7]  // The first 4 tiles on the Water Row (Row 41)
     },
 
-    // --- Asset Keys ---
-    TILE_TYPES: {
-        LAYER_5: 5,  // Highest Wall
-        LAYER_4: 4,  // Mid Wall
-        LAYER_3: 3,  // Low Wall
-        LAYER_2: 2,  // Grass
-        LAYER_1: 1,  // Dirt
-        LAYER_0: 0,  // Water
-    },
-
-    // Defines the physical stacking order (Visual Height)
-    TILE_DEPTH: {
-        5: 5, // Wall High 
-        4: 4, // Wall Mid
-        3: 3, // Wall Low
-        2: 2, // Grass
-        1: 1, // Dirt
-        0: 0, // Water
-    },
-
-    // Texture Y-Offsets (Row numbers in the sprite sheet)
-    BLOB_OFFSETS: {
-        5: 1,
-        4: 9,
-        3: 17,
-        2: 25,
-        1: 33,
-        0: 41, // Water is on Row 41
-    },
-
-    // Ensure our new walls are treated as blobs
-    BLOB_TILES: [1, 2, 3, 4, 5],
-
-    ASSETS: {
-        // Standard 1x1 Object
-        PINE_TREE_SMALL: { x: 0, y: 0, w: 1, h: 2 }, 
-
-        // Big 2x2 Tree 
-        BIG_TREE:   { x: 1, y: 0, w: 2, h: 2 }  
-    }
+    // --- Asset Keys & Mechanics (Auto-populated from TILE_REGISTRY) ---
+    TILE_TYPES: processedTiles.types,
+    TILE_DEPTH: processedTiles.depth,
+    // FIX: Updated to use processedTiles.defaultOffsets
+    BLOB_OFFSETS: processedTiles.defaultOffsets, 
+    BLOB_TILES: processedTiles.blobs,
 };
 
+
+// ===============================================
+// MASKS & LOGIC CONSTANTS
+// ===============================================
 export const BITMASK = {
     TOP: 1, TOP_RIGHT: 2, RIGHT: 4, BOTTOM_RIGHT: 8,
     BOTTOM: 16, BOTTOM_LEFT: 32, LEFT: 64, TOP_LEFT: 128
 };
 
+
 // ===============================================
-// ✅ NEW: COMBAT & STATS CONSTANTS
+// COMBAT & STATS CONSTANTS
 // ===============================================
 
 // 1. The Source of Truth for Logic (StatCalculator uses this)

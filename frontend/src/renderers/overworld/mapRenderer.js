@@ -1,5 +1,6 @@
 import { CONFIG } from '../../../../shared/data/constants.js';
 import { SPRITES } from '../../../../shared/data/sprites.js';
+import { gameState } from '../../../../shared/state/gameState.js';
 
 export class MapRenderer {
     constructor(canvas, loader, config) {
@@ -9,14 +10,15 @@ export class MapRenderer {
         this.config = config || CONFIG; 
         this.ctx.imageSmoothingEnabled = false;
 
-        this.tilesetImage = this.loader.get('tileset'); 
-        this.objectImage = this.loader.get('mapObjects') || this.loader.get('spritesheet');
         this.shadowImage = this.loader.get('shadows'); 
+        this.fallbackTileset = this.loader.get('plains'); 
+        
+        // FIX: Replaced 'mapObjects' with 'plainsMapObjects' as the default fallback
+        this.fallbackObjects = this.loader.get('plainsMapObjects') || this.loader.get('spritesheet');
 
         this.blobMap = new Map();
         this.shadowOverrides = new Map();
         
-        // Initialize Lookups (Bitmasks & Blobs)
         this.initBlobTables();
     }
 
@@ -25,18 +27,14 @@ export class MapRenderer {
     // ==========================================
 
     renderMap(worldManager, camera, entities = [], totalTime = 0) {
-        // 1. Clear Screen
         this.ctx.fillStyle = '#000000';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // 2. Calculate View Bounds (Culling)
         const bounds = this.getViewBounds(camera);
 
-        // 3. PASS 1: Flat Terrain (Ground, Water, Shadows, Rugs)
         this.renderTerrainPass(worldManager, camera, bounds, totalTime);
-
-        // 4. PASS 2: Vertical Sort (Walls, Objects, Entities)
         this.renderSortedPass(worldManager, camera, bounds, entities, totalTime);
+        
     }
 
     // ==========================================
@@ -52,10 +50,11 @@ export class MapRenderer {
                 const tileData = worldManager.getTileData(col, row);
                 const depth = TILE_DEPTH[tileData.id] || 0;
                 const coords = this.getDrawCoords(col, row, camera);
+                const sheetId = tileData.sheetId || 'tileset';
 
                 // A. Water (Base Layer)
                 const waterFrame = this.getWaterFrame(col, row, totalTime);
-                this.drawTile(TILE_TYPES.LAYER_0, waterFrame, coords.x, coords.y);
+                this.drawTile(TILE_TYPES.LAYER_0, waterFrame, coords.x, coords.y, sheetId);
 
                 // B. Layer 1 (Sand/Dirt)
                 if (depth >= TILE_DEPTH[TILE_TYPES.LAYER_2]) {
@@ -63,25 +62,26 @@ export class MapRenderer {
                     const idx = isSand 
                         ? (this.blobMap.get(worldManager.getSpecificMask(col, row, TILE_TYPES.LAYER_1)) ?? 14)
                         : 14;
-                    this.drawTile(TILE_TYPES.LAYER_1, idx, coords.x, coords.y);
+                    this.drawTile(TILE_TYPES.LAYER_1, idx, coords.x, coords.y, sheetId);
                 }
 
                 // C. Stacked Cliff Layers (Underlay)
-                if (depth >= TILE_DEPTH[TILE_TYPES.LAYER_3]) this.drawTile(TILE_TYPES.LAYER_2, 14, coords.x, coords.y);
-                if (depth >= TILE_DEPTH[TILE_TYPES.LAYER_4]) this.drawTile(TILE_TYPES.LAYER_3, 14, coords.x, coords.y);
-                if (depth >= TILE_DEPTH[TILE_TYPES.LAYER_5]) this.drawTile(TILE_TYPES.LAYER_4, 14, coords.x, coords.y);
+                if (depth >= TILE_DEPTH[TILE_TYPES.LAYER_3]) this.drawTile(TILE_TYPES.LAYER_2, 14, coords.x, coords.y, sheetId);
+                if (depth >= TILE_DEPTH[TILE_TYPES.LAYER_4]) this.drawTile(TILE_TYPES.LAYER_3, 14, coords.x, coords.y, sheetId);
+                if (depth >= TILE_DEPTH[TILE_TYPES.LAYER_5]) this.drawTile(TILE_TYPES.LAYER_4, 14, coords.x, coords.y, sheetId);
 
                 // D. The Actual Tile Surface
                 if (tileData.id !== TILE_TYPES.LAYER_0) {
                     const idx = this.blobMap.get(tileData.mask) ?? 14;
-                    this.drawTile(tileData.id, idx, coords.x, coords.y);
+                    this.drawTile(tileData.id, idx, coords.x, coords.y, sheetId);
                 }
 
                 // E. Shadows & Ground Objects
                 this.drawShadows(worldManager, col, row, coords.x, coords.y, depth);
 
                 if (tileData.object && tileData.object.isGround) {
-                    this.drawObject(tileData.object, coords.x, coords.y, totalTime);
+                    // Pass tileData.objectSheetId
+                    this.drawObject(tileData.object, coords.x, coords.y, totalTime, tileData.objectSheetId);
                 }
             }
         }
@@ -101,15 +101,19 @@ export class MapRenderer {
         // B. Collect Objects
         const objects = worldManager.getActiveObjects ? worldManager.getActiveObjects() : [];
         for (const obj of objects) {
-            if (obj.isGround || !obj.isAnchor) continue; // Skip rugs or parts
+            if (obj.isGround || !obj.isAnchor) continue;
             if (this.isInBounds(obj.col, obj.row, bounds)) {
                 const coords = this.getDrawCoords(obj.col, obj.row, camera);
+                const tileData = worldManager.getTileData(obj.col, obj.row);
+                
                 renderList.push({
                     y: ((obj.row + 1) * TILE_SIZE * GAME_SCALE) + 0.1,
                     type: 'OBJECT',
                     data: obj,
                     x: coords.x,
-                    dy: coords.y
+                    dy: coords.y,
+                    sheetId: tileData.sheetId,
+                    objectSheetId: tileData.objectSheetId // FIX: Include object sheet identifier
                 });
             }
         }
@@ -128,9 +132,10 @@ export class MapRenderer {
 
         for (const item of renderList) {
             if (item.type === 'WALL_FACE') {
-                this.drawTile(item.data.id, item.data.idx, item.x, item.dy);
+                this.drawTile(item.data.id, item.data.idx, item.x, item.dy, item.sheetId);
             } else if (item.type === 'OBJECT') {
-                this.drawObject(item.data, item.x, item.dy, totalTime);
+                // FIX: Pass the newly mapped objectSheetId to drawObject
+                this.drawObject(item.data, item.x, item.dy, totalTime, item.objectSheetId);
             } else if (item.type === 'ENTITY') {
                 this.drawEntity(item.data, camera);
             }
@@ -141,16 +146,23 @@ export class MapRenderer {
     // 4. DRAWING PRIMITIVES
     // ==========================================
 
-    drawTile(typeId, index, dx, dy, imageKey = 'tileset') {
+    drawTile(typeId, index, dx, dy, sheetId) {
         const { TILE_SIZE, TILE_PADDING, GAME_SCALE, BLOB_OFFSETS } = this.config;
-        const source = (imageKey === 'shadows') ? this.shadowImage : this.tilesetImage;
+        
+        let source;
+        if (sheetId === 'shadows') {
+            source = this.shadowImage;
+        } else {
+            source = this.loader.get(sheetId) || this.fallbackTileset;
+        }
+        
         if (!source) return;
 
         const drawSize = TILE_SIZE * GAME_SCALE;
         const slotSize = TILE_SIZE + (TILE_PADDING * 2);
 
         let startRow = 0;
-        if (imageKey === 'tileset' && BLOB_OFFSETS?.[typeId] !== undefined) {
+        if (sheetId !== 'shadows' && BLOB_OFFSETS?.[typeId] !== undefined) {
             startRow = BLOB_OFFSETS[typeId];
         }
 
@@ -160,9 +172,15 @@ export class MapRenderer {
         this.ctx.drawImage(source, sx, sy, TILE_SIZE, TILE_SIZE, dx, dy, drawSize, drawSize);
     }
 
-    drawObject(obj, dx, dy, totalTime = 0) {
+    drawObject(obj, dx, dy, totalTime = 0, objectSheetId = null) {
         const sprite = SPRITES[obj.spriteKey];
-        if (!this.objectImage || !sprite) return;
+        if (!sprite) return;
+        
+        // FIX: Uses the explicitly defined objectSheetId from the biome model
+        const sheetToUse = obj.sheetId || objectSheetId;
+        const imageSource = sheetToUse ? (this.loader.get(sheetToUse) || this.fallbackObjects) : this.fallbackObjects;
+        
+        if (!imageSource) return;
 
         const { OBJECT_SIZE, TILE_SIZE, GAME_SCALE } = this.config;
         let frameOffset = 0;
@@ -177,10 +195,9 @@ export class MapRenderer {
         const dW = sprite.w * OBJECT_SIZE * GAME_SCALE;
         const dH = sprite.h * OBJECT_SIZE * GAME_SCALE;
         
-        // Anchor to bottom-left of tile
         const heightOffset = dH - (TILE_SIZE * GAME_SCALE);
 
-        this.ctx.drawImage(this.objectImage, sx, sy, sprite.w * OBJECT_SIZE, sprite.h * OBJECT_SIZE, 
+        this.ctx.drawImage(imageSource, sx, sy, sprite.w * OBJECT_SIZE, sprite.h * OBJECT_SIZE, 
                            Math.floor(dx), Math.floor(dy - heightOffset), dW, dH);
     }
 
@@ -193,10 +210,9 @@ export class MapRenderer {
         const dy = Math.round((entity.y - camera.y) * GAME_SCALE);
         const drawSize = TILE_SIZE * GAME_SCALE;
 
-        // FIXED: Swapped UP (1) and DOWN (0)
         const rowMap = { 
-            "UP": 1,    // Row 1 = Back View (Moving Up)
-            "DOWN": 0,  // Row 0 = Front View (Moving Down)
+            "UP": 1,
+            "DOWN": 0,
             "LEFT": 2, 
             "RIGHT": 3 
         };
@@ -277,7 +293,6 @@ export class MapRenderer {
             startCol, startRow,
             endCol: startCol + tilesX,
             endRow: startRow + tilesY,
-            // Object specific bounds (slightly larger)
             objStartCol: startCol - (OBJ_PAD - VIEW_PAD),
             objEndCol: startCol + tilesX + (OBJ_PAD - VIEW_PAD),
             objStartRow: startRow - (OBJ_PAD - VIEW_PAD),
@@ -302,7 +317,6 @@ export class MapRenderer {
         const { WATER_ANIMATION } = this.config;
         if (!WATER_ANIMATION) return 0;
         
-        // Math.abs fixes black tile glitch by preventing negative indices
         const hash = Math.abs(Math.sin(col * 12.9898 + row * 78.233) * 43758.5453);
         const adjustedTime = totalTime + hash;
         const step = Math.floor(adjustedTime / WATER_ANIMATION.SPEED);
@@ -323,12 +337,11 @@ export class MapRenderer {
                 const myDepth = TILE_DEPTH[tileData.id];
                 const coords = this.getDrawCoords(col, row, camera);
 
-                // Check downward for cliff faces
                 for (let d = 1; d <= (WALL_HEIGHT || 2); d++) {
                     const belowId = worldManager.getTileAt(col, row + d);
                     const belowDepth = TILE_DEPTH[belowId] || 0;
 
-                    if (belowDepth >= myDepth) break; // Floor met
+                    if (belowDepth >= myDepth) break;
 
                     const isFoot = (d === (WALL_HEIGHT || 2)) || (belowDepth >= TILE_DEPTH[TILE_TYPES.LAYER_3]);
                     const faceIdx = this.getFaceIndex(tileData.mask, isFoot);
@@ -338,7 +351,8 @@ export class MapRenderer {
                         type: 'WALL_FACE',
                         data: { id: tileData.id, idx: faceIdx },
                         x: coords.x,
-                        dy: coords.y + (d * drawSize)
+                        dy: coords.y + (d * drawSize),
+                        sheetId: tileData.sheetId 
                     });
 
                     if (isFoot) break;

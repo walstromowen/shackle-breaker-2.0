@@ -18,6 +18,7 @@ Root
 │   │   │   └── overworldController.js
 │   │   ├── core/
 │   │   │   ├── assetLoader.js
+│   │   │   ├── audioManager.js
 │   │   │   ├── eventBus.js
 │   │   │   ├── gameLoop.js
 │   │   │   ├── input.js

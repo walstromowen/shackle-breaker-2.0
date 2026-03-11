@@ -15,41 +15,38 @@ export class OverworldController {
         this.camera = { x: 0, y: 0 };
         this.updateCamera();
 
-        // 3. LOCK FLAG (New)
-        // Prevents inputs and updates during transitions
+        // 3. LOCK FLAG
+        // Prevents inputs and updates during scene transitions or events
         this.isLocked = false;
     }
 
-    /**
-     * --- EVENT RECEIVER ---
-     */
+    // ==========================================
+    // INPUT HANDLING
+    // ==========================================
+
     handleKeyDown(code) {
-        // IGNORE INPUT IF LOCKED
         if (this.isLocked) return;
 
-        // Interact Actions
         if (code === 'Space' || code === 'Enter') {
             this.interact();
         }
 
-        // Toggle Party Menu
         if (code === 'KeyP') {
             console.log("[Overworld] Opening Party Menu...");
-            this.isLocked = true; // Freeze while switching scenes
+            this.isLocked = true; 
             events.emit('CHANGE_SCENE', { scene: 'party' });
         }
 
-        // Context Actions (Inventory)
         if (code === 'KeyI') {
-            console.log("Opening Inventory...");
+            console.log("[Overworld] Opening Inventory...");
         }
     }
 
-    /**
-     * --- CONTINUOUS LOOP ---
-     */
+    // ==========================================
+    // GAME LOOP
+    // ==========================================
+
     update(dt) {
-        // STOP UPDATES IF LOCKED
         if (this.isLocked) return;
 
         if (this.player.isMoving) {
@@ -60,12 +57,13 @@ export class OverworldController {
         this.updateCamera();
     }
 
-    // --- LOGIC: MOVEMENT & INTERACTION ---
+    // ==========================================
+    // MOVEMENT & INTERACTION LOGIC
+    // ==========================================
 
     interact() {
         if (this.player.isMoving || this.isLocked) return;
 
-        // 1. Calculate the tile we are facing
         const { TILE_SIZE } = this.config;
         let targetX = this.player.x;
         let targetY = this.player.y;
@@ -78,19 +76,18 @@ export class OverworldController {
         const lookCol = Math.floor(targetX / TILE_SIZE);
         const lookRow = Math.floor(targetY / TILE_SIZE);
 
-        // 2. Priority Check: Is there a Large Object here?
+        // 1. Priority Check: Is there a Large Object here?
         let obj = this.worldManager.getSolidObjectAt(lookCol, lookRow);
 
-        // 3. Fallback: Single-tile object
+        // 2. Fallback: Single-tile object
         if (!obj) {
             obj = this.worldManager.getObject(lookCol, lookRow);
         }
             
-        // 4. Trigger Interaction
+        // 3. Trigger Interaction
         if (obj && obj.interaction) {
             console.log(`[Overworld] Interacting with ${obj.type} at ${obj.col},${obj.row}`);
 
-            // FREEZE THE GAME
             this.isLocked = true;
 
             events.emit('INTERACT', {
@@ -112,7 +109,6 @@ export class OverworldController {
         let nextX = this.player.x;
         let nextY = this.player.y;
 
-        // Update facing direction immediately
         this.player.direction = dir;
 
         if (dir === "UP")    nextY -= TILE_SIZE;
@@ -135,22 +131,18 @@ export class OverworldController {
     }
 
     continueMoving(dt) {
-        // 1. Update Progress
         const moveSpeed = this.config.WALK_DURATION; 
         this.player.moveProgress += dt / moveSpeed;
         
-        // 2. Animate Sprite
         this.player.animTimer += dt;
         if (this.player.animTimer > 0.1) {
             this.player.animTimer = 0;
             this.player.animFrame = (this.player.animFrame + 1) % 4;
         }
 
-        // 3. Check Completion
         if (this.player.moveProgress >= 1) {
             this.finishMove();
         } else {
-            // Lerp Position
             this.player.x = this.player.sourceX + (this.player.destX - this.player.sourceX) * this.player.moveProgress;
             this.player.y = this.player.sourceY + (this.player.destY - this.player.sourceY) * this.player.moveProgress;
         }
@@ -162,16 +154,14 @@ export class OverworldController {
         this.player.isMoving = false;
         this.player.moveProgress = 0;
 
-        // Sync to Game State
+        // Sync to global Game State
         gameState.player.col = Math.floor(this.player.x / this.config.TILE_SIZE);
         gameState.player.row = Math.floor(this.player.y / this.config.TILE_SIZE);
         gameState.player.direction = this.player.direction;
 
-        // Check for Ambush
+        // Check for biome-specific events (e.g., ambushes)
         this.checkTileEvents();
 
-        // CRITICAL FIX: If checkTileEvents locked us (ambush triggered), stop here!
-        // Do not allow checking for a new move.
         if (this.isLocked) return;
 
         if (this.input.direction) {
@@ -181,46 +171,36 @@ export class OverworldController {
         }
     }
 
-    // --- HELPERS ---
-    // 10% Chance on Grass      if (tileId === this.config.TILE_TYPES.GRASS && Math.random() < 0.10) {if (tileId === this.config.TILE_TYPES.GRASS && Math.random() < 0.10) {
     checkTileEvents() {
         const col = Math.floor(this.player.x / this.config.TILE_SIZE);
         const row = Math.floor(this.player.y / this.config.TILE_SIZE);
         
-        // 20% Chance (based on < 0.20)
-        if (Math.random() < 0.05) {
-            
-            // FREEZE THE GAME
-            this.isLocked = true;
-            this.player.isMoving = false;
-            this.player.moveProgress = 0;
+        // Use the WorldManager to determine our current biome
+        const biome = this.worldManager.getBiomeAt(col, row);
 
-            // --- TEST ROSTER SETUP ---
-            const enemyParty = [];
-            for (let i = 0; i < 3; i++) {
-                if(Math.random() < 0.3) {
-                    const wolf = EntityFactory.create('WOLF');
-                    wolf.name = `Wolf ${i + 1}`;
-                    enemyParty.push(wolf);
-                    continue;
-                }
-                const legionary = EntityFactory.create('LEGIONARY');
-                legionary.name = `Legionary ${i + 1}`; 
-                //legionary.hp = 30;                      
-                //legionary.stamina = 1;                
-                
-                // --- FORCE STATUS EFFECT ---
-                // The BattleController parses this array and applies the effects automatically
-                //legionary.startingStatuses = ['poison']; 
-                
-                enemyParty.push(legionary);
-            }
+        // Ask the specific biome to roll for an encounter based on its internal logic
+        const battleData = biome.getBattle();
 
-            // Emit the battle event with the full roster
-            events.emit('START_BATTLE', {
-                enemies: enemyParty,
-            });
+        if (!battleData) return;
+
+        console.log(`[Overworld] Ambush triggered in biome: ${biome.id}!`);
+
+        // Lock the overworld while the battle takes place
+        this.isLocked = true;
+        this.player.isMoving = false;
+        this.player.moveProgress = 0;
+
+        // Generate the enemy party specifically catered to this biome
+        const enemyParty = [];
+        for (const enemyId of battleData.enemies) {
+            const enemyEntity = EntityFactory.create(enemyId);
+            enemyEntity.name = `${enemyEntity.name || enemyId} ${enemyParty.length + 1}`;
+            enemyParty.push(enemyEntity);
         }
+
+        events.emit('START_BATTLE', {
+            enemies: enemyParty,
+        });
     }
 
     isSpaceFree(targetX, targetY) {
@@ -234,6 +214,10 @@ export class OverworldController {
 
         return this.worldManager.canMove(startCol, startRow, endCol, endRow);
     }
+
+    // ==========================================
+    // CAMERA & STATE
+    // ==========================================
 
     updateCamera() {
         const { CANVAS_WIDTH, CANVAS_HEIGHT, GAME_SCALE, TILE_SIZE } = this.config;
@@ -256,6 +240,7 @@ export class OverworldController {
             startY = savedRow * this.config.TILE_SIZE;
         } 
         else {
+            // Utilizes the WorldManager's standardized flat-ground spawn logic
             const spawn = this.worldManager.findSpawnPoint();
             startX = spawn.col * this.config.TILE_SIZE;
             startY = spawn.row * this.config.TILE_SIZE;
