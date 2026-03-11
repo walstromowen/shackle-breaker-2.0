@@ -16,7 +16,6 @@ export class OverworldController {
         this.updateCamera();
 
         // 3. LOCK FLAG
-        // Prevents inputs and updates during scene transitions or events
         this.isLocked = false;
     }
 
@@ -76,17 +75,11 @@ export class OverworldController {
         const lookCol = Math.floor(targetX / TILE_SIZE);
         const lookRow = Math.floor(targetY / TILE_SIZE);
 
-        // 1. Priority Check: Is there a Large Object here?
-        let obj = this.worldManager.getSolidObjectAt(lookCol, lookRow);
-
-        // 2. Fallback: Single-tile object
-        if (!obj) {
-            obj = this.worldManager.getObject(lookCol, lookRow);
-        }
+        // Fetch ANY object overlapping this tile, regardless of whether it's solid or not
+        const obj = this.worldManager.getObjectAt(lookCol, lookRow);
             
-        // 3. Trigger Interaction
         if (obj && obj.interaction) {
-            console.log(`[Overworld] Interacting with ${obj.type} at ${obj.col},${obj.row}`);
+            console.log(`[Overworld] Interacting with ${obj.id} at ${obj.col},${obj.row}`);
 
             this.isLocked = true;
 
@@ -95,7 +88,7 @@ export class OverworldController {
                 context: {                
                     col: obj.col,
                     row: obj.row,
-                    objectId: obj.type
+                    objectId: obj.id
                 }
             });
         }
@@ -154,12 +147,10 @@ export class OverworldController {
         this.player.isMoving = false;
         this.player.moveProgress = 0;
 
-        // Sync to global Game State
         gameState.player.col = Math.floor(this.player.x / this.config.TILE_SIZE);
         gameState.player.row = Math.floor(this.player.y / this.config.TILE_SIZE);
         gameState.player.direction = this.player.direction;
 
-        // Check for biome-specific events (e.g., ambushes)
         this.checkTileEvents();
 
         if (this.isLocked) return;
@@ -175,22 +166,17 @@ export class OverworldController {
         const col = Math.floor(this.player.x / this.config.TILE_SIZE);
         const row = Math.floor(this.player.y / this.config.TILE_SIZE);
         
-        // Use the WorldManager to determine our current biome
         const biome = this.worldManager.getBiomeAt(col, row);
-
-        // Ask the specific biome to roll for an encounter based on its internal logic
         const battleData = biome.getBattle();
 
         if (!battleData) return;
 
         console.log(`[Overworld] Ambush triggered in biome: ${biome.id}!`);
 
-        // Lock the overworld while the battle takes place
         this.isLocked = true;
         this.player.isMoving = false;
         this.player.moveProgress = 0;
 
-        // Generate the enemy party specifically catered to this biome
         const enemyParty = [];
         for (const enemyId of battleData.enemies) {
             const enemyEntity = EntityFactory.create(enemyId);
@@ -240,7 +226,6 @@ export class OverworldController {
             startY = savedRow * this.config.TILE_SIZE;
         } 
         else {
-            // Utilizes the WorldManager's standardized flat-ground spawn logic
             const spawn = this.worldManager.findSpawnPoint();
             startX = spawn.col * this.config.TILE_SIZE;
             startY = spawn.row * this.config.TILE_SIZE;
@@ -254,6 +239,7 @@ export class OverworldController {
             isPlayer: true,
             x: startX,
             y: startY,
+            hitbox: { y: 0.5, h: 0.5 },
             direction: gameState.player.direction || "DOWN",
             isMoving: false,
             animFrame: 0, 

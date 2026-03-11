@@ -99,33 +99,44 @@ export class MapRenderer {
         this.collectWallFaces(worldManager, bounds, camera, renderList);
 
         // B. Collect Objects
-        const objects = worldManager.getActiveObjects ? worldManager.getActiveObjects() : [];
-        for (const obj of objects) {
-            if (obj.isGround || !obj.isAnchor) continue;
-            if (this.isInBounds(obj.col, obj.row, bounds)) {
-                const coords = this.getDrawCoords(obj.col, obj.row, camera);
-                const tileData = worldManager.getTileData(obj.col, obj.row);
-                
-                renderList.push({
-                    y: ((obj.row + 1) * TILE_SIZE * GAME_SCALE) + 0.1,
-                    type: 'OBJECT',
-                    data: obj,
-                    x: coords.x,
-                    dy: coords.y,
-                    sheetId: tileData.sheetId,
-                    objectSheetId: tileData.objectSheetId // FIX: Include object sheet identifier
-                });
-            }
-        }
+        const objects = worldManager.getActiveObjects ? worldManager.getActiveObjects() : [];
+        for (const obj of objects) {
+            if (obj.isGround || !obj.isAnchor) continue;
+            if (this.isInBounds(obj.col, obj.row, bounds)) {
+                const coords = this.getDrawCoords(obj.col, obj.row, camera);
+                const tileData = worldManager.getTileData(obj.col, obj.row);
+                
+                // FIX: Depth sorting MUST use the visual height (obj.h), not the collision hitbox.
+                // Hitboxes can be smaller than sprites, but depth relies on where the sprite touches the ground.
+                const visualBottomOffset = obj.h || 1;
+                
+                renderList.push({
+                    y: ((obj.row + visualBottomOffset) * TILE_SIZE * GAME_SCALE) + 0.1,
+                    type: 'OBJECT',
+                    data: obj,
+                    x: coords.x,
+                    dy: coords.y,
+                    objectSheetId: tileData.objectSheetId 
+                });
+            }
+        }
 
-        // C. Collect Entities
-        for (const entity of entities) {
-            renderList.push({
-                y: (entity.y + TILE_SIZE) * GAME_SCALE,
-                type: 'ENTITY',
-                data: entity
-            });
-        }
+        // C. Collect Entities
+        for (const entity of entities) {
+            // FIX: Safely calculate entity visual bottom to prevent NaN sorting errors.
+            let entityHitboxBottom = 1;
+            if (entity.hitbox) {
+                // Support both yOffset (objects) and y (common for entities)
+                const yOff = entity.hitbox.yOffset !== undefined ? entity.hitbox.yOffset : (entity.hitbox.y || 0);
+                entityHitboxBottom = yOff + (entity.hitbox.h || 1);
+            }
+            
+            renderList.push({
+                y: (entity.y + (entityHitboxBottom * TILE_SIZE)) * GAME_SCALE,
+                type: 'ENTITY',
+                data: entity
+            });
+        }
 
         // D. Sort & Draw
         renderList.sort((a, b) => a.y - b.y);
@@ -134,7 +145,6 @@ export class MapRenderer {
             if (item.type === 'WALL_FACE') {
                 this.drawTile(item.data.id, item.data.idx, item.x, item.dy, item.sheetId);
             } else if (item.type === 'OBJECT') {
-                // FIX: Pass the newly mapped objectSheetId to drawObject
                 this.drawObject(item.data, item.x, item.dy, totalTime, item.objectSheetId);
             } else if (item.type === 'ENTITY') {
                 this.drawEntity(item.data, camera);
@@ -173,16 +183,21 @@ export class MapRenderer {
     }
 
     drawObject(obj, dx, dy, totalTime = 0, objectSheetId = null) {
-        const sprite = SPRITES[obj.spriteKey];
-        if (!sprite) return;
+        // FIX: MapObjectModel stores the sprite key in 'obj.type'
+        const spriteKey = obj.spriteKey || obj.type || obj.id;
+        const sprite = SPRITES[spriteKey];
         
-        // FIX: Uses the explicitly defined objectSheetId from the biome model
+        if (!sprite) {
+            console.warn(`[MapRenderer] Missing sprite definition for: ${spriteKey}`);
+            return;
+        }
+        
         const sheetToUse = obj.sheetId || objectSheetId;
         const imageSource = sheetToUse ? (this.loader.get(sheetToUse) || this.fallbackObjects) : this.fallbackObjects;
         
         if (!imageSource) return;
 
-        const { OBJECT_SIZE, TILE_SIZE, GAME_SCALE } = this.config;
+        const { OBJECT_SIZE, GAME_SCALE } = this.config;
         let frameOffset = 0;
 
         if (sprite.frames > 1) {
@@ -195,10 +210,9 @@ export class MapRenderer {
         const dW = sprite.w * OBJECT_SIZE * GAME_SCALE;
         const dH = sprite.h * OBJECT_SIZE * GAME_SCALE;
         
-        const heightOffset = dH - (TILE_SIZE * GAME_SCALE);
-
+        // FIX: Removed heightOffset subtraction so the visual aligns perfectly with the grid/hitbox origin.
         this.ctx.drawImage(imageSource, sx, sy, sprite.w * OBJECT_SIZE, sprite.h * OBJECT_SIZE, 
-                           Math.floor(dx), Math.floor(dy - heightOffset), dW, dH);
+                           Math.floor(dx), Math.floor(dy), dW, dH);
     }
 
     drawEntity(entity, camera) {

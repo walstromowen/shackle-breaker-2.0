@@ -45,13 +45,13 @@ export class BattleRenderer {
         this.LAYOUT = {
             PLAYER: [
                 { x: 0.30, y: 0.55 }, // Lead: Raised up higher on the screen
+                { x: 0.45, y: 0.65 },  // Slot 3 (Right): Raised and placed exactly +0.15 away from lead
                 { x: 0.15, y: 0.65 }, // Slot 2 (Left): Raised and placed exactly -0.15 away from lead
-                { x: 0.45, y: 0.65 }  // Slot 3 (Right): Raised and placed exactly +0.15 away from lead
             ],
             ENEMY: [
                 { x: 0.70, y: 0.45 }, // Lead: Lowered further down toward the midline
+                { x: 0.55, y: 0.35 },  // Slot 3 (Left): Lowered, exactly -0.15 away from lead (Mirrors Slot 2!)
                 { x: 0.85, y: 0.35 }, // Slot 2 (Right): Lowered, exactly +0.15 away from lead
-                { x: 0.55, y: 0.35 }  // Slot 3 (Left): Lowered, exactly -0.15 away from lead (Mirrors Slot 2!)
             ]
         };
         this.displayStats = new WeakMap(); 

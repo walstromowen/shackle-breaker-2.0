@@ -17,7 +17,7 @@ export const BIOME_DEFINITIONS = {
             [CONFIG.TILE_TYPES.LAYER_2]: [ 
                 { chance: 0.001, id: 'WOODEN_CHEST' },
                 { chance: 0.004, id: 'CAMPFIRE' },
-                { chance: 0.004, id: 'SMALL_HOUSE_1', footprint: 4 },
+                
                 { chance: 0.014, id: 'OAK_TREE_1', footprint: 2 },
                 { chance: 0.044, id: 'PINE_TREE' },
                 { chance: 0.074, id: 'SMALL_ROCKS_1' },
@@ -34,7 +34,7 @@ export const BIOME_DEFINITIONS = {
             ]
         },
         battles: {
-            rate: 0.05,
+            rate: 0.005,
             pools: [
                 { chance: 0.50, enemies: ['WOLF', 'WOLF'] },           
                 { chance: 0.30, enemies: ['WOLF', 'WOLF', 'WOLF'] },   
@@ -47,12 +47,14 @@ export const BIOME_DEFINITIONS = {
         id: 'DESERT',
         sheetId: 'desert',                 // Terrain tileset
         objectSheetId: 'desertMapObjects', // Map objects tileset
+        // Ensure BOTH PLAINS and DESERT share the exact same threshold numbers!
         elevationMap: [
-            { threshold: -0.40, tile: CONFIG.TILE_TYPES.LAYER_0 },
-            { threshold: -0.30, tile: CONFIG.TILE_TYPES.LAYER_1 },
-            { threshold: 0.40,  tile: CONFIG.TILE_TYPES.LAYER_2 },
-            { threshold: 0.70,  tile: CONFIG.TILE_TYPES.LAYER_4 },
-            { threshold: 1.0,   tile: CONFIG.TILE_TYPES.LAYER_5 }  
+            { threshold: -0.30, tile: CONFIG.TILE_TYPES.LAYER_0 }, // Water
+            { threshold: -0.15, tile: CONFIG.TILE_TYPES.LAYER_1 }, // Dirt / Transition
+            { threshold: 0.40,  tile: CONFIG.TILE_TYPES.LAYER_2 }, // Main Surface (Grass/Sand)
+            { threshold: 0.65,  tile: CONFIG.TILE_TYPES.LAYER_3 }, // Lower Cliff
+            { threshold: 0.85,  tile: CONFIG.TILE_TYPES.LAYER_4 }, // Mid Cliff
+            { threshold: 1.0,   tile: CONFIG.TILE_TYPES.LAYER_5 }  // High Peak
         ],
         mapObjects: {
             [CONFIG.TILE_TYPES.LAYER_2]: [ 
@@ -64,7 +66,7 @@ export const BIOME_DEFINITIONS = {
             ]
         },
         battles: {
-            rate: 0.03,
+            rate: 0.003,
             pools: [
                 { chance: 0.50, enemies: ['WOLF', 'WOLF'] },           
                 { chance: 0.30, enemies: ['WOLF', 'WOLF', 'WOLF'] },   

@@ -31,7 +31,6 @@ Root
 │   │   │   ├── transitions/
 │   │   │   │    ├── transitionRenderer.js
 │   │   │   ├── overworld/
-│   │   │   │    ├── entityRenderer.js
 │   │   │   │    ├── lightningRenderer.js
 │   │   │   │    ├── mapRenderer.js
 │   │   │   ├── characterCreator/        
@@ -61,13 +60,14 @@ Root
 │   │   ├── constants.js
 │   │   ├── entityDefinitions.js    
 │   │   ├── itemDefinitions.js      
-│   │   ├── mapObjects.js
-│   │   └── sprites.js
+│   │   ├── mapObjectDefinitions.js
+│   │   └── 
 │   ├── models/ 
 |   │   ├── abilityModel.js   
 │   │   ├── battleAnimationModel.js                  
 │   │   ├── entityModel.js 
-│   │   ├── statusEffectModel.js                
+│   │   ├── statusEffectModel.js 
+│   │   ├── mapObjectModel.js                
 │   │   └── itemModel.js                 
 │   ├── registries/
 │   │   └── encounterRegistry.js
@@ -78,7 +78,8 @@ Root
 │   │   │   ├── abilityFactory.js   
 │   │   │   ├── battleAnimationFactory.js             
 │   │   │   ├── entityFactory.js 
-│   │   │   ├── statusEffectFactory.js     
+│   │   │   ├── statusEffectFactory.js 
+│   │   │   ├── mapObjectFactory.js     
 │   │   │   └── itemFactory.js
 │   │   ├── abilitySystem.js
 │   │   ├── targetingResolver.js
