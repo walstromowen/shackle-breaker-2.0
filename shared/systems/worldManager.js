@@ -3,6 +3,7 @@ import { MAP_OBJECTS_DEFINITIONS } from '../data/mapObjectDefinitions.js';
 import { gameState } from '../state/gameState.js';
 import { biomeFactory } from './factories/biomeFactory.js';
 import { mapObjectFactory } from '../../shared/systems/factories/mapObjectsFactory.js';
+import { WeatherFactory } from '../../shared/systems/factories/weatherFactory.js'; // NEW
 
 // ==========================================
 // CONFIGURATION
@@ -23,6 +24,12 @@ export class WorldManager {
     constructor() {
         if (!gameState.seed) gameState.seed = Math.floor(Math.random() * 1000000);
         if (!gameState.world.changes) gameState.world.changes = {};
+        
+        // --- NEW: Initialize weather properly if undefined ---
+        if (!gameState.world.currentWeather) {
+            gameState.world.currentWeather = WeatherFactory.createWeather('CLEAR');
+            gameState.world.currentWeather.intensity = 1.0;
+        }
 
         this.seed = gameState.seed;
         console.log(`%c[WorldManager] Seed: ${this.seed}`, 'color: #00ff00; font-weight: bold;');
@@ -309,41 +316,39 @@ export class WorldManager {
     // ==========================================
 
     getObjectAt(col, row) {
-        const RADIUS = 4;
-        // Search backwards/upwards to catch origins of large objects
-        for (let r = row - RADIUS; r <= row; r++) {
-            for (let c = col - RADIUS; c <= col; c++) {
-                
-                // 1. Fetch the object at the current searched coordinates
-                const object = this.getObject(c, r);
-                
-                // If no object originates here, skip to the next tile
-                if (!object) continue;
+        const RADIUS = 4;
+        // Search backwards/upwards to catch origins of large objects
+        for (let r = row - RADIUS; r <= row; r++) {
+            for (let c = col - RADIUS; c <= col; c++) {
+                
+                // 1. Fetch the object at the current searched coordinates
+                const object = this.getObject(c, r);
+                
+                // If no object originates here, skip to the next tile
+                if (!object) continue;
 
-                // ... (cache checking and custom collidesWith logic stays the same) ...
+                // 2. Default multi-tile Hitbox/Dimension logic
+                const def = MAP_OBJECTS_DEFINITIONS[object.id] || {};
+                
+                // FIXED: Changed .x and .y to .xOffset and .yOffset
+                const hbX = object.hitbox?.xOffset ?? def.hitbox?.xOffset ?? 0;
+                const hbY = object.hitbox?.yOffset ?? def.hitbox?.yOffset ?? 0;
+                
+                const hbW = object.hitbox?.w ?? def.hitbox?.w ?? def.w ?? 1;
+                const hbH = object.hitbox?.h ?? def.hitbox?.h ?? def.h ?? 1;
 
-                // 2. Default multi-tile Hitbox/Dimension logic
-                const def = MAP_OBJECTS_DEFINITIONS[object.id] || {};
-                
-                // FIXED: Changed .x and .y to .xOffset and .yOffset
-                const hbX = object.hitbox?.xOffset ?? def.hitbox?.xOffset ?? 0;
-                const hbY = object.hitbox?.yOffset ?? def.hitbox?.yOffset ?? 0;
-                
-                const hbW = object.hitbox?.w ?? def.hitbox?.w ?? def.w ?? 1;
-                const hbH = object.hitbox?.h ?? def.hitbox?.h ?? def.h ?? 1;
+                const minCol = object.col + hbX;
+                const maxCol = object.col + hbX + hbW - 1;
+                const minRow = object.row + hbY;
+                const maxRow = object.row + hbY + hbH - 1;
 
-                const minCol = object.col + hbX;
-                const maxCol = object.col + hbX + hbW - 1;
-                const minRow = object.row + hbY;
-                const maxRow = object.row + hbY + hbH - 1;
-
-                if (col >= minCol && col <= maxCol && row >= minRow && row <= maxRow) {
-                    return object;
-                }
-            }
-        }
-        return null;
-    }
+                if (col >= minCol && col <= maxCol && row >= minRow && row <= maxRow) {
+                    return object;
+                }
+            }
+        }
+        return null;
+    }
 
     getSolidObjectAt(col, row) {
         const obj = this.getObjectAt(col, row);

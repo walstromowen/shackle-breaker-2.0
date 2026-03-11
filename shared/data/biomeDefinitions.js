@@ -5,6 +5,7 @@ export const BIOME_DEFINITIONS = {
         id: 'PLAINS',
         sheetId: 'plains',                 // Terrain tileset
         objectSheetId: 'plainsMapObjects', // Map objects tileset (Trees, rocks, etc.)
+        allowedWeather: ['rain', 'fog'],
         elevationMap: [
             { threshold: -0.30, tile: CONFIG.TILE_TYPES.LAYER_0 },
             { threshold: -0.15, tile: CONFIG.TILE_TYPES.LAYER_1 },
@@ -46,6 +47,7 @@ export const BIOME_DEFINITIONS = {
     DESERT: {
         id: 'DESERT',
         sheetId: 'desert',                 // Terrain tileset
+        allowedWeather: ['sandstorm'],
         objectSheetId: 'desertMapObjects', // Map objects tileset
         // Ensure BOTH PLAINS and DESERT share the exact same threshold numbers!
         elevationMap: [

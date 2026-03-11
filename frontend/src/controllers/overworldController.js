@@ -1,6 +1,7 @@
 import { events } from '../core/eventBus.js';
 import { gameState } from '../../../shared/state/gameState.js';
 import { EntityFactory } from '../../../shared/systems/factories/entityFactory.js';
+import { WeatherFactory } from '../../../shared/systems/factories/weatherFactory.js'; // NEW: Import WeatherFactory
 
 export class OverworldController {
     constructor(input, config, worldManager) {
@@ -17,6 +18,12 @@ export class OverworldController {
 
         // 3. LOCK FLAG
         this.isLocked = false;
+        
+        // 4. Initialize Weather if missing
+        if (!gameState.world.currentWeather) {
+            gameState.world.currentWeather = WeatherFactory.createWeather('CLEAR');
+            gameState.world.currentWeather.intensity = 1.0;
+        }
     }
 
     // ==========================================
@@ -54,6 +61,22 @@ export class OverworldController {
             this.checkForNewMove();
         }
         this.updateCamera();
+        
+        // --- NEW: Update Weather Timer & Intensity ---
+        const weather = gameState.world.currentWeather;
+        if (weather && weather.id !== 'clear') {
+            // Decrease time remaining (assuming dt is in seconds)
+            weather.timeRemaining -= dt;
+            
+            // Pass fade duration (e.g., 5 seconds to fade in/out)
+            weather.updateIntensity(5.0);
+
+            if (weather.isFinished()) {
+                console.log(`[Weather] The ${weather.name} has naturally ended.`);
+                gameState.world.currentWeather = WeatherFactory.createWeather('CLEAR');
+                gameState.world.currentWeather.intensity = 1.0;
+            }
+        }
     }
 
     // ==========================================
@@ -151,7 +174,16 @@ export class OverworldController {
         gameState.player.row = Math.floor(this.player.y / this.config.TILE_SIZE);
         gameState.player.direction = this.player.direction;
 
+        // --- Core Tile Logic ---
         this.checkTileEvents();
+        
+        // --- NEW: Weather checks on tile entry ---
+        this.validateBiomeWeather();
+        
+        // 2% chance per tile step to start or stop weather dynamically
+        if (Math.random() < 0.02) {
+            this.rollForNewWeather();
+        }
 
         if (this.isLocked) return;
 
@@ -189,6 +221,68 @@ export class OverworldController {
         });
     }
 
+    // ==========================================
+    // WEATHER LOGIC
+    // ==========================================
+
+    validateBiomeWeather() {
+        const col = gameState.player.col;
+        const row = gameState.player.row;
+        
+        const biome = this.worldManager.getBiomeAt(col, row);
+        const activeWeather = gameState.world.currentWeather;
+
+        // If it's clear skies, we don't need to validate it
+        if (!activeWeather || activeWeather.id === 'clear') return;
+
+        // Make sure biome defines allowed weather, default to empty array if undefined
+        const allowed = biome.allowedWeather || [];
+
+        // Check if the current weather's ID is in the biome's allowed list
+        if (!allowed.includes(activeWeather.id)) {
+            console.log(`[Weather] Clearing skies. ${activeWeather.id} is invalid in ${biome.id}.`);
+            
+            // Instantly clear the weather
+            gameState.world.currentWeather = WeatherFactory.createWeather('CLEAR');
+            gameState.world.currentWeather.intensity = 1.0; 
+        }
+    }
+
+    rollForNewWeather() {
+        const col = gameState.player.col;
+        const row = gameState.player.row;
+        const biome = this.worldManager.getBiomeAt(col, row);
+        
+        const activeWeather = gameState.world.currentWeather;
+        const allowed = biome.allowedWeather || [];
+
+        // If weather is already happening (and not clear), 10% chance to stop it
+        if (activeWeather && activeWeather.id !== 'clear') {
+            if (Math.random() < 0.10) {
+                console.log(`[Weather] The ${activeWeather.name} is clearing up.`);
+                // Note: To fade out smoothly instead of instant clear, you can set timeRemaining 
+                // to match the fade out duration, e.g., activeWeather.timeRemaining = 5.0;
+                gameState.world.currentWeather = WeatherFactory.createWeather('CLEAR');
+                gameState.world.currentWeather.intensity = 1.0;
+            }
+            return;
+        }
+
+        // If skies are clear, 20% chance to start a new weather event allowed by this biome
+        if (allowed.length > 0 && Math.random() < 0.20) {
+            const randomWeatherId = allowed[Math.floor(Math.random() * allowed.length)];
+            
+            console.log(`[Weather] Changing to ${randomWeatherId} in the ${biome.id}!`);
+            
+            gameState.world.currentWeather = WeatherFactory.createWeather(randomWeatherId);
+            // Intensity starts at 0 naturally, allowing update() to fade it in
+        }
+    }
+
+    // ==========================================
+    // UTILS & STATE
+    // ==========================================
+
     isSpaceFree(targetX, targetY) {
         const { TILE_SIZE } = this.config;
 
@@ -200,10 +294,6 @@ export class OverworldController {
 
         return this.worldManager.canMove(startCol, startRow, endCol, endRow);
     }
-
-    // ==========================================
-    // CAMERA & STATE
-    // ==========================================
 
     updateCamera() {
         const { CANVAS_WIDTH, CANVAS_HEIGHT, GAME_SCALE, TILE_SIZE } = this.config;

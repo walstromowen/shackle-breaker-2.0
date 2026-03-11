@@ -1,7 +1,9 @@
 export class GameLoop {
     constructor(updateCallback, renderCallback) {
         this.fixedTimeStep = 1 / 60; 
-        this.deltaTimeClampValue = 0.25; 
+        
+        // UPDATE 1: Lower the clamp to 0.1 (max 6 frames of catch-up)
+        this.deltaTimeClampValue = 0.1; 
         
         this.timeAccumulator = 0;
         this.lastTimeStamp = 0;
@@ -32,19 +34,22 @@ export class GameLoop {
         deltaTime = Math.min(deltaTime, this.deltaTimeClampValue);
         this.timeAccumulator += deltaTime;
 
+        // UPDATE 2: "Panic Drop" - If the accumulator gets critically backlogged 
+        // (e.g., 10+ frames behind despite the clamp), drop the time to prevent a freeze.
+        if (this.timeAccumulator > this.fixedTimeStep * 10) {
+            console.warn("[GameLoop] Too far behind! Dropping time to prevent freeze.");
+            this.timeAccumulator = this.fixedTimeStep; // Reset to a single frame
+        }
+
         // Update Physics/Logic in fixed steps
         while (this.timeAccumulator >= this.fixedTimeStep) {
             this.update(this.fixedTimeStep);
             this.timeAccumulator -= this.fixedTimeStep;
         }
 
-        // Calculate render interpolation
         const interpolationFactor = this.timeAccumulator / this.fixedTimeStep;
-        
-        // Calculate total elapsed time (in seconds) for animations
         const totalTime = currentTimeStamp / 1000; 
 
-        // Render with both factors
         this.render(interpolationFactor, totalTime); 
         
         requestAnimationFrame((timeStamp) => this.fireGameLoop(timeStamp));

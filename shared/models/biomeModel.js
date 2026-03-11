@@ -4,9 +4,10 @@ export class BiomeModel {
     constructor(definition) {
         this.id = definition.id;
         this.sheetId = definition.sheetId; 
-        
-        // NEW: Store the map objects spritesheet ID so the renderer can find it
         this.objectSheetId = definition.objectSheetId; 
+        
+        // --- NEW: Pull allowed weather from definition ---
+        this.allowedWeather = definition.allowedWeather || [];
         
         this.elevationMap = definition.elevationMap;
         this.mapObjects = definition.mapObjects;

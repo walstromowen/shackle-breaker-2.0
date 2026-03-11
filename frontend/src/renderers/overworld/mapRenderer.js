@@ -13,11 +13,13 @@ export class MapRenderer {
         this.shadowImage = this.loader.get('shadows'); 
         this.fallbackTileset = this.loader.get('plains'); 
         
-        // FIX: Replaced 'mapObjects' with 'plainsMapObjects' as the default fallback
         this.fallbackObjects = this.loader.get('plainsMapObjects') || this.loader.get('spritesheet');
 
         this.blobMap = new Map();
         this.shadowOverrides = new Map();
+        
+        // PERFORMANCE: Cache the render array to prevent Garbage Collection stutter
+        this.renderList = [];
         
         this.initBlobTables();
     }
@@ -26,15 +28,15 @@ export class MapRenderer {
     // 1. MAIN RENDER PIPELINE
     // ==========================================
 
-    renderMap(worldManager, camera, entities = [], totalTime = 0) {
+    // ADDED: interpolationFactor passed down from GameLoop
+    renderMap(worldManager, camera, entities = [], totalTime = 0, interpolationFactor = 1) {
         this.ctx.fillStyle = '#000000';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         const bounds = this.getViewBounds(camera);
 
         this.renderTerrainPass(worldManager, camera, bounds, totalTime);
-        this.renderSortedPass(worldManager, camera, bounds, entities, totalTime);
-        
+        this.renderSortedPass(worldManager, camera, bounds, entities, totalTime, interpolationFactor);
     }
 
     // ==========================================
@@ -44,6 +46,11 @@ export class MapRenderer {
     renderTerrainPass(worldManager, camera, bounds, totalTime) {
         const { TILE_TYPES, TILE_DEPTH } = this.config;
 
+        // Cache depths for cleaner logic
+        const DEPTH_L0 = TILE_DEPTH[TILE_TYPES.LAYER_0] || 0;
+        const DEPTH_L1 = TILE_DEPTH[TILE_TYPES.LAYER_1] || 1;
+        const DEPTH_L2 = TILE_DEPTH[TILE_TYPES.LAYER_2] || 2;
+
         for (let row = bounds.startRow; row < bounds.endRow; row++) {
             for (let col = bounds.startCol; col < bounds.endCol; col++) {
                 
@@ -52,35 +59,35 @@ export class MapRenderer {
                 const coords = this.getDrawCoords(col, row, camera);
                 const sheetId = tileData.sheetId || 'tileset';
 
-                // A. Water (Base Layer)
-                const waterFrame = this.getWaterFrame(col, row, totalTime);
-                this.drawTile(TILE_TYPES.LAYER_0, waterFrame, coords.x, coords.y, sheetId);
-
-                // B. Layer 1 (Sand/Dirt)
-                if (depth >= TILE_DEPTH[TILE_TYPES.LAYER_2]) {
-                    const isSand = (tileData.id === TILE_TYPES.LAYER_2);
-                    const idx = isSand 
-                        ? (this.blobMap.get(worldManager.getSpecificMask(col, row, TILE_TYPES.LAYER_1)) ?? 14)
-                        : 14;
-                    this.drawTile(TILE_TYPES.LAYER_1, idx, coords.x, coords.y, sheetId);
+                // 1. Water Base Layer
+                // We draw water if the tile is Water (0) OR Dirt (1) 
+                // This ensures dirt coastlines have water underneath their transparent edges.
+                if (depth === DEPTH_L0 || depth === DEPTH_L1) {
+                    const waterFrame = this.getWaterFrame(col, row, totalTime);
+                    this.drawTile(TILE_TYPES.LAYER_0, waterFrame, coords.x, coords.y, sheetId);
                 }
 
-                // C. Stacked Cliff Layers (Underlay)
-                if (depth >= TILE_DEPTH[TILE_TYPES.LAYER_3]) this.drawTile(TILE_TYPES.LAYER_2, 14, coords.x, coords.y, sheetId);
-                if (depth >= TILE_DEPTH[TILE_TYPES.LAYER_4]) this.drawTile(TILE_TYPES.LAYER_3, 14, coords.x, coords.y, sheetId);
-                if (depth >= TILE_DEPTH[TILE_TYPES.LAYER_5]) this.drawTile(TILE_TYPES.LAYER_4, 14, coords.x, coords.y, sheetId);
+                // 2. Dirt Underlay for Grass & Cliffs
+                // If the tile is Grass (Layer 2) or higher, we MUST draw dirt underneath 
+                // so the transparent grass edges blend into dirt, not black space.
+                if (depth >= DEPTH_L2) {
+                    const dirtMask = worldManager.getSpecificMask(col, row, TILE_TYPES.LAYER_1);
+                    const dirtIdx = this.blobMap.get(dirtMask) ?? 14;
+                    this.drawTile(TILE_TYPES.LAYER_1, dirtIdx, coords.x, coords.y, sheetId);
+                }
 
-                // D. The Actual Tile Surface
+                // 3. The Actual Tile Surface
+                // As long as the tile isn't Water (which we already drew in Step 1), draw it!
+                // This will draw Dirt on Dirt tiles, Grass on Grass tiles, etc.
                 if (tileData.id !== TILE_TYPES.LAYER_0) {
                     const idx = this.blobMap.get(tileData.mask) ?? 14;
                     this.drawTile(tileData.id, idx, coords.x, coords.y, sheetId);
                 }
 
-                // E. Shadows & Ground Objects
+                // 4. Shadows & Ground Objects
                 this.drawShadows(worldManager, col, row, coords.x, coords.y, depth);
 
                 if (tileData.object && tileData.object.isGround) {
-                    // Pass tileData.objectSheetId
                     this.drawObject(tileData.object, coords.x, coords.y, totalTime, tileData.objectSheetId);
                 }
             }
@@ -91,63 +98,62 @@ export class MapRenderer {
     // 3. PASS: SORTED (Vertical Elements)
     // ==========================================
 
-    renderSortedPass(worldManager, camera, bounds, entities, totalTime) {
-        const renderList = [];
+    renderSortedPass(worldManager, camera, bounds, entities, totalTime, interpolationFactor) {
+        // PERFORMANCE FIX: Empty the pre-allocated array instead of declaring a new one
+        this.renderList.length = 0;
+        
         const { TILE_SIZE, GAME_SCALE } = this.config;
 
         // A. Collect Wall Faces
-        this.collectWallFaces(worldManager, bounds, camera, renderList);
+        this.collectWallFaces(worldManager, bounds, camera, this.renderList);
 
         // B. Collect Objects
-        const objects = worldManager.getActiveObjects ? worldManager.getActiveObjects() : [];
-        for (const obj of objects) {
-            if (obj.isGround || !obj.isAnchor) continue;
-            if (this.isInBounds(obj.col, obj.row, bounds)) {
-                const coords = this.getDrawCoords(obj.col, obj.row, camera);
-                const tileData = worldManager.getTileData(obj.col, obj.row);
-                
-                // FIX: Depth sorting MUST use the visual height (obj.h), not the collision hitbox.
-                // Hitboxes can be smaller than sprites, but depth relies on where the sprite touches the ground.
-                const visualBottomOffset = obj.h || 1;
-                
-                renderList.push({
-                    y: ((obj.row + visualBottomOffset) * TILE_SIZE * GAME_SCALE) + 0.1,
-                    type: 'OBJECT',
-                    data: obj,
-                    x: coords.x,
-                    dy: coords.y,
-                    objectSheetId: tileData.objectSheetId 
-                });
-            }
-        }
+        const objects = worldManager.getActiveObjects ? worldManager.getActiveObjects() : [];
+        for (const obj of objects) {
+            if (obj.isGround || !obj.isAnchor) continue;
+            if (this.isInBounds(obj.col, obj.row, bounds)) {
+                const coords = this.getDrawCoords(obj.col, obj.row, camera);
+                const tileData = worldManager.getTileData(obj.col, obj.row);
+                
+                const visualBottomOffset = obj.h || 1;
+                
+                this.renderList.push({
+                    y: ((obj.row + visualBottomOffset) * TILE_SIZE * GAME_SCALE) + 0.1,
+                    type: 'OBJECT',
+                    data: obj,
+                    x: coords.x,
+                    dy: coords.y,
+                    objectSheetId: tileData.objectSheetId 
+                });
+            }
+        }
 
-        // C. Collect Entities
-        for (const entity of entities) {
-            // FIX: Safely calculate entity visual bottom to prevent NaN sorting errors.
-            let entityHitboxBottom = 1;
-            if (entity.hitbox) {
-                // Support both yOffset (objects) and y (common for entities)
-                const yOff = entity.hitbox.yOffset !== undefined ? entity.hitbox.yOffset : (entity.hitbox.y || 0);
-                entityHitboxBottom = yOff + (entity.hitbox.h || 1);
-            }
-            
-            renderList.push({
-                y: (entity.y + (entityHitboxBottom * TILE_SIZE)) * GAME_SCALE,
-                type: 'ENTITY',
-                data: entity
-            });
-        }
+        // C. Collect Entities
+        for (const entity of entities) {
+            let entityHitboxBottom = 1;
+            if (entity.hitbox) {
+                const yOff = entity.hitbox.yOffset !== undefined ? entity.hitbox.yOffset : (entity.hitbox.y || 0);
+                entityHitboxBottom = yOff + (entity.hitbox.h || 1);
+            }
+            
+            this.renderList.push({
+                y: (entity.y + (entityHitboxBottom * TILE_SIZE)) * GAME_SCALE,
+                type: 'ENTITY',
+                data: entity
+            });
+        }
 
         // D. Sort & Draw
-        renderList.sort((a, b) => a.y - b.y);
+        this.renderList.sort((a, b) => a.y - b.y);
 
-        for (const item of renderList) {
+        for (const item of this.renderList) {
             if (item.type === 'WALL_FACE') {
                 this.drawTile(item.data.id, item.data.idx, item.x, item.dy, item.sheetId);
             } else if (item.type === 'OBJECT') {
                 this.drawObject(item.data, item.x, item.dy, totalTime, item.objectSheetId);
             } else if (item.type === 'ENTITY') {
-                this.drawEntity(item.data, camera);
+                // Pass interpolation down to the entity drawing
+                this.drawEntity(item.data, camera, interpolationFactor);
             }
         }
     }
@@ -183,7 +189,6 @@ export class MapRenderer {
     }
 
     drawObject(obj, dx, dy, totalTime = 0, objectSheetId = null) {
-        // FIX: MapObjectModel stores the sprite key in 'obj.type'
         const spriteKey = obj.spriteKey || obj.type || obj.id;
         const sprite = SPRITES[spriteKey];
         
@@ -210,18 +215,30 @@ export class MapRenderer {
         const dW = sprite.w * OBJECT_SIZE * GAME_SCALE;
         const dH = sprite.h * OBJECT_SIZE * GAME_SCALE;
         
-        // FIX: Removed heightOffset subtraction so the visual aligns perfectly with the grid/hitbox origin.
         this.ctx.drawImage(imageSource, sx, sy, sprite.w * OBJECT_SIZE, sprite.h * OBJECT_SIZE, 
                            Math.floor(dx), Math.floor(dy), dW, dH);
     }
 
-    drawEntity(entity, camera) {
+    drawEntity(entity, camera, interpolationFactor = 1) {
         const sprite = this.loader.get(gameState.party.members[0].spriteOverworld);
         if (!sprite) return;
 
         const { TILE_SIZE, GAME_SCALE } = this.config;
-        const dx = Math.round((entity.x - camera.x) * GAME_SCALE);
-        const dy = Math.round((entity.y - camera.y) * GAME_SCALE);
+        
+        // INTERPOLATION: Smooth out entity movement based on physics fixed delta
+        const renderX = entity.prevX !== undefined 
+            ? entity.prevX + (entity.x - entity.prevX) * interpolationFactor 
+            : entity.x;
+            
+        const renderY = entity.prevY !== undefined 
+            ? entity.prevY + (entity.y - entity.prevY) * interpolationFactor 
+            : entity.y;
+
+        const camX = Math.floor(camera.x);
+        const camY = Math.floor(camera.y);
+
+        const dx = Math.floor((renderX - camX) * GAME_SCALE);
+        const dy = Math.floor((renderY - camY) * GAME_SCALE);
         const drawSize = TILE_SIZE * GAME_SCALE;
 
         const rowMap = { 
@@ -321,9 +338,14 @@ export class MapRenderer {
 
     getDrawCoords(col, row, camera) {
         const { TILE_SIZE, GAME_SCALE } = this.config;
+        
+        // VISUAL FIX: Floor the camera coordinates first to prevent sub-pixel gaps/tearing
+        const camX = Math.floor(camera.x);
+        const camY = Math.floor(camera.y);
+        
         return {
-            x: Math.floor((col * TILE_SIZE - camera.x) * GAME_SCALE),
-            y: Math.floor((row * TILE_SIZE - camera.y) * GAME_SCALE)
+            x: Math.floor((col * TILE_SIZE - camX) * GAME_SCALE),
+            y: Math.floor((row * TILE_SIZE - camY) * GAME_SCALE)
         };
     }
 
