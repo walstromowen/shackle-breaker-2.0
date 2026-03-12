@@ -1,7 +1,7 @@
 import { events } from '../core/eventBus.js';
 import { gameState } from '../../../shared/state/gameState.js';
 import { EntityFactory } from '../../../shared/systems/factories/entityFactory.js';
-import { WeatherFactory } from '../../../shared/systems/factories/weatherFactory.js'; // NEW: Import WeatherFactory
+import { WeatherFactory } from '../../../shared/systems/factories/weatherFactory.js';
 
 export class OverworldController {
     constructor(input, config, worldManager) {
@@ -19,11 +19,8 @@ export class OverworldController {
         // 3. LOCK FLAG
         this.isLocked = false;
         
-        // 4. Initialize Weather if missing
-        if (!gameState.world.currentWeather) {
-            gameState.world.currentWeather = WeatherFactory.createWeather('CLEAR');
-            gameState.world.currentWeather.intensity = 1.0;
-        }
+        // Weather Initialization previously here is removed to allow 
+        // TimeSystem.generateNewWeather() to own it based on the biome.
     }
 
     // ==========================================
@@ -61,22 +58,6 @@ export class OverworldController {
             this.checkForNewMove();
         }
         this.updateCamera();
-        
-        // --- NEW: Update Weather Timer & Intensity ---
-        const weather = gameState.world.currentWeather;
-        if (weather && weather.id !== 'clear') {
-            // Decrease time remaining (assuming dt is in seconds)
-            weather.timeRemaining -= dt;
-            
-            // Pass fade duration (e.g., 5 seconds to fade in/out)
-            weather.updateIntensity(5.0);
-
-            if (weather.isFinished()) {
-                console.log(`[Weather] The ${weather.name} has naturally ended.`);
-                gameState.world.currentWeather = WeatherFactory.createWeather('CLEAR');
-                gameState.world.currentWeather.intensity = 1.0;
-            }
-        }
     }
 
     // ==========================================
@@ -98,7 +79,7 @@ export class OverworldController {
         const lookCol = Math.floor(targetX / TILE_SIZE);
         const lookRow = Math.floor(targetY / TILE_SIZE);
 
-        // Fetch ANY object overlapping this tile, regardless of whether it's solid or not
+        // Fetch ANY object overlapping this tile
         const obj = this.worldManager.getObjectAt(lookCol, lookRow);
             
         if (obj && obj.interaction) {
@@ -177,13 +158,8 @@ export class OverworldController {
         // --- Core Tile Logic ---
         this.checkTileEvents();
         
-        // --- NEW: Weather checks on tile entry ---
+        // --- Weather checks on tile entry ---
         this.validateBiomeWeather();
-        
-        // 2% chance per tile step to start or stop weather dynamically
-        if (Math.random() < 0.02) {
-            this.rollForNewWeather();
-        }
 
         if (this.isLocked) return;
 
@@ -209,9 +185,8 @@ export class OverworldController {
         this.player.isMoving = false;
         this.player.moveProgress = 0;
 
-        // 1. Get the current hour from your game state/time system
-        // (Replace gameState.time.hour with exactly how your game tracks it)
-        const currentHour = gameState.world.time/60; 
+        // 1. Get the current hour 
+        const currentHour = gameState.world.time / 60; 
 
         // 2. Ask the biome which background to use based on the time
         const battleBgAsset = biome.getBattleBackground(currentHour);
@@ -239,52 +214,17 @@ export class OverworldController {
         const row = gameState.player.row;
         
         const biome = this.worldManager.getBiomeAt(col, row);
+        gameState.world.currentBiome = biome.id; 
+
         const activeWeather = gameState.world.currentWeather;
+        if (!activeWeather || activeWeather.id.toUpperCase() === 'CLEAR') return;
 
-        // If it's clear skies, we don't need to validate it
-        if (!activeWeather || activeWeather.id === 'clear') return;
+        const allowed = (biome.allowedWeather || []).map(w => w.toUpperCase());
 
-        // Make sure biome defines allowed weather, default to empty array if undefined
-        const allowed = biome.allowedWeather || [];
-
-        // Check if the current weather's ID is in the biome's allowed list
-        if (!allowed.includes(activeWeather.id)) {
-            console.log(`[Weather] Clearing skies. ${activeWeather.id} is invalid in ${biome.id}.`);
-            
-            // Instantly clear the weather
+        // Just set it immediately to CLEAR. The renderer handles the crossfade visually.
+        if (!allowed.includes(activeWeather.id.toUpperCase())) {
+            console.log(`[Weather] Clearing skies. ${activeWeather.id} invalid in ${biome.id}.`);
             gameState.world.currentWeather = WeatherFactory.createWeather('CLEAR');
-            gameState.world.currentWeather.intensity = 1.0; 
-        }
-    }
-
-    rollForNewWeather() {
-        const col = gameState.player.col;
-        const row = gameState.player.row;
-        const biome = this.worldManager.getBiomeAt(col, row);
-        
-        const activeWeather = gameState.world.currentWeather;
-        const allowed = biome.allowedWeather || [];
-
-        // If weather is already happening (and not clear), 10% chance to stop it
-        if (activeWeather && activeWeather.id !== 'clear') {
-            if (Math.random() < 0.10) {
-                console.log(`[Weather] The ${activeWeather.name} is clearing up.`);
-                // Note: To fade out smoothly instead of instant clear, you can set timeRemaining 
-                // to match the fade out duration, e.g., activeWeather.timeRemaining = 5.0;
-                gameState.world.currentWeather = WeatherFactory.createWeather('CLEAR');
-                gameState.world.currentWeather.intensity = 1.0;
-            }
-            return;
-        }
-
-        // If skies are clear, 20% chance to start a new weather event allowed by this biome
-        if (allowed.length > 0 && Math.random() < 0.20) {
-            const randomWeatherId = allowed[Math.floor(Math.random() * allowed.length)];
-            
-            console.log(`[Weather] Changing to ${randomWeatherId} in the ${biome.id}!`);
-            
-            gameState.world.currentWeather = WeatherFactory.createWeather(randomWeatherId);
-            // Intensity starts at 0 naturally, allowing update() to fade it in
         }
     }
 

@@ -262,7 +262,7 @@ export class SceneManager {
         this.transitionRenderer.update(dt);
 
         if (this.currentScene === 'overworld') {
-            this.timeSystem.update(dt); 
+            // REMOVED this.timeSystem.update(dt); -> It is already called globally above!
             this.overworldController.update(dt);
             if (this.weatherRenderer.update) {
                 this.weatherRenderer.update(dt, this.overworldController.getState().camera);

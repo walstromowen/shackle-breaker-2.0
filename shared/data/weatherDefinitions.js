@@ -3,7 +3,7 @@ export const WeatherDefinitions = {
         id: 'clear',
         name: 'Clear Skies',
         visualEffect: 'none',
-        durationRange: [999, 999] // e.g., min and max in-game hours this weather lasts
+        durationRange: [10, 24] // e.g., min and max in-game hours this weather lasts
     },
     RAIN: {
         id: 'rain',
@@ -21,6 +21,6 @@ export const WeatherDefinitions = {
         id: 'sandstorm',
         name: 'Sandstorm',
         visualEffect: 'particle_sand',
-        durationRange: [10,209]
+        durationRange: [10,20]
     }
 };

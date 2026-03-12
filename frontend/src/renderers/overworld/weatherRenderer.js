@@ -8,30 +8,33 @@ export class WeatherRenderer {
         
         this.particles = [];
         this.splashParticles = []; 
-        this.currentWeatherId = null;
+        
+        // --- UPDATED INTERNAL STATE ---
+        this.targetWeatherId = 'CLEAR';
+        this.displayEffect = 'none';
+        this.renderIntensity = 0; 
+        this.targetIntensity = 0;
         
         this.lastCameraX = null;
         this.lastCameraY = null;
 
-        // Pre-render a single, perfectly smooth fog puff to use as a stamp
         this.fogPuffImage = this.createFogAsset();
 
         this.settings = {
             'particle_rain': {
                 count: 450, 
-                color: 'rgba(200, 220, 255, 0.5)', // Slightly more transparent
+                color: 'rgba(200, 220, 255, 0.5)',
                 splashColor: 'rgba(230, 240, 255, 0.6)',
-                // --- ADJUSTED: Slower, shorter, tighter rain for top-down perspective ---
                 speedY: [25, 45], 
                 speedX: [2, 5], 
                 length: [6, 12] 
             },
             'particle_sand': {
-                count: 400,
+                count: 600,
                 color: 'rgba(210, 180, 140, 0.7)',
-                speedY: [2, 5],
-                speedX: [15, 25], 
-                size: [1, 3]      
+                speedY: [1, 3],  
+                speedX: [20, 35], 
+                size: [1, 2]      
             },
             'overlay_fog': {
                 count: 40, 
@@ -75,10 +78,15 @@ export class WeatherRenderer {
         
         let p = {
             x: Math.random() * (this.canvas.width + 600) - 300, 
-            y: randomizeY ? Math.random() * this.canvas.height : -100 - (Math.random() * 200),
             speedY: settings.speedY[0] + Math.random() * (settings.speedY[1] - settings.speedY[0]),
             speedX: settings.speedX[0] + Math.random() * (settings.speedX[1] - settings.speedX[0])
         };
+
+        if (visualEffect === 'particle_sand' || visualEffect === 'overlay_fog' || randomizeY) {
+            p.y = Math.random() * (this.canvas.height + 200) - 100;
+        } else {
+            p.y = -100 - (Math.random() * 200);
+        }
 
         if (visualEffect === 'particle_rain') {
             p.length = settings.length[0] + Math.random() * (settings.length[1] - settings.length[0]);
@@ -92,11 +100,7 @@ export class WeatherRenderer {
 
         if (visualEffect === 'overlay_fog') {
             p.size = settings.size[0] + Math.random() * (settings.size[1] - settings.size[0]);
-            p.x = Math.random() * (this.canvas.width + p.size) - (p.size / 2);
-            p.y = Math.random() * (this.canvas.height + p.size) - (p.size / 2);
-        }
-
-        if (settings.size && visualEffect !== 'overlay_fog') {
+        } else if (settings.size) {
             p.size = settings.size[0] + Math.random() * (settings.size[1] - settings.size[0]);
         }
 
@@ -108,31 +112,80 @@ export class WeatherRenderer {
             this.splashParticles.push({
                 x: x,
                 y: y,
-                // --- ADJUSTED: Tighter splash burst ---
                 speedX: (Math.random() * 2) - 1,
                 speedY: (Math.random() * 2) - 1,
                 life: 1.0,
-                decay: 0.1 + (Math.random() * 0.05) // Fades quickly
+                decay: 0.1 + (Math.random() * 0.05)
             });
         }
     }
 
     update(dt, camera) {
-        const activeWeather = gameState.world.currentWeather; 
+        // Fallback safety to prevent NaN errors
+        const safeDt = dt || 0.016; 
         
-        if (!activeWeather || activeWeather.visualEffect === 'none') {
-            this.particles = [];
-            this.splashParticles = [];
-            this.currentWeatherId = null;
-            return;
+        const stateWeather = gameState.world.currentWeather;
+        const stateId = (stateWeather && stateWeather.id) ? stateWeather.id.toUpperCase() : 'CLEAR';
+        
+        // --- Auto-Mapping ---
+        const defaultEffects = {
+            'SANDSTORM': 'particle_sand',
+            'RAIN': 'particle_rain',
+            'FOG': 'overlay_fog'
+        };
+        
+        let stateEffect = 'none';
+        if (stateWeather && stateWeather.visualEffect && stateWeather.visualEffect !== 'none') {
+            stateEffect = stateWeather.visualEffect;
+        } else if (defaultEffects[stateId]) {
+            stateEffect = defaultEffects[stateId];
         }
 
-        const visualEffect = activeWeather.visualEffect;
+        // ---------------------------------------------------------
+        // 1. FIXED: Particle Initialization (Runs ONLY on change)
+        // ---------------------------------------------------------
+        if (this.targetWeatherId !== stateId) {
+            this.targetWeatherId = stateId;
 
-        if (this.currentWeatherId !== activeWeather.id) {
-            this.currentWeatherId = activeWeather.id;
-            this.initParticles(visualEffect);
+            // Only initialize new particles if it's not CLEAR
+            if (stateId !== 'CLEAR' && stateEffect !== 'none') {
+                if (this.displayEffect !== stateEffect) {
+                    this.displayEffect = stateEffect;
+                    this.initParticles(this.displayEffect);
+                }
+            }
         }
+
+        // ---------------------------------------------------------
+        // 2. FIXED: Sync Target Intensity (Runs EVERY FRAME)
+        // ---------------------------------------------------------
+        if (stateId === 'CLEAR' || stateEffect === 'none') {
+            this.targetIntensity = 0; 
+        } else {
+            // Now continuously tracks the WeatherModel as it fades in/out!
+            this.targetIntensity = (stateWeather.intensity !== undefined) ? stateWeather.intensity : 1.0;
+        }
+
+        // --- Smooth Fading Logic (Always active) ---
+        if (this.renderIntensity !== this.targetIntensity) {
+            const fadeSpeed = 0.5; // Takes 2 seconds
+            
+            if (this.renderIntensity < this.targetIntensity) {
+                this.renderIntensity = Math.min(this.targetIntensity, this.renderIntensity + safeDt * fadeSpeed);
+            } else {
+                this.renderIntensity = Math.max(this.targetIntensity, this.renderIntensity - safeDt * fadeSpeed);
+            }
+
+            // Once fully cleared, clean up memory
+            if (this.renderIntensity <= 0 && this.targetIntensity === 0) {
+                this.displayEffect = 'none';
+                this.particles = [];
+                this.splashParticles = [];
+            }
+        }
+
+        // Early return if skies are fully clear
+        if (this.displayEffect === 'none' || this.renderIntensity <= 0) return;
 
         let deltaX = 0;
         let deltaY = 0;
@@ -149,8 +202,9 @@ export class WeatherRenderer {
         this.lastCameraX = camera.x;
         this.lastCameraY = camera.y;
 
-        const fpsMultiplier = dt * 60; 
+        const fpsMultiplier = safeDt * 60; 
 
+        // Update Splashes
         for (let i = this.splashParticles.length - 1; i >= 0; i--) {
             let p = this.splashParticles[i];
             p.life -= p.decay * fpsMultiplier;
@@ -158,23 +212,18 @@ export class WeatherRenderer {
                 this.splashParticles.splice(i, 1);
                 continue;
             }
-            p.x += p.speedX * fpsMultiplier;
-            p.y += p.speedY * fpsMultiplier;
-            
-            p.x -= deltaX;
-            p.y -= deltaY;
+            p.x += p.speedX * fpsMultiplier - deltaX;
+            p.y += p.speedY * fpsMultiplier - deltaY;
         }
 
+        // Update Main Particles
         for (let i = 0; i < this.particles.length; i++) {
             let p = this.particles[i];
             
-            p.y += p.speedY * fpsMultiplier;
-            p.x += p.speedX * fpsMultiplier;
+            p.y += p.speedY * fpsMultiplier - deltaY;
+            p.x += p.speedX * fpsMultiplier - deltaX;
 
-            p.x -= deltaX;
-            p.y -= deltaY;
-
-            if (visualEffect === 'overlay_fog') {
+            if (this.displayEffect === 'overlay_fog') {
                 const pad = p.size / 2;
                 const wrapWidth = this.canvas.width + p.size;
                 const wrapHeight = this.canvas.height + p.size;
@@ -187,34 +236,41 @@ export class WeatherRenderer {
                 continue; 
             }
 
-            if (visualEffect === 'particle_rain') {
+            if (this.displayEffect === 'particle_sand') {
+                if (p.x > this.canvas.width + 50) p.x = -50;
+                else if (p.x < -50) p.x = this.canvas.width + 50;
+
+                if (p.y > this.canvas.height + 50) p.y = -50;
+                else if (p.y < -50) p.y = this.canvas.height + 50;
+                continue; 
+            }
+
+            if (this.displayEffect === 'particle_rain') {
                 p.targetY -= deltaY; 
-                
                 if (p.y > p.targetY) {
                     this.createSplash(p.x, p.y);
-                    this.particles[i] = this.createParticle(visualEffect, false);
+                    this.particles[i] = this.createParticle(this.displayEffect, false);
                     continue;
                 }
             }
 
             if (p.y > this.canvas.height + 150 || p.x > this.canvas.width + 150 || p.x < -150) {
-                this.particles[i] = this.createParticle(visualEffect, false);
+                this.particles[i] = this.createParticle(this.displayEffect, false);
             }
         }
     }
 
     render(ctx, camera) {
-        const activeWeather = gameState.world.currentWeather;
-        if (!activeWeather || activeWeather.visualEffect === 'none') return;
+        if (this.displayEffect === 'none' || this.renderIntensity <= 0) return;
 
-        const effect = activeWeather.visualEffect;
-        const settings = this.settings[effect];
-        const intensity = activeWeather.intensity || 1.0;
+        const settings = this.settings[this.displayEffect];
+        if (!settings) return;
 
         ctx.save();
-        ctx.globalAlpha = intensity;
+        
+        ctx.globalAlpha = this.renderIntensity; 
 
-        if (effect === 'overlay_fog') {
+        if (this.displayEffect === 'overlay_fog') {
             for (const p of this.particles) {
                 ctx.drawImage(this.fogPuffImage, p.x - (p.size/2), p.y - (p.size/2), p.size, p.size);
             }
@@ -225,18 +281,23 @@ export class WeatherRenderer {
         if (this.splashParticles.length > 0) {
             ctx.fillStyle = settings.splashColor;
             for (const p of this.splashParticles) {
-                ctx.globalAlpha = p.life * intensity;
-                // --- ADJUSTED: Splashes are now tiny 1x1 droplets ---
+                ctx.globalAlpha = p.life * this.renderIntensity;
                 ctx.fillRect(p.x, p.y, 1, 1); 
             }
-            ctx.globalAlpha = intensity; 
+            ctx.globalAlpha = this.renderIntensity; 
+        }
+
+        if (this.displayEffect === 'particle_sand') {
+            // FIXED: Removed the renderIntensity multiplier from the rgba channel, 
+            // since ctx.globalAlpha is already applying the overall fade!
+            ctx.fillStyle = `rgba(90, 70, 40, 0.55)`; 
+            ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         }
 
         ctx.fillStyle = settings.color;
         ctx.strokeStyle = settings.color;
         
-        if (effect === 'particle_rain') {
-            // --- ADJUSTED: Thinner lines ---
+        if (this.displayEffect === 'particle_rain') {
             ctx.lineWidth = 1.0; 
             ctx.lineCap = 'round'; 
             ctx.beginPath();
@@ -244,12 +305,13 @@ export class WeatherRenderer {
                 ctx.moveTo(p.x, p.y);
                 ctx.lineTo(p.x - p.speedX, p.y - p.length);
             }
-            ctx.stroke();
-        } else if (effect === 'particle_sand') {
+            ctx.stroke(); 
+        } else if (this.displayEffect === 'particle_sand') {
             ctx.beginPath();
             for (const p of this.particles) {
-                ctx.fillRect(p.x, p.y, p.size, p.size);
+                ctx.rect(p.x, p.y, p.size * 4, p.size); 
             }
+            ctx.fill(); 
         }
 
         ctx.restore();
