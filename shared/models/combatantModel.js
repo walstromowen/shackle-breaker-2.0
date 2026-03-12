@@ -1,84 +1,98 @@
-// shared/models/combatantModel.js
-import { StatCalculator } from '../systems/statCalculator.js';
+import { StatCalculator } from '../../shared/systems/statCalculator.js';
 import { AbilityFactory } from '../systems/factories/abilityFactory.js';
-import { ItemFactory } from '../systems/factories/itemFactory.js'; 
+import { ItemFactory } from '../systems/factories/itemFactory.js';
 import { StatusEffectFactory } from '../systems/factories/statusEffectFactory.js';
-import { events } from '../../frontend/src/core/eventBus.js'; 
+import { events } from '../../frontend/src/core/eventBus.js';
 
 export class CombatantModel {
     constructor(entity, teamAllegiance) {
-        const detailedStats = StatCalculator.calculateDetailed(entity);
-        const maxHp = detailedStats.maxHp?.total || 1;
-        const maxStamina = detailedStats.maxStamina?.total || 10;
-        const maxInsight = detailedStats.maxInsight?.total || 10;
-
-        this.originalEntity = entity; 
-        this.name = entity.name;
-        this.team = teamAllegiance; 
-        this.spritePortrait = entity.spritePortrait; 
-        this.spriteOverworld = entity.spriteOverworld;
+        // 1. Keep a reference to the core EntityModel
+        this.originalEntity = entity;
         
-        this.maxHp = maxHp;
-        this.hp = Math.min(entity.hp ?? maxHp, maxHp);
-        
-        this.maxStamina = maxStamina;
-        this.stamina = Math.min(entity.stamina ?? maxStamina, maxStamina);
-        
-        this.maxInsight = maxInsight;
-        this.insight = Math.min(entity.insight ?? maxInsight, maxInsight);
-        
-        this.stats = detailedStats;
+        // 2. Battle-Specific Volatile State
+        this.team = teamAllegiance;
         this._deathHandled = false;
-
-        this.abilities = this._extractAndResolveAbilities(entity, teamAllegiance);
-        this._applyStartingStatuses(entity);
+        this._skipAction = false;
+        
+        // 3. Cache Abilities specifically for this fight
+        this.abilities = this._extractAndResolveAbilities();
+        
+        // 4. Apply Starting Statuses (from battle contexts/ambushes)
+        this._applyStartingStatuses();
     }
 
+    // ==========================================
+    // DELEGATED PROPERTIES (Pass-through to Entity)
+    // ==========================================
+    get id() { return this.originalEntity.id; }
+    get name() { return this.originalEntity.name; }
+    get spritePortrait() { return this.originalEntity.spritePortrait; }
+    get spriteOverworld() { return this.originalEntity.spriteOverworld; }
     get statusEffects() { return this.originalEntity.statusEffects; }
-    get baseStats() { return this.stats; }
     
+    // ==========================================
+    // STATS & RESOURCES
+    // ==========================================
+    // Always calculate fresh stats to include active buffs/debuffs
+    get stats() { return StatCalculator.calculateDetailed(this.originalEntity); }
+    get baseStats() { return this.originalEntity.baseStats; }
+    
+    // Resource Getters
+    get hp() { return this.originalEntity.hp; }
+    get maxHp() { return this.stats.maxHp?.total || 1; }
+    get stamina() { return this.originalEntity.stamina; }
+    get maxStamina() { return this.stats.maxStamina?.total || 10; }
+    get insight() { return this.originalEntity.insight; }
+    get maxInsight() { return this.stats.maxInsight?.total || 10; }
+
     getAttack(type) { return this.stats.attack?.[type] || 0; }
     getDefense(type) { return this.stats.defense?.[type] || 0; }
-    
+
     isDead() { return this.hp <= 0; }
 
+    // ==========================================
+    // BATTLE-SPECIFIC LOGIC
+    // ==========================================
     modifyResource(resource, amount) {
-        if (this[resource] === undefined) return 0;
-        
-        const maxProp = 'max' + resource.charAt(0).toUpperCase() + resource.slice(1);
-        const originalValue = this[resource]; 
-        
-        this[resource] = Math.max(0, Math.min(this[maxProp], this[resource] + amount));
-        const actualDifference = this[resource] - originalValue; 
+        // We use the EntityModel's built in modifyResource...
+        const actualDifference = this.originalEntity.modifyResource(resource, amount);
 
+        // ...but we wrap it with our Battle UI events!
         if (actualDifference !== 0) {
             events.emit('SPAWN_FCT', {
                 target: this,
                 value: actualDifference,
                 resource: resource, 
-                isCritical: false  
+                isCritical: false 
             });
         }
-
         return actualDifference; 
     }
 
-    applyStatusEffect(effect) { this.originalEntity.applyStatusEffect(effect); }
-    removeStatusEffect(effectId) { this.originalEntity.removeStatusEffect(effectId); }
+    applyStatusEffect(effect) { 
+        this.originalEntity.applyStatusEffect(effect); 
+    }
+    
+    removeStatusEffect(effectId) { 
+        this.originalEntity.removeStatusEffect(effectId); 
+    }
 
-    _extractAndResolveAbilities(entity, teamAllegiance) {
+    // ==========================================
+    // PRIVATE SETUP METHODS
+    // ==========================================
+    _extractAndResolveAbilities() {
         const abilityIds = new Set();
-        
-        const addId = (a) => {
-            if (a) abilityIds.add(typeof a === 'string' ? a : a.id);
-        };
+        const addId = (a) => { if (a) abilityIds.add(typeof a === 'string' ? a : a.id); };
 
-        const baseAbilities = entity.abilities || entity.state?.abilities || entity.definition?.abilities || [];
+        // 1. Get Base Entity Abilities
+        const baseAbilities = this.originalEntity.abilities || [];
         baseAbilities.forEach(addId);
 
-        const equipment = entity.equipment || entity.state?.equipment || entity.definition?.equipment || {};
+        // 2. Get Equipment Abilities
+        const equipment = this.originalEntity.equipment || {};
         Object.values(equipment).forEach(item => {
             if (!item) return;
+            // Handle both string IDs and actual item objects
             const itemDef = typeof item === 'string' ? ItemFactory.createItem(item) : (item.definition || item);
             if (!itemDef) return;
 
@@ -87,16 +101,19 @@ export class CombatantModel {
             addId(itemDef.useAbility);
         });
 
-        if (teamAllegiance === 'party') abilityIds.add('retreat');
+        // 3. Fallbacks
+        if (this.team === 'party') abilityIds.add('retreat');
         if (abilityIds.size === 0) abilityIds.add('punch'); 
         abilityIds.delete(undefined);
         
         return AbilityFactory.createAbilities(Array.from(abilityIds)).filter(Boolean);
     }
 
-    _applyStartingStatuses(entity) {
-        if (!Array.isArray(entity.startingStatuses)) return;
-        entity.startingStatuses.forEach(statusId => {
+    _applyStartingStatuses() {
+        const starting = this.originalEntity.state?.startingStatuses || this.originalEntity.startingStatuses;
+        if (!Array.isArray(starting)) return;
+        
+        starting.forEach(statusId => {
             const newStatus = StatusEffectFactory.createEffect(statusId, null, this);
             if (newStatus) this.applyStatusEffect(newStatus);
         });

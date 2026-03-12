@@ -95,7 +95,7 @@ export const BattleAnimationDefinitions = {
                 start: 0.3, end: 0.7, 
                 type: 'travel', 
                 sheetKey: 'battleProjectiles',
-                frame: { col: 0, row: 0 },
+                frame: { col: 1, row: 1 },
                 frameSize: 32,
                 arc: -60,
                 rotation: 'auto',
