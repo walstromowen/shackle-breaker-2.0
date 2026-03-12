@@ -55,6 +55,8 @@ const ASSET_MANIFEST = {
     plainsBattle1: './assets/audio/music/plains_battle_1.mp3',
     plainsOverworldDay: './assets/audio/music/plains_overworld_day.mp3',  
 
+    weatherRain: './assets/audio/sfx/weather_rain.wav',
+
     arcaneDartSFX: './assets/audio/sfx/arcane_dart.wav',
     bubbleSFX: './assets/audio/sfx/bubble.wav',
     swordSlashSFX: './assets/audio/sfx/sword_slash.wav',

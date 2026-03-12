@@ -14,10 +14,15 @@ class AudioManager {
         this.masterGain = null;
         this.musicGain = null;
         this.sfxGain = null;
+        this.ambientGain = null; // NEW: Channel for weather/nature loops
         
         // State tracking
         this.currentMusicSource = null;
         this.currentTrackId = null; // Tracks what is currently playing
+        
+        this.currentAmbientSource = null; // NEW: Tracks active weather audio
+        this.currentAmbientId = null;     // NEW
+
         this.isInitialized = false;
 
         this._unlockAudioContext = this._unlockAudioContext.bind(this);
@@ -46,15 +51,18 @@ class AudioManager {
         this.masterGain = this.ctx.createGain();
         this.musicGain = this.ctx.createGain();
         this.sfxGain = this.ctx.createGain();
+        this.ambientGain = this.ctx.createGain(); // NEW
 
         // Default volumes
         this.masterGain.gain.value = 1.0;
         this.musicGain.gain.value = 0.5;
         this.sfxGain.gain.value = 0.8;
+        this.ambientGain.gain.value = 0.4; // NEW: Ambience shouldn't overpower music
 
         // Connect nodes
         this.musicGain.connect(this.masterGain);
         this.sfxGain.connect(this.masterGain);
+        this.ambientGain.connect(this.masterGain); // NEW
         this.masterGain.connect(this.ctx.destination);
 
         this.isInitialized = true;
@@ -74,6 +82,10 @@ class AudioManager {
         events.on('PLAY_SFX', (data) => this.playSFX(data.id, data.volume, data.pitch));
         events.on('PLAY_MUSIC', (data) => this.playMusic(data.id, data.fadeTime));
         events.on('STOP_MUSIC', (data) => this.stopMusic(data.fadeTime));
+        
+        // NEW: Event listeners for environmental audio
+        events.on('PLAY_AMBIENCE', (data) => this.playAmbience(data.id, data.fadeTime));
+        events.on('STOP_AMBIENCE', (data) => this.stopAmbience(data.fadeTime));
     }
 
     /**
@@ -163,6 +175,65 @@ class AudioManager {
         // Clear state
         this.currentMusicSource = null;
         this.currentTrackId = null;
+    }
+
+    // =========================================================
+    // NEW: Ambient Audio Methods
+    // =========================================================
+
+    playAmbience(key, fadeTime = 2.0) { // Longer default fade for weather
+        if (!this.isInitialized || !this.loader) return;
+        if (this.currentAmbientId === key) return;
+
+        if (this.currentAmbientSource) {
+            this.stopAmbience(fadeTime);
+        }
+
+        // If 'none' or missing key is passed, we just stop the current track (handled above)
+        if (!key || key === 'none') return; 
+
+        const buffer = this.loader.get(key);
+        if (!buffer) {
+            console.warn(`[AudioManager] Missing Ambient buffer: ${key}`);
+            return;
+        }
+
+        const source = this.ctx.createBufferSource();
+        source.buffer = buffer;
+        source.loop = true; // Ambient tracks should loop
+
+        const localGain = this.ctx.createGain();
+        localGain.gain.value = 0; // Start silent
+
+        source.connect(localGain);
+        localGain.connect(this.ambientGain);
+        source.start(0);
+
+        // Fade in
+        localGain.gain.linearRampToValueAtTime(1.0, this.ctx.currentTime + fadeTime);
+
+        this.currentAmbientSource = { source, gain: localGain };
+        this.currentAmbientId = key; 
+    }
+
+    stopAmbience(fadeTime = 2.0) {
+        if (!this.currentAmbientSource) return;
+
+        const { source, gain } = this.currentAmbientSource;
+        
+        // Fade out
+        gain.gain.setValueAtTime(gain.gain.value, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + fadeTime);
+        
+        // We capture the source in a closure so it stops the correct node
+        // even if a new ambient track starts playing before the fade finishes
+        const sourceToStop = source;
+        setTimeout(() => {
+            try { sourceToStop.stop(); } catch (e) {} 
+        }, fadeTime * 1000);
+        
+        this.currentAmbientSource = null;
+        this.currentAmbientId = null;
     }
 }
 

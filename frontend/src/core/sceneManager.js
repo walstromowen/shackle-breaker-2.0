@@ -12,7 +12,7 @@ import { BattleController } from '../controllers/battleController.js';
 // --- RENDERERS ---
 import { MapRenderer } from '../renderers/overworld/mapRenderer.js';
 import { LightingRenderer } from '../renderers/overworld/lightingRenderer.js'; 
-import { WeatherRenderer } from '../renderers/overworld/weatherRenderer.js'; // <-- ADD THIS
+import { WeatherRenderer } from '../renderers/overworld/weatherRenderer.js'; 
 import { EncounterRenderer } from '../renderers/encounter/encounterRenderer.js'; 
 import { TransitionRenderer } from '../renderers/transitions/transitionRenderer.js';
 import { CharacterCreatorRenderer } from '../renderers/characterCreator/characterCreatorRenderer.js'; 
@@ -51,7 +51,7 @@ export class SceneManager {
         // --- RENDERERS ---
         this.mapRenderer = new MapRenderer(this.canvas, this.loader, this.config);
         this.lightingRenderer = new LightingRenderer(this.config); 
-       this.weatherRenderer = new WeatherRenderer(this.canvas, this.ctx, this.config, this.loader);
+        this.weatherRenderer = new WeatherRenderer(this.canvas, this.ctx, this.config, this.loader);
         this.encounterRenderer = new EncounterRenderer(this.config);
         this.transitionRenderer = new TransitionRenderer(this.config);
         this.characterCreatorRenderer = new CharacterCreatorRenderer(this.config, this.loader);
@@ -83,14 +83,38 @@ export class SceneManager {
         return 'plainsOverworldDay';
     }
 
+    // NEW: Resolves what environmental audio should be playing per scene
+    resolveTargetAmbience(targetScene) {
+        // Stop ambience during combat, encounters, or character creation to build focus/tension
+        if (targetScene === 'battle' || targetScene === 'encounter' || targetScene === 'character-creator') {
+            return 'none';
+        }
+        
+        // Decoupled: For overworld, party, and summary menus, just ask the active weather object 
+        // what its audio effect is. The SceneManager no longer needs to know about definition files.
+        if (gameState.world && gameState.world.currentWeather) {
+            return gameState.world.currentWeather.audioEffect || 'none';
+        }
+        
+        return 'none';
+    }
+
     changeScene(sceneName) {
         console.log(`[SceneManager] Switching to: ${sceneName}`);
         this.currentScene = sceneName;
-        // Figure out what music should be playing for this scene
-        const targetBGM = this.resolveTargetBGM(sceneName);
         
-        // Tell the audio manager to play it. (It will ignore this if it's already playing)
+        // 1. Manage Music
+        const targetBGM = this.resolveTargetBGM(sceneName);
         events.emit('PLAY_MUSIC', { id: targetBGM, fadeTime: 1.0 });
+
+        // 2. Manage Weather Ambience
+        const targetAmbience = this.resolveTargetAmbience(sceneName);
+        if (targetAmbience === 'none') {
+            events.emit('STOP_AMBIENCE', { fadeTime: 1.0 });
+        } else {
+            // We use a slightly longer fade for weather to make transitions feel organic
+            events.emit('PLAY_AMBIENCE', { id: targetAmbience, fadeTime: 2.0 }); 
+        }
     }
 
     setupEventListeners() {
@@ -111,12 +135,10 @@ export class SceneManager {
                     this.characterSummaryController = new CharacterSummaryController(this.input, data);
                 }
 
-                // --- ADD THIS BLOCK ---
                 if (scene === 'party') {
                     // Wipe any old battle data by re-initializing with overworld defaults
                     this.partyController.init(data || {}); 
                 }
-                // ----------------------
 
                 this.changeScene(scene);
             });
@@ -137,12 +159,12 @@ export class SceneManager {
             this.transitionRenderer.start(() => {
                 console.log("[SceneManager] Handing off entities to BattleController:", data.enemies);
                 
-                // ✅ NEW: Ensure the background asset makes it into the context payload
+                // Ensure the background asset makes it into the context payload
                 const context = data.context || {};
                 context.backgroundId = data.background; 
 
                 this.battleController.start(data.enemies, context);
-                this.changeScene('battle');
+                this.changeScene('battle'); // <-- This will now fade out the weather!
             });
         });
 
@@ -150,7 +172,7 @@ export class SceneManager {
         events.on('BATTLE_ENDED', (data) => {
             if (data.victory) {
                 console.log("[SceneManager] Victory! Transitioning back to Overworld.");
-                events.emit('CHANGE_SCENE', { scene: 'overworld' });
+                events.emit('CHANGE_SCENE', { scene: 'overworld' }); // <-- This will now fade the weather back in!
             } else {
                 console.log("[SceneManager] The party was defeated! Routing to Game Over...");
                 // events.emit('CHANGE_SCENE', { scene: 'game_over' }); 
@@ -161,7 +183,6 @@ export class SceneManager {
         events.on('REQUEST_PARTY_SWAP', (data) => {
             this.transitionRenderer.start(() => {
                 this.partyController.init({
-                    // UPDATED: Dynamically use the mode passed, or fallback to BATTLE_SELECT
                     mode: data.mode || 'BATTLE_SELECT', 
                     activeIndices: data.activeIndices,
                     callback: data.callback 
@@ -262,7 +283,6 @@ export class SceneManager {
         this.transitionRenderer.update(dt);
 
         if (this.currentScene === 'overworld') {
-            // REMOVED this.timeSystem.update(dt); -> It is already called globally above!
             this.overworldController.update(dt);
             if (this.weatherRenderer.update) {
                 this.weatherRenderer.update(dt, this.overworldController.getState().camera);
@@ -327,7 +347,7 @@ export class SceneManager {
             totalTime 
         );
 
-        // --- ADD THIS: 2. Draw Weather Layer ---
+        // 2. Draw Weather Layer
         this.weatherRenderer.render(
             this.ctx, 
             state.camera, 

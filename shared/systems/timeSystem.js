@@ -1,6 +1,8 @@
 import { gameState } from '../state/gameState.js'; 
 import { biomeFactory } from '../systems/factories/biomeFactory.js';
 import { WeatherFactory } from '../systems/factories/weatherFactory.js';
+import { events } from '../../frontend/src/core/eventBus.js'; // NEW: Import event bus
+import { WeatherDefinitions } from '../data/weatherDefinitions.js'; // NEW: Needed to look up the audio effect string
 
 export class TimeSystem {
     constructor() {
@@ -168,5 +170,15 @@ export class TimeSystem {
         // Instantiate the new weather model and save it to the state
         gameState.world.currentWeather = WeatherFactory.createWeather(selectedWeatherId);
         console.log(`[TimeSystem] Weather changed to: ${gameState.world.currentWeather.name} for the next ${gameState.world.currentWeather.timeRemaining} hours.`);
+
+        // ---------------------------------------------------------
+        // NEW: Trigger Audio Sync
+        // ---------------------------------------------------------
+        // Look up the audio string from the definition
+        const newWeatherDef = WeatherDefinitions[selectedWeatherId];
+        const audioAssetId = newWeatherDef ? newWeatherDef.audioEffect : 'none';
+
+        // Fire the event. The AudioManager will catch it and crossfade!
+        events.emit('PLAY_AMBIENCE', { id: audioAssetId, fadeTime: 3.0 }); 
     }
 }

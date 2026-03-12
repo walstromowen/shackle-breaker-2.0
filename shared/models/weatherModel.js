@@ -5,14 +5,14 @@ export class WeatherModel {
         this.name = definition.name;
         this.visualEffect = definition.visualEffect;
         
+        // NEW: The model now holds its own audio track ID
+        this.audioEffect = definition.audioEffect || 'none'; 
+        
         // Dynamic state managed by your time/world system
         this.timeRemaining = 0;
-        this.totalDuration = 0; // NEW: Needed to calculate fade percentages
-        
-        // Start at 0.0 so the renderer naturally fades it in
+        this.totalDuration = 0; 
         this.intensity = 0.0; 
     }
-
     /**
      * Calculates the current alpha/intensity based on time remaining/elapsed.
      * @param {number} fadeDurationHours How many in-game hours it takes to fade in/out
