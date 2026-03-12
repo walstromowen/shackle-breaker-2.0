@@ -136,7 +136,12 @@ export class SceneManager {
         events.on('START_BATTLE', (data) => {
             this.transitionRenderer.start(() => {
                 console.log("[SceneManager] Handing off entities to BattleController:", data.enemies);
-                this.battleController.start(data.enemies, data.context);
+                
+                // ✅ NEW: Ensure the background asset makes it into the context payload
+                const context = data.context || {};
+                context.backgroundId = data.background; 
+
+                this.battleController.start(data.enemies, context);
                 this.changeScene('battle');
             });
         });

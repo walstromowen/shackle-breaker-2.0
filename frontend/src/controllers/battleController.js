@@ -43,30 +43,34 @@ export class BattleController {
     }
 
     start(enemies, context = {}) {
-        const maxActive = context.maxActive || 3; 
-        const party = gameState.party.members.map(member => this._createCombatant(member, 'party'));
-        const preparedEnemies = enemies.map(enemy => this._createCombatant(enemy, 'enemy'));
+    const maxActive = context.maxActive || 3; 
+    const party = gameState.party.members.map(member => this._createCombatant(member, 'party'));
+    const preparedEnemies = enemies.map(enemy => this._createCombatant(enemy, 'enemy'));
 
-        this.state = {
-            active: true,
-            isPausedForUI: false,
-            phase: PHASE.INTRO, 
-            partyRoster: party,              
-            enemyRoster: preparedEnemies,    
-            activeParty: party.slice(0, maxActive),            
-            activeEnemies: preparedEnemies.slice(0, maxActive), 
-            activePartyIndex: 0,   
-            selectedAction: null, 
-            turnQueue: [],         
-            menuIndex: 0,          
-            targetIndex: 0,
-            selectedTargets: [], 
-            message: `Battle started!`,
-            fled: false 
-        };
+    this.state = {
+        active: true,
+        isPausedForUI: false,
+        phase: PHASE.INTRO, 
+        
+        // ✅ NEW: Save the backgroundId to the state for the renderer
+        backgroundId: context.backgroundId, 
+        
+        partyRoster: party,              
+        enemyRoster: preparedEnemies,    
+        activeParty: party.slice(0, maxActive),            
+        activeEnemies: preparedEnemies.slice(0, maxActive), 
+        activePartyIndex: 0,   
+        selectedAction: null, 
+        turnQueue: [],         
+        menuIndex: 0,          
+        targetIndex: 0,
+        selectedTargets: [], 
+        message: `Battle started!`,
+        fled: false 
+    };
 
-        this.timer = 0;
-    }
+    this.timer = 0;
+}
 
     // --- ENTITY SETUP ---
     _createCombatant(entity, teamAllegiance) {

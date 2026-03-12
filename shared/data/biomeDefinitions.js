@@ -6,6 +6,11 @@ export const BIOME_DEFINITIONS = {
         sheetId: 'plains',                 // Terrain tileset
         objectSheetId: 'plainsMapObjects', // Map objects tileset (Trees, rocks, etc.)
         allowedWeather: ['rain', 'fog'],
+        battleBackgrounds: {
+            day: 'plainsBattleDayBg',     // <-- CORRECT KEY
+            dusk: 'plainsBattleDuskBg',   // <-- CORRECT KEY
+            night: 'plainsBattleNightBg'  // <-- CORRECT KEY
+        },
         elevationMap: [
             { threshold: -0.30, tile: CONFIG.TILE_TYPES.LAYER_0 },
             { threshold: -0.15, tile: CONFIG.TILE_TYPES.LAYER_1 },
@@ -49,6 +54,11 @@ export const BIOME_DEFINITIONS = {
         sheetId: 'desert',                 // Terrain tileset
         allowedWeather: ['sandstorm'],
         objectSheetId: 'desertMapObjects', // Map objects tileset
+        battleBackgrounds: {
+            day: 'desertBattleDayBg',
+            dusk: 'desertBattleDuskBg',
+            night: 'desertBattleNightBg'
+        },
         // Ensure BOTH PLAINS and DESERT share the exact same threshold numbers!
         elevationMap: [
             { threshold: -0.30, tile: CONFIG.TILE_TYPES.LAYER_0 }, // Water
@@ -68,7 +78,7 @@ export const BIOME_DEFINITIONS = {
             ]
         },
         battles: {
-            rate: 0.003,
+            rate: 0.3,
             pools: [
                 { chance: 0.50, enemies: ['WOLF', 'WOLF'] },           
                 { chance: 0.30, enemies: ['WOLF', 'WOLF', 'WOLF'] },   

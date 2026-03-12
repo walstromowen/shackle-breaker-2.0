@@ -209,6 +209,13 @@ export class OverworldController {
         this.player.isMoving = false;
         this.player.moveProgress = 0;
 
+        // 1. Get the current hour from your game state/time system
+        // (Replace gameState.time.hour with exactly how your game tracks it)
+        const currentHour = gameState.world.time/60; 
+
+        // 2. Ask the biome which background to use based on the time
+        const battleBgAsset = biome.getBattleBackground(currentHour);
+
         const enemyParty = [];
         for (const enemyId of battleData.enemies) {
             const enemyEntity = EntityFactory.create(enemyId);
@@ -216,8 +223,10 @@ export class OverworldController {
             enemyParty.push(enemyEntity);
         }
 
+        // 3. Pass the background into the battle payload
         events.emit('START_BATTLE', {
             enemies: enemyParty,
+            background: battleBgAsset 
         });
     }
 

@@ -8,7 +8,9 @@ export class BiomeModel {
         
         // --- NEW: Pull allowed weather from definition ---
         this.allowedWeather = definition.allowedWeather || [];
-        
+        // NEW: Store battle backgrounds
+        this.battleBackgrounds = definition.battleBackgrounds || { day: null, dusk: null, night: null };
+
         this.elevationMap = definition.elevationMap;
         this.mapObjects = definition.mapObjects;
         this.battles = definition.battles;
@@ -80,5 +82,22 @@ export class BiomeModel {
 
         // Fallback
         return { enemies: this.battles.pools[0].enemies };
+    }
+
+    getBattleBackground(currentHour) {
+        if (!this.battleBackgrounds) return null;
+        console.log(currentHour);
+        // Example Time Thresholds:
+        // Night: 20:00 (8 PM) to 05:59 (5:59 AM)
+        // Day: 06:00 (6 AM) to 16:59 (4:59 PM)
+        // Dusk: 17:00 (5 PM) to 19:59 (7:59 PM)
+        
+        if (currentHour >= 20 || currentHour < 6) {
+            return this.battleBackgrounds.night;
+        } else if (currentHour >= 6 && currentHour < 17) {
+            return this.battleBackgrounds.day;
+        } else {
+            return this.battleBackgrounds.dusk;
+        }
     }
 }

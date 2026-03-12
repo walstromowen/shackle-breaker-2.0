@@ -6,14 +6,14 @@ import { WeatherFactory } from '../systems/factories/weatherFactory.js';
 export class TimeSystem {
     constructor() {
         // --- CONFIGURATION (Static, doesn't need saving) ---
-        this.GAME_MINUTES_PER_REAL_SEC = 10; 
+        this.GAME_MINUTES_PER_REAL_SEC = 1; 
         this.MAX_TIME = 24 * 60; 
 
         // 2. SYNC ON LOAD
         // If the state is 0 (New Game), set the default starting time (8:00).
         // If we loaded a save file, this line skips, preserving the saved time.
         if (gameState.world.time === 0) {
-            gameState.world.time = 8 * 60; 
+            gameState.world.time = 6 * 60; 
         }
 
         // --- COLOR PALETTE ---

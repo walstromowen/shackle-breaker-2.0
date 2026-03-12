@@ -47,6 +47,9 @@ const ASSET_MANIFEST = {
     plainsBattleDayBg: './assets/backgrounds/plains_battle_day_bg.png',
     plainsBattleDuskBg: './assets/backgrounds/plains_battle_dusk_bg.png',
     plainsBattleNightBg: './assets/backgrounds/plains_battle_night_bg.png',
+    desertBattleDayBg: './assets/backgrounds/desert_battle_day_bg.png',
+    desertBattleDuskBg: './assets/backgrounds/desert_battle_dusk_bg.png',
+    desertBattleNightBg: './assets/backgrounds/desert_battle_night_bg.png',
 
     // --- NEW: Audio Assets go here! ---
     plainsBattle1: './assets/audio/music/plains_battle_1.mp3',
