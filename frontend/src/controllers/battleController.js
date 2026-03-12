@@ -57,9 +57,19 @@ export class BattleController {
     handleKeyDown(key) {
         if (!this.state?.active || this.state.isPausedForUI) return;
         
+        // 1. Check for global/debug hotkeys FIRST
+        // FIXED: Check for 'KeyC' instead of 'c'
+        if (key === 'KeyC') { 
+             console.log("Debug View Toggled!");
+             events.emit('TOGGLE_BATTLE_DEBUG');
+             return; 
+        }
+
+        // 2. Ignore inputs during processing/animation phases
         const ignorePhases = [PHASE.INTRO, PHASE.RESOLVE, PHASE.VICTORY, PHASE.DEFEAT];
         if (ignorePhases.includes(this.state.phase)) return;
 
+        // 3. Route normal battle inputs
         if (this.state.phase === PHASE.SELECT_ACTION) this._handleActionSelection(key);
         else if (this.state.phase === PHASE.SELECT_TARGET) this._handleTargetSelection(key);
     }

@@ -4,7 +4,6 @@ Roguelike turnbased adventure game based on the Shackle Breaker story by Owen Wa
 Weather Turn logic
 battle debug screen
 combat calculator fix (currently all blunt damage)
-refactor battle controller and renderer.
 enhance battle animations
 weather animations in battle
 multiple spritesheets for items

@@ -3,6 +3,7 @@ import { UITheme } from '../../ui/UITheme.js';
 import { events } from '../../../src/core/eventBus.js';
 import { BattleCombatantRenderer } from './battleCombatantRenderer.js';
 import { BattleHUDRenderer } from './battleHUDRenderer.js';
+import { BattleDebugRenderer } from './battleDebugRenderer.js';
 
 export class BattleRenderer {
     constructor(ctx, config, loader) {
@@ -15,10 +16,13 @@ export class BattleRenderer {
         // --- SUBCOMPONENTS ---
         this.combatantRenderer = new BattleCombatantRenderer(ctx, config, loader, this.ui);
         this.hudRenderer = new BattleHUDRenderer(ctx, config, loader, this.ui, this.combatantRenderer);
+        this.debugRenderer = new BattleDebugRenderer(ctx, config); // <-- Decoupled instantiation
+        
+        this.showDebug = false; // <-- Flag to toggle debug view
 
         this.lastTime = performance.now();
         this.dt = 0;
-
+        this.showDebug = false;
         // FCT Setup
         this.floatingTexts = [];
         this.currentState = null; 
@@ -34,6 +38,9 @@ export class BattleRenderer {
         events.on('SPAWN_FCT', (payload) => {
             if (!this.currentState) return; 
             this.spawnFloatingText(payload);
+        });
+        events.on('TOGGLE_BATTLE_DEBUG', () => {
+            this.showDebug = !this.showDebug;
         });
     }
 
@@ -86,6 +93,11 @@ export class BattleRenderer {
 
         // 5. Draw Floating Combat Text (Top-most layer)
         this.drawFloatingTexts(this.dt);
+
+        // 6. Draw Debug Overlay (Top-most UI layer) <-- Added Debug Call
+        if (this.showDebug) {
+            this.debugRenderer.render(state);
+        }
     }
 
     drawProjectiles(state) {
