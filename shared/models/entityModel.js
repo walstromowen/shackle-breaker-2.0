@@ -3,8 +3,18 @@ import { AbilityFactory } from '../systems/factories/abilityFactory.js';
 
 export class EntityModel {
     constructor(config) {
-        // Deep clone to safely detach from the source definition
+        // 1. Deep clone to safely detach from the source definition 
+        // (This safely catches all custom properties your battle system relies on)
         this.state = structuredClone(config);
+
+        // 2. THE FIX: structuredClone destroys class instances. 
+        // We must re-attach the living ItemModel references passed in from the Factory.
+        if (config.equipment) {
+            this.state.equipment = config.equipment;
+        }
+        if (config.inventory) {
+            this.state.inventory = config.inventory;
+        }
 
         // =========================================================
         // 1. INITIALIZATION
@@ -71,7 +81,7 @@ export class EntityModel {
         // Load Equipment Abilities (If spawning with gear)
         if (this.state.equipment) {
             Object.entries(this.state.equipment).forEach(([slot, item]) => {
-                // Ensure item is an object and has grantedAbilities before processing
+                // Because we re-attached config.equipment, item.grantedAbilities will now work!
                 if (item && typeof item === 'object' && item.grantedAbilities) {
                     const gearMoves = AbilityFactory.createAbilities(item.grantedAbilities);
                     this.addAbilities(gearMoves, slot);
@@ -228,7 +238,6 @@ export class EntityModel {
 
         if (existingEffect) {
             // 2. If it exists, usually we refresh the duration/charges
-            // (You can also add stacking logic here later if you want Poison x2)
             existingEffect.charges = activeEffect.charges; 
             console.log(`[EntityModel] Refreshed ${activeEffect.name} on ${this.name}.`);
         } else {
@@ -251,28 +260,12 @@ export class EntityModel {
         }
     }
 
-    /**
-     * Safely removes all status effects. 
-     * Useful for post-battle cleanup or "Purify" type abilities.
-     */
-    clearAllStatusEffects() {
-        if (this.state.statusEffects.length === 0) return;
+    clearAllStatusEffects() {
+        if (this.state.statusEffects.length === 0) return;
+        this.state.statusEffects = [];
+        console.log(`[EntityModel] All status effects cleared from ${this.name}.`);
+    }
 
-        // Optional: If your Status Effects have an "onRemove" or cleanup logic, 
-        // you can loop through and trigger them here before clearing.
-        // for (const effect of this.state.statusEffects) {
-        //     if (typeof effect.onRemove === 'function') effect.onRemove(this);
-        // }
-
-        this.state.statusEffects = [];
-        console.log(`[EntityModel] All status effects cleared from ${this.name}.`);
-    }
-
-    /**
-     * Checks if the entity currently has a specific status effect.
-     * @param {string} effectId 
-     * @returns {boolean}
-     */
     hasStatusEffect(effectId) {
         return this.state.statusEffects.some(e => e.id === effectId);
     }

@@ -1,9 +1,9 @@
 import { CanvasUI } from '../../ui/canvasUI.js';
 import { UITheme } from '../../ui/UITheme.js';
-import { events } from '../../../src/core/eventBus.js';
+import { events } from '../../core/eventBus.js';
 import { BattleCombatantRenderer } from './battleCombatantRenderer.js';
 import { BattleHUDRenderer } from './battleHUDRenderer.js';
-import { BattleDebugRenderer } from './battleDebugRenderer.js';
+import { BattleDebuggerRenderer } from './battleDebuggerRenderer.js';
 
 export class BattleRenderer {
     constructor(ctx, config, loader) {
@@ -16,7 +16,7 @@ export class BattleRenderer {
         // --- SUBCOMPONENTS ---
         this.combatantRenderer = new BattleCombatantRenderer(ctx, config, loader, this.ui);
         this.hudRenderer = new BattleHUDRenderer(ctx, config, loader, this.ui, this.combatantRenderer);
-        this.debugRenderer = new BattleDebugRenderer(ctx, config); // <-- Decoupled instantiation
+        this.debugRenderer = new BattleDebuggerRenderer(ctx, config); // <-- Decoupled instantiation
         
         this.showDebug = false; // <-- Flag to toggle debug view
 
