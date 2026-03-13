@@ -7,7 +7,7 @@ export const StatusEffectDefinitions = {
         defaultCharges: 3,
         maxStacks: 1, 
         effects: [
-            { trigger: 'ON_TURN_END', modify: 'hp', value: -5, element: 'dark' } 
+            { trigger: 'ON_TURN_END', modify: 'hp', value: -5, damageType: 'dark' } 
         ]
     },
     bleed: {
@@ -17,7 +17,7 @@ export const StatusEffectDefinitions = {
         defaultCharges: 3,
         maxStacks: 1, 
         effects: [
-            { trigger: 'ON_TURN_END', modify: 'stamina', value: -5, element: 'slash' } 
+            { trigger: 'ON_TURN_END', modify: 'stamina', value: -5, damageType: 'slash' } 
         ]
     },
     frozen: {
@@ -38,7 +38,7 @@ export const StatusEffectDefinitions = {
         maxStacks: 1,
         effects: [
             // Uses 'percent' instead of 'value' to calculate off incoming damage
-            { trigger: 'ON_DAMAGE_RECEIVED', target: 'attacker', modify: 'hp', percent: 0.5, element: 'pierce', consumeCharge: true }
+            { trigger: 'ON_DAMAGE_RECEIVED', target: 'attacker', modify: 'hp', percent: 0.5, damageType: 'pierce', consumeCharge: true }
         ]
     },
     living_bomb: {
@@ -49,9 +49,9 @@ export const StatusEffectDefinitions = {
         maxStacks: 1, 
         effects: [
             // Does three completely different things at different times!
-            { trigger: 'ON_TURN_START', modify: 'hp', value: -5, element: 'fire' },
+            { trigger: 'ON_TURN_START', modify: 'hp', value: -5, damageType: 'fire' },
             { trigger: 'ON_TURN_START', modify: 'stamina', value: -2 },
-            { trigger: 'ON_DAMAGE_RECEIVED', target: 'attacker', modify: 'hp', value: -50, element: 'fire', consumeCharge: true }
+            { trigger: 'ON_DAMAGE_RECEIVED', target: 'attacker', modify: 'hp', value: -50, damageType: 'fire', consumeCharge: true }
         ]
     }
 };

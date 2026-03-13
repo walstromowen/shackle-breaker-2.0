@@ -20,7 +20,7 @@ export const AbilityDefinitions = {
         accuracy: 1.0, 
         animationId: "melee_lunge",
         effects: [
-            { type: "damage", element: "blunt", power: 0.5 } 
+            { type: "damage", damageType: "blunt", power: 0.5 } 
         ]
     },
 
@@ -35,7 +35,7 @@ export const AbilityDefinitions = {
         accuracy: 1.0, 
         animationId: "slash",
         effects: [
-            { type: "damage", element: "pierce", power: 1.0 } 
+            { type: "damage", damageType: "pierce", power: 1.0 } 
         ],
         statusEffects: [
             { id: "bleed", chance: 0.1, duration: 3 } 
@@ -53,7 +53,7 @@ export const AbilityDefinitions = {
         accuracy: 1.0, 
         animationId: "strike",
         effects: [
-            { type: "damage", element: "blunt", power: 1.0 } 
+            { type: "damage", damageType: "blunt", power: 1.0 } 
         ],
         
     },
@@ -69,7 +69,7 @@ export const AbilityDefinitions = {
         accuracy: 1.0, 
         animationId: "stab",
         effects: [
-            { type: "damage", element: "pierce", power: 1.0 } 
+            { type: "damage", damageType: "pierce", power: 1.0 } 
         ],
         statusEffects: [
             { id: "bleed", chance: 0.1, duration: 3 } 
@@ -86,7 +86,7 @@ export const AbilityDefinitions = {
         accuracy: 1.0, 
         animationId: "bite",
         effects: [
-            { type: "damage", element: "pierce", power: 0.85 }
+            { type: "damage", damageType: "pierce", power: 0.85 }
         ],
         statusEffects: [
             { id: "bleed", chance: 0.15, duration: 3 } 
@@ -108,7 +108,7 @@ export const AbilityDefinitions = {
         accuracy: 0.8, 
         animationId: "stab",
         effects: [
-            { type: "damage", element: "pierce", power: 0.75 }
+            { type: "damage", damageType: "pierce", power: 0.75 }
         ]
     },
 
@@ -123,7 +123,7 @@ export const AbilityDefinitions = {
         accuracy: 0.85, 
         animationId: "melee_lunge",
         effects: [
-            { type: "damage", element: "slash", power: 1.25 }
+            { type: "damage", damageType: "slash", power: 1.25 }
         ],
         statusEffects: [
             { id: "knocked_down", chance: 0.20 } 
@@ -142,7 +142,7 @@ export const AbilityDefinitions = {
         effects: [
             { 
                 type: "damage", 
-                element: "blunt",
+                damageType: "blunt",
                 power: 1.0,
                 statScaling: { attacker: "defense", target: "defense" }
             }
@@ -161,7 +161,7 @@ export const AbilityDefinitions = {
         effects: [
             { 
                 type: "damage", 
-                element: "slash", 
+                damageType: "slash", 
                 power: 1.0, 
                 condition: { target_hp_below: 0.30, multiplier: 2.5 }
             }
@@ -180,7 +180,7 @@ export const AbilityDefinitions = {
         effects: [
             { 
                 type: "damage", 
-                element: "blunt", 
+                damageType: "blunt", 
                 power: 2.5, 
                 recoil: 0.25 
             }
@@ -197,7 +197,7 @@ export const AbilityDefinitions = {
         accuracy: 0.70, 
         animationId: "melee_lunge",
         effects: [
-            { type: "damage", element: "blunt", power: 1.5 }
+            { type: "damage", damageType: "blunt", power: 1.5 }
         ]
     },
 
@@ -216,7 +216,7 @@ export const AbilityDefinitions = {
         accuracy: 0.95,
         animationId: "melee_lunge",
         effects: [
-            { type: "damage", element: "slash", power: 0.8 },
+            { type: "damage", damageType: "slash", power: 0.8 },
             { type: "switch_self", method: "menu" }
         ]
     },
@@ -250,7 +250,7 @@ export const AbilityDefinitions = {
         cost: { stamina: 15 },
         accuracy: 0.85,
         effects: [
-            { type: "damage", element: "slash", power: 0.85 }
+            { type: "damage", damageType: "slash", power: 0.85 }
         ]
     },
 
@@ -265,7 +265,7 @@ export const AbilityDefinitions = {
         accuracy: 0.75, 
         multihit: { min: 3, max: 3, distinctChecks: true },
         effects: [
-            { type: "damage", element: "slash", power: 0.5 }
+            { type: "damage", damageType: "slash", power: 0.5 }
         ],
         statusEffects: [
             { id: "bleed", chance: 0.10 }
@@ -282,7 +282,7 @@ export const AbilityDefinitions = {
         cost: { stamina: 30 },
         accuracy: 0.90,
         effects: [
-            { type: "damage", element: "earth", power: 1.0 }
+            { type: "damage", damageType: "earth", power: 1.0 }
         ]
     },
 
@@ -296,7 +296,7 @@ export const AbilityDefinitions = {
         cost: { stamina: 20, insight: 20 },
         accuracy: 0.90,
         effects: [
-            { type: "damage", element: "earth", power: 0.5 }
+            { type: "damage", damageType: "earth", power: 0.5 }
         ],
         statusEffects: [
             { id: "poison", chance: 0.5 }
@@ -317,7 +317,7 @@ export const AbilityDefinitions = {
         cost: { insight: 12 }, 
         accuracy: 1.0, 
         effects: [
-            { type: "damage", element: "arcane", power: 0.6 }
+            { type: "damage", damageType: "arcane", power: 0.6 }
         ]
     },
 
@@ -331,7 +331,7 @@ export const AbilityDefinitions = {
         accuracy: 0.90,
         animationId: "melee_lunge",
         effects: [
-            { type: "damage", element: "dark", calculation: "percent_current", power: 0.5 }
+            { type: "damage", damageType: "dark", calculation: "percent_current", power: 0.5 }
         ]
     },
 
@@ -345,7 +345,7 @@ export const AbilityDefinitions = {
         accuracy: 0.95,
         animationId: "melee_lunge",
         effects: [
-            { type: "damage", element: "arcane", power: 2.5 }
+            { type: "damage", damageType: "arcane", power: 2.5 }
         ],
         selfStatusEffects: [
             { id: "recharging", chance: 1.0, duration: 1 }
@@ -364,7 +364,7 @@ export const AbilityDefinitions = {
         animationId: "melee_lunge",
         chargeConfig: {
             statusId: "charging_solar",
-            damageEffect: { type: "damage", element: "light", power: 2.0 }
+            damageEffect: { type: "damage", damageType: "light", power: 2.0 }
         }
     },
 
@@ -382,7 +382,7 @@ export const AbilityDefinitions = {
         accuracy: 1.0, 
         animationId: "melee_lunge",
         effects: [
-            { type: "damage", element: "dark", power: 1.0, drain: 0.5 }
+            { type: "damage", damageType: "dark", power: 1.0, drain: 0.5 }
         ]
     },
 
@@ -584,7 +584,7 @@ export const AbilityDefinitions = {
         speedModifier: 1.25,
         accuracy: 0.95, 
         effects: [
-            { type: "damage", element: "pierce", power: 0.25 }
+            { type: "damage", damageType: "pierce", power: 0.25 }
         ],
         statusEffects: [
             { id: "poison", chance: 1.0, duration: 3 }
@@ -617,7 +617,7 @@ export const AbilityDefinitions = {
         speedModifier: 1.25,
         accuracy: 0.90, 
         effects: [
-            { type: "damage", element: "ranged", power: 0.1 } 
+            { type: "damage", damageType: "ranged", power: 0.1 } 
         ],
         statusEffects: [
             { id: "bound", chance: 1.0, duration: 2 } 

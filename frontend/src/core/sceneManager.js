@@ -225,78 +225,77 @@ export class SceneManager {
     }
 
     update(dt) {
-        // 1. UPDATE GLOBAL SYSTEMS (Runs in every scene)
-        const click = this.input.getAndResetClick();
-        const rightClick = this.input.getAndResetRightClick();
-        const scroll = this.input.getAndResetScroll();
-        const mousePos = this.input.getMousePosition(); 
-        const isMouseDown = this.input.getIsMouseDown ? this.input.getIsMouseDown() : false;
-        
-        this.transitionRenderer.update(dt);
-        this.timeSystem.update(dt); // Time passes during battles too
-        
-        // ============================================================
-        // SCENE SPECIFIC UPDATES & INPUT HANDLING
-        // ============================================================
+        // 1. UPDATE GLOBAL SYSTEMS (Runs in every scene)
+        const click = this.input.getAndResetClick();
+        const rightClick = this.input.getAndResetRightClick();
+        const scroll = this.input.getAndResetScroll();
+        const mousePos = this.input.getMousePosition(); 
+        const isMouseDown = this.input.getIsMouseDown ? this.input.getIsMouseDown() : false;
+        
+        // (Removed timeSystem.update(dt) from here)
+        
+        // ============================================================
+        // SCENE SPECIFIC UPDATES & INPUT HANDLING
+        // ============================================================
 
-        switch (this.currentScene) {
-            case 'character-creator':
-                if (this.characterCreatorController.handleMouseMove) {
-                    this.characterCreatorController.handleMouseMove(mousePos.x, mousePos.y);
-                }
-                if (click) {
-                    this.characterCreatorController.handleMouseDown(click.x, click.y);
-                }
-                break;
+        switch (this.currentScene) {
+            case 'character-creator':
+                if (this.characterCreatorController.handleMouseMove) {
+                    this.characterCreatorController.handleMouseMove(mousePos.x, mousePos.y);
+                }
+                if (click) {
+                    this.characterCreatorController.handleMouseDown(click.x, click.y);
+                }
+                break;
 
-            case 'character_summary':
-                if (this.characterSummaryController) {
-                    this.characterSummaryController.handleMouseMove?.(mousePos.x, mousePos.y, isMouseDown);
-                    
-                    const hitZoneId = this.characterSummaryRenderer.getHitZone(mousePos.x, mousePos.y);
-                    this.characterSummaryController.handleHover?.(hitZoneId);
+            case 'character_summary':
+                if (this.characterSummaryController) {
+                    this.characterSummaryController.handleMouseMove?.(mousePos.x, mousePos.y, isMouseDown);
+                    
+                    const hitZoneId = this.characterSummaryRenderer.getHitZone(mousePos.x, mousePos.y);
+                    this.characterSummaryController.handleHover?.(hitZoneId);
 
-                    if (click && hitZoneId) {
-                        this.characterSummaryController.handleInteraction(hitZoneId);
-                    }
-                    if (rightClick) {
-                        const rightClickZoneId = this.characterSummaryRenderer.getHitZone(rightClick.x, rightClick.y);
-                        this.characterSummaryController.handleRightClick(rightClickZoneId);
-                    }
-                    if (scroll !== 0) {
-                        this.characterSummaryController.handleScroll?.(scroll);
-                    }
-                }
-                break;
+                    if (click && hitZoneId) {
+                        this.characterSummaryController.handleInteraction(hitZoneId);
+                    }
+                    if (rightClick) {
+                        const rightClickZoneId = this.characterSummaryRenderer.getHitZone(rightClick.x, rightClick.y);
+                        this.characterSummaryController.handleRightClick(rightClickZoneId);
+                    }
+                    if (scroll !== 0) {
+                        this.characterSummaryController.handleScroll?.(scroll);
+                    }
+                }
+                break;
 
-            case 'party':
-                if (click) {
-                    this.partyController.handleMouseDown(click.x, click.y, this.partyRenderer);
-                }
-                break;
-                
-            // Note: overworld and battle handle their own input inside their update() loops, 
-            // so we don't need to explicitly pass click data to them here unless they require it.
-        }
+            case 'party':
+                if (click) {
+                    this.partyController.handleMouseDown(click.x, click.y, this.partyRenderer);
+                }
+                break;
+        }
 
-        // --- 2. REGULAR UPDATES ---
-        this.transitionRenderer.update(dt);
+        // --- 2. REGULAR UPDATES ---
+        this.transitionRenderer.update(dt);
 
-        if (this.currentScene === 'overworld') {
-            this.overworldController.update(dt);
-            if (this.weatherRenderer.update) {
-                this.weatherRenderer.update(dt, this.overworldController.getState().camera);
-            }
-        }
-        
-        if (this.currentScene === 'battle') {
-            if (typeof this.battleController.update !== 'function') {
-                console.error("CRITICAL ERROR: BattleController is missing 'update()' method! Please save BattleController.js and refresh.");
-            } else {
-                this.battleController.update(dt);
-            }
-        }
-    }
+        if (this.currentScene === 'overworld') {
+            // TIME NOW ONLY PROGRESSES HERE!
+            this.timeSystem.update(dt); 
+
+            this.overworldController.update(dt);
+            if (this.weatherRenderer.update) {
+                this.weatherRenderer.update(dt, this.overworldController.getState().camera);
+            }
+        }
+        
+        if (this.currentScene === 'battle') {
+            if (typeof this.battleController.update !== 'function') {
+                console.error("CRITICAL ERROR: BattleController is missing 'update()' method! Please save BattleController.js and refresh.");
+            } else {
+                this.battleController.update(dt);
+            }
+        }
+    }
 
     render(interpolation, totalTime) { 
         if (!this.loader.isDone()) return;
