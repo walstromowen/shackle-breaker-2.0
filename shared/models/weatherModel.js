@@ -5,14 +5,19 @@ export class WeatherModel {
         this.name = definition.name;
         this.visualEffect = definition.visualEffect;
         
-        // NEW: The model now holds its own audio track ID
+        // Audio
         this.audioEffect = definition.audioEffect || 'none'; 
+        
+        // NEW: Pull battle-specific properties from the definition
+        this.animationId = definition.animationId || null; 
+        this.traitId = definition.traitId || null;         
         
         // Dynamic state managed by your time/world system
         this.timeRemaining = 0;
         this.totalDuration = 0; 
         this.intensity = 0.0; 
     }
+    
     /**
      * Calculates the current alpha/intensity based on time remaining/elapsed.
      * @param {number} fadeDurationHours How many in-game hours it takes to fade in/out
@@ -21,7 +26,7 @@ export class WeatherModel {
         const timeElapsed = this.totalDuration - this.timeRemaining;
 
         if (timeElapsed < fadeDurationHours) {
-            // Fading in (e.g., if 0.25 hours have passed of a 0.5 hour fade, intensity is 0.5)
+            // Fading in
             this.intensity = timeElapsed / fadeDurationHours;
         } else if (this.timeRemaining < fadeDurationHours) {
             // Fading out

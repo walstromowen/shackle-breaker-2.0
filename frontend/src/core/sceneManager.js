@@ -159,12 +159,13 @@ export class SceneManager {
             this.transitionRenderer.start(() => {
                 console.log("[SceneManager] Handing off entities to BattleController:", data.enemies);
                 
-                // Ensure the background asset makes it into the context payload
+                // Ensure the background and weather make it into the context payload
                 const context = data.context || {};
                 context.backgroundId = data.background; 
+                context.weather = data.weather; // <-- FIXED: Pass the weather data through!
 
                 this.battleController.start(data.enemies, context);
-                this.changeScene('battle'); // <-- This will now fade out the weather!
+                this.changeScene('battle'); 
             });
         });
 

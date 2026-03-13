@@ -21,7 +21,7 @@ const CREATION_DATA = {
             id: "TRAVELER", label: "Traveler", 
             desc: "Travelers from far and wide came to see the incredible discovery of what was magic in the Altus Kingdom.",
             attributes: { vigor: 12, strength: 12, dexterity: 12, intelligence: 10, attunement: 10 },
-            equipment: { mainHand: "short_sword", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
+            equipment: { mainHand: "shortsword", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
         { 
             id: "BLACKSMITH", label: "Blacksmith", 

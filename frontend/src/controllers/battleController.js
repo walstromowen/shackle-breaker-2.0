@@ -34,7 +34,7 @@ export class BattleController {
         this.state = {
             active: true,
             isPausedForUI: false,
-            phase: PHASE.INTRO, 
+            phase: PHASE.INTRO, // Default phase, might be overridden below
             backgroundId: context.backgroundId, 
             partyRoster: party,              
             enemyRoster: preparedEnemies,    
@@ -49,6 +49,32 @@ export class BattleController {
             message: `Battle started!`,
             fled: false 
         };
+console.log('[DEBUG] BattleController.start received context:', context);
+        // --- NEW WEATHER INTRO LOGIC ---
+        if (context.weather && context.weather.id !== 'clear') {
+            console.log('[DEBUG] WEATHER TRIGGERED in BattleController! Pushing to queue.', context.weather);
+            // 1. Queue the intro message
+            this.state.turnQueue.push({ 
+                type: TURN_TYPES.MESSAGE_STATUS, 
+                message: `A fierce ${context.weather.name} begins!` 
+            });
+
+            // 2. Gather all living, active combatants on the field
+            const activeCombatants = [...this.state.activeParty, ...this.state.activeEnemies]
+                .filter(c => c && !c.isDead());
+
+            // 3. Queue the custom weather animation & trait application
+            this.state.turnQueue.push({
+                type: TURN_TYPES.WEATHER_INTRO,
+                weather: context.weather,
+                targets: activeCombatants
+            });
+
+            this.state.phase = PHASE.RESOLVE; 
+            console.log('[DEBUG] Turn queue loaded. Phase set to RESOLVE. Queue:', this.state.turnQueue);
+        } else {
+             console.log('[DEBUG] No weather or weather is clear. Skipping to INTRO phase.');
+        }
 
         this.timer = 0;
     }

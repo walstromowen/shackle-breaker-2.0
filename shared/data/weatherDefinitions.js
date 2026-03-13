@@ -10,6 +10,7 @@ export const WeatherDefinitions = {
     RAIN: {
         id: 'rain',
         name: 'Rain',
+        animationId: 'weatherRain', // Link to the battle animation for rain
         visualEffect: 'particle_rain',
         audioEffect: 'weatherRain', // The ID of your audio asset
         durationRange: [8,20]

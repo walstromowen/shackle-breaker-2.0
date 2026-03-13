@@ -17,7 +17,8 @@ export const TURN_TYPES = {
     APPLY_ABILITY_EFFECTS: 'APPLY_ABILITY_EFFECTS',
     END_ACTOR_TURN: 'END_ACTOR_TURN', 
     EXECUTE_ACTION: 'EXECUTE_ACTION',            
-    APPLY_STATUS_EFFECT: 'APPLY_STATUS_EFFECT'   
+    APPLY_STATUS_EFFECT: 'APPLY_STATUS_EFFECT',
+    WEATHER_INTRO: 'WEATHER_INTRO' // <-- NEW: Add this
 };
 
 export class TurnManager {
@@ -49,6 +50,8 @@ export class TurnManager {
         }
         
         switch (turn.type) {
+            case TURN_TYPES.WEATHER_INTRO: // <-- NEW
+                return this._handleWeatherIntroTurn(turn);
             case TURN_TYPES.APPLY_STATUS_EFFECT:
                 return this._applyStatusEffectTurn(turn);
             case TURN_TYPES.EXECUTE_ACTION:
@@ -282,5 +285,28 @@ export class TurnManager {
 
     queueMessage(message, type = TURN_TYPES.MESSAGE_STATUS) {
         this.state.turnQueue.unshift({ type, message });
+    }
+    _handleWeatherIntroTurn(turn) {
+        console.log('[DEBUG] TurnManager executing WEATHER_INTRO turn:', turn);
+        const { weather, targets } = turn;
+        
+        // 1. Apply the weather trait
+        if (weather.traitId) {
+            targets.forEach(target => {
+                if (target && !target.isDead()) {
+                    console.log(`[DEBUG] Applying trait ${weather.traitId} to ${target.name}`);
+                    target.addStatusEffect(weather.traitId); 
+                }
+            });
+        }
+
+        // 2. Play the screen-wide animation
+        if (weather.animationId) {
+            console.log(`[DEBUG] Triggering Weather Animation: ${weather.animationId}`);
+            this.state.activeAnimation = BattleAnimationFactory.create(weather.animationId, null, targets);
+        } else {
+            console.log('[DEBUG] No animationId found for weather. Skipping to next turn.');
+            this.processNextTurnInQueue();
+        }
     }
 }

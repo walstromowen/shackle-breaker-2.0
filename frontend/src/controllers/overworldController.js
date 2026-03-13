@@ -198,11 +198,18 @@ export class OverworldController {
             enemyParty.push(enemyEntity);
         }
 
-        // 3. Pass the background into the battle payload
-        events.emit('START_BATTLE', {
+        // --- FIXED: Create the payload object first ---
+        const battlePayload = {
             enemies: enemyParty,
-            background: battleBgAsset 
-        });
+            background: battleBgAsset,
+            weather: gameState.world.currentWeather
+        };
+
+        // --- FIXED: Now log the variable ---
+        console.log('[DEBUG] Emitting START_BATTLE payload:', battlePayload);
+
+        // --- FIXED: Pass the variable to the emit function ---
+        events.emit('START_BATTLE', battlePayload);
     }
 
     // ==========================================

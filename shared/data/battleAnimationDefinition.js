@@ -157,5 +157,33 @@ export const BattleAnimationDefinitions = {
         target: {
             flash: { start: 0.1, end: 0.3, filter: 'brightness(200%)' }
         }
-    }
+    },
+    "weatherRain": {
+        duration: 2.5, 
+        audio: [
+            // Assuming you have a rain sound effect, if not, you can omit or replace this key
+            { start: 0.1, key: 'weatherRain', volume: 0.8 } 
+        ],
+        // No 'actor' block here, since weather doesn't originate from a specific combatant
+        projectiles: [
+            // Wave 1: Fast, small drops
+            { start: 0.1, end: 0.6, type: 'travel', sheetKey: 'battleProjectiles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.5, blendMode: 'screen' },
+            { start: 0.2, end: 0.7, type: 'travel', sheetKey: 'battleProjectiles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.6, blendMode: 'screen' },
+            { start: 0.3, end: 0.8, type: 'travel', sheetKey: 'battleProjectiles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.4, blendMode: 'screen' },
+            
+            // Wave 2: Slightly larger, slightly offset timing
+            { start: 0.6, end: 1.1, type: 'travel', sheetKey: 'battleProjectiles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.7, blendMode: 'screen' },
+            { start: 0.7, end: 1.2, type: 'travel', sheetKey: 'battleProjectiles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.5, blendMode: 'screen' },
+            { start: 0.8, end: 1.3, type: 'travel', sheetKey: 'battleProjectiles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.8, blendMode: 'screen' },
+
+            // Wave 3: Final lingering drops
+            { start: 1.1, end: 1.6, type: 'travel', sheetKey: 'battleProjectiles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.6, blendMode: 'screen' },
+            { start: 1.3, end: 1.8, type: 'travel', sheetKey: 'battleProjectiles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.5, blendMode: 'screen' }
+        ],
+        target: {
+            // A subtle, lingering flash that desaturates and darkens the combatants slightly, 
+            // making them look 'wet' and gloomy.
+            flash: { start: 0.2, end: 2.2, filter: 'brightness(80%) saturate(70%) sepia(30%) hue-rotate(180deg)' }
+        }
+    },
 };
