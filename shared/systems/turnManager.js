@@ -4,6 +4,7 @@ import { AbilitySystem } from '../../shared/systems/abilitySystem.js';
 import { BattleAnimationFactory } from '../../shared/systems/factories/battleAnimationFactory.js';
 import { AbilityFactory } from '../../shared/systems/factories/abilityFactory.js';
 import { PHASE } from '../../frontend/src/controllers/battleController.js'; // Import phase constants from the controller
+import { StatusEffectFactory } from '../../shared/systems/factories/statusEffectFactory.js'; // <-- NEW IMPORT
 
 export const TURN_TYPES = {
     MESSAGE_STATUS: 'STATUS_MESSAGE',
@@ -73,6 +74,18 @@ export class TurnManager {
                 const pool = turn.team === 'party' ? this.state.activeParty : this.state.activeEnemies;
                 pool[turn.slotIndex] = turn.replacement; 
                 this.state.message = turn.message;
+
+                // --- CHANGED: Apply active weather status to the reinforcement consistently! ---
+                if (this.state.weather && this.state.weather.appliedStatusId && this.state.weather.id !== 'clear') {
+                    const hasWeather = turn.replacement.statusEffects.some(s => s.id === this.state.weather.appliedStatusId);
+                    if (!hasWeather) {
+                        // Build the object, then apply it
+                        const weatherStatus = StatusEffectFactory.createEffect(this.state.weather.appliedStatusId, null, turn.replacement);
+                        if (weatherStatus) {
+                            turn.replacement.applyStatusEffect(weatherStatus);
+                        }
+                    }
+                }
                 return;
             case TURN_TYPES.PLAY_ANIMATION:
                 return this._handleAnimationTurn(turn);
@@ -290,12 +303,16 @@ export class TurnManager {
         console.log('[DEBUG] TurnManager executing WEATHER_INTRO turn:', turn);
         const { weather, targets } = turn;
         
-        // 1. Apply the weather trait
-        if (weather.traitId) {
+        if (weather.appliedStatusId) {
             targets.forEach(target => {
                 if (target && !target.isDead()) {
-                    console.log(`[DEBUG] Applying trait ${weather.traitId} to ${target.name}`);
-                    target.addStatusEffect(weather.traitId); 
+                    console.log(`[DEBUG] Applying weather status ${weather.appliedStatusId} to ${target.name}`);
+                    
+                    // --- CHANGED: Build the object, then apply it consistently ---
+                    const weatherStatus = StatusEffectFactory.createEffect(weather.appliedStatusId, null, target);
+                    if (weatherStatus) {
+                        target.applyStatusEffect(weatherStatus); 
+                    }
                 }
             });
         }

@@ -19,7 +19,7 @@ export const ItemDefinitions = {
             type: "weapon",
             description: 'A standard shortsword.',
             value: 20,
-            icon: { col: 1, row: 0 },
+            icon: { col: 0, row: 0 },
             attack: { pierce: 3, slash: 2 },
             grantedAbilities: ["slash", "quick_stab"] 
         },
@@ -31,7 +31,7 @@ export const ItemDefinitions = {
         type: "weapon",
         description: 'A standard shortsword.',
         value: 20,
-        icon: { col: 2, row: 0 },
+        icon: { col: 1, row: 0 },
         attack: { pierce: 3, slash: 3 },
         grantedAbilities: ["slash", "thrust", "flurry"] 
     },

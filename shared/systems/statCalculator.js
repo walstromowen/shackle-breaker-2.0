@@ -220,20 +220,36 @@ export class StatCalculator {
         finalStats.maxStamina = breakdown.resources.base.stamina + breakdown.resources.derived.stamina + breakdown.resources.flat.stamina;
         finalStats.maxInsight = breakdown.resources.base.insight + breakdown.resources.derived.insight + breakdown.resources.flat.insight;
 
-        // -> Apply Flat Combat Status Modifiers (e.g. +20 accuracy)
+        // -> Apply Flat Combat Status Modifiers (e.g. +20 accuracy, or resistance.fire)
         Object.keys(statusFlat).forEach(target => {
             if (!['vigor', 'strength', 'dexterity', 'intelligence', 'attunement'].includes(target)) {
-                if (typeof finalStats[target] === 'number') {
+                
+                // NEW: Handle nested stats like 'resistance.lightning'
+                if (target.includes('.')) {
+                    const [category, subKey] = target.split('.');
+                    if (finalStats[category] && typeof finalStats[category][subKey] === 'number') {
+                        finalStats[category][subKey] += statusFlat[target];
+                    }
+                } 
+                // Fallback for top-level stats like 'accuracy' or 'speed'
+                else if (typeof finalStats[target] === 'number') {
                     finalStats[target] += statusFlat[target];
                 }
             }
         });
 
-        // -> Apply Percent Combat Status Modifiers (e.g. -50% evasion)
+        // -> Apply Percent Combat Status Modifiers
         Object.keys(statusPercent).forEach(target => {
             if (!['vigor', 'strength', 'dexterity', 'intelligence', 'attunement'].includes(target)) {
-                if (typeof finalStats[target] === 'number') {
-                    // Do not floor decimal-based stats like critChance
+                
+                // NEW: Handle nested percent stats
+                if (target.includes('.')) {
+                    const [category, subKey] = target.split('.');
+                    if (finalStats[category] && typeof finalStats[category][subKey] === 'number') {
+                        finalStats[category][subKey] = Math.round(finalStats[category][subKey] * statusPercent[target]);
+                    }
+                }
+                else if (typeof finalStats[target] === 'number') {
                     if (['critChance', 'critMultiplier'].includes(target)) {
                         finalStats[target] *= statusPercent[target];
                     } else {

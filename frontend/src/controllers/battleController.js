@@ -34,8 +34,9 @@ export class BattleController {
         this.state = {
             active: true,
             isPausedForUI: false,
-            phase: PHASE.INTRO, // Default phase, might be overridden below
+            phase: PHASE.INTRO, 
             backgroundId: context.backgroundId, 
+            weather: context.weather || null,  // <-- NEW: Store the weather in state!
             partyRoster: party,              
             enemyRoster: preparedEnemies,    
             activeParty: party.slice(0, maxActive),            
@@ -49,14 +50,16 @@ export class BattleController {
             message: `Battle started!`,
             fled: false 
         };
-console.log('[DEBUG] BattleController.start received context:', context);
+        console.log('[DEBUG] BattleController.start received context:', context);
+
         // --- NEW WEATHER INTRO LOGIC ---
-        if (context.weather && context.weather.id !== 'clear') {
-            console.log('[DEBUG] WEATHER TRIGGERED in BattleController! Pushing to queue.', context.weather);
+        if (this.state.weather && this.state.weather.id !== 'clear') { // <-- FIXED: Reference this.state.weather
+            console.log('[DEBUG] WEATHER TRIGGERED in BattleController! Pushing to queue.', this.state.weather);
+            
             // 1. Queue the intro message
             this.state.turnQueue.push({ 
                 type: TURN_TYPES.MESSAGE_STATUS, 
-                message: `A fierce ${context.weather.name} begins!` 
+                message: `A fierce ${this.state.weather.name} begins!` 
             });
 
             // 2. Gather all living, active combatants on the field
@@ -66,7 +69,7 @@ console.log('[DEBUG] BattleController.start received context:', context);
             // 3. Queue the custom weather animation & trait application
             this.state.turnQueue.push({
                 type: TURN_TYPES.WEATHER_INTRO,
-                weather: context.weather,
+                weather: this.state.weather,
                 targets: activeCombatants
             });
 
@@ -481,10 +484,18 @@ console.log('[DEBUG] BattleController.start received context:', context);
             combatant.originalEntity.stamina = combatant.stamina;
             combatant.originalEntity.insight = combatant.insight;
             
+            // Standard cleanup for temporary combat effects
             const effectsToRemove = combatant.originalEntity.statusEffects
                 .filter(effect => !effect.persistAfterCombat)
                 .map(effect => effect.id);
                 
+            // NEW: Explicitly ensure the weather status effect is stripped
+            if (this.state.weather && this.state.weather.appliedStatusId) {
+                if (!effectsToRemove.includes(this.state.weather.appliedStatusId)) {
+                    effectsToRemove.push(this.state.weather.appliedStatusId);
+                }
+            }
+
             effectsToRemove.forEach(effectId => combatant.originalEntity.removeStatusEffect(effectId));
         });
 

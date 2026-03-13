@@ -8,9 +8,12 @@ export class WeatherModel {
         // Audio
         this.audioEffect = definition.audioEffect || 'none'; 
         
-        // NEW: Pull battle-specific properties from the definition
+        // Pull battle-specific properties from the definition
         this.animationId = definition.animationId || null; 
-        this.traitId = definition.traitId || null;         
+        this.traitId = definition.traitId || null;        
+        
+        // NEW: Pull the status effect ID to apply to combatants during this weather
+        this.appliedStatusId = definition.appliedStatusId || null;
         
         // Dynamic state managed by your time/world system
         this.timeRemaining = 0;

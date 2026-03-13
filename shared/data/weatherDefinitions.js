@@ -13,7 +13,8 @@ export const WeatherDefinitions = {
         animationId: 'weatherRain', // Link to the battle animation for rain
         visualEffect: 'particle_rain',
         audioEffect: 'weatherRain', // The ID of your audio asset
-        durationRange: [8,20]
+        durationRange: [8,20],
+        appliedStatusId: 'wet'
     },
     FOG: {
         id: 'fog',

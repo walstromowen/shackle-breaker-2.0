@@ -53,5 +53,20 @@ export const StatusEffectDefinitions = {
             { trigger: 'ON_TURN_START', modify: 'stamina', value: -2 },
             { trigger: 'ON_DAMAGE_RECEIVED', target: 'attacker', modify: 'hp', value: -50, damageType: 'fire', consumeCharge: true }
         ]
+    },
+    wet: {
+        id: 'wet',
+        name: 'Wet',
+        icon: { col: 0, row: 1 }, // Pick a valid sprite coordinate for a water drop!
+        defaultCharges: 99,       // Effectively infinite until the weather changes
+        maxStacks: 1, 
+        
+        // StatCalculator will automatically read these!
+        modifiers: [
+            // -0.5 resistance = 1.5x damage taken
+            { type: 'flat', target: 'resistance.lightning', value: -0.5 },
+            // +0.5 resistance = 0.5x damage taken
+            { type: 'flat', target: 'resistance.fire', value: 0.5 } 
+        ]
     }
 };
