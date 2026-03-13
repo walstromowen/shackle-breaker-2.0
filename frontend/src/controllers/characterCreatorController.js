@@ -21,25 +21,25 @@ const CREATION_DATA = {
             id: "TRAVELER", label: "Traveler", 
             desc: "Travelers from far and wide came to see the incredible discovery of what was magic in the Altus Kingdom.",
             attributes: { vigor: 12, strength: 12, dexterity: 12, intelligence: 10, attunement: 10 },
-            equipment: { mainHand: "wooden_stick", torso: "tattered_shirt"}
+            equipment: { mainHand: "short_sword", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
         { 
             id: "BLACKSMITH", label: "Blacksmith", 
             desc: "The honest trade of blacksmithing. Hard labor has made you tough, but magic remains a mystery.",
             attributes: { vigor: 15, strength: 15, dexterity: 10, intelligence: 7, attunement: 7 },
-            equipment: { mainHand: "wooden_stick", torso: "tattered_shirt" }
+            equipment: { mainHand: "warhammer", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
         { 
             id: "RANGER", label: "Ranger", 
             desc: "A hunter of wild animals. You rely on speed and precision rather than brute force.",
             attributes: { vigor: 11, strength: 10, dexterity: 16, intelligence: 9, attunement: 8 },
-            equipment: { mainHand: "wooden_stick", torso: "tattered_shirt" }
+            equipment: { mainHand: "dagger", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
         { 
             id: "SCHOLAR", label: "Scholar", 
             desc: "One who studies magic as a science. Physically frail, but possessing immense magical potential.",
             attributes: { vigor: 9, strength: 8, dexterity: 10, intelligence: 16, attunement: 14 },
-            equipment: { mainHand: "insight_of_fire", torso: "tattered_shirt" }
+            equipment: { mainHand: "insight_of_arcane", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
     ],
     ORIGINS: [
@@ -62,8 +62,9 @@ const CREATION_DATA = {
     TRAITS: UI_TRAITS,
     KEEPSAKES: [
         { label: "None", itemId: null, desc: "You carry nothing but your burden." },
-        { label: "Merchant's Bag", desc: "Start with a small supply of materials.", items: [{ id: "soft_wood", qty: 3 }] },
-        { label: "Healer's Pouch", desc: "Start with a small supply of healing herbs.", items: [{ id: "healing_herb", qty: 3 }] },
+        { label: "Smith's stash", desc: "Start with a small supply of crafting materials.", items: [{ id: "healing_herb", qty: 1 }, { id: "soft_wood", qty: 3 }, { id: "stone", qty: 2 }, { id: "iron_ingot", qty: 1 }] },
+        { label: "Healer's Pouch", desc: "Start with various beneficial herbs.", items: [{ id: "healing_herb", qty: 3 }, { id: "invigorating_herb", qty: 3 }, { id: "illuminating_herb", qty: 3 }] },
+        { label: "Drunkard", desc: "Start with a bottle of a strange ale.", items: [{ id: "healing_herb", qty: 1 }, { id: "brew_of_madness", qty: 1 }] },
     ],
     COMPANIONS: [
         { label: "None", speciesId: null, desc: "Walk the path alone.", attributes: {}, equipment: {} },
@@ -71,10 +72,10 @@ const CREATION_DATA = {
         { label: "Hunting Hawk", speciesId: "AVIAN", desc: "Fast and watchful.", attributes: { dexterity: 16, speed: 10 }, equipment: { accessory: "tattered_shirt" } }
     ],
     DIFFICULTIES: [
-        { id: "EASY", label: "Easy", desc: "Enemies deal 50% damage." },
+        { id: "EASY", label: "Easy", desc: "Easier challenge." },
         { id: "NORMAL", label: "Normal", desc: "Balanced challenge." },
-        { id: "HARD", label: "Hard", desc: "Enemies deal 150% damage." },
-        { id: "NIGHTMARE", label: "Nightmare", desc: "Death is permanent." }
+        { id: "HARD", label: "Hard", desc: "Difficult challenge" },
+        { id: "NIGHTMARE", label: "Nightmare", desc: "Hope is an illusion..." }
     ]
 };
 

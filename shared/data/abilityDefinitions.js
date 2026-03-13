@@ -191,7 +191,7 @@ export const AbilityDefinitions = {
         id: "wild_swing",
         name: "Wild Swing",
         description: "Swing blindly, hitting a random enemy.",
-        icon: { col: 5, row: 1 },
+        icon: { col: 2, row: 1 },
         targeting: { scope: "random_enemy", select: "random", count: 1 },
         cost: { stamina: 5 },
         accuracy: 0.70, 

@@ -39,7 +39,12 @@ const ASSET_MANIFEST = {
     germanSheepherdPortrait: './assets/sprites/dogs/german_sheepherd_portrait.png',
     hawkPortrait: './assets/sprites/hawk/hawk_portrait.png',
     
-    items: './assets/icons/items.png', 
+    //items: './assets/icons/items.png', 
+    weapons: './assets/icons/weapons.png',
+    armor: './assets/icons/armor.png',
+    consumables: './assets/icons/consumables.png',
+    materials: './assets/icons/materials.png',
+
     abilities: './assets/icons/abilities.png', 
     statusEffects: './assets/icons/status_effects.png',
     battleProjectiles: './assets/icons/battle_projectiles.png',

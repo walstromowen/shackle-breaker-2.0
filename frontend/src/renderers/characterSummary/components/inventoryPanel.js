@@ -188,7 +188,24 @@ export class InventoryPanel {
 
     _drawIcon(def, x, y) {
         if (!def) return;
-        const sheet = this.loader.get('icons') || this.loader.get('items'); 
+
+        // 1. Determine the correct spritesheet based on item type/slot
+        let sheetName = 'items'; // Default fallback
+        const type = (def.type || '').toLowerCase();
+        const slot = (def.slot || '').toLowerCase();
+        
+        if (slot === 'mainhand' || slot === 'offhand' || type === 'weapon' || type === 'shield' || type === 'tool') {
+            sheetName = 'weapons';
+        } else if (type === 'armor' || ['head', 'body', 'legs', 'feet', 'hands', 'accessory'].includes(slot)) {
+            sheetName = 'armor';
+        } else if (type === 'consumable') {
+            sheetName = 'consumables';
+        } else if (type === 'material') {
+            sheetName = 'materials';
+        }
+
+        // 2. Load the specific sheet, falling back to standard items/icons if missing
+        const sheet = this.loader.get(sheetName) || this.loader.get('items') || this.loader.get('icons'); 
         if (!sheet) return;
 
         const iconData = def.icon || { col: 0, row: 0 };

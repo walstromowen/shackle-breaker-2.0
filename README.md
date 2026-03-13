@@ -5,8 +5,18 @@ Weather Turn logic
 combat calculator fix (currently all blunt damage)
 enhance battle animations
 weather animations in battle
-multiple spritesheets for items
-
+Fix character summary screen
+two handed items
+clicking functionality across screens
+encounters(or new name)
+particleRenderer (global)
+item leveling and upgrading
+crafting
+charcter leveling and scaling
+Difficulty
+Starting seed
+procedural dungeons and hand crafted areas
+items being used in summary screen no longer work
 
 Root
 ├── backend/
@@ -41,6 +51,7 @@ Root
 │   │   │   ├── overworld/
 │   │   │   │    ├── lightningRenderer.js
 │   │   │   │    ├── mapRenderer.js
+│   │   │   │    ├── weatherRenderer.js
 │   │   │   ├── characterCreator/        
 │   │   │   │    └── characterCreatorRenderer.js
 │   │   │   ├── characterSummary/
