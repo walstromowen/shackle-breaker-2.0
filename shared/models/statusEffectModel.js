@@ -10,7 +10,7 @@ export class StatusEffectModel {
         
         // Grab the generic effects array
         this.effects = definition.effects || []; 
-        
+        this.modifiers = definition.modifiers || [];
         // Use custom charges if provided, otherwise fallback to default
         this.charges = initialCharges !== null && initialCharges !== undefined 
             ? initialCharges 

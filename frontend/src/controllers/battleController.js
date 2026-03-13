@@ -80,6 +80,7 @@ export class BattleController {
         }
 
         this.timer = 0;
+        this._dumpCombatantObjects('START OF BATTLE');
     }
 
     // --- INPUT HANDLING ---
@@ -505,7 +506,18 @@ export class BattleController {
             fled: !!this.state.fled 
         });
     }
-
+// --- NEW: Dump raw objects for inspection ---
+    _dumpCombatantObjects(phaseName) {
+        console.log(`\n=== [DEBUG] OBJECT DUMP: ${phaseName} ===`);
+        const allCombatants = [...this.state.partyRoster, ...this.state.enemyRoster];
+        
+        allCombatants.forEach((c, i) => {
+            if (c) {
+                console.log(`[${c.team.toUpperCase()}] ${c.name || 'Unknown'} object:`, c);
+            }
+        });
+        console.log(`==========================================\n`);
+    }
     getState() {
         return this.state;
     }

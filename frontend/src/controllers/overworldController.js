@@ -197,7 +197,11 @@ export class OverworldController {
             enemyEntity.name = `${enemyEntity.name || enemyId} ${enemyParty.length + 1}`;
             enemyParty.push(enemyEntity);
         }
-
+        console.log('\n=== [DEBUG] BATTLE PAYLOAD ENTITIES ===');
+        enemyParty.forEach((entity, index) => {
+            console.log(`Enemy ${index + 1} (${entity.name}) object:`, entity);
+        });
+        console.log('=======================================\n');
         // --- FIXED: Create the payload object first ---
         const battlePayload = {
             enemies: enemyParty,

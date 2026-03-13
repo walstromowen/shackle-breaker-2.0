@@ -92,6 +92,45 @@ export const AbilityDefinitions = {
             { id: "bleed", chance: 0.15, duration: 3 } 
         ]
     },
+    "arcane_bolt": {
+        id: "arcane_bolt",
+        name: "Arcane Bolt",
+        description: "Condense raw insight into a projectile. A reliable source of magical damage.",
+        icon: { col: 1, row: 9 }, // Assuming adjacent to magic missile
+        animationId: "magic_missile",
+        targeting: { scope: "enemy", select: "single" },
+        cost: { insight: 8 }, 
+        speedModifier: 1.0, 
+        accuracy: 1.0, 
+        effects: [
+            { 
+                type: "damage", 
+                damageType: "arcane", 
+                power: 1.2 // Slightly higher than 1.0 to compensate for mages having lower natural defense/HP
+            }
+        ]
+    },
+    "fireball": {
+        id: "fireball",
+        name: "Fireball",
+        description: "Hurl a glob of volatile flame. Deals high damage with a chance to burn.",
+        icon: { col: 0, row: 9 }, 
+        animationId: "fireball_cast",
+        targeting: { scope: "enemy", select: "single" },
+        cost: { insight: 15 }, 
+        speedModifier: 0.9, // Slightly slower to cast due to the "wind-up"
+        accuracy: 0.9,      // Slightly less accurate than a bolt
+        effects: [
+            { 
+                type: "damage", 
+                damageType: "fire", 
+                power: 1.8 // High power to punch through high-Vigor targets
+            }
+        ],
+        statusEffects: [
+            { id: "burn", chance: 0.3, duration: 3 } 
+        ]
+    },
 
     // =========================================================================
     // 1. PHYSICAL AGGRESSION
@@ -265,7 +304,7 @@ export const AbilityDefinitions = {
         accuracy: 0.75, 
         multihit: { min: 3, max: 3, distinctChecks: true },
         effects: [
-            { type: "damage", damageType: "slash", power: 0.5 }
+            { type: "damage", damageType: "slash", power: 0.75 }
         ],
         statusEffects: [
             { id: "bleed", chance: 0.10 }
@@ -317,7 +356,7 @@ export const AbilityDefinitions = {
         cost: { insight: 12 }, 
         accuracy: 1.0, 
         effects: [
-            { type: "damage", damageType: "arcane", power: 0.6 }
+            { type: "damage", damageType: "arcane", power: 0.75 }
         ]
     },
 

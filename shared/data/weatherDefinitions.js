@@ -20,14 +20,14 @@ export const WeatherDefinitions = {
         id: 'fog',
         name: 'Dense Fog',
         visualEffect: 'overlay_fog',
-        audioEffect: 'weatherRain', 
+        audioEffect: 'weatherFog', 
         durationRange: [8, 12]
     },
     SANDSTORM: {
         id: 'sandstorm',
         name: 'Sandstorm',
         visualEffect: 'particle_sand',
-        audioEffect: 'weatherRain',
+        audioEffect: 'weatherFog',
         durationRange: [10,20]
     }
 };

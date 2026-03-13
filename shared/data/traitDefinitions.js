@@ -17,6 +17,9 @@ export const TRAIT_DEFINITIONS = {
         attributes: { 
             intelligence: 2 ,
             attunement: 1 
+        },
+        stats: {
+            attack: { arcane: 3 }
         }
     },
     'brawler': {
@@ -106,7 +109,8 @@ export const TRAIT_DEFINITIONS = {
         conditionalStats: {
             condition: "hp_below_30_percent",
             stats: {
-                defense: { slash: 10, blunt: 10, pierce: 10 },
+                // Explicitly defining the physical defenses
+                defense: { slash: 10, blunt: 10, pierce: 10 }, 
                 combat: { speed: -5 }
             }
         }

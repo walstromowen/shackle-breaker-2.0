@@ -74,8 +74,9 @@ export class BattleDebuggerRenderer {
     }
 
     _getDamageType(c, type) {
+        // --- FIXED 1: Mapped 'SLS' to 'slash' and 'PRC' to 'pierce' to match StatCalculator ---
         const typeMap = {
-            'BLT': 'blunt', 'SLS': 'slashing', 'PRC': 'piercing', 'FIR': 'fire',
+            'BLT': 'blunt', 'SLS': 'slash', 'PRC': 'pierce', 'FIR': 'fire',
             'ICE': 'ice', 'LNG': 'lightning', 'WAT': 'water', 'ERT': 'earth',
             'WND': 'wind', 'LGT': 'light', 'DRK': 'dark', 'ARC': 'arcane'
         };
@@ -88,16 +89,22 @@ export class BattleDebuggerRenderer {
         atk = this._unwrapStat(atk) ?? '-';
         def = this._unwrapStat(def) ?? '-';
 
-        const resRaw = c.stats?.resistances?.[actualKey] || c.stats?.resistances?.[type];
+        // --- FIXED 2: Changed 'resistances' to 'resistance' (singular) ---
+        let resRaw = c.stats?.resistance?.[actualKey] || 0; 
+                  
         let resVal = this._unwrapStat(resRaw);
         
         if (atk === 0) atk = '-';
         if (def === 0) def = '-';
         
-        // FIXED: Round resistance to max 1 decimal place to stop repeating floats
         let resStr = '-';
-        if (resVal && resVal !== 0) {
-            resStr = `${Number(resVal.toFixed(1))}%`; 
+        if (typeof resVal === 'number' && !isNaN(resVal)) {
+            if (resVal === 0) {
+                 resStr = '0%';
+            } else {
+                 // Multiply by 100 before formatting
+                 resStr = `${Number((resVal * 100).toFixed(1))}%`; 
+            }
         }
 
         return { atk, def, res: resStr };
@@ -178,9 +185,9 @@ export class BattleDebuggerRenderer {
 
             const spd = this._unwrapStat(stats.speed) ?? '?';
             
-            // FIXED: Clean up floating point numbers for Criticals
+            // FIXED: Multiply Crit Chance by 100 for proper display
             let crt = this._unwrapStat(stats.critChance) ?? 0;
-            crt = Number(crt.toFixed(1)); 
+            crt = Number((crt * 100).toFixed(1)); 
 
             let crtDmg = this._unwrapStat(stats.critDamage) ?? 1.5;
             crtDmg = Number(crtDmg.toFixed(2)); 

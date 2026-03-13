@@ -30,7 +30,7 @@ export class EntityModel {
                 staminaRecovery: 0,  // NEW
                 insightRecovery: 0,  // NEW
                 speed: 0,
-                critical: 5, 
+                critical: 0.05, 
                 baseAttack: { blunt: 0, slash: 0, pierce: 0 },
                 baseDefense: { blunt: 0, slash: 0, pierce: 0 }
             };

@@ -1,10 +1,7 @@
 # [ShackleBreaker Legacy](https://shackle-breaker-frontend.onrender.com/)
 Roguelike turnbased adventure game based on the Shackle Breaker story by Owen Walstrom
 
-Weather Turn logic
-combat calculator fix (currently all blunt damage)
 enhance battle animations
-weather animations in battle
 Fix character summary screen
 two handed items
 clicking functionality across screens

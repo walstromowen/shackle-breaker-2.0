@@ -1,5 +1,5 @@
 export const ItemDefinitions = {
-    // --- WEAPONS (No changes needed) ---
+    // --- WEAPONS ---
     "wooden_stick": {
         id: "wooden_stick",
         name: "Wooden Stick",
@@ -74,7 +74,7 @@ export const ItemDefinitions = {
 
     "insight_of_fire": {
         id: "insight_of_fire",
-        name: "Insight of Fire", // Removed accidental trailing space
+        name: "Insight of Fire",
         slot: "mainHand",
         type: "weapon",
         description: "An insight into a firey truth.",
@@ -86,7 +86,7 @@ export const ItemDefinitions = {
 
     "insight_of_water": {
         id: "insight_of_water",
-        name: "Insight of Water", // Removed accidental trailing space
+        name: "Insight of Water",
         slot: "mainHand",
         type: "weapon",
         description: "An insight into a watery truth.",
@@ -98,7 +98,7 @@ export const ItemDefinitions = {
 
     "insight_of_earth": {
         id: "insight_of_earth",
-        name: "Insight of Earth ", // Removed accidental trailing space
+        name: "Insight of Earth",
         slot: "mainHand",
         type: "weapon",
         description: "An insight into a earthy truth.",
@@ -110,7 +110,7 @@ export const ItemDefinitions = {
 
     "insight_of_lightning": {
         id: "insight_of_lightning",
-        name: "Insight of Lightning ", // Removed accidental trailing space
+        name: "Insight of Lightning",
         slot: "mainHand",
         type: "weapon",
         description: "An insight into a electrifying truth.",
@@ -122,67 +122,65 @@ export const ItemDefinitions = {
 
     "insight_of_ice": {
         id: "insight_of_ice",
-        name: "Insight of Ice ", // Removed accidental trailing space
+        name: "Insight of Ice",
         slot: "mainHand",
         type: "weapon",
         description: "An insight into a frozen truth.",
         value: 20,
         icon: { col: 4, row: 1 },
-        attack: { fire: 5,  arcane: 2},
+        attack: { fire: 5},
         grantedAbilities: ["quick_stab"] 
     },
 
     "insight_of_wind": {
         id: "insight_of_wind",
-        name: "Insight of Wind ", // Removed accidental trailing space
+        name: "Insight of Wind",
         slot: "mainHand",
         type: "weapon",
         description: "An insight into a booming truth.",
         value: 20,
         icon: { col: 5, row: 1 },
-        attack: { fire: 5,  arcane: 2},
+        attack: { fire: 5},
         grantedAbilities: ["quick_stab"] 
     },
 
     "insight_of_arcane": {
         id: "insight_of_arcane",
-        name: "Insight of Arcane ", // Removed accidental trailing space
+        name: "Insight of Arcane",
         slot: "mainHand",
         type: "weapon",
         description: "An insight into a arcane truth.",
         value: 20,
         icon: { col: 6, row: 1 },
-        attack: { fire: 5,  arcane: 2},
-        grantedAbilities: ["quick_stab"] 
+        attack: { arcane: 5},
+        grantedAbilities: ["arcane_bolt", "magic_missile"] 
     },
 
     "insight_of_light": {
         id: "insight_of_light",
-        name: "Insight of Light ", // Removed accidental trailing space
+        name: "Insight of Light",
         slot: "mainHand",
         type: "weapon",
         description: "An insight into a luminous truth.",
         value: 20,
         icon: { col: 7, row: 1 },
-        attack: { fire: 5,  arcane: 2},
+        attack: { fire: 5},
         grantedAbilities: ["quick_stab"] 
     },
 
     "insight_of_darkness": {
         id: "insight_of_darkness",
-        name: "Insight of Darkness ", // Removed accidental trailing space
+        name: "Insight of Darkness",
         slot: "mainHand",
         type: "weapon",
         description: "An insight into a shadowy truth.",
         value: 20,
         icon: { col: 8, row: 1 },
-        attack: { fire: 5,  arcane: 2},
+        attack: { fire: 5},
         grantedAbilities: ["quick_stab"] 
     },
 
-    // ==========================================
-    // --- Tattered ARMOR SET (Level 1) ---
-    // ==========================================
+    // --- TATTERED ARMOR SET ---
     "tattered_hood": {
         id: "tattered_hood",
         name: "Tattered Hood",
@@ -193,7 +191,7 @@ export const ItemDefinitions = {
         value: 8,
         icon: { col: 0, row: 0 },
         defense: { slash: 1 },
-        resistance: {lightning: 1, ice: 1, wind: 1, light: 1,}
+        resistance: { lightning: 0.01, ice: 0.01, wind: 0.01, light: 0.01 }
     },
     "tattered_shirt": {
         id: "tattered_shirt",
@@ -205,7 +203,7 @@ export const ItemDefinitions = {
         value: 15,
         icon: { col: 0, row: 1 },
         defense: { blunt: 1, slash: 1, pierce: 1 },
-        resistance: { pierce: 1}
+        resistance: { pierce: 0.01 }
     },
     "tattered_gloves": {
         id: "tattered_gloves",
@@ -217,7 +215,7 @@ export const ItemDefinitions = {
         value: 5,
         icon: { col: 1, row: 2 },
         defense: { fire: 1 },
-        resistance: { earth: 2}
+        resistance: { earth: 0.02 }
     },
     "tattered_pants": {
         id: "tattered_pants",
@@ -229,7 +227,7 @@ export const ItemDefinitions = {
         value: 10,
         icon: { col: 0, row: 3 },
         defense: { blunt: 1, slash: 1 },
-        resistance: { slash: 1 }
+        resistance: { slash: 0.01 }
     },
     "tattered_boots": {
         id: "tattered_boots",
@@ -241,11 +239,10 @@ export const ItemDefinitions = {
         value: 6,
         icon: { col: 0, row: 4 },
         defense: { blunt: 1 },
-        resistance: { fire: 1,  earth: 1}
+        resistance: { fire: 0.01, earth: 0.01 }
     },
-    // ==========================================
-    // --- CLOTH ARMOR SET (Level 1) ---
-    // ==========================================
+
+    // --- CLOTH ARMOR SET ---
     "cloth_hood": {
         id: "cloth_hood",
         name: "Cloth Hood",
@@ -256,7 +253,7 @@ export const ItemDefinitions = {
         value: 8,
         icon: { col: 1, row: 0 },
         defense: { slash: 1 },
-        resistance: { arcane: 1, light: 1, dark: 1 }
+        resistance: { arcane: 0.01, light: 0.01, dark: 0.01 }
     },
     "cloth_robe": {
         id: "cloth_robe",
@@ -268,7 +265,7 @@ export const ItemDefinitions = {
         value: 15,
         icon: { col: 1, row: 1 },
         defense: { blunt: 1, slash: 1, pierce: 1 },
-        resistance: { fire: 1, ice: 1, arcane: 2 }
+        resistance: { fire: 0.01, ice: 0.01, arcane: 0.02 }
     },
     "cloth_gloves": {
         id: "cloth_gloves",
@@ -280,7 +277,7 @@ export const ItemDefinitions = {
         value: 5,
         icon: { col: 1, row: 2 },
         defense: { blunt: 1 },
-        resistance: { ice: 1 }
+        resistance: { ice: 0.01 }
     },
     "cloth_pants": {
         id: "cloth_pants",
@@ -292,7 +289,7 @@ export const ItemDefinitions = {
         value: 10,
         icon: { col: 1, row: 3 },
         defense: { blunt: 1, slash: 1 },
-        resistance: { arcane: 1 }
+        resistance: { arcane: 0.01 }
     },
     "cloth_shoes": {
         id: "cloth_shoes",
@@ -304,12 +301,10 @@ export const ItemDefinitions = {
         value: 6,
         icon: { col: 1, row: 4 },
         defense: { blunt: 1 },
-        resistance: { fire: 1 }
+        resistance: { fire: 0.01 }
     },
 
-    // ==========================================
-    // --- LEATHER ARMOR SET (Level 1) ---
-    // ==========================================
+    // --- LEATHER ARMOR SET ---
     "leather_helmet": {
         id: "leather_helmet",
         name: "Leather Helmet",
@@ -364,12 +359,10 @@ export const ItemDefinitions = {
         value: 18,
         icon: { col: 2, row: 4 },
         defense: { blunt: 1, slash: 1, pierce: 1 },
-        combat: { speed: 1 } // Lightweight boots give a tiny speed boost
+        combat: { speed: 1 }
     },
 
-    // ==========================================
-    // --- IRON ARMOR SET (Level 1) ---
-    // ==========================================
+    // --- IRON ARMOR SET ---
     "iron_helmet": {
         id: "iron_helmet",
         name: "Iron Helmet",
@@ -441,7 +434,6 @@ export const ItemDefinitions = {
         stackable: true,
         maxStack: 99
     },
-
      "stone": {
         id: "stone",
         name: "Stone",
@@ -452,7 +444,6 @@ export const ItemDefinitions = {
         stackable: true,
         maxStack: 99
     },
-
      "leather": {
         id: "leather",
         name: "Leather",
@@ -463,7 +454,6 @@ export const ItemDefinitions = {
         stackable: true,
         maxStack: 99
     },
-
      "iron_ingot": {
         id: "iron_ingot",
         name: "Iron Ingot",
@@ -475,7 +465,6 @@ export const ItemDefinitions = {
         maxStack: 99
     },
 
-
     // --- CONSUMABLES ---
     "healing_herb": {
         id: "healing_herb",
@@ -485,14 +474,10 @@ export const ItemDefinitions = {
         value: 10,
         icon: { col: 0, row: 0 },
         useAbility: "restore_health_minor",
-        
-        // UPDATED: Now uses 'overworld' instead of 'menu' to match gameState.mode
         usability: ['overworld', 'battle'], 
-        
         stackable: true,
         maxStack: 20
     },
-
     "invigorating_herb": {
         id: "invigorating_herb",
         name: "Invigorating Herb",
@@ -505,7 +490,6 @@ export const ItemDefinitions = {
         stackable: true,
         maxStack: 20
     },
-
      "illuminating_herb": {
         id: "illuminating_herb",
         name: "Illuminating Herb",
@@ -518,12 +502,10 @@ export const ItemDefinitions = {
         stackable: true,
         maxStack: 20
     },
-      
-
     "kurtus_brew": {
         name: "Kurtus's Brew of Madness",
-        type: "consumable", // It's an item
-        useAbility: "brew_of_madness", // Links to the logic below
+        type: "consumable",
+        useAbility: "brew_of_madness",
         description: "Smells like ozone and bad decisions. Sets HP to 1, fills Insight.",
         icon: { col: 1, row: 1 },
         stackable: true
@@ -542,13 +524,12 @@ export const ItemDefinitions = {
         resources: { maxHp: 100, maxStamina: 50, maxInsight: 50 },
         attack: { blunt: 5, slash: 5, pierce: 5, fire: 5, ice: 5, lightning: 5, arcane: 5 },
         defense: { blunt: 5, slash: 5, pierce: 5 },
-        resistance: { fire: 5, ice: 5, lightning: 5, arcane: 5 },
+        resistance: { fire: 1.0, ice: 1.0, lightning: 1.0, arcane: 1.0 },
         critChance: 0.10, 
         critMultiplier: 0.50, 
         speed: 5 ,
-
         hpRecovery: 10,
-        staminaRecovery: 20,
-        insightRecovery: 5
+        staminaRecovery: 20,
+        insightRecovery: 5
     },
 };

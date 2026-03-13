@@ -15,10 +15,9 @@ export class StatsPanel {
         // ==========================================
         this.ui.drawText("Attributes", x, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
         
-        // --- Underline Header ---
         currentY += 5; 
         this.ui.drawRect(x, currentY, w, 1, UITheme.colors.border); 
-        currentY += 15; // Space between line and content
+        currentY += 15; 
 
         const attrs = member.attributes || {};
         const attrKeys = Object.keys(attrs);
@@ -77,12 +76,11 @@ export class StatsPanel {
         const speed = stats.speed || member.attributes?.speed || 0;
         drawRow("SPD", `${speed}`, UITheme.colors.textMain);
 
-        const critChance = (stats.critChance || 0) * 100;
-        // CHANGED: Use textMain (Default) instead of insight color
-        drawRow("CRT %", `${critChance.toFixed(0)}%`, UITheme.colors.textMain);
+        // FIX: Converting decimal (0.1) to display percentage (10%)
+        const critChancePercent = Math.round((stats.critChance || 0) * 100);
+        drawRow("CRT %", `${critChancePercent}%`, UITheme.colors.textMain);
 
         const critMult = (stats.critMultiplier !== undefined) ? stats.critMultiplier : 1.5;
-        // CHANGED: Use textMain (Default) instead of custom gold
         drawRow("CRT Dmg", `x${critMult}`, UITheme.colors.textMain);
 
         currentY += 20;
@@ -105,7 +103,6 @@ export class StatsPanel {
         this.ui.drawText("TYPE", colType, currentY, headerFont, UITheme.colors.textMuted, "left");
         this.ui.drawText("ATK", colAtk, currentY, headerFont, UITheme.colors.danger, "center");
         this.ui.drawText("DEF", colDef, currentY, headerFont, UITheme.colors.magic, "center");
-        // CHANGED: Header for RES is now textMuted (default gray) to match the request for "default color"
         this.ui.drawText("RES", colRes, currentY, headerFont, UITheme.colors.textMuted, "center");
         
         currentY += 5;
@@ -126,30 +123,33 @@ export class StatsPanel {
             if (atk === 0 && defense === 0 && res === 0) return;
 
             const label = Formatting.getAbbreviation(type);
-            
             this.ui.drawText(label, colType, currentY, UITheme.fonts.mono, UITheme.colors.textMuted, "left");
             
-            const formatVal = (val, color) => {
+            // ATK/DEF Drawing
+            const formatFlatVal = (val, color) => {
                  const display = val > 0 ? `${val}` : "-";
                  const displayColor = val > 0 ? color : UITheme.colors.textMuted;
                  return { text: display, color: displayColor };
             };
 
-            // ATK (Danger/Red)
-            const atkData = formatVal(atk, UITheme.colors.danger);
+            const atkData = formatFlatVal(atk, UITheme.colors.danger);
             this.ui.drawText(atkData.text, colAtk, currentY, UITheme.fonts.mono, atkData.color, "center");
             
-            // DEF (Magic/Blue)
-            const defData = formatVal(defense, UITheme.colors.magic);
+            const defData = formatFlatVal(defense, UITheme.colors.magic);
             this.ui.drawText(defData.text, colDef, currentY, UITheme.fonts.mono, defData.color, "center");
             
-            // RES (Default/White)
-            // CHANGED: Use textMain instead of insight color for value
-            const resData = (res !== 0) 
-                ? { text: `${res}%`, color: UITheme.colors.textMain } 
-                : { text: "-", color: UITheme.colors.textMuted };
+            // FIX: Resistance Display
+            // Converting decimal (0.01) to integer string for UI ("1%")
+            let resText = "-";
+            let resColor = UITheme.colors.textMuted;
+
+            if (res !== 0) {
+                const resPercent = Math.round(res * 100);
+                resText = `${resPercent}%`;
+                resColor = UITheme.colors.textMain;
+            }
                 
-            this.ui.drawText(resData.text, colRes, currentY, UITheme.fonts.mono, resData.color, "center");
+            this.ui.drawText(resText, colRes, currentY, UITheme.fonts.mono, resColor, "center");
 
             currentY += 14; 
         });
