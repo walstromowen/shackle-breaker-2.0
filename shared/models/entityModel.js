@@ -30,6 +30,7 @@ export class EntityModel {
                 staminaRecovery: 0,  // NEW
                 insightRecovery: 0,  // NEW
                 speed: 0,
+                corruption: 0,
                 critical: 0.05, 
                 baseAttack: { blunt: 0, slash: 0, pierce: 0 },
                 baseDefense: { blunt: 0, slash: 0, pierce: 0 }
@@ -130,7 +131,7 @@ export class EntityModel {
     get speed() { return this.calculatedStats.speed; }           
     get critical() { return this.calculatedStats.critChance; }   
     get critMultiplier() { return this.calculatedStats.critMultiplier; }
-
+    get corruption() { return this.calculatedStats.corruption; }
     // NEW: Recovery Getters (fall back to baseStats if Calculator doesn't handle them yet)
     get hpRecovery() { return this.calculatedStats.hpRecovery ?? this.state.baseStats.hpRecovery; }
     get staminaRecovery() { return this.calculatedStats.staminaRecovery ?? this.state.baseStats.staminaRecovery; }

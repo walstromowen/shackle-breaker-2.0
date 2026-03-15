@@ -7,7 +7,7 @@ export class EquipmentPanel {
         this.ui = ui;
         this.loader = loader;
         this.SLOT_HEIGHT = 48;
-        this.PORTRAIT_SIZE = 112;
+        this.PORTRAIT_SIZE = 128;
         this.RENDER_SIZE = 32;
     }
 
@@ -90,95 +90,90 @@ export class EquipmentPanel {
         
 
         // --- SLOT DRAWING HELPER ---
-        const drawSlot = (slotName, index, isLeft) => {
-            const globalIndex = isLeft ? index : splitIndex + index;
-            const isSelected = (globalIndex === selectedIndex);
-            
-            const slotW = Math.floor((w - this.PORTRAIT_SIZE - 40) / 2);
-            const slotX = isLeft ? (centerX - (this.PORTRAIT_SIZE/2) - slotW - 10) : (centerX + (this.PORTRAIT_SIZE/2) + 10);
-            const slotY = startY + (index * (this.SLOT_HEIGHT + 4));
+        const drawSlot = (slotName, index, isLeft) => {
+            const globalIndex = isLeft ? index : splitIndex + index;
+            const isSelected = (globalIndex === selectedIndex);
+            
+            // 1. TIGHTEN WIDTH MARGINS: Changed from 40 to 16 to give slots more room
+            const slotW = Math.floor((w - this.PORTRAIT_SIZE - 26) / 2);
+            // 2. TIGHTEN GAP: Changed from 10 to 8 to move slots slightly closer to portrait
+            const slotX = isLeft ? (centerX - (this.PORTRAIT_SIZE/2) - slotW - 8) : (centerX + (this.PORTRAIT_SIZE/2) + 8);
+            const slotY = startY + (index * (this.SLOT_HEIGHT + 4));
 
-            // --- DROP COMPATIBILITY CHECK ---
-            let isValidDrop = false;
-            if (heldItem) {
-                const item = heldItem.item;
-                const def = ItemDefinitions[item.defId];
-                
-                if (def) {
-                    const iSlot = (def.slot || def.type || '').toLowerCase().replace(/\s/g, '');
-                    const sSlot = slotName.toLowerCase().replace(/\s/g, '');
+            // --- DROP COMPATIBILITY CHECK ---
+            let isValidDrop = false;
+            if (heldItem) {
+                const item = heldItem.item;
+                const def = ItemDefinitions[item.defId];
+                
+                if (def) {
+                    const iSlot = (def.slot || def.type || '').toLowerCase().replace(/\s/g, '');
+                    const sSlot = slotName.toLowerCase().replace(/\s/g, '');
 
-                    isValidDrop = (iSlot === sSlot) ||
-                                  (sSlot === 'mainhand' && (iSlot === 'weapon' || iSlot === 'tool')) ||
-                                  (sSlot === 'offhand' && (iSlot === 'shield' || iSlot === 'weapon'));
-                }
-            }
+                    isValidDrop = (iSlot === sSlot) ||
+                                  (sSlot === 'mainhand' && (iSlot === 'weapon' || iSlot === 'tool')) ||
+                                  (sSlot === 'offhand' && (iSlot === 'shield' || iSlot === 'weapon'));
+                }
+            }
 
-            // --- DYNAMIC STYLING ---
-            let borderColor = UITheme.colors.border;
-            let boxColor = UITheme.colors.scrollTrack; // Transparent dark
-            let lineWidth = 1;
+            // --- DYNAMIC STYLING ---
+            let borderColor = UITheme.colors.border;
+            let boxColor = UITheme.colors.scrollTrack; 
+            let lineWidth = 1;
 
-            if (isValidDrop) {
-                // Highlighting for valid drag target (Keep Green for "Safety/Success")
-                borderColor = UITheme.colors.success; 
-                boxColor = "rgba(46, 204, 113, 0.15)"; 
-                lineWidth = 2;
-            } else if (isSelected) {
-                // CHANGED: Use selectedWhite (Misty White) for the selection cursor
-                borderColor = UITheme.colors.selectedWhite;
-                // Subtle white tint for the background of selected item
-                boxColor = "rgba(240, 240, 240, 0.05)"; 
-                lineWidth = 2;
-            }
+            if (isValidDrop) {
+                borderColor = UITheme.colors.success; 
+                boxColor = "rgba(46, 204, 113, 0.15)"; 
+                lineWidth = 2;
+            } else if (isSelected) {
+                borderColor = UITheme.colors.selectedWhite;
+                boxColor = "rgba(240, 240, 240, 0.05)"; 
+                lineWidth = 2;
+            }
 
-            // Register Hitbox
-            hitboxes.push({ id: `SLOT_${slotName}`, x: slotX, y: slotY, w: slotW, h: this.SLOT_HEIGHT, type: 'slot', slotId: slotName });
+            hitboxes.push({ id: `SLOT_${slotName}`, x: slotX, y: slotY, w: slotW, h: this.SLOT_HEIGHT, type: 'slot', slotId: slotName });
 
-            // Draw Box
-            this.ui.drawRect(slotX, slotY, slotW, this.SLOT_HEIGHT, boxColor);
-            this.ui.ctx.lineWidth = lineWidth;
-            this.ui.drawRect(slotX, slotY, slotW, this.SLOT_HEIGHT, borderColor, false);
-            this.ui.ctx.lineWidth = 1;
+            this.ui.drawRect(slotX, slotY, slotW, this.SLOT_HEIGHT, boxColor);
+            this.ui.ctx.lineWidth = lineWidth;
+            this.ui.drawRect(slotX, slotY, slotW, this.SLOT_HEIGHT, borderColor, false);
+            this.ui.ctx.lineWidth = 1;
 
-            // --- GHOSTING LOGIC ---
-            // If dragging FROM this slot, hide the item visually
-            let item = equipData[slotName];
-            if (heldItem && heldItem.source === 'equipment' && heldItem.originSlot === slotName) {
-                item = null; 
-            }
+            // --- GHOSTING LOGIC ---
+            let item = equipData[slotName];
+            if (heldItem && heldItem.source === 'equipment' && heldItem.originSlot === slotName) {
+                item = null; 
+            }
 
-            let def = null;
-            if (item && item.defId) {
-                def = ItemDefinitions[item.defId];
-            }
+            let def = null;
+            if (item && item.defId) {
+                def = ItemDefinitions[item.defId];
+            }
 
-            const itemName = def ? def.name : "Empty";
-            
-            const iconX = isLeft ? (slotX + slotW - 36) : (slotX + 4);
-            const textX = isLeft ? (slotX + slotW - 42) : (slotX + 42);
-            const textW = slotW - 48;
-            const align = isLeft ? "right" : "left";
+            const itemName = def ? def.name : "Empty";
+            
+            // 3. TIGHTEN INTERNAL PADDING: Move icon to edge, maximize text width
+            const iconX = isLeft ? (slotX + slotW - 34) : (slotX + 2);
+            const textX = isLeft ? (slotX + slotW - 38) : (slotX + 36);
+            const textW = slotW - 40; 
+            const align = isLeft ? "right" : "left";
 
-            if (def) this._drawIcon(def, iconX, slotY + 8);
+            if (def) this._drawIcon(def, iconX, slotY + 8);
 
-            // Draw Label
-            this.ui.drawText(slotName.toUpperCase(), textX, slotY + 10, "bold 8px monospace", UITheme.colors.textMuted, align);
+            this.ui.drawText(slotName.toUpperCase(), textX, slotY + 10, "bold 8px monospace", UITheme.colors.textMuted, align);
 
-            // Draw Item Name
-            const nameFont = "11px sans-serif";
-            const nameLines = this.ui.getWrappedLines(itemName, textW, nameFont);
-            let nameY = slotY + 22;
-            if (nameLines.length === 1) nameY += 4; 
+            // 4. SHRINK FONT SLIGHTLY: Changed from 11px to 10px so whole words fit better
+            const nameFont = "10px sans-serif";
+            const nameLines = this.ui.getWrappedLines(itemName, textW, nameFont);
+            let nameY = slotY + 22;
+            if (nameLines.length === 1) nameY += 4; 
 
-            nameLines.forEach((line, i) => {
-                if (i < 2) {
-                    // Item Name: Main (whiteish) if item exists, Muted (grey) if empty
-                    const color = item ? UITheme.colors.textMain : UITheme.colors.textMuted;
-                    this.ui.drawText(line, textX, nameY + (i * 12), nameFont, color, align);
-                }
-            });
-        };
+            nameLines.forEach((line, i) => {
+                if (i < 2) {
+                    const color = item ? UITheme.colors.textMain : UITheme.colors.textMuted;
+                    this.ui.drawText(line, textX, nameY + (i * 12), nameFont, color, align);
+                }
+            });
+        };
 
         activeSlots.slice(0, splitIndex).forEach((s, i) => drawSlot(s, i, true));
         activeSlots.slice(splitIndex).forEach((s, i) => drawSlot(s, i, false));
@@ -198,20 +193,25 @@ export class EquipmentPanel {
         }
 
         traits.forEach(traitId => {
-            const def = TRAIT_DEFINITIONS[traitId] || { name: traitId };
-            const width = this.ui.ctx.measureText(def.name).width + 20;
+            const def = TRAIT_DEFINITIONS[traitId] || { name: traitId };
+            const width = this.ui.ctx.measureText(def.name).width + 20;
+            
+            if (currentX + width > x + w - 30) {
+                currentX = x + 30;
+                currentY += 30;
+            }
+
+            hitboxes.push({ id: traitId, x: currentX, y: currentY, w: width, h: 22, type: 'trait' });
+
+            // Draw Background
+            this.ui.drawRect(currentX, currentY, width, 22, UITheme.colors.bgScale[1]);
             
-            if (currentX + width > x + w - 30) {
-                currentX = x + 30;
-                currentY += 30;
-            }
+            // --- ADD THIS LINE TO DRAW THE BOX BORDER ---
+            this.ui.drawRect(currentX, currentY, width, 22, UITheme.colors.border, false);
 
-            hitboxes.push({ id: traitId, x: currentX, y: currentY, w: width, h: 22, type: 'trait' });
-
-            this.ui.drawRect(currentX, currentY, width, 22, UITheme.colors.bgScale[1]);
-            this.ui.drawText(def.name, currentX + width/2, currentY + 15, "11px sans-serif", UITheme.colors.textMain, "center");
-            currentX += width + 8;
-        });
+            this.ui.drawText(def.name, currentX + width/2, currentY + 15, "11px sans-serif", UITheme.colors.textMain, "center");
+            currentX += width + 8;
+        });
     }
 
     _drawIcon(def, x, y) {

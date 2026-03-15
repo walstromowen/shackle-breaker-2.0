@@ -60,32 +60,58 @@ export class StatsPanel {
         currentY += 20;
 
         // ==========================================
-        // 2. COMBAT STATS SECTION
-        // ==========================================
-        this.ui.drawText("Combat Stats", x, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
+        // 2. COMBAT & RECOVERY STATS SECTION
+        // ==========================================
+        this.ui.drawText("Combat Stats", x, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
 
-        currentY += 5; 
-        this.ui.drawRect(x, currentY, w, 1, UITheme.colors.border);
-        currentY += 15; 
+        currentY += 5; 
+        this.ui.drawRect(x, currentY, w, 1, UITheme.colors.border);
+        currentY += 15; 
 
-        const drawRow = (label, val, color) => {
-            this.ui.drawText(label, x, currentY, UITheme.fonts.mono, UITheme.colors.textMuted, "left");
-            this.ui.drawText(val, x + 70, currentY, UITheme.fonts.mono, color, "left");
-            currentY += rowHeight; 
-        };
+        const speed = stats.speed || member.attributes?.speed || 0;
+        const critChance = (stats.critChance || 0) * 100;
+        const critMult = (stats.critMultiplier !== undefined) ? stats.critMultiplier : 1.5;
+        const accuracy = stats.accuracy !== undefined ? stats.accuracy : 100;
+        const evasion = stats.evasion !== undefined ? stats.evasion : 100;
+        const hpRec = stats.hpRecovery || 0;
+        const staRec = stats.staminaRecovery || 0;
+        const insRec = stats.insightRecovery || 0;
+        const corruption = stats.corruption || 0;
 
-        const speed = stats.speed || member.attributes?.speed || 0;
-        drawRow("SPD", `${speed}`, UITheme.colors.textMain);
+        // Interleaved to force Column 1 (Recoveries/Speed) and Column 2 (Other Combat Stats)
+        const combatStats = [
+            { label: "SPD", val: `${speed}` },
+            { label: "CRT %", val: `${critChance.toFixed(0)}%` },
 
-        const critChance = (stats.critChance || 0) * 100;
-        // CHANGED: Use textMain (Default) instead of insight color
-        drawRow("CRT %", `${critChance.toFixed(0)}%`, UITheme.colors.textMain);
+            { label: "HP REC", val: hpRec > 0 ? `${hpRec}` : `${hpRec}` },
+            { label: "CRT DMG", val: `${critMult}` },
 
-        const critMult = (stats.critMultiplier !== undefined) ? stats.critMultiplier : 1.5;
-        // CHANGED: Use textMain (Default) instead of custom gold
-        drawRow("CRT Dmg", `x${critMult}`, UITheme.colors.textMain);
+            { label: "STA REC", val: staRec > 0 ? `${staRec}` : `${staRec}` },
+            { label: "ACC", val: `${accuracy}` },
 
-        currentY += 20;
+            { label: "INS REC", val: insRec > 0 ? `${insRec}` : `${insRec}` },
+            { label: "EVA", val: `${evasion}` },
+
+            { label: "COR", val: `${corruption}` }
+        ];
+
+        const colWidth = w / 2;
+        const numRows = Math.ceil(combatStats.length / 2);
+
+        combatStats.forEach((stat, i) => {
+            if (!stat.label) return; // Skip drawing if it's our blank spacer
+
+            const col = i % 2;
+            const row = Math.floor(i / 2);
+            
+            const itemX = x + (col * colWidth);
+            const itemY = currentY + (row * rowHeight);
+            
+            this.ui.drawText(stat.label, itemX, itemY, UITheme.fonts.mono, UITheme.colors.textMuted, "left");
+            this.ui.drawText(stat.val, itemX + 60, itemY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
+        });
+
+        currentY += (numRows * rowHeight) + 10;
 
         // ==========================================
         // 3. RESISTANCE TABLE
@@ -145,13 +171,13 @@ export class StatsPanel {
             
             // RES (Default/White)
             // CHANGED: Use textMain instead of insight color for value
-            const resData = (res !== 0) 
-                ? { text: `${res}%`, color: UITheme.colors.textMain } 
-                : { text: "-", color: UITheme.colors.textMuted };
-                
-            this.ui.drawText(resData.text, colRes, currentY, UITheme.fonts.mono, resData.color, "center");
+           const resData = (res !== 0) 
+                ? { text: `${(res * 100).toFixed(0)}%`, color: UITheme.colors.textMain } 
+                : { text: "-", color: UITheme.colors.textMuted };
+                
+            this.ui.drawText(resData.text, colRes, currentY, UITheme.fonts.mono, resData.color, "center");
 
-            currentY += 14; 
+            currentY += 14;
         });
     }
 }

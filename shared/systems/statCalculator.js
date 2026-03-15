@@ -46,7 +46,8 @@ export class StatCalculator {
             speed: finalStats.speed,
             critChance: finalStats.critChance,
             accuracy: finalStats.accuracy, 
-            evasion: finalStats.evasion    
+            evasion: finalStats.evasion,    
+            corruption: finalStats.corruption
         };
     }
 
@@ -56,6 +57,7 @@ export class StatCalculator {
             vigor: 0, strength: 0, dexterity: 0, intelligence: 0, attunement: 0,
             speed: 0, critChance: 0, critMultiplier: 1.5,
             accuracy: 100, evasion: 100, 
+            corruption: 0,
             maxHp: 0, maxStamina: 0, maxInsight: 0,
             hpRecovery: 0, staminaRecovery: 0, insightRecovery: 0 
         };
@@ -235,12 +237,13 @@ export class StatCalculator {
         });
 
         if (source.combat) {
-            if (source.combat.speed) stats.speed += source.combat.speed;
-            if (source.combat.critChance) stats.critChance += source.combat.critChance;
-            if (source.combat.critMultiplier) stats.critMultiplier += source.combat.critMultiplier;
-            if (source.combat.accuracy) stats.accuracy += source.combat.accuracy;
-            if (source.combat.evasion) stats.evasion += source.combat.evasion;
-        }
+            if (source.combat.speed) stats.speed += source.combat.speed;
+            if (source.combat.critChance) stats.critChance += source.combat.critChance;
+            if (source.combat.critMultiplier) stats.critMultiplier += source.combat.critMultiplier;
+            if (source.combat.accuracy) stats.accuracy += source.combat.accuracy;
+            if (source.combat.evasion) stats.evasion += source.combat.evasion;
+            if (source.combat.corruption) stats.corruption += source.combat.corruption;
+        }
     }
 
     static checkCondition(type, currentHp, maxHp) {
