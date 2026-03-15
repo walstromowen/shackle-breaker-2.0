@@ -180,6 +180,39 @@ export class StatCalculator {
             }
         });
 
+        // --- STEP 4.5: STATUS EFFECTS & STACKING ---
+        const activeStatuses = character.statusEffects || character.state?.statusEffects || [];
+        
+        activeStatuses.forEach(status => {
+            // Only process statuses that have a modifiers array
+            if (!status.modifiers || !Array.isArray(status.modifiers)) return;
+            
+            status.modifiers.forEach(mod => {
+                // Determine the multiplier (default to 1 if stacks isn't present)
+                const stacks = status.stacks || 1;
+                const totalValue = mod.value * stacks;
+                
+                // Parse the target (e.g., "resistance.slash" -> category: "resistance", stat: "slash")
+                const path = mod.target.split('.');
+                
+                if (path.length === 2) {
+                    const category = path[0]; // e.g., 'resistance'
+                    const stat = path[1];     // e.g., 'slash'
+                    
+                    // Safely apply the stacked value
+                    if (finalStats[category] && finalStats[category][stat] !== undefined) {
+                        finalStats[category][stat] += totalValue;
+                    }
+                } else if (path.length === 1) {
+                    // Handles flat root-level stats like "speed" or "maxHp"
+                    const stat = path[0];
+                    if (finalStats[stat] !== undefined) {
+                        finalStats[stat] += totalValue;
+                    }
+                }
+            });
+        });
+
         // --- STEP 5: FINAL SUMMATION ---
         finalStats.maxHp = breakdown.resources.base.hp + breakdown.resources.derived.hp + breakdown.resources.flat.hp;
         finalStats.maxStamina = breakdown.resources.base.stamina + breakdown.resources.derived.stamina + breakdown.resources.flat.stamina;

@@ -5,8 +5,11 @@ export class StatusEffectModel {
         this.name = definition.name;
         this.icon = definition.icon;
         
-        // ✅ Added: Pull the animation ID directly from the definition
-        this.animationId = definition.animationId; 
+       // ✅ Added: Pull the animation ID directly from the definition
+        this.animationId = definition.animationId; 
+        
+        // ✅ NEW: Pull the persist flag (defaults to false if not specified)
+        this.persistAfterCombat = definition.persistAfterCombat || false;
         
         // Grab the generic effects array
         this.effects = definition.effects || []; 

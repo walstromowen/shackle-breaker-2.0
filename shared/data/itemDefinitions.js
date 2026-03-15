@@ -33,7 +33,7 @@ export const ItemDefinitions = {
         value: 20,
         icon: { col: 1, row: 0 },
         attack: { pierce: 3, slash: 3 },
-        grantedAbilities: ["slash", "thrust", "flurry"] 
+        grantedAbilities: ["slash", "thrust", "flurry", "bolster"] 
     },
 
     "handaxe": {

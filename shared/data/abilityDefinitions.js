@@ -132,6 +132,21 @@ export const AbilityDefinitions = {
         ]
     },
 
+    "bolster": {
+        id: "bolster",
+        name: "Bolster",
+        description: "Hardens your defenses to increase resistance against physical attacks. Can be stacked up to 3 times.",
+        icon: { col: 2, row: 2 }, // Adjust the sprite coordinates to match a shield/armor icon!
+        targeting: { scope: "self", select: "single" },
+        cost: { stamina: 15 },
+        speedModifier: 1.2, // Generally you want buffs to go off fast before enemies attack
+        accuracy: 1.0, 
+        animationId: "strike", // Replace with a defensive animation if you have one
+        effects: [], // No direct damage or healing needed, attackHit defaults to true
+        statusEffects: [
+            { id: "iron_skin", chance: 1.0 } // 100% chance to apply our new buff
+        ]
+    },
     // =========================================================================
     // 1. PHYSICAL AGGRESSION
     // =========================================================================
