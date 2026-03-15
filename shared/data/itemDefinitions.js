@@ -232,7 +232,7 @@ export const ItemDefinitions = {
     "tattered_boots": {
         id: "tattered_boots",
         name: "Tattered Boots",
-        slot: "boots",
+        slot: "feet",
         type: "armor",
         level: 1,
         description: "Tattered boots.",
@@ -294,7 +294,7 @@ export const ItemDefinitions = {
     "cloth_shoes": {
         id: "cloth_shoes",
         name: "Cloth Shoes",
-        slot: "boots",
+        slot: "feet",
         type: "armor",
         level: 1,
         description: "Soft-soled shoes.",
@@ -352,7 +352,7 @@ export const ItemDefinitions = {
     "leather_boots": {
         id: "leather_boots",
         name: "Leather Boots",
-        slot: "boots",
+        slot: "feet",
         type: "armor",
         level: 1,
         description: "Sturdy leather boots with good grip.",
@@ -413,7 +413,7 @@ export const ItemDefinitions = {
     "iron_boots": {
         id: "iron_boots",
         name: "Iron Boots",
-        slot: "boots",
+        slot: "feet",
         type: "armor",
         level: 1,
         description: "Heavy iron-shod boots.",

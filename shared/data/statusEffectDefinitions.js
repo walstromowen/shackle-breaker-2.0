@@ -60,7 +60,7 @@ export const StatusEffectDefinitions = {
     wet: {
         id: 'wet',
         name: 'Wet',
-        icon: { col: 0, row: 1 }, // Pick a valid sprite coordinate for a water drop!
+        icon: { col: 5, row: 0 }, // Pick a valid sprite coordinate for a water drop!
         defaultCharges: 99,       // Effectively infinite until the weather changes
         maxStacks: 1, 
        
@@ -75,7 +75,7 @@ export const StatusEffectDefinitions = {
     iron_skin: {
         id: 'iron_skin',
         name: 'Iron Skin',
-        icon: { col: 4, row: 0 }, // Adjust this to match your sprite sheet
+        icon: { col: 0, row: 1 }, // Adjust this to match your sprite sheet
         defaultCharges: 3,        // Lasts for 3 turns (or until consumed/expired)
         maxStacks: 3,             // ✅ Allows stacking up to 3 times!
         persistAfterCombat: false, // Usually buffs clear after combat, but you can change this
