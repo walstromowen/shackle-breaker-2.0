@@ -150,15 +150,17 @@ export class ContextMenuManager {
 
     useItem(item) {
         const def = ItemDefinitions[item.defId];
+        console.log("1. Item Def:", def); 
+
         if (!def) return;
-        
         if (!def.useAbility) {
-            console.log(`Item ${def.name} is not usable directly.`);
+            console.log("2. FAILED: No useAbility on item");
             return;
         }
 
+        console.log("3. Executing Ability:", def.useAbility, "on", this.controller.currentMember.name);
         const result = AbilitySystem.execute(def.useAbility, this.controller.currentMember, this.controller.currentMember);
-
+        console.log("4. Ability Result:", result);
         if (result.success) {
             InventorySystem.removeItem(item.defId, 1);
 

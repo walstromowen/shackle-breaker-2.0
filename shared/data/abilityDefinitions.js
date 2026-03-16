@@ -602,19 +602,6 @@ export const AbilityDefinitions = {
     // =========================================================================
     // 8. CONSUMABLES (Items)
     // =========================================================================
-
-    "heal_minor": {
-        id: "heal_minor",
-        name: "Minor Heal",
-        description: "Restores a small amount of health.",
-        icon: { col: 0, row: 8 },
-        targeting: { scope: "ally", select: "single" }, 
-        accuracy: 1.0,
-        animationId: "melee_lunge",
-        effects: [
-            { type: "recover", resource: "hp", power: 10, calculation: "flat" }
-        ]
-    },
     
     "brew_of_madness": {
         id: "brew_of_madness",
@@ -693,10 +680,10 @@ export const AbilityDefinitions = {
         ]
     },
 
-    "item_health_potion": {
-        id: "item_health_potion",
-        name: "Health Potion",
-        description: "Restores 50% of Health.",
+    "minor_heal": {
+        id: "minor_heal",
+        name: "Minor Heal",
+        description: "Restores a small amount of health.",
         icon: { col: 5, row: 8 },
         cost: { item: "health_potion", amount: 1 },
         animationId: "melee_lunge",
@@ -704,14 +691,14 @@ export const AbilityDefinitions = {
         speedModifier: 1.0,
         accuracy: 1.0,
         effects: [
-            { type: "recover", resource: "hp", calculation: "percent", power: 0.5 }
+            { type: "recover", resource: "hp", calculation: "percent", power: 0.3 }
         ]
     },
 
-    "item_stamina_potion": {
-        id: "item_stamina_potion",
-        name: "Stamina Potion",
-        description: "Restores 50% of Stamina.",
+    "minor_recover": {
+        id: "minor_recover",
+        name: "Minor Recover",
+        description: "Restores a small amount of stamina.",
         icon: { col: 6, row: 8 },
         cost: { item: "stamina_potion", amount: 1 },
         animationId: "melee_lunge",
@@ -719,7 +706,22 @@ export const AbilityDefinitions = {
         speedModifier: 1.0,
         accuracy: 1.0,
         effects: [
-            { type: "recover", resource: "stamina", calculation: "percent", power: 0.5 }
+            { type: "recover", resource: "stamina", calculation: "percent", power: 0.3 }
+        ]
+    },
+
+    "minor_channel": {
+        id: "minor_channel",
+        name: "Minor Channel",
+        description: "Restores a small amount of insight.",
+        icon: { col: 7, row: 8 },
+        cost: { item: "mana_potion", amount: 1 },
+        animationId: "melee_lunge",
+        targeting: { scope: "ally", select: "single" },
+        speedModifier: 1.0,
+        accuracy: 1.0,
+        effects: [
+            { type: "recover", resource: "insight", calculation: "percent", power: 0.3 }
         ]
     }
 };

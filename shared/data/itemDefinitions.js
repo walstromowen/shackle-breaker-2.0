@@ -473,7 +473,7 @@ export const ItemDefinitions = {
         description: "A simple herb that can be used to treat minor wounds.",
         value: 10,
         icon: { col: 0, row: 0 },
-        useAbility: "restore_health_minor",
+        useAbility: "minor_heal",
         usability: ['overworld', 'battle'], 
         stackable: true,
         maxStack: 20
@@ -485,7 +485,7 @@ export const ItemDefinitions = {
         description: "A refreshing herb that can be used to restore stamina.",
         value: 15,
         icon: { col: 1, row: 0 },
-        useAbility: "restore_stamina_minor",
+        useAbility: "minor_recover",
         usability: ['overworld', 'battle'],
         stackable: true,
         maxStack: 20
@@ -497,7 +497,7 @@ export const ItemDefinitions = {
         description: "A refreshing herb that can be used to restore insight.",
         value: 15,
         icon: { col: 2, row: 0 },
-        useAbility: "restore_insight_minor",
+        useAbility: "minor_channel",
         usability: ['overworld', 'battle'],
         stackable: true,
         maxStack: 20
