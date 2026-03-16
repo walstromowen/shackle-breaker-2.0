@@ -418,24 +418,24 @@ export class CharacterSummaryController {
         const equipData = member.equipment || {}; 
         const availableSlots = Object.keys(equipData);
 
-        if (availableSlots.length > 0) {
-            this.activeSlots = availableSlots.sort((a, b) => {
-                const indexA = SLOT_ORDER.indexOf(a);
-                const indexB = SLOT_ORDER.indexOf(b);
-                const indexALower = SLOT_ORDER.findIndex(s => s.toLowerCase() === a.toLowerCase());
-                const indexBLower = SLOT_ORDER.findIndex(s => s.toLowerCase() === b.toLowerCase());
-                
-                const finalA = (indexA !== -1) ? indexA : (indexALower !== -1 ? indexALower : 99);
-                const finalB = (indexB !== -1) ? indexB : (indexBLower !== -1 ? indexBLower : 99);
+        // Sort whatever slots they actually have
+        this.activeSlots = availableSlots.sort((a, b) => {
+            const indexA = SLOT_ORDER.indexOf(a);
+            const indexB = SLOT_ORDER.indexOf(b);
+            const indexALower = SLOT_ORDER.findIndex(s => s.toLowerCase() === a.toLowerCase());
+            const indexBLower = SLOT_ORDER.findIndex(s => s.toLowerCase() === b.toLowerCase());
+            
+            const finalA = (indexA !== -1) ? indexA : (indexALower !== -1 ? indexALower : 99);
+            const finalB = (indexB !== -1) ? indexB : (indexBLower !== -1 ? indexBLower : 99);
 
-                return finalA - finalB;
-            });
-        } else {
-            this.activeSlots = [...SLOT_ORDER]; 
-        }
+            return finalA - finalB;
+        });
 
+        // REMOVED the else {} block that forced [...SLOT_ORDER]
+
+        // Make sure slotIndex doesn't go out of bounds (or sets to -1 if no slots exist)
         if (this.slotIndex >= this.activeSlots.length) {
-            this.slotIndex = 0;
+            this.slotIndex = this.activeSlots.length > 0 ? 0 : -1;
         }
 
         this.updateFilteredInventory();

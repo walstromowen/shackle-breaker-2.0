@@ -32,11 +32,7 @@ const BASE_ENTITY = {
         baseAttack: { blunt: 1, slash: 0, pierce: 0 }
     },
 
-    equipment: {
-        mainHand: null, offHand: null,  
-        head: null, torso: null, arms: null, legs: null, feet: null,  
-        accessory: null
-    },
+    equipment: {},
 
     // --- NEW: WEIGHTED LOOT & CURRENCY ---
     currencyReward: { min: 0, max: 0 }, 
@@ -62,7 +58,11 @@ const HUMANOID_TEMPLATE = {
         speed: 5, critical: 0.05,
         baseAttack: { blunt: 1, slash: 0, pierce: 0 }
     },
-
+    equipment: {
+        mainHand: null, offHand: null,  
+        head: null, torso: null, arms: null, legs: null, feet: null,  
+        accessory: null
+    },
     // Humanoids usually carry some pocket change
     currencyReward: { min: 1, max: 10 },
 
@@ -88,7 +88,9 @@ const BEAST_TEMPLATE = {
         baseResistance: { fire: -0.2 },
         baseAttack: { blunt: 6, slash: 8, pierce: 4 }
     },
-
+    equipment: {
+        accessory: null 
+    },
     // Beasts rarely carry money
     currencyReward: { min: 0, max: 0 },
 
