@@ -68,7 +68,7 @@ export class ItemDetailPanel {
         // --- Detailed Rendering Logic ---
 
         // A. Header
-        currentY = this._drawHeader(def, def, centerX, currentY, w);
+        currentY = this._drawHeader(item, def, centerX, currentY, w);
         currentY += 15;
 
         // B. Description
@@ -76,10 +76,12 @@ export class ItemDetailPanel {
         currentY += 15;
 
         // C. Main Stats (Attack, Defense, Resistance)
-        currentY = this._drawMainStats(def, x + 20, currentY, w - 40);
+        // CHANGED: Using 'item' instance instead of 'def'
+        currentY = this._drawMainStats(item, x + 20, currentY, w - 40);
 
         // D. Attribute Bonuses & Resources
-        currentY = this._drawAttributeBonuses(def, x + 20, currentY, w - 40);
+        // CHANGED: Using 'item' instance instead of 'def'
+        currentY = this._drawAttributeBonuses(item, x + 20, currentY, w - 40);
 
         // E. Abilities
         currentY = this._drawAbilities(def, x + 15, currentY, w - 30);
@@ -162,7 +164,8 @@ export class ItemDetailPanel {
         let currentY = y + this.ICON_SIZE + 20;
         const maxTextWidth = w - 40; 
         
-        const nameLines = this.ui.getWrappedLines(def.name, maxTextWidth, UITheme.fonts.header);
+        // CHANGED: Prioritize the item instance's name if customized
+        const nameLines = this.ui.getWrappedLines(item.name || def.name, maxTextWidth, UITheme.fonts.header);
         const rarityColor = this._getRarityColor(def.rarity);
         
         const lineHeight = 20;
@@ -172,7 +175,21 @@ export class ItemDetailPanel {
         });
 
         currentY += 4; 
-        const typeText = `${(def.type || "Item").toUpperCase()} ${def.slot ? " - " + def.slot.toUpperCase() : ""}`;
+        
+        // 1. Build the base type and slot string
+        let typeText = `${(def.type || "Item").toUpperCase()}`;
+        if (def.slot) {
+            typeText += ` - ${def.slot.toUpperCase()}`;
+        }
+        
+        // 2. Check for an item level and append it if it exists
+        // CHANGED: Prioritize the dynamic item level
+        const itemLevel = item.level || def.level || def.itemLevel; 
+        if (itemLevel !== undefined) {
+            typeText += ` • Lv. ${itemLevel}`; 
+        }
+
+        // 3. Draw the combined string
         this.ui.drawText(typeText, centerX, currentY, "bold 10px monospace", UITheme.colors.textMuted, "center");
 
         return currentY + 10;
@@ -207,9 +224,9 @@ export class ItemDetailPanel {
         return currentY;
     }
 
-    _drawMainStats(def, x, y, w) {
+    _drawMainStats(item, x, y, w) {
         let currentY = y;
-        const source = def.stats || def; 
+        const source = item.stats || item; 
 
         // 1. Primary Stats (Simple values)
         const primaryStats = [
@@ -270,11 +287,11 @@ export class ItemDetailPanel {
         return hasPrinted ? currentY + 8 : currentY; 
     }
 
-    _drawAttributeBonuses(def, x, y, w) {
+    _drawAttributeBonuses(item, x, y, w) {
         let currentY = y;
-        const attributes = def.attributes || (def.stats ? def.stats.attributes : {}) || {};
+        const attributes = item.attributes || (item.stats ? item.stats.attributes : {}) || {};
         const attrKeys = Object.keys(attributes);
-        const resources = def.resources || {};
+        const resources = item.resources || {};
         const resKeys = Object.keys(resources);
 
         if (attrKeys.length === 0 && resKeys.length === 0) return currentY;

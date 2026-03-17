@@ -11,13 +11,21 @@ export class EquipmentPanel {
         this.RENDER_SIZE = 32;
     }
 
+    // Helper to extract the actual number whether it's an object or primitive
+    _getVal(v) {
+        return (v && typeof v === 'object') ? (v.total || v.value || 0) : (Number(v) || 0);
+    }
+
     render(member, stats, activeSlots, selectedIndex, isChoosingItem, x, y, w, h, hitboxes, heldItem) {
         const centerX = Math.floor(x + (w / 2));
         let headerY = y + 10;
 
+        // Extract the actual level number safely
+        const actualLevel = this._getVal(stats.level) || this._getVal(member.level) || 1;
+
         // 1. Name & Level
         this.ui.drawText(member.name, centerX, headerY + 15, UITheme.fonts.header, UITheme.colors.textMain, "center");
-        this.ui.drawText(`Level ${member.level}`, centerX, headerY + 36, UITheme.fonts.body, UITheme.colors.textHighlight, "center");
+        this.ui.drawText(`Level ${actualLevel}`, centerX, headerY + 36, UITheme.fonts.body, UITheme.colors.textHighlight, "center");
 
         // 2. Vitals
         this._drawVitals(member, stats, centerX, headerY + 58, x, w);
@@ -32,16 +40,18 @@ export class EquipmentPanel {
     }
 
     _drawVitals(member, stats, centerX, y, fullX, fullW) {
-        const getVal = (v) => (v && typeof v === 'object') ? (v.total || v.value || 0) : (Number(v) || 0);
+        const totalMaxHp = this._getVal(stats.maxHp) || this._getVal(member.maxHp);
+        const totalMaxStm = this._getVal(stats.maxStamina) || this._getVal(member.maxStamina);
+        const totalMaxIns = this._getVal(stats.maxInsight) || this._getVal(member.maxInsight);
+        
+        // Also extract actual numbers for XP to prevent [object Object] bugs here too
+        const currentXp = this._getVal(stats.xp) || this._getVal(member.xp);
+        const nextXp = this._getVal(stats.xpToNext) || this._getVal(member.xpToNext) || 100;
 
-        const totalMaxHp = getVal(stats.maxHp) || getVal(member.maxHp);
-        const totalMaxStm = getVal(stats.maxStamina) || getVal(member.maxStamina);
-        const totalMaxIns = getVal(stats.maxInsight) || getVal(member.maxInsight);
-
-        const hpText = `HP ${member.hp}/${totalMaxHp}`;
-        const stmText = `STM ${member.stamina}/${totalMaxStm}`;
-        const insText = `INS ${member.insight || 0}/${totalMaxIns}`;
-        const xpText = `XP ${member.xp}/${member.xpToNext || 100}`;
+        const hpText = `HP ${this._getVal(member.hp)}/${totalMaxHp}`;
+        const stmText = `STM ${this._getVal(member.stamina)}/${totalMaxStm}`;
+        const insText = `INS ${this._getVal(member.insight)}/${totalMaxIns}`;
+        const xpText = `XP ${currentXp}/${nextXp}`;
 
         this.ui.ctx.font = UITheme.fonts.mono;
         const gap = 15;
@@ -78,8 +88,6 @@ export class EquipmentPanel {
         const img = this.loader.get(assetKey);
 
         if(img) {
-            // Updated to match your previous logic: 
-            // Crops the 128x128 face from the top-left and scales to PORTRAIT_SIZE
             this.ui.drawSprite(
                 img, 
                 0, 0, 128, 128,                         // Source: Top-left 128px square
@@ -88,92 +96,95 @@ export class EquipmentPanel {
             );
         }
         
-
         // --- SLOT DRAWING HELPER ---
-        const drawSlot = (slotName, index, isLeft) => {
-            const globalIndex = isLeft ? index : splitIndex + index;
-            const isSelected = (globalIndex === selectedIndex);
-            
-            // 1. TIGHTEN WIDTH MARGINS: Changed from 40 to 16 to give slots more room
-            const slotW = Math.floor((w - this.PORTRAIT_SIZE - 26) / 2);
-            // 2. TIGHTEN GAP: Changed from 10 to 8 to move slots slightly closer to portrait
-            const slotX = isLeft ? (centerX - (this.PORTRAIT_SIZE/2) - slotW - 8) : (centerX + (this.PORTRAIT_SIZE/2) + 8);
-            const slotY = startY + (index * (this.SLOT_HEIGHT + 4));
+        const drawSlot = (slotName, index, isLeft) => {
+            const globalIndex = isLeft ? index : splitIndex + index;
+            const isSelected = (globalIndex === selectedIndex);
+            
+            const slotW = Math.floor((w - this.PORTRAIT_SIZE - 26) / 2);
+            const slotX = isLeft ? (centerX - (this.PORTRAIT_SIZE/2) - slotW - 8) : (centerX + (this.PORTRAIT_SIZE/2) + 8);
+            const slotY = startY + (index * (this.SLOT_HEIGHT + 4));
 
-            // --- DROP COMPATIBILITY CHECK ---
-            let isValidDrop = false;
-            if (heldItem) {
-                const item = heldItem.item;
-                const def = ItemDefinitions[item.defId];
-                
-                if (def) {
-                    const iSlot = (def.slot || def.type || '').toLowerCase().replace(/\s/g, '');
-                    const sSlot = slotName.toLowerCase().replace(/\s/g, '');
+            // --- DROP COMPATIBILITY CHECK ---
+            let isValidDrop = false;
+            if (heldItem) {
+                const item = heldItem.item;
+                const def = ItemDefinitions[item.defId];
+                
+                if (def) {
+                    const iSlot = (def.slot || def.type || '').toLowerCase().replace(/\s/g, '');
+                    const sSlot = slotName.toLowerCase().replace(/\s/g, '');
 
-                    isValidDrop = (iSlot === sSlot) ||
-                                  (sSlot === 'mainhand' && (iSlot === 'weapon' || iSlot === 'tool')) ||
-                                  (sSlot === 'offhand' && (iSlot === 'shield' || iSlot === 'weapon'));
-                }
-            }
+                    isValidDrop = (iSlot === sSlot) ||
+                                  (sSlot === 'mainhand' && (iSlot === 'weapon' || iSlot === 'tool')) ||
+                                  (sSlot === 'offhand' && (iSlot === 'shield' || iSlot === 'weapon'));
+                }
+            }
 
-            // --- DYNAMIC STYLING ---
-            let borderColor = UITheme.colors.border;
-            let boxColor = UITheme.colors.scrollTrack; 
-            let lineWidth = 1;
+            // --- DYNAMIC STYLING ---
+            let borderColor = UITheme.colors.border;
+            let boxColor = UITheme.colors.scrollTrack; 
+            let lineWidth = 1;
 
-            if (isValidDrop) {
-                borderColor = UITheme.colors.success; 
-                boxColor = "rgba(46, 204, 113, 0.15)"; 
-                lineWidth = 2;
-            } else if (isSelected) {
-                borderColor = UITheme.colors.selectedWhite;
-                boxColor = "rgba(240, 240, 240, 0.05)"; 
-                lineWidth = 2;
-            }
+            if (isValidDrop) {
+                borderColor = UITheme.colors.success; 
+                boxColor = "rgba(46, 204, 113, 0.15)"; 
+                lineWidth = 2;
+            } else if (isSelected) {
+                borderColor = UITheme.colors.selectedWhite;
+                boxColor = "rgba(240, 240, 240, 0.05)"; 
+                lineWidth = 2;
+            }
 
-            hitboxes.push({ id: `SLOT_${slotName}`, x: slotX, y: slotY, w: slotW, h: this.SLOT_HEIGHT, type: 'slot', slotId: slotName });
+            hitboxes.push({ id: `SLOT_${slotName}`, x: slotX, y: slotY, w: slotW, h: this.SLOT_HEIGHT, type: 'slot', slotId: slotName });
 
-            this.ui.drawRect(slotX, slotY, slotW, this.SLOT_HEIGHT, boxColor);
-            this.ui.ctx.lineWidth = lineWidth;
-            this.ui.drawRect(slotX, slotY, slotW, this.SLOT_HEIGHT, borderColor, false);
-            this.ui.ctx.lineWidth = 1;
+            this.ui.drawRect(slotX, slotY, slotW, this.SLOT_HEIGHT, boxColor);
+            this.ui.ctx.lineWidth = lineWidth;
+            this.ui.drawRect(slotX, slotY, slotW, this.SLOT_HEIGHT, borderColor, false);
+            this.ui.ctx.lineWidth = 1;
 
-            // --- GHOSTING LOGIC ---
-            let item = equipData[slotName];
-            if (heldItem && heldItem.source === 'equipment' && heldItem.originSlot === slotName) {
-                item = null; 
-            }
+            // --- GHOSTING LOGIC ---
+            let item = equipData[slotName];
+            if (heldItem && heldItem.source === 'equipment' && heldItem.originSlot === slotName) {
+                item = null; 
+            }
 
-            let def = null;
-            if (item && item.defId) {
-                def = ItemDefinitions[item.defId];
-            }
+            let def = null;
+            if (item && item.defId) {
+                def = ItemDefinitions[item.defId];
+            }
 
-            const itemName = def ? def.name : "Empty";
-            
-            // 3. TIGHTEN INTERNAL PADDING: Move icon to edge, maximize text width
-            const iconX = isLeft ? (slotX + slotW - 34) : (slotX + 2);
-            const textX = isLeft ? (slotX + slotW - 38) : (slotX + 36);
-            const textW = slotW - 40; 
-            const align = isLeft ? "right" : "left";
+           // --- NEW: Read level from the item instance! ---
+            let itemName = "Empty";
+            if (item && def) {
+                itemName = def.name;
+                // If the item instance has a level greater than 1, display it
+                if (item.level && item.level > 1) {
+                    itemName += ` Lv.${item.level}`; 
+                }
+            }
+            
+            const iconX = isLeft ? (slotX + slotW - 34) : (slotX + 2);
+            const textX = isLeft ? (slotX + slotW - 38) : (slotX + 36);
+            const textW = slotW - 40; 
+            const align = isLeft ? "right" : "left";
 
-            if (def) this._drawIcon(def, iconX, slotY + 8);
+            if (def) this._drawIcon(def, iconX, slotY + 8);
 
-            this.ui.drawText(slotName.toUpperCase(), textX, slotY + 10, "bold 8px monospace", UITheme.colors.textMuted, align);
+            this.ui.drawText(slotName.toUpperCase(), textX, slotY + 10, "bold 8px monospace", UITheme.colors.textMuted, align);
 
-            // 4. SHRINK FONT SLIGHTLY: Changed from 11px to 10px so whole words fit better
-            const nameFont = "10px sans-serif";
-            const nameLines = this.ui.getWrappedLines(itemName, textW, nameFont);
-            let nameY = slotY + 22;
-            if (nameLines.length === 1) nameY += 4; 
+            const nameFont = "10px sans-serif";
+            const nameLines = this.ui.getWrappedLines(itemName, textW, nameFont);
+            let nameY = slotY + 22;
+            if (nameLines.length === 1) nameY += 4; 
 
-            nameLines.forEach((line, i) => {
-                if (i < 2) {
-                    const color = item ? UITheme.colors.textMain : UITheme.colors.textMuted;
-                    this.ui.drawText(line, textX, nameY + (i * 12), nameFont, color, align);
-                }
-            });
-        };
+            nameLines.forEach((line, i) => {
+                if (i < 2) {
+                    const color = item ? UITheme.colors.textMain : UITheme.colors.textMuted;
+                    this.ui.drawText(line, textX, nameY + (i * 12), nameFont, color, align);
+                }
+            });
+        };
 
         activeSlots.slice(0, splitIndex).forEach((s, i) => drawSlot(s, i, true));
         activeSlots.slice(splitIndex).forEach((s, i) => drawSlot(s, i, false));
@@ -193,32 +204,31 @@ export class EquipmentPanel {
         }
 
         traits.forEach(traitId => {
-            const def = TRAIT_DEFINITIONS[traitId] || { name: traitId };
-            const width = this.ui.ctx.measureText(def.name).width + 20;
-            
-            if (currentX + width > x + w - 30) {
-                currentX = x + 30;
-                currentY += 30;
-            }
-
-            hitboxes.push({ id: traitId, x: currentX, y: currentY, w: width, h: 22, type: 'trait' });
-
-            // Draw Background
-            this.ui.drawRect(currentX, currentY, width, 22, UITheme.colors.bgScale[1]);
+            const def = TRAIT_DEFINITIONS[traitId] || { name: traitId };
+            const width = this.ui.ctx.measureText(def.name).width + 20;
             
-            // --- ADD THIS LINE TO DRAW THE BOX BORDER ---
-            this.ui.drawRect(currentX, currentY, width, 22, UITheme.colors.border, false);
+            if (currentX + width > x + w - 30) {
+                currentX = x + 30;
+                currentY += 30;
+            }
 
-            this.ui.drawText(def.name, currentX + width/2, currentY + 15, "11px sans-serif", UITheme.colors.textMain, "center");
-            currentX += width + 8;
-        });
+            hitboxes.push({ id: traitId, x: currentX, y: currentY, w: width, h: 22, type: 'trait' });
+
+            // Draw Background
+            this.ui.drawRect(currentX, currentY, width, 22, UITheme.colors.bgScale[1]);
+            
+            // Box Border
+            this.ui.drawRect(currentX, currentY, width, 22, UITheme.colors.border, false);
+
+            this.ui.drawText(def.name, currentX + width/2, currentY + 15, "11px sans-serif", UITheme.colors.textMain, "center");
+            currentX += width + 8;
+        });
     }
 
     _drawIcon(def, x, y) {
         if (!def) return;
         
-        // 1. Determine the correct spritesheet based on item type/slot
-        let sheetName = 'items'; // Default fallback
+        let sheetName = 'items'; 
         const type = (def.type || '').toLowerCase();
         const slot = (def.slot || '').toLowerCase();
         
@@ -232,7 +242,6 @@ export class EquipmentPanel {
             sheetName = 'materials';
         }
 
-        // 2. Load the specific sheet, falling back to standard items/icons if missing
         const sheet = this.loader.get(sheetName) || this.loader.get('items') || this.loader.get('icons'); 
         if (!sheet) return;
         

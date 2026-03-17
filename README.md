@@ -1,19 +1,19 @@
 # [ShackleBreaker Legacy](https://shackle-breaker-frontend.onrender.com/)
 Roguelike turnbased adventure game based on the Shackle Breaker story by Owen Walstrom
 
+FIX item leveling and upgrading currently left off in itemUpgrade System and contextMenuManager and Item model:
+
+battlecries/deathrattles
 enhance battle animations
-Fix character summary screen
 two handed items
 clicking functionality across screens
 encounters(or new name)
 particleRenderer (global)
-item leveling and upgrading
 crafting
 charcter leveling and scaling
 Difficulty
 Starting seed
 procedural dungeons and hand crafted areas
-items being used in summary screen no longer work
 
 Root
 ├── backend/
@@ -60,6 +60,9 @@ Root
 │   │   │   │    │    ├── inventoryPanel.js            
 │   │   │   │    │    └── tooltipSystem.js   
 |   |   │   ├── ui 
+│   │   │   │    ├── contextMenuManager.js
+│   │   │   │    ├── dragAndDropManager.js
+│   │   │   │    ├── scrollManager.js
 │   │   │   │    ├── UITheme.js
 │   │   │   │    └── canvasUI.js      
 │   │   ├── index.html

@@ -3,11 +3,12 @@ import { events } from '../core/eventBus.js';
 import { ItemDefinitions } from '../../../shared/data/itemDefinitions.js';
 import { InventorySystem } from '../../../shared/systems/inventorySystem.js';
 import { AbilitySystem } from '../../../shared/systems/abilitySystem.js';
+import { ItemUpgradeSystem } from '../../../shared/systems/itemUpgradeSystem.js';
 
 export class ContextMenuManager {
     constructor(controller) {
         this.controller = controller;
-        this.menu = null; // Replaces controller.contextMenu
+        this.menu = null; 
     }
 
     handleRightClick(input) {
@@ -37,6 +38,11 @@ export class ContextMenuManager {
 
         if (this._isItemUsableInMenu(def)) {
             options.push({ label: 'Use', action: 'USE' });
+        }
+
+        // --- UPGRADE CHECK ---
+        if (ItemUpgradeSystem.canUpgrade(item)) {
+            options.push({ label: 'Upgrade', action: 'UPGRADE' });
         }
 
         if (source === 'equipment') {
@@ -118,6 +124,18 @@ export class ContextMenuManager {
         if (action === 'USE') {
             this.useItem(item);
         }
+        // --- UPGRADE ACTION ---
+        else if (action === 'UPGRADE') {
+            const success = ItemUpgradeSystem.upgradeItem(item);
+            if (success) {
+                events.emit('TEXT_POPUP', {
+                    text: `Upgraded to Lv.${item.level}!`, 
+                    x: this.controller.mouse.x || 400, 
+                    y: (this.controller.mouse.y || 300) - 40,
+                    color: '#ffd700' // Fancy gold color for an upgrade
+                });
+            }
+        }
         else if (action === 'NAV_TO_INV') {
             this.controller.state = 'INVENTORY';
             this.controller.inventoryIndex = 0;
@@ -144,23 +162,20 @@ export class ContextMenuManager {
             this._handleDropAction(action, item, source, sourceKey);
         }
 
+        // Close the menu and refresh UI state
         this.menu = null;
         this.controller.updateFilteredInventory();
     }
 
     useItem(item) {
         const def = ItemDefinitions[item.defId];
-        console.log("1. Item Def:", def); 
 
         if (!def) return;
         if (!def.useAbility) {
-            console.log("2. FAILED: No useAbility on item");
             return;
         }
 
-        console.log("3. Executing Ability:", def.useAbility, "on", this.controller.currentMember.name);
         const result = AbilitySystem.execute(def.useAbility, this.controller.currentMember, this.controller.currentMember);
-        console.log("4. Ability Result:", result);
         if (result.success) {
             InventorySystem.removeItem(item.defId, 1);
 

@@ -10,30 +10,54 @@ export const ItemDefinitions = {
         icon: { col: 11, row: 0 },
         attack: { blunt: 3 }, 
         grantedAbilities: ["strike"] 
+        // No upgrade data: cannot be upgraded.
     },
 
     "dagger": {
-            id: "shortsword",
-            name: "Shortsword",
-            slot: "mainHand",
-            type: "weapon",
-            description: 'A standard shortsword.',
-            value: 20,
-            icon: { col: 0, row: 0 },
-            attack: { pierce: 3, slash: 2 },
-            grantedAbilities: ["slash", "quick_stab"] 
+        id: "dagger", // Fixed from "shortsword"
+        name: "Dagger",
+        slot: "mainHand",
+        type: "weapon",
+        description: 'A standard dagger, perfect for quick strikes.',
+        value: 20,
+        icon: { col: 0, row: 0 },
+        attack: { pierce: 3, slash: 2 },
+        grantedAbilities: ["slash"], 
+        maxLevel: 3,
+        statGrowth: {
+            attack: { pierce: 1, slash: 1 }
         },
+        abilityUnlocks: {
+            2: ["quick_stab"]
+        },
+        upgradeCosts: {
+            2: { currency: 30, materials: { "stone": 2, "leather": 1 } },
+            3: { currency: 80, materials: { "iron_ingot": 1, "leather": 2 } }
+        }
+    },
 
     "shortsword": {
         id: "shortsword",
         name: "Shortsword",
         slot: "mainHand",
         type: "weapon",
-        description: 'A standard shortsword.',
+        description: 'A standard shortsword. Gets deadlier as you forge it.',
         value: 20,
         icon: { col: 1, row: 0 },
         attack: { pierce: 3, slash: 3 },
-        grantedAbilities: ["slash", "thrust", "flurry", "bolster"] 
+        grantedAbilities: ["slash", "thrust"],
+        maxLevel: 3,
+        statGrowth: {
+            attack: { pierce: 2, slash: 2 }
+        },
+        abilityUnlocks: {
+            2: ["flurry"],
+            3: ["bolster"]
+        },
+        upgradeCosts: {
+            2: { currency: 50, materials: { "iron_ingot": 1, "leather": 1 } },
+            3: { currency: 150, materials: { "iron_ingot": 3, "leather": 2 } }
+        }
     },
 
     "handaxe": {
@@ -41,11 +65,22 @@ export const ItemDefinitions = {
         name: "Handaxe",
         slot: "mainHand",
         type: "weapon",
-        description: 'A standard handaxe.',
+        description: 'A standard handaxe. Brutal and effective.',
         value: 20,
         icon: { col: 2, row: 0 },
         attack: { blunt: 3, slash: 3 },
-        grantedAbilities: ["slash", "strike", "cleave"] 
+        grantedAbilities: ["slash", "strike"], 
+        maxLevel: 3,
+        statGrowth: {
+            attack: { blunt: 2, slash: 2 }
+        },
+        abilityUnlocks: {
+            2: ["cleave"]
+        },
+        upgradeCosts: {
+            2: { currency: 50, materials: { "stone": 3, "soft_wood": 2 } },
+            3: { currency: 150, materials: { "iron_ingot": 2, "leather": 2 } }
+        }
     },
 
     "warhammer": {
@@ -53,11 +88,22 @@ export const ItemDefinitions = {
         name: "Warhammer",
         slot: "mainHand",
         type: "weapon",
-        description: 'A standard warhammer.',
+        description: 'A standard warhammer. Heavy and crushing.',
         value: 20,
         icon: { col: 3, row: 0 },
         attack: { blunt: 5},
-        grantedAbilities: ["strike", "wild_swing"] 
+        grantedAbilities: ["strike"], 
+        maxLevel: 3,
+        statGrowth: {
+            attack: { blunt: 3 }
+        },
+        abilityUnlocks: {
+            2: ["wild_swing"]
+        },
+        upgradeCosts: {
+            2: { currency: 60, materials: { "iron_ingot": 2, "soft_wood": 2 } },
+            3: { currency: 180, materials: { "iron_ingot": 4, "leather": 1 } }
+        }
     },
 
     "spear": {
@@ -65,13 +111,26 @@ export const ItemDefinitions = {
         name: "Spear",
         slot: "mainHand",
         type: "weapon",
-        description: 'A standard spear.',
+        description: 'A standard spear. Excellent reach.',
         value: 20,
         icon: { col: 3, row: 0 },
         attack: { pierce: 5},
-        grantedAbilities: ["thrust", "quick_stab"] 
+        grantedAbilities: ["thrust"], 
+        maxLevel: 3,
+        statGrowth: {
+            attack: { pierce: 2 }
+        },
+        abilityUnlocks: {
+            2: ["quick_stab"]
+        },
+        upgradeCosts: {
+            2: { currency: 40, materials: { "stone": 2, "soft_wood": 3 } },
+            3: { currency: 120, materials: { "iron_ingot": 1, "soft_wood": 5 } }
+        }
     },
 
+    // --- INSIGHT WEAPONS ---
+    // (Consolidating the upgrade logic for these magical items to require exotic materials or just lots of currency/stone for now)
     "insight_of_fire": {
         id: "insight_of_fire",
         name: "Insight of Fire",
@@ -81,7 +140,13 @@ export const ItemDefinitions = {
         value: 20,
         icon: { col: 0, row: 1 },
         attack: { fire: 5},
-        grantedAbilities: ["quick_stab"] 
+        grantedAbilities: ["quick_stab"],
+        maxLevel: 3,
+        statGrowth: { attack: { fire: 3 } },
+        upgradeCosts: {
+            2: { currency: 100, materials: { "stone": 5 } },
+            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+        }
     },
 
     "insight_of_water": {
@@ -93,7 +158,13 @@ export const ItemDefinitions = {
         value: 20,
         icon: { col: 1, row: 1 },
         attack: { water: 5},
-        grantedAbilities: ["quick_stab"] 
+        grantedAbilities: ["quick_stab"],
+        maxLevel: 3,
+        statGrowth: { attack: { water: 3 } },
+        upgradeCosts: {
+            2: { currency: 100, materials: { "stone": 5 } },
+            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+        }
     },
 
     "insight_of_earth": {
@@ -101,11 +172,17 @@ export const ItemDefinitions = {
         name: "Insight of Earth",
         slot: "mainHand",
         type: "weapon",
-        description: "An insight into a earthy truth.",
+        description: "An insight into an earthy truth.",
         value: 20,
         icon: { col: 2, row: 1 },
         attack: { earth: 5},
-        grantedAbilities: ["quick_stab"] 
+        grantedAbilities: ["quick_stab"],
+        maxLevel: 3,
+        statGrowth: { attack: { earth: 3 } },
+        upgradeCosts: {
+            2: { currency: 100, materials: { "stone": 5 } },
+            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+        }
     },
 
     "insight_of_lightning": {
@@ -113,11 +190,17 @@ export const ItemDefinitions = {
         name: "Insight of Lightning",
         slot: "mainHand",
         type: "weapon",
-        description: "An insight into a electrifying truth.",
+        description: "An insight into an electrifying truth.",
         value: 20,
         icon: { col: 3, row: 1 },
-        attack: {lightning: 5},
-        grantedAbilities: ["quick_stab"] 
+        attack: { lightning: 5},
+        grantedAbilities: ["quick_stab"],
+        maxLevel: 3,
+        statGrowth: { attack: { lightning: 3 } },
+        upgradeCosts: {
+            2: { currency: 100, materials: { "stone": 5 } },
+            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+        }
     },
 
     "insight_of_ice": {
@@ -128,8 +211,14 @@ export const ItemDefinitions = {
         description: "An insight into a frozen truth.",
         value: 20,
         icon: { col: 4, row: 1 },
-        attack: { fire: 5},
-        grantedAbilities: ["quick_stab"] 
+        attack: { ice: 5}, // Fixed from "fire"
+        grantedAbilities: ["quick_stab"],
+        maxLevel: 3,
+        statGrowth: { attack: { ice: 3 } },
+        upgradeCosts: {
+            2: { currency: 100, materials: { "stone": 5 } },
+            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+        }
     },
 
     "insight_of_wind": {
@@ -140,8 +229,14 @@ export const ItemDefinitions = {
         description: "An insight into a booming truth.",
         value: 20,
         icon: { col: 5, row: 1 },
-        attack: { fire: 5},
-        grantedAbilities: ["quick_stab"] 
+        attack: { wind: 5}, // Fixed from "fire"
+        grantedAbilities: ["quick_stab"],
+        maxLevel: 3,
+        statGrowth: { attack: { wind: 3 } },
+        upgradeCosts: {
+            2: { currency: 100, materials: { "stone": 5 } },
+            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+        }
     },
 
     "insight_of_arcane": {
@@ -149,11 +244,18 @@ export const ItemDefinitions = {
         name: "Insight of Arcane",
         slot: "mainHand",
         type: "weapon",
-        description: "An insight into a arcane truth.",
+        description: "An insight into an arcane truth.",
         value: 20,
         icon: { col: 6, row: 1 },
         attack: { arcane: 5},
-        grantedAbilities: ["arcane_bolt", "magic_missile"] 
+        grantedAbilities: ["arcane_bolt"], // Moved magic_missile to unlock
+        maxLevel: 3,
+        statGrowth: { attack: { arcane: 3 } },
+        abilityUnlocks: { 2: ["magic_missile"] },
+        upgradeCosts: {
+            2: { currency: 150, materials: { "stone": 5 } },
+            3: { currency: 400, materials: { "iron_ingot": 3, "stone": 10 } }
+        }
     },
 
     "insight_of_light": {
@@ -164,8 +266,14 @@ export const ItemDefinitions = {
         description: "An insight into a luminous truth.",
         value: 20,
         icon: { col: 7, row: 1 },
-        attack: { fire: 5},
-        grantedAbilities: ["quick_stab"] 
+        attack: { light: 5}, // Fixed from "fire"
+        grantedAbilities: ["quick_stab"],
+        maxLevel: 3,
+        statGrowth: { attack: { light: 3 } },
+        upgradeCosts: {
+            2: { currency: 100, materials: { "stone": 5 } },
+            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+        }
     },
 
     "insight_of_darkness": {
@@ -176,17 +284,22 @@ export const ItemDefinitions = {
         description: "An insight into a shadowy truth.",
         value: 20,
         icon: { col: 8, row: 1 },
-        attack: { fire: 5},
-        grantedAbilities: ["quick_stab"] 
+        attack: { dark: 5}, // Fixed from "fire"
+        grantedAbilities: ["quick_stab"],
+        maxLevel: 3,
+        statGrowth: { attack: { dark: 3 } },
+        upgradeCosts: {
+            2: { currency: 100, materials: { "stone": 5 } },
+            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+        }
     },
 
-    // --- TATTERED ARMOR SET ---
+    // --- TATTERED ARMOR SET (Non-Upgradeable Starter Gear) ---
     "tattered_hood": {
         id: "tattered_hood",
         name: "Tattered Hood",
         slot: "head",
         type: "armor",
-        level: 1,
         description: "A tattered hood that barely keeps the rain off.",
         value: 8,
         icon: { col: 0, row: 0 },
@@ -198,7 +311,6 @@ export const ItemDefinitions = {
         name: "Tattered Shirt",
         slot: "torso",
         type: "armor",
-        level: 1,
         description: "A tattered shirt that offers little physical protection but breathes well.",
         value: 15,
         icon: { col: 0, row: 1 },
@@ -210,7 +322,6 @@ export const ItemDefinitions = {
         name: "Tattered Gloves",
         slot: "arms",
         type: "armor",
-        level: 1,
         description: "Tattered gloves. Better than bare hands.",
         value: 5,
         icon: { col: 1, row: 2 },
@@ -222,7 +333,6 @@ export const ItemDefinitions = {
         name: "Tattered Pants",
         slot: "legs",
         type: "armor",
-        level: 1,
         description: "Tattered trousers.",
         value: 10,
         icon: { col: 0, row: 3 },
@@ -234,7 +344,6 @@ export const ItemDefinitions = {
         name: "Tattered Boots",
         slot: "feet",
         type: "armor",
-        level: 1,
         description: "Tattered boots.",
         value: 6,
         icon: { col: 0, row: 4 },
@@ -248,60 +357,85 @@ export const ItemDefinitions = {
         name: "Cloth Hood",
         slot: "head",
         type: "armor",
-        level: 1,
         description: "A simple hood that keeps the rain off.",
         value: 8,
         icon: { col: 1, row: 0 },
         defense: { slash: 1 },
-        resistance: { arcane: 0.01, light: 0.01, dark: 0.01 }
+        resistance: { arcane: 0.01, light: 0.01, dark: 0.01 },
+        maxLevel: 3,
+        statGrowth: { defense: { slash: 1, blunt: 1 } },
+        upgradeCosts: {
+            2: { currency: 20, materials: { "soft_wood": 2 } },
+            3: { currency: 60, materials: { "leather": 1 } }
+        }
     },
     "cloth_robe": {
         id: "cloth_robe",
         name: "Cloth Robe",
         slot: "torso",
         type: "armor",
-        level: 1,
-        description: "A simple woven robe. Offers little physical protection but breathes well.",
+        description: "A simple woven robe.",
         value: 15,
         icon: { col: 1, row: 1 },
         defense: { blunt: 1, slash: 1, pierce: 1 },
-        resistance: { fire: 0.01, ice: 0.01, arcane: 0.02 }
+        resistance: { fire: 0.01, ice: 0.01, arcane: 0.02 },
+        maxLevel: 3,
+        statGrowth: { defense: { blunt: 1, slash: 1, pierce: 1 } },
+        upgradeCosts: {
+            2: { currency: 40, materials: { "soft_wood": 3 } },
+            3: { currency: 100, materials: { "leather": 2 } }
+        }
     },
     "cloth_gloves": {
         id: "cloth_gloves",
         name: "Cloth Gloves",
         slot: "arms",
         type: "armor",
-        level: 1,
         description: "Thin gloves. Better than bare hands.",
         value: 5,
         icon: { col: 1, row: 2 },
         defense: { blunt: 1 },
-        resistance: { ice: 0.01 }
+        resistance: { ice: 0.01 },
+        maxLevel: 3,
+        statGrowth: { defense: { blunt: 1 } },
+        upgradeCosts: {
+            2: { currency: 15, materials: { "soft_wood": 1 } },
+            3: { currency: 45, materials: { "leather": 1 } }
+        }
     },
     "cloth_pants": {
         id: "cloth_pants",
         name: "Cloth Pants",
         slot: "legs",
         type: "armor",
-        level: 1,
         description: "Standard woven trousers.",
         value: 10,
         icon: { col: 1, row: 3 },
         defense: { blunt: 1, slash: 1 },
-        resistance: { arcane: 0.01 }
+        resistance: { arcane: 0.01 },
+        maxLevel: 3,
+        statGrowth: { defense: { blunt: 1, slash: 1 } },
+        upgradeCosts: {
+            2: { currency: 25, materials: { "soft_wood": 2 } },
+            3: { currency: 75, materials: { "leather": 1 } }
+        }
     },
     "cloth_shoes": {
         id: "cloth_shoes",
         name: "Cloth Shoes",
         slot: "feet",
         type: "armor",
-        level: 1,
         description: "Soft-soled shoes.",
         value: 6,
         icon: { col: 1, row: 4 },
         defense: { blunt: 1 },
-        resistance: { fire: 0.01 }
+        resistance: { fire: 0.01 },
+        maxLevel: 3,
+        statGrowth: { defense: { blunt: 1 } },
+        upgradeCosts: {
+            2: { currency: 15, materials: { "soft_wood": 1 } },
+            3: { currency: 45, materials: { "leather": 1 } }
+        }
     },
 
     // --- LEATHER ARMOR SET ---
@@ -310,56 +444,81 @@ export const ItemDefinitions = {
         name: "Leather Helmet",
         slot: "head",
         type: "armor",
-        level: 1,
         description: "A boiled leather cap.",
         value: 15,
         icon: { col: 2, row: 0 },
-        defense: { blunt: 1, slash: 2, pierce: 1 }
+        defense: { blunt: 1, slash: 2, pierce: 1 },
+        maxLevel: 3,
+        statGrowth: { defense: { blunt: 1, slash: 1 } },
+        upgradeCosts: {
+            2: { currency: 30, materials: { "leather": 2 } },
+            3: { currency: 90, materials: { "leather": 4, "iron_ingot": 1 } }
+        }
     },
     "leather_armor": {
         id: "leather_armor",
         name: "Leather Armor",
         slot: "torso",
         type: "armor",
-        level: 1,
-        description: "Toughened leather that provides decent protection without restricting movement.",
+        description: "Toughened leather that provides decent protection.",
         value: 40,
         icon: { col: 2, row: 1 },
-        defense: { blunt: 3, slash: 4, pierce: 2 } 
+        defense: { blunt: 3, slash: 4, pierce: 2 },
+        maxLevel: 3,
+        statGrowth: { defense: { blunt: 1, slash: 2, pierce: 1 } },
+        upgradeCosts: {
+            2: { currency: 80, materials: { "leather": 4 } },
+            3: { currency: 200, materials: { "leather": 6, "iron_ingot": 2 } }
+        }
     },
     "leather_bracers": {
         id: "leather_bracers",
         name: "Leather Bracers",
         slot: "arms",
         type: "armor",
-        level: 1,
         description: "Stiff leather arm guards.",
         value: 12,
         icon: { col: 2, row: 2 },
-        defense: { blunt: 1, slash: 2, pierce: 1 }
+        defense: { blunt: 1, slash: 2, pierce: 1 },
+        maxLevel: 3,
+        statGrowth: { defense: { slash: 1 } },
+        upgradeCosts: {
+            2: { currency: 25, materials: { "leather": 2 } },
+            3: { currency: 70, materials: { "leather": 3, "iron_ingot": 1 } }
+        }
     },
     "leather_leggings": {
         id: "leather_leggings",
         name: "Leather Leggings",
         slot: "legs",
         type: "armor",
-        level: 1,
         description: "Thick leather chaps.",
         value: 25,
         icon: { col: 2, row: 3 },
-        defense: { blunt: 2, slash: 2, pierce: 1 }
+        defense: { blunt: 2, slash: 2, pierce: 1 },
+        maxLevel: 3,
+        statGrowth: { defense: { blunt: 1, slash: 1 } },
+        upgradeCosts: {
+            2: { currency: 50, materials: { "leather": 3 } },
+            3: { currency: 130, materials: { "leather": 5, "iron_ingot": 1 } }
+        }
     },
     "leather_boots": {
         id: "leather_boots",
         name: "Leather Boots",
         slot: "feet",
         type: "armor",
-        level: 1,
         description: "Sturdy leather boots with good grip.",
         value: 18,
         icon: { col: 2, row: 4 },
         defense: { blunt: 1, slash: 1, pierce: 1 },
-        combat: { speed: 1 }
+        combat: { speed: 1 },
+        maxLevel: 3,
+        statGrowth: { defense: { pierce: 1 } },
+        upgradeCosts: {
+            2: { currency: 35, materials: { "leather": 2 } },
+            3: { currency: 100, materials: { "leather": 3, "iron_ingot": 1 } }
+        }
     },
 
     // --- IRON ARMOR SET ---
@@ -368,59 +527,84 @@ export const ItemDefinitions = {
         name: "Iron Helmet",
         slot: "head",
         type: "armor",
-        level: 1,
         description: "A heavy iron helm that protects the skull.",
         value: 45,
         icon: { col: 3, row: 0 },
         defense: { blunt: 2, slash: 3, pierce: 2 },
-        combat: { speed: -1 } 
+        combat: { speed: -1 },
+        maxLevel: 3,
+        statGrowth: { defense: { blunt: 1, slash: 2, pierce: 1 } },
+        upgradeCosts: {
+            2: { currency: 100, materials: { "iron_ingot": 2, "leather": 1 } },
+            3: { currency: 250, materials: { "iron_ingot": 4, "leather": 2 } }
+        }
     },
     "iron_armor": {
         id: "iron_armor",
         name: "Iron Armor",
         slot: "torso",
         type: "armor",
-        level: 1,
-        description: "Heavy iron plates that offer excellent defense against physical attacks.",
+        description: "Heavy iron plates that offer excellent defense.",
         value: 120,
         icon: { col: 3, row: 1 },
         defense: { blunt: 5, slash: 6, pierce: 5 },
-        combat: { speed: -2 } 
+        combat: { speed: -2 },
+        maxLevel: 3,
+        statGrowth: { defense: { blunt: 2, slash: 2, pierce: 2 } },
+        upgradeCosts: {
+            2: { currency: 200, materials: { "iron_ingot": 4, "leather": 2 } },
+            3: { currency: 500, materials: { "iron_ingot": 8, "leather": 4 } }
+        }
     },
     "iron_gauntlets": {
         id: "iron_gauntlets",
         name: "Iron Gauntlets",
         slot: "arms",
         type: "armor",
-        level: 1,
         description: "Plated gloves. Heavy but highly protective.",
         value: 35,
         icon: { col: 3, row: 2 },
-        defense: { blunt: 2, slash: 2, pierce: 2 }
+        defense: { blunt: 2, slash: 2, pierce: 2 },
+        maxLevel: 3,
+        statGrowth: { defense: { blunt: 1, slash: 1, pierce: 1 } },
+        upgradeCosts: {
+            2: { currency: 80, materials: { "iron_ingot": 2, "leather": 1 } },
+            3: { currency: 200, materials: { "iron_ingot": 3, "leather": 2 } }
+        }
     },
     "iron_greaves": {
         id: "iron_greaves",
         name: "Iron Greaves",
         slot: "legs",
         type: "armor",
-        level: 1,
         description: "Solid iron leg guards.",
         value: 70,
         icon: { col: 3, row: 3 },
         defense: { blunt: 3, slash: 4, pierce: 3 },
-        combat: { speed: -1 }
+        combat: { speed: -1 },
+        maxLevel: 3,
+        statGrowth: { defense: { blunt: 1, slash: 2, pierce: 1 } },
+        upgradeCosts: {
+            2: { currency: 150, materials: { "iron_ingot": 3, "leather": 2 } },
+            3: { currency: 350, materials: { "iron_ingot": 6, "leather": 3 } }
+        }
     },
     "iron_boots": {
         id: "iron_boots",
         name: "Iron Boots",
         slot: "feet",
         type: "armor",
-        level: 1,
         description: "Heavy iron-shod boots.",
         value: 40,
         icon: { col: 3, row: 4 },
         defense: { blunt: 2, slash: 2, pierce: 2 },
-        combat: { speed: -1 }
+        combat: { speed: -1 },
+        maxLevel: 3,
+        statGrowth: { defense: { blunt: 1, slash: 1, pierce: 1 } },
+        upgradeCosts: {
+            2: { currency: 90, materials: { "iron_ingot": 2, "leather": 1 } },
+            3: { currency: 220, materials: { "iron_ingot": 4, "leather": 2 } }
+        }
     },
 
     // --- MATERIALS ---
@@ -527,9 +711,11 @@ export const ItemDefinitions = {
         resistance: { fire: 1.0, ice: 1.0, lightning: 1.0, arcane: 1.0 },
         critChance: 0.10, 
         critMultiplier: 0.50, 
+        evasion: 0.01,
+        corruption: 0.02,
         speed: 5 ,
         hpRecovery: 10,
         staminaRecovery: 20,
         insightRecovery: 5
-    },
+    }
 };
