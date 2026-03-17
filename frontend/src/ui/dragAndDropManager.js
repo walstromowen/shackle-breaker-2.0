@@ -1,3 +1,4 @@
+import { gameState } from '../../../shared/state/gameState.js'; // <-- Add this
 import { ItemDefinitions } from '../../../shared/data/itemDefinitions.js';
 import { InventorySystem } from '../../../shared/systems/inventorySystem.js';
 
@@ -94,7 +95,9 @@ export class DragAndDropManager {
 
             // Perform unequip
             member.equipment[slot] = null;
-            InventorySystem.addItem(defId, item.qty);
+            gameState.party.inventory.push(item); // <-- Keep the exact instance!
+
+            this.controller.heldItem = null;
             
             this.controller.heldItem = null;
             this.controller.updateFilteredInventory();

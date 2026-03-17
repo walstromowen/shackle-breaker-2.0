@@ -101,6 +101,24 @@ export class StatCalculator {
         if (combatSource.baseAttack) this.DAMAGE_TYPES.forEach(t => finalStats.attack[t] = combatSource.baseAttack[t] || 0);
         if (combatSource.baseResistance) this.DAMAGE_TYPES.forEach(t => finalStats.resistance[t] = combatSource.baseResistance[t] || 0);
 
+        // --- STEP 1.5: UPGRADE MERGER ---
+        const getEffectiveStats = (item) => {
+            if (!item) return null;
+            if (!item.definition) return item;
+            
+            // Prioritize the instance's upgraded stats, fall back to the base definition
+            return {
+                ...item.definition,
+                ...item, // Overwrites base keys with instance keys
+                attributes: item.attributes || item.definition.attributes,
+                attack: item.attack || item.definition.attack,
+                defense: item.defense || item.definition.defense,
+                resistance: item.resistance || item.definition.resistance,
+                combat: item.combat || item.definition.combat,
+                resources: item.resources || item.definition.resources,
+            };
+        };
+
         // --- STEP 2: CALCULATE ATTRIBUTES ---
         const activeAttributes = { ...(character.attributes || {}) }; 
         const equipment = character.equipment || character.state?.equipment || {};
@@ -113,7 +131,7 @@ export class StatCalculator {
             }
         };
 
-        Object.values(equipment).forEach(item => { if (item) mergeAttributes(item.definition || item); });
+        Object.values(equipment).forEach(item => { if (item) mergeAttributes(getEffectiveStats(item)); });
         traitIds.forEach(tid => {
             const def = TRAIT_DEFINITIONS[tid];
             if (def) mergeAttributes(def); 
@@ -169,7 +187,7 @@ export class StatCalculator {
             if (source.maxHp) breakdown.resources.flat.hp += source.maxHp;
         };
 
-        Object.values(equipment).forEach(item => { if (item) applyFlat(item.definition || item); });
+        Object.values(equipment).forEach(item => { if (item) applyFlat(getEffectiveStats(item)); });
 
         const currentHp = character.hp ?? character.state?.stats?.hp ?? breakdown.resources.base.hp;
         const currentMaxHp = breakdown.resources.base.hp + breakdown.resources.derived.hp + breakdown.resources.flat.hp; 
@@ -237,13 +255,13 @@ export class StatCalculator {
         });
 
         if (source.combat) {
-            if (source.combat.speed) stats.speed += source.combat.speed;
-            if (source.combat.critChance) stats.critChance += source.combat.critChance;
-            if (source.combat.critMultiplier) stats.critMultiplier += source.combat.critMultiplier;
-            if (source.combat.accuracy) stats.accuracy += source.combat.accuracy;
-            if (source.combat.evasion) stats.evasion += source.combat.evasion;
+            if (source.combat.speed) stats.speed += source.combat.speed;
+            if (source.combat.critChance) stats.critChance += source.combat.critChance;
+            if (source.combat.critMultiplier) stats.critMultiplier += source.combat.critMultiplier;
+            if (source.combat.accuracy) stats.accuracy += source.combat.accuracy;
+            if (source.combat.evasion) stats.evasion += source.combat.evasion;
             if (source.combat.corruption) stats.corruption += source.combat.corruption;
-        }
+        }
     }
 
     static checkCondition(type, currentHp, maxHp) {

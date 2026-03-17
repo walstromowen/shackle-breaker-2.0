@@ -3,12 +3,8 @@ import { AbilityFactory } from '../systems/factories/abilityFactory.js';
 
 export class EntityModel {
     constructor(config) {
-        // 1. Deep clone to safely detach from the source definition 
-        // (This safely catches all custom properties your battle system relies on)
         this.state = structuredClone(config);
 
-        // 2. THE FIX: structuredClone destroys class instances. 
-        // We must re-attach the living ItemModel references passed in from the Factory.
         if (config.equipment) {
             this.state.equipment = config.equipment;
         }
@@ -20,24 +16,16 @@ export class EntityModel {
         // 1. INITIALIZATION
         // =========================================================
         
-        // A. Initialize Base Stats (The "Naked" Potential)
         if (!this.state.baseStats) {
             this.state.baseStats = {
-                maxHp: 10,
-                maxStamina: 10,
-                maxInsight: 10,
-                hpRecovery: 0,       // NEW
-                staminaRecovery: 0,  // NEW
-                insightRecovery: 0,  // NEW
-                speed: 0,
-                corruption: 0,
-                critical: 0.05, 
+                maxHp: 10, maxStamina: 10, maxInsight: 10,
+                hpRecovery: 0, staminaRecovery: 0, insightRecovery: 0, 
+                speed: 0, corruption: 0, critical: 0.05, 
                 baseAttack: { blunt: 0, slash: 0, pierce: 0 },
                 baseDefense: { blunt: 0, slash: 0, pierce: 0 }
             };
         }
 
-        // B. Initialize Current Stats (The "Live" Values)
         if (!this.state.stats) {
             this.state.stats = {
                 hp: this.state.baseStats.maxHp,
@@ -46,49 +34,35 @@ export class EntityModel {
             };
         }
 
-        // C. Initialize Attributes
         if (!this.state.attributes) {
             this.state.attributes = {
                 vigor: 0, strength: 0, dexterity: 0, intelligence: 0, attunement: 0
             };
         }
 
-        // D. Initialize Visuals 
-        // Ensure defaults exist if missing from config
         if (!this.state.spriteOverworld) this.state.spriteOverworld = "missing_texture";
         if (!this.state.spritePortrait) this.state.spritePortrait = "missing_face";
 
-        // E. Initialize Containers
         if (!this.state.traits) this.state.traits = [];
         if (!this.state.equipment) this.state.equipment = {};
         if (!Array.isArray(this.state.inventory)) this.state.inventory = [];
         if (!this.state.statusEffects) this.state.statusEffects = [];
 
-        // F. Progression Defaults
         if (typeof this.state.xp === 'undefined') this.state.xp = 0;
         if (typeof this.state.maxXp === 'undefined') this.state.maxXp = 100;
         if (typeof this.state.skillPoints === 'undefined') this.state.skillPoints = 0;
         if (typeof this.state.level === 'undefined') this.state.level = 1;
 
-        // G. Runtime Properties (Not saved to State)
-        this.abilities = []; 
+        // G. Runtime Properties (Replaced flat array with private array)
+        this._learnedAbilities = []; 
         
         // Load initial abilities (Innate Biology)
         if (this.state.abilities) {
              const innateMoves = AbilityFactory.createAbilities(this.state.abilities);
              this.addAbilities(innateMoves, 'innate');
         }
-
-        // Load Equipment Abilities (If spawning with gear)
-        if (this.state.equipment) {
-            Object.entries(this.state.equipment).forEach(([slot, item]) => {
-                // Because we re-attached config.equipment, item.grantedAbilities will now work!
-                if (item && typeof item === 'object' && item.grantedAbilities) {
-                    const gearMoves = AbilityFactory.createAbilities(item.grantedAbilities);
-                    this.addAbilities(gearMoves, slot);
-                }
-            });
-        }
+        
+        // Note: Equipment abilities are no longer loaded here. The getter handles it!
     }
 
     // =========================================================
@@ -98,11 +72,9 @@ export class EntityModel {
     get name() { return this.state.name; }
     set name(val) { this.state.name = val; }
     
-    // --- VISUALS ---
     get spritePortrait() { return this.state.spritePortrait; }
     get spriteOverworld() { return this.state.spriteOverworld; }
 
-    // --- LEVELING ---
     get level() { return this.state.level; }
     set level(val) { this.state.level = val; }
     get xp() { return this.state.xp; }
@@ -112,13 +84,10 @@ export class EntityModel {
     get skillPoints() { return this.state.skillPoints; }
     set skillPoints(val) { this.state.skillPoints = val; }
     
-    // Direct Access
     get attributes() { return this.state.attributes; }
     get equipment() { return this.state.equipment; }
     get statusEffects() { return this.state.statusEffects; }
     get traits() { return this.state.traits; }
-
-    // **CRITICAL**: Expose Base Stats for the Calculator
     get baseStats() { return this.state.baseStats; }
 
     // =========================================================
@@ -132,13 +101,13 @@ export class EntityModel {
     get critical() { return this.calculatedStats.critChance; }   
     get critMultiplier() { return this.calculatedStats.critMultiplier; }
     get corruption() { return this.calculatedStats.corruption; }
-    // NEW: Recovery Getters (fall back to baseStats if Calculator doesn't handle them yet)
+    
     get hpRecovery() { return this.calculatedStats.hpRecovery ?? this.state.baseStats.hpRecovery; }
     get staminaRecovery() { return this.calculatedStats.staminaRecovery ?? this.state.baseStats.staminaRecovery; }
     get insightRecovery() { return this.calculatedStats.insightRecovery ?? this.state.baseStats.insightRecovery; }
 
     // =========================================================
-    // RESOURCES (HP / STAMINA / INSIGHT)
+    // RESOURCES
     // =========================================================
     modifyResource(resourceId, amount, isPercent = false) {
         if (this[resourceId] === undefined) {
@@ -172,110 +141,79 @@ export class EntityModel {
     set insight(val) { this.state.stats.insight = Math.max(0, Math.min(val, this.maxInsight)); }
     get maxInsight() { return this.calculatedStats.maxInsight; }
 
-    // =========================================================
-    // TRAIT MANAGEMENT
-    // =========================================================
     addTrait(traitId) {
-        if (!this.state.traits.includes(traitId)) {
-            this.state.traits.push(traitId);
-        }
+        if (!this.state.traits.includes(traitId)) this.state.traits.push(traitId);
     }
-
     removeTrait(traitId) {
         const idx = this.state.traits.indexOf(traitId);
-        if (idx > -1) {
-            this.state.traits.splice(idx, 1);
-        }
+        if (idx > -1) this.state.traits.splice(idx, 1);
     }
 
     // =========================================================
-    // ABILITY & ITEM MANAGEMENT
+    // ABILITY & ITEM MANAGEMENT (Updated for Dynamic Retrieval)
     // =========================================================
+    
+    // NEW: Dynamic getter that combines innate and gear abilities on the fly
+    get abilities() {
+        const activeList = [...(this._learnedAbilities || [])];
+
+        if (this.state.equipment) {
+            Object.values(this.state.equipment).forEach(item => {
+                if (item && item.grantedAbilities) {
+                    const gearMoves = AbilityFactory.createAbilities(item.grantedAbilities);
+                    gearMoves.forEach(move => {
+                        move.source = 'equipment';
+                        if (!activeList.find(a => a.id === move.id)) {
+                            activeList.push(move);
+                        }
+                    });
+                }
+            });
+        }
+        return activeList;
+    }
+
     addAbilities(abilityList, source = 'innate') {
         if (!abilityList || abilityList.length === 0) return;
         abilityList.forEach(ability => {
             ability.source = source; 
-            // Only add if not already in the list
-            if (!this.abilities.find(a => a.id === ability.id)) {
-                this.abilities.push(ability);
+            if (!this._learnedAbilities.find(a => a.id === ability.id)) {
+                this._learnedAbilities.push(ability);
             }
         });
     }
 
     removeAbilitiesBySource(source) {
-        if (source === 'innate') {
-            console.warn("[EntityModel] Warning: Attempting to remove innate abilities.");
-            return;
-        }
-        this.abilities = this.abilities.filter(a => a.source !== source);
+        if (source === 'innate') return;
+        this._learnedAbilities = this._learnedAbilities.filter(a => a.source !== source);
     }
 
     equipItem(slot, itemModel) {
         this.unequipItem(slot);
         this.state.equipment[slot] = itemModel;
-        
-        if (itemModel && itemModel.grantedAbilities) {
-            const newMoves = AbilityFactory.createAbilities(itemModel.grantedAbilities);
-            this.addAbilities(newMoves, slot);
-        }
+        // Logic removed: the `get abilities()` getter now handles injecting gear skills automatically!
     }
 
     unequipItem(slot) {
-        this.removeAbilitiesBySource(slot);
         this.state.equipment[slot] = null;
+        // Logic removed: the `get abilities()` getter now handles removing gear skills automatically!
     }
 
     // =========================================================
     // STATUS EFFECT MANAGEMENT
     // =========================================================
-    
-    /**
-     * Applies a new status effect or updates an existing one.
-     * @param {Object} activeEffect - The instantiated effect object from StatusEffectFactory.
-     */
     applyStatusEffect(activeEffect) {
-        // 1. Check if the entity already has this effect
         const existingEffect = this.state.statusEffects.find(e => e.id === activeEffect.id);
-
-        if (existingEffect) {
-            // 2. If it exists, usually we refresh the duration/charges
-            existingEffect.charges = activeEffect.charges; 
-            console.log(`[EntityModel] Refreshed ${activeEffect.name} on ${this.name}.`);
-        } else {
-            // 3. If it's new, add it to the state
-            this.state.statusEffects.push(activeEffect);
-            console.log(`[EntityModel] Applied ${activeEffect.name} to ${this.name}.`);
-        }
+        if (existingEffect) existingEffect.charges = activeEffect.charges; 
+        else this.state.statusEffects.push(activeEffect);
     }
 
-    /**
-     * Removes a status effect by its ID.
-     * @param {string} effectId - The ID of the effect to remove (e.g., 'poison').
-     */
     removeStatusEffect(effectId) {
-        const initialLength = this.state.statusEffects.length;
         this.state.statusEffects = this.state.statusEffects.filter(e => e.id !== effectId);
-        
-        if (this.state.statusEffects.length < initialLength) {
-            console.log(`[EntityModel] Removed ${effectId} from ${this.name}.`);
-        }
     }
 
-    clearAllStatusEffects() {
-        if (this.state.statusEffects.length === 0) return;
-        this.state.statusEffects = [];
-        console.log(`[EntityModel] All status effects cleared from ${this.name}.`);
-    }
-
-    hasStatusEffect(effectId) {
-        return this.state.statusEffects.some(e => e.id === effectId);
-    }
-
-    isDead() {
-        return this.hp <= 0;
-    }
-
-    toJSON() {
-        return this.state;
-    }
+    clearAllStatusEffects() { this.state.statusEffects = []; }
+    hasStatusEffect(effectId) { return this.state.statusEffects.some(e => e.id === effectId); }
+    isDead() { return this.hp <= 0; }
+    toJSON() { return this.state; }
 }

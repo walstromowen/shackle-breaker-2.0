@@ -55,8 +55,8 @@ export const ItemDefinitions = {
             3: ["bolster"]
         },
         upgradeCosts: {
-            2: { currency: 50, materials: { "iron_ingot": 1, "leather": 1 } },
-            3: { currency: 150, materials: { "iron_ingot": 3, "leather": 2 } }
+            2: { currency: 50 },
+            3: { currency: 100}
         }
     },
 

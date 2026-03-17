@@ -145,7 +145,7 @@ export class ContextMenuManager {
             const defId = item.defId;
             
             this.controller.currentMember.unequipItem(sourceKey);
-            InventorySystem.addItem(defId, item.qty);
+            gameState.party.inventory.push(item); // Keep the exact instance
             
             this.controller.updateFilteredInventory();
             

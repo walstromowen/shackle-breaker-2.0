@@ -15,7 +15,7 @@ export const ItemUpgradeSystem = {
         if (!costs) return false;
 
         // 1. Check Currency
-        if (costs.currency && (gameState.party.gold || 0) < costs.currency) {
+        if (costs.currency && (gameState.party.currency || 0) < costs.currency) {
             return false;
         }
 
@@ -39,7 +39,7 @@ export const ItemUpgradeSystem = {
 
         // 1. Deduct Currency
         if (costs.currency) {
-            gameState.party.gold -= costs.currency;
+            gameState.party.currency -= costs.currency;
         }
 
         // 2. Deduct Materials
@@ -49,8 +49,15 @@ export const ItemUpgradeSystem = {
             }
         }
 
-        // Level up the item instance!
+        // Level up the item instance! (The ItemModel handles ability unlocks automatically)
         item.level += 1;
+
+        // Log the new abilities to the console for debugging
+        const def = item.definition || {};
+        const unlocks = def.abilityUnlocks && def.abilityUnlocks[item.level];
+        if (unlocks) {
+            console.log(`[ItemUpgradeSystem] Unlocked new abilities: ${unlocks.join(', ')}`);
+        }
 
         console.log(`[ItemUpgradeSystem] Successfully upgraded ${item.name} to Level ${item.level}!`);
         return true;

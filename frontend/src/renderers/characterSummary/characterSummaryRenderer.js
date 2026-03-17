@@ -8,6 +8,7 @@ import { StatsPanel } from './components/statsPanel.js';
 import { EquipmentPanel } from './components/equipmentPanel.js';
 import { InventoryPanel } from './components/inventoryPanel.js';
 import { TooltipSystem } from './components/tooltipSystem.js';
+import { AbilitiesPanel } from './components/abilitiesPanel.js';
 
 export class CharacterSummaryRenderer {
     constructor(ctx, loader) {
@@ -18,6 +19,7 @@ export class CharacterSummaryRenderer {
         // --- Component Initialization ---
         this.itemPanel = new ItemDetailPanel(this.ui, loader);
         this.statsPanel = new StatsPanel(this.ui);
+        this.abilitiesPanel = new AbilitiesPanel(this.ui, loader);
         this.equipPanel = new EquipmentPanel(this.ui, loader);
         this.invPanel   = new InventoryPanel(this.ui, loader);
         this.tooltipSystem = new TooltipSystem(this.ui);
@@ -118,7 +120,7 @@ export class CharacterSummaryRenderer {
 
         // --- Tabs ---
         const tabH = 28;
-        const tabW = contentW / 2;
+        const tabW = contentW / 3; 
         
         const drawTab = (label, tx, isActive, id) => {
             const bg = isActive ? UITheme.colors.bgScale[2] : UITheme.colors.bgScale[0];
@@ -143,6 +145,7 @@ export class CharacterSummaryRenderer {
 
         drawTab("STATS", x, viewMode === 'STATS', 'TAB_STATS');
         drawTab("ITEM", x + tabW, viewMode === 'ITEM', 'TAB_ITEM');
+        drawTab("SKILLS", x + (tabW * 2), viewMode === 'ABILITIES', 'TAB_ABILITIES'); 
 
         // --- Panel Content ---
         const contentY = y + tabH + 20;
@@ -150,8 +153,11 @@ export class CharacterSummaryRenderer {
 
         if (viewMode === 'STATS') {
             this.statsPanel.render(member, stats, x, contentY, contentW);
-        } else {
+        } else if (viewMode === 'ITEM') {
             this.itemPanel.render(focusedItem, x, contentY, contentW, contentH, state, this.hitboxes);
+        } else if (viewMode === 'ABILITIES') {
+            // NEW: Call the AbilitiesPanel render method
+            this.abilitiesPanel.render(member, x, contentY, contentW, contentH, state, this.hitboxes);
         }
     }
 

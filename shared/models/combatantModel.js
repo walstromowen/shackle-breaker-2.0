@@ -93,12 +93,13 @@ export class CombatantModel {
         Object.values(equipment).forEach(item => {
             if (!item) return;
             // Handle both string IDs and actual item objects
-            const itemDef = typeof item === 'string' ? ItemFactory.createItem(item) : (item.definition || item);
-            if (!itemDef) return;
+            // FIX: Use the actual item instance to ensure we get level-scaled abilities!
+            const itemInstance = typeof item === 'string' ? ItemFactory.createItem(item) : item;
+            if (!itemInstance) return;
 
-            itemDef.grantedAbilities?.forEach(addId);
-            addId(itemDef.grantedAbility);
-            addId(itemDef.useAbility);
+            itemInstance.grantedAbilities?.forEach(addId);
+            addId(itemInstance.grantedAbility);
+            addId(itemInstance.useAbility);
         });
 
         // 3. Fallbacks

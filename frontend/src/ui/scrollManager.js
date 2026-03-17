@@ -3,7 +3,7 @@ export class ScrollManager {
         this.controller = controller;
         this.dragState = {
             active: false,
-            target: null, // 'inventory' | 'details'
+            target: null, // 'inventory' | 'details' | 'abilities'
             startY: 0,
             startScroll: 0
         };
@@ -14,7 +14,7 @@ export class ScrollManager {
         const my = this.controller.mouse.y;
         const layout = this.controller.layout;
 
-        // Check Inventory Bounds
+        // 1. Check Inventory Bounds
         if (layout.inventoryBounds && 
             mx >= layout.inventoryBounds.x && 
             mx <= layout.inventoryBounds.x + layout.inventoryBounds.w &&
@@ -27,7 +27,7 @@ export class ScrollManager {
             return true; 
         }
 
-        // Check Details Bounds
+        // 2. Check Details Bounds (Item View)
         if (this.controller.viewMode === 'ITEM' && layout.detailBounds && 
             mx >= layout.detailBounds.x && 
             mx <= layout.detailBounds.x + layout.detailBounds.w &&
@@ -40,17 +40,35 @@ export class ScrollManager {
             return true;
         }
 
+        // 3. Check Abilities Bounds (Abilities View)
+        if (this.controller.viewMode === 'ABILITIES' && layout.abilitiesBounds && 
+            mx >= layout.abilitiesBounds.x && 
+            mx <= layout.abilitiesBounds.x + layout.abilitiesBounds.w &&
+            my >= layout.abilitiesBounds.y && 
+            my <= layout.abilitiesBounds.y + layout.abilitiesBounds.h) {
+            
+            const max = layout.abilitiesMaxScroll || 0;
+            let newScroll = this.controller.detailsScrollOffset + delta;
+            this.controller.detailsScrollOffset = Math.max(0, Math.min(newScroll, max));
+            return true;
+        }
+
         return false;
     }
 
     handleMouseDown(targetId, y) {
-        if (targetId === 'SCROLLBAR_THUMB') {
+        // 1. Check for the scrollbar thumb (added a fallback ID just in case!)
+        if (targetId === 'SCROLLBAR_THUMB' || targetId === 'ABILITIES_SCROLLBAR_THUMB') {
             this.dragState.active = true;
-            this.dragState.target = 'details';
+            
+            // Dynamically set the target based on the active tab
+            this.dragState.target = this.controller.viewMode === 'ABILITIES' ? 'abilities' : 'details';
+            
             this.dragState.startY = y;
             this.dragState.startScroll = this.controller.detailsScrollOffset;
             return true;
         }
+        // 2. Check for the Inventory scrollbar
         else if (targetId === 'INV_SCROLLBAR_THUMB') {
             this.dragState.active = true;
             this.dragState.target = 'inventory';
@@ -73,17 +91,23 @@ export class ScrollManager {
         const mouseDelta = y - this.dragState.startY;
         let viewportH, maxScroll, currentStartScroll;
         
+        currentStartScroll = this.dragState.startScroll;
+
         if (this.dragState.target === 'inventory') {
             viewportH = this.controller.layout.inventoryViewportH || 100;
             maxScroll = this.controller.layout.inventoryMaxScroll || 1;
-            currentStartScroll = this.dragState.startScroll;
+        } else if (this.dragState.target === 'abilities') {
+            viewportH = this.controller.layout.abilitiesViewportH || 100;
+            maxScroll = this.controller.layout.abilitiesMaxScroll || 1;
         } else {
             viewportH = this.controller.layout.detailViewportH || 100;
             maxScroll = this.controller.layout.detailMaxScroll || 1;
-            currentStartScroll = this.dragState.startScroll;
         }
 
         const contentH = maxScroll + viewportH;
+        // Prevent division by zero if content isn't scrollable yet
+        if (viewportH === 0) return; 
+        
         const scrollRatio = contentH / viewportH; 
         let newOffset = currentStartScroll + (mouseDelta * scrollRatio);
 
@@ -93,6 +117,7 @@ export class ScrollManager {
         if (this.dragState.target === 'inventory') {
             this.controller.inventoryScrollOffset = newOffset;
         } else {
+            // Both 'details' and 'abilities' use the same controller offset variable
             this.controller.detailsScrollOffset = newOffset;
         }
     }

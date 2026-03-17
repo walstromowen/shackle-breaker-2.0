@@ -81,6 +81,10 @@ export class CharacterSummaryController {
             'BTN_TAB_STATS': () => this.setViewMode('STATS'),
             'TAB_ITEM': () => this.setViewMode('ITEM'),
             'BTN_TAB_ITEM': () => this.setViewMode('ITEM'),
+            
+            // --- NEW: Map the Abilities tab hitboxes to change the view ---
+            'TAB_ABILITIES': () => this.setViewMode('ABILITIES'),
+            'BTN_TAB_ABILITIES': () => this.setViewMode('ABILITIES'),
         };
     }
 
@@ -107,7 +111,9 @@ export class CharacterSummaryController {
         if (intent === 'PREV_CHAR') return this.cycleMember(-1);
         if (intent === 'NEXT_CHAR') return this.cycleMember(1);
         if (intent === 'TOGGLE_VIEW') {
-            this.viewMode = (this.viewMode === 'STATS') ? 'ITEM' : 'STATS';
+            if (this.viewMode === 'STATS') this.viewMode = 'ITEM';
+            else if (this.viewMode === 'ITEM') this.viewMode = 'ABILITIES';
+            else this.viewMode = 'STATS';
             return;
         }
 
@@ -493,7 +499,7 @@ export class CharacterSummaryController {
         const currentEquip = member.equipment[slotName];
         
         if (currentEquip && currentEquip !== inventoryItem) {
-            InventorySystem.addItem(currentEquip.defId, currentEquip.qty);
+            gameState.party.inventory.push(currentEquip); // Keep the exact instance
         }
 
         const bagIdx = gameState.party.inventory.indexOf(inventoryItem);
@@ -522,7 +528,7 @@ export class CharacterSummaryController {
 
         if (currentEquip) {
             member.unequipItem(slotName);
-            InventorySystem.addItem(currentEquip.defId, currentEquip.qty || 1);
+            gameState.party.inventory.push(currentEquip); // Keep the exact instance
             
             this.state = 'SLOTS';
             this.inventoryIndex = -1; 

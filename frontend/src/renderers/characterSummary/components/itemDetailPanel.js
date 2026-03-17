@@ -12,7 +12,6 @@ export class ItemDetailPanel {
         this.ABILITY_ICON_SIZE = 32;
         this.SCROLLBAR_WIDTH = 4;
 
-        // State for scroll calculations
         this.lastItemId = null;
         this.totalContentHeight = 0;
     }
@@ -24,21 +23,29 @@ export class ItemDetailPanel {
         }
 
         let def = item;
+        let isAbility = false;
+
+        // --- NEW: Handle Ability Lookups vs Item Lookups ---
         if (item.defId) {
             def = ItemDefinitions[item.defId];
+        } else if (item.abilityId) {
+            def = AbilityDefinitions[item.abilityId];
+            isAbility = true;
+        } else if (AbilityDefinitions[item.id]) {
+            def = AbilityDefinitions[item.id];
+            isAbility = true;
         } else if (item.definition) {
             def = item.definition;
         }
         
         if (!def) {
-             this.ui.drawText("Unknown Item", x + w / 2, y + 50, UITheme.fonts.body, UITheme.colors.textMuted, "center");
+             this.ui.drawText("Unknown Definition", x + w / 2, y + 50, UITheme.fonts.body, UITheme.colors.textMuted, "center");
              return;
         }
 
         const itemId = def.id || "unknown";
 
         // --- 1. Scroll Management ---
-        
         if (itemId !== this.lastItemId) {
             state.scrollOffset = 0;
             this.lastItemId = itemId;
@@ -57,7 +64,6 @@ export class ItemDetailPanel {
         if (state.scrollOffset < 0) state.scrollOffset = 0;
 
         // --- 2. Render with Clipping ---
-
         this.ui.ctx.save();
         this.ui.startClip(x, y, w + 10, h);
 
@@ -68,26 +74,25 @@ export class ItemDetailPanel {
         // --- Detailed Rendering Logic ---
 
         // A. Header
-        currentY = this._drawHeader(item, def, centerX, currentY, w);
+        currentY = this._drawHeader(item, def, centerX, currentY, w, isAbility);
         currentY += 15;
 
         // B. Description
         currentY = this._drawDescription(def, x + 15, currentY, w - 30);
         currentY += 15;
 
-        // C. Main Stats (Attack, Defense, Resistance)
-        // CHANGED: Using 'item' instance instead of 'def'
-        currentY = this._drawMainStats(item, x + 20, currentY, w - 40);
-
-        // D. Attribute Bonuses & Resources
-        // CHANGED: Using 'item' instance instead of 'def'
-        currentY = this._drawAttributeBonuses(item, x + 20, currentY, w - 40);
-
-        // E. Abilities
-        currentY = this._drawAbilities(def, x + 15, currentY, w - 30);
+        // C & D. Main Stats & Attributes (Skip if it's purely an ability)
+        if (!isAbility) {
+            currentY = this._drawMainStats(item, x + 20, currentY, w - 40);
+            currentY = this._drawAttributeBonuses(item, x + 20, currentY, w - 40);
+            // E. Render granted abilities
+            currentY = this._drawAbilities(def, x + 15, currentY, w - 30);
+        } else {
+            // It IS an ability, so just draw the ability card for itself
+            currentY = this._drawAbilities({ grantedAbilities: [def.id] }, x + 15, currentY, w - 30);
+        }
 
         // --- End Rendering Logic ---
-
         this.totalContentHeight = currentY - initialDrawY;
 
         this.ui.endClip();
@@ -110,7 +115,6 @@ export class ItemDetailPanel {
         const trackSpace = viewportH - thumbH;
         const thumbY = y + (scrollRatio * trackSpace);
 
-        // Use scrollThumb color if defined, else generic grey
         const thumbColor = UITheme.colors.scrollThumb || "#666666";
         this.ui.drawRect(x, thumbY, this.SCROLLBAR_WIDTH, thumbH, thumbColor);
 
@@ -126,29 +130,30 @@ export class ItemDetailPanel {
         }
     }
 
-    _drawHeader(item, def, centerX, y, w) {
+    _drawHeader(item, def, centerX, y, w, isAbility) {
         const iconX = centerX - (this.ICON_SIZE / 2);
         
         this.ui.drawRect(iconX, y, this.ICON_SIZE, this.ICON_SIZE, UITheme.colors.bgScale[0]);
         this.ui.drawRect(iconX, y, this.ICON_SIZE, this.ICON_SIZE, UITheme.colors.border, false);
 
         if (this.loader) {
-            // 1. Determine the correct spritesheet based on item type/slot
-            let sheetName = 'items'; // Default fallback
+            // Adjust sheet targeting for abilities vs items
+            let sheetName = isAbility ? 'abilities' : 'items'; 
             const type = (def.type || '').toLowerCase();
             const slot = (def.slot || '').toLowerCase();
             
-            if (slot === 'mainhand' || slot === 'offhand' || type === 'weapon' || type === 'shield' || type === 'tool') {
-                sheetName = 'weapons';
-            } else if (type === 'armor' || ['head', 'body', 'legs', 'feet', 'hands', 'accessory'].includes(slot)) {
-                sheetName = 'armor';
-            } else if (type === 'consumable') {
-                sheetName = 'consumables';
-            } else if (type === 'material') {
-                sheetName = 'materials';
+            if (!isAbility) {
+                if (slot === 'mainhand' || slot === 'offhand' || type === 'weapon' || type === 'shield' || type === 'tool') {
+                    sheetName = 'weapons';
+                } else if (type === 'armor' || ['head', 'body', 'legs', 'feet', 'hands', 'accessory'].includes(slot)) {
+                    sheetName = 'armor';
+                } else if (type === 'consumable') {
+                    sheetName = 'consumables';
+                } else if (type === 'material') {
+                    sheetName = 'materials';
+                }
             }
 
-            // 2. Load the specific sheet, falling back to standard items/icons if missing
             const sheet = this.loader.get(sheetName) || this.loader.get('items') || this.loader.get('icons');
             
             if (sheet) {
@@ -164,7 +169,6 @@ export class ItemDetailPanel {
         let currentY = y + this.ICON_SIZE + 20;
         const maxTextWidth = w - 40; 
         
-        // CHANGED: Prioritize the item instance's name if customized
         const nameLines = this.ui.getWrappedLines(item.name || def.name, maxTextWidth, UITheme.fonts.header);
         const rarityColor = this._getRarityColor(def.rarity);
         
@@ -176,20 +180,16 @@ export class ItemDetailPanel {
 
         currentY += 4; 
         
-        // 1. Build the base type and slot string
-        let typeText = `${(def.type || "Item").toUpperCase()}`;
-        if (def.slot) {
+        let typeText = isAbility ? "SKILL / ABILITY" : `${(def.type || "Item").toUpperCase()}`;
+        if (def.slot && !isAbility) {
             typeText += ` - ${def.slot.toUpperCase()}`;
         }
         
-        // 2. Check for an item level and append it if it exists
-        // CHANGED: Prioritize the dynamic item level
         const itemLevel = item.level || def.level || def.itemLevel; 
         if (itemLevel !== undefined) {
             typeText += ` • Lv. ${itemLevel}`; 
         }
 
-        // 3. Draw the combined string
         this.ui.drawText(typeText, centerX, currentY, "bold 10px monospace", UITheme.colors.textMuted, "center");
 
         return currentY + 10;
@@ -224,16 +224,15 @@ export class ItemDetailPanel {
         return currentY;
     }
 
+    // ... (Keep _drawMainStats & _drawAttributeBonuses exactly as they were)
     _drawMainStats(item, x, y, w) {
         let currentY = y;
         const source = item.stats || item; 
 
-        // 1. Primary Stats (Simple values)
         const primaryStats = [
             { key: 'damage', label: 'ATK', color: UITheme.colors.attack },
             { key: 'attack', label: 'ATK', color: UITheme.colors.attack },
             { key: 'defense', label: 'DEF', color: UITheme.colors.defense },
-            // Block is defensive, using Resistance color (Slate Grey) or Defense (Blue)
             { key: 'block', label: 'BLK', color: UITheme.colors.resistance } 
         ];
 
@@ -242,7 +241,6 @@ export class ItemDetailPanel {
         primaryStats.forEach(stat => {
             const val = source[stat.key];
             if (val === undefined || val === null) return;
-            // Skip complex objects (like { blunt: 5 }) to let the breakdown loop handle them
             if (typeof val === 'object' && typeof val.min === 'undefined') return;
 
             this.ui.drawText(stat.label, x, currentY, UITheme.fonts.bold, stat.color, "left");
@@ -257,7 +255,6 @@ export class ItemDetailPanel {
             hasPrinted = true;
         });
 
-        // 2. Breakdown Loop (for objects like attack: { fire: 5 })
         ['attack', 'defense', 'resistance'].forEach(category => {
             if (!source[category]) return;
             const subStats = source[category];
@@ -268,12 +265,8 @@ export class ItemDetailPanel {
                 if (subStats[k] === 0) return;
                 
                 const typeAbbr = Formatting.getAbbreviation ? Formatting.getAbbreviation(k) : k.substring(0,3).toUpperCase();
-                
-                // Label Logic: ATK / DEF / RES
                 const catAbbr = category === 'resistance' ? 'RES' : (category === 'defense' ? 'DEF' : 'ATK');
                 const label = `${typeAbbr} ${catAbbr}`;
-                
-                // Color Logic: Match Theme Keys
                 const color = category === 'attack' ? UITheme.colors.attack : 
                              (category === 'defense' ? UITheme.colors.defense : UITheme.colors.resistance);
                 
@@ -299,7 +292,6 @@ export class ItemDetailPanel {
         this.ui.drawText("Bonuses", x, currentY, "bold 10px sans-serif", UITheme.colors.textMuted, "left");
         currentY += 14; 
 
-        // Attributes: Generic Text Main
         attrKeys.forEach(key => {
             const val = attributes[key];
             if (val === 0) return;
@@ -312,13 +304,12 @@ export class ItemDetailPanel {
             currentY += 14;
         });
 
-        // Resources: Theme Stat Colors
         resKeys.forEach(key => {
             const val = resources[key];
             if (val === 0) return;
 
             let label = key;
-            let color = UITheme.colors.textMain; // Default
+            let color = UITheme.colors.textMain; 
 
             if (key === 'maxHp') {
                 label = "Max HP";
@@ -346,7 +337,7 @@ export class ItemDetailPanel {
         const abilityList = def.grantedAbilities || (def.useAbility ? [def.useAbility] : []);
         
         if (abilityList.length > 0) {
-            const label = def.useAbility ? "On Use" : "Granted Abilities";
+            const label = def.useAbility ? "On Use" : "Details";
             
             this.ui.drawText(label, x, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
             currentY += 5;
@@ -390,14 +381,13 @@ export class ItemDetailPanel {
 
                 this.ui.drawText(ab.name || abilityId, contentX, cursorY, "bold 12px sans-serif", UITheme.colors.textMain, "left");
                 
-                // Draw Ability Cost
                 if (ab.cost) {
                     let costStr = "";
                     let costCol = UITheme.colors.textMuted;
                     
                     if (ab.cost.mana) { 
                         costStr = `${ab.cost.mana} MP`; 
-                        costCol = UITheme.colors.defense; // Standard Blue
+                        costCol = UITheme.colors.defense; 
                     }
                     else if (ab.cost.stamina) { 
                         costStr = `${ab.cost.stamina} SP`; 
@@ -418,7 +408,6 @@ export class ItemDetailPanel {
                     statX += (txt.length * 6) + 10;
                 };
 
-                // Draw Stats (Power, Acc, Spd)
                 if (ab.effects) {
                     const dmg = ab.effects.find(e => e.type === 'damage' || e.type === 'heal');
                     if (dmg) drawStat("Pwr:", `${dmg.power}x`, UITheme.colors.textHighlight);
