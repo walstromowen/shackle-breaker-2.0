@@ -1,12 +1,14 @@
 export class TargetingResolver {
-    static resolve(action, actor, primaryTarget, battleState) {
+    // ---> NEW: Added 'allowDeadActor = false' to the parameters here! <---
+    static resolve(action, actor, primaryTarget, battleState, allowDeadActor = false) {
         const scope = action.targeting?.scope || 'enemy';
         
         // Pre-filter the living combatants
         const livingEnemies = battleState.activeEnemies.filter(e => e && !e.isDead());
         const livingParty = battleState.activeParty.filter(p => p && !p.isDead());
 
-        if (actor.isDead()) return [];
+        // Now JS knows what allowDeadActor is!
+        if (actor.isDead() && !allowDeadActor) return [];
 
         // Define pools relative to the ACTOR's perspective
         const isParty = actor.team === 'party';

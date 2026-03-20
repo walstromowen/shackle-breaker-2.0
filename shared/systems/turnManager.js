@@ -56,7 +56,8 @@ export class TurnManager {
             case TURN_TYPES.APPLY_STATUS_EFFECT:
                 return this._applyStatusEffectTurn(turn);
             case TURN_TYPES.EXECUTE_ACTION:
-                if (turn.actor._skipAction || turn.actor.isDead()) {
+                // ---> NEW: Bypass the dead check if allowDeadActor is true
+                if (turn.actor._skipAction || (turn.actor.isDead() && !turn.allowDeadActor)) {
                     turn.actor._skipAction = false; 
                     return this.processNextTurnInQueue();
                 }
@@ -151,11 +152,14 @@ export class TurnManager {
     }
 
     _handleActionExecution(turn) {
-        let { actor, action, target: primaryTarget, ignoreCost } = turn;
+        // ---> NEW: Extract allowDeadActor from the turn object
+        let { actor, action, target: primaryTarget, ignoreCost, allowDeadActor } = turn;
 
-        if (actor.isDead()) return this.processNextTurnInQueue();
+        // ---> NEW: Respect the flag here too
+        if (actor.isDead() && !allowDeadActor) return this.processNextTurnInQueue();
 
-        let resolvedTargets = TargetingResolver.resolve(action, actor, primaryTarget, this.state);
+        // ---> NEW: Pass the flag down to the TargetingResolver
+        let resolvedTargets = TargetingResolver.resolve(action, actor, primaryTarget, this.state, allowDeadActor);
 
         if (resolvedTargets.length === 0) {
             this.state.message = `${actor.name} tried to use ${action.name}, but there were no targets left!`;

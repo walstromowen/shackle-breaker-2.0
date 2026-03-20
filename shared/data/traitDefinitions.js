@@ -12,8 +12,6 @@ export const TRAIT_DEFINITIONS = {
     'inquisitive': {
         name: "Inquisitive",
         description: "A keen mind that grasps the arcane quickly.",
-        // [FIX] Moved 'attributes' to the root level. 
-        // Attributes are inputs, whereas 'stats' are usually derived outputs.
         attributes: { 
             intelligence: 2 ,
             attunement: 1 
@@ -53,13 +51,6 @@ export const TRAIT_DEFINITIONS = {
     },
 
     // --- TRIGGER TRAITS ---
-    'ambush_predator': {
-        name: "Ambush Predator",
-        description: "Starts battles with increased initiative.",
-        triggers: {
-            onBattleStart: { effect: "buff_speed", duration: 1 }
-        }
-    },
     'martyr': {
         name: "Martyr",
         description: "Heals allies upon death.",
@@ -67,61 +58,20 @@ export const TRAIT_DEFINITIONS = {
             onDeath: { effect: "heal_party_all", value: 20 }
         }
     },
-
-    // --- REACTIVE TRAITS ---
-    'vampiric': {
-        name: "Vampiric",
-        description: "Feeds on the life force of enemies.",
+    'acidic': {
+        name: "Acidic",
+        description: "Leaves behind a dangerous pool of acid upon death.",
         triggers: {
-            onHit: { 
-                effect: "heal_self_flat", 
-                value: 5 
-            }
-        }
-    },
-    'spiked_shell': {
-        name: "Spiked Shell",
-        description: "Hurts those who touch it.",
-        triggers: {
-            onDamaged: {
-                effect: "damage_attacker_physical",
-                value: 3
-            }
-        }
-    },
-
-    // --- CONDITIONAL TRAITS ---
-    'berserker': {
-        name: "Berserker",
-        description: "Gains massive strength when near death.",
-        conditionalStats: {
-            condition: "hp_below_50_percent",
-            stats: {
-                attack: { slash: 10, blunt: 10 },
-                combat: { speed: 4 },
-                defense: { slash: -5 }
-            }
-        }
-    },
-    'turtle': {
-        name: "Turtle",
-        description: "Hunkers down when threatened.",
-        conditionalStats: {
-            condition: "hp_below_30_percent",
-            stats: {
-                // Explicitly defining the physical defenses
-                defense: { slash: 10, blunt: 10, pierce: 10 }, 
-                combat: { speed: -5 }
-            }
+            // Passes an ability ID directly to the battle engine!
+            onDeath: { ability: "acid_pool" }
         }
     },
     'iron_willed': {
         name: "Iron Willed",
         description: "Automatically casts Bolster at the start of battle.",
         triggers: {
-            // Instead of a raw effect, we pass the ability ID. 
-            // The battle system will catch this and funnel it through your AbilityFactory.
             onBattleStart: { ability: "bolster" } 
         }
     },
+
 };

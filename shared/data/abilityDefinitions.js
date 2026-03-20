@@ -345,7 +345,7 @@ export const AbilityDefinitions = {
         name: "Acid Pool",
         description: "Create a pool of acid that damages all enemies in the area. High chance to poison.",
         icon: { col: 1, row: 6 },
-        animationId: "heavy_spell",
+        animationId: "earthquake",
         targeting: { scope: "all_enemies", select: "auto" },
         cost: { stamina: 20, insight: 20 },
         accuracy: 0.90,

@@ -141,6 +141,45 @@ export class BattleController {
         return traitsQueued;
     }
 
+    // --- NEW: Death Trait Sweeper ---
+    _queueDeathTraits(deadCombatant) {
+        const rawTraits = deadCombatant.traits;
+        if (!rawTraits || !Array.isArray(rawTraits) || rawTraits.length === 0) return;
+
+        rawTraits.forEach(trait => {
+            const deathTrigger = trait?.triggers?.onDeath;
+
+            if (deathTrigger && deathTrigger.ability) {
+                const abilityId = deathTrigger.ability;
+                const [ability] = AbilityFactory.createAbilities([abilityId]);
+
+                if (ability) {
+                    console.log(`[Debug Sweeper] SUCCESS! Queuing death trait [${trait.name}] -> casting [${ability.name}] for ${deadCombatant.name}`);
+
+                    // We unshift in reverse order so they process correctly at the front of the queue
+                    
+                    // 2. Queue the actual ABILITY execution
+                    this.state.turnQueue.unshift({
+                        type: TURN_TYPES.EXECUTE_ACTION, 
+                        ignoreCost: true,
+                        allowDeadActor: true,  // <--- NEW: Tell the engine to bypass dead checks
+                        actor: deadCombatant, 
+                        action: ability, 
+                        target: deadCombatant
+                    });
+
+                    // 1. Announce the trait activation
+                    this.state.turnQueue.unshift({ 
+                        type: TURN_TYPES.MESSAGE_STATUS, 
+                        message: `${deadCombatant.name}'s ${trait.name} activates upon death!` 
+                    });
+                } else {
+                    console.warn(`[Debug Sweeper] Trait ${trait.name} tried to fire death ability '${abilityId}' but it failed to build.`);
+                }
+            }
+        });
+    }
+
     // --- INPUT HANDLING ---
     handleKeyDown(key) {
         if (!this.state?.active || this.state.isPausedForUI) return;
@@ -460,6 +499,9 @@ export class BattleController {
         combatant._deathHandled = true;
 
         this.state.turnQueue = this.state.turnQueue.filter(turn => turn.actor !== combatant);
+        
+        // ---> NEW: Sweep for onDeath traits! <---
+        this._queueDeathTraits(combatant);
         
         const isParty = combatant.team === 'party';
         const activeArray = isParty ? this.state.activeParty : this.state.activeEnemies;

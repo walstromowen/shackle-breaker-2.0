@@ -77,11 +77,11 @@ const BEAST_TEMPLATE = {
     spriteOverworld: "germanSheepherdSprite",
     spritePortrait: "germanSheepherdPortrait",
     
-    attributes: { vigor: 12, strength: 8, dexterity: 14, intelligence: 3, attunement: 5 },
-     traits: ["iron_willed"],
+    attributes: { vigor: 1, strength: 8, dexterity: 14, intelligence: 3, attunement: 5 },
+     traits: ["acidic"],
     baseStats: {
         ...BASE_ENTITY.baseStats,
-        maxHp: 30, maxStamina: 8, maxInsight: 0,
+        maxHp: 3, maxStamina: 8, maxInsight: 0,
         staminaRecovery: 10, // Beasts recover stamina slightly faster
         speed: 7, critical: 0.1,
         baseDefense: { blunt: 4, slash: 2, pierce: 1, water: 2 },
