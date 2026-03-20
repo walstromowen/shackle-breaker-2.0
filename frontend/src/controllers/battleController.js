@@ -21,7 +21,6 @@ export class BattleController {
         this.state = null;
         this.timer = 0; 
         
-        // Instantiate the turn manager, injecting a reference to this controller
         this.turnManager = new TurnManager(this);
     }
 
@@ -36,7 +35,7 @@ export class BattleController {
             isPausedForUI: false,
             phase: PHASE.INTRO, 
             backgroundId: context.backgroundId, 
-            weather: context.weather || null,  // <-- NEW: Store the weather in state!
+            weather: context.weather || null,  
             partyRoster: party,              
             enemyRoster: preparedEnemies,    
             activeParty: party.slice(0, maxActive),            
@@ -52,35 +51,94 @@ export class BattleController {
         };
         console.log('[DEBUG] BattleController.start received context:', context);
 
-        // --- NEW WEATHER INTRO LOGIC ---
-        if (this.state.weather && this.state.weather.id !== 'clear') { // <-- FIXED: Reference this.state.weather
+        let preBattleActionsQueued = false;
+
+        // --- 1. WEATHER INTRO LOGIC ---
+        if (this.state.weather && this.state.weather.id !== 'clear') { 
             console.log('[DEBUG] WEATHER TRIGGERED in BattleController! Pushing to queue.', this.state.weather);
             
-            // 1. Queue the intro message
             this.state.turnQueue.push({ 
                 type: TURN_TYPES.MESSAGE_STATUS, 
                 message: `A fierce ${this.state.weather.name} begins!` 
             });
 
-            // 2. Gather all living, active combatants on the field
-            const activeCombatants = [...this.state.activeParty, ...this.state.activeEnemies]
-                .filter(c => c && !c.isDead());
+            const activeCombatants = [...this.state.activeParty, ...this.state.activeEnemies].filter(c => c && !c.isDead());
 
-            // 3. Queue the custom weather animation & trait application
             this.state.turnQueue.push({
                 type: TURN_TYPES.WEATHER_INTRO,
                 weather: this.state.weather,
                 targets: activeCombatants
             });
+            preBattleActionsQueued = true;
+        }
 
+        // --- 2. PRE-BATTLE TRAIT SWEEP ---
+        const traitsQueued = this._queuePreBattleTraits();
+        if (traitsQueued) preBattleActionsQueued = true;
+
+        // --- 3. DETERMINE STARTING PHASE ---
+        if (preBattleActionsQueued) {
             this.state.phase = PHASE.RESOLVE; 
-            console.log('[DEBUG] Turn queue loaded. Phase set to RESOLVE. Queue:', this.state.turnQueue);
+            console.log('[DEBUG] Pre-battle queue loaded. Phase set to RESOLVE. Queue:', this.state.turnQueue);
         } else {
-             console.log('[DEBUG] No weather or weather is clear. Skipping to INTRO phase.');
+            console.log('[DEBUG] No weather or pre-battle traits. Proceeding with standard INTRO phase.');
         }
 
         this.timer = 0;
         this._dumpCombatantObjects('START OF BATTLE');
+    }
+
+    // --- UPDATED: Trait Sweeper WITH DEBUG LOGS ---
+    _queuePreBattleTraits() {
+        let traitsQueued = false;
+        const activeCombatants = [...this.state.activeParty, ...this.state.activeEnemies].filter(c => c && !c.isDead());
+        
+        // Sort by speed so the fastest characters trigger their traits first
+        activeCombatants.sort((a, b) => (b.stats?.speed ?? 10) - (a.stats?.speed ?? 10));
+
+        activeCombatants.forEach(combatant => {
+            const rawTraits = combatant.traits;
+            console.log(`[Debug Sweeper] Checking ${combatant.name}. Raw Traits found:`, rawTraits);
+
+            if (rawTraits && Array.isArray(rawTraits) && rawTraits.length > 0) {
+                
+                rawTraits.forEach(trait => {
+                    // 1. Look for the specific battle start trigger in the new Trait structure
+                    const startTrigger = trait?.triggers?.onBattleStart;
+
+                    if (startTrigger && startTrigger.ability) {
+                        // 2. The trait has an ability payload! Fetch it via AbilityFactory
+                        const abilityId = startTrigger.ability;
+                        const [ability] = AbilityFactory.createAbilities([abilityId]);
+
+                        if (ability) {
+                            console.log(`[Debug Sweeper] SUCCESS! Queuing pre-battle trait [${trait.name}] -> casting [${ability.name}] for ${combatant.name}`);
+                            
+                            // 3. Announce the trait activation using the TRAIT'S name
+                            this.state.turnQueue.push({ 
+                                type: TURN_TYPES.MESSAGE_STATUS, 
+                                message: `${combatant.name}'s ${trait.name} activates!` 
+                            });
+
+                            // 4. Queue the actual ABILITY execution
+                            this.state.turnQueue.push({
+                                type: TURN_TYPES.EXECUTE_ACTION, 
+                                ignoreCost: true,               
+                                actor: combatant,
+                                action: ability, // Passing the fully instantiated ability object
+                                target: combatant // TargetingResolver will auto-correct if it's an AoE
+                            });
+
+                            traitsQueued = true;
+                        } else {
+                            console.warn(`[Debug Sweeper] Trait ${trait.name} tried to fire ability '${abilityId}' but it failed to build.`);
+                        }
+                    }
+                });
+            }
+        });
+
+        return traitsQueued;
     }
 
     // --- INPUT HANDLING ---
@@ -490,7 +548,7 @@ export class BattleController {
                 .filter(effect => !effect.persistAfterCombat)
                 .map(effect => effect.id);
                 
-            // NEW: Explicitly ensure the weather status effect is stripped
+            // Explicitly ensure the weather status effect is stripped
             if (this.state.weather && this.state.weather.appliedStatusId) {
                 if (!effectsToRemove.includes(this.state.weather.appliedStatusId)) {
                     effectsToRemove.push(this.state.weather.appliedStatusId);
@@ -506,7 +564,8 @@ export class BattleController {
             fled: !!this.state.fled 
         });
     }
-// --- NEW: Dump raw objects for inspection ---
+
+    // --- NEW: Dump raw objects for inspection ---
     _dumpCombatantObjects(phaseName) {
         console.log(`\n=== [DEBUG] OBJECT DUMP: ${phaseName} ===`);
         const allCombatants = [...this.state.partyRoster, ...this.state.enemyRoster];
@@ -518,6 +577,7 @@ export class BattleController {
         });
         console.log(`==========================================\n`);
     }
+
     getState() {
         return this.state;
     }

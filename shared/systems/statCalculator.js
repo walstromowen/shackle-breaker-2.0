@@ -122,7 +122,9 @@ export class StatCalculator {
         // --- STEP 2: CALCULATE ATTRIBUTES ---
         const activeAttributes = { ...(character.attributes || {}) }; 
         const equipment = character.equipment || character.state?.equipment || {};
-        const traitIds = character.traits || character.state?.traits || [];
+        
+        // [FIX] Rename to traitList since they might be objects OR strings now
+        const traitList = character.traits || character.state?.traits || [];
 
         const mergeAttributes = (source) => {
             if (!source?.attributes) return;
@@ -132,8 +134,10 @@ export class StatCalculator {
         };
 
         Object.values(equipment).forEach(item => { if (item) mergeAttributes(getEffectiveStats(item)); });
-        traitIds.forEach(tid => {
-            const def = TRAIT_DEFINITIONS[tid];
+        
+        // [FIX] Check if trait is a string (EntityModel) or object (CombatantModel)
+        traitList.forEach(trait => {
+            const def = typeof trait === 'string' ? TRAIT_DEFINITIONS[trait] : trait;
             if (def) mergeAttributes(def); 
         });
 
@@ -192,8 +196,9 @@ export class StatCalculator {
         const currentHp = character.hp ?? character.state?.stats?.hp ?? breakdown.resources.base.hp;
         const currentMaxHp = breakdown.resources.base.hp + breakdown.resources.derived.hp + breakdown.resources.flat.hp; 
 
-        traitIds.forEach(tid => {
-            const def = TRAIT_DEFINITIONS[tid];
+        // [FIX] Same check for strings vs objects here
+        traitList.forEach(trait => {
+            const def = typeof trait === 'string' ? TRAIT_DEFINITIONS[trait] : trait;
             if (def?.stats) applyFlat(def.stats);
             if (def?.conditionalStats && this.checkCondition(def.conditionalStats.condition, currentHp, currentMaxHp)) {
                 applyFlat(def.conditionalStats.stats);
@@ -204,27 +209,22 @@ export class StatCalculator {
         const activeStatuses = character.statusEffects || character.state?.statusEffects || [];
         
         activeStatuses.forEach(status => {
-            // Only process statuses that have a modifiers array
             if (!status.modifiers || !Array.isArray(status.modifiers)) return;
             
             status.modifiers.forEach(mod => {
-                // Determine the multiplier (default to 1 if stacks isn't present)
                 const stacks = status.stacks || 1;
                 const totalValue = mod.value * stacks;
                 
-                // Parse the target (e.g., "resistance.slash" -> category: "resistance", stat: "slash")
                 const path = mod.target.split('.');
                 
                 if (path.length === 2) {
-                    const category = path[0]; // e.g., 'resistance'
-                    const stat = path[1];     // e.g., 'slash'
+                    const category = path[0]; 
+                    const stat = path[1];     
                     
-                    // Safely apply the stacked value
                     if (finalStats[category] && finalStats[category][stat] !== undefined) {
                         finalStats[category][stat] += totalValue;
                     }
                 } else if (path.length === 1) {
-                    // Handles flat root-level stats like "speed" or "maxHp"
                     const stat = path[0];
                     if (finalStats[stat] !== undefined) {
                         finalStats[stat] += totalValue;

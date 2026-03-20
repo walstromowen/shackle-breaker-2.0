@@ -83,9 +83,9 @@ export const StatusEffectDefinitions = {
             // Assuming +value means higher resistance (less damage taken)
             // You can adjust these values based on how your math works.
             // Example: +0.2 resistance per stack.
-            { type: 'flat', target: 'resistance.slash', value: 0.2 },
-            { type: 'flat', target: 'resistance.blunt', value: 0.2 },
-            { type: 'flat', target: 'resistance.pierce', value: 0.2 }
+            { type: 'flat', target: 'resistance.slash', value: 2.0 },
+            { type: 'flat', target: 'resistance.blunt', value: 2 },
+            { type: 'flat', target: 'resistance.pierce', value: 2 }
         ]
     },
 };

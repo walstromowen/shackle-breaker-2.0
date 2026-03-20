@@ -48,7 +48,7 @@ const HUMANOID_TEMPLATE = {
     name: "Humanoid",
     spriteOverworld: "spritesheet",
     spritePortrait: "legionaryPortrait",
-
+   
     attributes: { vigor: 10, strength: 10, dexterity: 10, intelligence: 10, attunement: 10 },
     
     baseStats: {
@@ -78,7 +78,7 @@ const BEAST_TEMPLATE = {
     spritePortrait: "germanSheepherdPortrait",
     
     attributes: { vigor: 12, strength: 8, dexterity: 14, intelligence: 3, attunement: 5 },
-    
+     traits: ["iron_willed"],
     baseStats: {
         ...BASE_ENTITY.baseStats,
         maxHp: 30, maxStamina: 8, maxInsight: 0,

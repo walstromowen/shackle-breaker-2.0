@@ -3,8 +3,8 @@ import { TargetingResolver } from '../../shared/systems/targetingResolver.js';
 import { AbilitySystem } from '../../shared/systems/abilitySystem.js';
 import { BattleAnimationFactory } from '../../shared/systems/factories/battleAnimationFactory.js';
 import { AbilityFactory } from '../../shared/systems/factories/abilityFactory.js';
-import { PHASE } from '../../frontend/src/controllers/battleController.js'; // Import phase constants from the controller
-import { StatusEffectFactory } from '../../shared/systems/factories/statusEffectFactory.js'; // <-- NEW IMPORT
+import { PHASE } from '../../frontend/src/controllers/battleController.js'; 
+import { StatusEffectFactory } from '../../shared/systems/factories/statusEffectFactory.js'; 
 
 export const TURN_TYPES = {
     MESSAGE_STATUS: 'STATUS_MESSAGE',
@@ -19,7 +19,7 @@ export const TURN_TYPES = {
     END_ACTOR_TURN: 'END_ACTOR_TURN', 
     EXECUTE_ACTION: 'EXECUTE_ACTION',            
     APPLY_STATUS_EFFECT: 'APPLY_STATUS_EFFECT',
-    WEATHER_INTRO: 'WEATHER_INTRO' // <-- NEW: Add this
+    WEATHER_INTRO: 'WEATHER_INTRO' 
 };
 
 export class TurnManager {
@@ -51,7 +51,7 @@ export class TurnManager {
         }
         
         switch (turn.type) {
-            case TURN_TYPES.WEATHER_INTRO: // <-- NEW
+            case TURN_TYPES.WEATHER_INTRO: 
                 return this._handleWeatherIntroTurn(turn);
             case TURN_TYPES.APPLY_STATUS_EFFECT:
                 return this._applyStatusEffectTurn(turn);
@@ -75,11 +75,10 @@ export class TurnManager {
                 pool[turn.slotIndex] = turn.replacement; 
                 this.state.message = turn.message;
 
-                // --- CHANGED: Apply active weather status to the reinforcement consistently! ---
+                // Apply active weather status to the reinforcement consistently
                 if (this.state.weather && this.state.weather.appliedStatusId && this.state.weather.id !== 'clear') {
                     const hasWeather = turn.replacement.statusEffects.some(s => s.id === this.state.weather.appliedStatusId);
                     if (!hasWeather) {
-                        // Build the object, then apply it
                         const weatherStatus = StatusEffectFactory.createEffect(this.state.weather.appliedStatusId, null, turn.replacement);
                         if (weatherStatus) {
                             turn.replacement.applyStatusEffect(weatherStatus);
@@ -110,13 +109,16 @@ export class TurnManager {
     }
 
     _applyAbilityEffects(turn) {
-        let { actor, action, targets, isFirstTarget } = turn;
+        let { actor, action, targets, isFirstTarget, ignoreCost } = turn;
 
-        if (isFirstTarget) action.payCost(actor, null);
+        // Respect the ignoreCost flag for pre-battle traits
+        if (isFirstTarget && !ignoreCost) {
+            action.payCost(actor, null);
+        }
 
         for (let target of targets) {
             const actualTarget = this.getValidTarget(target);
-            if (!actualTarget) continue; 
+            if (!actualTarget) continue;
             
             const wasTargetDead = actualTarget.isDead();
             const wasActorDead = actor.isDead(); 
@@ -149,7 +151,7 @@ export class TurnManager {
     }
 
     _handleActionExecution(turn) {
-        let { actor, action, target: primaryTarget } = turn;
+        let { actor, action, target: primaryTarget, ignoreCost } = turn;
 
         if (actor.isDead()) return this.processNextTurnInQueue();
 
@@ -160,7 +162,8 @@ export class TurnManager {
             return this.processNextTurnInQueue();
         }
 
-        if (!action.canPayCost(actor)) {
+        // Only force a 'rest' fallback if we are actually checking costs
+        if (!ignoreCost && !action.canPayCost(actor)) {
             action = AbilityFactory.createAbilities(['rest'])[0]; 
             resolvedTargets = [actor]; 
         }
@@ -170,34 +173,35 @@ export class TurnManager {
         const isAoE = ['all_enemies', 'all_allies'].includes(action.targeting?.scope) || action.targeting?.isAoE;
 
         if (isAoE) {
-            this._queueAoEAction(actor, action, resolvedTargets);
+            this._queueAoEAction(actor, action, resolvedTargets, ignoreCost);
         } else {
-            this._queueMultiAction(actor, action, resolvedTargets);
+            this._queueMultiAction(actor, action, resolvedTargets, ignoreCost);
         }
         
         this.processNextTurnInQueue();
     }
 
-    _queueAoEAction(actor, action, targets) {
+    _queueAoEAction(actor, action, targets, ignoreCost) {
         for (let i = targets.length - 1; i >= 0; i--) {
-            this.state.turnQueue.unshift(this._createApplyEffectTurn(actor, action, [targets[i]], i === 0, i === targets.length - 1));
+            this.state.turnQueue.unshift(this._createApplyEffectTurn(actor, action, [targets[i]], i === 0, i === targets.length - 1, ignoreCost));
         }
         this.state.turnQueue.unshift({ type: TURN_TYPES.PLAY_ANIMATION, actor, action, targets });
     }
 
-    _queueMultiAction(actor, action, targets) {
+    _queueMultiAction(actor, action, targets, ignoreCost) {
         for (let i = targets.length - 1; i >= 0; i--) {
-            this.state.turnQueue.unshift(this._createApplyEffectTurn(actor, action, [targets[i]], i === 0, i === targets.length - 1));
+            this.state.turnQueue.unshift(this._createApplyEffectTurn(actor, action, [targets[i]], i === 0, i === targets.length - 1, ignoreCost));
             this.state.turnQueue.unshift({ type: TURN_TYPES.PLAY_ANIMATION, actor, action, target: targets[i] });
         }
     }
 
-    _createApplyEffectTurn(actor, action, targets, isFirst, isLast) {
+    _createApplyEffectTurn(actor, action, targets, isFirst, isLast, ignoreCost) {
         return {
             type: TURN_TYPES.APPLY_ABILITY_EFFECTS,
             actor, action, targets, 
             isFirstTarget: isFirst, 
-            isLastTarget: isLast 
+            isLastTarget: isLast,
+            ignoreCost 
         };
     }
 
@@ -299,6 +303,7 @@ export class TurnManager {
     queueMessage(message, type = TURN_TYPES.MESSAGE_STATUS) {
         this.state.turnQueue.unshift({ type, message });
     }
+
     _handleWeatherIntroTurn(turn) {
         console.log('[DEBUG] TurnManager executing WEATHER_INTRO turn:', turn);
         const { weather, targets } = turn;
@@ -308,7 +313,6 @@ export class TurnManager {
                 if (target && !target.isDead()) {
                     console.log(`[DEBUG] Applying weather status ${weather.appliedStatusId} to ${target.name}`);
                     
-                    // --- CHANGED: Build the object, then apply it consistently ---
                     const weatherStatus = StatusEffectFactory.createEffect(weather.appliedStatusId, null, target);
                     if (weatherStatus) {
                         target.applyStatusEffect(weatherStatus); 
@@ -317,7 +321,6 @@ export class TurnManager {
             });
         }
 
-        // 2. Play the screen-wide animation
         if (weather.animationId) {
             console.log(`[DEBUG] Triggering Weather Animation: ${weather.animationId}`);
             this.state.activeAnimation = BattleAnimationFactory.create(weather.animationId, null, targets);

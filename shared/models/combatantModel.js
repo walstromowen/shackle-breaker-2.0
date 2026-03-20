@@ -2,6 +2,7 @@ import { StatCalculator } from '../../shared/systems/statCalculator.js';
 import { AbilityFactory } from '../systems/factories/abilityFactory.js';
 import { ItemFactory } from '../systems/factories/itemFactory.js';
 import { StatusEffectFactory } from '../systems/factories/statusEffectFactory.js';
+import { TraitFactory } from '../systems/factories/traitFactory.js'; // <-- NEW IMPORT
 import { events } from '../../frontend/src/core/eventBus.js';
 
 export class CombatantModel {
@@ -29,6 +30,14 @@ export class CombatantModel {
     get spritePortrait() { return this.originalEntity.spritePortrait; }
     get spriteOverworld() { return this.originalEntity.spriteOverworld; }
     get statusEffects() { return this.originalEntity.statusEffects; }
+    
+    // --> UPDATED: Now uses the factory to hydrate trait strings into objects
+    get traits() { 
+        const rawTraitIds = this.originalEntity.traits || [];
+        // Optional debug log if you want to verify they are hydrating correctly:
+        // console.log(`[Debug] Hydrating traits for ${this.name}:`, rawTraitIds);
+        return TraitFactory.createTraits(rawTraitIds); 
+    }
     
     // ==========================================
     // STATS & RESOURCES
@@ -92,8 +101,6 @@ export class CombatantModel {
         const equipment = this.originalEntity.equipment || {};
         Object.values(equipment).forEach(item => {
             if (!item) return;
-            // Handle both string IDs and actual item objects
-            // FIX: Use the actual item instance to ensure we get level-scaled abilities!
             const itemInstance = typeof item === 'string' ? ItemFactory.createItem(item) : item;
             if (!itemInstance) return;
 

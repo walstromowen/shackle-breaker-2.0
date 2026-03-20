@@ -114,5 +114,14 @@ export const TRAIT_DEFINITIONS = {
                 combat: { speed: -5 }
             }
         }
-    }
+    },
+    'iron_willed': {
+        name: "Iron Willed",
+        description: "Automatically casts Bolster at the start of battle.",
+        triggers: {
+            // Instead of a raw effect, we pass the ability ID. 
+            // The battle system will catch this and funnel it through your AbilityFactory.
+            onBattleStart: { ability: "bolster" } 
+        }
+    },
 };
