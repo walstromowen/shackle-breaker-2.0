@@ -126,7 +126,10 @@ export const BattleAnimationDefinitions = {
     "earthquake": {
         duration: 4.0, 
         audio: [
-            { start: 2.0, key: 'earthquake1SFX', volume: 1.0 },    
+            { start: 0.25, key: 'earthquake1SFX', volume: 1.0 }, 
+            { start: 0.5, key: 'earthquake2SFX', volume: 1.0 },    
+            { start: 0.8, key: 'earthquake3SFX', volume: 1.0 },    
+            
             
         ],
         projectiles: [

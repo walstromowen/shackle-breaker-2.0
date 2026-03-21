@@ -44,7 +44,7 @@ export const ItemDefinitions = {
         description: 'A standard shortsword. Gets deadlier as you forge it.',
         value: 20,
         icon: { col: 1, row: 0 },
-        attack: { pierce: 3, slash: 3 },
+        attack: { pierce: 300, slash: 300 },
         grantedAbilities: ["slash", "thrust"],
         maxLevel: 3,
         statGrowth: {

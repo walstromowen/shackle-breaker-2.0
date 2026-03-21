@@ -7,330 +7,328 @@ import { PHASE } from '../../frontend/src/controllers/battleController.js';
 import { StatusEffectFactory } from '../../shared/systems/factories/statusEffectFactory.js'; 
 
 export const TURN_TYPES = {
-    MESSAGE_STATUS: 'STATUS_MESSAGE',
-    MESSAGE_VICTORY: 'VICTORY_MESSAGE',
-    MESSAGE_DEFEAT: 'DEFEAT_MESSAGE',
-    MESSAGE_DEATH: 'DEATH_MESSAGE',
-    BATTLE_END: 'BATTLE_END',
-    REINFORCEMENT: 'REINFORCEMENT',
-    PROMPT_REINFORCEMENT: 'PROMPT_REINFORCEMENT',
-    PLAY_ANIMATION: 'PLAY_ANIMATION',
-    APPLY_ABILITY_EFFECTS: 'APPLY_ABILITY_EFFECTS',
-    END_ACTOR_TURN: 'END_ACTOR_TURN', 
-    EXECUTE_ACTION: 'EXECUTE_ACTION',            
-    APPLY_STATUS_EFFECT: 'APPLY_STATUS_EFFECT',
-    WEATHER_INTRO: 'WEATHER_INTRO' 
+    MESSAGE_STATUS: 'STATUS_MESSAGE',
+    MESSAGE_VICTORY: 'VICTORY_MESSAGE',
+    MESSAGE_DEFEAT: 'DEFEAT_MESSAGE',
+    MESSAGE_DEATH: 'DEATH_MESSAGE',
+    BATTLE_END: 'BATTLE_END',
+    REINFORCEMENT: 'REINFORCEMENT',
+    PROMPT_REINFORCEMENT: 'PROMPT_REINFORCEMENT',
+    PLAY_ANIMATION: 'PLAY_ANIMATION',
+    APPLY_ABILITY_EFFECTS: 'APPLY_ABILITY_EFFECTS',
+    END_ACTOR_TURN: 'END_ACTOR_TURN', 
+    EXECUTE_ACTION: 'EXECUTE_ACTION',            
+    APPLY_STATUS_EFFECT: 'APPLY_STATUS_EFFECT',
+    WEATHER_INTRO: 'WEATHER_INTRO' 
 };
 
 export class TurnManager {
-    constructor(battleController) {
-        this.bc = battleController;
-    }
+    constructor(battleController) {
+        this.bc = battleController;
+    }
 
-    // Convenient getter to always reference the parent controller's state
-    get state() {
-        return this.bc.state;
-    }
+    get state() {
+        return this.bc.state;
+    }
 
-    processNextTurnInQueue() {
-        this.bc.timer = 0;
-        this.state.activeAnimation = null; 
+    processNextTurnInQueue() {
+        this.bc.timer = 0;
+        this.state.activeAnimation = null; 
 
-        if (this.state.turnQueue.length > 0) {
-            this.executeTurn(this.state.turnQueue.shift());
-        } else if (this.state.phase === PHASE.RESOLVE) {
-            this.bc.checkBattleStatus();
-        }
-    }
+        if (this.state.turnQueue.length > 0) {
+            this.executeTurn(this.state.turnQueue.shift());
+        } else if (this.state.phase === PHASE.RESOLVE) {
+            this.bc.checkBattleStatus();
+        }
+    }
 
-    executeTurn(turn) {
-        const messageTypes = [TURN_TYPES.MESSAGE_VICTORY, TURN_TYPES.MESSAGE_DEFEAT, TURN_TYPES.MESSAGE_STATUS, TURN_TYPES.MESSAGE_DEATH];
-        if (messageTypes.includes(turn.type)) {
-            this.state.message = turn.message;
-            return;
-        }
-        
-        switch (turn.type) {
-            case TURN_TYPES.WEATHER_INTRO: 
-                return this._handleWeatherIntroTurn(turn);
-            case TURN_TYPES.APPLY_STATUS_EFFECT:
-                return this._applyStatusEffectTurn(turn);
-            case TURN_TYPES.EXECUTE_ACTION:
-                // ---> NEW: Bypass the dead check if allowDeadActor is true
-                if (turn.actor._skipAction || (turn.actor.isDead() && !turn.allowDeadActor)) {
-                    turn.actor._skipAction = false; 
-                    return this.processNextTurnInQueue();
-                }
-                return this._handleActionExecution(turn);
-            case TURN_TYPES.END_ACTOR_TURN:
-                if (!turn.actor.isDead() && !this.state.fled) {
-                    this.queueStatusEffects(turn.actor, 'ON_TURN_END');
-                }
-                return this.processNextTurnInQueue();
-            case TURN_TYPES.PROMPT_REINFORCEMENT:
-                return this.bc.requestPartySwap(true, turn.slotIndex);
-            case TURN_TYPES.BATTLE_END:
-                return this.bc.endBattle();
-            case TURN_TYPES.REINFORCEMENT:
-                const pool = turn.team === 'party' ? this.state.activeParty : this.state.activeEnemies;
-                pool[turn.slotIndex] = turn.replacement; 
-                this.state.message = turn.message;
+    executeTurn(turn) {
+        const messageTypes = [TURN_TYPES.MESSAGE_VICTORY, TURN_TYPES.MESSAGE_DEFEAT, TURN_TYPES.MESSAGE_STATUS, TURN_TYPES.MESSAGE_DEATH];
+        if (messageTypes.includes(turn.type)) {
+            this.state.message = turn.message;
+            return;
+        }
+        
+        switch (turn.type) {
+            case TURN_TYPES.WEATHER_INTRO: 
+                return this._handleWeatherIntroTurn(turn);
+            case TURN_TYPES.APPLY_STATUS_EFFECT:
+                return this._applyStatusEffectTurn(turn);
+            case TURN_TYPES.EXECUTE_ACTION:
+                if (turn.actor._skipAction || (turn.actor.isDead() && !turn.allowDeadActor)) {
+                    turn.actor._skipAction = false; 
+                    return this.processNextTurnInQueue();
+                }
+                return this._handleActionExecution(turn);
+            case TURN_TYPES.END_ACTOR_TURN:
+                if (!turn.actor.isDead() && !this.state.fled) {
+                    this.queueStatusEffects(turn.actor, 'ON_TURN_END');
+                }
+                return this.processNextTurnInQueue();
+            case TURN_TYPES.PROMPT_REINFORCEMENT:
+                return this.bc.requestPartySwap(true, turn.slotIndex);
+            case TURN_TYPES.BATTLE_END:
+                return this.bc.endBattle();
+            case TURN_TYPES.REINFORCEMENT:
+                const pool = turn.team === 'party' ? this.state.activeParty : this.state.activeEnemies;
+                pool[turn.slotIndex] = turn.replacement; 
+                this.state.message = turn.message;
 
-                // Apply active weather status to the reinforcement consistently
-                if (this.state.weather && this.state.weather.appliedStatusId && this.state.weather.id !== 'clear') {
-                    const hasWeather = turn.replacement.statusEffects.some(s => s.id === this.state.weather.appliedStatusId);
-                    if (!hasWeather) {
-                        const weatherStatus = StatusEffectFactory.createEffect(this.state.weather.appliedStatusId, null, turn.replacement);
-                        if (weatherStatus) {
-                            turn.replacement.applyStatusEffect(weatherStatus);
-                        }
-                    }
-                }
-                return;
-            case TURN_TYPES.PLAY_ANIMATION:
-                return this._handleAnimationTurn(turn);
-            case TURN_TYPES.APPLY_ABILITY_EFFECTS:
-                return this._applyAbilityEffects(turn);
-            default: 
-               return this._unpackBaseTurn(turn);
-        }
-    }
+                if (this.state.weather && this.state.weather.appliedStatusId && this.state.weather.id !== 'clear') {
+                    const hasWeather = turn.replacement.statusEffects.some(s => s.id === this.state.weather.appliedStatusId);
+                    if (!hasWeather) {
+                        const weatherStatus = StatusEffectFactory.createEffect(this.state.weather.appliedStatusId, null, turn.replacement);
+                        if (weatherStatus) {
+                            turn.replacement.applyStatusEffect(weatherStatus);
+                        }
+                    }
+                }
+                return;
+            case TURN_TYPES.PLAY_ANIMATION:
+                return this._handleAnimationTurn(turn);
+            case TURN_TYPES.APPLY_ABILITY_EFFECTS:
+                return this._applyAbilityEffects(turn);
+            default: 
+               return this._unpackBaseTurn(turn);
+        }
+    }
 
-    _unpackBaseTurn(turn) {
-        let { actor, action, target } = turn;
-        if (actor.isDead()) return this.processNextTurnInQueue();
+    _unpackBaseTurn(turn) {
+        let { actor, action, target } = turn;
+        if (actor.isDead()) return this.processNextTurnInQueue();
 
-        actor._skipAction = false; 
+        actor._skipAction = false; 
 
-        this.state.turnQueue.unshift({ type: TURN_TYPES.END_ACTOR_TURN, actor: actor });
-        this.state.turnQueue.unshift({ type: TURN_TYPES.EXECUTE_ACTION, actor, action, target });
-        this.queueStatusEffects(actor, 'ON_TURN_START');
+        this.state.turnQueue.unshift({ type: TURN_TYPES.END_ACTOR_TURN, actor: actor });
+        this.state.turnQueue.unshift({ type: TURN_TYPES.EXECUTE_ACTION, actor, action, target });
+        this.queueStatusEffects(actor, 'ON_TURN_START');
 
-        this.processNextTurnInQueue();
-    }
+        this.processNextTurnInQueue();
+    }
 
-    _applyAbilityEffects(turn) {
-        let { actor, action, targets, isFirstTarget, ignoreCost } = turn;
+    _applyAbilityEffects(turn) {
+        let { actor, action, targets, isFirstTarget, ignoreCost } = turn;
 
-        // Respect the ignoreCost flag for pre-battle traits
-        if (isFirstTarget && !ignoreCost) {
-            action.payCost(actor, null);
-        }
+        if (isFirstTarget && !ignoreCost) {
+            action.payCost(actor, null);
+        }
 
-        for (let target of targets) {
-            const actualTarget = this.getValidTarget(target);
-            if (!actualTarget) continue;
-            
-            const wasTargetDead = actualTarget.isDead();
-            const wasActorDead = actor.isDead(); 
+        for (let target of targets) {
+            const actualTarget = this.getValidTarget(target);
+            if (!actualTarget) continue;
+            
+            const wasTargetDead = actualTarget.isDead();
+            const wasActorDead = actor.isDead(); 
 
-            const result = AbilitySystem.execute(action.id, actor, actualTarget);
-            
-            if (result.fled) {
-                this.bc.handleFlee(actor);
-                break; 
-            }
+            const result = AbilitySystem.execute(action.id, actor, actualTarget);
+            
+            if (result.fled) {
+                this.bc.handleFlee(actor);
+                break; 
+            }
 
-            if (result.missed || result.evaded) {
-                events.emit('SPAWN_FCT', {
-                    target: actualTarget,
-                    text: result.evaded ? 'Evade!' : 'Miss!',
-                    type: 'status'
-                });
-            }
+            if (result.missed || result.evaded) {
+                events.emit('SPAWN_FCT', {
+                    target: actualTarget,
+                    text: result.evaded ? 'Evade!' : 'Miss!',
+                    type: 'status'
+                });
+            }
 
-            if (result.message) this.queueMessage(result.message);
+            // --- FIXED: Push death events into the queue BEFORE unshifting messages ---
+            if (!wasTargetDead && actualTarget.isDead()) this.bc.handleDeath(actualTarget);
+            if (!wasActorDead && actor.isDead()) this.bc.handleDeath(actor);
 
-            if (!wasTargetDead && actualTarget.isDead()) this.bc.handleDeath(actualTarget);
-            if (!wasActorDead && actor.isDead()) {
-                this.bc.handleDeath(actor);
-                break; 
-            }
-        }
+            // Now, unshift the message so it stays at the front
+            if (result.message) this.queueMessage(result.message);
 
-        this.processNextTurnInQueue();
-    }
+            // Finally, break if the actor died so they don't hit remaining targets
+            if (!wasActorDead && actor.isDead()) {
+                break; 
+            }
+        }
 
-    _handleActionExecution(turn) {
-        // ---> NEW: Extract allowDeadActor from the turn object
-        let { actor, action, target: primaryTarget, ignoreCost, allowDeadActor } = turn;
+        this.processNextTurnInQueue();
+    }
 
-        // ---> NEW: Respect the flag here too
-        if (actor.isDead() && !allowDeadActor) return this.processNextTurnInQueue();
+    _handleActionExecution(turn) {
+        let { actor, action, target: primaryTarget, ignoreCost, allowDeadActor } = turn;
 
-        // ---> NEW: Pass the flag down to the TargetingResolver
-        let resolvedTargets = TargetingResolver.resolve(action, actor, primaryTarget, this.state, allowDeadActor);
+        if (actor.isDead() && !allowDeadActor) return this.processNextTurnInQueue();
 
-        if (resolvedTargets.length === 0) {
-            this.state.message = `${actor.name} tried to use ${action.name}, but there were no targets left!`;
-            return this.processNextTurnInQueue();
-        }
+        let resolvedTargets = TargetingResolver.resolve(action, actor, primaryTarget, this.state, allowDeadActor);
 
-        // Only force a 'rest' fallback if we are actually checking costs
-        if (!ignoreCost && !action.canPayCost(actor)) {
-            action = AbilityFactory.createAbilities(['rest'])[0]; 
-            resolvedTargets = [actor]; 
-        }
-        
-        this.state.message = action.id === 'rest' ? `${actor.name} recovers!` : `${actor.name} used ${action.name}!`;
+        if (resolvedTargets.length === 0) {
+            this.state.message = `${actor.name} tried to use ${action.name}, but there were no targets left!`;
+            return this.processNextTurnInQueue();
+        }
 
-        const isAoE = ['all_enemies', 'all_allies'].includes(action.targeting?.scope) || action.targeting?.isAoE;
+        if (!ignoreCost && !action.canPayCost(actor)) {
+            action = AbilityFactory.createAbilities(['rest'])[0]; 
+            resolvedTargets = [actor]; 
+        }
+        
+        this.state.message = action.id === 'rest' ? `${actor.name} recovers!` : `${actor.name} used ${action.name}!`;
 
-        if (isAoE) {
-            this._queueAoEAction(actor, action, resolvedTargets, ignoreCost);
-        } else {
-            this._queueMultiAction(actor, action, resolvedTargets, ignoreCost);
-        }
-        
-        this.processNextTurnInQueue();
-    }
+        const isAoE = ['all_enemies', 'all_allies'].includes(action.targeting?.scope) || action.targeting?.isAoE;
 
-    _queueAoEAction(actor, action, targets, ignoreCost) {
-        for (let i = targets.length - 1; i >= 0; i--) {
-            this.state.turnQueue.unshift(this._createApplyEffectTurn(actor, action, [targets[i]], i === 0, i === targets.length - 1, ignoreCost));
-        }
-        this.state.turnQueue.unshift({ type: TURN_TYPES.PLAY_ANIMATION, actor, action, targets });
-    }
+        if (isAoE) {
+            this._queueAoEAction(actor, action, resolvedTargets, ignoreCost);
+        } else {
+            this._queueMultiAction(actor, action, resolvedTargets, ignoreCost);
+        }
+        
+        this.processNextTurnInQueue();
+    }
 
-    _queueMultiAction(actor, action, targets, ignoreCost) {
-        for (let i = targets.length - 1; i >= 0; i--) {
-            this.state.turnQueue.unshift(this._createApplyEffectTurn(actor, action, [targets[i]], i === 0, i === targets.length - 1, ignoreCost));
-            this.state.turnQueue.unshift({ type: TURN_TYPES.PLAY_ANIMATION, actor, action, target: targets[i] });
-        }
-    }
+    _queueAoEAction(actor, action, targets, ignoreCost) {
+        for (let i = targets.length - 1; i >= 0; i--) {
+            this.state.turnQueue.unshift(this._createApplyEffectTurn(actor, action, [targets[i]], i === 0, i === targets.length - 1, ignoreCost));
+        }
+        this.state.turnQueue.unshift({ type: TURN_TYPES.PLAY_ANIMATION, actor, action, targets });
+    }
 
-    _createApplyEffectTurn(actor, action, targets, isFirst, isLast, ignoreCost) {
-        return {
-            type: TURN_TYPES.APPLY_ABILITY_EFFECTS,
-            actor, action, targets, 
-            isFirstTarget: isFirst, 
-            isLastTarget: isLast,
-            ignoreCost 
-        };
-    }
+    _queueMultiAction(actor, action, targets, ignoreCost) {
+        for (let i = targets.length - 1; i >= 0; i--) {
+            this.state.turnQueue.unshift(this._createApplyEffectTurn(actor, action, [targets[i]], i === 0, i === targets.length - 1, ignoreCost));
+            this.state.turnQueue.unshift({ type: TURN_TYPES.PLAY_ANIMATION, actor, action, target: targets[i] });
+        }
+    }
 
-    _handleAnimationTurn(turn) {
-        const targetList = turn.targets || [turn.target];
-        const validTargets = [];
-        const redirectedTurns = new Set();
+    _createApplyEffectTurn(actor, action, targets, isFirst, isLast, ignoreCost) {
+        return {
+            type: TURN_TYPES.APPLY_ABILITY_EFFECTS,
+            actor, action, targets, 
+            isFirstTarget: isFirst, 
+            isLastTarget: isLast,
+            ignoreCost 
+        };
+    }
 
-        for (let target of targetList) {
-            let actualTarget = this.getValidTarget(target);
-            if (!actualTarget) continue; 
-            
-            if (actualTarget !== target) {
-                const nextApplyTurn = this.state.turnQueue.find(t => 
-                    t.type === TURN_TYPES.APPLY_ABILITY_EFFECTS && 
-                    t.targets?.includes(target) &&
-                    !redirectedTurns.has(t) 
-                );
-                
-                if (nextApplyTurn) {
-                    nextApplyTurn.targets = [actualTarget];
-                    redirectedTurns.add(nextApplyTurn); 
-                }
-            }
-            
-            if (!validTargets.includes(actualTarget)) validTargets.push(actualTarget);
-        }
+    _handleAnimationTurn(turn) {
+        const targetList = turn.targets || [turn.target];
+        const validTargets = [];
+        const redirectedTurns = new Set();
 
-        if (validTargets.length === 0) {
-            return this.processNextTurnInQueue(); 
-        }
+        for (let target of targetList) {
+            let actualTarget = this.getValidTarget(target);
+            if (!actualTarget) continue; 
+            
+            if (actualTarget !== target) {
+                const nextApplyTurn = this.state.turnQueue.find(t => 
+                    t.type === TURN_TYPES.APPLY_ABILITY_EFFECTS && 
+                    t.targets?.includes(target) &&
+                    !redirectedTurns.has(t) 
+                );
+                
+                if (nextApplyTurn) {
+                    nextApplyTurn.targets = [actualTarget];
+                    redirectedTurns.add(nextApplyTurn); 
+                }
+            }
+            
+            if (!validTargets.includes(actualTarget)) validTargets.push(actualTarget);
+        }
 
-        const animId = turn.animationId || turn.action?.animationId;
-        this.state.activeAnimation = BattleAnimationFactory.create(animId, turn.actor, validTargets);
-    }
+        if (validTargets.length === 0) {
+            return this.processNextTurnInQueue(); 
+        }
 
-    queueStatusEffects(combatant, triggerEvent, context = {}) {
-        if (!combatant || combatant.isDead()) return;
+        const animId = turn.animationId || turn.action?.animationId;
+        this.state.activeAnimation = BattleAnimationFactory.create(animId, turn.actor, validTargets);
+    }
 
-        for (let i = combatant.statusEffects.length - 1; i >= 0; i--) {
-            const status = combatant.statusEffects[i];
-            const hasActiveTrigger = status.effects && status.effects.some(e => e.trigger === triggerEvent);
+    queueStatusEffects(combatant, triggerEvent, context = {}) {
+        if (!combatant || combatant.isDead()) return;
 
-            this.state.turnQueue.unshift({
-                type: TURN_TYPES.APPLY_STATUS_EFFECT,
-                actor: combatant,
-                status: status,
-                triggerEvent: triggerEvent,
-                context: context
-            });
+        for (let i = combatant.statusEffects.length - 1; i >= 0; i--) {
+            const status = combatant.statusEffects[i];
+            const hasActiveTrigger = status.effects && status.effects.some(e => e.trigger === triggerEvent);
 
-            if (hasActiveTrigger) {
-                const animId = status.animationId || status.definition?.animationId || status.config?.animationId;
-                if (animId) {
-                    this.state.turnQueue.unshift({
-                        type: TURN_TYPES.PLAY_ANIMATION,
-                        actor: combatant,
-                        target: combatant,
-                        animationId: animId
-                    });
-                }
-            }
-        }
-    }
+            this.state.turnQueue.unshift({
+                type: TURN_TYPES.APPLY_STATUS_EFFECT,
+                actor: combatant,
+                status: status,
+                triggerEvent: triggerEvent,
+                context: context
+            });
 
-    _applyStatusEffectTurn(turn) {
-        const { actor, status, triggerEvent, context } = turn;
-        if (actor.isDead() || status.isExpired()) return this.processNextTurnInQueue();
+            if (hasActiveTrigger) {
+                const animId = status.animationId || status.definition?.animationId || status.config?.animationId;
+                if (animId) {
+                    this.state.turnQueue.unshift({
+                        type: TURN_TYPES.PLAY_ANIMATION,
+                        actor: combatant,
+                        target: combatant,
+                        animationId: animId
+                    });
+                }
+            }
+        }
+    }
 
-        const result = status.onEvent(triggerEvent, actor, context);
-        
-        if (result.cancelAction) actor._skipAction = true;
+    _applyStatusEffectTurn(turn) {
+        const { actor, status, triggerEvent, context } = turn;
+        if (actor.isDead() || status.isExpired()) return this.processNextTurnInQueue();
 
-        if (result.messages?.length > 0) {
-            const messageTurns = result.messages.map(msg => ({
-                type: TURN_TYPES.MESSAGE_STATUS, 
-                message: msg
-            }));
-            this.state.turnQueue.unshift(...messageTurns);
-        }
+        const result = status.onEvent(triggerEvent, actor, context);
+        
+        if (result.cancelAction) actor._skipAction = true;
 
-        if (actor.isDead()) this.bc.handleDeath(actor);
-        if (context.attacker?.isDead()) this.bc.handleDeath(context.attacker);
-        if (status.isExpired()) actor.removeStatusEffect(status.id);
+        // --- FIXED: Handle deaths and expiration BEFORE pushing status messages ---
+        if (actor.isDead()) this.bc.handleDeath(actor);
+        if (context.attacker?.isDead()) this.bc.handleDeath(context.attacker);
+        if (status.isExpired()) actor.removeStatusEffect(status.id);
 
-        this.processNextTurnInQueue();
-    }
+        // Now push messages so they appear before the deaths
+        if (result.messages?.length > 0) {
+            const messageTurns = result.messages.map(msg => ({
+                type: TURN_TYPES.MESSAGE_STATUS, 
+                message: msg
+            }));
+            this.state.turnQueue.unshift(...messageTurns);
+        }
 
-    getValidTarget(target) {
-        if (!target.isDead()) return target;
-        
-        const fallbackPool = this.bc.getActivePool(target.team);
-        const livingTargets = fallbackPool.filter(t => t && !t.isDead());
-        
-        if (livingTargets.length === 0) return null;
-        return livingTargets[Math.floor(Math.random() * livingTargets.length)];
-    }
+        this.processNextTurnInQueue();
+    }
 
-    queueMessage(message, type = TURN_TYPES.MESSAGE_STATUS) {
-        this.state.turnQueue.unshift({ type, message });
-    }
+    getValidTarget(target) {
+        if (!target.isDead()) return target;
+        
+        const fallbackPool = this.bc.getActivePool(target.team);
+        const livingTargets = fallbackPool.filter(t => t && !t.isDead());
+        
+        if (livingTargets.length === 0) return null;
+        return livingTargets[Math.floor(Math.random() * livingTargets.length)];
+    }
 
-    _handleWeatherIntroTurn(turn) {
-        console.log('[DEBUG] TurnManager executing WEATHER_INTRO turn:', turn);
-        const { weather, targets } = turn;
-        
-        if (weather.appliedStatusId) {
-            targets.forEach(target => {
-                if (target && !target.isDead()) {
-                    console.log(`[DEBUG] Applying weather status ${weather.appliedStatusId} to ${target.name}`);
-                    
-                    const weatherStatus = StatusEffectFactory.createEffect(weather.appliedStatusId, null, target);
-                    if (weatherStatus) {
-                        target.applyStatusEffect(weatherStatus); 
-                    }
-                }
-            });
-        }
+    queueMessage(message, type = TURN_TYPES.MESSAGE_STATUS) {
+        this.state.turnQueue.unshift({ type, message });
+    }
 
-        if (weather.animationId) {
-            console.log(`[DEBUG] Triggering Weather Animation: ${weather.animationId}`);
-            this.state.activeAnimation = BattleAnimationFactory.create(weather.animationId, null, targets);
-        } else {
-            console.log('[DEBUG] No animationId found for weather. Skipping to next turn.');
-            this.processNextTurnInQueue();
-        }
-    }
+    _handleWeatherIntroTurn(turn) {
+        console.log('[DEBUG] TurnManager executing WEATHER_INTRO turn:', turn);
+        const { weather, targets } = turn;
+        
+        if (weather.appliedStatusId) {
+            targets.forEach(target => {
+                if (target && !target.isDead()) {
+                    console.log(`[DEBUG] Applying weather status ${weather.appliedStatusId} to ${target.name}`);
+                    
+                    const weatherStatus = StatusEffectFactory.createEffect(weather.appliedStatusId, null, target);
+                    if (weatherStatus) {
+                        target.applyStatusEffect(weatherStatus); 
+                    }
+                }
+            });
+        }
+
+        if (weather.animationId) {
+            console.log(`[DEBUG] Triggering Weather Animation: ${weather.animationId}`);
+            this.state.activeAnimation = BattleAnimationFactory.create(weather.animationId, null, targets);
+        } else {
+            console.log('[DEBUG] No animationId found for weather. Skipping to next turn.');
+            this.processNextTurnInQueue();
+        }
+    }
 }
