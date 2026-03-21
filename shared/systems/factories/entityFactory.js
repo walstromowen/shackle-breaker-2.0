@@ -21,11 +21,14 @@ export class EntityFactory {
         // 1. Deep Clone Blueprint
         const config = structuredClone(blueprint);
 
-        // 2. Apply Identity Overrides (Renamed to match EntityDefinitions)
+        //2. Apply Identity Overrides (Renamed to match EntityDefinitions)
         if (overrides.name) config.name = overrides.name;
         if (overrides.spriteOverworld) config.spriteOverworld = overrides.spriteOverworld;
         if (overrides.spritePortrait) config.spritePortrait = overrides.spritePortrait;
 
+        // <-- NEW: Allow audio overrides
+        if (overrides.crySound) config.crySound = overrides.crySound;
+        if (overrides.deathSound) config.deathSound = overrides.deathSound;
         // 3. Merge Arrays & Objects
         if (overrides.tags) {
             const existingTags = config.tags || [];

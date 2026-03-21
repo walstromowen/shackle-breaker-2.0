@@ -9,7 +9,8 @@ const BASE_ENTITY = {
     // --- VISUALS ---
     spriteOverworld: "missing_texture",  
     spritePortrait: "missing_face",      
-    
+    crySound: "generic_cry",       // <-- NEW: Plays on battle start
+    deathSound: "generic_faint",
     traits: [],
     statusEffects: [],
     
@@ -109,7 +110,8 @@ export const ENTITY_DEFINITIONS = {
         
         spriteOverworld: "legionarySprite",
         spritePortrait: "legionaryPortrait",
-
+        crySound: "legionaryCry",       // <-- NEW: Plays on battle start
+        deathSound: "legionaryCry",
         attributes: {
             ...HUMANOID_TEMPLATE.attributes,
             vigor: 14, strength: 14, intelligence: 6
@@ -148,7 +150,8 @@ export const ENTITY_DEFINITIONS = {
 
         spriteOverworld: "legionarySprite",
         spritePortrait: "wolfPortrait",
-
+        crySound: "wolfCry",       // <-- NEW: Plays on battle start
+        deathSound: "wolfCry",
         attributes: {
             ...BEAST_TEMPLATE.attributes,
             dexterity: 16, strength: 10

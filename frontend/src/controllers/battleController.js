@@ -538,6 +538,7 @@ export class BattleController {
             type: TURN_TYPES.ANIMATION,     
             actor: combatant,
             animationId: 'faint',
+            soundId: combatant.deathSound, // <-- NEW: Pass the sound into the queue
             duration: 1.0                   
         });
 

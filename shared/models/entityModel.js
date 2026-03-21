@@ -42,6 +42,9 @@ export class EntityModel {
 
         if (!this.state.spriteOverworld) this.state.spriteOverworld = "missing_texture";
         if (!this.state.spritePortrait) this.state.spritePortrait = "missing_face";
+// <-- NEW: Add safe audio fallbacks 
+        if (!this.state.crySound) this.state.crySound = "generic_cry";
+        if (!this.state.deathSound) this.state.deathSound = "generic_faint";
 
         if (!this.state.traits) this.state.traits = [];
         if (!this.state.equipment) this.state.equipment = {};
@@ -75,6 +78,9 @@ export class EntityModel {
     get spritePortrait() { return this.state.spritePortrait; }
     get spriteOverworld() { return this.state.spriteOverworld; }
 
+    get crySound() { return this.state.crySound; }
+    get deathSound() { return this.state.deathSound; }
+    
     get level() { return this.state.level; }
     set level(val) { this.state.level = val; }
     get xp() { return this.state.xp; }

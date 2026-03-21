@@ -97,6 +97,7 @@ export class TurnManager {
     }
 
     // --- NEW: Standalone Animation Handler ---
+    // --- NEW: Standalone Animation Handler ---
     _handleStandaloneAnimation(turn) {
         const animId = turn.animationId;
         const targetActor = turn.actor;
@@ -107,6 +108,15 @@ export class TurnManager {
         // Override duration if the queue explicitly sets one
         if (turn.duration && this.state.activeAnimation) {
             this.state.activeAnimation.duration = turn.duration;
+        }
+
+        // --- NEW: Audio Integration ---
+        if (turn.soundId) {
+            events.emit('PLAY_SFX', {
+                id: turn.soundId,
+                volume: turn.volume || 1.0, // Default to 1.0 if not specified
+                pitch: turn.pitch || 1.0    // Default to 1.0 if not specified
+            });
         }
 
         // We intentionally do NOT call this.processNextTurnInQueue() here so the BattleController 
