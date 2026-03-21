@@ -42,9 +42,9 @@ export const BIOME_DEFINITIONS = {
         battles: {
             rate: 0.5,
             pools: [
-                { chance: 0.50, enemies: ['WOLF', 'WOLF'] },           
-                { chance: 0.30, enemies: ['WOLF', 'WOLF', 'WOLF'] },   
-                { chance: 0.20, enemies: ['LEGIONARY', 'LEGIONARY'] }  
+                { chance: 0.05, enemies: ['WOLF', 'WOLF'] },           
+                { chance: 0.05, enemies: ['WOLF', 'WOLF', 'WOLF'] },   
+                { chance: 0.90, enemies: ['LEGIONARY', 'LEGIONARY', 'LEGIONARY', 'LEGIONARY', 'LEGIONARY', 'LEGIONARY',] }  
             ]
         }
     },

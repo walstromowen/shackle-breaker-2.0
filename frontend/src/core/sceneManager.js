@@ -118,69 +118,58 @@ export class SceneManager {
     }
 
     setupEventListeners() {
-        // 1. General Scene Switching (Menus, etc.)
+        // 1. General Scene Switching -> Classic Fade
         events.on('CHANGE_SCENE', ({ scene, data }) => {
             this.transitionRenderer.start(() => {
-                
-                // Reset Input to prevent stuck keys
                 this.input.reset(); 
-
-                // Unlock Overworld if returning
-                if (scene === 'overworld') {
-                    this.overworldController.isLocked = false;
-                }
-
-                // Handle Scene Specific Data
+                if (scene === 'overworld') this.overworldController.isLocked = false;
+                
                 if (scene === 'character_summary') {
                     this.characterSummaryController = new CharacterSummaryController(this.input, data);
                 }
-
                 if (scene === 'party') {
-                    // Wipe any old battle data by re-initializing with overworld defaults
                     this.partyController.init(data || {}); 
                 }
 
                 this.changeScene(scene);
-            });
+            }, 'fade'); // <-- Explicitly call fade (or leave empty for default)
         });
         
-        // 2. Physical Interactions (Chests, NPCs, Signs)
+        // 2. Physical Interactions -> Circle Iris Wipe
         events.on('INTERACT', (data) => {
             if (data.type === 'ENCOUNTER') {
+                // Use the new circle transition
                 this.transitionRenderer.start(() => {
                     this.encounterController.start(data.id, data.context);
                     this.changeScene('encounter');
-                });
+                }, 'wipe'); 
             }
         });
 
-        // 3. Combat Triggers (Ambush, Scripted Bosses)
+        // 3. Combat Triggers -> Fast White Flash
         events.on('START_BATTLE', (data) => {
+            // Flash white to simulate battle start shock!
             this.transitionRenderer.start(() => {
                 console.log("[SceneManager] Handing off entities to BattleController:", data.enemies);
                 
-                // Ensure the background and weather make it into the context payload
                 const context = data.context || {};
                 context.backgroundId = data.background; 
-                context.weather = data.weather; // <-- FIXED: Pass the weather data through!
+                context.weather = data.weather; 
 
                 this.battleController.start(data.enemies, context);
                 this.changeScene('battle'); 
-            });
+            }, 'flash', { speed: 4.0, color: '#ffffff' }); 
         });
 
-        // 4. Listen for the end of the battle to handle routing cleanly
         events.on('BATTLE_ENDED', (data) => {
             if (data.victory) {
-                console.log("[SceneManager] Victory! Transitioning back to Overworld.");
-                events.emit('CHANGE_SCENE', { scene: 'overworld' }); // <-- This will now fade the weather back in!
+                events.emit('CHANGE_SCENE', { scene: 'overworld' }); 
             } else {
-                console.log("[SceneManager] The party was defeated! Routing to Game Over...");
-                // events.emit('CHANGE_SCENE', { scene: 'game_over' }); 
+                console.log("[SceneManager] Game Over...");
             }
         });
 
-        // 5. Party Swap Routing
+        // 5. Party Swap Routing -> Quick Wipe
         events.on('REQUEST_PARTY_SWAP', (data) => {
             this.transitionRenderer.start(() => {
                 this.partyController.init({
@@ -189,7 +178,7 @@ export class SceneManager {
                     callback: data.callback 
                 });
                 this.changeScene('party');
-            });
+            }, 'wipe', { speed: 3.0 }); // Slightly faster wipe for UI changes
         });
     }
 
