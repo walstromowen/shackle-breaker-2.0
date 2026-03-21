@@ -66,6 +66,7 @@ const ASSET_MANIFEST = {
     legionaryCry: './assets/audio/sfx/cries/legionary_cry.wav',
     wolfCry: './assets/audio/sfx/cries/wolf_cry.wav',
 
+    unsheathSwordSFX: './assets/audio/sfx/unsheath_sword.wav',
     arcaneDartSFX: './assets/audio/sfx/arcane_dart.wav',
     bubbleSFX: './assets/audio/sfx/bubble.wav',
     swordSlashSFX: './assets/audio/sfx/sword_slash.wav',

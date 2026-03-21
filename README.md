@@ -2,8 +2,8 @@
 Roguelike turnbased adventure game based on the Shackle Breaker story by Owen Walstrom
 
 
-battlecries/deathrattles
-enhance battle animations
+
+enhance battle animations / polish
 two handed items
 clicking functionality across screens
 encounters(or new name)

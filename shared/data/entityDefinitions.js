@@ -9,8 +9,8 @@ const BASE_ENTITY = {
     // --- VISUALS ---
     spriteOverworld: "missing_texture",  
     spritePortrait: "missing_face",      
-    crySound: "generic_cry",       // <-- NEW: Plays on battle start
-    deathSound: "generic_faint",
+    crySound: "unsheathSwordSFX",       // <-- NEW: Plays on battle start
+    deathSound: "unsheathSwordSFX",
     traits: [],
     statusEffects: [],
     
