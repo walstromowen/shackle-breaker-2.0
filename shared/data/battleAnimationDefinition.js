@@ -189,4 +189,32 @@ export const BattleAnimationDefinitions = {
             flash: { start: 0.2, end: 2.2, filter: 'brightness(80%) saturate(70%) sepia(30%) hue-rotate(180deg)' }
         }
     },
+    "faint": {
+        duration: 2.0, 
+        audio: [
+            { start: 0.0, key: 'faintDropSFX', volume: 0.8 }, 
+            { start: 0.2, key: 'windFaintSFX', volume: 1.0 } 
+        ],
+        actor: { 
+            type: 'shake', 
+            start: 0.0, 
+            end: 1.5, 
+            intensity: 8,
+            fade: { start: 0.2, end: 1.8 },
+            // MOVED FLASH HERE SO THE ENEMY GLOWS AND BLURS
+            flash: { start: 0.0, end: 1.8, filter: 'sepia(80%) brightness(200%) blur(4px)' }
+        },
+        projectiles: [
+            // A flurry of staggered "ash" particles blowing away
+            { start: 0.3, end: 1.3, type: 'overlay', sheetKey: 'battleProjectiles', frame: { col: 0, row: 0 }, frameSize: 32, movement: 'swipe_diagonal', scale: 0.6, blendMode: 'screen' },
+            { start: 0.5, end: 1.5, type: 'overlay', sheetKey: 'battleProjectiles', frame: { col: 0, row: 0 }, frameSize: 32, movement: 'float_up_and_pop', scale: 1.2, blendMode: 'screen' },
+            { start: 0.6, end: 1.6, type: 'overlay', sheetKey: 'battleProjectiles', frame: { col: 0, row: 0 }, frameSize: 32, movement: 'swipe_diagonal', scale: 0.8, blendMode: 'screen' },
+            { start: 0.8, end: 1.8, type: 'overlay', sheetKey: 'battleProjectiles', frame: { col: 0, row: 0 }, frameSize: 32, movement: 'expand_and_fade', scale: 0.4, blendMode: 'screen' },
+            { start: 1.0, end: 2.0, type: 'overlay', sheetKey: 'battleProjectiles', frame: { col: 0, row: 0 }, frameSize: 32, movement: 'swipe_diagonal', scale: 1.0, blendMode: 'screen' }
+        ],
+        target: {
+            // Brightens them, adds a sepia tone for that "dusty" look, and blurs them out
+            flash: { start: 0.0, end: 1.8, filter: 'sepia(80%) brightness(200%) blur(4px)' }
+        }
+    },
 };

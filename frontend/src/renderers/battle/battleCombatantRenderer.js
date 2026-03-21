@@ -28,11 +28,31 @@ export class BattleCombatantRenderer {
 
     isEntityVisible(entity, state) {
         if (!entity) return false;
-        if (entity.hp > 0) return true;
         
-        return state.turnQueue.some(
-            turn => turn.type === 'DEATH_MESSAGE' && turn.message.includes(entity.name)
+        // 1. If they are alive, always render them
+        if (entity.hp > 0) return true;
+
+        // --- TIMELINE OF A DEATH ---
+        // If they are dead, keep them visible ONLY IF they haven't finished fainting yet.
+
+        // 2. Are they currently part of an active animation? 
+        // (This prevents them vanishing mid-fireball if the hit drops them to 0)
+        const anim = state.activeAnimation;
+        if (anim) {
+            if (anim.actor === entity) return true;
+            if (anim.targets && anim.targets.includes(entity)) return true;
+        }
+
+        // 3. Is their 'faint' animation waiting its turn in the queue?
+        // (This bridges the gap between the attack finishing and the faint starting)
+        const isFaintQueued = state.turnQueue.some(
+            turn => turn.type === 'ANIMATION' && turn.actor === entity
         );
+        if (isFaintQueued) return true;
+
+        // If they are dead, not participating in an animation, and have no faint queued... 
+        // they are fully dead and gone.
+        return false;
     }
 
     getEntityPosition(entity, state) {
@@ -56,22 +76,16 @@ export class BattleCombatantRenderer {
 
     drawShadow(x, y, size) {
         this.ctx.save();
-        // Semi-transparent black for the shadow
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'; 
         this.ctx.beginPath();
         
-        // Calculate the shadow's dimensions based on the sprite size
         const shadowWidth = size * 0.35; 
-        const shadowHeight = size * 0.1; // Squashed to look isometric/perspective
-        
-        // Offset Y slightly so the shadow rests at the "feet" of the sprite 
+        const shadowHeight = size * 0.1; 
         const shadowY = y + (size * 0.45);
 
-        // Draw an ellipse (x, y, radiusX, radiusY, rotation, startAngle, endAngle)
         this.ctx.ellipse(x, shadowY, shadowWidth, shadowHeight, 0, 0, Math.PI * 2);
         this.ctx.fill();
         
-        // Add a slight blur to soften the edges 
         this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
         this.ctx.shadowBlur = 4;
         this.ctx.fill(); 
@@ -95,28 +109,30 @@ export class BattleCombatantRenderer {
             let y = Math.floor(layout.y * this.config.CANVAS_HEIGHT);
             const size = Math.floor(this.FRAME_SIZE * this.SPRITE_SCALE);
             let filter = 'none';
+            let alpha = 1.0; 
 
             if (anim && typeof anim.getTransform === 'function') {
                 const transform = anim.getTransform(entity, progress, isPlayer);
                 x += transform.xOffset || 0;
                 y += transform.yOffset || 0;
                 filter = transform.filter || 'none';
+                alpha = transform.alpha !== undefined ? transform.alpha : 1.0; 
             }
 
-            return { entity, x, y, size, filter };
+            return { entity, x, y, size, filter, alpha }; 
         }).filter(item => item !== null);
 
-        // Draw furthest back first (pseudo-depth sorting)
         renderables.sort((a, b) => a.y - b.y);
 
         renderables.forEach(item => {
-            const { entity, x, y, size, filter } = item;
+            const { entity, x, y, size, filter, alpha } = item;
             const assetKey = entity.spritePortrait || entity.spriteOverworld;
             const img = this.loader.get ? this.loader.get(assetKey) : this.loader.getAsset(assetKey);
 
-            this.drawShadow(x, y, size);
+            this.ctx.save(); 
+            this.ctx.globalAlpha = alpha; 
 
-            this.ctx.save();
+            this.drawShadow(x, y, size);
 
             if (filter !== 'none') {
                 this.ctx.filter = filter;
@@ -130,7 +146,7 @@ export class BattleCombatantRenderer {
                 this.ui.drawRect(x - size/2, y - size/2, size, size, color, true);
             }
             
-            this.ctx.restore();
+            this.ctx.restore(); 
         });
     }
 }

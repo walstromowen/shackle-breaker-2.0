@@ -6,7 +6,7 @@ export class BattleAnimationModel {
         this.actor = actor;
         this.targets = targets || [];
 
-        // NEW: Keep track of audio cues we've already fired
+        // Keep track of audio cues we've already fired
         this.playedAudio = new Set();
     }
     
@@ -38,24 +38,45 @@ export class BattleAnimationModel {
                 return { flightProgress, def: p };
             });
     }
+
     // Calculates the exact visual offsets and filters for a specific entity at a specific point in time
     getTransform(entity, progress, isPlayer) {
-        let transform = { xOffset: 0, yOffset: 0, filter: 'none' };
+        let transform = { xOffset: 0, yOffset: 0, filter: 'none', alpha: 1.0 };
 
-        // 1. ACTOR ANIMATION (e.g., Lunging and Flashing)
+        // 1. ACTOR ANIMATION (e.g., Lunging, Sinking, Shaking, Fading, and Flashing)
         if (entity === this.actor && this.def.actor) {
             const actDef = this.def.actor;
             
             if (actDef.type === 'lunge' && progress >= actDef.start && progress <= actDef.end) {
-                // Normalize progress within the specific action window
                 const localProgress = (progress - actDef.start) / (actDef.end - actDef.start);
-                const lungePeak = Math.sin(localProgress * Math.PI); // 0 -> 1 -> 0 arc
+                const lungePeak = Math.sin(localProgress * Math.PI); 
                 const direction = isPlayer ? 1 : -1;
-                
                 transform.xOffset += direction * (lungePeak * actDef.distance);
             }
 
-            // NEW: Allow the actor to flash/glow (great for charge-ups!)
+            if (actDef.type === 'sink' && progress >= actDef.start && progress <= actDef.end) {
+                const localProgress = (progress - actDef.start) / (actDef.end - actDef.start);
+                transform.yOffset += (localProgress * localProgress) * actDef.distance;
+                transform.alpha = 1.0 - localProgress; 
+            }
+
+            // --- NEW: Aggressive Shake for Fainting ---
+            if (actDef.type === 'shake' && progress >= actDef.start && progress <= actDef.end) {
+                // Adds a random jitter to X and Y based on the intensity
+                transform.xOffset += (Math.random() - 0.5) * actDef.intensity;
+                transform.yOffset += (Math.random() - 0.5) * actDef.intensity;
+            }
+
+            // --- NEW: Gradual Fade for Thanos Snap ---
+            if (actDef.fade && progress >= actDef.fade.start) {
+                if (progress >= actDef.fade.end) {
+                    transform.alpha = 0.0; // Completely gone
+                } else {
+                    const fadeProgress = (progress - actDef.fade.start) / (actDef.fade.end - actDef.fade.start);
+                    transform.alpha = 1.0 - fadeProgress; // Tweens from 1.0 down to 0.0
+                }
+            }
+
             if (actDef.flash && progress >= actDef.flash.start && progress <= actDef.flash.end) {
                 transform.filter = actDef.flash.filter;
             }

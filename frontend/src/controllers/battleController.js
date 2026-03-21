@@ -495,42 +495,56 @@ export class BattleController {
 
     // --- BATTLE STATE MANAGEMENT ---
     handleDeath(combatant) {
-        if (combatant._deathHandled) return;
-        combatant._deathHandled = true;
+        if (combatant._deathHandled) return;
+        combatant._deathHandled = true;
 
-        this.state.turnQueue = this.state.turnQueue.filter(turn => turn.actor !== combatant);
-        
-        // ---> NEW: Sweep for onDeath traits! <---
-        this._queueDeathTraits(combatant);
-        
-        const isParty = combatant.team === 'party';
-        const activeArray = isParty ? this.state.activeParty : this.state.activeEnemies;
-        const rosterArray = isParty ? this.state.partyRoster : this.state.enemyRoster;
-        const slotIndex = activeArray.indexOf(combatant);
-        
-        if (slotIndex === -1) return;
-        
-        const livingReserves = rosterArray.filter(member => 
-            !member.isDead() && 
-            !activeArray.includes(member) &&
-            !this.state.turnQueue.some(turn => turn.replacement === member) 
-        );
-        
-        if (livingReserves.length > 0) {
-            if (isParty) {
-                this.state.turnQueue.unshift({ type: TURN_TYPES.PROMPT_REINFORCEMENT, slotIndex });
-            } else {
-                const replacement = livingReserves[0];
-                this.state.turnQueue.unshift({
-                    type: TURN_TYPES.REINFORCEMENT,
-                    team: 'enemy', slotIndex, replacement,
-                    message: `${replacement.name} joins the battle!`
-                });
-            }
-        }
-        
-        this.turnManager.queueMessage(`${combatant.name} has been slain!`, TURN_TYPES.MESSAGE_DEATH);
-    }
+        // 1. Remove their pending actions
+        this.state.turnQueue = this.state.turnQueue.filter(turn => turn.actor !== combatant);
+        
+        // 2. Queue Death Traits (These unshift to the front)
+        this._queueDeathTraits(combatant);
+        
+        const isParty = combatant.team === 'party';
+        const activeArray = isParty ? this.state.activeParty : this.state.activeEnemies;
+        const rosterArray = isParty ? this.state.partyRoster : this.state.enemyRoster;
+        const slotIndex = activeArray.indexOf(combatant);
+        
+        if (slotIndex === -1) return;
+        
+        const livingReserves = rosterArray.filter(member => 
+            !member.isDead() && 
+            !activeArray.includes(member) &&
+            !this.state.turnQueue.some(turn => turn.replacement === member) 
+        );
+        
+        // 3. Queue Reinforcements
+        if (livingReserves.length > 0) {
+            if (isParty) {
+                this.state.turnQueue.unshift({ type: TURN_TYPES.PROMPT_REINFORCEMENT, slotIndex });
+            } else {
+                const replacement = livingReserves[0];
+                this.state.turnQueue.unshift({
+                    type: TURN_TYPES.REINFORCEMENT,
+                    team: 'enemy', slotIndex, replacement,
+                    message: `${replacement.name} joins the battle!`
+                });
+            }
+        }
+        
+        // 4. Queue the Faint Animation
+        this.state.turnQueue.unshift({
+            type: TURN_TYPES.ANIMATION,     // Make sure this is added to your TURN_TYPES constant!
+            actor: combatant,
+            animationId: 'faint',
+            duration: 1.0                   // Tells the engine how long to pause before the next turn
+        });
+
+        // 5. Queue the Death Message
+        this.state.turnQueue.unshift({ 
+            type: TURN_TYPES.MESSAGE_STATUS, // Or MESSAGE_DEATH if that's what you use
+            message: `${combatant.name} has been slain!` 
+        });
+    }
 
     checkBattleStatus() {
         const enemiesAlive = this.state.enemyRoster.some(e => !e.isDead());
