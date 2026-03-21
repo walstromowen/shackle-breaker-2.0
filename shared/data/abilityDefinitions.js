@@ -584,7 +584,7 @@ export const AbilityDefinitions = {
         icon: { col: 2, row: 12 },
         targeting: { scope: "self", select: "auto" },
         behavior: "flee_battle",
-        animationId: "melee_lunge",
+        animationId: "flee",
         accuracy: 1.0
     },
 

@@ -248,5 +248,51 @@ export const BattleAnimationDefinitions = {
             shake: { start: 0.333, end: 0.833, intensity: 15 },
             flash: { start: 0.333, end: 0.833, filter: 'invert(100%)' }
         }
-    }
+    },
+    "enter_battle": {
+        duration: 1.5,
+        audio: [
+            { start: 0.1, key: 'summonSFX', volume: 0.8 },
+            { start: 0.4, key: 'landSFX', volume: 0.6 }
+        ],
+        actor: { 
+            // We'll add 'slide_in' and 'fadeIn' to the model below!
+            type: 'slide_in', 
+            start: 0.0, 
+            end: 0.5, 
+            distance: -100, // Start 100 pixels to the left/right and slide to 0
+            fadeIn: { start: 0.0, end: 0.4 },
+            flash: { start: 0.4, end: 0.7, filter: 'brightness(200%)' }
+        },
+        vfx: [
+            // A puff of smoke or magical energy when they arrive
+            { 
+                start: 0.3, 
+                type: 'spawn', 
+                origin: 'source', // source is the entering actor here
+                config: { 
+                    life: 0.6, 
+                    sheetKey: 'particles', 
+                    frame: { col: 1, row: 0 }, // Adjust to your smoke/portal sprite
+                    frameSize: 32, 
+                    movement: 'expand_and_fade', 
+                    scale: 2.0, 
+                    blendMode: 'screen' 
+                } 
+            }
+        ]
+    },
+    "flee": {
+        duration: 1.0,
+        audio: [
+            { start: 0.0, key: 'runAwaySFX', volume: 1.0 }
+        ],
+        actor: { 
+            type: 'slide_out', 
+            start: 0.0, 
+            end: 0.6, 
+            distance: 150, // Distance to run away before disappearing
+            fade: { start: 0.2, end: 0.6 } // Re-using your existing fade out!
+        }
+    },
 };

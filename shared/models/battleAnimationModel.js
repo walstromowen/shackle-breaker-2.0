@@ -95,6 +95,46 @@ export class BattleAnimationModel {
         if (entity === this.actor && this.def.actor) {
             const actDef = this.def.actor;
             
+            // --- Slide In (Entrance) Logic ---
+            if (actDef.type === 'slide_in') {
+                const startOffset = isPlayer ? -actDef.distance : actDef.distance;
+
+                if (progress < actDef.start) {
+                    transform.xOffset += startOffset;
+                } else if (progress <= actDef.end) {
+                    const localProgress = (progress - actDef.start) / (actDef.end - actDef.start);
+                    // Ease-out calculation so they slide in fast and gently brake
+                    const easeOut = 1 - Math.pow(1 - localProgress, 3);
+                    transform.xOffset += startOffset * (1 - easeOut);
+                }
+            }
+
+            // --- Fade In Logic ---
+            if (actDef.fadeIn) {
+                if (progress < actDef.fadeIn.start) {
+                    transform.alpha = 0.0;
+                } else if (progress <= actDef.fadeIn.end) {
+                    const fadeProgress = (progress - actDef.fadeIn.start) / (actDef.fadeIn.end - actDef.fadeIn.start);
+                    transform.alpha = fadeProgress;
+                }
+            }
+
+            // --- Slide Out (Flee) Logic ---
+            if (actDef.type === 'slide_out') {
+                const targetOffset = isPlayer ? -actDef.distance : actDef.distance;
+
+                if (progress >= actDef.start && progress <= actDef.end) {
+                    const localProgress = (progress - actDef.start) / (actDef.end - actDef.start);
+                    // Ease-in calculation so they start running slow and accelerate
+                    const easeIn = Math.pow(localProgress, 2); 
+                    transform.xOffset += targetOffset * easeIn;
+                } else if (progress > actDef.end) {
+                    // Hold them at their final escaped distance once the movement finishes
+                    transform.xOffset += targetOffset;
+                }
+            }
+
+            // --- Existing Lunge, Sink, Shake, Fade, Flash ---
             if (actDef.type === 'lunge' && progress >= actDef.start && progress <= actDef.end) {
                 const localProgress = (progress - actDef.start) / (actDef.end - actDef.start);
                 const lungePeak = Math.sin(localProgress * Math.PI); 
