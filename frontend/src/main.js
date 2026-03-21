@@ -48,6 +48,7 @@ const ASSET_MANIFEST = {
     abilities: './assets/icons/abilities.png', 
     statusEffects: './assets/icons/status_effects.png',
     battleProjectiles: './assets/icons/battle_projectiles.png',
+    particles: './assets/icons/particles.png',
 
     plainsBattleDayBg: './assets/backgrounds/plains_battle_day_bg.png',
     plainsBattleDuskBg: './assets/backgrounds/plains_battle_dusk_bg.png',
@@ -61,6 +62,7 @@ const ASSET_MANIFEST = {
     plainsOverworldDay: './assets/audio/music/plains_overworld_day.mp3',  
 
     weatherRain: './assets/audio/sfx/weather_rain.wav',
+    weatherRainShort: './assets/audio/sfx/weather_rain_short.wav',
     spookyWind: './assets/audio/sfx/spooky_wind.wav',
 
     legionaryCry: './assets/audio/sfx/cries/legionary_cry.wav',

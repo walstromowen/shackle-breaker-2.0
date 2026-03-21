@@ -41,6 +41,7 @@ Root
 │   │   │   │    ├── battleRenderer.js
 │   │   │   │    ├── battleCombatantRenderer.js
 │   │   │   │    ├── battleHUDRenderer.js
+│   │   │   │    ├── battleVFXRenderer.js
 │   │   │   ├── encounter/
 │   │   │   │    ├── encounterRenderer.js
 │   │   │   ├── transitions/

@@ -4,20 +4,37 @@ export class BattleAnimationModel {
         this.duration = definition.duration;
         this.def = definition;
         this.actor = actor;
-        this.targets = targets || [];
+        this.targets = Array.isArray(targets) ? targets : (targets ? [targets] : []);
 
-        // Keep track of audio cues we've already fired
+        // Keep track of audio and VFX cues we've already fired
         this.playedAudio = new Set();
+        this.playedVFX = new Set(); 
     }
     
+    /**
+     * MASTER RENDERER METHOD
+     * Call this once per frame in your render loop to get the exact state of all entities.
+     */
+    getFrameState(progress, isPlayer) {
+        return {
+            actorTransform: this.getTransform(this.actor, progress, isPlayer),
+            targetTransforms: this.targets.map(target => ({
+                entity: target,
+                transform: this.getTransform(target, progress, isPlayer)
+            })),
+            newAudioCues: this.getAudioTriggers(progress),
+            newVFXCues: this.getVFXTriggers(progress),
+            background: this.getActiveBackground(progress)
+        };
+    }
+
     getAudioTriggers(progress) {
         if (!this.def.audio) return [];
 
         const triggers = [];
         this.def.audio.forEach((soundDef, index) => {
-            // If we've passed the start time, and haven't played it yet...
             if (progress >= soundDef.start && !this.playedAudio.has(index)) {
-                this.playedAudio.add(index); // Mark as played
+                this.playedAudio.add(index); 
                 triggers.push(soundDef);
             }
         });
@@ -25,25 +42,56 @@ export class BattleAnimationModel {
         return triggers;
     }
 
-    getActiveProjectiles(progress) {
-        if (!this.def.projectiles || this.def.projectiles.length === 0) {
-            return [];
-        }
+    getVFXTriggers(progress) {
+        if (!this.def.vfx) return [];
 
-        return this.def.projectiles
-            .filter(p => progress >= p.start && progress <= p.end)
-            .map(p => {
-                // Calculate how far along the projectile is in its own specific lifespan (0.0 to 1.0)
-                const flightProgress = (progress - p.start) / (p.end - p.start);
-                return { flightProgress, def: p };
-            });
+        const triggers = [];
+        this.def.vfx.forEach((vfxDef, index) => {
+            if (progress >= vfxDef.start && !this.playedVFX.has(index)) {
+                this.playedVFX.add(index); 
+                // Attach origin entity context directly for the renderer
+                const resolvedOrigin = vfxDef.origin === 'target' && this.targets.length > 0 
+                                       ? this.targets[0] 
+                                       : this.actor;
+                
+                triggers.push({ ...vfxDef, resolvedOrigin });
+            }
+        });
+        
+        return triggers;
     }
 
-    // Calculates the exact visual offsets and filters for a specific entity at a specific point in time
+    getActiveBackground(progress) {
+        if (!this.def.background) return null;
+
+        const bgDef = this.def.background;
+        if (progress >= bgDef.start && progress <= bgDef.end) {
+            const duration = bgDef.end - bgDef.start;
+            const localProgress = (progress - bgDef.start) / duration;
+
+            let currentAlpha = 1.0;
+            const fadeRatio = 0.2; 
+
+            if (localProgress < fadeRatio) {
+                currentAlpha = localProgress / fadeRatio; 
+            } else if (localProgress > 1.0 - fadeRatio) {
+                currentAlpha = (1.0 - localProgress) / fadeRatio; 
+            }
+
+            return {
+                key: bgDef.key || 'current', 
+                filter: bgDef.filter || 'none',
+                alpha: currentAlpha 
+            };
+        }
+        
+        return null;
+    }
+
     getTransform(entity, progress, isPlayer) {
         let transform = { xOffset: 0, yOffset: 0, filter: 'none', alpha: 1.0 };
 
-        // 1. ACTOR ANIMATION (e.g., Lunging, Sinking, Shaking, Fading, and Flashing)
+        // 1. ACTOR ANIMATION
         if (entity === this.actor && this.def.actor) {
             const actDef = this.def.actor;
             
@@ -60,20 +108,17 @@ export class BattleAnimationModel {
                 transform.alpha = 1.0 - localProgress; 
             }
 
-            // --- NEW: Aggressive Shake for Fainting ---
             if (actDef.type === 'shake' && progress >= actDef.start && progress <= actDef.end) {
-                // Adds a random jitter to X and Y based on the intensity
                 transform.xOffset += (Math.random() - 0.5) * actDef.intensity;
                 transform.yOffset += (Math.random() - 0.5) * actDef.intensity;
             }
 
-            // --- NEW: Gradual Fade for Thanos Snap ---
             if (actDef.fade && progress >= actDef.fade.start) {
                 if (progress >= actDef.fade.end) {
-                    transform.alpha = 0.0; // Completely gone
+                    transform.alpha = 0.0; 
                 } else {
                     const fadeProgress = (progress - actDef.fade.start) / (actDef.fade.end - actDef.fade.start);
-                    transform.alpha = 1.0 - fadeProgress; // Tweens from 1.0 down to 0.0
+                    transform.alpha = 1.0 - fadeProgress; 
                 }
             }
 
@@ -82,7 +127,7 @@ export class BattleAnimationModel {
             }
         }
 
-        // 2. TARGET ANIMATION (e.g., Shaking and Flashing)
+        // 2. TARGET ANIMATION
         if (this.targets.includes(entity) && this.def.target) {
             const tarDef = this.def.target;
             

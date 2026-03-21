@@ -1,11 +1,12 @@
 import { UITheme } from '../../ui/UITheme.js';
 
 export class BattleCombatantRenderer {
-    constructor(ctx, config, loader, ui) {
+    constructor(ctx, config, loader, ui, vfxRenderer) {
         this.ctx = ctx;
         this.config = config;
         this.loader = loader;
         this.ui = ui;
+        this.vfxRenderer = vfxRenderer; 
 
         // --- VISUAL CONFIG ---
         this.SPRITE_SCALE = 1;   
@@ -36,7 +37,6 @@ export class BattleCombatantRenderer {
         // If they are dead, keep them visible ONLY IF they haven't finished fainting yet.
 
         // 2. Are they currently part of an active animation? 
-        // (This prevents them vanishing mid-fireball if the hit drops them to 0)
         const anim = state.activeAnimation;
         if (anim) {
             if (anim.actor === entity) return true;
@@ -44,14 +44,12 @@ export class BattleCombatantRenderer {
         }
 
         // 3. Is their 'faint' animation waiting its turn in the queue?
-        // (This bridges the gap between the attack finishing and the faint starting)
         const isFaintQueued = state.turnQueue.some(
             turn => turn.type === 'ANIMATION' && turn.actor === entity
         );
         if (isFaintQueued) return true;
 
         // If they are dead, not participating in an animation, and have no faint queued... 
-        // they are fully dead and gone.
         return false;
     }
 
@@ -93,11 +91,15 @@ export class BattleCombatantRenderer {
         this.ctx.restore();
     }
 
-    drawGroup(entities, isPlayer, state) {
+   drawGroup(entities, isPlayer, state) {
         if (!entities) return;
 
         const anim = state.activeAnimation;
-        const progress = anim && state.timer ? Math.min(state.timer / anim.duration, 1) : 0;
+        
+        // NEW: Added a strict check for anim.duration to prevent division-by-zero
+        const progress = (anim && state.timer !== undefined && anim.duration) 
+            ? Math.min(state.timer / anim.duration, 1.0) 
+            : 0;
 
         let renderables = entities.map((entity, index) => {
             if (!this.isEntityVisible(entity, state) || index >= 3) return null;
