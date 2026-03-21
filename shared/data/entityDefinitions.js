@@ -77,9 +77,10 @@ const BEAST_TEMPLATE = {
     name: "Beast",
     spriteOverworld: "germanSheepherdSprite",
     spritePortrait: "germanSheepherdPortrait",
-    
+    crySound: "dogCry",       // <-- NEW: Plays on battle start
+    deathSound: "dogDeath",
     attributes: { vigor: 1, strength: 8, dexterity: 14, intelligence: 3, attunement: 5 },
-     traits: ["acidic"],
+     traits: [],
     baseStats: {
         ...BASE_ENTITY.baseStats,
         maxHp: 3, maxStamina: 8, maxInsight: 0,

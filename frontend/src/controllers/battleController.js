@@ -56,18 +56,33 @@ export class BattleController {
 
         // --- NEW: 1. ENEMY INTRO CRIES ---
         this.state.activeEnemies.forEach(enemy => {
-            // Assuming your CombatantModel has a property like 'crySound' or 'introSound'
             if (enemy && !enemy.isDead() && enemy.crySound) { 
                 this.state.turnQueue.push({
                     type: TURN_TYPES.ANIMATION,
                     actor: enemy,
-                    animationId: 'idle', // A neutral bounce or intro animation
+                    animationId: 'idle', 
                     soundId: enemy.crySound, 
-                    duration: 1.0 // Gives the UI 1 second to breathe while the sound plays
+                    duration: 1.0 
                 });
                 preBattleActionsQueued = true;
             }
         });
+
+        // --- NEW: 1.5 ALLY INTRO CRIES ---
+        this.state.activeParty.forEach(ally => {
+            // Make sure your party members also have a crySound property set on their model!
+            if (ally && !ally.isDead() && ally.crySound) { 
+                this.state.turnQueue.push({
+                    type: TURN_TYPES.ANIMATION,
+                    actor: ally,
+                    animationId: 'idle', // You might want to change this to 'ready' or 'intro' for allies
+                    soundId: ally.crySound, 
+                    duration: 1.0 
+                });
+                preBattleActionsQueued = true;
+            }
+        });
+
         if (this.state.weather && this.state.weather.id !== 'clear') { 
             console.log('[DEBUG] WEATHER TRIGGERED in BattleController! Pushing to queue.', this.state.weather);
             
