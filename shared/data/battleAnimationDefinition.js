@@ -37,7 +37,7 @@ export const BattleAnimationDefinitions = {
                 config: {
                     life: 0.3,
                     sheetKey: 'battleProjectiles', // Kept as battleProjectiles
-                    frame: { col: 0, row: 0 },
+                    frame: { col: 8, row: 0 },
                     frameSize: 32,
                     movement: 'expand_and_fade',
                     scale: 1.2,
@@ -62,7 +62,7 @@ export const BattleAnimationDefinitions = {
                 config: {
                     life: 0.2,
                     sheetKey: 'battleProjectiles', // Kept as battleProjectiles
-                    frame: { col: 0, row: 0 },
+                    frame: { col: 2, row: 0 },
                     frameSize: 32,
                     movement: 'expand_and_fade',
                     scale: 1.0,
@@ -87,7 +87,7 @@ export const BattleAnimationDefinitions = {
                 config: {
                     life: 0.4,
                     sheetKey: 'battleProjectiles', // Kept as battleProjectiles
-                    frame: { col: 0, row: 0 },
+                    frame: { col: 1, row: 0 },
                     frameSize: 32,
                     movement: 'expand_and_fade',
                     scale: 1.3,
