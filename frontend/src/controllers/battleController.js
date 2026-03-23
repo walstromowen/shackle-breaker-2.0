@@ -381,8 +381,18 @@ export class BattleController {
         if (isForced) {
             this.state.activeParty[slotIndex] = replacement;
             this.state.message = `${replacement.name} steps in!`;
+            
+            // NEW: Queue the entrance animation so they slide in and the renderer catches them!
+            this.state.turnQueue.unshift({
+                type: TURN_TYPES.ANIMATION,
+                actor: replacement,
+                animationId: 'enter_battle',
+                soundId: replacement.crySound,
+                duration: 1.0
+            });
         } else {
             const activeChar = this.state.activeParty[slotIndex];
+            
             this.state.turnQueue.push({
                 type: TURN_TYPES.REINFORCEMENT,
                 team: 'party',
@@ -390,6 +400,16 @@ export class BattleController {
                 replacement,
                 message: `${activeChar.name} swaps out for ${replacement.name}!`
             });
+            
+            // NEW: Push the entrance animation immediately after the reinforcement swap turn
+            this.state.turnQueue.push({
+                type: TURN_TYPES.ANIMATION,
+                actor: replacement,
+                animationId: 'enter_battle',
+                soundId: replacement.crySound,
+                duration: 1.0
+            });
+            
             this._advancePartyTurn();
         }
     }
@@ -571,6 +591,17 @@ export class BattleController {
                     this.state.turnQueue.unshift({ type: TURN_TYPES.PROMPT_REINFORCEMENT, slotIndex });
                 } else {
                     const replacement = livingReserves[0];
+                    
+                    // NEW: Unshift the animation FIRST (so it executes AFTER the swap)
+                    this.state.turnQueue.unshift({
+                        type: TURN_TYPES.ANIMATION,
+                        actor: replacement,
+                        animationId: 'enter_battle',
+                        soundId: replacement.crySound,
+                        duration: 1.0
+                    });
+
+                    // Existing: Unshift the reinforcement SECOND (so it executes BEFORE the animation)
                     this.state.turnQueue.unshift({
                         type: TURN_TYPES.REINFORCEMENT,
                         team: 'enemy', slotIndex, replacement,
