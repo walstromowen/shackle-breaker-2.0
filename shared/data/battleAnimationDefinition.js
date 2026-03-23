@@ -260,7 +260,7 @@ export const BattleAnimationDefinitions = {
             type: 'slide_in', 
             start: 0.0, 
             end: 0.5, 
-            distance: -100, // Start 100 pixels to the left/right and slide to 0
+            distance: 100, // Start 100 pixels to the left/right and slide to 0
             fadeIn: { start: 0.0, end: 0.4 },
             flash: { start: 0.4, end: 0.7, filter: 'brightness(200%)' }
         },

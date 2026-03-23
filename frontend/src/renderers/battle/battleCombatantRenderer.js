@@ -29,7 +29,17 @@ export class BattleCombatantRenderer {
 
     isEntityVisible(entity, state) {
         if (!entity) return false;
-        
+
+        // --- THE BULLETPROOF ENTRANCE CHECK ---
+        // Changed from (entity.hasEnteredBattle === false) to (!entity.hasEnteredBattle)
+        if (!entity.hasEnteredBattle) { 
+            const anim = state.activeAnimation;
+            const isEnteringRightNow = anim && anim.id === 'enter_battle' && anim.actor === entity;
+            
+            // If they haven't entered battle, and aren't entering right now, DO NOT DRAW THEM.
+            if (!isEnteringRightNow) return false; 
+        }
+
         // 1. If they are alive, always render them
         if (entity.hp > 0) return true;
 
@@ -44,7 +54,7 @@ export class BattleCombatantRenderer {
         }
 
         // 3. Is their 'faint' animation waiting its turn in the queue?
-        const isFaintQueued = state.turnQueue.some(
+        const isFaintQueued = state.turnQueue && state.turnQueue.some(
             turn => turn.type === 'ANIMATION' && turn.actor === entity
         );
         if (isFaintQueued) return true;
@@ -52,7 +62,7 @@ export class BattleCombatantRenderer {
         // If they are dead, not participating in an animation, and have no faint queued... 
         return false;
     }
-
+    
     getEntityPosition(entity, state) {
         let isPlayer = true;
         let index = state.activeParty ? state.activeParty.indexOf(entity) : -1;

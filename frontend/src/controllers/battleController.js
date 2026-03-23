@@ -60,7 +60,7 @@ export class BattleController {
                 this.state.turnQueue.push({
                     type: TURN_TYPES.ANIMATION,
                     actor: enemy,
-                    animationId: 'idle', 
+                    animationId: 'enter_battle', 
                     soundId: enemy.crySound, 
                     duration: 1.0 
                 });
@@ -75,7 +75,7 @@ export class BattleController {
                 this.state.turnQueue.push({
                     type: TURN_TYPES.ANIMATION,
                     actor: ally,
-                    animationId: 'idle', // You might want to change this to 'ready' or 'intro' for allies
+                    animationId: 'enter_battle', // You might want to change this to 'ready' or 'intro' for allies
                     soundId: ally.crySound, 
                     duration: 1.0 
                 });
@@ -490,8 +490,26 @@ export class BattleController {
             this.timer += dt;
             const waitTime = this.state.activeAnimation?.duration ?? 1.5;
 
-            // Hand execution over to the TurnManager
             if (this.timer >= waitTime) {
+                
+                // 1. Check if we just finished an active animation
+                if (this.state.activeAnimation) {
+                    const finishedAnim = this.state.activeAnimation;
+
+                    // 2. THE HANDSHAKE: If this was an entrance animation, make them permanently visible
+                    if (finishedAnim.id === 'enter_battle' && finishedAnim.actor) {
+                        finishedAnim.actor.hasEnteredBattle = true;
+                    }
+
+                    // 3. Clean up the animation
+                    this.state.activeAnimation = null;
+                }
+
+                // 4. Reset the controller's timer
+                this.timer = 0; 
+                this.state.timer = 0;
+
+                // 5. Hand execution over to the TurnManager
                 this.turnManager.processNextTurnInQueue();
             }
         }

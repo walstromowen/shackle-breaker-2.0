@@ -14,7 +14,7 @@ export class CombatantModel {
         this.team = teamAllegiance;
         this._deathHandled = false;
         this._skipAction = false;
-        
+        this.hasEnteredBattle = false;
         // 3. Cache Abilities specifically for this fight
         this.abilities = this._extractAndResolveAbilities();
         
