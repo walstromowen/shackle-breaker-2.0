@@ -282,7 +282,7 @@ export const BattleAnimationDefinitions = {
             }
         ]
     },
-    "flee": {
+    "retreat": {
         duration: 1.0,
         audio: [
             { start: 0.0, key: 'runAwaySFX', volume: 1.0 }

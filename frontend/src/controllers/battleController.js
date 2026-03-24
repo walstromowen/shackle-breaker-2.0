@@ -376,43 +376,74 @@ export class BattleController {
     }
 
     _executeSwap(selectedRosterIndex, isForced, slotIndex) {
-        const replacement = this.state.partyRoster[selectedRosterIndex];
-        
-        if (isForced) {
-            this.state.activeParty[slotIndex] = replacement;
-            this.state.message = `${replacement.name} steps in!`;
-            
-            // NEW: Queue the entrance animation so they slide in and the renderer catches them!
-            this.state.turnQueue.unshift({
-                type: TURN_TYPES.ANIMATION,
-                actor: replacement,
-                animationId: 'enter_battle',
-                soundId: replacement.crySound,
-                duration: 1.0
-            });
-        } else {
-            const activeChar = this.state.activeParty[slotIndex];
-            
-            this.state.turnQueue.push({
-                type: TURN_TYPES.REINFORCEMENT,
-                team: 'party',
-                slotIndex,
-                replacement,
-                message: `${activeChar.name} swaps out for ${replacement.name}!`
-            });
-            
-            // NEW: Push the entrance animation immediately after the reinforcement swap turn
-            this.state.turnQueue.push({
-                type: TURN_TYPES.ANIMATION,
-                actor: replacement,
-                animationId: 'enter_battle',
-                soundId: replacement.crySound,
-                duration: 1.0
-            });
-            
-            this._advancePartyTurn();
-        }
-    }
+        const replacement = this.state.partyRoster[selectedRosterIndex];
+        
+        if (isForced) {
+            // Update the actual slot immediately
+            this.state.activeParty[slotIndex] = replacement;
+            
+            // 2. Queue Animation (Unshift first so it runs AFTER the message)
+            this.state.turnQueue.unshift({
+                type: TURN_TYPES.ANIMATION,
+                actor: replacement,
+                animationId: 'enter_battle',
+                soundId: replacement.crySound,
+                duration: 1.0
+            });
+
+            // 1. Queue Message (Unshift second so it runs BEFORE the animation)
+            this.state.turnQueue.unshift({
+                type: TURN_TYPES.MESSAGE_STATUS,
+                message: `${replacement.name} steps into the fray!`
+            });
+            
+        } else {
+            const activeChar = this.state.activeParty[slotIndex];
+            const swapBaseSpeed = activeChar.stats?.speed ?? 10; 
+
+            // 1. Announce Retreat (+0.3)
+            this.state.turnQueue.push({
+                type: TURN_TYPES.MESSAGE_STATUS,
+                message: `${activeChar.name} falls back...`, 
+                speedOverride: swapBaseSpeed + 0.3,
+                swapInitiator: activeChar 
+            });
+
+            // 2. Retreat Animation (+0.2)
+            this.state.turnQueue.push({
+                type: TURN_TYPES.ANIMATION,
+                actor: activeChar,
+                animationId: 'retreat', 
+                duration: 1.0,
+                speedOverride: swapBaseSpeed + 0.2,
+                swapInitiator: activeChar 
+            });
+
+            // 3. Swap Data AND Fill the Gap! (+0.1)
+            this.state.turnQueue.push({
+                type: TURN_TYPES.REINFORCEMENT,
+                team: 'party',
+                slotIndex,
+                replacement,
+                message: `${replacement.name} steps into the fray!`, // <-- Added right here!
+                speedOverride: swapBaseSpeed + 0.1,
+                swapInitiator: activeChar 
+            });
+            
+            // 4. Enter Animation (+0.0)
+            this.state.turnQueue.push({
+                type: TURN_TYPES.ANIMATION,
+                actor: replacement,
+                animationId: 'enter_battle',
+                soundId: replacement.crySound,
+                duration: 1.0,
+                speedOverride: swapBaseSpeed,
+                swapInitiator: activeChar 
+            });
+            
+            this._advancePartyTurn();
+        }
+    }
 
     // --- TURN QUEUING LOGIC ---
     commitAction(primaryTarget) {
@@ -487,11 +518,11 @@ export class BattleController {
     }
 
     _sortTurnQueue() {
-        this.state.turnQueue.sort((a, b) => {
-            const speedA = (a.actor?.stats?.speed ?? 10) * (a.action?.speedModifier ?? 1);
-            const speedB = (b.actor?.stats?.speed ?? 10) * (b.action?.speedModifier ?? 1);
-            return speedB - speedA; 
-        });
+        this.state.turnQueue.sort((a, b) => {
+            const speedA = a.speedOverride ?? ((a.actor?.stats?.speed ?? 10) * (a.action?.speedModifier ?? 1));
+            const speedB = b.speedOverride ?? ((b.actor?.stats?.speed ?? 10) * (b.action?.speedModifier ?? 1));
+            return speedB - speedA; 
+        });
     }
 
     // --- MAIN TICK ---
@@ -507,32 +538,33 @@ export class BattleController {
         } 
         
         if ([PHASE.RESOLVE, PHASE.VICTORY, PHASE.DEFEAT].includes(this.state.phase)) {
-            this.timer += dt;
-            const waitTime = this.state.activeAnimation?.duration ?? 1.5;
+            this.timer += dt;
+            const waitTime = this.state.activeAnimation?.duration ?? 1.5;
 
-            if (this.timer >= waitTime) {
-                
-                // 1. Check if we just finished an active animation
-                if (this.state.activeAnimation) {
-                    const finishedAnim = this.state.activeAnimation;
+            if (this.timer >= waitTime) {
+                
+                if (this.state.activeAnimation) {
+                    const finishedAnim = this.state.activeAnimation;
 
-                    // 2. THE HANDSHAKE: If this was an entrance animation, make them permanently visible
-                    if (finishedAnim.id === 'enter_battle' && finishedAnim.actor) {
-                        finishedAnim.actor.hasEnteredBattle = true;
-                    }
+                    // Entrance handshake
+                    if (finishedAnim.id === 'enter_battle' && finishedAnim.actor) {
+                        finishedAnim.actor.hasEnteredBattle = true;
+                    }
+                    
+                    // NEW: Retreat handshake - reset the flag so they can enter again later!
+                    if (finishedAnim.id === 'retreat' && finishedAnim.actor) {
+                        finishedAnim.actor.hasEnteredBattle = false;
+                    }
 
-                    // 3. Clean up the animation
-                    this.state.activeAnimation = null;
-                }
+                    this.state.activeAnimation = null;
+                }
 
-                // 4. Reset the controller's timer
-                this.timer = 0; 
-                this.state.timer = 0;
+                this.timer = 0; 
+                this.state.timer = 0;
+                this.turnManager.processNextTurnInQueue();
+            }
+        }
 
-                // 5. Hand execution over to the TurnManager
-                this.turnManager.processNextTurnInQueue();
-            }
-        }
     }
 
     _startActionPhase() {
@@ -563,12 +595,13 @@ export class BattleController {
     // --- BATTLE STATE MANAGEMENT ---
    // --- BATTLE STATE MANAGEMENT ---
     handleDeath(combatant) {
-        if (combatant._deathHandled) return;
-        combatant._deathHandled = true;
+        if (combatant._deathHandled) return;
+        combatant._deathHandled = true;
 
-        // 1. Remove their pending actions
-        this.state.turnQueue = this.state.turnQueue.filter(turn => turn.actor !== combatant);
-        
+        // 1. Remove pending actions AND abort pending swaps!
+        this.state.turnQueue = this.state.turnQueue.filter(turn => 
+            turn.actor !== combatant && turn.swapInitiator !== combatant
+        );
         // =========================================================
         // QUEUE IN REVERSE ORDER OF EXECUTION (Last unshift = First to run)
         // =========================================================

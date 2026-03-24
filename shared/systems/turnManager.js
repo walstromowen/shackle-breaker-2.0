@@ -97,14 +97,17 @@ export class TurnManager {
     }
 
     // --- NEW: Standalone Animation Handler ---
-    // --- NEW: Standalone Animation Handler ---
     _handleStandaloneAnimation(turn) {
-        const animId = turn.animationId;
-        const targetActor = turn.actor;
-        
-        // Skip target validation to ensure dead actors can still play death animations
-        this.state.activeAnimation = BattleAnimationFactory.create(animId, targetActor, [targetActor]);
-        
+        // --- NEW: Set the message if the turn includes one ---
+        if (turn.message) {
+            this.state.message = turn.message;
+        }
+
+        const animId = turn.animationId;
+        const targetActor = turn.actor;
+        
+        // Skip target validation to ensure dead actors can still play death animations
+        this.state.activeAnimation = BattleAnimationFactory.create(animId, targetActor, [targetActor]);
         // Override duration if the queue explicitly sets one
         if (turn.duration && this.state.activeAnimation) {
             this.state.activeAnimation.duration = turn.duration;
