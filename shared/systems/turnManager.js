@@ -86,7 +86,9 @@ export class TurnManager {
                         }
                     }
                 }
-                return;
+                
+                // --- FIX: Instantly advance the queue so we don't hit the 1.5s fallback timer! ---
+                return this.processNextTurnInQueue();
             case TURN_TYPES.PLAY_ANIMATION:
                 return this._handleAnimationTurn(turn);
             case TURN_TYPES.APPLY_ABILITY_EFFECTS:

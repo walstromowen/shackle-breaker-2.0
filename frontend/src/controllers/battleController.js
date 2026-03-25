@@ -363,10 +363,9 @@ export class BattleController {
         const replacement = this.state.partyRoster[selectedRosterIndex];
         
         if (isForced) {
-            // 1. REMOVED direct state mutation: this.state.activeParty[slotIndex] = replacement;
+            // --- FORCED SWAP (Reverse Order Unshifting) ---
             
-            // Queue backwards for unshift (Executes: Message -> Swap -> Animation)
-            
+            // 3. Animation
             this.state.turnQueue.unshift({
                 type: TURN_TYPES.ANIMATION,
                 actor: replacement,
@@ -375,27 +374,33 @@ export class BattleController {
                 duration: 1.0
             });
 
+            // 2. Message
+            this.state.turnQueue.unshift({
+                type: TURN_TYPES.MESSAGE_STATUS,
+                message: `${replacement.name} steps into the fray!`
+            });
+
+            // 1. Data Swap
             this.state.turnQueue.unshift({
                 type: TURN_TYPES.REINFORCEMENT,
                 team: 'party',
                 slotIndex,
                 replacement
-                // NO message here! Flows instantly to the animation.
-            });
-
-            this.state.turnQueue.unshift({
-                type: TURN_TYPES.MESSAGE_STATUS,
-                message: `${replacement.name} steps into the fray!`
             });
             
         } else {
+            // --- STANDARD SWAP (Standard Order Pushing) ---
             const activeChar = this.state.activeParty[slotIndex];
-            const swapBaseSpeed = activeChar.stats?.speed ?? 10; 
+            
+            // 1. Use base speed + microscopic slot offset to prevent multi-swap ties
+            const swapSpeed = (activeChar.stats?.speed ?? 10) + (slotIndex * 0.001); 
 
+            // 2. Add swapSequenceOrder to rigidly tie these specific steps together
             this.state.turnQueue.push({
                 type: TURN_TYPES.MESSAGE_STATUS,
                 message: `${activeChar.name} falls back...`, 
-                speedOverride: swapBaseSpeed + 0.3,
+                speedOverride: swapSpeed,
+                swapSequenceOrder: 1, 
                 swapInitiator: activeChar 
             });
 
@@ -404,38 +409,38 @@ export class BattleController {
                 actor: activeChar,
                 animationId: 'retreat', 
                 duration: 1.0,
-                speedOverride: swapBaseSpeed + 0.2,
+                speedOverride: swapSpeed,
+                swapSequenceOrder: 2,
                 swapInitiator: activeChar 
             });
 
-            // NEW: Separate the entry message so it plays before the data updates
-            this.state.turnQueue.push({
-                type: TURN_TYPES.MESSAGE_STATUS,
-                message: `${replacement.name} steps into the fray!`,
-                speedOverride: swapBaseSpeed + 0.15,
-                swapInitiator: activeChar
-            });
-
-            // 3. Swap Data AND Fill the Gap (Instant)
             this.state.turnQueue.push({
                 type: TURN_TYPES.REINFORCEMENT,
                 team: 'party',
                 slotIndex,
                 replacement,
-                // NO message here! Flows instantly to the animation.
-                speedOverride: swapBaseSpeed + 0.1,
+                speedOverride: swapSpeed,
+                swapSequenceOrder: 3,
                 swapInitiator: activeChar 
             });
             
-            // 4. Enter Animation
+            this.state.turnQueue.push({
+                type: TURN_TYPES.MESSAGE_STATUS,
+                message: `${replacement.name} steps into the fray!`,
+                speedOverride: swapSpeed,
+                swapSequenceOrder: 4,
+                swapInitiator: activeChar
+            });
+
             this.state.turnQueue.push({
                 type: TURN_TYPES.ANIMATION,
                 actor: replacement,
                 animationId: 'enter_battle',
                 soundId: replacement.crySound,
                 duration: 1.0,
-                speedOverride: swapBaseSpeed,
-                swapInitiator: activeChar 
+                speedOverride: swapSpeed,
+                swapSequenceOrder: 5,
+                swapInitiator: activeChar
             });
             
             this._advancePartyTurn();
@@ -515,11 +520,21 @@ export class BattleController {
     }
 
     _sortTurnQueue() {
-        this.state.turnQueue.sort((a, b) => {
-            const speedA = a.speedOverride ?? ((a.actor?.stats?.speed ?? 10) * (a.action?.speedModifier ?? 1));
-            const speedB = b.speedOverride ?? ((b.actor?.stats?.speed ?? 10) * (b.action?.speedModifier ?? 1));
-            return speedB - speedA; 
-        });
+        this.state.turnQueue.sort((a, b) => {
+            const speedA = a.speedOverride ?? ((a.actor?.stats?.speed ?? 10) * (a.action?.speedModifier ?? 1));
+            const speedB = b.speedOverride ?? ((b.actor?.stats?.speed ?? 10) * (b.action?.speedModifier ?? 1));
+            
+            // 1. Sort by overall speed first
+            if (speedA !== speedB) {
+                return speedB - speedA; 
+            }
+
+            // 2. TIEBREAKER: Keep our atomic swap sequence tightly grouped 1 through 5
+            const orderA = a.swapSequenceOrder ?? 99;
+            const orderB = b.swapSequenceOrder ?? 99;
+            
+            return orderA - orderB;
+        });
     }
 
     // --- MAIN TICK ---
@@ -591,81 +606,77 @@ export class BattleController {
         this.state.message = "What will you do? [P] for Party"; 
     }
 
-    // --- BATTLE STATE MANAGEMENT ---
-   // --- BATTLE STATE MANAGEMENT ---
-    handleDeath(combatant) {
+   handleDeath(combatant) {
         if (combatant._deathHandled) return;
         combatant._deathHandled = true;
 
-        // 1. Remove pending actions AND abort pending swaps!
+        // Remove pending actions and abort pending swaps
         this.state.turnQueue = this.state.turnQueue.filter(turn => 
             turn.actor !== combatant && turn.swapInitiator !== combatant
         );
-        // =========================================================
-        // QUEUE IN REVERSE ORDER OF EXECUTION (Last unshift = First to run)
-        // =========================================================
 
-        const isParty = combatant.team === 'party';
-        const activeArray = isParty ? this.state.activeParty : this.state.activeEnemies;
-        const rosterArray = isParty ? this.state.partyRoster : this.state.enemyRoster;
-        const slotIndex = activeArray.indexOf(combatant);
-        
-        // A. Queue Reinforcements (Executes LAST)
-        if (slotIndex !== -1) {
-            const livingReserves = rosterArray.filter(member => 
-                !member.isDead() && 
-                !activeArray.includes(member) &&
-                !this.state.turnQueue.some(turn => turn.replacement === member) 
-            );
-            
-            if (livingReserves.length > 0) {
-                if (isParty) {
-                    this.state.turnQueue.unshift({ type: TURN_TYPES.PROMPT_REINFORCEMENT, slotIndex });
-                } else {
-                    const replacement = livingReserves[0];
-                    
-                    this.state.turnQueue.unshift({
-                        type: TURN_TYPES.ANIMATION,
-                        actor: replacement,
-                        animationId: 'enter_battle',
-                        soundId: replacement.crySound,
-                        duration: 1.0
-                    });
+        const isParty = combatant.team === 'party';
+        const activeArray = isParty ? this.state.activeParty : this.state.activeEnemies;
+        const rosterArray = isParty ? this.state.partyRoster : this.state.enemyRoster;
+        const slotIndex = activeArray.indexOf(combatant);
+        
+        // --- 4. Queue Reinforcements (Executes LAST) ---
+        if (slotIndex !== -1) {
+            const livingReserves = rosterArray.filter(member => 
+                !member.isDead() && 
+                !activeArray.includes(member) &&
+                !this.state.turnQueue.some(turn => turn.replacement === member) 
+            );
+            
+            if (livingReserves.length > 0) {
+                if (isParty) {
+                    this.state.turnQueue.unshift({ type: TURN_TYPES.PROMPT_REINFORCEMENT, slotIndex });
+                } else {
+                    const replacement = livingReserves[0];
+                    
+                    // Step 4b: Enter Battle Animation
+                    this.state.turnQueue.unshift({
+                        type: TURN_TYPES.ANIMATION,
+                        actor: replacement,
+                        animationId: 'enter_battle',
+                        soundId: replacement.crySound,
+                        duration: 1.0
+                    });
 
-                    this.state.turnQueue.unshift({
-                        type: TURN_TYPES.REINFORCEMENT,
-                        team: 'enemy', slotIndex, replacement
-                        // Remove message from here
-                    });
+                    // Step 4a: Joins Battle Message
+                    this.state.turnQueue.unshift({
+                        type: TURN_TYPES.MESSAGE_STATUS,
+                        message: `${replacement.name} joins the battle!` 
+                    });
 
-                    // Add message as a distinct prior step
-                    this.state.turnQueue.unshift({
-                        type: TURN_TYPES.MESSAGE_STATUS,
-                        message: `${replacement.name} joins the battle!`
-                    });
-                }
-            }
-        }
+                    // Data Swap happens silently right before the entrance
+                    this.state.turnQueue.unshift({
+                        type: TURN_TYPES.REINFORCEMENT,
+                        team: 'enemy', slotIndex, replacement
+                    });
+                }
+            }
+        }
 
-        // B. Queue the Faint Animation (Executes THIRD)
-        this.state.turnQueue.unshift({
-            type: TURN_TYPES.ANIMATION,     
-            actor: combatant,
-            animationId: 'faint',
-            soundId: combatant.deathSound, // <-- NEW: Pass the sound into the queue
-            duration: 1.0                   
-        });
+        // --- 3. Queue the Faint Animation ---
+        this.state.turnQueue.unshift({
+            type: TURN_TYPES.ANIMATION,     
+            actor: combatant,
+            animationId: 'faint',
+            soundId: combatant.deathSound, 
+            duration: 1.0 
+        });
 
-        // C. Queue Death Traits (Executes SECOND)
-        // Note: _queueDeathTraits unshifts the trait execution, then the trait message.
-        this._queueDeathTraits(combatant);
+        // --- 2. Queue Death Traits (Executes right after the slain message) ---
+        this._queueDeathTraits(combatant);
 
-        // D. Queue the Death Message (Executes FIRST)
-        this.state.turnQueue.unshift({ 
-            type: TURN_TYPES.MESSAGE_STATUS, 
-            message: `${combatant.name} has been slain!` 
-        });
-    }
+        // --- 1. Queue the Death Message (Executes FIRST) ---
+        // Unshifting this absolute last guarantees it sits at index 0 of the queue
+        this.state.turnQueue.unshift({ 
+            type: TURN_TYPES.MESSAGE_STATUS, 
+            message: `${combatant.name} has been slain!` 
+        });
+    }
 
     checkBattleStatus() {
         const enemiesAlive = this.state.enemyRoster.some(e => !e.isDead());

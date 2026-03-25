@@ -117,7 +117,7 @@ export const ENTITY_DEFINITIONS = {
             ...HUMANOID_TEMPLATE.attributes,
             vigor: 14, strength: 14, intelligence: 6
         },
-
+         traits: ["acidic", "iron_willed"],
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
             maxHp: 40, maxStamina: 20,

@@ -70,25 +70,32 @@ export class BattleHUDRenderer {
     }
 
     // FIX: Add 'state' to the parameters
-    drawPartyCards(party, state) { 
-        const startX = 10;
+   drawPartyCards(party, state) { 
+        const targetX = 10;
+        const hiddenX = -this.HUD.CARD_W - 20; // Off-screen to the left
         const startY = 10;
         const spacingY = 8; 
         
         party.forEach((member, index) => {
             if (!member) return; 
 
-            // FIX: Add the visibility check so the HUD waits for the entrance animation
-            if (!this.combatantRenderer.isEntityVisible(member, state)) return;
+            // Calculate slide state instead of instantly hiding
+            const isVisible = this.combatantRenderer.isEntityVisible(member, state);
+            const slideProgress = this.getDisplaySlide(member, isVisible);
 
+            if (slideProgress <= 0) return; // Completely off-screen, safe to skip drawing
+
+            // Lerp the X position based on progress
+            const currentX = hiddenX + ((targetX - hiddenX) * slideProgress);
             const y = startY + (index * (this.HUD.CARD_H + this.HUD.GAP));
             
-            this.ui.drawPanel(startX, y, this.HUD.CARD_W, this.HUD.CARD_H);
-            this.ui.drawText(member.name, startX + this.HUD.PADDING_X, y + 10, UITheme.fonts.small, UITheme.colors.textMain);
+            this.ui.drawPanel(currentX, y, this.HUD.CARD_W, this.HUD.CARD_H);
+            this.ui.drawText(member.name, currentX + this.HUD.PADDING_X, y + 10, UITheme.fonts.small, UITheme.colors.textMain);
+
             const effectCount = member.statusEffects ? member.statusEffects.length : 0;
             const iconSpaceNeeded = effectCount * 20; 
-            const statusStartX = startX + this.HUD.CARD_W - this.HUD.PADDING_X - iconSpaceNeeded;
-            const safeStatusX = Math.max(startX + 80, statusStartX); 
+            const statusStartX = currentX + this.HUD.CARD_W - this.HUD.PADDING_X - iconSpaceNeeded;
+            const safeStatusX = Math.max(currentX + 80, statusStartX); 
             
             this.drawStatusEffects(member, safeStatusX, y + 4);
 
@@ -104,7 +111,7 @@ export class BattleHUDRenderer {
             const targetIns = member.insight || 0;
             const displayIns = this.getDisplayStat(member, 'insight', targetIns);
 
-            const barX = startX + this.HUD.PADDING_X;
+            const barX = currentX + this.HUD.PADDING_X;
             let currentY = y + 16; 
 
             this.ui.drawBar(barX, currentY, this.HUD.BAR_WIDTH, this.HUD.BAR_HEIGHT, displayHp, maxHp, UITheme.colors.hp, UITheme.colors.hpDim);
@@ -125,23 +132,30 @@ export class BattleHUDRenderer {
         const stackHeight = (enemies.length * ENEMY_CARD_H) + ((enemies.length - 1) * this.HUD.GAP);
         const bottomMargin = 90; 
         
-        const startX = this.config.CANVAS_WIDTH - this.HUD.CARD_W - 10;
+        const targetX = this.config.CANVAS_WIDTH - this.HUD.CARD_W - 10;
+        const hiddenX = this.config.CANVAS_WIDTH + 20; // Off-screen to the right
         const startY = this.config.CANVAS_HEIGHT - bottomMargin - stackHeight;
 
         enemies.forEach((enemy, index) => {
-            if (!this.combatantRenderer.isEntityVisible(enemy, state)) return; 
+            // Calculate slide state
+            const isVisible = this.combatantRenderer.isEntityVisible(enemy, state);
+            const slideProgress = this.getDisplaySlide(enemy, isVisible);
 
+            if (slideProgress <= 0) return; // Completely off-screen
+
+            // Lerp the X position based on progress
+            const currentX = hiddenX + ((targetX - hiddenX) * slideProgress);
             const y = startY + (index * (ENEMY_CARD_H + this.HUD.GAP));
 
-            this.ui.drawPanel(startX, y, this.HUD.CARD_W, ENEMY_CARD_H);
-            this.ui.drawText(enemy.name, startX + this.HUD.CARD_W - this.HUD.PADDING_X, y + 12, UITheme.fonts.small, UITheme.colors.textMain, "right");
-            this.drawStatusEffects(enemy, startX + this.HUD.PADDING_X, y + 4);
+            this.ui.drawPanel(currentX, y, this.HUD.CARD_W, ENEMY_CARD_H);
+            this.ui.drawText(enemy.name, currentX + this.HUD.CARD_W - this.HUD.PADDING_X, y + 12, UITheme.fonts.small, UITheme.colors.textMain, "right");
+            this.drawStatusEffects(enemy, currentX + this.HUD.PADDING_X, y + 4);
 
             const maxHp = enemy.maxHp || 10;
             const targetHp = enemy.hp || 0;
             const displayHp = this.getDisplayStat(enemy, 'hp', targetHp);
 
-            const barX = (startX + this.HUD.CARD_W - this.HUD.PADDING_X) - this.HUD.BAR_WIDTH;
+            const barX = (currentX + this.HUD.CARD_W - this.HUD.PADDING_X) - this.HUD.BAR_WIDTH;
             const barY = y + 16; 
 
             this.ui.drawBar(barX, barY, this.HUD.BAR_WIDTH, this.HUD.BAR_HEIGHT, displayHp, maxHp, UITheme.colors.hp, UITheme.colors.hpDim);
@@ -415,5 +429,30 @@ export class BattleHUDRenderer {
             }
         }
         return stats[statKey];
+    }
+    getDisplaySlide(entity, isVisible) {
+        let stats = this.displayStats.get(entity);
+        if (!stats) {
+            stats = {};
+            this.displayStats.set(entity, stats);
+        }
+
+        // Target is 1.0 (fully on screen) if visible, 0.0 (off screen) if not
+        const target = isVisible ? 1.0 : 0.0;
+        
+        if (stats.slide === undefined) {
+            stats.slide = 0.0; // Start at 0 so everyone dramatically slides in on turn 1
+        }
+
+        const SLIDE_SPEED = 10.0; // Adjust this to make it snappier or slower
+        const diff = target - stats.slide;
+        
+        if (Math.abs(diff) > 0.01) {
+            stats.slide += diff * SLIDE_SPEED * this.dt;
+        } else {
+            stats.slide = target;
+        }
+        
+        return stats.slide;
     }
 }
