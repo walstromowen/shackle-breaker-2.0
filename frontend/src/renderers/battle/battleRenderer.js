@@ -68,7 +68,7 @@ export class BattleRenderer {
         // --- Audio & VFX Sync Logic ---
         const anim = state.activeAnimation;
         if (anim) {
-            // NEW: Normalize progress to a 0.0 - 1.0 ratio, safeguarding against missing duration
+            // Normalize progress to a 0.0 - 1.0 ratio, safeguarding against missing duration
             const progress = (state.timer !== undefined && anim.duration) 
                 ? Math.min(state.timer / anim.duration, 1.0) 
                 : 0;
@@ -85,8 +85,13 @@ export class BattleRenderer {
             if (typeof anim.getVFXTriggers === 'function') {
                 const vfxCues = anim.getVFXTriggers(progress);
                 if (vfxCues.length > 0) {
-                    const sourcePos = this.combatantRenderer.getEntityPosition(anim.actor, state);
-                    const targetPos = anim.targets && anim.targets.length > 0 ? this.combatantRenderer.getEntityPosition(anim.targets[0], state) : sourcePos;
+                    // FIX: Fallback center position for global effects that lack an actor
+                    const centerPos = { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 };
+
+                    const sourcePos = this.combatantRenderer.getEntityPosition(anim.actor, state) || centerPos;
+                    const targetPos = (anim.targets && anim.targets.length > 0) 
+                        ? (this.combatantRenderer.getEntityPosition(anim.targets[0], state) || sourcePos) 
+                        : sourcePos;
 
                     vfxCues.forEach(cue => {
                         let startX = cue.origin === 'target' ? targetPos.x : sourcePos.x;
@@ -128,7 +133,6 @@ export class BattleRenderer {
         }
 
         if (anim && typeof anim.getActiveBackground === 'function') {
-            // NEW: Use the exact same normalized progress calculation here
             const progress = (state.timer !== undefined && anim.duration) 
                 ? Math.min(state.timer / anim.duration, 1.0) 
                 : 0;

@@ -25,65 +25,82 @@ export class BattleController {
     }
 
     start(enemies, context = {}) {
-        const maxActive = context.maxActive || 3; 
-        
-        const party = gameState.party.members.map(member => new CombatantModel(member, 'party'));
-        const preparedEnemies = enemies.map(enemy => new CombatantModel(enemy, 'enemy'));
+        const maxActive = context.maxActive || 3; 
+        
+        const party = gameState.party.members.map(member => new CombatantModel(member, 'party'));
+        const preparedEnemies = enemies.map(enemy => new CombatantModel(enemy, 'enemy'));
 
-        this.state = {
-            // ... (keep all your existing state setup exactly the same)
-            active: true,
-            isPausedForUI: false,
-            phase: PHASE.INTRO, 
-            backgroundId: context.backgroundId, 
-            weather: context.weather || null,  
-            partyRoster: party,              
-            enemyRoster: preparedEnemies,    
-            activeParty: party.slice(0, maxActive),            
-            activeEnemies: preparedEnemies.slice(0, maxActive), 
-            activePartyIndex: 0,   
-            selectedAction: null, 
-            turnQueue: [],         
-            menuIndex: 0,          
-            targetIndex: 0,
-            selectedTargets: [], 
-            message: `Battle started!`,
-            fled: false 
-        };
-        console.log('[DEBUG] BattleController.start received context:', context);
+        this.state = {
+            active: true,
+            isPausedForUI: false,
+            phase: PHASE.INTRO, 
+            backgroundId: context.backgroundId, 
+            weather: context.weather || null,  
+            partyRoster: party,              
+            enemyRoster: preparedEnemies,    
+            activeParty: party.slice(0, maxActive),            
+            activeEnemies: preparedEnemies.slice(0, maxActive), 
+            activePartyIndex: 0,   
+            selectedAction: null, 
+            turnQueue: [],         
+            menuIndex: 0,          
+            targetIndex: 0,
+            selectedTargets: [], 
+            message: `Battle started!`,
+            fled: false 
+        };
+        console.log('[DEBUG] BattleController.start received context:', context);
 
-        let preBattleActionsQueued = false;
+        let preBattleActionsQueued = false;
 
-        // --- NEW: 1. ENEMY INTRO CRIES ---
-        this.state.activeEnemies.forEach(enemy => {
-            // Removed the strict requirement for crySound so the animation always fires
-            if (enemy && !enemy.isDead()) { 
-                enemy.hasEnteredBattle = false; // <-- FIX: Force UI to hide HUD initially
-                this.state.turnQueue.push({
-                    type: TURN_TYPES.ANIMATION,
-                    actor: enemy,
-                    animationId: 'enter_battle', 
-                    soundId: enemy.crySound || null, // <-- Safely pass null if missing
-                    duration: 1.0 
-                });
-                preBattleActionsQueued = true;
-            }
-        });
+        // --- 1. ENEMY INTRO CRIES ---
+        this.state.activeEnemies.forEach(enemy => {
+            if (enemy && !enemy.isDead()) { 
+                enemy.hasEnteredBattle = false; // Forces UI to hide HUD initially
+                this.state.turnQueue.push({
+                    type: TURN_TYPES.ANIMATION,
+                    actor: enemy,
+                    animationId: 'enter_battle', 
+                    soundId: enemy.crySound || null, 
+                    duration: 1.0 
+                });
+                preBattleActionsQueued = true;
+            }
+        });
 
-        // --- NEW: 1.5 ALLY INTRO CRIES ---
-        this.state.activeParty.forEach(ally => {
-            if (ally && !ally.isDead()) { 
-                ally.hasEnteredBattle = false; // <-- FIX: Force UI to hide HUD initially
-                this.state.turnQueue.push({
-                    type: TURN_TYPES.ANIMATION,
-                    actor: ally,
-                    animationId: 'enter_battle', 
-                    soundId: ally.crySound || null, 
-                    duration: 1.0 
-                });
-                preBattleActionsQueued = true;
-            }
-        });
+        // --- 1.5 ALLY INTRO CRIES ---
+        this.state.activeParty.forEach(ally => {
+            if (ally && !ally.isDead()) { 
+                ally.hasEnteredBattle = false; 
+                this.state.turnQueue.push({
+                    type: TURN_TYPES.ANIMATION,
+                    actor: ally,
+                    animationId: 'enter_battle', 
+                    soundId: ally.crySound || null, 
+                    duration: 1.0 
+                });
+                preBattleActionsQueued = true;
+            }
+        });
+
+        // --- 1.7 WEATHER INTRO (Restored) ---
+        if (this.state.weather && this.state.weather.id !== 'clear') { 
+            console.log('[DEBUG] WEATHER TRIGGERED in BattleController! Pushing to queue.', this.state.weather);
+            
+            this.state.turnQueue.push({ 
+                type: TURN_TYPES.MESSAGE_STATUS, 
+                message: `A fierce ${this.state.weather.name} begins!` 
+            });
+
+            const activeCombatants = [...this.state.activeParty, ...this.state.activeEnemies].filter(c => c && !c.isDead());
+
+            this.state.turnQueue.push({
+                type: TURN_TYPES.WEATHER_INTRO,
+                weather: this.state.weather,
+                targets: activeCombatants
+            });
+            preBattleActionsQueued = true;
+        }
 
         // --- 2. PRE-BATTLE TRAIT SWEEP ---
         const traitsQueued = this._queuePreBattleTraits();
