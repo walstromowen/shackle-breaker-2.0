@@ -54,52 +54,36 @@ export class BattleController {
 
         let preBattleActionsQueued = false;
 
-        // --- NEW: 1. ENEMY INTRO CRIES ---
-        this.state.activeEnemies.forEach(enemy => {
-            if (enemy && !enemy.isDead() && enemy.crySound) { 
-                this.state.turnQueue.push({
-                    type: TURN_TYPES.ANIMATION,
-                    actor: enemy,
-                    animationId: 'enter_battle', 
-                    soundId: enemy.crySound, 
-                    duration: 1.0 
-                });
-                preBattleActionsQueued = true;
-            }
-        });
+        // --- NEW: 1. ENEMY INTRO CRIES ---
+        this.state.activeEnemies.forEach(enemy => {
+            // Removed the strict requirement for crySound so the animation always fires
+            if (enemy && !enemy.isDead()) { 
+                enemy.hasEnteredBattle = false; // <-- FIX: Force UI to hide HUD initially
+                this.state.turnQueue.push({
+                    type: TURN_TYPES.ANIMATION,
+                    actor: enemy,
+                    animationId: 'enter_battle', 
+                    soundId: enemy.crySound || null, // <-- Safely pass null if missing
+                    duration: 1.0 
+                });
+                preBattleActionsQueued = true;
+            }
+        });
 
-        // --- NEW: 1.5 ALLY INTRO CRIES ---
-        this.state.activeParty.forEach(ally => {
-            // Make sure your party members also have a crySound property set on their model!
-            if (ally && !ally.isDead() && ally.crySound) { 
-                this.state.turnQueue.push({
-                    type: TURN_TYPES.ANIMATION,
-                    actor: ally,
-                    animationId: 'enter_battle', // You might want to change this to 'ready' or 'intro' for allies
-                    soundId: ally.crySound, 
-                    duration: 1.0 
-                });
-                preBattleActionsQueued = true;
-            }
-        });
-
-        if (this.state.weather && this.state.weather.id !== 'clear') { 
-            console.log('[DEBUG] WEATHER TRIGGERED in BattleController! Pushing to queue.', this.state.weather);
-            
-            this.state.turnQueue.push({ 
-                type: TURN_TYPES.MESSAGE_STATUS, 
-                message: `A fierce ${this.state.weather.name} begins!` 
-            });
-
-            const activeCombatants = [...this.state.activeParty, ...this.state.activeEnemies].filter(c => c && !c.isDead());
-
-            this.state.turnQueue.push({
-                type: TURN_TYPES.WEATHER_INTRO,
-                weather: this.state.weather,
-                targets: activeCombatants
-            });
-            preBattleActionsQueued = true;
-        }
+        // --- NEW: 1.5 ALLY INTRO CRIES ---
+        this.state.activeParty.forEach(ally => {
+            if (ally && !ally.isDead()) { 
+                ally.hasEnteredBattle = false; // <-- FIX: Force UI to hide HUD initially
+                this.state.turnQueue.push({
+                    type: TURN_TYPES.ANIMATION,
+                    actor: ally,
+                    animationId: 'enter_battle', 
+                    soundId: ally.crySound || null, 
+                    duration: 1.0 
+                });
+                preBattleActionsQueued = true;
+            }
+        });
 
         // --- 2. PRE-BATTLE TRAIT SWEEP ---
         const traitsQueued = this._queuePreBattleTraits();
@@ -376,74 +360,87 @@ export class BattleController {
     }
 
     _executeSwap(selectedRosterIndex, isForced, slotIndex) {
-        const replacement = this.state.partyRoster[selectedRosterIndex];
-        
-        if (isForced) {
-            // Update the actual slot immediately
-            this.state.activeParty[slotIndex] = replacement;
-            
-            // 2. Queue Animation (Unshift first so it runs AFTER the message)
-            this.state.turnQueue.unshift({
-                type: TURN_TYPES.ANIMATION,
-                actor: replacement,
-                animationId: 'enter_battle',
-                soundId: replacement.crySound,
-                duration: 1.0
-            });
+        const replacement = this.state.partyRoster[selectedRosterIndex];
+        
+        if (isForced) {
+            // 1. REMOVED direct state mutation: this.state.activeParty[slotIndex] = replacement;
+            
+            // Queue backwards for unshift (Executes: Message -> Swap -> Animation)
+            
+            this.state.turnQueue.unshift({
+                type: TURN_TYPES.ANIMATION,
+                actor: replacement,
+                animationId: 'enter_battle',
+                soundId: replacement.crySound,
+                duration: 1.0
+            });
 
-            // 1. Queue Message (Unshift second so it runs BEFORE the animation)
-            this.state.turnQueue.unshift({
-                type: TURN_TYPES.MESSAGE_STATUS,
-                message: `${replacement.name} steps into the fray!`
-            });
-            
-        } else {
-            const activeChar = this.state.activeParty[slotIndex];
-            const swapBaseSpeed = activeChar.stats?.speed ?? 10; 
+            this.state.turnQueue.unshift({
+                type: TURN_TYPES.REINFORCEMENT,
+                team: 'party',
+                slotIndex,
+                replacement
+                // NO message here! Flows instantly to the animation.
+            });
 
-            // 1. Announce Retreat (+0.3)
-            this.state.turnQueue.push({
-                type: TURN_TYPES.MESSAGE_STATUS,
-                message: `${activeChar.name} falls back...`, 
-                speedOverride: swapBaseSpeed + 0.3,
-                swapInitiator: activeChar 
-            });
+            this.state.turnQueue.unshift({
+                type: TURN_TYPES.MESSAGE_STATUS,
+                message: `${replacement.name} steps into the fray!`
+            });
+            
+        } else {
+            const activeChar = this.state.activeParty[slotIndex];
+            const swapBaseSpeed = activeChar.stats?.speed ?? 10; 
 
-            // 2. Retreat Animation (+0.2)
-            this.state.turnQueue.push({
-                type: TURN_TYPES.ANIMATION,
-                actor: activeChar,
-                animationId: 'retreat', 
-                duration: 1.0,
-                speedOverride: swapBaseSpeed + 0.2,
-                swapInitiator: activeChar 
-            });
+            this.state.turnQueue.push({
+                type: TURN_TYPES.MESSAGE_STATUS,
+                message: `${activeChar.name} falls back...`, 
+                speedOverride: swapBaseSpeed + 0.3,
+                swapInitiator: activeChar 
+            });
 
-            // 3. Swap Data AND Fill the Gap! (+0.1)
-            this.state.turnQueue.push({
-                type: TURN_TYPES.REINFORCEMENT,
-                team: 'party',
-                slotIndex,
-                replacement,
-                message: `${replacement.name} steps into the fray!`, // <-- Added right here!
-                speedOverride: swapBaseSpeed + 0.1,
-                swapInitiator: activeChar 
-            });
-            
-            // 4. Enter Animation (+0.0)
-            this.state.turnQueue.push({
-                type: TURN_TYPES.ANIMATION,
-                actor: replacement,
-                animationId: 'enter_battle',
-                soundId: replacement.crySound,
-                duration: 1.0,
-                speedOverride: swapBaseSpeed,
-                swapInitiator: activeChar 
-            });
-            
-            this._advancePartyTurn();
-        }
-    }
+            this.state.turnQueue.push({
+                type: TURN_TYPES.ANIMATION,
+                actor: activeChar,
+                animationId: 'retreat', 
+                duration: 1.0,
+                speedOverride: swapBaseSpeed + 0.2,
+                swapInitiator: activeChar 
+            });
+
+            // NEW: Separate the entry message so it plays before the data updates
+            this.state.turnQueue.push({
+                type: TURN_TYPES.MESSAGE_STATUS,
+                message: `${replacement.name} steps into the fray!`,
+                speedOverride: swapBaseSpeed + 0.15,
+                swapInitiator: activeChar
+            });
+
+            // 3. Swap Data AND Fill the Gap (Instant)
+            this.state.turnQueue.push({
+                type: TURN_TYPES.REINFORCEMENT,
+                team: 'party',
+                slotIndex,
+                replacement,
+                // NO message here! Flows instantly to the animation.
+                speedOverride: swapBaseSpeed + 0.1,
+                swapInitiator: activeChar 
+            });
+            
+            // 4. Enter Animation
+            this.state.turnQueue.push({
+                type: TURN_TYPES.ANIMATION,
+                actor: replacement,
+                animationId: 'enter_battle',
+                soundId: replacement.crySound,
+                duration: 1.0,
+                speedOverride: swapBaseSpeed,
+                swapInitiator: activeChar 
+            });
+            
+            this._advancePartyTurn();
+        }
+    }
 
     // --- TURN QUEUING LOGIC ---
     commitAction(primaryTarget) {
@@ -535,7 +532,7 @@ export class BattleController {
             this.timer += dt; 
             if (this.timer > 1.5) this._startActionPhase();
             return;
-        } 
+        }  
         
         if ([PHASE.RESOLVE, PHASE.VICTORY, PHASE.DEFEAT].includes(this.state.phase)) {
             this.timer += dt;
@@ -555,6 +552,8 @@ export class BattleController {
                     if (finishedAnim.id === 'retreat' && finishedAnim.actor) {
                         finishedAnim.actor.hasEnteredBattle = false;
                     }
+
+
 
                     this.state.activeAnimation = null;
                 }
@@ -625,7 +624,6 @@ export class BattleController {
                 } else {
                     const replacement = livingReserves[0];
                     
-                    // NEW: Unshift the animation FIRST (so it executes AFTER the swap)
                     this.state.turnQueue.unshift({
                         type: TURN_TYPES.ANIMATION,
                         actor: replacement,
@@ -634,10 +632,15 @@ export class BattleController {
                         duration: 1.0
                     });
 
-                    // Existing: Unshift the reinforcement SECOND (so it executes BEFORE the animation)
                     this.state.turnQueue.unshift({
                         type: TURN_TYPES.REINFORCEMENT,
-                        team: 'enemy', slotIndex, replacement,
+                        team: 'enemy', slotIndex, replacement
+                        // Remove message from here
+                    });
+
+                    // Add message as a distinct prior step
+                    this.state.turnQueue.unshift({
+                        type: TURN_TYPES.MESSAGE_STATUS,
                         message: `${replacement.name} joins the battle!`
                     });
                 }

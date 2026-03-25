@@ -61,14 +61,16 @@ export class BattleHUDRenderer {
 
     drawHUD(state) {
         if (state.activeParty && state.activeParty.length > 0) {
-            this.drawPartyCards(state.activeParty);
+            // FIX: Pass 'state' as the second argument
+            this.drawPartyCards(state.activeParty, state); 
         }
         if (state.activeEnemies && state.activeEnemies.length > 0) {
             this.drawEnemyCards(state.activeEnemies, state);
         }
     }
 
-    drawPartyCards(party) {
+    // FIX: Add 'state' to the parameters
+    drawPartyCards(party, state) { 
         const startX = 10;
         const startY = 10;
         const spacingY = 8; 
@@ -76,11 +78,13 @@ export class BattleHUDRenderer {
         party.forEach((member, index) => {
             if (!member) return; 
 
+            // FIX: Add the visibility check so the HUD waits for the entrance animation
+            if (!this.combatantRenderer.isEntityVisible(member, state)) return;
+
             const y = startY + (index * (this.HUD.CARD_H + this.HUD.GAP));
             
             this.ui.drawPanel(startX, y, this.HUD.CARD_W, this.HUD.CARD_H);
             this.ui.drawText(member.name, startX + this.HUD.PADDING_X, y + 10, UITheme.fonts.small, UITheme.colors.textMain);
-
             const effectCount = member.statusEffects ? member.statusEffects.length : 0;
             const iconSpaceNeeded = effectCount * 20; 
             const statusStartX = startX + this.HUD.CARD_W - this.HUD.PADDING_X - iconSpaceNeeded;
