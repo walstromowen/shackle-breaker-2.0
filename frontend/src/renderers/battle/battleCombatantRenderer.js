@@ -11,6 +11,8 @@ export class BattleCombatantRenderer {
         // --- VISUAL CONFIG ---
         this.SPRITE_SCALE = 1;   
         this.FRAME_SIZE = 128;
+        this.FRAMES_PER_ROW = 8;      // NEW: Total frames in the idle animation loop
+        this.ANIMATION_SPEED = 150;   // NEW: Milliseconds per frame
 
         // --- LAYOUT CONFIGURATION ---
         this.LAYOUT = {
@@ -31,12 +33,10 @@ export class BattleCombatantRenderer {
         if (!entity) return false;
 
         // --- THE BULLETPROOF ENTRANCE CHECK ---
-        // Changed from (entity.hasEnteredBattle === false) to (!entity.hasEnteredBattle)
         if (!entity.hasEnteredBattle) { 
             const anim = state.activeAnimation;
             const isEnteringRightNow = anim && anim.id === 'enter_battle' && anim.actor === entity;
             
-            // If they haven't entered battle, and aren't entering right now, DO NOT DRAW THEM.
             if (!isEnteringRightNow) return false; 
         }
 
@@ -44,8 +44,6 @@ export class BattleCombatantRenderer {
         if (entity.hp > 0) return true;
 
         // --- TIMELINE OF A DEATH ---
-        // If they are dead, keep them visible ONLY IF they haven't finished fainting yet.
-
         // 2. Are they currently part of an active animation? 
         const anim = state.activeAnimation;
         if (anim) {
@@ -59,7 +57,6 @@ export class BattleCombatantRenderer {
         );
         if (isFaintQueued) return true;
 
-        // If they are dead, not participating in an animation, and have no faint queued... 
         return false;
     }
     
@@ -106,7 +103,6 @@ export class BattleCombatantRenderer {
 
         const anim = state.activeAnimation;
         
-        // NEW: Added a strict check for anim.duration to prevent division-by-zero
         const progress = (anim && state.timer !== undefined && anim.duration) 
             ? Math.min(state.timer / anim.duration, 1.0) 
             : 0;
@@ -131,13 +127,14 @@ export class BattleCombatantRenderer {
                 alpha = transform.alpha !== undefined ? transform.alpha : 1.0; 
             }
 
-            return { entity, x, y, size, filter, alpha }; 
+            // NEW: We are passing 'index' into the return object so we can use it for our animation offset
+            return { entity, x, y, size, filter, alpha, index }; 
         }).filter(item => item !== null);
 
         renderables.sort((a, b) => a.y - b.y);
 
         renderables.forEach(item => {
-            const { entity, x, y, size, filter, alpha } = item;
+            const { entity, x, y, size, filter, alpha, index } = item;
             const assetKey = entity.spritePortrait || entity.spriteOverworld;
             const img = this.loader.get ? this.loader.get(assetKey) : this.loader.getAsset(assetKey);
 
@@ -152,7 +149,19 @@ export class BattleCombatantRenderer {
 
             if (img) {
                 const srcY = isPlayer ? this.FRAME_SIZE : 0;
-                this.ui.drawSprite(img, 0, srcY, this.FRAME_SIZE, this.FRAME_SIZE, x - size/2, y - size/2, size, size);
+                
+                // --- NEW ANIMATION LOGIC WITH OFFSET ---
+                const now = performance.now();
+                
+                // Stagger the animation: 
+                // Enemies start with a 100ms offset from players.
+                // Each slot adds an additional 120ms offset.
+                const offset = (isPlayer ? 0 : 100) + (index * 120); 
+                
+                const currentFrame = Math.floor((now + offset) / this.ANIMATION_SPEED) % this.FRAMES_PER_ROW;
+                const srcX = currentFrame * this.FRAME_SIZE;
+
+                this.ui.drawSprite(img, srcX, srcY, this.FRAME_SIZE, this.FRAME_SIZE, x - size/2, y - size/2, size, size);
             } else {
                 const color = isPlayer ? UITheme.colors.defense : UITheme.colors.hp;
                 this.ui.drawRect(x - size/2, y - size/2, size, size, color, true);
