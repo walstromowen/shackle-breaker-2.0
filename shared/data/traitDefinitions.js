@@ -55,22 +55,31 @@ export const TRAIT_DEFINITIONS = {
         name: "Martyr",
         description: "Heals allies upon death.",
         triggers: {
-            onDeath: { effect: "heal_party_all", value: 20 }
+            onDeath: { 
+                effect: "heal_party_all", 
+                value: 20, 
+                battleMessage: "In death, {actor} bestows a final blessing!" // ✅ NEW
+            }
         }
     },
     'acidic': {
         name: "Acidic",
         description: "Leaves behind a dangerous pool of acid upon death.",
         triggers: {
-            // Passes an ability ID directly to the battle engine!
-            onDeath: { ability: "acid_pool" }
+            onDeath: { 
+                ability: "acid_pool", 
+                battleMessage: "{actor}'s remains dissolve into a highly corrosive pool of acid!" // ✅ NEW
+            }
         }
     },
     'iron_willed': {
         name: "Iron Willed",
         description: "Automatically casts Bolster at the start of battle.",
         triggers: {
-            onBattleStart: { ability: "bolster" } 
+            onBattleStart: { 
+                ability: "bolster", 
+                battleMessage: "{actor}'s Iron Will hardens their resolve!" // ✅ NEW
+            } 
         }
     },
 

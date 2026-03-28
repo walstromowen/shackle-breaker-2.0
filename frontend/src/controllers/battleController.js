@@ -140,26 +140,32 @@ export class BattleController {
                     const startTrigger = trait?.triggers?.onBattleStart;
 
                     if (startTrigger && startTrigger.ability) {
-                        // 2. The trait has an ability payload! Fetch it via AbilityFactory
                         const abilityId = startTrigger.ability;
                         const [ability] = AbilityFactory.createAbilities([abilityId]);
 
                         if (ability) {
                             console.log(`[Debug Sweeper] SUCCESS! Queuing pre-battle trait [${trait.name}] -> casting [${ability.name}] for ${combatant.name}`);
                             
-                            // 3. Announce the trait activation using the TRAIT'S name
+                            // --- NEW MESSAGE PARSER ---
+                            const msgTemplate = startTrigger.battleMessage || "{actor}'s {trait} activates!";
+                            const finalMessage = msgTemplate
+                                .replace(/{actor}/g, combatant.name)
+                                .replace(/{trait}/g, trait.name);
+
+                            // 3. Announce the trait activation
                             this.state.turnQueue.push({ 
                                 type: TURN_TYPES.MESSAGE_STATUS, 
-                                message: `${combatant.name}'s ${trait.name} activates!` 
+                                message: finalMessage 
                             });
+                            // --------------------------
 
                             // 4. Queue the actual ABILITY execution
                             this.state.turnQueue.push({
                                 type: TURN_TYPES.EXECUTE_ACTION, 
                                 ignoreCost: true,               
                                 actor: combatant,
-                                action: ability, // Passing the fully instantiated ability object
-                                target: combatant // TargetingResolver will auto-correct if it's an AoE
+                                action: ability, 
+                                target: combatant 
                             });
 
                             traitsQueued = true;
@@ -189,23 +195,28 @@ export class BattleController {
                 if (ability) {
                     console.log(`[Debug Sweeper] SUCCESS! Queuing death trait [${trait.name}] -> casting [${ability.name}] for ${deadCombatant.name}`);
 
-                    // We unshift in reverse order so they process correctly at the front of the queue
-                    
                     // 2. Queue the actual ABILITY execution
                     this.state.turnQueue.unshift({
                         type: TURN_TYPES.EXECUTE_ACTION, 
                         ignoreCost: true,
-                        allowDeadActor: true,  // <--- NEW: Tell the engine to bypass dead checks
+                        allowDeadActor: true,  
                         actor: deadCombatant, 
                         action: ability, 
                         target: deadCombatant
                     });
 
+                    // --- NEW MESSAGE PARSER ---
+                    const msgTemplate = deathTrigger.battleMessage || "{actor}'s {trait} activates upon death!";
+                    const finalMessage = msgTemplate
+                        .replace(/{actor}/g, deadCombatant.name)
+                        .replace(/{trait}/g, trait.name);
+
                     // 1. Announce the trait activation
                     this.state.turnQueue.unshift({ 
                         type: TURN_TYPES.MESSAGE_STATUS, 
-                        message: `${deadCombatant.name}'s ${trait.name} activates upon death!` 
+                        message: finalMessage 
                     });
+                    // --------------------------
                 } else {
                     console.warn(`[Debug Sweeper] Trait ${trait.name} tried to fire death ability '${abilityId}' but it failed to build.`);
                 }
