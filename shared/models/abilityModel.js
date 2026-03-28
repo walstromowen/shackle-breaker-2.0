@@ -31,6 +31,9 @@ export class AbilityModel {
     get description() { return this.config.description; }
     get icon() { return this.config.icon; }
     get type() { return this.config.type || 'physical'; } 
+    get battleMessage() { 
+        return this.config.battleMessage || "{user} uses {ability}!"; 
+    }
     
     // Core Logic Data
     get targeting() { return this.config.targeting; }

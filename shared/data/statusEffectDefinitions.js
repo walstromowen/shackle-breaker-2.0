@@ -6,9 +6,10 @@ export const StatusEffectDefinitions = {
         icon: { col: 0, row: 0 }, 
         defaultCharges: 3,
         maxStacks: 1, 
-        persistAfterCombat: true, // ✅ NEW: Will stay on the player in the overworld
+        persistAfterCombat: true, 
         effects: [
-            { trigger: 'ON_TURN_END', modify: 'hp', value: -5, damageType: 'dark' } 
+            // Changed to battleMessage
+            { trigger: 'ON_TURN_END', modify: 'hp', value: -5, damageType: 'dark', battleMessage: "{target} suffers sss{amount} poison damage!" } 
         ]
     },
     bleed: {
@@ -17,9 +18,9 @@ export const StatusEffectDefinitions = {
         icon: { col: 1, row: 0 }, 
         defaultCharges: 3,
         maxStacks: 1, 
-        persistAfterCombat: true, // ✅ NEW: Will stay on the player in the overworld
+        persistAfterCombat: true, 
         effects: [
-            { trigger: 'ON_TURN_END', modify: 'stamina', value: -5, damageType: 'slash' } 
+            { trigger: 'ON_TURN_END', modify: 'stamina', value: -5, damageType: 'slash', battleMessage: "{target} loses {amount} stamina from bleeding!" } 
         ]
     },
     frozen: {
@@ -28,9 +29,8 @@ export const StatusEffectDefinitions = {
         icon: { col: 2, row: 0 },
         defaultCharges: 1,
         maxStacks: 1,
-        // No persist flag needed; defaults to false. Will be removed post-battle.
         effects: [
-            { trigger: 'ON_TURN_START', flag: 'skipAction' } 
+            { trigger: 'ON_TURN_START', flag: 'skipAction', battleMessage: "{target} is frozen solid and cannot move!" } 
         ]
     },
     thorns: {
@@ -40,8 +40,7 @@ export const StatusEffectDefinitions = {
         defaultCharges: 5, 
         maxStacks: 1,
         effects: [
-            // Uses 'percent' instead of 'value' to calculate off incoming damage
-            { trigger: 'ON_DAMAGE_RECEIVED', target: 'attacker', modify: 'hp', percent: 0.5, damageType: 'pierce', consumeCharge: true }
+            { trigger: 'ON_DAMAGE_RECEIVED', target: 'attacker', modify: 'hp', percent: 0.5, damageType: 'pierce', consumeCharge: true, battleMessage: "Thorns reflect {amount} damage back at {target}!" }
         ]
     },
     living_bomb: {
@@ -51,10 +50,9 @@ export const StatusEffectDefinitions = {
         defaultCharges: 3,
         maxStacks: 1, 
         effects: [
-            // Does three completely different things at different times!
-            { trigger: 'ON_TURN_START', modify: 'hp', value: -5, damageType: 'fire' },
-            { trigger: 'ON_TURN_START', modify: 'stamina', value: -2 },
-            { trigger: 'ON_DAMAGE_RECEIVED', target: 'attacker', modify: 'hp', value: -50, damageType: 'fire', consumeCharge: true }
+            { trigger: 'ON_TURN_START', modify: 'hp', value: -5, damageType: 'fire', battleMessage: "The bomb burns {target} for {amount} damage!" },
+            { trigger: 'ON_TURN_START', modify: 'stamina', value: -2, battleMessage: "The heat drains {amount} stamina from {target}!" },
+            { trigger: 'ON_DAMAGE_RECEIVED', target: 'attacker', modify: 'hp', value: -50, damageType: 'fire', consumeCharge: true, battleMessage: "BOOM! The bomb explodes in {target}'s face for {amount} damage!" }
         ]
     },
     wet: {

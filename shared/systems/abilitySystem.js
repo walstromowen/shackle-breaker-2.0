@@ -50,7 +50,7 @@ export class AbilitySystem {
             for (const effect of def.effects) {
                 
                 if (effect.type === 'damage') {
-                    const calc = this._handleDamage(effect, source, target, def.accuracy);
+                    const calc = this._handleDamage(effect, source, target, def.accuracy, def)
                     
                     result.success = calc.hit;
                     result.outcome = calc.crit ? 'CRIT' : (calc.hit ? 'HIT' : 'MISS');
@@ -62,8 +62,8 @@ export class AbilitySystem {
                         break; 
                     }
                 }
-                else if (effect.type === 'recover') {
-                    const subResult = this._handleRecover(effect, source, target);
+            else if (effect.type === 'recover') {
+                    const subResult = this._handleRecover(effect, source, target, def); // <-- Passed def
                     if (subResult.success) {
                         result.success = true;
                         result.outcome = 'HEAL';
@@ -93,32 +93,24 @@ export class AbilitySystem {
                     const existingStatus = (target.statusEffects || []).find(s => s.id === statusDef.id);
 
                     if (existingStatus) {
-                        // ✅ Tell the existing status to increment its stacks (and refresh duration)
-                        existingStatus.addStack();
-                        
-                        result.success = true;
-                        result.addedTags.push(statusDef.id);
-                        
-                        // Optional: Format the message to show stacking maxing out
-                        const stackText = existingStatus.stacks === existingStatus.maxStacks ? '(Max Stacks)' : `(x${existingStatus.stacks})`;
-                        result.message += ` ${target.name}'s ${existingStatus.name} grew stronger! ${stackText}`;
-                        
-                    } else {
-                        // Create a brand new effect if they don't have it yet
-                        const activeEffect = StatusEffectFactory.createEffect(
-                            statusDef.id, 
-                            statusDef.duration, 
-                            source
-                        );
+                        existingStatus.addStack();
+                        result.success = true;
+                        result.addedTags.push(statusDef.id);
+                        
+                        const stackText = existingStatus.stacks === existingStatus.maxStacks ? '(Max Stacks)' : `(x${existingStatus.stacks})`;
+                        const template = statusDef.stackMessage || "{target}'s {status} grew stronger! {stackText}";
+                        result.message += " " + this._parseMessage(template, source, target, def, { status: existingStatus.name, stackText: stackText });
+                        
+                    } else {
+                        const activeEffect = StatusEffectFactory.createEffect(statusDef.id, statusDef.duration, source);
 
-                        if (activeEffect) {
-                            target.applyStatusEffect(activeEffect);
-                            result.success = true; 
-                            result.addedTags.push(statusDef.id);
-                            
-                            // Adjust grammar so it doesn't sound weird when casting on yourself
-                            const targetName = target === source ? 'They' : target.name;
-                            result.message += ` ${targetName} gained ${activeEffect.name}!`;
+                        if (activeEffect) {
+                            target.applyStatusEffect(activeEffect);
+                            result.success = true; 
+                            result.addedTags.push(statusDef.id);
+                            
+                            const template = statusDef.applyMessage || "{target} gained {status}!";
+                            result.message += " " + this._parseMessage(template, source, target, def, { status: activeEffect.name });
                         } else {
                             console.error(`[Debug] Factory failed to create the effect! Check StatusEffectFactory.`);
                         }
@@ -132,46 +124,84 @@ export class AbilitySystem {
 
     // --- LOGIC HANDLERS ---
 
-    static _handleDamage(effect, source, target, abilityAccuracy = 1.0) {
-        const calc = CombatCalculator.calculateDamage(
-            source, 
-            target, 
-            effect.power || 10,
-            effect.damageType || 'blunt',
-            abilityAccuracy 
-        );
+    // Notice we added 'def' as the 5th parameter here
+    static _handleDamage(effect, source, target, abilityAccuracy = 1.0, def) {
+        const calc = CombatCalculator.calculateDamage(
+            source, 
+            target, 
+            effect.power || 10,
+            effect.damageType || 'blunt',
+            abilityAccuracy 
+        );
 
-        if (calc.hit) {
-            target.modifyResource('hp', -calc.damage);
+        if (calc.hit) {
+            target.modifyResource('hp', -calc.damage);
 
-            const critText = calc.crit ? " (Critical!)" : "";
-            calc.message = `${target.name} takes ${calc.damage} damage!${critText}`;
+            // Fetch custom message or fallback to default
+            const template = calc.crit 
+                ? (def.critMessage || "{target} takes {damage} damage! (Critical!)")
+                : (def.hitMessage || "{target} takes {damage} damage!");
 
-            if (target.statusEffects && Array.isArray(target.statusEffects)) {
-                for (let i = target.statusEffects.length - 1; i >= 0; i--) {
-                    const status = target.statusEffects[i];
-                    
-                    const reaction = status.onEvent('ON_DAMAGE_RECEIVED', target, { 
-                        attacker: source, 
-                        damage: calc.damage 
-                    });
-                    
-                    if (reaction.messages && reaction.messages.length > 0) {
-                        calc.message += ` ${reaction.messages.join(' ')}`;
-                    }
-                    
-                    if (status.isExpired()) {
-                        target.removeStatusEffect(status.id);
-                    }
-                }
-            }
-            
-        } else {
-            calc.message = `${source.name}'s attack missed!`;
-        }
+            calc.message = this._parseMessage(template, source, target, def, { damage: calc.damage });
 
-        return calc;
-    }
+            if (target.statusEffects && Array.isArray(target.statusEffects)) {
+                for (let i = target.statusEffects.length - 1; i >= 0; i--) {
+                    const status = target.statusEffects[i];
+                    
+                    const reaction = status.onEvent('ON_DAMAGE_RECEIVED', target, { 
+                        attacker: source, 
+                        damage: calc.damage 
+                    });
+                    
+                    if (reaction.messages && reaction.messages.length > 0) {
+                        calc.message += ` ${reaction.messages.join(' ')}`;
+                    }
+                    
+                    if (status.isExpired()) {
+                        target.removeStatusEffect(status.id);
+                    }
+                }
+            }
+            
+        } else {
+            const template = def.missMessage || "{user}'s attack missed!";
+            calc.message = this._parseMessage(template, source, target, def);
+        }
+
+        return calc;
+    }
+
+    // Notice we added 'def' as the 4th parameter here
+    static _handleRecover(effect, source, target, def) {
+        let amount = 0;
+
+        if (effect.calculation === 'flat') {
+            amount = effect.power;
+        } 
+        else if (effect.calculation === 'attribute') {
+            const currentStats = source.stats; 
+            amount = effect.power + Math.floor((currentStats.attributes?.[effect.attribute] || 0) * (effect.scaling || 0));
+        }
+        else if (effect.calculation === 'percent') {
+            const maxProp = 'max' + effect.resource.charAt(0).toUpperCase() + effect.resource.slice(1);
+            const maxValue = target[maxProp] || 1; 
+            amount = Math.floor(maxValue * effect.power);
+        }
+        else if (effect.calculation === 'max') {
+            amount = 9999; 
+        }
+
+        const actualChange = target.modifyResource(effect.resource, amount);
+
+        const template = def.healMessage || "+{amount} {resource}";
+        const parsedMessage = this._parseMessage(template, source, target, def, { amount: actualChange, resource: effect.resource });
+
+        return {
+            success: actualChange !== 0,
+            amount: actualChange,
+            message: actualChange !== 0 ? parsedMessage : "Recover failed"
+        };
+    }
 
     static _handleRecover(effect, source, target) {
         let amount = 0;
@@ -214,4 +244,22 @@ export class AbilitySystem {
             message: `${effect.resource.toUpperCase()} set to ${effect.value}`
         };
     }
+    static _parseMessage(template, source, target, def, extra = {}) {
+        // Adjust grammar if casting on self
+        const targetName = target === source ? 'They' : (target?.name || "the target");
+
+        let msg = template
+            .replace(/{user}/g, source?.name || "Someone")
+            .replace(/{target}/g, targetName)
+            .replace(/{ability}/g, def?.name || "the action");
+
+        // Replace consequence-specific placeholders if provided
+        if (extra.damage !== undefined) msg = msg.replace(/{damage}/g, extra.damage);
+        if (extra.status !== undefined) msg = msg.replace(/{status}/g, extra.status);
+        if (extra.amount !== undefined) msg = msg.replace(/{amount}/g, extra.amount);
+        if (extra.resource !== undefined) msg = msg.replace(/{resource}/g, extra.resource.toUpperCase());
+        if (extra.stackText !== undefined) msg = msg.replace(/{stackText}/g, extra.stackText);
+
+        return msg;
+    }
 }

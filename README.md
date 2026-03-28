@@ -13,7 +13,6 @@ charcter leveling and scaling
 Difficulty
 Starting seed
 procedural dungeons and hand crafted areas
-fix fleeing and entering battle animations
 
 Root
 ├── backend/

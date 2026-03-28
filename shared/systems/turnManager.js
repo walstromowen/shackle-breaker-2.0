@@ -184,34 +184,47 @@ export class TurnManager {
     }
 
     _handleActionExecution(turn) {
-        let { actor, action, target: primaryTarget, ignoreCost, allowDeadActor } = turn;
+        let { actor, action, target: primaryTarget, ignoreCost, allowDeadActor } = turn;
 
-        if (actor.isDead() && !allowDeadActor) return this.processNextTurnInQueue();
+        if (actor.isDead() && !allowDeadActor) return this.processNextTurnInQueue();
 
-        let resolvedTargets = TargetingResolver.resolve(action, actor, primaryTarget, this.state, allowDeadActor);
+        let resolvedTargets = TargetingResolver.resolve(action, actor, primaryTarget, this.state, allowDeadActor);
 
-        if (resolvedTargets.length === 0) {
-            this.state.message = `${actor.name} tried to use ${action.name}, but there were no targets left!`;
-            return this.processNextTurnInQueue();
-        }
+        if (resolvedTargets.length === 0) {
+            this.state.message = `${actor.name} tried to use ${action.name}, but there were no targets left!`;
+            return this.processNextTurnInQueue();
+        }
 
-        if (!ignoreCost && !action.canPayCost(actor)) {
-            action = AbilityFactory.createAbilities(['rest'])[0]; 
-            resolvedTargets = [actor]; 
-        }
-        
-        this.state.message = action.id === 'rest' ? `${actor.name} recovers!` : `${actor.name} used ${action.name}!`;
+        if (!ignoreCost && !action.canPayCost(actor)) {
+            action = AbilityFactory.createAbilities(['rest'])[0]; 
+            resolvedTargets = [actor]; 
+        }
+        
+        // --- NEW MESSAGE PARSER ---
+        // Grab the custom message or fall back to a default
+        let messageTemplate = action.battleMessage;
+        if (action.id === 'rest') messageTemplate = "{user} recovers!";
 
-        const isAoE = ['all_enemies', 'all_allies'].includes(action.targeting?.scope) || action.targeting?.isAoE;
+        // Safely get a target name (AoE abilities might not have a clean primaryTarget, so default to "the enemy" or "the party")
+        let targetName = primaryTarget ? primaryTarget.name : "the field";
 
-        if (isAoE) {
-            this._queueAoEAction(actor, action, resolvedTargets, ignoreCost);
-        } else {
-            this._queueMultiAction(actor, action, resolvedTargets, ignoreCost);
-        }
-        
-        this.processNextTurnInQueue();
-    }
+        // Parse the placeholders
+        this.state.message = messageTemplate
+            .replace(/{user}/g, actor.name)
+            .replace(/{ability}/g, action.name)
+            .replace(/{target}/g, targetName);
+        // --------------------------
+
+        const isAoE = ['all_enemies', 'all_allies'].includes(action.targeting?.scope) || action.targeting?.isAoE;
+
+        if (isAoE) {
+            this._queueAoEAction(actor, action, resolvedTargets, ignoreCost);
+        } else {
+            this._queueMultiAction(actor, action, resolvedTargets, ignoreCost);
+        }
+        
+        this.processNextTurnInQueue();
+    }
 
     _queueAoEAction(actor, action, targets, ignoreCost) {
         for (let i = targets.length - 1; i >= 0; i--) {

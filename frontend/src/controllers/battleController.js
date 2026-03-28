@@ -87,9 +87,12 @@ export class BattleController {
         if (this.state.weather && this.state.weather.id !== 'clear') { 
             console.log('[DEBUG] WEATHER TRIGGERED in BattleController! Pushing to queue.', this.state.weather);
             
+            // ✅ NEW: Grab the custom message or fallback to the generic one
+            const weatherMsg = this.state.weather.battleMessage || `A fierce ${this.state.weather.name} begins!`;
+            
             this.state.turnQueue.push({ 
                 type: TURN_TYPES.MESSAGE_STATUS, 
-                message: `A fierce ${this.state.weather.name} begins!` 
+                message: weatherMsg // ✅ Pushing the parsed message
             });
 
             const activeCombatants = [...this.state.activeParty, ...this.state.activeEnemies].filter(c => c && !c.isDead());

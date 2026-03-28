@@ -85,4 +85,22 @@ export class Formatting {
     static formatMoney(amount) {
         return Number(amount).toLocaleString();
     }
+    /**
+     * Replaces bracketed tokens in a string with values from a context object.
+     * Example: parseTokens("{actor} uses {ability}!", { actor: "Hero", ability: "Fireball" })
+     * Returns: "Hero uses Fireball!"
+     * * @param {string} text - The raw string containing {tokens}
+     * @param {Object} context - An object containing the replacement values
+     * @returns {string} - The fully parsed string
+     */
+    static parseTokens(text, context = {}) {
+        if (!text) return "";
+
+        // Finds anything inside { } brackets
+        return text.replace(/{(\w+)}/g, (match, key) => {
+            // If the key exists in our context object, swap it in.
+            // Otherwise, leave the {token} as is so you can spot missing data in-game.
+            return context[key] !== undefined ? context[key] : match;
+        });
+    }
 }

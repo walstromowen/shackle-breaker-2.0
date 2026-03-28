@@ -12,8 +12,11 @@ export class WeatherModel {
         this.animationId = definition.animationId || null; 
         this.traitId = definition.traitId || null;        
         
-        // NEW: Pull the status effect ID to apply to combatants during this weather
+        // Pull the status effect ID to apply to combatants during this weather
         this.appliedStatusId = definition.appliedStatusId || null;
+        
+        // ✅ NEW: Pull the custom battle message (or leave null to trigger the fallback)
+        this.battleMessage = definition.battleMessage || null;
         
         // Dynamic state managed by your time/world system
         this.timeRemaining = 0;
