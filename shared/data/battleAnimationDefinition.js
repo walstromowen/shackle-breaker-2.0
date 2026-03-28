@@ -161,6 +161,33 @@ export const BattleAnimationDefinitions = {
             flash: { start: 0.2, end: 0.8, filter: 'sepia(80%) brightness(60%) saturate(120%)' }
         }
     },
+    "trait_activate": {
+        duration: 1.2,
+        audio: [
+            { start: 0.0, key: 'bubbleSFX', volume: 0.8 } 
+        ],
+        target: { 
+            // ✅ CHANGED: Formatted to match your other target blocks
+            shake: { start: 0.0, end: 0.3, intensity: 4 },
+            flash: { start: 0.0, end: 0.4, filter: 'brightness(250%) saturate(150%)' }
+        },
+        vfx: [
+            {
+                start: 0.1,
+                type: 'spawn',
+                origin: 'target', // ✅ CHANGED: Now spawns on the target instead of source
+                config: {
+                    life: 0.5,
+                    sheetKey: 'particles', 
+                    frame: { col: 1, row: 1 }, 
+                    frameSize: 32,
+                    movement: 'expand_and_fade',
+                    scale: 1.8,
+                    blendMode: 'screen'
+                }
+            }
+        ]
+    },
     "melee_lunge": {
         duration: 1.5,
         audio: [

@@ -395,7 +395,28 @@ export const AbilityDefinitions = {
             { type: "damage", damageType: "arcane", power: 0.75 }
         ]
     },
-
+    "ice_bolt": {
+            id: "ice_bolt",
+            name: "Ice Bolt",
+            description: "Hurls a jagged shard of ice. Deals damage and has a chance to freeze the target.",
+            battleMessage: "{user} launches a freezing {ability} at {target}!",
+            icon: { col: 2, row: 9 }, // Adjust col/row to match wherever your ice icon is on your spritesheet
+            animationId: "magic_missile", // Or "ice_bolt_cast" if you have a specific animation for it
+            targeting: { scope: "enemy", select: "single" },
+            cost: { insight: 12 }, 
+            speedModifier: 0.95, 
+            accuracy: 0.95,      
+            effects: [
+                { 
+                    type: "damage", 
+                    damageType: "ice", // Make sure your damage/resistance calculators support "ice"
+                    power: 1.5 
+                }
+            ],
+            statusEffects: [
+                { id: "frozen", chance: 0.25, duration: 2 } 
+            ]
+        },
     "gravity": {
         id: "gravity",
         name: "Gravity",

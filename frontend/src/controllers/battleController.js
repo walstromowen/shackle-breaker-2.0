@@ -143,34 +143,43 @@ export class BattleController {
                         const abilityId = startTrigger.ability;
                         const [ability] = AbilityFactory.createAbilities([abilityId]);
 
-                        if (ability) {
-                            console.log(`[Debug Sweeper] SUCCESS! Queuing pre-battle trait [${trait.name}] -> casting [${ability.name}] for ${combatant.name}`);
-                            
-                            // --- NEW MESSAGE PARSER ---
-                            const msgTemplate = startTrigger.battleMessage || "{actor}'s {trait} activates!";
-                            const finalMessage = msgTemplate
-                                .replace(/{actor}/g, combatant.name)
-                                .replace(/{trait}/g, trait.name);
+                        if (startTrigger && startTrigger.ability) {
+                            const abilityId = startTrigger.ability;
+                            const [ability] = AbilityFactory.createAbilities([abilityId]);
 
-                            // 3. Announce the trait activation
-                            this.state.turnQueue.push({ 
-                                type: TURN_TYPES.MESSAGE_STATUS, 
-                                message: finalMessage 
-                            });
-                            // --------------------------
+                            if (ability) {
+                                
+                                // --- 1. QUEUE ANIMATION (If defined) ---
+                                if (startTrigger.animationId) {
+                                    this.state.turnQueue.push({
+                                        type: TURN_TYPES.PLAY_ANIMATION, // Use your engine's animation turn type
+                                        animationId: startTrigger.animationId,
+                                        target: combatant // The actor activating the trait
+                                    });
+                                }
 
-                            // 4. Queue the actual ABILITY execution
-                            this.state.turnQueue.push({
-                                type: TURN_TYPES.EXECUTE_ACTION, 
-                                ignoreCost: true,               
-                                actor: combatant,
-                                action: ability, 
-                                target: combatant 
-                            });
+                                // --- 2. QUEUE BATTLE MESSAGE ---
+                                const msgTemplate = startTrigger.battleMessage || "{actor}'s {trait} activates!";
+                                const finalMessage = msgTemplate
+                                    .replace(/{actor}/g, combatant.name)
+                                    .replace(/{trait}/g, trait.name);
 
-                            traitsQueued = true;
-                        } else {
-                            console.warn(`[Debug Sweeper] Trait ${trait.name} tried to fire ability '${abilityId}' but it failed to build.`);
+                                this.state.turnQueue.push({ 
+                                    type: TURN_TYPES.MESSAGE_STATUS, 
+                                    message: finalMessage 
+                                });
+
+                                // --- 3. QUEUE ABILITY EXECUTION ---
+                                this.state.turnQueue.push({
+                                    type: TURN_TYPES.EXECUTE_ACTION, 
+                                    ignoreCost: true,               
+                                    actor: combatant,
+                                    action: ability, 
+                                    target: combatant 
+                                });
+
+                                traitsQueued = true;
+                            }
                         }
                     }
                 });
@@ -180,6 +189,7 @@ export class BattleController {
         return traitsQueued;
     }
 
+    // --- NEW: Death Trait Sweeper ---
     // --- NEW: Death Trait Sweeper ---
     _queueDeathTraits(deadCombatant) {
         const rawTraits = deadCombatant.traits;
@@ -195,7 +205,7 @@ export class BattleController {
                 if (ability) {
                     console.log(`[Debug Sweeper] SUCCESS! Queuing death trait [${trait.name}] -> casting [${ability.name}] for ${deadCombatant.name}`);
 
-                    // 2. Queue the actual ABILITY execution
+                    // 3. Queue the actual ABILITY execution (unshifts first, so it executes last in this block)
                     this.state.turnQueue.unshift({
                         type: TURN_TYPES.EXECUTE_ACTION, 
                         ignoreCost: true,
@@ -205,18 +215,29 @@ export class BattleController {
                         target: deadCombatant
                     });
 
-                    // --- NEW MESSAGE PARSER ---
+                    // --- MESSAGE PARSER ---
                     const msgTemplate = deathTrigger.battleMessage || "{actor}'s {trait} activates upon death!";
                     const finalMessage = msgTemplate
                         .replace(/{actor}/g, deadCombatant.name)
                         .replace(/{trait}/g, trait.name);
 
-                    // 1. Announce the trait activation
+                    // 2. Announce the trait activation (unshifts second, so it executes before the ability)
                     this.state.turnQueue.unshift({ 
                         type: TURN_TYPES.MESSAGE_STATUS, 
                         message: finalMessage 
                     });
                     // --------------------------
+
+                    // --- NEW ANIMATION QUEUE ---
+                    // 1. Queue ANIMATION (unshifts last, so it executes first at the very front of the queue)
+                    const animId = deathTrigger.animationId || "trait_activate"; 
+                    this.state.turnQueue.unshift({
+                        type: TURN_TYPES.PLAY_ANIMATION, // Update this if your engine uses a different constant
+                        animationId: animId,
+                        target: deadCombatant
+                    });
+                    // --------------------------
+
                 } else {
                     console.warn(`[Debug Sweeper] Trait ${trait.name} tried to fire death ability '${abilityId}' but it failed to build.`);
                 }

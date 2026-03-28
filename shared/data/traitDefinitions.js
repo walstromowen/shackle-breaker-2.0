@@ -58,7 +58,8 @@ export const TRAIT_DEFINITIONS = {
             onDeath: { 
                 effect: "heal_party_all", 
                 value: 20, 
-                battleMessage: "In death, {actor} bestows a final blessing!" // ✅ NEW
+                battleMessage: "In death, {actor} bestows a final blessing!",
+                animationId: "trait_activate" // ✅ NEW: Plays on the dying actor
             }
         }
     },
@@ -68,7 +69,8 @@ export const TRAIT_DEFINITIONS = {
         triggers: {
             onDeath: { 
                 ability: "acid_pool", 
-                battleMessage: "{actor}'s remains dissolve into a highly corrosive pool of acid!" // ✅ NEW
+                battleMessage: "{actor}'s remains dissolve into a highly corrosive pool of acid!",
+                animationId: "trait_activate" // ✅ NEW
             }
         }
     },
@@ -78,7 +80,8 @@ export const TRAIT_DEFINITIONS = {
         triggers: {
             onBattleStart: { 
                 ability: "bolster", 
-                battleMessage: "{actor}'s Iron Will hardens their resolve!" // ✅ NEW
+                battleMessage: "{actor}'s Iron Will hardens their resolve!",
+                animationId: "trait_activate" // ✅ NEW
             } 
         }
     },
