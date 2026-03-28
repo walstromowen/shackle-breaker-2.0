@@ -77,6 +77,9 @@ export class EntityModel {
     
     get spritePortrait() { return this.state.spritePortrait; }
     get spriteOverworld() { return this.state.spriteOverworld; }
+    // <-- NEW: Animation frame getters
+    get battlePortraitFramesFront() { return this.state.battlePortraitFramesFront; }
+    get battlePortraitFramesBack() { return this.state.battlePortraitFramesBack; }
 
     get crySound() { return this.state.crySound; }
     get deathSound() { return this.state.deathSound; }

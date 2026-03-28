@@ -1,62 +1,62 @@
 export const UITheme = {
-    colors: {
-        // --- Background Scale (Required for Column Renderers) ---
-        // 0: Darkest (Side Columns), 1: Lighter (Center), 2: Highlight (Active Tabs)
-        bgScale: ["#0a0a0a", "#141414", "#1f1f1f", "#2a2a2a"], 
+    colors: {
+        // --- Background Scale (Required for Column Renderers) ---
+        // Adjusted to match the deep, cool darks of the HUD panel
+        bgScale: ["#080809", "#0b0b0d", "#0f0f11", "#141417"], 
 
-        // Backgrounds
-        background: "#050505", 
-        panelBg: "rgba(20, 20, 20, 0.95)", 
-        
-        // Borders & Lines
-        border: "#4a4a4a",
-        
-        // CHANGED: Specific "Misty White" for selections
-        selectedWhite: "#f0f0f0", 
-        borderHighlight: "#f0f0f0", // Alias for backward compatibility if needed
+        // Backgrounds
+        background: "#050505", 
+        panelBg: "rgba(15, 15, 17, 0.85)", 
+        
+        // Borders & Lines
+        border: "#3a352c",
+        selectedWhite: "#d4cbb8", 
+        borderHighlight: "#b89947", // Tarnished Gold
 
-        // Text
-        textMain: "#e0e0e0",      
-        textMuted: "#888888",     
-        textHighlight: "#FFC107", // Matches XP Gold
-        
-        // --- Normalized Stat Colors (Foreground) ---
-        hp: "#E02E2E",      // Health: Vibrant Signal Red
-        stm: "#2E8B57",     // Stamina: Deep Emerald
-        ins: "#F500FF",     // Insight: Neon Magenta
-        xp: "#FFC107",      // Experience: Rich Amber Gold
+        // Text
+        textMain: "#d4cbb8",      // Aged bone white
+        textMuted: "#8a8578",     
+        textHighlight: "#b89947", // Tarnished Gold
+        
+        // --- Normalized Stat Colors (Foreground) ---
+        hp: "#8c1c1c",      // Health: Dark Crimson
+        stm: "#4a5d4e",     // Stamina: Muted Moss Green
+        ins: "#4a5b70",     // Insight: Deep Slate Blue
+        xp: "#c9b475",      // Experience: Estus Gold
 
-        // --- Dimmed Stat Colors (Background/Empty Bars) ---
-        hpDim: "rgba(224, 46, 46, 0.2)",  
-        stmDim: "rgba(46, 139, 87, 0.2)", 
-        insDim: "rgba(245, 0, 255, 0.2)",  
-        xpDim: "rgba(255, 193, 7, 0.2)",  
+        // --- Dimmed Stat Colors (Background/Empty Bars) ---
+        hpDim: "#2b0909",  
+        stmDim: "#1f2621", 
+        insDim: "#1e242c",  
+        xpDim: "#3a352c",  
 
-        // --- Combat Stats (Defaults) ---
-        attack: "#ff8c00",      // Dark Orange
-        defense: "#3498db",     // Blue
-        resistance: "#95a5a6",  // Slate Grey
+        // --- Combat Stats (Defaults) ---
+        attack: "#9e1a1a",      // Target Red
+        defense: "#4a5b70",     // Insight Blue
+        resistance: "#8a8578",  // Muted Grey
 
-        // --- Gameplay Indicators ---
-        success: "#55ff55",     // Bright Green
-        failure: "#ff5555",     // Bright Red
-        
-        // Ability Costs & Scrolling
-        scrollTrack: "rgba(0,0,0,0.3)", 
-        scrollThumb: "#666666"
-    },
+        // --- Gameplay Indicators ---
+        success: "#c9b475",     // Estus Gold
+        failure: "#8c1c1c",     // Dark Crimson
+        
+        // Ability Costs & Scrolling
+        scrollTrack: "rgba(15, 15, 17, 0.5)", 
+        scrollThumb: "#3a352c"
+    },
 
-    fonts: {
-        header: "bold 24px serif",
-        body: "16px sans-serif",
-        bold: "bold 16px sans-serif",
-        small: "12px sans-serif",
-        mono: "14px monospace" 
-    },
+    fonts: {
+        title: 'normal 42px "Georgia", serif',
+        header: 'bold 24px "Georgia", serif',
+        body: '14px "Georgia", serif',
+        bold: 'bold 14px "Georgia", serif',
+        italic: 'italic 12px "Georgia", serif',
+        small: '12px "Georgia", serif',
+        mono: '14px monospace' 
+    },
 
-    layout: {
-        padding: 20,
-        headerHeight: 50,
-        cornerRadius: 4
-    }
+    layout: {
+        padding: 20,
+        headerHeight: 50,
+        cornerRadius: 0 // Flat, sharp corners fit the aesthetic better
+    }
 };

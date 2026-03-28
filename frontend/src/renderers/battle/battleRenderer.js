@@ -27,11 +27,15 @@ export class BattleRenderer {
         this.floatingTexts = [];
         this.currentState = null; 
 
+        // SOULS-LIKE PALETTE OVERRIDE
         this.COLORS = {
-            stamina: UITheme.colors.stm,
-            insight: UITheme.colors.ins,
-            insightDim: UITheme.colors.insDim,
-            highlight: UITheme.colors.textHighlight    
+            stamina: '#4a5d4e',      // Muted moss green
+            insight: '#4a5b70',      // Deep slate blue
+            insightDim: '#1a1d24',
+            highlight: '#b89947',    // Tarnished Gold
+            blood: '#7a0000',        // Dark Crimson
+            heal: '#c9b475',         // Estus Gold
+            textMain: '#d4cbb8'      // Aged bone white
         };
 
         // Event Listeners
@@ -68,12 +72,10 @@ export class BattleRenderer {
         // --- Audio & VFX Sync Logic ---
         const anim = state.activeAnimation;
         if (anim) {
-            // Normalize progress to a 0.0 - 1.0 ratio, safeguarding against missing duration
             const progress = (state.timer !== undefined && anim.duration) 
                 ? Math.min(state.timer / anim.duration, 1.0) 
                 : 0;
             
-            // 1. Handle Audio
             if (typeof anim.getAudioTriggers === 'function') {
                 const audioCues = anim.getAudioTriggers(progress);
                 audioCues.forEach(cue => {
@@ -81,13 +83,10 @@ export class BattleRenderer {
                 });
             }
 
-            // 2. Handle VFX
             if (typeof anim.getVFXTriggers === 'function') {
                 const vfxCues = anim.getVFXTriggers(progress);
                 if (vfxCues.length > 0) {
-                    // FIX: Fallback center position for global effects that lack an actor
                     const centerPos = { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 };
-
                     const sourcePos = this.combatantRenderer.getEntityPosition(anim.actor, state) || centerPos;
                     const targetPos = (anim.targets && anim.targets.length > 0) 
                         ? (this.combatantRenderer.getEntityPosition(anim.targets[0], state) || sourcePos) 
@@ -101,13 +100,10 @@ export class BattleRenderer {
                             this.vfxRenderer.spawnBurst(startX, startY, cue.count || 10, cue.config);
                         } 
                         else if (cue.type === 'travel') {
-                            // Let the Particle class handle exact positioning
                             this.vfxRenderer.spawn({
                                 ...cue.config,
-                                startX: sourcePos.x,
-                                startY: sourcePos.y,
-                                endX: targetPos.x,
-                                endY: targetPos.y,
+                                startX: sourcePos.x, startY: sourcePos.y,
+                                endX: targetPos.x, endY: targetPos.y,
                                 movement: cue.config.movement || 'linear'
                             });
                         }
@@ -128,9 +124,19 @@ export class BattleRenderer {
         if (baseBgImg) {
             this.ctx.drawImage(baseBgImg, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         } else {
-            this.ctx.fillStyle = UITheme.colors.bgScale[2]; 
+            this.ctx.fillStyle = '#111'; 
             this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         }
+
+        // --- NEW: CINEMATIC VIGNETTE OVER THE BACKGROUND ---
+        const gradient = this.ctx.createRadialGradient(
+            CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, CANVAS_HEIGHT * 0.2, 
+            CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, CANVAS_HEIGHT * 0.9
+        );
+        gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0.7)');
+        this.ctx.fillStyle = gradient;
+        this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
         if (anim && typeof anim.getActiveBackground === 'function') {
             const progress = (state.timer !== undefined && anim.duration) 
@@ -151,53 +157,54 @@ export class BattleRenderer {
                 if (overrideImg) {
                     this.ctx.drawImage(overrideImg, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
                 } else {
-                    this.ctx.fillStyle = UITheme.colors.bgScale[2]; 
+                    this.ctx.fillStyle = '#000'; 
                     this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
                 }
                 this.ctx.restore();
             }
         }
 
-        // 2. Draw Entities (Delegated)
+        // 2. Draw Entities 
         this.combatantRenderer.drawGroup(state.activeEnemies, false, state);
         this.combatantRenderer.drawGroup(state.activeParty, true, state);
 
-        // 3. Draw VFX (Particles over entities, under UI)
+        // 3. Draw VFX
         this.vfxRenderer.render();
 
-        // 4. Draw HUD & Menus (Delegated)
+        // 4. Draw HUD & Menus
         this.hudRenderer.render(state, this.dt);
 
-        // 5. Draw Floating Combat Text (Top-most layer)
+        // 5. Draw Floating Combat Text
         this.drawFloatingTexts(this.dt);
 
-        // 6. Draw Debug Overlay (Top-most UI layer)
+        // 6. Draw Debug Overlay
         if (this.showDebug) {
             this.debugRenderer.render(state);
         }
     }
 
-    spawnFloatingText({ target, value, resource, text, type, isCritical }) {
+    // Notice the new 'delay' parameter defaulting to 0
+    spawnFloatingText({ target, value, resource, text, type, isCritical, delay = 0 }) {
         const pos = this.combatantRenderer.getEntityPosition(target, this.currentState);
         if (!pos) return;
 
         let displayText = text;
-        let color = UITheme.colors.textMain;
-        let fontSize = isCritical ? 32 : 24; 
+        let color = this.COLORS.textMain;
+        let fontSize = isCritical ? 36 : 22; 
 
         if (value !== undefined) {
             const isGain = value > 0;
             const prefix = isGain ? '+' : '';
             displayText = `${prefix}${Math.round(value)}`;
 
-            if (resource === 'hp') color = isGain ? UITheme.colors.success : UITheme.colors.hp;
-            else if (resource === 'stamina') color = isGain ? this.COLORS.stamina : UITheme.colors.attack;
+            if (resource === 'hp') color = isGain ? this.COLORS.heal : this.COLORS.blood;
+            else if (resource === 'stamina') color = isGain ? this.COLORS.stamina : '#8c8c8c';
             else if (resource === 'insight') color = isGain ? this.COLORS.insight : this.COLORS.insightDim;
             
-            if (isCritical) color = this.COLORS.highlight; 
+            if (isCritical) color = this.COLORS.blood; 
         } 
         else if (type === 'status') {
-            color = UITheme.colors.textMuted; 
+            color = '#888'; 
         }
 
         let targetX = pos.x + (Math.random() * 40 - 20); 
@@ -215,15 +222,22 @@ export class BattleRenderer {
             fontSize,
             x: targetX,
             y: targetY, 
-            life: 1.5,
-            maxLife: 1.5,
-            velocityY: isCritical ? -45 : -35 
+            life: isCritical ? 2.0 : 1.5,
+            maxLife: isCritical ? 2.0 : 1.5,
+            velocityY: isCritical ? -25 : -15,
+            delay: delay // Storing the delay
         });
     }
 
     drawFloatingTexts(dt) {
         for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
             const ft = this.floatingTexts[i];
+            
+            // Wait out the delay before showing or moving the text
+            if (ft.delay > 0) {
+                ft.delay -= dt;
+                continue; 
+            }
             
             ft.life -= dt;
             ft.y += ft.velocityY * dt;
@@ -234,18 +248,31 @@ export class BattleRenderer {
             }
 
             this.ctx.save();
-            this.ctx.globalAlpha = Math.max(0, ft.life / ft.maxLife);
+            // Fade out smoothly in the last 50% of life
+            this.ctx.globalAlpha = Math.min(1.0, (ft.life / ft.maxLife) * 2);
             
-            this.ctx.font = `bold ${ft.fontSize}px monospace`; 
+            // Serif font for a gothic look
+            this.ctx.font = `italic bold ${ft.fontSize}px "Georgia", serif`; 
             this.ctx.textAlign = "center";
             this.ctx.textBaseline = "middle";
             
-            this.ctx.strokeStyle = UITheme.colors.bgScale[0];
-            this.ctx.lineWidth = 4;
-            this.ctx.strokeText(ft.text, ft.x, ft.y);
+            // Soft atmospheric drop-shadow instead of a hard stroke
+            this.ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+            this.ctx.shadowBlur = 8;
+            this.ctx.shadowOffsetX = 2;
+            this.ctx.shadowOffsetY = 2;
             
             this.ctx.fillStyle = ft.color;
             this.ctx.fillText(ft.text, ft.x, ft.y);
+            
+            // Add a slight bright center glow for criticals
+            if (ft.fontSize > 24) {
+                this.ctx.shadowBlur = 0;
+                this.ctx.globalAlpha *= 0.5;
+                this.ctx.fillStyle = '#fff';
+                this.ctx.fillText(ft.text, ft.x, ft.y);
+            }
+            
             this.ctx.restore();
         }
     }

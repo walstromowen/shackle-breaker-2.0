@@ -11,8 +11,8 @@ export class BattleCombatantRenderer {
         // --- VISUAL CONFIG ---
         this.SPRITE_SCALE = 1;   
         this.FRAME_SIZE = 128;
-        this.FRAMES_PER_ROW = 8;      // NEW: Total frames in the idle animation loop
-        this.ANIMATION_SPEED = 150;   // NEW: Milliseconds per frame
+        this.FRAMES_PER_ROW = 8;      // Fallback in case an entity is missing the new properties
+        this.ANIMATION_SPEED = 150;   // Milliseconds per frame
 
         // --- LAYOUT CONFIGURATION ---
         this.LAYOUT = {
@@ -127,7 +127,6 @@ export class BattleCombatantRenderer {
                 alpha = transform.alpha !== undefined ? transform.alpha : 1.0; 
             }
 
-            // NEW: We are passing 'index' into the return object so we can use it for our animation offset
             return { entity, x, y, size, filter, alpha, index }; 
         }).filter(item => item !== null);
 
@@ -150,15 +149,18 @@ export class BattleCombatantRenderer {
             if (img) {
                 const srcY = isPlayer ? this.FRAME_SIZE : 0;
                 
-                // --- NEW ANIMATION LOGIC WITH OFFSET ---
+                // --- NEW ANIMATION LOGIC WITH OFFSET & DYNAMIC FRAMES ---
                 const now = performance.now();
                 
                 // Stagger the animation: 
-                // Enemies start with a 100ms offset from players.
-                // Each slot adds an additional 120ms offset.
                 const offset = (isPlayer ? 0 : 100) + (index * 120); 
                 
-                const currentFrame = Math.floor((now + offset) / this.ANIMATION_SPEED) % this.FRAMES_PER_ROW;
+                // Determine the correct frame count based on orientation
+                const maxFrames = isPlayer 
+                    ? (entity.battlePortraitFramesBack || this.FRAMES_PER_ROW)
+                    : (entity.battlePortraitFramesFront || this.FRAMES_PER_ROW);
+
+                const currentFrame = Math.floor((now + offset) / this.ANIMATION_SPEED) % maxFrames;
                 const srcX = currentFrame * this.FRAME_SIZE;
 
                 this.ui.drawSprite(img, srcX, srcY, this.FRAME_SIZE, this.FRAME_SIZE, x - size/2, y - size/2, size, size);

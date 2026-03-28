@@ -26,9 +26,11 @@ export class EntityFactory {
         if (overrides.spriteOverworld) config.spriteOverworld = overrides.spriteOverworld;
         if (overrides.spritePortrait) config.spritePortrait = overrides.spritePortrait;
 
-        // <-- NEW: Allow audio overrides
+        // <-- NEW: Allow audio & animation overrides
         if (overrides.crySound) config.crySound = overrides.crySound;
         if (overrides.deathSound) config.deathSound = overrides.deathSound;
+        if (overrides.battlePortraitFramesFront !== undefined) config.battlePortraitFramesFront = overrides.battlePortraitFramesFront;
+        if (overrides.battlePortraitFramesBack !== undefined) config.battlePortraitFramesBack = overrides.battlePortraitFramesBack;
         // 3. Merge Arrays & Objects
         if (overrides.tags) {
             const existingTags = config.tags || [];

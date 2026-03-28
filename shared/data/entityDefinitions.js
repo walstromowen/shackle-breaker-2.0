@@ -8,7 +8,9 @@ const BASE_ENTITY = {
 
     // --- VISUALS ---
     spriteOverworld: "missing_texture",  
-    spritePortrait: "missing_face",      
+    spritePortrait: "missing_face",  
+    battlePortraitFramesFront: 8, // Defaults for enemy view
+    battlePortraitFramesBack: 8,  // Defaults for player view    
     crySound: "unsheathSwordSFX",       // <-- NEW: Plays on battle start
     deathSound: "unsheathSwordSFX",
     traits: [],
@@ -151,6 +153,8 @@ export const ENTITY_DEFINITIONS = {
 
         spriteOverworld: "legionarySprite",
         spritePortrait: "wolfPortrait",
+         battlePortraitFramesFront: 8, // Defaults for enemy view
+        battlePortraitFramesBack: 8,  // Defaults for player view    
         crySound: "wolfCry",       // <-- NEW: Plays on battle start
         deathSound: "wolfCry",
         attributes: {

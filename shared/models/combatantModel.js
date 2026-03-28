@@ -29,6 +29,8 @@ export class CombatantModel {
     get name() { return this.originalEntity.name; }
     get spritePortrait() { return this.originalEntity.spritePortrait; }
     get spriteOverworld() { return this.originalEntity.spriteOverworld; }
+    get battlePortraitFramesFront() { return this.originalEntity.battlePortraitFramesFront; }
+    get battlePortraitFramesBack() { return this.originalEntity.battlePortraitFramesBack; }
     // <-- NEW: Audio pass-throughs
     get crySound() { return this.originalEntity.crySound; }
     get deathSound() { return this.originalEntity.deathSound; }
