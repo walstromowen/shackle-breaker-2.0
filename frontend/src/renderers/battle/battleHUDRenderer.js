@@ -49,67 +49,67 @@ export class BattleHUDRenderer {
     }
 
     render(state, dt) {
-        this.dt = dt;
+        this.dt = dt;
 
-        // Track how long we've been in the current phase
-        if (this.lastPhase !== state.phase) {
-            this.phaseTime = 0;
-            this.lastPhase = state.phase;
-        }
-        this.phaseTime += this.dt;
+        // Track how long we've been in the current phase
+        if (this.lastPhase !== state.phase) {
+            this.phaseTime = 0;
+            this.lastPhase = state.phase;
+        }
+        this.phaseTime += this.dt;
 
-        // 1. Draw Static HUD Elements
-        this.drawHUD(state);
+        // 1. Draw Static HUD Elements
+        this.drawHUD(state);
 
-        let targetBannerAlpha = 0.0;
-        const isCinematicPhase = ['INTRO', 'RESOLVE', 'VICTORY', 'DEFEAT'].includes(state.phase);
+        let targetBannerAlpha = 0.0;
+        const isCinematicPhase = ['INTRO', 'RESOLVE', 'VICTORY', 'DEFEAT'].includes(state.phase);
 
-        // 2. Evaluate Contextual Layers
-        if (isCinematicPhase) {
+        // 2. Evaluate Contextual Layers
+        if (isCinematicPhase) {
             const isEndPhase = state.phase === 'VICTORY' || state.phase === 'DEFEAT';
 
-            if (isEndPhase) {
-                targetBannerAlpha = 1.0;
-            }
+            if (isEndPhase) {
+                targetBannerAlpha = 1.0;
+            }
 
-            if (state.message) {
+            if (state.message) {
                 if (isEndPhase) {
-                    // Wait 3 full seconds before drawing the dialog box and dropping the banner
-                    if (this.phaseTime > 3.0) { 
-                        this.drawDialogueBox(state.message);
-                        targetBannerAlpha = 0.0; 
-                    }
+                    // Wait 3 full seconds before drawing the dialog box and dropping the banner
+                    if (this.phaseTime > 3.0) { 
+                        this.drawDialogueBox(state.message);
+                        targetBannerAlpha = 0.0; 
+                    }
                 } else {
                     // For INTRO or RESOLVE, just draw the dialogue box without a banner
                     this.drawDialogueBox(state.message);
                 }
-            }
-        }
+            }
+        }
 
-        // 3. Smoothly lerp the banner's opacity
-        const FADE_SPEED = 3.0;
-        this.bannerAlpha += (targetBannerAlpha - this.bannerAlpha) * FADE_SPEED * this.dt;
-        this.bannerAlpha = Math.max(0, Math.min(1, this.bannerAlpha)); 
-        
-        // 4. Draw giant overlay banners if they have any opacity
-        if (this.bannerAlpha > 0.01) {
-            const text = (state.phase === 'DEFEAT') ? 'PARTY SLAIN' : 'ENEMY SLAIN';
-            const color = (state.phase === 'DEFEAT') ? this.COLORS.targetRed : this.COLORS.highlight;
-            this.drawCinematicBanner(text, color, this.bannerAlpha);
-        }
+        // 3. Smoothly lerp the banner's opacity
+        const FADE_SPEED = 3.0;
+        this.bannerAlpha += (targetBannerAlpha - this.bannerAlpha) * FADE_SPEED * this.dt;
+        this.bannerAlpha = Math.max(0, Math.min(1, this.bannerAlpha)); 
+        
+        // 4. Draw giant overlay banners if they have any opacity
+        if (this.bannerAlpha > 0.01) {
+            const text = (state.phase === 'DEFEAT') ? 'PARTY SLAIN' : 'ENEMY SLAIN';
+            const color = (state.phase === 'DEFEAT') ? this.COLORS.targetRed : this.COLORS.highlight;
+            this.drawCinematicBanner(text, color, this.bannerAlpha);
+        }
 
-        // 5. Draw Standard Menus
-        if (!isCinematicPhase) {
-            if (state.phase === 'SELECT_ACTION') {
-                this.drawActionMenu(state);
-                this.drawActivePlayerIndicator(state);
-            }
-            else if (state.phase === 'SELECT_TARGET') {
-                this.drawActionMenu(state);
-                this.drawTargetCursor(state); 
-            }
-        }
-    }
+        // 5. Draw Standard Menus
+        if (!isCinematicPhase) {
+            if (state.phase === 'SELECT_ACTION') {
+                this.drawActionMenu(state);
+                this.drawActivePlayerIndicator(state);
+            }
+            else if (state.phase === 'SELECT_TARGET') {
+                this.drawActionMenu(state);
+                this.drawTargetCursor(state); 
+            }
+        }
+    }
 
     drawHUD(state) {
         if (state.activeParty && state.activeParty.length > 0) {
@@ -285,33 +285,11 @@ export class BattleHUDRenderer {
             const drawY = startY + (row * (itemSize + margin));
 
             if (isSelected) {
-                // Draw animated brackets
+                // Centralized UI Bracket Drawing
                 const brktDist = 2 + (pulse * 2);
-                this.ctx.strokeStyle = canAfford ? this.COLORS.highlight : this.COLORS.hp;
-                this.ctx.lineWidth = 2;
-                this.ctx.beginPath();
+                const bracketColor = canAfford ? this.COLORS.highlight : this.COLORS.hp;
                 
-                // Top Left
-                this.ctx.moveTo(drawX - brktDist, drawY - brktDist + 6);
-                this.ctx.lineTo(drawX - brktDist, drawY - brktDist);
-                this.ctx.lineTo(drawX - brktDist + 6, drawY - brktDist);
-                
-                // Top Right
-                this.ctx.moveTo(drawX + itemSize + brktDist - 6, drawY - brktDist);
-                this.ctx.lineTo(drawX + itemSize + brktDist, drawY - brktDist);
-                this.ctx.lineTo(drawX + itemSize + brktDist, drawY - brktDist + 6);
-
-                // Bottom Left
-                this.ctx.moveTo(drawX - brktDist, drawY + itemSize + brktDist - 6);
-                this.ctx.lineTo(drawX - brktDist, drawY + itemSize + brktDist);
-                this.ctx.lineTo(drawX - brktDist + 6, drawY + itemSize + brktDist);
-
-                // Bottom Right
-                this.ctx.moveTo(drawX + itemSize + brktDist - 6, drawY + itemSize + brktDist);
-                this.ctx.lineTo(drawX + itemSize + brktDist, drawY + itemSize + brktDist);
-                this.ctx.lineTo(drawX + itemSize + brktDist, drawY + itemSize + brktDist - 6);
-                
-                this.ctx.stroke();
+                this.ui.drawSelectionBrackets(drawX, drawY, itemSize, itemSize, brktDist, bracketColor);
 
                 // Subtle inner glow
                 this.ctx.fillStyle = canAfford ? 'rgba(184, 153, 71, 0.2)' : 'rgba(140, 28, 28, 0.2)';

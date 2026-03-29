@@ -32,7 +32,6 @@ export class CharacterCreatorRenderer {
         
         // ========================================================
         // 1. LEFT COLUMN (Identity & Stats)
-        // Background: Darkest (bgScale[0])
         // ========================================================
         ui.drawPanel(p, startY, colW, panelHeight, UITheme.colors.bgScale[0]);
         
@@ -53,19 +52,22 @@ export class CharacterCreatorRenderer {
         const isNameHovered = hoveredElement && hoveredElement.id === inputId;
         const isNameSelected = (currentStep === 'name');
         
-        ctx.fillStyle = isNameSelected ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.3)';
-        if (isEditingName) ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'; 
+        // Base Box
+        ctx.fillStyle = isEditingName ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.3)';
         ctx.fillRect(nameInputX, curY, nameInputW, nameInputH);
-        
-        ctx.strokeStyle = (isNameSelected || isEditingName || isNameHovered) ? UITheme.colors.textMain : UITheme.colors.border;
+        ctx.strokeStyle = UITheme.colors.border;
         ctx.lineWidth = 1;
         ctx.strokeRect(nameInputX, curY, nameInputW, nameInputH);
+
+        // Selection Brackets
+        if (isNameSelected || isEditingName || isNameHovered) {
+            ui.drawSelectionBrackets(nameInputX, curY, nameInputW, nameInputH, 4); // Added 4
+        }
 
         let valStr = selections.name;
         let nameColor = UITheme.colors.textMain;
 
         if (isEditingName) {
-            nameColor = UITheme.colors.textMain; 
             if (Math.floor(Date.now() / 500) % 2 === 0) valStr += "|"; 
         } else if (!valStr) {
             valStr = "Enter Name..."; 
@@ -83,7 +85,6 @@ export class CharacterCreatorRenderer {
         const VITALS_OFFSET = 180; 
         const VITALS_START_Y = nameBottomY + VITALS_OFFSET; 
 
-        // Dimensions
         const portraitSize = 128;
         const spriteDisplaySize = 64; 
         const visualGap = 20;
@@ -91,7 +92,6 @@ export class CharacterCreatorRenderer {
         const totalVisualWidth = portraitSize + visualGap + spriteDisplaySize;
         const startVisualX = p + (colW - totalVisualWidth) / 2;
 
-        // Vertical centering
         const portraitY = nameBottomY + (VITALS_OFFSET / 2) - (portraitSize / 2);
         const spriteY = nameBottomY + (VITALS_OFFSET / 2) - (spriteDisplaySize / 2);
 
@@ -101,51 +101,32 @@ export class CharacterCreatorRenderer {
         if (appData) {
             ctx.save();
             
-          
-   
             const masterSheet = this.loader.get(appData.spritePortrait);
             
             if (masterSheet) {
-                // SRC: x=0, y=0, w=128, h=128 (Top-Left Face)
-                // DST: startVisualX, portraitY, size, size
-                ctx.drawImage(
-                    masterSheet, 
-                    0, 0, 128, 128, 
-                    startVisualX, portraitY, portraitSize, portraitSize
-                );
-                
-                ctx.strokeStyle = UITheme.colors.border;
-                ctx.lineWidth = 2;
-                ctx.strokeRect(startVisualX, portraitY, portraitSize, portraitSize);
+                ctx.drawImage(masterSheet, 0, 0, 128, 128, startVisualX, portraitY, portraitSize, portraitSize);
             } else {
-                // Fallback placeholder
                 ctx.fillStyle = "rgba(0,0,0,0.2)";
                 ctx.fillRect(startVisualX, portraitY, portraitSize, portraitSize);
-                ctx.strokeStyle = UITheme.colors.border;
-                ctx.strokeRect(startVisualX, portraitY, portraitSize, portraitSize);
             }
+            
+            ctx.strokeStyle = UITheme.colors.border;
+            ctx.lineWidth = 1;
+            ctx.strokeRect(startVisualX, portraitY, portraitSize, portraitSize);
 
             // 2. Draw Sprite (FROM OVERWORLD SHEET)
             const spriteX = startVisualX + portraitSize + visualGap;
             const overworldSheet = this.loader.get(appData.spriteOverworld);
             
-            // Background box for sprite
             ctx.fillStyle = "rgba(0,0,0,0.3)";
             ctx.fillRect(spriteX, spriteY, spriteDisplaySize, spriteDisplaySize);
             
             if (overworldSheet) {
                 ctx.imageSmoothingEnabled = false; 
-                // SRC: x=0, y=0, w=32, h=32 (Frame 1)
-                // DST: Scaled up to 64x64
-                ctx.drawImage(
-                    overworldSheet, 
-                    0, 0, 32, 32, 
-                    spriteX, spriteY, spriteDisplaySize, spriteDisplaySize
-                );
+                ctx.drawImage(overworldSheet, 0, 0, 32, 32, spriteX, spriteY, spriteDisplaySize, spriteDisplaySize);
             }
             
             ctx.strokeStyle = UITheme.colors.border;
-            ctx.lineWidth = 1;
             ctx.strokeRect(spriteX, spriteY, spriteDisplaySize, spriteDisplaySize);
 
             ctx.restore();
@@ -169,13 +150,9 @@ export class CharacterCreatorRenderer {
                 
                 const slotCenterX = vX + (slotIndex * thirdW) + (thirdW / 2);
                 
-                // 1. Label
                 ui.drawText(label, slotCenterX - 6, curY, RES_FONT, colorLabel, "right");
-                
-                // 2. Main Value
                 ui.drawText(`${total}`, slotCenterX + 6, curY, UITheme.fonts.bold, UITheme.colors.textMain, "left");
                 
-                // 3. Bonus (Below Main Value)
                 if (bonus > 0) {
                     ui.drawText(`(+${bonus})`, slotCenterX + 6, curY + 12, UITheme.fonts.small, UITheme.colors.success, "left");
                 }
@@ -206,7 +183,7 @@ export class CharacterCreatorRenderer {
                 const rightX = p + colW - 30;
 
                 if (idx % 2 === 0) {
-                    ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+                    ctx.fillStyle = "rgba(255, 255, 255, 0.02)"; // Dimmed for contrast
                     ctx.fillRect(p + 10, rowY - 14, colW - 20, ROW_HEIGHT);
                 }
 
@@ -217,7 +194,6 @@ export class CharacterCreatorRenderer {
 
         // ========================================================
         // 2. CENTER COLUMN: MENU
-        // Background: Lighter (bgScale[1])
         // ========================================================
         const menuStartX = p + colW + p;
         let menuY = CONTENT_START_Y;
@@ -231,7 +207,7 @@ export class CharacterCreatorRenderer {
         };
         
         const MENU_ITEM_HEIGHT = 35; 
-        const ROW_GAP = 2;           
+        const ROW_GAP = 2;          
         const menuSteps = ['background', 'origin', 'appearance', 'keepsake', 'companion', 'trait', 'difficulty', 'start'];
 
         menuSteps.forEach((key) => {
@@ -249,11 +225,16 @@ export class CharacterCreatorRenderer {
 
                 const btnColor = (isSelected || isBtnHovered) ? UITheme.colors.textMain : UITheme.colors.textMuted;
                 
-                ctx.fillStyle = (isSelected || isBtnHovered) ? "rgba(255, 255, 255, 0.1)" : "rgba(0,0,0,0.5)";
+                // Base Button Box
+                ctx.fillStyle = "rgba(0,0,0,0.5)";
                 ctx.fillRect(menuStartX + 40, btnY, midW - 80, MENU_ITEM_HEIGHT);
-                
-                ctx.strokeStyle = btnColor;
+                ctx.strokeStyle = UITheme.colors.border;
                 ctx.strokeRect(menuStartX + 40, btnY, midW - 80, MENU_ITEM_HEIGHT);
+
+                // Selection Brackets
+                if (isSelected || isBtnHovered) {
+                    ui.drawSelectionBrackets(menuStartX + 40, btnY, midW - 80, MENU_ITEM_HEIGHT, 4); // Added 4
+                }
 
                 ui.drawText("START", centerColX, btnY + (MENU_ITEM_HEIGHT/2) + 1, UITheme.fonts.body, btnColor, "center", "middle");
                 return; 
@@ -261,15 +242,11 @@ export class CharacterCreatorRenderer {
 
             this.hotspots.push({ id: rowId, x: menuStartX + 10, y: menuY, w: midW - 20, h: MENU_ITEM_HEIGHT });
 
+            // Menu Item Selection
             if (isSelected || isRowHovered) {
-                ctx.fillStyle = isSelected ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)";
+                ctx.fillStyle = "rgba(255,255,255,0.02)"; // Very subtle highlight
                 ctx.fillRect(menuStartX + 10, menuY, midW - 20, MENU_ITEM_HEIGHT);
-
-                if (isSelected) {
-                    ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
-                    ctx.lineWidth = 1;
-                    ctx.strokeRect(menuStartX + 10, menuY, midW - 20, MENU_ITEM_HEIGHT);
-                }
+                ui.drawSelectionBrackets(menuStartX + 10, menuY, midW - 20, MENU_ITEM_HEIGHT, 4); // Added 4
             }
 
             const labelY = menuY + 10;
@@ -319,7 +296,6 @@ export class CharacterCreatorRenderer {
 
         // ========================================================
         // 3. RIGHT COLUMN (Details)
-        // Background: Darkest (bgScale[0])
         // ========================================================
         const rightColX = CANVAS_WIDTH - colW - p;
         ui.drawPanel(rightColX, startY, colW, panelHeight, UITheme.colors.bgScale[0]);

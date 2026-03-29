@@ -11,13 +11,15 @@ export class StatCalculator {
         ];
     }
 
-    static calculate(character) {
-        const details = this._runPipeline(character);
+    // [UPDATED] Added optional allocations parameter
+    static calculate(character, allocations = null) {
+        const details = this._runPipeline(character, allocations);
         return details.finalStats;
     }
 
-    static calculateDetailed(character) {
-        const { finalStats, breakdown } = this._runPipeline(character);
+    // [UPDATED] Added optional allocations parameter
+    static calculateDetailed(character, allocations = null) {
+        const { finalStats, breakdown } = this._runPipeline(character, allocations);
         
         return {
             attributes: finalStats,
@@ -51,7 +53,8 @@ export class StatCalculator {
         };
     }
 
-    static _runPipeline(character) {
+    // [UPDATED] Added optional allocations parameter
+    static _runPipeline(character, allocations = null) {
         const finalStats = {
             attack: {}, defense: {}, resistance: {},
             vigor: 0, strength: 0, dexterity: 0, intelligence: 0, attunement: 0,
@@ -106,10 +109,9 @@ export class StatCalculator {
             if (!item) return null;
             if (!item.definition) return item;
             
-            // Prioritize the instance's upgraded stats, fall back to the base definition
             return {
                 ...item.definition,
-                ...item, // Overwrites base keys with instance keys
+                ...item,
                 attributes: item.attributes || item.definition.attributes,
                 attack: item.attack || item.definition.attack,
                 defense: item.defense || item.definition.defense,
@@ -121,9 +123,15 @@ export class StatCalculator {
 
         // --- STEP 2: CALCULATE ATTRIBUTES ---
         const activeAttributes = { ...(character.attributes || {}) }; 
+
+        // [NEW] Inject preview allocations before merging other sources
+        if (allocations) {
+            for (const [key, val] of Object.entries(allocations)) {
+                activeAttributes[key] = (activeAttributes[key] || 0) + val;
+            }
+        }
+
         const equipment = character.equipment || character.state?.equipment || {};
-        
-        // [FIX] Rename to traitList since they might be objects OR strings now
         const traitList = character.traits || character.state?.traits || [];
 
         const mergeAttributes = (source) => {
@@ -135,7 +143,6 @@ export class StatCalculator {
 
         Object.values(equipment).forEach(item => { if (item) mergeAttributes(getEffectiveStats(item)); });
         
-        // [FIX] Check if trait is a string (EntityModel) or object (CombatantModel)
         traitList.forEach(trait => {
             const def = typeof trait === 'string' ? TRAIT_DEFINITIONS[trait] : trait;
             if (def) mergeAttributes(def); 
@@ -144,28 +151,22 @@ export class StatCalculator {
         Object.assign(finalStats, activeAttributes);
 
         // --- STEP 3: DERIVED SCALING (SYMMETRICAL & BALANCED) ---
-
-        // 1. Vitality Pillar (Vigor handles HP and MODERATED Defense)
+        // 1. Vitality Pillar
         breakdown.resources.derived.hp = (finalStats.vigor * 3);
-
-        // +0.5 Defense per Vigor point (Calculated as a floor of total points)
         const vigorDefense = Math.floor(finalStats.vigor * 0.5);
         this.DAMAGE_TYPES.forEach(t => {
             finalStats.defense[t] += vigorDefense;
         });
 
-        // 2. Physical Pillar (Power vs. Engine)
-        // Strength = Damage
+        // 2. Physical Pillar
         finalStats.attack.blunt  += finalStats.strength;
         finalStats.attack.slash  += finalStats.strength;
         finalStats.attack.pierce += finalStats.strength;
 
-        // Dexterity = Stamina
         breakdown.resources.derived.stamina = (finalStats.dexterity * 2);
         finalStats.staminaRecovery += finalStats.dexterity;
 
-        // 3. Magical Pillar (Power vs. Engine)
-        // Intelligence = Damage (All non-physical / Insight types)
+        // 3. Magical Pillar
         const physicalTypes = ["blunt", "slash", "pierce"];
         this.DAMAGE_TYPES.forEach(t => {
             if (!physicalTypes.includes(t)) {
@@ -173,7 +174,6 @@ export class StatCalculator {
             }
         });
 
-        // Attunement = Insight
         breakdown.resources.derived.insight = (finalStats.attunement * 2);
         finalStats.insightRecovery += finalStats.attunement;
 
@@ -196,7 +196,6 @@ export class StatCalculator {
         const currentHp = character.hp ?? character.state?.stats?.hp ?? breakdown.resources.base.hp;
         const currentMaxHp = breakdown.resources.base.hp + breakdown.resources.derived.hp + breakdown.resources.flat.hp; 
 
-        // [FIX] Same check for strings vs objects here
         traitList.forEach(trait => {
             const def = typeof trait === 'string' ? TRAIT_DEFINITIONS[trait] : trait;
             if (def?.stats) applyFlat(def.stats);

@@ -4,7 +4,7 @@ const BASE_ENTITY = {
     level: 1, 
     xp: 0,            
     maxXp: 100,       
-    skillPoints: 0,   
+    skillPoints: 1,   
 
     // --- VISUALS ---
     spriteOverworld: "missing_texture",  
@@ -79,6 +79,8 @@ const BEAST_TEMPLATE = {
     name: "Beast",
     spriteOverworld: "germanSheepherdSprite",
     spritePortrait: "germanSheepherdPortrait",
+      battlePortraitFramesFront: 1, // Defaults for enemy view
+        battlePortraitFramesBack: 1,  // Defaults for player view    
     crySound: "dogCry",       // <-- NEW: Plays on battle start
     deathSound: "dogDeath",
     attributes: { vigor: 1, strength: 8, dexterity: 14, intelligence: 3, attunement: 5 },
@@ -106,6 +108,47 @@ const BEAST_TEMPLATE = {
 export const ENTITY_DEFINITIONS = {
     "HUMANOID": HUMANOID_TEMPLATE,
 
+    "MAD_MAGE": {
+        ...HUMANOID_TEMPLATE, 
+        name: "Mad Mage",
+        level: 1,
+        
+        spriteOverworld: "madMageSprite",
+        spritePortrait: "madMagePortrait",
+         battlePortraitFramesFront: 4, // Defaults for enemy view
+        battlePortraitFramesBack: 1,  // Defaults for player view    
+        crySound: "legionaryCry",       // <-- NEW: Plays on battle start
+        deathSound: "legionaryCry",
+        attributes: {
+            ...HUMANOID_TEMPLATE.attributes,
+            vigor: 6, intelligence: 14, attunement: 12
+        },
+         traits: [],
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 20, maxStamina: 20, maxInsight: 20,
+            baseDefense: {
+                ...HUMANOID_TEMPLATE.baseStats.baseDefense,
+                slash: 2, pierce: 2, blunt: 1
+            }
+        },
+
+        equipment: {
+            ...HUMANOID_TEMPLATE.equipment,
+            mainHand: "insight_of_arcane",
+        },
+
+        // Better currency, rare chance to drop their sword or a ration
+        currencyReward: { min: 5, max: 15 },
+        lootTable: [
+            { id: "healing_herb", dropRate: 0.25 }, // 15% chance
+            { id: "dagger", dropRate: 0.05 },    // 5% chance
+            { id: "insight_of_arcane", dropRate: 0.15 }
+        ],
+        abilities: [...HUMANOID_TEMPLATE.abilities],
+        tags: [...HUMANOID_TEMPLATE.tags]
+    },
+
     "LEGIONARY": {
         ...HUMANOID_TEMPLATE, 
         name: "Legionary",
@@ -113,6 +156,8 @@ export const ENTITY_DEFINITIONS = {
         
         spriteOverworld: "legionarySprite",
         spritePortrait: "legionaryPortrait",
+         battlePortraitFramesFront: 3, // Defaults for enemy view
+        battlePortraitFramesBack: 3,  // Defaults for player view    
         crySound: "legionaryCry",       // <-- NEW: Plays on battle start
         deathSound: "legionaryCry",
         attributes: {

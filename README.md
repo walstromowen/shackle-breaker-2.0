@@ -2,7 +2,7 @@
 Roguelike turnbased adventure game based on the Shackle Breaker story by Owen Walstrom
 
 
-consumable items in battle and party edits
+consumable items in battle
 enhance battle animations / polish
 two handed items
 clicking functionality across screens

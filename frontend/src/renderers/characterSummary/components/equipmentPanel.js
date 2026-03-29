@@ -44,9 +44,9 @@ export class EquipmentPanel {
         const totalMaxStm = this._getVal(stats.maxStamina) || this._getVal(member.maxStamina);
         const totalMaxIns = this._getVal(stats.maxInsight) || this._getVal(member.maxInsight);
         
-        // Also extract actual numbers for XP to prevent [object Object] bugs here too
+        // Expanded checks for Max XP (handles xpToNext OR maxXp)
         const currentXp = this._getVal(stats.xp) || this._getVal(member.xp);
-        const nextXp = this._getVal(stats.xpToNext) || this._getVal(member.xpToNext) || 100;
+        const nextXp = this._getVal(stats.xpToNext) || this._getVal(member.xpToNext) || this._getVal(stats.maxXp) || this._getVal(member.maxXp) || 100;
 
         const hpText = `HP ${this._getVal(member.hp)}/${totalMaxHp}`;
         const stmText = `STM ${this._getVal(member.stamina)}/${totalMaxStm}`;
@@ -95,6 +95,9 @@ export class EquipmentPanel {
                 this.PORTRAIT_SIZE, this.PORTRAIT_SIZE  // Destination Size: Scaled down
             );
         }
+
+        // --- ADD THIS LINE HERE ---
+        this._drawStatusEffects(member, pX, pY, this.PORTRAIT_SIZE);
         
         // --- SLOT DRAWING HELPER ---
         const drawSlot = (slotName, index, isLeft) => {
@@ -121,7 +124,7 @@ export class EquipmentPanel {
                 }
             }
 
-            // --- DYNAMIC STYLING ---
+           // --- DYNAMIC STYLING ---
             let borderColor = UITheme.colors.border;
             let boxColor = UITheme.colors.scrollTrack; 
             let lineWidth = 1;
@@ -130,11 +133,8 @@ export class EquipmentPanel {
                 borderColor = UITheme.colors.success; 
                 boxColor = "rgba(46, 204, 113, 0.15)"; 
                 lineWidth = 2;
-            } else if (isSelected) {
-                borderColor = UITheme.colors.selectedWhite;
-                boxColor = "rgba(240, 240, 240, 0.05)"; 
-                lineWidth = 2;
             }
+            // Removed the `else if (isSelected)` background/border override here!
 
             hitboxes.push({ id: `SLOT_${slotName}`, x: slotX, y: slotY, w: slotW, h: this.SLOT_HEIGHT, type: 'slot', slotId: slotName });
 
@@ -142,6 +142,12 @@ export class EquipmentPanel {
             this.ui.ctx.lineWidth = lineWidth;
             this.ui.drawRect(slotX, slotY, slotW, this.SLOT_HEIGHT, borderColor, false);
             this.ui.ctx.lineWidth = 1;
+
+            // DRAW SELECTION BRACKETS
+            if (isSelected) {
+                const pulseDist = 2 + Math.abs(Math.sin(Date.now() / 300)) * 3; 
+                this.ui.drawSelectionBrackets(slotX, slotY, slotW, this.SLOT_HEIGHT, pulseDist, UITheme.colors.selectedWhite);
+            }
 
             // --- GHOSTING LOGIC ---
             let item = equipData[slotName];
@@ -247,5 +253,51 @@ export class EquipmentPanel {
         
         const iconData = def.icon || {col:0, row:0};
         this.ui.drawSprite(sheet, iconData.col*32, iconData.row*32, 32, 32, x, y, 32, 32);
+    }
+    _drawStatusEffects(member, pX, pY, pSize) {
+        if (!member.statusEffects || member.statusEffects.length === 0) return;
+
+        // --- HARDCODED CONFIG ---
+        const sheetKey = 'statusEffects'; 
+        const srcSize = 32;  
+        const drawSize = 16; 
+        const spacing = 2; 
+
+        const sheet = this.loader.get ? this.loader.get(sheetKey) : this.loader.getAsset(sheetKey);
+        
+        let drawX = pX + 2; 
+        let drawY = pY + pSize - drawSize - 2;
+
+        member.statusEffects.forEach(effect => {
+            this.ui.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            this.ui.ctx.fillRect(drawX, drawY, drawSize, drawSize);
+
+            if (sheet && effect.icon) {
+                this.ui.ctx.drawImage(
+                    sheet, 
+                    effect.icon.col * srcSize, effect.icon.row * srcSize, srcSize, srcSize, 
+                    drawX, drawY, drawSize, drawSize 
+                );
+            } else {
+                // Notice we use this.ui.drawText here since EquipmentPanel routes through the UI manager
+                this.ui.drawText(effect.name.charAt(0), drawX + (drawSize/2), drawY + (drawSize/2) + 3, "bold 10px sans-serif", "white", "center");
+            }
+
+            this.ui.ctx.strokeStyle = UITheme.colors.border;
+            this.ui.ctx.strokeRect(drawX, drawY, drawSize, drawSize);
+
+            if (effect.stacks && effect.stacks > 1) {
+                this.ui.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                this.ui.ctx.beginPath();
+                this.ui.ctx.arc(drawX + drawSize, drawY + drawSize, 6, 0, Math.PI * 2);
+                this.ui.ctx.fill();
+                
+                this.ui.drawText(effect.stacks.toString(), drawX + drawSize, drawY + drawSize + 3, "bold 9px sans-serif", "white", "center");
+            }
+
+            drawX += (drawSize + spacing);
+            
+            if (drawX + drawSize > pX + pSize) return;
+        });
     }
 }

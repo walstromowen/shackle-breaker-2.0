@@ -15,7 +15,7 @@ export class PartyController {
         this.state = 'NAVIGATING'; // Options: 'NAVIGATING', 'MENU', 'SWAPPING'
 
         // --- MENU DATA ---
-        this.menuOptions = ['Summary', 'Move', 'Exile'];
+        this.menuOptions = []; // <-- CHANGED: Start empty, build dynamically
         this.menuIndex = 0;
 
         // --- SWAP DATA ---
@@ -59,14 +59,14 @@ export class PartyController {
     handleMouseDown(x, y, renderer) {
         const party = gameState.party.members;
         
-        // --- 1. MENU INTERACTION ---
         if (this.state === 'MENU') {
-            const menuActionIndex = renderer.getMenuHit(x, y, this.selectedIndex);
+            // --- THE FIX: Pass the dynamic length to the renderer ---
+            const menuActionIndex = renderer.getMenuHit(x, y, this.selectedIndex, this.menuOptions.length);
             
             if (menuActionIndex !== -1) {
                 this.selectMenuOption(menuActionIndex);
                 return;
-            } 
+            }
             
             const cardIndex = renderer.getHitIndex(x, y);
 
@@ -187,6 +187,18 @@ export class PartyController {
     openMenu() {
         this.state = 'MENU';
         this.menuIndex = 0; 
+        
+        const member = gameState.party.members[this.selectedIndex];
+        
+        // --- THE FIX: Build menu dynamically ---
+        this.menuOptions = ['Summary', 'Move'];
+        
+        // Assuming your character data has a 'skillPoints' property
+        if (member.skillPoints && member.skillPoints > 0) {
+            this.menuOptions.push('Spend Skill Points');
+        }
+        
+        this.menuOptions.push('Exile');
     }
 
     handleMenuKeys(code) {
@@ -217,6 +229,17 @@ export class PartyController {
             console.log(`[Party] Opening Summary for ${member.name}`);
             events.emit('CHANGE_SCENE', { 
                 scene: 'character_summary', 
+                data: { 
+                    memberIndex: this.selectedIndex,
+                    character: member 
+                } 
+            });
+            this.state = 'NAVIGATING'; 
+        }
+        else if (option === 'Spend Skill Points') {
+            console.log(`[Party] Opening Skills for ${member.name}`);
+            events.emit('CHANGE_SCENE', { 
+                scene: 'level_up', // Update this to match your actual scene name
                 data: { 
                     memberIndex: this.selectedIndex,
                     character: member 

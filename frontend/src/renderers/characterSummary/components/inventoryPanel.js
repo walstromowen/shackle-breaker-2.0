@@ -91,20 +91,12 @@ export class InventoryPanel {
                 const isHeld = state.heldItem && state.heldItem.item === item;
                 const isSelected = (index === inventoryIndex);
                 
-                // Colors (Standardized)
-                let bgFill = UITheme.colors.bgScale[1]; // Darkest grey
-                let borderFill = UITheme.colors.border; // Standard grey
-                let lineWidth = 1;
+                // Colors (Standardized) - Stripped out the selection overrides
+                const bgFill = UITheme.colors.bgScale[1]; // Darkest grey
+                const borderFill = UITheme.colors.border; // Standard grey
+                const lineWidth = 1;
 
-                if (isSelected) {
-                     // CHANGED: Use subtle misty white tint for selection background
-                     bgFill = "rgba(240, 240, 240, 0.05)"; 
-                     // CHANGED: Use selectedWhite for the border
-                     borderFill = UITheme.colors.selectedWhite;
-                     lineWidth = 2;
-                }
-
-                // Hitbox Registration
+                // Hitbox Registration (Keep your existing code here)
                 if (itemY + this.SLOT_SIZE >= listY && itemY <= listY + listH) {
                     hitboxes.push({
                         id: `INV_ITEM_${index}`,
@@ -121,7 +113,7 @@ export class InventoryPanel {
                 // Background
                 this.ui.drawRect(itemX, itemY, this.SLOT_SIZE, this.SLOT_SIZE, bgFill);
                 
-                // Border (Fixed drawStrokeRect)
+                // Border
                 if (this.ui.drawStrokeRect) {
                      this.ui.drawStrokeRect(itemX, itemY, this.SLOT_SIZE, this.SLOT_SIZE, borderFill, lineWidth);
                 } else {
@@ -131,7 +123,6 @@ export class InventoryPanel {
                 }
 
                 // Draw Icon
-                // Center icon in slot
                 const iconOffset = (this.SLOT_SIZE - 32) / 2;
                 if (!isHeld) {
                     this._drawIcon(def, itemX + iconOffset, itemY + iconOffset);
@@ -142,8 +133,13 @@ export class InventoryPanel {
 
                 // Count
                 if (item.qty > 1 && !isHeld) {
-                    // Used textHighlight (Gold) for count visibility
                     this.ui.drawText(`${item.qty}`, itemX + this.SLOT_SIZE - 2, itemY + this.SLOT_SIZE - 2, "10px sans-serif", UITheme.colors.textHighlight, "right");
+                }
+
+                // DRAW SELECTION BRACKETS
+                if (isSelected) {
+                    const pulseDist = 2 + Math.abs(Math.sin(Date.now() / 300)) * 3;
+                    this.ui.drawSelectionBrackets(itemX, itemY, this.SLOT_SIZE, this.SLOT_SIZE, pulseDist, UITheme.colors.selectedWhite);
                 }
             });
         }

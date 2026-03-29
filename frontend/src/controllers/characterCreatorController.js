@@ -395,7 +395,7 @@ export class CharacterCreatorController {
         const comp = CREATION_DATA.COMPANIONS[this.state.companionIdx];
         if (comp.speciesId) {
             // Loop 3 times to create 3 separate instances
-            for (let i = 1; i <= 3; i++) {
+            for (let i = 1; i <= 5; i++) {
                 const companionOverrides = {
                     name: `${comp.label} ${i}`, // e.g., "War Dog 1", "War Dog 2"
                     attributes: { ...comp.attributes },

@@ -7,7 +7,7 @@ import { WeatherDefinitions } from '../data/weatherDefinitions.js'; // NEW: Need
 export class TimeSystem {
     constructor() {
         // --- CONFIGURATION (Static, doesn't need saving) ---
-        this.GAME_MINUTES_PER_REAL_SEC = 20; 
+        this.GAME_MINUTES_PER_REAL_SEC = 1; 
         this.MAX_TIME = 24 * 60; 
 
         // 2. SYNC ON LOAD

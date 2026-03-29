@@ -8,6 +8,7 @@ import { CharacterCreatorController } from '../controllers/characterCreatorContr
 import { PartyController } from '../controllers/partyController.js';
 import { CharacterSummaryController } from '../controllers/characterSummaryController.js'; 
 import { BattleController } from '../controllers/battleController.js';
+import { LevelUpController } from '../controllers/levelUpController.js';    
 
 // --- RENDERERS ---
 import { MapRenderer } from '../renderers/overworld/mapRenderer.js';
@@ -19,6 +20,7 @@ import { CharacterCreatorRenderer } from '../renderers/characterCreator/characte
 import { PartyRenderer } from '../renderers/party/partyRenderer.js';
 import { CharacterSummaryRenderer } from '../renderers/characterSummary/characterSummaryRenderer.js'; 
 import { BattleRenderer } from '../renderers/battle/battleRenderer.js';
+import { LevelUpRenderer } from '../renderers/levelUp/levelUpRenderer.js';
 
 import { WorldManager } from '../../../shared/systems/worldManager.js'; 
 import { TimeSystem } from '../../../shared/systems/timeSystem.js';
@@ -44,6 +46,7 @@ export class SceneManager {
         this.characterCreatorController = new CharacterCreatorController(); 
         this.partyController = new PartyController();
         this.characterSummaryController = null; // Initialized on demand
+        this.levelUpController = new LevelUpController(this.input); // <-- NEW
 
         // 1. INITIALIZE BATTLE CONTROLLER
         this.battleController = new BattleController(this.input, this.config, this.worldManager);
@@ -59,6 +62,7 @@ export class SceneManager {
         
         // Pass this.loader here so the renderer can draw portraits
         this.characterSummaryRenderer = new CharacterSummaryRenderer(this.ctx, this.loader); 
+        this.levelUpRenderer = new LevelUpRenderer(this.ctx, this.config, this.loader); // <-- NEW
 
         // 2. INITIALIZE BATTLE RENDERER
         this.battleRenderer = new BattleRenderer(this.ctx, this.config, this.loader);
@@ -126,6 +130,9 @@ export class SceneManager {
                 
                 if (scene === 'character_summary') {
                     this.characterSummaryController = new CharacterSummaryController(this.input, data);
+                }
+                if (scene === 'level_up') {
+                    this.levelUpController.init(data); 
                 }
                 if (scene === 'party') {
                     this.partyController.init(data || {}); 
@@ -211,6 +218,9 @@ export class SceneManager {
                     this.characterSummaryController.handleKeyDown(e.code);
                 }
                 break;
+            case 'level_up':
+                this.levelUpController.handleKeyDown(e.code);
+                break;
         }
     }
 
@@ -257,6 +267,11 @@ export class SceneManager {
                     }
                 }
                 break;
+            case 'level_up':
+                if (click) {
+                    this.levelUpController.handleMouseDown(click.x, click.y, this.levelUpRenderer);
+                }
+                break;
 
             case 'party':
                 if (click) {
@@ -319,6 +334,10 @@ export class SceneManager {
                     const csState = this.characterSummaryController.getState();
                     this.characterSummaryRenderer.render(csState);
                 }
+                break;
+        case 'level_up':
+                const luState = this.levelUpController.getState();
+                this.levelUpRenderer.render(luState);
                 break;
         }
 

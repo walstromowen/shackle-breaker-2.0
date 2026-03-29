@@ -173,4 +173,43 @@ export class CanvasUI {
         if (!image) return;
         this.ctx.drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh);
     }
+// --- HUD ELEMENTS ---
+
+    // --- HUD ELEMENTS ---
+    drawSelectionBrackets(x, y, w, h, dist, color = UITheme.colors.borderHighlight) {
+        // We use the 'dist' passed in for the padding, allowing 
+        // different screens to scale the breathing effect as needed!
+        const p = dist; 
+        const len = 8;        // Length of the bracket arms
+        
+        this.ctx.save();
+        this.ctx.strokeStyle = color;
+        this.ctx.lineWidth = 2;
+        this.ctx.shadowColor = color;
+        this.ctx.shadowBlur = 8; // Kept your glow effect!
+        
+        this.ctx.beginPath();
+        // Top Left
+        this.ctx.moveTo(x - p, y - p + len);
+        this.ctx.lineTo(x - p, y - p);
+        this.ctx.lineTo(x - p + len, y - p);
+        
+        // Top Right
+        this.ctx.moveTo(x + w + p - len, y - p);
+        this.ctx.lineTo(x + w + p, y - p);
+        this.ctx.lineTo(x + w + p, y - p + len);
+        
+        // Bottom Right
+        this.ctx.moveTo(x + w + p, y + h + p - len);
+        this.ctx.lineTo(x + w + p, y + h + p);
+        this.ctx.lineTo(x + w + p - len, y + h + p);
+        
+        // Bottom Left
+        this.ctx.moveTo(x - p + len, y + h + p);
+        this.ctx.lineTo(x - p, y + h + p);
+        this.ctx.lineTo(x - p, y + h + p - len);
+        
+        this.ctx.stroke();
+        this.ctx.restore();
+    }
 }
