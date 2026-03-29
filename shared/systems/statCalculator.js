@@ -151,11 +151,18 @@ export class StatCalculator {
         Object.assign(finalStats, activeAttributes);
 
         // --- STEP 3: DERIVED SCALING (SYMMETRICAL & BALANCED) ---
+        
+        // [NEW] Level-based defense scaling (Option 1: +1 Defense every 2 levels)
+        const charLevel = character.level || 1;
+        const levelDefenseBonus = Math.floor(charLevel * 0.5);
+
         // 1. Vitality Pillar
         breakdown.resources.derived.hp = (finalStats.vigor * 3);
         const vigorDefense = Math.floor(finalStats.vigor * 0.5);
+        
         this.DAMAGE_TYPES.forEach(t => {
-            finalStats.defense[t] += vigorDefense;
+            // Apply both Vigor defense and the Level defense to all damage types
+            finalStats.defense[t] += vigorDefense + levelDefenseBonus;
         });
 
         // 2. Physical Pillar

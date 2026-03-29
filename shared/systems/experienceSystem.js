@@ -40,17 +40,9 @@ export const ExperienceSystem = {
         if (typeof entity.skillPoints === 'undefined') entity.skillPoints = 0;
         entity.skillPoints += 1;
 
-        // 2. Upgrade the raw base stats
-        if (entity.baseStats) {
-            entity.baseStats.maxHp += 10 + Math.floor(entity.level * 0.5);
-            entity.baseStats.maxStamina += 2;
-            entity.baseStats.maxInsight += 1;
-            
-            // Optional: Heal the entity upon leveling up using the NEW calculated max
-            entity.hp = entity.maxHp; 
-        } else {
-            console.warn(`[RPG] Level Up Error: Could not find baseStats for ${entity.name}`);
-        }
+        // 2. Heal the entity (Base stats no longer grow automatically)
+        if (entity.maxHp) entity.hp = entity.maxHp; 
+        if (entity.maxStamina) entity.stamina = entity.maxStamina;
+        if (entity.maxInsight) entity.insight = entity.maxInsight;
     }
-    
 };
