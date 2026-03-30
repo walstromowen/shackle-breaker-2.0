@@ -1,44 +1,48 @@
 export const encounterDefinitions = {
-
     // ==========================================
     // 1. MAP OBJECT ENCOUNTER: OAK TREE
     // ==========================================
     "oak_tree": {
         id: "oak_tree",
-        title: "A Sturdy Oak",
+        title: "A Sturdy Oak", // <-- Used directly by the UI now
         initialStage: "approach",
         stages: {
             "approach": {
-                imageId: "bg_forest_oak",
+                imageId: "encounters",
+                bgm: "plainsOverworldNight", // <-- BGM added
                 text: "A massive oak tree towers over you. Its thick trunk looks like it has stood here for centuries.",
                 decisions: [
                     {
-                        text: "Chop it down.",
-                        outcomes: [
-                            {
-                                weight: 100, // 100% chance
-                                results: [
-                                    { type: "ADVANCE_STAGE", payload: { stageId: "chopped_down" } }
-                                ]
-                            }
+                        text: "[Strength] Try to fell the tree in a single, mighty swing.",
+                        type: "skill_check",
+                        attribute: "strength",
+                        threshold: 14,
+                        successOutcomes: [
+                            { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "chopped_success" } }] }
+                        ],
+                        failureOutcomes: [
+                            { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "chopped_fail" } }] }
                         ]
                     },
                     {
-                        text: "Leave the tree in peace.",
+                        text: "Leave.",
                         outcomes: [
-                            {
-                                weight: 100,
-                                results: [
-                                    { type: "END_ENCOUNTER", payload: null }
-                                ]
-                            }
+                            { weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }
                         ]
-                    }
+                    },
+                    {
+                        text: "Switch character.",
+                        type: "switch_character",
+                        conditions: [
+                            { type: "has_other_party_members" }
+                        ]
+                    },
                 ]
             },
-            "chopped_down": {
-                imageId: "bg_forest_stump",
-                text: "With a few mighty swings, the ancient tree groans and crashes to the earth, yielding sturdy wood.",
+            "chopped_success": {
+                imageId: "encounters",
+                bgm: "plainsOverworldNight", // <-- BGM shifts on success
+                text: "[${context.roll_stat} Check: ${context.roll_total} vs DC ${context.roll_dc} - ${context.roll_result}]\n\nWith a flawless strike, the ancient tree groans and crashes to the earth.",
                 decisions: [
                     {
                         text: "Collect the wood.",
@@ -46,10 +50,28 @@ export const encounterDefinitions = {
                             {
                                 weight: 100,
                                 results: [
-        { type: "GIVE_ITEM", payload: { itemId: "soft_wood", qty: 3 } },
-        { type: "DESTROY_OBJECT" }, // <-- Use the one you already built!
-        { type: "END_ENCOUNTER", payload: null }
-    ]
+                                    { type: "GIVE_ITEM", payload: { itemId: "soft_wood", qty: 3 } },
+                                    { type: "DESTROY_OBJECT" }, 
+                                    { type: "END_ENCOUNTER", payload: null }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            "chopped_fail": {
+                imageId: "encounters",
+                text: "[${context.roll_stat} Check: ${context.roll_total} vs DC ${context.roll_dc} - ${context.roll_result}]\n\nYour axe glances off the thick bark. You jar your arms terribly but fail to bring it down.",
+                decisions: [
+                    {
+                        text: "Ouch. Walk away.",
+                        outcomes: [
+                            {
+                                weight: 100,
+                                results: [
+                                    { type: "TAKE_DAMAGE", payload: { amount: 2, target: "active_character" } },
+                                    { type: "END_ENCOUNTER", payload: null }
+                                ]
                             }
                         ]
                     }
@@ -67,44 +89,33 @@ export const encounterDefinitions = {
         initialStage: "discovery",
         stages: {
             "discovery": {
-                imageId: "bg_forest_bushes",
+                imageId: "encounters",
+                bgm: "tense_strings", // <-- Tense music starts
                 text: "You hear a faint whimper. You find a scruffy dog with a nasty gash on its hind leg. It growls softly, baring its teeth.",
                 decisions: [
                     {
                         text: "Offer it some food to calm it down.",
                         outcomes: [
-                            {
-                                weight: 100,
-                                results: [{ type: "ADVANCE_STAGE", payload: { stageId: "offer_food" } }]
-                            }
+                            { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "offer_food" } }] }
                         ]
                     },
                     {
                         text: "Reach out and try to bandage the wound directly.",
                         outcomes: [
-                            {
-                                weight: 40, // 40% chance you succeed without getting bitten
-                                results: [{ type: "ADVANCE_STAGE", payload: { stageId: "success_tame" } }]
-                            },
-                            {
-                                weight: 60, // 60% chance the dog panics
-                                results: [{ type: "ADVANCE_STAGE", payload: { stageId: "rushed_bandage" } }]
-                            }
+                            { weight: 40, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "success_tame" } }] },
+                            { weight: 60, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "rushed_bandage" } }] }
                         ]
                     },
                     {
                         text: "Leave the poor creature to its fate.",
                         outcomes: [
-                            {
-                                weight: 100,
-                                results: [{ type: "ADVANCE_STAGE", payload: { stageId: "walk_away" } }]
-                            }
+                            { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "walk_away" } }] }
                         ]
                     }
                 ]
             },
             "offer_food": {
-                imageId: "bg_forest_dog_calm",
+                imageId: "encounters",
                 text: "You toss a piece of dried meat toward the dog. It sniffs cautiously before gobbling it up. It seems to trust you now.",
                 decisions: [
                     {
@@ -122,7 +133,8 @@ export const encounterDefinitions = {
                 ]
             },
             "rushed_bandage": {
-                imageId: "bg_forest_dog_angry",
+                imageId: "encounters",
+                bgm: "battle_prelude", // <-- Music escalates here!
                 text: "Startled and in pain, the wild mutt snaps fiercely at your hand!",
                 decisions: [
                     {
@@ -152,6 +164,7 @@ export const encounterDefinitions = {
             },
             "success_tame": {
                 imageId: "bg_forest_dog_happy",
+                bgm: "happy_theme", // <-- Peaceful music resolves it
                 text: "You skillfully wrap the wound. The dog licks your hand in gratitude. You have a new friend.",
                 decisions: [
                     {
@@ -170,6 +183,7 @@ export const encounterDefinitions = {
             },
             "success_tame_hurt": {
                 imageId: "bg_forest_dog_happy",
+                bgm: "happy_theme",
                 text: "The dog's teeth sink into your hand, but you endure the pain to wrap the wound. The dog whines apologetically.",
                 decisions: [
                     {
@@ -188,15 +202,13 @@ export const encounterDefinitions = {
             },
             "walk_away": {
                 imageId: "bg_forest_path",
+                bgm: "forest_ambient",
                 text: "You turn your back on the whimpering animal. The wilds are unforgiving, and you must look out for yourself.",
                 decisions: [
                     {
                         text: "Continue your journey.",
                         outcomes: [
-                            {
-                                weight: 100,
-                                results: [{ type: "END_ENCOUNTER", payload: null }]
-                            }
+                            { weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }
                         ]
                     }
                 ]

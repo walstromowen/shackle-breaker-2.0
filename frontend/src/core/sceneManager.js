@@ -82,8 +82,12 @@ export class SceneManager {
             return 'plainsBattle1';
         }
         
+        // Let the EncounterController handle its own music dynamically!
+        if (targetScene === 'encounter') {
+            return null; 
+        }
+        
         // If it's the overworld, party screen, or character summary, 
-        // we just keep playing the overworld theme!
         return 'plainsOverworldDay';
     }
 
@@ -109,7 +113,9 @@ export class SceneManager {
         
         // 1. Manage Music
         const targetBGM = this.resolveTargetBGM(sceneName);
-        events.emit('PLAY_MUSIC', { id: targetBGM, fadeTime: 1.0 });
+        if (targetBGM) { // <-- ADD THIS CHECK
+            events.emit('PLAY_MUSIC', { id: targetBGM, fadeTime: 1.0 });
+        }
 
         // 2. Manage Weather Ambience
         const targetAmbience = this.resolveTargetAmbience(sceneName);
@@ -149,7 +155,7 @@ export class SceneManager {
                 this.transitionRenderer.start(() => {
                     this.encounterController.start(data.id, data.context);
                     this.changeScene('encounter');
-                }, 'wipe'); 
+                }, 'fade'); 
             }
         });
 
@@ -225,82 +231,92 @@ export class SceneManager {
     }
 
     update(dt) {
-        // 1. UPDATE GLOBAL SYSTEMS (Runs in every scene)
-        const click = this.input.getAndResetClick();
-        const rightClick = this.input.getAndResetRightClick();
-        const scroll = this.input.getAndResetScroll();
-        const mousePos = this.input.getMousePosition(); 
-        const isMouseDown = this.input.getIsMouseDown ? this.input.getIsMouseDown() : false;
-        
-        // (Removed timeSystem.update(dt) from here)
-        
-        // ============================================================
-        // SCENE SPECIFIC UPDATES & INPUT HANDLING
-        // ============================================================
+        // 1. UPDATE GLOBAL SYSTEMS (Runs in every scene)
+        const click = this.input.getAndResetClick();
+        const rightClick = this.input.getAndResetRightClick();
+        const scroll = this.input.getAndResetScroll();
+        const mousePos = this.input.getMousePosition(); 
+        const isMouseDown = this.input.getIsMouseDown ? this.input.getIsMouseDown() : false;
+        
+        // ============================================================
+        // SCENE SPECIFIC UPDATES & INPUT HANDLING
+        // ============================================================
 
-        switch (this.currentScene) {
-            case 'character-creator':
-                if (this.characterCreatorController.handleMouseMove) {
-                    this.characterCreatorController.handleMouseMove(mousePos.x, mousePos.y);
-                }
-                if (click) {
-                    this.characterCreatorController.handleMouseDown(click.x, click.y);
-                }
-                break;
+        switch (this.currentScene) {
+            case 'character-creator':
+                if (this.characterCreatorController.handleMouseMove) {
+                    this.characterCreatorController.handleMouseMove(mousePos.x, mousePos.y);
+                }
+                if (click) {
+                    this.characterCreatorController.handleMouseDown(click.x, click.y);
+                }
+                break;
 
-            case 'character_summary':
-                if (this.characterSummaryController) {
-                    this.characterSummaryController.handleMouseMove?.(mousePos.x, mousePos.y, isMouseDown);
-                    
-                    const hitZoneId = this.characterSummaryRenderer.getHitZone(mousePos.x, mousePos.y);
-                    this.characterSummaryController.handleHover?.(hitZoneId);
+            case 'character_summary':
+                if (this.characterSummaryController) {
+                    this.characterSummaryController.handleMouseMove?.(mousePos.x, mousePos.y, isMouseDown);
+                    
+                    const hitZoneId = this.characterSummaryRenderer.getHitZone(mousePos.x, mousePos.y);
+                    this.characterSummaryController.handleHover?.(hitZoneId);
 
-                    if (click && hitZoneId) {
-                        this.characterSummaryController.handleInteraction(hitZoneId);
-                    }
-                    if (rightClick) {
-                        const rightClickZoneId = this.characterSummaryRenderer.getHitZone(rightClick.x, rightClick.y);
-                        this.characterSummaryController.handleRightClick(rightClickZoneId);
-                    }
-                    if (scroll !== 0) {
-                        this.characterSummaryController.handleScroll?.(scroll);
-                    }
-                }
-                break;
+                    if (click && hitZoneId) {
+                        this.characterSummaryController.handleInteraction(hitZoneId);
+                    }
+                    if (rightClick) {
+                        const rightClickZoneId = this.characterSummaryRenderer.getHitZone(rightClick.x, rightClick.y);
+                        this.characterSummaryController.handleRightClick(rightClickZoneId);
+                    }
+                    if (scroll !== 0) {
+                        this.characterSummaryController.handleScroll?.(scroll);
+                    }
+                }
+                break;
             case 'level_up':
                 if (click) {
                     this.levelUpController.handleMouseDown(click.x, click.y, this.levelUpRenderer);
                 }
                 break;
 
-            case 'party':
-                if (click) {
-                    this.partyController.handleMouseDown(click.x, click.y, this.partyRenderer);
-                }
-                break;
-        }
+            case 'party':
+                if (click) {
+                    this.partyController.handleMouseDown(click.x, click.y, this.partyRenderer);
+                }
+                break;
+        }
 
-        // --- 2. REGULAR UPDATES ---
-        this.transitionRenderer.update(dt);
+        // --- 2. REGULAR UPDATES ---
+        this.transitionRenderer.update(dt);
 
-        if (this.currentScene === 'overworld') {
+        if (this.currentScene === 'overworld') {
             // TIME NOW ONLY PROGRESSES HERE!
             this.timeSystem.update(dt); 
 
-            this.overworldController.update(dt);
-            if (this.weatherRenderer.update) {
-                this.weatherRenderer.update(dt, this.overworldController.getState().camera);
-            }
-        }
-        
-        if (this.currentScene === 'battle') {
-            if (typeof this.battleController.update !== 'function') {
-                console.error("CRITICAL ERROR: BattleController is missing 'update()' method! Please save BattleController.js and refresh.");
-            } else {
-                this.battleController.update(dt);
-            }
-        }
-    }
+            this.overworldController.update(dt);
+            if (this.weatherRenderer.update) {
+                this.weatherRenderer.update(dt, this.overworldController.getState().camera);
+            }
+        }
+        
+        // ---> NEW BLOCK START <---
+        if (this.currentScene === 'encounter') {
+            // This is what makes the textTimer tick!
+            this.encounterController.update(dt); 
+            
+            // Keep the weather animating in the background of encounters
+            if (this.weatherRenderer.update) {
+                this.weatherRenderer.update(dt, this.overworldController.getState().camera);
+            }
+        }
+        // ---> NEW BLOCK END <---
+        
+        if (this.currentScene === 'battle') {
+            if (typeof this.battleController.update !== 'function') {
+                console.error("CRITICAL ERROR: BattleController is missing 'update()' method! Please save BattleController.js and refresh.");
+            } else {
+                this.battleController.update(dt);
+            }
+        }
+    }
 
     render(interpolation, totalTime) { 
         if (!this.loader.isDone()) return;

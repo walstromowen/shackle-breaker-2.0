@@ -9,21 +9,30 @@ export class EncounterController {
         this.config = config;
         this.worldManager = worldManager;
         
-        // The active encounter model
         this.model = null;
         this.selectedIndex = 0;
+
+        // Action State Variables
+        this.actionPhase = 'none'; // 'none', 'message', 'wait_for_roll', 'rolling', 'result'
+        this.pendingDecision = null; 
+        this.actionMessage = "";
+        
+        // Dice Timers and Data
+        this.rollTimer = 0;
+        this.rollTickTimer = 0; 
+        this.rollData = { displayVal: "?", d20: 0, mod: 0, total: 0, dc: 0, isSuccess: false, duration: 3.5 };
+
+        // GameLoop-Synced Animation Tracking
+        this.lastText = ""; 
+        this.textTimer = 0; 
+        this.skipMessageAnimation = false;
+       
+        this.updateBGM();
     }
 
-    /**
-     * Called by SceneManager when switching to this scene via INTERACT event.
-     * @param {string} encounterId - The ID from the Interaction component.
-     * @param {object} context - { col, row, objectId } of the object triggering this.
-     */
     start(encounterId, context = {}) {
-        // Use the new Factory to build an active Model instance
         this.model = EncounterFactory.create(encounterId, context);
         
-        // Safety check (handled by factory fallback, but good to ensure model exists)
         if (!this.model) {
             console.error(`[Encounter] Failed to create model for ID '${encounterId}'.`);
             events.emit('CHANGE_SCENE', { scene: 'overworld' });
@@ -31,58 +40,247 @@ export class EncounterController {
         }
 
         this.selectedIndex = 0;
+        this.actionPhase = 'none';
+        this.pendingDecision = null;
+        this.actionMessage = "";
+        this.rollTimer = 0;
+        
+        this.lastText = ""; 
+        this.textTimer = 0; 
+        this.skipMessageAnimation = false;
         console.log(`[Encounter] Started: ${this.model.id}`);
+
+        this.updateBGM();
     }
 
-    getState() {
-        // Safety check to prevent Renderer crash during transitions
-        if (!this.model) return { imageId: null, text: "", decisions: [], ui: {} };
+    update(dt) {
+        if (!this.model) return;
+        this.textTimer += dt;
 
-        // We now ask the Model for the parsed text and available decisions
-        return {
-            imageId: this.model.getImageId(),
-            text: this.model.getCurrentText(),
-            decisions: this.model.getAvailableDecisions(),
-            ui: { selectedDecisionIndex: this.selectedIndex }
-        };
+        if (this.actionPhase === 'message') {
+            const charsPerSecond = 45;
+            const totalTypingTime = this.actionMessage.length * (1 / charsPerSecond);
+
+            if (this.skipMessageAnimation || this.textTimer >= (totalTypingTime + 2.0)) {
+                this.skipMessageAnimation = false; 
+                
+                if (this.pendingDecision && this.pendingDecision.type === 'skill_check') {
+                    this.setupRollData(this.pendingDecision);
+                    this.actionPhase = 'wait_for_roll';
+                } else {
+                    this.resolveAction();
+                }
+            }
+        } 
+        else if (this.actionPhase === 'rolling') {
+            this.rollTimer -= dt;
+            this.rollTickTimer -= dt;
+            
+            if (this.rollTimer <= 0 || this.skipMessageAnimation) {
+                // Phase 1 finished: Hold on the base d20
+                this.rollData.displayVal = this.rollData.d20; 
+                this.actionPhase = 'hold_base';
+                this.rollTimer = 1.5; // Hold for 1.5 seconds
+                this.skipMessageAnimation = false;
+
+                events.emit('PLAY_SFX', { id: 'dice_land', volume: 0.7 });
+
+            } else if (this.rollTickTimer <= 0) {
+                this.rollData.displayVal = Math.floor(Math.random() * 20) + 1;
+                
+                const progress = 1.0 - (this.rollTimer / this.rollData.duration);
+                this.rollTickTimer = 0.015 + (Math.pow(progress, 6) * 1.2); 
+
+                events.emit('PLAY_SFX', { 
+                    id: 'dice_tick', 
+                    volume: 0.3, 
+                    pitch: 0.9 + (Math.random() * 0.2) 
+                });
+            }
+        }
+        else if (this.actionPhase === 'hold_base') {
+            this.rollTimer -= dt;
+            
+            if (this.rollTimer <= 0 || this.skipMessageAnimation) {
+                // Phase 2 finished: Begin animating the modifier
+                this.actionPhase = 'apply_mod';
+                this.rollTimer = 2.0; // Animate modifier over 2 seconds to make it a bit longer
+                this.skipMessageAnimation = false;
+            }
+        }
+        else if (this.actionPhase === 'apply_mod') {
+            this.rollTimer -= dt;
+            
+            // Calculate progress (0.0 to 1.0) and apply partial modifier
+            const duration = 2.0; // Matches extended time above
+            let progress = 1.0 - (this.rollTimer / duration);
+            progress = Math.min(Math.max(progress, 0), 1); // Clamp between 0 and 1
+            
+            const currentMod = Math.round(this.rollData.mod * progress);
+            this.rollData.displayVal = this.rollData.d20 + currentMod;
+
+            if (this.rollTimer <= 0 || this.skipMessageAnimation) {
+                // Phase 3 finished: Show final total and trigger result phase (color change)
+                this.rollData.displayVal = this.rollData.total; 
+                this.actionPhase = 'result';
+                this.rollTimer = 2.0; 
+                this.skipMessageAnimation = false;
+            }
+        }
+        else if (this.actionPhase === 'result') {
+            this.rollTimer -= dt;
+            if (this.rollTimer <= 0 || this.skipMessageAnimation) {
+                this.resolveAction();
+            }
+        }
     }
 
     handleKeyDown(key) {
         if (!this.model) return; 
 
+        const charsPerSecond = 45;
+        const totalTypingTime = this.lastText.length * (1 / charsPerSecond);
+        const isAnimatingText = this.textTimer < (totalTypingTime + 2.0);
+
+        const skipPhases = ['message', 'rolling', 'hold_base', 'apply_mod', 'result'];
+
+        if (skipPhases.includes(this.actionPhase) || isAnimatingText) {
+            if (key === "Enter" || key === "Space") {
+                this.skipMessageAnimation = true; 
+                this.textTimer = totalTypingTime + 2.0; 
+            }
+            return; 
+        }
+
+        if (this.actionPhase === 'wait_for_roll') {
+            if (key === "Enter" || key === "Space") {
+                this.triggerRoll();
+            }
+            return; 
+        }
+
         const options = this.model.getAvailableDecisions();
         if (!options || options.length === 0) return;
 
-        // Escape Key -> Exit immediately (optional, depending on design)
         if (key === "Escape") {
              this.endEncounter(); 
              return;
         } 
 
-        // Navigation
         if (key === "ArrowUp" || key === "KeyW") {
             this.selectedIndex = (this.selectedIndex - 1 + options.length) % options.length;
+            events.emit('PLAY_SFX', { id: 'ui_hover', volume: 0.4 });
         } 
         else if (key === "ArrowDown" || key === "KeyS") {
             this.selectedIndex = (this.selectedIndex + 1) % options.length;
+            events.emit('PLAY_SFX', { id: 'ui_hover', volume: 0.4 });
         } 
-        // Selection
         else if (key === "Enter" || key === "Space") {
-            this.confirmSelection(options[this.selectedIndex]);
+            events.emit('PLAY_SFX', { id: 'ui_select', volume: 0.6 });
+            
+            const selectedDecision = options[this.selectedIndex];
+            
+            // NEW: Intercept the switch_character decision
+            if (selectedDecision.type === 'switch_character') {
+                // Shift the active character to the end of the array
+                const currentActive = gameState.party.members.shift();
+                gameState.party.members.push(currentActive);
+                
+                // Reset the cursor to the top just to be safe
+                this.selectedIndex = 0;
+            } else {
+                // Proceed with normal action sequences (typing out message, rolls, etc.)
+                this.beginActionSequence(selectedDecision);
+            }
         }
     }
 
-    confirmSelection(decision) {
-        if (!decision || !decision.outcomes || decision.outcomes.length === 0) return;
+    triggerRoll() {
+        this.actionPhase = 'rolling';
+        this.rollTimer = this.rollData.duration;
+        this.rollTickTimer = 0; 
+        events.emit('PLAY_SFX', { id: 'dice_throw', volume: 0.8 });
+    }
 
-        // 1. Calculate the total weight of all possible outcomes
-        const totalWeight = decision.outcomes.reduce((sum, outcome) => sum + (outcome.weight || 1), 0);
+    beginActionSequence(decision) {
+        if (!decision) return;
 
-        // 2. Roll a random number to select the outcome
+        this.pendingDecision = decision;
+        this.actionPhase = 'message';
+        this.textTimer = 0; 
+        this.skipMessageAnimation = false;
+        
+        const actorName = gameState.party.members[0].name; 
+        
+        if (decision.type === 'skill_check') {
+             const actionText = decision.text.replace(/\[.*?\]/, '').trim().toLowerCase();
+             this.actionMessage = `${actorName} attempts to ${actionText}...`;
+        } else {
+             this.actionMessage = `${actorName} decides to ${decision.text.toLowerCase()}...`;
+        }
+
+        this.lastText = this.actionMessage; 
+    }
+
+    setupRollData(decision) {
+        const roller = gameState.party.members[0];
+        
+        const attributes = roller.attributes || {};
+        const statValue = attributes[decision.attribute] || 0; 
+        
+        const modifier = statValue > 10 ? Math.floor((statValue - 10) / 3) : 0;
+        
+        const d20 = Math.floor(Math.random() * 20) + 1;
+        const total = d20 + modifier;
+        
+        this.rollData = {
+            d20: d20,
+            mod: modifier,
+            total: total,
+            dc: decision.threshold,
+            isSuccess: total >= decision.threshold,
+            displayVal: "?", 
+            duration: 3.5
+        };
+    }
+
+    resolveAction() {
+        this.actionPhase = 'none';
+        const decision = this.pendingDecision;
+        this.pendingDecision = null;
+        
+        if (!decision) return;
+
+        if (decision.type === 'skill_check') {
+            if (this.rollData.isSuccess) {
+                events.emit('PLAY_SFX', { id: 'skill_success', volume: 0.7 });
+            } else {
+                events.emit('PLAY_SFX', { id: 'skill_failure', volume: 0.7 });
+            }
+
+            this.model.updateContext({
+                roll_stat: decision.attribute.toUpperCase(),
+                roll_d20: this.rollData.d20,
+                roll_mod: this.rollData.mod,
+                roll_total: this.rollData.total,
+                roll_dc: this.rollData.dc,
+                roll_result: this.rollData.isSuccess ? "SUCCESS" : "FAILED"
+            });
+            const targetOutcomes = this.rollData.isSuccess ? decision.successOutcomes : decision.failureOutcomes;
+            this.processOutcomes(targetOutcomes);
+        } else {
+            this.processOutcomes(decision.outcomes);
+        }
+    }
+
+    processOutcomes(outcomes) {
+        if (!outcomes || outcomes.length === 0) return;
+
+        const totalWeight = outcomes.reduce((sum, outcome) => sum + (outcome.weight || 1), 0);
         let roll = Math.random() * totalWeight;
         let selectedOutcome = null;
 
-        for (const outcome of decision.outcomes) {
+        for (const outcome of outcomes) {
             roll -= (outcome.weight || 1);
             if (roll <= 0) {
                 selectedOutcome = outcome;
@@ -90,10 +288,7 @@ export class EncounterController {
             }
         }
 
-        // Fallback safety
-        if (!selectedOutcome) selectedOutcome = decision.outcomes[0];
-
-        // 3. Process the results of the chosen outcome
+        if (!selectedOutcome) selectedOutcome = outcomes[0];
         this.resolveResults(selectedOutcome.results);
     }
 
@@ -105,92 +300,98 @@ export class EncounterController {
             const payload = result.payload;
 
             switch (type) {
-                // --- NAVIGATION ---
                 case "ADVANCE_STAGE":
                     this.model.advanceToStage(payload.stageId);
                     this.selectedIndex = 0;
+                    this.updateBGM(); 
                     break;
-                
                 case "CHANGE_ENCOUNTER":
-                    // Jump entirely to a different encounter definition
                     this.model = EncounterFactory.create(payload.encounterId, this.model.context, payload.stageId);
                     this.selectedIndex = 0;
+                    this.updateBGM(); 
                     break;
-
                 case "END_ENCOUNTER":
                     this.endEncounter();
                     break;
-
-                // --- WORLD INTERACTION ---
                 case "DESTROY_OBJECT":
                     const ctx = this.model.context;
                     if (ctx && ctx.col !== undefined && ctx.row !== undefined) {
-                        console.log(`[Encounter] Destroying object at ${ctx.col}, ${ctx.row}`);
                         this.worldManager.modifyWorld(ctx.col, ctx.row, null);
-                    } else {
-                        console.warn("[Encounter] DESTROY_OBJECT called but no col/row in context.");
                     }
                     break;
-                
-                // --- INVENTORY ---
                 case "GIVE_ITEM":
                     InventorySystem.addItem(payload.itemId, payload.qty);
-                    console.log(`[Encounter] Added ${payload.qty}x ${payload.itemId} to inventory.`);
                     break;
-
                 case "REMOVE_ITEM":
                     InventorySystem.removeItem(payload.itemId, payload.qty);
-                    console.log(`[Encounter] Removed ${payload.qty}x ${payload.itemId} from inventory.`);
                     break;
-
-                // --- BATTLE ---
                 case "START_BATTLE":
-                    // Trigger battle via EventBus just like the OverworldController does
-                    console.log(`[Encounter] Triggering battle from dialogue!`);
                     events.emit('START_BATTLE', {
                         enemies: payload.enemies,
                         background: payload.background,
                         weather: gameState.world.currentWeather
                     });
                     break;
-                    
-                // --- GLOBAL EVENTS (Damage, etc.) ---
+                case "TAKE_DAMAGE": 
+                    events.emit("TAKE_DAMAGE", payload);
+                    break;
                 default:
-                    // Anything else gets blindly fired to the event bus for other systems to catch
                     events.emit(type, payload);
                     break;
             }
         });
     }
 
-    /**
-     * PHASE 1: Trigger the Transition
-     */
     endEncounter() {
-        console.log("[Encounter] Signaling end...");
         events.emit('CHANGE_SCENE', { scene: 'overworld' });
     }
 
-    /**
-     * PHASE 2: The Cleanup
-     * Called by SceneManager during the black-screen transition (optional).
-     */
     cleanup() {
-        console.log("[Encounter] Wiping data.");
         this.model = null;
+        this.pendingDecision = null;
     }
-    getState() {
-        // Safety check to prevent Renderer crash during transitions
-        if (!this.model) return { imageId: null, text: "", decisions: [], ui: {}, party: [] };
 
-        // We now ask the Model for the parsed text and available decisions, 
-        // AND grab the active party members from the global state!
+    updateBGM() {
+        if (!this.model) return; 
+
+        const targetBGM = this.model.getBgm ? this.model.getBgm() : null;
+        if (targetBGM) {
+            events.emit('PLAY_MUSIC', { id: targetBGM, fadeTime: 1.0 });
+        }
+    }
+
+    getState() {
+        if (!this.model) return { imageId: null, title: "", text: "", decisions: [], ui: {}, party: [], skipMessageAnimation: false, textTimer: 0, actionPhase: 'none' };
+
+        let displayText = this.model.getCurrentText();
+        let displayDecisions = this.model.getAvailableDecisions();
+
+        if (this.actionPhase !== 'none') {
+            displayText = this.actionMessage; 
+            displayDecisions = []; 
+        }
+
+        if (this.lastText !== displayText) {
+            this.lastText = displayText;
+            this.textTimer = 0; 
+            this.skipMessageAnimation = false; 
+        }
+
         return {
+            title: this.model.title || "Unknown Encounter", 
             imageId: this.model.getImageId(),
-            text: this.model.getCurrentText(),
-            decisions: this.model.getAvailableDecisions(),
+            text: displayText, 
+            decisions: displayDecisions,
             ui: { selectedDecisionIndex: this.selectedIndex },
-            party: gameState.party.members // <--- Added this line
+            
+            // THE FIX: Pass only the active character (Index 0) as an array
+            party: [gameState.party.members[0]], 
+            
+            skipMessageAnimation: this.skipMessageAnimation,
+            textTimer: this.textTimer,
+            actionPhase: this.actionPhase,
+            rollTimer: this.rollTimer,
+            rollData: this.rollData
         };
     }
 }

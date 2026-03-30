@@ -1,12 +1,10 @@
 export class EncounterModel {
     constructor(definition, context = {}, startingStageId = null) {
         this.id = definition.id;
+        this.title = definition.title || "Unknown Encounter"; // <-- Maps the official title
         this.stages = definition.stages;
         
-        // Context holds dynamic data (e.g., the biome, an item name, or the interacting character)
         this.context = context; 
-        
-        // Use the provided stageId if jumping mid-encounter, otherwise use the default
         this.currentStageId = startingStageId || definition.initialStage;
     }
 
@@ -19,14 +17,17 @@ export class EncounterModel {
         return stage && stage.imageId ? stage.imageId : 'bg_default_black';
     }
 
-    // Gets the text and interpolates any ${context.variable} strings
+    // NEW: Gets the BGM for the current stage if it exists
+    getBgm() {
+        const stage = this.getCurrentStage();
+        return stage && stage.bgm ? stage.bgm : null;
+    }
+
     getCurrentText() {
         const stage = this.getCurrentStage();
         if (!stage || !stage.text) return "Error: Stage or text missing.";
 
         let parsedText = stage.text;
-
-        // Replaces ${context.keyName} with this.context.keyName
         parsedText = parsedText.replace(/\$\{context\.([a-zA-Z0-9_]+)\}/g, (match, key) => {
             return this.context[key] !== undefined ? this.context[key] : `[Missing:${key}]`;
         });
@@ -38,10 +39,19 @@ export class EncounterModel {
         const stage = this.getCurrentStage();
         if (!stage || !stage.decisions) return [];
 
-        // In the future, you can filter decisions here based on gameState (e.g., hiding choices if player lacks an item)
         return stage.decisions.filter(decision => {
             if (decision.conditions) {
-                // Future conditional logic goes here
+                // Check if EVERY condition is met
+                const meetsConditions = decision.conditions.every(cond => {
+                    if (cond.type === "has_other_party_members") {
+                        // Ensure there's more than 1 person in the party
+                        return gameState.party.members.length > 1; 
+                    }
+                    // Handle future conditions here
+                    return true;
+                });
+                
+                if (!meetsConditions) return false;
             }
             return true; 
         });
@@ -52,7 +62,7 @@ export class EncounterModel {
             this.currentStageId = stageId;
         } else {
             console.error(`[EncounterModel] Stage ID '${stageId}' not found in encounter '${this.id}'`);
-            this.currentStageId = null; // Fallback to avoid soft-locks
+            this.currentStageId = null; 
         }
     }
     
