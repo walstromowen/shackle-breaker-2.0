@@ -220,39 +220,55 @@ export class EncounterRenderer {
             const leftModX = diceCenterX - 90;
             const rightThreshX = diceCenterX + 90;
 
-            // Compute dynamic pulsing scale to PULSE ONLY ONCE
-            let pulseScale = 1.0;
+            // Compute dynamic pulsing scales
+            let modPulseScale = 1.0;
+            let resultPulseScale = 1.0;
+
             if (actionPhase === 'apply_mod') {
                 const phaseDuration = 2.0;
                 let progress = 1.0 - (state.rollTimer / phaseDuration);
                 progress = Math.min(Math.max(progress, 0), 1);
-                // Math.sin(progress * Math.PI) generates a perfect 0 -> 1 -> 0 wave
-                pulseScale = 1.0 + Math.sin(progress * Math.PI) * 0.3; 
+                // 0 -> 1 -> 0 wave
+                modPulseScale = 1.0 + Math.sin(progress * Math.PI) * 0.3; 
+            } else if (actionPhase === 'result') {
+                const phaseDuration = 2.0;
+                let progress = 1.0 - (state.rollTimer / phaseDuration);
+                progress = Math.min(Math.max(progress, 0), 1);
+                // A rapid pop/decay for the final outcome
+                resultPulseScale = 1.0 + Math.sin(progress * Math.PI * 3) * 0.25 * (1 - progress); 
             }
 
             // --- LEFT: Modifier ---
             const modStr = mod >= 0 ? `+${mod}` : `${mod}`;
+            const isPosMod = mod >= 0;
+            const activeModColor = isPosMod ? (UITheme.colors.success || '#00ff00') : (UITheme.colors.failure || '#ff0000');
+
             ctx.save();
             ctx.translate(leftModX, diceAreaY);
             if (actionPhase === 'apply_mod') {
-                ctx.scale(pulseScale, pulseScale);
+                ctx.scale(modPulseScale, modPulseScale);
             }
             ui.drawText("Modifier", 0, -20, UITheme.fonts.small || "14px sans-serif", UITheme.colors.textMuted, "center", "middle");
             
-            // Apply Glowing Green to modifier text when applying
+            // Apply Glowing Green/Red to modifier text when applying
             if (actionPhase === 'apply_mod') {
-                ctx.shadowColor = UITheme.colors.success || '#00ff00';
+                ctx.shadowColor = activeModColor;
                 ctx.shadowBlur = 12;
             }
-            const modColor = actionPhase === 'apply_mod' ? (UITheme.colors.success || '#00ff00') : UITheme.colors.textMain;
+            const finalModColor = actionPhase === 'apply_mod' ? activeModColor : UITheme.colors.textMain;
 
-            ui.drawText(modStr, 0, 10, UITheme.fonts.title, modColor, "center", "middle");
+            ui.drawText(modStr, 0, 10, UITheme.fonts.title, finalModColor, "center", "middle");
             ctx.restore();
 
             // --- CENTER: Roller Number (Diamond & Bigger) ---
             ctx.save();
             ctx.translate(diceCenterX, diceAreaY);
-            if (actionPhase === 'apply_mod') ctx.scale(pulseScale, pulseScale);
+            
+            if (actionPhase === 'apply_mod') {
+                ctx.scale(modPulseScale, modPulseScale);
+            } else if (actionPhase === 'result') {
+                ctx.scale(resultPulseScale, resultPulseScale);
+            }
             
             const diamondSize = 35;
             ctx.strokeStyle = diceColor;
@@ -267,6 +283,12 @@ export class EncounterRenderer {
             ctx.fillStyle = UITheme.colors.background; 
             ctx.fill(); 
             ctx.stroke();
+
+            // Glow effect depending on success for the final result
+            if (actionPhase === 'result') {
+                ctx.shadowColor = isSuccess ? (UITheme.colors.success || '#00ff00') : (UITheme.colors.failure || '#ff0000');
+                ctx.shadowBlur = 15;
+            }
 
             // Force significantly larger text for the focal point
             ctx.font = "bold 36px monospace";

@@ -86,6 +86,9 @@ const ASSET_MANIFEST = {
     spearStabSFX: './assets/audio/sfx/spear_stab.wav',
     strikeSFX: './assets/audio/sfx/strike.wav',
     swordSlashSFX: './assets/audio/sfx/sword_slash.wav',
+
+    //UI
+    diceTick: './assets/audio/sfx/ui/dice_tick.wav',
 };
 
 let sceneManager;

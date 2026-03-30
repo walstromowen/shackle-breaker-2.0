@@ -13,7 +13,7 @@ export class EncounterController {
         this.selectedIndex = 0;
 
         // Action State Variables
-        this.actionPhase = 'none'; // 'none', 'message', 'wait_for_roll', 'rolling', 'result'
+        this.actionPhase = 'none'; // 'none', 'message', 'wait_for_roll', 'rolling', 'hold_base', 'apply_mod', 'result'
         this.pendingDecision = null; 
         this.actionMessage = "";
         
@@ -92,7 +92,7 @@ export class EncounterController {
                 this.rollTickTimer = 0.015 + (Math.pow(progress, 6) * 1.2); 
 
                 events.emit('PLAY_SFX', { 
-                    id: 'dice_tick', 
+                    id: 'diceTick', 
                     volume: 0.3, 
                     pitch: 0.9 + (Math.random() * 0.2) 
                 });
@@ -104,7 +104,7 @@ export class EncounterController {
             if (this.rollTimer <= 0 || this.skipMessageAnimation) {
                 // Phase 2 finished: Begin animating the modifier
                 this.actionPhase = 'apply_mod';
-                this.rollTimer = 2.0; // Animate modifier over 2 seconds to make it a bit longer
+                this.rollTimer = 2.0; // Animate modifier over 2 seconds
                 this.skipMessageAnimation = false;
             }
         }
@@ -112,15 +112,15 @@ export class EncounterController {
             this.rollTimer -= dt;
             
             // Calculate progress (0.0 to 1.0) and apply partial modifier
-            const duration = 2.0; // Matches extended time above
+            const duration = 2.0; 
             let progress = 1.0 - (this.rollTimer / duration);
-            progress = Math.min(Math.max(progress, 0), 1); // Clamp between 0 and 1
+            progress = Math.min(Math.max(progress, 0), 1); 
             
             const currentMod = Math.round(this.rollData.mod * progress);
             this.rollData.displayVal = this.rollData.d20 + currentMod;
 
             if (this.rollTimer <= 0 || this.skipMessageAnimation) {
-                // Phase 3 finished: Show final total and trigger result phase (color change)
+                // Phase 3 finished: Show final total and trigger result phase
                 this.rollData.displayVal = this.rollData.total; 
                 this.actionPhase = 'result';
                 this.rollTimer = 2.0; 
@@ -180,16 +180,25 @@ export class EncounterController {
             
             const selectedDecision = options[this.selectedIndex];
             
-            // NEW: Intercept the switch_character decision
+            // Switch to Party Screen via Callback Pattern
             if (selectedDecision.type === 'switch_character') {
-                // Shift the active character to the end of the array
-                const currentActive = gameState.party.members.shift();
-                gameState.party.members.push(currentActive);
-                
-                // Reset the cursor to the top just to be safe
-                this.selectedIndex = 0;
+                events.emit('CHANGE_SCENE', { 
+                    scene: 'party',
+                    data: {
+                        mode: 'ENCOUNTER_SELECT',
+                        activeIndices: [0], 
+                        callback: (chosenIndex) => {
+                            if (chosenIndex !== null && chosenIndex >= 0 && chosenIndex < gameState.party.members.length) {
+                                const party = gameState.party.members;
+                                const selectedMember = party.splice(chosenIndex, 1)[0];
+                                party.unshift(selectedMember);
+                                
+                                this.selectedIndex = 0;
+                            }
+                        }
+                    }
+                });
             } else {
-                // Proceed with normal action sequences (typing out message, rolls, etc.)
                 this.beginActionSequence(selectedDecision);
             }
         }
@@ -210,7 +219,8 @@ export class EncounterController {
         this.textTimer = 0; 
         this.skipMessageAnimation = false;
         
-        const actorName = gameState.party.members[0].name; 
+        // Ensure party members exist before accessing
+        const actorName = gameState.party?.members?.[0]?.name || "The party"; 
         
         if (decision.type === 'skill_check') {
              const actionText = decision.text.replace(/\[.*?\]/, '').trim().toLowerCase();
@@ -224,12 +234,10 @@ export class EncounterController {
 
     setupRollData(decision) {
         const roller = gameState.party.members[0];
-        
-        const attributes = roller.attributes || {};
+        const attributes = roller?.attributes || {};
         const statValue = attributes[decision.attribute] || 0; 
         
         const modifier = statValue > 10 ? Math.floor((statValue - 10) / 3) : 0;
-        
         const d20 = Math.floor(Math.random() * 20) + 1;
         const total = d20 + modifier;
         
@@ -237,8 +245,8 @@ export class EncounterController {
             d20: d20,
             mod: modifier,
             total: total,
-            dc: decision.threshold,
-            isSuccess: total >= decision.threshold,
+            dc: decision.threshold || 0,
+            isSuccess: total >= (decision.threshold || 0),
             displayVal: "?", 
             duration: 3.5
         };
@@ -259,7 +267,7 @@ export class EncounterController {
             }
 
             this.model.updateContext({
-                roll_stat: decision.attribute.toUpperCase(),
+                roll_stat: decision.attribute?.toUpperCase() || "UNKNOWN",
                 roll_d20: this.rollData.d20,
                 roll_mod: this.rollData.mod,
                 roll_total: this.rollData.total,
@@ -297,7 +305,7 @@ export class EncounterController {
 
         resultsArray.forEach(result => {
             const type = result.type;
-            const payload = result.payload;
+            const payload = result.payload || {};
 
             switch (type) {
                 case "ADVANCE_STAGE":
@@ -320,16 +328,16 @@ export class EncounterController {
                     }
                     break;
                 case "GIVE_ITEM":
-                    InventorySystem.addItem(payload.itemId, payload.qty);
+                    InventorySystem.addItem(payload.itemId, payload.qty || 1);
                     break;
                 case "REMOVE_ITEM":
-                    InventorySystem.removeItem(payload.itemId, payload.qty);
+                    InventorySystem.removeItem(payload.itemId, payload.qty || 1);
                     break;
                 case "START_BATTLE":
                     events.emit('START_BATTLE', {
-                        enemies: payload.enemies,
-                        background: payload.background,
-                        weather: gameState.world.currentWeather
+                        enemies: payload.enemies || [],
+                        background: payload.background || 'default',
+                        weather: gameState.world?.currentWeather || 'clear'
                     });
                     break;
                 case "TAKE_DAMAGE": 
@@ -361,10 +369,25 @@ export class EncounterController {
     }
 
     getState() {
-        if (!this.model) return { imageId: null, title: "", text: "", decisions: [], ui: {}, party: [], skipMessageAnimation: false, textTimer: 0, actionPhase: 'none' };
+        // Fallback state if model is not loaded to prevent rendering crashes
+        if (!this.model) {
+            return { 
+                imageId: null, 
+                title: "", 
+                text: "", 
+                decisions: [], 
+                ui: { selectedDecisionIndex: 0 }, 
+                party: [], 
+                skipMessageAnimation: false, 
+                textTimer: 0, 
+                actionPhase: 'none',
+                rollTimer: 0,
+                rollData: this.rollData
+            };
+        }
 
-        let displayText = this.model.getCurrentText();
-        let displayDecisions = this.model.getAvailableDecisions();
+        let displayText = this.model.getCurrentText() || "";
+        let displayDecisions = this.model.getAvailableDecisions() || [];
 
         if (this.actionPhase !== 'none') {
             displayText = this.actionMessage; 
@@ -379,13 +402,14 @@ export class EncounterController {
 
         return {
             title: this.model.title || "Unknown Encounter", 
-            imageId: this.model.getImageId(),
+            imageId: this.model.getImageId ? this.model.getImageId() : null,
             text: displayText, 
             decisions: displayDecisions,
             ui: { selectedDecisionIndex: this.selectedIndex },
             
-            // THE FIX: Pass only the active character (Index 0) as an array
-            party: [gameState.party.members[0]], 
+            // Provides either the active character or the whole party based on renderer needs
+            // (Adjusted defensively to ensure it doesn't break if party is empty)
+            party: gameState.party?.members?.length > 0 ? [gameState.party.members[0]] : [], 
             
             skipMessageAnimation: this.skipMessageAnimation,
             textTimer: this.textTimer,

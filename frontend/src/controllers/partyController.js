@@ -142,23 +142,25 @@ export class PartyController {
      * Context-aware selection logic.
      */
     confirmSelection() {
-        if (this.mode === 'BATTLE_SELECT') {
+        // --- ADDED: Support for ENCOUNTER_SELECT ---
+        if (this.mode === 'BATTLE_SELECT' || this.mode === 'ENCOUNTER_SELECT') {
             const member = gameState.party.members[this.selectedIndex];
             const isDead = member.hp <= 0;
             const isActive = this.activeIndices.includes(this.selectedIndex);
 
             if (isDead || isActive) {
-                console.log("[Party] Cannot select this member for battle.");
+                console.log("[Party] Cannot select this member.");
                 // Optionally emit a sound event here: events.emit('PLAY_SOUND', 'error');
                 return; 
             }
 
-            // --- THE FIX: Trigger callback natively instead of using the EventBus ---
             if (this.callback) {
                 this.callback(this.selectedIndex);
             }
 
-            events.emit('CHANGE_SCENE', { scene: 'battle' });
+            // Determine where to return based on the mode
+            const targetScene = this.mode === 'BATTLE_SELECT' ? 'battle' : 'encounter';
+            events.emit('CHANGE_SCENE', { scene: targetScene });
         } else {
             this.openMenu();
         }
@@ -168,14 +170,17 @@ export class PartyController {
      * Context-aware cancellation logic.
      */
     cancelAndReturn() {
-        if (this.mode === 'BATTLE_SELECT') {
+        // --- ADDED: Support for ENCOUNTER_SELECT ---
+        if (this.mode === 'BATTLE_SELECT' || this.mode === 'ENCOUNTER_SELECT') {
             
-            // --- THE FIX: Send null to let BattleController know we backed out ---
+            // Send null to let the origin Controller know we backed out
             if (this.callback) {
                 this.callback(null);
             }
 
-            events.emit('CHANGE_SCENE', { scene: 'battle' });
+            // Return to the appropriate scene
+            const targetScene = this.mode === 'BATTLE_SELECT' ? 'battle' : 'encounter';
+            events.emit('CHANGE_SCENE', { scene: targetScene });
         } else {
             events.emit('CHANGE_SCENE', { scene: 'overworld' });
         }
