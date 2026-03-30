@@ -22,9 +22,10 @@ export const MAP_OBJECTS_DEFINITIONS = {
         hitbox: { xOffset: 0, yOffset: 1, w: 2, h: 1 } 
     },
     OAK_TREE_1: { 
-        spriteKey: 'OAK_TREE_1', width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true, // <-- ADDED
+        spriteKey: 'OAK_TREE_1', width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true,
         hitbox: { xOffset: 1, yOffset: 2, w: 1, h: 1 }, 
-        interaction: { type: 'ENCOUNTER', id: 'oakTree' }
+        // FIX: Changed 'oakTree' to 'oak_tree' to match the encounter definition
+        interaction: { type: 'ENCOUNTER', id: 'oak_tree' } 
     },
     SMALL_HOUSE_1: { 
         spriteKey: 'SMALL_HOUSE_1', width: 4, height: 3, isSolid: true, isGround: false, isAnchor: true, // <-- ADDED

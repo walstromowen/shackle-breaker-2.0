@@ -55,7 +55,7 @@ export class SceneManager {
         this.mapRenderer = new MapRenderer(this.canvas, this.loader, this.config);
         this.lightingRenderer = new LightingRenderer(this.config); 
         this.weatherRenderer = new WeatherRenderer(this.canvas, this.ctx, this.config, this.loader);
-        this.encounterRenderer = new EncounterRenderer(this.config);
+        this.encounterRenderer = new EncounterRenderer(this.config, this.loader);
         this.transitionRenderer = new TransitionRenderer(this.config);
         this.characterCreatorRenderer = new CharacterCreatorRenderer(this.config, this.loader);
         this.partyRenderer = new PartyRenderer(this.ctx, this.loader);

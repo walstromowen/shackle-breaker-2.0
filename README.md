@@ -27,6 +27,7 @@ Root
 │   │   │   ├── battleController.js
 │   │   │   ├── characterCreatorController.js
 |   |   │   ├── partyController.js
+|   |   │   ├── levelUpController.js
 │   │   │   └── overworldController.js
 │   │   ├── core/
 │   │   │   ├── assetLoader.js
@@ -59,7 +60,9 @@ Root
 │   │   │   │    │    ├── itemDetailPanel.js          
 │   │   │   │    │    ├── equipmentPanel.js            
 │   │   │   │    │    ├── inventoryPanel.js            
-│   │   │   │    │    └── tooltipSystem.js   
+│   │   │   │    │    └── tooltipSystem.js 
+│   │   │   ├── characterSummary/  
+│   │   │   │    │    ├── levelUpRenderer.js   
 |   |   │   ├── ui 
 │   │   │   │    ├── contextMenuManager.js
 │   │   │   │    ├── dragAndDropManager.js
@@ -91,8 +94,6 @@ Root
 │   │   ├── mapObjectModel.js    
 │   │   ├── weatherModel.js             
 │   │   └── itemModel.js                 
-│   ├── registries/
-│   │   └── encounterRegistry.js
 │   ├── state/
 │   │   └── gameState.js            
 │   ├── systems/
