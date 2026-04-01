@@ -83,11 +83,11 @@ const BEAST_TEMPLATE = {
         battlePortraitFramesBack: 1,  // Defaults for player view    
     crySound: "dogCry",       // <-- NEW: Plays on battle start
     deathSound: "dogDeath",
-    attributes: { vigor: 1, strength: 8, dexterity: 14, intelligence: 3, attunement: 5 },
+    attributes: { vigor: 8, strength: 8, dexterity: 14, intelligence: 3, attunement: 5 },
      traits: [],
     baseStats: {
         ...BASE_ENTITY.baseStats,
-        maxHp: 3, maxStamina: 8, maxInsight: 0,
+        maxHp: 15, maxStamina: 8, maxInsight: 0,
         staminaRecovery: 10, // Beasts recover stamina slightly faster
         speed: 7, critical: 0.1,
         baseDefense: { blunt: 4, slash: 2, pierce: 1, water: 2 },
@@ -117,8 +117,8 @@ export const ENTITY_DEFINITIONS = {
         spritePortrait: "madMagePortrait",
          battlePortraitFramesFront: 4, // Defaults for enemy view
         battlePortraitFramesBack: 1,  // Defaults for player view    
-        crySound: "legionaryCry",       // <-- NEW: Plays on battle start
-        deathSound: "legionaryCry",
+        crySound: "madMageCry",       // <-- NEW: Plays on battle start
+        deathSound: "madMageCry",
         attributes: {
             ...HUMANOID_TEMPLATE.attributes,
             vigor: 6, intelligence: 14, attunement: 12
@@ -164,14 +164,9 @@ export const ENTITY_DEFINITIONS = {
             ...HUMANOID_TEMPLATE.attributes,
             vigor: 14, strength: 14, intelligence: 6
         },
-         traits: ["acidic"],
+         traits: [],
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 40, maxStamina: 20,
-            baseDefense: {
-                ...HUMANOID_TEMPLATE.baseStats.baseDefense,
-                slash: 2, pierce: 2, blunt: 1
-            }
         },
 
         equipment: {

@@ -10,13 +10,13 @@ export const encounterDefinitions = {
             "approach": {
                 imageId: "encounters",
                 bgm: "plainsOverworldNight", // <-- BGM added
-                text: "A massive oak tree towers over you. Its thick trunk looks like it has stood here for centuries.",
+                text: "An oak tree towers over you. Its thick trunk looks like it has stood here for many years.",
                 decisions: [
                     {
-                        text: "[Strength] Try to fell the tree in a single, mighty swing.",
+                        text: "[STR] Chop down the tree for wood.",
                         type: "skill_check",
                         attribute: "strength",
-                        threshold: 14,
+                        threshold: 8,
                         successOutcomes: [
                             { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "chopped_success" } }] }
                         ],
@@ -64,7 +64,7 @@ export const encounterDefinitions = {
                 text: "[${context.roll_stat} Check: ${context.roll_total} vs DC ${context.roll_dc} - ${context.roll_result}]\n\nYour axe glances off the thick bark. You jar your arms terribly but fail to bring it down.",
                 decisions: [
                     {
-                        text: "Ouch. Walk away.",
+                        text: "Leave.",
                         outcomes: [
                             {
                                 weight: 100,
@@ -155,7 +155,7 @@ export const encounterDefinitions = {
                             {
                                 weight: 100,
                                 results: [
-                                    { type: "START_BATTLE", payload: { enemies: ["wild_dog"], background: "bg_forest" } }
+                                    { type: "START_BATTLE", payload: { enemies: ["wolf"], background: "bg_forest" } }
                                 ]
                             }
                         ]
@@ -173,7 +173,7 @@ export const encounterDefinitions = {
                             {
                                 weight: 100,
                                 results: [
-                                    { type: "RECRUIT_PARTY_MEMBER", payload: { entityId: "mutt_companion" } },
+                                    { type: "RECRUIT_CHARACTER", payload: { entityId: "BEAST" } },
                                     { type: "END_ENCOUNTER", payload: null }
                                 ]
                             }
@@ -192,7 +192,7 @@ export const encounterDefinitions = {
                             {
                                 weight: 100,
                                 results: [
-                                    { type: "RECRUIT_PARTY_MEMBER", payload: { entityId: "mutt_companion" } },
+                                    { type: "RECRUIT_CHARACTER", payload: { entityId: "BEAST" } },
                                     { type: "END_ENCOUNTER", payload: null }
                                 ]
                             }

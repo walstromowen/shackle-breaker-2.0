@@ -128,72 +128,88 @@ export class SceneManager {
     }
 
     setupEventListeners() {
-        // 1. General Scene Switching -> Classic Fade
-        events.on('CHANGE_SCENE', ({ scene, data }) => {
+        // 1. General Scene Switching -> Classic Fade
+        events.on('CHANGE_SCENE', ({ scene, data }) => {
+            this.transitionRenderer.start(() => {
+                this.input.reset(); 
+                if (scene === 'overworld') this.overworldController.isLocked = false;
+                
+                if (scene === 'character_summary') {
+                    this.characterSummaryController = new CharacterSummaryController(this.input, data);
+                }
+                if (scene === 'level_up') {
+                    this.levelUpController.init(data); 
+                }
+                if (scene === 'party') {
+                    this.partyController.init(data || {}); 
+                }
+
+                this.changeScene(scene);
+            }, 'fade'); 
+        });
+        
+        // 2. Physical Interactions -> Circle Iris Wipe
+        events.on('INTERACT', (data) => {
+            if (data.type === 'ENCOUNTER') {
+                this.transitionRenderer.start(() => {
+                    this.encounterController.start(data.id, data.context);
+                    this.changeScene('encounter');
+                }, 'fade'); 
+            }
+        });
+
+        // 2.5 Random Map Encounters -> Classic Fade
+        events.on('START_ENCOUNTER', (data) => {
+            this.transitionRenderer.start(() => {
+                this.encounterController.start(data.encounterId, data.context || {});
+                this.changeScene('encounter');
+            }, 'fade'); 
+        });
+
+        // 3. Combat Triggers -> Fast White Flash
+        events.on('START_BATTLE', (data) => {
+            this.transitionRenderer.start(() => {
+                console.log("[SceneManager] Handing off entities to BattleController:", data.enemies);
+                
+                const context = data.context || {};
+                context.backgroundId = data.background; 
+                context.weather = data.weather; 
+
+                this.battleController.start(data.enemies, context);
+                this.changeScene('battle'); 
+            }, 'flash', { speed: 4.0, color: '#ffffff' }); 
+        });
+
+        events.on('BATTLE_ENDED', (data) => {
+            if (data.victory) {
+                events.emit('CHANGE_SCENE', { scene: 'overworld' }); 
+            } else {
+                console.log("[SceneManager] Game Over...");
+            }
+        });
+
+        // 5. Party Swap Routing -> Quick Wipe
+        events.on('REQUEST_PARTY_SWAP', (data) => {
+            this.transitionRenderer.start(() => {
+                this.partyController.init({
+                    mode: data.mode || 'BATTLE_SELECT', 
+                    activeIndices: data.activeIndices,
+                    callback: data.callback 
+                });
+                this.changeScene('party');
+            }, 'wipe', { speed: 3.0 }); 
+        });
+
+        // ---> NEW BLOCK START <---
+        // 6. Character Recruitment -> Switch to Character Summary View
+        events.on('CHARACTER_RECRUITED', (data) => {
             this.transitionRenderer.start(() => {
-                this.input.reset(); 
-                if (scene === 'overworld') this.overworldController.isLocked = false;
-                
-                if (scene === 'character_summary') {
-                    this.characterSummaryController = new CharacterSummaryController(this.input, data);
-                }
-                if (scene === 'level_up') {
-                    this.levelUpController.init(data); 
-                }
-                if (scene === 'party') {
-                    this.partyController.init(data || {}); 
-                }
-
-                this.changeScene(scene);
-            }, 'fade'); // <-- Explicitly call fade (or leave empty for default)
+                this.characterSummaryController = new CharacterSummaryController(this.input, { character: data.character });
+                this.changeScene('character_summary');
+            }, 'wipe', { speed: 3.0 });
         });
-        
-        // 2. Physical Interactions -> Circle Iris Wipe
-        events.on('INTERACT', (data) => {
-            if (data.type === 'ENCOUNTER') {
-                // Use the new circle transition
-                this.transitionRenderer.start(() => {
-                    this.encounterController.start(data.id, data.context);
-                    this.changeScene('encounter');
-                }, 'fade'); 
-            }
-        });
-
-        // 3. Combat Triggers -> Fast White Flash
-        events.on('START_BATTLE', (data) => {
-            // Flash white to simulate battle start shock!
-            this.transitionRenderer.start(() => {
-                console.log("[SceneManager] Handing off entities to BattleController:", data.enemies);
-                
-                const context = data.context || {};
-                context.backgroundId = data.background; 
-                context.weather = data.weather; 
-
-                this.battleController.start(data.enemies, context);
-                this.changeScene('battle'); 
-            }, 'flash', { speed: 4.0, color: '#ffffff' }); 
-        });
-
-        events.on('BATTLE_ENDED', (data) => {
-            if (data.victory) {
-                events.emit('CHANGE_SCENE', { scene: 'overworld' }); 
-            } else {
-                console.log("[SceneManager] Game Over...");
-            }
-        });
-
-        // 5. Party Swap Routing -> Quick Wipe
-        events.on('REQUEST_PARTY_SWAP', (data) => {
-            this.transitionRenderer.start(() => {
-                this.partyController.init({
-                    mode: data.mode || 'BATTLE_SELECT', 
-                    activeIndices: data.activeIndices,
-                    callback: data.callback 
-                });
-                this.changeScene('party');
-            }, 'wipe', { speed: 3.0 }); // Slightly faster wipe for UI changes
-        });
-    }
+        // ---> NEW BLOCK END <---
+    }
 
     setupInputRouting() {
         window.addEventListener('keydown', this._handleGlobalKeydown);
@@ -351,11 +367,11 @@ export class SceneManager {
                     this.characterSummaryRenderer.render(csState);
                 }
                 break;
-        case 'level_up':
-                const luState = this.levelUpController.getState();
-                this.levelUpRenderer.render(luState);
-                break;
-        }
+            case 'level_up':
+                    const luState = this.levelUpController.getState();
+                    this.levelUpRenderer.render(luState);
+                    break;
+            }
 
         this.transitionRenderer.render(this.ctx);
     }

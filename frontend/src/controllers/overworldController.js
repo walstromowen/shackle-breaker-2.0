@@ -174,6 +174,26 @@ export class OverworldController {
         const col = Math.floor(this.player.x / this.config.TILE_SIZE);
         const row = Math.floor(this.player.y / this.config.TILE_SIZE);
         
+        /// ==========================================
+        // 1. STORY ENCOUNTER CHECK (10% Chance)
+        // ==========================================
+        if (Math.random() < 0.10) {
+            console.log(`[Overworld] Random encounter triggered: wounded_mutt!`);
+            
+            // Lock the overworld and halt the player
+            this.isLocked = true;
+            this.player.isMoving = false;
+            this.player.moveProgress = 0;
+            
+            // Emit a dedicated random encounter event
+            events.emit('START_ENCOUNTER', { encounterId: 'wounded_mutt' });
+            
+            return; // Exit early to prevent an ambush on the same tile
+        }
+
+        // ==========================================
+        // 2. BIOME AMBUSH (BATTLE) CHECK
+        // ==========================================
         const biome = this.worldManager.getBiomeAt(col, row);
         const battleData = biome.getBattle();
 
@@ -197,22 +217,20 @@ export class OverworldController {
             enemyEntity.name = `${enemyEntity.name || enemyId} ${enemyParty.length + 1}`;
             enemyParty.push(enemyEntity);
         }
+        
         console.log('\n=== [DEBUG] BATTLE PAYLOAD ENTITIES ===');
         enemyParty.forEach((entity, index) => {
             console.log(`Enemy ${index + 1} (${entity.name}) object:`, entity);
         });
         console.log('=======================================\n');
-        // --- FIXED: Create the payload object first ---
+        
         const battlePayload = {
             enemies: enemyParty,
             background: battleBgAsset,
             weather: gameState.world.currentWeather
         };
 
-        // --- FIXED: Now log the variable ---
         console.log('[DEBUG] Emitting START_BATTLE payload:', battlePayload);
-
-        // --- FIXED: Pass the variable to the emit function ---
         events.emit('START_BATTLE', battlePayload);
     }
 

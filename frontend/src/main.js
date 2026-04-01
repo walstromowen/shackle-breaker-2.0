@@ -70,6 +70,7 @@ const ASSET_MANIFEST = {
     legionaryCry: './assets/audio/sfx/cries/legionary_cry.wav',
     wolfCry: './assets/audio/sfx/cries/wolf_cry.wav',
     dogCry: './assets/audio/sfx/cries/dog_cry.wav',
+    madMageCry: './assets/audio/sfx/cries/mad_mage_cry.wav',
     dogDeath: './assets/audio/sfx/deaths/dog_death.wav',
 
     unsheathSwordSFX: './assets/audio/sfx/unsheath_sword.wav',
@@ -86,6 +87,9 @@ const ASSET_MANIFEST = {
     spearStabSFX: './assets/audio/sfx/spear_stab.wav',
     strikeSFX: './assets/audio/sfx/strike.wav',
     swordSlashSFX: './assets/audio/sfx/sword_slash.wav',
+    swordSlash1SFX: './assets/audio/sfx/sword_slash_1.wav',
+    swordSlash2SFX: './assets/audio/sfx/sword_slash_2.wav',
+    swordSlash3SFX: './assets/audio/sfx/sword_slash_3.wav',
 
     //UI
     diceTick: './assets/audio/sfx/ui/dice_tick.wav',

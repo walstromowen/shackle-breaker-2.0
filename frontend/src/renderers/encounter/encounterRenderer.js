@@ -222,20 +222,41 @@ export class EncounterRenderer {
 
             // Compute dynamic pulsing scales
             let modPulseScale = 1.0;
+            let rollerPulseScale = 1.0; 
             let resultPulseScale = 1.0;
+            let modGlowIntensity = 0;   
+            let rollerGlowIntensity = 0;
+
+            // Override display value visually so it snaps exactly when the modifier pulse ends
+            let renderedRollerVal = displayVal; 
 
             if (actionPhase === 'apply_mod') {
                 const phaseDuration = 2.0;
                 let progress = 1.0 - (state.rollTimer / phaseDuration);
                 progress = Math.min(Math.max(progress, 0), 1);
-                // 0 -> 1 -> 0 wave
-                modPulseScale = 1.0 + Math.sin(progress * Math.PI) * 0.3; 
+                
+                // 1. Modifier pulses slightly longer: first 45% of the phase (~0.9 seconds)
+                let modProgress = Math.min(progress / 0.45, 1.0);
+                modPulseScale = 1.0 + Math.sin(modProgress * Math.PI) * 0.3; 
+                modGlowIntensity = Math.sin(modProgress * Math.PI); // Peaks at 1.0 mid-pulse
+
+                // Snap the modifier to the roller ONLY after the modifier pulse finishes
+                renderedRollerVal = (modProgress < 1.0) ? rollData.d20 : rollData.total;
+
+                // 2. Roller pulses and glows in the NEXT 45% of the phase (~0.9s to 1.8s)
+                if (progress > 0.45) {
+                    let rollerProgress = Math.min((progress - 0.45) / 0.45, 1.0);
+                    rollerPulseScale = 1.0 + Math.sin(rollerProgress * Math.PI) * 0.3;
+                    rollerGlowIntensity = Math.sin(rollerProgress * Math.PI);
+                }
+
             } else if (actionPhase === 'result') {
                 const phaseDuration = 2.0;
                 let progress = 1.0 - (state.rollTimer / phaseDuration);
                 progress = Math.min(Math.max(progress, 0), 1);
                 // A rapid pop/decay for the final outcome
                 resultPulseScale = 1.0 + Math.sin(progress * Math.PI * 3) * 0.25 * (1 - progress); 
+                renderedRollerVal = rollData.total; // Ensure total is shown in result phase
             }
 
             // --- LEFT: Modifier ---
@@ -250,10 +271,10 @@ export class EncounterRenderer {
             }
             ui.drawText("Modifier", 0, -20, UITheme.fonts.small || "14px sans-serif", UITheme.colors.textMuted, "center", "middle");
             
-            // Apply Glowing Green/Red to modifier text when applying
-            if (actionPhase === 'apply_mod') {
+            // Apply Glowing Green/Red to modifier text ONLY during its active pulse
+            if (actionPhase === 'apply_mod' && modGlowIntensity > 0) {
                 ctx.shadowColor = activeModColor;
-                ctx.shadowBlur = 12;
+                ctx.shadowBlur = 15 * modGlowIntensity; 
             }
             const finalModColor = actionPhase === 'apply_mod' ? activeModColor : UITheme.colors.textMain;
 
@@ -265,7 +286,7 @@ export class EncounterRenderer {
             ctx.translate(diceCenterX, diceAreaY);
             
             if (actionPhase === 'apply_mod') {
-                ctx.scale(modPulseScale, modPulseScale);
+                ctx.scale(rollerPulseScale, rollerPulseScale); 
             } else if (actionPhase === 'result') {
                 ctx.scale(resultPulseScale, resultPulseScale);
             }
@@ -284,10 +305,13 @@ export class EncounterRenderer {
             ctx.fill(); 
             ctx.stroke();
 
-            // Glow effect depending on success for the final result
+            // Glow effect for the roller (pulse glow during apply_mod, steady glow during result)
             if (actionPhase === 'result') {
                 ctx.shadowColor = isSuccess ? (UITheme.colors.success || '#00ff00') : (UITheme.colors.failure || '#ff0000');
                 ctx.shadowBlur = 15;
+            } else if (actionPhase === 'apply_mod' && rollerGlowIntensity > 0) {
+                ctx.shadowColor = isSuccess ? (UITheme.colors.success || '#00ff00') : (UITheme.colors.failure || '#ff0000');
+                ctx.shadowBlur = 15 * rollerGlowIntensity;
             }
 
             // Force significantly larger text for the focal point
@@ -295,7 +319,7 @@ export class EncounterRenderer {
             ctx.fillStyle = diceColor;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillText(displayVal.toString(), 0, 0);
+            ctx.fillText(renderedRollerVal.toString(), 0, 0); // <-- Note the use of renderedRollerVal here
             ctx.restore();
 
             // --- RIGHT: Threshold ---

@@ -6,6 +6,7 @@ import { TextEntry } from '../../../shared/utils/textEntry.js';
 import { StatCalculator } from '../../../shared/systems/statCalculator.js';
 import { TRAIT_DEFINITIONS } from '../../../shared/data/traitDefinitions.js';
 import { InventorySystem } from '../../../shared/systems/inventorySystem.js';
+import { PartyManager } from '../../../shared/systems/partyManager.js'; 
 
 const ALLOWED_TRAITS = ['quick', 'inquisitive', 'brawler', 'tough'];
 const UI_TRAITS = ALLOWED_TRAITS.map(key => ({
@@ -106,29 +107,20 @@ export class CharacterCreatorController {
     // ========================================================
 
     getState() {
-        const getIdx = (idx, list) => (idx >= 0 && idx < list.length) ? idx : 0;
-        this.state.backgroundIdx = getIdx(this.state.backgroundIdx, CREATION_DATA.BACKGROUNDS);
-        this.state.traitIdx = getIdx(this.state.traitIdx, CREATION_DATA.TRAITS);
-
         if (this.isDirty) {
             this.cachedStats = this._calculatePreviewStats();
             this.isDirty = false;
         }
 
         return {
-            // Logic Data
             currentRow: this.currentRow,
             currentStep: this.menuOrder[this.currentRow],
             isEditingName: this.isEditingName, 
             data: CREATION_DATA,
             selections: this.state,
             previewStats: this.cachedStats,
-
-            // UI State (For Renderer)
             mouse: this.mouse,
             hoveredElement: this.hoveredElement,
-            
-            // Callback for Hitbox Injection
             onLayoutUpdate: (hitboxes) => this.updateHitboxes(hitboxes)
         };
     }
@@ -145,7 +137,6 @@ export class CharacterCreatorController {
         this.mouse.x = x;
         this.mouse.y = y;
 
-        // Iterate backwards (top-most elements first)
         let found = null;
         for (let i = this.lastRenderedHitboxes.length - 1; i >= 0; i--) {
             const b = this.lastRenderedHitboxes[i];
@@ -158,54 +149,33 @@ export class CharacterCreatorController {
     }
 
     handleMouseDown(x, y) {
-        // If editing name and we click outside, validate and close
-        if (this.isEditingName) {
-            if (!this.hoveredElement || this.hoveredElement.id !== 'INPUT_NAME') {
-                this.validateName();
-                this.isEditingName = false;
-            }
+        if (this.isEditingName && (!this.hoveredElement || this.hoveredElement.id !== 'INPUT_NAME')) {
+            this.validateName();
+            this.isEditingName = false;
         }
 
         if (!this.hoveredElement) return;
-
         const id = this.hoveredElement.id;
 
-        // 1. Name Input Click
         if (id === 'INPUT_NAME') {
-            this.currentRow = this.menuOrder.indexOf('name');
+            this._setActiveRowByStep('name');
             this.isEditingName = true;
-            return;
-        }
-
-        // 2. Start Button
-        if (id === 'BTN_START') {
+        } else if (id === 'BTN_START') {
             this.finalizeCharacter();
-            return;
-        }
-
-        // 3. Arrow Buttons (e.g., BTN_NEXT_background, BTN_PREV_origin)
-        if (id.startsWith('BTN_NEXT_')) {
-            const step = id.replace('BTN_NEXT_', '');
-            this._setActiveRowByStep(step);
+        } else if (id.startsWith('BTN_NEXT_')) {
+            this._setActiveRowByStep(id.replace('BTN_NEXT_', ''));
             this.modifyValue(1);
-        }
-        else if (id.startsWith('BTN_PREV_')) {
-            const step = id.replace('BTN_PREV_', '');
-            this._setActiveRowByStep(step);
+        } else if (id.startsWith('BTN_PREV_')) {
+            this._setActiveRowByStep(id.replace('BTN_PREV_', ''));
             this.modifyValue(-1);
-        }
-
-        // 4. Row Selection (Clicking the text label itself)
-        else if (id.startsWith('ROW_')) {
-            const step = id.replace('ROW_', '');
-            this._setActiveRowByStep(step);
+        } else if (id.startsWith('ROW_')) {
+            this._setActiveRowByStep(id.replace('ROW_', ''));
         }
     }
 
     handleKeyDown(e) {
         const code = e.code;
 
-        // --- MODE 1: NAME EDITING ---
         if (this.isEditingName) {
             if (code === "Enter" || code === "Escape") {
                 this.validateName();
@@ -217,33 +187,12 @@ export class CharacterCreatorController {
             return; 
         }
 
-        // --- MODE 2: NAVIGATION (WASD/Arrows/Space/Esc) ---
-        
-        // Navigation: Vertical
-        if (code === "ArrowUp" || code === "KeyW") {
-            this.moveRow(-1);
-        }
-        else if (code === "ArrowDown" || code === "KeyS") {
-            this.moveRow(1);
-        }
-        
-        // Navigation: Horizontal (Cycling options)
-        else if (code === "ArrowLeft" || code === "KeyA") {
-            this.modifyValue(-1);
-        }
-        else if (code === "ArrowRight" || code === "KeyD") {
-            this.modifyValue(1);
-        }
-        
-        // Action: Space / Enter
-        else if (code === "Enter" || code === "Space") {
-            this.handleAction();
-        }
-        
-        // Cancel / Exit
-        else if (code === "Escape") {
-             // events.emit('CHANGE_SCENE', { scene: 'mainMenu' });
-        }
+        if (code === "ArrowUp" || code === "KeyW") this.moveRow(-1);
+        else if (code === "ArrowDown" || code === "KeyS") this.moveRow(1);
+        else if (code === "ArrowLeft" || code === "KeyA") this.modifyValue(-1);
+        else if (code === "ArrowRight" || code === "KeyD") this.modifyValue(1);
+        else if (code === "Enter" || code === "Space") this.handleAction();
+        // else if (code === "Escape") events.emit('CHANGE_SCENE', { scene: 'mainMenu' });
     }
 
     // ========================================================
@@ -263,34 +212,34 @@ export class CharacterCreatorController {
     }
 
     moveRow(dir) {
-        const max = this.menuOrder.length - 1;
-        this.currentRow = this.cycle(this.currentRow, max + 1, dir);
+        this.currentRow = this.cycle(this.currentRow, this.menuOrder.length, dir);
     }
 
     modifyValue(dir) {
         const step = this.menuOrder[this.currentRow];
-        const s = this.state;
         const d = CREATION_DATA;
-        let changed = false;
+        
+        // Configuration mapping steps to their state keys and max array lengths
+        const stepConfig = {
+            background: { key: 'backgroundIdx', max: d.BACKGROUNDS.length, triggersDirty: true },
+            origin: { key: 'originIdx', max: d.ORIGINS.length, triggersDirty: true },
+            appearance: { key: 'appearanceIdx', max: d.APPEARANCES.length, triggersDirty: false },
+            keepsake: { key: 'keepsakeIdx', max: d.KEEPSAKES.length, triggersDirty: true },
+            companion: { key: 'companionIdx', max: d.COMPANIONS.length, triggersDirty: false },
+            trait: { key: 'traitIdx', max: d.TRAITS.length, triggersDirty: true },
+            difficulty: { key: 'difficultyIdx', max: d.DIFFICULTIES.length, triggersDirty: false }
+        };
 
-        switch(step) {
-            case 'name': break; 
-            case 'background': s.backgroundIdx = this.cycle(s.backgroundIdx, d.BACKGROUNDS.length, dir); changed = true; break;
-            case 'origin': s.originIdx = this.cycle(s.originIdx, d.ORIGINS.length, dir); changed = true; break;
-            case 'appearance': s.appearanceIdx = this.cycle(s.appearanceIdx, d.APPEARANCES.length, dir); break;
-            case 'keepsake': s.keepsakeIdx = this.cycle(s.keepsakeIdx, d.KEEPSAKES.length, dir); changed = true; break;
-            case 'companion': s.companionIdx = this.cycle(s.companionIdx, d.COMPANIONS.length, dir); break;
-            case 'trait': s.traitIdx = this.cycle(s.traitIdx, d.TRAITS.length, dir); changed = true; break; 
-            case 'difficulty': s.difficultyIdx = this.cycle(s.difficultyIdx, d.DIFFICULTIES.length, dir); break;
+        if (stepConfig[step]) {
+            const { key, max, triggersDirty } = stepConfig[step];
+            this.state[key] = this.cycle(this.state[key], max, dir);
+            if (triggersDirty) this.isDirty = true;
         }
-        if (changed) this.isDirty = true;
     }
 
     cycle(current, max, dir) {
-        let val = current + dir;
-        if (val < 0) val = max - 1;
-        if (val >= max) val = 0;
-        return val;
+        // Simplified modulo math replaces the manual if/else bounds checking
+        return (current + dir + max) % max;
     }
 
     handleAction() {
@@ -300,43 +249,41 @@ export class CharacterCreatorController {
     }
 
     // ========================================================
-    // ENTITY CREATION LOGIC
+    // ENTITY BUILDERS & PREVIEWS
     // ========================================================
 
-    _createHeroEntity(currentSelections) {
-        const bg = CREATION_DATA.BACKGROUNDS[currentSelections.backgroundIdx];
-        const origin = CREATION_DATA.ORIGINS[currentSelections.originIdx];
-        const app = CREATION_DATA.APPEARANCES[currentSelections.appearanceIdx];
-        const trait = CREATION_DATA.TRAITS[currentSelections.traitIdx];
+    _buildPlayerOverrides() {
+        const bg = CREATION_DATA.BACKGROUNDS[this.state.backgroundIdx];
+        const origin = CREATION_DATA.ORIGINS[this.state.originIdx];
+        const app = CREATION_DATA.APPEARANCES[this.state.appearanceIdx];
+        const trait = CREATION_DATA.TRAITS[this.state.traitIdx];
 
-        // 1. Convert Equipment Strings to Actual Items
-        const playerEquipment = this._resolveEquipment(bg.equipment);
-
-        // 2. Prepare Factory Overrides
-        // We use spritePortrait/spriteOverworld to align with the new EntityModel
-        const playerOverrides = {
-            name: currentSelections.name, 
+        return {
+            name: this.state.name, 
             attributes: { ...bg.attributes }, 
-            equipment: playerEquipment,
-            
-            // Visuals
+            equipment: bg.equipment, // Raw string map
             spritePortrait: app.spritePortrait,        
             spriteOverworld: app.spriteOverworld,  
-
             tags: [origin.tag],
             traits: [trait.id], 
             level: 1
         };
+    }
 
-        return EntityFactory.create("HUMANOID", playerOverrides);
+    _createPreviewEntity() {
+        // 1. Get base overrides
+        const overrides = this._buildPlayerOverrides();
+        
+        // 2. Resolve equipment manually JUST for the preview calculation
+        overrides.equipment = this._resolveEquipment(overrides.equipment);
+        
+        return EntityFactory.create("HUMANOID", overrides);
     }
 
     _calculatePreviewStats() {
         try {
-            // We create a temporary entity just to run calculations
-            const tempEntity = this._createHeroEntity(this.state);
-            if (!tempEntity) return null;
-            return StatCalculator.calculateDetailed(tempEntity);
+            const tempEntity = this._createPreviewEntity();
+            return tempEntity ? StatCalculator.calculateDetailed(tempEntity) : null;
         } catch (e) {
             console.error("Preview Calculation CRASHED:", e);
             return null; 
@@ -346,77 +293,58 @@ export class CharacterCreatorController {
     _resolveEquipment(equipmentIdMap) {
         const resolved = {};
         if (!equipmentIdMap) return resolved;
-        
         for (const [slot, itemId] of Object.entries(equipmentIdMap)) {
-            // Use the Factory to create real item instances
             const item = ItemFactory.createItem(itemId);
             if (item) resolved[slot] = item;
         }
         return resolved;
     }
 
+    // ========================================================
+    // FINALIZATION
+    // ========================================================
+
     finalizeCharacter() {
         if (!this.state.name || this.state.name.trim() === "") {
-            this.currentRow = 0; this.isEditingName = true; return;
+            this.currentRow = 0; 
+            this.isEditingName = true; 
+            return;
         }
 
         console.log("--- START FINALIZE ---");
 
-        // 1. Reset Global Inventory
-        gameState.party.inventory = [];
+        // 1. Create Main Character via PartyManager
+        PartyManager.createMainCharacter("HUMANOID", this._buildPlayerOverrides());
 
-        // 2. Add Keepsakes to Inventory
+        // 2. Add Keepsakes
         const keep = CREATION_DATA.KEEPSAKES[this.state.keepsakeIdx];
         if (keep.items) {
-            keep.items.forEach(i => {
-                InventorySystem.addItem(i.id, i.qty);
-            });
-        } 
-        else if (keep.itemId) {
+            keep.items.forEach(i => InventorySystem.addItem(i.id, i.qty));
+        } else if (keep.itemId) {
             InventorySystem.addItem(keep.itemId, 1);
         }
-        
-        // 3. Create Player
-        const player = this._createHeroEntity(this.state);
-        
-        if (!player) {
-            console.error("FATAL: Player entity failed to create.");
-            return;
-        }
 
-        // 4. Fill Player Resources (Start Fresh)
-        player.hp = player.maxHp;
-        player.stamina = player.maxStamina;
-        player.insight = player.maxInsight;
-
-        const finalParty = [player];
-
-        // 5. Create Companions (MODIFIED FOR TESTING: Creates 3 duplicates)
+        // 3. Create Companions via PartyManager
         const comp = CREATION_DATA.COMPANIONS[this.state.companionIdx];
         if (comp.speciesId) {
-            // Loop 3 times to create 3 separate instances
             for (let i = 1; i <= 5; i++) {
-                const companionOverrides = {
-                    name: `${comp.label} ${i}`, // e.g., "War Dog 1", "War Dog 2"
+                const companionInstance = PartyManager.addMember(comp.speciesId, {
+                    name: `${comp.label} ${i}`,
                     attributes: { ...comp.attributes },
-                    equipment: this._resolveEquipment(comp.equipment), 
+                    equipment: comp.equipment,
                     xp: 0 
-                };
+                });
                 
-                // Create a fresh instance for each duplicate
-                const companionInstance = EntityFactory.create(comp.speciesId, companionOverrides);
                 if (companionInstance) {
+                    // This refill can be removed here later if you move it into PartyManager.addMember!
                     companionInstance.hp = companionInstance.maxHp;
                     companionInstance.stamina = companionInstance.maxStamina;
-                    finalParty.push(companionInstance);
                 }
             }
         }
 
-        // 6. Commit to Game State
-        gameState.party.members = finalParty;
+        // 4. Commit to Game State
         gameState.party.currency = 100;
-        
         if (!gameState.settings) gameState.settings = {};
         gameState.settings.difficulty = CREATION_DATA.DIFFICULTIES[this.state.difficultyIdx].id; 
 

@@ -2,6 +2,7 @@ import { EncounterFactory } from "../../../shared/systems/factories/encounterFac
 import { gameState } from "../../../shared/state/gameState.js";
 import { events } from "../core/eventBus.js"; 
 import { InventorySystem } from "../../../shared/systems/inventorySystem.js"; 
+import { PartyManager } from "../../../shared/systems/partyManager.js";
 
 export class EncounterController {
     constructor(input, config, worldManager) {
@@ -343,6 +344,21 @@ export class EncounterController {
                 case "TAKE_DAMAGE": 
                     events.emit("TAKE_DAMAGE", payload);
                     break;
+
+                // ---> NEW RECRUITING LOGIC <---
+                case "RECRUIT_CHARACTER":
+                    const newCharacter = PartyManager.addMember(payload.entityId, payload.overrides);
+                    if (newCharacter) {
+                        // Refill stats for newly recruited characters
+                        newCharacter.hp = newCharacter.maxHp;
+                        newCharacter.stamina = newCharacter.maxStamina;
+                        events.emit('CHARACTER_RECRUITED', { character: newCharacter });
+                    } else {
+                        console.log(`[Encounter] Could not recruit ${payload.entityId}, party full.`);
+                    }
+                    break;
+                // -------------------------------
+
                 default:
                     events.emit(type, payload);
                     break;
