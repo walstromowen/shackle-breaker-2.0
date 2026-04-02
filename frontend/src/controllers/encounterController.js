@@ -145,8 +145,8 @@ export class EncounterController {
         const totalTypingTime = this.lastText.length * (1 / charsPerSecond);
         const isAnimatingText = this.textTimer < (totalTypingTime + 2.0);
 
-        const skipPhases = ['message', 'rolling', 'hold_base', 'apply_mod', 'result'];
-
+        const skipPhases = ['message', 'rolling', 'hold_base', 'apply_mod', 'result', 'ending'];
+        
         if (skipPhases.includes(this.actionPhase) || isAnimatingText) {
             if (key === "Enter" || key === "Space") {
                 this.skipMessageAnimation = true; 
@@ -525,8 +525,10 @@ export class EncounterController {
     }
 
     endEncounter(payload = null) {
-        events.emit('CHANGE_SCENE', { scene: 'overworld', data: payload });
-    }
+        // Lock the UI state so it doesn't revert to the model's default text
+        this.actionPhase = 'ending'; 
+        events.emit('CHANGE_SCENE', { scene: 'overworld', data: payload });
+    }
 
     cleanup() {
         this.model = null;
@@ -575,7 +577,8 @@ export class EncounterController {
         // -----------------------------------------------------------------------
 
         if (this.actionPhase !== 'none') {
-            displayText = this.actionMessage; 
+            // Freeze on whatever the last text was if we are transitioning out
+            displayText = this.actionPhase === 'ending' ? this.lastText : this.actionMessage; 
             displayDecisions = []; 
         }
 
