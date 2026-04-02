@@ -104,7 +104,7 @@ export class CharacterSummaryRenderer {
         }
 
         // G. Input Prompts
-        this._drawInputPrompts(state, w, h);
+        this._drawInputPrompts(state, leftW, centerW, h);
 
         // --- 5. Report Hitboxes ---
         if (state.onLayoutUpdate) {
@@ -245,17 +245,17 @@ export class CharacterSummaryRenderer {
         });
     }
 
-    _drawInputPrompts(state, w, h) {
+    _drawInputPrompts(state, leftW, centerW, h) {
         let prompts = "";
 
         if (state.contextMenu) {
-            prompts = "[W/S] Nav   [SPACE] Select   [ESC] Close";
+            prompts = "[W/S] Nav  [SPC] Select  [ESC] Close";
         } 
         else if (state.heldItem) {
-            prompts = "[MOUSE] Place   [ESC] Cancel";
+            prompts = "[MOUSE] Place  [ESC] Cancel";
         } 
         else if (state.isChoosingItem) {
-            prompts = "[WASD] Grid   [SHIFT] View   [SPACE] Menu   [ESC] Back";
+            prompts = "[WASD] Grid  [SHFT] View  [SPC] Menu  [ESC] Back";
         } 
         else {
             const slotName = (state.slots && state.slots[state.selectedSlotIndex]) || null;
@@ -263,21 +263,24 @@ export class CharacterSummaryRenderer {
             
             const hasInvItems = state.filteredInventory && state.filteredInventory.length > 0;
 
-            let parts = ["[WASD] Slot", "[Q/E] Char", "[SHIFT] View"];
+            let parts = ["[WASD] Slot", "[Q/E] Char", "[SHFT] View"];
 
             if (hasSlotItem) {
-                parts.push("[SPACE] Menu");
+                parts.push("[SPC] Menu");
             } else if (hasInvItems) {
-                parts.push("[SPACE] Equip");
+                parts.push("[SPC] Equip");
             }
 
             parts.push("[ESC] Back");
-            prompts = parts.join("   ");
+            prompts = parts.join("  ");
         }
+
+        // Calculate explicit center of the middle column
+        const centerX = leftW + Math.floor(centerW / 2);
 
         this.ui.drawText(
             prompts, 
-            w / 2,        
+            centerX,        
             h - 15,        
             UITheme.fonts.small, 
             UITheme.colors.textMuted, 

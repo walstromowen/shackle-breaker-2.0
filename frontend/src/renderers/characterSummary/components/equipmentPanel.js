@@ -145,8 +145,9 @@ export class EquipmentPanel {
 
             // DRAW SELECTION BRACKETS
             if (isSelected) {
-                const pulseDist = 2 + Math.abs(Math.sin(Date.now() / 300)) * 3; 
-                this.ui.drawSelectionBrackets(slotX, slotY, slotW, this.SLOT_HEIGHT, pulseDist, UITheme.colors.selectedWhite);
+                // CHANGED: Matched the smooth 4 + Math.sin bracket animation from other UI elements
+                const pulseDist = 4 + Math.sin(Date.now() / 150) * 2;
+                this.ui.drawSelectionBrackets(slotX, slotY, slotW, this.SLOT_HEIGHT, pulseDist, UITheme.colors.borderHighlight);
             }
 
             // --- GHOSTING LOGIC ---

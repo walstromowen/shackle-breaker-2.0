@@ -18,6 +18,11 @@ export class CharacterCreatorRenderer {
 
         ui.clearScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
 
+        // --- DYNAMIC ANIMATION OFFSET FOR BRACKETS ---
+        // Oscillates smoothly between 2px and 6px. 
+        // Divisor increased to 250 to slow the animation to standard UI speed.
+        const bracketOffset = 4 + Math.sin(Date.now() / 250) * 2; 
+
         // --- 1. GLOBAL LAYOUT: 20px PADDING ---
         const p = 20; 
         const startY = 20; 
@@ -59,9 +64,9 @@ export class CharacterCreatorRenderer {
         ctx.lineWidth = 1;
         ctx.strokeRect(nameInputX, curY, nameInputW, nameInputH);
 
-        // Selection Brackets
+        // Selection Brackets (Animated)
         if (isNameSelected || isEditingName || isNameHovered) {
-            ui.drawSelectionBrackets(nameInputX, curY, nameInputW, nameInputH, 4); // Added 4
+            ui.drawSelectionBrackets(nameInputX, curY, nameInputW, nameInputH, bracketOffset);
         }
 
         let valStr = selections.name;
@@ -76,7 +81,8 @@ export class CharacterCreatorRenderer {
 
         ctx.save(); 
         ctx.beginPath(); ctx.rect(nameInputX, curY, nameInputW, nameInputH); ctx.clip(); 
-        ui.drawText(valStr, nameInputX + (nameInputW/2), curY + 22, UITheme.fonts.header, nameColor, "center");
+        // Changed font to body and adjusted Y-offset slightly for better centering
+        ui.drawText(valStr, nameInputX + (nameInputW/2), curY + 21, UITheme.fonts.body, nameColor, "center");
         ctx.restore();
 
         const nameBottomY = curY + nameInputH;
@@ -231,9 +237,9 @@ export class CharacterCreatorRenderer {
                 ctx.strokeStyle = UITheme.colors.border;
                 ctx.strokeRect(menuStartX + 40, btnY, midW - 80, MENU_ITEM_HEIGHT);
 
-                // Selection Brackets
+                // Selection Brackets (Animated)
                 if (isSelected || isBtnHovered) {
-                    ui.drawSelectionBrackets(menuStartX + 40, btnY, midW - 80, MENU_ITEM_HEIGHT, 4); // Added 4
+                    ui.drawSelectionBrackets(menuStartX + 40, btnY, midW - 80, MENU_ITEM_HEIGHT, bracketOffset); 
                 }
 
                 ui.drawText("START", centerColX, btnY + (MENU_ITEM_HEIGHT/2) + 1, UITheme.fonts.body, btnColor, "center", "middle");
@@ -244,9 +250,7 @@ export class CharacterCreatorRenderer {
 
             // Menu Item Selection
             if (isSelected || isRowHovered) {
-                ctx.fillStyle = "rgba(255,255,255,0.02)"; // Very subtle highlight
-                ctx.fillRect(menuStartX + 10, menuY, midW - 20, MENU_ITEM_HEIGHT);
-                ui.drawSelectionBrackets(menuStartX + 10, menuY, midW - 20, MENU_ITEM_HEIGHT, 4); // Added 4
+                ui.drawSelectionBrackets(menuStartX + 10, menuY, midW - 20, MENU_ITEM_HEIGHT, bracketOffset); 
             }
 
             const labelY = menuY + 10;

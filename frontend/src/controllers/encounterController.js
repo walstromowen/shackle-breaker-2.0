@@ -4,6 +4,7 @@ import { events } from "../core/eventBus.js";
 import { InventorySystem } from "../../../shared/systems/inventorySystem.js"; 
 import { PartyManager } from "../../../shared/systems/partyManager.js";
 import { EntityFactory } from '../../../shared/systems/factories/entityFactory.js';
+import { ExperienceSystem } from '../../../shared/systems/experienceSystem.js';
 
 export class EncounterController {
     constructor(input, config, worldManager) {
@@ -178,34 +179,41 @@ export class EncounterController {
             events.emit('PLAY_SFX', { id: 'ui_hover', volume: 0.4 });
         } 
         else if (key === "Enter" || key === "Space") {
-            events.emit('PLAY_SFX', { id: 'ui_select', volume: 0.6 });
-            
-            const selectedDecision = options[this.selectedIndex];
-            
-            // Switch to Party Screen via Callback Pattern
-            if (selectedDecision.type === 'switch_character') {
-                events.emit('CHANGE_SCENE', { 
-                    scene: 'party',
-                    data: {
-                        mode: 'ENCOUNTER_SELECT',
-                        activeIndices: [0], 
-                        callback: (chosenIndex) => {
-                            if (chosenIndex !== null && chosenIndex >= 0 && chosenIndex < gameState.party.members.length) {
-                                const party = gameState.party.members;
-                                const selectedMember = party.splice(chosenIndex, 1)[0];
-                                party.unshift(selectedMember);
-                                
-                                this.selectedIndex = 0;
-                            }
-                        }
-                    }
-                });
-            } else {
-                this.beginActionSequence(selectedDecision);
-            }
+            this.executeSelectedDecision();
         }
     }
 
+    executeSelectedDecision() {
+        const options = this.model.getAvailableDecisions();
+        if (!options || options.length === 0) return;
+
+        events.emit('PLAY_SFX', { id: 'ui_select', volume: 0.6 });
+        
+        const selectedDecision = options[this.selectedIndex];
+        
+        // Switch to Party Screen via Callback Pattern
+        if (selectedDecision.type === 'switch_character') {
+            events.emit('CHANGE_SCENE', { 
+                scene: 'party',
+                data: {
+                    mode: 'ENCOUNTER_SELECT',
+                    activeIndices: [0], 
+                    callback: (chosenIndex) => {
+                        if (chosenIndex !== null && chosenIndex >= 0 && chosenIndex < gameState.party.members.length) {
+                            const party = gameState.party.members;
+                            const selectedMember = party.splice(chosenIndex, 1)[0];
+                            party.unshift(selectedMember);
+                            
+                            this.selectedIndex = 0;
+                        }
+                    }
+                }
+            });
+        } else {
+            this.beginActionSequence(selectedDecision);
+        }
+    }
+    
     triggerRoll() {
         this.actionPhase = 'rolling';
         this.rollTimer = this.rollData.duration;
@@ -214,25 +222,31 @@ export class EncounterController {
     }
 
     beginActionSequence(decision) {
-        if (!decision) return;
+        if (!decision) return;
 
-        this.pendingDecision = decision;
-        this.actionPhase = 'message';
-        this.textTimer = 0; 
-        this.skipMessageAnimation = false;
-        
-        // Ensure party members exist before accessing
-        const actorName = gameState.party?.members?.[0]?.name || "The party"; 
-        
-        if (decision.type === 'skill_check') {
-             const actionText = decision.text.replace(/\[.*?\]/, '').trim().toLowerCase();
-             this.actionMessage = `${actorName} attempts to ${actionText}...`;
-        } else {
-             this.actionMessage = `${actorName} decides to ${decision.text.toLowerCase()}...`;
-        }
+        this.pendingDecision = decision;
+        this.actionPhase = 'message';
+        this.textTimer = 0; 
+        this.skipMessageAnimation = false;
+        
+        // Ensure party members exist before accessing
+        const actorName = gameState.party?.members?.[0]?.name || "The party"; 
+        
+        // --- NEW LOGIC: Check for custom text first ---
+        if (decision.customActionText) {
+             // Replace '{name}' with the active character's name
+             this.actionMessage = decision.customActionText.replace(/{name}/g, actorName);
+        } 
+        // --- FALLBACK LOGIC ---
+        else {
+             // Strips out bracketed DC tags and generates standard text for all decision types
+             const cleanText = decision.text.replace(/\[.*?\]/g, '').trim().toLowerCase();
+             // FIX: Replace {name} in the fallback string
+             this.actionMessage = `${actorName} decides to ${cleanText.replace(/{name}/g, actorName)}...`;
+        }
 
-        this.lastText = this.actionMessage; 
-    }
+        this.lastText = this.actionMessage; 
+    }
 
     setupRollData(decision) {
         const roller = gameState.party.members[0];
@@ -305,6 +319,10 @@ export class EncounterController {
     resolveResults(resultsArray) {
         if (!resultsArray) return;
 
+        const messages = [];
+        let shouldEndEncounter = false;
+        let endEncounterPayload = null;
+
         resultsArray.forEach(result => {
             const type = result.type;
             const payload = result.payload || {};
@@ -321,7 +339,8 @@ export class EncounterController {
                     this.updateBGM(); 
                     break;
                 case "END_ENCOUNTER":
-                    this.endEncounter();
+                    shouldEndEncounter = true;
+                    endEncounterPayload = payload;
                     break;
                 case "DESTROY_OBJECT":
                     const ctx = this.model.context;
@@ -331,9 +350,54 @@ export class EncounterController {
                     break;
                 case "GIVE_ITEM":
                     InventorySystem.addItem(payload.itemId, payload.qty || 1);
+                    const readableName = payload.itemId.replace(/_/g, ' ');
+                    messages.push(`Obtained ${readableName} x${payload.qty || 1}`);
                     break;
                 case "REMOVE_ITEM":
                     InventorySystem.removeItem(payload.itemId, payload.qty || 1);
+                    break;
+                case "AWARD_XP":
+                    const xpAmount = payload.amount || 0;
+                    const xpTarget = payload.target || "active_character";
+                    
+                    if (xpAmount <= 0) break;
+
+                    if (xpTarget === "entire_party") {
+                        gameState.party?.members?.forEach(member => {
+                            if (ExperienceSystem.addXp(member, xpAmount)) {
+                                messages.push(`${member.name} reached Level ${member.level}!`);
+                            }
+                        });
+                        messages.push(`The party gained ${xpAmount} XP.`);
+                    } else {
+                        const activeCharacter = gameState.party?.members?.[0];
+                        if (activeCharacter) {
+                            if (ExperienceSystem.addXp(activeCharacter, xpAmount)) {
+                                messages.push(`${activeCharacter.name} reached Level ${activeCharacter.level}!`);
+                            }
+                            messages.push(`${activeCharacter.name} gained ${xpAmount} XP.`);
+                        }
+                    }
+                    break;
+
+                case "MODIFY_CURRENCY":
+                    const currencyAmount = payload.amount || 0;
+                    
+                    if (typeof gameState.party.currency === 'undefined') {
+                        gameState.party.currency = 0;
+                    }
+
+                    gameState.party.currency += currencyAmount;
+                    
+                    if (gameState.party.currency < 0) {
+                        gameState.party.currency = 0;
+                    }
+                    
+                    if (currencyAmount > 0) {
+                        messages.push(`Found ${currencyAmount} currency!`);
+                    } else if (currencyAmount < 0) {
+                        messages.push(`Lost ${Math.abs(currencyAmount)} currency.`);
+                    }
                     break;
                 case "MODIFY_VITALS":
                     const activeCharacter = gameState.party?.members?.[0];
@@ -346,27 +410,23 @@ export class EncounterController {
                             payload.insight || 0, 
                             payload.damageType || 'true',
                             payload.isPercentage || false,
-                            payload.bypassDefense || false // <-- ADDED THIS
+                            payload.bypassDefense || false 
                         );
                     }
                     break;
                 case "START_BATTLE":
-                    // 1. Transform the array of string IDs into actual Entity objects
                     const rawEnemies = payload.enemies || [];
                     const enemyParty = rawEnemies.map((enemyId, index) => {
                         const enemyEntity = EntityFactory.create(enemyId);
-                        // Ensure they have unique names for the battle UI (e.g., "Bandit 1", "Bandit 2")
                         enemyEntity.name = `${enemyEntity.name || enemyId} ${index + 1}`;
                         return enemyEntity;
                     });
 
-                    // 2. Determine Background (Payload Override -> Biome Default -> Safe Fallback)
                     let battleBgAsset = payload.background;
 
                     if (!battleBgAsset) {
                         const currentHour = gameState.world?.time ? gameState.world.time / 60 : 12;
                         
-                        // Fallback cascade: Context -> Player -> Default (0,0)
                         const context = this.model.context || {};
                         const col = context.col !== undefined ? context.col : (gameState.player?.col || 0);
                         const row = context.row !== undefined ? context.row : (gameState.player?.row || 0);
@@ -380,12 +440,11 @@ export class EncounterController {
                         }
                     }
 
-                    // 3. Emit the event with the instantiated objects
                     events.emit('START_BATTLE', {
                         enemies: enemyParty, 
                         background: battleBgAsset,
                         weather: gameState.world?.currentWeather || 'clear',
-                        context: this.model.context // Still good to pass this for scene context!
+                        context: this.model.context 
                     });
                     break;
                 case "TAKE_DAMAGE": 
@@ -402,23 +461,19 @@ export class EncounterController {
                     }
 
                     if (targetType === "entire_party") {
-                        // Apply to everyone
                         gameState.party?.members?.forEach(member => {
                             PartyManager.applyStatusEffect(member, effectId, customCharges);
                         });
                     } else {
-                        // Apply only to the active character taking the action
                         const activeCharacter = gameState.party?.members?.[0];
                         if (activeCharacter) {
                             PartyManager.applyStatusEffect(activeCharacter, effectId, customCharges);
                         }
                     }
                     break;   
-                // ---> NEW RECRUITING LOGIC <---
                 case "RECRUIT_CHARACTER":
                     const newCharacter = PartyManager.addMember(payload.entityId, payload.overrides);
                     if (newCharacter) {
-                        // Refill stats for newly recruited characters
                         newCharacter.hp = newCharacter.maxHp;
                         newCharacter.stamina = newCharacter.maxStamina;
                         events.emit('CHARACTER_RECRUITED', { character: newCharacter });
@@ -426,17 +481,51 @@ export class EncounterController {
                         console.log(`[Encounter] Could not recruit ${payload.entityId}, party full.`);
                     }
                     break;
-                // -------------------------------
 
                 default:
                     events.emit(type, payload);
                     break;
             }
         });
+
+        // --- NEW REWARD INTERCEPTOR ---
+        if (messages.length > 0 && shouldEndEncounter) {
+            const rewardText = messages.join('\n\n');
+            
+            // Ensure stages object exists on the model
+            this.model.stages = this.model.stages || {};
+            
+            // Inject a dynamic stage into the model
+            this.model.stages["encounter_rewards_stage"] = {
+                imageId: this.model.getImageId ? this.model.getImageId() : null, // Retain the current background
+                text: rewardText,
+                decisions: [
+                    { 
+                        text: "Continue.", 
+                        outcomes: [
+                            { 
+                                weight: 100, 
+                                results: [{ type: "END_ENCOUNTER", payload: endEncounterPayload }] 
+                            }
+                        ] 
+                    }
+                ]
+            };
+            
+            // Advance to our new dynamic stage instead of immediately closing
+            this.model.advanceToStage("encounter_rewards_stage");
+            this.selectedIndex = 0;
+            return; // Abort the actual end sequence for now
+        }
+
+        // Standard exit
+        if (shouldEndEncounter) {
+            this.endEncounter(endEncounterPayload);
+        }
     }
 
-    endEncounter() {
-        events.emit('CHANGE_SCENE', { scene: 'overworld' });
+    endEncounter(payload = null) {
+        events.emit('CHANGE_SCENE', { scene: 'overworld', data: payload });
     }
 
     cleanup() {
@@ -454,53 +543,63 @@ export class EncounterController {
     }
 
     getState() {
-        // Fallback state if model is not loaded to prevent rendering crashes
-        if (!this.model) {
-            return { 
-                imageId: null, 
-                title: "", 
-                text: "", 
-                decisions: [], 
-                ui: { selectedDecisionIndex: 0 }, 
-                party: [], 
-                skipMessageAnimation: false, 
-                textTimer: 0, 
-                actionPhase: 'none',
-                rollTimer: 0,
-                rollData: this.rollData
-            };
-        }
+        if (!this.model) {
+            return { 
+                imageId: null, 
+                title: "", 
+                text: "", 
+                decisions: [], 
+                ui: { selectedDecisionIndex: 0 }, 
+                party: [], 
+                currency: gameState.party?.currency || 0,
+                skipMessageAnimation: false, 
+                textTimer: 0, 
+                actionPhase: 'none',
+                rollTimer: 0,
+                rollData: this.rollData
+            };
+        }
 
-        let displayText = this.model.getCurrentText() || "";
-        let displayDecisions = this.model.getAvailableDecisions() || [];
+        let displayText = this.model.getCurrentText() || "";
+        let displayDecisions = this.model.getAvailableDecisions() || [];
 
-        if (this.actionPhase !== 'none') {
-            displayText = this.actionMessage; 
-            displayDecisions = []; 
-        }
+        // --- FIX: Grab actorName and replace {name} globally for UI elements ---
+        const actorName = gameState.party?.members?.[0]?.name || "The party";
+        
+        displayText = displayText.replace(/{name}/g, actorName);
+        
+        displayDecisions = displayDecisions.map(decision => ({
+            ...decision,
+            text: decision.text.replace(/{name}/g, actorName)
+        }));
+        // -----------------------------------------------------------------------
 
-        if (this.lastText !== displayText) {
-            this.lastText = displayText;
-            this.textTimer = 0; 
-            this.skipMessageAnimation = false; 
-        }
+        if (this.actionPhase !== 'none') {
+            displayText = this.actionMessage; 
+            displayDecisions = []; 
+        }
 
-        return {
-            title: this.model.title || "Unknown Encounter", 
-            imageId: this.model.getImageId ? this.model.getImageId() : null,
-            text: displayText, 
-            decisions: displayDecisions,
-            ui: { selectedDecisionIndex: this.selectedIndex },
-            
-            // Provides either the active character or the whole party based on renderer needs
-            // (Adjusted defensively to ensure it doesn't break if party is empty)
-            party: gameState.party?.members?.length > 0 ? [gameState.party.members[0]] : [], 
-            
-            skipMessageAnimation: this.skipMessageAnimation,
-            textTimer: this.textTimer,
-            actionPhase: this.actionPhase,
-            rollTimer: this.rollTimer,
-            rollData: this.rollData
-        };
-    }
+        if (this.lastText !== displayText) {
+            this.lastText = displayText;
+            this.textTimer = 0; 
+            this.skipMessageAnimation = false; 
+        }
+
+        return {
+            title: this.model.title || "Unknown Encounter", 
+            imageId: this.model.getImageId ? this.model.getImageId() : null,
+            text: displayText, 
+            decisions: displayDecisions,
+            ui: { selectedDecisionIndex: this.selectedIndex },
+            
+            party: gameState.party?.members?.length > 0 ? [gameState.party.members[0]] : [], 
+            currency: gameState.party?.currency || 0,
+            
+            skipMessageAnimation: this.skipMessageAnimation,
+            textTimer: this.textTimer,
+            actionPhase: this.actionPhase,
+            rollTimer: this.rollTimer,
+            rollData: this.rollData
+        };
+    }
 }

@@ -128,77 +128,77 @@ export class SceneManager {
     }
 
     setupEventListeners() {
-        // 1. General Scene Switching -> Classic Fade
-        events.on('CHANGE_SCENE', ({ scene, data }) => {
-            this.transitionRenderer.start(() => {
-                this.input.reset(); 
-                if (scene === 'overworld') this.overworldController.isLocked = false;
-                
-                if (scene === 'character_summary') {
-                    this.characterSummaryController = new CharacterSummaryController(this.input, data);
-                }
-                if (scene === 'level_up') {
-                    this.levelUpController.init(data); 
-                }
-                if (scene === 'party') {
-                    this.partyController.init(data || {}); 
-                }
+        // 1. General Scene Switching -> Classic Fade
+        events.on('CHANGE_SCENE', ({ scene, data }) => {
+            this.transitionRenderer.start(() => {
+                this.input.reset(); 
+                if (scene === 'overworld') this.overworldController.isLocked = false;
+                
+                if (scene === 'character_summary') {
+                    this.characterSummaryController = new CharacterSummaryController(this.input, data);
+                }
+                if (scene === 'level_up') {
+                    this.levelUpController.init(data); 
+                }
+                if (scene === 'party') {
+                    this.partyController.init(data || {}); 
+                }
 
-                this.changeScene(scene);
-            }, 'fade'); 
-        });
-        
-        // 2. Physical Interactions -> Circle Iris Wipe
-        events.on('INTERACT', (data) => {
-            if (data.type === 'ENCOUNTER') {
-                this.transitionRenderer.start(() => {
-                    this.encounterController.start(data.id, data.context);
-                    this.changeScene('encounter');
-                }, 'fade'); 
-            }
-        });
+                this.changeScene(scene);
+            }, 'fade'); 
+        });
+        
+        // 2. Physical Interactions -> Circle Iris Wipe
+        events.on('INTERACT', (data) => {
+            if (data.type === 'ENCOUNTER') {
+                this.transitionRenderer.start(() => {
+                    this.encounterController.start(data.id, data.context);
+                    this.changeScene('encounter');
+                }, 'fade'); 
+            }
+        });
 
-        // 2.5 Random Map Encounters -> Classic Fade
-        events.on('START_ENCOUNTER', (data) => {
-            this.transitionRenderer.start(() => {
-                this.encounterController.start(data.encounterId, data.context || {});
-                this.changeScene('encounter');
-            }, 'fade'); 
-        });
+        // 2.5 Random Map Encounters -> Classic Fade
+        events.on('START_ENCOUNTER', (data) => {
+            this.transitionRenderer.start(() => {
+                this.encounterController.start(data.encounterId, data.context || {});
+                this.changeScene('encounter');
+            }, 'fade'); 
+        });
 
-        // 3. Combat Triggers -> Fast White Flash
-        events.on('START_BATTLE', (data) => {
-            this.transitionRenderer.start(() => {
-                console.log("[SceneManager] Handing off entities to BattleController:", data.enemies);
-                
-                const context = data.context || {};
-                context.backgroundId = data.background; 
-                context.weather = data.weather; 
+        // 3. Combat Triggers -> Fast White Flash
+        events.on('START_BATTLE', (data) => {
+            this.transitionRenderer.start(() => {
+                console.log("[SceneManager] Handing off entities to BattleController:", data.enemies);
+                
+                const context = data.context || {};
+                context.backgroundId = data.background; 
+                context.weather = data.weather; 
 
-                this.battleController.start(data.enemies, context);
-                this.changeScene('battle'); 
-            }, 'flash', { speed: 4.0, color: '#ffffff' }); 
-        });
+                this.battleController.start(data.enemies, context);
+                this.changeScene('battle'); 
+            }, 'flash', { speed: 4.0, color: '#ffffff' }); 
+        });
 
-        events.on('BATTLE_ENDED', (data) => {
-            if (data.victory) {
-                events.emit('CHANGE_SCENE', { scene: 'overworld' }); 
-            } else {
-                console.log("[SceneManager] Game Over...");
-            }
-        });
+        events.on('BATTLE_ENDED', (data) => {
+            if (data.victory) {
+                events.emit('CHANGE_SCENE', { scene: 'overworld' }); 
+            } else {
+                console.log("[SceneManager] Game Over...");
+            }
+        });
 
-        // 5. Party Swap Routing -> Quick Wipe
-        events.on('REQUEST_PARTY_SWAP', (data) => {
-            this.transitionRenderer.start(() => {
-                this.partyController.init({
-                    mode: data.mode || 'BATTLE_SELECT', 
-                    activeIndices: data.activeIndices,
-                    callback: data.callback 
-                });
-                this.changeScene('party');
-            }, 'wipe', { speed: 3.0 }); 
-        });
+        // 5. Party Swap Routing -> Quick Wipe
+        events.on('REQUEST_PARTY_SWAP', (data) => {
+            this.transitionRenderer.start(() => {
+                this.partyController.init({
+                    mode: data.mode || 'BATTLE_SELECT', 
+                    activeIndices: data.activeIndices,
+                    callback: data.callback 
+                });
+                this.changeScene('party');
+            }, 'wipe', { speed: 3.0 }); 
+        });
 
         // ---> NEW BLOCK START <---
         // 6. Character Recruitment -> Switch to Character Summary View
@@ -209,7 +209,7 @@ export class SceneManager {
             }, 'wipe', { speed: 3.0 });
         });
         // ---> NEW BLOCK END <---
-    }
+    }
 
     setupInputRouting() {
         window.addEventListener('keydown', this._handleGlobalKeydown);
@@ -287,6 +287,7 @@ export class SceneManager {
                     }
                 }
                 break;
+
             case 'level_up':
                 if (click) {
                     this.levelUpController.handleMouseDown(click.x, click.y, this.levelUpRenderer);
@@ -298,6 +299,58 @@ export class SceneManager {
                     this.partyController.handleMouseDown(click.x, click.y, this.partyRenderer);
                 }
                 break;
+
+            // ---> NEW: Added mouse routing for gameplay scenes <---
+            case 'overworld':
+                if (this.overworldController.handleMouseMove) {
+                    this.overworldController.handleMouseMove(mousePos.x, mousePos.y, isMouseDown);
+                }
+                if (click && this.overworldController.handleMouseDown) {
+                    this.overworldController.handleMouseDown(click.x, click.y);
+                }
+                if (rightClick && this.overworldController.handleRightClick) {
+                    this.overworldController.handleRightClick(rightClick.x, rightClick.y);
+                }
+                if (scroll !== 0 && this.overworldController.handleScroll) {
+                    this.overworldController.handleScroll(scroll);
+                }
+                break;
+
+            // Updated Encounter Mouse Logic
+            case 'encounter':
+                if (this.encounterController.handleMouseInput) {
+                    // 1. Ask the renderer what button index the mouse is hovering over
+                    const hoverIndex = this.encounterRenderer.getButtonIndex?.(mousePos.x, mousePos.y);
+                    
+                    // Send hover data
+                    this.encounterController.handleMouseInput({ 
+                        type: 'hover', 
+                        index: hoverIndex 
+                    });
+
+                    // 2. If clicked, resolve the click target and send click data
+                    if (click) {
+                        const clickIndex = this.encounterRenderer.getButtonIndex?.(click.x, click.y);
+                        this.encounterController.handleMouseInput({ 
+                            type: 'click', 
+                            index: clickIndex 
+                        });
+                    }
+                }
+                break;
+
+            case 'battle':
+                if (this.battleController.handleMouseMove) {
+                    this.battleController.handleMouseMove(mousePos.x, mousePos.y, isMouseDown);
+                }
+                if (click && this.battleController.handleMouseDown) {
+                    this.battleController.handleMouseDown(click.x, click.y);
+                }
+                if (rightClick && this.battleController.handleRightClick) {
+                    this.battleController.handleRightClick(rightClick.x, rightClick.y);
+                }
+                break;
+            // ---> END NEW BLOCK <---
         }
 
         // --- 2. REGULAR UPDATES ---

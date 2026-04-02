@@ -4,7 +4,7 @@ import { UITheme } from '../../ui/UITheme.js';
 export class EncounterRenderer {
     constructor(config, loader) {
         this.config = config;
-        this.loader = loader; 
+        this.loader = loader;
     }
 
     // Helper for rendering wrapped/centered text in the columns
@@ -37,7 +37,7 @@ export class EncounterRenderer {
     render(ctx, state) {
         if (!state || !state.text) return;
 
-        const { imageId, text, title, encounter, decisions, ui: uiState, party = [], skipMessageAnimation, textTimer, actionPhase, rollData } = state;
+        const { imageId, text, title, encounter, decisions, rewards, ui: uiState, party = [], currency = 0, skipMessageAnimation, textTimer, actionPhase, rollData } = state;
         const selectedIndex = uiState.selectedDecisionIndex || 0;
         const { CANVAS_WIDTH, CANVAS_HEIGHT } = this.config;
 
@@ -47,6 +47,7 @@ export class EncounterRenderer {
         const centerW = Math.floor(CANVAS_WIDTH * 0.52);
         const rightW = CANVAS_WIDTH - leftW - centerW;
         const h = CANVAS_HEIGHT;
+        const centerX = leftW;
 
         const bg0 = UITheme.colors.bgScale[0];
         const bg1 = UITheme.colors.bgScale[1];
@@ -70,31 +71,44 @@ export class EncounterRenderer {
             ctx.beginPath(); ctx.moveTo(leftW + centerW, 0); ctx.lineTo(leftW + centerW, h); ctx.stroke();
         }
 
+        // Both Left Portrait and Right Encounter Image align at exactly imageY
         const imageY = 70; 
-        const titleY = imageY - 20; 
-        const headerFont = UITheme.fonts.header;
 
+        // --- LEFT COLUMN: PARTY MEMBERS ---
         let currentY = imageY; 
         party.slice(0, 3).forEach(member => {
-            this.drawPartyMember(ctx, ui, member, 0, currentY, leftW, titleY, headerFont);
+            const nameY = currentY - 20; 
+            this.drawPartyMember(ctx, ui, member, 0, currentY, leftW, nameY, UITheme.fonts.body);
             currentY += 280; 
         });
+
+        // --- PARTY CURRENCY ---
+        ui.drawText(
+            `Currency: ${currency}`, 
+            leftW / 2, 
+            currentY, 
+            UITheme.fonts.mono, 
+            UITheme.colors.textHighlight,
+            "center", 
+            "middle"
+        );
 
         const rightColX = leftW + centerW;
         const encounterTitle = title || (encounter && encounter.title) || "Unknown Encounter";
         
-        // Wrap Encounter Title if it's too long
+        // --- CENTER COLUMN: ENCOUNTER TITLE & NARRATIVE ---
         this.drawCenteredWrappedText(
             ctx, ui, 
             encounterTitle, 
-            rightColX + (rightW / 2), 
-            titleY, 
-            rightW - 20, 
-            24, 
-            headerFont, 
+            centerX + (centerW / 2), 
+            40,
+            centerW - 40, 
+            28, 
+            UITheme.fonts.header, 
             UITheme.colors.textMain
         );
 
+        // --- RIGHT COLUMN: ENCOUNTER IMAGE ---
         if (imageId && this.loader) {
             const img = this.loader.get(imageId);
             if (img) {
@@ -114,7 +128,6 @@ export class EncounterRenderer {
 
         const narrativeHeight = h * 0.40; 
         const decisionY = narrativeHeight;
-        const centerX = leftW;
         
         const charsPerSecond = 45; 
         const secondsPerChar = 1 / charsPerSecond;
@@ -135,7 +148,7 @@ export class EncounterRenderer {
         ui.drawWrappedText(
             visibleText, 
             centerX + 30, 
-            30, 
+            90, 
             centerW - 60,
             26, 
             UITheme.fonts.body,
@@ -151,41 +164,66 @@ export class EncounterRenderer {
             ctx.fillStyle = UITheme.colors.textHighlight;
             ctx.font = UITheme.fonts.italic;
             ctx.textAlign = "right";
-            ctx.fillText(">> [Enter] to Skip", promptX, promptY);
+            ctx.fillText("[Enter] to Skip", promptX, promptY);
             ctx.globalAlpha = 1.0;
         }
 
-        if (showDecisions && decisions && decisions.length > 0) {
-            let btnY = decisionY + 30;
-            const btnX = centerX + 40;
-            const btnW = centerW - 80;
-            const lineHeight = 24;
-
-            decisions.forEach((opt, index) => {
-                const isSelected = (index === selectedIndex);
+        if (showDecisions) {
+            if (rewards) {
+                this.drawRewards(ctx, ui, rewards, centerX + 40, decisionY + 30);
                 
-                const indicator = isSelected ? "> " : "  ";
-                const displayText = indicator + opt.text;
-                const textColor = isSelected ? UITheme.colors.textHighlight : UITheme.colors.textMuted;
+                const alpha = (Math.sin(Date.now() / 150) + 1) / 2; 
+                ctx.globalAlpha = 0.4 + (alpha * 0.6);
+                ctx.fillStyle = UITheme.colors.textHighlight;
+                ctx.font = UITheme.fonts.italic;
+                ctx.textAlign = "right";
+                ctx.fillText("[Enter] to Continue", promptX, CANVAS_HEIGHT - 30);
+                ctx.globalAlpha = 1.0;
 
-                ui.drawWrappedText(
-                    displayText, 
-                    btnX, 
-                    btnY, 
-                    btnW, 
-                    lineHeight, 
-                    UITheme.fonts.body, 
-                    textColor
-                );
+            } else if (decisions && decisions.length > 0) {
+                let btnY = decisionY + 30;
+                const btnX = centerX + 50; 
+                const btnW = centerW - 100; 
+                const lineHeight = 24;
 
-                const charsPerLine = Math.floor(btnW / 8); 
-                const lines = Math.ceil(displayText.length / charsPerLine) || 1;
-                
-                btnY += (lines * lineHeight) + 20; 
-            });
+                decisions.forEach((opt, index) => {
+                    const isSelected = (index === selectedIndex);
+                    const textColor = isSelected ? UITheme.colors.selectedWhite : UITheme.colors.textMuted;
+
+                    // Get precise height based on actual word-wrapping
+                    const lines = ui.getWrappedLines(opt.text, btnW, UITheme.fonts.body);
+                    const decisionHeight = lines.length * lineHeight;
+                    
+                    // Draw selection brackets with breathing animation
+                    if (isSelected) {
+                        const dist = 6 + Math.sin(Date.now() / 200) * 2;
+                        ui.drawSelectionBrackets(
+                            btnX - 15, 
+                            btnY - 5, 
+                            btnW + 30, 
+                            decisionHeight, 
+                            dist, 
+                            UITheme.colors.borderHighlight
+                        );
+                    }
+
+                    ui.drawWrappedText(
+                        opt.text, 
+                        btnX, 
+                        btnY, 
+                        btnW, 
+                        lineHeight, 
+                        UITheme.fonts.body, 
+                        textColor
+                    );
+
+                    // Add a cleaner, consistent vertical gap
+                    btnY += decisionHeight + 16; 
+                });
+            }
         }
 
-        // --- 6. GOTHIC DICE ROLL POPUP ---
+        // --- GOTHIC DICE ROLL POPUP ---
         const popupPhases = ['wait_for_roll', 'rolling', 'hold_base', 'apply_mod', 'result'];
         
         if (popupPhases.includes(actionPhase)) {
@@ -214,20 +252,17 @@ export class EncounterRenderer {
             const isNeutralPhase = ['wait_for_roll', 'rolling', 'hold_base', 'apply_mod'].includes(actionPhase);
             const diceColor = isNeutralPhase ? UITheme.colors.textHighlight : (isSuccess ? UITheme.colors.success : UITheme.colors.failure);
             
-            // Dice Area Layout
             const diceAreaY = popupY + 115;
             const diceCenterX = CANVAS_WIDTH / 2;
             const leftModX = diceCenterX - 90;
             const rightThreshX = diceCenterX + 90;
 
-            // Compute dynamic pulsing scales
             let modPulseScale = 1.0;
             let rollerPulseScale = 1.0; 
             let resultPulseScale = 1.0;
             let modGlowIntensity = 0;   
             let rollerGlowIntensity = 0;
 
-            // Override display value visually so it snaps exactly when the modifier pulse ends
             let renderedRollerVal = displayVal; 
 
             if (actionPhase === 'apply_mod') {
@@ -235,15 +270,12 @@ export class EncounterRenderer {
                 let progress = 1.0 - (state.rollTimer / phaseDuration);
                 progress = Math.min(Math.max(progress, 0), 1);
                 
-                // 1. Modifier pulses slightly longer: first 45% of the phase (~0.9 seconds)
                 let modProgress = Math.min(progress / 0.45, 1.0);
                 modPulseScale = 1.0 + Math.sin(modProgress * Math.PI) * 0.3; 
-                modGlowIntensity = Math.sin(modProgress * Math.PI); // Peaks at 1.0 mid-pulse
+                modGlowIntensity = Math.sin(modProgress * Math.PI); 
 
-                // Snap the modifier to the roller ONLY after the modifier pulse finishes
                 renderedRollerVal = (modProgress < 1.0) ? rollData.d20 : rollData.total;
 
-                // 2. Roller pulses and glows in the NEXT 45% of the phase (~0.9s to 1.8s)
                 if (progress > 0.45) {
                     let rollerProgress = Math.min((progress - 0.45) / 0.45, 1.0);
                     rollerPulseScale = 1.0 + Math.sin(rollerProgress * Math.PI) * 0.3;
@@ -254,12 +286,10 @@ export class EncounterRenderer {
                 const phaseDuration = 2.0;
                 let progress = 1.0 - (state.rollTimer / phaseDuration);
                 progress = Math.min(Math.max(progress, 0), 1);
-                // A rapid pop/decay for the final outcome
                 resultPulseScale = 1.0 + Math.sin(progress * Math.PI * 3) * 0.25 * (1 - progress); 
-                renderedRollerVal = rollData.total; // Ensure total is shown in result phase
+                renderedRollerVal = rollData.total; 
             }
 
-            // --- LEFT: Modifier ---
             const modStr = mod >= 0 ? `+${mod}` : `${mod}`;
             const isPosMod = mod >= 0;
             const activeModColor = isPosMod ? (UITheme.colors.success || '#00ff00') : (UITheme.colors.failure || '#ff0000');
@@ -271,7 +301,6 @@ export class EncounterRenderer {
             }
             ui.drawText("Modifier", 0, -20, UITheme.fonts.small || "14px sans-serif", UITheme.colors.textMuted, "center", "middle");
             
-            // Apply Glowing Green/Red to modifier text ONLY during its active pulse
             if (actionPhase === 'apply_mod' && modGlowIntensity > 0) {
                 ctx.shadowColor = activeModColor;
                 ctx.shadowBlur = 15 * modGlowIntensity; 
@@ -281,7 +310,6 @@ export class EncounterRenderer {
             ui.drawText(modStr, 0, 10, UITheme.fonts.title, finalModColor, "center", "middle");
             ctx.restore();
 
-            // --- CENTER: Roller Number (Diamond & Bigger) ---
             ctx.save();
             ctx.translate(diceCenterX, diceAreaY);
             
@@ -305,7 +333,6 @@ export class EncounterRenderer {
             ctx.fill(); 
             ctx.stroke();
 
-            // Glow effect for the roller (pulse glow during apply_mod, steady glow during result)
             if (actionPhase === 'result') {
                 ctx.shadowColor = isSuccess ? (UITheme.colors.success || '#00ff00') : (UITheme.colors.failure || '#ff0000');
                 ctx.shadowBlur = 15;
@@ -314,22 +341,19 @@ export class EncounterRenderer {
                 ctx.shadowBlur = 15 * rollerGlowIntensity;
             }
 
-            // Force significantly larger text for the focal point
             ctx.font = "bold 36px monospace";
             ctx.fillStyle = diceColor;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillText(renderedRollerVal.toString(), 0, 0); // <-- Note the use of renderedRollerVal here
+            ctx.fillText(renderedRollerVal.toString(), 0, 0); 
             ctx.restore();
 
-            // --- RIGHT: Threshold ---
             ctx.save();
             ctx.translate(rightThreshX, diceAreaY);
             ui.drawText("Threshold", 0, -20, UITheme.fonts.small || "14px sans-serif", UITheme.colors.textMuted, "center", "middle");
             ui.drawText(dc.toString(), 0, 10, UITheme.fonts.title, UITheme.colors.textMain, "center", "middle");
             ctx.restore();
 
-            // --- BOTTOM LOGIC (Button, Status, Escapes) ---
             if (actionPhase === 'wait_for_roll') {
                 const btnW = 160;
                 const btnH = 40;
@@ -359,25 +383,54 @@ export class EncounterRenderer {
                 ctx.fillStyle = UITheme.colors.textHighlight;
                 ctx.font = UITheme.fonts.italic;
                 ctx.textAlign = "center";
-                ctx.fillText(">> [Enter] to Skip", CANVAS_WIDTH / 2, popupY + 200);
+                ctx.fillText("[Enter] to Skip", CANVAS_WIDTH / 2, popupY + 200);
                 ctx.globalAlpha = 1.0;
             }
         }
     }
 
-    drawPartyMember(ctx, ui, member, x, y, colWidth, titleY, font) {
+    drawRewards(ctx, ui, rewards, x, y) {
+        let currentY = y;
+        const lineHeight = 28;
+
+        ui.drawText("Rewards Found", x, currentY, UITheme.fonts.header, UITheme.colors.textHighlight);
+        currentY += lineHeight + 5;
+
+        if (rewards.xp) {
+            ui.drawText(`+ ${rewards.xp} XP`, x + 15, currentY, UITheme.fonts.body, UITheme.colors.success || UITheme.colors.textMain);
+            currentY += lineHeight;
+        }
+
+        if (rewards.currency) {
+            ui.drawText(`+ ${rewards.currency} Currency`, x + 15, currentY, UITheme.fonts.body, UITheme.colors.textHighlight);
+            currentY += lineHeight;
+        }
+
+        if (rewards.items && rewards.items.length > 0) {
+            currentY += 10; 
+            ui.drawText("Items Acquired:", x + 15, currentY, UITheme.fonts.body, UITheme.colors.textMain);
+            currentY += lineHeight;
+
+            rewards.items.forEach(item => {
+                const qtyStr = item.quantity && item.quantity > 1 ? ` (x${item.quantity})` : "";
+                ui.drawText(`- ${item.name}${qtyStr}`, x + 35, currentY, UITheme.fonts.body, UITheme.colors.textMuted);
+                currentY += lineHeight;
+            });
+        }
+    }
+
+    drawPartyMember(ctx, ui, member, x, y, colWidth, nameY, font) {
         const pSize = 128;
         const pX = x + (colWidth / 2) - (pSize / 2);
         const pY = y;
 
         const nameColor = member.hp <= 0 ? UITheme.colors.hp : UITheme.colors.textMain;
 
-        // Wrap Character Name if it's too long for the left column
         this.drawCenteredWrappedText(
             ctx, ui, 
             member.name, 
             x + (colWidth / 2), 
-            titleY, 
+            nameY, 
             colWidth - 20, 
             24, 
             font, 

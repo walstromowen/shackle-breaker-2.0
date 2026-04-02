@@ -1,9 +1,10 @@
 import { UITheme } from '../../../ui/UITheme.js';
-import { ItemDefinitions } from '../../../../../shared/data/itemDefinitions.js';
+import { ItemDefinitions } from '../../../../../shared/data/itemDefinitions.js'
+import { gameState } from '../../../../../shared/state/gameState.js';
 
 export class InventoryPanel {
     constructor(ui, loader) {
-        this.ui = ui;
+        this.ui = ui;   
         this.loader = loader;
         
         // --- Grid Constants ---
@@ -12,7 +13,8 @@ export class InventoryPanel {
         this.SLOT_PADDING = 8;    // INCREASED: Was 4, now 8 (fills the side gaps)
         
         // Layout Constants
-        this.HEADER_HEIGHT = 50; 
+        // INCREASED HEADER_HEIGHT from 50 to 75 to fit the currency label
+        this.HEADER_HEIGHT = 75; 
         this.SCROLLBAR_WIDTH = 4;
         
         this.totalContentHeight = 0;
@@ -23,6 +25,11 @@ export class InventoryPanel {
 
         // --- 1. Draw Fixed Header ---
         this.ui.drawText("Inventory", centerX, y + 20, UITheme.fonts.header, UITheme.colors.textMain, "center");
+        
+        // --- NEW: Currency Label ---
+        // Safely extract currency from state (adjust the path if your state structure differs)
+        const currencyAmount = gameState.party.currency || 0;
+        this.ui.drawText(`Currency: ${currencyAmount}`, centerX, y + 45, UITheme.fonts.mono, UITheme.colors.textHighlight, "center");
         
         const dividerY = y + this.HEADER_HEIGHT - 10;
         this.ui.drawRect(x + 10, dividerY, w - 20, 1, UITheme.colors.border);
@@ -66,9 +73,9 @@ export class InventoryPanel {
         // --- 4. Draw Grid Content ---
         this.ui.ctx.save();
         
-        // CHANGED: Expanded clip area slightly (listY - 2) to prevent the top border 
-        // of the first row from being clipped (which made it look thinner).
-        this.ui.startClip(x, listY - 2, w + 15, listH + 4); 
+        // CHANGED: Expanded clip area significantly (listY - 10) to prevent the top bracket 
+        // animation of the first row from being cut off at the top of the viewport.
+        this.ui.startClip(x, listY - 10, w + 15, listH + 20); 
 
         if (!inventory || inventory.length === 0) {
             this.ui.drawText("- Empty -", centerX, listY + 30, "italic 12px sans-serif", UITheme.colors.textMuted, "center");
@@ -96,7 +103,7 @@ export class InventoryPanel {
                 const borderFill = UITheme.colors.border; // Standard grey
                 const lineWidth = 1;
 
-                // Hitbox Registration (Keep your existing code here)
+                // Hitbox Registration
                 if (itemY + this.SLOT_SIZE >= listY && itemY <= listY + listH) {
                     hitboxes.push({
                         id: `INV_ITEM_${index}`,
@@ -138,8 +145,9 @@ export class InventoryPanel {
 
                 // DRAW SELECTION BRACKETS
                 if (isSelected) {
-                    const pulseDist = 2 + Math.abs(Math.sin(Date.now() / 300)) * 3;
-                    this.ui.drawSelectionBrackets(itemX, itemY, this.SLOT_SIZE, this.SLOT_SIZE, pulseDist, UITheme.colors.selectedWhite);
+                    // CHANGED: Matched the smooth 4 + Math.sin bracket animation from other UI elements
+                    const pulseDist = 4 + Math.sin(Date.now() / 150) * 2;
+                    this.ui.drawSelectionBrackets(itemX, itemY, this.SLOT_SIZE, this.SLOT_SIZE, pulseDist, UITheme.colors.borderHighlight);
                 }
             });
         }
