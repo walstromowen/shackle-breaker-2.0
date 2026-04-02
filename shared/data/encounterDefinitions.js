@@ -155,7 +155,7 @@ export const encounterDefinitions = {
                             {
                                 weight: 100,
                                 results: [
-                                    { type: "START_BATTLE", payload: { enemies: ["wolf"], background: "bg_forest" } }
+                                    { type: "START_BATTLE", payload: { enemies: ["WOLF"], } }
                                 ]
                             }
                         ]

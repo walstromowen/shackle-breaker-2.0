@@ -3,6 +3,7 @@ import { gameState } from "../../../shared/state/gameState.js";
 import { events } from "../core/eventBus.js"; 
 import { InventorySystem } from "../../../shared/systems/inventorySystem.js"; 
 import { PartyManager } from "../../../shared/systems/partyManager.js";
+import { EntityFactory } from '../../../shared/systems/factories/entityFactory.js';
 
 export class EncounterController {
     constructor(input, config, worldManager) {
@@ -335,10 +336,41 @@ export class EncounterController {
                     InventorySystem.removeItem(payload.itemId, payload.qty || 1);
                     break;
                 case "START_BATTLE":
+                    // 1. Transform the array of string IDs into actual Entity objects
+                    const rawEnemies = payload.enemies || [];
+                    const enemyParty = rawEnemies.map((enemyId, index) => {
+                        const enemyEntity = EntityFactory.create(enemyId);
+                        // Ensure they have unique names for the battle UI (e.g., "Bandit 1", "Bandit 2")
+                        enemyEntity.name = `${enemyEntity.name || enemyId} ${index + 1}`;
+                        return enemyEntity;
+                    });
+
+                    // 2. Determine Background (Payload Override -> Biome Default -> Safe Fallback)
+                    let battleBgAsset = payload.background;
+
+                    if (!battleBgAsset) {
+                        const currentHour = gameState.world?.time ? gameState.world.time / 60 : 12;
+                        
+                        // Fallback cascade: Context -> Player -> Default (0,0)
+                        const context = this.model.context || {};
+                        const col = context.col !== undefined ? context.col : (gameState.player?.col || 0);
+                        const row = context.row !== undefined ? context.row : (gameState.player?.row || 0);
+                        
+                        const biome = this.worldManager.getBiomeAt(col, row);
+                        
+                        if (biome) {
+                            battleBgAsset = biome.getBattleBackground(currentHour);
+                        } else {
+                            battleBgAsset = 'default'; 
+                        }
+                    }
+
+                    // 3. Emit the event with the instantiated objects
                     events.emit('START_BATTLE', {
-                        enemies: payload.enemies || [],
-                        background: payload.background || 'default',
-                        weather: gameState.world?.currentWeather || 'clear'
+                        enemies: enemyParty, 
+                        background: battleBgAsset,
+                        weather: gameState.world?.currentWeather || 'clear',
+                        context: this.model.context // Still good to pass this for scene context!
                     });
                     break;
                 case "TAKE_DAMAGE": 
