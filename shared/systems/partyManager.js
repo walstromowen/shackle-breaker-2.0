@@ -2,8 +2,8 @@
 
 import { gameState } from '../state/gameState.js';
 import { EntityFactory } from './factories/entityFactory.js';
-import { ItemFactory } from './factories/itemFactory.js'; // <-- ADD THIS
-
+import { ItemFactory } from './factories/itemFactory.js';
+import { CombatCalculator } from './combatCalculator.js';
 
 export const PartyManager = {
     
@@ -36,10 +36,9 @@ export const PartyManager = {
     /**
      * CLEARS the current party and creates a new Main Character.
      * Use this when the user clicks "Start Game" on the Character Creator.
-     * * @param {string} name - The name entered by the user
-     * @param {object} attributes - { vigor, strength, dexterity, etc. }
+     * @param {string} templateId - The base template
+     * @param {object} overrides - { attributes, equipment, etc. }
      */
-    // In PartyManager.js
     createMainCharacter(templateId, overrides) {
         console.log(`[PartyManager] Creating Hero...`);
 
@@ -48,7 +47,7 @@ export const PartyManager = {
         gameState.party.currency = 0;
         gameState.party.inventory = [];
 
-        // 2. Resolve Equipment (Borrowing the logic you already wrote in addMember)
+        // 2. Resolve Equipment 
         if (overrides.equipment) {
             const resolvedEquipment = {};
             for (const [slot, itemData] of Object.entries(overrides.equipment)) {
@@ -65,7 +64,7 @@ export const PartyManager = {
         // 3. Create the Hero 
         const hero = EntityFactory.create(templateId, overrides);
 
-        // Fill resources (Do this here so you never have to do it manually again!)
+        // Fill resources 
         if (hero) {
             hero.hp = hero.maxHp;
             hero.stamina = hero.maxStamina;
@@ -94,22 +93,19 @@ export const PartyManager = {
             return null; 
         }
 
-        // --- NEW FIX: Resolve Equipment Strings into Item Objects ---
+        // Resolve Equipment Strings into Item Objects 
         if (overrides.equipment) {
             const resolvedEquipment = {};
             for (const [slot, itemData] of Object.entries(overrides.equipment)) {
-                // Check if it's a raw string ID (e.g., "shortsword"). If so, build it!
                 if (typeof itemData === 'string') {
                     const realItem = ItemFactory.createItem(itemData);
                     if (realItem) resolvedEquipment[slot] = realItem;
                 } else {
-                    // It's already an item object, just pass it through
                     resolvedEquipment[slot] = itemData;
                 }
             }
             overrides.equipment = resolvedEquipment;
         }
-        // ------------------------------------------------------------
 
         const newMember = EntityFactory.create(entityId, overrides);
         
@@ -118,5 +114,82 @@ export const PartyManager = {
             return newMember; 
         }
         return null;
+    },
+
+    /**
+     * Safely applies damage or healing to a party member's vitals.
+     * Uses CombatCalculator math for incoming damage so stats actually matter.
+     * @param {object} target - The entity receiving the stat change
+     * @param {number} hpDelta - The raw amount to change HP by (negative for damage)
+     * @param {number} staminaDelta - The amount to change Stamina by
+     * @param {number} insightDelta - The amount to change Insight by
+     * @param {string} damageType - "true" for unmitigated, or a valid DAMAGE_TYPE string
+     * @param {boolean} isPercentage - If true, treats deltas as a percentage of max stats
+     * @param {boolean} bypassDefense - If true, ignores all armor/resistance mitigation
+     */
+    modifyVitals(target, hpDelta, staminaDelta = 0, insightDelta = 0, damageType = 'true', isPercentage = false, bypassDefense = false) {
+        if (!target || target.isDead?.()) return;
+
+        let finalHpDelta = hpDelta;
+        let finalStaminaDelta = staminaDelta;
+        let finalInsightDelta = insightDelta;
+
+        // Convert percentages to flat numbers based on the character's max stats
+        if (isPercentage) {
+            finalHpDelta = Math.round(target.maxHp * (hpDelta / 100));
+            finalStaminaDelta = Math.round(target.maxStamina * (staminaDelta / 100));
+            finalInsightDelta = Math.round(target.maxInsight * (insightDelta / 100));
+        }
+
+        // --- 1. HANDLE HP ---
+        if (finalHpDelta !== 0) {
+            if (finalHpDelta < 0) {
+                const safeType = damageType.toLowerCase();
+                
+                // Now checks for the new flag OR the legacy 'true' string
+                if (bypassDefense || safeType === 'true') {
+                    // True damage (skips mitigation entirely)
+                    target.hp = Math.max(0, (target.hp || target.maxHp) - Math.abs(finalHpDelta));
+                    console.log(`[PartyManager] Raw Event Damage: ${Math.abs(finalHpDelta)} ${safeType} | Mitigated To: ${Math.abs(finalHpDelta)} (Defense Bypassed)`);
+                } else {
+                    // --- ENCOUNTER DAMAGE MITIGATION ---
+                    const stats = target.calculatedStats || target.stats || {};
+                    const defenseVal = stats.defense?.[safeType] || 0;
+                    const resistanceVal = stats.resistance?.[safeType] || 0;
+
+                    // Route through our shared mathematical pipeline
+                    const finalHpDamage = CombatCalculator.calculateMitigatedDamage(
+                        Math.abs(finalHpDelta), 
+                        defenseVal, 
+                        resistanceVal, 
+                        true // Enable variance
+                    );
+
+                    target.hp = Math.max(0, (target.hp || target.maxHp) - finalHpDamage);
+                    console.log(`[PartyManager] Raw Event Damage: ${Math.abs(finalHpDelta)} ${safeType} | Mitigated To: ${finalHpDamage}`);
+                }
+            } else {
+                // Apply Healing (capped at maxHP)
+                target.hp = Math.min(target.maxHp, (target.hp || 0) + finalHpDelta);
+            }
+        }
+
+        // --- 2. HANDLE STAMINA ---
+        if (finalStaminaDelta !== 0) {
+            if (finalStaminaDelta < 0) {
+                target.stamina = Math.max(0, (target.stamina || target.maxStamina) - Math.abs(finalStaminaDelta));
+            } else {
+                target.stamina = Math.min(target.maxStamina, (target.stamina || 0) + finalStaminaDelta);
+            }
+        }
+
+        // --- 3. HANDLE INSIGHT ---
+        if (finalInsightDelta !== 0) {
+            if (finalInsightDelta < 0) {
+                target.insight = Math.max(0, (target.insight || target.maxInsight) - Math.abs(finalInsightDelta));
+            } else {
+                target.insight = Math.min(target.maxInsight, (target.insight || 0) + finalInsightDelta);
+            }
+        }
     }
 };

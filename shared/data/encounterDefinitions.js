@@ -90,7 +90,7 @@ export const encounterDefinitions = {
         stages: {
             "discovery": {
                 imageId: "encounters",
-                bgm: "tense_strings", // <-- Tense music starts
+                bgm: "tense_strings",
                 text: "You hear a faint whimper. You find a scruffy dog with a nasty gash on its hind leg. It growls softly, baring its teeth.",
                 decisions: [
                     {
@@ -124,7 +124,7 @@ export const encounterDefinitions = {
                             {
                                 weight: 100,
                                 results: [
-                                    { type: "REMOVE_ITEM", payload: { itemId: "rations", qty: 1 } },
+                                    { type: "REMOVE_ITEM", payload: { itemId: "bandage", qty: 1 } },
                                     { type: "ADVANCE_STAGE", payload: { stageId: "success_tame" } }
                                 ]
                             }
@@ -134,7 +134,7 @@ export const encounterDefinitions = {
             },
             "rushed_bandage": {
                 imageId: "encounters",
-                bgm: "battle_prelude", // <-- Music escalates here!
+                bgm: "battle_prelude",
                 text: "Startled and in pain, the wild mutt snaps fiercely at your hand!",
                 decisions: [
                     {
@@ -143,7 +143,12 @@ export const encounterDefinitions = {
                             {
                                 weight: 100,
                                 results: [
-                                    { type: "TAKE_DAMAGE", payload: { amount: 5, target: "active_character" } },
+                                    // ---> UPDATED PAYLOAD (Negative values for damage) <---
+                                    { 
+                                        type: "MODIFY_VITALS", 
+                                        payload: { hp: -50, stamina: -10, insight: 0, damageType: "pierce", isPercentage: true, bypassDefense: false }
+                                    },
+                                    // -------------------------
                                     { type: "ADVANCE_STAGE", payload: { stageId: "success_tame_hurt" } }
                                 ]
                             }
@@ -155,7 +160,7 @@ export const encounterDefinitions = {
                             {
                                 weight: 100,
                                 results: [
-                                    { type: "START_BATTLE", payload: { enemies: ["WOLF"], } }
+                                    { type: "START_BATTLE", payload: { enemies: ["WOLF"] } }
                                 ]
                             }
                         ]
@@ -164,7 +169,7 @@ export const encounterDefinitions = {
             },
             "success_tame": {
                 imageId: "bg_forest_dog_happy",
-                bgm: "happy_theme", // <-- Peaceful music resolves it
+                bgm: "happy_theme",
                 text: "You skillfully wrap the wound. The dog licks your hand in gratitude. You have a new friend.",
                 decisions: [
                     {

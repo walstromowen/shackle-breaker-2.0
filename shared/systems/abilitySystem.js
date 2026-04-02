@@ -203,34 +203,6 @@ export class AbilitySystem {
         };
     }
 
-    static _handleRecover(effect, source, target) {
-        let amount = 0;
-
-        if (effect.calculation === 'flat') {
-            amount = effect.power;
-        } 
-        else if (effect.calculation === 'attribute') {
-            const currentStats = source.stats; 
-            amount = effect.power + Math.floor((currentStats.attributes?.[effect.attribute] || 0) * (effect.scaling || 0));
-        }
-        else if (effect.calculation === 'percent') {
-            const maxProp = 'max' + effect.resource.charAt(0).toUpperCase() + effect.resource.slice(1);
-            const maxValue = target[maxProp] || 1; 
-            amount = Math.floor(maxValue * effect.power);
-        }
-        else if (effect.calculation === 'max') {
-            amount = 9999; 
-        }
-
-        const actualChange = target.modifyResource(effect.resource, amount);
-
-        return {
-            success: actualChange !== 0,
-            amount: actualChange,
-            message: actualChange !== 0 ? `+${actualChange} ${effect.resource.toUpperCase()}` : "Recover failed"
-        };
-    }
-
     static _handleSet(effect, target) {
         const currentVal = target.stats ? target.stats[effect.resource] : target[effect.resource];
         const diff = effect.value - currentVal;

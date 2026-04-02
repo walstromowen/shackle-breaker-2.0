@@ -335,6 +335,21 @@ export class EncounterController {
                 case "REMOVE_ITEM":
                     InventorySystem.removeItem(payload.itemId, payload.qty || 1);
                     break;
+                case "MODIFY_VITALS":
+                    const activeCharacter = gameState.party?.members?.[0];
+                    
+                    if (activeCharacter) {
+                        PartyManager.modifyVitals(
+                            activeCharacter, 
+                            payload.hp || 0, 
+                            payload.stamina || 0,
+                            payload.insight || 0, 
+                            payload.damageType || 'true',
+                            payload.isPercentage || false,
+                            payload.bypassDefense || false // <-- ADDED THIS
+                        );
+                    }
+                    break;
                 case "START_BATTLE":
                     // 1. Transform the array of string IDs into actual Entity objects
                     const rawEnemies = payload.enemies || [];
