@@ -1,5 +1,5 @@
 // src/shared/systems/partyManager.js
-
+import { StatusEffectFactory } from '../systems/factories/statusEffectFactory.js';
 import { gameState } from '../state/gameState.js';
 import { EntityFactory } from './factories/entityFactory.js';
 import { ItemFactory } from './factories/itemFactory.js';
@@ -191,5 +191,29 @@ export const PartyManager = {
                 target.insight = Math.min(target.maxInsight, (target.insight || 0) + finalInsightDelta);
             }
         }
+    },
+    /**
+     * Safely creates and applies a status effect to a character.
+     * @param {object} target - The EntityModel receiving the effect.
+     * @param {string} effectId - The ID matching a StatusEffectDefinition.
+     * @param {number} customCharges - Optional override for how long it lasts.
+     */
+    applyStatusEffect(target, effectId, customCharges = null) {
+        if (!target || target.isDead?.()) return;
+
+        // Use the factory to generate the model!
+        const newEffect = StatusEffectFactory.createEffect(effectId, customCharges, null);
+        
+        if (!newEffect) {
+            // The factory already logs a warning if the ID is invalid, 
+            // so we can just safely back out here.
+            return; 
+        }
+
+        // Apply it using the method already on your EntityModel
+        target.applyStatusEffect(newEffect);
+        
+        console.log(`[PartyManager] Applied [${newEffect.name}] to ${target.name || 'character'}`);
     }
+    
 };

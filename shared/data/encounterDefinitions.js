@@ -143,12 +143,16 @@ export const encounterDefinitions = {
                             {
                                 weight: 100,
                                 results: [
-                                    // ---> UPDATED PAYLOAD (Negative values for damage) <---
                                     { 
                                         type: "MODIFY_VITALS", 
                                         payload: { hp: -50, stamina: -10, insight: 0, damageType: "pierce", isPercentage: true, bypassDefense: false }
                                     },
-                                    // -------------------------
+                                    // ---> NEW STATUS EFFECT PAYLOAD <---
+                                    {
+                                        type: "APPLY_STATUS_EFFECT",
+                                        payload: { effectId: "bleed", charges: 3, target: "active_character" }
+                                    },
+                                    // -----------------------------------
                                     { type: "ADVANCE_STAGE", payload: { stageId: "success_tame_hurt" } }
                                 ]
                             }

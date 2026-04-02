@@ -391,7 +391,29 @@ export class EncounterController {
                 case "TAKE_DAMAGE": 
                     events.emit("TAKE_DAMAGE", payload);
                     break;
+                case "APPLY_STATUS_EFFECT":
+                    const effectId = payload.effectId;
+                    const customCharges = payload.charges || null;
+                    const targetType = payload.target || "active_character";
 
+                    if (!effectId) {
+                        console.warn("[Encounter] APPLY_STATUS_EFFECT missing effectId in payload.");
+                        break;
+                    }
+
+                    if (targetType === "entire_party") {
+                        // Apply to everyone
+                        gameState.party?.members?.forEach(member => {
+                            PartyManager.applyStatusEffect(member, effectId, customCharges);
+                        });
+                    } else {
+                        // Apply only to the active character taking the action
+                        const activeCharacter = gameState.party?.members?.[0];
+                        if (activeCharacter) {
+                            PartyManager.applyStatusEffect(activeCharacter, effectId, customCharges);
+                        }
+                    }
+                    break;   
                 // ---> NEW RECRUITING LOGIC <---
                 case "RECRUIT_CHARACTER":
                     const newCharacter = PartyManager.addMember(payload.entityId, payload.overrides);
