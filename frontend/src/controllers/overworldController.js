@@ -212,19 +212,35 @@ export class OverworldController {
         // 2. Ask the biome which background to use based on the time
         const battleBgAsset = biome.getBattleBackground(currentHour);
 
-        // --- NEW: Grab the party's highest level ---
+        // --- Grab the party's highest level ---
         const dynamicLevel = PartyManager.getHighestLevel();
 
         const enemyParty = [];
         for (const enemyData of battleData.enemies) {
+            // 1. Determine base ID
             const enemyId = typeof enemyData === 'string' ? enemyData : enemyData.id;
             
-            // Look for level offsets in the biome data, default to 0
-            const levelOffset = (typeof enemyData === 'object' && enemyData.levelOffset) ? enemyData.levelOffset : 0;
-            const finalLevel = Math.max(1, dynamicLevel + levelOffset);
+            // 2. Build the overrides object to pass to the factory
+            let overrides = { level: dynamicLevel }; // Default to dynamic level
 
-            const enemyEntity = EntityFactory.create(enemyId, finalLevel);
-            enemyEntity.name = `${enemyEntity.name || enemyId} ${enemyParty.length + 1}`;
+            if (typeof enemyData === 'object') {
+                const levelOffset = enemyData.levelOffset || 0;
+                
+                // Pack everything from the definition into the overrides object
+                overrides = {
+                    ...enemyData, // Spreads equipment, traits, custom names, etc.
+                    level: Math.max(1, dynamicLevel + levelOffset) // Calculate final level
+                };
+            }
+
+            // 3. Pass the entire overrides object to the factory
+            const enemyEntity = EntityFactory.create(enemyId, overrides);
+            
+            // Fallback generic naming if no custom name was provided in the override
+            if (typeof enemyData === 'string' || !enemyData.name) {
+                enemyEntity.name = `${enemyEntity.name || enemyId} ${enemyParty.length + 1}`;
+            }
+
             enemyParty.push(enemyEntity);
         }
         

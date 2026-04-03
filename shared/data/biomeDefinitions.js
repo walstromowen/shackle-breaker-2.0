@@ -43,15 +43,35 @@ export const BIOME_DEFINITIONS = {
             rate: 0.01,
             pools: [
                 // Standard pack: No change needed! Will auto-scale to player's level.
-                { chance: 0.10, enemies: ['WOLF', 'WOLF', 'WOLF'] },          
+                { chance: 0.10, enemies: ['LEGIONARY', 'LEGIONARY', 'LEGIONARY'] },          
                 
-                // Alpha pack: Change "level" to "levelOffset". 
-                // If player is Lv 10, this spawns a Lv 12 Alpha with two Lv 10 regular wolves.
+                
                 { chance: 0.10, enemies: [{ id: 'WOLF', levelOffset: 2 }, 'WOLF', 'WOLF'] },   
                 
-                // Mad Mage (Boss/Hard encounter): Change to a high levelOffset.
-                // If player is Lv 10, the Mad Mage will be Lv 15.
-                { chance: 0.80, enemies: [{ id: 'MAD_MAGE', levelOffset: 5 }, { id: 'MAD_MAGE', levelOffset: 5 }] }  
+                // Mad Mage (Boss/Hard encounter): Added Tattered Armor overrides.
+                { 
+                    chance: 0.80, 
+                    enemies: [
+                        { 
+                            id: 'MAD_MAGE', 
+                        },
+                        { 
+                            id: 'MAD_MAGE', 
+                            levelOffset: 5,
+                            traits: ['iron_willed'],
+                            equipment: {
+                                head: "tattered_hood",
+                                torso: "tattered_shirt",
+                                arms: "tattered_gloves",
+                                legs: "tattered_pants",
+                                feet: "tattered_boots"
+                            }
+                        },
+                        { 
+                            id: 'MAD_MAGE', 
+                        },
+                    ] 
+                }  
             ]
         }
     },

@@ -420,18 +420,30 @@ export class EncounterController {
 
                     const rawEnemies = payload.enemies || [];
                     const enemyParty = rawEnemies.map((enemyData, index) => {
+                        // Determine base ID
                         const enemyId = typeof enemyData === 'string' ? enemyData : enemyData.id;
                         
-                        // 2. Check if the encounter payload specifically wants to offset the level (e.g. Bosses)
-                        const levelOffset = (typeof enemyData === 'object' && enemyData.levelOffset) ? enemyData.levelOffset : 0;
-                        
-                        // 3. Calculate final level, ensuring it never drops below 1
-                        const finalLevel = Math.max(1, dynamicLevel + levelOffset);
+                        // Build the overrides object to pass to the factory
+                        let overrides = { level: dynamicLevel }; // Default to dynamic level
 
-                        // 4. Pass the calculated level into your factory
-                        const enemyEntity = EntityFactory.create(enemyId, finalLevel);
+                        if (typeof enemyData === 'object') {
+                            const levelOffset = enemyData.levelOffset || 0;
+                            
+                            // Pack everything from the definition into the overrides object
+                            overrides = {
+                                ...enemyData, // Spreads equipment, traits, custom names, etc.
+                                level: Math.max(1, dynamicLevel + levelOffset) // Calculate final level
+                            };
+                        }
+
+                        // Pass the entire overrides object to the factory
+                        const enemyEntity = EntityFactory.create(enemyId, overrides);
                         
-                        enemyEntity.name = `${enemyEntity.name || enemyId} ${index + 1}`;
+                        // Fallback generic naming if no custom name was provided
+                        if (typeof enemyData === 'string' || !enemyData.name) {
+                            enemyEntity.name = `${enemyEntity.name || enemyId} ${index + 1}`;
+                        }
+                        
                         return enemyEntity;
                     });
 

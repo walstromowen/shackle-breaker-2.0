@@ -4,13 +4,6 @@ import { ExperienceSystem } from '../experienceSystem.js';
 
 export class EntityFactory {
     
-    /**
-     * Creates a living Entity instance based on a static definition.
-     * @param {string} entityId - The key in ENTITY_DEFINITIONS (e.g., "HUMANOID")
-     * @param {number|Object} levelOrOverrides - The level to spawn at, OR the overrides object for backwards compatibility.
-     * @param {Object} overrides - Custom values to merge on top of the blueprint
-     * @returns {EntityModel} A new, fully initialized Entity instance
-     */
     static create(entityId, levelOrOverrides = 1, overrides = {}) {
         const blueprint = ENTITY_DEFINITIONS[entityId];
         
@@ -19,8 +12,7 @@ export class EntityFactory {
             return null;
         }
 
-        // --- NEW: Smart Parameter Parsing ---
-        // Allows calling create("WOLF", 5) OR create("WOLF", { name: "Alpha" })
+        // --- Smart Parameter Parsing ---
         let level = 1;
         let finalOverrides = overrides;
 
@@ -34,7 +26,7 @@ export class EntityFactory {
         // 1. Deep Clone Blueprint
         const config = structuredClone(blueprint);
 
-        // 2. Apply Identity Overrides (Renamed to match EntityDefinitions)
+        // 2. Apply Identity Overrides
         if (finalOverrides.name) config.name = finalOverrides.name;
         if (finalOverrides.spriteOverworld) config.spriteOverworld = finalOverrides.spriteOverworld;
         if (finalOverrides.spritePortrait) config.spritePortrait = finalOverrides.spritePortrait;
@@ -50,7 +42,6 @@ export class EntityFactory {
             config.tags = [...new Set([...existingTags, ...finalOverrides.tags])];
         }
 
-        // Merge custom injected abilities
         if (finalOverrides.abilities) {
             const existingAbilities = config.abilities || [];
             config.abilities = [...new Set([...existingAbilities, ...finalOverrides.abilities])];
@@ -68,19 +59,22 @@ export class EntityFactory {
             config.baseStats = { ...config.baseStats, ...finalOverrides.baseStats };
         }
 
+        // --- EQUIPMENT INJECTION ---
         if (finalOverrides.equipment) {
             config.equipment = { ...config.equipment, ...finalOverrides.equipment };
         }
         if (!config.equipment) config.equipment = {}; 
 
-        if (finalOverrides.traits) {
-            config.traits = finalOverrides.traits;
-        } else if (!config.traits) {
-            config.traits = []; 
+        // --- TRAITS INJECTION ---
+        if (!config.traits) config.traits = []; 
+        if (finalOverrides.traits && Array.isArray(finalOverrides.traits)) {
+            // Push new custom traits into the entity's innate traits
+            config.traits.push(...finalOverrides.traits);
+            // Remove duplicates just in case
+            config.traits = [...new Set(config.traits)];
         }
 
         // --- PROGRESSION LOGIC ---
-        // Prioritize explicit level parameter, fallback to overrides, fallback to blueprint
         config.level = finalOverrides.level ?? level;
 
         if (finalOverrides.maxXp) {
@@ -92,7 +86,6 @@ export class EntityFactory {
         config.xp = finalOverrides.xp ?? config.xp ?? 0;
         config.skillPoints = finalOverrides.skillPoints ?? config.skillPoints ?? 0;
 
-        // Apply automatic level scaling based on 1-to-1 attribute points
         this._applyLevelScaling(config, config.level);
 
         // 4. Initialize Unique ID
@@ -103,12 +96,11 @@ export class EntityFactory {
         // 5. Create the Entity Model
         const entity = new EntityModel(config);
 
-        // Ensure reward data survives instantiation
         if (config.lootTable) entity.lootTable = config.lootTable;
         if (config.currencyReward) entity.currencyReward = config.currencyReward;
         if (config.xpReward) entity.xpReward = config.xpReward;
 
-        // 6. Fill Resources (Start at max health/stamina)
+        // 6. Fill Resources
         entity.hp = entity.maxHp; 
         entity.stamina = entity.maxStamina;
         entity.insight = entity.maxInsight;
@@ -118,41 +110,30 @@ export class EntityFactory {
         return entity;
     }
 
-    /**
-     * Dynamically scales enemy attributes and currency based on their level.
-     * Derived stats (HP, Damage, Defense) are handled naturally by the StatCalculator.
-     */
     static _applyLevelScaling(config, level) {
         const levelDiff = level - 1;
-        
-        // 1 point per level to match the player
         const totalPointsToDistribute = levelDiff * 1; 
 
         if (config.attributes && totalPointsToDistribute > 0) {
-            // Sort attributes from highest to lowest based on their blueprint
             const sortedAttributes = Object.keys(config.attributes).sort(
                 (a, b) => config.attributes[b] - config.attributes[a]
             );
 
-            // Distribute 1 point at a time, prioritizing their highest stats
             for (let i = 0; i < totalPointsToDistribute; i++) {
                 const attrToBoost = sortedAttributes[i % sortedAttributes.length];
                 config.attributes[attrToBoost] += 1;
             }
         }
 
-        // Base Stat Scaling (Minor Tweaks to keep early game enemies from being one-shot)
         if (config.baseStats) {
             config.baseStats.maxHp += (levelDiff * 2); 
         }
 
-        // Currency Scaling
         if (config.currencyReward) {
             config.currencyReward.min += Math.floor(levelDiff * 1.5);
             config.currencyReward.max += Math.floor(levelDiff * 3.5);
         }
         
-        // Optionally scale base XP rewards so higher level enemies drop more XP!
         if (config.xpReward) {
              config.xpReward = Math.floor(config.xpReward * Math.pow(1.1, levelDiff));
         }
