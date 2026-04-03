@@ -250,7 +250,6 @@ export class BattleController {
         if (!this.state?.active || this.state.isPausedForUI) return;
         
         // 1. Check for global/debug hotkeys FIRST
-        // FIXED: Check for 'KeyC' instead of 'c'
         if (key === 'KeyC') { 
              console.log("Debug View Toggled!");
              events.emit('TOGGLE_BATTLE_DEBUG');
@@ -260,6 +259,19 @@ export class BattleController {
         // 2. Ignore inputs during processing/animation phases
         const ignorePhases = [PHASE.INTRO, PHASE.RESOLVE, PHASE.VICTORY, PHASE.DEFEAT];
         if (ignorePhases.includes(this.state.phase)) return;
+
+        // 2.5 Check for Character Summary Screen (Only triggers during active input phases)
+        // Checking for both 'i' and 'KeyI' depending on how your input manager formats keys
+        if (key === 'i' || key === 'KeyI') {
+            console.log("Character Summary Toggled!");
+            
+            // Emit an event to your UI layer, passing the currently active character
+            events.emit('TOGGLE_CHARACTER_SUMMARY', {
+                combatant: this.state.activeParty[this.state.activePartyIndex],
+                phase: this.state.phase
+            });
+            return; 
+        }
 
         // 3. Route normal battle inputs
         if (this.state.phase === PHASE.SELECT_ACTION) this._handleActionSelection(key);

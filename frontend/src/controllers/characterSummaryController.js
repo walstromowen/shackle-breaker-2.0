@@ -23,7 +23,29 @@ const KEY_BINDINGS = {
 
 export class CharacterSummaryController {
     constructor(input, data) {
-        this.memberIndex = data ? data.memberIndex : 0;
+        // --- FIX: Safely determine memberIndex and store return destination ---
+        this.memberIndex = 0; 
+        this.returnScene = 'party'; // Default return destination
+
+        if (data) {
+            if (data.returnScene) {
+                this.returnScene = data.returnScene;
+            }
+
+            if (data.memberIndex !== undefined) {
+                this.memberIndex = data.memberIndex;
+            } else if (data.character) {
+                // Find the index of the passed character in the party array
+                // We check by direct reference, or fallback to matching IDs if wrapped
+                const index = gameState.party.members.findIndex(m => 
+                    m === data.character || m.id === data.character.id
+                );
+                this.memberIndex = index !== -1 ? index : 0;
+            }
+        }
+        
+        this.state = 'SLOTS'; 
+        this.viewMode = 'STATS';
         
         this.state = 'SLOTS'; 
         this.viewMode = 'STATS'; 
@@ -136,7 +158,8 @@ export class CharacterSummaryController {
             this.inventoryIndex = -1;
             this.updateFilteredInventory();
         } else {
-            events.emit('CHANGE_SCENE', { scene: 'party' }); 
+            // FIX: Use the stored return scene instead of hardcoding 'party'
+            events.emit('CHANGE_SCENE', { scene: this.returnScene }); 
         }
     }
 

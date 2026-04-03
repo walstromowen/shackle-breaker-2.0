@@ -208,7 +208,20 @@ export class SceneManager {
                 this.changeScene('character_summary');
             }, 'wipe', { speed: 3.0 });
         });
-        // ---> NEW BLOCK END <---
+        // 7. Open Character Summary from Battle
+        events.on('TOGGLE_CHARACTER_SUMMARY', (data) => {
+            this.transitionRenderer.start(() => {
+                // Initialize the summary controller with the active combatant
+                // We pass 'battle' as a return scene so the summary screen knows where to go back to
+                this.characterSummaryController = new CharacterSummaryController(this.input, { 
+                    character: data.combatant,
+                    returnScene: 'battle',
+                    phase: data.phase 
+                });
+                
+                this.changeScene('character_summary');
+            }, 'wipe', { speed: 4.0 }); 
+        });
     }
 
     setupInputRouting() {
