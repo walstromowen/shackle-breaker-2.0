@@ -40,9 +40,17 @@ export class EntityModel {
             };
         }
 
+        // --- NEW: Default Stat Multipliers Fallback ---
+        if (!this.state.statMultipliers) {
+            this.state.statMultipliers = {
+                hpPerVigor: 3, staminaPerDex: 2, insightPerAtt: 2
+            };
+        }
+
         if (!this.state.spriteOverworld) this.state.spriteOverworld = "missing_texture";
         if (!this.state.spritePortrait) this.state.spritePortrait = "missing_face";
-// <-- NEW: Add safe audio fallbacks 
+
+        // Add safe audio fallbacks 
         if (!this.state.crySound) this.state.crySound = "generic_cry";
         if (!this.state.deathSound) this.state.deathSound = "generic_faint";
 
@@ -77,7 +85,7 @@ export class EntityModel {
     
     get spritePortrait() { return this.state.spritePortrait; }
     get spriteOverworld() { return this.state.spriteOverworld; }
-    // <-- NEW: Animation frame getters
+    // Animation frame getters
     get battlePortraitFramesFront() { return this.state.battlePortraitFramesFront; }
     get battlePortraitFramesBack() { return this.state.battlePortraitFramesBack; }
 
@@ -94,6 +102,7 @@ export class EntityModel {
     set skillPoints(val) { this.state.skillPoints = val; }
     
     get attributes() { return this.state.attributes; }
+    get statMultipliers() { return this.state.statMultipliers; } // <-- NEW
     get equipment() { return this.state.equipment; }
     get statusEffects() { return this.state.statusEffects; }
     get traits() { return this.state.traits; }
@@ -162,7 +171,7 @@ export class EntityModel {
     // ABILITY & ITEM MANAGEMENT (Updated for Dynamic Retrieval)
     // =========================================================
     
-    // NEW: Dynamic getter that combines innate and gear abilities on the fly
+    // Dynamic getter that combines innate and gear abilities on the fly
     get abilities() {
         const activeList = [...(this._learnedAbilities || [])];
 
@@ -200,12 +209,10 @@ export class EntityModel {
     equipItem(slot, itemModel) {
         this.unequipItem(slot);
         this.state.equipment[slot] = itemModel;
-        // Logic removed: the `get abilities()` getter now handles injecting gear skills automatically!
     }
 
     unequipItem(slot) {
         this.state.equipment[slot] = null;
-        // Logic removed: the `get abilities()` getter now handles removing gear skills automatically!
     }
 
     // =========================================================

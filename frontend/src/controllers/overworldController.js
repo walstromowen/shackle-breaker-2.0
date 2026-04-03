@@ -2,6 +2,7 @@ import { events } from '../core/eventBus.js';
 import { gameState } from '../../../shared/state/gameState.js';
 import { EntityFactory } from '../../../shared/systems/factories/entityFactory.js';
 import { WeatherFactory } from '../../../shared/systems/factories/weatherFactory.js';
+import { PartyManager } from '../../../shared/systems/partyManager.js';
 
 export class OverworldController {
     constructor(input, config, worldManager) {
@@ -211,9 +212,18 @@ export class OverworldController {
         // 2. Ask the biome which background to use based on the time
         const battleBgAsset = biome.getBattleBackground(currentHour);
 
+        // --- NEW: Grab the party's highest level ---
+        const dynamicLevel = PartyManager.getHighestLevel();
+
         const enemyParty = [];
-        for (const enemyId of battleData.enemies) {
-            const enemyEntity = EntityFactory.create(enemyId);
+        for (const enemyData of battleData.enemies) {
+            const enemyId = typeof enemyData === 'string' ? enemyData : enemyData.id;
+            
+            // Look for level offsets in the biome data, default to 0
+            const levelOffset = (typeof enemyData === 'object' && enemyData.levelOffset) ? enemyData.levelOffset : 0;
+            const finalLevel = Math.max(1, dynamicLevel + levelOffset);
+
+            const enemyEntity = EntityFactory.create(enemyId, finalLevel);
             enemyEntity.name = `${enemyEntity.name || enemyId} ${enemyParty.length + 1}`;
             enemyParty.push(enemyEntity);
         }

@@ -11,13 +11,11 @@ export class StatCalculator {
         ];
     }
 
-    // [UPDATED] Added optional allocations parameter
     static calculate(character, allocations = null) {
         const details = this._runPipeline(character, allocations);
         return details.finalStats;
     }
 
-    // [UPDATED] Added optional allocations parameter
     static calculateDetailed(character, allocations = null) {
         const { finalStats, breakdown } = this._runPipeline(character, allocations);
         
@@ -53,7 +51,6 @@ export class StatCalculator {
         };
     }
 
-    // [UPDATED] Added optional allocations parameter
     static _runPipeline(character, allocations = null) {
         const finalStats = {
             attack: {}, defense: {}, resistance: {},
@@ -124,7 +121,6 @@ export class StatCalculator {
         // --- STEP 2: CALCULATE ATTRIBUTES ---
         const activeAttributes = { ...(character.attributes || {}) }; 
 
-        // [NEW] Inject preview allocations before merging other sources
         if (allocations) {
             for (const [key, val] of Object.entries(allocations)) {
                 activeAttributes[key] = (activeAttributes[key] || 0) + val;
@@ -150,18 +146,21 @@ export class StatCalculator {
 
         Object.assign(finalStats, activeAttributes);
 
-        // --- STEP 3: DERIVED SCALING (SYMMETRICAL & BALANCED) ---
+        // --- STEP 3: DERIVED SCALING (WEIGHTED BY SPECIES) ---
         
-        // [NEW] Level-based defense scaling (Option 1: +1 Defense every 2 levels)
+        // Fetch multipliers, gracefully falling back to defaults if not found
+        const mults = character.statMultipliers || character.state?.statMultipliers || {
+            hpPerVigor: 3, staminaPerDex: 2, insightPerAtt: 2
+        };
+
         const charLevel = character.level || 1;
         const levelDefenseBonus = Math.floor(charLevel * 0.5);
 
         // 1. Vitality Pillar
-        breakdown.resources.derived.hp = (finalStats.vigor * 3);
+        breakdown.resources.derived.hp = Math.floor(finalStats.vigor * mults.hpPerVigor); // <-- UPDATED
         const vigorDefense = Math.floor(finalStats.vigor * 0.5);
         
         this.DAMAGE_TYPES.forEach(t => {
-            // Apply both Vigor defense and the Level defense to all damage types
             finalStats.defense[t] += vigorDefense + levelDefenseBonus;
         });
 
@@ -170,7 +169,7 @@ export class StatCalculator {
         finalStats.attack.slash  += finalStats.strength;
         finalStats.attack.pierce += finalStats.strength;
 
-        breakdown.resources.derived.stamina = (finalStats.dexterity * 2);
+        breakdown.resources.derived.stamina = Math.floor(finalStats.dexterity * mults.staminaPerDex); // <-- UPDATED
         finalStats.staminaRecovery += finalStats.dexterity;
 
         // 3. Magical Pillar
@@ -181,7 +180,7 @@ export class StatCalculator {
             }
         });
 
-        breakdown.resources.derived.insight = (finalStats.attunement * 2);
+        breakdown.resources.derived.insight = Math.floor(finalStats.attunement * mults.insightPerAtt); // <-- UPDATED
         finalStats.insightRecovery += finalStats.attunement;
 
         // --- STEP 4: FLAT BONUSES & TRAITS ---

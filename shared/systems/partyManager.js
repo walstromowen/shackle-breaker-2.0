@@ -8,10 +8,17 @@ import { CombatCalculator } from './combatCalculator.js';
 export const PartyManager = {
     
     // --- READ OPERATIONS (Getters) ---
-    
+    getHighestLevel() {
+        const members = this.getMembers();
+        if (!members || members.length === 0) return 1;
+        
+        // Map out all the levels, then use Math.max to find the highest
+        return Math.max(...members.map(member => member.level || 1));
+    },
     /**
      * Returns the entire party array (Entities)
      */
+    
     getMembers() {
         return gameState.party.members;
     },

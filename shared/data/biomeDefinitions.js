@@ -42,9 +42,16 @@ export const BIOME_DEFINITIONS = {
         battles: {
             rate: 0.01,
             pools: [
-                { chance: 0.80, enemies: ['WOLF', 'WOLF', 'WOLF'] },           
-                { chance: 0.10, enemies: ['MAD_MAGE'] },   
-                { chance: 0.10, enemies: ['LEGIONARY', 'LEGIONARY', 'LEGIONARY',] }  
+                // Standard pack: No change needed! Will auto-scale to player's level.
+                { chance: 0.10, enemies: ['WOLF', 'WOLF', 'WOLF'] },          
+                
+                // Alpha pack: Change "level" to "levelOffset". 
+                // If player is Lv 10, this spawns a Lv 12 Alpha with two Lv 10 regular wolves.
+                { chance: 0.10, enemies: [{ id: 'WOLF', levelOffset: 2 }, 'WOLF', 'WOLF'] },   
+                
+                // Mad Mage (Boss/Hard encounter): Change to a high levelOffset.
+                // If player is Lv 10, the Mad Mage will be Lv 15.
+                { chance: 0.80, enemies: [{ id: 'MAD_MAGE', levelOffset: 5 }, { id: 'MAD_MAGE', levelOffset: 5 }] }  
             ]
         }
     },

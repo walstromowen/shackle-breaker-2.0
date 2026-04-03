@@ -16,6 +16,13 @@ const BASE_ENTITY = {
     traits: [],
     statusEffects: [],
     
+    // --- NEW: STAT MULTIPLIERS (Growth Rates) ---
+    statMultipliers: {
+        hpPerVigor: 3,
+        staminaPerDex: 2,
+        insightPerAtt: 2
+    },
+
     // --- ATTRIBUTES ---
     attributes: {
         vigor: 1, strength: 1, dexterity: 1, intelligence: 1, attunement: 1
@@ -79,12 +86,20 @@ const BEAST_TEMPLATE = {
     name: "Beast",
     spriteOverworld: "germanSheepherdSprite",
     spritePortrait: "germanSheepherdPortrait",
-      battlePortraitFramesFront: 1, // Defaults for enemy view
-        battlePortraitFramesBack: 1,  // Defaults for player view    
+    battlePortraitFramesFront: 1, // Defaults for enemy view
+    battlePortraitFramesBack: 1,  // Defaults for player view    
     crySound: "dogCry",       // <-- NEW: Plays on battle start
     deathSound: "dogDeath",
+    
+    // Beasts get massive HP/Stam from stats, but very little insight
+    statMultipliers: {
+        hpPerVigor: 5,
+        staminaPerDex: 3,
+        insightPerAtt: 0.5
+    },
+
     attributes: { vigor: 8, strength: 8, dexterity: 14, intelligence: 3, attunement: 5 },
-     traits: [],
+    traits: [],
     baseStats: {
         ...BASE_ENTITY.baseStats,
         maxHp: 15, maxStamina: 8, maxInsight: 0,
@@ -115,7 +130,7 @@ export const ENTITY_DEFINITIONS = {
         
         spriteOverworld: "madMageSprite",
         spritePortrait: "madMagePortrait",
-         battlePortraitFramesFront: 4, // Defaults for enemy view
+        battlePortraitFramesFront: 4, // Defaults for enemy view
         battlePortraitFramesBack: 1,  // Defaults for player view    
         crySound: "madMageCry",       // <-- NEW: Plays on battle start
         deathSound: "madMageCry",
@@ -123,7 +138,7 @@ export const ENTITY_DEFINITIONS = {
             ...HUMANOID_TEMPLATE.attributes,
             vigor: 6, intelligence: 14, attunement: 12
         },
-         traits: [],
+        traits: [],
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
             maxHp: 20, maxStamina: 20, maxInsight: 20,
@@ -156,7 +171,7 @@ export const ENTITY_DEFINITIONS = {
         
         spriteOverworld: "legionarySprite",
         spritePortrait: "legionaryPortrait",
-         battlePortraitFramesFront: 3, // Defaults for enemy view
+        battlePortraitFramesFront: 3, // Defaults for enemy view
         battlePortraitFramesBack: 3,  // Defaults for player view    
         crySound: "legionaryCry",       // <-- NEW: Plays on battle start
         deathSound: "legionaryCry",
@@ -164,7 +179,7 @@ export const ENTITY_DEFINITIONS = {
             ...HUMANOID_TEMPLATE.attributes,
             vigor: 14, strength: 14, intelligence: 6
         },
-         traits: [],
+        traits: [],
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
         },
@@ -193,7 +208,7 @@ export const ENTITY_DEFINITIONS = {
 
         spriteOverworld: "legionarySprite",
         spritePortrait: "wolfPortrait",
-         battlePortraitFramesFront: 8, // Defaults for enemy view
+        battlePortraitFramesFront: 8, // Defaults for enemy view
         battlePortraitFramesBack: 8,  // Defaults for player view    
         crySound: "wolfCry",       // <-- NEW: Plays on battle start
         deathSound: "wolfCry",
@@ -225,6 +240,14 @@ export const ENTITY_DEFINITIONS = {
         name: "Avian",
         spriteOverworld: "spritesheet",
         spritePortrait: "hawkPortrait",
+        
+        // Avians are fragile but very agile
+        statMultipliers: {
+            hpPerVigor: 2,
+            staminaPerDex: 4,
+            insightPerAtt: 1
+        },
+
         attributes: { vigor: 6, strength: 4, dexterity: 16, intelligence: 6, attunement: 8 },
         baseStats: {
             ...BASE_ENTITY.baseStats,

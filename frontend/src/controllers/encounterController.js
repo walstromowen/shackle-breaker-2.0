@@ -415,9 +415,22 @@ export class EncounterController {
                     }
                     break;
                 case "START_BATTLE":
+                    // 1. Get the highest level from the party
+                    const dynamicLevel = PartyManager.getHighestLevel();
+
                     const rawEnemies = payload.enemies || [];
-                    const enemyParty = rawEnemies.map((enemyId, index) => {
-                        const enemyEntity = EntityFactory.create(enemyId);
+                    const enemyParty = rawEnemies.map((enemyData, index) => {
+                        const enemyId = typeof enemyData === 'string' ? enemyData : enemyData.id;
+                        
+                        // 2. Check if the encounter payload specifically wants to offset the level (e.g. Bosses)
+                        const levelOffset = (typeof enemyData === 'object' && enemyData.levelOffset) ? enemyData.levelOffset : 0;
+                        
+                        // 3. Calculate final level, ensuring it never drops below 1
+                        const finalLevel = Math.max(1, dynamicLevel + levelOffset);
+
+                        // 4. Pass the calculated level into your factory
+                        const enemyEntity = EntityFactory.create(enemyId, finalLevel);
+                        
                         enemyEntity.name = `${enemyEntity.name || enemyId} ${index + 1}`;
                         return enemyEntity;
                     });

@@ -36,11 +36,17 @@ export const ExperienceSystem = {
     applyLevelUpStats(entity) {
         console.log(`[RPG] ${entity.name} reached Level ${entity.level}!`);
         
-        // 1. Grant Skill Points
+        // 1. Grant 1 Unified Skill Point for the player to allocate later
         if (typeof entity.skillPoints === 'undefined') entity.skillPoints = 0;
         entity.skillPoints += 1;
 
-        // 2. Heal the entity (Base stats no longer grow automatically)
+        // 2. Base stat growth (Match EntityFactory background scaling)
+        if (entity.baseStats && entity.baseStats.maxHp !== undefined) {
+            entity.baseStats.maxHp += 2; 
+        }
+
+        // 3. Heal the entity upon level up 
+        // (Note: If you don't want them getting a free heal mid-battle, you can remove this too!)
         if (entity.maxHp) entity.hp = entity.maxHp; 
         if (entity.maxStamina) entity.stamina = entity.maxStamina;
         if (entity.maxInsight) entity.insight = entity.maxInsight;
