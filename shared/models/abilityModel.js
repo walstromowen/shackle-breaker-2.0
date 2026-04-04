@@ -39,7 +39,17 @@ export class AbilityModel {
     get targeting() { return this.config.targeting; }
     get effects() { return this.config.effects || []; }
     get statusEffects() { return this.config.statusEffects || []; }
-    get cost() { return this.config.cost || {}; }
+    
+    // --- NEW: Setter to safely hold our dynamic item costs ---
+    set cost(newCost) {
+        this._dynamicCost = newCost;
+    }
+
+    // --- UPDATED: Check for a dynamic cost first, then fallback to base config ---
+    get cost() { 
+        return this._dynamicCost || this.config.cost || {}; 
+    }
+
     get multihit() { return this.config.multihit || null; }
     get targetCount() { 
         return this.config.targeting?.count || 1; 
@@ -84,15 +94,14 @@ export class AbilityModel {
         }
 
         // 4. Item Cost (Consumables)
-        // Checks if we have the specific item ID in inventory
         if (this.cost.item) {
             if (!inventory) {
                 console.warn(`AbilityModel: Item cost check failed. Inventory system missing.`);
                 return false;
             }
-            // Logic assumes inventory.getItemCount(itemId) exists
-            const count = inventory.getItemCount(this.cost.item);
-            return count >= (this.cost.amount || 1);
+            
+            // USE YOUR INVENTORY SYSTEM'S NATIVE METHOD
+            return inventory.hasItem(this.cost.item, this.cost.amount || 1);
         }
 
         return true;

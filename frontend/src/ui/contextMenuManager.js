@@ -36,32 +36,46 @@ export class ContextMenuManager {
         const options = [];
         const isStackable = (item.qty !== undefined && item.qty > 1);
 
-        if (this._isItemUsableInMenu(def)) {
-            options.push({ label: 'Use', action: 'USE' });
-        }
+        // --- NEW: Check if we are in Battle Selection Mode ---
+        // We look for the callback in the controller's config
+        const isBattleSelection = this.controller.config && typeof this.controller.config.onItemSelected === 'function';
 
-        // --- UPGRADE CHECK ---
-        if (ItemUpgradeSystem.canUpgrade(item)) {
-            options.push({ label: 'Upgrade', action: 'UPGRADE' });
-        }
-
-        if (source === 'equipment') {
-            if (this.controller.filteredInventory.length > 0) {
-                options.push({ label: 'Equip', action: 'NAV_TO_INV' });
+        if (isBattleSelection) {
+            // Only allow selection if the item actually has an ability ID attached
+            if (item.useAbility) {
+                options.push({ label: 'Use in Battle', action: 'BATTLE_USE' });
+            } else {
+                // Optional: If you want to show items that can't be used, but grey them out or do nothing
+                // options.push({ label: 'Cannot Use', action: 'NONE' });
             }
-            options.push({ label: 'Unequip', action: 'UNEQUIP_AND_NAV' });
-        } 
-        else if (source === 'inventory') {
-            if (this._canEquipItem(item)) {
-                options.push({ label: 'Equip', action: 'EQUIP' });
-            }
-        }
-
-        if (isStackable) {
-            options.push({ label: 'Drop 1', action: 'DROP_ONE' });
-            options.push({ label: 'Drop All', action: 'DROP_ALL' });
         } else {
-            options.push({ label: 'Drop', action: 'DROP_ONE' }); 
+            // --- EXISTING OVERWORLD LOGIC ---
+            if (this._isItemUsableInMenu(def)) {
+                options.push({ label: 'Use', action: 'USE' });
+            }
+
+            if (ItemUpgradeSystem.canUpgrade(item)) {
+                options.push({ label: 'Upgrade', action: 'UPGRADE' });
+            }
+
+            if (source === 'equipment') {
+                if (this.controller.filteredInventory.length > 0) {
+                    options.push({ label: 'Equip', action: 'NAV_TO_INV' });
+                }
+                options.push({ label: 'Unequip', action: 'UNEQUIP_AND_NAV' });
+            } 
+            else if (source === 'inventory') {
+                if (this._canEquipItem(item)) {
+                    options.push({ label: 'Equip', action: 'EQUIP' });
+                }
+            }
+
+            if (isStackable) {
+                options.push({ label: 'Drop 1', action: 'DROP_ONE' });
+                options.push({ label: 'Drop All', action: 'DROP_ALL' });
+            } else {
+                options.push({ label: 'Drop', action: 'DROP_ONE' }); 
+            }
         }
 
         let menuX = this.controller.mouse.x || 100;
@@ -120,6 +134,18 @@ export class ContextMenuManager {
         }
 
         const action = options[actionIndex].action;
+
+       // --- NEW: Handle Battle Usage ---
+        if (action === 'BATTLE_USE') {
+            this.menu = null; // Close menu immediately
+            
+            // Fire the callback, passing BOTH the item ID and the ability ID back to the BattleController
+            this.controller.config.onItemSelected({
+                itemId: item.defId,       // e.g., "health_potion"
+                abilityId: item.useAbility // e.g., "minor_heal"
+            });
+            return; 
+        }
 
         if (action === 'USE') {
             this.useItem(item);

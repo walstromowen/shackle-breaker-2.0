@@ -5,6 +5,7 @@ import { BattleAnimationFactory } from '../../shared/systems/factories/battleAni
 import { AbilityFactory } from '../../shared/systems/factories/abilityFactory.js';
 import { PHASE } from '../../frontend/src/controllers/battleController.js'; 
 import { StatusEffectFactory } from '../../shared/systems/factories/statusEffectFactory.js'; 
+import { InventorySystem } from '../../shared/systems/inventorySystem.js';
 
 export const TURN_TYPES = {
     MESSAGE_STATUS: 'STATUS_MESSAGE',
@@ -144,9 +145,11 @@ export class TurnManager {
     _applyAbilityEffects(turn) {
         let { actor, action, targets, isFirstTarget, ignoreCost } = turn;
 
+        // --- FIX: Pass InventorySystem instead of gameState.inventory ---
         if (isFirstTarget && !ignoreCost) {
-            action.payCost(actor, null);
+            action.payCost(actor, InventorySystem);
         }
+        // ----------------------------------------------------------------
 
         for (let target of targets) {
             const actualTarget = this.getValidTarget(target);
@@ -184,21 +187,23 @@ export class TurnManager {
     }
 
     _handleActionExecution(turn) {
-        let { actor, action, target: primaryTarget, ignoreCost, allowDeadActor } = turn;
+        let { actor, action, target: primaryTarget, ignoreCost, allowDeadActor } = turn;
 
-        if (actor.isDead() && !allowDeadActor) return this.processNextTurnInQueue();
+        if (actor.isDead() && !allowDeadActor) return this.processNextTurnInQueue();
 
-        let resolvedTargets = TargetingResolver.resolve(action, actor, primaryTarget, this.state, allowDeadActor);
+        let resolvedTargets = TargetingResolver.resolve(action, actor, primaryTarget, this.state, allowDeadActor);
 
-        if (resolvedTargets.length === 0) {
-            this.state.message = `${actor.name} tried to use ${action.name}, but there were no targets left!`;
-            return this.processNextTurnInQueue();
-        }
+        if (resolvedTargets.length === 0) {
+            this.state.message = `${actor.name} tried to use ${action.name}, but there were no targets left!`;
+            return this.processNextTurnInQueue();
+        }
 
-        if (!ignoreCost && !action.canPayCost(actor)) {
-            action = AbilityFactory.createAbilities(['rest'])[0]; 
-            resolvedTargets = [actor]; 
-        }
+        // --- FIX: Pass InventorySystem instead of gameState.inventory ---
+        if (!ignoreCost && !action.canPayCost(actor, InventorySystem)) {
+            action = AbilityFactory.createAbilities(['rest'])[0]; 
+            resolvedTargets = [actor]; 
+        }
+        // ----------------------------------------------------------------
         
         // --- NEW MESSAGE PARSER ---
         // Grab the custom message or fall back to a default

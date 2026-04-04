@@ -4,6 +4,7 @@ import { events } from '../core/eventBus.js';
 import { CombatantModel } from '../../../shared/models/combatantModel.js'; 
 import { BattleRewardSystem } from '../../../shared/systems/battleRewardSystem.js'; 
 import { TurnManager, TURN_TYPES } from '../../../shared/systems/turnManager.js';
+import { InventorySystem } from '../../../shared/systems/inventorySystem.js'; 
 
 export const PHASE = {
     INTRO: 'INTRO',
@@ -56,7 +57,7 @@ export class BattleController {
         // --- 1. ENEMY INTRO CRIES ---
         this.state.activeEnemies.forEach(enemy => {
             if (enemy && !enemy.isDead()) { 
-                enemy.hasEnteredBattle = false; // Forces UI to hide HUD initially
+                enemy.hasEnteredBattle = false; 
                 this.state.turnQueue.push({
                     type: TURN_TYPES.ANIMATION,
                     actor: enemy,
@@ -83,16 +84,15 @@ export class BattleController {
             }
         });
 
-        // --- 1.7 WEATHER INTRO (Restored) ---
+        // --- 1.7 WEATHER INTRO ---
         if (this.state.weather && this.state.weather.id !== 'clear') { 
             console.log('[DEBUG] WEATHER TRIGGERED in BattleController! Pushing to queue.', this.state.weather);
             
-            // ✅ NEW: Grab the custom message or fallback to the generic one
             const weatherMsg = this.state.weather.battleMessage || `A fierce ${this.state.weather.name} begins!`;
             
             this.state.turnQueue.push({ 
                 type: TURN_TYPES.MESSAGE_STATUS, 
-                message: weatherMsg // ✅ Pushing the parsed message
+                message: weatherMsg 
             });
 
             const activeCombatants = [...this.state.activeParty, ...this.state.activeEnemies].filter(c => c && !c.isDead());
@@ -118,15 +118,12 @@ export class BattleController {
         }
 
         this.timer = 0;
-        this._dumpCombatantObjects('START OF BATTLE');
     }
 
-    // --- UPDATED: Trait Sweeper WITH DEBUG LOGS ---
     _queuePreBattleTraits() {
         let traitsQueued = false;
         const activeCombatants = [...this.state.activeParty, ...this.state.activeEnemies].filter(c => c && !c.isDead());
         
-        // Sort by speed so the fastest characters trigger their traits first
         activeCombatants.sort((a, b) => (b.stats?.speed ?? 10) - (a.stats?.speed ?? 10));
 
         activeCombatants.forEach(combatant => {
@@ -134,52 +131,44 @@ export class BattleController {
             console.log(`[Debug Sweeper] Checking ${combatant.name}. Raw Traits found:`, rawTraits);
 
             if (rawTraits && Array.isArray(rawTraits) && rawTraits.length > 0) {
-                
                 rawTraits.forEach(trait => {
-                    // 1. Look for the specific battle start trigger in the new Trait structure
                     const startTrigger = trait?.triggers?.onBattleStart;
 
                     if (startTrigger && startTrigger.ability) {
                         const abilityId = startTrigger.ability;
                         const [ability] = AbilityFactory.createAbilities([abilityId]);
 
-                        if (startTrigger && startTrigger.ability) {
-                            const abilityId = startTrigger.ability;
-                            const [ability] = AbilityFactory.createAbilities([abilityId]);
-
-                            if (ability) {
-                                
-                                // --- 1. QUEUE ANIMATION (If defined) ---
-                                if (startTrigger.animationId) {
-                                    this.state.turnQueue.push({
-                                        type: TURN_TYPES.PLAY_ANIMATION, // Use your engine's animation turn type
-                                        animationId: startTrigger.animationId,
-                                        target: combatant // The actor activating the trait
-                                    });
-                                }
-
-                                // --- 2. QUEUE BATTLE MESSAGE ---
-                                const msgTemplate = startTrigger.battleMessage || "{actor}'s {trait} activates!";
-                                const finalMessage = msgTemplate
-                                    .replace(/{actor}/g, combatant.name)
-                                    .replace(/{trait}/g, trait.name);
-
-                                this.state.turnQueue.push({ 
-                                    type: TURN_TYPES.MESSAGE_STATUS, 
-                                    message: finalMessage 
-                                });
-
-                                // --- 3. QUEUE ABILITY EXECUTION ---
+                        if (ability) {
+                            // --- 1. QUEUE ANIMATION ---
+                            if (startTrigger.animationId) {
                                 this.state.turnQueue.push({
-                                    type: TURN_TYPES.EXECUTE_ACTION, 
-                                    ignoreCost: true,               
-                                    actor: combatant,
-                                    action: ability, 
+                                    type: TURN_TYPES.PLAY_ANIMATION, 
+                                    animationId: startTrigger.animationId,
                                     target: combatant 
                                 });
-
-                                traitsQueued = true;
                             }
+
+                            // --- 2. QUEUE BATTLE MESSAGE ---
+                            const msgTemplate = startTrigger.battleMessage || "{actor}'s {trait} activates!";
+                            const finalMessage = msgTemplate
+                                .replace(/{actor}/g, combatant.name)
+                                .replace(/{trait}/g, trait.name);
+
+                            this.state.turnQueue.push({ 
+                                type: TURN_TYPES.MESSAGE_STATUS, 
+                                message: finalMessage 
+                            });
+
+                            // --- 3. QUEUE ABILITY EXECUTION ---
+                            this.state.turnQueue.push({
+                                type: TURN_TYPES.EXECUTE_ACTION, 
+                                ignoreCost: true,               
+                                actor: combatant,
+                                action: ability, 
+                                target: combatant 
+                            });
+
+                            traitsQueued = true;
                         }
                     }
                 });
@@ -189,7 +178,6 @@ export class BattleController {
         return traitsQueued;
     }
 
-    // --- NEW: Death Trait Sweeper ---
     // --- NEW: Death Trait Sweeper ---
     _queueDeathTraits(deadCombatant) {
         const rawTraits = deadCombatant.traits;
@@ -205,7 +193,6 @@ export class BattleController {
                 if (ability) {
                     console.log(`[Debug Sweeper] SUCCESS! Queuing death trait [${trait.name}] -> casting [${ability.name}] for ${deadCombatant.name}`);
 
-                    // 3. Queue the actual ABILITY execution (unshifts first, so it executes last in this block)
                     this.state.turnQueue.unshift({
                         type: TURN_TYPES.EXECUTE_ACTION, 
                         ignoreCost: true,
@@ -215,28 +202,22 @@ export class BattleController {
                         target: deadCombatant
                     });
 
-                    // --- MESSAGE PARSER ---
                     const msgTemplate = deathTrigger.battleMessage || "{actor}'s {trait} activates upon death!";
                     const finalMessage = msgTemplate
                         .replace(/{actor}/g, deadCombatant.name)
                         .replace(/{trait}/g, trait.name);
 
-                    // 2. Announce the trait activation (unshifts second, so it executes before the ability)
                     this.state.turnQueue.unshift({ 
                         type: TURN_TYPES.MESSAGE_STATUS, 
                         message: finalMessage 
                     });
-                    // --------------------------
 
-                    // --- NEW ANIMATION QUEUE ---
-                    // 1. Queue ANIMATION (unshifts last, so it executes first at the very front of the queue)
                     const animId = deathTrigger.animationId || "trait_activate"; 
                     this.state.turnQueue.unshift({
-                        type: TURN_TYPES.PLAY_ANIMATION, // Update this if your engine uses a different constant
+                        type: TURN_TYPES.PLAY_ANIMATION,
                         animationId: animId,
                         target: deadCombatant
                     });
-                    // --------------------------
 
                 } else {
                     console.warn(`[Debug Sweeper] Trait ${trait.name} tried to fire death ability '${abilityId}' but it failed to build.`);
@@ -247,6 +228,7 @@ export class BattleController {
 
     // --- INPUT HANDLING ---
     handleKeyDown(key) {
+        console.log(`[Input Check] Key pressed: ${key}, Phase: ${this.state?.phase}, Paused: ${this.state?.isPausedForUI}`);
         if (!this.state?.active || this.state.isPausedForUI) return;
         
         // 1. Check for global/debug hotkeys FIRST
@@ -260,22 +242,51 @@ export class BattleController {
         const ignorePhases = [PHASE.INTRO, PHASE.RESOLVE, PHASE.VICTORY, PHASE.DEFEAT];
         if (ignorePhases.includes(this.state.phase)) return;
 
-        // 2.5 Check for Character Summary Screen (Only triggers during active input phases)
-        // Checking for both 'i' and 'KeyI' depending on how your input manager formats keys
+        // 2.5 Check for Character Summary Screen
         if (key === 'i' || key === 'KeyI') {
             console.log("Character Summary Toggled!");
             
-            // Emit an event to your UI layer, passing the currently active character
             events.emit('TOGGLE_CHARACTER_SUMMARY', {
                 combatant: this.state.activeParty[this.state.activePartyIndex],
-                phase: this.state.phase
+                phase: this.state.phase,
+                
+                onItemSelected: (payload) => {
+                    const { itemId, abilityId } = payload;
+                    const [action] = AbilityFactory.createAbilities([abilityId]);
+                    const activeChar = this.state.activeParty[this.state.activePartyIndex];
+
+                    if (action) {
+                        if (itemId) {
+                            action.cost = { item: itemId, amount: 1 };
+                            action.isItemAction = true; 
+                        }
+
+                        const inventory = InventorySystem; // Swapped to match your global system usage
+                        
+                        console.log("Checking inventory:", inventory);
+
+                        if (!action.canPayCost(activeChar, inventory)) {
+                            this.state.message = `Cannot use ${action.name}!`;
+                            console.warn("Cost check failed! Kicking back to menu."); 
+                        } else {
+                            console.log("Cost check PASSED! Moving to target selection.");
+                            this._setupTargetSelection(action, activeChar);
+                            this.state.isPausedForUI = false; 
+                        }
+                    }
+                    
+                    events.emit('CHANGE_SCENE', { scene: 'battle' });
+                }
             });
             return; 
         }
 
-        // 3. Route normal battle inputs
-        if (this.state.phase === PHASE.SELECT_ACTION) this._handleActionSelection(key);
-        else if (this.state.phase === PHASE.SELECT_TARGET) this._handleTargetSelection(key);
+        // 3. Delegate to specific menu phases (This was completely missing!)
+        if (this.state.phase === PHASE.SELECT_ACTION) {
+            this._handleActionSelection(key);
+        } else if (this.state.phase === PHASE.SELECT_TARGET) {
+            this._handleTargetSelection(key);
+        }
     }
 
     _handleActionSelection(key) {
@@ -289,7 +300,8 @@ export class BattleController {
         } else if (key === 'Enter') {
             const action = activeChar.abilities[this.state.menuIndex];
 
-            if (!action.canPayCost(activeChar)) {
+            // Verify they have the resources/items to use it from the primary menu
+            if (!action.canPayCost(activeChar, InventorySystem)) {
                 this.state.message = `Not enough resources to use ${action.name}!`;
                 return; 
             }
@@ -427,9 +439,6 @@ export class BattleController {
         const replacement = this.state.partyRoster[selectedRosterIndex];
         
         if (isForced) {
-            // --- FORCED SWAP (Reverse Order Unshifting) ---
-            
-            // 3. Animation
             this.state.turnQueue.unshift({
                 type: TURN_TYPES.ANIMATION,
                 actor: replacement,
@@ -438,13 +447,11 @@ export class BattleController {
                 duration: 1.0
             });
 
-            // 2. Message
             this.state.turnQueue.unshift({
                 type: TURN_TYPES.MESSAGE_STATUS,
                 message: `${replacement.name} steps into the fray!`
             });
 
-            // 1. Data Swap
             this.state.turnQueue.unshift({
                 type: TURN_TYPES.REINFORCEMENT,
                 team: 'party',
@@ -453,13 +460,9 @@ export class BattleController {
             });
             
         } else {
-            // --- STANDARD SWAP (Standard Order Pushing) ---
             const activeChar = this.state.activeParty[slotIndex];
-            
-            // 1. Use base speed + microscopic slot offset to prevent multi-swap ties
             const swapSpeed = (activeChar.stats?.speed ?? 10) + (slotIndex * 0.001); 
 
-            // 2. Add swapSequenceOrder to rigidly tie these specific steps together
             this.state.turnQueue.push({
                 type: TURN_TYPES.MESSAGE_STATUS,
                 message: `${activeChar.name} falls back...`, 
@@ -514,7 +517,11 @@ export class BattleController {
     // --- TURN QUEUING LOGIC ---
     commitAction(primaryTarget) {
         const activeChar = this.state.activeParty[this.state.activePartyIndex];
-        if (!this.state.selectedAction.canPayCost(activeChar)) return;
+        
+        if (!this.state.selectedAction.canPayCost(activeChar, InventorySystem)) {
+            console.warn(`[BattleController] commitAction aborted: Cost check failed for ${this.state.selectedAction.name}`);
+            return; 
+        }
 
         this.state.turnQueue.push({
             actor: activeChar,
@@ -565,7 +572,7 @@ export class BattleController {
         this.state.activeEnemies.forEach(enemy => {
             if (!enemy || enemy.isDead()) return; 
 
-            const validAbilities = enemy.abilities.filter(a => a.canPayCost(enemy) && !['rest', 'punch'].includes(a.id));
+            const validAbilities = enemy.abilities.filter(a => a.canPayCost(enemy, InventorySystem) && !['rest', 'punch'].includes(a.id));
             const randomTarget = livingParty[Math.floor(Math.random() * livingParty.length)];
 
             if (validAbilities.length > 0) {
@@ -573,7 +580,7 @@ export class BattleController {
                 return this.state.turnQueue.push({ actor: enemy, action, target: randomTarget });
             }
 
-            const punch = enemy.abilities.find(a => a.id === 'punch' && a.canPayCost(enemy));
+            const punch = enemy.abilities.find(a => a.id === 'punch' && a.canPayCost(enemy, InventorySystem));
             if (punch) {
                 return this.state.turnQueue.push({ actor: enemy, action: punch, target: randomTarget });
             }
@@ -588,12 +595,10 @@ export class BattleController {
             const speedA = a.speedOverride ?? ((a.actor?.stats?.speed ?? 10) * (a.action?.speedModifier ?? 1));
             const speedB = b.speedOverride ?? ((b.actor?.stats?.speed ?? 10) * (b.action?.speedModifier ?? 1));
             
-            // 1. Sort by overall speed first
             if (speedA !== speedB) {
                 return speedB - speedA; 
             }
 
-            // 2. TIEBREAKER: Keep our atomic swap sequence tightly grouped 1 through 5
             const orderA = a.swapSequenceOrder ?? 99;
             const orderB = b.swapSequenceOrder ?? 99;
             
@@ -614,35 +619,30 @@ export class BattleController {
         }  
         
         if ([PHASE.RESOLVE, PHASE.VICTORY, PHASE.DEFEAT].includes(this.state.phase)) {
-            this.timer += dt;
-            const waitTime = this.state.activeAnimation?.duration ?? 1.5;
+            this.timer += dt;
+            const waitTime = this.state.activeAnimation?.duration ?? 1.5;
 
-            if (this.timer >= waitTime) {
-                
-                if (this.state.activeAnimation) {
-                    const finishedAnim = this.state.activeAnimation;
+            if (this.timer >= waitTime) {
+                
+                if (this.state.activeAnimation) {
+                    const finishedAnim = this.state.activeAnimation;
 
-                    // Entrance handshake
-                    if (finishedAnim.id === 'enter_battle' && finishedAnim.actor) {
-                        finishedAnim.actor.hasEnteredBattle = true;
-                    }
-                    
-                    // NEW: Retreat handshake - reset the flag so they can enter again later!
-                    if (finishedAnim.id === 'retreat' && finishedAnim.actor) {
-                        finishedAnim.actor.hasEnteredBattle = false;
-                    }
+                    if (finishedAnim.id === 'enter_battle' && finishedAnim.actor) {
+                        finishedAnim.actor.hasEnteredBattle = true;
+                    }
+                    
+                    if (finishedAnim.id === 'retreat' && finishedAnim.actor) {
+                        finishedAnim.actor.hasEnteredBattle = false;
+                    }
 
+                    this.state.activeAnimation = null;
+                }
 
-
-                    this.state.activeAnimation = null;
-                }
-
-                this.timer = 0; 
-                this.state.timer = 0;
-                this.turnManager.processNextTurnInQueue();
-            }
-        }
-
+                this.timer = 0; 
+                this.state.timer = 0;
+                this.turnManager.processNextTurnInQueue();
+            }
+        }
     }
 
     _startActionPhase() {

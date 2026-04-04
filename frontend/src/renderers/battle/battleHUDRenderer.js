@@ -99,16 +99,25 @@ export class BattleHUDRenderer {
         }
 
         // 5. Draw Standard Menus
-        if (!isCinematicPhase) {
-            if (state.phase === 'SELECT_ACTION') {
-                this.drawActionMenu(state);
-                this.drawActivePlayerIndicator(state);
-            }
-            else if (state.phase === 'SELECT_TARGET') {
-                this.drawActionMenu(state);
-                this.drawTargetCursor(state); 
-            }
-        }
+        if (!isCinematicPhase) {
+            if (state.phase === 'SELECT_ACTION') {
+                this.drawActionMenu(state);
+                this.drawActivePlayerIndicator(state);
+            }
+            else if (state.phase === 'SELECT_TARGET') {
+                // Grab the current character and the ability they just chose
+                const activeChar = state.activeParty[state.activePartyIndex];
+                const selectedAbility = state.selectedAction || (activeChar && activeChar.abilities[state.menuIndex]);
+                
+                // Format the string dynamically
+                const promptText = selectedAbility ? `Select a target for ${selectedAbility.name}...` : "Select a target...";
+                
+                // Draw the cinematic dialogue box instead of the action menu
+                this.drawDialogueBox(promptText);
+                
+                this.drawTargetCursor(state); 
+            }
+        }
     }
 
     drawHUD(state) {

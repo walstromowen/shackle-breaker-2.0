@@ -40,7 +40,7 @@ export const BIOME_DEFINITIONS = {
             ]
         },
         battles: {
-            rate: 0.01,
+            rate: 0.5,
             pools: [
                 // Standard pack: No change needed! Will auto-scale to player's level.
                 { chance: 0.10, enemies: ['LEGIONARY', 'LEGIONARY', 'LEGIONARY'] },          

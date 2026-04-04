@@ -211,12 +211,12 @@ export class SceneManager {
         // 7. Open Character Summary from Battle
         events.on('TOGGLE_CHARACTER_SUMMARY', (data) => {
             this.transitionRenderer.start(() => {
-                // Initialize the summary controller with the active combatant
-                // We pass 'battle' as a return scene so the summary screen knows where to go back to
                 this.characterSummaryController = new CharacterSummaryController(this.input, { 
                     character: data.combatant,
                     returnScene: 'battle',
-                    phase: data.phase 
+                    phase: data.phase,
+                    // --- NEW: Pass the callback down to the controller ---
+                    onItemSelected: data.onItemSelected 
                 });
                 
                 this.changeScene('character_summary');

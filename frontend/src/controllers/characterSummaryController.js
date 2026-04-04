@@ -26,6 +26,9 @@ export class CharacterSummaryController {
         // --- FIX: Safely determine memberIndex and store return destination ---
         this.memberIndex = 0; 
         this.returnScene = 'party'; // Default return destination
+        
+        // ADD THIS LINE HERE:
+        this.config = data || {}; 
 
         if (data) {
             if (data.returnScene) {
