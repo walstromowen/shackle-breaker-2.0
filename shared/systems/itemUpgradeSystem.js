@@ -49,7 +49,7 @@ export const ItemUpgradeSystem = {
             }
         }
 
-        // Level up the item instance! (The ItemModel handles ability unlocks automatically)
+        // Level up the item instance!
         item.level += 1;
 
         // Log the new abilities to the console for debugging
@@ -59,7 +59,8 @@ export const ItemUpgradeSystem = {
             console.log(`[ItemUpgradeSystem] Unlocked new abilities: ${unlocks.join(', ')}`);
         }
 
-        console.log(`[ItemUpgradeSystem] Successfully upgraded ${item.name} to Level ${item.level}!`);
+        // This console log will now successfully trigger the updated ItemModel getter
+        console.log(`[ItemUpgradeSystem] Successfully upgraded ${item.name} to Level ${item.level}! New Value: ${item.value}`);
         return true;
     }
 };

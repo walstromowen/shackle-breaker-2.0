@@ -38,7 +38,17 @@ export class ItemModel {
     get name() { return this.definition.name; }
     get description() { return this.definition.description; }
     get type() { return this.definition.type; }
-    get value() { return this.definition.value; }
+    
+    // --- UPDATED: Dynamic Value Calculation ---
+    get value() { 
+        const baseValue = this.definition.value || 0;
+        if (this.level === 1) return baseValue;
+
+        // Increases value by 50% per level above 1, compounding.
+        const levelMultiplier = Math.pow(1.5, this.level - 1); 
+        return Math.floor(baseValue * levelMultiplier);
+    }
+    
     get slot() { return this.definition.slot || null; }
     get icon() { return this.definition.icon || { col: 0, row: 0 }; }
     

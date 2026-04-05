@@ -25,7 +25,7 @@ export class ItemDetailPanel {
         let def = item;
         let isAbility = false;
 
-        // --- NEW: Handle Ability Lookups vs Item Lookups ---
+        // --- Handle Ability Lookups vs Item Lookups ---
         if (item.defId) {
             def = ItemDefinitions[item.defId];
         } else if (item.abilityId) {
@@ -85,6 +85,10 @@ export class ItemDetailPanel {
         if (!isAbility) {
             currentY = this._drawMainStats(item, x + 20, currentY, w - 40);
             currentY = this._drawAttributeBonuses(item, x + 20, currentY, w - 40);
+            
+            // --- NEW: Render Upgrade Costs ---
+            currentY = this._drawUpgradeCosts(item, def, x + 15, currentY, w - 30);
+
             // E. Render granted abilities
             currentY = this._drawAbilities(def, x + 15, currentY, w - 30);
         } else {
@@ -137,7 +141,6 @@ export class ItemDetailPanel {
         this.ui.drawRect(iconX, y, this.ICON_SIZE, this.ICON_SIZE, UITheme.colors.border, false);
 
         if (this.loader) {
-            // Adjust sheet targeting for abilities vs items
             let sheetName = isAbility ? 'abilities' : 'items'; 
             const type = (def.type || '').toLowerCase();
             const slot = (def.slot || '').toLowerCase();
@@ -191,6 +194,16 @@ export class ItemDetailPanel {
         }
 
         this.ui.drawText(typeText, centerX, currentY, "bold 10px monospace", UITheme.colors.textMuted, "center");
+        currentY += 14;
+
+        // --- NEW: Render Item Value ---
+        // Grab instance value first (if upgraded), fallback to base def value
+        const itemValue = item.value || def.value; 
+        if (itemValue !== undefined && !isAbility) {
+            // Adjust the label/currency format as needed (e.g., adding a "G" or a coin icon)
+            this.ui.drawText(`Value: ${itemValue}`, centerX, currentY, "10px monospace", UITheme.colors.textMain, "center");
+            currentY += 12;
+        }
 
         return currentY + 10;
     }
@@ -224,7 +237,6 @@ export class ItemDetailPanel {
         return currentY;
     }
 
-    // ... (Keep _drawMainStats & _drawAttributeBonuses exactly as they were)
     _drawMainStats(item, x, y, w) {
         let currentY = y;
         const source = item.stats || item; 
@@ -330,6 +342,56 @@ export class ItemDetailPanel {
         });
 
         return currentY + 8;
+    }
+
+    // --- NEW METHOD: Draws Upgrade Costs ---
+    _drawUpgradeCosts(item, def, x, y, w) {
+        let currentY = y;
+        
+        // 1. Check if the item is already at max level
+        const isMax = item.isMaxLevel !== undefined ? item.isMaxLevel : (item.level >= def.maxLevel);
+        if (isMax) {
+            this.ui.drawText("Max Level Reached", x + w/2, currentY, "bold 10px sans-serif", UITheme.colors.textMuted, "center");
+            return currentY + 15;
+        }
+
+        // 2. Determine next level and fetch costs
+        const currentLevel = item.level || 1;
+        const nextLevel = currentLevel + 1;
+        
+        // Grab from the instance's nextUpgradeCost getter, or fall back to looking at the def
+        const costs = item.nextUpgradeCost || (def.upgradeCosts ? def.upgradeCosts[nextLevel] : null);
+
+        // Skip rendering if no costs are defined
+        if (!costs) return currentY;
+
+        this.ui.drawText(`Upgrade to Lv. ${nextLevel}`, x, currentY, "bold 10px sans-serif", UITheme.colors.textMuted, "left");
+        currentY += 5;
+        this.ui.drawRect(x, currentY, w, 1, UITheme.colors.border);
+        currentY += 12;
+
+        // 3. Draw Currency
+        if (costs.currency) {
+            this.ui.drawText("Currency", x + 10, currentY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
+            this.ui.drawText(costs.currency.toString(), x + w, currentY, UITheme.fonts.mono, UITheme.colors.textMain, "right");
+            currentY += 14;
+        }
+
+        // 4. Draw Materials
+        if (costs.materials) {
+            Object.keys(costs.materials).forEach(matId => {
+                const amount = costs.materials[matId];
+                
+                // Format resource keys (e.g., "iron_ingot" -> "Iron Ingot")
+                const label = matId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+                this.ui.drawText(label, x + 10, currentY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
+                this.ui.drawText(amount.toString(), x + w, currentY, UITheme.fonts.mono, UITheme.colors.textMain, "right");
+                currentY += 14;
+            });
+        }
+
+        return currentY + 10;
     }
 
     _drawAbilities(def, x, y, w) {
