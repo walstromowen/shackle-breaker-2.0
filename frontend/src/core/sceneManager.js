@@ -78,55 +78,60 @@ export class SceneManager {
     }
 
     resolveTargetBGM(targetScene) {
-        if (targetScene === 'battle') {
-            return 'plainsBattle1';
-        }
-        
-        // Let the EncounterController handle its own music dynamically!
-        if (targetScene === 'encounter') {
-            return null; 
-        }
-        
-        // If it's the overworld, party screen, or character summary, 
-        return 'plainsOverworldDay';
-    }
+        if (targetScene === 'battle') {
+            return 'plainsBattle1';
+        }
+        
+        if (targetScene === 'overworld') {
+            return 'plainsOverworldDay';
+        }
+        
+        // By returning null for menus and encounters, we tell changeScene() 
+        // to skip emitting a new PLAY_MUSIC event, allowing whatever is 
+        // currently playing to continue uninterrupted!
+        return null; 
+    }
 
-    // NEW: Resolves what environmental audio should be playing per scene
-    resolveTargetAmbience(targetScene) {
-        // Stop ambience during combat, encounters, or character creation to build focus/tension
-        if (targetScene === 'battle' || targetScene === 'encounter' || targetScene === 'character-creator') {
-            return 'none';
-        }
-        
-        // Decoupled: For overworld, party, and summary menus, just ask the active weather object 
-        // what its audio effect is. The SceneManager no longer needs to know about definition files.
-        if (gameState.world && gameState.world.currentWeather) {
-            return gameState.world.currentWeather.audioEffect || 'none';
-        }
-        
-        return 'none';
-    }
+    resolveTargetAmbience(targetScene) {
+        // NEW: Don't change ambience at all if we're just opening a menu screen
+        if (['party', 'character_summary', 'level_up'].includes(targetScene)) {
+            return null;
+        }
 
-    changeScene(sceneName) {
-        console.log(`[SceneManager] Switching to: ${sceneName}`);
-        this.currentScene = sceneName;
-        
-        // 1. Manage Music
-        const targetBGM = this.resolveTargetBGM(sceneName);
-        if (targetBGM) { // <-- ADD THIS CHECK
-            events.emit('PLAY_MUSIC', { id: targetBGM, fadeTime: 1.0 });
-        }
+        // Stop ambience during combat, encounters, or character creation to build focus/tension
+        if (targetScene === 'battle' || targetScene === 'encounter' || targetScene === 'character-creator') {
+            return 'none';
+        }
+        
+        // Decoupled: For overworld, just ask the active weather object 
+        if (gameState.world && gameState.world.currentWeather) {
+            return gameState.world.currentWeather.audioEffect || 'none';
+        }
+        
+        return 'none';
+    }
 
-        // 2. Manage Weather Ambience
-        const targetAmbience = this.resolveTargetAmbience(sceneName);
-        if (targetAmbience === 'none') {
-            events.emit('STOP_AMBIENCE', { fadeTime: 1.0 });
-        } else {
-            // We use a slightly longer fade for weather to make transitions feel organic
-            events.emit('PLAY_AMBIENCE', { id: targetAmbience, fadeTime: 2.0 }); 
-        }
-    }
+    changeScene(sceneName) {
+        console.log(`[SceneManager] Switching to: ${sceneName}`);
+        this.currentScene = sceneName;
+        
+        // 1. Manage Music
+        const targetBGM = this.resolveTargetBGM(sceneName);
+        // Check specifically against null so it doesn't trigger on 'none' or false
+        if (targetBGM !== null) { 
+            events.emit('PLAY_MUSIC', { id: targetBGM, fadeTime: 1.0 });
+        }
 
+        // 2. Manage Weather Ambience
+        const targetAmbience = this.resolveTargetAmbience(sceneName);
+        if (targetAmbience !== null) { // Only change ambience if it isn't null
+            if (targetAmbience === 'none') {
+                events.emit('STOP_AMBIENCE', { fadeTime: 1.0 });
+            } else {
+                events.emit('PLAY_AMBIENCE', { id: targetAmbience, fadeTime: 2.0 }); 
+            }
+        }
+    }
     setupEventListeners() {
         // 1. General Scene Switching -> Classic Fade
         events.on('CHANGE_SCENE', ({ scene, data }) => {
@@ -401,81 +406,82 @@ export class SceneManager {
     }
 
     render(interpolation, totalTime) { 
-        if (!this.loader.isDone()) return;
+        if (!this.loader.isDone()) return;
 
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        switch (this.currentScene) {
-            case 'character-creator':
-                const ccState = this.characterCreatorController.getState();
-                this.characterCreatorRenderer.render(this.ctx, ccState);
-                break;
-            case 'overworld':
-                this.renderOverworld(totalTime);
-                break;
-            case 'party':
-                const pState = this.partyController.getState();
-                this.partyRenderer.render(pState);
-                break;
-            case 'encounter':
-                this.renderOverworld(totalTime);
-                const encState = this.encounterController.getState();
-                this.encounterRenderer.render(this.ctx, encState);
-                break;
-            case 'battle':
-                this.renderOverworld(totalTime);
-                const batState = this.battleController.getState();
-                this.battleRenderer.render(batState);
-                break;
-            case 'character_summary':
-                if (this.characterSummaryController) {
-                    const csState = this.characterSummaryController.getState();
-                    this.characterSummaryRenderer.render(csState);
-                }
-                break;
-            case 'level_up':
-                    const luState = this.levelUpController.getState();
-                    this.levelUpRenderer.render(luState);
-                    break;
-            }
+        switch (this.currentScene) {
+            case 'character-creator':
+                const ccState = this.characterCreatorController.getState();
+                this.characterCreatorRenderer.render(this.ctx, ccState);
+                break;
+            case 'overworld':
+                this.renderOverworld(interpolation, totalTime); // <-- UPDATED
+                break;
+            case 'party':
+                const pState = this.partyController.getState();
+                this.partyRenderer.render(pState);
+                break;
+            case 'encounter':
+                this.renderOverworld(interpolation, totalTime); // <-- UPDATED
+                const encState = this.encounterController.getState();
+                this.encounterRenderer.render(this.ctx, encState);
+                break;
+            case 'battle':
+                this.renderOverworld(interpolation, totalTime); // <-- UPDATED
+                const batState = this.battleController.getState();
+                this.battleRenderer.render(batState);
+                break;
+            case 'character_summary':
+                if (this.characterSummaryController) {
+                    const csState = this.characterSummaryController.getState();
+                    this.characterSummaryRenderer.render(csState);
+                }
+                break;
+            case 'level_up':
+                const luState = this.levelUpController.getState();
+                this.levelUpRenderer.render(luState);
+                break;
+        }
 
-        this.transitionRenderer.render(this.ctx);
-    }
+        this.transitionRenderer.render(this.ctx);
+    }
 
-    renderOverworld(totalTime) {
-        const state = this.overworldController.getState();
-        
-        // 1. Draw Base Map & Entities
-        this.mapRenderer.renderMap(
-            this.worldManager, 
-            state.camera, 
-            state.entities,
-            totalTime 
-        );
+    renderOverworld(interpolation, totalTime) { // <-- UPDATED
+        const state = this.overworldController.getState();
+        
+        // 1. Draw Base Map & Entities
+        this.mapRenderer.renderMap(
+            this.worldManager, 
+            state.camera, 
+            state.entities,
+            interpolation, // <-- PASSED DOWN TO RENDERER
+            totalTime 
+        );
 
-        // 2. Draw Weather Layer
-        this.weatherRenderer.render(
-            this.ctx, 
-            state.camera, 
-            totalTime
-        );
+        // 2. Draw Weather Layer
+        this.weatherRenderer.render(
+            this.ctx, 
+            state.camera, 
+            totalTime
+        );
 
-        // 3. Draw Ambient Lighting Layer (tints both map and weather)
-        const ambientColor = this.timeSystem.getCurrentColorData();
-        const visibleObjects = this.worldManager.getVisibleObjects(
-            state.camera,
-            this.canvas.width,
-            this.canvas.height
-        );
+        // 3. Draw Ambient Lighting Layer (tints both map and weather)
+        const ambientColor = this.timeSystem.getCurrentColorData();
+        const visibleObjects = this.worldManager.getVisibleObjects(
+            state.camera,
+            this.canvas.width,
+            this.canvas.height
+        );
 
-        this.lightingRenderer.render(
-            this.ctx, 
-            ambientColor, 
-            state.camera, 
-            state.entities, 
-            visibleObjects
-        );
-    }
+        this.lightingRenderer.render(
+            this.ctx, 
+            ambientColor, 
+            state.camera, 
+            state.entities, 
+            visibleObjects
+        );
+    }
 
     destroy() {
         this.input.destroy();

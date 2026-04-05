@@ -53,6 +53,10 @@ export class OverworldController {
     update(dt) {
         if (this.isLocked) return;
 
+        // FEED THE RENDERER: Save previous position for interpolation
+        this.player.prevX = this.player.x;
+        this.player.prevY = this.player.y;
+
         if (this.player.isMoving) {
             this.continueMoving(dt);
         } else {
@@ -139,7 +143,17 @@ export class OverworldController {
         }
 
         if (this.player.moveProgress >= 1) {
-            this.finishMove();
+            // 1. Save the leftover movement
+            const overshoot = this.player.moveProgress - 1; 
+            
+            this.finishMove(); // This will trigger the next move if keys are held
+
+            // 2. Apply the leftover movement to the new tile transition immediately
+            if (this.player.isMoving) {
+                this.player.moveProgress = overshoot;
+                this.player.x = this.player.sourceX + (this.player.destX - this.player.sourceX) * this.player.moveProgress;
+                this.player.y = this.player.sourceY + (this.player.destY - this.player.sourceY) * this.player.moveProgress;
+            }
         } else {
             this.player.x = this.player.sourceX + (this.player.destX - this.player.sourceX) * this.player.moveProgress;
             this.player.y = this.player.sourceY + (this.player.destY - this.player.sourceY) * this.player.moveProgress;
@@ -178,7 +192,7 @@ export class OverworldController {
         /// ==========================================
         // 1. STORY ENCOUNTER CHECK (10% Chance)
         // ==========================================
-        if (Math.random() < 0.10) {
+        if (Math.random() < 0.01) {
             console.log(`[Overworld] Random encounter triggered: wounded_mutt!`);
             
             // Lock the overworld and halt the player

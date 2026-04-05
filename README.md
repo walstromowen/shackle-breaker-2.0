@@ -1,18 +1,16 @@
 # [ShackleBreaker Legacy](https://shackle-breaker-frontend.onrender.com/)
 Roguelike turnbased adventure game based on the Shackle Breaker story by Owen Walstrom
 
-
-consumable items in battle
 enhance battle animations / polish
 two handed items
 clicking functionality across screens
-encounters(or new name)
 particleRenderer (global)
 crafting system. Visual for materials needed to level up
-charcter leveling and scaling
 Difficulty
 Starting seed
 procedural dungeons and hand crafted areas
+structures: 
+acessing higher elevations
 
 Root
 ├── backend/

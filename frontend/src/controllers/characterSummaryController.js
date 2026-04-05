@@ -29,6 +29,7 @@ export class CharacterSummaryController {
         
         // ADD THIS LINE HERE:
         this.config = data || {}; 
+        this.readOnly = data?.readOnly || data?.isCombat || false;
 
         if (data) {
             if (data.returnScene) {
@@ -349,7 +350,9 @@ export class CharacterSummaryController {
         this.viewMode = mode;
     }
 
-    cycleMember(direction) {
+   cycleMember(direction) {
+        if (this.isLocked) return; // Completely locked down
+
         const count = gameState.party.members.length;
         this.memberIndex = (this.memberIndex + direction + count) % count;
         this.state = 'SLOTS';
@@ -378,7 +381,8 @@ export class CharacterSummaryController {
         const member = this.currentMember;
         const currentEquip = member.equipment[slotName];
 
-        if (currentEquip) {
+        // Locked
+        if (currentEquip && !this.readOnly) {
             this.pendingSlotClick = slotName;
             this.potentialDrag = {
                 item: currentEquip,
@@ -428,21 +432,27 @@ export class CharacterSummaryController {
             
             this.updateFilteredInventory(); 
 
-            this.potentialDrag = {
-                item: targetItem,
-                source: 'inventory',
-                originIndex: idx,
-                realIndex: gameState.party.inventory.indexOf(targetItem),
-                startX: this.mouse.x,
-                startY: this.mouse.y
-            };
+            // Locked
+            if (!this.readOnly) {
+                this.potentialDrag = {
+                    item: targetItem,
+                    source: 'inventory',
+                    originIndex: idx,
+                    realIndex: gameState.party.inventory.indexOf(targetItem),
+                    startX: this.mouse.x,
+                    startY: this.mouse.y
+                };
+            }
         }
     }
 
     get currentMember() { 
         return gameState.party.members[this.memberIndex]; 
     }
-
+    get isLocked() {
+        const isBattleSelection = this.config && typeof this.config.onItemSelected === 'function';
+        return this.readOnly || isBattleSelection;
+    }
     updateActiveSlots() {
         const member = this.currentMember;
         if (!member) return;
@@ -462,8 +472,6 @@ export class CharacterSummaryController {
 
             return finalA - finalB;
         });
-
-        // REMOVED the else {} block that forced [...SLOT_ORDER]
 
         // Make sure slotIndex doesn't go out of bounds (or sets to -1 if no slots exist)
         if (this.slotIndex >= this.activeSlots.length) {
@@ -501,6 +509,8 @@ export class CharacterSummaryController {
     }
 
     equipItem(inventoryItem, targetSlotOverride = null) {
+        if (this.readOnly) return; // Locked
+
         const member = this.currentMember;
         let slotName = targetSlotOverride;
         const def = ItemDefinitions[inventoryItem.defId];
@@ -546,7 +556,7 @@ export class CharacterSummaryController {
     }
 
     unequipCurrentSlot() {
-        if (this.slotIndex === -1) return;
+        if (this.readOnly || this.slotIndex === -1) return; // Locked
 
         const member = this.currentMember;
         const slotName = this.activeSlots[this.slotIndex];
@@ -606,6 +616,7 @@ export class CharacterSummaryController {
         const viewSelectedSlot = (this.state === 'INVENTORY') ? -1 : this.slotIndex;
 
         return {
+            readOnly: this.readOnly, // Passed down for rendering logic
             member,
             derivedStats,
             slots: this.activeSlots,

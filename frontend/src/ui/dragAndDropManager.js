@@ -1,4 +1,4 @@
-import { gameState } from '../../../shared/state/gameState.js'; // <-- Add this
+import { gameState } from '../../../shared/state/gameState.js'; 
 import { ItemDefinitions } from '../../../shared/data/itemDefinitions.js';
 import { InventorySystem } from '../../../shared/systems/inventorySystem.js';
 
@@ -8,6 +8,16 @@ export class DragAndDropManager {
     }
 
     handleItemDrop(x, y) {
+        const isBattleSelection = this.controller.config && typeof this.controller.config.onItemSelected === 'function';
+        
+        if (isBattleSelection || this.controller.readOnly) {
+            this.cancelDrag();
+            return;
+        }if (this.controller.readOnly) {
+            this.cancelDrag();
+            return;
+        }
+
         let dropTarget = this.controller.hoveredElement ? this.controller.hoveredElement.id : null;
         let slotName = this.controller.hoveredElement ? this.controller.hoveredElement.slotId : null;
         

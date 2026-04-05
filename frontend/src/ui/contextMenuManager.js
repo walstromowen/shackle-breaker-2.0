@@ -54,27 +54,30 @@ export class ContextMenuManager {
                 options.push({ label: 'Use', action: 'USE' });
             }
 
-            if (ItemUpgradeSystem.canUpgrade(item)) {
-                options.push({ label: 'Upgrade', action: 'UPGRADE' });
-            }
-
-            if (source === 'equipment') {
-                if (this.controller.filteredInventory.length > 0) {
-                    options.push({ label: 'Equip', action: 'NAV_TO_INV' });
+            // Lock down Equip, Unequip, Upgrade, and Drop if readOnly is true
+            if (!this.controller.readOnly) {
+                if (ItemUpgradeSystem.canUpgrade(item)) {
+                    options.push({ label: 'Upgrade', action: 'UPGRADE' });
                 }
-                options.push({ label: 'Unequip', action: 'UNEQUIP_AND_NAV' });
-            } 
-            else if (source === 'inventory') {
-                if (this._canEquipItem(item)) {
-                    options.push({ label: 'Equip', action: 'EQUIP' });
-                }
-            }
 
-            if (isStackable) {
-                options.push({ label: 'Drop 1', action: 'DROP_ONE' });
-                options.push({ label: 'Drop All', action: 'DROP_ALL' });
-            } else {
-                options.push({ label: 'Drop', action: 'DROP_ONE' }); 
+                if (source === 'equipment') {
+                    if (this.controller.filteredInventory.length > 0) {
+                        options.push({ label: 'Equip', action: 'NAV_TO_INV' });
+                    }
+                    options.push({ label: 'Unequip', action: 'UNEQUIP_AND_NAV' });
+                } 
+                else if (source === 'inventory') {
+                    if (this._canEquipItem(item)) {
+                        options.push({ label: 'Equip', action: 'EQUIP' });
+                    }
+                }
+
+                if (isStackable) {
+                    options.push({ label: 'Drop 1', action: 'DROP_ONE' });
+                    options.push({ label: 'Drop All', action: 'DROP_ALL' });
+                } else {
+                    options.push({ label: 'Drop', action: 'DROP_ONE' }); 
+                }
             }
         }
 

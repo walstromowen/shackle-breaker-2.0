@@ -3,11 +3,7 @@ import { MAP_OBJECTS_DEFINITIONS } from '../data/mapObjectDefinitions.js';
 import { gameState } from '../state/gameState.js';
 import { biomeFactory } from './factories/biomeFactory.js';
 import { mapObjectFactory } from '../../shared/systems/factories/mapObjectsFactory.js';
-import { WeatherFactory } from '../../shared/systems/factories/weatherFactory.js'; // NEW
-
-// ==========================================
-// CONFIGURATION
-// ==========================================
+import { WeatherFactory } from '../../shared/systems/factories/weatherFactory.js';
 
 const MASK_DIRECTIONS = [
     { c: 0,  r: -1, bit: BITMASK.TOP },
@@ -25,23 +21,25 @@ export class WorldManager {
         if (!gameState.seed) gameState.seed = Math.floor(Math.random() * 1000000);
         if (!gameState.world.changes) gameState.world.changes = {};
         
-        // --- NEW: Initialize weather properly if undefined ---
         if (!gameState.world.currentWeather) {
             gameState.world.currentWeather = WeatherFactory.createWeather('CLEAR');
             gameState.world.currentWeather.intensity = 1.0;
         }
 
         this.seed = gameState.seed;
-        console.log(`%c[WorldManager] Seed: ${this.seed}`, 'color: #00ff00; font-weight: bold;');
+        console.log(`%c[WorldManager] Seed: ${this.seed} (Chunked Mode)`, 'color: #00ff00; font-weight: bold;');
 
         this.offsetX = this.seed * 9973;
         this.offsetY = this.seed * 10007;
         this.TILES = CONFIG.TILE_TYPES;
         
-        // --- PERFORMANCE CACHES ---
-        this._tileCache = new Map();
-        this._procCache = new Map(); 
-        this.objects = new Map();
+        // --- CHUNKING & MEMORY ---
+        this.CHUNK_SIZE = 16; 
+        this.chunks = new Map();         // Stores active chunk metadata
+        this._tileCache = new Map();     // Global fast-access tile cache
+        this._biomeCache = new Map();    // Global fast-access biome cache
+        this.objects = new Map();        // Active global objects (by origin)
+        this._collisionMap = new Map();  // O(1) Object hitboxes!
 
         // --- NOISE GENERATORS ---
         this.elevationNoise = new PerlinNoise(this.seed);
@@ -49,12 +47,76 @@ export class WorldManager {
         this.moistureNoise = new PerlinNoise(this.seed + 54321); 
     }
 
-    _k(col, row) {
-        return (col & 0xFFFF) << 16 | (row & 0xFFFF);
+    _k(col, row) { return (col & 0xFFFF) << 16 | (row & 0xFFFF); }
+    _s(col, row) { return `${col},${row}`; }
+
+    // ==========================================
+    // API: CHUNK GENERATOR
+    // ==========================================
+
+    ensureChunkLoaded(col, row) {
+        const cx = Math.floor(col / this.CHUNK_SIZE);
+        const cy = Math.floor(row / this.CHUNK_SIZE);
+        const chunkKey = `${cx},${cy}`;
+
+        if (this.chunks.has(chunkKey)) return;
+
+        this.generateChunk(cx, cy, chunkKey);
     }
-    
-    _s(col, row) {
-        return `${col},${row}`;
+
+    generateChunk(cx, cy, chunkKey) {
+        const startCol = cx * this.CHUNK_SIZE;
+        const startRow = cy * this.CHUNK_SIZE;
+        const endCol = startCol + this.CHUNK_SIZE;
+        const endRow = startRow + this.CHUNK_SIZE;
+
+        const chunk = {
+            cx, cy,
+            keys: [] // Track keys belonging to this chunk for fast pruning
+        };
+
+        // Phase 1: Pre-calculate all Tiles & Biomes (Optimized)
+        for (let r = startRow; r < endRow; r++) {
+            for (let c = startCol; c < endCol; c++) {
+                const key = this._s(c, r);
+                chunk.keys.push(key);
+
+                // Now safely grabs the pure math value and caches it permanently for the chunk
+                this._biomeCache.set(key, this.getBiomeAt(c, r));
+                this._tileCache.set(key, this.getTileAt(c, r));
+            }
+        }
+
+        // Phase 2: Procedural Objects
+        for (let r = startRow; r < endRow; r++) {
+            for (let c = startCol; c < endCol; c++) {
+                const key = this._s(c, r);
+
+                // If a previously spawned object is overlapping this tile, skip spawning!
+                if (this._collisionMap.has(key)) continue;
+
+                const objId = this._getRawProceduralId(c, r);
+                if (objId) {
+                    const newObj = this.createObjectInstance(c, r, objId);
+                    this.objects.set(key, newObj);
+
+                    // Register Hitbox to Collision Map (O(1) lookups later)
+                    const def = MAP_OBJECTS_DEFINITIONS[objId] || {};
+                    const hbX = newObj.hitbox?.xOffset ?? def.hitbox?.xOffset ?? 0;
+                    const hbY = newObj.hitbox?.yOffset ?? def.hitbox?.yOffset ?? 0;
+                    const hbW = newObj.hitbox?.w ?? def.hitbox?.w ?? def.w ?? 1;
+                    const hbH = newObj.hitbox?.h ?? def.hitbox?.h ?? def.h ?? 1;
+
+                    for(let hr = 0; hr < hbH; hr++) {
+                        for(let hc = 0; hc < hbW; hc++) {
+                            this._collisionMap.set(this._s(c + hbX + hc, r + hbY + hr), newObj);
+                        }
+                    }
+                }
+            }
+        }
+
+        this.chunks.set(chunkKey, chunk);
     }
 
     // ==========================================
@@ -62,9 +124,14 @@ export class WorldManager {
     // ==========================================
 
     getBiomeAt(col, row) {
+        const key = this._s(col, row);
+        
+        // 1. Fast Cache Return
+        if (this._biomeCache.has(key)) return this._biomeCache.get(key);
+        
+        // 2. Pure Math Fallback (Does NOT trigger chunk generation)
         const rawTemp = this.temperatureNoise.get((col * 0.01) + this.offsetX, (row * 0.01) + this.offsetY);
         const rawMoist = this.moistureNoise.get((col * 0.01) + this.offsetX, (row * 0.01) + this.offsetY);
-        
         const tempVal = Math.min(1, Math.max(0, (rawTemp + 0.5)));
         const moistVal = Math.min(1, Math.max(0, (rawMoist + 0.5)));
         
@@ -72,16 +139,16 @@ export class WorldManager {
     }
 
     getTileAt(col, row) {
-        const key = this._k(col, row);
+        const key = this._s(col, row);
+        
+        // 1. Fast Cache Return
         if (this._tileCache.has(key)) return this._tileCache.get(key);
         
+        // 2. Pure Math Fallback (Does NOT trigger chunk generation)
         const elevVal = this.elevationNoise.get((col * 0.06) + this.offsetX, (row * 0.06) + this.offsetY);
         const biome = this.getBiomeAt(col, row);
         
-        const tileId = biome.getTileId(elevVal);
-
-        this._tileCache.set(key, tileId);
-        return tileId;
+        return biome.getTileId(elevVal);
     }
 
     canMove(fromCol, fromRow, toCol, toRow) {
@@ -96,10 +163,7 @@ export class WorldManager {
         const isDirtToGrass = (fromElev === depthL1 && toElev === depthL2) || 
                               (fromElev === depthL2 && toElev === depthL1);
         
-        if (fromElev !== toElev && !isDirtToGrass) {
-            return false;
-        }
-        
+        if (fromElev !== toElev && !isDirtToGrass) return false;
         if (this.isBlockedByFace(toCol, toRow)) return false;
         if (this.getSolidObjectAt(toCol, toRow)) return false; 
         
@@ -121,7 +185,7 @@ export class WorldManager {
     }
 
     // ==========================================
-    // API: MEMORY MANAGEMENT
+    // API: MEMORY MANAGEMENT (Prunes Whole Chunks)
     // ==========================================
 
     prune(cameraX, cameraY) {
@@ -129,19 +193,29 @@ export class WorldManager {
         const SAFE_DISTANCE = 2500; 
         const distSq = SAFE_DISTANCE * SAFE_DISTANCE;
 
-        for (const [key, obj] of this.objects) {
-            const dx = (obj.col * TILE_SIZE) - cameraX;
-            const dy = (obj.row * TILE_SIZE) - cameraY;
+        for (const [chunkKey, chunk] of this.chunks) {
+            // Calculate chunk center distance
+            const chunkPixelX = (chunk.cx * this.CHUNK_SIZE + (this.CHUNK_SIZE/2)) * TILE_SIZE;
+            const chunkPixelY = (chunk.cy * this.CHUNK_SIZE + (this.CHUNK_SIZE/2)) * TILE_SIZE;
+            
+            const dx = chunkPixelX - cameraX;
+            const dy = chunkPixelY - cameraY;
             
             if ((dx * dx + dy * dy) > distSq) {
-                this.objects.delete(key);
+                // Unload entire chunk memory instantly
+                for (const key of chunk.keys) {
+                    this._tileCache.delete(key);
+                    this._biomeCache.delete(key);
+                    
+                    if (this.objects.has(key)) {
+                        this.objects.delete(key);
+                    }
+                    if (this._collisionMap.has(key)) {
+                        this._collisionMap.delete(key);
+                    }
+                }
+                this.chunks.delete(chunkKey);
             }
-        }
-
-        if (this._procCache.size > 20000) {
-            console.log(`[WorldManager] Pruning Memory: Cleared ${this._procCache.size} cached tiles.`);
-            this._procCache.clear();
-            this._tileCache.clear();
         }
     }
 
@@ -150,6 +224,9 @@ export class WorldManager {
     // ==========================================
 
     getTileData(col, row) {
+        // Shifted chunk loading here so it's strictly driven by rendering!
+        this.ensureChunkLoaded(col, row);
+        
         const tileId = this.getTileAt(col, row);
         const biome = this.getBiomeAt(col, row); 
         const isBlob = CONFIG.BLOB_TILES?.includes(tileId);
@@ -168,15 +245,11 @@ export class WorldManager {
 
     getSpecificMask(col, row, targetId) {
         let mask = 0;
-        const myBiome = this.getBiomeAt(col, row);
-
         for (const d of MASK_DIRECTIONS) {
             const nCol = col + d.c;
             const nRow = row + d.r;
             
             const nId = this.getTileAt(nCol, nRow);
-            const nBiome = this.getBiomeAt(nCol, nRow);
-
             const targetDepth = CONFIG.TILE_DEPTH[targetId] || 0;
             const neighborDepth = CONFIG.TILE_DEPTH[nId] || 0;
 
@@ -185,9 +258,7 @@ export class WorldManager {
             const isSameDepth = (neighborDepth === targetDepth);
 
             if (isStructuralLayer || isSameDepth || isConnectingUpward) {
-                if (targetId === nId || neighborDepth >= targetDepth) {
-                    mask |= d.bit;
-                }
+                if (targetId === nId || neighborDepth >= targetDepth) mask |= d.bit;
             }
         }
         return mask;
@@ -207,10 +278,9 @@ export class WorldManager {
         const endRow = startRow + Math.ceil((canvasHeight / scale) / TILE_SIZE) + 4;
 
         const visible = [];
-
         for (let r = startRow; r <= endRow; r++) {
             for (let c = startCol; c <= endCol; c++) {
-                const obj = this.getObject(c, r); // Note: We still fetch purely by origin for rendering purposes
+                const obj = this.getObject(c, r);
                 if (obj) visible.push(obj);
             }
         }
@@ -222,58 +292,16 @@ export class WorldManager {
     // ==========================================
 
     getObject(col, row) {
+        // Returns object ONLY if its origin matches (used for rendering)
         const key = this._s(col, row);
-        if (this.objects.has(key)) return this.objects.get(key);
-
-        const id = this.getPotentialObjectId(col, row);
-        if (id) {
-            const newObj = this.createObjectInstance(col, row, id);
-            this.objects.set(key, newObj);
-            return newObj;
-        }
-        return null;
-    }
-
-    getPotentialObjectId(col, row) {
-        const key = this._s(col, row);
-        if (gameState.world.changes?.[key] !== undefined) {
-            return gameState.world.changes[key];
-        }
-
-        const cacheKey = this._k(col, row);
-        if (this._procCache.has(cacheKey)) return this._procCache.get(cacheKey);
-
-        const result = this._calculatePotentialObjectId(col, row);
-        
-        this._procCache.set(cacheKey, result);
-        return result;
-    }
-
-    _calculatePotentialObjectId(col, row) {
-        const MAX_LOOKBACK = 4;
-        // Check if an object spawning slightly up/left from here would overlap us
-        for (let r = row - MAX_LOOKBACK; r <= row; r++) {
-            for (let c = col - MAX_LOOKBACK; c <= col; c++) {
-                if (c === col && r === row) continue;
-
-                const nId = this._getRawProceduralId(c, r);
-                if (nId) {
-                    const cfg = MAP_OBJECTS_DEFINITIONS[nId] || {};
-                    const w = cfg.width || cfg.w || 1;
-                    const h = cfg.height || cfg.h || 1;
-                    
-                    // If an object spawned at (c,r) overlaps the current tile (col, row), 
-                    // we block a new object from spawning here.
-                    if (col >= c && col < c + w && row >= r && row < r + h) {
-                        return null; 
-                    }
-                }
-            }
-        }
-        return this._getRawProceduralId(col, row);
+        return this.objects.get(key) || null;
     }
 
     _getRawProceduralId(col, row) {
+        if (gameState.world.changes?.[this._s(col, row)] !== undefined) {
+            return gameState.world.changes[this._s(col, row)];
+        }
+
         if (this.isBlockedByFace(col, row) || this.isCliffFace(col, row) || this.isBiomeEdge(col, row)) return null;
 
         const tileId = this.getTileAt(col, row);
@@ -281,19 +309,15 @@ export class WorldManager {
         const isWall = (tileId >= this.TILES.LAYER_3 && tileId <= this.TILES.LAYER_5);
 
         const rng = this.pseudoRandom(col, row);
-        
         const spawnData = biome.getSpawnId(tileId, rng, isWall);
 
         if (!spawnData) return null;
 
-        // Ensure footprint fits actual object bounds
         const def = MAP_OBJECTS_DEFINITIONS[spawnData.id] || {};
         const w = def.w || def.width || 1;
         const h = def.h || def.height || 1;
 
-        if (!this.isFootprintValid(col, row, w, h)) {
-            return null;
-        }
+        if (!this.isFootprintValid(col, row, w, h)) return null;
         
         return spawnData.id;
     }
@@ -307,8 +331,27 @@ export class WorldManager {
         const key = this._s(col, row);
         gameState.world.changes[key] = newValue;
         
-        this.objects.delete(key); 
-        this._procCache.delete(this._k(col, row));
+        if (this.objects.has(key)) {
+            const oldObj = this.objects.get(key);
+            
+            // Reconstruct the hitbox footprint
+            const def = MAP_OBJECTS_DEFINITIONS[oldObj.id] || {};
+            const hbX = oldObj.hitbox?.xOffset ?? def.hitbox?.xOffset ?? 0;
+            const hbY = oldObj.hitbox?.yOffset ?? def.hitbox?.yOffset ?? 0;
+            const hbW = oldObj.hitbox?.w ?? def.hitbox?.w ?? def.w ?? 1;
+            const hbH = oldObj.hitbox?.h ?? def.hitbox?.h ?? def.h ?? 1;
+
+            // Loop through the footprint and scrub it from the collision map
+            for(let hr = 0; hr < hbH; hr++) {
+                for(let hc = 0; hc < hbW; hc++) {
+                    const targetKey = this._s(col + hbX + hc, row + hbY + hr);
+                    this._collisionMap.delete(targetKey);
+                }
+            }
+
+            // Remove the main visual object reference
+            this.objects.delete(key);
+        }
     }
 
     // ==========================================
@@ -316,43 +359,12 @@ export class WorldManager {
     // ==========================================
 
     getObjectAt(col, row) {
-        const RADIUS = 4;
-        // Search backwards/upwards to catch origins of large objects
-        for (let r = row - RADIUS; r <= row; r++) {
-            for (let c = col - RADIUS; c <= col; c++) {
-                
-                // 1. Fetch the object at the current searched coordinates
-                const object = this.getObject(c, r);
-                
-                // If no object originates here, skip to the next tile
-                if (!object) continue;
-
-                // 2. Default multi-tile Hitbox/Dimension logic
-                const def = MAP_OBJECTS_DEFINITIONS[object.id] || {};
-                
-                // FIXED: Changed .x and .y to .xOffset and .yOffset
-                const hbX = object.hitbox?.xOffset ?? def.hitbox?.xOffset ?? 0;
-                const hbY = object.hitbox?.yOffset ?? def.hitbox?.yOffset ?? 0;
-                
-                const hbW = object.hitbox?.w ?? def.hitbox?.w ?? def.w ?? 1;
-                const hbH = object.hitbox?.h ?? def.hitbox?.h ?? def.h ?? 1;
-
-                const minCol = object.col + hbX;
-                const maxCol = object.col + hbX + hbW - 1;
-                const minRow = object.row + hbY;
-                const maxRow = object.row + hbY + hbH - 1;
-
-                if (col >= minCol && col <= maxCol && row >= minRow && row <= maxRow) {
-                    return object;
-                }
-            }
-        }
-        return null;
+        this.ensureChunkLoaded(col, row); // Keep this here for physics checks!
+        return this._collisionMap.get(this._s(col, row)) || null;
     }
 
     getSolidObjectAt(col, row) {
         const obj = this.getObjectAt(col, row);
-        // By default, assume objects are solid unless explicitly defined as `isSolid: false`
         if (obj && obj.isSolid !== false) return obj;
         return null;
     }
