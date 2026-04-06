@@ -1,321 +1,321 @@
 export const ItemDefinitions = {
-    // --- WEAPONS ---
-    "wooden_stick": {
-        id: "wooden_stick",
-        name: "Wooden Stick",
-        slot: "mainHand",
-        type: "weapon",
-        description: "A sturdy branch found on the forest floor.",
-        value: 5,
-        icon: { col: 11, row: 0 },
-        attack: { blunt: 3 }, 
-        grantedAbilities: ["strike"] 
-        // No upgrade data: cannot be upgraded.
-    },
+    // --- WEAPONS ---
+    "wooden_stick": {
+        id: "wooden_stick",
+        name: "Wooden Stick",
+        slot: "oneHand",
+        type: "weapon",
+        description: "A sturdy branch found on the forest floor.",
+        value: 5,
+        icon: { col: 11, row: 0 },
+        attack: { blunt: 3 }, 
+        grantedAbilities: ["strike"] 
+        // No upgrade data: cannot be upgraded.
+    },
 
-    "dagger": {
-        id: "dagger", // Fixed from "shortsword"
-        name: "Dagger",
-        slot: "mainHand",
-        type: "weapon",
-        description: 'A standard dagger, perfect for quick strikes.',
-        value: 20,
-        icon: { col: 0, row: 0 },
-        attack: { pierce: 3, slash: 2 },
-        grantedAbilities: ["slash"], 
-        maxLevel: 3,
-        statGrowth: {
-            attack: { pierce: 1, slash: 1 }
-        },
-        abilityUnlocks: {
-            2: ["quick_stab"]
-        },
-        upgradeCosts: {
-            2: { currency: 30, materials: { "stone": 2, "leather": 1 } },
-            3: { currency: 80, materials: { "iron_ingot": 1, "leather": 2 } }
-        }
-    },
+    "dagger": {
+        id: "dagger", // Fixed from "shortsword"
+        name: "Dagger",
+        slot: "oneHand",
+        type: "weapon",
+        description: 'A standard dagger, perfect for quick strikes.',
+        value: 20,
+        icon: { col: 0, row: 0 },
+        attack: { pierce: 3, slash: 2 },
+        grantedAbilities: ["slash"], 
+        maxLevel: 3,
+        statGrowth: {
+            attack: { pierce: 1, slash: 1 }
+        },
+        abilityUnlocks: {
+            2: ["quick_stab"]
+        },
+        upgradeCosts: {
+            2: { currency: 30, materials: { "stone": 2, "leather": 1 } },
+            3: { currency: 80, materials: { "iron_ingot": 1, "leather": 2 } }
+        }
+    },
 
-    "shortsword": {
-        id: "shortsword",
-        name: "Shortsword",
-        slot: "mainHand",
-        type: "weapon",
-        description: 'A standard shortsword. Gets deadlier as you forge it.',
-        value: 20,
-        icon: { col: 1, row: 0 },
-        attack: { pierce: 300, slash: 300 },
-        grantedAbilities: ["slash", "thrust"],
-        maxLevel: 3,
-        statGrowth: {
-            attack: { pierce: 2, slash: 2 }
-        },
-        abilityUnlocks: {
-            2: ["flurry"],
-            3: ["bolster"]
-        },
-        upgradeCosts: {
-            2: { currency: 50 },
-            3: { currency: 100}
-        }
-    },
+    "shortsword": {
+        id: "shortsword",
+        name: "Shortsword",
+        slot: "oneHand",
+        type: "weapon",
+        description: 'A standard shortsword. Gets deadlier as you forge it.',
+        value: 20,
+        icon: { col: 1, row: 0 },
+        attack: { pierce: 300, slash: 300 },
+        grantedAbilities: ["slash", "thrust"],
+        maxLevel: 3,
+        statGrowth: {
+            attack: { pierce: 2, slash: 2 }
+        },
+        abilityUnlocks: {
+            2: ["flurry"],
+            3: ["bolster"]
+        },
+        upgradeCosts: {
+            2: { currency: 50 },
+            3: { currency: 100}
+        }
+    },
 
-    "handaxe": {
-        id: "handaxe",
-        name: "Handaxe",
-        slot: "mainHand",
-        type: "weapon",
-        description: 'A standard handaxe. Brutal and effective.',
-        value: 20,
-        icon: { col: 2, row: 0 },
-        attack: { blunt: 3, slash: 3 },
-        grantedAbilities: ["slash", "strike"], 
-        maxLevel: 3,
-        statGrowth: {
-            attack: { blunt: 2, slash: 2 }
-        },
-        abilityUnlocks: {
-            2: ["cleave"]
-        },
-        upgradeCosts: {
-            2: { currency: 50, materials: { "stone": 3, "soft_wood": 2 } },
-            3: { currency: 150, materials: { "iron_ingot": 2, "leather": 2 } }
-        }
-    },
+    "handaxe": {
+        id: "handaxe",
+        name: "Handaxe",
+        slot: "oneHand",
+        type: "weapon",
+        description: 'A standard handaxe. Brutal and effective.',
+        value: 20,
+        icon: { col: 2, row: 0 },
+        attack: { blunt: 3, slash: 3 },
+        grantedAbilities: ["slash", "strike"], 
+        maxLevel: 3,
+        statGrowth: {
+            attack: { blunt: 2, slash: 2 }
+        },
+        abilityUnlocks: {
+            2: ["cleave"]
+        },
+        upgradeCosts: {
+            2: { currency: 50, materials: { "stone": 3, "soft_wood": 2 } },
+            3: { currency: 150, materials: { "iron_ingot": 2, "leather": 2 } }
+        }
+    },
 
-    "warhammer": {
-        id: "warhammer",
-        name: "Warhammer",
-        slot: "twoHand",
-        type: "weapon",
-        description: 'A standard warhammer. Heavy and crushing.',
-        value: 20,
-        icon: { col: 3, row: 0 },
-        attack: { blunt: 5},
-        grantedAbilities: ["strike"], 
-        maxLevel: 3,
-        statGrowth: {
-            attack: { blunt: 3 }
-        },
-        abilityUnlocks: {
-            2: ["wild_swing"]
-        },
-        upgradeCosts: {
-            2: { currency: 60, materials: { "iron_ingot": 2, "soft_wood": 2 } },
-            3: { currency: 180, materials: { "iron_ingot": 4, "leather": 1 } }
-        }
-    },
+    "warhammer": {
+        id: "warhammer",
+        name: "Warhammer",
+        slot: "twoHand",
+        type: "weapon",
+        description: 'A standard warhammer. Heavy and crushing.',
+        value: 20,
+        icon: { col: 3, row: 0 },
+        attack: { blunt: 5},
+        grantedAbilities: ["strike"], 
+        maxLevel: 3,
+        statGrowth: {
+            attack: { blunt: 3 }
+        },
+        abilityUnlocks: {
+            2: ["wild_swing"]
+        },
+        upgradeCosts: {
+            2: { currency: 60, materials: { "iron_ingot": 2, "soft_wood": 2 } },
+            3: { currency: 180, materials: { "iron_ingot": 4, "leather": 1 } }
+        }
+    },
 
-    "spear": {
-        id: "spear",
-        name: "Spear",
-        slot: "mainHand",
-        type: "weapon",
-        description: 'A standard spear. Excellent reach.',
-        value: 20,
-        icon: { col: 3, row: 0 },
-        attack: { pierce: 5},
-        grantedAbilities: ["thrust"], 
-        maxLevel: 3,
-        statGrowth: {
-            attack: { pierce: 2 }
-        },
-        abilityUnlocks: {
-            2: ["quick_stab"]
-        },
-        upgradeCosts: {
-            2: { currency: 40, materials: { "stone": 2, "soft_wood": 3 } },
-            3: { currency: 120, materials: { "iron_ingot": 1, "soft_wood": 5 } }
-        }
-    },
-     "wooden_shield": {
-        id: "wooden_shield",
-        name: "Wooden Shield",
-        slot: "offHand",
-        type: "shield",
-        description: 'A sturdy wooden shield. Provides decent protection.',
-        value: 20,
-        icon: { col: 3, row: 0 },
-        defense: { blunt: 2, slash: 2, pierce: 1 },
-        resistance: { blunt: 0.02, slash: 0.03, pierce: 0.03},
-        grantedAbilities: [], 
-        maxLevel: 3,
-        statGrowth: {
-            defense: { blunt: 1, slash: 2, pierce: 2 },
-        },
-        abilityUnlocks: {
-            2: ["shield_bash"]
-        },
-        upgradeCosts: {
-            2: { currency: 40, materials: { "stone": 2, "soft_wood": 3 } },
-            3: { currency: 120, materials: { "iron_ingot": 1, "soft_wood": 5 } }
-        }
-    },
+    "spear": {
+        id: "spear",
+        name: "Spear",
+        slot: "oneHand",
+        type: "weapon",
+        description: 'A standard spear. Excellent reach.',
+        value: 20,
+        icon: { col: 3, row: 0 },
+        attack: { pierce: 5},
+        grantedAbilities: ["thrust"], 
+        maxLevel: 3,
+        statGrowth: {
+            attack: { pierce: 2 }
+        },
+        abilityUnlocks: {
+            2: ["quick_stab"]
+        },
+        upgradeCosts: {
+            2: { currency: 40, materials: { "stone": 2, "soft_wood": 3 } },
+            3: { currency: 120, materials: { "iron_ingot": 1, "soft_wood": 5 } }
+        }
+    },
+     "wooden_shield": {
+        id: "wooden_shield",
+        name: "Wooden Shield",
+        slot: "oneHand",
+        type: "shield",
+        description: 'A sturdy wooden shield. Provides decent protection.',
+        value: 20,
+        icon: { col: 3, row: 0 },
+        defense: { blunt: 2, slash: 2, pierce: 1 },
+        resistance: { blunt: 0.02, slash: 0.03, pierce: 0.03},
+        grantedAbilities: [], 
+        maxLevel: 3,
+        statGrowth: {
+            defense: { blunt: 1, slash: 2, pierce: 2 },
+        },
+        abilityUnlocks: {
+            2: ["shield_bash"]
+        },
+        upgradeCosts: {
+            2: { currency: 40, materials: { "stone": 2, "soft_wood": 3 } },
+            3: { currency: 120, materials: { "iron_ingot": 1, "soft_wood": 5 } }
+        }
+    },
 
-    // --- INSIGHT WEAPONS ---
-    // (Consolidating the upgrade logic for these magical items to require exotic materials or just lots of currency/stone for now)
-    "insight_of_fire": {
-        id: "insight_of_fire",
-        name: "Insight of Fire",
-        slot: "mainHand",
-        type: "weapon",
-        description: "An insight into a firey truth.",
-        value: 20,
-        icon: { col: 0, row: 1 },
-        attack: { fire: 5},
-        grantedAbilities: ["quick_stab"],
-        maxLevel: 3,
-        statGrowth: { attack: { fire: 3 } },
-        upgradeCosts: {
-            2: { currency: 100, materials: { "stone": 5 } },
-            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
-        }
-    },
+    // --- INSIGHT WEAPONS ---
+    // (Consolidating the upgrade logic for these magical items to require exotic materials or just lots of currency/stone for now)
+    "insight_of_fire": {
+        id: "insight_of_fire",
+        name: "Insight of Fire",
+        slot: "oneHand",
+        type: "weapon",
+        description: "An insight into a firey truth.",
+        value: 20,
+        icon: { col: 0, row: 1 },
+        attack: { fire: 5},
+        grantedAbilities: ["quick_stab"],
+        maxLevel: 3,
+        statGrowth: { attack: { fire: 3 } },
+        upgradeCosts: {
+            2: { currency: 100, materials: { "stone": 5 } },
+            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+        }
+    },
 
-    "insight_of_water": {
-        id: "insight_of_water",
-        name: "Insight of Water",
-        slot: "mainHand",
-        type: "weapon",
-        description: "An insight into a watery truth.",
-        value: 20,
-        icon: { col: 1, row: 1 },
-        attack: { water: 5},
-        grantedAbilities: ["quick_stab"],
-        maxLevel: 3,
-        statGrowth: { attack: { water: 3 } },
-        upgradeCosts: {
-            2: { currency: 100, materials: { "stone": 5 } },
-            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
-        }
-    },
+    "insight_of_water": {
+        id: "insight_of_water",
+        name: "Insight of Water",
+        slot: "oneHand",
+        type: "weapon",
+        description: "An insight into a watery truth.",
+        value: 20,
+        icon: { col: 1, row: 1 },
+        attack: { water: 5},
+        grantedAbilities: ["quick_stab"],
+        maxLevel: 3,
+        statGrowth: { attack: { water: 3 } },
+        upgradeCosts: {
+            2: { currency: 100, materials: { "stone": 5 } },
+            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+        }
+    },
 
-    "insight_of_earth": {
-        id: "insight_of_earth",
-        name: "Insight of Earth",
-        slot: "mainHand",
-        type: "weapon",
-        description: "An insight into an earthy truth.",
-        value: 20,
-        icon: { col: 2, row: 1 },
-        attack: { earth: 5},
-        grantedAbilities: ["quick_stab"],
-        maxLevel: 3,
-        statGrowth: { attack: { earth: 3 } },
-        upgradeCosts: {
-            2: { currency: 100, materials: { "stone": 5 } },
-            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
-        }
-    },
+    "insight_of_earth": {
+        id: "insight_of_earth",
+        name: "Insight of Earth",
+        slot: "oneHand",
+        type: "weapon",
+        description: "An insight into an earthy truth.",
+        value: 20,
+        icon: { col: 2, row: 1 },
+        attack: { earth: 5},
+        grantedAbilities: ["quick_stab"],
+        maxLevel: 3,
+        statGrowth: { attack: { earth: 3 } },
+        upgradeCosts: {
+            2: { currency: 100, materials: { "stone": 5 } },
+            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+        }
+    },
 
-    "insight_of_lightning": {
-        id: "insight_of_lightning",
-        name: "Insight of Lightning",
-        slot: "mainHand",
-        type: "weapon",
-        description: "An insight into an electrifying truth.",
-        value: 20,
-        icon: { col: 3, row: 1 },
-        attack: { lightning: 5},
-        grantedAbilities: ["quick_stab"],
-        maxLevel: 3,
-        statGrowth: { attack: { lightning: 3 } },
-        upgradeCosts: {
-            2: { currency: 100, materials: { "stone": 5 } },
-            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
-        }
-    },
+    "insight_of_lightning": {
+        id: "insight_of_lightning",
+        name: "Insight of Lightning",
+        slot: "oneHand",
+        type: "weapon",
+        description: "An insight into an electrifying truth.",
+        value: 20,
+        icon: { col: 3, row: 1 },
+        attack: { lightning: 5},
+        grantedAbilities: ["quick_stab"],
+        maxLevel: 3,
+        statGrowth: { attack: { lightning: 3 } },
+        upgradeCosts: {
+            2: { currency: 100, materials: { "stone": 5 } },
+            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+        }
+    },
 
-    "insight_of_ice": {
-        id: "insight_of_ice",
-        name: "Insight of Ice",
-        slot: "mainHand",
-        type: "weapon",
-        description: "An insight into a frozen truth.",
-        value: 20,
-        icon: { col: 4, row: 1 },
-        attack: { ice: 5}, // Fixed from "fire"
-        grantedAbilities: ["quick_stab"],
-        maxLevel: 3,
-        statGrowth: { attack: { ice: 3 } },
-        upgradeCosts: {
-            2: { currency: 100, materials: { "stone": 5 } },
-            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
-        }
-    },
+    "insight_of_ice": {
+        id: "insight_of_ice",
+        name: "Insight of Ice",
+        slot: "oneHand",
+        type: "weapon",
+        description: "An insight into a frozen truth.",
+        value: 20,
+        icon: { col: 4, row: 1 },
+        attack: { ice: 5}, // Fixed from "fire"
+        grantedAbilities: ["quick_stab"],
+        maxLevel: 3,
+        statGrowth: { attack: { ice: 3 } },
+        upgradeCosts: {
+            2: { currency: 100, materials: { "stone": 5 } },
+            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+        }
+    },
 
-    "insight_of_wind": {
-        id: "insight_of_wind",
-        name: "Insight of Wind",
-        slot: "mainHand",
-        type: "weapon",
-        description: "An insight into a booming truth.",
-        value: 20,
-        icon: { col: 5, row: 1 },
-        attack: { wind: 5}, // Fixed from "fire"
-        grantedAbilities: ["quick_stab"],
-        maxLevel: 3,
-        statGrowth: { attack: { wind: 3 } },
-        upgradeCosts: {
-            2: { currency: 100, materials: { "stone": 5 } },
-            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
-        }
-    },
+    "insight_of_wind": {
+        id: "insight_of_wind",
+        name: "Insight of Wind",
+        slot: "oneHand",
+        type: "weapon",
+        description: "An insight into a booming truth.",
+        value: 20,
+        icon: { col: 5, row: 1 },
+        attack: { wind: 5}, // Fixed from "fire"
+        grantedAbilities: ["quick_stab"],
+        maxLevel: 3,
+        statGrowth: { attack: { wind: 3 } },
+        upgradeCosts: {
+            2: { currency: 100, materials: { "stone": 5 } },
+            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+        }
+    },
 
-    "insight_of_arcane": {
-        id: "insight_of_arcane",
-        name: "Insight of Arcane",
-        slot: "mainHand",
-        type: "weapon",
-        description: "An insight into an arcane truth.",
-        value: 20,
-        icon: { col: 6, row: 1 },
-        attack: { arcane: 5},
-        grantedAbilities: ["arcane_bolt"], // Moved magic_missile to unlock
-        maxLevel: 3,
-        statGrowth: { attack: { arcane: 3 } },
-        abilityUnlocks: { 2: ["magic_missile"] },
-        upgradeCosts: {
-            2: { currency: 150, materials: { "stone": 5 } },
-            3: { currency: 400, materials: { "iron_ingot": 3, "stone": 10 } }
-        }
-    },
+    "insight_of_arcane": {
+        id: "insight_of_arcane",
+        name: "Insight of Arcane",
+        slot: "oneHand",
+        type: "weapon",
+        description: "An insight into an arcane truth.",
+        value: 20,
+        icon: { col: 6, row: 1 },
+        attack: { arcane: 5},
+        grantedAbilities: ["arcane_bolt"], // Moved magic_missile to unlock
+        maxLevel: 3,
+        statGrowth: { attack: { arcane: 3 } },
+        abilityUnlocks: { 2: ["magic_missile"] },
+        upgradeCosts: {
+            2: { currency: 150, materials: { "stone": 5 } },
+            3: { currency: 400, materials: { "iron_ingot": 3, "stone": 10 } }
+        }
+    },
 
-    "insight_of_light": {
-        id: "insight_of_light",
-        name: "Insight of Light",
-        slot: "mainHand",
-        type: "weapon",
-        description: "An insight into a luminous truth.",
-        value: 20,
-        icon: { col: 7, row: 1 },
-        attack: { light: 5}, // Fixed from "fire"
-        grantedAbilities: ["quick_stab"],
-        maxLevel: 3,
-        statGrowth: { attack: { light: 3 } },
-        upgradeCosts: {
-            2: { currency: 100, materials: { "stone": 5 } },
-            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
-        }
-    },
+    "insight_of_light": {
+        id: "insight_of_light",
+        name: "Insight of Light",
+        slot: "oneHand",
+        type: "weapon",
+        description: "An insight into a luminous truth.",
+        value: 20,
+        icon: { col: 7, row: 1 },
+        attack: { light: 5}, // Fixed from "fire"
+        grantedAbilities: ["quick_stab"],
+        maxLevel: 3,
+        statGrowth: { attack: { light: 3 } },
+        upgradeCosts: {
+            2: { currency: 100, materials: { "stone": 5 } },
+            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+        }
+    },
 
-    "insight_of_darkness": {
-        id: "insight_of_darkness",
-        name: "Insight of Darkness",
-        slot: "mainHand",
-        type: "weapon",
-        description: "An insight into a shadowy truth.",
-        value: 20,
-        icon: { col: 8, row: 1 },
-        attack: { dark: 5}, // Fixed from "fire"
-        grantedAbilities: ["quick_stab"],
-        maxLevel: 3,
-        statGrowth: { attack: { dark: 3 } },
-        upgradeCosts: {
-            2: { currency: 100, materials: { "stone": 5 } },
-            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
-        }
-    },
+    "insight_of_darkness": {
+        id: "insight_of_darkness",
+        name: "Insight of Darkness",
+        slot: "oneHand",
+        type: "weapon",
+        description: "An insight into a shadowy truth.",
+        value: 20,
+        icon: { col: 8, row: 1 },
+        attack: { dark: 5}, // Fixed from "fire"
+        grantedAbilities: ["quick_stab"],
+        maxLevel: 3,
+        statGrowth: { attack: { dark: 3 } },
+        upgradeCosts: {
+            2: { currency: 100, materials: { "stone": 5 } },
+            3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+        }
+    },
 
     // --- TATTERED ARMOR SET (Non-Upgradeable Starter Gear) ---
     "tattered_hood": {

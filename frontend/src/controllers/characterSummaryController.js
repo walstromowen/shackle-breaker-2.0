@@ -518,15 +518,38 @@ export class CharacterSummaryController {
         const rawItemType = def ? (def.slot || def.type || '').toLowerCase() : '';
         const itemTypeNormalized = rawItemType.replace(/\s/g, ''); // Safely converts 'two hand' to 'twohand'
 
+        // Pre-fetch slots and equipment states to determine smart routing
+        const mainHandSlot = this.activeSlots.find(s => s.toLowerCase() === 'mainhand') || 'mainHand';
+        const offHandSlot = this.activeSlots.find(s => s.toLowerCase() === 'offhand') || 'offHand';
+        
+        const currentMainItem = member.equipment[mainHandSlot];
+        const currentOffItem = member.equipment[offHandSlot];
+        
+        const currentMainDef = currentMainItem ? ItemDefinitions[currentMainItem.defId] : null;
+        const isMainTwoHanded = currentMainDef && (currentMainDef.slot || currentMainDef.type || '').toLowerCase().replace(/\s/g, '') === 'twohand';
+
+        // --- SMART ROUTING LOGIC ---
         if (!slotName) {
-            slotName = this.activeSlots.find(s => {
-                const sKey = s.toLowerCase();
-                if (sKey === rawItemType) return true;
-                // Allow auto-equipping two-handed to mainhand
-                if (sKey === 'mainhand' && (rawItemType === 'weapon' || rawItemType === 'tool' || itemTypeNormalized === 'twohand')) return true;
-                if (sKey === 'offhand' && (rawItemType === 'shield' || rawItemType === 'weapon')) return true;
-                return false;
-            });
+            if (itemTypeNormalized === 'onehand' || rawItemType === 'weapon') {
+                // Smart route: if mainhand is full, offhand is empty, and we aren't holding a 2H weapon
+                if (currentMainItem && !currentOffItem && !isMainTwoHanded) {
+                    slotName = offHandSlot;
+                } else {
+                    slotName = mainHandSlot;
+                }
+            } else if (itemTypeNormalized === 'twohand') {
+                slotName = mainHandSlot;
+            } else if (rawItemType === 'shield') {
+                slotName = offHandSlot;
+            } else {
+                // Fallback for armor, helmets, accessories, etc.
+                slotName = this.activeSlots.find(s => {
+                    const sKey = s.toLowerCase();
+                    if (sKey === rawItemType) return true;
+                    if (sKey === 'mainhand' && rawItemType === 'tool') return true;
+                    return false;
+                });
+            }
             
             if (!slotName) {
                 console.warn("Could not auto-determine slot for item.");
@@ -534,18 +557,10 @@ export class CharacterSummaryController {
             }
         }
 
-        // --- NEW: TWO-HANDED LOGIC ---
-        const mainHandSlot = this.activeSlots.find(s => s.toLowerCase() === 'mainhand') || 'mainHand';
-        const offHandSlot = this.activeSlots.find(s => s.toLowerCase() === 'offhand') || 'offHand';
-        
-        const currentMainItem = member.equipment[mainHandSlot];
-        const currentMainDef = currentMainItem ? ItemDefinitions[currentMainItem.defId] : null;
-        const isMainTwoHanded = currentMainDef && (currentMainDef.slot || currentMainDef.type || '').toLowerCase().replace(/\s/g, '') === 'twohand';
-
+        // --- TWO-HANDED RULE ENFORCEMENT ---
         // Rule A: If equipping a Two-Handed weapon, force it to Main Hand & unequip Off Hand
         if (itemTypeNormalized === 'twohand') {
             slotName = mainHandSlot; 
-            const currentOffItem = member.equipment[offHandSlot];
             if (currentOffItem) {
                 member.unequipItem(offHandSlot);
                 gameState.party.inventory.push(currentOffItem);
@@ -559,6 +574,7 @@ export class CharacterSummaryController {
         }
         // --- END TWO-HANDED LOGIC ---
         
+        // --- EXECUTION ---
         const currentEquip = member.equipment[slotName];
         
         if (currentEquip && currentEquip !== inventoryItem) {

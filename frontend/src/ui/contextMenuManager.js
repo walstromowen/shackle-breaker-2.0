@@ -273,16 +273,18 @@ export class ContextMenuManager {
     }
 
     _canEquipItem(item) {
-        const def = ItemDefinitions[item.defId];
-        if (!def) return false;
-        
-        const itemSlot = (def.slot || def.type || '').toLowerCase().replace(/\s/g, '');
-        
-        return this.controller.activeSlots.some(s => {
-            const slotKey = s.toLowerCase().replace(/\s/g, '');
-            return (itemSlot === slotKey) || 
-                   (slotKey === 'mainhand' && (itemSlot === 'weapon' || itemSlot === 'tool')) ||
-                   (slotKey === 'offhand' && (itemSlot === 'shield' || itemSlot === 'weapon'));
-        });
-    }
+        const def = ItemDefinitions[item.defId];
+        if (!def) return false;
+        
+        const itemSlot = (def.slot || def.type || '').toLowerCase().replace(/\s/g, '');
+        
+        return this.controller.activeSlots.some(s => {
+            const slotKey = s.toLowerCase().replace(/\s/g, '');
+            
+            // Allow onehand and twohand for mainhand, and onehand for offhand
+            return (itemSlot === slotKey) || 
+                   (slotKey === 'mainhand' && (itemSlot === 'weapon' || itemSlot === 'tool' || itemSlot === 'onehand' || itemSlot === 'twohand')) ||
+                   (slotKey === 'offhand' && (itemSlot === 'shield' || itemSlot === 'weapon' || itemSlot === 'onehand'));
+        });
+    }
 }

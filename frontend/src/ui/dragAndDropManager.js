@@ -59,13 +59,13 @@ export class DragAndDropManager {
             return;
         }
 
-        const itemSlot = (def.slot || def.type || '').toLowerCase().replace(/\s/g, ''); // Becomes 'twohand'
+        const itemSlot = (def.slot || def.type || '').toLowerCase().replace(/\s/g, ''); // Becomes 'twohand' or 'onehand'
         const slotKey = targetSlotRaw.toLowerCase().replace(/\s/g, '');
 
-        // --- UPDATED: Allow 'twohand' to be valid for the mainhand slot ---
+        // --- UPDATED: Allow 'onehand' to be valid for both mainhand and offhand ---
         const isValid = (itemSlot === slotKey) || 
-                        (slotKey === 'mainhand' && (itemSlot === 'weapon' || itemSlot === 'tool' || itemSlot === 'twohand')) ||
-                        (slotKey === 'offhand' && (itemSlot === 'shield' || itemSlot === 'weapon'));
+                        (slotKey === 'mainhand' && (itemSlot === 'weapon' || itemSlot === 'tool' || itemSlot === 'twohand' || itemSlot === 'onehand')) ||
+                        (slotKey === 'offhand' && (itemSlot === 'shield' || itemSlot === 'weapon' || itemSlot === 'onehand'));
 
         if (!isValid) {
             this.cancelDrag();
