@@ -86,7 +86,7 @@ export const ItemDefinitions = {
     "warhammer": {
         id: "warhammer",
         name: "Warhammer",
-        slot: "mainHand",
+        slot: "twoHand",
         type: "weapon",
         description: 'A standard warhammer. Heavy and crushing.',
         value: 20,
@@ -122,6 +122,29 @@ export const ItemDefinitions = {
         },
         abilityUnlocks: {
             2: ["quick_stab"]
+        },
+        upgradeCosts: {
+            2: { currency: 40, materials: { "stone": 2, "soft_wood": 3 } },
+            3: { currency: 120, materials: { "iron_ingot": 1, "soft_wood": 5 } }
+        }
+    },
+     "wooden_shield": {
+        id: "wooden_shield",
+        name: "Wooden Shield",
+        slot: "offHand",
+        type: "shield",
+        description: 'A sturdy wooden shield. Provides decent protection.',
+        value: 20,
+        icon: { col: 3, row: 0 },
+        defense: { blunt: 2, slash: 2, pierce: 1 },
+        resistance: { blunt: 0.02, slash: 0.03, pierce: 0.03},
+        grantedAbilities: [], 
+        maxLevel: 3,
+        statGrowth: {
+            defense: { blunt: 1, slash: 2, pierce: 2 },
+        },
+        abilityUnlocks: {
+            2: ["shield_bash"]
         },
         upgradeCosts: {
             2: { currency: 40, materials: { "stone": 2, "soft_wood": 3 } },

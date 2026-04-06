@@ -509,51 +509,78 @@ export class CharacterSummaryController {
     }
 
     equipItem(inventoryItem, targetSlotOverride = null) {
-        if (this.readOnly) return; // Locked
+        if (this.readOnly) return; // Locked
 
-        const member = this.currentMember;
-        let slotName = targetSlotOverride;
-        const def = ItemDefinitions[inventoryItem.defId];
+        const member = this.currentMember;
+        let slotName = targetSlotOverride;
+        const def = ItemDefinitions[inventoryItem.defId];
+        
+        const rawItemType = def ? (def.slot || def.type || '').toLowerCase() : '';
+        const itemTypeNormalized = rawItemType.replace(/\s/g, ''); // Safely converts 'two hand' to 'twohand'
 
-        if (!slotName) {
-            const itemSlot = def ? (def.slot || def.type || '').toLowerCase() : '';
-            
-            slotName = this.activeSlots.find(s => {
-                const sKey = s.toLowerCase();
-                if (sKey === itemSlot) return true;
-                if (sKey === 'mainhand' && (itemSlot === 'weapon' || itemSlot === 'tool')) return true;
-                if (sKey === 'offhand' && (itemSlot === 'shield' || itemSlot === 'weapon')) return true;
-                return false;
-            });
-            
-            if (!slotName) {
-                console.warn("Could not auto-determine slot for item.");
-                return;
-            }
-        }
-        
-        const currentEquip = member.equipment[slotName];
-        
-        if (currentEquip && currentEquip !== inventoryItem) {
-            gameState.party.inventory.push(currentEquip); // Keep the exact instance
-        }
+        if (!slotName) {
+            slotName = this.activeSlots.find(s => {
+                const sKey = s.toLowerCase();
+                if (sKey === rawItemType) return true;
+                // Allow auto-equipping two-handed to mainhand
+                if (sKey === 'mainhand' && (rawItemType === 'weapon' || rawItemType === 'tool' || itemTypeNormalized === 'twohand')) return true;
+                if (sKey === 'offhand' && (rawItemType === 'shield' || rawItemType === 'weapon')) return true;
+                return false;
+            });
+            
+            if (!slotName) {
+                console.warn("Could not auto-determine slot for item.");
+                return;
+            }
+        }
 
-        const bagIdx = gameState.party.inventory.indexOf(inventoryItem);
-        if (bagIdx > -1) {
-            gameState.party.inventory.splice(bagIdx, 1);
-        }
+        // --- NEW: TWO-HANDED LOGIC ---
+        const mainHandSlot = this.activeSlots.find(s => s.toLowerCase() === 'mainhand') || 'mainHand';
+        const offHandSlot = this.activeSlots.find(s => s.toLowerCase() === 'offhand') || 'offHand';
+        
+        const currentMainItem = member.equipment[mainHandSlot];
+        const currentMainDef = currentMainItem ? ItemDefinitions[currentMainItem.defId] : null;
+        const isMainTwoHanded = currentMainDef && (currentMainDef.slot || currentMainDef.type || '').toLowerCase().replace(/\s/g, '') === 'twohand';
 
-        member.equipItem(slotName, inventoryItem);
+        // Rule A: If equipping a Two-Handed weapon, force it to Main Hand & unequip Off Hand
+        if (itemTypeNormalized === 'twohand') {
+            slotName = mainHandSlot; 
+            const currentOffItem = member.equipment[offHandSlot];
+            if (currentOffItem) {
+                member.unequipItem(offHandSlot);
+                gameState.party.inventory.push(currentOffItem);
+            }
+        }
+        
+        // Rule B: If equipping an Off Hand item, check if holding a Two-Handed weapon
+        if (slotName.toLowerCase() === 'offhand' && isMainTwoHanded) {
+            member.unequipItem(mainHandSlot);
+            gameState.party.inventory.push(currentMainItem);
+        }
+        // --- END TWO-HANDED LOGIC ---
+        
+        const currentEquip = member.equipment[slotName];
+        
+        if (currentEquip && currentEquip !== inventoryItem) {
+            gameState.party.inventory.push(currentEquip); // Keep the exact instance
+        }
 
-        const newSlotIndex = this.activeSlots.indexOf(slotName);
-        if (newSlotIndex !== -1) {
-            this.slotIndex = newSlotIndex;
-        }
+        const bagIdx = gameState.party.inventory.indexOf(inventoryItem);
+        if (bagIdx > -1) {
+            gameState.party.inventory.splice(bagIdx, 1);
+        }
 
-        this.state = 'SLOTS';
-        this.inventoryIndex = -1; 
-        this.updateFilteredInventory();
-    }
+        member.equipItem(slotName, inventoryItem);
+
+        const newSlotIndex = this.activeSlots.indexOf(slotName);
+        if (newSlotIndex !== -1) {
+            this.slotIndex = newSlotIndex;
+        }
+
+        this.state = 'SLOTS';
+        this.inventoryIndex = -1; 
+        this.updateFilteredInventory();
+    }
 
     unequipCurrentSlot() {
         if (this.readOnly || this.slotIndex === -1) return; // Locked

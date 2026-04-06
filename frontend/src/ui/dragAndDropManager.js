@@ -49,49 +49,49 @@ export class DragAndDropManager {
     }
 
     attemptEquipDrop(targetSlotRaw) {
-        if (!this.controller.heldItem) return;
+        if (!this.controller.heldItem) return;
 
-        const item = this.controller.heldItem.item;
-        const def = ItemDefinitions[item.defId]; 
-        
-        if (!def) {
-            this.cancelDrag();
-            return;
-        }
+        const item = this.controller.heldItem.item;
+        const def = ItemDefinitions[item.defId]; 
+        
+        if (!def) {
+            this.cancelDrag();
+            return;
+        }
 
-        const itemSlot = (def.slot || def.type || '').toLowerCase().replace(/\s/g, '');
-        const slotKey = targetSlotRaw.toLowerCase().replace(/\s/g, '');
+        const itemSlot = (def.slot || def.type || '').toLowerCase().replace(/\s/g, ''); // Becomes 'twohand'
+        const slotKey = targetSlotRaw.toLowerCase().replace(/\s/g, '');
 
-        // Validation logic
-        const isValid = (itemSlot === slotKey) || 
-                        (slotKey === 'mainhand' && (itemSlot === 'weapon' || itemSlot === 'tool')) ||
-                        (slotKey === 'offhand' && (itemSlot === 'shield' || itemSlot === 'weapon'));
+        // --- UPDATED: Allow 'twohand' to be valid for the mainhand slot ---
+        const isValid = (itemSlot === slotKey) || 
+                        (slotKey === 'mainhand' && (itemSlot === 'weapon' || itemSlot === 'tool' || itemSlot === 'twohand')) ||
+                        (slotKey === 'offhand' && (itemSlot === 'shield' || itemSlot === 'weapon'));
 
-        if (!isValid) {
-            this.cancelDrag();
-            return;
-        }
+        if (!isValid) {
+            this.cancelDrag();
+            return;
+        }
 
-        const canonicalSlot = this.controller.activeSlots.find(s => s.toLowerCase().replace(/\s/g, '') === slotKey) || targetSlotRaw;
+        const canonicalSlot = this.controller.activeSlots.find(s => s.toLowerCase().replace(/\s/g, '') === slotKey) || targetSlotRaw;
 
-        // Duplication Fix / Same-Slot drop
-        if (this.controller.heldItem.source === 'equipment') {
-            const originSlot = this.controller.heldItem.originSlot;
-            
-            if (originSlot === canonicalSlot) {
-                this.cancelDrag();
-                return;
-            }
+        // Duplication Fix / Same-Slot drop
+        if (this.controller.heldItem.source === 'equipment') {
+            const originSlot = this.controller.heldItem.originSlot;
+            
+            if (originSlot === canonicalSlot) {
+                this.cancelDrag();
+                return;
+            }
 
-            this.controller.currentMember.equipment[originSlot] = null;
-            this.controller.equipItem(item, canonicalSlot);
-            this.controller.heldItem = null;
-            return;
-        }
+            this.controller.currentMember.equipment[originSlot] = null;
+            this.controller.equipItem(item, canonicalSlot);
+            this.controller.heldItem = null;
+            return;
+        }
 
-        this.controller.equipItem(item, canonicalSlot);
-        this.controller.heldItem = null;
-    }
+        this.controller.equipItem(item, canonicalSlot);
+        this.controller.heldItem = null;
+    }
 
     attemptInventoryDrop() {
         if (!this.controller.heldItem) return;

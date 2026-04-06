@@ -63,7 +63,7 @@ const CREATION_DATA = {
     TRAITS: UI_TRAITS,
     KEEPSAKES: [
         { label: "None", itemId: null, desc: "You carry nothing but your burden." },
-        { label: "Smith's stash", desc: "Start with a small supply of crafting materials.", items: [{ id: "healing_herb", qty: 1 }, { id: "soft_wood", qty: 3 }, { id: "stone", qty: 2 }, { id: "iron_ingot", qty: 1 }] },
+        { label: "Smith's stash", desc: "Start with a small supply of crafting materials.", items: [{ id: "wooden_shield", qty: 1 }, { id: "healing_herb", qty: 1 }, { id: "soft_wood", qty: 3 }, { id: "stone", qty: 2 }, { id: "iron_ingot", qty: 1 }] },
         { label: "Healer's Pouch", desc: "Start with various beneficial herbs.", items: [{ id: "healing_herb", qty: 3 }, { id: "invigorating_herb", qty: 3 }, { id: "illuminating_herb", qty: 3 }] },
         { label: "Drunkard", desc: "Start with a bottle of a strange ale.", items: [{ id: "healing_herb", qty: 1 }, { id: "brew_of_madness", qty: 1 }] },
     ],

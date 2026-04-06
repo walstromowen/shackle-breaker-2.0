@@ -11,7 +11,6 @@ export class EquipmentPanel {
         this.RENDER_SIZE = 32;
     }
 
-    // Helper to extract the actual number whether it's an object or primitive
     _getVal(v) {
         return (v && typeof v === 'object') ? (v.total || v.value || 0) : (Number(v) || 0);
     }
@@ -20,21 +19,16 @@ export class EquipmentPanel {
         const centerX = Math.floor(x + (w / 2));
         let headerY = y + 10;
 
-        // Extract the actual level number safely
         const actualLevel = this._getVal(stats.level) || this._getVal(member.level) || 1;
 
-        // 1. Name & Level
         this.ui.drawText(member.name, centerX, headerY + 15, UITheme.fonts.header, UITheme.colors.textMain, "center");
         this.ui.drawText(`Level ${actualLevel}`, centerX, headerY + 36, UITheme.fonts.body, UITheme.colors.textHighlight, "center");
 
-        // 2. Vitals
         this._drawVitals(member, stats, centerX, headerY + 58, x, w);
 
-        // 3. Equipment Slots & Portrait
         const equipStartY = y + 95; 
         this._drawEquipmentLayout(member, activeSlots, selectedIndex, isChoosingItem, centerX, equipStartY, w, hitboxes, heldItem);
 
-        // 4. Traits
         const traitsStartY = equipStartY + Math.max(this.PORTRAIT_SIZE, activeSlots.length/2 * 52) + 25;
         this._drawTraitBadges(member, x, traitsStartY, w, hitboxes);
     }
@@ -44,7 +38,6 @@ export class EquipmentPanel {
         const totalMaxStm = this._getVal(stats.maxStamina) || this._getVal(member.maxStamina);
         const totalMaxIns = this._getVal(stats.maxInsight) || this._getVal(member.maxInsight);
         
-        // Expanded checks for Max XP (handles xpToNext OR maxXp)
         const currentXp = this._getVal(stats.xp) || this._getVal(member.xp);
         const nextXp = this._getVal(stats.xpToNext) || this._getVal(member.xpToNext) || this._getVal(stats.maxXp) || this._getVal(member.maxXp) || 100;
 
@@ -64,13 +57,11 @@ export class EquipmentPanel {
             startX += width + gap;
         };
 
-        // Standardized Colors from UITheme
         drawVital(hpText, UITheme.colors.hp);
         drawVital(stmText, UITheme.colors.stm);
         drawVital(insText, UITheme.colors.ins); 
         drawVital(xpText, UITheme.colors.xp); 
 
-        // Divider Line
         this.ui.drawRect(fullX + 20, y + 15, fullW - 40, 1, UITheme.colors.border);
     }
 
@@ -78,7 +69,21 @@ export class EquipmentPanel {
         const equipData = (member.state && member.state.equipment) ? member.state.equipment : (member.equipment || {});
         const splitIndex = Math.ceil(activeSlots.length / 2);
         
-        // Portrait
+        // --- NEW: Check if Mainhand holds a Two-Handed Weapon ---
+        let isOffhandBlocked = false;
+        // Search case-insensitively just in case your data structures vary
+        const mhKey = Object.keys(equipData).find(k => k.toLowerCase() === 'mainhand');
+        if (mhKey && equipData[mhKey]) {
+            const mhDef = ItemDefinitions[equipData[mhKey].defId];
+            if (mhDef) {
+                // Strip spaces and hyphens so "two-hand", "Two Handed", etc. all match
+                const mhSlot = (mhDef.slot || mhDef.type || '').toLowerCase().replace(/[\s-]/g, '');
+                if (mhSlot.includes('twohand')) {
+                    isOffhandBlocked = true;
+                }
+            }
+        }
+
         const pX = Math.floor(centerX - (this.PORTRAIT_SIZE / 2));
         const pY = startY + 10;
 
@@ -88,18 +93,11 @@ export class EquipmentPanel {
         const img = this.loader.get(assetKey);
 
         if(img) {
-            this.ui.drawSprite(
-                img, 
-                0, 0, 128, 128,                         // Source: Top-left 128px square
-                pX, pY,                                 // Destination: Centered X, startY+10
-                this.PORTRAIT_SIZE, this.PORTRAIT_SIZE  // Destination Size: Scaled down
-            );
+            this.ui.drawSprite(img, 0, 0, 128, 128, pX, pY, this.PORTRAIT_SIZE, this.PORTRAIT_SIZE);
         }
 
-        // --- ADD THIS LINE HERE ---
         this._drawStatusEffects(member, pX, pY, this.PORTRAIT_SIZE);
         
-        // --- SLOT DRAWING HELPER ---
         const drawSlot = (slotName, index, isLeft) => {
             const globalIndex = isLeft ? index : splitIndex + index;
             const isSelected = (globalIndex === selectedIndex);
@@ -108,23 +106,29 @@ export class EquipmentPanel {
             const slotX = isLeft ? (centerX - (this.PORTRAIT_SIZE/2) - slotW - 8) : (centerX + (this.PORTRAIT_SIZE/2) + 8);
             const slotY = startY + (index * (this.SLOT_HEIGHT + 4));
 
-            // --- DROP COMPATIBILITY CHECK ---
+            // --- NEW: Updated Drop Compatibility Logic ---
             let isValidDrop = false;
             if (heldItem) {
                 const item = heldItem.item;
                 const def = ItemDefinitions[item.defId];
                 
                 if (def) {
-                    const iSlot = (def.slot || def.type || '').toLowerCase().replace(/\s/g, '');
+                    const iSlot = (def.slot || def.type || '').toLowerCase().replace(/[\s-]/g, '');
                     const sSlot = slotName.toLowerCase().replace(/\s/g, '');
 
                     isValidDrop = (iSlot === sSlot) ||
-                                  (sSlot === 'mainhand' && (iSlot === 'weapon' || iSlot === 'tool')) ||
-                                  (sSlot === 'offhand' && (iSlot === 'shield' || iSlot === 'weapon'));
+                                  // Mainhand accepts standard weapons/tools AND two-handed weapons
+                                  (sSlot === 'mainhand' && (iSlot === 'weapon' || iSlot === 'tool' || iSlot.includes('twohand'))) ||
+                                  // Offhand accepts shields/weapons, but EXPLICITLY rejects two-handed weapons
+                                  (sSlot === 'offhand' && (iSlot === 'shield' || iSlot === 'weapon') && !iSlot.includes('twohand'));
                 }
             }
 
-           // --- DYNAMIC STYLING ---
+            // --- NEW: Determine if this specific slot is blocked ---
+            const isOffhandSlot = slotName.toLowerCase().replace(/\s/g, '') === 'offhand';
+            const isBlocked = isOffhandSlot && isOffhandBlocked;
+
+            // --- DYNAMIC STYLING ---
             let borderColor = UITheme.colors.border;
             let boxColor = UITheme.colors.scrollTrack; 
             let lineWidth = 1;
@@ -133,8 +137,11 @@ export class EquipmentPanel {
                 borderColor = UITheme.colors.success; 
                 boxColor = "rgba(46, 204, 113, 0.15)"; 
                 lineWidth = 2;
+            } else if (isBlocked) {
+                // --- NEW: Visual Blocked Styling ---
+                borderColor = UITheme.colors.failure || "rgba(200, 50, 50, 0.8)";
+                boxColor = "rgba(200, 50, 50, 0.15)";
             }
-            // Removed the `else if (isSelected)` background/border override here!
 
             hitboxes.push({ id: `SLOT_${slotName}`, x: slotX, y: slotY, w: slotW, h: this.SLOT_HEIGHT, type: 'slot', slotId: slotName });
 
@@ -143,14 +150,11 @@ export class EquipmentPanel {
             this.ui.drawRect(slotX, slotY, slotW, this.SLOT_HEIGHT, borderColor, false);
             this.ui.ctx.lineWidth = 1;
 
-            // DRAW SELECTION BRACKETS
             if (isSelected) {
-                // CHANGED: Matched the smooth 4 + Math.sin bracket animation from other UI elements
                 const pulseDist = 4 + Math.sin(Date.now() / 150) * 2;
                 this.ui.drawSelectionBrackets(slotX, slotY, slotW, this.SLOT_HEIGHT, pulseDist, UITheme.colors.borderHighlight);
             }
 
-            // --- GHOSTING LOGIC ---
             let item = equipData[slotName];
             if (heldItem && heldItem.source === 'equipment' && heldItem.originSlot === slotName) {
                 item = null; 
@@ -161,11 +165,14 @@ export class EquipmentPanel {
                 def = ItemDefinitions[item.defId];
             }
 
-           // --- NEW: Read level from the item instance! ---
+            // --- NEW: Override Text & Icon if Blocked ---
             let itemName = "Empty";
-            if (item && def) {
+            if (isBlocked) {
+                itemName = "Blocked";
+                item = null; // Clear item so we don't draw its level/stats
+                def = null;  // Clear def so we don't draw its icon
+            } else if (item && def) {
                 itemName = def.name;
-                // If the item instance has a level greater than 1, display it
                 if (item.level && item.level > 1) {
                     itemName += ` Lv.${item.level}`; 
                 }
@@ -187,7 +194,13 @@ export class EquipmentPanel {
 
             nameLines.forEach((line, i) => {
                 if (i < 2) {
-                    const color = item ? UITheme.colors.textMain : UITheme.colors.textMuted;
+                    // --- NEW: Apply error color to text if blocked ---
+                    let color = UITheme.colors.textMuted;
+                    if (isBlocked) {
+                        color = UITheme.colors.failure || "rgba(200, 50, 50, 0.8)";
+                    } else if (item) {
+                        color = UITheme.colors.textMain;
+                    }
                     this.ui.drawText(line, textX, nameY + (i * 12), nameFont, color, align);
                 }
             });
@@ -221,12 +234,8 @@ export class EquipmentPanel {
 
             hitboxes.push({ id: traitId, x: currentX, y: currentY, w: width, h: 22, type: 'trait' });
 
-            // Draw Background
             this.ui.drawRect(currentX, currentY, width, 22, UITheme.colors.bgScale[1]);
-            
-            // Box Border
             this.ui.drawRect(currentX, currentY, width, 22, UITheme.colors.border, false);
-
             this.ui.drawText(def.name, currentX + width/2, currentY + 15, "11px sans-serif", UITheme.colors.textMain, "center");
             currentX += width + 8;
         });
@@ -255,10 +264,10 @@ export class EquipmentPanel {
         const iconData = def.icon || {col:0, row:0};
         this.ui.drawSprite(sheet, iconData.col*32, iconData.row*32, 32, 32, x, y, 32, 32);
     }
+
     _drawStatusEffects(member, pX, pY, pSize) {
         if (!member.statusEffects || member.statusEffects.length === 0) return;
 
-        // --- HARDCODED CONFIG ---
         const sheetKey = 'statusEffects'; 
         const srcSize = 32;  
         const drawSize = 16; 
@@ -280,7 +289,6 @@ export class EquipmentPanel {
                     drawX, drawY, drawSize, drawSize 
                 );
             } else {
-                // Notice we use this.ui.drawText here since EquipmentPanel routes through the UI manager
                 this.ui.drawText(effect.name.charAt(0), drawX + (drawSize/2), drawY + (drawSize/2) + 3, "bold 10px sans-serif", "white", "center");
             }
 

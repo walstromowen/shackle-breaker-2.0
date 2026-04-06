@@ -5,7 +5,7 @@ enhance battle animations / polish
 two handed items
 clicking functionality across screens
 particleRenderer (global)
-crafting system. Visual for materials needed to level up
+crafting system.
 Difficulty
 Starting seed
 procedural dungeons and hand crafted areas
