@@ -43,32 +43,28 @@ export const BIOME_DEFINITIONS = {
             rate: 0.01,
             pools: [
                 // Standard pack: No change needed! Will auto-scale to player's level.
-                { chance: 0.10, enemies: ['LEGIONARY', 'LEGIONARY', 'LEGIONARY'] },          
+                { chance: 0.40, enemies: ['LEGIONARY', 'MAD_MAGE', 'LEGIONARY'] },          
                 
                 
-                { chance: 0.10, enemies: [{ id: 'WOLF', levelOffset: 2 }, 'WOLF', 'WOLF'] },   
+                { chance: 0.40, enemies: ['WOLF', 'WOLF'] },   
                 
-                // Mad Mage (Boss/Hard encounter): Added Tattered Armor overrides.
+                // Mad Mage (Boss/Hard encounter):
                 { 
-                    chance: 0.80, 
+                    chance: 0.20, 
                     enemies: [
                         { 
-                            id: 'MAD_MAGE', 
-                        },
-                        { 
-                            id: 'MAD_MAGE', 
+                            id: 'LEGIONARY', 
                             levelOffset: 5,
                             traits: ['iron_willed'],
                             equipment: {
-                                head: "tattered_hood",
-                                torso: "tattered_shirt",
-                                arms: "tattered_gloves",
-                                legs: "tattered_pants",
-                                feet: "tattered_boots"
+                                mainHand: 'warhammer',
                             }
                         },
                         { 
-                            id: 'MAD_MAGE', 
+                            id: 'LEGIONARY', 
+                        },
+                        { 
+                            id: 'LEGIONARY', 
                         },
                     ] 
                 }  

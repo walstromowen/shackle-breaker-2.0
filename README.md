@@ -2,7 +2,6 @@
 Roguelike turnbased adventure game based on the Shackle Breaker story by Owen Walstrom
 
 enhance battle animations / polish
-two handed items
 clicking functionality across screens
 particleRenderer (global)
 crafting system.

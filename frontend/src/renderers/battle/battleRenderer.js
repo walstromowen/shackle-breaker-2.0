@@ -27,15 +27,14 @@ export class BattleRenderer {
         this.floatingTexts = [];
         this.currentState = null; 
 
-        // SOULS-LIKE PALETTE OVERRIDE
+        // Map floating text palette strictly to centralized UITheme base vitals
         this.COLORS = {
-            stamina: '#4a5d4e',      // Muted moss green
-            insight: '#4a5b70',      // Deep slate blue
-            insightDim: '#1a1d24',
-            highlight: '#b89947',    // Tarnished Gold
-            blood: '#7a0000',        // Dark Crimson
-            heal: '#c9b475',         // Estus Gold
-            textMain: '#d4cbb8'      // Aged bone white
+            hp: UITheme.colors.hp, 
+            stm: UITheme.colors.stm, 
+            ins: UITheme.colors.ins, 
+            highlight: UITheme.colors.borderHighlight,
+            textMain: UITheme.colors.textMain,
+            textMuted: UITheme.colors.textMuted
         };
 
         // Event Listeners
@@ -124,11 +123,11 @@ export class BattleRenderer {
         if (baseBgImg) {
             this.ctx.drawImage(baseBgImg, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         } else {
-            this.ctx.fillStyle = '#111'; 
+            this.ctx.fillStyle = UITheme.colors.background; 
             this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         }
 
-        // --- NEW: CINEMATIC VIGNETTE OVER THE BACKGROUND ---
+        // --- CINEMATIC VIGNETTE OVER THE BACKGROUND ---
         const gradient = this.ctx.createRadialGradient(
             CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, CANVAS_HEIGHT * 0.2, 
             CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, CANVAS_HEIGHT * 0.9
@@ -157,7 +156,7 @@ export class BattleRenderer {
                 if (overrideImg) {
                     this.ctx.drawImage(overrideImg, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
                 } else {
-                    this.ctx.fillStyle = '#000'; 
+                    this.ctx.fillStyle = UITheme.colors.background; 
                     this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
                 }
                 this.ctx.restore();
@@ -183,7 +182,6 @@ export class BattleRenderer {
         }
     }
 
-    // Notice the new 'delay' parameter defaulting to 0
     spawnFloatingText({ target, value, resource, text, type, isCritical, delay = 0 }) {
         const pos = this.combatantRenderer.getEntityPosition(target, this.currentState);
         if (!pos) return;
@@ -197,14 +195,16 @@ export class BattleRenderer {
             const prefix = isGain ? '+' : '';
             displayText = `${prefix}${Math.round(value)}`;
 
-            if (resource === 'hp') color = isGain ? this.COLORS.heal : this.COLORS.blood;
-            else if (resource === 'stamina') color = isGain ? this.COLORS.stamina : '#8c8c8c';
-            else if (resource === 'insight') color = isGain ? this.COLORS.insight : this.COLORS.insightDim;
+            // Always use the primary UITheme color for resources, skipping the "isGain" check
+            if (resource === 'hp') color = this.COLORS.hp;
+            else if (resource === 'stamina') color = this.COLORS.stm;
+            else if (resource === 'insight') color = this.COLORS.ins;
             
-            if (isCritical) color = this.COLORS.blood; 
+            // Critical hits usually default back to the dark crimson blood color
+            if (isCritical) color = this.COLORS.hp; 
         } 
         else if (type === 'status') {
-            color = '#888'; 
+            color = this.COLORS.textMuted; 
         }
 
         let targetX = pos.x + (Math.random() * 40 - 20); 
@@ -225,7 +225,7 @@ export class BattleRenderer {
             life: isCritical ? 2.0 : 1.5,
             maxLife: isCritical ? 2.0 : 1.5,
             velocityY: isCritical ? -25 : -15,
-            delay: delay // Storing the delay
+            delay: delay 
         });
     }
 
@@ -233,7 +233,6 @@ export class BattleRenderer {
         for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
             const ft = this.floatingTexts[i];
             
-            // Wait out the delay before showing or moving the text
             if (ft.delay > 0) {
                 ft.delay -= dt;
                 continue; 
@@ -248,29 +247,26 @@ export class BattleRenderer {
             }
 
             this.ctx.save();
-            // Fade out smoothly in the last 50% of life
             this.ctx.globalAlpha = Math.min(1.0, (ft.life / ft.maxLife) * 2);
             
-            // Serif font for a gothic look
-            this.ctx.font = `italic bold ${ft.fontSize}px "Georgia", serif`; 
-            this.ctx.textAlign = "center";
-            this.ctx.textBaseline = "middle";
+            // Dynamically rip the base font family out of UITheme
+            const fontFamily = UITheme.fonts.body.split('px ')[1] || '"Georgia", serif';
+            const fontStr = `italic bold ${ft.fontSize}px ${fontFamily}`; 
             
-            // Soft atmospheric drop-shadow instead of a hard stroke
+            // Set up crisp shadows before handing off to CanvasUI
             this.ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
             this.ctx.shadowBlur = 8;
             this.ctx.shadowOffsetX = 2;
             this.ctx.shadowOffsetY = 2;
             
-            this.ctx.fillStyle = ft.color;
-            this.ctx.fillText(ft.text, ft.x, ft.y);
+            // Utilize CanvasUI for text rendering
+            this.ui.drawText(ft.text, ft.x, ft.y, fontStr, ft.color, "center", "middle");
             
             // Add a slight bright center glow for criticals
             if (ft.fontSize > 24) {
                 this.ctx.shadowBlur = 0;
                 this.ctx.globalAlpha *= 0.5;
-                this.ctx.fillStyle = '#fff';
-                this.ctx.fillText(ft.text, ft.x, ft.y);
+                this.ui.drawText(ft.text, ft.x, ft.y, fontStr, UITheme.colors.textMain, "center", "middle");
             }
             
             this.ctx.restore();

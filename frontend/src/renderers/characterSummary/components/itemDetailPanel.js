@@ -18,7 +18,7 @@ export class ItemDetailPanel {
 
     render(item, x, y, w, h, state, hitboxes) {
         if (!item) {
-            this.ui.drawText("No item selected", x + w / 2, y + 50, UITheme.fonts.body, UITheme.colors.textMuted, "center");
+            this.ui.drawText("No item selected", x + w / 2, y + 50, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "center");
             return;
         }
 
@@ -39,7 +39,7 @@ export class ItemDetailPanel {
         }
         
         if (!def) {
-             this.ui.drawText("Unknown Definition", x + w / 2, y + 50, UITheme.fonts.body, UITheme.colors.textMuted, "center");
+             this.ui.drawText("Unknown Definition", x + w / 2, y + 50, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "center");
              return;
         }
 
@@ -75,7 +75,11 @@ export class ItemDetailPanel {
 
         // A. Header
         currentY = this._drawHeader(item, def, centerX, currentY, w, isAbility);
-        currentY += 15;
+        
+        // Flourish Divider Under Header
+        const flourishW = w * 0.7;
+        this.ui.drawLineWithGothicFlourish(x + (w - flourishW)/2, currentY + 10, flourishW, UITheme.colors.border);
+        currentY += 30;
 
         // B. Description
         currentY = this._drawDescription(def, x + 15, currentY, w - 30);
@@ -86,7 +90,7 @@ export class ItemDetailPanel {
             currentY = this._drawMainStats(item, x + 20, currentY, w - 40);
             currentY = this._drawAttributeBonuses(item, x + 20, currentY, w - 40);
             
-            // --- NEW: Render Upgrade Costs ---
+            // Render Upgrade Costs
             currentY = this._drawUpgradeCosts(item, def, x + 15, currentY, w - 30);
 
             // E. Render granted abilities
@@ -109,7 +113,7 @@ export class ItemDetailPanel {
     }
 
     drawScrollBar(x, y, viewportH, contentH, scrollOffset, hitboxes) {
-        this.ui.drawRect(x, y, this.SCROLLBAR_WIDTH, viewportH, UITheme.colors.bgScale[0]); 
+        this.ui.drawRect(x, y, this.SCROLLBAR_WIDTH, viewportH, UITheme.colors.scrollTrack || UITheme.colors.bgScale[0]); 
         
         const viewRatio = viewportH / contentH;
         let thumbH = Math.max(20, viewportH * viewRatio);
@@ -119,7 +123,7 @@ export class ItemDetailPanel {
         const trackSpace = viewportH - thumbH;
         const thumbY = y + (scrollRatio * trackSpace);
 
-        const thumbColor = UITheme.colors.scrollThumb || "#666666";
+        const thumbColor = UITheme.colors.scrollThumb || UITheme.colors.borderHighlight;
         this.ui.drawRect(x, thumbY, this.SCROLLBAR_WIDTH, thumbH, thumbColor);
 
         if (hitboxes) {
@@ -137,7 +141,8 @@ export class ItemDetailPanel {
     _drawHeader(item, def, centerX, y, w, isAbility) {
         const iconX = centerX - (this.ICON_SIZE / 2);
         
-        this.ui.drawRect(iconX, y, this.ICON_SIZE, this.ICON_SIZE, UITheme.colors.bgScale[0]);
+        // Stylized Icon Frame
+        this.ui.drawPanel(iconX, y, this.ICON_SIZE, this.ICON_SIZE, UITheme.colors.bgScale[2]);
         this.ui.drawRect(iconX, y, this.ICON_SIZE, this.ICON_SIZE, UITheme.colors.border, false);
 
         if (this.loader) {
@@ -193,19 +198,16 @@ export class ItemDetailPanel {
             typeText += ` • Lv. ${itemLevel}`; 
         }
 
-        this.ui.drawText(typeText, centerX, currentY, "bold 10px monospace", UITheme.colors.textMuted, "center");
+        this.ui.drawText(typeText, centerX, currentY, UITheme.fonts.cardMono, UITheme.colors.textMuted, "center");
         currentY += 14;
 
-        // --- NEW: Render Item Value ---
-        // Grab instance value first (if upgraded), fallback to base def value
         const itemValue = item.value || def.value; 
         if (itemValue !== undefined && !isAbility) {
-            // Adjust the label/currency format as needed (e.g., adding a "G" or a coin icon)
-            this.ui.drawText(`Value: ${itemValue}`, centerX, currentY, "10px monospace", UITheme.colors.textMain, "center");
+            this.ui.drawText(`Value: ${itemValue}`, centerX, currentY, UITheme.fonts.cardMono, UITheme.colors.textMain, "center");
             currentY += 12;
         }
 
-        return currentY + 10;
+        return currentY;
     }
 
     _drawDescription(def, x, y, w) {
@@ -228,9 +230,9 @@ export class ItemDetailPanel {
 
         if (def.description) {
             if (hasContent) currentY += 8;
-            const lines = this.ui.getWrappedLines(def.description, contentW, "italic 11px sans-serif");
+            const lines = this.ui.getWrappedLines(def.description, contentW, UITheme.fonts.cardItalic);
             lines.forEach(line => {
-                this.ui.drawText(line, centerX, currentY, "italic 11px sans-serif", UITheme.colors.textMuted, "center"); 
+                this.ui.drawText(line, centerX, currentY, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "center"); 
                 currentY += 14;
             });
         }
@@ -255,7 +257,7 @@ export class ItemDetailPanel {
             if (val === undefined || val === null) return;
             if (typeof val === 'object' && typeof val.min === 'undefined') return;
 
-            this.ui.drawText(stat.label, x, currentY, UITheme.fonts.bold, stat.color, "left");
+            this.ui.drawText(stat.label, x, currentY, UITheme.fonts.cardTitle, stat.color, "left");
             
             let valStr = val;
             if (typeof val === 'object' && val.min !== undefined) {
@@ -301,7 +303,7 @@ export class ItemDetailPanel {
 
         if (attrKeys.length === 0 && resKeys.length === 0) return currentY;
 
-        this.ui.drawText("Bonuses", x, currentY, "bold 10px sans-serif", UITheme.colors.textMuted, "left");
+        this.ui.drawText("Bonuses", x, currentY, UITheme.fonts.cardTitle, UITheme.colors.textMuted, "left");
         currentY += 14; 
 
         attrKeys.forEach(key => {
@@ -344,45 +346,37 @@ export class ItemDetailPanel {
         return currentY + 8;
     }
 
-    // --- NEW METHOD: Draws Upgrade Costs ---
     _drawUpgradeCosts(item, def, x, y, w) {
         let currentY = y;
         
-        // 1. Check if the item is already at max level
         const isMax = item.isMaxLevel !== undefined ? item.isMaxLevel : (item.level >= def.maxLevel);
         if (isMax) {
-            this.ui.drawText("Max Level Reached", x + w/2, currentY, "bold 10px sans-serif", UITheme.colors.textMuted, "center");
+            this.ui.drawText("Max Level Reached", x + w/2, currentY, UITheme.fonts.cardTitle, UITheme.colors.textMuted, "center");
             return currentY + 15;
         }
 
-        // 2. Determine next level and fetch costs
         const currentLevel = item.level || 1;
         const nextLevel = currentLevel + 1;
-        
-        // Grab from the instance's nextUpgradeCost getter, or fall back to looking at the def
         const costs = item.nextUpgradeCost || (def.upgradeCosts ? def.upgradeCosts[nextLevel] : null);
 
-        // Skip rendering if no costs are defined
         if (!costs) return currentY;
 
-        this.ui.drawText(`Upgrade to Lv. ${nextLevel}`, x, currentY, "bold 10px sans-serif", UITheme.colors.textMuted, "left");
-        currentY += 5;
-        this.ui.drawRect(x, currentY, w, 1, UITheme.colors.border);
+        this.ui.drawText(`Upgrade to Lv. ${nextLevel}`, x, currentY, UITheme.fonts.cardTitle, UITheme.colors.textMuted, "left");
+        currentY += 8;
+        
+        // Replaced flat line with gothic line
+        this.ui.drawLineWithGothicFlourish(x + w * 0.1, currentY, w * 0.8, UITheme.colors.border);
         currentY += 12;
 
-        // 3. Draw Currency
         if (costs.currency) {
             this.ui.drawText("Currency", x + 10, currentY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
             this.ui.drawText(costs.currency.toString(), x + w, currentY, UITheme.fonts.mono, UITheme.colors.textMain, "right");
             currentY += 14;
         }
 
-        // 4. Draw Materials
         if (costs.materials) {
             Object.keys(costs.materials).forEach(matId => {
                 const amount = costs.materials[matId];
-                
-                // Format resource keys (e.g., "iron_ingot" -> "Iron Ingot")
                 const label = matId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
                 this.ui.drawText(label, x + 10, currentY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
@@ -402,8 +396,8 @@ export class ItemDetailPanel {
             const label = def.useAbility ? "On Use" : "Details";
             
             this.ui.drawText(label, x, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
-            currentY += 5;
-            this.ui.drawRect(x, currentY, w, 1, UITheme.colors.border);
+            currentY += 8;
+            this.ui.drawLineWithGothicFlourish(x + w * 0.1, currentY, w * 0.8, UITheme.colors.border);
             currentY += 15; 
 
             abilityList.forEach(abilityId => {
@@ -418,7 +412,7 @@ export class ItemDetailPanel {
                 const contentX = iconX + iconSize + gap;
                 const contentW = w - (cardPadding * 2) - iconSize - gap; 
 
-                const descFont = "italic 11px sans-serif";
+                const descFont = UITheme.fonts.cardItalic;
                 const descLines = ab.description 
                     ? this.ui.getWrappedLines(ab.description, contentW, descFont) 
                     : [];
@@ -431,17 +425,17 @@ export class ItemDetailPanel {
                 
                 const cardHeight = Math.max(contentHeight, iconSize) + (cardPadding * 2);
 
-                this.ui.drawRect(x, currentY, w, cardHeight, UITheme.colors.bgScale[0]); 
-                this.ui.drawRect(x, currentY, w, cardHeight, UITheme.colors.border, false);
+                // Use stylised panel for the ability sub-card
+                this.ui.drawPanel(x, currentY, w, cardHeight, UITheme.colors.bgScale[0]); 
 
                 const iconY = currentY + cardPadding;
-                this.ui.drawRect(iconX, iconY, iconSize, iconSize, "rgba(0,0,0,0.5)");
+                this.ui.drawPanel(iconX, iconY, iconSize, iconSize, UITheme.colors.bgScale[2]);
                 this._drawAbilityIcon(ab, iconX, iconY);
                 this.ui.drawRect(iconX, iconY, iconSize, iconSize, UITheme.colors.border, false);
 
                 let cursorY = currentY + cardPadding + 10; 
 
-                this.ui.drawText(ab.name || abilityId, contentX, cursorY, "bold 12px sans-serif", UITheme.colors.textMain, "left");
+                this.ui.drawText(ab.name || abilityId, contentX, cursorY, UITheme.fonts.cardTitle, UITheme.colors.textMain, "left");
                 
                 if (ab.cost) {
                     let costStr = "";
@@ -459,16 +453,19 @@ export class ItemDetailPanel {
                         costStr = `${ab.cost.insight} INS`; 
                         costCol = UITheme.colors.ins; 
                     }
-                    this.ui.drawText(costStr, x + w - cardPadding, cursorY, "bold 10px monospace", costCol, "right");
+                    this.ui.drawText(costStr, x + w - cardPadding, cursorY, UITheme.fonts.cardMono, costCol, "right");
                 }
                 cursorY += 16;
 
                 let statX = contentX;
                 const drawStat = (label, value, color) => {
                     const txt = `${label} ${value}`;
-                    this.ui.drawText(txt, statX, cursorY, "10px monospace", color, "left");
-                    statX += (txt.length * 6) + 10;
+                    this.ui.drawText(txt, statX, cursorY, UITheme.fonts.cardMono, color, "left");
+                    statX += (this.ui.ctx.measureText(txt).width) + 12; // Adjusted spacing utilizing context dynamically
                 };
+
+                // Needs prep for measureText
+                this.ui.ctx.font = UITheme.fonts.cardMono; 
 
                 if (ab.effects) {
                     const dmg = ab.effects.find(e => e.type === 'damage' || e.type === 'heal');
@@ -477,11 +474,11 @@ export class ItemDetailPanel {
                 if (ab.accuracy) drawStat("Acc:", `${Math.floor(ab.accuracy*100)}%`, UITheme.colors.textMuted);
                 if (ab.speed) drawStat("Spd:", ab.speed, UITheme.colors.textMuted);
 
-                cursorY += 6; 
+                cursorY += 10; 
 
                 if (descLines.length > 0) {
-                    this.ui.drawRect(contentX, cursorY, contentW, 1, UITheme.colors.bgScale[2]);
-                    cursorY += 12;
+                    this.ui.drawLineWithGothicFlourish(contentX, cursorY, contentW * 0.8, UITheme.colors.border);
+                    cursorY += 14;
 
                     descLines.forEach(line => {
                         this.ui.drawText(line, contentX, cursorY, descFont, UITheme.colors.textMuted, "left");
@@ -506,7 +503,7 @@ export class ItemDetailPanel {
                 x, y, this.ABILITY_ICON_SIZE, this.ABILITY_ICON_SIZE
             );
         } else {
-            this.ui.drawRect(x, y, this.ABILITY_ICON_SIZE, this.ABILITY_ICON_SIZE, UITheme.colors.bgScale[1]); 
+            this.ui.drawPanel(x, y, this.ABILITY_ICON_SIZE, this.ABILITY_ICON_SIZE, UITheme.colors.bgScale[1]); 
         }
     }
 

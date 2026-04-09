@@ -1,41 +1,92 @@
 export const MAP_OBJECTS_DEFINITIONS = {
-    GRASS_COVERAGE_1: { spriteKey: 'GRASS_COVERAGE_1', width: 1, height: 1, isSolid: false, isGround: true },
-    GRASS_COVERAGE_2: { spriteKey: 'GRASS_COVERAGE_2', width: 1, height: 1, isSolid: false, isGround: true },
-    GRASS_COVERAGE_3: { spriteKey: 'GRASS_COVERAGE_3', width: 1, height: 1, isSolid: false, isGround: true },
-    TULIPS_ORANGE: { spriteKey: 'TULIPS_ORANGE', width: 1, height: 1, isSolid: false, isGround: true },
-    TULIPS_WHITE: { spriteKey: 'TULIPS_WHITE', width: 1, height: 1, isSolid: false, isGround: true },
-    TULIPS_RED: { spriteKey: 'TULIPS_RED', width: 1, height: 1, isSolid: false, isGround: true },
-    SMALL_ROCKS_1: { spriteKey: 'SMALL_ROCKS_1', width: 1, height: 1, isSolid: false, isGround: true },
-    SMALL_ROCKS_2: { spriteKey: 'SMALL_ROCKS_2', width: 1, height: 1, isSolid: false, isGround: true },
+    // --- STAIRS ---
+    STAIRS_LARGE_VERTICAL: { 
+        spriteX: 0, // Update this to your new sprite's X coordinate
+        spriteY: 10, // Update this to your new sprite's Y coordinate
+        width: 2, 
+        height: 3, 
+        isSolid: false, 
+        isGround: true, 
+        isStairs: true, 
+        allowedDirections: ['UP', 'DOWN'],
+        // yOffset: -1 pulls the hitbox up to grip the ledge. 
+        // h: 4 ensures it covers the ledge (-1), the origin (0), and the visual steps below (+1, +2)
+        hitbox: { xOffset: 0, yOffset: -1, w: 2, h: 4 } 
+    },
+    STAIRS_VERTICAL_1: { 
+        spriteX: 2, spriteY: 10, width: 1, height: 2, 
+        isSolid: false, isGround: true, isStairs: true, 
+        allowedDirections: ['UP', 'DOWN'],
+        // FIX: Shift hitbox up 1 tile and make it 2 tiles tall to cover the cliff face
+        hitbox: { xOffset: 0, yOffset: -1, w: 1, h: 2 } 
+    },
+    STAIRS_VERTICAL_2: { 
+        spriteX: 0, spriteY: 10, width: 1, height: 2, 
+        isSolid: false, isGround: true, isStairs: true, 
+        allowedDirections: ['UP', 'DOWN'],
+        // FIX: Shift hitbox up 1 tile and make it 3 tiles tall to cover the 2-tall cliff face
+        hitbox: { xOffset: 0, yOffset: -1, w: 1, h: 3 } 
+    },
+    STAIRS_VERTICAL_3: { 
+        spriteX: 0, spriteY: 10, width: 1, height: 3, 
+        isSolid: false, isGround: true, isStairs: true, 
+        allowedDirections: ['UP', 'DOWN'],
+        // FIX: Shift hitbox up 1 tile and make it 4 tiles tall
+        hitbox: { xOffset: 0, yOffset: -1, w: 1, h: 4 } 
+    },
+    STAIRS_HORIZONTAL_1: { 
+        spriteX: 2, spriteY: 10, width: 1, height: 1, 
+        isSolid: false, isGround: true, isStairs: true, 
+        allowedDirections: ['LEFT', 'RIGHT'],
+        hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } 
+    },
+    STAIRS_HORIZONTAL_2: { 
+        spriteX: 3, spriteY: 10, width: 2, height: 1,
+        isSolid: false, isGround: true, isStairs: true, 
+        allowedDirections: ['LEFT', 'RIGHT'],
+        hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 } 
+    },
+
+    // --- GROUND DECORATION ---
+    GRASS_COVERAGE_1: { spriteX: 6, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
+    GRASS_COVERAGE_2: { spriteX: 7, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
+    GRASS_COVERAGE_3: { spriteX: 8, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
+    TULIPS_ORANGE:    { spriteX: 1, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
+    TULIPS_WHITE:     { spriteX: 2, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
+    TULIPS_RED:       { spriteX: 3, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
+    SMALL_ROCKS_1:    { spriteX: 4, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
+    SMALL_ROCKS_2:    { spriteX: 5, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
     
+    // --- INTERACTABLES & OBSTACLES ---
     BOULDER_1: { 
-        spriteKey: 'BOULDER_1', width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, // <-- ADDED
+        spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, 
         hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } 
     },
     WOODEN_CHEST: { 
-        spriteKey: 'WOODEN_CHEST', width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, // <-- ADDED
+        spriteX: 0, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, 
         hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },
         interaction: { type: 'ENCOUNTER', id: 'WOODEN_CHEST_1', isRepeatable: false }
     },
     PINE_TREE: { 
-        spriteKey: 'PINE_TREE_SMALL', width: 2, height: 2, isSolid: true, isGround: false, isAnchor: true, // <-- ADDED
-        hitbox: { xOffset: 0, yOffset: 1, w: 2, h: 1 } 
+        spriteX: 3, spriteY: 1, width: 2, height: 2, isSolid: true, isGround: false, isAnchor: true, 
+        // Shifted yOffset from 1 to 0 so you don't collide too low
+        hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 } 
     },
     OAK_TREE_1: { 
-        spriteKey: 'OAK_TREE_1', width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true,
-        hitbox: { xOffset: 1, yOffset: 2, w: 1, h: 1 }, 
-        // FIX: Changed 'oakTree' to 'oak_tree' to match the encounter definition
+        spriteX: 0, spriteY: 1, width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true,
+       hitbox: { xOffset: 1, yOffset: 0, w: 1, h: 1 }, 
         interaction: { type: 'ENCOUNTER', id: 'oak_tree' } 
     },
     SMALL_HOUSE_1: { 
-        spriteKey: 'SMALL_HOUSE_1', width: 4, height: 3, isSolid: true, isGround: false, isAnchor: true, // <-- ADDED
+        spriteX: 0, spriteY: 7, width: 4, height: 3, isSolid: true, isGround: false, isAnchor: true, 
         hitbox: { xOffset: 0, yOffset: 2, w: 4, h: 1 } 
     },
+
+    // --- ANIMATED ---
     CAMPFIRE: { 
-        spriteKey: 'CAMPFIRE', width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, // <-- ADDED
+        spriteX: 0, spriteY: 6, frames: 4, speed: 0.2, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, 
         hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },
         interaction: { type: 'ENCOUNTER', id: 'bonfire' },
         light: { hasLight: true, radius: 5.5, color: '255, 100, 0', maxAlpha: 0.8, flickerSpeed: 0.1, flickerAmp: 0.5 }
     }
-
 };

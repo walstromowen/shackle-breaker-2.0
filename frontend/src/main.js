@@ -60,7 +60,7 @@ const ASSET_MANIFEST = {
     encounters: './assets/icons/encounters.png',
     // --- NEW: Audio Assets go here! ---
     plainsBattle1: './assets/audio/music/plains_battle_1.mp3',
-    plainsOverworldDay: './assets/audio/music/plains_overworld_day.mp3',  
+    plainsOverworldDay: './assets/audio/music/plains_overworld_day_2.mp3',  
     plainsOverworldNight: './assets/audio/music/plains_overworld_night.mp3',  
 
     weatherRain: './assets/audio/sfx/weather_rain.wav',

@@ -19,11 +19,9 @@ export class CharacterCreatorRenderer {
         ui.clearScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
 
         // --- DYNAMIC ANIMATION OFFSET FOR BRACKETS ---
-        // Oscillates smoothly between 2px and 6px. 
-        // Divisor increased to 250 to slow the animation to standard UI speed.
         const bracketOffset = 4 + Math.sin(Date.now() / 250) * 2; 
 
-        // --- 1. GLOBAL LAYOUT: 20px PADDING ---
+        // --- GLOBAL LAYOUT ---
         const p = 20; 
         const startY = 20; 
         const panelHeight = CANVAS_HEIGHT - (startY * 2); 
@@ -33,7 +31,7 @@ export class CharacterCreatorRenderer {
         
         const TITLE_OFFSET_Y = 25; 
         const TITLE_Y = startY + TITLE_OFFSET_Y;
-        const CONTENT_START_Y = TITLE_Y + 25; 
+        const CONTENT_START_Y = TITLE_Y + 35; 
         
         // ========================================================
         // 1. LEFT COLUMN (Identity & Stats)
@@ -43,8 +41,9 @@ export class CharacterCreatorRenderer {
         const leftCenterX = p + colW / 2;
         let curY = CONTENT_START_Y;
 
-        // A. Title
+        // A. Title & Flourish
         ui.drawText("IDENTITY", leftCenterX, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "center");
+        ui.drawLineWithGothicFlourish(leftCenterX - 50, TITLE_Y + 12, 100, UITheme.colors.borderHighlight);
 
         // B. Name Input
         const nameInputW = colW - 40;
@@ -57,14 +56,9 @@ export class CharacterCreatorRenderer {
         const isNameHovered = hoveredElement && hoveredElement.id === inputId;
         const isNameSelected = (currentStep === 'name');
         
-        // Base Box
-        ctx.fillStyle = isEditingName ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.3)';
-        ctx.fillRect(nameInputX, curY, nameInputW, nameInputH);
-        ctx.strokeStyle = UITheme.colors.border;
-        ctx.lineWidth = 1;
-        ctx.strokeRect(nameInputX, curY, nameInputW, nameInputH);
+        const nameBg = isEditingName ? "rgba(0, 0, 0, 0.8)" : "rgba(0, 0, 0, 0.4)";
+        ui.drawPanel(nameInputX, curY, nameInputW, nameInputH, nameBg);
 
-        // Selection Brackets (Animated)
         if (isNameSelected || isEditingName || isNameHovered) {
             ui.drawSelectionBrackets(nameInputX, curY, nameInputW, nameInputH, bracketOffset);
         }
@@ -81,18 +75,17 @@ export class CharacterCreatorRenderer {
 
         ctx.save(); 
         ctx.beginPath(); ctx.rect(nameInputX, curY, nameInputW, nameInputH); ctx.clip(); 
-        // Changed font to body and adjusted Y-offset slightly for better centering
         ui.drawText(valStr, nameInputX + (nameInputW/2), curY + 21, UITheme.fonts.body, nameColor, "center");
         ctx.restore();
 
         const nameBottomY = curY + nameInputH;
 
-        // --- C. VISUALS (Balanced Spacing) ---
+        // --- C. VISUALS ---
         const VITALS_OFFSET = 180; 
         const VITALS_START_Y = nameBottomY + VITALS_OFFSET; 
 
         const portraitSize = 128;
-        const spriteDisplaySize = 64; 
+        const spriteDisplaySize = 32; // Strictly 32x32 now
         const visualGap = 20;
         
         const totalVisualWidth = portraitSize + visualGap + spriteDisplaySize;
@@ -108,38 +101,33 @@ export class CharacterCreatorRenderer {
             ctx.save();
             
             const masterSheet = this.loader.get(appData.spritePortrait);
-            
-            if (masterSheet) {
-                ctx.drawImage(masterSheet, 0, 0, 128, 128, startVisualX, portraitY, portraitSize, portraitSize);
-            } else {
-                ctx.fillStyle = "rgba(0,0,0,0.2)";
-                ctx.fillRect(startVisualX, portraitY, portraitSize, portraitSize);
-            }
-            
-            ctx.strokeStyle = UITheme.colors.border;
-            ctx.lineWidth = 1;
-            ctx.strokeRect(startVisualX, portraitY, portraitSize, portraitSize);
-
-            // 2. Draw Sprite (FROM OVERWORLD SHEET)
-            const spriteX = startVisualX + portraitSize + visualGap;
             const overworldSheet = this.loader.get(appData.spriteOverworld);
+            const spriteX = startVisualX + portraitSize + visualGap;
             
-            ctx.fillStyle = "rgba(0,0,0,0.3)";
-            ctx.fillRect(spriteX, spriteY, spriteDisplaySize, spriteDisplaySize);
-            
+            // Draw Dark Backgrounds
+            ui.drawRect(startVisualX, portraitY, portraitSize, portraitSize, "rgba(0,0,0,0.6)", true);
+            ui.drawRect(spriteX, spriteY, spriteDisplaySize, spriteDisplaySize, "rgba(0,0,0,0.6)", true);
+
+            // Draw Images EXACTLY at their native scale (No insets)
+            if (masterSheet) {
+                ctx.drawImage(masterSheet, 0, 0, 128, 128, startVisualX, portraitY, 128, 128);
+            }
             if (overworldSheet) {
                 ctx.imageSmoothingEnabled = false; 
-                ctx.drawImage(overworldSheet, 0, 0, 32, 32, spriteX, spriteY, spriteDisplaySize, spriteDisplaySize);
+                ctx.drawImage(overworldSheet, 0, 0, 32, 32, spriteX, spriteY, 32, 32);
             }
-            
-            ctx.strokeStyle = UITheme.colors.border;
-            ctx.strokeRect(spriteX, spriteY, spriteDisplaySize, spriteDisplaySize);
+
+            // Overlay Borders so they don't crush the image size
+            ui.drawRect(startVisualX, portraitY, portraitSize, portraitSize, UITheme.colors.border, false);
+            ui.drawRect(spriteX, spriteY, spriteDisplaySize, spriteDisplaySize, UITheme.colors.border, false);
 
             ctx.restore();
         }
         
         // --- D. STATS TABLE ---
         curY = VITALS_START_Y;
+
+        ui.drawLineWithGothicFlourish(leftCenterX - 80, curY - 20, 160, UITheme.colors.border);
 
         if (previewStats) {
             const innerMargin = 20;
@@ -189,8 +177,7 @@ export class CharacterCreatorRenderer {
                 const rightX = p + colW - 30;
 
                 if (idx % 2 === 0) {
-                    ctx.fillStyle = "rgba(255, 255, 255, 0.02)"; // Dimmed for contrast
-                    ctx.fillRect(p + 10, rowY - 14, colW - 20, ROW_HEIGHT);
+                    ui.drawRect(p + 10, rowY - 14, colW - 20, ROW_HEIGHT, "rgba(255, 255, 255, 0.02)", true);
                 }
 
                 ui.drawText(attr.label, leftX, rowY, ATTR_FONT, UITheme.colors.textMuted, "left");
@@ -203,9 +190,12 @@ export class CharacterCreatorRenderer {
         // ========================================================
         const menuStartX = p + colW + p;
         let menuY = CONTENT_START_Y;
+        const centerColX = menuStartX + (midW / 2);
 
         ui.drawPanel(menuStartX, startY, midW, panelHeight, UITheme.colors.bgScale[1]);
-        ui.drawText("CUSTOMIZE", menuStartX + midW/2, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "center");
+        
+        ui.drawText("CUSTOMIZE", centerColX, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "center");
+        ui.drawLineWithGothicFlourish(centerColX - 60, TITLE_Y + 12, 120, UITheme.colors.borderHighlight);
 
         const labels = {
             background: "BACKGROUND", origin: "ORIGIN", appearance: "LOOK",
@@ -220,36 +210,32 @@ export class CharacterCreatorRenderer {
             const isSelected = (key === currentStep);
             const rowId = `ROW_${key}`;
             const isRowHovered = hoveredElement && hoveredElement.id === rowId;
-            const centerColX = menuStartX + (midW / 2);
 
             if (key === 'start') {
                 const btnId = "BTN_START";
                 const isBtnHovered = hoveredElement && hoveredElement.id === btnId;
-                const btnY = menuY + 5; 
+                const btnY = menuY + 15; 
 
-                this.hotspots.push({ id: btnId, x: menuStartX + 40, y: btnY, w: midW - 80, h: MENU_ITEM_HEIGHT });
+                this.hotspots.push({ id: btnId, x: menuStartX + 40, y: btnY, w: midW - 80, h: MENU_ITEM_HEIGHT + 10 });
 
-                const btnColor = (isSelected || isBtnHovered) ? UITheme.colors.textMain : UITheme.colors.textMuted;
+                const btnColor = (isSelected || isBtnHovered) ? UITheme.colors.borderHighlight : UITheme.colors.textMuted;
+                const btnBg = (isSelected || isBtnHovered) ? "rgba(184, 153, 71, 0.05)" : "rgba(0,0,0,0.6)";
+                const btnBorder = (isSelected || isBtnHovered) ? UITheme.colors.borderHighlight : UITheme.colors.border;
                 
-                // Base Button Box
-                ctx.fillStyle = "rgba(0,0,0,0.5)";
-                ctx.fillRect(menuStartX + 40, btnY, midW - 80, MENU_ITEM_HEIGHT);
-                ctx.strokeStyle = UITheme.colors.border;
-                ctx.strokeRect(menuStartX + 40, btnY, midW - 80, MENU_ITEM_HEIGHT);
+                ui.drawLancetArchedPanel(menuStartX + 40, btnY, midW - 80, MENU_ITEM_HEIGHT + 10, btnBg, btnBorder);
 
-                // Selection Brackets (Animated)
                 if (isSelected || isBtnHovered) {
-                    ui.drawSelectionBrackets(menuStartX + 40, btnY, midW - 80, MENU_ITEM_HEIGHT, bracketOffset); 
+                    ui.drawSelectionBrackets(menuStartX + 40, btnY, midW - 80, MENU_ITEM_HEIGHT + 10, bracketOffset); 
                 }
 
-                ui.drawText("START", centerColX, btnY + (MENU_ITEM_HEIGHT/2) + 1, UITheme.fonts.body, btnColor, "center", "middle");
+                ui.drawText("START", centerColX, btnY + ((MENU_ITEM_HEIGHT + 10)/2) + 4, UITheme.fonts.body, btnColor, "center", "middle");
                 return; 
             }
 
             this.hotspots.push({ id: rowId, x: menuStartX + 10, y: menuY, w: midW - 20, h: MENU_ITEM_HEIGHT });
 
-            // Menu Item Selection
             if (isSelected || isRowHovered) {
+                ui.drawRect(menuStartX + 10, menuY, midW - 20, MENU_ITEM_HEIGHT, "rgba(255, 255, 255, 0.02)", true);
                 ui.drawSelectionBrackets(menuStartX + 10, menuY, midW - 20, MENU_ITEM_HEIGHT, bracketOffset); 
             }
 
@@ -283,8 +269,8 @@ export class CharacterCreatorRenderer {
                 const textMaxWidth = midW - 140; 
                 const arrowSize = 5; 
 
-                const arrowColorPrev = isPrevHover ? UITheme.colors.textMain : UITheme.colors.textMuted;
-                const arrowColorNext = isNextHover ? UITheme.colors.textMain : UITheme.colors.textMuted;
+                const arrowColorPrev = isPrevHover ? UITheme.colors.borderHighlight : UITheme.colors.textMuted;
+                const arrowColorNext = isNextHover ? UITheme.colors.borderHighlight : UITheme.colors.textMuted;
 
                 ui.drawArrow(leftArrowX, valY - 4, arrowSize, 'left', arrowColorPrev);
                 ui.drawArrow(rightArrowX, valY - 4, arrowSize, 'right', arrowColorNext);
@@ -302,8 +288,12 @@ export class CharacterCreatorRenderer {
         // 3. RIGHT COLUMN (Details)
         // ========================================================
         const rightColX = CANVAS_WIDTH - colW - p;
+        const rightCenterX = rightColX + colW / 2;
+
         ui.drawPanel(rightColX, startY, colW, panelHeight, UITheme.colors.bgScale[0]);
-        ui.drawText("DETAILS", rightColX + colW/2, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "center");
+        
+        ui.drawText("DETAILS", rightCenterX, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "center");
+        ui.drawLineWithGothicFlourish(rightCenterX - 40, TITLE_Y + 12, 80, UITheme.colors.borderHighlight);
 
         const desc = this.getDescription(controllerState);
         if (desc) {

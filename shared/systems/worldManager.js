@@ -151,12 +151,30 @@ export class WorldManager {
         return biome.getTileId(elevVal);
     }
 
-    canMove(fromCol, fromRow, toCol, toRow) {
+    canMove(fromCol, fromRow, toCol, toRow, direction) {
         const fromElev = this.getElevation(fromCol, fromRow);
         const toElev = this.getElevation(toCol, toRow);
         
         if (toElev === -999) return false; 
         
+        // --- UPDATED STAIR LOGIC START ---
+        const currentObj = this.getObjectAt(fromCol, fromRow);
+        const targetObj = this.getObjectAt(toCol, toRow);
+
+        // Fetch the raw definitions to access 'isStairs' and 'allowedDirections'
+        const currentDef = currentObj ? MAP_OBJECTS_DEFINITIONS[currentObj.id] : null;
+        const targetDef = targetObj ? MAP_OBJECTS_DEFINITIONS[targetObj.id] : null;
+
+        const targetAllowsMove = targetDef?.isStairs && targetDef.allowedDirections.includes(direction);
+        const currentAllowsMove = currentDef?.isStairs && currentDef.allowedDirections.includes(direction);
+
+        if (targetAllowsMove || currentAllowsMove) {
+            // Bypass elevation and face-block checks, but still check for solid obstacles
+            if (this.getSolidObjectAt(toCol, toRow)) return false;
+            return true; 
+        }
+        // --- UPDATED STAIR LOGIC END ---
+
         const depthL1 = CONFIG.TILE_DEPTH[this.TILES.LAYER_1] || 1;
         const depthL2 = CONFIG.TILE_DEPTH[this.TILES.LAYER_2] || 2;
         
@@ -224,7 +242,6 @@ export class WorldManager {
     // ==========================================
 
     getTileData(col, row) {
-        // Shifted chunk loading here so it's strictly driven by rendering!
         this.ensureChunkLoaded(col, row);
         
         const tileId = this.getTileAt(col, row);
@@ -236,7 +253,13 @@ export class WorldManager {
             mask: isBlob ? this.getSpecificMask(col, row, tileId) : 0, 
             isBlob: isBlob, 
             isWall: (tileId >= this.TILES.LAYER_3 && tileId <= this.TILES.LAYER_5), 
-            object: this.getObject(col, row),
+            
+            // Use this for drawing so it only draws once
+            object: this.getObject(col, row), 
+            
+            // Use this for logic/hiding faces across the whole footprint
+            occupyingObject: this.getObjectAt(col, row), 
+            
             biomeId: biome.id,
             sheetId: biome.sheetId,
             objectSheetId: biome.objectSheetId 
@@ -302,14 +325,66 @@ export class WorldManager {
             return gameState.world.changes[this._s(col, row)];
         }
 
-        if (this.isBlockedByFace(col, row) || this.isCliffFace(col, row) || this.isBiomeEdge(col, row)) return null;
+        const myTileId = this.getTileAt(col, row);
+        const tileAboveId = this.getTileAt(col, row - 1);
+        const tileTwoAboveId = this.getTileAt(col, row - 2);
+        
+        const myElev = this.getElevation(col, row);
+        const elevAbove = this.getElevation(col, row - 1);
+        const elevTwoAbove = this.getElevation(col, row - 2);
 
-        const tileId = this.getTileAt(col, row);
+        // ==========================================
+        // 1. PROCEDURAL STAIR GENERATION
+        // ==========================================
+        
+        // Upper level stairs (1-tall) on L4/L5 cliffs (Spawns right below the cliff edge)
+        if (elevAbove > myElev) {
+            if (tileAboveId === this.TILES.LAYER_4 || tileAboveId === this.TILES.LAYER_5) {
+                if (this.pseudoRandom(col, row) < 0.1) {
+                    return 'STAIRS_VERTICAL_1';
+                }
+            }
+        }
+
+        // Lower level stairs (3-tall, 2-wide) on L3 cliffs -> Placed ONE LEVEL DOWN
+        if (elevTwoAbove > myElev && tileTwoAboveId === this.TILES.LAYER_3 && tileAboveId !== this.TILES.LAYER_3) {
+            
+            // CRITICAL: Check if the column to the right is ALSO a perfectly flat L3 cliff!
+            // This prevents 2-wide stairs from generating on 1-wide cliff corners.
+            const rightMyElev = this.getElevation(col + 1, row);
+            const rightElevTwoAbove = this.getElevation(col + 1, row - 2);
+            const rightTileTwoAboveId = this.getTileAt(col + 1, row - 2);
+            const rightTileAboveId = this.getTileAt(col + 1, row - 1);
+
+            const isRightSideValid = (
+                rightElevTwoAbove > rightMyElev && 
+                rightTileTwoAboveId === this.TILES.LAYER_3 && 
+                rightTileAboveId !== this.TILES.LAYER_3
+            );
+
+            if (isRightSideValid) {
+                if (this.pseudoRandom(col, row - 1) < 0.1) {
+                    // Make sure you add this ID to your MAP_OBJECTS_DEFINITIONS!
+                    return 'STAIRS_LARGE_VERTICAL'; 
+                }
+            }
+        }
+
+        // ==========================================
+        // 2. STANDARD OBJECT REJECTIONS
+        // ==========================================
+        // We block normal props on cliffs/faces (or near edges)
+        if (this.isBlockedByFace(col, row) || this.isCliffFace(col, row) || this.isBiomeEdge(col, row)) {
+            return null;
+        }
+
+        // ==========================================
+        // 3. STANDARD BIOME GENERATION
+        // ==========================================
         const biome = this.getBiomeAt(col, row);
-        const isWall = (tileId >= this.TILES.LAYER_3 && tileId <= this.TILES.LAYER_5);
-
-        const rng = this.pseudoRandom(col, row);
-        const spawnData = biome.getSpawnId(tileId, rng, isWall);
+        const objRng = this.pseudoRandom(col + 100, row + 100); 
+        
+        const spawnData = biome.getSpawnId(myTileId, objRng, false);
 
         if (!spawnData) return null;
 
@@ -317,6 +392,7 @@ export class WorldManager {
         const w = def.w || def.width || 1;
         const h = def.h || def.height || 1;
 
+        // Bypassed by stairs returning early, applies only to standard biome props
         if (!this.isFootprintValid(col, row, w, h)) return null;
         
         return spawnData.id;
@@ -400,8 +476,10 @@ export class WorldManager {
     }
 
     getWallFaceDepth(tileId) {
-        const depth = CONFIG.TILE_DEPTH[tileId] || 0;
-        return (depth >= 3) ? depth - 1 : 0;
+        // Hardcode face depths to stop upper cliffs from generating massive invisible collision walls
+        if (tileId === this.TILES.LAYER_3) return 2; // Bottom cliffs are 2 tiles deep visually
+        if (tileId === this.TILES.LAYER_4 || tileId === this.TILES.LAYER_5) return 1; // Upper cliffs are 1 tile deep
+        return 0;
     }
 
     isBlockedByFace(col, row) {

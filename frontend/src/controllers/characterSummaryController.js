@@ -5,7 +5,7 @@ import { ItemDefinitions } from '../../../shared/data/itemDefinitions.js';
 import { InventorySystem } from '../../../shared/systems/inventorySystem.js';
 import { DragAndDropManager } from '../ui/dragAndDropManager.js';
 import { ScrollManager } from '../ui/scrollManager.js';
-import { ContextMenuManager } from '../ui/contextMenuManager.js'; // Added import
+import { ContextMenuManager } from '../ui/contextMenuManager.js'; 
 
 const SLOT_ORDER = ['head', 'torso', 'arms', 'mainHand', 'offHand', 'legs', 'feet', 'accessory'];
 
@@ -23,11 +23,9 @@ const KEY_BINDINGS = {
 
 export class CharacterSummaryController {
     constructor(input, data) {
-        // --- FIX: Safely determine memberIndex and store return destination ---
         this.memberIndex = 0; 
-        this.returnScene = 'party'; // Default return destination
+        this.returnScene = 'party'; 
         
-        // ADD THIS LINE HERE:
         this.config = data || {}; 
         this.readOnly = data?.readOnly || data?.isCombat || false;
 
@@ -39,17 +37,12 @@ export class CharacterSummaryController {
             if (data.memberIndex !== undefined) {
                 this.memberIndex = data.memberIndex;
             } else if (data.character) {
-                // Find the index of the passed character in the party array
-                // We check by direct reference, or fallback to matching IDs if wrapped
                 const index = gameState.party.members.findIndex(m => 
                     m === data.character || m.id === data.character.id
                 );
                 this.memberIndex = index !== -1 ? index : 0;
             }
         }
-        
-        this.state = 'SLOTS'; 
-        this.viewMode = 'STATS';
         
         this.state = 'SLOTS'; 
         this.viewMode = 'STATS'; 
@@ -107,8 +100,6 @@ export class CharacterSummaryController {
             'BTN_TAB_STATS': () => this.setViewMode('STATS'),
             'TAB_ITEM': () => this.setViewMode('ITEM'),
             'BTN_TAB_ITEM': () => this.setViewMode('ITEM'),
-            
-            // --- NEW: Map the Abilities tab hitboxes to change the view ---
             'TAB_ABILITIES': () => this.setViewMode('ABILITIES'),
             'BTN_TAB_ABILITIES': () => this.setViewMode('ABILITIES'),
         };
@@ -124,15 +115,13 @@ export class CharacterSummaryController {
 
     handleKeyDown(code) {
         const intent = KEY_BINDINGS[code];
-        if (!intent) return; // Ignore unbound keys
+        if (!intent) return; 
 
-        // 1. Context Menu steals focus if open
         if (this.contextMenuManager.menu) {
             this.contextMenuManager.handleMenuNavigation(intent);
             return;
         }
 
-        // 2. Global Level Actions
         if (intent === 'CANCEL') return this._handleBack();
         if (intent === 'PREV_CHAR') return this.cycleMember(-1);
         if (intent === 'NEXT_CHAR') return this.cycleMember(1);
@@ -143,7 +132,6 @@ export class CharacterSummaryController {
             return;
         }
 
-        // 3. State-Specific Navigation
         if (this.state === 'SLOTS') {
             this.handleSlotNavigation(intent);
         } else {
@@ -162,7 +150,6 @@ export class CharacterSummaryController {
             this.inventoryIndex = -1;
             this.updateFilteredInventory();
         } else {
-            // FIX: Use the stored return scene instead of hardcoding 'party'
             events.emit('CHANGE_SCENE', { scene: this.returnScene }); 
         }
     }
@@ -209,10 +196,9 @@ export class CharacterSummaryController {
         else if (intent === 'CONFIRM') {
             const item = this.filteredInventory[this.inventoryIndex];
             if (item) this.contextMenuManager._openContextMenu(item, 'inventory', this.inventoryIndex);
-            return; // Exit early so we don't trigger scroll updates
+            return; 
         }
 
-        // Only scroll if we actually moved
         if (['UP', 'DOWN', 'LEFT', 'RIGHT'].includes(intent)) {
             this.scrollToItem(this.inventoryIndex, false);
         }
@@ -253,7 +239,6 @@ export class CharacterSummaryController {
             this.handleMouseDown(x, y);
         }
         
-        // Delegate scroll dragging
         this.scrollManager.handleMouseMove(y, isMouseDown);
     }
 
@@ -333,7 +318,6 @@ export class CharacterSummaryController {
     // STATE & DATA MANAGEMENT
     // ========================================================
 
-    // Scroll API proxies
     handleScroll(delta) {
         this.scrollManager.handleScrollWheel(delta);
     }
@@ -350,8 +334,8 @@ export class CharacterSummaryController {
         this.viewMode = mode;
     }
 
-   cycleMember(direction) {
-        if (this.isLocked) return; // Completely locked down
+    cycleMember(direction) {
+        if (this.isLocked) return; 
 
         const count = gameState.party.members.length;
         this.memberIndex = (this.memberIndex + direction + count) % count;
@@ -381,7 +365,6 @@ export class CharacterSummaryController {
         const member = this.currentMember;
         const currentEquip = member.equipment[slotName];
 
-        // Locked
         if (currentEquip && !this.readOnly) {
             this.pendingSlotClick = slotName;
             this.potentialDrag = {
@@ -432,7 +415,6 @@ export class CharacterSummaryController {
             
             this.updateFilteredInventory(); 
 
-            // Locked
             if (!this.readOnly) {
                 this.potentialDrag = {
                     item: targetItem,
@@ -449,10 +431,12 @@ export class CharacterSummaryController {
     get currentMember() { 
         return gameState.party.members[this.memberIndex]; 
     }
+    
     get isLocked() {
         const isBattleSelection = this.config && typeof this.config.onItemSelected === 'function';
         return this.readOnly || isBattleSelection;
     }
+    
     updateActiveSlots() {
         const member = this.currentMember;
         if (!member) return;
@@ -460,7 +444,6 @@ export class CharacterSummaryController {
         const equipData = member.equipment || {}; 
         const availableSlots = Object.keys(equipData);
 
-        // Sort whatever slots they actually have
         this.activeSlots = availableSlots.sort((a, b) => {
             const indexA = SLOT_ORDER.indexOf(a);
             const indexB = SLOT_ORDER.indexOf(b);
@@ -473,7 +456,6 @@ export class CharacterSummaryController {
             return finalA - finalB;
         });
 
-        // Make sure slotIndex doesn't go out of bounds (or sets to -1 if no slots exist)
         if (this.slotIndex >= this.activeSlots.length) {
             this.slotIndex = this.activeSlots.length > 0 ? 0 : -1;
         }
@@ -509,97 +491,91 @@ export class CharacterSummaryController {
     }
 
     equipItem(inventoryItem, targetSlotOverride = null) {
-        if (this.readOnly) return; // Locked
+        if (this.readOnly) return; 
 
-        const member = this.currentMember;
-        let slotName = targetSlotOverride;
-        const def = ItemDefinitions[inventoryItem.defId];
-        
-        const rawItemType = def ? (def.slot || def.type || '').toLowerCase() : '';
-        const itemTypeNormalized = rawItemType.replace(/\s/g, ''); // Safely converts 'two hand' to 'twohand'
+        const member = this.currentMember;
+        let slotName = targetSlotOverride;
+        const def = ItemDefinitions[inventoryItem.defId];
+        
+        const rawItemType = def ? (def.slot || def.type || '').toLowerCase() : '';
+        const itemTypeNormalized = rawItemType.replace(/\s/g, ''); 
 
-        // Pre-fetch slots and equipment states to determine smart routing
-        const mainHandSlot = this.activeSlots.find(s => s.toLowerCase() === 'mainhand') || 'mainHand';
-        const offHandSlot = this.activeSlots.find(s => s.toLowerCase() === 'offhand') || 'offHand';
-        
-        const currentMainItem = member.equipment[mainHandSlot];
-        const currentOffItem = member.equipment[offHandSlot];
-        
-        const currentMainDef = currentMainItem ? ItemDefinitions[currentMainItem.defId] : null;
-        const isMainTwoHanded = currentMainDef && (currentMainDef.slot || currentMainDef.type || '').toLowerCase().replace(/\s/g, '') === 'twohand';
+        const mainHandSlot = this.activeSlots.find(s => s.toLowerCase() === 'mainhand') || 'mainHand';
+        const offHandSlot = this.activeSlots.find(s => s.toLowerCase() === 'offhand') || 'offHand';
+        
+        const currentMainItem = member.equipment[mainHandSlot];
+        const currentOffItem = member.equipment[offHandSlot];
+        
+        const currentMainDef = currentMainItem ? ItemDefinitions[currentMainItem.defId] : null;
+        const isMainTwoHanded = currentMainDef && (currentMainDef.slot || currentMainDef.type || '').toLowerCase().replace(/\s/g, '') === 'twohand';
 
-        // --- SMART ROUTING LOGIC ---
-        if (!slotName) {
-            if (itemTypeNormalized === 'onehand' || rawItemType === 'weapon') {
-                // Smart route: if mainhand is full, offhand is empty, and we aren't holding a 2H weapon
-                if (currentMainItem && !currentOffItem && !isMainTwoHanded) {
-                    slotName = offHandSlot;
-                } else {
-                    slotName = mainHandSlot;
-                }
-            } else if (itemTypeNormalized === 'twohand') {
-                slotName = mainHandSlot;
-            } else if (rawItemType === 'shield') {
-                slotName = offHandSlot;
-            } else {
-                // Fallback for armor, helmets, accessories, etc.
-                slotName = this.activeSlots.find(s => {
-                    const sKey = s.toLowerCase();
-                    if (sKey === rawItemType) return true;
-                    if (sKey === 'mainhand' && rawItemType === 'tool') return true;
-                    return false;
-                });
-            }
-            
-            if (!slotName) {
-                console.warn("Could not auto-determine slot for item.");
-                return;
-            }
-        }
+        // --- SMART ROUTING LOGIC ---
+        if (!slotName) {
+            if (itemTypeNormalized === 'onehand' || rawItemType === 'weapon') {
+                if (currentMainItem && !currentOffItem && !isMainTwoHanded) {
+                    slotName = offHandSlot;
+                } else {
+                    slotName = mainHandSlot;
+                }
+            } else if (itemTypeNormalized === 'twohand') {
+                slotName = mainHandSlot;
+            } else if (rawItemType === 'shield') {
+                slotName = offHandSlot;
+            } else {
+                slotName = this.activeSlots.find(s => {
+                    const sKey = s.toLowerCase();
+                    if (sKey === rawItemType) return true;
+                    if (sKey === 'mainhand' && rawItemType === 'tool') return true;
+                    return false;
+                });
+            }
+            
+            if (!slotName) {
+                console.warn("Could not auto-determine slot for item.");
+                return;
+            }
+        }
 
-        // --- TWO-HANDED RULE ENFORCEMENT ---
-        // Rule A: If equipping a Two-Handed weapon, force it to Main Hand & unequip Off Hand
-        if (itemTypeNormalized === 'twohand') {
-            slotName = mainHandSlot; 
-            if (currentOffItem) {
-                member.unequipItem(offHandSlot);
-                gameState.party.inventory.push(currentOffItem);
-            }
-        }
-        
-        // Rule B: If equipping an Off Hand item, check if holding a Two-Handed weapon
-        if (slotName.toLowerCase() === 'offhand' && isMainTwoHanded) {
-            member.unequipItem(mainHandSlot);
-            gameState.party.inventory.push(currentMainItem);
-        }
-        // --- END TWO-HANDED LOGIC ---
-        
-        // --- EXECUTION ---
-        const currentEquip = member.equipment[slotName];
-        
-        if (currentEquip && currentEquip !== inventoryItem) {
-            gameState.party.inventory.push(currentEquip); // Keep the exact instance
-        }
+        // --- TWO-HANDED RULE ENFORCEMENT ---
+        if (itemTypeNormalized === 'twohand') {
+            slotName = mainHandSlot; 
+            if (currentOffItem) {
+                member.unequipItem(offHandSlot);
+                gameState.party.inventory.push(currentOffItem);
+            }
+        }
+        
+        if (slotName.toLowerCase() === 'offhand' && isMainTwoHanded) {
+            member.unequipItem(mainHandSlot);
+            gameState.party.inventory.push(currentMainItem);
+        }
+        
+        // --- EXECUTION ---
+        const currentEquip = member.equipment[slotName];
+        
+        if (currentEquip && currentEquip !== inventoryItem) {
+            gameState.party.inventory.push(currentEquip); 
+        }
 
-        const bagIdx = gameState.party.inventory.indexOf(inventoryItem);
-        if (bagIdx > -1) {
-            gameState.party.inventory.splice(bagIdx, 1);
-        }
+        const bagIdx = gameState.party.inventory.indexOf(inventoryItem);
+        if (bagIdx > -1) {
+            gameState.party.inventory.splice(bagIdx, 1);
+        }
 
-        member.equipItem(slotName, inventoryItem);
+        member.equipItem(slotName, inventoryItem);
 
-        const newSlotIndex = this.activeSlots.indexOf(slotName);
-        if (newSlotIndex !== -1) {
-            this.slotIndex = newSlotIndex;
-        }
+        const newSlotIndex = this.activeSlots.indexOf(slotName);
+        if (newSlotIndex !== -1) {
+            this.slotIndex = newSlotIndex;
+        }
 
-        this.state = 'SLOTS';
-        this.inventoryIndex = -1; 
-        this.updateFilteredInventory();
-    }
+        this.state = 'SLOTS';
+        this.inventoryIndex = -1; 
+        this.updateFilteredInventory();
+    }
 
     unequipCurrentSlot() {
-        if (this.readOnly || this.slotIndex === -1) return; // Locked
+        if (this.readOnly || this.slotIndex === -1) return; 
 
         const member = this.currentMember;
         const slotName = this.activeSlots[this.slotIndex];
@@ -607,7 +583,7 @@ export class CharacterSummaryController {
 
         if (currentEquip) {
             member.unequipItem(slotName);
-            gameState.party.inventory.push(currentEquip); // Keep the exact instance
+            gameState.party.inventory.push(currentEquip); 
             
             this.state = 'SLOTS';
             this.inventoryIndex = -1; 
@@ -635,6 +611,56 @@ export class CharacterSummaryController {
         return null;
     }
 
+    // ========================================================
+    // DATA COMPILATION & STATE EXPORT
+    // ========================================================
+
+    _compileAbilities(member) {
+        const abilityMap = new Map();
+
+        // --- FIX: 1. Gather abilities granted by equipped items FIRST ---
+        // This ensures items "claim" their abilities before the intrinsic fallback grabs them
+        if (member.equipment) {
+            for (const [slot, item] of Object.entries(member.equipment)) {
+                if (!item) continue;
+                
+                const def = ItemDefinitions[item.defId];
+                const grantedAbilities = (def && (def.abilities || def.grantedAbilities)) || [];
+                
+                grantedAbilities.forEach(ability => {
+                    const id = typeof ability === 'string' ? ability : ability.id;
+                    const abilityData = typeof ability === 'object' ? ability : { id, name: id };
+
+                    abilityMap.set(id, {
+                        ...abilityData,
+                        source: def.name || item.defId,
+                        sourceSlot: slot,
+                        isEquipment: true
+                    });
+                });
+            }
+        }
+
+        // --- FIX: 2. Gather intrinsic abilities ---
+        // If an ability is already mapped, it means an item granted it, so we skip overwriting it.
+        const intrinsicAbilities = member.abilities || (member.template && member.template.abilities) || [];
+        
+        intrinsicAbilities.forEach(ability => {
+            const id = typeof ability === 'string' ? ability : ability.id;
+            const abilityData = typeof ability === 'object' ? ability : { id, name: id };
+            
+            if (!abilityMap.has(id)) {
+                abilityMap.set(id, {
+                    ...abilityData,
+                    source: 'Intrinsic',
+                    isEquipment: false
+                });
+            }
+        });
+
+        return Array.from(abilityMap.values());
+    }
+
     getState() {
         const member = this.currentMember; 
         const computedStats = StatCalculator.calculate(member);
@@ -657,11 +683,13 @@ export class CharacterSummaryController {
         };
 
         const viewSelectedSlot = (this.state === 'INVENTORY') ? -1 : this.slotIndex;
+        const compiledAbilities = this._compileAbilities(member);
 
         return {
-            readOnly: this.readOnly, // Passed down for rendering logic
+            readOnly: this.readOnly, 
             member,
             derivedStats,
+            abilities: compiledAbilities, 
             slots: this.activeSlots,
             selectedSlotIndex: viewSelectedSlot,
             isChoosingItem: (this.state === 'INVENTORY'),

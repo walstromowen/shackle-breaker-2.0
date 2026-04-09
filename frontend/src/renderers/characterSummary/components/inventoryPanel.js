@@ -10,10 +10,9 @@ export class InventoryPanel {
         // --- Grid Constants ---
         this.COLS = 4;            
         this.SLOT_SIZE = 40;      // Keeps the 40px size (fits icons well)
-        this.SLOT_PADDING = 8;    // INCREASED: Was 4, now 8 (fills the side gaps)
+        this.SLOT_PADDING = 8;    // Fills the side gaps
         
         // Layout Constants
-        // INCREASED HEADER_HEIGHT from 50 to 75 to fit the currency label
         this.HEADER_HEIGHT = 75; 
         this.SCROLLBAR_WIDTH = 4;
         
@@ -26,24 +25,20 @@ export class InventoryPanel {
         // --- 1. Draw Fixed Header ---
         this.ui.drawText("Inventory", centerX, y + 20, UITheme.fonts.header, UITheme.colors.textMain, "center");
         
-        // --- NEW: Currency Label ---
-        // Safely extract currency from state (adjust the path if your state structure differs)
+        // --- Currency Label ---
         const currencyAmount = gameState.party.currency || 0;
-        this.ui.drawText(`Currency: ${currencyAmount}`, centerX, y + 45, UITheme.fonts.mono, UITheme.colors.textHighlight, "center");
+        this.ui.drawText(`Currency: ${currencyAmount}`, centerX, y + 45, UITheme.fonts.cardMono, UITheme.colors.textHighlight, "center");
         
         const dividerY = y + this.HEADER_HEIGHT - 10;
-        this.ui.drawRect(x + 10, dividerY, w - 20, 1, UITheme.colors.border);
+        const flourishW = w * 0.8;
+        this.ui.drawLineWithGothicFlourish(x + (w - flourishW)/2, dividerY, flourishW, UITheme.colors.border);
 
         // --- 2. Calculate Viewport Metrics ---
         const listY = y + this.HEADER_HEIGHT;
         const listH = h - this.HEADER_HEIGHT;
         
         // --- CENTER THE GRID ---
-        // New Width Calculation: (4 * 40) + (3 * 8) = 160 + 24 = 184px
         const totalGridW = (this.COLS * this.SLOT_SIZE) + ((this.COLS - 1) * this.SLOT_PADDING);
-        
-        // Calculate starting X. 
-        // We clamp it so it never renders to the left of the container (x + 2)
         let startX = x + Math.floor((w - totalGridW) / 2);
         if (startX < x + 2) startX = x + 2; 
 
@@ -73,12 +68,11 @@ export class InventoryPanel {
         // --- 4. Draw Grid Content ---
         this.ui.ctx.save();
         
-        // CHANGED: Expanded clip area significantly (listY - 10) to prevent the top bracket 
-        // animation of the first row from being cut off at the top of the viewport.
+        // Expanded clip area significantly to prevent bracket animations from clipping
         this.ui.startClip(x, listY - 10, w + 15, listH + 20); 
 
         if (!inventory || inventory.length === 0) {
-            this.ui.drawText("- Empty -", centerX, listY + 30, "italic 12px sans-serif", UITheme.colors.textMuted, "center");
+            this.ui.drawText("- Empty -", centerX, listY + 30, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "center");
         } 
         else {
             inventory.forEach((item, index) => {
@@ -98,10 +92,7 @@ export class InventoryPanel {
                 const isHeld = state.heldItem && state.heldItem.item === item;
                 const isSelected = (index === inventoryIndex);
                 
-                // Colors (Standardized) - Stripped out the selection overrides
                 const bgFill = UITheme.colors.bgScale[1]; // Darkest grey
-                const borderFill = UITheme.colors.border; // Standard grey
-                const lineWidth = 1;
 
                 // Hitbox Registration
                 if (itemY + this.SLOT_SIZE >= listY && itemY <= listY + listH) {
@@ -117,17 +108,8 @@ export class InventoryPanel {
                 }
 
                 // --- DRAW SLOT ---
-                // Background
-                this.ui.drawRect(itemX, itemY, this.SLOT_SIZE, this.SLOT_SIZE, bgFill);
-                
-                // Border
-                if (this.ui.drawStrokeRect) {
-                     this.ui.drawStrokeRect(itemX, itemY, this.SLOT_SIZE, this.SLOT_SIZE, borderFill, lineWidth);
-                } else {
-                    this.ui.ctx.strokeStyle = borderFill;
-                    this.ui.ctx.lineWidth = lineWidth;
-                    this.ui.ctx.strokeRect(itemX, itemY, this.SLOT_SIZE, this.SLOT_SIZE);
-                }
+                // Replaced flat drawRect/strokeRect combo with standard drawPanel
+                this.ui.drawPanel(itemX, itemY, this.SLOT_SIZE, this.SLOT_SIZE, bgFill);
 
                 // Draw Icon
                 const iconOffset = (this.SLOT_SIZE - 32) / 2;
@@ -140,12 +122,11 @@ export class InventoryPanel {
 
                 // Count
                 if (item.qty > 1 && !isHeld) {
-                    this.ui.drawText(`${item.qty}`, itemX + this.SLOT_SIZE - 2, itemY + this.SLOT_SIZE - 2, "10px sans-serif", UITheme.colors.textHighlight, "right");
+                    this.ui.drawText(`${item.qty}`, itemX + this.SLOT_SIZE - 2, itemY + this.SLOT_SIZE - 2, UITheme.fonts.small, UITheme.colors.textHighlight, "right");
                 }
 
                 // DRAW SELECTION BRACKETS
                 if (isSelected) {
-                    // CHANGED: Matched the smooth 4 + Math.sin bracket animation from other UI elements
                     const pulseDist = 4 + Math.sin(Date.now() / 150) * 2;
                     this.ui.drawSelectionBrackets(itemX, itemY, this.SLOT_SIZE, this.SLOT_SIZE, pulseDist, UITheme.colors.borderHighlight);
                 }
@@ -165,8 +146,7 @@ export class InventoryPanel {
     }
 
     drawScrollBar(x, y, viewportH, contentH, scrollOffset, hitboxes) {
-        // Track: Darkest background
-        this.ui.drawRect(x, y, this.SCROLLBAR_WIDTH, viewportH, UITheme.colors.bgScale[0]); 
+        this.ui.drawRect(x, y, this.SCROLLBAR_WIDTH, viewportH, UITheme.colors.scrollTrack || UITheme.colors.bgScale[0]); 
         
         const viewRatio = viewportH / contentH;
         let thumbH = Math.max(20, viewportH * viewRatio);
@@ -175,8 +155,7 @@ export class InventoryPanel {
         const trackSpace = viewportH - thumbH;
         const thumbY = y + (scrollRatio * trackSpace);
 
-        // Thumb: Muted text color (Grey)
-        this.ui.drawRect(x, thumbY, this.SCROLLBAR_WIDTH, thumbH, UITheme.colors.textMuted);
+        this.ui.drawRect(x, thumbY, this.SCROLLBAR_WIDTH, thumbH, UITheme.colors.scrollThumb || UITheme.colors.borderHighlight);
 
         if (hitboxes) {
             hitboxes.push({
@@ -193,8 +172,7 @@ export class InventoryPanel {
     _drawIcon(def, x, y) {
         if (!def) return;
 
-        // 1. Determine the correct spritesheet based on item type/slot
-        let sheetName = 'items'; // Default fallback
+        let sheetName = 'items'; 
         const type = (def.type || '').toLowerCase();
         const slot = (def.slot || '').toLowerCase();
         
@@ -208,7 +186,6 @@ export class InventoryPanel {
             sheetName = 'materials';
         }
 
-        // 2. Load the specific sheet, falling back to standard items/icons if missing
         const sheet = this.loader.get(sheetName) || this.loader.get('items') || this.loader.get('icons'); 
         if (!sheet) return;
 

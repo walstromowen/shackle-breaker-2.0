@@ -13,36 +13,12 @@ export class AbilitiesPanel {
     render(member, x, y, w, h, state, hitboxes) {
         if (!member) return;
 
-        // --- 1. Gather Abilities from ALL Sources ---
-        const abilitySet = new Set();
-
-        // Source A: Innate / Learned abilities on the character
-        if (member.abilities && Array.isArray(member.abilities)) {
-            member.abilities.forEach(id => abilitySet.add(id));
-        }
-        // (Optional) If your data uses "skills" instead of "abilities", add this:
-        if (member.skills && Array.isArray(member.skills)) {
-            member.skills.forEach(id => abilitySet.add(id));
-        }
-
-        // Source B: Equipment abilities
-        if (member.equipment) {
-            Object.values(member.equipment).forEach(item => {
-                if (!item) return;
-                
-                // Look for 'grantedAbilities' instead of 'abilities'
-                if (item.grantedAbilities && Array.isArray(item.grantedAbilities)) {
-                    item.grantedAbilities.forEach(id => abilitySet.add(id));
-                }
-            });
-        }
-
-        // Convert the Set back to an array so we can loop over it
-        const abilityList = Array.from(abilitySet);
+        // --- 1. Retrieve Compiled Abilities from State ---
+        const abilityList = state.abilities || [];
 
         // --- 2. Render Empty State ---
         if (abilityList.length === 0) {
-            this.ui.drawText("No abilities learned.", x + w / 2, y + 50, UITheme.fonts.body, UITheme.colors.textMuted, "center");
+            this.ui.drawText("No abilities learned.", x + w / 2, y + 50, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "center");
             return;
         }
 
@@ -65,12 +41,12 @@ export class AbilitiesPanel {
         let currentY = y - state.scrollOffset;
         const initialDrawY = currentY;
 
-        // IMPORTANT: Change this from member.abilities.forEach to abilityList.forEach
-        abilityList.forEach((abilityId, index) => {
-            const def = AbilityDefinitions[abilityId];
+        abilityList.forEach((abilityObj, index) => {
+            const def = AbilityDefinitions[abilityObj.id];
             if (!def) return;
             
-            currentY = this._drawAbilityCard(def, abilityId, x, currentY, w);
+            // Pass the state's abilityObj to render the source data
+            currentY = this._drawAbilityCard(def, abilityObj, x, currentY, w);
         });
 
         this.totalContentHeight = currentY - initialDrawY;
@@ -85,7 +61,8 @@ export class AbilitiesPanel {
     }
 
     drawScrollBar(x, y, viewportH, contentH, scrollOffset, hitboxes) {
-        this.ui.drawRect(x, y, this.SCROLLBAR_WIDTH, viewportH, UITheme.colors.bgScale[0]); 
+        // Kept as drawRect since 4px is too narrow for a full gothic panel border
+        this.ui.drawRect(x, y, this.SCROLLBAR_WIDTH, viewportH, UITheme.colors.scrollTrack || "rgba(0,0,0,0.5)"); 
         
         const viewRatio = viewportH / contentH;
         let thumbH = Math.max(20, viewportH * viewRatio);
@@ -95,12 +72,11 @@ export class AbilitiesPanel {
         const trackSpace = viewportH - thumbH;
         const thumbY = y + (scrollRatio * trackSpace);
 
-        const thumbColor = UITheme.colors.scrollThumb || "#666666";
-        this.ui.drawRect(x, thumbY, this.SCROLLBAR_WIDTH, thumbH, thumbColor);
+        this.ui.drawRect(x, thumbY, this.SCROLLBAR_WIDTH, thumbH, UITheme.colors.scrollThumb || UITheme.colors.borderHighlight);
 
         if (hitboxes) {
             hitboxes.push({
-                id: 'SCROLLBAR_THUMB', // <-- CHANGE THIS LINE
+                id: 'SCROLLBAR_THUMB', 
                 type: 'ui',
                 x: x - 4, 
                 y: y, 
@@ -110,90 +86,114 @@ export class AbilitiesPanel {
         }
     }
 
-    _drawAbilityCard(ab, abilityId, x, y, w) {
-        const cardPadding = 8;
+    _drawAbilityCard(ab, abilityObj, x, y, w) {
+        const cardPadding = 12;
         const iconSize = this.ABILITY_ICON_SIZE;
-        const gap = 10;
+        const gap = 12;
         
-        const iconX = x + cardPadding;
-        const contentX = iconX + iconSize + gap;
-        const contentW = w - (cardPadding * 2) - iconSize - gap; 
-
-        const descFont = "italic 11px sans-serif";
+        // --- 1. Calculate Layout Heights ---
+        const descW = w - (cardPadding * 2);
         const descLines = ab.description 
-            ? this.ui.getWrappedLines(ab.description, contentW, descFont) 
+            ? this.ui.getWrappedLines(ab.description, descW, UITheme.fonts.cardItalic) 
             : [];
         
-        const headerHeight = 14; 
-        const statsHeight = 14; 
-        const dividerHeight = 6;
-        const descTextHeight = descLines.length > 0 ? (descLines.length * 13) : 0;
-        const contentHeight = headerHeight + 4 + statsHeight + dividerHeight + descTextHeight;
+        const hasStats = ab.effects || ab.accuracy || ab.speed;
         
-        const cardHeight = Math.max(contentHeight, iconSize) + (cardPadding * 2);
+        // Expand the info block if we need a 3rd line for stats
+        const infoBlockHeight = hasStats ? 54 : 38; 
+        const dividerHeight = descLines.length > 0 ? 20 : 0;
+        const descTextHeight = descLines.length > 0 ? (descLines.length * 12) : 0;
+        
+        const cardHeight = cardPadding + infoBlockHeight + dividerHeight + descTextHeight + cardPadding;
 
-        this.ui.drawRect(x, y, w, cardHeight, UITheme.colors.bgScale[0]); 
-        this.ui.drawRect(x, y, w, cardHeight, UITheme.colors.border, false);
+        // --- 2. Draw Thematic Background Panel ---
+        const isEquip = abilityObj.isEquipment || (abilityObj.source && abilityObj.source !== 'Innate');
+        // Visually distinguish innate vs equipped abilities using subtle background scale shifts
+        const bgCol = isEquip ? UITheme.colors.panelBg : UITheme.colors.bgScale[0]; 
 
-        const iconY = y + cardPadding;
-        this.ui.drawRect(iconX, iconY, iconSize, iconSize, "rgba(0,0,0,0.5)");
+        // Replaced flat drawRect with stylized panel
+        this.ui.drawPanel(x, y, w, cardHeight, bgCol);
+
+        // --- 3. Render Info Block (TOP) ---
+        const infoY = y + cardPadding;
+        
+        // Draw Icon Frame (Vertically centered relative to text block height)
+        const iconX = x + cardPadding;
+        const iconY = infoY + (infoBlockHeight - iconSize) / 2;
+        
+        // Replaced simple rect frame with a nested panel for the icon recess
+        this.ui.drawPanel(iconX, iconY, iconSize, iconSize, UITheme.colors.bgScale[2]);
         this._drawAbilityIcon(ab, iconX, iconY);
-        this.ui.drawRect(iconX, iconY, iconSize, iconSize, UITheme.colors.border, false);
+        this.ui.drawRect(iconX, iconY, iconSize, iconSize, UITheme.colors.border, false); // Keep simple crisp outline for the icon itself
 
-        let cursorY = y + cardPadding + 10; 
-
-        this.ui.drawText(ab.name || abilityId, contentX, cursorY, "bold 12px sans-serif", UITheme.colors.textMain, "left");
+        const contentX = iconX + iconSize + gap;
         
-        // Cost
+        // Text Y-Anchors
+        const titleY = infoY + 12;
+        const sourceY = infoY + 28;
+        const statsY = infoY + 44; 
+        
+        // Title
+        const abilityName = ab.name || abilityObj.name || abilityObj.id;
+        this.ui.drawText(abilityName, contentX, titleY, UITheme.fonts.cardTitle, UITheme.colors.textMain, "left");
+        
+        // Cost (Top Right)
         if (ab.cost) {
             let costStr = "";
             let costCol = UITheme.colors.textMuted;
             
-            if (ab.cost.mana) { 
-                costStr = `${ab.cost.mana} MP`; 
-                costCol = UITheme.colors.defense; 
-            }
-            else if (ab.cost.stamina) { 
-                costStr = `${ab.cost.stamina} SP`; 
-                costCol = UITheme.colors.stm; 
-            }
-            else if (ab.cost.insight) { 
-                costStr = `${ab.cost.insight} INS`; 
-                costCol = UITheme.colors.ins; 
-            }
-            this.ui.drawText(costStr, x + w - cardPadding, cursorY, "bold 10px monospace", costCol, "right");
+            if (ab.cost.hp) { costStr = `${ab.cost.hp} HP`; costCol = UITheme.colors.hp; }
+            else if (ab.cost.mana) { costStr = `${ab.cost.mana} MP`; costCol = UITheme.colors.ins; }
+            else if (ab.cost.stamina) { costStr = `${ab.cost.stamina} SP`; costCol = UITheme.colors.stm; }
+            else if (ab.cost.insight) { costStr = `${ab.cost.insight} INS`; costCol = UITheme.colors.ins; }
+            
+            this.ui.drawText(costStr, x + w - cardPadding, titleY, UITheme.fonts.cardMono, costCol, "right");
         }
-        cursorY += 16;
 
-        // Stats
-        let statX = contentX;
-        const drawStat = (label, value, color) => {
-            const txt = `${label} ${value}`;
-            this.ui.drawText(txt, statX, cursorY, "10px monospace", color, "left");
-            statX += (txt.length * 6) + 10;
-        };
+        // Source Line
+        const sourceText = isEquip ? `Source: ${abilityObj.source}` : `Innate`;
+        const sourceColor = isEquip ? UITheme.colors.textHighlight : UITheme.colors.textMuted;
+        this.ui.drawText(sourceText, contentX, sourceY, UITheme.fonts.cardSmall, sourceColor, "left");
 
-        if (ab.effects) {
-            const dmg = ab.effects.find(e => e.type === 'damage' || e.type === 'heal');
-            if (dmg) drawStat("Pwr:", `${dmg.power}x`, UITheme.colors.textHighlight);
+        // Stats (Rendered on a dedicated 3rd line to guarantee they fit)
+        if (hasStats) {
+            let statX = contentX;
+            this.ui.ctx.font = UITheme.fonts.cardMono; // Prep measureText
+
+            const drawStat = (label, value, color) => {
+                const txt = `${label} ${value}`;
+                this.ui.drawText(txt, statX, statsY, UITheme.fonts.cardMono, color, "left");
+                statX += (this.ui.ctx.measureText(txt).width) + 12; // 12px gap between stats
+            };
+
+            if (ab.effects) {
+                const dmg = ab.effects.find(e => e.type === 'damage' || e.type === 'heal');
+                if (dmg) drawStat("Pwr:", `${dmg.power}x`, UITheme.colors.textHighlight);
+            }
+            if (ab.accuracy) drawStat("Acc:", `${Math.floor(ab.accuracy*100)}%`, UITheme.colors.textMuted);
+            if (ab.speed) drawStat("Spd:", ab.speed, UITheme.colors.textMuted);
         }
-        if (ab.accuracy) drawStat("Acc:", `${Math.floor(ab.accuracy*100)}%`, UITheme.colors.textMuted);
-        if (ab.speed) drawStat("Spd:", ab.speed, UITheme.colors.textMuted);
 
-        cursorY += 6; 
+        // --- 4. Render Divider & Description (BOTTOM) ---
+        let cursorY = infoY + infoBlockHeight;
 
-        // Description
         if (descLines.length > 0) {
-            this.ui.drawRect(contentX, cursorY, contentW, 1, UITheme.colors.bgScale[2]);
-            cursorY += 12;
+            cursorY += 8; // Padding before divider
+            
+            // Render Gothic Flourish Divider
+            const flourishW = w * 0.6;
+            this.ui.drawLineWithGothicFlourish(x + (w - flourishW)/2, cursorY, flourishW, UITheme.colors.border);
+            
+            cursorY += 14; // Padding after divider
 
+            // Render Description Text
             descLines.forEach(line => {
-                this.ui.drawText(line, contentX, cursorY, descFont, UITheme.colors.textMuted, "left");
-                cursorY += 13;
+                this.ui.drawText(line, x + (w/2), cursorY, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "center");
+                cursorY += 12;
             });
         }
 
-        return y + cardHeight + 8; // Return the bottom Y for the next card
+        return y + cardHeight + 8; // Margin bottom for next card
     }
 
     _drawAbilityIcon(ability, x, y) {
@@ -207,7 +207,8 @@ export class AbilitiesPanel {
                 x, y, this.ABILITY_ICON_SIZE, this.ABILITY_ICON_SIZE
             );
         } else {
-            this.ui.drawRect(x, y, this.ABILITY_ICON_SIZE, this.ABILITY_ICON_SIZE, UITheme.colors.bgScale[1]); 
+            // Fallback panel if icon doesn't load
+            this.ui.drawPanel(x, y, this.ABILITY_ICON_SIZE, this.ABILITY_ICON_SIZE, UITheme.colors.bgScale[1]); 
         }
     }
 }

@@ -310,7 +310,9 @@ export class OverworldController {
         const endCol = Math.floor(targetX / TILE_SIZE);
         const endRow = Math.floor(targetY / TILE_SIZE);
 
-        return this.worldManager.canMove(startCol, startRow, endCol, endRow);
+        // ADDED: Passing this.player.direction so the worldManager knows 
+        // which way the player is trying to enter/exit the stairs.
+        return this.worldManager.canMove(startCol, startRow, endCol, endRow, this.player.direction);
     }
 
     updateCamera() {

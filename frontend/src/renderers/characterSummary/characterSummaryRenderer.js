@@ -1,6 +1,7 @@
 import { CanvasUI } from '../../ui/canvasUI.js';
 import { UITheme } from '../../ui/UITheme.js';
 import { StatCalculator } from '../../../../shared/systems/statCalculator.js';
+import { ItemDefinitions } from '../../../../shared/data/itemDefinitions.js';
 
 // Sub-Components
 import { ItemDetailPanel } from './components/itemDetailPanel.js';
@@ -47,8 +48,9 @@ export class CharacterSummaryRenderer {
         this.ui.drawRect(leftW, 0, centerW, h, UITheme.colors.bgScale[1]);
         this.ui.drawRect(leftW + centerW, 0, rightW, h, UITheme.colors.bgScale[0]);
         
-        this.ui.drawLine(leftW, 0, leftW, h, UITheme.colors.selectedWhite);
-        this.ui.drawLine(leftW + centerW, 0, leftW + centerW, h, UITheme.colors.selectedWhite);
+        // Delicate column dividers
+        this.ui.drawLine(leftW, 0, leftW, h, UITheme.colors.border, 1);
+        this.ui.drawLine(leftW + centerW, 0, leftW + centerW, h, UITheme.colors.border, 1);
 
         if (!member) return;
 
@@ -56,7 +58,7 @@ export class CharacterSummaryRenderer {
 
         // --- 4. Render Components ---
 
-        // A. Left Column (Tabbed: Stats / Item Detail)
+        // A. Left Column (Tabbed: Stats / Item Detail / Skills)
         this.renderLeftColumn(state, leftW, h, member, stats);
 
         // B. Center Column (Equipment & Vitals)
@@ -123,19 +125,23 @@ export class CharacterSummaryRenderer {
         const tabW = contentW / 3; 
         
         const drawTab = (label, tx, isActive, id) => {
-            const bg = isActive ? UITheme.colors.bgScale[2] : UITheme.colors.bgScale[0];
-            const border = isActive ? UITheme.colors.selectedWhite : UITheme.colors.border;
-            const text = isActive ? UITheme.colors.textMain : UITheme.colors.textMuted;
+            if (isActive) {
+                // Active Tab: Gothic Panel with Gold Brackets
+                this.ui.drawPanel(tx, y, tabW, tabH, UITheme.colors.panelBg);
+                this.ui.drawSelectionBrackets(tx, y, tabW, tabH, 2, UITheme.colors.borderHighlight);
+            } else {
+                // Inactive Tab: Dimmed, basic border
+                this.ui.drawRect(tx, y, tabW, tabH, "rgba(0,0,0,0.5)");
+                this.ui.drawRect(tx, y, tabW, tabH, UITheme.colors.border, false); 
+            }
             
-            this.ui.drawRect(tx, y, tabW, tabH, bg);
-            this.ui.drawRect(tx, y, tabW, tabH, border, false); 
-            
+            const textCol = isActive ? UITheme.colors.textHighlight : UITheme.colors.textMuted;
             this.ui.drawText(
                 label, 
                 tx + tabW/2, 
                 y + (tabH/2) + 4, 
                 UITheme.fonts.small, 
-                text, 
+                textCol, 
                 "center", 
                 "middle"
             );
@@ -156,7 +162,6 @@ export class CharacterSummaryRenderer {
         } else if (viewMode === 'ITEM') {
             this.itemPanel.render(focusedItem, x, contentY, contentW, contentH, state, this.hitboxes);
         } else if (viewMode === 'ABILITIES') {
-            // NEW: Call the AbilitiesPanel render method
             this.abilitiesPanel.render(member, x, contentY, contentW, contentH, state, this.hitboxes);
         }
     }
@@ -166,27 +171,48 @@ export class CharacterSummaryRenderer {
         if (!heldItem || !heldItem.item) return;
 
         const item = heldItem.item;
-        const iconSheet = this.loader.get('icons'); 
+        const def = ItemDefinitions[item.defId];
+        if (!def) return; 
+
+        let sheetName = 'items'; 
+        const type = (def.type || '').toLowerCase();
+        const slot = (def.slot || '').toLowerCase();
+        
+        if (slot === 'mainhand' || slot === 'offhand' || type === 'weapon' || type === 'shield' || type === 'tool') {
+            sheetName = 'weapons';
+        } else if (type === 'armor' || ['head', 'body', 'legs', 'feet', 'hands', 'accessory'].includes(slot)) {
+            sheetName = 'armor';
+        } else if (type === 'consumable') {
+            sheetName = 'consumables';
+        } else if (type === 'material') {
+            sheetName = 'materials';
+        }
+
+        const iconSheet = this.loader.get(sheetName) || this.loader.get('items') || this.loader.get('icons'); 
+        
         const iconSize = 32; 
-        const drawSize = 32; 
+        const drawSize = 32; // Strictly adhere to 32x32
         
         const x = mouse.x - (drawSize / 2);
         const y = mouse.y - (drawSize / 2);
 
         this.ctx.save();
-        this.ctx.fillStyle = UITheme.colors.scrollTrack;
-        this.ctx.fillRect(x + 4, y + 4, drawSize, drawSize);
+        
+        // Gothic background for dragged item
+        this.ui.drawPanel(x, y, drawSize, drawSize, "rgba(0,0,0,0.85)");
 
-        if (iconSheet && item.icon) {
-            const sx = item.icon.col * iconSize;
-            const sy = item.icon.row * iconSize;
+        if (iconSheet && def.icon) {
+            const sx = def.icon.col * iconSize;
+            const sy = def.icon.row * iconSize;
             this.ctx.drawImage(iconSheet, sx, sy, iconSize, iconSize, x, y, drawSize, drawSize);
         } else {
             this.ctx.fillStyle = UITheme.colors.failure; 
-            this.ctx.fillRect(x, y, drawSize, drawSize);
+            this.ctx.fillRect(x + 4, y + 4, drawSize - 8, drawSize - 8);
         }
 
-        this.ui.drawRect(x, y, drawSize, drawSize, UITheme.colors.selectedWhite, false, 2);
+        // Tarnished gold highlight brackets to signify holding
+        this.ui.drawSelectionBrackets(x, y, drawSize, drawSize, 3, UITheme.colors.borderHighlight);
+        
         this.ctx.restore();
     }
 
@@ -208,32 +234,31 @@ export class CharacterSummaryRenderer {
         if (x < 5) x = 5;
         if (y < 5) y = 5;
 
-        // Draw Menu Background
-        this.ui.drawRect(x, y, menuW, menuH, UITheme.colors.bgScale[2]); 
-        this.ui.drawRect(x, y, menuW, menuH, UITheme.colors.selectedWhite, false);
+        // Draw Elegant Gothic Menu Background
+        this.ui.drawPanel(x, y, menuW, menuH, UITheme.colors.panelBg); 
 
         menu.options.forEach((opt, index) => {
             const optY = y + (index * optionH);
             const isSelected = (index === selectedIndex);
             
-            // Draw Selection Highlight
+            // Draw Selection Highlight (Inset slightly to clear the gothic border)
             if (isSelected) {
-                this.ui.drawRect(x, optY, menuW, optionH, UITheme.colors.bgScale[1]);
-                this.ui.drawText(">", x + 8, optY + (optionH/2) + 4, UITheme.fonts.small, UITheme.colors.selectedWhite);
+                this.ui.drawRect(x + 5, optY, menuW - 10, optionH, "rgba(184, 153, 71, 0.15)");
+                this.ui.drawText(">", x + 12, optY + (optionH/2) + 4, UITheme.fonts.small, UITheme.colors.textHighlight);
             }
 
             // Draw Option Label
             this.ui.drawText(
                 opt.label, 
-                x + 25, 
+                x + 28, 
                 optY + (optionH/2) + 5, 
                 UITheme.fonts.body, 
-                isSelected ? UITheme.colors.selectedWhite : UITheme.colors.textMain
+                isSelected ? UITheme.colors.textHighlight : UITheme.colors.textMain
             );
 
-            // Draw Separator
+            // Draw Delicate Separator
             if (index < menu.options.length - 1) {
-                this.ui.drawLine(x, optY + optionH, x + menuW, optY + optionH, UITheme.colors.border);
+                this.ui.drawLine(x + 10, optY + optionH, x + menuW - 10, optY + optionH, UITheme.colors.border);
             }
 
             // Register Hitbox
@@ -275,8 +300,10 @@ export class CharacterSummaryRenderer {
             prompts = parts.join("  ");
         }
 
-        // Calculate explicit center of the middle column
         const centerX = leftW + Math.floor(centerW / 2);
+
+        // Add a thematic flourish line above the controls
+        this.ui.drawLineWithGothicFlourish(centerX - 150, h - 35, 300, UITheme.colors.border);
 
         this.ui.drawText(
             prompts, 

@@ -6,7 +6,7 @@ export class BattleHUDRenderer {
         this.ctx = ctx;
         this.config = config;
         this.loader = loader;
-        this.ui = ui;
+        this.ui = ui; // canvasUI instance
         this.combatantRenderer = combatantRenderer;
 
         this.SRC_SIZE = 32; 
@@ -16,26 +16,10 @@ export class BattleHUDRenderer {
             CARD_W: 160,      
             CARD_H: 46,       
             GAP: 6,           
-            BAR_HEIGHT: 4,    // Thinner, more elegant bars
+            BAR_HEIGHT: 4,    
             BAR_WIDTH: 75,    
             PADDING_X: 10,
             PADDING_Y: 6      
-        };
-
-        // --- SOULS-LIKE PALETTE ---
-        this.COLORS = {
-            panelBg: 'rgba(15, 15, 17, 0.85)',
-            panelBorder: '#3a352c',
-            textMain: '#d4cbb8',
-            textMuted: '#8a8578',
-            stamina: '#4a5d4e',     
-            staminaDim: '#1f2621',
-            insight: '#4a5b70',     
-            insightDim: '#1e242c',
-            hp: '#8c1c1c',
-            hpDim: '#2b0909',
-            highlight: '#b89947',   // Tarnished Gold
-            targetRed: '#9e1a1a'
         };
 
         this.displayStats = new WeakMap(); 
@@ -94,30 +78,28 @@ export class BattleHUDRenderer {
         // 4. Draw giant overlay banners if they have any opacity
         if (this.bannerAlpha > 0.01) {
             const text = (state.phase === 'DEFEAT') ? 'PARTY SLAIN' : 'ENEMY SLAIN';
-            const color = (state.phase === 'DEFEAT') ? this.COLORS.targetRed : this.COLORS.highlight;
+            // FIX: Added string fallbacks in case UITheme colors are undefined
+            const color = (state.phase === 'DEFEAT') ? (UITheme.colors.targetRed || '#cc0000') : (UITheme.colors.highlight || '#b89947');
             this.drawCinematicBanner(text, color, this.bannerAlpha);
         }
 
         // 5. Draw Standard Menus
-        if (!isCinematicPhase) {
-            if (state.phase === 'SELECT_ACTION') {
-                this.drawActionMenu(state);
-                this.drawActivePlayerIndicator(state);
-            }
-            else if (state.phase === 'SELECT_TARGET') {
-                // Grab the current character and the ability they just chose
-                const activeChar = state.activeParty[state.activePartyIndex];
-                const selectedAbility = state.selectedAction || (activeChar && activeChar.abilities[state.menuIndex]);
-                
-                // Format the string dynamically
-                const promptText = selectedAbility ? `Select a target for ${selectedAbility.name}...` : "Select a target...";
-                
-                // Draw the cinematic dialogue box instead of the action menu
-                this.drawDialogueBox(promptText);
-                
-                this.drawTargetCursor(state); 
-            }
-        }
+        if (!isCinematicPhase) {
+            if (state.phase === 'SELECT_ACTION') {
+                this.drawActionMenu(state);
+                this.drawActivePlayerIndicator(state);
+            }
+            else if (state.phase === 'SELECT_TARGET') {
+                const activeChar = state.activeParty[state.activePartyIndex];
+                const selectedAbility = state.selectedAction || (activeChar && activeChar.abilities[state.menuIndex]);
+                
+                const promptText = selectedAbility ? `Select a target for ${selectedAbility.name}...` : "Select a target...";
+                
+                // Pass the active character's name as a centered title 
+                this.drawDialogueBox(promptText, `— ${activeChar.name} —`);
+                this.drawTargetCursor(state); 
+            }
+        }
     }
 
     drawHUD(state) {
@@ -130,11 +112,15 @@ export class BattleHUDRenderer {
     }
 
     drawDarkPanel(x, y, w, h) {
-        this.ctx.fillStyle = this.COLORS.panelBg;
-        this.ctx.fillRect(x, y, w, h);
-        this.ctx.strokeStyle = this.COLORS.panelBorder;
-        this.ctx.lineWidth = 1;
-        this.ctx.strokeRect(x, y, w, h);
+        if (this.ui.drawPanel) {
+            this.ui.drawPanel(x, y, w, h, UITheme.colors.panelBg, UITheme.colors.panelBorder);
+        } else {
+            this.ctx.fillStyle = UITheme.colors.panelBg;
+            this.ctx.fillRect(x, y, w, h);
+            this.ctx.strokeStyle = UITheme.colors.panelBorder;
+            this.ctx.lineWidth = 1;
+            this.ctx.strokeRect(x, y, w, h);
+        }
     }
 
     drawPartyCards(party, state) { 
@@ -156,15 +142,14 @@ export class BattleHUDRenderer {
             
             this.drawDarkPanel(currentX, y, this.HUD.CARD_W, this.HUD.CARD_H);
             
-            this.ctx.font = '12px "Georgia", serif';
-            this.ctx.fillStyle = this.COLORS.textMain;
+            this.ctx.font = UITheme.fonts.body;
+            this.ctx.fillStyle = UITheme.colors.textMain;
             this.ctx.fillText(member.name, currentX + this.HUD.PADDING_X, y + 14);
 
-            // Dynamically measure text so icons never overlap the name
             const textWidth = this.ctx.measureText(member.name).width;
             const safeStatusX = currentX + this.HUD.PADDING_X + textWidth + 10; 
             
-            this.drawStatusEffects(member, safeStatusX, y); // Adjusted Y to cleanly frame the text baseline
+            this.drawStatusEffects(member, safeStatusX, y); 
 
             const displayHp = this.getDisplayStat(member, 'hp', member.hp || 0);
             const displayStam = this.getDisplayStat(member, 'stamina', member.stamina || 0);
@@ -173,15 +158,16 @@ export class BattleHUDRenderer {
             const barX = currentX + this.HUD.PADDING_X;
             let currentY = y + 20; 
 
-            this.ui.drawBar(barX, currentY, this.HUD.BAR_WIDTH, this.HUD.BAR_HEIGHT, displayHp, member.maxHp || 10, this.COLORS.hp, this.COLORS.hpDim);
+            // Corrected UITheme mapping for vitals
+            this.ui.drawBar(barX, currentY, this.HUD.BAR_WIDTH, this.HUD.BAR_HEIGHT, displayHp, member.maxHp || 10, UITheme.colors.hp, UITheme.colors.hpDim);
             this.drawBarText(displayHp, member.maxHp, barX, currentY); 
             
             currentY += spacingY;
-            this.ui.drawBar(barX, currentY, this.HUD.BAR_WIDTH, this.HUD.BAR_HEIGHT, displayStam, member.maxStamina || 10, this.COLORS.stamina, this.COLORS.staminaDim);
+            this.ui.drawBar(barX, currentY, this.HUD.BAR_WIDTH, this.HUD.BAR_HEIGHT, displayStam, member.maxStamina || 10, UITheme.colors.stm, UITheme.colors.stmDim);
             this.drawBarText(displayStam, member.maxStamina, barX, currentY);
 
             currentY += spacingY;
-            this.ui.drawBar(barX, currentY, this.HUD.BAR_WIDTH, this.HUD.BAR_HEIGHT, displayIns, member.maxInsight || 10, this.COLORS.insight, this.COLORS.insightDim);
+            this.ui.drawBar(barX, currentY, this.HUD.BAR_WIDTH, this.HUD.BAR_HEIGHT, displayIns, member.maxInsight || 10, UITheme.colors.ins, UITheme.colors.insDim);
             this.drawBarText(displayIns, member.maxInsight, barX, currentY);
         });
     }
@@ -206,16 +192,15 @@ export class BattleHUDRenderer {
 
             this.drawDarkPanel(currentX, y, this.HUD.CARD_W, ENEMY_CARD_H);
             
-            this.ctx.font = 'italic 12px "Georgia", serif';
-            this.ctx.fillStyle = this.COLORS.textMain;
+            this.ctx.font = UITheme.fonts.bodyItalic || `italic ${UITheme.fonts.body}`;
+            this.ctx.fillStyle = UITheme.colors.textMain;
             this.ctx.textAlign = 'right';
             this.ctx.fillText(enemy.name, currentX + this.HUD.CARD_W - this.HUD.PADDING_X, y + 14);
             this.ctx.textAlign = 'left';
 
-            // Calculate exact space needed so right-aligned names don't crash into left-aligned icons
             const textWidth = this.ctx.measureText(enemy.name).width;
             const activeEffects = enemy.statusEffects ? Math.min(enemy.statusEffects.length, 4) : 0;
-            const iconsWidth = activeEffects * (16 + 6); // 16px icon + 6px spacing
+            const iconsWidth = activeEffects * (16 + 6);
             
             const safeStatusX = currentX + this.HUD.CARD_W - this.HUD.PADDING_X - textWidth - 10 - iconsWidth;
             
@@ -225,17 +210,25 @@ export class BattleHUDRenderer {
             const barX = (currentX + this.HUD.CARD_W - this.HUD.PADDING_X) - this.HUD.BAR_WIDTH;
             const barY = y + 20; 
 
-            this.ui.drawBar(barX, barY, this.HUD.BAR_WIDTH, this.HUD.BAR_HEIGHT, displayHp, enemy.maxHp || 10, this.COLORS.hp, this.COLORS.hpDim);
+            // Corrected UITheme mapping for vitals
+            this.ui.drawBar(barX, barY, this.HUD.BAR_WIDTH, this.HUD.BAR_HEIGHT, displayHp, enemy.maxHp || 10, UITheme.colors.hp, UITheme.colors.hpDim);
         });
     }
 
     drawBarText(current, max, barX, barY) {
         this.ctx.save();
-        this.ctx.font = '9px "Georgia", serif';
-        this.ctx.fillStyle = this.COLORS.textMuted;
+        
+        // Dynamically shrink the theme's small font by 2px so we don't have to hardcode the font family
+        let fontStr = UITheme.fonts.small || '12px sans-serif';
+        fontStr = fontStr.replace(/\d+px/, match => Math.max(8, parseInt(match) - 2) + 'px');
+        
+        this.ctx.font = fontStr;
+        this.ctx.fillStyle = UITheme.colors.textMuted;
         this.ctx.textAlign = "left";
         this.ctx.textBaseline = "middle";
-        this.ctx.fillText(`${Math.floor(current)}/${max}`, barX + this.HUD.BAR_WIDTH + 5, barY + (this.HUD.BAR_HEIGHT / 2));
+        
+        // Increased padding from + 5 to + 8 to un-cram it horizontally
+        this.ctx.fillText(`${Math.floor(current)}/${max}`, barX + this.HUD.BAR_WIDTH + 8, barY + (this.HUD.BAR_HEIGHT / 2));
         this.ctx.restore();
     }
 
@@ -243,7 +236,7 @@ export class BattleHUDRenderer {
         const activeChar = state.activeParty[state.activePartyIndex];
         if (!activeChar || !activeChar.abilities) return;
 
-        const itemSize = 32; // Explicitly set to 32x32 pixels
+        const itemSize = 32; 
         const margin = 10;   
         const paddingX = 20; 
         const headerH = 35;  
@@ -251,12 +244,8 @@ export class BattleHUDRenderer {
         const availableWidth = this.config.CANVAS_WIDTH - (paddingX * 2);
         const columns = Math.floor(availableWidth / (itemSize + margin));
         
-        const totalItems = activeChar.abilities.length;
-        const rows = Math.ceil(totalItems / columns);
-
-        const contentHeight = (rows * itemSize) + ((rows - 1) * margin);
-        const minHeight = 85;
-        const h = Math.max(minHeight, contentHeight + headerH + 20); 
+        // Lock the height to exactly 90 so it never fluctuates
+        const h = 90; 
 
         const w = this.config.CANVAS_WIDTH;
         const x = 0;
@@ -264,20 +253,24 @@ export class BattleHUDRenderer {
         const startY = y + headerH; 
 
         // Draw letterbox bottom area
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        this.ctx.fillStyle = UITheme.colors.menuBg || 'rgba(0, 0, 0, 0.8)';
         this.ctx.fillRect(x, y, w, h);
         
-        // Gold accent line
-        this.ctx.strokeStyle = this.COLORS.highlight;
+        // Accent line
+        this.ctx.strokeStyle = UITheme.colors.highlight;
         this.ctx.lineWidth = 1;
         this.ctx.beginPath();
         this.ctx.moveTo(x, y);
         this.ctx.lineTo(w, y);
         this.ctx.stroke();
 
-        this.ctx.font = '14px "Georgia", serif';
-        this.ctx.fillStyle = this.COLORS.textMuted;
-        this.ctx.fillText(`${activeChar.name}'s Action`, x + paddingX, y + 22);
+        // Centered, smaller character action text
+        this.ctx.save();
+        this.ctx.textAlign = 'center';
+        this.ctx.font = UITheme.fonts.bold; 
+        this.ctx.fillStyle = UITheme.colors.textMuted;
+        this.ctx.fillText(`— ${activeChar.name} —`, w / 2, y + 22);
+        this.ctx.restore();
 
         // --- ANIMATED SELECTOR LOGIC ---
         const time = performance.now() * 0.004;
@@ -294,14 +287,13 @@ export class BattleHUDRenderer {
             const drawY = startY + (row * (itemSize + margin));
 
             if (isSelected) {
-                // Centralized UI Bracket Drawing
                 const brktDist = 2 + (pulse * 2);
-                const bracketColor = canAfford ? this.COLORS.highlight : this.COLORS.hp;
+                const bracketColor = canAfford ? UITheme.colors.highlight : UITheme.colors.hp;
                 
                 this.ui.drawSelectionBrackets(drawX, drawY, itemSize, itemSize, brktDist, bracketColor);
 
                 // Subtle inner glow
-                this.ctx.fillStyle = canAfford ? 'rgba(184, 153, 71, 0.2)' : 'rgba(140, 28, 28, 0.2)';
+                this.ctx.fillStyle = canAfford ? (UITheme.colors.highlightGlow || 'rgba(184, 153, 71, 0.2)') : (UITheme.colors.hpGlow || 'rgba(140, 28, 28, 0.2)');
                 this.ctx.fillRect(drawX, drawY, itemSize, itemSize);
             } 
 
@@ -323,16 +315,18 @@ export class BattleHUDRenderer {
         const y = Math.floor(layout.y * this.config.CANVAS_HEIGHT);
         const size = Math.floor(this.combatantRenderer.FRAME_SIZE * this.combatantRenderer.SPRITE_SCALE);
 
-        // Animated bobbing
         const time = performance.now() * 0.003;
         const bob = Math.sin(time) * 4;
         const arrowY = y - (size/2) - 15 + bob;
         
-        this.ctx.fillStyle = this.COLORS.highlight;
-        this.ctx.shadowColor = this.COLORS.highlight;
-        this.ctx.shadowBlur = 10;
+        const pulse = (Math.sin(time * 2) + 1) / 2; // Oscillates between 0 and 1
         
-        // Draw a diamond
+        this.ctx.save();
+        this.ctx.globalAlpha = 0.6 + (pulse * 0.4); // Pulses opacity between 0.6 and 1.0
+        this.ctx.fillStyle = UITheme.colors.highlight;
+        this.ctx.shadowColor = UITheme.colors.highlight;
+        this.ctx.shadowBlur = 8 + (pulse * 12); // Pulses glow between 8 and 20
+        
         this.ctx.beginPath();
         this.ctx.moveTo(x, arrowY - 6);
         this.ctx.lineTo(x + 6, arrowY);
@@ -340,7 +334,7 @@ export class BattleHUDRenderer {
         this.ctx.lineTo(x - 6, arrowY);
         this.ctx.fill();
         
-        this.ctx.shadowBlur = 0;
+        this.ctx.restore();
     }
 
     drawTargetCursor(state) {
@@ -360,9 +354,9 @@ export class BattleHUDRenderer {
 
         const targets = TargetingResolver.resolve(selectedAbility, activeChar, primaryTarget, state) || [];
 
-        // Share the same bobbing timeline as the active player indicator
         const time = performance.now() * 0.003;
         const bob = Math.sin(time) * 4;
+        const pulse = (Math.sin(time * 2.5) + 1) / 2; // Slightly faster pulse for targets
 
         targets.forEach(target => {
             if (!this.combatantRenderer.isEntityVisible(target, state)) return;
@@ -384,15 +378,15 @@ export class BattleHUDRenderer {
             const size = Math.floor(this.combatantRenderer.FRAME_SIZE * this.combatantRenderer.SPRITE_SCALE);
 
             const arrowY = y - (size/2) - 15 + bob;
-            const targetColor = isAllyTargeting ? this.COLORS.highlight : this.COLORS.targetRed;
+            const targetColor = isAllyTargeting ? UITheme.colors.highlight : UITheme.colors.targetRed;
 
             this.ctx.save();
             
+            this.ctx.globalAlpha = 0.6 + (pulse * 0.4); // Pulses opacity between 0.6 and 1.0
             this.ctx.fillStyle = targetColor;
             this.ctx.shadowColor = targetColor;
-            this.ctx.shadowBlur = 10;
+            this.ctx.shadowBlur = 8 + (pulse * 12); // Pulses glow between 8 and 20
             
-            // Draw the diamond
             this.ctx.beginPath();
             this.ctx.moveTo(x, arrowY - 6);
             this.ctx.lineTo(x + 6, arrowY);
@@ -404,28 +398,44 @@ export class BattleHUDRenderer {
         });
     }
 
-    drawDialogueBox(text) {
+    drawDialogueBox(text, title = null) {
         const w = this.config.CANVAS_WIDTH;
-        const h = 80; 
+        const h = 90; // Locked to 90 to perfectly match the Action Menu
         const x = 0;
         const y = this.config.CANVAS_HEIGHT - h;
 
-        // Cinematic Dark Panel
-        this.ctx.fillStyle = 'rgba(15, 15, 17, 0.9)';
-        this.ctx.fillRect(x, y, w, h);
-        
-        // Top Gold Accent Border
-        this.ctx.fillStyle = 'rgba(184, 153, 71, 0.4)';
-        this.ctx.fillRect(x, y, w, 1);
+        if (this.ui.drawCinematicPanel) {
+            this.ui.drawCinematicPanel(x, y, w, h);
+        } else {
+            this.ctx.fillStyle = UITheme.colors.dialogueBg || 'rgba(15, 15, 17, 0.9)';
+            this.ctx.fillRect(x, y, w, h);
+            
+            this.ctx.fillStyle = UITheme.colors.highlightTransparent || 'rgba(184, 153, 71, 0.4)';
+            this.ctx.fillRect(x, y, w, 1);
+        }
+
+        let textY = y + 30;
+
+        // Optionally center a title (like the character's name) over the prompt text
+        if (title) {
+            this.ctx.save();
+            this.ctx.textAlign = 'center';
+            this.ctx.font = UITheme.fonts.bold;
+            this.ctx.fillStyle = UITheme.colors.textMuted;
+            this.ctx.fillText(title, x + (w / 2), y + 22);
+            this.ctx.restore();
+            
+            textY = y + 45; // Push the standard body text down slightly 
+        }
 
         this.ui.drawWrappedText(
             text, 
             x + 20, 
-            y + 30, 
+            textY, 
             w - 40, 
             20, 
             UITheme.fonts.body, 
-            this.COLORS.textMain
+            UITheme.colors.textMain
         );
     }
 
@@ -438,18 +448,16 @@ export class BattleHUDRenderer {
 
         this.ctx.save(); 
 
-        // 1. Darken the entire screen behind the banner
         this.ctx.fillStyle = `rgba(0, 0, 0, ${0.4 * alpha})`;
         this.ctx.fillRect(0, 0, w, this.config.CANVAS_HEIGHT);
 
-        // 2. Draw the heavy black letterbox strip
         this.ctx.fillStyle = `rgba(0, 0, 0, ${0.85 * alpha})`;
         this.ctx.fillRect(0, y, w, h);
 
-        // 3. Draw fading glowing borders
         const grad = this.ctx.createLinearGradient(0, y, w, y);
         grad.addColorStop(0, 'rgba(0,0,0,0)');
-        grad.addColorStop(0.5, color);
+        // FIX: Added a final safety fallback here just in case the method is called manually with an undefined color
+        grad.addColorStop(0.5, color || '#ffffff'); 
         grad.addColorStop(1, 'rgba(0,0,0,0)');
         
         this.ctx.fillStyle = grad;
@@ -457,9 +465,8 @@ export class BattleHUDRenderer {
         this.ctx.fillRect(0, y, w, 1);
         this.ctx.fillRect(0, y + h, w, 1);
         
-        // 4. Draw the iconic spaced-out typography
         this.ctx.globalAlpha = alpha; 
-        this.ctx.font = 'normal 42px "Georgia", serif'; 
+        this.ctx.font = UITheme.fonts.title; 
         this.ctx.fillStyle = color;
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
@@ -476,7 +483,7 @@ export class BattleHUDRenderer {
     drawStatusEffects(entity, startX, startY) {
         if (!entity.statusEffects || entity.statusEffects.length === 0) return;
 
-        const iconSize = 16; // Explicitly set to 16x16 pixels
+        const iconSize = 16;
         const spacing = 6;   
         const maxIcons = 4;  
 
@@ -511,7 +518,7 @@ export class BattleHUDRenderer {
 
     drawFallbackEmoji(text, x, y, size) {
         this.ctx.save();
-        this.ctx.fillStyle = this.COLORS.textMain;
+        this.ctx.fillStyle = UITheme.colors.textMain;
         this.ctx.font = `${Math.floor(size * 0.7)}px sans-serif`;
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';

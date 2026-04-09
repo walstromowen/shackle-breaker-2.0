@@ -7,9 +7,16 @@ export class EncounterRenderer {
         this.loader = loader;
     }
 
-    // Helper for rendering wrapped/centered text in the columns
-    drawCenteredWrappedText(ctx, ui, text, x, y, maxWidth, lineHeight, font, color) {
+    // Helper for rendering wrapped/centered text in the columns with optional shadow
+    drawCenteredWrappedText(ctx, ui, text, x, y, maxWidth, lineHeight, font, color, useShadow = false) {
         if (!text) return;
+        
+        if (useShadow) {
+            ctx.shadowColor = '#000000';
+            ctx.shadowBlur = 4;
+            ctx.shadowOffsetY = 2;
+        }
+
         ctx.font = font;
         const words = text.split(' ');
         let lines = [];
@@ -32,6 +39,12 @@ export class EncounterRenderer {
             ui.drawText(line, x, startY, font, color, "center", "middle");
             startY += lineHeight;
         });
+
+        if (useShadow) {
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
+        }
     }
 
     render(ctx, state) {
@@ -49,40 +62,50 @@ export class EncounterRenderer {
         const h = CANVAS_HEIGHT;
         const centerX = leftW;
 
-        const bg0 = UITheme.colors.bgScale[0];
-        const bg1 = UITheme.colors.bgScale[1];
-        const borderColor = UITheme.colors.border;
-
         ctx.save();
 
-        if (ui.drawRect && ui.drawLine) {
-            ui.drawRect(0, 0, leftW, h, bg0);
-            ui.drawRect(leftW, 0, centerW, h, bg1);
-            ui.drawRect(leftW + centerW, 0, rightW, h, bg0);
-            ui.drawLine(leftW, 0, leftW, h, borderColor);
-            ui.drawLine(leftW + centerW, 0, leftW + centerW, h, borderColor);
-        } else {
-            ctx.fillStyle = bg0; ctx.fillRect(0, 0, leftW, h);
-            ctx.fillStyle = bg1; ctx.fillRect(leftW, 0, centerW, h);
-            ctx.fillStyle = bg0; ctx.fillRect(leftW + centerW, 0, rightW, h);
-            
-            ctx.strokeStyle = borderColor; ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.moveTo(leftW, 0); ctx.lineTo(leftW, h); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(leftW + centerW, 0); ctx.lineTo(leftW + centerW, h); ctx.stroke();
-        }
+        // --- STYLIZED BACKGROUND GRADIENTS ---
+        const createColumnGradient = (x, width, colorTop, colorBottom) => {
+            const grad = ctx.createLinearGradient(x, 0, x, h);
+            grad.addColorStop(0, colorTop);
+            grad.addColorStop(1, colorBottom);
+            return grad;
+        };
 
-        // Both Left Portrait and Right Encounter Image align at exactly imageY
+        const bgLeftRight = createColumnGradient(0, leftW, UITheme.colors.bgScale[0], '#050505');
+        const bgCenter = createColumnGradient(leftW, centerW, UITheme.colors.bgScale[1], '#0a0a0a');
+
+        ctx.fillStyle = bgLeftRight; 
+        ctx.fillRect(0, 0, leftW, h);
+        
+        ctx.fillStyle = bgCenter; 
+        ctx.fillRect(leftW, 0, centerW, h);
+        
+        ctx.fillStyle = bgLeftRight; 
+        ctx.fillRect(leftW + centerW, 0, rightW, h);
+        
+        // --- ORNATE COLUMN DIVIDERS ---
+        ui.drawLine(leftW, 0, leftW, h, UITheme.colors.border, 2);
+        ui.drawLine(leftW + centerW, 0, leftW + centerW, h, UITheme.colors.border, 2);
+
+        // Standard alignment for images/portraits
         const imageY = 70; 
 
         // --- LEFT COLUMN: PARTY MEMBERS ---
         let currentY = imageY; 
-        party.slice(0, 3).forEach(member => {
+        party.slice(0, 3).forEach((member, index) => {
             const nameY = currentY - 20; 
             this.drawPartyMember(ctx, ui, member, 0, currentY, leftW, nameY, UITheme.fonts.body);
-            currentY += 280; 
+            currentY += 320; // Increased spacing to accommodate taller arches and expanded stats
+            
+            // Add a gothic flourish between party members (tarnished gold)
+            if (index < party.length - 1 && index < 2) {
+                ui.drawLineWithGothicFlourish(leftW * 0.2, currentY - 35, leftW * 0.6, UITheme.colors.borderHighlight);
+            }
         });
 
         // --- PARTY CURRENCY ---
+        ctx.shadowColor = '#000'; ctx.shadowBlur = 4;
         ui.drawText(
             `Currency: ${currency}`, 
             leftW / 2, 
@@ -92,6 +115,7 @@ export class EncounterRenderer {
             "center", 
             "middle"
         );
+        ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
 
         const rightColX = leftW + centerW;
         const encounterTitle = title || (encounter && encounter.title) || "Unknown Encounter";
@@ -105,8 +129,12 @@ export class EncounterRenderer {
             centerW - 40, 
             28, 
             UITheme.fonts.header, 
-            UITheme.colors.textMain
+            UITheme.colors.textMain,
+            true 
         );
+
+        // Flourish under the title (tarnished gold)
+        ui.drawLineWithGothicFlourish(centerX + (centerW * 0.2), 70, centerW * 0.6, UITheme.colors.borderHighlight);
 
         // --- RIGHT COLUMN: ENCOUNTER IMAGE ---
         if (imageId && this.loader) {
@@ -114,6 +142,13 @@ export class EncounterRenderer {
             if (img) {
                 const imgSize = 128;
                 const imgX = rightColX + (rightW / 2) - (imgSize / 2);
+
+                // Frame the encounter image in a gothic lancet arch (tarnished gold)
+                ui.drawLancetArchedPanel(imgX - 16, imageY - 32, imgSize + 32, imgSize + 64, '#000', UITheme.colors.borderHighlight);
+
+                // Add a dark backdrop for the image itself
+                ctx.fillStyle = '#050505';
+                ctx.fillRect(imgX, imageY, imgSize, imgSize);
 
                 ui.drawSprite(
                     img, 
@@ -126,7 +161,7 @@ export class EncounterRenderer {
             }
         }
 
-        const narrativeHeight = h * 0.40; 
+        const narrativeHeight = h * 0.45; 
         const decisionY = narrativeHeight;
         
         const charsPerSecond = 45; 
@@ -147,15 +182,15 @@ export class EncounterRenderer {
         
         ui.drawWrappedText(
             visibleText, 
-            centerX + 30, 
-            90, 
-            centerW - 60,
+            centerX + 40, 
+            100, 
+            centerW - 80,
             26, 
             UITheme.fonts.body,
             UITheme.colors.textMain
         );
 
-        const promptX = centerX + centerW - 25;
+        const promptX = centerX + centerW - 35;
         const promptY = narrativeHeight - 20;
 
         if (isTyping) {
@@ -169,8 +204,11 @@ export class EncounterRenderer {
         }
 
         if (showDecisions) {
+            // Flourish above decisions/rewards (tarnished gold)
+            ui.drawLineWithGothicFlourish(centerX + (centerW * 0.1), decisionY, centerW * 0.8, UITheme.colors.borderHighlight);
+
             if (rewards) {
-                this.drawRewards(ctx, ui, rewards, centerX + 40, decisionY + 30);
+                this.drawRewards(ctx, ui, rewards, centerX + 50, decisionY + 40);
                 
                 const alpha = (Math.sin(Date.now() / 150) + 1) / 2; 
                 ctx.globalAlpha = 0.4 + (alpha * 0.6);
@@ -181,22 +219,23 @@ export class EncounterRenderer {
                 ctx.globalAlpha = 1.0;
 
             } else if (decisions && decisions.length > 0) {
-                let btnY = decisionY + 30;
-                const btnX = centerX + 50; 
-                const btnW = centerW - 100; 
+                let btnY = decisionY + 40;
+                const btnX = centerX + 60; 
+                const btnW = centerW - 120; 
                 const lineHeight = 24;
 
                 decisions.forEach((opt, index) => {
                     const isSelected = (index === selectedIndex);
                     const textColor = isSelected ? UITheme.colors.selectedWhite : UITheme.colors.textMuted;
 
-                    // Get precise height based on actual word-wrapping
                     const lines = ui.getWrappedLines(opt.text, btnW, UITheme.fonts.body);
                     const decisionHeight = lines.length * lineHeight;
                     
-                    // Draw selection brackets with breathing animation
                     if (isSelected) {
                         const dist = 6 + Math.sin(Date.now() / 200) * 2;
+                        
+                        ctx.shadowColor = UITheme.colors.borderHighlight;
+                        ctx.shadowBlur = 10;
                         ui.drawSelectionBrackets(
                             btnX - 15, 
                             btnY - 5, 
@@ -205,6 +244,7 @@ export class EncounterRenderer {
                             dist, 
                             UITheme.colors.borderHighlight
                         );
+                        ctx.shadowBlur = 0;
                     }
 
                     ui.drawWrappedText(
@@ -217,8 +257,7 @@ export class EncounterRenderer {
                         textColor
                     );
 
-                    // Add a cleaner, consistent vertical gap
-                    btnY += decisionHeight + 16; 
+                    btnY += decisionHeight + 20; 
                 });
             }
         }
@@ -229,33 +268,36 @@ export class EncounterRenderer {
         if (popupPhases.includes(actionPhase)) {
             const { displayVal, mod, dc, isSuccess } = rollData;
             
-            const popupW = 360; 
-            const popupH = 240;
+            ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            const popupW = 400; 
+            const popupH = 280;
             const popupX = (CANVAS_WIDTH / 2) - (popupW / 2);
             const popupY = (CANVAS_HEIGHT / 2) - (popupH / 2);
 
-            ctx.fillStyle = UITheme.colors.panelBg;
-            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            const popupGrad = ctx.createLinearGradient(popupX, popupY, popupX, popupY + popupH);
+            popupGrad.addColorStop(0, UITheme.colors.bgScale[2] || '#1a1a1a');
+            popupGrad.addColorStop(1, '#050505');
 
-            if (ui.drawRect) {
-                ui.drawRect(popupX, popupY, popupW, popupH, UITheme.colors.background);
-                ui.drawRect(popupX + 4, popupY + 4, popupW - 8, popupH - 8, UITheme.colors.hp, false);
-                ui.drawRect(popupX, popupY, popupW, popupH, UITheme.colors.hpDim, false); 
-            } else {
-                ctx.fillStyle = UITheme.colors.background; ctx.fillRect(popupX, popupY, popupW, popupH);
-                ctx.strokeStyle = UITheme.colors.hp; ctx.strokeRect(popupX + 4, popupY + 4, popupW - 8, popupH - 8);
-                ctx.strokeStyle = UITheme.colors.hpDim; ctx.strokeRect(popupX, popupY, popupW, popupH);
-            }
+            ctx.fillStyle = popupGrad;
+            ctx.fillRect(popupX, popupY, popupW, popupH);
+            ui.drawPanel(popupX, popupY, popupW, popupH, "transparent"); 
 
-            ui.drawText("Skill Check", CANVAS_WIDTH / 2, popupY + 35, UITheme.fonts.header, UITheme.colors.textHighlight, "center");
+            ctx.shadowColor = '#000'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
+            ui.drawText("Skill Check", CANVAS_WIDTH / 2, popupY + 40, UITheme.fonts.header, UITheme.colors.textHighlight, "center");
+            ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+            
+            // Flourish in dice roll (tarnished gold)
+            ui.drawLineWithGothicFlourish(popupX + 40, popupY + 60, popupW - 80, UITheme.colors.borderHighlight);
 
             const isNeutralPhase = ['wait_for_roll', 'rolling', 'hold_base', 'apply_mod'].includes(actionPhase);
             const diceColor = isNeutralPhase ? UITheme.colors.textHighlight : (isSuccess ? UITheme.colors.success : UITheme.colors.failure);
             
-            const diceAreaY = popupY + 115;
+            const diceAreaY = popupY + 140;
             const diceCenterX = CANVAS_WIDTH / 2;
-            const leftModX = diceCenterX - 90;
-            const rightThreshX = diceCenterX + 90;
+            const leftModX = diceCenterX - 110;
+            const rightThreshX = diceCenterX + 110;
 
             let modPulseScale = 1.0;
             let rollerPulseScale = 1.0; 
@@ -299,7 +341,7 @@ export class EncounterRenderer {
             if (actionPhase === 'apply_mod') {
                 ctx.scale(modPulseScale, modPulseScale);
             }
-            ui.drawText("Modifier", 0, -20, UITheme.fonts.small || "14px sans-serif", UITheme.colors.textMuted, "center", "middle");
+            ui.drawText("Modifier", 0, -30, UITheme.fonts.small || "14px sans-serif", UITheme.colors.textMuted, "center", "middle");
             
             if (actionPhase === 'apply_mod' && modGlowIntensity > 0) {
                 ctx.shadowColor = activeModColor;
@@ -319,29 +361,40 @@ export class EncounterRenderer {
                 ctx.scale(resultPulseScale, resultPulseScale);
             }
             
-            const diamondSize = 35;
-            ctx.strokeStyle = diceColor;
-            ctx.lineWidth = 2;
+            const diamondSize = 45;
+            
+            ctx.fillStyle = '#0a0a0a';
             ctx.beginPath();
             ctx.moveTo(0, -diamondSize);
             ctx.lineTo(diamondSize, 0);
             ctx.lineTo(0, diamondSize);
             ctx.lineTo(-diamondSize, 0);
             ctx.closePath();
-            
-            ctx.fillStyle = UITheme.colors.background; 
-            ctx.fill(); 
+            ctx.fill();
+
+            ctx.strokeStyle = diceColor;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.strokeStyle = "rgba(255,255,255,0.15)";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, -diamondSize + 6);
+            ctx.lineTo(diamondSize - 6, 0);
+            ctx.lineTo(0, diamondSize - 6);
+            ctx.lineTo(-diamondSize + 6, 0);
+            ctx.closePath();
             ctx.stroke();
 
             if (actionPhase === 'result') {
                 ctx.shadowColor = isSuccess ? (UITheme.colors.success || '#00ff00') : (UITheme.colors.failure || '#ff0000');
-                ctx.shadowBlur = 15;
+                ctx.shadowBlur = 25;
             } else if (actionPhase === 'apply_mod' && rollerGlowIntensity > 0) {
                 ctx.shadowColor = isSuccess ? (UITheme.colors.success || '#00ff00') : (UITheme.colors.failure || '#ff0000');
-                ctx.shadowBlur = 15 * rollerGlowIntensity;
+                ctx.shadowBlur = 25 * rollerGlowIntensity;
             }
 
-            ctx.font = "bold 36px monospace";
+            ctx.font = "bold 40px monospace";
             ctx.fillStyle = diceColor;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
@@ -350,7 +403,7 @@ export class EncounterRenderer {
 
             ctx.save();
             ctx.translate(rightThreshX, diceAreaY);
-            ui.drawText("Threshold", 0, -20, UITheme.fonts.small || "14px sans-serif", UITheme.colors.textMuted, "center", "middle");
+            ui.drawText("Threshold", 0, -30, UITheme.fonts.small || "14px sans-serif", UITheme.colors.textMuted, "center", "middle");
             ui.drawText(dc.toString(), 0, 10, UITheme.fonts.title, UITheme.colors.textMain, "center", "middle");
             ctx.restore();
 
@@ -358,42 +411,45 @@ export class EncounterRenderer {
                 const btnW = 160;
                 const btnH = 40;
                 const btnX = (CANVAS_WIDTH / 2) - (btnW / 2);
-                const btnY = popupY + 180;
+                const btnY = popupY + 220;
 
-                ctx.fillStyle = UITheme.colors.bgScale[3];
-                ctx.fillRect(btnX, btnY, btnW, btnH);
-                ctx.strokeStyle = UITheme.colors.hp;
-                ctx.strokeRect(btnX, btnY, btnW, btnH);
+                ui.drawPanel(btnX, btnY, btnW, btnH, UITheme.colors.bgScale[3]);
 
                 const alpha = (Math.sin(Date.now() / 200) + 1) / 2; 
                 ctx.globalAlpha = 0.6 + (alpha * 0.4);
-                ctx.fillStyle = UITheme.colors.textHighlight; 
-                ctx.font = UITheme.fonts.bold;
-                ctx.textAlign = "center";
-                ctx.fillText("ROLL", CANVAS_WIDTH / 2, btnY + 25);
+                
+                ctx.shadowColor = UITheme.colors.textHighlight;
+                ctx.shadowBlur = 8;
+                ui.drawText("ROLL", CANVAS_WIDTH / 2, btnY + 26, UITheme.fonts.bold, UITheme.colors.textHighlight, "center");
+                
                 ctx.globalAlpha = 1.0;
+                ctx.shadowBlur = 0;
             } 
             else if (actionPhase === 'result') {
                 const resultText = isSuccess ? "SUCCESS!" : "FAILED";
-                ui.drawText(resultText, CANVAS_WIDTH / 2, popupY + 200, UITheme.fonts.header, diceColor, "center");
+                ctx.shadowColor = diceColor;
+                ctx.shadowBlur = 10;
+                ui.drawText(resultText, CANVAS_WIDTH / 2, popupY + 245, UITheme.fonts.header, diceColor, "center");
+                ctx.shadowBlur = 0;
             } 
             else if (['rolling', 'hold_base', 'apply_mod'].includes(actionPhase)) {
                 const alpha = (Math.sin(Date.now() / 150) + 1) / 2; 
                 ctx.globalAlpha = 0.4 + (alpha * 0.6);
-                ctx.fillStyle = UITheme.colors.textHighlight;
-                ctx.font = UITheme.fonts.italic;
-                ctx.textAlign = "center";
-                ctx.fillText("[Enter] to Skip", CANVAS_WIDTH / 2, popupY + 200);
+                ui.drawText("[Enter] to Skip", CANVAS_WIDTH / 2, popupY + 245, UITheme.fonts.italic, UITheme.colors.textHighlight, "center");
                 ctx.globalAlpha = 1.0;
             }
         }
+        ctx.restore();
     }
 
     drawRewards(ctx, ui, rewards, x, y) {
         let currentY = y;
         const lineHeight = 28;
 
+        ctx.shadowColor = '#000'; ctx.shadowBlur = 4;
         ui.drawText("Rewards Found", x, currentY, UITheme.fonts.header, UITheme.colors.textHighlight);
+        ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
+        
         currentY += lineHeight + 5;
 
         if (rewards.xp) {
@@ -433,40 +489,47 @@ export class EncounterRenderer {
             nameY, 
             colWidth - 20, 
             24, 
-            font, 
-            nameColor
+            UITheme.fonts.header, 
+            nameColor,
+            true 
         );
 
         const masterSheet = this.loader.get(member.spritePortrait);
-        ctx.fillStyle = UITheme.colors.scrollTrack;
+        
+        // Portrait inner shadow/darkness
+        ctx.fillStyle = '#050505';
         ctx.fillRect(pX, pY, pSize, pSize);
+        
         if (masterSheet) {
             ctx.drawImage(masterSheet, 0, 0, 128, 128, pX, pY, pSize, pSize);
         }
         
         if (member.hp <= 0) {
-            ctx.fillStyle = UITheme.colors.hpDim;
+            ctx.fillStyle = "rgba(100, 0, 0, 0.6)"; 
             ctx.fillRect(pX, pY, pSize, pSize);
         }
         
-        ctx.strokeStyle = UITheme.colors.border;
-        ctx.strokeRect(pX, pY, pSize, pSize);
+        // Match the left portrait arch EXACTLY to the right encounter image arch dimensions & tarnished gold
+        ui.drawLancetArchedPanel(pX - 16, pY - 32, pSize + 32, pSize + 64, "transparent", UITheme.colors.borderHighlight);
 
         this.drawStatusEffects(ctx, ui, member, pX, pY, pSize);
 
-        let statY = pY + pSize + 25;
-        const labelW = 32;
+        // Lowered statY to clear the new, taller gothic arch gracefully
+        let statY = pY + pSize + 40;
+        const labelW = 36;
         const numW = 45;
         const barW = colWidth - labelW - numW - 40; 
         const startX = x + 20;
 
+        ctx.shadowColor = '#000'; ctx.shadowBlur = 2;
         this.drawStatRow(ui, "HP", member.hp, member.maxHp, startX, statY, barW, 6, numW, labelW, UITheme.colors.hp, UITheme.colors.hpDim);
-        statY += 20;
+        statY += 24; // Better spacing
         this.drawStatRow(ui, "STM", member.stamina, member.maxStamina, startX, statY, barW, 6, numW, labelW, UITheme.colors.stm, UITheme.colors.stmDim);
-        statY += 20;
+        statY += 24; // Better spacing
         this.drawStatRow(ui, "INS", member.insight, member.maxInsight, startX, statY, barW, 6, numW, labelW, UITheme.colors.ins, UITheme.colors.insDim);
+        ctx.shadowBlur = 0;
         
-        statY += 24; 
+        statY += 30; // Larger gap separating vitals from attributes
 
         const attrs = member.attributes || {};
         const vig = attrs.vigor || 0;
@@ -475,19 +538,19 @@ export class EncounterRenderer {
         const int = attrs.intelligence || 0;
         const atn = attrs.attunement || 0;
 
-        const col1X = startX;
-        const col2X = startX + (colWidth / 2) - 10;
+        const col1X = startX + 10;
+        const col2X = startX + (colWidth / 2) + 10;
         const attrFont = UITheme.fonts.mono;
         
         ui.drawText(`VIG: ${vig}`, col1X, statY, attrFont, UITheme.colors.textMuted);
         ui.drawText(`STR: ${str}`, col2X, statY, attrFont, UITheme.colors.textMuted);
         
-        statY += 20;
+        statY += 24; // Better spacing
         
         ui.drawText(`DEX: ${dex}`, col1X, statY, attrFont, UITheme.colors.textMuted);
         ui.drawText(`INT: ${int}`, col2X, statY, attrFont, UITheme.colors.textMuted);
 
-        statY += 20;
+        statY += 24; // Better spacing
         
         ui.drawText(`ATN: ${atn}`, col1X, statY, attrFont, UITheme.colors.textMuted);
     }
@@ -503,17 +566,22 @@ export class EncounterRenderer {
 
         const sheetKey = 'statusEffects'; 
         const srcSize = 32;  
-        const drawSize = 16; 
-        const spacing = 2; 
+        const drawSize = 18; 
+        const spacing = 4; 
 
         const sheet = this.loader.get(sheetKey);
         
-        let drawX = pX + 2; 
-        let drawY = pY + pSize - drawSize - 2;
+        let drawX = pX + 4; 
+        let drawY = pY + pSize - drawSize - 4; 
 
         member.statusEffects.forEach(effect => {
-            ctx.fillStyle = UITheme.colors.scrollTrack;
+            ctx.shadowColor = '#000';
+            ctx.shadowBlur = 4;
+            
+            ctx.fillStyle = '#111';
             ctx.fillRect(drawX, drawY, drawSize, drawSize);
+
+            ctx.shadowBlur = 0; 
 
             if (sheet && effect.icon) {
                 ctx.drawImage(
@@ -525,14 +593,18 @@ export class EncounterRenderer {
                 ui.drawText(effect.name.charAt(0), drawX + (drawSize/2), drawY + (drawSize/2) + 3, UITheme.fonts.small, UITheme.colors.textMain, "center");
             }
 
-            ctx.strokeStyle = UITheme.colors.border;
-            ctx.strokeRect(drawX, drawY, drawSize, drawSize);
+            ctx.strokeStyle = UITheme.colors.borderHighlight || '#fff';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(drawX + 0.5, drawY + 0.5, drawSize - 1, drawSize - 1);
 
             if (effect.stacks && effect.stacks > 1) {
-                ctx.fillStyle = UITheme.colors.background;
+                ctx.fillStyle = '#000';
                 ctx.beginPath();
                 ctx.arc(drawX + drawSize, drawY + drawSize, 6, 0, Math.PI * 2);
                 ctx.fill();
+                
+                ctx.strokeStyle = UITheme.colors.border;
+                ctx.stroke();
                 
                 ui.drawText(effect.stacks.toString(), drawX + drawSize, drawY + drawSize + 3, UITheme.fonts.small, UITheme.colors.textMain, "center");
             }

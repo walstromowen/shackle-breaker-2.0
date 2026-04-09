@@ -13,11 +13,11 @@ export class StatsPanel {
         // ==========================================
         // 1. ATTRIBUTES SECTION
         // ==========================================
-        this.ui.drawText("Attributes", x, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
+        this.ui.drawText("Attributes", x, currentY, UITheme.fonts.bold, UITheme.colors.textMain, "left");
         
-        // --- Underline Header ---
-        currentY += 5; 
-        this.ui.drawRect(x, currentY, w, 1, UITheme.colors.border); 
+        // --- Gothic Flourish Header ---
+        currentY += 8; 
+        this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.border); 
         currentY += 15; // Space between line and content
 
         const attrs = member.attributes || {};
@@ -42,8 +42,8 @@ export class StatsPanel {
                 const isDebuffed = displayVal < baseVal;
                 
                 let valColor = UITheme.colors.textMain;
-                if (isBuffed) valColor = UITheme.colors.accent; 
-                if (isDebuffed) valColor = UITheme.colors.danger; 
+                if (isBuffed) valColor = UITheme.colors.success; // Estus Gold for buffs
+                if (isDebuffed) valColor = UITheme.colors.failure; // Dark Crimson for debuffs
 
                 const label = Formatting.getAbbreviation(key);
                 
@@ -53,65 +53,64 @@ export class StatsPanel {
 
             currentY += (numRows * rowHeight);
         } else {
-            this.ui.drawText("None", x, currentY, "italic 11px sans-serif", UITheme.colors.textMuted, "left");
+            this.ui.drawText("None", x, currentY, UITheme.fonts.italic, UITheme.colors.textMuted, "left");
             currentY += rowHeight;
         }
 
         currentY += 20;
 
         // ==========================================
-        // 2. COMBAT & RECOVERY STATS SECTION
-        // ==========================================
-        this.ui.drawText("Combat Stats", x, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
+        // 2. COMBAT & RECOVERY STATS SECTION
+        // ==========================================
+        this.ui.drawText("Combat Stats", x, currentY, UITheme.fonts.bold, UITheme.colors.textMain, "left");
 
-        currentY += 5; 
-        this.ui.drawRect(x, currentY, w, 1, UITheme.colors.border);
-        currentY += 15; 
+        currentY += 8; 
+        this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.border);
+        currentY += 15; 
 
-        const speed = stats.speed || member.attributes?.speed || 0;
-        const critChance = (stats.critChance || 0) * 100;
-        const critMult = (stats.critMultiplier !== undefined) ? stats.critMultiplier : 1.5;
-        const accuracy = stats.accuracy !== undefined ? stats.accuracy : 100;
-        const evasion = stats.evasion !== undefined ? stats.evasion : 100;
-        const hpRec = stats.hpRecovery || 0;
-        const staRec = stats.staminaRecovery || 0;
-        const insRec = stats.insightRecovery || 0;
-        const corruption = stats.corruption || 0;
+        const speed = stats.speed || member.attributes?.speed || 0;
+        const critChance = (stats.critChance || 0) * 100;
+        const critMult = (stats.critMultiplier !== undefined) ? stats.critMultiplier : 1.5;
+        const accuracy = stats.accuracy !== undefined ? stats.accuracy : 100;
+        const evasion = stats.evasion !== undefined ? stats.evasion : 100;
+        const hpRec = stats.hpRecovery || 0;
+        const staRec = stats.staminaRecovery || 0;
+        const insRec = stats.insightRecovery || 0;
+        const corruption = stats.corruption || 0;
 
-        // Interleaved to force Column 1 (Recoveries/Speed) and Column 2 (Other Combat Stats)
-        const combatStats = [
-            { label: "SPD", val: `${speed}` },
-            { label: "CRT %", val: `${critChance.toFixed(0)}%` },
+        const combatStats = [
+            { label: "SPD", val: `${speed}` },
+            { label: "CRT %", val: `${critChance.toFixed(0)}%` },
 
-            { label: "HP REC", val: hpRec > 0 ? `${hpRec}` : `${hpRec}` },
-            { label: "CRT DMG", val: `${critMult}` },
+            { label: "HP REC", val: hpRec > 0 ? `${hpRec}` : `${hpRec}` },
+            { label: "CRT DMG", val: `${critMult}` },
 
-            { label: "STA REC", val: staRec > 0 ? `${staRec}` : `${staRec}` },
-            { label: "ACC", val: `${accuracy}` },
+            { label: "STA REC", val: staRec > 0 ? `${staRec}` : `${staRec}` },
+            { label: "ACC", val: `${accuracy}` },
 
-            { label: "INS REC", val: insRec > 0 ? `${insRec}` : `${insRec}` },
-            { label: "EVA", val: `${evasion}` },
+            { label: "INS REC", val: insRec > 0 ? `${insRec}` : `${insRec}` },
+            { label: "EVA", val: `${evasion}` },
 
-            { label: "COR", val: `${corruption}` }
-        ];
+            { label: "COR", val: `${corruption}` }
+        ];
 
-        const colWidth = w / 2;
-        const numRows = Math.ceil(combatStats.length / 2);
+        const colWidth = w / 2;
+        const numRows = Math.ceil(combatStats.length / 2);
 
-        combatStats.forEach((stat, i) => {
-            if (!stat.label) return; // Skip drawing if it's our blank spacer
+        combatStats.forEach((stat, i) => {
+            if (!stat.label) return; 
 
-            const col = i % 2;
-            const row = Math.floor(i / 2);
-            
-            const itemX = x + (col * colWidth);
-            const itemY = currentY + (row * rowHeight);
-            
-            this.ui.drawText(stat.label, itemX, itemY, UITheme.fonts.mono, UITheme.colors.textMuted, "left");
-            this.ui.drawText(stat.val, itemX + 60, itemY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
-        });
+            const col = i % 2;
+            const row = Math.floor(i / 2);
+            
+            const itemX = x + (col * colWidth);
+            const itemY = currentY + (row * rowHeight);
+            
+            this.ui.drawText(stat.label, itemX, itemY, UITheme.fonts.mono, UITheme.colors.textMuted, "left");
+            this.ui.drawText(stat.val, itemX + 60, itemY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
+        });
 
-        currentY += (numRows * rowHeight) + 10;
+        currentY += (numRows * rowHeight) + 10;
 
         // ==========================================
         // 3. RESISTANCE TABLE
@@ -127,15 +126,14 @@ export class StatsPanel {
         const colDef = x + (w * 0.65);
         const colRes = x + (w * 0.85);
 
-        const headerFont = "bold 10px sans-serif";
+        const headerFont = UITheme.fonts.bold;
         this.ui.drawText("TYPE", colType, currentY, headerFont, UITheme.colors.textMuted, "left");
-        this.ui.drawText("ATK", colAtk, currentY, headerFont, UITheme.colors.danger, "center");
-        this.ui.drawText("DEF", colDef, currentY, headerFont, UITheme.colors.magic, "center");
-        // CHANGED: Header for RES is now textMuted (default gray) to match the request for "default color"
-        this.ui.drawText("RES", colRes, currentY, headerFont, UITheme.colors.textMuted, "center");
+        this.ui.drawText("ATK", colAtk, currentY, headerFont, UITheme.colors.attack, "center");
+        this.ui.drawText("DEF", colDef, currentY, headerFont, UITheme.colors.defense, "center");
+        this.ui.drawText("RES", colRes, currentY, headerFont, UITheme.colors.resistance, "center");
         
-        currentY += 5;
-        this.ui.drawRect(x, currentY, w, 1, UITheme.colors.border);
+        currentY += 8;
+        this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.border);
         currentY += 15;
 
         const types = [
@@ -161,23 +159,22 @@ export class StatsPanel {
                  return { text: display, color: displayColor };
             };
 
-            // ATK (Danger/Red)
-            const atkData = formatVal(atk, UITheme.colors.danger);
+            // ATK (Target Red)
+            const atkData = formatVal(atk, UITheme.colors.attack);
             this.ui.drawText(atkData.text, colAtk, currentY, UITheme.fonts.mono, atkData.color, "center");
             
-            // DEF (Magic/Blue)
-            const defData = formatVal(defense, UITheme.colors.magic);
+            // DEF (Insight Blue)
+            const defData = formatVal(defense, UITheme.colors.defense);
             this.ui.drawText(defData.text, colDef, currentY, UITheme.fonts.mono, defData.color, "center");
             
-            // RES (Default/White)
-            // CHANGED: Use textMain instead of insight color for value
-           const resData = (res !== 0) 
-                ? { text: `${(res * 100).toFixed(0)}%`, color: UITheme.colors.textMain } 
-                : { text: "-", color: UITheme.colors.textMuted };
-                
-            this.ui.drawText(resData.text, colRes, currentY, UITheme.fonts.mono, resData.color, "center");
+            // RES (Text Main)
+            const resData = (res !== 0) 
+                ? { text: `${(res * 100).toFixed(0)}%`, color: UITheme.colors.textMain } 
+                : { text: "-", color: UITheme.colors.textMuted };
+                
+            this.ui.drawText(resData.text, colRes, currentY, UITheme.fonts.mono, resData.color, "center");
 
-            currentY += 14;
+            currentY += 14;
         });
     }
 }

@@ -1,4 +1,3 @@
-import { SPRITES } from '../../../../shared/data/sprites.js';
 import { gameState } from '../../../../shared/state/gameState.js'; // <-- NEW: Import gameState
 
 export class LightingRenderer {

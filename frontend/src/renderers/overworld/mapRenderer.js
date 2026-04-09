@@ -1,6 +1,6 @@
 import { CONFIG } from '../../../../shared/data/constants.js';
-import { SPRITES } from '../../../../shared/data/sprites.js';
 import { gameState } from '../../../../shared/state/gameState.js';
+// SPRITES import successfully eradicated!
 
 export class MapRenderer {
     constructor(canvas, loader, config) {
@@ -28,12 +28,11 @@ export class MapRenderer {
     // 1. MAIN RENDER PIPELINE
     // ==========================================
 
-    // FIXED: Swapped interpolationFactor and totalTime to match SceneManager
     renderMap(worldManager, camera, entities = [], interpolationFactor = 1, totalTime = 0) {
         this.ctx.fillStyle = '#000000';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // NEW: Interpolate the camera so the entire terrain pans smoothly!
+        // Interpolate the camera so the entire terrain pans smoothly!
         const interpCamX = camera.prevX !== undefined 
             ? camera.prevX + (camera.x - camera.prevX) * interpolationFactor 
             : camera.x;
@@ -66,6 +65,9 @@ export class MapRenderer {
         const camX = camera.x;
         const camY = camera.y;
 
+        // --- NEW FIX: Queue ground objects to draw AFTER all terrain is rendered ---
+        const groundObjectsQueue = [];
+
         for (let row = bounds.startRow; row < bounds.endRow; row++) {
             for (let col = bounds.startCol; col < bounds.endCol; col++) {
                 
@@ -73,7 +75,6 @@ export class MapRenderer {
                 const depth = TILE_DEPTH[tileData.id] || 0;
                 const sheetId = tileData.sheetId || 'tileset';
 
-                // FIXED: Changed | 0 to Math.round() to prevent black screen-tearing lines
                 const dx = Math.round((col * TILE_SIZE - camX) * GAME_SCALE);
                 const dy = Math.round((row * TILE_SIZE - camY) * GAME_SCALE);
 
@@ -96,13 +97,55 @@ export class MapRenderer {
                     this.drawTile(tileData.id, idx, dx, dy, sheetId);
                 }
 
-                // 4. Shadows & Ground Objects
+                // 4. Shadows
                 this.drawShadows(worldManager, col, row, dx, dy, depth);
 
+                // 5. Reconstruct Cliff Faces under stairs
+                const obj = tileData.object || tileData.occupyingObject;
+                if (obj && obj.isGround && obj.isStairs) {
+                    const h = this.config.WALL_HEIGHT || 2;
+                    let foundWall = null;
+                    let foundDist = 0;
+                    
+                    for (let d = 1; d <= h; d++) {
+                        const aboveTileData = worldManager.getTileData(col, row - d);
+                        if (aboveTileData && aboveTileData.isWall) {
+                            foundWall = aboveTileData;
+                            foundDist = d;
+                            break; 
+                        }
+                    }
+
+                    if (foundWall) {
+                        const aboveDepth = TILE_DEPTH[foundWall.id] || 0;
+                        if (aboveDepth > depth) {
+                            for (let d = 1; d <= foundDist; d++) {
+                                const faceDrawY = dy - ((foundDist - d) * TILE_SIZE * GAME_SCALE);
+                                const isFoot = (d === foundDist) || (depth >= TILE_DEPTH[TILE_TYPES.LAYER_3]);
+                                const faceIdx = this.getFaceIndex(foundWall.mask, isFoot);
+                                
+                                this.drawTile(foundWall.id, faceIdx, dx, faceDrawY, foundWall.sheetId);
+                            }
+                        }
+                    }
+                }
+
+                // --- NEW FIX: Push the object to the queue instead of drawing it immediately ---
                 if (tileData.object && tileData.object.isGround) {
-                    this.drawObject(tileData.object, dx, dy, totalTime, tileData.objectSheetId);
+                    groundObjectsQueue.push({
+                        obj: tileData.object,
+                        dx: dx,
+                        dy: dy,
+                        sheetId: tileData.objectSheetId
+                    });
                 }
             }
+        }
+
+        // --- NEW FIX: Draw all queued ground objects on top of the finished terrain ---
+        for (let i = 0; i < groundObjectsQueue.length; i++) {
+            const item = groundObjectsQueue[i];
+            this.drawObject(item.obj, item.dx, item.dy, totalTime, item.sheetId);
         }
     }
 
@@ -127,7 +170,10 @@ export class MapRenderer {
             
             if (this.isInBounds(obj.col, obj.row, bounds)) {
                 const tileData = worldManager.getTileData(obj.col, obj.row);
-                const visualBottomOffset = obj.h || 1;
+                
+                // FIX: Force the Y-sort anchor to the bottom of the single anchor tile.
+                // Previously, obj.h caused tall objects to sort as if they were lower on the screen.
+                const visualBottomOffset = 1; 
                 
                 // Object Pooling: Reuse existing object or create new one if needed
                 if (!this.renderList[renderIdx]) this.renderList[renderIdx] = {};
@@ -136,7 +182,6 @@ export class MapRenderer {
                 item.y = ((obj.row + visualBottomOffset) * TILE_SIZE * GAME_SCALE) + 0.1;
                 item.type = 'OBJECT';
                 item.data = obj;
-                // FIXED: Applied Math.round() for objects
                 item.x = Math.round((obj.col * TILE_SIZE - camX) * GAME_SCALE);
                 item.dy = Math.round((obj.row * TILE_SIZE - camY) * GAME_SCALE);
                 item.objectSheetId = tileData.objectSheetId;
@@ -160,8 +205,8 @@ export class MapRenderer {
             item.data = entity;
         }
 
-        // D. Sort & Draw (Only sort the active subset of our pool)
-        this.renderList.length = renderIdx; // Truncate excess to avoid sorting junk
+        // D. Sort & Draw
+        this.renderList.length = renderIdx;
         this.renderList.sort((a, b) => a.y - b.y);
 
         for (let i = 0; i < renderIdx; i++) {
@@ -207,30 +252,33 @@ export class MapRenderer {
     }
 
     drawObject(obj, dx, dy, totalTime = 0, objectSheetId = null) {
-        const spriteKey = obj.spriteKey || obj.type || obj.id;
-        const sprite = SPRITES[spriteKey];
-        
-        if (!sprite) return;
-        
         const sheetToUse = obj.sheetId || objectSheetId;
         const imageSource = sheetToUse ? (this.loader.get(sheetToUse) || this.fallbackObjects) : this.fallbackObjects;
         
+        const { OBJECT_SIZE, GAME_SCALE } = this.config;
+        
+        const wTiles = obj.w || 1;
+        const hTiles = obj.h || 1;
+
+        const dW = wTiles * OBJECT_SIZE * GAME_SCALE;
+        const dH = hTiles * OBJECT_SIZE * GAME_SCALE;
+
+        // Shift tall objects UP so they anchor at the bottom tile instead of hanging downward
+        const drawY = dy - ((hTiles - 1) * OBJECT_SIZE * GAME_SCALE);
+
         if (!imageSource) return;
 
-        const { OBJECT_SIZE, GAME_SCALE } = this.config;
         let frameOffset = 0;
 
-        if (sprite.frames > 1) {
-            const speed = sprite.speed || 0.2;
-            frameOffset = ((totalTime / speed) | 0) % sprite.frames;
+        if (obj.frames > 1) {
+            const speed = obj.speed || 0.2;
+            frameOffset = ((totalTime / speed) | 0) % obj.frames;
         }
 
-        const sx = (sprite.x + frameOffset) * OBJECT_SIZE;
-        const sy = sprite.y * OBJECT_SIZE;
-        const dW = sprite.w * OBJECT_SIZE * GAME_SCALE;
-        const dH = sprite.h * OBJECT_SIZE * GAME_SCALE;
+        const sx = ((obj.spriteX || 0) + frameOffset) * OBJECT_SIZE;
+        const sy = (obj.spriteY || 0) * OBJECT_SIZE;
         
-        this.ctx.drawImage(imageSource, sx, sy, sprite.w * OBJECT_SIZE, sprite.h * OBJECT_SIZE, dx, dy, dW, dH);
+        this.ctx.drawImage(imageSource, sx, sy, wTiles * OBJECT_SIZE, hTiles * OBJECT_SIZE, dx, drawY, dW, dH);
     }
 
     drawEntity(entity, camera, interpolationFactor = 1) {
@@ -247,7 +295,6 @@ export class MapRenderer {
             ? entity.prevY + (entity.y - entity.prevY) * interpolationFactor 
             : entity.y;
 
-        // FIXED: Applied Math.round() for entities
         const dx = Math.round((renderX - camera.x) * GAME_SCALE);
         const dy = Math.round((renderY - camera.y) * GAME_SCALE);
         const drawSize = TILE_SIZE * GAME_SCALE;
@@ -282,13 +329,13 @@ export class MapRenderer {
         let mask = 0;
         const bits = this.BITS;
 
-        if (this._castsShadow(worldManager, col, row - 1, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5))     mask |= bits.TOP;
+        if (this._castsShadow(worldManager, col, row - 1, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5))    mask |= bits.TOP;
         if (this._castsShadow(worldManager, col + 1, row - 1, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5)) mask |= bits.TOP_RIGHT;
-        if (this._castsShadow(worldManager, col + 1, row, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5))     mask |= bits.RIGHT;
+        if (this._castsShadow(worldManager, col + 1, row, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5))    mask |= bits.RIGHT;
         if (this._castsShadow(worldManager, col + 1, row + 1, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5)) mask |= bits.BOTTOM_RIGHT;
-        if (this._castsShadow(worldManager, col, row + 1, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5))     mask |= bits.BOTTOM;
+        if (this._castsShadow(worldManager, col, row + 1, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5))    mask |= bits.BOTTOM;
         if (this._castsShadow(worldManager, col - 1, row + 1, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5)) mask |= bits.BOTTOM_LEFT;
-        if (this._castsShadow(worldManager, col - 1, row, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5))     mask |= bits.LEFT;
+        if (this._castsShadow(worldManager, col - 1, row, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5))    mask |= bits.LEFT;
         if (this._castsShadow(worldManager, col - 1, row - 1, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5)) mask |= bits.TOP_LEFT;
 
         if (mask === 0) return;
@@ -358,6 +405,7 @@ export class MapRenderer {
         const drawSize = TILE_SIZE * GAME_SCALE;
         const camX = camera.x;
         const camY = camera.y;
+        const h = WALL_HEIGHT || 2;
 
         for (let row = bounds.startRow; row < bounds.endRow; row++) {
             for (let col = bounds.startCol; col < bounds.endCol; col++) {
@@ -365,25 +413,40 @@ export class MapRenderer {
                 if (!tileData.isWall) continue;
 
                 const myDepth = TILE_DEPTH[tileData.id];
-                
-                // FIXED: Applied Math.round() for wall rendering
                 const dx = Math.round((col * TILE_SIZE - camX) * GAME_SCALE);
                 const dy = Math.round((row * TILE_SIZE - camY) * GAME_SCALE);
 
-                for (let d = 1; d <= (WALL_HEIGHT || 2); d++) {
-                    const belowId = worldManager.getTileAt(col, row + d);
-                    const belowDepth = TILE_DEPTH[belowId] || 0;
+                // --- NEW LOGIC: Pre-check if ANY tile below has stairs ---
+                // If stairs exist anywhere on this wall, let the Terrain Pass handle it.
+                let stairBlocksWall = false;
+                for (let d = 1; d <= h; d++) {
+                    const checkTile = worldManager.getTileData(col, row + d);
+                    if (checkTile) {
+                        const obj = checkTile.occupyingObject || checkTile.object;
+                        if (obj && obj.isStairs) {
+                            stairBlocksWall = true;
+                            break;
+                        }
+                    }
+                }
 
+                if (stairBlocksWall) continue; // Skip rendering this entire wall in the sorted pass
+
+                // Otherwise, process and sort faces normally
+                for (let d = 1; d <= h; d++) {
+                    const belowTileData = worldManager.getTileData(col, row + d);
+                    if (!belowTileData) break;
+                    
+                    const belowDepth = TILE_DEPTH[belowTileData.id] || 0;
                     if (belowDepth >= myDepth) break;
 
-                    const isFoot = (d === (WALL_HEIGHT || 2)) || (belowDepth >= TILE_DEPTH[TILE_TYPES.LAYER_3]);
+                    const isFoot = (d === h) || (belowDepth >= TILE_DEPTH[TILE_TYPES.LAYER_3]);
                     const faceIdx = this.getFaceIndex(tileData.mask, isFoot);
 
-                    // Re-use objects in the pool
                     if (!this.renderList[renderIdx]) this.renderList[renderIdx] = {};
                     const item = this.renderList[renderIdx++];
 
-                    item.y = ((row + d + 1) * TILE_SIZE * GAME_SCALE) + 0.1;
+                    item.y = ((row + d) * TILE_SIZE * GAME_SCALE); 
                     item.type = 'WALL_FACE';
                     item.data = { id: tileData.id, idx: faceIdx }; 
                     item.x = dx;

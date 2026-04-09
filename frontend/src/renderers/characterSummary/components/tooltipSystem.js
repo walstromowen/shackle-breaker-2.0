@@ -6,8 +6,8 @@ import { ItemDefinitions } from '../../../../../shared/data/itemDefinitions.js';
 export class TooltipSystem {
     constructor(ui) {
         this.ui = ui;
-        this.WIDTH = 220; // Reduced width slightly to match smaller text
-        this.PADDING = 10;
+        this.WIDTH = 220;
+        this.PADDING = 12; // Slightly wider padding to accommodate the inner panel borders
     }
 
     render(state, hitboxes) {
@@ -34,11 +34,9 @@ export class TooltipSystem {
         
         if (hovered.type === 'trait') {
             content = this._getTraitContent(hovered.id);
-        
         } else if (hovered.type === 'inventory') {
             const item = filteredInventory[hovered.index];
             if (item) content = this._getItemContent(item);
-        
         } else if (hovered.type === 'slot') {
             const equip = (member.state && member.state.equipment) ? member.state.equipment : member.equipment;
             const item = equip ? equip[hovered.slotId] : null; 
@@ -113,7 +111,7 @@ export class TooltipSystem {
         return {
             title: def.name,
             type: "Trait",
-            color: UITheme.colors.accent,
+            color: UITheme.colors.borderHighlight, // Tarnished gold for traits
             lines: lines
         };
     }
@@ -138,7 +136,6 @@ export class TooltipSystem {
             return null;
         }
 
-        // Resolve definition via defId if present
         let def = item;
         if (item.defId) {
             def = ItemDefinitions[item.defId];
@@ -146,7 +143,6 @@ export class TooltipSystem {
             def = item.definition;
         }
 
-        // Safety check if def isn't found
         if (!def) return null;
 
         const lines = [];
@@ -192,20 +188,20 @@ export class TooltipSystem {
         const { title, type, color, lines } = content;
         
         // --- FONTS ---
-        const headerFont = "bold 11px sans-serif"; 
-        const typeFont   = "9px sans-serif";       
-        const bodyFont   = "10px sans-serif";      
-        const lineHeight = 14; // Bumped slightly for better readability
+        const headerFont = UITheme.fonts.cardTitle; 
+        const typeFont   = UITheme.fonts.cardItalic;      
+        const bodyFont   = UITheme.fonts.cardSmall;      
+        const lineHeight = 14;
         
         this.ui.ctx.font = bodyFont;
         
         // 1. Calculate Height & Wrap Text
-        let contentHeight = 38; // Adjusted base height for the new header styling
+        let contentHeight = 38;
         const wrappedLines = [];
         
         lines.forEach(rawLine => {
             if (rawLine === "---") {
-                contentHeight += 8; 
+                contentHeight += 12; // More breathing room for flourishes
                 wrappedLines.push({ text: "---", isSeparator: true });
             } else {
                 const wLines = this.ui.getWrappedLines(rawLine, this.WIDTH - (this.PADDING * 2), bodyFont);
@@ -226,76 +222,61 @@ export class TooltipSystem {
         if (tx + this.WIDTH > screenW) tx = mx - this.WIDTH - 15;
         if (ty + contentHeight > screenH) ty = screenH - contentHeight - 10;
 
-        // 3. Draw Background with Drop Shadow
+        // 3. Draw Beautiful Gothic Panel with Drop Shadow
         this.ui.ctx.save();
         this.ui.ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
         this.ui.ctx.shadowBlur = 12;
         this.ui.ctx.shadowOffsetX = 4;
         this.ui.ctx.shadowOffsetY = 4;
-        this.ui.drawRect(tx, ty, this.WIDTH, contentHeight, "rgba(15, 15, 18, 0.96)");
-        this.ui.ctx.restore();
-
-        // 4. Draw Borders (Outer Frame + Faint Inner Rarity Accent)
-        this.ui.ctx.save();
-        this.ui.ctx.lineWidth = 1;
-        this.ui.drawRect(tx, ty, this.WIDTH, contentHeight, UITheme.colors.border, false); // Outer
         
-        this.ui.ctx.strokeStyle = color;
-        this.ui.ctx.globalAlpha = 0.25; // Subtle inner glow effect
-        this.ui.ctx.strokeRect(tx + 2, ty + 2, this.WIDTH - 4, contentHeight - 4); // Inner
+        // Utilizing the new drawPanel method!
+        this.ui.drawPanel(tx, ty, this.WIDTH, contentHeight, "rgba(15, 15, 18, 0.98)");
         this.ui.ctx.restore();
 
-        // 5. Draw Header Banner Background
+        // 4. Draw Header Banner Background (Inside the inset frame)
+        const inset = 4; // Matching inset from drawPanel logic
         this.ui.ctx.save();
         this.ui.ctx.fillStyle = color;
-        this.ui.ctx.globalAlpha = 0.12; // Just enough to tint the header box
-        this.ui.ctx.fillRect(tx + 1, ty + 1, this.WIDTH - 2, 28);
+        this.ui.ctx.globalAlpha = 0.12; 
+        this.ui.ctx.fillRect(tx + inset + 1, ty + inset + 1, this.WIDTH - (inset * 2) - 2, 28);
         this.ui.ctx.restore();
 
-        // 6. Draw Header Text
-        this.ui.drawText(title, tx + this.PADDING, ty + 19, headerFont, color, "left");
-        this.ui.drawText(type, tx + this.WIDTH - this.PADDING, ty + 19, typeFont, UITheme.colors.textMuted, "right");
+        // 5. Draw Header Text
+        this.ui.drawText(title, tx + this.PADDING, ty + 21, headerFont, color, "left");
+        this.ui.drawText(type, tx + this.WIDTH - this.PADDING, ty + 21, typeFont, UITheme.colors.textMuted, "right");
 
-        // Header Separator (Sharp Rarity Line)
+        // Header Separator (Sharp Rarity Line, constrained within inner frame)
         this.ui.ctx.save();
         this.ui.ctx.strokeStyle = color;
         this.ui.ctx.globalAlpha = 0.6;
         this.ui.ctx.beginPath();
-        this.ui.ctx.moveTo(tx + 2, ty + 29);
-        this.ui.ctx.lineTo(tx + this.WIDTH - 2, ty + 29);
+        this.ui.ctx.moveTo(tx + inset + 1, ty + 33);
+        this.ui.ctx.lineTo(tx + this.WIDTH - inset - 1, ty + 33);
         this.ui.ctx.stroke();
         this.ui.ctx.restore();
 
-        // 7. Draw Body Text & Fading Separators
-        let curY = ty + 42;
+        // 6. Draw Body Text & Gothic Separators
+        let curY = ty + 46;
         wrappedLines.forEach(lineObj => {
             if (lineObj.isSeparator) {
-                this.ui.ctx.save();
-                // Create a sleek gradient that fades out at the edges
-                const grad = this.ui.ctx.createLinearGradient(tx, 0, tx + this.WIDTH, 0);
-                grad.addColorStop(0, "rgba(255, 255, 255, 0)");
-                grad.addColorStop(0.5, "rgba(255, 255, 255, 0.15)");
-                grad.addColorStop(1, "rgba(255, 255, 255, 0)");
-                
-                this.ui.ctx.fillStyle = grad;
-                this.ui.ctx.fillRect(tx + this.PADDING, curY - 4, this.WIDTH - (this.PADDING * 2), 1);
-                this.ui.ctx.restore();
-                
-                curY += 8;
+                // Replacing gradient line with elegant Gothic flourish divider
+                this.ui.drawLineWithGothicFlourish(tx + this.PADDING, curY - 4, this.WIDTH - (this.PADDING * 2), UITheme.colors.border);
+                curY += 12;
             } else {
-                this.ui.drawText(lineObj.text, tx + this.PADDING, curY, bodyFont, "#d4d4d8", "left");
+                this.ui.drawText(lineObj.text, tx + this.PADDING, curY, bodyFont, UITheme.colors.textMain, "left");
                 curY += lineHeight;
             }
         });
     }
 
     _getRarityColor(rarity) {
+        // Tuned slightly to fit the muted aesthetic while retaining meaning
         switch ((rarity || "").toLowerCase()) {
-            case 'uncommon': return "#1eff00";
-            case 'rare': return "#0070dd";
-            case 'epic': return "#a335ee";
-            case 'legendary': return "#ff8000";
-            default: return "#ffffff";
+            case 'uncommon': return "#5c9e47"; // Muted green
+            case 'rare': return "#4a709c";     // Muted blue
+            case 'epic': return "#8359a3";     // Muted purple
+            case 'legendary': return "#b89947"; // Tarnished gold (Theme highlight)
+            default: return UITheme.colors.textMain;
         }
     }
 }
