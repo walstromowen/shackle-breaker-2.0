@@ -43,10 +43,11 @@ export const BIOME_DEFINITIONS = {
             rate: 0.01,
             pools: [
                 // Standard pack: No change needed! Will auto-scale to player's level.
-                { chance: 0.40, enemies: ['LEGIONARY', 'MAD_MAGE', 'LEGIONARY'] },          
+                { chance: 0.20, enemies: ['LEGIONARY', 'MAD_MAGE', 'LEGIONARY'] }, 
+                { chance: 0.40, enemies: ['SHACKLED_STEED'] },         
                 
                 
-                { chance: 0.40, enemies: ['WOLF', 'WOLF'] },   
+                { chance: 0.20, enemies: ['WOLF', 'WOLF'] },   
                 
                 // Mad Mage (Boss/Hard encounter):
                 { 
@@ -94,10 +95,12 @@ export const BIOME_DEFINITIONS = {
         mapObjects: {
             [CONFIG.TILE_TYPES.LAYER_2]: [ 
                 { chance: 0.002, id: 'WOODEN_CHEST' },
-                { chance: 0.15,  id: 'SMALL_ROCKS_1' }
+                { chance: 0.15,  id: 'SMALL_ROCKS_1' },
+                { chance: 0.50,  rangeStart: 0.30, pool: ['SAND_DUNE_1', 'SAND_DUNE_2', 'SAND_DUNE_3'] }
             ],
             _WALLS: [
-                { chance: 0.05, id: 'SMALL_ROCKS_1' }
+                { chance: 0.05, id: 'SMALL_ROCKS_1' },
+                { chance: 0.50,  rangeStart: 0.30, pool: ['SAND_DUNE_1', 'SAND_DUNE_2', 'SAND_DUNE_3'] }
             ]
         },
         battles: {

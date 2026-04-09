@@ -235,6 +235,40 @@ export const ENTITY_DEFINITIONS = {
         tags: [...BEAST_TEMPLATE.tags, "CANINE"]
     },
 
+    "SHACKLED_STEED": {
+        ...BEAST_TEMPLATE, 
+        name: "Shackled Steed",
+        level: 1,
+
+        spriteOverworld: "shackledSteedSprite",
+        spritePortrait: "shackledSteedPortrait",
+        battlePortraitFramesFront: 8, // Defaults for enemy view
+        battlePortraitFramesBack: 8,  // Defaults for player view    
+        crySound: "shackledSteedCry",       // <-- NEW: Plays on battle start
+        deathSound: "shackledSteedCry",
+        attributes: {
+            ...BEAST_TEMPLATE.attributes,
+            vigor: 14,dexterity: 10, strength: 10
+        },
+
+        baseStats: {
+            ...BEAST_TEMPLATE.baseStats,
+            maxHp: 40, maxStamina: 18, 
+            speed: 9, critical: 0.15, 
+            baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, ice: 4 },
+            baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, fire: -0.25, ice: 0.25 },
+            baseAttack: { blunt: 8, slash: 2, pierce: 2 }
+        },
+
+        // No money, but moderate chance for crafting/vendor trash
+        currencyReward: { min: 0, max: 0 },
+        lootTable: [
+            { id: "leather", dropRate: 0.50 }
+        ],
+        abilities: [...BEAST_TEMPLATE.abilities, "strike"],
+        tags: [...BEAST_TEMPLATE.tags,]
+    },
+
     "AVIAN": {
         ...BASE_ENTITY,
         name: "Avian",

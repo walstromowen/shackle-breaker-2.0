@@ -56,7 +56,12 @@ export const MAP_OBJECTS_DEFINITIONS = {
     TULIPS_RED:       { spriteX: 3, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
     SMALL_ROCKS_1:    { spriteX: 4, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
     SMALL_ROCKS_2:    { spriteX: 5, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
-    
+    SAND_DUNE_1: { spriteX: 6, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
+    SAND_DUNE_2: { spriteX: 7, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
+    SAND_DUNE_3: { spriteX: 8, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
+
+
+
     // --- INTERACTABLES & OBSTACLES ---
     BOULDER_1: { 
         spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, 

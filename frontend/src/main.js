@@ -38,6 +38,7 @@ const ASSET_MANIFEST = {
     germanSheepherdSprite: './assets/sprites/dogs/german_sheepherd_sprite.png',
     germanSheepherdPortrait: './assets/sprites/dogs/german_sheepherd_portrait.png',
     hawkPortrait: './assets/sprites/hawk/hawk_portrait.png',
+    shackledSteedPortrait: './assets/sprites/shackled_steed/shackled_steed_portrait.png',
     
     //items: './assets/icons/items.png', 
     weapons: './assets/icons/weapons.png',
@@ -70,6 +71,7 @@ const ASSET_MANIFEST = {
     legionaryCry: './assets/audio/sfx/cries/legionary_cry.wav',
     wolfCry: './assets/audio/sfx/cries/wolf_cry.wav',
     dogCry: './assets/audio/sfx/cries/dog_cry.wav',
+    shackledSteedCry: './assets/audio/sfx/cries/shackled_steed_cry.wav',
     madMageCry: './assets/audio/sfx/cries/mad_mage_cry.wav',
     dogDeath: './assets/audio/sfx/deaths/dog_death.wav',
 
