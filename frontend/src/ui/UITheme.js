@@ -44,23 +44,24 @@ export const UITheme = {
     },
 
     fonts: {
-        title: 'normal 42px "Georgia", serif',
-        header: 'bold 24px "Georgia", serif',
-        body: '14px "Georgia", serif',
-        bold: 'bold 14px "Georgia", serif',
-        italic: 'italic 12px "Georgia", serif',
-        small: '12px "Georgia", serif',
-        mono: '14px monospace',
+        title: 'normal 101px "Georgia", serif',       // Scaled from 42px
+        header: 'bold 58px "Georgia", serif',         // Scaled from 24px
+        body: '34px "Georgia", serif',                // Scaled from 14px
+        bold: 'bold 34px "Georgia", serif',           // Scaled from 14px
+        italic: 'italic 29px "Georgia", serif',       // Scaled from 12px
+        small: '29px "Georgia", serif',               // Scaled from 12px
+        mono: '34px monospace',                       // Scaled from 14px
+        
         // --- Added Micro Fonts for Cards ---
-        cardTitle: 'bold 12px "Georgia", serif',
-        cardSmall: '10px "Georgia", serif',
-        cardItalic: 'italic 10px "Georgia", serif',
-        cardMono: '10px monospace'
+        cardTitle: 'bold 29px "Georgia", serif',      // Scaled from 12px
+        cardSmall: '24px "Georgia", serif',           // Scaled from 10px
+        cardItalic: 'italic 24px "Georgia", serif',   // Scaled from 10px
+        cardMono: '24px monospace'                    // Scaled from 10px
     },
 
     layout: {
-        padding: 20,
-        headerHeight: 50,
-        cornerRadius: 0 // Flat, sharp corners fit the aesthetic better
+        padding: 48,          // Scaled from 20
+        headerHeight: 120,    // Scaled from 50
+        cornerRadius: 0       // Flat, sharp corners fit the aesthetic better
     }
 };

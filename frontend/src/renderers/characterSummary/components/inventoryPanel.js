@@ -9,12 +9,12 @@ export class InventoryPanel {
         
         // --- Grid Constants ---
         this.COLS = 4;            
-        this.SLOT_SIZE = 40;      // Keeps the 40px size (fits icons well)
-        this.SLOT_PADDING = 8;    // Fills the side gaps
+        this.SLOT_SIZE = 96;      // Scaled up for 1080p
+        this.SLOT_PADDING = 19;   // Fills the side gaps
         
         // Layout Constants
-        this.HEADER_HEIGHT = 75; 
-        this.SCROLLBAR_WIDTH = 4;
+        this.HEADER_HEIGHT = 180; 
+        this.SCROLLBAR_WIDTH = 10;
         
         this.totalContentHeight = 0;
     }
@@ -23,13 +23,13 @@ export class InventoryPanel {
         const centerX = Math.floor(x + (w / 2));
 
         // --- 1. Draw Fixed Header ---
-        this.ui.drawText("Inventory", centerX, y + 20, UITheme.fonts.header, UITheme.colors.textMain, "center");
+        this.ui.drawText("Inventory", centerX, y + 48, UITheme.fonts.header, UITheme.colors.textMain, "center");
         
         // --- Currency Label ---
         const currencyAmount = gameState.party.currency || 0;
-        this.ui.drawText(`Currency: ${currencyAmount}`, centerX, y + 45, UITheme.fonts.cardMono, UITheme.colors.textHighlight, "center");
+        this.ui.drawText(`Currency: ${currencyAmount}`, centerX, y + 108, UITheme.fonts.cardMono, UITheme.colors.textHighlight, "center");
         
-        const dividerY = y + this.HEADER_HEIGHT - 10;
+        const dividerY = y + this.HEADER_HEIGHT - 24;
         const flourishW = w * 0.8;
         this.ui.drawLineWithGothicFlourish(x + (w - flourishW)/2, dividerY, flourishW, UITheme.colors.border);
 
@@ -40,7 +40,7 @@ export class InventoryPanel {
         // --- CENTER THE GRID ---
         const totalGridW = (this.COLS * this.SLOT_SIZE) + ((this.COLS - 1) * this.SLOT_PADDING);
         let startX = x + Math.floor((w - totalGridW) / 2);
-        if (startX < x + 2) startX = x + 2; 
+        if (startX < x + 5) startX = x + 5; 
 
         // --- 3. Scroll Calculation ---
         const itemCount = inventory ? inventory.length : 0;
@@ -69,10 +69,10 @@ export class InventoryPanel {
         this.ui.ctx.save();
         
         // Expanded clip area significantly to prevent bracket animations from clipping
-        this.ui.startClip(x, listY - 10, w + 15, listH + 20); 
+        this.ui.startClip(x, listY - 24, w + 36, listH + 48); 
 
         if (!inventory || inventory.length === 0) {
-            this.ui.drawText("- Empty -", centerX, listY + 30, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "center");
+            this.ui.drawText("- Empty -", centerX, listY + 72, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "center");
         } 
         else {
             inventory.forEach((item, index) => {
@@ -112,22 +112,22 @@ export class InventoryPanel {
                 this.ui.drawPanel(itemX, itemY, this.SLOT_SIZE, this.SLOT_SIZE, bgFill);
 
                 // Draw Icon
-                const iconOffset = (this.SLOT_SIZE - 32) / 2;
+                const iconOffset = (this.SLOT_SIZE - 77) / 2;
                 if (!isHeld) {
                     this._drawIcon(def, itemX + iconOffset, itemY + iconOffset);
                 } else {
                     // Ghost if held
-                    this.ui.drawRect(itemX + iconOffset, itemY + iconOffset, 32, 32, "rgba(0,0,0,0.1)");
+                    this.ui.drawRect(itemX + iconOffset, itemY + iconOffset, 77, 77, "rgba(0,0,0,0.1)");
                 }
 
                 // Count
                 if (item.qty > 1 && !isHeld) {
-                    this.ui.drawText(`${item.qty}`, itemX + this.SLOT_SIZE - 2, itemY + this.SLOT_SIZE - 2, UITheme.fonts.small, UITheme.colors.textHighlight, "right");
+                    this.ui.drawText(`${item.qty}`, itemX + this.SLOT_SIZE - 5, itemY + this.SLOT_SIZE - 5, UITheme.fonts.small, UITheme.colors.textHighlight, "right");
                 }
 
                 // DRAW SELECTION BRACKETS
                 if (isSelected) {
-                    const pulseDist = 4 + Math.sin(Date.now() / 150) * 2;
+                    const pulseDist = 10 + Math.sin(Date.now() / 150) * 5;
                     this.ui.drawSelectionBrackets(itemX, itemY, this.SLOT_SIZE, this.SLOT_SIZE, pulseDist, UITheme.colors.borderHighlight);
                 }
             });
@@ -140,7 +140,7 @@ export class InventoryPanel {
 
         // --- 5. Draw Scrollbar ---
         if (this.totalContentHeight > listH) {
-            const scrollX = x + w + 2; 
+            const scrollX = x + w + 5; 
             this.drawScrollBar(scrollX, listY, listH, this.totalContentHeight, renderScroll, hitboxes);
         }
     }
@@ -149,7 +149,7 @@ export class InventoryPanel {
         this.ui.drawRect(x, y, this.SCROLLBAR_WIDTH, viewportH, UITheme.colors.scrollTrack || UITheme.colors.bgScale[0]); 
         
         const viewRatio = viewportH / contentH;
-        let thumbH = Math.max(20, viewportH * viewRatio);
+        let thumbH = Math.max(48, viewportH * viewRatio);
         const maxScroll = contentH - viewportH;
         const scrollRatio = maxScroll > 0 ? (scrollOffset / maxScroll) : 0;
         const trackSpace = viewportH - thumbH;
@@ -161,9 +161,9 @@ export class InventoryPanel {
             hitboxes.push({
                 id: 'INV_SCROLLBAR_THUMB', 
                 type: 'ui',
-                x: x - 4, 
+                x: x - 10, 
                 y: thumbY, 
-                w: this.SCROLLBAR_WIDTH + 8, 
+                w: this.SCROLLBAR_WIDTH + 19, 
                 h: thumbH 
             });
         }
@@ -195,6 +195,6 @@ export class InventoryPanel {
         const srcX = (iconData.col * ICON_SIZE);
         const srcY = (iconData.row * ICON_SIZE);
 
-        this.ui.drawSprite(sheet, srcX, srcY, ICON_SIZE, ICON_SIZE, x, y, 32, 32);
+        this.ui.drawSprite(sheet, srcX, srcY, ICON_SIZE, ICON_SIZE, x, y, 77, 77);
     }
 }

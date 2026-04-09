@@ -1,4 +1,4 @@
-import { gameState } from '../../../../shared/state/gameState.js'; // <-- NEW: Import gameState
+import { gameState } from '../../../../shared/state/gameState.js'; 
 
 export class LightingRenderer {
     constructor(config) {
@@ -38,13 +38,28 @@ export class LightingRenderer {
         if (finalA <= 0) return;
 
         const { width, height } = ctx.canvas;
-        const { TILE_SIZE } = this.config;
+        const { TILE_SIZE, GAME_SCALE } = this.config;
 
         // Resize overlay if window changed
         if (this.overlay.width !== width || this.overlay.height !== height) {
             this.overlay.width = width;
             this.overlay.height = height;
         }
+
+        // --- FIX: REPLICATE MAP RENDERER ALIGNMENT & SCALING ---
+        const baseWidth = 800;
+        const resScale = width / baseWidth;
+        const scale = GAME_SCALE * resScale;
+
+        const centerOffsetX = (width / 2) / scale - (TILE_SIZE / 2);
+        const centerOffsetY = (height / 2) / scale - (TILE_SIZE / 2);
+
+        // This matches the `renderCamera` object from your MapRenderer
+        const renderCamera = {
+            x: camera.x - centerOffsetX,
+            y: camera.y - centerOffsetY
+        };
+        // --------------------------------------------------------
 
         // 2. Fill Darkness (Using our new blended color)
         this.oCtx.clearRect(0, 0, width, height);
@@ -60,7 +75,8 @@ export class LightingRenderer {
                 if (ent.light && ent.light.hasLight) {
                     const centerX = ent.x + (ent.width || TILE_SIZE) / 2;
                     const centerY = ent.y + (ent.height || TILE_SIZE) / 2;
-                    this.drawLightPoint(this.oCtx, camera, centerX, centerY, ent.light);
+                    // Pass the shifted renderCamera and dynamic scale
+                    this.drawLightPoint(this.oCtx, renderCamera, centerX, centerY, ent.light, scale);
                 }
             });
         }
@@ -71,7 +87,8 @@ export class LightingRenderer {
                 if (obj.light && obj.light.hasLight) {
                     const pixelX = (obj.col * TILE_SIZE) + (obj.w * TILE_SIZE / 2);
                     const pixelY = (obj.row * TILE_SIZE) + (obj.h * TILE_SIZE / 2);
-                    this.drawLightPoint(this.oCtx, camera, pixelX, pixelY, obj.light);
+                    // Pass the shifted renderCamera and dynamic scale
+                    this.drawLightPoint(this.oCtx, renderCamera, pixelX, pixelY, obj.light, scale);
                 }
             });
         }
@@ -81,11 +98,13 @@ export class LightingRenderer {
         ctx.drawImage(this.overlay, 0, 0);
     }
 
-    drawLightPoint(ctx, camera, worldPixelX, worldPixelY, lightConfig) {
-        const { GAME_SCALE, TILE_SIZE } = this.config;
+    // Updated to accept our centered renderCamera and dynamic scale
+    drawLightPoint(ctx, renderCamera, worldPixelX, worldPixelY, lightConfig, scale) {
+        const { TILE_SIZE } = this.config;
 
-        const screenX = Math.floor((worldPixelX - camera.x) * GAME_SCALE);
-        const screenY = Math.floor((worldPixelY - camera.y) * GAME_SCALE);
+        // Use the aligned camera and combined scale
+        const screenX = Math.floor((worldPixelX - renderCamera.x) * scale);
+        const screenY = Math.floor((worldPixelY - renderCamera.y) * scale);
 
         let finalRadius = lightConfig.radius * TILE_SIZE;
 
@@ -96,7 +115,9 @@ export class LightingRenderer {
         }
 
         if (finalRadius < 0) finalRadius = 0;
-        const scaledRadius = finalRadius * GAME_SCALE;
+        
+        // Scale the radius properly as well
+        const scaledRadius = finalRadius * scale;
 
         try {
             const gradient = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, scaledRadius);

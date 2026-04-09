@@ -6,9 +6,9 @@ export class EquipmentPanel {
     constructor(ui, loader) {
         this.ui = ui;
         this.loader = loader;
-        this.SLOT_HEIGHT = 48;
-        this.PORTRAIT_SIZE = 128;
-        this.RENDER_SIZE = 32;
+        this.SLOT_HEIGHT = 115;
+        this.PORTRAIT_SIZE = 307;
+        this.RENDER_SIZE = 77;
     }
 
     _getVal(v) {
@@ -17,19 +17,19 @@ export class EquipmentPanel {
 
     render(member, stats, activeSlots, selectedIndex, isChoosingItem, x, y, w, h, hitboxes, heldItem) {
         const centerX = Math.floor(x + (w / 2));
-        let headerY = y + 10;
+        let headerY = y + 24;
 
         const actualLevel = this._getVal(stats.level) || this._getVal(member.level) || 1;
 
-        this.ui.drawText(member.name, centerX, headerY + 15, UITheme.fonts.header, UITheme.colors.textMain, "center");
-        this.ui.drawText(`Level ${actualLevel}`, centerX, headerY + 36, UITheme.fonts.body, UITheme.colors.textHighlight, "center");
+        this.ui.drawText(member.name, centerX, headerY + 36, UITheme.fonts.header, UITheme.colors.textMain, "center");
+        this.ui.drawText(`Level ${actualLevel}`, centerX, headerY + 86, UITheme.fonts.body, UITheme.colors.textHighlight, "center");
 
-        this._drawVitals(member, stats, centerX, headerY + 58, x, w);
+        this._drawVitals(member, stats, centerX, headerY + 139, x, w);
 
-        const equipStartY = y + 95; 
+        const equipStartY = y + 228; 
         this._drawEquipmentLayout(member, activeSlots, selectedIndex, isChoosingItem, centerX, equipStartY, w, hitboxes, heldItem);
 
-        const traitsStartY = equipStartY + Math.max(this.PORTRAIT_SIZE, activeSlots.length/2 * 52) + 25;
+        const traitsStartY = equipStartY + Math.max(this.PORTRAIT_SIZE, activeSlots.length/2 * 125) + 60;
         this._drawTraitBadges(member, x, traitsStartY, w, hitboxes);
     }
 
@@ -47,7 +47,7 @@ export class EquipmentPanel {
         const xpText = `XP ${currentXp}/${nextXp}`;
 
         this.ui.ctx.font = UITheme.fonts.mono;
-        const gap = 15;
+        const gap = 36;
         const totalW = this.ui.ctx.measureText(hpText + stmText + insText + xpText).width + (gap * 3);
         let startX = centerX - (totalW / 2);
 
@@ -63,7 +63,7 @@ export class EquipmentPanel {
         drawVital(xpText, UITheme.colors.xp); 
 
         // Gothic flourish instead of basic line divider
-        this.ui.drawLineWithGothicFlourish(fullX + 40, y + 15, fullW - 80, UITheme.colors.border);
+        this.ui.drawLineWithGothicFlourish(fullX + 96, y + 36, fullW - 192, UITheme.colors.border);
     }
 
     _drawEquipmentLayout(member, activeSlots, selectedIndex, isChoosingItem, centerX, startY, w, hitboxes, heldItem) {
@@ -84,7 +84,7 @@ export class EquipmentPanel {
         }
 
         const pX = Math.floor(centerX - (this.PORTRAIT_SIZE / 2));
-        const pY = startY + 10;
+        const pY = startY + 24;
 
         // Elegant portrait background
         this.ui.drawPanel(pX, pY, this.PORTRAIT_SIZE, this.PORTRAIT_SIZE, UITheme.colors.bgScale[0]);
@@ -102,9 +102,9 @@ export class EquipmentPanel {
             const globalIndex = isLeft ? index : splitIndex + index;
             const isSelected = (globalIndex === selectedIndex);
             
-            const slotW = Math.floor((w - this.PORTRAIT_SIZE - 26) / 2);
-            const slotX = isLeft ? (centerX - (this.PORTRAIT_SIZE/2) - slotW - 8) : (centerX + (this.PORTRAIT_SIZE/2) + 8);
-            const slotY = startY + (index * (this.SLOT_HEIGHT + 4));
+            const slotW = Math.floor((w - this.PORTRAIT_SIZE - 62) / 2);
+            const slotX = isLeft ? (centerX - (this.PORTRAIT_SIZE/2) - slotW - 19) : (centerX + (this.PORTRAIT_SIZE/2) + 19);
+            const slotY = startY + (index * (this.SLOT_HEIGHT + 10));
 
             // --- Determine if this specific slot is blocked ---
             const isOffhandSlot = slotName.toLowerCase().replace(/\s/g, '') === 'offhand';
@@ -145,14 +145,14 @@ export class EquipmentPanel {
 
             // Draw Drop Status Brackets (Overrides standard highlight)
             if (isValidDrop && !isBlocked) {
-                this.ui.drawSelectionBrackets(slotX, slotY, slotW, this.SLOT_HEIGHT, 2, UITheme.colors.success);
+                this.ui.drawSelectionBrackets(slotX, slotY, slotW, this.SLOT_HEIGHT, 5, UITheme.colors.success);
             } else if (isBlocked) {
-                this.ui.drawSelectionBrackets(slotX, slotY, slotW, this.SLOT_HEIGHT, 2, UITheme.colors.failure);
+                this.ui.drawSelectionBrackets(slotX, slotY, slotW, this.SLOT_HEIGHT, 5, UITheme.colors.failure);
             }
 
             // Draw User Selection Brackets
             if (isSelected) {
-                const pulseDist = 4 + Math.sin(Date.now() / 150) * 2;
+                const pulseDist = 10 + Math.sin(Date.now() / 150) * 5;
                 this.ui.drawSelectionBrackets(slotX, slotY, slotW, this.SLOT_HEIGHT, pulseDist, UITheme.colors.borderHighlight);
             }
 
@@ -179,18 +179,18 @@ export class EquipmentPanel {
                 }
             }
             
-            const iconX = isLeft ? (slotX + slotW - 34) : (slotX + 2);
-            const textX = isLeft ? (slotX + slotW - 38) : (slotX + 36);
-            const textW = slotW - 40; 
+            const iconX = isLeft ? (slotX + slotW - 82) : (slotX + 5);
+            const textX = isLeft ? (slotX + slotW - 91) : (slotX + 86);
+            const textW = slotW - 96; 
             const align = isLeft ? "right" : "left";
 
-            if (def) this._drawIcon(def, iconX, slotY + 8);
+            if (def) this._drawIcon(def, iconX, slotY + 19);
 
-            this.ui.drawText(slotName.toUpperCase(), textX, slotY + 12, UITheme.fonts.cardMono, UITheme.colors.textMuted, align);
+            this.ui.drawText(slotName.toUpperCase(), textX, slotY + 29, UITheme.fonts.cardMono, UITheme.colors.textMuted, align);
 
             const nameLines = this.ui.getWrappedLines(itemName, textW, UITheme.fonts.cardSmall);
-            let nameY = slotY + 24;
-            if (nameLines.length === 1) nameY += 4; 
+            let nameY = slotY + 58;
+            if (nameLines.length === 1) nameY += 10; 
 
             nameLines.forEach((line, i) => {
                 if (i < 2) {
@@ -200,7 +200,7 @@ export class EquipmentPanel {
                     } else if (item) {
                         color = UITheme.colors.textMain;
                     }
-                    this.ui.drawText(line, textX, nameY + (i * 12), UITheme.fonts.cardSmall, color, align);
+                    this.ui.drawText(line, textX, nameY + (i * 29), UITheme.fonts.cardSmall, color, align);
                 }
             });
         };
@@ -212,31 +212,31 @@ export class EquipmentPanel {
     _drawTraitBadges(member, x, y, w, hitboxes) {
         const centerX = x + (w / 2);
         this.ui.drawText("Traits", centerX, y, UITheme.fonts.bold, UITheme.colors.textMuted, "center");
-        this.ui.drawLineWithGothicFlourish(centerX - 50, y + 8, 100, UITheme.colors.border);
+        this.ui.drawLineWithGothicFlourish(centerX - 120, y + 19, 240, UITheme.colors.border);
         
-        let currentX = x + 30;
-        let currentY = y + 25;
+        let currentX = x + 72;
+        let currentY = y + 60;
         const traits = member.traits || [];
 
         if (traits.length === 0) {
-            this.ui.drawText("None", centerX, currentY + 12, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "center");
+            this.ui.drawText("None", centerX, currentY + 29, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "center");
             return;
         }
 
         traits.forEach(traitId => {
             const def = TRAIT_DEFINITIONS[traitId] || { name: traitId };
-            const width = this.ui.ctx.measureText(def.name).width + 20;
+            const width = this.ui.ctx.measureText(def.name).width + 48;
             
-            if (currentX + width > x + w - 30) {
-                currentX = x + 30;
-                currentY += 30;
+            if (currentX + width > x + w - 72) {
+                currentX = x + 72;
+                currentY += 72;
             }
 
-            hitboxes.push({ id: traitId, x: currentX, y: currentY, w: width, h: 22, type: 'trait' });
+            hitboxes.push({ id: traitId, x: currentX, y: currentY, w: width, h: 53, type: 'trait' });
 
-            this.ui.drawPanel(currentX, currentY, width, 22, UITheme.colors.bgScale[1]);
-            this.ui.drawText(def.name, currentX + width/2, currentY + 14, UITheme.fonts.cardSmall, UITheme.colors.textMain, "center", "middle");
-            currentX += width + 8;
+            this.ui.drawPanel(currentX, currentY, width, 53, UITheme.colors.bgScale[1]);
+            this.ui.drawText(def.name, currentX + width/2, currentY + 34, UITheme.fonts.cardSmall, UITheme.colors.textMain, "center", "middle");
+            currentX += width + 19;
         });
     }
 
@@ -261,7 +261,7 @@ export class EquipmentPanel {
         if (!sheet) return;
         
         const iconData = def.icon || {col:0, row:0};
-        this.ui.drawSprite(sheet, iconData.col*32, iconData.row*32, 32, 32, x, y, 32, 32);
+        this.ui.drawSprite(sheet, iconData.col*32, iconData.row*32, 32, 32, x, y, 77, 77);
     }
 
     _drawStatusEffects(member, pX, pY, pSize) {
@@ -269,13 +269,13 @@ export class EquipmentPanel {
 
         const sheetKey = 'statusEffects'; 
         const srcSize = 32;  
-        const drawSize = 16; 
-        const spacing = 2; 
+        const drawSize = 38; 
+        const spacing = 5; 
 
         const sheet = this.loader.get ? this.loader.get(sheetKey) : this.loader.getAsset(sheetKey);
         
-        let drawX = pX + 2; 
-        let drawY = pY + pSize - drawSize - 2;
+        let drawX = pX + 5; 
+        let drawY = pY + pSize - drawSize - 5;
 
         member.statusEffects.forEach(effect => {
             this.ui.ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
@@ -297,7 +297,7 @@ export class EquipmentPanel {
             if (effect.stacks && effect.stacks > 1) {
                 this.ui.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
                 this.ui.ctx.beginPath();
-                this.ui.ctx.arc(drawX + drawSize, drawY + drawSize, 6, 0, Math.PI * 2);
+                this.ui.ctx.arc(drawX + drawSize, drawY + drawSize, 14, 0, Math.PI * 2);
                 this.ui.ctx.fill();
                 
                 this.ui.drawText(effect.stacks.toString(), drawX + drawSize, drawY + drawSize, UITheme.fonts.cardSmall, "white", "center", "middle");

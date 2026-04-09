@@ -12,7 +12,9 @@ export class Particle {
         this.endX = config.endX || this.startX;
         this.endY = config.endY || this.startY;
         this.movement = config.movement || null; 
-        this.arcHeight = config.arc || config.arcHeight || -50;
+        
+        // Scaled default arc height (-50 * 2.4)
+        this.arcHeight = config.arc || config.arcHeight || -120;
 
         // Positioning (Physics/Burst)
         this.x = this.startX;
@@ -118,14 +120,16 @@ export class Particle {
 
             case 'float_up_and_pop':
                 this.x = this.startX;
-                this.y = this.startY - (progress * 40); 
+                // Scaled float distance (40 * 2.4)
+                this.y = this.startY - (progress * 96); 
                 this.alpha = progress > 0.8 ? this.baseAlpha * ((1.0 - progress) / 0.2) : this.baseAlpha;
                 this.scale = (this.config.scale || 1.0) + (progress * 0.2); 
                 break;
 
             case 'swipe_diagonal':
-                this.x = this.startX + (progress * 60) - 30; 
-                this.y = this.startY + (progress * 60) - 30; 
+                // Scaled swipe distance and centering offsets
+                this.x = this.startX + (progress * 144) - 72; 
+                this.y = this.startY + (progress * 144) - 72; 
                 this.alpha = this.baseAlpha * Math.sin(progress * Math.PI); 
                 break;
                 

@@ -37,24 +37,24 @@ export class CanvasUI {
             this.ctx.fillRect(x, y, w, h);
         } else {
             this.ctx.strokeStyle = color;
-            this.ctx.lineWidth = 1;
-            this.ctx.globalAlpha = 0.5; // Softens the line to make it feel more delicate
+            this.ctx.lineWidth = 2; // Scaled up to 2px
+            this.ctx.globalAlpha = 0.5; 
             
-            // The +0.5 trick prevents HTML canvas from blurring 1px lines into 2px lines
-            this.ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+            // Removed +0.5 trick because 2px lines do not blur on integer coordinates
+            this.ctx.strokeRect(x, y, w, h);
         }
         this.ctx.restore();
     }
 
-    drawLine(x1, y1, x2, y2, color = UITheme.colors.border, width = 1) {
+    drawLine(x1, y1, x2, y2, color = UITheme.colors.border, width = 2) {
         this.ctx.save();
         this.ctx.strokeStyle = color;
         this.ctx.lineWidth = width;
-        this.ctx.globalAlpha = 0.5; // Soft, elegant dividers
+        this.ctx.globalAlpha = 0.5; 
         
         this.ctx.beginPath();
-        // Offset for horizontal/vertical crispness
-        const offset = (width === 1) ? 0.5 : 0; 
+        // Dynamic offset based on line width (odd widths need 0.5, even widths do not)
+        const offset = (width % 2 !== 0) ? 0.5 : 0; 
         this.ctx.moveTo(x1 + offset, y1 + offset);
         this.ctx.lineTo(x2 + offset, y2 + offset);
         this.ctx.stroke();
@@ -100,8 +100,8 @@ export class CanvasUI {
         // 4. Crisp Border Frame
         this.ctx.strokeStyle = UITheme.colors.border;
         this.ctx.globalAlpha = 0.4;
-        this.ctx.lineWidth = 1;
-        this.ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+        this.ctx.lineWidth = 2; // Scaled up to 2px
+        this.ctx.strokeRect(x, y, w, h);
 
         this.ctx.restore();
     }
@@ -121,19 +121,19 @@ export class CanvasUI {
         this.ctx.strokeStyle = UITheme.colors.border;
 
         // 1. Outer crisp line
-        this.ctx.lineWidth = 1;
+        this.ctx.lineWidth = 2; // Scaled up to 2px
         this.ctx.globalAlpha = 0.6;
-        this.ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+        this.ctx.strokeRect(x, y, w, h);
         
         // 2. Faint, delicate inner frame
-        const inset = 4;
+        const inset = 10; // Scaled from 4
         this.ctx.globalAlpha = 0.15;
-        this.ctx.strokeRect(x + inset + 0.5, y + inset + 0.5, w - (inset * 2) - 1, h - (inset * 2) - 1);
+        this.ctx.strokeRect(x + inset, y + inset, w - (inset * 2), h - (inset * 2));
 
         // 3. Corner accents (pips)
         this.ctx.globalAlpha = 0.7;
         this.ctx.fillStyle = UITheme.colors.border;
-        const pSize = 2;
+        const pSize = 5; // Scaled from 2
         
         this.ctx.fillRect(x + inset, y + inset, pSize, pSize); // Top Left
         this.ctx.fillRect(x + w - inset - pSize, y + inset, pSize, pSize); // Top Right
@@ -184,7 +184,7 @@ export class CanvasUI {
         return lines;
     }
 
-    drawWrappedText(text, x, y, maxWidth, lineHeight = 24, font = UITheme.fonts.body, color = UITheme.colors.textMain) {
+    drawWrappedText(text, x, y, maxWidth, lineHeight = 58, font = UITheme.fonts.body, color = UITheme.colors.textMain) { // lineHeight scaled from 24
         if (!text) return;
         
         const paragraphs = text.split('\n');
@@ -210,48 +210,48 @@ export class CanvasUI {
     
     drawSelectionBrackets(x, y, w, h, dist, color = UITheme.colors.borderHighlight) {
         const p = dist; 
-        const len = 8;        
+        const len = 19; // Scaled from 8      
         
         this.ctx.save();
         this.ctx.strokeStyle = color;
-        this.ctx.lineWidth = 1; // Thinned this out as well!
+        this.ctx.lineWidth = 2; // Scaled from 1
         this.ctx.shadowColor = color;
-        this.ctx.shadowBlur = 6; 
+        this.ctx.shadowBlur = 14; // Scaled from 6
         
         this.ctx.beginPath();
         // Top Left
-        this.ctx.moveTo(x - p + 0.5, y - p + len + 0.5);
-        this.ctx.lineTo(x - p + 0.5, y - p + 0.5);
-        this.ctx.lineTo(x - p + len + 0.5, y - p + 0.5);
+        this.ctx.moveTo(x - p, y - p + len);
+        this.ctx.lineTo(x - p, y - p);
+        this.ctx.lineTo(x - p + len, y - p);
         
         // Top Right
-        this.ctx.moveTo(x + w + p - len + 0.5, y - p + 0.5);
-        this.ctx.lineTo(x + w + p + 0.5, y - p + 0.5);
-        this.ctx.lineTo(x + w + p + 0.5, y - p + len + 0.5);
+        this.ctx.moveTo(x + w + p - len, y - p);
+        this.ctx.lineTo(x + w + p, y - p);
+        this.ctx.lineTo(x + w + p, y - p + len);
         
         // Bottom Right
-        this.ctx.moveTo(x + w + p + 0.5, y + h + p - len + 0.5);
-        this.ctx.lineTo(x + w + p + 0.5, y + h + p + 0.5);
-        this.ctx.lineTo(x + w + p - len + 0.5, y + h + p + 0.5);
+        this.ctx.moveTo(x + w + p, y + h + p - len);
+        this.ctx.lineTo(x + w + p, y + h + p);
+        this.ctx.lineTo(x + w + p - len, y + h + p);
         
         // Bottom Left
-        this.ctx.moveTo(x - p + len + 0.5, y + h + p + 0.5);
-        this.ctx.lineTo(x - p + 0.5, y + h + p + 0.5);
-        this.ctx.lineTo(x - p + 0.5, y + h + p - len + 0.5);
+        this.ctx.moveTo(x - p + len, y + h + p);
+        this.ctx.lineTo(x - p, y + h + p);
+        this.ctx.lineTo(x - p, y + h + p - len);
         
         this.ctx.stroke();
         this.ctx.restore();
     }
+    
     drawLancetArchedPanel(x, y, w, h, bgColor = UITheme.colors.panelBg, borderCol = UITheme.colors.border) {
         this.ctx.save();
         
         // 1. Calculate arch parameters
-        // The "Point" starts at archY, which is the height minus the radius needed for the curve
         const curveRadius = w / 2;
         const archY = y + curveRadius; 
         
         // Ensure the arch doesn't take up more than half the total height
-        const actualArchY = Math.max(y + 5, Math.min(archY, y + (h * 0.5)));
+        const actualArchY = Math.max(y + 12, Math.min(archY, y + (h * 0.5))); // Offset scaled from 5
 
         // 2. Define the Pointed Arch Path
         const definePath = (ctx, offset = 0) => {
@@ -268,10 +268,10 @@ export class CanvasUI {
             // Line up to start of arch
             ctx.lineTo(ox, oArchY);
             
-            // Left Curve: Control point is top-left corner, ends at middle top point
+            // Left Curve
             ctx.quadraticCurveTo(ox, oy, middleX, oy);
             
-            // Right Curve: Control point is top-right corner, ends at right edge
+            // Right Curve
             ctx.quadraticCurveTo(ox + ow, oy, ox + ow, oArchY);
             
             // Line down to bottom right
@@ -287,11 +287,11 @@ export class CanvasUI {
             this.ctx.fill();
         }
 
-        // 4. Draw Elegant Thin Border (+0.5 trick for crispness)
+        // 4. Draw Elegant Thin Border (Removed 0.5 trick)
         this.ctx.strokeStyle = borderCol;
-        this.ctx.lineWidth = 1;
+        this.ctx.lineWidth = 2; // Scaled up to 2px
         this.ctx.globalAlpha = 0.6;
-        definePath(this.ctx, 0.5); 
+        definePath(this.ctx, 0); 
         this.ctx.stroke();
 
         this.ctx.restore();
@@ -304,20 +304,20 @@ export class CanvasUI {
         this.ctx.save();
         this.ctx.strokeStyle = color;
         this.ctx.fillStyle = color;
-        this.ctx.lineWidth = 1;
+        this.ctx.lineWidth = 2; // Scaled up to 2px
         this.ctx.globalAlpha = 0.4;
         
         const middleX = x + (w/2);
-        const pipSize = 2;
-        const diaSize = 3; // Center Diamond
+        const pipSize = 5; // Scaled from 2
+        const diaSize = 7; // Scaled from 3
 
-        // Draw Main Line (Crisp 1px horizontal)
+        // Draw Main Line
         this.ctx.beginPath();
-        this.ctx.moveTo(x + pipSize + 2, y + 0.5);
-        this.ctx.lineTo(x + w - pipSize - 2, y + 0.5);
+        this.ctx.moveTo(x + pipSize + 5, y); // Offset scaled from 2
+        this.ctx.lineTo(x + w - pipSize - 5, y);
         this.ctx.stroke();
 
-        this.ctx.globalAlpha = 0.7; // Pips are brighter
+        this.ctx.globalAlpha = 0.7; 
 
         // End Pips
         this.ctx.fillRect(x, y - (pipSize/2), pipSize, pipSize);

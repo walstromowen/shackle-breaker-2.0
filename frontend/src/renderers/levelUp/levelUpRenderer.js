@@ -11,16 +11,15 @@ export class LevelUpRenderer {
         
         this.hitboxes = [];
         
-        // Centralized Layout & Style configuration
         this.layout = {
-            padding: 20,
-            headerY: 40,
-            portraitSize: 128,
-            attrRowHeight: 28,
-            attrBlockWidth: 260,
-            btnWidth: 90,
-            btnHeight: 40,
-            btnSpacing: 15
+            padding: 48,
+            headerY: 70,              // Reduced from 96
+            portraitSize: 307,
+            attrRowHeight: 67,
+            attrBlockWidth: 624,
+            btnWidth: 216,
+            btnHeight: 96,
+            btnSpacing: 36
         };
     }
 
@@ -33,35 +32,25 @@ export class LevelUpRenderer {
         const h = this.ctx.canvas.height;
         this.ui.clearScreen(w, h);
 
-        // --- 1. Layout Calculations (Two-Column Layout) ---
         const halfW = Math.floor(w / 2);
 
-        // --- 2. Draw Global Backgrounds & Borders ---
         this.ui.drawRect(0, 0, halfW, h, UITheme.colors.bgScale[0]);
         this.ui.drawRect(halfW, 0, halfW, h, UITheme.colors.bgScale[1]);
         this.ui.drawLine(halfW, 0, halfW, h, UITheme.colors.border);
 
-        // --- 3. Render Columns ---
-        // Left Side: Character Info & Level Up Allocation (x = 0)
         this._renderCharacterColumn(member, availablePoints, pendingAllocations, 0, 0, halfW, h);
-        
-        // Right Side: Projected Stats (x = halfW)
         this._renderStatsColumn(currentStats, previewStats, halfW, 0, halfW, h);
 
-        // --- 4. Draw Actions (Cancel / Reset / Confirm) ---
         this._drawActionButtons(availablePoints, pendingAllocations, 0, h, halfW);
         
-        // --- 5. Report Hitboxes ---
         if (state.onLayoutUpdate) {
             state.onLayoutUpdate(this.hitboxes);
         }
 
-        // --- 6. Draw Selection/Hover Brackets ---
         if (hoverId) {
             const hoveredBox = this.hitboxes.find(b => b.id === hoverId);
             if (hoveredBox) {
-                // Using a distance of 4px for the padding/breathing space around the button
-                this.ui.drawSelectionBrackets(hoveredBox.x, hoveredBox.y, hoveredBox.w, hoveredBox.h, 4);
+                this.ui.drawSelectionBrackets(hoveredBox.x, hoveredBox.y, hoveredBox.w, hoveredBox.h, 10);
             }
         }
     }
@@ -74,31 +63,28 @@ export class LevelUpRenderer {
 
         // Header
         this.ui.drawText("PROJECTED STATS", centerX, currentY, UITheme.fonts.header, UITheme.colors.textMuted, "center");
-        currentY += 40;
+        currentY += 70; // Tightened from 96
 
         const startX = x + this.layout.padding;
         const colW = w - (this.layout.padding * 2);
 
-        // ==========================================
-        // 1. CORE VITALS
-        // ==========================================
+        // --- 1. VITALS (Tightened row height) ---
         this.ui.drawText("Vitals", startX, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
-        currentY += 5;
-        this.ui.drawLineWithGothicFlourish(startX, currentY, colW, UITheme.colors.borderHighlight);
-        currentY += 15;
-
-        currentY = this._drawStatDiffRow("Max HP", currentStats.maxHp?.total, previewStats.maxHp?.total, startX, currentY, colW);
-        currentY = this._drawStatDiffRow("Max SP", currentStats.maxStamina?.total, previewStats.maxStamina?.total, startX, currentY, colW);
-        currentY = this._drawStatDiffRow("Max INS", currentStats.maxInsight?.total, previewStats.maxInsight?.total, startX, currentY, colW);
         currentY += 10;
-
-        // ==========================================
-        // 2. COMBAT STATS
-        // ==========================================
-        this.ui.drawText("Combat Stats", startX, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
-        currentY += 5;
         this.ui.drawLineWithGothicFlourish(startX, currentY, colW, UITheme.colors.borderHighlight);
-        currentY += 15;
+        currentY += 32; // Tightened from 36
+
+        // Vitals row height reduced to 42
+        currentY = this._drawStatDiffRow("Max HP", currentStats.maxHp?.total, previewStats.maxHp?.total, startX, currentY, colW, 42);
+        currentY = this._drawStatDiffRow("Max SP", currentStats.maxStamina?.total, previewStats.maxStamina?.total, startX, currentY, colW, 42);
+        currentY = this._drawStatDiffRow("Max INS", currentStats.maxInsight?.total, previewStats.maxInsight?.total, startX, currentY, colW, 42);
+        currentY += 15; // Tightened gap
+
+        // --- 2. COMBAT STATS (Tightened row height) ---
+        this.ui.drawText("Combat Stats", startX, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
+        currentY += 10;
+        this.ui.drawLineWithGothicFlourish(startX, currentY, colW, UITheme.colors.borderHighlight);
+        currentY += 32;
 
         const combatStats = [
             { label: "SPD", c: currentStats.speed, p: previewStats.speed },
@@ -113,97 +99,74 @@ export class LevelUpRenderer {
         ];
 
         const cColW = colW / 2;
-        const numRows = Math.ceil(combatStats.length / 2);
+        const rowH = 32; // Reduced from 38
         
         combatStats.forEach((stat, i) => {
             const col = i % 2;
             const row = Math.floor(i / 2);
             const itemX = startX + (col * cColW);
-            const itemY = currentY + (row * 16);
+            const itemY = currentY + (row * rowH);
             
             let cVal = stat.c !== undefined ? stat.c : 0;
             let pVal = stat.p !== undefined ? stat.p : 0;
-            
             let cStr = stat.isPct ? `${cVal.toFixed(0)}%` : cVal.toString();
             let pStr = stat.isPct ? `${pVal.toFixed(0)}%` : pVal.toString();
 
-            // Always draw the label and the current value
             this.ui.drawText(stat.label, itemX, itemY, UITheme.fonts.small, UITheme.colors.textMuted, "left");
-            this.ui.drawText(cStr, itemX + 60, itemY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
+            this.ui.drawText(cStr, itemX + 130, itemY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
 
-            // Only draw the arrow and projection if the stat actually changed
             if (cVal !== pVal) {
-                let arrowColor = UITheme.colors.textMain;
-                if (pVal > cVal) arrowColor = UITheme.colors.success;
-                if (pVal < cVal) arrowColor = UITheme.colors.failure;
-
+                let arrowColor = (pVal > cVal) ? UITheme.colors.success : UITheme.colors.failure;
                 this.ctx.font = UITheme.fonts.mono;
                 const cWidth = this.ctx.measureText(cStr).width;
-                const arrowX = itemX + 60 + cWidth + 6;
-                
-                this.ui.drawArrow(arrowX, itemY - 4, 3, 'right', arrowColor);
-                this.ui.drawText(pStr, arrowX + 8, itemY, UITheme.fonts.mono, arrowColor, "left");
+                const arrowX = itemX + 130 + cWidth + 12;
+                this.ui.drawArrow(arrowX, itemY - 8, 6, 'right', arrowColor);
+                this.ui.drawText(pStr, arrowX + 15, itemY, UITheme.fonts.mono, arrowColor, "left");
             }
         });
 
-        currentY += (numRows * 16) + 15;
+        currentY += (Math.ceil(combatStats.length / 2) * rowH) + 24;
 
-        // ==========================================
-        // 3. RESISTANCE TABLE
-        // ==========================================
+        // --- 3. RESISTANCE TABLE ---
         this._drawProjectedResistanceTable(currentStats, previewStats, startX, currentY, colW);
     }
 
-    _drawStatDiffRow(label, curr = 0, prev = 0, x, y, w) {
+    _drawStatDiffRow(label, curr = 0, prev = 0, x, y, w, rowH = 48) {
         this.ui.drawText(label, x, y, UITheme.fonts.small, UITheme.colors.textMuted, "left");
-        
         const valX = x + (w * 0.4);
         
-        // If there is no change, just draw the current value
-        if (curr === prev) {
-            this.ui.drawText(curr.toString(), valX, y, UITheme.fonts.mono, UITheme.colors.textMain, "right");
-            return y + 20;
-        }
-
-        // Otherwise, draw the projection
         this.ui.drawText(curr.toString(), valX, y, UITheme.fonts.mono, UITheme.colors.textMain, "right");
 
-        let arrowColor = UITheme.colors.textMain;
-        if (prev > curr) arrowColor = UITheme.colors.success;
-        if (prev < curr) arrowColor = UITheme.colors.failure;
-
-        const arrowX = valX + 12;
-        this.ui.drawArrow(arrowX, y - 4, 4, 'right', arrowColor);
-        this.ui.drawText(prev.toString(), arrowX + 10, y, UITheme.fonts.mono, arrowColor, "left");
+        if (curr !== prev) {
+            let arrowColor = (prev > curr) ? UITheme.colors.success : UITheme.colors.failure;
+            const arrowX = valX + 25;
+            this.ui.drawArrow(arrowX, y - 8, 8, 'right', arrowColor);
+            this.ui.drawText(prev.toString(), arrowX + 20, y, UITheme.fonts.mono, arrowColor, "left");
+        }
         
-        return y + 20;
+        return y + rowH;
     }
 
     _drawProjectedResistanceTable(cStats, pStats, x, y, w) {
         let currentY = y;
-        
         const colType = x;
         const colAtk = x + (w * 0.35);
         const colDef = x + (w * 0.60);
         const colRes = x + (w * 0.85);
 
-        // Standardized table header font fallback
-        const headerFont = UITheme.fonts.cardTitle || "bold 12px sans-serif";
+        const headerFont = UITheme.fonts.cardTitle || "bold 28px sans-serif";
         
         this.ui.drawText("TYPE", colType, currentY, headerFont, UITheme.colors.textMuted, "left");
         this.ui.drawText("ATK", colAtk, currentY, headerFont, UITheme.colors.attack, "center");
         this.ui.drawText("DEF", colDef, currentY, headerFont, UITheme.colors.defense, "center");
         this.ui.drawText("RES", colRes, currentY, headerFont, UITheme.colors.resistance, "center");
         
-        currentY += 5;
+        currentY += 10;
         this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.border);
-        currentY += 15;
+        currentY += 30; // Reduced from 36
 
-        const types = [
-            "blunt", "slash", "pierce", 
-            "fire", "ice", "lightning", "water", "earth", "wind", 
-            "light", "dark", "arcane"
-        ];
+        const types = ["blunt", "slash", "pierce", "fire", "ice", "lightning", "water", "earth", "wind", "light", "dark", "arcane"];
+        const rowH = 30; // Reduced from 34 to ensure all 12 fit
         
         types.forEach((type) => {
             const cAtk = (cStats.attack || {})[type] || 0;
@@ -230,25 +193,18 @@ export class LevelUpRenderer {
                 if (curr === prev) {
                     this.ui.drawText(cStr, xPos, currentY, UITheme.fonts.mono, defaultColor, "center");
                 } else {
-                    let arrowColor = defaultColor;
-                    if (prev > curr) arrowColor = UITheme.colors.success;
-                    if (prev < curr) arrowColor = UITheme.colors.failure;
-
+                    let arrowColor = (prev > curr) ? UITheme.colors.success : UITheme.colors.failure;
                     this.ctx.font = UITheme.fonts.mono;
                     const cWidth = this.ctx.measureText(cStr).width;
                     const pWidth = this.ctx.measureText(pStr).width;
-                    
-                    const arrowSize = 3;
-                    const space = 4;
+                    const arrowSize = 6;
+                    const space = 8;
                     const totalWidth = cWidth + space + (arrowSize * 2) + space + pWidth;
-                    
                     const startX = xPos - (totalWidth / 2);
                     
                     this.ui.drawText(cStr, startX, currentY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
-                    
                     const arrowX = startX + cWidth + space + arrowSize;
-                    this.ui.drawArrow(arrowX, currentY - 4, arrowSize, 'right', arrowColor);
-                    
+                    this.ui.drawArrow(arrowX, currentY - 8, arrowSize, 'right', arrowColor);
                     this.ui.drawText(pStr, arrowX + arrowSize + space, currentY, UITheme.fonts.mono, arrowColor, "left");
                 }
             };
@@ -257,7 +213,7 @@ export class LevelUpRenderer {
             drawCell(cDef, pDef, colDef, UITheme.colors.defense);
             drawCell(cRes, pRes, colRes, UITheme.colors.resistance, true);
 
-            currentY += 14;
+            currentY += rowH;
         });
     }
 
@@ -265,82 +221,66 @@ export class LevelUpRenderer {
         const centerX = x + (w / 2);
         let currentY = y + this.layout.headerY; 
         
-        // Font styles mapped to UITheme with sensible fallbacks
-        const titleFont = UITheme.fonts.title || "bold 24px sans-serif";
-        const highlightFont = UITheme.fonts.bold || "bold 14px sans-serif";
-        const giantFont = UITheme.fonts.header || "bold 30px sans-serif";
+        const titleFont = UITheme.fonts.title || "bold 58px sans-serif";
+        const highlightFont = UITheme.fonts.bold || "bold 34px sans-serif";
+        const giantFont = UITheme.fonts.header || "bold 72px sans-serif";
 
-        // 1. Name
         this.ui.drawText(member.name, centerX, currentY, titleFont, UITheme.colors.textMain, "center");
-        currentY += 22; 
+        currentY += 53; 
 
-        // 2. Level & Unspent Points
         const lvlText = `Level ${member.level || 1} ${member.class || ''}`;
         const pointsColor = availablePoints > 0 ? UITheme.colors.success : UITheme.colors.textMuted;
         
-        this.ui.drawText(lvlText, centerX - 10, currentY, UITheme.fonts.body, UITheme.colors.textMuted, "right");
+        this.ui.drawText(lvlText, centerX - 24, currentY, UITheme.fonts.body, UITheme.colors.textMuted, "right");
         this.ui.drawText("|", centerX, currentY, UITheme.fonts.body, UITheme.colors.border, "center");
-        this.ui.drawText(`Unspent Points: ${availablePoints}`, centerX + 10, currentY, highlightFont, pointsColor, "left");
-        currentY += 12; 
+        this.ui.drawText(`Unspent Points: ${availablePoints}`, centerX + 24, currentY, highlightFont, pointsColor, "left");
+        currentY += 29; 
 
-        // 3. Portrait framed with Lancet Arch
         const pSize = this.layout.portraitSize;
         const portraitX = Math.floor(centerX - (pSize / 2));
         const img = this.loader.get(member.spritePortrait);
 
-        // Frame
         this.ui.drawLancetArchedPanel(portraitX, currentY, pSize, pSize * 1.25, UITheme.colors.bgScale[2], UITheme.colors.borderHighlight);
 
         if (img) {
-            this.ui.drawSprite(img, 0, 0, pSize, pSize, portraitX, currentY + (pSize * 0.15), pSize, pSize);
+            this.ui.drawSprite(img, 0, 0, 128, 128, portraitX, currentY + (pSize * 0.15), pSize, pSize);
         } else {
             this.ui.drawText("?", centerX, currentY + (pSize * 0.7), giantFont, UITheme.colors.textMuted, "center");
         }
-        currentY += (pSize * 1.25) + 15;
+        currentY += (pSize * 1.25) + 36;
 
-        // 4. Attributes Listing
         const attributes = ['vigor', 'strength', 'dexterity', 'intelligence', 'attunement'];
         const startX = centerX - (this.layout.attrBlockWidth / 2);
 
         attributes.forEach((attr, index) => {
             const rowY = currentY + (index * this.layout.attrRowHeight);
-            const textY = rowY + 16; // Vertically centered
-
+            const textY = rowY + 34;
             this.ui.drawText(Formatting.capitalize(attr), startX, textY, UITheme.fonts.body, UITheme.colors.textMain, "left");
 
             const currentVal = member.attributes?.[attr] || 0;
             const pendingVal = pendingAllocations[attr];
-            
-            this.ui.drawText(currentVal.toString(), startX + 110, textY, UITheme.fonts.mono, UITheme.colors.textMain, "center");
+            this.ui.drawText(currentVal.toString(), startX + 264, textY, UITheme.fonts.mono, UITheme.colors.textMain, "center");
 
             if (pendingVal > 0) {
-                this.ui.drawText(`+${pendingVal}`, startX + 130, textY, UITheme.fonts.mono, UITheme.colors.success, "left");
+                this.ui.drawText(`+${pendingVal}`, startX + 312, textY, UITheme.fonts.mono, UITheme.colors.success, "left");
             }
 
-            // Sub (-) Button
             const canSub = pendingVal > 0;
-            const subColor = canSub ? UITheme.colors.failure : UITheme.colors.textMuted;
-            const subBorder = canSub ? UITheme.colors.failure : UITheme.colors.border;
-            
-            this.ui.drawRect(startX + 190, rowY + 2, 24, 24, UITheme.colors.bgScale[0], true);
-            this.ui.drawRect(startX + 190, rowY + 2, 24, 24, subBorder, false);
-            this.ui.drawText("-", startX + 202, rowY + 18, UITheme.fonts.bold, subColor, "center");
-            this.hitboxes.push({ id: `SUB_${attr.toUpperCase()}`, x: startX + 190, y: rowY + 2, w: 24, h: 24 });
+            this.ui.drawRect(startX + 456, rowY + 5, 58, 58, UITheme.colors.bgScale[0], true);
+            this.ui.drawRect(startX + 456, rowY + 5, 58, 58, canSub ? UITheme.colors.failure : UITheme.colors.border, false);
+            this.ui.drawText("-", startX + 485, rowY + 43, UITheme.fonts.bold, canSub ? UITheme.colors.failure : UITheme.colors.textMuted, "center");
+            this.hitboxes.push({ id: `SUB_${attr.toUpperCase()}`, x: startX + 456, y: rowY + 5, w: 58, h: 58 });
 
-            // Add (+) Button
             const canAdd = availablePoints > 0;
-            const addColor = canAdd ? UITheme.colors.success : UITheme.colors.textMuted;
-            const addBorder = canAdd ? UITheme.colors.success : UITheme.colors.border;
-            
-            this.ui.drawRect(startX + 225, rowY + 2, 24, 24, UITheme.colors.bgScale[0], true);
-            this.ui.drawRect(startX + 225, rowY + 2, 24, 24, addBorder, false);
-            this.ui.drawText("+", startX + 237, rowY + 18, UITheme.fonts.bold, addColor, "center");
-            this.hitboxes.push({ id: `ADD_${attr.toUpperCase()}`, x: startX + 225, y: rowY + 2, w: 24, h: 24 });
+            this.ui.drawRect(startX + 540, rowY + 5, 58, 58, UITheme.colors.bgScale[0], true);
+            this.ui.drawRect(startX + 540, rowY + 5, 58, 58, canAdd ? UITheme.colors.success : UITheme.colors.border, false);
+            this.ui.drawText("+", startX + 569, rowY + 43, UITheme.fonts.bold, canAdd ? UITheme.colors.success : UITheme.colors.textMuted, "center");
+            this.hitboxes.push({ id: `ADD_${attr.toUpperCase()}`, x: startX + 540, y: rowY + 5, w: 58, h: 58 });
         });
     }
 
     _drawActionButtons(availablePoints, pendingAllocations, x, h, w) {
-        const btnY = h - 70; 
+        const btnY = h - 145; // Moved up slightly to prevent overlap
         const centerX = x + (w / 2);
         const hasPending = Object.values(pendingAllocations).some(v => v > 0);
 
@@ -354,30 +294,26 @@ export class LevelUpRenderer {
         // Cancel
         const cancelX = startX;
         this.ui.drawPanel(cancelX, btnY, btnW, btnH, baseBg);
-        this.ui.drawText("Cancel", cancelX + (btnW/2), btnY + 26, UITheme.fonts.body, UITheme.colors.textMain, "center");
+        this.ui.drawText("Cancel", cancelX + (btnW/2), btnY + 62, UITheme.fonts.body, UITheme.colors.textMain, "center");
         this.hitboxes.push({ id: 'BTN_CANCEL', x: cancelX, y: btnY, w: btnW, h: btnH });
 
         // Reset
         const resetX = cancelX + btnW + spacing;
         const resetColor = hasPending ? UITheme.colors.failure : UITheme.colors.textMuted;
-        
         this.ui.drawPanel(resetX, btnY, btnW, btnH, baseBg);
-        this.ui.drawText("Reset", resetX + (btnW/2), btnY + 26, UITheme.fonts.body, resetColor, "center");
-        
+        this.ui.drawText("Reset", resetX + (btnW/2), btnY + 62, UITheme.fonts.body, resetColor, "center");
         if (hasPending) {
-            this.ui.drawSelectionBrackets(resetX, btnY, btnW, btnH, 2, UITheme.colors.failure);
+            this.ui.drawSelectionBrackets(resetX, btnY, btnW, btnH, 5, UITheme.colors.failure);
             this.hitboxes.push({ id: 'BTN_RESET', x: resetX, y: btnY, w: btnW, h: btnH });
         }
 
         // Confirm
         const confirmX = resetX + btnW + spacing;
         const confirmColor = hasPending ? UITheme.colors.success : UITheme.colors.textMuted;
-        
         this.ui.drawPanel(confirmX, btnY, btnW, btnH, baseBg);
-        this.ui.drawText("Confirm", confirmX + (btnW/2), btnY + 26, UITheme.fonts.body, confirmColor, "center");
-        
+        this.ui.drawText("Confirm", confirmX + (btnW/2), btnY + 62, UITheme.fonts.body, confirmColor, "center");
         if (hasPending) {
-            this.ui.drawSelectionBrackets(confirmX, btnY, btnW, btnH, 2, UITheme.colors.success);
+            this.ui.drawSelectionBrackets(confirmX, btnY, btnW, btnH, 5, UITheme.colors.success);
             this.hitboxes.push({ id: 'BTN_CONFIRM', x: confirmX, y: btnY, w: btnW, h: btnH });
         }
     }

@@ -19,19 +19,19 @@ export class CharacterCreatorRenderer {
         ui.clearScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
 
         // --- DYNAMIC ANIMATION OFFSET FOR BRACKETS ---
-        const bracketOffset = 4 + Math.sin(Date.now() / 250) * 2; 
+        const bracketOffset = 10 + Math.sin(Date.now() / 250) * 5; 
 
-        // --- GLOBAL LAYOUT ---
-        const p = 20; 
-        const startY = 20; 
+        // --- GLOBAL LAYOUT (Scaled 2.4x for 1920x1080) ---
+        const p = 48; 
+        const startY = 48; 
         const panelHeight = CANVAS_HEIGHT - (startY * 2); 
         
         const colW = CANVAS_WIDTH * 0.3; 
         const midW = CANVAS_WIDTH - (colW * 2) - (p * 4);
         
-        const TITLE_OFFSET_Y = 25; 
+        const TITLE_OFFSET_Y = 60; 
         const TITLE_Y = startY + TITLE_OFFSET_Y;
-        const CONTENT_START_Y = TITLE_Y + 35; 
+        const CONTENT_START_Y = TITLE_Y + 84; 
         
         // ========================================================
         // 1. LEFT COLUMN (Identity & Stats)
@@ -43,12 +43,12 @@ export class CharacterCreatorRenderer {
 
         // A. Title & Flourish
         ui.drawText("IDENTITY", leftCenterX, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "center");
-        ui.drawLineWithGothicFlourish(leftCenterX - 50, TITLE_Y + 12, 100, UITheme.colors.borderHighlight);
+        ui.drawLineWithGothicFlourish(leftCenterX - 120, TITLE_Y + 29, 240, UITheme.colors.borderHighlight);
 
         // B. Name Input
-        const nameInputW = colW - 40;
-        const nameInputX = p + 20;
-        const nameInputH = 32;
+        const nameInputW = colW - 96;
+        const nameInputX = p + 48;
+        const nameInputH = 77;
         const inputId = "INPUT_NAME";
 
         this.hotspots.push({ id: inputId, x: nameInputX, y: curY, w: nameInputW, h: nameInputH });
@@ -75,18 +75,18 @@ export class CharacterCreatorRenderer {
 
         ctx.save(); 
         ctx.beginPath(); ctx.rect(nameInputX, curY, nameInputW, nameInputH); ctx.clip(); 
-        ui.drawText(valStr, nameInputX + (nameInputW/2), curY + 21, UITheme.fonts.body, nameColor, "center");
+        ui.drawText(valStr, nameInputX + (nameInputW/2), curY + 50, UITheme.fonts.body, nameColor, "center");
         ctx.restore();
 
         const nameBottomY = curY + nameInputH;
 
         // --- C. VISUALS ---
-        const VITALS_OFFSET = 180; 
+        const VITALS_OFFSET = 432; 
         const VITALS_START_Y = nameBottomY + VITALS_OFFSET; 
 
-        const portraitSize = 128;
-        const spriteDisplaySize = 32; // Strictly 32x32 now
-        const visualGap = 20;
+        const portraitSize = 307;
+        const spriteDisplaySize = 77;
+        const visualGap = 48;
         
         const totalVisualWidth = portraitSize + visualGap + spriteDisplaySize;
         const startVisualX = p + (colW - totalVisualWidth) / 2;
@@ -108,13 +108,13 @@ export class CharacterCreatorRenderer {
             ui.drawRect(startVisualX, portraitY, portraitSize, portraitSize, "rgba(0,0,0,0.6)", true);
             ui.drawRect(spriteX, spriteY, spriteDisplaySize, spriteDisplaySize, "rgba(0,0,0,0.6)", true);
 
-            // Draw Images EXACTLY at their native scale (No insets)
+            // Draw Images scaled out
             if (masterSheet) {
-                ctx.drawImage(masterSheet, 0, 0, 128, 128, startVisualX, portraitY, 128, 128);
+                ctx.drawImage(masterSheet, 0, 0, 128, 128, startVisualX, portraitY, portraitSize, portraitSize);
             }
             if (overworldSheet) {
                 ctx.imageSmoothingEnabled = false; 
-                ctx.drawImage(overworldSheet, 0, 0, 32, 32, spriteX, spriteY, 32, 32);
+                ctx.drawImage(overworldSheet, 0, 0, 32, 32, spriteX, spriteY, spriteDisplaySize, spriteDisplaySize);
             }
 
             // Overlay Borders so they don't crush the image size
@@ -127,10 +127,10 @@ export class CharacterCreatorRenderer {
         // --- D. STATS TABLE ---
         curY = VITALS_START_Y;
 
-        ui.drawLineWithGothicFlourish(leftCenterX - 80, curY - 20, 160, UITheme.colors.border);
+        ui.drawLineWithGothicFlourish(leftCenterX - 192, curY - 48, 384, UITheme.colors.border);
 
         if (previewStats) {
-            const innerMargin = 20;
+            const innerMargin = 48;
             const fullW = colW - (innerMargin * 2);
             const thirdW = fullW / 3;
             const vX = p + innerMargin;
@@ -144,11 +144,11 @@ export class CharacterCreatorRenderer {
                 
                 const slotCenterX = vX + (slotIndex * thirdW) + (thirdW / 2);
                 
-                ui.drawText(label, slotCenterX - 6, curY, RES_FONT, colorLabel, "right");
-                ui.drawText(`${total}`, slotCenterX + 6, curY, UITheme.fonts.bold, UITheme.colors.textMain, "left");
+                ui.drawText(label, slotCenterX - 14, curY, RES_FONT, colorLabel, "right");
+                ui.drawText(`${total}`, slotCenterX + 14, curY, UITheme.fonts.bold, UITheme.colors.textMain, "left");
                 
                 if (bonus > 0) {
-                    ui.drawText(`(+${bonus})`, slotCenterX + 6, curY + 12, UITheme.fonts.small, UITheme.colors.success, "left");
+                    ui.drawText(`(+${bonus})`, slotCenterX + 14, curY + 29, UITheme.fonts.small, UITheme.colors.success, "left");
                 }
             };
 
@@ -156,7 +156,7 @@ export class CharacterCreatorRenderer {
             drawStatBlock("STM", previewStats.maxStamina || previewStats.stamina, 1, UITheme.colors.stm);
             drawStatBlock("INS", previewStats.maxInsight || previewStats.insight, 2, UITheme.colors.ins);
 
-            curY += 35; 
+            curY += 84; 
 
             // E. Attributes
             const attrSource = previewStats.attributes || previewStats;
@@ -168,16 +168,16 @@ export class CharacterCreatorRenderer {
                 { label: "Attunement", val: attrSource.attunement }
             ];
 
-            const ROW_HEIGHT = 24; 
+            const ROW_HEIGHT = 58; 
             const ATTR_FONT = UITheme.fonts.small; 
 
             attrs.forEach((attr, idx) => {
                 const rowY = curY + (idx * ROW_HEIGHT);
-                const leftX = p + 30;     
-                const rightX = p + colW - 30;
+                const leftX = p + 72;     
+                const rightX = p + colW - 72;
 
                 if (idx % 2 === 0) {
-                    ui.drawRect(p + 10, rowY - 14, colW - 20, ROW_HEIGHT, "rgba(255, 255, 255, 0.02)", true);
+                    ui.drawRect(p + 24, rowY - 34, colW - 48, ROW_HEIGHT, "rgba(255, 255, 255, 0.02)", true);
                 }
 
                 ui.drawText(attr.label, leftX, rowY, ATTR_FONT, UITheme.colors.textMuted, "left");
@@ -195,15 +195,15 @@ export class CharacterCreatorRenderer {
         ui.drawPanel(menuStartX, startY, midW, panelHeight, UITheme.colors.bgScale[1]);
         
         ui.drawText("CUSTOMIZE", centerColX, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "center");
-        ui.drawLineWithGothicFlourish(centerColX - 60, TITLE_Y + 12, 120, UITheme.colors.borderHighlight);
+        ui.drawLineWithGothicFlourish(centerColX - 144, TITLE_Y + 29, 288, UITheme.colors.borderHighlight);
 
         const labels = {
             background: "BACKGROUND", origin: "ORIGIN", appearance: "LOOK",
             keepsake: "KEEPSAKE", companion: "COMPANION", trait: "TRAIT", difficulty: "DIFFICULTY"
         };
         
-        const MENU_ITEM_HEIGHT = 35; 
-        const ROW_GAP = 2;          
+        const MENU_ITEM_HEIGHT = 84; 
+        const ROW_GAP = 5;          
         const menuSteps = ['background', 'origin', 'appearance', 'keepsake', 'companion', 'trait', 'difficulty', 'start'];
 
         menuSteps.forEach((key) => {
@@ -214,33 +214,33 @@ export class CharacterCreatorRenderer {
             if (key === 'start') {
                 const btnId = "BTN_START";
                 const isBtnHovered = hoveredElement && hoveredElement.id === btnId;
-                const btnY = menuY + 15; 
+                const btnY = menuY + 36; 
 
-                this.hotspots.push({ id: btnId, x: menuStartX + 40, y: btnY, w: midW - 80, h: MENU_ITEM_HEIGHT + 10 });
+                this.hotspots.push({ id: btnId, x: menuStartX + 96, y: btnY, w: midW - 192, h: MENU_ITEM_HEIGHT + 24 });
 
                 const btnColor = (isSelected || isBtnHovered) ? UITheme.colors.borderHighlight : UITheme.colors.textMuted;
                 const btnBg = (isSelected || isBtnHovered) ? "rgba(184, 153, 71, 0.05)" : "rgba(0,0,0,0.6)";
                 const btnBorder = (isSelected || isBtnHovered) ? UITheme.colors.borderHighlight : UITheme.colors.border;
                 
-                ui.drawLancetArchedPanel(menuStartX + 40, btnY, midW - 80, MENU_ITEM_HEIGHT + 10, btnBg, btnBorder);
+                ui.drawLancetArchedPanel(menuStartX + 96, btnY, midW - 192, MENU_ITEM_HEIGHT + 24, btnBg, btnBorder);
 
                 if (isSelected || isBtnHovered) {
-                    ui.drawSelectionBrackets(menuStartX + 40, btnY, midW - 80, MENU_ITEM_HEIGHT + 10, bracketOffset); 
+                    ui.drawSelectionBrackets(menuStartX + 96, btnY, midW - 192, MENU_ITEM_HEIGHT + 24, bracketOffset); 
                 }
 
-                ui.drawText("START", centerColX, btnY + ((MENU_ITEM_HEIGHT + 10)/2) + 4, UITheme.fonts.body, btnColor, "center", "middle");
+                ui.drawText("START", centerColX, btnY + ((MENU_ITEM_HEIGHT + 24)/2) + 10, UITheme.fonts.body, btnColor, "center", "middle");
                 return; 
             }
 
-            this.hotspots.push({ id: rowId, x: menuStartX + 10, y: menuY, w: midW - 20, h: MENU_ITEM_HEIGHT });
+            this.hotspots.push({ id: rowId, x: menuStartX + 24, y: menuY, w: midW - 48, h: MENU_ITEM_HEIGHT });
 
             if (isSelected || isRowHovered) {
-                ui.drawRect(menuStartX + 10, menuY, midW - 20, MENU_ITEM_HEIGHT, "rgba(255, 255, 255, 0.02)", true);
-                ui.drawSelectionBrackets(menuStartX + 10, menuY, midW - 20, MENU_ITEM_HEIGHT, bracketOffset); 
+                ui.drawRect(menuStartX + 24, menuY, midW - 48, MENU_ITEM_HEIGHT, "rgba(255, 255, 255, 0.02)", true);
+                ui.drawSelectionBrackets(menuStartX + 24, menuY, midW - 48, MENU_ITEM_HEIGHT, bracketOffset); 
             }
 
-            const labelY = menuY + 10;
-            ui.drawText(labels[key], centerColX, labelY, "9px serif", UITheme.colors.textMuted, "center");
+            const labelY = menuY + 24;
+            ui.drawText(labels[key], centerColX, labelY, UITheme.fonts.cardSmall, UITheme.colors.textMuted, "center");
 
             let valStr = "";
             let valColor = UITheme.colors.textMain;
@@ -257,26 +257,26 @@ export class CharacterCreatorRenderer {
             }
 
             if (valStr) {
-                const valY = menuY + 26; 
+                const valY = menuY + 62; 
 
                 const prevId = `BTN_PREV_${key}`;
                 const nextId = `BTN_NEXT_${key}`;
                 const isPrevHover = hoveredElement && hoveredElement.id === prevId;
                 const isNextHover = hoveredElement && hoveredElement.id === nextId;
 
-                const leftArrowX = menuStartX + 30; 
-                const rightArrowX = menuStartX + midW - 30;
-                const textMaxWidth = midW - 140; 
-                const arrowSize = 5; 
+                const leftArrowX = menuStartX + 72; 
+                const rightArrowX = menuStartX + midW - 72;
+                const textMaxWidth = midW - 336; 
+                const arrowSize = 12; 
 
                 const arrowColorPrev = isPrevHover ? UITheme.colors.borderHighlight : UITheme.colors.textMuted;
                 const arrowColorNext = isNextHover ? UITheme.colors.borderHighlight : UITheme.colors.textMuted;
 
-                ui.drawArrow(leftArrowX, valY - 4, arrowSize, 'left', arrowColorPrev);
-                ui.drawArrow(rightArrowX, valY - 4, arrowSize, 'right', arrowColorNext);
+                ui.drawArrow(leftArrowX, valY - 10, arrowSize, 'left', arrowColorPrev);
+                ui.drawArrow(rightArrowX, valY - 10, arrowSize, 'right', arrowColorNext);
 
-                this.hotspots.push({ id: prevId, x: leftArrowX - 20, y: valY - 20, w: 40, h: 40 });
-                this.hotspots.push({ id: nextId, x: rightArrowX - 20, y: valY - 20, w: 40, h: 40 });
+                this.hotspots.push({ id: prevId, x: leftArrowX - 48, y: valY - 48, w: 96, h: 96 });
+                this.hotspots.push({ id: nextId, x: rightArrowX - 48, y: valY - 48, w: 96, h: 96 });
 
                 ui.drawText(valStr, centerColX, valY, UITheme.fonts.body, valColor, "center", "alphabetic", textMaxWidth);
             }
@@ -293,11 +293,11 @@ export class CharacterCreatorRenderer {
         ui.drawPanel(rightColX, startY, colW, panelHeight, UITheme.colors.bgScale[0]);
         
         ui.drawText("DETAILS", rightCenterX, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "center");
-        ui.drawLineWithGothicFlourish(rightCenterX - 40, TITLE_Y + 12, 80, UITheme.colors.borderHighlight);
+        ui.drawLineWithGothicFlourish(rightCenterX - 96, TITLE_Y + 29, 192, UITheme.colors.borderHighlight);
 
         const desc = this.getDescription(controllerState);
         if (desc) {
-            ui.drawWrappedText(desc, rightColX + 20, CONTENT_START_Y, colW - 40, 28, UITheme.fonts.body, UITheme.colors.textMain);
+            ui.drawWrappedText(desc, rightColX + 48, CONTENT_START_Y, colW - 96, 67, UITheme.fonts.body, UITheme.colors.textMain);
         }
 
         if (controllerState.onLayoutUpdate) {

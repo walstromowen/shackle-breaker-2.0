@@ -14,8 +14,10 @@ export class OverworldController {
         this.player = this.createPlayerEntity();
         
         // 2. Setup Camera
-        this.camera = { x: 0, y: 0 };
-        this.updateCamera();
+        this.camera = { 
+            x: 0, y: 0, 
+            prevX: 0, prevY: 0 // <-- Add these
+        };
 
         // 3. LOCK FLAG
         this.isLocked = false;
@@ -51,19 +53,23 @@ export class OverworldController {
     // ==========================================
 
     update(dt) {
-        if (this.isLocked) return;
+    if (this.isLocked) return;
 
-        // FEED THE RENDERER: Save previous position for interpolation
-        this.player.prevX = this.player.x;
-        this.player.prevY = this.player.y;
+    // FEED THE RENDERER: Save previous position for interpolation
+    this.player.prevX = this.player.x;
+    this.player.prevY = this.player.y;
+    
+    // --> FIX: Save the camera's previous position too
+    this.camera.prevX = this.camera.x;
+    this.camera.prevY = this.camera.y;
 
-        if (this.player.isMoving) {
-            this.continueMoving(dt);
-        } else {
-            this.checkForNewMove();
-        }
-        this.updateCamera();
+    if (this.player.isMoving) {
+        this.continueMoving(dt);
+    } else {
+        this.checkForNewMove();
     }
+    this.updateCamera();
+}
 
     // ==========================================
     // MOVEMENT & INTERACTION LOGIC
@@ -316,10 +322,12 @@ export class OverworldController {
     }
 
     updateCamera() {
-        const { CANVAS_WIDTH, CANVAS_HEIGHT, GAME_SCALE, TILE_SIZE } = this.config;
-        this.camera.x = this.player.x - (CANVAS_WIDTH / GAME_SCALE / 2) + (TILE_SIZE / 2);
-        this.camera.y = this.player.y - (CANVAS_HEIGHT / GAME_SCALE / 2) + (TILE_SIZE / 2);
-    }
+    this.camera.x = this.player.x;
+    this.camera.y = this.player.y;
+    // Tie the camera's history directly to the player's history!
+    this.camera.prevX = this.player.prevX; 
+    this.camera.prevY = this.player.prevY; 
+}
 
     getState() {
         return { entities: [this.player], camera: this.camera };

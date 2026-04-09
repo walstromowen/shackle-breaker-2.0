@@ -9,7 +9,6 @@ Difficulty
 Starting seed
 procedural dungeons and hand crafted areas
 structures: 
-acessing higher elevations
 
 Root
 ├── backend/

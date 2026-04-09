@@ -1,5 +1,3 @@
-import { gameState } from '../../../../shared/state/gameState.js';
-
 export class WeatherRenderer {
     constructor(canvas, ctx, config) {
         this.canvas = canvas;
@@ -20,34 +18,35 @@ export class WeatherRenderer {
 
         this.fogPuffImage = this.createFogAsset();
 
+        // 1920x1080 Scaling applies a 2.4x multiplier to sizes/speeds, and a 5.76x multiplier (Area) to particle counts.
         this.settings = {
             'particle_rain': {
-                count: 450, 
+                count: 2592, // Scaled from 450 
                 color: 'rgba(200, 220, 255, 0.5)',
                 splashColor: 'rgba(230, 240, 255, 0.6)',
-                speedY: [25, 45], 
-                speedX: [2, 5], 
-                length: [6, 12] 
+                speedY: [60, 108], // Scaled from [25, 45]
+                speedX: [4.8, 12], // Scaled from [2, 5]
+                length: [14.4, 28.8] // Scaled from [6, 12]
             },
             'particle_sand': {
-                count: 600,
+                count: 3456, // Scaled from 600
                 color: 'rgba(210, 180, 140, 0.7)',
-                speedY: [1, 3],  
-                speedX: [20, 35], 
-                size: [1, 2]      
+                speedY: [2.4, 7.2], // Scaled from [1, 3] 
+                speedX: [48, 84], // Scaled from [20, 35]
+                size: [2.4, 4.8] // Scaled from [1, 2]     
             },
             'overlay_fog': {
-                count: 40, 
-                speedX: [0.1, 0.3], 
-                speedY: [-0.1, 0.1], 
-                size: [500, 800] 
+                count: 230, // Scaled from 40 
+                speedX: [0.24, 0.72], // Scaled from [0.1, 0.3]
+                speedY: [-0.24, 0.24], // Scaled from [-0.1, 0.1]
+                size: [1200, 1920] // Scaled from [500, 800]
             }
         };
     }
 
     createFogAsset() {
         const offscreen = document.createElement('canvas');
-        const size = 256;
+        const size = 614; // Scaled from 256
         offscreen.width = size;
         offscreen.height = size;
         const oCtx = offscreen.getContext('2d');
@@ -77,15 +76,15 @@ export class WeatherRenderer {
         const settings = this.settings[visualEffect];
         
         let p = {
-            x: Math.random() * (this.canvas.width + 600) - 300, 
+            x: Math.random() * (this.canvas.width + 1440) - 720, // Scaled from +600, -300
             speedY: settings.speedY[0] + Math.random() * (settings.speedY[1] - settings.speedY[0]),
             speedX: settings.speedX[0] + Math.random() * (settings.speedX[1] - settings.speedX[0])
         };
 
         if (visualEffect === 'particle_sand' || visualEffect === 'overlay_fog' || randomizeY) {
-            p.y = Math.random() * (this.canvas.height + 200) - 100;
+            p.y = Math.random() * (this.canvas.height + 480) - 240; // Scaled from +200, -100
         } else {
-            p.y = -100 - (Math.random() * 200);
+            p.y = -240 - (Math.random() * 480); // Scaled from -100, 200
         }
 
         if (visualEffect === 'particle_rain') {
@@ -112,8 +111,8 @@ export class WeatherRenderer {
             this.splashParticles.push({
                 x: x,
                 y: y,
-                speedX: (Math.random() * 2) - 1,
-                speedY: (Math.random() * 2) - 1,
+                speedX: (Math.random() * 4.8) - 2.4, // Scaled from *2, -1
+                speedY: (Math.random() * 4.8) - 2.4, // Scaled from *2, -1
                 life: 1.0,
                 decay: 0.1 + (Math.random() * 0.05)
             });
@@ -194,7 +193,7 @@ export class WeatherRenderer {
             deltaX = (camera.x - this.lastCameraX) * this.config.GAME_SCALE;
             deltaY = (camera.y - this.lastCameraY) * this.config.GAME_SCALE;
             
-            if (Math.abs(deltaX) > 100 || Math.abs(deltaY) > 100) {
+            if (Math.abs(deltaX) > 240 || Math.abs(deltaY) > 240) { // Scaled from 100
                 deltaX = 0; deltaY = 0;
             }
         }
@@ -237,11 +236,11 @@ export class WeatherRenderer {
             }
 
             if (this.displayEffect === 'particle_sand') {
-                if (p.x > this.canvas.width + 50) p.x = -50;
-                else if (p.x < -50) p.x = this.canvas.width + 50;
+                if (p.x > this.canvas.width + 120) p.x = -120; // Scaled from 50
+                else if (p.x < -120) p.x = this.canvas.width + 120;
 
-                if (p.y > this.canvas.height + 50) p.y = -50;
-                else if (p.y < -50) p.y = this.canvas.height + 50;
+                if (p.y > this.canvas.height + 120) p.y = -120; // Scaled from 50
+                else if (p.y < -120) p.y = this.canvas.height + 120;
                 continue; 
             }
 
@@ -254,7 +253,7 @@ export class WeatherRenderer {
                 }
             }
 
-            if (p.y > this.canvas.height + 150 || p.x > this.canvas.width + 150 || p.x < -150) {
+            if (p.y > this.canvas.height + 360 || p.x > this.canvas.width + 360 || p.x < -360) { // Scaled from 150
                 this.particles[i] = this.createParticle(this.displayEffect, false);
             }
         }
@@ -282,7 +281,7 @@ export class WeatherRenderer {
             ctx.fillStyle = settings.splashColor;
             for (const p of this.splashParticles) {
                 ctx.globalAlpha = p.life * this.renderIntensity;
-                ctx.fillRect(p.x, p.y, 1, 1); 
+                ctx.fillRect(p.x, p.y, 2.4, 2.4); // Scaled from 1, 1 
             }
             ctx.globalAlpha = this.renderIntensity; 
         }
@@ -298,7 +297,7 @@ export class WeatherRenderer {
         ctx.strokeStyle = settings.color;
         
         if (this.displayEffect === 'particle_rain') {
-            ctx.lineWidth = 1.0; 
+            ctx.lineWidth = 2.4; // Scaled from 1.0 
             ctx.lineCap = 'round'; 
             ctx.beginPath();
             for (const p of this.particles) {

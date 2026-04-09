@@ -8,7 +8,7 @@ export class StatsPanel {
 
     render(member, stats, x, y, w) {
         let currentY = y;
-        const rowHeight = 16;
+        const rowHeight = 38; // Scaled up 2.4x from 16
 
         // ==========================================
         // 1. ATTRIBUTES SECTION
@@ -16,9 +16,9 @@ export class StatsPanel {
         this.ui.drawText("Attributes", x, currentY, UITheme.fonts.bold, UITheme.colors.textMain, "left");
         
         // --- Gothic Flourish Header ---
-        currentY += 8; 
+        currentY += 19; 
         this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.border); 
-        currentY += 15; // Space between line and content
+        currentY += 36; // Space between line and content
 
         const attrs = member.attributes || {};
         const attrKeys = Object.keys(attrs);
@@ -48,7 +48,7 @@ export class StatsPanel {
                 const label = Formatting.getAbbreviation(key);
                 
                 this.ui.drawText(label, itemX, itemY, UITheme.fonts.small, UITheme.colors.textMuted, "left");
-                this.ui.drawText(displayVal.toString(), itemX + 30, itemY, UITheme.fonts.mono, valColor, "left");
+                this.ui.drawText(displayVal.toString(), itemX + 72, itemY, UITheme.fonts.mono, valColor, "left");
             });
 
             currentY += (numRows * rowHeight);
@@ -57,16 +57,16 @@ export class StatsPanel {
             currentY += rowHeight;
         }
 
-        currentY += 20;
+        currentY += 48;
 
         // ==========================================
         // 2. COMBAT & RECOVERY STATS SECTION
         // ==========================================
         this.ui.drawText("Combat Stats", x, currentY, UITheme.fonts.bold, UITheme.colors.textMain, "left");
 
-        currentY += 8; 
+        currentY += 19; 
         this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.border);
-        currentY += 15; 
+        currentY += 36; 
 
         const speed = stats.speed || member.attributes?.speed || 0;
         const critChance = (stats.critChance || 0) * 100;
@@ -107,10 +107,10 @@ export class StatsPanel {
             const itemY = currentY + (row * rowHeight);
             
             this.ui.drawText(stat.label, itemX, itemY, UITheme.fonts.mono, UITheme.colors.textMuted, "left");
-            this.ui.drawText(stat.val, itemX + 60, itemY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
+            this.ui.drawText(stat.val, itemX + 144, itemY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
         });
 
-        currentY += (numRows * rowHeight) + 10;
+        currentY += (numRows * rowHeight) + 24;
 
         // ==========================================
         // 3. RESISTANCE TABLE
@@ -132,9 +132,9 @@ export class StatsPanel {
         this.ui.drawText("DEF", colDef, currentY, headerFont, UITheme.colors.defense, "center");
         this.ui.drawText("RES", colRes, currentY, headerFont, UITheme.colors.resistance, "center");
         
-        currentY += 8;
+        currentY += 19;
         this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.border);
-        currentY += 15;
+        currentY += 36;
 
         const types = [
             "blunt", "slash", "pierce", 
@@ -174,7 +174,7 @@ export class StatsPanel {
                 
             this.ui.drawText(resData.text, colRes, currentY, UITheme.fonts.mono, resData.color, "center");
 
-            currentY += 14;
+            currentY += 34;
         });
     }
 }

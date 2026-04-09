@@ -108,8 +108,10 @@ async function initialize() {
     await assetLoader.loadAll(ASSET_MANIFEST);
     
     const canvas = document.getElementById('game-canvas'); 
-    canvas.width = 800;
-    canvas.height = 450;
+    
+    // Use the CONFIG object to set dimensions so you only have a single source of truth
+    canvas.width = CONFIG.CANVAS_WIDTH;   // Resolves to 1920
+    canvas.height = CONFIG.CANVAS_HEIGHT; // Resolves to 1080
     
     // The SceneManager will handle creating the EncounterController internally
     sceneManager = new SceneManager(canvas, assetLoader, CONFIG);

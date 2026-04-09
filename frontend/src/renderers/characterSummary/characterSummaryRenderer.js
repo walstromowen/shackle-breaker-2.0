@@ -26,7 +26,7 @@ export class CharacterSummaryRenderer {
         this.tooltipSystem = new TooltipSystem(this.ui);
 
         this.hitboxes = [];
-        this.padding = 15;
+        this.padding = 36; // Scaled 15 * 2.4
     }
 
     render(state) {
@@ -121,14 +121,14 @@ export class CharacterSummaryRenderer {
         const contentW = w - (this.padding * 2);
 
         // --- Tabs ---
-        const tabH = 28;
+        const tabH = 67; // Scaled 28 * 2.4
         const tabW = contentW / 3; 
         
         const drawTab = (label, tx, isActive, id) => {
             if (isActive) {
                 // Active Tab: Gothic Panel with Gold Brackets
                 this.ui.drawPanel(tx, y, tabW, tabH, UITheme.colors.panelBg);
-                this.ui.drawSelectionBrackets(tx, y, tabW, tabH, 2, UITheme.colors.borderHighlight);
+                this.ui.drawSelectionBrackets(tx, y, tabW, tabH, 5, UITheme.colors.borderHighlight); // Scaled 2 * 2.4
             } else {
                 // Inactive Tab: Dimmed, basic border
                 this.ui.drawRect(tx, y, tabW, tabH, "rgba(0,0,0,0.5)");
@@ -139,7 +139,7 @@ export class CharacterSummaryRenderer {
             this.ui.drawText(
                 label, 
                 tx + tabW/2, 
-                y + (tabH/2) + 4, 
+                y + (tabH/2) + 10, // Scaled 4 * 2.4
                 UITheme.fonts.small, 
                 textCol, 
                 "center", 
@@ -154,8 +154,8 @@ export class CharacterSummaryRenderer {
         drawTab("SKILLS", x + (tabW * 2), viewMode === 'ABILITIES', 'TAB_ABILITIES'); 
 
         // --- Panel Content ---
-        const contentY = y + tabH + 20;
-        const contentH = h - contentY - 20;
+        const contentY = y + tabH + 48; // Scaled 20 * 2.4
+        const contentH = h - contentY - 48; // Scaled 20 * 2.4
 
         if (viewMode === 'STATS') {
             this.statsPanel.render(member, stats, x, contentY, contentW);
@@ -191,7 +191,7 @@ export class CharacterSummaryRenderer {
         const iconSheet = this.loader.get(sheetName) || this.loader.get('items') || this.loader.get('icons'); 
         
         const iconSize = 32; 
-        const drawSize = 32; // Strictly adhere to 32x32
+        const drawSize = 77; // Scaled 32 * 2.4
         
         const x = mouse.x - (drawSize / 2);
         const y = mouse.y - (drawSize / 2);
@@ -207,11 +207,11 @@ export class CharacterSummaryRenderer {
             this.ctx.drawImage(iconSheet, sx, sy, iconSize, iconSize, x, y, drawSize, drawSize);
         } else {
             this.ctx.fillStyle = UITheme.colors.failure; 
-            this.ctx.fillRect(x + 4, y + 4, drawSize - 8, drawSize - 8);
+            this.ctx.fillRect(x + 10, y + 10, drawSize - 19, drawSize - 19); // Scaled
         }
 
         // Tarnished gold highlight brackets to signify holding
-        this.ui.drawSelectionBrackets(x, y, drawSize, drawSize, 3, UITheme.colors.borderHighlight);
+        this.ui.drawSelectionBrackets(x, y, drawSize, drawSize, 7, UITheme.colors.borderHighlight); // Scaled 3 * 2.4
         
         this.ctx.restore();
     }
@@ -219,8 +219,8 @@ export class CharacterSummaryRenderer {
     _drawContextMenu(menu, selectedIndex = 0) {
         if (!menu || !menu.options) return;
 
-        const optionH = 32;
-        const menuW = 120;
+        const optionH = 77;  // Scaled 32 * 2.4
+        const menuW = 288;   // Scaled 120 * 2.4
         const menuH = menu.options.length * optionH;
         const screenW = this.ctx.canvas.width;
         const screenH = this.ctx.canvas.height;
@@ -228,11 +228,11 @@ export class CharacterSummaryRenderer {
         let x = menu.x;
         let y = menu.y;
 
-        // Clamp to screen
-        if (x + menuW > screenW) x = screenW - menuW - 5;
-        if (y + menuH > screenH) y = screenH - menuH - 5; 
-        if (x < 5) x = 5;
-        if (y < 5) y = 5;
+        // Clamp to screen (Scaled padding of 5 to 12)
+        if (x + menuW > screenW) x = screenW - menuW - 12;
+        if (y + menuH > screenH) y = screenH - menuH - 12; 
+        if (x < 12) x = 12;
+        if (y < 12) y = 12;
 
         // Draw Elegant Gothic Menu Background
         this.ui.drawPanel(x, y, menuW, menuH, UITheme.colors.panelBg); 
@@ -243,22 +243,22 @@ export class CharacterSummaryRenderer {
             
             // Draw Selection Highlight (Inset slightly to clear the gothic border)
             if (isSelected) {
-                this.ui.drawRect(x + 5, optY, menuW - 10, optionH, "rgba(184, 153, 71, 0.15)");
-                this.ui.drawText(">", x + 12, optY + (optionH/2) + 4, UITheme.fonts.small, UITheme.colors.textHighlight);
+                this.ui.drawRect(x + 12, optY, menuW - 24, optionH, "rgba(184, 153, 71, 0.15)");
+                this.ui.drawText(">", x + 29, optY + (optionH/2) + 10, UITheme.fonts.small, UITheme.colors.textHighlight);
             }
 
             // Draw Option Label
             this.ui.drawText(
                 opt.label, 
-                x + 28, 
-                optY + (optionH/2) + 5, 
+                x + 67, 
+                optY + (optionH/2) + 12, 
                 UITheme.fonts.body, 
                 isSelected ? UITheme.colors.textHighlight : UITheme.colors.textMain
             );
 
             // Draw Delicate Separator
             if (index < menu.options.length - 1) {
-                this.ui.drawLine(x + 10, optY + optionH, x + menuW - 10, optY + optionH, UITheme.colors.border);
+                this.ui.drawLine(x + 24, optY + optionH, x + menuW - 24, optY + optionH, UITheme.colors.border);
             }
 
             // Register Hitbox
@@ -303,12 +303,12 @@ export class CharacterSummaryRenderer {
         const centerX = leftW + Math.floor(centerW / 2);
 
         // Add a thematic flourish line above the controls
-        this.ui.drawLineWithGothicFlourish(centerX - 150, h - 35, 300, UITheme.colors.border);
+        this.ui.drawLineWithGothicFlourish(centerX - 360, h - 84, 720, UITheme.colors.border); // Scaled
 
         this.ui.drawText(
             prompts, 
             centerX,        
-            h - 15,        
+            h - 36,        // Scaled
             UITheme.fonts.small, 
             UITheme.colors.textMuted, 
             "center"      

@@ -6,8 +6,8 @@ import { ItemDefinitions } from '../../../../../shared/data/itemDefinitions.js';
 export class TooltipSystem {
     constructor(ui) {
         this.ui = ui;
-        this.WIDTH = 220;
-        this.PADDING = 12; // Slightly wider padding to accommodate the inner panel borders
+        this.WIDTH = 528; // Scaled up from 220
+        this.PADDING = 29; // Scaled up from 12
     }
 
     render(state, hitboxes) {
@@ -188,20 +188,21 @@ export class TooltipSystem {
         const { title, type, color, lines } = content;
         
         // --- FONTS ---
+        // Note: Assumes your UITheme fonts have also been scaled for 1080p
         const headerFont = UITheme.fonts.cardTitle; 
         const typeFont   = UITheme.fonts.cardItalic;      
         const bodyFont   = UITheme.fonts.cardSmall;      
-        const lineHeight = 14;
+        const lineHeight = 34; // Scaled up from 14
         
         this.ui.ctx.font = bodyFont;
         
         // 1. Calculate Height & Wrap Text
-        let contentHeight = 38;
+        let contentHeight = 91; // Scaled up from 38
         const wrappedLines = [];
         
         lines.forEach(rawLine => {
             if (rawLine === "---") {
-                contentHeight += 12; // More breathing room for flourishes
+                contentHeight += 29; // Scaled up from 12
                 wrappedLines.push({ text: "---", isSeparator: true });
             } else {
                 const wLines = this.ui.getWrappedLines(rawLine, this.WIDTH - (this.PADDING * 2), bodyFont);
@@ -216,52 +217,53 @@ export class TooltipSystem {
         const screenW = this.ui.ctx.canvas.width;
         const screenH = this.ui.ctx.canvas.height;
         
-        let tx = mx + 15;
-        let ty = my + 15;
+        let tx = mx + 36; // Scaled up from 15
+        let ty = my + 36; // Scaled up from 15
 
-        if (tx + this.WIDTH > screenW) tx = mx - this.WIDTH - 15;
-        if (ty + contentHeight > screenH) ty = screenH - contentHeight - 10;
+        if (tx + this.WIDTH > screenW) tx = mx - this.WIDTH - 36;
+        if (ty + contentHeight > screenH) ty = screenH - contentHeight - 24; // Scaled up from 10
 
         // 3. Draw Beautiful Gothic Panel with Drop Shadow
         this.ui.ctx.save();
         this.ui.ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
-        this.ui.ctx.shadowBlur = 12;
-        this.ui.ctx.shadowOffsetX = 4;
-        this.ui.ctx.shadowOffsetY = 4;
+        this.ui.ctx.shadowBlur = 29; // Scaled up from 12
+        this.ui.ctx.shadowOffsetX = 10; // Scaled up from 4
+        this.ui.ctx.shadowOffsetY = 10; // Scaled up from 4
         
         // Utilizing the new drawPanel method!
         this.ui.drawPanel(tx, ty, this.WIDTH, contentHeight, "rgba(15, 15, 18, 0.98)");
         this.ui.ctx.restore();
 
         // 4. Draw Header Banner Background (Inside the inset frame)
-        const inset = 4; // Matching inset from drawPanel logic
+        const inset = 10; // Scaled up from 4
         this.ui.ctx.save();
         this.ui.ctx.fillStyle = color;
         this.ui.ctx.globalAlpha = 0.12; 
-        this.ui.ctx.fillRect(tx + inset + 1, ty + inset + 1, this.WIDTH - (inset * 2) - 2, 28);
+        // Small constant pixel adjustments mapped to the new scale (1 -> 2, 28 -> 67)
+        this.ui.ctx.fillRect(tx + inset + 2, ty + inset + 2, this.WIDTH - (inset * 2) - 4, 67);
         this.ui.ctx.restore();
 
         // 5. Draw Header Text
-        this.ui.drawText(title, tx + this.PADDING, ty + 21, headerFont, color, "left");
-        this.ui.drawText(type, tx + this.WIDTH - this.PADDING, ty + 21, typeFont, UITheme.colors.textMuted, "right");
+        this.ui.drawText(title, tx + this.PADDING, ty + 50, headerFont, color, "left"); // 21 -> 50
+        this.ui.drawText(type, tx + this.WIDTH - this.PADDING, ty + 50, typeFont, UITheme.colors.textMuted, "right");
 
         // Header Separator (Sharp Rarity Line, constrained within inner frame)
         this.ui.ctx.save();
         this.ui.ctx.strokeStyle = color;
         this.ui.ctx.globalAlpha = 0.6;
         this.ui.ctx.beginPath();
-        this.ui.ctx.moveTo(tx + inset + 1, ty + 33);
-        this.ui.ctx.lineTo(tx + this.WIDTH - inset - 1, ty + 33);
+        this.ui.ctx.moveTo(tx + inset + 2, ty + 79); // 33 -> 79
+        this.ui.ctx.lineTo(tx + this.WIDTH - inset - 2, ty + 79);
         this.ui.ctx.stroke();
         this.ui.ctx.restore();
 
         // 6. Draw Body Text & Gothic Separators
-        let curY = ty + 46;
+        let curY = ty + 110; // 46 -> 110
         wrappedLines.forEach(lineObj => {
             if (lineObj.isSeparator) {
                 // Replacing gradient line with elegant Gothic flourish divider
-                this.ui.drawLineWithGothicFlourish(tx + this.PADDING, curY - 4, this.WIDTH - (this.PADDING * 2), UITheme.colors.border);
-                curY += 12;
+                this.ui.drawLineWithGothicFlourish(tx + this.PADDING, curY - 10, this.WIDTH - (this.PADDING * 2), UITheme.colors.border); // 4 -> 10
+                curY += 29; // 12 -> 29
             } else {
                 this.ui.drawText(lineObj.text, tx + this.PADDING, curY, bodyFont, UITheme.colors.textMain, "left");
                 curY += lineHeight;

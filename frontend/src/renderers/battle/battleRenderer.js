@@ -188,7 +188,7 @@ export class BattleRenderer {
 
         let displayText = text;
         let color = this.COLORS.textMain;
-        let fontSize = isCritical ? 36 : 22; 
+        let fontSize = isCritical ? 86 : 53; // Scaled (36 * 2.4, 22 * 2.4)
 
         if (value !== undefined) {
             const isGain = value > 0;
@@ -207,12 +207,12 @@ export class BattleRenderer {
             color = this.COLORS.textMuted; 
         }
 
-        let targetX = pos.x + (Math.random() * 40 - 20); 
-        let targetY = pos.y - 40; 
+        let targetX = pos.x + (Math.random() * 96 - 48); // Scaled (40 -> 96, 20 -> 48)
+        let targetY = pos.y - 96; // Scaled (40 -> 96)
 
         for (const ft of this.floatingTexts) {
-            if (Math.abs(ft.x - targetX) < 30 && Math.abs(ft.y - targetY) < 25) {
-                targetY -= 25; 
+            if (Math.abs(ft.x - targetX) < 72 && Math.abs(ft.y - targetY) < 60) { // Scaled (30 -> 72, 25 -> 60)
+                targetY -= 60; // Scaled (25 -> 60)
             }
         }
 
@@ -224,7 +224,7 @@ export class BattleRenderer {
             y: targetY, 
             life: isCritical ? 2.0 : 1.5,
             maxLife: isCritical ? 2.0 : 1.5,
-            velocityY: isCritical ? -25 : -15,
+            velocityY: isCritical ? -60 : -36, // Scaled (25 -> 60, 15 -> 36)
             delay: delay 
         });
     }
@@ -255,15 +255,15 @@ export class BattleRenderer {
             
             // Set up crisp shadows before handing off to CanvasUI
             this.ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-            this.ctx.shadowBlur = 8;
-            this.ctx.shadowOffsetX = 2;
-            this.ctx.shadowOffsetY = 2;
+            this.ctx.shadowBlur = 19; // Scaled (8 -> 19)
+            this.ctx.shadowOffsetX = 5; // Scaled (2 -> 5)
+            this.ctx.shadowOffsetY = 5; // Scaled (2 -> 5)
             
             // Utilize CanvasUI for text rendering
             this.ui.drawText(ft.text, ft.x, ft.y, fontStr, ft.color, "center", "middle");
             
             // Add a slight bright center glow for criticals
-            if (ft.fontSize > 24) {
+            if (ft.fontSize > 58) { // Scaled (24 -> 58)
                 this.ctx.shadowBlur = 0;
                 this.ctx.globalAlpha *= 0.5;
                 this.ui.drawText(ft.text, ft.x, ft.y, fontStr, UITheme.colors.textMain, "center", "middle");

@@ -468,6 +468,31 @@ export class WorldManager {
         }
         return true;
     }
+    getLightObjects(camera, canvasWidth, canvasHeight) {
+        const TILE_SIZE = CONFIG.TILE_SIZE;
+        const scale = CONFIG.GAME_SCALE || 1;
+        
+        // WIDE padding so lights don't pop in at the edges
+        const LIGHT_PAD = 15; 
+        
+        const startCol = Math.floor(camera.x / TILE_SIZE) - LIGHT_PAD;
+        const endCol = startCol + Math.ceil((canvasWidth / scale) / TILE_SIZE) + (LIGHT_PAD * 2);
+        const startRow = Math.floor(camera.y / TILE_SIZE) - LIGHT_PAD;
+        const endRow = startRow + Math.ceil((canvasHeight / scale) / TILE_SIZE) + (LIGHT_PAD * 2);
+
+        const lightObjects = [];
+        for (let r = startRow; r <= endRow; r++) {
+            for (let c = startCol; c <= endCol; c++) {
+                const obj = this.getObject(c, r);
+                
+                // CRITICAL: Only return objects that actually emit light!
+                if (obj && obj.light && obj.light.hasLight) {
+                    lightObjects.push(obj);
+                }
+            }
+        }
+        return lightObjects;
+    }
     
     getElevation(col, row) {
         const id = this.getTileAt(col, row);

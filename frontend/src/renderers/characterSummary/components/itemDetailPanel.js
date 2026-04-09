@@ -8,9 +8,10 @@ export class ItemDetailPanel {
         this.ui = ui;
         this.loader = loader;
         
-        this.ICON_SIZE = 64; 
-        this.ABILITY_ICON_SIZE = 32;
-        this.SCROLLBAR_WIDTH = 4;
+        // Scaled by 2.4x
+        this.ICON_SIZE = 154; 
+        this.ABILITY_ICON_SIZE = 76;
+        this.SCROLLBAR_WIDTH = 10;
 
         this.lastItemId = null;
         this.totalContentHeight = 0;
@@ -18,7 +19,7 @@ export class ItemDetailPanel {
 
     render(item, x, y, w, h, state, hitboxes) {
         if (!item) {
-            this.ui.drawText("No item selected", x + w / 2, y + 50, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "center");
+            this.ui.drawText("No item selected", x + w / 2, y + 120, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "center");
             return;
         }
 
@@ -39,7 +40,7 @@ export class ItemDetailPanel {
         }
         
         if (!def) {
-             this.ui.drawText("Unknown Definition", x + w / 2, y + 50, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "center");
+             this.ui.drawText("Unknown Definition", x + w / 2, y + 120, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "center");
              return;
         }
 
@@ -55,7 +56,7 @@ export class ItemDetailPanel {
         const maxScroll = Math.max(0, this.totalContentHeight - h);
         
         if (state.layout) {
-            state.layout.detailBounds = { x: x, y: y, w: w + 20, h: h };
+            state.layout.detailBounds = { x: x, y: y, w: w + 48, h: h };
             state.layout.detailMaxScroll = maxScroll;
             state.layout.detailViewportH = h; 
         }
@@ -65,7 +66,7 @@ export class ItemDetailPanel {
 
         // --- 2. Render with Clipping ---
         this.ui.ctx.save();
-        this.ui.startClip(x, y, w + 10, h);
+        this.ui.startClip(x, y, w + 24, h);
 
         let currentY = y - state.scrollOffset;
         const initialDrawY = currentY;
@@ -78,26 +79,26 @@ export class ItemDetailPanel {
         
         // Flourish Divider Under Header
         const flourishW = w * 0.7;
-        this.ui.drawLineWithGothicFlourish(x + (w - flourishW)/2, currentY + 10, flourishW, UITheme.colors.border);
-        currentY += 30;
+        this.ui.drawLineWithGothicFlourish(x + (w - flourishW)/2, currentY + 24, flourishW, UITheme.colors.border);
+        currentY += 72;
 
         // B. Description
-        currentY = this._drawDescription(def, x + 15, currentY, w - 30);
-        currentY += 15;
+        currentY = this._drawDescription(def, x + 36, currentY, w - 72);
+        currentY += 36;
 
         // C & D. Main Stats & Attributes (Skip if it's purely an ability)
         if (!isAbility) {
-            currentY = this._drawMainStats(item, x + 20, currentY, w - 40);
-            currentY = this._drawAttributeBonuses(item, x + 20, currentY, w - 40);
+            currentY = this._drawMainStats(item, x + 48, currentY, w - 96);
+            currentY = this._drawAttributeBonuses(item, x + 48, currentY, w - 96);
             
             // Render Upgrade Costs
-            currentY = this._drawUpgradeCosts(item, def, x + 15, currentY, w - 30);
+            currentY = this._drawUpgradeCosts(item, def, x + 36, currentY, w - 72);
 
             // E. Render granted abilities
-            currentY = this._drawAbilities(def, x + 15, currentY, w - 30);
+            currentY = this._drawAbilities(def, x + 36, currentY, w - 72);
         } else {
             // It IS an ability, so just draw the ability card for itself
-            currentY = this._drawAbilities({ grantedAbilities: [def.id] }, x + 15, currentY, w - 30);
+            currentY = this._drawAbilities({ grantedAbilities: [def.id] }, x + 36, currentY, w - 72);
         }
 
         // --- End Rendering Logic ---
@@ -108,7 +109,7 @@ export class ItemDetailPanel {
 
         // --- 3. Draw Scrollbar ---
         if (this.totalContentHeight > h) {
-            this.drawScrollBar(x + w + 6, y, h, this.totalContentHeight, state.scrollOffset, hitboxes);
+            this.drawScrollBar(x + w + 14, y, h, this.totalContentHeight, state.scrollOffset, hitboxes);
         }
     }
 
@@ -116,7 +117,7 @@ export class ItemDetailPanel {
         this.ui.drawRect(x, y, this.SCROLLBAR_WIDTH, viewportH, UITheme.colors.scrollTrack || UITheme.colors.bgScale[0]); 
         
         const viewRatio = viewportH / contentH;
-        let thumbH = Math.max(20, viewportH * viewRatio);
+        let thumbH = Math.max(48, viewportH * viewRatio);
         
         const maxScroll = contentH - viewportH;
         const scrollRatio = maxScroll > 0 ? (scrollOffset / maxScroll) : 0;
@@ -130,9 +131,9 @@ export class ItemDetailPanel {
             hitboxes.push({
                 id: 'SCROLLBAR_THUMB', 
                 type: 'ui',
-                x: x - 4, 
+                x: x - 10, 
                 y: y, 
-                w: this.SCROLLBAR_WIDTH + 8, 
+                w: this.SCROLLBAR_WIDTH + 19, 
                 h: viewportH 
             });
         }
@@ -174,19 +175,19 @@ export class ItemDetailPanel {
             }
         }
 
-        let currentY = y + this.ICON_SIZE + 20;
-        const maxTextWidth = w - 40; 
+        let currentY = y + this.ICON_SIZE + 48;
+        const maxTextWidth = w - 96; 
         
         const nameLines = this.ui.getWrappedLines(item.name || def.name, maxTextWidth, UITheme.fonts.header);
         const rarityColor = this._getRarityColor(def.rarity);
         
-        const lineHeight = 20;
+        const lineHeight = 48;
         nameLines.forEach(line => {
             this.ui.drawText(line, centerX, currentY, UITheme.fonts.header, rarityColor, "center");
             currentY += lineHeight;
         });
 
-        currentY += 4; 
+        currentY += 10; 
         
         let typeText = isAbility ? "SKILL / ABILITY" : `${(def.type || "Item").toUpperCase()}`;
         if (def.slot && !isAbility) {
@@ -199,19 +200,19 @@ export class ItemDetailPanel {
         }
 
         this.ui.drawText(typeText, centerX, currentY, UITheme.fonts.cardMono, UITheme.colors.textMuted, "center");
-        currentY += 14;
+        currentY += 34;
 
         const itemValue = item.value || def.value; 
         if (itemValue !== undefined && !isAbility) {
             this.ui.drawText(`Value: ${itemValue}`, centerX, currentY, UITheme.fonts.cardMono, UITheme.colors.textMain, "center");
-            currentY += 12;
+            currentY += 29;
         }
 
         return currentY;
     }
 
     _drawDescription(def, x, y, w) {
-        const padding = 10;
+        const padding = 24;
         const contentW = w - (padding * 2);
         const contentX = x + padding;
         const centerX = x + (w / 2);
@@ -223,17 +224,17 @@ export class ItemDetailPanel {
             const lines = this.ui.getWrappedLines(def.effectDescription, contentW, UITheme.fonts.body);
             lines.forEach(line => {
                 this.ui.drawText(line, contentX, currentY, UITheme.fonts.body, UITheme.colors.textMain, "left");
-                currentY += 14;
+                currentY += 34;
             });
             hasContent = true;
         }
 
         if (def.description) {
-            if (hasContent) currentY += 8;
+            if (hasContent) currentY += 19;
             const lines = this.ui.getWrappedLines(def.description, contentW, UITheme.fonts.cardItalic);
             lines.forEach(line => {
                 this.ui.drawText(line, centerX, currentY, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "center"); 
-                currentY += 14;
+                currentY += 34;
             });
         }
         return currentY;
@@ -265,7 +266,7 @@ export class ItemDetailPanel {
             }
 
             this.ui.drawText(valStr.toString(), x + w, currentY, UITheme.fonts.mono, stat.color, "right");
-            currentY += 16;
+            currentY += 38;
             hasPrinted = true;
         });
 
@@ -286,12 +287,12 @@ export class ItemDetailPanel {
                 
                 this.ui.drawText(label, x, currentY, UITheme.fonts.small, color, "left");
                 this.ui.drawText(subStats[k].toString(), x + w, currentY, UITheme.fonts.mono, color, "right");
-                currentY += 14;
+                currentY += 34;
                 hasPrinted = true;
             });
         });
 
-        return hasPrinted ? currentY + 8 : currentY; 
+        return hasPrinted ? currentY + 19 : currentY; 
     }
 
     _drawAttributeBonuses(item, x, y, w) {
@@ -304,7 +305,7 @@ export class ItemDetailPanel {
         if (attrKeys.length === 0 && resKeys.length === 0) return currentY;
 
         this.ui.drawText("Bonuses", x, currentY, UITheme.fonts.cardTitle, UITheme.colors.textMuted, "left");
-        currentY += 14; 
+        currentY += 34; 
 
         attrKeys.forEach(key => {
             const val = attributes[key];
@@ -313,9 +314,9 @@ export class ItemDetailPanel {
             const label = Formatting.getAbbreviation ? Formatting.getAbbreviation(key) : key.substring(0,3).toUpperCase();
             const valStr = Formatting.formatSigned(val);
             
-            this.ui.drawText(label, x + 10, currentY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
+            this.ui.drawText(label, x + 24, currentY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
             this.ui.drawText(valStr, x + w, currentY, UITheme.fonts.mono, UITheme.colors.textMain, "right");
-            currentY += 14;
+            currentY += 34;
         });
 
         resKeys.forEach(key => {
@@ -338,12 +339,12 @@ export class ItemDetailPanel {
 
             const valStr = Formatting.formatSigned(val);
 
-            this.ui.drawText(label, x + 10, currentY, UITheme.fonts.mono, color, "left");
+            this.ui.drawText(label, x + 24, currentY, UITheme.fonts.mono, color, "left");
             this.ui.drawText(valStr, x + w, currentY, UITheme.fonts.mono, color, "right");
-            currentY += 14;
+            currentY += 34;
         });
 
-        return currentY + 8;
+        return currentY + 19;
     }
 
     _drawUpgradeCosts(item, def, x, y, w) {
@@ -352,7 +353,7 @@ export class ItemDetailPanel {
         const isMax = item.isMaxLevel !== undefined ? item.isMaxLevel : (item.level >= def.maxLevel);
         if (isMax) {
             this.ui.drawText("Max Level Reached", x + w/2, currentY, UITheme.fonts.cardTitle, UITheme.colors.textMuted, "center");
-            return currentY + 15;
+            return currentY + 36;
         }
 
         const currentLevel = item.level || 1;
@@ -362,16 +363,16 @@ export class ItemDetailPanel {
         if (!costs) return currentY;
 
         this.ui.drawText(`Upgrade to Lv. ${nextLevel}`, x, currentY, UITheme.fonts.cardTitle, UITheme.colors.textMuted, "left");
-        currentY += 8;
+        currentY += 19;
         
         // Replaced flat line with gothic line
         this.ui.drawLineWithGothicFlourish(x + w * 0.1, currentY, w * 0.8, UITheme.colors.border);
-        currentY += 12;
+        currentY += 29;
 
         if (costs.currency) {
-            this.ui.drawText("Currency", x + 10, currentY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
+            this.ui.drawText("Currency", x + 24, currentY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
             this.ui.drawText(costs.currency.toString(), x + w, currentY, UITheme.fonts.mono, UITheme.colors.textMain, "right");
-            currentY += 14;
+            currentY += 34;
         }
 
         if (costs.materials) {
@@ -379,13 +380,13 @@ export class ItemDetailPanel {
                 const amount = costs.materials[matId];
                 const label = matId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
-                this.ui.drawText(label, x + 10, currentY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
+                this.ui.drawText(label, x + 24, currentY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
                 this.ui.drawText(amount.toString(), x + w, currentY, UITheme.fonts.mono, UITheme.colors.textMain, "right");
-                currentY += 14;
+                currentY += 34;
             });
         }
 
-        return currentY + 10;
+        return currentY + 24;
     }
 
     _drawAbilities(def, x, y, w) {
@@ -396,17 +397,17 @@ export class ItemDetailPanel {
             const label = def.useAbility ? "On Use" : "Details";
             
             this.ui.drawText(label, x, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
-            currentY += 8;
+            currentY += 19;
             this.ui.drawLineWithGothicFlourish(x + w * 0.1, currentY, w * 0.8, UITheme.colors.border);
-            currentY += 15; 
+            currentY += 36; 
 
             abilityList.forEach(abilityId => {
                 const ab = AbilityDefinitions[abilityId];
                 if (!ab) return;
 
-                const cardPadding = 8;
+                const cardPadding = 19;
                 const iconSize = this.ABILITY_ICON_SIZE;
-                const gap = 10;
+                const gap = 24;
                 
                 const iconX = x + cardPadding;
                 const contentX = iconX + iconSize + gap;
@@ -417,11 +418,11 @@ export class ItemDetailPanel {
                     ? this.ui.getWrappedLines(ab.description, contentW, descFont) 
                     : [];
                 
-                const headerHeight = 14; 
-                const statsHeight = 14; 
-                const dividerHeight = 6;
-                const descTextHeight = descLines.length > 0 ? (descLines.length * 13) : 0;
-                const contentHeight = headerHeight + 4 + statsHeight + dividerHeight + descTextHeight;
+                const headerHeight = 34; 
+                const statsHeight = 34; 
+                const dividerHeight = 14;
+                const descTextHeight = descLines.length > 0 ? (descLines.length * 31) : 0;
+                const contentHeight = headerHeight + 10 + statsHeight + dividerHeight + descTextHeight;
                 
                 const cardHeight = Math.max(contentHeight, iconSize) + (cardPadding * 2);
 
@@ -433,7 +434,7 @@ export class ItemDetailPanel {
                 this._drawAbilityIcon(ab, iconX, iconY);
                 this.ui.drawRect(iconX, iconY, iconSize, iconSize, UITheme.colors.border, false);
 
-                let cursorY = currentY + cardPadding + 10; 
+                let cursorY = currentY + cardPadding + 24; 
 
                 this.ui.drawText(ab.name || abilityId, contentX, cursorY, UITheme.fonts.cardTitle, UITheme.colors.textMain, "left");
                 
@@ -455,13 +456,13 @@ export class ItemDetailPanel {
                     }
                     this.ui.drawText(costStr, x + w - cardPadding, cursorY, UITheme.fonts.cardMono, costCol, "right");
                 }
-                cursorY += 16;
+                cursorY += 38;
 
                 let statX = contentX;
                 const drawStat = (label, value, color) => {
                     const txt = `${label} ${value}`;
                     this.ui.drawText(txt, statX, cursorY, UITheme.fonts.cardMono, color, "left");
-                    statX += (this.ui.ctx.measureText(txt).width) + 12; // Adjusted spacing utilizing context dynamically
+                    statX += (this.ui.ctx.measureText(txt).width) + 29; // Adjusted spacing utilizing context dynamically
                 };
 
                 // Needs prep for measureText
@@ -474,22 +475,22 @@ export class ItemDetailPanel {
                 if (ab.accuracy) drawStat("Acc:", `${Math.floor(ab.accuracy*100)}%`, UITheme.colors.textMuted);
                 if (ab.speed) drawStat("Spd:", ab.speed, UITheme.colors.textMuted);
 
-                cursorY += 10; 
+                cursorY += 24; 
 
                 if (descLines.length > 0) {
                     this.ui.drawLineWithGothicFlourish(contentX, cursorY, contentW * 0.8, UITheme.colors.border);
-                    cursorY += 14;
+                    cursorY += 34;
 
                     descLines.forEach(line => {
                         this.ui.drawText(line, contentX, cursorY, descFont, UITheme.colors.textMuted, "left");
-                        cursorY += 13;
+                        cursorY += 31;
                     });
                 }
 
-                currentY += cardHeight + 8;
+                currentY += cardHeight + 19;
             });
         }
-        return currentY + 5;
+        return currentY + 12;
     }
 
     _drawAbilityIcon(ability, x, y) {

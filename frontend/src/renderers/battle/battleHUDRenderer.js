@@ -11,15 +11,15 @@ export class BattleHUDRenderer {
 
         this.SRC_SIZE = 32; 
 
-        // --- HUD CONFIGURATION ---
+        // --- HUD CONFIGURATION (Scaled for 1920x1080) ---
         this.HUD = {
-            CARD_W: 160,      
-            CARD_H: 46,       
-            GAP: 6,           
-            BAR_HEIGHT: 4,    
-            BAR_WIDTH: 75,    
-            PADDING_X: 10,
-            PADDING_Y: 6      
+            CARD_W: 384,      
+            CARD_H: 110,       
+            GAP: 14,           
+            BAR_HEIGHT: 10,    
+            BAR_WIDTH: 180,    
+            PADDING_X: 24,
+            PADDING_Y: 14      
         };
 
         this.displayStats = new WeakMap(); 
@@ -124,10 +124,10 @@ export class BattleHUDRenderer {
     }
 
     drawPartyCards(party, state) { 
-        const targetX = 15;
-        const hiddenX = -this.HUD.CARD_W - 20;
-        const startY = 15;
-        const spacingY = 8; 
+        const targetX = 36;
+        const hiddenX = -this.HUD.CARD_W - 48;
+        const startY = 36;
+        const spacingY = 19; 
         
         party.forEach((member, index) => {
             if (!member) return; 
@@ -144,10 +144,10 @@ export class BattleHUDRenderer {
             
             this.ctx.font = UITheme.fonts.body;
             this.ctx.fillStyle = UITheme.colors.textMain;
-            this.ctx.fillText(member.name, currentX + this.HUD.PADDING_X, y + 14);
+            this.ctx.fillText(member.name, currentX + this.HUD.PADDING_X, y + 34);
 
             const textWidth = this.ctx.measureText(member.name).width;
-            const safeStatusX = currentX + this.HUD.PADDING_X + textWidth + 10; 
+            const safeStatusX = currentX + this.HUD.PADDING_X + textWidth + 24; 
             
             this.drawStatusEffects(member, safeStatusX, y); 
 
@@ -156,7 +156,7 @@ export class BattleHUDRenderer {
             const displayIns = this.getDisplayStat(member, 'insight', member.insight || 0);
 
             const barX = currentX + this.HUD.PADDING_X;
-            let currentY = y + 20; 
+            let currentY = y + 48; 
 
             // Corrected UITheme mapping for vitals
             this.ui.drawBar(barX, currentY, this.HUD.BAR_WIDTH, this.HUD.BAR_HEIGHT, displayHp, member.maxHp || 10, UITheme.colors.hp, UITheme.colors.hpDim);
@@ -173,12 +173,12 @@ export class BattleHUDRenderer {
     }
 
     drawEnemyCards(enemies, state) {
-        const ENEMY_CARD_H = 32; 
+        const ENEMY_CARD_H = 77; 
         const stackHeight = (enemies.length * ENEMY_CARD_H) + ((enemies.length - 1) * this.HUD.GAP);
-        const bottomMargin = 90; 
+        const bottomMargin = 216; 
         
-        const targetX = this.config.CANVAS_WIDTH - this.HUD.CARD_W - 15;
-        const hiddenX = this.config.CANVAS_WIDTH + 20; 
+        const targetX = this.config.CANVAS_WIDTH - this.HUD.CARD_W - 36;
+        const hiddenX = this.config.CANVAS_WIDTH + 48; 
         const startY = this.config.CANVAS_HEIGHT - bottomMargin - stackHeight;
 
         enemies.forEach((enemy, index) => {
@@ -195,20 +195,21 @@ export class BattleHUDRenderer {
             this.ctx.font = UITheme.fonts.bodyItalic || `italic ${UITheme.fonts.body}`;
             this.ctx.fillStyle = UITheme.colors.textMain;
             this.ctx.textAlign = 'right';
-            this.ctx.fillText(enemy.name, currentX + this.HUD.CARD_W - this.HUD.PADDING_X, y + 14);
+            this.ctx.fillText(enemy.name, currentX + this.HUD.CARD_W - this.HUD.PADDING_X, y + 34);
             this.ctx.textAlign = 'left';
 
             const textWidth = this.ctx.measureText(enemy.name).width;
             const activeEffects = enemy.statusEffects ? Math.min(enemy.statusEffects.length, 4) : 0;
-            const iconsWidth = activeEffects * (16 + 6);
+            // iconsWidth needs scaling too: 38 is the new iconSize, 14 is the spacing
+            const iconsWidth = activeEffects * (38 + 14); 
             
-            const safeStatusX = currentX + this.HUD.CARD_W - this.HUD.PADDING_X - textWidth - 10 - iconsWidth;
+            const safeStatusX = currentX + this.HUD.CARD_W - this.HUD.PADDING_X - textWidth - 24 - iconsWidth;
             
             this.drawStatusEffects(enemy, safeStatusX, y);
 
             const displayHp = this.getDisplayStat(enemy, 'hp', enemy.hp || 0);
             const barX = (currentX + this.HUD.CARD_W - this.HUD.PADDING_X) - this.HUD.BAR_WIDTH;
-            const barY = y + 20; 
+            const barY = y + 48; 
 
             // Corrected UITheme mapping for vitals
             this.ui.drawBar(barX, barY, this.HUD.BAR_WIDTH, this.HUD.BAR_HEIGHT, displayHp, enemy.maxHp || 10, UITheme.colors.hp, UITheme.colors.hpDim);
@@ -218,17 +219,17 @@ export class BattleHUDRenderer {
     drawBarText(current, max, barX, barY) {
         this.ctx.save();
         
-        // Dynamically shrink the theme's small font by 2px so we don't have to hardcode the font family
-        let fontStr = UITheme.fonts.small || '12px sans-serif';
-        fontStr = fontStr.replace(/\d+px/, match => Math.max(8, parseInt(match) - 2) + 'px');
+        // Dynamically shrink the theme's small font by 5px so we don't have to hardcode the font family
+        let fontStr = UITheme.fonts.small || '28px sans-serif'; // Assuming small is properly scaled in UITheme
+        fontStr = fontStr.replace(/\d+px/, match => Math.max(19, parseInt(match) - 5) + 'px');
         
         this.ctx.font = fontStr;
         this.ctx.fillStyle = UITheme.colors.textMuted;
         this.ctx.textAlign = "left";
         this.ctx.textBaseline = "middle";
         
-        // Increased padding from + 5 to + 8 to un-cram it horizontally
-        this.ctx.fillText(`${Math.floor(current)}/${max}`, barX + this.HUD.BAR_WIDTH + 8, barY + (this.HUD.BAR_HEIGHT / 2));
+        // Increased padding to un-cram it horizontally
+        this.ctx.fillText(`${Math.floor(current)}/${max}`, barX + this.HUD.BAR_WIDTH + 19, barY + (this.HUD.BAR_HEIGHT / 2));
         this.ctx.restore();
     }
 
@@ -236,16 +237,16 @@ export class BattleHUDRenderer {
         const activeChar = state.activeParty[state.activePartyIndex];
         if (!activeChar || !activeChar.abilities) return;
 
-        const itemSize = 32; 
-        const margin = 10;   
-        const paddingX = 20; 
-        const headerH = 35;  
+        const itemSize = 77; 
+        const margin = 24;   
+        const paddingX = 48; 
+        const headerH = 84;  
 
         const availableWidth = this.config.CANVAS_WIDTH - (paddingX * 2);
         const columns = Math.floor(availableWidth / (itemSize + margin));
         
-        // Lock the height to exactly 90 so it never fluctuates
-        const h = 90; 
+        // Lock the height so it never fluctuates
+        const h = 216; 
 
         const w = this.config.CANVAS_WIDTH;
         const x = 0;
@@ -269,7 +270,7 @@ export class BattleHUDRenderer {
         this.ctx.textAlign = 'center';
         this.ctx.font = UITheme.fonts.bold; 
         this.ctx.fillStyle = UITheme.colors.textMuted;
-        this.ctx.fillText(`— ${activeChar.name} —`, w / 2, y + 22);
+        this.ctx.fillText(`— ${activeChar.name} —`, w / 2, y + 53);
         this.ctx.restore();
 
         // --- ANIMATED SELECTOR LOGIC ---
@@ -287,7 +288,7 @@ export class BattleHUDRenderer {
             const drawY = startY + (row * (itemSize + margin));
 
             if (isSelected) {
-                const brktDist = 2 + (pulse * 2);
+                const brktDist = 5 + (pulse * 5);
                 const bracketColor = canAfford ? UITheme.colors.highlight : UITheme.colors.hp;
                 
                 this.ui.drawSelectionBrackets(drawX, drawY, itemSize, itemSize, brktDist, bracketColor);
@@ -316,8 +317,8 @@ export class BattleHUDRenderer {
         const size = Math.floor(this.combatantRenderer.FRAME_SIZE * this.combatantRenderer.SPRITE_SCALE);
 
         const time = performance.now() * 0.003;
-        const bob = Math.sin(time) * 4;
-        const arrowY = y - (size/2) - 15 + bob;
+        const bob = Math.sin(time) * 10; // Scaled bob amplitude
+        const arrowY = y - (size/2) - 36 + bob;
         
         const pulse = (Math.sin(time * 2) + 1) / 2; // Oscillates between 0 and 1
         
@@ -328,10 +329,10 @@ export class BattleHUDRenderer {
         this.ctx.shadowBlur = 8 + (pulse * 12); // Pulses glow between 8 and 20
         
         this.ctx.beginPath();
-        this.ctx.moveTo(x, arrowY - 6);
-        this.ctx.lineTo(x + 6, arrowY);
-        this.ctx.lineTo(x, arrowY + 6);
-        this.ctx.lineTo(x - 6, arrowY);
+        this.ctx.moveTo(x, arrowY - 14);
+        this.ctx.lineTo(x + 14, arrowY);
+        this.ctx.lineTo(x, arrowY + 14);
+        this.ctx.lineTo(x - 14, arrowY);
         this.ctx.fill();
         
         this.ctx.restore();
@@ -355,7 +356,7 @@ export class BattleHUDRenderer {
         const targets = TargetingResolver.resolve(selectedAbility, activeChar, primaryTarget, state) || [];
 
         const time = performance.now() * 0.003;
-        const bob = Math.sin(time) * 4;
+        const bob = Math.sin(time) * 10;
         const pulse = (Math.sin(time * 2.5) + 1) / 2; // Slightly faster pulse for targets
 
         targets.forEach(target => {
@@ -377,7 +378,7 @@ export class BattleHUDRenderer {
             const y = Math.floor(layout.y * this.config.CANVAS_HEIGHT);
             const size = Math.floor(this.combatantRenderer.FRAME_SIZE * this.combatantRenderer.SPRITE_SCALE);
 
-            const arrowY = y - (size/2) - 15 + bob;
+            const arrowY = y - (size/2) - 36 + bob;
             const targetColor = isAllyTargeting ? UITheme.colors.highlight : UITheme.colors.targetRed;
 
             this.ctx.save();
@@ -388,10 +389,10 @@ export class BattleHUDRenderer {
             this.ctx.shadowBlur = 8 + (pulse * 12); // Pulses glow between 8 and 20
             
             this.ctx.beginPath();
-            this.ctx.moveTo(x, arrowY - 6);
-            this.ctx.lineTo(x + 6, arrowY);
-            this.ctx.lineTo(x, arrowY + 6);
-            this.ctx.lineTo(x - 6, arrowY);
+            this.ctx.moveTo(x, arrowY - 14);
+            this.ctx.lineTo(x + 14, arrowY);
+            this.ctx.lineTo(x, arrowY + 14);
+            this.ctx.lineTo(x - 14, arrowY);
             this.ctx.fill();
             
             this.ctx.restore();
@@ -400,7 +401,7 @@ export class BattleHUDRenderer {
 
     drawDialogueBox(text, title = null) {
         const w = this.config.CANVAS_WIDTH;
-        const h = 90; // Locked to 90 to perfectly match the Action Menu
+        const h = 216; // Locked perfectly match the Action Menu
         const x = 0;
         const y = this.config.CANVAS_HEIGHT - h;
 
@@ -414,7 +415,7 @@ export class BattleHUDRenderer {
             this.ctx.fillRect(x, y, w, 1);
         }
 
-        let textY = y + 30;
+        let textY = y + 72;
 
         // Optionally center a title (like the character's name) over the prompt text
         if (title) {
@@ -422,18 +423,18 @@ export class BattleHUDRenderer {
             this.ctx.textAlign = 'center';
             this.ctx.font = UITheme.fonts.bold;
             this.ctx.fillStyle = UITheme.colors.textMuted;
-            this.ctx.fillText(title, x + (w / 2), y + 22);
+            this.ctx.fillText(title, x + (w / 2), y + 53);
             this.ctx.restore();
             
-            textY = y + 45; // Push the standard body text down slightly 
+            textY = y + 108; // Push the standard body text down slightly 
         }
 
         this.ui.drawWrappedText(
             text, 
-            x + 20, 
+            x + 48, 
             textY, 
-            w - 40, 
-            20, 
+            w - 96, 
+            48, // Scaled line height 
             UITheme.fonts.body, 
             UITheme.colors.textMain
         );
@@ -443,7 +444,7 @@ export class BattleHUDRenderer {
         if (alpha <= 0.01) return;
 
         const w = this.config.CANVAS_WIDTH;
-        const h = 120; 
+        const h = 288; 
         const y = (this.config.CANVAS_HEIGHT / 2) - (h / 2);
 
         this.ctx.save(); 
@@ -475,7 +476,7 @@ export class BattleHUDRenderer {
         
         this.ctx.shadowColor = color;
         this.ctx.shadowBlur = 15;
-        this.ctx.fillText(spacedText, w / 2, y + (h / 2) + 4); 
+        this.ctx.fillText(spacedText, w / 2, y + (h / 2) + 10); 
         
         this.ctx.restore(); 
     }
@@ -483,8 +484,8 @@ export class BattleHUDRenderer {
     drawStatusEffects(entity, startX, startY) {
         if (!entity.statusEffects || entity.statusEffects.length === 0) return;
 
-        const iconSize = 16;
-        const spacing = 6;   
+        const iconSize = 38;
+        const spacing = 14;   
         const maxIcons = 4;  
 
         const effectsToDraw = entity.statusEffects.slice(0, maxIcons);
@@ -496,7 +497,7 @@ export class BattleHUDRenderer {
         });
     }
     
-    drawIcon(iconData, sheetKey, x, y, size = 32) {
+    drawIcon(iconData, sheetKey, x, y, size = 77) { // Also updated default arg size for generic icon calls
         if (typeof iconData === 'object' && iconData !== null) {
             const sheet = this.loader.get ? this.loader.get(sheetKey) : this.loader.getAsset(sheetKey);
             if (sheet) {
@@ -522,7 +523,7 @@ export class BattleHUDRenderer {
         this.ctx.font = `${Math.floor(size * 0.7)}px sans-serif`;
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
-        this.ctx.fillText(text, x + size / 2, y + size / 2 + 2);
+        this.ctx.fillText(text, x + size / 2, y + size / 2 + 5);
         this.ctx.restore();
     }
     

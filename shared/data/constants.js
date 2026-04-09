@@ -41,8 +41,8 @@ export const CONFIG = {
     OBJECT_SIZE: 32,         
     TILE_PADDING: 1,        
     GAME_SCALE: 1,          
-    CANVAS_WIDTH: 800, 
-    CANVAS_HEIGHT: 450, 
+    CANVAS_WIDTH: 1920,   // <-- CHANGED FROM 800
+    CANVAS_HEIGHT: 1080,  // <-- CHANGED FROM 450
     WALL_HEIGHT: 2,    
 
     // --- Movement & Physics ---

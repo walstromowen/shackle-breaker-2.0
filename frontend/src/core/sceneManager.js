@@ -447,39 +447,20 @@ export class SceneManager {
         this.transitionRenderer.render(this.ctx);
     }
 
-    renderOverworld(interpolation, totalTime) { // <-- UPDATED
+    renderOverworld(interpolation, totalTime) { 
         const state = this.overworldController.getState();
+        const ambientColor = this.timeSystem.getCurrentColorData();
         
-        // 1. Draw Base Map & Entities
+        // 1. Draw Map, Entities, Weather, AND Lighting in one pass
         this.mapRenderer.renderMap(
             this.worldManager, 
             state.camera, 
             state.entities,
-            interpolation, // <-- PASSED DOWN TO RENDERER
-            totalTime 
-        );
-
-        // 2. Draw Weather Layer
-        this.weatherRenderer.render(
-            this.ctx, 
-            state.camera, 
-            totalTime
-        );
-
-        // 3. Draw Ambient Lighting Layer (tints both map and weather)
-        const ambientColor = this.timeSystem.getCurrentColorData();
-        const visibleObjects = this.worldManager.getVisibleObjects(
-            state.camera,
-            this.canvas.width,
-            this.canvas.height
-        );
-
-        this.lightingRenderer.render(
-            this.ctx, 
-            ambientColor, 
-            state.camera, 
-            state.entities, 
-            visibleObjects
+            interpolation, 
+            totalTime,
+            this.lightingRenderer,
+            ambientColor,
+            this.weatherRenderer // <-- Pass the weather renderer down!
         );
     }
 

@@ -9,8 +9,9 @@ export class BattleCombatantRenderer {
         this.vfxRenderer = vfxRenderer; 
 
         // --- VISUAL CONFIG ---
-        this.SPRITE_SCALE = 1;   
-        this.FRAME_SIZE = 128;
+        // Scale factor applied to the sprite drawing size to match 1080p
+        this.SPRITE_SCALE = 2.4;   
+        this.FRAME_SIZE = 128; // Keep source frame size constant to match asset parsing
         this.FRAMES_PER_ROW = 8;      // Fallback in case an entity is missing the new properties
         this.ANIMATION_SPEED = 150;   // Milliseconds per frame
 
@@ -92,7 +93,7 @@ export class BattleCombatantRenderer {
         this.ctx.fill();
         
         this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-        this.ctx.shadowBlur = 4;
+        this.ctx.shadowBlur = 10; // Scaled (4 -> 10)
         this.ctx.fill(); 
 
         this.ctx.restore();

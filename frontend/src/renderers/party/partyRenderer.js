@@ -7,23 +7,24 @@ export class PartyRenderer {
         this.loader = loader; 
         this.ui = new CanvasUI(ctx);
         
+        // --- Scaled 2.4x for 1920x1080 ---
         this.layout = {
-            cardW: 250, 
-            cardH: 140,     
-            gapX: 10,       
-            gapY: 20,   
-            startY: 90      
+            cardW: 600, 
+            cardH: 336,     
+            gapX: 24,       
+            gapY: 48,   
+            startY: 216      
         };
 
         this.menuConfig = {
-            width: 120,
-            btnHeight: 35,
-            padding: 10
+            width: 288,
+            btnHeight: 84,
+            padding: 24
         };
 
         // --- CONFIG FOR STATUS ICONS ---
         this.statusIconSheetPath = '/assets/ui/status_icons.png'; 
-        this.statusIconSize = 16; 
+        this.statusIconSize = 38; // Scaled up from 16
     }
 
     render(state) {
@@ -34,10 +35,10 @@ export class PartyRenderer {
         this.ui.clearScreen(width, height);
         
         const headerText = mode === 'BATTLE_SELECT' ? "Select Reserve to Swap In" : "Party Members";
-        this.ui.drawText(headerText, width / 2, 50, UITheme.fonts.header, UITheme.colors.textMain, "center");
+        this.ui.drawText(headerText, width / 2, 120, UITheme.fonts.header, UITheme.colors.textMain, "center");
         
-        // --- Added Gothic Flourish under Header ---
-        this.ui.drawLineWithGothicFlourish((width / 2) - 120, 65, 240, UITheme.colors.borderHighlight);
+        // --- Scaled Gothic Flourish ---
+        this.ui.drawLineWithGothicFlourish((width / 2) - 288, 156, 576, UITheme.colors.borderHighlight);
 
         members.forEach((member, index) => {
             if (index >= 6) return; 
@@ -69,7 +70,7 @@ export class PartyRenderer {
             }
         }
         
-        this.ui.drawText(guide, width / 2, height - 30, UITheme.fonts.mono, UITheme.colors.textMuted, "center");
+        this.ui.drawText(guide, width / 2, height - 72, UITheme.fonts.mono, UITheme.colors.textMuted, "center");
     }
 
     isPointInRect(x, y, rect) { return (x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h); }
@@ -88,7 +89,7 @@ export class PartyRenderer {
             const isHovered = (i === highlightIndex);
             const btnY = layout.y + this.menuConfig.padding + (i * this.menuConfig.btnHeight);
             
-            if (isHovered) this.ui.drawRect(layout.x + 5, btnY, layout.w - 10, this.menuConfig.btnHeight, "rgba(255, 255, 255, 0.05)", true);
+            if (isHovered) this.ui.drawRect(layout.x + 12, btnY, layout.w - 24, this.menuConfig.btnHeight, "rgba(255, 255, 255, 0.05)", true);
             
             let color = UITheme.colors.textMain;
             if (opt === 'Level Up') color = UITheme.colors.textHighlight; 
@@ -151,7 +152,7 @@ export class PartyRenderer {
         if (isCursor && !isBeingMoved) {
             const time = performance.now() * 0.004;
             const pulse = (Math.sin(time) + 1) / 2;
-            const brktDist = 3 + (pulse * 4); 
+            const brktDist = 7 + (pulse * 10); // Scaled
             const bracketColor = isUnavailable ? UITheme.colors.failure : UITheme.colors.borderHighlight;
             this.ui.drawSelectionBrackets(x, y, cardW, cardH, brktDist, bracketColor);
         }
@@ -164,36 +165,33 @@ export class PartyRenderer {
             const time = performance.now() * 0.005;
             const alpha = 0.5 + (Math.sin(time) + 1) * 0.25; 
             const goldRgb = "184, 153, 71"; 
-            this.ui.drawText("★ LVL UP", x + cardW - 8, y + cardH - 10, UITheme.fonts.cardTitle, `rgba(${goldRgb}, ${alpha})`, "right");
+            this.ui.drawText("★ LVL UP", x + cardW - 19, y + cardH - 24, UITheme.fonts.cardTitle, `rgba(${goldRgb}, ${alpha})`, "right");
         }
 
-        // 2. Portrait (Strictly 128x128)
-        const pSize = 128; 
-        const pX = x + 4; 
-        const pY = y + 6;  
+        // 2. Portrait (Scaled up from 128x128 to ~307x307)
+        const pSize = 307; 
+        const pX = x + 10; 
+        const pY = y + 14;  
         const masterSheet = this.loader.get(member.spritePortrait);
 
-        // Solid background beneath the portrait
         this.ui.drawRect(pX, pY, pSize, pSize, "rgba(0,0,0,0.5)", true);
         
-        // Draw image at exact 128x128 scale
         if (masterSheet) {
-            ctx.drawImage(masterSheet, 0, 0, 128, 128, pX, pY, 128, 128);
+            // Read 128x128 from sheet, draw at 307x307
+            ctx.drawImage(masterSheet, 0, 0, 128, 128, pX, pY, pSize, pSize);
         }
 
-        // Overlay the frame border so it doesn't shrink the image area
         this.ui.drawRect(pX, pY, pSize, pSize, UITheme.colors.border, false);
 
-        // --- Draw Status Effects Over Portrait ---
         this.drawStatusEffects(member, pX, pY, pSize);
 
         // 3. Info Column
-        const infoX = pX + pSize + 8; 
-        const numberWidth = 38;       
-        const labelWidth = 20;        
-        const barW = cardW - (pX - x) - pSize - 8 - labelWidth - numberWidth - 8;
+        const infoX = pX + pSize + 19; 
+        const numberWidth = 91;       
+        const labelWidth = 48;        
+        const barW = cardW - (pX - x) - pSize - 19 - labelWidth - numberWidth - 19;
 
-        this.ui.drawText(member.name, infoX, y + 18, UITheme.fonts.cardTitle, UITheme.colors.textMain);
+        this.ui.drawText(member.name, infoX, y + 43, UITheme.fonts.cardTitle, UITheme.colors.textMain);
 
         const levelText = `Lv.${member.level || 1}`;
         let statusPrefix = "";
@@ -207,27 +205,27 @@ export class PartyRenderer {
              statusColor = UITheme.colors.failure;
         }
         
-        this.ui.drawText(`${statusPrefix}${levelText}`, infoX, y + 32, UITheme.fonts.cardSmall, statusColor);
+        this.ui.drawText(`${statusPrefix}${levelText}`, infoX, y + 77, UITheme.fonts.cardSmall, statusColor);
 
-        const xpY = y + 47; 
-        this.ui.drawText("XP", infoX, xpY + 5, UITheme.fonts.cardMono, UITheme.colors.textMuted);
-        this.ui.drawBar(infoX + labelWidth, xpY, barW, 4, member.xp || 0, member.maxXp || 1, UITheme.colors.xp, UITheme.colors.xpDim);
-        this.ui.drawText(`${Math.floor(member.xp || 0)}/${member.maxXp || 1}`, infoX + labelWidth + barW + numberWidth, xpY + 5, UITheme.fonts.cardMono, UITheme.colors.textMuted, "right");
+        const xpY = y + 113; 
+        this.ui.drawText("XP", infoX, xpY + 12, UITheme.fonts.cardMono, UITheme.colors.textMuted);
+        this.ui.drawBar(infoX + labelWidth, xpY, barW, 10, member.xp || 0, member.maxXp || 1, UITheme.colors.xp, UITheme.colors.xpDim);
+        this.ui.drawText(`${Math.floor(member.xp || 0)}/${member.maxXp || 1}`, infoX + labelWidth + barW + numberWidth, xpY + 12, UITheme.fonts.cardMono, UITheme.colors.textMuted, "right");
 
-        let currentY = y + 60;
-        this.drawStatRow("HP", member.hp, member.maxHp, infoX, currentY, barW, 4, numberWidth, labelWidth, UITheme.colors.hp, UITheme.colors.hpDim);
-        currentY += 12;
-        this.drawStatRow("STM", member.stamina, member.maxStamina, infoX, currentY, barW, 4, numberWidth, labelWidth, UITheme.colors.stm, UITheme.colors.stmDim);
-        currentY += 12;
-        this.drawStatRow("INS", member.insight, member.maxInsight, infoX, currentY, barW, 4, numberWidth, labelWidth, UITheme.colors.ins, UITheme.colors.insDim);
+        let currentY = y + 144;
+        this.drawStatRow("HP", member.hp, member.maxHp, infoX, currentY, barW, 10, numberWidth, labelWidth, UITheme.colors.hp, UITheme.colors.hpDim);
+        currentY += 29;
+        this.drawStatRow("STM", member.stamina, member.maxStamina, infoX, currentY, barW, 10, numberWidth, labelWidth, UITheme.colors.stm, UITheme.colors.stmDim);
+        currentY += 29;
+        this.drawStatRow("INS", member.insight, member.maxInsight, infoX, currentY, barW, 10, numberWidth, labelWidth, UITheme.colors.ins, UITheme.colors.insDim);
         
         ctx.restore();
     }
 
     drawStatRow(label, current, max, x, y, barW, h, numW, labelW, color, dimColor) {
-        this.ui.drawText(label, x, y + 5, UITheme.fonts.cardMono, UITheme.colors.textMuted);
+        this.ui.drawText(label, x, y + 12, UITheme.fonts.cardMono, UITheme.colors.textMuted);
         this.ui.drawBar(x + labelW, y, barW, h, current, max, color, dimColor);
-        this.ui.drawText(`${Math.floor(current)}/${max}`, x + labelW + barW + numW, y + 5, UITheme.fonts.cardMono, UITheme.colors.textMuted, "right");
+        this.ui.drawText(`${Math.floor(current)}/${max}`, x + labelW + barW + numW, y + 12, UITheme.fonts.cardMono, UITheme.colors.textMuted, "right");
     }
 
     drawStatusEffects(member, pX, pY, pSize) {
@@ -235,13 +233,13 @@ export class PartyRenderer {
 
         const sheetKey = 'statusEffects'; 
         const srcSize = 32;  
-        const drawSize = 16; // Strictly 16x16
-        const spacing = 2; 
+        const drawSize = 38; // Scaled up
+        const spacing = 5; 
 
         const sheet = this.loader.get ? this.loader.get(sheetKey) : this.loader.getAsset(sheetKey);
         
-        let drawX = pX + 2; 
-        let drawY = pY + pSize - drawSize - 2;
+        let drawX = pX + 5; 
+        let drawY = pY + pSize - drawSize - 5;
 
         member.statusEffects.forEach(effect => {
             this.ui.drawRect(drawX, drawY, drawSize, drawSize, 'rgba(0, 0, 0, 0.8)', true);
@@ -251,19 +249,19 @@ export class PartyRenderer {
                 this.ctx.drawImage(
                     sheet, 
                     effect.icon.col * srcSize, effect.icon.row * srcSize, srcSize, srcSize, 
-                    drawX, drawY, 16, 16 
+                    drawX, drawY, drawSize, drawSize 
                 );
             } else {
-                this.ui.drawText(effect.name.charAt(0), drawX + (drawSize/2), drawY + (drawSize/2) + 1, UITheme.fonts.cardSmall, UITheme.colors.textMain, "center", "middle");
+                this.ui.drawText(effect.name.charAt(0), drawX + (drawSize/2), drawY + (drawSize/2) + 2, UITheme.fonts.cardSmall, UITheme.colors.textMain, "center", "middle");
             }
 
             if (effect.stacks && effect.stacks > 1) {
                 this.ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
                 this.ctx.beginPath();
-                this.ctx.arc(drawX + drawSize, drawY + drawSize, 6, 0, Math.PI * 2);
+                this.ctx.arc(drawX + drawSize, drawY + drawSize, 14, 0, Math.PI * 2); // Scaled circle
                 this.ctx.fill();
                 
-                this.ui.drawText(effect.stacks.toString(), drawX + drawSize, drawY + drawSize + 1, UITheme.fonts.cardMono, "white", "center", "middle");
+                this.ui.drawText(effect.stacks.toString(), drawX + drawSize, drawY + drawSize + 2, UITheme.fonts.cardMono, "white", "center", "middle");
             }
 
             drawX += (drawSize + spacing);

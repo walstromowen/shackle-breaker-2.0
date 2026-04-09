@@ -11,18 +11,18 @@ export class BattleDebuggerRenderer {
     render(state) {
         if (!state) return;
 
-        const width = this.config.CANVAS_WIDTH || 800;
-        const height = this.config.CANVAS_HEIGHT || 800;
+        const width = this.config.CANVAS_WIDTH || 1920;
+        const height = this.config.CANVAS_HEIGHT || 1080;
 
         // Draw semi-transparent background over the battle
         this.ui.drawRect(0, 0, width, height, 'rgba(0, 0, 0, 0.85)', true);
 
-        const margin = 10;
+        const margin = 24; // Scaled (10 -> 24)
         const columnWidth = (width / 2) - (margin * 1.5);
         const leftX = margin;
         const rightX = (width / 2) + (margin / 2);
         // Moved up since the header is gone from the top
-        const startY = 20; 
+        const startY = 48; // Scaled (20 -> 48)
 
         // Cyan/Blue for Allies, Failure Red for Enemies
         this._renderTeamTable('ALLIES (ACTIVE PARTY)', state.activeParty, leftX, startY, columnWidth, '#00ffff');
@@ -39,9 +39,9 @@ export class BattleDebuggerRenderer {
         const headerText = `[ BATTLE DEBUG ]  PHASE: ${state.phase}  |  TIMER: ${state.timer?.toFixed(2) || 0}s  |  QUEUE: ${state.turnQueue?.length || 0}  |  ACTION: ${actionName}  |  TARGETS: ${targetCount}`;
         
         // Moved to bottom, changed color to theme highlight (amber)
-        const yPos = screenHeight - 25;
-        this.ui.drawText(headerText, screenWidth / 2, yPos, 'bold 11px monospace', UITheme.colors.textHighlight, 'center', 'top');
-        this.ui.drawLine(20, yPos - 5, screenWidth - 20, yPos - 5, UITheme.colors.textHighlight, 1);
+        const yPos = screenHeight - 60; // Scaled (25 -> 60)
+        this.ui.drawText(headerText, screenWidth / 2, yPos, 'bold 26px monospace', UITheme.colors.textHighlight, 'center', 'top'); // Scaled (11px -> 26px)
+        this.ui.drawLine(48, yPos - 12, screenWidth - 48, yPos - 12, UITheme.colors.textHighlight, 1); // Scaled (20 -> 48, 5 -> 12)
     }
 
     // --- Helpers ---
@@ -113,13 +113,13 @@ export class BattleDebuggerRenderer {
     _renderTeamTable(title, combatants, x, y, width, titleColor) {
         if (!combatants || combatants.length === 0) return;
 
-        this.ui.drawText(title, x, y, 'bold 12px monospace', titleColor, 'left', 'top');
-        y += 15;
+        this.ui.drawText(title, x, y, 'bold 29px monospace', titleColor, 'left', 'top'); // Scaled (12px -> 29px)
+        y += 36; // Scaled (15 -> 36)
 
-        // Reduced height to fit 3 cards per column (125 * 3 = 375px)
-        const cardHeight = 125; 
+        // Reduced height to fit 3 cards per column
+        const cardHeight = 300; // Scaled (125 -> 300)
         // Slightly tighter line height to pack info
-        const lineH = 11;
+        const lineH = 26; // Scaled (11 -> 26)
 
         combatants.forEach((c, index) => {
             if (!c) return;
@@ -130,44 +130,44 @@ export class BattleDebuggerRenderer {
             
             // --- CARD BACKGROUND ---
             const bgColor = isDead ? 'rgba(30, 0, 0, 0.6)' : UITheme.colors.panelBg;
-            this.ui.drawPanel(x, y, width, cardHeight - 6, bgColor);
+            this.ui.drawPanel(x, y, width, cardHeight - 14, bgColor); // Scaled (6 -> 14)
             
             if (isDead) {
-                this.ui.drawRect(x, y, width, cardHeight - 6, UITheme.colors.failure, false);
+                this.ui.drawRect(x, y, width, cardHeight - 14, UITheme.colors.failure, false);
             }
 
-            let cy = y + 6;
-            const cx = x + 6;
-            const innerWidth = width - 12;
+            let cy = y + 14; // Scaled (6 -> 14)
+            const cx = x + 14; // Scaled (6 -> 14)
+            const innerWidth = width - 29; // Scaled (12 -> 29)
             const tColor = isDead ? UITheme.colors.textMuted : UITheme.colors.textMain;
 
             // --- 1. HEADER ---
             const lvl = c.originalEntity?.level || c.level || 1;
-            this.ui.drawText(`${c.name || c.id || 'Unknown'} (Lv.${lvl})`, cx, cy, 'bold 10px monospace', tColor, 'left', 'top');
+            this.ui.drawText(`${c.name || c.id || 'Unknown'} (Lv.${lvl})`, cx, cy, 'bold 24px monospace', tColor, 'left', 'top'); // Scaled (10px -> 24px)
             
             const xp = c.originalEntity?.xp || 0;
             const nextXp = c.originalEntity?.nextLevelXp || 100;
-            this.ui.drawText(`XP: ${xp}/${nextXp}`, x + width - 6, cy, 'bold 10px monospace', UITheme.colors.textHighlight, 'right', 'top');
-            cy += lineH + 2;
+            this.ui.drawText(`XP: ${xp}/${nextXp}`, x + width - 14, cy, 'bold 24px monospace', UITheme.colors.textHighlight, 'right', 'top'); // Scaled (6 -> 14, 10px -> 24px)
+            cy += lineH + 5; // Scaled (2 -> 5)
 
             // --- 2. RESOURCES & BARS ---
-            const barW = (innerWidth / 3) - 4;
+            const barW = (innerWidth / 3) - 10; // Scaled (4 -> 10)
             
             // HP
             const hpColor = isDead ? UITheme.colors.textMuted : UITheme.colors.hp;
-            this.ui.drawText(`HP: ${Math.round(c.hp)}/${c.maxHp}`, cx, cy, '9px monospace', hpColor, 'left', 'top');
-            this.ui.drawBar(cx, cy + 9, barW, 3, c.hp, c.maxHp, UITheme.colors.hp, UITheme.colors.hpDim);
+            this.ui.drawText(`HP: ${Math.round(c.hp)}/${c.maxHp}`, cx, cy, '22px monospace', hpColor, 'left', 'top'); // Scaled (9px -> 22px)
+            this.ui.drawBar(cx, cy + 22, barW, 7, c.hp, c.maxHp, UITheme.colors.hp, UITheme.colors.hpDim); // Scaled (9 -> 22, 3 -> 7)
 
             // STM
             const stmColor = isDead ? UITheme.colors.textMuted : UITheme.colors.stm;
-            this.ui.drawText(`STM: ${Math.round(c.stamina)}/${c.maxStamina}`, cx + barW + 6, cy, '9px monospace', stmColor, 'left', 'top');
-            this.ui.drawBar(cx + barW + 6, cy + 9, barW, 3, c.stamina, c.maxStamina, UITheme.colors.stm, UITheme.colors.stmDim);
+            this.ui.drawText(`STM: ${Math.round(c.stamina)}/${c.maxStamina}`, cx + barW + 14, cy, '22px monospace', stmColor, 'left', 'top'); // Scaled (6 -> 14, 9px -> 22px)
+            this.ui.drawBar(cx + barW + 14, cy + 22, barW, 7, c.stamina, c.maxStamina, UITheme.colors.stm, UITheme.colors.stmDim); // Scaled (6 -> 14, 9 -> 22, 3 -> 7)
 
             // INS
             const insColor = isDead ? UITheme.colors.textMuted : UITheme.colors.ins;
-            this.ui.drawText(`INS: ${Math.round(c.insight)}/${c.maxInsight}`, cx + (barW * 2) + 12, cy, '9px monospace', insColor, 'left', 'top');
-            this.ui.drawBar(cx + (barW * 2) + 12, cy + 9, barW, 3, c.insight, c.maxInsight, UITheme.colors.ins, UITheme.colors.insDim);
-            cy += lineH + 4;
+            this.ui.drawText(`INS: ${Math.round(c.insight)}/${c.maxInsight}`, cx + (barW * 2) + 29, cy, '22px monospace', insColor, 'left', 'top'); // Scaled (12 -> 29, 9px -> 22px)
+            this.ui.drawBar(cx + (barW * 2) + 29, cy + 22, barW, 7, c.insight, c.maxInsight, UITheme.colors.ins, UITheme.colors.insDim); // Scaled (12 -> 29, 9 -> 22, 3 -> 7)
+            cy += lineH + 10; // Scaled (4 -> 10)
 
             // --- 3. CORE ATTRIBUTES & CBT ---
             const baseAttrs = c.originalEntity?.attributes || {};
@@ -195,21 +195,21 @@ export class BattleDebuggerRenderer {
             const attrStr = `VIG:${vig} STR:${str} DEX:${dex} INT:${int} ATN:${atn}`;
             const cbtStr = `SPD:${spd} CRT:${crt}% DMG:x${crtDmg}`;
             
-            this.ui.drawText(`${attrStr} | ${cbtStr}`, cx, cy, '9px monospace', tColor, 'left', 'top');
-            cy += lineH + 2;
+            this.ui.drawText(`${attrStr} | ${cbtStr}`, cx, cy, '22px monospace', tColor, 'left', 'top'); // Scaled (9px -> 22px)
+            cy += lineH + 5; // Scaled (2 -> 5)
 
             // --- 4. DAMAGE MATRIX ---
             const allTypes = ['BLT', 'SLS', 'PRC', 'FIR', 'ICE', 'LNG', 'WAT', 'ERT', 'WND', 'LGT', 'DRK', 'ARC'];
-            const labelW = 20; 
+            const labelW = 48; // Scaled (20 -> 48)
             const colW = (innerWidth - labelW) / 12;
 
             // Matrix Background
             const tableBg = isDead ? 'rgba(20,20,20,0.5)' : UITheme.colors.bgScale[0];
-            this.ui.drawRect(cx, cy - 1, innerWidth, (lineH * 4) + 2, tableBg, true);
+            this.ui.drawRect(cx, cy - 2, innerWidth, (lineH * 4) + 5, tableBg, true); // Scaled (1 -> 2, 2 -> 5)
 
             // Matrix Headers
             allTypes.forEach((type, i) => {
-                this.ui.drawText(type, cx + labelW + (i * colW) + (colW / 2), cy, '8px monospace', tColor, 'center', 'top');
+                this.ui.drawText(type, cx + labelW + (i * colW) + (colW / 2), cy, '19px monospace', tColor, 'center', 'top'); // Scaled (8px -> 19px)
             });
             cy += lineH;
 
@@ -222,17 +222,17 @@ export class BattleDebuggerRenderer {
 
             tableRows.forEach(row => {
                 if (row.bg !== 'transparent') {
-                    this.ui.drawRect(cx, cy - 1, innerWidth, lineH, row.bg, true);
+                    this.ui.drawRect(cx, cy - 2, innerWidth, lineH, row.bg, true); // Scaled (1 -> 2)
                 }
-                this.ui.drawText(row.label, cx + 2, cy, '8px monospace', row.color, 'left', 'top');
+                this.ui.drawText(row.label, cx + 5, cy, '19px monospace', row.color, 'left', 'top'); // Scaled (2 -> 5, 8px -> 19px)
                 
                 allTypes.forEach((type, i) => {
                     const dt = this._getDamageType(c, type);
-                    this.ui.drawText(String(dt[row.key]), cx + labelW + (i * colW) + (colW / 2), cy, '8px monospace', tColor, 'center', 'top');
+                    this.ui.drawText(String(dt[row.key]), cx + labelW + (i * colW) + (colW / 2), cy, '19px monospace', tColor, 'center', 'top'); // Scaled (8px -> 19px)
                 });
                 cy += lineH;
             });
-            cy += 2; 
+            cy += 5; // Scaled (2 -> 5)
 
             // --- 5. EQUIPMENT & FX ---
             // FIXED: Dynamically fetch all equipment string
@@ -241,9 +241,9 @@ export class BattleDebuggerRenderer {
             const fxArr = c.statusEffects || [];
             const fxStr = fxArr.length > 0 ? fxArr.map(fx => fx.name || fx.id).join(', ') : 'None';
 
-            this.ui.drawText(`EQ: ${eqStr}`, cx, cy, '9px monospace', tColor, 'left', 'top');
+            this.ui.drawText(`EQ: ${eqStr}`, cx, cy, '22px monospace', tColor, 'left', 'top'); // Scaled (9px -> 22px)
             cy += lineH;
-            this.ui.drawText(`FX: ${fxStr}`, cx, cy, '9px monospace', tColor, 'left', 'top');
+            this.ui.drawText(`FX: ${fxStr}`, cx, cy, '22px monospace', tColor, 'left', 'top'); // Scaled (9px -> 22px)
 
             y += cardHeight;
         });

@@ -2,7 +2,7 @@ export const BattleAnimationDefinitions = {
     "slash": {
         duration: 1.5, 
         audio: [{ start: 0.067, key: 'swordSlashSFX', volume: 1.0 }],
-        actor: { type: 'lunge', start: 0.0, end: 0.133, distance: 50 },
+        actor: { type: 'lunge', start: 0.0, end: 0.133, distance: 120 }, // Scaled from 50
         vfx: [
             {
                 start: 0.1,
@@ -10,25 +10,25 @@ export const BattleAnimationDefinitions = {
                 origin: 'target',
                 config: {
                     life: 0.2, 
-                    sheetKey: 'battleProjectiles', // Kept as battleProjectiles
+                    sheetKey: 'battleProjectiles', 
                     frame: { col: 0, row: 0 },
                     frameSize: 32,
                     movement: 'swipe_diagonal',
-                    scale: 1.5,
+                    scale: 3.6, // Scaled from 1.5 for 1920x1080 (x2.4)
                     rotation: 15,
                     blendMode: 'screen'
                 }
             }
         ],
         target: {
-            shake: { start: 0.1, end: 0.233, intensity: 10 },
+            shake: { start: 0.1, end: 0.233, intensity: 24 }, // Scaled from 10
             flash: { start: 0.1, end: 0.167, filter: 'brightness(250%)' }
         }
     },
     "strike": {
         duration: 1.5,
         audio: [{ start: 0.133, key: 'strikeSFX', volume: 1.0 }],
-        actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 40 },
+        actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 96 }, // Scaled from 40
         vfx: [
             {
                 start: 0.133,
@@ -36,24 +36,24 @@ export const BattleAnimationDefinitions = {
                 origin: 'target',
                 config: {
                     life: 0.3,
-                    sheetKey: 'battleProjectiles', // Kept as battleProjectiles
+                    sheetKey: 'battleProjectiles', 
                     frame: { col: 8, row: 0 },
                     frameSize: 32,
                     movement: 'expand_and_fade',
-                    scale: 1.2,
+                    scale: 2.88, // Scaled from 1.2 for 1920x1080 (x2.4)
                     blendMode: 'screen'
                 }
             }
         ],
         target: {
-            shake: { start: 0.133, end: 0.333, intensity: 12 },
+            shake: { start: 0.133, end: 0.333, intensity: 29 }, // Scaled from 12
             flash: { start: 0.133, end: 0.267, filter: 'brightness(200%) sepia(100%) hue-rotate(300deg) saturate(300%)' }
         }
     },
     "stab": {
         duration: 1.5,
         audio: [{ start: 0.133, key: 'spearStabSFX', volume: 1.0 }],
-        actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 40 },
+        actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 96 }, // Scaled from 40
         vfx: [
             {
                 start: 0.133,
@@ -61,24 +61,24 @@ export const BattleAnimationDefinitions = {
                 origin: 'target',
                 config: {
                     life: 0.2,
-                    sheetKey: 'battleProjectiles', // Kept as battleProjectiles
+                    sheetKey: 'battleProjectiles', 
                     frame: { col: 2, row: 0 },
                     frameSize: 32,
                     movement: 'expand_and_fade',
-                    scale: 1.0,
+                    scale: 2.4, // Scaled from 1.0 for 1920x1080 (x2.4)
                     blendMode: 'screen'
                 }
             }
         ],
         target: {
-            shake: { start: 0.133, end: 0.333, intensity: 12 },
+            shake: { start: 0.133, end: 0.333, intensity: 29 }, // Scaled from 12
             flash: { start: 0.133, end: 0.267, filter: 'brightness(200%) sepia(100%) hue-rotate(300deg) saturate(300%)' }
         }
     },
     "bite": {
         duration: 1.5,
         audio: [{ start: 0.133, key: 'crunchSFX', volume: 1.0 }],
-        actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 40 },
+        actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 96 }, // Scaled from 40
         vfx: [
             {
                 start: 0.133,
@@ -86,17 +86,17 @@ export const BattleAnimationDefinitions = {
                 origin: 'target',
                 config: {
                     life: 0.4,
-                    sheetKey: 'battleProjectiles', // Kept as battleProjectiles
+                    sheetKey: 'battleProjectiles', 
                     frame: { col: 1, row: 0 },
                     frameSize: 32,
                     movement: 'expand_and_fade',
-                    scale: 1.3,
+                    scale: 3.12, // Scaled from 1.3 for 1920x1080 (x2.4)
                     blendMode: 'multiply'
                 }
             }
         ],
         target: {
-            shake: { start: 0.133, end: 0.333, intensity: 12 },
+            shake: { start: 0.133, end: 0.333, intensity: 29 }, // Scaled from 12
             flash: { start: 0.133, end: 0.267, filter: 'brightness(200%) sepia(100%) hue-rotate(300deg) saturate(300%)' }
         }
     },
@@ -113,18 +113,18 @@ export const BattleAnimationDefinitions = {
                 origin: 'source',
                 config: {
                     life: 0.4, 
-                    sheetKey: 'battleProjectiles', // Kept as battleProjectiles
+                    sheetKey: 'battleProjectiles', 
                     frame: { col: 1, row: 1 },
                     frameSize: 32,
-                    arc: -60,
+                    arc: -144, // Scaled from -60
                     rotation: 'auto',
-                    scale: 1.0,
+                    scale: 2.4, // Scaled from 1.0 for 1920x1080 (x2.4)
                     blendMode: 'screen' 
                 }
             }
         ],
         target: {
-            shake: { start: 0.4, end: 0.6, intensity: 10 },
+            shake: { start: 0.4, end: 0.6, intensity: 24 }, // Scaled from 10
             flash: { start: 0.4, end: 0.533, filter: 'brightness(300%) sepia(50%) hue-rotate(180deg)' }
         }
     },
@@ -134,7 +134,6 @@ export const BattleAnimationDefinitions = {
             { start: 0.1, key: 'bubbleSFX', volume: 0.6, pitch: 1.2 },
         ],
         vfx: [
-            // CHANGED to 'particles'
             { start: 0.05, type: 'spawn', origin: 'target', config: { life: 0.4, sheetKey: 'particles', frame: { col: 2, row: 1 }, frameSize: 32, movement: 'float_up_and_pop', scale: 1.2 } },
             { start: 0.1, type: 'spawn', origin: 'target', config: { life: 0.4, sheetKey: 'particles', frame: { col: 2, row: 1 }, frameSize: 32, movement: 'float_up_and_pop', scale: 1.5 } },
             { start: 0.15, type: 'spawn', origin: 'target', config: { life: 0.4, sheetKey: 'particles', frame: { col: 2, row: 1 }, frameSize: 32, movement: 'float_up_and_pop', scale: 0.9 } }
@@ -151,13 +150,13 @@ export const BattleAnimationDefinitions = {
             { start: 0.2, key: 'earthquake3SFX', volume: 1.0 },    
         ],
         vfx: [
-            // CHANGED to 'particles'
-            { start: 0.3, type: 'travel', origin: 'source', config: { life: 0.8, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, arc: 300, rotation: 45, scale: 1.2 } },
-            { start: 0.375, type: 'travel', origin: 'source', config: { life: 0.8, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, arc: -250, rotation: 120, scale: 1.5 } },
-            { start: 0.45, type: 'travel', origin: 'source', config: { life: 0.8, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, arc: 350, rotation: -45, scale: 1.0 } }
+            // Arcs scaled from 300, -250, 350
+            { start: 0.3, type: 'travel', origin: 'source', config: { life: 0.8, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, arc: 720, rotation: 45, scale: 1.2 } },
+            { start: 0.375, type: 'travel', origin: 'source', config: { life: 0.8, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, arc: -600, rotation: 120, scale: 1.5 } },
+            { start: 0.45, type: 'travel', origin: 'source', config: { life: 0.8, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, arc: 840, rotation: -45, scale: 1.0 } }
         ],
         target: {
-            shake: { start: 0.125, end: 0.875, intensity: 25 },
+            shake: { start: 0.125, end: 0.875, intensity: 60 }, // Scaled from 25
             flash: { start: 0.2, end: 0.8, filter: 'sepia(80%) brightness(60%) saturate(120%)' }
         }
     },
@@ -167,15 +166,14 @@ export const BattleAnimationDefinitions = {
             { start: 0.0, key: 'bubbleSFX', volume: 0.8 } 
         ],
         target: { 
-            // ✅ CHANGED: Formatted to match your other target blocks
-            shake: { start: 0.0, end: 0.3, intensity: 4 },
+            shake: { start: 0.0, end: 0.3, intensity: 10 }, // Scaled from 4
             flash: { start: 0.0, end: 0.4, filter: 'brightness(250%) saturate(150%)' }
         },
         vfx: [
             {
                 start: 0.1,
                 type: 'spawn',
-                origin: 'target', // ✅ CHANGED: Now spawns on the target instead of source
+                origin: 'target',
                 config: {
                     life: 0.5,
                     sheetKey: 'particles', 
@@ -194,9 +192,9 @@ export const BattleAnimationDefinitions = {
             { start: 0.0, key: 'swordSlashSFX', pitch: 1.1 },
             { start: 0.133, key: 'swordSlashSFX', volume: 1.0 }
         ],
-        actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 40 },
+        actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 96 }, // Scaled from 40
         target: {
-            shake: { start: 0.133, end: 0.333, intensity: 12 },
+            shake: { start: 0.133, end: 0.333, intensity: 29 }, // Scaled from 12
             flash: { start: 0.133, end: 0.267, filter: 'brightness(200%) sepia(100%) hue-rotate(300deg) saturate(300%)' }
         }
     },
@@ -219,7 +217,6 @@ export const BattleAnimationDefinitions = {
             filter: 'brightness(50%) saturate(60%) sepia(20%) hue-rotate(200deg)' 
         },
         vfx: [
-            // CHANGED to 'particles'
             { start: 0.04, type: 'travel', origin: 'source', config: { life: 0.5, sheetKey: 'particles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.5, blendMode: 'screen' } },
             { start: 0.08, type: 'travel', origin: 'source', config: { life: 0.5, sheetKey: 'particles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.6, blendMode: 'screen' } },
             { start: 0.12, type: 'travel', origin: 'source', config: { life: 0.5, sheetKey: 'particles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.4, blendMode: 'screen' } },
@@ -243,12 +240,11 @@ export const BattleAnimationDefinitions = {
             type: 'shake', 
             start: 0.0, 
             end: 0.75, 
-            intensity: 8,
+            intensity: 19, // Scaled from 8
             fade: { start: 0.1, end: 0.9 },
             flash: { start: 0.0, end: 0.9, filter: 'sepia(80%) brightness(200%) blur(4px)' }
         },
         vfx: [
-            // CHANGED to 'particles'
             { start: 0.15, type: 'spawn', origin: 'target', config: { life: 1.0, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, movement: 'swipe_diagonal', scale: 0.6, blendMode: 'screen' } },
             { start: 0.25, type: 'spawn', origin: 'target', config: { life: 1.0, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, movement: 'float_up_and_pop', scale: 1.2, blendMode: 'screen' } },
             { start: 0.3, type: 'spawn', origin: 'target', config: { life: 1.0, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, movement: 'swipe_diagonal', scale: 0.8, blendMode: 'screen' } },
@@ -272,7 +268,7 @@ export const BattleAnimationDefinitions = {
             flash: { start: 0.067, end: 0.933, filter: 'brightness(150%) hue-rotate(250deg)' }
         },
         target: {
-            shake: { start: 0.333, end: 0.833, intensity: 15 },
+            shake: { start: 0.333, end: 0.833, intensity: 36 }, // Scaled from 15
             flash: { start: 0.333, end: 0.833, filter: 'invert(100%)' }
         }
     },
@@ -283,24 +279,22 @@ export const BattleAnimationDefinitions = {
             { start: 0.4, key: 'landSFX', volume: 0.6 }
         ],
         actor: { 
-            // We'll add 'slide_in' and 'fadeIn' to the model below!
             type: 'slide_in', 
             start: 0.0, 
             end: 0.5, 
-            distance: 100, // Start 100 pixels to the left/right and slide to 0
+            distance: 240, // Scaled from 100
             fadeIn: { start: 0.0, end: 0.4 },
             flash: { start: 0.4, end: 0.7, filter: 'brightness(200%)' }
         },
         vfx: [
-            // A puff of smoke or magical energy when they arrive
             { 
                 start: 0.3, 
                 type: 'spawn', 
-                origin: 'source', // source is the entering actor here
+                origin: 'source', 
                 config: { 
                     life: 0.6, 
                     sheetKey: 'particles', 
-                    frame: { col: 1, row: 0 }, // Adjust to your smoke/portal sprite
+                    frame: { col: 1, row: 0 }, 
                     frameSize: 32, 
                     movement: 'expand_and_fade', 
                     scale: 2.0, 
@@ -318,8 +312,8 @@ export const BattleAnimationDefinitions = {
             type: 'slide_out', 
             start: 0.0, 
             end: 0.6, 
-            distance: 150, // Distance to run away before disappearing
-            fade: { start: 0.2, end: 0.6 } // Re-using your existing fade out!
+            distance: 360, // Scaled from 150
+            fade: { start: 0.2, end: 0.6 } 
         }
     },
 };
