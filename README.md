@@ -25,6 +25,9 @@ Root
 │   │   │   │   ├── characterSummaryController.js 
 │   │   │   │   └── characterSummaryLogic.js    
 │   │   │   ├── encounter/
+│   │   │   ├── chore/
+│   │   │   │   └── baseController.js  
+│   │   │   ├── encounter/
 │   │   │   │   ├── encounterController.js
 │   │   │   │   └── encounterLogic.js
 │   │   │   ├── battle/

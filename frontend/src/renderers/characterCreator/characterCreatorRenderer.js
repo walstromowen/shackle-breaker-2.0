@@ -173,7 +173,7 @@ export class CharacterCreatorRenderer {
 
             attrs.forEach((attr, idx) => {
                 const rowY = curY + (idx * ROW_HEIGHT);
-                const leftX = p + 72;     
+                const leftX = p + 72;    
                 const rightX = p + colW - 72;
 
                 if (idx % 2 === 0) {
@@ -275,8 +275,8 @@ export class CharacterCreatorRenderer {
                 ui.drawArrow(leftArrowX, valY - 10, arrowSize, 'left', arrowColorPrev);
                 ui.drawArrow(rightArrowX, valY - 10, arrowSize, 'right', arrowColorNext);
 
-                this.hotspots.push({ id: prevId, x: leftArrowX - 48, y: valY - 48, w: 96, h: 96 });
-                this.hotspots.push({ id: nextId, x: rightArrowX - 48, y: valY - 48, w: 96, h: 96 });
+                this.hotspots.push({ id: prevId, x: leftArrowX - 48, y: valY - 48, w: 96, h: 96, zIndex: 10 });
+                this.hotspots.push({ id: nextId, x: rightArrowX - 48, y: valY - 48, w: 96, h: 96, zIndex: 10 });
 
                 ui.drawText(valStr, centerColX, valY, UITheme.fonts.body, valColor, "center", "alphabetic", textMaxWidth);
             }
@@ -319,6 +319,15 @@ export class CharacterCreatorRenderer {
             // Default to 0 if the controller hasn't provided an offset yet
             const previewOffset = controllerState.scrollOffsets?.preview || 0; 
 
+            // FIXED: Always populate scrollBounds even if maxScroll is 0
+            scrollBounds = {
+                preview: {
+                    bounds: { x: textX, y: textY, w: textMaxWidth, h: textViewportHeight },
+                    maxScroll: maxScroll,
+                    viewportH: textViewportHeight
+                }
+            };
+
             // 4. Clip & Draw Text (Applying the offset)
             ui.startClip(textX, textY, textMaxWidth, textViewportHeight);
             ui.drawWrappedText(desc, textX, textY - previewOffset, textMaxWidth, lineHeight, UITheme.fonts.body, UITheme.colors.textMain);
@@ -347,17 +356,9 @@ export class CharacterCreatorRenderer {
                     x: trackX - 10, 
                     y: thumbY, 
                     w: trackW + 20, 
-                    h: thumbH 
+                    h: thumbH,
+                    zIndex: 10 // Pushed to front to avoid getting swallowed
                 });
-
-                // Package the scroll bounds for the controller
-                scrollBounds = {
-                    preview: {
-                        bounds: { x: textX, y: textY, w: textMaxWidth, h: textViewportHeight },
-                        maxScroll: maxScroll,
-                        viewportH: textViewportHeight
-                    }
-                };
             }
         }
 
