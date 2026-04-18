@@ -9,6 +9,7 @@ Difficulty
 Starting seed
 procedural dungeons and hand crafted areas
 structures: 
+Biome dependent generation
 
 Root
 ├── backend/
