@@ -1,147 +1,70 @@
-import { gameState } from '../../../shared/state/gameState.js'; 
-import { ItemDefinitions } from '../../../shared/data/itemDefinitions.js';
-import { InventorySystem } from '../../../shared/systems/inventorySystem.js';
+// frontend/src/ui/dragAndDropManager.js
 
 export class DragAndDropManager {
-    constructor(controller) {
-        this.controller = controller; // Reference to CharacterSummaryController
+    constructor() {
+        this.dragState = {
+            active: false,
+            payload: null,   // The item object being dragged
+            sourceId: null,  // Where it came from (e.g., 'equipment_mainHand', 'inventory')
+            originSlot: null,// Specific slot if it came from equipment
+            x: 0,
+            y: 0
+        };
+        this.onDropCallback = null;
     }
 
-    handleItemDrop(x, y) {
-        const isBattleSelection = this.controller.config && typeof this.controller.config.onItemSelected === 'function';
-        
-        if (isBattleSelection || this.controller.readOnly) {
-            this.cancelDrag();
-            return;
-        }if (this.controller.readOnly) {
-            this.cancelDrag();
-            return;
-        }
+    /**
+     * Start tracking a drag
+     */
+    startDrag(payload, sourceId, originSlot, startX, startY, onDropCallback) {
+        this.dragState = {
+            active: true,
+            payload,
+            sourceId,
+            originSlot,
+            x: startX,
+            y: startY
+        };
+        this.onDropCallback = onDropCallback;
+    }
 
-        let dropTarget = this.controller.hoveredElement ? this.controller.hoveredElement.id : null;
-        let slotName = this.controller.hoveredElement ? this.controller.hoveredElement.slotId : null;
-        
-        // 1. Resolve Hitboxes if dropped in an empty space near a slot
-        if ((!dropTarget || dropTarget.startsWith('ITEM_') || dropTarget.startsWith('INV_ITEM')) && this.controller.lastRenderedHitboxes.length > 0) {
-            const hit = this.controller.lastRenderedHitboxes.find(box => 
-                (box.type === 'slot' || (box.id && box.id.startsWith('SLOT_'))) && 
-                x >= box.x && x <= box.x + box.w &&
-                y >= box.y && y <= box.y + box.h
+    /**
+     * Update the x/y for the renderer to draw the floating item
+     */
+    updateDrag(mouseX, mouseY) {
+        if (!this.dragState.active) return;
+        this.dragState.x = mouseX;
+        this.dragState.y = mouseY;
+    }
+
+    /**
+     * Finish the drag and let the controller decide what happens
+     */
+    endDrag(targetHitboxId) {
+        if (!this.dragState.active) return;
+
+        // If the controller gave us a callback, fire it and pass the data back!
+        if (this.onDropCallback) {
+            this.onDropCallback(
+                this.dragState.payload, 
+                this.dragState.sourceId, 
+                this.dragState.originSlot,
+                targetHitboxId
             );
-            
-            if (hit) {
-                dropTarget = hit.id;
-                slotName = hit.slotId; 
-            }
         }
 
-        // 2. Route the drop based on the target
-        if (dropTarget && dropTarget.indexOf('SLOT_') === 0) {
-            const finalSlot = slotName || dropTarget.substring(5);
-            this.attemptEquipDrop(finalSlot);
-        }
-        else if (this.isMouseOverInventory(dropTarget)) {
-            this.attemptInventoryDrop();
-        }
-        else {
-            this.cancelDrag();
-        }
-    }
-
-    attemptEquipDrop(targetSlotRaw) {
-        if (!this.controller.heldItem) return;
-
-        const item = this.controller.heldItem.item;
-        const def = ItemDefinitions[item.defId]; 
-        
-        if (!def) {
-            this.cancelDrag();
-            return;
-        }
-
-        const itemSlot = (def.slot || def.type || '').toLowerCase().replace(/\s/g, ''); // Becomes 'twohand' or 'onehand'
-        const slotKey = targetSlotRaw.toLowerCase().replace(/\s/g, '');
-
-        // --- UPDATED: Allow 'onehand' to be valid for both mainhand and offhand ---
-        const isValid = (itemSlot === slotKey) || 
-                        (slotKey === 'mainhand' && (itemSlot === 'weapon' || itemSlot === 'tool' || itemSlot === 'twohand' || itemSlot === 'onehand')) ||
-                        (slotKey === 'offhand' && (itemSlot === 'shield' || itemSlot === 'weapon' || itemSlot === 'onehand'));
-
-        if (!isValid) {
-            this.cancelDrag();
-            return;
-        }
-
-        const canonicalSlot = this.controller.activeSlots.find(s => s.toLowerCase().replace(/\s/g, '') === slotKey) || targetSlotRaw;
-
-        // Duplication Fix / Same-Slot drop
-        if (this.controller.heldItem.source === 'equipment') {
-            const originSlot = this.controller.heldItem.originSlot;
-            
-            if (originSlot === canonicalSlot) {
-                this.cancelDrag();
-                return;
-            }
-
-            this.controller.currentMember.equipment[originSlot] = null;
-            this.controller.equipItem(item, canonicalSlot);
-            this.controller.heldItem = null;
-            return;
-        }
-
-        this.controller.equipItem(item, canonicalSlot);
-        this.controller.heldItem = null;
-    }
-
-    attemptInventoryDrop() {
-        if (!this.controller.heldItem) return;
-
-        // Handle Unequip (Equipment -> Inventory)
-        if (this.controller.heldItem.source === 'equipment') {
-            const member = this.controller.currentMember;
-            const slot = this.controller.heldItem.originSlot;
-            const item = this.controller.heldItem.item;
-            const defId = item.defId;
-
-            // Perform unequip
-            member.equipment[slot] = null;
-            gameState.party.inventory.push(item); // <-- Keep the exact instance!
-
-            this.controller.heldItem = null;
-            
-            this.controller.heldItem = null;
-            this.controller.updateFilteredInventory();
-
-            const newIndex = this.controller._findNewestInventoryIndex(defId);
-            
-            this.controller.state = 'INVENTORY';
-            this.controller.inventoryIndex = (newIndex !== -1) ? newIndex : 0;
-            this.controller.slotIndex = -1; 
-            this.controller.scrollToItem(this.controller.inventoryIndex, true);
-            return;
-        }
-
-        // Handle Inventory -> Inventory
-        this.controller.heldItem = null;
-        this.controller.updateFilteredInventory();
-    }
-
-    isMouseOverInventory(targetId) {
-        if (targetId && (targetId.startsWith('INV_') || targetId === 'SCROLLBAR_INV')) {
-            return true;
-        }
-        if (this.controller.layout.inventoryBounds) {
-            const { x, y, w, h } = this.controller.layout.inventoryBounds;
-            const mx = this.controller.mouse.x;
-            const my = this.controller.mouse.y;
-            return (mx >= x && mx <= x + w && my >= y && my <= y + h);
-        }
-        return false;
+        this.cancelDrag();
     }
 
     cancelDrag() {
-        this.controller.heldItem = null;
-        this.controller.potentialDrag = null;
-        this.controller.updateFilteredInventory();
+        this.dragState = {
+            active: false,
+            payload: null,
+            sourceId: null,
+            originSlot: null,
+            x: 0,
+            y: 0
+        };
+        this.onDropCallback = null;
     }
 }

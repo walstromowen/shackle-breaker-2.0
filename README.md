@@ -11,6 +11,8 @@ procedural dungeons and hand crafted areas
 structures: 
 Biome dependent generation
 
+
+
 Root
 ├── backend/
 ├── frontend/                  
@@ -19,53 +21,68 @@ Root
 │   │   │   ├── sprites/
 │   │   │   └── tilesets/
 │   │   ├── controllers/       
-│   │   │   ├── characterSummaryController.js     
-│   │   │   ├── encounterController.js
-│   │   │   ├── battleController.js
-│   │   │   ├── characterCreatorController.js
-|   |   │   ├── partyController.js
-|   |   │   ├── levelUpController.js
-│   │   │   └── overworldController.js
+│   │   │   ├── characterSummary/
+│   │   │   │   ├── characterSummaryController.js 
+│   │   │   │   └── characterSummaryLogic.js    
+│   │   │   ├── encounter/
+│   │   │   │   ├── encounterController.js
+│   │   │   │   └── encounterLogic.js
+│   │   │   ├── battle/
+│   │   │   │   ├── battleController.js
+│   │   │   │   └── battleLogic.js
+│   │   │   ├── characterCreator/
+│   │   │   │   ├── characterCreatorController.js
+│   │   │   │   └── characterCreatorLogic.js
+│   │   │   ├── party/
+│   │   │   │   ├── partyController.js
+│   │   │   │   └── partyLogic.js
+│   │   │   ├── levelUp/
+│   │   │   │   ├── levelUpController.js
+│   │   │   │   └── levelUpLogic.js
+│   │   │   └── overworld/
+│   │   │       ├── overworldController.js
+│   │   │       └── overworldLogic.js
 │   │   ├── core/
 │   │   │   ├── assetLoader.js
 │   │   │   ├── audioManager.js
 │   │   │   ├── eventBus.js
 │   │   │   ├── gameLoop.js
 │   │   │   ├── input.js
-│   │   │   └── sceneManager.js
+│   │   │   ├── sceneManager.js
+│   │   │   └── UIInteractionManager.js
 │   │   ├── renderers/
 │   │   │   ├── battle/
-│   │   │   │    ├── battleRenderer.js
-│   │   │   │    ├── battleCombatantRenderer.js
-│   │   │   │    ├── battleHUDRenderer.js
-│   │   │   │    ├── battleVFXRenderer.js
+│   │   │   │   ├── battleRenderer.js
+│   │   │   │   ├── battleCombatantRenderer.js
+│   │   │   │   ├── battleHUDRenderer.js
+│   │   │   │   └── battleVFXRenderer.js
 │   │   │   ├── encounter/
-│   │   │   │    ├── encounterRenderer.js
+│   │   │   │   └── encounterRenderer.js
 │   │   │   ├── transitions/
-│   │   │   │    ├── transitionRenderer.js
+│   │   │   │   └── transitionRenderer.js
 │   │   │   ├── overworld/
-│   │   │   │    ├── lightningRenderer.js
-│   │   │   │    ├── mapRenderer.js
-│   │   │   │    ├── weatherRenderer.js
+│   │   │   │   ├── lightningRenderer.js
+│   │   │   │   ├── mapRenderer.js
+│   │   │   │   └── weatherRenderer.js
 │   │   │   ├── characterCreator/        
-│   │   │   │    └── characterCreatorRenderer.js
+│   │   │   │   └── characterCreatorRenderer.js
 │   │   │   ├── characterSummary/
-│   │   │   │    ├── characterSummaryRenderer.js
-│   │   │   │    ├── components/
-│   │   │   │    │    ├── abilitiesPanel.js   
-│   │   │   │    │    ├── statsPanel.js                
-│   │   │   │    │    ├── itemDetailPanel.js          
-│   │   │   │    │    ├── equipmentPanel.js            
-│   │   │   │    │    ├── inventoryPanel.js            
-│   │   │   │    │    └── tooltipSystem.js 
-│   │   │   ├── characterSummary/  
-│   │   │   │    │    ├── levelUpRenderer.js   
-|   |   │   ├── ui 
-│   │   │   │    ├── contextMenuManager.js
-│   │   │   │    ├── dragAndDropManager.js
-│   │   │   │    ├── scrollManager.js
-│   │   │   │    ├── UITheme.js
-│   │   │   │    └── canvasUI.js      
+│   │   │   │   ├── characterSummaryRenderer.js
+│   │   │   │   └── components/
+│   │   │   │       ├── abilitiesPanel.js   
+│   │   │   │       ├── statsPanel.js                
+│   │   │   │       ├── itemDetailPanel.js          
+│   │   │   │       ├── equipmentPanel.js            
+│   │   │   │       ├── inventoryPanel.js            
+│   │   │   │       └── tooltipSystem.js 
+│   │   │   ├── levelUp/  
+│   │   │   │   └── levelUpRenderer.js   
+│   │   │   └── ui/ 
+│   │   │       ├── contextMenuManager.js
+│   │   │       ├── dragAndDropManager.js
+│   │   │       ├── scrollManager.js
+│   │   │       ├── UITheme.js
+│   │   │       └── canvasUI.js      
 │   │   ├── index.html
 │   │   ├── main.js
 │   │   └── styles.css
@@ -73,7 +90,6 @@ Root
 ├── shared/ 
 │   ├── data/  
 │   │   ├── battleAnimationDefinitions.js                     
-│   │   ├── encounters/
 │   │   ├── traitDefinitions.js 
 │   │   ├── abilityDefinitions.js   
 │   │   ├── statusEffectDefinitions.js 
@@ -83,8 +99,8 @@ Root
 │   │   ├── mapObjectDefinitions.js
 │   │   └── weatherDefinitions.js
 │   ├── models/ 
-|   │   ├── abilityModel.js   
-|   │   ├── combatantModel.js   
+│   │   ├── abilityModel.js   
+│   │   ├── combatantModel.js   
 │   │   ├── battleAnimationModel.js                  
 │   │   ├── entityModel.js 
 │   │   ├── statusEffectModel.js 
@@ -115,13 +131,15 @@ Root
 │   │   └── worldManager.js
 │   ├── utils/
 │   │   ├── textEntry.js
-│   │   ├── formatting.js
-├── .gitignore/ 
-├── LICENSE/ 
+│   │   └── formatting.js
+├── .gitignore 
+├── LICENSE 
 ├── package-lock.json 
 ├── package.json
 └── README.md
 
+IMPORTANT!!!!
+ou finished step 1 and step 2 (you are working out step 3 and trying to implement step 4 on the character summary screen)
 
 
 This is a fantastic technical debt to tackle now. Setting this up will make building every future screen (shops, dialog boxes, combat menus) ten times faster.

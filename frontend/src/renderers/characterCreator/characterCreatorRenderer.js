@@ -296,12 +296,77 @@ export class CharacterCreatorRenderer {
         ui.drawLineWithGothicFlourish(rightCenterX - 96, TITLE_Y + 29, 192, UITheme.colors.borderHighlight);
 
         const desc = this.getDescription(controllerState);
+        let scrollBounds = null; // Prepare our bounds object for the controller
+
         if (desc) {
-            ui.drawWrappedText(desc, rightColX + 48, CONTENT_START_Y, colW - 96, 67, UITheme.fonts.body, UITheme.colors.textMain);
+            // 1. Setup Text Area Dimensions
+            const textX = rightColX + 48;
+            const textY = CONTENT_START_Y;
+            const textMaxWidth = colW - 96;
+            const lineHeight = 67;
+            const textViewportHeight = panelHeight - (CONTENT_START_Y - startY) - 48; // Max visible height
+
+            // 2. Measure Total Text Height using CanvasUI's word wrapper
+            const paragraphs = desc.split('\n');
+            let totalLines = 0;
+            paragraphs.forEach(p => {
+                totalLines += ui.getWrappedLines(p, textMaxWidth, UITheme.fonts.body).length;
+            });
+            const totalTextHeight = totalLines * lineHeight;
+
+            // 3. Calculate Scroll Math
+            const maxScroll = Math.max(0, totalTextHeight - textViewportHeight);
+            // Default to 0 if the controller hasn't provided an offset yet
+            const previewOffset = controllerState.scrollOffsets?.preview || 0; 
+
+            // 4. Clip & Draw Text (Applying the offset)
+            ui.startClip(textX, textY, textMaxWidth, textViewportHeight);
+            ui.drawWrappedText(desc, textX, textY - previewOffset, textMaxWidth, lineHeight, UITheme.fonts.body, UITheme.colors.textMain);
+            ui.endClip();
+
+            // 5. Draw Scrollbar (Only if text overflows)
+            if (maxScroll > 0) {
+                const trackW = 8;
+                const trackX = rightColX + colW - 24; // Positioned near the right edge of the panel
+                const trackH = textViewportHeight;
+                
+                // Dynamically size thumb based on how much text is visible
+                const thumbH = Math.max(40, (textViewportHeight / totalTextHeight) * trackH);
+                
+                // Calculate thumb Y position
+                const scrollRatio = previewOffset / maxScroll;
+                const thumbY = textY + (scrollRatio * (trackH - thumbH));
+
+                // Draw Track & Thumb
+                ui.drawRect(trackX, textY, trackW, trackH, UITheme.colors.scrollTrack);
+                ui.drawRect(trackX, thumbY, trackW, thumbH, UITheme.colors.scrollThumb);
+
+                // Register the Thumb Hitbox (Adding padding so it's easier to grab with the mouse)
+                this.hotspots.push({ 
+                    id: 'SCROLL_THUMB_PREVIEW', 
+                    x: trackX - 10, 
+                    y: thumbY, 
+                    w: trackW + 20, 
+                    h: thumbH 
+                });
+
+                // Package the scroll bounds for the controller
+                scrollBounds = {
+                    preview: {
+                        bounds: { x: textX, y: textY, w: textMaxWidth, h: textViewportHeight },
+                        maxScroll: maxScroll,
+                        viewportH: textViewportHeight
+                    }
+                };
+            }
         }
 
+        // ========================================================
+        // 4. FINALIZE & SEND DATA TO CONTROLLER
+        // ========================================================
         if (controllerState.onLayoutUpdate) {
-            controllerState.onLayoutUpdate(this.hotspots);
+            // Pass BOTH the hotspots and the scrollBounds
+            controllerState.onLayoutUpdate(this.hotspots, scrollBounds);
         }
     }
 

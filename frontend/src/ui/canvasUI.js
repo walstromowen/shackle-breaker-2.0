@@ -208,8 +208,9 @@ export class CanvasUI {
 
     // --- HUD ELEMENTS ---
     
-    drawSelectionBrackets(x, y, w, h, dist, color = UITheme.colors.borderHighlight) {
-        const p = dist; 
+    drawSelectionBrackets(x, y, w, h, dist = null, color = UITheme.colors.borderHighlight) {
+        // If no distance is provided, use the standardized pulse animation!
+        const p = dist !== null ? dist : 10 + Math.sin(Date.now() / 150) * 5; 
         const len = 19; // Scaled from 8      
         
         this.ctx.save();

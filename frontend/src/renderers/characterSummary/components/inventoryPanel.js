@@ -108,27 +108,25 @@ export class InventoryPanel {
                 }
 
                 // --- DRAW SLOT ---
-                // Replaced flat drawRect/strokeRect combo with standard drawPanel
+                // Always draw the empty background panel so the grid remains intact
                 this.ui.drawPanel(itemX, itemY, this.SLOT_SIZE, this.SLOT_SIZE, bgFill);
 
-                // Draw Icon
-                const iconOffset = (this.SLOT_SIZE - 77) / 2;
+                // Only draw the item contents and selection brackets if we ARE NOT holding it
                 if (!isHeld) {
+                    // Draw Icon
+                    const iconOffset = (this.SLOT_SIZE - 77) / 2;
                     this._drawIcon(def, itemX + iconOffset, itemY + iconOffset);
-                } else {
-                    // Ghost if held
-                    this.ui.drawRect(itemX + iconOffset, itemY + iconOffset, 77, 77, "rgba(0,0,0,0.1)");
-                }
 
-                // Count
-                if (item.qty > 1 && !isHeld) {
-                    this.ui.drawText(`${item.qty}`, itemX + this.SLOT_SIZE - 5, itemY + this.SLOT_SIZE - 5, UITheme.fonts.small, UITheme.colors.textHighlight, "right");
-                }
+                    // Count
+                    if (item.qty > 1) {
+                        this.ui.drawText(`${item.qty}`, itemX + this.SLOT_SIZE - 5, itemY + this.SLOT_SIZE - 5, UITheme.fonts.small, UITheme.colors.textHighlight, "right");
+                    }
 
-                // DRAW SELECTION BRACKETS
-                if (isSelected) {
-                    const pulseDist = 10 + Math.sin(Date.now() / 150) * 5;
-                    this.ui.drawSelectionBrackets(itemX, itemY, this.SLOT_SIZE, this.SLOT_SIZE, pulseDist, UITheme.colors.borderHighlight);
+                    // DRAW SELECTION BRACKETS
+                    if (isSelected) {
+                        // No distance provided, so it automatically pulses!
+                        this.ui.drawSelectionBrackets(itemX, itemY, this.SLOT_SIZE, this.SLOT_SIZE);
+                    }
                 }
             });
         }

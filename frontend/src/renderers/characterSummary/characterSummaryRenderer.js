@@ -211,9 +211,10 @@ export class CharacterSummaryRenderer {
         }
 
         // Tarnished gold highlight brackets to signify holding
-        this.ui.drawSelectionBrackets(x, y, drawSize, drawSize, 7, UITheme.colors.borderHighlight); // Scaled 3 * 2.4
+        // Automatically pulses in sync with the inventory!
+        this.ui.drawSelectionBrackets(x, y, drawSize, drawSize); 
         
-        this.ctx.restore();
+        this.ctx.restore()
     }
 
     _drawContextMenu(menu, selectedIndex = 0) {

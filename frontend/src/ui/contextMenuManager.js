@@ -1,290 +1,87 @@
-import { gameState } from '../../../shared/state/gameState.js';
-import { events } from '../core/eventBus.js';
-import { ItemDefinitions } from '../../../shared/data/itemDefinitions.js';
-import { InventorySystem } from '../../../shared/systems/inventorySystem.js';
-import { AbilitySystem } from '../../../shared/systems/abilitySystem.js';
-import { ItemUpgradeSystem } from '../../../shared/systems/itemUpgradeSystem.js';
-
 export class ContextMenuManager {
-    constructor(controller) {
-        this.controller = controller;
+    constructor(config = {}) {
+        /**
+         * Expected config shape:
+         * {
+         * onAction: (actionId, payload) => {} // Global fallback callback
+         * }
+         */
+        this.config = config;
         this.menu = null; 
     }
 
-    handleRightClick(input) {
-        if (this.menu) {
-            this.menu = null;
-        }
-
-        if (!input) return;
-        const id = (typeof input === 'object' && input.id) ? input.id : input;
-        
-        if (id.startsWith('SLOT_')) {
-            const slotName = (typeof input === 'object' && input.slotId) ? input.slotId : id.replace('SLOT_', '');
-            const item = this.controller.currentMember.equipment[slotName];
-            if (item) this._openContextMenu(item, 'equipment', slotName);
-        }
-        else if (id.startsWith('INV_ITEM_')) {
-            const idx = parseInt(id.split('_')[2], 10);
-            const item = this.controller.filteredInventory[idx];
-            if (item) this._openContextMenu(item, 'inventory', idx);
-        }
-    }
-
-    _openContextMenu(item, source, sourceKey) {
-        const def = ItemDefinitions[item.defId];
-        const options = [];
-        const isStackable = (item.qty !== undefined && item.qty > 1);
-
-        // --- NEW: Check if we are in Battle Selection Mode ---
-        // We look for the callback in the controller's config
-        const isBattleSelection = this.controller.config && typeof this.controller.config.onItemSelected === 'function';
-
-        if (isBattleSelection) {
-            // Only allow selection if the item actually has an ability ID attached
-            if (item.useAbility) {
-                options.push({ label: 'Use in Battle', action: 'BATTLE_USE' });
-            } else {
-                // Optional: If you want to show items that can't be used, but grey them out or do nothing
-                // options.push({ label: 'Cannot Use', action: 'NONE' });
-            }
-        } else {
-            // --- EXISTING OVERWORLD LOGIC ---
-            if (this._isItemUsableInMenu(def)) {
-                options.push({ label: 'Use', action: 'USE' });
-            }
-
-            // Lock down Equip, Unequip, Upgrade, and Drop if readOnly is true
-            if (!this.controller.readOnly) {
-                if (ItemUpgradeSystem.canUpgrade(item)) {
-                    options.push({ label: 'Upgrade', action: 'UPGRADE' });
-                }
-
-                if (source === 'equipment') {
-                    if (this.controller.filteredInventory.length > 0) {
-                        options.push({ label: 'Equip', action: 'NAV_TO_INV' });
-                    }
-                    options.push({ label: 'Unequip', action: 'UNEQUIP_AND_NAV' });
-                } 
-                else if (source === 'inventory') {
-                    if (this._canEquipItem(item)) {
-                        options.push({ label: 'Equip', action: 'EQUIP' });
-                    }
-                }
-
-                if (isStackable) {
-                    options.push({ label: 'Drop 1', action: 'DROP_ONE' });
-                    options.push({ label: 'Drop All', action: 'DROP_ALL' });
-                } else {
-                    options.push({ label: 'Drop', action: 'DROP_ONE' }); 
-                }
-            }
-        }
-
-        let menuX = this.controller.mouse.x || 100;
-        let menuY = this.controller.mouse.y || 100;
-
-        let targetId = null;
-        if (source === 'equipment') {
-            targetId = `SLOT_${sourceKey}`;
-        } else if (source === 'inventory') {
-            targetId = `INV_ITEM_${sourceKey}`;
-        }
-
-        if (targetId && this.controller.lastRenderedHitboxes.length > 0) {
-            const hit = this.controller.lastRenderedHitboxes.find(h => h.id === targetId);
-            if (hit) {
-                menuX = Math.floor(hit.x + (hit.w / 2));
-                menuY = Math.floor(hit.y + (hit.h / 2));
-            }
-        }
+    /**
+     * Opens the context menu.
+     * @param {number} x - The screen X coordinate.
+     * @param {number} y - The screen Y coordinate.
+     * @param {Array} options - Array of { label: string, actionId: string, callback?: function }.
+     * @param {any} payload - Whatever data the controller wants back when an action is selected (e.g., the item object).
+     */
+    open(x, y, options, payload = null) {
+        if (!options || options.length === 0) return;
 
         this.menu = {
-            x: menuX,
-            y: menuY,
-            item: item,
-            source,
-            sourceKey,
+            x,
+            y,
             options,
+            payload,
             selectedIndex: 0
         };
     }
 
-    handleMenuNavigation(intent) {
+    close() {
+        this.menu = null;
+    }
+
+    /**
+     * Handles keyboard or gamepad directional input for the menu.
+     */
+    handleNavigation(intent) {
         if (!this.menu) return;
 
         const len = this.menu.options.length;
         
         if (intent === 'CANCEL') {
-            this.menu = null;
+            this.close();
         } else if (intent === 'UP') {
             this.menu.selectedIndex = (this.menu.selectedIndex - 1 + len) % len;
         } else if (intent === 'DOWN') {
             this.menu.selectedIndex = (this.menu.selectedIndex + 1) % len;
         } else if (intent === 'CONFIRM') {
-            this.handleMenuAction(this.menu.selectedIndex);
+            this.executeAction(this.menu.selectedIndex);
         }
     }
 
-    handleMenuAction(actionIndex) {
+    /**
+     * Executes the action at the specified index. Can be triggered by mouse click or CONFIRM intent.
+     */
+    executeAction(index) {
         if (!this.menu) return;
         
-        const { item, source, sourceKey, options } = this.menu;
-        
-        if (!options[actionIndex]) {
-            this.menu = null;
+        const option = this.menu.options[index];
+        if (!option) {
+            this.close();
             return;
         }
 
-        const action = options[actionIndex].action;
+        const payload = this.menu.payload;
 
-       // --- NEW: Handle Battle Usage ---
-        if (action === 'BATTLE_USE') {
-            this.menu = null; // Close menu immediately
-            
-            // Fire the callback, passing BOTH the item ID and the ability ID back to the BattleController
-            this.controller.config.onItemSelected({
-                itemId: item.defId,       // e.g., "health_potion"
-                abilityId: item.useAbility // e.g., "minor_heal"
-            });
-            return; 
+        // If the option has a specific callback, use it. Otherwise, use the global handler.
+        if (typeof option.callback === 'function') {
+            option.callback(payload);
+        } else if (typeof this.config.onAction === 'function') {
+            this.config.onAction(option.actionId, payload);
         }
 
-        if (action === 'USE') {
-            this.useItem(item);
-        }
-        // --- UPGRADE ACTION ---
-        else if (action === 'UPGRADE') {
-            const success = ItemUpgradeSystem.upgradeItem(item);
-            if (success) {
-                events.emit('TEXT_POPUP', {
-                    text: `Upgraded to Lv.${item.level}!`, 
-                    x: this.controller.mouse.x || 400, 
-                    y: (this.controller.mouse.y || 300) - 40,
-                    color: '#ffd700' // Fancy gold color for an upgrade
-                });
-            }
-        }
-        else if (action === 'NAV_TO_INV') {
-            this.controller.state = 'INVENTORY';
-            this.controller.inventoryIndex = 0;
-            this.controller.scrollToItem(0);
-        }
-        else if (action === 'UNEQUIP_AND_NAV') {
-            const defId = item.defId;
-            
-            this.controller.currentMember.unequipItem(sourceKey);
-            gameState.party.inventory.push(item); // Keep the exact instance
-            
-            this.controller.updateFilteredInventory();
-            
-            const newIndex = this.controller._findNewestInventoryIndex(defId);
-            
-            this.controller.state = 'INVENTORY';
-            this.controller.inventoryIndex = (newIndex !== -1) ? newIndex : 0;
-            this.controller.scrollToItem(this.controller.inventoryIndex, true);
-        }
-        else if (action === 'EQUIP') {
-            this.controller.equipItem(item); 
-        }
-        else if (action === 'DROP_ONE' || action === 'DROP_ALL') {
-            this._handleDropAction(action, item, source, sourceKey);
-        }
-
-        // Close the menu and refresh UI state
-        this.menu = null;
-        this.controller.updateFilteredInventory();
+        this.close();
     }
 
-    useItem(item) {
-        const def = ItemDefinitions[item.defId];
-
-        if (!def) return;
-        if (!def.useAbility) {
-            return;
-        }
-
-        const result = AbilitySystem.execute(def.useAbility, this.controller.currentMember, this.controller.currentMember);
-        if (result.success) {
-            InventorySystem.removeItem(item.defId, 1);
-
-            events.emit('TEXT_POPUP', {
-                text: result.message, 
-                x: this.controller.currentMember.x || 400, 
-                y: (this.controller.currentMember.y || 300) - 40,
-                color: '#00ff00' 
-            });
-
-            this.controller.updateFilteredInventory();
-            
-            if (this.controller.inventoryIndex >= this.controller.filteredInventory.length) {
-                this.controller.inventoryIndex = Math.max(0, this.controller.filteredInventory.length - 1);
-            }
-            if (this.controller.filteredInventory.length === 0) {
-                this.controller.inventoryIndex = -1;
-            }
-        } else {
-            events.emit('TEXT_POPUP', {
-                text: result.message,
-                x: 400,
-                y: 300,
-                color: '#ffffff' 
-            });
-        }
+    /**
+     * Optional: Helper to check if a mouse click was inside the menu bounds (requires renderer to pass menu dimensions)
+     */
+    isClickInside(mouseX, mouseY, menuWidth, menuHeight) {
+        if (!this.menu) return false;
+        return mouseX >= this.menu.x && mouseX <= this.menu.x + menuWidth &&
+               mouseY >= this.menu.y && mouseY <= this.menu.y + menuHeight;
     }
-
-    _isItemUsableInMenu(def) {
-        if (!def) return false;
-        const currentMode = (gameState.mode || 'overworld').toLowerCase();
-
-        if (def.usability && Array.isArray(def.usability)) {
-            return def.usability.includes(currentMode);
-        }
-
-        const itemType = (def.type || '').toLowerCase();
-        const itemCategory = (def.category || '').toLowerCase();
-
-        return (itemType === 'consumable' || itemCategory === 'consumable');
-    }
-
-    _handleDropAction(action, item, source, sourceKey) {
-        let qtyToRemove = 1;
-        if (action === 'DROP_ALL') {
-            qtyToRemove = item.qty || 1;
-        }
-
-        if (source === 'equipment') {
-            this.controller.currentMember.equipment[sourceKey] = null;
-            if (item.qty > qtyToRemove) {
-                item.qty -= qtyToRemove;
-                this.controller.currentMember.equipment[sourceKey] = item;
-            }
-        } 
-        else if (source === 'inventory') {
-            const realIndex = gameState.party.inventory.indexOf(item);
-            if (realIndex > -1) {
-                if (item.qty > qtyToRemove) {
-                    gameState.party.inventory[realIndex].qty -= qtyToRemove;
-                } else {
-                    gameState.party.inventory.splice(realIndex, 1);
-                }
-            }
-        }
-    }
-
-    _canEquipItem(item) {
-        const def = ItemDefinitions[item.defId];
-        if (!def) return false;
-        
-        const itemSlot = (def.slot || def.type || '').toLowerCase().replace(/\s/g, '');
-        
-        return this.controller.activeSlots.some(s => {
-            const slotKey = s.toLowerCase().replace(/\s/g, '');
-            
-            // Allow onehand and twohand for mainhand, and onehand for offhand
-            return (itemSlot === slotKey) || 
-                   (slotKey === 'mainhand' && (itemSlot === 'weapon' || itemSlot === 'tool' || itemSlot === 'onehand' || itemSlot === 'twohand')) ||
-                   (slotKey === 'offhand' && (itemSlot === 'shield' || itemSlot === 'weapon' || itemSlot === 'onehand'));
-        });
-    }
 }

@@ -1,5 +1,6 @@
 import { events } from './eventBus.js';
 import { Input } from './input.js';
+import { UIInteractionManager } from './UIInteractionManager.js'; // <-- 1. NEW IMPORT
 
 // --- CONTROLLERS ---
 import { OverworldController } from '../controllers/overworld/overworldController.js';
@@ -37,7 +38,7 @@ export class SceneManager {
         this.input = new Input(this.canvas);
         this.worldManager = new WorldManager(); 
         this.timeSystem = new TimeSystem();
-
+        this.uiInteractionManager = new UIInteractionManager(); // <-- 2. NEW INSTANCE
         console.log(`%c[SceneManager] Init. Seed: ${gameState.seed}`, 'color: #00aaaa');
 
         // --- CONTROLLERS ---
@@ -264,18 +265,52 @@ export class SceneManager {
         }
     }
 
+    _getActiveController() {
+        switch (this.currentScene) {
+            case 'overworld': return this.overworldController;
+            case 'encounter': return this.encounterController;
+            case 'battle': return this.battleController;
+            case 'character-creator': return this.characterCreatorController;
+            case 'party': return this.partyController;
+            case 'character_summary': return this.characterSummaryController;
+            case 'level_up': return this.levelUpController;
+            default: return null;
+        }
+    }
+
     update(dt) {
         // 1. UPDATE GLOBAL SYSTEMS (Runs in every scene)
-        const click = this.input.getAndResetClick();
-        const rightClick = this.input.getAndResetRightClick();
+        
+        // Changed to `let` so we can nullify them if UI consumes them
+        let click = this.input.getAndResetClick();
+        let rightClick = this.input.getAndResetRightClick();
+        
         const scroll = this.input.getAndResetScroll();
         const mousePos = this.input.getMousePosition(); 
         const isMouseDown = this.input.getIsMouseDown ? this.input.getIsMouseDown() : false;
         
+        // <-- 4. NEW: WIRE THE UI INTERACTION MANAGER -->
+        const activeController = this._getActiveController();
+        if (activeController) {
+            const inputProxy = {
+                getMousePosition: () => mousePos,
+                getIsMouseDown: () => isMouseDown,
+                getAndResetClick: () => click,
+                getAndResetRightClick: () => rightClick
+            };
+            
+            // Check what events the UI ate
+            const uiResult = this.uiInteractionManager.update(inputProxy, activeController);
+            if (uiResult) {
+                // Prevent the active scene underneath from processing UI clicks
+                if (uiResult.handledClick) click = null;
+                if (uiResult.handledRightClick) rightClick = null;
+            }
+        }
+
         // ============================================================
         // SCENE SPECIFIC UPDATES & INPUT HANDLING
         // ============================================================
-
         switch (this.currentScene) {
             case 'character-creator':
                 if (this.characterCreatorController.handleMouseMove) {
@@ -318,7 +353,6 @@ export class SceneManager {
                 }
                 break;
 
-            // ---> NEW: Added mouse routing for gameplay scenes <---
             case 'overworld':
                 if (this.overworldController.handleMouseMove) {
                     this.overworldController.handleMouseMove(mousePos.x, mousePos.y, isMouseDown);
@@ -334,19 +368,14 @@ export class SceneManager {
                 }
                 break;
 
-            // Updated Encounter Mouse Logic
             case 'encounter':
                 if (this.encounterController.handleMouseInput) {
-                    // 1. Ask the renderer what button index the mouse is hovering over
                     const hoverIndex = this.encounterRenderer.getButtonIndex?.(mousePos.x, mousePos.y);
-                    
-                    // Send hover data
                     this.encounterController.handleMouseInput({ 
                         type: 'hover', 
                         index: hoverIndex 
                     });
 
-                    // 2. If clicked, resolve the click target and send click data
                     if (click) {
                         const clickIndex = this.encounterRenderer.getButtonIndex?.(click.x, click.y);
                         this.encounterController.handleMouseInput({ 
@@ -368,33 +397,25 @@ export class SceneManager {
                     this.battleController.handleRightClick(rightClick.x, rightClick.y);
                 }
                 break;
-            // ---> END NEW BLOCK <---
         }
 
         // --- 2. REGULAR UPDATES ---
         this.transitionRenderer.update(dt);
 
         if (this.currentScene === 'overworld') {
-            // TIME NOW ONLY PROGRESSES HERE!
             this.timeSystem.update(dt); 
-
             this.overworldController.update(dt);
             if (this.weatherRenderer.update) {
                 this.weatherRenderer.update(dt, this.overworldController.getState().camera);
             }
         }
         
-        // ---> NEW BLOCK START <---
         if (this.currentScene === 'encounter') {
-            // This is what makes the textTimer tick!
             this.encounterController.update(dt); 
-            
-            // Keep the weather animating in the background of encounters
             if (this.weatherRenderer.update) {
                 this.weatherRenderer.update(dt, this.overworldController.getState().camera);
             }
         }
-        // ---> NEW BLOCK END <---
         
         if (this.currentScene === 'battle') {
             if (typeof this.battleController.update !== 'function') {
