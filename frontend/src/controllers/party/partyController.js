@@ -1,5 +1,5 @@
-import { gameState } from '../../../shared/state/gameState.js';
-import { events } from '../core/eventBus.js'; 
+import { gameState } from '../../../../shared/state/gameState.js';
+import { events } from '../../core/eventBus.js'; 
 
 export class PartyController {
     constructor() {

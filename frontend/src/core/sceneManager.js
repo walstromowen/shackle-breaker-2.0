@@ -2,13 +2,13 @@ import { events } from './eventBus.js';
 import { Input } from './input.js';
 
 // --- CONTROLLERS ---
-import { OverworldController } from '../controllers/overworldController.js';
-import { EncounterController } from '../controllers/encounterController.js'; 
-import { CharacterCreatorController } from '../controllers/characterCreatorController.js'; 
-import { PartyController } from '../controllers/partyController.js';
-import { CharacterSummaryController } from '../controllers/characterSummaryController.js'; 
-import { BattleController } from '../controllers/battleController.js';
-import { LevelUpController } from '../controllers/levelUpController.js';    
+import { OverworldController } from '../controllers/overworld/overworldController.js';
+import { EncounterController } from '../controllers/encounter/encounterController.js'; 
+import { CharacterCreatorController } from '../controllers/characterCreator/characterCreatorController.js'; 
+import { PartyController } from '../controllers/party/partyController.js';
+import { CharacterSummaryController } from '../controllers/characterSummary/characterSummaryController.js'; 
+import { BattleController } from '../controllers/battle/battleController.js';
+import { LevelUpController } from '../controllers/levelUp/levelUpController.js';    
 
 // --- RENDERERS ---
 import { MapRenderer } from '../renderers/overworld/mapRenderer.js';

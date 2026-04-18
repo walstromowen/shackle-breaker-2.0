@@ -1,5 +1,5 @@
-import { events } from '../core/eventBus.js';
-import { StatCalculator } from '../../../shared/systems/statCalculator.js';
+import { events } from '../../core/eventBus.js';
+import { StatCalculator } from '../../../../shared/systems/statCalculator.js';
 
 export class LevelUpController {
     constructor(input) {

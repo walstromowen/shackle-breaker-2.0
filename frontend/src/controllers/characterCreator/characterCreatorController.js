@@ -1,12 +1,12 @@
-import { gameState } from '../../../shared/state/gameState.js';
-import { EntityFactory } from '../../../shared/systems/factories/entityFactory.js';
-import { ItemFactory } from '../../../shared/systems/factories/itemFactory.js'; 
-import { events } from '../core/eventBus.js';
-import { TextEntry } from '../../../shared/utils/textEntry.js';
-import { StatCalculator } from '../../../shared/systems/statCalculator.js';
-import { TRAIT_DEFINITIONS } from '../../../shared/data/traitDefinitions.js';
-import { InventorySystem } from '../../../shared/systems/inventorySystem.js';
-import { PartyManager } from '../../../shared/systems/partyManager.js'; 
+import { gameState } from '../../../../shared/state/gameState.js';
+import { EntityFactory } from '../../../../shared/systems/factories/entityFactory.js';
+import { ItemFactory } from '../../../../shared/systems/factories/itemFactory.js'; 
+import { events } from '../../core/eventBus.js';
+import { TextEntry } from '../../../../shared/utils/textEntry.js';
+import { StatCalculator } from '../../../../shared/systems/statCalculator.js';
+import { TRAIT_DEFINITIONS } from '../../../../shared/data/traitDefinitions.js';
+import { InventorySystem } from '../../../../shared/systems/inventorySystem.js';
+import { PartyManager } from '../../../../shared/systems/partyManager.js'; 
 
 const ALLOWED_TRAITS = ['quick', 'inquisitive', 'brawler', 'tough'];
 const UI_TRAITS = ALLOWED_TRAITS.map(key => ({

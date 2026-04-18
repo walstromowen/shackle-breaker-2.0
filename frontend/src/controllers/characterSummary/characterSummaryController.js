@@ -1,11 +1,11 @@
-import { gameState } from '../../../shared/state/gameState.js';
-import { events } from '../core/eventBus.js';
-import { StatCalculator } from '../../../shared/systems/statCalculator.js';
-import { ItemDefinitions } from '../../../shared/data/itemDefinitions.js';
-import { InventorySystem } from '../../../shared/systems/inventorySystem.js';
-import { DragAndDropManager } from '../ui/dragAndDropManager.js';
-import { ScrollManager } from '../ui/scrollManager.js';
-import { ContextMenuManager } from '../ui/contextMenuManager.js'; 
+import { gameState } from '../../../../shared/state/gameState.js';
+import { events } from '../../core/eventBus.js';
+import { StatCalculator } from '../../../../shared/systems/statCalculator.js';
+import { ItemDefinitions } from '../../../../shared/data/itemDefinitions.js';
+import { InventorySystem } from '../../../../shared/systems/inventorySystem.js';
+import { DragAndDropManager } from '../../ui/dragAndDropManager.js';
+import { ScrollManager } from '../../ui/scrollManager.js';
+import { ContextMenuManager } from '../../ui/contextMenuManager.js'; 
 
 const SLOT_ORDER = ['head', 'torso', 'arms', 'mainHand', 'offHand', 'legs', 'feet', 'accessory'];
 

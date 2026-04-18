@@ -3,7 +3,7 @@ import { TargetingResolver } from '../../shared/systems/targetingResolver.js';
 import { AbilitySystem } from '../../shared/systems/abilitySystem.js';
 import { BattleAnimationFactory } from '../../shared/systems/factories/battleAnimationFactory.js';
 import { AbilityFactory } from '../../shared/systems/factories/abilityFactory.js';
-import { PHASE } from '../../frontend/src/controllers/battleController.js'; 
+import { PHASE } from '../../frontend/src/controllers/battle/battleController.js'; 
 import { StatusEffectFactory } from '../../shared/systems/factories/statusEffectFactory.js'; 
 import { InventorySystem } from '../../shared/systems/inventorySystem.js';
 
