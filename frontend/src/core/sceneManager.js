@@ -1,6 +1,6 @@
 import { events } from './eventBus.js';
 import { Input } from './input.js';
-import { UIInteractionManager } from './UIInteractionManager.js'; // <-- 1. NEW IMPORT
+import { UIInteractionManager } from './UIInteractionManager.js'; 
 
 // --- CONTROLLERS ---
 import { OverworldController } from '../controllers/overworld/overworldController.js';
@@ -38,7 +38,7 @@ export class SceneManager {
         this.input = new Input(this.canvas);
         this.worldManager = new WorldManager(); 
         this.timeSystem = new TimeSystem();
-        this.uiInteractionManager = new UIInteractionManager(); // <-- 2. NEW INSTANCE
+        this.uiInteractionManager = new UIInteractionManager(); 
         console.log(`%c[SceneManager] Init. Seed: ${gameState.seed}`, 'color: #00aaaa');
 
         // --- CONTROLLERS ---
@@ -46,10 +46,8 @@ export class SceneManager {
         this.encounterController = new EncounterController(this.input, this.config, this.worldManager);
         this.characterCreatorController = new CharacterCreatorController(); 
         this.partyController = new PartyController();
-        this.characterSummaryController = null; // Initialized on demand
-        this.levelUpController = new LevelUpController(this.input); // <-- NEW
-
-        // 1. INITIALIZE BATTLE CONTROLLER
+        this.characterSummaryController = null; 
+        this.levelUpController = new LevelUpController(this.input); 
         this.battleController = new BattleController(this.input, this.config, this.worldManager);
 
         // --- RENDERERS ---
@@ -60,81 +58,54 @@ export class SceneManager {
         this.transitionRenderer = new TransitionRenderer(this.config);
         this.characterCreatorRenderer = new CharacterCreatorRenderer(this.config, this.loader);
         this.partyRenderer = new PartyRenderer(this.ctx, this.loader);
-        
-        // Pass this.loader here so the renderer can draw portraits
         this.characterSummaryRenderer = new CharacterSummaryRenderer(this.ctx, this.loader); 
-        this.levelUpRenderer = new LevelUpRenderer(this.ctx, this.config, this.loader); // <-- NEW
-
-        // 2. INITIALIZE BATTLE RENDERER
+        this.levelUpRenderer = new LevelUpRenderer(this.ctx, this.config, this.loader); 
         this.battleRenderer = new BattleRenderer(this.ctx, this.config, this.loader);
 
         // State
         this.currentScene = 'character-creator'; 
         
-        // Bind the router so we can remove it later
         this._handleGlobalKeydown = this._handleGlobalKeydown.bind(this);
-
         this.setupInputRouting();
         this.setupEventListeners();
     }
 
     resolveTargetBGM(targetScene) {
-        if (targetScene === 'battle') {
-            return 'plainsBattle1';
-        }
-        
-        if (targetScene === 'overworld') {
-            return 'plainsOverworldDay';
-        }
-        
-        // By returning null for menus and encounters, we tell changeScene() 
-        // to skip emitting a new PLAY_MUSIC event, allowing whatever is 
-        // currently playing to continue uninterrupted!
-        return null; 
-    }
+        if (targetScene === 'battle') return 'plainsBattle1';
+        if (targetScene === 'overworld') return 'plainsOverworldDay';
+        return null; 
+    }
 
-    resolveTargetAmbience(targetScene) {
-        // NEW: Don't change ambience at all if we're just opening a menu screen
-        if (['party', 'character_summary', 'level_up'].includes(targetScene)) {
-            return null;
-        }
+    resolveTargetAmbience(targetScene) {
+        if (['party', 'character_summary', 'level_up'].includes(targetScene)) return null;
+        if (['battle', 'encounter', 'character-creator'].includes(targetScene)) return 'none';
+        
+        if (gameState.world && gameState.world.currentWeather) {
+            return gameState.world.currentWeather.audioEffect || 'none';
+        }
+        return 'none';
+    }
 
-        // Stop ambience during combat, encounters, or character creation to build focus/tension
-        if (targetScene === 'battle' || targetScene === 'encounter' || targetScene === 'character-creator') {
-            return 'none';
-        }
-        
-        // Decoupled: For overworld, just ask the active weather object 
-        if (gameState.world && gameState.world.currentWeather) {
-            return gameState.world.currentWeather.audioEffect || 'none';
-        }
-        
-        return 'none';
-    }
+    changeScene(sceneName) {
+        console.log(`[SceneManager] Switching to: ${sceneName}`);
+        this.currentScene = sceneName;
+        
+        const targetBGM = this.resolveTargetBGM(sceneName);
+        if (targetBGM !== null) { 
+            events.emit('PLAY_MUSIC', { id: targetBGM, fadeTime: 1.0 });
+        }
 
-    changeScene(sceneName) {
-        console.log(`[SceneManager] Switching to: ${sceneName}`);
-        this.currentScene = sceneName;
-        
-        // 1. Manage Music
-        const targetBGM = this.resolveTargetBGM(sceneName);
-        // Check specifically against null so it doesn't trigger on 'none' or false
-        if (targetBGM !== null) { 
-            events.emit('PLAY_MUSIC', { id: targetBGM, fadeTime: 1.0 });
-        }
+        const targetAmbience = this.resolveTargetAmbience(sceneName);
+        if (targetAmbience !== null) { 
+            if (targetAmbience === 'none') {
+                events.emit('STOP_AMBIENCE', { fadeTime: 1.0 });
+            } else {
+                events.emit('PLAY_AMBIENCE', { id: targetAmbience, fadeTime: 2.0 }); 
+            }
+        }
+    }
 
-        // 2. Manage Weather Ambience
-        const targetAmbience = this.resolveTargetAmbience(sceneName);
-        if (targetAmbience !== null) { // Only change ambience if it isn't null
-            if (targetAmbience === 'none') {
-                events.emit('STOP_AMBIENCE', { fadeTime: 1.0 });
-            } else {
-                events.emit('PLAY_AMBIENCE', { id: targetAmbience, fadeTime: 2.0 }); 
-            }
-        }
-    }
     setupEventListeners() {
-        // 1. General Scene Switching -> Classic Fade
         events.on('CHANGE_SCENE', ({ scene, data }) => {
             this.transitionRenderer.start(() => {
                 this.input.reset(); 
@@ -149,12 +120,10 @@ export class SceneManager {
                 if (scene === 'party') {
                     this.partyController.init(data || {}); 
                 }
-
                 this.changeScene(scene);
             }, 'fade'); 
         });
         
-        // 2. Physical Interactions -> Circle Iris Wipe
         events.on('INTERACT', (data) => {
             if (data.type === 'ENCOUNTER') {
                 this.transitionRenderer.start(() => {
@@ -164,7 +133,6 @@ export class SceneManager {
             }
         });
 
-        // 2.5 Random Map Encounters -> Classic Fade
         events.on('START_ENCOUNTER', (data) => {
             this.transitionRenderer.start(() => {
                 this.encounterController.start(data.encounterId, data.context || {});
@@ -172,11 +140,9 @@ export class SceneManager {
             }, 'fade'); 
         });
 
-        // 3. Combat Triggers -> Fast White Flash
         events.on('START_BATTLE', (data) => {
             this.transitionRenderer.start(() => {
                 console.log("[SceneManager] Handing off entities to BattleController:", data.enemies);
-                
                 const context = data.context || {};
                 context.backgroundId = data.background; 
                 context.weather = data.weather; 
@@ -194,7 +160,6 @@ export class SceneManager {
             }
         });
 
-        // 5. Party Swap Routing -> Quick Wipe
         events.on('REQUEST_PARTY_SWAP', (data) => {
             this.transitionRenderer.start(() => {
                 this.partyController.init({
@@ -206,22 +171,19 @@ export class SceneManager {
             }, 'wipe', { speed: 3.0 }); 
         });
 
-        // ---> NEW BLOCK START <---
-        // 6. Character Recruitment -> Switch to Character Summary View
         events.on('CHARACTER_RECRUITED', (data) => {
             this.transitionRenderer.start(() => {
                 this.characterSummaryController = new CharacterSummaryController(this.input, { character: data.character });
                 this.changeScene('character_summary');
             }, 'wipe', { speed: 3.0 });
         });
-        // 7. Open Character Summary from Battle
+
         events.on('TOGGLE_CHARACTER_SUMMARY', (data) => {
             this.transitionRenderer.start(() => {
                 this.characterSummaryController = new CharacterSummaryController(this.input, { 
                     character: data.combatant,
                     returnScene: 'battle',
                     phase: data.phase,
-                    // --- NEW: Pass the callback down to the controller ---
                     onItemSelected: data.onItemSelected 
                 });
                 
@@ -238,30 +200,11 @@ export class SceneManager {
         if (this.transitionRenderer.isActive && this.transitionRenderer.state === 'FADE_OUT') return;
         if (e.code === 'Backquote') this.mapRenderer.showDebug = !this.mapRenderer.showDebug;
 
-        switch (this.currentScene) {
-            case 'overworld':
-                this.overworldController.handleKeyDown(e.code);
-                break;
-            case 'encounter':
-                this.encounterController.handleKeyDown(e.code);
-                break;
-            case 'battle':
-                this.battleController.handleKeyDown(e.code);
-                break;
-            case 'character-creator':
-                this.characterCreatorController.handleKeyDown(e);
-                break;
-            case 'party': 
-                this.partyController.handleKeyDown(e.code);
-                break;
-            case 'character_summary':
-                if (this.characterSummaryController) {
-                    this.characterSummaryController.handleKeyDown(e.code);
-                }
-                break;
-            case 'level_up':
-                this.levelUpController.handleKeyDown(e.code);
-                break;
+        // --- POLYMORPHIC KEYDOWN ROUTING ---
+        const activeController = this._getActiveController();
+        if (activeController && activeController.handleKeyDown) {
+            // Note: Passed both e.code and e in case some older controllers still expect the raw event
+            activeController.handleKeyDown(e.code, e);
         }
     }
 
@@ -278,19 +221,30 @@ export class SceneManager {
         }
     }
 
+    // Helper to fetch active renderer (useful for generic mouse clicks that depend on UI layout)
+    _getActiveRenderer() {
+        switch (this.currentScene) {
+            case 'overworld': return this.mapRenderer;
+            case 'encounter': return this.encounterRenderer;
+            case 'battle': return this.battleRenderer;
+            case 'character-creator': return this.characterCreatorRenderer;
+            case 'party': return this.partyRenderer;
+            case 'character_summary': return this.characterSummaryRenderer;
+            case 'level_up': return this.levelUpRenderer;
+            default: return null;
+        }
+    }
+
     update(dt) {
-        // 1. UPDATE GLOBAL SYSTEMS (Runs in every scene)
-        
-        // Changed to `let` so we can nullify them if UI consumes them
         let click = this.input.getAndResetClick();
         let rightClick = this.input.getAndResetRightClick();
-        
         const scroll = this.input.getAndResetScroll();
         const mousePos = this.input.getMousePosition(); 
         const isMouseDown = this.input.getIsMouseDown ? this.input.getIsMouseDown() : false;
         
-        // <-- 4. NEW: WIRE THE UI INTERACTION MANAGER -->
         const activeController = this._getActiveController();
+        const activeRenderer = this._getActiveRenderer();
+
         if (activeController) {
             const inputProxy = {
                 getMousePosition: () => mousePos,
@@ -299,191 +253,106 @@ export class SceneManager {
                 getAndResetRightClick: () => rightClick
             };
             
-            // Check what events the UI ate
+            // UI Interaction Manager
             const uiResult = this.uiInteractionManager.update(inputProxy, activeController);
             if (uiResult) {
-                // Prevent the active scene underneath from processing UI clicks
                 if (uiResult.handledClick) click = null;
                 if (uiResult.handledRightClick) rightClick = null;
             }
+
+            // --- POLYMORPHIC MOUSE/INPUT ROUTING ---
+            // Relying on the new Base Controller interface to standardize inputs
+            if (activeController.handleMouseMove) {
+                activeController.handleMouseMove(mousePos.x, mousePos.y, isMouseDown, activeRenderer);
+            }
+            if (click && activeController.handleMouseDown) {
+                // Passed activeRenderer here to support Party/LevelUp controllers that previously required it
+                activeController.handleMouseDown(click.x, click.y, activeRenderer);
+            }
+            if (rightClick && activeController.handleRightClick) {
+                activeController.handleRightClick(rightClick.x, rightClick.y);
+            }
+            if (scroll !== 0 && activeController.handleScroll) {
+                activeController.handleScroll(scroll);
+            }
+
+            // --- POLYMORPHIC CONTROLLER UPDATE ---
+            if (activeController.update) {
+                activeController.update(dt);
+            }
         }
 
-        // ============================================================
-        // SCENE SPECIFIC UPDATES & INPUT HANDLING
-        // ============================================================
-        switch (this.currentScene) {
-            case 'character-creator':
-                if (this.characterCreatorController.handleMouseMove) {
-                    this.characterCreatorController.handleMouseMove(mousePos.x, mousePos.y);
-                }
-                if (click) {
-                    this.characterCreatorController.handleMouseDown(click.x, click.y);
-                }
-                break;
-
-            case 'character_summary':
-                if (this.characterSummaryController) {
-                    this.characterSummaryController.handleMouseMove?.(mousePos.x, mousePos.y, isMouseDown);
-                    
-                    const hitZoneId = this.characterSummaryRenderer.getHitZone(mousePos.x, mousePos.y);
-                    this.characterSummaryController.handleHover?.(hitZoneId);
-
-                    if (click && hitZoneId) {
-                        this.characterSummaryController.handleInteraction(hitZoneId);
-                    }
-                    if (rightClick) {
-                        const rightClickZoneId = this.characterSummaryRenderer.getHitZone(rightClick.x, rightClick.y);
-                        this.characterSummaryController.handleRightClick(rightClickZoneId);
-                    }
-                    if (scroll !== 0) {
-                        this.characterSummaryController.handleScroll?.(scroll);
-                    }
-                }
-                break;
-
-            case 'level_up':
-                if (click) {
-                    this.levelUpController.handleMouseDown(click.x, click.y, this.levelUpRenderer);
-                }
-                break;
-
-            case 'party':
-                if (click) {
-                    this.partyController.handleMouseDown(click.x, click.y, this.partyRenderer);
-                }
-                break;
-
-            case 'overworld':
-                if (this.overworldController.handleMouseMove) {
-                    this.overworldController.handleMouseMove(mousePos.x, mousePos.y, isMouseDown);
-                }
-                if (click && this.overworldController.handleMouseDown) {
-                    this.overworldController.handleMouseDown(click.x, click.y);
-                }
-                if (rightClick && this.overworldController.handleRightClick) {
-                    this.overworldController.handleRightClick(rightClick.x, rightClick.y);
-                }
-                if (scroll !== 0 && this.overworldController.handleScroll) {
-                    this.overworldController.handleScroll(scroll);
-                }
-                break;
-
-            case 'encounter':
-                if (this.encounterController.handleMouseInput) {
-                    const hoverIndex = this.encounterRenderer.getButtonIndex?.(mousePos.x, mousePos.y);
-                    this.encounterController.handleMouseInput({ 
-                        type: 'hover', 
-                        index: hoverIndex 
-                    });
-
-                    if (click) {
-                        const clickIndex = this.encounterRenderer.getButtonIndex?.(click.x, click.y);
-                        this.encounterController.handleMouseInput({ 
-                            type: 'click', 
-                            index: clickIndex 
-                        });
-                    }
-                }
-                break;
-
-            case 'battle':
-                if (this.battleController.handleMouseMove) {
-                    this.battleController.handleMouseMove(mousePos.x, mousePos.y, isMouseDown);
-                }
-                if (click && this.battleController.handleMouseDown) {
-                    this.battleController.handleMouseDown(click.x, click.y);
-                }
-                if (rightClick && this.battleController.handleRightClick) {
-                    this.battleController.handleRightClick(rightClick.x, rightClick.y);
-                }
-                break;
-        }
-
-        // --- 2. REGULAR UPDATES ---
+        // --- GLOBAL & ENVIRONMENTAL UPDATES ---
         this.transitionRenderer.update(dt);
 
-        if (this.currentScene === 'overworld') {
-            this.timeSystem.update(dt); 
-            this.overworldController.update(dt);
-            if (this.weatherRenderer.update) {
-                this.weatherRenderer.update(dt, this.overworldController.getState().camera);
+        // Weather and Time updates (Only relevant in specific scenes)
+        if (['overworld', 'encounter', 'battle'].includes(this.currentScene)) {
+            if (this.currentScene === 'overworld') {
+                this.timeSystem.update(dt); 
             }
-        }
-        
-        if (this.currentScene === 'encounter') {
-            this.encounterController.update(dt); 
-            if (this.weatherRenderer.update) {
+            if (this.weatherRenderer.update && this.overworldController.getState().camera) {
                 this.weatherRenderer.update(dt, this.overworldController.getState().camera);
-            }
-        }
-        
-        if (this.currentScene === 'battle') {
-            if (typeof this.battleController.update !== 'function') {
-                console.error("CRITICAL ERROR: BattleController is missing 'update()' method! Please save BattleController.js and refresh.");
-            } else {
-                this.battleController.update(dt);
             }
         }
     }
 
     render(interpolation, totalTime) { 
-        if (!this.loader.isDone()) return;
+        if (!this.loader.isDone()) return;
 
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        switch (this.currentScene) {
-            case 'character-creator':
-                const ccState = this.characterCreatorController.getState();
-                this.characterCreatorRenderer.render(this.ctx, ccState);
-                break;
-            case 'overworld':
-                this.renderOverworld(interpolation, totalTime); // <-- UPDATED
-                break;
-            case 'party':
-                const pState = this.partyController.getState();
-                this.partyRenderer.render(pState);
-                break;
-            case 'encounter':
-                this.renderOverworld(interpolation, totalTime); // <-- UPDATED
-                const encState = this.encounterController.getState();
-                this.encounterRenderer.render(this.ctx, encState);
-                break;
-            case 'battle':
-                this.renderOverworld(interpolation, totalTime); // <-- UPDATED
-                const batState = this.battleController.getState();
-                this.battleRenderer.render(batState);
-                break;
-            case 'character_summary':
-                if (this.characterSummaryController) {
-                    const csState = this.characterSummaryController.getState();
-                    this.characterSummaryRenderer.render(csState);
-                }
-                break;
-            case 'level_up':
-                const luState = this.levelUpController.getState();
-                this.levelUpRenderer.render(luState);
-                break;
-        }
+        switch (this.currentScene) {
+            case 'character-creator':
+                const ccState = this.characterCreatorController.getState();
+                this.characterCreatorRenderer.render(this.ctx, ccState);
+                break;
+            case 'overworld':
+                this.renderOverworld(interpolation, totalTime); 
+                break;
+            case 'party':
+                const pState = this.partyController.getState();
+                this.partyRenderer.render(pState);
+                break;
+            case 'encounter':
+                this.renderOverworld(interpolation, totalTime); 
+                const encState = this.encounterController.getState();
+                this.encounterRenderer.render(this.ctx, encState);
+                break;
+            case 'battle':
+                this.renderOverworld(interpolation, totalTime); 
+                const batState = this.battleController.getState();
+                this.battleRenderer.render(batState);
+                break;
+            case 'character_summary':
+                if (this.characterSummaryController) {
+                    const csState = this.characterSummaryController.getState();
+                    this.characterSummaryRenderer.render(csState);
+                }
+                break;
+            case 'level_up':
+                const luState = this.levelUpController.getState();
+                this.levelUpRenderer.render(luState);
+                break;
+        }
 
-        this.transitionRenderer.render(this.ctx);
-    }
+        this.transitionRenderer.render(this.ctx);
+    }
 
-    renderOverworld(interpolation, totalTime) { 
-        const state = this.overworldController.getState();
-        const ambientColor = this.timeSystem.getCurrentColorData();
-        
-        // 1. Draw Map, Entities, Weather, AND Lighting in one pass
-        this.mapRenderer.renderMap(
-            this.worldManager, 
-            state.camera, 
-            state.entities,
-            interpolation, 
-            totalTime,
-            this.lightingRenderer,
-            ambientColor,
-            this.weatherRenderer // <-- Pass the weather renderer down!
-        );
-    }
+    renderOverworld(interpolation, totalTime) { 
+        const state = this.overworldController.getState();
+        const ambientColor = this.timeSystem.getCurrentColorData();
+        
+        this.mapRenderer.renderMap(
+            this.worldManager, 
+            state.camera, 
+            state.entities,
+            interpolation, 
+            totalTime,
+            this.lightingRenderer,
+            ambientColor,
+            this.weatherRenderer 
+        );
+    }
 
     destroy() {
         this.input.destroy();

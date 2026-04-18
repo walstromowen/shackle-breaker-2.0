@@ -1,3 +1,4 @@
+import { BaseController } from '../core/baseController.js'; 
 import { gameState } from '../../../../shared/state/gameState.js'; 
 import { events } from '../../core/eventBus.js';
 import { DragAndDropManager } from '../../ui/dragAndDropManager.js';
@@ -17,8 +18,10 @@ const KEY_BINDINGS = {
     'KeyX': 'DELETE', 'Delete': 'DELETE'
 };
 
-export class CharacterSummaryController {
+export class CharacterSummaryController extends BaseController {
     constructor(input, data) {
+        super(input, data);
+        
         this.config = data || {}; 
         this.returnScene = this.config.returnScene || 'party'; 
         
@@ -37,19 +40,10 @@ export class CharacterSummaryController {
         
         // --- GRID CONFIGURATION ---
         this.COLS = 4; 
-        
-        // INTERACTION STATES
-        this.potentialDrag = null; 
-        this.pendingSlotClick = null; 
-        this.DRAG_THRESHOLD_SQ = 25; 
 
         this.detailsScrollOffset = 0;
         this.inventoryScrollOffset = 0; 
-        this.mouse = { x: 0, y: 0 };
-        this.hoveredElement = null;
         this.wasMouseDown = false; 
-
-        this.lastRenderedHitboxes = [];
 
         this.layout = { 
             detailMaxScroll: 0,
@@ -128,24 +122,60 @@ export class CharacterSummaryController {
     }
 
     // ========================================================
-    // CONTEXT MENU LOGIC
+    // HITBOX INTERACTION (Standard BaseController Hooks)
     // ========================================================
 
-    handleRightClick(input) {
-        if (!input) return;
-        const id = (typeof input === 'object' && input.id) ? input.id : input;
+    onHover(hitboxId) {
+        super.onHover(hitboxId);
+    }
+
+    onClick(hitboxId) {
+        if (!hitboxId) return;
+        
+        // 1. Context Menu Intercepts
+        if (this.contextMenuManager.menu) {
+            if (hitboxId.startsWith('CTX_OPT_')) {
+                const optIndex = parseInt(hitboxId.split('_')[2], 10);
+                this.contextMenuManager.executeAction(optIndex); 
+                return;
+            }
+            this.contextMenuManager.close(); 
+        }
+
+        // 2. Standard Button Handlers
+        if (this.handlers && this.handlers[hitboxId]) {
+            this.handlers[hitboxId]();
+            return;
+        }
+
+        // 3. Slots & Inventory
+        if (hitboxId.startsWith('SLOT_')) {
+            const slotId = hitboxId.replace('SLOT_', '');
+            this.handleSlotClick(slotId);
+            return;
+        }
+
+        if (hitboxId.startsWith('INV_ITEM_')) {
+            const idx = parseInt(hitboxId.split('_')[2], 10);
+            this.handleInventoryClick(idx);
+            return;
+        }
+    }
+
+    onRightClick(hitboxId) {
+        if (!hitboxId) return;
         
         let item = null;
         let source = '';
         let sourceKey = null;
 
         // 1. Identify what was clicked
-        if (id.startsWith('SLOT_')) {
-            sourceKey = (typeof input === 'object' && input.slotId) ? input.slotId : id.replace('SLOT_', '');
+        if (hitboxId.startsWith('SLOT_')) {
+            sourceKey = hitboxId.replace('SLOT_', '');
             item = this.currentMember.equipment[sourceKey];
             source = 'equipment';
-        } else if (id.startsWith('INV_ITEM_')) {
-            sourceKey = parseInt(id.split('_')[2], 10);
+        } else if (hitboxId.startsWith('INV_ITEM_')) {
+            sourceKey = parseInt(hitboxId.split('_')[2], 10);
             item = this.filteredInventory[sourceKey];
             source = 'inventory';
         }
@@ -159,7 +189,7 @@ export class CharacterSummaryController {
         // 3. Calculate Position (Center of hitbox)
         let menuX = this.mouse.x;
         let menuY = this.mouse.y;
-        const hit = this.lastRenderedHitboxes.find(h => h.id === id);
+        const hit = this.lastRenderedHitboxes.find(h => h.id === hitboxId);
         if (hit) {
             menuX = Math.floor(hit.x + (hit.w / 2));
             menuY = Math.floor(hit.y + (hit.h / 2));
@@ -168,6 +198,46 @@ export class CharacterSummaryController {
         // 4. Open the decoupled manager
         this.contextMenuManager.open(menuX, menuY, options, { item, source, sourceKey });
     }
+
+    onDragStart(hitboxId) {
+        if (!hitboxId || this.contextMenuManager.menu || this.logic.readOnly) return;
+
+        if (hitboxId.startsWith('SLOT_')) {
+            const slotName = hitboxId.replace('SLOT_', '');
+            const item = this.currentMember.equipment[slotName];
+            if (item) {
+                this.slotIndex = this.activeSlots.indexOf(slotName);
+                this.state = 'SLOTS';
+                this.inventoryIndex = -1;
+                
+                this.dragAndDropManager.startDrag(
+                    item, 'equipment', slotName, this.mouse.x, this.mouse.y, this.handleItemDropped.bind(this)
+                );
+            }
+        } else if (hitboxId.startsWith('INV_ITEM_')) {
+            const idx = parseInt(hitboxId.split('_')[2], 10);
+            const item = this.filteredInventory[idx];
+            if (item) {
+                this.inventoryIndex = idx;
+                this.state = 'INVENTORY';
+                this.slotIndex = -1;
+
+                this.dragAndDropManager.startDrag(
+                    item, 'inventory', idx, this.mouse.x, this.mouse.y, this.handleItemDropped.bind(this)
+                );
+            }
+        }
+    }
+
+    onDrop(dragId, targetHitboxId) {
+        if (this.dragAndDropManager.dragState.active) {
+            this.dragAndDropManager.endDrag(targetHitboxId);
+        }
+    }
+
+    // ========================================================
+    // CONTEXT MENU LOGIC
+    // ========================================================
 
     _buildMenuOptions(item, source, sourceKey) {
         const options = [];
@@ -314,7 +384,7 @@ export class CharacterSummaryController {
             const item = this.currentMember.equipment[slotName];
 
             if (item) {
-                this.handleRightClick(`SLOT_${slotName}`);
+                this.onRightClick(`SLOT_${slotName}`);
             } else if (this.filteredInventory.length > 0) {
                 this._activateSlotButDontFilter(slotName);
             }
@@ -344,7 +414,7 @@ export class CharacterSummaryController {
         else if (intent === 'CONFIRM') {
             const item = this.filteredInventory[this.inventoryIndex];
             if (item) {
-                this.handleRightClick(`INV_ITEM_${this.inventoryIndex}`);
+                this.onRightClick(`INV_ITEM_${this.inventoryIndex}`);
             }
             return; 
         }
@@ -355,7 +425,7 @@ export class CharacterSummaryController {
     }
 
     // ========================================================
-    // MOUSE & DRAG HANDLING
+    // RAW MOUSE & DRAG FALLBACKS
     // ========================================================
 
     handleMouseMove(x, y, isMouseDown) {
@@ -363,27 +433,6 @@ export class CharacterSummaryController {
         this.mouse.y = y;
 
         if (this.contextMenuManager.menu) return;
-
-        // Drag Trigger
-        if (isMouseDown && this.potentialDrag && !this.dragAndDropManager.dragState.active) {
-            const dx = x - this.potentialDrag.startX;
-            const dy = y - this.potentialDrag.startY;
-            
-            if ((dx * dx) + (dy * dy) > this.DRAG_THRESHOLD_SQ) {
-                this.dragAndDropManager.startDrag(
-                    this.potentialDrag.item,
-                    this.potentialDrag.source,
-                    this.potentialDrag.originSlot || this.potentialDrag.originIndex,
-                    this.potentialDrag.startX,
-                    this.potentialDrag.startY,
-                    this.handleItemDropped.bind(this)
-                );
-                
-                this.potentialDrag = null;
-                this.pendingSlotClick = null;
-                this.updateFilteredInventory();
-            }
-        }
 
         this.dragAndDropManager.updateDrag(x, y);
 
@@ -404,108 +453,21 @@ export class CharacterSummaryController {
     }
 
     handleMouseDown(x, y) {
-        const targetId = this.hoveredElement ? (this.hoveredElement.id || this.hoveredElement) : null;
+        const targetId = this.hoveredHitboxId;
         const handledByScroll = this.scrollManager.handleMouseDown(targetId, y);
         
         if (!handledByScroll && !targetId) {
             this.deselectSlot();
         }
-
-        // Setup potential drag right when the mouse goes DOWN
-        if (targetId && !this.contextMenuManager.menu && !this.logic.readOnly) {
-            if (String(targetId).startsWith('SLOT_')) {
-                const slotName = targetId.replace('SLOT_', '');
-                const item = this.currentMember.equipment[slotName];
-                if (item) {
-                    this.potentialDrag = {
-                        item: item, source: 'equipment', originSlot: slotName, startX: x, startY: y
-                    };
-                    // NEW: Update selection to the slot being grabbed
-                    this.slotIndex = this.activeSlots.indexOf(slotName);
-                    this.state = 'SLOTS';
-                    this.inventoryIndex = -1;
-                }
-            } else if (String(targetId).startsWith('INV_ITEM_')) {
-                const idx = parseInt(targetId.split('_')[2], 10);
-                const item = this.filteredInventory[idx];
-                if (item) {
-                    this.potentialDrag = {
-                        item: item, source: 'inventory', originIndex: idx, startX: x, startY: y
-                    };
-                    // NEW: Update selection to the inventory item being grabbed
-                    this.inventoryIndex = idx;
-                    this.state = 'INVENTORY';
-                    this.slotIndex = -1;
-                }
-            }
-        }
     }
 
     handleMouseUp(x, y) {
-        if (this.contextMenuManager.menu) return;
-
-        if (this.pendingSlotClick) {
-            this.pendingSlotClick = null;
-        }
-
-        if (this.dragAndDropManager.dragState.active) {
-            const dropTargetId = this.hoveredElement ? (this.hoveredElement.id || this.hoveredElement) : null;
-            this.dragAndDropManager.endDrag(dropTargetId);
-        } 
-        // If we released without dragging, treat it as a standard click
-        else if (this.potentialDrag) {
-            const targetId = this.hoveredElement ? (this.hoveredElement.id || this.hoveredElement) : null;
-            
-            if (targetId) {
-                if (String(targetId).startsWith('SLOT_')) {
-                    this.handleSlotClick(targetId.replace('SLOT_', ''));
-                } else if (String(targetId).startsWith('INV_ITEM_')) {
-                    this.handleInventoryClick(parseInt(targetId.split('_')[2], 10));
-                }
-            }
-        }
-        
-        this.potentialDrag = null;
-    }
-
-    handleHover(elementData) {
-        this.hoveredElement = elementData;
+        // Drag dropping and UI clicking are now handled natively by onDrop and onClick
     }
 
     updateHitboxes(hitboxes) {
-        this.lastRenderedHitboxes = hitboxes;
+        super.updateHitboxes(hitboxes);
         this._syncScrollZones(); 
-    }
-
-    handleInteraction(input) {
-        if (!input) return;
-        const id = (typeof input === 'object' && input.id) ? input.id : input;
-        
-        if (this.contextMenuManager.menu) {
-            if (id.startsWith('CTX_OPT_')) {
-                const optIndex = parseInt(id.split('_')[2], 10);
-                this.contextMenuManager.executeAction(optIndex); 
-                return;
-            }
-            this.contextMenuManager.close(); 
-        }
-
-        if (this.handlers[id]) {
-            this.handlers[id]();
-            return;
-        }
-
-        if (id.startsWith('SLOT_')) {
-            const slotId = (input.slotId) ? input.slotId : id.replace('SLOT_', '');
-            this.handleSlotClick(slotId);
-            return;
-        }
-
-        if (id.startsWith('INV_ITEM_')) {
-            const idx = parseInt(id.split('_')[2], 10);
-            this.handleInventoryClick(idx);
-            return;
-        }
     }
 
     _findNewestInventoryIndex(defId) {
@@ -549,8 +511,6 @@ export class CharacterSummaryController {
     cycleMember(direction) {
         if (this.logic.cycleMember(direction)) {
             this.state = 'SLOTS';
-            this.potentialDrag = null; 
-            this.pendingSlotClick = null;
             this.contextMenuManager.close(); 
             this.inventoryIndex = -1;
             this.resetScroll();
@@ -680,9 +640,8 @@ export class CharacterSummaryController {
         if (this.contextMenuManager.menu) return this.contextMenuManager.menu.item;
         if (this.dragAndDropManager.dragState.active) return this.dragAndDropManager.dragState.payload;
         
-        if (this.hoveredElement && this.hoveredElement.type === 'item') {
-            return this.hoveredElement.item;
-        }
+        // --- Hover focus logic removed here! Details only change on select/drag. ---
+
         if (this.state === 'INVENTORY') {
             return this.filteredInventory[this.inventoryIndex] || null;
         } 
@@ -703,7 +662,7 @@ export class CharacterSummaryController {
         let viewSelectedSlot = (this.state === 'INVENTORY') ? -1 : this.slotIndex;
         let viewInventoryIndex = this.inventoryIndex;
 
-        // --- NEW: Hide selection brackets on the origin element while dragging ---
+        // --- Hide selection brackets on the origin element while dragging ---
         if (this.dragAndDropManager.dragState.active) {
             const dragSource = this.dragAndDropManager.dragState.sourceId;
             const origin = this.dragAndDropManager.dragState.originSlot;
@@ -733,13 +692,13 @@ export class CharacterSummaryController {
             scrollOffset: this.detailsScrollOffset, 
             inventoryScrollOffset: this.inventoryScrollOffset,
             mouse: this.mouse,
-            hoveredElement: this.hoveredElement,
+            hoveredHitboxId: this.hoveredHitboxId, // Still pass hover state for visual outlines
             heldItem: this.dragAndDropManager.dragState.active ? {
                 item: this.dragAndDropManager.dragState.payload,
                 source: this.dragAndDropManager.dragState.sourceId,
                 originSlot: this.dragAndDropManager.dragState.originSlot
             } : null,
-            dropTarget: this.dragAndDropManager.dragState.active ? this.hoveredElement : null,
+            dropTarget: this.dragAndDropManager.dragState.active ? this.hoveredHitboxId : null,
             layout: this.layout,
             contextMenu: this.contextMenuManager.menu,
             onLayoutUpdate: (hitboxes) => this.updateHitboxes(hitboxes)

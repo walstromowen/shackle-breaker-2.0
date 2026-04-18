@@ -62,6 +62,7 @@ export class UIInteractionManager {
                 if (activeScreen.onDrop) {
                     activeScreen.onDrop(this.activeHitboxDown.id, targetHitbox ? targetHitbox.id : null);
                 }
+                handledClick = true; // <--- ADD THIS: Consume the click so it doesn't bleed into the raw map/gameplay
             } 
             else if (click) {
                 const hit = this._findHitbox(click.x, click.y, hitboxes);
