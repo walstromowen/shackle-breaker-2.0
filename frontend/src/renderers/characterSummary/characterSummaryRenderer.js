@@ -221,100 +221,105 @@ export class CharacterSummaryRenderer {
     _drawContextMenu(menu, selectedIndex = 0) {
         if (!menu || !menu.options) return;
 
-        const optionH = 77;  // Scaled 32 * 2.4
-        const menuW = 288;   // Scaled 120 * 2.4
-        const menuH = menu.options.length * optionH;
+        const btnHeight = 77;  // Scaled 32 * 2.4
+        
+        // FIX: Added padding so the top/bottom buttons clear the 10px inner border
+        const padding = 14;    // Scaled ~6 * 2.4
+        
+        // FIX: Made the menu slightly wider for more breathing room
+        const menuW = 312;     // Scaled 130 * 2.4 (Up from 288)
+        
+        const menuH = (menu.options.length * btnHeight) + (padding * 2);
+        
         const screenW = this.ctx.canvas.width;
         const screenH = this.ctx.canvas.height;
 
         let x = menu.x;
         let y = menu.y;
 
-        // Clamp to screen (Scaled padding of 5 to 12)
+        // Clamp to screen boundaries (Scaled padding of 12)
         if (x + menuW > screenW) x = screenW - menuW - 12;
         if (y + menuH > screenH) y = screenH - menuH - 12; 
         if (x < 12) x = 12;
         if (y < 12) y = 12;
 
-        // Draw Elegant Gothic Menu Background
-        this.ui.drawPanel(x, y, menuW, menuH, UITheme.colors.panelBg); 
+        const layout = { x, y, w: menuW, h: menuH };
+        
+        // Prepare the config properties required by CanvasUI
+        const menuConfig = {
+            ...menu,
+            selectedIndex: selectedIndex,
+            btnHeight: btnHeight,
+            padding: padding
+        };
 
-        menu.options.forEach((opt, index) => {
-            const optY = y + (index * optionH);
-            const isSelected = (index === selectedIndex);
-            
-            // Draw Selection Highlight (Inset slightly to clear the gothic border)
-            if (isSelected) {
-                this.ui.drawRect(x + 12, optY, menuW - 24, optionH, "rgba(184, 153, 71, 0.15)");
-                this.ui.drawText(">", x + 29, optY + (optionH/2) + 10, UITheme.fonts.small, UITheme.colors.textHighlight);
+        // --- Z-Order Handling ---
+        const menuHitboxes = [];
+        this.ui.drawContextMenu(menuConfig, layout, menuHitboxes);
+
+        // Translate CanvasUI's standardized 'MENU_OPT_' ids back to the 'CTX_OPT_' 
+        // ids that this specific screen's input controller is expecting.
+        menuHitboxes.forEach(box => {
+            if (box.id && box.id.startsWith('MENU_OPT_')) {
+                box.id = box.id.replace('MENU_OPT_', 'CTX_OPT_');
             }
-
-            // Draw Option Label
-            this.ui.drawText(
-                opt.label, 
-                x + 67, 
-                optY + (optionH/2) + 12, 
-                UITheme.fonts.body, 
-                isSelected ? UITheme.colors.textHighlight : UITheme.colors.textMain
-            );
-
-            // Draw Delicate Separator
-            if (index < menu.options.length - 1) {
-                this.ui.drawLine(x + 24, optY + optionH, x + menuW - 24, optY + optionH, UITheme.colors.border);
-            }
-
-            // Register Hitbox
-            this.hitboxes.push({
-                id: `CTX_OPT_${index}`,
-                type: 'context_opt',
-                x: x, y: optY, w: menuW, h: optionH
-            });
         });
+
+        this.hitboxes.push(...menuHitboxes.reverse());
     }
 
     _drawInputPrompts(state, leftW, centerW, h) {
-        let prompts = "";
+        let lines = [];
 
         if (state.contextMenu) {
-            prompts = "[W/S] Nav  [SPC] Select  [ESC] Close";
+            lines.push("[L-Click/SPC] Select   [R-Click/ESC] Close");
         } 
         else if (state.heldItem) {
-            prompts = "[MOUSE] Place  [ESC] Cancel";
+            lines.push("[L-Click] Place   [R-Click/ESC] Cancel");
         } 
         else if (state.isChoosingItem) {
-            prompts = "[WASD] Grid  [SHFT] View  [SPC] Menu  [ESC] Back";
+            lines.push("[L-Click/SPC] Menu   [Hover/V] View   [R-Click/ESC] Back");
         } 
         else {
             const slotName = (state.slots && state.slots[state.selectedSlotIndex]) || null;
             const hasSlotItem = slotName && state.member.equipment[slotName];
-            
             const hasInvItems = state.filteredInventory && state.filteredInventory.length > 0;
 
-            let parts = ["[WASD] Slot", "[Q/E] Char", "[SHFT] View"];
+            // Split the main navigation into two rows to prevent text overflow
+            let row1 = ["[L-Click/WASD] Select", "[Q/E] Char"];
+            let row2 = ["[Hover/V] View"];
 
             if (hasSlotItem) {
-                parts.push("[SPC] Menu");
+                row1.push("[L-Click/SPC] Menu");
             } else if (hasInvItems) {
-                parts.push("[SPC] Equip");
+                row1.push("[L-Click/SPC] Equip");
             }
 
-            parts.push("[ESC] Back");
-            prompts = parts.join("  ");
+            row2.push("[R-Click/ESC] Back");
+
+            lines.push(row1.join("   "));
+            lines.push(row2.join("   "));
         }
 
         const centerX = leftW + Math.floor(centerW / 2);
 
-        // Add a thematic flourish line above the controls
-        this.ui.drawLineWithGothicFlourish(centerX - 360, h - 84, 720, UITheme.colors.border); // Scaled
+        // Dynamically size the flourish line so it respects the center column's boundaries
+        const flourishW = Math.min(720, centerW - 64); 
+        this.ui.drawLineWithGothicFlourish(centerX - (flourishW / 2), h - 84, flourishW, UITheme.colors.border); 
 
-        this.ui.drawText(
-            prompts, 
-            centerX,        
-            h - 36,        // Scaled
-            UITheme.fonts.small, 
-            UITheme.colors.textMuted, 
-            "center"      
-        );
+        // If we have two lines, start drawing a bit higher so they don't collide with the bottom edge
+        const startY = h - (lines.length > 1 ? 52 : 36); 
+
+        lines.forEach((lineText, index) => {
+            this.ui.drawText(
+                lineText, 
+                centerX,        
+                startY + (index * 24), // 24px vertical gap between lines
+                UITheme.fonts.small, 
+                UITheme.colors.textMuted, 
+                "center"      
+            );
+        });
     }
 
     getHitZone(x, y) {

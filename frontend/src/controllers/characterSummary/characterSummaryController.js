@@ -14,7 +14,7 @@ const KEY_BINDINGS = {
     'Enter': 'CONFIRM', 'Space': 'CONFIRM',
     'Escape': 'CANCEL', 'Backspace': 'CANCEL',
     'KeyQ': 'PREV_CHAR', 'KeyE': 'NEXT_CHAR',
-    'ShiftLeft': 'TOGGLE_VIEW', 'ShiftRight': 'TOGGLE_VIEW',
+    'KeyV': 'TOGGLE_VIEW', // Swapped from Shift to V to prevent Sticky Keys
     'KeyX': 'DELETE', 'Delete': 'DELETE'
 };
 
@@ -127,6 +127,29 @@ export class CharacterSummaryController extends BaseController {
 
     onHover(hitboxId) {
         super.onHover(hitboxId);
+        
+        // UX UPGRADE: Instantly show item details on hover, creating a fluid, responsive feel.
+        // We pause this logic if dragging or in a menu to prevent distracting view jumps.
+        if (this.dragAndDropManager.dragState.active || this.contextMenuManager.menu) return;
+
+        if (hitboxId) {
+            if (hitboxId.startsWith('SLOT_')) {
+                const slotName = hitboxId.replace('SLOT_', '');
+                const newIndex = this.activeSlots.indexOf(slotName);
+                if (newIndex !== -1 && (this.slotIndex !== newIndex || this.state !== 'SLOTS')) {
+                    this.slotIndex = newIndex;
+                    this.state = 'SLOTS';
+                    this.inventoryIndex = -1;
+                }
+            } else if (hitboxId.startsWith('INV_ITEM_')) {
+                const idx = parseInt(hitboxId.split('_')[2], 10);
+                if (!isNaN(idx) && (this.inventoryIndex !== idx || this.state !== 'INVENTORY')) {
+                    this.inventoryIndex = idx;
+                    this.state = 'INVENTORY';
+                    this.slotIndex = -1;
+                }
+            }
+        }
     }
 
     onClick(hitboxId) {
@@ -641,8 +664,14 @@ export class CharacterSummaryController extends BaseController {
     }
 
     getFocusedItem() {
-        if (this.contextMenuManager.menu) return this.contextMenuManager.menu.item;
-        if (this.dragAndDropManager.dragState.active) return this.dragAndDropManager.dragState.payload;
+        // FIX: The ContextMenu payload stores the contextual data! 
+        if (this.contextMenuManager.menu && this.contextMenuManager.menu.payload) {
+            return this.contextMenuManager.menu.payload.item;
+        }
+
+        if (this.dragAndDropManager.dragState.active) {
+            return this.dragAndDropManager.dragState.payload;
+        }
         
         if (this.state === 'INVENTORY') {
             return this.filteredInventory[this.inventoryIndex] || null;
