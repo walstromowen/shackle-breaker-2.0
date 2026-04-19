@@ -429,11 +429,17 @@ export class CharacterSummaryController extends BaseController {
     // ========================================================
 
     handleMouseMove(x, y, isMouseDown) {
+        // 1. Let BaseController do its job (calculating hoveredHitboxId, etc.)
+        super.handleMouseMove(x, y, isMouseDown); 
+
+        // 2. Update local state
         this.mouse.x = x;
         this.mouse.y = y;
 
+        // 3. Halt interaction if context menu is open
         if (this.contextMenuManager.menu) return;
 
+        // 4. Update the drag manager with the raw canvas coordinates!
         this.dragAndDropManager.updateDrag(x, y);
 
         const isClickStart = isMouseDown && !this.wasMouseDown;
