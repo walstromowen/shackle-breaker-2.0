@@ -2,7 +2,7 @@ import { gameState } from '../../../../shared/state/gameState.js';
 import { StatCalculator } from '../../../../shared/systems/statCalculator.js';
 import { ItemDefinitions } from '../../../../shared/data/itemDefinitions.js';
 
-const SLOT_ORDER = ['head', 'torso', 'arms', 'mainHand', 'offHand', 'legs', 'feet', 'accessory'];
+const SLOT_ORDER = ['head', 'torso', 'arms', 'mainHand', 'legs', 'feet', 'accessory', 'offHand'];
 
 export class CharacterSummaryLogic {
     constructor(config) {

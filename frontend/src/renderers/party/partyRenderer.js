@@ -72,7 +72,10 @@ export class PartyRenderer {
         });
 
         if (menu) {
-            this.drawContextMenu(selectedIndex, menu, width, hitboxes, hoveredElement);
+            const layout = this.getMenuLayout(selectedIndex, width);
+            menu.padding = this.menuConfig.padding;
+            menu.btnHeight = this.menuConfig.btnHeight;
+            this.ui.drawContextMenu(menu, layout, hitboxes, hoveredElement?.id);
         }
 
         let guide = "";
@@ -107,45 +110,6 @@ export class PartyRenderer {
             w: this.layout.cardW / 2,        
             h: this.layout.cardH             
         };
-    }
-    
-    drawContextMenu(cardIndex, menu, canvasWidth, hitboxes, hoveredElement) {
-        const options = menu.options;
-        const highlightIndex = menu.selectedIndex;
-        const layout = this.getMenuLayout(cardIndex, canvasWidth); 
-
-        this.ui.drawPanel(layout.x, layout.y, layout.w, layout.h, UITheme.colors.bgScale[1]);
-        
-        hitboxes.unshift({
-            id: 'MENU_BG',
-            x: layout.x,
-            y: layout.y,
-            w: layout.w,
-            h: layout.h,
-            cursor: 'default'
-        });
-
-        options.forEach((opt, i) => {
-            const btnY = layout.y + this.menuConfig.padding + (i * this.menuConfig.btnHeight);
-            
-            hitboxes.unshift({
-                id: `MENU_OPT_${i}`,
-                x: layout.x,
-                y: btnY,
-                w: layout.w,
-                h: this.menuConfig.btnHeight,
-                cursor: 'pointer'
-            });
-
-            const isHovered = (i === highlightIndex) || (hoveredElement?.id === `MENU_OPT_${i}`);
-            
-            if (isHovered) {
-                this.ui.drawRect(layout.x + 12, btnY, layout.w - 24, this.menuConfig.btnHeight, "rgba(255, 255, 255, 0.05)", true);
-            }
-            
-            const color = UITheme.colors.textMain;
-            this.ui.drawText(opt.label, layout.x + (layout.w/2), btnY + (this.menuConfig.btnHeight/2), UITheme.fonts.cardSmall, color, "center", "middle");
-        });
     }
     
     getCardPosition(index, canvasWidth) {
@@ -297,7 +261,6 @@ export class PartyRenderer {
 
     _renderDraggedItem(dragState) {
         if (!dragState || !dragState.active || !dragState.payload) return;
-console.log("Rendering Drag at:", dragState.x, dragState.y);
         const { x, y, payload } = dragState;
         const ctx = this.ctx;
         

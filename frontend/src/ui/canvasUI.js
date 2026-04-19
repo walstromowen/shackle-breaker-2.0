@@ -335,4 +335,65 @@ export class CanvasUI {
 
         this.ctx.restore();
     }
+
+    // --- STANDARDIZED CONTEXT MENU (Party Screen Style) ---
+
+    drawContextMenu(menu, layout, hitboxes = [], hoveredId = null) {
+        if (!menu || !menu.options) return;
+
+        const options = menu.options;
+        const highlightIndex = menu.selectedIndex;
+        
+        // Use provided config or fallback to standard defaults
+        const padding = menu.padding || 0; 
+        const btnHeight = menu.btnHeight || 64; 
+
+        // Draw Background
+        this.drawPanel(layout.x, layout.y, layout.w, layout.h, UITheme.colors.bgScale[1]);
+        
+        // Push background hitbox to the FRONT of the array (Party screen style)
+        hitboxes.unshift({
+            id: 'MENU_BG',
+            type: 'context_bg',
+            x: layout.x,
+            y: layout.y,
+            w: layout.w,
+            h: layout.h,
+            cursor: 'default'
+        });
+
+        options.forEach((opt, i) => {
+            const btnY = layout.y + padding + (i * btnHeight);
+            const optId = `MENU_OPT_${i}`; 
+            
+            hitboxes.unshift({
+                id: optId,
+                type: 'context_opt',
+                x: layout.x,
+                y: btnY,
+                w: layout.w,
+                h: btnHeight,
+                cursor: 'pointer'
+            });
+
+            const isHovered = (i === highlightIndex) || (hoveredId === optId);
+            
+            // Draw Subtle Hover/Selection Highlight
+            if (isHovered) {
+                this.drawRect(layout.x + 12, btnY, layout.w - 24, btnHeight, "rgba(255, 255, 255, 0.05)", true);
+            }
+            
+            // Draw Centered Text
+            const color = UITheme.colors.textMain; 
+            this.drawText(
+                opt.label, 
+                layout.x + (layout.w / 2), 
+                btnY + (btnHeight / 2), 
+                UITheme.fonts.cardSmall, 
+                color, 
+                "center", 
+                "middle"
+            );
+        });
+    }
 }

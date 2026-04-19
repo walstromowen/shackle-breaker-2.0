@@ -130,15 +130,20 @@ export class CharacterSummaryController extends BaseController {
     }
 
     onClick(hitboxId) {
-        if (!hitboxId) return;
+        // Clicking outside any hitboxes clears the menu
+        if (!hitboxId) {
+            if (this.contextMenuManager.menu) this.contextMenuManager.close();
+            return;
+        }
         
-        // 1. Context Menu Intercepts
+        // 1. Context Menu Intercepts (Left Click selects option)
         if (this.contextMenuManager.menu) {
             if (hitboxId.startsWith('CTX_OPT_')) {
                 const optIndex = parseInt(hitboxId.split('_')[2], 10);
                 this.contextMenuManager.executeAction(optIndex); 
                 return;
             }
+            // If they clicked something else while the menu is open, close it
             this.contextMenuManager.close(); 
         }
 
@@ -148,55 +153,52 @@ export class CharacterSummaryController extends BaseController {
             return;
         }
 
-        // 3. Slots & Inventory
-        if (hitboxId.startsWith('SLOT_')) {
-            const slotId = hitboxId.replace('SLOT_', '');
-            this.handleSlotClick(slotId);
-            return;
-        }
-
-        if (hitboxId.startsWith('INV_ITEM_')) {
-            const idx = parseInt(hitboxId.split('_')[2], 10);
-            this.handleInventoryClick(idx);
-            return;
-        }
-    }
-
-    onRightClick(hitboxId) {
-        if (!hitboxId) return;
-        
+        // 3. Left Click on Slots & Inventory opens Context Menu
         let item = null;
         let source = '';
         let sourceKey = null;
 
-        // 1. Identify what was clicked
         if (hitboxId.startsWith('SLOT_')) {
             sourceKey = hitboxId.replace('SLOT_', '');
+            this.handleSlotClick(sourceKey); // Apply selection state
             item = this.currentMember.equipment[sourceKey];
             source = 'equipment';
         } else if (hitboxId.startsWith('INV_ITEM_')) {
             sourceKey = parseInt(hitboxId.split('_')[2], 10);
+            this.handleInventoryClick(sourceKey); // Apply selection state
             item = this.filteredInventory[sourceKey];
             source = 'inventory';
         }
 
-        if (!item) return;
+        if (item) {
+            // Build options based on game state
+            const options = this._buildMenuOptions(item, source, sourceKey);
+            if (options.length > 0) {
+                // Calculate Position (Center of hitbox)
+                let menuX = this.mouse.x;
+                let menuY = this.mouse.y;
+                
+                if (this.lastRenderedHitboxes) {
+                    const hit = this.lastRenderedHitboxes.find(h => h.id === hitboxId);
+                    if (hit) {
+                        menuX = Math.floor(hit.x + (hit.w / 2));
+                        menuY = Math.floor(hit.y + (hit.h / 2));
+                    }
+                }
 
-        // 2. Build options based on game state
-        const options = this._buildMenuOptions(item, source, sourceKey);
-        if (options.length === 0) return;
-
-        // 3. Calculate Position (Center of hitbox)
-        let menuX = this.mouse.x;
-        let menuY = this.mouse.y;
-        const hit = this.lastRenderedHitboxes.find(h => h.id === hitboxId);
-        if (hit) {
-            menuX = Math.floor(hit.x + (hit.w / 2));
-            menuY = Math.floor(hit.y + (hit.h / 2));
+                // Open the decoupled manager
+                this.contextMenuManager.open(menuX, menuY, options, { item, source, sourceKey });
+            }
         }
+    }
 
-        // 4. Open the decoupled manager
-        this.contextMenuManager.open(menuX, menuY, options, { item, source, sourceKey });
+    onRightClick(hitboxId) {
+        // Right click closes the context menu, or goes back if no menu is open
+        if (this.contextMenuManager.menu) {
+            this.contextMenuManager.close();
+        } else {
+            this._handleBack();
+        }
     }
 
     onDragStart(hitboxId) {
@@ -384,7 +386,8 @@ export class CharacterSummaryController extends BaseController {
             const item = this.currentMember.equipment[slotName];
 
             if (item) {
-                this.onRightClick(`SLOT_${slotName}`);
+                // Synthesize left click rather than old onRightClick to open menu
+                this.onClick(`SLOT_${slotName}`);
             } else if (this.filteredInventory.length > 0) {
                 this._activateSlotButDontFilter(slotName);
             }
@@ -414,7 +417,8 @@ export class CharacterSummaryController extends BaseController {
         else if (intent === 'CONFIRM') {
             const item = this.filteredInventory[this.inventoryIndex];
             if (item) {
-                this.onRightClick(`INV_ITEM_${this.inventoryIndex}`);
+                // Synthesize left click rather than old onRightClick to open menu
+                this.onClick(`INV_ITEM_${this.inventoryIndex}`);
             }
             return; 
         }
@@ -429,17 +433,11 @@ export class CharacterSummaryController extends BaseController {
     // ========================================================
 
     handleMouseMove(x, y, isMouseDown) {
-        // 1. Let BaseController do its job (calculating hoveredHitboxId, etc.)
-        super.handleMouseMove(x, y, isMouseDown); 
-
-        // 2. Update local state
         this.mouse.x = x;
         this.mouse.y = y;
 
-        // 3. Halt interaction if context menu is open
         if (this.contextMenuManager.menu) return;
 
-        // 4. Update the drag manager with the raw canvas coordinates!
         this.dragAndDropManager.updateDrag(x, y);
 
         const isClickStart = isMouseDown && !this.wasMouseDown;
@@ -646,8 +644,6 @@ export class CharacterSummaryController extends BaseController {
         if (this.contextMenuManager.menu) return this.contextMenuManager.menu.item;
         if (this.dragAndDropManager.dragState.active) return this.dragAndDropManager.dragState.payload;
         
-        // --- Hover focus logic removed here! Details only change on select/drag. ---
-
         if (this.state === 'INVENTORY') {
             return this.filteredInventory[this.inventoryIndex] || null;
         } 
@@ -668,16 +664,13 @@ export class CharacterSummaryController extends BaseController {
         let viewSelectedSlot = (this.state === 'INVENTORY') ? -1 : this.slotIndex;
         let viewInventoryIndex = this.inventoryIndex;
 
-        // --- Hide selection brackets on the origin element while dragging ---
         if (this.dragAndDropManager.dragState.active) {
             const dragSource = this.dragAndDropManager.dragState.sourceId;
             const origin = this.dragAndDropManager.dragState.originSlot;
 
-            // If we are dragging from the currently selected equipment slot, hide its brackets
             if (dragSource === 'equipment' && this.activeSlots[viewSelectedSlot] === origin) {
                 viewSelectedSlot = -1; 
             } 
-            // Do the same for inventory items to keep the visual behavior consistent
             else if (dragSource === 'inventory' && viewInventoryIndex === origin) {
                 viewInventoryIndex = -1; 
             }
@@ -689,16 +682,16 @@ export class CharacterSummaryController extends BaseController {
             derivedStats: this.logic.getDerivedStats(),
             abilities: this.logic.compileAbilities(), 
             slots: this.activeSlots,
-            selectedSlotIndex: viewSelectedSlot, // <-- Feed the hidden state to the View
+            selectedSlotIndex: viewSelectedSlot, 
             isChoosingItem: (this.state === 'INVENTORY'),
             filteredInventory: this.filteredInventory,
-            inventoryIndex: viewInventoryIndex,  // <-- Feed the hidden state to the View
+            inventoryIndex: viewInventoryIndex, 
             viewMode: this.viewMode,
             focusedItem: this.getFocusedItem(),
             scrollOffset: this.detailsScrollOffset, 
             inventoryScrollOffset: this.inventoryScrollOffset,
             mouse: this.mouse,
-            hoveredHitboxId: this.hoveredHitboxId, // Still pass hover state for visual outlines
+            hoveredHitboxId: this.hoveredHitboxId, 
             heldItem: this.dragAndDropManager.dragState.active ? {
                 item: this.dragAndDropManager.dragState.payload,
                 source: this.dragAndDropManager.dragState.sourceId,

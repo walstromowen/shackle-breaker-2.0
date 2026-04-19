@@ -2,7 +2,7 @@ import { BaseController } from '../core/baseController.js';
 import { gameState } from '../../../../shared/state/gameState.js';
 import { events } from '../../core/eventBus.js'; 
 import { ContextMenuManager } from '../../ui/ContextMenuManager.js';
-import { DragAndDropManager } from '../../ui/dragAndDropManager.js';
+import { DragAndDropManager } from '../../ui/dragAndDropManager.js'; 
 
 export class PartyController extends BaseController {
     constructor(input) {
@@ -21,12 +21,12 @@ export class PartyController extends BaseController {
 
         // --- MANAGERS ---
         this.contextMenu = new ContextMenuManager();
-        this.dragManager = new DragAndDropManager();
+        this.dragManager = new DragAndDropManager(); 
 
-        // --- SWAP & HITBOX DATA ---
+        // --- SWAP DATA ---
         this.swappingIdx = null; 
-        this.hoveredHitboxId = null;
-        this.hitboxes = [];
+        this.hoveredHitboxId = null; // FIX: Initialize hovered state
+        this.ignoreNextClick = false; // FIX: Prevent click-through on drop
     }
 
     init(data = {}) {
@@ -37,16 +37,9 @@ export class PartyController extends BaseController {
         this.selectedIndex = 0;
         this.swappingIdx = null;
         this.hoveredHitboxId = null;
+        this.ignoreNextClick = false;
         this.contextMenu.close();
         this.dragManager.cancelDrag();
-    }
-
-    getHitboxes() {
-        return this.hitboxes;
-    }
-
-    updateHitboxes(hitboxes) {
-        this.hitboxes = hitboxes;
     }
 
     // ========================================================
@@ -54,6 +47,9 @@ export class PartyController extends BaseController {
     // ========================================================
 
     onClick(hitboxId) {
+        // FIX: Prevent context menu opening immediately after a drag & drop finishes
+        if (this.ignoreNextClick) return; 
+
         const party = gameState.party.members;
 
         if (this.contextMenu.menu) {
@@ -100,6 +96,11 @@ export class PartyController extends BaseController {
     }
 
     onRightClick(hitboxId) {
+        if (this.dragManager.dragState.active) {
+            this.dragManager.cancelDrag(); 
+            return;
+        }
+
         if (this.contextMenu.menu) {
             this.contextMenu.close();
         } else if (this.state === 'SWAPPING') {
@@ -111,7 +112,7 @@ export class PartyController extends BaseController {
     }
 
     // ========================================================
-    // MOUSE & DRAG EVENTS
+    // DRAG AND DROP MOUSE EVENTS
     // ========================================================
     
     onMouseDown(hitboxId, x, y) {
@@ -123,70 +124,39 @@ export class PartyController extends BaseController {
             
             if (member) {
                 this.selectedIndex = clickedIndex;
+
+                this.dragManager.startDrag(member, 'PARTY', clickedIndex, x, y, (payload, sourceId, originSlot, targetHitboxId) => {
+                    // Drop Callback Logic
+                    if (targetHitboxId && targetHitboxId.startsWith('CARD_')) {
+                        const targetIndex = parseInt(targetHitboxId.replace('CARD_', ''), 10);
+                        if (originSlot !== targetIndex && targetIndex < gameState.party.members.length) {
+                            this.swapMembers(originSlot, targetIndex);
+                            this.selectedIndex = targetIndex; 
+                        }
+                    }
+                });
             }
         }
     }
 
+    // FIX: Added hitboxId parameter to prevent x getting the string value
     onMouseMove(hitboxId, x, y) {
-        this.hoveredHitboxId = hitboxId;
+        this.hoveredHitboxId = hitboxId; // FIX: Actually set hover state for renderer
         
-        // Update drag visuals if active
         if (this.dragManager.dragState.active) {
             this.dragManager.updateDrag(x, y);
         }
     }
 
-    onDragMove(x, y) {
-        if (this.dragManager && this.dragManager.dragState.active) {
-            this.dragManager.updateDrag(x, y);
-        }
-    }
-
-    onDragStart(sourceHitboxId) {
-        if (this.contextMenu.menu || this.mode === 'BATTLE_SELECT') return; // Don't drag if menu open or in battle select
-
-        if (!sourceHitboxId || !sourceHitboxId.startsWith('CARD_')) return;
-
-        const index = parseInt(sourceHitboxId.replace('CARD_', ''), 10);
-        const member = gameState.party.members[index];
-
-        if (!member) return;
-
-        const mousePos = this.input.getMousePosition();
-        
-        // Visually link state
-        this.state = 'SWAPPING';
-        this.swappingIdx = index;
-        this.selectedIndex = index;
-        
-        this.dragManager.startDrag(
-            member, 
-            'party', 
-            sourceHitboxId, 
-            mousePos.x, 
-            mousePos.y, 
-            this._handleDropComplete.bind(this)
-        );
-    }
-
-    onDrop(sourceHitboxId, targetHitboxId) {
-        this.dragManager.endDrag(targetHitboxId);
-    }
-
-    _handleDropComplete(payload, sourceId, originSlot, targetHitboxId) {
-        if (targetHitboxId && targetHitboxId.startsWith('CARD_') && originSlot !== targetHitboxId) {
-            const fromIdx = parseInt(originSlot.replace('CARD_', ''), 10);
-            const toIdx = parseInt(targetHitboxId.replace('CARD_', ''), 10);
-            this.swapMembers(fromIdx, toIdx);
-        }
-        
-        // Reset states
-        this.swappingIdx = null;
-        this.state = 'NAVIGATING';
-    }
-
+    // FIX: Match standard signature and apply debounce 
     onMouseUp(hitboxId, x, y) {
-        // Reserved for standard interaction handling
+        if (this.dragManager.dragState.active) {
+            this.dragManager.endDrag(hitboxId);
+            
+            // FIX: Set a brief timeout so `onClick` ignores the mouseup event from dropping
+            this.ignoreNextClick = true;
+            setTimeout(() => this.ignoreNextClick = false, 50);
+        }
     }
 
     handleKeyDown(keyCode, e) {
@@ -204,7 +174,7 @@ export class PartyController extends BaseController {
     }
 
     // ==========================================
-    //          STATE 1: NAVIGATING
+    //           STATE 1: NAVIGATING
     // ==========================================
     handleNavigatingKeys(intent, e) {
         const memberCount = gameState.party.members.length;
@@ -391,10 +361,11 @@ export class PartyController extends BaseController {
             selectedIndex: this.selectedIndex,
             swappingIdx: this.swappingIdx,
             menu: this.contextMenu.menu, 
-            mode: this.mode,                    
+            mode: this.mode,                     
             activeIndices: this.activeIndices,
+            dragState: this.dragManager.dragState, 
+            
             hoveredElement: this.hoveredHitboxId ? { id: this.hoveredHitboxId } : null,
-            dragState: this.dragManager.dragState, // Important: pass down drag state
             onLayoutUpdate: (hitboxes) => {
                 this.updateHitboxes(hitboxes);
             }

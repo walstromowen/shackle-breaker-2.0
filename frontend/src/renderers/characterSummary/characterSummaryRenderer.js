@@ -110,7 +110,8 @@ export class CharacterSummaryRenderer {
 
         // --- 5. Report Hitboxes ---
         if (state.onLayoutUpdate) {
-            state.onLayoutUpdate(this.hitboxes);
+            // Pass a reversed copy so top-layer UI (like context menus) are checked first
+            state.onLayoutUpdate([...this.hitboxes].reverse());
         }
     }
 
