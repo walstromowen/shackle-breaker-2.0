@@ -7,7 +7,6 @@ export class PartyRenderer {
         this.loader = loader; 
         this.ui = new CanvasUI(ctx);
         
-        // --- Scaled 2.4x for 1920x1080 ---
         this.layout = {
             cardW: 600, 
             cardH: 336,     
@@ -17,14 +16,12 @@ export class PartyRenderer {
         };
 
         this.menuConfig = {
-            // width is now handled dynamically in getMenuLayout, so we just need height/padding
-            btnHeight: 64,  // Reduced from 84
+            btnHeight: 64,  
             padding: 24     
         };
 
-        // --- CONFIG FOR STATUS ICONS ---
         this.statusIconSheetPath = '/assets/ui/status_icons.png'; 
-        this.statusIconSize = 38; // Scaled up from 16
+        this.statusIconSize = 38; 
     }
 
     render(state) {
@@ -32,30 +29,29 @@ export class PartyRenderer {
             members, 
             selectedIndex, 
             swappingIdx, 
-            menu, // Replaces menuOpen, menuOptions, menuIndex
+            menu, 
             mode = 'DEFAULT', 
             activeIndices = [],
             hoveredElement = null,   
+            dragState = null,
             onLayoutUpdate = null    
         } = state; 
 
         const width = this.ctx.canvas.width;
         const height = this.ctx.canvas.height;
-        const hitboxes = []; // Initialize hitboxes array for this frame
+        const hitboxes = []; 
 
         this.ui.clearScreen(width, height);
         
         const headerText = mode === 'BATTLE_SELECT' ? "Select Reserve to Swap In" : "Party Members";
         this.ui.drawText(headerText, width / 2, 120, UITheme.fonts.header, UITheme.colors.textMain, "center");
         
-        // --- Scaled Gothic Flourish ---
         this.ui.drawLineWithGothicFlourish((width / 2) - 288, 156, 576, UITheme.colors.borderHighlight);
 
         members.forEach((member, index) => {
             if (index >= 6) return; 
             const pos = this.getCardPosition(index, width);
             
-            // 1. Register Card Hitbox 
             hitboxes.push({
                 id: `CARD_${index}`,
                 x: pos.x,
@@ -65,10 +61,8 @@ export class PartyRenderer {
                 cursor: 'pointer'
             });
 
-            // Visually highlight if selected via keyboard OR hovered via mouse
             const isHovered = hoveredElement?.id === `CARD_${index}`;
             const isCursor = (index === selectedIndex) || isHovered; 
-            
             const isBeingMoved = (index === swappingIdx);
             const isActive = activeIndices.includes(index);
             const isDead = member.hp <= 0;
@@ -78,7 +72,6 @@ export class PartyRenderer {
         });
 
         if (menu) {
-            // Pass hitboxes array and hover state down to the menu builder
             this.drawContextMenu(selectedIndex, menu, width, hitboxes, hoveredElement);
         }
 
@@ -86,42 +79,43 @@ export class PartyRenderer {
         if (mode === 'BATTLE_SELECT') {
              guide = "[ARROWS] Navigate   [ENT/CLICK] Select   [ESC/R-CLICK] Cancel";
         } else {
-            guide = "[ARROWS] Navigate   [ENT/CLICK] Menu   [ESC/R-CLICK] Back";
+            guide = "[ARROWS] Navigate   [ENT/CLICK] Swap & Menu   [ESC/R-CLICK] Back";
             if (menu) {
                 guide = "[UP/DOWN] Choose   [ENT/CLICK] Select   [ESC/R-CLICK] Cancel";
-            } else if (swappingIdx !== null) {
+            } else if (swappingIdx !== null || (dragState && dragState.active)) {
                 guide = "[ARROWS] Move to Slot   [ENT/CLICK] Place   [ESC/R-CLICK] Cancel";
             }
         }
         
         this.ui.drawText(guide, width / 2, height - 72, UITheme.fonts.mono, UITheme.colors.textMuted, "center");
 
-        // 2. Send hitboxes back to the UI Interaction Manager via the controller
+        // Fire hitboxes back up to controller before dragging renders
         if (onLayoutUpdate) {
             onLayoutUpdate(hitboxes);
         }
+
+        // Draw the dragged card overlay on top of EVERYTHING
+        this._renderDraggedItem(dragState);
     }
     
-    // Update layout to snap to the left side, half width, full height
     getMenuLayout(cardIndex, canvasWidth) {
         const cardPos = this.getCardPosition(cardIndex, canvasWidth);
         
         return { 
-            x: cardPos.x,                     // Snapped to the left edge of the card
-            y: cardPos.y,                     // Snapped to the top edge of the card
-            w: this.layout.cardW / 2,         // Exactly half the card's width
-            h: this.layout.cardH              // Exactly the card's full height
+            x: cardPos.x,                    
+            y: cardPos.y,                    
+            w: this.layout.cardW / 2,        
+            h: this.layout.cardH             
         };
     }
     
     drawContextMenu(cardIndex, menu, canvasWidth, hitboxes, hoveredElement) {
         const options = menu.options;
         const highlightIndex = menu.selectedIndex;
-        const layout = this.getMenuLayout(cardIndex, canvasWidth); // Removed itemCount dependency
+        const layout = this.getMenuLayout(cardIndex, canvasWidth); 
 
         this.ui.drawPanel(layout.x, layout.y, layout.w, layout.h, UITheme.colors.bgScale[1]);
         
-        // Background blocker
         hitboxes.unshift({
             id: 'MENU_BG',
             x: layout.x,
@@ -134,7 +128,6 @@ export class PartyRenderer {
         options.forEach((opt, i) => {
             const btnY = layout.y + this.menuConfig.padding + (i * this.menuConfig.btnHeight);
             
-            // Unshift to prioritize menu hitboxes over the card
             hitboxes.unshift({
                 id: `MENU_OPT_${i}`,
                 x: layout.x,
@@ -144,17 +137,14 @@ export class PartyRenderer {
                 cursor: 'pointer'
             });
 
-            // Hover styling
             const isHovered = (i === highlightIndex) || (hoveredElement?.id === `MENU_OPT_${i}`);
             
             if (isHovered) {
                 this.ui.drawRect(layout.x + 12, btnY, layout.w - 24, this.menuConfig.btnHeight, "rgba(255, 255, 255, 0.05)", true);
             }
             
-            // Standardize the color for all options
             const color = UITheme.colors.textMain;
-            
-           this.ui.drawText(opt.label, layout.x + (layout.w/2), btnY + (this.menuConfig.btnHeight/2), UITheme.fonts.cardSmall, color, "center", "middle");
+            this.ui.drawText(opt.label, layout.x + (layout.w/2), btnY + (this.menuConfig.btnHeight/2), UITheme.fonts.cardSmall, color, "center", "middle");
         });
     }
     
@@ -174,7 +164,6 @@ export class PartyRenderer {
 
         ctx.save();
         
-        // 1. Background Frame
         let bgColor = UITheme.colors.panelBg;
         
         if (isBeingMoved) {
@@ -192,7 +181,7 @@ export class PartyRenderer {
         if (isCursor && !isBeingMoved) {
             const time = performance.now() * 0.004;
             const pulse = (Math.sin(time) + 1) / 2;
-            const brktDist = 7 + (pulse * 10); // Scaled
+            const brktDist = 7 + (pulse * 10); 
             const bracketColor = isUnavailable ? UITheme.colors.failure : UITheme.colors.borderHighlight;
             this.ui.drawSelectionBrackets(x, y, cardW, cardH, brktDist, bracketColor);
         }
@@ -208,7 +197,6 @@ export class PartyRenderer {
             this.ui.drawText("★ LVL UP", x + cardW - 19, y + cardH - 24, UITheme.fonts.cardTitle, `rgba(${goldRgb}, ${alpha})`, "right");
         }
 
-        // 2. Portrait (Scaled up from 128x128 to ~307x307)
         const pSize = 307; 
         const pX = x + 10; 
         const pY = y + 14;  
@@ -217,7 +205,6 @@ export class PartyRenderer {
         this.ui.drawRect(pX, pY, pSize, pSize, "rgba(0,0,0,0.5)", true);
         
         if (masterSheet) {
-            // Read 128x128 from sheet, draw at 307x307
             ctx.drawImage(masterSheet, 0, 0, 128, 128, pX, pY, pSize, pSize);
         }
 
@@ -225,7 +212,6 @@ export class PartyRenderer {
 
         this.drawStatusEffects(member, pX, pY, pSize);
 
-        // 3. Info Column
         const infoX = pX + pSize + 19; 
         const numberWidth = 91;       
         const labelWidth = 48;        
@@ -273,7 +259,7 @@ export class PartyRenderer {
 
         const sheetKey = 'statusEffects'; 
         const srcSize = 32;  
-        const drawSize = 38; // Scaled up
+        const drawSize = 38; 
         const spacing = 5; 
 
         const sheet = this.loader.get ? this.loader.get(sheetKey) : this.loader.getAsset(sheetKey);
@@ -298,7 +284,7 @@ export class PartyRenderer {
             if (effect.stacks && effect.stacks > 1) {
                 this.ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
                 this.ctx.beginPath();
-                this.ctx.arc(drawX + drawSize, drawY + drawSize, 14, 0, Math.PI * 2); // Scaled circle
+                this.ctx.arc(drawX + drawSize, drawY + drawSize, 14, 0, Math.PI * 2); 
                 this.ctx.fill();
                 
                 this.ui.drawText(effect.stacks.toString(), drawX + drawSize, drawY + drawSize + 2, UITheme.fonts.cardMono, "white", "center", "middle");
@@ -307,5 +293,34 @@ export class PartyRenderer {
             drawX += (drawSize + spacing);
             if (drawX + drawSize > pX + pSize) return;
         });
+    }
+
+    _renderDraggedItem(dragState) {
+        if (!dragState || !dragState.active || !dragState.payload) return;
+console.log("Rendering Drag at:", dragState.x, dragState.y);
+        const { x, y, payload } = dragState;
+        const ctx = this.ctx;
+        
+        // We render a mini floating portrait version to follow the mouse
+        const pSize = 120; 
+        
+        ctx.save();
+        ctx.globalAlpha = 0.85; // Slight transparency
+        
+        const masterSheet = this.loader.get(payload.spritePortrait);
+        
+        // Center drawing on the mouse coords
+        const drawX = x - (pSize / 2);
+        const drawY = y - (pSize / 2);
+
+        this.ui.drawRect(drawX, drawY, pSize, pSize, "rgba(0,0,0,0.6)", true);
+        
+        if (masterSheet) {
+            ctx.drawImage(masterSheet, 0, 0, 128, 128, drawX, drawY, pSize, pSize);
+        }
+        
+        this.ui.drawRect(drawX, drawY, pSize, pSize, UITheme.colors.borderHighlight, false);
+        
+        ctx.restore();
     }
 }

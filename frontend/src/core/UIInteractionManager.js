@@ -58,7 +58,13 @@ export class UIInteractionManager {
                     }
                 }
             }
-        } 
+            // ---> ADD THIS BLOCK <---
+            else if (this.isDragging && mousePos) {
+                if (activeScreen.onDragMove) {
+                    activeScreen.onDragMove(mousePos.x, mousePos.y);
+                }
+            }
+        }
         else {
             if (this.isDragging) {
                 const targetHitbox = this._findHitbox(mousePos.x, mousePos.y, hitboxes);

@@ -37,6 +37,7 @@ export class BaseController {
     
     onClick(hitboxId) {}
     onRightClick(hitboxId) {}
+    onDragMove(x, y) {} // <-- Add this
     onDragStart(hitboxId) {}
     onDrop(dragId, targetId) {}
 

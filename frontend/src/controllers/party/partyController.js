@@ -1,35 +1,34 @@
 import { BaseController } from '../core/baseController.js'; 
 import { gameState } from '../../../../shared/state/gameState.js';
 import { events } from '../../core/eventBus.js'; 
-import { ContextMenuManager } from '../../ui/ContextMenuManager.js'; // Adjust path if needed
+import { ContextMenuManager } from '../../ui/ContextMenuManager.js';
+import { DragAndDropManager } from '../../ui/dragAndDropManager.js';
 
 export class PartyController extends BaseController {
     constructor(input) {
-        super(input); // Standardize input via BaseController
+        super(input); 
 
         this.selectedIndex = 0;
         this.gridColumns = 3; 
         
         // --- CONTEXT ---
-        this.mode = 'DEFAULT'; // 'DEFAULT' or 'BATTLE_SELECT'
-        this.activeIndices = []; // Tracks who is currently active in battle
-        this.callback = null;    // Stores the callback from the SceneManager
+        this.mode = 'DEFAULT'; 
+        this.activeIndices = []; 
+        this.callback = null;    
 
         // --- STATE MACHINE ---
-        // Options: 'NAVIGATING', 'SWAPPING' 
-        // (Menu state is now derived from this.contextMenu.menu)
         this.state = 'NAVIGATING'; 
 
         // --- MANAGERS ---
         this.contextMenu = new ContextMenuManager();
+        this.dragManager = new DragAndDropManager();
 
-        // --- SWAP DATA ---
+        // --- SWAP & HITBOX DATA ---
         this.swappingIdx = null; 
+        this.hoveredHitboxId = null;
+        this.hitboxes = [];
     }
 
-    /**
-     * Called by sceneManager when transitioning TO this scene.
-     */
     init(data = {}) {
         this.mode = data.mode || 'DEFAULT';
         this.activeIndices = data.activeIndices || [];
@@ -37,52 +36,51 @@ export class PartyController extends BaseController {
         this.state = 'NAVIGATING';
         this.selectedIndex = 0;
         this.swappingIdx = null;
+        this.hoveredHitboxId = null;
         this.contextMenu.close();
+        this.dragManager.cancelDrag();
+    }
+
+    getHitboxes() {
+        return this.hitboxes;
+    }
+
+    updateHitboxes(hitboxes) {
+        this.hitboxes = hitboxes;
     }
 
     // ========================================================
-    // STANDARDIZED INPUT HANDLING (Overrides BaseController)
+    // STANDARDIZED INPUT HANDLING
     // ========================================================
 
     onClick(hitboxId) {
         const party = gameState.party.members;
 
-        // 1. Handling Clicks while MENU is open
         if (this.contextMenu.menu) {
-            // Clicked empty space or an irrelevant element
             if (!hitboxId) {
                 this.contextMenu.close();
                 return;
             }
-
-            // ADD THIS: Absorb clicks on the menu's empty padding
             if (hitboxId === 'MENU_BG') {
                 return; 
             }
-
-            // Clicked a menu option
             if (hitboxId.startsWith('MENU_OPT_')) {
                 const menuActionIndex = parseInt(hitboxId.replace('MENU_OPT_', ''), 10);
                 this.contextMenu.executeAction(menuActionIndex);
                 return;
             }
-
-            // Clicked a card while menu was open
             if (hitboxId.startsWith('CARD_')) {
                 const cardIndex = parseInt(hitboxId.replace('CARD_', ''), 10);
-                
                 if (cardIndex < party.length && cardIndex !== this.selectedIndex) {
                     this.selectedIndex = cardIndex;
                 }
                 this.contextMenu.close();
             } else {
-                // Catch-all for non-card/non-menu clicks
                 this.contextMenu.close();
             }
             return; 
         }
 
-        // 2. Handling Clicks while NAVIGATING or SWAPPING
         if (!hitboxId || !hitboxId.startsWith('CARD_')) return;
 
         const clickedIndex = parseInt(hitboxId.replace('CARD_', ''), 10);
@@ -92,7 +90,7 @@ export class PartyController extends BaseController {
             if (this.selectedIndex !== clickedIndex) {
                 this.selectedIndex = clickedIndex;
             } else {
-                this.confirmSelection(); // Context-aware click (opening menu or selecting for battle)
+                this.confirmSelection(); 
             }
         } 
         else if (this.state === 'SWAPPING') {
@@ -102,24 +100,96 @@ export class PartyController extends BaseController {
     }
 
     onRightClick(hitboxId) {
-        // We completely ignore the 'hitboxId' here.
-        // A right-click anywhere on the canvas triggers the "Back/Cancel" hierarchy.
-
         if (this.contextMenu.menu) {
-            // 1st Priority: Close the context menu if it's open
             this.contextMenu.close();
         } else if (this.state === 'SWAPPING') {
-            // 2nd Priority: Cancel a character move/swap
             this.swappingIdx = null;
             this.state = 'NAVIGATING';
         } else {
-            // 3rd Priority: Exit the party screen entirely
             this.cancelAndReturn();
         }
     }
 
+    // ========================================================
+    // MOUSE & DRAG EVENTS
+    // ========================================================
+    
+    onMouseDown(hitboxId, x, y) {
+        if (this.contextMenu.menu) return; 
+        
+        if (hitboxId && hitboxId.startsWith('CARD_')) {
+            const clickedIndex = parseInt(hitboxId.replace('CARD_', ''), 10);
+            const member = gameState.party.members[clickedIndex];
+            
+            if (member) {
+                this.selectedIndex = clickedIndex;
+            }
+        }
+    }
+
+    onMouseMove(hitboxId, x, y) {
+        this.hoveredHitboxId = hitboxId;
+        
+        // Update drag visuals if active
+        if (this.dragManager.dragState.active) {
+            this.dragManager.updateDrag(x, y);
+        }
+    }
+
+    onDragMove(x, y) {
+        if (this.dragManager && this.dragManager.dragState.active) {
+            this.dragManager.updateDrag(x, y);
+        }
+    }
+
+    onDragStart(sourceHitboxId) {
+        if (this.contextMenu.menu || this.mode === 'BATTLE_SELECT') return; // Don't drag if menu open or in battle select
+
+        if (!sourceHitboxId || !sourceHitboxId.startsWith('CARD_')) return;
+
+        const index = parseInt(sourceHitboxId.replace('CARD_', ''), 10);
+        const member = gameState.party.members[index];
+
+        if (!member) return;
+
+        const mousePos = this.input.getMousePosition();
+        
+        // Visually link state
+        this.state = 'SWAPPING';
+        this.swappingIdx = index;
+        this.selectedIndex = index;
+        
+        this.dragManager.startDrag(
+            member, 
+            'party', 
+            sourceHitboxId, 
+            mousePos.x, 
+            mousePos.y, 
+            this._handleDropComplete.bind(this)
+        );
+    }
+
+    onDrop(sourceHitboxId, targetHitboxId) {
+        this.dragManager.endDrag(targetHitboxId);
+    }
+
+    _handleDropComplete(payload, sourceId, originSlot, targetHitboxId) {
+        if (targetHitboxId && targetHitboxId.startsWith('CARD_') && originSlot !== targetHitboxId) {
+            const fromIdx = parseInt(originSlot.replace('CARD_', ''), 10);
+            const toIdx = parseInt(targetHitboxId.replace('CARD_', ''), 10);
+            this.swapMembers(fromIdx, toIdx);
+        }
+        
+        // Reset states
+        this.swappingIdx = null;
+        this.state = 'NAVIGATING';
+    }
+
+    onMouseUp(hitboxId, x, y) {
+        // Reserved for standard interaction handling
+    }
+
     handleKeyDown(keyCode, e) {
-        // Map the intent from BaseController if available
         const intent = typeof this._mapKeyCodeToIntent === 'function' ? this._mapKeyCodeToIntent(keyCode) : null;
 
         if (this.contextMenu.menu) {
@@ -134,13 +204,12 @@ export class PartyController extends BaseController {
     }
 
     // ==========================================
-    //           STATE 1: NAVIGATING
+    //          STATE 1: NAVIGATING
     // ==========================================
     handleNavigatingKeys(intent, e) {
         const memberCount = gameState.party.members.length;
         const col = this.selectedIndex % this.gridColumns;
 
-        // Grid Navigation
         if (intent === 'RIGHT' || e.code === 'ArrowRight' || e.code === 'KeyD') {
             if (col < this.gridColumns - 1 && this.selectedIndex + 1 < memberCount) this.selectedIndex++;
         } 
@@ -158,13 +227,9 @@ export class PartyController extends BaseController {
         else if (intent === 'UP' || e.code === 'ArrowUp' || e.code === 'KeyW') {
             if (this.selectedIndex - this.gridColumns >= 0) this.selectedIndex -= this.gridColumns;
         }
-        
-        // Action Confirm
         else if (intent === 'CONFIRM' || e.code === 'Enter' || e.code === 'Space') {
             this.confirmSelection();
         }
-
-        // Return / Cancel
         else if (intent === 'CANCEL' || e.code === 'KeyP' || e.code === 'Escape' || e.code === 'Tab') {
             this.cancelAndReturn();
         }
@@ -178,7 +243,6 @@ export class PartyController extends BaseController {
 
             if (isDead || isActive) {
                 console.log("[Party] Cannot select this member.");
-                // Optionally emit a sound event here: events.emit('PLAY_SOUND', 'error');
                 return; 
             }
 
@@ -212,13 +276,11 @@ export class PartyController extends BaseController {
         const member = gameState.party.members[this.selectedIndex];
         if (!member) return;
         
-        // Define the base options first
         const options = [
             {
                 label: 'Summary',
                 actionId: 'SUMMARY',
                 callback: () => {
-                    console.log(`[Party] Opening Summary for ${member.name}`);
                     events.emit('CHANGE_SCENE', { 
                         scene: 'character_summary', 
                         data: { memberIndex: this.selectedIndex, character: member } 
@@ -242,13 +304,11 @@ export class PartyController extends BaseController {
             }
         ];
         
-        // Add the Level Up option at the very end if they have points
         if (member.skillPoints && member.skillPoints > 0) {
             options.push({
                 label: 'Spend Skill Points',
                 actionId: 'SKILLS',
                 callback: () => {
-                    console.log(`[Party] Opening Skills for ${member.name}`);
                     events.emit('CHANGE_SCENE', { 
                         scene: 'level_up', 
                         data: { memberIndex: this.selectedIndex, character: member } 
@@ -268,7 +328,6 @@ export class PartyController extends BaseController {
             return;
         }
         
-        console.log(`[Party] Exiled ${party[index].name}`);
         party.splice(index, 1);
 
         if (this.selectedIndex >= party.length) {
@@ -331,12 +390,11 @@ export class PartyController extends BaseController {
             members: gameState.party.members,
             selectedIndex: this.selectedIndex,
             swappingIdx: this.swappingIdx,
-            menu: this.contextMenu.menu, // Pass the active ContextMenu object
-            mode: this.mode,                     
+            menu: this.contextMenu.menu, 
+            mode: this.mode,                    
             activeIndices: this.activeIndices,
-            
-            // UI Interaction Manager requirements
             hoveredElement: this.hoveredHitboxId ? { id: this.hoveredHitboxId } : null,
+            dragState: this.dragManager.dragState, // Important: pass down drag state
             onLayoutUpdate: (hitboxes) => {
                 this.updateHitboxes(hitboxes);
             }
