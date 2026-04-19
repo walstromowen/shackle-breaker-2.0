@@ -1,22 +1,27 @@
+import { BaseController } from '../core/baseController.js'; 
 import { gameState } from '../../../../shared/state/gameState.js';
 import { events } from '../../core/eventBus.js'; 
+import { ContextMenuManager } from '../../ui/ContextMenuManager.js'; // Adjust path if needed
 
-export class PartyController {
-    constructor() {
+export class PartyController extends BaseController {
+    constructor(input) {
+        super(input); // Standardize input via BaseController
+
         this.selectedIndex = 0;
         this.gridColumns = 3; 
         
         // --- CONTEXT ---
         this.mode = 'DEFAULT'; // 'DEFAULT' or 'BATTLE_SELECT'
         this.activeIndices = []; // Tracks who is currently active in battle
-        this.callback = null;    // <-- ADDED: Stores the callback from the SceneManager
+        this.callback = null;    // Stores the callback from the SceneManager
 
         // --- STATE MACHINE ---
-        this.state = 'NAVIGATING'; // Options: 'NAVIGATING', 'MENU', 'SWAPPING'
+        // Options: 'NAVIGATING', 'SWAPPING' 
+        // (Menu state is now derived from this.contextMenu.menu)
+        this.state = 'NAVIGATING'; 
 
-        // --- MENU DATA ---
-        this.menuOptions = []; // <-- CHANGED: Start empty, build dynamically
-        this.menuIndex = 0;
+        // --- MANAGERS ---
+        this.contextMenu = new ContextMenuManager();
 
         // --- SWAP DATA ---
         this.swappingIdx = null; 
@@ -28,71 +33,66 @@ export class PartyController {
     init(data = {}) {
         this.mode = data.mode || 'DEFAULT';
         this.activeIndices = data.activeIndices || [];
-        this.callback = data.callback || null; // <-- ADDED: Save the callback
+        this.callback = data.callback || null; 
         this.state = 'NAVIGATING';
         this.selectedIndex = 0;
         this.swappingIdx = null;
-        this.menuIndex = 0;
+        this.contextMenu.close();
     }
 
-    /**
-     * Handle global key events (Arrows, Enter, Esc)
-     */
-    handleKeyDown(code) {
-        if (this.state === 'NAVIGATING') {
-            this.handleNavigatingKeys(code);
-        } 
-        else if (this.state === 'MENU') {
-            this.handleMenuKeys(code);
-        }
-        else if (this.state === 'SWAPPING') {
-            this.handleSwappingKeys(code);
-        }
-    }
+    // ========================================================
+    // STANDARDIZED INPUT HANDLING (Overrides BaseController)
+    // ========================================================
 
-    /**
-     * Handle mouse clicks from the Input system.
-     * @param {number} x - Mouse X relative to canvas
-     * @param {number} y - Mouse Y relative to canvas
-     * @param {Object} renderer - The renderer to calculate hit boxes
-     */
-    handleMouseDown(x, y, renderer) {
+    onClick(hitboxId) {
         const party = gameState.party.members;
-        
-        if (this.state === 'MENU') {
-            // --- THE FIX: Pass the dynamic length to the renderer ---
-            const menuActionIndex = renderer.getMenuHit(x, y, this.selectedIndex, this.menuOptions.length);
-            
-            if (menuActionIndex !== -1) {
-                this.selectMenuOption(menuActionIndex);
+
+        // 1. Handling Clicks while MENU is open
+        if (this.contextMenu.menu) {
+            // Clicked empty space or an irrelevant element
+            if (!hitboxId) {
+                this.contextMenu.close();
                 return;
             }
-            
-            const cardIndex = renderer.getHitIndex(x, y);
 
-            if (cardIndex !== -1 && cardIndex < party.length) {
-                if (cardIndex !== this.selectedIndex) {
+            // ADD THIS: Absorb clicks on the menu's empty padding
+            if (hitboxId === 'MENU_BG') {
+                return; 
+            }
+
+            // Clicked a menu option
+            if (hitboxId.startsWith('MENU_OPT_')) {
+                const menuActionIndex = parseInt(hitboxId.replace('MENU_OPT_', ''), 10);
+                this.contextMenu.executeAction(menuActionIndex);
+                return;
+            }
+
+            // Clicked a card while menu was open
+            if (hitboxId.startsWith('CARD_')) {
+                const cardIndex = parseInt(hitboxId.replace('CARD_', ''), 10);
+                
+                if (cardIndex < party.length && cardIndex !== this.selectedIndex) {
                     this.selectedIndex = cardIndex;
-                    this.state = 'NAVIGATING';
-                } else {
-                    this.state = 'NAVIGATING';
                 }
+                this.contextMenu.close();
             } else {
-                this.state = 'NAVIGATING';
+                // Catch-all for non-card/non-menu clicks
+                this.contextMenu.close();
             }
             return; 
         }
 
-        // --- 2. CARD INTERACTION (NAVIGATING / SWAPPING) ---
-        const clickedIndex = renderer.getHitIndex(x, y);
+        // 2. Handling Clicks while NAVIGATING or SWAPPING
+        if (!hitboxId || !hitboxId.startsWith('CARD_')) return;
 
-        if (clickedIndex === -1 || clickedIndex >= party.length) return; 
+        const clickedIndex = parseInt(hitboxId.replace('CARD_', ''), 10);
+        if (clickedIndex >= party.length) return; 
 
         if (this.state === 'NAVIGATING') {
             if (this.selectedIndex !== clickedIndex) {
                 this.selectedIndex = clickedIndex;
             } else {
-                this.confirmSelection(); // Context-aware click
+                this.confirmSelection(); // Context-aware click (opening menu or selecting for battle)
             }
         } 
         else if (this.state === 'SWAPPING') {
@@ -101,21 +101,53 @@ export class PartyController {
         }
     }
 
+    onRightClick(hitboxId) {
+        // We completely ignore the 'hitboxId' here.
+        // A right-click anywhere on the canvas triggers the "Back/Cancel" hierarchy.
+
+        if (this.contextMenu.menu) {
+            // 1st Priority: Close the context menu if it's open
+            this.contextMenu.close();
+        } else if (this.state === 'SWAPPING') {
+            // 2nd Priority: Cancel a character move/swap
+            this.swappingIdx = null;
+            this.state = 'NAVIGATING';
+        } else {
+            // 3rd Priority: Exit the party screen entirely
+            this.cancelAndReturn();
+        }
+    }
+
+    handleKeyDown(keyCode, e) {
+        // Map the intent from BaseController if available
+        const intent = typeof this._mapKeyCodeToIntent === 'function' ? this._mapKeyCodeToIntent(keyCode) : null;
+
+        if (this.contextMenu.menu) {
+            this.contextMenu.handleNavigation(intent);
+        } 
+        else if (this.state === 'NAVIGATING') {
+            this.handleNavigatingKeys(intent, e);
+        } 
+        else if (this.state === 'SWAPPING') {
+            this.handleSwappingKeys(intent, e);
+        }
+    }
+
     // ==========================================
     //           STATE 1: NAVIGATING
     // ==========================================
-    handleNavigatingKeys(code) {
+    handleNavigatingKeys(intent, e) {
         const memberCount = gameState.party.members.length;
         const col = this.selectedIndex % this.gridColumns;
 
         // Grid Navigation
-        if (code === 'ArrowRight' || code === 'KeyD') {
+        if (intent === 'RIGHT' || e.code === 'ArrowRight' || e.code === 'KeyD') {
             if (col < this.gridColumns - 1 && this.selectedIndex + 1 < memberCount) this.selectedIndex++;
         } 
-        else if (code === 'ArrowLeft' || code === 'KeyA') {
+        else if (intent === 'LEFT' || e.code === 'ArrowLeft' || e.code === 'KeyA') {
             if (col > 0) this.selectedIndex--;
         }
-        else if (code === 'ArrowDown' || code === 'KeyS') {
+        else if (intent === 'DOWN' || e.code === 'ArrowDown' || e.code === 'KeyS') {
             const target = this.selectedIndex + this.gridColumns;
             if (target < memberCount) {
                 this.selectedIndex = target;
@@ -123,26 +155,22 @@ export class PartyController {
                 this.selectedIndex = memberCount - 1;
             }
         }
-        else if (code === 'ArrowUp' || code === 'KeyW') {
+        else if (intent === 'UP' || e.code === 'ArrowUp' || e.code === 'KeyW') {
             if (this.selectedIndex - this.gridColumns >= 0) this.selectedIndex -= this.gridColumns;
         }
         
         // Action Confirm
-        else if (code === 'Enter' || code === 'Space') {
+        else if (intent === 'CONFIRM' || e.code === 'Enter' || e.code === 'Space') {
             this.confirmSelection();
         }
 
         // Return / Cancel
-        else if (code === 'KeyP' || code === 'Escape' || code === 'Tab') {
+        else if (intent === 'CANCEL' || e.code === 'KeyP' || e.code === 'Escape' || e.code === 'Tab') {
             this.cancelAndReturn();
         }
     }
 
-    /**
-     * Context-aware selection logic.
-     */
     confirmSelection() {
-        // --- ADDED: Support for ENCOUNTER_SELECT ---
         if (this.mode === 'BATTLE_SELECT' || this.mode === 'ENCOUNTER_SELECT') {
             const member = gameState.party.members[this.selectedIndex];
             const isDead = member.hp <= 0;
@@ -158,7 +186,6 @@ export class PartyController {
                 this.callback(this.selectedIndex);
             }
 
-            // Determine where to return based on the mode
             const targetScene = this.mode === 'BATTLE_SELECT' ? 'battle' : 'encounter';
             events.emit('CHANGE_SCENE', { scene: targetScene });
         } else {
@@ -166,19 +193,11 @@ export class PartyController {
         }
     }
 
-    /**
-     * Context-aware cancellation logic.
-     */
     cancelAndReturn() {
-        // --- ADDED: Support for ENCOUNTER_SELECT ---
         if (this.mode === 'BATTLE_SELECT' || this.mode === 'ENCOUNTER_SELECT') {
-            
-            // Send null to let the origin Controller know we backed out
             if (this.callback) {
                 this.callback(null);
             }
-
-            // Return to the appropriate scene
             const targetScene = this.mode === 'BATTLE_SELECT' ? 'battle' : 'encounter';
             events.emit('CHANGE_SCENE', { scene: targetScene });
         } else {
@@ -190,76 +209,55 @@ export class PartyController {
     //            STATE 2: MENU
     // ==========================================
     openMenu() {
-        this.state = 'MENU';
-        this.menuIndex = 0; 
-        
         const member = gameState.party.members[this.selectedIndex];
+        if (!member) return;
         
-        // --- THE FIX: Build menu dynamically ---
-        this.menuOptions = ['Summary', 'Move'];
+        // Define the base options first
+        const options = [
+            {
+                label: 'Summary',
+                actionId: 'SUMMARY',
+                callback: () => {
+                    console.log(`[Party] Opening Summary for ${member.name}`);
+                    events.emit('CHANGE_SCENE', { 
+                        scene: 'character_summary', 
+                        data: { memberIndex: this.selectedIndex, character: member } 
+                    });
+                }
+            },
+            {
+                label: 'Move',
+                actionId: 'MOVE',
+                callback: () => {
+                    this.state = 'SWAPPING';
+                    this.swappingIdx = this.selectedIndex; 
+                }
+            },
+            {
+                label: 'Exile',
+                actionId: 'EXILE',
+                callback: () => {
+                    this.exileMember(this.selectedIndex);
+                }
+            }
+        ];
         
-        // Assuming your character data has a 'skillPoints' property
+        // Add the Level Up option at the very end if they have points
         if (member.skillPoints && member.skillPoints > 0) {
-            this.menuOptions.push('Spend Skill Points');
-        }
-        
-        this.menuOptions.push('Exile');
-    }
-
-    handleMenuKeys(code) {
-        if (code === 'ArrowUp' || code === 'KeyW') {
-            this.menuIndex = Math.max(0, this.menuIndex - 1);
-        } 
-        else if (code === 'ArrowDown' || code === 'KeyS') {
-            this.menuIndex = Math.min(this.menuOptions.length - 1, this.menuIndex + 1);
-        }
-        else if (code === 'Enter' || code === 'Space') {
-            this.selectMenuOption(this.menuIndex);
-        }
-        else if (code === 'Escape' || code === 'Backspace' || code === 'ArrowLeft') {
-            this.state = 'NAVIGATING';
-        }
-    }
-
-    selectMenuOption(index) {
-        const option = this.menuOptions[index];
-        const member = gameState.party.members[this.selectedIndex];
-
-        if (!member) { 
-            this.state = 'NAVIGATING';
-            return; 
-        }
-
-        if (option === 'Summary') {
-            console.log(`[Party] Opening Summary for ${member.name}`);
-            events.emit('CHANGE_SCENE', { 
-                scene: 'character_summary', 
-                data: { 
-                    memberIndex: this.selectedIndex,
-                    character: member 
-                } 
+            options.push({
+                label: 'Spend Skill Points',
+                actionId: 'SKILLS',
+                callback: () => {
+                    console.log(`[Party] Opening Skills for ${member.name}`);
+                    events.emit('CHANGE_SCENE', { 
+                        scene: 'level_up', 
+                        data: { memberIndex: this.selectedIndex, character: member } 
+                    });
+                }
             });
-            this.state = 'NAVIGATING'; 
         }
-        else if (option === 'Spend Skill Points') {
-            console.log(`[Party] Opening Skills for ${member.name}`);
-            events.emit('CHANGE_SCENE', { 
-                scene: 'level_up', // Update this to match your actual scene name
-                data: { 
-                    memberIndex: this.selectedIndex,
-                    character: member 
-                } 
-            });
-            this.state = 'NAVIGATING'; 
-        }
-        else if (option === 'Move') {
-            this.state = 'SWAPPING';
-            this.swappingIdx = this.selectedIndex; 
-        } 
-        else if (option === 'Exile') {
-            this.exileMember(this.selectedIndex);
-            this.state = 'NAVIGATING';
-        }
+
+        this.contextMenu.open(0, 0, options, member);
     }
 
     exileMember(index) {
@@ -281,17 +279,17 @@ export class PartyController {
     // ==========================================
     //            STATE 3: SWAPPING
     // ==========================================
-    handleSwappingKeys(code) {
+    handleSwappingKeys(intent, e) {
         const memberCount = gameState.party.members.length;
         const col = this.selectedIndex % this.gridColumns;
 
-        if (code === 'ArrowRight' || code === 'KeyD') {
+        if (intent === 'RIGHT' || e.code === 'ArrowRight' || e.code === 'KeyD') {
              if (col < this.gridColumns - 1 && this.selectedIndex + 1 < memberCount) this.selectedIndex++;
         }
-        else if (code === 'ArrowLeft' || code === 'KeyA') {
+        else if (intent === 'LEFT' || e.code === 'ArrowLeft' || e.code === 'KeyA') {
              if (col > 0) this.selectedIndex--;
         }
-        else if (code === 'ArrowDown' || code === 'KeyS') {
+        else if (intent === 'DOWN' || e.code === 'ArrowDown' || e.code === 'KeyS') {
              const target = this.selectedIndex + this.gridColumns;
              if (target < memberCount) {
                  this.selectedIndex = target;
@@ -299,13 +297,13 @@ export class PartyController {
                  this.selectedIndex = memberCount - 1;
              }
         }
-        else if (code === 'ArrowUp' || code === 'KeyW') {
+        else if (intent === 'UP' || e.code === 'ArrowUp' || e.code === 'KeyW') {
              if (this.selectedIndex - this.gridColumns >= 0) this.selectedIndex -= this.gridColumns;
         }
-        else if (code === 'Enter' || code === 'Space') {
+        else if (intent === 'CONFIRM' || e.code === 'Enter' || e.code === 'Space') {
             this.completeSwap();
         }
-        else if (code === 'Escape' || code === 'Backspace') {
+        else if (intent === 'CANCEL' || e.code === 'Escape' || e.code === 'Backspace') {
             this.swappingIdx = null; 
             this.state = 'NAVIGATING';
         }
@@ -324,19 +322,24 @@ export class PartyController {
         [p[from], p[to]] = [p[to], p[from]];
     }
 
-    /**
-     * Used by the Renderer to draw the UI
-     */
+    // ========================================================
+    // STATE ACCESS FOR RENDERER
+    // ========================================================
+    
     getState() {
         return { 
             members: gameState.party.members,
             selectedIndex: this.selectedIndex,
             swappingIdx: this.swappingIdx,
-            menuOpen: (this.state === 'MENU'),
-            menuOptions: this.menuOptions,
-            menuIndex: this.menuIndex,
-            mode: this.mode,                     // Exporting Mode
-            activeIndices: this.activeIndices    // Exporting Active indices
+            menu: this.contextMenu.menu, // Pass the active ContextMenu object
+            mode: this.mode,                     
+            activeIndices: this.activeIndices,
+            
+            // UI Interaction Manager requirements
+            hoveredElement: this.hoveredHitboxId ? { id: this.hoveredHitboxId } : null,
+            onLayoutUpdate: (hitboxes) => {
+                this.updateHitboxes(hitboxes);
+            }
         };
     }
 }

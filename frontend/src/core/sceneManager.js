@@ -45,7 +45,7 @@ export class SceneManager {
         this.overworldController = new OverworldController(this.input, this.config, this.worldManager);
         this.encounterController = new EncounterController(this.input, this.config, this.worldManager);
         this.characterCreatorController = new CharacterCreatorController(); 
-        this.partyController = new PartyController();
+        this.partyController = new PartyController(this.input);
         this.characterSummaryController = null; 
         this.levelUpController = new LevelUpController(this.input); 
         this.battleController = new BattleController(this.input, this.config, this.worldManager);

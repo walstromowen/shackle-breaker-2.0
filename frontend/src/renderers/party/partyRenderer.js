@@ -17,9 +17,9 @@ export class PartyRenderer {
         };
 
         this.menuConfig = {
-            width: 288,
-            btnHeight: 84,
-            padding: 24
+            // width is now handled dynamically in getMenuLayout, so we just need height/padding
+            btnHeight: 64,  // Reduced from 84
+            padding: 24     
         };
 
         // --- CONFIG FOR STATUS ICONS ---
@@ -28,9 +28,20 @@ export class PartyRenderer {
     }
 
     render(state) {
-        const { members, selectedIndex, swappingIdx, menuOpen, menuOptions, menuIndex, mode = 'DEFAULT', activeIndices = [] } = state; 
+        const { 
+            members, 
+            selectedIndex, 
+            swappingIdx, 
+            menu, // Replaces menuOpen, menuOptions, menuIndex
+            mode = 'DEFAULT', 
+            activeIndices = [],
+            hoveredElement = null,   
+            onLayoutUpdate = null    
+        } = state; 
+
         const width = this.ctx.canvas.width;
         const height = this.ctx.canvas.height;
+        const hitboxes = []; // Initialize hitboxes array for this frame
 
         this.ui.clearScreen(width, height);
         
@@ -44,9 +55,21 @@ export class PartyRenderer {
             if (index >= 6) return; 
             const pos = this.getCardPosition(index, width);
             
-            const isCursor = (index === selectedIndex);
-            const isBeingMoved = (index === swappingIdx);
+            // 1. Register Card Hitbox 
+            hitboxes.push({
+                id: `CARD_${index}`,
+                x: pos.x,
+                y: pos.y,
+                w: this.layout.cardW,
+                h: this.layout.cardH,
+                cursor: 'pointer'
+            });
+
+            // Visually highlight if selected via keyboard OR hovered via mouse
+            const isHovered = hoveredElement?.id === `CARD_${index}`;
+            const isCursor = (index === selectedIndex) || isHovered; 
             
+            const isBeingMoved = (index === swappingIdx);
             const isActive = activeIndices.includes(index);
             const isDead = member.hp <= 0;
             const isUnavailable = mode === 'BATTLE_SELECT' && (isActive || isDead);
@@ -54,68 +77,85 @@ export class PartyRenderer {
             this.drawCard(member, pos.x, pos.y, isCursor, isBeingMoved, isUnavailable, isActive, mode);
         });
 
-        if (menuOpen) {
-            this.drawContextMenu(selectedIndex, menuOptions, menuIndex, width);
+        if (menu) {
+            // Pass hitboxes array and hover state down to the menu builder
+            this.drawContextMenu(selectedIndex, menu, width, hitboxes, hoveredElement);
         }
 
         let guide = "";
         if (mode === 'BATTLE_SELECT') {
-             guide = "[ARROWS] Navigate   [ENT/CLICK] Select   [ESC] Cancel";
+             guide = "[ARROWS] Navigate   [ENT/CLICK] Select   [ESC/R-CLICK] Cancel";
         } else {
-            guide = "[ARROWS] Navigate   [ENT/CLICK] Menu   [ESC] Back";
-            if (menuOpen) {
-                guide = "[UP/DOWN] Choose   [ENT/CLICK] Select   [ESC] Cancel";
+            guide = "[ARROWS] Navigate   [ENT/CLICK] Menu   [ESC/R-CLICK] Back";
+            if (menu) {
+                guide = "[UP/DOWN] Choose   [ENT/CLICK] Select   [ESC/R-CLICK] Cancel";
             } else if (swappingIdx !== null) {
-                guide = "[ARROWS] Move to Slot   [ENT/CLICK] Place   [ESC] Cancel";
+                guide = "[ARROWS] Move to Slot   [ENT/CLICK] Place   [ESC/R-CLICK] Cancel";
             }
         }
         
         this.ui.drawText(guide, width / 2, height - 72, UITheme.fonts.mono, UITheme.colors.textMuted, "center");
-    }
 
-    isPointInRect(x, y, rect) { return (x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h); }
-    
-    getMenuLayout(cardIndex, canvasWidth, itemCount = 3) {
-        const cardPos = this.getCardPosition(cardIndex, canvasWidth);
-        const { width, btnHeight, padding } = this.menuConfig;
-        const totalH = (itemCount * btnHeight) + (padding * 2); 
-        return { x: cardPos.x + (this.layout.cardW / 2) - (width / 2), y: cardPos.y + (this.layout.cardH / 2) - (totalH / 2), w: width, h: totalH };
+        // 2. Send hitboxes back to the UI Interaction Manager via the controller
+        if (onLayoutUpdate) {
+            onLayoutUpdate(hitboxes);
+        }
     }
     
-    drawContextMenu(cardIndex, options, highlightIndex, canvasWidth) {
-        const layout = this.getMenuLayout(cardIndex, canvasWidth, options.length);
+    // Update layout to snap to the left side, half width, full height
+    getMenuLayout(cardIndex, canvasWidth) {
+        const cardPos = this.getCardPosition(cardIndex, canvasWidth);
+        
+        return { 
+            x: cardPos.x,                     // Snapped to the left edge of the card
+            y: cardPos.y,                     // Snapped to the top edge of the card
+            w: this.layout.cardW / 2,         // Exactly half the card's width
+            h: this.layout.cardH              // Exactly the card's full height
+        };
+    }
+    
+    drawContextMenu(cardIndex, menu, canvasWidth, hitboxes, hoveredElement) {
+        const options = menu.options;
+        const highlightIndex = menu.selectedIndex;
+        const layout = this.getMenuLayout(cardIndex, canvasWidth); // Removed itemCount dependency
+
         this.ui.drawPanel(layout.x, layout.y, layout.w, layout.h, UITheme.colors.bgScale[1]);
+        
+        // Background blocker
+        hitboxes.unshift({
+            id: 'MENU_BG',
+            x: layout.x,
+            y: layout.y,
+            w: layout.w,
+            h: layout.h,
+            cursor: 'default'
+        });
+
         options.forEach((opt, i) => {
-            const isHovered = (i === highlightIndex);
             const btnY = layout.y + this.menuConfig.padding + (i * this.menuConfig.btnHeight);
             
-            if (isHovered) this.ui.drawRect(layout.x + 12, btnY, layout.w - 24, this.menuConfig.btnHeight, "rgba(255, 255, 255, 0.05)", true);
+            // Unshift to prioritize menu hitboxes over the card
+            hitboxes.unshift({
+                id: `MENU_OPT_${i}`,
+                x: layout.x,
+                y: btnY,
+                w: layout.w,
+                h: this.menuConfig.btnHeight,
+                cursor: 'pointer'
+            });
+
+            // Hover styling
+            const isHovered = (i === highlightIndex) || (hoveredElement?.id === `MENU_OPT_${i}`);
             
-            let color = UITheme.colors.textMain;
-            if (opt === 'Level Up') color = UITheme.colors.textHighlight; 
+            if (isHovered) {
+                this.ui.drawRect(layout.x + 12, btnY, layout.w - 24, this.menuConfig.btnHeight, "rgba(255, 255, 255, 0.05)", true);
+            }
             
-            this.ui.drawText(opt, layout.x + (layout.w/2), btnY + (this.menuConfig.btnHeight/2), UITheme.fonts.body, color, "center", "middle");
+            // Standardize the color for all options
+            const color = UITheme.colors.textMain;
+            
+           this.ui.drawText(opt.label, layout.x + (layout.w/2), btnY + (this.menuConfig.btnHeight/2), UITheme.fonts.cardSmall, color, "center", "middle");
         });
-    }
-    
-    getMenuHit(mouseX, mouseY, cardIndex, itemCount = 3) {
-        const width = this.ctx.canvas.width;
-        const layout = this.getMenuLayout(cardIndex, width, itemCount);
-        if (!this.isPointInRect(mouseX, mouseY, layout)) return -1;
-        const relY = mouseY - (layout.y + this.menuConfig.padding);
-        const index = Math.floor(relY / this.menuConfig.btnHeight);
-        if (index >= 0 && index < itemCount) return index;
-        return -1;
-    }
-    
-    getHitIndex(mouseX, mouseY) {
-        const width = this.ctx.canvas.width;
-        for (let i = 0; i < 6; i++) {
-            const pos = this.getCardPosition(i, width);
-            const rect = { x: pos.x, y: pos.y, w: this.layout.cardW, h: this.layout.cardH };
-            if (this.isPointInRect(mouseX, mouseY, rect)) return i;
-        }
-        return -1;
     }
     
     getCardPosition(index, canvasWidth) {

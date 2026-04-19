@@ -31,10 +31,13 @@ export class UIInteractionManager {
         // 4. RIGHT CLICK TRANSLATION
         if (rightClick) {
             const hit = this._findHitbox(rightClick.x, rightClick.y, hitboxes);
-            if (hit) {
-                if (activeScreen.onRightClick) activeScreen.onRightClick(hit.id);
-                handledRightClick = true; // Consume the event
+            
+            // ALWAYS pass the event to the screen, whether there is a hitbox or not
+            if (activeScreen.onRightClick) {
+                activeScreen.onRightClick(hit ? hit.id : null);
             }
+            
+            handledRightClick = true; // Consume the event globally
         }
 
         // 5. DRAG VS CLICK MATH
@@ -66,10 +69,14 @@ export class UIInteractionManager {
             } 
             else if (click) {
                 const hit = this._findHitbox(click.x, click.y, hitboxes);
-                if (hit) {
-                    if (activeScreen.onClick) activeScreen.onClick(hit.id);
-                    handledClick = true; // Consume the event
+                
+                // ALWAYS pass the click to the screen
+                if (activeScreen.onClick) {
+                    activeScreen.onClick(hit ? hit.id : null);
                 }
+                
+                // Consume the event so the game map doesn't process it
+                handledClick = true; 
             }
 
             // Reset drag state
