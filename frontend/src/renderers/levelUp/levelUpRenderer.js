@@ -113,13 +113,17 @@ export class LevelUpRenderer {
             let pStr = stat.isPct ? `${pVal.toFixed(0)}%` : pVal.toString();
 
             this.ui.drawText(stat.label, itemX, itemY, UITheme.fonts.small, UITheme.colors.textMuted, "left");
-            this.ui.drawText(cStr, itemX + 130, itemY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
+            
+            // INCREASED OFFSET: Changed itemX + 130 to itemX + 145 to fit 'CRT DMG'
+            this.ui.drawText(cStr, itemX + 145, itemY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
 
             if (cVal !== pVal) {
                 let arrowColor = (pVal > cVal) ? UITheme.colors.success : UITheme.colors.failure;
                 this.ctx.font = UITheme.fonts.mono;
                 const cWidth = this.ctx.measureText(cStr).width;
-                const arrowX = itemX + 130 + cWidth + 12;
+                
+                // INCREASED OFFSET: Updated math here as well
+                const arrowX = itemX + 145 + cWidth + 12; 
                 this.ui.drawArrow(arrowX, itemY - 8, 6, 'right', arrowColor);
                 this.ui.drawText(pStr, arrowX + 15, itemY, UITheme.fonts.mono, arrowColor, "left");
             }
@@ -280,7 +284,7 @@ export class LevelUpRenderer {
     }
 
     _drawActionButtons(availablePoints, pendingAllocations, x, h, w) {
-        const btnY = h - 145; // Moved up slightly to prevent overlap
+        const btnY = h - 145; 
         const centerX = x + (w / 2);
         const hasPending = Object.values(pendingAllocations).some(v => v > 0);
 
@@ -299,11 +303,11 @@ export class LevelUpRenderer {
 
         // Reset
         const resetX = cancelX + btnW + spacing;
-        const resetColor = hasPending ? UITheme.colors.failure : UITheme.colors.textMuted;
+        const resetColor = hasPending ? UITheme.colors.textMain : UITheme.colors.textMuted;
         this.ui.drawPanel(resetX, btnY, btnW, btnH, baseBg);
         this.ui.drawText("Reset", resetX + (btnW/2), btnY + 62, UITheme.fonts.body, resetColor, "center");
         if (hasPending) {
-            this.ui.drawSelectionBrackets(resetX, btnY, btnW, btnH, 5, UITheme.colors.failure);
+            // Brackets removed; hitbox remains active only when pending
             this.hitboxes.push({ id: 'BTN_RESET', x: resetX, y: btnY, w: btnW, h: btnH });
         }
 
@@ -313,18 +317,10 @@ export class LevelUpRenderer {
         this.ui.drawPanel(confirmX, btnY, btnW, btnH, baseBg);
         this.ui.drawText("Confirm", confirmX + (btnW/2), btnY + 62, UITheme.fonts.body, confirmColor, "center");
         if (hasPending) {
-            this.ui.drawSelectionBrackets(confirmX, btnY, btnW, btnH, 5, UITheme.colors.success);
+            // Brackets removed; hitbox remains active only when pending
             this.hitboxes.push({ id: 'BTN_CONFIRM', x: confirmX, y: btnY, w: btnW, h: btnH });
         }
     }
 
-    getHitZone(x, y) {
-        for (let i = this.hitboxes.length - 1; i >= 0; i--) {
-            const box = this.hitboxes[i];
-            if (x >= box.x && x <= box.x + box.w && y >= box.y && y <= box.y + box.h) {
-                return box.id;
-            }
-        }
-        return null;
-    }
+    
 }

@@ -30,7 +30,7 @@ export class CharacterCreatorController extends BaseController {
             previewStats: this.logic.getPreviewStats(),
             mouse: this.mouse, 
             
-            // FIXED: Map BaseController's string ID to the object the Renderer expects
+            // Map BaseController's string ID to the object the Renderer expects
             hoveredElement: this.hoveredHitboxId ? { id: this.hoveredHitboxId } : null, 
             
             scrollOffsets: {
@@ -39,7 +39,7 @@ export class CharacterCreatorController extends BaseController {
             },
             
             onLayoutUpdate: (hitboxes, scrollBounds) => {
-                // FIXED: Use BaseController's method so UIInteractionManager can see them
+                // Use BaseController's method so UIInteractionManager can see them
                 this.updateHitboxes(hitboxes); 
                 
                 if (scrollBounds) {
@@ -55,9 +55,33 @@ export class CharacterCreatorController extends BaseController {
     // ========================================================
 
     handleMouseMove(x, y, isMouseDown, renderer) {
+        // Cache the previous hover state before letting the BaseController update it
+        const prevHoverId = this.hoveredHitboxId;
+        
         super.handleMouseMove(x, y, isMouseDown, renderer); 
+        
         // Feed raw mouse updates to the scroll manager for smooth dragging
         this.scrollManager.handleMouseMove(y, isMouseDown);
+
+        // --- NEW: SYNC KEYBOARD LOGIC WITH MOUSE HOVER ---
+        if (!this.logic.isEditingName && this.hoveredHitboxId && this.hoveredHitboxId !== prevHoverId) {
+            this._syncFocusWithHover(this.hoveredHitboxId);
+        }
+    }
+
+    // Maps UI hitboxes back to logical steps to keep the cursor unified
+    _syncFocusWithHover(hitboxId) {
+        if (hitboxId === 'INPUT_NAME') {
+            this.logic.setRowByStep('name');
+        } else if (hitboxId === 'BTN_START') {
+            this.logic.setRowByStep('start');
+        } else if (hitboxId.startsWith('ROW_')) {
+            this.logic.setRowByStep(hitboxId.replace('ROW_', ''));
+        } else if (hitboxId.startsWith('BTN_PREV_')) {
+            this.logic.setRowByStep(hitboxId.replace('BTN_PREV_', ''));
+        } else if (hitboxId.startsWith('BTN_NEXT_')) {
+            this.logic.setRowByStep(hitboxId.replace('BTN_NEXT_', ''));
+        }
     }
 
     onDragStart(hitboxId) {

@@ -25,8 +25,8 @@ export class PartyController extends BaseController {
 
         // --- SWAP DATA ---
         this.swappingIdx = null; 
-        this.hoveredHitboxId = null; // FIX: Initialize hovered state
-        this.ignoreNextClick = false; // FIX: Prevent click-through on drop
+        this.hoveredHitboxId = null; 
+        this.ignoreNextClick = false; 
     }
 
     init(data = {}) {
@@ -47,7 +47,6 @@ export class PartyController extends BaseController {
     // ========================================================
 
     onClick(hitboxId) {
-        // FIX: Prevent context menu opening immediately after a drag & drop finishes
         if (this.ignoreNextClick) return; 
 
         const party = gameState.party.members;
@@ -57,9 +56,8 @@ export class PartyController extends BaseController {
                 this.contextMenu.close();
                 return;
             }
-            if (hitboxId === 'MENU_BG') {
-                return; 
-            }
+            if (hitboxId === 'MENU_BG') return; 
+            
             if (hitboxId.startsWith('MENU_OPT_')) {
                 const menuActionIndex = parseInt(hitboxId.replace('MENU_OPT_', ''), 10);
                 this.contextMenu.executeAction(menuActionIndex);
@@ -112,48 +110,47 @@ export class PartyController extends BaseController {
     }
 
     // ========================================================
-    // DRAG AND DROP MOUSE EVENTS
+    // STANDARD DRAG AND DROP CALLBACKS
     // ========================================================
     
-    onMouseDown(hitboxId, x, y) {
+    onDragStart(hitboxId) {
         if (this.contextMenu.menu) return; 
         
-        if (hitboxId && hitboxId.startsWith('CARD_')) {
+        if (hitboxId && typeof hitboxId === 'string' && hitboxId.startsWith('CARD_')) {
             const clickedIndex = parseInt(hitboxId.replace('CARD_', ''), 10);
             const member = gameState.party.members[clickedIndex];
             
             if (member) {
                 this.selectedIndex = clickedIndex;
 
-                this.dragManager.startDrag(member, 'PARTY', clickedIndex, x, y, (payload, sourceId, originSlot, targetHitboxId) => {
-                    // Drop Callback Logic
-                    if (targetHitboxId && targetHitboxId.startsWith('CARD_')) {
-                        const targetIndex = parseInt(targetHitboxId.replace('CARD_', ''), 10);
-                        if (originSlot !== targetIndex && targetIndex < gameState.party.members.length) {
-                            this.swapMembers(originSlot, targetIndex);
-                            this.selectedIndex = targetIndex; 
+                // Safely use this.mouse.x/y inherited from BaseController
+                this.dragManager.startDrag(member, 'PARTY', clickedIndex, this.mouse.x, this.mouse.y, 
+                    (payload, sourceId, originSlot, dropTargetId) => {
+                        if (dropTargetId && typeof dropTargetId === 'string' && dropTargetId.startsWith('CARD_')) {
+                            const targetIndex = parseInt(dropTargetId.replace('CARD_', ''), 10);
+                            if (originSlot !== targetIndex && targetIndex < gameState.party.members.length) {
+                                this.swapMembers(originSlot, targetIndex);
+                                this.selectedIndex = targetIndex; 
+                            }
                         }
                     }
-                });
+                );
             }
         }
     }
 
-    // FIX: Added hitboxId parameter to prevent x getting the string value
-    onMouseMove(hitboxId, x, y) {
-        this.hoveredHitboxId = hitboxId; // FIX: Actually set hover state for renderer
-        
+    onDragMove(x, y) {
         if (this.dragManager.dragState.active) {
             this.dragManager.updateDrag(x, y);
         }
     }
 
-    // FIX: Match standard signature and apply debounce 
-    onMouseUp(hitboxId, x, y) {
+    onDrop(sourceHitboxId, targetHitboxId) {
         if (this.dragManager.dragState.active) {
-            this.dragManager.endDrag(hitboxId);
+            // targetHitboxId is handled safely directly by the UIInteractionManager
+            this.dragManager.endDrag(targetHitboxId);
             
-            // FIX: Set a brief timeout so `onClick` ignores the mouseup event from dropping
+            // Timeout to absorb the synchronous click event generated immediately after mouseup
             this.ignoreNextClick = true;
             setTimeout(() => this.ignoreNextClick = false, 50);
         }

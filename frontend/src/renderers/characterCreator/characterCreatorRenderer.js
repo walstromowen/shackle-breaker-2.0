@@ -18,9 +18,6 @@ export class CharacterCreatorRenderer {
 
         ui.clearScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
 
-        // --- DYNAMIC ANIMATION OFFSET FOR BRACKETS ---
-        const bracketOffset = 10 + Math.sin(Date.now() / 250) * 5; 
-
         // --- GLOBAL LAYOUT (Scaled 2.4x for 1920x1080) ---
         const p = 48; 
         const startY = 48; 
@@ -53,14 +50,13 @@ export class CharacterCreatorRenderer {
 
         this.hotspots.push({ id: inputId, x: nameInputX, y: curY, w: nameInputW, h: nameInputH });
 
-        const isNameHovered = hoveredElement && hoveredElement.id === inputId;
         const isNameSelected = (currentStep === 'name');
-        
         const nameBg = isEditingName ? "rgba(0, 0, 0, 0.8)" : "rgba(0, 0, 0, 0.4)";
+        
         ui.drawPanel(nameInputX, curY, nameInputW, nameInputH, nameBg);
 
-        if (isNameSelected || isEditingName || isNameHovered) {
-            ui.drawSelectionBrackets(nameInputX, curY, nameInputW, nameInputH, bracketOffset);
+        if (isNameSelected || isEditingName) {
+            ui.drawSelectionBrackets(nameInputX, curY, nameInputW, nameInputH, 10);
         }
 
         let valStr = selections.name;
@@ -104,11 +100,9 @@ export class CharacterCreatorRenderer {
             const overworldSheet = this.loader.get(appData.spriteOverworld);
             const spriteX = startVisualX + portraitSize + visualGap;
             
-            // Draw Dark Backgrounds
             ui.drawRect(startVisualX, portraitY, portraitSize, portraitSize, "rgba(0,0,0,0.6)", true);
             ui.drawRect(spriteX, spriteY, spriteDisplaySize, spriteDisplaySize, "rgba(0,0,0,0.6)", true);
 
-            // Draw Images scaled out
             if (masterSheet) {
                 ctx.drawImage(masterSheet, 0, 0, 128, 128, startVisualX, portraitY, portraitSize, portraitSize);
             }
@@ -117,7 +111,6 @@ export class CharacterCreatorRenderer {
                 ctx.drawImage(overworldSheet, 0, 0, 32, 32, spriteX, spriteY, spriteDisplaySize, spriteDisplaySize);
             }
 
-            // Overlay Borders so they don't crush the image size
             ui.drawRect(startVisualX, portraitY, portraitSize, portraitSize, UITheme.colors.border, false);
             ui.drawRect(spriteX, spriteY, spriteDisplaySize, spriteDisplaySize, UITheme.colors.border, false);
 
@@ -209,36 +202,28 @@ export class CharacterCreatorRenderer {
         menuSteps.forEach((key) => {
             const isSelected = (key === currentStep);
             const rowId = `ROW_${key}`;
-            const isRowHovered = hoveredElement && hoveredElement.id === rowId;
+            const isHovered = (hoveredElement && hoveredElement.id === rowId);
 
+            // --- START BUTTON REFACTOR ---
             if (key === 'start') {
                 const btnId = "BTN_START";
-                const isBtnHovered = hoveredElement && hoveredElement.id === btnId;
                 const btnY = menuY + 36; 
+                const isBtnHovered = (hoveredElement && hoveredElement.id === btnId);
 
                 this.hotspots.push({ id: btnId, x: menuStartX + 96, y: btnY, w: midW - 192, h: MENU_ITEM_HEIGHT + 24 });
 
-                const btnColor = (isSelected || isBtnHovered) ? UITheme.colors.borderHighlight : UITheme.colors.textMuted;
-                const btnBg = (isSelected || isBtnHovered) ? "rgba(184, 153, 71, 0.05)" : "rgba(0,0,0,0.6)";
-                const btnBorder = (isSelected || isBtnHovered) ? UITheme.colors.borderHighlight : UITheme.colors.border;
-                
-                ui.drawLancetArchedPanel(menuStartX + 96, btnY, midW - 192, MENU_ITEM_HEIGHT + 24, btnBg, btnBorder);
-
-                if (isSelected || isBtnHovered) {
-                    ui.drawSelectionBrackets(menuStartX + 96, btnY, midW - 192, MENU_ITEM_HEIGHT + 24, bracketOffset); 
-                }
-
-                ui.drawText("START", centerColX, btnY + ((MENU_ITEM_HEIGHT + 24)/2) + 10, UITheme.fonts.body, btnColor, "center", "middle");
+                // Render the unified interactive component
+                ui.drawInteractiveRow(menuStartX + 96, btnY, midW - 192, MENU_ITEM_HEIGHT + 24, "START", UITheme.fonts.body, "center", isSelected, isBtnHovered);
                 return; 
             }
 
+            // --- STANDARD ROWS REFACTOR ---
             this.hotspots.push({ id: rowId, x: menuStartX + 24, y: menuY, w: midW - 48, h: MENU_ITEM_HEIGHT });
 
-            if (isSelected || isRowHovered) {
-                ui.drawRect(menuStartX + 24, menuY, midW - 48, MENU_ITEM_HEIGHT, "rgba(255, 255, 255, 0.02)", true);
-                ui.drawSelectionBrackets(menuStartX + 24, menuY, midW - 48, MENU_ITEM_HEIGHT, bracketOffset); 
-            }
+            // 1. Draw the interactive background and focus brackets (Passing empty string so it doesn't draw text yet)
+            ui.drawInteractiveRow(menuStartX + 24, menuY, midW - 48, MENU_ITEM_HEIGHT, "", UITheme.fonts.body, "center", isSelected, isHovered);
 
+            // 2. Draw custom interior labels for this specific menu
             const labelY = menuY + 24;
             ui.drawText(labels[key], centerColX, labelY, UITheme.fonts.cardSmall, UITheme.colors.textMuted, "center");
 
@@ -261,6 +246,7 @@ export class CharacterCreatorRenderer {
 
                 const prevId = `BTN_PREV_${key}`;
                 const nextId = `BTN_NEXT_${key}`;
+                
                 const isPrevHover = hoveredElement && hoveredElement.id === prevId;
                 const isNextHover = hoveredElement && hoveredElement.id === nextId;
 
@@ -296,17 +282,15 @@ export class CharacterCreatorRenderer {
         ui.drawLineWithGothicFlourish(rightCenterX - 96, TITLE_Y + 29, 192, UITheme.colors.borderHighlight);
 
         const desc = this.getDescription(controllerState);
-        let scrollBounds = null; // Prepare our bounds object for the controller
+        let scrollBounds = null; 
 
         if (desc) {
-            // 1. Setup Text Area Dimensions
             const textX = rightColX + 48;
             const textY = CONTENT_START_Y;
             const textMaxWidth = colW - 96;
             const lineHeight = 67;
-            const textViewportHeight = panelHeight - (CONTENT_START_Y - startY) - 48; // Max visible height
+            const textViewportHeight = panelHeight - (CONTENT_START_Y - startY) - 48;
 
-            // 2. Measure Total Text Height using CanvasUI's word wrapper
             const paragraphs = desc.split('\n');
             let totalLines = 0;
             paragraphs.forEach(p => {
@@ -314,12 +298,9 @@ export class CharacterCreatorRenderer {
             });
             const totalTextHeight = totalLines * lineHeight;
 
-            // 3. Calculate Scroll Math
             const maxScroll = Math.max(0, totalTextHeight - textViewportHeight);
-            // Default to 0 if the controller hasn't provided an offset yet
             const previewOffset = controllerState.scrollOffsets?.preview || 0; 
 
-            // FIXED: Always populate scrollBounds even if maxScroll is 0
             scrollBounds = {
                 preview: {
                     bounds: { x: textX, y: textY, w: textMaxWidth, h: textViewportHeight },
@@ -328,36 +309,29 @@ export class CharacterCreatorRenderer {
                 }
             };
 
-            // 4. Clip & Draw Text (Applying the offset)
             ui.startClip(textX, textY, textMaxWidth, textViewportHeight);
             ui.drawWrappedText(desc, textX, textY - previewOffset, textMaxWidth, lineHeight, UITheme.fonts.body, UITheme.colors.textMain);
             ui.endClip();
 
-            // 5. Draw Scrollbar (Only if text overflows)
             if (maxScroll > 0) {
                 const trackW = 8;
-                const trackX = rightColX + colW - 24; // Positioned near the right edge of the panel
+                const trackX = rightColX + colW - 24; 
                 const trackH = textViewportHeight;
                 
-                // Dynamically size thumb based on how much text is visible
                 const thumbH = Math.max(40, (textViewportHeight / totalTextHeight) * trackH);
-                
-                // Calculate thumb Y position
                 const scrollRatio = previewOffset / maxScroll;
                 const thumbY = textY + (scrollRatio * (trackH - thumbH));
 
-                // Draw Track & Thumb
                 ui.drawRect(trackX, textY, trackW, trackH, UITheme.colors.scrollTrack);
                 ui.drawRect(trackX, thumbY, trackW, thumbH, UITheme.colors.scrollThumb);
 
-                // Register the Thumb Hitbox (Adding padding so it's easier to grab with the mouse)
                 this.hotspots.push({ 
                     id: 'SCROLL_THUMB_PREVIEW', 
                     x: trackX - 10, 
                     y: thumbY, 
                     w: trackW + 20, 
                     h: thumbH,
-                    zIndex: 10 // Pushed to front to avoid getting swallowed
+                    zIndex: 10
                 });
             }
         }
@@ -366,7 +340,6 @@ export class CharacterCreatorRenderer {
         // 4. FINALIZE & SEND DATA TO CONTROLLER
         // ========================================================
         if (controllerState.onLayoutUpdate) {
-            // Pass BOTH the hotspots and the scrollBounds
             controllerState.onLayoutUpdate(this.hotspots, scrollBounds);
         }
     }

@@ -199,6 +199,44 @@ export class CanvasUI {
         });
     }
 
+    drawInteractiveRow(x, y, w, h, label, font, align, isFocused, isHovered) {
+        this.ctx.save();
+
+        let textColor = UITheme.colors.textMuted;
+        let bgColor = null;
+
+        // 1. Resolve State Colors
+        if (isFocused) {
+            textColor = UITheme.colors.states.focusText;
+            bgColor = UITheme.colors.states.focusBg;
+        } else if (isHovered) {
+            textColor = UITheme.colors.states.hoverText;
+            bgColor = UITheme.colors.states.hoverBg;
+        }
+
+        // 2. Draw Background
+        if (bgColor) {
+            this.drawRect(x, y, w, h, bgColor, true);
+        }
+
+        // 3. Draw Text
+        // Calculate vertical center of the row for perfect text alignment
+        const textY = y + (h / 2) + 10; // +10 is an approximate baseline offset for your fonts
+        let textX = x;
+        if (align === "center") textX = x + (w / 2);
+        else if (align === "right") textX = x + w - 24; // Added padding
+        else textX = x + 24; // Left align padding
+
+        this.drawText(label, textX, textY, font, textColor, align, "alphabetic");
+
+        // 4. Draw Focus Brackets (The heavy visual indicator)
+        if (isFocused) {
+            this.drawSelectionBrackets(x, y, w, h, 10, UITheme.colors.borderHighlight);
+        }
+
+        this.ctx.restore();
+    }
+
     // --- IMAGES ---
 
     drawSprite(image, sx, sy, sw, sh, dx, dy, dw, dh) {

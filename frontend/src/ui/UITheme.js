@@ -40,7 +40,15 @@ export const UITheme = {
         
         // Ability Costs & Scrolling
         scrollTrack: "rgba(15, 15, 17, 0.5)", 
-        scrollThumb: "#d4cbb8" // Matched to the white border for visibility
+        scrollThumb: "#d4cbb8", // Matched to the white border for visibility
+
+        states: {
+            hoverText: "#b89947",         // Tarnished Gold (matches borderHighlight)
+            hoverBg: "rgba(184, 153, 71, 0.05)", 
+            focusText: "#d4cbb8",         // textMain
+            focusBg: "rgba(255, 255, 255, 0.02)",
+            disabledAlpha: 0.3
+        },
     },
 
     fonts: {

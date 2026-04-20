@@ -62,13 +62,17 @@ export class PartyRenderer {
             });
 
             const isHovered = hoveredElement?.id === `CARD_${index}`;
-            const isCursor = (index === selectedIndex) || isHovered; 
-            const isBeingMoved = (index === swappingIdx);
+            const isSelected = (index === selectedIndex); 
+            
+            // Evaluates true whether moving via keyboard (swappingIdx) or mouse (dragState)
+            const isBeingDragged = dragState?.active && dragState.payload === member;
+            const isBeingMoved = (index === swappingIdx) || isBeingDragged;
+            
             const isActive = activeIndices.includes(index);
             const isDead = member.hp <= 0;
             const isUnavailable = mode === 'BATTLE_SELECT' && (isActive || isDead);
 
-            this.drawCard(member, pos.x, pos.y, isCursor, isBeingMoved, isUnavailable, isActive, mode);
+            this.drawCard(member, pos.x, pos.y, isSelected, isHovered, isBeingMoved, isUnavailable, isActive, mode);
         });
 
         if (menu) {
@@ -122,32 +126,41 @@ export class PartyRenderer {
         return { x: startX + (col * (cardW + gapX)), y: startY + (row * (cardH + gapY)) };
     }
 
-    drawCard(member, x, y, isCursor, isBeingMoved, isUnavailable, isActive, mode) {
+    drawCard(member, x, y, isSelected, isHovered, isBeingMoved, isUnavailable, isActive, mode) {
         const ctx = this.ctx;
         const { cardW, cardH } = this.layout;
 
         ctx.save();
         
+        // --- 1. RESOLVE GLOBAL STATES ---
         let bgColor = UITheme.colors.panelBg;
-        
+        let nameColor = UITheme.colors.textMain;
+        let drawBrackets = false;
+        let bracketColor = UITheme.colors.borderHighlight;
+        let strokeColor = null;
+
         if (isBeingMoved) {
             bgColor = UITheme.colors.stmDim;
-        } else if (isCursor) {
-            bgColor = isUnavailable ? 'rgba(100, 0, 0, 0.2)' : UITheme.colors.bgScale[2];
+            strokeColor = UITheme.colors.stm;
+        } else if (isSelected) {
+            bgColor = isUnavailable ? 'rgba(100, 0, 0, 0.2)' : UITheme.colors.states.focusBg;
+            nameColor = isUnavailable ? UITheme.colors.textMuted : UITheme.colors.states.focusText;
+            drawBrackets = true;
+            bracketColor = isUnavailable ? UITheme.colors.failure : UITheme.colors.borderHighlight;
+        } else if (isHovered) {
+            bgColor = isUnavailable ? 'rgba(100, 0, 0, 0.2)' : UITheme.colors.states.hoverBg;
+            nameColor = isUnavailable ? UITheme.colors.textMuted : UITheme.colors.states.hoverText;
         }
 
+        // --- 2. DRAW BACKGROUNDS & BORDERS ---
         this.ui.drawPanel(x, y, cardW, cardH, bgColor);
 
-        if (isBeingMoved) {
-            this.ui.drawRect(x, y, cardW, cardH, UITheme.colors.stm, false);
+        if (strokeColor) {
+            this.ui.drawRect(x, y, cardW, cardH, strokeColor, false);
         }
 
-        if (isCursor && !isBeingMoved) {
-            const time = performance.now() * 0.004;
-            const pulse = (Math.sin(time) + 1) / 2;
-            const brktDist = 7 + (pulse * 10); 
-            const bracketColor = isUnavailable ? UITheme.colors.failure : UITheme.colors.borderHighlight;
-            this.ui.drawSelectionBrackets(x, y, cardW, cardH, brktDist, bracketColor);
+        if (drawBrackets) {
+            this.ui.drawSelectionBrackets(x, y, cardW, cardH, 10, bracketColor);
         }
 
         if (isUnavailable) {
@@ -176,12 +189,13 @@ export class PartyRenderer {
 
         this.drawStatusEffects(member, pX, pY, pSize);
 
+        // --- 3. DRAW TEXT WITH STATE COLORS ---
         const infoX = pX + pSize + 19; 
         const numberWidth = 91;       
         const labelWidth = 48;        
         const barW = cardW - (pX - x) - pSize - 19 - labelWidth - numberWidth - 19;
 
-        this.ui.drawText(member.name, infoX, y + 43, UITheme.fonts.cardTitle, UITheme.colors.textMain);
+        this.ui.drawText(member.name, infoX, y + 43, UITheme.fonts.cardTitle, nameColor);
 
         const levelText = `Lv.${member.level || 1}`;
         let statusPrefix = "";
@@ -264,15 +278,13 @@ export class PartyRenderer {
         const { x, y, payload } = dragState;
         const ctx = this.ctx;
         
-        // We render a mini floating portrait version to follow the mouse
         const pSize = 120; 
         
         ctx.save();
-        ctx.globalAlpha = 0.85; // Slight transparency
+        ctx.globalAlpha = 0.85; 
         
         const masterSheet = this.loader.get(payload.spritePortrait);
         
-        // Center drawing on the mouse coords
         const drawX = x - (pSize / 2);
         const drawY = y - (pSize / 2);
 
