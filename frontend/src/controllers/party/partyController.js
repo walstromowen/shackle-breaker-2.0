@@ -46,6 +46,38 @@ export class PartyController extends BaseController {
     // STANDARDIZED INPUT HANDLING
     // ========================================================
 
+    handleMouseMove(x, y, isMouseDown, renderer) {
+        // Cache the previous hover state
+        const prevHoverId = this.hoveredHitboxId;
+        
+        super.handleMouseMove(x, y, isMouseDown, renderer); 
+        
+        // --- SYNC KEYBOARD LOGIC WITH MOUSE HOVER ---
+        if (this.hoveredHitboxId && this.hoveredHitboxId !== prevHoverId) {
+            this._syncFocusWithHover(this.hoveredHitboxId);
+        }
+    }
+
+    _syncFocusWithHover(hitboxId) {
+        if (this.contextMenu.menu) {
+            if (hitboxId.startsWith('MENU_OPT_')) {
+                const menuActionIndex = parseInt(hitboxId.replace('MENU_OPT_', ''), 10);
+                this.contextMenu.menu.selectedIndex = menuActionIndex;
+            } else {
+                // Mouse left the menu options
+                this.contextMenu.menu.selectedIndex = -1;
+            }
+            return;
+        }
+
+        if (hitboxId.startsWith('CARD_')) {
+            const cardIndex = parseInt(hitboxId.replace('CARD_', ''), 10);
+            if (cardIndex < gameState.party.members.length) {
+                this.selectedIndex = cardIndex;
+            }
+        }
+    }
+
     onClick(hitboxId) {
         if (this.ignoreNextClick) return; 
 
@@ -147,10 +179,8 @@ export class PartyController extends BaseController {
 
     onDrop(sourceHitboxId, targetHitboxId) {
         if (this.dragManager.dragState.active) {
-            // targetHitboxId is handled safely directly by the UIInteractionManager
             this.dragManager.endDrag(targetHitboxId);
             
-            // Timeout to absorb the synchronous click event generated immediately after mouseup
             this.ignoreNextClick = true;
             setTimeout(() => this.ignoreNextClick = false, 50);
         }
@@ -285,6 +315,11 @@ export class PartyController extends BaseController {
         }
 
         this.contextMenu.open(0, 0, options, member);
+        
+        // --- FIX: Remove Default Highlight ---
+        if (this.contextMenu.menu) {
+            this.contextMenu.menu.selectedIndex = -1;
+        }
     }
 
     exileMember(index) {

@@ -1,29 +1,46 @@
 export class ScrollManager {
     constructor() {
-        // Map of registered scroll zones (e.g., 'inventory', 'details')
         this.zones = new Map(); 
+        
+        // Tuning parameter for smoothness. 
+        // Lower = floatier, Higher = snappier. (e.g., 0.15 is 15% closer per frame)
+        this.lerpSpeed = 0.05; 
         
         this.dragState = {
             active: false,
-            zoneId: null, // The ID of the zone currently being dragged
+            zoneId: null,
             startY: 0,
             startScroll: 0
         };
     }
 
-    /**
-     * Registers or updates a scrollable zone.
-     * @param {string} id - Unique identifier for the zone.
-     * @param {Object} config - Configuration for the zone.
-     * - bounds: {x, y, w, h} (The clickable/scrollable area)
-     * - maxScroll: number (Maximum scroll offset)
-     * - viewportH: number (Height of the visible area)
-     * - thumbIds: Array<string> (IDs of UI elements that act as scrollbar thumbs)
-     * - onChange: function(newOffset) (Callback fired when offset changes)
-     */
     registerZone(id, config) {
-        const existing = this.zones.get(id) || { offset: 0 };
+        const existing = this.zones.get(id) || { offset: 0, targetOffset: 0 };
         this.zones.set(id, { ...existing, ...config });
+    }
+
+    // --- SMOOTHNESS UPDATE LOOP ---
+    // THIS IS THE METHOD YOUR GAME LOOP WAS LOOKING FOR
+    update(dt) {
+        // A simple, bulletproof lerp. 
+        // We move a fixed percentage of the remaining distance every frame.
+        // Set your this.lerpSpeed back to something like 0.25
+        
+        for (const [id, zone] of this.zones.entries()) {
+            const distance = zone.targetOffset - zone.offset;
+
+            // If we are more than half a pixel away, glide towards it
+            if (Math.abs(distance) > 0.5) {
+                zone.offset += distance * this.lerpSpeed;
+            } else {
+                // We are close enough, snap to the exact pixel to prevent jitter
+                zone.offset = zone.targetOffset;
+            }
+            
+            if (typeof zone.onChange === 'function') {
+                zone.onChange(zone.offset);
+            }
+        }
     }
 
     // --- STATE ACCESS ---
@@ -32,47 +49,47 @@ export class ScrollManager {
         return this.zones.get(id)?.offset || 0;
     }
 
-    setOffset(id, newOffset) {
+    setOffset(id, newOffset, instant = false) {
         const zone = this.zones.get(id);
         if (!zone) return;
 
         const max = zone.maxScroll || 0;
         const clamped = Math.max(0, Math.min(newOffset, max));
         
-        if (zone.offset !== clamped) {
+        zone.targetOffset = clamped;
+        
+        if (instant) {
             zone.offset = clamped;
-            if (typeof zone.onChange === 'function') {
-                zone.onChange(clamped);
-            }
         }
     }
 
     resetAllScrolls() {
         for (const id of this.zones.keys()) {
-            this.setOffset(id, 0);
+            this.setOffset(id, 0, true); // Instant reset, no smoothing
         }
     }
 
-    // --- EVENT HANDLING ---
+    // --- SEMANTIC DRAG HANDLING ---
 
     handleScrollWheel(x, y, delta) {
         for (const [id, zone] of this.zones.entries()) {
             if (this._isInside(x, y, zone.bounds)) {
-                this.setOffset(id, zone.offset + delta);
+                // Add delta to the target, not the current offset
+                this.setOffset(id, zone.targetOffset + delta);
                 return true; 
             }
         }
         return false;
     }
 
-    handleMouseDown(targetId, y) {
+    handleDragStart(targetId, y) {
         for (const [id, zone] of this.zones.entries()) {
             if (zone.thumbIds && zone.thumbIds.includes(targetId)) {
                 this.dragState = {
                     active: true,
                     zoneId: id,
                     startY: y,
-                    startScroll: zone.offset
+                    startScroll: zone.targetOffset // Base drag off target
                 };
                 return true;
             }
@@ -80,12 +97,15 @@ export class ScrollManager {
         return false;
     }
 
-    handleMouseMove(y, isMouseDown) {
-        if (this.dragState.active && isMouseDown) {
+    handleDragMove(y) {
+        if (this.dragState.active) {
             this._handleScrollDrag(y);
-        } else if (!isMouseDown) {
-            this.dragState.active = false;
         }
+    }
+
+    handleDragEnd() {
+        this.dragState.active = false;
+        this.dragState.zoneId = null;
     }
 
     // --- INTERNAL LOGIC ---
@@ -104,7 +124,9 @@ export class ScrollManager {
         const mouseDelta = y - this.dragState.startY;
 
         const newOffset = this.dragState.startScroll + (mouseDelta * scrollRatio);
-        this.setOffset(this.dragState.zoneId, newOffset);
+        
+        // When dragging the bar, we want it to feel instantaneous 
+        this.setOffset(this.dragState.zoneId, newOffset, true);
     }
 
     _isInside(x, y, bounds) {
@@ -115,9 +137,6 @@ export class ScrollManager {
 
     // --- GRID/LIST UTILITIES ---
 
-    /**
-     * Calculates the required scroll offset to bring a specific grid item into view.
-     */
     scrollToIndex(zoneId, index, gridConfig, center = false) {
         const zone = this.zones.get(zoneId);
         if (!zone) return;
@@ -129,25 +148,25 @@ export class ScrollManager {
         const totalRows = Math.ceil(totalItems / columns);
         const viewportH = zone.viewportH || 300;
 
-        // Ensure maxScroll is up to date based on the grid config
         const contentHeight = totalRows * itemHeight;
         zone.maxScroll = Math.max(0, contentHeight - viewportH);
 
         const itemTop = rowIndex * itemHeight;
         const itemBottom = itemTop + itemHeight;
         
-        let targetOffset = zone.offset;
+        let targetOffset = zone.targetOffset;
 
         if (center) {
             targetOffset = (itemTop + (itemHeight / 2)) - (viewportH / 2);
         } else {
-            if (itemTop < zone.offset) {
-                targetOffset = itemTop; // Scroll up to top edge
-            } else if (itemBottom > zone.offset + viewportH) {
-                targetOffset = itemBottom - viewportH; // Scroll down to bottom edge
+            if (itemTop < zone.targetOffset) {
+                targetOffset = itemTop; 
+            } else if (itemBottom > zone.targetOffset + viewportH) {
+                targetOffset = itemBottom - viewportH; 
             }
         }
 
+        // Uses smoothing
         this.setOffset(zoneId, targetOffset);
     }
 }

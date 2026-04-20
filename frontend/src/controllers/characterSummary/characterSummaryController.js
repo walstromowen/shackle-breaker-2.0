@@ -476,12 +476,19 @@ export class CharacterSummaryController extends BaseController {
             this.handleMouseDown(x, y);
         }
         
-        this.scrollManager.handleMouseMove(y, isMouseDown);
+        // Use the correct drag methods for the ScrollManager
+        if (isMouseDown) {
+            this.scrollManager.handleDragMove(y);
+        } else {
+            this.scrollManager.handleDragEnd();
+        }
     }
 
     handleMouseDown(x, y) {
         const targetId = this.hoveredHitboxId;
-        const handledByScroll = this.scrollManager.handleMouseDown(targetId, y);
+        
+        // Initiate the drag on the ScrollManager instead of a generic mouse down
+        const handledByScroll = this.scrollManager.handleDragStart(targetId, y);
         
         if (!handledByScroll && !targetId) {
             this.deselectSlot();

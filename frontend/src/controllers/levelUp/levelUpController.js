@@ -148,20 +148,18 @@ export class LevelUpController extends BaseController {
     }
 
     getState() {
-        // Decide which focus system is currently driving the UI
-        const activeHoverId = this.isKeyboardActive 
-            ? this.navGrid[this.navRow][this.navCol] 
-            : this.hoveredHitboxId;
-
-        return {
-            member: this.member,
-            availablePoints: this.availablePoints,
-            pendingAllocations: this.pendingAllocations,
-            currentStats: StatCalculator.calculateDetailed(this.member),
-            previewStats: StatCalculator.calculateDetailed(this.member, this.pendingAllocations),
-            
-            hoverId: activeHoverId, // Automatically updates the renderer's highlight!
-            onLayoutUpdate: (hitboxes) => this.updateHitboxes(hitboxes)
-        };
-    }
+        return {
+            member: this.member,
+            availablePoints: this.availablePoints,
+            pendingAllocations: this.pendingAllocations,
+            currentStats: StatCalculator.calculateDetailed(this.member),
+            previewStats: StatCalculator.calculateDetailed(this.member, this.pendingAllocations),
+            
+            // --- Split Interaction States ---
+            hoverId: !this.isKeyboardActive ? this.hoveredHitboxId : null,
+            focusId: this.isKeyboardActive ? this.navGrid[this.navRow][this.navCol] : null,
+            
+            onLayoutUpdate: (hitboxes) => this.updateHitboxes(hitboxes)
+        };
+    }
 }

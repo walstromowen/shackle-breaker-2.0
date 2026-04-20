@@ -17,6 +17,18 @@ export class CharacterCreatorController extends BaseController {
     }
 
     // ========================================================
+    // LIFECYCLE
+    // ========================================================
+
+    update(dt) {
+        // Assuming your framework passes a delta time to controllers
+        if (super.update) super.update(dt);
+        
+        // Drive the smooth scrolling interpolation
+        this.scrollManager.update(dt); 
+    }
+
+    // ========================================================
     // STATE ACCESS FOR RENDERER
     // ========================================================
 
@@ -60,10 +72,7 @@ export class CharacterCreatorController extends BaseController {
         
         super.handleMouseMove(x, y, isMouseDown, renderer); 
         
-        // Feed raw mouse updates to the scroll manager for smooth dragging
-        this.scrollManager.handleMouseMove(y, isMouseDown);
-
-        // --- NEW: SYNC KEYBOARD LOGIC WITH MOUSE HOVER ---
+        // --- SYNC KEYBOARD LOGIC WITH MOUSE HOVER ---
         if (!this.logic.isEditingName && this.hoveredHitboxId && this.hoveredHitboxId !== prevHoverId) {
             this._syncFocusWithHover(this.hoveredHitboxId);
         }
@@ -87,8 +96,18 @@ export class CharacterCreatorController extends BaseController {
     onDragStart(hitboxId) {
         // Automatically called by UIInteractionManager if a drag threshold is met
         if (hitboxId === 'SCROLL_THUMB_PREVIEW' || hitboxId === 'SCROLL_THUMB_STATS') {
-            this.scrollManager.handleMouseDown(hitboxId, this.mouse.y);
+            this.scrollManager.handleDragStart(hitboxId, this.mouse.y);
         }
+    }
+
+    onDragMove(x, y) {
+        // Semantic drag update
+        this.scrollManager.handleDragMove(y);
+    }
+
+    onDrop(hitboxId, x, y) {
+        // Release the scrollbar
+        this.scrollManager.handleDragEnd();
     }
 
     onClick(hitboxId) {
@@ -117,8 +136,8 @@ export class CharacterCreatorController extends BaseController {
     }
 
     handleScroll(delta) {
-        // Pass scroll wheel events. Lowered multiplier to 8 for smoother reading.
-        this.scrollManager.handleScrollWheel(this.mouse.x, this.mouse.y, delta * 8); 
+        // Increased multiplier from 8 to 40 for a larger scroll distance per wheel notch
+        this.scrollManager.handleScrollWheel(this.mouse.x, this.mouse.y, delta * 40); 
     }
 
     handleKeyDown(keyCode, e) {

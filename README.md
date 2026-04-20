@@ -141,59 +141,16 @@ Root
 ├── package.json
 └── README.md
 
-IMPORTANT!!!!
-ou finished step 1 and step 2 (you are working out step 3 and trying to implement step 4 on the character summary screen)
+"We are using an Input Handling Pipeline for a game engine. The architecture follows a strict flow: Input.js (raw events) → SceneManager.js (mediator/router) → UIInteractionManager.js (semantic translator) → BaseController.js (logic consumer).
 
+Core Architectural Rules:
 
-This is a fantastic technical debt to tackle now. Setting this up will make building every future screen (shops, dialog boxes, combat menus) ten times faster.
+The Bracket Rule: Interaction logic (like drag vs. click math) must be encapsulated within the UIInteractionManager to prevent 'input bleed.' If the UI captures an interaction, it returns a handled flag, and the SceneManager must discard that input for the rest of the game world.
 
-Here is your high-level roadmap to transitioning your game to a universal, decoupled interaction system.
+The Interaction Standard: Left-click is for Selecting/Advancing; Right-click is the Universal Back/Cancel button. This is routed through the UIInteractionManager and consumed globally.
 
+Semantic Translation: Raw mouse coordinates and button states are translated into high-level events (onDragStart, onDragMove, onDrop, onHover) before reaching the controllers.
 
+Polymorphic Routing: The SceneManager routes these events to the activeController based on the current scene state."
 
-Step 3: Define a Standard Interface for Screens
-Every controller in your frontend/src/controllers/ folder needs to speak the same language. You should decide on a standard set of methods that the UIInteractionManager will look for and execute if they exist on the active screen.
-
-onHover(hitboxId)
-
-onClick(hitboxId)
-
-onRightClick(hitboxId)
-
-onDragStart(hitboxId)
-
-onDrop(hitboxId, targetHitboxId)
-
-scrolling stuff?
-
-Step 4: Wire it Together in SceneManager
-Your SceneManager (or GameLoop) becomes the traffic cop. Every frame, it should:
-
-Ask Input.js for raw updates.
-
-Feed those updates to the UIInteractionManager.
-
-The UIInteractionManager talks to the UI tools (Scroll, Drag, Context) and checks hitboxes.
-
-The UIInteractionManager fires the standardized methods (like onClick) on whatever screen is currently active in the SceneManager.
-
-The New Architecture Flow
-Plaintext
-[ Hardware/Browser ]
-        |
-        v
-[ core/Input.js ] (Raw coords, button states)
-        |
-        v
-[ ui/UIInteractionManager.js ] (Hitbox math, Click vs. Drag detection)
-        |
-        +---> Consults generic [ ScrollManager ], [ DragAndDropManager ], etc.
-        |
-        v
-[ controllers/ANY_Controller.js ] (Receives clean events: onClick('IRON_SWORD'))
-        |
-        v
-[ shared/state/gameState.js ] (Updates actual game logic)
-This ensures your controllers only handle game rules, your UI tools only handle UI math, and your input file only handles browser events.
-
-Which of these steps would you like to dive into first? I recommend starting with Step 1 (Decoupling a specific UI Manager) or Step 2 (Drafting the UIInteractionManager).
+provide 4 main interaction files: 

@@ -24,36 +24,37 @@ export class LevelUpRenderer {
     }
 
     render(state) {
-        this.hitboxes = [];
-        const { member, availablePoints, pendingAllocations, currentStats, previewStats, hoverId } = state;
-        if (!member) return;
+        this.hitboxes = [];
+        const { member, availablePoints, pendingAllocations, currentStats, previewStats, hoverId, focusId } = state;
+        if (!member) return;
 
-        const w = this.ctx.canvas.width;
-        const h = this.ctx.canvas.height;
-        this.ui.clearScreen(w, h);
+        const w = this.ctx.canvas.width;
+        const h = this.ctx.canvas.height;
+        this.ui.clearScreen(w, h);
 
-        const halfW = Math.floor(w / 2);
+        const halfW = Math.floor(w / 2);
 
-        this.ui.drawRect(0, 0, halfW, h, UITheme.colors.bgScale[0]);
-        this.ui.drawRect(halfW, 0, halfW, h, UITheme.colors.bgScale[1]);
-        this.ui.drawLine(halfW, 0, halfW, h, UITheme.colors.border);
+        this.ui.drawRect(0, 0, halfW, h, UITheme.colors.bgScale[0]);
+        this.ui.drawRect(halfW, 0, halfW, h, UITheme.colors.bgScale[1]);
+        this.ui.drawLine(halfW, 0, halfW, h, UITheme.colors.border);
 
-        this._renderCharacterColumn(member, availablePoints, pendingAllocations, 0, 0, halfW, h);
-        this._renderStatsColumn(currentStats, previewStats, halfW, 0, halfW, h);
+        this._renderCharacterColumn(member, availablePoints, pendingAllocations, hoverId, focusId, 0, 0, halfW, h);
+        this._renderStatsColumn(currentStats, previewStats, halfW, 0, halfW, h);
 
-        this._drawActionButtons(availablePoints, pendingAllocations, 0, h, halfW);
-        
-        if (state.onLayoutUpdate) {
-            state.onLayoutUpdate(this.hitboxes);
-        }
+        this._drawActionButtons(availablePoints, pendingAllocations, hoverId, focusId, 0, h, halfW);
+        
+        if (state.onLayoutUpdate) {
+            state.onLayoutUpdate(this.hitboxes);
+        }
 
-        if (hoverId) {
-            const hoveredBox = this.hitboxes.find(b => b.id === hoverId);
-            if (hoveredBox) {
-                this.ui.drawSelectionBrackets(hoveredBox.x, hoveredBox.y, hoveredBox.w, hoveredBox.h, 10);
-            }
-        }
-    }
+        // Brackets exclusively track keyboard focus
+        if (focusId) {
+            const focusedBox = this.hitboxes.find(b => b.id === focusId);
+            if (focusedBox) {
+                this.ui.drawSelectionBrackets(focusedBox.x, focusedBox.y, focusedBox.w, focusedBox.h, 10);
+            }
+        }
+    }
 
     _renderStatsColumn(currentStats, previewStats, x, y, w, h) {
         if (!currentStats || !previewStats) return;
@@ -221,106 +222,136 @@ export class LevelUpRenderer {
         });
     }
 
-    _renderCharacterColumn(member, availablePoints, pendingAllocations, x, y, w, h) {
-        const centerX = x + (w / 2);
-        let currentY = y + this.layout.headerY; 
-        
-        const titleFont = UITheme.fonts.title || "bold 58px sans-serif";
-        const highlightFont = UITheme.fonts.bold || "bold 34px sans-serif";
-        const giantFont = UITheme.fonts.header || "bold 72px sans-serif";
+    _renderCharacterColumn(member, availablePoints, pendingAllocations, hoverId, focusId, x, y, w, h) {
+        const centerX = x + (w / 2);
+        let currentY = y + this.layout.headerY; 
+        
+        const titleFont = UITheme.fonts.title || "bold 58px sans-serif";
+        const highlightFont = UITheme.fonts.bold || "bold 34px sans-serif";
+        const giantFont = UITheme.fonts.header || "bold 72px sans-serif";
 
-        this.ui.drawText(member.name, centerX, currentY, titleFont, UITheme.colors.textMain, "center");
-        currentY += 53; 
+        this.ui.drawText(member.name, centerX, currentY, titleFont, UITheme.colors.textMain, "center");
+        currentY += 53; 
 
-        const lvlText = `Level ${member.level || 1} ${member.class || ''}`;
-        const pointsColor = availablePoints > 0 ? UITheme.colors.success : UITheme.colors.textMuted;
-        
-        this.ui.drawText(lvlText, centerX - 24, currentY, UITheme.fonts.body, UITheme.colors.textMuted, "right");
-        this.ui.drawText("|", centerX, currentY, UITheme.fonts.body, UITheme.colors.border, "center");
-        this.ui.drawText(`Unspent Points: ${availablePoints}`, centerX + 24, currentY, highlightFont, pointsColor, "left");
-        currentY += 29; 
+        const lvlText = `Level ${member.level || 1} ${member.class || ''}`;
+        const pointsColor = availablePoints > 0 ? UITheme.colors.success : UITheme.colors.textMuted;
+        
+        this.ui.drawText(lvlText, centerX - 24, currentY, UITheme.fonts.body, UITheme.colors.textMuted, "right");
+        this.ui.drawText("|", centerX, currentY, UITheme.fonts.body, UITheme.colors.border, "center");
+        this.ui.drawText(`Unspent Points: ${availablePoints}`, centerX + 24, currentY, highlightFont, pointsColor, "left");
+        currentY += 29; 
 
-        const pSize = this.layout.portraitSize;
-        const portraitX = Math.floor(centerX - (pSize / 2));
-        const img = this.loader.get(member.spritePortrait);
+        const pSize = this.layout.portraitSize;
+        const portraitX = Math.floor(centerX - (pSize / 2));
+        const img = this.loader.get(member.spritePortrait);
 
-        this.ui.drawLancetArchedPanel(portraitX, currentY, pSize, pSize * 1.25, UITheme.colors.bgScale[2], UITheme.colors.borderHighlight);
+        this.ui.drawLancetArchedPanel(portraitX, currentY, pSize, pSize * 1.25, UITheme.colors.bgScale[2], UITheme.colors.borderHighlight);
 
-        if (img) {
-            this.ui.drawSprite(img, 0, 0, 128, 128, portraitX, currentY + (pSize * 0.15), pSize, pSize);
-        } else {
-            this.ui.drawText("?", centerX, currentY + (pSize * 0.7), giantFont, UITheme.colors.textMuted, "center");
-        }
-        currentY += (pSize * 1.25) + 36;
+        if (img) {
+            this.ui.drawSprite(img, 0, 0, 128, 128, portraitX, currentY + (pSize * 0.15), pSize, pSize);
+        } else {
+            this.ui.drawText("?", centerX, currentY + (pSize * 0.7), giantFont, UITheme.colors.textMuted, "center");
+        }
+        currentY += (pSize * 1.25) + 36;
 
-        const attributes = ['vigor', 'strength', 'dexterity', 'intelligence', 'attunement'];
-        const startX = centerX - (this.layout.attrBlockWidth / 2);
+        const attributes = ['vigor', 'strength', 'dexterity', 'intelligence', 'attunement'];
+        const startX = centerX - (this.layout.attrBlockWidth / 2);
 
-        attributes.forEach((attr, index) => {
-            const rowY = currentY + (index * this.layout.attrRowHeight);
-            const textY = rowY + 34;
-            this.ui.drawText(Formatting.capitalize(attr), startX, textY, UITheme.fonts.body, UITheme.colors.textMain, "left");
+        attributes.forEach((attr, index) => {
+            const rowY = currentY + (index * this.layout.attrRowHeight);
+            const textY = rowY + 34;
+            this.ui.drawText(Formatting.capitalize(attr), startX, textY, UITheme.fonts.body, UITheme.colors.textMain, "left");
 
-            const currentVal = member.attributes?.[attr] || 0;
-            const pendingVal = pendingAllocations[attr];
-            this.ui.drawText(currentVal.toString(), startX + 264, textY, UITheme.fonts.mono, UITheme.colors.textMain, "center");
+            const currentVal = member.attributes?.[attr] || 0;
+            const pendingVal = pendingAllocations[attr];
+            this.ui.drawText(currentVal.toString(), startX + 264, textY, UITheme.fonts.mono, UITheme.colors.textMain, "center");
 
-            if (pendingVal > 0) {
-                this.ui.drawText(`+${pendingVal}`, startX + 312, textY, UITheme.fonts.mono, UITheme.colors.success, "left");
-            }
+            if (pendingVal > 0) {
+                this.ui.drawText(`+${pendingVal}`, startX + 312, textY, UITheme.fonts.mono, UITheme.colors.success, "left");
+            }
 
-            const canSub = pendingVal > 0;
-            this.ui.drawRect(startX + 456, rowY + 5, 58, 58, UITheme.colors.bgScale[0], true);
-            this.ui.drawRect(startX + 456, rowY + 5, 58, 58, canSub ? UITheme.colors.failure : UITheme.colors.border, false);
-            this.ui.drawText("-", startX + 485, rowY + 43, UITheme.fonts.bold, canSub ? UITheme.colors.failure : UITheme.colors.textMuted, "center");
-            this.hitboxes.push({ id: `SUB_${attr.toUpperCase()}`, x: startX + 456, y: rowY + 5, w: 58, h: 58 });
+            // --- SUB BUTTON (-) ---
+            const canSub = pendingVal > 0;
+            const subId = `SUB_${attr.toUpperCase()}`;
+            let subBg = UITheme.colors.bgScale[0];
+            let subTextCol = canSub ? UITheme.colors.failure : UITheme.colors.textMuted;
+            let subBorder = canSub ? UITheme.colors.failure : UITheme.colors.border;
 
-            const canAdd = availablePoints > 0;
-            this.ui.drawRect(startX + 540, rowY + 5, 58, 58, UITheme.colors.bgScale[0], true);
-            this.ui.drawRect(startX + 540, rowY + 5, 58, 58, canAdd ? UITheme.colors.success : UITheme.colors.border, false);
-            this.ui.drawText("+", startX + 569, rowY + 43, UITheme.fonts.bold, canAdd ? UITheme.colors.success : UITheme.colors.textMuted, "center");
-            this.hitboxes.push({ id: `ADD_${attr.toUpperCase()}`, x: startX + 540, y: rowY + 5, w: 58, h: 58 });
-        });
-    }
+            if (canSub && focusId === subId) {
+                subBg = UITheme.colors.states.focusBg;
+                subTextCol = UITheme.colors.states.focusText;
+                subBorder = UITheme.colors.states.focusText;
+            } else if (canSub && hoverId === subId) {
+                subBg = UITheme.colors.states.hoverBg;
+                subTextCol = UITheme.colors.states.hoverText;
+                subBorder = UITheme.colors.states.hoverText;
+            }
 
-    _drawActionButtons(availablePoints, pendingAllocations, x, h, w) {
-        const btnY = h - 145; 
-        const centerX = x + (w / 2);
-        const hasPending = Object.values(pendingAllocations).some(v => v > 0);
+            this.ui.drawRect(startX + 456, rowY + 5, 58, 58, subBg, true);
+            this.ui.drawRect(startX + 456, rowY + 5, 58, 58, subBorder, false);
+            this.ui.drawText("-", startX + 485, rowY + 43, UITheme.fonts.bold, subTextCol, "center");
+            this.hitboxes.push({ id: subId, x: startX + 456, y: rowY + 5, w: 58, h: 58 });
 
-        const btnW = this.layout.btnWidth;
-        const btnH = this.layout.btnHeight;
-        const spacing = this.layout.btnSpacing;
-        const startX = centerX - (btnW * 1.5) - spacing; 
-        
-        const baseBg = UITheme.colors.bgScale[2];
+            // --- ADD BUTTON (+) ---
+            const canAdd = availablePoints > 0;
+            const addId = `ADD_${attr.toUpperCase()}`;
+            let addBg = UITheme.colors.bgScale[0];
+            let addTextCol = canAdd ? UITheme.colors.success : UITheme.colors.textMuted;
+            let addBorder = canAdd ? UITheme.colors.success : UITheme.colors.border;
 
-        // Cancel
-        const cancelX = startX;
-        this.ui.drawPanel(cancelX, btnY, btnW, btnH, baseBg);
-        this.ui.drawText("Cancel", cancelX + (btnW/2), btnY + 62, UITheme.fonts.body, UITheme.colors.textMain, "center");
-        this.hitboxes.push({ id: 'BTN_CANCEL', x: cancelX, y: btnY, w: btnW, h: btnH });
+            if (canAdd && focusId === addId) {
+                addBg = UITheme.colors.states.focusBg;
+                addTextCol = UITheme.colors.states.focusText;
+                addBorder = UITheme.colors.states.focusText;
+            } else if (canAdd && hoverId === addId) {
+                addBg = UITheme.colors.states.hoverBg;
+                addTextCol = UITheme.colors.states.hoverText;
+                addBorder = UITheme.colors.states.hoverText;
+            }
 
-        // Reset
-        const resetX = cancelX + btnW + spacing;
-        const resetColor = hasPending ? UITheme.colors.textMain : UITheme.colors.textMuted;
-        this.ui.drawPanel(resetX, btnY, btnW, btnH, baseBg);
-        this.ui.drawText("Reset", resetX + (btnW/2), btnY + 62, UITheme.fonts.body, resetColor, "center");
-        if (hasPending) {
-            // Brackets removed; hitbox remains active only when pending
-            this.hitboxes.push({ id: 'BTN_RESET', x: resetX, y: btnY, w: btnW, h: btnH });
-        }
+            this.ui.drawRect(startX + 540, rowY + 5, 58, 58, addBg, true);
+            this.ui.drawRect(startX + 540, rowY + 5, 58, 58, addBorder, false);
+            this.ui.drawText("+", startX + 569, rowY + 43, UITheme.fonts.bold, addTextCol, "center");
+            this.hitboxes.push({ id: addId, x: startX + 540, y: rowY + 5, w: 58, h: 58 });
+        });
+    }
 
-        // Confirm
-        const confirmX = resetX + btnW + spacing;
-        const confirmColor = hasPending ? UITheme.colors.success : UITheme.colors.textMuted;
-        this.ui.drawPanel(confirmX, btnY, btnW, btnH, baseBg);
-        this.ui.drawText("Confirm", confirmX + (btnW/2), btnY + 62, UITheme.fonts.body, confirmColor, "center");
-        if (hasPending) {
-            // Brackets removed; hitbox remains active only when pending
-            this.hitboxes.push({ id: 'BTN_CONFIRM', x: confirmX, y: btnY, w: btnW, h: btnH });
-        }
-    }
+    _drawActionButtons(availablePoints, pendingAllocations, hoverId, focusId, x, h, w) {
+        const btnY = h - 145; 
+        const centerX = x + (w / 2);
+        const hasPending = Object.values(pendingAllocations).some(v => v > 0);
+
+        const btnW = this.layout.btnWidth;
+        const btnH = this.layout.btnHeight;
+        const spacing = this.layout.btnSpacing;
+        const startX = centerX - (btnW * 1.5) - spacing; 
+
+        const drawBtn = (id, label, btnX, isActive, defaultCol) => {
+            let bg = UITheme.colors.bgScale[2];
+            let textCol = defaultCol;
+
+            if (isActive || id === 'BTN_CANCEL') {
+                if (focusId === id) {
+                    bg = UITheme.colors.states.focusBg;
+                    textCol = UITheme.colors.states.focusText;
+                } else if (hoverId === id) {
+                    bg = UITheme.colors.states.hoverBg;
+                    textCol = UITheme.colors.states.hoverText;
+                }
+            }
+
+            this.ui.drawPanel(btnX, btnY, btnW, btnH, bg);
+            this.ui.drawText(label, btnX + (btnW/2), btnY + 62, UITheme.fonts.body, textCol, "center");
+            
+            if (isActive || id === 'BTN_CANCEL') {
+                this.hitboxes.push({ id, x: btnX, y: btnY, w: btnW, h: btnH });
+            }
+        };
+
+        drawBtn('BTN_CANCEL', "Cancel", startX, true, UITheme.colors.textMain);
+        drawBtn('BTN_RESET', "Reset", startX + btnW + spacing, hasPending, hasPending ? UITheme.colors.textMain : UITheme.colors.textMuted);
+        drawBtn('BTN_CONFIRM', "Confirm", startX + (btnW * 2) + (spacing * 2), hasPending, hasPending ? UITheme.colors.success : UITheme.colors.textMuted);
+    }
 
     
 }
