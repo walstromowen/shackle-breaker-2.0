@@ -8,7 +8,8 @@ const KEY_BINDINGS = {
     'ArrowLeft': 'LEFT', 'KeyA': 'LEFT',
     'ArrowRight': 'RIGHT', 'KeyD': 'RIGHT',
     'Enter': 'CONFIRM', 'Space': 'CONFIRM',
-    'Escape': 'CANCEL', 'Backspace': 'CANCEL', 'KeyP': 'CANCEL', 'Tab': 'CANCEL'
+    'Escape': 'CANCEL', 'Backspace': 'CANCEL',
+    'KeyP': 'CANCEL', 'Tab': 'CANCEL'
 };
 
 export class LevelUpController extends BaseController {
@@ -44,23 +45,13 @@ export class LevelUpController extends BaseController {
         this.selectedAttributeIndex = 0;
         this.attributeColumn = 'ADD';
         this.selectedButtonIndex = 2;
-        this._syncHoverWithFocus();
     }
 
     // ========================================================
     // STANDARDIZED INPUT HANDLING
     // ========================================================
-    handleMouseMove(x, y, isMouseDown, renderer) {
-        const prevHoverId = this.hoveredHitboxId;
-        super.handleMouseMove(x, y, isMouseDown, renderer);
 
-        // --- SYNC KEYBOARD LOGIC WITH MOUSE HOVER ---
-        if (this.hoveredHitboxId && this.hoveredHitboxId !== prevHoverId) {
-            this._syncFocusWithHover(this.hoveredHitboxId);
-        }
-    }
-
-    _syncFocusWithHover(hitboxId) {
+    _setFocus(hitboxId) {
         if (!hitboxId) return;
 
         if (hitboxId.startsWith('ADD_') || hitboxId.startsWith('SUB_')) {
@@ -78,17 +69,13 @@ export class LevelUpController extends BaseController {
         }
     }
 
-    _syncHoverWithFocus() {
-        if (this.activeSection === 'ATTRIBUTES') {
-            const attr = this.attributes[this.selectedAttributeIndex].toUpperCase();
-            this.hoveredHitboxId = `${this.attributeColumn}_${attr}`;
-        } else if (this.activeSection === 'BUTTONS') {
-            this.hoveredHitboxId = this.uiButtons[this.selectedButtonIndex];
-        }
-    }
-
     onClick(hitboxId, fromKeyboard = false) {
         if (!hitboxId) return;
+
+        // Sync keyboard brackets to what the mouse just clicked
+        if (!fromKeyboard) {
+            this._setFocus(hitboxId);
+        }
 
         if (hitboxId.startsWith('ADD_')) {
             const attr = hitboxId.split('_')[1].toLowerCase();
@@ -97,7 +84,7 @@ export class LevelUpController extends BaseController {
                 this.availablePoints--;
             }
         }
-        
+
         if (hitboxId.startsWith('SUB_')) {
             const attr = hitboxId.split('_')[1].toLowerCase();
             if (this.pendingAllocations[attr] > 0) {
@@ -105,7 +92,7 @@ export class LevelUpController extends BaseController {
                 this.availablePoints++;
             }
         }
-        
+
         if (hitboxId === 'BTN_RESET') {
             this.attributes.forEach(attr => {
                 if (this.pendingAllocations[attr] > 0) {
@@ -114,15 +101,14 @@ export class LevelUpController extends BaseController {
                 }
             });
         }
-        
+
         if (hitboxId === 'BTN_CONFIRM') {
-            // Mirror visual lock: Only commit if there are actually points to spend
             const hasPending = Object.values(this.pendingAllocations).some(v => v > 0);
             if (hasPending) {
                 this.commitPoints();
             }
         }
-        
+
         if (hitboxId === 'BTN_CANCEL') {
             this.cancelAndReturn();
         }
@@ -133,11 +119,8 @@ export class LevelUpController extends BaseController {
     }
 
     handleKeyDown(keyCode, e) {
-        let intent = (e && KEY_BINDINGS[e.code]) || 
-                     (typeof this._mapKeyCodeToIntent === 'function' ? this._mapKeyCodeToIntent(keyCode) : null);
-
+        let intent = (e && KEY_BINDINGS[e.code]) || (typeof this._mapKeyCodeToIntent === 'function' ? this._mapKeyCodeToIntent(keyCode) : null);
         this.handleNavigatingKeys(intent, e);
-        this._syncHoverWithFocus();
     }
 
     handleNavigatingKeys(intent, e) {
@@ -150,9 +133,7 @@ export class LevelUpController extends BaseController {
                 if (this.selectedAttributeIndex < this.attributes.length - 1) {
                     this.selectedAttributeIndex++;
                 } else {
-                    // Drop down to the UI buttons
                     this.activeSection = 'BUTTONS';
-                    // Smart routing: left side drops to cancel, right side to confirm
                     this.selectedButtonIndex = this.attributeColumn === 'SUB' ? 0 : 2;
                 }
             } else if (intent === 'LEFT' || e?.code === 'ArrowLeft' || e?.code === 'KeyA') {
@@ -164,7 +145,6 @@ export class LevelUpController extends BaseController {
                     this.attributeColumn = 'ADD';
                 }
             } else if (intent === 'CONFIRM' || e?.code === 'Enter' || e?.code === 'Space') {
-                // FIXED: Reconstruct the target ID dynamically instead of relying on mouse hover state
                 const attr = this.attributes[this.selectedAttributeIndex].toUpperCase();
                 const targetId = `${this.attributeColumn}_${attr}`;
                 this.onClick(targetId, true);
@@ -173,7 +153,6 @@ export class LevelUpController extends BaseController {
             }
         } else if (this.activeSection === 'BUTTONS') {
             if (intent === 'UP' || e?.code === 'ArrowUp' || e?.code === 'KeyW') {
-                // Return to the bottom of the attributes list
                 this.activeSection = 'ATTRIBUTES';
                 this.selectedAttributeIndex = this.attributes.length - 1;
             } else if (intent === 'LEFT' || e?.code === 'ArrowLeft' || e?.code === 'KeyA') {
@@ -198,7 +177,6 @@ export class LevelUpController extends BaseController {
                 this.member.attributes[attr] += this.pendingAllocations[attr];
             }
         });
-        
         this.member.skillPoints = this.availablePoints;
         this.cancelAndReturn();
     }
@@ -210,15 +188,15 @@ export class LevelUpController extends BaseController {
     // ========================================================
     // STATE ACCESS FOR RENDERER
     // ========================================================
+
     getState() {
-        // FIXED: Derive the active ID directly from stable state, so it never blinks out
-        // even if the mouse cursor gets parked in a dead zone.
-        let activeId = null;
+        // Derive the logical selected ID (Keyboard Focus)
+        let selectedId = null;
         if (this.activeSection === 'ATTRIBUTES') {
             const attr = this.attributes[this.selectedAttributeIndex].toUpperCase();
-            activeId = `${this.attributeColumn}_${attr}`;
+            selectedId = `${this.attributeColumn}_${attr}`;
         } else if (this.activeSection === 'BUTTONS') {
-            activeId = this.uiButtons[this.selectedButtonIndex];
+            selectedId = this.uiButtons[this.selectedButtonIndex];
         }
 
         return {
@@ -227,7 +205,9 @@ export class LevelUpController extends BaseController {
             pendingAllocations: this.pendingAllocations,
             currentStats: StatCalculator.calculateDetailed(this.member),
             previewStats: StatCalculator.calculateDetailed(this.member, this.pendingAllocations),
-            hoveredElement: { id: activeId },
+            mouse: this.mouse,
+            hoveredElement: this.hoveredHitboxId ? { id: this.hoveredHitboxId } : null,
+            selectedElementId: selectedId,
             onLayoutUpdate: (hitboxes) => this.updateHitboxes(hitboxes)
         };
     }

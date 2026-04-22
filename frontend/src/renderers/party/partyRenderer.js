@@ -21,7 +21,8 @@ export class PartyRenderer {
         };
 
         this.statusIconSheetPath = '/assets/ui/status_icons.png'; 
-        this.statusIconSize = 38; 
+        // Changed to 32 for exact 1x scaling (was 38)
+        this.statusIconSize = 32; 
     }
 
     render(state) {
@@ -174,7 +175,8 @@ export class PartyRenderer {
             this.ui.drawText("★ LVL UP", x + cardW - 19, y + cardH - 24, UITheme.fonts.cardTitle, `rgba(${goldRgb}, ${alpha})`, "right");
         }
 
-        const pSize = 307; 
+        // Changed to 256 for exact 2x scaling (was 307)
+        const pSize = 256; 
         const pX = x + 10; 
         const pY = y + 14;  
         const masterSheet = this.loader.get(member.spritePortrait);
@@ -237,7 +239,8 @@ export class PartyRenderer {
 
         const sheetKey = 'statusEffects'; 
         const srcSize = 32;  
-        const drawSize = 38; 
+        // Changed to 32 for exact 1x scaling (was 38)
+        const drawSize = 32; 
         const spacing = 5; 
 
         const sheet = this.loader.get ? this.loader.get(sheetKey) : this.loader.getAsset(sheetKey);
@@ -278,7 +281,8 @@ export class PartyRenderer {
         const { x, y, payload } = dragState;
         const ctx = this.ctx;
         
-        const pSize = 120; 
+        // Changed to 128 for exact 1x scaling (was 120)
+        const pSize = 128; 
         
         ctx.save();
         ctx.globalAlpha = 0.85; 
