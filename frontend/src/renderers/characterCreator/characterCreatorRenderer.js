@@ -120,7 +120,7 @@ export class CharacterCreatorRenderer {
         // --- D. STATS TABLE ---
         curY = VITALS_START_Y;
 
-        ui.drawLineWithGothicFlourish(leftCenterX - 192, curY - 48, 384, UITheme.colors.border);
+        ui.drawLineWithGothicFlourish(leftCenterX - 192, curY - 48, 384, UITheme.colors.borderHighlight);
 
         if (previewStats) {
             const innerMargin = 48;

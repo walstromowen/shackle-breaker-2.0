@@ -17,7 +17,7 @@ export class StatsPanel {
         
         // --- Gothic Flourish Header ---
         currentY += 19; 
-        this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.border); 
+        this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.borderHighlight); 
         currentY += 36; // Space between line and content
 
         const attrs = member.attributes || {};
@@ -65,7 +65,7 @@ export class StatsPanel {
         this.ui.drawText("Combat Stats", x, currentY, UITheme.fonts.bold, UITheme.colors.textMain, "left");
 
         currentY += 19; 
-        this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.border);
+        this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.borderHighlight);
         currentY += 36; 
 
         const speed = stats.speed || member.attributes?.speed || 0;
@@ -133,7 +133,7 @@ export class StatsPanel {
         this.ui.drawText("RES", colRes, currentY, headerFont, UITheme.colors.resistance, "center");
         
         currentY += 19;
-        this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.border);
+        this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.borderHighlight);
         currentY += 36;
 
         const types = [

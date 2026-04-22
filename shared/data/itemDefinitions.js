@@ -710,6 +710,7 @@ export const ItemDefinitions = {
         maxStack: 20
     },
     "kurtus_brew": {
+        id: "brew_of_madness",
         name: "Kurtus's Brew of Madness",
         type: "consumable",
         useAbility: "brew_of_madness",

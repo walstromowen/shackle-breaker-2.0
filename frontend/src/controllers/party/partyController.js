@@ -4,6 +4,16 @@ import { events } from '../../core/eventBus.js';
 import { ContextMenuManager } from '../../ui/ContextMenuManager.js';
 import { DragAndDropManager } from '../../ui/dragAndDropManager.js'; 
 
+const KEY_BINDINGS = {
+    'ArrowUp': 'UP', 'KeyW': 'UP',
+    'ArrowDown': 'DOWN', 'KeyS': 'DOWN',
+    'ArrowLeft': 'LEFT', 'KeyA': 'LEFT',
+    'ArrowRight': 'RIGHT', 'KeyD': 'RIGHT',
+    'Enter': 'CONFIRM', 'Space': 'CONFIRM',
+    'Escape': 'CANCEL', 'Backspace': 'CANCEL',
+    'KeyP': 'CANCEL', 'Tab': 'CANCEL'
+};
+
 export class PartyController extends BaseController {
     constructor(input) {
         super(input); 
@@ -78,9 +88,8 @@ export class PartyController extends BaseController {
         }
     }
 
-    onClick(hitboxId) {
-        if (this.ignoreNextClick) return; 
-
+    onClick(hitboxId, fromKeyboard = false) {
+        if (this.ignoreNextClick) return;
         const party = gameState.party.members;
 
         if (this.contextMenu.menu) {
@@ -88,8 +97,7 @@ export class PartyController extends BaseController {
                 this.contextMenu.close();
                 return;
             }
-            if (hitboxId === 'MENU_BG') return; 
-            
+            if (hitboxId === 'MENU_BG') return;
             if (hitboxId.startsWith('MENU_OPT_')) {
                 const menuActionIndex = parseInt(hitboxId.replace('MENU_OPT_', ''), 10);
                 this.contextMenu.executeAction(menuActionIndex);
@@ -104,22 +112,21 @@ export class PartyController extends BaseController {
             } else {
                 this.contextMenu.close();
             }
-            return; 
+            return;
         }
 
         if (!hitboxId || !hitboxId.startsWith('CARD_')) return;
-
         const clickedIndex = parseInt(hitboxId.replace('CARD_', ''), 10);
-        if (clickedIndex >= party.length) return; 
+        if (clickedIndex >= party.length) return;
 
         if (this.state === 'NAVIGATING') {
             if (this.selectedIndex !== clickedIndex) {
                 this.selectedIndex = clickedIndex;
             } else {
-                this.confirmSelection(); 
+                // Pass the fromKeyboard flag down!
+                this.confirmSelection(fromKeyboard);
             }
-        } 
-        else if (this.state === 'SWAPPING') {
+        } else if (this.state === 'SWAPPING') {
             this.selectedIndex = clickedIndex;
             this.completeSwap();
         }
@@ -187,15 +194,17 @@ export class PartyController extends BaseController {
     }
 
     handleKeyDown(keyCode, e) {
-        const intent = typeof this._mapKeyCodeToIntent === 'function' ? this._mapKeyCodeToIntent(keyCode) : null;
+        // 1. Try to get the intent from our explicit bindings first
+        // 2. Fallback to the BaseController's mapper if the key isn't in our list
+        let intent = (e && KEY_BINDINGS[e.code]) 
+            || (typeof this._mapKeyCodeToIntent === 'function' ? this._mapKeyCodeToIntent(keyCode) : null);
 
+        // Now the context menu will successfully receive 'UP', 'DOWN', 'CONFIRM', etc.
         if (this.contextMenu.menu) {
             this.contextMenu.handleNavigation(intent);
-        } 
-        else if (this.state === 'NAVIGATING') {
+        } else if (this.state === 'NAVIGATING') {
             this.handleNavigatingKeys(intent, e);
-        } 
-        else if (this.state === 'SWAPPING') {
+        } else if (this.state === 'SWAPPING') {
             this.handleSwappingKeys(intent, e);
         }
     }
@@ -209,30 +218,26 @@ export class PartyController extends BaseController {
 
         if (intent === 'RIGHT' || e.code === 'ArrowRight' || e.code === 'KeyD') {
             if (col < this.gridColumns - 1 && this.selectedIndex + 1 < memberCount) this.selectedIndex++;
-        } 
-        else if (intent === 'LEFT' || e.code === 'ArrowLeft' || e.code === 'KeyA') {
+        } else if (intent === 'LEFT' || e.code === 'ArrowLeft' || e.code === 'KeyA') {
             if (col > 0) this.selectedIndex--;
-        }
-        else if (intent === 'DOWN' || e.code === 'ArrowDown' || e.code === 'KeyS') {
+        } else if (intent === 'DOWN' || e.code === 'ArrowDown' || e.code === 'KeyS') {
             const target = this.selectedIndex + this.gridColumns;
             if (target < memberCount) {
                 this.selectedIndex = target;
             } else if (target >= memberCount && this.selectedIndex < memberCount - 1) {
                 this.selectedIndex = memberCount - 1;
             }
-        }
-        else if (intent === 'UP' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+        } else if (intent === 'UP' || e.code === 'ArrowUp' || e.code === 'KeyW') {
             if (this.selectedIndex - this.gridColumns >= 0) this.selectedIndex -= this.gridColumns;
-        }
-        else if (intent === 'CONFIRM' || e.code === 'Enter' || e.code === 'Space') {
-            this.confirmSelection();
-        }
-        else if (intent === 'CANCEL' || e.code === 'KeyP' || e.code === 'Escape' || e.code === 'Tab') {
+        } else if (intent === 'CONFIRM' || e.code === 'Enter' || e.code === 'Space') {
+            // Flag as true so the menu highlights the first option
+            this.confirmSelection(true); 
+        } else if (intent === 'CANCEL' || e.code === 'KeyP' || e.code === 'Escape' || e.code === 'Tab') {
             this.cancelAndReturn();
         }
     }
 
-    confirmSelection() {
+    confirmSelection(fromKeyboard = false) {
         if (this.mode === 'BATTLE_SELECT' || this.mode === 'ENCOUNTER_SELECT') {
             const member = gameState.party.members[this.selectedIndex];
             const isDead = member.hp <= 0;
@@ -240,17 +245,15 @@ export class PartyController extends BaseController {
 
             if (isDead || isActive) {
                 console.log("[Party] Cannot select this member.");
-                return; 
+                return;
             }
-
             if (this.callback) {
                 this.callback(this.selectedIndex);
             }
-
             const targetScene = this.mode === 'BATTLE_SELECT' ? 'battle' : 'encounter';
             events.emit('CHANGE_SCENE', { scene: targetScene });
         } else {
-            this.openMenu();
+            this.openMenu(fromKeyboard);
         }
     }
 
@@ -269,18 +272,18 @@ export class PartyController extends BaseController {
     // ==========================================
     //            STATE 2: MENU
     // ==========================================
-    openMenu() {
+    openMenu(fromKeyboard = false) {
         const member = gameState.party.members[this.selectedIndex];
         if (!member) return;
-        
+
         const options = [
             {
                 label: 'Summary',
                 actionId: 'SUMMARY',
                 callback: () => {
-                    events.emit('CHANGE_SCENE', { 
-                        scene: 'character_summary', 
-                        data: { memberIndex: this.selectedIndex, character: member } 
+                    events.emit('CHANGE_SCENE', {
+                        scene: 'character_summary',
+                        data: { memberIndex: this.selectedIndex, character: member }
                     });
                 }
             },
@@ -289,7 +292,7 @@ export class PartyController extends BaseController {
                 actionId: 'MOVE',
                 callback: () => {
                     this.state = 'SWAPPING';
-                    this.swappingIdx = this.selectedIndex; 
+                    this.swappingIdx = this.selectedIndex;
                 }
             },
             {
@@ -300,25 +303,39 @@ export class PartyController extends BaseController {
                 }
             }
         ];
-        
+
         if (member.skillPoints && member.skillPoints > 0) {
             options.push({
                 label: 'Spend Skill Points',
                 actionId: 'SKILLS',
                 callback: () => {
-                    events.emit('CHANGE_SCENE', { 
-                        scene: 'level_up', 
-                        data: { memberIndex: this.selectedIndex, character: member } 
+                    events.emit('CHANGE_SCENE', {
+                        scene: 'level_up',
+                        data: { memberIndex: this.selectedIndex, character: member }
                     });
                 }
             });
         }
 
-        this.contextMenu.open(0, 0, options, member);
-        
-        // --- FIX: Remove Default Highlight ---
+        // UX Upgrade: Spawn at the mouse cursor if clicked, or roughly center if keyboard
+        let menuX = 0;
+        let menuY = 0;
+        if (!fromKeyboard && this.mouse) {
+            menuX = this.mouse.x;
+            menuY = this.mouse.y;
+        }
+
+        this.contextMenu.open(menuX, menuY, options, member);
+
+        // Dynamic Menu Highlight Logic
         if (this.contextMenu.menu) {
-            this.contextMenu.menu.selectedIndex = -1;
+            if (!fromKeyboard) {
+                // Clear default highlight for mouse users
+                this.contextMenu.menu.selectedIndex = -1; 
+            } else {
+                // Pre-select the first option for keyboard users
+                this.contextMenu.menu.selectedIndex = 0; 
+            }
         }
     }
 

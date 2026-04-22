@@ -26,7 +26,7 @@ export class EquipmentPanel {
 
         this._drawVitals(member, stats, centerX, headerY + 139, x, w);
 
-        const equipStartY = y + 228; 
+        const equipStartY = y + 228;
         this._drawEquipmentLayout(member, activeSlots, selectedIndex, isChoosingItem, centerX, equipStartY, w, hitboxes, heldItem);
 
         const traitsStartY = equipStartY + Math.max(this.PORTRAIT_SIZE, activeSlots.length/2 * 125) + 60;
@@ -37,7 +37,7 @@ export class EquipmentPanel {
         const totalMaxHp = this._getVal(stats.maxHp) || this._getVal(member.maxHp);
         const totalMaxStm = this._getVal(stats.maxStamina) || this._getVal(member.maxStamina);
         const totalMaxIns = this._getVal(stats.maxInsight) || this._getVal(member.maxInsight);
-        
+
         const currentXp = this._getVal(stats.xp) || this._getVal(member.xp);
         const nextXp = this._getVal(stats.xpToNext) || this._getVal(member.xpToNext) || this._getVal(stats.maxXp) || this._getVal(member.maxXp) || 100;
 
@@ -49,6 +49,7 @@ export class EquipmentPanel {
         this.ui.ctx.font = UITheme.fonts.mono;
         const gap = 36;
         const totalW = this.ui.ctx.measureText(hpText + stmText + insText + xpText).width + (gap * 3);
+
         let startX = centerX - (totalW / 2);
 
         const drawVital = (txt, color) => {
@@ -59,17 +60,17 @@ export class EquipmentPanel {
 
         drawVital(hpText, UITheme.colors.hp);
         drawVital(stmText, UITheme.colors.stm);
-        drawVital(insText, UITheme.colors.ins); 
-        drawVital(xpText, UITheme.colors.xp); 
+        drawVital(insText, UITheme.colors.ins);
+        drawVital(xpText, UITheme.colors.xp);
 
         // Gothic flourish instead of basic line divider
-        this.ui.drawLineWithGothicFlourish(fullX + 96, y + 36, fullW - 192, UITheme.colors.border);
+        this.ui.drawLineWithGothicFlourish(fullX + 96, y + 36, fullW - 192, UITheme.colors.borderHighlight);
     }
 
     _drawEquipmentLayout(member, activeSlots, selectedIndex, isChoosingItem, centerX, startY, w, hitboxes, heldItem) {
         const equipData = (member.state && member.state.equipment) ? member.state.equipment : (member.equipment || {});
         const splitIndex = Math.ceil(activeSlots.length / 2);
-        
+
         // --- Check if Mainhand holds a Two-Handed Weapon ---
         let isOffhandBlocked = false;
         const mhKey = Object.keys(equipData).find(k => k.toLowerCase() === 'mainhand');
@@ -91,17 +92,16 @@ export class EquipmentPanel {
 
         let assetKey = member.spritePortrait;
         const img = this.loader.get(assetKey);
-
         if(img) {
             this.ui.drawSprite(img, 0, 0, 128, 128, pX, pY, this.PORTRAIT_SIZE, this.PORTRAIT_SIZE);
         }
 
         this._drawStatusEffects(member, pX, pY, this.PORTRAIT_SIZE);
-        
+
         const drawSlot = (slotName, index, isLeft) => {
             const globalIndex = isLeft ? index : splitIndex + index;
             const isSelected = (globalIndex === selectedIndex);
-            
+
             const slotW = Math.floor((w - this.PORTRAIT_SIZE - 62) / 2);
             const slotX = isLeft ? (centerX - (this.PORTRAIT_SIZE/2) - slotW - 19) : (centerX + (this.PORTRAIT_SIZE/2) + 19);
             const slotY = startY + (index * (this.SLOT_HEIGHT + 10));
@@ -115,7 +115,6 @@ export class EquipmentPanel {
             if (heldItem) {
                 const item = heldItem.item;
                 const def = ItemDefinitions[item.defId];
-                
                 if (def) {
                     const iSlot = (def.slot || def.type || '').toLowerCase().replace(/[\s-]/g, '');
                     const sSlot = slotName.toLowerCase().replace(/\s/g, '');
@@ -129,7 +128,7 @@ export class EquipmentPanel {
             }
 
             // --- DYNAMIC STYLING ---
-            let boxColor = UITheme.colors.panelBg; 
+            let boxColor = UITheme.colors.panelBg;
 
             // Highlight backgrounds based on drop validity
             if (isValidDrop && !isBlocked) {
@@ -157,8 +156,9 @@ export class EquipmentPanel {
             }
 
             let item = equipData[slotName];
+
             if (heldItem && heldItem.source === 'equipment' && heldItem.originSlot === slotName) {
-                item = null; 
+                item = null;
             }
 
             let def = null;
@@ -170,18 +170,18 @@ export class EquipmentPanel {
             let itemName = "Empty";
             if (isBlocked) {
                 itemName = "Blocked";
-                item = null; 
-                def = null;  
+                item = null;
+                def = null;
             } else if (item && def) {
                 itemName = def.name;
                 if (item.level && item.level > 1) {
-                    itemName += ` Lv.${item.level}`; 
+                    itemName += ` Lv.${item.level}`;
                 }
             }
-            
+
             const iconX = isLeft ? (slotX + slotW - 82) : (slotX + 5);
             const textX = isLeft ? (slotX + slotW - 91) : (slotX + 86);
-            const textW = slotW - 96; 
+            const textW = slotW - 96;
             const align = isLeft ? "right" : "left";
 
             if (def) this._drawIcon(def, iconX, slotY + 19);
@@ -190,7 +190,7 @@ export class EquipmentPanel {
 
             const nameLines = this.ui.getWrappedLines(itemName, textW, UITheme.fonts.cardSmall);
             let nameY = slotY + 58;
-            if (nameLines.length === 1) nameY += 10; 
+            if (nameLines.length === 1) nameY += 10;
 
             nameLines.forEach((line, i) => {
                 if (i < 2) {
@@ -212,8 +212,8 @@ export class EquipmentPanel {
     _drawTraitBadges(member, x, y, w, hitboxes) {
         const centerX = x + (w / 2);
         this.ui.drawText("Traits", centerX, y, UITheme.fonts.bold, UITheme.colors.textMuted, "center");
-        this.ui.drawLineWithGothicFlourish(centerX - 120, y + 19, 240, UITheme.colors.border);
-        
+        this.ui.drawLineWithGothicFlourish(centerX - 120, y + 19, 240, UITheme.colors.borderHighlight);
+
         let currentX = x + 72;
         let currentY = y + 60;
         const traits = member.traits || [];
@@ -226,27 +226,26 @@ export class EquipmentPanel {
         traits.forEach(traitId => {
             const def = TRAIT_DEFINITIONS[traitId] || { name: traitId };
             const width = this.ui.ctx.measureText(def.name).width + 48;
-            
+
             if (currentX + width > x + w - 72) {
                 currentX = x + 72;
                 currentY += 72;
             }
 
             hitboxes.push({ id: traitId, x: currentX, y: currentY, w: width, h: 53, type: 'trait' });
-
             this.ui.drawPanel(currentX, currentY, width, 53, UITheme.colors.bgScale[1]);
             this.ui.drawText(def.name, currentX + width/2, currentY + 34, UITheme.fonts.cardSmall, UITheme.colors.textMain, "center", "middle");
+
             currentX += width + 19;
         });
     }
 
     _drawIcon(def, x, y) {
         if (!def) return;
-        
-        let sheetName = 'items'; 
+        let sheetName = 'items';
         const type = (def.type || '').toLowerCase();
         const slot = (def.slot || '').toLowerCase();
-        
+
         if (slot === 'mainhand' || slot === 'offhand' || type === 'weapon' || type === 'shield' || type === 'tool') {
             sheetName = 'weapons';
         } else if (type === 'armor' || ['head', 'body', 'legs', 'feet', 'hands', 'accessory'].includes(slot)) {
@@ -257,9 +256,9 @@ export class EquipmentPanel {
             sheetName = 'materials';
         }
 
-        const sheet = this.loader.get(sheetName) || this.loader.get('items') || this.loader.get('icons'); 
+        const sheet = this.loader.get(sheetName) || this.loader.get('items') || this.loader.get('icons');
         if (!sheet) return;
-        
+
         const iconData = def.icon || {col:0, row:0};
         this.ui.drawSprite(sheet, iconData.col*32, iconData.row*32, 32, 32, x, y, 77, 77);
     }
@@ -267,14 +266,13 @@ export class EquipmentPanel {
     _drawStatusEffects(member, pX, pY, pSize) {
         if (!member.statusEffects || member.statusEffects.length === 0) return;
 
-        const sheetKey = 'statusEffects'; 
-        const srcSize = 32;  
-        const drawSize = 38; 
-        const spacing = 5; 
-
+        const sheetKey = 'statusEffects';
+        const srcSize = 32;
+        const drawSize = 38;
+        const spacing = 5;
         const sheet = this.loader.get ? this.loader.get(sheetKey) : this.loader.getAsset(sheetKey);
-        
-        let drawX = pX + 5; 
+
+        let drawX = pX + 5;
         let drawY = pY + pSize - drawSize - 5;
 
         member.statusEffects.forEach(effect => {
@@ -283,9 +281,9 @@ export class EquipmentPanel {
 
             if (sheet && effect.icon) {
                 this.ui.ctx.drawImage(
-                    sheet, 
-                    effect.icon.col * srcSize, effect.icon.row * srcSize, srcSize, srcSize, 
-                    drawX, drawY, drawSize, drawSize 
+                    sheet,
+                    effect.icon.col * srcSize, effect.icon.row * srcSize, srcSize, srcSize,
+                    drawX, drawY, drawSize, drawSize
                 );
             } else {
                 this.ui.drawText(effect.name.charAt(0), drawX + (drawSize/2), drawY + (drawSize/2), UITheme.fonts.cardSmall, "white", "center", "middle");
@@ -299,12 +297,10 @@ export class EquipmentPanel {
                 this.ui.ctx.beginPath();
                 this.ui.ctx.arc(drawX + drawSize, drawY + drawSize, 14, 0, Math.PI * 2);
                 this.ui.ctx.fill();
-                
                 this.ui.drawText(effect.stacks.toString(), drawX + drawSize, drawY + drawSize, UITheme.fonts.cardSmall, "white", "center", "middle");
             }
 
             drawX += (drawSize + spacing);
-            
             if (drawX + drawSize > pX + pSize) return;
         });
     }

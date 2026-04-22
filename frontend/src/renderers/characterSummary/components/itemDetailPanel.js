@@ -79,7 +79,7 @@ export class ItemDetailPanel {
         
         // Flourish Divider Under Header
         const flourishW = w * 0.7;
-        this.ui.drawLineWithGothicFlourish(x + (w - flourishW)/2, currentY + 24, flourishW, UITheme.colors.border);
+        this.ui.drawLineWithGothicFlourish(x + (w - flourishW)/2, currentY + 24, flourishW, UITheme.colors.borderHighlight);
         currentY += 72;
 
         // B. Description
@@ -366,7 +366,7 @@ export class ItemDetailPanel {
         currentY += 19;
         
         // Replaced flat line with gothic line
-        this.ui.drawLineWithGothicFlourish(x + w * 0.1, currentY, w * 0.8, UITheme.colors.border);
+        this.ui.drawLineWithGothicFlourish(x + w * 0.1, currentY, w * 0.8, UITheme.colors.borderHighlight);
         currentY += 29;
 
         if (costs.currency) {
@@ -398,7 +398,7 @@ export class ItemDetailPanel {
             
             this.ui.drawText(label, x, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
             currentY += 19;
-            this.ui.drawLineWithGothicFlourish(x + w * 0.1, currentY, w * 0.8, UITheme.colors.border);
+            this.ui.drawLineWithGothicFlourish(x + w * 0.1, currentY, w * 0.8, UITheme.colors.borderHighlight);
             currentY += 36; 
 
             abilityList.forEach(abilityId => {
@@ -478,7 +478,8 @@ export class ItemDetailPanel {
                 cursorY += 24; 
 
                 if (descLines.length > 0) {
-                    this.ui.drawLineWithGothicFlourish(contentX, cursorY, contentW * 0.8, UITheme.colors.border);
+                    this.ui.drawLineWithGothicFlourish(contentX, cursorY, contentW * 0.8, UITheme.colors.borderHighlight);
+                    
                     cursorY += 34;
 
                     descLines.forEach(line => {

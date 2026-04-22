@@ -1,16 +1,30 @@
-import { BaseController } from '../core/baseController.js'; 
+import { BaseController } from '../core/baseController.js';
 import { CharacterCreatorLogic, CREATION_DATA } from './characterCreatorLogic.js';
 import { ScrollManager } from '../../ui/scrollManager.js';
 
+// --- STANDARDIZED INPUT BINDINGS ---
+const KEY_BINDINGS = {
+    'ArrowUp': 'UP',
+    'KeyW': 'UP',
+    'ArrowDown': 'DOWN',
+    'KeyS': 'DOWN',
+    'ArrowLeft': 'LEFT',
+    'KeyA': 'LEFT',
+    'ArrowRight': 'RIGHT',
+    'KeyD': 'RIGHT',
+    'Enter': 'CONFIRM',
+    'Space': 'CONFIRM',
+    'Escape': 'CANCEL',
+    'Backspace': 'CANCEL',
+    'Tab': 'CANCEL'
+};
+
 export class CharacterCreatorController extends BaseController {
-    // Note: Passed input here in case BaseController expects it, 
-    // though UIInteractionManager uses its proxy.
     constructor(input) {
-        super(input); 
-        
+        super(input);
         this.logic = new CharacterCreatorLogic();
         this.scrollManager = new ScrollManager();
-        
+
         // Register potential scroll zones early so the thumbs are recognized
         this.scrollManager.registerZone('preview_panel', { thumbIds: ['SCROLL_THUMB_PREVIEW'] });
         this.scrollManager.registerZone('stats_panel', { thumbIds: ['SCROLL_THUMB_STATS'] });
@@ -19,41 +33,30 @@ export class CharacterCreatorController extends BaseController {
     // ========================================================
     // LIFECYCLE
     // ========================================================
-
     update(dt) {
-        // Assuming your framework passes a delta time to controllers
         if (super.update) super.update(dt);
-        
-        // Drive the smooth scrolling interpolation
-        this.scrollManager.update(dt); 
+        this.scrollManager.update(dt);
     }
 
     // ========================================================
     // STATE ACCESS FOR RENDERER
     // ========================================================
-
     getState() {
         return {
             currentRow: this.logic.currentRow,
             currentStep: this.logic.getCurrentStep(),
-            isEditingName: this.logic.isEditingName, 
+            isEditingName: this.logic.isEditingName,
             data: CREATION_DATA,
             selections: this.logic.state,
             previewStats: this.logic.getPreviewStats(),
-            mouse: this.mouse, 
-            
-            // Map BaseController's string ID to the object the Renderer expects
-            hoveredElement: this.hoveredHitboxId ? { id: this.hoveredHitboxId } : null, 
-            
+            mouse: this.mouse,
+            hoveredElement: this.hoveredHitboxId ? { id: this.hoveredHitboxId } : null,
             scrollOffsets: {
                 preview: this.scrollManager.getOffset('preview_panel'),
                 stats: this.scrollManager.getOffset('stats_panel')
             },
-            
             onLayoutUpdate: (hitboxes, scrollBounds) => {
-                // Use BaseController's method so UIInteractionManager can see them
-                this.updateHitboxes(hitboxes); 
-                
+                this.updateHitboxes(hitboxes);
                 if (scrollBounds) {
                     if (scrollBounds.preview) this.scrollManager.registerZone('preview_panel', scrollBounds.preview);
                     if (scrollBounds.stats) this.scrollManager.registerZone('stats_panel', scrollBounds.stats);
@@ -65,20 +68,16 @@ export class CharacterCreatorController extends BaseController {
     // ========================================================
     // STANDARDIZED INPUT HANDLING (Overrides BaseController)
     // ========================================================
-
     handleMouseMove(x, y, isMouseDown, renderer) {
-        // Cache the previous hover state before letting the BaseController update it
         const prevHoverId = this.hoveredHitboxId;
-        
-        super.handleMouseMove(x, y, isMouseDown, renderer); 
-        
+        super.handleMouseMove(x, y, isMouseDown, renderer);
+
         // --- SYNC KEYBOARD LOGIC WITH MOUSE HOVER ---
         if (!this.logic.isEditingName && this.hoveredHitboxId && this.hoveredHitboxId !== prevHoverId) {
             this._syncFocusWithHover(this.hoveredHitboxId);
         }
     }
 
-    // Maps UI hitboxes back to logical steps to keep the cursor unified
     _syncFocusWithHover(hitboxId) {
         if (hitboxId === 'INPUT_NAME') {
             this.logic.setRowByStep('name');
@@ -93,32 +92,13 @@ export class CharacterCreatorController extends BaseController {
         }
     }
 
-    onDragStart(hitboxId) {
-        // Automatically called by UIInteractionManager if a drag threshold is met
-        if (hitboxId === 'SCROLL_THUMB_PREVIEW' || hitboxId === 'SCROLL_THUMB_STATS') {
-            this.scrollManager.handleDragStart(hitboxId, this.mouse.y);
-        }
-    }
-
-    onDragMove(x, y) {
-        // Semantic drag update
-        this.scrollManager.handleDragMove(y);
-    }
-
-    onDrop(hitboxId, x, y) {
-        // Release the scrollbar
-        this.scrollManager.handleDragEnd();
-    }
-
-    onClick(hitboxId) {
-        // Name validation catch
+    onClick(hitboxId, fromKeyboard = false) {
         if (this.logic.isEditingName && hitboxId !== 'INPUT_NAME') {
             this.logic.validateName();
         }
 
         if (!hitboxId) return;
 
-        // Routing based on Hitbox ID
         if (hitboxId === 'INPUT_NAME') {
             this.logic.setRowByStep('name');
             this.logic.isEditingName = true;
@@ -135,9 +115,37 @@ export class CharacterCreatorController extends BaseController {
         }
     }
 
+    onRightClick(hitboxId) {
+        if (this.logic.isEditingName) {
+            this.logic.validateName();
+        } else if (this.scrollManager.isDragging) {
+            this.scrollManager.handleDragEnd();
+        }
+    }
+
+    // ========================================================
+    // STANDARD DRAG AND DROP CALLBACKS
+    // ========================================================
+    onDragStart(hitboxId) {
+        if (hitboxId === 'SCROLL_THUMB_PREVIEW' || hitboxId === 'SCROLL_THUMB_STATS') {
+            this.scrollManager.handleDragStart(hitboxId, this.mouse.y);
+        }
+    }
+
+    onDragMove(x, y) {
+        if (this.scrollManager.isDragging) {
+            this.scrollManager.handleDragMove(y);
+        }
+    }
+
+    onDrop(sourceHitboxId, targetHitboxId) {
+        if (this.scrollManager.isDragging) {
+            this.scrollManager.handleDragEnd();
+        }
+    }
+
     handleScroll(delta) {
-        // Increased multiplier from 8 to 40 for a larger scroll distance per wheel notch
-        this.scrollManager.handleScrollWheel(this.mouse.x, this.mouse.y, delta * 40); 
+        this.scrollManager.handleScrollWheel(this.mouse.x, this.mouse.y, delta * 40);
     }
 
     handleKeyDown(keyCode, e) {
@@ -145,26 +153,33 @@ export class CharacterCreatorController extends BaseController {
             if (e.code === "Enter" || e.code === "Escape") {
                 this.logic.validateName();
             } else {
-                this.logic.nameInput.handleEvent(e); 
-                this.logic.state.name = this.logic.nameInput.value; 
+                this.logic.nameInput.handleEvent(e);
+                this.logic.state.name = this.logic.nameInput.value;
             }
-            return; 
+            return;
         }
 
-        // Note: Assuming `_mapKeyCodeToIntent` exists in your BaseController, 
-        // otherwise default entirely to checking `e.code`.
-        const intent = typeof this._mapKeyCodeToIntent === 'function' ? this._mapKeyCodeToIntent(keyCode) : null;
+        // 1. Try explicit bindings first, fallback to BaseController's mapper
+        const intent = (e && KEY_BINDINGS[e.code]) || 
+                       (typeof this._mapKeyCodeToIntent === 'function' ? this._mapKeyCodeToIntent(keyCode) : null);
 
-        if (intent === 'UP' || e.code === "ArrowUp" || e.code === "KeyW") {
+        if (!intent) return;
+
+        if (intent === 'UP') {
             this.logic.moveRow(-1);
-        } else if (intent === 'DOWN' || e.code === "ArrowDown" || e.code === "KeyS") {
+        } else if (intent === 'DOWN') {
             this.logic.moveRow(1);
-        } else if (intent === 'LEFT' || e.code === "ArrowLeft" || e.code === "KeyA") {
+        } else if (intent === 'LEFT') {
             if (this.logic.modifyValue(-1)) this.scrollManager.resetAllScrolls();
-        } else if (intent === 'RIGHT' || e.code === "ArrowRight" || e.code === "KeyD") {
+        } else if (intent === 'RIGHT') {
             if (this.logic.modifyValue(1)) this.scrollManager.resetAllScrolls();
-        } else if (intent === 'CONFIRM' || e.code === "Enter" || e.code === "Space") {
+        } else if (intent === 'CONFIRM') {
             this.logic.handleAction();
+        } else if (intent === 'CANCEL') {
+            // Cancel any active drag/scroll operations
+            if (this.scrollManager.isDragging) {
+                this.scrollManager.handleDragEnd();
+            }
         }
     }
 }

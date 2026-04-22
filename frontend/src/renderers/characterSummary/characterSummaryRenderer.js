@@ -97,7 +97,7 @@ export class CharacterSummaryRenderer {
 
         // E. Context Menu
         if (state.contextMenu) {
-            this._drawContextMenu(state.contextMenu, state.contextMenu.selectedIndex);
+            this._drawContextMenu(state.contextMenu, state.contextMenu.selectedIndex, state.hoveredHitboxId);
         }
 
         // F. Tooltips
@@ -218,19 +218,16 @@ export class CharacterSummaryRenderer {
         this.ctx.restore()
     }
 
-    _drawContextMenu(menu, selectedIndex = 0) {
+    _drawContextMenu(menu, selectedIndex = 0, hoveredHitboxId = null) {
         if (!menu || !menu.options) return;
 
         const btnHeight = 77;  // Scaled 32 * 2.4
-        
-        // FIX: Added padding so the top/bottom buttons clear the 10px inner border
+        // Added padding so the top/bottom buttons clear the 10px inner border
         const padding = 14;    // Scaled ~6 * 2.4
-        
-        // FIX: Made the menu slightly wider for more breathing room
+        // Made the menu slightly wider for more breathing room
         const menuW = 312;     // Scaled 130 * 2.4 (Up from 288)
-        
         const menuH = (menu.options.length * btnHeight) + (padding * 2);
-        
+
         const screenW = this.ctx.canvas.width;
         const screenH = this.ctx.canvas.height;
 
@@ -239,12 +236,12 @@ export class CharacterSummaryRenderer {
 
         // Clamp to screen boundaries (Scaled padding of 12)
         if (x + menuW > screenW) x = screenW - menuW - 12;
-        if (y + menuH > screenH) y = screenH - menuH - 12; 
+        if (y + menuH > screenH) y = screenH - menuH - 12;
         if (x < 12) x = 12;
         if (y < 12) y = 12;
 
         const layout = { x, y, w: menuW, h: menuH };
-        
+
         // Prepare the config properties required by CanvasUI
         const menuConfig = {
             ...menu,
@@ -253,11 +250,21 @@ export class CharacterSummaryRenderer {
             padding: padding
         };
 
+        // Map the hovered ID back to the standard MENU_OPT expected by CanvasUI
+        let menuHoverId = null;
+        if (hoveredHitboxId && hoveredHitboxId.startsWith('CTX_OPT_')) {
+            menuHoverId = hoveredHitboxId.replace('CTX_OPT_', 'MENU_OPT_');
+        } else if (hoveredHitboxId === 'MENU_BG') {
+            menuHoverId = 'MENU_BG';
+        }
+
         // --- Z-Order Handling ---
         const menuHitboxes = [];
-        this.ui.drawContextMenu(menuConfig, layout, menuHitboxes);
+        
+        // Pass the mapped menuHoverId as the 4th argument!
+        this.ui.drawContextMenu(menuConfig, layout, menuHitboxes, menuHoverId);
 
-        // Translate CanvasUI's standardized 'MENU_OPT_' ids back to the 'CTX_OPT_' 
+        // Translate CanvasUI's standardized 'MENU_OPT_' ids back to the 'CTX_OPT_'
         // ids that this specific screen's input controller is expecting.
         menuHitboxes.forEach(box => {
             if (box.id && box.id.startsWith('MENU_OPT_')) {
@@ -270,15 +277,16 @@ export class CharacterSummaryRenderer {
 
     _drawInputPrompts(state, leftW, centerW, h) {
         let lines = [];
-
+        
+        // Increased horizontal spacing between elements using "      " instead of "   "
         if (state.contextMenu) {
-            lines.push("[L-Click/SPC] Select   [R-Click/ESC] Close");
+            lines.push("[L-Click/SPC] Select      [R-Click/ESC] Close");
         } 
         else if (state.heldItem) {
-            lines.push("[L-Click] Place   [R-Click/ESC] Cancel");
+            lines.push("[L-Click] Place      [R-Click/ESC] Cancel");
         } 
         else if (state.isChoosingItem) {
-            lines.push("[L-Click/SPC] Menu   [Hover/V] View   [R-Click/ESC] Back");
+            lines.push("[L-Click/SPC] Menu      [Hover/V] View      [R-Click/ESC] Back");
         } 
         else {
             const slotName = (state.slots && state.slots[state.selectedSlotIndex]) || null;
@@ -297,24 +305,26 @@ export class CharacterSummaryRenderer {
 
             row2.push("[R-Click/ESC] Back");
 
-            lines.push(row1.join("   "));
-            lines.push(row2.join("   "));
+            lines.push(row1.join("      "));
+            lines.push(row2.join("      "));
         }
 
         const centerX = leftW + Math.floor(centerW / 2);
 
         // Dynamically size the flourish line so it respects the center column's boundaries
         const flourishW = Math.min(720, centerW - 64); 
-        this.ui.drawLineWithGothicFlourish(centerX - (flourishW / 2), h - 84, flourishW, UITheme.colors.border); 
+        
+        // Raised the flourish line slightly (from h - 84 to h - 104) to make room for spacing
+        this.ui.drawLineWithGothicFlourish(centerX - (flourishW / 2), h - 104, flourishW, UITheme.colors.borderHighlight); 
 
-        // If we have two lines, start drawing a bit higher so they don't collide with the bottom edge
-        const startY = h - (lines.length > 1 ? 52 : 36); 
+        // Give the text rows much more breathing room vertically
+        const startY = h - (lines.length > 1 ? 64 : 44); 
 
         lines.forEach((lineText, index) => {
             this.ui.drawText(
                 lineText, 
                 centerX,        
-                startY + (index * 24), // 24px vertical gap between lines
+                startY + (index * 32), // Increased from 24px to 32px vertical gap
                 UITheme.fonts.small, 
                 UITheme.colors.textMuted, 
                 "center"      
