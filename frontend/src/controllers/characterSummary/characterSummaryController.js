@@ -73,8 +73,18 @@ export class CharacterSummaryController extends BaseController {
         this.setupInteractionHandlers();
     }
 
-    get currentMember() { 
-        return this.logic.currentMember; 
+    get currentMember() {
+        return this.logic.currentMember;
+    }
+
+    // ========================================================
+    // LIFECYCLE
+    // ========================================================
+    update(dt) {
+        if (super.update) super.update(dt);
+        
+        // This drives the smooth scrolling math!
+        this.scrollManager.update(dt);
     }
 
     // ========================================================

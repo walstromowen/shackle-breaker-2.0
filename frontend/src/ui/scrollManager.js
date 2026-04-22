@@ -14,6 +14,11 @@ export class ScrollManager {
         };
     }
 
+    // --- NEW GETTER TO SYNC WITH PIPELINE ---
+    get isDragging() {
+        return this.dragState.active;
+    }
+
     registerZone(id, config) {
         const existing = this.zones.get(id) || { offset: 0, targetOffset: 0 };
         this.zones.set(id, { ...existing, ...config });
