@@ -11,27 +11,25 @@ export class BattleRenderer {
         this.ctx = ctx;
         this.config = config;
         this.loader = loader;
-        
         this.ui = new CanvasUI(ctx);
-        
+
         // --- SUBCOMPONENTS ---
         this.vfxRenderer = new VFXRenderer(ctx, loader);
         this.combatantRenderer = new BattleCombatantRenderer(ctx, config, loader, this.ui, this.vfxRenderer);
         this.hudRenderer = new BattleHUDRenderer(ctx, config, loader, this.ui, this.combatantRenderer);
-        this.debugRenderer = new BattleDebuggerRenderer(ctx, config); 
-        
-        this.showDebug = false; 
+        this.debugRenderer = new BattleDebuggerRenderer(ctx, config);
 
+        this.showDebug = false;
         this.lastTime = performance.now();
         this.dt = 0;
         this.floatingTexts = [];
-        this.currentState = null; 
+        this.currentState = null;
 
         // Map floating text palette strictly to centralized UITheme base vitals
         this.COLORS = {
-            hp: UITheme.colors.hp, 
-            stm: UITheme.colors.stm, 
-            ins: UITheme.colors.ins, 
+            hp: UITheme.colors.hp,
+            stm: UITheme.colors.stm,
+            ins: UITheme.colors.ins,
             highlight: UITheme.colors.borderHighlight,
             textMain: UITheme.colors.textMain,
             textMuted: UITheme.colors.textMuted
@@ -39,14 +37,14 @@ export class BattleRenderer {
 
         // Event Listeners
         events.on('SPAWN_FCT', (payload) => {
-            if (!this.currentState) return; 
+            if (!this.currentState) return;
             this.spawnFloatingText(payload);
         });
 
         events.on('SPAWN_VFX', (payload) => {
             this.vfxRenderer.spawn(payload);
         });
-        
+
         events.on('SPAWN_VFX_BURST', ({ x, y, count, config }) => {
             this.vfxRenderer.spawnBurst(x, y, count, config);
         });
@@ -58,12 +56,15 @@ export class BattleRenderer {
 
     render(state) {
         if (!state) return;
-        this.currentState = state; 
+        this.currentState = state;
 
         const { CANVAS_WIDTH, CANVAS_HEIGHT } = this.config;
         const now = performance.now();
-        this.dt = Math.min((now - (this.lastTime || now)) / 1000, 0.1); 
+        this.dt = Math.min((now - (this.lastTime || now)) / 1000, 0.1);
         this.lastTime = now;
+
+        // --- PIPELINE HITBOX INJECTION ---
+        const hitboxes = [];
 
         // --- Update Systems ---
         this.vfxRenderer.update(this.dt);
@@ -71,10 +72,8 @@ export class BattleRenderer {
         // --- Audio & VFX Sync Logic ---
         const anim = state.activeAnimation;
         if (anim) {
-            const progress = (state.timer !== undefined && anim.duration) 
-                ? Math.min(state.timer / anim.duration, 1.0) 
-                : 0;
-            
+            const progress = (state.timer !== undefined && anim.duration) ? Math.min(state.timer / anim.duration, 1.0) : 0;
+
             if (typeof anim.getAudioTriggers === 'function') {
                 const audioCues = anim.getAudioTriggers(progress);
                 audioCues.forEach(cue => {
@@ -87,9 +86,7 @@ export class BattleRenderer {
                 if (vfxCues.length > 0) {
                     const centerPos = { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 };
                     const sourcePos = this.combatantRenderer.getEntityPosition(anim.actor, state) || centerPos;
-                    const targetPos = (anim.targets && anim.targets.length > 0) 
-                        ? (this.combatantRenderer.getEntityPosition(anim.targets[0], state) || sourcePos) 
-                        : sourcePos;
+                    const targetPos = (anim.targets && anim.targets.length > 0) ? (this.combatantRenderer.getEntityPosition(anim.targets[0], state) || sourcePos) : sourcePos;
 
                     vfxCues.forEach(cue => {
                         let startX = cue.origin === 'target' ? targetPos.x : sourcePos.x;
@@ -97,16 +94,14 @@ export class BattleRenderer {
 
                         if (cue.type === 'burst') {
                             this.vfxRenderer.spawnBurst(startX, startY, cue.count || 10, cue.config);
-                        } 
-                        else if (cue.type === 'travel') {
+                        } else if (cue.type === 'travel') {
                             this.vfxRenderer.spawn({
                                 ...cue.config,
                                 startX: sourcePos.x, startY: sourcePos.y,
                                 endX: targetPos.x, endY: targetPos.y,
                                 movement: cue.config.movement || 'linear'
                             });
-                        }
-                        else if (cue.type === 'spawn') {
+                        } else if (cue.type === 'spawn') {
                             this.vfxRenderer.spawn({ ...cue.config, startX: startX, startY: startY });
                         }
                     });
@@ -119,17 +114,17 @@ export class BattleRenderer {
         // 1. Draw Background
         const baseBgKey = state.backgroundId || 'plainsBattleDayBg';
         const baseBgImg = this.loader.get ? this.loader.get(baseBgKey) : this.loader.getAsset(baseBgKey);
-
+        
         if (baseBgImg) {
             this.ctx.drawImage(baseBgImg, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         } else {
-            this.ctx.fillStyle = UITheme.colors.background; 
+            this.ctx.fillStyle = UITheme.colors.background;
             this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         }
 
         // --- CINEMATIC VIGNETTE OVER THE BACKGROUND ---
         const gradient = this.ctx.createRadialGradient(
-            CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, CANVAS_HEIGHT * 0.2, 
+            CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, CANVAS_HEIGHT * 0.2,
             CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, CANVAS_HEIGHT * 0.9
         );
         gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
@@ -138,10 +133,7 @@ export class BattleRenderer {
         this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
         if (anim && typeof anim.getActiveBackground === 'function') {
-            const progress = (state.timer !== undefined && anim.duration) 
-                ? Math.min(state.timer / anim.duration, 1.0) 
-                : 0;
-            
+            const progress = (state.timer !== undefined && anim.duration) ? Math.min(state.timer / anim.duration, 1.0) : 0;
             const activeBg = anim.getActiveBackground(progress);
 
             if (activeBg) {
@@ -150,28 +142,29 @@ export class BattleRenderer {
                 if (activeBg.filter && activeBg.filter !== 'none') {
                     this.ctx.filter = activeBg.filter;
                 }
+
                 const overrideKey = activeBg.key || baseBgKey;
                 const overrideImg = this.loader.get ? this.loader.get(overrideKey) : this.loader.getAsset(overrideKey);
-
+                
                 if (overrideImg) {
                     this.ctx.drawImage(overrideImg, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
                 } else {
-                    this.ctx.fillStyle = UITheme.colors.background; 
+                    this.ctx.fillStyle = UITheme.colors.background;
                     this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
                 }
                 this.ctx.restore();
             }
         }
 
-        // 2. Draw Entities 
-        this.combatantRenderer.drawGroup(state.activeEnemies, false, state);
-        this.combatantRenderer.drawGroup(state.activeParty, true, state);
+        // 2. Draw Entities (Passing hitboxes down)
+        this.combatantRenderer.drawGroup(state.activeEnemies, false, state, hitboxes);
+        this.combatantRenderer.drawGroup(state.activeParty, true, state, hitboxes);
 
         // 3. Draw VFX
         this.vfxRenderer.render();
 
-        // 4. Draw HUD & Menus
-        this.hudRenderer.render(state, this.dt);
+        // 4. Draw HUD & Menus (Passing hitboxes down)
+        this.hudRenderer.render(state, this.dt, hitboxes);
 
         // 5. Draw Floating Combat Text
         this.drawFloatingTexts(this.dt);
@@ -179,6 +172,11 @@ export class BattleRenderer {
         // 6. Draw Debug Overlay
         if (this.showDebug) {
             this.debugRenderer.render(state);
+        }
+
+        // --- PIPELINE COMMIT ---
+        if (state.onLayoutUpdate) {
+            state.onLayoutUpdate(hitboxes);
         }
     }
 
@@ -199,12 +197,12 @@ export class BattleRenderer {
             if (resource === 'hp') color = this.COLORS.hp;
             else if (resource === 'stamina') color = this.COLORS.stm;
             else if (resource === 'insight') color = this.COLORS.ins;
-            
+
             // Critical hits usually default back to the dark crimson blood color
-            if (isCritical) color = this.COLORS.hp; 
-        } 
-        else if (type === 'status') {
-            color = this.COLORS.textMuted; 
+            if (isCritical) color = this.COLORS.hp;
+
+        } else if (type === 'status') {
+            color = this.COLORS.textMuted;
         }
 
         let targetX = pos.x + (Math.random() * 96 - 48); // Scaled (40 -> 96, 20 -> 48)
@@ -217,27 +215,22 @@ export class BattleRenderer {
         }
 
         this.floatingTexts.push({
-            text: displayText,
-            color,
-            fontSize,
-            x: targetX,
-            y: targetY, 
-            life: isCritical ? 2.0 : 1.5,
-            maxLife: isCritical ? 2.0 : 1.5,
+            text: displayText, color, fontSize, x: targetX, y: targetY,
+            life: isCritical ? 2.0 : 1.5, maxLife: isCritical ? 2.0 : 1.5,
             velocityY: isCritical ? -60 : -36, // Scaled (25 -> 60, 15 -> 36)
-            delay: delay 
+            delay: delay
         });
     }
 
     drawFloatingTexts(dt) {
         for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
             const ft = this.floatingTexts[i];
-            
+
             if (ft.delay > 0) {
                 ft.delay -= dt;
-                continue; 
+                continue;
             }
-            
+
             ft.life -= dt;
             ft.y += ft.velocityY * dt;
 
@@ -251,24 +244,24 @@ export class BattleRenderer {
             
             // Dynamically rip the base font family out of UITheme
             const fontFamily = UITheme.fonts.body.split('px ')[1] || '"Georgia", serif';
-            const fontStr = `italic bold ${ft.fontSize}px ${fontFamily}`; 
-            
+            const fontStr = `italic bold ${ft.fontSize}px ${fontFamily}`;
+
             // Set up crisp shadows before handing off to CanvasUI
             this.ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
             this.ctx.shadowBlur = 19; // Scaled (8 -> 19)
             this.ctx.shadowOffsetX = 5; // Scaled (2 -> 5)
             this.ctx.shadowOffsetY = 5; // Scaled (2 -> 5)
-            
+
             // Utilize CanvasUI for text rendering
             this.ui.drawText(ft.text, ft.x, ft.y, fontStr, ft.color, "center", "middle");
-            
+
             // Add a slight bright center glow for criticals
             if (ft.fontSize > 58) { // Scaled (24 -> 58)
                 this.ctx.shadowBlur = 0;
                 this.ctx.globalAlpha *= 0.5;
                 this.ui.drawText(ft.text, ft.x, ft.y, fontStr, UITheme.colors.textMain, "center", "middle");
             }
-            
+
             this.ctx.restore();
         }
     }

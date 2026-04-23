@@ -276,8 +276,8 @@ export const ItemDefinitions = {
         statGrowth: { attack: { arcane: 3 } },
         abilityUnlocks: { 2: ["magic_missile"] },
         upgradeCosts: {
-            2: { currency: 150, materials: { "stone": 5 } },
-            3: { currency: 400, materials: { "iron_ingot": 3, "stone": 10 } }
+            2: { currency: 0,  },
+            3: { currency: 1000,  }
         }
     },
 
