@@ -10,7 +10,6 @@ export class BattleHUDRenderer {
         this.combatantRenderer = combatantRenderer;
 
         this.SRC_SIZE = 32;
-
         this.HUD = {
             CARD_W: 384,
             CARD_H: 110,
@@ -24,7 +23,6 @@ export class BattleHUDRenderer {
         this.displayStats = new WeakMap();
         this.BAR_LERP_SPEED = 5.0;
         this.dt = 0;
-
         this.bannerAlpha = 0.0;
         this.lastPhase = null;
         this.phaseTime = 0;
@@ -32,7 +30,6 @@ export class BattleHUDRenderer {
 
     render(state, dt, hitboxes = []) {
         this.dt = dt;
-
         if (this.lastPhase !== state.phase) {
             this.phaseTime = 0;
             this.lastPhase = state.phase;
@@ -46,10 +43,7 @@ export class BattleHUDRenderer {
 
         if (isCinematicPhase) {
             const isEndPhase = state.phase === 'VICTORY' || state.phase === 'DEFEAT';
-            
-            if (isEndPhase) {
-                targetBannerAlpha = 1.0;
-            }
+            if (isEndPhase) { targetBannerAlpha = 1.0; }
 
             if (state.message) {
                 if (isEndPhase) {
@@ -77,14 +71,18 @@ export class BattleHUDRenderer {
             if (state.phase === 'SELECT_ACTION') {
                 this.drawActionMenu(state, hitboxes);
                 this.drawActivePlayerIndicator(state);
+                
+                // --- NEW: Draw Ability Popup anchored to button ---
+                const activeChar = state.activeParty[state.activePartyIndex];
+                const focusedAbility = activeChar?.abilities?.[state.menuIndex];
+                if (focusedAbility) {
+                    this.drawAbilityDetailsPopup(focusedAbility, state.menuIndex);
+                }
+
             } else if (state.phase === 'SELECT_TARGET') {
                 const activeChar = state.activeParty[state.activePartyIndex];
                 const selectedAbility = state.selectedAction || (activeChar && activeChar.abilities[state.menuIndex]);
-                
-                const promptText = selectedAbility 
-                    ? `Select target(s) for ${selectedAbility.name}...` 
-                    : "Select a target...";
-                
+                const promptText = selectedAbility ? `Select target(s) for ${selectedAbility.name}...` : "Select a target...";
                 this.drawDialogueBox(promptText, `— ${activeChar.name} —`);
                 this.drawTargetCursor(state);
             }
@@ -127,11 +125,11 @@ export class BattleHUDRenderer {
 
             const isVisible = this.combatantRenderer.isEntityVisible(member, state);
             const slideProgress = this.getDisplaySlide(member, isVisible);
-            
             if (slideProgress <= 0) return;
+
             const currentX = hiddenX + ((targetX - hiddenX) * Math.pow(slideProgress, 0.5));
             const y = startY + (index * (this.HUD.CARD_H + this.HUD.GAP));
-            
+
             let isValidTarget = true;
             if (state.phase === 'SELECT_TARGET') {
                 if (targetGroup === 'enemy') isValidTarget = false;
@@ -150,8 +148,8 @@ export class BattleHUDRenderer {
             }
 
             this.ctx.save();
-            const isAlreadySelected = state.selectedTargets?.includes(member);
 
+            const isAlreadySelected = state.selectedTargets?.includes(member);
             if (!isValidTarget && !isAlreadySelected && state.phase === 'SELECT_TARGET') {
                 this.ctx.globalAlpha = 0.4;
             }
@@ -190,7 +188,7 @@ export class BattleHUDRenderer {
 
             this.ui.drawBar(barX, currentY, this.HUD.BAR_WIDTH, this.HUD.BAR_HEIGHT, displayIns, member.maxInsight || 10, UITheme.colors.ins, UITheme.colors.insDim);
             this.drawBarText(displayIns, member.maxInsight, barX, currentY);
-            
+
             this.ctx.restore();
         });
     }
@@ -199,7 +197,6 @@ export class BattleHUDRenderer {
         const ENEMY_CARD_H = 77;
         const stackHeight = (enemies.length * ENEMY_CARD_H) + ((enemies.length - 1) * this.HUD.GAP);
         const bottomMargin = 216;
-        
         const targetX = this.config.CANVAS_WIDTH - this.HUD.CARD_W - 36;
         const hiddenX = this.config.CANVAS_WIDTH + 48;
         const startY = this.config.CANVAS_HEIGHT - bottomMargin - stackHeight;
@@ -215,7 +212,7 @@ export class BattleHUDRenderer {
 
             const currentX = hiddenX + ((targetX - hiddenX) * Math.pow(slideProgress, 0.5));
             const y = startY + (index * (ENEMY_CARD_H + this.HUD.GAP));
-            
+
             let isValidTarget = true;
             if (state.phase === 'SELECT_TARGET') {
                 if (targetGroup === 'party' || targetGroup === 'self') isValidTarget = false;
@@ -233,8 +230,8 @@ export class BattleHUDRenderer {
             }
 
             this.ctx.save();
-            const isAlreadySelected = state.selectedTargets?.includes(enemy);
 
+            const isAlreadySelected = state.selectedTargets?.includes(enemy);
             if (!isValidTarget && !isAlreadySelected && state.phase === 'SELECT_TARGET') {
                 this.ctx.globalAlpha = 0.4;
             }
@@ -258,6 +255,7 @@ export class BattleHUDRenderer {
             const activeEffects = enemy.statusEffects ? Math.min(enemy.statusEffects.length, 4) : 0;
             const iconsWidth = activeEffects * (38 + 14);
             const safeStatusX = currentX + this.HUD.CARD_W - this.HUD.PADDING_X - textWidth - 24 - iconsWidth;
+
             this.drawStatusEffects(enemy, safeStatusX, y);
 
             const displayHp = this.getDisplayStat(enemy, 'hp', enemy.hp || 0);
@@ -265,7 +263,7 @@ export class BattleHUDRenderer {
             const barY = y + 48;
 
             this.ui.drawBar(barX, barY, this.HUD.BAR_WIDTH, this.HUD.BAR_HEIGHT, displayHp, enemy.maxHp || 10, UITheme.colors.hp, UITheme.colors.hpDim);
-            
+
             this.ctx.restore();
         });
     }
@@ -283,11 +281,10 @@ export class BattleHUDRenderer {
     }
 
     drawActionMenu(state, hitboxes = []) {
-        // ... (Unchanged logic for drawing the action menu)
         const activeChar = state.activeParty[state.activePartyIndex];
         if (!activeChar || !activeChar.abilities) return;
 
-        const itemSize = 77;
+        const itemSize = 64; 
         const margin = 24;
         const paddingX = 48;
         const headerH = 84;
@@ -324,7 +321,7 @@ export class BattleHUDRenderer {
         activeChar.abilities.forEach((ability, index) => {
             const isSelected = (index === state.menuIndex);
             const canAfford = ability.canPayCost ? ability.canPayCost(activeChar) : true;
-            
+
             const row = Math.floor(index / columns);
             const col = index % columns;
 
@@ -360,6 +357,142 @@ export class BattleHUDRenderer {
         });
     }
 
+    // --- NEW: Draw Ability Details Popup matching AbilitiesPanel styling ---
+    drawAbilityDetailsPopup(ability, menuIndex) {
+        // --- 1. Calculate Positioning ---
+        const itemSize = 64; 
+        const margin = 24;
+        const paddingX = 48;
+        const headerH = 84;
+        const availableWidth = this.config.CANVAS_WIDTH - (paddingX * 2);
+        const columns = Math.floor(availableWidth / (itemSize + margin));
+        const row = Math.floor(menuIndex / columns);
+        const col = menuIndex % columns;
+
+        // Find the absolute center position of the button in the action menu
+        const buttonX = paddingX + (col * (itemSize + margin));
+        const buttonY = (this.config.CANVAS_HEIGHT - 216) + headerH + (row * (itemSize + margin));
+
+        const w = 480;
+        const h = 240; 
+
+        // Center above button, clamp to screen bounds
+        let x = buttonX + (itemSize / 2) - (w / 2);
+        x = Math.max(24, Math.min(x, this.config.CANVAS_WIDTH - w - 24));
+        const y = buttonY - h - 16; 
+
+        // --- 2. Draw Thematic Background ---
+        this.drawDarkPanel(x, y, w, h);
+
+        this.ctx.save();
+        const cardPadding = 24;
+        const iconSize = 64;
+
+        // --- 3. Icon Frame (Top Left) ---
+        const iconX = x + cardPadding;
+        const iconY = y + cardPadding;
+        
+        this.ctx.fillStyle = UITheme.colors.bgScale?.[2] || 'rgba(255, 255, 255, 0.05)';
+        this.ctx.fillRect(iconX, iconY, iconSize, iconSize);
+        this.drawIcon(ability.icon, 'abilities', iconX, iconY, iconSize);
+        this.ctx.strokeStyle = UITheme.colors.panelBorder || '#444';
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(iconX, iconY, iconSize, iconSize);
+
+        const contentX = iconX + iconSize + 24;
+
+        // --- 4. Title & Cost (Top Row) ---
+        const titleY = iconY + 16;
+        
+        this.ctx.textAlign = 'left';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.font = UITheme.fonts.cardTitle || UITheme.fonts.bold;
+        this.ctx.fillStyle = UITheme.colors.textMain;
+        this.ctx.fillText(ability.name || 'Unknown Action', contentX, titleY);
+
+        this.ctx.textAlign = 'right';
+        this.ctx.font = UITheme.fonts.cardMono || UITheme.fonts.bold;
+        if (ability.cost) {
+            let costStr = "Free";
+            let costCol = UITheme.colors.textMuted;
+            if (ability.cost.hp) { costStr = `${ability.cost.hp} HP`; costCol = UITheme.colors.hp; }
+            else if (ability.cost.mana) { costStr = `${ability.cost.mana} MP`; costCol = UITheme.colors.ins; }
+            else if (ability.cost.stamina) { costStr = `${ability.cost.stamina} SP`; costCol = UITheme.colors.stm; }
+            else if (ability.cost.insight) { costStr = `${ability.cost.insight} INS`; costCol = UITheme.colors.ins; }
+            this.ctx.fillStyle = costCol;
+            this.ctx.fillText(costStr, x + w - cardPadding, titleY);
+        } else {
+            this.ctx.fillStyle = UITheme.colors.textMuted;
+            this.ctx.fillText("Free", x + w - cardPadding, titleY);
+        }
+
+        // --- 5. Source / Equipment Status ---
+        const sourceY = iconY + 44;
+        this.ctx.textAlign = 'left';
+        this.ctx.font = UITheme.fonts.cardSmall || UITheme.fonts.small || '18px sans-serif';
+        const isEquip = ability.isEquipment || (ability.source && ability.source !== 'Innate');
+        this.ctx.fillStyle = isEquip ? (UITheme.colors.textHighlight || UITheme.colors.highlight) : UITheme.colors.textMuted;
+        const sourceText = isEquip ? `Source: ${ability.source}` : `Innate`;
+        this.ctx.fillText(sourceText, contentX, sourceY);
+
+        // --- 6. Combat Stats ---
+        let statX = contentX;
+        const statsY = iconY + 76;
+        this.ctx.font = UITheme.fonts.cardMono || UITheme.fonts.small || '18px sans-serif';
+        
+        const drawStat = (label, value, color) => {
+            const txt = `${label} ${value}`;
+            this.ctx.fillStyle = color;
+            this.ctx.fillText(txt, statX, statsY);
+            statX += this.ctx.measureText(txt).width + 20;
+        };
+
+        const pwr = ability.power || (ability.effects && ability.effects.find(e => e.type === 'damage' || e.type === 'heal')?.power);
+        if (pwr) drawStat("Pwr:", `${pwr}x`, UITheme.colors.textHighlight || UITheme.colors.highlight);
+        
+        if (ability.accuracy) drawStat("Acc:", `${Math.floor(ability.accuracy * 100)}%`, UITheme.colors.textMuted);
+        
+        if (ability.speed) drawStat("Spd:", ability.speed, UITheme.colors.textMuted);
+
+        // --- 7. Gothic Divider ---
+        let cursorY = statsY + 24;
+        const flourishW = w * 0.6;
+        const divX = x + (w - flourishW) / 2;
+        
+        if (this.ui.drawLineWithGothicFlourish) {
+            this.ui.drawLineWithGothicFlourish(divX, cursorY, flourishW, UITheme.colors.borderHighlight || UITheme.colors.highlight);
+        } else {
+            this.ctx.strokeStyle = UITheme.colors.borderHighlight || UITheme.colors.highlightTransparent || 'rgba(184, 153, 71, 0.4)';
+            this.ctx.lineWidth = 1;
+            this.ctx.beginPath();
+            this.ctx.moveTo(divX, cursorY);
+            this.ctx.lineTo(divX + flourishW, cursorY);
+            this.ctx.stroke();
+        }
+
+        // --- 8. Description (Centered & Wrapped) ---
+        cursorY += 24;
+        const descStr = ability.description || 'No description available.';
+        const fontItalic = UITheme.fonts.cardItalic || UITheme.fonts.bodyItalic || `italic ${UITheme.fonts.body}`;
+        
+        if (this.ui.getWrappedLines) {
+            const lines = this.ui.getWrappedLines(descStr, w - (cardPadding * 2), fontItalic);
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'top';
+            this.ctx.fillStyle = UITheme.colors.textMuted;
+            this.ctx.font = fontItalic;
+            lines.forEach(line => {
+                this.ctx.fillText(line, x + w / 2, cursorY);
+                cursorY += 24;
+            });
+        } else {
+            this.ctx.textAlign = 'center'; 
+            this.ui.drawWrappedText(descStr, x + cardPadding, cursorY, w - (cardPadding * 2), 24, fontItalic, UITheme.colors.textMuted);
+        }
+
+        this.ctx.restore();
+    }
+
     drawActivePlayerIndicator(state) {
         const index = state.activePartyIndex;
         const layout = this.combatantRenderer.LAYOUT.PLAYER[index];
@@ -387,7 +520,6 @@ export class BattleHUDRenderer {
         this.ctx.lineTo(x, arrowY + 14);
         this.ctx.lineTo(x - 14, arrowY);
         this.ctx.fill();
-
         this.ctx.restore();
     }
 
@@ -398,50 +530,12 @@ export class BattleHUDRenderer {
         const selectedAbility = state.selectedAction || activeChar.abilities[state.menuIndex];
         if (!selectedAbility) return;
 
-        // 1. Draw Previously Selected Targets (Static Diamonds)
-        if (state.selectedTargets && state.selectedTargets.length > 0) {
-            state.selectedTargets.forEach((lockedTarget, idx) => {
-                if (!this.combatantRenderer.isEntityVisible(lockedTarget, state)) return;
-
-                const pos = this.combatantRenderer.getEntityPosition(lockedTarget, state);
-                if (!pos) return;
-
-                const size = Math.floor(this.combatantRenderer.FRAME_SIZE * this.combatantRenderer.SPRITE_SCALE);
-                const arrowY = pos.y - (size / 2) - 48;
-
-                const targetColor = '#DAA520'; 
-                const shadowColor = '#FFD700';
-
-                this.ctx.save();
-                this.ctx.globalAlpha = 0.9;
-                this.ctx.fillStyle = targetColor;
-                this.ctx.shadowColor = shadowColor;
-                this.ctx.shadowBlur = 10;
-
-                this.ctx.beginPath();
-                this.ctx.moveTo(pos.x, arrowY - 32);
-                this.ctx.lineTo(pos.x + 16, arrowY);
-                this.ctx.lineTo(pos.x, arrowY + 32);
-                this.ctx.lineTo(pos.x - 16, arrowY);
-                this.ctx.fill();
-
-                // Order Number (1, 2, 3...)
-                this.ctx.shadowBlur = 0;
-                this.ctx.fillStyle = '#111111';
-                this.ctx.font = 'bold 18px sans-serif';
-                this.ctx.textAlign = 'center';
-                this.ctx.textBaseline = 'middle';
-                this.ctx.fillText((idx + 1).toString(), pos.x, arrowY + 2);
-                this.ctx.restore();
-            });
-        }
-
-        // 2. Resolve Active Selection
+        // --- 1. RESOLVE ACTIVE TARGETS ---
         let primaryTarget;
         let isHoverOverride = false;
 
         if (state.hoveredElement?.id?.startsWith('TARGET_')) {
-            const parts = state.hoveredElement.id.split('_'); 
+            const parts = state.hoveredElement.id.split('_');
             const idx = parseInt(parts[2], 10);
             primaryTarget = (parts[1] === 'PARTY') ? state.activeParty[idx] : state.activeEnemies[idx];
             isHoverOverride = true;
@@ -459,63 +553,111 @@ export class BattleHUDRenderer {
             }
         }
 
-        const targets = TargetingResolver.resolve(selectedAbility, activeChar, primaryTarget, state) || [];
-        
+        const activeTargets = TargetingResolver.resolve(selectedAbility, activeChar, primaryTarget, state) || [];
+
+        // --- 2. TALLY TOTALS FOR FAN LAYOUT ---
+        const targetTotals = new Map();
+        if (state.selectedTargets) {
+            state.selectedTargets.forEach(t => {
+                targetTotals.set(t, (targetTotals.get(t) || 0) + 1);
+            });
+        }
+        activeTargets.forEach(t => {
+            targetTotals.set(t, (targetTotals.get(t) || 0) + 1);
+        });
+
+        const drawnCounts = new Map(); 
+
         const time = performance.now() * 0.003;
-        const bob = Math.sin(time) * 10;
+        const bob = Math.sin(time) * 8;
         const pulse = (Math.sin(time * 2.5) + 1) / 2;
 
-        // Calculate Remaining Targets
-        // Assuming ability has a 'maxTargets' or 'hitCount' property
         const totalHits = selectedAbility.hitCount || selectedAbility.maxTargets || 1;
         const currentCount = state.selectedTargets ? state.selectedTargets.length : 0;
         const remaining = totalHits - currentCount;
 
-        targets.forEach(target => {
+        // --- 3. HELPER: DRAW GOTHIC SHARD ---
+        const drawGothicShard = (target, isLocked, lockedIndex = null) => {
             if (!this.combatantRenderer.isEntityVisible(target, state)) return;
-
             const pos = this.combatantRenderer.getEntityPosition(target, state);
             if (!pos) return;
 
             const size = Math.floor(this.combatantRenderer.FRAME_SIZE * this.combatantRenderer.SPRITE_SCALE);
-            const arrowY = pos.y - (size / 2) - 48 + bob; 
 
-            // Bold Bold Gold
-            const targetColor = '#FFD700'; 
-            const shadowColor = '#FFEA00';
-            const dWidth = 16 + (pulse * 4);
-            const dHeight = 32 + (pulse * 8);
+            const total = targetTotals.get(target);
+            const currentIdx = drawnCounts.get(target) || 0;
+            drawnCounts.set(target, currentIdx + 1);
+
+            const spreadAngle = 0.40; 
+            const angle = (currentIdx - (total - 1) / 2) * spreadAngle;
+
+            const pivotY = pos.y - (size / 2) - 10;
+            const radius = 55 + (isLocked ? 0 : bob); 
 
             this.ctx.save();
-            this.ctx.globalAlpha = 0.8 + (pulse * 0.2);
-            this.ctx.fillStyle = targetColor;
+            this.ctx.translate(pos.x, pivotY);
+            this.ctx.rotate(angle);
+            this.ctx.translate(0, -radius);
+
+            // --- GOTHIC VISUAL STYLING ---
+            const colorCore = isLocked ? '#5a0000' : '#ff1a1a'; 
+            const colorEdge = isLocked ? '#110000' : '#8a0000';
+            const shadowColor = isLocked ? '#990000' : '#ff4d4d';
+
+            this.ctx.globalAlpha = isLocked ? 0.85 : 0.95 + (pulse * 0.05);
             this.ctx.shadowColor = shadowColor;
-            this.ctx.shadowBlur = 15 + (pulse * 15);
+            this.ctx.shadowBlur = isLocked ? 10 : 20 + (pulse * 15);
 
             this.ctx.beginPath();
-            this.ctx.moveTo(pos.x, arrowY - dHeight);
-            this.ctx.lineTo(pos.x + dWidth, arrowY);
-            this.ctx.lineTo(pos.x, arrowY + dHeight);
-            this.ctx.lineTo(pos.x - dWidth, arrowY);
-            this.ctx.fill();
+            this.ctx.moveTo(0, 15);      
+            this.ctx.lineTo(10, -10);    
+            this.ctx.lineTo(0, -30);     
+            this.ctx.lineTo(-10, -10);   
+            this.ctx.closePath();
 
-            // Render remaining count if there's more than one selection required
-            if (totalHits > 1 && remaining > 0) {
-                this.ctx.shadowBlur = 0;
-                this.ctx.fillStyle = '#000000';
-                // Font scales slightly with the pulse
-                const fontSize = 18 + (pulse * 4);
-                this.ctx.font = `bold ${fontSize}px sans-serif`;
+            const grad = this.ctx.createLinearGradient(0, -30, 0, 15);
+            grad.addColorStop(0, colorEdge);
+            grad.addColorStop(0.5, colorCore);
+            grad.addColorStop(1, colorEdge);
+
+            this.ctx.fillStyle = grad;
+            this.ctx.strokeStyle = isLocked ? '#000000' : '#ffffff';
+            this.ctx.lineWidth = isLocked ? 1 : 1.5;
+            this.ctx.fill();
+            this.ctx.stroke();
+
+            // --- NUMBER TEXT ---
+            let textToDraw = '';
+            if (isLocked) {
+                textToDraw = (lockedIndex + 1).toString();
+            } else if (totalHits > 1 && remaining > 0) {
+                textToDraw = remaining.toString();
+            }
+
+            if (textToDraw) {
+                this.ctx.shadowBlur = 0; 
+                this.ctx.translate(0, -10);
+                this.ctx.rotate(-angle);
+
+                this.ctx.fillStyle = isLocked ? '#cccccc' : '#ffffff';
+                const fontSize = isLocked ? 14 : 18 + (pulse * 2);
+                this.ctx.font = `bold ${fontSize}px 'Georgia', 'Times New Roman', serif`;
                 this.ctx.textAlign = 'center';
                 this.ctx.textBaseline = 'middle';
-                this.ctx.fillText(remaining.toString(), pos.x, arrowY + 2);
+                this.ctx.fillText(textToDraw, 0, 0);
             }
 
             this.ctx.restore();
-        });
+        };
+
+        // --- 4. DRAW ALL TARGETS ---
+        if (state.selectedTargets) {
+            state.selectedTargets.forEach((t, idx) => drawGothicShard(t, true, idx));
+        }
+
+        activeTargets.forEach(t => drawGothicShard(t, false));
     }
 
-    // ... (Unchanged dialogue/banner/icon drawing logic below)
     drawDialogueBox(text, title = null) {
         const w = this.config.CANVAS_WIDTH;
         const h = 216;
@@ -527,11 +669,13 @@ export class BattleHUDRenderer {
         } else {
             this.ctx.fillStyle = UITheme.colors.dialogueBg || 'rgba(15, 15, 17, 0.9)';
             this.ctx.fillRect(x, y, w, h);
+
             this.ctx.fillStyle = UITheme.colors.highlightTransparent || 'rgba(184, 153, 71, 0.4)';
             this.ctx.fillRect(x, y, w, 1);
         }
 
         let textY = y + 72;
+
         if (title) {
             this.ctx.save();
             this.ctx.textAlign = 'center';
@@ -543,23 +687,19 @@ export class BattleHUDRenderer {
         }
 
         this.ui.drawWrappedText(
-            text,
-            x + 48, textY,
-            w - 96, 48,
-            UITheme.fonts.body,
-            UITheme.colors.textMain
+            text, x + 48, textY, w - 96, 48,
+            UITheme.fonts.body, UITheme.colors.textMain
         );
     }
 
     drawCinematicBanner(text, color, alpha = 1.0) {
         if (alpha <= 0.01) return;
-
         const w = this.config.CANVAS_WIDTH;
         const h = 288;
         const y = (this.config.CANVAS_HEIGHT / 2) - (h / 2);
 
         this.ctx.save();
-        
+
         this.ctx.fillStyle = `rgba(0, 0, 0, ${0.4 * alpha})`;
         this.ctx.fillRect(0, 0, w, this.config.CANVAS_HEIGHT);
 
@@ -570,30 +710,30 @@ export class BattleHUDRenderer {
         grad.addColorStop(0, 'rgba(0,0,0,0)');
         grad.addColorStop(0.5, color || '#ffffff');
         grad.addColorStop(1, 'rgba(0,0,0,0)');
-        
         this.ctx.fillStyle = grad;
+        
         this.ctx.globalAlpha = 0.5 * alpha;
         this.ctx.fillRect(0, y, w, 1);
         this.ctx.fillRect(0, y + h, w, 1);
-        
+
         this.ctx.globalAlpha = alpha;
         this.ctx.font = UITheme.fonts.title;
         this.ctx.fillStyle = color;
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
-        
-        const spacedText = text.split('').join('  ');
+
+        const spacedText = text.split('').join('  ');
         this.ctx.shadowColor = color;
         this.ctx.shadowBlur = 15;
         this.ctx.fillText(spacedText, w / 2, y + (h / 2) + 10);
-        
+
         this.ctx.restore();
     }
 
     drawStatusEffects(entity, startX, startY) {
         if (!entity.statusEffects || entity.statusEffects.length === 0) return;
 
-        const iconSize = 38;
+        const iconSize = 32;
         const spacing = 14;
         const maxIcons = 4;
         const effectsToDraw = entity.statusEffects.slice(0, maxIcons);
@@ -605,7 +745,7 @@ export class BattleHUDRenderer {
         });
     }
 
-    drawIcon(iconData, sheetKey, x, y, size = 77) {
+    drawIcon(iconData, sheetKey, x, y, size = 64) {
         if (typeof iconData === 'object' && iconData !== null) {
             const sheet = this.loader.get ? this.loader.get(sheetKey) : this.loader.getAsset(sheetKey);
             if (sheet) {
@@ -658,18 +798,16 @@ export class BattleHUDRenderer {
         }
 
         const target = isVisible ? 1.0 : 0.0;
-        
         if (stats.slide === undefined) stats.slide = 0.0;
 
         const SLIDE_SPEED = 10.0;
         const diff = target - stats.slide;
-        
+
         if (Math.abs(diff) > 0.01) {
             stats.slide += diff * SLIDE_SPEED * this.dt;
         } else {
             stats.slide = target;
         }
-
         return stats.slide;
     }
 }

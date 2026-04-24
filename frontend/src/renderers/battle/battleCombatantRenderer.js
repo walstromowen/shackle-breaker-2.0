@@ -9,7 +9,7 @@ export class BattleCombatantRenderer {
         this.vfxRenderer = vfxRenderer;
 
         // --- VISUAL CONFIG ---
-        this.SPRITE_SCALE = 2.4;
+        this.SPRITE_SCALE = 2.0;
         this.FRAME_SIZE = 128;
         this.FRAMES_PER_ROW = 8;
         this.ANIMATION_SPEED = 150;
