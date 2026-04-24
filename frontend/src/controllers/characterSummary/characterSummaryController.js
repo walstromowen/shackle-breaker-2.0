@@ -334,12 +334,17 @@ export class CharacterSummaryController extends BaseController {
                     if (this.filteredInventory.length > 0) options.push({ label: 'Swap', actionId: 'NAV_TO_INV' });
                     options.push({ label: 'Unequip', actionId: 'UNEQUIP_AND_NAV' });
                 } else {
-                    options.push({ label: 'Equip', actionId: 'EQUIP' });
+                    // --- FIX: Check if the item is equippable before showing 'Equip' ---
+                    // Adjust this logic to match your specific item data schema. 
+                    // Usually, equipment has an 'equipSlot' defined, or a specific type.
+                    const isEquippable = item.equipSlot || ['weapon', 'armor', 'accessory', 'equipment'].includes(item.type);
+                    
+                    if (isEquippable) {
+                        options.push({ label: 'Equip', actionId: 'EQUIP' });
+                    }
                 }
 
                 // --- UPDATED UPGRADE CHECK ---
-                // Only show the option if they actually have the materials/currency 
-                // and the item isn't already at max level.
                 if (ItemUpgradeSystem.canUpgrade(item)) {
                     options.push({ label: 'Upgrade', actionId: 'UPGRADE' });
                 }

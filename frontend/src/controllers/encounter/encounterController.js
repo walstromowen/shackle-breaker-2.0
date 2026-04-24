@@ -550,8 +550,9 @@ export class EncounterController extends BaseController {
         if (messages.length > 0 && shouldEndEncounter) {
             const rewardText = messages.join('\n\n');
             this.model.stages = this.model.stages || {};
+            // Updated reward stage definition to use the new image object structure
             this.model.stages["encounter_rewards_stage"] = {
-                imageId: this.model.getImageId ? this.model.getImageId() : null,
+                image: this.model.getImage ? this.model.getImage() : { sheet: 'bg_default_black', col: 0, row: 0 },
                 text: rewardText,
                 decisions: [
                     {
@@ -594,7 +595,8 @@ export class EncounterController extends BaseController {
 
     getState() {
         const basePayload = {
-            imageId: null, title: "", text: "", decisions: [],
+            // UPDATED: imageInfo now holds the object { sheet, col, row }
+            imageInfo: null, title: "", text: "", decisions: [],
             ui: { selectedDecisionIndex: this.selectedIndex },
             party: gameState.party?.members?.length > 0 ? [gameState.party.members[0]] : [],
             currency: gameState.party?.currency || 0,
@@ -638,7 +640,8 @@ export class EncounterController extends BaseController {
         return {
             ...basePayload,
             title: this.model.title || "Unknown Encounter",
-            imageId: this.model.getImageId ? this.model.getImageId() : null,
+            // UPDATED: Use getImage() to get the definition object
+            imageInfo: this.model.getImage ? this.model.getImage() : null,
             text: displayText,
             decisions: displayDecisions,
         };

@@ -52,7 +52,8 @@ export class EncounterRenderer {
         if (!state || !state.text) return;
 
         const {
-            imageId, text, title, encounter, decisions, rewards,
+            // UPDATED: Destructure imageInfo object { sheet, col, row }
+            imageInfo, text, title, encounter, decisions, rewards,
             ui: uiState, party = [], currency = 0, skipMessageAnimation,
             textTimer, actionPhase, rollData,
             hoveredElement, scrollOffsets, onLayoutUpdate 
@@ -124,29 +125,53 @@ export class EncounterRenderer {
 
         ui.drawLineWithGothicFlourish(centerX + (centerW * 0.2), 168, centerW * 0.6, UITheme.colors.borderHighlight);
 
-        if (imageId && this.loader) {
-            const img = this.loader.get(imageId);
-            if (img) {
-                const targetAreaSize = 307;
+        // UPDATED: RIGHT COLUMN: ENCOUNTER IMAGE (Sprite Sheet Logic with Integer Scaling)
+        if (imageInfo && imageInfo.sheet && this.loader) {
+            const sheetImg = this.loader.get(imageInfo.sheet);
+            if (sheetImg) {
+                const targetAreaSize = 307; // Viewport panel area
+                const nativeRes = 128; // Native asset resolution
                 const imgScale = 2; // Integer multiple scale
-                const drawSize = 128 * imgScale; // 256x256
+                const drawSize = nativeRes * imgScale; // 256x256
 
                 const panelX = rightColX + (rightW / 2) - (targetAreaSize / 2);
                 
+                // Draw decorative panel
                 ui.drawLancetArchedPanel(panelX - 38, imageY - 76, targetAreaSize + 76, targetAreaSize + 152, '#000', UITheme.colors.borderHighlight);
                 
+                // Draw black background fill
                 ctx.fillStyle = '#050505';
                 ctx.fillRect(panelX, imageY, targetAreaSize, targetAreaSize);
 
+                // Calculate centered coordinates for scaled image within panel
                 const imgX = rightColX + (rightW / 2) - (drawSize / 2);
                 const imgY = imageY + (targetAreaSize / 2) - (drawSize / 2);
 
+                // Disable image smoothing for crisp pixel scaling
                 ctx.imageSmoothingEnabled = false;
-                ui.drawSprite(img, 0, 0, img.width, img.height, imgX, imgY, drawSize, drawSize);
+                
+                // UPDATED: Use sheet coordinates (col, row) and native resolution (128) for source rectangle
+                ui.drawSprite(
+                    sheetImg, 
+                    imageInfo.col * nativeRes, imageInfo.row * nativeRes, // Source X, Y
+                    nativeRes, nativeRes, // Source Width, Height
+                    imgX, imgY, // Destination X, Y
+                    drawSize, drawSize // Destination Width, Height (Scaled)
+                );
+                
+                // Restore smoothing
                 ctx.imageSmoothingEnabled = true;
             } else {
-                ui.drawText("Image Missing", rightColX + (rightW / 2), imageY + 154, UITheme.fonts.italic, UITheme.colors.textMuted, "center", "middle");
+                ui.drawText("Sheet Missing", rightColX + (rightW / 2), imageY + 154, UITheme.fonts.italic, UITheme.colors.textMuted, "center", "middle");
             }
+        } else {
+            // Draw empty panel if no image definition exists
+            const targetAreaSize = 307;
+            const panelX = rightColX + (rightW / 2) - (targetAreaSize / 2);
+            ui.drawLancetArchedPanel(panelX - 38, imageY - 76, targetAreaSize + 76, targetAreaSize + 152, '#000', UITheme.colors.borderHighlight);
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(panelX, imageY, targetAreaSize, targetAreaSize);
+            ui.drawText("No Image defined", rightColX + (rightW / 2), imageY + 154, UITheme.fonts.italic, UITheme.colors.textMuted, "center", "middle");
         }
 
         const narrativeHeight = h * 0.45;
@@ -237,7 +262,9 @@ export class EncounterRenderer {
                         });
                     }
 
+                    // Strict Constraint: Static Brackets ONLY on the selected item.
                     if (isSelected && typeof ui.drawSelectionBrackets === 'function') {
+                        // Pass specific distance (10) to make brackets static
                         ui.drawSelectionBrackets(btnX - 36, renderY - 12, btnW + 72, decisionHeight + 24, 10, UITheme.colors.selectedWhite || '#ffffff');
                     }
 
@@ -408,7 +435,6 @@ export class EncounterRenderer {
                 const btnY = popupY + 528;
 
                 const rollId = "BTN_ROLL";
-                const hoveredElement = state.hoveredElement;
                 const isRollHovered = hoveredElement && hoveredElement.id === rollId;
                 this.hotspots.push({ id: rollId, x: btnX, y: btnY, w: btnW, h: btnH });
 
@@ -477,8 +503,9 @@ export class EncounterRenderer {
 
     drawPartyMember(ctx, ui, member, x, y, colWidth, nameY, font) {
         const targetAreaSize = 307;
+        const nativeRes = 128; // Native Res portrait is 128x128
         const imgScale = 2; // Integer multiple scale
-        const drawSize = 128 * imgScale; // 256x256
+        const drawSize = nativeRes * imgScale; // 256x256
 
         const pX = x + (colWidth / 2) - (targetAreaSize / 2);
         const pY = y;
@@ -494,11 +521,13 @@ export class EncounterRenderer {
         ctx.fillRect(pX, pY, targetAreaSize, targetAreaSize);
 
         if (masterSheet) {
+            // Calculate centered coordinates for scaled image within panel
             const imgX = x + (colWidth / 2) - (drawSize / 2);
             const imgY = pY + (targetAreaSize / 2) - (drawSize / 2);
 
             ctx.imageSmoothingEnabled = false;
-            ctx.drawImage(masterSheet, 0, 0, 128, 128, imgX, imgY, drawSize, drawSize);
+            // Assumes character portraits are at 0,0 on their sheet, or sheet holds only the portrait
+            ctx.drawImage(masterSheet, 0, 0, nativeRes, nativeRes, imgX, imgY, drawSize, drawSize);
             ctx.imageSmoothingEnabled = true;
         }
 
@@ -557,8 +586,8 @@ export class EncounterRenderer {
         if (!member.statusEffects || member.statusEffects.length === 0) return;
 
         const sheetKey = 'statusEffects';
-        const srcSize = 32;  
-        const scale = 1; // 1x scale (32x32) works well for icons
+        const srcSize = 32;  // Source tile size on spritesheet
+        const scale = 1; // 1x scale (32x32) works well for icons within this panel design
         const drawSize = srcSize * scale;
         const spacing = 10;
         const sheet = this.loader.get(sheetKey);

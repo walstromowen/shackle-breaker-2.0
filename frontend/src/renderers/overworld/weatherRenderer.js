@@ -21,7 +21,7 @@ export class WeatherRenderer {
         // 1920x1080 Scaling applies a 2.4x multiplier to sizes/speeds, and a 5.76x multiplier (Area) to particle counts.
         this.settings = {
             'particle_rain': {
-                count: 2592, // Scaled from 450 
+                count: 2592, // Scaled from 450
                 color: 'rgba(200, 220, 255, 0.5)',
                 splashColor: 'rgba(230, 240, 255, 0.6)',
                 speedY: [60, 108], // Scaled from [25, 45]
@@ -31,15 +31,15 @@ export class WeatherRenderer {
             'particle_sand': {
                 count: 3456, // Scaled from 600
                 color: 'rgba(210, 180, 140, 0.7)',
-                speedY: [2.4, 7.2], // Scaled from [1, 3] 
+                speedY: [2.4, 7.2], // Scaled from [1, 3]
                 speedX: [48, 84], // Scaled from [20, 35]
-                size: [2.4, 4.8] // Scaled from [1, 2]     
+                size: [2.4, 4.8] // Scaled from [1, 2]
             },
             'overlay_fog': {
-                count: 230, // Scaled from 40 
-                speedX: [0.24, 0.72], // Scaled from [0.1, 0.3]
-                speedY: [-0.24, 0.24], // Scaled from [-0.1, 0.1]
-                size: [1200, 1920] // Scaled from [500, 800]
+                count: 25, // drastically reduced from 230 for scattered wisps
+                speedX: [0.4, 0.9], // Slightly faster horizontal drift
+                speedY: [-0.05, 0.05], // Kept mostly horizontal
+                size: [900, 1600] // Slightly varied size for distinct clouds
             }
         };
     }
@@ -52,12 +52,15 @@ export class WeatherRenderer {
         const oCtx = offscreen.getContext('2d');
 
         const gradient = oCtx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
-        gradient.addColorStop(0, 'rgba(220, 230, 245, 0.15)'); 
-        gradient.addColorStop(0.5, 'rgba(220, 230, 245, 0.05)');
-        gradient.addColorStop(1, 'rgba(220, 230, 245, 0)');
+        
+        // Bumping opacity and whiteness so the few scattered clouds pop
+        gradient.addColorStop(0, 'rgba(240, 248, 255, 0.4)');
+        gradient.addColorStop(0.4, 'rgba(240, 248, 255, 0.15)');
+        gradient.addColorStop(1, 'rgba(240, 248, 255, 0)');
 
         oCtx.fillStyle = gradient;
         oCtx.fillRect(0, 0, size, size);
+
         return offscreen;
     }
 

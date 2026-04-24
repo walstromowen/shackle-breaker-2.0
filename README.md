@@ -15,10 +15,8 @@ Biome / time dependent music
 Bugs
 Rain flash
 fog too thick
-lighting off centered after changing res
 can't use items
 exile option toggling for last character
-texture bleeding on animated sprites in battle
 
 
 Root

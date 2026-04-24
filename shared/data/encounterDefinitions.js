@@ -4,12 +4,12 @@ export const encounterDefinitions = {
     // ==========================================
     "oak_tree": {
         id: "oak_tree",
-        title: "A Sturdy Oak", 
+        title: "A Sturdy Oak",
         initialStage: "approach",
         stages: {
             "approach": {
-                imageId: "encounters",
-                bgm: "plainsOverworldNight", 
+                image: { sheet: "encounters", col: 0, row: 0 },
+                bgm: "plainsOverworldNight",
                 text: "An oak tree towers over {name}. Its thick trunk looks like it has stood here for many years.",
                 decisions: [
                     {
@@ -42,43 +42,37 @@ export const encounterDefinitions = {
                 ]
             },
             "chopped_success": {
-                imageId: "encounters",
-                bgm: "plainsOverworldNight", 
+                image: { sheet: "encounters", col: 1, row: 0 },
+                bgm: "plainsOverworldNight",
                 text: "[${context.roll_stat} Check: ${context.roll_total} vs DC ${context.roll_dc} - ${context.roll_result}]\n\nWith a flawless strike, the ancient tree groans and crashes to the earth. {name} spots a small coin pouch tangled in its roots!",
                 decisions: [
                     {
                         text: "Collect the wood and the pouch.",
                         customActionText: "{name} gathers up the heavy wood and pockets the loose coins.",
                         outcomes: [
-                            {
-                                weight: 100,
-                                results: [
-                                    { type: "GIVE_ITEM", payload: { itemId: "soft_wood", qty: 3 } },
-                                    { type: "AWARD_XP", payload: { amount: 25, target: "active_character" } },
-                                    { type: "MODIFY_CURRENCY", payload: { amount: 15 } },
-                                    { type: "DESTROY_OBJECT" }, 
-                                    { type: "END_ENCOUNTER", payload: null }
-                                ]
-                            }
+                            { weight: 100, results: [
+                                { type: "GIVE_ITEM", payload: { itemId: "soft_wood", qty: 3 } },
+                                { type: "AWARD_XP", payload: { amount: 25, target: "active_character" } },
+                                { type: "MODIFY_CURRENCY", payload: { amount: 15 } },
+                                { type: "DESTROY_OBJECT" },
+                                { type: "END_ENCOUNTER", payload: null }
+                            ]}
                         ]
                     }
                 ]
             },
             "chopped_fail": {
-                imageId: "encounters",
+                image: { sheet: "encounters", col: 2, row: 0 },
                 text: "[${context.roll_stat} Check: ${context.roll_total} vs DC ${context.roll_dc} - ${context.roll_result}]\n\n{name}'s axe glances off the thick bark. {name} jars their arms terribly but fails to bring it down.",
                 decisions: [
                     {
                         text: "Leave.",
                         customActionText: "{name} rubs their sore arms, cursing the old tree before walking away.",
                         outcomes: [
-                            {
-                                weight: 100,
-                                results: [
-                                    { type: "TAKE_DAMAGE", payload: { amount: 2, target: "active_character" } },
-                                    { type: "END_ENCOUNTER", payload: null }
-                                ]
-                            }
+                            { weight: 100, results: [
+                                { type: "TAKE_DAMAGE", payload: { amount: 2, target: "active_character" } },
+                                { type: "END_ENCOUNTER", payload: null }
+                            ]}
                         ]
                     }
                 ]
@@ -95,7 +89,7 @@ export const encounterDefinitions = {
         initialStage: "discovery",
         stages: {
             "discovery": {
-                imageId: "encounters",
+                image: { sheet: "encounters", col: 0, row: 1 },
                 bgm: "tense_strings",
                 text: "{name} hears a faint whimper and finds a scruffy dog with a nasty gash on its hind leg. It growls softly, baring its teeth.",
                 decisions: [
@@ -109,7 +103,7 @@ export const encounterDefinitions = {
                     {
                         text: "[ATT] Attempt to calm the beast and bandage its wound.",
                         type: "skill_check",
-                        attribute: "attunement", 
+                        attribute: "attunement",
                         threshold: 12,
                         customActionText: "{name} relies on a calming presence, reaching out to soothe and bandage the wound before the mutt can react...",
                         successOutcomes: [
@@ -129,26 +123,23 @@ export const encounterDefinitions = {
                 ]
             },
             "offer_food": {
-                imageId: "encounters",
+                image: { sheet: "encounters", col: 1, row: 1 },
                 text: "{name} tosses a piece of dried meat toward the dog. It sniffs cautiously before gobbling it up. It seems to trust {name} now.",
                 decisions: [
                     {
                         text: "Carefully bandage its leg.",
                         customActionText: "With the dog distracted by the food, {name} gently wraps the wounded leg.",
                         outcomes: [
-                            {
-                                weight: 100,
-                                results: [
-                                    { type: "REMOVE_ITEM", payload: { itemId: "bandage", qty: 1 } },
-                                    { type: "ADVANCE_STAGE", payload: { stageId: "success_tame" } }
-                                ]
-                            }
+                            { weight: 100, results: [
+                                { type: "REMOVE_ITEM", payload: { itemId: "bandage", qty: 1 } },
+                                { type: "ADVANCE_STAGE", payload: { stageId: "success_tame" } }
+                            ]}
                         ]
                     }
                 ]
             },
             "rushed_bandage": {
-                imageId: "encounters",
+                image: { sheet: "encounters", col: 2, row: 1 },
                 bgm: "battle_prelude",
                 text: "[${context.roll_stat} Check: ${context.roll_total} vs DC ${context.roll_dc} - ${context.roll_result}]\n\nStartled and in pain, the wild mutt snaps fiercely at {name}'s hand!",
                 decisions: [
@@ -156,38 +147,26 @@ export const encounterDefinitions = {
                         text: "Take the bite and force the bandages on.",
                         customActionText: "{name} grits their teeth, ignoring the fangs sinking into their flesh to finish the job.",
                         outcomes: [
-                            {
-                                weight: 100,
-                                results: [
-                                    { 
-                                        type: "MODIFY_VITALS", 
-                                        payload: { hp: -50, stamina: -10, insight: 0, damageType: "pierce", isPercentage: true, bypassDefense: false }
-                                    },
-                                    {
-                                        type: "APPLY_STATUS_EFFECT",
-                                        payload: { effectId: "bleed", charges: 3, target: "active_character" }
-                                    },
-                                    { type: "ADVANCE_STAGE", payload: { stageId: "success_tame_hurt" } }
-                                ]
-                            }
+                            { weight: 100, results: [
+                                { type: "MODIFY_VITALS", payload: { hp: -50, stamina: -10, insight: 0, damageType: "pierce", isPercentage: true, bypassDefense: false } },
+                                { type: "APPLY_STATUS_EFFECT", payload: { effectId: "bleed", charges: 3, target: "active_character" } },
+                                { type: "ADVANCE_STAGE", payload: { stageId: "success_tame_hurt" } }
+                            ]}
                         ]
                     },
                     {
                         text: "Back off and draw a weapon!",
                         customActionText: "{name} jumps backward with a curse, drawing their weapon as the beast lunges!",
                         outcomes: [
-                            {
-                                weight: 100,
-                                results: [
-                                    { type: "START_BATTLE", payload: { enemies: ["WOLF"] } }
-                                ]
-                            }
+                            { weight: 100, results: [
+                                { type: "START_BATTLE", payload: { enemies: ["WOLF"] } }
+                            ]}
                         ]
                     }
                 ]
             },
             "success_tame": {
-                imageId: "bg_forest_dog_happy",
+                image: { sheet: "encounters", col: 3, row: 1 },
                 bgm: "happy_theme",
                 text: "{name} skillfully wraps the wound. The dog licks {name}'s hand in gratitude. {name} has a new friend.",
                 decisions: [
@@ -195,19 +174,16 @@ export const encounterDefinitions = {
                         text: "Let's go, boy.",
                         customActionText: "{name} gives the dog an affectionate pat, signaling it to follow.",
                         outcomes: [
-                            {
-                                weight: 100,
-                                results: [
-                                    { type: "RECRUIT_CHARACTER", payload: { entityId: "BEAST" } },
-                                    { type: "END_ENCOUNTER", payload: null }
-                                ]
-                            }
+                            { weight: 100, results: [
+                                { type: "RECRUIT_CHARACTER", payload: { entityId: "BEAST" } },
+                                { type: "END_ENCOUNTER", payload: null }
+                            ]}
                         ]
                     }
                 ]
             },
             "success_tame_hurt": {
-                imageId: "bg_forest_dog_happy",
+                image: { sheet: "encounters", col: 3, row: 1 },
                 bgm: "happy_theme",
                 text: "The dog's teeth sink into {name}'s hand, but {name} endures the pain to wrap the wound. Realizing {name} helped it, the dog whines apologetically.",
                 decisions: [
@@ -215,19 +191,16 @@ export const encounterDefinitions = {
                         text: "Ouch... Good boy.",
                         customActionText: "{name} winces while bandaging their own hand, then pats the dog on the head.",
                         outcomes: [
-                            {
-                                weight: 100,
-                                results: [
-                                    { type: "RECRUIT_CHARACTER", payload: { entityId: "BEAST" } },
-                                    { type: "END_ENCOUNTER", payload: null }
-                                ]
-                            }
+                            { weight: 100, results: [
+                                { type: "RECRUIT_CHARACTER", payload: { entityId: "BEAST" } },
+                                { type: "END_ENCOUNTER", payload: null }
+                            ]}
                         ]
                     }
                 ]
             },
             "walk_away": {
-                imageId: "bg_forest_path",
+                image: { sheet: "encounters", col: 4, row: 1 },
                 bgm: "forest_ambient",
                 text: "{name} turns their back on the whimpering animal. The wilds are unforgiving, and one must look out for themselves.",
                 decisions: [
