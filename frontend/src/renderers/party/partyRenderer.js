@@ -1,58 +1,58 @@
-import { UITheme } from '../../ui/UITheme.js'; 
+import { UITheme } from '../../ui/UITheme.js';
 import { CanvasUI } from '../../ui/canvasUI.js';
 
 export class PartyRenderer {
     constructor(ctx, loader) {
         this.ctx = ctx;
-        this.loader = loader; 
+        this.loader = loader;
         this.ui = new CanvasUI(ctx);
-        
+
         this.layout = {
-            cardW: 600, 
-            cardH: 336,     
-            gapX: 24,       
-            gapY: 48,   
-            startY: 216      
+            cardW: 600,
+            cardH: 336,
+            gapX: 24,
+            gapY: 48,
+            startY: 216
         };
 
         this.menuConfig = {
-            btnHeight: 64,  
-            padding: 24     
+            btnHeight: 64,
+            padding: 24
         };
 
-        this.statusIconSheetPath = '/assets/ui/status_icons.png'; 
+        this.statusIconSheetPath = '/assets/ui/status_icons.png';
         // Changed to 32 for exact 1x scaling (was 38)
-        this.statusIconSize = 32; 
+        this.statusIconSize = 32;
     }
 
     render(state) {
-        const { 
-            members, 
-            selectedIndex, 
-            swappingIdx, 
-            menu, 
-            mode = 'DEFAULT', 
+        const {
+            members,
+            selectedIndex,
+            swappingIdx,
+            menu,
+            mode = 'DEFAULT',
             activeIndices = [],
-            hoveredElement = null,   
+            hoveredElement = null,
             dragState = null,
-            onLayoutUpdate = null    
-        } = state; 
+            onLayoutUpdate = null
+        } = state;
 
         const width = this.ctx.canvas.width;
         const height = this.ctx.canvas.height;
-        const hitboxes = []; 
+        const hitboxes = [];
 
         this.ui.clearScreen(width, height);
-        
+
         const headerText = mode === 'BATTLE_SELECT' ? "Select Reserve to Swap In" : "Party Members";
         this.ui.drawText(headerText, width / 2, 120, UITheme.fonts.header, UITheme.colors.textMain, "center");
-        
         this.ui.drawLineWithGothicFlourish((width / 2) - 288, 156, 576, UITheme.colors.borderHighlight);
 
         members.forEach((member, index) => {
-            if (index >= 6) return; 
+            if (index >= 6) return;
+
             const pos = this.getCardPosition(index, width);
-            
+
             hitboxes.push({
                 id: `CARD_${index}`,
                 x: pos.x,
@@ -63,12 +63,12 @@ export class PartyRenderer {
             });
 
             const isHovered = hoveredElement?.id === `CARD_${index}`;
-            const isSelected = (index === selectedIndex); 
-            
+            const isSelected = (index === selectedIndex);
+
             // Evaluates true whether moving via keyboard (swappingIdx) or mouse (dragState)
             const isBeingDragged = dragState?.active && dragState.payload === member;
             const isBeingMoved = (index === swappingIdx) || isBeingDragged;
-            
+
             const isActive = activeIndices.includes(index);
             const isDead = member.hp <= 0;
             const isUnavailable = mode === 'BATTLE_SELECT' && (isActive || isDead);
@@ -85,7 +85,7 @@ export class PartyRenderer {
 
         let guide = "";
         if (mode === 'BATTLE_SELECT') {
-             guide = "[ARROWS] Navigate   [ENT/CLICK] Select   [ESC/R-CLICK] Cancel";
+            guide = "[ARROWS] Navigate   [ENT/CLICK] Select   [ESC/R-CLICK] Cancel";
         } else {
             guide = "[ARROWS] Navigate   [ENT/CLICK] Swap & Menu   [ESC/R-CLICK] Back";
             if (menu) {
@@ -94,7 +94,7 @@ export class PartyRenderer {
                 guide = "[ARROWS] Move to Slot   [ENT/CLICK] Place   [ESC/R-CLICK] Cancel";
             }
         }
-        
+
         this.ui.drawText(guide, width / 2, height - 72, UITheme.fonts.mono, UITheme.colors.textMuted, "center");
 
         // Fire hitboxes back up to controller before dragging renders
@@ -105,26 +105,31 @@ export class PartyRenderer {
         // Draw the dragged card overlay on top of EVERYTHING
         this._renderDraggedItem(dragState);
     }
-    
+
     getMenuLayout(cardIndex, canvasWidth) {
         const cardPos = this.getCardPosition(cardIndex, canvasWidth);
-        
-        return { 
-            x: cardPos.x,                    
-            y: cardPos.y,                    
-            w: this.layout.cardW / 2,        
-            h: this.layout.cardH             
+        return {
+            x: cardPos.x,
+            y: cardPos.y,
+            w: this.layout.cardW / 2,
+            h: this.layout.cardH
         };
     }
-    
+
     getCardPosition(index, canvasWidth) {
         const COLS = 3;
         const { cardW, cardH, gapX, gapY, startY } = this.layout;
+
         const totalGridWidth = (COLS * cardW) + ((COLS - 1) * gapX);
         const startX = (canvasWidth - totalGridWidth) / 2;
-        const col = index % COLS;            
-        const row = Math.floor(index / COLS); 
-        return { x: startX + (col * (cardW + gapX)), y: startY + (row * (cardH + gapY)) };
+
+        const col = index % COLS;
+        const row = Math.floor(index / COLS);
+
+        return {
+            x: startX + (col * (cardW + gapX)),
+            y: startY + (row * (cardH + gapY))
+        };
     }
 
     drawCard(member, x, y, isSelected, isHovered, isBeingMoved, isUnavailable, isActive, mode) {
@@ -132,7 +137,7 @@ export class PartyRenderer {
         const { cardW, cardH } = this.layout;
 
         ctx.save();
-        
+
         // --- 1. RESOLVE GLOBAL STATES ---
         let bgColor = UITheme.colors.panelBg;
         let nameColor = UITheme.colors.textMain;
@@ -165,36 +170,34 @@ export class PartyRenderer {
         }
 
         if (isUnavailable) {
-             this.ui.drawRect(x, y, cardW, cardH, 'rgba(0, 0, 0, 0.6)', true);
+            this.ui.drawRect(x, y, cardW, cardH, 'rgba(0, 0, 0, 0.6)', true);
         }
 
         if (member.skillPoints && member.skillPoints > 0 && !isUnavailable) {
             const time = performance.now() * 0.005;
-            const alpha = 0.5 + (Math.sin(time) + 1) * 0.25; 
-            const goldRgb = "184, 153, 71"; 
+            const alpha = 0.5 + (Math.sin(time) + 1) * 0.25;
+            const goldRgb = "184, 153, 71";
             this.ui.drawText("★ LVL UP", x + cardW - 19, y + cardH - 24, UITheme.fonts.cardTitle, `rgba(${goldRgb}, ${alpha})`, "right");
         }
 
         // Changed to 256 for exact 2x scaling (was 307)
-        const pSize = 256; 
-        const pX = x + 10; 
-        const pY = y + 14;  
-        const masterSheet = this.loader.get(member.spritePortrait);
+        const pSize = 256;
+        const pX = x + 10;
+        const pY = y + 14;
 
+        const masterSheet = this.loader.get(member.spritePortrait);
         this.ui.drawRect(pX, pY, pSize, pSize, "rgba(0,0,0,0.5)", true);
-        
         if (masterSheet) {
             ctx.drawImage(masterSheet, 0, 0, 128, 128, pX, pY, pSize, pSize);
         }
-
         this.ui.drawRect(pX, pY, pSize, pSize, UITheme.colors.border, false);
 
         this.drawStatusEffects(member, pX, pY, pSize);
 
         // --- 3. DRAW TEXT WITH STATE COLORS ---
-        const infoX = pX + pSize + 19; 
-        const numberWidth = 91;       
-        const labelWidth = 48;        
+        const infoX = pX + pSize + 19;
+        const numberWidth = 91;
+        const labelWidth = 48;
         const barW = cardW - (pX - x) - pSize - 19 - labelWidth - numberWidth - 19;
 
         this.ui.drawText(member.name, infoX, y + 43, UITheme.fonts.cardTitle, nameColor);
@@ -202,18 +205,18 @@ export class PartyRenderer {
         const levelText = `Lv.${member.level || 1}`;
         let statusPrefix = "";
         let statusColor = UITheme.colors.textMuted;
-        
+
         if (isActive && mode === 'BATTLE_SELECT') {
-             statusPrefix = "ACT - ";
-             statusColor = UITheme.colors.hp;
+            statusPrefix = "ACT - ";
+            statusColor = UITheme.colors.hp;
         } else if (member.hp <= 0) {
-             statusPrefix = "FNT - ";
-             statusColor = UITheme.colors.failure;
+            statusPrefix = "FNT - ";
+            statusColor = UITheme.colors.failure;
         }
-        
+
         this.ui.drawText(`${statusPrefix}${levelText}`, infoX, y + 77, UITheme.fonts.cardSmall, statusColor);
 
-        const xpY = y + 113; 
+        const xpY = y + 113;
         this.ui.drawText("XP", infoX, xpY + 12, UITheme.fonts.cardMono, UITheme.colors.textMuted);
         this.ui.drawBar(infoX + labelWidth, xpY, barW, 10, member.xp || 0, member.maxXp || 1, UITheme.colors.xp, UITheme.colors.xpDim);
         this.ui.drawText(`${Math.floor(member.xp || 0)}/${member.maxXp || 1}`, infoX + labelWidth + barW + numberWidth, xpY + 12, UITheme.fonts.cardMono, UITheme.colors.textMuted, "right");
@@ -224,7 +227,7 @@ export class PartyRenderer {
         this.drawStatRow("STM", member.stamina, member.maxStamina, infoX, currentY, barW, 10, numberWidth, labelWidth, UITheme.colors.stm, UITheme.colors.stmDim);
         currentY += 29;
         this.drawStatRow("INS", member.insight, member.maxInsight, infoX, currentY, barW, 10, numberWidth, labelWidth, UITheme.colors.ins, UITheme.colors.insDim);
-        
+
         ctx.restore();
     }
 
@@ -237,15 +240,14 @@ export class PartyRenderer {
     drawStatusEffects(member, pX, pY, pSize) {
         if (!member.statusEffects || member.statusEffects.length === 0) return;
 
-        const sheetKey = 'statusEffects'; 
-        const srcSize = 32;  
-        // Changed to 32 for exact 1x scaling (was 38)
-        const drawSize = 32; 
-        const spacing = 5; 
+        const sheetKey = 'statusEffects';
+        const srcSize = 32; // Changed to 32 for exact 1x scaling (was 38)
+        const drawSize = 32;
+        const spacing = 5;
 
         const sheet = this.loader.get ? this.loader.get(sheetKey) : this.loader.getAsset(sheetKey);
-        
-        let drawX = pX + 5; 
+
+        let drawX = pX + 5;
         let drawY = pY + pSize - drawSize - 5;
 
         member.statusEffects.forEach(effect => {
@@ -254,20 +256,25 @@ export class PartyRenderer {
 
             if (sheet && effect.icon) {
                 this.ctx.drawImage(
-                    sheet, 
-                    effect.icon.col * srcSize, effect.icon.row * srcSize, srcSize, srcSize, 
-                    drawX, drawY, drawSize, drawSize 
+                    sheet,
+                    effect.icon.col * srcSize,
+                    effect.icon.row * srcSize,
+                    srcSize,
+                    srcSize,
+                    drawX,
+                    drawY,
+                    drawSize,
+                    drawSize
                 );
             } else {
-                this.ui.drawText(effect.name.charAt(0), drawX + (drawSize/2), drawY + (drawSize/2) + 2, UITheme.fonts.cardSmall, UITheme.colors.textMain, "center", "middle");
+                this.ui.drawText(effect.name.charAt(0), drawX + (drawSize / 2), drawY + (drawSize / 2) + 2, UITheme.fonts.cardSmall, UITheme.colors.textMain, "center", "middle");
             }
 
             if (effect.stacks && effect.stacks > 1) {
                 this.ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
                 this.ctx.beginPath();
-                this.ctx.arc(drawX + drawSize, drawY + drawSize, 14, 0, Math.PI * 2); 
+                this.ctx.arc(drawX + drawSize, drawY + drawSize, 14, 0, Math.PI * 2);
                 this.ctx.fill();
-                
                 this.ui.drawText(effect.stacks.toString(), drawX + drawSize, drawY + drawSize + 2, UITheme.fonts.cardMono, "white", "center", "middle");
             }
 
@@ -278,28 +285,25 @@ export class PartyRenderer {
 
     _renderDraggedItem(dragState) {
         if (!dragState || !dragState.active || !dragState.payload) return;
+
         const { x, y, payload } = dragState;
         const ctx = this.ctx;
-        
         // Changed to 128 for exact 1x scaling (was 120)
-        const pSize = 128; 
-        
+        const pSize = 128;
+
         ctx.save();
-        ctx.globalAlpha = 0.85; 
-        
+        ctx.globalAlpha = 0.85;
+
         const masterSheet = this.loader.get(payload.spritePortrait);
-        
         const drawX = x - (pSize / 2);
         const drawY = y - (pSize / 2);
 
         this.ui.drawRect(drawX, drawY, pSize, pSize, "rgba(0,0,0,0.6)", true);
-        
         if (masterSheet) {
             ctx.drawImage(masterSheet, 0, 0, 128, 128, drawX, drawY, pSize, pSize);
         }
-        
         this.ui.drawRect(drawX, drawY, pSize, pSize, UITheme.colors.borderHighlight, false);
-        
+
         ctx.restore();
     }
 }

@@ -2,7 +2,6 @@
 Roguelike turnbased adventure game based on the Shackle Breaker story by Owen Walstrom
 
 enhance battle animations / polish
-clicking functionality across screens
 particleRenderer (global)
 crafting system.
 Difficulty
@@ -11,10 +10,10 @@ procedural dungeons and hand crafted areas
 structures: 
 Biome dependent generation
 Biome / time dependent music
+mouse navigation buttons for switching party members or viewing the inventory
 
 Bugs
 Rain flash
-fog too thick
 can't use items
 exile option toggling for last character
 

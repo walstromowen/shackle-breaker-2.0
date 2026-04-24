@@ -1,6 +1,7 @@
 import { gameState } from '../../../../shared/state/gameState.js';
 import { StatCalculator } from '../../../../shared/systems/statCalculator.js';
 import { ItemDefinitions } from '../../../../shared/data/itemDefinitions.js';
+import { AbilitySystem } from '../../../../shared/systems/abilitySystem.js'; // Added import
 
 const SLOT_ORDER = ['head', 'torso', 'arms', 'mainHand', 'legs', 'feet', 'accessory', 'offHand'];
 
@@ -224,36 +225,55 @@ export class CharacterSummaryLogic {
 
         return Array.from(abilityMap.values());
     }
+
     dropItem(item, amount = 1) {
-        if (this.readOnly) return false;
+        if (this.readOnly) return false;
 
-        const bagIdx = gameState.party.inventory.indexOf(item);
-        if (bagIdx > -1) {
-            if (item.qty > 1) {
-                item.qty -= amount;
-                // If they dropped the whole stack, remove it from the array
-                if (item.qty <= 0) {
-                    gameState.party.inventory.splice(bagIdx, 1);
-                }
-            } else {
-                // Unstackable or only 1 left
-                gameState.party.inventory.splice(bagIdx, 1);
-            }
-            return true;
-        }
-        return false;
-    }
+        const bagIdx = gameState.party.inventory.indexOf(item);
+        if (bagIdx > -1) {
+            if (item.qty > 1) {
+                item.qty -= amount;
+                // If they dropped the whole stack, remove it from the array
+                if (item.qty <= 0) {
+                    gameState.party.inventory.splice(bagIdx, 1);
+                }
+            } else {
+                // Unstackable or only 1 left
+                gameState.party.inventory.splice(bagIdx, 1);
+            }
+            return true;
+        }
+        return false;
+    }
 
-    useItem(item, targetMember) {
-        if (this.readOnly) return false;
-        
-        const def = ItemDefinitions[item.defId];
-        if (!def) return false;
+    // --- UPDATED USE ITEM METHOD ---
+    useItem(item, targetMember) {
+        if (this.readOnly) return false;
+        
+        const def = ItemDefinitions[item.defId];
+        if (!def) return false;
 
-        // TODO: Apply the item's actual effects to targetMember here
-        // Example: targetMember.heal(def.healAmount);
+        // 1. Determine if the item has an ability ID attached
+        // (Checking both the specific item instance and its definition fallback)
+        const abilityId = item.useAbility || def.useAbility;
 
-        // After successful use, consume 1 from inventory
-        return this.dropItem(item, 1);
-    }
+        if (abilityId) {
+            // 2. Execute the ability (Source and Target are both the current character)
+            const result = AbilitySystem.execute(abilityId, targetMember, targetMember);
+
+            // 3. Only consume the item if the ability successfully applied
+            // (e.g., prevents wasting a potion if HP is already full)
+            if (result.success) {
+                console.log(`[Item Use] Success: ${result.message}`);
+                return this.dropItem(item, 1);
+            } else {
+                console.log(`[Item Use] Failed or no effect: ${result.message || "HP already full."}`);
+                return false; 
+            }
+        } 
+        
+        // 4. Fallback for using special/quest items that bypass the Ability System
+        console.log(`[Item Use] Used non-ability item: ${item.defId}`);
+        return this.dropItem(item, 1);
+    }
 }
