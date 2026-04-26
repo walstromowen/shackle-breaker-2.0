@@ -132,7 +132,7 @@ export class AbilitiesPanel {
             
             if (ab.cost.hp) { costStr = `${ab.cost.hp} HP`; costCol = UITheme.colors.hp; } 
             else if (ab.cost.mana) { costStr = `${ab.cost.mana} MP`; costCol = UITheme.colors.ins; } 
-            else if (ab.cost.stamina) { costStr = `${ab.cost.stamina} SP`; costCol = UITheme.colors.stm; } 
+            else if (ab.cost.stamina) { costStr = `${ab.cost.stamina} STM`; costCol = UITheme.colors.stm; } 
             else if (ab.cost.insight) { costStr = `${ab.cost.insight} INS`; costCol = UITheme.colors.ins; } 
             
             this.ui.drawText(costStr, x + w - cardPadding, titleY, UITheme.fonts.cardMono, costCol, "right"); 

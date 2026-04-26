@@ -15,6 +15,7 @@ import { LevelUpController } from '../controllers/levelUp/levelUpController.js';
 import { MapRenderer } from '../renderers/overworld/mapRenderer.js';
 import { LightingRenderer } from '../renderers/overworld/lightingRenderer.js'; 
 import { WeatherRenderer } from '../renderers/overworld/weatherRenderer.js'; 
+import { OverworldUIRenderer } from '../renderers/overworld/overworldUIRenderer.js'; // <-- Added import
 import { EncounterRenderer } from '../renderers/encounter/encounterRenderer.js'; 
 import { TransitionRenderer } from '../renderers/transitions/transitionRenderer.js';
 import { CharacterCreatorRenderer } from '../renderers/characterCreator/characterCreatorRenderer.js'; 
@@ -54,6 +55,7 @@ export class SceneManager {
         this.mapRenderer = new MapRenderer(this.canvas, this.loader, this.config);
         this.lightingRenderer = new LightingRenderer(this.config); 
         this.weatherRenderer = new WeatherRenderer(this.canvas, this.ctx, this.config, this.loader);
+        this.overworldUIRenderer = new OverworldUIRenderer(this.config, this.loader); // <-- Instantiated UI Renderer
         this.encounterRenderer = new EncounterRenderer(this.config, this.loader);
         this.transitionRenderer = new TransitionRenderer(this.config);
         this.characterCreatorRenderer = new CharacterCreatorRenderer(this.config, this.loader);
@@ -71,9 +73,23 @@ export class SceneManager {
     }
 
     resolveTargetBGM(targetScene) {
-        if (targetScene === 'battle') return 'plainsBattle1';
-        if (targetScene === 'overworld') return 'plainsOverworldDay';
-        return null; 
+        // If we aren't in a game state yet, return null
+        if (!gameState.player || gameState.player.col === undefined) return null;
+
+        const playerCol = gameState.player.col;
+        const playerRow = gameState.player.row;
+        const currentHour = (gameState.world.time || 0) / 60;
+        
+        // Grab the biome the player is currently standing in
+        const biome = this.worldManager.getBiomeAt(playerCol, playerRow);
+
+        if (targetScene === 'battle') {
+            return biome.getMusic(currentHour, true); // true = isBattle
+        }
+        if (targetScene === 'overworld') {
+            return biome.getMusic(currentHour, false); // false = overworld
+        }
+        return null;
     }
 
     resolveTargetAmbience(targetScene) {
@@ -89,18 +105,22 @@ export class SceneManager {
     changeScene(sceneName) {
         console.log(`[SceneManager] Switching to: ${sceneName}`);
         this.currentScene = sceneName;
-        
+
         const targetBGM = this.resolveTargetBGM(sceneName);
-        if (targetBGM !== null) { 
-            events.emit('PLAY_MUSIC', { id: targetBGM, fadeTime: 1.0 });
+        if (targetBGM !== null) {
+            // NEW: Track the currently playing BGM in state so we don't restart it constantly
+            if (gameState.world.currentBgm !== targetBGM) {
+                gameState.world.currentBgm = targetBGM;
+                events.emit('PLAY_MUSIC', { id: targetBGM, fadeTime: 1.0 });
+            }
         }
 
         const targetAmbience = this.resolveTargetAmbience(sceneName);
-        if (targetAmbience !== null) { 
+        if (targetAmbience !== null) {
             if (targetAmbience === 'none') {
                 events.emit('STOP_AMBIENCE', { fadeTime: 1.0 });
             } else {
-                events.emit('PLAY_AMBIENCE', { id: targetAmbience, fadeTime: 2.0 }); 
+                events.emit('PLAY_AMBIENCE', { id: targetAmbience, fadeTime: 2.0 });
             }
         }
     }
@@ -342,6 +362,7 @@ export class SceneManager {
         const state = this.overworldController.getState();
         const ambientColor = this.timeSystem.getCurrentColorData();
         
+        // 1. Draw the Game World
         this.mapRenderer.renderMap(
             this.worldManager, 
             state.camera, 
@@ -352,6 +373,9 @@ export class SceneManager {
             ambientColor,
             this.weatherRenderer 
         );
+
+        // 2. Draw the UI on top
+        this.overworldUIRenderer.render(this.ctx, state); // <-- Render the new UI
     }
 
     destroy() {

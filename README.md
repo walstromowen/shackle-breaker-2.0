@@ -8,14 +8,11 @@ Difficulty
 Starting seed
 procedural dungeons and hand crafted areas
 structures: 
-Biome dependent generation
-Biome / time dependent music
-mouse navigation buttons for switching party members or viewing the inventory
+better transisitons
+sound for UI
 
 Bugs
 Rain flash
-can't use items
-exile option toggling for last character
 
 
 Root

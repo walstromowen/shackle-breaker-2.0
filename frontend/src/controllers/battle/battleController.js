@@ -302,20 +302,27 @@ export class BattleController extends BaseController {
         if (this.state.phase === PHASE.SELECT_ACTION && hitboxId.startsWith('ACTION_')) {
             this.state.menuIndex = parseInt(hitboxId.split('_')[1], 10);
             this._handleActionSelection('CONFIRM');
-        } 
+        }
         // Treat clicking a target the same as hitting Enter on it
         else if (this.state.phase === PHASE.SELECT_TARGET && hitboxId.startsWith('TARGET_')) {
             if (this.state.targetIndex === 'ALL') {
-                // If it's an AoE, confirm only if they clicked a valid applicable side
                 if (this._isValidTargetHitbox(hitboxId)) {
                     this._handleTargetSelection('CONFIRM');
                 }
             } else if (this._isValidTargetHitbox(hitboxId)) {
-                // UNIFY: Set the index based on the shared array, not the raw hitbox suffix
                 const target = this._getTargetFromHitbox(hitboxId);
                 const validTargets = this._getTargetsFromGroup();
                 this.state.targetIndex = validTargets.indexOf(target);
                 this._handleTargetSelection('CONFIRM');
+            }
+        }
+        // --- NEW: Handle Global Battle UI Buttons ---
+        else if (this.state.phase === PHASE.SELECT_ACTION) {
+            if (hitboxId === 'BUTTON_PARTY') {
+                this.requestPartySwap(false, this.state.activePartyIndex);
+            } 
+            else if (hitboxId === 'BUTTON_INVENTORY') {
+                this._openCharacterSummary();
             }
         }
     }
@@ -349,39 +356,8 @@ export class BattleController extends BaseController {
         const ignorePhases = [PHASE.INTRO, PHASE.RESOLVE, PHASE.VICTORY, PHASE.DEFEAT];
         if (ignorePhases.includes(this.state.phase)) return;
 
-        // 2.5 Check for Character Summary Screen
         if (intent === 'SUMMARY') {
-            console.log("Character Summary Toggled!");
-            events.emit('TOGGLE_CHARACTER_SUMMARY', {
-                combatant: this.state.activeParty[this.state.activePartyIndex],
-                phase: this.state.phase,
-                onItemSelected: (payload) => {
-                    const { itemId, abilityId } = payload;
-                    const [action] = AbilityFactory.createAbilities([abilityId]);
-                    const activeChar = this.state.activeParty[this.state.activePartyIndex];
-
-                    if (action) {
-                        if (itemId) {
-                            action.cost = { item: itemId, amount: 1 };
-                            action.isItemAction = true;
-                        }
-
-                        const inventory = InventorySystem; // Swapped to match your global system usage
-                        console.log("Checking inventory:", inventory);
-
-                        if (!action.canPayCost(activeChar, inventory)) {
-                            this.state.message = `Cannot use ${action.name}!`;
-                            console.warn("Cost check failed! Kicking back to menu.");
-                        } else {
-                            console.log("Cost check PASSED! Moving to target selection.");
-                            this._setupTargetSelection(action, activeChar);
-                            this.state.isPausedForUI = false;
-                        }
-                    }
-                    
-                    events.emit('CHANGE_SCENE', { scene: 'battle' });
-                }
-            });
+            this._openCharacterSummary();
             return;
         }
 
@@ -891,6 +867,36 @@ export class BattleController extends BaseController {
             fled: !!this.state.fled
         });
     }
+    _openCharacterSummary() {
+    console.log("Character Summary Toggled!");
+    events.emit('TOGGLE_CHARACTER_SUMMARY', {
+        combatant: this.state.activeParty[this.state.activePartyIndex],
+        phase: this.state.phase,
+        onItemSelected: (payload) => {
+            const { itemId, abilityId } = payload;
+            const [action] = AbilityFactory.createAbilities([abilityId]);
+            const activeChar = this.state.activeParty[this.state.activePartyIndex];
+            
+            if (action) {
+                if (itemId) {
+                    action.cost = { item: itemId, amount: 1 };
+                    action.isItemAction = true;
+                }
+                const inventory = InventorySystem; 
+                console.log("Checking inventory:", inventory);
+                if (!action.canPayCost(activeChar, inventory)) {
+                    this.state.message = `Cannot use ${action.name}!`;
+                    console.warn("Cost check failed! Kicking back to menu.");
+                } else {
+                    console.log("Cost check PASSED! Moving to target selection.");
+                    this._setupTargetSelection(action, activeChar);
+                    this.state.isPausedForUI = false;
+                }
+            }
+            events.emit('CHANGE_SCENE', { scene: 'battle' });
+        }
+    });
+}
 
     // --- NEW: Dump raw objects for inspection ---
     _dumpCombatantObjects(phaseName) {
@@ -903,6 +909,7 @@ export class BattleController extends BaseController {
         });
         console.log(`==========================================\n`);
     }
+
 
     getState() {
         if (!this.state) return null;

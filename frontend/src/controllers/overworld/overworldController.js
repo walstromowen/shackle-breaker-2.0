@@ -1,79 +1,70 @@
-import { events } from '../../core/eventBus.js';
-import { gameState } from '../../../../shared/state/gameState.js';
-import { EntityFactory } from '../../../../shared/systems/factories/entityFactory.js';
-import { WeatherFactory } from '../../../../shared/systems/factories/weatherFactory.js';
-import { PartyManager } from '../../../../shared/systems/partyManager.js';
+import { events } from '../../core/eventBus.js'; 
+import { gameState } from '../../../../shared/state/gameState.js'; 
+import { EntityFactory } from '../../../../shared/systems/factories/entityFactory.js'; 
+import { WeatherFactory } from '../../../../shared/systems/factories/weatherFactory.js'; 
+import { PartyManager } from '../../../../shared/systems/partyManager.js'; 
+import { BaseController } from '../core/baseController.js'; 
 
-export class OverworldController {
-    constructor(input, config, worldManager) {
-        this.input = input;
-        this.config = config;
+export class OverworldController extends BaseController { 
+    constructor(input, config, worldManager) { 
+        super(input); 
+        this.config = config; 
         this.worldManager = worldManager; 
+        this.player = this.createPlayerEntity(); 
+        this.camera = { x: 0, y: 0, prevX: 0, prevY: 0 }; 
+        this.isLocked = false; 
+        this.uiHitboxes = [ 
+            { id: 'btn_party', x: 48, y: 48, w: 80, h: 80, zIndex: 100 } 
+        ]; 
+    } 
 
-        // 1. Setup Player State
-        this.player = this.createPlayerEntity();
-        
-        // 2. Setup Camera
-        this.camera = { 
-            x: 0, y: 0, 
-            prevX: 0, prevY: 0 // <-- Add these
-        };
+    getHitboxes() { return this.uiHitboxes; } 
 
-        // 3. LOCK FLAG
-        this.isLocked = false;
-        
-        // Weather Initialization previously here is removed to allow 
-        // TimeSystem.generateNewWeather() to own it based on the biome.
-    }
+    onClick(hitboxId) { 
+        if (this.isLocked) return; 
+        switch (hitboxId) { 
+            case 'btn_party': 
+                console.log("[Overworld] Opening Party Menu (via UI click)..."); 
+                this.isLocked = true; 
+                events.emit('CHANGE_SCENE', { scene: 'party' }); 
+                break; 
+        } 
+    } 
 
-    // ==========================================
-    // INPUT HANDLING
-    // ==========================================
+    onHover(hitboxId) { super.onHover(hitboxId); } 
 
-    handleKeyDown(code) {
-        if (this.isLocked) return;
-
-        if (code === 'Space' || code === 'Enter') {
-            this.interact();
-        }
-
-        if (code === 'KeyP') {
-            console.log("[Overworld] Opening Party Menu...");
+    handleKeyDown(code, e) { 
+        if (this.isLocked) return; 
+        if (code === 'Space' || code === 'Enter') this.interact(); 
+        if (code === 'KeyP') { 
+            console.log("[Overworld] Opening Party Menu (via Hotkey)..."); 
             this.isLocked = true; 
-            events.emit('CHANGE_SCENE', { scene: 'party' });
-        }
+            events.emit('CHANGE_SCENE', { scene: 'party' }); 
+        } 
+    } 
 
-        if (code === 'KeyI') {
-            console.log("[Overworld] Opening Inventory...");
-        }
-    }
+    handleMouseDown(x, y, renderer) { if (this.isLocked) return; } 
 
-    // ==========================================
-    // GAME LOOP
-    // ==========================================
+    update(dt) { 
+        super.update(dt); 
+        
+        // --- NEW: Check music dynamically as time passes, regardless of movement! ---
+        this.checkEnvironmentMusic();
 
-    update(dt) {
-    if (this.isLocked) return;
-
-    // FEED THE RENDERER: Save previous position for interpolation
-    this.player.prevX = this.player.x;
-    this.player.prevY = this.player.y;
-    
-    // --> FIX: Save the camera's previous position too
-    this.camera.prevX = this.camera.x;
-    this.camera.prevY = this.camera.y;
-
-    if (this.player.isMoving) {
-        this.continueMoving(dt);
-    } else {
-        this.checkForNewMove();
-    }
-    this.updateCamera();
-}
-
-    // ==========================================
-    // MOVEMENT & INTERACTION LOGIC
-    // ==========================================
+        if (this.isLocked) return; 
+        
+        this.player.prevX = this.player.x; 
+        this.player.prevY = this.player.y; 
+        this.camera.prevX = this.camera.x; 
+        this.camera.prevY = this.camera.y; 
+        
+        if (this.player.isMoving) { 
+            this.continueMoving(dt); 
+        } else { 
+            this.checkForNewMove(); 
+        } 
+        this.updateCamera(); 
+    } 
 
     interact() {
         if (this.player.isMoving || this.isLocked) return;
@@ -90,81 +81,71 @@ export class OverworldController {
         const lookCol = Math.floor(targetX / TILE_SIZE);
         const lookRow = Math.floor(targetY / TILE_SIZE);
 
-        // Fetch ANY object overlapping this tile
         const obj = this.worldManager.getObjectAt(lookCol, lookRow);
-            
         if (obj && obj.interaction) {
             console.log(`[Overworld] Interacting with ${obj.id} at ${obj.col},${obj.row}`);
-
             this.isLocked = true;
+            
+            this.player.animFrame = 0; 
 
             events.emit('INTERACT', {
-                ...obj.interaction,       
-                context: {                
-                    col: obj.col,
-                    row: obj.row,
-                    objectId: obj.id
-                }
+                ...obj.interaction,
+                context: { col: obj.col, row: obj.row, objectId: obj.id }
             });
         }
     }
 
-    checkForNewMove() {
+    checkForNewMove() { 
         const dir = this.input.direction; 
-        if (!dir) return;
-
-        const { TILE_SIZE } = this.config;
-        let nextX = this.player.x;
-        let nextY = this.player.y;
-
-        this.player.direction = dir;
-
-        if (dir === "UP")    nextY -= TILE_SIZE;
-        if (dir === "DOWN")  nextY += TILE_SIZE;
-        if (dir === "LEFT")  nextX -= TILE_SIZE;
-        if (dir === "RIGHT") nextX += TILE_SIZE;
-
-        if (this.isSpaceFree(nextX, nextY)) {
-            this.startMove(nextX, nextY);
-        }
-    }
-
-    startMove(nextX, nextY) {
-        this.player.sourceX = this.player.x;
-        this.player.sourceY = this.player.y;
-        this.player.destX = nextX;
-        this.player.destY = nextY;
-        this.player.moveProgress = 0;
-        this.player.isMoving = true;
-    }
-
-    continueMoving(dt) {
-        const moveSpeed = this.config.WALK_DURATION; 
-        this.player.moveProgress += dt / moveSpeed;
+        if (!dir) return; 
         
-        this.player.animTimer += dt;
-        if (this.player.animTimer > 0.1) {
-            this.player.animTimer = 0;
-            this.player.animFrame = (this.player.animFrame + 1) % 4;
-        }
+        const { TILE_SIZE } = this.config; 
+        let nextX = this.player.x; 
+        let nextY = this.player.y; 
+        this.player.direction = dir; 
+        
+        if (dir === "UP")    nextY -= TILE_SIZE; 
+        if (dir === "DOWN")  nextY += TILE_SIZE; 
+        if (dir === "LEFT")  nextX -= TILE_SIZE; 
+        if (dir === "RIGHT") nextX += TILE_SIZE; 
+        
+        if (this.isSpaceFree(nextX, nextY)) { 
+            this.startMove(nextX, nextY); 
+        } 
+    } 
 
-        if (this.player.moveProgress >= 1) {
-            // 1. Save the leftover movement
+    startMove(nextX, nextY) { 
+        this.player.sourceX = this.player.x; 
+        this.player.sourceY = this.player.y; 
+        this.player.destX = nextX; 
+        this.player.destY = nextY; 
+        this.player.moveProgress = 0; 
+        this.player.isMoving = true; 
+    } 
+
+    continueMoving(dt) { 
+        const moveSpeed = this.config.WALK_DURATION; 
+        this.player.moveProgress += dt / moveSpeed; 
+        this.player.animTimer += dt; 
+        
+        if (this.player.animTimer > 0.1) { 
+            this.player.animTimer = 0; 
+            this.player.animFrame = (this.player.animFrame + 1) % 4; 
+        } 
+        
+        if (this.player.moveProgress >= 1) { 
             const overshoot = this.player.moveProgress - 1; 
-            
-            this.finishMove(); // This will trigger the next move if keys are held
-
-            // 2. Apply the leftover movement to the new tile transition immediately
-            if (this.player.isMoving) {
-                this.player.moveProgress = overshoot;
-                this.player.x = this.player.sourceX + (this.player.destX - this.player.sourceX) * this.player.moveProgress;
-                this.player.y = this.player.sourceY + (this.player.destY - this.player.sourceY) * this.player.moveProgress;
-            }
-        } else {
-            this.player.x = this.player.sourceX + (this.player.destX - this.player.sourceX) * this.player.moveProgress;
-            this.player.y = this.player.sourceY + (this.player.destY - this.player.sourceY) * this.player.moveProgress;
-        }
-    }
+            this.finishMove(); 
+            if (this.player.isMoving) { 
+                this.player.moveProgress = overshoot; 
+                this.player.x = this.player.sourceX + (this.player.destX - this.player.sourceX) * this.player.moveProgress; 
+                this.player.y = this.player.sourceY + (this.player.destY - this.player.sourceY) * this.player.moveProgress; 
+            } 
+        } else { 
+            this.player.x = this.player.sourceX + (this.player.destX - this.player.sourceX) * this.player.moveProgress; 
+            this.player.y = this.player.sourceY + (this.player.destY - this.player.sourceY) * this.player.moveProgress; 
+        } 
+    } 
 
     finishMove() {
         this.player.x = Math.round(this.player.destX);
@@ -176,199 +157,167 @@ export class OverworldController {
         gameState.player.row = Math.floor(this.player.y / this.config.TILE_SIZE);
         gameState.player.direction = this.player.direction;
 
-        // --- Core Tile Logic ---
         this.checkTileEvents();
-        
-        // --- Weather checks on tile entry ---
         this.validateBiomeWeather();
 
         if (this.isLocked) return;
-
         if (this.input.direction) {
             this.checkForNewMove();
         } else {
-            this.player.animFrame = 0; 
+            this.player.animFrame = 0;
         }
     }
 
     checkTileEvents() {
         const col = Math.floor(this.player.x / this.config.TILE_SIZE);
         const row = Math.floor(this.player.y / this.config.TILE_SIZE);
-        
-        /// ==========================================
-        // 1. STORY ENCOUNTER CHECK (10% Chance)
-        // ==========================================
-        if (Math.random() < 0.01) {
-            console.log(`[Overworld] Random encounter triggered: wounded_mutt!`);
-            
-            // Lock the overworld and halt the player
+        const biome = this.worldManager.getBiomeAt(col, row);
+
+        const currentHour = gameState.world.time / 60;
+
+        const encounterData = biome.getEncounter(currentHour);
+        if (encounterData) {
+            console.log(`[Overworld] Encounter triggered in ${biome.id} at hour ${Math.floor(currentHour)}: ${encounterData.id}!`);
             this.isLocked = true;
             this.player.isMoving = false;
             this.player.moveProgress = 0;
+            this.player.animFrame = 0; 
             
-            // Emit a dedicated random encounter event
-            events.emit('START_ENCOUNTER', { encounterId: 'wounded_mutt' });
-            
-            return; // Exit early to prevent an ambush on the same tile
+            events.emit('START_ENCOUNTER', { encounterId: encounterData.id });
+            return;
         }
 
-        // ==========================================
-        // 2. BIOME AMBUSH (BATTLE) CHECK
-        // ==========================================
-        const biome = this.worldManager.getBiomeAt(col, row);
         const battleData = biome.getBattle();
-
         if (!battleData) return;
 
         console.log(`[Overworld] Ambush triggered in biome: ${biome.id}!`);
-
         this.isLocked = true;
         this.player.isMoving = false;
         this.player.moveProgress = 0;
+        this.player.animFrame = 0;
 
-        // 1. Get the current hour 
-        const currentHour = gameState.world.time / 60; 
-
-        // 2. Ask the biome which background to use based on the time
         const battleBgAsset = biome.getBattleBackground(currentHour);
-
-        // --- Grab the party's highest level ---
         const dynamicLevel = PartyManager.getHighestLevel();
-
         const enemyParty = [];
-        for (const enemyData of battleData.enemies) {
-            // 1. Determine base ID
-            const enemyId = typeof enemyData === 'string' ? enemyData : enemyData.id;
-            
-            // 2. Build the overrides object to pass to the factory
-            let overrides = { level: dynamicLevel }; // Default to dynamic level
-
-            if (typeof enemyData === 'object') {
-                const levelOffset = enemyData.levelOffset || 0;
-                
-                // Pack everything from the definition into the overrides object
-                overrides = {
-                    ...enemyData, // Spreads equipment, traits, custom names, etc.
-                    level: Math.max(1, dynamicLevel + levelOffset) // Calculate final level
-                };
-            }
-
-            // 3. Pass the entire overrides object to the factory
-            const enemyEntity = EntityFactory.create(enemyId, overrides);
-            
-            // Fallback generic naming if no custom name was provided in the override
-            if (typeof enemyData === 'string' || !enemyData.name) {
-                enemyEntity.name = `${enemyEntity.name || enemyId} ${enemyParty.length + 1}`;
-            }
-
-            enemyParty.push(enemyEntity);
-        }
         
-        console.log('\n=== [DEBUG] BATTLE PAYLOAD ENTITIES ===');
-        enemyParty.forEach((entity, index) => {
-            console.log(`Enemy ${index + 1} (${entity.name}) object:`, entity);
-        });
-        console.log('=======================================\n');
+        for (const enemyData of battleData.enemies) { 
+            const enemyId = typeof enemyData === 'string' ? enemyData : enemyData.id; 
+            let overrides = { level: dynamicLevel }; 
+            
+            if (typeof enemyData === 'object') { 
+                const levelOffset = enemyData.levelOffset || 0; 
+                overrides = { ...enemyData, level: Math.max(1, dynamicLevel + levelOffset) }; 
+            } 
+            
+            const enemyEntity = EntityFactory.create(enemyId, overrides); 
+            if (typeof enemyData === 'string' || !enemyData.name) { 
+                enemyEntity.name = `${enemyEntity.name || enemyId} ${enemyParty.length + 1}`; 
+            } 
+            enemyParty.push(enemyEntity); 
+        } 
         
-        const battlePayload = {
-            enemies: enemyParty,
-            background: battleBgAsset,
-            weather: gameState.world.currentWeather
-        };
+        const battlePayload = { 
+            enemies: enemyParty, 
+            background: battleBgAsset, 
+            weather: gameState.world.currentWeather 
+        }; 
+        
+        events.emit('START_BATTLE', battlePayload); 
+    } 
 
-        console.log('[DEBUG] Emitting START_BATTLE payload:', battlePayload);
-        events.emit('START_BATTLE', battlePayload);
-    }
+    validateBiomeWeather() { 
+        const col = gameState.player.col; 
+        const row = gameState.player.row; 
+        const biome = this.worldManager.getBiomeAt(col, row); 
+        
+        gameState.world.currentBiome = biome.id; 
+        const activeWeather = gameState.world.currentWeather; 
+        
+        if (!activeWeather || activeWeather.id.toUpperCase() === 'CLEAR') return; 
+        
+        const allowed = (biome.allowedWeather || []).map(w => w.toUpperCase()); 
+        if (!allowed.includes(activeWeather.id.toUpperCase())) { 
+            console.log(`[Weather] Clearing skies. ${activeWeather.id} invalid in ${biome.id}.`); 
+            gameState.world.currentWeather = WeatherFactory.createWeather('CLEAR'); 
+        } 
+    } 
 
-    // ==========================================
-    // WEATHER LOGIC
-    // ==========================================
-
-    validateBiomeWeather() {
+    checkEnvironmentMusic() {
         const col = gameState.player.col;
         const row = gameState.player.row;
-        
         const biome = this.worldManager.getBiomeAt(col, row);
-        gameState.world.currentBiome = biome.id; 
+        const currentHour = (gameState.world.time || 0) / 60;
 
-        const activeWeather = gameState.world.currentWeather;
-        if (!activeWeather || activeWeather.id.toUpperCase() === 'CLEAR') return;
+        // Ask the biome what track should be playing right now
+        const targetTrack = biome.getMusic(currentHour, false);
 
-        const allowed = (biome.allowedWeather || []).map(w => w.toUpperCase());
-
-        // Just set it immediately to CLEAR. The renderer handles the crossfade visually.
-        if (!allowed.includes(activeWeather.id.toUpperCase())) {
-            console.log(`[Weather] Clearing skies. ${activeWeather.id} invalid in ${biome.id}.`);
-            gameState.world.currentWeather = WeatherFactory.createWeather('CLEAR');
+        // If the target track is different from what's currently playing, crossfade it!
+        if (targetTrack && gameState.world.currentBgm !== targetTrack) {
+            console.log(`[Overworld] Music shift to: ${targetTrack}`);
+            gameState.world.currentBgm = targetTrack;
+            // Increased to 4.0 for a more gradual, atmospheric fade
+            events.emit('PLAY_MUSIC', { id: targetTrack, fadeTime: 4.0 });
         }
     }
 
-    // ==========================================
-    // UTILS & STATE
-    // ==========================================
+    isSpaceFree(targetX, targetY) { 
+        const { TILE_SIZE } = this.config; 
+        const startCol = Math.floor(this.player.x / TILE_SIZE); 
+        const startRow = Math.floor(this.player.y / TILE_SIZE); 
+        const endCol = Math.floor(targetX / TILE_SIZE); 
+        const endRow = Math.floor(targetY / TILE_SIZE); 
+        
+        return this.worldManager.canMove(startCol, startRow, endCol, endRow, this.player.direction); 
+    } 
 
-    isSpaceFree(targetX, targetY) {
-        const { TILE_SIZE } = this.config;
+    updateCamera() { 
+        this.camera.x = this.player.x; 
+        this.camera.y = this.player.y; 
+        this.camera.prevX = this.player.prevX; 
+        this.camera.prevY = this.player.prevY; 
+    } 
 
-        const startCol = Math.floor(this.player.x / TILE_SIZE);
-        const startRow = Math.floor(this.player.y / TILE_SIZE);
+    getState() { 
+        return { 
+            entities: [this.player], 
+            camera: this.camera, 
+            hoveredHitboxId: this.hoveredHitboxId 
+        }; 
+    } 
 
-        const endCol = Math.floor(targetX / TILE_SIZE);
-        const endRow = Math.floor(targetY / TILE_SIZE);
-
-        // ADDED: Passing this.player.direction so the worldManager knows 
-        // which way the player is trying to enter/exit the stairs.
-        return this.worldManager.canMove(startCol, startRow, endCol, endRow, this.player.direction);
-    }
-
-    updateCamera() {
-    this.camera.x = this.player.x;
-    this.camera.y = this.player.y;
-    // Tie the camera's history directly to the player's history!
-    this.camera.prevX = this.player.prevX; 
-    this.camera.prevY = this.player.prevY; 
-}
-
-    getState() {
-        return { entities: [this.player], camera: this.camera };
-    }
-
-    createPlayerEntity() {
-        let startX, startY;
-
-        const savedCol = gameState.player.col;
-        const savedRow = gameState.player.row;
-
-        if (savedCol !== 0 || savedRow !== 0) {
-            startX = savedCol * this.config.TILE_SIZE;
-            startY = savedRow * this.config.TILE_SIZE;
+    createPlayerEntity() { 
+        let startX, startY; 
+        const savedCol = gameState.player.col; 
+        const savedRow = gameState.player.row; 
+        
+        if (savedCol !== 0 || savedRow !== 0) { 
+            startX = savedCol * this.config.TILE_SIZE; 
+            startY = savedRow * this.config.TILE_SIZE; 
+        } else { 
+            const spawn = this.worldManager.findSpawnPoint(); 
+            startX = spawn.col * this.config.TILE_SIZE; 
+            startY = spawn.row * this.config.TILE_SIZE; 
+            gameState.player.col = spawn.col; 
+            gameState.player.row = spawn.row; 
         } 
-        else {
-            const spawn = this.worldManager.findSpawnPoint();
-            startX = spawn.col * this.config.TILE_SIZE;
-            startY = spawn.row * this.config.TILE_SIZE;
-            
-            gameState.player.col = spawn.col;
-            gameState.player.row = spawn.row;
-        }
-
-        return {
-            id: "player",
-            isPlayer: true,
-            x: startX,
-            y: startY,
-            hitbox: { y: 0.5, h: 0.5 },
-            direction: gameState.player.direction || "DOWN",
-            isMoving: false,
+        
+        return { 
+            id: "player", 
+            isPlayer: true, 
+            x: startX, 
+            y: startY, 
+            hitbox: { y: 0.5, h: 0.5 }, 
+            direction: gameState.player.direction || "DOWN", 
+            isMoving: false, 
             animFrame: 0, 
-            animTimer: 0,
-            light: {
-                hasLight: true,
-                radius: 4,
-                color: '255, 200, 100',
-                maxAlpha: 0.5,
-                flickerAmp: 0.1
-            }
-        };
-    }
+            animTimer: 0, 
+            light: { 
+                hasLight: true, 
+                radius: 4, 
+                color: '255, 200, 100', 
+                maxAlpha: 0.5, 
+                flickerAmp: 0.1 
+            } 
+        }; 
+    } 
 }

@@ -30,29 +30,29 @@ class BiomeFactory {
      * Determines which biome should exist based on temperature and moisture noise values.
      * These values should be provided by the WorldManager's noise generators.
      */
-    /**
-     * Determines which biome should exist based on temperature and moisture noise values.
-     * These values should be provided by the WorldManager's noise generators.
-     */
     determineBiome(temperatureNoise, moistureNoise) {
-        // Assuming values are now normalized between 0.0 and 1.0
-        // 0.5 is "average"
+        // Perlin noise creates a bell curve where most values cluster around 0.5.
+        // Splitting right down the middle creates 4 equal 25% quadrants.
         
-        // Hot areas (Lowered from 0.7 to 0.6 to make hot biomes more common)
-        if (temperatureNoise > 0.6) { 
-            // Hot and Dry (Raised from 0.4 to 0.5 to make dry biomes more common)
-            if (moistureNoise < 0.5) return this.getBiome('DESERT');
-            
-            return this.getBiome('PLAINS'); 
-        } 
-        
-        // Cold areas (Raised from 0.3 to 0.4)
-        if (temperatureNoise < 0.4) {
-            return this.getBiome('PLAINS'); // Future: SNOW
-        }
+        const isHot = temperatureNoise > 0.5;
+        const isDry = moistureNoise < 0.5;
 
-        // Default middle-ground (Temperate)
-        return this.getBiome('PLAINS'); 
+        // Quadrant 1: Hot & Dry (25% of map)
+        if (isHot && isDry) {
+            return this.getBiome('DESERT');
+        } 
+        // Quadrant 2: Hot & Wet (25% of map)
+        else if (isHot && !isDry) {
+            return this.getBiome('DESERT'); // TODO: Replace with JUNGLE or SAVANNA later!
+        } 
+        // Quadrant 3: Cold & Dry (25% of map)
+        else if (!isHot && isDry) {
+            return this.getBiome('PLAINS'); // TODO: Replace with TUNDRA or SNOW later!
+        } 
+        // Quadrant 4: Cold & Wet (25% of map)
+        else {
+            return this.getBiome('PLAINS'); // TODO: Replace with FOREST later!
+        }
     }
 }
 

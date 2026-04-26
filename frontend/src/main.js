@@ -11,7 +11,7 @@ const ASSET_MANIFEST = {
     plains: './assets/tilesets/plains.png',
     desert: './assets/tilesets/desert.png',
     plainsMapObjects: './assets/tilesets/plains_map_objects.png',
-    desertMapObjects: './assets/tilesets/plains_map_objects.png',
+    desertMapObjects: './assets/tilesets/desert_map_objects.png',
     spritesheet: './assets/sprites/hero.png',
     shadows: './assets/tilesets/shadows.png',
 
@@ -60,9 +60,13 @@ const ASSET_MANIFEST = {
 
     encounters: './assets/icons/encounters.png',
     // --- NEW: Audio Assets go here! ---
-    plainsBattle1: './assets/audio/music/plains_battle_1.mp3',
-    plainsOverworldDay: './assets/audio/music/plains_overworld_day_2.mp3',  
-    plainsOverworldNight: './assets/audio/music/plains_overworld_night.mp3',  
+    plainsBgmBattle: './assets/audio/music/plains_battle_1.mp3',
+    plainsBgmDay: './assets/audio/music/plains_overworld_day_2.mp3',  
+    plainsBgmNight: './assets/audio/music/plains_overworld_night.mp3', 
+    
+    desertBattleBgm: './assets/audio/music/plains_battle_1.mp3',
+    desertBgmDay: './assets/audio/music/plains_overworld_day_2.mp3',
+    desertBgmNight: './assets/audio/music/plains_overworld_night.mp3',
 
     weatherRain: './assets/audio/sfx/weather_rain.wav',
     weatherRainShort: './assets/audio/sfx/weather_rain_short.wav',

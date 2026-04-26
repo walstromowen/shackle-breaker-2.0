@@ -298,7 +298,7 @@ export class ItemDetailPanel {
             let label = key; 
             let color = UITheme.colors.textMain; 
             if (key === 'maxHp') { label = "Max HP"; color = UITheme.colors.hp; } 
-            else if (key === 'maxStamina') { label = "Max SP"; color = UITheme.colors.stm; } 
+            else if (key === 'maxStamina') { label = "Max STM"; color = UITheme.colors.stm; } 
             else if (key === 'maxInsight') { label = "Max INS"; color = UITheme.colors.ins; } 
             
             const valStr = Formatting.formatSigned(val); 
@@ -396,7 +396,7 @@ export class ItemDetailPanel {
                     let costStr = ""; 
                     let costCol = UITheme.colors.textMuted; 
                     if (ab.cost.mana) { costStr = `${ab.cost.mana} MP`; costCol = UITheme.colors.defense; } 
-                    else if (ab.cost.stamina) { costStr = `${ab.cost.stamina} SP`; costCol = UITheme.colors.stm; } 
+                    else if (ab.cost.stamina) { costStr = `${ab.cost.stamina} STM`; costCol = UITheme.colors.stm; } 
                     else if (ab.cost.insight) { costStr = `${ab.cost.insight} INS`; costCol = UITheme.colors.ins; } 
                     this.ui.drawText(costStr, x + w - cardPadding, cursorY, UITheme.fonts.cardMono, costCol, "right"); 
                 } 
