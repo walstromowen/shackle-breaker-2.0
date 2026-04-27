@@ -7,7 +7,7 @@ import { WeatherDefinitions } from '../data/weatherDefinitions.js'; // NEW: Need
 export class TimeSystem {
     constructor() {
         // --- CONFIGURATION (Static, doesn't need saving) ---
-        this.GAME_MINUTES_PER_REAL_SEC = 10; 
+        this.GAME_MINUTES_PER_REAL_SEC = 1; 
         this.MAX_TIME = 24 * 60; 
 
         // 2. SYNC ON LOAD
@@ -72,7 +72,6 @@ export class TimeSystem {
         if (gameState.world.time >= this.MAX_TIME) {
             gameState.world.time -= this.MAX_TIME;
             gameState.world.day++; 
-            console.log(`🌞 A new day dawns. Day ${gameState.world.day}`);
         }
     }
 
@@ -169,8 +168,6 @@ export class TimeSystem {
 
         // Instantiate the new weather model and save it to the state
         gameState.world.currentWeather = WeatherFactory.createWeather(selectedWeatherId);
-        console.log(`[TimeSystem] Weather changed to: ${gameState.world.currentWeather.name} for the next ${gameState.world.currentWeather.timeRemaining} hours.`);
-
         // ---------------------------------------------------------
         // NEW: Trigger Audio Sync
         // ---------------------------------------------------------

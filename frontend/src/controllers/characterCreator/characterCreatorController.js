@@ -152,6 +152,7 @@ export class CharacterCreatorController extends BaseController {
         if (this.logic.isEditingName) {
             if (e.code === "Enter" || e.code === "Escape") {
                 this.logic.validateName();
+                this.playConfirmSound();
             } else {
                 this.logic.nameInput.handleEvent(e);
                 this.logic.state.name = this.logic.nameInput.value;
@@ -159,27 +160,35 @@ export class CharacterCreatorController extends BaseController {
             return;
         }
 
-        // 1. Try explicit bindings first, fallback to BaseController's mapper
-        const intent = (e && KEY_BINDINGS[e.code]) || 
-                       (typeof this._mapKeyCodeToIntent === 'function' ? this._mapKeyCodeToIntent(keyCode) : null);
-
+        const intent = (e && KEY_BINDINGS[e.code]);
         if (!intent) return;
+
+        // Track state to see if a sound should fire
+        const prevRow = this.logic.currentRow;
+        const prevSelections = JSON.stringify(this.logic.state);
 
         if (intent === 'UP') {
             this.logic.moveRow(-1);
+            if (this.logic.currentRow !== prevRow) this.playNavSound();
         } else if (intent === 'DOWN') {
             this.logic.moveRow(1);
+            if (this.logic.currentRow !== prevRow) this.playNavSound();
         } else if (intent === 'LEFT') {
-            if (this.logic.modifyValue(-1)) this.scrollManager.resetAllScrolls();
+            if (this.logic.modifyValue(-1)) {
+                this.scrollManager.resetAllScrolls();
+                this.playNavSound();
+            }
         } else if (intent === 'RIGHT') {
-            if (this.logic.modifyValue(1)) this.scrollManager.resetAllScrolls();
+            if (this.logic.modifyValue(1)) {
+                this.scrollManager.resetAllScrolls();
+                this.playNavSound();
+            }
         } else if (intent === 'CONFIRM') {
             this.logic.handleAction();
+            this.playConfirmSound();
         } else if (intent === 'CANCEL') {
-            // Cancel any active drag/scroll operations
-            if (this.scrollManager.isDragging) {
-                this.scrollManager.handleDragEnd();
-            }
+            this.playCancelSound();
+            if (this.scrollManager.isDragging) this.scrollManager.handleDragEnd();
         }
     }
 }

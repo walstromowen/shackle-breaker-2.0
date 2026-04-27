@@ -1,59 +1,50 @@
 /**
  * frontend/src/controllers/core/baseController.js
  */
+import { events } from '../../core/eventBus.js';
+
 export class BaseController {
     constructor(input) {
         this.input = input;
-
-        // --- Shared State ---
         this.mouse = { x: 0, y: 0 };
         this.lastRenderedHitboxes = [];
-        this.hoveredHitboxId = null; 
+        this.hoveredHitboxId = null;
+    }
+
+    // ========================================================
+    // GLOBAL UI AUDIO HELPERS
+    // ========================================================
+    playNavSound(sfxId = 'hoverTick') {
+        events.emit('PLAY_SFX', { id: sfxId, volume: 0.4, pitch: 0.9 + Math.random() * 0.2 });
+    }
+
+    playConfirmSound(sfxId = 'cinematicBoom') {
+        events.emit('PLAY_SFX', { id: sfxId, volume: 0.6, pitch: 0.9 + Math.random() * 0.2 });
+    }
+
+    playCancelSound(sfxId = 'cinematicBoomCancel') {
+        events.emit('PLAY_SFX', { id: sfxId, volume: 0.5, pitch: 0.9 + Math.random() * 0.2 });
     }
 
     // --- Core Architecture ---
     update(dt) {}
     getState() { return {}; }
-
-    // --- Standard UI Hitbox System ---
-    
-    // UIInteractionManager calls this to see what is clickable
-    getHitboxes() { 
-        return this.lastRenderedHitboxes; 
-    }
-
-    // Renderers (or controllers) call this to update the cache
-    updateHitboxes(hitboxes) {
-        this.lastRenderedHitboxes = hitboxes;
-    }
+    getHitboxes() { return this.lastRenderedHitboxes; }
+    updateHitboxes(hitboxes) { this.lastRenderedHitboxes = hitboxes; }
 
     // --- Standard UI Callbacks ---
-    // UIInteractionManager calls these automatically!
-    
-    onHover(hitboxId) {
-        // Save the currently hovered ID so child controllers know what is highlighted
-        this.hoveredHitboxId = hitboxId;
-    }
-    
+    onHover(hitboxId) { this.hoveredHitboxId = hitboxId; }
     onClick(hitboxId) {}
     onRightClick(hitboxId) {}
-    onDragMove(x, y) {} // <-- Add this
+    onDragMove(x, y) {}
     onDragStart(hitboxId) {}
     onDrop(dragId, targetId) {}
 
-
     // --- Raw Input Fallbacks ---
-    // SceneManager calls these automatically for non-UI interactions
-
     handleKeyDown(keyCode, e) {}
-    handleScroll(delta) {}
-    
+    handleScroll(delta) { }
     handleMouseMove(x, y, isMouseDown, renderer) {
-        // Automatically keep track of raw mouse coordinates for all controllers
         this.mouse.x = x;
         this.mouse.y = y;
     }
-    
-    handleMouseDown(x, y, renderer) {}
-    handleRightClick(x, y) {}
 }

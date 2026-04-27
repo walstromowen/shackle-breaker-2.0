@@ -9,24 +9,15 @@ import { BaseController } from '../core/baseController.js';
 
 // --- ADDED KEY BINDINGS ---
 const KEY_BINDINGS = {
-    'ArrowUp': 'UP',
-    'KeyW': 'UP',
-    'ArrowDown': 'DOWN',
-    'KeyS': 'DOWN',
-    'ArrowLeft': 'LEFT',
-    'KeyA': 'LEFT',
-    'ArrowRight': 'RIGHT',
-    'KeyD': 'RIGHT',
-    'Enter': 'CONFIRM',
-    'Space': 'CONFIRM',
-    'Escape': 'CANCEL',
-    'Backspace': 'CANCEL',
-    'Tab': 'CANCEL',
+    'ArrowUp': 'UP', 'KeyW': 'UP',
+    'ArrowDown': 'DOWN', 'KeyS': 'DOWN',
+    'ArrowLeft': 'LEFT', 'KeyA': 'LEFT',
+    'ArrowRight': 'RIGHT', 'KeyD': 'RIGHT',
+    'Enter': 'CONFIRM', 'Space': 'CONFIRM',
+    'Escape': 'CANCEL', 'Backspace': 'CANCEL', 'Tab': 'CANCEL',
     'KeyP': 'SWAP',
-    'KeyI': 'SUMMARY',
-    'i': 'SUMMARY',
-    'KeyC': 'DEBUG',
-    'c': 'DEBUG'
+    'KeyI': 'SUMMARY', 'i': 'SUMMARY',
+    'KeyC': 'DEBUG', 'c': 'DEBUG'
 };
 
 export const PHASE = {
@@ -49,7 +40,6 @@ export class BattleController extends BaseController {
 
     start(enemies, context = {}) {
         const maxActive = context.maxActive || 3;
-        
         const party = gameState.party.members.map(member => new CombatantModel(member, 'party'));
         const preparedEnemies = enemies.map(enemy => new CombatantModel(enemy, 'enemy'));
 
@@ -74,7 +64,6 @@ export class BattleController extends BaseController {
         };
 
         console.log('[DEBUG] BattleController.start received context:', context);
-
         let preBattleActionsQueued = false;
 
         // --- 1. ENEMY INTRO CRIES ---
@@ -111,11 +100,7 @@ export class BattleController extends BaseController {
         if (this.state.weather && this.state.weather.id !== 'clear') {
             console.log('[DEBUG] WEATHER TRIGGERED in BattleController! Pushing to queue.', this.state.weather);
             const weatherMsg = this.state.weather.battleMessage || `A fierce ${this.state.weather.name} begins!`;
-            
-            this.state.turnQueue.push({
-                type: TURN_TYPES.MESSAGE_STATUS,
-                message: weatherMsg
-            });
+            this.state.turnQueue.push({ type: TURN_TYPES.MESSAGE_STATUS, message: weatherMsg });
 
             const activeCombatants = [...this.state.activeParty, ...this.state.activeEnemies].filter(c => c && !c.isDead());
             this.state.turnQueue.push({
@@ -144,20 +129,19 @@ export class BattleController extends BaseController {
     _queuePreBattleTraits() {
         let traitsQueued = false;
         const activeCombatants = [...this.state.activeParty, ...this.state.activeEnemies].filter(c => c && !c.isDead());
-        
         activeCombatants.sort((a, b) => (b.stats?.speed ?? 10) - (a.stats?.speed ?? 10));
 
         activeCombatants.forEach(combatant => {
             const rawTraits = combatant.traits;
             console.log(`[Debug Sweeper] Checking ${combatant.name}. Raw Traits found:`, rawTraits);
-            
+
             if (rawTraits && Array.isArray(rawTraits) && rawTraits.length > 0) {
                 rawTraits.forEach(trait => {
                     const startTrigger = trait?.triggers?.onBattleStart;
                     if (startTrigger && startTrigger.ability) {
                         const abilityId = startTrigger.ability;
                         const [ability] = AbilityFactory.createAbilities([abilityId]);
-                        
+
                         if (ability) {
                             // --- 1. QUEUE ANIMATION ---
                             if (startTrigger.animationId) {
@@ -173,11 +157,7 @@ export class BattleController extends BaseController {
                             const finalMessage = msgTemplate
                                 .replace(/{actor}/g, combatant.name)
                                 .replace(/{trait}/g, trait.name);
-
-                            this.state.turnQueue.push({
-                                type: TURN_TYPES.MESSAGE_STATUS,
-                                message: finalMessage
-                            });
+                            this.state.turnQueue.push({ type: TURN_TYPES.MESSAGE_STATUS, message: finalMessage });
 
                             // --- 3. QUEUE ABILITY EXECUTION ---
                             this.state.turnQueue.push({
@@ -187,7 +167,6 @@ export class BattleController extends BaseController {
                                 action: ability,
                                 target: combatant
                             });
-
                             traitsQueued = true;
                         }
                     }
@@ -208,10 +187,10 @@ export class BattleController extends BaseController {
             if (deathTrigger && deathTrigger.ability) {
                 const abilityId = deathTrigger.ability;
                 const [ability] = AbilityFactory.createAbilities([abilityId]);
-                
+
                 if (ability) {
                     console.log(`[Debug Sweeper] SUCCESS! Queuing death trait [${trait.name}] -> casting [${ability.name}] for ${deadCombatant.name}`);
-                    
+
                     this.state.turnQueue.unshift({
                         type: TURN_TYPES.EXECUTE_ACTION,
                         ignoreCost: true,
@@ -225,11 +204,7 @@ export class BattleController extends BaseController {
                     const finalMessage = msgTemplate
                         .replace(/{actor}/g, deadCombatant.name)
                         .replace(/{trait}/g, trait.name);
-
-                    this.state.turnQueue.unshift({
-                        type: TURN_TYPES.MESSAGE_STATUS,
-                        message: finalMessage
-                    });
+                    this.state.turnQueue.unshift({ type: TURN_TYPES.MESSAGE_STATUS, message: finalMessage });
 
                     const animId = deathTrigger.animationId || "trait_activate";
                     this.state.turnQueue.unshift({
@@ -248,7 +223,6 @@ export class BattleController extends BaseController {
     // ========================================================
     // UNIFIED TARGETING PIPELINE (KEYBOARD & MOUSE)
     // ========================================================
-
     _getTargetsFromGroup() {
         if (this.state.targetGroup === 'everyone') {
             return [...this.state.activeParty, ...this.state.activeEnemies];
@@ -267,7 +241,6 @@ export class BattleController extends BaseController {
 
     _isValidTargetHitbox(hitboxId) {
         if (!this.state.targetGroup) return false;
-
         const target = this._getTargetFromHitbox(hitboxId);
         if (!target || target.isDead()) return false;
 
@@ -277,13 +250,18 @@ export class BattleController extends BaseController {
     }
 
     onHover(hitboxId) {
+        const prevMenuIndex = this.state?.menuIndex;
+        const prevTargetIndex = this.state?.targetIndex;
+
         super.onHover(hitboxId);
         if (!hitboxId || this.state?.isPausedForUI || !this.state?.active) return;
 
         // Sync focus logic to brackets on hover
         if (this.state.phase === PHASE.SELECT_ACTION && hitboxId.startsWith('ACTION_')) {
             this.state.menuIndex = parseInt(hitboxId.split('_')[1], 10);
-        } else if (this.state.phase === PHASE.SELECT_TARGET && hitboxId.startsWith('TARGET_')) {
+            if (this.state.menuIndex !== prevMenuIndex) this.playNavSound();
+        } 
+        else if (this.state.phase === PHASE.SELECT_TARGET && hitboxId.startsWith('TARGET_')) {
             if (this.state.targetIndex === 'ALL') return; // Do not snap cursor to specific index for AoE
 
             if (this._isValidTargetHitbox(hitboxId)) {
@@ -291,6 +269,8 @@ export class BattleController extends BaseController {
                 const target = this._getTargetFromHitbox(hitboxId);
                 const validTargets = this._getTargetsFromGroup();
                 this.state.targetIndex = validTargets.indexOf(target);
+                
+                if (this.state.targetIndex !== prevTargetIndex) this.playNavSound();
             }
         }
     }
@@ -302,7 +282,7 @@ export class BattleController extends BaseController {
         if (this.state.phase === PHASE.SELECT_ACTION && hitboxId.startsWith('ACTION_')) {
             this.state.menuIndex = parseInt(hitboxId.split('_')[1], 10);
             this._handleActionSelection('CONFIRM');
-        }
+        } 
         // Treat clicking a target the same as hitting Enter on it
         else if (this.state.phase === PHASE.SELECT_TARGET && hitboxId.startsWith('TARGET_')) {
             if (this.state.targetIndex === 'ALL') {
@@ -315,13 +295,14 @@ export class BattleController extends BaseController {
                 this.state.targetIndex = validTargets.indexOf(target);
                 this._handleTargetSelection('CONFIRM');
             }
-        }
-        // --- NEW: Handle Global Battle UI Buttons ---
+        } 
+        // --- Handle Global Battle UI Buttons ---
         else if (this.state.phase === PHASE.SELECT_ACTION) {
             if (hitboxId === 'BUTTON_PARTY') {
+                this.playConfirmSound('ui_select');
                 this.requestPartySwap(false, this.state.activePartyIndex);
-            } 
-            else if (hitboxId === 'BUTTON_INVENTORY') {
+            } else if (hitboxId === 'BUTTON_INVENTORY') {
+                this.playConfirmSound('ui_select');
                 this._openCharacterSummary();
             }
         }
@@ -357,6 +338,7 @@ export class BattleController extends BaseController {
         if (ignorePhases.includes(this.state.phase)) return;
 
         if (intent === 'SUMMARY') {
+            this.playConfirmSound('ui_select');
             this._openCharacterSummary();
             return;
         }
@@ -372,22 +354,31 @@ export class BattleController extends BaseController {
     _handleActionSelection(intent) {
         const activeChar = this.state.activeParty[this.state.activePartyIndex];
         const abilityCount = activeChar.abilities.length;
+        const prevIndex = this.state.menuIndex;
 
         if (intent === 'RIGHT') {
             this.state.menuIndex = (this.state.menuIndex + 1) % abilityCount;
-        } else if (intent === 'LEFT') {
+            if (this.state.menuIndex !== prevIndex) this.playNavSound();
+        } 
+        else if (intent === 'LEFT') {
             this.state.menuIndex = (this.state.menuIndex - 1 + abilityCount) % abilityCount;
-        } else if (intent === 'CONFIRM') {
+            if (this.state.menuIndex !== prevIndex) this.playNavSound();
+        } 
+        else if (intent === 'CONFIRM') {
             const action = activeChar.abilities[this.state.menuIndex];
-            
+
             // Verify they have the resources/items to use it from the primary menu
             if (!action.canPayCost(activeChar, InventorySystem)) {
+                this.playCancelSound(); // SFX for invalid action
                 this.state.message = `Not enough resources to use ${action.name}!`;
                 return;
             }
 
+            this.playConfirmSound();
             this._setupTargetSelection(action, activeChar);
-        } else if (intent === 'SWAP') {
+        } 
+        else if (intent === 'SWAP') {
+            this.playConfirmSound('ui_select');
             this.requestPartySwap(false, this.state.activePartyIndex);
         }
     }
@@ -425,7 +416,7 @@ export class BattleController extends BaseController {
         // 4. Standard Ally/Enemy processing
         const isPartyTarget = scope.includes('allies') || scope === 'ally';
         const targetPool = isPartyTarget ? this.state.activeParty : this.state.activeEnemies;
-        
+
         this.state.targetGroup = isPartyTarget ? 'party' : 'enemy';
 
         if (['all_enemies', 'all_allies'].includes(scope)) {
@@ -440,20 +431,33 @@ export class BattleController extends BaseController {
     _handleTargetSelection(intent) {
         // UNIFY: Keyboard now fetches the exact same pool as the mouse
         const targetArray = this._getTargetsFromGroup();
+        const prevIndex = this.state.targetIndex;
 
         if (this.state.targetIndex === 'ALL') {
-            if (intent === 'CONFIRM') this.commitAction('ALL');
-            else if (intent === 'CANCEL') this._cancelTargetSelection();
+            if (intent === 'CONFIRM') {
+                this.playConfirmSound('ui_select');
+                this.commitAction('ALL');
+            } else if (intent === 'CANCEL') {
+                this.playCancelSound();
+                this._cancelTargetSelection();
+            }
             return;
         }
 
         if (intent === 'DOWN' || intent === 'RIGHT') {
             this.state.targetIndex = this._cycleTarget(targetArray, 1);
-        } else if (intent === 'UP' || intent === 'LEFT') {
+            if (this.state.targetIndex !== prevIndex) this.playNavSound();
+        } 
+        else if (intent === 'UP' || intent === 'LEFT') {
             this.state.targetIndex = this._cycleTarget(targetArray, -1);
-        } else if (intent === 'CONFIRM') {
+            if (this.state.targetIndex !== prevIndex) this.playNavSound();
+        } 
+        else if (intent === 'CONFIRM') {
+            this.playConfirmSound('ui_select');
             this._selectSpecificTarget(targetArray[this.state.targetIndex]);
-        } else if (intent === 'CANCEL') {
+        } 
+        else if (intent === 'CANCEL') {
+            this.playCancelSound();
             this._cancelTargetSelection();
         }
     }
@@ -461,6 +465,7 @@ export class BattleController extends BaseController {
     _cycleTarget(targetArray, direction) {
         const count = targetArray.length;
         let nextIndex = this.state.targetIndex;
+
         for (let i = 0; i < count; i++) {
             nextIndex = (nextIndex + direction + count) % count;
             if (targetArray[nextIndex] && !targetArray[nextIndex].isDead()) return nextIndex;
@@ -523,12 +528,10 @@ export class BattleController extends BaseController {
             activeIndices: activeIndices,
             callback: (selectedRosterIndex) => {
                 this.state.isPausedForUI = false;
-                
                 if (selectedRosterIndex === null || selectedRosterIndex === undefined) {
                     if (isForced) this.requestPartySwap(isForced, slotIndex);
                     return;
                 }
-
                 this._executeSwap(selectedRosterIndex, isForced, slotIndex);
             }
         });
@@ -538,7 +541,13 @@ export class BattleController extends BaseController {
         const replacement = this.state.partyRoster[selectedRosterIndex];
 
         if (isForced) {
-            this.state.turnQueue.unshift({ type: TURN_TYPES.ANIMATION, actor: replacement, animationId: 'enter_battle', soundId: replacement.crySound, duration: 1.0 });
+            this.state.turnQueue.unshift({
+                type: TURN_TYPES.ANIMATION,
+                actor: replacement,
+                animationId: 'enter_battle',
+                soundId: replacement.crySound,
+                duration: 1.0
+            });
             this.state.turnQueue.unshift({ type: TURN_TYPES.MESSAGE_STATUS, message: `${replacement.name} steps into the fray!` });
             this.state.turnQueue.unshift({ type: TURN_TYPES.REINFORCEMENT, team: 'party', slotIndex, replacement });
         } else {
@@ -613,9 +622,8 @@ export class BattleController extends BaseController {
         this.state.activeEnemies.forEach(enemy => {
             if (!enemy || enemy.isDead()) return;
 
-            const validAbilities = enemy.abilities.filter(a => 
-                a.canPayCost(enemy, InventorySystem) && 
-                !['rest', 'punch'].includes(a.id)
+            const validAbilities = enemy.abilities.filter(a =>
+                a.canPayCost(enemy, InventorySystem) && !['rest', 'punch'].includes(a.id)
             );
 
             const randomTarget = livingParty[Math.floor(Math.random() * livingParty.length)];
@@ -639,11 +647,11 @@ export class BattleController extends BaseController {
         this.state.turnQueue.sort((a, b) => {
             const speedA = a.speedOverride ?? ((a.actor?.stats?.speed ?? 10) * (a.action?.speedModifier ?? 1));
             const speedB = b.speedOverride ?? ((b.actor?.stats?.speed ?? 10) * (b.action?.speedModifier ?? 1));
-            
+
             if (speedA !== speedB) {
-                return speedB - speedA; 
+                return speedB - speedA;
             }
-            
+
             const orderA = a.swapSequenceOrder ?? 99;
             const orderB = b.swapSequenceOrder ?? 99;
             return orderA - orderB;
@@ -653,7 +661,6 @@ export class BattleController extends BaseController {
     // --- MAIN TICK ---
     update(dt) {
         if (!this.state?.active || this.state.isPausedForUI) return;
-
         this.state.timer = this.timer;
 
         if (this.state.phase === PHASE.INTRO) {
@@ -669,17 +676,14 @@ export class BattleController extends BaseController {
             if (this.timer >= waitTime) {
                 if (this.state.activeAnimation) {
                     const finishedAnim = this.state.activeAnimation;
-                    
                     if (finishedAnim.id === 'enter_battle' && finishedAnim.actor) {
                         finishedAnim.actor.hasEnteredBattle = true;
                     }
                     if (finishedAnim.id === 'retreat' && finishedAnim.actor) {
                         finishedAnim.actor.hasEnteredBattle = false;
                     }
-                    
                     this.state.activeAnimation = null;
                 }
-
                 this.timer = 0;
                 this.state.timer = 0;
                 this.turnManager.processNextTurnInQueue();
@@ -717,55 +721,34 @@ export class BattleController extends BaseController {
         combatant._deathHandled = true;
 
         // Remove pending actions and abort pending swaps
-        this.state.turnQueue = this.state.turnQueue.filter(turn => 
-            turn.actor !== combatant && 
-            turn.swapInitiator !== combatant
+        this.state.turnQueue = this.state.turnQueue.filter(turn =>
+            turn.actor !== combatant && turn.swapInitiator !== combatant
         );
 
         const isParty = combatant.team === 'party';
         const activeArray = isParty ? this.state.activeParty : this.state.activeEnemies;
         const rosterArray = isParty ? this.state.partyRoster : this.state.enemyRoster;
-        
         const slotIndex = activeArray.indexOf(combatant);
 
         // --- 4. Queue Reinforcements (Executes LAST) ---
         if (slotIndex !== -1) {
-            const livingReserves = rosterArray.filter(member => 
-                !member.isDead() && 
+            const livingReserves = rosterArray.filter(member =>
+                !member.isDead() &&
                 !activeArray.includes(member) &&
                 !this.state.turnQueue.some(turn => turn.replacement === member)
             );
 
             if (livingReserves.length > 0) {
                 if (isParty) {
-                    this.state.turnQueue.unshift({
-                        type: TURN_TYPES.PROMPT_REINFORCEMENT,
-                        slotIndex
-                    });
+                    this.state.turnQueue.unshift({ type: TURN_TYPES.PROMPT_REINFORCEMENT, slotIndex });
                 } else {
                     const replacement = livingReserves[0];
                     // Step 4b: Enter Battle Animation
-                    this.state.turnQueue.unshift({
-                        type: TURN_TYPES.ANIMATION,
-                        actor: replacement,
-                        animationId: 'enter_battle',
-                        soundId: replacement.crySound,
-                        duration: 1.0
-                    });
-
+                    this.state.turnQueue.unshift({ type: TURN_TYPES.ANIMATION, actor: replacement, animationId: 'enter_battle', soundId: replacement.crySound, duration: 1.0 });
                     // Step 4a: Joins Battle Message
-                    this.state.turnQueue.unshift({
-                        type: TURN_TYPES.MESSAGE_STATUS,
-                        message: `${replacement.name} joins the battle!`
-                    });
-
+                    this.state.turnQueue.unshift({ type: TURN_TYPES.MESSAGE_STATUS, message: `${replacement.name} joins the battle!` });
                     // Data Swap happens silently right before the entrance
-                    this.state.turnQueue.unshift({
-                        type: TURN_TYPES.REINFORCEMENT,
-                        team: 'enemy',
-                        slotIndex,
-                        replacement
-                    });
+                    this.state.turnQueue.unshift({ type: TURN_TYPES.REINFORCEMENT, team: 'enemy', slotIndex, replacement });
                 }
             }
         }
@@ -784,10 +767,7 @@ export class BattleController extends BaseController {
 
         // --- 1. Queue the Death Message (Executes FIRST) ---
         // Unshifting this absolute last guarantees it sits at index 0 of the queue
-        this.state.turnQueue.unshift({
-            type: TURN_TYPES.MESSAGE_STATUS,
-            message: `${combatant.name} has been slain!`
-        });
+        this.state.turnQueue.unshift({ type: TURN_TYPES.MESSAGE_STATUS, message: `${combatant.name} has been slain!` });
     }
 
     checkBattleStatus() {
@@ -867,36 +847,39 @@ export class BattleController extends BaseController {
             fled: !!this.state.fled
         });
     }
+
     _openCharacterSummary() {
-    console.log("Character Summary Toggled!");
-    events.emit('TOGGLE_CHARACTER_SUMMARY', {
-        combatant: this.state.activeParty[this.state.activePartyIndex],
-        phase: this.state.phase,
-        onItemSelected: (payload) => {
-            const { itemId, abilityId } = payload;
-            const [action] = AbilityFactory.createAbilities([abilityId]);
-            const activeChar = this.state.activeParty[this.state.activePartyIndex];
-            
-            if (action) {
-                if (itemId) {
-                    action.cost = { item: itemId, amount: 1 };
-                    action.isItemAction = true;
+        console.log("Character Summary Toggled!");
+        events.emit('TOGGLE_CHARACTER_SUMMARY', {
+            combatant: this.state.activeParty[this.state.activePartyIndex],
+            phase: this.state.phase,
+            onItemSelected: (payload) => {
+                const { itemId, abilityId } = payload;
+                const [action] = AbilityFactory.createAbilities([abilityId]);
+                const activeChar = this.state.activeParty[this.state.activePartyIndex];
+
+                if (action) {
+                    if (itemId) {
+                        action.cost = { item: itemId, amount: 1 };
+                        action.isItemAction = true;
+                    }
+
+                    const inventory = InventorySystem;
+                    console.log("Checking inventory:", inventory);
+
+                    if (!action.canPayCost(activeChar, inventory)) {
+                        this.state.message = `Cannot use ${action.name}!`;
+                        console.warn("Cost check failed! Kicking back to menu.");
+                    } else {
+                        console.log("Cost check PASSED! Moving to target selection.");
+                        this._setupTargetSelection(action, activeChar);
+                        this.state.isPausedForUI = false;
+                    }
                 }
-                const inventory = InventorySystem; 
-                console.log("Checking inventory:", inventory);
-                if (!action.canPayCost(activeChar, inventory)) {
-                    this.state.message = `Cannot use ${action.name}!`;
-                    console.warn("Cost check failed! Kicking back to menu.");
-                } else {
-                    console.log("Cost check PASSED! Moving to target selection.");
-                    this._setupTargetSelection(action, activeChar);
-                    this.state.isPausedForUI = false;
-                }
+                events.emit('CHANGE_SCENE', { scene: 'battle' });
             }
-            events.emit('CHANGE_SCENE', { scene: 'battle' });
-        }
-    });
-}
+        });
+    }
 
     // --- NEW: Dump raw objects for inspection ---
     _dumpCombatantObjects(phaseName) {
@@ -909,7 +892,6 @@ export class BattleController extends BaseController {
         });
         console.log(`==========================================\n`);
     }
-
 
     getState() {
         if (!this.state) return null;

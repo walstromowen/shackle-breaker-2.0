@@ -127,68 +127,71 @@ export class SceneManager {
 
     setupEventListeners() {
         events.on('CHANGE_SCENE', ({ scene, data }) => {
+            //events.emit('PLAY_SFX', { id: 'cinematicBoom', volume: 1.0 });
             this.transitionRenderer.start(() => {
-                this.input.reset(); 
+                this.input.reset();
                 if (scene === 'overworld') this.overworldController.isLocked = false;
-                
                 if (scene === 'character_summary') {
                     this.characterSummaryController = new CharacterSummaryController(this.input, data);
                 }
                 if (scene === 'level_up') {
-                    this.levelUpController.init(data); 
+                    this.levelUpController.init(data);
                 }
                 if (scene === 'party') {
-                    this.partyController.init(data || {}); 
+                    this.partyController.init(data || {});
                 }
                 this.changeScene(scene);
-            }, 'fade'); 
+            }, 'fade');
         });
-        
+
         events.on('INTERACT', (data) => {
             if (data.type === 'ENCOUNTER') {
+                //events.emit('PLAY_SFX', { id: 'cinematicBoom', volume: 1.0 });
                 this.transitionRenderer.start(() => {
                     this.encounterController.start(data.id, data.context);
                     this.changeScene('encounter');
-                }, 'fade'); 
+                }, 'fade');
             }
         });
 
         events.on('START_ENCOUNTER', (data) => {
+            events.emit('PLAY_SFX', { id: 'cinematicBoom', volume: 1.0 });
             this.transitionRenderer.start(() => {
                 this.encounterController.start(data.encounterId, data.context || {});
                 this.changeScene('encounter');
-            }, 'fade'); 
+            }, 'fade');
         });
 
         events.on('START_BATTLE', (data) => {
+            //events.emit('PLAY_SFX', { id: 'battle_glass_shatter', volume: 0.9 });
             this.transitionRenderer.start(() => {
                 console.log("[SceneManager] Handing off entities to BattleController:", data.enemies);
                 const context = data.context || {};
-                context.backgroundId = data.background; 
-                context.weather = data.weather; 
-
+                context.backgroundId = data.background;
+                context.weather = data.weather;
                 this.battleController.start(data.enemies, context);
-                this.changeScene('battle'); 
-            }, 'flash', { speed: 4.0, color: '#ffffff' }); 
+                this.changeScene('battle');
+            }, 'flash', { speed: 4.0, color: '#ffffff' });
         });
 
         events.on('BATTLE_ENDED', (data) => {
             if (data.victory) {
-                events.emit('CHANGE_SCENE', { scene: 'overworld' }); 
+                events.emit('CHANGE_SCENE', { scene: 'overworld' });
             } else {
                 console.log("[SceneManager] Game Over...");
             }
         });
 
         events.on('REQUEST_PARTY_SWAP', (data) => {
+            //events.emit('PLAY_SFX', { id: 'cinematicBoom', volume: 0.7 });
             this.transitionRenderer.start(() => {
-                this.partyController.init({
+                this.partyController.init({ 
                     mode: data.mode || 'BATTLE_SELECT', 
-                    activeIndices: data.activeIndices,
+                    activeIndices: data.activeIndices, 
                     callback: data.callback 
                 });
                 this.changeScene('party');
-            }, 'wipe', { speed: 3.0 }); 
+            }, 'wipe', { speed: 3.0 });
         });
 
         events.on('CHARACTER_RECRUITED', (data) => {
@@ -199,16 +202,16 @@ export class SceneManager {
         });
 
         events.on('TOGGLE_CHARACTER_SUMMARY', (data) => {
+            events.emit('PLAY_SFX', { id: 'cinematicBoom', volume: 0.7 });
             this.transitionRenderer.start(() => {
                 this.characterSummaryController = new CharacterSummaryController(this.input, { 
-                    character: data.combatant,
-                    returnScene: 'battle',
-                    phase: data.phase,
+                    character: data.combatant, 
+                    returnScene: 'battle', 
+                    phase: data.phase, 
                     onItemSelected: data.onItemSelected 
                 });
-                
                 this.changeScene('character_summary');
-            }, 'wipe', { speed: 4.0 }); 
+            }, 'wipe', { speed: 4.0 });
         });
     }
 

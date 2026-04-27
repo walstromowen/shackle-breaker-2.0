@@ -5,7 +5,7 @@ export class EncounterRenderer {
     constructor(config, loader) {
         this.config = config;
         this.loader = loader;
-        this.hotspots = []; 
+        this.hotspots = [];
     }
 
     drawCenteredWrappedText(ctx, ui, text, x, y, maxWidth, lineHeight, font, color, useShadow = false) {
@@ -19,7 +19,6 @@ export class EncounterRenderer {
         const words = text.split(' ');
         let lines = [];
         let currentLine = words[0];
-
         for (let i = 1; i < words.length; i++) {
             const word = words[i];
             const width = ctx.measureText(currentLine + " " + word).width;
@@ -31,13 +30,11 @@ export class EncounterRenderer {
             }
         }
         lines.push(currentLine);
-
         let startY = y - ((lines.length - 1) * lineHeight) / 2;
         lines.forEach(line => {
             ui.drawText(line, x, startY, font, color, "center", "middle");
             startY += lineHeight;
         });
-
         if (useShadow) {
             ctx.shadowColor = 'transparent';
             ctx.shadowBlur = 0;
@@ -46,17 +43,29 @@ export class EncounterRenderer {
     }
 
     render(ctx, state) {
-        this.hotspots = []; 
+        this.hotspots = [];
         let scrollBounds = null;
 
         if (!state || !state.text) return;
 
         const {
             // UPDATED: Destructure imageInfo object { sheet, col, row }
-            imageInfo, text, title, encounter, decisions, rewards,
-            ui: uiState, party = [], currency = 0, skipMessageAnimation,
-            textTimer, actionPhase, rollData,
-            hoveredElement, scrollOffsets, onLayoutUpdate 
+            imageInfo,
+            text,
+            title,
+            encounter,
+            decisions,
+            rewards,
+            ui: uiState,
+            party = [],
+            currency = 0,
+            skipMessageAnimation,
+            textTimer,
+            actionPhase,
+            rollData,
+            hoveredElement,
+            scrollOffsets,
+            onLayoutUpdate
         } = state;
 
         const selectedIndex = uiState.selectedDecisionIndex || 0;
@@ -93,13 +102,12 @@ export class EncounterRenderer {
         ui.drawLine(leftW + centerW, 0, leftW + centerW, h, UITheme.colors.border, 2);
 
         const imageY = 170;
-
         let currentY = imageY;
+
         party.slice(0, 3).forEach((member, index) => {
             const nameY = currentY - 48;
             this.drawPartyMember(ctx, ui, member, 0, currentY, leftW, nameY, UITheme.fonts.body);
             currentY += 768;
-            
             if (index < party.length - 1 && index < 2) {
                 ui.drawLineWithGothicFlourish(leftW * 0.2, currentY - 84, leftW * 0.6, UITheme.colors.borderHighlight);
             }
@@ -109,7 +117,12 @@ export class EncounterRenderer {
         ctx.shadowBlur = 10;
         ui.drawText(
             `Currency: ${currency}`,
-            leftW / 2, currentY, UITheme.fonts.mono, UITheme.colors.textHighlight, "center", "middle"
+            leftW / 2,
+            currentY,
+            UITheme.fonts.mono,
+            UITheme.colors.textHighlight,
+            "center",
+            "middle"
         );
         ctx.shadowColor = 'transparent';
         ctx.shadowBlur = 0;
@@ -119,8 +132,8 @@ export class EncounterRenderer {
 
         this.drawCenteredWrappedText(
             ctx, ui, encounterTitle,
-            centerX + (centerW / 2), 96,
-            centerW - 96, 67, UITheme.fonts.header, UITheme.colors.textMain, true
+            centerX + (centerW / 2), 96, centerW - 96, 67,
+            UITheme.fonts.header, UITheme.colors.textMain, true
         );
 
         ui.drawLineWithGothicFlourish(centerX + (centerW * 0.2), 168, centerW * 0.6, UITheme.colors.borderHighlight);
@@ -135,10 +148,10 @@ export class EncounterRenderer {
                 const drawSize = nativeRes * imgScale; // 256x256
 
                 const panelX = rightColX + (rightW / 2) - (targetAreaSize / 2);
-                
+
                 // Draw decorative panel
                 ui.drawLancetArchedPanel(panelX - 38, imageY - 76, targetAreaSize + 76, targetAreaSize + 152, '#000', UITheme.colors.borderHighlight);
-                
+
                 // Draw black background fill
                 ctx.fillStyle = '#050505';
                 ctx.fillRect(panelX, imageY, targetAreaSize, targetAreaSize);
@@ -149,18 +162,19 @@ export class EncounterRenderer {
 
                 // Disable image smoothing for crisp pixel scaling
                 ctx.imageSmoothingEnabled = false;
-                
+
                 // UPDATED: Use sheet coordinates (col, row) and native resolution (128) for source rectangle
                 ui.drawSprite(
-                    sheetImg, 
+                    sheetImg,
                     imageInfo.col * nativeRes, imageInfo.row * nativeRes, // Source X, Y
                     nativeRes, nativeRes, // Source Width, Height
                     imgX, imgY, // Destination X, Y
                     drawSize, drawSize // Destination Width, Height (Scaled)
                 );
-                
+
                 // Restore smoothing
                 ctx.imageSmoothingEnabled = true;
+
             } else {
                 ui.drawText("Sheet Missing", rightColX + (rightW / 2), imageY + 154, UITheme.fonts.italic, UITheme.colors.textMuted, "center", "middle");
             }
@@ -168,14 +182,18 @@ export class EncounterRenderer {
             // Draw empty panel if no image definition exists
             const targetAreaSize = 307;
             const panelX = rightColX + (rightW / 2) - (targetAreaSize / 2);
+
             ui.drawLancetArchedPanel(panelX - 38, imageY - 76, targetAreaSize + 76, targetAreaSize + 152, '#000', UITheme.colors.borderHighlight);
+
             ctx.fillStyle = '#050505';
             ctx.fillRect(panelX, imageY, targetAreaSize, targetAreaSize);
+
             ui.drawText("No Image defined", rightColX + (rightW / 2), imageY + 154, UITheme.fonts.italic, UITheme.colors.textMuted, "center", "middle");
         }
 
         const narrativeHeight = h * 0.45;
         const decisionY = narrativeHeight;
+
         const charsPerSecond = 45;
         const secondsPerChar = 1 / charsPerSecond;
         const totalTypingTime = text.length * secondsPerChar;
@@ -191,6 +209,7 @@ export class EncounterRenderer {
         }
 
         const visibleText = text.substring(0, charsToShow);
+
         ui.drawWrappedText(visibleText, centerX + 96, 240, centerW - 192, 62, UITheme.fonts.body, UITheme.colors.textMain);
 
         const promptX = centerX + centerW - 84;
@@ -224,12 +243,12 @@ export class EncounterRenderer {
                 const lineHeight = 58;
                 const decisionViewportY = decisionY + 96;
                 const decisionViewportH = CANVAS_HEIGHT - decisionViewportY - 48;
-
                 let totalHeight = 0;
+
                 const decisionLayoutData = decisions.map((opt) => {
                     const lines = ui.getWrappedLines(opt.text, btnW, UITheme.fonts.body);
                     const dh = lines.length * lineHeight;
-                    const blockHeight = dh + 48; 
+                    const blockHeight = dh + 48;
                     const data = { lines, decisionHeight: dh, blockHeight };
                     totalHeight += blockHeight;
                     return data;
@@ -249,16 +268,21 @@ export class EncounterRenderer {
                 ui.startClip(btnX - 60, decisionViewportY - 24, btnW + 120, decisionViewportH + 48);
 
                 let renderY = decisionViewportY - scrollOffset;
-
                 decisions.forEach((opt, index) => {
                     const isSelected = (index === selectedIndex);
                     const hitId = `DECISION_${index}`;
-                    
                     const { decisionHeight, blockHeight } = decisionLayoutData[index];
 
                     if (renderY + blockHeight > decisionViewportY && renderY < decisionViewportY + decisionViewportH) {
-                        this.hotspots.push({
-                            id: hitId, x: btnX - 36, y: renderY - 12, w: btnW + 72, h: decisionHeight + 24
+                        // --- SFX UPDATED ---
+                        this.hotspots.push({ 
+                            id: hitId, 
+                            x: btnX - 36, 
+                            y: renderY - 12, 
+                            w: btnW + 72, 
+                            h: decisionHeight + 24,
+                            hoverSfx: 'hoverTick',
+                            clickSfx: 'hoverTick'
                         });
                     }
 
@@ -270,7 +294,7 @@ export class EncounterRenderer {
 
                     const textColor = isSelected ? (UITheme.colors.selectedWhite || '#ffffff') : UITheme.colors.textMuted;
                     ui.drawWrappedText(opt.text, btnX, renderY, btnW, lineHeight, UITheme.fonts.body, textColor);
-                    
+
                     renderY += blockHeight;
                 });
 
@@ -287,9 +311,7 @@ export class EncounterRenderer {
                     ui.drawRect(trackX, decisionViewportY, trackW, trackH, UITheme.colors.scrollTrack);
                     ui.drawRect(trackX, thumbY, trackW, thumbH, UITheme.colors.scrollThumb);
 
-                    this.hotspots.push({
-                        id: 'SCROLL_THUMB_DECISIONS', x: trackX - 10, y: thumbY, w: trackW + 20, h: thumbH, zIndex: 10
-                    });
+                    this.hotspots.push({ id: 'SCROLL_THUMB_DECISIONS', x: trackX - 10, y: thumbY, w: trackW + 20, h: thumbH, zIndex: 10 });
                 }
             }
         }
@@ -312,12 +334,14 @@ export class EncounterRenderer {
 
             ctx.fillStyle = popupGrad;
             ctx.fillRect(popupX, popupY, popupW, popupH);
+
             ui.drawPanel(popupX, popupY, popupW, popupH, "transparent");
 
             ctx.shadowColor = '#000';
             ctx.shadowBlur = 14;
             ctx.shadowOffsetY = 5;
             ui.drawText("Skill Check", CANVAS_WIDTH / 2, popupY + 96, UITheme.fonts.header, UITheme.colors.textHighlight, "center");
+
             ctx.shadowBlur = 0;
             ctx.shadowOffsetY = 0;
 
@@ -336,6 +360,7 @@ export class EncounterRenderer {
             let resultPulseScale = 1.0;
             let modGlowIntensity = 0;
             let rollerGlowIntensity = 0;
+
             let renderedRollerVal = displayVal;
 
             if (actionPhase === 'apply_mod') {
@@ -354,10 +379,12 @@ export class EncounterRenderer {
                     rollerPulseScale = 1.0 + Math.sin(rollerProgress * Math.PI) * 0.3;
                     rollerGlowIntensity = Math.sin(rollerProgress * Math.PI);
                 }
+
             } else if (actionPhase === 'result') {
                 const phaseDuration = 2.0;
                 let progress = 1.0 - (state.rollTimer / phaseDuration);
                 progress = Math.min(Math.max(progress, 0), 1);
+
                 resultPulseScale = 1.0 + Math.sin(progress * Math.PI * 3) * 0.25 * (1 - progress);
                 renderedRollerVal = rollData.total;
             }
@@ -368,12 +395,14 @@ export class EncounterRenderer {
             ctx.save();
             ctx.translate(leftModX, diceAreaY);
             if (actionPhase === 'apply_mod') ctx.scale(modPulseScale, modPulseScale);
-            
+
             ui.drawText("Modifier", 0, -72, UITheme.fonts.small || "34px sans-serif", UITheme.colors.textMuted, "center", "middle");
+
             if (actionPhase === 'apply_mod' && modGlowIntensity > 0) {
                 ctx.shadowColor = activeModColor;
                 ctx.shadowBlur = 36 * modGlowIntensity;
             }
+
             const finalModColor = actionPhase === 'apply_mod' ? activeModColor : UITheme.colors.textMain;
             ui.drawText(modStr, 0, 24, UITheme.fonts.title, finalModColor, "center", "middle");
             ctx.restore();
@@ -420,6 +449,7 @@ export class EncounterRenderer {
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText(renderedRollerVal.toString(), 0, 0);
+
             ctx.restore();
 
             ctx.save();
@@ -433,20 +463,31 @@ export class EncounterRenderer {
                 const btnH = 96;
                 const btnX = (CANVAS_WIDTH / 2) - (btnW / 2);
                 const btnY = popupY + 528;
-
                 const rollId = "BTN_ROLL";
                 const isRollHovered = hoveredElement && hoveredElement.id === rollId;
-                this.hotspots.push({ id: rollId, x: btnX, y: btnY, w: btnW, h: btnH });
+
+                // --- SFX UPDATED ---
+                this.hotspots.push({ 
+                    id: rollId, 
+                    x: btnX, 
+                    y: btnY, 
+                    w: btnW, 
+                    h: btnH,
+                    hoverSfx: 'hoverTick',
+                    clickSfx: 'cinematicBoom' // Added a heavier sound since rolling dictates fate
+                });
 
                 ui.drawPanel(btnX, btnY, btnW, btnH, isRollHovered ? "rgba(255,255,255,0.1)" : UITheme.colors.bgScale[3]);
-                
+
                 const alpha = (Math.sin(Date.now() / 200) + 1) / 2;
                 ctx.globalAlpha = 0.6 + (alpha * 0.4);
                 ctx.shadowColor = UITheme.colors.textHighlight;
                 ctx.shadowBlur = isRollHovered ? 30 : 19;
                 ui.drawText("ROLL", CANVAS_WIDTH / 2, btnY + 62, UITheme.fonts.bold, UITheme.colors.textHighlight, "center");
+
                 ctx.globalAlpha = 1.0;
                 ctx.shadowBlur = 0;
+
             } else if (actionPhase === 'result') {
                 const resultText = isSuccess ? "SUCCESS!" : "FAILED";
                 ctx.shadowColor = diceColor;
@@ -477,22 +518,22 @@ export class EncounterRenderer {
         ui.drawText("Rewards Found", x, currentY, UITheme.fonts.header, UITheme.colors.textHighlight);
         ctx.shadowColor = 'transparent';
         ctx.shadowBlur = 0;
-
         currentY += lineHeight + 12;
 
         if (rewards.xp) {
             ui.drawText(`+ ${rewards.xp} XP`, x + 36, currentY, UITheme.fonts.body, UITheme.colors.success || UITheme.colors.textMain);
             currentY += lineHeight;
         }
+
         if (rewards.currency) {
             ui.drawText(`+ ${rewards.currency} Currency`, x + 36, currentY, UITheme.fonts.body, UITheme.colors.textHighlight);
             currentY += lineHeight;
         }
+
         if (rewards.items && rewards.items.length > 0) {
             currentY += 24;
             ui.drawText("Items Acquired:", x + 36, currentY, UITheme.fonts.body, UITheme.colors.textMain);
             currentY += lineHeight;
-
             rewards.items.forEach(item => {
                 const qtyStr = item.quantity && item.quantity > 1 ? ` (x${item.quantity})` : "";
                 ui.drawText(`- ${item.name}${qtyStr}`, x + 84, currentY, UITheme.fonts.body, UITheme.colors.textMuted);
@@ -511,8 +552,11 @@ export class EncounterRenderer {
         const pY = y;
 
         const nameColor = member.hp <= 0 ? UITheme.colors.hp : UITheme.colors.textMain;
+
         this.drawCenteredWrappedText(
-            ctx, ui, member.name, x + (colWidth / 2), nameY, colWidth - 48, 58, UITheme.fonts.header, nameColor, true
+            ctx, ui, member.name,
+            x + (colWidth / 2), nameY, colWidth - 48, 58,
+            UITheme.fonts.header, nameColor, true
         );
 
         const masterSheet = this.loader.get(member.spritePortrait);
@@ -548,14 +592,16 @@ export class EncounterRenderer {
 
         ctx.shadowColor = '#000';
         ctx.shadowBlur = 5;
+
         this.drawStatRow(ui, "HP", member.hp, member.maxHp, startX, statY, barW, 14, numW, labelW, UITheme.colors.hp, UITheme.colors.hpDim);
         statY += 58;
         this.drawStatRow(ui, "STM", member.stamina, member.maxStamina, startX, statY, barW, 14, numW, labelW, UITheme.colors.stm, UITheme.colors.stmDim);
         statY += 58;
         this.drawStatRow(ui, "INS", member.insight, member.maxInsight, startX, statY, barW, 14, numW, labelW, UITheme.colors.ins, UITheme.colors.insDim);
+        
         ctx.shadowBlur = 0;
-
         statY += 72;
+
         const attrs = member.attributes || {};
         const vig = attrs.vigor || 0;
         const str = attrs.strength || 0;
@@ -587,13 +633,13 @@ export class EncounterRenderer {
 
         const sheetKey = 'statusEffects';
         const srcSize = 32;  // Source tile size on spritesheet
-        const scale = 1; // 1x scale (32x32) works well for icons within this panel design
+        const scale = 1;     // 1x scale (32x32) works well for icons within this panel design
         const drawSize = srcSize * scale;
         const spacing = 10;
         const sheet = this.loader.get(sheetKey);
 
         let drawX = pX + 10;
-        let drawY = pY + targetAreaSize - drawSize - 10; 
+        let drawY = pY + targetAreaSize - drawSize - 10;
 
         member.statusEffects.forEach(effect => {
             ctx.shadowColor = '#000';
@@ -621,7 +667,7 @@ export class EncounterRenderer {
             if (effect.stacks && effect.stacks > 1) {
                 ctx.fillStyle = '#000';
                 ctx.beginPath();
-                ctx.arc(drawX + drawSize, drawY + drawSize, 14, 0, Math.PI * 2); 
+                ctx.arc(drawX + drawSize, drawY + drawSize, 14, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.strokeStyle = UITheme.colors.border;
                 ctx.stroke();
@@ -629,7 +675,7 @@ export class EncounterRenderer {
             }
 
             drawX += (drawSize + spacing);
-            if (drawX + drawSize > pX + targetAreaSize) return; 
+            if (drawX + drawSize > pX + targetAreaSize) return;
         });
     }
 }

@@ -6,37 +6,15 @@ export class PartyRenderer {
         this.ctx = ctx;
         this.loader = loader;
         this.ui = new CanvasUI(ctx);
-
-        this.layout = {
-            cardW: 600,
-            cardH: 336,
-            gapX: 24,
-            gapY: 48,
-            startY: 216
-        };
-
-        this.menuConfig = {
-            btnHeight: 64,
-            padding: 24
-        };
-
+        this.layout = { cardW: 600, cardH: 336, gapX: 24, gapY: 48, startY: 216 };
+        this.menuConfig = { btnHeight: 64, padding: 24 };
         this.statusIconSheetPath = '/assets/ui/status_icons.png';
         // Changed to 32 for exact 1x scaling (was 38)
         this.statusIconSize = 32;
     }
 
     render(state) {
-        const {
-            members,
-            selectedIndex,
-            swappingIdx,
-            menu,
-            mode = 'DEFAULT',
-            activeIndices = [],
-            hoveredElement = null,
-            dragState = null,
-            onLayoutUpdate = null
-        } = state;
+        const { members, selectedIndex, swappingIdx, menu, mode = 'DEFAULT', activeIndices = [], hoveredElement = null, dragState = null, onLayoutUpdate = null } = state;
 
         const width = this.ctx.canvas.width;
         const height = this.ctx.canvas.height;
@@ -50,25 +28,25 @@ export class PartyRenderer {
 
         members.forEach((member, index) => {
             if (index >= 6) return;
-
             const pos = this.getCardPosition(index, width);
 
+            // --- SFX ACTIVATION ON HOTSPOTS ---
             hitboxes.push({
                 id: `CARD_${index}`,
                 x: pos.x,
                 y: pos.y,
                 w: this.layout.cardW,
                 h: this.layout.cardH,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                hoverSfx: 'hoverTick',      // Standard hover tick
+                clickSfx: 'cinematicBoom'   // Standard confirm boom
             });
 
             const isHovered = hoveredElement?.id === `CARD_${index}`;
             const isSelected = (index === selectedIndex);
-
             // Evaluates true whether moving via keyboard (swappingIdx) or mouse (dragState)
             const isBeingDragged = dragState?.active && dragState.payload === member;
             const isBeingMoved = (index === swappingIdx) || isBeingDragged;
-
             const isActive = activeIndices.includes(index);
             const isDead = member.hp <= 0;
             const isUnavailable = mode === 'BATTLE_SELECT' && (isActive || isDead);
@@ -119,7 +97,6 @@ export class PartyRenderer {
     getCardPosition(index, canvasWidth) {
         const COLS = 3;
         const { cardW, cardH, gapX, gapY, startY } = this.layout;
-
         const totalGridWidth = (COLS * cardW) + ((COLS - 1) * gapX);
         const startX = (canvasWidth - totalGridWidth) / 2;
 
@@ -160,15 +137,12 @@ export class PartyRenderer {
 
         // --- 2. DRAW BACKGROUNDS & BORDERS ---
         this.ui.drawPanel(x, y, cardW, cardH, bgColor);
-
         if (strokeColor) {
             this.ui.drawRect(x, y, cardW, cardH, strokeColor, false);
         }
-
         if (drawBrackets) {
             this.ui.drawSelectionBrackets(x, y, cardW, cardH, 10, bracketColor);
         }
-
         if (isUnavailable) {
             this.ui.drawRect(x, y, cardW, cardH, 'rgba(0, 0, 0, 0.6)', true);
         }
@@ -180,18 +154,18 @@ export class PartyRenderer {
             this.ui.drawText("★ LVL UP", x + cardW - 19, y + cardH - 24, UITheme.fonts.cardTitle, `rgba(${goldRgb}, ${alpha})`, "right");
         }
 
-        // Changed to 256 for exact 2x scaling (was 307)
         const pSize = 256;
         const pX = x + 10;
         const pY = y + 14;
 
         const masterSheet = this.loader.get(member.spritePortrait);
         this.ui.drawRect(pX, pY, pSize, pSize, "rgba(0,0,0,0.5)", true);
+
         if (masterSheet) {
             ctx.drawImage(masterSheet, 0, 0, 128, 128, pX, pY, pSize, pSize);
         }
-        this.ui.drawRect(pX, pY, pSize, pSize, UITheme.colors.border, false);
 
+        this.ui.drawRect(pX, pY, pSize, pSize, UITheme.colors.border, false);
         this.drawStatusEffects(member, pX, pY, pSize);
 
         // --- 3. DRAW TEXT WITH STATE COLORS ---
@@ -213,7 +187,6 @@ export class PartyRenderer {
             statusPrefix = "FNT - ";
             statusColor = UITheme.colors.failure;
         }
-
         this.ui.drawText(`${statusPrefix}${levelText}`, infoX, y + 77, UITheme.fonts.cardSmall, statusColor);
 
         const xpY = y + 113;
@@ -259,12 +232,8 @@ export class PartyRenderer {
                     sheet,
                     effect.icon.col * srcSize,
                     effect.icon.row * srcSize,
-                    srcSize,
-                    srcSize,
-                    drawX,
-                    drawY,
-                    drawSize,
-                    drawSize
+                    srcSize, srcSize,
+                    drawX, drawY, drawSize, drawSize
                 );
             } else {
                 this.ui.drawText(effect.name.charAt(0), drawX + (drawSize / 2), drawY + (drawSize / 2) + 2, UITheme.fonts.cardSmall, UITheme.colors.textMain, "center", "middle");
@@ -299,9 +268,11 @@ export class PartyRenderer {
         const drawY = y - (pSize / 2);
 
         this.ui.drawRect(drawX, drawY, pSize, pSize, "rgba(0,0,0,0.6)", true);
+
         if (masterSheet) {
             ctx.drawImage(masterSheet, 0, 0, 128, 128, drawX, drawY, pSize, pSize);
         }
+
         this.ui.drawRect(drawX, drawY, pSize, pSize, UITheme.colors.borderHighlight, false);
 
         ctx.restore();

@@ -5,20 +5,12 @@ import { ContextMenuManager } from '../../ui/ContextMenuManager.js';
 import { DragAndDropManager } from '../../ui/dragAndDropManager.js';
 
 const KEY_BINDINGS = {
-    'ArrowUp': 'UP',
-    'KeyW': 'UP',
-    'ArrowDown': 'DOWN',
-    'KeyS': 'DOWN',
-    'ArrowLeft': 'LEFT',
-    'KeyA': 'LEFT',
-    'ArrowRight': 'RIGHT',
-    'KeyD': 'RIGHT',
-    'Enter': 'CONFIRM',
-    'Space': 'CONFIRM',
-    'Escape': 'CANCEL',
-    'Backspace': 'CANCEL',
-    'KeyP': 'CANCEL',
-    'Tab': 'CANCEL'
+    'ArrowUp': 'UP', 'KeyW': 'UP',
+    'ArrowDown': 'DOWN', 'KeyS': 'DOWN',
+    'ArrowLeft': 'LEFT', 'KeyA': 'LEFT',
+    'ArrowRight': 'RIGHT', 'KeyD': 'RIGHT',
+    'Enter': 'CONFIRM', 'Space': 'CONFIRM',
+    'Escape': 'CANCEL', 'Backspace': 'CANCEL', 'KeyP': 'CANCEL', 'Tab': 'CANCEL'
 };
 
 export class PartyController extends BaseController {
@@ -49,13 +41,11 @@ export class PartyController extends BaseController {
         this.mode = data.mode || 'DEFAULT';
         this.activeIndices = data.activeIndices || [];
         this.callback = data.callback || null;
-
         this.state = 'NAVIGATING';
         this.selectedIndex = 0;
         this.swappingIdx = null;
         this.hoveredHitboxId = null;
         this.ignoreNextClick = false;
-
         this.contextMenu.close();
         this.dragManager.cancelDrag();
     }
@@ -63,6 +53,7 @@ export class PartyController extends BaseController {
     // ========================================================
     // STANDARDIZED INPUT HANDLING
     // ========================================================
+
     handleMouseMove(x, y, isMouseDown, renderer) {
         // Cache the previous hover state
         const prevHoverId = this.hoveredHitboxId;
@@ -102,9 +93,9 @@ export class PartyController extends BaseController {
         if (this.contextMenu.menu) {
             if (!hitboxId) {
                 this.contextMenu.close();
+                this.playCancelSound(); // Feedback for closing
                 return;
             }
-
             if (hitboxId === 'MENU_BG') return;
 
             if (hitboxId.startsWith('MENU_OPT_')) {
@@ -144,27 +135,32 @@ export class PartyController extends BaseController {
     }
 
     onRightClick(hitboxId) {
+        // Added specialized Cancel SFX to all RIGHT CLICK logic
         if (this.dragManager.dragState.active) {
             this.dragManager.cancelDrag();
+            this.playCancelSound();
             return;
         }
 
         if (this.contextMenu.menu) {
             this.contextMenu.close();
+            this.playCancelSound();
         } else if (this.state === 'SWAPPING') {
             this.swappingIdx = null;
             this.state = 'NAVIGATING';
+            this.playCancelSound();
         } else {
             this.cancelAndReturn();
+            this.playCancelSound();
         }
     }
 
     // ========================================================
     // STANDARD DRAG AND DROP CALLBACKS
     // ========================================================
+
     onDragStart(hitboxId) {
         if (this.contextMenu.menu) return;
-
         // Block drag and drop operations if selecting a member for battle or encounter
         if (this.mode === 'BATTLE_SELECT' || this.mode === 'ENCOUNTER_SELECT') return;
 
@@ -174,14 +170,12 @@ export class PartyController extends BaseController {
 
             if (member) {
                 this.selectedIndex = clickedIndex;
+                // Added distinct sound for initiating a drag
+                events.emit('PLAY_SFX', { id: 'ui_drag_start', volume: 0.5 });
 
                 // Safely use this.mouse.x/y inherited from BaseController
                 this.dragManager.startDrag(
-                    member,
-                    'PARTY',
-                    clickedIndex,
-                    this.mouse.x,
-                    this.mouse.y,
+                    member, 'PARTY', clickedIndex, this.mouse.x, this.mouse.y,
                     (payload, sourceId, originSlot, dropTargetId) => {
                         if (dropTargetId && typeof dropTargetId === 'string' && dropTargetId.startsWith('CARD_')) {
                             const targetIndex = parseInt(dropTargetId.replace('CARD_', ''), 10);
@@ -205,6 +199,12 @@ export class PartyController extends BaseController {
     onDrop(sourceHitboxId, targetHitboxId) {
         if (this.dragManager.dragState.active) {
             this.dragManager.endDrag(targetHitboxId);
+            
+            // Trigger feedback sound only if dropped on a valid target
+            if (targetHitboxId && targetHitboxId.startsWith('CARD_')) {
+                this.playConfirmSound(); // Reuse cinematicBoom for successful placement
+            }
+
             this.ignoreNextClick = true;
             setTimeout(() => this.ignoreNextClick = false, 50);
         }
@@ -213,8 +213,7 @@ export class PartyController extends BaseController {
     handleKeyDown(keyCode, e) {
         // 1. Try to get the intent from our explicit bindings first
         // 2. Fallback to the BaseController's mapper if the key isn't in our list
-        let intent = (e && KEY_BINDINGS[e.code]) ||
-            (typeof this._mapKeyCodeToIntent === 'function' ? this._mapKeyCodeToIntent(keyCode) : null);
+        let intent = (e && KEY_BINDINGS[e.code]) || (typeof this._mapKeyCodeToIntent === 'function' ? this._mapKeyCodeToIntent(keyCode) : null);
 
         // Now the context menu will successfully receive 'UP', 'DOWN', 'CONFIRM', etc.
         if (this.contextMenu.menu) {
@@ -232,6 +231,7 @@ export class PartyController extends BaseController {
     handleNavigatingKeys(intent, e) {
         const memberCount = gameState.party.members.length;
         const col = this.selectedIndex % this.gridColumns;
+        const oldIndex = this.selectedIndex; // Track index before move
 
         if (intent === 'RIGHT' || e.code === 'ArrowRight' || e.code === 'KeyD') {
             if (col < this.gridColumns - 1 && this.selectedIndex + 1 < memberCount) this.selectedIndex++;
@@ -246,10 +246,19 @@ export class PartyController extends BaseController {
             }
         } else if (intent === 'UP' || e.code === 'ArrowUp' || e.code === 'KeyW') {
             if (this.selectedIndex - this.gridColumns >= 0) this.selectedIndex -= this.gridColumns;
-        } else if (intent === 'CONFIRM' || e.code === 'Enter' || e.code === 'Space') {
+        } 
+        
+        // --- Added randomized Nav SFX ---
+        if (this.selectedIndex !== oldIndex) this.playNavSound();
+
+        if (intent === 'CONFIRM' || e.code === 'Enter' || e.code === 'Space') {
+            // Added specialized Confirm SFX
+            this.playConfirmSound();
             // Flag as true so the menu highlights the first option
             this.confirmSelection(true);
         } else if (intent === 'CANCEL' || e.code === 'KeyP' || e.code === 'Escape' || e.code === 'Tab') {
+            // Added specialized Cancel SFX
+            this.playCancelSound();
             this.cancelAndReturn();
         }
     }
@@ -262,13 +271,13 @@ export class PartyController extends BaseController {
 
             if (isDead || isActive) {
                 console.log("[Party] Cannot select this member.");
+                this.playCancelSound(); // Feedback sound for invalid selection
                 return;
             }
 
             if (this.callback) {
                 this.callback(this.selectedIndex);
             }
-
             const targetScene = this.mode === 'BATTLE_SELECT' ? 'battle' : 'encounter';
             events.emit('CHANGE_SCENE', { scene: targetScene });
         } else {
@@ -297,19 +306,12 @@ export class PartyController extends BaseController {
 
         const options = [
             {
-                label: 'Summary',
-                actionId: 'SUMMARY',
-                callback: () => {
-                    events.emit('CHANGE_SCENE', {
-                        scene: 'character_summary',
-                        data: { memberIndex: this.selectedIndex, character: member }
-                    });
+                label: 'Summary', actionId: 'SUMMARY', callback: () => {
+                    events.emit('CHANGE_SCENE', { scene: 'character_summary', data: { memberIndex: this.selectedIndex, character: member } });
                 }
             },
             {
-                label: 'Move',
-                actionId: 'MOVE',
-                callback: () => {
+                label: 'Move', actionId: 'MOVE', callback: () => {
                     this.state = 'SWAPPING';
                     this.swappingIdx = this.selectedIndex;
                 }
@@ -319,9 +321,7 @@ export class PartyController extends BaseController {
         // Render the Exile option ONLY if there is more than 1 party member
         if (gameState.party.members.length > 1) {
             options.push({
-                label: 'Exile',
-                actionId: 'EXILE',
-                callback: () => {
+                label: 'Exile', actionId: 'EXILE', callback: () => {
                     this.exileMember(this.selectedIndex);
                 }
             });
@@ -329,13 +329,8 @@ export class PartyController extends BaseController {
 
         if (member.skillPoints && member.skillPoints > 0) {
             options.push({
-                label: 'Spend Skill Points',
-                actionId: 'SKILLS',
-                callback: () => {
-                    events.emit('CHANGE_SCENE', {
-                        scene: 'level_up',
-                        data: { memberIndex: this.selectedIndex, character: member }
-                    });
+                label: 'Spend Skill Points', actionId: 'SKILLS', callback: () => {
+                    events.emit('CHANGE_SCENE', { scene: 'level_up', data: { memberIndex: this.selectedIndex, character: member } });
                 }
             });
         }
@@ -343,7 +338,6 @@ export class PartyController extends BaseController {
         // UX Upgrade: Spawn at the mouse cursor if clicked, or roughly center if keyboard
         let menuX = 0;
         let menuY = 0;
-
         if (!fromKeyboard && this.mouse) {
             menuX = this.mouse.x;
             menuY = this.mouse.y;
@@ -369,9 +363,7 @@ export class PartyController extends BaseController {
             console.warn("Cannot exile the last party member.");
             return;
         }
-
         party.splice(index, 1);
-
         if (this.selectedIndex >= party.length) {
             this.selectedIndex = Math.max(0, party.length - 1);
         }
@@ -383,6 +375,7 @@ export class PartyController extends BaseController {
     handleSwappingKeys(intent, e) {
         const memberCount = gameState.party.members.length;
         const col = this.selectedIndex % this.gridColumns;
+        const oldIndex = this.selectedIndex; // Track index before move
 
         if (intent === 'RIGHT' || e.code === 'ArrowRight' || e.code === 'KeyD') {
             if (col < this.gridColumns - 1 && this.selectedIndex + 1 < memberCount) this.selectedIndex++;
@@ -397,9 +390,18 @@ export class PartyController extends BaseController {
             }
         } else if (intent === 'UP' || e.code === 'ArrowUp' || e.code === 'KeyW') {
             if (this.selectedIndex - this.gridColumns >= 0) this.selectedIndex -= this.gridColumns;
-        } else if (intent === 'CONFIRM' || e.code === 'Enter' || e.code === 'Space') {
+        } 
+        
+        // --- Added randomized Nav SFX ---
+        if (this.selectedIndex !== oldIndex) this.playNavSound();
+
+        if (intent === 'CONFIRM' || e.code === 'Enter' || e.code === 'Space') {
+            // Added specialized Confirm SFX
+            this.playConfirmSound();
             this.completeSwap();
         } else if (intent === 'CANCEL' || e.code === 'Escape' || e.code === 'Backspace') {
+            // Added specialized Cancel SFX
+            this.playCancelSound();
             this.swappingIdx = null;
             this.state = 'NAVIGATING';
         }

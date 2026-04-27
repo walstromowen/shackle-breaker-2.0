@@ -8,8 +8,7 @@ const KEY_BINDINGS = {
     'ArrowLeft': 'LEFT', 'KeyA': 'LEFT',
     'ArrowRight': 'RIGHT', 'KeyD': 'RIGHT',
     'Enter': 'CONFIRM', 'Space': 'CONFIRM',
-    'Escape': 'CANCEL', 'Backspace': 'CANCEL',
-    'KeyP': 'CANCEL', 'Tab': 'CANCEL'
+    'Escape': 'CANCEL', 'Backspace': 'CANCEL', 'KeyP': 'CANCEL', 'Tab': 'CANCEL'
 };
 
 export class LevelUpController extends BaseController {
@@ -18,15 +17,17 @@ export class LevelUpController extends BaseController {
         this.member = null;
         this.routeData = null;
         this.availablePoints = 0;
-        this.pendingAllocations = { vigor: 0, strength: 0, dexterity: 0, intelligence: 0, attunement: 0 };
+        this.pendingAllocations = {
+            vigor: 0, strength: 0, dexterity: 0, intelligence: 0, attunement: 0
+        };
         this.attributes = ['vigor', 'strength', 'dexterity', 'intelligence', 'attunement'];
 
         // --- KEYBOARD NAVIGATION STATE ---
         this.uiButtons = ['BTN_CANCEL', 'BTN_RESET', 'BTN_CONFIRM'];
-        this.activeSection = 'ATTRIBUTES'; // 'ATTRIBUTES' or 'BUTTONS'
+        this.activeSection = 'ATTRIBUTES'; 
         this.selectedAttributeIndex = 0;
-        this.attributeColumn = 'ADD'; // 'SUB' or 'ADD'
-        this.selectedButtonIndex = 2; // Default focus to the CONFIRM button
+        this.attributeColumn = 'ADD'; 
+        this.selectedButtonIndex = 2; 
     }
 
     init(payload) {
@@ -40,7 +41,6 @@ export class LevelUpController extends BaseController {
 
         this.attributes.forEach(attr => this.pendingAllocations[attr] = 0);
 
-        // Reset navigation state on load
         this.activeSection = 'ATTRIBUTES';
         this.selectedAttributeIndex = 0;
         this.attributeColumn = 'ADD';
@@ -48,8 +48,35 @@ export class LevelUpController extends BaseController {
     }
 
     // ========================================================
+    // AUDIO WRAPPERS
+    // ========================================================
+    playNavSound() {
+        super.playNavSound(); 
+    }
+
+    playClickSound() {
+        events.emit('PLAY_SFX', { id: 'click', volume: 0.5, pitch: 0.9 + Math.random() * 0.2 });
+    }
+
+    playConfirmSound() {
+        super.playConfirmSound(); 
+    }
+
+    playCancelSound() {
+        super.playCancelSound(); 
+    }
+
+    // ========================================================
     // STANDARDIZED INPUT HANDLING
     // ========================================================
+    handleMouseMove(x, y, isMouseDown, renderer) {
+        const prevHoverId = this.hoveredHitboxId;
+        super.handleMouseMove(x, y, isMouseDown, renderer);
+
+        if (this.hoveredHitboxId && this.hoveredHitboxId !== prevHoverId) {
+            this._setFocus(this.hoveredHitboxId);
+        }
+    }
 
     _setFocus(hitboxId) {
         if (!hitboxId) return;
@@ -57,7 +84,7 @@ export class LevelUpController extends BaseController {
         if (hitboxId.startsWith('ADD_') || hitboxId.startsWith('SUB_')) {
             this.activeSection = 'ATTRIBUTES';
             const parts = hitboxId.split('_');
-            this.attributeColumn = parts[0]; // 'ADD' or 'SUB'
+            this.attributeColumn = parts[0]; 
             const attr = parts[1].toLowerCase();
             const index = this.attributes.indexOf(attr);
             if (index !== -1) {
@@ -72,7 +99,6 @@ export class LevelUpController extends BaseController {
     onClick(hitboxId, fromKeyboard = false) {
         if (!hitboxId) return;
 
-        // Sync keyboard brackets to what the mouse just clicked
         if (!fromKeyboard) {
             this._setFocus(hitboxId);
         }
@@ -82,90 +108,114 @@ export class LevelUpController extends BaseController {
             if (this.availablePoints > 0) {
                 this.pendingAllocations[attr]++;
                 this.availablePoints--;
+                this.playClickSound();
+            } else {
+                this.playCancelSound(); 
             }
-        }
-
-        if (hitboxId.startsWith('SUB_')) {
+        } else if (hitboxId.startsWith('SUB_')) {
             const attr = hitboxId.split('_')[1].toLowerCase();
             if (this.pendingAllocations[attr] > 0) {
                 this.pendingAllocations[attr]--;
                 this.availablePoints++;
+                this.playClickSound();
+            } else {
+                this.playCancelSound(); 
             }
-        }
-
-        if (hitboxId === 'BTN_RESET') {
+        } else if (hitboxId === 'BTN_RESET') {
+            let hasPending = false;
             this.attributes.forEach(attr => {
                 if (this.pendingAllocations[attr] > 0) {
                     this.availablePoints += this.pendingAllocations[attr];
                     this.pendingAllocations[attr] = 0;
+                    hasPending = true;
                 }
             });
-        }
-
-        if (hitboxId === 'BTN_CONFIRM') {
-            const hasPending = Object.values(this.pendingAllocations).some(v => v > 0);
+            
             if (hasPending) {
-                this.commitPoints();
+                this.playClickSound(); 
+            } else {
+                this.playCancelSound(); // Prevent resetting if nothing is spent
             }
-        }
-
-        if (hitboxId === 'BTN_CANCEL') {
+        } else if (hitboxId === 'BTN_CONFIRM') {
+            const hasPending = Object.values(this.pendingAllocations).some(v => v > 0);
+            
+            if (hasPending) {
+                this.playConfirmSound(); 
+                this.commitPoints();
+            } else {
+                // Deny exiting the screen via confirm if no points are spent
+                this.playCancelSound(); 
+            }
+        } else if (hitboxId === 'BTN_CANCEL') {
+            this.playCancelSound();
             this.cancelAndReturn();
         }
     }
 
     onRightClick(hitboxId) {
+        this.playCancelSound();
         this.cancelAndReturn();
     }
 
     handleKeyDown(keyCode, e) {
-        let intent = (e && KEY_BINDINGS[e.code]) || (typeof this._mapKeyCodeToIntent === 'function' ? this._mapKeyCodeToIntent(keyCode) : null);
-        this.handleNavigatingKeys(intent, e);
+        const intent = (e && KEY_BINDINGS[e.code]);
+        if (!intent) return;
+        this.handleNavigatingKeys(intent);
     }
 
-    handleNavigatingKeys(intent, e) {
+    handleNavigatingKeys(intent) {
         if (this.activeSection === 'ATTRIBUTES') {
-            if (intent === 'UP' || e?.code === 'ArrowUp' || e?.code === 'KeyW') {
+            if (intent === 'UP') {
                 if (this.selectedAttributeIndex > 0) {
                     this.selectedAttributeIndex--;
+                    this.playNavSound();
                 }
-            } else if (intent === 'DOWN' || e?.code === 'ArrowDown' || e?.code === 'KeyS') {
+            } else if (intent === 'DOWN') {
                 if (this.selectedAttributeIndex < this.attributes.length - 1) {
                     this.selectedAttributeIndex++;
+                    this.playNavSound();
                 } else {
                     this.activeSection = 'BUTTONS';
                     this.selectedButtonIndex = this.attributeColumn === 'SUB' ? 0 : 2;
+                    this.playNavSound();
                 }
-            } else if (intent === 'LEFT' || e?.code === 'ArrowLeft' || e?.code === 'KeyA') {
+            } else if (intent === 'LEFT') {
                 if (this.attributeColumn === 'ADD') {
                     this.attributeColumn = 'SUB';
+                    this.playNavSound();
                 }
-            } else if (intent === 'RIGHT' || e?.code === 'ArrowRight' || e?.code === 'KeyD') {
+            } else if (intent === 'RIGHT') {
                 if (this.attributeColumn === 'SUB') {
                     this.attributeColumn = 'ADD';
+                    this.playNavSound();
                 }
-            } else if (intent === 'CONFIRM' || e?.code === 'Enter' || e?.code === 'Space') {
+            } else if (intent === 'CONFIRM') {
                 const attr = this.attributes[this.selectedAttributeIndex].toUpperCase();
                 const targetId = `${this.attributeColumn}_${attr}`;
                 this.onClick(targetId, true);
-            } else if (intent === 'CANCEL' || e?.code === 'Escape' || e?.code === 'Backspace') {
+            } else if (intent === 'CANCEL') {
+                this.playCancelSound();
                 this.cancelAndReturn();
             }
         } else if (this.activeSection === 'BUTTONS') {
-            if (intent === 'UP' || e?.code === 'ArrowUp' || e?.code === 'KeyW') {
+            if (intent === 'UP') {
                 this.activeSection = 'ATTRIBUTES';
                 this.selectedAttributeIndex = this.attributes.length - 1;
-            } else if (intent === 'LEFT' || e?.code === 'ArrowLeft' || e?.code === 'KeyA') {
+                this.playNavSound();
+            } else if (intent === 'LEFT') {
                 if (this.selectedButtonIndex > 0) {
                     this.selectedButtonIndex--;
+                    this.playNavSound();
                 }
-            } else if (intent === 'RIGHT' || e?.code === 'ArrowRight' || e?.code === 'KeyD') {
+            } else if (intent === 'RIGHT') {
                 if (this.selectedButtonIndex < this.uiButtons.length - 1) {
                     this.selectedButtonIndex++;
+                    this.playNavSound();
                 }
-            } else if (intent === 'CONFIRM' || e?.code === 'Enter' || e?.code === 'Space') {
+            } else if (intent === 'CONFIRM') {
                 this.onClick(this.uiButtons[this.selectedButtonIndex], true);
-            } else if (intent === 'CANCEL' || e?.code === 'Escape' || e?.code === 'Backspace') {
+            } else if (intent === 'CANCEL') {
+                this.playCancelSound();
                 this.cancelAndReturn();
             }
         }
@@ -185,12 +235,7 @@ export class LevelUpController extends BaseController {
         events.emit('CHANGE_SCENE', { scene: 'party', data: this.routeData });
     }
 
-    // ========================================================
-    // STATE ACCESS FOR RENDERER
-    // ========================================================
-
     getState() {
-        // Derive the logical selected ID (Keyboard Focus)
         let selectedId = null;
         if (this.activeSection === 'ATTRIBUTES') {
             const attr = this.attributes[this.selectedAttributeIndex].toUpperCase();

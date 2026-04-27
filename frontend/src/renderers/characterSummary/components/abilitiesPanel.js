@@ -58,29 +58,29 @@ export class AbilitiesPanel {
         } 
     } 
 
-    drawScrollBar(x, y, viewportH, contentH, scrollOffset, hitboxes) { 
-        // Kept as drawRect since it's narrow 
-        this.ui.drawRect(x, y, this.SCROLLBAR_WIDTH, viewportH, UITheme.colors.scrollTrack || "rgba(0,0,0,0.5)"); 
-        const viewRatio = viewportH / contentH; 
-        let thumbH = Math.max(48, viewportH * viewRatio); 
-        const maxScroll = contentH - viewportH; 
-        const scrollRatio = maxScroll > 0 ? (scrollOffset / maxScroll) : 0; 
-        const trackSpace = viewportH - thumbH; 
-        const thumbY = y + (scrollRatio * trackSpace); 
-        
-        this.ui.drawRect(x, thumbY, this.SCROLLBAR_WIDTH, thumbH, UITheme.colors.scrollThumb || UITheme.colors.borderHighlight); 
-        
-        if (hitboxes) { 
+    drawScrollBar(x, y, viewportH, contentH, scrollOffset, hitboxes) {
+        // Kept as drawRect since it's narrow
+        this.ui.drawRect(x, y, this.SCROLLBAR_WIDTH, viewportH, UITheme.colors.scrollTrack || "rgba(0,0,0,0.5)");
+
+        const viewRatio = viewportH / contentH;
+        let thumbH = Math.max(48, viewportH * viewRatio);
+
+        const maxScroll = contentH - viewportH;
+        const scrollRatio = maxScroll > 0 ? (scrollOffset / maxScroll) : 0;
+        const trackSpace = viewportH - thumbH;
+        const thumbY = y + (scrollRatio * trackSpace);
+
+        this.ui.drawRect(x, thumbY, this.SCROLLBAR_WIDTH, thumbH, UITheme.colors.scrollThumb || UITheme.colors.borderHighlight);
+
+        if (hitboxes) {
+            // --- DELECTARIVE AUDIO ADDED HERE ---
             hitboxes.push({ 
-                id: 'SCROLLBAR_THUMB', 
-                type: 'ui', 
-                x: x - 10,  
-                y: y, 
-                w: this.SCROLLBAR_WIDTH + 19, 
-                h: viewportH 
-            }); 
-        } 
-    } 
+                id: 'SCROLLBAR_THUMB', type: 'ui', 
+                x: x - 10, y: y, w: this.SCROLLBAR_WIDTH + 19, h: viewportH,
+                hoverSfx: 'hoverTick'
+            });
+        }
+    }
 
     _drawAbilityCard(ab, abilityObj, x, y, w) { 
         const cardPadding = 29; 

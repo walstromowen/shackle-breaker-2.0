@@ -60,7 +60,7 @@ const ASSET_MANIFEST = {
 
     encounters: './assets/icons/encounters.png',
     // --- NEW: Audio Assets go here! ---
-    plainsBgmBattle: './assets/audio/music/plains_battle_1.mp3',
+    plainsBattleBgm: './assets/audio/music/plains_battle_1.mp3',
     plainsBgmDay: './assets/audio/music/plains_overworld_day_2.mp3',  
     plainsBgmNight: './assets/audio/music/plains_overworld_night.mp3', 
     
@@ -99,6 +99,9 @@ const ASSET_MANIFEST = {
 
     //UI
     diceTick: './assets/audio/sfx/ui/dice_tick.wav',
+    hoverTick: './assets/audio/sfx/ui/hover_tick.wav',
+    cinematicBoom: './assets/audio/sfx/ui/cinematic_boom.mp3',
+    cinematicBoomCancel: './assets/audio/sfx/ui/cinematic_boom_cancel.wav',
 };
 
 let sceneManager;

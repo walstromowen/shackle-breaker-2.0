@@ -23,7 +23,7 @@ export class EncounterController extends BaseController {
         super(input);
         this.config = config;
         this.worldManager = worldManager;
-        
+
         // Setup standardized UI managers
         this.scrollManager = new ScrollManager();
         this.scrollManager.registerZone('decision_list', { thumbIds: ['SCROLL_THUMB_DECISIONS'] });
@@ -71,6 +71,9 @@ export class EncounterController extends BaseController {
 
         console.log(`[Encounter] Started: ${this.model.id}`);
         this.updateBGM();
+
+        
+        
     }
 
     update(dt) {
@@ -87,6 +90,7 @@ export class EncounterController extends BaseController {
 
             if (this.skipMessageAnimation || this.textTimer >= (totalTypingTime + 2.0)) {
                 this.skipMessageAnimation = false;
+
                 if (this.pendingDecision && this.pendingDecision.type === 'skill_check') {
                     this.setupRollData(this.pendingDecision);
                     this.actionPhase = 'wait_for_roll';
@@ -94,30 +98,35 @@ export class EncounterController extends BaseController {
                     this.resolveAction();
                 }
             }
-        } else if (this.actionPhase === 'rolling') {
+        }
+        else if (this.actionPhase === 'rolling') {
             this.rollTimer -= dt;
             this.rollTickTimer -= dt;
 
             if (this.rollTimer <= 0 || this.skipMessageAnimation) {
                 this.rollData.displayVal = this.rollData.d20;
                 this.actionPhase = 'hold_base';
-                this.rollTimer = 1.5; 
+                this.rollTimer = 1.5;
                 this.skipMessageAnimation = false;
+                // Specific game mechanic sounds remain specific, not general UI standard sounds
                 events.emit('PLAY_SFX', { id: 'dice_land', volume: 0.7 });
-            } else if (this.rollTickTimer <= 0) {
+            }
+            else if (this.rollTickTimer <= 0) {
                 this.rollData.displayVal = Math.floor(Math.random() * 20) + 1;
                 const progress = 1.0 - (this.rollTimer / this.rollData.duration);
                 this.rollTickTimer = 0.015 + (Math.pow(progress, 6) * 1.2);
                 events.emit('PLAY_SFX', { id: 'diceTick', volume: 0.3, pitch: 0.9 + (Math.random() * 0.2) });
             }
-        } else if (this.actionPhase === 'hold_base') {
+        }
+        else if (this.actionPhase === 'hold_base') {
             this.rollTimer -= dt;
             if (this.rollTimer <= 0 || this.skipMessageAnimation) {
                 this.actionPhase = 'apply_mod';
-                this.rollTimer = 2.0; 
+                this.rollTimer = 2.0;
                 this.skipMessageAnimation = false;
             }
-        } else if (this.actionPhase === 'apply_mod') {
+        }
+        else if (this.actionPhase === 'apply_mod') {
             this.rollTimer -= dt;
             const duration = 2.0;
             let progress = 1.0 - (this.rollTimer / duration);
@@ -131,7 +140,8 @@ export class EncounterController extends BaseController {
                 this.rollTimer = 2.0;
                 this.skipMessageAnimation = false;
             }
-        } else if (this.actionPhase === 'result') {
+        }
+        else if (this.actionPhase === 'result') {
             this.rollTimer -= dt;
             if (this.rollTimer <= 0 || this.skipMessageAnimation) {
                 this.resolveAction();
@@ -140,9 +150,8 @@ export class EncounterController extends BaseController {
     }
 
     // ========================================================
-    // STANDARDIZED UI CALLBACKS 
+    // STANDARDIZED UI CALLBACKS
     // ========================================================
-
     handleMouseMove(x, y, isMouseDown, renderer) {
         // Track previous position to detect actual physical mouse movement
         const prevX = this.mouse?.x;
@@ -158,7 +167,8 @@ export class EncounterController extends BaseController {
             const index = parseInt(this.hoveredHitboxId.replace('DECISION_', ''), 10);
             if (!isNaN(index) && this.selectedIndex !== index) {
                 this.selectedIndex = index; // Updates focus, overriding keyboard if mouse moves
-                events.emit('PLAY_SFX', { id: 'ui_hover', volume: 0.4 });
+                // --- SFX UPDATED: Play the default tick sound ---
+                this.playNavSound();
             }
         }
     }
@@ -179,6 +189,8 @@ export class EncounterController extends BaseController {
         }
 
         if (this.actionPhase === 'wait_for_roll') {
+            // UI interaction for roll button. Standard sound first, then mechanic trigger which has its sound.
+            this.playConfirmSound();
             this.triggerRoll();
             return;
         }
@@ -188,7 +200,7 @@ export class EncounterController extends BaseController {
         if (hitboxId.startsWith('DECISION_')) {
             const index = parseInt(hitboxId.replace('DECISION_', ''), 10);
             if (!isNaN(index)) {
-                this.selectedIndex = index; 
+                this.selectedIndex = index;
                 this.executeSelectedDecision();
             }
         }
@@ -201,7 +213,6 @@ export class EncounterController extends BaseController {
     }
 
     // --- Standard Drag and Drop / Scroll Mapping ---
-    
     onDragStart(hitboxId) {
         if (hitboxId === 'SCROLL_THUMB_DECISIONS') {
             this.scrollManager.handleDragStart(hitboxId, this.mouse.y);
@@ -227,7 +238,6 @@ export class EncounterController extends BaseController {
     // ========================================================
     // RAW INPUT FALLBACK (KEYBOARD)
     // ========================================================
-
     handleKeyDown(keyCode, e) {
         if (!this.model) return;
 
@@ -235,11 +245,12 @@ export class EncounterController extends BaseController {
         const totalTypingTime = this.lastText.length * (1 / charsPerSecond);
         const isAnimatingText = this.textTimer < (totalTypingTime + 2.0);
         const skipPhases = ['message', 'rolling', 'hold_base', 'apply_mod', 'result', 'ending'];
-        
+
         const intent = (e && KEY_BINDINGS[e.code]) || KEY_BINDINGS[keyCode];
 
         if (skipPhases.includes(this.actionPhase) || isAnimatingText) {
             if (intent === 'CONFIRM') {
+                this.playConfirmSound(); // Play confirm sound for skipped content
                 this.skipMessageAnimation = true;
                 this.textTimer = totalTypingTime + 2.0;
             }
@@ -248,6 +259,8 @@ export class EncounterController extends BaseController {
 
         if (this.actionPhase === 'wait_for_roll') {
             if (intent === 'CONFIRM') {
+                // UI interaction for roll. Standard sound first, then mechanic trigger which has its sound.
+                this.playConfirmSound();
                 this.triggerRoll();
             }
             return;
@@ -257,19 +270,30 @@ export class EncounterController extends BaseController {
         if (!options || options.length === 0) return;
 
         if (intent === 'CANCEL') {
+            this.playCancelSound();
             if (this.scrollManager.isDragging) {
                 this.scrollManager.handleDragEnd();
             }
             return;
         }
 
+        // Track state to see if a tick sound should fire
+        const prevIndex = this.selectedIndex;
+
         if (intent === 'UP') {
             this.selectedIndex = (this.selectedIndex - 1 + options.length) % options.length;
-            events.emit('PLAY_SFX', { id: 'ui_hover', volume: 0.4 });
-        } else if (intent === 'DOWN') {
+            if (this.selectedIndex !== prevIndex) {
+                this.playNavSound();
+            }
+        }
+        else if (intent === 'DOWN') {
             this.selectedIndex = (this.selectedIndex + 1) % options.length;
-            events.emit('PLAY_SFX', { id: 'ui_hover', volume: 0.4 });
-        } else if (intent === 'CONFIRM') {
+            if (this.selectedIndex !== prevIndex) {
+                this.playNavSound();
+            }
+        }
+        else if (intent === 'CONFIRM') {
+            this.playConfirmSound(); // generic UI interaction sound before core logic trigger
             this.executeSelectedDecision();
         }
     }
@@ -277,12 +301,13 @@ export class EncounterController extends BaseController {
     // ========================================================
     // CORE ENCOUNTER LOGIC
     // ========================================================
-
     executeSelectedDecision() {
         const options = this.model.getAvailableDecisions();
         if (!options || options.length === 0) return;
 
-        events.emit('PLAY_SFX', { id: 'ui_select', volume: 0.6 });
+        // --- SFX UPDATED: Standardized helper for selection with specific ID for choice ---
+        this.playConfirmSound('ui_select');
+
         const selectedDecision = options[this.selectedIndex];
 
         if (selectedDecision.type === 'switch_character') {
@@ -310,6 +335,7 @@ export class EncounterController extends BaseController {
         this.actionPhase = 'rolling';
         this.rollTimer = this.rollData.duration;
         this.rollTickTimer = 0;
+        // Thematic mechanic sound remains different from generic UI confirms
         events.emit('PLAY_SFX', { id: 'dice_throw', volume: 0.8 });
     }
 
@@ -328,6 +354,7 @@ export class EncounterController extends BaseController {
             const cleanText = decision.text.replace(/\[.*?\]/g, '').trim().toLowerCase();
             this.actionMessage = `${actorName} decides to ${cleanText.replace(/{name}/g, actorName)}...`;
         }
+
         this.lastText = this.actionMessage;
     }
 
@@ -340,8 +367,10 @@ export class EncounterController extends BaseController {
         const total = d20 + modifier;
 
         this.rollData = {
-            d20: d20, mod: modifier, total: total, dc: decision.threshold || 0,
-            isSuccess: total >= (decision.threshold || 0), displayVal: "?", duration: 3.5
+            d20: d20, mod: modifier, total: total,
+            dc: decision.threshold || 0,
+            isSuccess: total >= (decision.threshold || 0),
+            displayVal: "?", duration: 3.5
         };
     }
 
@@ -349,11 +378,11 @@ export class EncounterController extends BaseController {
         this.actionPhase = 'none';
         const decision = this.pendingDecision;
         this.pendingDecision = null;
-
         if (!decision) return;
 
         if (decision.type === 'skill_check') {
             if (this.rollData.isSuccess) {
+                // Game mechanic sounds remain thematic not standard interface sounds
                 events.emit('PLAY_SFX', { id: 'skill_success', volume: 0.7 });
             } else {
                 events.emit('PLAY_SFX', { id: 'skill_failure', volume: 0.7 });
@@ -387,6 +416,7 @@ export class EncounterController extends BaseController {
                 break;
             }
         }
+
         if (!selectedOutcome) selectedOutcome = outcomes[0];
         this.resolveResults(selectedOutcome.results);
     }
@@ -468,8 +498,11 @@ export class EncounterController extends BaseController {
                     const activeCharacter = gameState.party?.members?.[0];
                     if (activeCharacter) {
                         PartyManager.modifyVitals(
-                            activeCharacter, payload.hp || 0, payload.stamina || 0, payload.insight || 0,
-                            payload.damageType || 'true', payload.isPercentage || false, payload.bypassDefense || false
+                            activeCharacter,
+                            payload.hp || 0, payload.stamina || 0, payload.insight || 0,
+                            payload.damageType || 'true',
+                            payload.isPercentage || false,
+                            payload.bypassDefense || false
                         );
                     }
                     break;
@@ -499,14 +532,10 @@ export class EncounterController extends BaseController {
                         const col = context.col !== undefined ? context.col : (gameState.player?.col || 0);
                         const row = context.row !== undefined ? context.row : (gameState.player?.row || 0);
                         const biome = this.worldManager.getBiomeAt(col, row);
-                        
                         battleBgAsset = biome ? biome.getBattleBackground(currentHour) : 'default';
                     }
 
-                    events.emit('START_BATTLE', {
-                        enemies: enemyParty, background: battleBgAsset,
-                        weather: gameState.world?.currentWeather || 'clear', context: this.model.context
-                    });
+                    events.emit('START_BATTLE', { enemies: enemyParty, background: battleBgAsset, weather: gameState.world?.currentWeather || 'clear', context: this.model.context });
                     break;
                 case "TAKE_DAMAGE":
                     events.emit("TAKE_DAMAGE", payload);
@@ -515,6 +544,7 @@ export class EncounterController extends BaseController {
                     const effectId = payload.effectId;
                     const customCharges = payload.charges || null;
                     const targetType = payload.target || "active_character";
+
                     if (!effectId) {
                         console.warn("[Encounter] APPLY_STATUS_EFFECT missing effectId in payload.");
                         break;
@@ -555,15 +585,12 @@ export class EncounterController extends BaseController {
                 image: this.model.getImage ? this.model.getImage() : { sheet: 'bg_default_black', col: 0, row: 0 },
                 text: rewardText,
                 decisions: [
-                    {
-                        text: "Continue.",
-                        outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: endEncounterPayload }] }]
-                    }
+                    { text: "Continue.", outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: endEncounterPayload }] }] }
                 ]
             };
             this.model.advanceToStage("encounter_rewards_stage");
             this.selectedIndex = 0;
-            return; 
+            return;
         }
 
         if (shouldEndEncounter) {
@@ -592,18 +619,19 @@ export class EncounterController extends BaseController {
     // ========================================================
     // STATE ACCESS FOR RENDERER
     // ========================================================
-
     getState() {
         const basePayload = {
             // UPDATED: imageInfo now holds the object { sheet, col, row }
-            imageInfo: null, title: "", text: "", decisions: [],
+            imageInfo: null,
+            title: "", text: "", decisions: [],
             ui: { selectedDecisionIndex: this.selectedIndex },
             party: gameState.party?.members?.length > 0 ? [gameState.party.members[0]] : [],
             currency: gameState.party?.currency || 0,
             skipMessageAnimation: this.skipMessageAnimation,
-            textTimer: this.textTimer, actionPhase: this.actionPhase,
-            rollTimer: this.rollTimer, rollData: this.rollData,
-            
+            textTimer: this.textTimer,
+            actionPhase: this.actionPhase,
+            rollTimer: this.rollTimer,
+            rollData: this.rollData,
             mouse: this.mouse,
             hoveredElement: this.hoveredHitboxId ? { id: this.hoveredHitboxId } : null,
             scrollOffsets: { decisions: this.scrollManager.getOffset('decision_list') },
@@ -619,8 +647,8 @@ export class EncounterController extends BaseController {
 
         let displayText = this.model.getCurrentText() || "";
         let displayDecisions = this.model.getAvailableDecisions() || [];
-
         const actorName = gameState.party?.members?.[0]?.name || "The party";
+
         displayText = displayText.replace(/{name}/g, actorName);
         displayDecisions = displayDecisions.map(decision => ({
             ...decision, text: decision.text.replace(/{name}/g, actorName)

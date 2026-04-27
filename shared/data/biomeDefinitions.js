@@ -40,7 +40,7 @@ export const BIOME_DEFINITIONS = {
             ]
         },
         battles: {
-            rate: 0.00,
+            rate: 0.01,
             pools: [
                 { chance: 0.20, enemies: ['LEGIONARY', 'MAD_MAGE', 'LEGIONARY'] },
                 { chance: 0.40, enemies: ['SHACKLED_STEED'] },
@@ -86,16 +86,16 @@ export const BIOME_DEFINITIONS = {
                 { chance: 0.50,  rangeStart: 0.30, pool: ['SAND_DUNE_1', 'SAND_DUNE_2', 'SAND_DUNE_3'] }
             ]
 
-            
+
         },
         encounters: {
-            rate: 0.005,
+            rate: 0.01,
             pools: [
                 { chance: 0.80, id: 'wounded_mutt', allowedTimes: ['day'] },
             ]
         },
         battles: {
-            rate: 0.0,
+            rate: 0.01,
             pools: [
                 { chance: 0.50, enemies: ['WOLF', 'WOLF'] },
                 { chance: 0.30, enemies: ['WOLF', 'WOLF', 'WOLF'] },

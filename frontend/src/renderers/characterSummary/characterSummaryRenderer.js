@@ -114,7 +114,7 @@ export class CharacterSummaryRenderer {
 
         const drawTab = (label, tx, isActive, id) => {
             const isHovered = hoveredHitboxId === id;
-            
+
             // Default styling
             let bgColor = "rgba(0,0,0,0.5)";
             let textCol = UITheme.colors.textMuted;
@@ -135,7 +135,6 @@ export class CharacterSummaryRenderer {
 
             // Render backgrounds
             this.ui.drawPanel(tx, y, tabW, tabH, bgColor);
-            
             if (strokeColor) {
                 this.ui.drawRect(tx, y, tabW, tabH, strokeColor, false);
             }
@@ -152,8 +151,13 @@ export class CharacterSummaryRenderer {
                 "center",
                 "middle"
             );
-            
-            this.hitboxes.push({ id, x: tx, y, w: tabW, h: tabH, type: 'tab' });
+
+            // --- DELECTARIVE AUDIO ADDED HERE ---
+            this.hitboxes.push({ 
+                id, x: tx, y, w: tabW, h: tabH, type: 'tab',
+                hoverSfx: 'hoverTick',
+                clickSfx: 'cinematicBoom'
+            });
         };
 
         drawTab("STATS", x, viewMode === 'STATS', 'TAB_STATS');

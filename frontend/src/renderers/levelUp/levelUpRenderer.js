@@ -10,18 +10,10 @@ export class LevelUpRenderer {
         this.ui = new CanvasUI(ctx);
         this.hitboxes = [];
 
-        // Updated to perfectly mirror CharacterCreatorRenderer layout constants
         this.layout = {
-            p: 48,
-            startY: 48,
-            titleOffsetY: 40,
-            contentOffsetY: 60,
-            portraitSize: 250,
-            attrRowHeight: 50,
-            attrBlockWidth: 624,
-            btnWidth: 216,
-            btnHeight: 84,
-            btnSpacing: 36
+            p: 48, startY: 48, titleOffsetY: 40, contentOffsetY: 60,
+            portraitSize: 250, attrRowHeight: 50, attrBlockWidth: 624,
+            btnWidth: 216, btnHeight: 84, btnSpacing: 36
         };
     }
 
@@ -34,35 +26,32 @@ export class LevelUpRenderer {
         const w = this.ctx.canvas.width;
         const h = this.ctx.canvas.height;
         this.ui.clearScreen(w, h);
-
         const hoveredId = hoveredElement ? hoveredElement.id : null;
 
-        // --- GLOBAL LAYOUT ---
         const { p, startY } = this.layout;
         const panelHeight = h - (startY * 2);
         const halfW = Math.floor(w / 2);
-
-        // Calculate dynamic column widths keeping a uniform gap ('p') between everything
         const colW = halfW - (p * 1.5);
         const leftColX = p;
         const rightColX = halfW + (p * 0.5);
 
-        // Draw floating panels instead of filling the full halves
         this.ui.drawPanel(leftColX, startY, colW, panelHeight, UITheme.colors.bgScale[0]);
         this.ui.drawPanel(rightColX, startY, colW, panelHeight, UITheme.colors.bgScale[1]);
 
-        this._renderCharacterColumn(member, availablePoints, pendingAllocations, hoveredId, selectedElementId, leftColX, startY, colW, panelHeight);
-        this._renderStatsColumn(currentStats, previewStats, rightColX, startY, colW, panelHeight);
-
-        // Bound action buttons to the bottom of the left column
-        this._drawActionButtons(availablePoints, pendingAllocations, hoveredId, selectedElementId, leftColX, startY + panelHeight, colW);
+        this._renderCharacterColumn(
+            member, availablePoints, pendingAllocations, hoveredId, selectedElementId, leftColX, startY, colW, panelHeight
+        );
+        this._renderStatsColumn(
+            currentStats, previewStats, rightColX, startY, colW, panelHeight
+        );
+        this._drawActionButtons(
+            availablePoints, pendingAllocations, hoveredId, selectedElementId, leftColX, startY + panelHeight, colW
+        );
 
         if (state.onLayoutUpdate) {
             state.onLayoutUpdate(this.hitboxes);
         }
 
-        // --- DRAW SELECTION BRACKETS FOR KEYBOARD FOCUS ---
-        // This ensures keyboard users always see their cursor, even if the mouse is parked elsewhere.
         if (selectedElementId) {
             const activeBox = this.hitboxes.find(b => b.id === selectedElementId);
             if (activeBox) {
@@ -76,28 +65,23 @@ export class LevelUpRenderer {
         const CONTENT_START_Y = TITLE_Y + this.layout.contentOffsetY;
         const centerX = x + (w / 2);
 
-        // --- TITLE & FLOURISH ---
         const titleStr = member.name ? member.name.toUpperCase() : "LEVEL UP";
-        
         this.ctx.font = UITheme.fonts.body;
         const titleWidth = this.ctx.measureText(titleStr).width;
-        
+
         this.ui.drawText(titleStr, centerX, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "center");
         const lvlText = `Level ${member.level || 1} ${member.class || ''}`;
         this.ui.drawText(lvlText, centerX + (titleWidth / 2) + 20, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "left");
-        
         this.ui.drawLineWithGothicFlourish(centerX - 120, TITLE_Y + 29, 240, UITheme.colors.borderHighlight);
 
         let currentY = CONTENT_START_Y;
         const highlightFont = UITheme.fonts.bold || "bold 34px sans-serif";
         const giantFont = UITheme.fonts.header || "bold 72px sans-serif";
 
-        // --- UNSPENT POINTS ---
         const pointsColor = availablePoints > 0 ? UITheme.colors.success : UITheme.colors.textMuted;
         this.ui.drawText(`Unspent Points: ${availablePoints}`, centerX, currentY, highlightFont, pointsColor, "center");
         currentY += 40;
 
-        // --- PORTRAIT ---
         const pSize = this.layout.portraitSize;
         const portraitX = Math.floor(centerX - (pSize / 2));
         const img = this.loader.get(member.spritePortrait);
@@ -105,7 +89,7 @@ export class LevelUpRenderer {
         this.ui.drawLancetArchedPanel(portraitX, currentY, pSize, pSize * 1.25, UITheme.colors.bgScale[2], UITheme.colors.borderHighlight);
 
         if (img) {
-            const scaledSize = 128 * 2; 
+            const scaledSize = 128 * 2;
             const centeredX = portraitX + (pSize / 2) - (scaledSize / 2);
             const centeredY = currentY + ((pSize * 1.25) / 2) - (scaledSize / 2);
             this.ui.drawSprite(img, 0, 0, 128, 128, centeredX, centeredY, scaledSize, scaledSize);
@@ -115,7 +99,6 @@ export class LevelUpRenderer {
 
         currentY += (pSize * 1.25) + 36;
 
-        // --- ATTRIBUTES ---
         const attributes = ['vigor', 'strength', 'dexterity', 'intelligence', 'attunement'];
         const startX = centerX - (this.layout.attrBlockWidth / 2);
 
@@ -133,6 +116,7 @@ export class LevelUpRenderer {
             const pendingVal = pendingAllocations[attr];
 
             this.ui.drawText(currentVal.toString(), startX + 264, textY, UITheme.fonts.mono, UITheme.colors.textMain, "center");
+
             if (pendingVal > 0) {
                 this.ui.drawText(`+${pendingVal}`, startX + 312, textY, UITheme.fonts.mono, UITheme.colors.success, "left");
             }
@@ -144,15 +128,16 @@ export class LevelUpRenderer {
             const isFocusSub = canSub && (hoveredId === subId || selectedId === subId);
 
             let subBg = isHoveredSub ? UITheme.colors.states.focusBg : "rgba(0,0,0,0.4)";
-            
-            // Removed the red "failure" color, replaced with textMain and border
             let subTextCol = canSub ? (isFocusSub ? UITheme.colors.states.focusText : UITheme.colors.textMain) : UITheme.colors.textMuted;
             let subBorder = canSub ? (isFocusSub ? UITheme.colors.states.focusText : UITheme.colors.border) : UITheme.colors.border;
 
             this.ui.drawRect(startX + 456, rowY + 5, 40, 40, subBg, true);
             this.ui.drawRect(startX + 456, rowY + 5, 40, 40, subBorder, false);
             this.ui.drawText("-", startX + 476, rowY + 34, UITheme.fonts.bold, subTextCol, "center");
-            this.hitboxes.push({ id: subId, x: startX + 456, y: rowY + 5, w: 40, h: 40, disabled: !canSub });
+
+            const subBox = { id: subId, x: startX + 456, y: rowY + 5, w: 40, h: 40 };
+            if (canSub) subBox.hoverSfx = 'hoverTick'; // Only append hover if actionable
+            this.hitboxes.push(subBox);
 
             // --- ADD BUTTON (+) ---
             const canAdd = availablePoints > 0;
@@ -167,7 +152,10 @@ export class LevelUpRenderer {
             this.ui.drawRect(startX + 540, rowY + 5, 40, 40, addBg, true);
             this.ui.drawRect(startX + 540, rowY + 5, 40, 40, addBorder, false);
             this.ui.drawText("+", startX + 560, rowY + 34, UITheme.fonts.bold, addTextCol, "center");
-            this.hitboxes.push({ id: addId, x: startX + 540, y: rowY + 5, w: 40, h: 40, disabled: !canAdd });
+
+            const addBox = { id: addId, x: startX + 540, y: rowY + 5, w: 40, h: 40 };
+            if (canAdd) addBox.hoverSfx = 'hoverTick'; // Only append hover if actionable
+            this.hitboxes.push(addBox);
         });
     }
 
@@ -178,7 +166,6 @@ export class LevelUpRenderer {
         const CONTENT_START_Y = TITLE_Y + this.layout.contentOffsetY;
         const centerX = x + (w / 2);
 
-        // --- TITLE & FLOURISH ---
         this.ui.drawText("PROJECTED STATS", centerX, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "center");
         this.ui.drawLineWithGothicFlourish(centerX - 120, TITLE_Y + 29, 240, UITheme.colors.borderHighlight);
 
@@ -186,7 +173,6 @@ export class LevelUpRenderer {
         const startX = x + this.layout.p;
         const colW = w - (this.layout.p * 2);
 
-        // --- 1. VITALS ---
         this.ui.drawText("Vitals", startX, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
         currentY += 10;
         this.ui.drawLineWithGothicFlourish(startX, currentY, colW, UITheme.colors.borderHighlight);
@@ -195,10 +181,8 @@ export class LevelUpRenderer {
         currentY = this._drawStatDiffRow("Max HP", currentStats.maxHp?.total, previewStats.maxHp?.total, startX, currentY, colW, 42);
         currentY = this._drawStatDiffRow("Max SP", currentStats.maxStamina?.total, previewStats.maxStamina?.total, startX, currentY, colW, 42);
         currentY = this._drawStatDiffRow("Max INS", currentStats.maxInsight?.total, previewStats.maxInsight?.total, startX, currentY, colW, 42);
-
         currentY += 15;
 
-        // --- 2. COMBAT STATS ---
         this.ui.drawText("Combat Stats", startX, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
         currentY += 10;
         this.ui.drawLineWithGothicFlourish(startX, currentY, colW, UITheme.colors.borderHighlight);
@@ -243,8 +227,6 @@ export class LevelUpRenderer {
         });
 
         currentY += (Math.ceil(combatStats.length / 2) * rowH) + 24;
-
-        // --- 3. RESISTANCE TABLE ---
         this._drawProjectedResistanceTable(currentStats, previewStats, startX, currentY, colW);
     }
 
@@ -252,6 +234,7 @@ export class LevelUpRenderer {
         this.ui.drawText(label, x, y, UITheme.fonts.small, UITheme.colors.textMuted, "left");
         const valX = x + (w * 0.4);
         this.ui.drawText(curr.toString(), valX, y, UITheme.fonts.mono, UITheme.colors.textMain, "right");
+
         if (curr !== prev) {
             let arrowColor = (prev > curr) ? UITheme.colors.success : UITheme.colors.failure;
             const arrowX = valX + 25;
@@ -267,13 +250,12 @@ export class LevelUpRenderer {
         const colAtk = x + (w * 0.35);
         const colDef = x + (w * 0.60);
         const colRes = x + (w * 0.85);
-
         const headerFont = UITheme.fonts.cardTitle || "bold 28px sans-serif";
+
         this.ui.drawText("TYPE", colType, currentY, headerFont, UITheme.colors.textMuted, "left");
         this.ui.drawText("ATK", colAtk, currentY, headerFont, UITheme.colors.attack, "center");
         this.ui.drawText("DEF", colDef, currentY, headerFont, UITheme.colors.defense, "center");
         this.ui.drawText("RES", colRes, currentY, headerFont, UITheme.colors.resistance, "center");
-        
         currentY += 10;
         this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.border);
         currentY += 30;
@@ -324,7 +306,6 @@ export class LevelUpRenderer {
             drawCell(cAtk, pAtk, colAtk, UITheme.colors.attack);
             drawCell(cDef, pDef, colDef, UITheme.colors.defense);
             drawCell(cRes, pRes, colRes, UITheme.colors.resistance, true);
-
             currentY += rowH;
         });
     }
@@ -333,9 +314,9 @@ export class LevelUpRenderer {
         const btnW = this.layout.btnWidth;
         const btnH = this.layout.btnHeight;
         const spacing = this.layout.btnSpacing;
-
         const btnY = bottomY - btnH - this.layout.p;
         const centerX = x + (w / 2);
+
         const hasPending = Object.values(pendingAllocations).some(v => v > 0);
         const startX = centerX - (btnW * 1.5) - spacing;
 
@@ -344,20 +325,20 @@ export class LevelUpRenderer {
             const isSelected = selectedId === id;
             const isFocus = isClickable && (isHovered || isSelected);
 
-            let bg = isHovered && isClickable ? UITheme.colors.states.focusBg : "rgba(0,0,0,0.6)";
-            let textCol;
+            // Change hover treatment slightly for disabled buttons
+            let bg = "rgba(0,0,0,0.6)";
+            if (isHovered) bg = isClickable ? UITheme.colors.states.focusBg : "rgba(0,0,0,0.7)";
             
-            if (isClickable) {
-                textCol = isFocus ? UITheme.colors.states.focusText : defaultCol;
-            } else {
-                textCol = UITheme.colors.textMuted;
-                if (isHovered) bg = "rgba(0,0,0,0.8)";
-            }
+            let textCol = isClickable 
+                ? (isFocus ? UITheme.colors.states.focusText : defaultCol) 
+                : UITheme.colors.textMuted;
 
             this.ui.drawPanel(btnX, btnY, btnW, btnH, bg);
             this.ui.drawText(label, btnX + (btnW/2), btnY + (btnH / 2) + 10, UITheme.fonts.body, textCol, "center");
-            
-            this.hitboxes.push({ id, x: btnX, y: btnY, w: btnW, h: btnH, disabled: !isClickable });
+
+            const box = { id, x: btnX, y: btnY, w: btnW, h: btnH };
+            if (isClickable) box.hoverSfx = 'hoverTick'; // Only append hover if actionable
+            this.hitboxes.push(box);
         };
 
         drawBtn('BTN_CANCEL', "Cancel", startX, true, UITheme.colors.textMain);
