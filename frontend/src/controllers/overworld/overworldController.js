@@ -187,10 +187,9 @@ export class OverworldController extends BaseController {
         const col = Math.floor(this.player.x / this.config.TILE_SIZE);
         const row = Math.floor(this.player.y / this.config.TILE_SIZE);
         const biome = this.worldManager.getBiomeAt(col, row);
-
         const currentHour = gameState.world.time / 60;
-        const encounterData = biome.getEncounter(currentHour);
 
+        const encounterData = biome.getEncounter(currentHour);
         if (encounterData) {
             console.log(`[Overworld] Encounter triggered in ${biome.id} at hour ${Math.floor(currentHour)}: ${encounterData.id}!`);
             this.isLocked = true;
@@ -201,50 +200,24 @@ export class OverworldController extends BaseController {
             return;
         }
 
-        // --- UPDATED: Fetch difficulty and pass to getBattle ---
         const difficulty = gameState.difficulty || 'normal';
         const battleData = biome.getBattle(difficulty);
-
         if (!battleData) return;
 
         console.log(`[Overworld] Ambush triggered in biome: ${biome.id} on ${difficulty} difficulty!`);
+        
         this.isLocked = true;
         this.player.isMoving = false;
         this.player.moveProgress = 0;
         this.player.animFrame = 0;
 
         const battleBgAsset = biome.getBattleBackground(currentHour);
-        
-        // --- UPDATED: Calculate base level + global difficulty offset ---
-        const globalOffset = DIFFICULTY_MODIFIERS[difficulty]?.enemyLevelOffset || 0;
-        const baseLevel = PartyManager.getHighestLevel() + globalOffset;
 
-        const enemyParty = [];
-
-        for (const enemyData of battleData.enemies) {
-            const enemyId = typeof enemyData === 'string' ? enemyData : enemyData.id;
-            
-            // Dynamic level calculation floor is 1 so enemies are never level 0 or negative
-            let finalLevel = Math.max(1, baseLevel);
-            let overrides = { level: finalLevel };
-
-            if (typeof enemyData === 'object') {
-                const specificOffset = enemyData.levelOffset || 0;
-                finalLevel = Math.max(1, baseLevel + specificOffset);
-                overrides = { ...enemyData, level: finalLevel };
-            }
-
-            const enemyEntity = EntityFactory.create(enemyId, overrides);
-
-            if (typeof enemyData === 'string' || !enemyData.name) {
-                enemyEntity.name = `${enemyEntity.name || enemyId} ${enemyParty.length + 1}`;
-            }
-
-            enemyParty.push(enemyEntity);
-        }
-
+        // --- UPDATED: Look how clean this is now! ---
+        // We just pass the raw enemy array straight from the biome definition.
+        // SceneManager will catch this payload, scale them, and build the entities.
         const battlePayload = {
-            enemies: enemyParty,
+            enemies: battleData.enemies, 
             background: battleBgAsset,
             weather: gameState.world.currentWeather
         };

@@ -110,6 +110,6 @@ export const DIFFICULTY_LEVELS = {
 export const DIFFICULTY_MODIFIERS = {
     [DIFFICULTY_LEVELS.EASY]: { rollBonus: 2, enemyLevelOffset: -1 },
     [DIFFICULTY_LEVELS.NORMAL]: { rollBonus: 0, enemyLevelOffset: 0 },
-    [DIFFICULTY_LEVELS.HARD]: { rollBonus: -2, enemyLevelOffset: 2 },
-    [DIFFICULTY_LEVELS.NIGHTMARE]: { rollBonus: -5, enemyLevelOffset: 5 }
+    [DIFFICULTY_LEVELS.HARD]: { rollBonus: -2, enemyLevelOffset: 1 },
+    [DIFFICULTY_LEVELS.NIGHTMARE]: { rollBonus: -3, enemyLevelOffset: 3 }
 };

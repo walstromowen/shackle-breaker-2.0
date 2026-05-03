@@ -4,7 +4,6 @@ Roguelike turnbased adventure game based on the Shackle Breaker story by Owen Wa
 enhance battle animations / polish
 particleRenderer (global)
 crafting system.
-Difficulty
 Starting seed
 procedural dungeons and hand crafted areas
 structures: 
@@ -13,6 +12,7 @@ structures:
 
 name changes in character summary
 more consistent sound for UI
+battle UI to display damage types and additional information
 
 Bugs
 Rain flash

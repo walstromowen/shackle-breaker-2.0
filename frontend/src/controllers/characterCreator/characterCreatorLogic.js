@@ -20,33 +20,33 @@ export const CREATION_DATA = {
     BACKGROUNDS: [
         { 
             id: "TRAVELER", label: "Traveler", 
-            desc: "Travelers from far and wide came to see the incredible discovery of what was magic in the Altus Kingdom.",
+            desc: "Travelers from far and wide came to see the incredible discovery of what was magic in the Altus Kingdom. Those first to arive were amazed by what they saw. Those last to arrive were horrified.",
             attributes: { vigor: 12, strength: 12, dexterity: 12, intelligence: 10, attunement: 10 },
             equipment: { mainHand: "shortsword", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
         { 
             id: "BLACKSMITH", label: "Blacksmith", 
-            desc: "The honest trade of blacksmithing. Hard labor has made you tough, but magic remains a mystery.",
+            desc: "The honest trade of blacksmithing is a profession that was held in high esteem by Alterians, and Panzerians alike. After the discovery of magic, most blacksmiths found themselves unable to find work, but with their sanity intact.",
             attributes: { vigor: 15, strength: 15, dexterity: 10, intelligence: 7, attunement: 7 },
             equipment: { mainHand: "warhammer", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
         { 
             id: "RANGER", label: "Ranger", 
-            desc: "A hunter of wild animals. You rely on speed and precision rather than brute force.",
+            desc: "Not all were enamored with the discovery of magic. A select few of the populance sought an escape from the people's obsession of it. Many of those that left became rangers, hunting wild animals and later more unnatural things.",
             attributes: { vigor: 11, strength: 10, dexterity: 16, intelligence: 9, attunement: 8 },
             equipment: { mainHand: "dagger", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
         { 
             id: "SCHOLAR", label: "Scholar", 
-            desc: "One who studies magic as a science. Physically frail, but possessing immense magical potential.",
+            desc: "Almost overnight, the scholars and philosophers of the Altus kingdom abandoned their studies to begin research of magic. Some saw magic as a science, others as life itself.",
             attributes: { vigor: 9, strength: 8, dexterity: 10, intelligence: 16, attunement: 14 },
             equipment: { mainHand: "insight_of_arcane", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
     ],
     ORIGINS: [
-        { label: "Alterian", tag: "LANG_ALTERIAN", desc: "Alterians are the oldest people of the known worldAlterians are the oldest people of the known worldAlterians are the oldest people of the known worldAlterians are the oldest people of the known worldAlterians are the oldest people of the known worldAlterians are the oldest people of the known worldAlterians are the oldest people of the known worldAlterians are the oldest people of the known worldAlterians are the oldest people of the known worldAlterians are the oldest people of the known worldAlterians are the oldest people of the known world." },
-        { label: "Panzerian", tag: "LANG_PANZERIAN", desc: "Panzerians are a creative and powerful people from the icy mountains." },
-        { label: "Namuh", tag: "LANG_NAMUH", desc: "The Namuh are a silent and mysterious people." }
+        { label: "Alterian", tag: "LANG_ALTERIAN", desc: "Alterians are the oldest people of the known world and the first to discover magic. They are a fearless and adventurous people who hail from the ancient Altus kingdom. Despite their reputation as conquerors, Alterians are actually quite diplomatic. They value strength, honor, and loyalty to one's family. Or at least, they use to." },
+        { label: "Panzerian", tag: "LANG_PANZERIAN", desc: "Panzerians are a creative and powerful people from the icy mountains of Panzeria. They are master engineers who have acomplished a variety of impressive technolgical and architectural feats. Most notably being their weapons of war including cannons, genetically engineered beasts, and the famous Panzerian armor. All of which were eventually used against them." },
+        { label: "Namuh", tag: "LANG_NAMUH", desc: "The Namuh are a silent and mysterious people who communicate only through a form sign language. Not much is known about the Namuh people except for rumors, many of which speaking of a great tragedy befalling the Namuh people and the becoming of a shadow of their former selves." }
     ],
     APPEARANCES: [
         { label: "Legionary", spritePortrait: "legionaryHeroPortrait", spriteOverworld: "legionaryHeroSprite" }, 

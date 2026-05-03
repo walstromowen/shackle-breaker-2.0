@@ -179,7 +179,7 @@ export class LevelUpRenderer {
         currentY += 32;
 
         currentY = this._drawStatDiffRow("Max HP", currentStats.maxHp?.total, previewStats.maxHp?.total, startX, currentY, colW, 42);
-        currentY = this._drawStatDiffRow("Max SP", currentStats.maxStamina?.total, previewStats.maxStamina?.total, startX, currentY, colW, 42);
+        currentY = this._drawStatDiffRow("Max STM", currentStats.maxStamina?.total, previewStats.maxStamina?.total, startX, currentY, colW, 42);
         currentY = this._drawStatDiffRow("Max INS", currentStats.maxInsight?.total, previewStats.maxInsight?.total, startX, currentY, colW, 42);
         currentY += 15;
 
@@ -193,7 +193,7 @@ export class LevelUpRenderer {
             { label: "CRT %", c: (currentStats.critChance || 0)*100, p: (previewStats.critChance || 0)*100, isPct: true },
             { label: "HP REC", c: currentStats.hpRecovery, p: previewStats.hpRecovery },
             { label: "CRT DMG", c: currentStats.critMultiplier, p: previewStats.critMultiplier },
-            { label: "STA REC", c: currentStats.staminaRecovery, p: previewStats.staminaRecovery },
+            { label: "STM REC", c: currentStats.staminaRecovery, p: previewStats.staminaRecovery },
             { label: "ACC", c: currentStats.accuracy, p: previewStats.accuracy },
             { label: "INS REC", c: currentStats.insightRecovery, p: previewStats.insightRecovery },
             { label: "EVA", c: currentStats.evasion, p: previewStats.evasion },

@@ -41,7 +41,7 @@ export const ItemDefinitions = {
         name: "Shortsword",
         slot: "oneHand",
         type: "weapon",
-        description: 'A standard shortsword. Gets deadlier as you forge it.',
+        description: 'A standard shortsword. Standard issue shortsword of the Altus legion. "A shorter longsword is a faster longsword" - Commander Mentoras.',
         value: 20,
         icon: { col: 1, row: 0 },
         attack: { pierce: 300, slash: 300 },
@@ -65,7 +65,7 @@ export const ItemDefinitions = {
         name: "Handaxe",
         slot: "oneHand",
         type: "weapon",
-        description: 'A standard handaxe. Brutal and effective.',
+        description: 'A battered handaxe. After the fall of Altus kingdom, many common tools were repurposed as weapons much like this well worn axe. "An axe is a simple lever. The harder you pull the lever, the quicker your work becomes." - Commander Mentoras.',
         value: 20,
         icon: { col: 2, row: 0 },
         attack: { blunt: 3, slash: 3 },
@@ -111,7 +111,7 @@ export const ItemDefinitions = {
         name: "Spear",
         slot: "oneHand",
         type: "weapon",
-        description: 'A standard spear. Excellent reach.',
+        description: `A standard spear. Standard issue spear of the Altus legion. "Keep your enemies close and your friends at spear's length." - Commander Mentoras.`,
         value: 20,
         icon: { col: 3, row: 0 },
         attack: { pierce: 5},
@@ -128,12 +128,12 @@ export const ItemDefinitions = {
             3: { currency: 120, materials: { "iron_ingot": 1, "soft_wood": 5 } }
         }
     },
-     "wooden_shield": {
-        id: "wooden_shield",
-        name: "Wooden Shield",
+     "wooden_buckler": {
+        id: "wooden_buckler",
+        name: "Wooden Buckler",
         slot: "oneHand",
         type: "shield",
-        description: 'A sturdy wooden shield. Provides decent protection.',
+        description: 'A wooden buckler. A buckler fashioned from hard wood. A blue and green symbol of unknown origin is painted on its front.',
         value: 20,
         icon: { col: 3, row: 0 },
         defense: { blunt: 2, slash: 2, pierce: 1 },

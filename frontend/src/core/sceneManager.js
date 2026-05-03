@@ -24,9 +24,13 @@ import { CharacterSummaryRenderer } from '../renderers/characterSummary/characte
 import { BattleRenderer } from '../renderers/battle/battleRenderer.js';
 import { LevelUpRenderer } from '../renderers/levelUp/levelUpRenderer.js';
 
+import { PartyManager } from '../../../shared/systems/partyManager.js';
 import { WorldManager } from '../../../shared/systems/worldManager.js'; 
 import { TimeSystem } from '../../../shared/systems/timeSystem.js';
 import { gameState } from '../../../shared/state/gameState.js';
+import { DIFFICULTY_MODIFIERS } from '../../../shared/data/constants.js';
+
+import { EntityFactory } from '../../../shared/systems/factories/entityFactory.js';
 
 export class SceneManager {
     constructor(canvas, assetLoader, config) {
@@ -164,20 +168,51 @@ export class SceneManager {
 
         events.on('START_BATTLE', (data) => {
             events.emit('PLAY_SFX', { id: 'battleStart', volume: 0.9 });
+
+            // --- NEW: UNIVERSAL ENEMY SCALING ---
+            const difficulty = gameState.difficulty || 'normal';
+            const globalOffset = DIFFICULTY_MODIFIERS[difficulty]?.enemyLevelOffset || 0;
+            const baseLevel = PartyManager.getHighestLevel() + globalOffset;
+
+            const scaledEnemies = [];
             
-            // Check if the battle is triggering directly from the overworld scene
+            for (const enemyData of data.enemies) {
+                // Failsafe: If the data is already a fully built Entity (e.g., from old Overworld code), skip scaling
+                if (enemyData.stats) {
+                    scaledEnemies.push(enemyData);
+                    continue;
+                }
+
+                const enemyId = typeof enemyData === 'string' ? enemyData : enemyData.id;
+                let finalLevel = Math.max(1, baseLevel);
+                let overrides = { level: finalLevel };
+
+                if (typeof enemyData === 'object') {
+                    const specificOffset = enemyData.levelOffset || 0;
+                    finalLevel = Math.max(1, baseLevel + specificOffset);
+                    overrides = { ...enemyData, level: finalLevel };
+                }
+
+                const enemyEntity = EntityFactory.create(enemyId, overrides);
+                if (typeof enemyData === 'string' || !enemyData.name) {
+                    enemyEntity.name = `${enemyEntity.name || enemyId} ${scaledEnemies.length + 1}`;
+                }
+                scaledEnemies.push(enemyEntity);
+            }
+
+            // --- TRANSITION AND HANDOFF ---
             const isFromOverworld = this.currentScene === 'overworld';
-            
-          
             const transitionType = isFromOverworld ? 'blade' : 'ethereal';
             const transitionSpeed = isFromOverworld ? 1.5 : 2.5;
 
             this.transitionRenderer.start(() => {
-                console.log("[SceneManager] Handing off entities to BattleController:", data.enemies);
+                console.log("[SceneManager] Handing off scaled entities to BattleController:", scaledEnemies);
                 const context = data.context || {};
                 context.backgroundId = data.background;
                 context.weather = data.weather;
-                this.battleController.start(data.enemies, context);
+                
+                // Pass the SCALED enemies to the controller
+                this.battleController.start(scaledEnemies, context);
                 this.changeScene('battle');
             }, transitionType, { speed: transitionSpeed, color: '#0a0a12' });
         });
