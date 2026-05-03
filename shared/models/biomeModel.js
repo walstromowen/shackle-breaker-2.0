@@ -35,19 +35,31 @@ export class BiomeModel {
         return null;
     }
 
-    getBattle() {
+    getBattle(difficulty = 'normal') {
         if (!this.battles) return null;
         if (Math.random() > this.battles.rate) return null;
 
+        // Extract the specific array for the current difficulty level
+        const currentPools = this.battles.pools[difficulty];
+
+        // Failsafe in case the difficulty key is missing or empty
+        if (!currentPools || !Array.isArray(currentPools) || currentPools.length === 0) {
+            console.warn(`[BiomeModel] No battle pool found for difficulty: ${difficulty}`);
+            return null;
+        }
+
         const roll = Math.random();
         let cumulativeChance = 0;
-        for (const pool of this.battles.pools) {
+
+        for (const pool of currentPools) {
             cumulativeChance += pool.chance;
             if (roll <= cumulativeChance) {
                 return { enemies: pool.enemies };
             }
         }
-        return { enemies: this.battles.pools[0].enemies };
+
+        // Fallback to the first pool if the random roll fails to match (e.g., chances don't sum to 1.0)
+        return { enemies: currentPools[0].enemies };
     }
 
     getTimeOfDay(currentHour) {

@@ -1,3 +1,5 @@
+// ui/overworld/encounter/encounterController.js
+
 import { BaseController } from '../core/baseController.js';
 import { ScrollManager } from '../../ui/scrollManager.js';
 import { EncounterFactory } from "../../../../shared/systems/factories/encounterFactory.js";
@@ -7,6 +9,8 @@ import { InventorySystem } from "../../../../shared/systems/inventorySystem.js";
 import { PartyManager } from "../../../../shared/systems/partyManager.js";
 import { EntityFactory } from '../../../../shared/systems/factories/entityFactory.js';
 import { ExperienceSystem } from '../../../../shared/systems/experienceSystem.js';
+// --- [DIFFICULTY ADDITION] Import modifiers config ---
+import { DIFFICULTY_MODIFIERS } from '../../../../shared/data/constants.js';
 
 // --- STANDARDIZED INPUT BINDINGS ---
 const KEY_BINDINGS = {
@@ -392,18 +396,62 @@ export class EncounterController extends BaseController {
         this.lastText = this.actionMessage;
     }
 
+    // --- [DIFFICULTY FIX] completely refactored method to apply modifiers correctly ---
     setupRollData(decision) {
         const roller = gameState.party.members[0];
         const attributes = roller?.attributes || {};
         const statValue = attributes[decision.attribute] || 0;
-        const modifier = statValue > 10 ? Math.floor((statValue - 10) / 3) : 0;
+        
+        // Fetch difficulty, fallback to normal if setting is missing
+        const difficulty = gameState.difficulty || 'normal';
+        const globalConfig = DIFFICULTY_MODIFIERS[difficulty] || { rollBonus: 0 };
+        // This is the flat bonus/penalty applied to the total roll (Easy:+2, Normal:0, Hard:-2, Nightmare:-5)
+        const difficultyRollMod = globalConfig.rollBonus || 0;
 
+        // 1. Calculate standard attribute bonus (rounded down).
+        // Standard table derived from (Stat - 10) / 3:
+        // 1-3: -3, 4-6: -2, 7-9: -1, 10-12: 0, 13-15: +1, 16-18: +2, 19+: +3
+        const attributeBonus = Math.floor((statValue - 10) / 3);
+        
+        // 2. Adjust branching logic based on difficulty constraints regarding Penalties.
+        // We need a variable for the 'applied' attribute bonus.
+        let appliedAttributeBonus = attributeBonus;
+
+        if (difficulty === 'easy' || difficulty === 'normal') {
+            // Easy/Normal do not penalize for low stats (floor the attribute bonus at 0).
+            appliedAttributeBonus = Math.max(0, attributeBonus);
+        }
+        // else (Hard/Nightmare): appliedAttributeBonus stays raw, allowing penalties (-1, -2, etc.)
+
+        // --- Execute Roll ---
         const d20 = Math.floor(Math.random() * 20) + 1;
-        const total = d20 + modifier;
 
+        // [Line 146 TRACE] --- BUG TRACE ---
+        // Old flawed logic: baseMod = Math.max(0, attributeBonus + globalConfig.rollBonus);
+        // On Hard difficulty with STR 13 (attributeBonus:+1), Hard Penalty (globalConfig.rollBonus:-2):
+        // Old logic resulted in: baseMod = Math.max(0, 1 + (-2)) = Math.max(0, -1) = 0.
+        // The user's +1 Strength bonus was consumed by the penalty completely.
+
+        // --- NEW [Line 146 FIX] ---
+        // Combine raw (possibly floored) stat mod and flat difficulty mod together.
+        // New calculation on Hard with STR 13: 
+        // finalAppliedMod = (+1) + (-2) = -1.
+        const finalAppliedMod = appliedAttributeBonus + difficultyRollMod;
+
+        // --- APPLY Nightmare specific halving rules to positive totals ---
+        let finalizedNightmareMod = finalAppliedMod;
+        if (difficulty === 'nightmare' && finalAppliedMod > 0) {
+            // Nightmare halves any remaining positive bonus (rounding down).
+            finalizedNightmareMod = Math.floor(finalAppliedMod / 2);
+        }
+
+        // Apply finalized combined mod to the total
+        const total = d20 + finalizedNightmareMod;
+
+        // --- Store Data ---
         this.rollData = {
             d20: d20,
-            mod: modifier,
+            mod: finalizedNightmareMod, // This is the FINAL combined value count up on the dice
             total: total,
             dc: decision.threshold || 0,
             isSuccess: total >= (decision.threshold || 0),

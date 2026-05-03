@@ -1,3 +1,5 @@
+// shared/data/constants.js
+
 // ===============================================
 // TILE REGISTRY
 // ===============================================
@@ -31,44 +33,40 @@ const buildTileConfig = () => {
 
 const processedTiles = buildTileConfig();
 
-
 // ===============================================
 // GLOBAL CONFIGURATION
 // ===============================================
 export const CONFIG = {
     // --- Visuals & Display ---
     TILE_SIZE: 32,
-    OBJECT_SIZE: 32,         
-    TILE_PADDING: 1,        
-    GAME_SCALE: 1,          
-    CANVAS_WIDTH: 1920,   // <-- CHANGED FROM 800
-    CANVAS_HEIGHT: 1080,  // <-- CHANGED FROM 450
-    WALL_HEIGHT: 2,    
+    OBJECT_SIZE: 32,
+    TILE_PADDING: 1,
+    GAME_SCALE: 1,
+    CANVAS_WIDTH: 1920,   
+    CANVAS_HEIGHT: 1080,  
+    WALL_HEIGHT: 2,
 
     // --- Movement & Physics ---
-    WALK_DURATION: 0.4,     
-    
+    WALK_DURATION: 0.4,
+
     // --- Animation ---
-    ANIMATION_FRAMES: 4,    
-    FRAME_TIME: 0.15,       
-    
-    SHEET_WIDTH: 512, 
+    ANIMATION_FRAMES: 4,
+    FRAME_TIME: 0.15,
+    SHEET_WIDTH: 512,
     SHEET_HEIGHT: 2048,
 
     // --- Water Animation ---
     WATER_ANIMATION: {
         SPEED: 0.8,           // Seconds per frame
-        FRAMES: [0, 1, 2, 3, 4, 5, 6, 7]  // The first 4 tiles on the Water Row (Row 41)
+        FRAMES: [0, 1, 2, 3, 4, 5, 6, 7]  // Water Row (Row 41)
     },
 
     // --- Asset Keys & Mechanics (Auto-populated from TILE_REGISTRY) ---
     TILE_TYPES: processedTiles.types,
     TILE_DEPTH: processedTiles.depth,
-    // FIX: Updated to use processedTiles.defaultOffsets
-    BLOB_OFFSETS: processedTiles.defaultOffsets, 
+    BLOB_OFFSETS: processedTiles.defaultOffsets,
     BLOB_TILES: processedTiles.blobs,
 };
-
 
 // ===============================================
 // MASKS & LOGIC CONSTANTS
@@ -78,37 +76,29 @@ export const BITMASK = {
     BOTTOM: 16, BOTTOM_LEFT: 32, LEFT: 64, TOP_LEFT: 128
 };
 
-
 // ===============================================
 // COMBAT & STATS CONSTANTS
 // ===============================================
-
 // 1. The Source of Truth for Logic (StatCalculator uses this)
-export const DAMAGE_TYPES = [ 
-    "blunt", "slash", "pierce", 
-    "fire", "ice", "lightning", "water", "earth", "wind", 
-    "light", "dark", "arcane" 
+export const DAMAGE_TYPES = [
+    "blunt", "slash", "pierce",
+    "fire", "ice", "lightning",
+    "water", "earth", "wind",
+    "light", "dark", "arcane"
 ];
 
 // 2. The Source of Truth for UI (Renderers use this)
 export const DAMAGE_TYPE_LABELS = {
-    blunt: "BNT",
-    slash: "SLS",
-    pierce: "PRC",
-    fire: "FIR",
-    ice: "ICE",
-    lightning: "LIG",
-    water: "WAT",
-    earth: "ERT",
-    wind: "WND",
-    light: "LGT", 
-    dark: "DRK",
-    arcane: "ARC",
+    blunt: "BNT", slash: "SLS", pierce: "PRC",
+    fire: "FIR", ice: "ICE", lightning: "LIG",
+    water: "WAT", earth: "ERT", wind: "WND",
+    light: "LGT", dark: "DRK", arcane: "ARC",
 };
 
 // ===============================================
 // DIFFICULTY MODIFIERS (NEW)
 // ===============================================
+// Standard keys used by GameState, CharacterCreator, Spawner, and Dice Roller.
 export const DIFFICULTY_LEVELS = {
     EASY: 'easy',
     NORMAL: 'normal',
@@ -116,6 +106,7 @@ export const DIFFICULTY_LEVELS = {
     NIGHTMARE: 'nightmare'
 };
 
+// Maps global settings to specific mathematical penalties/bonuses.
 export const DIFFICULTY_MODIFIERS = {
     [DIFFICULTY_LEVELS.EASY]: { rollBonus: 2, enemyLevelOffset: -1 },
     [DIFFICULTY_LEVELS.NORMAL]: { rollBonus: 0, enemyLevelOffset: 0 },
