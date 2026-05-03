@@ -1,6 +1,7 @@
 export const gameState = {
     seed: null, 
     mode: "overworld", 
+    difficulty: "normal", // <-- NEW: Global difficulty tracker
     
     // Player Position in the World
     player: {

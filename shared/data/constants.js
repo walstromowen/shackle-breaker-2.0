@@ -105,3 +105,20 @@ export const DAMAGE_TYPE_LABELS = {
     dark: "DRK",
     arcane: "ARC",
 };
+
+// ===============================================
+// DIFFICULTY MODIFIERS (NEW)
+// ===============================================
+export const DIFFICULTY_LEVELS = {
+    EASY: 'easy',
+    NORMAL: 'normal',
+    HARD: 'hard',
+    NIGHTMARE: 'nightmare'
+};
+
+export const DIFFICULTY_MODIFIERS = {
+    [DIFFICULTY_LEVELS.EASY]: { rollBonus: 2, enemyLevelOffset: -1 },
+    [DIFFICULTY_LEVELS.NORMAL]: { rollBonus: 0, enemyLevelOffset: 0 },
+    [DIFFICULTY_LEVELS.HARD]: { rollBonus: -2, enemyLevelOffset: 2 },
+    [DIFFICULTY_LEVELS.NIGHTMARE]: { rollBonus: -5, enemyLevelOffset: 5 }
+};

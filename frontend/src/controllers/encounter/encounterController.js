@@ -39,20 +39,27 @@ export class EncounterController extends BaseController {
         // Dice Timers and Data
         this.rollTimer = 0;
         this.rollTickTimer = 0;
-        this.rollData = {
-            displayVal: "?", d20: 0, mod: 0, total: 0, dc: 0, isSuccess: false, duration: 3.5
-        };
+        this.rollData = { displayVal: "?", d20: 0, mod: 0, total: 0, dc: 0, isSuccess: false, duration: 3.5 };
 
         // GameLoop-Synced Animation Tracking
         this.lastText = "";
         this.textTimer = 0;
         this.skipMessageAnimation = false;
 
+        // --- [TRANSITION ADDITION] Image Transition State ---
+        this.imageTransition = {
+            active: false,
+            timer: 0,
+            duration: 2.0, // Seconds for the fade/burn effect. Can move to config.
+            previousInfo: null // Stores { sheet, col, row } of outgoing image
+        };
+
         this.updateBGM();
     }
 
     start(encounterId, context = {}) {
         this.model = EncounterFactory.create(encounterId, context);
+
         if (!this.model) {
             console.error(`[Encounter] Failed to create model for ID '${encounterId}'.`);
             events.emit('CHANGE_SCENE', { scene: 'overworld' });
@@ -69,11 +76,13 @@ export class EncounterController extends BaseController {
         this.textTimer = 0;
         this.skipMessageAnimation = false;
 
+        // --- [TRANSITION ADDITION] Reset transition on start ---
+        this.imageTransition.active = false;
+        this.imageTransition.previousInfo = null;
+        this.imageTransition.timer = 0;
+
         console.log(`[Encounter] Started: ${this.model.id}`);
         this.updateBGM();
-
-        
-        
     }
 
     update(dt) {
@@ -84,13 +93,23 @@ export class EncounterController extends BaseController {
 
         this.textTimer += dt;
 
+        // --- [TRANSITION ADDITION] Update transition timer ---
+        if (this.imageTransition.active) {
+            this.imageTransition.timer += dt;
+            if (this.imageTransition.timer >= this.imageTransition.duration) {
+                this.imageTransition.active = false;
+                this.imageTransition.previousInfo = null;
+                // Keep timer at max for getState calculation stability until next change
+                this.imageTransition.timer = this.imageTransition.duration; 
+            }
+        }
+
         if (this.actionPhase === 'message') {
             const charsPerSecond = 45;
             const totalTypingTime = this.actionMessage.length * (1 / charsPerSecond);
 
             if (this.skipMessageAnimation || this.textTimer >= (totalTypingTime + 2.0)) {
                 this.skipMessageAnimation = false;
-
                 if (this.pendingDecision && this.pendingDecision.type === 'skill_check') {
                     this.setupRollData(this.pendingDecision);
                     this.actionPhase = 'wait_for_roll';
@@ -98,8 +117,7 @@ export class EncounterController extends BaseController {
                     this.resolveAction();
                 }
             }
-        }
-        else if (this.actionPhase === 'rolling') {
+        } else if (this.actionPhase === 'rolling') {
             this.rollTimer -= dt;
             this.rollTickTimer -= dt;
 
@@ -110,27 +128,25 @@ export class EncounterController extends BaseController {
                 this.skipMessageAnimation = false;
                 // Specific game mechanic sounds remain specific, not general UI standard sounds
                 events.emit('PLAY_SFX', { id: 'dice_land', volume: 0.7 });
-            }
-            else if (this.rollTickTimer <= 0) {
+            } else if (this.rollTickTimer <= 0) {
                 this.rollData.displayVal = Math.floor(Math.random() * 20) + 1;
                 const progress = 1.0 - (this.rollTimer / this.rollData.duration);
                 this.rollTickTimer = 0.015 + (Math.pow(progress, 6) * 1.2);
                 events.emit('PLAY_SFX', { id: 'diceTick', volume: 0.3, pitch: 0.9 + (Math.random() * 0.2) });
             }
-        }
-        else if (this.actionPhase === 'hold_base') {
+        } else if (this.actionPhase === 'hold_base') {
             this.rollTimer -= dt;
             if (this.rollTimer <= 0 || this.skipMessageAnimation) {
                 this.actionPhase = 'apply_mod';
                 this.rollTimer = 2.0;
                 this.skipMessageAnimation = false;
             }
-        }
-        else if (this.actionPhase === 'apply_mod') {
+        } else if (this.actionPhase === 'apply_mod') {
             this.rollTimer -= dt;
             const duration = 2.0;
             let progress = 1.0 - (this.rollTimer / duration);
             progress = Math.min(Math.max(progress, 0), 1);
+
             const currentMod = Math.round(this.rollData.mod * progress);
             this.rollData.displayVal = this.rollData.d20 + currentMod;
 
@@ -140,8 +156,7 @@ export class EncounterController extends BaseController {
                 this.rollTimer = 2.0;
                 this.skipMessageAnimation = false;
             }
-        }
-        else if (this.actionPhase === 'result') {
+        } else if (this.actionPhase === 'result') {
             this.rollTimer -= dt;
             if (this.rollTimer <= 0 || this.skipMessageAnimation) {
                 this.resolveAction();
@@ -149,9 +164,29 @@ export class EncounterController extends BaseController {
         }
     }
 
+    // --- [TRANSITION ADDITION] Helper to set up transition state ---
+    /**
+     * Call this BEFORE updating the model to advance stage or change encounter.
+     * It captures the current image as the background for the transition.
+     */
+    _triggerImageTransition() {
+        if (!this.model) return;
+        
+        // Capture outgoing image info
+        const outgoingInfo = this.model.getImage ? this.model.getImage() : null;
+        
+        // Only trigger if there actually was an image (avoid visual glitch on first load if black)
+        if (outgoingInfo) {
+            this.imageTransition.active = true;
+            this.imageTransition.timer = 0;
+            this.imageTransition.previousInfo = outgoingInfo;
+        }
+    }
+
     // ========================================================
     // STANDARDIZED UI CALLBACKS
     // ========================================================
+
     handleMouseMove(x, y, isMouseDown, renderer) {
         // Track previous position to detect actual physical mouse movement
         const prevX = this.mouse?.x;
@@ -159,7 +194,7 @@ export class EncounterController extends BaseController {
 
         super.handleMouseMove(x, y, isMouseDown, renderer);
 
-        // Check if the mouse actually changed coordinates.
+        // Check if the mouse actually changed coordinates. 
         // This prevents a stationary mouse from fighting keyboard navigation.
         const hasMoved = (prevX !== x || prevY !== y);
 
@@ -238,6 +273,7 @@ export class EncounterController extends BaseController {
     // ========================================================
     // RAW INPUT FALLBACK (KEYBOARD)
     // ========================================================
+
     handleKeyDown(keyCode, e) {
         if (!this.model) return;
 
@@ -285,14 +321,12 @@ export class EncounterController extends BaseController {
             if (this.selectedIndex !== prevIndex) {
                 this.playNavSound();
             }
-        }
-        else if (intent === 'DOWN') {
+        } else if (intent === 'DOWN') {
             this.selectedIndex = (this.selectedIndex + 1) % options.length;
             if (this.selectedIndex !== prevIndex) {
                 this.playNavSound();
             }
-        }
-        else if (intent === 'CONFIRM') {
+        } else if (intent === 'CONFIRM') {
             this.playConfirmSound(); // generic UI interaction sound before core logic trigger
             this.executeSelectedDecision();
         }
@@ -301,6 +335,7 @@ export class EncounterController extends BaseController {
     // ========================================================
     // CORE ENCOUNTER LOGIC
     // ========================================================
+
     executeSelectedDecision() {
         const options = this.model.getAvailableDecisions();
         if (!options || options.length === 0) return;
@@ -354,7 +389,6 @@ export class EncounterController extends BaseController {
             const cleanText = decision.text.replace(/\[.*?\]/g, '').trim().toLowerCase();
             this.actionMessage = `${actorName} decides to ${cleanText.replace(/{name}/g, actorName)}...`;
         }
-
         this.lastText = this.actionMessage;
     }
 
@@ -363,14 +397,18 @@ export class EncounterController extends BaseController {
         const attributes = roller?.attributes || {};
         const statValue = attributes[decision.attribute] || 0;
         const modifier = statValue > 10 ? Math.floor((statValue - 10) / 3) : 0;
+
         const d20 = Math.floor(Math.random() * 20) + 1;
         const total = d20 + modifier;
 
         this.rollData = {
-            d20: d20, mod: modifier, total: total,
+            d20: d20,
+            mod: modifier,
+            total: total,
             dc: decision.threshold || 0,
             isSuccess: total >= (decision.threshold || 0),
-            displayVal: "?", duration: 3.5
+            displayVal: "?",
+            duration: 3.5
         };
     }
 
@@ -378,6 +416,7 @@ export class EncounterController extends BaseController {
         this.actionPhase = 'none';
         const decision = this.pendingDecision;
         this.pendingDecision = null;
+
         if (!decision) return;
 
         if (decision.type === 'skill_check') {
@@ -390,8 +429,10 @@ export class EncounterController extends BaseController {
 
             this.model.updateContext({
                 roll_stat: decision.attribute?.toUpperCase() || "UNKNOWN",
-                roll_d20: this.rollData.d20, roll_mod: this.rollData.mod,
-                roll_total: this.rollData.total, roll_dc: this.rollData.dc,
+                roll_d20: this.rollData.d20,
+                roll_mod: this.rollData.mod,
+                roll_total: this.rollData.total,
+                roll_dc: this.rollData.dc,
                 roll_result: this.rollData.isSuccess ? "SUCCESS" : "FAILED"
             });
 
@@ -434,36 +475,47 @@ export class EncounterController extends BaseController {
 
             switch (type) {
                 case "ADVANCE_STAGE":
+                    // --- [TRANSITION ADDITION] Prepare transition before changing stage ---
+                    this._triggerImageTransition();
                     this.model.advanceToStage(payload.stageId);
                     this.selectedIndex = 0;
                     this.updateBGM();
                     break;
+
                 case "CHANGE_ENCOUNTER":
+                    // --- [TRANSITION ADDITION] Prepare transition before changing model ---
+                    this._triggerImageTransition();
                     this.model = EncounterFactory.create(payload.encounterId, this.model.context, payload.stageId);
                     this.selectedIndex = 0;
                     this.updateBGM();
                     break;
+
                 case "END_ENCOUNTER":
                     shouldEndEncounter = true;
                     endEncounterPayload = payload;
                     break;
+
                 case "DESTROY_OBJECT":
                     const ctx = this.model.context;
                     if (ctx && ctx.col !== undefined && ctx.row !== undefined) {
                         this.worldManager.modifyWorld(ctx.col, ctx.row, null);
                     }
                     break;
+
                 case "GIVE_ITEM":
                     InventorySystem.addItem(payload.itemId, payload.qty || 1);
                     const readableName = payload.itemId.replace(/_/g, ' ');
                     messages.push(`Obtained ${readableName} x${payload.qty || 1}`);
                     break;
+
                 case "REMOVE_ITEM":
                     InventorySystem.removeItem(payload.itemId, payload.qty || 1);
                     break;
+
                 case "AWARD_XP":
                     const xpAmount = payload.amount || 0;
                     const xpTarget = payload.target || "active_character";
+
                     if (xpAmount <= 0) break;
 
                     if (xpTarget === "entire_party") {
@@ -483,6 +535,7 @@ export class EncounterController extends BaseController {
                         }
                     }
                     break;
+
                 case "MODIFY_CURRENCY":
                     const currencyAmount = payload.amount || 0;
                     if (typeof gameState.party.currency === 'undefined') {
@@ -494,18 +547,22 @@ export class EncounterController extends BaseController {
                     if (currencyAmount > 0) messages.push(`Found ${currencyAmount} currency!`);
                     else if (currencyAmount < 0) messages.push(`Lost ${Math.abs(currencyAmount)} currency.`);
                     break;
+
                 case "MODIFY_VITALS":
                     const activeCharacter = gameState.party?.members?.[0];
                     if (activeCharacter) {
                         PartyManager.modifyVitals(
                             activeCharacter,
-                            payload.hp || 0, payload.stamina || 0, payload.insight || 0,
+                            payload.hp || 0,
+                            payload.stamina || 0,
+                            payload.insight || 0,
                             payload.damageType || 'true',
                             payload.isPercentage || false,
                             payload.bypassDefense || false
                         );
                     }
                     break;
+
                 case "START_BATTLE":
                     const dynamicLevel = PartyManager.getHighestLevel();
                     const rawEnemies = payload.enemies || [];
@@ -535,11 +592,18 @@ export class EncounterController extends BaseController {
                         battleBgAsset = biome ? biome.getBattleBackground(currentHour) : 'default';
                     }
 
-                    events.emit('START_BATTLE', { enemies: enemyParty, background: battleBgAsset, weather: gameState.world?.currentWeather || 'clear', context: this.model.context });
+                    events.emit('START_BATTLE', {
+                        enemies: enemyParty,
+                        background: battleBgAsset,
+                        weather: gameState.world?.currentWeather || 'clear',
+                        context: this.model.context
+                    });
                     break;
+
                 case "TAKE_DAMAGE":
                     events.emit("TAKE_DAMAGE", payload);
                     break;
+
                 case "APPLY_STATUS_EFFECT":
                     const effectId = payload.effectId;
                     const customCharges = payload.charges || null;
@@ -561,6 +625,7 @@ export class EncounterController extends BaseController {
                         }
                     }
                     break;
+
                 case "RECRUIT_CHARACTER":
                     const newCharacter = PartyManager.addMember(payload.entityId, payload.overrides);
                     if (newCharacter) {
@@ -571,6 +636,7 @@ export class EncounterController extends BaseController {
                         console.log(`[Encounter] Could not recruit ${payload.entityId}, party full.`);
                     }
                     break;
+
                 default:
                     events.emit(type, payload);
                     break;
@@ -580,14 +646,23 @@ export class EncounterController extends BaseController {
         if (messages.length > 0 && shouldEndEncounter) {
             const rewardText = messages.join('\n\n');
             this.model.stages = this.model.stages || {};
+            
             // Updated reward stage definition to use the new image object structure
             this.model.stages["encounter_rewards_stage"] = {
                 image: this.model.getImage ? this.model.getImage() : { sheet: 'bg_default_black', col: 0, row: 0 },
                 text: rewardText,
                 decisions: [
-                    { text: "Continue.", outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: endEncounterPayload }] }] }
+                    {
+                        text: "Continue.",
+                        outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: endEncounterPayload }] }]
+                    }
                 ]
             };
+
+            // --- [TRANSITION ADDITION] Prepare transition before showing rewards stage ---
+            // Note: Since image usually doesn't change for rewards, this might be skipped in _triggerImageTransition based on logic, 
+            // but we call it here for consistency.
+            this._triggerImageTransition();
             this.model.advanceToStage("encounter_rewards_stage");
             this.selectedIndex = 0;
             return;
@@ -619,12 +694,28 @@ export class EncounterController extends BaseController {
     // ========================================================
     // STATE ACCESS FOR RENDERER
     // ========================================================
+
     getState() {
         const basePayload = {
             // UPDATED: imageInfo now holds the object { sheet, col, row }
-            imageInfo: null,
-            title: "", text: "", decisions: [],
-            ui: { selectedDecisionIndex: this.selectedIndex },
+            // This is the TARGET image.
+            imageInfo: null, 
+            
+            // --- [TRANSITION ADDITION] Data for renderer effects ---
+            transition: {
+                active: this.imageTransition.active,
+                // Normalized progress 0.0 -> 1.0
+                progress: Math.min(1.0, this.imageTransition.timer / this.imageTransition.duration),
+                // The outgoing image definition
+                previousImageInfo: this.imageTransition.previousInfo
+            },
+
+            title: "",
+            text: "",
+            decisions: [],
+            ui: {
+                selectedDecisionIndex: this.selectedIndex
+            },
             party: gameState.party?.members?.length > 0 ? [gameState.party.members[0]] : [],
             currency: gameState.party?.currency || 0,
             skipMessageAnimation: this.skipMessageAnimation,
@@ -634,7 +725,9 @@ export class EncounterController extends BaseController {
             rollData: this.rollData,
             mouse: this.mouse,
             hoveredElement: this.hoveredHitboxId ? { id: this.hoveredHitboxId } : null,
-            scrollOffsets: { decisions: this.scrollManager.getOffset('decision_list') },
+            scrollOffsets: {
+                decisions: this.scrollManager.getOffset('decision_list')
+            },
             onLayoutUpdate: (hitboxes, scrollBounds) => {
                 this.updateHitboxes(hitboxes);
                 if (scrollBounds && scrollBounds.decisions) {
@@ -647,11 +740,12 @@ export class EncounterController extends BaseController {
 
         let displayText = this.model.getCurrentText() || "";
         let displayDecisions = this.model.getAvailableDecisions() || [];
-        const actorName = gameState.party?.members?.[0]?.name || "The party";
 
+        const actorName = gameState.party?.members?.[0]?.name || "The party";
         displayText = displayText.replace(/{name}/g, actorName);
         displayDecisions = displayDecisions.map(decision => ({
-            ...decision, text: decision.text.replace(/{name}/g, actorName)
+            ...decision,
+            text: decision.text.replace(/{name}/g, actorName)
         }));
 
         if (this.actionPhase !== 'none') {
@@ -668,7 +762,7 @@ export class EncounterController extends BaseController {
         return {
             ...basePayload,
             title: this.model.title || "Unknown Encounter",
-            // UPDATED: Use getImage() to get the definition object
+            // UPDATED: Use getImage() to get the definition object. This is the intended destination image.
             imageInfo: this.model.getImage ? this.model.getImage() : null,
             text: displayText,
             decisions: displayDecisions,

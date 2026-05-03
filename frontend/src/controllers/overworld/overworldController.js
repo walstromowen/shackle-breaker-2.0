@@ -4,6 +4,7 @@ import { EntityFactory } from '../../../../shared/systems/factories/entityFactor
 import { WeatherFactory } from '../../../../shared/systems/factories/weatherFactory.js';
 import { PartyManager } from '../../../../shared/systems/partyManager.js';
 import { BaseController } from '../core/baseController.js';
+import { DIFFICULTY_MODIFIERS } from '../../../../shared/data/constants.js';
 
 export class OverworldController extends BaseController {
     constructor(input, config, worldManager) {
@@ -186,9 +187,10 @@ export class OverworldController extends BaseController {
         const col = Math.floor(this.player.x / this.config.TILE_SIZE);
         const row = Math.floor(this.player.y / this.config.TILE_SIZE);
         const biome = this.worldManager.getBiomeAt(col, row);
-        const currentHour = gameState.world.time / 60;
 
+        const currentHour = gameState.world.time / 60;
         const encounterData = biome.getEncounter(currentHour);
+
         if (encounterData) {
             console.log(`[Overworld] Encounter triggered in ${biome.id} at hour ${Math.floor(currentHour)}: ${encounterData.id}!`);
             this.isLocked = true;
@@ -199,32 +201,45 @@ export class OverworldController extends BaseController {
             return;
         }
 
-        const battleData = biome.getBattle();
+        // --- UPDATED: Fetch difficulty and pass to getBattle ---
+        const difficulty = gameState.difficulty || 'normal';
+        const battleData = biome.getBattle(difficulty);
+
         if (!battleData) return;
 
-        console.log(`[Overworld] Ambush triggered in biome: ${biome.id}!`);
+        console.log(`[Overworld] Ambush triggered in biome: ${biome.id} on ${difficulty} difficulty!`);
         this.isLocked = true;
         this.player.isMoving = false;
         this.player.moveProgress = 0;
         this.player.animFrame = 0;
 
         const battleBgAsset = biome.getBattleBackground(currentHour);
-        const dynamicLevel = PartyManager.getHighestLevel();
+        
+        // --- UPDATED: Calculate base level + global difficulty offset ---
+        const globalOffset = DIFFICULTY_MODIFIERS[difficulty]?.enemyLevelOffset || 0;
+        const baseLevel = PartyManager.getHighestLevel() + globalOffset;
 
         const enemyParty = [];
+
         for (const enemyData of battleData.enemies) {
             const enemyId = typeof enemyData === 'string' ? enemyData : enemyData.id;
-            let overrides = { level: dynamicLevel };
+            
+            // Dynamic level calculation floor is 1 so enemies are never level 0 or negative
+            let finalLevel = Math.max(1, baseLevel);
+            let overrides = { level: finalLevel };
 
             if (typeof enemyData === 'object') {
-                const levelOffset = enemyData.levelOffset || 0;
-                overrides = { ...enemyData, level: Math.max(1, dynamicLevel + levelOffset) };
+                const specificOffset = enemyData.levelOffset || 0;
+                finalLevel = Math.max(1, baseLevel + specificOffset);
+                overrides = { ...enemyData, level: finalLevel };
             }
 
             const enemyEntity = EntityFactory.create(enemyId, overrides);
+
             if (typeof enemyData === 'string' || !enemyData.name) {
                 enemyEntity.name = `${enemyEntity.name || enemyId} ${enemyParty.length + 1}`;
             }
+
             enemyParty.push(enemyEntity);
         }
 
@@ -233,6 +248,7 @@ export class OverworldController extends BaseController {
             background: battleBgAsset,
             weather: gameState.world.currentWeather
         };
+
         events.emit('START_BATTLE', battlePayload);
     }
 

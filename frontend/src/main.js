@@ -102,6 +102,8 @@ const ASSET_MANIFEST = {
     hoverTick: './assets/audio/sfx/ui/hover_tick.wav',
     cinematicBoom: './assets/audio/sfx/ui/cinematic_boom.mp3',
     cinematicBoomCancel: './assets/audio/sfx/ui/cinematic_boom_cancel.wav',
+    ambushColdBreath: './assets/audio/sfx/ui/ambush_cold_breath.wav',
+    battleStart: './assets/audio/sfx/ui/battle_start.wav',
 };
 
 let sceneManager;

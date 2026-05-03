@@ -69,10 +69,10 @@ export const CREATION_DATA = {
         { label: "Hunting Hawk", speciesId: "AVIAN", desc: "Fast and watchful.", attributes: { dexterity: 16, speed: 10 }, equipment: { accessory: "tattered_shirt" } }
     ],
     DIFFICULTIES: [
-        { id: "EASY", label: "Easy", desc: "Easier challenge." },
-        { id: "NORMAL", label: "Normal", desc: "Balanced challenge." },
-        { id: "HARD", label: "Hard", desc: "Difficult challenge" },
-        { id: "NIGHTMARE", label: "Nightmare", desc: "Hope is an illusion..." }
+        { id: "easy", label: "Easy", desc: "Easier challenge." },
+        { id: "normal", label: "Normal", desc: "Balanced challenge." },
+        { id: "hard", label: "Hard", desc: "Difficult challenge" },
+        { id: "nightmare", label: "Nightmare", desc: "Hope is an illusion..." }
     ]
 };
 
@@ -210,8 +210,8 @@ export class CharacterCreatorLogic {
 
     finalizeCharacter() {
         if (!this.state.name || this.state.name.trim() === "") {
-            this.currentRow = 0; 
-            this.isEditingName = true; 
+            this.currentRow = 0;
+            this.isEditingName = true;
             return;
         }
 
@@ -233,9 +233,8 @@ export class CharacterCreatorLogic {
                     name: `${comp.label} ${i}`,
                     attributes: { ...comp.attributes },
                     equipment: comp.equipment,
-                    xp: 0 
+                    xp: 0
                 });
-                
                 if (companionInstance) {
                     companionInstance.hp = companionInstance.maxHp;
                     companionInstance.stamina = companionInstance.maxStamina;
@@ -244,8 +243,9 @@ export class CharacterCreatorLogic {
         }
 
         gameState.party.currency = 100;
-        if (!gameState.settings) gameState.settings = {};
-        gameState.settings.difficulty = CREATION_DATA.DIFFICULTIES[this.state.difficultyIdx].id; 
+
+        // --- UPDATED: Save difficulty directly to the root of gameState ---
+        gameState.difficulty = CREATION_DATA.DIFFICULTIES[this.state.difficultyIdx].id;
 
         events.emit('CHANGE_SCENE', { scene: 'overworld' });
     }

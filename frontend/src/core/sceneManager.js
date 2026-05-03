@@ -155,15 +155,23 @@ export class SceneManager {
         });
 
         events.on('START_ENCOUNTER', (data) => {
-            events.emit('PLAY_SFX', { id: 'cinematicBoom', volume: 1.0 });
+           events.emit('PLAY_SFX', { id: 'cinematicBoom', volume: 1.0 });
             this.transitionRenderer.start(() => {
                 this.encounterController.start(data.encounterId, data.context || {});
                 this.changeScene('encounter');
-            }, 'fade');
+            }, 'ethereal');
         });
 
         events.on('START_BATTLE', (data) => {
-            //events.emit('PLAY_SFX', { id: 'battle_glass_shatter', volume: 0.9 });
+            events.emit('PLAY_SFX', { id: 'battleStart', volume: 0.9 });
+            
+            // Check if the battle is triggering directly from the overworld scene
+            const isFromOverworld = this.currentScene === 'overworld';
+            
+          
+            const transitionType = isFromOverworld ? 'blade' : 'ethereal';
+            const transitionSpeed = isFromOverworld ? 1.5 : 2.5;
+
             this.transitionRenderer.start(() => {
                 console.log("[SceneManager] Handing off entities to BattleController:", data.enemies);
                 const context = data.context || {};
@@ -171,7 +179,7 @@ export class SceneManager {
                 context.weather = data.weather;
                 this.battleController.start(data.enemies, context);
                 this.changeScene('battle');
-            }, 'flash', { speed: 4.0, color: '#ffffff' });
+            }, transitionType, { speed: transitionSpeed, color: '#0a0a12' });
         });
 
         events.on('BATTLE_ENDED', (data) => {

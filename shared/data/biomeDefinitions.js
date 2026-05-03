@@ -6,14 +6,19 @@ export const BIOME_DEFINITIONS = {
         sheetId: 'plains',
         objectSheetId: 'plainsMapObjects',
         allowedWeather: ['rain', 'fog'],
-        // --- NEW: Music keys matching your audio loader ---
-        music: { 
-            day: 'plainsBgmDay', 
-            night: 'plainsBgmNight', 
-            battle: 'plainsBattleBgm' 
+        music: {
+            day: 'plainsBgmDay',
+            night: 'plainsBgmNight',
+            battle: 'plainsBattleBgm'
         },
-        battleBackgrounds: { day: 'plainsBattleDayBg', dusk: 'plainsBattleDuskBg', night: 'plainsBattleNightBg' },
-        shapeElevation: (noise) => noise, 
+        battleBackgrounds: {
+            day: 'plainsBattleDayBg',
+            dusk: 'plainsBattleDuskBg',
+            night: 'plainsBattleNightBg'
+        },
+        shapeElevation: (noise) => noise,
+        
+        // RESTORED MAP OBJECTS
         mapObjects: {
             [CONFIG.TILE_TYPES.LAYER_2]: [
                 { chance: 0.001, id: 'WOODEN_CHEST' },
@@ -33,24 +38,45 @@ export const BIOME_DEFINITIONS = {
                 { chance: 0.30, rangeStart: 0.15, pool: ['GRASS_COVERAGE_1', 'GRASS_COVERAGE_2'] }
             ]
         },
+        
         encounters: {
             rate: 0.01,
             pools: [
-                { chance: 0.30, id: 'wounded_mutt' }, 
+                { chance: 0.30, id: 'wounded_mutt' },
             ]
         },
         battles: {
             rate: 0.01,
-            pools: [
-                { chance: 0.20, enemies: ['LEGIONARY', 'MAD_MAGE', 'LEGIONARY'] },
-                { chance: 0.40, enemies: ['SHACKLED_STEED'] },
-                { chance: 0.20, enemies: ['WOLF', 'WOLF'] },
-                { chance: 0.20, enemies: [
-                    { id: 'LEGIONARY', levelOffset: 5, traits: ['iron_willed'], equipment: { mainHand: 'warhammer' } },
-                    { id: 'LEGIONARY' },
-                    { id: 'LEGIONARY' }
-                ]}
-            ]
+            pools: {
+                easy: [
+                    { chance: 0.50, enemies: ['WOLF'] },
+                    { chance: 0.50, enemies: ['SHACKLED_STEED'] }
+                ],
+                normal: [
+                    { chance: 0.20, enemies: ['LEGIONARY', 'MAD_MAGE', 'LEGIONARY'] },
+                    { chance: 0.40, enemies: ['SHACKLED_STEED'] },
+                    { chance: 0.20, enemies: ['WOLF', 'WOLF'] },
+                    { chance: 0.20, enemies: [
+                        { id: 'LEGIONARY', levelOffset: 5, traits: ['iron_willed'], equipment: { mainHand: 'warhammer' } },
+                        { id: 'LEGIONARY' },
+                        { id: 'LEGIONARY' }
+                    ]}
+                ],
+                hard: [
+                    { chance: 0.30, enemies: ['LEGIONARY', 'MAD_MAGE', 'LEGIONARY', 'WOLF'] },
+                    { chance: 0.30, enemies: ['SHACKLED_STEED', 'WOLF'] },
+                    { chance: 0.40, enemies: [
+                        { id: 'LEGIONARY', levelOffset: 5, traits: ['iron_willed'], equipment: { mainHand: 'warhammer' } },
+                        { id: 'LEGIONARY' },
+                        { id: 'LEGIONARY' },
+                        { id: 'MAD_MAGE' }
+                    ]}
+                ],
+                nightmare: [
+                    { chance: 0.50, enemies: ['LEGIONARY', 'MAD_MAGE', 'MAD_MAGE', 'LEGIONARY', 'LEGIONARY'] },
+                    { chance: 0.50, enemies: ['SHACKLED_STEED', 'SHACKLED_STEED'] }
+                ]
+            }
         }
     },
 
@@ -59,22 +85,27 @@ export const BIOME_DEFINITIONS = {
         sheetId: 'desert',
         allowedWeather: ['sandstorm'],
         objectSheetId: 'desertMapObjects',
-        // --- NEW: Music keys matching your audio loader ---
-        music: { 
-            day: 'desertBgmDay', 
-            night: 'desertBgmNight', 
-            battle: 'desertBattleBgm' 
+        music: {
+            day: 'desertBgmDay',
+            night: 'desertBgmNight',
+            battle: 'desertBattleBgm'
         },
-        battleBackgrounds: { day: 'desertBattleDayBg', dusk: 'desertBattleDuskBg', night: 'desertBattleNightBg' },
+        battleBackgrounds: {
+            day: 'desertBattleDayBg',
+            dusk: 'desertBattleDuskBg',
+            night: 'desertBattleNightBg'
+        },
         shapeElevation: (noise) => {
             if (noise < -0.20) {
-                return noise; 
+                return noise;
             } else if (noise < 0.50) {
                 return 0.05 + (noise * 0.1);
             } else {
-                return Math.min(0.65, 0.25 + ((noise - 0.50) * 10.0)); 
+                return Math.min(0.65, 0.25 + ((noise - 0.50) * 10.0));
             }
         },
+        
+        // RESTORED MAP OBJECTS
         mapObjects: {
             [CONFIG.TILE_TYPES.LAYER_2]: [
                 { chance: 0.002, id: 'WOODEN_CHEST' },
@@ -85,9 +116,8 @@ export const BIOME_DEFINITIONS = {
                 { chance: 0.05, id: 'SMALL_ROCKS_1' },
                 { chance: 0.50,  rangeStart: 0.30, pool: ['SAND_DUNE_1', 'SAND_DUNE_2', 'SAND_DUNE_3'] }
             ]
-
-
         },
+        
         encounters: {
             rate: 0.01,
             pools: [
@@ -96,11 +126,23 @@ export const BIOME_DEFINITIONS = {
         },
         battles: {
             rate: 0.01,
-            pools: [
-                { chance: 0.50, enemies: ['WOLF', 'WOLF'] },
-                { chance: 0.30, enemies: ['WOLF', 'WOLF', 'WOLF'] },
-                { chance: 0.20, enemies: ['LEGIONARY', 'LEGIONARY'] }
-            ]
+            pools: {
+                easy: [
+                    { chance: 1.00, enemies: ['WOLF'] }
+                ],
+                normal: [
+                    { chance: 0.50, enemies: ['WOLF', 'WOLF'] },
+                    { chance: 0.30, enemies: ['WOLF', 'WOLF', 'WOLF'] },
+                    { chance: 0.20, enemies: ['LEGIONARY', 'LEGIONARY'] }
+                ],
+                hard: [
+                    { chance: 0.50, enemies: ['WOLF', 'WOLF', 'WOLF', 'WOLF'] },
+                    { chance: 0.50, enemies: ['LEGIONARY', 'LEGIONARY', 'LEGIONARY'] }
+                ],
+                nightmare: [
+                    { chance: 1.00, enemies: ['LEGIONARY', 'LEGIONARY', 'MAD_MAGE', 'LEGIONARY', 'LEGIONARY'] }
+                ]
+            }
         }
     }
 };

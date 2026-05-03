@@ -8,8 +8,11 @@ Difficulty
 Starting seed
 procedural dungeons and hand crafted areas
 structures: 
-better transisitons
-sound for UI
+
+
+
+name changes in character summary
+more consistent sound for UI
 
 Bugs
 Rain flash
