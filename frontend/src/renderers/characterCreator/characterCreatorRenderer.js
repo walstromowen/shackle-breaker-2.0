@@ -14,7 +14,7 @@ export class CharacterCreatorRenderer {
 
         const ui = new CanvasUI(ctx);
         const { CANVAS_WIDTH, CANVAS_HEIGHT } = this.config;
-        const { selections, data, currentStep, isEditingName, previewStats, hoveredElement } = controllerState;
+        const { selections, data, currentStep, isEditingName, isEditingSeed, previewStats, hoveredElement } = controllerState;
 
         ui.clearScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
 
@@ -24,7 +24,6 @@ export class CharacterCreatorRenderer {
         const panelHeight = CANVAS_HEIGHT - (startY * 2);
         const colW = CANVAS_WIDTH * 0.3;
         const midW = CANVAS_WIDTH - (colW * 2) - (p * 4);
-
         const TITLE_OFFSET_Y = 60;
         const TITLE_Y = startY + TITLE_OFFSET_Y;
         const CONTENT_START_Y = TITLE_Y + 84;
@@ -40,63 +39,80 @@ export class CharacterCreatorRenderer {
         ui.drawText("IDENTITY", leftCenterX, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "center");
         ui.drawLineWithGothicFlourish(leftCenterX - 120, TITLE_Y + 29, 240, UITheme.colors.borderHighlight);
 
-        // B. Name Input
-        const nameInputW = colW - 96;
-        const nameInputX = p + 48;
-        const nameInputH = 77;
-        const inputId = "INPUT_NAME";
+        // B. Identity Inputs (Name & Seed)
+        const inputW = colW - 96;
+        const inputX = p + 48;
+        const inputH = 77;
+        const inputGap = 16;
 
-        // --- SFX UPDATED ---
-        this.hotspots.push({
-            id: inputId,
-            x: nameInputX,
-            y: curY,
-            w: nameInputW,
-            h: nameInputH,
-            hoverSfx: 'hoverTick',
-            clickSfx: 'cinematicBoom'
-        });
-
+        // --- NAME INPUT ---
+        this.hotspots.push({ id: "INPUT_NAME", x: inputX, y: curY, w: inputW, h: inputH, hoverSfx: 'hoverTick', clickSfx: 'cinematicBoom' });
         const isNameSelected = (currentStep === 'name');
         const nameBg = isEditingName ? "rgba(0, 0, 0, 0.8)" : "rgba(0, 0, 0, 0.4)";
-        ui.drawPanel(nameInputX, curY, nameInputW, nameInputH, nameBg);
-
+        
+        ui.drawPanel(inputX, curY, inputW, inputH, nameBg);
         if (isNameSelected || isEditingName) {
-            ui.drawSelectionBrackets(nameInputX, curY, nameInputW, nameInputH, 10);
+            ui.drawSelectionBrackets(inputX, curY, inputW, inputH, 10);
         }
 
-        let valStr = selections.name;
+        let nameStr = selections.name;
         let nameColor = UITheme.colors.textMain;
-
         if (isEditingName) {
-            if (Math.floor(Date.now() / 500) % 2 === 0) valStr += "|";
-        } else if (!valStr) {
-            valStr = "Enter Name...";
+            if (Math.floor(Date.now() / 500) % 2 === 0) nameStr += "|";
+        } else if (!nameStr) {
+            nameStr = "Enter Name...";
             nameColor = UITheme.colors.textMuted;
         }
 
         ctx.save();
         ctx.beginPath();
-        ctx.rect(nameInputX, curY, nameInputW, nameInputH);
+        ctx.rect(inputX, curY, inputW, inputH);
         ctx.clip();
-        ui.drawText(valStr, nameInputX + (nameInputW/2), curY + 50, UITheme.fonts.body, nameColor, "center");
+        ui.drawText(nameStr, inputX + (inputW/2), curY + 50, UITheme.fonts.body, nameColor, "center");
         ctx.restore();
 
-        const nameBottomY = curY + nameInputH;
+        curY += inputH + inputGap;
+
+        // --- SEED INPUT ---
+        this.hotspots.push({ id: "INPUT_SEED", x: inputX, y: curY, w: inputW, h: inputH, hoverSfx: 'hoverTick', clickSfx: 'cinematicBoom' });
+        const isSeedSelected = (currentStep === 'seed');
+        const seedBg = isEditingSeed ? "rgba(0, 0, 0, 0.8)" : "rgba(0, 0, 0, 0.4)";
+        
+        ui.drawPanel(inputX, curY, inputW, inputH, seedBg);
+        if (isSeedSelected || isEditingSeed) {
+            ui.drawSelectionBrackets(inputX, curY, inputW, inputH, 10);
+        }
+
+        let seedStr = selections.seed;
+        let seedColor = UITheme.colors.textMain;
+        if (isEditingSeed) {
+            if (Math.floor(Date.now() / 500) % 2 === 0) seedStr += "|";
+        } else if (!seedStr) {
+            seedStr = "Random World Seed...";
+            seedColor = UITheme.colors.textMuted;
+        }
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(inputX, curY, inputW, inputH);
+        ctx.clip();
+        ui.drawText(seedStr, inputX + (inputW/2), curY + 50, UITheme.fonts.body, seedColor, "center");
+        ctx.restore();
+
+        const identityBottomY = curY + inputH;
 
         // --- C. VISUALS ---
-        const VITALS_OFFSET = 432;
-        const VITALS_START_Y = nameBottomY + VITALS_OFFSET;
-        
-        // Corrected sizes to exact 2x multiples
-        const portraitSize = 256;          // Was 307. Exactly 2x of 128x128
-        const spriteDisplaySize = 64;      // Was 77. Exactly 2x of 32x32
+        // Adjusted vertical offset to make room for the new seed box
+        const VITALS_OFFSET = 338; 
+        const VITALS_START_Y = identityBottomY + VITALS_OFFSET;
+
+        const portraitSize = 256;
+        const spriteDisplaySize = 64;
         const visualGap = 48;
         const totalVisualWidth = portraitSize + visualGap + spriteDisplaySize;
         const startVisualX = p + (colW - totalVisualWidth) / 2;
-
-        const portraitY = nameBottomY + (VITALS_OFFSET / 2) - (portraitSize / 2);
-        const spriteY = nameBottomY + (VITALS_OFFSET / 2) - (spriteDisplaySize / 2);
+        const portraitY = identityBottomY + (VITALS_OFFSET / 2) - (portraitSize / 2);
+        const spriteY = identityBottomY + (VITALS_OFFSET / 2) - (spriteDisplaySize / 2);
 
         const appIdx = selections.appearanceIdx || 0;
         const appData = data.APPEARANCES ? data.APPEARANCES[appIdx] : null;
@@ -204,7 +220,6 @@ export class CharacterCreatorRenderer {
 
         const MENU_ITEM_HEIGHT = 84;
         const ROW_GAP = 5;
-
         const menuSteps = ['background', 'origin', 'appearance', 'keepsake', 'companion', 'trait', 'difficulty', 'start'];
 
         menuSteps.forEach((key) => {
@@ -212,38 +227,17 @@ export class CharacterCreatorRenderer {
             const rowId = `ROW_${key}`;
             const isHovered = (hoveredElement && hoveredElement.id === rowId);
 
-            // --- START BUTTON REFACTOR ---
             if (key === 'start') {
                 const btnId = "BTN_START";
                 const btnY = menuY + 36;
                 const isBtnHovered = (hoveredElement && hoveredElement.id === btnId);
 
-                // --- SFX UPDATED ---
-                this.hotspots.push({
-                    id: btnId,
-                    x: menuStartX + 96,
-                    y: btnY,
-                    w: midW - 192,
-                    h: MENU_ITEM_HEIGHT + 24,
-                    hoverSfx: 'hoverTick',
-                    clickSfx: 'cinematicBoom' // Big impact sound for starting
-                });
-
+                this.hotspots.push({ id: btnId, x: menuStartX + 96, y: btnY, w: midW - 192, h: MENU_ITEM_HEIGHT + 24, hoverSfx: 'hoverTick', clickSfx: 'cinematicBoom' });
                 ui.drawInteractiveRow(menuStartX + 96, btnY, midW - 192, MENU_ITEM_HEIGHT + 24, "START", UITheme.fonts.body, "center", isSelected, isBtnHovered);
                 return;
             }
 
-            // --- STANDARD ROWS REFACTOR ---
-            // --- SFX UPDATED ---
-            this.hotspots.push({
-                id: rowId,
-                x: menuStartX + 24,
-                y: menuY,
-                w: midW - 48,
-                h: MENU_ITEM_HEIGHT,
-                hoverSfx: 'hoverTick'
-            });
-
+            this.hotspots.push({ id: rowId, x: menuStartX + 24, y: menuY, w: midW - 48, h: MENU_ITEM_HEIGHT, hoverSfx: 'hoverTick' });
             ui.drawInteractiveRow(menuStartX + 24, menuY, midW - 48, MENU_ITEM_HEIGHT, "", UITheme.fonts.body, "center", isSelected, isHovered);
 
             const labelY = menuY + 24;
@@ -267,6 +261,7 @@ export class CharacterCreatorRenderer {
                 const valY = menuY + 62;
                 const prevId = `BTN_PREV_${key}`;
                 const nextId = `BTN_NEXT_${key}`;
+
                 const isPrevHover = hoveredElement && hoveredElement.id === prevId;
                 const isNextHover = hoveredElement && hoveredElement.id === nextId;
 
@@ -281,29 +276,8 @@ export class CharacterCreatorRenderer {
                 ui.drawArrow(leftArrowX, valY - 10, arrowSize, 'left', arrowColorPrev);
                 ui.drawArrow(rightArrowX, valY - 10, arrowSize, 'right', arrowColorNext);
 
-                // --- SFX UPDATED ---
-                this.hotspots.push({
-                    id: prevId,
-                    x: leftArrowX - 48,
-                    y: valY - 48,
-                    w: 96,
-                    h: 96,
-                    zIndex: 10,
-                    hoverSfx: 'hoverTick',
-                    clickSfx: 'hoverTick'
-                });
-                
-                // --- SFX UPDATED ---
-                this.hotspots.push({
-                    id: nextId,
-                    x: rightArrowX - 48,
-                    y: valY - 48,
-                    w: 96,
-                    h: 96,
-                    zIndex: 10,
-                    hoverSfx: 'hoverTick',
-                    clickSfx: 'hoverTick'
-                });
+                this.hotspots.push({ id: prevId, x: leftArrowX - 48, y: valY - 48, w: 96, h: 96, zIndex: 10, hoverSfx: 'hoverTick', clickSfx: 'hoverTick' });
+                this.hotspots.push({ id: nextId, x: rightArrowX - 48, y: valY - 48, w: 96, h: 96, zIndex: 10, hoverSfx: 'hoverTick', clickSfx: 'hoverTick' });
 
                 ui.drawText(valStr, centerColX, valY, UITheme.fonts.body, valColor, "center", "alphabetic", textMaxWidth);
             }
@@ -315,7 +289,6 @@ export class CharacterCreatorRenderer {
         // ========================================================
         const rightColX = CANVAS_WIDTH - colW - p;
         const rightCenterX = rightColX + colW / 2;
-
         ui.drawPanel(rightColX, startY, colW, panelHeight, UITheme.colors.bgScale[0]);
         ui.drawText("DETAILS", rightCenterX, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "center");
         ui.drawLineWithGothicFlourish(rightCenterX - 96, TITLE_Y + 29, 192, UITheme.colors.borderHighlight);
@@ -335,8 +308,8 @@ export class CharacterCreatorRenderer {
             paragraphs.forEach(p => {
                 totalLines += ui.getWrappedLines(p, textMaxWidth, UITheme.fonts.body).length;
             });
-            const totalTextHeight = totalLines * lineHeight;
 
+            const totalTextHeight = totalLines * lineHeight;
             const maxScroll = Math.max(0, totalTextHeight - textViewportHeight);
             const previewOffset = controllerState.scrollOffsets?.preview || 0;
 
@@ -357,21 +330,13 @@ export class CharacterCreatorRenderer {
                 const trackX = rightColX + colW - 24;
                 const trackH = textViewportHeight;
                 const thumbH = Math.max(40, (textViewportHeight / totalTextHeight) * trackH);
-
                 const scrollRatio = previewOffset / maxScroll;
                 const thumbY = textY + (scrollRatio * (trackH - thumbH));
 
                 ui.drawRect(trackX, textY, trackW, trackH, UITheme.colors.scrollTrack);
                 ui.drawRect(trackX, thumbY, trackW, thumbH, UITheme.colors.scrollThumb);
 
-                this.hotspots.push({
-                    id: 'SCROLL_THUMB_PREVIEW',
-                    x: trackX - 10,
-                    y: thumbY,
-                    w: trackW + 20,
-                    h: thumbH,
-                    zIndex: 10
-                });
+                this.hotspots.push({ id: 'SCROLL_THUMB_PREVIEW', x: trackX - 10, y: thumbY, w: trackW + 20, h: thumbH, zIndex: 10 });
             }
         }
 
@@ -383,12 +348,11 @@ export class CharacterCreatorRenderer {
         }
     }
 
-    getDescription({ currentStep, selections, data, isEditingName }) {
+    getDescription({ currentStep, selections, data, isEditingName, isEditingSeed }) {
         if (!data) return "";
-
         if (currentStep === 'name') return isEditingName ? "Type your name using the keyboard.\nPress Enter to confirm." : "Select to edit your character's name.";
+        if (currentStep === 'seed') return isEditingSeed ? "Type a custom world seed.\nPress Enter to confirm." : "Leave blank to spawn in a completely random world, or set a seed to share layouts with friends.";
         if (currentStep === 'start') return "Finalize your choices and venture forth into the unknown.";
-        
         if (currentStep === 'background') return data.BACKGROUNDS?.[selections.backgroundIdx]?.desc;
         if (currentStep === 'origin') return data.ORIGINS?.[selections.originIdx]?.desc;
         if (currentStep === 'appearance') return "Choose the physical form you shall take in this realm.";

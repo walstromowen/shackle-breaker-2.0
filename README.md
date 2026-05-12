@@ -9,8 +9,6 @@ procedural dungeons and hand crafted areas
 structures: 
 
 
-
-name changes in character summary
 more consistent sound for UI
 
 

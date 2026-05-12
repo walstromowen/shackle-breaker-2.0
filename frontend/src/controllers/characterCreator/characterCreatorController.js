@@ -4,19 +4,12 @@ import { ScrollManager } from '../../ui/scrollManager.js';
 
 // --- STANDARDIZED INPUT BINDINGS ---
 const KEY_BINDINGS = {
-    'ArrowUp': 'UP',
-    'KeyW': 'UP',
-    'ArrowDown': 'DOWN',
-    'KeyS': 'DOWN',
-    'ArrowLeft': 'LEFT',
-    'KeyA': 'LEFT',
-    'ArrowRight': 'RIGHT',
-    'KeyD': 'RIGHT',
-    'Enter': 'CONFIRM',
-    'Space': 'CONFIRM',
-    'Escape': 'CANCEL',
-    'Backspace': 'CANCEL',
-    'Tab': 'CANCEL'
+    'ArrowUp': 'UP', 'KeyW': 'UP',
+    'ArrowDown': 'DOWN', 'KeyS': 'DOWN',
+    'ArrowLeft': 'LEFT', 'KeyA': 'LEFT',
+    'ArrowRight': 'RIGHT', 'KeyD': 'RIGHT',
+    'Enter': 'CONFIRM', 'Space': 'CONFIRM',
+    'Escape': 'CANCEL', 'Backspace': 'CANCEL', 'Tab': 'CANCEL'
 };
 
 export class CharacterCreatorController extends BaseController {
@@ -46,6 +39,7 @@ export class CharacterCreatorController extends BaseController {
             currentRow: this.logic.currentRow,
             currentStep: this.logic.getCurrentStep(),
             isEditingName: this.logic.isEditingName,
+            isEditingSeed: this.logic.isEditingSeed, // NEW: Export to renderer
             data: CREATION_DATA,
             selections: this.logic.state,
             previewStats: this.logic.getPreviewStats(),
@@ -73,7 +67,7 @@ export class CharacterCreatorController extends BaseController {
         super.handleMouseMove(x, y, isMouseDown, renderer);
 
         // --- SYNC KEYBOARD LOGIC WITH MOUSE HOVER ---
-        if (!this.logic.isEditingName && this.hoveredHitboxId && this.hoveredHitboxId !== prevHoverId) {
+        if (!this.logic.isEditingName && !this.logic.isEditingSeed && this.hoveredHitboxId && this.hoveredHitboxId !== prevHoverId) {
             this._syncFocusWithHover(this.hoveredHitboxId);
         }
     }
@@ -81,6 +75,8 @@ export class CharacterCreatorController extends BaseController {
     _syncFocusWithHover(hitboxId) {
         if (hitboxId === 'INPUT_NAME') {
             this.logic.setRowByStep('name');
+        } else if (hitboxId === 'INPUT_SEED') { // NEW
+            this.logic.setRowByStep('seed');
         } else if (hitboxId === 'BTN_START') {
             this.logic.setRowByStep('start');
         } else if (hitboxId.startsWith('ROW_')) {
@@ -93,8 +89,9 @@ export class CharacterCreatorController extends BaseController {
     }
 
     onClick(hitboxId, fromKeyboard = false) {
-        if (this.logic.isEditingName && hitboxId !== 'INPUT_NAME') {
-            this.logic.validateName();
+        // Unfocus if clicking elsewhere
+        if ((this.logic.isEditingName || this.logic.isEditingSeed) && hitboxId !== 'INPUT_NAME' && hitboxId !== 'INPUT_SEED') {
+            this.logic.validateActiveInput();
         }
 
         if (!hitboxId) return;
@@ -102,6 +99,9 @@ export class CharacterCreatorController extends BaseController {
         if (hitboxId === 'INPUT_NAME') {
             this.logic.setRowByStep('name');
             this.logic.isEditingName = true;
+        } else if (hitboxId === 'INPUT_SEED') { // NEW
+            this.logic.setRowByStep('seed');
+            this.logic.isEditingSeed = true;
         } else if (hitboxId === 'BTN_START') {
             this.logic.finalizeCharacter();
         } else if (hitboxId.startsWith('BTN_NEXT_')) {
@@ -116,8 +116,8 @@ export class CharacterCreatorController extends BaseController {
     }
 
     onRightClick(hitboxId) {
-        if (this.logic.isEditingName) {
-            this.logic.validateName();
+        if (this.logic.isEditingName || this.logic.isEditingSeed) {
+            this.logic.validateActiveInput();
         } else if (this.scrollManager.isDragging) {
             this.scrollManager.handleDragEnd();
         }
@@ -149,13 +149,19 @@ export class CharacterCreatorController extends BaseController {
     }
 
     handleKeyDown(keyCode, e) {
-        if (this.logic.isEditingName) {
+        // Intercept typing for either the name or the seed
+        if (this.logic.isEditingName || this.logic.isEditingSeed) {
             if (e.code === "Enter" || e.code === "Escape") {
-                this.logic.validateName();
+                this.logic.validateActiveInput();
                 this.playConfirmSound();
             } else {
-                this.logic.nameInput.handleEvent(e);
-                this.logic.state.name = this.logic.nameInput.value;
+                if (this.logic.isEditingName) {
+                    this.logic.nameInput.handleEvent(e);
+                    this.logic.state.name = this.logic.nameInput.value;
+                } else if (this.logic.isEditingSeed) {
+                    this.logic.seedInput.handleEvent(e);
+                    this.logic.state.seed = this.logic.seedInput.value;
+                }
             }
             return;
         }

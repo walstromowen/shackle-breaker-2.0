@@ -41,19 +41,22 @@ export class SceneManager {
 
         // Systems
         this.input = new Input(this.canvas);
-        this.worldManager = new WorldManager(); 
+        this.worldManager = null
         this.timeSystem = new TimeSystem();
         this.uiInteractionManager = new UIInteractionManager(); 
         console.log(`%c[SceneManager] Init. Seed: ${gameState.seed}`, 'color: #00aaaa');
 
         // --- CONTROLLERS ---
-        this.overworldController = new OverworldController(this.input, this.config, this.worldManager);
-        this.encounterController = new EncounterController(this.input, this.config, this.worldManager);
-        this.characterCreatorController = new CharacterCreatorController(); 
+        // 1. Instantiate the controllers that do NOT rely on the world generation
+        this.characterCreatorController = new CharacterCreatorController();
         this.partyController = new PartyController(this.input);
-        this.characterSummaryController = null; 
-        this.levelUpController = new LevelUpController(this.input); 
-        this.battleController = new BattleController(this.input, this.config, this.worldManager);
+        this.levelUpController = new LevelUpController(this.input);
+        
+        // 2. Defer the ones that require the worldManager
+        this.overworldController = null;
+        this.encounterController = null;
+        this.battleController = null;
+        this.characterSummaryController = null;
 
         // --- RENDERERS ---
         this.mapRenderer = new MapRenderer(this.canvas, this.loader, this.config);
@@ -129,12 +132,26 @@ export class SceneManager {
         }
     }
 
-    setupEventListeners() {
+   setupEventListeners() {
         events.on('CHANGE_SCENE', ({ scene, data }) => {
-            //events.emit('PLAY_SFX', { id: 'cinematicBoom', volume: 1.0 });
             this.transitionRenderer.start(() => {
                 this.input.reset();
+
+                // --- GENERATE WORLD FOR THE FIRST TIME ---
+                if (this.currentScene === 'character-creator' && scene === 'overworld') {
+                    console.log(`%c[SceneManager] Generating World with finalized seed: ${gameState.seed}`, 'color: #00ff00');
+                    
+                    // 1. Generate the world
+                    this.worldManager = new WorldManager();
+                    
+                    // 2. NOW instantiate the controllers that need the world
+                    this.overworldController = new OverworldController(this.input, this.config, this.worldManager);
+                    this.encounterController = new EncounterController(this.input, this.config, this.worldManager);
+                    this.battleController = new BattleController(this.input, this.config, this.worldManager);
+                }
+
                 if (scene === 'overworld') this.overworldController.isLocked = false;
+                
                 if (scene === 'character_summary') {
                     this.characterSummaryController = new CharacterSummaryController(this.input, data);
                 }
@@ -144,6 +161,8 @@ export class SceneManager {
                 if (scene === 'party') {
                     this.partyController.init(data || {});
                 }
+                
+                // Now that the worldManager exists, changeScene can safely resolve biomes and music
                 this.changeScene(scene);
             }, 'fade');
         });

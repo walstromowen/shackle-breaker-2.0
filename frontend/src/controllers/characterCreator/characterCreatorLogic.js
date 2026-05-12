@@ -78,20 +78,29 @@ export const CREATION_DATA = {
 
 export class CharacterCreatorLogic {
     constructor() {
-        this.menuOrder = ['name', 'background', 'origin', 'appearance', 'keepsake', 'companion', 'trait', 'difficulty', 'start'];
+        // --- ADD 'seed' TO MENU ORDER ---
+        this.menuOrder = ['name', 'seed', 'background', 'origin', 'appearance', 'keepsake', 'companion', 'trait', 'difficulty', 'start'];
         this.currentRow = 0;
         
-        this.nameInput = new TextEntry("Shackle Breaker", 16); 
+        this.nameInput = new TextEntry("Shackle Breaker", 16);
+        this.seedInput = new TextEntry("", 16); // NEW: Empty by default (random)
+        
         this.isEditingName = false;
+        this.isEditingSeed = false; // NEW
         
         this.state = {
             name: "Shackle Breaker",
-            backgroundIdx: 0, originIdx: 0, appearanceIdx: 0,
-            keepsakeIdx: 0, companionIdx: 0, traitIdx: 0, difficultyIdx: 1 
+            seed: "", // NEW
+            backgroundIdx: 0,
+            originIdx: 0,
+            appearanceIdx: 0,
+            keepsakeIdx: 0,
+            companionIdx: 0,
+            traitIdx: 0,
+            difficultyIdx: 1
         };
-        
         this.cachedStats = null;
-        this.isDirty = true; 
+        this.isDirty = true;
     }
 
     // ========================================================
@@ -130,17 +139,23 @@ export class CharacterCreatorLogic {
         return false;
     }
 
-    validateName() {
-        if (this.nameInput.value.trim() === "") {
-            this.nameInput.reset("Shackle Breaker");
-            this.state.name = "Shackle Breaker";
+    validateActiveInput() {
+        if (this.isEditingName) {
+            if (this.nameInput.value.trim() === "") {
+                this.nameInput.reset("Shackle Breaker");
+                this.state.name = "Shackle Breaker";
+            }
+            this.isEditingName = false;
+        } else if (this.isEditingSeed) {
+            this.state.seed = this.seedInput.value;
+            this.isEditingSeed = false;
         }
-        this.isEditingName = false;
     }
 
     handleAction() {
         const step = this.menuOrder[this.currentRow];
-        if (step === 'name') this.isEditingName = true; 
+        if (step === 'name') this.isEditingName = true;
+        else if (step === 'seed') this.isEditingSeed = true; // NEW
         else if (step === 'start') this.finalizeCharacter();
     }
 
@@ -214,8 +229,29 @@ export class CharacterCreatorLogic {
             this.isEditingName = true;
             return;
         }
-
+        
         console.log("--- START FINALIZE ---");
+        
+        // --- PROCESS THE SEED ---
+        let finalSeed;
+        if (this.state.seed && this.state.seed.trim() !== "") {
+            // Convert string to a number for WorldManager math
+            finalSeed = parseInt(this.state.seed, 10);
+            if (isNaN(finalSeed)) {
+                // Simple string hash if they typed words
+                finalSeed = this.state.seed.split('').reduce((a, b) => { 
+                    a = ((a << 5) - a) + b.charCodeAt(0); 
+                    return a & a 
+                }, 0);
+                finalSeed = Math.abs(finalSeed);
+            }
+        } else {
+            // Fallback to random if left blank
+            finalSeed = Math.floor(Math.random() * 1000000);
+        }
+        
+        // Inject into gameState before WorldManager boots up!
+        gameState.seed = finalSeed;
 
         PartyManager.createMainCharacter("HUMANOID", this._buildPlayerOverrides());
 
