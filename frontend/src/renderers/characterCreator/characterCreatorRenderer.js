@@ -22,8 +22,10 @@ export class CharacterCreatorRenderer {
         const p = 48;
         const startY = 48;
         const panelHeight = CANVAS_HEIGHT - (startY * 2);
+
         const colW = CANVAS_WIDTH * 0.3;
         const midW = CANVAS_WIDTH - (colW * 2) - (p * 4);
+
         const TITLE_OFFSET_Y = 60;
         const TITLE_Y = startY + TITLE_OFFSET_Y;
         const CONTENT_START_Y = TITLE_Y + 84;
@@ -32,6 +34,7 @@ export class CharacterCreatorRenderer {
         // 1. LEFT COLUMN (Identity & Stats)
         // ========================================================
         ui.drawPanel(p, startY, colW, panelHeight, UITheme.colors.bgScale[0]);
+
         const leftCenterX = p + colW / 2;
         let curY = CONTENT_START_Y;
 
@@ -39,18 +42,21 @@ export class CharacterCreatorRenderer {
         ui.drawText("IDENTITY", leftCenterX, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "center");
         ui.drawLineWithGothicFlourish(leftCenterX - 120, TITLE_Y + 29, 240, UITheme.colors.borderHighlight);
 
-        // B. Identity Inputs (Name & Seed)
+        // B. Identity Input (Name only)
         const inputW = colW - 96;
         const inputX = p + 48;
         const inputH = 77;
-        const inputGap = 16;
 
         // --- NAME INPUT ---
-        this.hotspots.push({ id: "INPUT_NAME", x: inputX, y: curY, w: inputW, h: inputH, hoverSfx: 'hoverTick', clickSfx: 'cinematicBoom' });
+        this.hotspots.push({
+            id: "INPUT_NAME", x: inputX, y: curY, w: inputW, h: inputH,
+            hoverSfx: 'hoverTick', clickSfx: 'cinematicBoom'
+        });
+
         const isNameSelected = (currentStep === 'name');
         const nameBg = isEditingName ? "rgba(0, 0, 0, 0.8)" : "rgba(0, 0, 0, 0.4)";
-        
         ui.drawPanel(inputX, curY, inputW, inputH, nameBg);
+
         if (isNameSelected || isEditingName) {
             ui.drawSelectionBrackets(inputX, curY, inputW, inputH, 10);
         }
@@ -68,42 +74,14 @@ export class CharacterCreatorRenderer {
         ctx.beginPath();
         ctx.rect(inputX, curY, inputW, inputH);
         ctx.clip();
-        ui.drawText(nameStr, inputX + (inputW/2), curY + 50, UITheme.fonts.body, nameColor, "center");
+        ui.drawText(nameStr, inputX + (inputW / 2), curY + 50, UITheme.fonts.body, nameColor, "center");
         ctx.restore();
 
-        curY += inputH + inputGap;
-
-        // --- SEED INPUT ---
-        this.hotspots.push({ id: "INPUT_SEED", x: inputX, y: curY, w: inputW, h: inputH, hoverSfx: 'hoverTick', clickSfx: 'cinematicBoom' });
-        const isSeedSelected = (currentStep === 'seed');
-        const seedBg = isEditingSeed ? "rgba(0, 0, 0, 0.8)" : "rgba(0, 0, 0, 0.4)";
-        
-        ui.drawPanel(inputX, curY, inputW, inputH, seedBg);
-        if (isSeedSelected || isEditingSeed) {
-            ui.drawSelectionBrackets(inputX, curY, inputW, inputH, 10);
-        }
-
-        let seedStr = selections.seed;
-        let seedColor = UITheme.colors.textMain;
-        if (isEditingSeed) {
-            if (Math.floor(Date.now() / 500) % 2 === 0) seedStr += "|";
-        } else if (!seedStr) {
-            seedStr = "Random World Seed...";
-            seedColor = UITheme.colors.textMuted;
-        }
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(inputX, curY, inputW, inputH);
-        ctx.clip();
-        ui.drawText(seedStr, inputX + (inputW/2), curY + 50, UITheme.fonts.body, seedColor, "center");
-        ctx.restore();
-
-        const identityBottomY = curY + inputH;
+        curY += inputH;
+        const identityBottomY = curY;
 
         // --- C. VISUALS ---
-        // Adjusted vertical offset to make room for the new seed box
-        const VITALS_OFFSET = 338; 
+        const VITALS_OFFSET = 380;
         const VITALS_START_Y = identityBottomY + VITALS_OFFSET;
 
         const portraitSize = 256;
@@ -111,6 +89,7 @@ export class CharacterCreatorRenderer {
         const visualGap = 48;
         const totalVisualWidth = portraitSize + visualGap + spriteDisplaySize;
         const startVisualX = p + (colW - totalVisualWidth) / 2;
+
         const portraitY = identityBottomY + (VITALS_OFFSET / 2) - (portraitSize / 2);
         const spriteY = identityBottomY + (VITALS_OFFSET / 2) - (spriteDisplaySize / 2);
 
@@ -121,6 +100,7 @@ export class CharacterCreatorRenderer {
             ctx.save();
             const masterSheet = this.loader.get(appData.spritePortrait);
             const overworldSheet = this.loader.get(appData.spriteOverworld);
+
             const spriteX = startVisualX + portraitSize + visualGap;
 
             ui.drawRect(startVisualX, portraitY, portraitSize, portraitSize, "rgba(0,0,0,0.6)", true);
@@ -215,16 +195,17 @@ export class CharacterCreatorRenderer {
             keepsake: "KEEPSAKE",
             companion: "COMPANION",
             trait: "TRAIT",
-            difficulty: "DIFFICULTY"
+            difficulty: "DIFFICULTY",
+            seed: "WORLD SEED"
         };
 
-        const MENU_ITEM_HEIGHT = 84;
-        const ROW_GAP = 5;
-        const menuSteps = ['background', 'origin', 'appearance', 'keepsake', 'companion', 'trait', 'difficulty', 'start'];
+        const MENU_ITEM_HEIGHT = 76; 
+        const ROW_GAP = 4;
+        const menuSteps = ['background', 'origin', 'appearance', 'keepsake', 'companion', 'trait', 'difficulty', 'seed', 'start'];
 
         menuSteps.forEach((key) => {
             const isSelected = (key === currentStep);
-            const rowId = `ROW_${key}`;
+            const rowId = key === 'seed' ? "INPUT_SEED" : `ROW_${key}`;
             const isHovered = (hoveredElement && hoveredElement.id === rowId);
 
             if (key === 'start') {
@@ -232,16 +213,48 @@ export class CharacterCreatorRenderer {
                 const btnY = menuY + 36;
                 const isBtnHovered = (hoveredElement && hoveredElement.id === btnId);
 
-                this.hotspots.push({ id: btnId, x: menuStartX + 96, y: btnY, w: midW - 192, h: MENU_ITEM_HEIGHT + 24, hoverSfx: 'hoverTick', clickSfx: 'cinematicBoom' });
+                this.hotspots.push({
+                    id: btnId, x: menuStartX + 96, y: btnY, w: midW - 192, h: MENU_ITEM_HEIGHT + 24,
+                    hoverSfx: 'hoverTick', clickSfx: 'cinematicBoom'
+                });
+
                 ui.drawInteractiveRow(menuStartX + 96, btnY, midW - 192, MENU_ITEM_HEIGHT + 24, "START", UITheme.fonts.body, "center", isSelected, isBtnHovered);
                 return;
             }
 
-            this.hotspots.push({ id: rowId, x: menuStartX + 24, y: menuY, w: midW - 48, h: MENU_ITEM_HEIGHT, hoverSfx: 'hoverTick' });
-            ui.drawInteractiveRow(menuStartX + 24, menuY, midW - 48, MENU_ITEM_HEIGHT, "", UITheme.fonts.body, "center", isSelected, isHovered);
+            let currentItemHeight = MENU_ITEM_HEIGHT;
+            let seedBoxY = 0;
+            const seedBoxH = 77; // Exactly match the identity name input height
 
-            const labelY = menuY + 24;
-            ui.drawText(labels[key], centerColX, labelY, UITheme.fonts.cardSmall, UITheme.colors.textMuted, "center");
+            if (key === 'seed') {
+                seedBoxY = menuY + 30; // Push box down to leave room for the label
+                currentItemHeight = 30 + seedBoxH; // Increase total row height allocation
+
+                this.hotspots.push({
+                    id: rowId, x: menuStartX + 24, y: seedBoxY, w: midW - 48, h: seedBoxH, hoverSfx: 'hoverTick'
+                });
+
+                const seedBg = isEditingSeed ? "rgba(0, 0, 0, 0.8)" : "rgba(0, 0, 0, 0.4)";
+                ui.drawPanel(menuStartX + 24, seedBoxY, midW - 48, seedBoxH, seedBg);
+
+                if (isSelected || isEditingSeed) {
+                    ui.drawSelectionBrackets(menuStartX + 24, seedBoxY, midW - 48, seedBoxH, 10);
+                }
+
+                // Draw label above the actual input box
+                ui.drawText(labels[key], centerColX, menuY + 22, UITheme.fonts.cardSmall, UITheme.colors.textMuted, "center");
+
+            } else {
+                this.hotspots.push({
+                    id: rowId, x: menuStartX + 24, y: menuY, w: midW - 48, h: MENU_ITEM_HEIGHT, hoverSfx: 'hoverTick'
+                });
+
+                ui.drawInteractiveRow(menuStartX + 24, menuY, midW - 48, MENU_ITEM_HEIGHT, "", UITheme.fonts.body, "center", isSelected, isHovered);
+
+                // Draw normal label
+                const labelY = menuY + 22;
+                ui.drawText(labels[key], centerColX, labelY, UITheme.fonts.cardSmall, UITheme.colors.textMuted, "center");
+            }
 
             let valStr = "";
             let valColor = UITheme.colors.textMain;
@@ -255,33 +268,54 @@ export class CharacterCreatorRenderer {
             else if (key === 'difficulty') {
                 const d = data.DIFFICULTIES?.[selections.difficultyIdx];
                 valStr = d?.label;
+            } else if (key === 'seed') {
+                valStr = selections.seed;
+                if (isEditingSeed) {
+                    if (Math.floor(Date.now() / 500) % 2 === 0) valStr += "|";
+                } else if (!valStr) {
+                    valStr = "World Seed...";
+                    valColor = UITheme.colors.textMuted;
+                }
             }
 
             if (valStr) {
-                const valY = menuY + 62;
-                const prevId = `BTN_PREV_${key}`;
-                const nextId = `BTN_NEXT_${key}`;
+                if (key === 'seed') {
+                    // Match relative text alignment of the Name input (boxY + 50)
+                    const valY = seedBoxY + 50; 
+                    const textMaxWidth = midW - 96;
+                    
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(menuStartX + 24, seedBoxY, midW - 48, seedBoxH);
+                    ctx.clip();
+                    ui.drawText(valStr, centerColX, valY, UITheme.fonts.body, valColor, "center", "alphabetic", textMaxWidth);
+                    ctx.restore();
+                } else {
+                    const valY = menuY + 56;
+                    const textMaxWidth = midW - 336;
+                    const prevId = `BTN_PREV_${key}`;
+                    const nextId = `BTN_NEXT_${key}`;
+                    const isPrevHover = hoveredElement && hoveredElement.id === prevId;
+                    const isNextHover = hoveredElement && hoveredElement.id === nextId;
 
-                const isPrevHover = hoveredElement && hoveredElement.id === prevId;
-                const isNextHover = hoveredElement && hoveredElement.id === nextId;
+                    const leftArrowX = menuStartX + 72;
+                    const rightArrowX = menuStartX + midW - 72;
+                    const arrowSize = 12;
 
-                const leftArrowX = menuStartX + 72;
-                const rightArrowX = menuStartX + midW - 72;
-                const textMaxWidth = midW - 336;
-                const arrowSize = 12;
+                    const arrowColorPrev = isPrevHover ? UITheme.colors.borderHighlight : UITheme.colors.textMuted;
+                    const arrowColorNext = isNextHover ? UITheme.colors.borderHighlight : UITheme.colors.textMuted;
 
-                const arrowColorPrev = isPrevHover ? UITheme.colors.borderHighlight : UITheme.colors.textMuted;
-                const arrowColorNext = isNextHover ? UITheme.colors.borderHighlight : UITheme.colors.textMuted;
+                    ui.drawArrow(leftArrowX, valY - 10, arrowSize, 'left', arrowColorPrev);
+                    ui.drawArrow(rightArrowX, valY - 10, arrowSize, 'right', arrowColorNext);
 
-                ui.drawArrow(leftArrowX, valY - 10, arrowSize, 'left', arrowColorPrev);
-                ui.drawArrow(rightArrowX, valY - 10, arrowSize, 'right', arrowColorNext);
+                    this.hotspots.push({ id: prevId, x: leftArrowX - 48, y: valY - 48, w: 96, h: 96, zIndex: 10, hoverSfx: 'hoverTick', clickSfx: 'hoverTick' });
+                    this.hotspots.push({ id: nextId, x: rightArrowX - 48, y: valY - 48, w: 96, h: 96, zIndex: 10, hoverSfx: 'hoverTick', clickSfx: 'hoverTick' });
 
-                this.hotspots.push({ id: prevId, x: leftArrowX - 48, y: valY - 48, w: 96, h: 96, zIndex: 10, hoverSfx: 'hoverTick', clickSfx: 'hoverTick' });
-                this.hotspots.push({ id: nextId, x: rightArrowX - 48, y: valY - 48, w: 96, h: 96, zIndex: 10, hoverSfx: 'hoverTick', clickSfx: 'hoverTick' });
-
-                ui.drawText(valStr, centerColX, valY, UITheme.fonts.body, valColor, "center", "alphabetic", textMaxWidth);
+                    ui.drawText(valStr, centerColX, valY, UITheme.fonts.body, valColor, "center", "alphabetic", textMaxWidth);
+                }
             }
-            menuY += MENU_ITEM_HEIGHT + ROW_GAP;
+
+            menuY += currentItemHeight + ROW_GAP;
         });
 
         // ========================================================
@@ -289,6 +323,7 @@ export class CharacterCreatorRenderer {
         // ========================================================
         const rightColX = CANVAS_WIDTH - colW - p;
         const rightCenterX = rightColX + colW / 2;
+
         ui.drawPanel(rightColX, startY, colW, panelHeight, UITheme.colors.bgScale[0]);
         ui.drawText("DETAILS", rightCenterX, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "center");
         ui.drawLineWithGothicFlourish(rightCenterX - 96, TITLE_Y + 29, 192, UITheme.colors.borderHighlight);
@@ -311,8 +346,8 @@ export class CharacterCreatorRenderer {
 
             const totalTextHeight = totalLines * lineHeight;
             const maxScroll = Math.max(0, totalTextHeight - textViewportHeight);
-            const previewOffset = controllerState.scrollOffsets?.preview || 0;
 
+            const previewOffset = controllerState.scrollOffsets?.preview || 0;
             scrollBounds = {
                 preview: {
                     bounds: { x: textX, y: textY, w: textMaxWidth, h: textViewportHeight },
@@ -336,7 +371,10 @@ export class CharacterCreatorRenderer {
                 ui.drawRect(trackX, textY, trackW, trackH, UITheme.colors.scrollTrack);
                 ui.drawRect(trackX, thumbY, trackW, thumbH, UITheme.colors.scrollThumb);
 
-                this.hotspots.push({ id: 'SCROLL_THUMB_PREVIEW', x: trackX - 10, y: thumbY, w: trackW + 20, h: thumbH, zIndex: 10 });
+                this.hotspots.push({
+                    id: 'SCROLL_THUMB_PREVIEW',
+                    x: trackX - 10, y: thumbY, w: trackW + 20, h: thumbH, zIndex: 10
+                });
             }
         }
 
@@ -350,9 +388,11 @@ export class CharacterCreatorRenderer {
 
     getDescription({ currentStep, selections, data, isEditingName, isEditingSeed }) {
         if (!data) return "";
+
         if (currentStep === 'name') return isEditingName ? "Type your name using the keyboard.\nPress Enter to confirm." : "Select to edit your character's name.";
         if (currentStep === 'seed') return isEditingSeed ? "Type a custom world seed.\nPress Enter to confirm." : "Leave blank to spawn in a completely random world, or set a seed to share layouts with friends.";
         if (currentStep === 'start') return "Finalize your choices and venture forth into the unknown.";
+
         if (currentStep === 'background') return data.BACKGROUNDS?.[selections.backgroundIdx]?.desc;
         if (currentStep === 'origin') return data.ORIGINS?.[selections.originIdx]?.desc;
         if (currentStep === 'appearance') return "Choose the physical form you shall take in this realm.";

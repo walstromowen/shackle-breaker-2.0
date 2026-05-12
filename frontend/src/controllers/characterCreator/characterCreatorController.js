@@ -89,8 +89,11 @@ export class CharacterCreatorController extends BaseController {
     }
 
     onClick(hitboxId, fromKeyboard = false) {
-        // Unfocus if clicking elsewhere
-        if ((this.logic.isEditingName || this.logic.isEditingSeed) && hitboxId !== 'INPUT_NAME' && hitboxId !== 'INPUT_SEED') {
+        // --- CHANGED: Check each input's focus state individually ---
+        if (this.logic.isEditingName && hitboxId !== 'INPUT_NAME') {
+            this.logic.validateActiveInput();
+        }
+        if (this.logic.isEditingSeed && hitboxId !== 'INPUT_SEED') {
             this.logic.validateActiveInput();
         }
 
@@ -99,7 +102,7 @@ export class CharacterCreatorController extends BaseController {
         if (hitboxId === 'INPUT_NAME') {
             this.logic.setRowByStep('name');
             this.logic.isEditingName = true;
-        } else if (hitboxId === 'INPUT_SEED') { // NEW
+        } else if (hitboxId === 'INPUT_SEED') {
             this.logic.setRowByStep('seed');
             this.logic.isEditingSeed = true;
         } else if (hitboxId === 'BTN_START') {

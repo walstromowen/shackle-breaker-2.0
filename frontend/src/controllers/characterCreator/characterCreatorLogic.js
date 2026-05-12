@@ -1,12 +1,12 @@
 import { gameState } from '../../../../shared/state/gameState.js';
 import { EntityFactory } from '../../../../shared/systems/factories/entityFactory.js';
-import { ItemFactory } from '../../../../shared/systems/factories/itemFactory.js'; 
+import { ItemFactory } from '../../../../shared/systems/factories/itemFactory.js';
 import { events } from '../../core/eventBus.js';
 import { TextEntry } from '../../../../shared/utils/textEntry.js';
 import { StatCalculator } from '../../../../shared/systems/statCalculator.js';
 import { TRAIT_DEFINITIONS } from '../../../../shared/data/traitDefinitions.js';
 import { InventorySystem } from '../../../../shared/systems/inventorySystem.js';
-import { PartyManager } from '../../../../shared/systems/partyManager.js'; 
+import { PartyManager } from '../../../../shared/systems/partyManager.js';
 
 const ALLOWED_TRAITS = ['quick', 'inquisitive', 'brawler', 'tough'];
 const UI_TRAITS = ALLOWED_TRAITS.map(key => ({
@@ -18,26 +18,26 @@ const UI_TRAITS = ALLOWED_TRAITS.map(key => ({
 
 export const CREATION_DATA = {
     BACKGROUNDS: [
-        { 
-            id: "TRAVELER", label: "Traveler", 
+        {
+            id: "TRAVELER", label: "Traveler",
             desc: "Travelers from far and wide came to see the incredible discovery of what was magic in the Altus Kingdom. Those first to arive were amazed by what they saw. Those last to arrive were horrified.",
             attributes: { vigor: 12, strength: 12, dexterity: 12, intelligence: 10, attunement: 10 },
             equipment: { mainHand: "shortsword", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
-        { 
-            id: "BLACKSMITH", label: "Blacksmith", 
+        {
+            id: "BLACKSMITH", label: "Blacksmith",
             desc: "The honest trade of blacksmithing is a profession that was held in high esteem by Alterians, and Panzerians alike. After the discovery of magic, most blacksmiths found themselves unable to find work, but with their sanity intact.",
             attributes: { vigor: 15, strength: 15, dexterity: 10, intelligence: 7, attunement: 7 },
             equipment: { mainHand: "warhammer", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
-        { 
-            id: "RANGER", label: "Ranger", 
+        {
+            id: "RANGER", label: "Ranger",
             desc: "Not all were enamored with the discovery of magic. A select few of the populance sought an escape from the people's obsession of it. Many of those that left became rangers, hunting wild animals and later more unnatural things.",
             attributes: { vigor: 11, strength: 10, dexterity: 16, intelligence: 9, attunement: 8 },
             equipment: { mainHand: "dagger", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
-        { 
-            id: "SCHOLAR", label: "Scholar", 
+        {
+            id: "SCHOLAR", label: "Scholar",
             desc: "Almost overnight, the scholars and philosophers of the Altus kingdom abandoned their studies to begin research of magic. Some saw magic as a science, others as life itself.",
             attributes: { vigor: 9, strength: 8, dexterity: 10, intelligence: 16, attunement: 14 },
             equipment: { mainHand: "insight_of_arcane", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
@@ -49,10 +49,10 @@ export const CREATION_DATA = {
         { label: "Namuh", tag: "LANG_NAMUH", desc: "The Namuh are a silent and mysterious people who communicate only through a form sign language. Not much is known about the Namuh people except for rumors, many of which speaking of a great tragedy befalling the Namuh people and the becoming of a shadow of their former selves." }
     ],
     APPEARANCES: [
-        { label: "Legionary", spritePortrait: "legionaryHeroPortrait", spriteOverworld: "legionaryHeroSprite" }, 
+        { label: "Legionary", spritePortrait: "legionaryHeroPortrait", spriteOverworld: "legionaryHeroSprite" },
         { label: "Warlord", spritePortrait: "warlordHeroPortrait", spriteOverworld: "warlordHeroSprite" },
         { label: "Nightblade", spritePortrait: "nightbladeHeroPortrait", spriteOverworld: "nightbladeHeroSprite" },
-        { label: "Artificer", spritePortrait: "artificerHeroPortrait", spriteOverworld: "legionaryHeroSprite" }, 
+        { label: "Artificer", spritePortrait: "artificerHeroPortrait", spriteOverworld: "legionaryHeroSprite" },
         { label: "Avalancher", spritePortrait: "avalancherHeroPortrait", spriteOverworld: "warlordHeroSprite" },
         { label: "Shadow Caster", spritePortrait: "shadowCasterHeroPortrait", spriteOverworld: "nightbladeHeroSprite" }
     ],
@@ -78,19 +78,18 @@ export const CREATION_DATA = {
 
 export class CharacterCreatorLogic {
     constructor() {
-        // --- ADD 'seed' TO MENU ORDER ---
-        this.menuOrder = ['name', 'seed', 'background', 'origin', 'appearance', 'keepsake', 'companion', 'trait', 'difficulty', 'start'];
+        // --- ADD 'seed' TO MENU ORDER BELOW DIFFICULTY ---
+        this.menuOrder = ['name', 'background', 'origin', 'appearance', 'keepsake', 'companion', 'trait', 'difficulty', 'seed', 'start'];
         this.currentRow = 0;
-        
+
         this.nameInput = new TextEntry("Shackle Breaker", 16);
-        this.seedInput = new TextEntry("", 16); // NEW: Empty by default (random)
-        
+        this.seedInput = new TextEntry("", 16); 
         this.isEditingName = false;
-        this.isEditingSeed = false; // NEW
-        
+        this.isEditingSeed = false; 
+
         this.state = {
             name: "Shackle Breaker",
-            seed: "", // NEW
+            seed: "", 
             backgroundIdx: 0,
             originIdx: 0,
             appearanceIdx: 0,
@@ -99,6 +98,7 @@ export class CharacterCreatorLogic {
             traitIdx: 0,
             difficultyIdx: 1
         };
+
         this.cachedStats = null;
         this.isDirty = true;
     }
@@ -119,7 +119,7 @@ export class CharacterCreatorLogic {
     modifyValue(dir) {
         const step = this.menuOrder[this.currentRow];
         const d = CREATION_DATA;
-        
+
         const stepConfig = {
             background: { key: 'backgroundIdx', max: d.BACKGROUNDS.length, triggersDirty: true },
             origin: { key: 'originIdx', max: d.ORIGINS.length, triggersDirty: true },
@@ -133,9 +133,11 @@ export class CharacterCreatorLogic {
         if (stepConfig[step]) {
             const { key, max, triggersDirty } = stepConfig[step];
             this.state[key] = this._cycle(this.state[key], max, dir);
+            
             if (triggersDirty) this.isDirty = true;
-            return triggersDirty; // Tells the caller if they need to reset scrolls
+            return triggersDirty; 
         }
+
         return false;
     }
 
@@ -146,7 +148,9 @@ export class CharacterCreatorLogic {
                 this.state.name = "Shackle Breaker";
             }
             this.isEditingName = false;
-        } else if (this.isEditingSeed) {
+        }
+        
+        if (this.isEditingSeed) {
             this.state.seed = this.seedInput.value;
             this.isEditingSeed = false;
         }
@@ -155,7 +159,7 @@ export class CharacterCreatorLogic {
     handleAction() {
         const step = this.menuOrder[this.currentRow];
         if (step === 'name') this.isEditingName = true;
-        else if (step === 'seed') this.isEditingSeed = true; // NEW
+        else if (step === 'seed') this.isEditingSeed = true; 
         else if (step === 'start') this.finalizeCharacter();
     }
 
@@ -192,13 +196,13 @@ export class CharacterCreatorLogic {
         const trait = CREATION_DATA.TRAITS[this.state.traitIdx];
 
         return {
-            name: this.state.name, 
-            attributes: { ...bg.attributes }, 
-            equipment: bg.equipment, 
-            spritePortrait: app.spritePortrait,        
-            spriteOverworld: app.spriteOverworld,  
+            name: this.state.name,
+            attributes: { ...bg.attributes },
+            equipment: bg.equipment,
+            spritePortrait: app.spritePortrait,
+            spriteOverworld: app.spriteOverworld,
             tags: [origin.tag],
-            traits: [trait.id], 
+            traits: [trait.id],
             level: 1
         };
     }
@@ -212,6 +216,7 @@ export class CharacterCreatorLogic {
     _resolveEquipment(equipmentIdMap) {
         const resolved = {};
         if (!equipmentIdMap) return resolved;
+
         for (const [slot, itemId] of Object.entries(equipmentIdMap)) {
             const item = ItemFactory.createItem(itemId);
             if (item) resolved[slot] = item;
@@ -229,28 +234,23 @@ export class CharacterCreatorLogic {
             this.isEditingName = true;
             return;
         }
-        
         console.log("--- START FINALIZE ---");
-        
+
         // --- PROCESS THE SEED ---
         let finalSeed;
         if (this.state.seed && this.state.seed.trim() !== "") {
-            // Convert string to a number for WorldManager math
             finalSeed = parseInt(this.state.seed, 10);
             if (isNaN(finalSeed)) {
-                // Simple string hash if they typed words
-                finalSeed = this.state.seed.split('').reduce((a, b) => { 
-                    a = ((a << 5) - a) + b.charCodeAt(0); 
-                    return a & a 
+                finalSeed = this.state.seed.split('').reduce((a, b) => {
+                    a = ((a << 5) - a) + b.charCodeAt(0);
+                    return a & a
                 }, 0);
                 finalSeed = Math.abs(finalSeed);
             }
         } else {
-            // Fallback to random if left blank
             finalSeed = Math.floor(Math.random() * 1000000);
         }
-        
-        // Inject into gameState before WorldManager boots up!
+
         gameState.seed = finalSeed;
 
         PartyManager.createMainCharacter("HUMANOID", this._buildPlayerOverrides());
@@ -279,8 +279,6 @@ export class CharacterCreatorLogic {
         }
 
         gameState.party.currency = 100;
-
-        // --- UPDATED: Save difficulty directly to the root of gameState ---
         gameState.difficulty = CREATION_DATA.DIFFICULTIES[this.state.difficultyIdx].id;
 
         events.emit('CHANGE_SCENE', { scene: 'overworld' });

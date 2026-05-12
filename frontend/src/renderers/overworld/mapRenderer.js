@@ -105,9 +105,16 @@ export class MapRenderer {
                 const dx = Math.floor((col * TILE_SIZE - camX) * scale);
                 const dy = Math.floor((row * TILE_SIZE - camY) * scale);
 
-                if (depth === DEPTH_L0 || depth === DEPTH_L1) {
+                if (depth >= DEPTH_L0) {
                     const waterFrame = this.getWaterFrame(col, row, totalTime);
                     this.drawTile(TILE_TYPES.LAYER_0, waterFrame, dx, dy, sheetId);
+                }
+
+                // Then draw Layer 1 (Dirt) underneath any tile that is Layer 2 or higher
+                if (depth >= DEPTH_L2) {
+                    const dirtMask = worldManager.getSpecificMask(col, row, TILE_TYPES.LAYER_1);
+                    const dirtIdx = this.blobMap.get(dirtMask) ?? 14;
+                    this.drawTile(TILE_TYPES.LAYER_1, dirtIdx, dx, dy, sheetId);
                 }
 
                 if (depth >= DEPTH_L2) {

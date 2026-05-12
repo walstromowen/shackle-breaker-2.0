@@ -448,6 +448,16 @@ export class WorldManager {
         if (this.isBlockedByFace(col, row) || this.isCliffFace(col, row) || this.isBiomeEdge(col, row)) { 
             return null; 
         } 
+
+        // ==========================================
+        // NEW FIX: Prevent objects floating on blended edges
+        // ==========================================
+        // If the mask is not 255, it means this tile is an edge/corner 
+        // with transparent pixels blending into a lower layer.
+        const tileMask = this.getSpecificMask(col, row, myTileId);
+        if (tileMask !== 255) {
+            return null; 
+        }
         
         const biome = this.getBiomeAt(col, row); 
         const objRng = this.pseudoRandom(col + 100, row + 100); 
