@@ -14,9 +14,8 @@ const KEY_BINDINGS = {
     'ArrowRight': 'RIGHT', 'KeyD': 'RIGHT',
     'Enter': 'CONFIRM', 'Space': 'CONFIRM',
     'Escape': 'CANCEL', 'Backspace': 'CANCEL',
-    'KeyQ': 'PREV_CHAR',
-    'KeyE': 'NEXT_CHAR',
-    'KeyV': 'TOGGLE_VIEW', // Swapped from Shift to V to prevent Sticky Keys
+    'KeyQ': 'PREV_CHAR', 'KeyE': 'NEXT_CHAR',
+    'KeyV': 'TOGGLE_VIEW',
     'KeyX': 'DELETE', 'Delete': 'DELETE'
 };
 
@@ -44,23 +43,17 @@ export class CharacterSummaryController extends BaseController {
         this.wasMouseDown = false;
 
         this.layout = {
-            detailMaxScroll: 0,
-            detailViewportH: 300,
-            abilitiesMaxScroll: 0,
-            abilitiesViewportH: 300,
-            inventoryMaxScroll: 0,
-            inventoryViewportH: 300,
-            inventoryBounds: null,
-            detailBounds: null,
-            abilitiesBounds: null,
+            detailMaxScroll: 0, detailViewportH: 300,
+            abilitiesMaxScroll: 0, abilitiesViewportH: 300,
+            inventoryMaxScroll: 0, inventoryViewportH: 300,
+            inventoryBounds: null, detailBounds: null, abilitiesBounds: null,
             itemHeight: 48
         };
 
         // Initialize Managers
         this.dragAndDropManager = new DragAndDropManager();
         this.scrollManager = new ScrollManager();
-
-        // Initialize ContextMenuManager as a pure UI component
+        
         this.contextMenuManager = new ContextMenuManager({
             onAction: (actionId, payload) => this.executeMenuAction(actionId, payload)
         });
@@ -74,40 +67,27 @@ export class CharacterSummaryController extends BaseController {
         return this.logic.currentMember;
     }
 
-    // ========================================================
-    // LIFECYCLE
-    // ========================================================
     update(dt) {
         if (super.update) super.update(dt);
-        // This drives the smooth scrolling math!
         this.scrollManager.update(dt);
     }
 
-    // ========================================================
-    // SCROLL ZONE REGISTRATION
-    // ========================================================
     _syncScrollZones() {
-        // Register/Update Inventory Zone
         this.scrollManager.registerZone('inventory', {
             bounds: this.layout.inventoryBounds,
             maxScroll: this.layout.inventoryMaxScroll,
             viewportH: this.layout.inventoryViewportH,
             thumbIds: ['INV_SCROLLBAR_THUMB'],
-            onChange: (newOffset) => {
-                this.inventoryScrollOffset = newOffset;
-            }
+            onChange: (newOffset) => { this.inventoryScrollOffset = newOffset; }
         });
 
-        // Register/Update Details Zone
         const isAbilities = this.viewMode === 'ABILITIES';
         this.scrollManager.registerZone('details', {
             bounds: isAbilities ? this.layout.abilitiesBounds : this.layout.detailBounds,
             maxScroll: isAbilities ? this.layout.abilitiesMaxScroll : this.layout.detailMaxScroll,
             viewportH: isAbilities ? this.layout.abilitiesViewportH : this.layout.detailViewportH,
             thumbIds: ['SCROLLBAR_THUMB', 'ABILITIES_SCROLLBAR_THUMB'],
-            onChange: (newOffset) => {
-                this.detailsScrollOffset = newOffset;
-            }
+            onChange: (newOffset) => { this.detailsScrollOffset = newOffset; }
         });
     }
 
@@ -117,6 +97,13 @@ export class CharacterSummaryController extends BaseController {
             'BTN_NEXT_CHAR': () => this.cycleMember(1),
             'BTN_BACK': () => this._handleBack(),
             'BTN_UNEQUIP': () => this.unequipCurrentSlot(),
+            
+            // Text Editing Trigger
+            'BTN_EDIT_NAME': () => {
+                this.logic.startNameEdit();
+                this.playConfirmSound();
+            },
+
             // Tabs
             'TAB_STATS': () => this.setViewMode('STATS'),
             'BTN_TAB_STATS': () => this.setViewMode('STATS'),
@@ -127,14 +114,8 @@ export class CharacterSummaryController extends BaseController {
         };
     }
 
-    // ========================================================
-    // HITBOX INTERACTION (Standard BaseController Hooks)
-    // ========================================================
-
     onHover(hitboxId) {
         super.onHover(hitboxId);
-        // UX UPGRADE: Instantly show item details on hover, creating a fluid, responsive feel.
-        // We pause this logic if dragging or in a menu to prevent distracting view jumps.
         if (this.dragAndDropManager.dragState.active || this.contextMenuManager.menu) return;
 
         if (hitboxId) {
@@ -158,7 +139,13 @@ export class CharacterSummaryController extends BaseController {
     }
 
     onClick(hitboxId, fromKeyboard = false) {
-        // 1. Clicking outside any hitboxes clears menus or selections
+        // If clicking anywhere else while editing the name, attempt to save
+        if (this.logic.isEditingName && hitboxId !== 'BTN_EDIT_NAME') {
+            if (this.logic.validateName()) {
+                this.playConfirmSound();
+            }
+        }
+
         if (!hitboxId) {
             if (this.contextMenuManager.menu) {
                 this.contextMenuManager.close();
@@ -170,65 +157,54 @@ export class CharacterSummaryController extends BaseController {
             return;
         }
 
-        // 2. Context Menu Intercepts (Left Click selects option)
         if (this.contextMenuManager.menu) {
             if (hitboxId.startsWith('CTX_OPT_')) {
                 const optIndex = parseInt(hitboxId.split('_')[2], 10);
-                this.playConfirmSound(); // Confirm menu selection
+                this.playConfirmSound(); 
                 this.contextMenuManager.executeAction(optIndex);
                 return;
             }
-            // If they clicked something else while the menu is open, close it
             this.contextMenuManager.close();
         }
 
-        // 2. Standard Button Handlers
         if (this.handlers && this.handlers[hitboxId]) {
             this.handlers[hitboxId]();
             return;
         }
 
-        // 3. Left Click on Slots & Inventory opens Context Menu
         let item = null;
         let source = '';
         let sourceKey = null;
 
         if (hitboxId.startsWith('SLOT_')) {
             sourceKey = hitboxId.replace('SLOT_', '');
-            this.handleSlotClick(sourceKey); // Apply selection state
+            this.handleSlotClick(sourceKey);
             item = this.currentMember.equipment[sourceKey];
             source = 'equipment';
         } else if (hitboxId.startsWith('INV_ITEM_')) {
             sourceKey = parseInt(hitboxId.split('_')[2], 10);
-            this.handleInventoryClick(sourceKey); // Apply selection state
+            this.handleInventoryClick(sourceKey);
             item = this.filteredInventory[sourceKey];
             source = 'inventory';
         }
 
         if (item) {
-            // Build options based on game state
             const options = this._buildMenuOptions(item, source, sourceKey);
             if (options.length > 0) {
-                // Calculate Position (Default to mouse position)
                 let menuX = this.mouse.x;
                 let menuY = this.mouse.y;
 
                 if (this.lastRenderedHitboxes) {
                     const hit = this.lastRenderedHitboxes.find(h => h.id === hitboxId);
                     if (hit) {
-                        // Offset to the RIGHT edge of the slot, with an 8px gap
                         menuX = Math.floor(hit.x + hit.w + 8);
-                        // Align the top of the menu with the top of the slot
                         menuY = Math.floor(hit.y);
                     }
                 }
 
-                // Open the decoupled manager
                 this.contextMenuManager.open(menuX, menuY, options, { item, source, sourceKey });
-                this.playConfirmSound(); // Sound for opening context menu
-
-                // FIX: If opened via mouse, clear the default keyboard selection
-                // so the first item isn't artificially highlighted!
+                this.playConfirmSound(); 
+                
                 if (!fromKeyboard && this.contextMenuManager.menu) {
                     this.contextMenuManager.menu.selectedIndex = -1;
                 }
@@ -237,7 +213,11 @@ export class CharacterSummaryController extends BaseController {
     }
 
     onRightClick(hitboxId) {
-        // Right click closes the context menu, or goes back if no menu is open
+        if (this.logic.isEditingName) {
+            if (this.logic.validateName()) this.playConfirmSound();
+            return;
+        }
+
         this.playCancelSound();
         if (this.contextMenuManager.menu) {
             this.contextMenuManager.close();
@@ -246,57 +226,44 @@ export class CharacterSummaryController extends BaseController {
         }
     }
 
-    // ========================================================
-    // STANDARD DRAG AND DROP CALLBACKS
-    // ========================================================
-
     onDragStart(hitboxId) {
-        if (!hitboxId || this.contextMenuManager.menu) return;
+        if (!hitboxId || this.contextMenuManager.menu || this.logic.isEditingName) return;
 
-        // 1. Scrollbar Drag Intercept
         if (hitboxId.includes('SCROLLBAR_THUMB')) {
             this.scrollManager.handleDragStart(hitboxId, this.mouse.y);
             return;
         }
 
-        // 2. Item Drag Intercept
         if (this.logic.readOnly) return;
 
         if (hitboxId.startsWith('SLOT_')) {
             const slotName = hitboxId.replace('SLOT_', '');
             const item = this.currentMember.equipment[slotName];
-
             if (item) {
                 this.slotIndex = this.activeSlots.indexOf(slotName);
                 this.state = 'SLOTS';
                 this.inventoryIndex = -1;
-                
-                events.emit('PLAY_SFX', { id: 'ui_drag_start', volume: 0.5 }); // Distinct drag start SFX
+                events.emit('PLAY_SFX', { id: 'ui_drag_start', volume: 0.5 });
                 this.dragAndDropManager.startDrag(
-                    item, 'equipment', slotName, this.mouse.x, this.mouse.y,
-                    this.handleItemDropped.bind(this)
+                    item, 'equipment', slotName, this.mouse.x, this.mouse.y, this.handleItemDropped.bind(this)
                 );
             }
         } else if (hitboxId.startsWith('INV_ITEM_')) {
             const idx = parseInt(hitboxId.split('_')[2], 10);
             const item = this.filteredInventory[idx];
-
             if (item) {
                 this.inventoryIndex = idx;
                 this.state = 'INVENTORY';
                 this.slotIndex = -1;
-                
-                events.emit('PLAY_SFX', { id: 'ui_drag_start', volume: 0.5 }); // Distinct drag start SFX
+                events.emit('PLAY_SFX', { id: 'ui_drag_start', volume: 0.5 });
                 this.dragAndDropManager.startDrag(
-                    item, 'inventory', idx, this.mouse.x, this.mouse.y,
-                    this.handleItemDropped.bind(this)
+                    item, 'inventory', idx, this.mouse.x, this.mouse.y, this.handleItemDropped.bind(this)
                 );
             }
         }
     }
 
     onDragMove(x, y) {
-        // Route the drag update to whichever manager is currently active
         if (this.scrollManager.isDragging) {
             this.scrollManager.handleDragMove(y);
         } else if (this.dragAndDropManager.dragState.active) {
@@ -305,7 +272,6 @@ export class CharacterSummaryController extends BaseController {
     }
 
     onDrop(sourceHitboxId, targetHitboxId) {
-        // Route the drop to whichever manager is currently active
         if (this.scrollManager.isDragging) {
             this.scrollManager.handleDragEnd();
         } else if (this.dragAndDropManager.dragState.active) {
@@ -313,9 +279,6 @@ export class CharacterSummaryController extends BaseController {
         }
     }
 
-    // ========================================================
-    // CONTEXT MENU LOGIC
-    // ========================================================
     _buildMenuOptions(item, source, sourceKey) {
         const options = [];
         const isBattle = typeof this.config.onItemSelected === 'function';
@@ -332,13 +295,11 @@ export class CharacterSummaryController extends BaseController {
                     if (this.filteredInventory.length > 0) options.push({ label: 'Swap', actionId: 'NAV_TO_INV' });
                     options.push({ label: 'Unequip', actionId: 'UNEQUIP_AND_NAV' });
                 } else {
-                    // --- FIX: Check if the item is equippable before showing 'Equip' ---
                     const isEquippable = item.equipSlot || ['weapon', 'armor', 'accessory', 'equipment'].includes(item.type);
                     if (isEquippable) {
                         options.push({ label: 'Equip', actionId: 'EQUIP' });
                     }
                 }
-                // --- UPDATED UPGRADE CHECK ---
                 if (ItemUpgradeSystem.canUpgrade(item)) {
                     options.push({ label: 'Upgrade', actionId: 'UPGRADE' });
                 }
@@ -384,7 +345,6 @@ export class CharacterSummaryController extends BaseController {
                     console.warn('useItem method missing on CharacterSummaryLogic');
                 }
                 break;
-            // --- UPDATED UPGRADE HANDLER ---
             case 'UPGRADE':
                 ItemUpgradeSystem.upgradeItem(item);
                 break;
@@ -401,17 +361,26 @@ export class CharacterSummaryController extends BaseController {
                 }
                 break;
         }
-
-        // Ensure view stays synced after stats/inventory change
         this.updateFilteredInventory();
     }
 
-    // ========================================================
-    // INPUT HANDLING
-    // ========================================================
-
-    handleKeyDown(code) {
-        const intent = KEY_BINDINGS[code];
+    // --- UPDATED SIGNATURE TO ACCEPT RAW EVENT ---
+    handleKeyDown(code, e) {
+        // Raw event intercept for text input
+        if (this.logic.isEditingName && e) {
+            if (e.code === "Enter" || e.code === "Escape") {
+                this.logic.validateName();
+                this.playConfirmSound();
+            } else {
+                this.logic.nameInput.handleEvent(e);
+                
+                // --- MIRROR CREATOR: LIVE SYNC ---
+                // Update the actual member data so the UI reflects keystrokes instantly
+                this.currentMember.name = this.logic.nameInput.value;
+            }
+            return;
+        }
+        const intent = KEY_BINDINGS[code] || KEY_BINDINGS[e?.code];
         if (!intent) return;
 
         if (this.contextMenuManager.menu) {
@@ -424,10 +393,11 @@ export class CharacterSummaryController extends BaseController {
         if (intent === 'NEXT_CHAR') return this.cycleMember(1);
 
         if (intent === 'TOGGLE_VIEW') {
-            this.playNavSound(); // View toggle sound
+            this.playNavSound(); 
             if (this.viewMode === 'STATS') this.viewMode = 'ITEM';
             else if (this.viewMode === 'ITEM') this.viewMode = 'ABILITIES';
             else this.viewMode = 'STATS';
+            
             this.setViewMode(this.viewMode);
             return;
         }
@@ -442,12 +412,10 @@ export class CharacterSummaryController extends BaseController {
     _handleBack() {
         if (this.dragAndDropManager.dragState.active) {
             this.dragAndDropManager.cancelDrag();
-            this.playCancelSound(); // Feedback for canceling drag
+            this.playCancelSound(); 
             return;
         }
-        
-        this.playCancelSound(); // Feedback for backing out or deselecting
-
+        this.playCancelSound(); 
         if (this.state === 'INVENTORY') {
             this.state = 'SLOTS';
             this.inventoryIndex = -1;
@@ -459,28 +427,25 @@ export class CharacterSummaryController extends BaseController {
 
     handleSlotNavigation(intent) {
         const oldIndex = this.slotIndex;
-
         if (intent === 'UP') {
             this.slotIndex = (this.slotIndex > 0) ? this.slotIndex - 1 : this.activeSlots.length - 1;
         } else if (intent === 'DOWN') {
             this.slotIndex = (this.slotIndex < this.activeSlots.length - 1) ? this.slotIndex + 1 : 0;
         }
 
-        if (this.slotIndex !== oldIndex) this.playNavSound(); // SFX for slot movement
+        if (this.slotIndex !== oldIndex) this.playNavSound(); 
 
         if (intent === 'CONFIRM') {
             const slotName = this.activeSlots[this.slotIndex];
             const item = this.currentMember.equipment[slotName];
-            
             if (item) {
-                // Synthesize click AND flag it as a keyboard action
                 this.onClick(`SLOT_${slotName}`, true);
             } else if (this.filteredInventory.length > 0) {
                 this.playConfirmSound();
                 this._activateSlotButDontFilter(slotName);
             }
         } else if (intent === 'DELETE') {
-            this.playCancelSound(); // SFX for unequip command via hotkey
+            this.playCancelSound(); 
             this.unequipCurrentSlot();
         }
     }
@@ -501,7 +466,7 @@ export class CharacterSummaryController extends BaseController {
         }
 
         if (this.inventoryIndex !== oldIndex) {
-            this.playNavSound(); // SFX for inventory grid movement
+            this.playNavSound(); 
             if (['UP', 'DOWN', 'LEFT', 'RIGHT'].includes(intent)) {
                 this.scrollToItem(this.inventoryIndex, false);
             }
@@ -510,25 +475,15 @@ export class CharacterSummaryController extends BaseController {
         if (intent === 'CONFIRM') {
             const item = this.filteredInventory[this.inventoryIndex];
             if (item) {
-                // Synthesize click AND flag it as a keyboard action
                 this.onClick(`INV_ITEM_${this.inventoryIndex}`, true);
             }
             return;
         }
     }
 
-    // ========================================================
-    // RAW MOUSE & DRAG FALLBACKS
-    // ========================================================
-
     handleMouseMove(x, y, isMouseDown, renderer) {
-        // Let BaseController track this.mouse.x/y
         super.handleMouseMove(x, y, isMouseDown, renderer);
     }
-
-    // ========================================================
-    // SCROLL API BRIDGES
-    // ========================================================
 
     updateHitboxes(hitboxes) {
         super.updateHitboxes(hitboxes);
@@ -560,18 +515,19 @@ export class CharacterSummaryController extends BaseController {
         this.scrollManager.resetAllScrolls();
     }
 
-    // ========================================================
-    // STATE & DATA MANAGEMENT
-    // ========================================================
-
     setViewMode(mode) {
         this.viewMode = mode;
         this._syncScrollZones();
     }
 
     cycleMember(direction) {
+        // Save name state if cycling via keyboard bindings
+        if (this.logic.isEditingName) {
+            this.logic.validateName();
+        }
+
         if (this.logic.cycleMember(direction)) {
-            this.playNavSound(); // Feedback for changing character
+            this.playNavSound(); 
             this.state = 'SLOTS';
             this.contextMenuManager.close();
             this.inventoryIndex = -1;
@@ -585,7 +541,6 @@ export class CharacterSummaryController extends BaseController {
             this.dragAndDropManager.endDrag('SLOT_' + slotName);
             return;
         }
-
         const newIndex = this.activeSlots.indexOf(slotName);
         if (newIndex !== -1) {
             this.slotIndex = newIndex;
@@ -623,7 +578,6 @@ export class CharacterSummaryController extends BaseController {
             this.dragAndDropManager.endDrag('INV_ZONE');
             return;
         }
-
         const targetItem = this.filteredInventory[idx];
         if (targetItem) {
             this.inventoryIndex = idx;
@@ -645,7 +599,7 @@ export class CharacterSummaryController extends BaseController {
         const draggingSource = this.dragAndDropManager.dragState.active ? this.dragAndDropManager.dragState.sourceId : null;
 
         this.filteredInventory = this.logic.getFilteredInventory(draggingItem, draggingSource);
-
+        
         if (this.inventoryIndex >= this.filteredInventory.length) {
             this.inventoryIndex = Math.max(0, this.filteredInventory.length - 1);
         }
@@ -665,8 +619,8 @@ export class CharacterSummaryController extends BaseController {
 
     equipItem(inventoryItem, targetSlotOverride = null) {
         if (this.logic.readOnly) return;
-
         const equippedSlotName = this.logic.equipItem(inventoryItem, targetSlotOverride, this.activeSlots);
+
         if (equippedSlotName) {
             const newSlotIndex = this.activeSlots.indexOf(equippedSlotName);
             if (newSlotIndex !== -1) {
@@ -680,9 +634,9 @@ export class CharacterSummaryController extends BaseController {
 
     unequipCurrentSlot() {
         if (this.logic.readOnly || this.slotIndex === -1) return;
-
         const slotName = this.activeSlots[this.slotIndex];
         const didUnequip = this.logic.unequipSlot(slotName);
+
         if (didUnequip) {
             this.state = 'SLOTS';
             this.inventoryIndex = -1;
@@ -691,7 +645,6 @@ export class CharacterSummaryController extends BaseController {
     }
 
     getFocusedItem() {
-        // FIX: The ContextMenu payload stores the contextual data!
         if (this.contextMenuManager.menu && this.contextMenuManager.menu.payload) {
             return this.contextMenuManager.menu.payload.item;
         }
@@ -718,6 +671,7 @@ export class CharacterSummaryController extends BaseController {
         if (this.dragAndDropManager.dragState.active) {
             const dragSource = this.dragAndDropManager.dragState.sourceId;
             const origin = this.dragAndDropManager.dragState.originSlot;
+            
             if (dragSource === 'equipment' && this.activeSlots[viewSelectedSlot] === origin) {
                 viewSelectedSlot = -1;
             } else if (dragSource === 'inventory' && viewInventoryIndex === origin) {
@@ -741,6 +695,11 @@ export class CharacterSummaryController extends BaseController {
             inventoryScrollOffset: this.inventoryScrollOffset,
             mouse: this.mouse,
             hoveredHitboxId: this.hoveredHitboxId,
+
+            // --- EXPORT NAME ENTRY STATE ---
+            isEditingName: this.logic.isEditingName,
+            nameInputValue: this.logic.nameInput.value,
+
             heldItem: this.dragAndDropManager.dragState.active ? {
                 item: this.dragAndDropManager.dragState.payload,
                 source: this.dragAndDropManager.dragState.sourceId,
@@ -755,13 +714,12 @@ export class CharacterSummaryController extends BaseController {
 
     handleItemDropped(item, sourceId, originSlot, dropTargetId) {
         if (this.logic.readOnly) return;
-
         if (!dropTargetId || dropTargetId.startsWith('INV_') || dropTargetId === 'SCROLLBAR_INV') {
             if (sourceId === 'equipment') {
-                this.playCancelSound(); // Feedback sound for successful unequip drop
+                this.playCancelSound(); 
                 this.logic.unequipSlot(originSlot);
                 this.updateFilteredInventory();
-
+                
                 const newIndex = this._findNewestInventoryIndex(item.defId);
                 this.state = 'INVENTORY';
                 this.inventoryIndex = (newIndex !== -1) ? newIndex : 0;
@@ -775,17 +733,16 @@ export class CharacterSummaryController extends BaseController {
         if (dropTargetId && dropTargetId.startsWith('SLOT_')) {
             const targetSlotRaw = dropTargetId.substring(5);
             if (!this.logic.canEquipToSlot(item, targetSlotRaw)) {
-                this.playCancelSound(); // Invalid drop rejection
+                this.playCancelSound(); 
                 return;
             }
 
             const slotKey = targetSlotRaw.toLowerCase().replace(/\s/g, '');
             const canonicalSlot = this.activeSlots.find(s => s.toLowerCase().replace(/\s/g, '') === slotKey) || targetSlotRaw;
-
+            
             if (sourceId === 'equipment' && originSlot === canonicalSlot) return;
 
-            this.playConfirmSound(); // Feedback sound for successful equip drop
-            
+            this.playConfirmSound(); 
             if (sourceId === 'equipment') {
                 this.logic.unequipSlot(originSlot);
             }

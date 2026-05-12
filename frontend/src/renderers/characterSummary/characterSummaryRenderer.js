@@ -32,8 +32,10 @@ export class CharacterSummaryRenderer {
     render(state) {
         // 1. Reset Frame State
         this.hitboxes = [];
-        const { member, derivedStats } = state;
-
+        
+        // --- DESTRUCTURE NAME EDITING STATE HERE ---
+        const { member, derivedStats, isEditingName, nameInputValue } = state; 
+        
         const w = this.ctx.canvas.width;
         const h = this.ctx.canvas.height;
         this.ui.clearScreen(w, h);
@@ -53,7 +55,6 @@ export class CharacterSummaryRenderer {
         this.ui.drawLine(leftW + centerW, 0, leftW + centerW, h, UITheme.colors.border, 1);
 
         if (!member) return;
-
         const stats = derivedStats || StatCalculator.calculate(member);
 
         // --- 4. Render Components ---
@@ -62,16 +63,34 @@ export class CharacterSummaryRenderer {
         this.renderLeftColumn(state, leftW, h, member, stats);
 
         // B. Center Column (Equipment & Vitals)
-        // *** ADDED state.hoveredHitboxId HERE ***
         this.equipPanel.render(
-            member, stats, state.slots, state.selectedSlotIndex, 
-            state.isChoosingItem, leftW, 0, centerW, h, this.hitboxes, state.heldItem, state.hoveredHitboxId
+            member, stats, state.slots, state.selectedSlotIndex, state.isChoosingItem,
+            leftW, 0, centerW, h, this.hitboxes, state.heldItem, state.hoveredHitboxId,
+            isEditingName // <--- Pass the flag down
         );
+
+        // --- ADD NAME EDITING OVERLAY ---
+        if (isEditingName) {
+            const centerX = leftW + Math.floor(centerW / 2);
+            const nameY = 24 + 36; 
+
+            this.ctx.font = UITheme.fonts.header;
+            const textWidth = this.ctx.measureText(nameInputValue).width;
+            const boxW = Math.max(250, textWidth + 80); 
+            
+            // INCREASED PADDING: Shifted up to -48, Height increased to 72
+            this.ui.drawRect(centerX - boxW/2, nameY - 48, boxW, 72, "#080808", true); 
+            this.ui.drawRect(centerX - boxW/2, nameY - 48, boxW, 72, UITheme.colors.borderHighlight, false);
+
+            const cursor = (Math.floor(Date.now() / 500) % 2 === 0) ? "|" : "";
+            this.ui.drawText(nameInputValue + cursor, centerX, nameY, UITheme.fonts.header, UITheme.colors.textHighlight, "center");
+        }
 
         // C. Right Column (Inventory Grid)
         const invX = leftW + centerW + this.padding;
         const invY = 0;
         const invW = rightW - (this.padding * 2);
+
         this.invPanel.render(
             state.filteredInventory, state.inventoryIndex, state.isChoosingItem,
             invX, invY, invW, h, state, this.hitboxes
@@ -114,7 +133,7 @@ export class CharacterSummaryRenderer {
 
         const drawTab = (label, tx, isActive, id) => {
             const isHovered = hoveredHitboxId === id;
-
+            
             // Default styling
             let bgColor = "rgba(0,0,0,0.5)";
             let textCol = UITheme.colors.textMuted;
@@ -153,11 +172,7 @@ export class CharacterSummaryRenderer {
             );
 
             // --- DELECTARIVE AUDIO ADDED HERE ---
-            this.hitboxes.push({ 
-                id, x: tx, y, w: tabW, h: tabH, type: 'tab',
-                hoverSfx: 'hoverTick',
-                clickSfx: 'cinematicBoom'
-            });
+            this.hitboxes.push({ id, x: tx, y, w: tabW, h: tabH, type: 'tab', hoverSfx: 'hoverTick', clickSfx: 'cinematicBoom' });
         };
 
         drawTab("STATS", x, viewMode === 'STATS', 'TAB_STATS');
@@ -206,7 +221,6 @@ export class CharacterSummaryRenderer {
         const y = mouse.y - (drawSize / 2);
 
         this.ctx.save();
-        
         // Sync with PartyRenderer: Use global alpha and flat border instead of pulsing brackets
         this.ctx.globalAlpha = 0.85;
         this.ui.drawRect(x, y, drawSize, drawSize, "rgba(0,0,0,0.6)", true);
@@ -222,7 +236,6 @@ export class CharacterSummaryRenderer {
 
         // Clean static border
         this.ui.drawRect(x, y, drawSize, drawSize, UITheme.colors.borderHighlight, false);
-
         this.ctx.restore();
     }
 
@@ -231,22 +244,28 @@ export class CharacterSummaryRenderer {
 
         const btnHeight = 77;  // Scaled 32 * 2.4
         const padding = 14;    // Scaled ~6 * 2.4
-        const menuW = 312;     // Scaled 130 * 2.4 
+        const menuW = 312;     // Scaled 130 * 2.4
         const menuH = (menu.options.length * btnHeight) + (padding * 2);
 
         const screenW = this.ctx.canvas.width;
         const screenH = this.ctx.canvas.height;
+
         let x = menu.x;
         let y = menu.y;
 
-        // Clamp to screen boundaries 
+        // Clamp to screen boundaries
         if (x + menuW > screenW) x = screenW - menuW - 12;
         if (y + menuH > screenH) y = screenH - menuH - 12;
         if (x < 12) x = 12;
         if (y < 12) y = 12;
 
         const layout = { x, y, w: menuW, h: menuH };
-        const menuConfig = { ...menu, selectedIndex: selectedIndex, btnHeight: btnHeight, padding: padding };
+        const menuConfig = {
+            ...menu,
+            selectedIndex: selectedIndex,
+            btnHeight: btnHeight,
+            padding: padding
+        };
 
         let menuHoverId = null;
         if (hoveredHitboxId && hoveredHitboxId.startsWith('CTX_OPT_')) {
@@ -269,7 +288,7 @@ export class CharacterSummaryRenderer {
 
     _drawInputPrompts(state, leftW, centerW, h) {
         let lines = [];
-        
+
         if (state.contextMenu) {
             lines.push("[L-Click/SPC] Select      [R-Click/ESC] Close");
         } else if (state.heldItem) {
@@ -289,14 +308,16 @@ export class CharacterSummaryRenderer {
             } else if (hasInvItems) {
                 row1.push("[L-Click/SPC] Equip");
             }
+
             row2.push("[R-Click/ESC] Back");
-            
+
             lines.push(row1.join("      "));
             lines.push(row2.join("      "));
         }
 
         const centerX = leftW + Math.floor(centerW / 2);
-        const flourishW = Math.min(720, centerW - 64); 
+        const flourishW = Math.min(720, centerW - 64);
+        
         this.ui.drawLineWithGothicFlourish(centerX - (flourishW / 2), h - 104, flourishW, UITheme.colors.borderHighlight);
 
         const startY = h - (lines.length > 1 ? 64 : 44);
@@ -304,7 +325,7 @@ export class CharacterSummaryRenderer {
             this.ui.drawText(
                 lineText,
                 centerX,
-                startY + (index * 32), 
+                startY + (index * 32),
                 UITheme.fonts.small,
                 UITheme.colors.textMuted,
                 "center"

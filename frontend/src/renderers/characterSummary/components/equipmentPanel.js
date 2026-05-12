@@ -15,12 +15,32 @@ export class EquipmentPanel {
         return (v && typeof v === 'object') ? (v.total || v.value || 0) : (Number(v) || 0);
     }
 
-    render(member, stats, activeSlots, selectedIndex, isChoosingItem, x, y, w, h, hitboxes, heldItem, hoveredId = null) {
+    render(member, stats, activeSlots, selectedIndex, isChoosingItem, x, y, w, h, hitboxes, heldItem, hoveredId = null, isEditingName = false) {
         const centerX = Math.floor(x + (w / 2));
         let headerY = y + 24;
-        
         const actualLevel = this._getVal(stats.level) || this._getVal(member.level) || 1;
+
+        // --- FIX: Set the font BEFORE measuring so the width is accurate ---
+        this.ui.ctx.font = UITheme.fonts.header;
         
+        // Measure with the correct font and add generous padding (changed 40 to 80)
+        const nameWidth = this.ui.ctx.measureText(member.name).width + 80;
+        const nameHeight = 60; // Slightly taller for a better click target
+
+        hitboxes.push({
+            id: 'BTN_EDIT_NAME',
+            x: centerX - (nameWidth / 2),
+            y: headerY, // Shifted up slightly to perfectly frame the text
+            w: nameWidth,
+            h: nameHeight,
+            type: 'button',
+            hoverSfx: 'hoverTick'
+        });
+
+        // Only draw the standard name if we are NOT actively editing it
+        if (!isEditingName) {
+            this.ui.drawText(member.name, centerX, headerY + 36, UITheme.fonts.header, UITheme.colors.textMain, "center");
+        }
         this.ui.drawText(member.name, centerX, headerY + 36, UITheme.fonts.header, UITheme.colors.textMain, "center");
         this.ui.drawText(`Level ${actualLevel}`, centerX, headerY + 86, UITheme.fonts.body, UITheme.colors.textHighlight, "center");
         
