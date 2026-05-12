@@ -12,10 +12,11 @@ structures:
 
 name changes in character summary
 more consistent sound for UI
-battle UI to display damage types and additional information
+
 
 Bugs
 Rain flash
+scaling of enemies in encounter not working properly
 
 
 Root
