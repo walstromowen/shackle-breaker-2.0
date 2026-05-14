@@ -40,7 +40,7 @@ export const BIOME_DEFINITIONS = {
         },
         
         encounters: {
-            rate: 0.01,
+            rate: 0.91,
             pools: [
                 { chance: 0.30, id: 'wounded_mutt' },
             ]

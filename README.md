@@ -4,17 +4,17 @@ Roguelike turnbased adventure game based on the Shackle Breaker story by Owen Wa
 enhance battle animations / polish
 particleRenderer (global)
 crafting system.
-Starting seed
+Shop System
 procedural dungeons and hand crafted areas
 structures: 
 
 
 more consistent sound for UI
+Overall UI polish
 
 
 Bugs
 Rain flash
-scaling of enemies in encounter not working properly
 
 
 Root
