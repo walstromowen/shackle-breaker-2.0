@@ -17,7 +17,15 @@ export const BIOME_DEFINITIONS = {
             night: 'plainsBattleNightBg'
         },
         shapeElevation: (noise) => noise,
-        
+
+        // NEW: Structures spawn pool
+        structures: {
+            rate: 0.10, // 10% chance per chunk
+            pools: [
+                { chance: 1.00, id: 'ABANDONED_VILLAGE' }
+            ]
+        },
+
         // RESTORED MAP OBJECTS
         mapObjects: {
             [CONFIG.TILE_TYPES.LAYER_2]: [
@@ -38,15 +46,14 @@ export const BIOME_DEFINITIONS = {
                 { chance: 0.30, rangeStart: 0.15, pool: ['GRASS_COVERAGE_1', 'GRASS_COVERAGE_2'] }
             ]
         },
-        
         encounters: {
-            rate: 0.91,
+            rate: 0.001,
             pools: [
                 { chance: 0.30, id: 'wounded_mutt' },
             ]
         },
         battles: {
-            rate: 0.01,
+            rate: 0.001,
             pools: {
                 easy: [
                     { chance: 0.50, enemies: ['WOLF'] },
@@ -79,7 +86,6 @@ export const BIOME_DEFINITIONS = {
             }
         }
     },
-
     DESERT: {
         id: 'DESERT',
         sheetId: 'desert',
@@ -104,7 +110,6 @@ export const BIOME_DEFINITIONS = {
                 return Math.min(0.65, 0.25 + ((noise - 0.50) * 10.0));
             }
         },
-        
         // RESTORED MAP OBJECTS
         mapObjects: {
             [CONFIG.TILE_TYPES.LAYER_2]: [
@@ -117,15 +122,14 @@ export const BIOME_DEFINITIONS = {
                 { chance: 0.50,  rangeStart: 0.30, pool: ['SAND_DUNE_1', 'SAND_DUNE_2', 'SAND_DUNE_3'] }
             ]
         },
-        
         encounters: {
-            rate: 0.01,
+            rate: 0.001,
             pools: [
                 { chance: 0.80, id: 'wounded_mutt', allowedTimes: ['day'] },
             ]
         },
         battles: {
-            rate: 0.01,
+            rate: 0.001,
             pools: {
                 easy: [
                     { chance: 1.00, enemies: ['WOLF'] }
