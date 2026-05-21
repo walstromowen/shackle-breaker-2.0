@@ -11,16 +11,14 @@ export const gameState = {
     },
 
     world: {
-        currentBiomeId: null, 
-        time: 0, 
+        currentBiomeId: null,
+        time: 0,
         day: 1,
-        changes: {}, 
+        changes: {},
+        terrainOverrides: {}, // <-- ADD THIS LINE
         discoveredChunks: [],
-        
-        // --- NEW: Weather State ---
-        currentWeather: null 
-    },
-
+        currentWeather: null
+        },
     party: {
         inventory: [], 
         currency: 0,

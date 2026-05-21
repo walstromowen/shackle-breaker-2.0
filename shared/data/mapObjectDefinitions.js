@@ -116,7 +116,7 @@ export const MAP_OBJECTS_DEFINITIONS = {
         spriteX: 0, spriteY: 7, width: 4, height: 3,
         isSolid: true, isGround: false, isAnchor: true,
         // FIX: yOffset changed to 0
-        hitbox: { xOffset: 0, yOffset: 0, w: 4, h: 1 }
+        hitbox: { xOffset: 0, yOffset: -1, w: 4, h: 2 }
     },
 
     // --- ANIMATED ---
