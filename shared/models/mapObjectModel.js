@@ -19,17 +19,25 @@ export class MapObjectModel {
         // Logical/Game Properties
         this.isSolid = definition.isSolid || false;
         this.isGround = definition.isGround || false;
-        
-        // --- THE MISSING FIXES ---
         this.isStairs = definition.isStairs || false;
         this.allowedDirections = definition.allowedDirections || null;
-
         this.interaction = definition.interaction || null;
         this.light = definition.light || null;
 
-        this.hitbox = definition.hitbox || { xOffset: 0, yOffset: 0, w: this.w, h: this.h };
+        // --- HYBRID HITBOX RESOLUTION ---
+        if (definition.hitboxes && Array.isArray(definition.hitboxes)) {
+            this.hitboxes = definition.hitboxes;
+        } else if (definition.hitbox) {
+            this.hitboxes = [definition.hitbox];
+        } else {
+            this.hitboxes = [{ xOffset: 0, yOffset: 0, w: this.w, h: this.h }];
+        }
+        
+        // Retain standard pointer for single-box lookup compatibility if needed elsewhere
+        this.hitbox = this.hitboxes[0]; 
     }
 
+    // Retained for legacy API consistency—returns bounds of primary/first hitbox block
     getCollisionBounds() {
         return {
             left: this.col + this.hitbox.xOffset,
@@ -41,7 +49,14 @@ export class MapObjectModel {
 
     collidesWith(col, row) {
         if (!this.isSolid) return false;
-        const bounds = this.getCollisionBounds();
-        return (col >= bounds.left && col < bounds.right && row >= bounds.top && row < bounds.bottom);
+        
+        // Evaluates collision check across all allocated shapes
+        return this.hitboxes.some(hb => {
+            const left = this.col + hb.xOffset;
+            const right = left + hb.w;
+            const top = this.row + hb.yOffset;
+            const bottom = top + hb.h;
+            return (col >= left && col < right && row >= top && row < bottom);
+        });
     }
 }

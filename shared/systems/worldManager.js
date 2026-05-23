@@ -455,14 +455,14 @@ export class WorldManager {
     _placeObject(col, row, id) {
         const newObj = this.createObjectInstance(col, row, id);
         this.objects.set(this._s(col, row), newObj);
-        const def = MAP_OBJECTS_DEFINITIONS[id] || {};
-        const hbX = newObj.hitbox?.xOffset ?? def.hitbox?.xOffset ?? 0;
-        const hbY = newObj.hitbox?.yOffset ?? def.hitbox?.yOffset ?? 0;
-        const hbW = newObj.hitbox?.w ?? def.hitbox?.w ?? def.w ?? 1;
-        const hbH = newObj.hitbox?.h ?? def.hitbox?.h ?? def.h ?? 1;
-        for(let hr = 0; hr < hbH; hr++) {
-            for(let hc = 0; hc < hbW; hc++) {
-                this._collisionMap.set(this._s(col + hbX + hc, row + hbY + hr), newObj);
+
+        // Iterates across each designated structural hitbox block 
+        for (const hb of newObj.hitboxes) {
+            for (let hr = 0; hr < hb.h; hr++) {
+                for (let hc = 0; hc < hb.w; hc++) {
+                    const targetKey = this._s(col + hb.xOffset + hc, row + hb.yOffset + hr);
+                    this._collisionMap.set(targetKey, newObj);
+                }
             }
         }
     }
@@ -522,22 +522,23 @@ export class WorldManager {
     modifyWorld(col, row, newValue) {
         const key = this._s(col, row);
         gameState.world.changes[key] = newValue;
+
         if (this.objects.has(key)) {
             const oldObj = this.objects.get(key);
-            const def = MAP_OBJECTS_DEFINITIONS[oldObj.id] || {};
-            const hbX = oldObj.hitbox?.xOffset ?? def.hitbox?.xOffset ?? 0;
-            const hbY = oldObj.hitbox?.yOffset ?? def.hitbox?.yOffset ?? 0;
-            const hbW = oldObj.hitbox?.w ?? def.hitbox?.w ?? def.w ?? 1;
-            const hbH = oldObj.hitbox?.h ?? def.hitbox?.h ?? def.h ?? 1;
-            for(let hr = 0; hr < hbH; hr++) {
-                for(let hc = 0; hc < hbW; hc++) {
-                    this._collisionMap.delete(this._s(col + hbX + hc, row + hbY + hr));
+
+            // Systematically unregisters every structural grid coordinate mapped to this object
+            for (const hb of oldObj.hitboxes) {
+                for (let hr = 0; hr < hb.h; hr++) {
+                    for (let hc = 0; hc < hb.w; hc++) {
+                        const targetKey = this._s(col + hb.xOffset + hc, row + hb.yOffset + hr);
+                        this._collisionMap.delete(targetKey);
+                    }
                 }
             }
             this.objects.delete(key);
         }
     }
-
+    
     getObjectAt(col, row) { this.ensureChunkLoaded(col, row); return this._collisionMap.get(this._s(col, row)) || null; }
     getSolidObjectAt(col, row) { const obj = this.getObjectAt(col, row); return (obj && obj.isSolid !== false) ? obj : null; }
 

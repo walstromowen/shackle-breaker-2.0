@@ -61,9 +61,33 @@ export class OverworldController extends BaseController {
 
     update(dt) {
         super.update(dt);
-
-        // --- NEW: Check music dynamically as time passes, regardless of movement! ---
         this.checkEnvironmentMusic();
+
+        // --- STEP STATEFUL OBJECT ANIMATIONS (e.g., Doors Opening) ---
+        this.worldManager.getActiveObjects().forEach(obj => {
+            if (obj.isAnimating) {
+                obj.animTimer = (obj.animTimer || 0) + dt;
+                if (obj.animTimer >= (obj.speed || 0.15)) {
+                    obj.animTimer = 0;
+                    if (obj.currentFrame < obj.frames - 1) {
+                        obj.currentFrame++;
+                    } else {
+                        // Animation finished!
+                        obj.isAnimating = false;
+
+                        // If it's a warp trigger, instantly execute the room transition now
+                        if (obj.interaction?.type === 'WARP') {
+                            events.emit('INTERACT', { 
+                                ...obj.interaction, 
+                                context: { col: obj.col, row: obj.row, objectId: obj.id } 
+                            });
+                        } else {
+                            this.isLocked = false;
+                        }
+                    }
+                }
+            }
+        });
 
         if (this.isLocked) return;
 
@@ -77,7 +101,6 @@ export class OverworldController extends BaseController {
         } else {
             this.checkForNewMove();
         }
-
         this.updateCamera();
     }
 
@@ -170,6 +193,18 @@ export class OverworldController extends BaseController {
         gameState.player.col = Math.floor(this.player.x / this.config.TILE_SIZE);
         gameState.player.row = Math.floor(this.player.y / this.config.TILE_SIZE);
         gameState.player.direction = this.player.direction;
+
+        // --- INTERCEPT: STEPPING INTO AN ANIMATED WARP DOOR ---
+        const stepOnObj = this.worldManager.getObjectAt(gameState.player.col, gameState.player.row);
+        if (stepOnObj && stepOnObj.frames > 1 && stepOnObj.interaction?.type === 'WARP') {
+            this.isLocked = true; // Freeze player input
+            stepOnObj.isAnimating = true;
+            stepOnObj.currentFrame = 0;
+            stepOnObj.animTimer = 0;
+            
+            events.emit('PLAY_SFX', { id: 'door_open', volume: 0.6, pitch: 1.0 });
+            return; // Halt encounters/movement checks while the door transitions open
+        }
 
         this.checkTileEvents();
         this.validateBiomeWeather();
