@@ -131,159 +131,170 @@ export class WorldManager {
     }
 
     _planBlueprint(startCol, startRow, blueprint, cx, cy) {
-        const centerPrefab = STRUCTURES[blueprint.centerPrefab];
-        if (!centerPrefab) return;
+    const centerPrefab = STRUCTURES[blueprint.centerPrefab];
+    if (!centerPrefab) return;
 
-        console.log(`[WorldManager] Planning Blueprint Structure at ${startCol}, ${startRow}`);
-        this._writePrefabToGlobalState(startCol, startRow, centerPrefab);
-        const baseElev = this.getElevation(startCol, startRow);
-        
-        const claimedTiles = new Set();
-        const markClaimed = (c, r, w, h) => {
-            for(let y = 0; y < h; y++) {
-                for(let x = 0; x < w; x++) claimedTiles.add(this._s(c + x, r + y));
-            }
-        };
-        markClaimed(startCol, startRow, centerPrefab.width, centerPrefab.height);
+    console.log(`[WorldManager] Planning Blueprint Structure at ${startCol}, ${startRow}`);
+    this._writePrefabToGlobalState(startCol, startRow, centerPrefab);
 
-        // Directions: 0=North, 1=East, 2=South, 3=West
-        const DIRS = [
-            {c: 0, r: -1}, // North
-            {c: 1, r: 0},  // East
-            {c: 0, r: 1},  // South
-            {c: -1, r: 0}  // West
-        ];
-
-        let activePaths = [];
-        for (let i = 0; i < 4; i++) {
-            if (this.pseudoRandom(cx * 11, cy * i * 13) < blueprint.branchChance) {
-                // Find the absolute middle tile of the prefab
-                const midC = startCol + Math.floor(centerPrefab.width / 2);
-                const midR = startRow + Math.floor(centerPrefab.height / 2);
-                
-                // Move exactly to the outer edge boundary tile 
-                // For size 5: mid (2) + dir * floor(5/2) (2) = edge index (4 or 0)
-                const edgeC = midC + (DIRS[i].c * Math.floor(centerPrefab.width / 2));
-                const edgeR = midR + (DIRS[i].r * Math.floor(centerPrefab.height / 2));
-                
-                // Start the road exactly 1 tile past that edge tile
-                const startC = edgeC;
-                const startR = edgeR;
-
-                const lenRng = this.pseudoRandom(cx * i, cy * 31);
-                const maxLen = Math.floor(lenRng * (blueprint.branchLength.max - blueprint.branchLength.min)) + blueprint.branchLength.min;
-                
-                activePaths.push({
-                    c: startC,
-                    r: startR,
-                    dirIndex: i,
-                    len: 0,
-                    maxLen: maxLen,
-                    stepsSinceLastModule: 0
-                });
-            }
+    const baseElev = this.getElevation(startCol, startRow);
+    const claimedTiles = new Set();
+    const markClaimed = (c, r, w, h) => {
+        for(let y = 0; y < h; y++) {
+            for(let x = 0; x < w; x++) claimedTiles.add(this._s(c + x, r + y));
         }
+    };
+    markClaimed(startCol, startRow, centerPrefab.width, centerPrefab.height);
 
-        while (activePaths.length > 0) {
-            const nextPaths = [];
-            for (const p of activePaths) {
-                if (p.len >= p.maxLen) continue;
+    // Directions: 0=North, 1=East, 2=South, 3=West
+    const DIRS = [
+        {c: 0, r: -1}, // North
+        {c: 1, r: 0},  // East
+        {c: 0, r: 1},  // South
+        {c: -1, r: 0}  // West
+    ];
 
-                let nextC = p.c + DIRS[p.dirIndex].c;
-                let nextR = p.r + DIRS[p.dirIndex].r;
+    let activePaths = [];
+    for (let i = 0; i < 4; i++) {
+        if (this.pseudoRandom(cx * 11, cy * i * 13) < blueprint.branchChance) {
+            const midC = startCol + Math.floor(centerPrefab.width / 2);
+            const midR = startRow + Math.floor(centerPrefab.height / 2);
 
-                let valid = this._isPathValid(nextC, nextR, baseElev, claimedTiles);
-                if (!valid) {
+            const edgeC = midC + (DIRS[i].c * Math.floor(centerPrefab.width / 2));
+            const edgeR = midR + (DIRS[i].r * Math.floor(centerPrefab.height / 2));
+
+            const startC = edgeC;
+            const startR = edgeR;
+
+            const lenRng = this.pseudoRandom(cx * i, cy * 31);
+            const maxLen = Math.floor(lenRng * (blueprint.branchLength.max - blueprint.branchLength.min)) + blueprint.branchLength.min;
+            
+            activePaths.push({ 
+                c: startC, 
+                r: startR, 
+                dirIndex: i, 
+                len: 0, 
+                maxLen: maxLen, 
+                stepsSinceLastModule: 0,
+                stepsSinceLastTurn: 0 // <-- Added tracking for turns
+            });
+        }
+    }
+
+    while (activePaths.length > 0) {
+        const nextPaths = [];
+        for (const p of activePaths) {
+            if (p.len >= p.maxLen) continue;
+
+            // --- 1. SPONTANEOUS TURNING LOGIC ---
+            // Pull settings from blueprint or fall back to defaults
+            const turnChance = blueprint.turnChance ?? 0.15; // 15% chance to attempt a turn per step
+            const minStepsBetweenTurns = blueprint.minStepsBetweenTurns ?? 4; // Ensure straight sections
+
+            if (p.stepsSinceLastTurn >= minStepsBetweenTurns) {
+                if (this.pseudoRandom(p.c * 53, p.r * 67) < turnChance) {
                     const leftDir = (p.dirIndex + 3) % 4;
                     const rightDir = (p.dirIndex + 1) % 4;
-                    const tryFirst = this.pseudoRandom(p.c, p.r) < 0.5 ? leftDir : rightDir;
-                    const trySecond = tryFirst === leftDir ? rightDir : leftDir;
+                    // Deterministically pick left or right
+                    const turnDir = this.pseudoRandom(p.c * 71, p.r * 79) < 0.5 ? leftDir : rightDir;
 
-                    if (this._isPathValid(p.c + DIRS[tryFirst].c, p.r + DIRS[tryFirst].r, baseElev, claimedTiles)) {
-                        p.dirIndex = tryFirst;
-                        nextC = p.c + DIRS[p.dirIndex].c;
-                        nextR = p.r + DIRS[p.dirIndex].r;
-                        valid = true;
-                    } else if (this._isPathValid(p.c + DIRS[trySecond].c, p.r + DIRS[trySecond].r, baseElev, claimedTiles)) {
-                        p.dirIndex = trySecond;
-                        nextC = p.c + DIRS[p.dirIndex].c;
-                        nextR = p.r + DIRS[p.dirIndex].r;
-                        valid = true;
+                    // Only commit to the turn if the very next tile in that direction is valid
+                    if (this._isPathValid(p.c + DIRS[turnDir].c, p.r + DIRS[turnDir].r, baseElev, claimedTiles)) {
+                        p.dirIndex = turnDir;
+                        p.stepsSinceLastTurn = 0; 
                     }
                 }
+            }
+            // ------------------------------------
 
-                if (valid) {
-                    p.c = nextC;
-                    p.r = nextR;
-                    p.len++;
-                    p.stepsSinceLastModule++;
-                    
-                    const key = this._s(p.c, p.r);
-                    gameState.world.terrainOverrides[key] = blueprint.pathTile;
-                    this.terrain.invalidateTile(key);
-                    claimedTiles.add(key);
+            let nextC = p.c + DIRS[p.dirIndex].c;
+            let nextR = p.r + DIRS[p.dirIndex].r;
+            let valid = this._isPathValid(nextC, nextR, baseElev, claimedTiles);
 
-                    // Prevents random trees/rocks from spawning on the cleared path tile
-                    gameState.world.changes[key] = null;
+            // --- 2. OBSTACLE AVOIDANCE STEERING (Existing fallback logic) ---
+            if (!valid) {
+                const leftDir = (p.dirIndex + 3) % 4;
+                const rightDir = (p.dirIndex + 1) % 4;
+                const tryFirst = this.pseudoRandom(p.c, p.r) < 0.5 ? leftDir : rightDir;
+                const trySecond = tryFirst === leftDir ? rightDir : leftDir;
 
-                    // Try to spawn a module alongside the path
-                    for (const modConfig of blueprint.modules) {
-                        if (p.stepsSinceLastModule >= modConfig.spacing) {
-                            if (this.pseudoRandom(p.c * 7, p.r * 11) < modConfig.spawnChance) {
-                                const modPrefab = STRUCTURES[modConfig.prefab];
-                                
-                                // Determine the side direction vector (perpendicular to road direction)
-                                const sideDir = DIRS[(p.dirIndex + 1) % 4]; 
-                                
-                                let moduleOriginC = 0;
-                                let moduleOriginR = 0;
+                if (this._isPathValid(p.c + DIRS[tryFirst].c, p.r + DIRS[tryFirst].r, baseElev, claimedTiles)) {
+                    p.dirIndex = tryFirst;
+                    nextC = p.c + DIRS[p.dirIndex].c;
+                    nextR = p.r + DIRS[p.dirIndex].r;
+                    valid = true;
+                    p.stepsSinceLastTurn = 0; // Reset turn counter on forced steer
+                } else if (this._isPathValid(p.c + DIRS[trySecond].c, p.r + DIRS[trySecond].r, baseElev, claimedTiles)) {
+                    p.dirIndex = trySecond;
+                    nextC = p.c + DIRS[p.dirIndex].c;
+                    nextR = p.r + DIRS[p.dirIndex].r;
+                    valid = true;
+                    p.stepsSinceLastTurn = 0; // Reset turn counter on forced steer
+                }
+            }
 
-                                // Edge-anchoring math based on road axis orientation
-                                if (p.dirIndex === 0 || p.dirIndex === 2) { 
-                                    // Moving North or South: Side is East/West. Center prefab on road's Row index.
-                                    moduleOriginR = p.r - Math.floor(modPrefab.height / 2);
-                                    if (sideDir.c > 0) {
-                                        // Spawning to the Right (East) side of road
-                                        moduleOriginC = p.c + modConfig.offset;
-                                    } else {
-                                        // Spawning to the Left (West) side of road
-                                        moduleOriginC = p.c - modConfig.offset - modPrefab.width + 1;
-                                    }
-                                } else { 
-                                    // Moving East or West: Side is North/South. Center prefab on road's Column index.
-                                    moduleOriginC = p.c - Math.floor(modPrefab.width / 2);
-                                    if (sideDir.r > 0) {
-                                        // Spawning to the Bottom (South) side of road
-                                        moduleOriginR = p.r + modConfig.offset;
-                                    } else {
-                                        // Spawning to the Top (North) side of road
-                                        moduleOriginR = p.r - modConfig.offset - modPrefab.height + 1;
+            if (valid) {
+                p.c = nextC;
+                p.r = nextR;
+                p.len++;
+                p.stepsSinceLastModule++;
+                p.stepsSinceLastTurn++; // <-- Increment turn steps counter
+
+                const key = this._s(p.c, p.r);
+                gameState.world.terrainOverrides[key] = blueprint.pathTile;
+                this.terrain.invalidateTile(key);
+                claimedTiles.add(key);
+
+                this.modifyWorld(p.c, p.r, null);
+
+                // Spawning modules alongside paths
+                for (const modConfig of blueprint.modules) {
+                    if (p.stepsSinceLastModule >= modConfig.spacing) {
+                        if (this.pseudoRandom(p.c * 7, p.r * 11) < modConfig.spawnChance) {
+                            const modPrefab = STRUCTURES[modConfig.prefab];
+                            const sideDir = DIRS[(p.dirIndex + 1) % 4];
+                            let moduleOriginC = 0;
+                            let moduleOriginR = 0;
+
+                            if (p.dirIndex === 0 || p.dirIndex === 2) {
+                                moduleOriginR = p.r - Math.floor(modPrefab.height / 2);
+                                if (sideDir.c > 0) {
+                                    moduleOriginC = p.c + modConfig.offset;
+                                } else {
+                                    moduleOriginC = p.c - modConfig.offset - modPrefab.width + 1;
+                                }
+                            } else {
+                                moduleOriginC = p.c - Math.floor(modPrefab.width / 2);
+                                if (sideDir.r > 0) {
+                                    moduleOriginR = p.r + modConfig.offset;
+                                } else {
+                                    moduleOriginR = p.r - modConfig.offset - modPrefab.height + 1;
+                                }
+                            }
+
+                            if (this._isStructureFootprintValid(moduleOriginC, moduleOriginR, modPrefab.width, modPrefab.height)) {
+                                let overlap = false;
+                                for(let y=0; y<modPrefab.height; y++) {
+                                    for(let x=0; x<modPrefab.width; x++) {
+                                        if (claimedTiles.has(this._s(moduleOriginC+x, moduleOriginR+y))) overlap = true;
                                     }
                                 }
-
-                                if (this._isStructureFootprintValid(moduleOriginC, moduleOriginR, modPrefab.width, modPrefab.height)) {
-                                    let overlap = false;
-                                    for(let y=0; y<modPrefab.height; y++) {
-                                        for(let x=0; x<modPrefab.width; x++) {
-                                            if (claimedTiles.has(this._s(moduleOriginC+x, moduleOriginR+y))) overlap = true;
-                                        }
-                                    }
-                                    if (!overlap) {
-                                        this._writePrefabToGlobalState(moduleOriginC, moduleOriginR, modPrefab);
-                                        markClaimed(moduleOriginC, moduleOriginR, modPrefab.width, modPrefab.height);
-                                        p.stepsSinceLastModule = 0;
-                                        break;
-                                    }
+                                if (!overlap) {
+                                    this._writePrefabToGlobalState(moduleOriginC, moduleOriginR, modPrefab);
+                                    markClaimed(moduleOriginC, moduleOriginR, modPrefab.width, modPrefab.height);
+                                    p.stepsSinceLastModule = 0;
+                                    break;
                                 }
                             }
                         }
                     }
-                    nextPaths.push(p);
                 }
+                nextPaths.push(p);
             }
-            activePaths = nextPaths;
         }
+        activePaths = nextPaths;
     }
+}
 
     _isPathValid(c, r, baseElev, claimedTiles) {
         if (claimedTiles.has(this._s(c, r))) return false;

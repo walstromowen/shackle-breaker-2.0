@@ -83,9 +83,58 @@ export const MAP_OBJECTS_DEFINITIONS = {
     SAND_DUNE_2:      { spriteX: 7, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
     SAND_DUNE_3:      { spriteX: 8, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
 
+    // --- BUILDINGS ---
+    SMALL_HOUSE_1: {
+        spriteX: 0, spriteY: 7, width: 4, height: 3,
+        isSolid: true, isGround: false, isAnchor: true,
+        hitbox: { xOffset: 0, yOffset: 2, w: 4, h: 1 } 
+    },
+    ABANDONED_HOUSE_1: {
+        spriteX: 5, spriteY: 7, width: 4, height: 4,
+        isSolid: true, isGround: false, isAnchor: true,
+        hitbox: { xOffset: 0, yOffset: -1, w: 4, h: 2 }
+    },
+
+    // --- STRUCTURES / FENCES ---
+    WOODEN_FENCE_H: {
+        spriteX: 5, spriteY: 5, width: 1, height: 1,
+        isSolid: true, isGround: false, isAnchor: true,
+        hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }
+    },
+    WOODEN_FENCE_V: {
+        spriteX: 5, spriteY: 4, width: 1, height: 1,
+        isSolid: true, isGround: false, isAnchor: true,
+        hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }
+    },
+    WOODEN_FENCE_TL_CORNER: {
+        spriteX: 3, spriteY: 4, width: 1, height: 1,
+        isSolid: true, isGround: false, isAnchor: true,
+        hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }
+    },
+    WOODEN_FENCE_TR_CORNER: {
+        spriteX: 4, spriteY: 4, width: 1, height: 1,
+        isSolid: true, isGround: false, isAnchor: true,
+        hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }
+    },
+    WOODEN_FENCE_BL_CORNER: {
+        spriteX: 3, spriteY: 5, width: 1, height: 1,
+        isSolid: true, isGround: false, isAnchor: true,
+        hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }
+    },
+    WOODEN_FENCE_BR_CORNER: {
+        spriteX: 4, spriteY: 5, width: 1, height: 1,
+        isSolid: true, isGround: false, isAnchor: true,
+        hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }
+    },
+
     // --- INTERACTABLES & OBSTACLES ---
     BOULDER_1: {
         spriteX: 0, spriteY: 0, width: 1, height: 1,
+        isSolid: true, isGround: false, isAnchor: true,
+        hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }
+    },
+    BOULDER_2: {
+        spriteX: 1, spriteY: 0, width: 1, height: 1, // Adjust spriteX/Y
         isSolid: true, isGround: false, isAnchor: true,
         hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }
     },
@@ -106,17 +155,17 @@ export const MAP_OBJECTS_DEFINITIONS = {
         hitbox: { xOffset: 1, yOffset: 0, w: 1, h: 1 },
         interaction: { type: 'ENCOUNTER', id: 'oak_tree' }
     },
-    SMALL_HOUSE_1: {
-        spriteX: 0, spriteY: 7, width: 4, height: 3,
+    TREE_STUMP: {
+        spriteX: 0, spriteY: 4, width: 1, height: 1, // Adjust spriteX/Y
         isSolid: true, isGround: false, isAnchor: true,
-        // FIX: yOffset changed to 0
-        hitbox: { xOffset: 0, yOffset: 0, w: 4, h: 1 } 
+        hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }
     },
-    ABANDONED_HOUSE_1: {
-        spriteX: 0, spriteY: 7, width: 4, height: 3,
+    // New Cactus
+    CACTUS: {
+        spriteX: 6, spriteY: 1, // Adjust spriteX/Y
+        width: 1, height: 1,
         isSolid: true, isGround: false, isAnchor: true,
-        // FIX: yOffset changed to 0
-        hitbox: { xOffset: 0, yOffset: -1, w: 4, h: 2 }
+        hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }
     },
 
     // --- ANIMATED ---
