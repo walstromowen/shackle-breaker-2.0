@@ -239,4 +239,8 @@ class PerlinNoise {
             this.lerp(u, this.grad(this.p[A + 1], x, y - 1), this.grad(this.p[B + 1], x - 1, y - 1))
         );
     }
+        invalidateTile(key) {
+        // Interiors use fixed structural boundaries rather than volatile 
+        // noise caches, so no cache clearing is required here!
+    }
 }

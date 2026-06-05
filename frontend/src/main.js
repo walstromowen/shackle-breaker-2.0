@@ -10,6 +10,7 @@ const assetLoader = new AssetLoader();
 const ASSET_MANIFEST = {
     plains: './assets/tilesets/plains.png',
     desert: './assets/tilesets/desert.png',
+    houseInterior: './assets/tilesets/house_interior.png',
     plainsMapObjects: './assets/tilesets/plains_map_objects.png',
     desertMapObjects: './assets/tilesets/desert_map_objects.png',
     spritesheet: './assets/sprites/hero.png',
@@ -35,10 +36,12 @@ const ASSET_MANIFEST = {
     madmanPortrait: './assets/sprites/madman/madman_portrait.png',
     arcKnightPortrait: './assets/sprites/arc_knight/arc_knight_portrait.png',
     madMagePortrait: './assets/sprites/mad_mage/mad_mage_portrait.png',
+    rottingManPortrait: './assets/sprites/rotting_man/rotting_man_portrait.png',
     germanSheepherdSprite: './assets/sprites/dogs/german_sheepherd_sprite.png',
     germanSheepherdPortrait: './assets/sprites/dogs/german_sheepherd_portrait.png',
     hawkPortrait: './assets/sprites/hawk/hawk_portrait.png',
     shackledSteedPortrait: './assets/sprites/shackled_steed/shackled_steed_portrait.png',
+    sandStalkerPortrait: './assets/sprites/sand_stalker/sand_stalker_portrait.png', 
     
     //items: './assets/icons/items.png', 
     weapons: './assets/icons/weapons.png',
@@ -76,7 +79,9 @@ const ASSET_MANIFEST = {
     wolfCry: './assets/audio/sfx/cries/wolf_cry.wav',
     dogCry: './assets/audio/sfx/cries/dog_cry.wav',
     shackledSteedCry: './assets/audio/sfx/cries/shackled_steed_cry.wav',
+    madmanCry: './assets/audio/sfx/cries/madman_cry.wav',
     madMageCry: './assets/audio/sfx/cries/mad_mage_cry.wav',
+    sandStalkerCry: './assets/audio/sfx/cries/sand_stalker_cry.wav',
     dogDeath: './assets/audio/sfx/deaths/dog_death.wav',
 
     unsheathSwordSFX: './assets/audio/sfx/unsheath_sword.wav',

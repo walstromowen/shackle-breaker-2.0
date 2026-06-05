@@ -303,17 +303,20 @@ export const BattleAnimationDefinitions = {
             }
         ]
     },
-    "retreat": {
-        duration: 1.0,
+   "retreat": {
+        duration: 1.5, // Increased from 1.0 to give it a longer screen duration
         audio: [
             { start: 0.0, key: 'runAwaySFX', volume: 1.0 }
         ],
-        actor: { 
+        actor: {
             type: 'slide_out', 
             start: 0.0, 
-            end: 0.6, 
-            distance: 360, // Scaled from 150
-            fade: { start: 0.2, end: 0.6 } 
+            end: 1.2,       // Stretched from 0.6 so the movement is more gradual over time
+            distance: 360,
+            fade: { 
+                start: 0.4, // Holds solid visibility slightly longer
+                end: 1.2    // Fades out completely right as the slide finishes
+            }
         }
-    },
+    }
 };

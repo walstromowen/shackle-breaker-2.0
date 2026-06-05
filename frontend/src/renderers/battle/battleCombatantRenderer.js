@@ -11,8 +11,8 @@ export class BattleCombatantRenderer {
         // --- VISUAL CONFIG ---
         this.SPRITE_SCALE = 2.0;
         this.FRAME_SIZE = 128;
-        this.FRAMES_PER_ROW = 8;
-        this.ANIMATION_SPEED = 150;
+        this.FRAMES_PER_ROW = 32;
+        this.ANIMATION_SPEED = 100;
 
         // --- LAYOUT CONFIGURATION ---
         this.LAYOUT = {
@@ -172,16 +172,24 @@ export class BattleCombatantRenderer {
             if (img) {
                 const srcY = isPlayer ? this.FRAME_SIZE : 0;
                 const now = performance.now();
-                const offset = (isPlayer ? 0 : 100) + (index * 120);
                 
-                const maxFrames = isPlayer ? 
-                    (entity.battlePortraitFramesBack || this.FRAMES_PER_ROW) : 
-                    (entity.battlePortraitFramesFront || this.FRAMES_PER_ROW);
+                const maxFrames = isPlayer 
+                    ? (entity.battlePortraitFramesBack || this.FRAMES_PER_ROW) 
+                    : (entity.battlePortraitFramesFront || this.FRAMES_PER_ROW);
 
-                const currentFrame = Math.floor((now + offset) / this.ANIMATION_SPEED) % maxFrames;
+                // 1. Lazily generate a random frame offset for this specific entity instance
+                if (entity.battleAnimOffset === undefined) {
+                    // Pick a random starting frame (0 to maxFrames) and convert it to time milliseconds
+                    const randomStartFrame = Math.floor(Math.random() * maxFrames);
+                    entity.battleAnimOffset = randomStartFrame * this.ANIMATION_SPEED;
+                }
+
+                // 2. Use the entity's unique offset instead of the layout index
+                const currentFrame = Math.floor((now + entity.battleAnimOffset) / this.ANIMATION_SPEED) % maxFrames;
                 const srcX = currentFrame * this.FRAME_SIZE;
 
                 this.ui.drawSprite(img, srcX, srcY, this.FRAME_SIZE, this.FRAME_SIZE, x - size/2, y - size/2, size, size);
+
             } else {
                 const color = isPlayer ? UITheme.colors.defense : UITheme.colors.hp;
                 this.ui.drawRect(x - size/2, y - size/2, size, size, color, true);

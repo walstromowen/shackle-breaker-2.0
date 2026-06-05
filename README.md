@@ -2,12 +2,14 @@
 Roguelike turnbased adventure game based on the Shackle Breaker story by Owen Walstrom
 
 enhance battle animations / polish
-particleRenderer (global)
+particleRenderer revamped(global)
 crafting system.
 Shop System
 procedural dungeons and hand crafted areas
 structures: 
-
+trait aquisition system
+ability tags / immunities range
+Title Screen
 
 more consistent sound for UI
 Overall UI polish
@@ -15,6 +17,9 @@ Overall UI polish
 
 Bugs
 Rain flash
+rain sound effect too slow
+can equip/ unequip items in battle
+
 
 
 Root

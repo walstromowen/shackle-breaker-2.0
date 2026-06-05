@@ -110,10 +110,11 @@ export class EncounterLogic {
                 case "DESTROY_OBJECT":
                     const ctx = model.context;
                     if (ctx && ctx.col !== undefined && ctx.row !== undefined) {
-                        worldManager.modifyWorld(ctx.col, ctx.row, null);
+                        // As long as the interaction context provides ctx.mapId, it works!
+                        worldManager.modifyWorld(ctx.col, ctx.row, null, ctx.mapId); 
                     }
                     break;
-                    
+                                    
                 case "GIVE_ITEM":
                     InventorySystem.addItem(payload.itemId, payload.qty || 1);
                     const readableName = payload.itemId.replace(/_/g, ' ');

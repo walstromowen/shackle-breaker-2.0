@@ -52,9 +52,9 @@ export const CREATION_DATA = {
         { label: "Legionary", spritePortrait: "legionaryHeroPortrait", spriteOverworld: "legionaryHeroSprite" },
         { label: "Warlord", spritePortrait: "warlordHeroPortrait", spriteOverworld: "warlordHeroSprite" },
         { label: "Nightblade", spritePortrait: "nightbladeHeroPortrait", spriteOverworld: "nightbladeHeroSprite" },
-        { label: "Artificer", spritePortrait: "artificerHeroPortrait", spriteOverworld: "legionaryHeroSprite" },
-        { label: "Avalancher", spritePortrait: "avalancherHeroPortrait", spriteOverworld: "warlordHeroSprite" },
-        { label: "Shadow Caster", spritePortrait: "shadowCasterHeroPortrait", spriteOverworld: "nightbladeHeroSprite" }
+        //{ label: "Artificer", spritePortrait: "artificerHeroPortrait", spriteOverworld: "legionaryHeroSprite" },
+        //{ label: "Avalancher", spritePortrait: "avalancherHeroPortrait", spriteOverworld: "warlordHeroSprite" },
+        //{ label: "Shadow Caster", spritePortrait: "shadowCasterHeroPortrait", spriteOverworld: "nightbladeHeroSprite" }
     ],
     TRAITS: UI_TRAITS,
     KEEPSAKES: [
@@ -65,7 +65,7 @@ export const CREATION_DATA = {
     ],
     COMPANIONS: [
         { label: "None", speciesId: null, desc: "Walk the path alone.", attributes: {}, equipment: {} },
-        { label: "War Dog", speciesId: "BEAST", desc: "Loyal and sturdy.", attributes: { vigor: 12, strength: 10 }  },
+        { label: "War Dog", speciesId: "DOG", desc: "Loyal and sturdy.", attributes: { vigor: 12, strength: 10 }  },
         { label: "Hunting Hawk", speciesId: "AVIAN", desc: "Fast and watchful.", attributes: { dexterity: 16, speed: 10 }, equipment: { accessory: "tattered_shirt" } }
     ],
     DIFFICULTIES: [

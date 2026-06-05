@@ -7,10 +7,10 @@ const BASE_ENTITY = {
     skillPoints: 1,   
 
     // --- VISUALS ---
-    spriteOverworld: "missing_texture",  
-    spritePortrait: "missing_face",  
-    battlePortraitFramesFront: 8, // Defaults for enemy view
-    battlePortraitFramesBack: 8,  // Defaults for player view    
+    spriteOverworld: "spritesheet",  
+    spritePortrait: "spritesheet",  
+    battlePortraitFramesFront: 31, // Defaults for enemy view
+    battlePortraitFramesBack: 31,  // Defaults for player view    
     crySound: "unsheathSwordSFX",       // <-- NEW: Plays on battle start
     deathSound: "unsheathSwordSFX",
     traits: [],
@@ -57,7 +57,7 @@ const HUMANOID_TEMPLATE = {
     ...BASE_ENTITY,
     name: "Humanoid",
     spriteOverworld: "spritesheet",
-    spritePortrait: "legionaryPortrait",
+    spritePortrait: "spritesheet",
    
     attributes: { vigor: 10, strength: 10, dexterity: 10, intelligence: 10, attunement: 10 },
     
@@ -84,8 +84,8 @@ const HUMANOID_TEMPLATE = {
 const BEAST_TEMPLATE = {
     ...BASE_ENTITY,
     name: "Beast",
-    spriteOverworld: "germanSheepherdSprite",
-    spritePortrait: "germanSheepherdPortrait",
+    spriteOverworld: "spritesheet",
+    spritePortrait: "spritesheet",
     battlePortraitFramesFront: 1, // Defaults for enemy view
     battlePortraitFramesBack: 1,  // Defaults for player view    
     crySound: "dogCry",       // <-- NEW: Plays on battle start
@@ -119,10 +119,53 @@ const BEAST_TEMPLATE = {
     tags: ["BIOLOGICAL", "BEAST"]
 };
 
-// 4. EXPORTED DEFINITIONS
+// 4. EXPORTED DEFINITIONS (Organized Logically)
 export const ENTITY_DEFINITIONS = {
+    // =========================================================================
+    // HUMANOID LINEAGE
+    // =========================================================================
     "HUMANOID": HUMANOID_TEMPLATE,
 
+    "MAD_MAN": {
+        ...HUMANOID_TEMPLATE,
+        name: "Madman",
+        level: 1,
+
+        spriteOverworld: "spritesheet",
+        spritePortrait: "madmanPortrait",
+        battlePortraitFramesFront: 32,
+        battlePortraitFramesBack: 4,
+        crySound: "madmanCry",
+        deathSound: "madmanCry",
+        attributes: {
+            ...HUMANOID_TEMPLATE.attributes,
+            vigor: 10,
+            strength: 10,
+            dexterity: 10
+        },
+
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 20,
+            maxStamina: 10,
+            speed: 5
+        },
+
+        equipment: {
+            ...HUMANOID_TEMPLATE.equipment,
+            mainHand: "dagger"
+        },
+
+        currencyReward: { min: 2, max: 8 },
+        lootTable: [
+            { id: "healing_herb", dropRate: 0.15 },
+            { id: "dagger", dropRate: 0.05 }
+        ],
+        abilities: [...HUMANOID_TEMPLATE.abilities],
+        tags: [...HUMANOID_TEMPLATE.tags]
+    },
+
+    
     "MAD_MAGE": {
         ...HUMANOID_TEMPLATE, 
         name: "Mad Mage",
@@ -130,7 +173,7 @@ export const ENTITY_DEFINITIONS = {
         
         spriteOverworld: "madMageSprite",
         spritePortrait: "madMagePortrait",
-        battlePortraitFramesFront: 4, // Defaults for enemy view
+        battlePortraitFramesFront: 32, // Defaults for enemy view
         battlePortraitFramesBack: 1,  // Defaults for player view    
         crySound: "madMageCry",       // <-- NEW: Plays on battle start
         deathSound: "madMageCry",
@@ -153,12 +196,49 @@ export const ENTITY_DEFINITIONS = {
             mainHand: "insight_of_arcane",
         },
 
-        // Better currency, rare chance to drop their sword or a ration
         currencyReward: { min: 5, max: 15 },
         lootTable: [
-            { id: "healing_herb", dropRate: 0.25 }, // 15% chance
-            { id: "dagger", dropRate: 0.05 },    // 5% chance
+            { id: "healing_herb", dropRate: 0.25 }, 
+            { id: "dagger", dropRate: 0.05 },    
             { id: "insight_of_arcane", dropRate: 0.15 }
+        ],
+        abilities: [...HUMANOID_TEMPLATE.abilities],
+        tags: [...HUMANOID_TEMPLATE.tags]
+    },
+
+    "ROTTING_MAN": {
+        ...HUMANOID_TEMPLATE,
+        name: "Rotting Man",
+        level: 1,
+
+        spriteOverworld: "spritesheet",
+        spritePortrait: "rottingManPortrait",
+        battlePortraitFramesFront: 29,
+        battlePortraitFramesBack: 4,
+        crySound: "madmanCry",
+        deathSound: "madmanCry",
+        attributes: {
+            ...HUMANOID_TEMPLATE.attributes,
+            vigor: 11,
+            strength: 11,
+            dexterity: 8
+        },
+        traits: ['acidic'],
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 30,
+            maxStamina: 10,
+            speed: 5
+        },
+
+        equipment: {
+            ...HUMANOID_TEMPLATE.equipment,
+        },
+
+        currencyReward: { min: 2, max: 8 },
+        lootTable: [
+            { id: "healing_herb", dropRate: 0.15 },
+            { id: "dagger", dropRate: 0.05 }
         ],
         abilities: [...HUMANOID_TEMPLATE.abilities],
         tags: [...HUMANOID_TEMPLATE.tags]
@@ -171,8 +251,8 @@ export const ENTITY_DEFINITIONS = {
         
         spriteOverworld: "legionarySprite",
         spritePortrait: "legionaryPortrait",
-        battlePortraitFramesFront: 3, // Defaults for enemy view
-        battlePortraitFramesBack: 3,  // Defaults for player view    
+        battlePortraitFramesFront: 32, // Defaults for enemy view
+        battlePortraitFramesBack: 32,  // Defaults for player view    
         crySound: "legionaryCry",       // <-- NEW: Plays on battle start
         deathSound: "legionaryCry",
         attributes: {
@@ -189,17 +269,90 @@ export const ENTITY_DEFINITIONS = {
             mainHand: "shortsword",
         },
 
-        // Better currency, rare chance to drop their sword or a ration
         currencyReward: { min: 5, max: 15 },
         lootTable: [
-            { id: "healing_herb", dropRate: 1 }, // 15% chance
-            { id: "shortsword", dropRate: 0.05 }    // 5% chance
+            { id: "healing_herb", dropRate: 1 }, 
+            { id: "shortsword", dropRate: 0.05 }    
         ],
         abilities: [...HUMANOID_TEMPLATE.abilities],
         tags: [...HUMANOID_TEMPLATE.tags, "SOLDIER"]
     },
 
+    "SAND_STALKER": {
+        ...HUMANOID_TEMPLATE,
+        name: "Sand Stalker",
+        level: 1,
+
+        spriteOverworld: "spritesheet",
+        spritePortrait: "sandStalkerPortrait",
+        battlePortraitFramesFront: 32,
+        battlePortraitFramesBack: 4,
+        crySound: "sandStalkerCry",
+        deathSound: "sandStalkerCry",
+        attributes: { vigor: 8, strength: 8, dexterity: 12, intelligence: 10, attunement: 12 },
+    
+
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 15,
+            maxStamina: 15,
+            speed: 25
+        },
+
+        equipment: {
+            ...HUMANOID_TEMPLATE.equipment,
+            mainHand: "shortsword"
+        },
+
+        currencyReward: { min: 2, max: 8 },
+        lootTable: [
+            { id: "healing_herb", dropRate: 0.15 },
+            { id: "shortsword", dropRate: 0.05 }
+        ],
+        abilities: [...HUMANOID_TEMPLATE.abilities],
+        tags: [...HUMANOID_TEMPLATE.tags, ]
+    },
+
+
+    // =========================================================================
+    // BEAST LINEAGE
+    // =========================================================================
     "BEAST": BEAST_TEMPLATE,
+
+    "DOG": {
+        ...BEAST_TEMPLATE,
+        name: "Dog",
+        level: 1,
+
+        spriteOverworld: "germanSheepherdSprite",
+        spritePortrait: "germanSheepherdPortrait",
+        battlePortraitFramesFront: 1,
+        battlePortraitFramesBack: 31,
+        crySound: "dogCry",
+        deathSound: "dogDeath",
+        attributes: {
+            ...BEAST_TEMPLATE.attributes,
+            vigor: 6,
+            dexterity: 12,
+            strength: 6
+        },
+
+        baseStats: {
+            ...BEAST_TEMPLATE.baseStats,
+            maxHp: 12,
+            maxStamina: 8,
+            speed: 7,
+            critical: 0.08,
+            baseAttack: { blunt: 2, slash: 4, pierce: 2 }
+        },
+
+        currencyReward: { min: 0, max: 0 },
+        lootTable: [
+            { id: "leather", dropRate: 0.20 }
+        ],
+        abilities: [...BEAST_TEMPLATE.abilities],
+        tags: [...BEAST_TEMPLATE.tags, "CANINE"]
+    },
 
     "WOLF": {
         ...BEAST_TEMPLATE, 
@@ -208,8 +361,8 @@ export const ENTITY_DEFINITIONS = {
 
         spriteOverworld: "legionarySprite",
         spritePortrait: "wolfPortrait",
-        battlePortraitFramesFront: 8, // Defaults for enemy view
-        battlePortraitFramesBack: 8,  // Defaults for player view    
+        battlePortraitFramesFront: 23, // Defaults for enemy view
+        battlePortraitFramesBack: 32,  // Defaults for player view    
         crySound: "wolfCry",       // <-- NEW: Plays on battle start
         deathSound: "wolfCry",
         attributes: {
@@ -226,10 +379,9 @@ export const ENTITY_DEFINITIONS = {
             baseAttack: { blunt: 0, slash: 5, pierce: 7 }
         },
 
-        // No money, but moderate chance for crafting/vendor trash
         currencyReward: { min: 0, max: 0 },
         lootTable: [
-            { id: "healing_herb", dropRate: 0.15 } // 15% chance
+            { id: "healing_herb", dropRate: 0.15 } 
         ],
         abilities: [...BEAST_TEMPLATE.abilities],
         tags: [...BEAST_TEMPLATE.tags, "CANINE"]
@@ -242,13 +394,13 @@ export const ENTITY_DEFINITIONS = {
 
         spriteOverworld: "shackledSteedSprite",
         spritePortrait: "shackledSteedPortrait",
-        battlePortraitFramesFront: 8, // Defaults for enemy view
+        battlePortraitFramesFront: 25, // Defaults for enemy view
         battlePortraitFramesBack: 8,  // Defaults for player view    
         crySound: "shackledSteedCry",       // <-- NEW: Plays on battle start
         deathSound: "shackledSteedCry",
         attributes: {
             ...BEAST_TEMPLATE.attributes,
-            vigor: 14,dexterity: 10, strength: 10
+            vigor: 14, dexterity: 10, strength: 10
         },
 
         baseStats: {
@@ -260,13 +412,12 @@ export const ENTITY_DEFINITIONS = {
             baseAttack: { blunt: 8, slash: 2, pierce: 2 }
         },
 
-        // No money, but moderate chance for crafting/vendor trash
         currencyReward: { min: 0, max: 0 },
         lootTable: [
             { id: "leather", dropRate: 0.50 }
         ],
         abilities: [...BEAST_TEMPLATE.abilities, "strike"],
-        tags: [...BEAST_TEMPLATE.tags,]
+        tags: [...BEAST_TEMPLATE.tags]
     },
 
     "AVIAN": {
@@ -275,7 +426,6 @@ export const ENTITY_DEFINITIONS = {
         spriteOverworld: "spritesheet",
         spritePortrait: "hawkPortrait",
         
-        // Avians are fragile but very agile
         statMultipliers: {
             hpPerVigor: 2,
             staminaPerDex: 4,
@@ -286,7 +436,7 @@ export const ENTITY_DEFINITIONS = {
         baseStats: {
             ...BASE_ENTITY.baseStats,
             maxHp: 12, maxStamina: 15, maxInsight: 5,
-            staminaRecovery: 3, // Birds recover fast!
+            staminaRecovery: 3, 
             speed: 10, critical: 0.15,
             baseDefense: { earth: 5 }, 
             baseResistance: { wind: 0.5, earth: 0.2 },
@@ -294,7 +444,7 @@ export const ENTITY_DEFINITIONS = {
         },
         currencyReward: { min: 0, max: 0 },
         lootTable: [
-            { id: "feather", dropRate: 0.40 } // 40% chance
+            { id: "feather", dropRate: 0.40 } 
         ],
         abilities: [...BASE_ENTITY.abilities, "peck", "screech"],
         tags: ["BIOLOGICAL", "AVIAN"]

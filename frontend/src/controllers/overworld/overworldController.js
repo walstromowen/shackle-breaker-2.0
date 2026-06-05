@@ -316,6 +316,36 @@ export class OverworldController extends BaseController {
             hoveredHitboxId: this.hoveredHitboxId
         };
     }
+    // Add this anywhere inside the OverworldController class!
+    warpTo(col, row) {
+        const { TILE_SIZE } = this.config;
+        
+        // 1. Update the global Game State
+        gameState.player.col = col;
+        gameState.player.row = row;
+        
+        // 2. Snap Player Pixel Coordinates
+        this.player.x = col * TILE_SIZE;
+        this.player.y = row * TILE_SIZE;
+        
+        // 🔥 CRITICAL FIX: Reset history parameters to prevent interpolation visual snaps
+        this.player.prevX = this.player.x;
+        this.player.prevY = this.player.y;
+        
+        // Wipe any ongoing movement properties
+        this.player.destX = this.player.x;
+        this.player.destY = this.player.y;
+        this.player.sourceX = this.player.x;
+        this.player.sourceY = this.player.y;
+        this.player.isMoving = false;
+        this.player.moveProgress = 0;
+        
+        // 3. Snap the Camera Instantly
+        this.camera.x = this.player.x;
+        this.camera.y = this.player.y;
+        this.camera.prevX = this.player.x;
+        this.camera.prevY = this.player.y;
+    }
 
     createPlayerEntity() {
         let startX, startY;

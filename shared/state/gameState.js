@@ -12,6 +12,8 @@ export const gameState = {
 
     world: {
         currentBiomeId: null,
+        isInterior: false, // Make sure this exists!
+        interiorType: null,
         time: 0,
         day: 1,
         changes: {},
