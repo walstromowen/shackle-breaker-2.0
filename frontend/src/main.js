@@ -54,6 +54,7 @@ const ASSET_MANIFEST = {
     battleProjectiles: './assets/icons/battle_projectiles.png',
     particles: './assets/icons/particles.png',
 
+    arcaneVortexBg: './assets/backgrounds/arcane_vortex_bg.png',
     plainsBattleDayBg: './assets/backgrounds/plains_battle_day_bg.png',
     plainsBattleDuskBg: './assets/backgrounds/plains_battle_dusk_bg.png',
     plainsBattleNightBg: './assets/backgrounds/plains_battle_night_bg.png',

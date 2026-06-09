@@ -1,322 +1,146 @@
-export const BattleAnimationDefinitions = {
-    "slash": {
-        duration: 1.5, 
-        audio: [{ start: 0.067, key: 'swordSlashSFX', volume: 1.0 }],
-        actor: { type: 'lunge', start: 0.0, end: 0.133, distance: 120 }, // Scaled from 50
-        vfx: [
-            {
-                start: 0.1,
-                type: 'spawn',
-                origin: 'target',
-                config: {
-                    life: 0.2, 
-                    sheetKey: 'battleProjectiles', 
-                    frame: { col: 0, row: 0 },
-                    frameSize: 32,
-                    movement: 'swipe_diagonal',
-                    scale: 3.6, // Scaled from 1.5 for 1920x1080 (x2.4)
-                    rotation: 15,
-                    blendMode: 'screen'
-                }
-            }
-        ],
-        target: {
-            shake: { start: 0.1, end: 0.233, intensity: 24 }, // Scaled from 10
-            flash: { start: 0.1, end: 0.167, filter: 'brightness(250%)' }
-        }
+export const BattleAnimationDefinitions = { 
+  "slash": { 
+    duration: 1.5, 
+    audio: [{ start: 0.067, key: 'swordSlashSFX', volume: 1.0 }], 
+    actor: { type: 'lunge', start: 0.0, end: 0.133, distance: 120 }, 
+    // New backdrop overlay tracking with the sword impact window
+    vfx: [ { start: 0.1, type: 'spawn', origin: 'target', config: { life: 0.2, sheetKey: 'battleProjectiles', frame: { col: 0, row: 0 }, frameSize: 32, movement: 'swipe_diagonal', scale: 3.6, rotation: 15, blendMode: 'screen' } } ], 
+    target: { 
+      shake: { start: 0.1, end: 0.233, intensity: 24 }, 
+      flash: { start: 0.1, end: 0.167, filter: 'brightness(250%)' } 
+    } 
+  },
+  "strike": { 
+    duration: 1.5, 
+    audio: [{ start: 0.133, key: 'strikeSFX', volume: 1.0 }], 
+    actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 96 }, 
+    vfx: [ { start: 0.133, type: 'spawn', origin: 'target', config: { life: 0.3, sheetKey: 'battleProjectiles', frame: { col: 8, row: 0 }, frameSize: 32, movement: 'expand_and_fade', scale: 2.88, blendMode: 'screen' } } ], 
+    target: { shake: { start: 0.133, end: 0.333, intensity: 29 }, flash: { start: 0.133, end: 0.267, filter: 'brightness(200%) sepia(100%) hue-rotate(300deg) saturate(300%)' } } 
+  }, 
+  "stab": { 
+    duration: 1.5, 
+    audio: [{ start: 0.133, key: 'spearStabSFX', volume: 1.0 }], 
+    actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 96 }, 
+    vfx: [ { start: 0.133, type: 'spawn', origin: 'target', config: { life: 0.2, sheetKey: 'battleProjectiles', frame: { col: 2, row: 0 }, frameSize: 32, movement: 'expand_and_fade', scale: 2.4, blendMode: 'screen' } } ], 
+    target: { shake: { start: 0.133, end: 0.333, intensity: 29 }, flash: { start: 0.133, end: 0.267, filter: 'brightness(200%) sepia(100%) hue-rotate(300deg) saturate(300%)' } } 
+  }, 
+  "bite": { 
+    duration: 1.5, 
+    audio: [{ start: 0.133, key: 'crunchSFX', volume: 1.0 }], 
+    actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 96 }, 
+    vfx: [ { start: 0.133, type: 'spawn', origin: 'target', config: { life: 0.4, sheetKey: 'battleProjectiles', frame: { col: 1, row: 0 }, frameSize: 32, movement: 'expand_and_fade', scale: 3.12, blendMode: 'multiply' } } ], 
+    target: { shake: { start: 0.133, end: 0.333, intensity: 29 }, flash: { start: 0.133, end: 0.267, filter: 'brightness(200%) sepia(100%) hue-rotate(300deg) saturate(300%)' } } 
+  }, 
+  "magic_missile": { 
+    duration: 1.5, 
+    audio: [{ start: 0.0, key: 'magicCast1SFX' }, { start: 0.533, key: 'arcaneDartSFX' }], 
+    actor: { flash: { start: 0.0, end: 0.2, filter: 'brightness(200%) hue-rotate(180deg) saturate(300%)' } }, 
+       background: {
+      start: 0.0,
+      end: 1.0,
+      key: 'arcaneVortexBg', // Replace with your texture asset key (e.g., speed lines), or use 'current'
+      //filter: 'contrast(180%) brightness(130%) saturate(30%)' // Gives an intense, stylized high-action look
     },
-    "strike": {
-        duration: 1.5,
-        audio: [{ start: 0.133, key: 'strikeSFX', volume: 1.0 }],
-        actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 96 }, // Scaled from 40
-        vfx: [
-            {
-                start: 0.133,
-                type: 'spawn',
-                origin: 'target',
-                config: {
-                    life: 0.3,
-                    sheetKey: 'battleProjectiles', 
-                    frame: { col: 8, row: 0 },
-                    frameSize: 32,
-                    movement: 'expand_and_fade',
-                    scale: 2.88, // Scaled from 1.2 for 1920x1080 (x2.4)
-                    blendMode: 'screen'
-                }
-            }
-        ],
-        target: {
-            shake: { start: 0.133, end: 0.333, intensity: 29 }, // Scaled from 12
-            flash: { start: 0.133, end: 0.267, filter: 'brightness(200%) sepia(100%) hue-rotate(300deg) saturate(300%)' }
-        }
+    vfx: [ { start: 0.2, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'battleProjectiles', frame: { col: 1, row: 1 }, frameSize: 32, arc: -144, rotation: 'auto', scale: 2.4, blendMode: 'screen' } } ], 
+    target: { shake: { start: 0.4, end: 0.6, intensity: 24 }, flash: { start: 0.4, end: 0.533, filter: 'brightness(300%) sepia(50%) hue-rotate(180deg)' } } 
+  }, 
+  "poison": { 
+    duration: 2.0, 
+    audio: [ { start: 0.1, key: 'bubbleSFX', volume: 0.6, pitch: 1.2 }, ], 
+    vfx: [ 
+      { start: 0.05, type: 'spawn', origin: 'target', config: { life: 0.4, sheetKey: 'particles', frame: { col: 2, row: 1 }, frameSize: 32, movement: 'float_up_and_pop', scale: 1.2 } }, 
+      { start: 0.1, type: 'spawn', origin: 'target', config: { life: 0.4, sheetKey: 'particles', frame: { col: 2, row: 1 }, frameSize: 32, movement: 'float_up_and_pop', scale: 1.5 } }, 
+      { start: 0.15, type: 'spawn', origin: 'target', config: { life: 0.4, sheetKey: 'particles', frame: { col: 2, row: 1 }, frameSize: 32, movement: 'float_up_and_pop', scale: 0.9 } } 
+    ], 
+    target: { flash: { start: 0.0, end: 0.75, filter: 'brightness(110%) saturate(160%) hue-rotate(100deg)' } } 
+  }, 
+  "earthquake": { 
+    duration: 4.0, 
+    // New backdrop overlay tracking with the rumble duration
+    background: {
+      start: 0.063,
+      end: 3.5,
+      key: 'earthquakeFissureBg', // Replace with your texture asset key
+      filter: 'sepia(60%) brightness(75%) saturate(110%)' // Gives the field a dusty, debris-filled look
     },
-    "stab": {
-        duration: 1.5,
-        audio: [{ start: 0.133, key: 'spearStabSFX', volume: 1.0 }],
-        actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 96 }, // Scaled from 40
-        vfx: [
-            {
-                start: 0.133,
-                type: 'spawn',
-                origin: 'target',
-                config: {
-                    life: 0.2,
-                    sheetKey: 'battleProjectiles', 
-                    frame: { col: 2, row: 0 },
-                    frameSize: 32,
-                    movement: 'expand_and_fade',
-                    scale: 2.4, // Scaled from 1.0 for 1920x1080 (x2.4)
-                    blendMode: 'screen'
-                }
-            }
-        ],
-        target: {
-            shake: { start: 0.133, end: 0.333, intensity: 29 }, // Scaled from 12
-            flash: { start: 0.133, end: 0.267, filter: 'brightness(200%) sepia(100%) hue-rotate(300deg) saturate(300%)' }
-        }
-    },
-    "bite": {
-        duration: 1.5,
-        audio: [{ start: 0.133, key: 'crunchSFX', volume: 1.0 }],
-        actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 96 }, // Scaled from 40
-        vfx: [
-            {
-                start: 0.133,
-                type: 'spawn',
-                origin: 'target',
-                config: {
-                    life: 0.4,
-                    sheetKey: 'battleProjectiles', 
-                    frame: { col: 1, row: 0 },
-                    frameSize: 32,
-                    movement: 'expand_and_fade',
-                    scale: 3.12, // Scaled from 1.3 for 1920x1080 (x2.4)
-                    blendMode: 'multiply'
-                }
-            }
-        ],
-        target: {
-            shake: { start: 0.133, end: 0.333, intensity: 29 }, // Scaled from 12
-            flash: { start: 0.133, end: 0.267, filter: 'brightness(200%) sepia(100%) hue-rotate(300deg) saturate(300%)' }
-        }
-    },
-    "magic_missile": {
-        duration: 1.5,
-        audio: [{ start: 0.0, key: 'magicCast1SFX' }, { start: 0.533, key: 'arcaneDartSFX' }],
-        actor: {
-            flash: { start: 0.0, end: 0.2, filter: 'brightness(200%) hue-rotate(180deg) saturate(300%)' }
-        },
-        vfx: [
-            { 
-                start: 0.2,
-                type: 'travel',
-                origin: 'source',
-                config: {
-                    life: 0.4, 
-                    sheetKey: 'battleProjectiles', 
-                    frame: { col: 1, row: 1 },
-                    frameSize: 32,
-                    arc: -144, // Scaled from -60
-                    rotation: 'auto',
-                    scale: 2.4, // Scaled from 1.0 for 1920x1080 (x2.4)
-                    blendMode: 'screen' 
-                }
-            }
-        ],
-        target: {
-            shake: { start: 0.4, end: 0.6, intensity: 24 }, // Scaled from 10
-            flash: { start: 0.4, end: 0.533, filter: 'brightness(300%) sepia(50%) hue-rotate(180deg)' }
-        }
-    },
-    "poison": {
-        duration: 2.0,
-        audio: [
-            { start: 0.1, key: 'bubbleSFX', volume: 0.6, pitch: 1.2 },
-        ],
-        vfx: [
-            { start: 0.05, type: 'spawn', origin: 'target', config: { life: 0.4, sheetKey: 'particles', frame: { col: 2, row: 1 }, frameSize: 32, movement: 'float_up_and_pop', scale: 1.2 } },
-            { start: 0.1, type: 'spawn', origin: 'target', config: { life: 0.4, sheetKey: 'particles', frame: { col: 2, row: 1 }, frameSize: 32, movement: 'float_up_and_pop', scale: 1.5 } },
-            { start: 0.15, type: 'spawn', origin: 'target', config: { life: 0.4, sheetKey: 'particles', frame: { col: 2, row: 1 }, frameSize: 32, movement: 'float_up_and_pop', scale: 0.9 } }
-        ],
-        target: {
-            flash: { start: 0.0, end: 0.75, filter: 'brightness(110%) saturate(160%) hue-rotate(100deg)' }
-        }
-    },
-    "earthquake": {
-        duration: 4.0, 
-        audio: [
-            { start: 0.063, key: 'earthquake1SFX', volume: 1.0 }, 
-            { start: 0.125, key: 'earthquake2SFX', volume: 1.0 },    
-            { start: 0.2, key: 'earthquake3SFX', volume: 1.0 },    
-        ],
-        vfx: [
-            // Arcs scaled from 300, -250, 350
-            { start: 0.3, type: 'travel', origin: 'source', config: { life: 0.8, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, arc: 720, rotation: 45, scale: 1.2 } },
-            { start: 0.375, type: 'travel', origin: 'source', config: { life: 0.8, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, arc: -600, rotation: 120, scale: 1.5 } },
-            { start: 0.45, type: 'travel', origin: 'source', config: { life: 0.8, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, arc: 840, rotation: -45, scale: 1.0 } }
-        ],
-        target: {
-            shake: { start: 0.125, end: 0.875, intensity: 60 }, // Scaled from 25
-            flash: { start: 0.2, end: 0.8, filter: 'sepia(80%) brightness(60%) saturate(120%)' }
-        }
-    },
-    "trait_activate": {
-        duration: 1.2,
-        audio: [
-            { start: 0.0, key: 'bubbleSFX', volume: 0.8 } 
-        ],
-        target: { 
-            shake: { start: 0.0, end: 0.3, intensity: 10 }, // Scaled from 4
-            flash: { start: 0.0, end: 0.4, filter: 'brightness(250%) saturate(150%)' }
-        },
-        vfx: [
-            {
-                start: 0.1,
-                type: 'spawn',
-                origin: 'target',
-                config: {
-                    life: 0.5,
-                    sheetKey: 'particles', 
-                    frame: { col: 1, row: 1 }, 
-                    frameSize: 32,
-                    movement: 'expand_and_fade',
-                    scale: 1.8,
-                    blendMode: 'screen'
-                }
-            }
-        ]
-    },
-    "melee_lunge": {
-        duration: 1.5,
-        audio: [
-            { start: 0.0, key: 'swordSlashSFX', pitch: 1.1 },
-            { start: 0.133, key: 'swordSlashSFX', volume: 1.0 }
-        ],
-        actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 96 }, // Scaled from 40
-        target: {
-            shake: { start: 0.133, end: 0.333, intensity: 29 }, // Scaled from 12
-            flash: { start: 0.133, end: 0.267, filter: 'brightness(200%) sepia(100%) hue-rotate(300deg) saturate(300%)' }
-        }
-    },
-    "default_attack": {
-        duration: 0.5,
-        audio: [{ start: 0.2, key: 'SFX_BLUNT_HIT' }],
-        target: {
-            flash: { start: 0.2, end: 0.6, filter: 'brightness(200%)' }
-        }
-    },
-    "weatherRain": {
-        duration: 2.5, 
-        audio: [
-            { start: 0.04, key: 'weatherRainShort', volume: 0.8 } 
-        ],
-        background: { 
-            start: 0.0, 
-            end: 1.0, 
-            key: 'current',
-            filter: 'brightness(50%) saturate(60%) sepia(20%) hue-rotate(200deg)' 
-        },
-        vfx: [
-            { start: 0.04, type: 'travel', origin: 'source', config: { life: 0.5, sheetKey: 'particles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.5, blendMode: 'screen' } },
-            { start: 0.08, type: 'travel', origin: 'source', config: { life: 0.5, sheetKey: 'particles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.6, blendMode: 'screen' } },
-            { start: 0.12, type: 'travel', origin: 'source', config: { life: 0.5, sheetKey: 'particles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.4, blendMode: 'screen' } },
-            { start: 0.24, type: 'travel', origin: 'source', config: { life: 0.5, sheetKey: 'particles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.7, blendMode: 'screen' } },
-            { start: 0.28, type: 'travel', origin: 'source', config: { life: 0.5, sheetKey: 'particles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.5, blendMode: 'screen' } },
-            { start: 0.32, type: 'travel', origin: 'source', config: { life: 0.5, sheetKey: 'particles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.8, blendMode: 'screen' } },
-            { start: 0.44, type: 'travel', origin: 'source', config: { life: 0.5, sheetKey: 'particles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.6, blendMode: 'screen' } },
-            { start: 0.52, type: 'travel', origin: 'source', config: { life: 0.5, sheetKey: 'particles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.5, blendMode: 'screen' } }
-        ],
-        target: {
-            flash: { start: 0.08, end: 0.88, filter: 'brightness(80%) saturate(70%) sepia(30%) hue-rotate(180deg)' }
-        }
-    },
-    "faint": {
-        duration: 2.0, 
-        audio: [
-            { start: 0.0, key: 'faintDropSFX', volume: 0.8 }, 
-            { start: 0.1, key: 'windFaintSFX', volume: 1.0 } 
-        ],
-        actor: { 
-            type: 'shake', 
-            start: 0.0, 
-            end: 0.75, 
-            intensity: 19, // Scaled from 8
-            fade: { start: 0.1, end: 0.9 },
-            flash: { start: 0.0, end: 0.9, filter: 'sepia(80%) brightness(200%) blur(4px)' }
-        },
-        vfx: [
-            { start: 0.15, type: 'spawn', origin: 'target', config: { life: 1.0, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, movement: 'swipe_diagonal', scale: 0.6, blendMode: 'screen' } },
-            { start: 0.25, type: 'spawn', origin: 'target', config: { life: 1.0, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, movement: 'float_up_and_pop', scale: 1.2, blendMode: 'screen' } },
-            { start: 0.3, type: 'spawn', origin: 'target', config: { life: 1.0, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, movement: 'swipe_diagonal', scale: 0.8, blendMode: 'screen' } },
-            { start: 0.4, type: 'spawn', origin: 'target', config: { life: 1.0, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, movement: 'expand_and_fade', scale: 0.4, blendMode: 'screen' } },
-            { start: 0.5, type: 'spawn', origin: 'target', config: { life: 1.0, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, movement: 'swipe_diagonal', scale: 1.0, blendMode: 'screen' } }
-        ],
-        target: {
-            flash: { start: 0.0, end: 0.9, filter: 'sepia(80%) brightness(200%) blur(4px)' }
-        }
-    },
-    "abyssal_void": {
-        duration: 3.0,
-        audio: [{ start: 0.033, key: 'darkMagicSFX', volume: 1.0 }],
-        background: { 
-            start: 0.067, 
-            end: 0.933, 
-            key: 'voidBackground', 
-            filter: 'brightness(80%) sepia(50%) hue-rotate(250deg)' 
-        },
-        actor: {
-            flash: { start: 0.067, end: 0.933, filter: 'brightness(150%) hue-rotate(250deg)' }
-        },
-        target: {
-            shake: { start: 0.333, end: 0.833, intensity: 36 }, // Scaled from 15
-            flash: { start: 0.333, end: 0.833, filter: 'invert(100%)' }
-        }
-    },
-    "enter_battle": {
-        duration: 1.5,
-        audio: [
-            { start: 0.1, key: 'summonSFX', volume: 0.8 },
-            { start: 0.4, key: 'landSFX', volume: 0.6 }
-        ],
-        actor: { 
-            type: 'slide_in', 
-            start: 0.0, 
-            end: 0.5, 
-            distance: 240, // Scaled from 100
-            fadeIn: { start: 0.0, end: 0.4 },
-            flash: { start: 0.4, end: 0.7, filter: 'brightness(200%)' }
-        },
-        vfx: [
-            { 
-                start: 0.3, 
-                type: 'spawn', 
-                origin: 'source', 
-                config: { 
-                    life: 0.6, 
-                    sheetKey: 'particles', 
-                    frame: { col: 1, row: 0 }, 
-                    frameSize: 32, 
-                    movement: 'expand_and_fade', 
-                    scale: 2.0, 
-                    blendMode: 'screen' 
-                } 
-            }
-        ]
-    },
-   "retreat": {
-        duration: 1.5, // Increased from 1.0 to give it a longer screen duration
-        audio: [
-            { start: 0.0, key: 'runAwaySFX', volume: 1.0 }
-        ],
-        actor: {
-            type: 'slide_out', 
-            start: 0.0, 
-            end: 1.2,       // Stretched from 0.6 so the movement is more gradual over time
-            distance: 360,
-            fade: { 
-                start: 0.4, // Holds solid visibility slightly longer
-                end: 1.2    // Fades out completely right as the slide finishes
-            }
-        }
-    }
+    audio: [ 
+      { start: 0.063, key: 'earthquake1SFX', volume: 1.0 }, 
+      { start: 0.125, key: 'earthquake2SFX', volume: 1.0 }, 
+      { start: 0.2, key: 'earthquake3SFX', volume: 1.0 }, 
+    ], 
+    vfx: [ 
+      { start: 0.3, type: 'travel', origin: 'source', config: { life: 0.8, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, arc: 720, rotation: 45, scale: 1.2 } }, 
+      { start: 0.375, type: 'travel', origin: 'source', config: { life: 0.8, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, arc: -600, rotation: 120, scale: 1.5 } }, 
+      { start: 0.45, type: 'travel', origin: 'source', config: { life: 0.8, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, arc: 840, rotation: -45, scale: 1.0 } } 
+    ], 
+    target: { 
+      // Extended shaking window and increased screen rumble intensity
+      shake: { start: 0.063, end: 3.6, intensity: 72 }, 
+      flash: { start: 0.2, end: 0.8, filter: 'sepia(80%) brightness(60%) saturate(120%)' } 
+    } 
+  }, 
+  "trait_activate": { 
+    duration: 1.2, 
+    audio: [ { start: 0.0, key: 'bubbleSFX', volume: 0.8 } ], 
+    target: { shake: { start: 0.0, end: 0.3, intensity: 10 }, flash: { start: 0.0, end: 0.4, filter: 'brightness(250%) saturate(150%)' } }, 
+    vfx: [ { start: 0.1, type: 'spawn', origin: 'target', config: { life: 0.5, sheetKey: 'particles', frame: { col: 1, row: 1 }, frameSize: 32, movement: 'expand_and_fade', scale: 1.8, blendMode: 'screen' } } ] 
+  }, 
+  "melee_lunge": { 
+    duration: 1.5, 
+    audio: [ { start: 0.0, key: 'swordSlashSFX', pitch: 1.1 }, { start: 0.133, key: 'swordSlashSFX', volume: 1.0 } ], 
+    actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 96 }, 
+    target: { shake: { start: 0.133, end: 0.333, intensity: 29 }, flash: { start: 0.133, end: 0.267, filter: 'brightness(200%) sepia(100%) hue-rotate(300deg) saturate(300%)' } } 
+  }, 
+  "default_attack": { 
+    duration: 0.5, 
+    audio: [{ start: 0.2, key: 'SFX_BLUNT_HIT' }], 
+    target: { flash: { start: 0.2, end: 0.6, filter: 'brightness(200%)' } } 
+  }, 
+  "weatherRain": { 
+    duration: 2.5, 
+    audio: [ { start: 0.04, key: 'weatherRainShort', volume: 0.8 } ], 
+    background: { start: 0.0, end: 1.0, key: 'current', filter: 'brightness(50%) saturate(60%) sepia(20%) hue-rotate(200deg)' }, 
+    vfx: [ 
+      { start: 0.04, type: 'travel', origin: 'source', config: { life: 0.5, sheetKey: 'particles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.5, blendMode: 'screen' } }, 
+      { start: 0.08, type: 'travel', origin: 'source', config: { life: 0.5, sheetKey: 'particles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.6, blendMode: 'screen' } }, 
+      { start: 0.12, type: 'travel', origin: 'source', config: { life: 0.5, sheetKey: 'particles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.4, blendMode: 'screen' } }, 
+      { start: 0.24, type: 'travel', origin: 'source', config: { life: 0.5, sheetKey: 'particles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.7, blendMode: 'screen' } }, 
+      { start: 0.28, type: 'travel', origin: 'source', config: { life: 0.5, sheetKey: 'particles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.5, blendMode: 'screen' } }, 
+      { start: 0.32, type: 'travel', origin: 'source', config: { life: 0.5, sheetKey: 'particles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.8, blendMode: 'screen' } }, 
+      { start: 0.44, type: 'travel', origin: 'source', config: { life: 0.5, sheetKey: 'particles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.6, blendMode: 'screen' } }, 
+      { start: 0.52, type: 'travel', origin: 'source', config: { life: 0.5, sheetKey: 'particles', frame: { col: 0, row: 1 }, frameSize: 32, movement: 'linear', arc: 0, rotation: 15, scale: 0.5, blendMode: 'screen' } } 
+    ], 
+    target: { flash: { start: 0.08, end: 0.88, filter: 'brightness(80%) saturate(70%) sepia(30%) hue-rotate(180deg)' } } 
+  }, 
+  "faint": { 
+    duration: 2.0, 
+    audio: [ { start: 0.0, key: 'faintDropSFX', volume: 0.8 }, { start: 0.1, key: 'windFaintSFX', volume: 1.0 } ], 
+    actor: { type: 'shake', start: 0.0, end: 0.75, intensity: 19, fade: { start: 0.1, end: 0.9 }, flash: { start: 0.0, end: 0.9, filter: 'sepia(80%) brightness(200%) blur(4px)' } }, 
+    vfx: [ 
+      { start: 0.15, type: 'spawn', origin: 'target', config: { life: 1.0, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, movement: 'swipe_diagonal', scale: 0.6, blendMode: 'screen' } }, 
+      { start: 0.25, type: 'spawn', origin: 'target', config: { life: 1.0, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, movement: 'float_up_and_pop', scale: 1.2, blendMode: 'screen' } }, 
+      { start: 0.3, type: 'spawn', origin: 'target', config: { life: 1.0, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, movement: 'swipe_diagonal', scale: 0.8, blendMode: 'screen' } }, 
+      { start: 0.4, type: 'spawn', origin: 'target', config: { life: 1.0, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, movement: 'expand_and_fade', scale: 0.4, blendMode: 'screen' } }, 
+      { start: 0.5, type: 'spawn', origin: 'target', config: { life: 1.0, sheetKey: 'particles', frame: { col: 0, row: 0 }, frameSize: 32, movement: 'swipe_diagonal', scale: 1.0, blendMode: 'screen' } } 
+    ], 
+    target: { flash: { start: 0.0, end: 0.9, filter: 'sepia(80%) brightness(200%) blur(4px)' } } 
+  }, 
+  "abyssal_void": { 
+    duration: 3.0, 
+    audio: [{ start: 0.033, key: 'darkMagicSFX', volume: 1.0 }], 
+    background: { start: 0.067, end: 0.933, key: 'voidBackground', filter: 'brightness(80%) sepia(50%) hue-rotate(250deg)' }, 
+    actor: { flash: { start: 0.067, end: 0.933, filter: 'brightness(150%) hue-rotate(250deg)' } }, 
+    target: { shake: { start: 0.333, end: 0.833, intensity: 36 }, flash: { start: 0.333, end: 0.833, filter: 'invert(100%)' } } 
+  }, 
+  "enter_battle": { 
+    duration: 1.5, 
+    audio: [ { start: 0.1, key: 'summonSFX', volume: 0.8 }, { start: 0.4, key: 'landSFX', volume: 0.6 } ], 
+    actor: { type: 'slide_in', start: 0.0, end: 0.5, distance: 240, fadeIn: { start: 0.0, end: 0.4 }, flash: { start: 0.4, end: 0.7, filter: 'brightness(200%)' } }, 
+    vfx: [ { start: 0.3, type: 'spawn', origin: 'source', config: { life: 0.6, sheetKey: 'particles', frame: { col: 1, row: 0 }, frameSize: 32, movement: 'expand_and_fade', scale: 2.0, blendMode: 'screen' } } ] 
+  }, 
+  "flee": { 
+    duration: 1.5, 
+    audio: [ { start: 0.0, key: 'runAwaySFX', volume: 1.0 } ], 
+    actor: { type: 'slide_out', start: 0.0, end: 1.2, distance: 360, fade: { start: 0.4, end: 1.2 } } 
+  } 
 };

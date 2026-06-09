@@ -45,8 +45,9 @@ export const BIOME_DEFINITIONS = {
       rate: 0.1, 
       pools: { 
         easy: [ 
-          { chance: 0.50, enemies: ['ROTTING_MAN', 'MAD_MAN', 'ROTTING_MAN'] }, 
-          { chance: 0.5, enemies: ['SHACKLED_STEED', 'MAD_MAN'] } 
+          { chance: 0.25, enemies: ['ROTTING_MAN', 'MAD_MAN', 'ROTTING_MAN'] }, 
+          { chance: 0.25, enemies: ['SHACKLED_STEED', 'MAD_MAN'] } ,
+           { chance: 0.5, enemies: ['WOLF', 'WOLF'] } 
         ], 
         normal: [ 
           { chance: 0.20, enemies: ['MAD_MAN', 'MAD_MAGE', 'MAD_MAN'] }, 
@@ -56,7 +57,7 @@ export const BIOME_DEFINITIONS = {
           { chance: 0.20, enemies: [ 
             { id: 'LEGIONARY', levelOffset: 5, traits: ['iron_willed'], equipment: { mainHand: 'warhammer' } }, 
             { id: 'LEGIONARY' }, 
-            { id: 'LEGIONARY' } 
+            { id: 'MAD_MAGE' } 
           ]} 
         ], 
         hard: [ 
