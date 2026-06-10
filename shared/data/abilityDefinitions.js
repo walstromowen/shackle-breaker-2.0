@@ -632,18 +632,17 @@ export const AbilityDefinitions = {
         ]
     },
 
-    "retreat": {
-        id: "retreat",
-        name: "Retreat",
-        description: "Escape the battle.",
-        battleMessage: "{user} attempts to {ability} from the battle!",
-        icon: { col: 2, row: 12 },
-        targeting: { scope: "self", select: "auto" },
-        behavior: "flee_battle",
-        animationId: "flee",
-        accuracy: 1.0
-    },
-
+        "retreat": {
+            id: "retreat",
+            name: "Retreat",
+            description: "The entire party attempts to escape the battle.",
+            battleMessage: "{user} signals the party to {ability}!",
+            icon: { col: 2, row: 12 },
+            targeting: { scope: "all_allies", select: "auto" }, // <-- CHANGED HERE
+            behavior: "flee_battle",
+            animationId: "flee",
+            accuracy: 1.0
+        },
     "switch_combatant": {
         id: "switch_combatant",
         name: "Switch",

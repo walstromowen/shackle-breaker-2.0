@@ -138,9 +138,26 @@ export const BattleAnimationDefinitions = {
     actor: { type: 'slide_in', start: 0.0, end: 0.5, distance: 240, fadeIn: { start: 0.0, end: 0.4 }, flash: { start: 0.4, end: 0.7, filter: 'brightness(200%)' } }, 
     vfx: [ { start: 0.3, type: 'spawn', origin: 'source', config: { life: 0.6, sheetKey: 'particles', frame: { col: 1, row: 0 }, frameSize: 32, movement: 'expand_and_fade', scale: 2.0, blendMode: 'screen' } } ] 
   }, 
-  "flee": { 
+"flee": { 
     duration: 1.5, 
     audio: [ { start: 0.0, key: 'runAwaySFX', volume: 1.0 } ], 
-    actor: { type: 'slide_out', start: 0.0, end: 1.2, distance: 360, fade: { start: 0.4, end: 1.2 } } 
-  } 
+    
+    // The combatant who clicked the "Retreat" button
+    actor: { 
+      type: 'slide_out', 
+      start: 0.0, 
+      end: 1.2, 
+      distance: 360, 
+      fade: { start: 0.4, end: 1.2 } 
+    },
+    
+    // The rest of the party (since targeting scope is "all_allies")
+    target: { 
+      type: 'slide_out', 
+      start: 0.0, 
+      end: 1.2, 
+      distance: 360, 
+      fade: { start: 0.4, end: 1.2 } 
+    } 
+  }
 };
