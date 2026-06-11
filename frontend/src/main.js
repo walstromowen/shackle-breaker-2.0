@@ -54,6 +54,15 @@ const ASSET_MANIFEST = {
     battleProjectiles: './assets/icons/battle_projectiles.png',
     particles: './assets/icons/particles.png',
 
+    // --- NEW: Ability Animations ---
+    slash: './assets/abilityAnimations/slash.png',
+    strike: './assets/abilityAnimations/strike.png',
+    stab: './assets/abilityAnimations/stab.png',
+    bite: './assets/abilityAnimations/bite.png',
+    arcaneDart: './assets/abilityAnimations/arcane_dart.png',
+    poison: './assets/abilityAnimations/poison.png',
+    earthquake: './assets/abilityAnimations/earthquake.png',
+
     arcaneVortexBg: './assets/backgrounds/arcane_vortex_bg.png',
     plainsBattleDayBg: './assets/backgrounds/plains_battle_day_bg.png',
     plainsBattleDuskBg: './assets/backgrounds/plains_battle_dusk_bg.png',
@@ -72,7 +81,7 @@ const ASSET_MANIFEST = {
     desertBgmDay: './assets/audio/music/plains_overworld_day_2.mp3',
     desertBgmNight: './assets/audio/music/plains_overworld_night.mp3',
 
-    weatherRain: './assets/audio/sfx/weather_rain.wav',
+    weatherRain: './assets/audio/sfx/weather_rain.wav', // Note: You might want to rename this audio key later if you ever need to fetch the sprite sheet and audio under the exact same name, but they are stored separately by the asset loader perfectly fine for now!
     weatherRainShort: './assets/audio/sfx/weather_rain_short.wav',
     spookyWind: './assets/audio/sfx/spooky_wind.wav',
 
@@ -98,7 +107,7 @@ const ASSET_MANIFEST = {
     magicCast1SFX: './assets/audio/sfx/magic_cast_1.wav',
     spearStabSFX: './assets/audio/sfx/spear_stab.wav',
     strikeSFX: './assets/audio/sfx/strike.wav',
-    swordSlashSFX: './assets/audio/sfx/sword_slash.wav',
+    // swordSlashSFX: './assets/audio/sfx/sword_slash.wav', // Removed duplicate
     swordSlash1SFX: './assets/audio/sfx/sword_slash_1.wav',
     swordSlash2SFX: './assets/audio/sfx/sword_slash_2.wav',
     swordSlash3SFX: './assets/audio/sfx/sword_slash_3.wav',

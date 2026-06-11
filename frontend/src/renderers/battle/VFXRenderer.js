@@ -10,25 +10,36 @@ export class VFXRenderer {
 
     spawn(config) {
         const p = new Particle(config);
+        
+        if (p.maxLife === undefined) {
+            p.maxLife = config.life || 1.0; 
+        }
+
+        // --- GUARANTEE FLIP FLAGS ---
+        // Some strict Particle classes ignore keys like flipX/flipY during construction. 
+        // We explicitly inject them here to guarantee they exist for the render loop.
+        p.flipX = config.flipX;
+        p.flipY = config.flipY;
+        
         this.particles.push(p);
     }
 
     spawnBurst(x, y, count, baseConfig) {
         for (let i = 0; i < count; i++) {
             const angle = Math.random() * Math.PI * 2;
-            
-            // Scaled default burst speeds to cover the larger 1080p canvas appropriately
             const minSpeed = baseConfig.minSpeed || 120;
             const maxSpeed = baseConfig.maxSpeed || 360;
             const speed = minSpeed + Math.random() * (maxSpeed - minSpeed);
             
+            const life = (baseConfig.minLife || 0.5) + Math.random() * ((baseConfig.maxLife || 1.0) - (baseConfig.minLife || 0.5));
+
             this.spawn({
                 ...baseConfig,
                 x: x,
                 y: y,
                 vx: Math.cos(angle) * speed,
                 vy: Math.sin(angle) * speed,
-                life: (baseConfig.minLife || 0.5) + Math.random() * ((baseConfig.maxLife || 1.0) - (baseConfig.minLife || 0.5)),
+                life: life,
             });
         }
     }
@@ -36,9 +47,7 @@ export class VFXRenderer {
     update(dt) {
         for (let i = this.particles.length - 1; i >= 0; i--) {
             const p = this.particles[i];
-            
             p.update(dt);
-            
             if (p.isDead) {
                 this.particles.splice(i, 1);
             }
@@ -49,42 +58,60 @@ export class VFXRenderer {
         if (this.particles.length === 0) return;
 
         this.ctx.save();
-        
+
         for (const p of this.particles) {
-            this.ctx.globalCompositeOperation = p.blendMode;
-            this.ctx.globalAlpha = Math.max(0, Math.min(1, p.alpha));
-
+            this.ctx.globalCompositeOperation = p.blendMode || 'source-over';
+            this.ctx.globalAlpha = Math.max(0, Math.min(1, p.alpha !== undefined ? p.alpha : 1.0));
+            
             this.ctx.translate(p.x, p.y);
-            // Convert degrees to radians if your configurations use degrees, else assume radians
-            this.ctx.rotate(p.rotation);
+            this.ctx.rotate(p.rotation || 0);
 
-            if (p.sheetKey && p.frame) {
+            // --- Apply Scaling for Flips ---
+            const scaleX = p.flipX ? -1 : 1;
+            const scaleY = p.flipY ? -1 : 1;
+            this.ctx.scale(scaleX, scaleY);
+
+            // --- ANIMATION LOGIC ---
+            if (p.sheetKey) {
                 const sheet = this.loader.get ? this.loader.get(p.sheetKey) : this.loader.getAsset(p.sheetKey);
+                
                 if (sheet) {
-                    const srcX = p.frame.col * p.frameSize;
-                    const srcY = p.frame.row * p.frameSize;
+                    const progress = p.maxLife > 0 ? 1.0 - (p.life / p.maxLife) : 1.0;
                     
-                    // Added a 2.4x multiplier here so existing sprite particles draw at the correct new resolution scale
-                    const size = p.frameSize * p.scale * 2.4; 
+                    const frames = p.frameCount || 1;
+                    const currentFrame = Math.min(Math.floor(progress * frames), frames - 1);
                     
+                    const srcX = currentFrame * p.frameSize;
+                    const srcY = 0; 
+                    
+                    const size = p.frameSize * (p.scale || 1.0) * 2.4;
+
                     this.ctx.drawImage(
-                        sheet,
-                        srcX, srcY, p.frameSize, p.frameSize,
-                        -size/2, -size/2, size, size
+                        sheet, 
+                        srcX, 
+                        srcY, 
+                        p.frameSize, 
+                        p.frameSize, 
+                        -size/2, 
+                        -size/2, 
+                        size, 
+                        size
                     );
                 }
             } else {
-                // Fallback / Basic Shape Particle
-                this.ctx.fillStyle = p.color;
-                this.ctx.shadowColor = p.color;
-                this.ctx.shadowBlur = 24; // Scaled shadow blur
+                this.ctx.fillStyle = p.color || '#ffffff';
+                this.ctx.shadowColor = p.color || '#ffffff';
+                this.ctx.shadowBlur = 24; 
+                
                 this.ctx.beginPath();
-                this.ctx.arc(0, 0, 12 * p.scale, 0, Math.PI * 2); // Scaled default radius from 5 to 12
+                this.ctx.arc(0, 0, 12 * (p.scale || 1.0), 0, Math.PI * 2); 
                 this.ctx.fill();
             }
 
-            // Reset transform for the next particle instead of saving/restoring ctx repeatedly
-            this.ctx.rotate(-p.rotation);
+            // --- Revert Scaling for Flips ---
+            this.ctx.scale(scaleX, scaleY);
+
+            this.ctx.rotate(-(p.rotation || 0));
             this.ctx.translate(-p.x, -p.y);
         }
 
