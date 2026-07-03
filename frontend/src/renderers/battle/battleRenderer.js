@@ -92,44 +92,57 @@ export class BattleRenderer {
                         (this.combatantRenderer.getEntityPosition(anim.targets[0], state) || sourcePos) : sourcePos;
                     
                     // --- BULLETPROOF ENEMY CHECK ---
-                    // Safely evaluate if the actor is an enemy, handling both Object and String ID references
-                    const isEnemy = state.activeEnemies 
-                        ? state.activeEnemies.some(e => e === anim.actor || e.id === (anim.actor?.id || anim.actor)) 
-                        : false;
+// Safely evaluate if the actor is an enemy, handling both Object and String ID references
+const isEnemy = state.activeEnemies ? state.activeEnemies.some(e => e === anim.actor || e.id === (anim.actor?.id || anim.actor)) : false;
 
-                    vfxCues.forEach(cue => {
-                        let startX = cue.origin === 'target' ? targetPos.x : sourcePos.x;
-                        let startY = cue.origin === 'target' ? targetPos.y : sourcePos.y;
-                        
-                        // Avoid double-flipping: Auto-rotation already mathematically points towards the target!
-                        const isAutoRotate = cue.config.rotation === 'auto';
+vfxCues.forEach(cue => {
+  // Avoid double-flipping: Auto-rotation already mathematically points towards the target!
+  const isAutoRotate = cue.config.rotation === 'auto';
 
-                        // Inject flip flags securely into the config
-                        const enhancedConfig = { 
-                            ...cue.config, 
-                            flipY: cue.config.flipY !== undefined ? cue.config.flipY : isEnemy,
-                            flipX: cue.config.flipX !== undefined ? cue.config.flipX : (isAutoRotate ? false : isEnemy)
-                        };
+  // Inject flip flags securely into the config
+const enhancedConfig = {
+  ...cue.config,
+  flipY: cue.config.flipY !== undefined ? cue.config.flipY : false, // Keeping this false stops it from going upside down
+  flipX: cue.config.flipX !== undefined ? cue.config.flipX : (isAutoRotate ? false : isEnemy)
+};
 
-                        if (cue.type === 'burst') {
-                            this.vfxRenderer.spawnBurst(startX, startY, cue.count || 10, enhancedConfig);
-                        } else if (cue.type === 'travel') {
-                            this.vfxRenderer.spawn({
-                                ...enhancedConfig,
-                                startX: sourcePos.x,
-                                startY: sourcePos.y,
-                                endX: targetPos.x,
-                                endY: targetPos.y,
-                                movement: cue.config.movement || 'linear'
-                            });
-                        } else if (cue.type === 'spawn') {
-                            this.vfxRenderer.spawn({
-                                ...enhancedConfig,
-                                startX: startX,
-                                startY: startY
-                            });
-                        }
-                    });
+  // --- MULTI-TARGET MULTIPLEXER ---
+  // If the effect is a flat 'spawn' or a particle 'burst' on the target, 
+  // duplicate it for each target individual in a splash attack.
+  if (cue.origin === 'target' && (cue.type === 'spawn' || cue.type === 'burst') && anim.targets && anim.targets.length > 0) {
+    
+    anim.targets.forEach(target => {
+      const tPos = this.combatantRenderer.getEntityPosition(target, state) || sourcePos;
+      
+      if (cue.type === 'burst') {
+        this.vfxRenderer.spawnBurst(tPos.x, tPos.y, cue.count || 10, enhancedConfig);
+      } else if (cue.type === 'spawn') {
+        this.vfxRenderer.spawn({ ...enhancedConfig, startX: tPos.x, startY: tPos.y });
+      }
+    });
+
+  } else {
+    // --- STANDARD FALLBACK ---
+    // Runs normally if the origin is the source actor, or if it's a 'traveling' projectile
+    let startX = cue.origin === 'target' ? targetPos.x : sourcePos.x;
+    let startY = cue.origin === 'target' ? targetPos.y : sourcePos.y;
+
+    if (cue.type === 'burst') {
+      this.vfxRenderer.spawnBurst(startX, startY, cue.count || 10, enhancedConfig);
+    } else if (cue.type === 'travel') {
+      this.vfxRenderer.spawn({ 
+        ...enhancedConfig, 
+        startX: sourcePos.x, 
+        startY: sourcePos.y, 
+        endX: targetPos.x, 
+        endY: targetPos.y, 
+        movement: cue.config.movement || 'linear' 
+      });
+    } else if (cue.type === 'spawn') {
+      this.vfxRenderer.spawn({ ...enhancedConfig, startX: startX, startY: startY });
+    }
+  }
+});
                 }
             }
         }
@@ -214,86 +227,109 @@ export class BattleRenderer {
     }
 
     spawnFloatingText({ target, value, resource, text, type, isCritical, delay = 0 }) {
-        const pos = this.combatantRenderer.getEntityPosition(target, this.currentState);
-        if (!pos) return;
+  const pos = this.combatantRenderer.getEntityPosition(target, this.currentState);
+  if (!pos) return;
 
-        let displayText = text;
-        let color = this.COLORS.textMain;
-        let fontSize = isCritical ? 86 : 53; 
+  let displayText = text;
+  let color = this.COLORS.textMain;
+  let fontSize = isCritical ? 86 : 53;
 
-        if (value !== undefined) {
-            const isGain = value > 0;
-            const prefix = isGain ? '+' : '';
-            displayText = `${prefix}${Math.round(value)}`;
-            
-            if (resource === 'hp') color = this.COLORS.hp;
-            else if (resource === 'stamina') color = this.COLORS.stm;
-            else if (resource === 'insight') color = this.COLORS.ins;
-            
-            if (isCritical) color = this.COLORS.hp;
-        } else if (type === 'status') {
-            color = this.COLORS.textMuted;
-        }
+  if (value !== undefined) {
+    const isGain = value > 0;
+    const prefix = isGain ? '+' : '';
+    displayText = `${prefix}${Math.round(value)}`;
 
-        let targetX = pos.x + (Math.random() * 96 - 48); 
-        let targetY = pos.y - 96; 
-
-        for (const ft of this.floatingTexts) {
-            if (Math.abs(ft.x - targetX) < 72 && Math.abs(ft.y - targetY) < 60) { 
-                targetY -= 60; 
-            }
-        }
-
-        this.floatingTexts.push({
-            text: displayText,
-            color,
-            fontSize,
-            x: targetX,
-            y: targetY,
-            life: isCritical ? 2.0 : 1.5,
-            maxLife: isCritical ? 2.0 : 1.5,
-            velocityY: isCritical ? -60 : -36,
-            delay: delay
-        });
+    // --- FIXED RESOURCE MAPPING ---
+    if (resource === 'hp') {
+      color = this.COLORS.hp; // #8c1c1c (Dark Crimson)
+    } else if (resource === 'stamina' || resource === 'stm') {
+      color = this.COLORS.stm; // #4a5d4e (Muted Moss Green)
+    } else if (resource === 'insight' || resource === 'ins') {
+      color = this.COLORS.ins; // #4a5b70 (Deep Slate Blue)
     }
+    
+    // REMOVED: "if (isCritical) color = this.COLORS.hp;" 
+    // This allows critical stamina or insight modifications to keep their clear green/blue hues!
+    
+  } else if (type === 'status') {
+    color = this.COLORS.textMuted;
+  }
+
+  let targetX = pos.x + (Math.random() * 96 - 48);
+  let targetY = pos.y - 96;
+
+  for (const ft of this.floatingTexts) {
+    if (Math.abs(ft.x - targetX) < 72 && Math.abs(ft.y - targetY) < 60) {
+      targetY -= 60;
+    }
+  }
+
+  this.floatingTexts.push({
+    text: displayText,
+    color,
+    fontSize,
+    x: targetX,
+    y: targetY,
+    life: isCritical ? 2.0 : 1.5,
+    maxLife: isCritical ? 2.0 : 1.5,
+    velocityY: isCritical ? -60 : -36,
+    delay: delay
+  });
+}
 
     drawFloatingTexts(dt) {
-        for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
-            const ft = this.floatingTexts[i];
-            
-            if (ft.delay > 0) {
-                ft.delay -= dt;
-                continue;
-            }
+  for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
+    const ft = this.floatingTexts[i];
 
-            ft.life -= dt;
-            ft.y += ft.velocityY * dt;
-
-            if (ft.life <= 0) {
-                this.floatingTexts.splice(i, 1);
-                continue;
-            }
-
-            this.ctx.save();
-            this.ctx.globalAlpha = Math.min(1.0, (ft.life / ft.maxLife) * 2);
-            
-            const fontFamily = UITheme.fonts.body.split('px ')[1] || '"Georgia", serif';
-            const fontStr = `italic bold ${ft.fontSize}px ${fontFamily}`;
-            
-            this.ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-            this.ctx.shadowBlur = 19; 
-            this.ctx.shadowOffsetX = 5; 
-            this.ctx.shadowOffsetY = 5; 
-
-            this.ui.drawText(ft.text, ft.x, ft.y, fontStr, ft.color, "center", "middle");
-
-            if (ft.fontSize > 58) { 
-                this.ctx.shadowBlur = 0;
-                this.ctx.globalAlpha *= 0.5;
-                this.ui.drawText(ft.text, ft.x, ft.y, fontStr, UITheme.colors.textMain, "center", "middle");
-            }
-            
-            this.ctx.restore();
-        }
+    if (ft.delay > 0) {
+      ft.delay -= dt;
+      continue;
     }
+
+    ft.life -= dt;
+    ft.y += ft.velocityY * dt;
+
+    if (ft.life <= 0) {
+      this.floatingTexts.splice(i, 1);
+      continue;
+    }
+
+    this.ctx.save();
+    this.ctx.globalAlpha = Math.min(1.0, (ft.life / ft.maxLife) * 2);
+
+    const fontFamily = UITheme.fonts.body.split('px ')[1] || '"Georgia", serif';
+    const fontStr = `italic bold ${ft.fontSize}px ${fontFamily}`;
+
+    // 1. Setup native canvas text properties
+    this.ctx.font = fontStr;
+    this.ctx.textAlign = "center";
+    this.ctx.textBaseline = "middle";
+
+    // 2. Draw a thick, hard black outline
+    this.ctx.lineJoin = "round"; // Prevents sharp spikes on corners
+    this.ctx.lineWidth = ft.fontSize > 58 ? 8 : 5; // Thicker outline for crits
+    this.ctx.strokeStyle = "rgba(0, 0, 0, 0.95)";
+    this.ctx.strokeText(ft.text, ft.x, ft.y);
+
+    // 3. Setup a tight, crisp drop shadow
+    this.ctx.shadowColor = 'rgba(0, 0, 0, 1.0)';
+    this.ctx.shadowBlur = 4; // Drastically reduced from 19!
+    this.ctx.shadowOffsetX = 3;
+    this.ctx.shadowOffsetY = 3;
+
+    // 4. Fill the text with the main color
+    this.ui.drawText(ft.text, ft.x, ft.y, fontStr, ft.color, "center", "middle");
+
+    // 5. Critical hit overlay (Inner highlight)
+    if (ft.fontSize > 58) {
+      this.ctx.shadowBlur = 0;
+      this.ctx.shadowOffsetX = 0;
+      this.ctx.shadowOffsetY = 0;
+      this.ctx.globalAlpha *= 0.5;
+      this.ui.drawText(ft.text, ft.x, ft.y, fontStr, UITheme.colors.textMain, "center", "middle");
+    }
+
+    this.ctx.restore();
+  }
+}
 }

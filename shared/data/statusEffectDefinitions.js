@@ -8,13 +8,13 @@ export const StatusEffectDefinitions = {
         maxStacks: 1, 
         persistAfterCombat: true, 
         effects: [
-            // Changed to battleMessage
-            { trigger: 'ON_TURN_END', modify: 'hp', value: -5, damageType: 'dark', battleMessage: "{target} suffers sss{amount} poison damage!" } 
+            { trigger: 'ON_TURN_END', modify: 'hp', value: -5, damageType: 'dark', battleMessage: "{target} suffers {amount} poison damage!" } 
         ]
     },
     bleed: {
         id: 'bleed',
         name: 'Bleed',
+         animationId: "bleed",
         icon: { col: 1, row: 0 }, 
         defaultCharges: 3,
         maxStacks: 1, 
@@ -26,6 +26,7 @@ export const StatusEffectDefinitions = {
     frozen: {
         id: 'frozen',
         name: 'Frozen',
+         animationId: "frozen",
         icon: { col: 2, row: 0 },
         defaultCharges: 1,
         maxStacks: 1,
@@ -58,32 +59,82 @@ export const StatusEffectDefinitions = {
     wet: {
         id: 'wet',
         name: 'Wet',
-        icon: { col: 5, row: 0 }, // Pick a valid sprite coordinate for a water drop!
-        defaultCharges: 99,       // Effectively infinite until the weather changes
+        icon: { col: 5, row: 0 }, 
+        defaultCharges: 99, 
         maxStacks: 1, 
-       
-        // StatCalculator will automatically read these!
         modifiers: [
-            // -0.5 resistance = 1.5x damage taken
             { type: 'flat', target: 'resistance.lightning', value: -0.5 },
-            // +0.5 resistance = 0.5x damage taken
             { type: 'flat', target: 'resistance.fire', value: 0.5 } 
         ]
     },
     iron_skin: {
         id: 'iron_skin',
         name: 'Iron Skin',
-        icon: { col: 0, row: 1 }, // Adjust this to match your sprite sheet
-        defaultCharges: 3,        // Lasts for 3 turns (or until consumed/expired)
-        maxStacks: 3,             // ✅ Allows stacking up to 3 times!
-        persistAfterCombat: false, // Usually buffs clear after combat, but you can change this
+        icon: { col: 0, row: 1 }, 
+        defaultCharges: 3, 
+        maxStacks: 3, 
+        persistAfterCombat: false, 
         modifiers: [
-            // Assuming +value means higher resistance (less damage taken)
-            // You can adjust these values based on how your math works.
-            // Example: +0.2 resistance per stack.
             { type: 'flat', target: 'resistance.slash', value: 2.0 },
-            { type: 'flat', target: 'resistance.blunt', value: 2 },
-            { type: 'flat', target: 'resistance.pierce', value: 2 }
+            { type: 'flat', target: 'resistance.blunt', value: 2.0 },
+            { type: 'flat', target: 'resistance.pierce', value: 2.0 }
         ]
     },
+    burn: {
+        id: 'burn',
+        name: 'Burn',
+        animationId: "burn",
+        icon: { col: 3, row: 0 },
+        defaultCharges: 3,
+        maxStacks: 1,
+        persistAfterCombat: true,
+        effects: [
+            { trigger: 'ON_TURN_END', modify: 'hp', value: -8, damageType: 'fire', battleMessage: "{target} suffers {amount} burn damage!" }
+        ]
+    },
+    knocked_down: {
+        id: 'knocked_down',
+        name: 'Knocked Down',
+        icon: { col: 5, row: 1 },
+        defaultCharges: 1,
+        maxStacks: 1,
+        effects: [
+            { trigger: 'ON_TURN_START', flag: 'skipAction', battleMessage: "{target} is knocked down and misses their turn!" }
+        ]
+    },
+    recharging: {
+        id: 'recharging',
+        name: 'Recharging',
+        icon: { col: 6, row: 1 },
+        defaultCharges: 1,
+        maxStacks: 1,
+        effects: [
+            { trigger: 'ON_TURN_START', flag: 'skipAction', battleMessage: "{target} must recharge and cannot act!" }
+        ]
+    },
+    bound: {
+        id: 'bound',
+        name: 'Bound',
+         animationId: "bound",
+        icon: { col: 7, row: 0 },
+        defaultCharges: 2,
+        maxStacks: 1,
+        effects: [
+            { trigger: 'ON_TURN_START', flag: 'skipAction', battleMessage: "{target} is bound and cannot move!" }
+        ],
+        modifiers: [
+            { type: 'percent', target: 'evasion', value: -1.0 } // Can't dodge while tied up
+        ]
+    },
+    paralyzed: {
+        id: 'paralyzed',
+        name: 'Paralyzed',
+        animationId: "paralyzed",
+        icon: { col: 8, row: 0 },
+        defaultCharges: 2,
+        maxStacks: 1,
+        effects: [
+            { trigger: 'ON_TURN_START', flag: 'skipAction', battleMessage: "{target} is fully paralyzed and cannot move!" }
+        ]
+    }
 };

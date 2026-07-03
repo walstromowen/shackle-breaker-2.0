@@ -19,7 +19,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 5 },
         accuracy: 1.0, 
-        animationId: "melee_lunge",
+        animationId: "punch",
         effects: [
             { type: "damage", damageType: "blunt", power: 0.5 } 
         ]
@@ -61,10 +61,10 @@ export const AbilityDefinitions = {
         
     },
 
-    "thrust": {
-        id: "thrust",
-        name: "Thrust",
-        description: "A forward thrust. Has a chance to bleed the target.",
+    "stab": {
+        id: "stab",
+        name: "Stab",
+        description: "A forward stab. Has a chance to bleed the target.",
         battleMessage: "{user} performs a piercing {ability} against {target}!",
         icon: { col: 0, row: 2 },
         speedModifier: 1, 
@@ -97,13 +97,13 @@ export const AbilityDefinitions = {
             { id: "bleed", chance: 0.15, duration: 3 } 
         ]
     },
-    "arcane_bolt": {
-        id: "arcane_bolt",
-        name: "Arcane Bolt",
+    "arcane_dart": {
+        id: "arcane_dart",
+        name: "Arcane Dart",
         description: "Condense raw insight into a projectile. A reliable source of magical damage.",
         battleMessage: "{user} fires an {ability} toward {target}!",
-        icon: { col: 1, row: 9 }, 
-        animationId: "magic_missile",
+        icon: { col: 0, row: 9 }, 
+        animationId: "arcane_dart",
         targeting: { scope: "enemy", select: "single" },
         cost: { insight: 8 }, 
         speedModifier: 1.0, 
@@ -121,8 +121,8 @@ export const AbilityDefinitions = {
         name: "Fireball",
         description: "Hurl a glob of volatile flame. Deals high damage with a chance to burn.",
         battleMessage: "{user} hurls a blazing {ability} at {target}!",
-        icon: { col: 0, row: 9 }, 
-        animationId: "fireball_cast",
+        icon: { col: 0, row: 3 }, 
+        animationId: "fireball",
         targeting: { scope: "enemy", select: "single" },
         cost: { insight: 15 }, 
         speedModifier: 0.9, 
@@ -365,7 +365,7 @@ export const AbilityDefinitions = {
         description: "Create a pool of acid that damages all enemies in the area. High chance to poison.",
         battleMessage: "{user} conjures an {ability} beneath the enemies!",
         icon: { col: 1, row: 6 },
-        animationId: "earthquake",
+        animationId: "acid_pool",
         targeting: { scope: "all_enemies", select: "auto" },
         cost: { stamina: 20, insight: 20 },
         accuracy: 0.90,
@@ -387,7 +387,7 @@ export const AbilityDefinitions = {
         description: "Fire three bolts. Can hit the same target multiple times.",
         battleMessage: "{user} unleashes a {ability} barrage!",
         icon: { col: 1, row: 9 },
-        animationId: "magic_missile",
+        animationId: "arcane_dart",
         targeting: { scope: "enemy", select: "multiple", count: 3, allowRepeats: true },
         cost: { insight: 12 }, 
         accuracy: 1.0, 
@@ -780,5 +780,101 @@ export const AbilityDefinitions = {
         effects: [
             { type: "recover", resource: "insight", calculation: "percent", power: 0.3 }
         ]
-    }
+    },
+    // =========================================================================
+  // 9. MISSING MANIFEST ABILITIES (Claw, Eviscerate, Fire Punch, Shock, Vine Lash)
+  // =========================================================================
+
+  "claw": {
+    id: "claw",
+    name: "Claw",
+    description: "Rake the target with sharp claws. May cause bleeding.",
+    battleMessage: "{user} slashes at {target} with a vicious {ability}!",
+    icon: { col: 1, row: 12 },
+    speedModifier: 1.1,
+    targeting: { scope: "enemy", select: "single" },
+    cost: { stamina: 8 },
+    accuracy: 0.95,
+    animationId: "claw",
+    effects: [
+      { type: "damage", damageType: "slash", power: 0.9 }
+    ],
+    statusEffects: [
+      { id: "bleed", chance: 0.2, duration: 3 }
+    ]
+  },
+
+  "eviscerate": {
+    id: "eviscerate",
+    name: "Eviscerate",
+    description: "A devastating strike that deals critical damage to bleeding targets.",
+    battleMessage: "{user} moves to {ability} {target} mercilessly!",
+    icon: { col: 0, row: 0 },
+    speedModifier: 1.0,
+    targeting: { scope: "enemy", select: "single" },
+    cost: { stamina: 25 },
+    accuracy: 0.85,
+    animationId: "eviscerate",
+    effects: [
+      { type: "damage", damageType: "slash", power: 1.5, condition: { target_has_status: "bleed", multiplier: 2.0 } }
+    ]
+  },
+
+  "fire_punch": {
+    id: "fire_punch",
+    name: "Fire Punch",
+    description: "A heavy physical strike cloaked in flames. Has a chance to burn the target.",
+    battleMessage: "{user} delivers a blazing {ability} to {target}!",
+    icon: { col: 0, row: 9 },
+    speedModifier: 1.0,
+    targeting: { scope: "enemy", select: "single" },
+    cost: { stamina: 12, insight: 8 },
+    accuracy: 0.90,
+    animationId: "fire_punch",
+    effects: [
+      { type: "damage", damageType: "blunt", power: 0.8 },
+      { type: "damage", damageType: "fire", power: 0.8 }
+    ],
+    statusEffects: [
+      { id: "burn", chance: 0.25, duration: 3 }
+    ]
+  },
+
+  "shock": {
+    id: "shock",
+    name: "Shock",
+    description: "Channel a jolt of lightning to zap the enemy. May paralyze.",
+    battleMessage: "{user} casts {ability}, electrocuting {target}!",
+    icon: { col: 1, row: 9 },
+    speedModifier: 1.3,
+    targeting: { scope: "enemy", select: "single" },
+    cost: { insight: 12 },
+    accuracy: 1.0,
+    animationId: "shock",
+    effects: [
+      { type: "damage", damageType: "lightning", power: 1.2 }
+    ],
+    statusEffects: [
+      { id: "paralyzed", chance: 0.2, duration: 2 }
+    ]
+  },
+
+  "vine_lash": {
+    id: "vine_lash",
+    name: "Vine Lash",
+    description: "Whip the target with thorny vines. Can restrict movement.",
+    battleMessage: "{user} strikes {target} with a {ability}!",
+    icon: { col: 2, row: 6 },
+    speedModifier: 1.0,
+    targeting: { scope: "enemy", select: "single" },
+    cost: { insight: 8, stamina: 5 },
+    accuracy: 0.95,
+    animationId: "vine_lash",
+    effects: [
+      { type: "damage", damageType: "earth", power: 1.0 }
+    ],
+    statusEffects: [
+      { id: "bound", chance: 0.15, duration: 2 }
+    ]
+  }
 };

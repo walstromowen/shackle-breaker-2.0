@@ -14,7 +14,7 @@ export const ItemDefinitions = {
     },
 
     "dagger": {
-        id: "dagger", // Fixed from "shortsword"
+        id: "dagger", 
         name: "Dagger",
         slot: "oneHand",
         type: "weapon",
@@ -45,7 +45,7 @@ export const ItemDefinitions = {
         value: 20,
         icon: { col: 1, row: 0 },
         attack: { pierce: 3, slash: 3 },
-        grantedAbilities: ["slash", "thrust"],
+        grantedAbilities: ["slash", "thrust", "earthquake", "acid_pool", "fireball"],
         maxLevel: 3,
         statGrowth: {
             attack: { pierce: 2, slash: 2 }
@@ -271,7 +271,7 @@ export const ItemDefinitions = {
         value: 20,
         icon: { col: 6, row: 1 },
         attack: { arcane: 5},
-        grantedAbilities: ["arcane_bolt"], // Moved magic_missile to unlock
+        grantedAbilities: ["arcane_dart"], // Moved magic_missile to unlock
         maxLevel: 3,
         statGrowth: { attack: { arcane: 3 } },
         abilityUnlocks: { 2: ["magic_missile"] },

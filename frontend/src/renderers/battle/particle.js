@@ -39,12 +39,11 @@ export class Particle {
         this.color = config.color || '#ffffff';
         this.blendMode = config.blendMode || 'source-over';
         
-        // --- THE ONLY NEEDED CHANGE IS HERE ---
-        // Default to 'battleProjectiles' so older animations don't break
+        // Sprite/Animation configuration
         this.sheetKey = config.sheetKey || 'battleProjectiles'; 
-        
         this.frame = config.frame || null;
         this.frameSize = config.frameSize || 32;
+        this.frameCount = config.frameCount || 1; // FIX: Ensure frameCount is saved!
     }
 
     update(dt) {

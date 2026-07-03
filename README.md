@@ -13,7 +13,9 @@ Title Screen
 
 more consistent sound for UI
 Overall UI polish
-
+better text style
+targeting ui improvements for splash attacks with mouse
+hero battle cry not working
 
 Bugs
 Rain flash
@@ -22,7 +24,7 @@ can equip/ unequip items in battle
 
 
 
-Root
+Rooth
 ├── backend/
 ├── frontend/                  
 │   ├── src/

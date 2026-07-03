@@ -185,20 +185,22 @@ export class BattleController extends BaseController {
   onHover(hitboxId) {
     if (hitboxId === this.lastHoveredHitboxId) return;
     this.lastHoveredHitboxId = hitboxId;
-
+    
     const prevMenuIndex = this.state?.menuIndex;
     const prevTargetIndex = this.state?.targetIndex;
+    
     super.onHover(hitboxId);
-
+    
     if (!hitboxId || this.state?.isPausedForUI || !this.state?.active) return;
-
+    
     if (this.state.phase === PHASE.SELECT_ACTION && hitboxId.startsWith('ACTION_')) {
       this.state.menuIndex = parseInt(hitboxId.split('_')[1], 10);
-      // FIXED: Removed all automatic assignments to showAbilityDetails here.
-      // It will now purely preserve whatever state it was toggled to.
       if (this.state.menuIndex !== prevMenuIndex) this.playNavSound();
-    } else if (this.state.phase === PHASE.SELECT_TARGET && hitboxId.startsWith('TARGET_')) {
-      if (this.state.targetIndex === 'ALL') return;
+    } 
+    else if (this.state.phase === PHASE.SELECT_TARGET && hitboxId.startsWith('TARGET_')) {
+      // --- FIX: If targeting ALL, keep it ALL on hover ---
+      if (this.state.targetIndex === 'ALL') return; 
+      
       if (this._isValidTargetHitbox(hitboxId)) {
         const target = this._getTargetFromHitbox(hitboxId);
         const validTargets = this._getTargetsFromGroup();
@@ -210,11 +212,13 @@ export class BattleController extends BaseController {
 
   onClick(hitboxId) {
     if (!hitboxId || this.state?.isPausedForUI || !this.state?.active) return;
-
+    
     if (this.state.phase === PHASE.SELECT_ACTION && hitboxId.startsWith('ACTION_')) {
       this.state.menuIndex = parseInt(hitboxId.split('_')[1], 10);
       this._handleActionSelection('CONFIRM');
-    } else if (this.state.phase === PHASE.SELECT_TARGET && hitboxId.startsWith('TARGET_')) {
+    } 
+    else if (this.state.phase === PHASE.SELECT_TARGET && hitboxId.startsWith('TARGET_')) {
+      // --- FIX: If targeting ALL, any valid target click triggers the group confirm ---
       if (this.state.targetIndex === 'ALL') {
         if (this._isValidTargetHitbox(hitboxId)) {
           this._handleTargetSelection('CONFIRM');
@@ -225,7 +229,8 @@ export class BattleController extends BaseController {
         this.state.targetIndex = validTargets.indexOf(target);
         this._handleTargetSelection('CONFIRM');
       }
-    } else if (this.state.phase === PHASE.SELECT_ACTION) {
+    } 
+    else if (this.state.phase === PHASE.SELECT_ACTION) {
       if (hitboxId === 'BUTTON_PARTY') {
         this.playConfirmSound('ui_select');
         this.requestPartySwap(false, this.state.activePartyIndex);
@@ -235,7 +240,6 @@ export class BattleController extends BaseController {
       }
     }
   }
-
   onRightClick(hitboxId) {
     if (this.state?.isPausedForUI || !this.state?.active) return;
     if (this.state.phase === PHASE.SELECT_TARGET) {
