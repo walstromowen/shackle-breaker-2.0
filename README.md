@@ -15,7 +15,6 @@ more consistent sound for UI
 Overall UI polish
 better text style
 targeting ui improvements for splash attacks with mouse
-hero battle cry not working
 
 Bugs
 Rain flash

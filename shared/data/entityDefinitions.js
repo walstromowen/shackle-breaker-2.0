@@ -9,10 +9,10 @@ const BASE_ENTITY = {
     // --- VISUALS ---
     spriteOverworld: "spritesheet",  
     spritePortrait: "spritesheet",  
-    battlePortraitFramesFront: 31, // Defaults for enemy view
+    battlePortraitFramesFront: 32, // Defaults for enemy view
     battlePortraitFramesBack: 31,  // Defaults for player view    
-    crySound: "unsheathSwordSFX",       // <-- NEW: Plays on battle start
-    deathSound: "unsheathSwordSFX",
+    crySound: "unsheathSwordSfx",       // <-- NEW: Plays on battle start
+    deathSound: "unsheathSwordSfx",
     traits: [],
     statusEffects: [],
     
@@ -86,8 +86,8 @@ const BEAST_TEMPLATE = {
     name: "Beast",
     spriteOverworld: "spritesheet",
     spritePortrait: "spritesheet",
-    battlePortraitFramesFront: 31, // Defaults for enemy view
-    battlePortraitFramesBack: 31,  // Defaults for player view    
+    battlePortraitFramesFront: 32, // Defaults for enemy view
+    battlePortraitFramesBack: 32,  // Defaults for player view    
     crySound: "dogCry",       // <-- NEW: Plays on battle start
     deathSound: "dogDeath",
     
@@ -134,7 +134,7 @@ export const ENTITY_DEFINITIONS = {
         spriteOverworld: "spritesheet",
         spritePortrait: "madmanPortrait",
         battlePortraitFramesFront: 32,
-        battlePortraitFramesBack: 31,
+        battlePortraitFramesBack: 32,
         crySound: "madmanCry",
         deathSound: "madmanCry",
         attributes: {
@@ -174,7 +174,7 @@ export const ENTITY_DEFINITIONS = {
         spriteOverworld: "madMageSprite",
         spritePortrait: "madMagePortrait",
         battlePortraitFramesFront: 32, // Defaults for enemy view
-        battlePortraitFramesBack: 31,  // Defaults for player view    
+        battlePortraitFramesBack: 32,  // Defaults for player view    
         crySound: "madMageCry",       // <-- NEW: Plays on battle start
         deathSound: "madMageCry",
         attributes: {
@@ -214,7 +214,7 @@ export const ENTITY_DEFINITIONS = {
         spriteOverworld: "spritesheet",
         spritePortrait: "rottingManPortrait",
         battlePortraitFramesFront: 29,
-        battlePortraitFramesBack: 31,
+        battlePortraitFramesBack: 32,
         crySound: "madmanCry",
         deathSound: "madmanCry",
         attributes: {
@@ -285,8 +285,8 @@ export const ENTITY_DEFINITIONS = {
 
         spriteOverworld: "spritesheet",
         spritePortrait: "sandStalkerPortrait",
-        battlePortraitFramesFront: 31,
-        battlePortraitFramesBack: 31,
+        battlePortraitFramesFront: 32,
+        battlePortraitFramesBack: 32,
         crySound: "sandStalkerCry",
         deathSound: "sandStalkerCry",
         attributes: { vigor: 8, strength: 8, dexterity: 12, intelligence: 10, attunement: 12 },
@@ -326,8 +326,8 @@ export const ENTITY_DEFINITIONS = {
 
         spriteOverworld: "germanSheepherdSprite",
         spritePortrait: "germanSheepherdPortrait",
-        battlePortraitFramesFront: 31,
-        battlePortraitFramesBack: 31,
+        battlePortraitFramesFront: 32,
+        battlePortraitFramesBack: 32,
         crySound: "dogCry",
         deathSound: "dogDeath",
         attributes: {
@@ -361,8 +361,8 @@ export const ENTITY_DEFINITIONS = {
 
         spriteOverworld: "legionarySprite",
         spritePortrait: "wolfPortrait",
-        battlePortraitFramesFront: 31, // Defaults for enemy view
-        battlePortraitFramesBack: 31,  // Defaults for player view    
+        battlePortraitFramesFront: 32, // Defaults for enemy view
+        battlePortraitFramesBack: 32,  // Defaults for player view    
         crySound: "wolfCry",       // <-- NEW: Plays on battle start
         deathSound: "wolfCry",
         attributes: {

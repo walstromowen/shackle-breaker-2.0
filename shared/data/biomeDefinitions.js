@@ -36,13 +36,14 @@ export const BIOME_DEFINITIONS = {
       ] 
     }, 
     encounters: { 
-      rate: 0.001, 
+      rate: 0.5, 
       pools: [ 
-        { chance: 0.30, id: 'wounded_mutt' }, 
+         { chance: 0.0, id: 'wounded_mutt', allowedTimes: ['day'] },
+        { chance: 1.0, id: 'madman_ahead', allowedTimes: ['day'] },  
       ] 
     }, 
     battles: { 
-      rate: 0.1, 
+      rate: 0.001, 
       pools: { 
         easy: [ 
           { chance: 0.25, enemies: ['ROTTING_MAN', 'MAD_MAN', 'ROTTING_MAN'] }, 
@@ -114,13 +115,14 @@ export const BIOME_DEFINITIONS = {
       ] 
     }, 
     encounters: { 
-      rate: 0.001, 
+      rate: 0.5, 
       pools: [ 
-        { chance: 0.80, id: 'wounded_mutt', allowedTimes: ['day'] }, 
+        { chance: 0.0, id: 'wounded_mutt', allowedTimes: ['day'] },
+        { chance: 1.0, id: 'madman_ahead', allowedTimes: ['day'] },  
       ] 
     }, 
     battles: { 
-      rate: 0.1, 
+      rate: 0.001, 
       pools: { 
         easy: [ 
           { chance: 1.00, enemies: ['SAND_STALKER', 'SAND_STALKER'] } 
