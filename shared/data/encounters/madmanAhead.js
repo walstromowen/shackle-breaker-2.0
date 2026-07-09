@@ -56,17 +56,13 @@ export const madmanAhead = {
           customActionText: "{name} steps out and attempts to speak calmly to the Madman.",
           successOutcomes: [
             { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "communicate_success_gift" } }] },
-            { weight: 2, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "conversation" } }] } // Merged the old class!
+            { weight: 2, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "conversation" } }] } 
           ],
           failureOutcomes: [
             { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "communicate_fail" } }] }
           ]
         },
-        {
-          text: "Switch character.",
-          type: "switch_character",
-          conditions: [{ type: "has_other_party_members" }]
-        },
+        { text: "Switch character.", type: "switch_character", conditions: [{ type: "has_other_party_members" }] },
         {
           text: "Leave.",
           customActionText: "{name} quietly backs away from the Madman and takes a different path.",
@@ -87,29 +83,50 @@ export const madmanAhead = {
         {
           text: "Loot the body and leave.",
           outcomes: [
-            { weight: 100, results: [
-              { type: "GIVE_ITEM", payload: { itemId: "random_loot", qty: 1 } },
-              { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
-              { type: "END_ENCOUNTER", payload: null }
-            ]}
+            {
+              weight: 100, results: [
+                { type: "GIVE_ITEM", payload: { itemId: "random_loot", qty: 1 } },
+                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
+                { type: "END_ENCOUNTER", payload: null }
+              ]
+            }
           ]
         }
       ]
     },
     "sneak_fail_startle": {
       image: { sheet: "encounters", col: 2, row: 2 },
-      bgm: "battle_prelude",
+      bgm: "plainsBattleBgm",
       text: "[${context.roll_stat} Check: ${context.roll_total} vs DC ${context.roll_dc} - ${context.roll_result}]\n\nThe Madman is startled by {name}'s clumsy approach. He shrieks and draws his weapon!",
       decisions: [
-        { text: "Defend yourself!", outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { enemies: ["MAD_MAN"] } }] }] }
+        {
+          text: "Defend yourself!",
+          outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { enemies: ["MAD_MAN"] } }] }]
+        }
       ]
     },
     "sneak_fail_bleed": {
       image: { sheet: "encounters", col: 2, row: 2 },
-      bgm: "battle_prelude",
+      bgm: "plainsBattleBgm",
       text: "[${context.roll_stat} Check: ${context.roll_total} vs DC ${context.roll_dc} - ${context.roll_result}]\n\n{name} plunges a dagger into the side of the Madman, leaving him bleeding profusely! He survives the blow and sends a howl into the air, alerting nearby villagers!",
       decisions: [
-        { text: "Brace for the ambush!", outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { enemies: ["MAD_MAN", "MADMAN_BANDIT"] } }] }] }
+        {
+          text: "Brace for the ambush!",
+          outcomes: [{
+            weight: 100, results: [{
+              type: "START_BATTLE", payload: {
+                enemies: [
+                  {
+                    id: "MAD_MAN",
+                    startingHpPercent: 0.5,
+                    statusEffects: [{ id: "bleed", duration: 3, power: 5 }]
+                  },
+                  "MADMAN_BANDIT"
+                ]
+              }
+            }]
+          }]
+        }
       ]
     },
 
@@ -123,49 +140,71 @@ export const madmanAhead = {
         {
           text: "Check his pockets.",
           outcomes: [
-            { weight: 100, results: [
-              { type: "GIVE_ITEM", payload: { itemId: "random_loot", qty: 1 } },
-              { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
-              { type: "END_ENCOUNTER", payload: null }
-            ]}
+            {
+              weight: 100, results: [
+                { type: "GIVE_ITEM", payload: { itemId: "random_loot", qty: 1 } },
+                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
+                { type: "END_ENCOUNTER", payload: null }
+              ]
+            }
           ]
         }
       ]
     },
     "rock_injure": {
       image: { sheet: "encounters", col: 2, row: 2 },
-      bgm: "battle_prelude",
+      bgm: "plainsBattleBgm",
       text: "[${context.roll_stat} Check: ${context.roll_total} vs DC ${context.roll_dc} - ${context.roll_result}]\n\nThe rock hits the Madman's body, injuring him. After wincing from the wound, the Madman looks up and runs screaming at {name}!",
       decisions: [
-        { text: "Draw your weapon!", outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { enemies: ["MADMAN_INJURED"] } }] }] }
+        {
+          text: "Draw your weapon!",
+          outcomes: [{
+            weight: 100, results: [{
+              type: "START_BATTLE", payload: {
+                enemies: [
+                  { id: "MAD_MAN", startingHpPercent: 0.5 }
+                ]
+              }
+            }]
+          }]
+        }
       ]
     },
     "rock_miss_startle": {
       image: { sheet: "encounters", col: 2, row: 2 },
-      bgm: "battle_prelude",
+      bgm: "plainsBattleBgm",
       text: "[${context.roll_stat} Check: ${context.roll_total} vs DC ${context.roll_dc} - ${context.roll_result}]\n\nThe rock goes far over the Madman's head. He snaps his head around, draws his weapon, and rushes at {name}!",
       decisions: [
-        { text: "Fight!", outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { enemies: ["MAD_MAN"] } }] }] }
+        {
+          text: "Fight!",
+          outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { enemies: ["MAD_MAN"] } }] }]
+        }
       ]
     },
     "rock_miss_retry": {
       image: { sheet: "encounters", col: 0, row: 2 },
       text: "[${context.roll_stat} Check: ${context.roll_total} vs DC ${context.roll_dc} - ${context.roll_result}]\n\nThe rock completely misses the madman and lands softly in the grass. He doesn't seem to have noticed. Surely he will notice another...",
       decisions: [
-        { text: "Try again.", outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery" } }] }] }
+        {
+          text: "Try again.",
+          outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery" } }] }]
+        }
       ]
     },
     "rock_miss_wolves": {
       image: { sheet: "encounters", col: 3, row: 2 },
-      bgm: "battle_prelude",
+      bgm: "plainsBattleBgm",
       text: "[${context.roll_stat} Check: ${context.roll_total} vs DC ${context.roll_dc} - ${context.roll_result}]\n\nThe rock goes nowhere near the Madman. Instead, it lands right in the middle of the bushes, startling a pack of wolves! They turn and glare fiercely at {name}!",
       decisions: [
-        { text: "Uh oh...", outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { enemies: ["WOLF", "WOLF", "WOLF"] } }] }] }
+        {
+          text: "Uh oh...",
+          outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { enemies: ["WOLF", "WOLF", "WOLF"] } }] }]
+        }
       ]
     },
 
     // ==========================================
-    // COMMUNICATE OUTCOMES (Merge of the 2 classes)
+    // COMMUNICATE OUTCOMES 
     // ==========================================
     "communicate_success_gift": {
       image: { sheet: "encounters", col: 1, row: 2 },
@@ -174,21 +213,26 @@ export const madmanAhead = {
         {
           text: "Take the knapsack.",
           outcomes: [
-            { weight: 100, results: [
-              { type: "GIVE_ITEM", payload: { itemId: "random_loot", qty: 1 } },
-              { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
-              { type: "END_ENCOUNTER", payload: null }
-            ]}
+            {
+              weight: 100, results: [
+                { type: "GIVE_ITEM", payload: { itemId: "random_loot", qty: 1 } },
+                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
+                { type: "END_ENCOUNTER", payload: null }
+              ]
+            }
           ]
         }
       ]
     },
     "communicate_fail": {
       image: { sheet: "encounters", col: 2, row: 2 },
-      bgm: "battle_prelude",
+      bgm: "plainsBattleBgm",
       text: "[${context.roll_stat} Check: ${context.roll_total} vs DC ${context.roll_dc} - ${context.roll_result}]\n\nThe Madman stops, looks {name} dead in the eyes, and bursts into maniacal laughter. He draws a rusted blade!",
       decisions: [
-        { text: "Fight!", outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { enemies: ["MAD_MAN"] } }] }] }
+        {
+          text: "Fight!",
+          outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { enemies: ["MAD_MAN"] } }] }]
+        }
       ]
     },
 
@@ -202,7 +246,7 @@ export const madmanAhead = {
         {
           text: "\"Magic says run away freak!\"",
           type: "skill_check",
-          attribute: "strength", // Old game used "none", forcing to a baseline roll
+          attribute: "strength",
           threshold: 5,
           customActionText: "{name} puffs out their chest and shouts at the Madman.",
           successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "convo_run_success" } }] }],
@@ -228,7 +272,7 @@ export const madmanAhead = {
         }
       ]
     },
-    
+
     // Conversation Resolutions
     "convo_run_success": {
       image: { sheet: "encounters", col: 1, row: 2 },
@@ -237,21 +281,26 @@ export const madmanAhead = {
         {
           text: "Take the knapsack.",
           outcomes: [
-            { weight: 100, results: [
-              { type: "GIVE_ITEM", payload: { itemId: "random_loot", qty: 1 } },
-              { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
-              { type: "END_ENCOUNTER", payload: null }
-            ]}
+            {
+              weight: 100, results: [
+                { type: "GIVE_ITEM", payload: { itemId: "random_loot", qty: 1 } },
+                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
+                { type: "END_ENCOUNTER", payload: null }
+              ]
+            }
           ]
         }
       ]
     },
     "convo_run_fail": {
       image: { sheet: "encounters", col: 2, row: 2 },
-      bgm: "battle_prelude",
+      bgm: "plainsBattleBgm",
       text: "[Check: ${context.roll_total} vs DC ${context.roll_dc} - ${context.roll_result}]\n\n\"Freak? .. Friend! Magic know many freak friend! You be freak friend too!\" he screams, lunging forward.",
       decisions: [
-        { text: "Fight!", outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { enemies: ["MAD_MAN"] } }] }] }
+        {
+          text: "Fight!",
+          outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { enemies: ["MAD_MAN"] } }] }]
+        }
       ]
     },
     "convo_give_success": {
@@ -261,21 +310,26 @@ export const madmanAhead = {
         {
           text: "Take his offerings.",
           outcomes: [
-            { weight: 100, results: [
-              { type: "GIVE_ITEM", payload: { itemId: "random_loot", qty: 1 } },
-              { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
-              { type: "END_ENCOUNTER", payload: null }
-            ]}
+            {
+              weight: 100, results: [
+                { type: "GIVE_ITEM", payload: { itemId: "random_loot", qty: 1 } },
+                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
+                { type: "END_ENCOUNTER", payload: null }
+              ]
+            }
           ]
         }
       ]
     },
     "convo_give_fail": {
       image: { sheet: "encounters", col: 2, row: 2 },
-      bgm: "battle_prelude",
+      bgm: "plainsBattleBgm",
       text: "[${context.roll_stat} Check: ${context.roll_total} vs DC ${context.roll_dc} - ${context.roll_result}]\n\n\"Hahaha! Magic no like you! So me no like you neither!\"",
       decisions: [
-        { text: "Fight!", outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { enemies: ["MAD_MAN"] } }] }] }
+        {
+          text: "Fight!",
+          outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { enemies: ["MAD_MAN"] } }] }]
+        }
       ]
     },
     "convo_bow_success": {
@@ -285,27 +339,31 @@ export const madmanAhead = {
         {
           text: "Command him to follow.",
           outcomes: [
-            { weight: 100, results: [
-              { type: "MODIFY_VITALS", payload: { insight: 5 } }, // Translated "Current Corruption +0.05"
-              { type: "RECRUIT_CHARACTER", payload: { entityId: "MAD_MAN" } },
-              { type: "END_ENCOUNTER", payload: null }
-            ]}
+            {
+              weight: 100, results: [
+                { type: "MODIFY_VITALS", payload: { insight: 5 } },
+                { type: "RECRUIT_CHARACTER", payload: { entityId: "MAD_MAN" } },
+                { type: "END_ENCOUNTER", payload: null }
+              ]
+            }
           ]
         }
       ]
     },
     "convo_bow_fail": {
       image: { sheet: "encounters", col: 2, row: 2 },
-      bgm: "battle_prelude",
+      bgm: "plainsBattleBgm",
       text: "[${context.roll_stat} Check: ${context.roll_total} vs DC ${context.roll_dc} - ${context.roll_result}]\n\nHe glares at you with sudden, horrifying clarity. \"You no hear magic! Me hurt you now!\"",
       decisions: [
         {
           text: "Defend yourself!",
           outcomes: [
-            { weight: 100, results: [
-              { type: "MODIFY_VITALS", payload: { insight: 5 } }, 
-              { type: "START_BATTLE", payload: { enemies: ["MAD_MAN"] } }
-            ]}
+            {
+              weight: 100, results: [
+                { type: "MODIFY_VITALS", payload: { insight: 5 } },
+                { type: "START_BATTLE", payload: { enemies: ["MAD_MAN"] } }
+              ]
+            }
           ]
         }
       ]

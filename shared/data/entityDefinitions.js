@@ -361,7 +361,7 @@ export const ENTITY_DEFINITIONS = {
 
         spriteOverworld: "legionarySprite",
         spritePortrait: "wolfPortrait",
-        battlePortraitFramesFront: 32, // Defaults for enemy view
+        battlePortraitFramesFront: 31, // Defaults for enemy view
         battlePortraitFramesBack: 32,  // Defaults for player view    
         crySound: "wolfCry",       // <-- NEW: Plays on battle start
         deathSound: "wolfCry",
