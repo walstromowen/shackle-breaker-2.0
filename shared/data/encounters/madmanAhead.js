@@ -12,12 +12,22 @@ export const madmanAhead = {
       text: "{name} sees a man walking ahead. The man appears to be walking aimlessly and laughing. Upon getting closer, {name} realizes this is one of the many souls to have succumbed to madness.",
       decisions: [
         {
-          text: "Charge the Madman.",
-          customActionText: "{name} draws their weapon and charges the Madman!",
-          outcomes: [
-            { weight: 100, results: [{ type: "START_BATTLE", payload: { enemies: ["MAD_MAN", "MAD_MAN"] } }] }
-          ]
-        },
+                    text: "Charge the Madman.",
+                    customActionText: "{name} draws their weapon and charges the Madman!",
+                    outcomes: [
+                        {
+                            weight: 100,
+                             bgm: "plainsBgmNight", //as outcome text begins displaying
+                            results: [{ 
+                                type: "START_BATTLE", 
+                                payload: { 
+                                    enemies: ["MAD_MAN", "MAD_MAN"],
+                                    bgm: "plainsBgmNight"//for actual battle
+                                } 
+                            }]
+                        }
+                    ]
+                },
         {
           text: "[DEX] Eliminate the Madman quietly.",
           type: "skill_check",

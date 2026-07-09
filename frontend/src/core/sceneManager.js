@@ -71,13 +71,27 @@ export class SceneManager {
 
         // State
         this.currentScene = 'character-creator';
+        
+        // --- NEW: Audio Memory Cache ---
+        this.activeBattleBGM = null;
+        this.activeEncounterBGM = null;
 
         this._handleGlobalKeydown = this._handleGlobalKeydown.bind(this);
         this.setupInputRouting();
         this.setupEventListeners();
     }
 
-    resolveTargetBGM(targetScene) {
+    resolveTargetBGM(targetScene, sceneContext = {}) {
+        // 1. Direct override from an event payload
+        if (sceneContext.bgm) {
+            return sceneContext.bgm;
+        }
+
+        // 2. Memory check (prevents music resetting when returning from menus)
+        if (targetScene === 'battle' && this.activeBattleBGM) return this.activeBattleBGM;
+        if (targetScene === 'encounter' && this.activeEncounterBGM) return this.activeEncounterBGM;
+
+        // 3. Fallback: Biome Default
         if (!gameState.player || gameState.player.col === undefined) return null;
 
         const playerCol = gameState.player.col;
@@ -86,7 +100,7 @@ export class SceneManager {
         const biome = this.worldManager.getBiomeAt(playerCol, playerRow);
 
         if (targetScene === 'battle') {
-            return biome.getMusic(currentHour, true); 
+            return biome.getMusic(currentHour, true);
         }
         if (targetScene === 'overworld') {
             return biome.getMusic(currentHour, false);
@@ -97,18 +111,18 @@ export class SceneManager {
     resolveTargetAmbience(targetScene) {
         if (['party', 'character_summary', 'level_up'].includes(targetScene)) return null;
         if (['battle', 'encounter', 'character-creator'].includes(targetScene)) return 'none';
-        
+
         if (gameState.world && gameState.world.currentWeather) {
             return gameState.world.currentWeather.audioEffect || 'none';
         }
         return 'none';
     }
 
-    changeScene(sceneName) {
+    changeScene(sceneName, sceneContext = {}) {
         console.log(`[SceneManager] Switching to: ${sceneName}`);
         this.currentScene = sceneName;
 
-        const targetBGM = this.resolveTargetBGM(sceneName);
+        const targetBGM = this.resolveTargetBGM(sceneName, sceneContext);
         if (targetBGM !== null) {
             if (gameState.world.currentBgm !== targetBGM) {
                 gameState.world.currentBgm = targetBGM;
@@ -127,15 +141,14 @@ export class SceneManager {
     }
 
     setupEventListeners() {
-        // --- NEW: Global Audio Sync ---
-        // If an Encounter (or anything else) manually triggers a track, 
+        // --- Global Audio Sync ---
+        // If an Encounter (or anything else) manually triggers a track,
         // we force the SceneManager's gameState to stay in sync!
         events.on('PLAY_MUSIC', (data) => {
             if (gameState && gameState.world) {
                 gameState.world.currentBgm = data.id;
             }
         });
-        // --- END NEW ---
 
         events.on('CHANGE_SCENE', ({ scene, data }) => {
             this.transitionRenderer.start(() => {
@@ -169,10 +182,11 @@ export class SceneManager {
             if (data.type === 'ENCOUNTER') {
                 this.transitionRenderer.start(() => {
                     this.encounterController.start(data.id, data.context);
-                    this.changeScene('encounter');
+                    const customBGM = data.context?.bgm || null;
+                    this.activeEncounterBGM = customBGM;
+                    this.changeScene('encounter', { bgm: customBGM });
                 }, 'fade');
-            }
-            else if (data.type === 'WARP') {
+            } else if (data.type === 'WARP') {
                 events.emit('PLAY_SFX', { id: 'doorOpen', volume: 0.8 });
                 this.transitionRenderer.start(() => {
                     if (data.id === 'procedural_room_trigger') {
@@ -192,8 +206,7 @@ export class SceneManager {
                         const interiorSpawn = this.worldManager.findSpawnPoint() || { col: 3, row: 5 };
                         this.overworldController.warpTo(interiorSpawn.col, interiorSpawn.row);
                         this.overworldController.isLocked = false;
-                    } 
-                    else if (data.id === 'exit_interior') {
+                    } else if (data.id === 'exit_interior') {
                         const saved = gameState.world.savedOverworld;
                         if (saved) {
                             gameState.seed = saved.seed;
@@ -207,6 +220,9 @@ export class SceneManager {
                             this.overworldController.isLocked = false;
                         }
                     }
+                    
+                    // Clear memory on returning to overworld
+                    this.activeEncounterBGM = null;
                     this.changeScene('overworld');
                 }, 'fade', { speed: 2.0 });
             }
@@ -216,7 +232,9 @@ export class SceneManager {
             events.emit('PLAY_SFX', { id: 'cinematicBoom', volume: 1.0 });
             this.transitionRenderer.start(() => {
                 this.encounterController.start(data.encounterId, data.context || {});
-                this.changeScene('encounter');
+                const customBGM = data.bgm || data.context?.bgm || null;
+                this.activeEncounterBGM = customBGM;
+                this.changeScene('encounter', { bgm: customBGM });
             }, 'ethereal');
         });
 
@@ -258,15 +276,25 @@ export class SceneManager {
 
             this.transitionRenderer.start(() => {
                 console.log("[SceneManager] Handing off scaled entities to BattleController:", scaledEnemies);
+                
                 const context = data.context || {};
                 context.backgroundId = data.background;
                 context.weather = data.weather;
+                
                 this.battleController.start(scaledEnemies, context);
-                this.changeScene('battle');
+                
+                // --- Save BGM to memory ---
+                const customBGM = data.bgm || context.bgm || null;
+                this.activeBattleBGM = customBGM;
+                this.changeScene('battle', { bgm: customBGM });
+
             }, transitionType, { speed: transitionSpeed, color: '#0a0a12' });
         });
 
         events.on('BATTLE_ENDED', (data) => {
+            // --- Clear BGM memory on battle end ---
+            this.activeBattleBGM = null;
+            
             if (data.victory) {
                 events.emit('CHANGE_SCENE', { scene: 'overworld' });
             } else {

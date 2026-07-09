@@ -82,6 +82,7 @@ const ASSET_MANIFEST = {
   desertBattleDuskBg: './assets/backgrounds/desert_battle_dusk_bg.png', 
   desertBattleNightBg: './assets/backgrounds/desert_battle_night_bg.png', 
   encounters: './assets/icons/encounters.png', 
+  shackle_breaker_theme_1: './assets/audio/music/shackle_breaker_theme_1.mp3',
   
   // --- 1:1 ABILITY AUDIO SFX --- 
   earthquake1Sfx: './assets/audio/sfx/abilities/earthquake/earthquake_1.wav',
