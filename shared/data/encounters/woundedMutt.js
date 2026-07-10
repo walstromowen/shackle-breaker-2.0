@@ -45,13 +45,16 @@ export const woundedMutt = {
           text: "Carefully bandage its leg.",
           customActionText: "With the dog distracted by the food, {name} gently wraps the wounded leg.",
           conditions: [
-            { type: "has_item", itemId: "bandage", qty: 1 } // Fixed bug: added item condition check
+            { type: "has_item", itemId: "bandage", qty: 1 } 
           ],
           outcomes: [
-            { weight: 100, results: [
-              { type: "REMOVE_ITEM", payload: { itemId: "bandage", qty: 1 } },
-              { type: "ADVANCE_STAGE", payload: { stageId: "success_tame" } }
-            ]}
+            {
+              weight: 100,
+              results: [
+                { type: "REMOVE_ITEM", payload: { itemId: "bandage", qty: 1 } },
+                { type: "ADVANCE_STAGE", payload: { stageId: "success_tame" } }
+              ]
+            }
           ]
         }
       ]
@@ -59,26 +62,32 @@ export const woundedMutt = {
     "rushed_bandage": {
       image: { sheet: "encounters", col: 2, row: 1 },
       bgm: "battle_prelude",
-      text: "[${context.roll_stat} Check: ${context.roll_total} vs DC ${context.roll_dc} - ${context.roll_result}]\n\nStartled and in pain, the wild mutt snaps fiercely at {name}'s hand!",
+      text: "Startled and in pain, the wild mutt snaps fiercely at {name}'s hand!",
       decisions: [
         {
           text: "Take the bite and force the bandages on.",
           customActionText: "{name} grits their teeth, ignoring the fangs sinking into their flesh to finish the job.",
           outcomes: [
-            { weight: 100, results: [
-              { type: "MODIFY_VITALS", payload: { hp: -50, stamina: -10, insight: 0, damageType: "pierce", isPercentage: true, bypassDefense: false } },
-              { type: "APPLY_STATUS_EFFECT", payload: { effectId: "bleed", charges: 3, target: "active_character" } },
-              { type: "ADVANCE_STAGE", payload: { stageId: "success_tame_hurt" } }
-            ]}
+            {
+              weight: 100,
+              results: [
+                { type: "MODIFY_VITALS", payload: { hp: -50, stamina: -10, insight: 0, damageType: "pierce", isPercentage: true, bypassDefense: false } },
+                { type: "APPLY_STATUS_EFFECT", payload: { effectId: "bleed", charges: 3, target: "active_character" } },
+                { type: "ADVANCE_STAGE", payload: { stageId: "success_tame_hurt" } }
+              ]
+            }
           ]
         },
         {
           text: "Back off and draw a weapon!",
           customActionText: "{name} jumps backward with a curse, drawing their weapon as the beast lunges!",
           outcomes: [
-            { weight: 100, results: [
-              { type: "START_BATTLE", payload: { enemies: ["WOLF"] } }
-            ]}
+            {
+              weight: 100,
+              results: [
+                { type: "START_BATTLE", payload: { enemies: ["WOLF"] } }
+              ]
+            }
           ]
         }
       ]
@@ -92,10 +101,13 @@ export const woundedMutt = {
           text: "Let's go, boy.",
           customActionText: "{name} gives the dog an affectionate pat, signaling it to follow.",
           outcomes: [
-            { weight: 100, results: [
-              { type: "RECRUIT_CHARACTER", payload: { entityId: "BEAST" } },
-              { type: "END_ENCOUNTER", payload: null }
-            ]}
+            {
+              weight: 100,
+              results: [
+                { type: "RECRUIT_CHARACTER", payload: { entityId: "BEAST" } },
+                { type: "END_ENCOUNTER", payload: null }
+              ]
+            }
           ]
         }
       ]
@@ -109,10 +121,13 @@ export const woundedMutt = {
           text: "Ouch... Good boy.",
           customActionText: "{name} winces while bandaging their own hand, then pats the dog on the head.",
           outcomes: [
-            { weight: 100, results: [
-              { type: "RECRUIT_CHARACTER", payload: { entityId: "BEAST" } },
-              { type: "END_ENCOUNTER", payload: null }
-            ]}
+            {
+              weight: 100,
+              results: [
+                { type: "RECRUIT_CHARACTER", payload: { entityId: "BEAST" } },
+                { type: "END_ENCOUNTER", payload: null }
+              ]
+            }
           ]
         }
       ]
@@ -123,7 +138,7 @@ export const woundedMutt = {
       text: "{name} turns their back on the whimpering animal. The wilds are unforgiving, and one must look out for themselves.",
       decisions: [
         {
-          text: "Continue your journey.",
+          text: "Continue the journey.",
           customActionText: "{name} presses onward, trying to ignore the fading whimpers.",
           outcomes: [
             { weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }

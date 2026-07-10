@@ -264,9 +264,7 @@ export class SceneManager {
                 }
 
                 const enemyEntity = EntityFactory.create(enemyId, factoryOverrides);
-                if (typeof enemyData === 'string' || !enemyData.name) {
-                    enemyEntity.name = `${enemyEntity.name || enemyId} ${scaledEnemies.length + 1}`;
-                }
+                
                 scaledEnemies.push(enemyEntity);
             }
 
