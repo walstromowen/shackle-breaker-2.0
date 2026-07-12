@@ -355,6 +355,13 @@ export class EncounterController extends BaseController {
             this.textTimer = 0;
             this.skipMessageAnimation = false;
         }
-        return { ...basePayload, title: this.model.title || "Unknown Encounter", imageInfo: this.model.getImage ? this.model.getImage() : null, text: displayText, decisions: displayDecisions, };
+        return {
+        ...basePayload,
+        title: this.model.title || "Unknown Encounter",
+        stageName: this.model.getStageName ? this.model.getStageName() : "Unknown Stage", // <--- ADD THIS
+        imageInfo: this.model.getImage ? this.model.getImage() : null,
+        text: displayText,
+        decisions: displayDecisions,
+        };
     }
 }

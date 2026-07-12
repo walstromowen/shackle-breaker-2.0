@@ -37,7 +37,7 @@ export const AbilityDefinitions = {
         accuracy: 1.0, 
         animationId: "slash",
         effects: [
-            { type: "damage", damageType: "pierce", power: 1.0 } 
+            { type: "damage", damageType: "slash", power: 1.0 } 
         ],
         statusEffects: [
             { id: "bleed", chance: 0.1, duration: 3 } 

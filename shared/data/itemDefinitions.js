@@ -44,7 +44,7 @@ export const ItemDefinitions = {
         description: 'A standard shortsword. Standard issue shortsword of the Altus legion. "A shorter longsword is a faster longsword" - Commander Mentoras.',
         value: 20,
         icon: { col: 1, row: 0 },
-        attack: { pierce: 3, slash: 3 },
+        attack: { pierce: 3, slash: 3000 },
         grantedAbilities: ["slash", "thrust", "earthquake", "acid_pool", "fireball"],
         maxLevel: 3,
         statGrowth: {

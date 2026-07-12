@@ -1,6 +1,7 @@
 import { gameState } from '../state/gameState.js';
 import { ExperienceSystem } from './experienceSystem.js';
 import { InventorySystem } from './inventorySystem.js';
+import { LootTableFactory } from './factories/lootTableFactory.js';
 
 export class BattleRewardSystem {
     /**
@@ -23,10 +24,24 @@ export class BattleRewardSystem {
             if (currReward.max > 0) {
                 totalCurrency += Math.floor(Math.random() * (currReward.max - currReward.min + 1)) + currReward.min;
             }
-            
-            (enemy.originalEntity.lootTable || []).forEach(loot => {
-                if (Math.random() <= loot.dropRate) droppedItems.push(loot.id);
-            });
+
+            // --- NEW: Process Loot Table ID via Factory ---
+            const lootId = enemy.originalEntity.lootTableId;
+            if (lootId) {
+                const generatedLoot = LootTableFactory.generateLoot(lootId, 1, 0);
+                if (generatedLoot && generatedLoot.items) {
+                    generatedLoot.items.forEach(item => {
+                        const itemId = typeof item === 'string' ? item : item.id;
+                        
+                        // --- FIX: Look for 'qty' from the Factory model ---
+                        const quantity = item.qty || 1; 
+                        
+                        for (let i = 0; i < quantity; i++) {
+                            droppedItems.push(itemId);
+                        }
+                    });
+                }
+            }
         });
 
         messages.push(`Victory! The party gained ${totalXp} XP.`);
@@ -34,7 +49,7 @@ export class BattleRewardSystem {
         // 2. Distribute XP to Surviving Party Members
         const aliveParty = partyRoster.filter(m => !m.isDead());
         const xpPerMember = Math.floor(totalXp / Math.max(1, aliveParty.length));
-
+        
         aliveParty.forEach(member => {
             if (ExperienceSystem.addXp(member.originalEntity, xpPerMember)) {
                 messages.push(`${member.name} reached Level ${member.originalEntity.level}!`);
@@ -49,12 +64,17 @@ export class BattleRewardSystem {
 
         // 4. Distribute Loot
         if (droppedItems.length > 0) {
-            const itemCounts = droppedItems.reduce((acc, id) => { acc[id] = (acc[id] || 0) + 1; return acc; }, {});
+            const itemCounts = droppedItems.reduce((acc, id) => {
+                acc[id] = (acc[id] || 0) + 1;
+                return acc;
+            }, {});
+            
             const lootStrings = Object.entries(itemCounts).map(([id, count]) => {
                 InventorySystem.addItem(id, count);
-                const readableName = id.replace(/_/g, ' '); 
+                const readableName = id.replace(/_/g, ' ');
                 return count > 1 ? `${readableName} x${count}` : readableName;
             });
+            
             messages.push(`Loot recovered: ${lootStrings.join(', ')}`);
         } else if (totalCurrency === 0) {
             messages.push(`The enemies left nothing useful behind.`);
@@ -68,7 +88,7 @@ export class BattleRewardSystem {
         
         const sumStats = (statObj) => statObj ? Object.values(statObj).reduce((sum, val) => sum + val, 0) : 0;
         const statSum = enemy.maxHp + (enemy.stats.speed ?? 10) + sumStats(enemy.stats.attack) + sumStats(enemy.stats.defense);
-       
+        
         return Math.floor(statSum * 0.15) + ((enemy.originalEntity.level || 1) * 10);
     }
 }

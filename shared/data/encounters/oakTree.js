@@ -1,10 +1,11 @@
 export const oakTree = {
   id: "oak_tree",
   title: "A Sturdy Oak",
+  imageSheet: "encounter_oaktree", // Define unique image sheet for this encounter
   initialStage: "approach",
   stages: {
     "approach": {
-      image: { sheet: "encounters", col: 0, row: 0 },
+      image: { col: 0, row: 0 },
       bgm: "plainsOverworldNight",
       text: "An oak tree towers over {name}. Its thick trunk looks like it has stood here for many years.",
       decisions: [
@@ -38,7 +39,7 @@ export const oakTree = {
       ]
     },
     "chopped_success": {
-      image: { sheet: "encounters", col: 1, row: 0 },
+      image: { col: 1, row: 0 },
       bgm: "plainsOverworldNight",
       text: "With a flawless strike, the ancient tree groans and crashes to the earth. {name} spots a small coin pouch tangled in its roots!",
       decisions: [
@@ -61,7 +62,7 @@ export const oakTree = {
       ]
     },
     "chopped_fail": {
-      image: { sheet: "encounters", col: 2, row: 0 },
+      image: { col: 2, row: 0 },
       text: "{name}'s weapon glances off the thick bark. {name} jars their arms terribly but fails to bring it down.",
       decisions: [
         {

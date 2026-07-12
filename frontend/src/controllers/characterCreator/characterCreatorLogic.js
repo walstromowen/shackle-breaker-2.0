@@ -52,9 +52,6 @@ export const CREATION_DATA = {
         { label: "Legionary", spritePortrait: "legionaryHeroPortrait", spriteOverworld: "legionaryHeroSprite" },
         { label: "Warlord", spritePortrait: "warlordHeroPortrait", spriteOverworld: "warlordHeroSprite" },
         { label: "Nightblade", spritePortrait: "nightbladeHeroPortrait", spriteOverworld: "nightbladeHeroSprite" },
-        //{ label: "Artificer", spritePortrait: "artificerHeroPortrait", spriteOverworld: "legionaryHeroSprite" },
-        //{ label: "Avalancher", spritePortrait: "avalancherHeroPortrait", spriteOverworld: "warlordHeroSprite" },
-        //{ label: "Shadow Caster", spritePortrait: "shadowCasterHeroPortrait", spriteOverworld: "nightbladeHeroSprite" }
     ],
     TRAITS: UI_TRAITS,
     KEEPSAKES: [
@@ -66,7 +63,7 @@ export const CREATION_DATA = {
     COMPANIONS: [
         { label: "None", speciesId: null, desc: "Walk the path alone.", attributes: {}, equipment: {} },
         { label: "War Dog", speciesId: "DOG", desc: "Loyal and sturdy.", attributes: { vigor: 12, strength: 10 }  },
-        { label: "Hunting Hawk", speciesId: "AVIAN", desc: "Fast and watchful.", attributes: { dexterity: 16, speed: 10 }, equipment: { accessory: "tattered_shirt" } }
+        //{ label: "Hunting Hawk", speciesId: "AVIAN", desc: "Fast and watchful.", attributes: { dexterity: 16, speed: 10 }, equipment: { accessory: "tattered_shirt" } }
     ],
     DIFFICULTIES: [
         { id: "easy", label: "Easy", desc: "Easier challenge." },
@@ -78,7 +75,6 @@ export const CREATION_DATA = {
 
 export class CharacterCreatorLogic {
     constructor() {
-        // --- ADD 'seed' TO MENU ORDER BELOW DIFFICULTY ---
         this.menuOrder = ['name', 'background', 'origin', 'appearance', 'keepsake', 'companion', 'trait', 'difficulty', 'seed', 'start'];
         this.currentRow = 0;
 
@@ -102,10 +98,6 @@ export class CharacterCreatorLogic {
         this.cachedStats = null;
         this.isDirty = true;
     }
-
-    // ========================================================
-    // STATE MODIFICATION
-    // ========================================================
 
     setRowByStep(stepName) {
         const idx = this.menuOrder.indexOf(stepName);
@@ -166,10 +158,6 @@ export class CharacterCreatorLogic {
     _cycle(current, max, dir) {
         return (current + dir + max) % max;
     }
-
-    // ========================================================
-    // DATA RETRIEVAL & PREVIEWS
-    // ========================================================
 
     getCurrentStep() {
         return this.menuOrder[this.currentRow];
@@ -236,7 +224,6 @@ export class CharacterCreatorLogic {
         }
         console.log("--- START FINALIZE ---");
 
-        // --- PROCESS THE SEED ---
         let finalSeed;
         if (this.state.seed && this.state.seed.trim() !== "") {
             finalSeed = parseInt(this.state.seed, 10);
@@ -262,19 +249,18 @@ export class CharacterCreatorLogic {
             InventorySystem.addItem(keep.itemId, 1);
         }
 
+        // --- FIXED: ADD ONLY ONE COMPANION ---
         const comp = CREATION_DATA.COMPANIONS[this.state.companionIdx];
         if (comp.speciesId) {
-            for (let i = 1; i <= 5; i++) {
-                const companionInstance = PartyManager.addMember(comp.speciesId, {
-                    name: `${comp.label} ${i}`,
-                    attributes: { ...comp.attributes },
-                    equipment: comp.equipment,
-                    xp: 0
-                });
-                if (companionInstance) {
-                    companionInstance.hp = companionInstance.maxHp;
-                    companionInstance.stamina = companionInstance.maxStamina;
-                }
+            const companionInstance = PartyManager.addMember(comp.speciesId, {
+                name: comp.label, // Stripped out the tracking index text "1"
+                attributes: { ...comp.attributes },
+                equipment: comp.equipment,
+                xp: 0
+            });
+            if (companionInstance) {
+                companionInstance.hp = companionInstance.maxHp;
+                companionInstance.stamina = companionInstance.maxStamina;
             }
         }
 

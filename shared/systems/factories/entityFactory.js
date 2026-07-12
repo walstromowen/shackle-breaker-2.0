@@ -5,7 +5,6 @@ import { ExperienceSystem } from '../experienceSystem.js';
 export class EntityFactory {
     static create(entityId, levelOrOverrides = 1, overrides = {}) {
         const blueprint = ENTITY_DEFINITIONS[entityId];
-
         if (!blueprint) {
             console.error(`EntityFactory Error: ID '${entityId}' not found in definitions.`);
             return null;
@@ -14,7 +13,7 @@ export class EntityFactory {
         // --- Smart Parameter Parsing ---
         let level = 1;
         let finalOverrides = overrides;
-
+        
         if (typeof levelOrOverrides === 'object') {
             finalOverrides = levelOrOverrides;
             level = finalOverrides.level || blueprint.level || 1;
@@ -32,17 +31,15 @@ export class EntityFactory {
         if (finalOverrides.crySound) config.crySound = finalOverrides.crySound;
         if (finalOverrides.deathSound) config.deathSound = finalOverrides.deathSound;
         
-        if (finalOverrides.battlePortraitFramesFront !== undefined) 
-            config.battlePortraitFramesFront = finalOverrides.battlePortraitFramesFront;
-        if (finalOverrides.battlePortraitFramesBack !== undefined) 
-            config.battlePortraitFramesBack = finalOverrides.battlePortraitFramesBack;
+        if (finalOverrides.battlePortraitFramesFront !== undefined) config.battlePortraitFramesFront = finalOverrides.battlePortraitFramesFront;
+        if (finalOverrides.battlePortraitFramesBack !== undefined) config.battlePortraitFramesBack = finalOverrides.battlePortraitFramesBack;
 
         // 3. Merge Arrays & Objects
         if (finalOverrides.tags) {
             const existingTags = config.tags || [];
             config.tags = [...new Set([...existingTags, ...finalOverrides.tags])];
         }
-
+        
         if (finalOverrides.abilities) {
             const existingAbilities = config.abilities || [];
             config.abilities = [...new Set([...existingAbilities, ...finalOverrides.abilities])];
@@ -69,28 +66,24 @@ export class EntityFactory {
         // --- TRAITS INJECTION ---
         if (!config.traits) config.traits = [];
         if (finalOverrides.traits && Array.isArray(finalOverrides.traits)) {
-            // Push new custom traits into the entity's innate traits
             config.traits.push(...finalOverrides.traits);
-            // Remove duplicates just in case
             config.traits = [...new Set(config.traits)];
         }
 
         // --- STATUS EFFECTS INJECTION ---
         if (!config.statusEffects) config.statusEffects = [];
         if (finalOverrides.statusEffects && Array.isArray(finalOverrides.statusEffects)) {
-            // Push incoming overrides. Duplicates are allowed here since effects (like bleed) can stack
             config.statusEffects.push(...finalOverrides.statusEffects);
         }
 
         // --- PROGRESSION LOGIC ---
         config.level = finalOverrides.level ?? level;
-        
         if (finalOverrides.maxXp) {
             config.maxXp = finalOverrides.maxXp;
         } else {
             config.maxXp = ExperienceSystem.getMaxXP(config.level);
         }
-
+        
         config.xp = finalOverrides.xp ?? config.xp ?? 0;
         config.skillPoints = finalOverrides.skillPoints ?? config.skillPoints ?? 0;
 
@@ -104,7 +97,9 @@ export class EntityFactory {
         // 5. Create the Entity Model
         const entity = new EntityModel(config);
         
-        if (config.lootTable) entity.lootTable = config.lootTable;
+        // --- NEW: Reference lootTableId ---
+        if (config.lootTableId) entity.state.lootTableId = config.lootTableId;
+
         if (config.currencyReward) entity.currencyReward = config.currencyReward;
         if (config.xpReward) entity.xpReward = config.xpReward;
 
@@ -112,17 +107,16 @@ export class EntityFactory {
         entity.hp = finalOverrides.startingHpPercent !== undefined 
             ? Math.floor(entity.maxHp * finalOverrides.startingHpPercent) 
             : entity.maxHp;
-
+            
         entity.stamina = finalOverrides.startingStaminaPercent !== undefined 
             ? Math.floor(entity.maxStamina * finalOverrides.startingStaminaPercent) 
             : entity.maxStamina;
-
+            
         entity.insight = finalOverrides.startingInsightPercent !== undefined 
             ? Math.floor(entity.maxInsight * finalOverrides.startingInsightPercent) 
             : entity.maxInsight;
 
         config.isDead = false;
-
         return entity;
     }
 

@@ -38,8 +38,8 @@ export const BIOME_DEFINITIONS = {
     encounters: { 
       rate: 0.5, 
       pools: [ 
-         { chance: 0.0, id: 'wounded_mutt', allowedTimes: ['day'] },
-        { chance: 1.0, id: 'madman_ahead', allowedTimes: ['day'] },  
+         { chance: 0.67, id: 'wounded_mutt', allowedTimes: ['day'] },
+        { chance: 0.33, id: 'madman_ahead', allowedTimes: ['day'] },  
       ] 
     }, 
     battles: { 
