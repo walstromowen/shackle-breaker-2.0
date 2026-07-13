@@ -1,91 +1,80 @@
+// models/encounterModel.js
 export class EncounterModel {
-  constructor(definition, context = {}, startingStageId = null) {
-    this.id = definition.id;
-    this.title = definition.title || "Unknown Encounter";
-    
-    // Capture the root image asset key for this specific encounter
-    this.imageSheet = definition.imageSheet || null;
-    
-    this.stages = definition.stages;
-    this.context = context;
-    this.currentStageId = startingStageId || definition.initialStage;
-  }
-
-  getCurrentStage() {
-    return this.stages[this.currentStageId];
-  }
-
-  getStageName() {
-    if (!this.currentStageId) return "Unknown Stage";
-    // Convert keys like 'sneak_fail_startle' into 'Sneak Fail Startle'
-    return this.currentStageId
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  }
-
-  getImage() {
-    const stage = this.getCurrentStage();
-    if (stage && stage.image) {
-      return {
-        // Fallback hierarchy: Stage specific sheet -> Encounter root sheet -> Black fallback
-        sheet: stage.image.sheet || this.imageSheet || 'bg_default_black',
-        col: stage.image.col || 0,
-        row: stage.image.row || 0,
-        // Optional: Support explicit pixel cropping instead of col/row
-        x: stage.image.x,
-        y: stage.image.y,
-        w: stage.image.w,
-        h: stage.image.h
-      };
+    constructor(definition, context = {}, startingStageId = null) {
+        this.id = definition.id;
+        this.title = definition.title || "Unknown Encounter";
+        this.imageSheet = definition.imageSheet || null;
+        this.stages = definition.stages;
+        this.context = context;
+        this.currentStageId = startingStageId || definition.initialStage;
     }
-    return { sheet: 'bg_default_black', col: 0, row: 0 };
-  }
 
-  getBgm() {
-    const stage = this.getCurrentStage();
-    return stage && stage.bgm ? stage.bgm : null;
-  }
+    getCurrentStage() {
+        return this.stages[this.currentStageId];
+    }
 
-  getCurrentText() {
-    const stage = this.getCurrentStage();
-    if (!stage || !stage.text) return "Error: Stage or text missing.";
+    getStageDisplayText() {
+        if (!this.currentStageId) return "Unknown Stage";
+        
+        const stage = this.getCurrentStage();
+        if (stage && stage.displayText) {
+            return stage.displayText;
+        }
 
-    let parsedText = stage.text;
-    parsedText = parsedText.replace(/\$\{context\.([a-zA-Z0-9_]+)\}/g, (match, key) => {
-      return this.context[key] !== undefined ? this.context[key] : `[Missing:${key}]`;
-    });
-    return parsedText;
-  }
+        // Fallback layout algorithm parsing the key string directly if property is missing
+        return this.currentStageId
+            .split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    }
 
-  getAvailableDecisions() {
-    const stage = this.getCurrentStage();
-    if (!stage || !stage.decisions) return [];
+    getImage() {
+        const stage = this.getCurrentStage();
+        if (stage && stage.image) {
+            return {
+                sheet: stage.image.sheet || this.imageSheet || 'bg_default_black',
+                col: stage.image.col || 0,
+                row: stage.image.row || 0,
+                x: stage.image.x,
+                y: stage.image.y,
+                w: stage.image.w,
+                h: stage.image.h
+            };
+        }
+        return { sheet: 'bg_default_black', col: 0, row: 0 };
+    }
 
-    return stage.decisions.filter(decision => {
-      if (decision.conditions) {
-        const meetsConditions = decision.conditions.every(cond => {
-          if (cond.type === "has_other_party_members") {
-            return gameState.party.members.length > 1;
-          }
-          return true; 
+    getBgm() {
+        const stage = this.getCurrentStage();
+        return stage && stage.bgm ? stage.bgm : null;
+    }
+
+    getCurrentText() {
+        const stage = this.getCurrentStage();
+        if (!stage || !stage.text) return "Error: Stage or text missing.";
+        
+        let parsedText = stage.text;
+        parsedText = parsedText.replace(/\$\{context\.([a-zA-Z0-9_]+)\}/g, (match, key) => {
+            return this.context[key] !== undefined ? this.context[key] : `[Missing:${key}]`;
         });
-        if (!meetsConditions) return false;
-      }
-      return true;
-    });
-  }
-
-  advanceToStage(stageId) {
-    if (this.stages[stageId]) {
-      this.currentStageId = stageId;
-    } else {
-      console.error(`[EncounterModel] Stage ID '${stageId}' not found in encounter '${this.id}'`);
-      this.currentStageId = null;
+        return parsedText;
     }
-  }
 
-  updateContext(newData) {
-    this.context = { ...this.context, ...newData };
-  }
+    getAvailableDecisions() {
+        const stage = this.getCurrentStage();
+        return stage && stage.decisions ? stage.decisions : [];
+    }
+
+    advanceToStage(stageId) {
+        if (this.stages[stageId]) {
+            this.currentStageId = stageId;
+        } else {
+            console.error(`[EncounterModel] Stage ID '${stageId}' not found in encounter '${this.id}'`);
+            this.currentStageId = null;
+        }
+    }
+
+    updateContext(newData) {
+        this.context = { ...this.context, ...newData };
+    }
 }

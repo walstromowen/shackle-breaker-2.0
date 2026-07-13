@@ -7,9 +7,12 @@ import { events } from "../../core/eventBus.js";
 import { EncounterLogic } from './encounterLogic.js';
 
 const KEY_BINDINGS = {
-    'ArrowUp': 'UP', 'KeyW': 'UP', 'ArrowDown': 'DOWN', 'KeyS': 'DOWN',
-    'ArrowLeft': 'LEFT', 'KeyA': 'LEFT', 'ArrowRight': 'RIGHT', 'KeyD': 'RIGHT',
-    'Enter': 'CONFIRM', 'Space': 'CONFIRM', 'Escape': 'CANCEL', 'Backspace': 'CANCEL', 'Tab': 'CANCEL'
+    'ArrowUp': 'UP', 'KeyW': 'UP',
+    'ArrowDown': 'DOWN', 'KeyS': 'DOWN',
+    'ArrowLeft': 'LEFT', 'KeyA': 'LEFT',
+    'ArrowRight': 'RIGHT', 'KeyD': 'RIGHT',
+    'Enter': 'CONFIRM', 'Space': 'CONFIRM',
+    'Escape': 'CANCEL', 'Backspace': 'CANCEL', 'Tab': 'CANCEL'
 };
 
 export class EncounterController extends BaseController {
@@ -30,11 +33,25 @@ export class EncounterController extends BaseController {
         this.lastText = "";
         this.textTimer = 0;
         this.skipMessageAnimation = false;
-        this.imageTransition = { active: false, timer: 0, duration: 2.0, previousInfo: null };
+        this.imageTransition = { active: false, timer: 0, duration: 2.0, previousInfo: null, previousPartyMember: null };
         this.updateBGM();
     }
 
     start(encounterId, context = {}) {
+        if (gameState.party && gameState.party.members && gameState.party.members.length > 0) {
+            const members = gameState.party.members;
+            if (members[0].hp <= 0) {
+                const firstLivingIndex = members.findIndex(m => m.hp > 0);
+                if (firstLivingIndex > 0) {
+                    const livingMember = members.splice(firstLivingIndex, 1)[0];
+                    members.unshift(livingMember);
+                } else if (firstLivingIndex === -1) {
+                    events.emit('CHANGE_SCENE', { scene: 'game_over' });
+                    return;
+                }
+            }
+        }
+
         this.model = EncounterFactory.create(encounterId, context);
         if (!this.model) {
             events.emit('CHANGE_SCENE', { scene: 'overworld' });
@@ -48,7 +65,7 @@ export class EncounterController extends BaseController {
         this.lastText = "";
         this.textTimer = 0;
         this.skipMessageAnimation = false;
-        this.imageTransition = { active: false, timer: 0, duration: 2.0, previousInfo: null };
+        this.imageTransition = { active: false, timer: 0, duration: 2.0, previousInfo: null, previousPartyMember: null };
         this.updateBGM();
     }
 
@@ -63,6 +80,7 @@ export class EncounterController extends BaseController {
             if (this.imageTransition.timer >= this.imageTransition.duration) {
                 this.imageTransition.active = false;
                 this.imageTransition.previousInfo = null;
+                this.imageTransition.previousPartyMember = null;
                 this.imageTransition.timer = this.imageTransition.duration;
             }
         }
@@ -122,17 +140,26 @@ export class EncounterController extends BaseController {
     _triggerImageTransition() {
         if (!this.model) return;
         const outgoingInfo = this.model.getImage ? this.model.getImage() : null;
-        if (outgoingInfo) {
-            this.imageTransition.active = true;
-            this.imageTransition.timer = 0;
-            this.imageTransition.previousInfo = outgoingInfo;
-        }
+        const outgoingMember = gameState.party?.members?.[0] || null;
+        
+        this.imageTransition.active = true;
+        this.imageTransition.timer = 0;
+        this.imageTransition.previousInfo = outgoingInfo;
+        // Deep copy the party member to capture their death state precisely
+        this.imageTransition.previousPartyMember = outgoingMember ? JSON.parse(JSON.stringify(outgoingMember)) : null;
+    }
+
+    _getValidDecisions() {
+        if (!this.model) return [];
+        const rawDecisions = this.model.getAvailableDecisions() || [];
+        return rawDecisions.filter(decision => EncounterLogic.checkConditions(decision));
     }
 
     handleMouseMove(x, y, isMouseDown, renderer) {
         const prevX = this.mouse?.x;
         const prevY = this.mouse?.y;
         super.handleMouseMove(x, y, isMouseDown, renderer);
+        
         if ((prevX !== x || prevY !== y) && this.hoveredHitboxId && this.hoveredHitboxId.startsWith('DECISION_')) {
             const index = parseInt(this.hoveredHitboxId.replace('DECISION_', ''), 10);
             if (!isNaN(index) && this.selectedIndex !== index) {
@@ -148,16 +175,19 @@ export class EncounterController extends BaseController {
         const totalTypingTime = this.lastText.length * (1 / charsPerSecond);
         const isAnimatingText = this.textTimer < (totalTypingTime + 2.0);
         const skipPhases = ['message', 'rolling', 'hold_base', 'apply_mod', 'result', 'ending'];
+        
         if (skipPhases.includes(this.actionPhase) || isAnimatingText) {
             this.skipMessageAnimation = true;
             this.textTimer = totalTypingTime + 2.0;
             return;
         }
+        
         if (this.actionPhase === 'wait_for_roll') {
             this.playConfirmSound();
             this.triggerRoll();
             return;
         }
+        
         if (hitboxId && hitboxId.startsWith('DECISION_')) {
             const index = parseInt(hitboxId.replace('DECISION_', ''), 10);
             if (!isNaN(index)) {
@@ -167,11 +197,25 @@ export class EncounterController extends BaseController {
         }
     }
 
-    onRightClick(hitboxId) { if (this.scrollManager.isDragging) this.scrollManager.handleDragEnd(); }
-    onDragStart(hitboxId) { if (hitboxId === 'SCROLL_THUMB_DECISIONS') this.scrollManager.handleDragStart(hitboxId, this.mouse.y); }
-    onDragMove(x, y) { if (this.scrollManager.isDragging) this.scrollManager.handleDragMove(y); }
-    onDrop(sourceHitboxId, targetHitboxId) { if (this.scrollManager.isDragging) this.scrollManager.handleDragEnd(); }
-    handleScroll(delta) { this.scrollManager.handleScrollWheel(this.mouse.x, this.mouse.y, delta * 40); }
+    onRightClick(hitboxId) {
+        if (this.scrollManager.isDragging) this.scrollManager.handleDragEnd();
+    }
+    
+    onDragStart(hitboxId) {
+        if (hitboxId === 'SCROLL_THUMB_DECISIONS') this.scrollManager.handleDragStart(hitboxId, this.mouse.y);
+    }
+    
+    onDragMove(x, y) {
+        if (this.scrollManager.isDragging) this.scrollManager.handleDragMove(y);
+    }
+    
+    onDrop(sourceHitboxId, targetHitboxId) {
+        if (this.scrollManager.isDragging) this.scrollManager.handleDragEnd();
+    }
+    
+    handleScroll(delta) {
+        this.scrollManager.handleScrollWheel(this.mouse.x, this.mouse.y, delta * 40);
+    }
 
     handleKeyDown(keyCode, e) {
         if (!this.model) return;
@@ -189,6 +233,7 @@ export class EncounterController extends BaseController {
             }
             return;
         }
+        
         if (this.actionPhase === 'wait_for_roll') {
             if (intent === 'CONFIRM') {
                 this.playConfirmSound();
@@ -196,13 +241,16 @@ export class EncounterController extends BaseController {
             }
             return;
         }
-        const options = this.model.getAvailableDecisions();
+        
+        const options = this._getValidDecisions();
         if (!options || options.length === 0) return;
+        
         if (intent === 'CANCEL') {
             this.playCancelSound();
             if (this.scrollManager.isDragging) this.scrollManager.handleDragEnd();
             return;
         }
+        
         const prevIndex = this.selectedIndex;
         if (intent === 'UP') {
             this.selectedIndex = (this.selectedIndex - 1 + options.length) % options.length;
@@ -217,12 +265,29 @@ export class EncounterController extends BaseController {
     }
 
     executeSelectedDecision() {
-        const options = this.model.getAvailableDecisions();
+        const options = this._getValidDecisions();
         if (!options || options.length === 0) return;
+        
         this.playConfirmSound('ui_select');
         const selectedDecision = options[this.selectedIndex];
+        
         if (selectedDecision.type === 'switch_character') {
-            events.emit('CHANGE_SCENE', { scene: 'party', data: { mode: 'ENCOUNTER_SELECT', activeIndices: [0], callback: (chosenIndex) => { if (chosenIndex !== null && chosenIndex >= 0 && chosenIndex < gameState.party.members.length) { const party = gameState.party.members; const selectedMember = party.splice(chosenIndex, 1)[0]; party.unshift(selectedMember); this.selectedIndex = 0; } } } });
+            events.emit('CHANGE_SCENE', {
+                scene: 'party',
+                data: {
+                    mode: 'ENCOUNTER_SELECT',
+                    activeIndices: [0],
+                    callback: (chosenIndex) => {
+                        if (chosenIndex !== null && chosenIndex >= 0 && chosenIndex < gameState.party.members.length) {
+                            this._triggerImageTransition();
+                            const party = gameState.party.members;
+                            const selectedMember = party.splice(chosenIndex, 1)[0];
+                            party.unshift(selectedMember);
+                            this.selectedIndex = 0;
+                        }
+                    }
+                }
+            });
         } else {
             this.beginActionSequence(selectedDecision);
         }
@@ -235,25 +300,26 @@ export class EncounterController extends BaseController {
         events.emit('PLAY_SFX', { id: 'dice_throw', volume: 0.8 });
     }
 
-    // 🎵 SCENARIO 1: Outcome Music plays exactly when custom action text begins displaying
     beginActionSequence(decision) {
         if (!decision) return;
         this.pendingDecision = decision;
         this.actionPhase = 'message';
         this.textTimer = 0;
         this.skipMessageAnimation = false;
-
+        
         if (decision.outcomes && decision.outcomes[0] && decision.outcomes[0].bgm) {
             events.emit('PLAY_MUSIC', { id: decision.outcomes[0].bgm, fadeTime: 0.5 });
         }
-
+        
         const actorName = gameState.party?.members?.[0]?.name || "The party";
+        
         if (decision.customActionText) {
             this.actionMessage = decision.customActionText.replace(/{name}/g, actorName);
         } else {
             const cleanText = decision.text.replace(/\[.*?\]/g, '').trim().toLowerCase();
             this.actionMessage = `${actorName} decides to ${cleanText.replace(/{name}/g, actorName)}...`;
         }
+        
         this.lastText = this.actionMessage;
     }
 
@@ -261,15 +327,23 @@ export class EncounterController extends BaseController {
         this.actionPhase = 'none';
         const decision = this.pendingDecision;
         this.pendingDecision = null;
+        
         if (!decision) return;
-
+        
         let targetOutcomes = decision.outcomes;
         if (decision.type === 'skill_check') {
             events.emit('PLAY_SFX', { id: this.rollData.isSuccess ? 'skill_success' : 'skill_failure', volume: 0.7 });
-            this.model.updateContext({ roll_stat: decision.attribute?.toUpperCase() || "UNKNOWN", roll_d20: this.rollData.d20, roll_mod: this.rollData.mod, roll_total: this.rollData.total, roll_dc: this.rollData.dc, roll_result: this.rollData.isSuccess ? "SUCCESS" : "FAILED" });
+            this.model.updateContext({
+                roll_stat: decision.attribute?.toUpperCase() || "UNKNOWN",
+                roll_d20: this.rollData.d20,
+                roll_mod: this.rollData.mod,
+                roll_total: this.rollData.total,
+                roll_dc: this.rollData.dc,
+                roll_result: this.rollData.isSuccess ? "SUCCESS" : "FAILED"
+            });
             targetOutcomes = this.rollData.isSuccess ? decision.successOutcomes : decision.failureOutcomes;
         }
-
+        
         const selectedOutcome = EncounterLogic.selectOutcome(targetOutcomes);
         if (selectedOutcome) {
             this.applyLogicResults(selectedOutcome.results);
@@ -281,36 +355,88 @@ export class EncounterController extends BaseController {
         if (resultsArray && resultsArray.some(r => r.type === 'START_BATTLE')) {
             isStartingBattle = true;
         }
-
+        
+        // Catch our custom game over trigger from the defeat screen
+        if (resultsArray && resultsArray.some(r => r.type === 'TRIGGER_GAME_OVER')) {
+            this.actionPhase = 'ending';
+            events.emit('CHANGE_SCENE', { scene: 'game_over' });
+            return;
+        }
+        
         const logicResponse = EncounterLogic.resolveResults(resultsArray, this.model, this.worldManager);
 
-        // 🎵 SCENARIO 2: New Stage Music activates seamlessly here
-        if (logicResponse.modelChanged) {
-            this._triggerImageTransition();
-            this.model = logicResponse.newModel;
-            this.selectedIndex = 0;
-            this.updateBGM();
-        } else if (logicResponse.stageChanged) {
-            this._triggerImageTransition();
-            this.model.advanceToStage(logicResponse.newStageId);
-            this.selectedIndex = 0;
-            this.updateBGM();
-        }
+        // Check if this results in a total party wipe
+        const party = gameState.party.members;
+        const nextLivingIndex = party.findIndex(m => m.hp > 0);
+        const isTotalWipe = logicResponse.isGameOver || (logicResponse.forceCharacterSwitch && nextLivingIndex === -1);
 
-        if (logicResponse.messages.length > 0 && logicResponse.shouldEndEncounter && !isStartingBattle) {
-            const rewardText = logicResponse.messages.join('\n\n');
-            this.model.stages = this.model.stages || {};
-            this.model.stages["encounter_rewards_stage"] = {
-                image: this.model.getImage ? this.model.getImage() : { sheet: 'bg_default_black', col: 0, row: 0 },
-                text: rewardText,
-                decisions: [{ text: "Continue.", outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: logicResponse.endEncounterPayload }] }] }]
-            };
+        if (isTotalWipe) {
             this._triggerImageTransition();
-            this.model.advanceToStage("encounter_rewards_stage");
+            
+            const deathMsg = "Game over, all party members have been slain!";
+            const fullText = logicResponse.messages.length > 0 
+                ? logicResponse.messages.join('\n\n') + '\n\n' + deathMsg 
+                : deathMsg;
+            
+            this.model.stages = this.model.stages || {};
+            this.model.stages["game_over_stage"] = {
+                displayText: "Defeat",
+                image: this.model.getImage ? this.model.getImage() : { sheet: 'bg_default_black', col: 0, row: 0 },
+                text: fullText,
+                decisions: [{
+                    text: "Accept your fate.",
+                    outcomes: [{ weight: 100, results: [{ type: "TRIGGER_GAME_OVER" }] }]
+                }]
+            };
+            
+            this.model.advanceToStage("game_over_stage");
             this.selectedIndex = 0;
             return;
         }
 
+        if (logicResponse.forceCharacterSwitch) {
+            this._triggerImageTransition();
+            if (nextLivingIndex > 0) {
+                const deadMember = party[0];
+                const selectedMember = party.splice(nextLivingIndex, 1)[0];
+                party.unshift(selectedMember);
+                this.selectedIndex = 0;
+                logicResponse.messages.unshift(`${deadMember.name} has fallen! ${selectedMember.name} steps up.`);
+            }
+        }
+
+        if (logicResponse.modelChanged) {
+            if (!logicResponse.forceCharacterSwitch) this._triggerImageTransition();
+            this.model = logicResponse.newModel;
+            this.selectedIndex = 0;
+            this.updateBGM();
+        } else if (logicResponse.stageChanged) {
+            if (!logicResponse.forceCharacterSwitch) this._triggerImageTransition();
+            this.model.advanceToStage(logicResponse.newStageId);
+            this.selectedIndex = 0;
+            this.updateBGM();
+        }
+        
+        if (logicResponse.messages.length > 0 && logicResponse.shouldEndEncounter && !isStartingBattle) {
+            const rewardText = logicResponse.messages.join('\n\n');
+            this.model.stages = this.model.stages || {};
+            this.model.stages["encounter_rewards_stage"] = {
+                displayText: "Victory",
+                image: this.model.getImage ? this.model.getImage() : { sheet: 'bg_default_black', col: 0, row: 0 },
+                text: rewardText,
+                decisions: [{
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: logicResponse.endEncounterPayload }] }]
+                }]
+            };
+            
+            if (!logicResponse.forceCharacterSwitch) this._triggerImageTransition();
+            
+            this.model.advanceToStage("encounter_rewards_stage");
+            this.selectedIndex = 0;
+            return;
+        }
+        
         if (logicResponse.shouldEndEncounter) {
             if (isStartingBattle) {
                 this.actionPhase = 'ending';
@@ -339,29 +465,68 @@ export class EncounterController extends BaseController {
     }
 
     getState() {
-        const basePayload = { imageInfo: null, transition: { active: this.imageTransition.active, progress: Math.min(1.0, this.imageTransition.timer / this.imageTransition.duration), previousImageInfo: this.imageTransition.previousInfo }, title: "", text: "", decisions: [], ui: { selectedDecisionIndex: this.selectedIndex }, party: gameState.party?.members?.length > 0 ? [gameState.party.members[0]] : [], currency: gameState.party?.currency || 0, skipMessageAnimation: this.skipMessageAnimation, textTimer: this.textTimer, actionPhase: this.actionPhase, rollTimer: this.rollTimer, rollData: this.rollData, mouse: this.mouse, hoveredElement: this.hoveredHitboxId ? { id: this.hoveredHitboxId } : null, scrollOffsets: { decisions: this.scrollManager.getOffset('decision_list') }, onLayoutUpdate: (hitboxes, scrollBounds) => { this.updateHitboxes(hitboxes); if (scrollBounds && scrollBounds.decisions) { this.scrollManager.registerZone('decision_list', scrollBounds.decisions); } } };
+        const basePayload = {
+            imageInfo: null,
+            transition: {
+                active: this.imageTransition.active,
+                progress: Math.min(1.0, this.imageTransition.timer / this.imageTransition.duration),
+                previousImageInfo: this.imageTransition.previousInfo,
+                previousPartyMember: this.imageTransition.previousPartyMember
+            },
+            title: "",
+            text: "",
+            decisions: [],
+            ui: { selectedDecisionIndex: this.selectedIndex },
+            party: gameState.party?.members?.length > 0 ? [gameState.party.members[0]] : [],
+            currency: gameState.party?.currency || 0,
+            skipMessageAnimation: this.skipMessageAnimation,
+            textTimer: this.textTimer,
+            actionPhase: this.actionPhase,
+            rollTimer: this.rollTimer,
+            rollData: this.rollData,
+            mouse: this.mouse,
+            hoveredElement: this.hoveredHitboxId ? { id: this.hoveredHitboxId } : null,
+            scrollOffsets: { decisions: this.scrollManager.getOffset('decision_list') },
+            onLayoutUpdate: (hitboxes, scrollBounds) => {
+                this.updateHitboxes(hitboxes);
+                if (scrollBounds && scrollBounds.decisions) {
+                    this.scrollManager.registerZone('decision_list', scrollBounds.decisions);
+                }
+            }
+        };
+        
         if (!this.model) return basePayload;
+        
         let displayText = this.model.getCurrentText() || "";
-        let displayDecisions = this.model.getAvailableDecisions() || [];
+        let displayDecisions = this._getValidDecisions();
+        let displayStageName = this.model.getStageDisplayText ? this.model.getStageDisplayText() : "Unknown Stage";
         const actorName = gameState.party?.members?.[0]?.name || "The party";
+        
         displayText = displayText.replace(/{name}/g, actorName);
-        displayDecisions = displayDecisions.map(decision => ({ ...decision, text: decision.text.replace(/{name}/g, actorName) }));
+        displayStageName = displayStageName.replace(/{name}/g, actorName);
+        displayDecisions = displayDecisions.map(decision => ({
+            ...decision,
+            text: decision.text.replace(/{name}/g, actorName)
+        }));
+        
         if (this.actionPhase !== 'none') {
             displayText = this.actionPhase === 'ending' ? this.lastText : this.actionMessage;
             displayDecisions = [];
         }
+        
         if (this.lastText !== displayText) {
             this.lastText = displayText;
             this.textTimer = 0;
             this.skipMessageAnimation = false;
         }
+        
         return {
-        ...basePayload,
-        title: this.model.title || "Unknown Encounter",
-        stageName: this.model.getStageName ? this.model.getStageName() : "Unknown Stage", // <--- ADD THIS
-        imageInfo: this.model.getImage ? this.model.getImage() : null,
-        text: displayText,
-        decisions: displayDecisions,
+            ...basePayload,
+            title: this.model.title || "Unknown Encounter",
+            stageName: displayStageName,
+            imageInfo: this.model.getImage ? this.model.getImage() : null,
+            text: displayText,
+            decisions: displayDecisions,
         };
     }
 }

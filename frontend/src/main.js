@@ -4,7 +4,7 @@ import { GameLoop } from "./core/gameLoop.js";
 import { audioManager } from './core/audioManager.js'; 
 import { CONFIG } from "../../shared/data/constants.js"; 
 import { gameState } from '../../shared/state/gameState.js'; 
-import { madmanAhead } from "../../shared/data/encounters/madmanAhead.js";
+import { aDisturbingSight } from "../../shared/data/encounters/aDisturbingSight.js";
 
 // Moved to top for clean imports 
 const assetLoader = new AssetLoader(); 
@@ -87,8 +87,8 @@ const ASSET_MANIFEST = {
   //Encounters
   encounter_oaktree: './assets/icons/encounters/oak_tree.png',
   encounter_wounded_mutt: './assets/icons/encounters/wounded_mutt.png',
-  encounter_madman_ahead: './assets/icons/encounters/madman_ahead.png',
-
+  encounter_a_disturbing_sight: './assets/icons/encounters/a_disturbing_sight.png',
+  encounter_bonfire: './assets/icons/encounters/bonfire.png',
   // --- 1:1 ABILITY AUDIO SFX --- 
   earthquake1Sfx: './assets/audio/sfx/abilities/earthquake/earthquake_1.wav',
   earthquake2Sfx: './assets/audio/sfx/abilities/earthquake/earthquake_2.wav',
@@ -125,7 +125,7 @@ const ASSET_MANIFEST = {
   weatherRain: './assets/audio/sfx/weather_rain.wav', 
   weatherRainShort: './assets/audio/sfx/weather_rain_short.wav',
   spookyWind: './assets/audio/sfx/spooky_wind.wav', 
-  madmanAheadBgm: './assets/audio/music/madman_ahead.mp3',
+  aDisturbingSightBgm: './assets/audio/music/a_disturbing_sight.mp3',
   
   // --- CREATURE CRIES & DEATHS ---
   legionaryCry: './assets/audio/sfx/cries/legionary_cry.wav', 

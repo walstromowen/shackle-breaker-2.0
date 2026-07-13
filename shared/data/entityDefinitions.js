@@ -168,7 +168,7 @@ export const ENTITY_DEFINITIONS = {
         ...BEAST_TEMPLATE,
         name: "Dog", level: 1,
         spriteOverworld: "germanSheepherdSprite", spritePortrait: "germanSheepherdPortrait",
-        battlePortraitFramesFront: 1, battlePortraitFramesBack: 32,
+        battlePortraitFramesFront: 1, battlePortraitFramesBack: 31,
         crySound: "dogCry", deathSound: "dogDeath",
         attributes: { ...BEAST_TEMPLATE.attributes, vigor: 6, dexterity: 12, strength: 6 },
         baseStats: {
@@ -226,5 +226,58 @@ export const ENTITY_DEFINITIONS = {
         lootTableId: "mad_man_drops", // <-- CHANGED
         abilities: [...BASE_ENTITY.abilities, "peck", "screech"],
         tags: ["BIOLOGICAL", "AVIAN"]
-    }
+    },
+
+    "GRIM_STAG": {
+    ...BEAST_TEMPLATE,
+    name: "Grim Stag",
+    level: 1,
+    spriteOverworld: "grimStagSprite",
+    spritePortrait: "grimStagPortrait",
+    battlePortraitFramesFront: 31,
+    battlePortraitFramesBack: 32,
+    crySound: "grimStagCry",
+    deathSound: "grimStagCry",
+    attributes: {
+      ...BEAST_TEMPLATE.attributes,
+      vigor: 22,
+      strength: 18,
+      dexterity: 16,
+      intelligence: 10,
+      attunement: 8
+    },
+    baseStats: {
+      ...BEAST_TEMPLATE.baseStats,
+      maxHp: 150,
+      maxStamina: 35,
+      maxInsight: 15,
+      speed: 12,
+      critical: 0.15,
+      baseDefense: {
+        ...BEAST_TEMPLATE.baseStats.baseDefense,
+        blunt: 12,
+        slash: 8,
+        pierce: 6,
+        earth: 15, // High defense against earth-based attacks
+        dark: 10
+      },
+      baseResistance: {
+        ...BEAST_TEMPLATE.baseStats.baseResistance,
+        earth: 0.5, // 50% damage reduction to Earth
+        dark: 0.3,
+        wind: -0.25 // Weakness to wind/air elements
+      },
+      baseAttack: {
+        blunt: 10,  // Hoof trample
+        slash: 12,
+        pierce: 14, // Antler gore
+        earth: 12   // <--- Added Earth elemental damage
+      }
+    },
+    currencyReward: { min: 75, max: 200 },
+    lootTableId: "grim_stag_drops",
+    abilities: [...BEAST_TEMPLATE.abilities, "earthquake", "eviscerate"],
+    tags: [...BEAST_TEMPLATE.tags, "MINIBOSS", "ELITE"]
+  }
 };
+
