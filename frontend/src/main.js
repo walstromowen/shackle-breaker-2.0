@@ -39,7 +39,8 @@ const ASSET_MANIFEST = {
   hawkPortrait: './assets/sprites/hawk/hawk_portrait.png', 
   shackledSteedPortrait: './assets/sprites/shackled_steed/shackled_steed_portrait.png', 
   sandStalkerPortrait: './assets/sprites/sand_stalker/sand_stalker_portrait.png', 
-  
+  grimStagPortrait: './assets/sprites/grim_stag/grim_stag_portrait.png', 
+  poachersNightmarePortrait: './assets/sprites/poachers_nightmare/poachers_nightmare_portrait.png', 
   // UI / Icon Atlases
   weapons: './assets/icons/weapons.png', 
   armor: './assets/icons/armor.png', 
@@ -82,6 +83,7 @@ const ASSET_MANIFEST = {
   desertBattleDayBg: './assets/backgrounds/desert_battle_day_bg.png', 
   desertBattleDuskBg: './assets/backgrounds/desert_battle_dusk_bg.png', 
   desertBattleNightBg: './assets/backgrounds/desert_battle_night_bg.png', 
+  poachersNightmareBg: './assets/backgrounds/poachers_nightmare_bg.png',
   shackle_breaker_theme_1: './assets/audio/music/shackle_breaker_theme_1.mp3',
 
   //Encounters
@@ -89,6 +91,8 @@ const ASSET_MANIFEST = {
   encounter_wounded_mutt: './assets/icons/encounters/wounded_mutt.png',
   encounter_a_disturbing_sight: './assets/icons/encounters/a_disturbing_sight.png',
   encounter_bonfire: './assets/icons/encounters/bonfire.png',
+  encounter_wild_hunt: './assets/icons/encounters/wild_hunt.png',
+  encounter_treasure_chest: './assets/icons/encounters/treasure_chest.png',
   // --- 1:1 ABILITY AUDIO SFX --- 
   earthquake1Sfx: './assets/audio/sfx/abilities/earthquake/earthquake_1.wav',
   earthquake2Sfx: './assets/audio/sfx/abilities/earthquake/earthquake_2.wav',
@@ -126,6 +130,7 @@ const ASSET_MANIFEST = {
   weatherRainShort: './assets/audio/sfx/weather_rain_short.wav',
   spookyWind: './assets/audio/sfx/spooky_wind.wav', 
   aDisturbingSightBgm: './assets/audio/music/a_disturbing_sight.mp3',
+  poachersNightmareBgm: './assets/audio/music/poachers_nightmare.mp3',
   
   // --- CREATURE CRIES & DEATHS ---
   legionaryCry: './assets/audio/sfx/cries/legionary_cry.wav', 
@@ -137,8 +142,9 @@ const ASSET_MANIFEST = {
   sandStalkerCry: './assets/audio/sfx/cries/sand_stalker_cry.wav', 
   dogDeath: './assets/audio/sfx/deaths/dog_death.wav',
   unsheathSwordSfx: './assets/audio/sfx/unsheath_sword.wav', 
-
-
+  grimStagCry: './assets/audio/sfx/cries/grim_stag_cry.wav',
+poachersNightmareCry: './assets/audio/sfx/cries/poachers_nightmare_cry.wav',
+  
   
   // --- UI SFX --- 
   diceTick: './assets/audio/sfx/ui/dice_tick.wav', 

@@ -28,12 +28,14 @@ export class EntityFactory {
         if (finalOverrides.name) config.name = finalOverrides.name;
         if (finalOverrides.spriteOverworld) config.spriteOverworld = finalOverrides.spriteOverworld;
         if (finalOverrides.spritePortrait) config.spritePortrait = finalOverrides.spritePortrait;
+        
+        // --- NEW: Allow frameSize to be overridden/passed dynamically ---
+        if (finalOverrides.frameSize !== undefined) config.frameSize = finalOverrides.frameSize; 
+        
         if (finalOverrides.crySound) config.crySound = finalOverrides.crySound;
         if (finalOverrides.deathSound) config.deathSound = finalOverrides.deathSound;
-        
         if (finalOverrides.battlePortraitFramesFront !== undefined) config.battlePortraitFramesFront = finalOverrides.battlePortraitFramesFront;
         if (finalOverrides.battlePortraitFramesBack !== undefined) config.battlePortraitFramesBack = finalOverrides.battlePortraitFramesBack;
-
         // 3. Merge Arrays & Objects
         if (finalOverrides.tags) {
             const existingTags = config.tags || [];

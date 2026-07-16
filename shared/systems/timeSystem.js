@@ -14,7 +14,7 @@ export class TimeSystem {
         // If the state is 0 (New Game), set the default starting time (6:00 AM).
         // If we loaded a save file, this line skips, preserving the saved time.
         if (gameState.world.time === 0) {
-            gameState.world.time = 6 * 60; 
+            gameState.world.time = 12 * 60; 
         }
 
         // --- COLOR PALETTE ---

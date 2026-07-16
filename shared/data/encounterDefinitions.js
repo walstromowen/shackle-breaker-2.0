@@ -3,7 +3,8 @@ import { aDisturbingSight } from './encounters/aDisturbingSight.js';
 import { oakTree } from './encounters/oakTree.js';
 import { woundedMutt } from './encounters/woundedMutt.js';
 import { bonfire } from './encounters/bonfire.js';
-import { deathTestEncounter } from './encounters/deathTestEncounter.js';
+import { wildHunt } from './encounters/wildHunt.js';
+import { treasureChest } from './encounters/treasureChest.js';
 
 // 2. Map them by their explicit system IDs
 export const encounterDefinitions = {
@@ -11,7 +12,8 @@ export const encounterDefinitions = {
   [woundedMutt.id]: woundedMutt,
   [aDisturbingSight.id]: aDisturbingSight,
   [bonfire.id]: bonfire,
-  [deathTestEncounter.id]: deathTestEncounter
+  [wildHunt.id]: wildHunt,
+  [treasureChest.id]: treasureChest,
   
   // When you make a new encounter, it's just two quick steps:
   // 1. Import it at the top.

@@ -107,5 +107,11 @@ export const LootTableDefinitions = {
             { id: "leather", dropRate: 0.20, min: 1, max: 2 },
             { id: "healing_herb", dropRate: 0.05 }
         ]
+    },
+    "deer_drops": {
+        type: "independent",
+        items: [
+            { id: "leather", dropRate: 1.0, min: 2, max: 4 },
+        ]
     }
 };

@@ -73,7 +73,7 @@ export class EntityModel {
     get id() { return this.state.id; }
     get name() { return this.state.name; }
     set name(val) { this.state.name = val; }
-
+    get frameSize() { return this.state.frameSize; }
     get spritePortrait() { return this.state.spritePortrait; }
     get spriteOverworld() { return this.state.spriteOverworld; }
     get battlePortraitFramesFront() { return this.state.battlePortraitFramesFront; }

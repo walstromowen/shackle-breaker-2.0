@@ -7,12 +7,19 @@ import { events } from "../../core/eventBus.js";
 import { EncounterLogic } from './encounterLogic.js';
 
 const KEY_BINDINGS = {
-    'ArrowUp': 'UP', 'KeyW': 'UP',
-    'ArrowDown': 'DOWN', 'KeyS': 'DOWN',
-    'ArrowLeft': 'LEFT', 'KeyA': 'LEFT',
-    'ArrowRight': 'RIGHT', 'KeyD': 'RIGHT',
-    'Enter': 'CONFIRM', 'Space': 'CONFIRM',
-    'Escape': 'CANCEL', 'Backspace': 'CANCEL', 'Tab': 'CANCEL'
+    'ArrowUp': 'UP',
+    'KeyW': 'UP',
+    'ArrowDown': 'DOWN',
+    'KeyS': 'DOWN',
+    'ArrowLeft': 'LEFT',
+    'KeyA': 'LEFT',
+    'ArrowRight': 'RIGHT',
+    'KeyD': 'RIGHT',
+    'Enter': 'CONFIRM',
+    'Space': 'CONFIRM',
+    'Escape': 'CANCEL',
+    'Backspace': 'CANCEL',
+    'Tab': 'CANCEL'
 };
 
 export class EncounterController extends BaseController {
@@ -20,8 +27,10 @@ export class EncounterController extends BaseController {
         super(input);
         this.config = config;
         this.worldManager = worldManager;
+
         this.scrollManager = new ScrollManager();
         this.scrollManager.registerZone('decision_list', { thumbIds: ['SCROLL_THUMB_DECISIONS'] });
+
         this.model = null;
         this.selectedIndex = 0;
         this.actionPhase = 'none';
@@ -30,10 +39,19 @@ export class EncounterController extends BaseController {
         this.rollTimer = 0;
         this.rollTickTimer = 0;
         this.rollData = { displayVal: "?", d20: 0, mod: 0, total: 0, dc: 0, isSuccess: false, duration: 3.5 };
+
         this.lastText = "";
         this.textTimer = 0;
         this.skipMessageAnimation = false;
-        this.imageTransition = { active: false, timer: 0, duration: 2.0, previousInfo: null, previousPartyMember: null };
+
+        this.imageTransition = {
+            active: false,
+            timer: 0,
+            duration: 2.0,
+            previousInfo: null,
+            previousPartyMember: null
+        };
+
         this.updateBGM();
     }
 
@@ -53,10 +71,12 @@ export class EncounterController extends BaseController {
         }
 
         this.model = EncounterFactory.create(encounterId, context);
+
         if (!this.model) {
             events.emit('CHANGE_SCENE', { scene: 'overworld' });
             return;
         }
+
         this.selectedIndex = 0;
         this.actionPhase = 'none';
         this.pendingDecision = null;
@@ -65,7 +85,14 @@ export class EncounterController extends BaseController {
         this.lastText = "";
         this.textTimer = 0;
         this.skipMessageAnimation = false;
-        this.imageTransition = { active: false, timer: 0, duration: 2.0, previousInfo: null, previousPartyMember: null };
+
+        this.imageTransition = {
+            active: false,
+            timer: 0,
+            duration: 2.0,
+            previousInfo: null,
+            previousPartyMember: null
+        };
         this.updateBGM();
     }
 
@@ -73,8 +100,9 @@ export class EncounterController extends BaseController {
         if (super.update) super.update(dt);
         this.scrollManager.update(dt);
         if (!this.model) return;
+
         this.textTimer += dt;
-        
+
         if (this.imageTransition.active) {
             this.imageTransition.timer += dt;
             if (this.imageTransition.timer >= this.imageTransition.duration) {
@@ -84,7 +112,7 @@ export class EncounterController extends BaseController {
                 this.imageTransition.timer = this.imageTransition.duration;
             }
         }
-        
+
         if (this.actionPhase === 'message') {
             const charsPerSecond = 45;
             const totalTypingTime = this.actionMessage.length * (1 / charsPerSecond);
@@ -100,6 +128,7 @@ export class EncounterController extends BaseController {
         } else if (this.actionPhase === 'rolling') {
             this.rollTimer -= dt;
             this.rollTickTimer -= dt;
+
             if (this.rollTimer <= 0 || this.skipMessageAnimation) {
                 this.rollData.displayVal = this.rollData.d20;
                 this.actionPhase = 'hold_base';
@@ -141,7 +170,7 @@ export class EncounterController extends BaseController {
         if (!this.model) return;
         const outgoingInfo = this.model.getImage ? this.model.getImage() : null;
         const outgoingMember = gameState.party?.members?.[0] || null;
-        
+
         this.imageTransition.active = true;
         this.imageTransition.timer = 0;
         this.imageTransition.previousInfo = outgoingInfo;
@@ -152,14 +181,14 @@ export class EncounterController extends BaseController {
     _getValidDecisions() {
         if (!this.model) return [];
         const rawDecisions = this.model.getAvailableDecisions() || [];
-        return rawDecisions.filter(decision => EncounterLogic.checkConditions(decision));
+        return rawDecisions.filter(decision => EncounterLogic.checkConditions(decision, this.model.context || {}));
     }
 
     handleMouseMove(x, y, isMouseDown, renderer) {
         const prevX = this.mouse?.x;
         const prevY = this.mouse?.y;
         super.handleMouseMove(x, y, isMouseDown, renderer);
-        
+
         if ((prevX !== x || prevY !== y) && this.hoveredHitboxId && this.hoveredHitboxId.startsWith('DECISION_')) {
             const index = parseInt(this.hoveredHitboxId.replace('DECISION_', ''), 10);
             if (!isNaN(index) && this.selectedIndex !== index) {
@@ -174,20 +203,20 @@ export class EncounterController extends BaseController {
         const charsPerSecond = 45;
         const totalTypingTime = this.lastText.length * (1 / charsPerSecond);
         const isAnimatingText = this.textTimer < (totalTypingTime + 2.0);
+
         const skipPhases = ['message', 'rolling', 'hold_base', 'apply_mod', 'result', 'ending'];
-        
         if (skipPhases.includes(this.actionPhase) || isAnimatingText) {
             this.skipMessageAnimation = true;
             this.textTimer = totalTypingTime + 2.0;
             return;
         }
-        
+
         if (this.actionPhase === 'wait_for_roll') {
             this.playConfirmSound();
             this.triggerRoll();
             return;
         }
-        
+
         if (hitboxId && hitboxId.startsWith('DECISION_')) {
             const index = parseInt(hitboxId.replace('DECISION_', ''), 10);
             if (!isNaN(index)) {
@@ -200,31 +229,34 @@ export class EncounterController extends BaseController {
     onRightClick(hitboxId) {
         if (this.scrollManager.isDragging) this.scrollManager.handleDragEnd();
     }
-    
+
     onDragStart(hitboxId) {
-        if (hitboxId === 'SCROLL_THUMB_DECISIONS') this.scrollManager.handleDragStart(hitboxId, this.mouse.y);
+        if (hitboxId === 'SCROLL_THUMB_DECISIONS') {
+            this.scrollManager.handleDragStart(hitboxId, this.mouse.y);
+        }
     }
-    
+
     onDragMove(x, y) {
         if (this.scrollManager.isDragging) this.scrollManager.handleDragMove(y);
     }
-    
+
     onDrop(sourceHitboxId, targetHitboxId) {
         if (this.scrollManager.isDragging) this.scrollManager.handleDragEnd();
     }
-    
+
     handleScroll(delta) {
         this.scrollManager.handleScrollWheel(this.mouse.x, this.mouse.y, delta * 40);
     }
 
     handleKeyDown(keyCode, e) {
         if (!this.model) return;
+
         const intent = (e && KEY_BINDINGS[e.code]) || KEY_BINDINGS[keyCode];
         const charsPerSecond = 45;
         const totalTypingTime = this.lastText.length * (1 / charsPerSecond);
         const isAnimatingText = this.textTimer < (totalTypingTime + 2.0);
+
         const skipPhases = ['message', 'rolling', 'hold_base', 'apply_mod', 'result', 'ending'];
-        
         if (skipPhases.includes(this.actionPhase) || isAnimatingText) {
             if (intent === 'CONFIRM') {
                 this.playConfirmSound();
@@ -233,7 +265,7 @@ export class EncounterController extends BaseController {
             }
             return;
         }
-        
+
         if (this.actionPhase === 'wait_for_roll') {
             if (intent === 'CONFIRM') {
                 this.playConfirmSound();
@@ -241,17 +273,18 @@ export class EncounterController extends BaseController {
             }
             return;
         }
-        
+
         const options = this._getValidDecisions();
         if (!options || options.length === 0) return;
-        
+
         if (intent === 'CANCEL') {
             this.playCancelSound();
             if (this.scrollManager.isDragging) this.scrollManager.handleDragEnd();
             return;
         }
-        
+
         const prevIndex = this.selectedIndex;
+
         if (intent === 'UP') {
             this.selectedIndex = (this.selectedIndex - 1 + options.length) % options.length;
             if (this.selectedIndex !== prevIndex) this.playNavSound();
@@ -267,10 +300,10 @@ export class EncounterController extends BaseController {
     executeSelectedDecision() {
         const options = this._getValidDecisions();
         if (!options || options.length === 0) return;
-        
+
         this.playConfirmSound('ui_select');
         const selectedDecision = options[this.selectedIndex];
-        
+
         if (selectedDecision.type === 'switch_character') {
             events.emit('CHANGE_SCENE', {
                 scene: 'party',
@@ -302,24 +335,24 @@ export class EncounterController extends BaseController {
 
     beginActionSequence(decision) {
         if (!decision) return;
+
         this.pendingDecision = decision;
         this.actionPhase = 'message';
         this.textTimer = 0;
         this.skipMessageAnimation = false;
-        
+
         if (decision.outcomes && decision.outcomes[0] && decision.outcomes[0].bgm) {
             events.emit('PLAY_MUSIC', { id: decision.outcomes[0].bgm, fadeTime: 0.5 });
         }
-        
+
         const actorName = gameState.party?.members?.[0]?.name || "The party";
-        
         if (decision.customActionText) {
             this.actionMessage = decision.customActionText.replace(/{name}/g, actorName);
         } else {
             const cleanText = decision.text.replace(/\[.*?\]/g, '').trim().toLowerCase();
-            this.actionMessage = `${actorName} decides to ${cleanText.replace(/{name}/g, actorName)}...`;
+            this.actionMessage = `${cleanText.replace(/{name}/g, actorName)}...`;
         }
-        
+
         this.lastText = this.actionMessage;
     }
 
@@ -327,12 +360,17 @@ export class EncounterController extends BaseController {
         this.actionPhase = 'none';
         const decision = this.pendingDecision;
         this.pendingDecision = null;
-        
+
         if (!decision) return;
-        
+
         let targetOutcomes = decision.outcomes;
+
         if (decision.type === 'skill_check') {
-            events.emit('PLAY_SFX', { id: this.rollData.isSuccess ? 'skill_success' : 'skill_failure', volume: 0.7 });
+            events.emit('PLAY_SFX', {
+                id: this.rollData.isSuccess ? 'skill_success' : 'skill_failure',
+                volume: 0.7
+            });
+
             this.model.updateContext({
                 roll_stat: decision.attribute?.toUpperCase() || "UNKNOWN",
                 roll_d20: this.rollData.d20,
@@ -341,9 +379,10 @@ export class EncounterController extends BaseController {
                 roll_dc: this.rollData.dc,
                 roll_result: this.rollData.isSuccess ? "SUCCESS" : "FAILED"
             });
+
             targetOutcomes = this.rollData.isSuccess ? decision.successOutcomes : decision.failureOutcomes;
         }
-        
+
         const selectedOutcome = EncounterLogic.selectOutcome(targetOutcomes);
         if (selectedOutcome) {
             this.applyLogicResults(selectedOutcome.results);
@@ -355,14 +394,14 @@ export class EncounterController extends BaseController {
         if (resultsArray && resultsArray.some(r => r.type === 'START_BATTLE')) {
             isStartingBattle = true;
         }
-        
+
         // Catch our custom game over trigger from the defeat screen
         if (resultsArray && resultsArray.some(r => r.type === 'TRIGGER_GAME_OVER')) {
             this.actionPhase = 'ending';
             events.emit('CHANGE_SCENE', { scene: 'game_over' });
             return;
         }
-        
+
         const logicResponse = EncounterLogic.resolveResults(resultsArray, this.model, this.worldManager);
 
         // Check if this results in a total party wipe
@@ -372,12 +411,9 @@ export class EncounterController extends BaseController {
 
         if (isTotalWipe) {
             this._triggerImageTransition();
-            
             const deathMsg = "Game over, all party members have been slain!";
-            const fullText = logicResponse.messages.length > 0 
-                ? logicResponse.messages.join('\n\n') + '\n\n' + deathMsg 
-                : deathMsg;
-            
+            const fullText = logicResponse.messages.length > 0 ? logicResponse.messages.join('\n\n') + '\n\n' + deathMsg : deathMsg;
+
             this.model.stages = this.model.stages || {};
             this.model.stages["game_over_stage"] = {
                 displayText: "Defeat",
@@ -388,7 +424,6 @@ export class EncounterController extends BaseController {
                     outcomes: [{ weight: 100, results: [{ type: "TRIGGER_GAME_OVER" }] }]
                 }]
             };
-            
             this.model.advanceToStage("game_over_stage");
             this.selectedIndex = 0;
             return;
@@ -416,7 +451,7 @@ export class EncounterController extends BaseController {
             this.selectedIndex = 0;
             this.updateBGM();
         }
-        
+
         if (logicResponse.messages.length > 0 && logicResponse.shouldEndEncounter && !isStartingBattle) {
             const rewardText = logicResponse.messages.join('\n\n');
             this.model.stages = this.model.stages || {};
@@ -429,14 +464,13 @@ export class EncounterController extends BaseController {
                     outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: logicResponse.endEncounterPayload }] }]
                 }]
             };
-            
+
             if (!logicResponse.forceCharacterSwitch) this._triggerImageTransition();
-            
             this.model.advanceToStage("encounter_rewards_stage");
             this.selectedIndex = 0;
             return;
         }
-        
+
         if (logicResponse.shouldEndEncounter) {
             if (isStartingBattle) {
                 this.actionPhase = 'ending';
@@ -494,32 +528,33 @@ export class EncounterController extends BaseController {
                 }
             }
         };
-        
+
         if (!this.model) return basePayload;
-        
+
         let displayText = this.model.getCurrentText() || "";
         let displayDecisions = this._getValidDecisions();
         let displayStageName = this.model.getStageDisplayText ? this.model.getStageDisplayText() : "Unknown Stage";
         const actorName = gameState.party?.members?.[0]?.name || "The party";
-        
+
         displayText = displayText.replace(/{name}/g, actorName);
         displayStageName = displayStageName.replace(/{name}/g, actorName);
+
         displayDecisions = displayDecisions.map(decision => ({
             ...decision,
             text: decision.text.replace(/{name}/g, actorName)
         }));
-        
+
         if (this.actionPhase !== 'none') {
             displayText = this.actionPhase === 'ending' ? this.lastText : this.actionMessage;
             displayDecisions = [];
         }
-        
+
         if (this.lastText !== displayText) {
             this.lastText = displayText;
             this.textTimer = 0;
             this.skipMessageAnimation = false;
         }
-        
+
         return {
             ...basePayload,
             title: this.model.title || "Unknown Encounter",

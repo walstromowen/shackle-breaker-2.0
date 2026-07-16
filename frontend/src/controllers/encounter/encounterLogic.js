@@ -9,7 +9,7 @@ import { DIFFICULTY_MODIFIERS } from '../../../../shared/data/constants.js';
 import { LootTableFactory } from "../../../../shared/systems/factories/lootTableFactory.js";
 
 export class EncounterLogic {
-    static checkConditions(decision) {
+    static checkConditions(decision, context = {}) {
         if (!decision || !decision.conditions) return true;
 
         return decision.conditions.every(cond => {
@@ -18,6 +18,10 @@ export class EncounterLogic {
                     return gameState.party?.members?.length > 1;
                 case "has_item":
                     return InventorySystem.hasItem(cond.itemId, cond.qty || 1);
+                case "context_flag_set":
+                    return !!context[cond.flagId];
+                case "context_flag_not_set":
+                    return !context[cond.flagId];
                 default:
                     return true;
             }
@@ -27,47 +31,49 @@ export class EncounterLogic {
     static calculateRoll(decision) {
         const roller = gameState.party.members[0];
         const attributes = roller?.attributes || {};
-        
         const difficulty = gameState.difficulty || 'normal';
+
         const globalConfig = DIFFICULTY_MODIFIERS[difficulty] || { rollBonus: 0 };
         const difficultyRollMod = globalConfig.rollBonus || 0;
 
-        let appliedAttributeBonus = 0; 
-
+        let appliedAttributeBonus = 0;
         if (decision.attribute && decision.attribute !== 'none') {
             const statValue = attributes[decision.attribute] || 0;
             const attributeBonus = Math.floor((statValue - 10) / 3);
             appliedAttributeBonus = attributeBonus;
-            
+
             if (difficulty === 'easy' || difficulty === 'normal') {
                 appliedAttributeBonus = Math.max(0, attributeBonus);
             }
         }
-        
+
         const finalAppliedMod = appliedAttributeBonus + difficultyRollMod;
         let finalizedNightmareMod = finalAppliedMod;
-        
         if (difficulty === 'nightmare' && finalAppliedMod > 0) {
             finalizedNightmareMod = Math.floor(finalAppliedMod / 2);
         }
-        
+
         const d20 = Math.floor(Math.random() * 20) + 1;
         const total = d20 + finalizedNightmareMod;
-        
-        return { 
-            d20, mod: finalizedNightmareMod, 
-            total, dc: decision.threshold || 0, 
-            isSuccess: total >= (decision.threshold || 0), 
-            displayVal: "?", duration: 3.5 
+
+        return {
+            d20,
+            mod: finalizedNightmareMod,
+            total,
+            dc: decision.threshold || 0,
+            isSuccess: total >= (decision.threshold || 0),
+            displayVal: "?",
+            duration: 3.5
         };
     }
 
     static selectOutcome(outcomes) {
         if (!outcomes || outcomes.length === 0) return null;
+
         const totalWeight = outcomes.reduce((sum, outcome) => sum + (outcome.weight || 1), 0);
         let roll = Math.random() * totalWeight;
+
         let selectedOutcome = null;
-        
         for (const outcome of outcomes) {
             roll -= (outcome.weight || 1);
             if (roll <= 0) {
@@ -79,18 +85,18 @@ export class EncounterLogic {
     }
 
     static resolveResults(resultsArray, model, worldManager) {
-        const response = { 
-            messages: [], 
-            shouldEndEncounter: false, 
-            endEncounterPayload: null, 
-            modelChanged: false, 
-            newModel: null, 
-            stageChanged: false, 
+        const response = {
+            messages: [],
+            shouldEndEncounter: false,
+            endEncounterPayload: null,
+            modelChanged: false,
+            newModel: null,
+            stageChanged: false,
             newStageId: null,
             isGameOver: false,
             forceCharacterSwitch: false
         };
-        
+
         if (!resultsArray) return response;
 
         resultsArray.forEach(result => {
@@ -98,6 +104,10 @@ export class EncounterLogic {
             const payload = result.payload || {};
 
             switch (type) {
+                case "SET_CONTEXT_FLAG":
+                    if (!model.context) model.context = {};
+                    model.context[payload.flagId] = payload.value !== undefined ? payload.value : true;
+                    break;
                 case "ADVANCE_STAGE":
                     response.stageChanged = true;
                     response.newStageId = payload.stageId;
@@ -141,7 +151,9 @@ export class EncounterLogic {
                             computedRolls = Math.floor(Math.random() * (payload.maxRolls - payload.minRolls + 1)) + payload.minRolls;
                         }
                         const lootModel = LootTableFactory.generateLoot(
-                            payload.lootTableId, computedRolls, payload.baseCurrency || 0
+                            payload.lootTableId,
+                            computedRolls,
+                            payload.baseCurrency || 0
                         );
                         if (lootModel.hasItems()) {
                             lootModel.items.forEach(item => {
@@ -168,15 +180,20 @@ export class EncounterLogic {
                 case "AWARD_XP":
                     const xpAmount = payload.amount || 0;
                     if (xpAmount <= 0) break;
+
                     if (payload.target === "entire_party") {
                         gameState.party?.members?.forEach(m => {
-                            if (ExperienceSystem.addXp(m, xpAmount)) response.messages.push(`${m.name} hit Lvl ${m.level}!`);
+                            if (ExperienceSystem.addXp(m, xpAmount)) {
+                                response.messages.push(`${m.name} hit Lvl ${m.level}!`);
+                            }
                         });
                         response.messages.push(`The party gained ${xpAmount} XP.`);
                     } else {
                         const active = gameState.party?.members?.[0];
                         if (active) {
-                            if (ExperienceSystem.addXp(active, xpAmount)) response.messages.push(`${active.name} hit Lvl ${active.level}!`);
+                            if (ExperienceSystem.addXp(active, xpAmount)) {
+                                response.messages.push(`${active.name} hit Lvl ${active.level}!`);
+                            }
                             response.messages.push(`${active.name} gained ${xpAmount} XP.`);
                         }
                     }
@@ -188,8 +205,8 @@ export class EncounterLogic {
                     if ((payload.amount || 0) > 0) response.messages.push(`Found ${payload.amount} currency!`);
                     break;
                 case "MODIFY_VITALS":
-                    const targetMembers = payload.target === "entire_party" 
-                        ? (gameState.party?.members || []) 
+                    const targetMembers = payload.target === "entire_party"
+                        ? (gameState.party?.members || [])
                         : [gameState.party?.members?.[0]].filter(Boolean);
 
                     targetMembers.forEach(char => {
@@ -202,15 +219,35 @@ export class EncounterLogic {
                             hpChange = Math.floor(char.hp * (hpChange / 100));
                             stamChange = Math.floor(char.stamina * (stamChange / 100));
                             insightChange = Math.floor((char.insight || 0) * (insightChange / 100));
-                            isPct = false; 
+                            isPct = false;
                         }
-
                         PartyManager.modifyVitals(
-                            char, hpChange, stamChange, insightChange, 
-                            payload.damageType || 'true', isPct, payload.bypassDefense || false
+                            char,
+                            hpChange,
+                            stamChange,
+                            insightChange,
+                            payload.damageType || 'true',
+                            isPct,
+                            payload.bypassDefense || false
                         );
                     });
                     break;
+                case "APPLY_STATUS_EFFECT": {
+                    const effectTargets = payload.target === "entire_party" 
+                        ? (gameState.party?.members || []) 
+                        : [gameState.party?.members?.[0]].filter(Boolean);
+                    
+                    effectTargets.forEach(char => {
+                        // Use your existing PartyManager method to handle the factory and application
+                        PartyManager.applyStatusEffect(char, payload.effectId, payload.charges);
+                        
+                        // Generate the UI message so the player knows what happened
+                        const effectName = (payload.effectId || "a status effect").replace(/_/g, ' ');
+                        response.messages.push(`${char.name} was afflicted with ${effectName}!`);
+                    });
+                    break;
+                
+                }
                 case "START_BATTLE":
                     let battleBgAsset = payload.background;
                     if (!battleBgAsset) {
@@ -221,7 +258,13 @@ export class EncounterLogic {
                         const biome = worldManager.getBiomeAt(col, row);
                         battleBgAsset = biome ? biome.getBattleBackground(currentHour) : 'default';
                     }
-                    events.emit('START_BATTLE', { enemies: payload.enemies || [], background: battleBgAsset, weather: gameState.world?.currentWeather || 'clear', context: model.context, bgm: payload.bgm || null });
+                    events.emit('START_BATTLE', {
+                        enemies: payload.enemies || [],
+                        background: battleBgAsset,
+                        weather: gameState.world?.currentWeather || 'clear',
+                        context: model.context,
+                        bgm: payload.bgm || null
+                    });
                     break;
                 case "TAKE_DAMAGE":
                     events.emit("TAKE_DAMAGE", payload);
@@ -232,6 +275,29 @@ export class EncounterLogic {
                         newCharacter.hp = newCharacter.maxHp;
                         newCharacter.stamina = newCharacter.maxStamina;
                         events.emit('CHARACTER_RECRUITED', { character: newCharacter });
+                    }
+                    break;
+                case "ADVANCE_TIME":
+                    if (gameState.world && typeof gameState.world.time !== 'undefined') {
+                        const minutesToAdvance = (payload.hours || 0) * 60 + (payload.minutes || 0);
+                        gameState.world.time += minutesToAdvance;
+
+                        // Handle day rollovers (in case they rest through midnight)
+                        while (gameState.world.time >= (24 * 60)) {
+                            gameState.world.time -= (24 * 60);
+                            gameState.world.day = (gameState.world.day || 1) + 1;
+                        }
+
+                        // Fast-forward weather timers so TimeSystem rerolls it on the next frame if needed
+                        if (gameState.world.currentWeather) {
+                            gameState.world.currentWeather.timeRemaining -= (minutesToAdvance / 60);
+                        }
+
+                        if (payload.hours) {
+                            response.messages.push(`${payload.hours} hours have passed.`);
+                        } else if (payload.minutes) {
+                            response.messages.push(`${payload.minutes} minutes have passed.`);
+                        }
                     }
                     break;
                 default:
@@ -250,7 +316,6 @@ export class EncounterLogic {
                 response.forceCharacterSwitch = true;
             }
         }
-
         return response;
     }
 }

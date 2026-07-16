@@ -36,10 +36,12 @@ export const BIOME_DEFINITIONS = {
       ] 
     }, 
     encounters: { 
-      rate: 0.02, 
+      rate: 1.02, 
       pools: [ 
-         { chance: 0.67, id: 'wounded_mutt', allowedTimes: ['day'] },
-        { chance: 0.33, id: 'a_disturbing_sight', allowedTimes: ['day'] },  
+         { chance: 1, id: 'treasure_chest', allowedTimes: ['day'] },
+         { chance: 0.1, id: 'wild_hunt', allowedTimes: ['day'] },
+         { chance: 0.2, id: 'wounded_mutt', allowedTimes: ['day'] },
+        { chance: 0.2, id: 'a_disturbing_sight', allowedTimes: ['day'] },  
       ] 
     }, 
     battles: { 
