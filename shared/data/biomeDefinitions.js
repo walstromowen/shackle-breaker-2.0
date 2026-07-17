@@ -36,7 +36,7 @@ export const BIOME_DEFINITIONS = {
       ] 
     }, 
     encounters: { 
-      rate: 1.02, 
+      rate: 0, 
       pools: [ 
         { chance: 1 , id: 'test_encounter', allowedTimes: ['day'] },
          { chance: 0.1, id: 'wild_hunt', allowedTimes: ['day'] },
@@ -45,7 +45,7 @@ export const BIOME_DEFINITIONS = {
       ] 
     }, 
     battles: { 
-     rate: 0.02, 
+     rate: 1.02, 
       pools: { 
         easy: [ 
           { chance: 0.25, enemies: ['ROTTING_MAN', 'MAD_MAN', 'ROTTING_MAN'] }, 

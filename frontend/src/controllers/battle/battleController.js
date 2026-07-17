@@ -40,6 +40,14 @@ export class BattleController extends BaseController {
         this.timer = 0;
         this.turnManager = new TurnManager(this);
         this.lastHoveredHitboxId = null;
+
+        // --- NEW CODE: Listen for the shout from combatantModel.js ---
+        events.on('ON_STATUS_APPLIED', (data) => {
+            // Make sure we are currently in a battle with a ledger before recording
+            if (this.state && this.state.battleLedger) {
+                this.registerStatusApplication(data.status, data.actor, data.target);
+            }
+        });
     }
 
     start(enemies, context = {}) {
@@ -60,6 +68,7 @@ export class BattleController extends BaseController {
             activePartyIndex: 0,
             selectedAction: null,
             turnQueue: [],
+            battleLedger: [], // Added to track events for trait rewards
             menuIndex: 0,
             targetIndex: 0,
             selectedTargets: [],
@@ -73,7 +82,13 @@ export class BattleController extends BaseController {
         this.state.activeEnemies.forEach(enemy => {
             if (enemy && !enemy.isDead()) {
                 enemy.hasEnteredBattle = false;
-                this.state.turnQueue.push({ type: TURN_TYPES.ANIMATION, actor: enemy, animationId: 'enter_battle', soundId: enemy.crySound || null, duration: 1.0 });
+                this.state.turnQueue.push({
+                    type: TURN_TYPES.ANIMATION,
+                    actor: enemy,
+                    animationId: 'enter_battle',
+                    soundId: enemy.crySound || null,
+                    duration: 1.0
+                });
                 preBattleActionsQueued = true;
             }
         });
@@ -81,7 +96,13 @@ export class BattleController extends BaseController {
         this.state.activeParty.forEach(ally => {
             if (ally && !ally.isDead()) {
                 ally.hasEnteredBattle = false;
-                this.state.turnQueue.push({ type: TURN_TYPES.ANIMATION, actor: ally, animationId: 'enter_battle', soundId: ally.crySound || null, duration: 1.0 });
+                this.state.turnQueue.push({
+                    type: TURN_TYPES.ANIMATION,
+                    actor: ally,
+                    animationId: 'enter_battle',
+                    soundId: ally.crySound || null,
+                    duration: 1.0
+                });
                 preBattleActionsQueued = true;
             }
         });
@@ -90,7 +111,11 @@ export class BattleController extends BaseController {
             const weatherMsg = this.state.weather.battleMessage || `A fierce ${this.state.weather.name} begins!`;
             this.state.turnQueue.push({ type: TURN_TYPES.MESSAGE_STATUS, message: weatherMsg });
             const activeCombatants = [...this.state.activeParty, ...this.state.activeEnemies].filter(c => c && !c.isDead());
-            this.state.turnQueue.push({ type: TURN_TYPES.WEATHER_INTRO, weather: this.state.weather, targets: activeCombatants });
+            this.state.turnQueue.push({
+                type: TURN_TYPES.WEATHER_INTRO,
+                weather: this.state.weather,
+                targets: activeCombatants
+            });
             preBattleActionsQueued = true;
         }
 
@@ -102,13 +127,14 @@ export class BattleController extends BaseController {
         } else {
             this._startActionPhase();
         }
-        
+
         this.timer = 0;
     }
 
     _queuePreBattleTraits() {
         let traitsQueued = false;
         const activeCombatants = [...this.state.activeParty, ...this.state.activeEnemies].filter(c => c && !c.isDead());
+
         activeCombatants.sort((a, b) => (b.stats?.speed ?? 10) - (a.stats?.speed ?? 10));
 
         activeCombatants.forEach(combatant => {
@@ -119,14 +145,31 @@ export class BattleController extends BaseController {
                     if (startTrigger && startTrigger.ability) {
                         const abilityId = startTrigger.ability;
                         const [ability] = AbilityFactory.createAbilities([abilityId]);
+
                         if (ability) {
                             if (startTrigger.animationId) {
-                                this.state.turnQueue.push({ type: TURN_TYPES.PLAY_ANIMATION, animationId: startTrigger.animationId, target: combatant });
+                                this.state.turnQueue.push({
+                                    type: TURN_TYPES.PLAY_ANIMATION,
+                                    animationId: startTrigger.animationId,
+                                    target: combatant
+                                });
                             }
+
                             const msgTemplate = startTrigger.battleMessage || "{actor}'s {trait} activates!";
                             const finalMessage = msgTemplate.replace(/{actor}/g, combatant.name).replace(/{trait}/g, trait.name);
-                            this.state.turnQueue.push({ type: TURN_TYPES.MESSAGE_STATUS, message: finalMessage });
-                            this.state.turnQueue.push({ type: TURN_TYPES.EXECUTE_ACTION, ignoreCost: true, actor: combatant, action: ability, target: combatant });
+
+                            this.state.turnQueue.push({
+                                type: TURN_TYPES.MESSAGE_STATUS,
+                                message: finalMessage
+                            });
+
+                            this.state.turnQueue.push({
+                                type: TURN_TYPES.EXECUTE_ACTION,
+                                ignoreCost: true,
+                                actor: combatant,
+                                action: ability,
+                                target: combatant
+                            });
                             traitsQueued = true;
                         }
                     }
@@ -145,13 +188,27 @@ export class BattleController extends BaseController {
             if (deathTrigger && deathTrigger.ability) {
                 const abilityId = deathTrigger.ability;
                 const [ability] = AbilityFactory.createAbilities([abilityId]);
+
                 if (ability) {
-                    this.state.turnQueue.unshift({ type: TURN_TYPES.EXECUTE_ACTION, ignoreCost: true, allowDeadActor: true, actor: deadCombatant, action: ability, target: deadCombatant });
+                    this.state.turnQueue.unshift({
+                        type: TURN_TYPES.EXECUTE_ACTION,
+                        ignoreCost: true,
+                        allowDeadActor: true,
+                        actor: deadCombatant,
+                        action: ability,
+                        target: deadCombatant
+                    });
+
                     const msgTemplate = deathTrigger.battleMessage || "{actor}'s {trait} activates upon death!";
                     const finalMessage = msgTemplate.replace(/{actor}/g, deadCombatant.name).replace(/{trait}/g, trait.name);
                     this.state.turnQueue.unshift({ type: TURN_TYPES.MESSAGE_STATUS, message: finalMessage });
+
                     const animId = deathTrigger.animationId || "trait_activate";
-                    this.state.turnQueue.unshift({ type: TURN_TYPES.PLAY_ANIMATION, animationId: animId, target: deadCombatant });
+                    this.state.turnQueue.unshift({
+                        type: TURN_TYPES.PLAY_ANIMATION,
+                        animationId: animId,
+                        target: deadCombatant
+                    });
                 }
             }
         });
@@ -184,17 +241,19 @@ export class BattleController extends BaseController {
     onHover(hitboxId) {
         if (hitboxId === this.lastHoveredHitboxId) return;
         this.lastHoveredHitboxId = hitboxId;
+
         const prevMenuIndex = this.state?.menuIndex;
         const prevTargetIndex = this.state?.targetIndex;
+
         super.onHover(hitboxId);
-        
         if (!hitboxId || this.state?.isPausedForUI || !this.state?.active) return;
-        
+
         if (this.state.phase === PHASE.SELECT_ACTION && hitboxId.startsWith('ACTION_')) {
             this.state.menuIndex = parseInt(hitboxId.split('_')[1], 10);
             if (this.state.menuIndex !== prevMenuIndex) this.playNavSound();
         } else if (this.state.phase === PHASE.SELECT_TARGET && hitboxId.startsWith('TARGET_')) {
             if (this.state.targetIndex === 'ALL') return;
+
             if (this._isValidTargetHitbox(hitboxId)) {
                 const target = this._getTargetFromHitbox(hitboxId);
                 const validTargets = this._getTargetsFromGroup();
@@ -241,10 +300,11 @@ export class BattleController extends BaseController {
 
     handleKeyDown(key) {
         console.log(`[Input Check] Key pressed: ${key}, Phase: ${this.state?.phase}, Paused: ${this.state?.isPausedForUI}`);
+
         if (!this.state?.active || this.state.isPausedForUI) return;
-        
+
         const intent = KEY_BINDINGS[key] || key;
-        
+
         if (intent === 'DEBUG') {
             console.log("Debug View Toggled!");
             events.emit('TOGGLE_BATTLE_DEBUG');
@@ -271,7 +331,7 @@ export class BattleController extends BaseController {
         const activeChar = this.state.activeParty[this.state.activePartyIndex];
         const abilityCount = activeChar.abilities.length;
         const prevIndex = this.state.menuIndex;
-        
+
         if (intent === 'RIGHT') {
             this.state.menuIndex = (this.state.menuIndex + 1) % abilityCount;
             if (this.state.menuIndex !== prevIndex) this.playNavSound();
@@ -339,7 +399,7 @@ export class BattleController extends BaseController {
     _handleTargetSelection(intent) {
         const targetArray = this._getTargetsFromGroup();
         const prevIndex = this.state.targetIndex;
-        
+
         if (this.state.targetIndex === 'ALL') {
             if (intent === 'CONFIRM') {
                 this.playConfirmSound('ui_select');
@@ -378,7 +438,7 @@ export class BattleController extends BaseController {
 
     _selectSpecificTarget(target) {
         if (!target || target.isDead()) return;
-        
+
         const targeting = this.state.selectedAction.targeting || {};
         if (targeting.select !== 'multiple') {
             return this.commitAction(target);
@@ -386,7 +446,7 @@ export class BattleController extends BaseController {
 
         const requiredCount = targeting.count || 1;
         this.state.selectedTargets.push(target);
-        
+
         if (this.state.selectedTargets.length >= requiredCount) {
             this.commitAction([...this.state.selectedTargets]);
             this.state.selectedTargets = [];
@@ -402,7 +462,6 @@ export class BattleController extends BaseController {
             this.state.message = `Select target ${this.state.selectedTargets.length + 1} of ${requiredCount} for ${this.state.selectedAction.name}`;
             return;
         }
-        
         this.state.phase = PHASE.SELECT_ACTION;
         this.state.selectedAction = null;
         this.state.targetGroup = null;
@@ -413,7 +472,7 @@ export class BattleController extends BaseController {
         const activeIndices = this.state.activeParty
             .map(p => p ? this.state.partyRoster.indexOf(p) : -1)
             .filter(i => i !== -1);
-            
+
         this.state.turnQueue.forEach(turn => {
             if (turn.type === TURN_TYPES.REINFORCEMENT && turn.team === 'party' && turn.replacement) {
                 const pendingIndex = this.state.partyRoster.indexOf(turn.replacement);
@@ -440,19 +499,27 @@ export class BattleController extends BaseController {
 
     _executeSwap(selectedRosterIndex, isForced, slotIndex) {
         const replacement = this.state.partyRoster[selectedRosterIndex];
-        
+
         if (isForced) {
-            this.state.turnQueue.unshift({ type: TURN_TYPES.ANIMATION, actor: replacement, animationId: 'enter_battle', soundId: replacement.crySound, duration: 1.0 });
+            this.state.turnQueue.unshift({
+                type: TURN_TYPES.ANIMATION,
+                actor: replacement,
+                animationId: 'enter_battle',
+                soundId: replacement.crySound,
+                duration: 1.0
+            });
             this.state.turnQueue.unshift({ type: TURN_TYPES.MESSAGE_STATUS, message: `${replacement.name} steps into the fray!` });
             this.state.turnQueue.unshift({ type: TURN_TYPES.REINFORCEMENT, team: 'party', slotIndex, replacement });
         } else {
             const activeChar = this.state.activeParty[slotIndex];
             const swapSpeed = (activeChar.stats?.speed ?? 10) + (slotIndex * 0.001);
+
             this.state.turnQueue.push({ type: TURN_TYPES.MESSAGE_STATUS, message: `${activeChar.name} falls back...`, speedOverride: swapSpeed, swapSequenceOrder: 1, swapInitiator: activeChar });
             this.state.turnQueue.push({ type: TURN_TYPES.ANIMATION, actor: activeChar, animationId: 'retreat', duration: 1.0, speedOverride: swapSpeed, swapSequenceOrder: 2, swapInitiator: activeChar });
             this.state.turnQueue.push({ type: TURN_TYPES.REINFORCEMENT, team: 'party', slotIndex, replacement, speedOverride: swapSpeed, swapSequenceOrder: 3, swapInitiator: activeChar });
             this.state.turnQueue.push({ type: TURN_TYPES.MESSAGE_STATUS, message: `${replacement.name} steps into the fray!`, speedOverride: swapSpeed, swapSequenceOrder: 4, swapInitiator: activeChar });
             this.state.turnQueue.push({ type: TURN_TYPES.ANIMATION, actor: replacement, animationId: 'enter_battle', soundId: replacement.crySound, duration: 1.0, speedOverride: swapSpeed, swapSequenceOrder: 5, swapInitiator: activeChar });
+
             this._advancePartyTurn();
         }
     }
@@ -462,13 +529,7 @@ export class BattleController extends BaseController {
         if (!this.state.selectedAction.canPayCost(activeChar, InventorySystem)) {
             return;
         }
-        
-        this.state.turnQueue.push({
-            actor: activeChar,
-            action: this.state.selectedAction,
-            target: primaryTarget
-        });
-        
+        this.state.turnQueue.push({ actor: activeChar, action: this.state.selectedAction, target: primaryTarget });
         this._advancePartyTurn();
     }
 
@@ -476,7 +537,7 @@ export class BattleController extends BaseController {
         do {
             this.state.activePartyIndex++;
         } while (
-            this.state.activePartyIndex < this.state.activeParty.length && 
+            this.state.activePartyIndex < this.state.activeParty.length &&
             (!this.state.activeParty[this.state.activePartyIndex] || this.state.activeParty[this.state.activePartyIndex].isDead())
         );
 
@@ -511,20 +572,23 @@ export class BattleController extends BaseController {
 
         this.state.activeEnemies.forEach(enemy => {
             if (!enemy || enemy.isDead()) return;
-            
-            const validAbilities = enemy.abilities.filter(a => a.canPayCost(enemy, InventorySystem) && !['rest', 'punch'].includes(a.id));
+
+            const validAbilities = enemy.abilities.filter(a =>
+                a.canPayCost(enemy, InventorySystem) && !['rest', 'punch'].includes(a.id)
+            );
+
             const randomTarget = livingParty[Math.floor(Math.random() * livingParty.length)];
-            
+
             if (validAbilities.length > 0) {
                 const action = validAbilities[Math.floor(Math.random() * validAbilities.length)];
                 return this.state.turnQueue.push({ actor: enemy, action, target: randomTarget });
             }
-            
+
             const punch = enemy.abilities.find(a => a.id === 'punch' && a.canPayCost(enemy, InventorySystem));
             if (punch) {
                 return this.state.turnQueue.push({ actor: enemy, action: punch, target: randomTarget });
             }
-            
+
             const restAction = AbilityFactory.createAbilities(['rest'])[0];
             this.state.turnQueue.push({ actor: enemy, action: restAction, target: enemy });
         });
@@ -534,9 +598,11 @@ export class BattleController extends BaseController {
         this.state.turnQueue.sort((a, b) => {
             const speedA = a.speedOverride ?? ((a.actor?.stats?.speed ?? 10) * (a.action?.speedModifier ?? 1));
             const speedB = b.speedOverride ?? ((b.actor?.stats?.speed ?? 10) * (b.action?.speedModifier ?? 1));
+
             if (speedA !== speedB) {
                 return speedB - speedA;
             }
+
             const orderA = a.swapSequenceOrder ?? 99;
             const orderB = b.swapSequenceOrder ?? 99;
             return orderA - orderB;
@@ -545,6 +611,7 @@ export class BattleController extends BaseController {
 
     update(dt) {
         if (!this.state?.active || this.state.isPausedForUI) return;
+
         this.state.timer = this.timer;
 
         if (this.state.phase === PHASE.INTRO) {
@@ -556,7 +623,7 @@ export class BattleController extends BaseController {
         if ([PHASE.RESOLVE, PHASE.VICTORY, PHASE.DEFEAT].includes(this.state.phase)) {
             this.timer += dt;
             const waitTime = this.state.activeAnimation?.duration ?? 1.5;
-            
+
             if (this.timer >= waitTime) {
                 if (this.state.activeAnimation) {
                     const finishedAnim = this.state.activeAnimation;
@@ -581,14 +648,14 @@ export class BattleController extends BaseController {
         this.state.turnQueue = [];
         this.timer = 0;
         this.state.showAbilityDetails = true;
-        
+
         while (
-            this.state.activePartyIndex < this.state.activeParty.length && 
+            this.state.activePartyIndex < this.state.activeParty.length &&
             (!this.state.activeParty[this.state.activePartyIndex] || this.state.activeParty[this.state.activePartyIndex].isDead())
         ) {
             this.state.activePartyIndex++;
         }
-        
+
         if (this.state.activePartyIndex >= this.state.activeParty.length) {
             this._queueEnemyActions();
             this._sortTurnQueue();
@@ -596,7 +663,7 @@ export class BattleController extends BaseController {
             this.state.message = "Turns Processing...";
             return;
         }
-        
+
         this.state.phase = PHASE.SELECT_ACTION;
         this.state.message = "What will you do? [P] for Party";
     }
@@ -604,36 +671,58 @@ export class BattleController extends BaseController {
     handleDeath(combatant) {
         if (combatant._deathHandled) return;
         combatant._deathHandled = true;
-        
-        this.state.turnQueue = this.state.turnQueue.filter(turn => turn.actor !== combatant && turn.swapInitiator !== combatant);
+
+        this.state.turnQueue = this.state.turnQueue.filter(turn =>
+            turn.actor !== combatant && turn.swapInitiator !== combatant
+        );
+
         const isParty = combatant.team === 'party';
         const activeArray = isParty ? this.state.activeParty : this.state.activeEnemies;
         const rosterArray = isParty ? this.state.partyRoster : this.state.enemyRoster;
         const slotIndex = activeArray.indexOf(combatant);
-        
+
         if (slotIndex !== -1) {
-            const livingReserves = rosterArray.filter(member => !member.isDead() && !activeArray.includes(member) && !this.state.turnQueue.some(turn => turn.replacement === member));
+            const livingReserves = rosterArray.filter(member =>
+                !member.isDead() &&
+                !activeArray.includes(member) &&
+                !this.state.turnQueue.some(turn => turn.replacement === member)
+            );
+
             if (livingReserves.length > 0) {
                 if (isParty) {
                     this.state.turnQueue.unshift({ type: TURN_TYPES.PROMPT_REINFORCEMENT, slotIndex });
                 } else {
                     const replacement = livingReserves[0];
-                    this.state.turnQueue.unshift({ type: TURN_TYPES.ANIMATION, actor: replacement, animationId: 'enter_battle', soundId: replacement.crySound, duration: 1.0 });
+                    this.state.turnQueue.unshift({
+                        type: TURN_TYPES.ANIMATION,
+                        actor: replacement,
+                        animationId: 'enter_battle',
+                        soundId: replacement.crySound,
+                        duration: 1.0
+                    });
                     this.state.turnQueue.unshift({ type: TURN_TYPES.MESSAGE_STATUS, message: `${replacement.name} joins the battle!` });
                     this.state.turnQueue.unshift({ type: TURN_TYPES.REINFORCEMENT, team: 'enemy', slotIndex, replacement });
                 }
             }
         }
-        
-        this.state.turnQueue.unshift({ type: TURN_TYPES.ANIMATION, actor: combatant, animationId: 'faint', soundId: combatant.deathSound, duration: 1.0 });
+
+        this.state.turnQueue.unshift({
+            type: TURN_TYPES.ANIMATION,
+            actor: combatant,
+            animationId: 'faint',
+            soundId: combatant.deathSound,
+            duration: 1.0
+        });
+
         this._queueDeathTraits(combatant);
+
         this.state.turnQueue.unshift({ type: TURN_TYPES.MESSAGE_STATUS, message: `${combatant.name} has been slain!` });
     }
 
     checkBattleStatus() {
         const enemiesAlive = this.state.enemyRoster.some(e => !e.isDead());
         const partyAlive = this.state.partyRoster.some(p => !p.isDead());
-        
+
         if (!enemiesAlive) this._handleVictory();
         else if (!partyAlive) this._handleDefeat();
         else {
@@ -654,18 +743,24 @@ export class BattleController extends BaseController {
     _handleVictory() {
         this.state.phase = PHASE.VICTORY;
         this.state.turnQueue = [];
-        
-        const rewardMessages = BattleRewardSystem.processVictory(this.state.partyRoster, this.state.enemyRoster);
+
+        // Stall the queue for 3.0 seconds to let the visual banner play out seamlessly!
+        this.state.turnQueue.push({ type: TURN_TYPES.WAIT, duration: 3.0 });
+
+        // Pass battleLedger so BattleRewardSystem can process trait conditions
+        const rewardMessages = BattleRewardSystem.processVictory(this.state.partyRoster, this.state.enemyRoster, this.state.battleLedger);
+
         rewardMessages.forEach(msg => {
             this.state.turnQueue.push({ type: TURN_TYPES.MESSAGE_VICTORY, message: msg });
         });
-        
         this.state.turnQueue.push({ type: TURN_TYPES.BATTLE_END });
     }
 
     _handleDefeat() {
         this.state.phase = PHASE.DEFEAT;
         this.state.turnQueue = [
+            // Stalling here as well so the "PARTY SLAIN" banner gets its spotlight
+            { type: TURN_TYPES.WAIT, duration: 3.0 },
             { type: TURN_TYPES.MESSAGE_DEFEAT, message: `The party has fallen in battle...` },
             { type: TURN_TYPES.BATTLE_END }
         ];
@@ -676,18 +771,20 @@ export class BattleController extends BaseController {
             combatant.originalEntity.hp = combatant.hp;
             combatant.originalEntity.stamina = combatant.stamina;
             combatant.originalEntity.insight = combatant.insight;
-            
-            const effectsToRemove = combatant.originalEntity.statusEffects.filter(effect => !effect.persistAfterCombat).map(effect => effect.id);
-            
+
+            const effectsToRemove = combatant.originalEntity.statusEffects
+                .filter(effect => !effect.persistAfterCombat)
+                .map(effect => effect.id);
+
             if (this.state.weather && this.state.weather.appliedStatusId) {
                 if (!effectsToRemove.includes(this.state.weather.appliedStatusId)) {
                     effectsToRemove.push(this.state.weather.appliedStatusId);
                 }
             }
-            
+
             effectsToRemove.forEach(effectId => combatant.originalEntity.removeStatusEffect(effectId));
         });
-        
+
         this.state.active = false;
         events.emit('BATTLE_ENDED', { victory: this.state.partyRoster.some(p => !p.isDead()), fled: !!this.state.fled });
     }
@@ -700,7 +797,7 @@ export class BattleController extends BaseController {
                 const { itemId, abilityId } = payload;
                 const [action] = AbilityFactory.createAbilities([abilityId]);
                 const activeChar = this.state.activeParty[this.state.activePartyIndex];
-                
+
                 if (action) {
                     if (itemId) {
                         action.cost = { item: itemId, amount: 1 };
@@ -722,6 +819,42 @@ export class BattleController extends BaseController {
         const allCombatants = [...this.state.partyRoster, ...this.state.enemyRoster];
         allCombatants.forEach((c) => {
             if (c) console.log(`[${c.team.toUpperCase()}] ${c.name || 'Unknown'} object:`, c);
+        });
+    }
+
+    // --- BATTLE EVENT REGISTRATION HELPERS FOR TRAIT ACQUISITION ---
+    /**
+     * Pushes generic combat events to the ledger for end-of-battle trait evaluation.
+     */
+    registerBattleEvent(event) {
+        if (this.state?.battleLedger) {
+            this.state.battleLedger.push(event);
+        }
+    }
+
+    registerStatusApplication(status, actor, target) {
+        this.registerBattleEvent({
+            type: 'STATUS_APPLIED',
+            status: status,
+            actor: actor,
+            target: target
+        });
+    }
+
+    registerAbilityUse(action, actor, target) {
+        this.registerBattleEvent({
+            type: 'ABILITY_USED',
+            action: action,
+            actor: actor,
+            target: target
+        });
+    }
+
+    registerDeath(killer, killed) {
+        this.registerBattleEvent({
+            type: 'DEATH',
+            killer: killer,
+            killed: killed
         });
     }
 

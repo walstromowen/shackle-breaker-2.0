@@ -31,16 +31,21 @@ export const AbilityDefinitions = {
         description: "A horizontal strike with a sharp blade. Has a chance to cause bleeding.",
         battleMessage: "{user} steps forward to {ability} {target}!",
         icon: { col: 0, row: 0 },
-        speedModifier: 1, 
+        speedModifier: 1,
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 10 },
-        accuracy: 1.0, 
+        accuracy: 1.0,
         animationId: "slash",
         effects: [
-            { type: "damage", damageType: "slash", power: 1.0 } 
+            { type: "damage", damageType: "slash", power: 1.0 }
         ],
         statusEffects: [
-            { id: "bleed", chance: 0.1, duration: 3 } 
+            { id: "bleed", chance: 0.1, duration: 3 }
+        ],
+        // ---> NEW: Trait Rewards integrated into the ability <---
+        traitRewards: [
+            { id: "martyr", chance: 1, condition: "use_ability" },
+            { id: "clumsy", chance: 1.0, condition: "hit_by_ability" }
         ]
     },
 

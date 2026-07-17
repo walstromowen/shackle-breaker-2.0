@@ -29,65 +29,97 @@ export class BattleHUDRenderer {
   render(state, dt, hitboxes = []) {
     this.dt = dt;
     if (this.lastPhase !== state.phase) {
-      this.phaseTime = 0;
-      this.lastPhase = state.phase;
+        this.phaseTime = 0;
+        this.lastPhase = state.phase;
     }
     this.phaseTime += this.dt;
 
     this.drawHUD(state, hitboxes);
 
-    let targetBannerAlpha = 0.0;
     const isCinematicPhase = ['INTRO', 'RESOLVE', 'VICTORY', 'DEFEAT'].includes(state.phase);
+    
+    if (isCinematicPhase) {
+        const isEndPhase = state.phase === 'VICTORY' || state.phase === 'DEFEAT';
+        
+        if (isEndPhase) {
+            // --- DETERMINISTIC THREE-STAGE TIMELINE ---
+            const FADE_IN_DURATION = 0.4;  // 0.4 seconds to smoothly fade in
+            const SOLID_DURATION = 1.6;    // 1.6 seconds of full solid peak visibility
+            const FADE_OUT_DURATION = 1.0; // 1.0 second to smoothly fade out
+            const TOTAL_DURATION = FADE_IN_DURATION + SOLID_DURATION + FADE_OUT_DURATION; // Exactly 3.0s total
+            
+            const solidThreshold = FADE_IN_DURATION;
+            const fadeOutThreshold = FADE_IN_DURATION + SOLID_DURATION;
+
+            if (this.phaseTime < solidThreshold) {
+                // 1. Linear Fade-In: 0.0 -> 1.0
+                this.bannerAlpha = this.phaseTime / FADE_IN_DURATION;
+            } else if (this.phaseTime < fadeOutThreshold) {
+                // 2. Solid Peak Hold
+                this.bannerAlpha = 1.0;
+            } else if (this.phaseTime < TOTAL_DURATION) {
+                // 3. Linear Fade-Out: 1.0 -> 0.0
+                const elapsedFadeOut = this.phaseTime - fadeOutThreshold;
+                this.bannerAlpha = 1.0 - (elapsedFadeOut / FADE_OUT_DURATION);
+            } else {
+                // 4. Time expired
+                this.bannerAlpha = 0.0;
+            }
+
+            // --- ABSOLUTE FAIL-SAFE HAND-OFF ---
+            // If delta spikes or rounding issues occur and a message lands early, 
+            // the banner is immediately forced down to make way for the text.
+            if (state.message) {
+                this.bannerAlpha = 0.0;
+            }
+        }
+    } else {
+        // Smoothly drop banner alpha if changing to action/targeting phases
+        const DECAY_SPEED = 5.0;
+        this.bannerAlpha += (0.0 - this.bannerAlpha) * DECAY_SPEED * this.dt;
+    }
+
+    // Direct clamping without lagging behind a target value
+    this.bannerAlpha = Math.max(0, Math.min(1, this.bannerAlpha));
+    
+    // Frame-exact visibility flag
+    const isBannerVisible = this.bannerAlpha > 0.0;
 
     if (isCinematicPhase) {
-      const isEndPhase = state.phase === 'VICTORY' || state.phase === 'DEFEAT';
-      if (isEndPhase) {
-        targetBannerAlpha = 1.0;
-      }
-      if (state.message) {
-        if (isEndPhase) {
-          if (this.phaseTime > 3.0) {
+        // 2. Draw the dialogue box if there's a message,
+        // BUT ONLY if the banner is completely faded out!
+        if (state.message && !isBannerVisible) {
             this.drawDialogueBox(state.message);
-            targetBannerAlpha = 0.0;
-          }
-        } else {
-          this.drawDialogueBox(state.message);
         }
-      }
     }
 
-    const FADE_SPEED = 3.0;
-    this.bannerAlpha += (targetBannerAlpha - this.bannerAlpha) * FADE_SPEED * this.dt;
-    this.bannerAlpha = Math.max(0, Math.min(1, this.bannerAlpha));
-
+    // Draw the cinematic banner if it has any opacity
     if (this.bannerAlpha > 0.01) {
-      const text = (state.phase === 'DEFEAT') ? 'PARTY SLAIN' : 'ENEMY SLAIN';
-      const color = (state.phase === 'DEFEAT') ? (UITheme.colors.targetRed || '#cc0000') : (UITheme.colors.highlight || '#b89947');
-      this.drawCinematicBanner(text, color, this.bannerAlpha);
+        const text = (state.phase === 'DEFEAT') ? 'PARTY SLAIN' : 'ENEMY SLAIN';
+        const color = (state.phase === 'DEFEAT') ? (UITheme.colors.targetRed || '#cc0000') : (UITheme.colors.highlight || '#b89947');
+        this.drawCinematicBanner(text, color, this.bannerAlpha);
     }
 
-    if (!isCinematicPhase) {
-      if (state.phase === 'SELECT_ACTION') {
-        this.drawActionMenu(state, hitboxes);
-        this.drawActivePlayerIndicator(state);
-        
-        // --- MODIFIED: Wrap details rendering context inside layout state conditional ---
-        if (state.showAbilityDetails) {
-          const activeChar = state.activeParty[state.activePartyIndex];
-          const focusedAbility = activeChar?.abilities?.[state.menuIndex];
-          if (focusedAbility) {
-            this.drawAbilityDetailsPopup(focusedAbility, state.menuIndex);
-          }
+        if (!isCinematicPhase) {
+            if (state.phase === 'SELECT_ACTION') {
+                this.drawActionMenu(state, hitboxes);
+                this.drawActivePlayerIndicator(state);
+                if (state.showAbilityDetails) {
+                    const activeChar = state.activeParty[state.activePartyIndex];
+                    const focusedAbility = activeChar?.abilities?.[state.menuIndex];
+                    if (focusedAbility) {
+                        this.drawAbilityDetailsPopup(focusedAbility, state.menuIndex);
+                    }
+                }
+            } else if (state.phase === 'SELECT_TARGET') {
+                const activeChar = state.activeParty[state.activePartyIndex];
+                const selectedAbility = state.selectedAction || (activeChar && activeChar.abilities[state.menuIndex]);
+                const promptText = selectedAbility ? `Select target(s) for ${selectedAbility.name}...` : "Select a target...";
+                this.drawDialogueBox(promptText, `— ${activeChar.name} —`);
+                this.drawTargetCursor(state);
+            }
         }
-      } else if (state.phase === 'SELECT_TARGET') {
-        const activeChar = state.activeParty[state.activePartyIndex];
-        const selectedAbility = state.selectedAction || (activeChar && activeChar.abilities[state.menuIndex]);
-        const promptText = selectedAbility ? `Select target(s) for ${selectedAbility.name}...` : "Select a target...";
-        this.drawDialogueBox(promptText, `— ${activeChar.name} —`);
-        this.drawTargetCursor(state);
-      }
     }
-  }
 
   drawHUD(state, hitboxes = []) {
     if (state.activeParty && state.activeParty.length > 0) {

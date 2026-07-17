@@ -134,7 +134,11 @@ export const ENTITY_DEFINITIONS = {
         currencyReward: { min: 2, max: 8 },
         lootTableId: "mad_man_drops", 
         abilities: [...HUMANOID_TEMPLATE.abilities, "bite", "punch"],
-        tags: [...HUMANOID_TEMPLATE.tags]
+        tags: [...HUMANOID_TEMPLATE.tags],
+        traitRewards: [
+            { id: "tough", chance: 0.5, condition: "kill" },
+            { id: "quick", chance: 1.0, condition: "killed_by" } // Note: make sure 'killed_by' is added to your reward logic if it wasn't already!
+        ]
     },
 
     "MAD_MAGE": {

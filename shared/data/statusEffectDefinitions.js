@@ -9,7 +9,7 @@ export const StatusEffectDefinitions = {
         persistAfterCombat: true, 
         effects: [
             { trigger: 'ON_TURN_END', modify: 'hp', value: -5, damageType: 'dark', battleMessage: "{target} suffers {amount} poison damage!" } 
-        ]
+        ],
     },
     bleed: {
         id: 'bleed',
@@ -21,7 +21,11 @@ export const StatusEffectDefinitions = {
         persistAfterCombat: true, 
         effects: [
             { trigger: 'ON_TURN_END', modify: 'stamina', value: -5, damageType: 'slash', battleMessage: "{target} loses {amount} stamina from bleeding!" } 
-        ]
+        ],
+          traitRewards: [
+            { id: 'acidic', chance: 1.0, condition: 'apply_status' },   // Gained when inflicting on an enemy
+            { id: 'acidic', chance: 1.0, condition: 'receive_status' }  // Gained when an enemy inflicts it on you
+        ],
     },
     frozen: {
         id: 'frozen',
