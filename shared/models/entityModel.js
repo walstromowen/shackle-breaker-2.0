@@ -17,9 +17,15 @@ export class EntityModel {
         // =========================================================
         if (!this.state.baseStats) {
             this.state.baseStats = {
-                maxHp: 10, maxStamina: 10, maxInsight: 10,
-                hpRecovery: 0, staminaRecovery: 0, insightRecovery: 0,
-                speed: 0, corruption: 0, critical: 0.05,
+                maxHp: 10,
+                maxStamina: 10,
+                maxInsight: 10,
+                hpRecovery: 0,
+                staminaRecovery: 0,
+                insightRecovery: 0,
+                speed: 0,
+                corruption: 0,
+                critical: 0.05,
                 baseAttack: { blunt: 0, slash: 0, pierce: 0 },
                 baseDefense: { blunt: 0, slash: 0, pierce: 0 }
             };
@@ -34,23 +40,32 @@ export class EntityModel {
         }
 
         if (!this.state.attributes) {
-            this.state.attributes = { vigor: 0, strength: 0, dexterity: 0, intelligence: 0, attunement: 0 };
+            this.state.attributes = {
+                vigor: 0,
+                strength: 0,
+                dexterity: 0,
+                intelligence: 0,
+                attunement: 0
+            };
         }
 
         if (!this.state.statMultipliers) {
-            this.state.statMultipliers = { hpPerVigor: 3, staminaPerDex: 2, insightPerAtt: 2 };
+            this.state.statMultipliers = {
+                hpPerVigor: 3,
+                staminaPerDex: 2,
+                insightPerAtt: 2
+            };
         }
 
         if (!this.state.spriteOverworld) this.state.spriteOverworld = "missing_texture";
         if (!this.state.spritePortrait) this.state.spritePortrait = "missing_face";
         if (!this.state.crySound) this.state.crySound = "generic_cry";
         if (!this.state.deathSound) this.state.deathSound = "generic_faint";
-
         if (!this.state.traits) this.state.traits = [];
         if (!this.state.equipment) this.state.equipment = {};
         if (!Array.isArray(this.state.inventory)) this.state.inventory = [];
         if (!this.state.statusEffects) this.state.statusEffects = [];
-        
+
         // --- NEW: Handle lootTableId instead of array ---
         if (typeof this.state.lootTableId === 'undefined') this.state.lootTableId = null;
 
@@ -60,7 +75,6 @@ export class EntityModel {
         if (typeof this.state.level === 'undefined') this.state.level = 1;
 
         this._learnedAbilities = [];
-
         if (this.state.abilities) {
             const innateMoves = AbilityFactory.createAbilities(this.state.abilities);
             this.addAbilities(innateMoves, 'innate');
@@ -68,20 +82,20 @@ export class EntityModel {
     }
 
     // =========================================================
-    // GETTERS & SETTERS 
+    // GETTERS & SETTERS
     // =========================================================
     get id() { return this.state.id; }
     get name() { return this.state.name; }
     set name(val) { this.state.name = val; }
+
     get frameSize() { return this.state.frameSize; }
     get spritePortrait() { return this.state.spritePortrait; }
     get spriteOverworld() { return this.state.spriteOverworld; }
     get battlePortraitFramesFront() { return this.state.battlePortraitFramesFront; }
     get battlePortraitFramesBack() { return this.state.battlePortraitFramesBack; }
-    
     get crySound() { return this.state.crySound; }
     get deathSound() { return this.state.deathSound; }
-    
+
     get level() { return this.state.level; }
     set level(val) { this.state.level = val; }
     get xp() { return this.state.xp; }
@@ -90,14 +104,14 @@ export class EntityModel {
     set maxXp(val) { this.state.maxXp = val; }
     get skillPoints() { return this.state.skillPoints; }
     set skillPoints(val) { this.state.skillPoints = val; }
-    
+
     get attributes() { return this.state.attributes; }
     get statMultipliers() { return this.state.statMultipliers; }
     get equipment() { return this.state.equipment; }
     get statusEffects() { return this.state.statusEffects; }
     get traits() { return this.state.traits; }
     get baseStats() { return this.state.baseStats; }
-    
+
     // --- NEW: Getter for the loot table ID ---
     get lootTableId() { return this.state.lootTableId; }
 
@@ -112,7 +126,6 @@ export class EntityModel {
     get critical() { return this.calculatedStats.critChance; }
     get critMultiplier() { return this.calculatedStats.critMultiplier; }
     get corruption() { return this.calculatedStats.corruption; }
-    
     get hpRecovery() { return this.calculatedStats.hpRecovery ?? this.state.baseStats.hpRecovery; }
     get staminaRecovery() { return this.calculatedStats.staminaRecovery ?? this.state.baseStats.staminaRecovery; }
     get insightRecovery() { return this.calculatedStats.insightRecovery ?? this.state.baseStats.insightRecovery; }
@@ -141,11 +154,11 @@ export class EntityModel {
     get hp() { return this.state.stats.hp; }
     set hp(val) { this.state.stats.hp = Math.max(0, Math.min(val, this.maxHp)); }
     get maxHp() { return this.calculatedStats.maxHp; }
-    
+
     get stamina() { return this.state.stats.stamina; }
     set stamina(val) { this.state.stats.stamina = Math.max(0, Math.min(val, this.maxStamina)); }
     get maxStamina() { return this.calculatedStats.maxStamina; }
-    
+
     get insight() { return this.state.stats.insight; }
     set insight(val) { this.state.stats.insight = Math.max(0, Math.min(val, this.maxInsight)); }
     get maxInsight() { return this.calculatedStats.maxInsight; }
@@ -156,7 +169,14 @@ export class EntityModel {
 
     removeTrait(traitId) {
         const idx = this.state.traits.indexOf(traitId);
-        if (idx > -1) this.state.traits.splice(idx, 1);
+        if (idx > -1) {
+            this.state.traits.splice(idx, 1);
+            
+            // Trigger setters to cap current vitals against newly recalculated maxes
+            this.hp = this.hp;
+            this.stamina = this.stamina;
+            this.insight = this.insight;
+        }
     }
 
     // =========================================================
@@ -202,6 +222,11 @@ export class EntityModel {
 
     unequipItem(slot) {
         this.state.equipment[slot] = null;
+        
+        // Trigger setters to cap current vitals against newly recalculated maxes
+        this.hp = this.hp;
+        this.stamina = this.stamina;
+        this.insight = this.insight;
     }
 
     // =========================================================
@@ -209,8 +234,11 @@ export class EntityModel {
     // =========================================================
     applyStatusEffect(activeEffect) {
         const existingEffect = this.state.statusEffects.find(e => e.id === activeEffect.id);
-        if (existingEffect) existingEffect.charges = activeEffect.charges;
-        else this.state.statusEffects.push(activeEffect);
+        if (existingEffect) {
+            existingEffect.charges = activeEffect.charges;
+        } else {
+            this.state.statusEffects.push(activeEffect);
+        }
     }
 
     removeStatusEffect(effectId) {

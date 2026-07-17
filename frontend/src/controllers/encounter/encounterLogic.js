@@ -248,6 +248,50 @@ export class EncounterLogic {
                     break;
                 
                 }
+                case "ADD_TRAIT": {
+                    const traitTargets = payload.target === "entire_party" 
+                        ? (gameState.party?.members || []) 
+                        : [gameState.party?.members?.[0]].filter(Boolean);
+
+                    traitTargets.forEach(char => {
+                        // Check if they already have it so we don't spam the message
+                        const alreadyHasTrait = char.traits && char.traits.includes(payload.traitId);
+                        
+                        if (char.addTrait && !alreadyHasTrait) {
+                            char.addTrait(payload.traitId);
+                            
+                            // Format the ID for the UI (e.g., 'iron_willed' -> 'Iron Willed')
+                            const formattedTraitName = payload.traitId
+                                .split('_')
+                                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                .join(' ');
+                                
+                            response.messages.push(`${char.name} developed the trait: ${formattedTraitName}!`);
+                        }
+                    });
+                    break;
+                }
+                case "REMOVE_TRAIT": {
+                    const removeTargets = payload.target === "entire_party" 
+                        ? (gameState.party?.members || []) 
+                        : [gameState.party?.members?.[0]].filter(Boolean);
+
+                    removeTargets.forEach(char => {
+                        const hasTrait = char.traits && char.traits.includes(payload.traitId);
+                        
+                        if (char.removeTrait && hasTrait) {
+                            char.removeTrait(payload.traitId);
+                            
+                            const formattedTraitName = payload.traitId
+                                .split('_')
+                                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                .join(' ');
+                                
+                            response.messages.push(`${char.name} lost the trait: ${formattedTraitName}.`);
+                        }
+                    });
+                    break;
+                }
                 case "START_BATTLE":
                     let battleBgAsset = payload.background;
                     if (!battleBgAsset) {
