@@ -71,9 +71,9 @@ export const StatusEffectDefinitions = {
             { type: 'flat', target: 'resistance.fire', value: 0.5 } 
         ]
     },
-    iron_skin: {
-        id: 'iron_skin',
-        name: 'Iron Skin',
+    fortified: {
+        id: 'fortified',
+        name: 'Fortified',
         icon: { col: 0, row: 1 }, 
         defaultCharges: 3, 
         maxStacks: 3, 

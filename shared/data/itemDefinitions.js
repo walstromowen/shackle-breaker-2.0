@@ -44,8 +44,8 @@ export const ItemDefinitions = {
         description: 'A standard shortsword. Standard issue shortsword of the Altus legion. "A shorter longsword is a faster longsword" - Commander Mentoras.',
         value: 20,
         icon: { col: 1, row: 0 },
-        attack: { pierce: 3, slash: 3999 },
-        grantedAbilities: ["slash", "flurry",],
+        attack: { pierce: 3, slash: 3 },
+        grantedAbilities: ["slash", "eviscerate", "spirit_reap"],
         maxLevel: 3,
         statGrowth: {
             attack: { pierce: 2, slash: 2 }
@@ -128,6 +128,28 @@ export const ItemDefinitions = {
             3: { currency: 120, materials: { "iron_ingot": 1, "soft_wood": 5 } }
         }
     },
+    "scythe": {
+            id: "scythe",
+            name: "Scythe",
+            slot: "twoHand",
+            type: "weapon",
+            description: 'A repurposed farming tool with a wickedly curved blade. Originally forged to reap grain in the fertile valleys of Altus, it now harvests a far more grim crop. "The arc of a scythe is absolute. Do not swing at a single foe; swing to clear the field." - Commander Mentoras.',
+            value: 25,
+            icon: { col: 8, row: 0 },
+            attack: { slash: 5, pierce: 1 },
+            grantedAbilities: ["slash", "execute"],
+            maxLevel: 3,
+            statGrowth: {
+                attack: { slash: 3, pierce: 1 }
+            },
+            abilityUnlocks: {
+              
+            },
+            upgradeCosts: {
+                2: { currency: 60, materials: { "soft_wood": 4, "stone": 2 } },
+                3: { currency: 180, materials: { "iron_ingot": 3, "leather": 2 } }
+            }
+        },
      "wooden_buckler": {
         id: "wooden_buckler",
         name: "Wooden Buckler",

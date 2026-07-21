@@ -250,6 +250,194 @@ export const BattleAnimationDefinitions = {
       flash: { start: 0.4, end: 0.6, filter: 'brightness(250%) sepia(100%) hue-rotate(350deg) saturate(500%)' }
     }
   },
+  "ice_bolt": {
+  duration: 1.5,
+  audio: [
+    { start: 0.0, key: 'iceBoltCastSfx', volume: 1.0 },
+    { start: 1.0, key: 'iceBoltImpactSfx', volume: 1.0 }
+  ],
+  actor: {
+    // Caster lights up with a cyan/icy blue glow as they channel the spell
+    flash: { 
+      start: 0.0, 
+      end: 0.2, 
+      filter: 'brightness(200%) sepia(100%) hue-rotate(190deg) saturate(300%)' 
+    }
+  },
+  vfx: [
+    { 
+      // Dynamic 4-frame projectile traveling from source to target
+      start: 0.2, 
+      type: 'travel', 
+      origin: 'source', 
+      config: { 
+        life: 0.4, 
+        sheetKey: 'iceBoltAnimation', 
+        frameCount: 4, 
+        frameSize: 64, 
+        scale: 2.0, 
+        blendMode: 'screen' 
+      } 
+    }
+  ],
+  target: {
+    // Impact triggers exactly as the travel life hits the target
+    shake: { 
+      start: 0.4, 
+      end: 0.6, 
+      intensity: 28 
+    },
+    flash: { 
+      // A bright, freezing blast of cyan/blue upon impact
+      start: 0.4, 
+      end: 0.6, 
+      filter: 'brightness(250%) sepia(100%) hue-rotate(190deg) saturate(500%)' 
+    }
+  }
+},
+  "reckless_charge": {
+  duration: 1.6,
+  audio: [
+    { start: 0.0, key: 'recklessChargeSfx', volume: 0.8, pitch: 1.0 },     // Sudden burst of motion/charging speed
+  ],
+  actor: {
+    type: 'lunge',
+    start: 0.0,
+    end: 0.12,
+    distance: 160, // Massive momentum charging across the screen
+    flash: { 
+      start: 0.15, 
+      end: 0.45, 
+      filter: 'brightness(130%) sepia(100%) hue-rotate(330deg) saturate(400%)' // Flashes red to show recoil damage
+    }
+  },
+  vfx: [
+    { 
+      // Large impact blast on the target enemy
+      start: 0.12, 
+      type: 'spawn', 
+      origin: 'target', 
+      config: { 
+        life: 0.4, 
+        sheetKey: 'strikeAnimation', 
+        frameCount: 1, 
+        frameSize: 64, 
+        movement: 'expand_and_fade', 
+        scale: 2.4, 
+        blendMode: 'screen' 
+      } 
+    },
+    { 
+      // Recoil damage burst appearing directly on the user (source)
+      start: 0.15, 
+      type: 'spawn', 
+      origin: 'source', 
+      config: { 
+        life: 0.3, 
+        sheetKey: 'bleedAnimation', 
+        frameCount: 1, 
+        frameSize: 64, 
+        movement: 'static', 
+        scale: 1.1, 
+        blendMode: 'screen' 
+      } 
+    }
+  ],
+  target: {
+    shake: { start: 0.12, end: 0.55, intensity: 48 }, // Violent, high-intensity impact shake
+    flash: { start: 0.12, end: 0.32, filter: 'brightness(250%)' }
+  }
+},
+"eviscerate": {
+  duration: 1.5,
+  audio: [
+    { start: 0.1, key: 'slashSfx', volume: 1.0 },
+    { start: 0.2, key: 'eviscerateSfx', volume: 1.0 }
+  ],
+  actor: {
+    type: 'lunge', 
+    start: 0.0, 
+    end: 0.15, 
+    distance: 140 
+  },
+  vfx: [
+    {
+      start: 0.1, 
+      type: 'spawn', 
+      origin: 'target', 
+      config: { 
+        life: 0.35, 
+        sheetKey: 'eviscerateAnimation', 
+        frameCount: 1, 
+        frameSize: 64, 
+        movement: 'swipe_diagonal', 
+        scale: 2.2, 
+        blendMode: 'screen' 
+      }
+    }
+  ],
+  target: {
+    shake: { 
+      start: 0.1, 
+      end: 0.5, 
+      intensity: 38 
+    },
+    flash: { 
+      start: 0.1, 
+      end: 0.6, 
+      filter: 'brightness(160%) sepia(100%) hue-rotate(330deg) saturate(500%)' 
+    }
+  }
+},
+"spirit_reap": {
+  duration: 4,
+  audio: [
+    { start: 0.0, key: 'spiritReapSfx', volume: 1.0 } 
+  ],
+  actor: {
+    type: 'lunge', 
+    start: 0.0, 
+    end: 0.15, 
+    distance: 80, 
+    flash: { 
+      // Delayed the caster's stamina absorption flash to trigger after the long drain
+      start: 3.5, 
+      end: 4, 
+      filter: 'brightness(180%) saturate(200%) hue-rotate(120deg)' 
+    }
+  },
+  vfx: [
+    {
+      start: 0.12, 
+      type: 'spawn', 
+      origin: 'target', 
+      config: { 
+        life: 3, // Extended life to match the new duration
+        sheetKey: 'spiritReapAnimation', 
+        frameCount: 1, 
+        frameSize: 64, 
+        movement: 'expand_and_fade', // Causes the VFX to grow over its lifetime
+        scale: 2.5, // Increased max scale for a more dramatic growth
+        blendMode: 'screen' 
+      }
+    }
+  ],
+  target: {
+    shake: { 
+      // Extended the shake to last the entire 4.5 seconds the VFX is growing
+      start: 0.12, 
+      end: 4, 
+      intensity: 25 
+    },
+    flash: { 
+      // Extended the target's color drain to match the struggle
+      start: 0.12, 
+      end: 4, 
+      filter: 'brightness(130%) sepia(60%) hue-rotate(270deg) saturate(80%)' 
+    }
+  }
+},
+
   "abyssal_void": { 
     duration: 3.0, 
     audio: [{ start: 0.033, key: 'darkMagicSFX', volume: 1.0 }], 
@@ -338,6 +526,40 @@ export const BattleAnimationDefinitions = {
       shake: { start: 0.05, end: 0.2, intensity: 10 },
       // Persistent icy blue tint
       flash: { start: 0.05, end: 1.8, filter: 'brightness(140%) sepia(100%) hue-rotate(190deg) saturate(250%)' } 
+    }
+  },
+  "bolster": {
+    duration: 1.2,
+    audio: [
+      // A resonant, energetic hum or barrier activation sound
+      { start: 0.05, key: 'strikeSfx', volume: 1.0 }
+    ],
+    actor: {
+      // A quick brighten on the caster as the barrier is summoned
+      flash: { start: 0.0, end: 0.2, filter: 'brightness(180%) saturate(150%)' }
+    },
+    vfx: [
+      {
+        // A large shield bubble appearing on the player
+        start: 0.05,
+        type: 'spawn',
+        origin: 'target', // In context of a self-buff ability like Bolster, 'target' is the caster
+        config: {
+          life: 0.5, // Total duration of the visual flare
+          sheetKey: 'shieldActivationAnimation', // A bubble or shield-shaped sprite
+          frameCount: 1,
+          frameSize: 64,
+          movement: 'expand_and_fade', // Key request: starts at caster, grows rapidly, then fades
+          scale: 2.2, // Large enough to visibly encompass the combatant sprite
+          blendMode: 'screen' // Bright, glowing blue/white energy
+        }
+      }
+    ],
+    target: {
+      // A quick 'snapping' shake on activation to provide physical feedback
+      shake: { start: 0.05, end: 0.2, intensity: 15 },
+      // Apply a cool blue/cyan defensive tint that persists longer than the flash
+      flash: { start: 0.05, end: 1.0, filter: 'brightness(130%) sepia(100%) hue-rotate(190deg) saturate(300%)' }
     }
   }
 };

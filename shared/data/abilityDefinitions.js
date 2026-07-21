@@ -148,16 +148,16 @@ export const AbilityDefinitions = {
         id: "bolster",
         name: "Bolster",
         description: "Hardens your defenses to increase resistance against physical attacks. Can be stacked up to 3 times.",
-        battleMessage: "{user} uses {ability} to harden their defenses!",
+        battleMessage: "{user} bolsters their physical defenses!",
         icon: { col: 2, row: 2 }, 
         targeting: { scope: "self", select: "single" },
         cost: { stamina: 15 },
         speedModifier: 1.2, 
         accuracy: 1.0, 
-        animationId: "strike", 
+        animationId: "bolster", 
         effects: [], 
         statusEffects: [
-            { id: "iron_skin", chance: 1.0 } 
+            { id: "fortified", chance: 1.0 } 
         ]
     },
     // =========================================================================
@@ -248,7 +248,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 15 },
         accuracy: 0.80, 
-        animationId: "melee_lunge",
+        animationId: "reckless_charge",
         effects: [
             { 
                 type: "damage", 
@@ -406,7 +406,7 @@ export const AbilityDefinitions = {
             description: "Hurls a jagged shard of ice. Deals damage and has a chance to freeze the target.",
             battleMessage: "{user} launches a freezing {ability} at {target}!",
             icon: { col: 2, row: 9 }, // Adjust col/row to match wherever your ice icon is on your spritesheet
-            animationId: "magic_missile", // Or "ice_bolt_cast" if you have a specific animation for it
+            animationId: "ice_bolt", // Or "ice_bolt_cast" if you have a specific animation for it
             targeting: { scope: "enemy", select: "single" },
             cost: { insight: 12 }, 
             speedModifier: 0.95, 
@@ -476,6 +476,23 @@ export const AbilityDefinitions = {
     // 5. RESOURCE MANIPULATION
     // =========================================================================
 
+    "spirit_reap": {
+        id: "spirit_reap",
+        name: "Spirit Reap",
+        description: "A spectral reaping strike that tears at both physical flesh and psychic energy. Deals dark damage to health and siphons the target's stamina to replenish your own.",
+        battleMessage: "{user} drives a ghostly blade through {target} with {ability}!",
+        icon: { col: 3, row: 11 }, // Seamlessly fills the empty column index in your resource row
+        targeting: { scope: "enemy", select: "single" },
+        cost: { insight: 20 }, // 
+        animationId: "spirit_reap", // Ensure you have a unique animation for this ability
+        effects: [
+            // Effect 1: Deals physical/magical dark damage to target's core Health pools
+            { type: "damage", damageType: "dark", power: 1.0 },
+            // Effect 2: Directly targets the opponent's Stamina pool and returns 100% of it to the caster
+            { type: "damage", resource: "stamina", power: 0.6, drain: 1.0 }
+        ]
+    },
+    
     "drain_life": {
         id: "drain_life",
         name: "Drain Life",
@@ -814,7 +831,7 @@ export const AbilityDefinitions = {
     name: "Eviscerate",
     description: "A devastating strike that deals critical damage to bleeding targets.",
     battleMessage: "{user} moves to {ability} {target} mercilessly!",
-    icon: { col: 0, row: 0 },
+    icon: { col: 1, row: 2 },
     speedModifier: 1.0,
     targeting: { scope: "enemy", select: "single" },
     cost: { stamina: 25 },

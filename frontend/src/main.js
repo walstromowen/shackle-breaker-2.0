@@ -41,6 +41,7 @@ const ASSET_MANIFEST = {
   sandStalkerPortrait: './assets/sprites/sand_stalker/sand_stalker_portrait.png', 
   grimStagPortrait: './assets/sprites/grim_stag/grim_stag_portrait.png', 
   poachersNightmarePortrait: './assets/sprites/poachers_nightmare/poachers_nightmare_portrait.png', 
+  hollowHarvesterPortrait: './assets/sprites/hollow_harvester/hollow_harvester_portrait.png',
   // UI / Icon Atlases
   weapons: './assets/icons/weapons.png', 
   armor: './assets/icons/armor.png', 
@@ -73,7 +74,7 @@ const ASSET_MANIFEST = {
   strikeAnimation: './assets/abilityAnimations/strike.png',
   uppercutAnimation: './assets/abilityAnimations/uppercut.png',
   vineLashAnimation: './assets/abilityAnimations/vine_lash.png',
-
+spiritReapAnimation: './assets/abilityAnimations/spirit_reap.png',
   
   // Backgrounds
   arcaneVortexBg: './assets/backgrounds/arcane_vortex_bg.png', 
@@ -110,7 +111,8 @@ const ASSET_MANIFEST = {
   slashSfx: './assets/audio/sfx/abilities/slash.wav',
   stabSfx: './assets/audio/sfx/abilities/stab.wav',
   strikeSfx: './assets/audio/sfx/abilities/strike.wav',
-
+  eviscerateSfx: './assets/audio/sfx/abilities/eviscerate.wav',
+spiritReapSfx: './assets/audio/sfx/abilities/spirit_reap.wav',
 
   //BATTLE STATUS AND WEATHER SFX
   poisonSfx: './assets/audio/sfx/statusEffects/poison.wav',
@@ -144,7 +146,7 @@ const ASSET_MANIFEST = {
   unsheathSwordSfx: './assets/audio/sfx/unsheath_sword.wav', 
   grimStagCry: './assets/audio/sfx/cries/grim_stag_cry.wav',
 poachersNightmareCry: './assets/audio/sfx/cries/poachers_nightmare_cry.wav',
-  
+  hollowHarvesterCry: './assets/audio/sfx/cries/hollow_harvester_cry.wav',
   
   // --- UI SFX --- 
   diceTick: './assets/audio/sfx/ui/dice_tick.wav', 

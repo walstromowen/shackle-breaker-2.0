@@ -41,6 +41,7 @@ export const LootTableDefinitions = {
             { id: "warhammer", weight: 10, min: 1, max: 1 },
             { id: "spear", weight: 15, min: 1, max: 1 },
             { id: "wooden_buckler", weight: 20, min: 1, max: 1 },
+            { id: "scythe", weight: 15, min: 1, max: 1 },
 
             // --- INSIGHT WEAPONS (Rare Drop Rate) ---
             { id: "insight_of_fire", weight: 5, min: 1, max: 1 },
@@ -89,16 +90,27 @@ export const LootTableDefinitions = {
     "mad_man_drops": {
         type: "independent",
         items: [
-            { id: "healing_herb", dropRate: 0.15, min: 1, max: 2 },
+            { id: "healing_herb", dropRate: 0.1, min: 1, max: 2 },
             { id: "dagger", dropRate: 0.10 }
         ]
     },
     "mad_mage_drops": {
         type: "independent",
         items: [
-            { id: "healing_herb", dropRate: 0.25 },
+            { id: "healing_herb", dropRate: 0.1 },
             { id: "dagger", dropRate: 0.05 },
             { id: "insight_of_arcane", dropRate: 0.15 }
+        ]
+    },
+    "hollow_harvester_drops": {
+        type: "independent",
+        items: [
+            { id: "scythe", dropRate: 0.02 },
+            { id: "tattered_hood", dropRate: 0.02 },
+            { id: "tattered_shirt", dropRate: 0.02 },
+            { id: "tattered_gloves", dropRate: 0.02 },
+            { id: "tattered_pants", dropRate: 0.02 },
+            { id: "tattered_boots", dropRate: 0.02 }
         ]
     },
     "canine_drops": {

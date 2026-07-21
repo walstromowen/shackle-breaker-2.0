@@ -205,6 +205,52 @@ export const ENTITY_DEFINITIONS = {
         abilities: [...HUMANOID_TEMPLATE.abilities],
         tags: [...HUMANOID_TEMPLATE.tags, "SOLDIER"]
     },
+    "HOLLOW_HARVESTER": {
+        ...HUMANOID_TEMPLATE,
+        name: "Hollow Harvester",
+        level: 1,
+        spriteOverworld: "hollowHarvesterSprite",
+        spritePortrait: "hollowHarvesterPortrait",
+        battlePortraitFramesFront: 31,
+        battlePortraitFramesBack: 31,
+        crySound: "hollowHarvesterCry",
+        deathSound: "hollowHarvesterCry",
+        attributes: {
+            vigor: 12,
+            strength: 8,
+            dexterity: 14,
+            intelligence: 14,
+            attunement: 10
+        },
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 32,
+            maxStamina: 15,
+            maxInsight: 15,
+            speed: 6,
+            baseDefense: {
+                ...HUMANOID_TEMPLATE.baseStats.baseDefense,
+                slash: 4,
+                dark: 6,
+                arcane: 4,
+                light: -3 // Weak against holy/light magic
+            },
+            baseAttack: { 
+                blunt: 0, 
+                slash: 7, 
+                arcane: 5 // Magic / Slashing hybrid breakdown
+            }
+        },
+        equipment: {
+            ...HUMANOID_TEMPLATE.equipment,
+            mainHand: "scythe"
+        },
+        currencyReward: { min: 6, max: 14 },
+        lootTableId: "hollow_harvester_drops",
+        abilities: [...HUMANOID_TEMPLATE.abilities, "spirit_reap"],
+        // Replaced BIOLOGICAL with MAGICAL and UNDEAD to reflect its ethereal nature
+        tags: ["HUMANOID", "MAGICAL", "UNDEAD"] 
+    },
 
     "SAND_STALKER": {
         ...HUMANOID_TEMPLATE,
@@ -315,38 +361,52 @@ export const ENTITY_DEFINITIONS = {
         tags: ["BIOLOGICAL", "AVIAN"]
     },
 
-    "GRIM_STAG": {
-        ...BEAST_TEMPLATE,
-        name: "Grim Stag",
-        level: 1,
-        spriteOverworld: "grimStagSprite",
-        spritePortrait: "grimStagPortrait",
-        battlePortraitFramesFront: 31,
-        battlePortraitFramesBack: 31,
-        crySound: "grimStagCry",
-        deathSound: "grimStagCry",
-        attributes: {
-            ...BEAST_TEMPLATE.attributes,
-            vigor: 22, strength: 18, dexterity: 16, intelligence: 10, attunement: 8
-        },
-        baseStats: {
-            ...BEAST_TEMPLATE.baseStats,
-            maxHp: 150, maxStamina: 35, maxInsight: 15, speed: 12, critical: 0.15,
-            baseDefense: {
-                ...BEAST_TEMPLATE.baseStats.baseDefense,
-                blunt: 12, slash: 8, pierce: 6, earth: 15, dark: 10
-            },
-            baseResistance: {
-                ...BEAST_TEMPLATE.baseStats.baseResistance,
-                earth: 0.5, dark: 0.3, wind: -0.25 
-            },
-            baseAttack: { blunt: 10, slash: 12, pierce: 14, earth: 12 }
-        },
-        currencyReward: { min: 75, max: 200 },
-        lootTableId: "grim_stag_drops",
-        abilities: [...BEAST_TEMPLATE.abilities, "earthquake", "eviscerate"],
-        tags: [...BEAST_TEMPLATE.tags, "MINIBOSS", "ELITE"]
-    },
+    "GRIM_STAG": { 
+  ...BEAST_TEMPLATE, 
+  name: "Grim Stag", 
+  level: 1, 
+  spriteOverworld: "grimStagSprite", 
+  spritePortrait: "grimStagPortrait", 
+  battlePortraitFramesFront: 31, 
+  battlePortraitFramesBack: 31, 
+  crySound: "grimStagCry", 
+  deathSound: "grimStagCry", 
+  attributes: { 
+    ...BEAST_TEMPLATE.attributes, 
+    vigor: 14,       // Down from 22 (Reduces massive HP scaling)
+    strength: 13,    // Down from 18 (Still hard-hitting for a common enemy)
+    dexterity: 11,   // Down from 16
+    intelligence: 5, // Down from 10
+    attunement: 4    // Down from 8 
+  }, 
+  baseStats: { 
+    ...BEAST_TEMPLATE.baseStats, 
+    maxHp: 90,       // Down from 150 (Tougher than a Madman, but not a slog)
+    maxStamina: 25,  // Down from 35
+    maxInsight: 10,  
+    speed: 11,       // Down from 12
+    critical: 0.08,  // Down from 0.15 (0.15 is incredibly high for a common foe)
+    baseDefense: { 
+      ...BEAST_TEMPLATE.baseStats.baseDefense, 
+      blunt: 6,      // Toned down across the board so players can actually dent it
+      slash: 4, 
+      pierce: 3, 
+      earth: 6, 
+      dark: 2 
+    }, 
+    baseResistance: { 
+      ...BEAST_TEMPLATE.baseStats.baseResistance, 
+      earth: 0.25,   // Softened elemental immunities
+      dark: 0.1, 
+      wind: -0.15 
+    }, 
+    baseAttack: { blunt: 7, slash: 2, pierce: 9, earth: 0 } // Adjusted to favor antler thrusts (pierce) over magic
+  }, 
+  currencyReward: { min: 24, max: 48 }, // Normalized down from the 75-200 miniboss payout
+  lootTableId: "grim_stag_drops", 
+  abilities: [...BEAST_TEMPLATE.abilities, "strike", "reckless_charge"], // Replaced Earthquake/Eviscerate with realistic beast mechanics
+  tags: [...BEAST_TEMPLATE.tags] // Stripped "MINIBOSS" and "ELITE" tags so it spawns in normal pools
+},
 
     // =========================================================================
     // BOSS LINEAGE
