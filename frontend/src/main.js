@@ -33,7 +33,7 @@ const ASSET_MANIFEST = {
   madmanPortrait: './assets/sprites/madman/madman_portrait.png', 
   arcKnightPortrait: './assets/sprites/arc_knight/arc_knight_portrait.png', 
   madMagePortrait: './assets/sprites/mad_mage/mad_mage_portrait.png', 
-  rottingManPortrait: './assets/sprites/rotting_man/rotting_man_portrait.png', 
+  rotterPortrait: './assets/sprites/rotter/rotter_portrait.png', 
   germanSheepherdSprite: './assets/sprites/dogs/german_sheepherd_sprite.png', 
   germanSheepherdPortrait: './assets/sprites/dogs/german_sheepherd_portrait.png', 
   hawkPortrait: './assets/sprites/hawk/hawk_portrait.png', 
@@ -75,6 +75,7 @@ const ASSET_MANIFEST = {
   uppercutAnimation: './assets/abilityAnimations/uppercut.png',
   vineLashAnimation: './assets/abilityAnimations/vine_lash.png',
 spiritReapAnimation: './assets/abilityAnimations/spirit_reap.png',
+iceBoltAnimation: './assets/abilityAnimations/ice_bolt.png',
   
   // Backgrounds
   arcaneVortexBg: './assets/backgrounds/arcane_vortex_bg.png', 
@@ -113,9 +114,13 @@ spiritReapAnimation: './assets/abilityAnimations/spirit_reap.png',
   strikeSfx: './assets/audio/sfx/abilities/strike.wav',
   eviscerateSfx: './assets/audio/sfx/abilities/eviscerate.wav',
 spiritReapSfx: './assets/audio/sfx/abilities/spirit_reap.wav',
-
+iceBoltCastSfx: './assets/audio/sfx/abilities/ice_bolt/ice_bolt_cast.wav',  
+iceBoltImpactSfx: './assets/audio/sfx/abilities/ice_bolt/ice_bolt_impact.wav',
+clawSfx: './assets/audio/sfx/abilities/claw.wav',
+vineLashSfx: './assets/audio/sfx/abilities/vine_lash.wav',
   //BATTLE STATUS AND WEATHER SFX
   poisonSfx: './assets/audio/sfx/statusEffects/poison.wav',
+  paralyzedSfx: './assets/audio/sfx/statusEffects/paralyzed.wav',
    // bleedSfx: './assets/audio/sfx/statusEffects/bleed.wav',
     //frozenSfx: './assets/audio/sfx/statusEffects/frozen.wav',
    // burnSfx: './assets/audio/sfx/statusEffects/burn.wav',
@@ -147,6 +152,7 @@ spiritReapSfx: './assets/audio/sfx/abilities/spirit_reap.wav',
   grimStagCry: './assets/audio/sfx/cries/grim_stag_cry.wav',
 poachersNightmareCry: './assets/audio/sfx/cries/poachers_nightmare_cry.wav',
   hollowHarvesterCry: './assets/audio/sfx/cries/hollow_harvester_cry.wav',
+  rotterCry: './assets/audio/sfx/cries/rotter_cry.wav',
   
   // --- UI SFX --- 
   diceTick: './assets/audio/sfx/ui/dice_tick.wav', 

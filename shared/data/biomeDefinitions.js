@@ -53,7 +53,7 @@ export const BIOME_DEFINITIONS = {
       rate: 1.02, 
       pools: { 
         easy: [ 
-          { chance: 0.25, enemies: ['ROTTING_MAN', 'MAD_MAN', 'ROTTING_MAN'] }, 
+          { chance: 0.25, enemies: ['ROTTER', 'MAD_MAN', 'ROTTER'] }, 
           { chance: 0.25, enemies: ['SHACKLED_STEED', 'MAD_MAN'] } , 
           { chance: 0.50, enemies: ['WOLF', 'WOLF'] } 
         ], 
@@ -61,7 +61,7 @@ export const BIOME_DEFINITIONS = {
           // Mixed Harvester with Mad Man & Mad Mage
           { chance: 0.15, enemies: ['MAD_MAN', 'HOLLOW_HARVESTER', 'MAD_MAGE'] }, 
           { chance: 0.15, enemies: ['SHACKLED_STEED', 'MAD_MAN'] }, 
-          { chance: 0.15, enemies: ['ROTTING_MAN', 'MAD_MAN', 'ROTTING_MAN'] }, 
+          { chance: 0.15, enemies: ['ROTTER', 'MAD_MAN', 'ROTTER'] }, 
           { chance: 0.15, enemies: ['WOLF', 'WOLF'] }, 
           { chance: 0.15, enemies: [ 
               { id: 'LEGIONARY', levelOffset: 5, traits: ['iron_willed'], equipment: { mainHand: 'warhammer' } }, 

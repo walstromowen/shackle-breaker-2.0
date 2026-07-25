@@ -174,7 +174,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 5 },
         accuracy: 0.8, 
-        animationId: "stab",
+        animationId: "quick_stab",
         effects: [
             { type: "damage", damageType: "pierce", power: 0.75 }
         ]
@@ -185,12 +185,12 @@ export const AbilityDefinitions = {
         name: "Uppercut",
         description: "A heavy strike that can knock opponents down.",
         battleMessage: "{user} delivers a brutal {ability} to {target}!",
-        icon: { col: 1, row: 1 },
+        icon: { col: 4, row: 0 },
         speedModifier: 1.0, 
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 20 },
         accuracy: 0.85, 
-        animationId: "melee_lunge",
+        animationId: "uppercut",
         effects: [
             { type: "damage", damageType: "slash", power: 1.25 }
         ],
@@ -208,7 +208,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 10 },
         accuracy: 0.90,
-        animationId: "melee_lunge",
+        animationId: "shield_bash",
         effects: [
             { 
                 type: "damage", 
@@ -224,17 +224,17 @@ export const AbilityDefinitions = {
         name: "Execute",
         description: "Deals massive damage to enemies below 30% HP.",
         battleMessage: "{user} attempts to {ability} {target}!",
-        icon: { col: 3, row: 1 },
+        icon: { col: 3, row: 0 },
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 20 },
         accuracy: 0.95, 
-        animationId: "melee_lunge",
+        animationId: "execute",
         effects: [
             { 
                 type: "damage", 
                 damageType: "slash", 
                 power: 1.0, 
-                condition: { target_hp_below: 0.30, multiplier: 2.5 }
+                condition: { target_hp_below: 0.30, multiplier: 3 }
             }
         ]
     },
@@ -264,11 +264,11 @@ export const AbilityDefinitions = {
         name: "Wild Swing",
         description: "Swing blindly, hitting a random enemy.",
         battleMessage: "{user} unleashes a {ability}!",
-        icon: { col: 2, row: 1 },
+        icon: { col: 1, row: 1 },
         targeting: { scope: "random_enemy", select: "random", count: 1 },
         cost: { stamina: 5 },
         accuracy: 0.70, 
-        animationId: "melee_lunge",
+        animationId: "wild_swing",
         effects: [
             { type: "damage", damageType: "blunt", power: 1.5 }
         ]
@@ -405,7 +405,7 @@ export const AbilityDefinitions = {
             name: "Ice Bolt",
             description: "Hurls a jagged shard of ice. Deals damage and has a chance to freeze the target.",
             battleMessage: "{user} launches a freezing {ability} at {target}!",
-            icon: { col: 2, row: 9 }, // Adjust col/row to match wherever your ice icon is on your spritesheet
+            icon: { col: 0, row: 4 }, // Adjust col/row to match wherever your ice icon is on your spritesheet
             animationId: "ice_bolt", // Or "ice_bolt_cast" if you have a specific animation for it
             targeting: { scope: "enemy", select: "single" },
             cost: { insight: 12 }, 
@@ -414,7 +414,7 @@ export const AbilityDefinitions = {
             effects: [
                 { 
                     type: "damage", 
-                    damageType: "ice", // Make sure your damage/resistance calculators support "ice"
+                    damageType: "ice",
                     power: 1.5 
                 }
             ],
@@ -422,6 +422,7 @@ export const AbilityDefinitions = {
                 { id: "frozen", chance: 0.25, duration: 2 } 
             ]
         },
+       
     "gravity": {
         id: "gravity",
         name: "Gravity",
@@ -479,8 +480,8 @@ export const AbilityDefinitions = {
     "spirit_reap": {
         id: "spirit_reap",
         name: "Spirit Reap",
-        description: "A spectral reaping strike that tears at both physical flesh and psychic energy. Deals dark damage to health and siphons the target's stamina to replenish your own.",
-        battleMessage: "{user} drives a ghostly blade through {target} with {ability}!",
+        description: "A spectral reaping that graps at physical flesh and psychic energy. Deals dark damage to health and siphons the target's stamina to replenish your own.",
+        battleMessage: "{user} reaps {target}'s spirit!",
         icon: { col: 3, row: 11 }, // Seamlessly fills the empty column index in your resource row
         targeting: { scope: "enemy", select: "single" },
         cost: { insight: 20 }, // 
@@ -812,7 +813,7 @@ export const AbilityDefinitions = {
     name: "Claw",
     description: "Rake the target with sharp claws. May cause bleeding.",
     battleMessage: "{user} slashes at {target} with a vicious {ability}!",
-    icon: { col: 1, row: 12 },
+    icon: { col: 5, row: 0 },
     speedModifier: 1.1,
     targeting: { scope: "enemy", select: "single" },
     cost: { stamina: 8 },
@@ -863,30 +864,30 @@ export const AbilityDefinitions = {
   },
 
   "shock": {
-    id: "shock",
-    name: "Shock",
-    description: "Channel a jolt of lightning to zap the enemy. May paralyze.",
-    battleMessage: "{user} casts {ability}, electrocuting {target}!",
-    icon: { col: 1, row: 9 },
-    speedModifier: 1.3,
-    targeting: { scope: "enemy", select: "single" },
-    cost: { insight: 12 },
-    accuracy: 1.0,
-    animationId: "shock",
-    effects: [
-      { type: "damage", damageType: "lightning", power: 1.2 }
-    ],
-    statusEffects: [
-      { id: "paralyzed", chance: 0.2, duration: 2 }
-    ]
-  },
+            id: "shock",
+            name: "Shock",
+            description: "Shoot a a chain of electricity from one's hand. Has a chance to paralyze the target.",
+            battleMessage: "{user} shocks {target}!",
+            icon: { col: 0, row: 5 }, // Placed next to Shock in your spritesheet layout
+            speedModifier: 1.0,
+            targeting: { scope: "enemy", select: "single" },
+            cost: { insight: 18 },
+            accuracy: 0.95,
+            animationId: "shock", // Make sure this matches an animation in your engine
+            effects: [
+                { type: "damage", damageType: "lightning", power: 1.8 }
+            ],
+            statusEffects: [
+                { id: "paralyzed", chance: 0.10, duration: 2 }
+            ]
+        },
 
   "vine_lash": {
     id: "vine_lash",
     name: "Vine Lash",
     description: "Whip the target with thorny vines. Can restrict movement.",
     battleMessage: "{user} strikes {target} with a {ability}!",
-    icon: { col: 2, row: 6 },
+    icon: { col: 3, row: 6 },
     speedModifier: 1.0,
     targeting: { scope: "enemy", select: "single" },
     cost: { insight: 8, stamina: 5 },

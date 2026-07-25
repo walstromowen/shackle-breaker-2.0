@@ -170,15 +170,15 @@ export const ENTITY_DEFINITIONS = {
         tags: [...HUMANOID_TEMPLATE.tags]
     },
 
-    "ROTTING_MAN": {
+    "ROTTER": {
         ...HUMANOID_TEMPLATE,
-        name: "Rotting Man",
+        name: "Rotter",
         level: 1,
-        spritePortrait: "rottingManPortrait",
+        spritePortrait: "rotterPortrait",
         battlePortraitFramesFront: 29,
         battlePortraitFramesBack: 32,
-        crySound: "madmanCry",
-        deathSound: "madmanCry",
+        crySound: "rotterCry",
+        deathSound: "rotterCry",
         attributes: { ...HUMANOID_TEMPLATE.attributes, vigor: 11, strength: 11, dexterity: 8 },
         traits: ['acidic'],
         baseStats: { ...HUMANOID_TEMPLATE.baseStats, maxHp: 30, maxStamina: 10, speed: 5 },

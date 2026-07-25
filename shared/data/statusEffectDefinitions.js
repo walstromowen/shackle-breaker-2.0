@@ -32,7 +32,7 @@ export const StatusEffectDefinitions = {
         name: 'Frozen',
          animationId: "frozen",
         icon: { col: 2, row: 0 },
-        defaultCharges: 1,
+        defaultCharges: 3,
         maxStacks: 1,
         effects: [
             { trigger: 'ON_TURN_START', flag: 'skipAction', battleMessage: "{target} is frozen solid and cannot move!" } 
@@ -134,7 +134,7 @@ export const StatusEffectDefinitions = {
         id: 'paralyzed',
         name: 'Paralyzed',
         animationId: "paralyzed",
-        icon: { col: 8, row: 0 },
+        icon: { col: 6, row: 0 },
         defaultCharges: 2,
         maxStacks: 1,
         effects: [
