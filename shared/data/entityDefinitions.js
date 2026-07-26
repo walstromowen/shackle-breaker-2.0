@@ -133,7 +133,7 @@ export const ENTITY_DEFINITIONS = {
         },
         currencyReward: { min: 2, max: 8 },
         lootTableId: "mad_man_drops", 
-        abilities: [...HUMANOID_TEMPLATE.abilities, "bite", "punch"],
+        abilities: [...HUMANOID_TEMPLATE.abilities, "bite", "claw"],
         tags: [...HUMANOID_TEMPLATE.tags],
         traitRewards: [
             { id: "tough", chance: 0.5, condition: "kill" },
@@ -184,7 +184,7 @@ export const ENTITY_DEFINITIONS = {
         baseStats: { ...HUMANOID_TEMPLATE.baseStats, maxHp: 30, maxStamina: 10, speed: 5 },
         currencyReward: { min: 2, max: 8 },
         lootTableId: "mad_man_drops", 
-        abilities: [...HUMANOID_TEMPLATE.abilities],
+        abilities: [...HUMANOID_TEMPLATE.abilities, "claw", "bite"],
         tags: [...HUMANOID_TEMPLATE.tags]
     },
 
@@ -298,7 +298,7 @@ export const ENTITY_DEFINITIONS = {
 
     "WOLF": {
         ...BEAST_TEMPLATE,
-        name: "Grey Wolf",
+        name: "Wolf",
         level: 1,
         spriteOverworld: "legionarySprite",
         spritePortrait: "wolfPortrait",
@@ -338,7 +338,7 @@ export const ENTITY_DEFINITIONS = {
             baseAttack: { blunt: 8, slash: 2, pierce: 2 }
         },
         lootTableId: "mad_man_drops",
-        abilities: [...BEAST_TEMPLATE.abilities, "strike"],
+        abilities: [...BEAST_TEMPLATE.abilities, "strike", "reckless_charge"],
         tags: [...BEAST_TEMPLATE.tags]
     },
 
@@ -404,7 +404,7 @@ export const ENTITY_DEFINITIONS = {
   }, 
   currencyReward: { min: 24, max: 48 }, // Normalized down from the 75-200 miniboss payout
   lootTableId: "grim_stag_drops", 
-  abilities: [...BEAST_TEMPLATE.abilities, "strike", "reckless_charge"], // Replaced Earthquake/Eviscerate with realistic beast mechanics
+  abilities: [...BEAST_TEMPLATE.abilities, "claw", "reckless_charge", "eviscerate"], // Replaced Earthquake/Eviscerate with realistic beast mechanics
   tags: [...BEAST_TEMPLATE.tags] // Stripped "MINIBOSS" and "ELITE" tags so it spawns in normal pools
 },
 
@@ -460,7 +460,7 @@ export const ENTITY_DEFINITIONS = {
         },
         currencyReward: { min: 350, max: 800 },
         lootTableId: "boss_poachers_nightmare_drops",
-        abilities: [...BEAST_TEMPLATE.abilities, "eviscerate", "earthquake", "strike"], // Add deadly boss moves here
+        abilities: [...BEAST_TEMPLATE.abilities, "eviscerate", "earthquake", "claw", "vine_lash"], // Add deadly boss moves here
         tags: [...BEAST_TEMPLATE.tags, "BOSS", "ELITE"]
     }
 };

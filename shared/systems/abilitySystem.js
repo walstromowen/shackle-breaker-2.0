@@ -197,7 +197,17 @@ export class AbilitySystem {
                 }
             }
 
-            // 5. Trigger Status Effect Reactions
+            // 5. Handle Recoil Mechanics
+        if (effect.recoil && effect.recoil > 0) {
+            // Calculate recoil based on the damage dealt (minimum of 1 damage if it hits)
+            const recoilAmount = Math.max(1, Math.floor(calc.damage * effect.recoil));
+            const recoilResource = effect.recoilResource || 'hp'; // Default to HP damage
+            
+            source.modifyResource(recoilResource, -recoilAmount);
+            calc.message += ` ${source.name} took ${recoilAmount} recoil damage!`;
+        }
+
+            // 6. Trigger Status Effect Reactions
             if (target.statusEffects && Array.isArray(target.statusEffects)) {
                 for (let i = target.statusEffects.length - 1; i >= 0; i--) {
                     const status = target.statusEffects[i];
