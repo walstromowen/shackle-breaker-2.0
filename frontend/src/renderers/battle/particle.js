@@ -72,7 +72,7 @@ export class Particle {
         }
 
         // Standard fade out in the last 50% of life
-        const customAlphas = ['expand_and_fade', 'float_up_and_pop', 'swipe_diagonal'];
+       const customAlphas = ['expand_and_fade', 'float_up_and_pop', 'swipe_diagonal', 'swipe_diagonal_alt', 'shrink_and_fade'];
         if (this.fadeOut && !customAlphas.includes(this.movement)) {
             if (progress > 0.5) {
                 const fadeProgress = (progress - 0.5) / 0.5;
@@ -126,11 +126,26 @@ export class Particle {
                 break;
 
             case 'swipe_diagonal':
-                // Scaled swipe distance and centering offsets
-                this.x = this.startX + (progress * 144) - 72; 
-                this.y = this.startY + (progress * 144) - 72; 
-                this.alpha = this.baseAlpha * Math.sin(progress * Math.PI); 
-                break;
+    // Scaled swipe distance and centering offsets (Top-Left to Bottom-Right)
+    this.x = this.startX + (progress * 144) - 72;
+    this.y = this.startY + (progress * 144) - 72;
+    this.alpha = this.baseAlpha * Math.sin(progress * Math.PI);
+    break;
+    
+case 'swipe_diagonal_alt':
+    // Scaled swipe distance and centering offsets (Top-Right to Bottom-Left)
+    this.x = this.startX - (progress * 144) + 72;
+    this.y = this.startY + (progress * 144) - 72;
+    this.alpha = this.baseAlpha * Math.sin(progress * Math.PI);
+    break;
+
+    case 'shrink_and_fade':
+    this.x = this.startX;
+    this.y = this.startY;
+    // Shrinks from its initial scale down to 0
+    this.scale = (this.config.scale || 1.0) * (1.0 - progress);
+    this.alpha = this.baseAlpha * (1.0 - progress);
+    break;
                 
             default:
                 this.x = this.startX;

@@ -212,7 +212,8 @@ export class AbilitySystem {
                 }
             }
         } else {
-            const template = def.missMessage || "{user}'s attack missed!";
+            // Added {target} to the fallback string to clarify AoE misses
+            const template = def.missMessage || "{user}'s ability missed {target}!";
             calc.message = this._parseMessage(template, source, target, def);
         }
 

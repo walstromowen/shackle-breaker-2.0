@@ -53,7 +53,7 @@ export const MAP_OBJECTS_DEFINITIONS = {
     // --- ANIMATED ---
     CAMPFIRE: { spriteX: 0, spriteY: 6, frames: 4, speed: 0.2, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'bonfire' }, light: { hasLight: true, radius: 5.5, color: '255, 100, 0', maxAlpha: 0.8, flickerSpeed: 0.1, flickerAmp: 0.5 } },
     HOUSE_DOOR_WOODEN: {
-    spriteX: 0, spriteY: 12, width: 1, height: 1, frames: 4, speed: 0.15,
+    spriteX: 6, spriteY: 10, width: 1, height: 1, frames: 4, speed: 0.15,
     isSolid: false, isGround: false, isAnchor: true,
     hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },
     interaction: { 
@@ -64,8 +64,8 @@ export const MAP_OBJECTS_DEFINITIONS = {
     }
 },
     HOUSE_EXIT_DOOR: {
-    spriteX: 0, 
-    spriteY: 0, // Match your wood door graphic frames
+    spriteX: 6, 
+    spriteY: 10, // Match your wood door graphic frames
     width: 1, 
     height: 1, 
     frames: 4, 

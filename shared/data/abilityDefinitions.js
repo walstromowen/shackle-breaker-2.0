@@ -149,7 +149,7 @@ export const AbilityDefinitions = {
         name: "Bolster",
         description: "Hardens your defenses to increase resistance against physical attacks. Can be stacked up to 3 times.",
         battleMessage: "{user} bolsters their physical defenses!",
-        icon: { col: 2, row: 2 }, 
+        icon: { col: 3, row: 1 }, 
         targeting: { scope: "self", select: "single" },
         cost: { stamina: 15 },
         speedModifier: 1.2, 
@@ -244,7 +244,7 @@ export const AbilityDefinitions = {
         name: "Reckless Charge",
         description: "A massive slam that hurts the user due to impact.",
         battleMessage: "{user} launches into a {ability} at {target}!",
-        icon: { col: 4, row: 1 },
+        icon: { col: 2, row: 1 },
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 15 },
         accuracy: 0.80, 
@@ -266,11 +266,11 @@ export const AbilityDefinitions = {
         battleMessage: "{user} unleashes a {ability}!",
         icon: { col: 1, row: 1 },
         targeting: { scope: "random_enemy", select: "random", count: 1 },
-        cost: { stamina: 5 },
+        cost: { stamina: 15 },
         accuracy: 0.70, 
         animationId: "wild_swing",
         effects: [
-            { type: "damage", damageType: "blunt", power: 1.5 }
+            { type: "damage", damageType: "blunt", power: 2 }
         ]
     },
 
@@ -321,7 +321,7 @@ export const AbilityDefinitions = {
         description: "Strike a target and one adjacent enemy.",
         battleMessage: "{user} swings wide to {ability} the enemies!",
         icon: { col: 1, row: 0 },
-        animationId: "melee_lunge",
+        animationId: "cleave",
         targeting: { scope: "all_enemies", select: "auto" }, 
         cost: { stamina: 15 },
         accuracy: 0.85,
@@ -336,7 +336,7 @@ export const AbilityDefinitions = {
         description: "Slash a target with a series of quick strikes.",
         battleMessage: "{user} unleashes a {ability} of strikes on {target}!",
         icon: { col: 2, row: 0 },
-        animationId: "melee_lunge",
+        animationId: "flurry",
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 25 },
         accuracy: 0.75, 
@@ -420,6 +420,24 @@ export const AbilityDefinitions = {
             ],
             statusEffects: [
                 { id: "frozen", chance: 0.25, duration: 2 } 
+            ]
+        },
+        "water_blast": {
+            id: "water_blast",
+            name: "Water Blast",
+            description: "Unleash a high-pressure torrent of water. Has a 50% chance to leave the target soaked.",
+            battleMessage: "{user} unleashes a {ability} at {target}!",
+            icon: { col: 0, row: 8 }, // Adjust col/row to match wherever your water icon is located
+            animationId: "water_blast",
+            targeting: { scope: "enemy", select: "single" },
+            cost: { insight: 12 },
+            speedModifier: 0.95,
+            accuracy: 0.95,
+            effects: [
+                { type: "damage", damageType: "water", power: 1.5 }
+            ],
+            statusEffects: [
+                { id: "wet", chance: 0.50, duration: 3 }
             ]
         },
        

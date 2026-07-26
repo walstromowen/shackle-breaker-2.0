@@ -28,7 +28,7 @@ export const BattleAnimationDefinitions = {
         audio: [{ start: 0.133, key: 'stabSfx', volume: 1.0 }],
         actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 96 },
         vfx: [
-            { start: 0.133, type: 'spawn', origin: 'target', config: { life: 0.2, sheetKey: 'stabAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 1.2, blendMode: 'screen' } }
+            { start: 0.133, type: 'spawn', origin: 'target', config: { life: 0.2, sheetKey: 'stabAnimation', frameCount: 1, frameSize: 64, movement: 'shrink_and_fade', scale: 1.2, blendMode: 'screen' } }
         ],
         target: {
             shake: { start: 0.133, end: 0.333, intensity: 29 },
@@ -40,7 +40,7 @@ export const BattleAnimationDefinitions = {
         audio: [{ start: 0.133, key: 'crunchSfx', volume: 1.0 }],
         actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 96 },
         vfx: [
-            { start: 0.133, type: 'spawn', origin: 'target', config: { life: 0.4, sheetKey: 'biteAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 1.56, blendMode: 'multiply' } }
+            { start: 0.133, type: 'spawn', origin: 'target', config: { life: 0.4, sheetKey: 'biteAnimation', frameCount: 1, frameSize: 64, movement: 'shrink_and_fade', scale: 1.56, blendMode: 'multiply' } }
         ],
         target: {
             shake: { start: 0.133, end: 0.333, intensity: 29 },
@@ -215,12 +215,47 @@ export const BattleAnimationDefinitions = {
         audio: [{ start: 0.08, key: 'cleaveSfx', volume: 1.0 }],
         actor: { type: 'lunge', start: 0.0, end: 0.15, distance: 130 },
         vfx: [
-            { start: 0.1, type: 'spawn', origin: 'target', config: { life: 0.3, sheetKey: 'slashAnimation', frameCount: 1, frameSize: 64, movement: 'swipe_diagonal', scale: 2.6, blendMode: 'screen' } }
+            { start: 0.1, type: 'spawn', origin: 'target', config: { life: 0.3, sheetKey: 'cleaveAnimation', frameCount: 1, frameSize: 64, movement: 'swipe_diagonal', scale: 2.6, blendMode: 'screen' } }
         ],
         target: {
             shake: { start: 0.1, end: 0.35, intensity: 32 },
             flash: { start: 0.1, end: 0.25, filter: 'brightness(200%) sepia(30%)' }
         }
+    },
+    "wild_swing": { 
+        duration: 1.3, 
+        audio: [ 
+            // Pitch dropped to 0.8 to give it a heavy, swooshing "haymaker" feel
+            { start: 0.1, key: 'wildSwingSfx', volume: 1.0, pitch: 0.8 } 
+        ], 
+        actor: { 
+            type: 'lunge', 
+            start: 0.0, 
+            end: 0.25, // A slightly slower, clunkier wind-up
+            distance: 140, // Overextending the lunge distance
+            flash: { start: 0.0, end: 0.3, filter: 'brightness(150%) sepia(50%) hue-rotate(15deg) saturate(200%)' } 
+        }, 
+        vfx: [ 
+            { 
+                start: 0.25, 
+                type: 'spawn', 
+                origin: 'target', 
+                config: { 
+                    life: 0.25, 
+                    sheetKey: 'wildSwingAnimation', 
+                    frameCount: 1, 
+                    frameSize: 64, 
+                    movement: 'swipe_diagonal', 
+                    scale: 3.0, // Massive scale to represent the lack of precision
+                    blendMode: 'screen' 
+                } 
+            } 
+        ], 
+        target: { 
+            // Heavy impact reactions when it finally connects
+            shake: { start: 0.25, end: 0.75, intensity: 45 }, 
+            flash: { start: 0.25, end: 0.45, filter: 'brightness(250%)' } 
+        } 
     },
     "acid_pool": {
         duration: 2.2,
@@ -261,21 +296,77 @@ export const BattleAnimationDefinitions = {
             flash: { start: 0.4, end: 0.6, filter: 'brightness(250%) sepia(100%) hue-rotate(190deg) saturate(500%)' }
         }
     },
-    "reckless_charge": {
-        duration: 1.6,
-        audio: [{ start: 0.0, key: 'recklessChargeSfx', volume: 0.8, pitch: 1.0 }],
+    "water_blast": {
+        duration: 2.5,
+        audio: [
+            { start: 0.1, key: 'waterBlastSfx', volume: 1.0 }
+        ],
         actor: {
-            type: 'lunge', start: 0.0, end: 0.12, distance: 160,
-            flash: { start: 0.15, end: 0.45, filter: 'brightness(130%) sepia(100%) hue-rotate(330deg) saturate(400%)' }
+            flash: { start: 0.0, end: 0.35, filter: 'brightness(200%) sepia(100%) hue-rotate(200deg) saturate(300%) drop-shadow(0 0 10px blue)' }
         },
         vfx: [
-            { start: 0.12, type: 'spawn', origin: 'target', config: { life: 0.4, sheetKey: 'strikeAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 2.4, blendMode: 'screen' } },
-            { start: 0.15, type: 'spawn', origin: 'source', config: { life: 0.3, sheetKey: 'bleedAnimation', frameCount: 1, frameSize: 64, movement: 'static', scale: 1.1, blendMode: 'screen' } }
+            { start: 0.150, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
+            { start: 0.155, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
+            { start: 0.160, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
+            { start: 0.165, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
+            { start: 0.170, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
+            { start: 0.175, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
+            { start: 0.180, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
+            { start: 0.185, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
+            { start: 0.190, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
+            { start: 0.195, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
+            { start: 0.200, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
+            { start: 0.205, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
+            { start: 0.210, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
+            { start: 0.215, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
+            { start: 0.220, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
+            { start: 0.225, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
+            { start: 0.230, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
+            { start: 0.235, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
+            { start: 0.240, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
+            { start: 0.245, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } }
         ],
         target: {
-            shake: { start: 0.12, end: 0.55, intensity: 48 },
-            flash: { start: 0.12, end: 0.32, filter: 'brightness(250%)' }
+            // Impact synced: First particle reaches target at 0.150 + 0.400 = 0.550
+            shake: { start: 0.55, end: 1.0, intensity: 35 },
+            flash: { start: 0.55, end: 0.95, filter: 'brightness(250%) sepia(100%) hue-rotate(200deg) saturate(400%) drop-shadow(0 0 10px cyan)' }
         }
+    },
+
+    "reckless_charge": { 
+        duration: 1.5, 
+        audio: [ 
+            { start: 0.0, key: 'recklessChargeApproachSfx', volume: 0.8, pitch: 1.0 }, 
+            { start: 0.2, key: 'recklessChargeImpactSfx', volume: 0.8, pitch: 1.0 } 
+        ], 
+        actor: { 
+            type: 'lunge', 
+            start: 0.0, 
+            end: 0.2, 
+            distance: 160, 
+            // Flash delayed slightly after impact to represent the recoil damage hurting the user
+            flash: { start: 0.25, end: 0.55, filter: 'brightness(130%) sepia(100%) hue-rotate(330deg) saturate(400%)' } 
+        }, 
+        vfx: [ 
+            { 
+                start: 0.2, 
+                type: 'spawn', 
+                origin: 'target', 
+                config: { 
+                    life: 0.4, 
+                    sheetKey: 'impactAnimation', 
+                    frameCount: 1, 
+                    frameSize: 64, 
+                    movement: 'expand_and_fade', 
+                    scale: 2.5, 
+                    blendMode: 'screen' 
+                } 
+            } 
+        ], 
+        target: { 
+            shake: { start: 0.2, end: 0.6, intensity: 48 }, 
+            flash: { start: 0.2, end: 0.4, filter: 'brightness(250%)' } 
+        } 
     },
     "eviscerate": {
         duration: 1.5,
@@ -400,6 +491,72 @@ export const BattleAnimationDefinitions = {
             flash: { start: 0.1, end: 0.35, filter: 'brightness(130%) sepia(80%) hue-rotate(90deg) saturate(250%)' }
         }
     },
+    "flurry": { 
+        duration: 1.0, 
+        audio: [ 
+            { start: 0.15, key: 'slashSfx', volume: 1.0, pitch: 1.0 },
+            { start: 0.25, key: 'slashSfx', volume: 1.0, pitch: 1.2 }, 
+            { start: 0.35, key: 'slashSfx', volume: 1.0, pitch: 0.9 }  
+        ], 
+        actor: { 
+            type: 'lunge', 
+            start: 0.0, 
+            end: 0.15, 
+            distance: 120 
+        }, 
+        vfx: [ 
+            // First Slash
+            { 
+                start: 0.15, 
+                type: 'spawn', 
+                origin: 'target', 
+                config: { 
+                    life: 0.3, 
+                    sheetKey: 'slashAnimation', 
+                    frameCount: 1, 
+                    frameSize: 64, 
+                    movement: 'swipe_diagonal', 
+                    scale: 1.8, 
+                    blendMode: 'screen' 
+                } 
+            },
+            // Second Slash (Alternative direction)
+            { 
+                start: 0.25, 
+                type: 'spawn', 
+                origin: 'target', 
+                config: { 
+                    life: 0.3, 
+                    sheetKey: 'slashAnimation', 
+                    frameCount: 1, 
+                    frameSize: 64, 
+                    movement: 'swipe_diagonal_alt', 
+                    scale: 2.0, 
+                    blendMode: 'screen' 
+                } 
+            },
+            // Third Slash (Heavier finisher)
+            { 
+                start: 0.35, 
+                type: 'spawn', 
+                origin: 'target', 
+                config: { 
+                    life: 0.3, 
+                    sheetKey: 'slashAnimation', 
+                    frameCount: 1, 
+                    frameSize: 64, 
+                    movement: 'swipe_diagonal', 
+                    scale: 2.4, 
+                    blendMode: 'screen' 
+                } 
+            } 
+        ], 
+        target: { 
+            // Tightened shake and flash to match the faster strikes
+            shake: { start: 0.15, end: 0.55, intensity: 35 }, 
+            flash: { start: 0.15, end: 0.45, filter: 'brightness(200%) sepia(50%) hue-rotate(330deg) saturate(300%)' } 
+        } 
+    },
     "abyssal_void": {
         duration: 3.0,
         audio: [{ start: 0.033, key: 'darkMagicSFX', volume: 1.0 }],
@@ -474,7 +631,7 @@ export const BattleAnimationDefinitions = {
         audio: [{ start: 0.05, key: 'strikeSfx', volume: 1.0 }],
         actor: { flash: { start: 0.0, end: 0.2, filter: 'brightness(180%) saturate(150%)' } },
         vfx: [
-            { start: 0.05, type: 'spawn', origin: 'target', config: { life: 0.5, sheetKey: 'shieldActivationAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 2.2, blendMode: 'screen' } }
+            { start: 0.05, type: 'spawn', origin: 'target', config: { life: 0.5, sheetKey: 'bolsterAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 2.2, blendMode: 'screen' } }
         ],
         target: {
             shake: { start: 0.05, end: 0.2, intensity: 15 },
