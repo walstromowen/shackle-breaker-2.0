@@ -215,11 +215,12 @@ export class BattleController extends BaseController {
     }
 
     _getTargetsFromGroup() {
-        if (this.state.targetGroup === 'everyone') {
-            return [...this.state.activeParty, ...this.state.activeEnemies];
-        }
-        return this.getActivePool(this.state.targetGroup);
+    // Treat 'any' just like 'everyone' when building the list of valid cursor targets
+    if (this.state.targetGroup === 'everyone' || this.state.targetGroup === 'any') {
+        return [...this.state.activeParty, ...this.state.activeEnemies];
     }
+    return this.getActivePool(this.state.targetGroup);
+}
 
     _getTargetFromHitbox(hitboxId) {
         if (!hitboxId || !hitboxId.startsWith('TARGET_')) return null;
@@ -357,44 +358,56 @@ export class BattleController extends BaseController {
     }
 
     _setupTargetSelection(action, activeChar) {
-        this.state.selectedAction = action;
-        this.state.selectedTargets = [];
+    this.state.selectedAction = action;
+    this.state.selectedTargets = [];
+    const scope = action.targeting?.scope || 'enemy';
+    const selectMode = action.targeting?.select || 'single';
 
-        const scope = action.targeting?.scope || 'enemy';
-        const selectMode = action.targeting?.select || 'single';
-
-        if (scope === 'self') {
-            return this.commitAction(activeChar);
-        }
-
-        if (selectMode === 'random' || scope.includes('random')) {
-            const isPartyTarget = scope.includes('allies') || scope === 'ally';
-            const targetPool = isPartyTarget ? this.state.activeParty : this.state.activeEnemies;
-            const fallbackTarget = targetPool.find(t => t && !t.isDead()) || activeChar;
-            return this.commitAction(fallbackTarget);
-        }
-
-        this.state.phase = PHASE.SELECT_TARGET;
-
-        if (scope === 'everyone') {
-            this.state.targetGroup = 'everyone';
-            this.state.message = `Confirm target for ${action.name}`;
-            this.state.targetIndex = 'ALL';
-            return;
-        }
-
+    if (scope === 'self') {
+        return this.commitAction(activeChar);
+    }
+    if (selectMode === 'random' || scope.includes('random')) {
         const isPartyTarget = scope.includes('allies') || scope === 'ally';
         const targetPool = isPartyTarget ? this.state.activeParty : this.state.activeEnemies;
-        this.state.targetGroup = isPartyTarget ? 'party' : 'enemy';
-
-        if (['all_enemies', 'all_allies'].includes(scope)) {
-            this.state.message = `Confirm target for ${action.name}`;
-            this.state.targetIndex = 'ALL';
-        } else {
-            this.state.message = `Select a target for ${action.name}`;
-            this.state.targetIndex = Math.max(0, targetPool.findIndex(t => t && !t.isDead()));
-        }
+        const fallbackTarget = targetPool.find(t => t && !t.isDead()) || activeChar;
+        return this.commitAction(fallbackTarget);
     }
+
+    this.state.phase = PHASE.SELECT_TARGET;
+
+    if (scope === 'everyone') {
+        this.state.targetGroup = 'everyone';
+        this.state.message = `Confirm target for ${action.name}`;
+        this.state.targetIndex = 'ALL';
+        return;
+    }
+
+    // ---> NEW SUPPORT FOR "ANY" <---
+    if (scope === 'any') {
+        this.state.targetGroup = 'any';
+        const allTargets = [...this.state.activeParty, ...this.state.activeEnemies];
+        this.state.message = `Select a target for ${action.name}`;
+        
+        // Default the cursor to the first living enemy, or fallback to first living ally
+        const defaultTarget = this.state.activeEnemies.find(t => t && !t.isDead()) || 
+                              allTargets.find(t => t && !t.isDead());
+        this.state.targetIndex = allTargets.indexOf(defaultTarget);
+        return;
+    }
+    // --------------------------------
+
+    const isPartyTarget = scope.includes('allies') || scope === 'ally';
+    const targetPool = isPartyTarget ? this.state.activeParty : this.state.activeEnemies;
+    this.state.targetGroup = isPartyTarget ? 'party' : 'enemy';
+
+    if (['all_enemies', 'all_allies'].includes(scope)) {
+        this.state.message = `Confirm target for ${action.name}`;
+        this.state.targetIndex = 'ALL';
+    } else {
+        this.state.message = `Select a target for ${action.name}`;
+        this.state.targetIndex = Math.max(0, targetPool.findIndex(t => t && !t.isDead()));
+    }
+}
 
     _handleTargetSelection(intent) {
         const targetArray = this._getTargetsFromGroup();
