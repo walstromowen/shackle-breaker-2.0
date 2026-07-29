@@ -80,6 +80,8 @@ waterBlastAnimation: './assets/abilityAnimations/water_blast.png',
 bolsterAnimation: './assets/abilityAnimations/bolster.png',
 cleaveAnimation: './assets/abilityAnimations/cleave.png',
 wildSwingAnimation: './assets/abilityAnimations/wild_swing.png',
+purifyAnimation: './assets/abilityAnimations/purify.png',
+meteorShowerAnimation: './assets/abilityAnimations/meteor_shower.png',
   
   // Backgrounds
   arcaneVortexBg: './assets/backgrounds/arcane_vortex_bg.png', 
@@ -127,6 +129,8 @@ recklessChargeImpactSfx: './assets/audio/sfx/abilities/reckless_charge/reckless_
 waterBlastSfx: './assets/audio/sfx/abilities/water_blast.wav',
 cleaveSfx: './assets/audio/sfx/abilities/cleave.wav',
 wildSwingSfx: './assets/audio/sfx/abilities/wild_swing.wav',
+purifySfx: './assets/audio/sfx/abilities/purify.wav',
+meteorShowerImpactSfx: './assets/audio/sfx/abilities/meteor_shower/meteor_shower_impact.wav',
   //BATTLE STATUS AND WEATHER SFX
   poisonSfx: './assets/audio/sfx/statusEffects/poison.wav',
   paralyzedSfx: './assets/audio/sfx/statusEffects/paralyzed.wav',

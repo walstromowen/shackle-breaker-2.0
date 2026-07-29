@@ -40,7 +40,7 @@ export const BattleAnimationDefinitions = {
         audio: [{ start: 0.133, key: 'crunchSfx', volume: 1.0 }],
         actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 96 },
         vfx: [
-            { start: 0.133, type: 'spawn', origin: 'target', config: { life: 0.4, sheetKey: 'biteAnimation', frameCount: 1, frameSize: 64, movement: 'shrink_and_fade', scale: 1.56, blendMode: 'multiply' } }
+            { start: 0.133, type: 'spawn', origin: 'target', config: { life: 0.4, sheetKey: 'biteAnimation', frameCount: 1, frameSize: 64, movement: 'shrink_and_fade', scale: 3, blendMode: 'multiply' } }
         ],
         target: {
             shake: { start: 0.133, end: 0.333, intensity: 29 },
@@ -257,6 +257,104 @@ export const BattleAnimationDefinitions = {
             flash: { start: 0.25, end: 0.45, filter: 'brightness(250%)' } 
         } 
     },
+    "purify": {
+        duration: 2.0,
+        audio: [
+            { start: 0.1, key: 'healSfx', volume: 1.0, pitch: 1.2 }
+        ],
+        actor: {
+            // A brief, bright glow on the caster as they invoke the ability
+            flash: { start: 0.0, end: 0.3, filter: 'brightness(180%) sepia(50%) hue-rotate(180deg) saturate(200%)' }
+        },
+        vfx: [
+            // Main cleansing aura
+            { 
+                start: 0.2, 
+                type: 'spawn', 
+                origin: 'target', 
+                config: { 
+                    life: 1.0, 
+                    sheetKey: 'purifyAnimation', // Or 'healAnimation' if you share assets
+                    frameCount: 1, 
+                    frameSize: 64, 
+                    movement: 'float_up_and_pop', 
+                    scale: 1.5, 
+                    blendMode: 'screen' 
+                } 
+            },
+            // Secondary sparkles/particles dispersing the status effects
+            { 
+                start: 0.4, 
+                type: 'spawn', 
+                origin: 'target', 
+                config: { 
+                    life: 0.8, 
+                    sheetKey: 'particles', 
+                    frameCount: 1, 
+                    frameSize: 64, 
+                    movement: 'expand_and_fade', 
+                    scale: 1.2, 
+                    blendMode: 'screen' 
+                } 
+            }
+        ],
+        target: {
+            // A soft, lingering, holy/water-like glow to indicate they feel much better
+            flash: { start: 0.2, end: 1.2, filter: 'brightness(200%) sepia(30%) hue-rotate(180deg) saturate(150%) drop-shadow(0 0 10px white)' }
+        }
+    },
+  "meteor_shower": {
+duration: 1.6, 
+  audio: [
+    // Everything triggers immediately to give the meteor time to fall
+    { start: 0.0, key: 'earthquake1Sfx', volume: 0.8, pitch: 0.5 },
+    { start: 0.0, key: 'fireballCastSfx', volume: 1.2, pitch: 0.6 },
+    // Impact happens exactly at 0.8s, safely before the engine cuts the turn
+    { start: 0.8, key: 'meteorShowerImpactSfx', volume: 1.4, pitch: 0.7 }
+  ],
+  background: {
+    start: 0.0, end: 1.5,
+    key: 'voidBackground',
+    filter: 'brightness(30%) sepia(100%) hue-rotate(330deg) saturate(400%)'
+  },
+  actor: {
+    flash: { 
+      start: 0.0, end: 0.8, 
+      filter: 'brightness(250%) sepia(100%) hue-rotate(350deg) saturate(500%) drop-shadow(0 0 10px orange)' 
+    }
+  },
+  vfx: [
+    // --- THE METEOR ---
+    {
+      start: 0.0, type: 'spawn', origin: 'target',
+      config: { 
+        life: 0.8, // 0.8 second fall time, hits exactly at 0.8s
+        sheetKey: 'meteorShowerAnimation', frameCount: 4, frameSize: 64, 
+        movement: 'diagonal_drop', dropX: 1400, dropY: 1400, 
+        offsetX: 0, offsetY: 0, 
+        scale: 3.5, 
+        blendMode: 'screen',
+        fadeOut: false 
+      }
+    },
+    // --- THE IMPACT ---
+    { 
+      start: 0.8, // Triggered safely at 0.8s
+      type: 'spawn', origin: 'target',
+      config: { 
+        life: 0.6, sheetKey: 'impactAnimation', frameCount: 1, frameSize: 64, 
+        movement: 'expand_and_fade', 
+        scale: 3.5, 
+        blendMode: 'screen' 
+      }
+    }
+  ],
+  target: {
+    // Shake and flash trigger at 0.8s
+    shake: { start: 0.8, end: 1.3, intensity: 55 }, 
+    flash: { start: 0.8, end: 1.4, filter: 'brightness(350%) sepia(100%) hue-rotate(350deg) saturate(600%) drop-shadow(0 0 20px red)' }
+  }
+},
     "acid_pool": {
         duration: 2.2,
         audio: [{ start: 0.05, key: 'acidPoolSfx', volume: 1.0 }],

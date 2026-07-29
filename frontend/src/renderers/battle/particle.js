@@ -7,11 +7,11 @@ export class Particle {
         this.isDead = false;
 
         // Positioning (Targeted)
-        this.startX = config.startX || config.x || 0;
-        this.startY = config.startY || config.y || 0;
-        this.endX = config.endX || this.startX;
-        this.endY = config.endY || this.startY;
-        this.movement = config.movement || null; 
+        this.startX = (config.startX || config.x || 0) + (config.offsetX || 0);
+        this.startY = (config.startY || config.y || 0) + (config.offsetY || 0);
+        this.endX = (config.endX || this.startX) + (config.offsetX || 0);
+        this.endY = (config.endY || this.startY) + (config.offsetY || 0);
+        this.movement = config.movement || null;
         
         // Scaled default arc height (-50 * 2.4)
         this.arcHeight = config.arc || config.arcHeight || -120;
@@ -39,14 +39,21 @@ export class Particle {
         this.color = config.color || '#ffffff';
         this.blendMode = config.blendMode || 'source-over';
         
-        // Sprite/Animation configuration
-        this.sheetKey = config.sheetKey || 'battleProjectiles'; 
-        this.frame = config.frame || null;
-        this.frameSize = config.frameSize || 32;
-        this.frameCount = config.frameCount || 1; // FIX: Ensure frameCount is saved!
-    }
+       // Sprite/Animation configuration
+    this.sheetKey = config.sheetKey || 'battleProjectiles';
+    this.frame = config.frame || null;
+    this.frameSize = config.frameSize || 32;
+    this.frameCount = config.frameCount || 1; // FIX: Ensure frameCount is saved!
 
-    update(dt) {
+    // --- NEW ADDITION ---
+    // Instantly calculate the correct starting position for Frame 0 
+    // so it doesn't flash at the target's center before updating.
+    if (this.movement) {
+      this.applyTargetedMovement(0);
+    }
+  }
+
+  update(dt) {
         this.age += dt;
         const progress = Math.min(this.age / this.maxLife, 1.0);
 
@@ -138,6 +145,18 @@ case 'swipe_diagonal_alt':
     this.y = this.startY + (progress * 144) - 72;
     this.alpha = this.baseAlpha * Math.sin(progress * Math.PI);
     break;
+
+    case 'diagonal_drop':
+  // Spawns at an offset distance and crashes down into startX/startY
+  const dropX = this.config.dropX || 1200; // X distance to start from
+  const dropY = this.config.dropY || 1200; // Y distance to start from
+  
+  this.x = this.startX + (dropX * (1 - progress));
+  this.y = this.startY - (dropY * (1 - progress));
+  
+  // Fade in slightly during the first 10% of life to avoid harsh popping
+  this.alpha = progress < 0.1 ? this.baseAlpha * (progress / 0.1) : this.baseAlpha;
+  break;
 
     case 'shrink_and_fade':
     this.x = this.startX;

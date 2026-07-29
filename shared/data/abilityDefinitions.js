@@ -218,6 +218,33 @@ export const AbilityDefinitions = {
             }
         ]
     },
+    "meteor_shower": {
+        id: "meteor_shower",
+        name: "Meteor Shower",
+        description: "Calls down fiery meteors from the sky, striking random enemies 3 to 5 times.",
+        battleMessage: "{user} calls down a devastating {ability}!",
+        icon: { col: 3, row: 3 }, // Placed next to Fireball in standard layouts
+        speedModifier: 0.85, // Slower cast time due to the immense power
+        targeting: { 
+            scope: "random_enemy", 
+            select: "random", 
+            allowRepeats: true // Allows the same enemy to be hit multiple times if they are unlucky
+        },
+        cost: { insight: 5 },
+        accuracy: 0.85,
+        animationId: "meteor_shower",
+        multihit: { 
+            min: 3, 
+            max: 5, 
+            distinctChecks: true // Calculates accuracy and evasion for each meteor individually
+        },
+        effects: [
+            { type: "damage", damageType: "fire", power: 1.2 } // High damage when compounded
+        ],
+        statusEffects: [
+            { id: "burn", chance: 0.25, duration: 3 }
+        ]
+    },
 
     "execute": {
         id: "execute",
@@ -560,15 +587,15 @@ export const AbilityDefinitions = {
     "purify": {
         id: "purify",
         name: "Purify",
-        description: "Cleanse poison and bleeding from an ally.",
+        description: "Cleanse a negative status effect from a target.",
         battleMessage: "{user} casts {ability} on {target}!",
-        icon: { col: 4, row: 5 },
+        icon: { col: 0, row: 10 },
         targeting: { scope: "ally", select: "single" },
         cost: { insight: 10 },
         accuracy: 1.0,
-        animationId: "melee_lunge",
+        animationId: "purify",
         effects: [
-            { type: "dispel", tags: ["poison", "bleed", "burn"] },
+            { type: "dispel", tags: ["poison", "bleed", "burn", "frozen", "bound", "paralyzed", "knocked_down", "wet"] },
             { type: "recover", resource: "hp", calculation: "percent", power: 0.1 }
         ]
     },

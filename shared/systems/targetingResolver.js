@@ -2,7 +2,7 @@ export class TargetingResolver {
     // ---> NEW: Added 'allowDeadActor = false' to the parameters here! <---
     static resolve(action, actor, primaryTarget, battleState, allowDeadActor = false) {
         const scope = action.targeting?.scope || 'enemy';
-        
+
         // Pre-filter the living combatants
         const livingEnemies = battleState.activeEnemies.filter(e => e && !e.isDead());
         const livingParty = battleState.activeParty.filter(p => p && !p.isDead());
@@ -14,9 +14,10 @@ export class TargetingResolver {
         const isParty = actor.team === 'party';
         const actorAllies = isParty ? livingParty : livingEnemies;
         const actorEnemies = isParty ? livingEnemies : livingParty;
+        const allLiving = [...livingParty, ...livingEnemies];
 
         // ----------------------------------------------------------------------
-        // DETERMINE TOTAL HITS 
+        // DETERMINE TOTAL HITS
         // ----------------------------------------------------------------------
         let hitCount = action.targeting?.count || 1;
         if (action.multihit) {
@@ -28,23 +29,27 @@ export class TargetingResolver {
         switch (scope) {
             case 'self':
                 return Array(hitCount).fill(actor);
-
+                
+            case 'any':     // <--- NEW: Target anyone on the field
             case 'enemy':
             case 'ally': {
-                const fallbackPool = scope === 'enemy' ? actorEnemies : actorAllies;
+                // Assign the correct pool based on the scope
+                let fallbackPool;
+                if (scope === 'enemy') fallbackPool = actorEnemies;
+                else if (scope === 'ally') fallbackPool = actorAllies;
+                else fallbackPool = allLiving;
 
                 if (Array.isArray(primaryTarget)) {
                     const validTargets = primaryTarget.filter(t => t && !t.isDead());
-                    if (validTargets.length > 0) return validTargets; 
+                    if (validTargets.length > 0) return validTargets;
                 }
 
                 let finalTarget = primaryTarget;
 
-                // --> NEW: Validate the dummy target passed by auto-queue traits!
-                // If target is the actor but scope requires an enemy, invalidate it.
+                // Validate the dummy target passed by auto-queue traits
                 if (finalTarget && !Array.isArray(finalTarget) && finalTarget !== 'ALL') {
                     if (!fallbackPool.includes(finalTarget)) {
-                        finalTarget = null;
+                        finalTarget = null; // Invalidated because it's not in the permitted pool
                     }
                 }
 
@@ -91,9 +96,9 @@ export class TargetingResolver {
                 }
                 return randomTargets;
             }
-            
-            case 'everyone': 
-                return [...livingEnemies, ...livingParty];
+
+            case 'everyone':
+                return allLiving;
 
             default:
                 console.warn(`[TargetingResolver] Unknown targeting scope: ${scope}. Defaulting to primary target.`);

@@ -35,37 +35,72 @@ export class AbilitySystem {
         let attackHit = true;
 
         // 1. Process Main Effects (Damage, Heal, etc.)
-        if (def.effects && Array.isArray(def.effects)) {
-            for (const effect of def.effects) {
-                if (effect.type === 'damage') {
-                    const calc = this._handleDamage(effect, source, target, def.accuracy, def)
-                    result.success = calc.hit;
-                    result.outcome = calc.crit ? 'CRIT' : (calc.hit ? 'HIT' : 'MISS');
-                    result.delta = -calc.damage;
-                    result.message = calc.message;
-
-                    if (!calc.hit) {
-                        attackHit = false;
-                        break; 
+    if (def.effects && Array.isArray(def.effects)) {
+        for (const effect of def.effects) {
+            
+            if (effect.type === 'damage') {
+                const calc = this._handleDamage(effect, source, target, def.accuracy, def)
+                result.success = calc.hit;
+                result.outcome = calc.crit ? 'CRIT' : (calc.hit ? 'HIT' : 'MISS');
+                result.delta = -calc.damage;
+                
+                // --- FIX: Append instead of overwrite ---
+                result.message = result.message ? `${result.message} ${calc.message}` : calc.message;
+                
+                if (!calc.hit) {
+                    attackHit = false;
+                    break;
+                }
+            } 
+            else if (effect.type === 'recover') {
+                const subResult = this._handleRecover(effect, source, target, def);
+                if (subResult.success) {
+                    result.success = true;
+                    result.outcome = 'HEAL';
+                    result.delta = subResult.amount;
+                    result.resource = effect.resource;
+                    
+                    // --- FIX: Append instead of overwrite ---
+                    result.message = result.message ? `${result.message} ${subResult.message}` : subResult.message;
+                }
+            } 
+            else if (effect.type === 'set') {
+                const subResult = this._handleSet(effect, target);
+                if (subResult.success) {
+                    result.success = true;
+                    // --- FIX: Append instead of overwrite ---
+                    result.message = result.message ? `${result.message} ${subResult.message}` : subResult.message;
+                }
+            } 
+            else if (effect.type === 'dispel') {
+                if (target.statusEffects && Array.isArray(target.statusEffects)) {
+                    let dispelledStatusNames = [];
+                    
+                    for (let i = target.statusEffects.length - 1; i >= 0; i--) {
+                        const currentStatus = target.statusEffects[i];
+                        if (effect.tags.includes(currentStatus.id)) {
+                            dispelledStatusNames.push(currentStatus.name || currentStatus.id); // Safely use name if available
+                            
+                            if (typeof target.removeStatusEffect === 'function') {
+                                target.removeStatusEffect(currentStatus.id);
+                            } else {
+                                target.statusEffects.splice(i, 1);
+                            }
+                        }
                     }
-                } else if (effect.type === 'recover') {
-                    const subResult = this._handleRecover(effect, source, target, def);
-                    if (subResult.success) {
+                    
+                    if (dispelledStatusNames.length > 0) {
+                        const cleansedString = dispelledStatusNames.join(" and ");
                         result.success = true;
-                        result.outcome = 'HEAL';
-                        result.delta = subResult.amount;
-                        result.resource = effect.resource;
-                        result.message = subResult.message;
-                    }
-                } else if (effect.type === 'set') {
-                    const subResult = this._handleSet(effect, target);
-                    if (subResult.success) {
-                        result.success = true;
-                        result.message = subResult.message;
+                        
+                        // --- FIX: Cleanly append dispel message ---
+                        const cleanseMsg = `${target.name || 'Target'} was cleansed of ${cleansedString}!`;
+                        result.message = result.message ? `${result.message} ${cleanseMsg}` : cleanseMsg;
                     }
                 }
             }
         }
+    }
 
         // 2. Process Status Effects (Only if the attack didn't miss!)
         if (attackHit && def.statusEffects && Array.isArray(def.statusEffects)) {
@@ -250,8 +285,7 @@ export class AbilitySystem {
         }
 
         const actualChange = target.modifyResource(effect.resource, amount);
-        const template = def.healMessage || "+{amount} {resource}";
-        const parsedMessage = this._parseMessage(template, source, target, def, { amount: actualChange, resource: effect.resource });
+        const template = def.healMessage || "{target} recovers {amount} {resource}!";        const parsedMessage = this._parseMessage(template, source, target, def, { amount: actualChange, resource: effect.resource });
 
         return { 
             success: actualChange !== 0, 
