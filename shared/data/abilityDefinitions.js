@@ -66,17 +66,17 @@ export const AbilityDefinitions = {
         
     },
 
-    "stab": {
-        id: "stab",
-        name: "Stab",
-        description: "A forward stab. Has a chance to bleed the target.",
+    "thrust": {
+        id: "thrust",
+        name: "Thrust",
+        description: "A forward thrust. Has a chance to bleed the target.",
         battleMessage: "{user} performs a piercing {ability} against {target}!",
         icon: { col: 0, row: 2 },
         speedModifier: 1, 
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 10 },
         accuracy: 1.0, 
-        animationId: "stab",
+        animationId: "thrust",
         effects: [
             { type: "damage", damageType: "pierce", power: 1.0 } 
         ],
@@ -427,13 +427,13 @@ export const AbilityDefinitions = {
             { type: "damage", damageType: "arcane", power: 0.75 }
         ]
     },
-    "ice_bolt": {
-            id: "ice_bolt",
-            name: "Ice Bolt",
+    "ice_shard": {
+            id: "ice_shard",
+            name: "Ice Shard",
             description: "Hurls a jagged shard of ice. Deals damage and has a chance to freeze the target.",
             battleMessage: "{user} launches a freezing {ability} at {target}!",
             icon: { col: 0, row: 4 }, // Adjust col/row to match wherever your ice icon is on your spritesheet
-            animationId: "ice_bolt", // Or "ice_bolt_cast" if you have a specific animation for it
+            animationId: "ice_shard", // Or "ice_bolt_cast" if you have a specific animation for it
             targeting: { scope: "enemy", select: "single" },
             cost: { insight: 12 }, 
             speedModifier: 0.95, 
@@ -569,21 +569,20 @@ export const AbilityDefinitions = {
         ]
     },
 
-    "healing_rain": {
-        id: "healing_rain",
-        name: "Healing Rain",
-        description: "Restore health to the entire party.",
-        battleMessage: "{user} calls down a {ability} to restore the party!",
-        icon: { col: 2, row: 5 },
-        targeting: { scope: "all_allies", select: "auto" },
-        cost: { insight: 25 },
-        accuracy: 1.0,
-        animationId: "melee_lunge",
-        effects: [
-            { type: "recover", resource: "hp", calculation: "percent", power: 0.3 }
-        ]
-    },
-
+"healing_rain": {
+    id: "healing_rain",
+    name: "Healing Rain",
+    description: "Restore health to all allies, including those in reserve.",
+    battleMessage: "{user} calls down a {ability} to restore the party!",
+    icon: { col: 2, row: 5 },
+    targeting: { scope: "full_ally_party", select: "auto" }, // <--- Specific scope
+    cost: { insight: 25 },
+    accuracy: 1.0,
+    animationId: "melee_lunge",
+    effects: [
+        { type: "recover", resource: "hp", calculation: "percent", power: 0.3 }
+    ]
+},
     "purify": {
         id: "purify",
         name: "Purify",

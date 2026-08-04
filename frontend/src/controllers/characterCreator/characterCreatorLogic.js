@@ -21,27 +21,63 @@ export const CREATION_DATA = {
         {
             id: "TRAVELER", label: "Traveler",
             desc: "Travelers from far and wide came to see the incredible discovery of what was magic in the Altus Kingdom. Those first to arive were amazed by what they saw. Those last to arrive were horrified.",
-            attributes: { vigor: 12, strength: 12, dexterity: 12, intelligence: 10, attunement: 10 },
+            attributes: { vigor: 11, strength: 11, dexterity: 10, intelligence: 9, attunement: 9 }, // Sum: 50
             equipment: { mainHand: "shortsword", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
         {
             id: "BLACKSMITH", label: "Blacksmith",
             desc: "The honest trade of blacksmithing is a profession that was held in high esteem by Alterians, and Panzerians alike. After the discovery of magic, most blacksmiths found themselves unable to find work, but with their sanity intact.",
-            attributes: { vigor: 15, strength: 15, dexterity: 10, intelligence: 7, attunement: 7 },
+            attributes: { vigor: 14, strength: 14, dexterity: 8, intelligence: 7, attunement: 7 }, // Sum: 50
             equipment: { mainHand: "warhammer", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
         {
             id: "RANGER", label: "Ranger",
             desc: "Not all were enamored with the discovery of magic. A select few of the populance sought an escape from the people's obsession of it. Many of those that left became rangers, hunting wild animals and later more unnatural things.",
-            attributes: { vigor: 11, strength: 10, dexterity: 16, intelligence: 9, attunement: 8 },
+            attributes: { vigor: 10, strength: 9, dexterity: 15, intelligence: 8, attunement: 8 }, // Sum: 50
             equipment: { mainHand: "dagger", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
         {
             id: "SCHOLAR", label: "Scholar",
             desc: "Almost overnight, the scholars and philosophers of the Altus kingdom abandoned their studies to begin research of magic. Some saw magic as a science, others as life itself.",
-            attributes: { vigor: 9, strength: 8, dexterity: 10, intelligence: 16, attunement: 14 },
+            attributes: { vigor: 8, strength: 7, dexterity: 9, intelligence: 14, attunement: 12 }, // Sum: 50
             equipment: { mainHand: "insight_of_arcane", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
+        {
+            id: "WARRIOR", label: "Warrior",
+            desc: "For generations, warriors have been respected for their power. Only recently have some become feared for it.",
+            attributes: { vigor: 13, strength: 15, dexterity: 9, intelligence: 7, attunement: 6 }, // Sum: 50
+            equipment: { mainHand: "handaxe", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
+        },
+        {
+            id: "THIEF", label: "Thief",
+            desc: "Many thought the discovery of magic would mark the end of thievery and poverty. Alas, it only made it easier.",
+            attributes: { vigor: 9, strength: 8, dexterity: 16, intelligence: 9, attunement: 8 }, // Sum: 50
+            equipment: { mainHand: "dagger", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
+        },
+        {
+            id: "HERMIT", label: "Hermit",
+            desc: "Most of those who studied magic wished to stay as close to the artifact as possible. However, for better or for worse, a handful decided to study magic in solitude.",
+            attributes: { vigor: 10, strength: 7, dexterity: 9, intelligence: 13, attunement: 11 }, // Sum: 50
+            equipment: { mainHand: "insight_of_fire", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
+        },
+        {
+            id: "FARMER", label: "Farmer",
+            desc: "While the discovery of magic dramatically changed the populations of big cities, those tending to their fields expereienced little change. As a result, these men and women were most prepared when the Altus kingdom fell.",
+            attributes: { vigor: 15, strength: 12, dexterity: 9, intelligence: 7, attunement: 7 }, // Sum: 50
+            equipment: { mainHand: "scythe", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
+        },
+        {
+            id: "BOUNTY_HUNTER", label: "Bounty Hunter",
+            desc: "During the years leading up to the fall of Altus Kingdom, The demand for bounty hunters increased dramatically due to the need to deal with those who went mad. Particuarily skilled hunters often weilded rare weapons such as panzerian firearms or special Alterian swords. Ironically, this also made them particularly difficult to hunt when they too went mad.",
+            attributes: { vigor: 12, strength: 11, dexterity: 14, intelligence: 7, attunement: 6 }, // Sum: 50
+            equipment: { mainHand: "shortsword", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
+        },
+        {
+            id: "DISEASED", label: "Diseased",
+            desc: "During the years of the Alterian-Panzerian War, and prior to the fall of Altus Kingdom, those exhibiting signs of madness were often taken from their homes for treatment. It was believed that magic held the key to curing the the buildup of madness and thus, patients were exposed to even more of the artifact's influence. Still, perhaps being aflicted has its advantages?",
+            attributes: { vigor: 10, strength: 10, dexterity: 10, intelligence: 10, attunement: 10 }, // Sum: 50
+            equipment: {}
+        }
     ],
     ORIGINS: [
         { label: "Alterian", tag: "LANG_ALTERIAN", desc: "Alterians are the oldest people of the known world and the first to discover magic. They are a fearless and adventurous people who hail from the ancient Altus kingdom. Despite their reputation as conquerors, Alterians are actually quite diplomatic. They value strength, honor, and loyalty to one's family. Or at least, they use to." },
@@ -62,8 +98,24 @@ export const CREATION_DATA = {
     ],
     COMPANIONS: [
         { label: "None", speciesId: null, desc: "Walk the path alone.", attributes: {}, equipment: {} },
-        { label: "War Dog", speciesId: "DOG", desc: "Loyal and sturdy.", attributes: { vigor: 12, strength: 10 }  },
-        //{ label: "Hunting Hawk", speciesId: "AVIAN", desc: "Fast and watchful.", attributes: { dexterity: 16, speed: 10 }, equipment: { accessory: "tattered_shirt" } }
+        { label: "War Dog", speciesId: "DOG", desc: "Loyal and sturdy.", attributes: { vigor: 12, strength: 10 } },
+        { 
+            label: "Mercenary", 
+            speciesId: "HUMANOID", 
+            isRandomizer: true, 
+            desc: "A fellow adventurer seeking fortune and glory. Arrives with a random background, origin, and trait.", 
+            attributes: {}, 
+            equipment: {} 
+        },
+        { 
+        label: "Test: 5 Mercs", 
+        speciesId: "HUMANOID", 
+        isRandomizer: true, 
+        spawnCount: 5, // Custom property to trigger the loop
+        desc: "[TEST] Pushes five random mercenaries into the party.", 
+        attributes: {}, 
+        equipment: {} 
+    }
     ],
     DIFFICULTIES: [
         { id: "easy", label: "Easy", desc: "Easier challenge." },
@@ -77,15 +129,14 @@ export class CharacterCreatorLogic {
     constructor() {
         this.menuOrder = ['name', 'background', 'origin', 'appearance', 'keepsake', 'companion', 'trait', 'difficulty', 'seed', 'start'];
         this.currentRow = 0;
-
         this.nameInput = new TextEntry("Shackle Breaker", 16);
-        this.seedInput = new TextEntry("", 16); 
+        this.seedInput = new TextEntry("", 16);
         this.isEditingName = false;
-        this.isEditingSeed = false; 
+        this.isEditingSeed = false;
 
         this.state = {
             name: "Shackle Breaker",
-            seed: "", 
+            seed: "",
             backgroundIdx: 0,
             originIdx: 0,
             appearanceIdx: 0,
@@ -125,11 +176,9 @@ export class CharacterCreatorLogic {
         if (stepConfig[step]) {
             const { key, max, triggersDirty } = stepConfig[step];
             this.state[key] = this._cycle(this.state[key], max, dir);
-            
             if (triggersDirty) this.isDirty = true;
-            return triggersDirty; 
+            return triggersDirty;
         }
-
         return false;
     }
 
@@ -141,7 +190,7 @@ export class CharacterCreatorLogic {
             }
             this.isEditingName = false;
         }
-        
+
         if (this.isEditingSeed) {
             this.state.seed = this.seedInput.value;
             this.isEditingSeed = false;
@@ -151,7 +200,7 @@ export class CharacterCreatorLogic {
     handleAction() {
         const step = this.menuOrder[this.currentRow];
         if (step === 'name') this.isEditingName = true;
-        else if (step === 'seed') this.isEditingSeed = true; 
+        else if (step === 'seed') this.isEditingSeed = true;
         else if (step === 'start') this.finalizeCharacter();
     }
 
@@ -215,13 +264,13 @@ export class CharacterCreatorLogic {
     // ========================================================
     // FINALIZATION
     // ========================================================
-
     finalizeCharacter() {
         if (!this.state.name || this.state.name.trim() === "") {
             this.currentRow = 0;
             this.isEditingName = true;
             return;
         }
+
         console.log("--- START FINALIZE ---");
 
         let finalSeed;
@@ -237,33 +286,65 @@ export class CharacterCreatorLogic {
         } else {
             finalSeed = Math.floor(Math.random() * 1000000);
         }
-
         gameState.seed = finalSeed;
 
         PartyManager.createMainCharacter("HUMANOID", this._buildPlayerOverrides());
 
-        const keep = CREATION_DATA.KEEPSAKES[this.state.keepsakeIdx];
-        if (keep.items) {
-            keep.items.forEach(i => InventorySystem.addItem(i.id, i.qty));
-        } else if (keep.itemId) {
-            InventorySystem.addItem(keep.itemId, 1);
-        }
+        // ... (previous finalizeCharacter code) ...
 
-        // --- FIXED: ADD ONLY ONE COMPANION ---
-        const comp = CREATION_DATA.COMPANIONS[this.state.companionIdx];
-        if (comp.speciesId) {
-            const companionInstance = PartyManager.addMember(comp.speciesId, {
-                name: comp.label, // Stripped out the tracking index text "1"
-                attributes: { ...comp.attributes },
-                equipment: comp.equipment,
-                xp: 0
-            });
+    const keep = CREATION_DATA.KEEPSAKES[this.state.keepsakeIdx];
+    if (keep.items) {
+        keep.items.forEach(i => InventorySystem.addItem(i.id, i.qty));
+    } else if (keep.itemId) {
+        InventorySystem.addItem(keep.itemId, 1);
+    }
+
+    const comp = CREATION_DATA.COMPANIONS[this.state.companionIdx];
+    if (comp.speciesId) {
+        // Default to 1 if no spawnCount is provided
+        const count = comp.spawnCount || 1; 
+
+        for (let i = 0; i < count; i++) {
+            let companionOverrides = {};
+
+            if (comp.isRandomizer && comp.speciesId === "HUMANOID") {
+                const randomElement = (arr) => arr[Math.floor(Math.random() * arr.length)];
+                const bg = randomElement(CREATION_DATA.BACKGROUNDS);
+                const origin = randomElement(CREATION_DATA.ORIGINS);
+                const app = randomElement(CREATION_DATA.APPEARANCES);
+                const trait = randomElement(CREATION_DATA.TRAITS);
+                
+                // Differentiate names slightly if there are multiple companions
+                const companionName = count > 1 ? `Mercenary ${i + 1}` : "Mercenary";
+
+                companionOverrides = {
+                    name: companionName,
+                    attributes: { ...bg.attributes },
+                    equipment: { ...bg.equipment },
+                    spritePortrait: app.spritePortrait,
+                    spriteOverworld: app.spriteOverworld,
+                    tags: [origin.tag],
+                    traits: [trait.id],
+                    level: 1,
+                    xp: 0
+                };
+            } else {
+                companionOverrides = {
+                    name: count > 1 ? `${comp.label} ${i + 1}` : comp.label,
+                    attributes: { ...comp.attributes },
+                    equipment: comp.equipment,
+                    xp: 0
+                };
+            }
+
+            const companionInstance = PartyManager.addMember(comp.speciesId, companionOverrides);
+            
             if (companionInstance) {
                 companionInstance.hp = companionInstance.maxHp;
                 companionInstance.stamina = companionInstance.maxStamina;
             }
         }
-
+    }
         gameState.party.currency = 100;
         gameState.difficulty = CREATION_DATA.DIFFICULTIES[this.state.difficultyIdx].id;
 

@@ -224,7 +224,7 @@ export class TurnManager {
             .replace(/{ability}/g, action.name)
             .replace(/{target}/g, targetName);
 
-        const isAoE = ['all_enemies', 'all_allies'].includes(action.targeting?.scope) || action.targeting?.isAoE;
+const isAoE = ['all_enemies', 'all_allies', 'full_ally_party'].includes(action.targeting?.scope) || action.targeting?.isAoE;
         if (isAoE) {
             this._queueAoEAction(actor, action, resolvedTargets, ignoreCost);
         } else {

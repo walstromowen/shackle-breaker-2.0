@@ -23,12 +23,12 @@ export const BattleAnimationDefinitions = {
             flash: { start: 0.133, end: 0.267, filter: 'brightness(200%) sepia(100%) hue-rotate(300deg) saturate(300%)' }
         }
     },
-    "stab": {
+    "thrust": {
         duration: 1.5,
-        audio: [{ start: 0.133, key: 'stabSfx', volume: 1.0 }],
+        audio: [{ start: 0.133, key: 'thrustSfx', volume: 1.0 }],
         actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 96 },
         vfx: [
-            { start: 0.133, type: 'spawn', origin: 'target', config: { life: 0.2, sheetKey: 'stabAnimation', frameCount: 1, frameSize: 64, movement: 'shrink_and_fade', scale: 1.2, blendMode: 'screen' } }
+            { start: 0.133, type: 'spawn', origin: 'target', config: { life: 0.2, sheetKey: 'thrustAnimation', frameCount: 1, frameSize: 64, movement: 'shrink_and_fade', scale: 2, blendMode: 'screen' } }
         ],
         target: {
             shake: { start: 0.133, end: 0.333, intensity: 29 },
@@ -161,10 +161,10 @@ export const BattleAnimationDefinitions = {
     },
     "quick_stab": {
         duration: 0.8,
-        audio: [{ start: 0.05, key: 'stabSfx', volume: 1.0, pitch: 1.3 }],
+        audio: [{ start: 0.05, key: 'quickStabSfx', volume: 1.0, pitch: 1.3 }],
         actor: { type: 'lunge', start: 0.0, end: 0.1, distance: 100 },
         vfx: [
-            { start: 0.05, type: 'spawn', origin: 'target', config: { life: 0.15, sheetKey: 'stabAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 1.0, blendMode: 'screen' } }
+            { start: 0.05, type: 'spawn', origin: 'target', config: { life: 0.15, sheetKey: 'quickStabAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 1.0, blendMode: 'screen' } }
         ],
         target: {
             shake: { start: 0.05, end: 0.2, intensity: 15 },
@@ -715,7 +715,7 @@ duration: 1.6,
     },
     "frozen": {
         duration: 2.0,
-        audio: [{ start: 0.05, key: 'stabSfx', volume: 0.8, pitch: 2.0 }],
+        audio: [{ start: 0.05, key: 'frozenSfx', volume: 0.8, pitch: 2.0 }],
         vfx: [
             { start: 0.1, type: 'spawn', origin: 'target', config: { life: 1.5, sheetKey: 'frozenAnimation', frameCount: 1, frameSize: 64, movement: 'static', scale: 1.8, blendMode: 'screen' } }
         ],

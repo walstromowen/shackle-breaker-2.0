@@ -234,30 +234,38 @@ export class CharacterSummaryController extends BaseController {
             return;
         }
 
-        if (this.logic.readOnly) return;
+        // ---> FIX: Prevent dragging if we are in battle or read-only mode
+        const isBattle = typeof this.config.onItemSelected === 'function';
+        if (this.logic.readOnly || isBattle) return; 
 
         if (hitboxId.startsWith('SLOT_')) {
             const slotName = hitboxId.replace('SLOT_', '');
             const item = this.currentMember.equipment[slotName];
+
             if (item) {
                 this.slotIndex = this.activeSlots.indexOf(slotName);
                 this.state = 'SLOTS';
                 this.inventoryIndex = -1;
                 events.emit('PLAY_SFX', { id: 'ui_drag_start', volume: 0.5 });
                 this.dragAndDropManager.startDrag(
-                    item, 'equipment', slotName, this.mouse.x, this.mouse.y, this.handleItemDropped.bind(this)
+                    item, 'equipment', slotName, 
+                    this.mouse.x, this.mouse.y, 
+                    this.handleItemDropped.bind(this)
                 );
             }
         } else if (hitboxId.startsWith('INV_ITEM_')) {
             const idx = parseInt(hitboxId.split('_')[2], 10);
             const item = this.filteredInventory[idx];
+
             if (item) {
                 this.inventoryIndex = idx;
                 this.state = 'INVENTORY';
                 this.slotIndex = -1;
                 events.emit('PLAY_SFX', { id: 'ui_drag_start', volume: 0.5 });
                 this.dragAndDropManager.startDrag(
-                    item, 'inventory', idx, this.mouse.x, this.mouse.y, this.handleItemDropped.bind(this)
+                    item, 'inventory', idx, 
+                    this.mouse.x, this.mouse.y, 
+                    this.handleItemDropped.bind(this)
                 );
             }
         }
@@ -618,9 +626,12 @@ export class CharacterSummaryController extends BaseController {
     }
 
     equipItem(inventoryItem, targetSlotOverride = null) {
-        if (this.logic.readOnly) return;
-        const equippedSlotName = this.logic.equipItem(inventoryItem, targetSlotOverride, this.activeSlots);
+        // ---> FIX: Prevent equip actions in battle
+        const isBattle = typeof this.config.onItemSelected === 'function';
+        if (this.logic.readOnly || isBattle) return;
 
+        const equippedSlotName = this.logic.equipItem(inventoryItem, targetSlotOverride, this.activeSlots);
+        
         if (equippedSlotName) {
             const newSlotIndex = this.activeSlots.indexOf(equippedSlotName);
             if (newSlotIndex !== -1) {
@@ -633,10 +644,13 @@ export class CharacterSummaryController extends BaseController {
     }
 
     unequipCurrentSlot() {
-        if (this.logic.readOnly || this.slotIndex === -1) return;
+        // ---> FIX: Prevent unequip actions in battle
+        const isBattle = typeof this.config.onItemSelected === 'function';
+        if (this.logic.readOnly || isBattle || this.slotIndex === -1) return;
+
         const slotName = this.activeSlots[this.slotIndex];
         const didUnequip = this.logic.unequipSlot(slotName);
-
+        
         if (didUnequip) {
             this.state = 'SLOTS';
             this.inventoryIndex = -1;
@@ -713,10 +727,13 @@ export class CharacterSummaryController extends BaseController {
     }
 
     handleItemDropped(item, sourceId, originSlot, dropTargetId) {
-        if (this.logic.readOnly) return;
+        // ---> FIX: Prevent dropping/swapping if in battle
+        const isBattle = typeof this.config.onItemSelected === 'function';
+        if (this.logic.readOnly || isBattle) return;
+
         if (!dropTargetId || dropTargetId.startsWith('INV_') || dropTargetId === 'SCROLLBAR_INV') {
             if (sourceId === 'equipment') {
-                this.playCancelSound(); 
+                this.playCancelSound();
                 this.logic.unequipSlot(originSlot);
                 this.updateFilteredInventory();
                 
@@ -733,16 +750,16 @@ export class CharacterSummaryController extends BaseController {
         if (dropTargetId && dropTargetId.startsWith('SLOT_')) {
             const targetSlotRaw = dropTargetId.substring(5);
             if (!this.logic.canEquipToSlot(item, targetSlotRaw)) {
-                this.playCancelSound(); 
+                this.playCancelSound();
                 return;
             }
 
             const slotKey = targetSlotRaw.toLowerCase().replace(/\s/g, '');
             const canonicalSlot = this.activeSlots.find(s => s.toLowerCase().replace(/\s/g, '') === slotKey) || targetSlotRaw;
-            
+
             if (sourceId === 'equipment' && originSlot === canonicalSlot) return;
 
-            this.playConfirmSound(); 
+            this.playConfirmSound();
             if (sourceId === 'equipment') {
                 this.logic.unequipSlot(originSlot);
             }

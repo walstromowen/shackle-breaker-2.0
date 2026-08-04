@@ -481,6 +481,8 @@ export class BattleController extends BaseController {
         this.state.selectedTargets = [];
     }
 
+    // Inside BattleController.js
+
     requestPartySwap(isForced = false, slotIndex = -1) {
         const activeIndices = this.state.activeParty
             .map(p => p ? this.state.partyRoster.indexOf(p) : -1)
@@ -496,11 +498,17 @@ export class BattleController extends BaseController {
         });
 
         this.state.isPausedForUI = true;
-        events.emit('REQUEST_PARTY_SWAP', {
-            mode: 'BATTLE_SELECT',
-            activeIndices: activeIndices,
+        
+        events.emit('REQUEST_PARTY_SWAP', { 
+            mode: 'BATTLE_SELECT', 
+            activeIndices: activeIndices, 
             callback: (selectedRosterIndex) => {
+                // ---> THE FIX: Guard against UI double-clicks! <---
+                // If it's already false, this callback has already been handled.
+                if (!this.state.isPausedForUI) return; 
+                
                 this.state.isPausedForUI = false;
+
                 if (selectedRosterIndex === null || selectedRosterIndex === undefined) {
                     if (isForced) this.requestPartySwap(isForced, slotIndex);
                     return;

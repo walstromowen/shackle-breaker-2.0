@@ -45,14 +45,14 @@ export const ItemDefinitions = {
         value: 20,
         icon: { col: 1, row: 0 },
         attack: { pierce: 3, slash: 3 },
-        grantedAbilities: ["slash", "purify", "uppercut"],
+        grantedAbilities: ["slash", "thrust",  "quick_stab", "healing_rain"],
         maxLevel: 3,
         statGrowth: {
             attack: { pierce: 2, slash: 2 }
         },
         abilityUnlocks: {
-            2: ["flurry"],
-            3: ["bolster"]
+            2: ["cleave"],
+            3: ["flurry"]
         },
         upgradeCosts: {
            2: { currency: 50, materials: { "soft_wood": 3 } },
@@ -92,7 +92,7 @@ export const ItemDefinitions = {
         value: 20,
         icon: { col: 3, row: 0 },
         attack: { blunt: 5},
-        grantedAbilities: ["strike"], 
+        grantedAbilities: ["strike", "cleave"], 
         maxLevel: 3,
         statGrowth: {
             attack: { blunt: 3 }
@@ -121,7 +121,7 @@ export const ItemDefinitions = {
             attack: { pierce: 2 }
         },
         abilityUnlocks: {
-            2: ["quick_stab"]
+            2: ["execute"]
         },
         upgradeCosts: {
             2: { currency: 40, materials: { "stone": 2, "soft_wood": 3 } },
@@ -137,13 +137,13 @@ export const ItemDefinitions = {
             value: 25,
             icon: { col: 8, row: 0 },
             attack: { slash: 5, pierce: 1 },
-            grantedAbilities: ["slash", "execute"],
+            grantedAbilities: ["slash"],
             maxLevel: 3,
             statGrowth: {
                 attack: { slash: 3, pierce: 1 }
             },
             abilityUnlocks: {
-              
+            2: ["execute"]
             },
             upgradeCosts: {
                 2: { currency: 60, materials: { "soft_wood": 4, "stone": 2 } },
@@ -166,7 +166,7 @@ export const ItemDefinitions = {
             defense: { blunt: 1, slash: 2, pierce: 2 },
         },
         abilityUnlocks: {
-            2: ["shield_bash"]
+            2: ["bolster"]
         },
         upgradeCosts: {
             2: { currency: 40, materials: { "stone": 2, "soft_wood": 3 } },
@@ -185,9 +185,12 @@ export const ItemDefinitions = {
         value: 20,
         icon: { col: 0, row: 1 },
         attack: { fire: 5},
-        grantedAbilities: ["quick_stab"],
+        grantedAbilities: ["fireball"],
         maxLevel: 3,
         statGrowth: { attack: { fire: 3 } },
+        abilityUnlocks: {
+                    2: ["meteor_shower"]
+                },
         upgradeCosts: {
             2: { currency: 100, materials: { "stone": 5 } },
             3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
@@ -203,7 +206,7 @@ export const ItemDefinitions = {
         value: 20,
         icon: { col: 1, row: 1 },
         attack: { water: 5},
-        grantedAbilities: ["quick_stab"],
+        grantedAbilities: ["water_blast"],
         maxLevel: 3,
         statGrowth: { attack: { water: 3 } },
         upgradeCosts: {
@@ -221,7 +224,7 @@ export const ItemDefinitions = {
         value: 20,
         icon: { col: 2, row: 1 },
         attack: { earth: 5},
-        grantedAbilities: ["quick_stab"],
+        grantedAbilities: ["earthquake"],
         maxLevel: 3,
         statGrowth: { attack: { earth: 3 } },
         upgradeCosts: {
@@ -239,7 +242,7 @@ export const ItemDefinitions = {
         value: 20,
         icon: { col: 3, row: 1 },
         attack: { lightning: 5},
-        grantedAbilities: ["quick_stab"],
+        grantedAbilities: ["shock"],
         maxLevel: 3,
         statGrowth: { attack: { lightning: 3 } },
         upgradeCosts: {
@@ -257,7 +260,7 @@ export const ItemDefinitions = {
         value: 20,
         icon: { col: 4, row: 1 },
         attack: { ice: 5}, // Fixed from "fire"
-        grantedAbilities: ["quick_stab"],
+        grantedAbilities: ["ice_shard"],
         maxLevel: 3,
         statGrowth: { attack: { ice: 3 } },
         upgradeCosts: {
@@ -275,7 +278,7 @@ export const ItemDefinitions = {
         value: 20,
         icon: { col: 5, row: 1 },
         attack: { wind: 5}, // Fixed from "fire"
-        grantedAbilities: ["quick_stab"],
+        grantedAbilities: ["strike"],
         maxLevel: 3,
         statGrowth: { attack: { wind: 3 } },
         upgradeCosts: {
@@ -312,9 +315,13 @@ export const ItemDefinitions = {
         value: 20,
         icon: { col: 7, row: 1 },
         attack: { light: 5}, // Fixed from "fire"
-        grantedAbilities: ["quick_stab"],
+        grantedAbilities: ["purif"],
         maxLevel: 3,
         statGrowth: { attack: { light: 3 } },
+ abilityUnlocks: { 
+    2: ["purify"],
+    3: ["healing_rain"]
+ },
         upgradeCosts: {
             2: { currency: 100, materials: { "stone": 5 } },
             3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
@@ -330,7 +337,7 @@ export const ItemDefinitions = {
         value: 20,
         icon: { col: 8, row: 1 },
         attack: { dark: 5}, // Fixed from "fire"
-        grantedAbilities: ["quick_stab"],
+        grantedAbilities: ["spirit_reap"],
         maxLevel: 3,
         statGrowth: { attack: { dark: 3 } },
         upgradeCosts: {

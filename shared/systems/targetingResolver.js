@@ -96,6 +96,20 @@ export class TargetingResolver {
                 }
                 return randomTargets;
             }
+            case 'full_ally_party': {
+                // Determine the full roster based on who is casting it
+                const fullLivingParty = (battleState.party || battleState.activeParty).filter(p => p && !p.isDead());
+                const fullLivingEnemies = (battleState.enemies || battleState.activeEnemies).filter(e => e && !e.isDead());
+                
+                const targetPool = isParty ? fullLivingParty : fullLivingEnemies;
+
+                if (hitCount > 1) {
+                    const multiAoE = [];
+                    for (let i = 0; i < hitCount; i++) multiAoE.push(...targetPool);
+                    return multiAoE;
+                }
+                return targetPool;
+            }
 
             case 'everyone':
                 return allLiving;

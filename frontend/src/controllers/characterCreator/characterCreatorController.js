@@ -4,12 +4,19 @@ import { ScrollManager } from '../../ui/scrollManager.js';
 
 // --- STANDARDIZED INPUT BINDINGS ---
 const KEY_BINDINGS = {
-    'ArrowUp': 'UP', 'KeyW': 'UP',
-    'ArrowDown': 'DOWN', 'KeyS': 'DOWN',
-    'ArrowLeft': 'LEFT', 'KeyA': 'LEFT',
-    'ArrowRight': 'RIGHT', 'KeyD': 'RIGHT',
-    'Enter': 'CONFIRM', 'Space': 'CONFIRM',
-    'Escape': 'CANCEL', 'Backspace': 'CANCEL', 'Tab': 'CANCEL'
+    'ArrowUp': 'UP',
+    'KeyW': 'UP',
+    'ArrowDown': 'DOWN',
+    'KeyS': 'DOWN',
+    'ArrowLeft': 'LEFT',
+    'KeyA': 'LEFT',
+    'ArrowRight': 'RIGHT',
+    'KeyD': 'RIGHT',
+    'Enter': 'CONFIRM',
+    'Space': 'CONFIRM',
+    'Escape': 'CANCEL',
+    'Backspace': 'CANCEL',
+    'Tab': 'CANCEL'
 };
 
 export class CharacterCreatorController extends BaseController {
@@ -39,7 +46,8 @@ export class CharacterCreatorController extends BaseController {
             currentRow: this.logic.currentRow,
             currentStep: this.logic.getCurrentStep(),
             isEditingName: this.logic.isEditingName,
-            isEditingSeed: this.logic.isEditingSeed, // NEW: Export to renderer
+            isEditingSeed: this.logic.isEditingSeed,
+            // NEW: Export to renderer
             data: CREATION_DATA,
             selections: this.logic.state,
             previewStats: this.logic.getPreviewStats(),
@@ -75,7 +83,7 @@ export class CharacterCreatorController extends BaseController {
     _syncFocusWithHover(hitboxId) {
         if (hitboxId === 'INPUT_NAME') {
             this.logic.setRowByStep('name');
-        } else if (hitboxId === 'INPUT_SEED') { // NEW
+        } else if (hitboxId === 'INPUT_SEED') {
             this.logic.setRowByStep('seed');
         } else if (hitboxId === 'BTN_START') {
             this.logic.setRowByStep('start');
@@ -174,8 +182,7 @@ export class CharacterCreatorController extends BaseController {
 
         // Track state to see if a sound should fire
         const prevRow = this.logic.currentRow;
-        const prevSelections = JSON.stringify(this.logic.state);
-
+        
         if (intent === 'UP') {
             this.logic.moveRow(-1);
             if (this.logic.currentRow !== prevRow) this.playNavSound();

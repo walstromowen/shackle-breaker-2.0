@@ -19,7 +19,7 @@ targeting ui improvements for splash attacks with mouse
 Bugs
 Rain flash
 rain sound effect too slow
-can equip/ unequip items in battle
+death rattle animation indication triggering on wrong entity
 
 
 
