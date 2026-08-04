@@ -61,7 +61,7 @@ export const BIOME_DEFINITIONS = {
           // Mixed Harvester with Mad Man & Mad Mage
           { chance: 0.15, enemies: ['MAD_MAN', 'HOLLOW_HARVESTER', 'MAD_MAGE'] }, 
           { chance: 0.15, enemies: ['SHACKLED_STEED', 'MAD_MAN'] }, 
-          { chance: 0.15, enemies: ['ROTTER', 'MAD_MAN', 'ROTTER'] }, 
+          { chance: 1.15, enemies: ['ROTTER', 'MAD_MAN', 'ROTTER'] }, 
           { chance: 0.15, enemies: ['WOLF', 'WOLF'] }, 
           { chance: 0.15, enemies: [ 
               { id: 'LEGIONARY', levelOffset: 5, traits: ['iron_willed'], equipment: { mainHand: 'warhammer' } }, 

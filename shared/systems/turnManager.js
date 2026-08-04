@@ -143,14 +143,16 @@ export class TurnManager {
     }
 
     _applyAbilityEffects(turn) {
-        let { actor, action, targets, isFirstTarget, ignoreCost } = turn;
-
+    let { actor, action, targets, isFirstTarget, ignoreCost, allowDeadTarget } = turn; 
+    
+    // Fallback to checking the action definition if the turn doesn't explicitly have it
+    const canTargetDead = allowDeadTarget || action?.allowDeadTarget;
         if (isFirstTarget && !ignoreCost) {
             action.payCost(actor, InventorySystem);
         }
 
         for (let target of targets) {
-            const actualTarget = this.getValidTarget(target);
+        const actualTarget = this.getValidTarget(target, canTargetDead);
             if (!actualTarget) continue;
 
             const wasTargetDead = actualTarget.isDead();
@@ -263,14 +265,17 @@ const isAoE = ['all_enemies', 'all_allies', 'full_ally_party'].includes(action.t
     }
 
     _handleAnimationTurn(turn) {
-        const targetList = turn.targets || [turn.target];
-        const validTargets = [];
-        const redirectedTurns = new Set();
+    const targetList = turn.targets || [turn.target];
+    const validTargets = [];
+    const redirectedTurns = new Set();
+    
+    // Extract the flag from the turn object
+    const allowDeadTarget = turn.allowDeadTarget || turn.action?.allowDeadTarget || false;
 
-        for (let target of targetList) {
-            let actualTarget = this.getValidTarget(target);
-            if (!actualTarget) continue;
-
+    for (let target of targetList) {
+        // Pass the flag down!
+        let actualTarget = this.getValidTarget(target, allowDeadTarget); 
+        if (!actualTarget) continue;
             if (actualTarget !== target) {
                 const nextApplyTurn = this.state.turnQueue.find(t =>
                     t.type === TURN_TYPES.APPLY_ABILITY_EFFECTS &&
@@ -351,13 +356,15 @@ const isAoE = ['all_enemies', 'all_allies', 'full_ally_party'].includes(action.t
         this.processNextTurnInQueue();
     }
 
-    getValidTarget(target) {
-        if (!target.isDead()) return target;
-        const fallbackPool = this.bc.getActivePool(target.team);
-        const livingTargets = fallbackPool.filter(t => t && !t.isDead());
-        if (livingTargets.length === 0) return null;
-        return livingTargets[Math.floor(Math.random() * livingTargets.length)];
-    }
+    getValidTarget(target, allowDeadTarget = false) {
+    // If the turn explicitly allows dead targets, return the corpse!
+    if (allowDeadTarget || !target.isDead()) return target;
+
+    const fallbackPool = this.bc.getActivePool(target.team);
+    const livingTargets = fallbackPool.filter(t => t && !t.isDead());
+    if (livingTargets.length === 0) return null;
+    return livingTargets[Math.floor(Math.random() * livingTargets.length)];
+}
 
     queueMessage(message, type = TURN_TYPES.MESSAGE_STATUS) {
         this.state.turnQueue.unshift({ type, message });

@@ -180,39 +180,44 @@ export class BattleController extends BaseController {
     }
 
     _queueDeathTraits(deadCombatant) {
-        const rawTraits = deadCombatant.traits;
-        if (!rawTraits || !Array.isArray(rawTraits) || rawTraits.length === 0) return;
+    const rawTraits = deadCombatant.traits;
+    if (!rawTraits || !Array.isArray(rawTraits) || rawTraits.length === 0) return;
 
-        rawTraits.forEach(trait => {
-            const deathTrigger = trait?.triggers?.onDeath;
-            if (deathTrigger && deathTrigger.ability) {
-                const abilityId = deathTrigger.ability;
-                const [ability] = AbilityFactory.createAbilities([abilityId]);
+    rawTraits.forEach(trait => {
+        const deathTrigger = trait?.triggers?.onDeath;
+        if (deathTrigger && deathTrigger.ability) {
+            const abilityId = deathTrigger.ability;
+            const [ability] = AbilityFactory.createAbilities([abilityId]);
+            
+            if (ability) {
+                // 1. Add allowDeadTarget to the EXECUTE_ACTION
+                this.state.turnQueue.unshift({
+                    type: TURN_TYPES.EXECUTE_ACTION,
+                    ignoreCost: true,
+                    allowDeadActor: true,
+                    allowDeadTarget: true, // <--- ADD THIS HERE
+                    actor: deadCombatant,
+                    action: ability,
+                    target: deadCombatant
+                });
 
-                if (ability) {
-                    this.state.turnQueue.unshift({
-                        type: TURN_TYPES.EXECUTE_ACTION,
-                        ignoreCost: true,
-                        allowDeadActor: true,
-                        actor: deadCombatant,
-                        action: ability,
-                        target: deadCombatant
-                    });
+                const msgTemplate = deathTrigger.battleMessage || "{actor}'s {trait} activates upon death!";
+                const finalMessage = msgTemplate.replace(/{actor}/g, deadCombatant.name).replace(/{trait}/g, trait.name);
+                this.state.turnQueue.unshift({ type: TURN_TYPES.MESSAGE_STATUS, message: finalMessage });
 
-                    const msgTemplate = deathTrigger.battleMessage || "{actor}'s {trait} activates upon death!";
-                    const finalMessage = msgTemplate.replace(/{actor}/g, deadCombatant.name).replace(/{trait}/g, trait.name);
-                    this.state.turnQueue.unshift({ type: TURN_TYPES.MESSAGE_STATUS, message: finalMessage });
-
-                    const animId = deathTrigger.animationId || "trait_activate";
-                    this.state.turnQueue.unshift({
-                        type: TURN_TYPES.PLAY_ANIMATION,
-                        animationId: animId,
-                        target: deadCombatant
-                    });
-                }
+                const animId = deathTrigger.animationId || "trait_activate";
+                
+                // 2. Add allowDeadTarget to the PLAY_ANIMATION
+                this.state.turnQueue.unshift({
+                    type: TURN_TYPES.PLAY_ANIMATION,
+                    animationId: animId,
+                    target: deadCombatant,
+                    allowDeadTarget: true // <--- ADD THIS HERE
+                });
             }
-        });
-    }
+        }
+    });
+}
 
     _getTargetsFromGroup() {
     // Treat 'any' just like 'everyone' when building the list of valid cursor targets
