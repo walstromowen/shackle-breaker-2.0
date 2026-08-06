@@ -1,4 +1,3 @@
-// models/encounterModel.js
 export class EncounterModel {
     constructor(definition, context = {}, startingStageId = null) {
         this.id = definition.id;
@@ -52,11 +51,13 @@ export class EncounterModel {
     getCurrentText() {
         const stage = this.getCurrentStage();
         if (!stage || !stage.text) return "Error: Stage or text missing.";
-        
+
         let parsedText = stage.text;
+
         parsedText = parsedText.replace(/\$\{context\.([a-zA-Z0-9_]+)\}/g, (match, key) => {
             return this.context[key] !== undefined ? this.context[key] : `[Missing:${key}]`;
         });
+
         return parsedText;
     }
 

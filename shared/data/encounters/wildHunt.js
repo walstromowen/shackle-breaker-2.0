@@ -169,9 +169,7 @@ export const wildHunt = {
                     text: "Charge the monstrosity!",
                     customActionText: "{name}'s party rush out to attack the monstrosity!",
                     outcomes: [
-                        { weight: 100, results: [
-                            { type: "START_BATTLE", payload: { enemies: ["POACHERS_NIGHTMARE"], bgm: "poachersNightmareBgm", background: "poachersNightmareBg" } }
-                        ]}
+                        { weight: 100, results: [ { type: "START_BATTLE", payload: { enemies: ["POACHERS_NIGHTMARE"], bgm: "poachersNightmareBgm", background: "poachersNightmareBg" } } ]}
                     ]
                 }
             ]
@@ -184,9 +182,7 @@ export const wildHunt = {
                 {
                     text: "Draw your weapon!",
                     outcomes: [
-                        { weight: 100, results: [
-                            { type: "START_BATTLE", payload: { enemies: ["POACHERS_NIGHTMARE"], bgm: "poachersNightmareBgm", background: "poachersNightmareBg" } }
-                        ]}
+                        { weight: 100, results: [ { type: "START_BATTLE", payload: { enemies: ["POACHERS_NIGHTMARE"], bgm: "poachersNightmareBgm", background: "poachersNightmareBg" } } ]}
                     ]
                 }
             ]
@@ -199,10 +195,7 @@ export const wildHunt = {
                 {
                     text: "Collect the valuable materials.",
                     outcomes: [
-                        { weight: 100, results: [
-                            { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "deer_drops", rolls: 1 } },
-                            { type: "END_ENCOUNTER", payload: null }
-                        ]}
+                        { weight: 100, results: [ { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "deer_drops", rolls: 1 } }, { type: "END_ENCOUNTER", payload: null } ]}
                     ]
                 }
             ]
@@ -229,9 +222,7 @@ export const wildHunt = {
                 {
                     text: "Brace for the sudden fight!",
                     outcomes: [
-                        { weight: 100, results: [
-                            { type: "START_BATTLE", payload: { enemies: ["GRIM_STAG"] } }
-                        ]}
+                        { weight: 100, results: [ { type: "START_BATTLE", payload: { enemies: ["GRIM_STAG"] } } ]}
                     ]
                 }
             ]

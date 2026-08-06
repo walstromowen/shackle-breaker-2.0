@@ -235,7 +235,7 @@ export class SceneManager {
                 const customBGM = data.bgm || data.context?.bgm || null;
                 this.activeEncounterBGM = customBGM;
                 this.changeScene('encounter', { bgm: customBGM });
-            }, 'ethereal');
+            }, 'fade');
         });
 
         events.on('START_BATTLE', (data) => {

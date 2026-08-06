@@ -5,19 +5,23 @@ import { woundedMutt } from './encounters/woundedMutt.js';
 import { bonfire } from './encounters/bonfire.js';
 import { wildHunt } from './encounters/wildHunt.js';
 import { treasureChest } from './encounters/treasureChest.js';
-import { testEncounter } from './encounters/testEncounter.js'; // <-- Import your new encounter here
+import { testEncounter } from './encounters/testEncounter.js';
+
+// <-- Import your new encounter here
 
 // 2. Map them by their explicit system IDs
 export const encounterDefinitions = {
-  [oakTree.id]: oakTree,
-  [woundedMutt.id]: woundedMutt,
-  [aDisturbingSight.id]: aDisturbingSight,
-  [bonfire.id]: bonfire,
-  [wildHunt.id]: wildHunt,
-  [treasureChest.id]: treasureChest,
-  [testEncounter.id]: testEncounter, // <-- Add your new encounter here
-  
-  // When you make a new encounter, it's just two quick steps:
-  // 1. Import it at the top.
-  // 2. Add `[yourEncounter.id]: yourEncounter,` right here.
+    [oakTree.id]: oakTree,
+    [woundedMutt.id]: woundedMutt,
+    [aDisturbingSight.id]: aDisturbingSight,
+    [bonfire.id]: bonfire,
+    [wildHunt.id]: wildHunt,
+    [treasureChest.id]: treasureChest,
+    [testEncounter.id]: testEncounter,
+    
+    // <-- Add your new encounter here
+    
+    // When you make a new encounter, it's just two quick steps:
+    // 1. Import it at the top.
+    // 2. Add `[yourEncounter.id]: yourEncounter,` right here.
 };

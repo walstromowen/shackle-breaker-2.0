@@ -30,12 +30,11 @@ export const treasureChest = {
                     successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "opened_chest" } }] }],
                     failureOutcomes: [
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "ambush" } }] },
-                        { 
-                            weight: 1, 
-                            results: [
+                        {
+                            weight: 1, results: [
                                 { type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_str" } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "wont_budge" } }
-                            ] 
+                            ]
                         },
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "chest_explosion" } }] },
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "poison_mist" } }] }
@@ -51,12 +50,11 @@ export const treasureChest = {
                     successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "opened_chest" } }] }],
                     failureOutcomes: [
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "ambush" } }] },
-                        { 
-                            weight: 1, 
-                            results: [
+                        {
+                            weight: 1, results: [
                                 { type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_dex" } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "jammed_lock" } }
-                            ] 
+                            ]
                         },
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "chest_explosion" } }] },
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "poison_mist" } }] }
@@ -72,12 +70,11 @@ export const treasureChest = {
                     successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "opened_chest" } }] }],
                     failureOutcomes: [
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "ambush" } }] },
-                        { 
-                            weight: 1, 
-                            results: [
+                        {
+                            weight: 1, results: [
                                 { type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_int" } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "spell_fail" } }
-                            ] 
+                            ]
                         },
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "summon_evil" } }] },
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "chest_explosion" } }] },
@@ -94,12 +91,11 @@ export const treasureChest = {
                     successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "found_key" } }] }],
                     failureOutcomes: [
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "ambush" } }] },
-                        { 
-                            weight: 1, 
-                            results: [
+                        {
+                            weight: 1, results: [
                                 { type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_atn" } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "no_key" } }
-                            ] 
+                            ]
                         },
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "chest_explosion" } }] },
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "poison_mist" } }] }
@@ -203,13 +199,13 @@ export const treasureChest = {
                 {
                     text: "Pat out the flames.",
                     customActionText: "{name} is thrown back by the blast!",
-                    outcomes: [{ 
+                    outcomes: [{
                         weight: 100, results: [
                             { type: "MODIFY_VITALS", payload: { hp: -25, damageType: "fire", target: "active_character" } },
                             { type: "APPLY_STATUS_EFFECT", payload: { effectId: "burn", charges: 3, target: "active_character" } },
                             { type: "DESTROY_OBJECT" },
                             { type: "END_ENCOUNTER", payload: null }
-                        ] 
+                        ]
                     }]
                 }
             ]
@@ -241,7 +237,7 @@ export const treasureChest = {
             decisions: [
                 {
                     text: "Draw your weapon!",
-                    outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { enemies: ["BIOME_DEFAULT", "BIOME_DEFAULT"] } }] }]
+                    outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { tableId: "biome_ambush" } }] }]
                 }
             ]
         },
@@ -253,7 +249,7 @@ export const treasureChest = {
             decisions: [
                 {
                     text: "Prepare for combat!",
-                    outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { enemies: ["DARK_SPIRIT"] } }] }]
+                    outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { tableId: "dark_spirit" } }] }]
                 }
             ]
         }

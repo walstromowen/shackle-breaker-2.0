@@ -33,22 +33,21 @@ class BiomeFactory {
     determineBiome(temperatureNoise, moistureNoise) {
         // Perlin noise creates a bell curve where most values cluster around 0.5.
         // Splitting right down the middle creates 4 equal 25% quadrants.
-        
         const isHot = temperatureNoise > 0.5;
         const isDry = moistureNoise < 0.5;
 
         // Quadrant 1: Hot & Dry (25% of map)
         if (isHot && isDry) {
             return this.getBiome('DESERT');
-        } 
+        }
         // Quadrant 2: Hot & Wet (25% of map)
         else if (isHot && !isDry) {
             return this.getBiome('DESERT'); // TODO: Replace with JUNGLE or SAVANNA later!
-        } 
+        }
         // Quadrant 3: Cold & Dry (25% of map)
         else if (!isHot && isDry) {
             return this.getBiome('PLAINS'); // TODO: Replace with TUNDRA or SNOW later!
-        } 
+        }
         // Quadrant 4: Cold & Wet (25% of map)
         else {
             return this.getBiome('PLAINS'); // TODO: Replace with FOREST later!

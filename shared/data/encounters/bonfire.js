@@ -17,18 +17,22 @@ export const bonfire = {
                     conditions: [{ type: "context_flag_not_set", flagId: "failed_bonfire_rest" }],
                     customActionText: "{name} sets up camp and rests by the dwindling flames for 12 hours...",
                     successOutcomes: [
-                        { weight: 1, results: [
-                            { type: "MODIFY_VITALS", payload: { hp: 50, stamina: 50, insight: 50, target: "entire_party", isPercentageOfCurrent: true } },
-                            { type: "AWARD_XP", payload: { amount: 5, target: "entire_party" } },
-                            { type: "ADVANCE_TIME", payload: { hours: 12 } },
-                            { type: "ADVANCE_STAGE", payload: { stageId: "rest_success_loot" } }
-                        ]},
-                        { weight: 2, results: [
-                            { type: "MODIFY_VITALS", payload: { hp: 50, stamina: 50, insight: 50, target: "entire_party", isPercentageOfCurrent: true } },
-                            { type: "AWARD_XP", payload: { amount: 5, target: "entire_party" } },
-                            { type: "ADVANCE_TIME", payload: { hours: 12 } },
-                            { type: "ADVANCE_STAGE", payload: { stageId: "rest_success_normal" } }
-                        ]}
+                        {
+                            weight: 1, results: [
+                                { type: "MODIFY_VITALS", payload: { hp: 50, stamina: 50, insight: 50, target: "entire_party", isPercentageOfCurrent: true } },
+                                { type: "AWARD_XP", payload: { amount: 5, target: "entire_party" } },
+                                { type: "ADVANCE_TIME", payload: { hours: 12 } },
+                                { type: "ADVANCE_STAGE", payload: { stageId: "rest_success_loot" } }
+                            ]
+                        },
+                        {
+                            weight: 2, results: [
+                                { type: "MODIFY_VITALS", payload: { hp: 50, stamina: 50, insight: 50, target: "entire_party", isPercentageOfCurrent: true } },
+                                { type: "AWARD_XP", payload: { amount: 5, target: "entire_party" } },
+                                { type: "ADVANCE_TIME", payload: { hours: 12 } },
+                                { type: "ADVANCE_STAGE", payload: { stageId: "rest_success_normal" } }
+                            ]
+                        }
                     ],
                     failureOutcomes: [
                         { weight: 1, results: [{ type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_bonfire_rest" } }, { type: "ADVANCE_STAGE", payload: { stageId: "ambush_madman" } }] },
@@ -55,11 +59,13 @@ export const bonfire = {
             decisions: [
                 {
                     text: "Dig up the half-buried object.",
-                    outcomes: [{ weight: 1, results: [
-                        { type: "DESTROY_OBJECT" },
-                        { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "plains", rolls: 1 } },
-                        { type: "END_ENCOUNTER", payload: null }
-                    ]}]
+                    outcomes: [{
+                        weight: 1, results: [
+                            { type: "DESTROY_OBJECT" },
+                            { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "plains", rolls: 1 } },
+                            { type: "END_ENCOUNTER", payload: null }
+                        ]
+                    }]
                 }
             ]
         },
@@ -70,10 +76,12 @@ export const bonfire = {
             decisions: [
                 {
                     text: "Pack up camp and continue.",
-                    outcomes: [{ weight: 1, results: [
-                        { type: "DESTROY_OBJECT" },
-                        { type: "END_ENCOUNTER", payload: null }
-                    ]}]
+                    outcomes: [{
+                        weight: 1, results: [
+                            { type: "DESTROY_OBJECT" },
+                            { type: "END_ENCOUNTER", payload: null }
+                        ]
+                    }]
                 }
             ]
         },
@@ -85,7 +93,7 @@ export const bonfire = {
             decisions: [
                 {
                     text: "Draw your weapon!",
-                    outcomes: [{ weight: 1, results: [{ type: "START_BATTLE", payload: { enemies: ["MAD_MAN", "MAD_MAN", "MAD_MAN"] } }] }]
+                    outcomes: [{ weight: 1, results: [{ type: "START_BATTLE", payload: { tableId: "madman_pack" } }] }]
                 }
             ]
         },
@@ -97,7 +105,7 @@ export const bonfire = {
             decisions: [
                 {
                     text: "Draw your weapon!",
-                    outcomes: [{ weight: 1, results: [{ type: "START_BATTLE", payload: { enemies: ["MAD_MAN", "MAD_MAN"] } }] }]
+                    outcomes: [{ weight: 1, results: [{ type: "START_BATTLE", payload: { tableId: "madman_pack" } }] }]
                 }
             ]
         },
@@ -109,7 +117,7 @@ export const bonfire = {
             decisions: [
                 {
                     text: "Draw your weapon!",
-                    outcomes: [{ weight: 1, results: [{ type: "START_BATTLE", payload: { enemies: ["WOLF", "WOLF", "WOLF"] } }] }]
+                    outcomes: [{ weight: 1, results: [{ type: "START_BATTLE", payload: { tableId: "wolf_pack" } }] }]
                 }
             ]
         }

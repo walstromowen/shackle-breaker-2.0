@@ -1,4 +1,5 @@
 import { CONFIG } from '../data/constants.js';
+import { SpawnTableFactory } from '../systems/factories/spawnTableFactory.js';
 
 export class BiomeModel {
     constructor(definition) {
@@ -9,22 +10,19 @@ export class BiomeModel {
         this.battleBackgrounds = definition.battleBackgrounds || { day: null, dusk: null, night: null };
         this.music = definition.music || { day: null, night: null, battle: null };
         this.shapeElevation = definition.shapeElevation || ((noise) => noise);
-        this.plateauWidth = definition.plateauWidth !== undefined ? definition.plateauWidth : 2; // Default to 2
+        this.plateauWidth = definition.plateauWidth !== undefined ? definition.plateauWidth : 2;
         
         this.mapObjects = definition.mapObjects;
         this.battles = definition.battles;
         this.encounters = definition.encounters;
-        
-        // NEW: Structures definitions
         this.structures = definition.structures;
     }
 
-    // NEW: Phase 0 Structure Spawning Logic
     getStructureId(rngValue) {
         if (!this.structures) return null;
         if (rngValue > this.structures.rate) return null;
 
-        const poolRng = rngValue / this.structures.rate; 
+        const poolRng = rngValue / this.structures.rate;
         let cumulativeChance = 0;
         
         for (const pool of this.structures.pools) {
@@ -42,6 +40,7 @@ export class BiomeModel {
 
         for (const rule of rules) {
             if (rule.rangeStart && rngValue < rule.rangeStart) continue;
+            
             if (rngValue < rule.chance) {
                 let spawnId = rule.id;
                 if (rule.pool) {
@@ -53,30 +52,17 @@ export class BiomeModel {
         return null;
     }
 
-    getBattle(difficulty = 'normal') {
-        if (!this.battles) return null;
+    getBattle(difficulty = 'normal', currentHour = 12) {
+        if (!this.battles || !this.battles.tables) return null;
         if (Math.random() > this.battles.rate) return null;
 
-        // Extract the specific array for the current difficulty level
-        const currentPools = this.battles.pools[difficulty];
-
-        // Failsafe in case the difficulty key is missing or empty
-        if (!currentPools || !Array.isArray(currentPools) || currentPools.length === 0) {
-            console.warn(`[BiomeModel] No battle pool found for difficulty: ${difficulty}`);
-            return null;
-        }
-
-        const roll = Math.random();
-        let cumulativeChance = 0;
-        for (const pool of currentPools) {
-            cumulativeChance += pool.chance;
-            if (roll <= cumulativeChance) {
-                return { enemies: pool.enemies };
-            }
-        }
+        const timeOfDay = this.getTimeOfDay(currentHour);
+        const tableId = this.battles.tables[timeOfDay] || this.battles.tables.day;
         
-        // Fallback to the first pool if the random roll fails to match (e.g., chances don't sum to 1.0)
-        return { enemies: currentPools[0].enemies };
+        if (!tableId) return null;
+
+        const spawnModel = SpawnTableFactory.generateBattle(tableId, difficulty);
+        return spawnModel.hasEnemies() ? { enemies: spawnModel.enemies } : null;
     }
 
     getTimeOfDay(currentHour) {
@@ -86,25 +72,31 @@ export class BiomeModel {
     }
 
     getEncounter(currentHour) {
-        if (!this.encounters) return null;
+        // Updated to read directly from the biome's inline encounter pools
+        if (!this.encounters || !this.encounters.pools || this.encounters.pools.length === 0) return null;
         if (Math.random() > this.encounters.rate) return null;
 
         const timeOfDay = this.getTimeOfDay(currentHour);
+        
+        // Filter out encounters that don't match the current time
         const validPools = this.encounters.pools.filter(pool => 
             !pool.allowedTimes || pool.allowedTimes.includes(timeOfDay)
         );
 
         if (validPools.length === 0) return null;
 
-        const roll = Math.random();
-        let cumulativeChance = 0;
+        // Perform a weighted random roll
+        const totalWeight = validPools.reduce((sum, pool) => sum + pool.weight, 0);
+        let roll = Math.random() * totalWeight;
+
         for (const pool of validPools) {
-            cumulativeChance += pool.chance;
-            if (roll <= cumulativeChance) {
+            if (roll < pool.weight) {
                 return { id: pool.id };
             }
+            roll -= pool.weight;
         }
-        return { id: validPools[0].id };
+
+        return null;
     }
 
     getBattleBackground(currentHour) {
@@ -113,14 +105,11 @@ export class BiomeModel {
         return this.battleBackgrounds[timeOfDay];
     }
 
-    // --- NEW: Time & State Aware Music Logic ---
     getMusic(currentHour, isBattle = false) {
         if (!this.music) return null;
         if (isBattle) return this.music.battle;
         
         const timeOfDay = this.getTimeOfDay(currentHour);
-        // If it's night, play night theme (fallback to day if missing).
-        // If it's dusk, default to the day theme.
         if (timeOfDay === 'night') {
             return this.music.night || this.music.day;
         }

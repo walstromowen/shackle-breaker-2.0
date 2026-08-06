@@ -62,11 +62,13 @@ export const woundedMutt = {
                 {
                     text: "Defend against the rabid mutt!",
                     customActionText: "{name} grits their teeth against the tearing flesh, kicking the beast away and drawing a weapon!",
-                    outcomes: [{ weight: 100, results: [
-                        { type: "MODIFY_VITALS", payload: { hp: -35, stamina: -15, insight: 0, damageType: "pierce", isPercentage: false, bypassDefense: false } },
-                        { type: "APPLY_STATUS_EFFECT", payload: { effectId: "bleed", charges: 3, target: "active_character" } },
-                        { type: "START_BATTLE", payload: { enemies: ["DOG"] } }
-                    ] }]
+                    outcomes: [{
+                        weight: 100, results: [
+                            { type: "MODIFY_VITALS", payload: { hp: -35, stamina: -15, insight: 0, damageType: "pierce", isPercentage: false, bypassDefense: false } },
+                            { type: "APPLY_STATUS_EFFECT", payload: { effectId: "bleed", charges: 3, target: "active_character" } },
+                            { type: "START_BATTLE", payload: { tableId: "rabid_dog" } }
+                        ]
+                    }]
                 }
             ]
         },
