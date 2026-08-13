@@ -87,6 +87,7 @@ export class EntityModel {
     get equipment() { return this.state.equipment; }
     get statusEffects() { return this.state.statusEffects; }
     get traits() { return this.state.traits; }
+    get tags() { return this.state.tags || []; }
     get baseStats() { return this.state.baseStats; }
     get lootTableId() { return this.state.lootTableId; }
     get traitRewards() { return this.state.traitRewards; } // <-- Added Getter

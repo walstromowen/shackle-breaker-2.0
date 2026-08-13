@@ -4,7 +4,7 @@ export const bonfire = {
     imageSheet: "encounter_bonfire",
     initialStage: "discovery",
     stages: {
-        "discovery": {
+        discovery: {
             displayText: "Bonfire",
             image: { col: 0, row: 0 },
             text: "{name}'s party encounters a bonfire. Its embers appear to still be burning.",
@@ -14,11 +14,15 @@ export const bonfire = {
                     type: "skill_check",
                     attribute: null,
                     threshold: 10,
-                    conditions: [{ type: "context_flag_not_set", flagId: "failed_bonfire_rest" }],
-                    customActionText: "{name} sets up camp and rests by the dwindling flames for 12 hours...",
+                    conditions: [
+                        { type: "context_flag_not_set", flagId: "failed_bonfire_rest" },
+                        { type: "has_tag", tag: "HUMANOID" }
+                    ],
+                    customActionText: "{name} sets up camp and rests by the dwindling flames.",
                     successOutcomes: [
                         {
-                            weight: 1, results: [
+                            weight: 1,
+                            results: [
                                 { type: "MODIFY_VITALS", payload: { hp: 50, stamina: 50, insight: 50, target: "entire_party", isPercentageOfCurrent: true } },
                                 { type: "AWARD_XP", payload: { amount: 5, target: "entire_party" } },
                                 { type: "ADVANCE_TIME", payload: { hours: 12 } },
@@ -26,7 +30,8 @@ export const bonfire = {
                             ]
                         },
                         {
-                            weight: 2, results: [
+                            weight: 2,
+                            results: [
                                 { type: "MODIFY_VITALS", payload: { hp: 50, stamina: 50, insight: 50, target: "entire_party", isPercentageOfCurrent: true } },
                                 { type: "AWARD_XP", payload: { amount: 5, target: "entire_party" } },
                                 { type: "ADVANCE_TIME", payload: { hours: 12 } },
@@ -52,40 +57,46 @@ export const bonfire = {
                 }
             ]
         },
-        "rest_success_loot": {
+        rest_success_loot: {
             displayText: "Rest",
-            image: { col: 2, row: 0 },
+            image: { col: 0, row: 2 },
             text: "Upon waking from a rest, {name} finds something half-buried in the dirt beside the burned-out fire.",
             decisions: [
                 {
                     text: "Dig up the half-buried object.",
-                    outcomes: [{
-                        weight: 1, results: [
-                            { type: "DESTROY_OBJECT" },
-                            { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "plains", rolls: 1 } },
-                            { type: "END_ENCOUNTER", payload: null }
-                        ]
-                    }]
+                    conditions: [{ type: "has_tag", tag: "HUMANOID" }],
+                    outcomes: [
+
+
+                        {
+                            weight: 1,
+                            results: [
+                                { type: "DESTROY_OBJECT" },
+                                { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "plains", rolls: 1 } },
+                                // Added custom text for the dynamically generated rewards screen
+                                { type: "END_ENCOUNTER", payload: { 
+                                    titleText: "Unearthed Loot", 
+                                    buttonText: "Leave the camp behind." 
+                                } }
+                            ]
+                        }
+                    ]
                 }
             ]
         },
-        "rest_success_normal": {
+        rest_success_normal: {
             displayText: "Rest",
             image: { col: 1, row: 0 },
             text: "{name}'s party rests peacefully, recovering their strength. The embers have long since burned out as much time has passed.",
             decisions: [
                 {
                     text: "Pack up camp and continue.",
-                    outcomes: [{
-                        weight: 1, results: [
-                            { type: "DESTROY_OBJECT" },
-                            { type: "END_ENCOUNTER", payload: null }
-                        ]
-                    }]
+                    conditions: [{ type: "has_tag", tag: "HUMANOID" }],
+                    outcomes: [{ weight: 1, results: [{ type: "DESTROY_OBJECT" }, { type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]
         },
-        "ambush_madman": {
+        ambush_madman: {
             displayText: "Ambush!",
             image: { col: 0, row: 1 },
             text: "The rest is violently interrupted! {name} is ambushed by madmen emerging from the shadows!",
@@ -93,23 +104,25 @@ export const bonfire = {
             decisions: [
                 {
                     text: "Draw your weapon!",
-                    outcomes: [{ weight: 1, results: [{ type: "START_BATTLE", payload: { tableId: "madman_pack" } }] }]
+                    conditions: [{ type: "has_tag", tag: "HUMANOID" }],
+                    outcomes: [{ weight: 1, results: [{ type: "START_BATTLE", payload: { tableId: "madman_pack", enemies: ["MAD_MAN"] } }] }]
                 }
             ]
         },
-        "ambush_unseen": {
+        ambush_unseen: {
             displayText: "Ambush!",
-            image: { col: 1, row: 1 },
+            image: { col: 0, row: 1 },
             text: "A heavy rock flies out of the darkness and strikes {name}! Soon, the party is surrounded by raving madmen!",
             bgm: "plainsBattleBgm",
             decisions: [
                 {
                     text: "Draw your weapon!",
-                    outcomes: [{ weight: 1, results: [{ type: "START_BATTLE", payload: { tableId: "madman_pack" } }] }]
+                    conditions: [{ type: "has_tag", tag: "HUMANOID" }],
+                    outcomes: [{ weight: 1, results: [{ type: "START_BATTLE", payload: { tableId: "madman_pack", enemies: ["MAD_MAN"] } }] }]
                 }
             ]
         },
-        "ambush_wolves": {
+        ambush_wolves: {
             displayText: "Ambush!",
             image: { col: 1, row: 1 },
             text: "A low growl echoes in the dark. {name}'s party is surrounded by a pack of starving wolves!",
@@ -117,7 +130,8 @@ export const bonfire = {
             decisions: [
                 {
                     text: "Draw your weapon!",
-                    outcomes: [{ weight: 1, results: [{ type: "START_BATTLE", payload: { tableId: "wolf_pack" } }] }]
+                    conditions: [{ type: "has_tag", tag: "HUMANOID" }],
+                    outcomes: [{ weight: 1, results: [{ type: "START_BATTLE", payload: { tableId: "wolf_pack", enemies: ["WOLF"] } }] }]
                 }
             ]
         }

@@ -4,6 +4,7 @@ import { SpawnTableFactory } from '../systems/factories/spawnTableFactory.js';
 export class BiomeModel {
     constructor(definition) {
         this.id = definition.id;
+        this.defaultLootTable = definition.defaultLootTable || 'basic_loot'; // Provide a safe fallback
         this.sheetId = definition.sheetId;
         this.objectSheetId = definition.objectSheetId;
         this.allowedWeather = definition.allowedWeather || [];
