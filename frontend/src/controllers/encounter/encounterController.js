@@ -441,62 +441,91 @@ export class EncounterController extends BaseController {
     }
 
     beginActionSequence(decision) {
-        if (!decision) return;
-        this.pendingDecision = decision;
+    if (!decision) return;
+    this.pendingDecision = decision;
 
-        if (decision.bgm) {
-            events.emit('PLAY_MUSIC', { id: decision.bgm, fadeTime: 0.5 });
-        } else if (decision.outcomes && decision.outcomes[0] && decision.outcomes[0].bgm) {
-            events.emit('PLAY_MUSIC', { id: decision.outcomes[0].bgm, fadeTime: 0.5 });
-        }
-
-        if (decision.image) {
-            this._triggerImageTransition(0.4);
-        }
-
-        const actorName = gameState.party?.members?.[0]?.name || "The party";
-        if (decision.customActionText) {
-            this.actionPhase = 'message';
-            this.textTimer = 6.0;
-            this.hasDoneIntro = true;
-            this.skipMessageAnimation = false;
-            this.actionMessage = decision.customActionText.replace(/{name}/g, actorName);
-            this.lastText = this.actionMessage;
-        } else {
-            if (decision.type === 'skill_check') {
-                this.rollData = EncounterLogic.calculateRoll(this.pendingDecision);
-                this.actionPhase = 'wait_for_roll';
-            } else {
-                this.resolveAction();
-            }
-        }
+    if (decision.bgm) {
+      events.emit('PLAY_MUSIC', { id: decision.bgm, fadeTime: 0.5 });
+    } else if (decision.outcomes && decision.outcomes[0] && decision.outcomes[0].bgm) {
+      events.emit('PLAY_MUSIC', { id: decision.outcomes[0].bgm, fadeTime: 0.5 });
     }
 
-    resolveAction() {
-        this.actionPhase = 'none';
-        const decision = this.pendingDecision;
-        this.pendingDecision = null;
-        if (!decision) return;
-
-        let targetOutcomes = decision.outcomes;
-        if (decision.type === 'skill_check') {
-            events.emit('PLAY_SFX', { id: this.rollData.isSuccess ? 'skill_success' : 'skill_failure', volume: 0.7 });
-            this.model.updateContext({
-                roll_stat: decision.attribute?.toUpperCase() || "UNKNOWN",
-                roll_d20: this.rollData.d20,
-                roll_mod: this.rollData.mod,
-                roll_total: this.rollData.total,
-                roll_dc: this.rollData.dc,
-                roll_result: this.rollData.isSuccess ? "SUCCESS" : "FAILED"
-            });
-            targetOutcomes = this.rollData.isSuccess ? decision.successOutcomes : decision.failureOutcomes;
-        }
-
-        const selectedOutcome = EncounterLogic.selectOutcome(targetOutcomes);
-        if (selectedOutcome) {
-            this.applyLogicResults(selectedOutcome.results);
-        }
+    if (decision.image) {
+      // 1. Trigger the transition
+      this._triggerImageTransition(0.4);
+      
+      // 2. Temporarily override the model's getImage
+      if (this.model && this.model.getImage) {
+        this.model._originalGetImage = this.model.getImage;
+        
+        // Fetch the currently rendering image to steal its 'sheet' property
+        const currentImage = this.model._originalGetImage.call(this.model);
+        const baseSheet = currentImage ? currentImage.sheet : this.model.imageSheet;
+        
+        this.model.getImage = () => {
+          return {
+            // Use the decision's sheet if provided, otherwise use the encounter's default sheet
+            sheet: decision.image.sheet || baseSheet, 
+            col: decision.image.col,
+            row: decision.image.row
+          };
+        };
+      }
     }
+
+    const actorName = gameState.party?.members?.[0]?.name || "The party";
+    if (decision.customActionText) {
+      this.actionPhase = 'message';
+      this.textTimer = 6.0;
+      this.hasDoneIntro = true;
+      this.skipMessageAnimation = false;
+      this.actionMessage = decision.customActionText.replace(/{name}/g, actorName);
+      this.lastText = this.actionMessage;
+    } else {
+      if (decision.type === 'skill_check') {
+        this.rollData = EncounterLogic.calculateRoll(this.pendingDecision);
+        this.actionPhase = 'wait_for_roll';
+      } else {
+        this.resolveAction();
+      }
+    }
+  }
+
+  resolveAction() {
+    this.actionPhase = 'none';
+    const decision = this.pendingDecision;
+    this.pendingDecision = null;
+
+    // Clean up our temporary image override now that the action is resolving
+    if (this.model && this.model._originalGetImage) {
+      this.model.getImage = this.model._originalGetImage;
+      delete this.model._originalGetImage;
+    }
+
+    if (!decision) return;
+
+    let targetOutcomes = decision.outcomes;
+
+    if (decision.type === 'skill_check') {
+      events.emit('PLAY_SFX', { id: this.rollData.isSuccess ? 'skill_success' : 'skill_failure', volume: 0.7 });
+      
+      this.model.updateContext({
+        roll_stat: decision.attribute?.toUpperCase() || "UNKNOWN",
+        roll_d20: this.rollData.d20,
+        roll_mod: this.rollData.mod,
+        roll_total: this.rollData.total,
+        roll_dc: this.rollData.dc,
+        roll_result: this.rollData.isSuccess ? "SUCCESS" : "FAILED"
+      });
+
+      targetOutcomes = this.rollData.isSuccess ? decision.successOutcomes : decision.failureOutcomes;
+    }
+
+    const selectedOutcome = EncounterLogic.selectOutcome(targetOutcomes);
+    if (selectedOutcome) {
+      this.applyLogicResults(selectedOutcome.results);
+    }
+  }
 
     applyLogicResults(resultsArray) {
         let isStartingBattle = false;
@@ -690,9 +719,7 @@ export class EncounterController extends BaseController {
         }
 
         let currentImage = this.model.getImage ? this.model.getImage() : null;
-        if (this.pendingDecision && this.pendingDecision.image) {
-            currentImage = this.pendingDecision.image;
-        }
+        
 
         return {
             ...basePayload,

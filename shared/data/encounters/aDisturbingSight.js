@@ -14,6 +14,8 @@ export const aDisturbingSight = {
           text: "Charge directly at the Madman.",
           conditions: [{ type: "has_tag", tag: "HUMANOID" }],
           customActionText: "{name} draws their weapon and charges the Madman!",
+          image: { col: 1, row: 0 }, // Added: Triggers image transition on click
+          bgm: "plainsBattleBgm",    // Added: Triggers battle music on click
           outcomes: [
             {
               weight: 100,
@@ -32,7 +34,10 @@ export const aDisturbingSight = {
           ],
           customActionText: "{name} sneaks behind the Madman, dagger drawn...",
           successOutcomes: [
-            { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "a_quiet_end" } }] }
+            {
+              weight: 100,
+              results: [{ type: "ADVANCE_STAGE", payload: { stageId: "a_quiet_end" } }]
+            }
           ],
           failureOutcomes: [
             {
@@ -62,8 +67,14 @@ export const aDisturbingSight = {
           ],
           customActionText: "{name} picks up a heavy rock and hurls it at the Madman.",
           successOutcomes: [
-            { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "a_lucky_strike" } }] },
-            { weight: 3, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "enraged_lunatic" } }] }
+            {
+              weight: 1,
+              results: [{ type: "ADVANCE_STAGE", payload: { stageId: "a_lucky_strike" } }]
+            },
+            {
+              weight: 3,
+              results: [{ type: "ADVANCE_STAGE", payload: { stageId: "enraged_lunatic" } }]
+            }
           ],
           failureOutcomes: [
             {
@@ -100,8 +111,14 @@ export const aDisturbingSight = {
           ],
           customActionText: "{name} steps out and attempts to speak calmly to the Madman.",
           successOutcomes: [
-            { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "a_moment_of_clarity" } }] },
-            { weight: 2, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "speaking_to_the_voices" } }] }
+            {
+              weight: 1,
+              results: [{ type: "ADVANCE_STAGE", payload: { stageId: "a_moment_of_clarity" } }]
+            },
+            {
+              weight: 2,
+              results: [{ type: "ADVANCE_STAGE", payload: { stageId: "speaking_to_the_voices" } }]
+            }
           ],
           failureOutcomes: [
             {
@@ -173,10 +190,7 @@ export const aDisturbingSight = {
               results: [
                 {
                   type: "START_BATTLE",
-                  payload: {
-                    tableId: "madman_pack",
-                    enemies: [{ id: "MAD_MAN", startingHpPercent: 0.5, statusEffects: [{ id: "bleed", duration: 3, power: 5 }] }, "MAD_MAN"]
-                  }
+                  payload: { tableId: "madman_pack", enemies: [{ id: "MAD_MAN", startingHpPercent: 0.5, statusEffects: [{ id: "bleed", duration: 3, power: 5 }] }, "MAD_MAN"] }
                 }
               ]
             }
@@ -447,12 +461,12 @@ export const aDisturbingSight = {
     },
     shattered_illusions: {
       displayText: "Combat",
-      image: { col: 2, row: 2 },
+      image: { col: 0, row: 2 },
       bgm: "plainsBattleBgm",
       text: "He glares at {name} with sudden, horrifying clarity. \"No hear magic! Me hurt you now!\"",
       decisions: [
         {
-          text: "Draw your weapons!",
+          text: "Draw your weapon!",
           conditions: [{ type: "has_tag", tag: "HUMANOID" }],
           outcomes: [
             {

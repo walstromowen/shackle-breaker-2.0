@@ -1,7 +1,7 @@
 export const wildHerbs = {
   id: "wild_herbs",
   title: "A Patch of Wild Herbs",
-  imageSheet: "encounter_nature", 
+  imageSheet: "encounter_wild_herbs", 
   initialStage: "discovery",
   stages: {
     discovery: {
@@ -57,6 +57,7 @@ export const wildHerbs = {
               weight: 100,
               results: [
                 { type: "GIVE_ITEM", payload: { items: [{ id: "healing_herb", qty: 1 }] } },
+                { type: "DESTROY_OBJECT" },
                 { type: "END_ENCOUNTER", payload: null }
               ]
             }
@@ -76,6 +77,7 @@ export const wildHerbs = {
               weight: 100,
               results: [
                 { type: "GIVE_ITEM", payload: { items: [{ id: "invigorating_herb", qty: 1 }] } },
+                { type: "DESTROY_OBJECT" },
                 { type: "END_ENCOUNTER", payload: null }
               ]
             }
@@ -95,6 +97,7 @@ export const wildHerbs = {
               weight: 100,
               results: [
                 { type: "GIVE_ITEM", payload: { items: [{ id: "illuminating_herb", qty: 1 }] } },
+                { type: "DESTROY_OBJECT" },
                 { type: "END_ENCOUNTER", payload: null }
               ]
             }
@@ -114,6 +117,7 @@ export const wildHerbs = {
               weight: 100,
               results: [
                 { type: "APPLY_STATUS_EFFECT", payload: { statusId: "poison", target: "active_character" } },
+                { type: "DESTROY_OBJECT" },
                 { type: "END_ENCOUNTER", payload: null }
               ]
             }

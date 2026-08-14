@@ -222,7 +222,7 @@ export const treasureChest = {
         },
         poison_mist: {
             displayText: "A Toxic Trap",
-            image: { col: 3, row: 1 },
+            image: { col: 3, row: 0 },
             text: "With a grinding creak, the chest pops open—but immediately releases a dense cloud of noxious, green mist! {name} inhales the toxic fumes as they reach for the loot.",
             decisions: [
                 {
@@ -245,7 +245,7 @@ export const treasureChest = {
         ambush: {
             displayText: "Ambush!",
             image: { col: 0, row: 1 },
-            bgm: "battleBgm",
+            bgm: "plainsBattleBgm",
             text: "All the commotion attracts unwanted attention. Something approaches {name}'s position rapidly from the shadows!",
             decisions: [
                 {
@@ -258,12 +258,13 @@ export const treasureChest = {
         summon_evil: {
             displayText: "A Dark Presence",
             image: { col: 2, row: 1 },
-            bgm: "battleBgm",
+            bgm: "plainsBattleBgm",
             text: "The unstable magic backfires terribly! The chest remains locked, but a dark, swirling mass of energy materializes into an evil entity right before {name}'s eyes!",
             decisions: [
                 {
                     text: "Prepare for combat!",
-                    outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { tableId: "dark_spirit" } }] }]
+                    outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { tableId: "dark_spirit" } },{ type: "DESTROY_OBJECT" }, // And added here for the other 50% roll
+                ] }]
                 }
             ]
         }

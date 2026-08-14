@@ -335,53 +335,73 @@ export class MapRenderer {
     // ==========================================
 
     drawShadows(worldManager, col, row, dx, dy, currentDepth) {
-        const { TILE_TYPES, TILE_DEPTH } = this.config;
+    const { TILE_TYPES, TILE_DEPTH } = this.config;
+    
+    // Water receives no shadows
+    if (currentDepth === TILE_DEPTH[TILE_TYPES.LAYER_0]) return; 
 
-        if (currentDepth === TILE_DEPTH[TILE_TYPES.LAYER_0] || 
-            currentDepth === TILE_DEPTH[TILE_TYPES.LAYER_1]) return;
+    const DEPTH_L3 = TILE_DEPTH[TILE_TYPES.LAYER_3];
+    const DEPTH_L4 = TILE_DEPTH[TILE_TYPES.LAYER_4];
+    const DEPTH_L5 = TILE_DEPTH[TILE_TYPES.LAYER_5];
 
-        const DEPTH_L3 = TILE_DEPTH[TILE_TYPES.LAYER_3]; 
-        const DEPTH_L4 = TILE_DEPTH[TILE_TYPES.LAYER_4]; 
-        const DEPTH_L5 = TILE_DEPTH[TILE_TYPES.LAYER_5]; 
+    const nDepth1 = this._getDepth(worldManager, col, row - 1);
+    const nDepth2 = this._getDepth(worldManager, col, row - 2);
 
-        const nDepth1 = this._getDepth(worldManager, col, row - 1);
-        const nDepth2 = this._getDepth(worldManager, col, row - 2);
+    // All walls (L3, L4, L5) hide shadows 1 tile down (under their first face tile)
+    if (nDepth1 > currentDepth && (nDepth1 === DEPTH_L4 || nDepth1 === DEPTH_L5 || nDepth1 === DEPTH_L3)) return;
+    
+    // ONLY Layer 3 has a 2-tile tall face. L4 and L5 do not hide shadows 2 tiles down!
+    if (nDepth2 > currentDepth && nDepth2 === DEPTH_L3) return;
 
-        if (nDepth1 > currentDepth && (nDepth1 === DEPTH_L4 || nDepth1 === DEPTH_L5 || nDepth1 === DEPTH_L3)) return;
-        if (nDepth2 > currentDepth && nDepth2 === DEPTH_L3) return;
+    let mask = 0;
+    const bits = this.BITS;
 
-        let mask = 0;
-        const bits = this.BITS;
+    if (this._castsShadow(worldManager, col, row - 1, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5))    mask |= bits.TOP;
+    if (this._castsShadow(worldManager, col + 1, row - 1, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5)) mask |= bits.TOP_RIGHT;
+    if (this._castsShadow(worldManager, col + 1, row, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5))    mask |= bits.RIGHT;
+    if (this._castsShadow(worldManager, col + 1, row + 1, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5)) mask |= bits.BOTTOM_RIGHT;
+    if (this._castsShadow(worldManager, col, row + 1, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5))    mask |= bits.BOTTOM;
+    if (this._castsShadow(worldManager, col - 1, row + 1, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5)) mask |= bits.BOTTOM_LEFT;
+    if (this._castsShadow(worldManager, col - 1, row, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5))    mask |= bits.LEFT;
+    if (this._castsShadow(worldManager, col - 1, row - 1, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5)) mask |= bits.TOP_LEFT;
 
-        if (this._castsShadow(worldManager, col, row - 1, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5))    mask |= bits.TOP;
-        if (this._castsShadow(worldManager, col + 1, row - 1, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5)) mask |= bits.TOP_RIGHT;
-        if (this._castsShadow(worldManager, col + 1, row, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5))    mask |= bits.RIGHT;
-        if (this._castsShadow(worldManager, col + 1, row + 1, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5)) mask |= bits.BOTTOM_RIGHT;
-        if (this._castsShadow(worldManager, col, row + 1, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5))    mask |= bits.BOTTOM;
-        if (this._castsShadow(worldManager, col - 1, row + 1, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5)) mask |= bits.BOTTOM_LEFT;
-        if (this._castsShadow(worldManager, col - 1, row, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5))    mask |= bits.LEFT;
-        if (this._castsShadow(worldManager, col - 1, row - 1, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5)) mask |= bits.TOP_LEFT;
+    if (mask === 0) return;
 
-        if (mask === 0) return;
-
-        const idx = this.shadowOverrides.get(mask) ?? this.blobMap.get(mask) ?? 14; 
-        this.drawTile(null, idx, dx, dy, 'shadows');
-    }
+    const idx = this.shadowOverrides.get(mask) ?? this.blobMap.get(mask) ?? 14;
+    this.drawTile(null, idx, dx, dy, 'shadows');
+}
 
     _getDepth(worldManager, c, r) {
         const t = worldManager.getTileAt(c, r);
         return (t !== null && t !== undefined) ? (this.config.TILE_DEPTH[t] || 0) : 0;
     }
 
-    _castsShadow(worldManager, tx, ty, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5) {
-        const d0 = this._getDepth(worldManager, tx, ty);
-        if (d0 > currentDepth) return true;
-        const d1 = this._getDepth(worldManager, tx, ty - 1);
-        if (d1 > currentDepth && (d1 === DEPTH_L4 || d1 === DEPTH_L5 || d1 === DEPTH_L3)) return true;
-        const d2 = this._getDepth(worldManager, tx, ty - 2);
-        if (d2 > currentDepth && d2 === DEPTH_L3) return true;
-        return false;
+   _castsShadow(worldManager, tx, ty, currentDepth, DEPTH_L3, DEPTH_L4, DEPTH_L5) {
+    const { TILE_TYPES, TILE_DEPTH } = this.config;
+    const DEPTH_L1 = TILE_DEPTH[TILE_TYPES.LAYER_1];
+    const DEPTH_L2 = TILE_DEPTH[TILE_TYPES.LAYER_2];
+
+    const d0 = this._getDepth(worldManager, tx, ty);
+    
+    if (d0 > currentDepth) {
+        // Exception: Layer 2 (Grass) does not cast a shadow on Layer 1 (Dirt)
+        if (currentDepth === DEPTH_L1 && d0 === DEPTH_L2) {
+            // Let it fall through
+        } else {
+            return true;
+        }
     }
+
+    const d1 = this._getDepth(worldManager, tx, ty - 1);
+    // All walls (L3, L4, L5) cast a shadow 1 logical tile down (past their 1st face tile)
+    if (d1 > currentDepth && (d1 === DEPTH_L4 || d1 === DEPTH_L5 || d1 === DEPTH_L3)) return true;
+
+    const d2 = this._getDepth(worldManager, tx, ty - 2);
+    // ONLY Layer 3 needs to project its shadow an extra tile away (past its 2nd face tile)
+    if (d2 > currentDepth && d2 === DEPTH_L3) return true;
+
+    return false;
+}
 
     updateViewBounds(camera) {
         const { TILE_SIZE, GAME_SCALE, WALL_HEIGHT } = this.config;

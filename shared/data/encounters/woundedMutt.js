@@ -61,7 +61,6 @@ export const woundedMutt = {
             decisions: [
                 {
                     text: "Defend against the rabid mutt!",
-                    customActionText: "{name} grits their teeth against the tearing flesh, kicking the beast away and drawing a weapon!",
                     outcomes: [{
                         weight: 100, results: [
                             { type: "MODIFY_VITALS", payload: { hp: -35, stamina: -15, insight: 0, damageType: "pierce", isPercentage: false, bypassDefense: false } },

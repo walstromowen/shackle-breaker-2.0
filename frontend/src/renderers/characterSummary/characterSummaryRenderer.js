@@ -30,96 +30,99 @@ export class CharacterSummaryRenderer {
     }
 
     render(state) {
-        // 1. Reset Frame State
-        this.hitboxes = [];
-        
-        // --- DESTRUCTURE NAME EDITING STATE HERE ---
-        const { member, derivedStats, isEditingName, nameInputValue } = state; 
-        
-        const w = this.ctx.canvas.width;
-        const h = this.ctx.canvas.height;
-        this.ui.clearScreen(w, h);
+    // 1. Reset Frame State
+    this.hitboxes = [];
 
-        // 2. Layout Calculations (3-Column Grid)
-        const leftW = Math.floor(w * 0.28);
-        const centerW = Math.floor(w * 0.44);
-        const rightW = w - leftW - centerW;
+    // --- DESTRUCTURE NAME EDITING STATE HERE ---
+    const { member, derivedStats, isEditingName, nameInputValue } = state;
 
-        // 3. Draw Global Backgrounds & Borders
-        this.ui.drawRect(0, 0, leftW, h, UITheme.colors.bgScale[0]);
-        this.ui.drawRect(leftW, 0, centerW, h, UITheme.colors.bgScale[1]);
-        this.ui.drawRect(leftW + centerW, 0, rightW, h, UITheme.colors.bgScale[0]);
+    const w = this.ctx.canvas.width;
+    const h = this.ctx.canvas.height;
+    this.ui.clearScreen(w, h);
 
-        // Delicate column dividers
-        this.ui.drawLine(leftW, 0, leftW, h, UITheme.colors.border, 1);
-        this.ui.drawLine(leftW + centerW, 0, leftW + centerW, h, UITheme.colors.border, 1);
+    // 2. Layout Calculations (3-Column Grid)
+    const leftW = Math.floor(w * 0.28);
+    const centerW = Math.floor(w * 0.44);
+    const rightW = w - leftW - centerW;
 
-        if (!member) return;
-        const stats = derivedStats || StatCalculator.calculate(member);
+    // 3. Draw Global Backgrounds & Borders
+    this.ui.drawRect(0, 0, leftW, h, UITheme.colors.bgScale[0]);
+    this.ui.drawRect(leftW, 0, centerW, h, UITheme.colors.bgScale[1]);
+    this.ui.drawRect(leftW + centerW, 0, rightW, h, UITheme.colors.bgScale[0]);
 
-        // --- 4. Render Components ---
+    // Delicate column dividers
+    this.ui.drawLine(leftW, 0, leftW, h, UITheme.colors.border, 1);
+    this.ui.drawLine(leftW + centerW, 0, leftW + centerW, h, UITheme.colors.border, 1);
 
-        // A. Left Column (Tabbed: Stats / Item Detail / Skills)
-        this.renderLeftColumn(state, leftW, h, member, stats);
+    if (!member) return;
 
-        // B. Center Column (Equipment & Vitals)
-        this.equipPanel.render(
-            member, stats, state.slots, state.selectedSlotIndex, state.isChoosingItem,
-            leftW, 0, centerW, h, this.hitboxes, state.heldItem, state.hoveredHitboxId,
-            isEditingName // <--- Pass the flag down
-        );
+    const stats = derivedStats || StatCalculator.calculate(member);
 
-        // --- ADD NAME EDITING OVERLAY ---
-        if (isEditingName) {
-            const centerX = leftW + Math.floor(centerW / 2);
-            const nameY = 24 + 36; 
+    // --- 4. Render Components ---
 
-            this.ctx.font = UITheme.fonts.header;
-            const textWidth = this.ctx.measureText(nameInputValue).width;
-            const boxW = Math.max(250, textWidth + 80); 
-            
-            // INCREASED PADDING: Shifted up to -48, Height increased to 72
-            this.ui.drawRect(centerX - boxW/2, nameY - 48, boxW, 72, "#080808", true); 
-            this.ui.drawRect(centerX - boxW/2, nameY - 48, boxW, 72, UITheme.colors.borderHighlight, false);
+    // A. Left Column (Tabbed: Stats / Item Detail / Skills)
+    this.renderLeftColumn(state, leftW, h, member, stats);
 
-            const cursor = (Math.floor(Date.now() / 500) % 2 === 0) ? "|" : "";
-            this.ui.drawText(nameInputValue + cursor, centerX, nameY, UITheme.fonts.header, UITheme.colors.textHighlight, "center");
-        }
+    // B. Center Column (Equipment & Vitals)
+    this.equipPanel.render(
+      member, stats, state.slots, state.selectedSlotIndex, state.isChoosingItem,
+      leftW, 0, centerW, h, this.hitboxes, state.heldItem, state.hoveredHitboxId, isEditingName
+    );
 
-        // C. Right Column (Inventory Grid)
-        const invX = leftW + centerW + this.padding;
-        const invY = 0;
-        const invW = rightW - (this.padding * 2);
+    // --- ADD NAME EDITING OVERLAY ---
+    if (isEditingName) {
+      const centerX = leftW + Math.floor(centerW / 2);
+      const nameY = 24 + 36;
+      this.ctx.font = UITheme.fonts.header;
+      const textWidth = this.ctx.measureText(nameInputValue).width;
+      const boxW = Math.max(250, textWidth + 80);
 
-        this.invPanel.render(
-            state.filteredInventory, state.inventoryIndex, state.isChoosingItem,
-            invX, invY, invW, h, state, this.hitboxes
-        );
+      // INCREASED PADDING: Shifted up to -48, Height increased to 72
+      this.ui.drawRect(centerX - boxW/2, nameY - 48, boxW, 72, "#080808", true);
+      this.ui.drawRect(centerX - boxW/2, nameY - 48, boxW, 72, UITheme.colors.borderHighlight, false);
 
-        // D. Held Item (Floating Cursor)
-        if (state.heldItem) {
-            this._drawHeldItem(state);
-        }
-
-        // E. Context Menu
-        if (state.contextMenu) {
-            this._drawContextMenu(state.contextMenu, state.contextMenu.selectedIndex, state.hoveredHitboxId);
-        }
-
-        // F. Tooltips
-        if (!state.heldItem && !state.contextMenu) {
-            this.tooltipSystem.render(state, this.hitboxes);
-        }
-
-        // G. Input Prompts
-        this._drawInputPrompts(state, leftW, centerW, h);
-
-        // --- 5. Report Hitboxes ---
-        if (state.onLayoutUpdate) {
-            // Pass a reversed copy so top-layer UI (like context menus) are checked first
-            state.onLayoutUpdate([...this.hitboxes].reverse());
-        }
+      const cursor = (Math.floor(Date.now() / 500) % 2 === 0) ? "|" : "";
+      this.ui.drawText(nameInputValue + cursor, centerX, nameY, UITheme.fonts.header, UITheme.colors.textHighlight, "center");
     }
+
+    // C. Right Column (Inventory Grid)
+    const invX = leftW + centerW + this.padding;
+    const invY = 0;
+    const invW = rightW - (this.padding * 2);
+
+    this.invPanel.render(
+      state.filteredInventory, state.inventoryIndex, state.isChoosingItem,
+      invX, invY, invW, h, state, this.hitboxes
+    );
+
+    // ==========================================
+    // REORDERED RENDER CALLS (Fixes Z-Index Issue)
+    // ==========================================
+
+    // D. Input Prompts (Drawn first so they stay in the background)
+    this._drawInputPrompts(state, leftW, centerW, h);
+
+    // E. Held Item (Floating Cursor)
+    if (state.heldItem) {
+      this._drawHeldItem(state);
+    }
+
+    // F. Context Menu (Drawn over the background and inputs)
+    if (state.contextMenu) {
+      this._drawContextMenu(state.contextMenu, state.contextMenu.selectedIndex, state.hoveredHitboxId);
+    }
+
+    // G. Tooltips (Highest Z-Index)
+    if (!state.heldItem && !state.contextMenu) {
+      this.tooltipSystem.render(state, this.hitboxes);
+    }
+
+    // --- 5. Report Hitboxes ---
+    if (state.onLayoutUpdate) {
+      // Pass a reversed copy so top-layer UI (like context menus) are checked first
+      state.onLayoutUpdate([...this.hitboxes].reverse());
+    }
+  }
 
     renderLeftColumn(state, w, h, member, stats) {
         const { viewMode, focusedItem, hoveredHitboxId } = state;
@@ -240,51 +243,54 @@ export class CharacterSummaryRenderer {
     }
 
     _drawContextMenu(menu, selectedIndex = 0, hoveredHitboxId = null) {
-        if (!menu || !menu.options) return;
+    if (!menu || !menu.options) return;
 
-        const btnHeight = 77;  // Scaled 32 * 2.4
-        const padding = 14;    // Scaled ~6 * 2.4
-        const menuW = 312;     // Scaled 130 * 2.4
-        const menuH = (menu.options.length * btnHeight) + (padding * 2);
+    const btnHeight = 77;  // Scaled 32 * 2.4
+    const padding = 14;    // Scaled ~6 * 2.4
+    const menuW = 312;     // Scaled 130 * 2.4
+    const menuH = (menu.options.length * btnHeight) + (padding * 2);
+    
+    const screenW = this.ctx.canvas.width;
+    const screenH = this.ctx.canvas.height;
+    
+    let x = menu.x;
+    let y = menu.y;
 
-        const screenW = this.ctx.canvas.width;
-        const screenH = this.ctx.canvas.height;
+    // Clamp to screen boundaries
+    if (x + menuW > screenW) x = screenW - menuW - 12;
+    if (y + menuH > screenH) y = screenH - menuH - 12;
+    if (x < 12) x = 12;
+    if (y < 12) y = 12;
 
-        let x = menu.x;
-        let y = menu.y;
+    const layout = { x, y, w: menuW, h: menuH };
+    
+    const menuConfig = { 
+      ...menu, 
+      selectedIndex: selectedIndex, 
+      btnHeight: btnHeight,
+      padding: padding 
+    };
 
-        // Clamp to screen boundaries
-        if (x + menuW > screenW) x = screenW - menuW - 12;
-        if (y + menuH > screenH) y = screenH - menuH - 12;
-        if (x < 12) x = 12;
-        if (y < 12) y = 12;
-
-        const layout = { x, y, w: menuW, h: menuH };
-        const menuConfig = {
-            ...menu,
-            selectedIndex: selectedIndex,
-            btnHeight: btnHeight,
-            padding: padding
-        };
-
-        let menuHoverId = null;
-        if (hoveredHitboxId && hoveredHitboxId.startsWith('CTX_OPT_')) {
-            menuHoverId = hoveredHitboxId.replace('CTX_OPT_', 'MENU_OPT_');
-        } else if (hoveredHitboxId === 'MENU_BG') {
-            menuHoverId = 'MENU_BG';
-        }
-
-        const menuHitboxes = [];
-        this.ui.drawContextMenu(menuConfig, layout, menuHitboxes, menuHoverId);
-
-        menuHitboxes.forEach(box => {
-            if (box.id && box.id.startsWith('MENU_OPT_')) {
-                box.id = box.id.replace('MENU_OPT_', 'CTX_OPT_');
-            }
-        });
-
-        this.hitboxes.push(...menuHitboxes.reverse());
+    let menuHoverId = null;
+    if (hoveredHitboxId && hoveredHitboxId.startsWith('CTX_OPT_')) {
+      menuHoverId = hoveredHitboxId.replace('CTX_OPT_', 'MENU_OPT_');
+    } else if (hoveredHitboxId === 'MENU_BG') {
+      menuHoverId = 'MENU_BG';
     }
+
+    const menuHitboxes = [];
+    
+    // ---> FIX: Pass `this.loader` as the 5th argument so CanvasUI can access spritesheets
+    this.ui.drawContextMenu(menuConfig, layout, menuHitboxes, menuHoverId, this.loader);
+
+    menuHitboxes.forEach(box => {
+      if (box.id && box.id.startsWith('MENU_OPT_')) {
+        box.id = box.id.replace('MENU_OPT_', 'CTX_OPT_');
+      }
+    });
+
+    this.hitboxes.push(...menuHitboxes.reverse());
+  }
 
     _drawInputPrompts(state, leftW, centerW, h) {
         let lines = [];

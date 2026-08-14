@@ -307,31 +307,33 @@ export class CanvasUI {
     this.ctx.restore();
   }
 
-  // --- STANDARDIZED CONTEXT MENU (Party Screen Style) ---
-  drawContextMenu(menu, layout, hitboxes = [], hoveredId = null) {
-    if (!menu || !menu.options) return;
-    const options = menu.options;
-    const highlightIndex = menu.selectedIndex;
+  // --- STANDARDIZED CONTEXT MENU (With Icon & Ability Support) ---
+drawContextMenu(menu, layout, hitboxes = [], hoveredId = null, loader = null) {
+  if (!menu || !menu.options) return;
 
-    const padding = menu.padding || 0;
-    const btnHeight = menu.btnHeight || 64;
+  const options = menu.options;
+  const highlightIndex = menu.selectedIndex;
+  const padding = menu.padding || 0;
+  const btnHeight = menu.btnHeight || 64;
 
-    this.drawPanel(layout.x, layout.y, layout.w, layout.h, UITheme.colors.bgScale[1]);
+  this.drawPanel(layout.x, layout.y, layout.w, layout.h, UITheme.colors.bgScale[1]);
 
-    hitboxes.unshift({
-      id: 'MENU_BG',
-      type: 'context_bg',
-      x: layout.x,
-      y: layout.y,
-      w: layout.w,
-      h: layout.h,
-      cursor: 'default'
-    });
+  hitboxes.unshift({
+    id: 'MENU_BG',
+    type: 'context_bg',
+    x: layout.x,
+    y: layout.y,
+    w: layout.w,
+    h: layout.h,
+    cursor: 'default'
+  });
 
-    options.forEach((opt, i) => {
-      const btnY = layout.y + padding + (i * btnHeight);
-      const optId = `MENU_OPT_${i}`;
+  options.forEach((opt, i) => {
+    const btnY = layout.y + padding + (i * btnHeight);
+    const optId = `MENU_OPT_${i}`;
 
+    // Don't register click hitboxes for informational dividers
+    if (!opt.isDivider) {
       hitboxes.unshift({
         id: optId,
         type: 'context_opt',
@@ -339,25 +341,64 @@ export class CanvasUI {
         y: btnY,
         w: layout.w,
         h: btnHeight,
-        cursor: 'pointer'
+        cursor: opt.isInfo ? 'default' : 'pointer'
       });
+    }
 
-      const isHovered = (i === highlightIndex) || (hoveredId === optId);
+    const isHovered = (i === highlightIndex) || (hoveredId === optId);
 
-      if (isHovered) {
-        this.drawRect(layout.x + 12, btnY, layout.w - 24, btnHeight, "rgba(255, 255, 255, 0.05)", true);
-      }
+    if (isHovered && !opt.isDivider) {
+      this.drawRect(layout.x + 12, btnY, layout.w - 24, btnHeight, "rgba(255, 255, 255, 0.05)", true);
+    }
 
-      const color = UITheme.colors.textMain;
-      this.drawText(
-        opt.label,
-        layout.x + (layout.w / 2),
+    // --- DIVIDER LINE ---
+    if (opt.isDivider) {
+      this.drawLine(
+        layout.x + 16,
         btnY + (btnHeight / 2),
-        UITheme.fonts.cardSmall,
-        color,
-        "center",
-        "middle"
+        layout.x + layout.w - 16,
+        btnY + (btnHeight / 2),
+        UITheme.colors.border,
+        1
       );
-    });
-  }
+      return;
+    }
+
+    // --- ICON RENDERING (32x32) ---
+    let textX = layout.x + (layout.w / 2);
+    let textAlign = "center";
+
+    if (opt.iconSheet && loader) {
+      const sheet = loader.get(opt.iconSheet) || loader.get('abilities') || loader.get('icons');
+      if (sheet) {
+        const iconSize = opt.iconSize || 32;
+        const iconX = layout.x + 16;
+        const iconY = btnY + Math.floor((btnHeight - iconSize) / 2);
+
+        const col = opt.iconCol || 0;
+        const row = opt.iconRow || 0;
+
+        // Draw the 32x32 icon
+        this.drawSprite(sheet, col * iconSize, row * iconSize, iconSize, iconSize, iconX, iconY, iconSize, iconSize);
+
+        // Shift text to the right and left-align
+        textX = iconX + iconSize + 12;
+        textAlign = "left";
+      }
+    }
+
+    // --- TEXT RENDERING ---
+    const textColor = opt.isInfo ? UITheme.colors.textHighlight : UITheme.colors.textMain;
+
+    this.drawText(
+      opt.label,
+      textX,
+      btnY + (btnHeight / 2) + 2,
+      UITheme.fonts.cardSmall,
+      textColor,
+      textAlign,
+      "middle"
+    );
+  });
+}
 }

@@ -92,11 +92,33 @@ export class CombatantModel {
     }
 
     _applyStartingStatuses() {
-        const starting = this.originalEntity.state?.startingStatuses || this.originalEntity.startingStatuses;
-        if (!Array.isArray(starting)) return;
-        starting.forEach(statusId => {
-            const newStatus = StatusEffectFactory.createEffect(statusId, null, this);
-            if (newStatus) this.applyStatusEffect(newStatus);
+        // 1. Grab legacy string arrays OR the raw JSON overrides from your Encounter data
+        const legacyStarting = this.originalEntity.state?.startingStatuses || this.originalEntity.startingStatuses || [];
+        const rawOverrides = this.originalEntity.state?.statusEffects || [];
+
+        const allToApply = [...legacyStarting, ...rawOverrides];
+        if (allToApply.length === 0) return;
+
+        // 2. CRITICAL: Clear the raw JSON "imposter" objects so they don't block application
+        this.originalEntity.clearAllStatusEffects();
+
+        // 3. Loop through and instantiate the real StatusEffectModels
+        allToApply.forEach(effectData => {
+            if (!effectData) return;
+
+            // Extract the lowercase string ID ("bleed") and duration (3)
+            const statusId = typeof effectData === 'string' ? effectData : effectData.id;
+            const customCharges = typeof effectData === 'object' ? (effectData.duration || effectData.charges) : null;
+
+            if (!statusId) return;
+
+            // Pass it to the factory EXACTLY as is (lowercase) along with custom charges
+            const newStatus = StatusEffectFactory.createEffect(statusId, customCharges, this);
+
+            if (newStatus) {
+                // Apply the fully functioning class instance
+                this.applyStatusEffect(newStatus);
+            }
         });
     }
 }

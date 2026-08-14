@@ -102,6 +102,7 @@ meteorShowerAnimation: './assets/abilityAnimations/meteor_shower.png',
   encounter_bonfire: './assets/icons/encounters/bonfire.png',
   encounter_wild_hunt: './assets/icons/encounters/wild_hunt.png',
   encounter_treasure_chest: './assets/icons/encounters/treasure_chest.png',
+  encounter_wild_herbs: './assets/icons/encounters/wild_herbs.png',
   // --- 1:1 ABILITY AUDIO SFX --- 
   earthquake1Sfx: './assets/audio/sfx/abilities/earthquake/earthquake_1.wav',
   earthquake2Sfx: './assets/audio/sfx/abilities/earthquake/earthquake_2.wav',

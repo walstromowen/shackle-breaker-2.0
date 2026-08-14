@@ -122,7 +122,7 @@ export const wildHunt = {
     },
     "the_anomaly": {
       displayText: "An Unnatural Stillness",
-      image: { col: 0, row: 2 },
+      image: { col: 1, row: 2 },
       text: "{name} successfully tracks the deer to the center of the clearing. However, something is deeply wrong. The deer is frozen in place, trembling violently. It isn't grazing; it's staring wide-eyed into the pitch-black tree line, paralyzed by fear.",
       decisions: [
         {
@@ -227,9 +227,9 @@ export const wildHunt = {
     },
     "startled_stag": {
       displayText: "The Wrong Prey",
-      image: { col: 2, row: 1 },
+      image: { col: 1, row: 0 },
       bgm: "plainsBattleBgm",
-      text: "*SNAP*. While blindly searching for the lost trail, {name} steps on a dry branch. Suddenly, an enormous beast erupts from the brush! It isn't the deer—it's a massive Grim Stag, and it lowers its antlers to charge the trespasser!",
+      text: "*SNAP*. While blindly searching for the lost trail, {name} steps on a dry branch. Suddenly, another stag erupts from the brush, only it looks unnatural...",
       decisions: [
         {
           text: "Brace for the sudden fight!",

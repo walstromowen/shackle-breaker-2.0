@@ -3,7 +3,7 @@ import { CONFIG } from './constants.js';
 export const BIOME_DEFINITIONS = { 
   PLAINS: { 
     id: 'PLAINS', 
-    defaultLootTable: 'plains',
+    defaultLootTable: 'plains', 
     sheetId: 'plains', 
     objectSheetId: 'plainsMapObjects', 
     allowedWeather: ['rain', 'fog'], 
@@ -22,31 +22,32 @@ export const BIOME_DEFINITIONS = {
       rate: 0.10, 
       pools: [{ chance: 1.00, id: 'ABANDONED_VILLAGE' }] 
     }, 
-    mapObjects: { 
+    mapObjects: {
+      [CONFIG.TILE_TYPES.LAYER_3]: [
+        { chance: 0.005, id: 'STRANGE_OBELISK' },
+        { chance: 0.120, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] } 
+      ],
       [CONFIG.TILE_TYPES.LAYER_2]: [ 
-        { chance: 0.005, id: 'STRANGE_OBELISK' }, // <-- NEW: Rare encounter
-        { chance: 0.020, id: 'WILD_HERBS' },      // <-- NEW: Uncommon forageable
+        { chance: 0.020, id: 'WILD_HERBS' },      
         { chance: 0.014, id: 'OAK_TREE_1', footprint: 2 }, 
         { chance: 0.044, id: 'PINE_TREE' }, 
-        { chance: 0.074, id: 'SMALL_ROCKS_1' }, 
+        { chance: 0.192, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
         { chance: 0.20, rangeStart: 0.10, pool: ['TULIPS_RED', 'TULIPS_WHITE', 'TULIPS_ORANGE'] }, 
         { chance: 0.70, rangeStart: 0.30, pool: ['GRASS_COVERAGE_1', 'GRASS_COVERAGE_2', 'GRASS_COVERAGE_3'] } 
       ], 
       [CONFIG.TILE_TYPES.LAYER_1]: [ 
-        { chance: 0.15, id: 'SMALL_ROCKS_1' } 
+        { chance: 0.330, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] }
       ], 
       _WALLS: [ 
         { chance: 0.05, id: 'PINE_TREE' }, 
-        { chance: 0.10, id: 'SMALL_ROCKS_1' }, 
+        { chance: 0.230, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
         { chance: 0.30, rangeStart: 0.15, pool: ['GRASS_COVERAGE_1', 'GRASS_COVERAGE_2'] } 
       ] 
     }, 
     encounters: { 
-      rate: 0.01, // Lower this back down after testing! 
+      rate: 0.005, 
       type: "time_weighted", 
       pools: [ 
-        // Added dusk and night so it doesn't fail when testing at different in-game hours 
-        //{ weight: 1, id: 'test_encounter', allowedTimes: ['day', 'dusk', 'night'] }, 
         { weight: 10, id: 'wild_hunt', allowedTimes: ['day'] }, 
         { weight: 20, id: 'wounded_mutt', allowedTimes: ['day'] }, 
         { weight: 20, id: 'a_disturbing_sight', allowedTimes: ['day'] } 
@@ -63,7 +64,7 @@ export const BIOME_DEFINITIONS = {
   }, 
   DESERT: { 
     id: 'DESERT', 
-    defaultLootTable: 'desert',
+    defaultLootTable: 'desert', 
     sheetId: 'desert', 
     allowedWeather: ['sandstorm'], 
     objectSheetId: 'desertMapObjects', 
@@ -91,17 +92,28 @@ export const BIOME_DEFINITIONS = {
       pools: [{ chance: 1.00, id: 'ABANDONED_VILLAGE' }] 
     }, 
     mapObjects: { 
+      [CONFIG.TILE_TYPES.LAYER_3]: [
+        { chance: 0.030, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] }
+      ],
       [CONFIG.TILE_TYPES.LAYER_2]: [ 
-        { chance: 0.15, id: 'SMALL_ROCKS_1' }, 
-        { chance: 0.50, rangeStart: 0.30, pool: ['SAND_DUNE_1', 'SAND_DUNE_2', 'SAND_DUNE_3'] } 
-      ], 
+        { chance: 0.015, id: 'DESERT_SKULL' },
+        { chance: 0.040, id: 'SMALL_CACTUS_1' },
+        { chance: 0.050, id: 'SMALL_CACTUS_2' },
+        { chance: 0.065, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
+        { chance: 0.500, rangeStart: 0.30, pool: ['SAND_DUNE_1', 'SAND_DUNE_2', 'SAND_DUNE_3'] } 
+      ],
+      [CONFIG.TILE_TYPES.LAYER_1]: [ 
+        { chance: 0.065, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] }
+      ],
       _WALLS: [ 
-        { chance: 0.05, id: 'SMALL_ROCKS_1' }, 
-        { chance: 0.50, rangeStart: 0.30, pool: ['SAND_DUNE_1', 'SAND_DUNE_2', 'SAND_DUNE_3'] } 
+        { chance: 0.030, id: 'SMALL_CACTUS_1' },
+        { chance: 0.040, id: 'SMALL_CACTUS_2' },
+        { chance: 0.045, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
+        { chance: 0.500, rangeStart: 0.30, pool: ['SAND_DUNE_1', 'SAND_DUNE_2', 'SAND_DUNE_3'] } 
       ] 
     }, 
     encounters: { 
-      rate: 0.05, 
+      rate: 0.005, 
       type: "time_weighted", 
       pools: [ 
         { weight: 20, id: 'wounded_mutt', allowedTimes: ['day'] }, 
@@ -109,7 +121,7 @@ export const BIOME_DEFINITIONS = {
       ] 
     }, 
     battles: { 
-      rate: 1.02, 
+      rate: 0.01, 
       tables: { 
         day: 'desert_battles_day', 
         dusk: 'desert_battles_day', 
@@ -119,7 +131,7 @@ export const BIOME_DEFINITIONS = {
   }, 
   HOUSE_INTERIOR: { 
     id: 'HOUSE_INTERIOR', 
-    defaultLootTable: 'house',
+    defaultLootTable: 'house', 
     sheetId: 'houseInterior', 
     objectSheetId: 'houseInteriorMapObjects', 
     allowedWeather: [], 

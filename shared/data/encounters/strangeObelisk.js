@@ -106,6 +106,7 @@ export const strangeObelisk = {
               results: [
                 { type: "ADD_TRAIT", payload: { traitId: "inquisitive", target: "active_character" } },
                 { type: "AWARD_XP", payload: { amount: 25, target: "active_character" } },
+                { type: "DESTROY_OBJECT" }, // Added to destroy the obelisk
                 { type: "END_ENCOUNTER", payload: null }
               ]
             }
@@ -125,6 +126,7 @@ export const strangeObelisk = {
               weight: 100,
               results: [
                 { type: "ADD_TRAIT", payload: { traitId: "clumsy", target: "active_character" } },
+                { type: "DESTROY_OBJECT" }, // Added to destroy the obelisk
                 { type: "END_ENCOUNTER", payload: null }
               ]
             }
@@ -145,6 +147,7 @@ export const strangeObelisk = {
               weight: 50,
               results: [
                 { type: "ADD_TRAIT", payload: { traitId: "tough", target: "active_character" } },
+                { type: "DESTROY_OBJECT" }, // Added here
                 { type: "END_ENCOUNTER", payload: null }
               ]
             },
@@ -152,6 +155,7 @@ export const strangeObelisk = {
               weight: 50,
               results: [
                 { type: "ADD_TRAIT", payload: { traitId: "quick", target: "active_character" } },
+                { type: "DESTROY_OBJECT" }, // And added here for the other 50% roll
                 { type: "END_ENCOUNTER", payload: null }
               ]
             }
@@ -171,6 +175,7 @@ export const strangeObelisk = {
               weight: 100,
               results: [
                 { type: "ADD_TRAIT", payload: { traitId: "timid", target: "active_character" } },
+                { type: "DESTROY_OBJECT" }, // And added here for the other 50% roll
                 { type: "END_ENCOUNTER", payload: null }
               ]
             }
@@ -191,6 +196,7 @@ export const strangeObelisk = {
               weight: 100,
               results: [
                 { type: "AWARD_XP", payload: { amount: 150, target: "active_character" } },
+                { type: "DESTROY_OBJECT" }, // And added here for the other 50% roll
                 { type: "END_ENCOUNTER", payload: null }
               ]
             }
@@ -210,6 +216,7 @@ export const strangeObelisk = {
               weight: 100,
               results: [
                 { type: "ADD_TRAIT", payload: { traitId: "cowardly", target: "active_character" } },
+                { type: "DESTROY_OBJECT" }, // Added here to destroy the obelisk after failure  
                 { type: "END_ENCOUNTER", payload: null }
               ]
             }
