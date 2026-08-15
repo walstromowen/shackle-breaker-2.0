@@ -1,6 +1,6 @@
 export const strangeObelisk = {
   id: "strange_obelisk",
-  title: "The Strange Obelisk",
+  title: "A Strange Obelisk",
   imageSheet: "encounter_obelisk", 
   initialStage: "discovery",
   stages: {

@@ -1,52 +1,48 @@
 export class Particle {
-    constructor(config) {
-        // Lifecycle
-        this.age = 0;
-        this.life = config.life || 1.0;
-        this.maxLife = this.life;
-        this.isDead = false;
+  constructor(config) {
+    // Lifecycle
+    this.age = 0;
+    this.life = config.life || 1.0;
+    this.maxLife = this.life;
+    this.isDead = false;
 
-        // Positioning (Targeted)
-        this.startX = (config.startX || config.x || 0) + (config.offsetX || 0);
-        this.startY = (config.startY || config.y || 0) + (config.offsetY || 0);
-        this.endX = (config.endX || this.startX) + (config.offsetX || 0);
-        this.endY = (config.endY || this.startY) + (config.offsetY || 0);
-        this.movement = config.movement || null;
-        
-        // Scaled default arc height (-50 * 2.4)
-        this.arcHeight = config.arc || config.arcHeight || -120;
+    // Positioning (Targeted)
+    this.startX = (config.startX || config.x || 0) + (config.offsetX || 0);
+    this.startY = (config.startY || config.y || 0) + (config.offsetY || 0);
+    this.endX = (config.endX || this.startX) + (config.offsetX || 0);
+    this.endY = (config.endY || this.startY) + (config.offsetY || 0);
+    this.movement = config.movement || null;
 
-        // Positioning (Physics/Burst)
-        this.x = this.startX;
-        this.y = this.startY;
-        this.vx = config.vx || 0;
-        this.vy = config.vy || 0;
-        this.gravity = config.gravity || 0;
-        this.drag = config.drag !== undefined ? config.drag : 1;
+    // Scaled default arc height (-50 * 2.4)
+    this.arcHeight = config.arc || config.arcHeight || -120;
 
-        // Visuals
-        this.config = config;
-        this.scale = config.scale || 1.0;
-        this.scaleDelta = config.scaleDelta || 0;
-        
-        this.baseAlpha = config.alpha !== undefined ? config.alpha : 1.0;
-        this.alpha = this.baseAlpha;
-        this.fadeOut = config.fadeOut !== undefined ? config.fadeOut : true;
-        
-        this.rotation = config.rotation || 0;
-        this.rotationDelta = config.rotationDelta || 0;
-        
-        this.color = config.color || '#ffffff';
-        this.blendMode = config.blendMode || 'source-over';
-        
-       // Sprite/Animation configuration
+    // Positioning (Physics/Burst)
+    this.x = this.startX;
+    this.y = this.startY;
+    this.vx = config.vx || 0;
+    this.vy = config.vy || 0;
+    this.gravity = config.gravity || 0;
+    this.drag = config.drag !== undefined ? config.drag : 1;
+
+    // Visuals
+    this.config = config;
+    this.scale = config.scale || 1.0;
+    this.scaleDelta = config.scaleDelta || 0;
+    this.baseAlpha = config.alpha !== undefined ? config.alpha : 1.0;
+    this.alpha = this.baseAlpha;
+    this.fadeOut = config.fadeOut !== undefined ? config.fadeOut : true;
+    this.rotation = config.rotation || 0;
+    this.rotationDelta = config.rotationDelta || 0;
+    this.color = config.color || '#ffffff';
+    this.blendMode = config.blendMode || 'source-over';
+
+    // Sprite/Animation configuration
     this.sheetKey = config.sheetKey || 'battleProjectiles';
     this.frame = config.frame || null;
     this.frameSize = config.frameSize || 32;
-    this.frameCount = config.frameCount || 1; // FIX: Ensure frameCount is saved!
+    this.frameCount = config.frameCount || 1;
 
-    // --- NEW ADDITION ---
-    // Instantly calculate the correct starting position for Frame 0 
+    // Instantly calculate the correct starting position for Frame 0
     // so it doesn't flash at the target's center before updating.
     if (this.movement) {
       this.applyTargetedMovement(0);
@@ -54,126 +50,112 @@ export class Particle {
   }
 
   update(dt) {
-        this.age += dt;
-        const progress = Math.min(this.age / this.maxLife, 1.0);
+    this.age += dt;
+    const progress = Math.min(this.age / this.maxLife, 1.0);
 
-        if (progress >= 1.0) {
-            this.isDead = true;
-            return;
-        }
-
-        // Route to the correct movement logic
-        if (this.movement) {
-            this.applyTargetedMovement(progress);
-        } else {
-            this.applyPhysicsMovement(dt);
-        }
-
-        // Apply shared transforms
-        this.scale += this.scaleDelta * dt;
-        if (this.scale < 0) this.scale = 0;
-        
-        // Auto-rotation (used for arcs) overrides standard rotationDelta
-        if (this.config.rotation !== 'auto') {
-            this.rotation += this.rotationDelta * dt;
-        }
-
-        // Standard fade out in the last 50% of life
-       const customAlphas = ['expand_and_fade', 'float_up_and_pop', 'swipe_diagonal', 'swipe_diagonal_alt', 'shrink_and_fade'];
-        if (this.fadeOut && !customAlphas.includes(this.movement)) {
-            if (progress > 0.5) {
-                const fadeProgress = (progress - 0.5) / 0.5;
-                this.alpha = this.baseAlpha * (1 - fadeProgress);
-            }
-        }
+    if (progress >= 1.0) {
+      this.isDead = true;
+      return;
     }
 
-    applyPhysicsMovement(dt) {
-        this.vy += this.gravity * dt;
-        this.vx *= this.drag;
-        this.vy *= this.drag;
-        
-        this.x += this.vx * dt;
-        this.y += this.vy * dt;
+    // Route to the correct movement logic
+    if (this.movement) {
+      this.applyTargetedMovement(progress);
+    } else {
+      this.applyPhysicsMovement(dt);
     }
 
-    applyTargetedMovement(progress) {
-        switch (this.movement) {
-            case 'linear':
-                this.x = this.lerp(this.startX, this.endX, progress);
-                this.y = this.lerp(this.startY, this.endY, progress);
-                break;
+    // Apply shared transforms
+    this.scale += this.scaleDelta * dt;
+    if (this.scale < 0) this.scale = 0;
 
-            case 'arc':
-                this.x = this.lerp(this.startX, this.endX, progress);
-                const baseLineY = this.lerp(this.startY, this.endY, progress);
-                this.y = baseLineY + (Math.sin(progress * Math.PI) * this.arcHeight);
-                
-                if (this.config.rotation === 'auto') {
-                    const nextX = this.lerp(this.startX, this.endX, progress + 0.01);
-                    const nextBaseY = this.lerp(this.startY, this.endY, progress + 0.01);
-                    const nextY = nextBaseY + (Math.sin((progress + 0.01) * Math.PI) * this.arcHeight);
-                    this.rotation = Math.atan2(nextY - this.y, nextX - this.x);
-                }
-                break;
+    // Auto-rotation (used for arcs) overrides standard rotationDelta
+    if (this.config.rotation !== 'auto') {
+      this.rotation += this.rotationDelta * dt;
+    }
 
-            case 'expand_and_fade':
-                this.x = this.startX;
-                this.y = this.startY;
-                this.scale = (this.config.scale || 1.0) * (1.0 + progress); 
-                this.alpha = this.baseAlpha * (1.0 - progress); 
-                break;
-
-            case 'float_up_and_pop':
-                this.x = this.startX;
-                // Scaled float distance (40 * 2.4)
-                this.y = this.startY - (progress * 96); 
-                this.alpha = progress > 0.8 ? this.baseAlpha * ((1.0 - progress) / 0.2) : this.baseAlpha;
-                this.scale = (this.config.scale || 1.0) + (progress * 0.2); 
-                break;
-
-            case 'swipe_diagonal':
-    // Scaled swipe distance and centering offsets (Top-Left to Bottom-Right)
-    this.x = this.startX + (progress * 144) - 72;
-    this.y = this.startY + (progress * 144) - 72;
-    this.alpha = this.baseAlpha * Math.sin(progress * Math.PI);
-    break;
+    // --- FIX: Prevent linear/arc projectiles from fading out mid-flight ---
+    // Added 'linear', 'arc', and 'diagonal_drop' so they crash into the target at full opacity.
+    const customAlphas = ['expand_and_fade', 'float_up_and_pop', 'swipe_diagonal', 'swipe_diagonal_alt', 'shrink_and_fade', 'linear', 'arc', 'diagonal_drop'];
     
-case 'swipe_diagonal_alt':
-    // Scaled swipe distance and centering offsets (Top-Right to Bottom-Left)
-    this.x = this.startX - (progress * 144) + 72;
-    this.y = this.startY + (progress * 144) - 72;
-    this.alpha = this.baseAlpha * Math.sin(progress * Math.PI);
-    break;
+    if (this.fadeOut && !customAlphas.includes(this.movement)) {
+      // Changed from 0.5 to 0.85 so standard particles only fade in the last 15% of life
+      if (progress > 0.85) { 
+        const fadeProgress = (progress - 0.85) / 0.15;
+        this.alpha = this.baseAlpha * (1 - fadeProgress);
+      }
+    }
+  }
 
-    case 'diagonal_drop':
-  // Spawns at an offset distance and crashes down into startX/startY
-  const dropX = this.config.dropX || 1200; // X distance to start from
-  const dropY = this.config.dropY || 1200; // Y distance to start from
-  
-  this.x = this.startX + (dropX * (1 - progress));
-  this.y = this.startY - (dropY * (1 - progress));
-  
-  // Fade in slightly during the first 10% of life to avoid harsh popping
-  this.alpha = progress < 0.1 ? this.baseAlpha * (progress / 0.1) : this.baseAlpha;
-  break;
+  applyPhysicsMovement(dt) {
+    this.vy += this.gravity * dt;
+    this.vx *= this.drag;
+    this.vy *= this.drag;
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+  }
 
-    case 'shrink_and_fade':
-    this.x = this.startX;
-    this.y = this.startY;
-    // Shrinks from its initial scale down to 0
-    this.scale = (this.config.scale || 1.0) * (1.0 - progress);
-    this.alpha = this.baseAlpha * (1.0 - progress);
-    break;
-                
-            default:
-                this.x = this.startX;
-                this.y = this.startY;
-                break;
+  applyTargetedMovement(progress) {
+    switch (this.movement) {
+      case 'linear':
+        this.x = this.lerp(this.startX, this.endX, progress);
+        this.y = this.lerp(this.startY, this.endY, progress);
+        break;
+      case 'arc':
+        this.x = this.lerp(this.startX, this.endX, progress);
+        const baseLineY = this.lerp(this.startY, this.endY, progress);
+        this.y = baseLineY + (Math.sin(progress * Math.PI) * this.arcHeight);
+        
+        if (this.config.rotation === 'auto') {
+          const nextX = this.lerp(this.startX, this.endX, progress + 0.01);
+          const nextBaseY = this.lerp(this.startY, this.endY, progress + 0.01);
+          const nextY = nextBaseY + (Math.sin((progress + 0.01) * Math.PI) * this.arcHeight);
+          this.rotation = Math.atan2(nextY - this.y, nextX - this.x);
         }
+        break;
+      case 'expand_and_fade':
+        this.x = this.startX;
+        this.y = this.startY;
+        this.scale = (this.config.scale || 1.0) * (1.0 + progress);
+        this.alpha = this.baseAlpha * (1.0 - progress);
+        break;
+      case 'float_up_and_pop':
+        this.x = this.startX;
+        this.y = this.startY - (progress * 96);
+        this.alpha = progress > 0.8 ? this.baseAlpha * ((1.0 - progress) / 0.2) : this.baseAlpha;
+        this.scale = (this.config.scale || 1.0) + (progress * 0.2);
+        break;
+      case 'swipe_diagonal':
+        this.x = this.startX + (progress * 144) - 72;
+        this.y = this.startY + (progress * 144) - 72;
+        this.alpha = this.baseAlpha * Math.sin(progress * Math.PI);
+        break;
+      case 'swipe_diagonal_alt':
+        this.x = this.startX - (progress * 144) + 72;
+        this.y = this.startY + (progress * 144) - 72;
+        this.alpha = this.baseAlpha * Math.sin(progress * Math.PI);
+        break;
+      case 'diagonal_drop':
+        const dropX = this.config.dropX || 1200;
+        const dropY = this.config.dropY || 1200;
+        this.x = this.startX + (dropX * (1 - progress));
+        this.y = this.startY - (dropY * (1 - progress));
+        this.alpha = progress < 0.1 ? this.baseAlpha * (progress / 0.1) : this.baseAlpha;
+        break;
+      case 'shrink_and_fade':
+        this.x = this.startX;
+        this.y = this.startY;
+        this.scale = (this.config.scale || 1.0) * (1.0 - progress);
+        this.alpha = this.baseAlpha * (1.0 - progress);
+        break;
+      default:
+        this.x = this.startX;
+        this.y = this.startY;
+        break;
     }
+  }
 
-    lerp(start, end, amt) {
-        return (1 - amt) * start + amt * end;
-    }
+  lerp(start, end, amt) {
+    return (1 - amt) * start + amt * end;
+  }
 }

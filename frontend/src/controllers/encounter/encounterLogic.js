@@ -312,6 +312,28 @@ export class EncounterLogic {
                     });
                     break;
                 }
+                case "ADVANCE_TIME": 
+                    if (gameState.world && typeof gameState.world.time !== 'undefined') { 
+                        const minutesToAdvance = (payload.hours || 0) * 60 + (payload.minutes || 0); 
+                        gameState.world.time += minutesToAdvance; 
+                        while (gameState.world.time >= (24 * 60)) { 
+                            gameState.world.time -= (24 * 60); 
+                            gameState.world.day = (gameState.world.day || 1) + 1; 
+                        } 
+                        if (gameState.world.currentWeather) { 
+                            gameState.world.currentWeather.timeRemaining -= (minutesToAdvance / 60); 
+                        } 
+                        if (payload.hours) { 
+                            response.messages.push(`${payload.hours} hours have passed.`); 
+                        } else if (payload.minutes) { 
+                            response.messages.push(`${payload.minutes} minutes have passed.`); 
+                        } 
+                    } 
+                    break; 
+                default: 
+                    events.emit(type, payload); 
+                    break; 
+                
 
                 case "TAKE_DAMAGE":
                     events.emit("TAKE_DAMAGE", payload);

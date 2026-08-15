@@ -200,30 +200,32 @@ export class EncounterController extends BaseController {
     }
 
     _triggerImageTransition(duration = 0.4) {
-        if (!this.model) return;
-        const outgoingInfo = this.model.getImage ? this.model.getImage() : null;
-        const outgoingMember = gameState.party?.members?.[0] || null;
+    if (!this.model) return;
+    const outgoingInfo = this.model.getImage ? this.model.getImage() : null;
+    const outgoingMember = gameState.party?.members?.[0] || null;
 
-        this.imageTransition.active = true;
-        this.imageTransition.timer = 0;
-        this.imageTransition.duration = duration;
-        this.imageTransition.previousInfo = outgoingInfo;
+    this.imageTransition.active = true;
+    this.imageTransition.timer = 0;
+    this.imageTransition.duration = duration;
+    this.imageTransition.previousInfo = outgoingInfo;
 
-        if (outgoingMember) {
-            this.imageTransition.previousPartyMember = {
-                name: outgoingMember.name,
-                hp: outgoingMember.hp,
-                maxHp: outgoingMember.maxHp,
-                stamina: outgoingMember.stamina,
-                maxStamina: outgoingMember.maxStamina,
-                sheet: outgoingMember.sheet,
-                col: outgoingMember.col,
-                row: outgoingMember.row
-            };
-        } else {
-            this.imageTransition.previousPartyMember = null;
-        }
+    if (outgoingMember) {
+      this.imageTransition.previousPartyMember = {
+        name: outgoingMember.name,
+        hp: outgoingMember.hp,
+        maxHp: outgoingMember.maxHp,
+        stamina: outgoingMember.stamina,
+        maxStamina: outgoingMember.maxStamina,
+        insight: outgoingMember.insight || 0,          // <--- ADD THIS
+        maxInsight: outgoingMember.maxInsight || 100,  // <--- ADD THIS
+        sheet: outgoingMember.sheet,
+        col: outgoingMember.col,
+        row: outgoingMember.row
+      };
+    } else {
+      this.imageTransition.previousPartyMember = null;
     }
+  }
 
     _getValidDecisions() {
         if (!this.model) return [];
@@ -650,6 +652,9 @@ export class EncounterController extends BaseController {
     }
 
     getState() {
+        // Calculate the fade-in alpha for side columns, vitals, and currency (happens between 3.0s and 6.0s)
+        const currentIntroAlpha = this.hasDoneIntro ? 1.0 : Math.max(0, Math.min(1, (this.textTimer - 3.0) / 3.0));
+
         const basePayload = {
             imageInfo: null,
             transition: {
@@ -661,8 +666,9 @@ export class EncounterController extends BaseController {
             title: "",
             text: "",
             decisions: [],
-            ui: {
-                selectedDecisionIndex: this.selectedIndex
+            ui: { 
+                selectedDecisionIndex: this.selectedIndex,
+                introAlpha: currentIntroAlpha // Expose this for the renderer to fade in vitals/currency/side columns
             },
             party: gameState.party?.members?.length > 0 ? [gameState.party.members[0]] : [],
             currency: gameState.party?.currency || 0,
@@ -695,8 +701,8 @@ export class EncounterController extends BaseController {
         let displayText = this.model.getCurrentText() || "";
         let displayDecisions = this._getValidDecisions();
         let displayStageName = this.model.getStageDisplayText ? this.model.getStageDisplayText() : "Unknown Stage";
-        const actorName = gameState.party?.members?.[0]?.name || "The party";
 
+        const actorName = gameState.party?.members?.[0]?.name || "The party";
         displayText = displayText.replace(/{name}/g, actorName);
         displayStageName = displayStageName.replace(/{name}/g, actorName);
         displayDecisions = displayDecisions.map(decision => ({
@@ -719,7 +725,6 @@ export class EncounterController extends BaseController {
         }
 
         let currentImage = this.model.getImage ? this.model.getImage() : null;
-        
 
         return {
             ...basePayload,
@@ -730,8 +735,9 @@ export class EncounterController extends BaseController {
             imageInfo: currentImage,
             text: displayText,
             decisions: displayDecisions,
-            ui: {
-                selectedDecisionIndex: this.selectedIndex
+            ui: { 
+                selectedDecisionIndex: this.selectedIndex,
+                introAlpha: currentIntroAlpha 
             }
         };
     }

@@ -655,6 +655,191 @@ duration: 1.6,
             flash: { start: 0.15, end: 0.45, filter: 'brightness(200%) sepia(50%) hue-rotate(330deg) saturate(300%)' } 
         } 
     },
+    "waterfall": {
+    duration: 2.0,
+    audio: [{ start: 0.1, key: 'waterBlastSfx', volume: 1.2, pitch: 0.8 }],
+    actor: { 
+      flash: { start: 0.0, end: 0.3, filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } 
+    },
+    vfx: [
+      { start: 0.2, type: 'spawn', origin: 'target', config: { life: 0.6, sheetKey: 'waterfallAnimation', frameCount: 4, frameSize: 64, movement: 'shrink_and_fade', dropX: 0, dropY: 400, scale: 2.5, blendMode: 'screen' } },
+     
+    ],
+    target: {
+      shake: { start: 0.5, end: 1.0, intensity: 30 },
+      flash: { start: 0.5, end: 0.8, filter: 'brightness(200%) sepia(100%) hue-rotate(200deg) saturate(300%) drop-shadow(0 0 10px blue)' }
+    }
+  },
+
+  "inferno": {
+    duration: 2.5,
+    audio: [
+      { start: 0.1, key: 'fireballCastSfx', volume: 1.5, pitch: 0.6 }, 
+      { start: 0.6, key: 'meteorShowerImpactSfx', volume: 1.2 }
+    ],
+    background: { 
+      start: 0.0, end: 2.0, key: 'voidBackground', filter: 'brightness(50%) sepia(100%) hue-rotate(350deg) saturate(500%)' 
+    },
+    actor: {
+      // Recoil damage representation: the caster shakes and flashes alongside the targets
+      shake: { start: 0.6, end: 1.2, intensity: 20 }, 
+      flash: { start: 0.5, end: 1.5, filter: 'brightness(250%) sepia(100%) hue-rotate(350deg) saturate(500%) drop-shadow(0 0 15px red)' }
+    },
+    vfx: [
+      { start: 0.4, type: 'spawn', origin: 'target', config: { life: 1.0, sheetKey: 'firePunchAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 4.5, blendMode: 'screen' } }
+    ],
+    target: {
+      shake: { start: 0.6, end: 1.5, intensity: 45 },
+      flash: { start: 0.6, end: 1.6, filter: 'brightness(300%) sepia(100%) hue-rotate(350deg) saturate(600%) drop-shadow(0 0 15px red)' }
+    }
+  },
+
+ "spite": {
+  duration: 1.5, // Back to strike's default duration
+  audio: [
+    { start: 0.0, key: 'spiteCastSfx', volume: 1.0 }, // Chorus plays immediately on attack start
+    { start: 0.133, key: 'strikeSfx', volume: 1.0, pitch: 1.2 } // Strike hits precisely at 0.133s
+  ],
+  actor: { 
+    type: 'lunge', start: 0.0, end: 0.2, distance: 96, // Lunge starts immediately at 0.0 like strike
+    flash: { start: 0.0, end: 0.3, filter: 'brightness(200%) sepia(100%) hue-rotate(35deg) saturate(300%)' } 
+  },
+  vfx: [
+    { 
+      start: 0.133, // Synced with strike's impact timing
+      type: 'spawn', 
+      origin: 'target', 
+      config: { 
+        life: 0.3, 
+        sheetKey: 'spiteAnimation', 
+        frameCount: 1, 
+        frameSize: 64, 
+        movement: 'expand_and_fade', 
+        scale: 2.5, 
+        blendMode: 'screen' 
+      } 
+    }
+  ],
+  target: {
+    shake: { start: 0.133, end: 0.333, intensity: 29 }, // Synced with strike's impact timing
+    flash: { start: 0.133, end: 0.4, filter: 'brightness(300%) sepia(100%) hue-rotate(35deg) saturate(300%) drop-shadow(0 0 15px gold)' }
+  }
+},
+
+"flamethrower": {
+  duration: 1.3, // Attack resolves much faster now
+  audio: [{ start: 0.0, key: 'fireballCastSfx', volume: 1.0, pitch: 1.2 }],
+  actor: {
+    flash: { start: 0.0, end: 0.6, filter: 'brightness(150%) sepia(100%) hue-rotate(15deg) saturate(300%)' }
+  },
+  vfx: [
+    // Life cut down to ~0.5s range for a high-velocity stream
+    { start: 0.10, type: 'travel', origin: 'source', config: { life: 0.50, offsetY: 0,   sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.5, blendMode: 'screen' } },
+    { start: 0.12, type: 'travel', origin: 'source', config: { life: 0.45, offsetY: -15, sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.6, blendMode: 'screen' } },
+    { start: 0.14, type: 'travel', origin: 'source', config: { life: 0.55, offsetY: 12,  sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.4, blendMode: 'screen' } },
+    { start: 0.16, type: 'travel', origin: 'source', config: { life: 0.40, offsetY: -8,  sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.5, blendMode: 'screen' } },
+    { start: 0.18, type: 'travel', origin: 'source', config: { life: 0.60, offsetY: 20,  sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.7, blendMode: 'screen' } },
+    { start: 0.20, type: 'travel', origin: 'source', config: { life: 0.45, offsetY: -22, sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.5, blendMode: 'screen' } },
+    { start: 0.22, type: 'travel', origin: 'source', config: { life: 0.50, offsetY: 5,   sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.6, blendMode: 'screen' } },
+    { start: 0.24, type: 'travel', origin: 'source', config: { life: 0.55, offsetY: -18, sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.4, blendMode: 'screen' } },
+    { start: 0.26, type: 'travel', origin: 'source', config: { life: 0.40, offsetY: 15,  sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.5, blendMode: 'screen' } },
+    { start: 0.28, type: 'travel', origin: 'source', config: { life: 0.60, offsetY: -10, sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.7, blendMode: 'screen' } },
+    { start: 0.30, type: 'travel', origin: 'source', config: { life: 0.45, offsetY: 25,  sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.5, blendMode: 'screen' } },
+    { start: 0.32, type: 'travel', origin: 'source', config: { life: 0.50, offsetY: -5,  sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.6, blendMode: 'screen' } },
+    { start: 0.34, type: 'travel', origin: 'source', config: { life: 0.55, offsetY: 18,  sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.4, blendMode: 'screen' } },
+    { start: 0.36, type: 'travel', origin: 'source', config: { life: 0.40, offsetY: -20, sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.5, blendMode: 'screen' } },
+    { start: 0.38, type: 'travel', origin: 'source', config: { life: 0.60, offsetY: 10,  sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.7, blendMode: 'screen' } },
+    { start: 0.40, type: 'travel', origin: 'source', config: { life: 0.45, offsetY: -12, sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.5, blendMode: 'screen' } },
+    { start: 0.42, type: 'travel', origin: 'source', config: { life: 0.50, offsetY: 22,  sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.6, blendMode: 'screen' } },
+    { start: 0.44, type: 'travel', origin: 'source', config: { life: 0.55, offsetY: -25, sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.4, blendMode: 'screen' } },
+    { start: 0.46, type: 'travel', origin: 'source', config: { life: 0.40, offsetY: 8,   sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.5, blendMode: 'screen' } },
+    { start: 0.48, type: 'travel', origin: 'source', config: { life: 0.60, offsetY: -15, sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.7, blendMode: 'screen' } },
+    { start: 0.50, type: 'travel', origin: 'source', config: { life: 0.50, offsetY: 15,  sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.5, blendMode: 'screen' } }
+  ],
+  target: {
+    // Starts exactly as the fastest first particles hit (0.1 start + 0.40 life = 0.50)
+    // Ends when the slowest last particle hits (0.5 start + 0.60 life = 1.10)
+    shake: { start: 0.5, end: 1.1, intensity: 25 },
+    flash: { start: 0.5, end: 1.1, filter: 'brightness(200%) sepia(100%) hue-rotate(15deg) saturate(400%)' }
+  }
+},
+  "boulder_throw": {
+    duration: 1.8,
+    audio: [
+      { start: 0.0, key: 'earthquake1Sfx', volume: 0.8, pitch: 1.5 },
+      { start: 0.6, key: 'earthquake2Sfx', volume: 1.2, pitch: 0.8 }
+    ],
+    actor: { 
+      type: 'lunge', start: 0.0, end: 0.2, distance: 40 
+    },
+    vfx: [
+      { start: 0.2, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'boulderThrowAnimation', frameCount: 4, frameSize: 64, scale: 3.0, blendMode: 'normal' } },
+      { start: 0.6, type: 'spawn', origin: 'target', config: { life: 0.5, sheetKey: 'impactAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 2.5, blendMode: 'multiply' } }
+    ],
+    target: {
+      shake: { start: 0.6, end: 1.1, intensity: 40 },
+      flash: { start: 0.6, end: 0.9, filter: 'sepia(80%) brightness(80%) saturate(150%)' }
+    }
+  },
+
+  "frigid_gale": {
+  duration: 1.8,
+  audio: [{ start: 0.1, key: 'iceBoltCastSfx', volume: 1.2, pitch: 0.7 }],
+  actor: {
+    flash: { start: 0.0, end: 0.4, filter: 'brightness(180%) sepia(100%) hue-rotate(190deg) saturate(200%)' }
+  },
+  vfx: [
+    { 
+      start: 0.2, 
+      type: 'travel', 
+      origin: 'source', 
+      config: { 
+        life: 0.5, 
+        sheetKey: 'frigidGaleAnimation', 
+        frameCount: 4, 
+        frameSize: 64, 
+        scale: 1.5, 
+        blendMode: 'screen' 
+      } 
+    },
+    { 
+      start: 0.4, 
+      type: 'travel', 
+      origin: 'source', 
+      config: { 
+        life: 0.5, 
+        sheetKey: 'frigidGaleAnimation', 
+        frameCount: 4, 
+        frameSize: 64, 
+        scale: 2.0, 
+        blendMode: 'screen' 
+      } 
+    }
+  ],
+  target: {
+    shake: { start: 0.5, end: 1.2, intensity: 25 },
+    flash: { start: 0.5, end: 1.0, filter: 'brightness(200%) sepia(80%) hue-rotate(190deg) saturate(300%) drop-shadow(0 0 10px cyan)' }
+  }
+},
+
+  "overload": {
+    duration: 2.0,
+    audio: [{ start: 0.1, key: 'shockSfx', volume: 1.3, pitch: 0.8 }],
+    actor: { 
+      flash: { start: 0.1, end: 1.0, filter: 'brightness(300%) drop-shadow(0 0 15px yellow)' } 
+    },
+    background: { 
+      start: 0.1, end: 0.5, key: 'voidBackground', filter: 'brightness(200%) sepia(50%) hue-rotate(60deg) invert(10%)' 
+    },
+    vfx: [
+      { start: 0.2, type: 'spawn', origin: 'target', config: { life: 0.8, sheetKey: 'overloadAnimation', frameCount: 4, frameSize: 64, movement: 'expand_and_fade', scale: 3.5, blendMode: 'screen' } },
+      { start: 0.4, type: 'spawn', origin: 'target', config: { life: 0.6, sheetKey: 'overloadAnimation', frameCount: 4, frameSize: 64, movement: 'static', scale: 2.5, blendMode: 'screen' } }
+    ],
+    target: {
+      shake: { start: 0.2, end: 1.2, intensity: 50 },
+      flash: { start: 0.2, end: 1.0, filter: 'brightness(300%) sepia(100%) hue-rotate(50deg) saturate(500%) drop-shadow(0 0 15px yellow)' }
+    }
+  },
     "abyssal_void": {
         duration: 3.0,
         audio: [{ start: 0.033, key: 'darkMagicSFX', volume: 1.0 }],

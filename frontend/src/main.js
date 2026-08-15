@@ -82,6 +82,13 @@ cleaveAnimation: './assets/abilityAnimations/cleave.png',
 wildSwingAnimation: './assets/abilityAnimations/wild_swing.png',
 purifyAnimation: './assets/abilityAnimations/purify.png',
 meteorShowerAnimation: './assets/abilityAnimations/meteor_shower.png',
+frigidGaleAnimation: './assets/abilityAnimations/frigid_gale.png',
+flamethrowerAnimation: './assets/abilityAnimations/flamethrower.png',
+waterfallAnimation: './assets/abilityAnimations/waterfall.png',
+overloadAnimation: './assets/abilityAnimations/overload.png',
+spiteAnimation: './assets/abilityAnimations/spite.png',
+boulderThrowAnimation: './assets/abilityAnimations/boulder_throw.png',
+
 //quickStabAnimation: './assets/abilityAnimations/quick_stab.png',
   
   // Backgrounds
@@ -134,6 +141,7 @@ wildSwingSfx: './assets/audio/sfx/abilities/wild_swing.wav',
 purifySfx: './assets/audio/sfx/abilities/purify.wav',
 meteorShowerImpactSfx: './assets/audio/sfx/abilities/meteor_shower/meteor_shower_impact.wav',
 quickStabSfx: './assets/audio/sfx/abilities/quick_stab.wav',
+spiteCastSfx: './assets/audio/sfx/abilities/spite/spite_cast.wav',
 //BATTLE STATUS AND WEATHER SFX
   poisonSfx: './assets/audio/sfx/statusEffects/poison.wav',
   paralyzedSfx: './assets/audio/sfx/statusEffects/paralyzed.wav',

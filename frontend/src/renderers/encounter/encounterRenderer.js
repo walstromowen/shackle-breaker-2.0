@@ -774,6 +774,21 @@ export class EncounterRenderer {
             onLayoutUpdate(this.hotspots, scrollBounds);
         }
     }
+    drawStatRow(ctx, ui, label, current, max, x, y, barW, h, numW, labelW, color, dimColor, alpha) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    
+    // Pre-calculate faded colors to ensure ui components that reset globalAlpha still fade appropriately
+    const fadedTextMuted = this.getAlphaColor(UITheme.colors.textMuted, alpha);
+    const fadedColor = this.getAlphaColor(color, alpha);
+    const fadedDimColor = this.getAlphaColor(dimColor, alpha);
+
+    ui.drawText(label, x, y + 12, UITheme.fonts.cardMono || UITheme.fonts.mono, fadedTextMuted);
+    ui.drawBar(x + labelW, y, barW, h, current, max, fadedColor, fadedDimColor);
+    ui.drawText(`${Math.floor(current)}/${max}`, x + labelW + barW + numW, y + 12, UITheme.fonts.cardMono || UITheme.fonts.mono, fadedTextMuted, "right");
+    
+    ctx.restore();
+  }
 
     drawRewards(ctx, ui, rewards, x, y) {
         let currentY = y;
@@ -808,91 +823,119 @@ export class EncounterRenderer {
     }
 
     drawPartyMember(ctx, ui, member, x, y, colWidth, nameY, font, targetAreaSize, transition = null, baseAlpha = 1.0) {
-        const nativeRes = 128;
-        const imgScale = 2;
-        const drawSize = nativeRes * imgScale;
+    const nativeRes = 128;
+    const imgScale = 2;
+    const drawSize = nativeRes * imgScale;
+    const pX = x + (colWidth / 2) - (targetAreaSize / 2);
+    const pY = y;
+    const transActive = transition && transition.active;
+    const prevMember = transActive ? transition.previousPartyMember : null;
+    const isDying = prevMember && prevMember.hp > 0 && member.hp <= 0;
+    const characterChanged = prevMember && (prevMember.name !== member.name || isDying);
+    
+    const displayName = (characterChanged && transition.progress < 0.5) ? prevMember.name : member.name;
+    const displayColor = (characterChanged && transition.progress < 0.5) ? 
+        (prevMember.hp <= 0 ? UITheme.colors.hp : UITheme.colors.textMain) : 
+        (member.hp <= 0 ? UITheme.colors.hp : UITheme.colors.textMain);
 
-        const pX = x + (colWidth / 2) - (targetAreaSize / 2);
-        const pY = y;
+    ctx.save();
+    ctx.globalAlpha = baseAlpha;
+    this.drawCenteredWrappedText(ctx, ui, displayName, x + (colWidth / 2), nameY, colWidth - 48, 58, UITheme.fonts.header, displayColor, true);
 
-        const transActive = transition && transition.active;
-        const prevMember = transActive ? transition.previousPartyMember : null;
-        const isDying = prevMember && prevMember.hp > 0 && member.hp <= 0;
-        const characterChanged = prevMember && (prevMember.name !== member.name || isDying);
-        const displayName = (characterChanged && transition.progress < 0.5) ? prevMember.name : member.name;
-        const displayColor = (characterChanged && transition.progress < 0.5) ?
-            (prevMember.hp <= 0 ? UITheme.colors.hp : UITheme.colors.textMain) :
-            (member.hp <= 0 ? UITheme.colors.hp : UITheme.colors.textMain);
+    ctx.fillStyle = '#050505';
+    ctx.fillRect(pX, pY, targetAreaSize, targetAreaSize);
 
+    // Safely patch UITheme colors so CanvasUI border drawing inherits the fade
+    const fadeBorder = this.getAlphaColor(UITheme.colors.border, baseAlpha);
+    const fadeHighlight = this.getAlphaColor(UITheme.colors.borderHighlight, baseAlpha);
+    const oldBorder = UITheme.colors.border;
+    const oldHighlight = UITheme.colors.borderHighlight;
+    UITheme.colors.border = fadeBorder;
+    UITheme.colors.borderHighlight = fadeHighlight;
+
+    ui.drawPanel(pX - 4, pY - 4, targetAreaSize + 8, targetAreaSize + 8, "transparent", fadeBorder);
+
+    // Restore theme
+    UITheme.colors.border = oldBorder;
+    UITheme.colors.borderHighlight = oldHighlight;
+    ctx.restore();
+
+    const drawCharSprite = (charData, alpha) => {
+      if (!charData || !this.loader) return;
+      const sheet = this.loader.get(charData.spritePortrait);
+      if (!sheet) return;
+      
+      const imgX = x + (colWidth / 2) - (drawSize / 2);
+      const imgY = pY + (targetAreaSize / 2) - (drawSize / 2);
+      
+      ctx.save();
+      ctx.globalAlpha = alpha * baseAlpha;
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(sheet, 0, 0, nativeRes, nativeRes, imgX, imgY, drawSize, drawSize);
+      ctx.imageSmoothingEnabled = true;
+      ctx.restore();
+    };
+    
+    // --- NEW: Helper to draw all three vitals beneath the portrait ---
+    const drawVitals = (charData, alpha) => {
+        if (!charData) return;
+        
+        const vitalsY = pY + targetAreaSize + 32;
+        const totalW = colWidth * 0.75;
+        const labelW = 48;
+        const numW = 85;
+        const barW = totalW - labelW - numW;
+        const vX = x + (colWidth / 2) - (totalW / 2);
+        
+        let currentY = vitalsY;
+        const rowH = 10;
+        const rowSpacing = 29;
+
+        this.drawStatRow(ctx, ui, "HP", charData.hp, charData.maxHp, vX, currentY, barW, rowH, numW, labelW, UITheme.colors.hp, UITheme.colors.hpDim, alpha * baseAlpha);
+        currentY += rowSpacing;
+        this.drawStatRow(ctx, ui, "STM", charData.stamina, charData.maxStamina, vX, currentY, barW, rowH, numW, labelW, UITheme.colors.stm, UITheme.colors.stmDim, alpha * baseAlpha);
+        currentY += rowSpacing;
+        this.drawStatRow(ctx, ui, "INS", charData.insight || 0, charData.maxInsight || 100, vX, currentY, barW, rowH, numW, labelW, UITheme.colors.ins, UITheme.colors.insDim, alpha * baseAlpha);
+    };
+
+    if (transActive && characterChanged) {
+      const p = transition.progress;
+      const smoothP = p * p * (3 - 2 * p);
+      
+      // Draw previous character fading out
+      drawCharSprite(prevMember, 1.0 - smoothP);
+      drawVitals(prevMember, 1.0 - smoothP);
+      
+      if (prevMember.hp <= 0) {
+        ctx.save();
+        ctx.globalAlpha = (1.0 - smoothP) * baseAlpha;
+        ctx.fillStyle = "rgba(100, 0, 0, 0.6)";
+        ctx.fillRect(pX, pY, targetAreaSize, targetAreaSize);
+        ctx.restore();
+      }
+      
+      // Draw new character fading in
+      drawCharSprite(member, smoothP);
+      drawVitals(member, smoothP);
+      
+      if (member.hp <= 0) {
+        ctx.save();
+        ctx.globalAlpha = smoothP * baseAlpha;
+        ctx.fillStyle = "rgba(100, 0, 0, 0.6)";
+        ctx.fillRect(pX, pY, targetAreaSize, targetAreaSize);
+        ctx.restore();
+      }
+    } else {
+      drawCharSprite(member, 1.0);
+      drawVitals(member, 1.0);
+      
+      if (member.hp <= 0) {
         ctx.save();
         ctx.globalAlpha = baseAlpha;
-
-        this.drawCenteredWrappedText(ctx, ui, displayName, x + (colWidth / 2), nameY, colWidth - 48, 58, UITheme.fonts.header, displayColor, true);
-
-        ctx.fillStyle = '#050505';
+        ctx.fillStyle = "rgba(100, 0, 0, 0.6)";
         ctx.fillRect(pX, pY, targetAreaSize, targetAreaSize);
-
-        // Safely patch UITheme colors so CanvasUI border drawing inherits the fade
-        const fadeBorder = this.getAlphaColor(UITheme.colors.border, baseAlpha);
-        const fadeHighlight = this.getAlphaColor(UITheme.colors.borderHighlight, baseAlpha);
-        const oldBorder = UITheme.colors.border;
-        const oldHighlight = UITheme.colors.borderHighlight;
-        UITheme.colors.border = fadeBorder;
-        UITheme.colors.borderHighlight = fadeHighlight;
-
-        ui.drawPanel(pX - 4, pY - 4, targetAreaSize + 8, targetAreaSize + 8, "transparent", fadeBorder);
-
-        // Restore theme
-        UITheme.colors.border = oldBorder;
-        UITheme.colors.borderHighlight = oldHighlight;
         ctx.restore();
-
-        const drawCharSprite = (charData, alpha) => {
-            if (!charData || !this.loader) return;
-            const sheet = this.loader.get(charData.spritePortrait);
-            if (!sheet) return;
-
-            const imgX = x + (colWidth / 2) - (drawSize / 2);
-            const imgY = pY + (targetAreaSize / 2) - (drawSize / 2);
-
-            ctx.save();
-            ctx.globalAlpha = alpha * baseAlpha;
-            ctx.imageSmoothingEnabled = false;
-            ctx.drawImage(sheet, 0, 0, nativeRes, nativeRes, imgX, imgY, drawSize, drawSize);
-            ctx.imageSmoothingEnabled = true;
-            ctx.restore();
-        };
-
-        if (transActive && characterChanged) {
-            const p = transition.progress;
-            const smoothP = p * p * (3 - 2 * p);
-
-            drawCharSprite(prevMember, 1.0 - smoothP);
-            if (prevMember.hp <= 0) {
-                ctx.save();
-                ctx.globalAlpha = (1.0 - smoothP) * baseAlpha;
-                ctx.fillStyle = "rgba(100, 0, 0, 0.6)";
-                ctx.fillRect(pX, pY, targetAreaSize, targetAreaSize);
-                ctx.restore();
-            }
-
-            drawCharSprite(member, smoothP);
-            if (member.hp <= 0) {
-                ctx.save();
-                ctx.globalAlpha = smoothP * baseAlpha;
-                ctx.fillStyle = "rgba(100, 0, 0, 0.6)";
-                ctx.fillRect(pX, pY, targetAreaSize, targetAreaSize);
-                ctx.restore();
-            }
-        } else {
-            drawCharSprite(member, 1.0);
-            if (member.hp <= 0) {
-                ctx.save();
-                ctx.globalAlpha = baseAlpha;
-                ctx.fillStyle = "rgba(100, 0, 0, 0.6)";
-                ctx.fillRect(pX, pY, targetAreaSize, targetAreaSize);
-                ctx.restore();
-            }
-        }
+      }
     }
+  }
 }

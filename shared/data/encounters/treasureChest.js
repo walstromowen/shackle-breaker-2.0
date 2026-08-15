@@ -222,7 +222,7 @@ export const treasureChest = {
         },
         poison_mist: {
             displayText: "A Toxic Trap",
-            image: { col: 3, row: 0 },
+            image: { col: 2, row: 0 },
             text: "With a grinding creak, the chest pops open—but immediately releases a dense cloud of noxious, green mist! {name} inhales the toxic fumes as they reach for the loot.",
             decisions: [
                 {

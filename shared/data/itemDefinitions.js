@@ -45,7 +45,7 @@ export const ItemDefinitions = {
         value: 20,
         icon: { col: 1, row: 0 },
         attack: { pierce: 3, slash: 3 },
-        grantedAbilities: ["slash", "thrust",  "quick_stab", "healing_rain"],
+        grantedAbilities: ["slash", "thrust",  "frigid_gale", "waterfall", "overload", "boulder_throw", "spite", "inferno", "flamethrower"],
         maxLevel: 3,
         statGrowth: {
             attack: { pierce: 2, slash: 2 }
