@@ -9,12 +9,12 @@ procedural dungeons and hand crafted areas
 structures: 
 ability tags / immunities range
 Title Screen
-
+autenticaiton (last)
 more consistent sound for UI
 Overall UI polish
 better text style
 targeting ui improvements for splash attacks with mouse
-
+quest tab screen
 Bugs
 Rain flash
 rain sound effect too slow

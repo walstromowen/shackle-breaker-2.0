@@ -15,50 +15,17 @@ export class TitleRenderer {
 
         // 1. Draw Fullscreen Background Image
         const bgImage = this.loader.getImage ? this.loader.getImage('title_bg') : this.loader.get('title_bg');
-
+        
         if (bgImage) {
             ctx.drawImage(bgImage, 0, 0, width, height);
         } else {
             ui.clearScreen(width, height);
         }
 
-        // Dark Vignette & Overlay for UI Readability
-        const overlay = ctx.createRadialGradient(width / 2, height / 2, width * 0.25, width / 2, height / 2, width * 0.75);
-        overlay.addColorStop(0, 'rgba(0, 0, 0, 0.35)');
-        overlay.addColorStop(1, 'rgba(0, 0, 0, 0.75)');
-        ctx.fillStyle = overlay;
-        ctx.fillRect(0, 0, width, height);
+        // Note: The dark vignette overlay was removed from here to restore 
+        // the original brightness of your background image.
 
-        // 2. Draw Title Text with Drop Shadow
-        const titleY = height * 0.22;
-
-        ctx.save();
-        ctx.shadowColor = '#000000';
-        ctx.shadowBlur = 15;
-        ctx.shadowOffsetY = 4;
-
-        ui.drawText(
-            'Shackle Breaker',
-            width / 2,
-            titleY,
-            UITheme.fonts.title,
-            UITheme.colors.textMain,
-            'center',
-            'middle'
-        );
-        ctx.restore();
-
-        // Gothic flourish underline beneath title
-        const flourishWidth = 500;
-        const flourishX = (width / 2) - (flourishWidth / 2);
-        ui.drawLineWithGothicFlourish(
-            flourishX,
-            titleY + 70,
-            flourishWidth,
-            UITheme.colors.borderHighlight
-        );
-
-        // 3. Draw Menu Items & Calculate Hitboxes
+        // 2. Draw Menu Items & Calculate Hitboxes
         const hitboxes = [];
         const buttonWidth = 400;
         const buttonHeight = 70;
@@ -69,14 +36,7 @@ export class TitleRenderer {
             const x = width / 2 - buttonWidth / 2;
             const y = startY + (index * spacing);
 
-            hitboxes.push({
-                id: item.id,
-                x: x,
-                y: y,
-                w: buttonWidth,
-                h: buttonHeight,
-                zIndex: 10
-            });
+            hitboxes.push({ id: item.id, x: x, y: y, w: buttonWidth, h: buttonHeight, zIndex: 10 });
 
             const isHovered = state.hoveredId === item.id;
 
@@ -86,19 +46,13 @@ export class TitleRenderer {
             if (isHovered) {
                 ui.drawRect(x, y, buttonWidth, buttonHeight, UITheme.colors.states.hoverBg, true);
                 ui.drawSelectionBrackets(
-                    x,
-                    y,
-                    buttonWidth,
-                    buttonHeight,
-                    15,
-                    UITheme.colors.borderHighlight
+                    x, y, buttonWidth, buttonHeight, 15, UITheme.colors.borderHighlight
                 );
             } else {
                 ui.drawRect(x, y, buttonWidth, buttonHeight, UITheme.colors.border, false);
             }
 
             const textColor = isHovered ? UITheme.colors.states.hoverText : UITheme.colors.textMain;
-
             ui.drawText(
                 item.text,
                 width / 2,
@@ -110,7 +64,7 @@ export class TitleRenderer {
             );
         });
 
-        // 4. Update Controller Hitbox Cache
+        // 3. Update Controller Hitbox Cache
         controller.updateHitboxes(hitboxes);
     }
 }

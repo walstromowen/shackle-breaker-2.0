@@ -16,29 +16,33 @@ const KEY_BINDINGS = {
 export class TitleController extends BaseController {
     constructor(input) {
         super(input);
-
+        
         // Define our semantic menu data
         this.menuItems = [
             { id: 'btn_new_game', text: 'New Game' },
             { id: 'btn_load_game', text: 'Load Game' },
             { id: 'btn_options', text: 'Settings' }
         ];
+        
+        // Start with -1 so no button is highlighted by default
+        this.selectedIndex = -1;
 
-        // Track selected index for keyboard navigation (defaults to first item)
-        this.selectedIndex = 0;
+        // Since the user already interacted with the Auth screen prior to this,
+        // the browser's AudioContext is fully unlocked. This will play instantly!
+        events.emit('PLAY_MUSIC', { id: 'shackle_breaker_theme_1', fadeTime: 2.0 });
     }
 
     // Pass necessary data to the renderer
     getState() {
         return {
             menuItems: this.menuItems,
-            // Fall back to keyboard-focused item ID if no mouse hover is active
-            hoveredId: this.hoveredHitboxId || this.menuItems[this.selectedIndex]?.id
+            // Only fall back to keyboard index if it's a valid index (>= 0)
+            hoveredId: this.hoveredHitboxId || (this.selectedIndex >= 0 ? this.menuItems[this.selectedIndex]?.id : null)
         };
     }
 
     // ======================================================== //
-    // STANDARDIZED INPUT HANDLING                             //
+    //     STANDARDIZED INPUT HANDLING                          //
     // ======================================================== //
 
     handleMouseMove(x, y, isMouseDown, renderer) {
@@ -46,10 +50,12 @@ export class TitleController extends BaseController {
         super.handleMouseMove(x, y, isMouseDown, renderer);
 
         // Sync keyboard selection index with mouse hover
-        if (this.hoveredHitboxId && this.hoveredHitboxId !== prevHoverId) {
-            const index = this.menuItems.findIndex(item => item.id === this.hoveredHitboxId);
-            if (index !== -1) {
-                this.selectedIndex = index;
+        if (this.hoveredHitboxId !== prevHoverId) {
+            if (this.hoveredHitboxId) {
+                this.selectedIndex = this.menuItems.findIndex(item => item.id === this.hoveredHitboxId);
+            } else {
+                // Clear selection when mouse leaves button
+                this.selectedIndex = -1;
             }
         }
     }
@@ -61,20 +67,30 @@ export class TitleController extends BaseController {
         const prevIndex = this.selectedIndex;
 
         if (intent === 'UP') {
-            this.selectedIndex = (this.selectedIndex - 1 + this.menuItems.length) % this.menuItems.length;
+            if (this.selectedIndex === -1) {
+                this.selectedIndex = this.menuItems.length - 1; // Jump to bottom
+            } else {
+                this.selectedIndex = (this.selectedIndex - 1 + this.menuItems.length) % this.menuItems.length;
+            }
             if (this.selectedIndex !== prevIndex) {
                 events.emit('PLAY_SFX', { id: 'uiNav', volume: 0.5 });
             }
         } else if (intent === 'DOWN') {
-            this.selectedIndex = (this.selectedIndex + 1) % this.menuItems.length;
+            if (this.selectedIndex === -1) {
+                this.selectedIndex = 0; // Jump to top
+            } else {
+                this.selectedIndex = (this.selectedIndex + 1) % this.menuItems.length;
+            }
             if (this.selectedIndex !== prevIndex) {
                 events.emit('PLAY_SFX', { id: 'uiNav', volume: 0.5 });
             }
         } else if (intent === 'CONFIRM') {
-            const selectedItem = this.menuItems[this.selectedIndex];
-            if (selectedItem) {
-                events.emit('PLAY_SFX', { id: 'uiConfirm', volume: 0.8 });
-                this.onClick(selectedItem.id);
+            if (this.selectedIndex >= 0) {
+                const selectedItem = this.menuItems[this.selectedIndex];
+                if (selectedItem) {
+                    events.emit('PLAY_SFX', { id: 'uiConfirm', volume: 0.8 });
+                    this.onClick(selectedItem.id);
+                }
             }
         } else if (intent === 'CANCEL') {
             events.emit('PLAY_SFX', { id: 'uiCancel', volume: 0.5 });
@@ -103,8 +119,6 @@ export class TitleController extends BaseController {
 
     // Right-Click / CANCEL: Universal Back/Cancel
     onRightClick(hitboxId) {
-        // Since we are at the root menu, 'Back' might just cancel an active prompt
-        // or trigger an exit confirmation. For now, we capture it to prevent bleed.
         console.log('[TitleController] Universal Back triggered at root menu.');
     }
 }

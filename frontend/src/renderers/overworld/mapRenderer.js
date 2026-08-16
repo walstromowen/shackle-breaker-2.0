@@ -12,10 +12,6 @@ export class MapRenderer {
         this.baseWidth = 800;
         this.resScale = this.canvas.width / this.baseWidth;
 
-        this.shadowImage = this.loader.get('shadows'); 
-        this.fallbackTileset = this.loader.get('plains'); 
-        this.fallbackObjects = this.loader.get('plainsMapObjects') || this.loader.get('spritesheet');
-
         this.blobMap = new Map();
         this.shadowOverrides = new Map();
         
@@ -250,31 +246,40 @@ export class MapRenderer {
     // ==========================================
 
     drawTile(typeId, index, dx, dy, sheetId) {
-        const { TILE_SIZE, TILE_PADDING, GAME_SCALE, BLOB_OFFSETS } = this.config;
-        const scale = GAME_SCALE * this.resScale;
-        
-        let source = sheetId === 'shadows' ? this.shadowImage : (this.loader.get(sheetId) || this.fallbackTileset);
-        if (!source) return;
+    const { TILE_SIZE, TILE_PADDING, GAME_SCALE, BLOB_OFFSETS } = this.config;
+    const scale = GAME_SCALE * this.resScale;
+    
+    // Fetch directly from the loader every frame!
+    const shadowImage = this.loader.get('shadows');
+    const fallbackTileset = this.loader.get('plains');
+    let source = sheetId === 'shadows' ? shadowImage : (this.loader.get(sheetId) || fallbackTileset);
+    
+    if (!source) return;
 
-        const drawSize = Math.ceil(TILE_SIZE * scale);
-        const slotSize = TILE_SIZE + (TILE_PADDING * 2);
-
-        let startRow = 0;
-        if (sheetId !== 'shadows' && BLOB_OFFSETS?.[typeId] !== undefined) {
-            startRow = BLOB_OFFSETS[typeId];
-        }
-
-        const sx = ((index % 8) * slotSize) + TILE_PADDING;
-        const sy = (((index / 8) | 0) + startRow) * slotSize + TILE_PADDING;
-
-        this.ctx.drawImage(source, sx, sy, TILE_SIZE, TILE_SIZE, dx, dy, drawSize, drawSize);
+    const drawSize = Math.ceil(TILE_SIZE * scale);
+    const slotSize = TILE_SIZE + (TILE_PADDING * 2);
+    
+    let startRow = 0;
+    if (sheetId !== 'shadows' && BLOB_OFFSETS?.[typeId] !== undefined) {
+        startRow = BLOB_OFFSETS[typeId];
     }
+    
+    const sx = ((index % 8) * slotSize) + TILE_PADDING;
+    const sy = (((index / 8) | 0) + startRow) * slotSize + TILE_PADDING;
+    
+    this.ctx.drawImage(source, sx, sy, TILE_SIZE, TILE_SIZE, dx, dy, drawSize, drawSize);
+}
 
     drawObject(obj, dx, dy, totalTime = 0, objectSheetId = null) {
-        const sheetToUse = obj.sheetId || objectSheetId;
-        const imageSource = sheetToUse ? (this.loader.get(sheetToUse) || this.fallbackObjects) : this.fallbackObjects;
-        const { OBJECT_SIZE, GAME_SCALE } = this.config;
-        const scale = GAME_SCALE * this.resScale;
+    const sheetToUse = obj.sheetId || objectSheetId;
+    
+    // Fetch directly from the loader!
+    const fallbackObjects = this.loader.get('plainsMapObjects') || this.loader.get('spritesheet');
+    const imageSource = sheetToUse ? (this.loader.get(sheetToUse) || fallbackObjects) : fallbackObjects;
+    
+    const { OBJECT_SIZE, GAME_SCALE } = this.config;
+    const scale = GAME_SCALE * this.resScale;
+    // ... rest of drawObject stays exactly the same
         const wTiles = obj.w || 1;
         const hTiles = obj.h || 1;
         const dW = Math.ceil(wTiles * OBJECT_SIZE * scale);

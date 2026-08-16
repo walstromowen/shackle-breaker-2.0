@@ -11,6 +11,7 @@ const assetLoader = new AssetLoader();
 
 const ASSET_MANIFEST = {
 title_bg: './assets/screens/title_bg.jpg',
+shackle_breaker_theme_1: './assets/audio/music/shackle_breaker_theme_1.mp3',
 
     plains: './assets/tilesets/plains.png',
     desert: './assets/tilesets/desert.png',
