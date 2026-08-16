@@ -8,51 +8,76 @@ export class OverworldUIRenderer {
     constructor(config, loader) {
         this.config = config;
         this.loader = loader;
-
-        // Reverted to the original 80x80 square layout
-        this.buttons = [
-            { id: 'btn_party', x: 48, y: 48, w: 80, h: 80, label: 'PARTY', hotkey: 'P' }
-        ];
     }
 
     render(ctx, state) {
-        const { hoveredHitboxId } = state || {};
+        const { hoveredHitboxId, isMenuOpen, menuToggleHitbox, dropdownHitboxes } = state || {};
         const ui = new CanvasUI(ctx);
 
-        for (const btn of this.buttons) {
-            const isHovered = hoveredHitboxId === btn.id;
-            this.drawButton(ctx, ui, btn, isHovered);
+        if (menuToggleHitbox) {
+            const isMainHovered = hoveredHitboxId === menuToggleHitbox.id;
+            this.drawSquareButton(ctx, ui, menuToggleHitbox, isMainHovered, isMenuOpen);
+        }
+
+        if (isMenuOpen && dropdownHitboxes) {
+            for (const btn of dropdownHitboxes) {
+                const isHovered = hoveredHitboxId === btn.id;
+                this.drawSquareButton(ctx, ui, btn, isHovered, false);
+            }
         }
     }
 
-    drawButton(ctx, ui, btn, isHovered) {
-        // 1. Resolve colors based on hover state
-        const bgColor = isHovered ? "rgba(60, 55, 50, 0.95)" : "rgba(20, 18, 15, 0.85)";
-        const textColor = isHovered ? UITheme.colors.states.hoverText : UITheme.colors.textMain;
+    drawSquareButton(ctx, ui, btn, isHovered, isActiveOverride = false) {
+        const isActive = isHovered || isActiveOverride;
         
-        // Add a slight tactile bump upwards when hovered
-        const yOffset = isHovered ? -2 : 0;
+        // --- TRANSPARENT SQUARE BACKGROUNDS ---
+        // Alpha lowered dramatically from 0.92 to 0.4 (and 0.6 on hover/active)
+        const bgColor = isActive ? "rgba(65, 58, 50, 0.6)" : "rgba(25, 23, 20, 0.4)";
+        const textColor = isActive ? UITheme.colors.states.hoverText : UITheme.colors.textMain;
+        
+        // Slight hover bounce
+        const yOffset = isHovered ? -3 : 0;
         const drawY = btn.y + yOffset;
 
-        // 2. Draw the Main Gothic Panel
+        // Draw the square panel background
         ui.drawPanel(btn.x, drawY, btn.w, btn.h, bgColor);
 
-        // 3. Draw pulse/glow brackets if hovered
-        if (isHovered) {
-            ui.drawSelectionBrackets(btn.x - 2, drawY - 2, btn.w + 4, btn.h + 4, 8, UITheme.colors.borderHighlight);
+        // Highlight brackets outside the panel
+        if (isActive) {
+            ui.drawSelectionBrackets(btn.x - 4, drawY - 4, btn.w + 8, btn.h + 8, 8, UITheme.colors.borderHighlight);
         }
 
-        // 4. Draw Simplified Text & Hotkey with a smaller font
-        const displayText = btn.hotkey ? `${btn.label} [${btn.hotkey}]` : btn.label;
+        const centerX = btn.x + (btn.w / 2);
+        const uiSheet = this.loader.get('ui_icons'); 
 
+        // Draw the 64x64 icon from the spritesheet
+        if (uiSheet && btn.spriteCol !== undefined && btn.spriteRow !== undefined) {
+            const iconSize = 64;
+            const dstX = centerX - (iconSize / 2);
+            // Position the icon slightly near the top to leave room for text
+            const dstY = drawY + 8;
+            
+            const srcX = btn.spriteCol * iconSize;
+            const srcY = btn.spriteRow * iconSize;
+
+            ctx.drawImage(
+                uiSheet,
+                srcX, srcY, iconSize, iconSize, 
+                dstX, dstY, iconSize, iconSize  
+            );
+        }
+
+        // Draw bold centered destination label below the icon
+        const textY = drawY + btn.h - 20; 
+        
         ui.drawText(
-            displayText,
-            btn.x + (btn.w / 2),
-            drawY + (btn.h / 2) + 4, // Vertically centered
-            UITheme.fonts.small || "12px sans-serif", // Smaller text to fit the 80x80 box
-            textColor,
-            "center",
-            "alphabetic"
+            btn.label, 
+            centerX, 
+            textY, 
+            "bold 16px sans-serif", 
+            textColor, 
+            "center", 
+            "middle"
         );
     }
 }

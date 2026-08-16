@@ -10,8 +10,9 @@ import { aDisturbingSight } from "../../shared/data/encounters/aDisturbingSight.
 const assetLoader = new AssetLoader();
 
 const ASSET_MANIFEST = {
-title_bg: './assets/screens/title_bg.jpg',
+title_bg: './assets/screens/title_bg.png',
 shackle_breaker_theme_1: './assets/audio/music/shackle_breaker_theme_1.mp3',
+ui_icons: './assets/icons/ui_icons.png',
 
     plains: './assets/tilesets/plains.png',
     desert: './assets/tilesets/desert.png',

@@ -11,31 +11,80 @@ export class OverworldController extends BaseController {
         super(input);
         this.config = config;
         this.worldManager = worldManager;
+        
         this.player = this.createPlayerEntity();
         this.camera = { x: 0, y: 0, prevX: 0, prevY: 0 };
         this.isLocked = false;
+        
+        this.isMenuOpen = false;
 
-        // Added hoverSfx for automatic hover ticking
-        this.uiHitboxes = [
-            { id: 'btn_party', x: 48, y: 48, w: 80, h: 80, zIndex: 100, hoverSfx: 'hoverTick' }
+        // --- RESTORED SQUARE LAYOUT ---
+        const MENU_X = 48;
+        const MENU_Y = 48;
+        const BTN_SIZE = 104; // Square width/height
+        const GAP = 8;        // Gap between stacked buttons
+
+        this.menuToggleHitbox = { 
+            id: 'btn_menu_toggle', 
+            x: MENU_X, 
+            y: MENU_Y, 
+            w: BTN_SIZE, 
+            h: BTN_SIZE, 
+            spriteCol: 4, 
+            spriteRow: 0,
+            label: 'Menu',
+            zIndex: 100, 
+            hoverSfx: 'hoverTick' 
+        };
+        
+        // Updated options
+        this.dropdownHitboxes = [
+            { id: 'btn_party',     x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 1, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 2, spriteRow: 0, label: 'Party' },
+            { id: 'btn_character', x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 2, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 0, spriteRow: 0, label: 'Character' },
+            { id: 'btn_quests',    x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 3, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 1, spriteRow: 0, label: 'Quests' },
+            { id: 'btn_system',    x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 4, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 3, spriteRow: 0, label: 'System' }
         ];
     }
 
     getHitboxes() {
-        return this.uiHitboxes;
+        if (this.isMenuOpen) {
+            return [this.menuToggleHitbox, ...this.dropdownHitboxes];
+        }
+        return [this.menuToggleHitbox];
     }
 
     onClick(hitboxId) {
         if (this.isLocked) return;
 
         switch (hitboxId) {
+            case 'btn_menu_toggle':
+                events.emit('PLAY_SFX', { id: 'click', volume: 0.6, pitch: 1.0 });
+                this.isMenuOpen = !this.isMenuOpen;
+                break;
             case 'btn_party':
-                events.emit('PLAY_SFX', { id: 'click', volume: 0.6, pitch: 0.95 + Math.random() * 0.1 });
-                console.log("[Overworld] Opening Party Menu (via UI click)...");
-                this.isLocked = true;
-                events.emit('CHANGE_SCENE', { scene: 'party' });
+                this.executeMenuAction('party');
+                break;
+            case 'btn_character':
+                this.executeMenuAction('character');
+                break;
+            case 'btn_quests':
+                this.executeMenuAction('quests');
+                break;
+            case 'btn_system':
+                this.executeMenuAction('system');
+                break;
+            default:
+                if (this.isMenuOpen) this.isMenuOpen = false;
                 break;
         }
+    }
+
+    executeMenuAction(sceneName) {
+        events.emit('PLAY_SFX', { id: 'click', volume: 0.6, pitch: 0.95 + Math.random() * 0.1 });
+        console.log(`[Overworld] Opening ${sceneName} Menu...`);
+        this.isMenuOpen = false;
+        this.isLocked = true;
+        events.emit('CHANGE_SCENE', { scene: sceneName });
     }
 
     onHover(hitboxId) {
@@ -44,14 +93,19 @@ export class OverworldController extends BaseController {
 
     handleKeyDown(code, e) {
         if (this.isLocked) return;
-
-        if (code === 'Space' || code === 'Enter') this.interact();
         
-        if (code === 'KeyP') {
-            events.emit('PLAY_SFX', { id: 'click', volume: 0.6, pitch: 0.95 + Math.random() * 0.1 });
-            console.log("[Overworld] Opening Party Menu (via Hotkey)...");
-            this.isLocked = true;
-            events.emit('CHANGE_SCENE', { scene: 'party' });
+        if (code === 'Space' || code === 'Enter') this.interact();
+
+        if (code === 'KeyM') {
+            events.emit('PLAY_SFX', { id: 'click', volume: 0.6, pitch: 1.0 });
+            this.isMenuOpen = !this.isMenuOpen;
+        }
+        if (code === 'KeyP') this.executeMenuAction('party');
+        if (code === 'KeyC') this.executeMenuAction('character');
+        if (code === 'KeyJ') this.executeMenuAction('quests');
+        
+        if (code === 'Escape' && this.isMenuOpen) {
+            this.isMenuOpen = false;
         }
     }
 
@@ -61,9 +115,9 @@ export class OverworldController extends BaseController {
 
     update(dt) {
         super.update(dt);
+        
         this.checkEnvironmentMusic();
 
-        // --- STEP STATEFUL OBJECT ANIMATIONS (e.g., Doors Opening) ---
         this.worldManager.getActiveObjects().forEach(obj => {
             if (obj.isAnimating) {
                 obj.animTimer = (obj.animTimer || 0) + dt;
@@ -72,10 +126,7 @@ export class OverworldController extends BaseController {
                     if (obj.currentFrame < obj.frames - 1) {
                         obj.currentFrame++;
                     } else {
-                        // Animation finished!
                         obj.isAnimating = false;
-
-                        // If it's a warp trigger, instantly execute the room transition now
                         if (obj.interaction?.type === 'WARP') {
                             events.emit('INTERACT', { 
                                 ...obj.interaction, 
@@ -101,6 +152,7 @@ export class OverworldController extends BaseController {
         } else {
             this.checkForNewMove();
         }
+
         this.updateCamera();
     }
 
@@ -118,15 +170,15 @@ export class OverworldController extends BaseController {
 
         const lookCol = Math.floor(targetX / TILE_SIZE);
         const lookRow = Math.floor(targetY / TILE_SIZE);
-        const obj = this.worldManager.getObjectAt(lookCol, lookRow);
 
+        const obj = this.worldManager.getObjectAt(lookCol, lookRow);
         if (obj && obj.interaction) {
             console.log(`[Overworld] Interacting with ${obj.id} at ${obj.col},${obj.row}`);
             this.isLocked = true;
             this.player.animFrame = 0;
-            events.emit('INTERACT', {
-                ...obj.interaction,
-                context: { col: obj.col, row: obj.row, objectId: obj.id }
+            events.emit('INTERACT', { 
+                ...obj.interaction, 
+                context: { col: obj.col, row: obj.row, objectId: obj.id } 
             });
         }
     }
@@ -163,7 +215,7 @@ export class OverworldController extends BaseController {
     continueMoving(dt) {
         const moveSpeed = this.config.WALK_DURATION;
         this.player.moveProgress += dt / moveSpeed;
-
+        
         this.player.animTimer += dt;
         if (this.player.animTimer > 0.1) {
             this.player.animTimer = 0;
@@ -173,6 +225,7 @@ export class OverworldController extends BaseController {
         if (this.player.moveProgress >= 1) {
             const overshoot = this.player.moveProgress - 1;
             this.finishMove();
+            
             if (this.player.isMoving) {
                 this.player.moveProgress = overshoot;
                 this.player.x = this.player.sourceX + (this.player.destX - this.player.sourceX) * this.player.moveProgress;
@@ -194,16 +247,14 @@ export class OverworldController extends BaseController {
         gameState.player.row = Math.floor(this.player.y / this.config.TILE_SIZE);
         gameState.player.direction = this.player.direction;
 
-        // --- INTERCEPT: STEPPING INTO AN ANIMATED WARP DOOR ---
         const stepOnObj = this.worldManager.getObjectAt(gameState.player.col, gameState.player.row);
         if (stepOnObj && stepOnObj.frames > 1 && stepOnObj.interaction?.type === 'WARP') {
-            this.isLocked = true; // Freeze player input
+            this.isLocked = true; 
             stepOnObj.isAnimating = true;
             stepOnObj.currentFrame = 0;
             stepOnObj.animTimer = 0;
-            
             events.emit('PLAY_SFX', { id: 'door_open', volume: 0.6, pitch: 1.0 });
-            return; // Halt encounters/movement checks while the door transitions open
+            return; 
         }
 
         this.checkTileEvents();
@@ -222,9 +273,10 @@ export class OverworldController extends BaseController {
         const col = Math.floor(this.player.x / this.config.TILE_SIZE);
         const row = Math.floor(this.player.y / this.config.TILE_SIZE);
         const biome = this.worldManager.getBiomeAt(col, row);
+        
         const currentHour = gameState.world.time / 60;
-
         const encounterData = biome.getEncounter(currentHour);
+
         if (encounterData) {
             console.log(`[Overworld] Encounter triggered in ${biome.id} at hour ${Math.floor(currentHour)}: ${encounterData.id}!`);
             this.isLocked = true;
@@ -237,22 +289,18 @@ export class OverworldController extends BaseController {
 
         const difficulty = gameState.difficulty || 'normal';
         const battleData = biome.getBattle(difficulty);
+
         if (!battleData) return;
 
         console.log(`[Overworld] Ambush triggered in biome: ${biome.id} on ${difficulty} difficulty!`);
-        
         this.isLocked = true;
         this.player.isMoving = false;
         this.player.moveProgress = 0;
         this.player.animFrame = 0;
 
         const battleBgAsset = biome.getBattleBackground(currentHour);
-
-        // --- UPDATED: Look how clean this is now! ---
-        // We just pass the raw enemy array straight from the biome definition.
-        // SceneManager will catch this payload, scale them, and build the entities.
         const battlePayload = {
-            enemies: battleData.enemies, 
+            enemies: battleData.enemies,
             background: battleBgAsset,
             weather: gameState.world.currentWeather
         };
@@ -266,8 +314,8 @@ export class OverworldController extends BaseController {
         const biome = this.worldManager.getBiomeAt(col, row);
         
         gameState.world.currentBiome = biome.id;
-        const activeWeather = gameState.world.currentWeather;
 
+        const activeWeather = gameState.world.currentWeather;
         if (!activeWeather || activeWeather.id.toUpperCase() === 'CLEAR') return;
 
         const allowed = (biome.allowedWeather || []).map(w => w.toUpperCase());
@@ -281,8 +329,8 @@ export class OverworldController extends BaseController {
         const col = gameState.player.col;
         const row = gameState.player.row;
         const biome = this.worldManager.getBiomeAt(col, row);
-        const currentHour = (gameState.world.time || 0) / 60;
 
+        const currentHour = (gameState.world.time || 0) / 60;
         const targetTrack = biome.getMusic(currentHour, false);
 
         if (targetTrack && gameState.world.currentBgm !== targetTrack) {
@@ -310,37 +358,36 @@ export class OverworldController extends BaseController {
     }
 
     getState() {
-        return {
-            entities: [this.player],
-            camera: this.camera,
-            hoveredHitboxId: this.hoveredHitboxId
+        return { 
+            entities: [this.player], 
+            camera: this.camera, 
+            hoveredHitboxId: this.hoveredHitboxId,
+            menuToggleHitbox: this.menuToggleHitbox,
+            dropdownHitboxes: this.dropdownHitboxes,
+            isMenuOpen: this.isMenuOpen
         };
     }
-    // Add this anywhere inside the OverworldController class!
+
     warpTo(col, row) {
         const { TILE_SIZE } = this.config;
-        
-        // 1. Update the global Game State
+
         gameState.player.col = col;
         gameState.player.row = row;
-        
-        // 2. Snap Player Pixel Coordinates
+
         this.player.x = col * TILE_SIZE;
         this.player.y = row * TILE_SIZE;
-        
-        // 🔥 CRITICAL FIX: Reset history parameters to prevent interpolation visual snaps
+
         this.player.prevX = this.player.x;
         this.player.prevY = this.player.y;
-        
-        // Wipe any ongoing movement properties
+
         this.player.destX = this.player.x;
         this.player.destY = this.player.y;
         this.player.sourceX = this.player.x;
         this.player.sourceY = this.player.y;
+        
         this.player.isMoving = false;
         this.player.moveProgress = 0;
-        
-        // 3. Snap the Camera Instantly
+
         this.camera.x = this.player.x;
         this.camera.y = this.player.y;
         this.camera.prevX = this.player.x;
@@ -373,12 +420,12 @@ export class OverworldController extends BaseController {
             isMoving: false,
             animFrame: 0,
             animTimer: 0,
-            light: {
-                hasLight: true,
-                radius: 4,
-                color: '255, 200, 100',
-                maxAlpha: 0.5,
-                flickerAmp: 0.1
+            light: { 
+                hasLight: true, 
+                radius: 4, 
+                color: '255, 200, 100', 
+                maxAlpha: 0.5, 
+                flickerAmp: 0.1 
             }
         };
     }

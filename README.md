@@ -15,6 +15,12 @@ Overall UI polish
 better text style
 targeting ui improvements for splash attacks with mouse
 quest tab screen
+auto pickup without encounter on overworld
+
+
+
+
+
 Bugs
 Rain flash
 rain sound effect too slow
