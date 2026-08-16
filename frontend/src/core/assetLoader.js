@@ -65,6 +65,11 @@ export class AssetLoader {
         return this.assets[key];
     }
 
+    getProgress() {
+        if (this.totalToLoad === 0) return 0;
+        return this.loadedCount / this.totalToLoad;
+    }
+
     isDone() {
         return this.totalToLoad > 0 && this.loadedCount === this.totalToLoad;
     }

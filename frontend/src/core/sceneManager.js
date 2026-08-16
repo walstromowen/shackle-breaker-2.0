@@ -3,6 +3,8 @@ import { Input } from './input.js';
 import { UIInteractionManager } from './UIInteractionManager.js';
 
 // --- CONTROLLERS ---
+import { BootController } from '../controllers/boot/bootController.js';        // <-- NEW
+import { TitleController } from '../controllers/title/titleController.js';     // <-- NEW
 import { OverworldController } from '../controllers/overworld/overworldController.js';
 import { EncounterController } from '../controllers/encounter/encounterController.js';
 import { CharacterCreatorController } from '../controllers/characterCreator/characterCreatorController.js';
@@ -12,6 +14,8 @@ import { BattleController } from '../controllers/battle/battleController.js';
 import { LevelUpController } from '../controllers/levelUp/levelUpController.js';
 
 // --- RENDERERS ---
+import { BootRenderer } from '../renderers/boot/bootRenderer.js';              // <-- NEW
+import { TitleRenderer } from '../renderers/title/titleRenderer.js';           // <-- NEW
 import { MapRenderer } from '../renderers/overworld/mapRenderer.js';
 import { LightingRenderer } from '../renderers/overworld/lightingRenderer.js';
 import { WeatherRenderer } from '../renderers/overworld/weatherRenderer.js';
@@ -40,23 +44,27 @@ export class SceneManager {
 
         // Systems
         this.input = new Input(this.canvas);
-        this.worldManager = null
+        this.worldManager = null;
         this.timeSystem = new TimeSystem();
         this.uiInteractionManager = new UIInteractionManager();
 
         console.log(`%c[SceneManager] Init. Seed: ${gameState.seed}`, 'color: #00aaaa');
 
         // --- CONTROLLERS ---
+        this.bootController = new BootController(this.input, this.loader);  // <-- NEW
+        this.titleController = new TitleController(this.input);             // <-- NEW
         this.characterCreatorController = new CharacterCreatorController();
         this.partyController = new PartyController(this.input);
         this.levelUpController = new LevelUpController(this.input);
-
+        
         this.overworldController = null;
         this.encounterController = null;
         this.battleController = null;
         this.characterSummaryController = null;
 
         // --- RENDERERS ---
+        this.bootRenderer = new BootRenderer(this.canvas);                                 // <-- NEW
+        this.titleRenderer = new TitleRenderer(this.canvas, this.config, this.loader);     // <-- NEW
         this.mapRenderer = new MapRenderer(this.canvas, this.loader, this.config);
         this.lightingRenderer = new LightingRenderer(this.config);
         this.weatherRenderer = new WeatherRenderer(this.canvas, this.ctx, this.config, this.loader);
@@ -70,8 +78,8 @@ export class SceneManager {
         this.battleRenderer = new BattleRenderer(this.ctx, this.config, this.loader);
 
         // State
-        this.currentScene = 'character-creator';
-        
+        this.currentScene = 'boot'; // <-- CHANGED: Start with boot screen
+
         // --- NEW: Audio Memory Cache ---
         this.activeBattleBGM = null;
         this.activeEncounterBGM = null;
@@ -82,36 +90,40 @@ export class SceneManager {
     }
 
     resolveTargetBGM(targetScene, sceneContext = {}) {
-        // 1. Direct override from an event payload
-        if (sceneContext.bgm) {
-            return sceneContext.bgm;
-        }
+        // 1. Explicit scene context overrides
+        if (sceneContext.bgm) return sceneContext.bgm;
 
-        // 2. Memory check (prevents music resetting when returning from menus)
+        // 2. Main menu and Boot exceptions (No world map exists yet)
+        if (targetScene === 'boot') return null;
+        if (targetScene === 'title') return 'shackle_breaker_theme_1';
+        if (targetScene === 'character-creator') return null;
+
+        // 3. Cached Battle/Encounter overrides
         if (targetScene === 'battle' && this.activeBattleBGM) return this.activeBattleBGM;
         if (targetScene === 'encounter' && this.activeEncounterBGM) return this.activeEncounterBGM;
 
-        // 3. Fallback: Biome Default
+        // 4. Overworld/Battle default biome resolution
         if (!gameState.player || gameState.player.col === undefined) return null;
+        
+        // Safety guard to prevent crashes if worldManager hasn't been instantiated yet
+        if (!this.worldManager) return null;
 
         const playerCol = gameState.player.col;
         const playerRow = gameState.player.row;
         const currentHour = (gameState.world.time || 0) / 60;
+        
         const biome = this.worldManager.getBiomeAt(playerCol, playerRow);
 
-        if (targetScene === 'battle') {
-            return biome.getMusic(currentHour, true);
-        }
-        if (targetScene === 'overworld') {
-            return biome.getMusic(currentHour, false);
-        }
+        if (targetScene === 'battle') return biome.getMusic(currentHour, true);
+        if (targetScene === 'overworld') return biome.getMusic(currentHour, false);
+
         return null;
     }
 
     resolveTargetAmbience(targetScene) {
         if (['party', 'character_summary', 'level_up'].includes(targetScene)) return null;
-        if (['battle', 'encounter', 'character-creator'].includes(targetScene)) return 'none';
-
+        if (['battle', 'encounter', 'character-creator', 'title', 'boot'].includes(targetScene)) return 'none';
+        
         if (gameState.world && gameState.world.currentWeather) {
             return gameState.world.currentWeather.audioEffect || 'none';
         }
@@ -141,9 +153,6 @@ export class SceneManager {
     }
 
     setupEventListeners() {
-        // --- Global Audio Sync ---
-        // If an Encounter (or anything else) manually triggers a track,
-        // we force the SceneManager's gameState to stay in sync!
         events.on('PLAY_MUSIC', (data) => {
             if (gameState && gameState.world) {
                 gameState.world.currentBgm = data.id;
@@ -163,7 +172,6 @@ export class SceneManager {
                 }
 
                 if (scene === 'overworld') this.overworldController.isLocked = false;
-                
                 if (scene === 'character_summary') {
                     this.characterSummaryController = new CharacterSummaryController(this.input, data);
                 }
@@ -195,14 +203,15 @@ export class SceneManager {
                             returnCol: data.context.col,
                             returnRow: data.context.row + 1
                         };
+
                         gameState.seed = gameState.seed + (data.context.col * 73856) + (data.context.row * 19349);
                         gameState.world.isInterior = true;
                         gameState.world.interiorType = data.roomType || 'HOUSE_INTERIOR';
                         gameState.world.interiorId = `${data.context.col}_${data.context.row}`;
-                        
+
                         this.worldManager = new WorldManager();
                         this.overworldController.worldManager = this.worldManager;
-                        
+
                         const interiorSpawn = this.worldManager.findSpawnPoint() || { col: 3, row: 5 };
                         this.overworldController.warpTo(interiorSpawn.col, interiorSpawn.row);
                         this.overworldController.isLocked = false;
@@ -213,15 +222,14 @@ export class SceneManager {
                             gameState.world.isInterior = false;
                             gameState.world.interiorType = null;
                             gameState.world.interiorId = null;
-                            
+
                             this.worldManager = new WorldManager();
                             this.overworldController.worldManager = this.worldManager;
                             this.overworldController.warpTo(saved.returnCol, saved.returnRow);
                             this.overworldController.isLocked = false;
                         }
                     }
-                    
-                    // Clear memory on returning to overworld
+
                     this.activeEncounterBGM = null;
                     this.changeScene('overworld');
                 }, 'fade', { speed: 2.0 });
@@ -264,7 +272,6 @@ export class SceneManager {
                 }
 
                 const enemyEntity = EntityFactory.create(enemyId, factoryOverrides);
-                
                 scaledEnemies.push(enemyEntity);
             }
 
@@ -274,14 +281,12 @@ export class SceneManager {
 
             this.transitionRenderer.start(() => {
                 console.log("[SceneManager] Handing off scaled entities to BattleController:", scaledEnemies);
-                
                 const context = data.context || {};
                 context.backgroundId = data.background;
                 context.weather = data.weather;
-                
+
                 this.battleController.start(scaledEnemies, context);
-                
-                // --- Save BGM to memory ---
+
                 const customBGM = data.bgm || context.bgm || null;
                 this.activeBattleBGM = customBGM;
                 this.changeScene('battle', { bgm: customBGM });
@@ -290,9 +295,7 @@ export class SceneManager {
         });
 
         events.on('BATTLE_ENDED', (data) => {
-            // --- Clear BGM memory on battle end ---
             this.activeBattleBGM = null;
-            
             if (data.victory) {
                 events.emit('CHANGE_SCENE', { scene: 'overworld' });
             } else {
@@ -302,10 +305,10 @@ export class SceneManager {
 
         events.on('REQUEST_PARTY_SWAP', (data) => {
             this.transitionRenderer.start(() => {
-                this.partyController.init({ 
+                this.partyController.init({
                     mode: data.mode || 'BATTLE_SELECT',
                     activeIndices: data.activeIndices,
-                    callback: data.callback 
+                    callback: data.callback
                 });
                 this.changeScene('party');
             }, 'wipe', { speed: 3.0 });
@@ -321,7 +324,7 @@ export class SceneManager {
         events.on('TOGGLE_CHARACTER_SUMMARY', (data) => {
             events.emit('PLAY_SFX', { id: 'cinematicBoom', volume: 0.7 });
             this.transitionRenderer.start(() => {
-                this.characterSummaryController = new CharacterSummaryController(this.input, { 
+                this.characterSummaryController = new CharacterSummaryController(this.input, {
                     character: data.combatant,
                     returnScene: 'battle',
                     phase: data.phase,
@@ -348,6 +351,8 @@ export class SceneManager {
 
     _getActiveController() {
         switch (this.currentScene) {
+            case 'boot': return this.bootController;               // <-- NEW
+            case 'title': return this.titleController;             // <-- NEW
             case 'overworld': return this.overworldController;
             case 'encounter': return this.encounterController;
             case 'battle': return this.battleController;
@@ -361,6 +366,8 @@ export class SceneManager {
 
     _getActiveRenderer() {
         switch (this.currentScene) {
+            case 'boot': return this.bootRenderer;                 // <-- NEW
+            case 'title': return this.titleRenderer;               // <-- NEW
             case 'overworld': return this.mapRenderer;
             case 'encounter': return this.encounterRenderer;
             case 'battle': return this.battleRenderer;
@@ -426,11 +433,20 @@ export class SceneManager {
     }
 
     render(interpolation, totalTime) {
-        if (!this.loader.isDone()) return;
+        // --- CHANGED: Allow rendering if we are in the boot screen! ---
+        if (!this.loader.isDone() && this.currentScene !== 'boot') return;
 
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         switch (this.currentScene) {
+            case 'boot':                                                                   // <-- NEW
+                const bootState = this.bootController.getState();
+                this.bootRenderer.render(this.ctx, bootState);
+                break;
+            case 'title':                                                                  // <-- NEW
+                const titleState = this.titleController.getState();
+                this.titleRenderer.render(this.ctx, titleState, this.titleController);
+                break;
             case 'character-creator':
                 const ccState = this.characterCreatorController.getState();
                 this.characterCreatorRenderer.render(this.ctx, ccState);
@@ -470,7 +486,7 @@ export class SceneManager {
     renderOverworld(interpolation, totalTime) {
         const state = this.overworldController.getState();
         const ambientColor = this.timeSystem.getCurrentColorData();
-
+        
         this.mapRenderer.renderMap(
             this.worldManager,
             state.camera,
@@ -481,7 +497,6 @@ export class SceneManager {
             ambientColor,
             this.weatherRenderer
         );
-
         this.overworldUIRenderer.render(this.ctx, state);
     }
 

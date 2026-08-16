@@ -9,20 +9,18 @@ class AudioManager {
     constructor() {
         this.ctx = null;
         this.loader = null; // Will hold the reference to AssetLoader
-        
+
         // Routing Nodes
         this.masterGain = null;
         this.musicGain = null;
         this.sfxGain = null;
         this.ambientGain = null; // NEW: Channel for weather/nature loops
-        
+
         // State tracking
         this.currentMusicSource = null;
         this.currentTrackId = null; // Tracks what is currently playing
-        
         this.currentAmbientSource = null; // NEW: Tracks active weather audio
-        this.currentAmbientId = null;     // NEW
-
+        this.currentAmbientId = null;      // NEW
         this.isInitialized = false;
 
         this._unlockAudioContext = this._unlockAudioContext.bind(this);
@@ -31,7 +29,7 @@ class AudioManager {
 
     /**
      * Link the AudioManager to your central AssetLoader.
-     * @param {AssetLoader} assetLoader 
+     * @param {AssetLoader} assetLoader
      */
     init(assetLoader) {
         this.loader = assetLoader;
@@ -82,7 +80,7 @@ class AudioManager {
         events.on('PLAY_SFX', (data) => this.playSFX(data.id, data.volume, data.pitch));
         events.on('PLAY_MUSIC', (data) => this.playMusic(data.id, data.fadeTime));
         events.on('STOP_MUSIC', (data) => this.stopMusic(data.fadeTime));
-        
+
         // NEW: Event listeners for environmental audio
         events.on('PLAY_AMBIENCE', (data) => this.playAmbience(data.id, data.fadeTime));
         events.on('STOP_AMBIENCE', (data) => this.stopAmbience(data.fadeTime));
@@ -103,7 +101,7 @@ class AudioManager {
 
         const source = this.ctx.createBufferSource();
         source.buffer = buffer;
-        
+
         // Local gain node for this specific sound
         const localGain = this.ctx.createGain();
         localGain.gain.value = volume;
@@ -129,7 +127,6 @@ class AudioManager {
         }
 
         const buffer = this.loader.get(key);
-
         if (!buffer) {
             console.warn(`[AudioManager] Missing Music buffer: ${key}`);
             return;
@@ -157,21 +154,21 @@ class AudioManager {
 
         // Update state
         this.currentMusicSource = { source, gain: localGain };
-        this.currentTrackId = key; 
+        this.currentTrackId = key;
     }
 
     stopMusic(fadeTime = 1.0) {
         if (!this.currentMusicSource) return;
 
         const { source, gain } = this.currentMusicSource;
-        
+
         // Fade out
         gain.gain.setValueAtTime(gain.gain.value, this.ctx.currentTime);
         gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + fadeTime);
-        
+
         // Stop playback after fade completes
         source.stop(this.ctx.currentTime + fadeTime);
-        
+
         // Clear state
         this.currentMusicSource = null;
         this.currentTrackId = null;
@@ -180,7 +177,6 @@ class AudioManager {
     // =========================================================
     // NEW: Ambient Audio Methods
     // =========================================================
-
     playAmbience(key, fadeTime = 2.0) { // Longer default fade for weather
         if (!this.isInitialized || !this.loader) return;
         if (this.currentAmbientId === key) return;
@@ -190,7 +186,7 @@ class AudioManager {
         }
 
         // If 'none' or missing key is passed, we just stop the current track (handled above)
-        if (!key || key === 'none') return; 
+        if (!key || key === 'none') return;
 
         const buffer = this.loader.get(key);
         if (!buffer) {
@@ -207,31 +203,34 @@ class AudioManager {
 
         source.connect(localGain);
         localGain.connect(this.ambientGain);
+
         source.start(0);
 
         // Fade in
         localGain.gain.linearRampToValueAtTime(1.0, this.ctx.currentTime + fadeTime);
 
         this.currentAmbientSource = { source, gain: localGain };
-        this.currentAmbientId = key; 
+        this.currentAmbientId = key;
     }
 
     stopAmbience(fadeTime = 2.0) {
         if (!this.currentAmbientSource) return;
 
         const { source, gain } = this.currentAmbientSource;
-        
+
         // Fade out
         gain.gain.setValueAtTime(gain.gain.value, this.ctx.currentTime);
         gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + fadeTime);
-        
+
         // We capture the source in a closure so it stops the correct node
         // even if a new ambient track starts playing before the fade finishes
         const sourceToStop = source;
         setTimeout(() => {
-            try { sourceToStop.stop(); } catch (e) {} 
+            try {
+                sourceToStop.stop();
+            } catch (e) {}
         }, fadeTime * 1000);
-        
+
         this.currentAmbientSource = null;
         this.currentAmbientId = null;
     }

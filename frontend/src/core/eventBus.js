@@ -1,12 +1,12 @@
 /**
  * EventBus.js
  * A lightweight, global pub-sub system to decouple game systems.
- * * Usage:
+ *
+ * Usage:
  * import { events } from './eventBus.js';
  * events.emit('EVENT_NAME', data);
  * events.on('EVENT_NAME', (data) => { ... });
  */
-
 class EventBus {
     constructor() {
         this.listeners = {};
@@ -27,8 +27,8 @@ class EventBus {
     /**
      * Unsubscribe from an event.
      * Important for cleaning up when scenes are destroyed.
-     * @param {string} event 
-     * @param {function} callback 
+     * @param {string} event
+     * @param {function} callback
      */
     off(event, callback) {
         if (!this.listeners[event]) return;
@@ -37,7 +37,7 @@ class EventBus {
 
     /**
      * Broadcast an event to all listeners.
-     * @param {string} event 
+     * @param {string} event
      * @param {any} data - The payload to send
      */
     emit(event, data) {
