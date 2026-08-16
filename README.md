@@ -7,7 +7,6 @@ crafting system.
 Shop System
 procedural dungeons and hand crafted areas
 structures: 
-trait aquisition system
 ability tags / immunities range
 Title Screen
 
@@ -19,23 +18,6 @@ targeting ui improvements for splash attacks with mouse
 Bugs
 Rain flash
 rain sound effect too slow
-encounter battles: Uncaught TypeError: Converting circular structure to JSON
-    --> starting at object with constructor 'CombatantModel'
-    |     property 'originalEntity' -> object with constructor 'Object'
-    |     property 'statusEffects' -> object with constructor 'Array'
-    |     ...
-    |     index 0 -> object with constructor 'StatusEffectModel'
-    --- property 'inflictor' closes the circle
-    at JSON.stringify (<anonymous>)
-    at EncounterController._triggerImageTransition (encounterController.js:178:85)
-    at EncounterController.applyLogicResults (encounterController.js:449:59)
-    at EncounterController.resolveAction (encounterController.js:388:18)
-    at EncounterController.update (encounterController.js:164:22)
-    at SceneManager.update (sceneManager.js:412:34)
-    at GameLoop.update (main.js:201:33)
-    at GameLoop.fireGameLoop (gameLoop.js:46:18)
-    at gameLoop.js:55:51
-    (when sucessfully hiting enemy with a rock)
 
 
 Rooth

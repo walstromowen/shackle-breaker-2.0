@@ -9,6 +9,30 @@ export class EncounterRenderer {
         this.config = config;
         this.loader = loader;
         this.hotspots = [];
+        // Store displayed values for smooth vital bar animations
+        this.animatedVitals = {};
+    }
+
+    // Smooth linear interpolation (Lerp) helper for numeric vitals
+    getAnimatedValue(key, targetValue, speed = 8.0) {
+        if (this.animatedVitals[key] === undefined) {
+            this.animatedVitals[key] = targetValue;
+            return targetValue;
+        }
+
+        const current = this.animatedVitals[key];
+        const diff = targetValue - current;
+
+        // Snap to target value if difference is negligible
+        if (Math.abs(diff) < 0.05) {
+            this.animatedVitals[key] = targetValue;
+            return targetValue;
+        }
+
+        // Smooth step frame-by-frame toward target
+        const step = diff * (speed * 0.016);
+        this.animatedVitals[key] += step;
+        return this.animatedVitals[key];
     }
 
     // Helper to inject alpha into hex/rgb strings so UI components that reset globalAlpha will still fade
@@ -16,7 +40,6 @@ export class EncounterRenderer {
         if (!color || typeof color !== 'string') return color;
         const c = color.trim().toLowerCase();
 
-        // Handle Hex colors (including 8-digit #RRGGBBAA and 4-digit #RGBA formats)
         if (c.startsWith('#')) {
             let r = 0, g = 0, b = 0;
             if (c.length === 4 || c.length === 5) {
@@ -33,7 +56,6 @@ export class EncounterRenderer {
             return color;
         }
 
-        // Robust RGB/RGBA parsing
         if (c.startsWith('rgb')) {
             const nums = c.match(/\d+(\.\d+)?/g);
             if (nums && nums.length >= 3) {
@@ -41,22 +63,16 @@ export class EncounterRenderer {
             }
         }
 
-        // Handle common named colors often used in UI themes
         const namedColors = {
-            'white': '255, 255, 255',
-            'black': '0, 0, 0',
-            'red': '255, 0, 0',
-            'green': '0, 128, 0',
-            'blue': '0, 0, 255',
-            'yellow': '255, 255, 0',
-            'gray': '128, 128, 128',
-            'grey': '128, 128, 128',
-            'transparent': '0, 0, 0' // Alpha controls visibility entirely
+            'white': '255, 255, 255', 'black': '0, 0, 0', 'red': '255, 0, 0',
+            'green': '0, 128, 0', 'blue': '0, 0, 255', 'yellow': '255, 255, 0',
+            'gray': '128, 128, 128', 'grey': '128, 128, 128', 'transparent': '0, 0, 0'
         };
 
         if (namedColors[c]) {
             return `rgba(${namedColors[c]}, ${alpha})`;
         }
+
         return color;
     }
 
@@ -71,6 +87,7 @@ export class EncounterRenderer {
         const words = text.split(' ');
         let lines = [];
         let currentLine = words[0];
+
         for (let i = 1; i < words.length; i++) {
             const word = words[i];
             const width = ctx.measureText(currentLine + " " + word).width;
@@ -82,11 +99,13 @@ export class EncounterRenderer {
             }
         }
         lines.push(currentLine);
+
         let startY = y - ((lines.length - 1) * lineHeight) / 2;
         lines.forEach(line => {
             ui.drawText(line, x, startY, font, color, "center", "middle");
             startY += lineHeight;
         });
+
         if (useShadow) {
             ctx.shadowColor = 'transparent';
             ctx.shadowBlur = 0;
@@ -97,6 +116,7 @@ export class EncounterRenderer {
     render(ctx, state) {
         this.hotspots = [];
         let scrollBounds = {};
+
         if (!state || !state.text) return;
 
         const {
@@ -141,7 +161,6 @@ export class EncounterRenderer {
         const T_TEXT_END = T_TEXT_START + totalTypingTime;
         const T_DEC_START = T_TEXT_END + 0.5;
 
-        // Apply a smoothstep curve so fading out of pure black is gradual instead of sudden
         const ease = p => p * p * (3 - 2 * p);
 
         if (skipMessageAnimation) {
@@ -158,6 +177,7 @@ export class EncounterRenderer {
             titleAlpha = ease(rawTitleAlpha);
             colsAlpha = ease(rawColsAlpha);
             decisionsAlpha = ease(rawDecisionsAlpha);
+
             isTyping = (timeElapsed >= T_TEXT_START) && (timeElapsed < T_TEXT_END + charFadeDuration);
             showDecisions = (timeElapsed >= T_DEC_START);
         }
@@ -192,10 +212,8 @@ export class EncounterRenderer {
             ctx.fillStyle = bgLeftRight;
             ctx.fillRect(leftW + centerW, 0, rightW, h);
 
-            // Pass alpha-adjusted colors to ensure lines fade even if CanvasUI overrides globalAlpha internally
             ui.drawLine(leftW, 0, leftW, h, this.getAlphaColor(UITheme.colors.border, colsAlpha), 2);
             ui.drawLine(leftW + centerW, 0, leftW + centerW, h, this.getAlphaColor(UITheme.colors.border, colsAlpha), 2);
-
             ctx.restore();
         }
 
@@ -207,10 +225,8 @@ export class EncounterRenderer {
             ctx.globalAlpha = titleAlpha;
             const encounterTitle = title || (encounter && encounter.title) || "Unknown Encounter";
             this.drawCenteredWrappedText(
-                ctx, ui, encounterTitle,
-                centerX + (centerW / 2), 96,
-                centerW - 96, 67,
-                UITheme.fonts.header, UITheme.colors.textMain, true
+                ctx, ui, encounterTitle, centerX + (centerW / 2), 96,
+                centerW - 96, 67, UITheme.fonts.header, UITheme.colors.textMain, true
             );
             ctx.restore();
         }
@@ -250,19 +266,15 @@ export class EncounterRenderer {
             this.drawCenteredWrappedText(ctx, ui, displayStageName, rightColX + (rightW / 2), 96, rightW - 96, 67, UITheme.fonts.header, UITheme.colors.textMuted, true);
 
             const panelX = rightColX + (rightW / 2) - (targetAreaSize / 2);
-
-            // Safely patch UITheme colors so CanvasUI border drawing inherits the fade
             const fadeBorder = this.getAlphaColor(UITheme.colors.border, colsAlpha);
             const fadeHighlight = this.getAlphaColor(UITheme.colors.borderHighlight, colsAlpha);
-
             const oldBorder = UITheme.colors.border;
             const oldHighlight = UITheme.colors.borderHighlight;
+
             UITheme.colors.border = fadeBorder;
             UITheme.colors.borderHighlight = fadeHighlight;
 
             ui.drawPanel(panelX - 4, imageY - 4, targetAreaSize + 8, targetAreaSize + 8, this.getAlphaColor('#000000', colsAlpha), fadeBorder);
-
-            // Restore theme
             UITheme.colors.border = oldBorder;
             UITheme.colors.borderHighlight = oldHighlight;
 
@@ -350,9 +362,11 @@ export class EncounterRenderer {
                     for (let i = 0; i < line.length; i++) {
                         const char = line[i];
                         const charStartTime = T_TEXT_START + globalCharIndex * secondsPerChar;
+
                         if (timeElapsed >= charStartTime || skipMessageAnimation) {
                             let alpha = skipMessageAnimation ? 1.0 : (timeElapsed - charStartTime) / charFadeDuration;
                             alpha = Math.max(0, Math.min(1, alpha));
+
                             if (alpha > 0) {
                                 ctx.save();
                                 ctx.globalAlpha = alpha;
@@ -378,9 +392,8 @@ export class EncounterRenderer {
                 const thumbH = Math.max(40, (textViewportH / totalTextHeight) * trackH);
                 const scrollRatio = textScrollOffset / textMaxScroll;
                 const thumbY = textViewportY + (scrollRatio * (trackH - thumbH));
-
-                // Track needs alpha applied manually to prevent instantly appearing
                 const scrollAlpha = skipMessageAnimation ? 1.0 : Math.max(0, Math.min(1, (timeElapsed - T_TEXT_START) / 0.5));
+                
                 if (scrollAlpha > 0) {
                     ctx.save();
                     ctx.globalAlpha = scrollAlpha;
@@ -412,6 +425,7 @@ export class EncounterRenderer {
         // DECISIONS (CENTER COLUMN, BOTTOM)
         // ========================================================
         const hasDecisionContent = (decisions && decisions.length > 0) || rewards;
+
         if (decisionsAlpha > 0 && hasDecisionContent) {
             ctx.save();
             ctx.globalAlpha = decisionsAlpha;
@@ -420,6 +434,7 @@ export class EncounterRenderer {
 
             if (rewards) {
                 this.drawRewards(ctx, ui, rewards, centerX + 120, decisionViewportY);
+
                 const alpha = (Math.sin(Date.now() / 150) + 1) / 2;
                 ctx.globalAlpha = decisionsAlpha * (0.4 + (alpha * 0.6));
                 ctx.fillStyle = UITheme.colors.textHighlight;
@@ -431,8 +446,8 @@ export class EncounterRenderer {
                 const btnX = centerX + 144;
                 const btnW = centerW - 288;
                 const lineHeight = 50;
-
                 let totalHeight = 0;
+
                 const decisionLayoutData = decisions.map((opt) => {
                     const lines = ui.getWrappedLines(opt.text, btnW, UITheme.fonts.body);
                     const dh = lines.length * lineHeight;
@@ -452,8 +467,8 @@ export class EncounterRenderer {
                 };
 
                 ui.startClip(btnX - 60, decisionViewportY - 24, btnW + 120, decisionViewportH + 48);
-                let renderY = decisionViewportY - scrollOffset;
 
+                let renderY = decisionViewportY - scrollOffset;
                 decisions.forEach((opt, index) => {
                     const isSelected = (index === safeSelectedIndex);
                     const hitId = `DECISION_${index}`;
@@ -463,9 +478,12 @@ export class EncounterRenderer {
                         if (decisionsAlpha > 0.8 || skipMessageAnimation) {
                             this.hotspots.push({
                                 id: hitId,
-                                x: btnX - 36, y: renderY - 8,
-                                w: btnW + 72, h: decisionHeight + 16,
-                                hoverSfx: 'hoverTick', clickSfx: 'hoverTick'
+                                x: btnX - 36,
+                                y: renderY - 8,
+                                w: btnW + 72,
+                                h: decisionHeight + 16,
+                                hoverSfx: 'hoverTick',
+                                clickSfx: 'hoverTick'
                             });
                         }
                     }
@@ -522,14 +540,11 @@ export class EncounterRenderer {
                     if (difficulty === 'easy' || difficulty === 'normal') {
                         appliedAttributeBonus = Math.max(0, attributeBonus);
                     }
-
                     const finalAppliedMod = appliedAttributeBonus + difficultyRollMod;
                     let finalizedNightmareMod = finalAppliedMod;
-
                     if (difficulty === 'nightmare' && finalAppliedMod > 0) {
                         finalizedNightmareMod = Math.floor(finalAppliedMod / 2);
                     }
-
                     return finalizedNightmareMod >= 0 ? `(+${finalizedNightmareMod})` : `(${finalizedNightmareMod})`;
                 };
 
@@ -542,8 +557,8 @@ export class EncounterRenderer {
                     { label: 'INT', val: attrs.intelligence || 0 },
                     { label: 'ATN', val: attrs.attunement || 0 }
                 ];
-                const sectionW = centerW / stats.length;
 
+                const sectionW = centerW / stats.length;
                 ui.drawLineWithGothicFlourish(centerX + (centerW * 0.1), attributeBarY, centerW * 0.8, this.getAlphaColor(UITheme.colors.borderHighlight, colsAlpha));
 
                 stats.forEach((stat, i) => {
@@ -562,7 +577,6 @@ export class EncounterRenderer {
             } else {
                 ui.drawLineWithGothicFlourish(centerX + (centerW * 0.2), attributeBarY, centerW * 0.6, this.getAlphaColor(UITheme.colors.borderHighlight, colsAlpha));
             }
-
             ctx.restore();
         }
 
@@ -599,6 +613,7 @@ export class EncounterRenderer {
 
             const isNeutralPhase = ['wait_for_roll', 'rolling', 'hold_base', 'apply_mod'].includes(actionPhase);
             const diceColor = isNeutralPhase ? UITheme.colors.textHighlight : (isSuccess ? UITheme.colors.success : UITheme.colors.failure);
+
             const diceAreaY = popupY + 336;
             const diceCenterX = CANVAS_WIDTH / 2;
             const leftModX = diceCenterX - 264;
@@ -609,47 +624,35 @@ export class EncounterRenderer {
             let resultPulseScale = 1.0;
             let modGlowIntensity = 0;
             let rollerGlowIntensity = 0;
-            let resultGlowIntensity = 0; // Tracking pulse glow intensity
+            let resultGlowIntensity = 0;
+
             let renderedRollerVal = displayVal;
 
-        if (actionPhase === 'apply_mod') {
-            // Increased duration from 1.5 to 2.5 for a slower, more deliberate modifier pop
-            const phaseDuration = 2.5;
-            let progress = 1.0 - (state.rollTimer / phaseDuration);
-            progress = Math.min(Math.max(progress, 0), 1);
+            if (actionPhase === 'apply_mod') {
+                const phaseDuration = 2.5;
+                let progress = 1.0 - (state.rollTimer / phaseDuration);
+                progress = Math.min(Math.max(progress, 0), 1);
+                let modProgress = Math.min(progress / 0.5, 1.0);
+                modPulseScale = 1.0 + Math.sin(modProgress * Math.PI) * 0.2;
+                modGlowIntensity = Math.sin(modProgress * Math.PI);
+                renderedRollerVal = (modProgress < 1.0) ? rollData.d20 : rollData.total;
 
-            let modProgress = Math.min(progress / 0.5, 1.0);
-            modPulseScale = 1.0 + Math.sin(modProgress * Math.PI) * 0.2;
-            modGlowIntensity = Math.sin(modProgress * Math.PI);
-
-            renderedRollerVal = (modProgress < 1.0) ? rollData.d20 : rollData.total;
-
-            if (progress > 0.5) {
-                let rollerProgress = Math.min((progress - 0.5) / 0.5, 1.0);
-                rollerPulseScale = 1.0 + Math.sin(rollerProgress * Math.PI) * 0.2;
-                rollerGlowIntensity = Math.sin(rollerProgress * Math.PI);
+                if (progress > 0.5) {
+                    let rollerProgress = Math.min((progress - 0.5) / 0.5, 1.0);
+                    rollerPulseScale = 1.0 + Math.sin(rollerProgress * Math.PI) * 0.2;
+                    rollerGlowIntensity = Math.sin(rollerProgress * Math.PI);
+                }
+            } else if (actionPhase === 'result') {
+                const phaseDuration = 3.5;
+                let progress = 1.0 - (state.rollTimer / phaseDuration);
+                progress = Math.min(Math.max(progress, 0), 1);
+                let p2 = Math.min(progress * 1.25, 1.0);
+                let decay = 1.0 - p2;
+                let pulseWave = Math.abs(Math.sin(p2 * Math.PI * 3));
+                resultPulseScale = 1.0 + (pulseWave * 0.25 * decay);
+                resultGlowIntensity = pulseWave * decay;
+                renderedRollerVal = rollData.total;
             }
-        } else if (actionPhase === 'result') {
-            // Increased duration from 2.0 to 3.5 to keep the results on screen longer
-            const phaseDuration = 3.5;
-            let progress = 1.0 - (state.rollTimer / phaseDuration);
-            progress = Math.min(Math.max(progress, 0), 1);
-
-            // Change multiplier from 2.0 to 1.25. 
-            // This spreads the 3 pulses out over 80% of the phase duration instead of rushing them in 50%
-            let p2 = Math.min(progress * 1.25, 1.0);
-
-            // Decay lowers the intensity of each consecutive pulse (1.0 -> 0)
-            let decay = 1.0 - p2;
-
-            // Math.PI * 3 creates exactly 3 arching pulses when run through Math.abs()
-            let pulseWave = Math.abs(Math.sin(p2 * Math.PI * 3));
-
-            // First pulse is ~25% larger, second is ~12%, third is ~4%
-            resultPulseScale = 1.0 + (pulseWave * 0.25 * decay);
-            resultGlowIntensity = pulseWave * decay;
-            renderedRollerVal = rollData.total;
-        }
 
             const modStr = mod >= 0 ? `+${mod}` : `${mod}`;
             const activeModColor = mod >= 0 ? (UITheme.colors.success || '#00ff00') : (UITheme.colors.failure || '#ff0000');
@@ -658,14 +661,11 @@ export class EncounterRenderer {
             ctx.save();
             ctx.translate(leftModX, diceAreaY);
             if (actionPhase === 'apply_mod') ctx.scale(modPulseScale, modPulseScale);
-
             ui.drawText("Modifier", 0, -72, UITheme.fonts.small || "34px sans-serif", UITheme.colors.textMuted, "center", "middle");
-
             if (actionPhase === 'apply_mod' && modGlowIntensity > 0) {
                 ctx.shadowColor = activeModColor;
                 ctx.shadowBlur = 36 * modGlowIntensity;
             }
-
             const finalModColor = actionPhase === 'apply_mod' ? activeModColor : UITheme.colors.textMain;
             ui.drawText(modStr, 0, 24, UITheme.fonts.title, finalModColor, "center", "middle");
             ctx.restore();
@@ -673,15 +673,12 @@ export class EncounterRenderer {
             // --- 2. ROLLER / DICE (Center side) ---
             ctx.save();
             ctx.translate(diceCenterX, diceAreaY);
-
             if (actionPhase === 'apply_mod') ctx.scale(rollerPulseScale, rollerPulseScale);
             else if (actionPhase === 'result') ctx.scale(resultPulseScale, resultPulseScale);
 
             const diamondSize = 108;
-
             if (actionPhase === 'result') {
                 ctx.shadowColor = isSuccess ? (UITheme.colors.success || '#00ff00') : (UITheme.colors.failure || '#ff0000');
-                // Base glow of 30, spiking up to 80 on the impacts
                 ctx.shadowBlur = 30 + (50 * resultGlowIntensity);
             } else if (actionPhase === 'apply_mod' && rollerGlowIntensity > 0) {
                 ctx.shadowColor = isSuccess ? (UITheme.colors.success || '#00ff00') : (UITheme.colors.failure || '#ff0000');
@@ -734,7 +731,11 @@ export class EncounterRenderer {
                 const rollId = "BTN_ROLL";
                 const isRollHovered = hoveredElement && hoveredElement.id === rollId;
 
-                this.hotspots.push({ id: rollId, x: btnX, y: btnY, w: btnW, h: btnH, hoverSfx: 'hoverTick', clickSfx: 'cinematicBoom' });
+                this.hotspots.push({
+                    id: rollId, x: btnX, y: btnY, w: btnW, h: btnH,
+                    hoverSfx: 'hoverTick', clickSfx: 'cinematicBoom'
+                });
+
                 ui.drawPanel(btnX, btnY, btnW, btnH, isRollHovered ? "rgba(255,255,255,0.1)" : UITheme.colors.bgScale[3]);
 
                 const alpha = (Math.sin(Date.now() / 200) + 1) / 2;
@@ -747,18 +748,13 @@ export class EncounterRenderer {
             } else if (actionPhase === 'result') {
                 const resultText = isSuccess ? "SUCCESS!" : "FAILED";
                 ctx.shadowColor = diceColor;
-                
-                // Pulse the text shadow
                 ctx.shadowBlur = 24 + (24 * resultGlowIntensity);
-                
-                // Slightly bump the text scale to match the impact
                 ctx.save();
                 ctx.translate(CANVAS_WIDTH / 2, popupY + 588);
-                const textBump = 1.0 + (resultGlowIntensity * 0.08); // 8% text size bump
+                const textBump = 1.0 + (resultGlowIntensity * 0.08);
                 ctx.scale(textBump, textBump);
                 ui.drawText(resultText, 0, 0, UITheme.fonts.header, diceColor, "center");
                 ctx.restore();
-                
                 ctx.shadowBlur = 0;
             } else if (['rolling', 'hold_base', 'apply_mod'].includes(actionPhase)) {
                 const alpha = (Math.sin(Date.now() / 150) + 1) / 2;
@@ -767,24 +763,33 @@ export class EncounterRenderer {
                 ctx.globalAlpha = 1.0;
             }
         }
-
         ctx.restore();
 
         if (onLayoutUpdate) {
             onLayoutUpdate(this.hotspots, scrollBounds);
         }
     }
+
     drawStatRow(ctx, ui, label, current, max, x, y, barW, h, numW, labelW, color, dimColor, alpha) {
     ctx.save();
     ctx.globalAlpha = alpha;
     
-    // Pre-calculate faded colors to ensure ui components that reset globalAlpha still fade appropriately
     const fadedTextMuted = this.getAlphaColor(UITheme.colors.textMuted, alpha);
     const fadedColor = this.getAlphaColor(color, alpha);
     const fadedDimColor = this.getAlphaColor(dimColor, alpha);
 
     ui.drawText(label, x, y + 12, UITheme.fonts.cardMono || UITheme.fonts.mono, fadedTextMuted);
+    
+    // TEMPORARY OVERRIDE: Inject alpha into the global border color so the hardcoded
+    // globalAlpha inside CanvasUI.drawBar doesn't prevent the border from fading out.
+    const oldBorder = UITheme.colors.border;
+    UITheme.colors.border = this.getAlphaColor(oldBorder, alpha);
+    
     ui.drawBar(x + labelW, y, barW, h, current, max, fadedColor, fadedDimColor);
+    
+    // Restore original border color
+    UITheme.colors.border = oldBorder;
+    
     ui.drawText(`${Math.floor(current)}/${max}`, x + labelW + barW + numW, y + 12, UITheme.fonts.cardMono || UITheme.fonts.mono, fadedTextMuted, "right");
     
     ctx.restore();
@@ -799,17 +804,18 @@ export class EncounterRenderer {
         ui.drawText("Rewards Found", x, currentY, UITheme.fonts.header, UITheme.colors.textHighlight);
         ctx.shadowColor = 'transparent';
         ctx.shadowBlur = 0;
-
         currentY += lineHeight + 12;
 
         if (rewards.xp) {
             ui.drawText(`+ ${rewards.xp} XP`, x + 36, currentY, UITheme.fonts.body, UITheme.colors.success || UITheme.colors.textMain);
             currentY += lineHeight;
         }
+
         if (rewards.currency) {
             ui.drawText(`+ ${rewards.currency} Currency`, x + 36, currentY, UITheme.fonts.body, UITheme.colors.textHighlight);
             currentY += lineHeight;
         }
+
         if (rewards.items && rewards.items.length > 0) {
             currentY += 24;
             ui.drawText("Items Acquired:", x + 36, currentY, UITheme.fonts.body, UITheme.colors.textMain);
@@ -822,120 +828,171 @@ export class EncounterRenderer {
         }
     }
 
+    drawStatusEffects(ctx, ui, member, pX, pY, pSize, alpha) {
+        if (!member.statusEffects || member.statusEffects.length === 0) return;
+        
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        
+        const sheetKey = 'statusEffects';
+        const srcSize = 32;
+        const drawSize = 32;
+        const spacing = 5;
+        const sheet = this.loader.get ? this.loader.get(sheetKey) : (this.loader.getAsset ? this.loader.getAsset(sheetKey) : null);
+        let drawX = pX + 5;
+        let drawY = pY + pSize - drawSize - 5;
+
+        member.statusEffects.forEach(effect => {
+            // Background Box
+            ctx.fillStyle = this.getAlphaColor('rgba(0, 0, 0, 0.8)', alpha);
+            ctx.fillRect(drawX, drawY, drawSize, drawSize);
+            
+            // Border Box
+            ui.drawRect(drawX, drawY, drawSize, drawSize, this.getAlphaColor(UITheme.colors.border, alpha), false);
+
+            if (sheet && effect.icon && effect.icon.col !== undefined) {
+                ctx.drawImage(
+                    sheet,
+                    effect.icon.col * srcSize,
+                    effect.icon.row * srcSize,
+                    srcSize,
+                    srcSize,
+                    drawX,
+                    drawY,
+                    drawSize,
+                    drawSize
+                );
+            } else {
+                // Fallback text if no sheet/icon mapped
+                const char = effect.name ? effect.name.charAt(0) : '?';
+                ui.drawText(char, drawX + (drawSize / 2), drawY + (drawSize / 2) + 2, UITheme.fonts.cardSmall || UITheme.fonts.small || "12px sans-serif", this.getAlphaColor(UITheme.colors.textMain, alpha), "center", "middle");
+            }
+
+            // Stack Counter
+            if (effect.stacks && effect.stacks > 1) {
+                ctx.fillStyle = this.getAlphaColor('rgba(0, 0, 0, 0.9)', alpha);
+                ctx.beginPath();
+                ctx.arc(drawX + drawSize, drawY + drawSize, 14, 0, Math.PI * 2);
+                ctx.fill();
+                ui.drawText(effect.stacks.toString(), drawX + drawSize, drawY + drawSize + 2, UITheme.fonts.cardMono || UITheme.fonts.mono, this.getAlphaColor("white", alpha), "center", "middle");
+            }
+
+            drawX += (drawSize + spacing);
+            // Protect against drawing outside portrait bounds
+            if (drawX + drawSize > pX + pSize) return;
+        });
+        
+        ctx.restore();
+    }
+
     drawPartyMember(ctx, ui, member, x, y, colWidth, nameY, font, targetAreaSize, transition = null, baseAlpha = 1.0) {
-    const nativeRes = 128;
-    const imgScale = 2;
-    const drawSize = nativeRes * imgScale;
-    const pX = x + (colWidth / 2) - (targetAreaSize / 2);
-    const pY = y;
-    const transActive = transition && transition.active;
-    const prevMember = transActive ? transition.previousPartyMember : null;
-    const isDying = prevMember && prevMember.hp > 0 && member.hp <= 0;
-    const characterChanged = prevMember && (prevMember.name !== member.name || isDying);
-    
-    const displayName = (characterChanged && transition.progress < 0.5) ? prevMember.name : member.name;
-    const displayColor = (characterChanged && transition.progress < 0.5) ? 
-        (prevMember.hp <= 0 ? UITheme.colors.hp : UITheme.colors.textMain) : 
-        (member.hp <= 0 ? UITheme.colors.hp : UITheme.colors.textMain);
+        const nativeRes = 128;
+        const imgScale = 2;
+        const drawSize = nativeRes * imgScale;
+        const pX = x + (colWidth / 2) - (targetAreaSize / 2);
+        const pY = y;
 
-    ctx.save();
-    ctx.globalAlpha = baseAlpha;
-    this.drawCenteredWrappedText(ctx, ui, displayName, x + (colWidth / 2), nameY, colWidth - 48, 58, UITheme.fonts.header, displayColor, true);
+        const transActive = transition && transition.active;
+        const prevMember = transActive ? transition.previousPartyMember : null;
+        const isDying = prevMember && prevMember.hp > 0 && member.hp <= 0;
+        const characterChanged = prevMember && (prevMember.name !== member.name || isDying);
+        const displayName = (characterChanged && transition.progress < 0.5) ? prevMember.name : member.name;
+        const displayColor = (characterChanged && transition.progress < 0.5) ? (prevMember.hp <= 0 ? UITheme.colors.hp : UITheme.colors.textMain) : (member.hp <= 0 ? UITheme.colors.hp : UITheme.colors.textMain);
 
-    ctx.fillStyle = '#050505';
-    ctx.fillRect(pX, pY, targetAreaSize, targetAreaSize);
+        ctx.save();
+        ctx.globalAlpha = baseAlpha;
+        this.drawCenteredWrappedText(ctx, ui, displayName, x + (colWidth / 2), nameY, colWidth - 48, 58, UITheme.fonts.header, displayColor, true);
 
-    // Safely patch UITheme colors so CanvasUI border drawing inherits the fade
-    const fadeBorder = this.getAlphaColor(UITheme.colors.border, baseAlpha);
-    const fadeHighlight = this.getAlphaColor(UITheme.colors.borderHighlight, baseAlpha);
-    const oldBorder = UITheme.colors.border;
-    const oldHighlight = UITheme.colors.borderHighlight;
-    UITheme.colors.border = fadeBorder;
-    UITheme.colors.borderHighlight = fadeHighlight;
+        ctx.fillStyle = '#050505';
+        ctx.fillRect(pX, pY, targetAreaSize, targetAreaSize);
 
-    ui.drawPanel(pX - 4, pY - 4, targetAreaSize + 8, targetAreaSize + 8, "transparent", fadeBorder);
+        const fadeBorder = this.getAlphaColor(UITheme.colors.border, baseAlpha);
+        const fadeHighlight = this.getAlphaColor(UITheme.colors.borderHighlight, baseAlpha);
+        const oldBorder = UITheme.colors.border;
+        const oldHighlight = UITheme.colors.borderHighlight;
 
-    // Restore theme
-    UITheme.colors.border = oldBorder;
-    UITheme.colors.borderHighlight = oldHighlight;
-    ctx.restore();
+        UITheme.colors.border = fadeBorder;
+        UITheme.colors.borderHighlight = fadeHighlight;
 
-    const drawCharSprite = (charData, alpha) => {
-      if (!charData || !this.loader) return;
-      const sheet = this.loader.get(charData.spritePortrait);
-      if (!sheet) return;
-      
-      const imgX = x + (colWidth / 2) - (drawSize / 2);
-      const imgY = pY + (targetAreaSize / 2) - (drawSize / 2);
-      
-      ctx.save();
-      ctx.globalAlpha = alpha * baseAlpha;
-      ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(sheet, 0, 0, nativeRes, nativeRes, imgX, imgY, drawSize, drawSize);
-      ctx.imageSmoothingEnabled = true;
-      ctx.restore();
-    };
-    
-    // --- NEW: Helper to draw all three vitals beneath the portrait ---
+        ui.drawPanel(pX - 4, pY - 4, targetAreaSize + 8, targetAreaSize + 8, "transparent", fadeBorder);
+
+        UITheme.colors.border = oldBorder;
+        UITheme.colors.borderHighlight = oldHighlight;
+        ctx.restore();
+
+        const drawCharSprite = (charData, alpha) => {
+            if (!charData || !this.loader) return;
+            const sheet = this.loader.get(charData.spritePortrait);
+            if (!sheet) return;
+
+            const imgX = x + (colWidth / 2) - (drawSize / 2);
+            const imgY = pY + (targetAreaSize / 2) - (drawSize / 2);
+
+            ctx.save();
+            ctx.globalAlpha = alpha * baseAlpha;
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(sheet, 0, 0, nativeRes, nativeRes, imgX, imgY, drawSize, drawSize);
+            ctx.imageSmoothingEnabled = true;
+            ctx.restore();
+
+            // Render Status Effects directly overlaid onto the portrait
+            this.drawStatusEffects(ctx, ui, charData, imgX, imgY, drawSize, alpha * baseAlpha);
+        };
+
+        // Helper to draw all three vitals beneath the portrait with smooth interpolation animations
     const drawVitals = (charData, alpha) => {
-        if (!charData) return;
-        
-        const vitalsY = pY + targetAreaSize + 32;
-        const totalW = colWidth * 0.75;
-        const labelW = 48;
-        const numW = 85;
-        const barW = totalW - labelW - numW;
-        const vX = x + (colWidth / 2) - (totalW / 2);
-        
-        let currentY = vitalsY;
-        const rowH = 10;
-        const rowSpacing = 29;
+      if (!charData) return;
 
-        this.drawStatRow(ctx, ui, "HP", charData.hp, charData.maxHp, vX, currentY, barW, rowH, numW, labelW, UITheme.colors.hp, UITheme.colors.hpDim, alpha * baseAlpha);
-        currentY += rowSpacing;
-        this.drawStatRow(ctx, ui, "STM", charData.stamina, charData.maxStamina, vX, currentY, barW, rowH, numW, labelW, UITheme.colors.stm, UITheme.colors.stmDim, alpha * baseAlpha);
-        currentY += rowSpacing;
-        this.drawStatRow(ctx, ui, "INS", charData.insight || 0, charData.maxInsight || 100, vX, currentY, barW, rowH, numW, labelW, UITheme.colors.ins, UITheme.colors.insDim, alpha * baseAlpha);
+      const vitalsY = pY + targetAreaSize + 32;
+      const totalW = colWidth * 0.75;
+      const labelW = 48;
+      const numW = 85;
+      const barW = totalW - labelW - numW;
+      const vX = x + (colWidth / 2) - (totalW / 2);
+
+      let currentY = vitalsY;
+      const rowH = 10;
+      const rowSpacing = 29;
+
+      const charKey = charData.name || "active_char";
+
+      // Animate HP, Stamina, and Insight from previous to target values
+      const animatedHp = this.getAnimatedValue(`${charKey}_hp`, charData.hp);
+      const animatedStamina = this.getAnimatedValue(`${charKey}_stamina`, charData.stamina);
+      const animatedInsight = this.getAnimatedValue(`${charKey}_insight`, charData.insight || 0);
+
+      this.drawStatRow(
+        ctx, ui, "HP", animatedHp, charData.maxHp,
+        vX, currentY, barW, rowH, numW, labelW,
+        UITheme.colors.hp, UITheme.colors.hpDim, alpha * baseAlpha
+      );
+      currentY += rowSpacing;
+
+      this.drawStatRow(
+        ctx, ui, "STM", animatedStamina, charData.maxStamina,
+        vX, currentY, barW, rowH, numW, labelW,
+        UITheme.colors.stm, UITheme.colors.stmDim, alpha * baseAlpha
+      );
+      currentY += rowSpacing;
+
+      this.drawStatRow(
+        ctx, ui, "INS", animatedInsight, charData.maxInsight || 100,
+        vX, currentY, barW, rowH, numW, labelW,
+        UITheme.colors.ins, UITheme.colors.insDim, alpha * baseAlpha
+      );
     };
 
-    if (transActive && characterChanged) {
+    if (transActive && prevMember && characterChanged) {
       const p = transition.progress;
       const smoothP = p * p * (3 - 2 * p);
-      
-      // Draw previous character fading out
+
       drawCharSprite(prevMember, 1.0 - smoothP);
-      drawVitals(prevMember, 1.0 - smoothP);
-      
-      if (prevMember.hp <= 0) {
-        ctx.save();
-        ctx.globalAlpha = (1.0 - smoothP) * baseAlpha;
-        ctx.fillStyle = "rgba(100, 0, 0, 0.6)";
-        ctx.fillRect(pX, pY, targetAreaSize, targetAreaSize);
-        ctx.restore();
-      }
-      
-      // Draw new character fading in
       drawCharSprite(member, smoothP);
-      drawVitals(member, smoothP);
-      
-      if (member.hp <= 0) {
-        ctx.save();
-        ctx.globalAlpha = smoothP * baseAlpha;
-        ctx.fillStyle = "rgba(100, 0, 0, 0.6)";
-        ctx.fillRect(pX, pY, targetAreaSize, targetAreaSize);
-        ctx.restore();
-      }
+
+      drawVitals(p < 0.5 ? prevMember : member, 1.0);
     } else {
       drawCharSprite(member, 1.0);
       drawVitals(member, 1.0);
-      
-      if (member.hp <= 0) {
-        ctx.save();
-        ctx.globalAlpha = baseAlpha;
-        ctx.fillStyle = "rgba(100, 0, 0, 0.6)";
-        ctx.fillRect(pX, pY, targetAreaSize, targetAreaSize);
-        ctx.restore();
-      }
     }
-  }
+    }
 }
