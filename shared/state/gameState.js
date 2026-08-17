@@ -1,50 +1,59 @@
 export const gameState = {
-    seed: null, 
-    mode: "overworld", 
-    difficulty: "normal", // <-- NEW: Global difficulty tracker
+    seed: null,
+    mode: "overworld",
+    difficulty: "normal",
     
-    // Player Position in the World
-    player: {
-        col: 0, 
-        row: 0,
-        direction: 'down' 
+    // <-- NEW: Quest Tracker
+    quests: {
+        active: {},       // Keyed by questId, stores current progress
+        completed: [],    // Array of completed questIds
+        trackedIds: []    // Array of questIds currently tracked on the HUD
     },
-
+    
+    player: {
+        col: 0,
+        row: 0,
+        direction: 'down'
+    },
+    
     world: {
         currentBiomeId: null,
-        isInterior: false, // Make sure this exists!
+        isInterior: false,
         interiorType: null,
         time: 0,
         day: 1,
         changes: {},
-        terrainOverrides: {}, // <-- ADD THIS LINE
+        terrainOverrides: {},
         discoveredChunks: [],
         currentWeather: null
-        },
+    },
+    
     party: {
-        inventory: [], 
+        inventory: [],
         currency: 0,
         members: []
     },
-
-    // NON-COMBAT ENCOUNTERS
+    
     encounter: {
-        activeData: null,    
-        currentStageId: null, 
+        activeData: null,
+        currentStageId: null,
         history: [],
-        context: { col: null, row: null, objectId: null } 
+        context: {
+            col: null,
+            row: null,
+            objectId: null
+        }
     },
-
-    // COMBAT STATE
+    
     battle: {
         isActive: false,
-        enemies: [],      
-        turnQueue: [],    
+        enemies: [],
+        turnQueue: [],
         roundNumber: 1
     },
-
+    
     ui: {
-        selectedDecisionIndex: 0, 
+        selectedDecisionIndex: 0,
         isMenuOpen: false
     }
 };

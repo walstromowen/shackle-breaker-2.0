@@ -7,7 +7,7 @@ import { StatCalculator } from '../../../../shared/systems/statCalculator.js';
 import { TRAIT_DEFINITIONS } from '../../../../shared/data/traitDefinitions.js';
 import { InventorySystem } from '../../../../shared/systems/inventorySystem.js';
 import { PartyManager } from '../../../../shared/systems/partyManager.js';
-
+import { QuestModel } from '../../../../shared/models/QuestModel.js';
 const ALLOWED_TRAITS = ['quick', 'inquisitive', 'brawler', 'tough'];
 const UI_TRAITS = ALLOWED_TRAITS.map(key => ({
     id: key,
@@ -286,67 +286,77 @@ export class CharacterCreatorLogic {
         } else {
             finalSeed = Math.floor(Math.random() * 1000000);
         }
+
         gameState.seed = finalSeed;
 
+        // Note: Make sure PartyManager.createMainCharacter NO LONGER injects the quest
+        // if you previously added it there!
         PartyManager.createMainCharacter("HUMANOID", this._buildPlayerOverrides());
 
-        // ... (previous finalizeCharacter code) ...
+        const keep = CREATION_DATA.KEEPSAKES[this.state.keepsakeIdx];
+        if (keep.items) {
+            keep.items.forEach(i => InventorySystem.addItem(i.id, i.qty));
+        } else if (keep.itemId) {
+            InventorySystem.addItem(keep.itemId, 1);
+        }
 
-    const keep = CREATION_DATA.KEEPSAKES[this.state.keepsakeIdx];
-    if (keep.items) {
-        keep.items.forEach(i => InventorySystem.addItem(i.id, i.qty));
-    } else if (keep.itemId) {
-        InventorySystem.addItem(keep.itemId, 1);
-    }
+        const comp = CREATION_DATA.COMPANIONS[this.state.companionIdx];
+        if (comp.speciesId) {
+            const count = comp.spawnCount || 1;
+            for (let i = 0; i < count; i++) {
+                let companionOverrides = {};
+                if (comp.isRandomizer && comp.speciesId === "HUMANOID") {
+                    const randomElement = (arr) => arr[Math.floor(Math.random() * arr.length)];
+                    const bg = randomElement(CREATION_DATA.BACKGROUNDS);
+                    const origin = randomElement(CREATION_DATA.ORIGINS);
+                    const app = randomElement(CREATION_DATA.APPEARANCES);
+                    const trait = randomElement(CREATION_DATA.TRAITS);
+                    
+                    const companionName = count > 1 ? `Mercenary ${i + 1}` : "Mercenary";
 
-    const comp = CREATION_DATA.COMPANIONS[this.state.companionIdx];
-    if (comp.speciesId) {
-        // Default to 1 if no spawnCount is provided
-        const count = comp.spawnCount || 1; 
+                    companionOverrides = {
+                        name: companionName,
+                        attributes: { ...bg.attributes },
+                        equipment: { ...bg.equipment },
+                        spritePortrait: app.spritePortrait,
+                        spriteOverworld: app.spriteOverworld,
+                        tags: [origin.tag],
+                        traits: [trait.id],
+                        level: 1,
+                        xp: 0
+                    };
+                } else {
+                    companionOverrides = {
+                        name: count > 1 ? `${comp.label} ${i + 1}` : comp.label,
+                        attributes: { ...comp.attributes },
+                        equipment: comp.equipment,
+                        xp: 0
+                    };
+                }
 
-        for (let i = 0; i < count; i++) {
-            let companionOverrides = {};
-
-            if (comp.isRandomizer && comp.speciesId === "HUMANOID") {
-                const randomElement = (arr) => arr[Math.floor(Math.random() * arr.length)];
-                const bg = randomElement(CREATION_DATA.BACKGROUNDS);
-                const origin = randomElement(CREATION_DATA.ORIGINS);
-                const app = randomElement(CREATION_DATA.APPEARANCES);
-                const trait = randomElement(CREATION_DATA.TRAITS);
-                
-                // Differentiate names slightly if there are multiple companions
-                const companionName = count > 1 ? `Mercenary ${i + 1}` : "Mercenary";
-
-                companionOverrides = {
-                    name: companionName,
-                    attributes: { ...bg.attributes },
-                    equipment: { ...bg.equipment },
-                    spritePortrait: app.spritePortrait,
-                    spriteOverworld: app.spriteOverworld,
-                    tags: [origin.tag],
-                    traits: [trait.id],
-                    level: 1,
-                    xp: 0
-                };
-            } else {
-                companionOverrides = {
-                    name: count > 1 ? `${comp.label} ${i + 1}` : comp.label,
-                    attributes: { ...comp.attributes },
-                    equipment: comp.equipment,
-                    xp: 0
-                };
-            }
-
-            const companionInstance = PartyManager.addMember(comp.speciesId, companionOverrides);
-            
-            if (companionInstance) {
-                companionInstance.hp = companionInstance.maxHp;
-                companionInstance.stamina = companionInstance.maxStamina;
+                const companionInstance = PartyManager.addMember(comp.speciesId, companionOverrides);
+                if (companionInstance) {
+                    companionInstance.hp = companionInstance.maxHp;
+                    companionInstance.stamina = companionInstance.maxStamina;
+                }
             }
         }
-    }
+
+        // --- NEW GAME GRANTS ---
+       // --- NEW GAME GRANTS ---
         gameState.party.currency = 100;
         gameState.difficulty = CREATION_DATA.DIFFICULTIES[this.state.difficultyIdx].id;
+
+        // ---> NEW: Start the tutorial quest <---
+        QuestModel.startQuest(gameState, 'q_fetch_herbs');
+
+        // ---> NEW: Automatically track the tutorial quest so it shows on the HUD <---
+        if (!gameState.quests.trackedIds) {
+            gameState.quests.trackedIds = [];
+        }
+        if (!gameState.quests.trackedIds.includes('q_fetch_herbs')) {
+            gameState.quests.trackedIds.push('q_fetch_herbs');
+        }
 
         events.emit('CHANGE_SCENE', { scene: 'overworld' });
     }

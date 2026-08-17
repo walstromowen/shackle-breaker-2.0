@@ -42,7 +42,14 @@ export class CombatantModel {
     get maxStamina() { return this.stats.maxStamina?.total || 10; }
     get insight() { return this.originalEntity.insight; }
     get maxInsight() { return this.stats.maxInsight?.total || 10; }
-    
+    // Add these getters inside CombatantModel class
+get templateId() { 
+    return this.originalEntity.templateId || this.originalEntity.definitionKey || this.originalEntity.type; 
+}
+
+get definitionKey() {
+    return this.templateId;
+}
     getAttack(type) { return this.stats.attack?.[type] || 0; }
     getDefense(type) { return this.stats.defense?.[type] || 0; }
     isDead() { return this.hp <= 0; }

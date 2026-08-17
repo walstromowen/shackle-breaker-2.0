@@ -2,6 +2,10 @@ import { events } from '../../core/eventBus.js';
 import { StatCalculator } from '../../../../shared/systems/statCalculator.js';
 import { BaseController } from '../core/baseController.js';
 
+import { gameState } from '../../../../shared/state/gameState.js';
+import { QuestModel } from '../../../../shared/models/QuestModel.js';
+import { QuestDefinitions } from '../../../../shared/data/QuestDefinitions.js';
+
 const KEY_BINDINGS = {
     'ArrowUp': 'UP', 'KeyW': 'UP',
     'ArrowDown': 'DOWN', 'KeyS': 'DOWN',
@@ -227,7 +231,38 @@ export class LevelUpController extends BaseController {
                 this.member.attributes[attr] += this.pendingAllocations[attr];
             }
         });
+        
         this.member.skillPoints = this.availablePoints;
+
+        // ---> NEW: QUEST PROGRESSION (party_level) <---
+        Object.keys(gameState.quests.active).forEach(questId => {
+            const questDef = QuestDefinitions[questId];
+            if (questDef) {
+                questDef.objectives.forEach(obj => {
+                    if (obj.type === 'party_level') {
+                        // Count how many party members meet or exceed the target level
+                        const qualifyingMembersCount = gameState.party.members.filter(
+                            m => (m.level || 1) >= obj.targetLevel
+                        ).length;
+
+                        // Calculate difference to prevent double-counting if they level up again
+                        const currentProgress = gameState.quests.active[questId].progress[obj.id] || 0;
+                        const diff = qualifyingMembersCount - currentProgress;
+
+                        if (diff > 0) {
+                            const didUpdate = QuestModel.updateProgress(gameState, questId, obj.id, diff);
+                            
+                            if (didUpdate && QuestModel.checkCompletion(gameState, questId)) {
+                                console.log(`[Quest System] Quest Complete: ${questDef.name}!`);
+                                // Optional: Emit event to show UI toast here
+                            }
+                        }
+                    }
+                });
+            }
+        });
+        // ----------------------------------------------
+
         this.cancelAndReturn();
     }
 

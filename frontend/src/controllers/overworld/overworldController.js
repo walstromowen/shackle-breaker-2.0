@@ -5,7 +5,7 @@ import { WeatherFactory } from '../../../../shared/systems/factories/weatherFact
 import { PartyManager } from '../../../../shared/systems/partyManager.js';
 import { BaseController } from '../core/baseController.js';
 import { DIFFICULTY_MODIFIERS } from '../../../../shared/data/constants.js';
-
+import { QuestDefinitions } from '../../../../shared/data/questDefinitions.js';
 export class OverworldController extends BaseController {
     constructor(input, config, worldManager) {
         super(input);
@@ -41,7 +41,7 @@ export class OverworldController extends BaseController {
         this.dropdownHitboxes = [
             { id: 'btn_party',     x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 1, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 2, spriteRow: 0, label: 'Party' },
             { id: 'btn_character', x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 2, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 0, spriteRow: 0, label: 'Character' },
-            { id: 'btn_quests',    x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 3, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 1, spriteRow: 0, label: 'Quests' },
+            { id: 'btn_journal',    x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 3, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 1, spriteRow: 0, label: 'Journal' },
             { id: 'btn_system',    x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 4, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 3, spriteRow: 0, label: 'System' }
         ];
     }
@@ -67,8 +67,8 @@ export class OverworldController extends BaseController {
             case 'btn_character':
                 this.executeMenuAction('character');
                 break;
-            case 'btn_quests':
-                this.executeMenuAction('quests');
+            case 'btn_journal':
+                this.executeMenuAction('journal');
                 break;
             case 'btn_system':
                 this.executeMenuAction('system');
@@ -102,7 +102,7 @@ export class OverworldController extends BaseController {
         }
         if (code === 'KeyP') this.executeMenuAction('party');
         if (code === 'KeyC') this.executeMenuAction('character');
-        if (code === 'KeyJ') this.executeMenuAction('quests');
+        if (code === 'KeyJ') this.executeMenuAction('journal');
         
         if (code === 'Escape' && this.isMenuOpen) {
             this.isMenuOpen = false;
@@ -357,14 +357,67 @@ export class OverworldController extends BaseController {
         this.camera.prevY = this.player.prevY;
     }
 
+    getTrackedQuests() {
+        if (!gameState.quests || !gameState.quests.active) return [];
+        
+        const trackedIds = gameState.quests.trackedIds || [];
+        const trackedQuests = [];
+
+        for (const id of trackedIds) {
+            const questState = gameState.quests.active[id];
+            const def = QuestDefinitions[id]; // Get the static text data
+
+            // Make sure both the state and definition exist
+            if (questState && def) {
+                // Build the objectives array that the renderer expects
+                const formattedObjectives = def.objectives.map(obj => {
+                    const current = questState.progress[obj.id] || 0;
+                    const required = obj.amount || 1;
+
+                    // Figure out the verb to use
+                    let actionText = "Objective";
+                    let targetText = obj.targetId;
+
+                    if (obj.type === 'kill_enemy') actionText = "Defeat";
+                    if (obj.type === 'obtain_item') actionText = "Collect";
+                    if (obj.type === 'party_level') {
+                        actionText = "Reach Level";
+                        targetText = obj.targetLevel;
+                    }
+
+                    // Format the target name (e.g., "forest_slime" -> "Forest Slime")
+                    if (typeof targetText === 'string') {
+                        targetText = targetText.split('_')
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                            .join(' ');
+                    }
+
+                    return {
+                        description: `${actionText} ${targetText}`,
+                        current: current,
+                        required: required
+                    };
+                });
+
+                trackedQuests.push({
+                    title: def.name, // Pass the actual name from the definition
+                    objectives: formattedObjectives
+                });
+            }
+        }
+        return trackedQuests;
+    }
+
+    // Update your existing getState method:
     getState() {
-        return { 
-            entities: [this.player], 
-            camera: this.camera, 
+        return {
+            entities: [this.player],
+            camera: this.camera,
             hoveredHitboxId: this.hoveredHitboxId,
             menuToggleHitbox: this.menuToggleHitbox,
             dropdownHitboxes: this.dropdownHitboxes,
-            isMenuOpen: this.isMenuOpen
+            isMenuOpen: this.isMenuOpen,
+            trackedQuests: this.getTrackedQuests() // <-- Added this line
         };
     }
 

@@ -6,6 +6,8 @@ import { BattleRewardSystem } from '../../../../shared/systems/battleRewardSyste
 import { TurnManager, TURN_TYPES } from '../../../../shared/systems/turnManager.js';
 import { InventorySystem } from '../../../../shared/systems/inventorySystem.js';
 import { BaseController } from '../core/baseController.js';
+import { QuestModel } from '../../../../shared/models/questModel.js';
+import { QuestDefinitions } from '../../../../shared/data/questDefinitions.js';   
 
 // --- FIXED KEY BINDINGS ---
 const KEY_BINDINGS = {
@@ -698,8 +700,48 @@ export class BattleController extends BaseController {
         if (combatant._deathHandled) return;
         combatant._deathHandled = true;
 
-        this.state.turnQueue = this.state.turnQueue.filter(turn =>
-            turn.actor !== combatant && turn.swapInitiator !== combatant
+        // ---> NEW: QUEST PROGRESSION (FIXED) <---
+        // If the dead combatant is an enemy, check if any active quests need it dead.
+            if (combatant.team === 'enemy') {
+            // Collect template IDs and fall back to the entity's display name
+            const rawIdentifiers = [
+                combatant.templateId,
+                combatant.definitionKey,
+                combatant.originalEntity?.templateId,
+                combatant.originalEntity?.definitionKey,
+                combatant.name // Fallback: "Madman"
+            ].filter(Boolean);
+
+            // Normalize strings (strip spaces, underscores, and dashes) so "Madman" and "MAD_MAN" both become "madman"
+            const possibleIds = rawIdentifiers.map(id => 
+                String(id).toLowerCase().replace(/[\s_\-]+/g, '')
+            );
+
+            Object.keys(gameState.quests.active).forEach(questId => {
+                const questDef = QuestDefinitions[questId];
+                if (questDef) {
+                    questDef.objectives.forEach(obj => {
+                        const targetIdSafe = String(obj.targetId).toLowerCase().replace(/[\s_\-]+/g, '');
+                        
+                        if (obj.type === 'kill_enemy' && possibleIds.includes(targetIdSafe)) {
+                            const didUpdate = QuestModel.updateProgress(gameState, questId, obj.id, 1);
+                            
+                            if (didUpdate && QuestModel.checkCompletion(gameState, questId)) {
+                                this.state.turnQueue.unshift({ 
+                                    type: TURN_TYPES.MESSAGE_STATUS, 
+                                    message: `Quest Complete: ${questDef.name}!` 
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+        }
+        // --------------------------------
+
+        this.state.turnQueue = this.state.turnQueue.filter(turn => 
+            turn.actor !== combatant && 
+            turn.swapInitiator !== combatant
         );
 
         const isParty = combatant.team === 'party';
@@ -708,15 +750,18 @@ export class BattleController extends BaseController {
         const slotIndex = activeArray.indexOf(combatant);
 
         if (slotIndex !== -1) {
-            const livingReserves = rosterArray.filter(member =>
-                !member.isDead() &&
+            const livingReserves = rosterArray.filter(member => 
+                !member.isDead() && 
                 !activeArray.includes(member) &&
                 !this.state.turnQueue.some(turn => turn.replacement === member)
             );
 
             if (livingReserves.length > 0) {
                 if (isParty) {
-                    this.state.turnQueue.unshift({ type: TURN_TYPES.PROMPT_REINFORCEMENT, slotIndex });
+                    this.state.turnQueue.unshift({
+                        type: TURN_TYPES.PROMPT_REINFORCEMENT,
+                        slotIndex
+                    });
                 } else {
                     const replacement = livingReserves[0];
                     this.state.turnQueue.unshift({
@@ -726,8 +771,16 @@ export class BattleController extends BaseController {
                         soundId: replacement.crySound,
                         duration: 1.0
                     });
-                    this.state.turnQueue.unshift({ type: TURN_TYPES.MESSAGE_STATUS, message: `${replacement.name} joins the battle!` });
-                    this.state.turnQueue.unshift({ type: TURN_TYPES.REINFORCEMENT, team: 'enemy', slotIndex, replacement });
+                    this.state.turnQueue.unshift({
+                        type: TURN_TYPES.MESSAGE_STATUS,
+                        message: `${replacement.name} joins the battle!`
+                    });
+                    this.state.turnQueue.unshift({
+                        type: TURN_TYPES.REINFORCEMENT,
+                        team: 'enemy',
+                        slotIndex,
+                        replacement
+                    });
                 }
             }
         }
@@ -742,7 +795,10 @@ export class BattleController extends BaseController {
 
         this._queueDeathTraits(combatant);
 
-        this.state.turnQueue.unshift({ type: TURN_TYPES.MESSAGE_STATUS, message: `${combatant.name} has been slain!` });
+        this.state.turnQueue.unshift({
+            type: TURN_TYPES.MESSAGE_STATUS,
+            message: `${combatant.name} has been slain!`
+        });
     }
 
     checkBattleStatus() {

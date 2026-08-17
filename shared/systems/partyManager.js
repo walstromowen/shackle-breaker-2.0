@@ -4,21 +4,21 @@ import { gameState } from '../state/gameState.js';
 import { EntityFactory } from './factories/entityFactory.js';
 import { ItemFactory } from './factories/itemFactory.js';
 import { CombatCalculator } from './combatCalculator.js';
+import { QuestModel } from '../models/QuestModel.js';
+import { QuestDefinitions } from '../data/questDefinitions.js';
 
 export const PartyManager = {
-    
     // --- READ OPERATIONS (Getters) ---
     getHighestLevel() {
         const members = this.getMembers();
         if (!members || members.length === 0) return 1;
-        
         // Map out all the levels, then use Math.max to find the highest
         return Math.max(...members.map(member => member.level || 1));
     },
+
     /**
      * Returns the entire party array (Entities)
      */
-    
     getMembers() {
         return gameState.party.members;
     },
@@ -39,7 +39,6 @@ export const PartyManager = {
     },
 
     // --- WRITE OPERATIONS (Setters / Actions) ---
-
     /**
      * CLEARS the current party and creates a new Main Character.
      * Use this when the user clicks "Start Game" on the Character Creator.
@@ -48,13 +47,12 @@ export const PartyManager = {
      */
     createMainCharacter(templateId, overrides) {
         console.log(`[PartyManager] Creating Hero...`);
-
         // 1. Clear existing data (Reset for new game)
         gameState.party.members = [];
         gameState.party.currency = 0;
         gameState.party.inventory = [];
 
-        // 2. Resolve Equipment 
+        // 2. Resolve Equipment
         if (overrides.equipment) {
             const resolvedEquipment = {};
             for (const [slot, itemData] of Object.entries(overrides.equipment)) {
@@ -68,16 +66,19 @@ export const PartyManager = {
             overrides.equipment = resolvedEquipment;
         }
 
-        // 3. Create the Hero 
+        // 3. Create the Hero
         const hero = EntityFactory.create(templateId, overrides);
 
-        // Fill resources 
+        // Fill resources
         if (hero) {
             hero.hp = hero.maxHp;
             hero.stamina = hero.maxStamina;
             hero.insight = hero.maxInsight;
-            
             gameState.party.members.push(hero);
+            
+            // ---> NEW: Check quest levels!
+            this._checkLevelQuests();
+
             console.log("[PartyManager] Hero created successfully:", hero);
             return hero;
         } else {
@@ -94,13 +95,12 @@ export const PartyManager = {
      */
     addMember(entityId, overrides = {}) {
         const MAX_PARTY_SIZE = 6;
-
         if (gameState.party.members.length >= MAX_PARTY_SIZE) {
             console.warn("[PartyManager] Party is full.");
-            return null; 
+            return null;
         }
 
-        // Resolve Equipment Strings into Item Objects 
+        // Resolve Equipment Strings into Item Objects
         if (overrides.equipment) {
             const resolvedEquipment = {};
             for (const [slot, itemData] of Object.entries(overrides.equipment)) {
@@ -115,10 +115,14 @@ export const PartyManager = {
         }
 
         const newMember = EntityFactory.create(entityId, overrides);
-        
+
         if (newMember) {
             gameState.party.members.push(newMember);
-            return newMember; 
+            
+            // ---> NEW: Check quest levels!
+            this._checkLevelQuests();
+
+            return newMember;
         }
         return null;
     },
@@ -152,7 +156,7 @@ export const PartyManager = {
         if (finalHpDelta !== 0) {
             if (finalHpDelta < 0) {
                 const safeType = damageType.toLowerCase();
-                
+
                 // Now checks for the new flag OR the legacy 'true' string
                 if (bypassDefense || safeType === 'true') {
                     // True damage (skips mitigation entirely)
@@ -166,9 +170,9 @@ export const PartyManager = {
 
                     // Route through our shared mathematical pipeline
                     const finalHpDamage = CombatCalculator.calculateMitigatedDamage(
-                        Math.abs(finalHpDelta), 
-                        defenseVal, 
-                        resistanceVal, 
+                        Math.abs(finalHpDelta),
+                        defenseVal,
+                        resistanceVal,
                         true // Enable variance
                     );
 
@@ -199,6 +203,7 @@ export const PartyManager = {
             }
         }
     },
+
     /**
      * Safely creates and applies a status effect to a character.
      * @param {object} target - The EntityModel receiving the effect.
@@ -210,17 +215,41 @@ export const PartyManager = {
 
         // Use the factory to generate the model!
         const newEffect = StatusEffectFactory.createEffect(effectId, customCharges, null);
-        
+
         if (!newEffect) {
-            // The factory already logs a warning if the ID is invalid, 
+            // The factory already logs a warning if the ID is invalid,
             // so we can just safely back out here.
-            return; 
+            return;
         }
 
         // Apply it using the method already on your EntityModel
         target.applyStatusEffect(newEffect);
-        
         console.log(`[PartyManager] Applied [${newEffect.name}] to ${target.name || 'character'}`);
+    },
+
+    // ---> NEW: Helper Method to scan for level-ups when the party changes <---
+    _checkLevelQuests() {
+        Object.keys(gameState.quests.active).forEach(questId => {
+            const questDef = QuestDefinitions[questId];
+            if (questDef) {
+                questDef.objectives.forEach(obj => {
+                    if (obj.type === 'party_level') {
+                        const qualifyingCount = gameState.party.members.filter(
+                            m => (m.level || 1) >= obj.targetLevel
+                        ).length;
+
+                        const currentProgress = gameState.quests.active[questId].progress[obj.id] || 0;
+                        const diff = qualifyingCount - currentProgress;
+
+                        if (diff > 0) {
+                            const didUpdate = QuestModel.updateProgress(gameState, questId, obj.id, diff);
+                            if (didUpdate && QuestModel.checkCompletion(gameState, questId)) {
+                                console.log(`[Quest System] Quest Complete: ${questDef.name}!`);
+                            }
+                        }
+                    }
+                });
+            }
+        });
     }
-    
 };

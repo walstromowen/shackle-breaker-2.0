@@ -196,8 +196,10 @@ export class BattleHUDRenderer {
       }
 
       this.ctx.font = UITheme.fonts.body;
-      this.ctx.fillStyle = UITheme.colors.textMain;
-      this.ctx.fillText(member.name, currentX + this.HUD.PADDING_X, y + 34);
+this.ctx.fillStyle = UITheme.colors.textMain;
+this.ctx.textAlign = 'left';
+this.ctx.textBaseline = 'alphabetic';
+this.ctx.fillText(member.name, currentX + this.HUD.PADDING_X, y + 34);
 
       const textWidth = this.ctx.measureText(member.name).width;
       const safeStatusX = currentX + this.HUD.PADDING_X + textWidth + 24;
@@ -281,6 +283,7 @@ export class BattleHUDRenderer {
       this.ctx.font = UITheme.fonts.bodyItalic || `italic ${UITheme.fonts.body}`;
       this.ctx.fillStyle = UITheme.colors.textMain;
       this.ctx.textAlign = 'right';
+      this.ctx.textBaseline = 'alphabetic'; // <-- Add this line to force the text to draw upwards
       this.ctx.fillText(enemy.name, currentX + this.HUD.CARD_W - this.HUD.PADDING_X, y + 34);
 
       this.ctx.textAlign = 'left';
@@ -340,6 +343,7 @@ export class BattleHUDRenderer {
     this.ctx.textAlign = 'center';
     this.ctx.font = UITheme.fonts.bold;
     this.ctx.fillStyle = UITheme.colors.textMuted;
+    this.ctx.textBaseline = 'alphabetic'; // <-- Add this line to force the text to draw upwards
     this.ctx.fillText(`— ${activeChar.name} —`, w / 2, y + 53);
     this.ctx.restore();
 

@@ -12,7 +12,7 @@ import { PartyController } from '../controllers/party/partyController.js';
 import { CharacterSummaryController } from '../controllers/characterSummary/characterSummaryController.js';
 import { BattleController } from '../controllers/battle/battleController.js';
 import { LevelUpController } from '../controllers/levelUp/levelUpController.js';
-
+import { JournalController } from '../controllers/journal/journalController.js';
 // --- RENDERERS ---
 import { BootRenderer } from '../renderers/boot/bootRenderer.js';              // <-- NEW
 import { TitleRenderer } from '../renderers/title/titleRenderer.js';           // <-- NEW
@@ -27,7 +27,7 @@ import { PartyRenderer } from '../renderers/party/partyRenderer.js';
 import { CharacterSummaryRenderer } from '../renderers/characterSummary/characterSummaryRenderer.js';
 import { BattleRenderer } from '../renderers/battle/battleRenderer.js';
 import { LevelUpRenderer } from '../renderers/levelUp/levelUpRenderer.js';
-
+import { JournalRenderer } from '../renderers/journal/journalRenderer.js';
 import { PartyManager } from '../../../shared/systems/partyManager.js';
 import { WorldManager } from '../../../shared/systems/worldManager.js';
 import { TimeSystem } from '../../../shared/systems/timeSystem.js';
@@ -56,12 +56,13 @@ export class SceneManager {
         this.characterCreatorController = new CharacterCreatorController();
         this.partyController = new PartyController(this.input);
         this.levelUpController = new LevelUpController(this.input);
-        
+        this.journalController = new JournalController(this.input);
+
         this.overworldController = null;
         this.encounterController = null;
         this.battleController = null;
         this.characterSummaryController = null;
-
+        
         // --- RENDERERS ---
         this.bootRenderer = new BootRenderer(this.canvas);                                 // <-- NEW
         this.titleRenderer = new TitleRenderer(this.canvas, this.config, this.loader);     // <-- NEW
@@ -76,7 +77,7 @@ export class SceneManager {
         this.characterSummaryRenderer = new CharacterSummaryRenderer(this.ctx, this.loader);
         this.levelUpRenderer = new LevelUpRenderer(this.ctx, this.config, this.loader);
         this.battleRenderer = new BattleRenderer(this.ctx, this.config, this.loader);
-
+        this.journalRenderer = new JournalRenderer(this.config, this.loader);
         // State
         this.currentScene = 'boot'; // <-- CHANGED: Start with boot screen
 
@@ -180,6 +181,9 @@ export class SceneManager {
                 }
                 if (scene === 'party') {
                     this.partyController.init(data || {});
+                }
+                if (scene === 'journal') {                                   // <-- NEW
+                    this.journalController.init();
                 }
 
                 this.changeScene(scene);
@@ -350,19 +354,23 @@ export class SceneManager {
     }
 
     _getActiveController() {
-        switch (this.currentScene) {
-            case 'boot': return this.bootController;               // <-- NEW
-            case 'title': return this.titleController;             // <-- NEW
-            case 'overworld': return this.overworldController;
-            case 'encounter': return this.encounterController;
-            case 'battle': return this.battleController;
-            case 'character-creator': return this.characterCreatorController;
-            case 'party': return this.partyController;
-            case 'character_summary': return this.characterSummaryController;
-            case 'level_up': return this.levelUpController;
-            default: return null;
-        }
+    switch (this.currentScene) {
+        case 'boot': return this.bootController;               
+        case 'title': return this.titleController;             
+        case 'overworld': return this.overworldController;
+        case 'encounter': return this.encounterController;
+        case 'battle': return this.battleController;
+        case 'character-creator': return this.characterCreatorController;
+        case 'party': return this.partyController;
+        case 'character_summary': return this.characterSummaryController;
+        case 'level_up': return this.levelUpController;
+        
+        // Add this line!
+        case 'journal': return this.journalController; 
+        
+        default: return null;
     }
+}
 
     _getActiveRenderer() {
         switch (this.currentScene) {
@@ -375,6 +383,7 @@ export class SceneManager {
             case 'party': return this.partyRenderer;
             case 'character_summary': return this.characterSummaryRenderer;
             case 'level_up': return this.levelUpRenderer;
+            case 'journal': return this.journalRenderer;
             default: return null;
         }
     }
@@ -453,6 +462,10 @@ export class SceneManager {
                 break;
             case 'overworld':
                 this.renderOverworld(interpolation, totalTime);
+                break;
+            case 'journal':
+                const journalState = this.journalController.getState();
+                this.journalRenderer.render(this.ctx, journalState);
                 break;
             case 'party':
                 const pState = this.partyController.getState();
