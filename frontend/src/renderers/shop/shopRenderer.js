@@ -358,8 +358,8 @@ export class ShopRenderer {
         } else if (state.heldItem) {
             lines.push("[L-Click] Place      [R-Click/ESC] Cancel");
         } else {
-            // Note: Removed the [TAB] instruction here!
-            lines.push("[L-Click/WASD] Select      [SPC] Action      [R-Click/ESC] Exit Shop");
+            // Note: Changed "Action" to "Options"
+            lines.push("[L-Click/WASD] Select      [SPC] Options      [R-Click/ESC] Exit Shop");
         }
 
         const centerX = Math.floor(w / 2);

@@ -1,5 +1,6 @@
 import { gameState } from '../../../../shared/state/gameState.js';
 import { ItemDefinitions } from '../../../../shared/data/itemDefinitions.js';
+import { InventorySystem } from '../../../../shared/systems/inventorySystem.js'; // <-- NEW: Import the inventory system
 
 export class ShopLogic {
     constructor(config) {
@@ -17,8 +18,7 @@ export class ShopLogic {
     }
 
     getPartyCurrency() {
-        // BUG FIX: Match the state! 'gold' was returning undefined. 
-        return gameState.party.currency || 0; 
+        return gameState.party.currency || 0;
     }
 
     _initializeWares(baseWares) {
@@ -36,46 +36,40 @@ export class ShopLogic {
     }
 
     buyItem(item, amount = 1) {
-    const totalCost = item.cost * amount;
-    
-    if (gameState.party.currency >= totalCost) {
-        gameState.party.currency -= totalCost; 
-        
-        // 1. Add to party inventory
-        const existingItem = this.partyInventory.find(i => i.defId === item.defId && (i.qty || 1) < 99);
-        if (existingItem) {
-            existingItem.qty = (existingItem.qty || 1) + amount;
-        } else {
-            gameState.party.inventory.push({ defId: item.defId, qty: amount });
-        }
+        const totalCost = item.cost * amount;
 
-        // 2. BUG FIX: Remove/decrement item from vendor stock
-        const vendorIdx = this.vendorWares.indexOf(item);
-        if (vendorIdx > -1) {
-            if (item.qty && item.qty > amount) {
-                item.qty -= amount;
-            } else {
-                // If item has no quantity property or reaches 0, splice it out completely
-                this.vendorWares.splice(vendorIdx, 1);
+        if (gameState.party.currency >= totalCost) {
+            gameState.party.currency -= totalCost;
+
+            // 1. CORRECT FIX: Use InventorySystem so it generates an ItemModel with stats 
+            // and automatically checks for Quest progression!
+            InventorySystem.addItem(item.defId, amount);
+
+            // 2. Remove/decrement item from vendor stock
+            const vendorIdx = this.vendorWares.indexOf(item);
+            if (vendorIdx > -1) {
+                if (item.qty && item.qty > amount) {
+                    item.qty -= amount;
+                } else {
+                    this.vendorWares.splice(vendorIdx, 1);
+                }
             }
+            return true;
         }
-
-        return true;
+        return false;
     }
-    return false;
-}
 
     sellItem(item, amount = 1) {
         const def = ItemDefinitions[item.defId];
         const sellValue = Math.floor((def?.cost || 10) * 0.5); // Sell for 50%
         const bagIdx = gameState.party.inventory.indexOf(item);
-        
-        if (bagIdx > -1) {
-            // BUG FIX: Use 'currency' instead of 'gold'
-            if (gameState.party.currency === undefined) gameState.party.currency = 0;
-            gameState.party.currency += (sellValue * amount); 
 
-            // BUG FIX: Add the item back to the vendor's inventory so it doesn't vanish
+        if (bagIdx > -1) {
+            if (gameState.party.currency === undefined) gameState.party.currency = 0;
+            
+            gameState.party.currency += (sellValue * amount);
+
+            // Add the item back to the vendor's inventory
             const existingVendorItem = this.vendorWares.find(w => w.defId === item.defId);
             if (existingVendorItem) {
                 existingVendorItem.qty = (existingVendorItem.qty || 1) + amount;
@@ -84,7 +78,7 @@ export class ShopLogic {
                     defId: item.defId,
                     id: item.defId,
                     name: item.name || def?.name || item.defId,
-                    cost: def?.cost || 10, // Give it a standard buy-back cost
+                    cost: def?.cost || 10, 
                     type: def?.type || 'item',
                     qty: amount
                 });

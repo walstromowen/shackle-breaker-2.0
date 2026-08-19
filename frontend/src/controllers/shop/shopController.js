@@ -4,6 +4,7 @@ import { DragAndDropManager } from '../../ui/dragAndDropManager.js';
 import { ScrollManager } from '../../ui/scrollManager.js';
 import { ContextMenuManager } from '../../ui/contextMenuManager.js';
 import { ShopLogic } from './shopLogic.js';
+import { ItemDefinitions } from '../../../../shared/data/itemDefinitions.js';
 
 const KEY_BINDINGS = {
     'ArrowUp': 'UP',
@@ -18,19 +19,16 @@ const KEY_BINDINGS = {
     'Space': 'CONFIRM',
     'Escape': 'CANCEL',
     'Backspace': 'CANCEL'
-    // Removed TAB binding - we use fluid grid wrapping now!
 };
 
 export class ShopController extends BaseController {
     constructor(input, data) {
-        console.log("2b. CONTROLLER CONSTRUCTOR CALLED WITH:", data);
         super(input, data);
         this.config = data || {};
         this.returnScene = this.config.returnScene || 'overworld';
         this.logic = new ShopLogic(this.config);
 
-        // --- View & Keyboard State ---
-        this.activePanel = 'vendor'; // 'vendor' or 'party'
+        this.activePanel = 'vendor'; 
         this.vendorIndex = -1;
         this.partyIndex = -1;
         this.COLS = 4;
@@ -47,32 +45,26 @@ export class ShopController extends BaseController {
         this.vendorScrollOffset = 0;
         this.partyScrollOffset = 0;
 
-        // --- Managers ---
         this.dragAndDropManager = new DragAndDropManager();
         this.scrollManager = new ScrollManager();
         this.contextMenuManager = new ContextMenuManager({
             onAction: (actionId, payload) => this.executeMenuAction(actionId, payload)
         });
 
+        this.currentHitboxes = []; // Used to spawn context menu at item coords
+
         this._syncScrollZones();
         this.setupInteractionHandlers();
     }
 
-    // ========================================================
-    // LIFECYCLE RE-INITIALIZATION (THE FIX)
-    // ========================================================
     init(data) {
-        console.log("2. CONTROLLER INIT CALLED WITH:", data);
         if (super.init) super.init(data);
 
         if (data) {
             this.config = data;
             this.returnScene = this.config.returnScene || 'overworld';
-            
-            // RE-INITIALIZE THE LOGIC with the dynamically passed wares
             this.logic = new ShopLogic(this.config);
 
-            // Reset state so the shop opens cleanly
             this.activePanel = 'vendor';
             this.vendorIndex = -1;
             this.partyIndex = -1;
@@ -115,9 +107,6 @@ export class ShopController extends BaseController {
         };
     }
 
-    // ========================================================
-    // KEYBOARD NAVIGATION LOGIC
-    // ========================================================
     handleKeyDown(code, e) {
         if (e && code === 'Tab') e.preventDefault();
 
@@ -134,35 +123,13 @@ export class ShopController extends BaseController {
         this.handleGridNavigation(intent);
     }
 
-    switchPanel() {
-        // Kept purely as a fallback helper for mouse clicks or logic checks
-        this.playNavSound();
-        this.hoveredHitboxId = null; 
-
-        if (this.activePanel === 'vendor') {
-            this.activePanel = 'party';
-            if (this.partyIndex === -1 && this.logic.partyInventory.length > 0) {
-                this.partyIndex = 0;
-            }
-            this.vendorIndex = -1;
-        } else {
-            this.activePanel = 'vendor';
-            if (this.vendorIndex === -1 && this.logic.vendorWares.length > 0) {
-                this.vendorIndex = 0;
-            }
-            this.partyIndex = -1;
-        }
-    }
-
     handleGridNavigation(intent) {
         const isVendor = this.activePanel === 'vendor';
         const list = isVendor ? this.logic.vendorWares : this.logic.partyInventory;
         let currentIndex = isVendor ? this.vendorIndex : this.partyIndex;
 
-        // 1. Safety check for completely empty shop
         if (this.logic.vendorWares.length === 0 && this.logic.partyInventory.length === 0) return;
 
-        // 2. If the current list is empty but the user moves, jump to the other panel
         if (list.length === 0) {
             if (intent === 'LEFT' || intent === 'RIGHT') {
                 this._jumpToOppositePanel(0, intent === 'LEFT' ? this.COLS - 1 : 0);
@@ -170,7 +137,6 @@ export class ShopController extends BaseController {
             return;
         }
 
-        // 3. Setup initial focus if needed
         if (currentIndex === -1) {
             currentIndex = 0;
             this._setIndex(currentIndex);
@@ -180,56 +146,34 @@ export class ShopController extends BaseController {
 
         const maxIndex = list.length - 1;
         const oldIndex = currentIndex;
-
         const row = Math.floor(currentIndex / this.COLS);
         const col = currentIndex % this.COLS;
 
-        // 4. Calculate Movement
         if (intent === 'UP') {
             currentIndex = Math.max(0, currentIndex - this.COLS);
         } else if (intent === 'DOWN') {
             currentIndex = Math.min(maxIndex, currentIndex + this.COLS);
         } else if (intent === 'LEFT') {
-            if (col === 0) {
-                // At left edge: Jump to the right edge of the opposite panel
-                this._jumpToOppositePanel(row, this.COLS - 1);
-                return;
-            } else {
-                currentIndex = currentIndex - 1;
-            }
+            if (col === 0) this._jumpToOppositePanel(row, this.COLS - 1);
+            else currentIndex = currentIndex - 1;
         } else if (intent === 'RIGHT') {
-            if (col === this.COLS - 1 || currentIndex === maxIndex) {
-                // At right edge (or end of list): Jump to the left edge of the opposite panel
-                this._jumpToOppositePanel(row, 0);
-                return;
-            } else {
-                currentIndex = currentIndex + 1;
-            }
+            if (col === this.COLS - 1 || currentIndex === maxIndex) this._jumpToOppositePanel(row, 0);
+            else currentIndex = currentIndex + 1;
         }
 
-        // 5. Apply Movement
         if (currentIndex !== oldIndex) {
             this.playNavSound();
             this._setIndex(currentIndex);
-            this.hoveredHitboxId = null; // Clear mouse hover state
-
+            this.hoveredHitboxId = null; 
             if (['UP', 'DOWN', 'LEFT', 'RIGHT'].includes(intent)) {
                 this.scrollToItem(this.activePanel, currentIndex);
             }
         }
 
-        // 6. Execution
         if (intent === 'CONFIRM') {
             const item = list[currentIndex];
             if (item) {
-                if (isVendor) {
-                    if(this.logic.buyItem(item, 1)) this.playConfirmSound();
-                    else events.emit('PLAY_SFX', { id: 'ui_error' });
-                } else {
-                    if(this.logic.sellItem(item, 1)) this.playConfirmSound();
-                    else events.emit('PLAY_SFX', { id: 'ui_error' });
-                }
-                this._validateIndices();
+                this._openItemContextMenu(item, isVendor ? 'vendor' : 'party', currentIndex);
             }
         }
     }
@@ -239,7 +183,6 @@ export class ShopController extends BaseController {
         const targetList = targetPanel === 'vendor' ? this.logic.vendorWares : this.logic.partyInventory;
 
         if (targetList.length === 0) {
-            // Target side is empty! Wrap around to the opposite edge of the SAME panel instead.
             const currentList = this.activePanel === 'vendor' ? this.logic.vendorWares : this.logic.partyInventory;
             const newCol = targetCol === 0 ? 0 : this.COLS - 1; 
             let newIndex = (targetRow * this.COLS) + newCol;
@@ -255,11 +198,8 @@ export class ShopController extends BaseController {
             return;
         }
 
-        // Smoothly jump into the corresponding row/col of the other panel
         let newIndex = (targetRow * this.COLS) + targetCol;
-        if (newIndex >= targetList.length) {
-            newIndex = targetList.length - 1; // Cap to the last available item
-        }
+        if (newIndex >= targetList.length) newIndex = targetList.length - 1; 
 
         this.playNavSound();
         this.activePanel = targetPanel;
@@ -300,11 +240,63 @@ export class ShopController extends BaseController {
     }
 
     // ========================================================
-    // MOUSE & CLICK LOGIC
+    // CONTEXT MENU
     // ========================================================
+    _openItemContextMenu(item, source, index) {
+        let x = this.mouse.x;
+        let y = this.mouse.y;
+        
+        // If spawned via keypad, anchor menu to item hitbox center
+        if (x === 0 && y === 0 && this.currentHitboxes) {
+            const hitboxId = source === 'vendor' ? `VENDOR_ITEM_${index}` : `PARTY_ITEM_${index}`;
+            const box = this.currentHitboxes.find(h => h.id === hitboxId);
+            if (box) {
+                x = box.x + box.w / 2;
+                y = box.y + box.h / 2;
+            }
+        }
+
+        const def = ItemDefinitions[item.defId || item.id] || {};
+        const itemName = item.name || def.name || "Item";
+        
+        const options = [];
+
+        if (source === 'vendor') {
+            const cost = def.cost || def.value || 10;
+            options.push({ label: `Buy ${itemName} (${cost}c)`, actionId: 'BUY' });
+        } else {
+            const value = Math.floor((def.cost || def.value || 10) / 2);
+            options.push({ label: `Sell ${itemName} (${value}c)`, actionId: 'SELL' });
+        }
+        options.push({ label: "Cancel", actionId: 'CANCEL' });
+        
+        this.contextMenuManager.open(x, y, options, { item, source, index });
+        this.playConfirmSound();
+    }
+
+    executeMenuAction(actionId, payload) {
+        if (actionId === 'CANCEL') {
+            this.playCancelSound();
+            return;
+        }
+
+        const { item, source } = payload;
+
+        if (actionId === 'BUY' && source === 'vendor') {
+            if(this.logic.buyItem(item, 1)) this.playConfirmSound();
+            else events.emit('PLAY_SFX', { id: 'ui_error' });
+        } else if (actionId === 'SELL' && source === 'party') {
+            if(this.logic.sellItem(item, 1)) this.playConfirmSound();
+            else events.emit('PLAY_SFX', { id: 'ui_error' });
+        }
+
+        this._validateIndices();
+    }
+
     onHover(hitboxId) {
         super.onHover(hitboxId);
 
+        // Don't change hover states if dragging or if a context menu is open
         if (this.dragAndDropManager.dragState.active || this.contextMenuManager.menu) return;
 
         if (hitboxId) {
@@ -322,7 +314,15 @@ export class ShopController extends BaseController {
                     this.partyIndex = idx;
                     this.vendorIndex = -1;
                 }
+            } else {
+                // If we are hovering over something else (like a scrollbar or close button), clear the item focus
+                this.vendorIndex = -1;
+                this.partyIndex = -1;
             }
+        } else {
+            // Hovering over completely empty space - clear the item focus
+            this.vendorIndex = -1;
+            this.partyIndex = -1;
         }
     }
 
@@ -342,11 +342,13 @@ export class ShopController extends BaseController {
         if (this.contextMenuManager.menu) {
             if (hitboxId.startsWith('CTX_OPT_')) {
                 const optIndex = parseInt(hitboxId.split('_')[2], 10);
-                this.playConfirmSound();
                 this.contextMenuManager.executeAction(optIndex);
                 return;
             }
+            // Clicked something outside the menu options
             this.contextMenuManager.close();
+            this.playCancelSound();
+            return;
         }
 
         if (this.handlers && this.handlers[hitboxId]) {
@@ -354,15 +356,14 @@ export class ShopController extends BaseController {
             return;
         }
 
+        // Left clicking an item now OPENS THE CONTEXT MENU instead of buying directly
         if (hitboxId.startsWith('VENDOR_ITEM_')) {
             const idx = parseInt(hitboxId.split('_')[2], 10);
             const item = this.logic.vendorWares[idx];
             if (item) {
                 this.activePanel = 'vendor';
                 this.vendorIndex = idx;
-                if (this.logic.buyItem(item, 1)) this.playConfirmSound();
-                else events.emit('PLAY_SFX', { id: 'ui_error' });
-                this._validateIndices();
+                this._openItemContextMenu(item, 'vendor', idx);
             }
         } else if (hitboxId.startsWith('PARTY_ITEM_')) {
             const idx = parseInt(hitboxId.split('_')[2], 10);
@@ -370,9 +371,7 @@ export class ShopController extends BaseController {
             if (item) {
                 this.activePanel = 'party';
                 this.partyIndex = idx;
-                if (this.logic.sellItem(item, 1)) this.playConfirmSound();
-                else events.emit('PLAY_SFX', { id: 'ui_error' });
-                this._validateIndices();
+                this._openItemContextMenu(item, 'party', idx);
             }
         }
     }
@@ -478,15 +477,13 @@ export class ShopController extends BaseController {
         this._validateIndices();
     }
 
-    // ========================================================
-    // SCROLLING & HITBOX UPDATES
-    // ========================================================
     handleScroll(delta) {
         this.scrollManager.handleScrollWheel(this.mouse.x, this.mouse.y, delta);
     }
 
     updateHitboxes(hitboxes) {
         super.updateHitboxes(hitboxes);
+        this.currentHitboxes = hitboxes; // Saved to position keyboard context menus
         this._updateScrollMaxes();
         this._syncScrollZones();
     }
@@ -502,9 +499,6 @@ export class ShopController extends BaseController {
         this.layout.partyMaxScroll = Math.max(0, (partyRows * ROW_H) - VIEW_H);
     }
 
-    // ========================================================
-    // STATE EXPORT
-    // ========================================================
     getFocusedItem() {
         if (this.dragAndDropManager.dragState.active) {
             return this.dragAndDropManager.dragState.payload;
