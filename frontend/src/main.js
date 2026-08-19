@@ -46,7 +46,9 @@ ui_icons: './assets/icons/ui_icons.png',
     grimStagPortrait: './assets/sprites/grim_stag/grim_stag_portrait.png',
     poachersNightmarePortrait: './assets/sprites/poachers_nightmare/poachers_nightmare_portrait.png',
     hollowHarvesterPortrait: './assets/sprites/hollow_harvester/hollow_harvester_portrait.png',
-
+duneMawPortrait: './assets/sprites/dune_maw/dune_maw_portrait.png',
+scorchedVagrantPortrait: './assets/sprites/scorched_vagrant/scorched_vagrant_portrait.png',
+miragewrightPortrait: './assets/sprites/miragewright/miragewright_portrait.png',
     // UI / Icon Atlases
     weapons: './assets/icons/weapons.png',
     armor: './assets/icons/armor.png',
@@ -183,7 +185,9 @@ ui_icons: './assets/icons/ui_icons.png',
     poachersNightmareCry: './assets/audio/sfx/cries/poachers_nightmare_cry.wav',
     hollowHarvesterCry: './assets/audio/sfx/cries/hollow_harvester_cry.wav',
     rotterCry: './assets/audio/sfx/cries/rotter_cry.wav',
-
+duneMawCry: './assets/audio/sfx/cries/dune_maw_cry.wav',
+scorchedVagrantCry: './assets/audio/sfx/cries/scorched_vagrant_cry.wav',
+miragewrightCry: './assets/audio/sfx/cries/miragewright_cry.wav',
     // --- UI SFX ---
     diceTick: './assets/audio/sfx/ui/dice_tick.wav',
     hoverTick: './assets/audio/sfx/ui/hover_tick.wav',
