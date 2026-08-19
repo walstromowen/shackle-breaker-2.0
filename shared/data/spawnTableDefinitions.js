@@ -1,4 +1,5 @@
 export const SpawnTableDefinitions = {
+
     // ==========================================
     // PLAINS BATTLES - DAY
     // ==========================================
@@ -79,101 +80,106 @@ export const SpawnTableDefinitions = {
     },
 
     // ==========================================
-        // DESERT BATTLES - DAY
-        // ==========================================
-        "desert_battles_day": {
-            type: "faction_pool",
-            pools: [
-                {
-                    factionId: "wildlife",
-                    weight: 25,
-                    difficultySettings: {
-                        easy: { minSize: 1, maxSize: 1 },
-                        normal: { minSize: 1, maxSize: 2 },
-                        hard: { minSize: 1, maxSize: 3 },
-                        nightmare: { minSize: 2, maxSize: 4 }
-                    },
-                    members: [
-                        { id: 'DUNE_MAW', weight: 100 }
-                    ]
+    // DESERT BATTLES - DAY
+    // ==========================================
+    "desert_battles_day": {
+        type: "faction_pool",
+        pools: [
+            {
+                factionId: "wildlife",
+                weight: 30,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 2 },
+                    normal: { minSize: 1, maxSize: 3 },
+                    hard: { minSize: 2, maxSize: 4 },
+                    nightmare: { minSize: 3, maxSize: 5 }
                 },
-                {
-                    factionId: "shifting_sands",
-                    weight: 45,
-                    difficultySettings: {
-                        easy: { minSize: 1, maxSize: 2 },
-                        normal: { minSize: 1, maxSize: 3 },
-                        hard: { minSize: 1, maxSize: 4 },
-                        nightmare: { minSize: 1, maxSize: 5 }
-                    },
-                    members: [
-                        { id: 'SAND_STALKER', weight: 100, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } }
-                    ]
+                members: [
+                    { id: 'DUNE_MAW', weight: 60 },
+                    { id: 'THUNDER_LOCUST', weight: 40, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 3 } } }
+                ]
+            },
+            {
+                factionId: "shifting_sands",
+                weight: 40,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 2 },
+                    normal: { minSize: 1, maxSize: 3 },
+                    hard: { minSize: 1, maxSize: 4 },
+                    nightmare: { minSize: 1, maxSize: 5 }
                 },
-                {
-                    factionId: "shackled",
-                    weight: 30,
-                    difficultySettings: {
-                        easy: { minSize: 1, maxSize: 1 },
-                        normal: { minSize: 1, maxSize: 2 },
-                        hard: { minSize: 1, maxSize: 4 },
-                        nightmare: { minSize: 1, maxSize: 6 }
-                    },
-                    members: [
-                        { id: 'SCORCHED_VAGRANT', weight: 100 }
-                    ]
-                }
-            ]
-        },
+                members: [
+                    { id: 'SAND_STALKER', weight: 70, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } },
+                    { id: 'CALCIFIED_CRUSADER', weight: 30, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 } } }
+                ]
+            },
+            {
+                factionId: "shackled",
+                weight: 30,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 1 },
+                    normal: { minSize: 1, maxSize: 2 },
+                    hard: { minSize: 1, maxSize: 4 },
+                    nightmare: { minSize: 1, maxSize: 6 }
+                },
+                members: [
+                    { id: 'SCORCHED_VAGRANT', weight: 100 }
+                ]
+            }
+        ]
+    },
 
-        // ==========================================
-        // DESERT BATTLES - NIGHT
-        // ==========================================
-        "desert_battles_night": {
-            type: "faction_pool",
-            pools: [
-                {
-                    factionId: "cursedwildlife",
-                    weight: 30,
-                    difficultySettings: {
-                        easy: { minSize: 1, maxSize: 2 },
-                        normal: { minSize: 1, maxSize: 3 },
-                        hard: { minSize: 2, maxSize: 4 },
-                        nightmare: { minSize: 2, maxSize: 5 }
-                    },
-                    members: [
-                        { id: 'DUNE_MAW', weight: 100 }
-                    ]
+    // ==========================================
+    // DESERT BATTLES - NIGHT
+    // ==========================================
+    "desert_battles_night": {
+        type: "faction_pool",
+        pools: [
+            {
+                factionId: "cursedwildlife",
+                weight: 30,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 2 },
+                    normal: { minSize: 1, maxSize: 3 },
+                    hard: { minSize: 2, maxSize: 4 },
+                    nightmare: { minSize: 3, maxSize: 5 }
                 },
-                {
-                    factionId: "shifting_sands",
-                    weight: 35,
-                    difficultySettings: {
-                        easy: { minSize: 1, maxSize: 2 },
-                        normal: { minSize: 1, maxSize: 3 },
-                        hard: { minSize: 2, maxSize: 4 },
-                        nightmare: { minSize: 3, maxSize: 5 }
-                    },
-                    members: [
-                        { id: 'SAND_STALKER', weight: 70, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } },
-                        { id: 'MIRAGEWRIGHT', weight: 30, modifiers: { levelOffset: { chance: 0.5, min: 1, max: 2 } } }
-                    ]
+                members: [
+                    { id: 'DUNE_MAW', weight: 60 },
+                    { id: 'THUNDER_LOCUST', weight: 40, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 3 } } }
+                ]
+            },
+            {
+                factionId: "shifting_sands",
+                weight: 35,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 2 },
+                    normal: { minSize: 1, maxSize: 3 },
+                    hard: { minSize: 2, maxSize: 4 },
+                    nightmare: { minSize: 3, maxSize: 5 }
                 },
-                {
-                    factionId: "shackled",
-                    weight: 35,
-                    difficultySettings: {
-                        easy: { minSize: 1, maxSize: 1 },
-                        normal: { minSize: 1, maxSize: 3 },
-                        hard: { minSize: 2, maxSize: 4 },
-                        nightmare: { minSize: 2, maxSize: 6 }
-                    },
-                    members: [
-                        { id: 'SCORCHED_VAGRANT', weight: 100 }
-                    ]
-                }
-            ]
-        },
+                members: [
+                    { id: 'SAND_STALKER', weight: 50, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } },
+                    { id: 'MIRAGEWRIGHT', weight: 25, modifiers: { levelOffset: { chance: 0.5, min: 1, max: 2 } } },
+                    { id: 'CALCIFIED_CRUSADER', weight: 25, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 3 } } }
+                ]
+            },
+            {
+                factionId: "shackled",
+                weight: 35,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 1 },
+                    normal: { minSize: 1, maxSize: 3 },
+                    hard: { minSize: 2, maxSize: 4 },
+                    nightmare: { minSize: 2, maxSize: 6 }
+                },
+                members: [
+                    { id: 'SCORCHED_VAGRANT', weight: 100 }
+                ]
+            }
+        ]
+    },
+
     // ==========================================
     // ENCOUNTER BATTLES (Triggered via Events)
     // ==========================================
@@ -218,8 +224,7 @@ export const SpawnTableDefinitions = {
                 hard: { minSize: 1, maxSize: 2 },
                 nightmare: { minSize: 2, maxSize: 3 }
             },
-            // Note: If you have an ailment system, this is a great place to force a 'rabid' or 'bleeding' trait
-            members: [{ id: 'DOG', weight: 100, modifiers: { levelOffset: { chance: 1, min: 1, max: 2 } } }] 
+            members: [{ id: 'DOG', weight: 100, modifiers: { levelOffset: { chance: 1, min: 1, max: 2 } } }]
         }]
     },
 
@@ -239,7 +244,6 @@ export const SpawnTableDefinitions = {
     },
 
     "biome_ambush": {
-        // A randomized ambush that pulls a small group of general enemies to replace ["BIOME_DEFAULT", "BIOME_DEFAULT"]
         type: "faction_pool",
         pools: [
             {
@@ -270,5 +274,5 @@ export const SpawnTableDefinitions = {
                 ]
             }
         ]
-    },
+    }
 };

@@ -1,4 +1,4 @@
-import { gameState } from '../../../../shared/state/gameState.js';
+
 import { StatCalculator } from '../../../../shared/systems/statCalculator.js';
 import { ItemDefinitions } from '../../../../shared/data/itemDefinitions.js';
 import { AbilitySystem } from '../../../../shared/systems/abilitySystem.js';
@@ -10,12 +10,12 @@ export class CharacterSummaryLogic {
     constructor(config) {
         this.config = config || {};
         this.readOnly = this.config.readOnly || this.config.isCombat || false;
-        
         this.memberIndex = 0;
+        
         if (this.config.memberIndex !== undefined) {
             this.memberIndex = this.config.memberIndex;
         } else if (this.config.character) {
-            const index = gameState.party.members.findIndex(m => 
+            const index = gameState.party.members.findIndex(m =>
                 m === this.config.character || m.id === this.config.character.id
             );
             this.memberIndex = index !== -1 ? index : 0;
@@ -38,17 +38,9 @@ export class CharacterSummaryLogic {
     // ========================================================
     // NAME EDITING LOGIC
     // ========================================================
-    // Locate the Name Editing Logic section in CharacterSummaryLogic.js
-// Replace startNameEdit() and validateName() with this:
-
-    // ========================================================
-    // NAME EDITING LOGIC
-    // ========================================================
-    
     startNameEdit() {
         if (this.readOnly) return;
         this.isEditingName = true;
-        
         // Cache the original name so we can revert if they leave it blank
         this.originalName = this.currentMember.name || "Unknown";
         this.nameInput.reset(this.originalName);
@@ -56,7 +48,6 @@ export class CharacterSummaryLogic {
 
     validateName() {
         if (!this.isEditingName) return false;
-        
         // Mirror Character Creator: Revert if empty, otherwise save trimmed value
         if (this.nameInput.value.trim() === "") {
             this.nameInput.reset(this.originalName);
@@ -64,7 +55,6 @@ export class CharacterSummaryLogic {
         } else {
             this.currentMember.name = this.nameInput.value.trim();
         }
-        
         this.isEditingName = false;
         return true;
     }
@@ -82,17 +72,14 @@ export class CharacterSummaryLogic {
     getActiveSlots() {
         const member = this.currentMember;
         if (!member) return [];
-
         const availableSlots = Object.keys(member.equipment || {});
         return availableSlots.sort((a, b) => {
             const indexA = SLOT_ORDER.indexOf(a);
             const indexB = SLOT_ORDER.indexOf(b);
             const indexALower = SLOT_ORDER.findIndex(s => s.toLowerCase() === a.toLowerCase());
             const indexBLower = SLOT_ORDER.findIndex(s => s.toLowerCase() === b.toLowerCase());
-            
             const finalA = (indexA !== -1) ? indexA : (indexALower !== -1 ? indexALower : 99);
             const finalB = (indexB !== -1) ? indexB : (indexBLower !== -1 ? indexBLower : 99);
-            
             return finalA - finalB;
         });
     }
@@ -104,10 +91,8 @@ export class CharacterSummaryLogic {
     canEquipToSlot(item, targetSlotRaw) {
         const def = ItemDefinitions[item.defId];
         if (!def) return false;
-
         const itemSlot = (def.slot || def.type || '').toLowerCase().replace(/\s/g, '');
         const slotKey = targetSlotRaw.toLowerCase().replace(/\s/g, '');
-
         return (itemSlot === slotKey) ||
                (slotKey === 'mainhand' && ['weapon', 'tool', 'twohand', 'onehand'].includes(itemSlot)) ||
                (slotKey === 'offhand' && ['shield', 'weapon', 'onehand'].includes(itemSlot));
@@ -115,16 +100,14 @@ export class CharacterSummaryLogic {
 
     equipItem(inventoryItem, targetSlotOverride, activeSlots) {
         if (this.readOnly) return null;
-
         const member = this.currentMember;
         let slotName = targetSlotOverride;
         const def = ItemDefinitions[inventoryItem.defId];
         const rawItemType = def ? (def.slot || def.type || '').toLowerCase() : '';
         const itemTypeNormalized = rawItemType.replace(/\s/g, '');
-
+        
         const mainHandSlot = activeSlots.find(s => s.toLowerCase() === 'mainhand') || 'mainHand';
         const offHandSlot = activeSlots.find(s => s.toLowerCase() === 'offhand') || 'offHand';
-
         const currentMainItem = member.equipment[mainHandSlot];
         const currentOffItem = member.equipment[offHandSlot];
         const currentMainDef = currentMainItem ? ItemDefinitions[currentMainItem.defId] : null;
@@ -150,7 +133,6 @@ export class CharacterSummaryLogic {
                     return false;
                 });
             }
-
             if (!slotName) {
                 console.warn("Could not auto-determine slot for item.");
                 return null;
@@ -165,7 +147,6 @@ export class CharacterSummaryLogic {
                 gameState.party.inventory.push(currentOffItem);
             }
         }
-
         if (slotName.toLowerCase() === 'offhand' && isMainTwoHanded) {
             member.unequipItem(mainHandSlot);
             gameState.party.inventory.push(currentMainItem);
@@ -176,12 +157,12 @@ export class CharacterSummaryLogic {
         if (currentEquip && currentEquip !== inventoryItem) {
             gameState.party.inventory.push(currentEquip);
         }
-
+        
         const bagIdx = gameState.party.inventory.indexOf(inventoryItem);
         if (bagIdx > -1) {
             gameState.party.inventory.splice(bagIdx, 1);
         }
-
+        
         member.equipItem(slotName, inventoryItem);
         return slotName;
     }
@@ -190,7 +171,6 @@ export class CharacterSummaryLogic {
         if (this.readOnly) return false;
         const member = this.currentMember;
         const currentEquip = member.equipment[slotName];
-
         if (currentEquip) {
             member.unequipItem(slotName);
             gameState.party.inventory.push(currentEquip);
@@ -203,12 +183,12 @@ export class CharacterSummaryLogic {
         const member = this.currentMember;
         const computedStats = StatCalculator.calculate(member);
         const baseSource = member.state ? member.state.stats : (member.attributes || {});
-
+        
         const formatStat = (key, currentVal) => {
             const base = baseSource[key] || 0;
             return { base: base, bonus: (currentVal - base), total: currentVal };
         };
-
+        
         return {
             ...computedStats,
             maxHp: formatStat('maxHp', computedStats.maxHp || member.maxHp),
@@ -220,21 +200,26 @@ export class CharacterSummaryLogic {
     compileAbilities() {
         const member = this.currentMember;
         const abilityMap = new Map();
-
+        
         if (member.equipment) {
             for (const [slot, item] of Object.entries(member.equipment)) {
                 if (!item) continue;
                 const def = ItemDefinitions[item.defId];
                 const grantedAbilities = (def && (def.abilities || def.grantedAbilities)) || [];
-
+                
                 grantedAbilities.forEach(ability => {
                     const id = typeof ability === 'string' ? ability : ability.id;
                     const abilityData = typeof ability === 'object' ? ability : { id, name: id };
-                    abilityMap.set(id, { ...abilityData, source: def.name || item.defId, sourceSlot: slot, isEquipment: true });
+                    abilityMap.set(id, {
+                        ...abilityData,
+                        source: def.name || item.defId,
+                        sourceSlot: slot,
+                        isEquipment: true
+                    });
                 });
             }
         }
-
+        
         const intrinsicAbilities = member.abilities || (member.template && member.template.abilities) || [];
         intrinsicAbilities.forEach(ability => {
             const id = typeof ability === 'string' ? ability : ability.id;
@@ -243,14 +228,13 @@ export class CharacterSummaryLogic {
                 abilityMap.set(id, { ...abilityData, source: 'Intrinsic', isEquipment: false });
             }
         });
-
+        
         return Array.from(abilityMap.values());
     }
 
     dropItem(item, amount = 1) {
         if (this.readOnly) return false;
         const bagIdx = gameState.party.inventory.indexOf(item);
-
         if (bagIdx > -1) {
             if (item.qty > 1) {
                 item.qty -= amount;
@@ -269,9 +253,8 @@ export class CharacterSummaryLogic {
         if (this.readOnly) return false;
         const def = ItemDefinitions[item.defId];
         if (!def) return false;
-
+        
         const abilityId = item.useAbility || def.useAbility;
-
         if (abilityId) {
             const result = AbilitySystem.execute(abilityId, targetMember, targetMember);
             if (result.success) {
@@ -282,7 +265,7 @@ export class CharacterSummaryLogic {
                 return false;
             }
         }
-
+        
         console.log(`[Item Use] Used non-ability item: ${item.defId}`);
         return this.dropItem(item, 1);
     }

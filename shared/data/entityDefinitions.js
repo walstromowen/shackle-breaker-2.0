@@ -225,10 +225,10 @@ export const ENTITY_DEFINITIONS = {
             baseResistance: { fire: 0.4, light: 0.2 },
             baseAttack: { blunt: 2, fire: 7, arcane: 4, light: 3 }
         },
-        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "charred_catalyst" },
+        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_fire" },
         currencyReward: { min: 6, max: 16 },
         lootTableId: "scorched_vagrant_drops",
-        abilities: [...HUMANOID_TEMPLATE.abilities, "flamethrower", "fireball"],
+        abilities: [...HUMANOID_TEMPLATE.abilities, "flamethrower",],
         tags: [...HUMANOID_TEMPLATE.tags, "MAGICAL", "DESERT"]
     },
 
@@ -252,7 +252,7 @@ export const ENTITY_DEFINITIONS = {
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "short_sword" },
         currencyReward: { min: 4, max: 12 },
         lootTableId: "sand_stalker_drops",
-        abilities: [...HUMANOID_TEMPLATE.abilities, "dust_blind", "rending_gale"],
+        abilities: [...HUMANOID_TEMPLATE.abilities],
         tags: [...HUMANOID_TEMPLATE.tags, "DESERT", "ASSASSIN"]
     },
     
@@ -279,6 +279,47 @@ export const ENTITY_DEFINITIONS = {
         lootTableId: "miragewright_drops",
         abilities: [...HUMANOID_TEMPLATE.abilities, "flamethrower", "fireball"],
         tags: ["HUMANOID", "MAGICAL", "DESERT", "ELITE"]
+    },
+    "CALCIFIED_CRUSADER": {
+        ...HUMANOID_TEMPLATE,
+        name: "Calcified Crusader",
+        level: 1,
+        spriteOverworld: "calcifiedCrusaderSprite",
+        spritePortrait: "calcifiedCrusaderPortrait",
+        battlePortraitFramesFront: 32,
+        battlePortraitFramesBack: 32,
+        crySound: "stoneGrindSfx",
+        deathSound: "sandCollapseSfx",
+        attributes: { ...HUMANOID_TEMPLATE.attributes, vigor: 18, strength: 16, dexterity: 4, intelligence: 4, attunement: 10 },
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 60, maxStamina: 16, speed: 3, critical: 0.05,
+            baseDefense: { 
+                ...HUMANOID_TEMPLATE.baseStats.baseDefense, 
+                slash: 14, 
+                pierce: 12, 
+                blunt: 4, 
+                earth: 12, 
+                wind: -6, 
+                water: -10 
+            },
+            baseResistance: { 
+                slash: 0.4, 
+                pierce: 0.3, 
+                earth: 0.3, 
+                water: -0.6 
+            },
+            baseAttack: { slash: 10, earth: 4 }
+        },
+        equipment: { 
+            ...HUMANOID_TEMPLATE.equipment, 
+            mainHand: "sandstone_greatsword", 
+            torso: "calcified_cuirass" 
+        },
+        currencyReward: { min: 10, max: 22 },
+        lootTableId: "calcified_crusader_drops",
+        abilities: [...HUMANOID_TEMPLATE.abilities, "abrasive_stance", "dune_cleave", "stone_bulwark"],
+        tags: ["HUMANOID", "CONSTRUCT", "DESERT", "SHIFTING_SANDS", "ELITE"]
     },
 
     // -------------------------------------------------------------------------
@@ -314,7 +355,7 @@ export const ENTITY_DEFINITIONS = {
         spriteOverworld: "legionarySprite",
         spritePortrait: "wolfPortrait",
         battlePortraitFramesFront: 31,
-        battlePortraitFramesBack: 32,
+        battlePortraitFramesBack: 31,
         crySound: "wolfCry",
         deathSound: "wolfCry",
         attributes: { ...BEAST_TEMPLATE.attributes, dexterity: 16, strength: 10 },
@@ -417,6 +458,52 @@ export const ENTITY_DEFINITIONS = {
         lootTableId: "dune_maw_drops",
         abilities: [...BEAST_TEMPLATE.abilities, "bite"],
         tags: [...BEAST_TEMPLATE.tags, "DESERT"]
+    },
+    "THUNDER_LOCUST": {
+        ...BEAST_TEMPLATE,
+        name: "Thunder Locust Swarm",
+        level: 1,
+        spriteOverworld: "thunderLocustSprite",
+        spritePortrait: "thunderLocustPortrait",
+        battlePortraitFramesFront: 31,
+        battlePortraitFramesBack: 31,
+        crySound: "thunderLocustCry",
+        deathSound: "thunderLocustCry",
+        // Swarms are fragile but incredibly fast and magically attuned
+        attributes: { 
+            ...BEAST_TEMPLATE.attributes, 
+            vigor: 5, 
+            strength: 4, 
+            dexterity: 18, 
+            intelligence: 4, 
+            attunement: 16 
+        },
+        baseStats: {
+            ...BEAST_TEMPLATE.baseStats,
+            maxHp: 22, 
+            maxStamina: 25, 
+            speed: 20, 
+            critical: 0.15,
+            baseDefense: { 
+                ...BEAST_TEMPLATE.baseStats.baseDefense, 
+                lightning: 15, 
+                wind: 8, 
+                blunt: 2, 
+                earth: -6, 
+                water: -6 
+            },
+            baseResistance: { 
+                ...BEAST_TEMPLATE.baseStats.baseResistance, 
+                lightning: 0.75, 
+                wind: 0.25,
+                water: -0.5 
+            },
+            baseAttack: { pierce: 3, lightning: 9, wind: 3 }
+        },
+        currencyReward: { min: 3, max: 12 },
+        lootTableId: "thunder_locust_drops",
+        abilities: [...BEAST_TEMPLATE.abilities, "spark_swarm", "piercing_bite", "galvanize"],
+        tags: ["BIOLOGICAL", "INSECT", "SWARM", "DESERT", "MAGICAL"]
     },
 
     // -------------------------------------------------------------------------

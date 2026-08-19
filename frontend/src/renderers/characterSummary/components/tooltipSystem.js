@@ -17,18 +17,23 @@ export class TooltipSystem {
             this.loader = state.loader;
         }
 
-        const { mouse, member, filteredInventory } = state;
-        if (!mouse) return;
-
-        const mx = mouse.x;
-        const my = mouse.y;
-
         let hovered = null;
-        for (let i = hitboxes.length - 1; i >= 0; i--) {
-            const b = hitboxes[i];
-            if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) {
-                hovered = b;
-                break;
+
+        // 1. PRIORITIZE KEYBOARD STATE: Grab the actively focused hitbox ID from the controller
+        if (state && state.hoveredHitboxId) {
+            hovered = hitboxes.find(b => b.id === state.hoveredHitboxId);
+        }
+
+        // 2. FALLBACK TO MOUSE: If no active ID, check physical mouse collision
+        if (!hovered && state.mouse) {
+            const mx = state.mouse.x;
+            const my = state.mouse.y;
+            for (let i = hitboxes.length - 1; i >= 0; i--) {
+                const b = hitboxes[i];
+                if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) {
+                    hovered = b;
+                    break;
+                }
             }
         }
 
@@ -38,16 +43,19 @@ export class TooltipSystem {
         if (hovered.type === 'trait') {
             content = this._getTraitContent(hovered.id);
         } else if (hovered.type === 'inventory') {
-            const item = filteredInventory[hovered.index];
+            const item = state.filteredInventory[hovered.index];
             if (item) content = this._getItemContent(item);
         } else if (hovered.type === 'slot') {
-            const equip = (member.state && member.state.equipment) ? member.state.equipment : member.equipment;
+            const equip = (state.member.state && state.member.state.equipment) ? state.member.state.equipment : state.member.equipment;
             const item = equip ? equip[hovered.slotId] : null;
             content = this._getItemContent(item, hovered.slotId);
         }
 
         if (content) {
-            this._drawTooltip(content, mx, my);
+            // Anchor to the top-right corner of the actual slot
+            const anchorX = hovered.x + hovered.w;
+            const anchorY = hovered.y;
+            this._drawTooltip(content, anchorX, anchorY, hovered);
         }
     }
 
@@ -342,8 +350,9 @@ export class TooltipSystem {
         };
     }
 
-    _drawTooltip(content, mx, my) {
+    _drawTooltip(content, anchorX, anchorY, hoveredHitbox) {
         const { title, type, color, weight, value, level, lines } = content;
+        
         const headerFont = UITheme.fonts.cardTitle;
         const typeFont   = UITheme.fonts.cardItalic;
         const bodyFont   = UITheme.fonts.cardSmall;
@@ -352,9 +361,9 @@ export class TooltipSystem {
         this.ui.ctx.font = bodyFont;
 
         // 1. Calculate Height & Wrap Objects
-        let contentHeight = 111; 
+        let contentHeight = 111;
         const wrappedLines = [];
-
+        
         lines.forEach(rawLine => {
             if (rawLine.type === 'row') {
                 wrappedLines.push({ ...rawLine, isRow: true });
@@ -363,18 +372,18 @@ export class TooltipSystem {
                 const maxItems = Math.max(rawLine.abilities.length, rawLine.stats.length);
                 let gridHeight = 0;
                 if (maxItems > 0) {
-                    gridHeight += lineHeight; 
-                    gridHeight += (maxItems * 32); 
+                    gridHeight += lineHeight;
+                    gridHeight += (maxItems * 32);
                 }
                 wrappedLines.push({ ...rawLine });
                 contentHeight += gridHeight;
             } else if (rawLine.type === 'spacer') {
-                contentHeight += 8; 
+                contentHeight += 8;
             } else {
                 let textStr = typeof rawLine === 'string' ? rawLine : rawLine.text;
                 let f = (typeof rawLine === 'object' && rawLine.font) ? rawLine.font : bodyFont;
                 let c = (typeof rawLine === 'object' && rawLine.color) ? rawLine.color : UITheme.colors.textMain;
-
+                
                 const wLines = this.ui.getWrappedLines(textStr, this.WIDTH - (this.PADDING * 2), f);
                 wLines.forEach(l => {
                     wrappedLines.push({ text: l, font: f, color: c });
@@ -383,14 +392,29 @@ export class TooltipSystem {
             }
         });
 
-        // 2. Smart Positioning
+        // 2. Smart Dynamic Positioning
         const screenW = this.ui.ctx.canvas.width;
         const screenH = this.ui.ctx.canvas.height;
-        let tx = mx + 36;
-        let ty = my + 36;
+        
+        // Add a small gap between the slot and the tooltip
+        const gap = 16; 
+        
+        // Default: Place to the right of the slot
+        let tx = anchorX + gap;
+        let ty = anchorY;
 
-        if (tx + this.WIDTH > screenW) tx = mx - this.WIDTH - 36;
-        if (ty + contentHeight > screenH) ty = screenH - contentHeight - 24;
+        // Screen bounds check: If it overflows the right edge, flip to the left edge of the slot
+        if (tx + this.WIDTH > screenW) {
+            tx = hoveredHitbox.x - this.WIDTH - gap;
+        }
+
+        // Screen bounds check: Keep it on screen vertically
+        if (ty + contentHeight > screenH) {
+            ty = screenH - contentHeight - 24;
+        }
+        
+        // Ensure it doesn't clip the top of the screen either
+        if (ty < 24) ty = 24; 
 
         // 3. Draw Gothic Panel
         this.ui.ctx.save();
@@ -398,6 +422,7 @@ export class TooltipSystem {
         this.ui.ctx.shadowBlur = 29;
         this.ui.ctx.shadowOffsetX = 10;
         this.ui.ctx.shadowOffsetY = 10;
+        
         this.ui.drawPanel(tx, ty, this.WIDTH, contentHeight, "rgba(15, 15, 18, 0.98)");
         this.ui.ctx.restore();
 
@@ -409,15 +434,14 @@ export class TooltipSystem {
         this.ui.ctx.fillRect(tx + inset + 2, ty + inset + 2, this.WIDTH - (inset * 2) - 4, 85);
         this.ui.ctx.restore();
 
-        // 5. Draw Header Text 
+        // 5. Draw Header Text
         this.ui.drawText(title, tx + this.PADDING, ty + 46, headerFont, color, "left");
-        
         if (level !== undefined) {
             this.ui.drawText(`Lv. ${level}`, tx + this.WIDTH - this.PADDING, ty + 46, headerFont, UITheme.colors.textHighlight, "right");
         }
 
         this.ui.drawText(type, tx + this.PADDING, ty + 80, typeFont, UITheme.colors.textMuted, "left");
-
+        
         if (weight !== undefined || value !== undefined) {
             const rightMeta = [];
             if (weight !== undefined) rightMeta.push(`Wt: ${weight}`);
@@ -437,47 +461,44 @@ export class TooltipSystem {
 
         // 6. Draw Body Text & Grid Layout
         let curY = ty + 128;
-
         wrappedLines.forEach(lineObj => {
             if (lineObj.isRow) {
-                const numCols = 2; 
+                const numCols = 2;
                 const colWidth = (this.WIDTH - (this.PADDING * 2)) / numCols;
-
                 lineObj.items.forEach((item, idx) => {
                     const startX = tx + this.PADDING + (idx * colWidth);
                     let endX = startX + colWidth;
-                    if (idx < numCols - 1) endX -= 24; 
-
+                    if (idx < numCols - 1) endX -= 24;
+                    
                     this.ui.drawText(item.label, startX, curY, bodyFont, item.color || UITheme.colors.textMuted, "left");
                     this.ui.drawText(item.val.toString(), endX, curY, bodyFont, item.color || UITheme.colors.textMain, "right");
                 });
                 curY += lineHeight;
-
+                
             } else if (lineObj.type === 'split-grid') {
                 const colWidth = (this.WIDTH - (this.PADDING * 2)) / 2;
                 const leftStart = tx + this.PADDING;
                 const rightStart = leftStart + colWidth;
-                const leftEnd = rightStart - 24; 
-
+                const leftEnd = rightStart - 24;
+                
                 if (lineObj.stats.length > 0 || lineObj.abilities.length > 0) {
                     if (lineObj.stats.length > 0) this.ui.drawText("Stats", leftStart, curY, typeFont, UITheme.colors.textMuted, "left");
                     if (lineObj.abilities.length > 0) this.ui.drawText("Abilities", rightStart, curY, typeFont, UITheme.colors.textMuted, "left");
                     curY += lineHeight;
                 }
-
+                
                 const maxRows = Math.max(lineObj.stats.length, lineObj.abilities.length);
                 const rowHeight = 32;
-
+                
                 for (let i = 0; i < maxRows; i++) {
                     const st = lineObj.stats[i];
                     const ab = lineObj.abilities[i];
                     const itemY = curY;
-
+                    
                     if (st) {
                         this.ui.drawText(st.label, leftStart, itemY, bodyFont, st.color || UITheme.colors.textMuted, "left");
                         this.ui.drawText(st.val.toString(), leftEnd, itemY, bodyFont, st.color || UITheme.colors.textMain, "right");
                     }
-
                     if (ab) {
                         let textX = rightStart;
                         const drawSize = 24;
@@ -493,10 +514,8 @@ export class TooltipSystem {
                         }
                         this.ui.drawText(ab.name, textX, itemY, bodyFont, ab.color, "left");
                     }
-
                     curY += rowHeight;
                 }
-
             } else if (lineObj.text) {
                 this.ui.ctx.font = lineObj.font || bodyFont;
                 this.ui.drawText(lineObj.text, tx + this.PADDING, curY, lineObj.font || bodyFont, lineObj.color || UITheme.colors.textMain, "left");

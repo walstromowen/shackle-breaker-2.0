@@ -18,7 +18,7 @@ export class JournalRenderer {
         const h = ctx.canvas.height;
         
         ui.clearScreen(w, h);
-        
+
         const { p, startY } = state.layout;
         const panelHeight = h - (startY * 2);
         const halfW = Math.floor(w / 2);
@@ -40,10 +40,10 @@ export class JournalRenderer {
         this._renderQuestList(ui, state, leftColX, listYBase, colW, listHeight);
 
         // 4. Right Column: Details
-        if (state.selectedQuestId) {
+        if (state.displayQuestId) {
             this._renderQuestDetails(ui, state, rightColX, startY, colW, panelHeight);
         } else {
-            ui.drawText("Select a quest to view the chronicle.", rightColX + (colW / 2), startY + (panelHeight / 2), UITheme.fonts.italic, UITheme.colors.textMuted, "center");
+            ui.drawText("Select or hover a quest to view details.", rightColX + (colW / 2), startY + (panelHeight / 2), UITheme.fonts.italic, UITheme.colors.textMuted, "center");
         }
     }
 
@@ -51,18 +51,34 @@ export class JournalRenderer {
         const activeBox = state.hitboxes.find(h => h.id === 'tab_active');
         const completedBox = state.hitboxes.find(h => h.id === 'tab_completed');
 
+        // Draw Active Tab
         if (activeBox) {
             const isHovered = state.hoveredHitboxId === 'tab_active';
             const isActive = state.activeTab === 'active';
-            ui.drawInteractiveRow(activeBox.x, activeBox.y, activeBox.w, activeBox.h, "Active Quests", UITheme.fonts.body, "center", isActive, isHovered);
+            
+            // Pass 'false' for isActive so it ONLY lights up when hovered/focused
+            ui.drawInteractiveRow(activeBox.x, activeBox.y, activeBox.w, activeBox.h, "Active Quests", UITheme.fonts.body, "center", false, isHovered);
+            
+            // Brackets indicate SELECTION
+            if (isActive) {
+                ui.drawSelectionBrackets(activeBox.x, activeBox.y, activeBox.w, activeBox.h, 10);
+            }
         }
-
+        
+        // Draw Completed Tab
         if (completedBox) {
             const isHovered = state.hoveredHitboxId === 'tab_completed';
             const isActive = state.activeTab === 'completed';
-            ui.drawInteractiveRow(completedBox.x, completedBox.y, completedBox.w, completedBox.h, "Chronicle", UITheme.fonts.body, "center", isActive, isHovered);
+            
+            // Pass 'false' for isActive so it ONLY lights up when hovered/focused
+            ui.drawInteractiveRow(completedBox.x, completedBox.y, completedBox.w, completedBox.h, "Chronicle", UITheme.fonts.body, "center", false, isHovered);
+            
+            // Brackets indicate SELECTION
+            if (isActive) {
+                ui.drawSelectionBrackets(completedBox.x, completedBox.y, completedBox.w, completedBox.h, 10);
+            }
         }
-        
+
         const refBox = activeBox || completedBox;
         if (refBox) {
             ui.drawLineWithGothicFlourish(x + (w / 4), refBox.y + refBox.h + 16, w / 2, UITheme.colors.borderHighlight);
@@ -71,7 +87,6 @@ export class JournalRenderer {
 
     _renderQuestList(ui, state, x, y, w, h) {
         ui.startClip(x, y, w, h);
-        
         const scrollOffset = state.scrollOffset;
         let currentY = 0;
         const rowHeight = state.layout.rowHeight;
@@ -88,22 +103,24 @@ export class JournalRenderer {
             const drawY = y + currentY - scrollOffset;
             const isSelected = state.selectedQuestId === qId;
             const isHovered = state.hoveredHitboxId === `quest_sel_${qId}`;
-            
+
             const itemX = x + 16;
-            const itemW = w - 40; // Reduced to leave breathing room for the scrollbar
+            const itemW = w - 40; 
             const itemH = rowHeight - 8;
 
-            ui.drawInteractiveRow(itemX, drawY, itemW, itemH, def.name, UITheme.fonts.body, "left", isSelected, isHovered);
-
+            // FOCUS: Pass 'false' to the selected argument. It will now ONLY light up when isHovered is true.
+            ui.drawInteractiveRow(itemX, drawY, itemW, itemH, def.name, UITheme.fonts.body, "left", false, isHovered);
+            
+            // SELECTION: Brackets lock onto the active quest you are viewing
             if (isSelected) {
                 ui.drawSelectionBrackets(itemX, drawY, itemW, itemH, 10);
-            }
+            } 
 
+            // Draw status icons
             if (state.activeTab === 'active') {
                 const isComplete = QuestModel.checkCompletion(state, qId);
                 const isTracked = state.trackedIds && state.trackedIds.includes(qId);
-
-                // Checkmark for complete, Gold Star for tracked
+                
                 if (isComplete) {
                     ui.drawText("✓", itemX + itemW - 16, drawY + (itemH / 2), UITheme.fonts.body, UITheme.colors.success, "center", "middle");
                 } else if (isTracked) {
@@ -112,10 +129,9 @@ export class JournalRenderer {
             } else if (state.activeTab === 'completed') {
                 ui.drawText("✓", itemX + itemW - 16, drawY + (itemH / 2), UITheme.fonts.body, UITheme.colors.textMuted, "center", "middle");
             }
-
+            
             currentY += rowHeight;
         });
-        
         ui.endClip();
 
         // Scrollbar rendering
@@ -129,10 +145,9 @@ export class JournalRenderer {
     }
 
     _renderQuestDetails(ui, state, x, y, w, h) {
-        const def = state.definitions[state.selectedQuestId];
+        const def = state.definitions[state.displayQuestId];
         if (!def) return;
 
-        // Start clip to ensure long text never overlaps UI borders
         ui.startClip(x, y, w, h);
 
         const centerX = x + (w / 2);
@@ -148,11 +163,9 @@ export class JournalRenderer {
         const padding = 32;
         const descStartX = x + padding;
         const descW = w - (padding * 2);
-
-        ui.drawWrappedText(def.description, descStartX, currentY, descW, 36, UITheme.fonts.body, UITheme.colors.textMuted);
         
-        // Calculate dynamic height for description based on average char width
-        const charsPerLine = Math.max(10, Math.floor(descW / 14)); 
+        ui.drawWrappedText(def.description, descStartX, currentY, descW, 36, UITheme.fonts.body, UITheme.colors.textMuted);
+        const charsPerLine = Math.max(10, Math.floor(descW / 14));
         const lines = Math.ceil(def.description.length / charsPerLine);
         currentY += (lines * 36) + 30;
 
@@ -162,7 +175,8 @@ export class JournalRenderer {
         ui.drawLineWithGothicFlourish(descStartX, currentY, descW, UITheme.colors.borderHighlight);
         currentY += 35;
 
-        const questState = state.quests.active[state.selectedQuestId];
+        const questState = state.quests.active[state.displayQuestId];
+
         def.objectives.forEach(obj => {
             const progress = questState ? (questState.progress[obj.id] || 0) : (obj.amount || 1);
             const req = obj.amount || 1;
@@ -170,20 +184,21 @@ export class JournalRenderer {
 
             let actionText = "Objective";
             let targetText = obj.targetId;
-            
+
             if (obj.type === 'kill_enemy') actionText = "Defeat";
             if (obj.type === 'obtain_item') actionText = "Collect";
-            if (obj.type === 'party_level') {
-                actionText = "Reach Level";
-                targetText = obj.targetLevel;
+            if (obj.type === 'party_level') { 
+                actionText = "Reach Level"; 
+                targetText = obj.targetLevel; 
             }
+
             if (typeof targetText === 'string') {
                 targetText = Formatting.capitalize(targetText.split('_').join(' '));
             }
 
             const color = isDone ? UITheme.colors.success : UITheme.colors.textMain;
             const checkbox = isDone ? "[X]" : "[ ]";
-            
+
             ui.drawText(`${checkbox}  ${actionText} ${targetText}`, descStartX + 8, currentY, UITheme.fonts.body, color, "left");
             ui.drawText(`${progress} / ${req}`, descStartX + descW - 8, currentY, UITheme.fonts.mono, color, "right");
             currentY += 40;
@@ -198,62 +213,50 @@ export class JournalRenderer {
         currentY += 30;
 
         this._renderRewardsList(ui, def, descStartX, currentY, descW);
-
-        // End clip BEFORE the dynamically placed layout buttons at the bottom 
         ui.endClip();
 
-        // Collect Button
+        // Action Buttons
         const btnBox = state.hitboxes.find(box => box.id === `btn_collect_${state.selectedQuestId}`);
         if (btnBox) {
             const isHovered = state.hoveredHitboxId === btnBox.id;
+            // FOCUS: Brightens the background via UITheme.colors.states.focusBg
             let bg = isHovered ? UITheme.colors.states.focusBg : "rgba(0,0,0,0.6)";
             let textCol = isHovered ? UITheme.colors.states.focusText : UITheme.colors.success;
 
             ui.drawPanel(btnBox.x, btnBox.y, btnBox.w, btnBox.h, bg);
             ui.drawText("COLLECT", btnBox.x + (btnBox.w / 2), btnBox.y + (btnBox.h / 2) + 6, UITheme.fonts.body, textCol, "center", "middle");
-            if (isHovered) {
-                ui.drawSelectionBrackets(btnBox.x, btnBox.y, btnBox.w, btnBox.h, 10);
-            }
+            // (Removed brackets from buttons since they are immediate actions, not selected states)
         }
 
-        // Track/Untrack Button
         const trackBtnBox = state.hitboxes.find(box => box.id === `btn_track_${state.selectedQuestId}`);
         if (trackBtnBox) {
             const isHovered = state.hoveredHitboxId === trackBtnBox.id;
             const isTracked = state.trackedIds && state.trackedIds.includes(state.selectedQuestId);
+            
+            // FOCUS: Brightens the background via UITheme.colors.states.focusBg
             let bg = isHovered ? UITheme.colors.states.focusBg : "rgba(0,0,0,0.6)";
             let textCol = isHovered ? UITheme.colors.states.focusText : (isTracked ? UITheme.colors.textHighlight : UITheme.colors.textMuted);
-            
-            // Removed the stars and changed to UNTRACK to match the exact character width of "COLLECT"
             let text = isTracked ? "UNTRACK" : "TRACK";
 
             ui.drawPanel(trackBtnBox.x, trackBtnBox.y, trackBtnBox.w, trackBtnBox.h, bg);
             ui.drawText(text, trackBtnBox.x + (trackBtnBox.w / 2), trackBtnBox.y + (trackBtnBox.h / 2) + 6, UITheme.fonts.body, textCol, "center", "middle");
-            
-            if (isHovered) {
-                // Changed bracket size from 8 to 10 to perfectly match the Collect button
-                ui.drawSelectionBrackets(trackBtnBox.x, trackBtnBox.y, trackBtnBox.w, trackBtnBox.h, 10);
-            }
+            // (Removed brackets from buttons since they are immediate actions, not selected states)
         }
     }
 
     _renderRewardsList(ui, def, startX, startY, width) {
         let currentY = startY;
-        const iconSize = 48; // Compacted slightly to fit the UI better
-        const rowHeight = 64; 
+        const iconSize = 48;
+        const rowHeight = 64;
         const sheet = this.loader.get(this.iconSheetId);
 
         const drawRewardRow = (label, amountText, customDraw = null) => {
             ui.drawPanel(startX, currentY, width, rowHeight, "rgba(0,0,0,0.4)");
             ui.drawPanel(startX + 8, currentY + 8, iconSize, iconSize, "rgba(0,0,0,0.6)");
-            
-            if (customDraw) {
-                customDraw(startX + 8, currentY + 8, iconSize);
-            }
+            if (customDraw) customDraw(startX + 8, currentY + 8, iconSize);
             
             ui.drawText(label, startX + iconSize + 24, currentY + (rowHeight / 2) + 6, UITheme.fonts.body, UITheme.colors.textMain, "left");
             ui.drawText(amountText, startX + width - 16, currentY + (rowHeight / 2) + 6, UITheme.fonts.mono, UITheme.colors.textHighlight, "right");
-            
             currentY += rowHeight + 12;
         };
 
@@ -264,13 +267,11 @@ export class JournalRenderer {
                 ui.drawText("XP", ix + s / 2, iy + s / 2 + 6, UITheme.fonts.bold, UITheme.colors.xp, "center");
             });
         }
-
         if (def.rewards.currency) {
             drawRewardRow("Gold", `+${def.rewards.currency}`, (ix, iy, s) => {
                 ui.drawText("$", ix + s / 2, iy + s / 2 + 6, UITheme.fonts.bold, UITheme.colors.textHighlight, "center");
             });
         }
-
         if (def.rewards.items) {
             def.rewards.items.forEach(reqItem => {
                 const itemDef = ItemDefinitions ? ItemDefinitions[reqItem.id] : null;
@@ -283,7 +284,6 @@ export class JournalRenderer {
                 });
             });
         }
-
         if (def.rewards.companions) {
             def.rewards.companions.forEach(comp => {
                 const entDef = ENTITY_DEFINITIONS ? ENTITY_DEFINITIONS[comp.id] : null;
@@ -317,10 +317,10 @@ export class JournalRenderer {
         } else if (type === 'material') {
             sheetName = 'materials';
         }
-
+        
         const sheet = this.loader.get(sheetName) || this.loader.get('items') || this.loader.get('icons');
         if (!sheet) return false;
-
+        
         const iconData = def.icon || { col: 0, row: 0 };
         const ICON_SIZE = 32;
         const srcX = (iconData.col * ICON_SIZE);

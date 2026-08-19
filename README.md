@@ -152,6 +152,13 @@ Rooth
 ├── package.json
 └── README.md
 
+
+selection - brackets
+focused - lightup
+
+selected but not focused brackets no lightup
+
+
 "We are using an Input Handling Pipeline for a game engine. The architecture follows a strict flow: Input.js (raw events) → SceneManager.js (mediator/router) → UIInteractionManager.js (semantic translator) → BaseController.js (logic consumer).
 
 Core Architectural Rules:

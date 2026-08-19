@@ -4,19 +4,26 @@ import { events } from '../../core/eventBus.js';
 import { DragAndDropManager } from '../../ui/dragAndDropManager.js';
 import { ScrollManager } from '../../ui/scrollManager.js';
 import { ContextMenuManager } from '../../ui/contextMenuManager.js';
-import { CharacterSummaryLogic } from './characterSummaryLogic.js';
 import { ItemUpgradeSystem } from '../../../../shared/systems/itemUpgradeSystem.js';
 
 const KEY_BINDINGS = {
-    'ArrowUp': 'UP', 'KeyW': 'UP',
-    'ArrowDown': 'DOWN', 'KeyS': 'DOWN',
-    'ArrowLeft': 'LEFT', 'KeyA': 'LEFT',
-    'ArrowRight': 'RIGHT', 'KeyD': 'RIGHT',
-    'Enter': 'CONFIRM', 'Space': 'CONFIRM',
-    'Escape': 'CANCEL', 'Backspace': 'CANCEL',
-    'KeyQ': 'PREV_CHAR', 'KeyE': 'NEXT_CHAR',
+    'ArrowUp': 'UP',
+    'KeyW': 'UP',
+    'ArrowDown': 'DOWN',
+    'KeyS': 'DOWN',
+    'ArrowLeft': 'LEFT',
+    'KeyA': 'LEFT',
+    'ArrowRight': 'RIGHT',
+    'KeyD': 'RIGHT',
+    'Enter': 'CONFIRM',
+    'Space': 'CONFIRM',
+    'Escape': 'CANCEL',
+    'Backspace': 'CANCEL',
+    'KeyQ': 'PREV_CHAR',
+    'KeyE': 'NEXT_CHAR',
     'KeyV': 'TOGGLE_VIEW',
-    'KeyX': 'DELETE', 'Delete': 'DELETE'
+    'KeyX': 'DELETE',
+    'Delete': 'DELETE'
 };
 
 export class CharacterSummaryController extends BaseController {
@@ -24,6 +31,7 @@ export class CharacterSummaryController extends BaseController {
         super(input, data);
         this.config = data || {};
         this.returnScene = this.config.returnScene || 'party';
+        this.inputMode = 'mouse';
 
         // Initialize Core Logic
         this.logic = new CharacterSummaryLogic(this.config);
@@ -41,19 +49,23 @@ export class CharacterSummaryController extends BaseController {
         this.detailsScrollOffset = 0;
         this.inventoryScrollOffset = 0;
         this.wasMouseDown = false;
-
+        
         this.layout = {
-            detailMaxScroll: 0, detailViewportH: 300,
-            abilitiesMaxScroll: 0, abilitiesViewportH: 300,
-            inventoryMaxScroll: 0, inventoryViewportH: 300,
-            inventoryBounds: null, detailBounds: null, abilitiesBounds: null,
+            detailMaxScroll: 0,
+            detailViewportH: 300,
+            abilitiesMaxScroll: 0,
+            abilitiesViewportH: 300,
+            inventoryMaxScroll: 0,
+            inventoryViewportH: 300,
+            inventoryBounds: null,
+            detailBounds: null,
+            abilitiesBounds: null,
             itemHeight: 48
         };
 
         // Initialize Managers
         this.dragAndDropManager = new DragAndDropManager();
         this.scrollManager = new ScrollManager();
-        
         this.contextMenuManager = new ContextMenuManager({
             onAction: (actionId, payload) => this.executeMenuAction(actionId, payload)
         });
@@ -78,7 +90,9 @@ export class CharacterSummaryController extends BaseController {
             maxScroll: this.layout.inventoryMaxScroll,
             viewportH: this.layout.inventoryViewportH,
             thumbIds: ['INV_SCROLLBAR_THUMB'],
-            onChange: (newOffset) => { this.inventoryScrollOffset = newOffset; }
+            onChange: (newOffset) => {
+                this.inventoryScrollOffset = newOffset;
+            }
         });
 
         const isAbilities = this.viewMode === 'ABILITIES';
@@ -87,7 +101,9 @@ export class CharacterSummaryController extends BaseController {
             maxScroll: isAbilities ? this.layout.abilitiesMaxScroll : this.layout.detailMaxScroll,
             viewportH: isAbilities ? this.layout.abilitiesViewportH : this.layout.detailViewportH,
             thumbIds: ['SCROLLBAR_THUMB', 'ABILITIES_SCROLLBAR_THUMB'],
-            onChange: (newOffset) => { this.detailsScrollOffset = newOffset; }
+            onChange: (newOffset) => {
+                this.detailsScrollOffset = newOffset;
+            }
         });
     }
 
@@ -97,13 +113,11 @@ export class CharacterSummaryController extends BaseController {
             'BTN_NEXT_CHAR': () => this.cycleMember(1),
             'BTN_BACK': () => this._handleBack(),
             'BTN_UNEQUIP': () => this.unequipCurrentSlot(),
-            
             // Text Editing Trigger
             'BTN_EDIT_NAME': () => {
                 this.logic.startNameEdit();
                 this.playConfirmSound();
             },
-
             // Tabs
             'TAB_STATS': () => this.setViewMode('STATS'),
             'BTN_TAB_STATS': () => this.setViewMode('STATS'),
@@ -113,9 +127,39 @@ export class CharacterSummaryController extends BaseController {
             'BTN_TAB_ABILITIES': () => this.setViewMode('ABILITIES'),
         };
     }
+    
+    _validateIndices() {
+        // Clamp Equipment Slots
+        if (this.slotIndex >= this.activeSlots.length) {
+            this.slotIndex = Math.max(0, this.activeSlots.length - 1);
+            if (this.activeSlots.length === 0) this.slotIndex = -1;
+        }
+
+        // Clamp Inventory
+        if (this.inventoryIndex >= this.filteredInventory.length) {
+            this.inventoryIndex = Math.max(0, this.filteredInventory.length - 1);
+            if (this.filteredInventory.length === 0) this.inventoryIndex = -1;
+        }
+
+        // AUTO-SWITCH FOCUS: If the active panel is empty but the other is not
+        if (this.state === 'INVENTORY' && this.inventoryIndex === -1 && this.activeSlots.length > 0) {
+            this.state = 'SLOTS';
+            this.slotIndex = 0;
+        } else if (this.state === 'SLOTS' && this.slotIndex === -1 && this.filteredInventory.length > 0) {
+            this.state = 'INVENTORY';
+            this.inventoryIndex = 0;
+        }
+
+        this._syncScrollZones();
+    }
 
     onHover(hitboxId) {
         super.onHover(hitboxId);
+        
+        // 1. Ignore resting mouse if using keyboard
+        if (this.inputMode === 'keyboard') return;
+        
+        // 2. Ignore if dragging or menu is open
         if (this.dragAndDropManager.dragState.active || this.contextMenuManager.menu) return;
 
         if (hitboxId) {
@@ -134,11 +178,19 @@ export class CharacterSummaryController extends BaseController {
                     this.state = 'INVENTORY';
                     this.slotIndex = -1;
                 }
+            } else {
+                this.slotIndex = -1;
+                this.inventoryIndex = -1;
             }
+        } else {
+            this.slotIndex = -1;
+            this.inventoryIndex = -1;
         }
     }
 
     onClick(hitboxId, fromKeyboard = false) {
+        this.inputMode = 'mouse'; // Aggressive wake up
+
         // If clicking anywhere else while editing the name, attempt to save
         if (this.logic.isEditingName && hitboxId !== 'BTN_EDIT_NAME') {
             if (this.logic.validateName()) {
@@ -160,11 +212,13 @@ export class CharacterSummaryController extends BaseController {
         if (this.contextMenuManager.menu) {
             if (hitboxId.startsWith('CTX_OPT_')) {
                 const optIndex = parseInt(hitboxId.split('_')[2], 10);
-                this.playConfirmSound(); 
+                this.playConfirmSound();
                 this.contextMenuManager.executeAction(optIndex);
                 return;
             }
             this.contextMenuManager.close();
+            this.playCancelSound();
+            return;
         }
 
         if (this.handlers && this.handlers[hitboxId]) {
@@ -193,7 +247,6 @@ export class CharacterSummaryController extends BaseController {
             if (options.length > 0) {
                 let menuX = this.mouse.x;
                 let menuY = this.mouse.y;
-
                 if (this.lastRenderedHitboxes) {
                     const hit = this.lastRenderedHitboxes.find(h => h.id === hitboxId);
                     if (hit) {
@@ -201,10 +254,9 @@ export class CharacterSummaryController extends BaseController {
                         menuY = Math.floor(hit.y);
                     }
                 }
-
                 this.contextMenuManager.open(menuX, menuY, options, { item, source, sourceKey });
-                this.playConfirmSound(); 
-                
+                this.playConfirmSound();
+
                 if (!fromKeyboard && this.contextMenuManager.menu) {
                     this.contextMenuManager.menu.selectedIndex = -1;
                 }
@@ -213,6 +265,7 @@ export class CharacterSummaryController extends BaseController {
     }
 
     onRightClick(hitboxId) {
+        this.inputMode = 'mouse';
         if (this.logic.isEditingName) {
             if (this.logic.validateName()) this.playConfirmSound();
             return;
@@ -227,6 +280,7 @@ export class CharacterSummaryController extends BaseController {
     }
 
     onDragStart(hitboxId) {
+        this.inputMode = 'mouse';
         if (!hitboxId || this.contextMenuManager.menu || this.logic.isEditingName) return;
 
         if (hitboxId.includes('SCROLLBAR_THUMB')) {
@@ -234,37 +288,34 @@ export class CharacterSummaryController extends BaseController {
             return;
         }
 
-        // ---> FIX: Prevent dragging if we are in battle or read-only mode
         const isBattle = typeof this.config.onItemSelected === 'function';
-        if (this.logic.readOnly || isBattle) return; 
+        if (this.logic.readOnly || isBattle) return;
 
         if (hitboxId.startsWith('SLOT_')) {
             const slotName = hitboxId.replace('SLOT_', '');
             const item = this.currentMember.equipment[slotName];
-
             if (item) {
                 this.slotIndex = this.activeSlots.indexOf(slotName);
                 this.state = 'SLOTS';
                 this.inventoryIndex = -1;
                 events.emit('PLAY_SFX', { id: 'ui_drag_start', volume: 0.5 });
                 this.dragAndDropManager.startDrag(
-                    item, 'equipment', slotName, 
-                    this.mouse.x, this.mouse.y, 
+                    item, 'equipment', slotName,
+                    this.mouse.x, this.mouse.y,
                     this.handleItemDropped.bind(this)
                 );
             }
         } else if (hitboxId.startsWith('INV_ITEM_')) {
             const idx = parseInt(hitboxId.split('_')[2], 10);
             const item = this.filteredInventory[idx];
-
             if (item) {
                 this.inventoryIndex = idx;
                 this.state = 'INVENTORY';
                 this.slotIndex = -1;
                 events.emit('PLAY_SFX', { id: 'ui_drag_start', volume: 0.5 });
                 this.dragAndDropManager.startDrag(
-                    item, 'inventory', idx, 
-                    this.mouse.x, this.mouse.y, 
+                    item, 'inventory', idx,
+                    this.mouse.x, this.mouse.y,
                     this.handleItemDropped.bind(this)
                 );
             }
@@ -298,6 +349,7 @@ export class CharacterSummaryController extends BaseController {
             if (item.usable || item.type === 'consumable') {
                 options.push({ label: 'Use', actionId: 'USE' });
             }
+
             if (!this.logic.readOnly) {
                 if (source === 'equipment') {
                     if (this.filteredInventory.length > 0) options.push({ label: 'Swap', actionId: 'NAV_TO_INV' });
@@ -308,9 +360,11 @@ export class CharacterSummaryController extends BaseController {
                         options.push({ label: 'Equip', actionId: 'EQUIP' });
                     }
                 }
+                
                 if (ItemUpgradeSystem.canUpgrade(item)) {
                     options.push({ label: 'Upgrade', actionId: 'UPGRADE' });
                 }
+
                 if (isStackable) {
                     options.push({ label: 'Drop 1', actionId: 'DROP_ONE' });
                     options.push({ label: 'Drop All', actionId: 'DROP_ALL' });
@@ -372,22 +426,21 @@ export class CharacterSummaryController extends BaseController {
         this.updateFilteredInventory();
     }
 
-    // --- UPDATED SIGNATURE TO ACCEPT RAW EVENT ---
     handleKeyDown(code, e) {
-        // Raw event intercept for text input
+        super.handleKeyDown(code, e);
+        this.inputMode = 'keyboard'; // Switch to keyboard control
+
         if (this.logic.isEditingName && e) {
             if (e.code === "Enter" || e.code === "Escape") {
                 this.logic.validateName();
                 this.playConfirmSound();
             } else {
                 this.logic.nameInput.handleEvent(e);
-                
-                // --- MIRROR CREATOR: LIVE SYNC ---
-                // Update the actual member data so the UI reflects keystrokes instantly
                 this.currentMember.name = this.logic.nameInput.value;
             }
             return;
         }
+
         const intent = KEY_BINDINGS[code] || KEY_BINDINGS[e?.code];
         if (!intent) return;
 
@@ -401,15 +454,15 @@ export class CharacterSummaryController extends BaseController {
         if (intent === 'NEXT_CHAR') return this.cycleMember(1);
 
         if (intent === 'TOGGLE_VIEW') {
-            this.playNavSound(); 
+            this.playNavSound();
             if (this.viewMode === 'STATS') this.viewMode = 'ITEM';
             else if (this.viewMode === 'ITEM') this.viewMode = 'ABILITIES';
             else this.viewMode = 'STATS';
-            
             this.setViewMode(this.viewMode);
             return;
         }
 
+        // Route grid navigation
         if (this.state === 'SLOTS') {
             this.handleSlotNavigation(intent);
         } else {
@@ -420,10 +473,11 @@ export class CharacterSummaryController extends BaseController {
     _handleBack() {
         if (this.dragAndDropManager.dragState.active) {
             this.dragAndDropManager.cancelDrag();
-            this.playCancelSound(); 
+            this.playCancelSound();
             return;
         }
-        this.playCancelSound(); 
+
+        this.playCancelSound();
         if (this.state === 'INVENTORY') {
             this.state = 'SLOTS';
             this.inventoryIndex = -1;
@@ -433,15 +487,48 @@ export class CharacterSummaryController extends BaseController {
         }
     }
 
+    _jumpToPanel(targetPanel) {
+        this.playNavSound();
+        this.state = targetPanel;
+        this.hoveredHitboxId = null;
+
+        if (targetPanel === 'INVENTORY') {
+            if (this.inventoryIndex === -1) this.inventoryIndex = 0;
+            this.slotIndex = -1;
+            this.scrollToItem(this.inventoryIndex);
+        } else {
+            if (this.slotIndex === -1) this.slotIndex = 0;
+            this.inventoryIndex = -1;
+        }
+    }
+
     handleSlotNavigation(intent) {
+        if (this.activeSlots.length === 0) return;
+        
+        // Recover focus
+        if (this.slotIndex === -1) {
+            this.slotIndex = 0;
+            this.playNavSound();
+            return;
+        }
+
         const oldIndex = this.slotIndex;
+
         if (intent === 'UP') {
             this.slotIndex = (this.slotIndex > 0) ? this.slotIndex - 1 : this.activeSlots.length - 1;
         } else if (intent === 'DOWN') {
             this.slotIndex = (this.slotIndex < this.activeSlots.length - 1) ? this.slotIndex + 1 : 0;
+        } else if (intent === 'RIGHT') {
+            if (this.filteredInventory.length > 0) {
+                this._jumpToPanel('INVENTORY');
+            }
+            return;
         }
 
-        if (this.slotIndex !== oldIndex) this.playNavSound(); 
+        if (this.slotIndex !== oldIndex) {
+            this.playNavSound();
+            this.hoveredHitboxId = null; // Clear mouse focus
+        }
 
         if (intent === 'CONFIRM') {
             const slotName = this.activeSlots[this.slotIndex];
@@ -453,28 +540,48 @@ export class CharacterSummaryController extends BaseController {
                 this._activateSlotButDontFilter(slotName);
             }
         } else if (intent === 'DELETE') {
-            this.playCancelSound(); 
+            this.playCancelSound();
             this.unequipCurrentSlot();
         }
     }
 
     handleInventoryNavigation(intent) {
         if (this.filteredInventory.length === 0) return;
+
+        // Recover focus
+        if (this.inventoryIndex === -1) {
+            this.inventoryIndex = 0;
+            this.playNavSound();
+            return;
+        }
+
         const maxIndex = this.filteredInventory.length - 1;
         const oldIndex = this.inventoryIndex;
+        const col = this.inventoryIndex % this.COLS;
 
         if (intent === 'UP') {
             this.inventoryIndex = Math.max(0, this.inventoryIndex - this.COLS);
         } else if (intent === 'DOWN') {
             this.inventoryIndex = Math.min(maxIndex, this.inventoryIndex + this.COLS);
         } else if (intent === 'LEFT') {
-            this.inventoryIndex = Math.max(0, this.inventoryIndex - 1);
+            if (col === 0 && this.activeSlots.length > 0) {
+                this._jumpToPanel('SLOTS');
+                return;
+            } else {
+                this.inventoryIndex = Math.max(0, this.inventoryIndex - 1);
+            }
         } else if (intent === 'RIGHT') {
-            this.inventoryIndex = Math.min(maxIndex, this.inventoryIndex + 1);
+            if (col === this.COLS - 1 || this.inventoryIndex === maxIndex) {
+                if (this.activeSlots.length > 0) this._jumpToPanel('SLOTS');
+                return;
+            } else {
+                this.inventoryIndex = Math.min(maxIndex, this.inventoryIndex + 1);
+            }
         }
 
         if (this.inventoryIndex !== oldIndex) {
-            this.playNavSound(); 
+            this.playNavSound();
+            this.hoveredHitboxId = null; // Clear mouse focus
             if (['UP', 'DOWN', 'LEFT', 'RIGHT'].includes(intent)) {
                 this.scrollToItem(this.inventoryIndex, false);
             }
@@ -485,7 +592,6 @@ export class CharacterSummaryController extends BaseController {
             if (item) {
                 this.onClick(`INV_ITEM_${this.inventoryIndex}`, true);
             }
-            return;
         }
     }
 
@@ -508,6 +614,7 @@ export class CharacterSummaryController extends BaseController {
     }
 
     handleScroll(delta) {
+        this.inputMode = 'mouse';
         this.scrollManager.handleScrollWheel(this.mouse.x, this.mouse.y, delta);
     }
 
@@ -529,13 +636,11 @@ export class CharacterSummaryController extends BaseController {
     }
 
     cycleMember(direction) {
-        // Save name state if cycling via keyboard bindings
         if (this.logic.isEditingName) {
             this.logic.validateName();
         }
-
         if (this.logic.cycleMember(direction)) {
-            this.playNavSound(); 
+            this.playNavSound();
             this.state = 'SLOTS';
             this.contextMenuManager.close();
             this.inventoryIndex = -1;
@@ -581,7 +686,6 @@ export class CharacterSummaryController extends BaseController {
 
     handleInventoryClick(idx) {
         if (isNaN(idx) || idx >= this.filteredInventory.length) return;
-
         if (this.dragAndDropManager.dragState.active) {
             this.dragAndDropManager.endDrag('INV_ZONE');
             return;
@@ -605,7 +709,6 @@ export class CharacterSummaryController extends BaseController {
     updateFilteredInventory() {
         const draggingItem = this.dragAndDropManager.dragState.active ? this.dragAndDropManager.dragState.payload : null;
         const draggingSource = this.dragAndDropManager.dragState.active ? this.dragAndDropManager.dragState.sourceId : null;
-
         this.filteredInventory = this.logic.getFilteredInventory(draggingItem, draggingSource);
         
         if (this.inventoryIndex >= this.filteredInventory.length) {
@@ -614,24 +717,24 @@ export class CharacterSummaryController extends BaseController {
         if (this.filteredInventory.length === 0) {
             this.inventoryIndex = -1;
         }
-
+        
         const ROW_H = this.layout.itemHeight || 48;
         const VIEW_H = this.layout.inventoryViewportH || 300;
         const totalRows = Math.ceil(this.filteredInventory.length / this.COLS);
         const contentHeight = totalRows * ROW_H;
-
         this.layout.inventoryMaxScroll = Math.max(0, contentHeight - VIEW_H);
+        
         this._syncScrollZones();
         this.scrollManager.setOffset('inventory', this.inventoryScrollOffset);
+        
+        // Ensure indices are solid after inventory updates
+        this._validateIndices();
     }
 
     equipItem(inventoryItem, targetSlotOverride = null) {
-        // ---> FIX: Prevent equip actions in battle
         const isBattle = typeof this.config.onItemSelected === 'function';
         if (this.logic.readOnly || isBattle) return;
-
         const equippedSlotName = this.logic.equipItem(inventoryItem, targetSlotOverride, this.activeSlots);
-        
         if (equippedSlotName) {
             const newSlotIndex = this.activeSlots.indexOf(equippedSlotName);
             if (newSlotIndex !== -1) {
@@ -644,13 +747,10 @@ export class CharacterSummaryController extends BaseController {
     }
 
     unequipCurrentSlot() {
-        // ---> FIX: Prevent unequip actions in battle
         const isBattle = typeof this.config.onItemSelected === 'function';
         if (this.logic.readOnly || isBattle || this.slotIndex === -1) return;
-
         const slotName = this.activeSlots[this.slotIndex];
         const didUnequip = this.logic.unequipSlot(slotName);
-        
         if (didUnequip) {
             this.state = 'SLOTS';
             this.inventoryIndex = -1;
@@ -685,11 +785,20 @@ export class CharacterSummaryController extends BaseController {
         if (this.dragAndDropManager.dragState.active) {
             const dragSource = this.dragAndDropManager.dragState.sourceId;
             const origin = this.dragAndDropManager.dragState.originSlot;
-            
             if (dragSource === 'equipment' && this.activeSlots[viewSelectedSlot] === origin) {
                 viewSelectedSlot = -1;
             } else if (dragSource === 'inventory' && viewInventoryIndex === origin) {
                 viewInventoryIndex = -1;
+            }
+        }
+
+        // --- ARTIFICIAL TOOLTIP FOR KEYBOARD NAVIGATION ---
+        let activeTooltipId = this.hoveredHitboxId;
+        if (!activeTooltipId || (!activeTooltipId.startsWith('SLOT_') && !activeTooltipId.startsWith('INV_ITEM_'))) {
+            if (this.state === 'SLOTS' && this.slotIndex !== -1) {
+                activeTooltipId = `SLOT_${this.activeSlots[this.slotIndex]}`;
+            } else if (this.state === 'INVENTORY' && this.inventoryIndex !== -1) {
+                activeTooltipId = `INV_ITEM_${this.inventoryIndex}`;
             }
         }
 
@@ -708,12 +817,11 @@ export class CharacterSummaryController extends BaseController {
             scrollOffset: this.detailsScrollOffset,
             inventoryScrollOffset: this.inventoryScrollOffset,
             mouse: this.mouse,
-            hoveredHitboxId: this.hoveredHitboxId,
-
+            hoveredHitboxId: activeTooltipId,
+            
             // --- EXPORT NAME ENTRY STATE ---
             isEditingName: this.logic.isEditingName,
             nameInputValue: this.logic.nameInput.value,
-
             heldItem: this.dragAndDropManager.dragState.active ? {
                 item: this.dragAndDropManager.dragState.payload,
                 source: this.dragAndDropManager.dragState.sourceId,
@@ -727,7 +835,6 @@ export class CharacterSummaryController extends BaseController {
     }
 
     handleItemDropped(item, sourceId, originSlot, dropTargetId) {
-        // ---> FIX: Prevent dropping/swapping if in battle
         const isBattle = typeof this.config.onItemSelected === 'function';
         if (this.logic.readOnly || isBattle) return;
 
@@ -736,7 +843,6 @@ export class CharacterSummaryController extends BaseController {
                 this.playCancelSound();
                 this.logic.unequipSlot(originSlot);
                 this.updateFilteredInventory();
-                
                 const newIndex = this._findNewestInventoryIndex(item.defId);
                 this.state = 'INVENTORY';
                 this.inventoryIndex = (newIndex !== -1) ? newIndex : 0;
@@ -753,17 +859,287 @@ export class CharacterSummaryController extends BaseController {
                 this.playCancelSound();
                 return;
             }
-
             const slotKey = targetSlotRaw.toLowerCase().replace(/\s/g, '');
             const canonicalSlot = this.activeSlots.find(s => s.toLowerCase().replace(/\s/g, '') === slotKey) || targetSlotRaw;
-
             if (sourceId === 'equipment' && originSlot === canonicalSlot) return;
-
             this.playConfirmSound();
             if (sourceId === 'equipment') {
                 this.logic.unequipSlot(originSlot);
             }
             this.equipItem(item, canonicalSlot);
         }
+    }
+}
+
+
+import { StatCalculator } from '../../../../shared/systems/statCalculator.js';
+import { ItemDefinitions } from '../../../../shared/data/itemDefinitions.js';
+import { AbilitySystem } from '../../../../shared/systems/abilitySystem.js';
+import { TextEntry } from '../../../../shared/utils/textEntry.js';
+
+const SLOT_ORDER = ['head', 'torso', 'arms', 'mainHand', 'legs', 'feet', 'accessory', 'offHand'];
+
+export class CharacterSummaryLogic {
+    constructor(config) {
+        this.config = config || {};
+        this.readOnly = this.config.readOnly || this.config.isCombat || false;
+        this.memberIndex = 0;
+        
+        if (this.config.memberIndex !== undefined) {
+            this.memberIndex = this.config.memberIndex;
+        } else if (this.config.character) {
+            const index = gameState.party.members.findIndex(m =>
+                m === this.config.character || m.id === this.config.character.id
+            );
+            this.memberIndex = index !== -1 ? index : 0;
+        }
+
+        // --- NAME EDITING STATE ---
+        this.isEditingName = false;
+        this.nameInput = new TextEntry("", 16, /^[a-zA-Z0-9 ]$/);
+    }
+
+    get currentMember() {
+        return gameState.party.members[this.memberIndex];
+    }
+
+    get isLocked() {
+        const isBattleSelection = this.config && typeof this.config.onItemSelected === 'function';
+        return this.readOnly || isBattleSelection;
+    }
+
+    // ========================================================
+    // NAME EDITING LOGIC
+    // ========================================================
+    startNameEdit() {
+        if (this.readOnly) return;
+        this.isEditingName = true;
+        // Cache the original name so we can revert if they leave it blank
+        this.originalName = this.currentMember.name || "Unknown";
+        this.nameInput.reset(this.originalName);
+    }
+
+    validateName() {
+        if (!this.isEditingName) return false;
+        // Mirror Character Creator: Revert if empty, otherwise save trimmed value
+        if (this.nameInput.value.trim() === "") {
+            this.nameInput.reset(this.originalName);
+            this.currentMember.name = this.originalName;
+        } else {
+            this.currentMember.name = this.nameInput.value.trim();
+        }
+        this.isEditingName = false;
+        return true;
+    }
+
+    // ========================================================
+    // CORE LOGIC
+    // ========================================================
+    cycleMember(direction) {
+        if (this.isLocked) return false;
+        const count = gameState.party.members.length;
+        this.memberIndex = (this.memberIndex + direction + count) % count;
+        return true;
+    }
+
+    getActiveSlots() {
+        const member = this.currentMember;
+        if (!member) return [];
+        const availableSlots = Object.keys(member.equipment || {});
+        return availableSlots.sort((a, b) => {
+            const indexA = SLOT_ORDER.indexOf(a);
+            const indexB = SLOT_ORDER.indexOf(b);
+            const indexALower = SLOT_ORDER.findIndex(s => s.toLowerCase() === a.toLowerCase());
+            const indexBLower = SLOT_ORDER.findIndex(s => s.toLowerCase() === b.toLowerCase());
+            const finalA = (indexA !== -1) ? indexA : (indexALower !== -1 ? indexALower : 99);
+            const finalB = (indexB !== -1) ? indexB : (indexBLower !== -1 ? indexBLower : 99);
+            return finalA - finalB;
+        });
+    }
+
+    getFilteredInventory() {
+        return gameState.party.inventory.filter(item => item);
+    }
+
+    canEquipToSlot(item, targetSlotRaw) {
+        const def = ItemDefinitions[item.defId];
+        if (!def) return false;
+        const itemSlot = (def.slot || def.type || '').toLowerCase().replace(/\s/g, '');
+        const slotKey = targetSlotRaw.toLowerCase().replace(/\s/g, '');
+        return (itemSlot === slotKey) ||
+               (slotKey === 'mainhand' && ['weapon', 'tool', 'twohand', 'onehand'].includes(itemSlot)) ||
+               (slotKey === 'offhand' && ['shield', 'weapon', 'onehand'].includes(itemSlot));
+    }
+
+    equipItem(inventoryItem, targetSlotOverride, activeSlots) {
+        if (this.readOnly) return null;
+        const member = this.currentMember;
+        let slotName = targetSlotOverride;
+        const def = ItemDefinitions[inventoryItem.defId];
+        const rawItemType = def ? (def.slot || def.type || '').toLowerCase() : '';
+        const itemTypeNormalized = rawItemType.replace(/\s/g, '');
+        
+        const mainHandSlot = activeSlots.find(s => s.toLowerCase() === 'mainhand') || 'mainHand';
+        const offHandSlot = activeSlots.find(s => s.toLowerCase() === 'offhand') || 'offHand';
+        const currentMainItem = member.equipment[mainHandSlot];
+        const currentOffItem = member.equipment[offHandSlot];
+        const currentMainDef = currentMainItem ? ItemDefinitions[currentMainItem.defId] : null;
+        const isMainTwoHanded = currentMainDef && (currentMainDef.slot || currentMainDef.type || '').toLowerCase().replace(/\s/g, '') === 'twohand';
+
+        // --- SMART ROUTING LOGIC ---
+        if (!slotName) {
+            if (itemTypeNormalized === 'onehand' || rawItemType === 'weapon') {
+                if (currentMainItem && !currentOffItem && !isMainTwoHanded) {
+                    slotName = offHandSlot;
+                } else {
+                    slotName = mainHandSlot;
+                }
+            } else if (itemTypeNormalized === 'twohand') {
+                slotName = mainHandSlot;
+            } else if (rawItemType === 'shield') {
+                slotName = offHandSlot;
+            } else {
+                slotName = activeSlots.find(s => {
+                    const sKey = s.toLowerCase();
+                    if (sKey === rawItemType) return true;
+                    if (sKey === 'mainhand' && rawItemType === 'tool') return true;
+                    return false;
+                });
+            }
+            if (!slotName) {
+                console.warn("Could not auto-determine slot for item.");
+                return null;
+            }
+        }
+
+        // --- TWO-HANDED RULE ENFORCEMENT ---
+        if (itemTypeNormalized === 'twohand') {
+            slotName = mainHandSlot;
+            if (currentOffItem) {
+                member.unequipItem(offHandSlot);
+                gameState.party.inventory.push(currentOffItem);
+            }
+        }
+        if (slotName.toLowerCase() === 'offhand' && isMainTwoHanded) {
+            member.unequipItem(mainHandSlot);
+            gameState.party.inventory.push(currentMainItem);
+        }
+
+        // --- EXECUTION ---
+        const currentEquip = member.equipment[slotName];
+        if (currentEquip && currentEquip !== inventoryItem) {
+            gameState.party.inventory.push(currentEquip);
+        }
+        
+        const bagIdx = gameState.party.inventory.indexOf(inventoryItem);
+        if (bagIdx > -1) {
+            gameState.party.inventory.splice(bagIdx, 1);
+        }
+        
+        member.equipItem(slotName, inventoryItem);
+        return slotName;
+    }
+
+    unequipSlot(slotName) {
+        if (this.readOnly) return false;
+        const member = this.currentMember;
+        const currentEquip = member.equipment[slotName];
+        if (currentEquip) {
+            member.unequipItem(slotName);
+            gameState.party.inventory.push(currentEquip);
+            return true;
+        }
+        return false;
+    }
+
+    getDerivedStats() {
+        const member = this.currentMember;
+        const computedStats = StatCalculator.calculate(member);
+        const baseSource = member.state ? member.state.stats : (member.attributes || {});
+        
+        const formatStat = (key, currentVal) => {
+            const base = baseSource[key] || 0;
+            return { base: base, bonus: (currentVal - base), total: currentVal };
+        };
+        
+        return {
+            ...computedStats,
+            maxHp: formatStat('maxHp', computedStats.maxHp || member.maxHp),
+            maxStamina: formatStat('maxStamina', computedStats.maxStamina || member.maxStamina),
+            maxInsight: formatStat('maxInsight', computedStats.maxInsight || member.maxInsight)
+        };
+    }
+
+    compileAbilities() {
+        const member = this.currentMember;
+        const abilityMap = new Map();
+        
+        if (member.equipment) {
+            for (const [slot, item] of Object.entries(member.equipment)) {
+                if (!item) continue;
+                const def = ItemDefinitions[item.defId];
+                const grantedAbilities = (def && (def.abilities || def.grantedAbilities)) || [];
+                
+                grantedAbilities.forEach(ability => {
+                    const id = typeof ability === 'string' ? ability : ability.id;
+                    const abilityData = typeof ability === 'object' ? ability : { id, name: id };
+                    abilityMap.set(id, {
+                        ...abilityData,
+                        source: def.name || item.defId,
+                        sourceSlot: slot,
+                        isEquipment: true
+                    });
+                });
+            }
+        }
+        
+        const intrinsicAbilities = member.abilities || (member.template && member.template.abilities) || [];
+        intrinsicAbilities.forEach(ability => {
+            const id = typeof ability === 'string' ? ability : ability.id;
+            const abilityData = typeof ability === 'object' ? ability : { id, name: id };
+            if (!abilityMap.has(id)) {
+                abilityMap.set(id, { ...abilityData, source: 'Intrinsic', isEquipment: false });
+            }
+        });
+        
+        return Array.from(abilityMap.values());
+    }
+
+    dropItem(item, amount = 1) {
+        if (this.readOnly) return false;
+        const bagIdx = gameState.party.inventory.indexOf(item);
+        if (bagIdx > -1) {
+            if (item.qty > 1) {
+                item.qty -= amount;
+                if (item.qty <= 0) {
+                    gameState.party.inventory.splice(bagIdx, 1);
+                }
+            } else {
+                gameState.party.inventory.splice(bagIdx, 1);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    useItem(item, targetMember) {
+        if (this.readOnly) return false;
+        const def = ItemDefinitions[item.defId];
+        if (!def) return false;
+        
+        const abilityId = item.useAbility || def.useAbility;
+        if (abilityId) {
+            const result = AbilitySystem.execute(abilityId, targetMember, targetMember);
+            if (result.success) {
+                console.log(`[Item Use] Success: ${result.message}`);
+                return this.dropItem(item, 1);
+            } else {
+                console.log(`[Item Use] Failed or no effect: ${result.message || "HP already full."}`);
+                return false;
+            }
+        }
+        
+        console.log(`[Item Use] Used non-ability item: ${item.defId}`);
+        return this.dropItem(item, 1);
     }
 }
