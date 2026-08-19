@@ -65,13 +65,13 @@ export class OverworldController extends BaseController {
                 this.executeMenuAction('party');
                 break;
             case 'btn_character':
-                this.executeMenuAction('character');
+                this.executeMenuAction('character_summary');
                 break;
             case 'btn_journal':
                 this.executeMenuAction('journal');
                 break;
             case 'btn_system':
-                this.executeMenuAction('system');
+                this.executeMenuAction('title');
                 break;
             default:
                 if (this.isMenuOpen) this.isMenuOpen = false;

@@ -45,12 +45,12 @@ export const BIOME_DEFINITIONS = {
       ] 
     }, 
     encounters: { 
-      rate: 0.005, 
+      rate: 1.005, 
       type: "time_weighted", 
       pools: [ 
         { weight: 10, id: 'wild_hunt', allowedTimes: ['day'] }, 
         { weight: 20, id: 'wounded_mutt', allowedTimes: ['day'] }, 
-        { weight: 20, id: 'a_disturbing_sight', allowedTimes: ['day'] } 
+        { weight: 120, id: 'a_disturbing_sight', allowedTimes: ['day'] } 
       ] 
     }, 
     battles: { 

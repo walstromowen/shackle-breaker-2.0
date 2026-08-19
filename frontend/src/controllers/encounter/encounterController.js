@@ -4,6 +4,8 @@ import { EncounterFactory } from "../../../../shared/systems/factories/encounter
 import { gameState } from "../../../../shared/state/gameState.js";
 import { events } from "../../core/eventBus.js";
 import { EncounterLogic } from './encounterLogic.js';
+import { QuestModel } from '../../../../shared/models/questModel.js';
+import { QuestDefinitions } from '../../../../shared/data/questDefinitions.js';
 
 const KEY_BINDINGS = {
     'ArrowUp': 'UP', 'KeyW': 'UP',
@@ -19,7 +21,6 @@ export class EncounterController extends BaseController {
         super(input);
         this.config = config;
         this.worldManager = worldManager;
-
         this.scrollManager = new ScrollManager();
         this.scrollManager.registerZone('decision_list', { thumbIds: ['SCROLL_THUMB_DECISIONS'] });
         this.scrollManager.registerZone('text_content', { thumbIds: ['SCROLL_THUMB_TEXT'] });
@@ -28,34 +29,19 @@ export class EncounterController extends BaseController {
         this.selectedIndex = 0;
         this.actionPhase = 'none';
         this.pendingDecision = null;
-        this.pendingLogicResponse = null; // Added to decouple logic execution from scene updates
-        this.actionMessage = "";
+        this.pendingLogicResponse = null; 
 
+        this.actionMessage = "";
         this.rollTimer = 0;
         this.rollTickTimer = 0;
-        this.rollData = {
-            displayVal: "?",
-            d20: 0,
-            mod: 0,
-            total: 0,
-            dc: 0,
-            isSuccess: false,
-            duration: 2.5
-        };
-
+        this.rollData = { displayVal: "?", d20: 0, mod: 0, total: 0, dc: 0, isSuccess: false, duration: 2.5 };
+        
         this.lastText = "";
         this.textTimer = 0;
         this.hasDoneIntro = false;
         this.skipMessageAnimation = false;
         this.inputCooldown = 0.15;
-
-        this.imageTransition = {
-            active: false,
-            timer: 0,
-            duration: 0.4,
-            previousInfo: null,
-            previousPartyMember: null
-        };
+        this.imageTransition = { active: false, timer: 0, duration: 0.4, previousInfo: null, previousPartyMember: null };
 
         this.rewardQueue = [];
         this.pendingEndEncounterPayload = null;
@@ -79,6 +65,7 @@ export class EncounterController extends BaseController {
         }
 
         this.model = EncounterFactory.create(encounterId, context);
+        
         if (!this.model) {
             events.emit('CHANGE_SCENE', { scene: 'overworld' });
             return;
@@ -90,23 +77,14 @@ export class EncounterController extends BaseController {
         this.pendingLogicResponse = null;
         this.actionMessage = "";
         this.rollTimer = 0;
-
         this.lastText = "";
         this.textTimer = 0;
         this.hasDoneIntro = false;
         this.skipMessageAnimation = false;
         this.inputCooldown = 0.15;
-
         this.rewardQueue = [];
         this.pendingEndEncounterPayload = null;
-
-        this.imageTransition = {
-            active: false,
-            timer: 0,
-            duration: 0.4,
-            previousInfo: null,
-            previousPartyMember: null
-        };
+        this.imageTransition = { active: false, timer: 0, duration: 0.4, previousInfo: null, previousPartyMember: null };
 
         this.updateBGM();
     }
@@ -137,7 +115,7 @@ export class EncounterController extends BaseController {
             const charsPerSecond = 25;
             const totalTypingTime = this.actionMessage.length * (1 / charsPerSecond);
             const padding = Math.max(0.8, Math.min(2.5, this.actionMessage.length * 0.02));
-
+            
             if (this.skipMessageAnimation || this.textTimer >= (6.0 + totalTypingTime + padding)) {
                 this.skipMessageAnimation = false;
                 if (this.pendingDecision && this.pendingDecision.type === 'skill_check') {
@@ -150,7 +128,7 @@ export class EncounterController extends BaseController {
         } else if (this.actionPhase === 'rolling') {
             this.rollTimer -= dt;
             this.rollTickTimer -= dt;
-
+            
             if (this.rollTimer <= 0 || this.skipMessageAnimation) {
                 this.rollData.displayVal = this.rollData.d20;
                 this.actionPhase = 'hold_base';
@@ -167,21 +145,19 @@ export class EncounterController extends BaseController {
             this.rollTimer -= dt;
             if (this.rollTimer <= 0 || this.skipMessageAnimation) {
                 this.actionPhase = 'apply_mod';
-                this.rollTimer = 2.5; 
+                this.rollTimer = 2.5;
                 this.skipMessageAnimation = false;
             }
         } else if (this.actionPhase === 'apply_mod') {
             this.rollTimer -= dt;
             let progress = Math.min(Math.max(1.0 - (this.rollTimer / 2.5), 0), 1);
             this.rollData.displayVal = this.rollData.d20 + Math.round(this.rollData.mod * progress);
-
+            
             if (this.rollTimer <= 0 || this.skipMessageAnimation) {
                 this.rollData.displayVal = this.rollData.total;
                 this.actionPhase = 'result';
-                this.rollTimer = 3.5; 
+                this.rollTimer = 3.5;
                 this.skipMessageAnimation = false;
-
-                // FIX: Instantly execute logic the moment the result holds so vitals render in right away!
                 this.executeLogic();
             }
         } else if (this.actionPhase === 'result') {
@@ -212,7 +188,7 @@ export class EncounterController extends BaseController {
         this.imageTransition.timer = 0;
         this.imageTransition.duration = duration;
         this.imageTransition.previousInfo = outgoingInfo;
-
+        
         if (outgoingMember) {
             this.imageTransition.previousPartyMember = {
                 name: outgoingMember.name,
@@ -222,10 +198,8 @@ export class EncounterController extends BaseController {
                 maxStamina: outgoingMember.maxStamina,
                 insight: outgoingMember.insight || 0,
                 maxInsight: outgoingMember.maxInsight || 100,
-                statusEffects: outgoingMember.statusEffects ? [...outgoingMember.statusEffects] : [], // FIX: Snapshot status effects
-                sheet: outgoingMember.sheet,
-                col: outgoingMember.col,
-                row: outgoingMember.row
+                statusEffects: outgoingMember.statusEffects ? [...outgoingMember.statusEffects] : [],
+                sheet: outgoingMember.sheet, col: outgoingMember.col, row: outgoingMember.row
             };
         } else {
             this.imageTransition.previousPartyMember = null;
@@ -243,7 +217,7 @@ export class EncounterController extends BaseController {
         const prevY = this.mouse?.y;
 
         super.handleMouseMove(x, y, isMouseDown, renderer);
-
+        
         if ((prevX !== x || prevY !== y) && this.hoveredHitboxId && this.hoveredHitboxId.startsWith('DECISION_')) {
             const index = parseInt(this.hoveredHitboxId.replace('DECISION_', ''), 10);
             if (!isNaN(index) && this.selectedIndex !== index) {
@@ -259,13 +233,9 @@ export class EncounterController extends BaseController {
 
         if (!this.hasDoneIntro) {
             if (this.textTimer < 3.0) {
-                this.textTimer = 3.0;
-                this.inputCooldown = 0.15;
-                return;
+                this.textTimer = 3.0; this.inputCooldown = 0.15; return;
             } else if (this.textTimer < 6.0) {
-                this.textTimer = 6.0;
-                this.inputCooldown = 0.15;
-                return;
+                this.textTimer = 6.0; this.inputCooldown = 0.15; return;
             } else {
                 this.hasDoneIntro = true;
             }
@@ -276,20 +246,20 @@ export class EncounterController extends BaseController {
         const totalTypingTime = currentText.length * (1 / charsPerSecond);
         const decisionFadeTime = this.actionPhase === 'none' ? 3.0 : 0;
         const padding = Math.max(0.8, Math.min(2.5, currentText.length * 0.02));
-
+        
         const textStartTime = 6.0;
         const textEndTime = textStartTime + totalTypingTime;
         const isAnimatingText = this.textTimer < (textEndTime + decisionFadeTime);
 
         const skipPhases = ['message', 'rolling', 'hold_base', 'apply_mod', 'result', 'ending', 'ending_delay', 'reward_delay'];
-
+        
         if (skipPhases.includes(this.actionPhase) || (this.actionPhase === 'none' && isAnimatingText)) {
             if ((this.actionPhase === 'message' || this.actionPhase === 'none' || this.actionPhase === 'reward_delay') && this.textTimer < textEndTime) {
                 this.textTimer = textEndTime;
                 this.inputCooldown = 0.15;
                 return;
             }
-
+            
             this.skipMessageAnimation = true;
             this.textTimer = textEndTime + decisionFadeTime + padding;
             this.inputCooldown = 0.15;
@@ -345,13 +315,9 @@ export class EncounterController extends BaseController {
 
         if (!this.hasDoneIntro && (intent === 'CONFIRM' || intent === 'CANCEL')) {
             if (this.textTimer < 3.0) {
-                this.textTimer = 3.0;
-                this.inputCooldown = 0.15;
-                return;
+                this.textTimer = 3.0; this.inputCooldown = 0.15; return;
             } else if (this.textTimer < 6.0) {
-                this.textTimer = 6.0;
-                this.inputCooldown = 0.15;
-                return;
+                this.textTimer = 6.0; this.inputCooldown = 0.15; return;
             } else {
                 this.hasDoneIntro = true;
             }
@@ -362,7 +328,7 @@ export class EncounterController extends BaseController {
         const totalTypingTime = currentText.length * (1 / charsPerSecond);
         const decisionFadeTime = this.actionPhase === 'none' ? 3.0 : 0;
         const padding = Math.max(0.8, Math.min(2.5, currentText.length * 0.02));
-
+        
         const textStartTime = 6.0;
         const textEndTime = textStartTime + totalTypingTime;
         const isAnimatingText = this.textTimer < (textEndTime + decisionFadeTime);
@@ -377,7 +343,6 @@ export class EncounterController extends BaseController {
                     this.inputCooldown = 0.15;
                     return;
                 }
-
                 this.skipMessageAnimation = true;
                 this.textTimer = textEndTime + decisionFadeTime + padding;
                 this.inputCooldown = 0.15;
@@ -418,16 +383,21 @@ export class EncounterController extends BaseController {
     }
 
     executeSelectedDecision() {
+        // FIX: Provide a hard lock to prevent executing anything if the scene is ending or a decision is processing
+        if (this.actionPhase === 'ending' || this.pendingDecision !== null) return;
+
         const options = this._getValidDecisions();
         if (!options || options.length === 0) return;
 
         this.playConfirmSound('ui_select');
+
         const selectedDecision = options[this.selectedIndex];
 
         if (selectedDecision.type === 'switch_character') {
-            events.emit('CHANGE_SCENE', {
-                scene: 'party',
-                data: {
+            this.inputCooldown = 0.5; // FIX: Increase cooldown slightly to prevent menu spamming
+            events.emit('CHANGE_SCENE', { 
+                scene: 'party', 
+                data: { 
                     mode: 'ENCOUNTER_SELECT',
                     activeIndices: [0],
                     callback: (chosenIndex) => {
@@ -455,6 +425,7 @@ export class EncounterController extends BaseController {
 
     beginActionSequence(decision) {
         if (!decision) return;
+        
         this.pendingDecision = decision;
 
         if (decision.bgm) {
@@ -470,22 +441,17 @@ export class EncounterController extends BaseController {
                 const currentImage = this.model._originalGetImage.call(this.model);
                 const baseSheet = currentImage ? currentImage.sheet : this.model.imageSheet;
                 this.model.getImage = () => {
-                    return {
-                        sheet: decision.image.sheet || baseSheet,
-                        col: decision.image.col,
-                        row: decision.image.row
-                    };
+                    return { sheet: decision.image.sheet || baseSheet, col: decision.image.col, row: decision.image.row };
                 };
             }
         }
 
-        // FIX: Execute Logic immediately on direct decisions so vitals render in!
         if (decision.type !== 'skill_check') {
             this.executeLogic();
         }
 
         const actorName = gameState.party?.members?.[0]?.name || "The party";
-
+        
         if (decision.customActionText) {
             this.actionPhase = 'message';
             this.textTimer = 6.0;
@@ -503,7 +469,6 @@ export class EncounterController extends BaseController {
         }
     }
 
-    // FIX: Decoupled into `executeLogic` (instant data execution) and `applySceneChanges` (delayed display execution)
     executeLogic() {
         const decision = this.pendingDecision;
         if (!decision) return;
@@ -530,33 +495,41 @@ export class EncounterController extends BaseController {
             let isStartingBattle = false;
             let isGameOverTriggered = false;
 
-            if (resultsArray && resultsArray.some(r => r.type === 'START_BATTLE')) {
-                isStartingBattle = true;
-            }
-            if (resultsArray && resultsArray.some(r => r.type === 'TRIGGER_GAME_OVER')) {
-                isGameOverTriggered = true;
+            if (resultsArray) {
+                for (const r of resultsArray) {
+                    if (r.type === 'START_BATTLE') isStartingBattle = true;
+                    if (r.type === 'TRIGGER_GAME_OVER') isGameOverTriggered = true;
+
+                    if (r.type === 'RECORD_KILL') {
+                        const targetIdSafe = String(r.payload.enemyId).toLowerCase().replace(/[\s_\-]+/g, '');
+                        const killAmount = r.payload.amount || 1;
+                        
+                        Object.keys(gameState.quests.active).forEach(questId => {
+                            const questDef = QuestDefinitions[questId];
+                            if (questDef) {
+                                questDef.objectives.forEach(obj => {
+                                    const objTargetSafe = String(obj.targetId).toLowerCase().replace(/[\s_\-]+/g, '');
+                                    if (obj.type === 'kill_enemy' && objTargetSafe === targetIdSafe) {
+                                        const didUpdate = QuestModel.updateProgress(gameState, questId, obj.id, killAmount);
+                                        if (didUpdate && QuestModel.checkCompletion(gameState, questId)) {
+                                            console.log(`Quest Complete: ${questDef.name}!`);
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
             }
 
-            // By running this now, gameState mutates exactly when the action initiates or the roll lands. 
-            // The UI immediately renders in the new states!
             const logicResponse = EncounterLogic.resolveResults(resultsArray, this.model, this.worldManager);
-
-            this.pendingLogicResponse = {
-                response: logicResponse,
-                isStartingBattle,
-                isGameOverTriggered
-            };
+            this.pendingLogicResponse = { response: logicResponse, isStartingBattle, isGameOverTriggered };
         }
     }
 
     applySceneChanges() {
         this.actionPhase = 'none';
         this.pendingDecision = null;
-
-        if (this.model && this.model._originalGetImage) {
-            this.model.getImage = this.model._originalGetImage;
-            delete this.model._originalGetImage;
-        }
 
         if (!this.pendingLogicResponse) return;
 
@@ -577,6 +550,7 @@ export class EncounterController extends BaseController {
             this._triggerImageTransition(2.0);
             const deathMsg = "Game over, all party members have been slain!";
             const fullText = logicResponse.messages.length > 0 ? logicResponse.messages.join('\n\n') + '\n\n' + deathMsg : deathMsg;
+
             this.model.stages = this.model.stages || {};
             this.model.stages["game_over_stage"] = {
                 displayText: "Defeat",
@@ -623,12 +597,11 @@ export class EncounterController extends BaseController {
             return;
         }
 
-        if (logicResponse.shouldEndEncounter) {
-            if (isStartingBattle) {
-                this.actionPhase = 'ending';
-            } else {
-                this.endEncounter(logicResponse.endEncounterPayload);
-            }
+        // FIX: Un-nested `isStartingBattle`. If a battle starts, the UI phase absolutely MUST enter the "ending" locked state.
+        if (isStartingBattle) {
+            this.actionPhase = 'ending';
+        } else if (logicResponse.shouldEndEncounter) {
+            this.endEncounter(logicResponse.endEncounterPayload);
         }
     }
 
@@ -648,12 +621,12 @@ export class EncounterController extends BaseController {
         };
         this.model.advanceToStage("encounter_rewards_stage");
         this.selectedIndex = 0;
+        
         this.actionPhase = 'reward_delay';
-
         const typingTime = nextMsg.length / 25;
         this.rollTimer = typingTime + 2.0;
         this.lastText = "";
-        this.textTimer = 6.0;
+        this.textTimer = 6.0; 
         this.skipMessageAnimation = false;
     }
 
@@ -724,11 +697,14 @@ export class EncounterController extends BaseController {
         let displayText = this.model.getCurrentText() || "";
         let displayDecisions = this._getValidDecisions();
         let displayStageName = this.model.getStageDisplayText ? this.model.getStageDisplayText() : "Unknown Stage";
-        const actorName = gameState.party?.members?.[0]?.name || "The party";
 
+        const actorName = gameState.party?.members?.[0]?.name || "The party";
         displayText = displayText.replace(/{name}/g, actorName);
         displayStageName = displayStageName.replace(/{name}/g, actorName);
-        displayDecisions = displayDecisions.map(decision => ({ ...decision, text: decision.text.replace(/{name}/g, actorName) }));
+        displayDecisions = displayDecisions.map(decision => ({
+            ...decision,
+            text: decision.text.replace(/{name}/g, actorName)
+        }));
 
         if (this.actionPhase !== 'none' && this.actionPhase !== 'ending_delay' && this.actionPhase !== 'reward_delay') {
             displayText = this.actionPhase === 'ending' ? this.lastText : this.actionMessage;

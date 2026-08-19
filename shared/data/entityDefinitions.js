@@ -136,8 +136,8 @@ export const ENTITY_DEFINITIONS = {
         abilities: [...HUMANOID_TEMPLATE.abilities, "bite", "claw"],
         tags: [...HUMANOID_TEMPLATE.tags],
         traitRewards: [
-            { id: "tough", chance: 0.5, condition: "kill" },
-            { id: "quick", chance: 1.0, condition: "killed_by" } // Note: make sure 'killed_by' is added to your reward logic if it wasn't already!
+            //{ id: "tough", chance: 0.5, condition: "kill" },
+            //{ id: "quick", chance: 1.0, condition: "killed_by" } // Note: make sure 'killed_by' is added to your reward logic if it wasn't already!
         ]
     },
 

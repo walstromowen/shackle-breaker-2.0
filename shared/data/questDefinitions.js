@@ -1,13 +1,80 @@
 export const QuestDefinitions = {
-    "q_tutorial_combat": {
-        id: "q_tutorial_combat",
-        name: "First Blood",
-        description: "Something is wrong with the populace. They seem mad and behave like wild animals.",
+    "shackled1": {
+        id: "shackled1",
+        name: "Shackled",
+        description: "You wake up with shackles around your wrists. Though the chain connecting them is broken, the shackles remain locked.",
+        objectives: [
+            { id: "obj_reach_level_2", type: "party_level", targetLevel: 2, amount: 1 },
+        ],
+        rewards: {
+            exp: 50,
+            currency: 50,
+            quests: ["shackled2"]
+        }
+    },
+    "shackled2": {
+        id: "shackled2",
+        name: "Shackled",
+        description: "You notice that many of the people here also have shackles on their wrists. They laugh wildly in the streets as if sharing the same hallucination, what happened here?",
+        objectives: [
+            { id: "obj_kill_madmen_part_2", type: "kill_enemy", targetId: "MAD_MAN", amount: 3 },
+            { id: "obj_reach_level_3", type: "party_level", targetLevel: 3, amount: 1 }
+        ],
+        rewards: {
+            exp: 100,
+            currency: 100,
+            quests: ["shackled3"]
+        }
+    },
+    "shackled3": {
+        id: "shackled3",
+        name: "Shackled",
+        description: "On examination of your shackles, you notice there is no keyhole. Your spirit weighs as heavy on you as the shackles themselves. Perhaps one of the scholars can help you, if there are any left.",
+        objectives: [
+            { id: "obj_reach_level_5", type: "party_level", targetLevel: 5, amount: 1 },
+            { id: "obj_kill_mad_mages", type: "kill_enemy", targetId: "MAD_MAGE", amount: 3 },
+        ],
+        rewards: {
+            exp: 150,
+            currency: 150,
+            quests: ["shackled4"]
+        }
+    },
+    "shackled4": {
+        id: "shackled4",
+        name: "Shackled",
+        description: "You overhear one of the scholars babbling about power coming from the heavens while fixating on a strange rock. He speaks to it as if it were his own child. ",
+        objectives: [
+            { id: "obj_reach_level_8", type: "party_level", targetLevel: 8, amount: 1 },
+            { id: "obj_get_meteorite", type: "obtain_item", targetId: "meteorite", amount: 1 }
+        ],
+        rewards: {
+            exp: 200,
+            currency: 200,
+            quests: ["shackled5"]
+        }
+    },
+    "shackled5": {
+        id: "shackled5",
+        name: "Shackled",
+        description: "You notice the madmen seem to be drawn to the meteorite. They seem to coordinate their efforts in retrieving it and bringing it to someone named Darius.",
+        objectives: [
+            { id: "obj_kill_darius", type: "kill_enemy", targetId: "DARIUS_THE_GROVELER", amount: 1 }
+        ],
+        rewards: {
+            exp: 300,
+            currency: 300
+        }
+    },
+    "cursed_populance": {
+        id: "cursed_populance",
+        name: "Cursed Populance",
+        description: "The entire town seems to be afflicted with a strange madness. The people here are not themselves, are they even still human?",
         objectives: [
             { 
                 id: "obj_kill_madmen", 
                 type: "kill_enemy", 
-                targetId: "MAD_MAN", // Updated to match ENTITY_DEFINITIONS key
+                targetId: "MAD_MAN", 
                 amount: 3 
             }
         ],
@@ -16,10 +83,10 @@ export const QuestDefinitions = {
             currency: 100 
         }
     },
-    "q_fetch_herbs": {
-        id: "q_fetch_herbs",
-        name: "The Healer's Request",
-        description: "Gather medicinal herbs to help treat the growing number of afflicted in the area.",
+    "unnatural_flora": {
+        id: "unnatural_flora",
+        name: "Unnatural Flora",
+        description: "Once ordinary flora seems to pulse with an otherworldly energy.",
         objectives: [
             { 
                 id: "obj_get_healing_herbs", 
@@ -35,60 +102,47 @@ export const QuestDefinitions = {
             }
         ],
         rewards: { 
-            exp: 50,
-            items: [
+            exp: 50, 
+            items: [ 
                 { id: "insight_of_earth", amount: 1 } 
-            ],
-            currency: 50,
-            // ---> NEW: Awards the follow-up quest <---
-            quests: ["q_cure_the_afflicted"] 
+            ], 
+            currency: 50, 
+            quests: ["cure_the_afflicted"] 
         }
     },
-    "q_hero_training": {
-        id: "q_hero_training",
-        name: "Path to Power",
-        description: "Reach level 5 with any party member to prepare for the horrors ahead.",
+    "men_no_less": {
+        id: "men_no_less",
+        name: "Men No Less",
+        description: "You notice some of the afflicted appear to exhibit less madness than others, perhaps you can help one of them.",
         objectives: [
             { 
-                id: "obj_level_up", 
-                type: "party_level", 
-                targetLevel: 5, 
-                amount: 1 
+                id: "obj_cure_madmen", 
+                type: "kill_enemy", 
+                targetId: "MAD_MAN", 
+                amount: 2 
+            },
+            { 
+                id: "obj_cure_madmage", 
+                type: "kill_enemy", 
+                targetId: "MAD_MAGE", 
+                amount: 2 
+            },
+            { 
+                id: "obj_cure_madmen", 
+                type: "kill_enemy", 
+                targetId: "ROTTER", 
+                amount: 2 
             }
         ],
         rewards: { 
-            exp: 50,
-            items: [
-                { id: "shortsword", amount: 1 }, // Used an actual weapon referenced in character creation
-                { id: "iron_ingot", amount: 3 }  // Added materials to make it more rewarding
-            ] 
-        }
-    },
-    "q_cure_the_afflicted": {
-        id: "q_cure_the_afflicted",
-        name: "Administer the Cure",
-        description: "The healer has crafted a remedy from the herbs you gathered. Subdue the afflicted and administer the cure.",
-        objectives: [
-            {
-                id: "obj_cure_madmen",
-                type: "kill_enemy", 
-                targetId: "MAD_MAN",
-                amount: 0
-            }
-        ],
-        rewards: {
-            exp: 75,
-            currency: 150,
-            items: [
-                { id: "healing_herb", amount: 3 }
-            ],
-            // ---> NEW: Companion Reward <---
-            companions: [
+            exp: 75, 
+            currency: 150, 
+            companions: [ 
                 { 
-                    id: "MAD_MAN", // Must match an entity ID in your definitions
-                    overrides: { name: "Elara the Grateful" } 
-                }
-            ]
+                    id: "MAD_MAN", 
+                    overrides: { name: "survivor" } 
+                } 
+            ] 
         }
     }
 };

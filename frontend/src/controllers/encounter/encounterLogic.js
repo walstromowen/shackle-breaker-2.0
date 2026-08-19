@@ -122,8 +122,13 @@ export class EncounterLogic {
         resultsArray.forEach(result => {
             const type = result.type;
             const payload = result.payload || {};
-            
+
             switch (type) {
+                // ADDED: Break safely so the event emitter isn't spammed. 
+                // The actual logic is handled instantly in EncounterController!
+                case "RECORD_KILL": 
+                    break;
+                    
                 case "SET_CONTEXT_FLAG":
                     if (!model.context) model.context = {};
                     model.context[payload.flagId] = payload.value !== undefined ? payload.value : true;

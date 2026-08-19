@@ -75,9 +75,9 @@ export const StatusEffectDefinitions = {
         maxStacks: 3,
         persistAfterCombat: false,
         modifiers: [
-            { type: 'flat', target: 'resistance.slash', value: 2.0 },
-            { type: 'flat', target: 'resistance.blunt', value: 2.0 },
-            { type: 'flat', target: 'resistance.pierce', value: 2.0 }
+            { type: 'flat', target: 'resistance.slash', value: 1.5 },
+            { type: 'flat', target: 'resistance.blunt', value: 1.5 },
+            { type: 'flat', target: 'resistance.pierce', value: 1.5 }
         ]
     },
     burn: {
@@ -150,9 +150,9 @@ export const StatusEffectDefinitions = {
         defaultCharges: 3,
         maxStacks: 1,
         modifiers: [
-            { type: 'percent', target: 'attack.dark', value: 0.5 },
-            { type: 'percent', target: 'attack.light', value: 0.5 },
-            { type: 'percent', target: 'attack.arcane', value: 0.5 }
+            { type: 'percent', target: 'attack.dark', value: 1.5 },
+            { type: 'percent', target: 'attack.light', value: 1.5 },
+            { type: 'percent', target: 'attack.arcane', value: 1.5 }
         ]
     },
     dimmed: {
@@ -162,9 +162,9 @@ export const StatusEffectDefinitions = {
         defaultCharges: 3,
         maxStacks: 1,
         modifiers: [
-            { type: 'percent', target: 'attack.dark', value: -0.5 },
-            { type: 'percent', target: 'attack.light', value: -0.5 },
-            { type: 'percent', target: 'attack.arcane', value: -0.5 }
+            { type: 'percent', target: 'attack.dark', value: 0.5 },
+            { type: 'percent', target: 'attack.light', value: 0.5 },
+            { type: 'percent', target: 'attack.arcane', value: 0.5 }
         ]
     },
     blessed: {
@@ -209,12 +209,12 @@ export const StatusEffectDefinitions = {
         defaultCharges: 3,
         maxStacks: 1,
         modifiers: [
-            { type: 'percent', target: 'attack.fire', value: 0.5 },
-            { type: 'percent', target: 'attack.ice', value: 0.5 },
-            { type: 'percent', target: 'attack.lightning', value: 0.5 },
-            { type: 'percent', target: 'attack.earth', value: 0.5 },
-            { type: 'percent', target: 'attack.water', value: 0.5 },
-            { type: 'percent', target: 'attack.wind', value: 0.5 }
+            { type: 'percent', target: 'attack.fire', value: 1.5 },
+            { type: 'percent', target: 'attack.ice', value: 1.5 },
+            { type: 'percent', target: 'attack.lightning', value: 1.5 },
+            { type: 'percent', target: 'attack.earth', value: 1.5 },
+            { type: 'percent', target: 'attack.water', value: 1.5 },
+            { type: 'percent', target: 'attack.wind', value: 1.5 }
         ]
     },
     suppressed: {
@@ -224,12 +224,12 @@ export const StatusEffectDefinitions = {
         defaultCharges: 3,
         maxStacks: 1,
         modifiers: [
-            { type: 'percent', target: 'attack.fire', value: -0.5 },
-            { type: 'percent', target: 'attack.ice', value: -0.5 },
-            { type: 'percent', target: 'attack.lightning', value: -0.5 },
-            { type: 'percent', target: 'attack.earth', value: -0.5 },
-            { type: 'percent', target: 'attack.water', value: -0.5 },
-            { type: 'percent', target: 'attack.wind', value: -0.5 }
+            { type: 'percent', target: 'attack.fire', value: 0.5 },
+            { type: 'percent', target: 'attack.ice', value: 0.5 },
+            { type: 'percent', target: 'attack.lightning', value: 0.5 },
+            { type: 'percent', target: 'attack.earth', value: 0.5 },
+            { type: 'percent', target: 'attack.water', value: 0.5 },
+            { type: 'percent', target: 'attack.wind', value: 0.5 }
         ]
     }
 };

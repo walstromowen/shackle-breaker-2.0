@@ -342,20 +342,19 @@ export class CharacterCreatorLogic {
             }
         }
 
-        // --- NEW GAME GRANTS ---
        // --- NEW GAME GRANTS ---
         gameState.party.currency = 100;
         gameState.difficulty = CREATION_DATA.DIFFICULTIES[this.state.difficultyIdx].id;
 
         // ---> NEW: Start the tutorial quest <---
-        QuestModel.startQuest(gameState, 'q_fetch_herbs');
+        QuestModel.startQuest(gameState, 'shackled1');
 
         // ---> NEW: Automatically track the tutorial quest so it shows on the HUD <---
         if (!gameState.quests.trackedIds) {
             gameState.quests.trackedIds = [];
         }
-        if (!gameState.quests.trackedIds.includes('q_fetch_herbs')) {
-            gameState.quests.trackedIds.push('q_fetch_herbs');
+        if (!gameState.quests.trackedIds.includes('shackled1')) {
+            gameState.quests.trackedIds.push('shackled1');
         }
 
         events.emit('CHANGE_SCENE', { scene: 'overworld' });

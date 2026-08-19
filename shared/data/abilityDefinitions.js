@@ -121,8 +121,8 @@ export const AbilityDefinitions = {
             { id: "bleed", chance: 0.1, duration: 3 }
         ],
         traitRewards: [
-            { id: "martyr", chance: 1, condition: "use_ability" },
-            { id: "clumsy", chance: 1.0, condition: "hit_by_ability" }
+            //{ id: "martyr", chance: 1, condition: "use_ability" },
+            //{ id: "clumsy", chance: 1.0, condition: "hit_by_ability" }
         ]
     },
     "uppercut": {
