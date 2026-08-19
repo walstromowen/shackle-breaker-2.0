@@ -6,6 +6,7 @@ import { PartyManager } from '../../../../shared/systems/partyManager.js';
 import { BaseController } from '../core/baseController.js';
 import { DIFFICULTY_MODIFIERS } from '../../../../shared/data/constants.js';
 import { QuestDefinitions } from '../../../../shared/data/questDefinitions.js';
+
 export class OverworldController extends BaseController {
     constructor(input, config, worldManager) {
         super(input);
@@ -15,7 +16,6 @@ export class OverworldController extends BaseController {
         this.player = this.createPlayerEntity();
         this.camera = { x: 0, y: 0, prevX: 0, prevY: 0 };
         this.isLocked = false;
-        
         this.isMenuOpen = false;
 
         // --- RESTORED SQUARE LAYOUT ---
@@ -26,22 +26,16 @@ export class OverworldController extends BaseController {
 
         this.menuToggleHitbox = { 
             id: 'btn_menu_toggle', 
-            x: MENU_X, 
-            y: MENU_Y, 
-            w: BTN_SIZE, 
-            h: BTN_SIZE, 
-            spriteCol: 4, 
-            spriteRow: 0,
-            label: 'Menu',
-            zIndex: 100, 
-            hoverSfx: 'hoverTick' 
+            x: MENU_X, y: MENU_Y, w: BTN_SIZE, h: BTN_SIZE, 
+            spriteCol: 4, spriteRow: 0, label: 'Menu', 
+            zIndex: 100, hoverSfx: 'hoverTick' 
         };
-        
+
         // Updated options
         this.dropdownHitboxes = [
             { id: 'btn_party',     x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 1, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 2, spriteRow: 0, label: 'Party' },
             { id: 'btn_character', x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 2, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 0, spriteRow: 0, label: 'Character' },
-            { id: 'btn_journal',    x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 3, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 1, spriteRow: 0, label: 'Journal' },
+            { id: 'btn_journal',   x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 3, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 1, spriteRow: 0, label: 'Journal' },
             { id: 'btn_system',    x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 4, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 3, spriteRow: 0, label: 'System' }
         ];
     }
@@ -93,17 +87,34 @@ export class OverworldController extends BaseController {
 
     handleKeyDown(code, e) {
         if (this.isLocked) return;
-        
-        if (code === 'Space' || code === 'Enter') this.interact();
 
+        if (code === 'Space' || code === 'Enter') this.interact();
+        
         if (code === 'KeyM') {
             events.emit('PLAY_SFX', { id: 'click', volume: 0.6, pitch: 1.0 });
             this.isMenuOpen = !this.isMenuOpen;
         }
+
         if (code === 'KeyP') this.executeMenuAction('party');
         if (code === 'KeyC') this.executeMenuAction('character');
         if (code === 'KeyJ') this.executeMenuAction('journal');
-        
+
+        // --- TEMPORARY TEST: Open Shop ---
+        // --- TEMPORARY TEST: Open Shop ---
+if (code === 'KeyK') {
+    this.isMenuOpen = false;
+    this.isLocked = true;
+    console.log("[Overworld] 'K' Pressed: Triggering OPEN_SHOP event...");
+    // Emit the custom shop event with some dummy vendor items
+    events.emit('OPEN_SHOP', {
+        shopName: "Test Merchant", // Optionally add the name too!
+        wares: [                   // <--- CHANGED THIS TO 'wares'
+            { defId: 'shortsword', qty: 1 },
+           
+        ]
+    });
+}
+
         if (code === 'Escape' && this.isMenuOpen) {
             this.isMenuOpen = false;
         }
@@ -158,7 +169,7 @@ export class OverworldController extends BaseController {
 
     interact() {
         if (this.player.isMoving || this.isLocked) return;
-
+        
         const { TILE_SIZE } = this.config;
         let targetX = this.player.x;
         let targetY = this.player.y;
@@ -172,10 +183,12 @@ export class OverworldController extends BaseController {
         const lookRow = Math.floor(targetY / TILE_SIZE);
 
         const obj = this.worldManager.getObjectAt(lookCol, lookRow);
+        
         if (obj && obj.interaction) {
             console.log(`[Overworld] Interacting with ${obj.id} at ${obj.col},${obj.row}`);
             this.isLocked = true;
-            this.player.animFrame = 0;
+            this.player.animFrame = 0; 
+            
             events.emit('INTERACT', { 
                 ...obj.interaction, 
                 context: { col: obj.col, row: obj.row, objectId: obj.id } 
@@ -215,11 +228,11 @@ export class OverworldController extends BaseController {
     continueMoving(dt) {
         const moveSpeed = this.config.WALK_DURATION;
         this.player.moveProgress += dt / moveSpeed;
-        
+
         this.player.animTimer += dt;
-        if (this.player.animTimer > 0.1) {
+        if (this.player.animTimer > 0.1) { 
             this.player.animTimer = 0;
-            this.player.animFrame = (this.player.animFrame + 1) % 4;
+            this.player.animFrame = (this.player.animFrame + 1) % 4; 
         }
 
         if (this.player.moveProgress >= 1) {
@@ -249,23 +262,23 @@ export class OverworldController extends BaseController {
 
         const stepOnObj = this.worldManager.getObjectAt(gameState.player.col, gameState.player.row);
         if (stepOnObj && stepOnObj.frames > 1 && stepOnObj.interaction?.type === 'WARP') {
-            this.isLocked = true; 
+            this.isLocked = true;
             stepOnObj.isAnimating = true;
             stepOnObj.currentFrame = 0;
             stepOnObj.animTimer = 0;
             events.emit('PLAY_SFX', { id: 'door_open', volume: 0.6, pitch: 1.0 });
-            return; 
+            return;
         }
 
         this.checkTileEvents();
         this.validateBiomeWeather();
 
-        if (this.isLocked) return;
+        if (this.isLocked) return; 
 
         if (this.input.direction) {
             this.checkForNewMove();
         } else {
-            this.player.animFrame = 0;
+            this.player.animFrame = 0; 
         }
     }
 
@@ -289,7 +302,7 @@ export class OverworldController extends BaseController {
 
         const difficulty = gameState.difficulty || 'normal';
         const battleData = biome.getBattle(difficulty);
-
+        
         if (!battleData) return;
 
         console.log(`[Overworld] Ambush triggered in biome: ${biome.id} on ${difficulty} difficulty!`);
@@ -312,13 +325,14 @@ export class OverworldController extends BaseController {
         const col = gameState.player.col;
         const row = gameState.player.row;
         const biome = this.worldManager.getBiomeAt(col, row);
-        
         gameState.world.currentBiome = biome.id;
-
+        
         const activeWeather = gameState.world.currentWeather;
+        
         if (!activeWeather || activeWeather.id.toUpperCase() === 'CLEAR') return;
-
+        
         const allowed = (biome.allowedWeather || []).map(w => w.toUpperCase());
+        
         if (!allowed.includes(activeWeather.id.toUpperCase())) {
             console.log(`[Weather] Clearing skies. ${activeWeather.id} invalid in ${biome.id}.`);
             gameState.world.currentWeather = WeatherFactory.createWeather('CLEAR');
@@ -329,10 +343,10 @@ export class OverworldController extends BaseController {
         const col = gameState.player.col;
         const row = gameState.player.row;
         const biome = this.worldManager.getBiomeAt(col, row);
-
         const currentHour = (gameState.world.time || 0) / 60;
-        const targetTrack = biome.getMusic(currentHour, false);
 
+        const targetTrack = biome.getMusic(currentHour, false);
+        
         if (targetTrack && gameState.world.currentBgm !== targetTrack) {
             console.log(`[Overworld] Music shift to: ${targetTrack}`);
             gameState.world.currentBgm = targetTrack;
@@ -346,7 +360,7 @@ export class OverworldController extends BaseController {
         const startRow = Math.floor(this.player.y / TILE_SIZE);
         const endCol = Math.floor(targetX / TILE_SIZE);
         const endRow = Math.floor(targetY / TILE_SIZE);
-
+        
         return this.worldManager.canMove(startCol, startRow, endCol, endRow, this.player.direction);
     }
 
@@ -362,49 +376,51 @@ export class OverworldController extends BaseController {
         
         const trackedIds = gameState.quests.trackedIds || [];
         const trackedQuests = [];
-
+        
         for (const id of trackedIds) {
             const questState = gameState.quests.active[id];
-            const def = QuestDefinitions[id]; // Get the static text data
-
+            const def = QuestDefinitions[id];
+            
+            // Get the static text data
             // Make sure both the state and definition exist
             if (questState && def) {
                 // Build the objectives array that the renderer expects
                 const formattedObjectives = def.objectives.map(obj => {
                     const current = questState.progress[obj.id] || 0;
                     const required = obj.amount || 1;
-
+                    
                     // Figure out the verb to use
                     let actionText = "Objective";
                     let targetText = obj.targetId;
-
+                    
                     if (obj.type === 'kill_enemy') actionText = "Defeat";
                     if (obj.type === 'obtain_item') actionText = "Collect";
                     if (obj.type === 'party_level') {
                         actionText = "Reach Level";
                         targetText = obj.targetLevel;
                     }
-
+                    
                     // Format the target name (e.g., "forest_slime" -> "Forest Slime")
                     if (typeof targetText === 'string') {
                         targetText = targetText.split('_')
                             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
                             .join(' ');
                     }
-
+                    
                     return {
                         description: `${actionText} ${targetText}`,
                         current: current,
                         required: required
                     };
                 });
-
+                
                 trackedQuests.push({
                     title: def.name, // Pass the actual name from the definition
                     objectives: formattedObjectives
                 });
             }
         }
+        
         return trackedQuests;
     }
 
@@ -423,16 +439,14 @@ export class OverworldController extends BaseController {
 
     warpTo(col, row) {
         const { TILE_SIZE } = this.config;
-
         gameState.player.col = col;
         gameState.player.row = row;
-
+        
         this.player.x = col * TILE_SIZE;
         this.player.y = row * TILE_SIZE;
-
+        
         this.player.prevX = this.player.x;
         this.player.prevY = this.player.y;
-
         this.player.destX = this.player.x;
         this.player.destY = this.player.y;
         this.player.sourceX = this.player.x;
@@ -440,7 +454,7 @@ export class OverworldController extends BaseController {
         
         this.player.isMoving = false;
         this.player.moveProgress = 0;
-
+        
         this.camera.x = this.player.x;
         this.camera.y = this.player.y;
         this.camera.prevX = this.player.x;
@@ -451,7 +465,7 @@ export class OverworldController extends BaseController {
         let startX, startY;
         const savedCol = gameState.player.col;
         const savedRow = gameState.player.row;
-
+        
         if (savedCol !== 0 || savedRow !== 0) {
             startX = savedCol * this.config.TILE_SIZE;
             startY = savedRow * this.config.TILE_SIZE;
