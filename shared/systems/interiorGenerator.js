@@ -28,7 +28,7 @@ const INTERIOR_LAYOUTS = {
       if (col === 0 && row === bounds.maxR) return 'HOUSE_EXIT_DOOR';
       
       // 2. Pre-placed layout items (your static chest)
-      if (col === -1 && row === -1) return 'OAK_TREE_1';
+      if (col === -1 && row === -1) return 'WOODEN_CHEST';
 
     
 
@@ -53,7 +53,7 @@ export class InteriorGenerator {
     this.layoutProfile = INTERIOR_LAYOUTS[this.type] || INTERIOR_LAYOUTS.HOUSE_INTERIOR;
     this.bounds = this.layoutProfile.bounds;
 
-    // --- TEST OAK TREE PLACEMENT ---
+    
     const width = this.bounds.maxC - this.bounds.minC - 1; 
     const height = this.bounds.maxR - this.bounds.minR - 2; 
 

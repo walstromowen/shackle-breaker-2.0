@@ -8,6 +8,7 @@ import { treasureChest } from './encounters/treasureChest.js';
 import { testEncounter } from './encounters/testEncounter.js';
 import { strangeObelisk } from './encounters/strangeObelisk.js';
 import { wildHerbs } from './encounters/wild_herbs.js';
+import { suspiciousMerchant } from './encounters/suspiciousMerchant.js';
 
 // <-- Import your new encounter here
 
@@ -22,6 +23,7 @@ export const encounterDefinitions = {
     [testEncounter.id]: testEncounter,
     [strangeObelisk.id]: strangeObelisk,
     [wildHerbs.id]: wildHerbs,
+    [suspiciousMerchant.id]: suspiciousMerchant,
 
     
     // <-- Add your new encounter here

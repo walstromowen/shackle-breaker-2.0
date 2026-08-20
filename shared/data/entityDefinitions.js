@@ -164,6 +164,44 @@ export const ENTITY_DEFINITIONS = {
         abilities: [...HUMANOID_TEMPLATE.abilities, "claw", "bite"],
         tags: [...HUMANOID_TEMPLATE.tags]
     },
+    "SHADY_MERCHANT": {
+        ...HUMANOID_TEMPLATE,
+        name: "Shady Merchant",
+        level: 1,
+        spriteOverworld: "shadyMerchantSprite", 
+        spritePortrait: "shadyMerchantPortrait", // Reusing the encounter sheet!
+        battlePortraitFramesFront: 31,
+        battlePortraitFramesBack: 31,
+        crySound: "shadyMerchantCry", // Can share the shady merchant's distinctive cry
+        deathSound: "shadyMerchantCry",
+        attributes: {
+            ...HUMANOID_TEMPLATE.attributes,
+            vigor: 12,      // Slightly beefier than the base 10
+            dexterity: 14,  // Nimble enough to pickpocket
+            strength: 9     // Relies more on speed than raw power
+        },
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 25,      // Madman has 20
+            maxStamina: 15, // Madman has 10
+            speed: 7,       // Faster than the Madman's 5
+            critical: 0.10, // 10% crit chance for backstab flavor
+            baseDefense: {
+                ...HUMANOID_TEMPLATE.baseStats.baseDefense,
+                slash: 2,
+                pierce: 2
+            }
+        },
+        equipment: {
+            ...HUMANOID_TEMPLATE.equipment,
+            mainHand: "dagger", // Matches the encounter text!
+            offHand: "dagger" // Matches the encounter text!
+        },
+        currencyReward: { min: 15, max: 40 }, // He's a merchant, so he drops a good purse!
+        lootTableId: "mad_man_drops", // You can change this if you make a specific merchant loot table
+        abilities: [...HUMANOID_TEMPLATE.abilities, "eviscerate"], // Backstab flavor
+        tags: [...HUMANOID_TEMPLATE.tags, "MERCHANT", "ROGUE"]
+    },
     
     "LEGIONARY": {
         ...HUMANOID_TEMPLATE,
@@ -274,7 +312,7 @@ export const ENTITY_DEFINITIONS = {
             baseResistance: { ice: 0.2, water: 0.2, dark: 0.3, wind: 0.2 },
             baseAttack: { blunt: 2, ice: 4, dark: 6, wind: 3 }
         },
-        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "shifting_orb" },
+        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_darkness" },
         currencyReward: { min: 10, max: 25 },
         lootTableId: "miragewright_drops",
         abilities: [...HUMANOID_TEMPLATE.abilities, "flamethrower", "fireball"],
@@ -286,10 +324,10 @@ export const ENTITY_DEFINITIONS = {
         level: 1,
         spriteOverworld: "calcifiedCrusaderSprite",
         spritePortrait: "calcifiedCrusaderPortrait",
-        battlePortraitFramesFront: 32,
-        battlePortraitFramesBack: 32,
-        crySound: "stoneGrindSfx",
-        deathSound: "sandCollapseSfx",
+        battlePortraitFramesFront: 31,
+        battlePortraitFramesBack: 31,
+        crySound: "calcifiedCrusaderCry",
+        deathSound: "calcifiedCrusaderCry",
         attributes: { ...HUMANOID_TEMPLATE.attributes, vigor: 18, strength: 16, dexterity: 4, intelligence: 4, attunement: 10 },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
@@ -299,6 +337,8 @@ export const ENTITY_DEFINITIONS = {
                 slash: 14, 
                 pierce: 12, 
                 blunt: 4, 
+
+
                 earth: 12, 
                 wind: -6, 
                 water: -10 
@@ -313,12 +353,12 @@ export const ENTITY_DEFINITIONS = {
         },
         equipment: { 
             ...HUMANOID_TEMPLATE.equipment, 
-            mainHand: "sandstone_greatsword", 
-            torso: "calcified_cuirass" 
+            mainHand: "glaive"
+         
         },
         currencyReward: { min: 10, max: 22 },
         lootTableId: "calcified_crusader_drops",
-        abilities: [...HUMANOID_TEMPLATE.abilities, "abrasive_stance", "dune_cleave", "stone_bulwark"],
+        abilities: [...HUMANOID_TEMPLATE.abilities, ],
         tags: ["HUMANOID", "CONSTRUCT", "DESERT", "SHIFTING_SANDS", "ELITE"]
     },
 

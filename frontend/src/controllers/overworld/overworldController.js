@@ -84,12 +84,11 @@ export class OverworldController extends BaseController {
     onHover(hitboxId) {
         super.onHover(hitboxId);
     }
-
-    handleKeyDown(code, e) {
+handleKeyDown(code, e) {
         if (this.isLocked) return;
-
-        if (code === 'Space' || code === 'Enter') this.interact();
         
+        if (code === 'Space' || code === 'Enter') this.interact();
+
         if (code === 'KeyM') {
             events.emit('PLAY_SFX', { id: 'click', volume: 0.6, pitch: 1.0 });
             this.isMenuOpen = !this.isMenuOpen;
@@ -98,22 +97,6 @@ export class OverworldController extends BaseController {
         if (code === 'KeyP') this.executeMenuAction('party');
         if (code === 'KeyC') this.executeMenuAction('character');
         if (code === 'KeyJ') this.executeMenuAction('journal');
-
-        // --- TEMPORARY TEST: Open Shop ---
-        // --- TEMPORARY TEST: Open Shop ---
-if (code === 'KeyK') {
-    this.isMenuOpen = false;
-    this.isLocked = true;
-    console.log("[Overworld] 'K' Pressed: Triggering OPEN_SHOP event...");
-    // Emit the custom shop event with some dummy vendor items
-    events.emit('OPEN_SHOP', {
-        shopName: "Test Merchant", // Optionally add the name too!
-        wares: [                   // <--- CHANGED THIS TO 'wares'
-            { defId: 'shortsword', qty: 1 },
-           
-        ]
-    });
-}
 
         if (code === 'Escape' && this.isMenuOpen) {
             this.isMenuOpen = false;

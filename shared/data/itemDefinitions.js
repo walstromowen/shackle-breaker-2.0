@@ -22,13 +22,13 @@ export const ItemDefinitions = {
         value: 20,
         icon: { col: 0, row: 0 },
         attack: { pierce: 3, slash: 2 },
-        grantedAbilities: ["slash"], 
+        grantedAbilities: ["slash", "quick_stab"], 
         maxLevel: 3,
         statGrowth: {
             attack: { pierce: 1, slash: 1 }
         },
         abilityUnlocks: {
-            2: ["quick_stab"]
+            2: ["eviscerate"],
         },
         upgradeCosts: {
             2: { currency: 30, materials: { "stone": 2, "leather": 1 } },
@@ -44,8 +44,8 @@ export const ItemDefinitions = {
         description: 'A standard shortsword. Standard issue shortsword of the Altus legion. "A shorter longsword is a faster longsword" - Commander Mentoras.',
         value: 20,
         icon: { col: 1, row: 0 },
-        attack: { pierce: 3, slash: 3999 },
-        grantedAbilities: ["slash", "thrust", "flurry",  "frigid_gale", "waterfall", "overload", "boulder_throw", "spite", "inferno", "flamethrower"],
+        attack: { pierce: 3, slash: 3 },
+        grantedAbilities: ["slash", "thrust"],
         maxLevel: 3,
         statGrowth: {
             attack: { pierce: 2, slash: 2 }
@@ -75,7 +75,8 @@ export const ItemDefinitions = {
             attack: { blunt: 2, slash: 2 }
         },
         abilityUnlocks: {
-            2: ["cleave"]
+            2: ["cleave"],
+            3: ["wild_swing"]
         },
         upgradeCosts: {
             2: { currency: 50, materials: { "stone": 3, "soft_wood": 2 } },
@@ -150,6 +151,29 @@ export const ItemDefinitions = {
                 3: { currency: 180, materials: { "iron_ingot": 3, "leather": 2 } }
             }
         },
+    "glaive": {
+        id: "glaive",
+        name: "Glaive",
+        slot: "twoHand",
+        type: "weapon",
+        description: 'A polearm tipped with a sweeping blade. Standard issue for vanguard elite units tasked with holding back swarms. "A spear thrusts to kill one; a glaive sweeps to remind an army why they fear the front line." - Commander Mentoras.',
+        value: 30,
+        icon: { col: 4, row: 0 },
+        attack: { slash: 4, pierce: 3 },
+        grantedAbilities: ["slash", "thrust"],
+        maxLevel: 3,
+        statGrowth: {
+            attack: { slash: 2, pierce: 2 }
+        },
+        abilityUnlocks: {
+            2: ["cleave"],
+            3: ["execute"]
+        },
+        upgradeCosts: {
+            2: { currency: 70, materials: { "soft_wood": 4, "iron_ingot": 1 } },
+            3: { currency: 200, materials: { "iron_ingot": 3, "leather": 2 } }
+        }
+    },
      "wooden_buckler": {
         id: "wooden_buckler",
         name: "Wooden Buckler",
@@ -189,7 +213,7 @@ export const ItemDefinitions = {
         maxLevel: 3,
         statGrowth: { attack: { fire: 3 } },
         abilityUnlocks: {
-                    2: ["meteor_shower"]
+                    3: ["meteor_shower"]
                 },
         upgradeCosts: {
             2: { currency: 100, materials: { "stone": 5 } },
@@ -209,6 +233,9 @@ export const ItemDefinitions = {
         grantedAbilities: ["water_blast"],
         maxLevel: 3,
         statGrowth: { attack: { water: 3 } },
+        abilityUnlocks: {
+            2: ["waterfall"]
+        },
         upgradeCosts: {
             2: { currency: 100, materials: { "stone": 5 } },
             3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
@@ -224,9 +251,14 @@ export const ItemDefinitions = {
         value: 20,
         icon: { col: 2, row: 1 },
         attack: { earth: 5},
-        grantedAbilities: ["earthquake"],
+        grantedAbilities: ["vine_lash"],
         maxLevel: 3,
         statGrowth: { attack: { earth: 3 } },
+        abilityUnlocks: {
+            2: ["boulder_throw"],
+            3: ["earthquake"],
+            4: ["acid_pool"]
+        },
         upgradeCosts: {
             2: { currency: 100, materials: { "stone": 5 } },
             3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
@@ -245,6 +277,9 @@ export const ItemDefinitions = {
         grantedAbilities: ["shock"],
         maxLevel: 3,
         statGrowth: { attack: { lightning: 3 } },
+        abilityUnlocks: {
+            2: ["overload"]
+        },
         upgradeCosts: {
             2: { currency: 100, materials: { "stone": 5 } },
             3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
@@ -263,6 +298,9 @@ export const ItemDefinitions = {
         grantedAbilities: ["ice_shard"],
         maxLevel: 3,
         statGrowth: { attack: { ice: 3 } },
+        abilityUnlocks: {
+                2: ["frigid_gale"]
+            },
         upgradeCosts: {
             2: { currency: 100, materials: { "stone": 5 } },
             3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
@@ -315,7 +353,7 @@ export const ItemDefinitions = {
         value: 20,
         icon: { col: 7, row: 1 },
         attack: { light: 5}, // Fixed from "fire"
-        grantedAbilities: ["purif"],
+        grantedAbilities: ["spite"],
         maxLevel: 3,
         statGrowth: { attack: { light: 3 } },
  abilityUnlocks: { 

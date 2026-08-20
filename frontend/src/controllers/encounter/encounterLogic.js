@@ -48,7 +48,6 @@ export class EncounterLogic {
             const statValue = attributes[decision.attribute] || 0;
             const attributeBonus = Math.floor((statValue - 10) / 3);
             appliedAttributeBonus = attributeBonus;
-            
             if (difficulty === 'easy' || difficulty === 'normal') {
                 appliedAttributeBonus = Math.max(0, attributeBonus);
             }
@@ -56,7 +55,6 @@ export class EncounterLogic {
         
         const finalAppliedMod = appliedAttributeBonus + difficultyRollMod;
         let finalizedNightmareMod = finalAppliedMod;
-        
         if (difficulty === 'nightmare' && finalAppliedMod > 0) {
             finalizedNightmareMod = Math.floor(finalAppliedMod / 2);
         }
@@ -65,19 +63,13 @@ export class EncounterLogic {
         const total = d20 + finalizedNightmareMod;
         
         return {
-            d20,
-            mod: finalizedNightmareMod,
-            total,
-            dc: decision.threshold || 0,
-            isSuccess: total >= (decision.threshold || 0),
-            displayVal: "?",
-            duration: 1.5
+            d20, mod: finalizedNightmareMod, total, dc: decision.threshold || 0,
+            isSuccess: total >= (decision.threshold || 0), displayVal: "?", duration: 1.5
         };
     }
 
     static selectOutcome(outcomes) {
         if (!outcomes || outcomes.length === 0) return null;
-        
         const totalWeight = outcomes.reduce((sum, outcome) => sum + (outcome.weight || 1), 0);
         let roll = Math.random() * totalWeight;
         let selectedOutcome = null;
@@ -89,11 +81,10 @@ export class EncounterLogic {
                 break;
             }
         }
-        
         return selectedOutcome || outcomes[0];
     }
 
-    static resolveResults(resultsArray, model, worldManager) {
+   static resolveResults(resultsArray, model, worldManager) {
         const response = {
             messages: [],
             shouldEndEncounter: false,
@@ -103,11 +94,15 @@ export class EncounterLogic {
             stageChanged: false,
             newStageId: null,
             isGameOver: false,
-            forceCharacterSwitch: false
+            forceCharacterSwitch: false,
+            isOpeningShop: false,
+            shopId: null,
+            wares: [], 
+            returnScene: 'encounter' // <--- ADD THIS HERE!
         };
         
         if (!resultsArray) return response;
-
+        
         // Group the messages to allow sequenced reward screens
         let itemsFound = [];
         let xpEarned = [];
@@ -116,46 +111,38 @@ export class EncounterLogic {
         let traitsGained = [];
         let traitsLost = [];
         let statusEffects = [];
-        let questsStarted = []; // NEW: Array to collect started quests
+        let questsStarted = []; // Array to collect started quests
         let generalMessages = [];
         
         resultsArray.forEach(result => {
             const type = result.type;
             const payload = result.payload || {};
-
+            
             switch (type) {
-                // ADDED: Break safely so the event emitter isn't spammed. 
-                // The actual logic is handled instantly in EncounterController!
-                case "RECORD_KILL": 
+                case "RECORD_KILL":
                     break;
-                    
                 case "SET_CONTEXT_FLAG":
                     if (!model.context) model.context = {};
                     model.context[payload.flagId] = payload.value !== undefined ? payload.value : true;
                     break;
-                    
                 case "ADVANCE_STAGE":
                     response.stageChanged = true;
                     response.newStageId = payload.stageId;
                     break;
-                    
                 case "CHANGE_ENCOUNTER":
                     response.modelChanged = true;
                     response.newModel = EncounterFactory.create(payload.encounterId, model.context, payload.stageId);
                     break;
-                    
                 case "END_ENCOUNTER":
                     response.shouldEndEncounter = true;
                     response.endEncounterPayload = payload;
                     break;
-                    
                 case "DESTROY_OBJECT":
                     const ctx = model.context;
                     if (ctx && ctx.col !== undefined && ctx.row !== undefined) {
                         worldManager.modifyWorld(ctx.col, ctx.row, null, ctx.mapId);
                     }
                     break;
-                    
                 case "GIVE_ITEM":
                     let itemsToGive = [];
                     if (payload.items && Array.isArray(payload.items)) {
@@ -163,7 +150,6 @@ export class EncounterLogic {
                     } else if (payload.itemId) {
                         itemsToGive.push({ id: payload.itemId, qty: payload.qty || 1 });
                     }
-                    
                     itemsToGive.forEach(item => {
                         if (item.id) {
                             InventorySystem.addItem(item.id, item.qty || 1);
@@ -172,15 +158,13 @@ export class EncounterLogic {
                         }
                     });
                     break;
-
-                case "START_QUEST": // NEW: Quest logic handled right alongside item rewards
+                case "START_QUEST":
                     if (payload.questId) {
                         events.emit('START_QUEST', { questId: payload.questId });
                         const questName = payload.questName || payload.questId.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
                         questsStarted.push(`New Quest: ${questName}`);
                     }
                     break;
-                    
                 case "ROLL_LOOT_TABLE":
                     if (payload.lootTableId) {
                         let actualTableId = payload.lootTableId;
@@ -195,12 +179,10 @@ export class EncounterLogic {
                                 console.warn(`No defaultLootTable found for biome at ${col},${row}.`);
                             }
                         }
-                        
                         let computedRolls = payload.rolls || 1;
                         if (payload.minRolls !== undefined && payload.maxRolls !== undefined) {
                             computedRolls = Math.floor(Math.random() * (payload.maxRolls - payload.minRolls + 1)) + payload.minRolls;
                         }
-                        
                         const lootModel = LootTableFactory.generateLoot(actualTableId, computedRolls, payload.baseCurrency || 0);
                         if (lootModel.hasItems()) {
                             lootModel.items.forEach(item => {
@@ -218,15 +200,12 @@ export class EncounterLogic {
                         }
                     }
                     break;
-                    
                 case "REMOVE_ITEM":
                     InventorySystem.removeItem(payload.itemId, payload.qty || 1);
                     break;
-                    
                 case "AWARD_XP":
                     const xpAmount = payload.amount || 0;
                     if (xpAmount <= 0) break;
-                    
                     if (payload.target === "entire_party") {
                         gameState.party?.members?.forEach(m => {
                             if (ExperienceSystem.addXp(m, xpAmount)) {
@@ -244,15 +223,28 @@ export class EncounterLogic {
                         }
                     }
                     break;
-                    
-                case "MODIFY_CURRENCY":
+               case "MODIFY_CURRENCY":
                     if (typeof gameState.party.currency === 'undefined') gameState.party.currency = 0;
-                    gameState.party.currency += (payload.amount || 0);
+                    
+                    const amount = payload.amount || 0;
+                    const startingCurrency = gameState.party.currency;
+                    
+                    // Apply the change
+                    gameState.party.currency += amount;
+                    
+                    // Prevent currency from dropping below zero
                     if (gameState.party.currency < 0) gameState.party.currency = 0;
                     
-                    if ((payload.amount || 0) > 0) currencyFound.push(`Found ${payload.amount} currency!`);
-                    break;
+                    // Calculate exactly how much actually changed
+                    const amountChanged = Math.abs(gameState.party.currency - startingCurrency);
                     
+                    // Notify the player of the gain or loss
+                    if (amount > 0) {
+                        currencyFound.push(`Found ${amountChanged} currency!`);
+                    } else if (amount < 0 && amountChanged > 0) {
+                        generalMessages.push(`Lost ${amountChanged} currency!`);
+                    }
+                    break;
                 case "MODIFY_VITALS":
                     const targetMembers = payload.target === "entire_party" ? (gameState.party?.members || []) : [gameState.party?.members?.[0]].filter(Boolean);
                     targetMembers.forEach(char => {
@@ -267,11 +259,9 @@ export class EncounterLogic {
                             insightChange = Math.floor((char.insight || 0) * (insightChange / 100));
                             isPct = false;
                         }
-                        
                         PartyManager.modifyVitals(char, hpChange, stamChange, insightChange, payload.damageType || 'true', isPct, payload.bypassDefense || false);
                     });
                     break;
-                    
                 case "APPLY_STATUS_EFFECT": {
                     const effectTargets = payload.target === "entire_party" ? (gameState.party?.members || []) : [gameState.party?.members?.[0]].filter(Boolean);
                     effectTargets.forEach(char => {
@@ -281,7 +271,6 @@ export class EncounterLogic {
                     });
                     break;
                 }
-                    
                 case "ADD_TRAIT": {
                     const traitTargets = payload.target === "entire_party" ? (gameState.party?.members || []) : [gameState.party?.members?.[0]].filter(Boolean);
                     traitTargets.forEach(char => {
@@ -294,7 +283,6 @@ export class EncounterLogic {
                     });
                     break;
                 }
-                    
                 case "REMOVE_TRAIT": {
                     const removeTargets = payload.target === "entire_party" ? (gameState.party?.members || []) : [gameState.party?.members?.[0]].filter(Boolean);
                     removeTargets.forEach(char => {
@@ -307,18 +295,15 @@ export class EncounterLogic {
                     });
                     break;
                 }
-                    
                 case "START_BATTLE": {
                     let enemyList = Array.isArray(payload.enemies) ? [...payload.enemies] : [];
                     const currentDifficulty = payload.difficulty || gameState.difficulty || 'normal';
-                    
                     if (payload.tableId) {
                         const spawnModel = SpawnTableFactory.generateBattle(payload.tableId, currentDifficulty);
                         if (spawnModel && spawnModel.hasEnemies()) {
                             enemyList = [...enemyList, ...spawnModel.enemies];
                         }
                     }
-                    
                     let battleBgAsset = payload.background;
                     if (!battleBgAsset) {
                         const currentHour = gameState.world?.time ? gameState.world.time / 60 : 12;
@@ -328,19 +313,13 @@ export class EncounterLogic {
                         const biome = worldManager.getBiomeAt(col, row);
                         battleBgAsset = biome ? biome.getBattleBackground(currentHour) : 'default';
                     }
-                    
                     events.emit('START_BATTLE', {
-                        enemies: enemyList,
-                        tableId: payload.tableId || null,
-                        difficulty: currentDifficulty,
-                        background: battleBgAsset,
-                        weather: gameState.world?.currentWeather || 'clear',
-                        context: model.context,
-                        bgm: payload.bgm || null
+                        enemies: enemyList, tableId: payload.tableId || null, difficulty: currentDifficulty,
+                        background: battleBgAsset, weather: gameState.world?.currentWeather || 'clear',
+                        context: model.context, bgm: payload.bgm || null
                     });
                     break;
                 }
-                    
                 case "ADVANCE_TIME":
                     if (gameState.world && typeof gameState.world.time !== 'undefined') {
                         const minutesToAdvance = (payload.hours || 0) * 60 + (payload.minutes || 0);
@@ -359,17 +338,43 @@ export class EncounterLogic {
                         }
                     }
                     break;
-                    
                 case "TAKE_DAMAGE":
                     events.emit("TAKE_DAMAGE", payload);
                     break;
 
+               case "OPEN_SHOP":
+                response.isOpeningShop = true;
+                response.shopId = payload.shopId;
+                
+                // 1. Check if we have already generated wares for this specific encounter
+                if (model.context && model.context.shopWares) {
+                    response.wares = model.context.shopWares;
+                } else {
+                    // 2. If this is the first time trading, generate the wares
+                    let resolvedWares = payload.wares ? [...payload.wares] : [];
+                    
+                    if (payload.lootTableId) {
+                        const rolls = payload.rolls || 5;
+                        const lootModel = LootTableFactory.generateLoot(payload.lootTableId, rolls);
+                        if (lootModel.hasItems()) {
+                            const generatedWares = lootModel.items.map(item => ({ id: item.id, qty: item.qty }));
+                            resolvedWares = [...resolvedWares, ...generatedWares];
+                        }
+                    }
+                    
+                    // 3. Save the generated wares to the encounter context so they persist
+                    if (!model.context) model.context = {};
+                    model.context.shopWares = resolvedWares;
+                    
+                    response.wares = resolvedWares;
+                }
+                break;
                 default:
                     events.emit(type, payload);
                     break;
             }
         });
-
+        
         // Grouping the collected messages sequentially
         if (generalMessages.length > 0) response.messages.push(...generalMessages);
         if (statusEffects.length > 0) response.messages.push(statusEffects.join('\n'));
@@ -377,7 +382,7 @@ export class EncounterLogic {
         if (levelsGained.length > 0) response.messages.push(levelsGained.join('\n'));
         if (traitsGained.length > 0) response.messages.push(traitsGained.join('\n'));
         if (traitsLost.length > 0) response.messages.push(traitsLost.join('\n'));
-        if (questsStarted.length > 0) response.messages.push(questsStarted.join('\n')); // NEW: Renders quests alongside regular items!
+        if (questsStarted.length > 0) response.messages.push(questsStarted.join('\n'));
         if (itemsFound.length > 0) response.messages.push(`Obtained Items:\n` + itemsFound.join('\n'));
         if (currencyFound.length > 0) response.messages.push(currencyFound.join('\n'));
         

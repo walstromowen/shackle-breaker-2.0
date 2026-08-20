@@ -24,7 +24,7 @@ export const BIOME_DEFINITIONS = {
     }, 
     mapObjects: { 
       [CONFIG.TILE_TYPES.LAYER_3]: [ 
-        { chance: 0.025, id: 'STRANGE_OBELISK' }, // Increased from 0.005
+        { chance: 0.1, id: 'STRANGE_OBELISK' }, // Increased from 0.005
         { chance: 0.040, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] } // Decreased from 0.120
       ], 
       [CONFIG.TILE_TYPES.LAYER_2]: [ 
@@ -45,12 +45,13 @@ export const BIOME_DEFINITIONS = {
       ] 
     }, 
     encounters: { 
-      rate: 1.005, 
+      rate: 0.01, 
       type: "time_weighted", 
       pools: [ 
-        { weight: 10, id: 'wild_hunt', allowedTimes: ['day'] }, 
-        { weight: 20, id: 'wounded_mutt', allowedTimes: ['day'] }, 
-        { weight: 120, id: 'a_disturbing_sight', allowedTimes: ['day'] } 
+        { weight: 10, id: 'wild_hunt', allowedTimes: ['day', 'dusk', 'night'] }, 
+        { weight: 10, id: 'wounded_mutt', allowedTimes: ['day', 'dusk', 'night'] }, 
+        { weight: 20, id: 'a_disturbing_sight', allowedTimes: ['day', 'dusk', 'night'] } ,
+        { weight: 20, id: 'suspicious_merchant', allowedTimes: ['day', 'dusk', 'night'] } 
       ] 
     }, 
     battles: { 
@@ -73,7 +74,7 @@ export const BIOME_DEFINITIONS = {
     }, 
     structures: { 
       rate: 0.0, 
-      pools: [{ chance: 1.00, id: 'ABANDONED_VILLAGE' }] 
+      pools: [] 
     }, 
     mapObjects: { 
       [CONFIG.TILE_TYPES.LAYER_3]: [ 
@@ -97,11 +98,10 @@ export const BIOME_DEFINITIONS = {
       ] 
     }, 
     encounters: { 
-      rate: 0.005, 
+      rate: 0.01, 
       type: "time_weighted", 
       pools: [ 
-        { weight: 20, id: 'wounded_mutt', allowedTimes: ['day'] }, 
-        { weight: 80, id: 'a_disturbing_sight', allowedTimes: ['day'] } 
+        { weight: 100, id: 'suspicious_merchant', allowedTimes: ['day'] }, 
       ] 
     }, 
     battles: { 
