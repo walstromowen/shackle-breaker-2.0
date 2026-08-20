@@ -49,8 +49,10 @@ ui_icons: './assets/icons/ui_icons.png',
 duneMawPortrait: './assets/sprites/dune_maw/dune_maw_portrait.png',
 scorchedVagrantPortrait: './assets/sprites/scorched_vagrant/scorched_vagrant_portrait.png',
 miragewrightPortrait: './assets/sprites/miragewright/miragewright_portrait.png',
+calcifiedCrusaderPortrait: './assets/sprites/calcified_crusader/calcified_crusader_portrait.png',
 shadyMerchantPortrait: './assets/sprites/shady_merchant/shady_merchant_portrait.png',
-    // UI / Icon Atlases
+thunderLocustPortrait: './assets/sprites/thunder_locust/thunder_locust_portrait.png',
+// UI / Icon Atlases
     weapons: './assets/icons/weapons.png',
     armor: './assets/icons/armor.png',
     consumables: './assets/icons/consumables.png',
@@ -97,6 +99,9 @@ shadyMerchantPortrait: './assets/sprites/shady_merchant/shady_merchant_portrait.
     spiteAnimation: './assets/abilityAnimations/spite.png',
     boulderThrowAnimation: './assets/abilityAnimations/boulder_throw.png',
     //quickStabAnimation: './assets/abilityAnimations/quick_stab.png',
+    intimidateAnimation: './assets/abilityAnimations/intimidate.png',
+    rallyAnimation: './assets/abilityAnimations/rally.png',
+    smokeAnimation: './assets/abilityAnimations/smoke.png',
 
     // Backgrounds
     arcaneVortexBg: './assets/backgrounds/arcane_vortex_bg.png',
@@ -152,6 +157,9 @@ shadyMerchantPortrait: './assets/sprites/shady_merchant/shady_merchant_portrait.
     meteorShowerImpactSfx: './assets/audio/sfx/abilities/meteor_shower/meteor_shower_impact.wav',
     quickStabSfx: './assets/audio/sfx/abilities/quick_stab.wav',
     spiteCastSfx: './assets/audio/sfx/abilities/spite/spite_cast.wav',
+    rallySfx: './assets/audio/sfx/abilities/rally.wav',
+    smokeSfx: './assets/audio/sfx/abilities/smoke.wav',
+    intimidateSfx: './assets/audio/sfx/abilities/intimidate.wav',
     
     //BATTLE STATUS AND WEATHER SFX
     poisonSfx: './assets/audio/sfx/statusEffects/poison.wav',
@@ -191,6 +199,8 @@ shadyMerchantPortrait: './assets/sprites/shady_merchant/shady_merchant_portrait.
     duneMawCry: './assets/audio/sfx/cries/dune_maw_cry.wav',
     scorchedVagrantCry: './assets/audio/sfx/cries/scorched_vagrant_cry.wav',
     miragewrightCry: './assets/audio/sfx/cries/miragewright_cry.wav',
+    calcifiedCrusaderCry: './assets/audio/sfx/cries/calcified_crusader_cry.wav',
+    thunderLocustCry: './assets/audio/sfx/cries/thunder_locust_cry.wav',
     shadyMerchantCry: './assets/audio/sfx/cries/shady_merchant_cry.wav',
     // --- UI SFX ---
     diceTick: './assets/audio/sfx/ui/dice_tick.wav',
@@ -209,12 +219,36 @@ async function initialize() {
     audioManager.init(assetLoader);
 
     const canvas = document.getElementById('game-canvas');
-    // Use the CONFIG object to set dimensions so you only have a single source of truth
-    canvas.width = CONFIG.CANVAS_WIDTH;   // Resolves to 1920
-    canvas.height = CONFIG.CANVAS_HEIGHT; // Resolves to 1080
+    const ctx = canvas.getContext('2d'); // <-- Grab the context here to apply scaling
+
+    // --- NEW: Handle Window Resizing and High-DPI screens ---
+    function applyCrispScaling() {
+        const dpr = window.devicePixelRatio || 1;
+
+        // Multiply your internal 1920x1080 by the monitor's pixel density
+        canvas.width = CONFIG.CANVAS_WIDTH * dpr;  
+        canvas.height = CONFIG.CANVAS_HEIGHT * dpr;
+
+        // Scale the canvas context. 
+        // This is the magic part: your game logic still draws at 1920x1080,
+        // but the browser renders it using the extra pixels!
+        ctx.scale(dpr, dpr);
+        
+        // Force crisp pixels (MUST be reapplied every time canvas dimensions change)
+        ctx.imageSmoothingEnabled = false; 
+    }
+
+    // Apply the scaling right now
+    applyCrispScaling();
+
+    // Re-apply if the user drags the window to a different monitor with a different DPI
+    window.addEventListener('resize', applyCrispScaling);
+    // ---------------------------------------------------------
+
 
     // 2. Initialize SceneManager and GameLoop FIRST so the Boot screen can render
     sceneManager = new SceneManager(canvas, assetLoader, CONFIG);
+
     gameLoop = new GameLoop(
         (deltaTime) => sceneManager.update(deltaTime),
         (interpolation, totalTime) => sceneManager.render(interpolation, totalTime)

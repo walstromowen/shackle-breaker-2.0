@@ -83,13 +83,15 @@ export class CharacterCreatorRenderer {
         // --- C. VISUALS ---
         const VITALS_OFFSET = 380;
         const VITALS_START_Y = identityBottomY + VITALS_OFFSET;
-
-        const portraitSize = 256;
+        
+        // The bounding box size for the UI element
+        const portraitSize = 256; 
         const spriteDisplaySize = 64;
+        
         const visualGap = 48;
         const totalVisualWidth = portraitSize + visualGap + spriteDisplaySize;
         const startVisualX = p + (colW - totalVisualWidth) / 2;
-
+        
         const portraitY = identityBottomY + (VITALS_OFFSET / 2) - (portraitSize / 2);
         const spriteY = identityBottomY + (VITALS_OFFSET / 2) - (spriteDisplaySize / 2);
 
@@ -100,15 +102,33 @@ export class CharacterCreatorRenderer {
             ctx.save();
             const masterSheet = this.loader.get(appData.spritePortrait);
             const overworldSheet = this.loader.get(appData.spriteOverworld);
-
+            
             const spriteX = startVisualX + portraitSize + visualGap;
 
             ui.drawRect(startVisualX, portraitY, portraitSize, portraitSize, "rgba(0,0,0,0.6)", true);
             ui.drawRect(spriteX, spriteY, spriteDisplaySize, spriteDisplaySize, "rgba(0,0,0,0.6)", true);
 
             if (masterSheet) {
-                ctx.drawImage(masterSheet, 0, 0, 128, 128, startVisualX, portraitY, portraitSize, portraitSize);
+                const srcW = 128;
+                const srcH = 128;
+                const srcRatio = srcW / srcH;
+                let drawW = portraitSize;
+                let drawH = portraitSize;
+                
+                if (srcRatio > 1) {
+                    drawH = portraitSize / srcRatio;
+                } else if (srcRatio < 1) {
+                    drawW = portraitSize * srcRatio;
+                }
+                
+                // Center the image inside the bounding box
+                const drawX = startVisualX + (portraitSize - drawW) / 2;
+                const drawY = portraitY + (portraitSize - drawH) / 2;
+
+                ctx.imageSmoothingEnabled = false; // Keeps pixel art crisp when scaled
+                ctx.drawImage(masterSheet, 0, 0, srcW, srcH, drawX, drawY, drawW, drawH);
             }
+
             if (overworldSheet) {
                 ctx.imageSmoothingEnabled = false;
                 ctx.drawImage(overworldSheet, 0, 0, 32, 32, spriteX, spriteY, spriteDisplaySize, spriteDisplaySize);
@@ -116,6 +136,7 @@ export class CharacterCreatorRenderer {
 
             ui.drawRect(startVisualX, portraitY, portraitSize, portraitSize, UITheme.colors.border, false);
             ui.drawRect(spriteX, spriteY, spriteDisplaySize, spriteDisplaySize, UITheme.colors.border, false);
+
             ctx.restore();
         }
 

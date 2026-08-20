@@ -178,10 +178,10 @@ export const StatusEffectDefinitions = {
             { trigger: 'ON_TURN_END', modify: 'hp', percent: 0.05, battleMessage: "{target} is blessed and recovers {amount} HP!" }
         ]
     },
-    empowered: {
-        id: 'empowered',
-        name: 'Empowered',
-        icon: { col: 4, row: 2 },
+    enraged: {
+        id: 'enraged',
+        name: 'Enraged',
+        icon: { col: 1, row: 1 },
         defaultCharges: 3,
         maxStacks: 1,
         modifiers: [
@@ -193,7 +193,7 @@ export const StatusEffectDefinitions = {
     weakened: {
         id: 'weakened',
         name: 'Weakened',
-        icon: { col: 5, row: 2 },
+        icon: { col: 1, row: 2 },
         defaultCharges: 3,
         maxStacks: 1,
         modifiers: [
@@ -231,5 +231,28 @@ export const StatusEffectDefinitions = {
             { type: 'percent', target: 'attack.water', value: 0.5 },
             { type: 'percent', target: 'attack.wind', value: 0.5 }
         ]
-    }
+    },
+    evasive: {
+        id: 'evasive',
+        name: 'Evasive',
+        animationId: "evasive",
+        icon: { col: 2, row: 1 }, // Adjust sprite sheet coordinates as needed
+        defaultCharges: 3,
+        maxStacks: 1,
+        modifiers: [
+            { type: 'percent', target: 'evasion', value: 0.5 } // Increases evasion by 50%
+        ]
+    },
+    
+    exposed: {
+        id: 'exposed',
+        name: 'Exposed',
+        animationId: "exposed",
+        icon: { col: 2, row: 2 }, // Adjust sprite sheet coordinates as needed
+        defaultCharges: 3,
+        maxStacks: 1,
+        modifiers: [
+            { type: 'percent', target: 'evasion', value: -0.5 } // Decreases evasion by 50%
+        ]
+    },
 };

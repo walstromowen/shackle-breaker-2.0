@@ -401,8 +401,17 @@ export class ShopController extends BaseController {
             this.playCancelSound();
             return;
         }
+
         this.playCancelSound();
-        events.emit('CHANGE_SCENE', { scene: this.returnScene });
+        
+        // --- MODIFIED: Pass the updated wares and ID back when leaving ---
+        events.emit('CHANGE_SCENE', { 
+            scene: this.returnScene,
+            data: {
+                encounterInstanceId: this.config.encounterInstanceId,
+                updatedWares: this.logic.vendorWares
+            }
+        });
     }
 
     // ========================================================

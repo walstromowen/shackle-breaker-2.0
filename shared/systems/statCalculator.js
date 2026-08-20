@@ -213,6 +213,10 @@ export class StatCalculator {
         // --- STEP 4.5: STATUS EFFECTS & STACKING ---
         const activeStatuses = character.statusEffects || character.state?.statusEffects || [];
         
+        // Arrays to hold modifiers so we can apply flats first, then percents
+        const flatModifiers = [];
+        const percentModifiers = [];
+
         activeStatuses.forEach(status => {
             if (!status.modifiers || !Array.isArray(status.modifiers)) return;
             
@@ -220,23 +224,44 @@ export class StatCalculator {
                 const stacks = status.stacks || 1;
                 const totalValue = mod.value * stacks;
                 
-                const path = mod.target.split('.');
-                
-                if (path.length === 2) {
-                    const category = path[0]; 
-                    const stat = path[1];     
-                    
-                    if (finalStats[category] && finalStats[category][stat] !== undefined) {
-                        finalStats[category][stat] += totalValue;
-                    }
-                } else if (path.length === 1) {
-                    const stat = path[0];
-                    if (finalStats[stat] !== undefined) {
-                        finalStats[stat] += totalValue;
-                    }
+                if (mod.type === 'percent') {
+                    percentModifiers.push({ target: mod.target, value: totalValue });
+                } else {
+                    flatModifiers.push({ target: mod.target, value: totalValue });
                 }
             });
         });
+
+        // Helper function to safely apply values to the finalStats object
+        const applyMod = (mod, isPercent) => {
+            const path = mod.target.split('.');
+            if (path.length === 2) {
+                const category = path[0];
+                const stat = path[1];
+                if (finalStats[category] && finalStats[category][stat] !== undefined) {
+                    if (isPercent) {
+                        finalStats[category][stat] += (finalStats[category][stat] * mod.value);
+                    } else {
+                        finalStats[category][stat] += mod.value;
+                    }
+                }
+            } else if (path.length === 1) {
+                const stat = path[0];
+                if (finalStats[stat] !== undefined) {
+                    if (isPercent) {
+                        finalStats[stat] += (finalStats[stat] * mod.value);
+                    } else {
+                        finalStats[stat] += mod.value;
+                    }
+                }
+            }
+        };
+
+        // Apply flats first (e.g., +10 attack)
+        flatModifiers.forEach(mod => applyMod(mod, false));
+        
+        // Apply percents second (e.g., +50% attack scales off the new flat total)
+        percentModifiers.forEach(mod => applyMod(mod, true));
 
         // --- STEP 5: FINAL SUMMATION ---
         finalStats.maxHp = breakdown.resources.base.hp + breakdown.resources.derived.hp + breakdown.resources.flat.hp;

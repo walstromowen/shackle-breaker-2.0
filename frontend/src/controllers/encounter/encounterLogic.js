@@ -342,32 +342,29 @@ export class EncounterLogic {
                     events.emit("TAKE_DAMAGE", payload);
                     break;
 
-               case "OPEN_SHOP":
+              case "OPEN_SHOP":
                 response.isOpeningShop = true;
                 response.shopId = payload.shopId;
+                response.encounterInstanceId = model.instanceId;
+                // We generate the wares from the loot table every time the outcome is rolled.
+                // We NO LONGER cache this in model.context.shopWares. 
+                // ShopLogic will use the encounterInstanceId to ignore these new rolls 
+                // if the player is just re-opening the shop during the same visit.
+                let resolvedWares = payload.wares ? [...payload.wares] : [];
                 
-                // 1. Check if we have already generated wares for this specific encounter
-                if (model.context && model.context.shopWares) {
-                    response.wares = model.context.shopWares;
-                } else {
-                    // 2. If this is the first time trading, generate the wares
-                    let resolvedWares = payload.wares ? [...payload.wares] : [];
-                    
-                    if (payload.lootTableId) {
-                        const rolls = payload.rolls || 5;
-                        const lootModel = LootTableFactory.generateLoot(payload.lootTableId, rolls);
-                        if (lootModel.hasItems()) {
-                            const generatedWares = lootModel.items.map(item => ({ id: item.id, qty: item.qty }));
-                            resolvedWares = [...resolvedWares, ...generatedWares];
-                        }
+                if (payload.lootTableId) {
+                    const rolls = payload.rolls || 5;
+                    const lootModel = LootTableFactory.generateLoot(payload.lootTableId, rolls);
+                    if (lootModel.hasItems()) {
+                        const generatedWares = lootModel.items.map(item => ({
+                            id: item.id,
+                            qty: item.qty
+                        }));
+                        resolvedWares = [...resolvedWares, ...generatedWares];
                     }
-                    
-                    // 3. Save the generated wares to the encounter context so they persist
-                    if (!model.context) model.context = {};
-                    model.context.shopWares = resolvedWares;
-                    
-                    response.wares = resolvedWares;
                 }
+                
+                response.wares = resolvedWares;
                 break;
                 default:
                     events.emit(type, payload);

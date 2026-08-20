@@ -239,6 +239,69 @@ export const AbilityDefinitions = {
         ]
     },
 
+    "rally": {
+        id: "rally",
+        name: "Rally",
+        description: "A rousing battle cry that raises the physical attack power of all allies.",
+        battleMessage: "{user} lets out a fierce {ability}, boosting the party's strength!",
+        icon: { col: 6, row: 0 }, 
+        targeting: { scope: "all_allies", select: "auto" },
+        cost: { stamina: 15 },
+        accuracy: 1.0,
+        animationId: "rally", // <-- NEW ANIMATION ID
+        effects: [],
+        statusEffects: [
+            { id: "enraged", chance: 1.0, duration: 3 }
+        ]
+    },
+
+    "intimidate": {
+        id: "intimidate",
+        name: "Intimidate",
+        description: "A terrifying display that lowers a single target's attack power for 3 turns.",
+        battleMessage: "{user} glares intensely to {ability} {target}!",
+        icon: { col: 4, row: 11 },
+        targeting: { scope: "enemy", select: "single" }, 
+        cost: { stamina: 10 },
+        accuracy: 1.0,
+        animationId: "intimidate", // <-- NEW ANIMATION ID
+        effects: [],
+        statusEffects: [
+            { id: "weakened", chance: 1.0, duration: 3 }
+        ]
+    },
+
+    "howl": {
+        id: "howl",
+        name: "Howl",
+        description: "A primal howl that awakens a target's fighting spirit, raising their attack power for 3 turns.",
+        battleMessage: "{user} lets out a ferocious {ability}, boosting {target}'s strength!",
+        icon: { col: 3, row: 2 }, 
+        targeting: { scope: "ally", select: "single" }, 
+        cost: { stamina: 10 },
+        accuracy: 1.0,
+        animationId: "howl", // <-- NEW ANIMATION ID
+        effects: [],
+        statusEffects: [
+            { id: "enraged", chance: 1.0, duration: 3 }
+        ]
+    },
+    "hide": {
+        id: "hide",
+        name: "Hide",
+        description: "The user melts into the shadows, raising their evasion for 3 turns.",
+        battleMessage: "{user} uses a smoke trick to {ability} in the shadows!",
+        icon: { col: 5, row: 2 }, 
+        targeting: { scope: "self", select: "auto" }, // Automatically targets the caster
+        cost: { stamina: 10 },
+        accuracy: 1.0,
+        animationId: "hide",
+        effects: [],
+        statusEffects: [
+            { id: "evasive", chance: 1.0, duration: 3 } // Make sure 'evasion_up' exists in your Status Effects!
+        ]
+    },
+
     // =========================================================================
     // 3. PHYSICAL - PIERCE
     // =========================================================================
@@ -265,7 +328,7 @@ export const AbilityDefinitions = {
         name: "Bite",
         description: "Tear at the target with sharp fangs.",
         battleMessage: "{user} sinks their teeth into {target} with a vicious {ability}!",
-        icon: { col: 1, row: 12 },
+        icon: { col: 4, row: 2 },
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 10 },
         accuracy: 1.0,
@@ -916,35 +979,6 @@ export const AbilityDefinitions = {
         animationId: "melee_lunge",
         statusEffects: [
             { id: "counter_ready", chance: 1.0, duration: 1 }
-        ]
-    },
-    "intimidate": {
-        id: "intimidate",
-        name: "Intimidate",
-        description: "Shout to lower the attack power of all enemies.",
-        battleMessage: "{user} shouts to {ability} the enemy!",
-        icon: { col: 1, row: 7 },
-        targeting: { scope: "all_enemies", select: "auto" },
-        cost: { stamina: 10 },
-        accuracy: 1.0,
-        animationId: "melee_lunge",
-        effects: [],
-        statusEffects: [
-            { id: "attack_down", chance: 1.0, duration: 3 }
-        ]
-    },
-    "hide": {
-        id: "hide",
-        name: "Hide",
-        description: "Attempt to hide. Raises evasion.",
-        battleMessage: "{user} attempts to {ability} in the shadows!",
-        icon: { col: 2, row: 7 },
-        animationId: "melee_lunge",
-        targeting: { scope: "self", select: "auto" },
-        cost: { stamina: 10 },
-        accuracy: 1.0,
-        statusEffects: [
-            { id: "evasion_up", chance: 1.0, duration: 3 }
         ]
     },
     "retreat": {

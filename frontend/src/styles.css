@@ -30,13 +30,15 @@ body{
     margin: auto;
     
 }
-#game-canvas{
-    display: block;
-    background-color: #111;
-    width: 100%; 
+#game-canvas {
+    width: 100%;       /* Or whatever you use to fit it to the window */
     height: 100%;
-    box-shadow: 0 0 20px var(--color-1);
-    image-rendering: pixelated; 
+    object-fit: contain; /* Keeps the 16:9 aspect ratio */
+    
+    /* Forces nearest-neighbor scaling */
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-crisp-edges;
+    image-rendering: pixelated;
     image-rendering: crisp-edges;
-   
+
 }

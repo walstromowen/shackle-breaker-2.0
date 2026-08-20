@@ -116,63 +116,89 @@ class AudioManager {
     }
 
     /**
-     * Crossfades into a new music track.
-     */
-    playMusic(key, fadeTime = 1.0) {
-        if (!this.isInitialized || !this.loader) return;
+   * Crossfades into a new music track or restores it if it's currently fading out.
+   */
+  playMusic(key, fadeTime = 1.0) {
+    if (!this.isInitialized || !this.loader) return;
 
-        // Prevent restarting the track if it's already playing
-        if (this.currentTrackId === key) {
-            return;
+    // Prevent restarting the track if it's already playing (or fading out to stop)
+    if (this.currentTrackId === key) {
+      if (this.currentMusicSource) {
+        const { gain, stopTimeout } = this.currentMusicSource;
+        
+        // If the track was in the process of stopping, cancel the stop timer
+        if (stopTimeout) {
+          clearTimeout(stopTimeout);
+          this.currentMusicSource.stopTimeout = null;
         }
-
-        const buffer = this.loader.get(key);
-        if (!buffer) {
-            console.warn(`[AudioManager] Missing Music buffer: ${key}`);
-            return;
-        }
-
-        // If we are already playing a track, fade it out
-        if (this.currentMusicSource) {
-            this.stopMusic(fadeTime);
-        }
-
-        const source = this.ctx.createBufferSource();
-        source.buffer = buffer;
-        source.loop = true;
-
-        const localGain = this.ctx.createGain();
-        localGain.gain.value = 0; // Start at 0 for fade in
-
-        source.connect(localGain);
-        localGain.connect(this.musicGain);
-
-        source.start(0);
-
-        // Fade in
-        localGain.gain.linearRampToValueAtTime(1.0, this.ctx.currentTime + fadeTime);
-
-        // Update state
-        this.currentMusicSource = { source, gain: localGain };
-        this.currentTrackId = key;
+        
+        // Cancel the fade-out and ramp the volume back up
+        gain.gain.cancelScheduledValues(this.ctx.currentTime);
+        gain.gain.setValueAtTime(gain.gain.value, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(1.0, this.ctx.currentTime + fadeTime);
+      }
+      return;
     }
 
-    stopMusic(fadeTime = 1.0) {
-        if (!this.currentMusicSource) return;
+    // If we are already playing a DIFFERENT track, fade it out
+    if (this.currentMusicSource) {
+      this.stopMusic(fadeTime);
+    }
 
-        const { source, gain } = this.currentMusicSource;
+    const buffer = this.loader.get(key);
+    if (!buffer) {
+      console.warn(`[AudioManager] Missing Music buffer: ${key}`);
+      return;
+    }
 
-        // Fade out
-        gain.gain.setValueAtTime(gain.gain.value, this.ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + fadeTime);
+    const source = this.ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
 
-        // Stop playback after fade completes
-        source.stop(this.ctx.currentTime + fadeTime);
+    const localGain = this.ctx.createGain();
+    localGain.gain.value = 0; // Start at 0 for fade in
 
-        // Clear state
+    source.connect(localGain);
+    localGain.connect(this.musicGain);
+    source.start(0);
+
+    // Fade in
+    localGain.gain.linearRampToValueAtTime(1.0, this.ctx.currentTime + fadeTime);
+
+    // Update state, initialize with no stop timeout
+    this.currentMusicSource = { source, gain: localGain, stopTimeout: null };
+    this.currentTrackId = key;
+  }
+
+  stopMusic(fadeTime = 1.0) {
+    if (!this.currentMusicSource) return;
+
+    const { source, gain } = this.currentMusicSource;
+    const sourceToStop = source;
+    const trackIdToStop = this.currentTrackId;
+
+    // Fade out
+    gain.gain.cancelScheduledValues(this.ctx.currentTime);
+    gain.gain.setValueAtTime(gain.gain.value, this.ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + fadeTime);
+
+    // Use setTimeout instead of source.stop(time) so we can cancel it in playMusic if needed.
+    const timeout = setTimeout(() => {
+      try { sourceToStop.stop(); } catch (e) {}
+      
+      // Clear state ONLY if this track is still the active state (wasn't overwritten by a new track)
+      if (this.currentTrackId === trackIdToStop) {
         this.currentMusicSource = null;
         this.currentTrackId = null;
-    }
+      }
+    }, fadeTime * 1000);
+
+    // Assign timeout to the source object in case we need to resume it
+    this.currentMusicSource.stopTimeout = timeout;
+    
+    // Notice: We intentionally DO NOT set this.currentTrackId = null here!
+    // Leaving it allows playMusic to check if the incoming track matches the fading one.
+  }
 
     // =========================================================
     // NEW: Ambient Audio Methods

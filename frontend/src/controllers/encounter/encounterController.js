@@ -409,17 +409,14 @@ export class EncounterController extends BaseController {
         else if (selectedDecision.type === 'open_shop') {
             this.inputCooldown = 0.5;
             let finalWares = selectedDecision.wares || [];
-            
-            // Generate dynamic wares if a loot table is provided
+
             if (selectedDecision.lootTableId) {
                 const rolls = selectedDecision.rolls || 5;
                 const lootModel = LootTableFactory.generateLoot(selectedDecision.lootTableId, rolls);
-                
                 if (lootModel.hasItems()) {
                     const dynamicWares = lootModel.items.map(item => ({
                         id: item.id,
-                        qty: item.qty 
-                        // ShopController automatically handles the price!
+                        qty: item.qty
                     }));
                     finalWares = [...finalWares, ...dynamicWares];
                 }
@@ -428,7 +425,11 @@ export class EncounterController extends BaseController {
             events.emit('OPEN_SHOP', {
                 shopId: selectedDecision.shopId,
                 wares: finalWares,
-                returnScene: 'encounter', // <--- THIS TELLS THE SHOP WHERE TO GO BACK TO
+                returnScene: 'encounter',
+                
+                // --- ADD THIS LINE: Pass the ID directly from the model ---
+                encounterInstanceId: this.model.instanceId, 
+                
                 callback: () => {
                     this.inputCooldown = 0.5;
                     this.updateBGM();
@@ -585,11 +586,14 @@ export class EncounterController extends BaseController {
 
         // --- NEW: Emit OPEN_SHOP event here as well to capture outcome-based shop encounters ---
         if (logicResponse.isOpeningShop) {
-            this.actionPhase = 'ending'; // Locks input in the encounter scene temporarily
-            events.emit('OPEN_SHOP', { 
-                shopId: logicResponse.shopId, 
+            this.actionPhase = 'ending'; 
+            events.emit('OPEN_SHOP', {
+                shopId: logicResponse.shopId,
                 wares: logicResponse.wares || [],
-                returnScene: logicResponse.returnScene || 'encounter' // <--- ADD THIS HERE TOO
+                returnScene: logicResponse.returnScene || 'encounter',
+                
+                // --- UPDATE THIS LINE to grab the ID from logicResponse ---
+                encounterInstanceId: logicResponse.encounterInstanceId 
             });
             return;
         }

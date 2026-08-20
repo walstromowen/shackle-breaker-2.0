@@ -1,6 +1,7 @@
 export class EncounterModel {
     constructor(definition, context = {}, startingStageId = null) {
         this.id = definition.id;
+        this.instanceId = context.instanceId || `${this.id}_${Date.now()}`;
         this.title = definition.title || "Unknown Encounter";
         this.imageSheet = definition.imageSheet || null;
         this.stages = definition.stages;

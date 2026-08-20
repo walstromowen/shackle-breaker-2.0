@@ -287,7 +287,7 @@ export const ENTITY_DEFINITIONS = {
             baseResistance: { wind: 0.25, earth: 0.15 },
             baseAttack: { slash: 8, earth: 2, wind: 4 }
         },
-        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "short_sword" },
+        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "shortsword" },
         currencyReward: { min: 4, max: 12 },
         lootTableId: "sand_stalker_drops",
         abilities: [...HUMANOID_TEMPLATE.abilities],
@@ -373,7 +373,7 @@ export const ENTITY_DEFINITIONS = {
         level: 1,
         spriteOverworld: "germanSheepherdSprite",
         spritePortrait: "germanSheepherdPortrait",
-        battlePortraitFramesFront: 1,
+        battlePortraitFramesFront: 31,
         battlePortraitFramesBack: 31,
         crySound: "dogCry",
         deathSound: "dogDeath",
@@ -384,7 +384,7 @@ export const ENTITY_DEFINITIONS = {
             baseAttack: { blunt: 2, slash: 4, pierce: 2 }
         },
         lootTableId: "canine_drops",
-        abilities: [...BEAST_TEMPLATE.abilities],
+        abilities: [...BEAST_TEMPLATE.abilities, 'howl'],
         tags: [...BEAST_TEMPLATE.tags, "CANINE"]
     },
     
@@ -407,7 +407,7 @@ export const ENTITY_DEFINITIONS = {
             baseAttack: { blunt: 0, slash: 5, pierce: 7 }
         },
         lootTableId: "canine_drops",
-        abilities: [...BEAST_TEMPLATE.abilities],
+        abilities: [...BEAST_TEMPLATE.abilities, 'howl'],
         tags: [...BEAST_TEMPLATE.tags, "CANINE"]
     },
     

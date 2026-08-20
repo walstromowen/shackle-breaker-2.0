@@ -840,6 +840,94 @@ duration: 1.6,
       flash: { start: 0.2, end: 1.0, filter: 'brightness(300%) sepia(100%) hue-rotate(50deg) saturate(500%) drop-shadow(0 0 15px yellow)' }
     }
   },
+  "rally": {
+        duration: 2.0,
+        audio: [
+            { start: 0.1, key: 'rallySfx', volume: 1.0, pitch: 1.0 }, // E.g., a horn or a shout
+        ],
+        actor: {
+            // A golden, inspiring glow emits from the caster
+            flash: { start: 0.0, end: 0.5, filter: 'brightness(180%) sepia(80%) hue-rotate(35deg) saturate(300%)' }
+        },
+        vfx: [
+            // Upward floating light/energy on the targets (allies)
+            { 
+                start: 0.5, type: 'spawn', origin: 'target', 
+                config: { life: 0.6, sheetKey: 'rallyAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 1.5, blendMode: 'screen' } 
+            }
+        ],
+        target: {
+            // Allies receive a warm, empowering golden flash
+            flash: { start: 0.3, end: 1.2, filter: 'brightness(150%) sepia(80%) hue-rotate(35deg) saturate(300%) drop-shadow(0 0 10px gold)' }
+        }
+    },
+
+    "intimidate": {
+        duration: 2.0,
+        audio: [
+            { start: 0.1, key: 'intimidateSfx', volume: 1.0, pitch: 0.7 }, // A deep, menacing sound
+        ],
+        actor: {
+            // Caster lunges forward slightly and turns dark/menacing
+            type: 'lunge', start: 0.0, end: 0.2, distance: 40,
+            flash: { start: 0.0, end: 0.5, filter: 'brightness(50%) sepia(100%) hue-rotate(260deg) saturate(400%) drop-shadow(0 0 10px purple)' }
+        },
+        vfx: [
+            // A dark, oppressive visual (like a skull, eye, or dark aura) expanding over the enemy
+            { 
+                start: 0.3, type: 'spawn', origin: 'target', 
+                config: { life: 0.6, sheetKey: 'intimidateAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 1.5, blendMode: 'multiply' } 
+            }
+        ],
+        target: {
+            // Target shakes out of fear and flashes a sickly, dark purple/blue
+            shake: { start: 0.3, end: 1.2, intensity: 15 },
+            flash: { start: 0.3, end: 1.2, filter: 'brightness(60%) sepia(80%) hue-rotate(260deg) saturate(200%)' }
+        }
+    },
+
+    "howl": {
+        duration: 2.0,
+        audio: [
+            { start: 0.05, key: 'wolfCry', volume: 1.0, pitch: 1.0 }, // A primal wolf-like howl
+        ],
+        actor: {
+            // The caster trembles slightly as they howl, glowing red with rage/spirit
+            type: 'shake', start: 0.05, end: 0.6, intensity: 10,
+            flash: { start: 0.0, end: 0.6, filter: 'brightness(150%) sepia(100%) hue-rotate(340deg) saturate(400%)' }
+        },
+        vfx: [
+            // A fiery/aggressive aura expanding outward
+           
+        ],
+        target: {
+            // The target's fighting spirit is awakened with an intense, aggressive red flash
+            shake: { start: 0.4, end: 0.8, intensity: 12 }, // A brief shake of adrenaline
+            flash: { start: 0.4, end: 1.4, filter: 'brightness(160%) sepia(100%) hue-rotate(340deg) saturate(400%) drop-shadow(0 0 12px red)' }
+        }
+    },
+    "hide": {
+        duration: 1.5,
+        audio: [
+            { start: 0.1, key: 'smokeSfx', volume: 1.0, pitch: 1.1 } // A sudden whoosh or smoke puff
+        ],
+        actor: {
+            // A slight tremble as they quickly duck out of sight
+            type: 'shake', start: 0.1, end: 0.3, intensity: 5 
+        },
+        vfx: [
+            // A smoke bomb or shadow burst concealing the user
+            { 
+                start: 0.1, type: 'spawn', origin: 'target', 
+                config: { life: 0.6, sheetKey: 'smokeAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 1.5, blendMode: 'normal' } 
+            }
+        ],
+        target: {
+            // The user is darkened, slightly desaturated, and blurred to simulate being hard to hit
+            flash: { start: 0.1, end: 1.5, filter: 'brightness(40%) grayscale(50%) blur(1px) drop-shadow(0 0 8px #111)' }
+        }
+    },
+
     "abyssal_void": {
         duration: 3.0,
         audio: [{ start: 0.033, key: 'darkMagicSFX', volume: 1.0 }],
@@ -907,6 +995,40 @@ duration: 1.6,
         target: {
             shake: { start: 0.05, end: 0.2, intensity: 10 },
             flash: { start: 0.05, end: 1.8, filter: 'brightness(140%) sepia(100%) hue-rotate(190deg) saturate(250%)' }
+        }
+    },
+    "evasive": {
+        duration: 1.5,
+        audio: [
+            { start: 0.1, key: 'smokeSfx', volume: 1.0, pitch: 1.3 }
+        ],
+        vfx: [
+            { 
+                start: 0.1, type: 'spawn', origin: 'target', 
+                config: { life: 0.6, sheetKey: 'smokeAnimation', frameCount: 1, frameSize: 64, movement: 'float_up_and_pop', scale: 1.8, blendMode: 'screen' } 
+            }
+        ],
+        target: {
+            // A quick blur and bright flash to simulate swift movement
+            flash: { start: 0.1, end: 0.8, filter: 'brightness(150%) saturate(50%) blur(2px) drop-shadow(0 0 10px white)' }
+        }
+    },
+
+    "sluggish": {
+        duration: 1.5,
+        audio: [
+            { start: 0.1, key: 'strikeSfx', volume: 1.0, pitch: 0.7 }
+        ],
+        vfx: [
+            { 
+                start: 0.1, type: 'spawn', origin: 'target', 
+                config: { life: 0.6, sheetKey: 'sluggishAnimation', frameCount: 1, frameSize: 64, movement: 'shrink_and_fade', scale: 1.8, blendMode: 'multiply' } 
+            }
+        ],
+        target: {
+            // A heavy, downward-feeling shake and a gray, darkened filter
+            shake: { start: 0.1, end: 0.5, intensity: 10 },
+            flash: { start: 0.1, end: 0.8, filter: 'brightness(60%) grayscale(60%) drop-shadow(0 10px 5px black)' }
         }
     },
     "bolster": {

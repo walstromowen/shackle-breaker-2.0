@@ -98,34 +98,37 @@ export class SceneManager {
     }
 
     resolveTargetBGM(targetScene, sceneContext = {}) {
-        // 1. Explicit scene context overrides
-        if (sceneContext.bgm) return sceneContext.bgm;
+    // 1. Explicit scene context overrides
+    if (sceneContext.bgm) return sceneContext.bgm;
 
-        // 2. Main menu and Boot exceptions (No world map exists yet)
-        if (targetScene === 'boot') return null; 
-        if (targetScene === 'title') return 'shackle_breaker_theme_1';
-        if (targetScene === 'character-creator') return null;
+    // 2. Main menu and Boot exceptions (No world map exists yet)
+    if (targetScene === 'boot') return null;
+    if (targetScene === 'title') return 'shackle_breaker_theme_1';
+    if (targetScene === 'character-creator') return null;
 
-        // 3. Cached Battle/Encounter overrides
-        if (targetScene === 'battle' && this.activeBattleBGM) return this.activeBattleBGM;
-        if (targetScene === 'encounter' && this.activeEncounterBGM) return this.activeEncounterBGM;
+    // 3. Cached Battle/Encounter overrides
+    if (targetScene === 'battle' && this.activeBattleBGM) return this.activeBattleBGM;
+    if (targetScene === 'encounter' && this.activeEncounterBGM) return this.activeEncounterBGM;
 
-        // 4. Overworld/Battle default biome resolution
-        if (!gameState.player || gameState.player.col === undefined) return null;
-
-        // Safety guard to prevent crashes if worldManager hasn't been instantiated yet
-        if (!this.worldManager) return null;
-
-        const playerCol = gameState.player.col;
-        const playerRow = gameState.player.row;
-        const currentHour = (gameState.world.time || 0) / 60;
-
-        const biome = this.worldManager.getBiomeAt(playerCol, playerRow);
-        if (targetScene === 'battle') return biome.getMusic(currentHour, true);
-        if (targetScene === 'overworld') return biome.getMusic(currentHour, false);
-
-        return null;
+    // --- FIX: Preserve active encounter BGM if battle specifies no custom BGM ---
+    if (targetScene === 'battle' && this.currentScene === 'encounter' && gameState.world?.currentBgm) {
+      return gameState.world.currentBgm;
     }
+
+    // 4. Overworld/Battle default biome resolution
+    if (!gameState.player || gameState.player.col === undefined) return null;
+    if (!this.worldManager) return null;
+
+    const playerCol = gameState.player.col;
+    const playerRow = gameState.player.row;
+    const currentHour = (gameState.world.time || 0) / 60;
+    const biome = this.worldManager.getBiomeAt(playerCol, playerRow);
+
+    if (targetScene === 'battle') return biome.getMusic(currentHour, true);
+    if (targetScene === 'overworld') return biome.getMusic(currentHour, false);
+
+    return null;
+  }
 
     resolveTargetAmbience(targetScene) {
         // <-- ADDED 'shop' to keep whatever background ambience is currently playing
@@ -310,25 +313,25 @@ events.on('OPEN_SHOP', (data) => {
                 scaledEnemies.push(enemyEntity);
             }
 
-            const isFromOverworld = this.currentScene === 'overworld';
-            const transitionType = isFromOverworld ? 'blade' : 'ethereal';
-            const transitionSpeed = isFromOverworld ? 1.5 : 2.5;
+           const isFromOverworld = this.currentScene === 'overworld';
+      const transitionType = isFromOverworld ? 'blade' : 'ethereal';
+      const transitionSpeed = isFromOverworld ? 1.5 : 2.5;
 
-            this.transitionRenderer.start(() => {
-                console.log("[SceneManager] Handing off scaled entities to BattleController:", scaledEnemies);
-                const context = data.context || {};
-                context.backgroundId = data.background;
-                context.weather = data.weather;
+      this.transitionRenderer.start(() => {
+        console.log("[SceneManager] Handing off scaled entities to BattleController:", scaledEnemies);
+        const context = data.context || {};
+        context.backgroundId = data.background;
+        context.weather = data.weather;
+        this.battleController.start(scaledEnemies, context);
 
-                this.battleController.start(scaledEnemies, context);
-                
-                const customBGM = data.bgm || context.bgm || null;
-                this.activeBattleBGM = customBGM;
-                this.changeScene('battle', { bgm: customBGM });
-                
-            }, transitionType, { speed: transitionSpeed, color: '#0a0a12' });
-        });
-
+        // --- FIX: Fallback to currently playing encounter music if no explicit BGM was passed ---
+        const currentBGM = gameState.world?.currentBgm || null;
+        const customBGM = data.bgm || context.bgm || (this.currentScene === 'encounter' ? currentBGM : null);
+        
+        this.activeBattleBGM = customBGM;
+        this.changeScene('battle', { bgm: customBGM });
+      }, transitionType, { speed: transitionSpeed, color: '#0a0a12' });
+    });
         events.on('BATTLE_ENDED', (data) => {
             this.activeBattleBGM = null;
             if (data.victory) {
