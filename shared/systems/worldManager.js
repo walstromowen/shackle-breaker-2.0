@@ -4,8 +4,8 @@ import { STRUCTURES } from '../data/structures.js';
 import { gameState } from '../state/gameState.js';
 import { mapObjectFactory } from '../../shared/systems/factories/mapObjectsFactory.js';
 import { WeatherFactory } from '../../shared/systems/factories/weatherFactory.js';
-import { TerrainGenerator } from './TerrainGenerator.js';
-import { InteriorGenerator } from './InteriorGenerator.js';
+import { TerrainGenerator } from './terrainGenerator.js';
+import { InteriorGenerator } from './interiorGenerator.js';
 
 const MASK_DIRECTIONS = [
     { c: 0,  r: -1, bit: BITMASK.TOP },

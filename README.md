@@ -1,30 +1,29 @@
-# [ShackleBreaker Legacy](https://shackle-breaker-frontend.onrender.com/)
+## [ShackleBreaker Legacy](https://shackle-breaker-frontend.onrender.com/)
 Roguelike turnbased adventure game based on the Shackle Breaker story by Owen Walstrom
 
-enhance battle animations / polish
-particleRenderer revamped(global)
+# PLANNED FEATURES
 crafting system.
 procedural dungeons and hand crafted areas
-structures: 
 ability tags / immunities range
 autenticaiton (last)
+auto pickup without encounter on overworld
+
+# REFINEMENTS
+enhance battle animations / polish
+particleRenderer revamped(global)
+structures: 
 more consistent sound for UI
 Overall UI polish
 better text style
 targeting ui improvements for splash attacks with mouse
-auto pickup without encounter on overworld
 
-
-
-
-
-Bugs
+# Bugs
 shop system and character summary stacking equipables
 Rain flash
 rain sound effect too slow
 
 
-Rooth
+Root
 ├── backend/
 ├── frontend/                  
 │   ├── src/

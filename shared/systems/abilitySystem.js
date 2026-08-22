@@ -13,14 +13,15 @@ export class AbilitySystem {
             const stats = source.baseStats || source.stats || {};
             const evasion = stats.evasion || 100;
             const abilityAcc = def.accuracy !== undefined ? def.accuracy : 1.0;
-            
+
             let fleeChance = abilityAcc * (evasion / 100);
             fleeChance = Math.max(0.05, Math.min(1.0, fleeChance));
-            
+
             const roll = Math.random();
             const isSuccess = roll <= fleeChance;
+
             console.log(`[MATH DEBUG] Flee Check -> Evasion: ${evasion} | Chance: ${(fleeChance * 100).toFixed(1)}% | Roll: ${(roll * 100).toFixed(1)}% | Success: ${isSuccess}`);
-            
+
             return {
                 success: isSuccess,
                 fled: isSuccess,
@@ -31,76 +32,75 @@ export class AbilitySystem {
             };
         }
 
-        const result = { success: false, outcome: 'NONE', delta: 0, resource: 'hp', message: "", addedTags: [] };
+        const result = {
+            success: false,
+            outcome: 'NONE',
+            delta: 0,
+            resource: 'hp',
+            message: "",
+            addedTags: []
+        };
+
         let attackHit = true;
 
         // 1. Process Main Effects (Damage, Heal, etc.)
-    if (def.effects && Array.isArray(def.effects)) {
-        for (const effect of def.effects) {
-            
-            if (effect.type === 'damage') {
-                const calc = this._handleDamage(effect, source, target, def.accuracy, def)
-                result.success = calc.hit;
-                result.outcome = calc.crit ? 'CRIT' : (calc.hit ? 'HIT' : 'MISS');
-                result.delta = -calc.damage;
-                
-                // --- FIX: Append instead of overwrite ---
-                result.message = result.message ? `${result.message} ${calc.message}` : calc.message;
-                
-                if (!calc.hit) {
-                    attackHit = false;
-                    break;
-                }
-            } 
-            else if (effect.type === 'recover') {
-                const subResult = this._handleRecover(effect, source, target, def);
-                if (subResult.success) {
-                    result.success = true;
-                    result.outcome = 'HEAL';
-                    result.delta = subResult.amount;
-                    result.resource = effect.resource;
-                    
+        if (def.effects && Array.isArray(def.effects)) {
+            for (const effect of def.effects) {
+                if (effect.type === 'damage') {
+                    const calc = this._handleDamage(effect, source, target, def.accuracy, def)
+                    result.success = calc.hit;
+                    result.outcome = calc.crit ? 'CRIT' : (calc.hit ? 'HIT' : 'MISS');
+                    result.delta = -calc.damage;
                     // --- FIX: Append instead of overwrite ---
-                    result.message = result.message ? `${result.message} ${subResult.message}` : subResult.message;
-                }
-            } 
-            else if (effect.type === 'set') {
-                const subResult = this._handleSet(effect, target);
-                if (subResult.success) {
-                    result.success = true;
-                    // --- FIX: Append instead of overwrite ---
-                    result.message = result.message ? `${result.message} ${subResult.message}` : subResult.message;
-                }
-            } 
-            else if (effect.type === 'dispel') {
-                if (target.statusEffects && Array.isArray(target.statusEffects)) {
-                    let dispelledStatusNames = [];
-                    
-                    for (let i = target.statusEffects.length - 1; i >= 0; i--) {
-                        const currentStatus = target.statusEffects[i];
-                        if (effect.tags.includes(currentStatus.id)) {
-                            dispelledStatusNames.push(currentStatus.name || currentStatus.id); // Safely use name if available
-                            
-                            if (typeof target.removeStatusEffect === 'function') {
-                                target.removeStatusEffect(currentStatus.id);
-                            } else {
-                                target.statusEffects.splice(i, 1);
+                    result.message = result.message ? `${result.message} ${calc.message}` : calc.message;
+
+                    if (!calc.hit) {
+                        attackHit = false;
+                        break;
+                    }
+
+                } else if (effect.type === 'recover') {
+                    const subResult = this._handleRecover(effect, source, target, def);
+                    if (subResult.success) {
+                        result.success = true;
+                        result.outcome = 'HEAL';
+                        result.delta = subResult.amount;
+                        result.resource = effect.resource;
+                        // --- FIX: Append instead of overwrite ---
+                        result.message = result.message ? `${result.message} ${subResult.message}` : subResult.message;
+                    }
+                } else if (effect.type === 'set') {
+                    const subResult = this._handleSet(effect, target);
+                    if (subResult.success) {
+                        result.success = true;
+                        // --- FIX: Append instead of overwrite ---
+                        result.message = result.message ? `${result.message} ${subResult.message}` : subResult.message;
+                    }
+                } else if (effect.type === 'dispel') {
+                    if (target.statusEffects && Array.isArray(target.statusEffects)) {
+                        let dispelledStatusNames = [];
+                        for (let i = target.statusEffects.length - 1; i >= 0; i--) {
+                            const currentStatus = target.statusEffects[i];
+                            if (effect.tags.includes(currentStatus.id)) {
+                                dispelledStatusNames.push(currentStatus.name || currentStatus.id); // Safely use name if available
+                                if (typeof target.removeStatusEffect === 'function') {
+                                    target.removeStatusEffect(currentStatus.id);
+                                } else {
+                                    target.statusEffects.splice(i, 1);
+                                }
                             }
                         }
-                    }
-                    
-                    if (dispelledStatusNames.length > 0) {
-                        const cleansedString = dispelledStatusNames.join(" and ");
-                        result.success = true;
-                        
-                        // --- FIX: Cleanly append dispel message ---
-                        const cleanseMsg = `${target.name || 'Target'} was cleansed of ${cleansedString}!`;
-                        result.message = result.message ? `${result.message} ${cleanseMsg}` : cleanseMsg;
+                        if (dispelledStatusNames.length > 0) {
+                            const cleansedString = dispelledStatusNames.join(" and ");
+                            result.success = true;
+                            // --- FIX: Cleanly append dispel message ---
+                            const cleanseMsg = `${target.name || 'Target'} was cleansed of ${cleansedString}!`;
+                            result.message = result.message ? `${result.message} ${cleanseMsg}` : cleanseMsg;
+                        }
                     }
                 }
             }
         }
-    }
 
         // 2. Process Status Effects (Only if the attack didn't miss!)
         if (attackHit && def.statusEffects && Array.isArray(def.statusEffects)) {
@@ -110,7 +110,7 @@ export class AbilitySystem {
 
                 if (roll <= chance) {
                     const existingStatus = (target.statusEffects || []).find(s => s.id === statusDef.id);
-                    
+
                     if (existingStatus) {
                         existingStatus.addStack();
                         result.success = true;
@@ -136,6 +136,7 @@ export class AbilitySystem {
 
         return result;
     }
+
 
     // =========================================================================
     // LOGIC HANDLERS
@@ -178,6 +179,7 @@ export class AbilitySystem {
         return multiplier;
     }
 
+
     static _handleDamage(effect, source, target, abilityAccuracy = 1.0, def) {
         // Evaluate condition and calculate final modified power
         const conditionMultiplier = this._calculateConditionalMultiplier(effect, source, target);
@@ -190,23 +192,27 @@ export class AbilitySystem {
 
         // Pass the updated power into the Combat Calculator
         const calc = CombatCalculator.calculateDamage(
-            source, target, finalPower, effect.damageType || 'blunt', abilityAccuracy
+            source,
+            target,
+            finalPower,
+            effect.damageType || 'blunt',
+            abilityAccuracy
         );
 
         if (calc.hit) {
             // 1. Identify the target resource (default to 'hp')
             const targetResource = effect.resource || 'hp';
-            
+
             // 2. Apply damage to the dynamic resource
             target.modifyResource(targetResource, -calc.damage);
 
             // 3. Fetch custom message or fallback to default
-            const template = calc.crit ? 
-                (def.critMessage || "{target} takes {damage} damage! (Critical!)") : 
+            const template = calc.crit ?
+                (def.critMessage || "{target} takes {damage} damage! (Critical!)") :
                 (def.hitMessage || "{target} takes {damage} damage!");
-            
+
             calc.message = this._parseMessage(template, source, target, def, { damage: calc.damage });
-            
+
             // Format message context for non-HP resources
             if (targetResource !== 'hp') {
                 calc.message = calc.message.replace("damage!", `${targetResource.toUpperCase()} damage!`);
@@ -217,40 +223,40 @@ export class AbilitySystem {
                 // Find out how much of the resource the target ACTUALLY had before we hit them
                 // We use Math.max(0) to ensure we don't calculate based on negative numbers if they were already dead/empty
                 const currentResourceAmount = Math.max(0, (target[targetResource] || target.stats[targetResource]));
-                
+
                 // You can only drain up to the amount of health/stamina/insight the target actually possessed
                 const effectiveDamage = Math.min(calc.damage, currentResourceAmount);
-                
+
                 // Calculate how much is returned to the user
                 const drainAmount = Math.floor(effectiveDamage * effect.drain);
-                
+
                 if (drainAmount > 0) {
-                    const drainResource = effect.drainResource || targetResource; 
+                    const drainResource = effect.drainResource || targetResource;
                     source.modifyResource(drainResource, drainAmount);
-                    
                     calc.message += ` ${source.name} absorbed ${drainAmount} ${drainResource.toUpperCase()}!`;
                 }
             }
 
             // 5. Handle Recoil Mechanics
-        if (effect.recoil && effect.recoil > 0) {
-            // Calculate recoil based on the damage dealt (minimum of 1 damage if it hits)
-            const recoilAmount = Math.max(1, Math.floor(calc.damage * effect.recoil));
-            const recoilResource = effect.recoilResource || 'hp'; // Default to HP damage
-            
-            source.modifyResource(recoilResource, -recoilAmount);
-            calc.message += ` ${source.name} took ${recoilAmount} recoil damage!`;
-        }
+            if (effect.recoil && effect.recoil > 0) {
+                // Calculate recoil based on the damage dealt (minimum of 1 damage if it hits)
+                const recoilAmount = Math.max(1, Math.floor(calc.damage * effect.recoil));
+                const recoilResource = effect.recoilResource || 'hp'; // Default to HP damage
+
+                source.modifyResource(recoilResource, -recoilAmount);
+                calc.message += ` ${source.name} took ${recoilAmount} recoil damage!`;
+            }
 
             // 6. Trigger Status Effect Reactions
             if (target.statusEffects && Array.isArray(target.statusEffects)) {
                 for (let i = target.statusEffects.length - 1; i >= 0; i--) {
                     const status = target.statusEffects[i];
                     const reaction = status.onEvent('ON_DAMAGE_RECEIVED', target, { attacker: source, damage: calc.damage });
-                    
+
                     if (reaction.messages && reaction.messages.length > 0) {
                         calc.message += ` ${reaction.messages.join(' ')}`;
                     }
+
                     if (status.isExpired()) {
                         target.removeStatusEffect(status.id);
                     }
@@ -265,12 +271,12 @@ export class AbilitySystem {
         return calc;
     }
 
+
     static _handleRecover(effect, source, target, def) {
         let amount = 0;
-        
-        // You could theoretically use _calculateConditionalMultiplier here too
+        // You could theoretically use _calculateConditionalMultiplier here too 
         // if you want healing to scale based on conditions!
-        
+
         if (effect.calculation === 'flat') {
             amount = effect.power;
         } else if (effect.calculation === 'attribute') {
@@ -285,12 +291,14 @@ export class AbilitySystem {
         }
 
         const actualChange = target.modifyResource(effect.resource, amount);
-        const template = def.healMessage || "{target} recovers {amount} {resource}!";        const parsedMessage = this._parseMessage(template, source, target, def, { amount: actualChange, resource: effect.resource });
 
-        return { 
-            success: actualChange !== 0, 
-            amount: actualChange, 
-            message: actualChange !== 0 ? parsedMessage : "Recover failed" 
+        const template = def.healMessage || "{target} recovers {amount} {resource}!";
+        const parsedMessage = this._parseMessage(template, source, target, def, { amount: actualChange, resource: effect.resource });
+
+        return {
+            success: actualChange !== 0,
+            amount: actualChange,
+            message: actualChange !== 0 ? parsedMessage : "Recover failed"
         };
     }
 
@@ -298,13 +306,15 @@ export class AbilitySystem {
         const currentVal = target.stats ? target.stats[effect.resource] : target[effect.resource];
         const diff = effect.value - currentVal;
         if (diff === 0) return { success: false };
-        
+
         target.modifyResource(effect.resource, diff);
         return { success: true, message: `${effect.resource.toUpperCase()} set to ${effect.value}` };
     }
 
     static _parseMessage(template, source, target, def, extra = {}) {
-        const targetName = target === source ? 'They' : (target?.name || "the target");
+        // FIX: Removed the 'They' replacement logic so the actual target name is always used!
+        const targetName = target?.name || "the target";
+        
         let msg = template
             .replace(/{user}/g, source?.name || "Someone")
             .replace(/{target}/g, targetName)

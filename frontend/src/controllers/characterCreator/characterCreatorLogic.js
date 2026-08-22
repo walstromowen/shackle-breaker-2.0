@@ -7,7 +7,7 @@ import { StatCalculator } from '../../../../shared/systems/statCalculator.js';
 import { TRAIT_DEFINITIONS } from '../../../../shared/data/traitDefinitions.js';
 import { InventorySystem } from '../../../../shared/systems/inventorySystem.js';
 import { PartyManager } from '../../../../shared/systems/partyManager.js';
-import { QuestModel } from '../../../../shared/models/QuestModel.js';
+import { QuestModel } from '../../../../shared/models/questModel.js';
 const ALLOWED_TRAITS = ['quick', 'inquisitive', 'brawler', 'tough'];
 const UI_TRAITS = ALLOWED_TRAITS.map(key => ({
     id: key,
@@ -279,14 +279,14 @@ export class CharacterCreatorLogic {
             if (isNaN(finalSeed)) {
                 finalSeed = this.state.seed.split('').reduce((a, b) => {
                     a = ((a << 5) - a) + b.charCodeAt(0);
-                    return a & a
+                    return a & a;
                 }, 0);
                 finalSeed = Math.abs(finalSeed);
             }
         } else {
             finalSeed = Math.floor(Math.random() * 1000000);
         }
-
+        
         gameState.seed = finalSeed;
 
         // Note: Make sure PartyManager.createMainCharacter NO LONGER injects the quest
@@ -311,9 +311,8 @@ export class CharacterCreatorLogic {
                     const origin = randomElement(CREATION_DATA.ORIGINS);
                     const app = randomElement(CREATION_DATA.APPEARANCES);
                     const trait = randomElement(CREATION_DATA.TRAITS);
-                    
                     const companionName = count > 1 ? `Mercenary ${i + 1}` : "Mercenary";
-
+                    
                     companionOverrides = {
                         name: companionName,
                         attributes: { ...bg.attributes },
@@ -342,19 +341,33 @@ export class CharacterCreatorLogic {
             }
         }
 
-       // --- NEW GAME GRANTS ---
+        // --- NEW GAME GRANTS ---
         gameState.party.currency = 100;
         gameState.difficulty = CREATION_DATA.DIFFICULTIES[this.state.difficultyIdx].id;
 
-        // ---> NEW: Start the tutorial quest <---
+        // ---> START QUESTS <---
+        
+        // 1. Start the main tutorial quest
         QuestModel.startQuest(gameState, 'shackled1');
+        
+        // 2. Start the background-specific quest
+        const selectedBackground = CREATION_DATA.BACKGROUNDS[this.state.backgroundIdx];
+        const backgroundQuestId = `bg_${selectedBackground.id.toLowerCase()}_1`;
+        QuestModel.startQuest(gameState, backgroundQuestId);
 
-        // ---> NEW: Automatically track the tutorial quest so it shows on the HUD <---
+        // ---> TRACK QUESTS ON HUD <---
         if (!gameState.quests.trackedIds) {
             gameState.quests.trackedIds = [];
         }
+        
+        // Track Main Quest
         if (!gameState.quests.trackedIds.includes('shackled1')) {
             gameState.quests.trackedIds.push('shackled1');
+        }
+        
+        // Track Background Quest
+        if (!gameState.quests.trackedIds.includes(backgroundQuestId)) {
+            gameState.quests.trackedIds.push(backgroundQuestId);
         }
 
         events.emit('CHANGE_SCENE', { scene: 'overworld' });

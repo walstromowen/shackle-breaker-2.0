@@ -1,7 +1,7 @@
 import { BaseController } from '../core/baseController.js';
 import { gameState } from '../../../../shared/state/gameState.js';
 import { events } from '../../core/eventBus.js';
-import { ContextMenuManager } from '../../ui/ContextMenuManager.js';
+import { ContextMenuManager } from '../../ui/contextMenuManager.js';
 import { DragAndDropManager } from '../../ui/dragAndDropManager.js';
 
 const KEY_BINDINGS = {

@@ -738,6 +738,16 @@ export const ItemDefinitions = {
         stackable: true,
         maxStack: 99
     },
+    "meteorite": {
+        id: "meteorite",
+        name: "Fallen Meteorite",
+        type: "material",
+        description: "A strange, jagged stone fallen from the heavens. It pulses with a faint, otherworldly glow. Staring into it for too long makes your own thoughts feel loud and unfamiliar.",
+        value: 250,
+        icon: { col: 6, row: 1 }, // Reusing the Arcane insight icon coordinates for a magical look
+        stackable: false,
+        maxStack: 1
+    },
 
     // --- CONSUMABLES ---
     "healing_herb": {

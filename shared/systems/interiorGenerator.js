@@ -43,10 +43,14 @@ export class InteriorGenerator {
     this.TILES = CONFIG.TILE_TYPES;
 
     // 1. Calculate the unique seed based on the door ID
+    // Inside InteriorGenerator.js constructor:
     let uniqueHouseModifier = 0;
     if (gameState.world.interiorId) {
-      uniqueHouseModifier = gameState.world.interiorId.split('_')
-        .reduce((acc, val) => acc + parseInt(val), 0);
+        uniqueHouseModifier = gameState.world.interiorId.split('_')
+            .reduce((acc, val) => {
+                const parsed = parseInt(val);
+                return acc + (isNaN(parsed) ? 0 : parsed); // Ignore text like "HOUSE"
+            }, 0);
     }
     this.seed = seed + uniqueHouseModifier;
 

@@ -1,6 +1,3 @@
-/**
- * frontend/src/renderers/overworld/overworldUIRenderer.js
- */
 import { CanvasUI } from '../../ui/canvasUI.js';
 import { UITheme } from '../../ui/UITheme.js';
 
@@ -13,7 +10,6 @@ export class OverworldUIRenderer {
     render(ctx, state) {
         // Destructure trackedQuests from state
         const { hoveredHitboxId, isMenuOpen, menuToggleHitbox, dropdownHitboxes, trackedQuests } = state || {};
-        
         const ui = new CanvasUI(ctx);
 
         if (menuToggleHitbox) {
@@ -34,72 +30,82 @@ export class OverworldUIRenderer {
         }
     }
 
-    // Add this new method to render the HUD tracker
     drawQuestTracker(ctx, ui, quests) {
-        // SCALED UP DIMENSIONS
-        const padding = 48; // Space from the edge of the screen
-        const trackerWidth = 460; // Much wider to fit large text
+        const padding = 24; // Screen edge padding
+        const trackerWidth = 380; // Reduced width for smaller text
         const startX = ctx.canvas.width - trackerWidth - padding;
-        let currentY = padding;
+        
+        // Formatting constants for smaller text layout
+        const innerPadding = 16;
+        const titleHeight = 32;
+        const lineHeight = 26; 
+        const questGap = 20;
+
+        // 1. Calculate total panel height first
+        let totalHeight = innerPadding;
+        for (const quest of quests) {
+            totalHeight += titleHeight;
+            if (quest.objectives) {
+                totalHeight += quest.objectives.length * lineHeight;
+            }
+            totalHeight += questGap;
+        }
+
+        // 2. Draw the single unified background panel
+        ui.drawPanel(startX, padding, trackerWidth, totalHeight, "rgba(25, 23, 20, 0.6)");
+
+        // 3. Render the text over the panel
+        let currentY = padding + innerPadding;
 
         for (const quest of quests) {
-            // SCALED UP SPACING
-            const lineHeight = 38;
-            const objectivesHeight = (quest.objectives ? quest.objectives.length : 0) * lineHeight;
-            const panelHeight = 75 + objectivesHeight;
-
-            // Draw a subtle background panel for the quest
-            ui.drawPanel(startX, currentY, trackerWidth, panelHeight, "rgba(25, 23, 20, 0.6)");
-
-            // Draw Quest Title using UITheme
+            // Draw Quest Title 
             ui.drawText(
                 quest.title || "Unknown Quest",
-                startX + 24, 
-                currentY + 40,
-                UITheme.fonts.bold, // <-- Using the large bold font (34px)
+                startX + 16,
+                currentY + (titleHeight / 2),
+                UITheme.fonts.body, // Swapped to a smaller font (e.g., body)
                 UITheme.colors.states.hoverText || "#FFD700",
-                "left", 
+                "left",
                 "middle"
             );
 
-            // Draw Objectives
-            let objY = currentY + 86; // Push down below the larger title
+            currentY += titleHeight;
 
+            // Draw Objectives
             if (quest.objectives) {
                 for (const obj of quest.objectives) {
                     const progressText = `${obj.current}/${obj.required}`;
                     const isComplete = obj.current >= obj.required;
-                    // Use UITheme's success color (Estus Gold) instead of generic green
                     const textColor = isComplete ? UITheme.colors.success : UITheme.colors.textMain;
 
                     // Objective Description
                     ui.drawText(
                         `- ${obj.description}`,
-                        startX + 24, 
-                        objY,
-                        UITheme.fonts.small, // <-- Using the small theme font (29px)
+                        startX + 24, // Indented slightly
+                        currentY + (lineHeight / 2),
+                        UITheme.fonts.cardSmall, // Using the 16px card font
                         textColor,
-                        "left", 
+                        "left",
                         "middle"
                     );
 
                     // Objective Progress Numbers (Aligned to the right)
                     ui.drawText(
                         progressText,
-                        startX + trackerWidth - 24, 
-                        objY,
-                        UITheme.fonts.small, 
+                        startX + trackerWidth - 16,
+                        currentY + (lineHeight / 2),
+                        UITheme.fonts.cardSmall,
                         textColor,
-                        "right", 
+                        "right",
                         "middle"
                     );
 
-                    objY += lineHeight;
+                    currentY += lineHeight;
                 }
             }
 
-            // Add a gap before the next tracked quest
-            currentY += panelHeight + 16;
+            // Gap before the next quest in the list
+            currentY += questGap;
         }
     }
 
@@ -141,13 +147,13 @@ export class OverworldUIRenderer {
             );
         }
 
-        // Draw destination label below the icon (Updated to use UITheme)
+        // Draw destination label below the icon
         const textY = drawY + btn.h - 18;
         ui.drawText(
             btn.label,
             centerX,
             textY,
-            UITheme.fonts.cardSmall, // <-- Replaced the hardcoded 16px font
+            UITheme.fonts.cardSmall,
             textColor,
             "center",
             "middle"

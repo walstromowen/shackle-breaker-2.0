@@ -4,7 +4,7 @@ import { gameState } from '../state/gameState.js';
 import { EntityFactory } from './factories/entityFactory.js';
 import { ItemFactory } from './factories/itemFactory.js';
 import { CombatCalculator } from './combatCalculator.js';
-import { QuestModel } from '../models/QuestModel.js';
+import { QuestModel } from '../models/questModel.js';
 import { QuestDefinitions } from '../data/questDefinitions.js';
 
 export const PartyManager = {

@@ -572,5 +572,60 @@ export const ENTITY_DEFINITIONS = {
         lootTableId: "boss_poachers_nightmare_drops",
         abilities: [...BEAST_TEMPLATE.abilities, "eviscerate", "earthquake", "claw", "vine_lash"],
         tags: [...BEAST_TEMPLATE.tags, "BOSS", "ELITE"]
+    },
+    "DARIUS_THE_GROVELER": {
+        ...HUMANOID_TEMPLATE,
+        name: "Darius the Groveler",
+        level: 1,
+        spriteOverworld: "dariusSprite",
+        spritePortrait: "dariusPortrait",
+        battlePortraitFramesFront: 31,
+        battlePortraitFramesBack: 31,
+        crySound: "madMageCry", // He is the apex of the Mad Mages
+        deathSound: "madMageCry",
+        
+        attributes: {
+            ...HUMANOID_TEMPLATE.attributes,
+            vigor: 30,
+            strength: 15,
+            dexterity: 15,
+            intelligence: 35, // Highly warped by the meteorite
+            attunement: 30
+        },
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 420,
+            maxStamina: 30,
+            maxInsight: 100,
+            speed: 12,
+            critical: 0.1,
+            baseDefense: {
+                ...HUMANOID_TEMPLATE.baseStats.baseDefense,
+                blunt: 10,
+                slash: 8,
+                pierce: 8,
+                arcane: 25,
+                light: -10, // Weak to light, representing his dark cosmic corruption
+                fire: -5
+            },
+            baseResistance: {
+                arcane: 0.6,
+                dark: 0.3,
+                light: -0.4
+            },
+            baseAttack: {
+                blunt: 5,
+                arcane: 25
+            }
+        },
+        equipment: {
+            ...HUMANOID_TEMPLATE.equipment,
+            mainHand: "insight_of_arcane",
+            head: "tattered_hood" // Keeps the "groveler/vagabond" aesthetic
+        },
+        currencyReward: { min: 200, max: 500 },
+        lootTableId: "boss_darius_drops",
+        abilities: [...HUMANOID_TEMPLATE.abilities, "arcane_dart", "magic_missile", "meteor_shower"], 
+        tags: [...HUMANOID_TEMPLATE.tags, "BOSS", "ELITE", "MAGICAL"]
     }
 };
