@@ -1,9 +1,7 @@
 export const TRAIT_DEFINITIONS = {
-
     // ==========================================
     // --- POSITIVE TRAITS ---
     // ==========================================
-
     'quick': {
         name: "Quick",
         description: "Naturally fleet of foot.",
@@ -53,17 +51,17 @@ export const TRAIT_DEFINITIONS = {
         attributes: { intelligence: 3, attunement: 2 },
         stats: { resources: { maxInsight: 15, insightRecovery: 2 } }
     },
-    'athletic': { // NEW
+    'athletic': {
         name: "Athletic",
         description: "Possesses incredible cardiovascular endurance.",
         stats: { resources: { maxStamina: 10, staminaRecovery: 5 } }
     },
-    'nocturnal': { // NEW
+    'nocturnal': {
         name: "Nocturnal",
         description: "Thrives in the darkness.",
         stats: { resistance: { dark: 0.25, light: -0.25 } }
     },
-    'ironhide': { // NEW
+    'ironhide': {
         name: "Ironhide",
         description: "Thick, leathery skin that naturally deflects blows.",
         stats: { defense: { blunt: 2, slash: 4, pierce: 3 }, combat: { speed: -2 } }
@@ -72,7 +70,6 @@ export const TRAIT_DEFINITIONS = {
     // ==========================================
     // --- NEGATIVE TRAITS ---
     // ==========================================
-
     'clumsy': {
         name: "Clumsy",
         description: "Prone to stumbling.",
@@ -94,19 +91,19 @@ export const TRAIT_DEFINITIONS = {
         description: "Easily frightened by the arcane.",
         stats: { resistance: { dark: -0.25, arcane: -0.25, light: -0.10 }, combat: { corruption: 5 } }
     },
-    'lazy': { // NEW
+    'lazy': {
         name: "Lazy",
         description: "Prefers to avoid physical exertion.",
         attributes: { dexterity: -1 },
         stats: { resources: { maxStamina: -5, staminaRecovery: -3 } }
     },
-    'dull': { // NEW
+    'dull': {
         name: "Dull",
         description: "Slow-witted and completely uncreative.",
         attributes: { intelligence: -2, attunement: -2 },
         stats: { resources: { maxInsight: -10, insightRecovery: -1 } }
     },
-    'sluggish': { // NEW
+    'sluggish': {
         name: "Sluggish",
         description: "Slow to react to incoming threats.",
         stats: { combat: { speed: -5, evasion: -8 } }
@@ -115,17 +112,12 @@ export const TRAIT_DEFINITIONS = {
     // ==========================================
     // --- CONDITIONAL TRAITS ---
     // ==========================================
-
     'berserker': {
         name: "Berserker",
         description: "Goes into a frenzy when wounded.",
         conditionalStats: {
             condition: "hp_below_50_percent",
-            stats: {
-                attack: { blunt: 10, slash: 10 },
-                combat: { critChance: 0.15 },
-                defense: { blunt: -5, slash: -5 }
-            }
+            stats: { attack: { blunt: 10, slash: 10 }, combat: { critChance: 0.15 }, defense: { blunt: -5, slash: -5 } }
         }
     },
     'claustrophobic': {
@@ -144,7 +136,7 @@ export const TRAIT_DEFINITIONS = {
             stats: { combat: { accuracy: 20, speed: 5, critChance: 0.10 } }
         }
     },
-    'enduring': { // NEW
+    'enduring': {
         name: "Enduring",
         description: "Body enters a state of absolute defense when near death.",
         conditionalStats: {
@@ -152,7 +144,7 @@ export const TRAIT_DEFINITIONS = {
             stats: { defense: { blunt: 15, slash: 15, pierce: 15 }, resistance: { fire: 0.50, ice: 0.50, lightning: 0.50 } }
         }
     },
-    'overconfident': { // NEW
+    'overconfident': {
         name: "Overconfident",
         description: "Hits incredibly hard right until they take their first hit.",
         conditionalStats: {
@@ -164,60 +156,53 @@ export const TRAIT_DEFINITIONS = {
     // ==========================================
     // --- TRIGGER TRAITS ---
     // ==========================================
-
     'martyr': {
         name: "Martyr",
         description: "Heals allies upon death.",
         triggers: {
-            onDeath: {
-                ability: "healing_rain", 
-                battleMessage: "In death, {actor} bestows a final blessing!", 
-                animationId: "trait_activate"
-            }
+            onDeath: { ability: "healing_rain", battleMessage: "In death, {actor} bestows a final blessing!", animationId: "trait_activate" }
         }
     },
     'acidic': {
         name: "Acidic",
         description: "Leaves behind a dangerous pool of acid upon death.",
         triggers: {
-            onDeath: {
-                ability: "acid_pool", 
-                battleMessage: "{actor}'s remains dissolve into a highly corrosive pool of acid!", 
-                animationId: "trait_activate"
-            }
+            onDeath: { ability: "acid_pool", battleMessage: "{actor}'s remains dissolve into a highly corrosive pool of acid!", animationId: "trait_activate" }
         }
     },
     'iron_willed': {
         name: "Iron Willed",
         description: "Automatically casts Bolster at the start of battle.",
         triggers: {
-            onBattleStart: {
-                ability: "bolster", 
-                battleMessage: "{actor}'s Iron Will hardens their resolve!", 
-                animationId: "trait_activate"
-            }
+            onBattleStart: { ability: "bolster", battleMessage: "{actor}'s Iron Will hardens their resolve!", animationId: "trait_activate" }
         }
     },
     'intimidating': {
         name: "Intimidating",
         description: "Automatically casts Intimidate on a random enemy at the start of combat.",
         triggers: {
-            onBattleStart: {
-                ability: "intimidate", target: "random_enemy", 
-                battleMessage: "{actor} asserts a terrifying presence!", 
-                animationId: "trait_activate"
-            }
+            onBattleStart: { ability: "intimidate", target: "random_enemy", battleMessage: "{actor} asserts a terrifying presence!", animationId: "trait_activate" }
         }
     },
     'stealthy': {
         name: "Stealthy",
         description: "Automatically shrinks away and casts Hide at the start of combat.",
         triggers: {
-            onBattleStart: {
-                ability: "hide", 
-                battleMessage: "{actor} quickly ducks into the shadows!", 
-                animationId: "trait_activate"
-            }
+            onBattleStart: { ability: "hide", battleMessage: "{actor} quickly ducks into the shadows!", animationId: "trait_activate" }
+        }
+    },
+    'airborne': {
+        name: "Airborn",
+        description: "Takes to the skies at the start of battle.",
+        triggers: {
+            onBattleStart: { ability: "take_flight", battleMessage: "{actor} takes to the air!", animationId: "trait_activate" }
+        }
+    },
+    'ghostly': {
+        name: "Ghostly",
+        description: "Exists partially out of phase with reality.",
+        triggers: {
+            onBattleStart: { ability: "become_ethereal", battleMessage: "{actor}'s physical form fades...", animationId: "trait_activate" }
         }
     }
 };

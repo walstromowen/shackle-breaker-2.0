@@ -244,26 +244,34 @@ export class BattleRenderer {
             color = this.COLORS.textMuted;
         }
 
-        let targetX = pos.x + (Math.random() * 96 - 48);
-        let targetY = pos.y - 96;
+        // 1. Determine if this is a damage number (drops) or healing/status (floats)
+    const isDamage = (value !== undefined && value < 0);
+    const direction = isDamage ? 1 : -1;
 
-        for (const ft of this.floatingTexts) {
-            if (Math.abs(ft.x - targetX) < 72 && Math.abs(ft.y - targetY) < 60) {
-                targetY -= 60;
-            }
+    // 2. Set starting position. Damage starts at center (pos.y), Healing starts above (pos.y - 96)
+    let targetX = pos.x + (Math.random() * 96 - 48);
+    let targetY = isDamage ? pos.y : pos.y - 96;
+
+    // 3. Prevent overlapping text
+    for (const ft of this.floatingTexts) {
+        if (Math.abs(ft.x - targetX) < 72 && Math.abs(ft.y - targetY) < 60) {
+            // Shift dropping text lower, shift floating text higher
+            targetY += isDamage ? 60 : -60; 
         }
+    }
 
-        this.floatingTexts.push({
-            text: displayText,
-            color,
-            fontSize,
-            x: targetX,
-            y: targetY,
-            life: isCritical ? 2.0 : 1.5,
-            maxLife: isCritical ? 2.0 : 1.5,
-            velocityY: isCritical ? -60 : -36,
-            delay: delay
-        });
+    // 4. Push to the array
+    this.floatingTexts.push({
+        text: displayText,
+        color,
+        fontSize,
+        x: targetX,
+        y: targetY,
+        life: isCritical ? 2.0 : 1.5,
+        maxLife: isCritical ? 2.0 : 1.5,
+        velocityY: direction * (isCritical ? 60 : 36),
+        delay: delay
+    });
     }
 
     drawFloatingTexts(dt) {

@@ -1,9 +1,6 @@
 import { events } from '../../core/eventBus.js';
 import { StatCalculator } from '../../../../shared/systems/statCalculator.js';
 import { BaseController } from '../core/baseController.js';
-import { gameState } from '../../../../shared/state/gameState.js';
-import { QuestModel } from '../../../../shared/models/questModel.js';
-import { QuestDefinitions } from '../../../../shared/data/questDefinitions.js';
 
 const KEY_BINDINGS = {
     'ArrowUp': 'UP',
@@ -240,42 +237,19 @@ export class LevelUpController extends BaseController {
     }
 
     commitPoints() {
-        this.attributes.forEach(attr => {
-            if (this.pendingAllocations[attr] > 0) {
-                this.member.attributes[attr] += this.pendingAllocations[attr];
-                // --- NEW: Reset pending allocations after applying them just to be extra safe ---
-                this.pendingAllocations[attr] = 0; 
-            }
-        });
-        
-        this.member.skillPoints = this.availablePoints;
+    this.attributes.forEach(attr => {
+      if (this.pendingAllocations[attr] > 0) {
+        this.member.attributes[attr] += this.pendingAllocations[attr];
+        // --- NEW: Reset pending allocations after applying them just to be extra safe ---
+        this.pendingAllocations[attr] = 0;
+      }
+    });
+    this.member.skillPoints = this.availablePoints;
 
-        // Quest Progression Check
-        Object.keys(gameState.quests.active).forEach(questId => {
-            const questDef = QuestDefinitions[questId];
-            if (questDef) {
-                questDef.objectives.forEach(obj => {
-                    if (obj.type === 'party_level') {
-                        const qualifyingMembersCount = gameState.party.members.filter(
-                            m => (m.level || 1) >= obj.targetLevel
-                        ).length;
-
-                        const currentProgress = gameState.quests.active[questId].progress[obj.id] || 0;
-                        const diff = qualifyingMembersCount - currentProgress;
-                        
-                        if (diff > 0) {
-                            const didUpdate = QuestModel.updateProgress(gameState, questId, obj.id, diff);
-                            if (didUpdate && QuestModel.checkCompletion(gameState, questId)) {
-                                console.log(`[Quest System] Quest Complete: ${questDef.name}!`);
-                            }
-                        }
-                    }
-                });
-            }
-        });
-
-        this.cancelAndReturn();
-    }
+    // Quest logic removed from here!
+    
+    this.cancelAndReturn();
+  }
 
     cancelAndReturn() {
         // --- NEW: Lock the screen to prevent double-firings ---

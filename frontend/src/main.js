@@ -105,7 +105,7 @@ thunderLocustPortrait: './assets/sprites/thunder_locust/thunder_locust_portrait.
 
     // Backgrounds
     arcaneVortexBg: './assets/backgrounds/arcane_vortex_bg.png',
-    plainsBattleDayBg: './assets/backgrounds/plains_battle_day_bg.png',
+    plainsBattleDayBg: './assets/backgrounds/plains_battle_day_bg.jpg',
     plainsBattleDuskBg: './assets/backgrounds/plains_battle_dusk_bg.png',
     plainsBattleNightBg: './assets/backgrounds/plains_battle_night_bg.png',
     desertBattleDayBg: './assets/backgrounds/desert_battle_day_bg.png',

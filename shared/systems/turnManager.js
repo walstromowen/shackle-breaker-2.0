@@ -30,21 +30,16 @@ export class TurnManager {
         this.bc = battleController;
     }
 
-    get state() {
-        return this.bc.state;
-    }
+    get state() { return this.bc.state; }
 
     processNextTurnInQueue() {
         this.bc.timer = 0;
         this.state.activeAnimation = null;
-
+        
         if (this.state.turnQueue.length > 0) {
             this.executeTurn(this.state.turnQueue.shift());
         } else if (this.state.phase === PHASE.RESOLVE) {
             this.bc.checkBattleStatus();
-            
-            // --- FIXED: If checkBattleStatus populated the queue (like adding a WAIT for victory), 
-            // process it immediately so we don't accidentally idle for the default 1.5 seconds!
             if (this.state.turnQueue.length > 0) {
                 this.executeTurn(this.state.turnQueue.shift());
             }
@@ -53,7 +48,6 @@ export class TurnManager {
 
     executeTurn(turn) {
         const messageTypes = [TURN_TYPES.MESSAGE_VICTORY, TURN_TYPES.MESSAGE_DEFEAT, TURN_TYPES.MESSAGE_STATUS, TURN_TYPES.MESSAGE_DEATH];
-
         if (messageTypes.includes(turn.type)) {
             this.state.message = turn.message;
             return;
@@ -61,7 +55,7 @@ export class TurnManager {
 
         switch (turn.type) {
             case TURN_TYPES.WAIT:
-                this.state.message = ""; 
+                this.state.message = "";
                 if (turn.duration) {
                     this.state.activeAnimation = { duration: turn.duration };
                 }
@@ -91,7 +85,7 @@ export class TurnManager {
                 const pool = turn.team === 'party' ? this.state.activeParty : this.state.activeEnemies;
                 pool[turn.slotIndex] = turn.replacement;
                 this.state.message = turn.message;
-
+                
                 if (this.state.weather && this.state.weather.appliedStatusId && this.state.weather.id !== 'clear') {
                     const hasWeather = turn.replacement.statusEffects.some(s => s.id === this.state.weather.appliedStatusId);
                     if (!hasWeather) {
@@ -115,15 +109,16 @@ export class TurnManager {
         if (turn.message) {
             this.state.message = turn.message;
         }
-
+        
         const animId = turn.animationId;
         const targetActor = turn.actor;
+        
         this.state.activeAnimation = BattleAnimationFactory.create(animId, targetActor, [targetActor]);
-
+        
         if (turn.duration && this.state.activeAnimation) {
             this.state.activeAnimation.duration = turn.duration;
         }
-
+        
         if (turn.soundId) {
             events.emit('PLAY_SFX', { id: turn.soundId, volume: turn.volume || 1.0, pitch: turn.pitch || 1.0 });
         }
@@ -131,38 +126,56 @@ export class TurnManager {
 
     _unpackBaseTurn(turn) {
         let { actor, action, target } = turn;
-
+        
         if (actor.isDead()) return this.processNextTurnInQueue();
-
         actor._skipAction = false;
+        
         this.state.turnQueue.unshift({ type: TURN_TYPES.END_ACTOR_TURN, actor: actor });
         this.state.turnQueue.unshift({ type: TURN_TYPES.EXECUTE_ACTION, actor, action, target });
-
+        
         this.queueStatusEffects(actor, 'ON_TURN_START');
         this.processNextTurnInQueue();
     }
 
     _applyAbilityEffects(turn) {
-    let { actor, action, targets, isFirstTarget, ignoreCost, allowDeadTarget } = turn; 
-    
-    // Fallback to checking the action definition if the turn doesn't explicitly have it
-    const canTargetDead = allowDeadTarget || action?.allowDeadTarget;
+        let { actor, action, targets, isFirstTarget, ignoreCost, allowDeadTarget } = turn;
+        
+        const canTargetDead = allowDeadTarget || action?.allowDeadTarget;
+        
         if (isFirstTarget && !ignoreCost) {
             action.payCost(actor, InventorySystem);
         }
 
         for (let target of targets) {
-        const actualTarget = this.getValidTarget(target, canTargetDead);
+            const actualTarget = this.getValidTarget(target, canTargetDead);
             if (!actualTarget) continue;
-
+            
             const wasTargetDead = actualTarget.isDead();
             const wasActorDead = actor.isDead();
-
+            
             this.bc.registerAbilityUse(action, actor, actualTarget);
 
-            const statusSnapshots = (actualTarget.statusEffects || []).map(s => ({ id: s.id, stacks: s.stacks }));
-            const result = AbilitySystem.execute(action.id, actor, actualTarget);
+            // ---> NEW: Unified Tag and Range Immunity Check <---
+            // We pass 'actor' so the model knows if the attacker has 'reach' or 'flying'
+            const immunityCheck = actualTarget.checkImmunity(action, actor);
 
+            if (immunityCheck.isImmune) {
+                if (immunityCheck.reason === 'range') {
+                    events.emit('SPAWN_FCT', { target: actualTarget, text: 'Out of Reach!', type: 'miss' });
+                    this.queueMessage(`${actor.name}'s attack cannot reach ${actualTarget.name}!`);
+                } else if (immunityCheck.reason === 'tag') {
+                    const formattedTag = immunityCheck.value.charAt(0).toUpperCase() + immunityCheck.value.slice(1);
+                    events.emit('SPAWN_FCT', { target: actualTarget, text: 'Immune!', type: 'status' });
+                    this.queueMessage(`${actualTarget.name} is immune to ${formattedTag}!`);
+                }
+                continue;
+            }
+
+            // --- Normal Ability Execution ---
+            const statusSnapshots = (actualTarget.statusEffects || []).map(s => ({ id: s.id, stacks: s.stacks }));
+            
+            const result = AbilitySystem.execute(action.id, actor, actualTarget);
+            
             if (actualTarget.statusEffects) {
                 actualTarget.statusEffects.forEach(status => {
                     const snap = statusSnapshots.find(s => s.id === status.id);
@@ -178,21 +191,25 @@ export class TurnManager {
             }
 
             if (result.missed || result.evaded) {
-                events.emit('SPAWN_FCT', { target: actualTarget, text: result.evaded ? 'Evade!' : 'Miss!', type: 'status' });
+                events.emit('SPAWN_FCT', { 
+                    target: actualTarget, 
+                    text: result.evaded ? 'Evade!' : 'Miss!', 
+                    type: 'status' 
+                });
             }
-
+            
+            // Death handling
             if (!wasTargetDead && actualTarget.isDead()) {
                 this.bc.registerDeath(actor, actualTarget);
                 this.bc.handleDeath(actualTarget);
             }
-
             if (!wasActorDead && actor.isDead()) {
                 this.bc.registerDeath(actualTarget, actor);
                 this.bc.handleDeath(actor);
             }
 
             if (result.message) this.queueMessage(result.message);
-
+            
             if (!wasActorDead && actor.isDead()) {
                 break;
             }
@@ -202,11 +219,11 @@ export class TurnManager {
 
     _handleActionExecution(turn) {
         let { actor, action, target: primaryTarget, ignoreCost, allowDeadActor } = turn;
-
+        
         if (actor.isDead() && !allowDeadActor) return this.processNextTurnInQueue();
 
         let resolvedTargets = TargetingResolver.resolve(action, actor, primaryTarget, this.state, allowDeadActor);
-
+        
         if (resolvedTargets.length === 0) {
             this.state.message = `${actor.name} tried to use ${action.name}, but there were no targets left!`;
             return this.processNextTurnInQueue();
@@ -219,20 +236,21 @@ export class TurnManager {
 
         let messageTemplate = action.battleMessage;
         if (action.id === 'rest') messageTemplate = "{user} recovers!";
-
+        
         let targetName = primaryTarget ? primaryTarget.name : "the field";
         this.state.message = messageTemplate
             .replace(/{user}/g, actor.name)
             .replace(/{ability}/g, action.name)
             .replace(/{target}/g, targetName);
 
-const isAoE = ['all_enemies', 'all_allies', 'full_ally_party'].includes(action.targeting?.scope) || action.targeting?.isAoE;
+        const isAoE = ['all_enemies', 'all_allies', 'full_ally_party'].includes(action.targeting?.scope) || action.targeting?.isAoE;
+        
         if (isAoE) {
             this._queueAoEAction(actor, action, resolvedTargets, ignoreCost);
         } else {
             this._queueMultiAction(actor, action, resolvedTargets, ignoreCost);
         }
-
+        
         this.processNextTurnInQueue();
     }
 
@@ -255,33 +273,34 @@ const isAoE = ['all_enemies', 'all_allies', 'full_ally_party'].includes(action.t
     }
 
     _createApplyEffectTurn(actor, action, targets, isFirst, isLast, ignoreCost) {
-        return {
-            type: TURN_TYPES.APPLY_ABILITY_EFFECTS,
-            actor, action, targets,
-            isFirstTarget: isFirst,
-            isLastTarget: isLast,
-            ignoreCost
+        return { 
+            type: TURN_TYPES.APPLY_ABILITY_EFFECTS, 
+            actor, 
+            action, 
+            targets, 
+            isFirstTarget: isFirst, 
+            isLastTarget: isLast, 
+            ignoreCost 
         };
     }
 
     _handleAnimationTurn(turn) {
-    const targetList = turn.targets || [turn.target];
-    const validTargets = [];
-    const redirectedTurns = new Set();
-    
-    // Extract the flag from the turn object
-    const allowDeadTarget = turn.allowDeadTarget || turn.action?.allowDeadTarget || false;
+        const targetList = turn.targets || [turn.target];
+        const validTargets = [];
+        const redirectedTurns = new Set();
+        const allowDeadTarget = turn.allowDeadTarget || turn.action?.allowDeadTarget || false;
 
-    for (let target of targetList) {
-        // Pass the flag down!
-        let actualTarget = this.getValidTarget(target, allowDeadTarget); 
-        if (!actualTarget) continue;
+        for (let target of targetList) {
+            let actualTarget = this.getValidTarget(target, allowDeadTarget);
+            if (!actualTarget) continue;
+            
             if (actualTarget !== target) {
-                const nextApplyTurn = this.state.turnQueue.find(t =>
-                    t.type === TURN_TYPES.APPLY_ABILITY_EFFECTS &&
-                    t.targets?.includes(target) &&
+                const nextApplyTurn = this.state.turnQueue.find(t => 
+                    t.type === TURN_TYPES.APPLY_ABILITY_EFFECTS && 
+                    t.targets?.includes(target) && 
                     !redirectedTurns.has(t)
                 );
+                
                 if (nextApplyTurn) {
                     nextApplyTurn.targets = [actualTarget];
                     redirectedTurns.add(nextApplyTurn);
@@ -300,17 +319,17 @@ const isAoE = ['all_enemies', 'all_allies', 'full_ally_party'].includes(action.t
 
     queueStatusEffects(combatant, triggerEvent, context = {}) {
         if (!combatant || combatant.isDead()) return;
-
+        
         for (let i = combatant.statusEffects.length - 1; i >= 0; i--) {
             const status = combatant.statusEffects[i];
             const hasActiveTrigger = status.effects && status.effects.some(e => e.trigger === triggerEvent);
-
-            this.state.turnQueue.unshift({
-                type: TURN_TYPES.APPLY_STATUS_EFFECT,
-                actor: combatant,
-                status: status,
-                triggerEvent: triggerEvent,
-                context: context
+            
+            this.state.turnQueue.unshift({ 
+                type: TURN_TYPES.APPLY_STATUS_EFFECT, 
+                actor: combatant, 
+                status: status, 
+                triggerEvent: triggerEvent, 
+                context: context 
             });
 
             if (hasActiveTrigger) {
@@ -329,42 +348,44 @@ const isAoE = ['all_enemies', 'all_allies', 'full_ally_party'].includes(action.t
 
     _applyStatusEffectTurn(turn) {
         const { actor, status, triggerEvent, context } = turn;
-
+        
         if (actor.isDead() || status.isExpired()) return this.processNextTurnInQueue();
-
+        
         const result = status.onEvent(triggerEvent, actor, context);
-
         if (result.cancelAction) actor._skipAction = true;
-
+        
         if (actor.isDead()) {
             this.bc.registerDeath(context.attacker, actor);
             this.bc.handleDeath(actor);
         }
-
+        
         if (context.attacker?.isDead()) {
             this.bc.registerDeath(actor, context.attacker);
             this.bc.handleDeath(context.attacker);
         }
 
         if (status.isExpired()) actor.removeStatusEffect(status.id);
-
+        
         if (result.messages?.length > 0) {
-            const messageTurns = result.messages.map(msg => ({ type: TURN_TYPES.MESSAGE_STATUS, message: msg }));
+            const messageTurns = result.messages.map(msg => ({ 
+                type: TURN_TYPES.MESSAGE_STATUS, 
+                message: msg 
+            }));
             this.state.turnQueue.unshift(...messageTurns);
         }
-
+        
         this.processNextTurnInQueue();
     }
 
     getValidTarget(target, allowDeadTarget = false) {
-    // If the turn explicitly allows dead targets, return the corpse!
-    if (allowDeadTarget || !target.isDead()) return target;
-
-    const fallbackPool = this.bc.getActivePool(target.team);
-    const livingTargets = fallbackPool.filter(t => t && !t.isDead());
-    if (livingTargets.length === 0) return null;
-    return livingTargets[Math.floor(Math.random() * livingTargets.length)];
-}
+        if (allowDeadTarget || !target.isDead()) return target;
+        
+        const fallbackPool = this.bc.getActivePool(target.team);
+        const livingTargets = fallbackPool.filter(t => t && !t.isDead());
+        
+        if (livingTargets.length === 0) return null;
+        return livingTargets[Math.floor(Math.random() * livingTargets.length)];
+    }
 
     queueMessage(message, type = TURN_TYPES.MESSAGE_STATUS) {
         this.state.turnQueue.unshift({ type, message });
@@ -372,7 +393,6 @@ const isAoE = ['all_enemies', 'all_allies', 'full_ally_party'].includes(action.t
 
     _handleWeatherIntroTurn(turn) {
         const { weather, targets } = turn;
-
         if (weather.appliedStatusId) {
             targets.forEach(target => {
                 if (target && !target.isDead()) {
@@ -383,7 +403,7 @@ const isAoE = ['all_enemies', 'all_allies', 'full_ally_party'].includes(action.t
                 }
             });
         }
-
+        
         if (weather.animationId) {
             this.state.activeAnimation = BattleAnimationFactory.create(weather.animationId, null, targets);
         } else {

@@ -17,7 +17,9 @@ export class AbilityModel {
     get name() { return this.config.name; }
     get description() { return this.config.description; }
     get icon() { return this.config.icon; }
-    get type() { return this.config.type || 'physical'; }
+    //get type() { return this.config.type || 'physical'; }
+    get range() { return this.config.range || 'melee'; }
+    get tags() { return this.config.tags || []; }
     get battleMessage() { return this.config.battleMessage || "{user} uses {ability}!"; }
     
     // Core Logic Data

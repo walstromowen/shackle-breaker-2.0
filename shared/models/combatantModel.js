@@ -1,4 +1,3 @@
-
 // =========================================================================
 // 4. combatantModel.js
 // =========================================================================
@@ -16,6 +15,7 @@ export class CombatantModel {
         this._deathHandled = false;
         this._skipAction = false;
         this.hasEnteredBattle = false;
+        
         this.abilities = this._extractAndResolveAbilities();
         this._applyStartingStatuses();
     }
@@ -31,53 +31,143 @@ export class CombatantModel {
     get customRowIndex() { return this.originalEntity.customRowIndex; }
     get crySound() { return this.originalEntity.crySound; }
     get deathSound() { return this.originalEntity.deathSound; }
+    
     get statusEffects() { return this.originalEntity.statusEffects; }
     get traits() { return TraitFactory.createTraits(this.originalEntity.traits || []); }
     
     get stats() { return StatCalculator.calculateDetailed(this.originalEntity); }
     get baseStats() { return this.originalEntity.baseStats; }
+    
     get hp() { return this.originalEntity.hp; }
     get maxHp() { return this.stats.maxHp?.total || 1; }
+    
     get stamina() { return this.originalEntity.stamina; }
     get maxStamina() { return this.stats.maxStamina?.total || 10; }
+    
     get insight() { return this.originalEntity.insight; }
     get maxInsight() { return this.stats.maxInsight?.total || 10; }
-    // Add these getters inside CombatantModel class
-get templateId() { 
-    return this.originalEntity.templateId || this.originalEntity.definitionKey || this.originalEntity.type; 
-}
 
-get definitionKey() {
-    return this.templateId;
-}
+    get templateId() { 
+        return this.originalEntity.templateId || this.originalEntity.definitionKey || this.originalEntity.type; 
+    }
+    get definitionKey() { return this.templateId; }
+
     getAttack(type) { return this.stats.attack?.[type] || 0; }
     getDefense(type) { return this.stats.defense?.[type] || 0; }
-    isDead() { return this.hp <= 0; }
+
+    // ---> NEW: Tag & Immunity Evaluation <---
+    getActiveTags() {
+        const activeTags = new Set(this.originalEntity.tags || []);
+        
+        this.traits.forEach(trait => {
+            if (trait.tags) trait.tags.forEach(t => activeTags.add(t.toLowerCase()));
+        });
+        
+        this.statusEffects.forEach(status => {
+            if (status.tags) status.tags.forEach(t => activeTags.add(t.toLowerCase()));
+        });
+        
+        return Array.from(activeTags);
+    }
+
+    hasTag(tag) {
+        if (!tag) return false;
+        return this.getActiveTags().includes(tag.toLowerCase());
+    }
+
+    getImmunities() {
+        const immunities = { ranges: new Set(), tags: new Set() };
+
+        // Helper function to safely extract both ranges and tags from objects or flat arrays
+        const processImmunities = (immData) => {
+            if (!immData) return;
+            
+            if (typeof immData === 'object' && !Array.isArray(immData)) {
+                if (immData.ranges) immData.ranges.forEach(r => immunities.ranges.add(r.toLowerCase()));
+                if (immData.tags) immData.tags.forEach(t => immunities.tags.add(t.toLowerCase()));
+            } 
+            else if (Array.isArray(immData)) {
+                immData.forEach(t => immunities.tags.add(t.toLowerCase()));
+            }
+        };
+
+        processImmunities(this.originalEntity.immunities);
+        this.traits.forEach(trait => processImmunities(trait.immunities));
+        this.statusEffects.forEach(status => processImmunities(status.immunities));
+
+        return {
+            ranges: Array.from(immunities.ranges),
+            tags: Array.from(immunities.tags)
+        };
+    }
+
+    checkImmunity(ability, attacker = null) {
+        if (!ability) return { isImmune: false, reason: null, value: null };
+
+        const myImmunities = this.getImmunities();
+
+        // 1. Check Range Immunity (e.g., Flying vs Melee)
+        if (ability.range && myImmunities.ranges.includes(ability.range.toLowerCase())) {
+            
+            // Allow bypassing if the attacker has a 'reach' or 'flying' tag
+            let bypassed = false;
+            if (attacker && ability.range.toLowerCase() === 'melee') {
+                if (attacker.hasTag('reach') || attacker.hasTag('flying')) {
+                    bypassed = true;
+                }
+            }
+
+            if (!bypassed) {
+                return { isImmune: true, reason: 'range', value: ability.range };
+            }
+        }
+
+        // 2. Check Tag Immunity (e.g., Ground / Fire / Physical)
+        if (ability.tags && Array.isArray(ability.tags)) {
+            const matchedTag = ability.tags.find(tag => myImmunities.tags.includes(tag.toLowerCase()));
+            if (matchedTag) {
+                return { isImmune: true, reason: 'tag', value: matchedTag };
+            }
+        }
+
+        return { isImmune: false, reason: null, value: null };
+    }
+
+    // ----------------------------------------
+
+    isDead() {
+        return this.hp <= 0;
+    }
 
     modifyResource(resource, amount) {
         const actualDifference = this.originalEntity.modifyResource(resource, amount);
+        
         if (actualDifference !== 0) {
-            events.emit('SPAWN_FCT', { target: this, value: actualDifference, resource: resource, isCritical: false });
+            events.emit('SPAWN_FCT', {
+                target: this,
+                value: actualDifference,
+                resource: resource,
+                isCritical: false
+            });
         }
         return actualDifference;
     }
 
-   applyStatusEffect(effect) {
-        // 1. Actually apply the status to the entity
+    applyStatusEffect(effect) {
         this.originalEntity.applyStatusEffect(effect);
-        
-        // 2. 📢 SHOUT IT OUT so the BattleController records it!
-        events.emit('ON_STATUS_APPLIED', {
-            status: effect,
-            actor: effect.inflictor, // The enemy who cast the poison
-            target: this             // The party member getting poisoned
-        });
+        events.emit('ON_STATUS_APPLIED', { status: effect, actor: effect.inflictor, target: this });
     }
-    removeStatusEffect(effectId) { this.originalEntity.removeStatusEffect(effectId); }
+
+    removeStatusEffect(effectId) {
+        this.originalEntity.removeStatusEffect(effectId);
+    }
 
     _extractAndResolveAbilities() {
         const abilityIds = new Set();
-        const addId = (a) => { if (a) abilityIds.add(typeof a === 'string' ? a : a.id); };
+        
+        const addId = (a) => {
+            if (a) abilityIds.add(typeof a === 'string' ? a : a.id);
+        };
 
         const baseAbilities = this.originalEntity.abilities || [];
         baseAbilities.forEach(addId);
@@ -87,6 +177,7 @@ get definitionKey() {
             if (!item) return;
             const itemInstance = typeof item === 'string' ? ItemFactory.createItem(item) : item;
             if (!itemInstance) return;
+            
             itemInstance.grantedAbilities?.forEach(addId);
             addId(itemInstance.grantedAbility);
             addId(itemInstance.useAbility);
@@ -94,36 +185,30 @@ get definitionKey() {
 
         if (this.team === 'party') abilityIds.add('retreat');
         if (abilityIds.size === 0) abilityIds.add('punch');
+        
         abilityIds.delete(undefined);
         return AbilityFactory.createAbilities(Array.from(abilityIds)).filter(Boolean);
     }
 
     _applyStartingStatuses() {
-        // 1. Grab legacy string arrays OR the raw JSON overrides from your Encounter data
         const legacyStarting = this.originalEntity.state?.startingStatuses || this.originalEntity.startingStatuses || [];
         const rawOverrides = this.originalEntity.state?.statusEffects || [];
-
+        
         const allToApply = [...legacyStarting, ...rawOverrides];
         if (allToApply.length === 0) return;
-
-        // 2. CRITICAL: Clear the raw JSON "imposter" objects so they don't block application
+        
         this.originalEntity.clearAllStatusEffects();
-
-        // 3. Loop through and instantiate the real StatusEffectModels
+        
         allToApply.forEach(effectData => {
             if (!effectData) return;
-
-            // Extract the lowercase string ID ("bleed") and duration (3)
+            
             const statusId = typeof effectData === 'string' ? effectData : effectData.id;
             const customCharges = typeof effectData === 'object' ? (effectData.duration || effectData.charges) : null;
-
+            
             if (!statusId) return;
-
-            // Pass it to the factory EXACTLY as is (lowercase) along with custom charges
+            
             const newStatus = StatusEffectFactory.createEffect(statusId, customCharges, this);
-
             if (newStatus) {
-                // Apply the fully functioning class instance
                 this.applyStatusEffect(newStatus);
             }
         });

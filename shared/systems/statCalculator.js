@@ -1,306 +1,220 @@
-import { TRAIT_DEFINITIONS } from '../../shared/data/traitDefinitions.js';
-import { DAMAGE_TYPES } from '../../shared/data/constants.js';
+import { TRAIT_DEFINITIONS } from '../../shared/data/traitDefinitions.js'; 
+import { DAMAGE_TYPES } from '../../shared/data/constants.js'; 
 
-export class StatCalculator {
-
+export class StatCalculator { 
     static get DAMAGE_TYPES() { 
-        return DAMAGE_TYPES || [ 
-            "blunt", "slash", "pierce", 
-            "fire", "ice", "lightning", "water", "earth", "wind", 
-            "light", "dark", "arcane" 
-        ];
-    }
+        return DAMAGE_TYPES || [ "blunt", "slash", "pierce", "fire", "ice", "lightning", "water", "earth", "wind", "light", "dark", "arcane" ]; 
+    } 
 
-    static calculate(character, allocations = null) {
-        const details = this._runPipeline(character, allocations);
-        return details.finalStats;
-    }
+    static calculate(character, allocations = null) { 
+        const details = this._runPipeline(character, allocations); 
+        return details.finalStats; 
+    } 
 
-    static calculateDetailed(character, allocations = null) {
-        const { finalStats, breakdown } = this._runPipeline(character, allocations);
-        
-        return {
-            attributes: finalStats,
-            maxHp: { 
-                base: breakdown.resources.base.hp + breakdown.resources.derived.hp, 
-                bonus: breakdown.resources.flat.hp, 
-                total: finalStats.maxHp 
-            },
-            maxStamina: { 
-                base: breakdown.resources.base.stamina + breakdown.resources.derived.stamina, 
-                bonus: breakdown.resources.flat.stamina, 
-                total: finalStats.maxStamina 
-            },
-            maxInsight: { 
-                base: breakdown.resources.base.insight + breakdown.resources.derived.insight, 
-                bonus: breakdown.resources.flat.insight, 
-                total: finalStats.maxInsight 
-            },
-            hpRecovery: finalStats.hpRecovery,
-            staminaRecovery: finalStats.staminaRecovery,
-            insightRecovery: finalStats.insightRecovery,
-
-            attack: finalStats.attack,
-            defense: finalStats.defense,
-            resistance: finalStats.resistance,
-            speed: finalStats.speed,
-            critChance: finalStats.critChance,
+    static calculateDetailed(character, allocations = null) { 
+        const { finalStats, breakdown } = this._runPipeline(character, allocations); 
+        return { 
+            attributes: finalStats, 
+            maxHp: { base: breakdown.resources.base.hp + breakdown.resources.derived.hp, bonus: breakdown.resources.flat.hp, total: finalStats.maxHp }, 
+            maxStamina: { base: breakdown.resources.base.stamina + breakdown.resources.derived.stamina, bonus: breakdown.resources.flat.stamina, total: finalStats.maxStamina }, 
+            maxInsight: { base: breakdown.resources.base.insight + breakdown.resources.derived.insight, bonus: breakdown.resources.flat.insight, total: finalStats.maxInsight }, 
+            hpRecovery: finalStats.hpRecovery, 
+            staminaRecovery: finalStats.staminaRecovery, 
+            insightRecovery: finalStats.insightRecovery, 
+            attack: finalStats.attack, 
+            defense: finalStats.defense, 
+            resistance: finalStats.resistance, 
+            speed: finalStats.speed, 
+            critChance: finalStats.critChance, 
             accuracy: finalStats.accuracy, 
-            evasion: finalStats.evasion,    
-            corruption: finalStats.corruption
-        };
-    }
+            evasion: finalStats.evasion, 
+            corruption: finalStats.corruption 
+        }; 
+    } 
 
-    static _runPipeline(character, allocations = null) {
-        const finalStats = {
-            attack: {}, defense: {}, resistance: {},
-            vigor: 0, strength: 0, dexterity: 0, intelligence: 0, attunement: 0,
-            speed: 0, critChance: 0, critMultiplier: 1.5,
-            accuracy: 100, evasion: 100, 
-            corruption: 0,
-            maxHp: 0, maxStamina: 0, maxInsight: 0,
-            hpRecovery: 0, staminaRecovery: 0, insightRecovery: 0 
-        };
-
-        this.DAMAGE_TYPES.forEach(t => {
-            finalStats.attack[t] = 0; 
-            finalStats.defense[t] = 0; 
-            finalStats.resistance[t] = 0;
-        });
-
-        const breakdown = {
-            resources: {
-                base: { hp: 0, stamina: 0, insight: 0 },
-                derived: { hp: 0, stamina: 0, insight: 0 },
-                flat: { hp: 0, stamina: 0, insight: 0 }
-            }
-        };
-
-        if (!character) return { finalStats, breakdown };
-
+    static _runPipeline(character, allocations = null) { 
+        const finalStats = { attack: {}, defense: {}, resistance: {}, vigor: 0, strength: 0, dexterity: 0, intelligence: 0, attunement: 0, speed: 0, critChance: 0, critMultiplier: 1.5, accuracy: 100, evasion: 100, corruption: 0, maxHp: 0, maxStamina: 0, maxInsight: 0, hpRecovery: 0, staminaRecovery: 0, insightRecovery: 0 }; 
+        this.DAMAGE_TYPES.forEach(t => { finalStats.attack[t] = 0; finalStats.defense[t] = 0; finalStats.resistance[t] = 0; }); 
+        
+        const breakdown = { resources: { base: { hp: 0, stamina: 0, insight: 0 }, derived: { hp: 0, stamina: 0, insight: 0 }, flat: { hp: 0, stamina: 0, insight: 0 } } }; 
+        if (!character) return { finalStats, breakdown }; 
+        
         const definition = character.definition || {}; 
         
-        // --- STEP 1: BASE ENTITY & SECONDARY STATS ---
-        const baseSource = character.baseStats || definition.stats || {};
-        breakdown.resources.base.hp = baseSource.maxHp || baseSource.hp || 10;
-        breakdown.resources.base.stamina = baseSource.maxStamina || baseSource.stamina || 10;
-        breakdown.resources.base.insight = baseSource.maxInsight || baseSource.insight || 0;
-
-        finalStats.hpRecovery = baseSource.hpRecovery || 0;
-        finalStats.staminaRecovery = baseSource.staminaRecovery || 0;
-        finalStats.insightRecovery = baseSource.insightRecovery || 0;
-
-        const combatSource = character.baseStats || definition.baseStats || {};
-        finalStats.speed = combatSource.speed || 0;
-        finalStats.critChance = combatSource.critical || 0;
+        // --- STEP 1: BASE ENTITY & SECONDARY STATS --- 
+        const baseSource = character.baseStats || definition.stats || {}; 
+        breakdown.resources.base.hp = baseSource.maxHp || baseSource.hp || 10; 
+        breakdown.resources.base.stamina = baseSource.maxStamina || baseSource.stamina || 10; 
+        breakdown.resources.base.insight = baseSource.maxInsight || baseSource.insight || 0; 
+        finalStats.hpRecovery = baseSource.hpRecovery || 0; 
+        finalStats.staminaRecovery = baseSource.staminaRecovery || 0; 
+        finalStats.insightRecovery = baseSource.insightRecovery || 0; 
         
-        if (combatSource.accuracy !== undefined) finalStats.accuracy = combatSource.accuracy;
-        if (combatSource.evasion !== undefined) finalStats.evasion = combatSource.evasion;
-
-        if (combatSource.baseDefense) this.DAMAGE_TYPES.forEach(t => finalStats.defense[t] = combatSource.baseDefense[t] || 0);
-        if (combatSource.baseAttack) this.DAMAGE_TYPES.forEach(t => finalStats.attack[t] = combatSource.baseAttack[t] || 0);
-        if (combatSource.baseResistance) this.DAMAGE_TYPES.forEach(t => finalStats.resistance[t] = combatSource.baseResistance[t] || 0);
-
-        // --- STEP 1.5: UPGRADE MERGER ---
-        const getEffectiveStats = (item) => {
-            if (!item) return null;
-            if (!item.definition) return item;
-            
-            return {
-                ...item.definition,
-                ...item,
-                attributes: item.attributes || item.definition.attributes,
-                attack: item.attack || item.definition.attack,
-                defense: item.defense || item.definition.defense,
-                resistance: item.resistance || item.definition.resistance,
-                combat: item.combat || item.definition.combat,
-                resources: item.resources || item.definition.resources,
-            };
-        };
-
-        // --- STEP 2: CALCULATE ATTRIBUTES ---
+        const combatSource = character.baseStats || definition.baseStats || {}; 
+        finalStats.speed = combatSource.speed || 0; 
+        finalStats.critChance = combatSource.critical || 0; 
+        if (combatSource.accuracy !== undefined) finalStats.accuracy = combatSource.accuracy; 
+        if (combatSource.evasion !== undefined) finalStats.evasion = combatSource.evasion; 
+        
+        if (combatSource.baseDefense) this.DAMAGE_TYPES.forEach(t => finalStats.defense[t] = combatSource.baseDefense[t] || 0); 
+        if (combatSource.baseAttack) this.DAMAGE_TYPES.forEach(t => finalStats.attack[t] = combatSource.baseAttack[t] || 0); 
+        if (combatSource.baseResistance) this.DAMAGE_TYPES.forEach(t => finalStats.resistance[t] = combatSource.baseResistance[t] || 0); 
+        
+        // --- STEP 1.5: UPGRADE MERGER --- 
+        const getEffectiveStats = (item) => { 
+            if (!item) return null; 
+            if (!item.definition) return item; 
+            return { ...item.definition, ...item, attributes: item.attributes || item.definition.attributes, attack: item.attack || item.definition.attack, defense: item.defense || item.definition.defense, resistance: item.resistance || item.definition.resistance, combat: item.combat || item.definition.combat, resources: item.resources || item.definition.resources, }; 
+        }; 
+        
+        // --- STEP 2: CALCULATE ATTRIBUTES --- 
         const activeAttributes = { ...(character.attributes || {}) }; 
-
-        if (allocations) {
-            for (const [key, val] of Object.entries(allocations)) {
-                activeAttributes[key] = (activeAttributes[key] || 0) + val;
-            }
-        }
-
-        const equipment = character.equipment || character.state?.equipment || {};
-        const traitList = character.traits || character.state?.traits || [];
-
-        const mergeAttributes = (source) => {
-            if (!source?.attributes) return;
-            for (const [key, val] of Object.entries(source.attributes)) {
-                activeAttributes[key] = (activeAttributes[key] || 0) + val;
-            }
-        };
-
-        Object.values(equipment).forEach(item => { if (item) mergeAttributes(getEffectiveStats(item)); });
+        if (allocations) { 
+            for (const [key, val] of Object.entries(allocations)) { 
+                activeAttributes[key] = (activeAttributes[key] || 0) + val; 
+            } 
+        } 
         
-        traitList.forEach(trait => {
-            const def = typeof trait === 'string' ? TRAIT_DEFINITIONS[trait] : trait;
+        const equipment = character.equipment || character.state?.equipment || {}; 
+        const traitList = character.traits || character.state?.traits || []; 
+        const mergeAttributes = (source) => { 
+            if (!source?.attributes) return; 
+            for (const [key, val] of Object.entries(source.attributes)) { 
+                activeAttributes[key] = (activeAttributes[key] || 0) + val; 
+            } 
+        }; 
+        
+        Object.values(equipment).forEach(item => { if (item) mergeAttributes(getEffectiveStats(item)); }); 
+        traitList.forEach(trait => { 
+            const def = typeof trait === 'string' ? TRAIT_DEFINITIONS[trait] : trait; 
             if (def) mergeAttributes(def); 
-        });
-
-        Object.assign(finalStats, activeAttributes);
-
-        // --- STEP 3: DERIVED SCALING (WEIGHTED BY SPECIES) ---
+        }); 
         
-        // Fetch multipliers, gracefully falling back to defaults if not found
-        const mults = character.statMultipliers || character.state?.statMultipliers || {
-            hpPerVigor: 3, staminaPerDex: 2, insightPerAtt: 2
-        };
-
-        const charLevel = character.level || 1;
-        const levelDefenseBonus = Math.floor(charLevel * 0.5);
-
-        // 1. Vitality Pillar
-        breakdown.resources.derived.hp = Math.floor(finalStats.vigor * mults.hpPerVigor); // <-- UPDATED
-        const vigorDefense = Math.floor(finalStats.vigor * 0.5);
+        Object.assign(finalStats, activeAttributes); 
         
-        this.DAMAGE_TYPES.forEach(t => {
-            finalStats.defense[t] += vigorDefense + levelDefenseBonus;
-        });
-
-        // 2. Physical Pillar
-        finalStats.attack.blunt  += finalStats.strength;
-        finalStats.attack.slash  += finalStats.strength;
-        finalStats.attack.pierce += finalStats.strength;
-
-        breakdown.resources.derived.stamina = Math.floor(finalStats.dexterity * mults.staminaPerDex); // <-- UPDATED
-        finalStats.staminaRecovery += finalStats.dexterity;
-
-        // 3. Magical Pillar
-        const physicalTypes = ["blunt", "slash", "pierce"];
-        this.DAMAGE_TYPES.forEach(t => {
-            if (!physicalTypes.includes(t)) {
-                finalStats.attack[t] += finalStats.intelligence;
-            }
-        });
-
-        breakdown.resources.derived.insight = Math.floor(finalStats.attunement * mults.insightPerAtt); // <-- UPDATED
-        finalStats.insightRecovery += finalStats.attunement;
-
-        // --- STEP 4: FLAT BONUSES & TRAITS ---
-        const applyFlat = (source) => {
+        // --- STEP 3: DERIVED SCALING --- 
+        const mults = character.statMultipliers || character.state?.statMultipliers || { hpPerVigor: 3, staminaPerDex: 2, insightPerAtt: 2 }; 
+        const charLevel = character.level || 1; 
+        const levelDefenseBonus = Math.floor(charLevel * 0.5); 
+        
+        // Vitality Pillar
+        breakdown.resources.derived.hp = Math.floor(finalStats.vigor * mults.hpPerVigor); 
+        const vigorDefense = Math.floor(finalStats.vigor * 0.5); 
+        this.DAMAGE_TYPES.forEach(t => { finalStats.defense[t] += vigorDefense + levelDefenseBonus; }); 
+        
+        // Physical Pillar 
+        finalStats.attack.blunt  += finalStats.strength; 
+        finalStats.attack.slash  += finalStats.strength; 
+        finalStats.attack.pierce += finalStats.strength; 
+        breakdown.resources.derived.stamina = Math.floor(finalStats.dexterity * mults.staminaPerDex); 
+        finalStats.staminaRecovery += finalStats.dexterity; 
+        
+        // Magical Pillar 
+        const physicalTypes = ["blunt", "slash", "pierce"]; 
+        this.DAMAGE_TYPES.forEach(t => { 
+            if (!physicalTypes.includes(t)) { finalStats.attack[t] += finalStats.intelligence; } 
+        }); 
+        breakdown.resources.derived.insight = Math.floor(finalStats.attunement * mults.insightPerAtt); 
+        finalStats.insightRecovery += finalStats.attunement; 
+        
+        // --- STEP 4: FLAT BONUSES & TRAITS --- 
+        const applyFlat = (source) => { 
             this.applyModifiers(finalStats, source); 
-            if (source.resources) {
-                if (source.resources.maxHp) breakdown.resources.flat.hp += source.resources.maxHp;
-                if (source.resources.maxStamina) breakdown.resources.flat.stamina += source.resources.maxStamina;
-                if (source.resources.maxInsight) breakdown.resources.flat.insight += source.resources.maxInsight;
-                if (source.resources.hpRecovery) finalStats.hpRecovery += source.resources.hpRecovery;
-                if (source.resources.staminaRecovery) finalStats.staminaRecovery += source.resources.staminaRecovery;
-                if (source.resources.insightRecovery) finalStats.insightRecovery += source.resources.insightRecovery;
-            }
-            if (source.maxHp) breakdown.resources.flat.hp += source.maxHp;
-        };
-
-        Object.values(equipment).forEach(item => { if (item) applyFlat(getEffectiveStats(item)); });
-
-        const currentHp = character.hp ?? character.state?.stats?.hp ?? breakdown.resources.base.hp;
+            if (source.resources) { 
+                if (source.resources.maxHp) breakdown.resources.flat.hp += source.resources.maxHp; 
+                if (source.resources.maxStamina) breakdown.resources.flat.stamina += source.resources.maxStamina; 
+                if (source.resources.maxInsight) breakdown.resources.flat.insight += source.resources.maxInsight; 
+                if (source.resources.hpRecovery) finalStats.hpRecovery += source.resources.hpRecovery; 
+                if (source.resources.staminaRecovery) finalStats.staminaRecovery += source.resources.staminaRecovery; 
+                if (source.resources.insightRecovery) finalStats.insightRecovery += source.resources.insightRecovery; 
+            } 
+            if (source.maxHp) breakdown.resources.flat.hp += source.maxHp; 
+        }; 
+        
+        Object.values(equipment).forEach(item => { if (item) applyFlat(getEffectiveStats(item)); }); 
+        const currentHp = character.hp ?? character.state?.stats?.hp ?? breakdown.resources.base.hp; 
         const currentMaxHp = breakdown.resources.base.hp + breakdown.resources.derived.hp + breakdown.resources.flat.hp; 
-
-        traitList.forEach(trait => {
-            const def = typeof trait === 'string' ? TRAIT_DEFINITIONS[trait] : trait;
-            if (def?.stats) applyFlat(def.stats);
-            if (def?.conditionalStats && this.checkCondition(def.conditionalStats.condition, currentHp, currentMaxHp)) {
-                applyFlat(def.conditionalStats.stats);
-            }
-        });
-
-        // --- STEP 4.5: STATUS EFFECTS & STACKING ---
-        const activeStatuses = character.statusEffects || character.state?.statusEffects || [];
         
-        // Arrays to hold modifiers so we can apply flats first, then percents
-        const flatModifiers = [];
-        const percentModifiers = [];
-
-        activeStatuses.forEach(status => {
-            if (!status.modifiers || !Array.isArray(status.modifiers)) return;
-            
-            status.modifiers.forEach(mod => {
-                const stacks = status.stacks || 1;
-                const totalValue = mod.value * stacks;
-                
-                if (mod.type === 'percent') {
-                    percentModifiers.push({ target: mod.target, value: totalValue });
-                } else {
-                    flatModifiers.push({ target: mod.target, value: totalValue });
-                }
-            });
-        });
-
-        // Helper function to safely apply values to the finalStats object
-        const applyMod = (mod, isPercent) => {
-            const path = mod.target.split('.');
-            if (path.length === 2) {
-                const category = path[0];
-                const stat = path[1];
-                if (finalStats[category] && finalStats[category][stat] !== undefined) {
-                    if (isPercent) {
-                        finalStats[category][stat] += (finalStats[category][stat] * mod.value);
-                    } else {
-                        finalStats[category][stat] += mod.value;
-                    }
-                }
-            } else if (path.length === 1) {
-                const stat = path[0];
-                if (finalStats[stat] !== undefined) {
-                    if (isPercent) {
-                        finalStats[stat] += (finalStats[stat] * mod.value);
-                    } else {
-                        finalStats[stat] += mod.value;
-                    }
-                }
-            }
-        };
-
-        // Apply flats first (e.g., +10 attack)
-        flatModifiers.forEach(mod => applyMod(mod, false));
+        traitList.forEach(trait => { 
+            const def = typeof trait === 'string' ? TRAIT_DEFINITIONS[trait] : trait; 
+            if (def?.stats) applyFlat(def.stats); 
+            if (def?.conditionalStats && this.checkCondition(def.conditionalStats.condition, currentHp, currentMaxHp)) { 
+                applyFlat(def.conditionalStats.stats); 
+            } 
+        }); 
         
-        // Apply percents second (e.g., +50% attack scales off the new flat total)
-        percentModifiers.forEach(mod => applyMod(mod, true));
+        // --- STEP 4.5: STATUS EFFECTS & STACKING --- 
+        const activeStatuses = character.statusEffects || character.state?.statusEffects || []; 
+        const flatModifiers = []; 
+        const percentModifiers = []; 
+        
+        activeStatuses.forEach(status => { 
+            if (!status.modifiers || !Array.isArray(status.modifiers)) return; 
+            status.modifiers.forEach(mod => { 
+                const stacks = status.stacks || 1; 
+                const totalValue = mod.value * stacks; 
+                if (mod.type === 'percent') { percentModifiers.push({ target: mod.target, value: totalValue }); } 
+                else { flatModifiers.push({ target: mod.target, value: totalValue }); } 
+            }); 
+        }); 
+        
+        const applyMod = (mod, isPercent) => { 
+            const path = mod.target.split('.'); 
+            if (path.length === 2) { 
+                const category = path[0]; 
+                const stat = path[1]; 
+                if (finalStats[category] && finalStats[category][stat] !== undefined) { 
+                    if (isPercent) { finalStats[category][stat] += (finalStats[category][stat] * mod.value); } 
+                    else { finalStats[category][stat] += mod.value; } 
+                } 
+            } else if (path.length === 1) { 
+                const stat = path[0]; 
+                if (finalStats[stat] !== undefined) { 
+                    if (isPercent) { finalStats[stat] += (finalStats[stat] * mod.value); } 
+                    else { finalStats[stat] += mod.value; } 
+                } 
+            } 
+        }; 
+        
+        flatModifiers.forEach(mod => applyMod(mod, false)); 
+        percentModifiers.forEach(mod => applyMod(mod, true)); 
+        
+        // --- STEP 5: FINAL SUMMATION --- 
+        finalStats.maxHp = breakdown.resources.base.hp + breakdown.resources.derived.hp + breakdown.resources.flat.hp; 
+        finalStats.maxStamina = breakdown.resources.base.stamina + breakdown.resources.derived.stamina + breakdown.resources.flat.stamina; 
+        finalStats.maxInsight = breakdown.resources.base.insight + breakdown.resources.derived.insight + breakdown.resources.flat.insight; 
+        finalStats.evasion = Math.max(1, finalStats.evasion); 
+        finalStats.accuracy = Math.max(1, finalStats.accuracy); 
+        
+        return { finalStats, breakdown }; 
+    } 
 
-        // --- STEP 5: FINAL SUMMATION ---
-        finalStats.maxHp = breakdown.resources.base.hp + breakdown.resources.derived.hp + breakdown.resources.flat.hp;
-        finalStats.maxStamina = breakdown.resources.base.stamina + breakdown.resources.derived.stamina + breakdown.resources.flat.stamina;
-        finalStats.maxInsight = breakdown.resources.base.insight + breakdown.resources.derived.insight + breakdown.resources.flat.insight;
+    static applyModifiers(stats, source) { 
+        const map = { attack: 'attack', defense: 'defense', resistance: 'resistance' }; 
+        Object.keys(map).forEach(k => { 
+            if (source[k] && typeof source[k] === 'object') { 
+                for (const [type, val] of Object.entries(source[k])) { 
+                    if (stats[map[k]][type] !== undefined) stats[map[k]][type] += val; 
+                } 
+            } 
+        }); 
+        if (source.combat) { 
+            if (source.combat.speed) stats.speed += source.combat.speed; 
+            if (source.combat.critChance) stats.critChance += source.combat.critChance; 
+            if (source.combat.critMultiplier) stats.critMultiplier += source.combat.critMultiplier; 
+            if (source.combat.accuracy) stats.accuracy += source.combat.accuracy; 
+            if (source.combat.evasion) stats.evasion += source.combat.evasion; 
+            if (source.combat.corruption) stats.corruption += source.combat.corruption; 
+        } 
+    } 
 
-        finalStats.evasion = Math.max(1, finalStats.evasion);
-        finalStats.accuracy = Math.max(1, finalStats.accuracy);
-
-        return { finalStats, breakdown };
-    }
-
-    static applyModifiers(stats, source) {
-        const map = { attack: 'attack', defense: 'defense', resistance: 'resistance' };
-        Object.keys(map).forEach(k => {
-            if (source[k] && typeof source[k] === 'object') {
-                for (const [type, val] of Object.entries(source[k])) {
-                    if (stats[map[k]][type] !== undefined) stats[map[k]][type] += val;
-                }
-            }
-        });
-
-        if (source.combat) {
-            if (source.combat.speed) stats.speed += source.combat.speed;
-            if (source.combat.critChance) stats.critChance += source.combat.critChance;
-            if (source.combat.critMultiplier) stats.critMultiplier += source.combat.critMultiplier;
-            if (source.combat.accuracy) stats.accuracy += source.combat.accuracy;
-            if (source.combat.evasion) stats.evasion += source.combat.evasion;
-            if (source.combat.corruption) stats.corruption += source.combat.corruption;
-        }
-    }
-
-    static checkCondition(type, currentHp, maxHp) {
-        if (!maxHp) maxHp = 1;
-        switch (type) {
-            case "hp_below_50_percent": return currentHp < (maxHp * 0.5);
-            case "hp_below_30_percent": return currentHp < (maxHp * 0.3);
-            case "hp_full": return currentHp >= maxHp;
-            default: return false;
-        }
-    }
+    static checkCondition(type, currentHp, maxHp) { 
+        if (!maxHp) maxHp = 1; 
+        switch (type) { 
+            case "hp_below_50_percent": return currentHp < (maxHp * 0.5); 
+            case "hp_below_30_percent": return currentHp < (maxHp * 0.3); 
+            case "hp_full": return currentHp >= maxHp; 
+            default: return false; 
+        } 
+    } 
 }

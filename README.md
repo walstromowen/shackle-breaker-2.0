@@ -4,7 +4,6 @@ Roguelike turnbased adventure game based on the Shackle Breaker story by Owen Wa
 # PLANNED FEATURES
 crafting system.
 hand crafted areas
-ability tags / immunities range
 autenticaiton (last)
 auto pickup without encounter on overworld
 
@@ -16,11 +15,14 @@ more consistent sound for UI
 Overall UI polish
 better text style
 targeting ui improvements for splash attacks with mouse
+global texture/resolution upgrade
+map tile connections / new tile connection system gamemaker
 
 # Bugs
 shop system and character summary stacking equipables
 Rain flash
 rain sound effect too slow
+flashing of sprites in battle renderer
 
 
 Root

@@ -98,6 +98,7 @@ export const StatusEffectDefinitions = {
         icon: { col: 5, row: 1 },
         defaultCharges: 1,
         maxStacks: 1,
+        cancels: ['flying'], // NEW: Instantly strips the flying status
         effects: [
             { trigger: 'ON_TURN_START', flag: 'skipAction', battleMessage: "{target} is knocked down and misses their turn!" }
         ]
@@ -119,6 +120,7 @@ export const StatusEffectDefinitions = {
         icon: { col: 7, row: 0 },
         defaultCharges: 2,
         maxStacks: 1,
+        cancels: ['flying', 'evasive'], // NEW: Nets/Binds pull flying targets down
         effects: [
             { trigger: 'ON_TURN_START', flag: 'skipAction', battleMessage: "{target} is bound and cannot move!" }
         ],
@@ -137,11 +139,6 @@ export const StatusEffectDefinitions = {
             { trigger: 'ON_TURN_START', flag: 'skipAction', battleMessage: "{target} is fully paralyzed and cannot move!" }
         ]
     },
-
-    // ==========================================
-    // NEW STATUS EFFECTS
-    // ==========================================
-    
     enlightened: {
         id: 'enlightened',
         name: 'Enlightened',
@@ -236,23 +233,47 @@ export const StatusEffectDefinitions = {
         id: 'evasive',
         name: 'Evasive',
         animationId: "evasive",
-        icon: { col: 2, row: 1 }, // Adjust sprite sheet coordinates as needed
+        icon: { col: 2, row: 1 }, 
         defaultCharges: 3,
         maxStacks: 1,
         modifiers: [
-            { type: 'percent', target: 'evasion', value: 0.5 } // Increases evasion by 50%
+            { type: 'percent', target: 'evasion', value: 0.5 }
         ]
     },
-    
     exposed: {
         id: 'exposed',
         name: 'Exposed',
         animationId: "exposed",
-        icon: { col: 2, row: 2 }, // Adjust sprite sheet coordinates as needed
+        icon: { col: 2, row: 2 }, 
         defaultCharges: 3,
         maxStacks: 1,
         modifiers: [
-            { type: 'percent', target: 'evasion', value: -0.5 } // Decreases evasion by 50%
+            { type: 'percent', target: 'evasion', value: -0.5 } 
         ]
     },
+    
+    // ==========================================
+    // NEW INNATE IMMUNITY STATUS EFFECTS
+    // ==========================================
+    flying: {
+        id: 'flying',
+        name: 'Flying',
+        icon: { col: 3, row: 1 },
+        defaultCharges: 3, // -1 for Infinite duration
+        maxStacks: 1,
+        immunities: {
+            
+            tags: ['physical']
+        }
+    },
+    incorporeal: {
+        id: 'incorporeal',
+        name: 'Incorporeal',
+        icon: { col: 4, row: 1 },
+        defaultCharges: 3, // Infinite duration
+        maxStacks: 1,
+        immunities: {
+            tags: ['physical'] 
+        }
+    }
 };

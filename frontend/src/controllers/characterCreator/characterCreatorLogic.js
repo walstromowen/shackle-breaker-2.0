@@ -8,7 +8,7 @@ import { TRAIT_DEFINITIONS } from '../../../../shared/data/traitDefinitions.js';
 import { InventorySystem } from '../../../../shared/systems/inventorySystem.js';
 import { PartyManager } from '../../../../shared/systems/partyManager.js';
 import { QuestModel } from '../../../../shared/models/questModel.js';
-const ALLOWED_TRAITS = ['quick', 'inquisitive', 'brawler', 'tough'];
+const ALLOWED_TRAITS = ['quick', 'inquisitive', 'brawler', 'tough', 'stealthy'];
 const UI_TRAITS = ALLOWED_TRAITS.map(key => ({
     id: key,
     label: TRAIT_DEFINITIONS[key].name,
