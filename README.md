@@ -3,7 +3,7 @@ Roguelike turnbased adventure game based on the Shackle Breaker story by Owen Wa
 
 # PLANNED FEATURES
 crafting system.
-procedural dungeons and hand crafted areas
+hand crafted areas
 ability tags / immunities range
 autenticaiton (last)
 auto pickup without encounter on overworld

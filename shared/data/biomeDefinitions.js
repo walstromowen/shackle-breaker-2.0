@@ -132,7 +132,7 @@ export const BIOME_DEFINITIONS = {
     HOUSE_INTERIOR: { 
         id: 'HOUSE_INTERIOR', 
         defaultLootTable: 'house', 
-        sheetId: 'houseInterior', 
+        sheetId: 'plains', 
         objectSheetId: 'houseInteriorMapObjects', 
         allowedWeather: [], 
         music: { 

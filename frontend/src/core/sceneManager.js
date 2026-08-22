@@ -3,8 +3,8 @@ import { Input } from './input.js';
 import { UIInteractionManager } from './UIInteractionManager.js';
 
 // --- CONTROLLERS ---
-import { BootController } from '../controllers/boot/bootController.js';        
-import { TitleController } from '../controllers/title/titleController.js';      
+import { BootController } from '../controllers/boot/bootController.js';
+import { TitleController } from '../controllers/title/titleController.js';
 import { OverworldController } from '../controllers/overworld/overworldController.js';
 import { EncounterController } from '../controllers/encounter/encounterController.js';
 import { CharacterCreatorController } from '../controllers/characterCreator/characterCreatorController.js';
@@ -13,11 +13,11 @@ import { CharacterSummaryController } from '../controllers/characterSummary/char
 import { BattleController } from '../controllers/battle/battleController.js';
 import { LevelUpController } from '../controllers/levelUp/levelUpController.js';
 import { JournalController } from '../controllers/journal/journalController.js';
-import { ShopController } from '../controllers/shop/shopController.js';          // <-- NEW
+import { ShopController } from '../controllers/shop/shopController.js';         // <-- NEW
 
 // --- RENDERERS ---
-import { BootRenderer } from '../renderers/boot/bootRenderer.js';               
-import { TitleRenderer } from '../renderers/title/titleRenderer.js';            
+import { BootRenderer } from '../renderers/boot/bootRenderer.js';
+import { TitleRenderer } from '../renderers/title/titleRenderer.js';
 import { MapRenderer } from '../renderers/overworld/mapRenderer.js';
 import { LightingRenderer } from '../renderers/overworld/lightingRenderer.js';
 import { WeatherRenderer } from '../renderers/overworld/weatherRenderer.js';
@@ -39,6 +39,7 @@ import { gameState } from '../../../shared/state/gameState.js';
 import { DIFFICULTY_MODIFIERS } from '../../../shared/data/constants.js';
 import { EntityFactory } from '../../../shared/systems/factories/entityFactory.js';
 
+
 export class SceneManager {
     constructor(canvas, assetLoader, config) {
         this.canvas = canvas;
@@ -55,22 +56,22 @@ export class SceneManager {
         console.log(`%c[SceneManager] Init. Seed: ${gameState.seed}`, 'color: #00aaaa');
 
         // --- CONTROLLERS ---
-        this.bootController = new BootController(this.input, this.loader);  
-        this.titleController = new TitleController(this.input);             
+        this.bootController = new BootController(this.input, this.loader);
+        this.titleController = new TitleController(this.input);
         this.characterCreatorController = new CharacterCreatorController();
         this.partyController = new PartyController(this.input);
         this.levelUpController = new LevelUpController(this.input);
         this.journalController = new JournalController(this.input);
         this.shopController = new ShopController(this.input);                    // <-- NEW
-        
+
         this.overworldController = null;
         this.encounterController = null;
         this.battleController = null;
         this.characterSummaryController = null;
 
         // --- RENDERERS ---
-        this.bootRenderer = new BootRenderer(this.canvas);                                 
-        this.titleRenderer = new TitleRenderer(this.canvas, this.config, this.loader);     
+        this.bootRenderer = new BootRenderer(this.canvas);
+        this.titleRenderer = new TitleRenderer(this.canvas, this.config, this.loader);
         this.mapRenderer = new MapRenderer(this.canvas, this.loader, this.config);
         this.lightingRenderer = new LightingRenderer(this.config);
         this.weatherRenderer = new WeatherRenderer(this.canvas, this.ctx, this.config, this.loader);
@@ -86,8 +87,8 @@ export class SceneManager {
         this.shopRenderer = new ShopRenderer(this.ctx, this.loader);             // <-- NEW
 
         // State
-        this.currentScene = 'boot'; 
-
+        this.currentScene = 'boot';
+        
         // --- NEW: Audio Memory Cache ---
         this.activeBattleBGM = null;
         this.activeEncounterBGM = null;
@@ -98,46 +99,49 @@ export class SceneManager {
     }
 
     resolveTargetBGM(targetScene, sceneContext = {}) {
-    // 1. Explicit scene context overrides
-    if (sceneContext.bgm) return sceneContext.bgm;
+        // 1. Explicit scene context overrides
+        if (sceneContext.bgm) return sceneContext.bgm;
 
-    // 2. Main menu and Boot exceptions (No world map exists yet)
-    if (targetScene === 'boot') return null;
-    if (targetScene === 'title') return 'shackle_breaker_theme_1';
-    if (targetScene === 'character-creator') return null;
+        // 2. Main menu and Boot exceptions (No world map exists yet)
+        if (targetScene === 'boot') return null;
+        if (targetScene === 'title') return 'shackle_breaker_theme_1';
+        if (targetScene === 'character-creator') return null;
 
-    // 3. Cached Battle/Encounter overrides
-    if (targetScene === 'battle' && this.activeBattleBGM) return this.activeBattleBGM;
-    if (targetScene === 'encounter' && this.activeEncounterBGM) return this.activeEncounterBGM;
+        // 3. Cached Battle/Encounter overrides
+        if (targetScene === 'battle' && this.activeBattleBGM) return this.activeBattleBGM;
+        if (targetScene === 'encounter' && this.activeEncounterBGM) return this.activeEncounterBGM;
+        
+        // --- FIX: Preserve active encounter BGM if battle specifies no custom BGM ---
+        if (targetScene === 'battle' && this.currentScene === 'encounter' && gameState.world?.currentBgm) {
+            return gameState.world.currentBgm;
+        }
 
-    // --- FIX: Preserve active encounter BGM if battle specifies no custom BGM ---
-    if (targetScene === 'battle' && this.currentScene === 'encounter' && gameState.world?.currentBgm) {
-      return gameState.world.currentBgm;
+        // 4. Overworld/Battle default biome resolution
+        if (!gameState.player || gameState.player.col === undefined) return null;
+        if (!this.worldManager) return null;
+        
+        const playerCol = gameState.player.col;
+        const playerRow = gameState.player.row;
+        const currentHour = (gameState.world.time || 0) / 60;
+        
+        const biome = this.worldManager.getBiomeAt(playerCol, playerRow);
+        
+        if (targetScene === 'battle') return biome.getMusic(currentHour, true);
+        if (targetScene === 'overworld') return biome.getMusic(currentHour, false);
+
+        return null;
     }
-
-    // 4. Overworld/Battle default biome resolution
-    if (!gameState.player || gameState.player.col === undefined) return null;
-    if (!this.worldManager) return null;
-
-    const playerCol = gameState.player.col;
-    const playerRow = gameState.player.row;
-    const currentHour = (gameState.world.time || 0) / 60;
-    const biome = this.worldManager.getBiomeAt(playerCol, playerRow);
-
-    if (targetScene === 'battle') return biome.getMusic(currentHour, true);
-    if (targetScene === 'overworld') return biome.getMusic(currentHour, false);
-
-    return null;
-  }
 
     resolveTargetAmbience(targetScene) {
         // <-- ADDED 'shop' to keep whatever background ambience is currently playing
         if (['party', 'character_summary', 'level_up', 'shop'].includes(targetScene)) return null; 
+
         if (['battle', 'encounter', 'character-creator', 'title', 'boot'].includes(targetScene)) return 'none';
-        
+
         if (gameState.world && gameState.world.currentWeather) {
             return gameState.world.currentWeather.audioEffect || 'none';
         }
+
         return 'none';
     }
 
@@ -182,12 +186,20 @@ export class SceneManager {
                     this.battleController = new BattleController(this.input, this.config, this.worldManager);
                 }
 
-                if (scene === 'overworld') this.overworldController.isLocked = false;
+                if (scene === 'overworld') {
+                    this.overworldController.isLocked = false;
+                    
+                    // --- FIX: Check for the map object destruction payload ---
+                    if (data && data.col !== undefined && data.row !== undefined) {
+                        console.log(`[SceneManager] Removing object at ${data.col}, ${data.row} after encounter.`);
+                        this.worldManager.modifyWorld(data.col, data.row, null);
+                    }
+                }
 
                 if (scene === 'character_summary') {
                     this.characterSummaryController = new CharacterSummaryController(this.input, data);
                 }
-
+                
                 if (scene === 'level_up') {
                     this.levelUpController.init(data);
                 }
@@ -196,11 +208,11 @@ export class SceneManager {
                     this.partyController.init(data || {});
                 }
 
-                if (scene === 'journal') {                                  
+                if (scene === 'journal') {
                     this.journalController.init();
                 }
 
-                if (scene === 'shop') {                                          // <-- NEW
+                if (scene === 'shop') {                                         // <-- NEW
                     this.shopController.init(data || {});
                 }
 
@@ -208,18 +220,16 @@ export class SceneManager {
             }, 'fade');
         });
 
-       // <-- NEW EXPLICIT OPEN_SHOP LISTENER
-events.on('OPEN_SHOP', (data) => {
-    console.log("1. EVENT RECEIVED DATA:", data);
-    events.emit('PLAY_SFX', { id: 'doorOpen', volume: 0.6 });
-    this.transitionRenderer.start(() => {
-        
-        // ADD THIS LINE: Pass the data to the controller so it can build the wares!
-        this.shopController.init(data || {}); 
-        
-        this.changeScene('shop', data);
-    }, 'wipe', { speed: 3.5 });
-});
+        // <-- NEW EXPLICIT OPEN_SHOP LISTENER
+        events.on('OPEN_SHOP', (data) => {
+            console.log("1. EVENT RECEIVED DATA:", data);
+            events.emit('PLAY_SFX', { id: 'doorOpen', volume: 0.6 });
+            this.transitionRenderer.start(() => {
+                // ADD THIS LINE: Pass the data to the controller so it can build the wares!
+                this.shopController.init(data || {}); 
+                this.changeScene('shop', data);
+            }, 'wipe', { speed: 3.5 });
+        });
 
         events.on('INTERACT', (data) => {
             if (data.type === 'ENCOUNTER') {
@@ -233,20 +243,27 @@ events.on('OPEN_SHOP', (data) => {
                 events.emit('PLAY_SFX', { id: 'doorOpen', volume: 0.8 });
                 this.transitionRenderer.start(() => {
                     if (data.id === 'procedural_room_trigger') {
+                        // Save Overworld state
                         gameState.world.savedOverworld = {
                             seed: gameState.seed,
                             returnCol: data.context.col,
                             returnRow: data.context.row + 1
                         };
                         
+                        // Shift into interior state
                         gameState.seed = gameState.seed + (data.context.col * 73856) + (data.context.row * 19349);
                         gameState.world.isInterior = true;
                         gameState.world.interiorType = data.roomType || 'HOUSE_INTERIOR';
                         gameState.world.interiorId = `${data.context.col}_${data.context.row}`;
                         
+                        // Generate the interior map
                         this.worldManager = new WorldManager();
-                        this.overworldController.worldManager = this.worldManager;
                         
+                        // --- FIX: Give the interior map to ALL controllers! ---
+                        this.overworldController.worldManager = this.worldManager;
+                        this.encounterController.worldManager = this.worldManager;
+                        this.battleController.worldManager = this.worldManager;
+
                         const interiorSpawn = this.worldManager.findSpawnPoint() || { col: 3, row: 5 };
                         this.overworldController.warpTo(interiorSpawn.col, interiorSpawn.row);
                         this.overworldController.isLocked = false;
@@ -254,14 +271,20 @@ events.on('OPEN_SHOP', (data) => {
                     } else if (data.id === 'exit_interior') {
                         const saved = gameState.world.savedOverworld;
                         if (saved) {
+                            // Restore Overworld state
                             gameState.seed = saved.seed;
                             gameState.world.isInterior = false;
                             gameState.world.interiorType = null;
                             gameState.world.interiorId = null;
                             
+                            // Restore the overworld map
                             this.worldManager = new WorldManager();
-                            this.overworldController.worldManager = this.worldManager;
                             
+                            // --- FIX: Restore the overworld map for ALL controllers! ---
+                            this.overworldController.worldManager = this.worldManager;
+                            this.encounterController.worldManager = this.worldManager;
+                            this.battleController.worldManager = this.worldManager;
+
                             this.overworldController.warpTo(saved.returnCol, saved.returnRow);
                             this.overworldController.isLocked = false;
                         }
@@ -276,7 +299,6 @@ events.on('OPEN_SHOP', (data) => {
             events.emit('PLAY_SFX', { id: 'cinematicBoom', volume: 1.0 });
             this.transitionRenderer.start(() => {
                 this.encounterController.start(data.encounterId, data.context || {});
-                
                 const customBGM = data.bgm || data.context?.bgm || null;
                 this.activeEncounterBGM = customBGM;
                 this.changeScene('encounter', { bgm: customBGM });
@@ -291,20 +313,21 @@ events.on('OPEN_SHOP', (data) => {
             const baseLevel = PartyManager.getHighestLevel() + globalOffset;
 
             const scaledEnemies = [];
+
             for (const enemyData of data.enemies) {
                 if (enemyData.stats) {
                     scaledEnemies.push(enemyData);
-                    continue;
+                    continue; 
                 }
 
                 const enemyId = typeof enemyData === 'string' ? enemyData : enemyData.id;
-                
                 let finalLevel = Math.max(1, baseLevel);
                 let factoryOverrides = { level: finalLevel };
 
                 if (typeof enemyData === 'object') {
                     const specificOffset = enemyData.levelOffset || 0;
                     finalLevel = Math.max(1, baseLevel + specificOffset);
+
                     const { id, levelOffset, ...restOfProperties } = enemyData;
                     factoryOverrides = { level: finalLevel, ...restOfProperties };
                 }
@@ -313,40 +336,45 @@ events.on('OPEN_SHOP', (data) => {
                 scaledEnemies.push(enemyEntity);
             }
 
-           const isFromOverworld = this.currentScene === 'overworld';
-      const transitionType = isFromOverworld ? 'blade' : 'ethereal';
-      const transitionSpeed = isFromOverworld ? 1.5 : 2.5;
+            const isFromOverworld = this.currentScene === 'overworld';
+            const transitionType = isFromOverworld ? 'blade' : 'ethereal';
+            const transitionSpeed = isFromOverworld ? 1.5 : 2.5;
 
-      this.transitionRenderer.start(() => {
-        console.log("[SceneManager] Handing off scaled entities to BattleController:", scaledEnemies);
-        const context = data.context || {};
-        context.backgroundId = data.background;
-        context.weather = data.weather;
-        this.battleController.start(scaledEnemies, context);
+            this.transitionRenderer.start(() => {
+                console.log("[SceneManager] Handing off scaled entities to BattleController:", scaledEnemies);
+                
+                const context = data.context || {};
+                context.backgroundId = data.background;
+                context.weather = data.weather;
+                
+                this.battleController.start(scaledEnemies, context);
 
-        // --- FIX: Fallback to currently playing encounter music if no explicit BGM was passed ---
-        const currentBGM = gameState.world?.currentBgm || null;
-        const customBGM = data.bgm || context.bgm || (this.currentScene === 'encounter' ? currentBGM : null);
-        
-        this.activeBattleBGM = customBGM;
-        this.changeScene('battle', { bgm: customBGM });
-      }, transitionType, { speed: transitionSpeed, color: '#0a0a12' });
-    });
+                // --- FIX: Fallback to currently playing encounter music if no explicit BGM was passed ---
+                const currentBGM = gameState.world?.currentBgm || null;
+                const customBGM = data.bgm || context.bgm || (this.currentScene === 'encounter' ? currentBGM : null);
+
+                this.activeBattleBGM = customBGM;
+                this.changeScene('battle', { bgm: customBGM });
+
+            }, transitionType, { speed: transitionSpeed, color: '#0a0a12' });
+        });
+
         events.on('BATTLE_ENDED', (data) => {
-            this.activeBattleBGM = null;
+            this.activeBattleBGM = null; 
             if (data.victory) {
                 events.emit('CHANGE_SCENE', { scene: 'overworld' });
             } else {
                 console.log("[SceneManager] Game Over...");
+                // Add your game over logic here (e.g., return to title screen)
             }
         });
 
         events.on('REQUEST_PARTY_SWAP', (data) => {
             this.transitionRenderer.start(() => {
-                this.partyController.init({ 
+                this.partyController.init({
                     mode: data.mode || 'BATTLE_SELECT',
                     activeIndices: data.activeIndices,
-                    callback: data.callback 
+                    callback: data.callback
                 });
                 this.changeScene('party');
             }, 'wipe', { speed: 3.0 });
@@ -362,7 +390,7 @@ events.on('OPEN_SHOP', (data) => {
         events.on('TOGGLE_CHARACTER_SUMMARY', (data) => {
             events.emit('PLAY_SFX', { id: 'cinematicBoom', volume: 0.7 });
             this.transitionRenderer.start(() => {
-                this.characterSummaryController = new CharacterSummaryController(this.input, { 
+                this.characterSummaryController = new CharacterSummaryController(this.input, {
                     character: data.combatant,
                     returnScene: 'battle',
                     phase: data.phase,
@@ -380,7 +408,7 @@ events.on('OPEN_SHOP', (data) => {
     _handleGlobalKeydown(e) {
         if (this.transitionRenderer.isActive && this.transitionRenderer.state === 'FADE_OUT') return;
         if (e.code === 'Backquote') this.mapRenderer.showDebug = !this.mapRenderer.showDebug;
-
+        
         const activeController = this._getActiveController();
         if (activeController && activeController.handleKeyDown) {
             activeController.handleKeyDown(e.code, e);
@@ -389,15 +417,15 @@ events.on('OPEN_SHOP', (data) => {
 
     _getActiveController() {
         switch (this.currentScene) {
-            case 'boot': return this.bootController; 
-            case 'title': return this.titleController; 
+            case 'boot': return this.bootController;
+            case 'title': return this.titleController;
             case 'overworld': return this.overworldController;
             case 'encounter': return this.encounterController;
             case 'battle': return this.battleController;
             case 'character-creator': return this.characterCreatorController;
             case 'party': return this.partyController;
             case 'character_summary': return this.characterSummaryController;
-            case 'level_up': return this.levelUpController; 
+            case 'level_up': return this.levelUpController;
             case 'journal': return this.journalController;
             case 'shop': return this.shopController;                         // <-- NEW
             default: return null;
@@ -406,8 +434,8 @@ events.on('OPEN_SHOP', (data) => {
 
     _getActiveRenderer() {
         switch (this.currentScene) {
-            case 'boot': return this.bootRenderer;                 
-            case 'title': return this.titleRenderer;               
+            case 'boot': return this.bootRenderer;
+            case 'title': return this.titleRenderer;
             case 'overworld': return this.mapRenderer;
             case 'encounter': return this.encounterRenderer;
             case 'battle': return this.battleRenderer;
@@ -438,8 +466,8 @@ events.on('OPEN_SHOP', (data) => {
                 getAndResetClick: () => click,
                 getAndResetRightClick: () => rightClick
             };
-            
             const uiResult = this.uiInteractionManager.update(inputProxy, activeController);
+
             if (uiResult) {
                 if (uiResult.handledClick) click = null;
                 if (uiResult.handledRightClick) rightClick = null;
@@ -476,15 +504,15 @@ events.on('OPEN_SHOP', (data) => {
 
     render(interpolation, totalTime) {
         if (!this.loader.isDone() && this.currentScene !== 'boot') return;
-        
+
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         switch (this.currentScene) {
-            case 'boot':                                                             
+            case 'boot':
                 const bootState = this.bootController.getState();
                 this.bootRenderer.render(this.ctx, bootState);
                 break;
-            case 'title':                                                            
+            case 'title':
                 const titleState = this.titleController.getState();
                 this.titleRenderer.render(this.ctx, titleState, this.titleController);
                 break;
@@ -499,7 +527,7 @@ events.on('OPEN_SHOP', (data) => {
                 const journalState = this.journalController.getState();
                 this.journalRenderer.render(this.ctx, journalState);
                 break;
-            case 'shop':                                                             // <-- NEW
+            case 'shop':                                                         // <-- NEW
                 const shopState = this.shopController.getState();
                 this.shopRenderer.render(shopState);
                 break;
@@ -535,7 +563,7 @@ events.on('OPEN_SHOP', (data) => {
     renderOverworld(interpolation, totalTime) {
         const state = this.overworldController.getState();
         const ambientColor = this.timeSystem.getCurrentColorData();
-        
+
         this.mapRenderer.renderMap(
             this.worldManager,
             state.camera,
@@ -546,6 +574,7 @@ events.on('OPEN_SHOP', (data) => {
             ambientColor,
             this.weatherRenderer
         );
+
         this.overworldUIRenderer.render(this.ctx, state);
     }
 
