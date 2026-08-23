@@ -22,7 +22,6 @@ export class WorkshopRenderer {
 
         const w = this.ctx.canvas.width;
         const h = this.ctx.canvas.height;
-
         this.ui.clearScreen(w, h);
 
         const leftW = Math.floor(w * 0.28);
@@ -55,13 +54,18 @@ export class WorkshopRenderer {
             if (!tooltipState.member) {
                 tooltipState.member = { equipment: {}, stats: {} };
             }
+
             const activeHitbox = this.hitboxes.find(h => h.id === state.hoveredHitboxId);
             if (activeHitbox) {
                 const mx = tooltipState.mouse?.x || 0;
                 const my = tooltipState.mouse?.y || 0;
-                const isMouseInBox = mx >= activeHitbox.x && mx <= activeHitbox.x + activeHitbox.w && my >= activeHitbox.y && my <= activeHitbox.y + activeHitbox.h;
+                const isMouseInBox = mx >= activeHitbox.x && mx <= activeHitbox.x + activeHitbox.w &&
+                                     my >= activeHitbox.y && my <= activeHitbox.y + activeHitbox.h;
                 if (!isMouseInBox) {
-                    tooltipState.mouse = { x: Math.floor(activeHitbox.x + (activeHitbox.w / 2)), y: Math.floor(activeHitbox.y + (activeHitbox.h / 2)) };
+                    tooltipState.mouse = {
+                        x: Math.floor(activeHitbox.x + (activeHitbox.w / 2)),
+                        y: Math.floor(activeHitbox.y + (activeHitbox.h / 2))
+                    };
                 }
                 this.tooltipSystem.render(tooltipState, this.hitboxes);
             }
@@ -80,7 +84,6 @@ export class WorkshopRenderer {
 
         this.ui.drawText("Recipes", centerX, listY + 24, UITheme.fonts.header, UITheme.colors.textMain, "center");
         listY += 48;
-
         const flourishW = w * 0.8;
         this.ui.drawLineWithGothicFlourish(centerX - (flourishW / 2), listY, flourishW, UITheme.colors.borderHighlight);
         listY += 32;
@@ -115,7 +118,6 @@ export class WorkshopRenderer {
             this.ui.drawText(outDef.name, x + 104, listY + (rowH / 2) + 8, UITheme.fonts.body, color, "left");
 
             this.hitboxes.push({ id: hitboxId, x: x + 12, y: listY, w: w - 24, h: rowH, type: 'recipe', hoverSfx: 'hoverTick', clickSfx: 'cinematicBoom' });
-
             listY += rowH + 8;
         });
     }
@@ -133,7 +135,6 @@ export class WorkshopRenderer {
         let cursorY = this.padding;
         const contentX = x + this.padding;
         const contentW = w - (this.padding * 2);
-
         const activeTab = state.activeTab || 'description';
 
         // --- Tabs ---
@@ -163,7 +164,6 @@ export class WorkshopRenderer {
             if (drawBrackets) this.ui.drawSelectionBrackets(tx, cursorY, tabW, tabH, 5, UITheme.colors.borderHighlight);
 
             this.ui.drawText(label, tx + tabW / 2, cursorY + (tabH / 2) + 10, UITheme.fonts.small, textCol, "center");
-
             this.hitboxes.push({ id: id, x: tx, y: cursorY, w: tabW, h: tabH, type: 'tab', hoverSfx: 'hoverTick', clickSfx: 'cinematicBoom' });
         };
 
@@ -179,7 +179,9 @@ export class WorkshopRenderer {
             cursorY += 16;
             cursorY = this._renderItemMainInfo(outDef, contentX, cursorY, contentW);
         } else if (activeTab === 'stats') {
-            cursorY = this._renderStatsGrid(outDef, contentX, cursorY, contentW);
+            // Mock an item structure to use the detailed stats renderer without diff arrows
+            const mockItem = { definition: outDef, stats: outDef.stats };
+            cursorY = this._renderDetailedStats(mockItem, contentX, cursorY, contentW);
         } else if (activeTab === 'skills') {
             cursorY = this._renderAbilities(outDef, contentX, cursorY, contentW);
         }
@@ -195,7 +197,6 @@ export class WorkshopRenderer {
         let cursorY = this.padding;
         const contentX = x + this.padding;
         const contentW = w - (this.padding * 2);
-
         const isUpgradeable = item.isUpgradeable || def.isUpgradeable;
 
         // --- Tabs ---
@@ -226,7 +227,6 @@ export class WorkshopRenderer {
             if (drawBrackets) this.ui.drawSelectionBrackets(tx, cursorY, tabW, tabH, 5, UITheme.colors.borderHighlight);
 
             this.ui.drawText(label, tx + tabW / 2, cursorY + (tabH / 2) + 10, UITheme.fonts.small, textCol, "center");
-
             this.hitboxes.push({ id: id, x: tx, y: cursorY, w: tabW, h: tabH, type: 'tab', hoverSfx: 'hoverTick', clickSfx: 'cinematicBoom' });
         };
 
@@ -240,6 +240,7 @@ export class WorkshopRenderer {
         if (activeTab === 'description') {
             const currentLevel = item.level !== undefined ? item.level : null;
             const nextLevel = (isUpgradeable && !item.isMaxLevel && currentLevel !== null) ? currentLevel + 1 : null;
+
             cursorY = this._renderItemHeader(def, contentX, cursorY, contentW, currentLevel, nextLevel);
             cursorY += 16;
             cursorY = this._renderItemMainInfo(def, contentX, cursorY, contentW);
@@ -251,10 +252,8 @@ export class WorkshopRenderer {
             if (isUpgradeable && !item.isMaxLevel) {
                 this.ui.drawText("Stat Increases", contentX, cursorY, UITheme.fonts.bold, UITheme.colors.textMain, "left");
                 cursorY += 24;
-                cursorY = this._renderUpgradeStatsComparison(item, contentX, cursorY, contentW);
-            } else {
-                cursorY = this._renderStatsGrid(def, contentX, cursorY, contentW);
             }
+            cursorY = this._renderDetailedStats(item, contentX, cursorY, contentW);
         } else if (activeTab === 'skills') {
             if (isUpgradeable && !item.isMaxLevel) {
                 const unlocks = def.abilityUnlocks && def.abilityUnlocks[item.level + 1];
@@ -284,7 +283,6 @@ export class WorkshopRenderer {
         const materialEntries = Object.entries(materials);
         const btnH = 64;
         let footerH = 40;
-
         footerH += materialEntries.length * 76;
         if (currencyCost > 0) footerH += 36;
         footerH += btnH + 24;
@@ -303,8 +301,8 @@ export class WorkshopRenderer {
             const inventoryItem = (state.partyInventory || []).find(i => i.id === matId);
             const playerHas = inventoryItem ? inventoryItem.qty : 0;
             const hasEnough = playerHas >= amountNeeded;
-
             const matSlotSize = 64;
+
             this.ui.drawPanel(x, materialsY, matSlotSize, matSlotSize, UITheme.colors.bgScale[1]);
             this.ui.drawRect(x, materialsY, matSlotSize, matSlotSize, UITheme.colors.border, false);
             this._drawIcon(matDef, x, materialsY, matSlotSize);
@@ -320,6 +318,7 @@ export class WorkshopRenderer {
             const partyCurrency = gameState.party ? (gameState.party.currency || 0) : (state.partyCurrency || 0);
             const hasEnoughCurrency = partyCurrency >= currencyCost;
             const color = hasEnoughCurrency ? UITheme.colors.textHighlight : UITheme.colors.failure;
+
             this.ui.drawText(`Cost: ${currencyCost} Gold`, x, materialsY + 12, UITheme.fonts.body, color, "left");
             this.ui.drawText(`(Owned: ${partyCurrency})`, x + w, materialsY + 12, UITheme.fonts.small, UITheme.colors.textMuted, "right");
             materialsY += 36;
@@ -347,40 +346,253 @@ export class WorkshopRenderer {
         }
     }
 
-    _renderUpgradeStatsComparison(item, x, y, w) {
+    _buildUnifiedStats(item, useNext = false) {
+        const def = item.definition || ItemDefinitions[item.defId || item.id] || {};
+
+        // Helper to grab stats by safely cascading through available sources
+        const getVal = (key, category = null) => {
+            // Priority 1: Projected Next Stats (if requested and available)
+            if (useNext && item.nextStats) {
+                if (category && item.nextStats[category] && item.nextStats[category][key] !== undefined) {
+                    return item.nextStats[category][key];
+                }
+                if (!category && item.nextStats[key] !== undefined) {
+                    return item.nextStats[key];
+                }
+            }
+
+            // Priority 2: Legacy nested stats object (if it exists)
+            if (item.stats) {
+                if (category && item.stats[category] && item.stats[category][key] !== undefined) {
+                    return item.stats[category][key];
+                }
+                if (!category && item.stats[key] !== undefined) {
+                    return item.stats[key];
+                }
+            }
+
+            // Priority 3: THE FIX - Direct Item Instance Getters
+            // This properly grabs `item.attack.slash` or `item.speed` which scale with the item's current level!
+            if (category && item[category] && item[category][key] !== undefined) {
+                return item[category][key];
+            }
+            if (!category && item[key] !== undefined) {
+                return item[key];
+            }
+
+            // Priority 4: Base Item Definition Stats (Level 1 Fallback)
+            if (def.stats) {
+                if (category && def.stats[category] && def.stats[category][key] !== undefined) {
+                    return def.stats[category][key];
+                }
+                if (!category && def.stats[key] !== undefined) {
+                    return def.stats[key];
+                }
+            }
+
+            // Priority 5: Flat Base Definition Fallback
+            if (category && def[category] && def[category][key] !== undefined) {
+                return def[category][key];
+            }
+            if (def[key] !== undefined) {
+                return def[key];
+            }
+
+            return 0;
+        };
+
+        return {
+            resources: {
+                maxHp: getVal('maxHp', 'resources'),
+                maxStamina: getVal('maxStamina', 'resources'),
+                maxInsight: getVal('maxInsight', 'resources')
+            },
+            attack: {
+                blunt: getVal('blunt', 'attack'), slash: getVal('slash', 'attack'), pierce: getVal('pierce', 'attack'),
+                fire: getVal('fire', 'attack'), ice: getVal('ice', 'attack'), lightning: getVal('lightning', 'attack'),
+                water: getVal('water', 'attack'), earth: getVal('earth', 'attack'), wind: getVal('wind', 'attack'),
+                light: getVal('light', 'attack'), dark: getVal('dark', 'attack'), arcane: getVal('arcane', 'attack')
+            },
+            defense: {
+                blunt: getVal('blunt', 'defense'), slash: getVal('slash', 'defense'), pierce: getVal('pierce', 'defense'),
+                fire: getVal('fire', 'defense'), ice: getVal('ice', 'defense'), lightning: getVal('lightning', 'defense'),
+                water: getVal('water', 'defense'), earth: getVal('earth', 'defense'), wind: getVal('wind', 'defense'),
+                light: getVal('light', 'defense'), dark: getVal('dark', 'defense'), arcane: getVal('arcane', 'defense')
+            },
+            resistance: {
+                blunt: getVal('blunt', 'resistance'), slash: getVal('slash', 'resistance'), pierce: getVal('pierce', 'resistance'),
+                fire: getVal('fire', 'resistance'), ice: getVal('ice', 'resistance'), lightning: getVal('lightning', 'resistance'),
+                water: getVal('water', 'resistance'), earth: getVal('earth', 'resistance'), wind: getVal('wind', 'resistance'),
+                light: getVal('light', 'resistance'), dark: getVal('dark', 'resistance'), arcane: getVal('arcane', 'resistance')
+            },
+            speed: getVal('speed'),
+            critChance: getVal('critChance'),
+            critMultiplier: getVal('critMultiplier'),
+            evasion: getVal('evasion'),
+            corruption: getVal('corruption'),
+            hpRecovery: getVal('hpRecovery'),
+            staminaRecovery: getVal('staminaRecovery'),
+            insightRecovery: getVal('insightRecovery')
+        };
+    }
+
+    _renderDetailedStats(item, x, y, w) {
         let currentY = y;
-        const currentStats = item.stats || item.definition.stats || {};
-        const nextStats = item.nextStats || currentStats;
+        const cStats = this._buildUnifiedStats(item, false);
+        const pStats = this._buildUnifiedStats(item, true); // if it's a recipe, pStats will match cStats automatically
 
-        const statKeysToCompare = ['damage', 'attack', 'defense', 'block', 'maxHp', 'maxStamina'];
-        let hasDisplayedAny = false;
-        const bodyFont = UITheme.fonts.cardSmall || UITheme.fonts.body;
+        // --- 1. Resources ---
+        this.ui.drawText("Resources", x, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
+        currentY += 10;
+        this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.borderHighlight);
+        currentY += 32;
 
-        statKeysToCompare.forEach(key => {
-            const currVal = currentStats[key];
-            const nextVal = nextStats[key];
+        if (cStats.resources.maxHp || pStats.resources.maxHp) currentY = this._drawStatDiffRow("Max HP", cStats.resources.maxHp, pStats.resources.maxHp, x, currentY, w, 32);
+        if (cStats.resources.maxStamina || pStats.resources.maxStamina) currentY = this._drawStatDiffRow("Max STM", cStats.resources.maxStamina, pStats.resources.maxStamina, x, currentY, w, 32);
+        if (cStats.resources.maxInsight || pStats.resources.maxInsight) currentY = this._drawStatDiffRow("Max INS", cStats.resources.maxInsight, pStats.resources.maxInsight, x, currentY, w, 32);
 
-            if (currVal !== undefined && nextVal !== undefined) {
-                const label = key.toUpperCase();
-                const color = this._getStatColor(key);
+        currentY += 15;
 
-                let currStr = typeof currVal === 'object' ? `${currVal.min}-${currVal.max}` : currVal;
-                let nextStr = typeof nextVal === 'object' ? `${nextVal.min}-${nextVal.max}` : nextVal;
+        // --- 2. Combat Stats ---
+        this.ui.drawText("Combat Stats", x, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
+        currentY += 10;
+        this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.borderHighlight);
+        currentY += 32;
 
-                this.ui.drawText(label, x, currentY + 16, bodyFont, color, "left");
-                this.ui.drawText(String(currStr), x + w - 100, currentY + 16, bodyFont, UITheme.colors.textMuted, "right");
-                this.ui.drawText("->", x + w - 60, currentY + 16, bodyFont, UITheme.colors.border, "right");
-                this.ui.drawText(String(nextStr), x + w, currentY + 16, bodyFont, UITheme.colors.success, "right");
+        const combatStats = [
+            { label: "SPD", c: cStats.speed, p: pStats.speed },
+            { label: "CRT %", c: cStats.critChance, p: pStats.critChance, isPct: true },
+            { label: "HP REC", c: cStats.hpRecovery, p: pStats.hpRecovery },
+            { label: "CRT DMG", c: cStats.critMultiplier, p: pStats.critMultiplier, isPct: true },
+            { label: "STM REC", c: cStats.staminaRecovery, p: pStats.staminaRecovery },
+            { label: "EVA %", c: cStats.evasion, p: pStats.evasion, isPct: true },
+            { label: "INS REC", c: cStats.insightRecovery, p: pStats.insightRecovery },
+            { label: "COR %", c: cStats.corruption, p: pStats.corruption, isPct: true }
+        ].filter(stat => stat.c !== 0 || stat.p !== 0);
 
-                currentY += 28;
-                hasDisplayedAny = true;
+        const cColW = w / 2;
+        const rowH = 32;
+
+        combatStats.forEach((stat, i) => {
+            const col = i % 2;
+            const row = Math.floor(i / 2);
+            const itemX = x + (col * cColW);
+            const itemY = currentY + (row * rowH);
+
+            let cStr = stat.isPct ? `${(stat.c * 100).toFixed(0)}%` : stat.c.toString();
+            let pStr = stat.isPct ? `${(stat.p * 100).toFixed(0)}%` : stat.p.toString();
+
+            this.ui.drawText(stat.label, itemX, itemY, UITheme.fonts.small, UITheme.colors.textMuted, "left");
+            this.ui.drawText(cStr, itemX + 85, itemY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
+
+            if (stat.c !== stat.p) {
+                let arrowColor = (stat.p > stat.c) ? UITheme.colors.success : UITheme.colors.failure;
+                this.ctx.font = UITheme.fonts.mono;
+                const cWidth = this.ctx.measureText(cStr).width;
+                const arrowX = itemX + 85 + cWidth + 12;
+
+                this.ui.drawArrow(arrowX, itemY - 8, 6, 'right', arrowColor);
+                this.ui.drawText(pStr, arrowX + 15, itemY, UITheme.fonts.mono, arrowColor, "left");
             }
         });
 
-        if (!hasDisplayedAny) {
-            this.ui.drawText("General improvements to base stats.", x, currentY + 16, UITheme.fonts.italic, UITheme.colors.textMuted, "left");
-            currentY += 28;
+        if (combatStats.length > 0) {
+            currentY += (Math.ceil(combatStats.length / 2) * rowH) + 24;
         }
+
+        // --- 3. Attack & Defenses Table ---
+        currentY = this._drawProjectedResistanceTable(cStats, pStats, x, currentY, w);
+        return currentY;
+    }
+
+    _drawStatDiffRow(label, curr = 0, prev = 0, x, y, w, rowH = 48) {
+        this.ui.drawText(label, x, y, UITheme.fonts.small, UITheme.colors.textMuted, "left");
+        const valX = x + (w * 0.4);
+        this.ui.drawText(curr.toString(), valX, y, UITheme.fonts.mono, UITheme.colors.textMain, "right");
+
+        if (curr !== prev) {
+            let arrowColor = (prev > curr) ? UITheme.colors.success : UITheme.colors.failure;
+            const arrowX = valX + 25;
+            this.ui.drawArrow(arrowX, y - 8, 8, 'right', arrowColor);
+            this.ui.drawText(prev.toString(), arrowX + 20, y, UITheme.fonts.mono, arrowColor, "left");
+        }
+        return y + rowH;
+    }
+
+    _drawProjectedResistanceTable(cStats, pStats, x, y, w) {
+        let currentY = y;
+
+        this.ui.drawText("Damage & Resistances", x, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
+        currentY += 10;
+        this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.borderHighlight);
+        currentY += 32;
+
+        const colType = x;
+        const colAtk = x + (w * 0.35);
+        const colDef = x + (w * 0.60);
+        const colRes = x + (w * 0.85);
+        const headerFont = UITheme.fonts.cardTitle || "bold 28px sans-serif";
+
+        this.ui.drawText("TYPE", colType, currentY, headerFont, UITheme.colors.textMuted, "left");
+        this.ui.drawText("ATK", colAtk, currentY, headerFont, UITheme.colors.attack, "center");
+        this.ui.drawText("DEF", colDef, currentY, headerFont, UITheme.colors.defense, "center");
+        this.ui.drawText("RES", colRes, currentY, headerFont, UITheme.colors.resistance, "center");
+
+        currentY += 10;
+        this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.border);
+        currentY += 30;
+
+        const types = ["blunt", "slash", "pierce", "fire", "ice", "lightning", "water", "earth", "wind", "light", "dark", "arcane"];
+        const rowH = 30;
+
+        types.forEach((type) => {
+            const cAtk = cStats.attack[type] || 0;
+            const pAtk = pStats.attack[type] || 0;
+            const cDef = cStats.defense[type] || 0;
+            const pDef = pStats.defense[type] || 0;
+            const cRes = cStats.resistance[type] || 0;
+            const pRes = pStats.resistance[type] || 0;
+
+            if (pAtk === 0 && pDef === 0 && pRes === 0 && cAtk === 0 && cDef === 0 && cRes === 0) return;
+
+            const label = Formatting.getAbbreviation ? Formatting.getAbbreviation(type) : type.substring(0, 3).toUpperCase();
+            this.ui.drawText(label, colType, currentY, UITheme.fonts.mono, UITheme.colors.textMuted, "left");
+
+            const drawCell = (curr, prev, xPos, defaultColor, isPct = false) => {
+                if (prev === 0 && curr === 0) {
+                    this.ui.drawText("-", xPos, currentY, UITheme.fonts.mono, UITheme.colors.textMuted, "center");
+                    return;
+                }
+
+                const cStr = isPct ? `${(curr * 100).toFixed(0)}%` : `${curr}`;
+                const pStr = isPct ? `${(prev * 100).toFixed(0)}%` : `${prev}`;
+
+                if (curr === prev) {
+                    this.ui.drawText(cStr, xPos, currentY, UITheme.fonts.mono, defaultColor, "center");
+                } else {
+                    let arrowColor = (prev > curr) ? UITheme.colors.success : UITheme.colors.failure;
+                    this.ctx.font = UITheme.fonts.mono;
+
+                    const cWidth = this.ctx.measureText(cStr).width;
+                    const pWidth = this.ctx.measureText(pStr).width;
+                    const arrowSize = 6;
+                    const space = 8;
+                    const totalWidth = cWidth + space + (arrowSize * 2) + space + pWidth;
+                    const startX = xPos - (totalWidth / 2);
+
+                    this.ui.drawText(cStr, startX, currentY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
+                    const arrowX = startX + cWidth + space + arrowSize;
+                    this.ui.drawArrow(arrowX, currentY - 8, arrowSize, 'right', arrowColor);
+                    this.ui.drawText(pStr, arrowX + arrowSize + space, currentY, UITheme.fonts.mono, arrowColor, "left");
+                }
+            };
+
+            drawCell(cAtk, pAtk, colAtk, UITheme.colors.attack);
+            drawCell(cDef, pDef, colDef, UITheme.colors.defense);
+            drawCell(cRes, pRes, colRes, UITheme.colors.resistance, true);
+
+            currentY += rowH;
+        });
 
         return currentY;
     }
@@ -447,8 +659,8 @@ export class WorkshopRenderer {
 
         const textX = x + iconSize + 16;
         const textW = w - iconSize - 16;
-        let hasContent = false;
 
+        let hasContent = false;
         if (def.effectDescription) {
             const lines = this.ui.getWrappedLines(def.effectDescription, textW, UITheme.fonts.body);
             lines.forEach(line => {
@@ -468,98 +680,6 @@ export class WorkshopRenderer {
         }
 
         return Math.max(y + iconSize, textY);
-    }
-
-    _renderStatsGrid(def, x, y, w) {
-        let currentY = y;
-        const statItems = [];
-
-        const getStatVal = (key) => {
-            if (def.stats && def.stats[key] !== undefined) return def.stats[key];
-            if (def[key] !== undefined) return def[key];
-            return undefined;
-        };
-
-        const primaryStats = [
-            { key: 'damage', label: 'ATTACK' },
-            { key: 'attack', label: 'ATTACK' },
-            { key: 'defense', label: 'DEFENSE' },
-            { key: 'block', label: 'BLOCK' }
-        ];
-
-        primaryStats.forEach(stat => {
-            const val = getStatVal(stat.key);
-            if (val === undefined || val === null) return;
-            if (typeof val === 'object' && typeof val.min === 'undefined') return;
-
-            let valStr = val;
-            if (typeof val === 'object' && val.min !== undefined) {
-                valStr = `${this._formatValue(val.min)}-${this._formatValue(val.max)}`;
-            } else {
-                valStr = this._formatValue(val);
-            }
-
-            statItems.push({ label: stat.label, val: valStr, color: this._getStatColor(stat.key) });
-        });
-
-        ['attack', 'defense', 'resistance'].forEach(category => {
-            const catObj = getStatVal(category);
-            if (!catObj || typeof catObj !== 'object') return;
-            Object.keys(catObj).forEach(k => {
-                if (k === 'min' || k === 'max' || catObj[k] === 0) return;
-                const typeAbbr = (Formatting.getAbbreviation ? Formatting.getAbbreviation(k) : k.substring(0, 3)).toUpperCase();
-                const catAbbr = category === 'resistance' ? 'RES' : (category === 'defense' ? 'DEF' : 'ATK');
-                statItems.push({ label: `${typeAbbr} ${catAbbr}`, val: this._formatValue(catObj[k]), color: this._getStatColor(k) });
-            });
-        });
-
-        const attributes = def.attributes || (def.stats ? def.stats.attributes : {}) || {};
-        const resources = def.resources || {};
-
-        Object.keys(attributes).forEach(key => {
-            const val = attributes[key];
-            if (val === 0) return;
-            const label = (Formatting.getAbbreviation ? Formatting.getAbbreviation(key) : key.substring(0, 3)).toUpperCase();
-            statItems.push({ label: label, val: this._formatValue(val, true), color: this._getStatColor(key) });
-        });
-
-        Object.keys(resources).forEach(key => {
-            const val = resources[key];
-            if (val === 0) return;
-            let label = key.toUpperCase();
-            if (key === 'maxHp') label = "MAX HP";
-            else if (key === 'maxStamina') label = "MAX STM";
-            else if (key === 'maxInsight') label = "MAX INS";
-            statItems.push({ label: label, val: this._formatValue(val, true), color: this._getStatColor(key) });
-        });
-
-        if (statItems.length === 0) {
-            this.ui.drawText("- No stats available -", x + (w/2), currentY + 32, UITheme.fonts.italic, UITheme.colors.textMuted, "center");
-            return currentY + 64;
-        }
-
-        const numCols = 2;
-        const colWidth = w / numCols;
-        const bodyFont = UITheme.fonts.cardSmall || UITheme.fonts.body;
-
-        for (let i = 0; i < statItems.length; i++) {
-            const col = i % numCols;
-            const row = Math.floor(i / numCols);
-            const itemX = x + (col * colWidth);
-            const itemY = currentY + (row * 32);
-
-            let labelColor = UITheme.colors.textMuted;
-            const l = statItems[i].label.toLowerCase();
-            if (l.includes('atk') || l.includes('attack') || l.includes('damage') || l.includes('def') || l.includes('defense') || l.includes('block') || l.includes('res') || l.includes('resistance')) {
-                labelColor = statItems[i].color;
-            }
-
-            this.ui.drawText(statItems[i].label, itemX, itemY + 16, bodyFont, labelColor, "left");
-            this.ui.drawText(String(statItems[i].val), itemX + colWidth - 16, itemY + 16, bodyFont, statItems[i].color, "right");
-        }
-
-        const totalRows = Math.ceil(statItems.length / numCols);
-        return currentY + (totalRows * 32);
     }
 
     _renderAbilities(def, x, y, w) {
@@ -591,7 +711,6 @@ export class WorkshopRenderer {
 
         const themeColor = (UITheme.colors.types && UITheme.colors.types[rawType]) || UITheme.colors.textMuted;
         const displayType = rawType.charAt(0).toUpperCase() + rawType.slice(1);
-
         const descW = w - (cardPadding * 2);
         const descLines = ab.description ? this.ui.getWrappedLines(ab.description, descW, UITheme.fonts.cardItalic) : [];
         const hasStats = ab.effects || ab.accuracy || ab.speed;
@@ -601,7 +720,7 @@ export class WorkshopRenderer {
         const cardHeight = cardPadding + infoBlockHeight + dividerHeight + descTextHeight + cardPadding;
 
         this.ui.drawPanel(x, y, w, cardHeight, UITheme.colors.panelBg);
-
+        
         this.ui.ctx.save();
         const bgGrad = this.ui.ctx.createLinearGradient(x, y, x, y + cardHeight);
         bgGrad.addColorStop(0, `${themeColor}15`);
@@ -627,16 +746,16 @@ export class WorkshopRenderer {
 
         const contentX = iconX + iconSize + gap;
         let currentTextY = iconY + 12;
-
         const abilityName = ab.name || ab.id;
+
         this.ui.ctx.textAlign = 'left';
         this.ui.ctx.textBaseline = 'middle';
         this.ui.ctx.font = UITheme.fonts.cardTitle;
         this.ui.ctx.fillStyle = themeColor;
         this.ui.ctx.fillText(abilityName, contentX, currentTextY);
+
         this.ui.ctx.textAlign = 'right';
         this.ui.ctx.font = UITheme.fonts.cardMono;
-
         if (ab.cost) {
             let costStr = "Free";
             let costCol = UITheme.colors.textMuted;
@@ -652,9 +771,9 @@ export class WorkshopRenderer {
         }
 
         currentTextY += 32;
-
         this.ui.ctx.textAlign = 'left';
         this.ui.ctx.font = UITheme.fonts.cardItalic;
+        
         const typeWidth = this.ui.ctx.measureText(displayType).width;
         const badgePadX = 10;
         const badgeH = 24;
@@ -672,16 +791,15 @@ export class WorkshopRenderer {
         }
         this.ui.ctx.fill();
         this.ui.ctx.stroke();
+
         this.ui.ctx.fillStyle = themeColor;
         this.ui.ctx.fillText(displayType, contentX + badgePadX, currentTextY);
 
         currentTextY += 30;
-
         this.ui.ctx.font = UITheme.fonts.cardItalic;
         const targetLabel = "Target: ";
         this.ui.ctx.fillStyle = UITheme.colors.textMuted;
         this.ui.ctx.fillText(targetLabel, contentX, currentTextY);
-
         const labelColumnW = this.ui.ctx.measureText(targetLabel).width;
         const targetText = ab.targeting ? (ab.targeting.type || "Self") : "Self";
         this.ui.ctx.fillText(targetText, contentX + labelColumnW, currentTextY);
@@ -746,7 +864,7 @@ export class WorkshopRenderer {
         const HEADER_HEIGHT = 180;
 
         // --- 1. Draw Fixed Header ---
-        this.ui.drawText("Party Inventory", centerX, 48, UITheme.fonts.header, UITheme.colors.textMain, "center");
+        this.ui.drawText("Inventory", centerX, 48, UITheme.fonts.header, UITheme.colors.textMain, "center");
 
         // --- Currency Label ---
         const currencyAmount = gameState.party ? (gameState.party.currency || 0) : (state.partyCurrency || 0);
@@ -759,14 +877,14 @@ export class WorkshopRenderer {
         // --- 2. Calculate Viewport Metrics ---
         const listY = HEADER_HEIGHT;
         const listH = h - HEADER_HEIGHT;
-
         const inv = state.partyInventory || [];
+
         const COLS = 4;
         const SLOT_SIZE = 96;
         const SLOT_PADDING = 19;
         const SCROLLBAR_WIDTH = 10;
-
         const totalGridW = (COLS * SLOT_SIZE) + ((COLS - 1) * SLOT_PADDING);
+
         let startX = x + Math.floor((w - totalGridW) / 2);
         if (startX < x + 5) startX = x + 5;
 
@@ -798,6 +916,7 @@ export class WorkshopRenderer {
 
                 const col = index % COLS;
                 const row = Math.floor(index / COLS);
+
                 const itemX = startX + (col * (SLOT_SIZE + SLOT_PADDING));
                 const itemY = listY + (row * (SLOT_SIZE + SLOT_PADDING)) - renderScroll;
 
@@ -818,17 +937,7 @@ export class WorkshopRenderer {
                     drawBrackets = true;
                 }
 
-                this.hitboxes.push({
-                    id: `PARTY_ITEM_${index}`,
-                    x: itemX,
-                    y: itemY,
-                    w: SLOT_SIZE,
-                    h: SLOT_SIZE,
-                    type: 'inventory',
-                    index: index,
-                    hoverSfx: 'hoverTick',
-                    clickSfx: 'uiClick'
-                });
+                this.hitboxes.push({ id: `PARTY_ITEM_${index}`, x: itemX, y: itemY, w: SLOT_SIZE, h: SLOT_SIZE, type: 'inventory', index: index, hoverSfx: 'hoverTick', clickSfx: 'uiClick' });
 
                 this.ui.drawPanel(itemX, itemY, SLOT_SIZE, SLOT_SIZE, bgFill);
 
@@ -863,14 +972,8 @@ export class WorkshopRenderer {
         const thumbY = y + (scrollRatio * (viewportH - thumbH));
 
         this.ui.drawRect(x, thumbY, SCROLLBAR_WIDTH, thumbH, UITheme.colors.borderHighlight);
-        this.hitboxes.push({
-            id: `SCROLLBAR_THUMB_${prefix}`,
-            x: x - 5,
-            y: thumbY,
-            w: SCROLLBAR_WIDTH + 10,
-            h: thumbH,
-            type: 'scrollbar_thumb'
-        });
+
+        this.hitboxes.push({ id: `SCROLLBAR_THUMB_${prefix}`, x: x - 5, y: thumbY, w: SCROLLBAR_WIDTH + 10, h: thumbH, type: 'scrollbar_thumb' });
     }
 
     _drawInputPrompts(state, leftW, centerW, h) {
@@ -885,9 +988,10 @@ export class WorkshopRenderer {
 
         const centerX = leftW + Math.floor(centerW / 2);
         const flourishW = Math.min(720, centerW - 64);
-        this.ui.drawLineWithGothicFlourish(centerX - (flourishW / 2), h - 104, flourishW, UITheme.colors.borderHighlight);
 
+        this.ui.drawLineWithGothicFlourish(centerX - (flourishW / 2), h - 104, flourishW, UITheme.colors.borderHighlight);
         const startY = h - 64;
+
         lines.forEach((lineText, index) => {
             this.ui.drawText(
                 lineText,

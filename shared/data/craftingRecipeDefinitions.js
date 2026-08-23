@@ -1,5 +1,21 @@
 export const craftingRecipeDefinitions = {
   // --- GEAR RECIPES ---
+    "recipe_shortsword": {
+    id: "recipe_shortsword",
+    outputItemId: "shortsword",
+    materials: {
+      "hard_wood": 1, // Swapped to hard wood for a sturdy handle
+      "iron_ingot": 1
+    }
+  },
+  "recipe_dagger": {
+    id: "recipe_dagger",
+    outputItemId: "dagger",
+    materials: {
+      "hard_wood": 1, // Swapped to hard wood for a sturdy handle
+      "iron_ingot": 1
+    }
+  },
   "recipe_handaxe": {
     id: "recipe_handaxe",
     outputItemId: "handaxe",

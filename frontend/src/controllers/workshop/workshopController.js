@@ -4,25 +4,25 @@ import { gameState } from '../../../../shared/state/gameState.js';
 import { CraftingManager } from '../../../../shared/systems/craftingManager.js';
 import { ItemDefinitions } from '../../../../shared/data/itemDefinitions.js';
 import { InventorySystem } from '../../../../shared/systems/inventorySystem.js';
-import { ItemUpgradeSystem } from '../../../../shared/systems/itemUpgradeSystem.js'; 
+import { ItemUpgradeSystem } from '../../../../shared/systems/itemUpgradeSystem.js';
 import { ScrollManager } from '../../ui/scrollManager.js';
 
 export class WorkshopController extends BaseController {
     constructor(input) {
         super(input);
-        
+
         // Crafting State
         this.availableRecipes = [];
         this.selectedRecipe = null;
         this.canCraftSelected = false;
-        
+
         // Upgrading State
         this.selectedUpgradeItem = null;
         this.canUpgradeSelected = false;
 
         // Default to the description tab when opening the workshop
         this.activeTab = 'description';
-        
+
         // --- Scroll & Layout Support ---
         this.scrollManager = new ScrollManager();
         this.recipeScrollOffset = 0;
@@ -43,12 +43,10 @@ export class WorkshopController extends BaseController {
 
     init(data) {
         if (super.init) super.init(data);
-        
         this.availableRecipes = CraftingManager.getVisibleRecipes(gameState);
         if (this.availableRecipes.length > 0) {
             this.selectRecipe(this.availableRecipes[0]);
         }
-        
         this.recipeScrollOffset = 0;
         this.partyScrollOffset = 0;
         this._syncScrollZones();
@@ -68,7 +66,7 @@ export class WorkshopController extends BaseController {
             thumbIds: ['SCROLLBAR_THUMB_RECIPES'],
             onChange: (newOffset) => { this.recipeScrollOffset = newOffset; }
         });
-        
+
         this.scrollManager.registerZone('party', {
             bounds: this.layout.partyBounds,
             maxScroll: this.layout.partyMaxScroll,
@@ -85,14 +83,12 @@ export class WorkshopController extends BaseController {
         // Dynamically calculate max scroll heights based on item counts
         const ROW_H = this.layout.itemHeight || 48;
         const VIEW_H = this.layout.viewportH || 300;
-        
         const partyItemsCount = this._getFormattedInventory().length;
         const recipeRows = this.availableRecipes.length;
         const partyRows = Math.ceil(partyItemsCount / 4); // 4 columns for inventory
         
         this.layout.recipeMaxScroll = Math.max(0, (recipeRows * ROW_H) - VIEW_H);
         this.layout.partyMaxScroll = Math.max(0, (partyRows * ROW_H) - VIEW_H);
-        
         this._syncScrollZones();
     }
 
@@ -102,14 +98,13 @@ export class WorkshopController extends BaseController {
     }
 
     // --- ITEM SELECTION LOGIC ---
-    
     selectRecipe(recipe) {
         this.selectedUpgradeItem = null;
         this.selectedRecipe = recipe;
         this.activeTab = 'description';
         this.checkCraftability();
     }
-    
+
     selectUpgradeItem(item) {
         this.selectedRecipe = null;
         this.selectedUpgradeItem = item;
@@ -118,15 +113,15 @@ export class WorkshopController extends BaseController {
     }
 
     // --- CRAFTING LOGIC ---
-    
     checkCraftability() {
         if (!this.selectedRecipe) return;
         
         let canCraft = true;
+        
         if ((gameState.party.currency || 0) < (this.selectedRecipe.currencyCost || 0)) {
             canCraft = false;
         }
-        
+
         if (this.selectedRecipe.materials) {
             for (const [matId, amountNeeded] of Object.entries(this.selectedRecipe.materials)) {
                 if (!InventorySystem.hasItem(matId, amountNeeded)) {
@@ -135,7 +130,6 @@ export class WorkshopController extends BaseController {
                 }
             }
         }
-        
         this.canCraftSelected = canCraft;
     }
 
@@ -150,32 +144,73 @@ export class WorkshopController extends BaseController {
         
         // 3. Add Crafted Item
         InventorySystem.addItem(
-            this.selectedRecipe.outputItemId,
+            this.selectedRecipe.outputItemId, 
             (this.selectedRecipe.outputQuantity || 1)
         );
-        
+
         this.checkCraftability();
         this.updateHitboxes(this.currentHitboxes);
         events.emit('PLAY_SOUND', { id: 'crafting_success' });
     }
 
     // --- UPGRADING LOGIC ---
-    
     checkUpgradeability() {
         if (!this.selectedUpgradeItem) return;
         this.canUpgradeSelected = ItemUpgradeSystem.canUpgrade(this.selectedUpgradeItem);
+        
+        // Generate and attach projected stats for the renderer preview
+        this._attachProjectedStats(this.selectedUpgradeItem);
     }
 
-    executeUpgrade() {
-        if (ItemUpgradeSystem.upgradeItem(this.selectedUpgradeItem)) {
-            this.checkUpgradeability();
-            this.updateHitboxes(this.currentHitboxes);
-            events.emit('PLAY_SOUND', { id: 'crafting_success' });
+    _attachProjectedStats(item) {
+        if (!item || item.isMaxLevel) return;
+
+        try {
+            // 1. Clone the item while keeping its class prototype (getters) intact
+            const dummyItem = Object.assign(Object.create(Object.getPrototypeOf(item)), item);
+            
+            // 2. Increment the level. Because we kept the prototype, the getters will naturally scale!
+            dummyItem.level = (dummyItem.level || 0) + 1;
+            
+            // 3. Explicitly map the evaluated stat groups to nextStats so the UI can read them
+            item.nextStats = {
+                attack: dummyItem.attack,
+                defense: dummyItem.defense,
+                resistance: dummyItem.resistance,
+                attributes: dummyItem.attributes,
+                value: dummyItem.value
+            };
+        } catch (e) {
+            console.warn("WorkshopController: Could not project next level stats for preview.", e);
         }
     }
 
+   executeUpgrade() {
+    // 1. Grab the currently selected item
+    const item = this.selectedUpgradeItem;
+    if (!item) return;
+
+    // 2. Delegate to your existing ItemUpgradeSystem!
+    // This perfectly handles currency, materials, and item.level += 1
+    const success = ItemUpgradeSystem.upgradeItem(item);
+
+    if (success) {
+        // 3. Re-run your upgrade check. 
+        // Because the item's level just went up, this will automatically 
+        // generate the NEW nextStats (Level 3) for the preview!
+        this.checkUpgradeability();
+
+        // 4. Force a UI refresh and play a sound
+        this.updateHitboxes(this.currentHitboxes);
+        
+        // Optional: emit an upgrade sound if you have one, or reuse crafting_success
+        if (typeof events !== 'undefined') {
+            events.emit('PLAY_SOUND', { id: 'crafting_success' }); 
+        }
+    }
+}
+
     // --- UI INTERACTION CALLBACKS ---
-    
     onHover(hitboxId) {
         super.onHover(hitboxId);
     }
@@ -183,19 +218,19 @@ export class WorkshopController extends BaseController {
     onClick(hitboxId) {
         this.inputMode = 'mouse';
         if (!hitboxId) return;
-        
+
         const normalizedId = hitboxId.toUpperCase();
-        
+
         if (normalizedId === 'BTN_CLOSE') {
             events.emit('CHANGE_SCENE', { scene: 'overworld' });
             return;
         }
-        
+
         if (normalizedId === 'BTN_CRAFT' && this.canCraftSelected) {
             this.executeCrafting();
             return;
         }
-        
+
         if (normalizedId === 'BTN_UPGRADE' && this.canUpgradeSelected) {
             this.executeUpgrade();
             return;
@@ -215,13 +250,14 @@ export class WorkshopController extends BaseController {
         if (normalizedId.startsWith('RECIPE_')) {
             const recipeId = hitboxId.substring(7);
             const recipe = this.availableRecipes.find(r => r.id === recipeId || r.id.toLowerCase() === recipeId.toLowerCase());
+            
             if (recipe) {
                 this.selectRecipe(recipe);
                 events.emit('PLAY_SOUND', { id: 'uiClick' });
             }
             return;
         }
-        
+
         // --- Handle Inventory Item Selection ---
         if (normalizedId.startsWith('PARTY_ITEM_')) {
             const index = parseInt(normalizedId.replace('PARTY_ITEM_', ''), 10);
@@ -232,9 +268,9 @@ export class WorkshopController extends BaseController {
                 // If it's unique gear it has an instanceId, grab the real one.
                 // If it's a stacked material, just use the formatted object directly!
                 const realItem = selected.instanceId 
-                    ? gameState.party.inventory.find(i => i.instanceId === selected.instanceId) 
+                    ? gameState.party.inventory.find(i => i.instanceId === selected.instanceId)
                     : selected;
-
+                
                 if (realItem) {
                     this.selectUpgradeItem(realItem);
                     events.emit('PLAY_SOUND', { id: 'uiClick' });
@@ -249,56 +285,55 @@ export class WorkshopController extends BaseController {
     }
 
     // --- STATE FORMATTING ---
-    
     _getFormattedInventory() {
-    const formatted = [];
-    const stackables = new Map();
+        const formatted = [];
+        const stackables = new Map();
 
-    // Split inventory: equipment/upgradeables remain individual instances.
-    // Materials and consumables are stacked by definition ID.
-    gameState.party.inventory.forEach(item => {
-        if (!item) return;
-        
-        // Grab the base definition ID safely
-        const itemId = item.defId || item.id;
-        const def = ItemDefinitions[itemId] || {};
-        const isEquipment = ['weapon', 'armor', 'shield'].includes((def.type || '').toLowerCase());
+        gameState.party.inventory.forEach(item => {
+            if (!item) return;
 
-        if (item.isUpgradeable || isEquipment) {
-            // Retain specific instance, but explicitly normalize fallback properties
-            formatted.push({
-                ...item,
-                defId: itemId, // ADDED: Ensures the renderer can always look up the definition
-                name: item.name || def.name || itemId, // ADDED: Ensures name text doesn't fail
-                type: item.type || def.type || 'item',
-                slot: item.slot || def.slot || '',
-                icon: item.icon || def.icon
-            });
-        } else {
-            // ADDED: Safely group stackables by itemId rather than strictly item.defId
-            const currentQty = stackables.get(itemId) || 0;
-            stackables.set(itemId, currentQty + (item.qty || 1));
-        }
-    });
+            const itemId = item.defId || item.id;
+            const def = ItemDefinitions[itemId] || {};
+            const isEquipment = ['weapon', 'armor', 'shield'].includes((def.type || '').toLowerCase());
 
-    // Map stacked items back to a fully decorated array
-    const aggregated = Array.from(stackables, ([defId, qty]) => {
-        const def = ItemDefinitions[defId] || {};
-        return {
-            defId: defId,
-            id: defId,
-            qty: qty,
-            name: def.name || defId,
-            type: def.type || 'item',
-            slot: def.slot || '', 
-            icon: def.icon || null, 
-            description: def.description || '',
-            cost: def.cost || def.value || 0
-        };
-    });
+            if (item.isUpgradeable || isEquipment) {
+                formatted.push({
+                    ...item, 
+                    defId: itemId,
+                    name: item.name || def.name || itemId,
+                    type: item.type || def.type || 'item',
+                    slot: item.slot || def.slot || '',
+                    icon: item.icon || def.icon,
+                    // ADDED: Explicitly evaluate the getters so the UI renderer can see them!
+                    attack: item.attack,
+                    defense: item.defense,
+                    resistance: item.resistance,
+                    attributes: item.attributes,
+                    value: item.value
+                });
+            } else {
+                const currentQty = stackables.get(itemId) || 0;
+                stackables.set(itemId, currentQty + (item.qty || 1));
+            }
+        });
 
-    return [...formatted, ...aggregated];
-}
+        const aggregated = Array.from(stackables, ([defId, qty]) => {
+            const def = ItemDefinitions[defId] || {};
+            return {
+                defId: defId,
+                id: defId,
+                qty: qty,
+                name: def.name || defId,
+                type: def.type || 'item',
+                slot: def.slot || '',
+                icon: def.icon || null,
+                description: def.description || '',
+                cost: def.cost || def.value || 0
+            };
+        });
+
+        return [...formatted, ...aggregated];
+    }
 
     getState() {
         return {
@@ -306,12 +341,10 @@ export class WorkshopController extends BaseController {
             availableRecipes: this.availableRecipes,
             selectedRecipe: this.selectedRecipe,
             canCraftSelected: this.canCraftSelected,
-            
             selectedUpgradeItem: this.selectedUpgradeItem,
             canUpgradeSelected: this.canUpgradeSelected,
-            
             activeTab: this.activeTab,
-            
+
             // Layout & Scrolling Support
             layout: this.layout,
             recipeScrollOffset: this.recipeScrollOffset,
