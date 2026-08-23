@@ -13,7 +13,8 @@ import { CharacterSummaryController } from '../controllers/characterSummary/char
 import { BattleController } from '../controllers/battle/battleController.js';
 import { LevelUpController } from '../controllers/levelUp/levelUpController.js';
 import { JournalController } from '../controllers/journal/journalController.js';
-import { ShopController } from '../controllers/shop/shopController.js';         // <-- NEW
+import { ShopController } from '../controllers/shop/shopController.js';
+import { WorkshopController } from '../controllers/workshop/workshopController.js'; // <-- NEW
 
 // --- RENDERERS ---
 import { BootRenderer } from '../renderers/boot/bootRenderer.js';
@@ -30,7 +31,8 @@ import { CharacterSummaryRenderer } from '../renderers/characterSummary/characte
 import { BattleRenderer } from '../renderers/battle/battleRenderer.js';
 import { LevelUpRenderer } from '../renderers/levelUp/levelUpRenderer.js';
 import { JournalRenderer } from '../renderers/journal/journalRenderer.js';
-import { ShopRenderer } from '../renderers/shop/shopRenderer.js';                // <-- NEW
+import { ShopRenderer } from '../renderers/shop/shopRenderer.js';
+import { WorkshopRenderer } from '../renderers/workshop/workshopRenderer.js'; // <-- NEW
 
 import { PartyManager } from '../../../shared/systems/partyManager.js';
 import { WorldManager } from '../../../shared/systems/worldManager.js';
@@ -38,7 +40,6 @@ import { TimeSystem } from '../../../shared/systems/timeSystem.js';
 import { gameState } from '../../../shared/state/gameState.js';
 import { DIFFICULTY_MODIFIERS } from '../../../shared/data/constants.js';
 import { EntityFactory } from '../../../shared/systems/factories/entityFactory.js';
-
 
 export class SceneManager {
     constructor(canvas, assetLoader, config) {
@@ -62,7 +63,8 @@ export class SceneManager {
         this.partyController = new PartyController(this.input);
         this.levelUpController = new LevelUpController(this.input);
         this.journalController = new JournalController(this.input);
-        this.shopController = new ShopController(this.input);                    // <-- NEW
+        this.shopController = new ShopController(this.input);
+        this.workshopController = new WorkshopController(this.input); // <-- NEW
 
         this.overworldController = null;
         this.encounterController = null;
@@ -84,11 +86,12 @@ export class SceneManager {
         this.levelUpRenderer = new LevelUpRenderer(this.ctx, this.config, this.loader);
         this.battleRenderer = new BattleRenderer(this.ctx, this.config, this.loader);
         this.journalRenderer = new JournalRenderer(this.config, this.loader);
-        this.shopRenderer = new ShopRenderer(this.ctx, this.loader);             // <-- NEW
+        this.shopRenderer = new ShopRenderer(this.ctx, this.loader);
+        this.workshopRenderer = new WorkshopRenderer(this.ctx, this.loader); // <-- NEW
 
         // State
         this.currentScene = 'boot';
-        
+
         // --- NEW: Audio Memory Cache ---
         this.activeBattleBGM = null;
         this.activeEncounterBGM = null;
@@ -102,7 +105,7 @@ export class SceneManager {
         // 1. Explicit scene context overrides
         if (sceneContext.bgm) return sceneContext.bgm;
 
-        // 2. Main menu and Boot exceptions (No world map exists yet)
+        // 2. Main menu and Boot exceptions
         if (targetScene === 'boot') return null;
         if (targetScene === 'title') return 'shackle_breaker_theme_1';
         if (targetScene === 'character-creator') return null;
@@ -119,13 +122,12 @@ export class SceneManager {
         // 4. Overworld/Battle default biome resolution
         if (!gameState.player || gameState.player.col === undefined) return null;
         if (!this.worldManager) return null;
-        
+
         const playerCol = gameState.player.col;
         const playerRow = gameState.player.row;
         const currentHour = (gameState.world.time || 0) / 60;
-        
         const biome = this.worldManager.getBiomeAt(playerCol, playerRow);
-        
+
         if (targetScene === 'battle') return biome.getMusic(currentHour, true);
         if (targetScene === 'overworld') return biome.getMusic(currentHour, false);
 
@@ -133,8 +135,8 @@ export class SceneManager {
     }
 
     resolveTargetAmbience(targetScene) {
-        // <-- ADDED 'shop' to keep whatever background ambience is currently playing
-        if (['party', 'character_summary', 'level_up', 'shop'].includes(targetScene)) return null; 
+        // <-- ADDED 'workshop' to keep whatever background ambience is currently playing
+        if (['party', 'character_summary', 'level_up', 'shop', 'workshop'].includes(targetScene)) return null;
 
         if (['battle', 'encounter', 'character-creator', 'title', 'boot'].includes(targetScene)) return 'none';
 
@@ -199,35 +201,42 @@ export class SceneManager {
                 if (scene === 'character_summary') {
                     this.characterSummaryController = new CharacterSummaryController(this.input, data);
                 }
-                
                 if (scene === 'level_up') {
                     this.levelUpController.init(data);
                 }
-
                 if (scene === 'party') {
                     this.partyController.init(data || {});
                 }
-
                 if (scene === 'journal') {
                     this.journalController.init();
                 }
-
-                if (scene === 'shop') {                                         // <-- NEW
+                if (scene === 'shop') {
                     this.shopController.init(data || {});
+                }
+                if (scene === 'workshop') {                 // <-- NEW
+                    this.workshopController.init(data || {});
                 }
 
                 this.changeScene(scene);
             }, 'fade');
         });
 
-        // <-- NEW EXPLICIT OPEN_SHOP LISTENER
+        // EXPLICT OPEN_SHOP LISTENER
         events.on('OPEN_SHOP', (data) => {
             console.log("1. EVENT RECEIVED DATA:", data);
             events.emit('PLAY_SFX', { id: 'doorOpen', volume: 0.6 });
             this.transitionRenderer.start(() => {
-                // ADD THIS LINE: Pass the data to the controller so it can build the wares!
-                this.shopController.init(data || {}); 
+                this.shopController.init(data || {});
                 this.changeScene('shop', data);
+            }, 'wipe', { speed: 3.5 });
+        });
+
+        // EXPLICT OPEN_WORKSHOP LISTENER <-- NEW
+        events.on('OPEN_WORKSHOP', (data) => {
+            events.emit('PLAY_SFX', { id: 'doorOpen', volume: 0.6 });
+            this.transitionRenderer.start(() => {
+                this.workshopController.init(data || {});
+                this.changeScene('workshop', data);
             }, 'wipe', { speed: 3.5 });
         });
 
@@ -249,16 +258,16 @@ export class SceneManager {
                             returnCol: data.context.col,
                             returnRow: data.context.row + 1
                         };
-                        
+
                         // Shift into interior state
                         gameState.seed = gameState.seed + (data.context.col * 73856) + (data.context.row * 19349);
                         gameState.world.isInterior = true;
                         gameState.world.interiorType = data.roomType || 'HOUSE_INTERIOR';
                         gameState.world.interiorId = `${data.context.col}_${data.context.row}`;
-                        
+
                         // Generate the interior map
                         this.worldManager = new WorldManager();
-                        
+
                         // --- FIX: Give the interior map to ALL controllers! ---
                         this.overworldController.worldManager = this.worldManager;
                         this.encounterController.worldManager = this.worldManager;
@@ -267,7 +276,6 @@ export class SceneManager {
                         const interiorSpawn = this.worldManager.findSpawnPoint() || { col: 3, row: 5 };
                         this.overworldController.warpTo(interiorSpawn.col, interiorSpawn.row);
                         this.overworldController.isLocked = false;
-                        
                     } else if (data.id === 'exit_interior') {
                         const saved = gameState.world.savedOverworld;
                         if (saved) {
@@ -276,7 +284,7 @@ export class SceneManager {
                             gameState.world.isInterior = false;
                             gameState.world.interiorType = null;
                             gameState.world.interiorId = null;
-                            
+
                             // Restore the overworld map
                             this.worldManager = new WorldManager();
                             
@@ -289,6 +297,7 @@ export class SceneManager {
                             this.overworldController.isLocked = false;
                         }
                     }
+
                     this.activeEncounterBGM = null;
                     this.changeScene('overworld');
                 }, 'fade', { speed: 2.0 });
@@ -307,19 +316,18 @@ export class SceneManager {
 
         events.on('START_BATTLE', (data) => {
             events.emit('PLAY_SFX', { id: 'battleStart', volume: 0.9 });
-            
             const difficulty = gameState.difficulty || 'normal';
             const globalOffset = DIFFICULTY_MODIFIERS[difficulty]?.enemyLevelOffset || 0;
             const baseLevel = PartyManager.getHighestLevel() + globalOffset;
-
+            
             const scaledEnemies = [];
-
+            
             for (const enemyData of data.enemies) {
                 if (enemyData.stats) {
                     scaledEnemies.push(enemyData);
-                    continue; 
+                    continue;
                 }
-
+                
                 const enemyId = typeof enemyData === 'string' ? enemyData : enemyData.id;
                 let finalLevel = Math.max(1, baseLevel);
                 let factoryOverrides = { level: finalLevel };
@@ -327,7 +335,6 @@ export class SceneManager {
                 if (typeof enemyData === 'object') {
                     const specificOffset = enemyData.levelOffset || 0;
                     finalLevel = Math.max(1, baseLevel + specificOffset);
-
                     const { id, levelOffset, ...restOfProperties } = enemyData;
                     factoryOverrides = { level: finalLevel, ...restOfProperties };
                 }
@@ -335,32 +342,29 @@ export class SceneManager {
                 const enemyEntity = EntityFactory.create(enemyId, factoryOverrides);
                 scaledEnemies.push(enemyEntity);
             }
-
+            
             const isFromOverworld = this.currentScene === 'overworld';
             const transitionType = isFromOverworld ? 'blade' : 'ethereal';
             const transitionSpeed = isFromOverworld ? 1.5 : 2.5;
 
             this.transitionRenderer.start(() => {
                 console.log("[SceneManager] Handing off scaled entities to BattleController:", scaledEnemies);
-                
                 const context = data.context || {};
                 context.backgroundId = data.background;
                 context.weather = data.weather;
-                
                 this.battleController.start(scaledEnemies, context);
-
+                
                 // --- FIX: Fallback to currently playing encounter music if no explicit BGM was passed ---
                 const currentBGM = gameState.world?.currentBgm || null;
                 const customBGM = data.bgm || context.bgm || (this.currentScene === 'encounter' ? currentBGM : null);
-
                 this.activeBattleBGM = customBGM;
-                this.changeScene('battle', { bgm: customBGM });
 
+                this.changeScene('battle', { bgm: customBGM });
             }, transitionType, { speed: transitionSpeed, color: '#0a0a12' });
         });
 
         events.on('BATTLE_ENDED', (data) => {
-            this.activeBattleBGM = null; 
+            this.activeBattleBGM = null;
             if (data.victory) {
                 events.emit('CHANGE_SCENE', { scene: 'overworld' });
             } else {
@@ -382,7 +386,9 @@ export class SceneManager {
 
         events.on('CHARACTER_RECRUITED', (data) => {
             this.transitionRenderer.start(() => {
-                this.characterSummaryController = new CharacterSummaryController(this.input, { character: data.character });
+                this.characterSummaryController = new CharacterSummaryController(this.input, {
+                    character: data.character
+                });
                 this.changeScene('character_summary');
             }, 'wipe', { speed: 3.0 });
         });
@@ -408,7 +414,7 @@ export class SceneManager {
     _handleGlobalKeydown(e) {
         if (this.transitionRenderer.isActive && this.transitionRenderer.state === 'FADE_OUT') return;
         if (e.code === 'Backquote') this.mapRenderer.showDebug = !this.mapRenderer.showDebug;
-        
+
         const activeController = this._getActiveController();
         if (activeController && activeController.handleKeyDown) {
             activeController.handleKeyDown(e.code, e);
@@ -427,7 +433,8 @@ export class SceneManager {
             case 'character_summary': return this.characterSummaryController;
             case 'level_up': return this.levelUpController;
             case 'journal': return this.journalController;
-            case 'shop': return this.shopController;                         // <-- NEW
+            case 'shop': return this.shopController;
+            case 'workshop': return this.workshopController; // <-- NEW
             default: return null;
         }
     }
@@ -444,7 +451,8 @@ export class SceneManager {
             case 'character_summary': return this.characterSummaryRenderer;
             case 'level_up': return this.levelUpRenderer;
             case 'journal': return this.journalRenderer;
-            case 'shop': return this.shopRenderer;                           // <-- NEW
+            case 'shop': return this.shopRenderer;
+            case 'workshop': return this.workshopRenderer; // <-- NEW
             default: return null;
         }
     }
@@ -466,6 +474,7 @@ export class SceneManager {
                 getAndResetClick: () => click,
                 getAndResetRightClick: () => rightClick
             };
+
             const uiResult = this.uiInteractionManager.update(inputProxy, activeController);
 
             if (uiResult) {
@@ -527,9 +536,16 @@ export class SceneManager {
                 const journalState = this.journalController.getState();
                 this.journalRenderer.render(this.ctx, journalState);
                 break;
-            case 'shop':                                                         // <-- NEW
+            case 'shop':
                 const shopState = this.shopController.getState();
                 this.shopRenderer.render(shopState);
+                break;
+            case 'workshop':                                         // <-- NEW
+                if (this.workshopController) {
+                    const workshopState = this.workshopController.getState();
+                    const hitboxes = this.workshopRenderer.render(workshopState);
+                    this.workshopController.updateHitboxes(hitboxes);
+                }
                 break;
             case 'party':
                 const pState = this.partyController.getState();
@@ -574,7 +590,7 @@ export class SceneManager {
             ambientColor,
             this.weatherRenderer
         );
-
+        
         this.overworldUIRenderer.render(this.ctx, state);
     }
 

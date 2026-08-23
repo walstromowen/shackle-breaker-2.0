@@ -31,6 +31,7 @@ export const gameState = {
     party: {
         inventory: [],
         currency: 0,
+        unlockedCraftingRecipes: [],
         members: []
     },
     

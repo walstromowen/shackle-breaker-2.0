@@ -32,7 +32,7 @@ export const SpawnTableDefinitions = {
                     { id: 'ROTTER', weight: 40 },
                     { id: 'MAD_MAN', weight: 30, modifiers: { equipment: [{ slot: 'mainHand', items: ['dagger', 'wooden_stick'], chance: 0.5 }] } },
                     { id: 'SHACKLED_STEED', weight: 20 },
-                    { id: 'LEGIONARY', weight: 70, modifiers: { levelOffset: { chance: 0.3, min: -1, max: 2 }, equipment: [{ slot: 'mainHand', items: ['warhammer', 'spear'], chance: 0.3 }], traits: [{ id: 'iron_willed', chance: 0.15 }] } },
+                    { id: 'LEGIONARY', weight: 270, modifiers: { levelOffset: { chance: 0.3, min: -1, max: 2 }, equipment: [{ slot: 'mainHand', items: ['warhammer', 'spear'], chance: 0.3 }], traits: [{ id: 'iron_willed', chance: 0.15 }] } },
                     { id: 'MAD_MAGE', weight: 30 }
                 ]
             }

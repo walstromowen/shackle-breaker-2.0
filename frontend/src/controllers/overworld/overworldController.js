@@ -12,7 +12,6 @@ export class OverworldController extends BaseController {
         super(input);
         this.config = config;
         this.worldManager = worldManager;
-        
         this.player = this.createPlayerEntity();
         this.camera = { x: 0, y: 0, prevX: 0, prevY: 0 };
         this.isLocked = false;
@@ -24,11 +23,14 @@ export class OverworldController extends BaseController {
         const BTN_SIZE = 104; // Square width/height
         const GAP = 8;        // Gap between stacked buttons
 
-        this.menuToggleHitbox = { 
-            id: 'btn_menu_toggle', 
-            x: MENU_X, y: MENU_Y, w: BTN_SIZE, h: BTN_SIZE, 
-            spriteCol: 4, spriteRow: 0, label: 'Menu', 
-            zIndex: 100, hoverSfx: 'hoverTick' 
+        this.menuToggleHitbox = {
+            id: 'btn_menu_toggle',
+            x: MENU_X, y: MENU_Y,
+            w: BTN_SIZE, h: BTN_SIZE,
+            spriteCol: 4, spriteRow: 0,
+            label: 'Menu',
+            zIndex: 100,
+            hoverSfx: 'hoverTick'
         };
 
         // Updated options
@@ -84,20 +86,25 @@ export class OverworldController extends BaseController {
     onHover(hitboxId) {
         super.onHover(hitboxId);
     }
-handleKeyDown(code, e) {
-        if (this.isLocked) return;
-        
-        if (code === 'Space' || code === 'Enter') this.interact();
 
+    handleKeyDown(code, e) {
+        if (this.isLocked) return;
+
+        if (code === 'Space' || code === 'Enter') this.interact();
         if (code === 'KeyM') {
             events.emit('PLAY_SFX', { id: 'click', volume: 0.6, pitch: 1.0 });
             this.isMenuOpen = !this.isMenuOpen;
         }
-
         if (code === 'KeyP') this.executeMenuAction('party');
-        if (code === 'KeyC') this.executeMenuAction('character');
+        
+        // --- NEW: Test bind for opening the Workshop ---
+        if (code === 'KeyC') {
+            this.isLocked = true;
+            this.isMenuOpen = false;
+            events.emit('OPEN_WORKSHOP');
+        }
+        
         if (code === 'KeyJ') this.executeMenuAction('journal');
-
         if (code === 'Escape' && this.isMenuOpen) {
             this.isMenuOpen = false;
         }
@@ -109,7 +116,6 @@ handleKeyDown(code, e) {
 
     update(dt) {
         super.update(dt);
-        
         this.checkEnvironmentMusic();
 
         this.worldManager.getActiveObjects().forEach(obj => {
@@ -122,10 +128,7 @@ handleKeyDown(code, e) {
                     } else {
                         obj.isAnimating = false;
                         if (obj.interaction?.type === 'WARP') {
-                            events.emit('INTERACT', { 
-                                ...obj.interaction, 
-                                context: { col: obj.col, row: obj.row, objectId: obj.id } 
-                            });
+                            events.emit('INTERACT', { ...obj.interaction, context: { col: obj.col, row: obj.row, objectId: obj.id } });
                         } else {
                             this.isLocked = false;
                         }
@@ -152,7 +155,7 @@ handleKeyDown(code, e) {
 
     interact() {
         if (this.player.isMoving || this.isLocked) return;
-        
+
         const { TILE_SIZE } = this.config;
         let targetX = this.player.x;
         let targetY = this.player.y;
@@ -164,18 +167,13 @@ handleKeyDown(code, e) {
 
         const lookCol = Math.floor(targetX / TILE_SIZE);
         const lookRow = Math.floor(targetY / TILE_SIZE);
-
         const obj = this.worldManager.getObjectAt(lookCol, lookRow);
-        
+
         if (obj && obj.interaction) {
             console.log(`[Overworld] Interacting with ${obj.id} at ${obj.col},${obj.row}`);
             this.isLocked = true;
-            this.player.animFrame = 0; 
-            
-            events.emit('INTERACT', { 
-                ...obj.interaction, 
-                context: { col: obj.col, row: obj.row, objectId: obj.id } 
-            });
+            this.player.animFrame = 0;
+            events.emit('INTERACT', { ...obj.interaction, context: { col: obj.col, row: obj.row, objectId: obj.id } });
         }
     }
 
@@ -188,7 +186,6 @@ handleKeyDown(code, e) {
         let nextY = this.player.y;
 
         this.player.direction = dir;
-
         if (dir === "UP")    nextY -= TILE_SIZE;
         if (dir === "DOWN")  nextY += TILE_SIZE;
         if (dir === "LEFT")  nextX -= TILE_SIZE;
@@ -211,17 +208,16 @@ handleKeyDown(code, e) {
     continueMoving(dt) {
         const moveSpeed = this.config.WALK_DURATION;
         this.player.moveProgress += dt / moveSpeed;
-
+        
         this.player.animTimer += dt;
-        if (this.player.animTimer > 0.1) { 
+        if (this.player.animTimer > 0.1) {
             this.player.animTimer = 0;
-            this.player.animFrame = (this.player.animFrame + 1) % 4; 
+            this.player.animFrame = (this.player.animFrame + 1) % 4;
         }
 
         if (this.player.moveProgress >= 1) {
             const overshoot = this.player.moveProgress - 1;
             this.finishMove();
-            
             if (this.player.isMoving) {
                 this.player.moveProgress = overshoot;
                 this.player.x = this.player.sourceX + (this.player.destX - this.player.sourceX) * this.player.moveProgress;
@@ -256,12 +252,12 @@ handleKeyDown(code, e) {
         this.checkTileEvents();
         this.validateBiomeWeather();
 
-        if (this.isLocked) return; 
+        if (this.isLocked) return;
 
         if (this.input.direction) {
             this.checkForNewMove();
         } else {
-            this.player.animFrame = 0; 
+            this.player.animFrame = 0;
         }
     }
 
@@ -269,10 +265,10 @@ handleKeyDown(code, e) {
         const col = Math.floor(this.player.x / this.config.TILE_SIZE);
         const row = Math.floor(this.player.y / this.config.TILE_SIZE);
         const biome = this.worldManager.getBiomeAt(col, row);
-        
         const currentHour = gameState.world.time / 60;
+        
         const encounterData = biome.getEncounter(currentHour);
-
+        
         if (encounterData) {
             console.log(`[Overworld] Encounter triggered in ${biome.id} at hour ${Math.floor(currentHour)}: ${encounterData.id}!`);
             this.isLocked = true;
@@ -285,10 +281,10 @@ handleKeyDown(code, e) {
 
         const difficulty = gameState.difficulty || 'normal';
         const battleData = biome.getBattle(difficulty);
-        
         if (!battleData) return;
 
         console.log(`[Overworld] Ambush triggered in biome: ${biome.id} on ${difficulty} difficulty!`);
+        
         this.isLocked = true;
         this.player.isMoving = false;
         this.player.moveProgress = 0;
@@ -308,14 +304,13 @@ handleKeyDown(code, e) {
         const col = gameState.player.col;
         const row = gameState.player.row;
         const biome = this.worldManager.getBiomeAt(col, row);
+        
         gameState.world.currentBiome = biome.id;
-        
+
         const activeWeather = gameState.world.currentWeather;
-        
         if (!activeWeather || activeWeather.id.toUpperCase() === 'CLEAR') return;
-        
+
         const allowed = (biome.allowedWeather || []).map(w => w.toUpperCase());
-        
         if (!allowed.includes(activeWeather.id.toUpperCase())) {
             console.log(`[Weather] Clearing skies. ${activeWeather.id} invalid in ${biome.id}.`);
             gameState.world.currentWeather = WeatherFactory.createWeather('CLEAR');
@@ -326,10 +321,10 @@ handleKeyDown(code, e) {
         const col = gameState.player.col;
         const row = gameState.player.row;
         const biome = this.worldManager.getBiomeAt(col, row);
-        const currentHour = (gameState.world.time || 0) / 60;
-
-        const targetTrack = biome.getMusic(currentHour, false);
         
+        const currentHour = (gameState.world.time || 0) / 60;
+        const targetTrack = biome.getMusic(currentHour, false);
+
         if (targetTrack && gameState.world.currentBgm !== targetTrack) {
             console.log(`[Overworld] Music shift to: ${targetTrack}`);
             gameState.world.currentBgm = targetTrack;
@@ -359,20 +354,16 @@ handleKeyDown(code, e) {
         
         const trackedIds = gameState.quests.trackedIds || [];
         const trackedQuests = [];
-        
+
         for (const id of trackedIds) {
             const questState = gameState.quests.active[id];
-            const def = QuestDefinitions[id];
+            const def = QuestDefinitions[id]; 
             
-            // Get the static text data
-            // Make sure both the state and definition exist
             if (questState && def) {
-                // Build the objectives array that the renderer expects
                 const formattedObjectives = def.objectives.map(obj => {
                     const current = questState.progress[obj.id] || 0;
                     const required = obj.amount || 1;
                     
-                    // Figure out the verb to use
                     let actionText = "Objective";
                     let targetText = obj.targetId;
                     
@@ -382,23 +373,22 @@ handleKeyDown(code, e) {
                         actionText = "Reach Level";
                         targetText = obj.targetLevel;
                     }
-                    
-                    // Format the target name (e.g., "forest_slime" -> "Forest Slime")
+
                     if (typeof targetText === 'string') {
                         targetText = targetText.split('_')
                             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
                             .join(' ');
                     }
-                    
+
                     return {
                         description: `${actionText} ${targetText}`,
                         current: current,
                         required: required
                     };
                 });
-                
+
                 trackedQuests.push({
-                    title: def.name, // Pass the actual name from the definition
+                    title: def.name,
                     objectives: formattedObjectives
                 });
             }
@@ -407,7 +397,6 @@ handleKeyDown(code, e) {
         return trackedQuests;
     }
 
-    // Update your existing getState method:
     getState() {
         return {
             entities: [this.player],
@@ -416,7 +405,7 @@ handleKeyDown(code, e) {
             menuToggleHitbox: this.menuToggleHitbox,
             dropdownHitboxes: this.dropdownHitboxes,
             isMenuOpen: this.isMenuOpen,
-            trackedQuests: this.getTrackedQuests() // <-- Added this line
+            trackedQuests: this.getTrackedQuests()
         };
     }
 
@@ -427,7 +416,6 @@ handleKeyDown(code, e) {
         
         this.player.x = col * TILE_SIZE;
         this.player.y = row * TILE_SIZE;
-        
         this.player.prevX = this.player.x;
         this.player.prevY = this.player.y;
         this.player.destX = this.player.x;
@@ -470,12 +458,12 @@ handleKeyDown(code, e) {
             isMoving: false,
             animFrame: 0,
             animTimer: 0,
-            light: { 
-                hasLight: true, 
-                radius: 4, 
-                color: '255, 200, 100', 
-                maxAlpha: 0.5, 
-                flickerAmp: 0.1 
+            light: {
+                hasLight: true,
+                radius: 4,
+                color: '255, 200, 100',
+                maxAlpha: 0.5,
+                flickerAmp: 0.1
             }
         };
     }

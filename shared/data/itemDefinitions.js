@@ -55,7 +55,7 @@ export const ItemDefinitions = {
             3: ["flurry"]
         },
         upgradeCosts: {
-           2: { currency: 50, materials: { "soft_wood": 3 } },
+           2: { currency: 50, materials: { "soft_wood": 1 } },
            3: { currency: 150, materials: { "iron_ingot": 2, "leather": 2 } }
         }
     },
@@ -698,103 +698,35 @@ export const ItemDefinitions = {
     },
 
     // --- MATERIALS ---
-    "soft_wood": {
-        id: "soft_wood",
-        name: "Soft Wood",
-        type: "material", 
-        description: "A piece of soft wood.",
-        value: 5,
-        icon: { col: 0, row: 0 },
-        stackable: true,
-        maxStack: 99
-    },
-     "stone": {
-        id: "stone",
-        name: "Stone",
-        type: "material",
-        description: "A rough stone.",
-        value: 2,
-        icon: { col: 1, row: 0 },
-        stackable: true,
-        maxStack: 99
-    },
-     "leather": {
-        id: "leather",
-        name: "Leather",
-        type: "material",
-        description: "Hide treated with tannin.",
-        value: 10,
-        icon: { col: 3, row: 0 },
-        stackable: true,
-        maxStack: 99
-    },
-     "iron_ingot": {
-        id: "iron_ingot",
-        name: "Iron Ingot",
-        type: "material",
-        description: "A solid ingot of iron.",
-        value: 15,
-        icon: { col: 5, row: 1 },
-        stackable: true,
-        maxStack: 99
-    },
-    "meteorite": {
-        id: "meteorite",
-        name: "Fallen Meteorite",
-        type: "material",
-        description: "A strange, jagged stone fallen from the heavens. It pulses with a faint, otherworldly glow. Staring into it for too long makes your own thoughts feel loud and unfamiliar.",
-        value: 250,
-        icon: { col: 6, row: 1 }, // Reusing the Arcane insight icon coordinates for a magical look
-        stackable: false,
-        maxStack: 1
-    },
+  "soft_wood": { id: "soft_wood", name: "Soft Wood", type: "material", description: "A piece of soft, easily workable wood.", value: 5, icon: { col: 0, row: 1 }, stackable: true, maxStack: 99 },
+  "hard_wood": { id: "hard_wood", name: "Hard Wood", type: "material", description: "Dense, durable wood ideal for tool handles and weapons.", value: 10, icon: { col: 1, row: 1 }, stackable: true, maxStack: 99 },
+  "stone": { id: "stone", name: "Stone", type: "material", description: "A rough stone.", value: 2, icon: { col: 2, row: 0 }, stackable: true, maxStack: 99 },
+  "flint": { id: "flint", name: "Flint", type: "material", description: "A sharp, sparking stone.", value: 4, icon: { col: 2, row: 1 }, stackable: true, maxStack: 99 },
+  "bone": { id: "bone", name: "Bone", type: "material", description: "A sturdy, bleached bone.", value: 3, icon: { col: 2, row: 2 }, stackable: true, maxStack: 99 },
+  "sand": { id: "sand", name: "Sand", type: "material", description: "Fine, gritty sand.", value: 1, icon: { col: 1, row: 2 }, stackable: true, maxStack: 99 },
+  
+  "leather": { id: "leather", name: "Leather", type: "material", description: "Hide treated with tannin.", value: 10, icon: { col: 3, row: 0 }, stackable: true, maxStack: 99 },
+  "fur": { id: "fur", name: "Fur", type: "material", description: "A warm, thick animal pelt.", value: 6, icon: { col: 3, row: 1 }, stackable: true, maxStack: 99 },
+  "cotton": { id: "cotton", name: "Cotton", type: "material", description: "Fluffy raw cotton, ready to be spun.", value: 4, icon: { col: 4, row: 0 }, stackable: true, maxStack: 99 },
+  "linen": { id: "linen", name: "Linen", type: "material", description: "Strong cloth woven from refined fibers.", value: 8, icon: { col: 4, row: 1 }, stackable: true, maxStack: 99 },
+  
+  "wheat": { id: "wheat", name: "Wheat", type: "material", description: "A golden sheaf of harvested wheat.", value: 3, icon: { col: 3, row: 2 }, stackable: true, maxStack: 99 },
+  "salt": { id: "salt", name: "Salt", type: "material", description: "Coarse rock salt, useful for preserving and alchemy.", value: 5, icon: { col: 4, row: 2 }, stackable: true, maxStack: 99 },
+  
+  "coal": { id: "coal", name: "Coal", type: "material", description: "A combustible black rock used for forging.", value: 6, icon: { col: 2, row: 0 }, stackable: true, maxStack: 99 },
+  "iron_ore": { id: "iron_ore", name: "Iron Ore", type: "material", description: "Unrefined iron. Needs to be smelted.", value: 8, icon: { col: 5, row: 0 }, stackable: true, maxStack: 99 },
+  "iron_ingot": { id: "iron_ingot", name: "Iron Ingot", type: "material", description: "A solid ingot of iron.", value: 15, icon: { col: 5, row: 1 }, stackable: true, maxStack: 99 },
+  "copper_ore": { id: "copper_ore", name: "Copper Ore", type: "material", description: "Unrefined copper. Highly conductive.", value: 5, icon: { col: 6, row: 0 }, stackable: true, maxStack: 99 },
+  "tin_ore": { id: "tin_ore", name: "Tin Ore", type: "material", description: "Unrefined tin. Soft and silvery.", value: 4, icon: { col: 3, row: 2 }, stackable: true, maxStack: 99 },
+  "copper_ingot": { id: "copper_ingot", name: "Copper Ingot", type: "material", description: "A solid ingot of refined copper. Highly conductive.", value: 12, icon: { col: 5, row: 2 }, stackable: true, maxStack: 99 },
+  "brass_ingot": { id: "brass_ingot", name: "Brass Ingot", type: "material", description: "A heavy, golden-colored alloy ingot.", value: 25, icon: { col: 6, row: 2 }, stackable: true, maxStack: 99 },
+  "meteorite": { id: "meteorite", name: "Fallen Meteorite", type: "material", description: "A strange, jagged stone fallen from the heavens. It pulses with a faint, otherworldly glow. Staring into it for too long makes your own thoughts feel loud and unfamiliar.", value: 250, icon: { col: 6, row: 1 }, stackable: false, maxStack: 1 },
 
-    // --- CONSUMABLES ---
-    "healing_herb": {
-        id: "healing_herb",
-        name: "Healing Herb",
-        type: "consumable", 
-        description: "A simple herb that can be used to treat minor wounds.",
-        value: 10,
-        icon: { col: 0, row: 0 },
-        useAbility: "minor_heal",
-        usability: ['overworld', 'battle'], 
-        stackable: true,
-        maxStack: 20
-    },
-    "invigorating_herb": {
-        id: "invigorating_herb",
-        name: "Invigorating Herb",
-        type: "consumable",
-        description: "A refreshing herb that can be used to restore stamina.",
-        value: 15,
-        icon: { col: 1, row: 0 },
-        useAbility: "minor_recover",
-        usability: ['overworld', 'battle'],
-        stackable: true,
-        maxStack: 20
-    },
-     "illuminating_herb": {
-        id: "illuminating_herb",
-        name: "Illuminating Herb",
-        type: "consumable",
-        description: "A refreshing herb that can be used to restore insight.",
-        value: 15,
-        icon: { col: 2, row: 0 },
-        useAbility: "minor_channel",
-        usability: ['overworld', 'battle'],
-        stackable: true,
-        maxStack: 20
-    },
-    "kurtus_brew": {
-        id: "brew_of_madness",
-        name: "Kurtus's Brew of Madness",
-        type: "consumable",
-        useAbility: "brew_of_madness",
-        description: "Smells like ozone and bad decisions. Sets HP to 1, fills Insight.",
-        icon: { col: 1, row: 1 },
-        stackable: true
-    },
+  // --- CONSUMABLES ---
+  "healing_herb": { id: "healing_herb", name: "Healing Herb", type: "consumable", description: "A simple herb that can be used to treat minor wounds.", value: 10, icon: { col: 0, row: 0 }, useAbility: "minor_heal", usability: ['overworld', 'battle'], stackable: true, maxStack: 20 },
+  "invigorating_herb": { id: "invigorating_herb", name: "Invigorating Herb", type: "consumable", description: "A refreshing herb that can be used to restore stamina.", value: 15, icon: { col: 1, row: 0 }, useAbility: "minor_recover", usability: ['overworld', 'battle'], stackable: true, maxStack: 20 },
+  "illuminating_herb": { id: "illuminating_herb", name: "Illuminating Herb", type: "consumable", description: "A refreshing herb that can be used to restore insight.", value: 15, icon: { col: 2, row: 0 }, useAbility: "minor_channel", usability: ['overworld', 'battle'], stackable: true, maxStack: 20 },
+  "kurtus_brew": { id: "brew_of_madness", name: "Kurtus's Brew of Madness", type: "consumable", useAbility: "brew_of_madness", description: "Smells like ozone and bad decisions. Sets HP to 1, fills Insight.", icon: { col: 1, row: 1 }, stackable: true },
 
     // --- ACCESSORIES ---
     "artifact_of_the_dev": {
