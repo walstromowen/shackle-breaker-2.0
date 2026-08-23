@@ -162,34 +162,75 @@ export class CombatantModel {
         this.originalEntity.removeStatusEffect(effectId);
     }
 
-    _extractAndResolveAbilities() {
-        const abilityIds = new Set();
+   _extractAndResolveAbilities() {
+    const allAbilityIds = new Set();
+    const equipMap = new Map();
+
+    // 1. Gather ALL abilities the entity claims to have
+    // (This prevents the bug where equipment abilities were already mixed in)
+    const rawAbilities = this.originalEntity.abilities || [];
+    rawAbilities.forEach(a => {
+        if (a) allAbilityIds.add(typeof a === 'string' ? a : a.id);
+    });
+
+    if (this.team === 'party') allAbilityIds.add('retreat');
+
+    // 2. Gather Equipment Abilities directly from equipped items
+    const equipment = this.originalEntity.equipment || {};
+    Object.values(equipment).forEach(item => {
+        if (!item) return;
+        // Resolve item from factory if it's just a string
+        const itemInstance = typeof item === 'string' ? ItemFactory.createItem(item) : item;
+        if (!itemInstance) return;
         
-        const addId = (a) => {
-            if (a) abilityIds.add(typeof a === 'string' ? a : a.id);
+        const itemName = itemInstance.name || 'Equipment'; 
+
+        const addEquip = (a) => {
+            if (a) {
+                const id = typeof a === 'string' ? a : a.id;
+                equipMap.set(id, itemName); 
+                allAbilityIds.add(id); // Ensure it is in our master list
+            }
         };
-
-        const baseAbilities = this.originalEntity.abilities || [];
-        baseAbilities.forEach(addId);
-
-        const equipment = this.originalEntity.equipment || {};
-        Object.values(equipment).forEach(item => {
-            if (!item) return;
-            const itemInstance = typeof item === 'string' ? ItemFactory.createItem(item) : item;
-            if (!itemInstance) return;
-            
-            itemInstance.grantedAbilities?.forEach(addId);
-            addId(itemInstance.grantedAbility);
-            addId(itemInstance.useAbility);
-        });
-
-        if (this.team === 'party') abilityIds.add('retreat');
-        if (abilityIds.size === 0) abilityIds.add('punch');
         
-        abilityIds.delete(undefined);
-        return AbilityFactory.createAbilities(Array.from(abilityIds)).filter(Boolean);
-    }
+        itemInstance.grantedAbilities?.forEach(addEquip);
+        addEquip(itemInstance.grantedAbility);
+        addEquip(itemInstance.useAbility);
+    });
 
+    if (allAbilityIds.size === 0) allAbilityIds.add('punch');
+    allAbilityIds.delete(undefined);
+
+    const finalAbilities = [];
+    const abilitiesToCreate = Array.from(allAbilityIds);
+    
+    // 3. Create all abilities at once using your factory
+    const createdAbilities = AbilityFactory.createAbilities 
+        ? AbilityFactory.createAbilities(abilitiesToCreate) 
+        : abilitiesToCreate.map(id => AbilityFactory.createAbility(id));
+
+    // 4. Safely wrap them and assign their source for the UI
+    createdAbilities.forEach(ability => {
+        if (!ability) return;
+        
+        // Use Object.create() to make a safe proxy!
+        // This prevents mutating shared factory templates while preserving methods like canPayCost()
+        const inst = Object.create(ability);
+        
+        // If this ID exists in our equipMap, we know it came from an item!
+        if (equipMap.has(ability.id)) {
+            inst.isEquipment = true;
+            inst.source = equipMap.get(ability.id);
+        } else {
+            inst.isEquipment = false;
+            inst.source = 'Intrinsic';
+        }
+        
+        finalAbilities.push(inst);
+    });
+
+    return finalAbilities;
+}
     _applyStartingStatuses() {
         const legacyStarting = this.originalEntity.state?.startingStatuses || this.originalEntity.startingStatuses || [];
         const rawOverrides = this.originalEntity.state?.statusEffects || [];

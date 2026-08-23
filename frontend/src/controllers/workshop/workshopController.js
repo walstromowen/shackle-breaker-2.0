@@ -97,18 +97,18 @@ export class WorkshopController extends BaseController {
         this.scrollManager.handleScrollWheel(this.mouse.x, this.mouse.y, delta);
     }
 
-    // --- ITEM SELECTION LOGIC ---
+    /// --- ITEM SELECTION LOGIC ---
     selectRecipe(recipe) {
         this.selectedUpgradeItem = null;
         this.selectedRecipe = recipe;
-        this.activeTab = 'description';
+        
         this.checkCraftability();
     }
 
     selectUpgradeItem(item) {
         this.selectedRecipe = null;
         this.selectedUpgradeItem = item;
-        this.activeTab = 'description';
+      
         this.checkUpgradeability();
     }
 
