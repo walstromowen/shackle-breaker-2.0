@@ -5,7 +5,6 @@ import { gameState } from '../state/gameState.js';
 import { mapObjectFactory } from '../../shared/systems/factories/mapObjectsFactory.js';
 import { WeatherFactory } from '../../shared/systems/factories/weatherFactory.js';
 import { TerrainGenerator } from './terrainGenerator.js';
-
 // --- NEW: Import the Factory instead of the old Generator ---
 import { InteriorFactory } from './factories/interiorFactory.js';
 
@@ -25,22 +24,21 @@ export class WorldManager {
         if (!gameState.seed) gameState.seed = Math.floor(Math.random() * 1000000);
         if (!gameState.world.changes) gameState.world.changes = {};
         if (!gameState.world.terrainOverrides) gameState.world.terrainOverrides = {};
-        
         if (!gameState.world.currentWeather) {
             gameState.world.currentWeather = WeatherFactory.createWeather('CLEAR');
             gameState.world.currentWeather.intensity = 1.0;
         }
-
+        
         this.seed = gameState.seed;
         this.TILES = CONFIG.TILE_TYPES;
         this.CHUNK_SIZE = 16;
-
+        
         // --- MEMORY ---
         this.chunks = new Map();
         this.objects = new Map();
         this._collisionMap = new Map();
         this._structureSpawnedChunks = new Set();
-
+        
         // --- SYSTEMS ---
         if (gameState.world.isInterior) {
             console.log(`%c[WorldManager] Interior Mode: ${gameState.world.interiorType}`, 'color: #00ffaa; font-weight: bold;');
@@ -62,11 +60,9 @@ export class WorldManager {
         } else if (explicitMapId) {
             return `INT_${explicitMapId}_${col},${row}`;
         }
-        
         if (gameState.world.isInterior && gameState.world.interiorId) {
             return `INT_${gameState.world.interiorId}_${col},${row}`;
         }
-        
         return `${col},${row}`;
     }
 
@@ -91,7 +87,6 @@ export class WorldManager {
         const startRow = cy * this.CHUNK_SIZE;
         const endCol = startCol + this.CHUNK_SIZE;
         const endRow = startRow + this.CHUNK_SIZE;
-
         const chunk = { cx, cy, keys: [] };
 
         if (!gameState.world.isInterior) {
@@ -113,20 +108,20 @@ export class WorldManager {
             }
         }
 
-        // Phase 2: Object Population 
+        // Phase 2: Object Population
         for (let r = startRow; r < endRow; r++) {
             for (let c = startCol; c < endCol; c++) {
                 const key = this._s(c, r);
                 if (this._collisionMap.has(key)) continue;
-
+                
                 const forcedObjId = gameState.world.changes?.[key];
                 if (forcedObjId !== undefined) {
                     if (forcedObjId !== null) {
                         this._placeObject(c, r, forcedObjId);
                     }
-                    continue; 
+                    continue;
                 }
-
+                
                 let objId = null;
                 if (gameState.world.isInterior) {
                     if (typeof this.terrain.getObjectIdAt === 'function') {
@@ -135,14 +130,14 @@ export class WorldManager {
                             const tileId = this.getTileAt(c, r);
                             const isWallTile = (tileId >= this.TILES.LAYER_3 && tileId <= this.TILES.LAYER_5);
                             if (isWallTile || this.isBlockedByFace(c, r) || this.isCliffFace(c, r)) {
-                                objId = null; 
+                                objId = null;
                             }
                         }
                     }
                 } else {
                     objId = this._getRawProceduralId(c, r);
                 }
-
+                
                 if (objId) {
                     this._placeObject(c, r, objId);
                 }
@@ -168,24 +163,25 @@ export class WorldManager {
         const structureId = biome.getStructureId(structureRng);
         
         if (!structureId) return;
+        
         const prefabOrBlueprint = STRUCTURES[structureId];
         if (!prefabOrBlueprint) return;
-
+        
         const checkWidth = prefabOrBlueprint.type === 'BLUEPRINT' ? STRUCTURES[prefabOrBlueprint.centerPrefab].width : prefabOrBlueprint.width;
         const checkHeight = prefabOrBlueprint.type === 'BLUEPRINT' ? STRUCTURES[prefabOrBlueprint.centerPrefab].height : prefabOrBlueprint.height;
-
         const maxLocalCol = Math.max(1, this.CHUNK_SIZE - checkWidth);
         const maxLocalRow = Math.max(1, this.CHUNK_SIZE - checkHeight);
+        
         const startX = Math.floor(this.pseudoRandom(cx * 401, cy * 503) * maxLocalCol);
         const startY = Math.floor(this.pseudoRandom(cx * 607, cy * 701) * maxLocalRow);
-
+        
         for (let rOffset = 0; rOffset < maxLocalRow; rOffset++) {
             for (let cOffset = 0; cOffset < maxLocalCol; cOffset++) {
                 const localCol = (startX + cOffset) % maxLocalCol;
                 const localRow = (startY + rOffset) % maxLocalRow;
                 const originCol = startCol + localCol;
                 const originRow = startRow + localRow;
-
+                
                 if (this._isStructureFootprintValid(originCol, originRow, checkWidth, checkHeight)) {
                     if (prefabOrBlueprint.type === 'BLUEPRINT') {
                         this._planBlueprint(originCol, originRow, prefabOrBlueprint, cx, cy);
@@ -201,18 +197,18 @@ export class WorldManager {
     _planBlueprint(startCol, startRow, blueprint, cx, cy) {
         const centerPrefab = STRUCTURES[blueprint.centerPrefab];
         if (!centerPrefab) return;
-        
         console.log(`[WorldManager] Planning Blueprint Structure at ${startCol}, ${startRow}`);
+        
         this._writePrefabToGlobalState(startCol, startRow, centerPrefab);
         
         const baseElev = this.getElevation(startCol, startRow);
         const claimedTiles = new Set();
+        
         const markClaimed = (c, r, w, h) => {
             for(let y = 0; y < h; y++) {
                 for(let x = 0; x < w; x++) claimedTiles.add(this._s(c + x, r + y));
             }
         };
-        
         markClaimed(startCol, startRow, centerPrefab.width, centerPrefab.height);
         
         const DIRS = [
@@ -223,20 +219,17 @@ export class WorldManager {
         ];
         
         let activePaths = [];
-        
         for (let i = 0; i < 4; i++) {
             if (this.pseudoRandom(cx * 11, cy * i * 13) < blueprint.branchChance) {
                 const midC = startCol + Math.floor(centerPrefab.width / 2);
                 const midR = startRow + Math.floor(centerPrefab.height / 2);
                 const edgeC = midC + (DIRS[i].c * Math.floor(centerPrefab.width / 2));
                 const edgeR = midR + (DIRS[i].r * Math.floor(centerPrefab.height / 2));
-                
                 const lenRng = this.pseudoRandom(cx * i, cy * 31);
                 const maxLen = Math.floor(lenRng * (blueprint.branchLength.max - blueprint.branchLength.min)) + blueprint.branchLength.min;
                 
                 activePaths.push({
-                    c: edgeC, r: edgeR, dirIndex: i, len: 0, maxLen: maxLen,
-                    stepsSinceLastModule: 0, stepsSinceLastTurn: 0
+                    c: edgeC, r: edgeR, dirIndex: i, len: 0, maxLen: maxLen, stepsSinceLastModule: 0, stepsSinceLastTurn: 0
                 });
             }
         }
@@ -254,7 +247,6 @@ export class WorldManager {
                         const leftDir = (p.dirIndex + 3) % 4;
                         const rightDir = (p.dirIndex + 1) % 4;
                         const turnDir = this.pseudoRandom(p.c * 71, p.r * 79) < 0.5 ? leftDir : rightDir;
-                        
                         if (this._isPathValid(p.c + DIRS[turnDir].c, p.r + DIRS[turnDir].r, baseElev, claimedTiles)) {
                             p.dirIndex = turnDir;
                             p.stepsSinceLastTurn = 0;
@@ -300,9 +292,11 @@ export class WorldManager {
                     claimedTiles.add(key);
                     this.modifyWorld(p.c, p.r, null);
                     
-                    for (const modConfig of blueprint.modules) {
+                    // --- CHANGED: Injecting the index into the PRNG to fix module bottleneck ---
+                    for (const [index, modConfig] of blueprint.modules.entries()) {
                         if (p.stepsSinceLastModule >= modConfig.spacing) {
-                            if (this.pseudoRandom(p.c * 7, p.r * 11) < modConfig.spawnChance) {
+                            const uniqueRoll = this.pseudoRandom(p.c * 7 + (index * 13), p.r * 11 + (index * 17));
+                            if (uniqueRoll < modConfig.spawnChance) {
                                 const modPrefab = STRUCTURES[modConfig.prefab];
                                 const sideDir = DIRS[(p.dirIndex + 1) % 4];
                                 let moduleOriginC = 0;
@@ -359,12 +353,12 @@ export class WorldManager {
                 }
                 
                 gameState.world.changes[key] = explicitObjId;
+                
                 if (explicitObjId) {
                     this._placeObject(originCol + c, originRow + r, explicitObjId);
                 }
             }
         }
-        
         if (prefab.terrain) {
             for (let r = 0; r < prefab.height; r++) {
                 for (let c = 0; c < prefab.width; c++) {
@@ -382,6 +376,7 @@ export class WorldManager {
     _isStructureFootprintValid(col, row, w, h) {
         const baseElev = this.getElevation(col, row);
         if (baseElev <= 0) return false;
+        
         for (let r = row; r < row + h; r++) {
             for (let c = col; c < col + w; c++) {
                 const key = this._s(c, r);
@@ -396,15 +391,15 @@ export class WorldManager {
 
     prune(cameraX, cameraY) {
         const TILE_SIZE = CONFIG.TILE_SIZE;
-        const SAFE_DISTANCE = 2500; 
+        const SAFE_DISTANCE = 2500;
         const distSq = SAFE_DISTANCE * SAFE_DISTANCE;
-
+        
         for (const [chunkKey, chunk] of this.chunks) {
             const chunkPixelX = (chunk.cx * this.CHUNK_SIZE + (this.CHUNK_SIZE/2)) * TILE_SIZE;
             const chunkPixelY = (chunk.cy * this.CHUNK_SIZE + (this.CHUNK_SIZE/2)) * TILE_SIZE;
             const dx = chunkPixelX - cameraX;
             const dy = chunkPixelY - cameraY;
-
+            
             if ((dx * dx + dy * dy) > distSq) {
                 this.terrain.clearCacheForKeys(chunk.keys);
                 for (const key of chunk.keys) {
@@ -421,12 +416,12 @@ export class WorldManager {
         const tileId = this.getTileAt(col, row);
         const biome = this.getBiomeAt(col, row);
         const isBlob = CONFIG.BLOB_TILES?.includes(tileId);
-
+        
         let occupyingObject = this.getObjectAt(col, row);
         if (occupyingObject && !occupyingObject.isStairs && this.isBlockedByFace(col, row)) {
             occupyingObject = null;
         }
-
+        
         return {
             id: tileId,
             mask: isBlob ? this.getSpecificMask(col, row, tileId) : 0,
@@ -504,9 +499,9 @@ export class WorldManager {
         } else if (newObj.hitbox) {
             activeHitboxes = [newObj.hitbox];
         } else {
-            return; 
+            return;
         }
-
+        
         for (const hb of activeHitboxes) {
             for (let hr = 0; hr < hb.h; hr++) {
                 for (let hc = 0; hc < hb.w; hc++) {
@@ -525,7 +520,7 @@ export class WorldManager {
             if (!def.isStairs && this.isBlockedByFace(col, row)) return null;
             return forcedObjId;
         }
-
+        
         const myTileId = this.getTileAt(col, row);
         const tileAboveId = this.getTileAt(col, row - 1);
         const tileTwoAboveId = this.getTileAt(col, row - 2);
@@ -533,11 +528,11 @@ export class WorldManager {
         const myElev = this.getElevation(col, row);
         const elevAbove = this.getElevation(col, row - 1);
         const elevTwoAbove = this.getElevation(col, row - 2);
-
+        
         if (elevAbove > myElev && (tileAboveId === this.TILES.LAYER_4 || tileAboveId === this.TILES.LAYER_5)) {
             if (this.pseudoRandom(col, row) < 0.1) return 'STAIRS_VERTICAL_1';
         }
-
+        
         if (elevTwoAbove > myElev && tileTwoAboveId === this.TILES.LAYER_3 && tileAboveId !== this.TILES.LAYER_3) {
             const rightMyElev = this.getElevation(col + 1, row);
             const rightElevTwoAbove = this.getElevation(col + 1, row - 2);
@@ -545,36 +540,33 @@ export class WorldManager {
             const rightTileAboveId = this.getTileAt(col + 1, row - 1);
             
             const isRightSideValid = (
-                rightElevTwoAbove > rightMyElev &&
-                rightTileTwoAboveId === this.TILES.LAYER_3 && 
-                rightTileAboveId !== this.TILES.LAYER_3
+                rightElevTwoAbove > rightMyElev && rightTileTwoAboveId === this.TILES.LAYER_3 && rightTileAboveId !== this.TILES.LAYER_3
             );
-
+            
             if (isRightSideValid && this.pseudoRandom(col, row - 1) < 0.1) {
                 return 'STAIRS_LARGE_VERTICAL';
             }
         }
-
+        
         if (this.isBlockedByFace(col, row) || this.isCliffFace(col, row) || this.isBiomeEdge(col, row)) return null;
-
+        
         const tileMask = this.getSpecificMask(col, row, myTileId);
         if (tileMask !== 255) return null;
-
+        
         const biome = this.getBiomeAt(col, row);
         const objRng = this.pseudoRandom(col + 100, row + 100);
-
         let spawnCategory = myTileId;
+        
         if (myTileId >= this.TILES.LAYER_3 && myTileId <= this.TILES.LAYER_5) {
             spawnCategory = '_WALLS';
         }
-
+        
         const spawnData = biome.getSpawnId(spawnCategory, objRng, false);
         if (!spawnData) return null;
-
+        
         const def = MAP_OBJECTS_DEFINITIONS[spawnData.id] || {};
         const w = def.w || def.width || 1;
         const h = def.h || def.height || 1;
-
         if (!this.isFootprintValid(col, row, w, h)) return null;
         return spawnData.id;
     }
@@ -621,15 +613,13 @@ export class WorldManager {
     canMove(fromCol, fromRow, toCol, toRow, direction) {
         const fromElev = this.getElevation(fromCol, fromRow);
         const toElev = this.getElevation(toCol, toRow);
-        
         if (toElev === -999) return false;
-
+        
         const currentObj = this.getObjectAt(fromCol, fromRow);
         const targetObj = this.getObjectAt(toCol, toRow);
-        
         const currentDef = currentObj ? MAP_OBJECTS_DEFINITIONS[currentObj.id] : null;
         const targetDef = targetObj ? MAP_OBJECTS_DEFINITIONS[targetObj.id] : null;
-
+        
         const targetAllowsMove = targetDef?.isStairs && targetDef.allowedDirections.includes(direction);
         const currentAllowsMove = currentDef?.isStairs && currentDef.allowedDirections.includes(direction);
         const isSameStair = (currentObj && targetObj && currentObj === targetObj && currentDef?.isStairs);
@@ -641,11 +631,9 @@ export class WorldManager {
         const depthL1 = CONFIG.TILE_DEPTH[this.TILES.LAYER_1] || 1;
         const depthL2 = CONFIG.TILE_DEPTH[this.TILES.LAYER_2] || 2;
         const isDirtToGrass = (fromElev === depthL1 && toElev === depthL2) || (fromElev === depthL2 && toElev === depthL1);
-        
         if (fromElev !== toElev && !isDirtToGrass) return false;
         if (this.isBlockedByFace(toCol, toRow)) return false;
         if (this.getSolidObjectAt(toCol, toRow)) return false;
-
         return true;
     }
 
@@ -689,7 +677,6 @@ export class WorldManager {
     isFootprintValid(col, row, w, h) {
         const elev = this.getElevation(col, row);
         if (elev <= 0) return false;
-        
         for (let r = row; r < row + h; r++) {
             for (let c = col; c < col + w; c++) {
                 const key = this._s(c, r);
@@ -708,12 +695,11 @@ export class WorldManager {
         const TILE_SIZE = CONFIG.TILE_SIZE;
         const scale = CONFIG.GAME_SCALE || 1;
         const LIGHT_PAD = 15;
-        
         const startCol = Math.floor(camera.x / TILE_SIZE) - LIGHT_PAD;
         const endCol = startCol + Math.ceil((canvasWidth / scale) / TILE_SIZE) + (LIGHT_PAD * 2);
         const startRow = Math.floor(camera.y / TILE_SIZE) - LIGHT_PAD;
         const endRow = startRow + Math.ceil((canvasHeight / scale) / TILE_SIZE) + (LIGHT_PAD * 2);
-
+        
         const lightObjects = [];
         for (let r = startRow; r <= endRow; r++) {
             for (let c = startCol; c <= endCol; c++) {
@@ -748,7 +734,6 @@ export class WorldManager {
     isCliffFace(col, row) {
         const elev = this.getElevation(col, row);
         if (elev <= 0) return false;
-        
         const depth = this.getWallFaceDepth(this.getTileAt(col, row));
         for (let i = 1; i <= depth; i++) {
             if (this.getElevation(col, row + i) < elev) return true;
@@ -759,11 +744,9 @@ export class WorldManager {
     isBiomeEdge(col, row) {
         const myBiomeId = this.getBiomeAt(col, row).id;
         const myD = CONFIG.TILE_DEPTH[this.getTileAt(col, row)] || 0;
-        
         const check = (c, r) => {
             return ((CONFIG.TILE_DEPTH[this.getTileAt(c, r)] || 0) < myD) || (this.getBiomeAt(c, r).id !== myBiomeId);
         };
-        
         return check(col, row-1) || check(col+1, row) || check(col, row+1) || check(col-1, row);
     }
 

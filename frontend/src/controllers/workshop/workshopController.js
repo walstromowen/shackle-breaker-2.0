@@ -10,19 +10,23 @@ import { ScrollManager } from '../../ui/scrollManager.js';
 export class WorkshopController extends BaseController {
     constructor(input) {
         super(input);
-
+        
+        // Station properties
+        this.stationId = 'any';
+        this.stationTitle = 'Workshop';
+        
         // Crafting State
         this.availableRecipes = [];
         this.selectedRecipe = null;
         this.canCraftSelected = false;
-
+        
         // Upgrading State
         this.selectedUpgradeItem = null;
         this.canUpgradeSelected = false;
-
+        
         // Default to the description tab when opening the workshop
         this.activeTab = 'description';
-
+        
         // --- Scroll & Layout Support ---
         this.scrollManager = new ScrollManager();
         this.recipeScrollOffset = 0;
@@ -43,10 +47,26 @@ export class WorkshopController extends BaseController {
 
     init(data) {
         if (super.init) super.init(data);
-        this.availableRecipes = CraftingManager.getVisibleRecipes(gameState);
+
+        // Read station data passed in from the Overworld interaction via SceneManager
+        this.stationId = data?.station || 'any';
+        this.stationTitle = data?.title || 'Workshop';
+
+        // Fetch all unlocked visible recipes, then filter based on station
+        const allRecipes = CraftingManager.getVisibleRecipes(gameState);
+        this.availableRecipes = allRecipes.filter(recipe => {
+            // If we passed 'all' (e.g. from debug/menu), show everything.
+            // Otherwise, only show recipes assigned to this exact station OR generic 'any' prep recipes.
+            return this.stationId === 'all' || recipe.station === this.stationId || recipe.station === 'any';
+        });
+
         if (this.availableRecipes.length > 0) {
             this.selectRecipe(this.availableRecipes[0]);
+        } else {
+            this.selectedRecipe = null;
+            this.canCraftSelected = false;
         }
+
         this.recipeScrollOffset = 0;
         this.partyScrollOffset = 0;
         this._syncScrollZones();
@@ -64,7 +84,9 @@ export class WorkshopController extends BaseController {
             maxScroll: this.layout.recipeMaxScroll,
             viewportH: this.layout.viewportH,
             thumbIds: ['SCROLLBAR_THUMB_RECIPES'],
-            onChange: (newOffset) => { this.recipeScrollOffset = newOffset; }
+            onChange: (newOffset) => {
+                this.recipeScrollOffset = newOffset;
+            }
         });
 
         this.scrollManager.registerZone('party', {
@@ -72,7 +94,9 @@ export class WorkshopController extends BaseController {
             maxScroll: this.layout.partyMaxScroll,
             viewportH: this.layout.viewportH,
             thumbIds: ['SCROLLBAR_THUMB_PARTY'],
-            onChange: (newOffset) => { this.partyScrollOffset = newOffset; }
+            onChange: (newOffset) => {
+                this.partyScrollOffset = newOffset;
+            }
         });
     }
 
@@ -83,12 +107,14 @@ export class WorkshopController extends BaseController {
         // Dynamically calculate max scroll heights based on item counts
         const ROW_H = this.layout.itemHeight || 48;
         const VIEW_H = this.layout.viewportH || 300;
+        
         const partyItemsCount = this._getFormattedInventory().length;
         const recipeRows = this.availableRecipes.length;
         const partyRows = Math.ceil(partyItemsCount / 4); // 4 columns for inventory
-        
+
         this.layout.recipeMaxScroll = Math.max(0, (recipeRows * ROW_H) - VIEW_H);
         this.layout.partyMaxScroll = Math.max(0, (partyRows * ROW_H) - VIEW_H);
+        
         this._syncScrollZones();
     }
 
@@ -101,23 +127,21 @@ export class WorkshopController extends BaseController {
     selectRecipe(recipe) {
         this.selectedUpgradeItem = null;
         this.selectedRecipe = recipe;
-        
         this.checkCraftability();
     }
 
     selectUpgradeItem(item) {
         this.selectedRecipe = null;
         this.selectedUpgradeItem = item;
-      
         this.checkUpgradeability();
     }
 
     // --- CRAFTING LOGIC ---
     checkCraftability() {
         if (!this.selectedRecipe) return;
-        
+
         let canCraft = true;
-        
+
         if ((gameState.party.currency || 0) < (this.selectedRecipe.currencyCost || 0)) {
             canCraft = false;
         }
@@ -130,21 +154,22 @@ export class WorkshopController extends BaseController {
                 }
             }
         }
+
         this.canCraftSelected = canCraft;
     }
 
     executeCrafting() {
         // 1. Deduct Currency
         gameState.party.currency -= (this.selectedRecipe.currencyCost || 0);
-        
+
         // 2. Remove Materials
         for (const [matId, amountNeeded] of Object.entries(this.selectedRecipe.materials || {})) {
             InventorySystem.removeItem(matId, amountNeeded);
         }
-        
+
         // 3. Add Crafted Item
         InventorySystem.addItem(
-            this.selectedRecipe.outputItemId, 
+            this.selectedRecipe.outputItemId,
             (this.selectedRecipe.outputQuantity || 1)
         );
 
@@ -164,7 +189,7 @@ export class WorkshopController extends BaseController {
 
     _attachProjectedStats(item) {
         if (!item || item.isMaxLevel) return;
-
+        
         try {
             // 1. Clone the item while keeping its class prototype (getters) intact
             const dummyItem = Object.assign(Object.create(Object.getPrototypeOf(item)), item);
@@ -185,30 +210,25 @@ export class WorkshopController extends BaseController {
         }
     }
 
-   executeUpgrade() {
-    // 1. Grab the currently selected item
-    const item = this.selectedUpgradeItem;
-    if (!item) return;
+    executeUpgrade() {
+        // 1. Grab the currently selected item
+        const item = this.selectedUpgradeItem;
+        if (!item) return;
 
-    // 2. Delegate to your existing ItemUpgradeSystem!
-    // This perfectly handles currency, materials, and item.level += 1
-    const success = ItemUpgradeSystem.upgradeItem(item);
-
-    if (success) {
-        // 3. Re-run your upgrade check. 
-        // Because the item's level just went up, this will automatically 
-        // generate the NEW nextStats (Level 3) for the preview!
-        this.checkUpgradeability();
-
-        // 4. Force a UI refresh and play a sound
-        this.updateHitboxes(this.currentHitboxes);
-        
-        // Optional: emit an upgrade sound if you have one, or reuse crafting_success
-        if (typeof events !== 'undefined') {
-            events.emit('PLAY_SOUND', { id: 'crafting_success' }); 
+        // 2. Delegate to your existing ItemUpgradeSystem!
+        const success = ItemUpgradeSystem.upgradeItem(item);
+        if (success) {
+            // 3. Re-run your upgrade check. Automatically generates the NEW nextStats for the preview!
+            this.checkUpgradeability();
+            
+            // 4. Force a UI refresh and play a sound
+            this.updateHitboxes(this.currentHitboxes);
+            
+            if (typeof events !== 'undefined') {
+                events.emit('PLAY_SOUND', { id: 'crafting_success' });
+            }
         }
     }
-}
 
     // --- UI INTERACTION CALLBACKS ---
     onHover(hitboxId) {
@@ -263,14 +283,14 @@ export class WorkshopController extends BaseController {
             const index = parseInt(normalizedId.replace('PARTY_ITEM_', ''), 10);
             const inventoryList = this._getFormattedInventory();
             const selected = inventoryList[index];
-
+            
             if (selected) {
                 // If it's unique gear it has an instanceId, grab the real one.
                 // If it's a stacked material, just use the formatted object directly!
                 const realItem = selected.instanceId 
-                    ? gameState.party.inventory.find(i => i.instanceId === selected.instanceId)
+                    ? gameState.party.inventory.find(i => i.instanceId === selected.instanceId) 
                     : selected;
-                
+                    
                 if (realItem) {
                     this.selectUpgradeItem(realItem);
                     events.emit('PLAY_SOUND', { id: 'uiClick' });
@@ -298,13 +318,13 @@ export class WorkshopController extends BaseController {
 
             if (item.isUpgradeable || isEquipment) {
                 formatted.push({
-                    ...item, 
+                    ...item,
                     defId: itemId,
                     name: item.name || def.name || itemId,
                     type: item.type || def.type || 'item',
                     slot: item.slot || def.slot || '',
                     icon: item.icon || def.icon,
-                    // ADDED: Explicitly evaluate the getters so the UI renderer can see them!
+                    // Explicitly evaluate the getters so the UI renderer can see them
                     attack: item.attack,
                     defense: item.defense,
                     resistance: item.resistance,
@@ -337,14 +357,19 @@ export class WorkshopController extends BaseController {
 
     getState() {
         return {
+            // Metadata exposed for the Renderer to use
+            stationId: this.stationId,
+            stationTitle: this.stationTitle,
+            
             // Recipe & Upgrade States
             availableRecipes: this.availableRecipes,
             selectedRecipe: this.selectedRecipe,
             canCraftSelected: this.canCraftSelected,
+            
             selectedUpgradeItem: this.selectedUpgradeItem,
             canUpgradeSelected: this.canUpgradeSelected,
             activeTab: this.activeTab,
-
+            
             // Layout & Scrolling Support
             layout: this.layout,
             recipeScrollOffset: this.recipeScrollOffset,
