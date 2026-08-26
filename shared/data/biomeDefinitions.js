@@ -114,7 +114,7 @@ export const BIOME_DEFINITIONS = {
             ] 
         }, 
         encounters: { 
-            rate: 0.01, 
+            rate: 0.005, 
             type: "time_weighted", 
             pools: [ 
                 { weight: 100, id: 'suspicious_merchant', allowedTimes: ['day'] }, 

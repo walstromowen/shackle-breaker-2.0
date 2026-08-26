@@ -26,17 +26,17 @@ export class OverworldController extends BaseController {
 
 this.menuToggleHitbox = { 
     id: 'btn_menu_toggle', x: MENU_X, y: MENU_Y, w: BTN_SIZE, h: BTN_SIZE, 
-    spriteCol: 4, spriteRow: 0, label: 'Menu', shortcut: '1', // <-- Added shortcut
+    spriteCol: 0, spriteRow: 0, label: 'Menu', shortcut: '1', // <-- Added shortcut
     zIndex: 100, hoverSfx: 'hoverTick' 
 };
 
 // 2. Add the shortcut strings to the dropdown array
 this.dropdownHitboxes = [
-    { id: 'btn_party',     x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 1, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 2, spriteRow: 0, label: 'Party', shortcut: '2' },
-    { id: 'btn_character', x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 2, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 0, spriteRow: 0, label: 'Character', shortcut: '3' },
-    { id: 'btn_journal',   x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 3, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 1, spriteRow: 0, label: 'Journal', shortcut: '4' },
-    { id: 'btn_crafting',  x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 4, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 5, spriteRow: 0, label: 'Crafting', shortcut: '5' },
-    { id: 'btn_system',    x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 5, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 3, spriteRow: 0, label: 'System', shortcut: '6' }
+    { id: 'btn_party',     x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 1, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 1, spriteRow: 0, label: 'Party', shortcut: '2' },
+    { id: 'btn_character', x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 2, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 2, spriteRow: 0, label: 'Character', shortcut: '3' },
+    { id: 'btn_journal',   x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 3, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 3, spriteRow: 0, label: 'Journal', shortcut: '4' },
+    { id: 'btn_crafting',  x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 4, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 4, spriteRow: 0, label: 'Crafting', shortcut: '5' },
+    { id: 'btn_system',    x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 5, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 5, spriteRow: 0, label: 'System', shortcut: '6' }
 ];
   }
 

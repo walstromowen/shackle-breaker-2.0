@@ -700,7 +700,7 @@ export const ItemDefinitions = {
     // --- MATERIALS ---
   "soft_wood": { id: "soft_wood", name: "Soft Wood", type: "material", description: "A piece of soft, easily workable wood.", value: 5, icon: { col: 0, row: 1 }, stackable: true, maxStack: 99 },
   "hard_wood": { id: "hard_wood", name: "Hard Wood", type: "material", description: "Dense, durable wood ideal for tool handles and weapons.", value: 10, icon: { col: 1, row: 1 }, stackable: true, maxStack: 99 },
-  "stone": { id: "stone", name: "Stone", type: "material", description: "A rough stone.", value: 2, icon: { col: 2, row: 0 }, stackable: true, maxStack: 99 },
+  "stone": { id: "stone", name: "Stone", type: "material", description: "A rough stone.", value: 2, icon: { col: 5, row: 2 }, stackable: true, maxStack: 99 },
   "flint": { id: "flint", name: "Flint", type: "material", description: "A sharp, sparking stone.", value: 4, icon: { col: 2, row: 1 }, stackable: true, maxStack: 99 },
   "bone": { id: "bone", name: "Bone", type: "material", description: "A sturdy, bleached bone.", value: 3, icon: { col: 2, row: 2 }, stackable: true, maxStack: 99 },
   "sand": { id: "sand", name: "Sand", type: "material", description: "Fine, gritty sand.", value: 1, icon: { col: 1, row: 2 }, stackable: true, maxStack: 99 },

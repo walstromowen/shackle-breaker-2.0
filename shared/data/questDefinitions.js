@@ -3,14 +3,15 @@ export const QuestDefinitions = {
     // MAIN QUESTLINE (SHACKLED)
     // ========================================================
     "shackled1": {
-        id: "shackled1",
-        name: "Shackled",
-        description: "You wake up with shackles around your wrists. Though the chain connecting them is broken, the shackles remain locked.",
-        objectives: [
-            { id: "obj_reach_level_2", type: "party_level", targetLevel: 2, amount: 1 }
-        ],
-        rewards: { exp: 50, currency: 50, quests: ["shackled2"] }
-    },
+    id: "shackled1",
+    name: "Shackled",
+    description: "You wake up with shackles around your wrists. Though the chain connecting them is broken, the shackles remain locked.",
+    objectives: [
+        { id: "obj_reach_level_2", type: "party_level", targetLevel: 2, amount: 1 },
+        { id: "obj_craft_artifact", type: "craft", targetId: "artifact_of_the_dev", amount: 1 }
+    ],
+    rewards: { exp: 50, currency: 50, quests: ["shackled2"] }
+},
     "shackled2": {
         id: "shackled2",
         name: "Shackled",
@@ -88,6 +89,19 @@ export const QuestDefinitions = {
             companions: [{ id: "MAD_MAN", overrides: { name: "survivor" } }] 
         }
     },
+    'blacksmith_apprentice': {
+    id: 'blacksmith_apprentice',
+    title: 'The Blacksmith\'s Test',
+    description: 'Prove your worth by forging an Iron Sword.',
+    objectives: [
+      {
+        type: 'craft',           // Tells the QuestModel to listen for 'ITEM_CRAFTED'
+        targetId: 'iron_sword',  // The item ID to check against
+        requiredQty: 1,
+        currentQty: 0
+      }
+    ]
+  },
 
     // ========================================================
     // TRAVELER QUESTLINE

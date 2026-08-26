@@ -159,24 +159,29 @@ export class WorkshopController extends BaseController {
     }
 
     executeCrafting() {
-        // 1. Deduct Currency
-        gameState.party.currency -= (this.selectedRecipe.currencyCost || 0);
+    // 1. Deduct Currency
+    gameState.party.currency -= (this.selectedRecipe.currencyCost || 0);
 
-        // 2. Remove Materials
-        for (const [matId, amountNeeded] of Object.entries(this.selectedRecipe.materials || {})) {
-            InventorySystem.removeItem(matId, amountNeeded);
-        }
-
-        // 3. Add Crafted Item
-        InventorySystem.addItem(
-            this.selectedRecipe.outputItemId,
-            (this.selectedRecipe.outputQuantity || 1)
-        );
-
-        this.checkCraftability();
-        this.updateHitboxes(this.currentHitboxes);
-        events.emit('PLAY_SOUND', { id: 'crafting_success' });
+    // 2. Remove Materials
+    for (const [matId, amountNeeded] of Object.entries(this.selectedRecipe.materials || {})) {
+      InventorySystem.removeItem(matId, amountNeeded);
     }
+
+    // 3. Add Crafted Item
+    const outputId = this.selectedRecipe.outputItemId;
+    const outputQty = this.selectedRecipe.outputQuantity || 1;
+    InventorySystem.addItem(outputId, outputQty);
+
+    // 4. EMIT CRAFTING EVENT FOR QUEST TRACKING
+    events.emit('ITEM_CRAFTED', { 
+        itemId: outputId, 
+        quantity: outputQty 
+    });
+
+    this.checkCraftability();
+    this.updateHitboxes(this.currentHitboxes);
+    events.emit('PLAY_SOUND', { id: 'crafting_success' });
+  }
 
     // --- UPGRADING LOGIC ---
     checkUpgradeability() {
@@ -303,6 +308,7 @@ export class WorkshopController extends BaseController {
     onRightClick(hitboxId) {
         events.emit('CHANGE_SCENE', { scene: 'overworld' });
     }
+    
 
     // --- STATE FORMATTING ---
     _getFormattedInventory() {

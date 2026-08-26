@@ -1,5 +1,13 @@
 export const craftingRecipeDefinitions = {
   // --- GEAR RECIPES ---
+  "artifact_of_the_dev": {
+    id: "artifact_of_the_dev",
+    outputItemId: "artifact_of_the_dev",
+    station: "any", // Renamed from weaving_loom
+    materials: {
+      "soft_wood": 1
+    }
+  },
   "recipe_shortsword": {
     id: "recipe_shortsword",
     outputItemId: "shortsword",

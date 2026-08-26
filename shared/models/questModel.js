@@ -122,3 +122,4 @@ export const QuestModel = {
         return true;
     }
 };
+

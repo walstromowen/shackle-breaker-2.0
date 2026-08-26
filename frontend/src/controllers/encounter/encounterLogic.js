@@ -120,6 +120,10 @@ export class EncounterLogic {
             
             switch (type) {
                 case "RECORD_KILL":
+                    events.emit('ENEMY_KILLED', { 
+                        enemyId: payload.enemyId, 
+                        amount: payload.amount || 1 
+                    });
                     break;
                 case "SET_CONTEXT_FLAG":
                     if (!model.context) model.context = {};
