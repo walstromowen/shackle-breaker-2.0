@@ -272,42 +272,52 @@ export class MapRenderer {
 
     drawObject(obj, dx, dy, totalTime = 0, objectSheetId = null) {
     const sheetToUse = obj.sheetId || objectSheetId;
-    
     // Fetch directly from the loader!
     const fallbackObjects = this.loader.get('plainsMapObjects') || this.loader.get('spritesheet');
     const imageSource = sheetToUse ? (this.loader.get(sheetToUse) || fallbackObjects) : fallbackObjects;
     
     const { OBJECT_SIZE, GAME_SCALE } = this.config;
     const scale = GAME_SCALE * this.resScale;
-    // ... rest of drawObject stays exactly the same
-        const wTiles = obj.w || 1;
-        const hTiles = obj.h || 1;
-        const dW = Math.ceil(wTiles * OBJECT_SIZE * scale);
-        const dH = Math.ceil(hTiles * OBJECT_SIZE * scale);
-        const drawY = Math.floor(dy - ((hTiles - 1) * OBJECT_SIZE * scale));
+    
+    const wTiles = obj.w || 1;
+    const hTiles = obj.h || 1;
+    
+    const dW = Math.ceil(wTiles * OBJECT_SIZE * scale);
+    const dH = Math.ceil(hTiles * OBJECT_SIZE * scale);
+    const drawY = Math.floor(dy - ((hTiles - 1) * OBJECT_SIZE * scale));
+    
+    if (!imageSource) return;
 
-        if (!imageSource) return;
-
-        // --- STATEFUL ANIMATION UPDATE ---
-        let frameOffset = 0;
-        if (obj.frames > 1) {
-            if (obj.currentFrame !== undefined) {
-                // Use stateful manual frames if provided (Doors)
-                frameOffset = obj.currentFrame;
-            } else if (obj.interaction?.type === 'WARP') {
-                // Keep doors closed (Frame 0) by default when idle
-                frameOffset = 0;
-            } else {
-                // Fallback to constant looping (Campfire)
-                const speed = obj.speed || 0.2;
-                frameOffset = ((totalTime / speed) | 0) % obj.frames;
-            }
+    // --- STATEFUL ANIMATION UPDATE ---
+    let frameOffset = 0;
+    if (obj.frames > 1) {
+        if (obj.currentFrame !== undefined) {
+            frameOffset = obj.currentFrame;
+        } else if (obj.interaction?.type === 'WARP') {
+            frameOffset = 0;
+        } else {
+            const speed = obj.speed || 0.2;
+            frameOffset = ((totalTime / speed) | 0) % obj.frames;
         }
-
-        const sx = ((obj.spriteX || 0) + frameOffset) * OBJECT_SIZE;
-        const sy = (obj.spriteY || 0) * OBJECT_SIZE;
-        this.ctx.drawImage(imageSource, sx, sy, wTiles * OBJECT_SIZE, hTiles * OBJECT_SIZE, dx, drawY, dW, dH);
     }
+
+    const sx = ((obj.spriteX || 0) + frameOffset) * OBJECT_SIZE;
+    const sy = (obj.spriteY || 0) * OBJECT_SIZE;
+
+    // --- NEW: Handle Alpha for Fading ---
+    const prevAlpha = this.ctx.globalAlpha;
+    if (obj.alpha !== undefined) {
+        // Ensure alpha stays between 0 and 1 so the canvas doesn't throw an error
+        this.ctx.globalAlpha = Math.max(0, Math.min(1, obj.alpha)); 
+    }
+
+    this.ctx.drawImage(imageSource, sx, sy, wTiles * OBJECT_SIZE, hTiles * OBJECT_SIZE, dx, drawY, dW, dH);
+    
+    // --- NEW: Restore Alpha ---
+    if (obj.alpha !== undefined) {
+        this.ctx.globalAlpha = prevAlpha;
+    }
+}
 
     drawEntity(entity, camera, interpolationFactor = 1) {
         const sprite = this.loader.get(gameState.party.members[0].spriteOverworld);
