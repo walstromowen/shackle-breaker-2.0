@@ -8,7 +8,6 @@ export const QuestDefinitions = {
     description: "You wake up with shackles around your wrists. Though the chain connecting them is broken, the shackles remain locked.",
     objectives: [
         { id: "obj_reach_level_2", type: "party_level", targetLevel: 2, amount: 1 },
-        { id: "obj_craft_artifact", type: "craft", targetId: "artifact_of_the_dev", amount: 1 }
     ],
     rewards: { exp: 50, currency: 50, quests: ["shackled2"] }
 },
@@ -102,6 +101,8 @@ export const QuestDefinitions = {
         }
     ]
 },
+
+
 
     // ========================================================
     // TRAVELER QUESTLINE

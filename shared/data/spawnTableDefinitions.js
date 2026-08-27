@@ -8,7 +8,7 @@ export const SpawnTableDefinitions = {
         pools: [
             {
                 factionId: "wildlife",
-                weight: 60,
+                weight: 0,
                 difficultySettings: {
                     easy: { minSize: 1, maxSize: 2 },
                     normal: { minSize: 1, maxSize: 2 },
@@ -21,7 +21,7 @@ export const SpawnTableDefinitions = {
             },
             {
                 factionId: "shackled",
-                weight: 40,
+                weight: 140,
                 difficultySettings: {
                     easy: { minSize: 1, maxSize: 1 },
                     normal: { minSize: 1, maxSize: 3 },
@@ -29,6 +29,7 @@ export const SpawnTableDefinitions = {
                     nightmare: { minSize: 1, maxSize: 5 }
                 },
                 members: [
+                    { id: 'DARIUS_THE_GROVELER', weight: 91140 },
                     { id: 'ROTTER', weight: 40 },
                     { id: 'MAD_MAN', weight: 30, modifiers: { equipment: [{ slot: 'mainHand', items: ['dagger', 'wooden_stick'], chance: 0.5 }] } },
                     { id: 'SHACKLED_STEED', weight: 20 },

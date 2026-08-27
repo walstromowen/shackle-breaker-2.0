@@ -72,10 +72,12 @@ export class TooltipSystem {
         if (typeof val !== 'number') return val;
         let isDecimal = val % 1 !== 0;
         let displayVal = isDecimal ? +(val * 100).toFixed(1) : val;
+
         let str = '';
         if (forceSign && displayVal > 0) str += '+';
         str += displayVal;
         if (isDecimal) str += '%';
+
         return str;
     }
 
@@ -83,11 +85,11 @@ export class TooltipSystem {
     _getStatColor(rawKey) {
         if (!rawKey) return UITheme.colors.textMain;
         const k = rawKey.toLowerCase();
-        
+
         // Exact matches
         if (UITheme.colors[k]) return UITheme.colors[k];
         if (UITheme.colors.types && UITheme.colors.types[k]) return UITheme.colors.types[k];
-        
+
         // Fuzzy matches for common attributes and resources
         if (k.includes('hp') || k.includes('health')) return UITheme.colors.hp || "#8c1c1c";
         if (k.includes('stm') || k.includes('stamina')) return UITheme.colors.stm || "#4a5d4e";
@@ -95,7 +97,7 @@ export class TooltipSystem {
         if (k.includes('atk') || k.includes('attack') || k.includes('damage')) return UITheme.colors.attack || "#9e1a1a";
         if (k.includes('def') || k.includes('block')) return UITheme.colors.defense || "#4a5b70";
         if (k.includes('res')) return UITheme.colors.resistance || "#8a8578";
-        
+
         return UITheme.colors.textMain;
     }
 
@@ -106,8 +108,8 @@ export class TooltipSystem {
 
         if (def.attributes) {
             for (const [key, val] of Object.entries(def.attributes)) {
-                statItems.push({ 
-                    label: Formatting.getAbbreviation(key).toUpperCase(), 
+                statItems.push({
+                    label: Formatting.getAbbreviation(key).toUpperCase(),
                     val: this._formatValue(val, true),
                     color: this._getStatColor(key)
                 });
@@ -123,8 +125,9 @@ export class TooltipSystem {
                             let label = Formatting.getAbbreviation(key).toUpperCase();
                             if (cat === 'attack') label = `${label} ATK`;
                             if (cat === 'defense') label = `${label} DEF`;
-                            statItems.push({ 
-                                label: label, 
+
+                            statItems.push({
+                                label: label,
                                 val: this._formatValue(val, true),
                                 color: this._getStatColor(key)
                             });
@@ -148,7 +151,10 @@ export class TooltipSystem {
             lines.push({ type: 'spacer' });
             for (const [triggerName, effectObj] of Object.entries(def.triggers)) {
                 const cleanTrigger = triggerName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-                lines.push({ type: 'row', items: [{ label: cleanTrigger, val: this._formatEffect(effectObj) }] });
+                lines.push({
+                    type: 'row',
+                    items: [{ label: cleanTrigger, val: this._formatEffect(effectObj) }]
+                });
             }
         }
 
@@ -156,12 +162,18 @@ export class TooltipSystem {
             lines.push({ type: 'spacer' });
             const cond = def.conditionalStats.condition.replace(/_/g, ' ');
             lines.push({ type: 'row', items: [{ label: 'Condition', val: cond }] });
+
             if (def.conditionalStats.stats) {
                 lines.push({ text: "(Active stats hidden)", font: UITheme.fonts.cardItalic, color: UITheme.colors.textMuted });
             }
         }
 
-        return { title: def.name, type: "Trait", color: UITheme.colors.borderHighlight, lines: lines };
+        return {
+            title: def.name,
+            type: "Trait",
+            color: UITheme.colors.borderHighlight,
+            lines: lines
+        };
     }
 
     _formatEffect(effectObj) {
@@ -174,7 +186,12 @@ export class TooltipSystem {
     _getItemContent(item, slotName) {
         if (!item) {
             if (slotName) {
-                return { title: "Empty Slot", type: slotName.toUpperCase(), color: UITheme.colors.textMuted, lines: ["No item equipped."] };
+                return {
+                    title: "Empty Slot",
+                    type: slotName.toUpperCase(),
+                    color: UITheme.colors.textMuted,
+                    lines: ["No item equipped."]
+                };
             }
             return null;
         }
@@ -193,7 +210,9 @@ export class TooltipSystem {
 
         // 2. Data Gathering (Stats)
         const statItems = [];
+
         const getStatVal = (key) => {
+            if (typeof item[key] === 'function') return item[key];
             if (item.stats && item.stats[key] !== undefined) return item.stats[key];
             if (item[key] !== undefined) return item[key];
             if (def.stats && def.stats[key] !== undefined) return def.stats[key];
@@ -211,7 +230,19 @@ export class TooltipSystem {
         primaryStats.forEach(stat => {
             const val = getStatVal(stat.key);
             if (val === undefined || val === null) return;
-            if (typeof val === 'object' && typeof val.min === 'undefined') return;
+            if (typeof val === 'object' && typeof val.min === 'undefined' && Object.keys(val).length === 0) return;
+
+            if (typeof val === 'object' && val.min === undefined) {
+                Object.keys(val).forEach(typeKey => {
+                    const typeAbbr = (Formatting.getAbbreviation ? Formatting.getAbbreviation(typeKey) : typeKey.substring(0, 3)).toUpperCase();
+                    statItems.push({
+                        label: `${typeAbbr} ${stat.label}`,
+                        val: this._formatValue(val[typeKey]),
+                        color: this._getStatColor(typeKey)
+                    });
+                });
+                return;
+            }
 
             let valStr = val;
             if (typeof val === 'object' && val.min !== undefined) {
@@ -219,10 +250,11 @@ export class TooltipSystem {
             } else {
                 valStr = this._formatValue(val);
             }
-            statItems.push({ 
-                label: stat.label, 
-                val: valStr, 
-                color: this._getStatColor(stat.key) 
+
+            statItems.push({
+                label: stat.label,
+                val: valStr,
+                color: this._getStatColor(stat.key)
             });
         });
 
@@ -232,12 +264,13 @@ export class TooltipSystem {
 
             Object.keys(catObj).forEach(k => {
                 if (k === 'min' || k === 'max' || catObj[k] === 0) return;
-                const typeAbbr = (Formatting.getAbbreviation ? Formatting.getAbbreviation(k) : k.substring(0,3)).toUpperCase();
+                const typeAbbr = (Formatting.getAbbreviation ? Formatting.getAbbreviation(k) : k.substring(0, 3)).toUpperCase();
                 const catAbbr = category === 'resistance' ? 'RES' : (category === 'defense' ? 'DEF' : 'ATK');
-                statItems.push({ 
-                    label: `${typeAbbr} ${catAbbr}`, 
+
+                statItems.push({
+                    label: `${typeAbbr} ${catAbbr}`,
                     val: this._formatValue(catObj[k]),
-                    color: this._getStatColor(k) 
+                    color: this._getStatColor(k)
                 });
             });
         });
@@ -253,8 +286,12 @@ export class TooltipSystem {
         Object.keys(attributes).forEach(key => {
             const val = attributes[key];
             if (val === 0) return;
-            const label = (Formatting.getAbbreviation ? Formatting.getAbbreviation(key) : key.substring(0,3)).toUpperCase();
-            statItems.push({ label: label, val: this._formatValue(val, true), color: this._getStatColor(key) });
+            const label = (Formatting.getAbbreviation ? Formatting.getAbbreviation(key) : key.substring(0, 3)).toUpperCase();
+            statItems.push({
+                label: label,
+                val: this._formatValue(val, true),
+                color: this._getStatColor(key)
+            });
         });
 
         Object.keys(resources).forEach(key => {
@@ -264,12 +301,33 @@ export class TooltipSystem {
             if (key === 'maxHp') label = "MAX HP";
             else if (key === 'maxStamina') label = "MAX STM";
             else if (key === 'maxInsight') label = "MAX INS";
-            statItems.push({ label: label, val: this._formatValue(val, true), color: this._getStatColor(key) });
+
+            statItems.push({
+                label: label,
+                val: this._formatValue(val, true),
+                color: this._getStatColor(key)
+            });
         });
+
+        // ==========================================
+        // Harvest Tool Extraction (harvestTool Array)
+        // ==========================================
+        const rawHarvestTools = item.harvestTool || def.harvestTool;
+        if (rawHarvestTools && Array.isArray(rawHarvestTools) && rawHarvestTools.length > 0) {
+            const formattedTools = rawHarvestTools
+                .map(t => String(t).replace(/_/g, ' ').toUpperCase())
+                .join(', ');
+
+            statItems.push({
+                label: 'TOOL',
+                val: formattedTools,
+                color: UITheme.colors.textHighlight || "#ffd700"
+            });
+        }
 
         // 3. Data Gathering (Abilities)
         const abilityLines = [];
-        const rawAbilities = item.abilities || def.abilities || def.grantedAbilities || (def.useAbility ? [def.useAbility] : null);
+        const rawAbilities = item.grantedAbilities || def.grantedAbilities || item.abilities || def.abilities || (def.useAbility ? [def.useAbility] : null);
 
         if (rawAbilities && rawAbilities.length > 0) {
             rawAbilities.forEach(ab => {
@@ -290,7 +348,6 @@ export class TooltipSystem {
 
                 let typeFound = null;
                 const sources = [abDef, ab];
-                
                 for (const src of sources) {
                     if (!src) continue;
                     if (src.damageType) { typeFound = src.damageType; break; }
@@ -335,24 +392,24 @@ export class TooltipSystem {
         if (def.effectDescription) {
             lines.push({ text: def.effectDescription, color: UITheme.colors.textMain });
         }
+
         if (def.description) {
             lines.push({ text: `"${def.description}"`, font: UITheme.fonts.cardItalic, color: UITheme.colors.textMuted });
         }
 
-        return { 
-            title: def.name || item.name, 
-            type: typeText, 
+        return {
+            title: def.name || item.name,
+            type: typeText,
             color: this._getRarityColor(def.rarity),
             weight: def.weight,
-            value: def.value,
+            value: item.value !== undefined ? item.value : def.value,
             level: itemLevel,
-            lines: lines 
+            lines: lines
         };
     }
 
     _drawTooltip(content, anchorX, anchorY, hoveredHitbox) {
         const { title, type, color, weight, value, level, lines } = content;
-        
         const headerFont = UITheme.fonts.cardTitle;
         const typeFont   = UITheme.fonts.cardItalic;
         const bodyFont   = UITheme.fonts.cardSmall;
@@ -363,7 +420,7 @@ export class TooltipSystem {
         // 1. Calculate Height & Wrap Objects
         let contentHeight = 111;
         const wrappedLines = [];
-        
+
         lines.forEach(rawLine => {
             if (rawLine.type === 'row') {
                 wrappedLines.push({ ...rawLine, isRow: true });
@@ -383,7 +440,7 @@ export class TooltipSystem {
                 let textStr = typeof rawLine === 'string' ? rawLine : rawLine.text;
                 let f = (typeof rawLine === 'object' && rawLine.font) ? rawLine.font : bodyFont;
                 let c = (typeof rawLine === 'object' && rawLine.color) ? rawLine.color : UITheme.colors.textMain;
-                
+
                 const wLines = this.ui.getWrappedLines(textStr, this.WIDTH - (this.PADDING * 2), f);
                 wLines.forEach(l => {
                     wrappedLines.push({ text: l, font: f, color: c });
@@ -395,26 +452,18 @@ export class TooltipSystem {
         // 2. Smart Dynamic Positioning
         const screenW = this.ui.ctx.canvas.width;
         const screenH = this.ui.ctx.canvas.height;
-        
-        // Add a small gap between the slot and the tooltip
         const gap = 16; 
         
-        // Default: Place to the right of the slot
         let tx = anchorX + gap;
         let ty = anchorY;
 
-        // Screen bounds check: If it overflows the right edge, flip to the left edge of the slot
         if (tx + this.WIDTH > screenW) {
             tx = hoveredHitbox.x - this.WIDTH - gap;
         }
-
-        // Screen bounds check: Keep it on screen vertically
         if (ty + contentHeight > screenH) {
             ty = screenH - contentHeight - 24;
         }
-        
-        // Ensure it doesn't clip the top of the screen either
-        if (ty < 24) ty = 24; 
+        if (ty < 24) ty = 24;
 
         // 3. Draw Gothic Panel
         this.ui.ctx.save();
@@ -422,7 +471,6 @@ export class TooltipSystem {
         this.ui.ctx.shadowBlur = 29;
         this.ui.ctx.shadowOffsetX = 10;
         this.ui.ctx.shadowOffsetY = 10;
-        
         this.ui.drawPanel(tx, ty, this.WIDTH, contentHeight, "rgba(15, 15, 18, 0.98)");
         this.ui.ctx.restore();
 
@@ -436,12 +484,13 @@ export class TooltipSystem {
 
         // 5. Draw Header Text
         this.ui.drawText(title, tx + this.PADDING, ty + 46, headerFont, color, "left");
+
         if (level !== undefined) {
             this.ui.drawText(`Lv. ${level}`, tx + this.WIDTH - this.PADDING, ty + 46, headerFont, UITheme.colors.textHighlight, "right");
         }
 
         this.ui.drawText(type, tx + this.PADDING, ty + 80, typeFont, UITheme.colors.textMuted, "left");
-        
+
         if (weight !== undefined || value !== undefined) {
             const rightMeta = [];
             if (weight !== undefined) rightMeta.push(`Wt: ${weight}`);
@@ -461,6 +510,7 @@ export class TooltipSystem {
 
         // 6. Draw Body Text & Grid Layout
         let curY = ty + 128;
+
         wrappedLines.forEach(lineObj => {
             if (lineObj.isRow) {
                 const numCols = 2;
@@ -469,36 +519,36 @@ export class TooltipSystem {
                     const startX = tx + this.PADDING + (idx * colWidth);
                     let endX = startX + colWidth;
                     if (idx < numCols - 1) endX -= 24;
-                    
+
                     this.ui.drawText(item.label, startX, curY, bodyFont, item.color || UITheme.colors.textMuted, "left");
                     this.ui.drawText(item.val.toString(), endX, curY, bodyFont, item.color || UITheme.colors.textMain, "right");
                 });
                 curY += lineHeight;
-                
             } else if (lineObj.type === 'split-grid') {
                 const colWidth = (this.WIDTH - (this.PADDING * 2)) / 2;
                 const leftStart = tx + this.PADDING;
                 const rightStart = leftStart + colWidth;
                 const leftEnd = rightStart - 24;
-                
+
                 if (lineObj.stats.length > 0 || lineObj.abilities.length > 0) {
                     if (lineObj.stats.length > 0) this.ui.drawText("Stats", leftStart, curY, typeFont, UITheme.colors.textMuted, "left");
                     if (lineObj.abilities.length > 0) this.ui.drawText("Abilities", rightStart, curY, typeFont, UITheme.colors.textMuted, "left");
                     curY += lineHeight;
                 }
-                
+
                 const maxRows = Math.max(lineObj.stats.length, lineObj.abilities.length);
                 const rowHeight = 32;
-                
+
                 for (let i = 0; i < maxRows; i++) {
                     const st = lineObj.stats[i];
                     const ab = lineObj.abilities[i];
                     const itemY = curY;
-                    
+
                     if (st) {
                         this.ui.drawText(st.label, leftStart, itemY, bodyFont, st.color || UITheme.colors.textMuted, "left");
                         this.ui.drawText(st.val.toString(), leftEnd, itemY, bodyFont, st.color || UITheme.colors.textMain, "right");
                     }
+
                     if (ab) {
                         let textX = rightStart;
                         const drawSize = 24;

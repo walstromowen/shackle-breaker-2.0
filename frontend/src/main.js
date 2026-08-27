@@ -52,6 +52,7 @@ miragewrightPortrait: './assets/sprites/miragewright/miragewright_portrait.png',
 calcifiedCrusaderPortrait: './assets/sprites/calcified_crusader/calcified_crusader_portrait.png',
 shadyMerchantPortrait: './assets/sprites/shady_merchant/shady_merchant_portrait.png',
 thunderLocustPortrait: './assets/sprites/thunder_locust/thunder_locust_portrait.png',
+dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_groveler_portrait.png',
 // UI / Icon Atlases
     weapons: './assets/icons/weapons.png',
     armor: './assets/icons/armor.png',

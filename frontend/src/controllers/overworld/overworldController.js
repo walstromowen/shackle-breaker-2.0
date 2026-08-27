@@ -19,6 +19,12 @@ export class OverworldController extends BaseController {
         this.isLocked = false;
         this.isMenuOpen = false;
 
+        // --- NEW: HARVEST STATE ---
+        this.isHarvesting = false;
+        this.harvestTimer = 0;
+        this.harvestDuration = 0;
+        this.harvestTarget = null;
+
         // --- RESTORED SQUARE LAYOUT ---
         const MENU_X = 48;
         const MENU_Y = 48;
@@ -26,14 +32,8 @@ export class OverworldController extends BaseController {
         const GAP = 8;        // Gap between stacked buttons
 
         this.menuToggleHitbox = {
-            id: 'btn_menu_toggle',
-            x: MENU_X, y: MENU_Y,
-            w: BTN_SIZE, h: BTN_SIZE,
-            spriteCol: 0, spriteRow: 0,
-            label: 'Menu',
-            shortcut: '1', 
-            zIndex: 100,
-            hoverSfx: 'hoverTick'
+            id: 'btn_menu_toggle', x: MENU_X, y: MENU_Y, w: BTN_SIZE, h: BTN_SIZE,
+            spriteCol: 0, spriteRow: 0, label: 'Menu', shortcut: '1', zIndex: 100, hoverSfx: 'hoverTick'
         };
 
         this.dropdownHitboxes = [
@@ -100,7 +100,7 @@ export class OverworldController extends BaseController {
         if (this.isLocked) return;
 
         if (code === 'KeyI' || code === 'Enter') this.interact();
-
+        
         // 1: Toggle Menu
         if (code === 'Digit1') {
             events.emit('PLAY_SFX', { id: 'click', volume: 0.6, pitch: 1.0 });
@@ -153,6 +153,16 @@ export class OverworldController extends BaseController {
             }
         });
 
+        // --- NEW: Process active harvesting sequence ---
+        if (this.isHarvesting && this.harvestTarget) {
+            this.harvestTimer += dt;
+            
+            if (this.harvestTimer >= this.harvestDuration) {
+                this.completeHarvest();
+            }
+            return; // Block movement and other updates while harvesting
+        }
+
         if (this.isLocked) return;
 
         this.player.prevX = this.player.x;
@@ -169,22 +179,12 @@ export class OverworldController extends BaseController {
         this.updateCamera();
     }
 
-    // --- NEW: Extracted Reusable Pickup Logic ---
-    processPickup(targetObj) {
-        targetObj.isFading = true;
-        
-        const itemId = targetObj.interaction.itemId;
-        const amount = targetObj.interaction.amount || 1;
-        InventorySystem.addItem(itemId, amount);
-        
-        events.emit('PLAY_SFX', { id: 'pickup_sound', volume: 0.8, pitch: 1.0 });
-
-        // --- LOOK UP EXACT ITEM DEFINITION ---
+    // --- REUSABLE UI TOAST SYSTEM ---
+    createItemToast(itemId, amount) {
         const itemDef = ItemDefinitions[itemId];
         const iconCol = itemDef?.icon?.col || 0;
         const iconRow = itemDef?.icon?.row || 0;
 
-        // --- DETERMINE CORRECT SPRITE SHEET ---
         let sheetName = 'items';
         if (itemDef) {
             const type = (itemDef.type || '').toLowerCase();
@@ -200,21 +200,31 @@ export class OverworldController extends BaseController {
             }
         }
 
-        // --- TRIGGER TOAST ---
         if (!gameState.ui) gameState.ui = {};
         if (!gameState.ui.toasts) gameState.ui.toasts = [];
+
         gameState.ui.toasts.push({
             itemId: itemId,
             amount: amount,
             createdAt: performance.now(),
             duration: 2500,
-            iconSheet: sheetName, 
+            iconSheet: sheetName,
             iconCol: iconCol,
             iconRow: iconRow
         });
 
-        // Clean up expired toasts
         gameState.ui.toasts = gameState.ui.toasts.filter(t => performance.now() - t.createdAt < 3000);
+    }
+
+    processPickup(targetObj) {
+        targetObj.isFading = true;
+        const itemId = targetObj.interaction.itemId;
+        const amount = targetObj.interaction.amount || 1;
+        
+        InventorySystem.addItem(itemId, amount);
+        events.emit('PLAY_SFX', { id: 'pickup_sound', volume: 0.8, pitch: 1.0 });
+        
+        this.createItemToast(itemId, amount);
 
         // --- FADE OUT MAP OBJECT ---
         targetObj.alpha = 1.0;
@@ -222,6 +232,7 @@ export class OverworldController extends BaseController {
         const fadeDuration = 300;
         const stepTime = fadeDuration / fadeSteps;
         const alphaDrop = 1.0 / fadeSteps;
+
         const fadeInterval = setInterval(() => {
             targetObj.alpha -= alphaDrop;
             if (targetObj.alpha <= 0) {
@@ -231,18 +242,115 @@ export class OverworldController extends BaseController {
         }, stepTime);
     }
 
+   // --- NEW: Helper to check if party leader has required tool ---
+    hasRequiredTool(requiredTool) {
+        if (!requiredTool) return true; // Always true if no tool is required
+
+        const leader = PartyManager.getPlayer();
+        let hasTool = false;
+
+        const checkTool = (item) => {
+            if (!item) return false;
+            if (item.harvestTool && Array.isArray(item.harvestTool)) {
+                return item.harvestTool.includes(requiredTool);
+            }
+            return false;
+        };
+
+        if (leader?.equipment) {
+            if (checkTool(leader.equipment.mainHand)) hasTool = true;
+            if (checkTool(leader.equipment.twoHand)) hasTool = true;
+            if (checkTool(leader.equipment.offHand)) hasTool = true;
+        }
+
+        return hasTool;
+    }
+    // --- NEW: HARVESTING LOGIC ---
+    startHarvest(targetObj) {
+        const requiredTool = targetObj.interaction.tool;
+        let hasTool = !requiredTool; // Always true if no tool is required
+
+        // Check if the party leader has the required tool equipped
+        if (requiredTool) {
+            const leader = PartyManager.getPlayer();
+
+            // Since equipped items are ItemModel instances, we just use the getter!
+            const checkTool = (item) => {
+                if (!item) return false;
+                
+                // Call the getter directly. It returns an array (or empty array)
+                if (item.harvestTool && Array.isArray(item.harvestTool)) {
+                    return item.harvestTool.includes(requiredTool);
+                }
+                return false;
+            };
+
+            if (leader?.equipment) {
+                if (checkTool(leader.equipment.mainHand)) hasTool = true;
+                if (checkTool(leader.equipment.twoHand)) hasTool = true;
+                // Might as well check offHand just in case they equip a sickle there!
+                if (checkTool(leader.equipment.offHand)) hasTool = true; 
+            }
+        }
+
+        if (!hasTool) {
+            console.log(`[Overworld] Requires a ${requiredTool} to harvest this!`);
+            events.emit('PLAY_SFX', { id: 'error_buzz', volume: 0.5 });
+            return;
+        }
+
+        // Lock player and start harvesting timer
+        this.isHarvesting = true;
+        this.isLocked = true;
+        this.harvestTarget = targetObj;
+        this.harvestDuration = targetObj.interaction.duration || 1.5;
+        this.harvestTimer = 0;
+
+        // Make the character face the object during animation
+        this.player.animFrame = 0;
+        events.emit('PLAY_SFX', { id: 'harvest_start', volume: 0.6 });
+    }
+
+    completeHarvest() {
+        this.isHarvesting = false;
+        this.isLocked = false;
+        const obj = this.harvestTarget;
+        this.harvestTarget = null;
+        
+        if (!obj) return;
+
+        const itemId = obj.interaction.itemId;
+        const amount = obj.interaction.amount || 1;
+        
+        InventorySystem.addItem(itemId, amount);
+        events.emit('PLAY_SFX', { id: 'pickup_sound', volume: 0.8, pitch: 1.0 });
+        this.createItemToast(itemId, amount);
+        
+        // Check if object leaves a remnant behind (e.g. Tree -> Stump)
+        if (obj.interaction.replaceWith) {
+            this.worldManager.modifyWorld(obj.col, obj.row, obj.interaction.replaceWith);
+        } else {
+            this.worldManager.modifyWorld(obj.col, obj.row, null);
+        }
+    }
+
     interact() {
         if (this.player.isMoving || this.isLocked) return;
-
+        
         const obj = this.getFacedObject();
-
         if (obj && obj.interaction) {
             console.log(`[Overworld] Interacting with ${obj.id} at ${obj.col},${obj.row}`);
-
-            // --- NEW: Intercept item pickups so the game doesn't freeze! ---
+            
+            // --- Intercept item pickups so the game doesn't freeze! ---
             if (obj.interaction.type === 'PICKUP') {
                 this.processPickup(obj);
-                return; // Exit early to prevent input lock
+                return;
+            }
+
+            // --- Intercept harvesting mechanics ---
+            if (obj.interaction.type === 'HARVEST') {
+                this.startHarvest(obj);
+                return;
             }
 
             this.isLocked = true;
@@ -291,8 +399,8 @@ export class OverworldController extends BaseController {
     continueMoving(dt) {
         const moveSpeed = this.config.WALK_DURATION;
         this.player.moveProgress += dt / moveSpeed;
-        this.player.animTimer += dt;
 
+        this.player.animTimer += dt;
         if (this.player.animTimer > 0.1) {
             this.player.animTimer = 0;
             this.player.animFrame = (this.player.animFrame + 1) % 4;
@@ -301,7 +409,7 @@ export class OverworldController extends BaseController {
         if (this.player.moveProgress >= 1) {
             const overshoot = this.player.moveProgress - 1;
             this.finishMove();
-
+            
             if (this.player.isMoving) {
                 this.player.moveProgress = overshoot;
                 this.player.x = this.player.sourceX + (this.player.destX - this.player.sourceX) * this.player.moveProgress;
@@ -324,12 +432,12 @@ export class OverworldController extends BaseController {
         gameState.player.direction = this.player.direction;
 
         const stepOnObj = this.worldManager.getObjectAt(gameState.player.col, gameState.player.row);
-
+        
         // --- UPDATED: Handle Walk-Over Pickups ---
         if (stepOnObj && stepOnObj.interaction?.type === 'PICKUP' && !stepOnObj.isFading) {
             this.processPickup(stepOnObj);
         }
-
+        
         // Existing Warp logic
         if (stepOnObj && stepOnObj.frames > 1 && stepOnObj.interaction?.type === 'WARP') {
             this.isLocked = true;
@@ -359,7 +467,7 @@ export class OverworldController extends BaseController {
         
         const currentHour = gameState.world.time / 60;
         const encounterData = biome.getEncounter(currentHour);
-        
+
         if (encounterData) {
             console.log(`[Overworld] Encounter triggered in ${biome.id} at hour ${Math.floor(currentHour)}: ${encounterData.id}!`);
             this.isLocked = true;
@@ -372,7 +480,7 @@ export class OverworldController extends BaseController {
 
         const difficulty = gameState.difficulty || 'normal';
         const battleData = biome.getBattle(difficulty);
-
+        
         if (!battleData) return;
 
         console.log(`[Overworld] Ambush triggered in biome: ${biome.id} on ${difficulty} difficulty!`);
@@ -382,12 +490,12 @@ export class OverworldController extends BaseController {
         this.player.animFrame = 0;
 
         const battleBgAsset = biome.getBattleBackground(currentHour);
-
         const battlePayload = {
             enemies: battleData.enemies,
             background: battleBgAsset,
             weather: gameState.world.currentWeather
         };
+        
         events.emit('START_BATTLE', battlePayload);
     }
 
@@ -395,6 +503,7 @@ export class OverworldController extends BaseController {
         const col = gameState.player.col;
         const row = gameState.player.row;
         const biome = this.worldManager.getBiomeAt(col, row);
+        
         gameState.world.currentBiome = biome.id;
 
         const activeWeather = gameState.world.currentWeather;
@@ -441,6 +550,7 @@ export class OverworldController extends BaseController {
 
     getTrackedQuests() {
         if (!gameState.quests || !gameState.quests.active) return [];
+        
         const trackedIds = gameState.quests.trackedIds || [];
         const trackedQuests = [];
 
@@ -458,7 +568,8 @@ export class OverworldController extends BaseController {
                     
                     if (obj.type === 'kill_enemy') actionText = "Defeat";
                     if (obj.type === 'obtain_item') actionText = "Collect";
-                    if (obj.type === 'craft') actionText = "Craft"; // <--- ADD THIS LINE
+                    if (obj.type === 'craft') actionText = "Craft";
+                    
                     if (obj.type === 'party_level') {
                         actionText = "Reach Level";
                         targetText = obj.targetLevel;
@@ -477,9 +588,13 @@ export class OverworldController extends BaseController {
                     };
                 });
 
-                trackedQuests.push({ title: def.name, objectives: formattedObjectives });
+                trackedQuests.push({
+                    title: def.name,
+                    objectives: formattedObjectives
+                });
             }
         }
+        
         return trackedQuests;
     }
 
@@ -499,16 +614,24 @@ export class OverworldController extends BaseController {
         const lookRow = Math.floor(targetY / TILE_SIZE);
 
         const obj = this.worldManager.getObjectAt(lookCol, lookRow);
-
+        
         // Only return it if it has an interaction and isn't currently fading
         if (obj && obj.interaction && !obj.isFading) {
             return obj;
         }
-
         return null;
     }
 
     getState() {
+        let displayFacedObject = this.getFacedObject();
+
+        // --- NEW: Hide interaction prompt if missing required harvest tool ---
+        if (displayFacedObject && displayFacedObject.interaction?.type === 'HARVEST') {
+            if (!this.hasRequiredTool(displayFacedObject.interaction.tool)) {
+                displayFacedObject = null; // Hide from UI
+            }
+        }
+
         return {
             entities: [this.player],
             camera: this.camera,
@@ -518,7 +641,11 @@ export class OverworldController extends BaseController {
             isMenuOpen: this.isMenuOpen,
             trackedQuests: this.getTrackedQuests(),
             toasts: (gameState.ui && gameState.ui.toasts) ? gameState.ui.toasts : [],
-            facedObject: this.getFacedObject()
+            facedObject: displayFacedObject, // Passes null if they lack the tool!
+            isHarvesting: this.isHarvesting,
+            harvestTimer: this.harvestTimer,
+            harvestDuration: this.harvestDuration,
+            harvestTarget: this.harvestTarget
         };
     }
 
@@ -529,12 +656,14 @@ export class OverworldController extends BaseController {
         
         this.player.x = col * TILE_SIZE;
         this.player.y = row * TILE_SIZE;
+        
         this.player.prevX = this.player.x;
         this.player.prevY = this.player.y;
         this.player.destX = this.player.x;
         this.player.destY = this.player.y;
         this.player.sourceX = this.player.x;
         this.player.sourceY = this.player.y;
+        
         this.player.isMoving = false;
         this.player.moveProgress = 0;
         
@@ -548,7 +677,7 @@ export class OverworldController extends BaseController {
         let startX, startY;
         const savedCol = gameState.player.col;
         const savedRow = gameState.player.row;
-
+        
         if (savedCol !== 0 || savedRow !== 0) {
             startX = savedCol * this.config.TILE_SIZE;
             startY = savedRow * this.config.TILE_SIZE;
