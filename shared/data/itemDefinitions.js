@@ -69,7 +69,8 @@ export const ItemDefinitions = {
         value: 20,
         icon: { col: 2, row: 0 },
         attack: { blunt: 3, slash: 3 },
-        grantedAbilities: ["slash", "strike"], 
+        grantedAbilities: ["slash", "strike"],
+        harvestTool: ["axe"],
         maxLevel: 3,
         statGrowth: {
             attack: { blunt: 2, slash: 2 }
@@ -94,6 +95,7 @@ export const ItemDefinitions = {
         icon: { col: 3, row: 0 },
         attack: { blunt: 5},
         grantedAbilities: ["strike", "cleave"], 
+        harvestTool: ["hammer"],
         maxLevel: 3,
         statGrowth: {
             attack: { blunt: 3 }
@@ -139,6 +141,7 @@ export const ItemDefinitions = {
             icon: { col: 8, row: 0 },
             attack: { slash: 5, pierce: 1 },
             grantedAbilities: ["slash"],
+            harvestTool: ["sickle"],
             maxLevel: 3,
             statGrowth: {
                 attack: { slash: 3, pierce: 1 }

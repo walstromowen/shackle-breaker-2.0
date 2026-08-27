@@ -27,8 +27,8 @@ export const MAP_OBJECTS_DEFINITIONS = {
     DESERT_SKULL:     { spriteX: 3, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
 
     // --- BUILDINGS ---
-    SMALL_HOUSE_1: { spriteX: 0, spriteY: 7, width: 4, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 2, w: 4, h: 1 } },
     ABANDONED_HOUSE_1: { spriteX: 5, spriteY: 7, width: 4, height: 4, isSolid: true, isGround: false, isAnchor: true, hitboxes: [{ xOffset: 0, yOffset: 0, w: 1, h: 2 }, { xOffset: 1, yOffset: -1, w: 1, h: 1 }, { xOffset: 2, yOffset: -1, w: 2, h: 2 }] },
+    ABANDONED_HOUSE_2: { spriteX: 9, spriteY: 7, width: 4, height: 4, isSolid: true, isGround: false, isAnchor: true, hitboxes: [{ xOffset: 0, yOffset: 0, w: 1, h: 2 }, { xOffset: 1, yOffset: -1, w: 1, h: 1 }, { xOffset: 2, yOffset: -1, w: 2, h: 2 }] },
 
     // --- STRUCTURES / FENCES ---
     WOODEN_FENCE_H: { spriteX: 5, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
@@ -48,10 +48,14 @@ export const MAP_OBJECTS_DEFINITIONS = {
     SMALL_CACTUS_1: { spriteX: 1, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
     SMALL_CACTUS_2: { spriteX: 2, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
     STRANGE_OBELISK: { spriteX: 1, spriteY: 4, width: 2, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'strange_obelisk', isRepeatable: false } },
-    WILD_HERBS: { spriteX: 9, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'wild_herbs', isRepeatable: false } },
+    
+    // --- HERBS ---
+    HEALING_HERB: { spriteX: 9, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'PICKUP', itemId: 'healing_herb', amount: 1 } },
+    INVIGORATING_HERB: { spriteX: 9, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'PICKUP', itemId: 'invigorating_herb', amount: 1 } },
+    ILLUMINATING_HERB: { spriteX: 9, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'PICKUP', itemId: 'illuminating_herb', amount: 1 } },
 
     // --- CRAFTING STATIONS ---
-    ANVIL: { spriteX: 7, spriteY: 4, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'CRAFTING_STATION', station: 'anvil', title: 'Anvil' } },
+    ANVIL: { spriteX: 6, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'CRAFTING_STATION', station: 'anvil', title: 'Anvil' } },
     FORGE: { spriteX: 8, spriteY: 6, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'CRAFTING_STATION', station: 'forge', title: 'Forge' }, light: { hasLight: true, radius: 4, color: '255, 120, 50', maxAlpha: 0.6, flickerSpeed: 0.1, flickerAmp: 0.2 } },
     CARPENTERS_BENCH: { spriteX: 7, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'CRAFTING_STATION', station: 'carpenters_bench', title: "Carpenter's Bench" } },
     STONE_BANKER: { spriteX: 9, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'CRAFTING_STATION', station: 'stone_banker', title: 'Stone Banker' } },

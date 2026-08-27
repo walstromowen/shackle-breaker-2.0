@@ -29,13 +29,19 @@ export const QuestSystem = {
                     
                     // Route to your existing, untouched QuestModel!
                     const progressed = QuestModel.updateProgress(gameState, questId, objective.id, amount);
-                    
                     if (progressed) {
-                        events.emit('QUEST_PROGRESS_UPDATED', { 
-                            questId, 
+                        const isComplete = QuestModel.checkCompletion(gameState, questId);
+                        events.emit('QUEST_PROGRESS_UPDATED', {
+                            questId,
                             objectiveId: objective.id,
-                            isComplete: QuestModel.checkCompletion(gameState, questId)
+                            isComplete: isComplete
                         });
+
+                        // ✅ Actually complete the quest and distribute rewards!
+                        if (isComplete) {
+                            QuestModel.completeQuest(gameState, questId);
+                            events.emit('QUEST_COMPLETED', { questId });
+                        }
                     }
                 }
             });

@@ -24,23 +24,24 @@ export const BIOME_DEFINITIONS = {
         }, 
         mapObjects: { 
             [CONFIG.TILE_TYPES.LAYER_3]: [ 
-                { chance: 0.60, id: 'STRANGE_OBELISK' }, // Increased significantly to make it very common
-                { chance: 0.040, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] }
+                // Spawns on Layer 3 only when the noise threshold is 0.50 or higher
+                { chance: 0.40, rangeStart: 0.50, id: 'STRANGE_OBELISK' }, 
+                { chance: 0.005, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] } 
             ], 
             [CONFIG.TILE_TYPES.LAYER_2]: [ 
-                { chance: 0.020, id: 'WILD_HERBS' }, 
+                { chance: 0.020, pool: ['HEALING_HERB', 'INVIGORATING_HERB', 'ILLUMINATING_HERB'] }, 
                 { chance: 0.014, id: 'OAK_TREE_1', footprint: 2 }, 
                 { chance: 0.044, id: 'PINE_TREE' }, 
-                { chance: 0.192, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] }, 
+                { chance: 0.020, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] }, 
                 { chance: 0.20, rangeStart: 0.10, pool: ['TULIPS_RED', 'TULIPS_WHITE', 'TULIPS_ORANGE'] }, 
                 { chance: 0.70, rangeStart: 0.30, pool: ['GRASS_COVERAGE_1', 'GRASS_COVERAGE_2', 'GRASS_COVERAGE_3'] } 
             ], 
             [CONFIG.TILE_TYPES.LAYER_1]: [ 
-                { chance: 0.330, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] } 
+                { chance: 0.030, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] } 
             ], 
             _WALLS: [ 
                 { chance: 0.05, id: 'PINE_TREE' }, 
-                { chance: 0.230, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] }, 
+                { chance: 0.020, pool: ['SMALL_ROCTS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] }, 
                 { chance: 0.30, rangeStart: 0.15, pool: ['GRASS_COVERAGE_1', 'GRASS_COVERAGE_2'] } 
             ] 
         }, 
@@ -50,7 +51,7 @@ export const BIOME_DEFINITIONS = {
             pools: [ 
                 { weight: 10, id: 'wild_hunt', allowedTimes: ['day', 'dusk', 'night'] }, 
                 { weight: 10, id: 'wounded_mutt', allowedTimes: ['day', 'dusk', 'night'] }, 
-                { weight: 20, id: 'a_disturbing_sight', allowedTimes: ['day', 'dusk', 'night'] } , 
+                { weight: 20, id: 'a_disturbing_sight', allowedTimes: ['day', 'dusk', 'night'] }, 
                 { weight: 20, id: 'suspicious_merchant', allowedTimes: ['day', 'dusk', 'night'] } 
             ] 
         }, 
@@ -63,6 +64,7 @@ export const BIOME_DEFINITIONS = {
             } 
         } 
     }, 
+    
     DESERT: { 
         id: 'DESERT', 
         defaultLootTable: 'desert', 
@@ -97,7 +99,7 @@ export const BIOME_DEFINITIONS = {
                 { chance: 0.030, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] } 
             ], 
             [CONFIG.TILE_TYPES.LAYER_2]: [ 
-                { chance: 0.001, id: 'DESERT_SKULL' }, // Decreased from 0.015 to be significantly less common
+                { chance: 0.001, id: 'DESERT_SKULL' }, 
                 { chance: 0.040, id: 'SMALL_CACTUS_1' }, 
                 { chance: 0.050, id: 'SMALL_CACTUS_2' }, 
                 { chance: 0.065, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] }, 
@@ -129,6 +131,7 @@ export const BIOME_DEFINITIONS = {
             } 
         } 
     }, 
+    
     HOUSE_INTERIOR: { 
         id: 'HOUSE_INTERIOR', 
         defaultLootTable: 'house', 

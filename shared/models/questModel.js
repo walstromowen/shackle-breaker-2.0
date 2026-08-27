@@ -32,6 +32,11 @@ export const QuestModel = {
                         if (qualifyingMembersCount > 0) {
                             this.updateProgress(state, questId, obj.id, qualifyingMembersCount);
                         }
+                    } else if (obj.type === 'craft') {
+                        const hasCraftedItem = state.party.inventory.some(i => i.defId === obj.targetId);
+                        if (hasCraftedItem) {
+                            this.updateProgress(state, questId, obj.id, 1);
+                        }
                     }
                 });
             }

@@ -96,7 +96,9 @@ export class ItemModel {
 
     // Resource modifiers (maxHp, maxStamina, etc.)
     get resources() { return this.definition.resources || {}; }
-
+    get harvestTool() {
+      return this.definition.harvestTool || [];
+  }
     // Core attributes (strength, intelligence, etc.)
     get attributes() { return this.definition.attributes || {}; }
 

@@ -94,14 +94,14 @@ export const QuestDefinitions = {
     title: 'The Blacksmith\'s Test',
     description: 'Prove your worth by forging an Iron Sword.',
     objectives: [
-      {
-        type: 'craft',           // Tells the QuestModel to listen for 'ITEM_CRAFTED'
-        targetId: 'iron_sword',  // The item ID to check against
-        requiredQty: 1,
-        currentQty: 0
-      }
+        { 
+            type: 'craft',
+            targetId: 'iron_sword', 
+            amount: 1 // <-- Replaced requiredQty: 1
+            // Removed currentQty: 0
+        }
     ]
-  },
+},
 
     // ========================================================
     // TRAVELER QUESTLINE

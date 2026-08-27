@@ -2,10 +2,14 @@
 Roguelike turnbased adventure game based on the Shackle Breaker story by Owen Walstrom
 
 # PLANNED FEATURES
-
+harvestable items from tools
 hand crafted areas
 autenticaiton (last)
-auto pickup without encounter on overworld
+minimap
+waypoints
+more dynamic world generation
+sprinting
+party rendering on overworld
 
 # REFINEMENTS
 enhance battle animations / polish
@@ -17,6 +21,7 @@ better text style
 targeting ui improvements for splash attacks with mouse
 global texture/resolution upgrade
 map tile connections / new tile connection system gamemaker
+dynamic lighting system
 
 # Bugs
 shop system and character summary stacking equipables
