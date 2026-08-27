@@ -441,7 +441,6 @@ export class OverworldController extends BaseController {
 
     getTrackedQuests() {
         if (!gameState.quests || !gameState.quests.active) return [];
-
         const trackedIds = gameState.quests.trackedIds || [];
         const trackedQuests = [];
 
@@ -456,9 +455,10 @@ export class OverworldController extends BaseController {
                     
                     let actionText = "Objective";
                     let targetText = obj.targetId;
-
+                    
                     if (obj.type === 'kill_enemy') actionText = "Defeat";
                     if (obj.type === 'obtain_item') actionText = "Collect";
+                    if (obj.type === 'craft') actionText = "Craft"; // <--- ADD THIS LINE
                     if (obj.type === 'party_level') {
                         actionText = "Reach Level";
                         targetText = obj.targetLevel;
@@ -477,10 +477,7 @@ export class OverworldController extends BaseController {
                     };
                 });
 
-                trackedQuests.push({
-                    title: def.name,
-                    objectives: formattedObjectives
-                });
+                trackedQuests.push({ title: def.name, objectives: formattedObjectives });
             }
         }
         return trackedQuests;

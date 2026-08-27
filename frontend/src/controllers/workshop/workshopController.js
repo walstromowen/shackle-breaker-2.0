@@ -6,6 +6,8 @@ import { ItemDefinitions } from '../../../../shared/data/itemDefinitions.js';
 import { InventorySystem } from '../../../../shared/systems/inventorySystem.js';
 import { ItemUpgradeSystem } from '../../../../shared/systems/itemUpgradeSystem.js';
 import { ScrollManager } from '../../ui/scrollManager.js';
+import { QuestDefinitions } from '../../../../shared/data/questDefinitions.js';
+import { QuestModel } from '../../../../shared/models/questModel.js';
 
 export class WorkshopController extends BaseController {
     constructor(input) {
@@ -159,29 +161,50 @@ export class WorkshopController extends BaseController {
     }
 
     executeCrafting() {
-    // 1. Deduct Currency
-    gameState.party.currency -= (this.selectedRecipe.currencyCost || 0);
+        // 1. Deduct Currency
+        gameState.party.currency -= (this.selectedRecipe.currencyCost || 0);
 
-    // 2. Remove Materials
-    for (const [matId, amountNeeded] of Object.entries(this.selectedRecipe.materials || {})) {
-      InventorySystem.removeItem(matId, amountNeeded);
+        // 2. Remove Materials
+        for (const [matId, amountNeeded] of Object.entries(this.selectedRecipe.materials || {})) {
+            InventorySystem.removeItem(matId, amountNeeded);
+        }
+
+        // 3. Add Crafted Item
+        const outputId = this.selectedRecipe.outputItemId;
+        const outputQty = this.selectedRecipe.outputQuantity || 1;
+        InventorySystem.addItem(outputId, outputQty);
+
+        // 4. EMIT CRAFTING EVENT
+        events.emit('ITEM_CRAFTED', { itemId: outputId, quantity: outputQty });
+
+        // ---> NEW: DIRECT QUEST PROGRESSION FOR CRAFTING <---
+        if (gameState.quests && gameState.quests.active) {
+            Object.keys(gameState.quests.active).forEach(questId => {
+                const questDef = QuestDefinitions[questId];
+                if (questDef) {
+                    questDef.objectives.forEach(obj => {
+                        // Check if this quest needs THIS specific item to be crafted
+                        if (obj.type === 'craft' && obj.targetId === outputId) {
+                            const didUpdate = QuestModel.updateProgress(gameState, questId, obj.id, outputQty);
+                            
+                            // Check if this craft completed the quest
+                            if (didUpdate && QuestModel.checkCompletion(gameState, questId)) {
+                                console.log(`[Workshop] Quest Ready to Turn In: ${questDef.name}!`);
+                                // If you want quests to auto-complete and give rewards instantly instead 
+                                // of going to the Journal to collect them, uncomment the line below:
+                                // QuestModel.completeQuest(gameState, questId);
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        // 5. Refresh UI & Play Sound
+        this.checkCraftability();
+        this.updateHitboxes(this.currentHitboxes);
+        events.emit('PLAY_SOUND', { id: 'crafting_success' });
     }
-
-    // 3. Add Crafted Item
-    const outputId = this.selectedRecipe.outputItemId;
-    const outputQty = this.selectedRecipe.outputQuantity || 1;
-    InventorySystem.addItem(outputId, outputQty);
-
-    // 4. EMIT CRAFTING EVENT FOR QUEST TRACKING
-    events.emit('ITEM_CRAFTED', { 
-        itemId: outputId, 
-        quantity: outputQty 
-    });
-
-    this.checkCraftability();
-    this.updateHitboxes(this.currentHitboxes);
-    events.emit('PLAY_SOUND', { id: 'crafting_success' });
-  }
 
     // --- UPGRADING LOGIC ---
     checkUpgradeability() {

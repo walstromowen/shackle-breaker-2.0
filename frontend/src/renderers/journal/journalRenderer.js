@@ -190,23 +190,24 @@ export class JournalRenderer {
         const questState = state.quests.active[state.displayQuestId];
 
         def.objectives.forEach(obj => {
-            const progress = questState ? (questState.progress[obj.id] || 0) : (obj.amount || 1);
-            const req = obj.amount || 1;
-            const isDone = progress >= req || state.activeTab === 'completed';
+        const progress = questState ? (questState.progress[obj.id] || 0) : (obj.amount || 1);
+        const req = obj.amount || 1;
+        const isDone = progress >= req || state.activeTab === 'completed';
 
-            let actionText = "Objective";
-            let targetText = obj.targetId;
+        let actionText = "Objective";
+        let targetText = obj.targetId;
 
-            if (obj.type === 'kill_enemy') actionText = "Defeat";
-            if (obj.type === 'obtain_item') actionText = "Collect";
-            if (obj.type === 'party_level') {
-                actionText = "Reach Level";
-                targetText = obj.targetLevel;
-            }
+        if (obj.type === 'kill_enemy') actionText = "Defeat";
+        if (obj.type === 'obtain_item') actionText = "Collect";
+        if (obj.type === 'craft') actionText = "Craft"; // <--- ADD THIS LINE
+        if (obj.type === 'party_level') {
+            actionText = "Reach Level";
+            targetText = obj.targetLevel;
+        }
 
-            if (typeof targetText === 'string') {
-                targetText = Formatting.capitalize(targetText.split('_').join(' '));
-            }
+        if (typeof targetText === 'string') {
+            targetText = Formatting.capitalize(targetText.split('_').join(' '));
+        }
 
             const color = isDone ? UITheme.colors.success : UITheme.colors.textMain;
             const checkbox = isDone ? "[X]" : "[ ]";
