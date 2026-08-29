@@ -27,7 +27,7 @@ export const QuestDefinitions = {
         description: "On examination of your shackles, you notice there is no keyhole. Your spirit weighs as heavy on you as the shackles themselves. Perhaps one of the scholars can help you, if there are any left.",
         objectives: [
             { id: "obj_reach_level_5", type: "party_level", targetLevel: 5, amount: 1 },
-            { id: "obj_kill_mad_mages", type: "kill_enemy", targetId: "MAD_MAGE", amount: 3 }
+            { id: "obj_kill_magic_addicts", type: "kill_enemy", targetId: "MAGIC_ADDICT", amount: 3 }
         ],
         rewards: { exp: 150, currency: 150, quests: ["shackled4"] }
     },
@@ -79,7 +79,7 @@ export const QuestDefinitions = {
         description: "You notice some of the afflicted appear to exhibit less madness than others, perhaps you can help one of them.",
         objectives: [
             { id: "obj_cure_madmen", type: "kill_enemy", targetId: "MAD_MAN", amount: 2 },
-            { id: "obj_cure_madmage", type: "kill_enemy", targetId: "MAD_MAGE", amount: 2 },
+            { id: "obj_cure_madmage", type: "kill_enemy", targetId: "MAGIC_ADDICT", amount: 2 },
             { id: "obj_cure_madmen_rotter", type: "kill_enemy", targetId: "ROTTER", amount: 2 }
         ],
         rewards: { 
@@ -223,7 +223,7 @@ export const QuestDefinitions = {
         name: "A Dangerous Hypothesis",
         description: "You and your colleagues abandoned traditional studies for magic. One colleague hypothesized that magic was life itself. Today, he proved it by going rabid and attacking you. Subdue him.",
         objectives: [
-            { id: "obj_sch1", type: "kill_enemy", targetId: "MAD_MAGE", amount: 1 }
+            { id: "obj_sch1", type: "kill_enemy", targetId: "MAGIC_ADDICT", amount: 1 }
         ],
         rewards: { exp: 50, currency: 20, quests: ["bg_scholar_2"] }
     },
@@ -241,7 +241,7 @@ export const QuestDefinitions = {
         name: "A Flawed Science",
         description: "The horrifying truth reveals itself. The energy from the artifact is inherently corrosive to the human mind. Magic isn't a new science; it is a sickness driving the scholars mad.",
         objectives: [
-            { id: "obj_sch3", type: "kill_enemy", targetId: "MAD_MAGE", amount: 2 }
+            { id: "obj_sch3", type: "kill_enemy", targetId: "MAGIC_ADDICT", amount: 2 }
         ],
         rewards: { 
             exp: 150, 
@@ -352,7 +352,7 @@ export const QuestDefinitions = {
         name: "A Cursed Proximity",
         description: "Even out here, the static persists. The artifact radiates a corrupting frequency. The 'magic' is a curse, and anyone who draws near to it is doomed to lose their mind.",
         objectives: [
-            { id: "obj_her3", type: "kill_enemy", targetId: "MAD_MAGE", amount: 1 }
+            { id: "obj_her3", type: "kill_enemy", targetId: "MAGIC_ADDICT", amount: 1 }
         ],
         rewards: { 
             exp: 150, 
@@ -457,7 +457,7 @@ export const QuestDefinitions = {
         name: "Failing Treatments",
         description: "The concoction wears off quickly. You track down the scholar who 'treated' you, only to find him violently thrashing in the dirt, madder than his patients. Defeat him.",
         objectives: [
-            { id: "obj_dis2", type: "kill_enemy", targetId: "MAD_MAGE", amount: 1 }
+            { id: "obj_dis2", type: "kill_enemy", targetId: "MAGIC_ADDICT", amount: 1 }
         ],
         rewards: { exp: 100, currency: 30, quests: ["bg_diseased_3"] }
     },

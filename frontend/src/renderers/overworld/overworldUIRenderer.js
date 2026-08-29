@@ -1,5 +1,7 @@
 import { CanvasUI } from '../../ui/canvasUI.js';
 import { UITheme } from '../../ui/UITheme.js';
+import { ItemDefinitions } from '../../../../shared/data/itemDefinitions.js';
+import { ENTITY_DEFINITIONS } from '../../../../shared/data/entityDefinitions.js';
 
 export class OverworldUIRenderer {
     constructor(config, loader) {
@@ -293,7 +295,7 @@ export class OverworldUIRenderer {
         const titleHeight = 32;
         const lineHeight = 26;
         const questGap = 20;
-
+        
         let totalHeight = innerPadding;
         for (const quest of quests) {
             totalHeight += titleHeight;
@@ -304,47 +306,79 @@ export class OverworldUIRenderer {
         }
 
         ui.drawPanel(startX, padding, trackerWidth, totalHeight, "rgba(25, 23, 20, 0.6)");
-
         let currentY = padding + innerPadding;
+
         for (const quest of quests) {
+            const questDisplayName = quest.name || quest.title || "Unknown Quest";
+
             ui.drawText(
-                quest.title || "Unknown Quest",
-                startX + 16,
-                currentY + (titleHeight / 2),
-                UITheme.fonts.body,
-                UITheme.colors.states.hoverText || "#FFD700",
-                "left",
+                questDisplayName, 
+                startX + 16, 
+                currentY + (titleHeight / 2), 
+                UITheme.fonts.body, 
+                UITheme.colors.states.hoverText || "#FFD700", 
+                "left", 
                 "middle"
             );
-            
             currentY += titleHeight;
-            
+
             if (quest.objectives) {
                 for (const obj of quest.objectives) {
                     const progressText = `${obj.current}/${obj.required}`;
                     const isComplete = obj.current >= obj.required;
                     const textColor = isComplete ? UITheme.colors.success : UITheme.colors.textMain;
                     
+                    let descText = obj.description;
+
+                    // Dynamically resolve target names if there is no hardcoded description
+                    if (!descText && obj.type) {
+                        let actionText = "Objective";
+                        let targetText = obj.targetId;
+
+                        if (obj.type === 'kill_enemy') {
+                            actionText = "Defeat";
+                            const entityDef = ENTITY_DEFINITIONS ? (ENTITY_DEFINITIONS[obj.targetId] || ENTITY_DEFINITIONS[String(obj.targetId).toUpperCase()]) : null;
+                            targetText = entityDef?.name || targetText;
+                        } else if (obj.type === 'obtain_item') {
+                            actionText = "Collect";
+                            const itemDef = ItemDefinitions ? (ItemDefinitions[obj.targetId] || ItemDefinitions[String(obj.targetId).toUpperCase()]) : null;
+                            targetText = itemDef?.name || targetText;
+                        } else if (obj.type === 'craft') {
+                            actionText = "Craft";
+                            const itemDef = ItemDefinitions ? (ItemDefinitions[obj.targetId] || ItemDefinitions[String(obj.targetId).toUpperCase()]) : null;
+                            targetText = itemDef?.name || targetText;
+                        } else if (obj.type === 'party_level') {
+                            actionText = "Reach Level";
+                            targetText = obj.targetLevel;
+                        }
+
+                        // Fallback formatting if definitions fail to load
+                        if (typeof targetText === 'string' && targetText === obj.targetId) {
+                            targetText = targetText.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+                        }
+
+                        descText = `${actionText} ${targetText}`;
+                    }
+
                     ui.drawText(
-                        `- ${obj.description}`,
-                        startX + 24,
-                        currentY + (lineHeight / 2),
-                        UITheme.fonts.cardSmall,
-                        textColor,
-                        "left",
+                        `- ${descText || "Objective"}`, 
+                        startX + 24, 
+                        currentY + (lineHeight / 2), 
+                        UITheme.fonts.cardSmall, 
+                        textColor, 
+                        "left", 
                         "middle"
                     );
                     
                     ui.drawText(
-                        progressText,
-                        startX + trackerWidth - 16,
-                        currentY + (lineHeight / 2),
-                        UITheme.fonts.cardSmall,
-                        textColor,
-                        "right",
+                        progressText, 
+                        startX + trackerWidth - 16, 
+                        currentY + (lineHeight / 2), 
+                        UITheme.fonts.cardSmall, 
+                        textColor, 
+                        "right", 
                         "middle"
                     );
-                    
                     currentY += lineHeight;
                 }
             }

@@ -550,7 +550,6 @@ export class OverworldController extends BaseController {
 
     getTrackedQuests() {
         if (!gameState.quests || !gameState.quests.active) return [];
-        
         const trackedIds = gameState.quests.trackedIds || [];
         const trackedQuests = [];
 
@@ -563,38 +562,20 @@ export class OverworldController extends BaseController {
                     const current = questState.progress[obj.id] || 0;
                     const required = obj.amount || 1;
                     
-                    let actionText = "Objective";
-                    let targetText = obj.targetId;
-                    
-                    if (obj.type === 'kill_enemy') actionText = "Defeat";
-                    if (obj.type === 'obtain_item') actionText = "Collect";
-                    if (obj.type === 'craft') actionText = "Craft";
-                    
-                    if (obj.type === 'party_level') {
-                        actionText = "Reach Level";
-                        targetText = obj.targetLevel;
-                    }
-
-                    if (typeof targetText === 'string') {
-                        targetText = targetText.split('_')
-                            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                            .join(' ');
-                    }
-
+                    // Pass the raw data so the UIRenderer can resolve the real names 
+                    // using ENTITY_DEFINITIONS and ItemDefinitions
                     return {
-                        description: `${actionText} ${targetText}`,
+                        description: obj.description, // Only pass if hardcoded in the quest def
+                        type: obj.type,
+                        targetId: obj.targetId,
+                        targetLevel: obj.targetLevel,
                         current: current,
                         required: required
                     };
                 });
-
-                trackedQuests.push({
-                    title: def.name,
-                    objectives: formattedObjectives
-                });
+                trackedQuests.push({ title: def.name, objectives: formattedObjectives });
             }
         }
-        
         return trackedQuests;
     }
 

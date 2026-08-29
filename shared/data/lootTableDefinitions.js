@@ -226,7 +226,7 @@ export const LootTableDefinitions = {
             { id: "dagger", dropRate: 0.10 }
         ]
     },
-    "mad_mage_drops": {
+    "magic_addict_drops": {
         type: "independent",
         items: [
             { id: "healing_herb", dropRate: 0.1 },
