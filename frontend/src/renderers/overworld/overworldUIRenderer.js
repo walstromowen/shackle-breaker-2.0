@@ -155,79 +155,75 @@ export class OverworldUIRenderer {
     }
 
     drawInteractionTooltip(ctx, ui, canvas, facedObject) {
-        if (!facedObject) return;
+    if (!facedObject) return;
 
-        // --- NEW: Dynamic Interaction Text ---
-        let text = "Interact"; // Default fallback
-        
-        if (facedObject.interaction && facedObject.interaction.type) {
-            switch (facedObject.interaction.type.toUpperCase()) {
-                case 'PICKUP': 
-                    text = "Pick Up"; 
-                    break;
-                case 'HARVEST': 
-                    text = "Harvest"; 
-                    break;
-                case 'WARP': 
-                    text = "Enter"; 
-                    break;
-                case 'CRAFTING_STATION':
-                case 'WORKSHOP': 
-                    text = "Craft"; 
-                    break;
-                default:
-                    // If it's something like 'TALK' or 'INSPECT', just title-case it:
-                    text = facedObject.interaction.type.charAt(0).toUpperCase() + 
-                           facedObject.interaction.type.slice(1).toLowerCase();
-                    break;
-            }
-        }
-
-        const shortcut = "I";
-        const margin = 24;
-        const height = 44;
-        const badgeSize = 26;
-        const padding = 12;
-
-        ctx.save();
-        ctx.font = UITheme.fonts.body || "16px sans-serif";
-        const textWidth = ctx.measureText(text).width;
-
-        const gap = 10;
-        const width = padding + badgeSize + gap + textWidth + padding;
-
-        const startX = canvas.width - width - margin;
-        const startY = canvas.height - height - margin;
-
-        const bgColor = "rgba(65, 58, 50, 0.8)";
-        ui.drawPanel(startX, startY, width, height, bgColor);
-
-        const badgeX = startX + padding;
-        const badgeY = startY + (height / 2) - (badgeSize / 2);
-
-        ui.drawPanel(badgeX, badgeY, badgeSize, badgeSize, "rgba(0, 0, 0, 0.7)");
-        ui.drawText(
-            shortcut,
-            badgeX + (badgeSize / 2),
-            badgeY + (badgeSize / 2),
-            UITheme.fonts.cardSmall || "12px sans-serif",
-            UITheme.colors.textMuted || "#AAAAAA",
-            "center",
-            "middle"
-        );
-
-        const textX = badgeX + badgeSize + gap;
-        ui.drawText(
-            text,
-            textX,
-            startY + (height / 2),
-            UITheme.fonts.body || "16px sans-serif",
-            UITheme.colors.textMain || "#FFFFFF",
-            "left",
-            "middle"
-        );
-        ctx.restore();
+    // --- NEW: Dynamic Interaction Text ---
+    let text = "Interact"; // Default fallback
+    if (facedObject.interaction && facedObject.interaction.type) {
+      switch (facedObject.interaction.type.toUpperCase()) {
+        case 'PICKUP': text = "Pick Up"; break;
+        case 'HARVEST': text = "Harvest"; break;
+        case 'WARP': text = "Enter"; break;
+        case 'CRAFTING_STATION':
+        case 'WORKSHOP': text = "Craft"; break;
+        default:
+          text = facedObject.interaction.type.charAt(0).toUpperCase() + facedObject.interaction.type.slice(1).toLowerCase();
+          break;
+      }
     }
+
+    const shortcut = "SPACE";
+    const margin = 24;
+    const height = 44;
+    const badgeHeight = 26; 
+    const padding = 12;
+
+    ctx.save();
+    
+    // 1. Measure the shortcut text to dynamically size the black box
+    ctx.font = UITheme.fonts.cardSmall || "12px sans-serif";
+    const shortcutWidth = ctx.measureText(shortcut).width;
+    const badgeWidth = Math.max(52, shortcutWidth + 16); // at least 52px wide, plus 8px padding on each side
+
+    // 2. Measure the main text
+    ctx.font = UITheme.fonts.body || "16px sans-serif";
+    const textWidth = ctx.measureText(text).width;
+
+    const gap = 10;
+    const width = padding + badgeWidth + gap + textWidth + padding;
+    const startX = canvas.width - width - margin;
+    const startY = canvas.height - height - margin;
+
+    const bgColor = "rgba(65, 58, 50, 0.8)";
+    ui.drawPanel(startX, startY, width, height, bgColor);
+
+    const badgeX = startX + padding;
+    const badgeY = startY + (height / 2) - (badgeHeight / 2);
+    ui.drawPanel(badgeX, badgeY, badgeWidth, badgeHeight, "rgba(0, 0, 0, 0.7)");
+
+    ui.drawText(
+      shortcut,
+      badgeX + (badgeWidth / 2),
+      badgeY + (badgeHeight / 2) + 1, // +1 minor adjustment to visually center text
+      UITheme.fonts.cardSmall || "12px sans-serif",
+      UITheme.colors.textMuted || "#AAAAAA",
+      "center",
+      "middle"
+    );
+
+    const textX = badgeX + badgeWidth + gap;
+    ui.drawText(
+      text,
+      textX,
+      startY + (height / 2),
+      UITheme.fonts.body || "16px sans-serif",
+      UITheme.colors.textMain || "#FFFFFF",
+      "left",
+      "middle"
+    );
+
+    ctx.restore();
+  }
 
     drawToasts(ctx, ui, toasts) {
         const now = performance.now();

@@ -145,7 +145,7 @@ export class MapRenderer {
                         const aboveDepth = TILE_DEPTH[foundWall.id] || 0;
                         if (aboveDepth > depth) {
                             for (let d = 1; d <= foundDist; d++) {
-                                const faceDrawY = Math.floor(dy - ((foundDist - d) * TILE_SIZE * scale));
+                                const faceDrawY = Math.floor(((row - (foundDist - d)) * TILE_SIZE - camY) * scale);
                                 const isFoot = (d === foundDist) || (depth >= TILE_DEPTH[TILE_TYPES.LAYER_3]);
                                 const faceIdx = this.getFaceIndex(foundWall.mask, isFoot);
                                 
@@ -461,63 +461,56 @@ export class MapRenderer {
     }
 
     collectWallFaces(worldManager, bounds, camera, renderIdx) {
-        const { TILE_TYPES, TILE_DEPTH, WALL_HEIGHT, TILE_SIZE, GAME_SCALE } = this.config;
-        const scale = GAME_SCALE * this.resScale;
-        // Fix to align exactly with new floor/ceil rules
-        const drawSize = Math.ceil(TILE_SIZE * scale); 
-        const camX = camera.x;
-        const camY = camera.y;
-        const h = WALL_HEIGHT || 2;
+    const { TILE_TYPES, TILE_DEPTH, WALL_HEIGHT, TILE_SIZE, GAME_SCALE } = this.config;
+    const scale = GAME_SCALE * this.resScale;
+    const camX = camera.x;
+    const camY = camera.y;
+    const h = WALL_HEIGHT || 2;
 
-        for (let row = bounds.startRow; row < bounds.endRow; row++) {
-            for (let col = bounds.startCol; col < bounds.endCol; col++) {
-                const tileData = worldManager.getTileData(col, row);
-                if (!tileData.isWall) continue;
+    for (let row = bounds.startRow; row < bounds.endRow; row++) {
+        for (let col = bounds.startCol; col < bounds.endCol; col++) {
+            const tileData = worldManager.getTileData(col, row);
+            if (!tileData.isWall) continue;
 
-                const myDepth = TILE_DEPTH[tileData.id];
-                const dx = Math.floor((col * TILE_SIZE - camX) * scale);
-                const dy = Math.floor((row * TILE_SIZE - camY) * scale);
+            const myDepth = TILE_DEPTH[tileData.id];
+            const dx = Math.floor((col * TILE_SIZE - camX) * scale);
 
-                let stairBlocksWall = false;
-                for (let d = 1; d <= h; d++) {
-                    const checkTile = worldManager.getTileData(col, row + d);
-                    if (checkTile) {
-                        const obj = checkTile.occupyingObject || checkTile.object;
-                        if (obj && obj.isStairs) {
-                            stairBlocksWall = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (stairBlocksWall) continue; 
-
-                for (let d = 1; d <= h; d++) {
-                    const belowTileData = worldManager.getTileData(col, row + d);
-                    if (!belowTileData) break;
-                    
-                    const belowDepth = TILE_DEPTH[belowTileData.id] || 0;
-                    if (belowDepth >= myDepth) break;
-
-                    const isFoot = (d === h) || (belowDepth >= TILE_DEPTH[TILE_TYPES.LAYER_3]);
-                    const faceIdx = this.getFaceIndex(tileData.mask, isFoot);
-
-                    if (!this.renderList[renderIdx]) this.renderList[renderIdx] = {};
-                    const item = this.renderList[renderIdx++];
-
-                    item.y = ((row + d) * TILE_SIZE * scale); 
-                    item.type = 'WALL_FACE';
-                    item.data = { id: tileData.id, idx: faceIdx }; 
-                    item.x = dx;
-                    item.dy = dy + (d * drawSize);
-                    item.sheetId = tileData.sheetId; 
-
-                    if (isFoot) break;
+            let stairBlocksWall = false;
+            for (let d = 1; d <= h; d++) {
+                const checkTile = worldManager.getTileData(col, row + d);
+                if (checkTile) {
+                    const obj = checkTile.occupyingObject || checkTile.object;
+                    if (obj && obj.isStairs) { stairBlocksWall = true; break; }
                 }
             }
+            if (stairBlocksWall) continue;
+
+            for (let d = 1; d <= h; d++) {
+                const belowTileData = worldManager.getTileData(col, row + d);
+                if (!belowTileData) break;
+                const belowDepth = TILE_DEPTH[belowTileData.id] || 0;
+                if (belowDepth >= myDepth) break;
+
+                const isFoot = (d === h) || (belowDepth >= TILE_DEPTH[TILE_TYPES.LAYER_3]);
+                const faceIdx = this.getFaceIndex(tileData.mask, isFoot);
+
+                // Recompute straight from world coords instead of dy + d*drawSize
+                const faceDy = Math.floor(((row + d) * TILE_SIZE - camY) * scale);
+
+                if (!this.renderList[renderIdx]) this.renderList[renderIdx] = {};
+                const item = this.renderList[renderIdx++];
+                item.y = ((row + d) * TILE_SIZE * scale);
+                item.type = 'WALL_FACE';
+                item.data = { id: tileData.id, idx: faceIdx };
+                item.x = dx;
+                item.dy = faceDy;
+                item.sheetId = tileData.sheetId;
+                if (isFoot) break;
+            }
         }
-        return renderIdx;
     }
+    return renderIdx;
+}
 
     getFaceIndex(mask, isFoot) {
         const { LEFT, RIGHT } = this.BITS;

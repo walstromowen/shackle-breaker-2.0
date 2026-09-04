@@ -159,6 +159,395 @@ Root
 └── README.md
 
 
+//Tile set generator:
+
+I need a Python script using the `Pillow` (PIL) library to programmatically generate a 2D top-down tileset for a game. The tileset should be a dark fantasy "Dark Souls" inspired plains biome. 
+
+The final image must be exactly 272x272 pixels, containing an 8x8 grid of tiles. Each tile is 32x32 pixels, with a 1-pixel buffer/margin around each tile. The exact pixel coordinate formula for the top-left of a tile is `x = col * 34 + 1` and `y = row * 34 + 1`. Any grid coordinates not mapped in the JSON below must remain fully transparent.
+
+**Tile Breakdown & JSON Mappings:**
+
+**1. Plains Autotiling (Rows 0-5):**
+Use this JSON to map the 47-tile blob format. 
+[
+  { "bitmask": 0, "row": 5, "col": 2 }, { "bitmask": 1, "row": 4, "col": 0 }, { "bitmask": 4, "row": 5, "col": 3 }, { "bitmask": 5, "row": 1, "col": 3 }, 
+  { "bitmask": 7, "row": 2, "col": 5 }, { "bitmask": 16, "row": 3, "col": 0 }, { "bitmask": 17, "row": 5, "col": 0 }, { "bitmask": 20, "row": 0, "col": 3 }, 
+  { "bitmask": 21, "row": 0, "col": 1 }, { "bitmask": 23, "row": 3, "col": 1 }, { "bitmask": 28, "row": 0, "col": 5 }, { "bitmask": 29, "row": 4, "col": 1 }, 
+  { "bitmask": 31, "row": 1, "col": 5 }, { "bitmask": 64, "row": 5, "col": 4 }, { "bitmask": 65, "row": 1, "col": 4 }, { "bitmask": 68, "row": 5, "col": 1 }, 
+  { "bitmask": 69, "row": 2, "col": 0 }, { "bitmask": 71, "row": 2, "col": 2 }, { "bitmask": 80, "row": 0, "col": 4 }, { "bitmask": 81, "row": 0, "col": 2 }, 
+  { "bitmask": 84, "row": 1, "col": 0 }, { "bitmask": 85, "row": 4, "col": 6 }, { "bitmask": 87, "row": 3, "col": 3 }, { "bitmask": 92, "row": 1, "col": 2 }, 
+  { "bitmask": 93, "row": 2, "col": 3 }, { "bitmask": 95, "row": 4, "col": 7 }, { "bitmask": 112, "row": 0, "col": 7 }, { "bitmask": 113, "row": 4, "col": 2 }, 
+  { "bitmask": 116, "row": 1, "col": 1 }, { "bitmask": 117, "row": 2, "col": 4 }, { "bitmask": 119, "row": 4, "col": 4 }, { "bitmask": 121, "row": 5, "col": 6 }, 
+  { "bitmask": 124, "row": 0, "col": 6 }, { "bitmask": 125, "row": 5, "col": 6 }, { "bitmask": 127, "row": 5, "col": 7 }, { "bitmask": 193, "row": 2, "col": 7 }, 
+  { "bitmask": 197, "row": 2, "col": 1 }, { "bitmask": 199, "row": 2, "col": 6 }, { "bitmask": 209, "row": 3, "col": 2 }, { "bitmask": 213, "row": 3, "col": 4 }, 
+  { "bitmask": 215, "row": 3, "col": 6 }, { "bitmask": 221, "row": 4, "col": 3 }, { "bitmask": 223, "row": 3, "col": 7 }, { "bitmask": 241, "row": 1, "col": 7 }, 
+  { "bitmask": 245, "row": 4, "col": 5 }, { "bitmask": 247, "row": 3, "col": 5 }, { "bitmask": 251, "row": 1, "col": 7 }, { "bitmask": 253, "row": 5, "col": 5 }, 
+  { "bitmask": 254, "row": 3, "col": 7 }, { "bitmask": 255, "row": 1, "col": 6 }
+]
+
+**2. Cliff Face Autotiling (Rows 6-7):**
+Use this JSON to map the 1D horizontal cliff connections.
+[
+  { "type": "cliff_top", "connects": "right", "row": 6, "col": 0 }, { "type": "cliff_top", "connects": "both", "row": 6, "col": 1 }, 
+  { "type": "cliff_top", "connects": "left", "row": 6, "col": 2 }, { "type": "cliff_top", "connects": "none", "row": 6, "col": 3 }, 
+  { "type": "cliff_base", "connects": "right", "row": 7, "col": 0 }, { "type": "cliff_base", "connects": "both", "row": 7, "col": 1 }, 
+  { "type": "cliff_base", "connects": "left", "row": 7, "col": 2 }, { "type": "cliff_base", "connects": "none", "row": 7, "col": 3 }, 
+  { "type": "cliff_short", "connects": "right", "row": 7, "col": 5 }, { "type": "cliff_short", "connects": "both", "row": 7, "col": 6 }, 
+  { "type": "cliff_short", "connects": "left", "row": 7, "col": 7 }
+]
+
+**Rendering Instructions:**
+*   **Generative Textures:** Do not use external image files. Programmatically generate a "dark grass" texture (dark greens/greys/browns with noise), a "dirt drop-off edge" texture (darker browns/blacks), and a "vertical cliff face" texture (dark rock with vertical striations).
+*   **Base Terrain (Rows 0-5):** Parse the bitmask (Top=1, Top-Right=2, Right=4, Bottom-Right=8, Bottom=16, Bottom-Left=32, Left=64, Top-Left=128). Draw the base dark grass. If a side is MISSING from the bitmask, draw the darker dirt drop-off edge on that side. If present, render the grass seamlessly to the edge.
+*   **Cliff Tops (`cliff_top`):** Draw the vertical cliff texture with a grass overhang on the top edge. If `connects` is missing "left" or "right" (e.g., "right" means left is missing), draw a hard vertical dirt edge border on the non-connecting side.
+*   **Cliff Bases (`cliff_base`):** Draw a pure vertical cliff texture extending downwards with a shadow/fade at the bottom edge. Apply the same left/right non-connecting border rules.
+*   **Short Cliffs (`cliff_short`):** Draw a 1-tile high cliff featuring BOTH the top grass overhang and the bottom shadow in the same 32x32 tile. Apply left/right borders based on `connects`.
+*   Save the final output as `dark_plains_tileset.png`.
+
+
+
+
+
+"""
+Generate a dark, hand-crafted-style dystopian pixel-art tileset (Stardew Valley
+composition, Dark Souls mood) entirely procedurally with Pillow.
+
+Output: dark_handcrafted_plains_tileset.png  (272x272, 8x8 grid of 32x32 tiles,
+1px buffer/margin around every tile).
+"""
+
+import math
+import random
+from PIL import Image, ImageDraw
+
+# ----------------------------------------------------------------------------
+# Grid / geometry constants
+# ----------------------------------------------------------------------------
+TILE = 32
+STEP = 34            # 32px tile + 1px margin on each side
+IMG_SIZE = 272
+GRID = 8
+
+
+def cell_origin(row, col):
+    return col * STEP + 1, row * STEP + 1
+
+
+# ----------------------------------------------------------------------------
+# Palette - bleak, cold, desaturated. Kept small & flat (no noisy dithering)
+# so it reads as deliberately hand-drawn.
+# ----------------------------------------------------------------------------
+GRASS_SHADOW = (34, 46, 32, 255)
+GRASS_DARK = (46, 60, 40, 255)
+GRASS_MID = (58, 74, 48, 255)
+GRASS_LIGHT = (74, 90, 58, 255)
+
+STONE_BLACK = (18, 19, 22, 255)
+STONE_SHADOW = (34, 36, 41, 255)
+STONE_MID = (56, 59, 66, 255)
+STONE_LIGHT = (82, 86, 94, 255)
+STONE_HILITE = (112, 116, 124, 255)
+
+FADE_BLACK = (8, 8, 10, 255)
+
+# Bitmask bit values (Top=1, TopRight=2, Right=4, BottomRight=8,
+# Bottom=16, BottomLeft=32, Left=64, TopLeft=128)
+BIT_TOP, BIT_TOPRIGHT, BIT_RIGHT, BIT_BOTTOMRIGHT = 1, 2, 4, 8
+BIT_BOTTOM, BIT_BOTTOMLEFT, BIT_LEFT, BIT_TOPLEFT = 16, 32, 64, 128
+
+EDGE_DEPTH = 9   # how deep the stone drop-off eats into a tile
+
+
+# ----------------------------------------------------------------------------
+# Small drawing helpers
+# ----------------------------------------------------------------------------
+def rounded_cobble(draw, cx, cy, r, rng):
+    """A single hand-drawn, rounded cobblestone with simple pixel-art shading."""
+    base = rng.choice([STONE_MID, STONE_SHADOW])
+    draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=base, outline=STONE_BLACK)
+    # cold highlight, upper-left, gives the stones a stylized 3D pop
+    hr = max(1, r - 2)
+    draw.ellipse([cx - hr, cy - hr, cx - hr + r, cy - hr + r],
+                 fill=STONE_LIGHT)
+    draw.point([(cx - hr // 2, cy - hr)], fill=STONE_HILITE)
+    # cold shadow, lower-right
+    draw.ellipse([cx, cy, cx + hr, cy + hr], fill=STONE_SHADOW)
+
+
+def cobble_layer(wx, wy, salt=0):
+    """A full opaque 32x32 seamless cobblestone texture tile.
+
+    The cobble grid is generated in WORLD space (keyed on wx,wy, the
+    world-space position of this tile's local origin) then translated back
+    to local (0..32) coordinates for drawing. Two tiles that sit next to
+    each other in the sheet compute the exact same world-space grid points
+    along their shared edge, so the stone interlocks seamlessly.
+    """
+    img = Image.new("RGBA", (TILE, TILE), STONE_MID)
+    draw = ImageDraw.Draw(img)
+    spacing = 8
+    pad = 6
+
+    row_i = int(math.floor((wy - pad) / spacing)) - 1
+    y = row_i * spacing
+    while y < wy + TILE + pad:
+        offset = (spacing // 2) if (row_i % 2) else 0
+        col_i = int(math.floor((wx - pad - offset) / spacing)) - 1
+        x = col_i * spacing + offset
+        while x < wx + TILE + pad:
+            local_rng = random.Random((x * 7919) ^ (y * 104729) ^ salt)
+            r = 4 + local_rng.randint(-1, 1)
+            rounded_cobble(draw, x - wx, y - wy, r, local_rng)
+            x += spacing
+        y += spacing
+        row_i += 1
+    return img
+
+
+def edge_mask(top=False, right=False, bottom=False, left=False,
+              tl=False, tr=False, bl=False, br=False, depth=EDGE_DEPTH, corner_r=5):
+    """Build an L-mode mask marking which parts of a tile should show stone
+    (white) vs. the layer underneath (black)."""
+    mask = Image.new("L", (TILE, TILE), 0)
+    d = ImageDraw.Draw(mask)
+    if top:
+        d.rectangle([0, 0, TILE, depth], fill=255)
+    if bottom:
+        d.rectangle([0, TILE - depth, TILE, TILE], fill=255)
+    if left:
+        d.rectangle([0, 0, depth, TILE], fill=255)
+    if right:
+        d.rectangle([TILE - depth, 0, TILE, TILE], fill=255)
+    r = corner_r
+    if tl:
+        d.ellipse([-r, -r, r, r], fill=255)
+    if tr:
+        d.ellipse([TILE - r, -r, TILE + r, r], fill=255)
+    if bl:
+        d.ellipse([-r, TILE - r, r, TILE + r], fill=255)
+    if br:
+        d.ellipse([TILE - r, TILE - r, TILE + r, TILE + r], fill=255)
+    return mask
+
+
+def grass_fill(draw, x0, y0, x1, y1, seed):
+    """Flat, clean, deliberately hand-painted grass fill with a couple of
+    subtle darker dabs -- NOT noisy/dithered."""
+    draw.rectangle([x0, y0, x1 - 1, y1 - 1], fill=GRASS_MID)
+    rng = random.Random(seed)
+    for _ in range(5):
+        w = rng.randint(3, 6)
+        h = rng.randint(2, 4)
+        px = rng.randint(x0, max(x0, x1 - w))
+        py = rng.randint(y0, max(y0, y1 - h))
+        shade = rng.choice([GRASS_DARK, GRASS_LIGHT])
+        draw.rectangle([px, py, px + w, py + h], fill=shade)
+    # a single crisp shadow line along the very bottom for grounding
+    draw.line([(x0, y1 - 1), (x1 - 1, y1 - 1)], fill=GRASS_SHADOW)
+
+
+# ----------------------------------------------------------------------------
+# Base terrain (rows 0-5) -- 47-tile blob autotile
+# ----------------------------------------------------------------------------
+def draw_base_terrain(bitmask, world_x, world_y):
+    img = Image.new("RGBA", (TILE, TILE), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+
+    top = bool(bitmask & BIT_TOP)
+    right = bool(bitmask & BIT_RIGHT)
+    bottom = bool(bitmask & BIT_BOTTOM)
+    left = bool(bitmask & BIT_LEFT)
+    tl = bool(bitmask & BIT_TOPLEFT)
+    tr = bool(bitmask & BIT_TOPRIGHT)
+    bl = bool(bitmask & BIT_BOTTOMLEFT)
+    br = bool(bitmask & BIT_BOTTOMRIGHT)
+
+    seed = (world_x * 92821) ^ (world_y * 68917) ^ bitmask
+
+    # 1. full grass base everywhere
+    grass_fill(draw, 0, 0, TILE, TILE, seed)
+
+    # 2. stone drop-off wherever a cardinal side is *missing*, plus concave
+    # corner notches where both adjacent edges are grass but the diagonal
+    # neighbor bit is missing. Composited via a mask so the stone never
+    # bleeds past its intended boundary.
+    mask = edge_mask(
+        top=not top, bottom=not bottom, left=not left, right=not right,
+        tl=(top and left and not tl), tr=(top and right and not tr),
+        bl=(bottom and left and not bl), br=(bottom and right and not br),
+    )
+    stone = cobble_layer(world_x, world_y, salt=1)
+    img.paste(stone, (0, 0), mask)
+
+    return img
+
+
+# ----------------------------------------------------------------------------
+# Cliff faces (rows 6-7) -- 1D horizontal connections
+# ----------------------------------------------------------------------------
+BORDER_W = 4
+
+
+def side_border(draw, side):
+    if side == "left":
+        draw.rectangle([0, 0, BORDER_W - 1, TILE - 1], fill=STONE_BLACK)
+        draw.line([(BORDER_W, 0), (BORDER_W, TILE - 1)], fill=STONE_HILITE)
+    elif side == "right":
+        draw.rectangle([TILE - BORDER_W, 0, TILE - 1, TILE - 1], fill=STONE_BLACK)
+        draw.line([(TILE - BORDER_W - 1, 0), (TILE - BORDER_W - 1, TILE - 1)], fill=STONE_HILITE)
+
+
+def apply_connect_borders(draw, connects):
+    # connects tells us which sides are OPEN (seamless). Anything not listed
+    # gets a hard rounded-stone border.
+    if connects == "both":
+        open_sides = {"left", "right"}
+    elif connects == "left":
+        open_sides = {"left"}
+    elif connects == "right":
+        open_sides = {"right"}
+    else:  # "none"
+        open_sides = set()
+
+    if "left" not in open_sides:
+        side_border(draw, "left")
+    if "right" not in open_sides:
+        side_border(draw, "right")
+
+
+def draw_cliff_top(connects, world_x, world_y):
+    img = cobble_layer(world_x, world_y, salt=1000)
+    draw = ImageDraw.Draw(img)
+    overhang = 8
+    # solid, flat, hand-drawn grass overhang along the top edge (flat so it
+    # stays seamless between connected neighbors), painted over the stone
+    draw.rectangle([0, 0, TILE, overhang - 1], fill=GRASS_DARK)
+    draw.line([(0, overhang - 1), (TILE, overhang - 1)], fill=GRASS_SHADOW)
+    apply_connect_borders(draw, connects)
+    return img
+
+
+def fade_to_black(img, fade_h, max_alpha):
+    """Alpha-blend (not just overwrite) a black gradient onto the bottom of
+    an opaque tile so it reads as a true shading fade rather than punching
+    a hole of transparency."""
+    overlay = Image.new("RGBA", (TILE, TILE), (0, 0, 0, 0))
+    od = ImageDraw.Draw(overlay)
+    for i in range(fade_h):
+        t = i / fade_h
+        alpha = int(t * max_alpha)
+        od.line([(0, TILE - fade_h + i), (TILE, TILE - fade_h + i)],
+                fill=(FADE_BLACK[0], FADE_BLACK[1], FADE_BLACK[2], alpha))
+    return Image.alpha_composite(img, overlay)
+
+
+def draw_cliff_base(connects, world_x, world_y):
+    img = cobble_layer(world_x, world_y, salt=2000)
+    img = fade_to_black(img, fade_h=14, max_alpha=235)
+    draw = ImageDraw.Draw(img)
+    apply_connect_borders(draw, connects)
+    return img
+
+
+def draw_cliff_short(connects, world_x, world_y):
+    img = cobble_layer(world_x, world_y, salt=3000)
+    img = fade_to_black(img, fade_h=8, max_alpha=220)
+    draw = ImageDraw.Draw(img)
+    overhang = 6
+    draw.rectangle([0, 0, TILE, overhang - 1], fill=GRASS_DARK)
+    draw.line([(0, overhang - 1), (TILE, overhang - 1)], fill=GRASS_SHADOW)
+    apply_connect_borders(draw, connects)
+    return img
+
+
+# ----------------------------------------------------------------------------
+# Data: exact JSON mappings supplied in the spec
+# ----------------------------------------------------------------------------
+PLAINS = [
+    {"bitmask": 0, "row": 5, "col": 2}, {"bitmask": 1, "row": 4, "col": 0},
+    {"bitmask": 4, "row": 5, "col": 3}, {"bitmask": 5, "row": 1, "col": 3},
+    {"bitmask": 7, "row": 2, "col": 5}, {"bitmask": 16, "row": 3, "col": 0},
+    {"bitmask": 17, "row": 5, "col": 0}, {"bitmask": 20, "row": 0, "col": 3},
+    {"bitmask": 21, "row": 0, "col": 1}, {"bitmask": 23, "row": 3, "col": 1},
+    {"bitmask": 28, "row": 0, "col": 5}, {"bitmask": 29, "row": 4, "col": 1},
+    {"bitmask": 31, "row": 1, "col": 5}, {"bitmask": 64, "row": 5, "col": 4},
+    {"bitmask": 65, "row": 1, "col": 4}, {"bitmask": 68, "row": 5, "col": 1},
+    {"bitmask": 69, "row": 2, "col": 0}, {"bitmask": 71, "row": 2, "col": 2},
+    {"bitmask": 80, "row": 0, "col": 4}, {"bitmask": 81, "row": 0, "col": 2},
+    {"bitmask": 84, "row": 1, "col": 0}, {"bitmask": 85, "row": 4, "col": 6},
+    {"bitmask": 87, "row": 3, "col": 3}, {"bitmask": 92, "row": 1, "col": 2},
+    {"bitmask": 93, "row": 2, "col": 3}, {"bitmask": 95, "row": 4, "col": 7},
+    {"bitmask": 112, "row": 0, "col": 7}, {"bitmask": 113, "row": 4, "col": 2},
+    {"bitmask": 116, "row": 1, "col": 1}, {"bitmask": 117, "row": 2, "col": 4},
+    {"bitmask": 119, "row": 4, "col": 4}, {"bitmask": 121, "row": 5, "col": 6},
+    {"bitmask": 124, "row": 0, "col": 6}, {"bitmask": 125, "row": 5, "col": 6},
+    {"bitmask": 127, "row": 5, "col": 7}, {"bitmask": 193, "row": 2, "col": 7},
+    {"bitmask": 197, "row": 2, "col": 1}, {"bitmask": 199, "row": 2, "col": 6},
+    {"bitmask": 209, "row": 3, "col": 2}, {"bitmask": 213, "row": 3, "col": 4},
+    {"bitmask": 215, "row": 3, "col": 6}, {"bitmask": 221, "row": 4, "col": 3},
+    {"bitmask": 223, "row": 3, "col": 7}, {"bitmask": 241, "row": 1, "col": 7},
+    {"bitmask": 245, "row": 4, "col": 5}, {"bitmask": 247, "row": 3, "col": 5},
+    {"bitmask": 251, "row": 1, "col": 7}, {"bitmask": 253, "row": 5, "col": 5},
+    {"bitmask": 254, "row": 3, "col": 7}, {"bitmask": 255, "row": 1, "col": 6},
+]
+
+CLIFFS = [
+    {"type": "cliff_top", "connects": "right", "row": 6, "col": 0},
+    {"type": "cliff_top", "connects": "both", "row": 6, "col": 1},
+    {"type": "cliff_top", "connects": "left", "row": 6, "col": 2},
+    {"type": "cliff_top", "connects": "none", "row": 6, "col": 3},
+    {"type": "cliff_base", "connects": "right", "row": 7, "col": 0},
+    {"type": "cliff_base", "connects": "both", "row": 7, "col": 1},
+    {"type": "cliff_base", "connects": "left", "row": 7, "col": 2},
+    {"type": "cliff_base", "connects": "none", "row": 7, "col": 3},
+    {"type": "cliff_short", "connects": "right", "row": 7, "col": 5},
+    {"type": "cliff_short", "connects": "both", "row": 7, "col": 6},
+    {"type": "cliff_short", "connects": "left", "row": 7, "col": 7},
+]
+
+
+def build_tileset():
+    sheet = Image.new("RGBA", (IMG_SIZE, IMG_SIZE), (0, 0, 0, 0))
+
+    for entry in PLAINS:
+        ox, oy = cell_origin(entry["row"], entry["col"])
+        tile = draw_base_terrain(entry["bitmask"], ox, oy)
+        sheet.alpha_composite(tile, (ox, oy))
+
+    for entry in CLIFFS:
+        ox, oy = cell_origin(entry["row"], entry["col"])
+        if entry["type"] == "cliff_top":
+            tile = draw_cliff_top(entry["connects"], ox, oy)
+        elif entry["type"] == "cliff_base":
+            tile = draw_cliff_base(entry["connects"], ox, oy)
+        else:
+            tile = draw_cliff_short(entry["connects"], ox, oy)
+        sheet.alpha_composite(tile, (ox, oy))
+
+    return sheet
+
+
+if __name__ == "__main__":
+    sheet = build_tileset()
+    assert sheet.size == (IMG_SIZE, IMG_SIZE)
+    out_path = "dark_handcrafted_plains_tileset.png"
+    sheet.save(out_path)
+    print(f"Saved {out_path} ({sheet.size[0]}x{sheet.size[1]})")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 selection - brackets
 focused - lightup
 

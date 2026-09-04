@@ -97,34 +97,38 @@ export class OverworldController extends BaseController {
     }
 
     handleKeyDown(code, e) {
-        if (this.isLocked) return;
+    if (this.isLocked) return;
 
-        if (code === 'KeyI' || code === 'Enter') this.interact();
-        
-        // 1: Toggle Menu
-        if (code === 'Digit1') {
-            events.emit('PLAY_SFX', { id: 'click', volume: 0.6, pitch: 1.0 });
-            this.isMenuOpen = !this.isMenuOpen;
-        }
-        // 2: Party
-        if (code === 'Digit2') this.executeMenuAction('party');
-        // 3: Character
-        if (code === 'Digit3') this.executeMenuAction('character_summary');
-        // 4: Journal
-        if (code === 'Digit4') this.executeMenuAction('journal');
-        // 5: Crafting Bag
-        if (code === 'Digit5') {
-            this.isLocked = true;
-            this.isMenuOpen = false;
-            events.emit('OPEN_WORKSHOP', { station: 'any', title: 'Crafting Bag' });
-        }
-        // 6: System / Title
-        if (code === 'Digit6') this.executeMenuAction('title');
-
-        if (code === 'Escape' && this.isMenuOpen) {
-            this.isMenuOpen = false;
-        }
+    // Change interaction key to Spacebar (and prevent page scrolling)
+    if (code === 'Space' || code === 'Enter') {
+      if (e && e.preventDefault) e.preventDefault(); 
+      this.interact();
     }
+
+    // 1: Toggle Menu
+    if (code === 'Digit1') {
+      events.emit('PLAY_SFX', { id: 'click', volume: 0.6, pitch: 1.0 });
+      this.isMenuOpen = !this.isMenuOpen;
+    }
+    // 2: Party
+    if (code === 'Digit2') this.executeMenuAction('party');
+    // 3: Character
+    if (code === 'Digit3') this.executeMenuAction('character_summary');
+    // 4: Journal
+    if (code === 'Digit4') this.executeMenuAction('journal');
+    // 5: Crafting Bag
+    if (code === 'Digit5') {
+      this.isLocked = true;
+      this.isMenuOpen = false;
+      events.emit('OPEN_WORKSHOP', { station: 'any', title: 'Crafting Bag' });
+    }
+    // 6: System / Title
+    if (code === 'Digit6') this.executeMenuAction('title');
+
+    if (code === 'Escape' && this.isMenuOpen) {
+      this.isMenuOpen = false;
+    }
+  }
 
     handleMouseDown(x, y, renderer) {
         if (this.isLocked) return;

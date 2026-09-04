@@ -1,16 +1,9 @@
 export const craftingRecipeDefinitions = {
   // --- GEAR RECIPES ---
-  "artifact_of_the_dev": {
-    id: "artifact_of_the_dev",
-    outputItemId: "artifact_of_the_dev",
-    station: "any", // Renamed from weaving_loom
-    materials: {
-      "soft_wood": 1
-    }
-  },
   "recipe_shortsword": {
     id: "recipe_shortsword",
     outputItemId: "shortsword",
+    locked: true,
     station: "anvil",
     materials: {
       "hard_wood": 1, // Swapped to hard wood for a sturdy handle
@@ -29,6 +22,7 @@ export const craftingRecipeDefinitions = {
   "recipe_handaxe": {
     id: "recipe_handaxe",
     outputItemId: "handaxe",
+    locked: true,
     station: "anvil",
     materials: {
       "hard_wood": 1, 
