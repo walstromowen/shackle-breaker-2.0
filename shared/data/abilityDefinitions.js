@@ -373,6 +373,71 @@ export const AbilityDefinitions = {
         effects: [{ type: "damage", damageType: "ranged", power: 0.1 }],
         statusEffects: [{ id: "bound", chance: 1.0, duration: 2 }]
     },
+    "loose_arrow": {
+        id: "loose_arrow",
+        name: "Loose Arrow",
+        description: "Fire a standard arrow at the target. A reliable ranged attack.",
+        range: "ranged",
+        tags: ["physical", "projectile", "weapon", "pierce", "bow"],
+        battleMessage: "{user} looses and arrow at {target}!",
+        icon: { col: 2, row: 8 }, 
+        speedModifier: 1.0,
+        targeting: { scope: "enemy", select: "single" },
+        cost: { stamina: 8 },
+        accuracy: 0.95,
+        animationId: "loose_arrow",
+        effects: [{ type: "damage", damageType: "pierce", power: 1.0 }]
+    },
+
+    "quick_draw": {
+        id: "quick_draw",
+        name: "Quick Draw",
+        description: "A rapid snapshot that often strikes before the enemy can react.",
+        range: "ranged",
+        tags: ["physical", "projectile", "weapon", "pierce", "bow", "fast"],
+        battleMessage: "{user} quickly shoots {target}!",
+        icon: { col: 3, row: 8 },
+        speedModifier: 1.5,
+        targeting: { scope: "enemy", select: "single" },
+        cost: { stamina: 5 },
+        accuracy: 0.90,
+        animationId: "quick_draw",
+        effects: [{ type: "damage", damageType: "pierce", power: 0.75 }]
+    },
+
+    "poisoned_arrow": {
+        id: "poisoned_arrow",
+        name: "Poisoned Arrow",
+        description: "Fire an arrow tipped in toxic venom. High chance to poison the target.",
+        range: "ranged",
+        tags: ["physical", "projectile", "weapon", "pierce", "bow", "poison"],
+        battleMessage: "{user} hits {target} with a poisoned arrow!",
+        icon: { col: 4, row: 8 },
+        speedModifier: 1.0,
+        targeting: { scope: "enemy", select: "single" },
+        cost: { stamina: 12 },
+        accuracy: 0.95,
+        animationId: "loose_arrow",
+        effects: [{ type: "damage", damageType: "pierce", power: 0.85 }],
+        statusEffects: [{ id: "poison", chance: 0.50, duration: 3 }]
+    },
+
+    "triple_shot": {
+        id: "triple_shot",
+        name: "Triple Shot",
+        description: "Nock and fire three arrows in rapid succession at a single target.",
+        range: "ranged",
+        tags: ["physical", "projectile", "weapon", "pierce", "bow", "multihit"],
+        battleMessage: "{user} unleashes {ability} on {target}!",
+        icon: { col: 5, row: 8 },
+        speedModifier: 0.9, 
+        targeting: { scope: "enemy", select: "single" },
+        cost: { stamina: 20 },
+        accuracy: 0.85,
+        multihit: { min: 3, max: 3, distinctChecks: true },
+        animationId: "triple_shot",
+        effects: [{ type: "damage", damageType: "pierce", power: 0.65 }]
+    },
 
     // =========================================================================
     // 5. MAGICAL - ARCANE

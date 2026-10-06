@@ -1042,5 +1042,140 @@ duration: 1.6,
             shake: { start: 0.05, end: 0.2, intensity: 15 },
             flash: { start: 0.05, end: 1.0, filter: 'brightness(130%) sepia(100%) hue-rotate(190deg) saturate(300%)' }
         }
+    },
+    // --- SHORT BOW ABILITIES ---
+
+  "loose_arrow": {
+    duration: 1.2,
+    audio: [
+      { start: 0.05, key: 'bowReleaseSfx', volume: 1.0 },
+      { start: 0.25, key: 'arrowImpactSfx', volume: 1.0 }
+    ],
+    actor: {
+      type: 'lunge', start: 0.0, end: 0.1, distance: -12 // Slight recoil
+    },
+    vfx: [
+      {
+        start: 0.1,
+        type: 'travel',
+        origin: 'source',
+        config: {
+          life: 0.15,
+          sheetKey: 'arrowAnimation',
+          frameCount: 1,
+          frameSize: 64,
+          scale: 1.2,
+          blendMode: 'normal'
+        }
+      }
+    ],
+    target: {
+      shake: { start: 0.25, end: 0.45, intensity: 15 },
+      flash: { start: 0.25, end: 0.35, filter: 'brightness(180%) sepia(30%)' }
     }
+  },
+
+  "quick_draw": {
+    duration: 0.8, // Reduced duration for faster execution
+    audio: [
+      { start: 0.0, key: 'bowReleaseSfx', volume: 1.0, pitch: 1.2 }, // Higher pitch to emphasize speed
+      { start: 0.15, key: 'arrowImpactSfx', volume: 0.9 }
+    ],
+    actor: {
+      type: 'lunge', start: 0.0, end: 0.05, distance: -8
+    },
+    vfx: [
+      {
+        start: 0.05,
+        type: 'travel',
+        origin: 'source',
+        config: {
+          life: 0.1, // Faster travel time
+          sheetKey: 'arrowAnimation',
+          frameCount: 1,
+          frameSize: 64,
+          scale: 1.0,
+          blendMode: 'normal'
+        }
+      }
+    ],
+    target: {
+      shake: { start: 0.15, end: 0.3, intensity: 12 },
+      flash: { start: 0.15, end: 0.25, filter: 'brightness(150%)' }
+    }
+  },
+
+  "poisoned_arrow": {
+    duration: 1.8,
+    audio: [
+      { start: 0.05, key: 'bowReleaseSfx', volume: 1.0, pitch: 0.9 },
+      { start: 0.3, key: 'poisonSplashSfx', volume: 1.0 }
+    ],
+    actor: {
+      type: 'lunge', start: 0.0, end: 0.1, distance: -14
+    },
+    vfx: [
+      {
+        start: 0.1,
+        type: 'travel',
+        origin: 'source',
+        config: {
+          life: 0.2,
+          sheetKey: 'poisonArrowAnimation',
+          frameCount: 1,
+          frameSize: 64,
+          scale: 1.2,
+          blendMode: 'normal'
+        }
+      },
+      {
+        start: 0.3,
+        type: 'spawn',
+        origin: 'target',
+        config: {
+          life: 0.6,
+          sheetKey: 'poisonAnimation',
+          frameCount: 1,
+          frameSize: 64,
+          movement: 'expand_and_fade',
+          scale: 1.5,
+          blendMode: 'multiply'
+        }
+      }
+    ],
+    target: {
+      shake: { start: 0.3, end: 0.6, intensity: 20 },
+      flash: { start: 0.3, end: 1.4, filter: 'brightness(120%) saturate(200%) hue-rotate(100deg)' } // Lingering green hue
+    }
+  },
+
+  "triple_shot": {
+    duration: 0.6, // Short duration per arrow so multi-hit sequences fire smoothly
+    audio: [
+      { start: 0.05, key: 'bowReleaseSfx', volume: 0.9, pitch: 1.1 },
+      { start: 0.2, key: 'arrowImpactSfx', volume: 0.9 }
+    ],
+    actor: {
+      type: 'lunge', start: 0.0, end: 0.08, distance: -10
+    },
+    vfx: [
+      {
+        start: 0.08,
+        type: 'travel',
+        origin: 'source',
+        config: {
+          life: 0.12,
+          sheetKey: 'arrowAnimation',
+          frameCount: 1,
+          frameSize: 64,
+          scale: 1.1,
+          blendMode: 'normal'
+        }
+      }
+    ],
+    target: {
+      shake: { start: 0.2, end: 0.35, intensity: 12 },
+      flash: { start: 0.2, end: 0.3, filter: 'brightness(160%)' }
+    }
+  }
 };

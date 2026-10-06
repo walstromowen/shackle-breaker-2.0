@@ -27,14 +27,14 @@ export const CREATION_DATA = {
         {
             id: "BLACKSMITH", label: "Blacksmith",
             desc: "The honest trade of blacksmithing is a profession that was held in high esteem by Alterians, and Panzerians alike. After the discovery of magic, most blacksmiths found themselves unable to find work, but with their sanity intact.",
-            attributes: { vigor: 14, strength: 14, dexterity: 8, intelligence: 7, attunement: 7 }, // Sum: 50
-            equipment: { mainHand: "warhammer", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
+            attributes: { vigor: 15, strength: 13, dexterity: 8, intelligence: 7, attunement: 7 }, // Sum: 50
+            equipment: { mainHand: "shortsword", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
         {
             id: "RANGER", label: "Ranger",
             desc: "Not all were enamored with the discovery of magic. A select few of the populance sought an escape from the people's obsession of it. Many of those that left became rangers, hunting wild animals and later more unnatural things.",
             attributes: { vigor: 10, strength: 9, dexterity: 15, intelligence: 8, attunement: 8 }, // Sum: 50
-            equipment: { mainHand: "dagger", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
+            equipment: { mainHand: "shortbow", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
         {
             id: "SCHOLAR", label: "Scholar",
@@ -58,7 +58,7 @@ export const CREATION_DATA = {
             id: "HERMIT", label: "Hermit",
             desc: "Most of those who studied magic wished to stay as close to the artifact as possible. However, for better or for worse, a handful decided to study magic in solitude.",
             attributes: { vigor: 10, strength: 7, dexterity: 9, intelligence: 13, attunement: 11 }, // Sum: 50
-            equipment: { mainHand: "insight_of_fire", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
+            equipment: { mainHand: "insight_of_earth", head: "tattered_hood", arms: "tattered_gloves", torso: "tattered_shirt", legs: "tattered_pants", feet: "tattered_boots" }
         },
         {
             id: "FARMER", label: "Farmer",

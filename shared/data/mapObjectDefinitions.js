@@ -53,9 +53,9 @@ export const MAP_OBJECTS_DEFINITIONS = {
     STRANGE_OBELISK: { spriteX: 1, spriteY: 4, width: 2, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'strange_obelisk', isRepeatable: false } },
     
     // --- HERBS ---
-    HEALING_HERB: { spriteX: 9, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'PICKUP', itemId: 'healing_herb', amount: 1 } },
-    INVIGORATING_HERB: { spriteX: 9, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'PICKUP', itemId: 'invigorating_herb', amount: 1 } },
-    ILLUMINATING_HERB: { spriteX: 9, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'PICKUP', itemId: 'illuminating_herb', amount: 1 } },
+    HEALING_HERB: { spriteX: 9, spriteY: 1, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'PICKUP', itemId: 'healing_herb', amount: 1 } },
+    INVIGORATING_HERB: { spriteX: 10, spriteY: 1, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'PICKUP', itemId: 'invigorating_herb', amount: 1 } },
+    ILLUMINATING_HERB: { spriteX: 11, spriteY: 1, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'PICKUP', itemId: 'illuminating_herb', amount: 1 } },
 
     // --- CRAFTING STATIONS ---
     ANVIL: { spriteX: 6, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'CRAFTING_STATION', station: 'anvil', title: 'Anvil' } },

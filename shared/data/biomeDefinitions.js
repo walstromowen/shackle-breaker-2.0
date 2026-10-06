@@ -25,7 +25,7 @@ export const BIOME_DEFINITIONS = {
         mapObjects: { 
             [CONFIG.TILE_TYPES.LAYER_3]: [ 
                 // Spawns on Layer 3 only when the noise threshold is 0.50 or higher
-                { chance: 0.40, rangeStart: 0.50, id: 'STRANGE_OBELISK' }, 
+                { chance: 0.80, rangeStart: 0.50, id: 'STRANGE_OBELISK' }, 
                 { chance: 0.005, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] } 
             ], 
             [CONFIG.TILE_TYPES.LAYER_2]: [ 

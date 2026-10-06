@@ -3,11 +3,23 @@ export const craftingRecipeDefinitions = {
   "recipe_shortsword": {
     id: "recipe_shortsword",
     outputItemId: "shortsword",
-    locked: true,
     station: "anvil",
     materials: {
-      "hard_wood": 1, // Swapped to hard wood for a sturdy handle
-      "iron_ingot": 1
+      "soft_wood": 5,
+      "stone": 5,
+      "plant_fibers": 5,
+      "sand":5
+    }
+  },
+  "recipe_spear": {
+    id: "recipe_shortsword",
+    outputItemId: "shortsword",
+    station: "anvil",
+    materials: {
+      "soft_wood": 10,
+      "stone": 3,
+      "plant_fibers": 5,
+      "sand":2
     }
   },
   "recipe_dagger": {
@@ -15,20 +27,47 @@ export const craftingRecipeDefinitions = {
     outputItemId: "dagger",
     station: "anvil",
     materials: {
-      "hard_wood": 1, 
-      "iron_ingot": 1
+      "soft_wood": 3,
+      "stone": 3,
+      "plant_fibers": 3,
+      "sand":3
     }
   },
   "recipe_handaxe": {
     id: "recipe_handaxe",
     outputItemId: "handaxe",
+    station: "anvil",
+    materials: {
+      "soft_wood": 7,
+      "stone": 5,
+      "plant_fibers": 3,
+      "sand":3
+    }
+  },
+    "recipe_shortbow": {
+    id: "recipe_shortbow",
+    outputItemId: "shortbow",
+    station: "carpenters_bench",
+    materials: {
+      "soft_wood": 15,
+      "plant_fibers": 15,
+    }
+  },
+ "recipe_handaxe": {
+    id: "recipe_handaxe",
+    outputItemId: "handaxe",
     locked: true,
     station: "anvil",
     materials: {
-      "hard_wood": 1, 
-      "iron_ingot": 1
+      "soft_wood": 7,
+      "stone": 5,
+      "plant_fibers": 3,
+      "sand":3
     }
   },
+
+
+
   "recipe_iron_helmet": {
     id: "recipe_iron_helmet",
     outputItemId: "iron_helmet",
@@ -76,9 +115,9 @@ export const craftingRecipeDefinitions = {
       "coal": 1
     }
   },
-  "recipe_brass_ingot": {
-    id: "recipe_brass_ingot",
-    outputItemId: "brass_ingot",
+  "recipe_bronze_ingot": {
+    id: "recipe_bronze_ingot",
+    outputItemId: "bronze_ingot",
     station: "forge",
     materials: {
       "copper_ingot": 1,
@@ -88,33 +127,38 @@ export const craftingRecipeDefinitions = {
   },
 
   // --- CONSUMABLE RECIPES ---
-  "recipe_healing_herb": {
-    id: "recipe_healing_herb",
-    outputItemId: "healing_herb",
-    station: "any",
+  "recipe_bandage": {
+    id: "recipe_bandage",
+    outputItemId: "bandage",
+    station: "tailors_bench",
     materials: {
-      "wheat": 2,     // Ground down into a poultice
-      "cotton": 1,    // Used as a bandage binding
-      "salt": 1       // Used to clean the wound
+      "linen": 2,
+      "plant_fibers": 2, // Used to tie the dressing securely
+      "healing_herb": 2,
     }
   },
-  "recipe_invigorating_herb": {
-    id: "recipe_invigorating_herb",
-    outputItemId: "invigorating_herb",
+  "recipe_healing_tonic": {
+    id: "recipe_healing_tonic",
+    outputItemId: "healing_tonic",
     station: "any",
     materials: {
-      "wheat": 2,
-      "bone": 1       // Ground bone marrow for stamina recovery
+      "healing_herb": 5
     }
   },
-  "recipe_illuminating_herb": {
-    id: "recipe_illuminating_herb",
-    outputItemId: "illuminating_herb",
+  "recipe_invigorating_tonic": {
+    id: "recipe_invigorating_tonic",
+    outputItemId: "invigorating_tonic",
     station: "any",
     materials: {
-      "wheat": 1,
-      "flint": 1,     // Consuming flint dust to 'spark' insight
-      "copper_ore": 1 // Conductive properties for channel abilities
+      "invigorating_herb": 5
+    }
+  },
+  "recipe_illuminating_tonic": {
+    id: "recipe_illuminating_tonic",
+    outputItemId: "illuminating_tonic",
+    station: "any",
+    materials: {
+      "illuminating_herb": 5
     }
   },
   "recipe_kurtus_brew": {
