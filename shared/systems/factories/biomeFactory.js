@@ -22,36 +22,20 @@ class BiomeFactory {
 
         const biomeModel = new BiomeModel(definition);
         this._biomeCache.set(biomeId, biomeModel);
-        
+
         return biomeModel;
     }
 
     /**
-     * Determines which biome should exist based on temperature and moisture noise values.
-     * These values should be provided by the WorldManager's noise generators.
+     * Determines which biome should exist based on temperature and moisture noise values (both 0..1).
+     * Three biomes, each covering a third of the map: the temperature noise is cut at its 1/3 and 2/3 points
+     * (about 0.39 and 0.61: Perlin noise piles up around 0.5, so cutting at 0.33 / 0.67 would make the middle biome far too big).
+     * Moisture is not used for now; it is still passed in for the biomes you add later.
      */
     determineBiome(temperatureNoise, moistureNoise) {
-        // Perlin noise creates a bell curve where most values cluster around 0.5.
-        // Splitting right down the middle creates 4 equal 25% quadrants.
-        const isHot = temperatureNoise > 0.5;
-        const isDry = moistureNoise < 0.5;
-
-        // Quadrant 1: Hot & Dry (25% of map)
-        if (isHot && isDry) {
-            return this.getBiome('DESERT');
-        }
-        // Quadrant 2: Hot & Wet (25% of map)
-        else if (isHot && !isDry) {
-            return this.getBiome('DESERT'); // TODO: Replace with JUNGLE or SAVANNA later!
-        }
-        // Quadrant 3: Cold & Dry (25% of map)
-        else if (!isHot && isDry) {
-            return this.getBiome('PLAINS'); // TODO: Replace with TUNDRA or SNOW later!
-        }
-        // Quadrant 4: Cold & Wet (25% of map)
-        else {
-            return this.getBiome('PLAINS'); // TODO: Replace with FOREST later!
-        }
+        if (temperatureNoise < 0.39) return this.getBiome('SNOWY_MOUNTAINS'); // coldest third
+        if (temperatureNoise < 0.61) return this.getBiome('PLAINS');          // middle third
+        return this.getBiome('DESERT');                                       // hottest third
     }
 }
 

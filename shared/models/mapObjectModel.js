@@ -13,7 +13,7 @@ export class MapObjectModel {
     this.spriteY = definition.spriteY || 0;
     this.frames = definition.frames || 1;
     this.speed = definition.speed || 0.2;
-    this.sheetId = sheetId;
+    this.sheet = definition.sheet; 
     
     this.isAnchor = definition.isAnchor !== undefined ? definition.isAnchor : true;
     
