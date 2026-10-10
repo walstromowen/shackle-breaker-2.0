@@ -7,6 +7,9 @@ export class OverworldUIRenderer {
     constructor(config, loader) {
         this.config = config;
         this.loader = loader;
+
+        // Source cell size (px) of the item icon sheets used by pickup toasts
+        this.ICON_SRC_SIZE = 64;
     }
 
     render(ctx, state) {
@@ -256,7 +259,7 @@ export class OverworldUIRenderer {
 
             const iconSheet = this.loader.get(toast.iconSheet || 'items');
             if (iconSheet) {
-                const srcSize = 32;
+                const srcSize = this.ICON_SRC_SIZE;
                 const dstSize = 28;
                 const srcX = toast.iconCol * srcSize;
                 const srcY = toast.iconRow * srcSize;

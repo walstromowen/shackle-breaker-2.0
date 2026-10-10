@@ -46,6 +46,11 @@ export class TerrainGenerator {
         this.ridgeMaskNoise = new PerlinNoise(this.seed + 2727);
         this.ridgeWarpA = new PerlinNoise(this.seed + 71);
         this.ridgeWarpB = new PerlinNoise(this.seed + 93);
+        /* Crevices (see _crevice): narrow, twisting cracks through the plateaus, thinning out at their ends. */
+        this.crevNoise = new PerlinNoise(this.seed + 8181);
+        this.crevMaskNoise = new PerlinNoise(this.seed + 8282);
+        this.crevWarpA = new PerlinNoise(this.seed + 8383);
+        this.crevWarpB = new PerlinNoise(this.seed + 8484);
         this.RIDGE_FREQ = 0.017; this.RIDGE_WARP_FREQ = 0.012; this.RIDGE_WARP_AMP = 26;
         this.RING_CELL = 130; this.RING_CHANCE = 0.72;
         /* Stairs / ramps: rare places where a one-level step of a hill can be climbed (see getStairAt). The world is cut into STAIR_BLOCK x
@@ -114,12 +119,12 @@ export class TerrainGenerator {
     }
     /* Ring mountains: one candidate per RING_CELL x RING_CELL square. Height ~2.1 on the crest, falling off over ~T cells either side; the
        radius wobbles with the angle, and one gap (~40 degrees) lets the crest drop so the basin can be walked into. */
-    _ringField(col, row) {
+    _ringField(col, row, chance = this.RING_CHANCE) {
         const C = this.RING_CELL, gx0 = Math.floor(col / C), gy0 = Math.floor(row / C);
         let best = 0, clear = 0;
         for (let gy = gy0 - 1; gy <= gy0 + 1; gy++) {
             for (let gx = gx0 - 1; gx <= gx0 + 1; gx++) {
-                if (this._hash(gx, gy, 5) > this.RING_CHANCE) continue;
+                if (this._hash(gx, gy, 5) > chance) continue;
                 const cx = gx * C + 40 + this._hash(gx, gy, 6) * (C - 80), cy = gy * C + 40 + this._hash(gx, gy, 7) * (C - 80);
                 const R = 22 + this._hash(gx, gy, 8) * 16, T = 6 + this._hash(gx, gy, 9) * 3;
                 const dx = col - cx, dy = row - cy;
@@ -160,26 +165,72 @@ export class TerrainGenerator {
         const land = base * 0.75 + 1.6 * band * mask * mask * (3 - 2 * mask);
         return land * (1 - basin) - 0.25 * basin + ringAdd;
     }
+    /* Winding ridge band, 0..1: 1 along the crest of a ridge that bends and doubles back (the zero contour of a hard-warped noise), 0 away from it;
+       only where a slow mask is high. The same shape getHillValue adds to its hill field. */
+    _ridgeBand(col, row) {
+        const fw = this.RIDGE_WARP_FREQ, aw = this.RIDGE_WARP_AMP;
+        const rx = col + aw * this.ridgeWarpA.get(col * fw + this.offsetX + 50, row * fw + this.offsetY + 50);
+        const ry = row + aw * this.ridgeWarpB.get(col * fw + this.offsetX + 150, row * fw + this.offsetY + 150);
+        const r = Math.abs(this.ridgeNoise.get(rx * this.RIDGE_FREQ + this.offsetX, ry * this.RIDGE_FREQ + this.offsetY));
+        const m = this.ridgeMaskNoise.get(col * 0.007 + this.offsetX, row * 0.007 + this.offsetY);
+        const mask = Math.min(1, Math.max(0, (m + 0.12) / 0.3));
+        const bt = Math.min(1, Math.max(0, (r - 0.08) / 0.17));
+        return (1 - bt * bt * (3 - 2 * bt)) * mask * mask * (3 - 2 * mask);
+    }
+    /* Crevice: true where a narrow crack runs. The crack follows the zero contour of a noise read at a strongly warped position (so it twists), is
+       about `width` noise units either side (~0.03 per cell, so 0.045 is a crack 2-3 cells wide), and a slow mask thins it to nothing at its ends. */
+    _crevice(col, row, f) {
+        const m = this.crevMaskNoise.get(col * 0.011 + this.offsetX, row * 0.011 + this.offsetY);
+        const t = Math.min(1, Math.max(0, (m - f.maskLow) / 0.18));
+        if (t <= 0) return false;
+        const A = f.warp, fw = 0.035;
+        const x = col + A * this.crevWarpA.get(col * fw + this.offsetX + 20, row * fw + this.offsetY + 20);
+        const y = row + A * this.crevWarpB.get(col * fw + this.offsetX + 220, row * fw + this.offsetY + 220);
+        return Math.abs(this.crevNoise.get(x * f.freq + this.offsetX, y * f.freq + this.offsetY)) < f.width * t * t * (3 - 2 * t);
+    }
+    /* Landforms drawn cell by cell on top of the straight-edged plateaus (a biome opts in with `features`; each part is optional):
+         rings:   { chance, wall }   donuts: a wall of rock (one level high) round a basin, with one gap in it; the basin is cut down to the ground,
+                                     also out of a mesa it stands on. `chance` = share of ring sites used, `wall` = how high the ring field must be (0..2.1) for rock.
+         ridge:   { wall }           winding ridges: rock where the ridge band (0..1) is above `wall`.
+         crevice: { width, freq, warp, maskLow }   narrow cracks cut down to the ground through every plateau they cross.
+       They are drawn per cell, so they keep their curving, twisting outline instead of the long straight cliffs. Nothing is ever raised out of a
+       pond or a dirt patch, and the usual slope limit and sliver clean-up still apply (so a wall is 2+ cells thick and one level high). */
+    _applyFeatures(col, row, level, natural, f) {
+        if (natural < 2 && level < 3) return level;
+        if (f.rings) {
+            const [add, clear] = this._ringField(col, row, f.rings.chance);
+            if (clear > 0.5 && level > 2) level = 2;
+            else if (add >= f.rings.wall && level < 3) level = 3;
+        }
+        if (f.ridge && level < 3 && this._ridgeBand(col, row) >= f.ridge.wall) level = 3;
+        if (f.crevice && level >= 3 && this._crevice(col, row, f.crevice)) level = 2;
+        return level;
+    }
     /* Distance to the winding canyon line, as a plain number (0 on the line); the biome turns it into walls and a floor. */
-    getCanyonValue(col, row) {
+    getCanyonValue(col, row, stretch, rings = true) {
         const [x, y] = this._warp(col, row);
-        const c = Math.abs(this.canyonNoise.get(x * this.CANYON_FREQ + this.offsetX, y * this.CANYON_FREQ + this.offsetY));
+        const sx = stretch ? stretch[0] : 1, sy = stretch ? stretch[1] : 1;
+        const c = Math.abs(this.canyonNoise.get(x * (this.CANYON_FREQ / sx) + this.offsetX, y * (this.CANYON_FREQ / sy) + this.offsetY));
         /* no canyon through a ring wall: it stays a closed donut except for its own gap */
-        return c + 0.5 * Math.min(1, this._ringField(col, row)[0] / 1.0);
+        /* (ring walls only exist in the ridge-and-ring hill field, so a massif biome skips this) */
+        return rings ? c + 0.5 * Math.min(1, this._ringField(col, row)[0] / 1.0) : c;
     }
     /* Massif field (a biome opts in with `hillField: 'massif'`): a few broad domes, 100+ cells across, with a little detail on the slopes. No narrow ridge
        bands and no rings, so a tall mountain climbs in wide, long terraces (room for stairs) instead of thin ledges. About [-1.3, 1.3]. */
-    getMassifValue(col, row) {
+    getMassifValue(col, row, stretch) {
         const [x, y] = this._warp(col, row);
-        const big = this.massifNoise.get(x * 0.006 + this.offsetX, y * 0.006 + this.offsetY);
-        const mid = this.massifDetailNoise.get(x * 0.035 + this.offsetX, y * 0.035 + this.offsetY);
+        const sx = stretch ? stretch[0] : 1, sy = stretch ? stretch[1] : 1;
+        const big = this.massifNoise.get(x * (0.006 / sx) + this.offsetX, y * (0.006 / sy) + this.offsetY);
+        const mid = this.massifDetailNoise.get(x * (0.035 / sx) + this.offsetX, y * (0.035 / sy) + this.offsetY);
         return big * 3.0 + mid * 0.45;
     }
     getBlendedElevationNoise(col, row, noCanyon = false) {
         const centerBiome = this.getBiomeAt(col, row);
         const cdef = BIOME_DEFINITIONS[centerBiome.id];
-        const hill = cdef && cdef.hillField === 'massif' ? this.getMassifValue(col, row) : this.getHillValue(col, row);
-        const canyon = noCanyon ? 1 : this.getCanyonValue(col, row);
+        const massif = !!(cdef && cdef.hillField === 'massif');
+        const stretch = cdef && cdef.massifStretch;
+        const hill = massif ? this.getMassifValue(col, row, stretch) : this.getHillValue(col, row);
+        const canyon = noCanyon ? 1 : this.getCanyonValue(col, row, massif ? stretch : undefined, !massif);
         const [wx, wy] = this._warp(col, row);
         const rawNoise = this.elevationNoise.get(wx * 0.03 + this.offsetX, wy * 0.03 + this.offsetY);
         const CHECK_RADIUS = 6;
@@ -248,13 +299,15 @@ export class TerrainGenerator {
     }
     _getStraightNoise(col, row) {
         const [dc, ca, dr, ra] = this._straightDims(col, row);
+        const bd0 = BIOME_DEFINITIONS[this.getBiomeAt(col, row).id];
+        const noCan = !!(bd0 && bd0.gorge !== undefined);
         const qc = this._stripCentre(col, dc, ca, 11);
         const qr = this._stripCentre(row, dr, ra, 29);
         const key = qc + ',' + qr + ',' + dc + ',' + dr;
         let n = this._straightNoiseCache.get(key);
         if (n === undefined) {
             n = Math.min(
-                this.getBlendedElevationNoise(qc, qr),
+                this.getBlendedElevationNoise(qc, qr, noCan),
                 this.getBlendedElevationNoise(qc - dc, qr, true), this.getBlendedElevationNoise(qc + dc, qr, true),
                 this.getBlendedElevationNoise(qc, qr - dr, true), this.getBlendedElevationNoise(qc, qr + dr, true));
             this._straightNoiseCache.set(key, n);
@@ -298,6 +351,7 @@ export class TerrainGenerator {
                 }
             }
         }
+        const natural = level;
         if (this.straightCliffs) {
             const sn = this._getStraightNoise(col, row);
             let hi = this.GLOBAL_ELEVATION_MAP.length - 1;
@@ -305,7 +359,15 @@ export class TerrainGenerator {
                 if (sn < this.GLOBAL_ELEVATION_MAP[i].threshold) { hi = i; break; }
             }
             level = hi >= 3 ? hi : Math.min(level, 2);
+            /* Gorge: a biome with `gorge: d` has its canyon cut through the plateaus cell by cell (distance to the canyon line below d), down to the
+               ground / dirt level the elevation noise itself gives there. Reading the canyon only at the strip centre (as the other biomes do) would
+               leave gaps in it as soon as the strips are wider than the gorge. */
+            const gb = BIOME_DEFINITIONS[this.getBiomeAt(col, row).id];
+            if (gb && gb.gorge !== undefined && this.getCanyonValue(col, row, gb.massifStretch, gb.hillField !== 'massif') < gb.gorge
+                && !(gb.features && gb.features.rings && this._ringField(col, row, gb.features.rings.chance)[0] > 0.8)) level = Math.min(natural, 2); /* (a donut's wall stays closed: no canyon through it) */
         }
+        const fb = BIOME_DEFINITIONS[this.getBiomeAt(col, row).id];
+        if (fb && fb.features) level = this._applyFeatures(col, row, level, natural, fb.features);
         this._rawElevCache.set(key, level);
         return level;
     }

@@ -198,6 +198,40 @@ export const SpawnTableDefinitions = {
         }]
     },
 
+    // Used by aftermath_encounter: the "fallen" Alterian soldiers rise and attack.
+    "alterian_warriors": {
+        type: "faction_pool",
+        pools: [{
+            factionId: "shackled",
+            weight: 100,
+            difficultySettings: {
+                easy: { minSize: 1, maxSize: 2 },
+                normal: { minSize: 2, maxSize: 3 },
+                hard: { minSize: 3, maxSize: 4 },
+                nightmare: { minSize: 4, maxSize: 5 }
+            },
+            members: [
+                {
+                    id: 'LEGIONARY',
+                    weight: 50,
+                    modifiers: {
+                        levelOffset: { chance: 0.3, min: -1, max: 2 },
+                        equipment: [{ slot: 'mainHand', items: ['warhammer', 'spear'], chance: 0.3 }],
+                        traits: [{ id: 'iron_willed', chance: 0.15 }]
+                    }
+                },
+                {
+                    id: 'WATCHMAN',
+                    weight: 50,
+                    modifiers: {
+                        levelOffset: { chance: 0.25, min: 1, max: 2 },
+                        equipment: [{ slot: 'mainHand', items: ['spear', 'shortsword'], chance: 0.4 }]
+                    }
+                }
+            ]
+        }]
+    },
+
     "wolf_pack": {
         type: "faction_pool",
         pools: [{

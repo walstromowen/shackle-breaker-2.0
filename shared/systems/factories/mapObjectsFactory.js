@@ -6,7 +6,7 @@ import { MapObjectModel } from '../../models/mapObjectModel.js';
  *     OAK_TREE_1: { sheet: 'objOakTree1', spriteX..., width: 3, height: 3, ... }
  * or, when the art differs per biome, a map keyed by biome id:
  *     SMALL_ROCKS_1: { sheet: { default: 'objSmallRocks1', DESERT: 'objSmallRocks1Desert' }, ... }
- * Definitions without `sheet` keep drawing from the biome's shared object sheet (objectSheetId + spriteX / spriteY).
+ * The factory resolves that to a single loader key and hands it to the model as `sheet`.
  */
 class MapObjectFactory {
     resolveSheet(definition, biome) {
@@ -20,8 +20,8 @@ class MapObjectFactory {
         const definition = MAP_OBJECTS_DEFINITIONS[typeId];
         if (!definition) return null;
         const instanceId = `proc_${col}_${row}`;
-        // typeId is passed in, so the shared definition object is no longer written to.
-        return new MapObjectModel(instanceId, col, row, definition, biome.objectSheetId, typeId, this.resolveSheet(definition, biome));
+        // typeId is passed in, so the shared definition object is never written to.
+        return new MapObjectModel(instanceId, col, row, definition, typeId, this.resolveSheet(definition, biome));
     }
 }
 

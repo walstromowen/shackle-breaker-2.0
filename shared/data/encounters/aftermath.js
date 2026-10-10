@@ -1,6 +1,6 @@
-export const aftermathEncounter = {
-    id: "aftermath_encounter",
-    title: "The Aftermath",
+export const aftermath = {
+    id: "aftermath",
+    title: "Aftermath",
     imageSheet: "encounter_aftermath",
     initialStage: "aftermath",
     stages: {
@@ -27,8 +27,10 @@ export const aftermathEncounter = {
                             weight: 100,
                             results: [
                                 { type: "SET_CONTEXT_FLAG", payload: { flagId: "looted_battlefield" } },
-                                { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "biome_default", rolls: 1 } },
+                                { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "battlefield_loot", rolls: 1 } },
                                 { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
+                                // Removes the map object so re-entering can't farm the same loot
+                                { type: "DESTROY_OBJECT" },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "loot_success" } }
                             ]
                         }
@@ -69,6 +71,8 @@ export const aftermathEncounter = {
                         {
                             weight: 100,
                             results: [
+                                // FIX: success now sets the flag too, so the XP can't be farmed by repeating the search
+                                { type: "SET_CONTEXT_FLAG", payload: { flagId: "searched_survivors" } },
                                 { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "wounded_warrior" } }
                             ]
@@ -85,6 +89,39 @@ export const aftermathEncounter = {
                         {
                             weight: 1,
                             results: [
+                                { type: "ADVANCE_STAGE", payload: { stageId: "madman_ambush" } }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    text: "[INT] Search for a fallen officer.",
+                    type: "skill_check",
+                    attribute: "intelligence",
+                    threshold: 13,
+                    conditions: [
+                        { type: "context_flag_not_set", flagId: "failed_officer_search" },
+                        { type: "has_tag", tag: "HUMANOID" }
+                    ],
+                    customActionText: "{name} scans the bodies for anyone with finer armor or an officer's insignia...",
+                    successOutcomes: [
+                        {
+                            weight: 100,
+                            results: [{ type: "ADVANCE_STAGE", payload: { stageId: "fallen_officer" } }]
+                        }
+                    ],
+                    failureOutcomes: [
+                        {
+                            weight: 3,
+                            results: [
+                                { type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_officer_search" } },
+                                { type: "ADVANCE_STAGE", payload: { stageId: "no_officer_found" } }
+                            ]
+                        },
+                        {
+                            weight: 1,
+                            results: [
+                                { type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_officer_search" } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "madman_ambush" } }
                             ]
                         }
@@ -139,6 +176,62 @@ export const aftermathEncounter = {
                 }
             ]
         },
+        no_officer_found: {
+            displayText: "Common Soldiers",
+            image: { col: 0, row: 0 },
+            text: "{name} turns over body after body, but finds only rank-and-file soldiers. If an officer fell here, someone has already taken everything that marked them.",
+            decisions: [
+                {
+                    text: "Reassess the area.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "aftermath" } }] }]
+                }
+            ]
+        },
+
+        // ==========================================
+        // FALLEN OFFICER STAGE
+        // ==========================================
+        // NOTE: the quest ID below ("alterian_sealed_orders") is a placeholder.
+        // Swap it for a real quest ID once the quest is defined.
+        fallen_officer: {
+            displayText: "A Fallen Officer",
+            image: { col: 1, row: 0 },
+            text: "{name} spots a figure in finer armor lying apart from the rest, a Royal Guard insignia still pinned to the chest. A leather satchel is strapped across the body.",
+            decisions: [
+                {
+                    text: "Search the officer's satchel.",
+                    conditions: [{ type: "has_tag", tag: "HUMANOID" }],
+                    customActionText: "{name} carefully unbuckles the satchel and sorts through what's inside...",
+                    outcomes: [
+                        {
+                            // Outcome A: sealed orders -> new quest
+                            weight: 1,
+                            results: [
+                                { type: "START_QUEST", payload: { questId: "alterian_sealed_orders", questName: "Sealed Orders" } },
+                                { type: "AWARD_XP", payload: { amount: 10, target: "active_character" } },
+                                { type: "DESTROY_OBJECT" },
+                                { type: "END_ENCOUNTER", payload: null }
+                            ]
+                        },
+                        {
+                            // Outcome B: the officer's personal gear -> item
+                            weight: 1,
+                            results: [
+                                { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "alterian_officer_loot", rolls: 1 } },
+                                { type: "AWARD_XP", payload: { amount: 10, target: "active_character" } },
+                                { type: "DESTROY_OBJECT" },
+                                { type: "END_ENCOUNTER", payload: null }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    text: "Leave the body.",
+                    customActionText: "{name} steps away from the officer's body.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "aftermath" } }] }]
+                }
+            ]
+        },
 
         // ==========================================
         // 2. WOUNDED WARRIOR STAGE
@@ -149,20 +242,20 @@ export const aftermathEncounter = {
             text: "{name} approaches a wounded warrior still breathing, but bleeding badly.",
             decisions: [
                 {
-                    text: "[Bandage] Bandage the warrior.",
+                    text: "[Healing Herb] Treat the warrior.",
                     type: "skill_check",
                     attribute: "none",
                     threshold: 8,
                     conditions: [
-                        { type: "has_item", itemId: "bandage", qty: 1 },
+                        { type: "has_item", itemId: "healing_herb", qty: 1 },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} attempts to bandage the warrior's deep wounds...",
+                    customActionText: "{name} crushes a healing herb and presses it into the warrior's deep wounds...",
                     successOutcomes: [
                         {
                             weight: 100,
                             results: [
-                                { type: "REMOVE_ITEM", payload: { itemId: "bandage", qty: 1 } },
+                                { type: "REMOVE_ITEM", payload: { itemId: "healing_herb", qty: 1 } },
                                 { type: "MODIFY_CORRUPTION", payload: { amount: -5, target: "active_character" } },
                                 { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "battle_survivor" } }
@@ -171,9 +264,9 @@ export const aftermathEncounter = {
                     ],
                     failureOutcomes: [
                         {
-                            weight: 2,
+                            weight: 100,
                             results: [
-                                { type: "REMOVE_ITEM", payload: { itemId: "bandage", qty: 1 } },
+                                { type: "REMOVE_ITEM", payload: { itemId: "healing_herb", qty: 1 } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "warrior_betrayal_ambush" } }
                             ]
                         }
@@ -195,14 +288,15 @@ export const aftermathEncounter = {
                             results: [
                                 { type: "SET_CONTEXT_FLAG", payload: { flagId: "tried_robbing" } },
                                 { type: "MODIFY_CORRUPTION", payload: { amount: 5, target: "active_character" } },
-                                { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "biome_default", rolls: 1 } },
+                                { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "battlefield_loot", rolls: 1 } },
+                                { type: "DESTROY_OBJECT" },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "robbed_warrior" } }
                             ]
                         }
                     ],
                     failureOutcomes: [
                         {
-                            weight: 1,
+                            weight: 100,
                             results: [
                                 { type: "MODIFY_CORRUPTION", payload: { amount: 5, target: "active_character" } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "alterian_ambush" } }
@@ -225,14 +319,17 @@ export const aftermathEncounter = {
             ]
         },
 
+        // FIX: the warrior dies here, so this no longer loops back to wounded_warrior
+        // (which let the player bandage a corpse). It returns to the battlefield hub instead;
+        // searched_survivors is already set, so no second survivor can be found.
         robbed_warrior: {
             displayText: "Cold-Hearted",
             image: { col: 0, row: 1 },
             text: "{name} finds something on the wounded warrior. Meanwhile, the warrior breathes his last breath.",
             decisions: [
                 {
-                    text: "Reassess the situation.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "wounded_warrior" } }] }]
+                    text: "Reassess the area.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "aftermath" } }] }]
                 }
             ]
         },
@@ -272,7 +369,7 @@ export const aftermathEncounter = {
                     ]
                 },
                 {
-                    text: "[Alterian] \"You should come with me, we are safer together.\"",
+                    text: "[ALT] \"You should come with me, we are safer together.\"",
                     type: "skill_check",
                     attribute: "alterian",
                     threshold: 10,
@@ -286,7 +383,9 @@ export const aftermathEncounter = {
                             weight: 100,
                             results: [
                                 { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
-                                { type: "RECRUIT_ENTITY", payload: { entityId: "ALTERIAN_WARRIOR" } },
+                                // FIX: RECRUIT_ENTITY -> RECRUIT_CHARACTER (the event the other encounters use)
+                                { type: "RECRUIT_CHARACTER", payload: { entityId: "WATCHMAN" } },
+                                { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
                         }
@@ -385,6 +484,7 @@ export const aftermathEncounter = {
             text: "\"Hmm... I am not convinced...\"",
             decisions: [
                 {
+                    // Needs the has_currency condition added to EncounterLogic.checkConditions
                     text: "[50g] \"Perhaps some incentive?\"",
                     conditions: [{ type: "has_currency", amount: 50 }],
                     outcomes: [
@@ -392,7 +492,8 @@ export const aftermathEncounter = {
                             weight: 100,
                             results: [
                                 { type: "MODIFY_CURRENCY", payload: { amount: -50 } },
-                                { type: "RECRUIT_ENTITY", payload: { entityId: "ALTERIAN_WARRIOR" } },
+                                { type: "RECRUIT_CHARACTER", payload: { entityId: "WATCHMAN" } },
+                                { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
                         }
@@ -407,6 +508,8 @@ export const aftermathEncounter = {
 
         // ==========================================
         // COMBAT ENCOUNTERS
+        // (forced-fight stages have no has_tag gate: with a gate, a non-humanoid
+        //  active character would see zero buttons and be soft-locked)
         // ==========================================
         madman_ambush: {
             displayText: "Madmen Approach!",
@@ -416,7 +519,6 @@ export const aftermathEncounter = {
             decisions: [
                 {
                     text: "Draw your weapon!",
-                    conditions: [{ type: "has_tag", tag: "HUMANOID" }],
                     outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { tableId: "madman_pack" } }] }]
                 }
             ]
@@ -430,7 +532,6 @@ export const aftermathEncounter = {
             decisions: [
                 {
                     text: "Prepare for battle!",
-                    conditions: [{ type: "has_tag", tag: "HUMANOID" }],
                     outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { tableId: "alterian_warriors" } }] }]
                 }
             ]
@@ -440,11 +541,10 @@ export const aftermathEncounter = {
             displayText: "Betrayal!",
             image: { col: 2, row: 1 },
             bgm: "plainsBattleBgm",
-            text: "As {name} bandages the warrior, he violently grabs {name} and draws his weapon! Soon, other fallen warriors rise around you!",
+            text: "As {name} tends to the warrior's wounds, he violently grabs {name} and draws his weapon! Soon, other fallen warriors rise around you!",
             decisions: [
                 {
                     text: "Defend yourself!",
-                    conditions: [{ type: "has_tag", tag: "HUMANOID" }],
                     outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { tableId: "alterian_warriors" } }] }]
                 }
             ]

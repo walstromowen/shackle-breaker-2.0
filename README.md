@@ -18,8 +18,6 @@ more consistent sound for UI
 Overall UI polish
 better text style
 targeting ui improvements for splash attacks with mouse
-global texture/resolution upgrade
-map tile connections / new tile connection system gamemaker
 dynamic lighting system
 
 

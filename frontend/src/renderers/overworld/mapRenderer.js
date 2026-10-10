@@ -167,11 +167,21 @@ export class MapRenderer {
         const renderY = entity.prevY !== undefined ? entity.prevY + (entity.y - entity.prevY) * interpolationFactor : entity.y;
         const dx = Math.floor((renderX - camera.x) * scale);
         const dy = Math.floor((renderY - camera.y) * scale);
-        const drawSize = Math.ceil(TILE_SIZE * scale);
+        /* A character frame can be bigger than a tile (e.g. 56 x 56). entity.x / y stay the tile the character stands on, so collision, the hitbox and
+           the depth sort do not change; the frame is only DRAWN centred on that tile and rising above it, with its feet on the tile's bottom edge.
+           CONFIG.CHARACTER_FRAME = { w, h, feetPad, shiftX } (an entity may carry its own `frame`):
+             w, h     size of one frame in the sheet (default: one tile, the old behaviour)
+             feetPad  transparent rows between the feet and the bottom of the frame (the frame is moved down by this much)
+             shiftX   pixels to move the frame sideways when the figure is not centred in it (positive = right) */
+        const fr = entity.frame || this.config.CHARACTER_FRAME || {};
+        const FW = fr.w || TILE_SIZE, FH = fr.h || TILE_SIZE;
+        const feetPad = fr.feetPad || 0, shiftX = fr.shiftX || 0;
         const rowMap = { UP: 1, DOWN: 0, LEFT: 2, RIGHT: 3 };
-        const sx = (entity.animFrame || 0) * TILE_SIZE;
-        const sy = (rowMap[entity.direction] ?? 0) * TILE_SIZE;
-        this.ctx.drawImage(sprite, sx, sy, TILE_SIZE, TILE_SIZE, dx, dy, drawSize, drawSize);
+        const sx = (entity.animFrame || 0) * FW;
+        const sy = (rowMap[entity.direction] ?? 0) * FH;
+        const offX = Math.floor(((FW - TILE_SIZE) / 2 - shiftX) * scale);
+        const offY = Math.floor((FH - TILE_SIZE - feetPad) * scale);
+        this.ctx.drawImage(sprite, sx, sy, FW, FH, dx - offX, dy - offY, Math.ceil(FW * scale), Math.ceil(FH * scale));
     }
     updateViewBounds(camera) {
         const { TILE_SIZE, GAME_SCALE, WALL_HEIGHT } = this.config;

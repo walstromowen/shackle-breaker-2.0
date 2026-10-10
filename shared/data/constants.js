@@ -1,71 +1,37 @@
 // shared/data/constants.js
 
 // ===============================================
-// TILE REGISTRY
+// TILE LEVELS
 // ===============================================
-const TILE_DEFINITIONS = {
-    // ID remains the same everywhere. Depth remains the same everywhere.
-    // The offset is the default row on the sprite sheet.
-    LAYER_5: { id: 5, depth: 5, defaultOffset: 1,  isBlob: true },  // High Wall
-    LAYER_4: { id: 4, depth: 4, defaultOffset: 9,  isBlob: true },  // Mid Wall
-    LAYER_3: { id: 3, depth: 3, defaultOffset: 17, isBlob: true },  // Low Wall
-    LAYER_2: { id: 2, depth: 2, defaultOffset: 25, isBlob: true },  // Ground 2 (Grass/Sand)
-    LAYER_1: { id: 1, depth: 1, defaultOffset: 33, isBlob: true },  // Ground 1 (Dirt/Wet Sand)
-    LAYER_0: { id: 0, depth: 0, defaultOffset: 41, isBlob: false }, // Water
-};
-
-// --- Auto-generate the configuration objects from the registry ---
-const buildTileConfig = () => {
-    const types = {};
-    const depth = {};
-    const defaultOffsets = {};
-    const blobs = [];
-
-    for (const [key, config] of Object.entries(TILE_DEFINITIONS)) {
-        types[key] = config.id;
-        depth[config.id] = config.depth;
-        defaultOffsets[config.id] = config.defaultOffset;
-        if (config.isBlob) blobs.push(config.id);
-    }
-
-    return { types, depth, defaultOffsets, blobs };
-};
-
-const processedTiles = buildTileConfig();
+// LAYER_0 water, LAYER_1 dirt, LAYER_2 ground, LAYER_3..LAYER_7 the cliff levels (see biomeDefinitions.js).
+// A level's id and depth are the same number (the stair / slope code relies on LAYER_n = LAYER_0 + n). Everything except water is a blob tile.
+// What each level looks like is set per biome (blobTileset in biomeDefinitions.js), not here.
+const TOP_LEVEL = 7;
+const TILE_TYPES = {}, TILE_DEPTH = {}, BLOB_TILES = [];
+for (let i = 0; i <= TOP_LEVEL; i++) {
+    TILE_TYPES['LAYER_' + i] = i;
+    TILE_DEPTH[i] = i;
+    if (i > 0) BLOB_TILES.push(i);
+}
 
 // ===============================================
 // GLOBAL CONFIGURATION
 // ===============================================
 export const CONFIG = {
-    // --- Visuals & Display ---
     TILE_SIZE: 32,
     OBJECT_SIZE: 32,
-    TILE_PADDING: 1,
     GAME_SCALE: 1,
-    CANVAS_WIDTH: 1920,   
-    CANVAS_HEIGHT: 1080,  
     WALL_HEIGHT: 2,
-
-    // --- Movement & Physics ---
     WALK_DURATION: 0.4,
+    TILE_TYPES, TILE_DEPTH, BLOB_TILES,
 
-    // --- Animation ---
-    ANIMATION_FRAMES: 4,
-    FRAME_TIME: 0.15,
+    // --- Not read by any file I have seen (the renderers, world manager, terrain generator, biome definitions). Probably the canvas setup and the
+    //     animation code use them: delete each one that a project-wide search for its name finds only here. ---
+    CANVAS_WIDTH: 1920,
+    CANVAS_HEIGHT: 1080,
     SHEET_WIDTH: 512,
     SHEET_HEIGHT: 2048,
-
-    // --- Water Animation ---
-    WATER_ANIMATION: {
-        SPEED: 0.8,           // Seconds per frame
-        FRAMES: [0, 1, 2, 3, 4, 5, 6, 7]  // Water Row (Row 41)
-    },
-
-    // --- Asset Keys & Mechanics (Auto-populated from TILE_REGISTRY) ---
-    TILE_TYPES: processedTiles.types,
-    TILE_DEPTH: processedTiles.depth,
-    BLOB_OFFSETS: processedTiles.defaultOffsets,
-    BLOB_TILES: processedTiles.blobs,
+  
 };
 
 // ===============================================
@@ -79,26 +45,18 @@ export const BITMASK = {
 // ===============================================
 // COMBAT & STATS CONSTANTS
 // ===============================================
-// 1. The Source of Truth for Logic (StatCalculator uses this)
-export const DAMAGE_TYPES = [
-    "blunt", "slash", "pierce",
-    "fire", "ice", "lightning",
-    "water", "earth", "wind",
-    "light", "dark", "arcane"
-];
-
-// 2. The Source of Truth for UI (Renderers use this)
+// One list: the keys are the damage types (StatCalculator), the values are the 3-letter UI labels (renderers).
 export const DAMAGE_TYPE_LABELS = {
     blunt: "BNT", slash: "SLS", pierce: "PRC",
     fire: "FIR", ice: "ICE", lightning: "LIG",
     water: "WAT", earth: "ERT", wind: "WND",
     light: "LGT", dark: "DRK", arcane: "ARC",
 };
+export const DAMAGE_TYPES = Object.keys(DAMAGE_TYPE_LABELS);
 
 // ===============================================
-// DIFFICULTY MODIFIERS (NEW)
+// DIFFICULTY
 // ===============================================
-// Standard keys used by GameState, CharacterCreator, Spawner, and Dice Roller.
 export const DIFFICULTY_LEVELS = {
     EASY: 'easy',
     NORMAL: 'normal',
@@ -106,7 +64,6 @@ export const DIFFICULTY_LEVELS = {
     NIGHTMARE: 'nightmare'
 };
 
-// Maps global settings to specific mathematical penalties/bonuses.
 export const DIFFICULTY_MODIFIERS = {
     [DIFFICULTY_LEVELS.EASY]: { rollBonus: 2, enemyLevelOffset: -1 },
     [DIFFICULTY_LEVELS.NORMAL]: { rollBonus: 0, enemyLevelOffset: 0 },

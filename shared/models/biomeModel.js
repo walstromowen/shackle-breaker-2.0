@@ -5,7 +5,6 @@ export class BiomeModel {
     constructor(definition) {
         this.id = definition.id;
         this.defaultLootTable = definition.defaultLootTable || 'basic_loot'; // Provide a safe fallback
-        this.sheetId = definition.sheetId;
         this.blobTileset = definition.blobTileset || null; // generated blob-47 tilesets (see blobTerrainRenderer.js)
         this.objectSheetId = definition.objectSheetId;
         this.allowedWeather = definition.allowedWeather || [];
@@ -33,18 +32,30 @@ export class BiomeModel {
         return this.structures.pools[0].id;
     }
 
-    getSpawnId(tileId, rngValue, isWall = false) {
-        const rules = isWall ? this.mapObjects._WALLS : this.mapObjects[tileId];
+    getSpawnId(tileId, rngValue) {
+        const rules = this.mapObjects[tileId];
         if (!rules) return null;
+        // One roll (rngValue, 0..1) picks at most one rule. A rule with `rangeStart` owns the band [rangeStart, chance).
+        // Every other rule owns the next `chance`-wide slice after the rules above it, so its `chance` really is its share
+        // (before, `rngValue < chance` made a rule listed after a bigger one unreachable: rocks / boulders listed after a
+        // pine tree with the same or a larger chance never spawned).
+        let used = 0;
         for (const rule of rules) {
-            if (rule.rangeStart && rngValue < rule.rangeStart) continue;
-            if (rngValue < rule.chance) {
-                let spawnId = rule.id;
-                if (rule.pool) {
-                    spawnId = rule.pool[Math.floor(rngValue * 1000) % rule.pool.length];
-                }
-                return { id: spawnId, footprint: rule.footprint || null };
+            let lo, hi;
+            if (rule.rangeStart) {
+                lo = rule.rangeStart;
+                hi = rule.chance;
+            } else {
+                lo = used;
+                hi = used + rule.chance;
+                used = hi;
             }
+            if (rngValue < lo || rngValue >= hi) continue;
+            let spawnId = rule.id;
+            if (rule.pool) {
+                spawnId = rule.pool[Math.floor(rngValue * 1000) % rule.pool.length];
+            }
+            return { id: spawnId, footprint: rule.footprint || null };
         }
         return null;
     }

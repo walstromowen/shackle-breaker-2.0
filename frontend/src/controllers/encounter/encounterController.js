@@ -42,6 +42,9 @@ export class EncounterController extends BaseController {
     this.imageTransition = { active: false, timer: 0, duration: 0.4, previousInfo: null, previousPartyMember: null };
     this.rewardQueue = [];
     this.pendingEndEncounterPayload = null;
+    this.rewardsEndEncounter = false;
+    this.pendingSceneChange = null;
+    this.rewardReturnStageId = null;
     this.isUsingKeyboard = false;
     this._lastMouseX = null;
     this._lastMouseY = null;
@@ -81,6 +84,9 @@ export class EncounterController extends BaseController {
     this.inputCooldown = 0.15;
     this.rewardQueue = [];
     this.pendingEndEncounterPayload = null;
+    this.rewardsEndEncounter = false;
+    this.pendingSceneChange = null;
+    this.rewardReturnStageId = null;
     this.imageTransition = { active: false, timer: 0, duration: 0.4, previousInfo: null, previousPartyMember: null };
     this.updateBGM();
   }
@@ -594,6 +600,25 @@ export class EncounterController extends BaseController {
       return;
     }
     
+    const hasMessages = logicResponse.messages.length > 0 && !isStartingBattle;
+
+    // Mid-encounter rewards: show the gain messages on the CURRENT stage first,
+    // then move on to the destination stage/model once the player has read them.
+    if (hasMessages && !logicResponse.shouldEndEncounter) {
+      if (logicResponse.modelChanged) {
+        this.pendingSceneChange = { type: 'model', model: logicResponse.newModel };
+      } else if (logicResponse.stageChanged) {
+        this.pendingSceneChange = { type: 'stage', stageId: logicResponse.newStageId };
+      } else {
+        this.pendingSceneChange = null;
+      }
+      this.rewardReturnStageId = this.model.currentStageId || null;
+      this.rewardsEndEncounter = false;
+      this.rewardQueue = [...logicResponse.messages];
+      this.showNextReward();
+      return;
+    }
+
     if (logicResponse.modelChanged) {
       if (!logicResponse.forceCharacterSwitch) this._triggerImageTransition();
       this.model = logicResponse.newModel;
@@ -605,15 +630,17 @@ export class EncounterController extends BaseController {
       this.selectedIndex = 0;
       this.updateBGM();
     }
-    
-    if (logicResponse.messages.length > 0 && logicResponse.shouldEndEncounter && !isStartingBattle) {
+
+    if (hasMessages && logicResponse.shouldEndEncounter) {
       this.rewardQueue = [...logicResponse.messages];
       this.pendingEndEncounterPayload = logicResponse.endEncounterPayload;
+      this.rewardsEndEncounter = true;
+      this.pendingSceneChange = null;
       if (!logicResponse.forceCharacterSwitch) this._triggerImageTransition();
       this.showNextReward();
       return;
     }
-    
+
     if (isStartingBattle) {
       this.actionPhase = 'ending';
     } else if (logicResponse.shouldEndEncounter) {
@@ -623,14 +650,18 @@ export class EncounterController extends BaseController {
 
   showNextReward() {
     if (!this.rewardQueue || this.rewardQueue.length === 0) {
-      this.endEncounter(this.pendingEndEncounterPayload);
+      if (this.rewardsEndEncounter) {
+        this.endEncounter(this.pendingEndEncounterPayload);
+      } else {
+        this._finishMidEncounterRewards();
+      }
       return;
     }
     
     const nextMsg = this.rewardQueue.shift();
     this.model.stages = this.model.stages || {};
     this.model.stages["encounter_rewards_stage"] = {
-      displayText: "Victory",
+      displayText: this.rewardsEndEncounter ? "Victory" : "Spoils",
       image: this.model.getImage ? this.model.getImage() : { sheet: 'bg_default_black', col: 0, row: 0 },
       text: nextMsg,
       decisions: []
@@ -645,6 +676,32 @@ export class EncounterController extends BaseController {
     this.skipMessageAnimation = false;
   }
 
+  _finishMidEncounterRewards() {
+    const change = this.pendingSceneChange;
+    const returnStageId = this.rewardReturnStageId;
+    this.pendingSceneChange = null;
+    this.rewardReturnStageId = null;
+
+    if (change && change.type === 'model') {
+      this._triggerImageTransition();
+      this.model = change.model;
+    } else if (change && change.type === 'stage') {
+      this._triggerImageTransition();
+      this.model.advanceToStage(change.stageId);
+    } else if (returnStageId) {
+      // No stage change: go back to the stage the player acted from.
+      this.model.advanceToStage(returnStageId);
+    }
+
+    this.selectedIndex = 0;
+    this.actionPhase = 'none';
+    this.lastText = "";
+    this.textTimer = 6.0;
+    this.skipMessageAnimation = false;
+    this.inputCooldown = 0.15;
+    this.updateBGM();
+  }
+
   endEncounter(payload = null) {
     this.actionPhase = 'ending';
     events.emit('CHANGE_SCENE', { scene: 'overworld', data: payload });
@@ -653,6 +710,10 @@ export class EncounterController extends BaseController {
   cleanup() {
     this.model = null;
     this.pendingDecision = null;
+    this.rewardQueue = [];
+    this.pendingSceneChange = null;
+    this.rewardReturnStageId = null;
+    this.rewardsEndEncounter = false;
   }
 
   updateBGM() {

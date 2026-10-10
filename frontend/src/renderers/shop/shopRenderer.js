@@ -11,6 +11,9 @@ export class ShopRenderer {
         this.tooltipSystem = new TooltipSystem(this.ui, loader);
         this.hitboxes = [];
         this.padding = 36;
+
+        // Source cell size (px) of the item icon sheets
+        this.ICON_SRC_SIZE = 64;
     }
 
     render(state) {
@@ -31,20 +34,20 @@ export class ShopRenderer {
         this.ui.drawLine(halfW, 0, halfW, h, UITheme.colors.border, 1);
 
         this._drawShopPanel(
-            state.vendorWares || [], 
-            "Merchant's Wares", 
-            null, 
-            'VENDOR', 
-            state, 
+            state.vendorWares || [],
+            "Merchant's Wares",
+            null,
+            'VENDOR',
+            state,
             0, 0, halfW, h
         );
 
         this._drawShopPanel(
-            state.partyInventory || [], 
-            "Party Inventory", 
-            state.partyCurrency, 
-            'PARTY', 
-            state, 
+            state.partyInventory || [],
+            "Party Inventory",
+            state.partyCurrency,
+            'PARTY',
+            state,
             halfW, 0, halfW, h
         );
 
@@ -56,8 +59,8 @@ export class ShopRenderer {
 
         if (state.contextMenu) {
             this._drawContextMenu(
-                state.contextMenu, 
-                state.contextMenu.selectedIndex, 
+                state.contextMenu,
+                state.contextMenu.selectedIndex,
                 state.hoveredHitboxId
             );
         }
@@ -70,7 +73,7 @@ export class ShopRenderer {
             } else if (state.hoveredHitboxId.startsWith('PARTY_ITEM_')) {
                 tooltipState.filteredInventory = state.partyInventory || [];
             } else {
-                return; 
+                return;
             }
 
             if (!tooltipState.member) {
@@ -78,16 +81,13 @@ export class ShopRenderer {
             }
 
             const activeHitbox = this.hitboxes.find(h => h.id === state.hoveredHitboxId);
-            
+
             if (activeHitbox) {
                 const mx = tooltipState.mouse?.x || 0;
                 const my = tooltipState.mouse?.y || 0;
-                
-                const isMouseInBox = mx >= activeHitbox.x && 
-                                     mx <= activeHitbox.x + activeHitbox.w && 
-                                     my >= activeHitbox.y && 
-                                     my <= activeHitbox.y + activeHitbox.h;
-                
+                const isMouseInBox = mx >= activeHitbox.x && mx <= activeHitbox.x + activeHitbox.w &&
+                                     my >= activeHitbox.y && my <= activeHitbox.y + activeHitbox.h;
+
                 if (!isMouseInBox) {
                     tooltipState.mouse = {
                         x: Math.floor(activeHitbox.x + (activeHitbox.w / 2)),
@@ -95,7 +95,7 @@ export class ShopRenderer {
                     };
                 }
             } else {
-                return; 
+                return;
             }
 
             this.tooltipSystem.render(tooltipState, this.hitboxes);
@@ -115,22 +115,23 @@ export class ShopRenderer {
         const SCROLLBAR_WIDTH = 10;
 
         this.ui.drawText(title, centerX, y + 48, UITheme.fonts.header, UITheme.colors.textMain, "center");
+
         if (currency !== null && currency !== undefined) {
             this.ui.drawText(`Currency: ${currency}c`, centerX, y + 108, UITheme.fonts.cardMono, UITheme.colors.textHighlight, "center");
         } else {
             this.ui.drawText("Prices Fixed", centerX, y + 108, UITheme.fonts.cardMono, UITheme.colors.textMuted, "center");
         }
-        
+
         const dividerY = y + HEADER_HEIGHT - 24;
         const flourishW = w * 0.8;
-        this.ui.drawLineWithGothicFlourish(x + (w - flourishW)/2, dividerY, flourishW, UITheme.colors.borderHighlight);
+        this.ui.drawLineWithGothicFlourish(x + (w - flourishW) / 2, dividerY, flourishW, UITheme.colors.borderHighlight);
 
         const listY = y + HEADER_HEIGHT;
         const listH = h - HEADER_HEIGHT - 120;
 
         const totalGridW = (COLS * SLOT_SIZE) + ((COLS - 1) * SLOT_PADDING);
         const padding = 36;
-        let startX = x + padding; 
+        let startX = x + padding;
 
         if (w < totalGridW + (padding * 2)) {
             startX = x + Math.floor((w - totalGridW) / 2);
@@ -140,7 +141,7 @@ export class ShopRenderer {
         const itemCount = inventory ? inventory.length : 0;
         const rowCount = Math.ceil(itemCount / COLS);
         const currentContentHeight = rowCount * (SLOT_SIZE + SLOT_PADDING);
-        
+
         const scrollOffset = prefix === 'VENDOR' ? (state.vendorScrollOffset || 0) : (state.partyScrollOffset || 0);
         const maxScroll = Math.max(0, currentContentHeight - listH);
 
@@ -198,7 +199,10 @@ export class ShopRenderer {
 
                 this.hitboxes.push({
                     id: `${prefix}_ITEM_${index}`,
-                    x: itemX, y: itemY, w: SLOT_SIZE, h: SLOT_SIZE,
+                    x: itemX,
+                    y: itemY,
+                    w: SLOT_SIZE,
+                    h: SLOT_SIZE,
                     type: 'inventory',
                     index: index,
                     hoverSfx: 'hoverTick',
@@ -242,10 +246,12 @@ export class ShopRenderer {
 
     _drawScrollBar(x, y, viewportH, contentH, scrollOffset, prefix) {
         const SCROLLBAR_WIDTH = 10;
+
         this.ui.drawRect(x, y, SCROLLBAR_WIDTH, viewportH, UITheme.colors.scrollTrack || UITheme.colors.bgScale[0]);
 
         const viewRatio = viewportH / contentH;
         let thumbH = Math.max(20, viewportH * viewRatio);
+
         const scrollRatio = scrollOffset / (contentH - viewportH);
         const thumbY = y + (scrollRatio * (viewportH - thumbH));
 
@@ -253,7 +259,10 @@ export class ShopRenderer {
 
         this.hitboxes.push({
             id: `SCROLLBAR_THUMB_${prefix}`,
-            x: x - 5, y: thumbY, w: SCROLLBAR_WIDTH + 10, h: thumbH,
+            x: x - 5,
+            y: thumbY,
+            w: SCROLLBAR_WIDTH + 10,
+            h: thumbH,
             type: 'scrollbar_thumb'
         });
     }
@@ -279,10 +288,11 @@ export class ShopRenderer {
         if (!sheet) return;
 
         const iconData = def.icon || { col: 0, row: 0 };
-        const ICON_SIZE = 32;
+        const ICON_SIZE = this.ICON_SRC_SIZE;
         const srcX = (iconData.col * ICON_SIZE);
         const srcY = (iconData.row * ICON_SIZE);
 
+        // 64x64 source drawn at 64x64 (exact 1x)
         this.ui.drawSprite(sheet, srcX, srcY, ICON_SIZE, ICON_SIZE, x, y, 64, 64);
     }
 
@@ -300,9 +310,11 @@ export class ShopRenderer {
 
         this.ctx.save();
         this.ctx.globalAlpha = 0.85;
+
         this.ui.drawRect(x, y, drawSize, drawSize, "rgba(0,0,0,0.6)", true);
         this._drawIcon(def, x + 6, y + 6);
         this.ui.drawRect(x, y, drawSize, drawSize, UITheme.colors.borderHighlight, false);
+
         this.ctx.restore();
     }
 
@@ -316,6 +328,7 @@ export class ShopRenderer {
 
         const screenW = this.ctx.canvas.width;
         const screenH = this.ctx.canvas.height;
+
         let x = menu.x;
         let y = menu.y;
 
@@ -325,6 +338,7 @@ export class ShopRenderer {
         if (y < 12) y = 12;
 
         const layout = { x, y, w: menuW, h: menuH };
+
         const menuConfig = {
             ...menu,
             selectedIndex: selectedIndex,
@@ -347,12 +361,13 @@ export class ShopRenderer {
                 box.id = box.id.replace('MENU_OPT_', 'CTX_OPT_');
             }
         });
-        
+
         this.hitboxes.push(...menuHitboxes.reverse());
     }
 
     _drawInputPrompts(state, w, h) {
         let lines = [];
+
         if (state.contextMenu) {
             lines.push("[L-Click/SPC] Select      [R-Click/ESC] Close");
         } else if (state.heldItem) {
@@ -364,10 +379,10 @@ export class ShopRenderer {
 
         const centerX = Math.floor(w / 2);
         const flourishW = Math.min(720, w - 64);
-        
         this.ui.drawLineWithGothicFlourish(centerX - (flourishW / 2), h - 104, flourishW, UITheme.colors.borderHighlight);
 
         const startY = h - 64;
+
         lines.forEach((lineText, index) => {
             this.ui.drawText(
                 lineText,

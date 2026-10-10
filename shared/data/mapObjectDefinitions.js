@@ -3,14 +3,15 @@ export const MAP_OBJECTS_DEFINITIONS = {
     GRASS_COVERAGE_1: { sheet: 'objGrassCoverage1', spriteX: 6, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
     GRASS_COVERAGE_2: { sheet: 'objGrassCoverage2', spriteX: 7, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
     GRASS_COVERAGE_3: { sheet: 'objGrassCoverage3', spriteX: 8, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
-    TULIPS_ORANGE: { sheet: 'objTulipsOrange', spriteX: 1, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
-    TULIPS_WHITE: { sheet: 'objTulipsWhite', spriteX: 2, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
-    TULIPS_RED: { sheet: 'objTulipsRed', spriteX: 3, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
+    TULIPS_ORANGE: { sheet: 'objTulipsOrange', spriteX: 1, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'plant_fiber', amount: 1 } },
+    TULIPS_WHITE: { sheet: 'objTulipsWhite', spriteX: 2, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'plant_fiber', amount: 1 } },
+    TULIPS_RED: { sheet: 'objTulipsRed', spriteX: 3, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'plant_fiber', amount: 1 } },
     
     // --- UPDATED: SMALL ROCKS WITH PICKUP ---
     SMALL_ROCKS_1: { sheet: { default: 'objSmallRocks1', DESERT: 'objSmallRocks1Desert', SNOWY_MOUNTAINS: 'objSmallRocks1Snow' }, spriteX: 4, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'stone', amount: 1 } },
     SMALL_ROCKS_2: { sheet: { default: 'objSmallRocks2', DESERT: 'objSmallRocks2Desert', SNOWY_MOUNTAINS: 'objSmallRocks2Snow' }, spriteX: 5, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'stone', amount: 1 } },
     SMALL_ROCKS_3: { sheet: { default: 'objSmallRocks3', DESERT: 'objSmallRocks3Desert', SNOWY_MOUNTAINS: 'objSmallRocks3Snow' }, spriteX: 10, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'stone', amount: 1 } },
+    STICK: { sheet: 'objStick', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'soft_wood', amount: 1 } },
     // ----------------------------------------
 
     SAND_DUNE_1: { sheet: 'objSandDune1', spriteX: 6, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
@@ -36,7 +37,7 @@ export const MAP_OBJECTS_DEFINITIONS = {
     WOODEN_CHEST: { sheet: 'objWoodenChest', spriteX: 0, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'treasure_chest', isRepeatable: false } },
     PINE_TREE: { sheet: 'objPineTree', spriteX: 3, spriteY: 1, width: 2, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 }, interaction: { type: 'HARVEST', tool: 'axe', itemId: 'soft_wood', amount: 2, duration: 1.5, replaceWith: 'TREE_STUMP' } },
     SNOWY_PINE_TREE: { sheet: 'objPineTreeSnow', spriteX: 3, spriteY: 1, width: 2, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 }, interaction: { type: 'HARVEST', tool: 'axe', itemId: 'soft_wood', amount: 2, duration: 1.5, replaceWith: 'SNOWY_TREE_STUMP' } },
-    OAK_TREE_1: { sheet: 'objOakTree1', spriteX: 0, spriteY: 1, width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 1, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'oak_tree' } },
+    OAK_TREE_1: { sheet: 'objOakTree1', spriteX: 0, spriteY: 1, width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 1, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'HARVEST', tool: 'axe', itemId: 'hardwood', amount: 2, duration: 2.0, replaceWith: 'TREE_STUMP' } },
     TREE_STUMP: { sheet: 'objTreeStump', spriteX: 0, spriteY: 4, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
     SNOWY_TREE_STUMP: { sheet: 'objTreeStumpSnow', spriteX: 0, spriteY: 4, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
     SMALL_CACTUS_1: { sheet: 'objSmallCactus1', spriteX: 1, spriteY: 0, width: 1, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },

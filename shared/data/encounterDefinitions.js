@@ -9,6 +9,7 @@ import { testEncounter } from './encounters/testEncounter.js';
 import { strangeObelisk } from './encounters/strangeObelisk.js';
 import { wildHerbs } from './encounters/wild_herbs.js';
 import { suspiciousMerchant } from './encounters/suspiciousMerchant.js';
+import { aftermath } from './encounters/aftermath.js';
 
 // <-- Import your new encounter here
 
@@ -24,6 +25,7 @@ export const encounterDefinitions = {
     [strangeObelisk.id]: strangeObelisk,
     [wildHerbs.id]: wildHerbs,
     [suspiciousMerchant.id]: suspiciousMerchant,
+    [aftermath.id]: aftermath,
 
     
     // <-- Add your new encounter here

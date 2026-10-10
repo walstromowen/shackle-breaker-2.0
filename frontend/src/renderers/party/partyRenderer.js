@@ -6,15 +6,41 @@ export class PartyRenderer {
         this.ctx = ctx;
         this.loader = loader;
         this.ui = new CanvasUI(ctx);
-        this.layout = { cardW: 600, cardH: 336, gapX: 24, gapY: 48, startY: 216 };
-        this.menuConfig = { btnHeight: 64, padding: 24 };
+
+        this.layout = {
+            cardW: 600,
+            cardH: 336,
+            gapX: 24,
+            gapY: 48,
+            startY: 216
+        };
+
+        this.menuConfig = {
+            btnHeight: 64,
+            padding: 24
+        };
+
         this.statusIconSheetPath = '/assets/ui/status_icons.png';
-        // Changed to 32 for exact 1x scaling (was 38)
+        // On-screen size of a status icon (draw size, not source size)
         this.statusIconSize = 32;
+
+        // Source cell sizes (px) on the sprite sheets
+        this.STATUS_ICON_SRC_SIZE = 64;
+        this.PORTRAIT_SRC_SIZE = 128;
     }
 
     render(state) {
-        const { members, selectedIndex, swappingIdx, menu, mode = 'DEFAULT', activeIndices = [], hoveredElement = null, dragState = null, onLayoutUpdate = null } = state;
+        const {
+            members,
+            selectedIndex,
+            swappingIdx,
+            menu,
+            mode = 'DEFAULT',
+            activeIndices = [],
+            hoveredElement = null,
+            dragState = null,
+            onLayoutUpdate = null
+        } = state;
 
         const width = this.ctx.canvas.width;
         const height = this.ctx.canvas.height;
@@ -44,9 +70,11 @@ export class PartyRenderer {
 
             const isHovered = hoveredElement?.id === `CARD_${index}`;
             const isSelected = (index === selectedIndex);
+
             // Evaluates true whether moving via keyboard (swappingIdx) or mouse (dragState)
             const isBeingDragged = dragState?.active && dragState.payload === member;
             const isBeingMoved = (index === swappingIdx) || isBeingDragged;
+
             const isActive = activeIndices.includes(index);
             const isDead = member.hp <= 0;
             const isUnavailable = mode === 'BATTLE_SELECT' && (isActive || isDead);
@@ -97,6 +125,7 @@ export class PartyRenderer {
     getCardPosition(index, canvasWidth) {
         const COLS = 3;
         const { cardW, cardH, gapX, gapY, startY } = this.layout;
+
         const totalGridWidth = (COLS * cardW) + ((COLS - 1) * gapX);
         const startX = (canvasWidth - totalGridWidth) / 2;
 
@@ -137,12 +166,15 @@ export class PartyRenderer {
 
         // --- 2. DRAW BACKGROUNDS & BORDERS ---
         this.ui.drawPanel(x, y, cardW, cardH, bgColor);
+
         if (strokeColor) {
             this.ui.drawRect(x, y, cardW, cardH, strokeColor, false);
         }
+
         if (drawBrackets) {
             this.ui.drawSelectionBrackets(x, y, cardW, cardH, 10, bracketColor);
         }
+
         if (isUnavailable) {
             this.ui.drawRect(x, y, cardW, cardH, 'rgba(0, 0, 0, 0.6)', true);
         }
@@ -159,13 +191,16 @@ export class PartyRenderer {
         const pY = y + 14;
 
         const masterSheet = this.loader.get(member.spritePortrait);
+
         this.ui.drawRect(pX, pY, pSize, pSize, "rgba(0,0,0,0.5)", true);
 
         if (masterSheet) {
-            ctx.drawImage(masterSheet, 0, 0, 128, 128, pX, pY, pSize, pSize);
+            const src = this.PORTRAIT_SRC_SIZE;
+            ctx.drawImage(masterSheet, 0, 0, src, src, pX, pY, pSize, pSize);
         }
 
         this.ui.drawRect(pX, pY, pSize, pSize, UITheme.colors.border, false);
+
         this.drawStatusEffects(member, pX, pY, pSize);
 
         // --- 3. DRAW TEXT WITH STATE COLORS ---
@@ -187,6 +222,7 @@ export class PartyRenderer {
             statusPrefix = "FNT - ";
             statusColor = UITheme.colors.failure;
         }
+
         this.ui.drawText(`${statusPrefix}${levelText}`, infoX, y + 77, UITheme.fonts.cardSmall, statusColor);
 
         const xpY = y + 113;
@@ -214,8 +250,8 @@ export class PartyRenderer {
         if (!member.statusEffects || member.statusEffects.length === 0) return;
 
         const sheetKey = 'statusEffects';
-        const srcSize = 32; // Changed to 32 for exact 1x scaling (was 38)
-        const drawSize = 32;
+        const srcSize = this.STATUS_ICON_SRC_SIZE; // Source cell size on the sheet (64x64)
+        const drawSize = 32;                       // On-screen size
         const spacing = 5;
 
         const sheet = this.loader.get ? this.loader.get(sheetKey) : this.loader.getAsset(sheetKey);
@@ -230,9 +266,7 @@ export class PartyRenderer {
             if (sheet && effect.icon) {
                 this.ctx.drawImage(
                     sheet,
-                    effect.icon.col * srcSize,
-                    effect.icon.row * srcSize,
-                    srcSize, srcSize,
+                    effect.icon.col * srcSize, effect.icon.row * srcSize, srcSize, srcSize,
                     drawX, drawY, drawSize, drawSize
                 );
             } else {
@@ -257,20 +291,23 @@ export class PartyRenderer {
 
         const { x, y, payload } = dragState;
         const ctx = this.ctx;
-        // Changed to 128 for exact 1x scaling (was 120)
+
+        // 128 draw size = exact 1x scaling of the 128px portrait
         const pSize = 128;
 
         ctx.save();
         ctx.globalAlpha = 0.85;
 
         const masterSheet = this.loader.get(payload.spritePortrait);
+
         const drawX = x - (pSize / 2);
         const drawY = y - (pSize / 2);
 
         this.ui.drawRect(drawX, drawY, pSize, pSize, "rgba(0,0,0,0.6)", true);
 
         if (masterSheet) {
-            ctx.drawImage(masterSheet, 0, 0, 128, 128, drawX, drawY, pSize, pSize);
+            const src = this.PORTRAIT_SRC_SIZE;
+            ctx.drawImage(masterSheet, 0, 0, src, src, drawX, drawY, pSize, pSize);
         }
 
         this.ui.drawRect(drawX, drawY, pSize, pSize, UITheme.colors.borderHighlight, false);

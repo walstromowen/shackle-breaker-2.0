@@ -112,6 +112,31 @@ export const ItemDefinitions = {
       5: { currency: 500, materials: { "steel_ingot": 5, "iron_ingot": 10, "bronze_ingot": 15 } }
     }
   },
+  "crossbow": {
+    id: "crossbow",
+    name: "Crossbow",
+    slot: "twoHand",
+    type: "weapon",
+    description: 'A standard crossbow. Standard issue crossbow of the Alterian watchmen. "A crossbow is the bow of a lazy man, and the weapon of an efficient adversary." - Commander Mentoras.',
+    value: 20,
+    icon: { col: 6, row: 0 },
+    attack: { pierce: 3, slash: 3 },
+    grantedAbilities: ["loose_arrow", "quick_draw"],
+    maxLevel: 3,
+    statGrowth: {
+      attack: { pierce: 2, slash: 2 }
+    },
+    abilityUnlocks: {
+      2: ["poisoned_arrow"],
+      3: ["triple_shot"]
+    },
+    upgradeCosts: {
+      2: { currency: 50, materials: { "hard_wood": 5, "soft_wood": 10, "plant_fibers": 15 } },
+      3: { currency: 150, materials: { "bronze_ingot": 5, "hard_wood": 10, "soft_wood": 15 } },
+      4: { currency: 300, materials: { "iron_ingot": 5, "bronze_ingot": 10, "hard_wood": 15 } },
+      5: { currency: 500, materials: { "steel_ingot": 5, "iron_ingot": 10, "bronze_ingot": 15 } }
+    }
+  },
   "warhammer": {
     id: "warhammer",
     name: "Warhammer",

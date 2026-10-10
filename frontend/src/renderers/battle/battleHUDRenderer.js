@@ -8,7 +8,7 @@ export class BattleHUDRenderer {
     this.loader = loader;
     this.ui = ui;
     this.combatantRenderer = combatantRenderer;
-    this.SRC_SIZE = 32;
+    this.SRC_SIZE = 64; // Icon sprite sheet cell size (upgraded from 32)
     this.HUD = {
       CARD_W: 384,
       CARD_H: 110,
@@ -29,97 +29,97 @@ export class BattleHUDRenderer {
   render(state, dt, hitboxes = []) {
     this.dt = dt;
     if (this.lastPhase !== state.phase) {
-        this.phaseTime = 0;
-        this.lastPhase = state.phase;
+      this.phaseTime = 0;
+      this.lastPhase = state.phase;
     }
     this.phaseTime += this.dt;
 
     this.drawHUD(state, hitboxes);
 
     const isCinematicPhase = ['INTRO', 'RESOLVE', 'VICTORY', 'DEFEAT'].includes(state.phase);
-    
+
     if (isCinematicPhase) {
-        const isEndPhase = state.phase === 'VICTORY' || state.phase === 'DEFEAT';
-        
-        if (isEndPhase) {
-            // --- DETERMINISTIC THREE-STAGE TIMELINE ---
-            const FADE_IN_DURATION = 0.4;  // 0.4 seconds to smoothly fade in
-            const SOLID_DURATION = 1.6;    // 1.6 seconds of full solid peak visibility
-            const FADE_OUT_DURATION = 1.0; // 1.0 second to smoothly fade out
-            const TOTAL_DURATION = FADE_IN_DURATION + SOLID_DURATION + FADE_OUT_DURATION; // Exactly 3.0s total
-            
-            const solidThreshold = FADE_IN_DURATION;
-            const fadeOutThreshold = FADE_IN_DURATION + SOLID_DURATION;
+      const isEndPhase = state.phase === 'VICTORY' || state.phase === 'DEFEAT';
 
-            if (this.phaseTime < solidThreshold) {
-                // 1. Linear Fade-In: 0.0 -> 1.0
-                this.bannerAlpha = this.phaseTime / FADE_IN_DURATION;
-            } else if (this.phaseTime < fadeOutThreshold) {
-                // 2. Solid Peak Hold
-                this.bannerAlpha = 1.0;
-            } else if (this.phaseTime < TOTAL_DURATION) {
-                // 3. Linear Fade-Out: 1.0 -> 0.0
-                const elapsedFadeOut = this.phaseTime - fadeOutThreshold;
-                this.bannerAlpha = 1.0 - (elapsedFadeOut / FADE_OUT_DURATION);
-            } else {
-                // 4. Time expired
-                this.bannerAlpha = 0.0;
-            }
+      if (isEndPhase) {
+        // --- DETERMINISTIC THREE-STAGE TIMELINE ---
+        const FADE_IN_DURATION = 0.4;  // 0.4 seconds to smoothly fade in
+        const SOLID_DURATION = 1.6;    // 1.6 seconds of full solid peak visibility
+        const FADE_OUT_DURATION = 1.0; // 1.0 second to smoothly fade out
+        const TOTAL_DURATION = FADE_IN_DURATION + SOLID_DURATION + FADE_OUT_DURATION; // Exactly 3.0s total
 
-            // --- ABSOLUTE FAIL-SAFE HAND-OFF ---
-            // If delta spikes or rounding issues occur and a message lands early, 
-            // the banner is immediately forced down to make way for the text.
-            if (state.message) {
-                this.bannerAlpha = 0.0;
-            }
+        const solidThreshold = FADE_IN_DURATION;
+        const fadeOutThreshold = FADE_IN_DURATION + SOLID_DURATION;
+
+        if (this.phaseTime < solidThreshold) {
+          // 1. Linear Fade-In: 0.0 -> 1.0
+          this.bannerAlpha = this.phaseTime / FADE_IN_DURATION;
+        } else if (this.phaseTime < fadeOutThreshold) {
+          // 2. Solid Peak Hold
+          this.bannerAlpha = 1.0;
+        } else if (this.phaseTime < TOTAL_DURATION) {
+          // 3. Linear Fade-Out: 1.0 -> 0.0
+          const elapsedFadeOut = this.phaseTime - fadeOutThreshold;
+          this.bannerAlpha = 1.0 - (elapsedFadeOut / FADE_OUT_DURATION);
+        } else {
+          // 4. Time expired
+          this.bannerAlpha = 0.0;
         }
+
+        // --- ABSOLUTE FAIL-SAFE HAND-OFF ---
+        // If delta spikes or rounding issues occur and a message lands early,
+        // the banner is immediately forced down to make way for the text.
+        if (state.message) {
+          this.bannerAlpha = 0.0;
+        }
+      }
     } else {
-        // Smoothly drop banner alpha if changing to action/targeting phases
-        const DECAY_SPEED = 5.0;
-        this.bannerAlpha += (0.0 - this.bannerAlpha) * DECAY_SPEED * this.dt;
+      // Smoothly drop banner alpha if changing to action/targeting phases
+      const DECAY_SPEED = 5.0;
+      this.bannerAlpha += (0.0 - this.bannerAlpha) * DECAY_SPEED * this.dt;
     }
 
     // Direct clamping without lagging behind a target value
     this.bannerAlpha = Math.max(0, Math.min(1, this.bannerAlpha));
-    
+
     // Frame-exact visibility flag
     const isBannerVisible = this.bannerAlpha > 0.0;
 
     if (isCinematicPhase) {
-        // 2. Draw the dialogue box if there's a message,
-        // BUT ONLY if the banner is completely faded out!
-        if (state.message && !isBannerVisible) {
-            this.drawDialogueBox(state.message);
-        }
+      // 2. Draw the dialogue box if there's a message,
+      // BUT ONLY if the banner is completely faded out!
+      if (state.message && !isBannerVisible) {
+        this.drawDialogueBox(state.message);
+      }
     }
 
     // Draw the cinematic banner if it has any opacity
     if (this.bannerAlpha > 0.01) {
-        const text = (state.phase === 'DEFEAT') ? 'PARTY SLAIN' : 'ENEMY SLAIN';
-        const color = (state.phase === 'DEFEAT') ? (UITheme.colors.targetRed || '#cc0000') : (UITheme.colors.highlight || '#b89947');
-        this.drawCinematicBanner(text, color, this.bannerAlpha);
+      const text = (state.phase === 'DEFEAT') ? 'PARTY SLAIN' : 'ENEMY SLAIN';
+      const color = (state.phase === 'DEFEAT') ? (UITheme.colors.targetRed || '#cc0000') : (UITheme.colors.highlight || '#b89947');
+      this.drawCinematicBanner(text, color, this.bannerAlpha);
     }
 
-        if (!isCinematicPhase) {
-            if (state.phase === 'SELECT_ACTION') {
-                this.drawActionMenu(state, hitboxes);
-                this.drawActivePlayerIndicator(state);
-                if (state.showAbilityDetails) {
-                    const activeChar = state.activeParty[state.activePartyIndex];
-                    const focusedAbility = activeChar?.abilities?.[state.menuIndex];
-                    if (focusedAbility) {
-                        this.drawAbilityDetailsPopup(focusedAbility, state.menuIndex);
-                    }
-                }
-            } else if (state.phase === 'SELECT_TARGET') {
-                const activeChar = state.activeParty[state.activePartyIndex];
-                const selectedAbility = state.selectedAction || (activeChar && activeChar.abilities[state.menuIndex]);
-                const promptText = selectedAbility ? `Select target(s) for ${selectedAbility.name}...` : "Select a target...";
-                this.drawDialogueBox(promptText, `— ${activeChar.name} —`);
-                this.drawTargetCursor(state);
-            }
+    if (!isCinematicPhase) {
+      if (state.phase === 'SELECT_ACTION') {
+        this.drawActionMenu(state, hitboxes);
+        this.drawActivePlayerIndicator(state);
+        if (state.showAbilityDetails) {
+          const activeChar = state.activeParty[state.activePartyIndex];
+          const focusedAbility = activeChar?.abilities?.[state.menuIndex];
+          if (focusedAbility) {
+            this.drawAbilityDetailsPopup(focusedAbility, state.menuIndex);
+          }
         }
+      } else if (state.phase === 'SELECT_TARGET') {
+        const activeChar = state.activeParty[state.activePartyIndex];
+        const selectedAbility = state.selectedAction || (activeChar && activeChar.abilities[state.menuIndex]);
+        const promptText = selectedAbility ? `Select target(s) for ${selectedAbility.name}...` : "Select a target...";
+        this.drawDialogueBox(promptText, `— ${activeChar.name} —`);
+        this.drawTargetCursor(state);
+      }
     }
+  }
 
   drawHUD(state, hitboxes = []) {
     if (state.activeParty && state.activeParty.length > 0) {
@@ -196,10 +196,10 @@ export class BattleHUDRenderer {
       }
 
       this.ctx.font = UITheme.fonts.body;
-this.ctx.fillStyle = UITheme.colors.textMain;
-this.ctx.textAlign = 'left';
-this.ctx.textBaseline = 'alphabetic';
-this.ctx.fillText(member.name, currentX + this.HUD.PADDING_X, y + 34);
+      this.ctx.fillStyle = UITheme.colors.textMain;
+      this.ctx.textAlign = 'left';
+      this.ctx.textBaseline = 'alphabetic';
+      this.ctx.fillText(member.name, currentX + this.HUD.PADDING_X, y + 34);
 
       const textWidth = this.ctx.measureText(member.name).width;
       const safeStatusX = currentX + this.HUD.PADDING_X + textWidth + 24;
@@ -283,7 +283,7 @@ this.ctx.fillText(member.name, currentX + this.HUD.PADDING_X, y + 34);
       this.ctx.font = UITheme.fonts.bodyItalic || `italic ${UITheme.fonts.body}`;
       this.ctx.fillStyle = UITheme.colors.textMain;
       this.ctx.textAlign = 'right';
-      this.ctx.textBaseline = 'alphabetic'; // <-- Add this line to force the text to draw upwards
+      this.ctx.textBaseline = 'alphabetic'; // Force the text to draw upwards
       this.ctx.fillText(enemy.name, currentX + this.HUD.CARD_W - this.HUD.PADDING_X, y + 34);
 
       this.ctx.textAlign = 'left';
@@ -343,7 +343,7 @@ this.ctx.fillText(member.name, currentX + this.HUD.PADDING_X, y + 34);
     this.ctx.textAlign = 'center';
     this.ctx.font = UITheme.fonts.bold;
     this.ctx.fillStyle = UITheme.colors.textMuted;
-    this.ctx.textBaseline = 'alphabetic'; // <-- Add this line to force the text to draw upwards
+    this.ctx.textBaseline = 'alphabetic'; // Force the text to draw upwards
     this.ctx.fillText(`— ${activeChar.name} —`, w / 2, y + 53);
     this.ctx.restore();
 
@@ -416,224 +416,224 @@ this.ctx.fillText(member.name, currentX + this.HUD.PADDING_X, y + 34);
   }
 
   drawAbilityDetailsPopup(ability, menuIndex) {
-        // --- 1. Damage Type Colors Configuration ---
-        let rawType = ability.damageType || (ability.type ? ability.type.toLowerCase() : 'physical');
-        if (!ability.damageType && ability.effects && ability.effects.length > 0) {
-            const dmgEffect = ability.effects.find(e => e.type === 'damage');
-            if (dmgEffect && dmgEffect.damageType) rawType = dmgEffect.damageType.toLowerCase();
-        }
-        const themeColor = (UITheme.colors.types && UITheme.colors.types[rawType]) || UITheme.colors.textMuted;
-        const displayType = rawType.charAt(0).toUpperCase() + rawType.slice(1);
-
-        // --- 2. Calculate Content & Dynamic Heights (Relaxed Compact) ---
-        const cardPadding = 24;
-        const w = 480;
-        const descW = w - (cardPadding * 2);
-        const descStr = ability.description || 'No description available.';
-        const fontItalic = UITheme.fonts.cardItalic || UITheme.fonts.bodyItalic || `italic ${UITheme.fonts.body}`;
-
-        // Measure description lines
-        let descLines = [descStr];
-        if (this.ui.getWrappedLines) {
-            descLines = this.ui.getWrappedLines(descStr, descW, fontItalic);
-        }
-
-        // Check for stats to adjust block height
-        const pwr = ability.power || (ability.effects && ability.effects.find(e => e.type === 'damage' || e.type === 'heal')?.power);
-        const hasStats = pwr || ability.accuracy !== undefined || ability.speed !== undefined || ability.range !== undefined;
-
-        // Increased heights to allow more breathing room between text lines
-        const infoBlockHeight = hasStats ? 132 : 104; 
-        const dividerHeight = descLines.length > 0 ? 32 : 0;
-        const descTextHeight = descLines.length > 0 ? (descLines.length * 24) : 0; 
-        const h = cardPadding + infoBlockHeight + dividerHeight + descTextHeight + cardPadding;
-
-        // --- 3. Calculate Positioning (Bottom-Up Anchoring) ---
-        const itemSize = 64;
-        const margin = 24;
-        const paddingX = 48;
-        const availableWidth = this.config.CANVAS_WIDTH - (paddingX * 2);
-        const columns = Math.floor(availableWidth / (itemSize + margin));
-        const col = menuIndex % columns;
-
-        const buttonX = paddingX + (col * (itemSize + margin));
-        let x = buttonX + (itemSize / 2) - (w / 2);
-        x = Math.max(24, Math.min(x, this.config.CANVAS_WIDTH - w - 24));
-
-        const actionMenuTop = this.config.CANVAS_HEIGHT - 216;
-        const y = actionMenuTop - h - 16;
-
-        // --- 4. Draw Thematic Background ---
-        this.drawDarkPanel(x, y, w, h);
-
-        this.ctx.save();
-        const bgGrad = this.ctx.createLinearGradient(x, y, x, y + h);
-        bgGrad.addColorStop(0, `${themeColor}15`);
-        bgGrad.addColorStop(0.4, 'rgba(0,0,0,0)');
-        this.ctx.fillStyle = bgGrad;
-        this.ctx.fillRect(x, y, w, h);
-
-        this.ctx.strokeStyle = themeColor;
-        this.ctx.lineWidth = 1;
-        this.ctx.strokeRect(x, y, w, h); // Outline to match menu aesthetics
-
-        // --- 5. Render Info Block (TOP) ---
-        const iconSize = 64;
-        const infoY = y + cardPadding;
-        const iconX = x + cardPadding;
-        const iconY = infoY; 
-
-        // Draw Icon Frame
-        this.ctx.fillStyle = UITheme.colors.bgScale?.[2] || 'rgba(255, 255, 255, 0.05)';
-        this.ctx.fillRect(iconX, iconY, iconSize, iconSize);
-        this.drawIcon(ability.icon, 'abilities', iconX, iconY, iconSize);
-
-        this.ctx.strokeStyle = themeColor;
-        this.ctx.lineWidth = 1;
-        this.ctx.strokeRect(iconX, iconY, iconSize, iconSize);
-
-        const contentX = iconX + iconSize + 16;
-        let currentTextY = infoY + 14; 
-
-        // Row 1: Title & Cost
-        this.ctx.textAlign = 'left';
-        this.ctx.textBaseline = 'middle';
-        this.ctx.font = UITheme.fonts.cardTitle || UITheme.fonts.bold;
-        this.ctx.fillStyle = UITheme.colors.textMain;
-        this.ctx.fillText(ability.name || 'Unknown Action', contentX, currentTextY);
-
-        this.ctx.textAlign = 'right';
-        this.ctx.font = UITheme.fonts.cardMono || UITheme.fonts.bold;
-        if (ability.cost) {
-            let costStr = "Free";
-            let costCol = UITheme.colors.textMuted;
-            
-            // Render cost with spacing (e.g., "15 STM")
-            if (ability.cost.hp) { costStr = `${ability.cost.hp} HP`; costCol = UITheme.colors.hp; }
-            else if (ability.cost.mana) { costStr = `${ability.cost.mana} MP`; costCol = UITheme.colors.ins; }
-            else if (ability.cost.stamina) { costStr = `${ability.cost.stamina} STM`; costCol = UITheme.colors.stm; }
-            else if (ability.cost.insight) { costStr = `${ability.cost.insight} INS`; costCol = UITheme.colors.ins; }
-            
-            this.ctx.fillStyle = costCol;
-            this.ctx.fillText(costStr, x + w - cardPadding, currentTextY);
-        } else {
-            this.ctx.fillStyle = UITheme.colors.textMuted;
-            this.ctx.fillText("Free", x + w - cardPadding, currentTextY);
-        }
-        
-        // Increased space before next line
-        currentTextY += 32;
-
-       // Row 2: Type Badge & Source
-this.ctx.textAlign = 'left';
-this.ctx.font = fontItalic;
-const typeWidth = this.ctx.measureText(displayType).width;
-const badgePadX = 8;
-const badgeH = 22;
-const badgeW = typeWidth + (badgePadX * 2);
-const badgeDrawY = currentTextY - (badgeH / 2);
-
-this.ctx.fillStyle = `${themeColor}33`;
-this.ctx.strokeStyle = themeColor;
-this.ctx.lineWidth = 1;
-this.ctx.beginPath();
-if (this.ctx.roundRect) {
-    this.ctx.roundRect(contentX, badgeDrawY, badgeW, badgeH, badgeH / 2);
-} else {
-    this.ctx.rect(contentX, badgeDrawY, badgeW, badgeH);
-}
-this.ctx.fill();
-this.ctx.stroke();
-this.ctx.fillStyle = themeColor;
-this.ctx.fillText(displayType, contentX + badgePadX, currentTextY);
-
-// Source aligned to the right (Moved from Row 4 to match panel layout)
-// FIXED: Changed 'Innate' to 'Intrinsic'
-const sourceText = ability.isEquipment ? (ability.source || 'Equip') : (ability.source || 'Intrinsic');
-
-this.ctx.textAlign = 'right';
-this.ctx.fillStyle = UITheme.colors.textMuted;
-this.ctx.fillText(sourceText, x + w - cardPadding, currentTextY);
-        // DROP DOWN BELOW ICON for full width, with a bit more padding
-        currentTextY = infoY + iconSize + 20;
-        const fullRowX = x + cardPadding;
-
-        // Row 3: Target (Full Width)
-        this.ctx.textAlign = 'left';
-        this.ctx.font = fontItalic;
-        const targetText = this.formatTargetingText(ability.targeting);
-        this.ctx.fillStyle = UITheme.colors.textMuted;
-        this.ctx.fillText("Target: ", fullRowX, currentTextY);
-        this.ctx.fillStyle = UITheme.colors.textMain;
-        this.ctx.fillText(targetText, fullRowX + this.ctx.measureText("Target: ").width, currentTextY);
-        
-        // Increased space before stats
-        currentTextY += 28;
-
-        // Row 4: Combat Stats Grid (Full Width)
-        if (hasStats) {
-            let statX = fullRowX;
-            this.ctx.font = UITheme.fonts.cardMono || UITheme.fonts.small || '18px monospace';
-            
-            const drawStat = (label, value, valueColor) => {
-                this.ctx.fillStyle = UITheme.colors.textMuted;
-                this.ctx.fillText(label, statX, currentTextY);
-                statX += this.ctx.measureText(label).width + 4; // slight gap between label and value
-                this.ctx.fillStyle = valueColor;
-                this.ctx.fillText(value, statX, currentTextY);
-                statX += this.ctx.measureText(value).width + 16; // relaxed gap between stat blocks
-            };
-
-            if (pwr) drawStat("Pwr:", `${pwr}x`, themeColor);
-            if (ability.accuracy !== undefined) drawStat("Acc:", `${Math.floor(ability.accuracy * 100)}%`, UITheme.colors.textMain);
-            if (ability.speed !== undefined) drawStat("Spd:", ability.speed.toString(), UITheme.colors.textMain);
-            
-            // Appended Range Stat
-            if (ability.range !== undefined) {
-                let rangeStr = ability.range.toString();
-                rangeStr = rangeStr.charAt(0).toUpperCase() + rangeStr.slice(1);
-                drawStat("Rng:", rangeStr, UITheme.colors.textMain);
-            }
-        }
-
-        // --- 6. Divider & Description (BOTTOM) ---
-        this.ctx.textBaseline = 'top';
-        let cursorY = infoY + infoBlockHeight;
-
-        if (descLines.length > 0) {
-            const flourishW = w * 0.5;
-            const divX = x + (w - flourishW) / 2;
-            
-            if (this.ui.drawLineWithGothicFlourish) {
-                this.ui.drawLineWithGothicFlourish(divX, cursorY, flourishW, themeColor);
-            } else {
-                this.ctx.strokeStyle = themeColor;
-                this.ctx.globalAlpha = 0.4;
-                this.ctx.lineWidth = 1;
-                this.ctx.beginPath();
-                this.ctx.moveTo(divX, cursorY + 12);
-                this.ctx.lineTo(divX + flourishW, cursorY + 12);
-                this.ctx.stroke();
-                this.ctx.globalAlpha = 1.0;
-            }
-            cursorY += 26; // Increased gap below divider
-
-            this.ctx.textAlign = 'center';
-            this.ctx.fillStyle = UITheme.colors.textMuted;
-            this.ctx.font = fontItalic; 
-            
-            if (this.ui.getWrappedLines) {
-                descLines.forEach(line => {
-                    this.ctx.fillText(line, x + w / 2, cursorY);
-                    cursorY += 24; // Relaxed line height for description
-                });
-            } else {
-                this.ui.drawWrappedText(descStr, x + cardPadding, cursorY, descW, 24, fontItalic, UITheme.colors.textMuted);
-            }
-        }
-        
-        this.ctx.restore();
+    // --- 1. Damage Type Colors Configuration ---
+    let rawType = ability.damageType || (ability.type ? ability.type.toLowerCase() : 'physical');
+    if (!ability.damageType && ability.effects && ability.effects.length > 0) {
+      const dmgEffect = ability.effects.find(e => e.type === 'damage');
+      if (dmgEffect && dmgEffect.damageType) rawType = dmgEffect.damageType.toLowerCase();
     }
+    const themeColor = (UITheme.colors.types && UITheme.colors.types[rawType]) || UITheme.colors.textMuted;
+    const displayType = rawType.charAt(0).toUpperCase() + rawType.slice(1);
+
+    // --- 2. Calculate Content & Dynamic Heights (Relaxed Compact) ---
+    const cardPadding = 24;
+    const w = 480;
+    const descW = w - (cardPadding * 2);
+    const descStr = ability.description || 'No description available.';
+    const fontItalic = UITheme.fonts.cardItalic || UITheme.fonts.bodyItalic || `italic ${UITheme.fonts.body}`;
+
+    // Measure description lines
+    let descLines = [descStr];
+    if (this.ui.getWrappedLines) {
+      descLines = this.ui.getWrappedLines(descStr, descW, fontItalic);
+    }
+
+    // Check for stats to adjust block height
+    const pwr = ability.power || (ability.effects && ability.effects.find(e => e.type === 'damage' || e.type === 'heal')?.power);
+    const hasStats = pwr || ability.accuracy !== undefined || ability.speed !== undefined || ability.range !== undefined;
+
+    // Increased heights to allow more breathing room between text lines
+    const infoBlockHeight = hasStats ? 132 : 104;
+    const dividerHeight = descLines.length > 0 ? 32 : 0;
+    const descTextHeight = descLines.length > 0 ? (descLines.length * 24) : 0;
+    const h = cardPadding + infoBlockHeight + dividerHeight + descTextHeight + cardPadding;
+
+    // --- 3. Calculate Positioning (Bottom-Up Anchoring) ---
+    const itemSize = 64;
+    const margin = 24;
+    const paddingX = 48;
+    const availableWidth = this.config.CANVAS_WIDTH - (paddingX * 2);
+    const columns = Math.floor(availableWidth / (itemSize + margin));
+    const col = menuIndex % columns;
+
+    const buttonX = paddingX + (col * (itemSize + margin));
+    let x = buttonX + (itemSize / 2) - (w / 2);
+    x = Math.max(24, Math.min(x, this.config.CANVAS_WIDTH - w - 24));
+
+    const actionMenuTop = this.config.CANVAS_HEIGHT - 216;
+    const y = actionMenuTop - h - 16;
+
+    // --- 4. Draw Thematic Background ---
+    this.drawDarkPanel(x, y, w, h);
+
+    this.ctx.save();
+    const bgGrad = this.ctx.createLinearGradient(x, y, x, y + h);
+    bgGrad.addColorStop(0, `${themeColor}15`);
+    bgGrad.addColorStop(0.4, 'rgba(0,0,0,0)');
+    this.ctx.fillStyle = bgGrad;
+    this.ctx.fillRect(x, y, w, h);
+
+    this.ctx.strokeStyle = themeColor;
+    this.ctx.lineWidth = 1;
+    this.ctx.strokeRect(x, y, w, h); // Outline to match menu aesthetics
+
+    // --- 5. Render Info Block (TOP) ---
+    const iconSize = 64;
+    const infoY = y + cardPadding;
+    const iconX = x + cardPadding;
+    const iconY = infoY;
+
+    // Draw Icon Frame
+    this.ctx.fillStyle = UITheme.colors.bgScale?.[2] || 'rgba(255, 255, 255, 0.05)';
+    this.ctx.fillRect(iconX, iconY, iconSize, iconSize);
+    this.drawIcon(ability.icon, 'abilities', iconX, iconY, iconSize);
+
+    this.ctx.strokeStyle = themeColor;
+    this.ctx.lineWidth = 1;
+    this.ctx.strokeRect(iconX, iconY, iconSize, iconSize);
+
+    const contentX = iconX + iconSize + 16;
+    let currentTextY = infoY + 14;
+
+    // Row 1: Title & Cost
+    this.ctx.textAlign = 'left';
+    this.ctx.textBaseline = 'middle';
+    this.ctx.font = UITheme.fonts.cardTitle || UITheme.fonts.bold;
+    this.ctx.fillStyle = UITheme.colors.textMain;
+    this.ctx.fillText(ability.name || 'Unknown Action', contentX, currentTextY);
+
+    this.ctx.textAlign = 'right';
+    this.ctx.font = UITheme.fonts.cardMono || UITheme.fonts.bold;
+    if (ability.cost) {
+      let costStr = "Free";
+      let costCol = UITheme.colors.textMuted;
+
+      // Render cost with spacing (e.g., "15 STM")
+      if (ability.cost.hp) { costStr = `${ability.cost.hp} HP`; costCol = UITheme.colors.hp; }
+      else if (ability.cost.mana) { costStr = `${ability.cost.mana} MP`; costCol = UITheme.colors.ins; }
+      else if (ability.cost.stamina) { costStr = `${ability.cost.stamina} STM`; costCol = UITheme.colors.stm; }
+      else if (ability.cost.insight) { costStr = `${ability.cost.insight} INS`; costCol = UITheme.colors.ins; }
+
+      this.ctx.fillStyle = costCol;
+      this.ctx.fillText(costStr, x + w - cardPadding, currentTextY);
+    } else {
+      this.ctx.fillStyle = UITheme.colors.textMuted;
+      this.ctx.fillText("Free", x + w - cardPadding, currentTextY);
+    }
+
+    // Increased space before next line
+    currentTextY += 32;
+
+    // Row 2: Type Badge & Source
+    this.ctx.textAlign = 'left';
+    this.ctx.font = fontItalic;
+    const typeWidth = this.ctx.measureText(displayType).width;
+    const badgePadX = 8;
+    const badgeH = 22;
+    const badgeW = typeWidth + (badgePadX * 2);
+    const badgeDrawY = currentTextY - (badgeH / 2);
+
+    this.ctx.fillStyle = `${themeColor}33`;
+    this.ctx.strokeStyle = themeColor;
+    this.ctx.lineWidth = 1;
+    this.ctx.beginPath();
+    if (this.ctx.roundRect) {
+      this.ctx.roundRect(contentX, badgeDrawY, badgeW, badgeH, badgeH / 2);
+    } else {
+      this.ctx.rect(contentX, badgeDrawY, badgeW, badgeH);
+    }
+    this.ctx.fill();
+    this.ctx.stroke();
+    this.ctx.fillStyle = themeColor;
+    this.ctx.fillText(displayType, contentX + badgePadX, currentTextY);
+
+    // Source aligned to the right (Moved from Row 4 to match panel layout)
+    const sourceText = ability.isEquipment ? (ability.source || 'Equip') : (ability.source || 'Intrinsic');
+
+    this.ctx.textAlign = 'right';
+    this.ctx.fillStyle = UITheme.colors.textMuted;
+    this.ctx.fillText(sourceText, x + w - cardPadding, currentTextY);
+
+    // DROP DOWN BELOW ICON for full width, with a bit more padding
+    currentTextY = infoY + iconSize + 20;
+    const fullRowX = x + cardPadding;
+
+    // Row 3: Target (Full Width)
+    this.ctx.textAlign = 'left';
+    this.ctx.font = fontItalic;
+    const targetText = this.formatTargetingText(ability.targeting);
+    this.ctx.fillStyle = UITheme.colors.textMuted;
+    this.ctx.fillText("Target: ", fullRowX, currentTextY);
+    this.ctx.fillStyle = UITheme.colors.textMain;
+    this.ctx.fillText(targetText, fullRowX + this.ctx.measureText("Target: ").width, currentTextY);
+
+    // Increased space before stats
+    currentTextY += 28;
+
+    // Row 4: Combat Stats Grid (Full Width)
+    if (hasStats) {
+      let statX = fullRowX;
+      this.ctx.font = UITheme.fonts.cardMono || UITheme.fonts.small || '18px monospace';
+
+      const drawStat = (label, value, valueColor) => {
+        this.ctx.fillStyle = UITheme.colors.textMuted;
+        this.ctx.fillText(label, statX, currentTextY);
+        statX += this.ctx.measureText(label).width + 4; // slight gap between label and value
+        this.ctx.fillStyle = valueColor;
+        this.ctx.fillText(value, statX, currentTextY);
+        statX += this.ctx.measureText(value).width + 16; // relaxed gap between stat blocks
+      };
+
+      if (pwr) drawStat("Pwr:", `${pwr}x`, themeColor);
+      if (ability.accuracy !== undefined) drawStat("Acc:", `${Math.floor(ability.accuracy * 100)}%`, UITheme.colors.textMain);
+      if (ability.speed !== undefined) drawStat("Spd:", ability.speed.toString(), UITheme.colors.textMain);
+
+      // Appended Range Stat
+      if (ability.range !== undefined) {
+        let rangeStr = ability.range.toString();
+        rangeStr = rangeStr.charAt(0).toUpperCase() + rangeStr.slice(1);
+        drawStat("Rng:", rangeStr, UITheme.colors.textMain);
+      }
+    }
+
+    // --- 6. Divider & Description (BOTTOM) ---
+    this.ctx.textBaseline = 'top';
+    let cursorY = infoY + infoBlockHeight;
+
+    if (descLines.length > 0) {
+      const flourishW = w * 0.5;
+      const divX = x + (w - flourishW) / 2;
+
+      if (this.ui.drawLineWithGothicFlourish) {
+        this.ui.drawLineWithGothicFlourish(divX, cursorY, flourishW, themeColor);
+      } else {
+        this.ctx.strokeStyle = themeColor;
+        this.ctx.globalAlpha = 0.4;
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(divX, cursorY + 12);
+        this.ctx.lineTo(divX + flourishW, cursorY + 12);
+        this.ctx.stroke();
+        this.ctx.globalAlpha = 1.0;
+      }
+      cursorY += 26; // Increased gap below divider
+
+      this.ctx.textAlign = 'center';
+      this.ctx.fillStyle = UITheme.colors.textMuted;
+      this.ctx.font = fontItalic;
+
+      if (this.ui.getWrappedLines) {
+        descLines.forEach(line => {
+          this.ctx.fillText(line, x + w / 2, cursorY);
+          cursorY += 24; // Relaxed line height for description
+        });
+      } else {
+        this.ui.drawWrappedText(descStr, x + cardPadding, cursorY, descW, 24, fontItalic, UITheme.colors.textMuted);
+      }
+    }
+
+    this.ctx.restore();
+  }
 
   formatTargetingText(targeting) {
     if (!targeting) return 'None';
@@ -661,7 +661,7 @@ this.ctx.fillText(sourceText, x + w - cardPadding, currentTextY);
     const x = Math.floor(layout.x * this.config.CANVAS_WIDTH);
     const y = Math.floor(layout.y * this.config.CANVAS_HEIGHT);
     const size = Math.floor(this.combatantRenderer.FRAME_SIZE * this.combatantRenderer.SPRITE_SCALE);
-    
+
     const time = performance.now() * 0.003;
     const bob = Math.sin(time) * 10;
     const arrowY = y - (size / 2) - 36 + bob;
@@ -672,7 +672,7 @@ this.ctx.fillText(sourceText, x + w - cardPadding, currentTextY);
     this.ctx.fillStyle = UITheme.colors.highlight;
     this.ctx.shadowColor = UITheme.colors.highlight;
     this.ctx.shadowBlur = 8 + (pulse * 12);
-    
+
     this.ctx.beginPath();
     this.ctx.moveTo(x, arrowY - 14);
     this.ctx.lineTo(x + 14, arrowY);
@@ -858,8 +858,8 @@ this.ctx.fillText(sourceText, x + w - cardPadding, currentTextY);
     this.ctx.fillStyle = color;
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
-    
-    const spacedText = text.split('').join('  ');
+
+    const spacedText = text.split('').join('  ');
     this.ctx.shadowColor = color;
     this.ctx.shadowBlur = 15;
     this.ctx.fillText(spacedText, w / 2, y + (h / 2) + 10);

@@ -6,6 +6,10 @@ export class WorkshopBaseRenderer {
         this.ctx = ui.ctx;
         this.loader = loader;
         this.padding = 36;
+
+        // Source cell size (px) of every icon sheet read by the workshop renderers.
+        // Subclasses (recipe, details, inventory) inherit this.
+        this.ICON_SRC_SIZE = 64;
     }
 
     formatValue(val, forceSign = false) {
@@ -34,11 +38,11 @@ export class WorkshopBaseRenderer {
 
     drawIcon(def, x, y, size = 64) {
         if (!def) return;
-        
+
         let sheetName = 'items';
         const type = (def.type || '').toLowerCase();
         const slot = (def.slot || '').toLowerCase();
-        
+
         if (slot === 'mainhand' || slot === 'offhand' || type === 'weapon' || type === 'shield' || type === 'tool') {
             sheetName = 'weapons';
         } else if (type === 'armor' || ['head', 'body', 'legs', 'feet', 'hands', 'accessory'].includes(slot)) {
@@ -48,21 +52,21 @@ export class WorkshopBaseRenderer {
         } else if (type === 'material') {
             sheetName = 'materials';
         }
-        
+
         const sheet = this.loader.get(sheetName) || this.loader.get('items') || this.loader.get('icons');
         if (!sheet) return;
-        
+
         const iconData = def.icon || { col: 0, row: 0 };
-        const ICON_SIZE = 32;
+        const ICON_SIZE = this.ICON_SRC_SIZE;
         const srcX = (iconData.col * ICON_SIZE);
         const srcY = (iconData.row * ICON_SIZE);
-        
+
         this.ui.drawSprite(sheet, srcX, srcY, ICON_SIZE, ICON_SIZE, x, y, size, size);
     }
 
     getRarityColor(rarity) {
         if (!rarity) return UITheme.colors.textMain;
-        
+
         const rarityColors = {
             common: UITheme.colors.textMain || '#ffffff',
             uncommon: UITheme.colors.success || '#4caf50',
@@ -70,7 +74,7 @@ export class WorkshopBaseRenderer {
             epic: UITheme.colors.corruption || '#9c27b0',
             legendary: UITheme.colors.textHighlight || '#ffeb3b',
         };
-        
+
         return rarityColors[rarity.toLowerCase()] || UITheme.colors.textMain;
     }
 }

@@ -17,6 +17,8 @@ export class EncounterLogic {
                     return gameState.party?.members?.length > 1;
                 case "has_item":
                     return InventorySystem.hasItem(cond.itemId, cond.qty || 1);
+                case "has_currency":
+                    return (gameState.party?.currency || 0) >= (cond.amount || 0);
                 case "context_flag_set":
                     return !!context[cond.flagId];
                 case "context_flag_not_set":
@@ -31,6 +33,7 @@ export class EncounterLogic {
                     return hasTrait || hasTag;
                 }
                 default:
+                    console.warn(`[EncounterLogic] Unknown condition type '${cond.type}'; treating as met.`);
                     return true;
             }
         });

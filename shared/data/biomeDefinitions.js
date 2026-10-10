@@ -33,7 +33,9 @@ const _step = (x, a, b) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a)
    wide); floor: a dirt bed along the middle (c < 0.025), only where there is a hill for it to run through. */
 const _cut = (c) => 1 - _step(c, 0.06, 0.075);
 const _bed = (c, hill) => (1 - _step(c, 0.028, 0.04)) * _step(hill, 0.0, 0.3);
-const HILL_TIERS = { plains: [0.12, 0.7, 1.2], desert: [1.5], snowy: [-0.25, 0.0, 0.24, 0.46, 0.66] };
+/* Every biome below now reads the massif field (the snowy mountains' broad domes, about [-1.3, 1.3] with a few percent beyond: 36% of the land is above 0.3,
+   12% above 0.9, 6% above 1.2), each with its own tiers: plains 3 (LAYER_3 .. LAYER_5), desert 2 (LAYER_3 .. LAYER_4, so a mesa is never higher), snowy 5. */
+const HILL_TIERS = { plains: [0.3, 0.8, 1.25], desert: [0.3, 0.85], snowy: [-0.25, 0.0, 0.24, 0.46, 0.66] };
 /* Snowy mountains: 5 tiers, one per plateau level (LAYER_3 .. LAYER_7), each lifting the land by a quarter of the elevation scale so the tiers land
    in the middle of the GLOBAL_ELEVATION_MAP bands. The tiers are read on the massif field (TerrainGenerator.getMassifValue, about [-1.3, 1.3]),
    not the ridge-and-ring hill field. Move a tier down to make that level more common, up to make it rarer. */
@@ -41,6 +43,19 @@ const _lift = (hill, tiers, k = 0.27, w = 0.06) => tiers.reduce((sum, t) => sum 
 export const BIOME_DEFINITIONS = {
     PLAINS: {
         id: 'PLAINS',
+        plateauWidth: 4 /* as in the snowy mountains: every step of a hill is at least 4 cells wide (default 2) */,
+        hillField: 'massif' /* broad domes (see TerrainGenerator.getMassifValue) instead of the ridge-and-ring hill field */,
+        stairChance: 1.0 /* chance that a 32 x 32 block gets stairs (the default is 0.35) ... */,
+        stairsPerBlock: 2 /* ... and how many at most (default 1): there are three levels to climb */,
+        stairMargin: 4 /* cells kept free at the block edge (default 6) */,
+        straight: { colW: 8, colA: 1, rowW: 6, rowA: 1 } /* long straight cliffs, as in the snowy mountains */,
+        massifStretch: [1.6, 1.0] /* hills (and the canyon line) a little longer east-west */,
+        gorge: 0.04 /* ravines cut cell by cell through the hills (narrower than the desert's) */,
+        features: {
+            rings: { chance: 0.3, wall: 1.4 } /* a few donut hills */,
+            ridge: { wall: 0.8 } /* winding ridges */,
+            crevice: { width: 0.06, freq: 0.03, warp: 12, maskLow: 0.15 } /* the odd crack */,
+        } /* see TerrainGenerator._applyFeatures */,
         defaultLootTable: 'plains',
         blobTileset: {
             primaryFloor: 'plainsPrimaryFloor',
@@ -55,25 +70,21 @@ export const BIOME_DEFINITIONS = {
             waterInterior: 'plainsWaterInterior',
             levelDirt: null /* dirt only generates on the lower (ground) level, never on the tops of cliffs */,
         },
-        objectSheetId: 'plainsMapObjects',
         allowedWeather: ['rain', 'fog'],
         music: { day: 'plainsBgmDay', night: 'plainsBgmNight', battle: 'plainsBattleBgm' },
         battleBackgrounds: { day: 'plainsBattleDayBg', dusk: 'plainsBattleDuskBg', night: 'plainsBattleNightBg' },
         shapeElevation: (noise, hill = 0, c = 1) => {
-            /* Plains: lakes keep their shape, the rest of the ground is flattened and carried up in tiers by the hill field (large hills with cliffs). */
-            let ground = noise < 0 ? noise * (1 - _step(hill, 0.0, 0.14)) : Math.min(noise, 0.5) * 0.4;
-            ground += (-0.22 - ground) * _bed(c, hill);
+            /* Plains: like the snowy mountains the ground is nearly flat and the massif field carries it up in tiers, but there are only three of them
+               (LAYER_3 .. LAYER_5) and they start higher, so the hills are lower and rarer. Lakes keep their shape on the low ground and are filled in
+               where a hill stands, so a cliff never drops straight into a pond. No gorges: every terrace stays whole. */
+            const t0 = HILL_TIERS.plains[0];
+            let ground = noise < 0 ? noise * (1 - _step(hill, t0 - 0.12, t0 + 0.02)) : Math.min(noise, 0.5) * 0.4;
+            ground += (-0.22 - ground) * _bed(c, hill - (t0 - 0.35)) * 0.8; /* dry ravine floor */
             return Math.min(0.99, ground + _lift(hill - 3 * _cut(c), HILL_TIERS.plains)); /* capped: plains hills stop at LAYER_5 */
         },
         structures: { rate: 0.1, pools: [{ chance: 1.0, id: 'ABANDONED_VILLAGE' }] },
         mapObjects: {
             [CONFIG.TILE_TYPES.LAYER_3]: [
-                /* Spawns on Layer 3 only when the noise threshold is 0.50 or higher */
-                {
-                    chance: 0.8,
-                    rangeStart: 0.5,
-                    id: 'STRANGE_OBELISK',
-                },
                 { chance: 0.015, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
             ],
             [CONFIG.TILE_TYPES.LAYER_2]: [
@@ -81,20 +92,21 @@ export const BIOME_DEFINITIONS = {
                 { chance: 0.014, id: 'OAK_TREE_1', footprint: 2 },
                 { chance: 0.044, id: 'PINE_TREE' },
                 { chance: 0.04, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
+                { chance: 0.008, id: 'STICK' } /* rare */,
+                { chance: 0.002, id: 'STRANGE_OBELISK', footprint: 2 } /* rare; this list is also copied to every plateau level as _WALLS (see the loop at the bottom) */,
                 { chance: 0.2, rangeStart: 0.1, pool: ['TULIPS_RED', 'TULIPS_WHITE', 'TULIPS_ORANGE'] },
                 { chance: 0.7, rangeStart: 0.3, pool: ['GRASS_COVERAGE_1', 'GRASS_COVERAGE_2', 'GRASS_COVERAGE_3'] },
             ],
-            [CONFIG.TILE_TYPES.LAYER_1]: [{ chance: 0.05, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] }],
-            _WALLS: [
-                { chance: 0.05, id: 'PINE_TREE' },
-                { chance: 0.035, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
-                { chance: 0.3, rangeStart: 0.15, pool: ['GRASS_COVERAGE_1', 'GRASS_COVERAGE_2'] },
+            [CONFIG.TILE_TYPES.LAYER_1]: [
+                { chance: 0.05, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
+                { chance: 0.002, id: 'STRANGE_OBELISK', footprint: 2 },
             ],
         },
         encounters: {
             rate: 0.01,
             type: 'time_weighted',
             pools: [
+                { weight: 10, id: 'aftermath', allowedTimes: ['day', 'dusk', 'night'] },
                 { weight: 10, id: 'wild_hunt', allowedTimes: ['day', 'dusk', 'night'] },
                 { weight: 10, id: 'wounded_mutt', allowedTimes: ['day', 'dusk', 'night'] },
                 { weight: 20, id: 'a_disturbing_sight', allowedTimes: ['day', 'dusk', 'night'] },
@@ -105,6 +117,19 @@ export const BIOME_DEFINITIONS = {
     },
     DESERT: {
         id: 'DESERT',
+        plateauWidth: 4 /* as in the snowy mountains: every step is at least 4 cells wide, so the canyon walls come in broad terraces (default 2) */,
+        hillField: 'massif' /* broad domes (see TerrainGenerator.getMassifValue) instead of the ridge-and-ring hill field */,
+        massifStretch: [2.2, 1.0] /* the domes (and the canyon line) are stretched along x: the mesas are long, east-west */,
+        gorge: 0.065 /* the canyon is cut cell by cell through the plateaus, so it stays one piece (see TerrainGenerator._getRawElevationLevel) */,
+        features: {
+            rings: { chance: 0.6, wall: 1.4 } /* donuts: a rock wall round a sunken basin, one gap */,
+            ridge: { wall: 0.72 } /* winding ridges that bend back on themselves */,
+            crevice: { width: 0.07, freq: 0.03, warp: 12, maskLow: 0.02 } /* narrow twisting cracks through the mesas */,
+        } /* see TerrainGenerator._applyFeatures */,
+        stairChance: 1.0 /* chance that a 32 x 32 block gets stairs (the default is 0.35) ... */,
+        stairsPerBlock: 2 /* ... and how many at most (default 1) */,
+        stairMargin: 4 /* cells kept free at the block edge (default 6) */,
+        straight: { colW: 10, colA: 2, rowW: 6, rowA: 1 } /* long straight cliffs: the mesas have long, level edges */,
         defaultLootTable: 'desert',
         blobTileset: {
             primaryFloor: 'desertPrimaryFloor',
@@ -120,14 +145,17 @@ export const BIOME_DEFINITIONS = {
             levelDirt: null /* dirt only generates on the lower (ground) level, never on the tops of cliffs */,
         },
         allowedWeather: ['sandstorm'],
-        objectSheetId: 'desertMapObjects',
         music: { day: 'desertBgmDay', night: 'desertBgmNight', battle: 'desertBattleBgm' },
         battleBackgrounds: { day: 'desertBattleDayBg', dusk: 'desertBattleDuskBg', night: 'desertBattleNightBg' },
         shapeElevation: (noise, hill = 0, c = 1) => {
-            /* Desert: flat dunes; plateaus (mesas, one level high, flat-topped) only stand where the hill field is very high, so they are rare. */
-            let ground = noise < -0.2 ? noise * (1 - _step(hill, 0.5, 0.7)) + 0.05 * _step(hill, 0.5, 0.7) : 0.05 + noise * 0.1;
-            ground += (-0.22 - ground) * _bed(c, hill - 0.3);
-            return ground + _lift(hill - 3 * _cut(c), HILL_TIERS.desert);
+            /* Desert: flat sand with large, long, low mesas. The massif field (stretched along x, see massifStretch) carries the land up in two tiers only
+               (LAYER_3 and LAYER_4), so a mesa is never more than two levels high. Oases and dirt patches stay on the low ground and are filled in where
+               a mesa stands. A winding canyon cuts through the mesas (gorge walls, see `gorge`) and runs on across the flats as a dry bed of dirt. */
+            const t0 = HILL_TIERS.desert[0];
+            const s = _step(hill, t0 - 0.12, t0 + 0.02);
+            let ground = noise < -0.2 ? noise * (1 - s) + 0.05 * s : 0.05 + noise * 0.1;
+            ground += (-0.22 - ground) * _bed(c, hill - (t0 - 0.35));
+            return ground + _lift(hill - 4 * _cut(c), HILL_TIERS.desert);
         },
         structures: { rate: 0.0, pools: [] },
         mapObjects: {
@@ -140,12 +168,6 @@ export const BIOME_DEFINITIONS = {
                 { chance: 0.5, rangeStart: 0.3, pool: ['SAND_DUNE_1', 'SAND_DUNE_2', 'SAND_DUNE_3'] },
             ],
             [CONFIG.TILE_TYPES.LAYER_1]: [{ chance: 0.10, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] }],
-            _WALLS: [
-                { chance: 0.03, id: 'SMALL_CACTUS_1' },
-                { chance: 0.04, id: 'SMALL_CACTUS_2' },
-                { chance: 0.07, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
-                { chance: 0.5, rangeStart: 0.3, pool: ['SAND_DUNE_1', 'SAND_DUNE_2', 'SAND_DUNE_3'] },
-            ],
         },
         encounters: { rate: 0.005, type: 'time_weighted', pools: [{ weight: 100, id: 'suspicious_merchant', allowedTimes: ['day'] }] },
         battles: { rate: 0.01, tables: { day: 'desert_battles_day', dusk: 'desert_battles_day', night: 'desert_battles_night' } },
@@ -172,10 +194,9 @@ export const BIOME_DEFINITIONS = {
             waterInterior: 'snowyMountainsWaterInterior',
             levelDirt: null /* frozen dirt only on the lowest ground, never on the tops of the cliffs */,
         },
-        objectSheetId: 'plainsMapObjects' /* placeholder: swap for a snowy object sheet when there is one */,
         allowedWeather: ['fog'] /* add 'snow' here once the weather exists */,
-        music: { day: 'plainsBgmDay', night: 'plainsBgmNight', battle: 'plainsBattleBgm' } /* placeholders */,
-        battleBackgrounds: { day: 'plainsBattleDayBg', dusk: 'plainsBattleDuskBg', night: 'plainsBattleNightBg' } /* placeholders */,
+        music: { day: 'snowyMountainsBgmDay', night: 'snowyMountainsBgmNight', battle: 'snowyMountainsBattleBgm' } /* placeholders */,
+        battleBackgrounds: { day: 'snowyMountainsBattleDayBg', dusk: 'snowyMountainsBattleDuskBg', night: 'snowyMountainsBattleNightBg' } /* placeholders */,
         shapeElevation: (noise, hill = 0, c = 1) => {
             /* Snowy mountains: frozen lakes keep their shape on the low ground; everywhere else the ground is nearly flat and the massif field
                carries it up through five tiers (LAYER_3 .. LAYER_7). Tall hills are frequent and very broad. */
@@ -194,10 +215,6 @@ export const BIOME_DEFINITIONS = {
             [CONFIG.TILE_TYPES.LAYER_3]: [
                 { chance: 0.04, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
                 { chance: 0.012, pool: ['BOULDER_1', 'BOULDER_2'] },
-            ],
-            _WALLS: [
-                { chance: 0.04, id: 'SNOWY_PINE_TREE' },
-                { chance: 0.05, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
             ],
         },
     },
@@ -218,7 +235,6 @@ export const BIOME_DEFINITIONS = {
             voidColor: '#07080a',
             levelTop: 'void',
         },
-        objectSheetId: 'houseInteriorMapObjects',
         allowedWeather: [],
         music: { day: 'houseInteriorBgmDay', night: 'houseInteriorBgmNight', battle: 'houseInteriorBattleBgm' },
         battleBackgrounds: { day: 'houseInteriorBg', dusk: 'houseInteriorBg', night: 'houseInteriorBg' },
@@ -229,3 +245,11 @@ export const BIOME_DEFINITIONS = {
         battles: { rate: 0, tables: null },
     },
 };
+
+/* The tops of the cliff levels (LAYER_3 and up) spawn exactly the map objects the ground level (LAYER_2) does, in every biome: the `_WALLS` category the
+   world manager asks for on a plateau is the biome's LAYER_2 list. To give a biome different objects on its plateaus, write its own `_WALLS` list
+   in its mapObjects and this loop leaves it alone. */
+for (const def of Object.values(BIOME_DEFINITIONS)) {
+    const mo = def.mapObjects;
+    if (mo && mo._WALLS === undefined) mo._WALLS = mo[CONFIG.TILE_TYPES.LAYER_2] || [];
+}

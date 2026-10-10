@@ -2,14 +2,17 @@ import { UITheme } from '../../../ui/UITheme.js';
 import { TRAIT_DEFINITIONS } from '../../../../../shared/data/traitDefinitions.js';
 import { ItemDefinitions } from '../../../../../shared/data/itemDefinitions.js';
 
-
 export class EquipmentPanel {
   constructor(ui, loader) {
     this.ui = ui;
     this.loader = loader;
-    this.SLOT_HEIGHT = 115; 
+
+    this.SLOT_HEIGHT = 115;
     this.PORTRAIT_SIZE = 256;
     this.RENDER_SIZE = 64;
+    this.ICON_SRC_SIZE = 64;        // Item icon sprite sheet cell size (upgraded from 32)
+    this.STATUS_ICON_SRC_SIZE = 64; // Status effect sprite sheet cell size (upgraded from 32)
+    this.PORTRAIT_SRC_SIZE = 128;   // Portraits remain 128x128
   }
 
   _getVal(v) {
@@ -19,20 +22,21 @@ export class EquipmentPanel {
   render(member, stats, activeSlots, selectedIndex, isChoosingItem, x, y, w, h, hitboxes, heldItem, hoveredId = null, isEditingName = false) {
     const centerX = Math.floor(x + (w / 2));
     let headerY = y + 24;
+
     const actualLevel = this._getVal(stats.level) || this._getVal(member.level) || 1;
 
     this.ui.ctx.font = UITheme.fonts.header;
     const nameWidth = this.ui.ctx.measureText(member.name).width + 80;
-    const nameHeight = 60; 
+    const nameHeight = 60;
 
-    hitboxes.push({ 
-      id: 'BTN_EDIT_NAME', 
-      x: centerX - (nameWidth / 2), 
-      y: headerY, 
-      w: nameWidth, 
-      h: nameHeight, 
-      type: 'button', 
-      hoverSfx: 'hoverTick' 
+    hitboxes.push({
+      id: 'BTN_EDIT_NAME',
+      x: centerX - (nameWidth / 2),
+      y: headerY,
+      w: nameWidth,
+      h: nameHeight,
+      type: 'button',
+      hoverSfx: 'hoverTick'
     });
 
     if (!isEditingName) {
@@ -46,7 +50,7 @@ export class EquipmentPanel {
     const equipStartY = y + 228;
     this._drawEquipmentLayout(member, activeSlots, selectedIndex, isChoosingItem, centerX, equipStartY, w, hitboxes, heldItem, hoveredId);
 
-    const traitsStartY = equipStartY + Math.max(this.PORTRAIT_SIZE, activeSlots.length/2 * 125) + 60;
+    const traitsStartY = equipStartY + Math.max(this.PORTRAIT_SIZE, activeSlots.length / 2 * 125) + 60;
     this._drawTraitBadges(member, x, traitsStartY, w, hitboxes, hoveredId);
   }
 
@@ -54,6 +58,7 @@ export class EquipmentPanel {
     const totalMaxHp = this._getVal(stats.maxHp) || this._getVal(member.maxHp);
     const totalMaxStm = this._getVal(stats.maxStamina) || this._getVal(member.maxStamina);
     const totalMaxIns = this._getVal(stats.maxInsight) || this._getVal(member.maxInsight);
+
     const currentXp = this._getVal(stats.xp) || this._getVal(member.xp);
     const nextXp = this._getVal(stats.xpToNext) || this._getVal(member.xpToNext) || this._getVal(stats.maxXp) || this._getVal(member.maxXp) || 100;
 
@@ -64,13 +69,13 @@ export class EquipmentPanel {
 
     this.ui.ctx.font = UITheme.fonts.mono;
     const gap = 36;
+
     const totalW = this.ui.ctx.measureText(hpText + stmText + insText + xpText).width + (gap * 3);
-    
     let startX = centerX - (totalW / 2);
 
     const drawVital = (txt, color) => {
       const width = this.ui.ctx.measureText(txt).width;
-      this.ui.drawText(txt, startX + width/2, y, UITheme.fonts.mono, color, "center");
+      this.ui.drawText(txt, startX + width / 2, y, UITheme.fonts.mono, color, "center");
       startX += width + gap;
     };
 
@@ -85,7 +90,7 @@ export class EquipmentPanel {
   _drawEquipmentLayout(member, activeSlots, selectedIndex, isChoosingItem, centerX, startY, w, hitboxes, heldItem, hoveredId) {
     const equipData = (member.state && member.state.equipment) ? member.state.equipment : (member.equipment || {});
     const splitIndex = Math.ceil(activeSlots.length / 2);
-    
+
     let isOffhandBlocked = false;
     const mhKey = Object.keys(equipData).find(k => k.toLowerCase() === 'mainhand');
     if (mhKey && equipData[mhKey]) {
@@ -100,21 +105,23 @@ export class EquipmentPanel {
 
     const pX = Math.floor(centerX - (this.PORTRAIT_SIZE / 2));
     const pY = startY + 24;
+
     this.ui.drawPanel(pX, pY, this.PORTRAIT_SIZE, this.PORTRAIT_SIZE, UITheme.colors.bgScale[0]);
 
     let assetKey = member.spritePortrait;
     const img = this.loader.get(assetKey);
-    if(img) {
-      this.ui.drawSprite(img, 0, 0, 128, 128, pX, pY, this.PORTRAIT_SIZE, this.PORTRAIT_SIZE);
+    if (img) {
+      this.ui.drawSprite(img, 0, 0, this.PORTRAIT_SRC_SIZE, this.PORTRAIT_SRC_SIZE, pX, pY, this.PORTRAIT_SIZE, this.PORTRAIT_SIZE);
     }
+
     this._drawStatusEffects(member, pX, pY, this.PORTRAIT_SIZE);
 
     const drawSlot = (slotName, index, isLeft) => {
       const globalIndex = isLeft ? index : splitIndex + index;
       const isSelected = (globalIndex === selectedIndex);
-      
+
       const slotW = Math.floor((w - this.PORTRAIT_SIZE - 62) / 2);
-      const slotX = isLeft ? (centerX - (this.PORTRAIT_SIZE/2) - slotW - 19) : (centerX + (this.PORTRAIT_SIZE/2) + 19);
+      const slotX = isLeft ? (centerX - (this.PORTRAIT_SIZE / 2) - slotW - 19) : (centerX + (this.PORTRAIT_SIZE / 2) + 19);
       const slotY = startY + (index * (this.SLOT_HEIGHT + 10));
 
       const isOffhandSlot = slotName.toLowerCase().replace(/\s/g, '') === 'offhand';
@@ -127,15 +134,17 @@ export class EquipmentPanel {
         if (def) {
           const iSlot = (def.slot || def.type || '').toLowerCase().replace(/[\s-]/g, '');
           const sSlot = slotName.toLowerCase().replace(/\s/g, '');
-          isValidDrop = (iSlot === sSlot) || 
-            (sSlot === 'mainhand' && (iSlot === 'weapon' || iSlot === 'tool' || iSlot === 'onehand' || iSlot.includes('twohand'))) ||
-            (sSlot === 'offhand' && (iSlot === 'shield' || iSlot === 'weapon' || iSlot === 'onehand') && !iSlot.includes('twohand'));
+
+          isValidDrop = (iSlot === sSlot) ||
+                        (sSlot === 'mainhand' && (iSlot === 'weapon' || iSlot === 'tool' || iSlot === 'onehand' || iSlot.includes('twohand'))) ||
+                        (sSlot === 'offhand' && (iSlot === 'shield' || iSlot === 'weapon' || iSlot === 'onehand') && !iSlot.includes('twohand'));
         }
       }
 
       let boxColor = UITheme.colors.panelBg;
       let drawBrackets = false;
       let bracketColor = UITheme.colors.borderHighlight;
+
       const isHovered = (hoveredId === `SLOT_${slotName}`);
 
       if (isValidDrop && !isBlocked) {
@@ -159,25 +168,36 @@ export class EquipmentPanel {
       }
 
       hitboxes.push({
-        id: `SLOT_${slotName}`, x: slotX, y: slotY, w: slotW, h: this.SLOT_HEIGHT, type: 'slot', slotId: slotName,
-        hoverSfx: 'hoverTick', clickSfx: isBlocked ? 'cancelSound' : 'cinematicBoom'
+        id: `SLOT_${slotName}`,
+        x: slotX,
+        y: slotY,
+        w: slotW,
+        h: this.SLOT_HEIGHT,
+        type: 'slot',
+        slotId: slotName,
+        hoverSfx: 'hoverTick',
+        clickSfx: isBlocked ? 'cancelSound' : 'cinematicBoom'
       });
 
       this.ui.drawPanel(slotX, slotY, slotW, this.SLOT_HEIGHT, boxColor);
+
       if (drawBrackets) {
         this.ui.drawSelectionBrackets(slotX, slotY, slotW, this.SLOT_HEIGHT, 5, bracketColor);
       }
 
       let item = equipData[slotName];
+
       if (heldItem && heldItem.source === 'equipment' && heldItem.originSlot === slotName) {
         item = null;
       }
+
       let def = null;
       if (item && item.defId) {
         def = ItemDefinitions[item.defId];
       }
 
       let itemName = "Empty";
+
       if (isBlocked) {
         itemName = "Blocked";
         item = null;
@@ -201,7 +221,7 @@ export class EquipmentPanel {
       const nameLines = this.ui.getWrappedLines(itemName, textW, UITheme.fonts.cardSmall);
       let nameY = slotY + 58;
       if (nameLines.length === 1) nameY += 10;
-      
+
       nameLines.forEach((line, i) => {
         if (i < 2) {
           let color = UITheme.colors.textMuted;
@@ -221,6 +241,7 @@ export class EquipmentPanel {
 
   _drawTraitBadges(member, x, y, w, hitboxes, hoveredId) {
     const centerX = x + (w / 2);
+
     this.ui.drawText("Traits", centerX, y, UITheme.fonts.bold, UITheme.colors.textMuted, "center");
     this.ui.drawLineWithGothicFlourish(centerX - 120, y + 19, 240, UITheme.colors.borderHighlight);
 
@@ -246,18 +267,25 @@ export class EquipmentPanel {
       const bgColor = isHovered ? UITheme.colors.states.hoverBg : UITheme.colors.bgScale[1];
 
       hitboxes.push({
-        id: traitId, x: currentX, y: currentY, w: width, h: 53, type: 'trait', hoverSfx: 'hoverTick'
+        id: traitId,
+        x: currentX,
+        y: currentY,
+        w: width,
+        h: 53,
+        type: 'trait',
+        hoverSfx: 'hoverTick'
       });
 
       this.ui.drawPanel(currentX, currentY, width, 53, bgColor);
-      this.ui.drawText(def.name, currentX + width/2, currentY + 34, UITheme.fonts.cardSmall, UITheme.colors.textMain, "center", "middle");
-      
+      this.ui.drawText(def.name, currentX + width / 2, currentY + 34, UITheme.fonts.cardSmall, UITheme.colors.textMain, "center", "middle");
+
       currentX += width + 19;
     });
   }
 
   _drawIcon(def, x, y) {
     if (!def) return;
+
     let sheetName = 'items';
     const type = (def.type || '').toLowerCase();
     const slot = (def.slot || '').toLowerCase();
@@ -274,18 +302,20 @@ export class EquipmentPanel {
 
     const sheet = this.loader.get(sheetName) || this.loader.get('items') || this.loader.get('icons');
     if (!sheet) return;
-    
-    const iconData = def.icon || {col:0, row:0};
-    this.ui.drawSprite(sheet, iconData.col*32, iconData.row*32, 32, 32, x, y, 64, 64);
+
+    const iconData = def.icon || { col: 0, row: 0 };
+    const src = this.ICON_SRC_SIZE;
+    this.ui.drawSprite(sheet, iconData.col * src, iconData.row * src, src, src, x, y, 64, 64);
   }
 
   _drawStatusEffects(member, pX, pY, pSize) {
     if (!member.statusEffects || member.statusEffects.length === 0) return;
 
     const sheetKey = 'statusEffects';
-    const srcSize = 32;
-    const drawSize = 32; 
+    const srcSize = this.STATUS_ICON_SRC_SIZE;
+    const drawSize = 32;
     const spacing = 5;
+
     const sheet = this.loader.get ? this.loader.get(sheetKey) : this.loader.getAsset(sheetKey);
 
     let drawX = pX + 5;
@@ -298,7 +328,7 @@ export class EquipmentPanel {
       if (sheet && effect.icon) {
         this.ui.ctx.drawImage(sheet, effect.icon.col * srcSize, effect.icon.row * srcSize, srcSize, srcSize, drawX, drawY, drawSize, drawSize);
       } else {
-        this.ui.drawText(effect.name.charAt(0), drawX + (drawSize/2), drawY + (drawSize/2), UITheme.fonts.cardSmall, "white", "center", "middle");
+        this.ui.drawText(effect.name.charAt(0), drawX + (drawSize / 2), drawY + (drawSize / 2), UITheme.fonts.cardSmall, "white", "center", "middle");
       }
 
       this.ui.ctx.strokeStyle = UITheme.colors.border;

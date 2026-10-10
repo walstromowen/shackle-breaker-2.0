@@ -22,7 +22,7 @@ export class CharacterSummaryRenderer {
     this.statsPanel = new StatsPanel(this.ui);
     this.abilitiesPanel = new AbilitiesPanel(this.ui, loader);
     this.equipPanel = new EquipmentPanel(this.ui, loader);
-    this.invPanel   = new InventoryPanel(this.ui, loader);
+    this.invPanel = new InventoryPanel(this.ui, loader);
     this.tooltipSystem = new TooltipSystem(this.ui, loader);
 
     this.hitboxes = [];
@@ -55,6 +55,7 @@ export class CharacterSummaryRenderer {
     this.ui.drawLine(leftW + centerW, 0, leftW + centerW, h, UITheme.colors.border, 1);
 
     if (!member) return;
+
     const stats = derivedStats || StatCalculator.calculate(member);
 
     // --- 4. Render Components ---
@@ -64,22 +65,29 @@ export class CharacterSummaryRenderer {
 
     // B. Center Column (Equipment & Vitals)
     this.equipPanel.render(
-      member, stats, state.slots, state.selectedSlotIndex, 
-      state.isChoosingItem, leftW, 0, centerW, h, 
-      this.hitboxes, state.heldItem, state.hoveredHitboxId, isEditingName
+      member,
+      stats,
+      state.slots,
+      state.selectedSlotIndex,
+      state.isChoosingItem,
+      leftW, 0, centerW, h,
+      this.hitboxes,
+      state.heldItem,
+      state.hoveredHitboxId,
+      isEditingName
     );
 
     // --- ADD NAME EDITING OVERLAY ---
     if (isEditingName) {
       const centerX = leftW + Math.floor(centerW / 2);
       const nameY = 24 + 36;
-      
+
       this.ctx.font = UITheme.fonts.header;
       const textWidth = this.ctx.measureText(nameInputValue).width;
-      const boxW = Math.max(250, textWidth + 80); 
-      
-      this.ui.drawRect(centerX - boxW/2, nameY - 48, boxW, 72, "#080808", true);
-      this.ui.drawRect(centerX - boxW/2, nameY - 48, boxW, 72, UITheme.colors.borderHighlight, false);
+      const boxW = Math.max(250, textWidth + 80);
+
+      this.ui.drawRect(centerX - boxW / 2, nameY - 48, boxW, 72, "#080808", true);
+      this.ui.drawRect(centerX - boxW / 2, nameY - 48, boxW, 72, UITheme.colors.borderHighlight, false);
 
       const cursor = (Math.floor(Date.now() / 500) % 2 === 0) ? "|" : "";
       this.ui.drawText(nameInputValue + cursor, centerX, nameY, UITheme.fonts.header, UITheme.colors.textHighlight, "center");
@@ -91,12 +99,16 @@ export class CharacterSummaryRenderer {
     const invW = rightW - (this.padding * 2);
 
     this.invPanel.render(
-      state.filteredInventory, state.inventoryIndex, state.isChoosingItem,
-      invX, invY, invW, h, state, this.hitboxes
+      state.filteredInventory,
+      state.inventoryIndex,
+      state.isChoosingItem,
+      invX, invY, invW, h,
+      state,
+      this.hitboxes
     );
 
     // ==========================================
-    // REORDERED RENDER CALLS 
+    // REORDERED RENDER CALLS
     // ==========================================
 
     // D. Input Prompts
@@ -107,7 +119,7 @@ export class CharacterSummaryRenderer {
       this._drawHeldItem(state);
     }
 
-    // F. Context Menu 
+    // F. Context Menu
     if (state.contextMenu) {
       this._drawContextMenu(state.contextMenu, state.contextMenu.selectedIndex, state.hoveredHitboxId);
     }
@@ -115,7 +127,7 @@ export class CharacterSummaryRenderer {
     // G. Tooltips (Highest Z-Index)
     if (!state.heldItem && !state.contextMenu) {
       let activeTooltipId = state.hoveredHitboxId;
-      
+
       // 1. Fallback to keyboard focus if no mouse hover exists
       if (!activeTooltipId) {
         if (state.isChoosingItem && state.inventoryIndex !== undefined && state.inventoryIndex !== null) {
@@ -129,13 +141,13 @@ export class CharacterSummaryRenderer {
       if (activeTooltipId) {
         const tooltipState = { ...state, hoveredHitboxId: activeTooltipId };
         const activeHitbox = this.hitboxes.find(h => h.id === activeTooltipId);
-        
+
         if (activeHitbox) {
           const mx = tooltipState.mouse?.x || 0;
           const my = tooltipState.mouse?.y || 0;
-          const isMouseInBox = mx >= activeHitbox.x && mx <= activeHitbox.x + activeHitbox.w && 
+          const isMouseInBox = mx >= activeHitbox.x && mx <= activeHitbox.x + activeHitbox.w &&
                                my >= activeHitbox.y && my <= activeHitbox.y + activeHitbox.h;
-          
+
           // 2. Snap tooltip anchor to the center of the item if using keyboard
           if (!isMouseInBox) {
             tooltipState.mouse = {
@@ -143,6 +155,7 @@ export class CharacterSummaryRenderer {
               y: Math.floor(activeHitbox.y + (activeHitbox.h / 2))
             };
           }
+
           this.tooltipSystem.render(tooltipState, this.hitboxes);
         }
       }
@@ -161,12 +174,12 @@ export class CharacterSummaryRenderer {
     const contentW = w - (this.padding * 2);
 
     // --- Tabs ---
-    const tabH = 67; 
+    const tabH = 67;
     const tabW = contentW / 3;
 
     const drawTab = (label, tx, isActive, id) => {
       const isHovered = hoveredHitboxId === id;
-      
+
       let bgColor = "rgba(0,0,0,0.5)";
       let textCol = UITheme.colors.textMuted;
       let drawBrackets = false;
@@ -184,22 +197,34 @@ export class CharacterSummaryRenderer {
       }
 
       this.ui.drawPanel(tx, y, tabW, tabH, bgColor);
+
       if (strokeColor) {
         this.ui.drawRect(tx, y, tabW, tabH, strokeColor, false);
       }
-      
+
       if (drawBrackets) {
         this.ui.drawSelectionBrackets(tx, y, tabW, tabH, 5, UITheme.colors.borderHighlight);
       }
 
       this.ui.drawText(
-        label, tx + tabW / 2, y + (tabH / 2) + 10,
-        UITheme.fonts.small, textCol, "center", "middle"
+        label,
+        tx + tabW / 2,
+        y + (tabH / 2) + 10,
+        UITheme.fonts.small,
+        textCol,
+        "center",
+        "middle"
       );
 
       this.hitboxes.push({
-        id, x: tx, y, w: tabW, h: tabH, type: 'tab',
-        hoverSfx: 'hoverTick', clickSfx: 'cinematicBoom'
+        id,
+        x: tx,
+        y,
+        w: tabW,
+        h: tabH,
+        type: 'tab',
+        hoverSfx: 'hoverTick',
+        clickSfx: 'cinematicBoom'
       });
     };
 
@@ -243,14 +268,16 @@ export class CharacterSummaryRenderer {
     }
 
     const iconSheet = this.loader.get(sheetName) || this.loader.get('items') || this.loader.get('icons');
-    const iconSize = 32;
-    const drawSize = 77; 
+
+    const iconSize = 64; // Sprite sheet cell size (upgraded from 32)
+    const drawSize = 77;
+
     const x = mouse.x - (drawSize / 2);
     const y = mouse.y - (drawSize / 2);
 
     this.ctx.save();
     this.ctx.globalAlpha = 0.85;
-    
+
     this.ui.drawRect(x, y, drawSize, drawSize, "rgba(0,0,0,0.6)", true);
 
     if (iconSheet && def.icon) {
@@ -269,9 +296,9 @@ export class CharacterSummaryRenderer {
   _drawContextMenu(menu, selectedIndex = 0, hoveredHitboxId = null) {
     if (!menu || !menu.options) return;
 
-    const btnHeight = 77; 
-    const padding = 14; 
-    const menuW = 312; 
+    const btnHeight = 77;
+    const padding = 14;
+    const menuW = 312;
     const menuH = (menu.options.length * btnHeight) + (padding * 2);
 
     const screenW = this.ctx.canvas.width;
@@ -332,7 +359,7 @@ export class CharacterSummaryRenderer {
       } else if (hasInvItems) {
         row1.push("[L-Click/SPC] Equip");
       }
-      
+
       row2.push("[R-Click/ESC] Back");
 
       lines.push(row1.join("      "));
@@ -340,15 +367,20 @@ export class CharacterSummaryRenderer {
     }
 
     const centerX = leftW + Math.floor(centerW / 2);
+
     const flourishW = Math.min(720, centerW - 64);
-    
     this.ui.drawLineWithGothicFlourish(centerX - (flourishW / 2), h - 104, flourishW, UITheme.colors.borderHighlight);
 
     const startY = h - (lines.length > 1 ? 64 : 44);
+
     lines.forEach((lineText, index) => {
       this.ui.drawText(
-        lineText, centerX, startY + (index * 32), 
-        UITheme.fonts.small, UITheme.colors.textMuted, "center"
+        lineText,
+        centerX,
+        startY + (index * 32),
+        UITheme.fonts.small,
+        UITheme.colors.textMuted,
+        "center"
       );
     });
   }
@@ -363,4 +395,3 @@ export class CharacterSummaryRenderer {
     return null;
   }
 }
-

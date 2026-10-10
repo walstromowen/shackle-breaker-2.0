@@ -6,15 +6,16 @@ export class InventoryPanel {
   constructor(ui, loader) {
     this.ui = ui;
     this.loader = loader;
-    
+
     // --- Grid Constants ---
     this.COLS = 4;
     this.SLOT_SIZE = 96;
     this.SLOT_PADDING = 19;
-    
+
     // Layout Constants
     this.HEADER_HEIGHT = 180;
     this.SCROLLBAR_WIDTH = 10;
+
     this.totalContentHeight = 0;
   }
 
@@ -30,7 +31,7 @@ export class InventoryPanel {
 
     const dividerY = y + this.HEADER_HEIGHT - 24;
     const flourishW = w * 0.8;
-    this.ui.drawLineWithGothicFlourish(x + (w - flourishW)/2, dividerY, flourishW, UITheme.colors.borderHighlight);
+    this.ui.drawLineWithGothicFlourish(x + (w - flourishW) / 2, dividerY, flourishW, UITheme.colors.borderHighlight);
 
     // --- 2. Calculate Viewport Metrics ---
     const listY = y + this.HEADER_HEIGHT;
@@ -73,8 +74,10 @@ export class InventoryPanel {
     } else {
       inventory.forEach((item, index) => {
         const def = ItemDefinitions[item.defId];
+
         const col = index % this.COLS;
         const row = Math.floor(index / this.COLS);
+
         const itemX = startX + (col * (this.SLOT_SIZE + this.SLOT_PADDING));
         const itemY = listY + (row * (this.SLOT_SIZE + this.SLOT_PADDING)) - renderScroll;
 
@@ -101,8 +104,15 @@ export class InventoryPanel {
         // Hitbox Registration
         if (itemY + this.SLOT_SIZE >= listY && itemY <= listY + listH) {
           hitboxes.push({
-            id: `INV_ITEM_${index}`, x: itemX, y: itemY, w: this.SLOT_SIZE, h: this.SLOT_SIZE, 
-            type: 'inventory', index: index, hoverSfx: 'hoverTick', clickSfx: 'cinematicBoom'
+            id: `INV_ITEM_${index}`,
+            x: itemX,
+            y: itemY,
+            w: this.SLOT_SIZE,
+            h: this.SLOT_SIZE,
+            type: 'inventory',
+            index: index,
+            hoverSfx: 'hoverTick',
+            clickSfx: 'cinematicBoom'
           });
         }
 
@@ -127,6 +137,7 @@ export class InventoryPanel {
     }
 
     this.totalContentHeight = currentContentHeight;
+
     this.ui.endClip();
     this.ui.ctx.restore();
 
@@ -139,26 +150,32 @@ export class InventoryPanel {
 
   drawScrollBar(x, y, viewportH, contentH, scrollOffset, hitboxes) {
     this.ui.drawRect(x, y, this.SCROLLBAR_WIDTH, viewportH, UITheme.colors.scrollTrack || UITheme.colors.bgScale[0]);
+
     const viewRatio = viewportH / contentH;
     let thumbH = Math.max(48, viewportH * viewRatio);
     const maxScroll = contentH - viewportH;
     const scrollRatio = maxScroll > 0 ? (scrollOffset / maxScroll) : 0;
-    
     const trackSpace = viewportH - thumbH;
     const thumbY = y + (scrollRatio * trackSpace);
-    
+
     this.ui.drawRect(x, thumbY, this.SCROLLBAR_WIDTH, thumbH, UITheme.colors.scrollThumb || UITheme.colors.borderHighlight);
-    
+
     if (hitboxes) {
       hitboxes.push({
-        id: 'INV_SCROLLBAR_THUMB', type: 'ui', x: x - 10, y: thumbY, 
-        w: this.SCROLLBAR_WIDTH + 19, h: thumbH, hoverSfx: 'hoverTick'
+        id: 'INV_SCROLLBAR_THUMB',
+        type: 'ui',
+        x: x - 10,
+        y: thumbY,
+        w: this.SCROLLBAR_WIDTH + 19,
+        h: thumbH,
+        hoverSfx: 'hoverTick'
       });
     }
   }
 
   _drawIcon(def, x, y) {
     if (!def) return;
+
     let sheetName = 'items';
     const type = (def.type || '').toLowerCase();
     const slot = (def.slot || '').toLowerCase();
@@ -175,12 +192,13 @@ export class InventoryPanel {
 
     const sheet = this.loader.get(sheetName) || this.loader.get('items') || this.loader.get('icons');
     if (!sheet) return;
-    
+
     const iconData = def.icon || { col: 0, row: 0 };
-    const ICON_SIZE = 32;
+
+    const ICON_SIZE = 64; // Sprite sheet cell size (upgraded from 32)
     const srcX = (iconData.col * ICON_SIZE);
     const srcY = (iconData.row * ICON_SIZE);
-    
+
     this.ui.drawSprite(sheet, srcX, srcY, ICON_SIZE, ICON_SIZE, x, y, 64, 64);
   }
 }

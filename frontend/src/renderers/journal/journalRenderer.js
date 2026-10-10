@@ -10,18 +10,20 @@ export class JournalRenderer {
         this.config = config;
         this.loader = loader;
         this.iconSheetId = 'icons';
+
+        // Source cell size (px) of every icon sheet read by this renderer.
+        this.ICON_SRC_SIZE = 64;
     }
 
     render(ctx, state) {
         const ui = new CanvasUI(ctx);
         const w = ctx.canvas.width;
         const h = ctx.canvas.height;
-        
+
         ui.clearScreen(w, h);
 
         const { p, startY } = state.layout;
         const panelHeight = h - (startY * 2);
-        
         const halfW = Math.floor(w / 2);
         const colW = halfW - (p * 1.5);
         const leftColX = p;
@@ -36,6 +38,7 @@ export class JournalRenderer {
 
         // 3. Left Column: Tabs & List
         this._renderTabs(ui, state, leftColX, startY, colW);
+
         const listYBase = startY + 24 + state.layout.tabHeight + 32;
         const listHeight = panelHeight - (listYBase - startY) - 24;
         this._renderQuestList(ui, state, leftColX, listYBase, colW, listHeight);
@@ -80,11 +83,11 @@ export class JournalRenderer {
 
     _renderQuestList(ui, state, x, y, w, h) {
         ui.startClip(x - 5, y - 5, w + 10, h + 10);
-        
+
         const scrollOffset = state.scrollOffset;
         let currentY = 0;
         const rowHeight = state.layout.rowHeight;
-        
+
         const quests = state.activeTab === 'active' ? Object.keys(state.quests.active) : state.quests.completed;
 
         if (quests.length === 0) {
@@ -98,7 +101,7 @@ export class JournalRenderer {
             const drawY = y + currentY - scrollOffset;
             const isSelected = state.selectedQuestId === qId;
             const isHovered = state.hoveredHitboxId === `quest_sel_${qId}`;
-            
+
             const itemX = x + 16;
             const itemW = w - 40;
             const itemH = rowHeight - 8;
@@ -112,7 +115,7 @@ export class JournalRenderer {
             if (state.activeTab === 'active') {
                 const isComplete = QuestModel.checkCompletion(state, qId);
                 const isTracked = state.trackedIds && state.trackedIds.includes(qId);
-                
+
                 if (isComplete) {
                     ui.drawText("✓", itemX + itemW - 16, drawY + (itemH / 2), UITheme.fonts.body, UITheme.colors.success, "center", "middle");
                 } else if (isTracked) {
@@ -121,7 +124,7 @@ export class JournalRenderer {
             } else if (state.activeTab === 'completed') {
                 ui.drawText("✓", itemX + itemW - 16, drawY + (itemH / 2), UITheme.fonts.body, UITheme.colors.textMuted, "center", "middle");
             }
-            
+
             currentY += rowHeight;
         });
 
@@ -131,7 +134,7 @@ export class JournalRenderer {
             const pct = scrollOffset / (currentY - h);
             const thumbH = Math.max(50, (h / currentY) * h);
             const thumbY = y + (pct * (h - thumbH));
-            
+
             ui.drawRect(x + w - 12, y, 4, h, UITheme.colors.scrollTrack);
             ui.drawRect(x + w - 12, thumbY, 4, thumbH, UITheme.colors.scrollThumb);
         }
@@ -142,7 +145,7 @@ export class JournalRenderer {
         if (!def) return;
 
         ui.startClip(x, y, w, h);
-        
+
         const centerX = x + (w / 2);
         const TITLE_Y = y + 60;
         let currentY = TITLE_Y + 50;
@@ -156,13 +159,14 @@ export class JournalRenderer {
         const padding = 32;
         const descStartX = x + padding;
         const descW = w - (padding * 2);
-        
+
         ui.drawWrappedText(def.description, descStartX, currentY, descW, 36, UITheme.fonts.body, UITheme.colors.textMuted);
 
         const charWidthEstimate = 18;
         const charsPerLine = Math.max(10, Math.floor(descW / charWidthEstimate));
         const manualNewlines = (def.description.match(/\n/g) || []).length;
         const lines = Math.ceil(def.description.length / charsPerLine) + manualNewlines;
+
         currentY += (lines * 36) + 50;
 
         // Objectives
@@ -172,7 +176,7 @@ export class JournalRenderer {
         currentY += 35;
 
         const questState = state.quests.active[state.displayQuestId];
-        
+
         def.objectives.forEach(obj => {
             const progress = questState ? (questState.progress[obj.id] || 0) : (obj.amount || 1);
             const req = obj.amount || 1;
@@ -203,10 +207,10 @@ export class JournalRenderer {
 
             const color = isDone ? UITheme.colors.success : UITheme.colors.textMain;
             const checkbox = isDone ? "[X]" : "[ ]";
-            
+
             ui.drawText(`${checkbox}  ${actionText} ${targetText}`, descStartX + 8, currentY, UITheme.fonts.body, color, "left");
             ui.drawText(`${progress} / ${req}`, descStartX + descW - 8, currentY, UITheme.fonts.mono, color, "right");
-            
+
             currentY += 40;
         });
 
@@ -219,6 +223,7 @@ export class JournalRenderer {
         currentY += 30;
 
         this._renderRewardsList(ui, def, descStartX, currentY, descW);
+
         ui.endClip();
 
         // Action Buttons
@@ -227,7 +232,7 @@ export class JournalRenderer {
             const isHovered = state.hoveredHitboxId === btnBox.id;
             let bg = isHovered ? UITheme.colors.states.focusBg : "rgba(0,0,0,0.6)";
             let textCol = isHovered ? UITheme.colors.states.focusText : UITheme.colors.success;
-            
+
             ui.drawPanel(btnBox.x, btnBox.y, btnBox.w, btnBox.h, bg);
             ui.drawText("COLLECT", btnBox.x + (btnBox.w / 2), btnBox.y + (btnBox.h / 2) + 6, UITheme.fonts.body, textCol, "center", "middle");
         }
@@ -236,11 +241,11 @@ export class JournalRenderer {
         if (trackBtnBox) {
             const isHovered = state.hoveredHitboxId === trackBtnBox.id;
             const isTracked = state.trackedIds && state.trackedIds.includes(state.selectedQuestId);
-            
+
             let bg = isHovered ? UITheme.colors.states.focusBg : "rgba(0,0,0,0.6)";
             let textCol = isHovered ? UITheme.colors.states.focusText : (isTracked ? UITheme.colors.textHighlight : UITheme.colors.textMuted);
             let text = isTracked ? "UNTRACK" : "TRACK";
-            
+
             ui.drawPanel(trackBtnBox.x, trackBtnBox.y, trackBtnBox.w, trackBtnBox.h, bg);
             ui.drawText(text, trackBtnBox.x + (trackBtnBox.w / 2), trackBtnBox.y + (trackBtnBox.h / 2) + 6, UITheme.fonts.body, textCol, "center", "middle");
         }
@@ -255,11 +260,12 @@ export class JournalRenderer {
         const drawRewardRow = (label, amountText, customDraw = null) => {
             ui.drawPanel(startX, currentY, width, rowHeight, "rgba(0,0,0,0.4)");
             ui.drawPanel(startX + 8, currentY + 8, iconSize, iconSize, "rgba(0,0,0,0.6)");
-            
+
             if (customDraw) customDraw(startX + 8, currentY + 8, iconSize);
-            
+
             ui.drawText(label, startX + iconSize + 24, currentY + (rowHeight / 2) + 6, UITheme.fonts.body, UITheme.colors.textMain, "left");
             ui.drawText(amountText, startX + width - 16, currentY + (rowHeight / 2) + 6, UITheme.fonts.mono, UITheme.colors.textHighlight, "right");
+
             currentY += rowHeight + 12;
         };
 
@@ -281,7 +287,7 @@ export class JournalRenderer {
             def.rewards.items.forEach(reqItem => {
                 const itemDef = ItemDefinitions ? ItemDefinitions[reqItem.id] : null;
                 const itemName = itemDef ? itemDef.name : "Unknown Item";
-                
+
                 drawRewardRow(itemName, `${reqItem.amount}x`, (ix, iy, s) => {
                     const success = this._drawItemIcon(ui, itemDef, ix, iy, s);
                     if (!success) {
@@ -295,12 +301,13 @@ export class JournalRenderer {
             def.rewards.companions.forEach(comp => {
                 const entDef = ENTITY_DEFINITIONS ? ENTITY_DEFINITIONS[comp.id] : null;
                 const name = comp.overrides?.name || entDef?.name || "Ally";
-                
+
                 drawRewardRow(`Ally: ${name}`, "1x", (ix, iy, s) => {
                     if (entDef && sheet) {
                         const col = entDef.iconCol || 0;
                         const row = entDef.iconRow || 0;
-                        ui.drawSprite(sheet, col * 32, row * 32, 32, 32, ix, iy, s, s);
+                        const src = this.ICON_SRC_SIZE;
+                        ui.drawSprite(sheet, col * src, row * src, src, src, ix, iy, s, s);
                     } else {
                         ui.drawText("♟", ix + s / 2, iy + s / 2 + 6, UITheme.fonts.bold, UITheme.colors.textHighlight, "center");
                     }
@@ -311,7 +318,7 @@ export class JournalRenderer {
 
     _drawItemIcon(ui, def, x, y, size) {
         if (!def) return false;
-        
+
         let sheetName = 'items';
         const type = (def.type || '').toLowerCase();
         const slot = (def.slot || '').toLowerCase();
@@ -330,10 +337,10 @@ export class JournalRenderer {
         if (!sheet) return false;
 
         const iconData = def.icon || { col: 0, row: 0 };
-        const ICON_SIZE = 32;
+        const ICON_SIZE = this.ICON_SRC_SIZE;
         const srcX = (iconData.col * ICON_SIZE);
         const srcY = (iconData.row * ICON_SIZE);
-        
+
         ui.drawSprite(sheet, srcX, srcY, ICON_SIZE, ICON_SIZE, x, y, size, size);
         return true;
     }

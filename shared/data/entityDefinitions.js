@@ -210,6 +210,34 @@ export const ENTITY_DEFINITIONS = {
         tags: [...HUMANOID_TEMPLATE.tags, "SOLDIER"]
     },
 
+    // Cursed Alterian soldier armed with a crossbow. Also the recruit target in aftermath_encounter,
+    // so it keeps the HUMANOID tag (encounter choices are gated on it).
+    "WATCHMAN": {
+        ...HUMANOID_TEMPLATE,
+        name: "Watchman",
+        level: 1,
+        spriteOverworld: "watchmanSprite",
+        spritePortrait: "watchmanPortrait",
+        crySound: "watchmanCry",
+        deathSound: "watchmanCry",
+        attributes: {
+            ...HUMANOID_TEMPLATE.attributes,
+            vigor: 10, strength: 9, dexterity: 15, intelligence: 8, attunement: 10
+        },
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 24, maxStamina: 16, speed: 7, critical: 0.12, corruption: 10,
+            baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: 1, pierce: 1, dark: 2, light: -2 },
+            baseResistance: { dark: 0.15, light: -0.15 },
+            baseAttack: { blunt: 1, pierce: 4, dark: 1 }
+        },
+        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "crossbow" },
+        currencyReward: { min: 5, max: 15 },
+        lootTableId: "watchman_drops",
+        abilities: [...HUMANOID_TEMPLATE.abilities],
+        tags: [...HUMANOID_TEMPLATE.tags, "SOLDIER", "CURSED", "ALTERIAN"]
+    },
+
     "HOLLOW_HARVESTER": {
         ...HUMANOID_TEMPLATE,
         name: "Hollow Harvester",

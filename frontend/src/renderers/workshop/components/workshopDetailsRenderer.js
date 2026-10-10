@@ -759,11 +759,12 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
             const sheet = loader.get('abilities') || loader.get('items');
             if (sheet) {
                 const iconData = ability.icon || { col: 0, row: 0 };
+                const src = this.ICON_SRC_SIZE; // 64px source cells
                 this.ui.drawSprite(
                     sheet, 
-                    iconData.col * 32, 
-                    iconData.row * 32, 
-                    32, 32, 
+                    iconData.col * src, 
+                    iconData.row * src, 
+                    src, src, 
                     x, y, 
                     size, 
                     size
