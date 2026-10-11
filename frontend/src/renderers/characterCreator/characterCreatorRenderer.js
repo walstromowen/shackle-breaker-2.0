@@ -1,11 +1,32 @@
 import { CanvasUI } from '../../ui/canvasUI.js';
 import { UITheme } from '../../ui/UITheme.js';
 
+/* The LOOK preview next to the portrait plays the character's South-facing animation from the overworld sprite sheet.
+   The sheet layout is the one MapRenderer uses: frames of CONFIG.CHARACTER_FRAME (w x h) in a row of 8, and rows in three sets of four
+   (idle 0-3, walk 4-7, run 8-11), each set in the order South, East, North, West.
+   state  which set to play: 'walk', 'idle' or 'run'
+   fps    frames per second: 10 plays a walk cycle in 0.8 s, the same pace as walking in the overworld (use about 6 for 'idle')
+   scale  whole-number zoom of the frame; 2 matches the portrait (128 -> 256) so the pixels of both stay the same size */
+const PREVIEW_ANIM = { state: 'walk', fps: 10, scale: 2 };
+
 export class CharacterCreatorRenderer {
     constructor(config, assetLoader) {
         this.config = config;
         this.loader = assetLoader;
         this.hotspots = [];
+
+        const frame = config.CHARACTER_FRAME || {};
+        const ca = config.CHARACTER_ANIM || {}; // optional overrides, read the same way MapRenderer reads them
+        const firstRow = { idle: 0, walk: 4, run: 8, ...(ca.firstRow || {}) };
+        const south = Math.max(0, (ca.directionOrder || ['DOWN', 'RIGHT', 'UP', 'LEFT']).indexOf('DOWN'));
+        this.sprite = {
+            frameW: frame.w || config.TILE_SIZE || 32,
+            frameH: frame.h || config.TILE_SIZE || 32,
+            frames: ca.frames || 8,
+            row: (firstRow[PREVIEW_ANIM.state] ?? 0) + south,
+            fps: PREVIEW_ANIM.fps,
+            scale: PREVIEW_ANIM.scale,
+        };
     }
 
     render(ctx, controllerState) {
@@ -85,15 +106,18 @@ export class CharacterCreatorRenderer {
         const VITALS_START_Y = identityBottomY + VITALS_OFFSET;
         
         // The bounding box size for the UI element
-        const portraitSize = 256; 
-        const spriteDisplaySize = 64;
-        
+        const portraitSize = 256;
+        // The sprite box holds exactly one frame of the character sheet (e.g. 64 x 64) at a whole-number zoom, so it is 128 x 128 for 64 px frames
+        const { frameW, frameH, frames: spriteFrames, row: spriteRow, fps: spriteFps, scale: spriteScale } = this.sprite;
+        const spriteBoxW = frameW * spriteScale;
+        const spriteBoxH = frameH * spriteScale;
+
         const visualGap = 48;
-        const totalVisualWidth = portraitSize + visualGap + spriteDisplaySize;
+        const totalVisualWidth = portraitSize + visualGap + spriteBoxW;
         const startVisualX = p + (colW - totalVisualWidth) / 2;
-        
+
         const portraitY = identityBottomY + (VITALS_OFFSET / 2) - (portraitSize / 2);
-        const spriteY = identityBottomY + (VITALS_OFFSET / 2) - (spriteDisplaySize / 2);
+        const spriteY = identityBottomY + (VITALS_OFFSET / 2) - (spriteBoxH / 2);
 
         const appIdx = selections.appearanceIdx || 0;
         const appData = data.APPEARANCES ? data.APPEARANCES[appIdx] : null;
@@ -106,7 +130,7 @@ export class CharacterCreatorRenderer {
             const spriteX = startVisualX + portraitSize + visualGap;
 
             ui.drawRect(startVisualX, portraitY, portraitSize, portraitSize, "rgba(0,0,0,0.6)", true);
-            ui.drawRect(spriteX, spriteY, spriteDisplaySize, spriteDisplaySize, "rgba(0,0,0,0.6)", true);
+            ui.drawRect(spriteX, spriteY, spriteBoxW, spriteBoxH, "rgba(0,0,0,0.6)", true);
 
             if (masterSheet) {
                 const srcW = 128;
@@ -130,12 +154,14 @@ export class CharacterCreatorRenderer {
             }
 
             if (overworldSheet) {
+                // South-facing animation: the frame follows the clock, and the whole frame is drawn into the box
+                const spriteFrame = Math.floor((Date.now() / 1000) * spriteFps) % spriteFrames;
                 ctx.imageSmoothingEnabled = false;
-                ctx.drawImage(overworldSheet, 0, 0, 32, 32, spriteX, spriteY, spriteDisplaySize, spriteDisplaySize);
+                ctx.drawImage(overworldSheet, spriteFrame * frameW, spriteRow * frameH, frameW, frameH, spriteX, spriteY, spriteBoxW, spriteBoxH);
             }
 
             ui.drawRect(startVisualX, portraitY, portraitSize, portraitSize, UITheme.colors.border, false);
-            ui.drawRect(spriteX, spriteY, spriteDisplaySize, spriteDisplaySize, UITheme.colors.border, false);
+            ui.drawRect(spriteX, spriteY, spriteBoxW, spriteBoxH, UITheme.colors.border, false);
 
             ctx.restore();
         }
@@ -415,7 +441,7 @@ export class CharacterCreatorRenderer {
         if (currentStep === 'start') return "Finalize your choices and venture forth into the unknown.";
 
         if (currentStep === 'background') return data.BACKGROUNDS?.[selections.backgroundIdx]?.desc;
-        if (currentStep === 'origin') return data.ORIGINS?.[selections.originIdx]?.desc;
+        if (currentStep === 'origin') return data.ORIGINS?.[selections.originIdx]?.label ? data.ORIGINS[selections.originIdx].desc : "";
         if (currentStep === 'appearance') return "Choose the physical form you shall take in this realm.";
         if (currentStep === 'keepsake') return data.KEEPSAKES?.[selections.keepsakeIdx]?.desc;
         if (currentStep === 'companion') return data.COMPANIONS?.[selections.companionIdx]?.desc;

@@ -22,10 +22,13 @@ export class Input {
         this._onMouseMove = this._onMouseMove.bind(this);
         this._onWheel = this._onWheel.bind(this);
         this._onContextMenu = this._onContextMenu.bind(this);
+        this._onBlur = this._onBlur.bind(this);
 
         // --- ATTACH LISTENERS ---
         window.addEventListener("keydown", this._onKeyDown);
         window.addEventListener("keyup", this._onKeyUp);
+        // A key released while the window was not focused never sends its keyup, so it would stay "held" (and the player would keep walking / running)
+        window.addEventListener("blur", this._onBlur);
         
         // Listen for mouseup on WINDOW so dragging doesn't get stuck 
         // if the user releases the mouse outside the canvas.
@@ -45,6 +48,7 @@ export class Input {
 
     _onKeyDown(e) { this.heldKeys.add(e.code); }
     _onKeyUp(e) { this.heldKeys.delete(e.code); }
+    _onBlur() { this.heldKeys.clear(); }
     _onContextMenu(e) { e.preventDefault(); }
 
     _getMouseCoords(e) {
@@ -92,6 +96,7 @@ export class Input {
     destroy() {
         window.removeEventListener("keydown", this._onKeyDown);
         window.removeEventListener("keyup", this._onKeyUp);
+        window.removeEventListener("blur", this._onBlur);
         window.removeEventListener("mouseup", this._onMouseUp); 
         window.removeEventListener("contextmenu", this._onContextMenu);
 
@@ -138,6 +143,11 @@ export class Input {
         this.lastRightClick = null;
         this.isMouseDown = false;
         this.scrollDelta = 0;
+    }
+
+    /* True while either shift key is down: the overworld runs while it is held. Like `direction`, it is matched on the physical key (e.code). */
+    get run() {
+        return this.heldKeys.has("ShiftLeft") || this.heldKeys.has("ShiftRight");
     }
 
     get direction() {

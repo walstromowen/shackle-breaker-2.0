@@ -13,6 +13,17 @@ export class MapRenderer {
         this.renderList = [];
         this._cachedBounds = {};
         this.blobTerrain = new BlobTerrainRenderer(this.loader, this.config);
+        /* Character sheet layout: 8 frames across, 12 rows down in three sets of four (idle rows 0-3, walk rows 4-7, run rows 8-11); inside a set the rows
+           are South, East, North, West. CONFIG.CHARACTER_ANIM can override any of it. The controller only says WHICH animation plays (entity.animState) and
+           how far through it the entity is (entity.animPhase while walking / running, entity.idleTimer while idle); the frame is worked out here. */
+        const ca = this.config.CHARACTER_ANIM || {};
+        this.charAnim = {
+            frames: 8,
+            directionOrder: ['DOWN', 'RIGHT', 'UP', 'LEFT'], // South, East, North, West
+            idleFps: 6,
+            ...ca,
+            firstRow: { idle: 0, walk: 4, run: 8, ...(ca.firstRow || {}) },
+        };
     }
     /* ==========================================  1. MAIN RENDER PIPELINE  ========================================== */
     renderMap(
@@ -167,18 +178,24 @@ export class MapRenderer {
         const renderY = entity.prevY !== undefined ? entity.prevY + (entity.y - entity.prevY) * interpolationFactor : entity.y;
         const dx = Math.floor((renderX - camera.x) * scale);
         const dy = Math.floor((renderY - camera.y) * scale);
-        /* A character frame can be bigger than a tile (e.g. 56 x 56). entity.x / y stay the tile the character stands on, so collision, the hitbox and
-           the depth sort do not change; the frame is only DRAWN centred on that tile and rising above it, with its feet on the tile's bottom edge.
+        /* A character frame can be bigger than a tile (e.g. 64 x 64). entity.x / y stay the tile the character stands on, so collision, the hitbox and
+           the depth sort do not change; the frame is only DRAWN around that tile.
            CONFIG.CHARACTER_FRAME = { w, h, feetPad, shiftX } (an entity may carry its own `frame`):
              w, h     size of one frame in the sheet (default: one tile, the old behaviour)
-             feetPad  transparent rows between the feet and the bottom of the frame (the frame is moved down by this much)
+             feetPad  how far the frame is moved down below the tile's bottom edge. (h - tile) / 2 centres the frame on the tile (64 x 64: 16);
+                      0 puts the bottom of the frame on the tile's bottom edge, so the frame rises above the tile
              shiftX   pixels to move the frame sideways when the figure is not centred in it (positive = right) */
         const fr = entity.frame || this.config.CHARACTER_FRAME || {};
         const FW = fr.w || TILE_SIZE, FH = fr.h || TILE_SIZE;
         const feetPad = fr.feetPad || 0, shiftX = fr.shiftX || 0;
-        const rowMap = { UP: 1, DOWN: 0, LEFT: 2, RIGHT: 3 };
-        const sx = (entity.animFrame || 0) * FW;
-        const sy = (rowMap[entity.direction] ?? 0) * FH;
+        const A = this.charAnim;
+        const state = A.firstRow[entity.animState] !== undefined ? entity.animState : 'idle'; // an entity without an animState shows its idle pose
+        const dirIndex = Math.max(0, A.directionOrder.indexOf(entity.direction));
+        const frame = state === 'idle'
+            ? Math.floor((entity.idleTimer || 0) * A.idleFps) % A.frames
+            : Math.floor((entity.animPhase || 0) * A.frames) % A.frames;
+        const sx = frame * FW;
+        const sy = (A.firstRow[state] + dirIndex) * FH;
         const offX = Math.floor(((FW - TILE_SIZE) / 2 - shiftX) * scale);
         const offY = Math.floor((FH - TILE_SIZE - feetPad) * scale);
         this.ctx.drawImage(sprite, sx, sy, FW, FH, dx - offX, dy - offY, Math.ceil(FW * scale), Math.ceil(FH * scale));

@@ -157,6 +157,8 @@ export class OverworldController extends BaseController {
             }
         });
 
+        this.updateCharacterAnimation(dt);
+
         // --- NEW: Process active harvesting sequence ---
         if (this.isHarvesting && this.harvestTarget) {
             this.harvestTimer += dt;
@@ -391,6 +393,32 @@ export class OverworldController extends BaseController {
         }
     }
 
+    /* Holding shift runs (Input.run). Read once per tile (in startMove), so a step is never half walk, half run. */
+    isRunHeld() {
+        return !!this.input.run;
+    }
+
+    /* Seconds one tile takes: CONFIG.WALK_DURATION on foot, CONFIG.RUN_DURATION when running (default: a little over half the walking time). */
+    getMoveDuration() {
+        const walk = this.config.WALK_DURATION;
+        return this.player.isRunning ? (this.config.RUN_DURATION ?? walk * 0.55) : walk;
+    }
+
+    /* Back to the idle pose: the idle loop starts again from its first frame. */
+    setAnimIdle() {
+        this.player.animState = 'idle';
+        this.player.animPhase = 0;
+        this.player.idleTimer = 0;
+    }
+
+    /* Called every update. While standing still (also while the player is locked in a menu or harvesting) the idle clock runs; the walk / run phase is
+       advanced by the movement itself, in continueMoving. MapRenderer turns the clock or the phase into a frame of the sheet. */
+    updateCharacterAnimation(dt) {
+        if (this.player.isMoving) return;
+        if (this.player.animState !== 'idle') this.setAnimIdle(); // a move that ended without a follow-up (blocked, locked, warp...)
+        this.player.idleTimer += dt;
+    }
+
     startMove(nextX, nextY) {
         this.player.sourceX = this.player.x;
         this.player.sourceY = this.player.y;
@@ -398,17 +426,23 @@ export class OverworldController extends BaseController {
         this.player.destY = nextY;
         this.player.moveProgress = 0;
         this.player.isMoving = true;
+
+        const wasIdle = this.player.animState === 'idle';
+        this.player.isRunning = this.isRunHeld();
+        this.player.animState = this.player.isRunning ? 'run' : 'walk';
+        if (wasIdle) this.player.animPhase = 0; // a fresh start; a chained step keeps the cycle going
     }
 
     continueMoving(dt) {
-        const moveSpeed = this.config.WALK_DURATION;
-        this.player.moveProgress += dt / moveSpeed;
+        const progressStep = dt / this.getMoveDuration();
+        this.player.moveProgress += progressStep;
 
-        this.player.animTimer += dt;
-        if (this.player.animTimer > 0.1) {
-            this.player.animTimer = 0;
-            this.player.animFrame = (this.player.animFrame + 1) % 4;
-        }
+        /* Walk / run animation follows the distance covered, not the clock, so a faster step plays the same cycle faster and the feet keep to the tiles.
+           animPhase runs 0..1 through one cycle of the sheet's 8 frames; one cycle spans this many tiles (8 frames = two footsteps, so 2 = a footstep per
+           tile). Override with CONFIG.CHARACTER_ANIM = { walkTilesPerCycle, runTilesPerCycle }. */
+        const ca = this.config.CHARACTER_ANIM || {};
+        const tilesPerCycle = this.player.isRunning ? (ca.runTilesPerCycle ?? 3) : (ca.walkTilesPerCycle ?? 2);
+        this.player.animPhase = (this.player.animPhase + progressStep / tilesPerCycle) % 1;
 
         if (this.player.moveProgress >= 1) {
             const overshoot = this.player.moveProgress - 1;
@@ -460,7 +494,7 @@ export class OverworldController extends BaseController {
         if (this.input.direction) {
             this.checkForNewMove();
         } else {
-            this.player.animFrame = 0;
+            this.setAnimIdle();
         }
     }
 
@@ -682,8 +716,11 @@ export class OverworldController extends BaseController {
             hitbox: { y: 0.5, h: 0.5 },
             direction: gameState.player.direction || "DOWN",
             isMoving: false,
-            animFrame: 0,
-            animTimer: 0,
+            isRunning: false,
+            animState: 'idle', // 'idle' | 'walk' | 'run': which set of rows of the sheet MapRenderer draws
+            animPhase: 0,      // 0..1 through the walk / run cycle
+            idleTimer: 0,      // seconds spent standing still, for the idle loop
+            animFrame: 0,      // no longer used by MapRenderer (it works the frame out from animPhase / idleTimer)
             light: {
                 hasLight: true,
                 radius: 4,

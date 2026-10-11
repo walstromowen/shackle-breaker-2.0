@@ -22,8 +22,16 @@ export const CONFIG = {
     OBJECT_SIZE: 32,
     GAME_SCALE: 1,
     WALL_HEIGHT: 2,
-    WALK_DURATION: 0.4,
+    WALK_DURATION: 0.4, // seconds per tile on foot
+    RUN_DURATION: 0.22, // seconds per tile while shift is held
     TILE_TYPES, TILE_DEPTH, BLOB_TILES,
+
+        // Character sprite sheet (see MapRenderer.drawEntity): one frame is w x h pixels, drawn with the frame's centre on the centre of the character's
+    // 32 px tile (a 64 x 64 frame covers the tile and 16 px beyond it on every side). The sheet is 8 frames wide and 12 rows tall (idle, walk, run;
+    // each South, East, North, West), so 512 x 768 px for 64 x 64 frames.
+    // feetPad = how far the frame sits below the tile's bottom edge: (h - 32) / 2 = 16 is exactly centred; 0 would put the frame's bottom on the
+    // tile's bottom edge (frame rising above the tile). shiftX = pixels to nudge a figure that is not centred in its frame (positive = right).
+    CHARACTER_FRAME: { w: 64, h: 64, feetPad: 16, shiftX: 0 },
 
     // --- Not read by any file I have seen (the renderers, world manager, terrain generator, biome definitions). Probably the canvas setup and the
     //     animation code use them: delete each one that a project-wide search for its name finds only here. ---
@@ -31,7 +39,7 @@ export const CONFIG = {
     CANVAS_HEIGHT: 1080,
     SHEET_WIDTH: 512,
     SHEET_HEIGHT: 2048,
-  
+
 };
 
 // ===============================================
