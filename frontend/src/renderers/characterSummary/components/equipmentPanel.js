@@ -286,26 +286,8 @@ export class EquipmentPanel {
   _drawIcon(def, x, y) {
     if (!def) return;
 
-    let sheetName = 'items';
-    const type = (def.type || '').toLowerCase();
-    const slot = (def.slot || '').toLowerCase();
-
-    if (slot === 'mainhand' || slot === 'offhand' || type === 'weapon' || type === 'shield' || type === 'tool') {
-      sheetName = 'weapons';
-    } else if (type === 'armor' || ['head', 'body', 'legs', 'feet', 'hands', 'accessory'].includes(slot)) {
-      sheetName = 'armor';
-    } else if (type === 'consumable') {
-      sheetName = 'consumables';
-    } else if (type === 'material') {
-      sheetName = 'materials';
-    }
-
-    const sheet = this.loader.get(sheetName) || this.loader.get('items') || this.loader.get('icons');
-    if (!sheet) return;
-
-    const iconData = def.icon || { col: 0, row: 0 };
-    const src = this.ICON_SRC_SIZE;
-    this.ui.drawSprite(sheet, iconData.col * src, iconData.row * src, src, src, x, y, 64, 64);
+    // Picks the right sprite sheet for the item's category - see CanvasUI.drawItemIcon
+    this.ui.drawItemIcon(this.loader, def, x, y, 64, this.ICON_SRC_SIZE);
   }
 
   _drawStatusEffects(member, pX, pY, pSize) {

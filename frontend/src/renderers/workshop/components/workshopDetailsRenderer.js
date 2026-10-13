@@ -1,11 +1,60 @@
 import { WorkshopBaseRenderer } from './workshopBaseRenderer.js';
 import { ItemDefinitions } from '../../../../../shared/data/itemDefinitions.js';
 import { AbilityDefinitions } from '../../../../../shared/data/abilityDefinitions.js';
+import { AbilityPreview } from '../../../ui/abilityPreview.js';
 import { Formatting } from '../../../../../shared/utils/formatting.js';
 import { UITheme } from '../../../ui/UITheme.js';
 import { gameState } from '../../../../../shared/state/gameState.js';
 
+// Stat table typography/spacing. Rows are laid out on their vertical middle, and the row height
+// is sized to the font so text never touches the row above or below.
+const STAT_LABEL_FONT = UITheme.fonts.small;                        // 29px serif
+const STAT_VALUE_FONT = UITheme.fonts.monoSmall || '29px monospace';
+const STAT_ROW_H = 40;
+const TABLE_ROW_H = 38;
+const SECTION_GAP = 28;   // empty space between two stat sections
+
 export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
+
+    /**
+     * Picks the combatant whose stats are used to preview ability damage.
+     * Prefers whoever is wearing the selected item, then an explicit member on state,
+     * then the first party member.
+     */
+    _resolvePreviewActor(state) {
+        return state.selectedUpgradeHolder?.member || state.member || gameState.party?.members?.[0] || null;
+    }
+
+    /**
+     * Strip shown under the tabs when the selected item is worn by a party member.
+     * Returns the Y position below the strip (unchanged if the item isn't equipped).
+     */
+    _renderHolderStrip(holder, x, y, w) {
+        if (!holder) return y;
+
+        const stripH = 42;
+        const badgeSize = 30;
+
+        this.ui.drawPanel(x, y, w, stripH, 'rgba(0,0,0,0.35)');
+        this.ui.drawRect(x, y, w, stripH, UITheme.colors.border, false);
+
+        this.drawHolderBadge(x + 8, y + (stripH - badgeSize) / 2, badgeSize, holder.name, holder.index);
+
+        const textX = x + 8 + badgeSize + 14;
+        const midY = y + (stripH / 2);
+        const slotLabel = this.formatSlotName(holder.slot);
+
+        this.ui.drawText('Equipped by', textX, midY, UITheme.fonts.cardItalic, UITheme.colors.textMuted, 'left', 'middle');
+        this.ui.ctx.font = UITheme.fonts.cardItalic;
+        const prefixW = this.ui.ctx.measureText('Equipped by ').width;
+        this.ui.drawText(holder.name, textX + prefixW, midY, UITheme.fonts.cardTitle, this.getHolderColor(holder.index), 'left', 'middle');
+
+        if (slotLabel) {
+            this.ui.drawText(slotLabel, x + w - 16, midY, UITheme.fonts.cardItalic, UITheme.colors.textMuted, 'right', 'middle');
+        }
+
+        return y + stripH;
+    }
 
     renderRecipeDetails(state, x, w, h, hitboxes) {
         if (!state.selectedRecipe) {
@@ -16,6 +65,9 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         const recipe = state.selectedRecipe;
         const outDef = ItemDefinitions[recipe.outputItemId];
         if (!outDef) return;
+
+        this._previewActor = this._resolvePreviewActor(state);
+        this._previewStats = (state && state.derivedStats) || null;
 
         let cursorY = this.padding;
         const contentX = x + this.padding;
@@ -57,25 +109,38 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         drawTab("SKILLS", contentX + (tabW * 2), activeTab === 'skills', 'TAB_SKILLS');
         cursorY += tabH + 36;
 
-        // --- Tab Contents ---
-        if (activeTab === 'description') {
-            cursorY = this._renderItemHeader(outDef, contentX, cursorY, contentW, null);
-            cursorY += 16;
-            cursorY = this._renderItemMainInfo(outDef, contentX, cursorY, contentW);
-        } else if (activeTab === 'stats') {
-            const mockItem = { definition: outDef, stats: outDef.stats };
-            cursorY = this._renderDetailedStats(mockItem, contentX, cursorY, contentW);
-        } else if (activeTab === 'skills') {
-            cursorY = this._renderAbilities(outDef, contentX, cursorY, contentW);
-        }
+        // --- Tab Contents (scrolls inside the space above the pinned footer) ---
+        const recipeMaterials = recipe.materials || {};
+        const recipeCost = recipe.currencyCost || 0;
+        const viewTop = cursorY;
+        // The footer heading is drawn on its baseline, so it rises ~25px above the footer's top edge
+        const viewBottom = this._footerTop(recipeMaterials, recipeCost, h) - 32;
 
-        this._renderMaterialsFooter(state, contentX, cursorY, contentW, h, recipe.materials || {}, recipe.currencyCost || 0, state.canCraftSelected, 'CRAFT ITEM', 'BTN_CRAFT', hitboxes);
+        this._withScrollRegion(state, x, w, viewTop, viewBottom, () => {
+            let yy = viewTop;
+            if (activeTab === 'description') {
+                yy = this._renderItemHeader(outDef, contentX, yy, contentW, null);
+                yy += 20;
+                yy = this._renderItemMainInfo(outDef, contentX, yy, contentW);
+            } else if (activeTab === 'stats') {
+                const mockItem = { definition: outDef, stats: outDef.stats };
+                yy = this._renderDetailedStats(mockItem, contentX, yy, contentW);
+            } else if (activeTab === 'skills') {
+                yy = this._renderAbilities(outDef, contentX, yy, contentW);
+            }
+            return yy;
+        });
+
+        this._renderMaterialsFooter(state, contentX, viewBottom, contentW, h, recipeMaterials, recipeCost, state.canCraftSelected, 'CRAFT ITEM', 'BTN_CRAFT', hitboxes);
     }
 
     renderUpgradeDetails(state, x, w, h, hitboxes) {
         const item = state.selectedUpgradeItem;
         const def = item.definition || ItemDefinitions[item.defId || item.id];
         if (!def) return;
+
+        this._previewActor = this._resolvePreviewActor(state);
+        this._previewStats = (state && state.derivedStats) || null;
 
         let cursorY = this.padding;
         const contentX = x + this.padding;
@@ -118,66 +183,132 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         drawTab("STATS", contentX + tabW, activeTab === 'stats', 'TAB_STATS');
         drawTab("SKILLS", contentX + (tabW * 2), activeTab === 'skills', 'TAB_SKILLS');
 
-        cursorY += tabH + 36;
+        cursorY += tabH + 18;
 
-        // --- Tab Contents ---
-        if (activeTab === 'description') {
-            const currentLevel = item.level !== undefined ? item.level : null;
-            const nextLevel = (isUpgradeable && !item.isMaxLevel && currentLevel !== null) ? currentLevel + 1 : null;
-
-            cursorY = this._renderItemHeader(def, contentX, cursorY, contentW, currentLevel, nextLevel);
-            cursorY += 16;
-            cursorY = this._renderItemMainInfo(def, contentX, cursorY, contentW);
-
-            if (isUpgradeable && item.isMaxLevel) {
-                this.ui.drawText("MAX LEVEL REACHED", contentX + (contentW/2), cursorY + 40, UITheme.fonts.header, UITheme.colors.success, "center");
-            }
-        } else if (activeTab === 'stats') {
-            if (isUpgradeable && !item.isMaxLevel) {
-                this.ui.drawText("Stat Increases", contentX, cursorY, UITheme.fonts.bold, UITheme.colors.textMain, "left");
-                cursorY += 24;
-            }
-            cursorY = this._renderDetailedStats(item, contentX, cursorY, contentW);
-        } else if (activeTab === 'skills') {
-            if (isUpgradeable && !item.isMaxLevel) {
-                const unlocks = def.abilityUnlocks && def.abilityUnlocks[item.level + 1];
-                if (unlocks && unlocks.length > 0) {
-                    this.ui.drawText("New Abilities Unlocked", contentX, cursorY, UITheme.fonts.bold, UITheme.colors.textHighlight, "left");
-                    cursorY += 20;
-
-                    unlocks.forEach(abilityId => {
-                        const ability = AbilityDefinitions[abilityId] || { name: abilityId, description: "" };
-                        // FIXED: Pass def.name as the source so it says "Source: Bronze Sword" instead of "Source: Innate"
-                        cursorY = this._drawAbilityCard(ability, contentX, cursorY, contentW, def.name);
-                    });
-                } else {
-                    this.ui.drawText("- No new skills at next level -", contentX + (contentW/2), cursorY + 32, UITheme.fonts.italic, UITheme.colors.textMuted, "center");
-                }
-            } else {
-                cursorY = this._renderAbilities(def, contentX, cursorY, contentW);
-            }
+        // Who is holding this item (only when it's equipped on a party member)
+        if (state.selectedUpgradeHolder) {
+            cursorY = this._renderHolderStrip(state.selectedUpgradeHolder, contentX, cursorY, contentW) + 18;
+        } else {
+            cursorY += 18;
         }
 
-        // --- Footer ---
-        if (isUpgradeable && !item.isMaxLevel) {
-            const costs = item.nextUpgradeCost || {};
+        // --- Tab Contents (scrolls inside the space above the pinned footer) ---
+        const showFooter = isUpgradeable && !item.isMaxLevel;
+        const costs = showFooter ? (item.nextUpgradeCost || {}) : null;
+        const viewTop = cursorY;
+        const viewBottom = (showFooter
+            ? this._footerTop(costs.materials || {}, costs.currency || 0, h) - 32
+            : h - 110 - 12);
+
+        this._withScrollRegion(state, x, w, viewTop, viewBottom, () => {
+            let yy = viewTop;
+
+            if (activeTab === 'description') {
+                const currentLevel = item.level !== undefined ? item.level : null;
+                const nextLevel = (isUpgradeable && !item.isMaxLevel && currentLevel !== null) ? currentLevel + 1 : null;
+
+                yy = this._renderItemHeader(def, contentX, yy, contentW, currentLevel, nextLevel);
+                yy += 20;
+                yy = this._renderItemMainInfo(def, contentX, yy, contentW);
+
+                if (isUpgradeable && item.isMaxLevel) {
+                    this.ui.drawText("MAX LEVEL REACHED", contentX + (contentW / 2), yy + 40, UITheme.fonts.header, UITheme.colors.success, "center");
+                    yy += 80;
+                }
+            } else if (activeTab === 'stats') {
+                if (isUpgradeable && !item.isMaxLevel) {
+                    this.ui.drawText("Stat Increases", contentX, yy, UITheme.fonts.bold, UITheme.colors.textHighlight, "left", "top");
+                    yy += 60;
+                }
+                yy = this._renderDetailedStats(item, contentX, yy, contentW);
+            } else if (activeTab === 'skills') {
+                if (isUpgradeable && !item.isMaxLevel) {
+                    const unlocks = def.abilityUnlocks && def.abilityUnlocks[item.level + 1];
+                    if (unlocks && unlocks.length > 0) {
+                        this.ui.drawText("New Abilities Unlocked", contentX + (contentW / 2), yy, UITheme.fonts.bold, UITheme.colors.textHighlight, "center", "top");
+                        yy += 48;
+
+                        unlocks.forEach(abilityId => {
+                            const ability = AbilityDefinitions[abilityId] || { name: abilityId, description: "" };
+                            // Pass def.name as the source so it says "Source: Bronze Sword" instead of "Source: Innate"
+                            yy = this._drawAbilityCard(ability, contentX, yy, contentW, def.name);
+                        });
+                    } else {
+                        this.ui.drawText("- No new skills at next level -", contentX + (contentW / 2), yy + 32, UITheme.fonts.italic, UITheme.colors.textMuted, "center");
+                        yy += 64;
+                    }
+                } else {
+                    yy = this._renderAbilities(def, contentX, yy, contentW);
+                }
+            }
+            return yy;
+        });
+
+        // --- Footer (pinned to the bottom so the button is always reachable) ---
+        if (showFooter) {
             this._renderMaterialsFooter(
-                state, contentX, cursorY, contentW, h, 
-                costs.materials || {}, costs.currency || 0, 
+                state, contentX, viewBottom, contentW, h,
+                costs.materials || {}, costs.currency || 0,
                 state.canUpgradeSelected, 'UPGRADE ITEM', 'BTN_UPGRADE', hitboxes
             );
         }
     }
 
+    /**
+     * Draws tab content inside a clipped viewport that can scroll vertically.
+     * drawFn draws at absolute coordinates starting at viewTop and returns the Y it ended at.
+     * The controller owns the offset (state.detailsScrollOffset) and learns the viewport/limits
+     * through state.layout.detailsBounds / detailsMaxScroll.
+     */
+    _withScrollRegion(state, panelX, panelW, viewTop, viewBottom, drawFn) {
+        const viewH = Math.max(0, viewBottom - viewTop);
+        const layout = state.layout || null;
+        const scroll = Math.min(Math.max(0, state.detailsScrollOffset || 0), (layout && layout.detailsMaxScroll) || 0);
+
+        this.ui.startClip(panelX, viewTop, panelW, viewH);
+        this.ui.ctx.save();
+        this.ui.ctx.translate(0, -scroll);
+        const endY = drawFn();
+        this.ui.ctx.restore();
+        this.ui.endClip();
+
+        const contentH = endY - viewTop;
+        const maxScroll = Math.max(0, contentH - viewH);
+
+        if (layout) {
+            layout.detailsBounds = { x: panelX, y: viewTop, w: panelW, h: viewH };
+            layout.detailsMaxScroll = maxScroll;
+        }
+
+        if (maxScroll > 0) {
+            const trackX = panelX + panelW - 12;
+            const thumbH = Math.max(32, viewH * (viewH / contentH));
+            const thumbY = viewTop + ((scroll / maxScroll) * (viewH - thumbH));
+            this.ui.drawRect(trackX, viewTop, 6, viewH, UITheme.colors.scrollTrack || UITheme.colors.bgScale[0]);
+            this.ui.drawRect(trackX, thumbY, 6, thumbH, UITheme.colors.borderHighlight);
+        }
+    }
+
+    _footerHeight(materials, currencyCost) {
+        const btnH = 64;
+        let footerH = 40;
+        footerH += Object.keys(materials).length * 76;
+        if (currencyCost > 0) footerH += 44;
+        footerH += btnH + 24;
+        return footerH;
+    }
+
+    /** Top edge of the pinned footer (materials list + button). */
+    _footerTop(materials, currencyCost, h) {
+        return h - 90 - this._footerHeight(materials, currencyCost);
+    }
+
     _renderMaterialsFooter(state, x, currentY, w, h, materials, currencyCost, isEnabled, btnText, btnHitboxId, hitboxes) {
         const materialEntries = Object.entries(materials);
         const btnH = 64;
-        let footerH = 40;
-        footerH += materialEntries.length * 76;
-        if (currencyCost > 0) footerH += 36;
-        footerH += btnH + 24;
-        
-        let materialsY = Math.max(currentY + 48, h - 90 - footerH);
+
+        // Always pinned to the bottom of the column (currentY is no longer used to push it down)
+        let materialsY = this._footerTop(materials, currencyCost, h);
         
         this.ui.drawText("Required Materials", x, materialsY, UITheme.fonts.bold, UITheme.colors.textMain, "left");
         materialsY += 16;
@@ -208,9 +339,9 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
             const partyCurrency = gameState.party ? (gameState.party.currency || 0) : (state.partyCurrency || 0);
             const hasEnoughCurrency = partyCurrency >= currencyCost;
             const color = hasEnoughCurrency ? UITheme.colors.textHighlight : UITheme.colors.failure;
-            this.ui.drawText(`Cost: ${currencyCost} Gold`, x, materialsY + 12, UITheme.fonts.body, color, "left");
-            this.ui.drawText(`(Owned: ${partyCurrency})`, x + w, materialsY + 12, UITheme.fonts.small, UITheme.colors.textMuted, "right");
-            materialsY += 36;
+            this.ui.drawText(`Cost: ${currencyCost} Gold`, x, materialsY + 22, UITheme.fonts.body, color, "left", "middle");
+            this.ui.drawText(`(Owned: ${partyCurrency})`, x + w, materialsY + 22, UITheme.fonts.small, UITheme.colors.textMuted, "right", "middle");
+            materialsY += 44;
         }
 
         const btnY = materialsY + 12;
@@ -288,28 +419,72 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         };
     }
 
+    /** Section title + flourish. Returns the Y where the section's first row starts. */
+    _drawSectionHeader(label, x, y, w) {
+        this.ui.drawText(label, x, y, UITheme.fonts.cardTitle, UITheme.colors.textMuted, "left", "top");
+        const lineY = y + 46;
+        this.ui.drawLineWithGothicFlourish(x, lineY, w, UITheme.colors.borderHighlight);
+        return lineY + 18;
+    }
+
+    /** Measures text in the stat value font. */
+    _measure(text, font = STAT_VALUE_FONT) {
+        this.ctx.save();
+        this.ctx.font = font;
+        const width = this.ctx.measureText(text).width;
+        this.ctx.restore();
+        return width;
+    }
+
+    /**
+     * Draws "current > projected" (or just "current" when unchanged), vertically centred on cy.
+     * With align "left" x is the left edge, with "center" x is the middle of the whole group.
+     * Returns the total width drawn.
+     */
+    _drawDiffRowValues(cNum, pNum, cStr, pStr, x, cy, align = "left", plainColor = UITheme.colors.textMain) {
+        const cW = this._measure(cStr);
+
+        if (cStr === pStr) {
+            const startX = align === "center" ? x - (cW / 2) : x;
+            this.ui.drawText(cStr, startX, cy, STAT_VALUE_FONT, plainColor, "left", "middle");
+            return cW;
+        }
+
+        const arrowSize = 6;
+        const space = 10;
+        const pW = this._measure(pStr);
+        const total = cW + space + (arrowSize * 2) + space + pW;
+        const startX = align === "center" ? x - (total / 2) : x;
+        const changeColor = (pNum > cNum) ? UITheme.colors.success : UITheme.colors.failure;
+
+        this.ui.drawText(cStr, startX, cy, STAT_VALUE_FONT, UITheme.colors.textMain, "left", "middle");
+        const arrowX = startX + cW + space + arrowSize;
+        this.ui.drawArrow(arrowX, cy, arrowSize, 'right', changeColor);
+        this.ui.drawText(pStr, arrowX + arrowSize + space, cy, STAT_VALUE_FONT, changeColor, "left", "middle");
+        return total;
+    }
+
     _renderDetailedStats(item, x, y, w) {
         let currentY = y;
         const cStats = this._buildUnifiedStats(item, false);
         const pStats = this._buildUnifiedStats(item, true);
 
-        // --- 1. Resources ---
-        this.ui.drawText("Resources", x, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
-        currentY += 10;
-        this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.borderHighlight);
-        currentY += 32;
+        // --- 1. Resources (only when the item actually touches them) ---
+        const resourceRows = [
+            { label: "Max HP", c: cStats.resources.maxHp, p: pStats.resources.maxHp },
+            { label: "Max STM", c: cStats.resources.maxStamina, p: pStats.resources.maxStamina },
+            { label: "Max INS", c: cStats.resources.maxInsight, p: pStats.resources.maxInsight }
+        ].filter(r => r.c || r.p);
 
-        if (cStats.resources.maxHp || pStats.resources.maxHp) currentY = this._drawStatDiffRow("Max HP", cStats.resources.maxHp, pStats.resources.maxHp, x, currentY, w, 32);
-        if (cStats.resources.maxStamina || pStats.resources.maxStamina) currentY = this._drawStatDiffRow("Max STM", cStats.resources.maxStamina, pStats.resources.maxStamina, x, currentY, w, 32);
-        if (cStats.resources.maxInsight || pStats.resources.maxInsight) currentY = this._drawStatDiffRow("Max INS", cStats.resources.maxInsight, pStats.resources.maxInsight, x, currentY, w, 32);
-        currentY += 15;
+        if (resourceRows.length > 0) {
+            currentY = this._drawSectionHeader("Resources", x, currentY, w);
+            resourceRows.forEach(r => {
+                currentY = this._drawStatDiffRow(r.label, r.c, r.p, x, currentY, w, STAT_ROW_H);
+            });
+            currentY += SECTION_GAP;
+        }
 
         // --- 2. Combat Stats ---
-        this.ui.drawText("Combat Stats", x, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
-        currentY += 10;
-        this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.borderHighlight);
-        currentY += 32;
-
         const combatStats = [
             { label: "SPD", c: cStats.speed, p: pStats.speed },
             { label: "CRT %", c: cStats.critChance, p: pStats.critChance, isPct: true },
@@ -321,123 +496,102 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
             { label: "COR %", c: cStats.corruption, p: pStats.corruption, isPct: true }
         ].filter(stat => stat.c !== 0 || stat.p !== 0);
 
-        const cColW = w / 2;
-        const rowH = 32;
-
-        combatStats.forEach((stat, i) => {
-            const col = i % 2;
-            const row = Math.floor(i / 2);
-            const itemX = x + (col * cColW);
-            const itemY = currentY + (row * rowH);
-
-            let cStr = stat.isPct ? `${(stat.c * 100).toFixed(0)}%` : stat.c.toString();
-            let pStr = stat.isPct ? `${(stat.p * 100).toFixed(0)}%` : stat.p.toString();
-
-            this.ui.drawText(stat.label, itemX, itemY, UITheme.fonts.small, UITheme.colors.textMuted, "left");
-            this.ui.drawText(cStr, itemX + 85, itemY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
-
-            if (stat.c !== stat.p) {
-                let arrowColor = (stat.p > stat.c) ? UITheme.colors.success : UITheme.colors.failure;
-                this.ctx.font = UITheme.fonts.mono;
-                const cWidth = this.ctx.measureText(cStr).width;
-                const arrowX = itemX + 85 + cWidth + 12;
-                this.ui.drawArrow(arrowX, itemY - 8, 6, 'right', arrowColor);
-                this.ui.drawText(pStr, arrowX + 15, itemY, UITheme.fonts.mono, arrowColor, "left");
-            }
-        });
-
         if (combatStats.length > 0) {
-            currentY += (Math.ceil(combatStats.length / 2) * rowH) + 24;
+            currentY = this._drawSectionHeader("Combat Stats", x, currentY, w);
+
+            // Label column is as wide as the longest label so values never collide with it
+            const labelColW = Math.max(...combatStats.map(s => this._measure(s.label, STAT_LABEL_FONT))) + 20;
+            const colGap = 24;
+            const cColW = (w - colGap) / 2;
+
+            combatStats.forEach((stat, i) => {
+                const col = i % 2;
+                const row = Math.floor(i / 2);
+                const itemX = x + (col * (cColW + colGap));
+                const cy = currentY + (row * STAT_ROW_H) + (STAT_ROW_H / 2);
+
+                const cStr = stat.isPct ? `${(stat.c * 100).toFixed(0)}%` : stat.c.toString();
+                const pStr = stat.isPct ? `${(stat.p * 100).toFixed(0)}%` : stat.p.toString();
+
+                this.ui.drawText(stat.label, itemX, cy, STAT_LABEL_FONT, UITheme.colors.textMuted, "left", "middle");
+                this._drawDiffRowValues(stat.c, stat.p, cStr, pStr, itemX + labelColW, cy);
+            });
+
+            currentY += (Math.ceil(combatStats.length / 2) * STAT_ROW_H) + SECTION_GAP;
         }
 
         // --- 3. Attack & Defenses Table ---
-        currentY = this._drawProjectedResistanceTable(cStats, pStats, x, currentY, w);
-        return currentY;
+        const tableEndY = this._drawProjectedResistanceTable(cStats, pStats, x, currentY, w);
+
+        // Nothing at all to show (no resources, combat stats or damage types)
+        if (resourceRows.length === 0 && combatStats.length === 0 && tableEndY === currentY) {
+            this.ui.drawText("- No stat bonuses -", x + (w / 2), currentY + 32, UITheme.fonts.italic, UITheme.colors.textMuted, "center");
+            return currentY + 64;
+        }
+        return tableEndY;
     }
 
-    _drawStatDiffRow(label, curr = 0, prev = 0, x, y, w, rowH = 48) {
-        this.ui.drawText(label, x, y, UITheme.fonts.small, UITheme.colors.textMuted, "left");
-        const valX = x + (w * 0.4);
-        this.ui.drawText(curr.toString(), valX, y, UITheme.fonts.mono, UITheme.colors.textMain, "right");
-        if (curr !== prev) {
-            let arrowColor = (prev > curr) ? UITheme.colors.success : UITheme.colors.failure;
-            const arrowX = valX + 25;
-            this.ui.drawArrow(arrowX, y - 8, 8, 'right', arrowColor);
-            this.ui.drawText(prev.toString(), arrowX + 20, y, UITheme.fonts.mono, arrowColor, "left");
-        }
+    /** One labelled row: label on the left, "current > projected" in a fixed value column. */
+    _drawStatDiffRow(label, curr = 0, prev = 0, x, y, w, rowH = STAT_ROW_H) {
+        const cy = y + (rowH / 2);
+        this.ui.drawText(label, x, cy, STAT_LABEL_FONT, UITheme.colors.textMuted, "left", "middle");
+        this._drawDiffRowValues(curr, prev, curr.toString(), prev.toString(), x + 150, cy);
         return y + rowH;
     }
 
     _drawProjectedResistanceTable(cStats, pStats, x, y, w) {
-        let currentY = y;
-        this.ui.drawText("Damage & Resistances", x, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
-        currentY += 10;
-        this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.borderHighlight);
-        currentY += 32;
+        const types = ["blunt", "slash", "pierce", "fire", "ice", "lightning", "water", "earth", "wind", "light", "dark", "arcane"];
+        const visibleTypes = types.filter(type => {
+            const vals = [
+                cStats.attack[type], pStats.attack[type],
+                cStats.defense[type], pStats.defense[type],
+                cStats.resistance[type], pStats.resistance[type]
+            ];
+            return vals.some(v => v);
+        });
+
+        if (visibleTypes.length === 0) return y;
+
+        let currentY = this._drawSectionHeader("Damage & Resistances", x, y, w);
 
         const colType = x;
-        const colAtk = x + (w * 0.35);
-        const colDef = x + (w * 0.60);
-        const colRes = x + (w * 0.85);
-        const headerFont = UITheme.fonts.cardTitle || "bold 28px sans-serif";
-        
-        this.ui.drawText("TYPE", colType, currentY, headerFont, UITheme.colors.textMuted, "left");
-        this.ui.drawText("ATK", colAtk, currentY, headerFont, UITheme.colors.attack, "center");
-        this.ui.drawText("DEF", colDef, currentY, headerFont, UITheme.colors.defense, "center");
-        this.ui.drawText("RES", colRes, currentY, headerFont, UITheme.colors.resistance, "center");
-        currentY += 10;
-        this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.border);
-        currentY += 30;
+        const colAtk = x + (w * 0.36);
+        const colDef = x + (w * 0.62);
+        const colRes = x + (w * 0.88);
+        const headerFont = UITheme.fonts.cardTitle;
 
-        const types = ["blunt", "slash", "pierce", "fire", "ice", "lightning", "water", "earth", "wind", "light", "dark", "arcane"];
-        const rowH = 30;
+        // Column headers sit on the middle of their own row, with a thin rule underneath
+        const headerCy = currentY + (STAT_ROW_H / 2);
+        this.ui.drawText("TYPE", colType, headerCy, headerFont, UITheme.colors.textMuted, "left", "middle");
+        this.ui.drawText("ATK", colAtk, headerCy, headerFont, UITheme.colors.attack, "center", "middle");
+        this.ui.drawText("DEF", colDef, headerCy, headerFont, UITheme.colors.defense, "center", "middle");
+        this.ui.drawText("RES", colRes, headerCy, headerFont, UITheme.colors.resistance, "center", "middle");
+        currentY += STAT_ROW_H;
+        this.ui.drawLine(x, currentY, x + w, currentY, UITheme.colors.border, 1);
+        currentY += 8;
 
-        types.forEach((type) => {
-            const cAtk = cStats.attack[type] || 0;
-            const pAtk = pStats.attack[type] || 0;
-            const cDef = cStats.defense[type] || 0;
-            const pDef = pStats.defense[type] || 0;
-            const cRes = cStats.resistance[type] || 0;
-            const pRes = pStats.resistance[type] || 0;
-            
-            if (pAtk === 0 && pDef === 0 && pRes === 0 && cAtk === 0 && cDef === 0 && cRes === 0) return;
-            
+        visibleTypes.forEach((type) => {
+            const cy = currentY + (TABLE_ROW_H / 2);
             const label = Formatting.getAbbreviation ? Formatting.getAbbreviation(type) : type.substring(0, 3).toUpperCase();
-            this.ui.drawText(label, colType, currentY, UITheme.fonts.mono, UITheme.colors.textMuted, "left");
-            
+            this.ui.drawText(label.toUpperCase(), colType, cy, STAT_VALUE_FONT, UITheme.colors.textMuted, "left", "middle");
+
             const drawCell = (curr, prev, xPos, defaultColor, isPct = false) => {
                 if (prev === 0 && curr === 0) {
-                    this.ui.drawText("-", xPos, currentY, UITheme.fonts.mono, UITheme.colors.textMuted, "center");
+                    this.ui.drawText("-", xPos, cy, STAT_VALUE_FONT, UITheme.colors.textMuted, "center", "middle");
                     return;
                 }
                 const cStr = isPct ? `${(curr * 100).toFixed(0)}%` : `${curr}`;
                 const pStr = isPct ? `${(prev * 100).toFixed(0)}%` : `${prev}`;
-                
-                if (curr === prev) {
-                    this.ui.drawText(cStr, xPos, currentY, UITheme.fonts.mono, defaultColor, "center");
-                } else {
-                    let arrowColor = (prev > curr) ? UITheme.colors.success : UITheme.colors.failure;
-                    this.ctx.font = UITheme.fonts.mono;
-                    const cWidth = this.ctx.measureText(cStr).width;
-                    const pWidth = this.ctx.measureText(pStr).width;
-                    const arrowSize = 6;
-                    const space = 8;
-                    const totalWidth = cWidth + space + (arrowSize * 2) + space + pWidth;
-                    const startX = xPos - (totalWidth / 2);
-                    
-                    this.ui.drawText(cStr, startX, currentY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
-                    const arrowX = startX + cWidth + space + arrowSize;
-                    this.ui.drawArrow(arrowX, currentY - 8, arrowSize, 'right', arrowColor);
-                    this.ui.drawText(pStr, arrowX + arrowSize + space, currentY, UITheme.fonts.mono, arrowColor, "left");
-                }
+                this._drawDiffRowValues(curr, prev, cStr, pStr, xPos, cy, "center", defaultColor);
             };
 
-            drawCell(cAtk, pAtk, colAtk, UITheme.colors.attack);
-            drawCell(cDef, pDef, colDef, UITheme.colors.defense);
-            drawCell(cRes, pRes, colRes, UITheme.colors.resistance, true);
-            
-            currentY += rowH;
+            drawCell(cStats.attack[type] || 0, pStats.attack[type] || 0, colAtk, UITheme.colors.attack);
+            drawCell(cStats.defense[type] || 0, pStats.defense[type] || 0, colDef, UITheme.colors.defense);
+            drawCell(cStats.resistance[type] || 0, pStats.resistance[type] || 0, colRes, UITheme.colors.resistance, true);
+
+            currentY += TABLE_ROW_H;
         });
+
         return currentY;
     }
 
@@ -508,18 +662,19 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         if (def.effectDescription) {
             const lines = this.ui.getWrappedLines(def.effectDescription, textW, UITheme.fonts.body);
             lines.forEach(line => {
-                this.ui.drawText(line, textX, textY + 16, UITheme.fonts.body, UITheme.colors.textMain, "left");
-                textY += 28;
+                // Top-aligned so the first line starts level with the icon; 40px lines fit the 34px font
+                this.ui.drawText(line, textX, textY + 2, UITheme.fonts.body, UITheme.colors.textMain, "left", "top");
+                textY += 40;
             });
             hasContent = true;
         }
         
         if (def.description) {
-            if (hasContent) textY += 16;
+            if (hasContent) textY += 12;
             const lines = this.ui.getWrappedLines(`"${def.description}"`, textW, UITheme.fonts.cardItalic);
             lines.forEach(line => {
-                this.ui.drawText(line, textX, textY + 16, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "left");
-                textY += 28;
+                this.ui.drawText(line, textX, textY + 2, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "left", "top");
+                textY += 32;
             });
         }
         return Math.max(y + iconSize, textY);
@@ -543,6 +698,10 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
     }
 
     _drawAbilityCard(ab, x, y, w, sourceName = 'Innate') {
+        // Fixed-width card, centred in the column so it lines up with the centred section title
+        const columnW = w;
+        w = AbilityPreview.getCardWidth(w);
+        x += Math.floor((columnW - w) / 2);
         const cardPadding = 24;
         const iconSize = 64; 
         const gap = 24;
@@ -559,14 +718,24 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         // --- 2. Calculate Layout Heights ---
         const descW = w - (cardPadding * 2);
         const descLines = ab.description ? this.ui.getWrappedLines(ab.description, descW, UITheme.fonts.cardItalic) : [];
-        
-        // FIXED: Check for range as a stat trigger
-        const hasStats = ab.effects || ab.accuracy !== undefined || ab.speed !== undefined || ab.range !== undefined;
-        
-        const infoBlockHeight = hasStats ? 160 : 136;
+
+        // Stat chips (raw damage, effective hit chance, speed, range), wrapped to fit beside the icon
+        const statFont = UITheme.fonts.cardMono;
+        const statChips = AbilityPreview.getStatChips(ab, this._previewActor, this._previewStats);
+        const statRows = this.ui.layoutChipColumn(statChips, statFont, 12);
+        const CARD_STAT_ROW_H = 30;
+        const STAT_GAP = 8;
+        const extraStatRows = Math.max(0, statRows.length - 1);
+
+        const hasStats = ab.effects || statChips.length > 0;
+
+        // Header rows (title/badge/target/source) take 150px down to the first stat row's centre,
+        // then each stat row, then breathing room above the divider.
+        const infoBlockHeight = hasStats ? 183 + (extraStatRows * CARD_STAT_ROW_H) : 136;
+        const DESC_LINE_H = 28;
         const dividerHeight = descLines.length > 0 ? 40 : 0;
-        const descTextHeight = descLines.length > 0 ? (descLines.length * 24) : 0;
-        const cardHeight = cardPadding + infoBlockHeight + dividerHeight + descTextHeight + cardPadding;
+        const descTextHeight = descLines.length > 0 ? (descLines.length * DESC_LINE_H) : 0;
+        const cardHeight = cardPadding + infoBlockHeight + dividerHeight + descTextHeight + 18;
 
         // --- 3. Draw Thematic Background Panel & Border ---
         this.ui.drawPanel(x, y, w, cardHeight, UITheme.colors.panelBg);
@@ -586,7 +755,7 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         // --- 4. Render Info Block (TOP) ---
         const infoY = y + cardPadding;
         const iconX = x + cardPadding;
-        const iconY = infoY + 16;
+        const iconY = infoY + 10;
 
         this.ui.ctx.fillStyle = UITheme.colors.bgScale?.[2] || 'rgba(255, 255, 255, 0.05)';
         this.ui.ctx.fillRect(iconX, iconY, iconSize, iconSize);
@@ -672,38 +841,24 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         this.ui.ctx.fillText(targetLabel, contentX, currentTextY);
         this.ui.ctx.fillStyle = themeColor;
         this.ui.ctx.fillText(targetText, contentX + labelColumnW, currentTextY);
-        currentTextY += 24;
+        currentTextY += 28;
 
         // Row 4: Source
         this.ui.ctx.fillStyle = UITheme.colors.textMuted;
         this.ui.ctx.fillText(sourceLabel, contentX, currentTextY);
         this.ui.ctx.fillStyle = themeColor;
         this.ui.ctx.fillText(sourceName, contentX + labelColumnW, currentTextY);
-        currentTextY += 26;
+        currentTextY += 30;
 
-        // Row 5: Combat Stats Grid
+        // Row 5: Combat Stats (wraps onto extra rows so nothing spills out of the card)
         if (hasStats) {
-            let statX = contentX;
-            this.ui.ctx.font = UITheme.fonts.cardMono;
-            
-            const drawStat = (label, value, valueColor) => {
-                this.ui.ctx.fillStyle = UITheme.colors.textMuted;
-                this.ui.ctx.fillText(`${label} `, statX, currentTextY);
-                statX += this.ui.ctx.measureText(`${label} `).width;
-                this.ui.ctx.fillStyle = valueColor;
-                this.ui.ctx.fillText(value, statX, currentTextY);
-                statX += this.ui.ctx.measureText(value).width + 24;
-            };
-
-            if (ab.effects) {
-                const dmg = ab.effects.find(e => e.type === 'damage' || e.type === 'heal');
-                if (dmg) drawStat("Pwr:", `${dmg.power}x`, themeColor);
-            }
-            if (ab.accuracy !== undefined) drawStat("Acc:", `${Math.floor(ab.accuracy*100)}%`, themeColor);
-            if (ab.speed !== undefined) drawStat("Spd:", ab.speed.toString(), themeColor);
-            
-            // FIXED: Added Range stat rendering
-            if (ab.range !== undefined) drawStat("Rng:", ab.range.toString(), themeColor);
+            currentTextY += STAT_GAP;
+            // Snapped to the card's left edge (under the icon), not indented beside it
+            this.ui.drawChipRows(statRows, x + cardPadding, currentTextY, CARD_STAT_ROW_H, statFont, {
+                muted: UITheme.colors.textMuted,
+                accent: themeColor,
+                normal: themeColor
+            });
         }
 
         // --- 7. Render Divider & Description (BOTTOM) ---
@@ -726,7 +881,7 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
             
             descLines.forEach(line => {
                 this.ui.ctx.fillText(line, x + (w/2), cursorY);
-                cursorY += 24;
+                cursorY += DESC_LINE_H;
             });
         }
         
@@ -735,21 +890,7 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
     }
 
     _formatTargetingText(targeting) {
-        if (!targeting) return 'None';
-        const scope = targeting.scope || 'enemy';
-        const select = targeting.select || 'single';
-        const count = targeting.count || 1;
-        
-        if (scope === 'self') return 'Self';
-        if (scope === 'all_enemies') return 'All Enemies';
-        if (scope === 'all_allies') return 'All Allies';
-        if (scope === 'everyone') return 'Everyone';
-        
-        const scopeStr = scope.charAt(0).toUpperCase() + scope.slice(1);
-        if (select === 'multiple') return `${count}x ${scopeStr}`;
-        if (select === 'random') return `Random ${scopeStr}`;
-        if (select === 'row') return `${scopeStr} Row`;
-        return `Single ${scopeStr}`;
+        return AbilityPreview.getTargetText(targeting);
     }
     _drawAbilityIcon(ability, x, y, size) {
         // Try to access the loader (either directly on the class or via this.ui)

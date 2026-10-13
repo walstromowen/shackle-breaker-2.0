@@ -207,6 +207,15 @@ export class TooltipSystem {
 
     const lines = [];
 
+    // Who is wearing it (only set for equipped gear listed in the workshop)
+    if (item.equippedBy) {
+      const slotLabel = item.equippedSlot
+        ? ` (${String(item.equippedSlot).replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase())})`
+        : '';
+      lines.push({ text: `Equipped by ${item.equippedBy}${slotLabel}`, font: UITheme.fonts.cardItalic, color: UITheme.colors.textHighlight });
+      lines.push({ type: 'spacer' });
+    }
+
     // 1. Title Meta Parsing
     let typeText = (def.type || "Item").toUpperCase();
     if (def.slot) typeText += ` - ${def.slot.toUpperCase()}`;

@@ -230,7 +230,12 @@ export class OverworldUIRenderer {
 
     drawToasts(ctx, ui, toasts) {
         const now = performance.now();
-        const toastHeight = 44;
+        // Icon is drawn 1:1 with the 64px source cells; the panel grows around it
+        const iconSize = 64;
+        const padX = 12;
+        const padY = 8;
+        const iconGap = 14;
+        const toastHeight = iconSize + (padY * 2);
         const baseY = ctx.canvas.height - 150;
 
         for (let i = toasts.length - 1; i >= 0; i--) {
@@ -252,30 +257,31 @@ export class OverworldUIRenderer {
             const textString = `+${toast.amount}`;
             const textWidth = ctx.measureText(textString).width;
 
-            const toastWidth = 12 + 28 + 10 + textWidth + 16;
+            const toastWidth = padX + iconSize + iconGap + textWidth + 16;
             const startX = ctx.canvas.width - toastWidth - 24;
 
             ui.drawPanel(startX, floatY, toastWidth, toastHeight, "rgba(25, 23, 20, 0.8)");
 
-            const iconSheet = this.loader.get(toast.iconSheet || 'items');
-            if (iconSheet) {
-                const srcSize = this.ICON_SRC_SIZE;
-                const dstSize = 28;
+            // toast.iconSheet names a sheet (e.g. 'consumables'); resolve it the same way every
+            // other item icon is resolved so alternate sheet keys still work
+            const found = ui.resolveItemSheet(this.loader, toast.iconSheet || 'items');
+            if (found) {
+                const srcSize = found.cell || this.ICON_SRC_SIZE;
                 const srcX = toast.iconCol * srcSize;
                 const srcY = toast.iconRow * srcSize;
-                
+
                 ctx.drawImage(
-                    iconSheet,
+                    found.sheet,
                     srcX, srcY, srcSize, srcSize,
-                    startX + 12,
-                    floatY + (toastHeight / 2) - (dstSize / 2),
-                    dstSize, dstSize
+                    startX + padX,
+                    floatY + padY,
+                    iconSize, iconSize
                 );
             }
 
             ui.drawText(
                 textString,
-                startX + 50,
+                startX + padX + iconSize + iconGap,
                 floatY + (toastHeight / 2),
                 UITheme.fonts.cardTitle,
                 UITheme.colors.success || "#4CAF50",

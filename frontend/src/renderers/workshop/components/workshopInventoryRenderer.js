@@ -69,7 +69,12 @@ export class WorkshopInventoryRenderer extends WorkshopBaseRenderer {
                 if (itemY + SLOT_SIZE < listY) return;
 
                 const isHovered = state.hoveredHitboxId === `PARTY_ITEM_${index}`;
-                const isSelected = state.selectedUpgradeItem && state.selectedUpgradeItem.id === item.id && state.selectedUpgradeItem.instanceId === item.instanceId;
+                // Gear entries point at the live item (_ref), so two identical swords - one in the
+                // bag and one equipped - never highlight together. Stacked materials fall back to id.
+                const selectedItem = state.selectedUpgradeItem;
+                const isSelected = !!selectedItem && (item._ref
+                    ? item._ref === selectedItem
+                    : (selectedItem.id === item.id && selectedItem.instanceId === item.instanceId));
 
                 let bgFill = UITheme.colors.bgScale[1];
                 let drawBrackets = false;
@@ -90,6 +95,11 @@ export class WorkshopInventoryRenderer extends WorkshopBaseRenderer {
                 
                 // Uses inherited drawIcon
                 this.drawIcon(def, itemX + iconOffset, itemY + iconOffset, 64);
+
+                // Equipped gear: badge in the corner shows which party member is holding it
+                if (item.equippedBy) {
+                    this.drawHolderBadge(itemX + 3, itemY + 3, 28, item.equippedBy, item.equippedByIndex);
+                }
 
                 if (item.qty > 1) {
                     this.ui.drawText(`${item.qty}`, itemX + SLOT_SIZE - 5, itemY + SLOT_SIZE - 5, UITheme.fonts.small, UITheme.colors.textHighlight, "right");

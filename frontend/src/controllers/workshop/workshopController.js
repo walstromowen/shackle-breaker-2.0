@@ -33,12 +33,15 @@ export class WorkshopController extends BaseController {
         this.scrollManager = new ScrollManager();
         this.recipeScrollOffset = 0;
         this.partyScrollOffset = 0;
+        this.detailsScrollOffset = 0; // scroll position of the centre (stats / skills) panel
         
         this.layout = {
             recipeBounds: null,
             partyBounds: null,
+            detailsBounds: null,
             recipeMaxScroll: 0,
             partyMaxScroll: 0,
+            detailsMaxScroll: 0,
             viewportH: 300,
             itemHeight: 48
         };
@@ -122,17 +125,32 @@ export class WorkshopController extends BaseController {
 
     handleScroll(delta) {
         this.inputMode = 'mouse';
+
+        // The centre panel (stats / skills) scrolls when its content is taller than the space
+        // above the materials footer.
+        const b = this.layout.detailsBounds;
+        const maxScroll = this.layout.detailsMaxScroll || 0;
+        if (b && maxScroll > 0 &&
+            this.mouse.x >= b.x && this.mouse.x <= b.x + b.w &&
+            this.mouse.y >= b.y && this.mouse.y <= b.y + b.h) {
+            const step = 80 * Math.sign(delta || 0);
+            this.detailsScrollOffset = Math.min(maxScroll, Math.max(0, this.detailsScrollOffset + step));
+            return;
+        }
+
         this.scrollManager.handleScrollWheel(this.mouse.x, this.mouse.y, delta);
     }
 
     /// --- ITEM SELECTION LOGIC ---
     selectRecipe(recipe) {
+        this.detailsScrollOffset = 0;
         this.selectedUpgradeItem = null;
         this.selectedRecipe = recipe;
         this.checkCraftability();
     }
 
     selectUpgradeItem(item) {
+        this.detailsScrollOffset = 0;
         this.selectedRecipe = null;
         this.selectedUpgradeItem = item;
         this.checkUpgradeability();
@@ -246,6 +264,9 @@ export class WorkshopController extends BaseController {
         // 2. Delegate to your existing ItemUpgradeSystem!
         const success = ItemUpgradeSystem.upgradeItem(item);
         if (success) {
+            // 2b. If a party member is wearing it, rebuild their stats right away
+            this._refreshHolderStats(item);
+
             // 3. Re-run your upgrade check. Automatically generates the NEW nextStats for the preview!
             this.checkUpgradeability();
             
@@ -289,6 +310,7 @@ export class WorkshopController extends BaseController {
             const tabName = normalizedId.replace('TAB_', '').toLowerCase();
             if (['description', 'stats', 'skills'].includes(tabName)) {
                 this.activeTab = tabName;
+                this.detailsScrollOffset = 0;
                 events.emit('PLAY_SOUND', { id: 'uiClick' });
             }
             return;
@@ -313,12 +335,14 @@ export class WorkshopController extends BaseController {
             const selected = inventoryList[index];
             
             if (selected) {
-                // If it's unique gear it has an instanceId, grab the real one.
-                // If it's a stacked material, just use the formatted object directly!
-                const realItem = selected.instanceId 
-                    ? gameState.party.inventory.find(i => i.instanceId === selected.instanceId) 
-                    : selected;
-                    
+                // Gear entries (carried OR equipped) carry a direct reference to the live item.
+                // Stacked materials have no reference, so the formatted object is used as-is.
+                const realItem = selected._ref
+                    ? selected._ref
+                    : (selected.instanceId
+                        ? gameState.party.inventory.find(i => i.instanceId === selected.instanceId)
+                        : selected);
+
                 if (realItem) {
                     this.selectUpgradeItem(realItem);
                     events.emit('PLAY_SOUND', { id: 'uiClick' });
@@ -333,38 +357,130 @@ export class WorkshopController extends BaseController {
     }
     
 
+    // --- EQUIPPED GEAR HELPERS ---
+    /**
+     * Returns the equipment map of a party member (slot -> item).
+     * Entities keep it either on member.state.equipment or member.equipment.
+     */
+    _getEquipmentMap(member) {
+        return member?.state?.equipment || member?.equipment || null;
+    }
+
+    /**
+     * Lists every item currently worn by a party member, with who holds it.
+     * @returns {{item: object, member: object, memberIndex: number, slot: string}[]}
+     */
+    _getEquippedEntries() {
+        const entries = [];
+        const members = gameState.party?.members || [];
+
+        members.forEach((member, memberIndex) => {
+            const equipment = this._getEquipmentMap(member);
+            if (!equipment) return;
+
+            Object.entries(equipment).forEach(([slot, item]) => {
+                if (item) entries.push({ item, member, memberIndex, slot });
+            });
+        });
+
+        return entries;
+    }
+
+    /**
+     * Finds which party member (if any) is wearing the given item instance.
+     * @returns {{member: object, name: string, index: number, slot: string}|null}
+     */
+    _findHolder(item) {
+        if (!item) return null;
+
+        const entry = this._getEquippedEntries().find(e =>
+            e.item === item || (item.instanceId && e.item.instanceId === item.instanceId)
+        );
+        if (!entry) return null;
+
+        return {
+            member: entry.member,
+            name: entry.member.name || entry.member.id || `Member ${entry.memberIndex + 1}`,
+            index: entry.memberIndex,
+            slot: entry.slot
+        };
+    }
+
+    /**
+     * After upgrading worn gear, the holder's derived stats must be rebuilt so combat
+     * and the character sheet pick up the new level immediately.
+     */
+    _refreshHolderStats(item) {
+        const holder = this._findHolder(item);
+        if (!holder) return;
+
+        const member = holder.member;
+        const refreshFns = ['recalculateStats', 'recalcStats', 'refreshStats', 'updateStats', 'calculateStats'];
+        for (const fnName of refreshFns) {
+            if (typeof member[fnName] === 'function') {
+                member[fnName]();
+                return;
+            }
+        }
+    }
+
     // --- STATE FORMATTING ---
+    _isGear(item) {
+        const def = ItemDefinitions[item.defId || item.id] || {};
+        const isEquipment = ['weapon', 'armor', 'shield'].includes((def.type || '').toLowerCase());
+        return !!(item.isUpgradeable || isEquipment);
+    }
+
+    /**
+     * Builds the flat UI object for a unique piece of gear.
+     * `_ref` keeps a pointer to the live item so upgrades hit the real instance
+     * (carried in the bag or worn by a member).
+     */
+    _formatGear(item, holder = null) {
+        const itemId = item.defId || item.id;
+        const def = ItemDefinitions[itemId] || {};
+
+        return {
+            ...item,
+            defId: itemId,
+            name: item.name || def.name || itemId,
+            type: item.type || def.type || 'item',
+            slot: item.slot || def.slot || '',
+            icon: item.icon || def.icon,
+            // Explicitly evaluate the getters so the UI renderer can see them
+            attack: item.attack,
+            defense: item.defense,
+            resistance: item.resistance,
+            attributes: item.attributes,
+            value: item.value,
+            _ref: item,
+            // Holder info (null/undefined when the item is just sitting in the bag)
+            equippedBy: holder ? (holder.member.name || holder.member.id || `Member ${holder.memberIndex + 1}`) : null,
+            equippedByIndex: holder ? holder.memberIndex : null,
+            equippedSlot: holder ? holder.slot : null
+        };
+    }
+
     _getFormattedInventory() {
-        const formatted = [];
+        const carriedGear = [];
         const stackables = new Map();
 
         gameState.party.inventory.forEach(item => {
             if (!item) return;
 
-            const itemId = item.defId || item.id;
-            const def = ItemDefinitions[itemId] || {};
-            const isEquipment = ['weapon', 'armor', 'shield'].includes((def.type || '').toLowerCase());
-
-            if (item.isUpgradeable || isEquipment) {
-                formatted.push({
-                    ...item,
-                    defId: itemId,
-                    name: item.name || def.name || itemId,
-                    type: item.type || def.type || 'item',
-                    slot: item.slot || def.slot || '',
-                    icon: item.icon || def.icon,
-                    // Explicitly evaluate the getters so the UI renderer can see them
-                    attack: item.attack,
-                    defense: item.defense,
-                    resistance: item.resistance,
-                    attributes: item.attributes,
-                    value: item.value
-                });
+            if (this._isGear(item)) {
+                carriedGear.push(this._formatGear(item));
             } else {
+                const itemId = item.defId || item.id;
                 const currentQty = stackables.get(itemId) || 0;
                 stackables.set(itemId, currentQty + (item.qty || 1));
             }
         });
+
+        // Gear currently worn by party members, so it can be upgraded without unequipping
+        const equippedGear = this._getEquippedEntries()
+            .filter(entry => this._isGear(entry.item))
+            .map(entry => this._formatGear(entry.item, entry));
 
         const aggregated = Array.from(stackables, ([defId, qty]) => {
             const def = ItemDefinitions[defId] || {};
@@ -381,7 +497,7 @@ export class WorkshopController extends BaseController {
             };
         });
 
-        return [...formatted, ...aggregated];
+        return [...carriedGear, ...equippedGear, ...aggregated];
     }
 
     getState() {
@@ -396,6 +512,8 @@ export class WorkshopController extends BaseController {
             canCraftSelected: this.canCraftSelected,
             
             selectedUpgradeItem: this.selectedUpgradeItem,
+            // Who is wearing the selected item (null if it's in the bag) - looked up live
+            selectedUpgradeHolder: this._findHolder(this.selectedUpgradeItem),
             canUpgradeSelected: this.canUpgradeSelected,
             activeTab: this.activeTab,
             
@@ -403,6 +521,7 @@ export class WorkshopController extends BaseController {
             layout: this.layout,
             recipeScrollOffset: this.recipeScrollOffset,
             partyScrollOffset: this.partyScrollOffset,
+            detailsScrollOffset: this.detailsScrollOffset,
             onLayoutUpdate: (hitboxes) => this.updateHitboxes(hitboxes),
             
             // Interaction & Data

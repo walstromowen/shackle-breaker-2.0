@@ -176,29 +176,8 @@ export class InventoryPanel {
   _drawIcon(def, x, y) {
     if (!def) return;
 
-    let sheetName = 'items';
-    const type = (def.type || '').toLowerCase();
-    const slot = (def.slot || '').toLowerCase();
-
-    if (slot === 'mainhand' || slot === 'offhand' || type === 'weapon' || type === 'shield' || type === 'tool') {
-      sheetName = 'weapons';
-    } else if (type === 'armor' || ['head', 'body', 'legs', 'feet', 'hands', 'accessory'].includes(slot)) {
-      sheetName = 'armor';
-    } else if (type === 'consumable') {
-      sheetName = 'consumables';
-    } else if (type === 'material') {
-      sheetName = 'materials';
-    }
-
-    const sheet = this.loader.get(sheetName) || this.loader.get('items') || this.loader.get('icons');
-    if (!sheet) return;
-
-    const iconData = def.icon || { col: 0, row: 0 };
-
+    // Picks the right sprite sheet for the item's category - see CanvasUI.drawItemIcon
     const ICON_SIZE = 64; // Sprite sheet cell size (upgraded from 32)
-    const srcX = (iconData.col * ICON_SIZE);
-    const srcY = (iconData.row * ICON_SIZE);
-
-    this.ui.drawSprite(sheet, srcX, srcY, ICON_SIZE, ICON_SIZE, x, y, 64, 64);
+    this.ui.drawItemIcon(this.loader, def, x, y, 64, ICON_SIZE);
   }
 }

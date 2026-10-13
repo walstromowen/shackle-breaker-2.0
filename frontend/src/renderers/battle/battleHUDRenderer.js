@@ -1,5 +1,6 @@
 import { UITheme } from '../../ui/UITheme.js';
 import { TargetingResolver } from '../../../../shared/systems/targetingResolver.js';
+import { AbilityPreview } from '../../ui/abilityPreview.js';
 
 export class BattleHUDRenderer {
   constructor(ctx, config, loader, ui, combatantRenderer) {
@@ -108,7 +109,7 @@ export class BattleHUDRenderer {
           const activeChar = state.activeParty[state.activePartyIndex];
           const focusedAbility = activeChar?.abilities?.[state.menuIndex];
           if (focusedAbility) {
-            this.drawAbilityDetailsPopup(focusedAbility, state.menuIndex);
+            this.drawAbilityDetailsPopup(focusedAbility, state.menuIndex, activeChar);
           }
         }
       } else if (state.phase === 'SELECT_TARGET') {
@@ -415,7 +416,7 @@ export class BattleHUDRenderer {
     });
   }
 
-  drawAbilityDetailsPopup(ability, menuIndex) {
+  drawAbilityDetailsPopup(ability, menuIndex, actor) {
     // --- 1. Damage Type Colors Configuration ---
     let rawType = ability.damageType || (ability.type ? ability.type.toLowerCase() : 'physical');
     if (!ability.damageType && ability.effects && ability.effects.length > 0) {
@@ -427,7 +428,7 @@ export class BattleHUDRenderer {
 
     // --- 2. Calculate Content & Dynamic Heights (Relaxed Compact) ---
     const cardPadding = 24;
-    const w = 480;
+    const w = AbilityPreview.CARD_WIDTH;
     const descW = w - (cardPadding * 2);
     const descStr = ability.description || 'No description available.';
     const fontItalic = UITheme.fonts.cardItalic || UITheme.fonts.bodyItalic || `italic ${UITheme.fonts.body}`;
@@ -438,12 +439,18 @@ export class BattleHUDRenderer {
       descLines = this.ui.getWrappedLines(descStr, descW, fontItalic);
     }
 
-    // Check for stats to adjust block height
-    const pwr = ability.power || (ability.effects && ability.effects.find(e => e.type === 'damage' || e.type === 'heal')?.power);
-    const hasStats = pwr || ability.accuracy !== undefined || ability.speed !== undefined || ability.range !== undefined;
+    // Stat chips (raw damage, effective hit chance, speed, range), wrapped to fit the card
+    const statFont = UITheme.fonts.cardMono || UITheme.fonts.small || '18px monospace';
+    const statChips = AbilityPreview.getStatChips(ability, actor);
+    const statRows = this.ui.layoutChipColumn(statChips, statFont, 12);
+    const STAT_ROW_H = 30;
+    const STAT_GAP = 8;
+    const extraStatRows = Math.max(0, statRows.length - 1);
+
+    const hasStats = statChips.length > 0;
 
     // Increased heights to allow more breathing room between text lines
-    const infoBlockHeight = hasStats ? 132 : 104;
+    const infoBlockHeight = (hasStats ? 132 + STAT_GAP : 104) + (extraStatRows * STAT_ROW_H);
     const dividerHeight = descLines.length > 0 ? 32 : 0;
     const descTextHeight = descLines.length > 0 ? (descLines.length * 24) : 0;
     const h = cardPadding + infoBlockHeight + dividerHeight + descTextHeight + cardPadding;
@@ -570,30 +577,14 @@ export class BattleHUDRenderer {
     // Increased space before stats
     currentTextY += 28;
 
-    // Row 4: Combat Stats Grid (Full Width)
+    // Row 4: Combat Stats (wraps onto extra rows so nothing spills out of the box)
     if (hasStats) {
-      let statX = fullRowX;
-      this.ctx.font = UITheme.fonts.cardMono || UITheme.fonts.small || '18px monospace';
-
-      const drawStat = (label, value, valueColor) => {
-        this.ctx.fillStyle = UITheme.colors.textMuted;
-        this.ctx.fillText(label, statX, currentTextY);
-        statX += this.ctx.measureText(label).width + 4; // slight gap between label and value
-        this.ctx.fillStyle = valueColor;
-        this.ctx.fillText(value, statX, currentTextY);
-        statX += this.ctx.measureText(value).width + 16; // relaxed gap between stat blocks
-      };
-
-      if (pwr) drawStat("Pwr:", `${pwr}x`, themeColor);
-      if (ability.accuracy !== undefined) drawStat("Acc:", `${Math.floor(ability.accuracy * 100)}%`, UITheme.colors.textMain);
-      if (ability.speed !== undefined) drawStat("Spd:", ability.speed.toString(), UITheme.colors.textMain);
-
-      // Appended Range Stat
-      if (ability.range !== undefined) {
-        let rangeStr = ability.range.toString();
-        rangeStr = rangeStr.charAt(0).toUpperCase() + rangeStr.slice(1);
-        drawStat("Rng:", rangeStr, UITheme.colors.textMain);
-      }
+      currentTextY += STAT_GAP;
+      this.ui.drawChipRows(statRows, fullRowX, currentTextY, STAT_ROW_H, statFont, {
+        muted: UITheme.colors.textMuted,
+        accent: themeColor,
+        normal: UITheme.colors.textMain
+      });
     }
 
     // --- 6. Divider & Description (BOTTOM) ---
@@ -636,21 +627,7 @@ export class BattleHUDRenderer {
   }
 
   formatTargetingText(targeting) {
-    if (!targeting) return 'None';
-    const scope = targeting.scope || 'enemy';
-    const select = targeting.select || 'single';
-    const count = targeting.count || 1;
-
-    if (scope === 'self') return 'Self';
-    if (scope === 'all_enemies') return 'All Enemies';
-    if (scope === 'all_allies') return 'All Allies';
-    if (scope === 'everyone') return 'Everyone';
-
-    const scopeStr = scope.charAt(0).toUpperCase() + scope.slice(1);
-    if (select === 'multiple') return `${count}x ${scopeStr}`;
-    if (select === 'random') return `Random ${scopeStr}`;
-    if (select === 'row') return `${scopeStr} Row`;
-    return `Single ${scopeStr}`;
+      return AbilityPreview.getTargetText(targeting);
   }
 
   drawActivePlayerIndicator(state) {

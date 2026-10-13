@@ -2,6 +2,8 @@ import { UITheme } from '../../../ui/UITheme.js';
 import { Formatting } from '../../../../../shared/utils/formatting.js';
 import { AbilityDefinitions } from '../../../../../shared/data/abilityDefinitions.js';
 import { ItemDefinitions } from '../../../../../shared/data/itemDefinitions.js';
+import { gameState } from '../../../../../shared/state/gameState.js';
+import { AbilityPreview } from '../../../ui/abilityPreview.js';
 
 export class ItemDetailPanel {
   constructor(ui, loader) {
@@ -28,6 +30,13 @@ export class ItemDetailPanel {
 
     this.lastItemId = null;
     this.totalContentHeight = 0;
+    this._previewActor = null;
+    this._previewStats = null;
+  }
+
+  // Character whose current stats scale the damage / hit-chance numbers on ability cards.
+  _resolvePreviewActor(state) {
+    return (state && (state.member || state.activeMember)) || gameState.party?.members?.[0] || null;
   }
 
   render(item, x, y, w, h, state, hitboxes) {
@@ -35,6 +44,9 @@ export class ItemDetailPanel {
       this.ui.drawText("No item selected", x + w / 2, y + h / 2, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "center");
       return;
     }
+
+    this._previewActor = this._resolvePreviewActor(state);
+    this._previewStats = (state && state.derivedStats) || null;
 
     let def = this._resolveDefinition(item);
     const isAbility = !!(item.abilityId || AbilityDefinitions[item.id] || (def && def.type === 'ability'));
@@ -81,9 +93,9 @@ export class ItemDetailPanel {
     if (!isAbility) {
       currentY = this._drawStatsGrid(item, def, contentX, currentY, contentW);
       currentY = this._drawUpgradeCosts(item, def, contentX, currentY, contentW);
-      currentY = this._drawAbilities(def, contentX, currentY, contentW);
+      currentY = this._drawAbilities(def, x, currentY, w);
     } else {
-      currentY = this._drawAbilities({ grantedAbilities: [def.id] }, contentX, currentY, contentW);
+      currentY = this._drawAbilities({ grantedAbilities: [def.id] }, x, currentY, w);
     }
 
     this.totalContentHeight = currentY - initialDrawY + this.layout.padding;
@@ -268,23 +280,13 @@ export class ItemDetailPanel {
   _drawMainIcon(def, x, y, isAbility) {
     if (!this.loader) return;
 
-    let sheetName = isAbility ? 'abilities' : 'items';
-    const type = (def.type || '').toLowerCase();
-    const slot = (def.slot || '').toLowerCase();
-
+    // Items (weapons, armor, consumables, materials ...) pick their own sprite sheet
     if (!isAbility) {
-      if (['mainhand', 'offhand'].includes(slot) || ['weapon', 'shield', 'tool'].includes(type)) {
-        sheetName = 'weapons';
-      } else if (type === 'armor' || ['head', 'body', 'legs', 'feet', 'hands', 'accessory'].includes(slot)) {
-        sheetName = 'armor';
-      } else if (type === 'consumable') {
-        sheetName = 'consumables';
-      } else if (type === 'material') {
-        sheetName = 'materials';
-      }
+      this.ui.drawItemIcon(this.loader, def, x, y, this.ICON_SIZE, this.ICON_SRC_SIZE);
+      return;
     }
 
-    const sheet = this.loader.get(sheetName) || this.loader.get('items') || this.loader.get('icons');
+    const sheet = this.loader.get('abilities') || this.loader.get('items') || this.loader.get('icons');
 
     if (sheet) {
       const iconData = def.icon || { col: 0, row: 0 };
@@ -426,21 +428,18 @@ export class ItemDetailPanel {
       this.ui.drawText("Materials Required:", x, currentY, bodyFont, UITheme.colors.textMuted, "left");
       currentY += this.layout.lineHeight;
 
-      const materialsSheet = this.loader ? (this.loader.get('materials') || this.loader.get('items') || this.loader.get('icons')) : null;
-      const src = this.ICON_SRC_SIZE;
-
       Object.entries(cost.materials).forEach(([matId, count]) => {
         const matDef = ItemDefinitions[matId] || {};
         const matName = matDef.name || matId;
 
         const iconSize = this.MATERIAL_ICON_SIZE * 2; // Doubled Size
 
-        if (materialsSheet && matDef.icon) {
-          this.ui.drawSprite(
-            materialsSheet,
-            matDef.icon.col * src, matDef.icon.row * src, src, src,
-            x, currentY - (iconSize / 2) + 6, iconSize, iconSize
-          );
+        const drewIcon = !!matDef.icon && this.ui.drawItemIcon(
+          this.loader, matDef,
+          x, currentY - (iconSize / 2) + 6, iconSize, this.ICON_SRC_SIZE
+        );
+
+        if (drewIcon) {
           this.ui.drawText(`- ${matName}: x${count}`, x + iconSize + 8, currentY, bodyFont, UITheme.colors.textMain, "left");
         } else {
           this.ui.drawText(`- ${matName}: x${count}`, x + 12, currentY, bodyFont, UITheme.colors.textMain, "left");
@@ -480,6 +479,7 @@ export class ItemDetailPanel {
   }
 
   _drawAbilityCard(ab, abilityObj, x, y, w) {
+    w = AbilityPreview.getCardWidth(w);
     const cardPadding = 24;
     const iconSize = this.ABILITY_ICON_SIZE;
     const gap = 24;
@@ -499,9 +499,18 @@ export class ItemDetailPanel {
     const descW = w - (cardPadding * 2);
     const descLines = ab.description ? this.ui.getWrappedLines(ab.description, descW, UITheme.fonts.cardItalic) : [];
 
-    const hasStats = ab.effects || ab.accuracy || ab.speed;
+    // Stat chips (raw damage, effective hit chance, speed, range), wrapped to fit beside the icon
+    const statFont = UITheme.fonts.cardMono;
+    const statChips = AbilityPreview.getStatChips(ab, this._previewActor, this._previewStats);
 
-    const infoBlockHeight = hasStats ? 160 : 136;
+    const statRows = this.ui.layoutChipColumn(statChips, statFont, 12);
+    const STAT_ROW_H = 30;
+    const STAT_GAP = 8;
+    const extraStatRows = Math.max(0, statRows.length - 1);
+
+    const hasStats = ab.effects || statChips.length > 0;
+
+    const infoBlockHeight = (hasStats ? 160 + STAT_GAP : 136) + (extraStatRows * STAT_ROW_H);
     const dividerHeight = descLines.length > 0 ? 40 : 0;
     const descTextHeight = descLines.length > 0 ? (descLines.length * 24) : 0;
 
@@ -633,28 +642,15 @@ export class ItemDetailPanel {
 
     currentTextY += 26;
 
-    // Row 5: Combat Stats Grid
+    // Row 5: Combat Stats (wraps onto extra rows so nothing spills out of the card)
     if (hasStats) {
-      let statX = contentX;
-      this.ui.ctx.font = UITheme.fonts.cardMono;
-
-      const drawStat = (label, value, valueColor) => {
-        this.ui.ctx.fillStyle = UITheme.colors.textMuted;
-        this.ui.ctx.fillText(`${label} `, statX, currentTextY);
-        statX += this.ui.ctx.measureText(`${label} `).width;
-        this.ui.ctx.fillStyle = valueColor;
-        this.ui.ctx.fillText(value, statX, currentTextY);
-        statX += this.ui.ctx.measureText(value).width + 24;
-      };
-
-      if (ab.effects) {
-        const dmg = ab.effects.find(e => e.type === 'damage' || e.type === 'heal');
-        if (dmg) drawStat("Pwr:", `${dmg.power}x`, themeColor);
-      }
-
-      // MATCH: Changed from UITheme.colors.textMain to themeColor for stat values
-      if (ab.accuracy) drawStat("Acc:", `${Math.floor(ab.accuracy * 100)}%`, themeColor);
-      if (ab.speed) drawStat("Spd:", ab.speed, themeColor);
+      currentTextY += STAT_GAP;
+      // Snapped to the card's left edge (under the icon), not indented beside it
+      this.ui.drawChipRows(statRows, x + cardPadding, currentTextY, STAT_ROW_H, statFont, {
+        muted: UITheme.colors.textMuted,
+        accent: themeColor,
+        normal: themeColor
+      });
     }
 
     // --- 7. Render Divider & Description (BOTTOM) ---
@@ -706,20 +702,6 @@ export class ItemDetailPanel {
   }
 
   _formatTargetingText(targeting) {
-    if (!targeting) return 'None';
-    const scope = targeting.scope || 'enemy';
-    const select = targeting.select || 'single';
-    const count = targeting.count || 1;
-
-    if (scope === 'self') return 'Self';
-    if (scope === 'all_enemies') return 'All Enemies';
-    if (scope === 'all_allies') return 'All Allies';
-    if (scope === 'everyone') return 'Everyone';
-
-    const scopeStr = scope.charAt(0).toUpperCase() + scope.slice(1);
-    if (select === 'multiple') return `${count}x ${scopeStr}`;
-    if (select === 'random') return `Random ${scopeStr}`;
-    if (select === 'row') return `${scopeStr} Row`;
-    return `Single ${scopeStr}`;
+      return AbilityPreview.getTargetText(targeting);
   }
 }

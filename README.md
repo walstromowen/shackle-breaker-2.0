@@ -27,7 +27,7 @@ Rain flash
 rain sound effect too slow
 flashing of sprites in battle renderer
 
-
+Breathe with subtle chest expansion and shoulder rise, settling back into the starting posture with minimal swaying.
 Root
 ├── backend/
 ├── frontend/                  

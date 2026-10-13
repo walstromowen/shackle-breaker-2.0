@@ -1,5 +1,6 @@
 import { UITheme } from '../../../ui/UITheme.js';
 import { AbilityDefinitions } from '../../../../../shared/data/abilityDefinitions.js';
+import { AbilityPreview } from '../../../ui/abilityPreview.js';
 
 export class AbilitiesPanel {
   constructor(ui, loader) {
@@ -47,7 +48,8 @@ export class AbilitiesPanel {
       const def = AbilityDefinitions[abilityObj.id];
       if (!def) return;
 
-      currentY = this._drawAbilityCard(def, abilityObj, x, currentY, w);
+      // member + derivedStats let the card show damage scaled by the user's current stats
+      currentY = this._drawAbilityCard(def, abilityObj, x, currentY, w, member, state.derivedStats);
     });
 
     this.totalContentHeight = currentY - initialDrawY;
@@ -86,7 +88,8 @@ export class AbilitiesPanel {
     }
   }
 
-  _drawAbilityCard(ab, abilityObj, x, y, w) {
+  _drawAbilityCard(ab, abilityObj, x, y, w, member = null, derivedStats = null) {
+    w = AbilityPreview.getCardWidth(w);
     const cardPadding = 12;
     const iconSize = 48;
     const gap = 12;
@@ -106,10 +109,18 @@ export class AbilitiesPanel {
     const descW = w - (cardPadding * 2);
     const descLines = ab.description ? this.ui.getWrappedLines(ab.description, descW, UITheme.fonts.cardItalic) : [];
 
-    const hasStats = ab.effects || ab.accuracy !== undefined || ab.speed !== undefined || ab.range !== undefined;
+    // Stat chips (raw damage, effective hit chance, speed, range), wrapped to fit the card
+    const statFont = UITheme.fonts.cardMono;
+    const statChips = AbilityPreview.getStatChips(ab, member, derivedStats);
+    const statRows = this.ui.layoutChipColumn(statChips, statFont, 12);
+    const STAT_ROW_H = 26;
+    const STAT_GAP = 6;
+    const extraStatRows = Math.max(0, statRows.length - 1);
+
+    const hasStats = ab.effects || statChips.length > 0;
 
     // Increased heights to allow more breathing room between text lines
-    const infoBlockHeight = hasStats ? 108 : 84;
+    const infoBlockHeight = (hasStats ? 108 + STAT_GAP : 84) + (extraStatRows * STAT_ROW_H);
     const dividerHeight = descLines.length > 0 ? 24 : 0;
     const descTextHeight = descLines.length > 0 ? (descLines.length * 22) : 0; // 22px line height for description
 
@@ -228,32 +239,14 @@ export class AbilitiesPanel {
     // Increased space before stats
     currentTextY += 24;
 
-    // Row 4: Combat Stats Grid (Full Width)
+    // Row 4: Combat Stats (wraps onto extra rows so nothing spills out of the card)
     if (hasStats) {
-      let statX = fullRowX;
-      this.ui.ctx.font = UITheme.fonts.cardMono;
-
-      const drawStat = (label, value, valueColor) => {
-        this.ui.ctx.fillStyle = UITheme.colors.textMuted;
-        this.ui.ctx.fillText(label, statX, currentTextY);
-        statX += this.ui.ctx.measureText(label).width;
-        this.ui.ctx.fillStyle = valueColor;
-        this.ui.ctx.fillText(value, statX, currentTextY);
-        statX += this.ui.ctx.measureText(value).width + 12; // Relaxed gap between stat blocks
-      };
-
-      if (ab.effects) {
-        const dmg = ab.effects.find(e => e.type === 'damage' || e.type === 'heal');
-        if (dmg) drawStat("Pwr:", `${dmg.power}x`, themeColor);
-      }
-      if (ab.accuracy !== undefined) drawStat("Acc:", `${Math.floor(ab.accuracy * 100)}%`, UITheme.colors.textMain);
-      if (ab.speed !== undefined) drawStat("Spd:", ab.speed.toString(), UITheme.colors.textMain);
-
-      if (ab.range !== undefined) {
-        let rangeStr = ab.range.toString();
-        rangeStr = rangeStr.charAt(0).toUpperCase() + rangeStr.slice(1);
-        drawStat("Rng:", rangeStr, UITheme.colors.textMain);
-      }
+      currentTextY += STAT_GAP;
+      this.ui.drawChipRows(statRows, fullRowX, currentTextY, STAT_ROW_H, statFont, {
+        muted: UITheme.colors.textMuted,
+        accent: themeColor,
+        normal: UITheme.colors.textMain
+      });
     }
 
     // --- 5. Render Divider & Description (BOTTOM) ---
@@ -302,20 +295,6 @@ export class AbilitiesPanel {
   }
 
   _formatTargetingText(targeting) {
-    if (!targeting) return 'None';
-    const scope = targeting.scope || 'enemy';
-    const select = targeting.select || 'single';
-    const count = targeting.count || 1;
-
-    if (scope === 'self') return 'Self';
-    if (scope === 'all_enemies') return 'All Enemies';
-    if (scope === 'all_allies') return 'All Allies';
-    if (scope === 'everyone') return 'Everyone';
-
-    const scopeStr = scope.charAt(0).toUpperCase() + scope.slice(1);
-    if (select === 'multiple') return `${count}x ${scopeStr}`;
-    if (select === 'random') return `Random ${scopeStr}`;
-    if (select === 'row') return `${scopeStr} Row`;
-    return `Single ${scopeStr}`;
+      return AbilityPreview.getTargetText(targeting);
   }
 }

@@ -39,29 +39,39 @@ export class WorkshopBaseRenderer {
     drawIcon(def, x, y, size = 64) {
         if (!def) return;
 
-        let sheetName = 'items';
-        const type = (def.type || '').toLowerCase();
-        const slot = (def.slot || '').toLowerCase();
+        // Picks the right sprite sheet for the item's category (weapons, armor, consumables,
+        // materials ...) - see CanvasUI.drawItemIcon
+        this.ui.drawItemIcon(this.loader, def, x, y, size, this.ICON_SRC_SIZE);
+    }
 
-        if (slot === 'mainhand' || slot === 'offhand' || type === 'weapon' || type === 'shield' || type === 'tool') {
-            sheetName = 'weapons';
-        } else if (type === 'armor' || ['head', 'body', 'legs', 'feet', 'hands', 'accessory'].includes(slot)) {
-            sheetName = 'armor';
-        } else if (type === 'consumable') {
-            sheetName = 'consumables';
-        } else if (type === 'material') {
-            sheetName = 'materials';
-        }
+    // --- Equipped-gear holder helpers (shared by the inventory grid and the details panel) ---
 
-        const sheet = this.loader.get(sheetName) || this.loader.get('items') || this.loader.get('icons');
-        if (!sheet) return;
+    /** One stable colour per party slot so members with the same initial can still be told apart. */
+    getHolderColor(memberIndex) {
+        const palette = ['#c9a227', '#4f8fc0', '#b5525c', '#5fa86b', '#9a6bc2', '#d1823b'];
+        return palette[(memberIndex || 0) % palette.length];
+    }
 
-        const iconData = def.icon || { col: 0, row: 0 };
-        const ICON_SIZE = this.ICON_SRC_SIZE;
-        const srcX = (iconData.col * ICON_SIZE);
-        const srcY = (iconData.row * ICON_SIZE);
+    /** "mainHand" / "main_hand" -> "Main Hand" */
+    formatSlotName(slot) {
+        if (!slot) return '';
+        return String(slot)
+            .replace(/([a-z])([A-Z])/g, '$1 $2')
+            .replace(/[_-]+/g, ' ')
+            .replace(/\b\w/g, c => c.toUpperCase());
+    }
 
-        this.ui.drawSprite(sheet, srcX, srcY, ICON_SIZE, ICON_SIZE, x, y, size, size);
+    /**
+     * Small square badge with the holder's initial, tinted by party slot.
+     * Drawn on top of an item slot so you can see at a glance who is wearing it.
+     */
+    drawHolderBadge(x, y, size, name, memberIndex) {
+        const color = this.getHolderColor(memberIndex);
+        const initial = (name || '?').trim().charAt(0).toUpperCase();
+
+        this.ui.drawRect(x, y, size, size, 'rgba(0, 0, 0, 0.85)');
+        this.ui.drawRect(x, y, size, size, color, false);
+        this.ui.drawText(initial, x + Math.floor(size / 2), y + Math.floor(size / 2) + 1, UITheme.fonts.cardTitle, color, 'center', 'middle');
     }
 
     getRarityColor(rarity) {

@@ -31,7 +31,7 @@ export const CONFIG = {
     // each South, East, North, West), so 512 x 768 px for 64 x 64 frames.
     // feetPad = how far the frame sits below the tile's bottom edge: (h - 32) / 2 = 16 is exactly centred; 0 would put the frame's bottom on the
     // tile's bottom edge (frame rising above the tile). shiftX = pixels to nudge a figure that is not centred in its frame (positive = right).
-    CHARACTER_FRAME: { w: 64, h: 64, feetPad: 16, shiftX: 0 },
+   CHARACTER_FRAME: { w: 64, h: 64, feetPad: 'auto', shiftX: 0 },
 
     // --- Not read by any file I have seen (the renderers, world manager, terrain generator, biome definitions). Probably the canvas setup and the
     //     animation code use them: delete each one that a project-wide search for its name finds only here. ---

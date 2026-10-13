@@ -253,22 +253,6 @@ export class CharacterSummaryRenderer {
     const def = ItemDefinitions[item.defId];
     if (!def) return;
 
-    let sheetName = 'items';
-    const type = (def.type || '').toLowerCase();
-    const slot = (def.slot || '').toLowerCase();
-
-    if (slot === 'mainhand' || slot === 'offhand' || type === 'weapon' || type === 'shield' || type === 'tool') {
-      sheetName = 'weapons';
-    } else if (type === 'armor' || ['head', 'body', 'legs', 'feet', 'hands', 'accessory'].includes(slot)) {
-      sheetName = 'armor';
-    } else if (type === 'consumable') {
-      sheetName = 'consumables';
-    } else if (type === 'material') {
-      sheetName = 'materials';
-    }
-
-    const iconSheet = this.loader.get(sheetName) || this.loader.get('items') || this.loader.get('icons');
-
     const iconSize = 64; // Sprite sheet cell size (upgraded from 32)
     const drawSize = 77;
 
@@ -280,10 +264,8 @@ export class CharacterSummaryRenderer {
 
     this.ui.drawRect(x, y, drawSize, drawSize, "rgba(0,0,0,0.6)", true);
 
-    if (iconSheet && def.icon) {
-      const sx = def.icon.col * iconSize;
-      const sy = def.icon.row * iconSize;
-      this.ctx.drawImage(iconSheet, sx, sy, iconSize, iconSize, x, y, drawSize, drawSize);
+    if (this.ui.drawItemIcon(this.loader, def, x, y, drawSize, iconSize)) {
+      // drawn from the sheet that matches the item's category
     } else {
       this.ctx.fillStyle = UITheme.colors.failure;
       this.ctx.fillRect(x + 10, y + 10, drawSize - 19, drawSize - 19);

@@ -169,6 +169,38 @@ export class MapRenderer {
             this.ctx.globalAlpha = prevAlpha;
         }
     }
+    /* Number of empty rows between the lowest drawn pixel and the bottom of a character frame, read from the sheet's own pixels: the lowest opaque row
+       of any frame in the sheet (so a lifted foot does not drag the ground line up). Found once per sheet and remembered. Returns null when the pixels
+       cannot be read (no document, a sheet from another origin, ...), and the caller then falls back to the configured number. */
+    characterFeetPad(sprite, FH) {
+        if (!this._feetPads) this._feetPads = new WeakMap();
+        if (this._feetPads.has(sprite)) return this._feetPads.get(sprite);
+        let pad = null;
+        try {
+            const w = sprite.naturalWidth || sprite.width, h = sprite.naturalHeight || sprite.height;
+            if (w > 0 && h > 0 && typeof document !== 'undefined') {
+                const cv = document.createElement('canvas');
+                cv.width = w;
+                cv.height = h;
+                const cx = cv.getContext('2d', { willReadFrequently: true });
+                cx.drawImage(sprite, 0, 0);
+                const px = cx.getImageData(0, 0, w, h).data;
+                let lowest = -1;
+                for (let y = 0; y < h; y++) {
+                    const row = y % FH; // the row inside its frame
+                    if (row <= lowest) continue; // cannot raise the maximum
+                    for (let x = 0; x < w; x++) {
+                        if (px[(y * w + x) * 4 + 3] > 0) { lowest = row; break; }
+                    }
+                }
+                if (lowest >= 0) pad = FH - 1 - lowest;
+            }
+        } catch (e) {
+            pad = null;
+        }
+        this._feetPads.set(sprite, pad); // a failure is remembered too, so the sheet is not scanned again every frame
+        return pad;
+    }
     drawEntity(entity, camera, interpolationFactor = 1) {
         const sprite = this.loader.get(gameState.party.members[0].spriteOverworld);
         if (!sprite) return;
@@ -179,15 +211,19 @@ export class MapRenderer {
         const dx = Math.floor((renderX - camera.x) * scale);
         const dy = Math.floor((renderY - camera.y) * scale);
         /* A character frame can be bigger than a tile (e.g. 64 x 64). entity.x / y stay the tile the character stands on, so collision, the hitbox and
-           the depth sort do not change; the frame is only DRAWN around that tile.
+           the depth sort do not change; the frame is only DRAWN around that tile: centred sideways, with the lowest drawn pixel of the sprite on the
+           bottom edge of the tile (exactly the line the bottom of a 1-tile map object sits on, see drawObject), so nothing is drawn over the tile
+           below. A 64 x 64 frame with its feet on the last row rises 32 px above the tile.
            CONFIG.CHARACTER_FRAME = { w, h, feetPad, shiftX } (an entity may carry its own `frame`):
              w, h     size of one frame in the sheet (default: one tile, the old behaviour)
-             feetPad  how far the frame is moved down below the tile's bottom edge. (h - tile) / 2 centres the frame on the tile (64 x 64: 16);
-                      0 puts the bottom of the frame on the tile's bottom edge, so the frame rises above the tile
+             feetPad  'auto' (default): the empty rows under the feet are read from the sheet's pixels, so the feet are flush whatever the art
+                      looks like. A number overrides that: the empty rows between the feet and the bottom of the frame (0 = feet on the last row)
              shiftX   pixels to move the frame sideways when the figure is not centred in it (positive = right) */
         const fr = entity.frame || this.config.CHARACTER_FRAME || {};
         const FW = fr.w || TILE_SIZE, FH = fr.h || TILE_SIZE;
-        const feetPad = fr.feetPad || 0, shiftX = fr.shiftX || 0;
+        const shiftX = fr.shiftX || 0;
+        let feetPad = fr.feetPad;
+        if (typeof feetPad !== 'number') feetPad = this.characterFeetPad(sprite, FH) ?? 0; // 'auto' or not set
         const A = this.charAnim;
         const state = A.firstRow[entity.animState] !== undefined ? entity.animState : 'idle'; // an entity without an animState shows its idle pose
         const dirIndex = Math.max(0, A.directionOrder.indexOf(entity.direction));
@@ -197,8 +233,9 @@ export class MapRenderer {
         const sx = frame * FW;
         const sy = (A.firstRow[state] + dirIndex) * FH;
         const offX = Math.floor(((FW - TILE_SIZE) / 2 - shiftX) * scale);
-        const offY = Math.floor((FH - TILE_SIZE - feetPad) * scale);
-        this.ctx.drawImage(sprite, sx, sy, FW, FH, dx - offX, dy - offY, Math.ceil(FW * scale), Math.ceil(FH * scale));
+        const dW = Math.ceil(FW * scale), dH = Math.ceil(FH * scale);
+        const tileBottom = dy + Math.ceil(TILE_SIZE * scale); // the same screen line drawObject puts the bottom of a 1-tile object on, at any scale
+        this.ctx.drawImage(sprite, sx, sy, FW, FH, dx - offX, tileBottom - dH + Math.round(feetPad * dH / FH), dW, dH);
     }
     updateViewBounds(camera) {
         const { TILE_SIZE, GAME_SCALE, WALL_HEIGHT } = this.config;

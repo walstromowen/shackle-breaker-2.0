@@ -3,9 +3,9 @@ export const MAP_OBJECTS_DEFINITIONS = {
     GRASS_COVERAGE_1: { sheet: 'objGrassCoverage1', spriteX: 6, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
     GRASS_COVERAGE_2: { sheet: 'objGrassCoverage2', spriteX: 7, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
     GRASS_COVERAGE_3: { sheet: 'objGrassCoverage3', spriteX: 8, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
-    TULIPS_ORANGE: { sheet: 'objTulipsOrange', spriteX: 1, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'plant_fiber', amount: 1 } },
-    TULIPS_WHITE: { sheet: 'objTulipsWhite', spriteX: 2, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'plant_fiber', amount: 1 } },
-    TULIPS_RED: { sheet: 'objTulipsRed', spriteX: 3, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'plant_fiber', amount: 1 } },
+    TULIPS_ORANGE: { sheet: 'objTulipsOrange', spriteX: 1, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'plant_fibers', amount: 1 } },
+    TULIPS_WHITE: { sheet: 'objTulipsWhite', spriteX: 2, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'plant_fibers', amount: 1 } },
+    TULIPS_RED: { sheet: 'objTulipsRed', spriteX: 3, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'plant_fibers', amount: 1 } },
     
     // --- UPDATED: SMALL ROCKS WITH PICKUP ---
     SMALL_ROCKS_1: { sheet: { default: 'objSmallRocks1', DESERT: 'objSmallRocks1Desert', SNOWY_MOUNTAINS: 'objSmallRocks1Snow' }, spriteX: 4, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'stone', amount: 1 } },
