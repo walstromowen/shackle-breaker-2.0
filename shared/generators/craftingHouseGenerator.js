@@ -1,77 +1,97 @@
 // src/world/generators/CraftingHouseGenerator.js
 import { CONFIG } from '../../shared/data/constants.js';
 import { biomeFactory } from '../systems/factories/biomeFactory.js';
+import { hashString, makeRng, Furnisher } from './HouseGenerator.js';
 
+/* A single workshop room (9 x 8 cells) with one crafting station against the north wall, dressed for its trade: a hearth and barrels for the
+   smith, crates and shelves for the carpenter, and so on. The trade is read from the interior type (ABANDONED_BLACKSMITH...) or, failing that,
+   from the station's id, so config.craftingStation only has to name the station. The layout and the dressing are fixed by the interior id. */
 export class CraftingHouseGenerator {
     constructor(seed, type, config, interiorId) {
         this.type = type;
         this.config = config;
         this.TILES = CONFIG.TILE_TYPES;
-        
-        // Ensure this specific house gets its own unique PRNG (even if we don't strictly need it for a static layout, it maintains pattern parity)
-        let uniqueHouseModifier = 0;
-        if (interiorId) {
-            uniqueHouseModifier = interiorId.split('_')
-                .reduce((acc, val) => {
-                    const parsed = parseInt(val);
-                    return acc + (isNaN(parsed) ? 0 : parsed);
-                }, 0);
-        }
-        this.seed = seed + uniqueHouseModifier;
-        
-        // Define a small, symmetrical room (9 tiles wide, 7 tiles deep)
-        this.bounds = { minC: -4, maxC: 4, minR: -7, maxR: 0 };
+        this.seed = (seed | 0) ^ hashString(interiorId || type || 'workshop');
+        this.room = { minC: -4, maxC: 4, minR: -7, maxR: 0 };
+        this.bounds = { ...this.room };
+        this._furnish();
     }
 
-    _getFaceDepth(tileName) {
-        if (tileName === 'LAYER_3') return 2;
-        if (tileName === 'LAYER_4' || tileName === 'LAYER_5') return 1;
-        return 0;
+    _trade() {
+        const key = String(this.type || '') + ' ' + String(this.config.craftingStation || '');
+        if (/BLACKSMITH|ANVIL|FORGE/i.test(key)) return 'smith';
+        if (/CARPENTER/i.test(key)) return 'carpenter';
+        if (/MASON|STONE/i.test(key)) return 'mason';
+        if (/TAILOR/i.test(key)) return 'tailor';
+        return 'generic';
+    }
+
+    /* 'F' floor, 'D' doorway, 'W' wall, 'O' outside */
+    _kind(col, row) {
+        const b = this.bounds;
+        if (col < b.minC || col > b.maxC || row < b.minR || row > b.maxR) return 'O';
+        if (col === 0 && row === b.maxR) return 'D';
+        if (col > b.minC && col < b.maxC && row > b.minR && row < b.maxR) return 'F';
+        return 'W';
+    }
+
+    _furnish() {
+        const rand = makeRng(this.seed ^ 0x85ebca6b), room = this.room, trade = this._trade();
+        const spawn = this.getEntrySpawnPoint();
+        const F = new Furnisher((c, r) => this._kind(c, r), this.bounds, spawn);
+        F.reserveDoor({ col: 0, row: room.maxR, dir: 'h' });
+        const a = F.area(room), cx = (a.c0 + a.c1) / 2, cy = (a.r0 + a.r1) / 2;
+        this.stationPos = null;
+
+        F.place('DOORMAT', 0, room.maxR - 1);
+        F.placeRugNear(room, rand.pick(['RUG_SMALL', 'RUG_GREEN', 'RUG_LONG']), cx, cy + 1);
+        // a work table in the middle of the floor with a stool at each end
+        const spots = [];
+        for (let r = a.r0 + 2; r <= a.r1 - 1; r++) for (let c = a.c0 + 1; c + 1 <= a.c1 - 1; c++) spots.push([c, r, Math.abs(c + 0.5 - cx) + Math.abs(r - cy - 0.5)]);
+        spots.sort((p, q) => p[2] - q[2]);
+        for (const [c, r] of spots) if (F.place('TABLE_LONG', c, r)) { if (rand() < 0.7) F.place('STOOL', c - 1, r); if (rand() < 0.7) F.place('STOOL', c + 2, r); break; }
+
+        // the station: against the north wall, in the middle, with room to stand in front of it
+        const station = this.config.craftingStation;
+        if (station) {
+            const row = a.r0;
+            for (const c of [0, 1, -1, 2, -2]) if (F.place(station, c, row)) { this.stationPos = [c, row]; break; }
+        }
+        const sc = this.stationPos ? this.stationPos[0] : 0;
+        // what the trade has around it
+        const wallProps = {
+            smith: ['FIREPLACE', 'BARREL'], carpenter: ['BOOKSHELF', 'WARDROBE'], mason: ['BOOKSHELF'], tailor: ['WARDROBE', 'BOOKSHELF'], generic: ['BOOKSHELF'],
+        }[trade];
+        for (const id of wallProps) F.placeOnNorthWall(room, id, rand, id === 'FIREPLACE' ? sc + (rand() < 0.5 ? -4 : 3) : sc + rand.pick([-3, 3]));
+        const ringProps = {
+            smith: ['BARREL', 'BARREL', 'CRATE', 'SACKS'], carpenter: ['CRATE', 'CRATE', 'CRATE_SACK', 'BARREL'], mason: ['CRATE', 'CRATE', 'BARREL', 'SACKS', 'SACKS'],
+            tailor: ['SACKS', 'SACKS', 'CRATE_SACK', 'POTTED_PLANT'], generic: ['CRATE', 'BARREL'],
+        }[trade];
+        for (const id of ringProps) F.placeOnRing(room, id, rand);
+        if (trade === 'tailor' || trade === 'generic') F.placeAnywhere(room, 'SMALL_TABLE', rand);
+        if (rand() < 0.5) F.placeAnywhere(room, rand.pick(['CRATE', 'BARREL']), rand);
+        for (const c of [a.c0, a.c1]) if (rand() < 0.9) F.place('CANDELABRA', c, a.r1);
+        if (this.config.lootObject) F.placeOnRing(room, this.config.lootObject, rand);
+        this.furniture = F;
     }
 
     getBiomeAt(col, row) {
-        // Force all crafting houses to use the HOUSE_INTERIOR biome rules, sprite sheets, and music
         return biomeFactory.getBiome('HOUSE_INTERIOR') || biomeFactory.getBiome('PLAINS');
     }
 
     getTileAt(col, row) {
-        // 1. Optimize out of bounds requests early
-        if (col < this.bounds.minC || col > this.bounds.maxC || row < this.bounds.minR || row > this.bounds.maxR) {
-            return this.TILES.LAYER_0;
-        }
-
-        // 2. Exterior Main Door (Bottom Center)
-        if (col === 0 && row === this.bounds.maxR) return this.TILES[this.config.floorTile];
-
-        // 3. Floors (If strictly inside the room)
-        if (col > this.bounds.minC && col < this.bounds.maxC && row > this.bounds.minR && row < this.bounds.maxR) {
-            return this.TILES[this.config.floorTile];
-        }
-
-        // 4. Walls (If exactly on the border of the room)
-        if (col === this.bounds.minC || col === this.bounds.maxC || row === this.bounds.minR || row === this.bounds.maxR) {
-            return this.TILES[this.config.wallTile];
-        }
-
+        const t = this._kind(col, row);
+        if (t === 'F' || t === 'D') return this.TILES[this.config.floorTile];
+        if (t === 'W') return this.TILES[this.config.wallTile];
         return this.TILES.LAYER_0;
     }
 
     getObjectIdAt(col, row) {
-        if (col < this.bounds.minC || col > this.bounds.maxC || row < this.bounds.minR || row > this.bounds.maxR) {
-            return null;
-        }
-
-        // Place the Exit Door
-        if (col === 0 && row === this.bounds.maxR) return this.config.doorObject;
-
-        // Calculate safe row for the crafting station to ensure it isn't hidden by the north wall's visual depth
-        const faceDepth = this._getFaceDepth(this.config.wallTile);
-        const safeRow = this.bounds.minR + 1 + faceDepth;
-
-        // Place the Crafting Station at the far center
-        if (col === 0 && row === safeRow) return this.config.craftingStation;
-
-        return null;
+        const b = this.bounds;
+        /* the exit door is 2 tiles tall: it is anchored on the row BELOW the doorway cell (the lower wall-face row) and draws upward over both wall rows; its hitbox sits on the doorway cell. config.doorObject is the outside version of the door and would warp into another building */
+        if (col === 0 && row === b.maxR + 1) return this.config.exitObject || 'HOUSE_EXIT_DOOR';
+        if (col < b.minC || col > b.maxC || row < b.minR || row > b.maxR) return null;
+        return this.furniture.objectAt(col, row);
     }
 
     getEntrySpawnPoint() {

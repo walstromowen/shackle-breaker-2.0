@@ -272,10 +272,10 @@ export class ShopController extends BaseController {
         
         if (source === 'vendor') {
             const cost = def.cost || def.value || 10;
-            options.push({ label: `Buy ${itemName} (${cost}c)`, actionId: 'BUY' });
+            options.push({ label: `Buy ${itemName} (${cost})`, actionId: 'BUY' });
         } else {
             const value = Math.floor((def.cost || def.value || 10) / 2);
-            options.push({ label: `Sell ${itemName} (${value}c)`, actionId: 'SELL' });
+            options.push({ label: `Sell ${itemName} (${value})`, actionId: 'SELL' });
         }
         options.push({ label: "Cancel", actionId: 'CANCEL' });
         

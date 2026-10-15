@@ -45,6 +45,8 @@ export class MapRenderer {
         const interpCamX = camera.prevX !== undefined ? camera.prevX + (camera.x - camera.prevX) * interpolationFactor : camera.x;
         const interpCamY = camera.prevY !== undefined ? camera.prevY + (camera.y - camera.prevY) * interpolationFactor : camera.y;
         const renderCamera = { x: interpCamX - centerOffsetX, y: interpCamY - centerOffsetY };
+        /* A biome with `ambientLight` (a cave) is dark whatever the clock says: blended into the day / night colour before the lighting pass. */
+        ambientData = this.naturalAmbient(worldManager, interpCamX, interpCamY, ambientData, totalTime);
         const bounds = this.updateViewBounds(renderCamera);
         /* Pass 1: Flat Terrain & Ground Objects */
         this.renderTerrainPass(worldManager, renderCamera, bounds, totalTime);
@@ -57,8 +59,40 @@ export class MapRenderer {
         /* ==========================================  Pass 3: LIGHTING  ========================================== */
         if (lightingRenderer && ambientData) {
             const lightObjects = worldManager.getLightObjects(camera, this.canvas.width, this.canvas.height);
-            lightingRenderer.render(this.ctx, ambientData, renderCamera, entities, lightObjects);
+            lightingRenderer.render(this.ctx, ambientData, renderCamera, entities, lightObjects, worldManager, interpolationFactor);
         }
+    }
+    /* Natural darkness. The biome under the camera may carry `ambientLight: { r, g, b, a }` (biomeDefinitions.js). The result is the darker of that and the
+       day / night colour (alpha = the larger of the two, colour = the two weighted by their alphas), so a cave is as dark as night by day and no darker than the
+       night outside by night. The strength fades in and out over FADE seconds (walking from one biome into a darker one, or a new map); a new world manager
+       starts at full strength at once. `ambientData` may be null (full day): the result is then the natural darkness alone, or null if there is none. */
+    naturalAmbient(worldManager, camX, camY, ambientData, totalTime) {
+        const FADE = 0.6;
+        const T = this.config.TILE_SIZE;
+        const biome = worldManager && worldManager.getBiomeAt ? worldManager.getBiomeAt(Math.floor((camX + T / 2) / T), Math.floor((camY + T / 2) / T)) : null;
+        const want = biome && biome.ambientLight ? biome.ambientLight : null;
+        let st = this._natural;
+        if (!st || st.wm !== worldManager) {
+            st = this._natural = { wm: worldManager, t: totalTime, r: want ? want.r : 0, g: want ? want.g : 0, b: want ? want.b : 0, a: want ? want.a : 0 };
+        }
+        const dt = Math.max(0, Math.min(0.25, totalTime - st.t));
+        st.t = totalTime;
+        const k = Math.min(1, dt / FADE);
+        if (want) {                                        // colour follows the biome; strength moves towards it
+            st.r += (want.r - st.r) * k; st.g += (want.g - st.g) * k; st.b += (want.b - st.b) * k;
+            st.a += (want.a - st.a) * k;
+        } else {                                           // no darkness here: fade out, keeping the last colour so it does not shift while fading
+            st.a = Math.max(0, st.a - k * Math.max(st.a, 0.5));
+        }
+        if (st.a < 0.002) return ambientData;
+        if (!ambientData || !(ambientData.a > 0)) return { r: st.r, g: st.g, b: st.b, a: st.a };
+        const w = Math.min(1, st.a / ambientData.a);       // the darker one gives the colour; below that the two mix
+        return {
+            r: ambientData.r + (st.r - ambientData.r) * w,
+            g: ambientData.g + (st.g - ambientData.g) * w,
+            b: ambientData.b + (st.b - ambientData.b) * w,
+            a: Math.max(st.a, ambientData.a),
+        };
     }
     /* ==========================================  2. PASS: TERRAIN (Unsorted / Flat)  ========================================== */
     renderTerrainPass(worldManager, camera, bounds, totalTime) {
@@ -235,7 +269,7 @@ export class MapRenderer {
         const offX = Math.floor(((FW - TILE_SIZE) / 2 - shiftX) * scale);
         const dW = Math.ceil(FW * scale), dH = Math.ceil(FH * scale);
         const tileBottom = dy + Math.ceil(TILE_SIZE * scale); // the same screen line drawObject puts the bottom of a 1-tile object on, at any scale
-        this.ctx.drawImage(sprite, sx, sy, FW, FH, dx - offX, tileBottom - dH + Math.round(feetPad * dH / FH), dW, dH);
+        this.ctx.drawImage(sprite, sx, sy, FW, FH, dx - offX, tileBottom - dH + Math.floor(feetPad * dH / FH), dW, dH);
     }
     updateViewBounds(camera) {
         const { TILE_SIZE, GAME_SCALE, WALL_HEIGHT } = this.config;

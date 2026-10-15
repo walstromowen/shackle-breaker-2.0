@@ -410,7 +410,7 @@ export const ENTITY_DEFINITIONS = {
             baseAttack: { blunt: 0, slash: 5, pierce: 7 }
         },
         lootTableId: "canine_drops",
-        abilities: [...BEAST_TEMPLATE.abilities, 'howl'],
+        abilities: [...BEAST_TEMPLATE.abilities, 'howl', 'bite'],
         tags: [...BEAST_TEMPLATE.tags, "CANINE"]
     },
 
@@ -522,12 +522,12 @@ export const ENTITY_DEFINITIONS = {
             ...BEAST_TEMPLATE.baseStats,
             maxHp: 22, maxStamina: 25, speed: 20, critical: 0.15,
             baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, lightning: 6, wind: 4, blunt: 1, earth: -3, water: -3 },
-            baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, lightning: 0.75, wind: 0.25, water: -0.5 },
+            baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, lightning: 1.0, wind: 0.25, water: -0.5 },
             baseAttack: { pierce: 2, lightning: 5, wind: 2 }
         },
         currencyReward: { min: 3, max: 12 },
         lootTableId: "thunder_locust_drops",
-        abilities: [...BEAST_TEMPLATE.abilities, "spark_swarm", "piercing_bite", "galvanize"],
+        abilities: [...BEAST_TEMPLATE.abilities, "bite", "shock", "overload"],
         tags: ["BIOLOGICAL", "INSECT", "SWARM", "DESERT", "MAGICAL"]
     },
 

@@ -22,7 +22,14 @@ export class MapObjectModel {
         this.isStairs = definition.isStairs || false;
         this.allowedDirections = definition.allowedDirections || null;
         this.interaction = definition.interaction || null;
+
+        /* Lighting (see LightingRenderer).
+           light: this object gives off light: { hasLight, radius (tiles), maxAlpha (strength 0..1), color: '255, 120, 50', flickerAmp, flickerSpeed }.
+           blocksLight: this object dims light that passes through it, on the tiles of its hitboxes (the same shape as its collision), or on its whole
+                        w x h when it has no hitboxes. true = the default absorption (CONFIG.LIGHT_WALL_ABSORB), a number = that many tiles of light
+                        swallowed per tile (a thin fence 1, a house 6). Leave it out for objects light passes through (trees, flowers, furniture). */
         this.light = definition.light || null;
+        this.blocksLight = definition.blocksLight || false;
 
         // --- HYBRID HITBOX RESOLUTION ---
         if (definition.hitboxes && Array.isArray(definition.hitboxes)) {

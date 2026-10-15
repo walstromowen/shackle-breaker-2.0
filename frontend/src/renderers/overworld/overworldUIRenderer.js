@@ -2,6 +2,7 @@ import { CanvasUI } from '../../ui/canvasUI.js';
 import { UITheme } from '../../ui/UITheme.js';
 import { ItemDefinitions } from '../../../../shared/data/itemDefinitions.js';
 import { ENTITY_DEFINITIONS } from '../../../../shared/data/entityDefinitions.js';
+import { MinimapRenderer } from './minimapRenderer.js';
 
 export class OverworldUIRenderer {
     constructor(config, loader) {
@@ -10,6 +11,9 @@ export class OverworldUIRenderer {
 
         // Source cell size (px) of the item icon sheets used by pickup toasts
         this.ICON_SRC_SIZE = 64;
+
+        // Minimap in the bottom-left corner (settings: CONFIG.MINIMAP)
+        this.minimap = new MinimapRenderer(config);
     }
 
     render(ctx, state) {
@@ -21,6 +25,11 @@ export class OverworldUIRenderer {
         } = state || {};
 
         const ui = new CanvasUI(ctx);
+
+        // --- Minimap (bottom-left). Needs state.worldManager and state.camera from the controller ---
+        if (state && state.worldManager) {
+            this.minimap.render(ctx, ui, state);
+        }
 
         if (menuToggleHitbox) {
             const isMainHovered = hoveredHitboxId === menuToggleHitbox.id;
@@ -100,7 +109,7 @@ export class OverworldUIRenderer {
         ctx.fillStyle = "rgba(25, 23, 20, 0.9)";
         ctx.fillRect(barX, barY, barWidth, barHeight);
 
-        // Fill (Gold/Success color)
+        // Fill (Success color)
         ctx.fillStyle = UITheme.colors.success || "#4CAF50";
         ctx.fillRect(barX, barY, barWidth * progress, barHeight);
 

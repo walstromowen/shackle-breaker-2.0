@@ -2,6 +2,7 @@ import { events } from '../../core/eventBus.js';
 import { gameState } from '../../../../shared/state/gameState.js';
 import { EntityFactory } from '../../../../shared/systems/factories/entityFactory.js';
 import { WeatherFactory } from '../../../../shared/systems/factories/weatherFactory.js';
+import { TimeSystem } from '../../../../shared/systems/timeSystem.js';
 import { PartyManager } from '../../../../shared/systems/partyManager.js';
 import { BaseController } from '../core/baseController.js';
 import { DIFFICULTY_MODIFIERS } from '../../../../shared/data/constants.js';
@@ -136,6 +137,7 @@ export class OverworldController extends BaseController {
 
     update(dt) {
         super.update(dt);
+        this.validateBiomeWeather(); // every frame: the weather must fit the biome the player stands in even when no step ends (a warp, standing still)
         this.checkEnvironmentMusic();
 
         this.worldManager.getActiveObjects().forEach(obj => {
@@ -486,6 +488,14 @@ export class OverworldController extends BaseController {
             return;
         }
 
+        // Walk-in warps (cave mouths, `walkIn: true` on the WARP): a single-frame object has no door to open, so stepping onto its doorway cell warps at once
+        if (stepOnObj && !(stepOnObj.frames > 1) && stepOnObj.interaction?.type === 'WARP' && stepOnObj.interaction.walkIn) {
+            this.isLocked = true;
+            this.setAnimIdle();
+            events.emit('INTERACT', { ...stepOnObj.interaction, context: { col: stepOnObj.col, row: stepOnObj.row, objectId: stepOnObj.id } });
+            return;
+        }
+
         this.checkTileEvents();
         this.validateBiomeWeather();
 
@@ -537,21 +547,11 @@ export class OverworldController extends BaseController {
         events.emit('START_BATTLE', battlePayload);
     }
 
+    /* Keeps gameState.world.currentBiome and the weather in step with where the player stands. The rules live in TimeSystem.syncBiomeWeather:
+       weather the biome does not allow becomes CLEAR and its sound is stopped. Cheap (the biome lookup is cached), so it runs every frame. */
     validateBiomeWeather() {
-        const col = gameState.player.col;
-        const row = gameState.player.row;
-        const biome = this.worldManager.getBiomeAt(col, row);
-        
-        gameState.world.currentBiome = biome.id;
-
-        const activeWeather = gameState.world.currentWeather;
-        if (!activeWeather || activeWeather.id.toUpperCase() === 'CLEAR') return;
-
-        const allowed = (biome.allowedWeather || []).map(w => w.toUpperCase());
-        if (!allowed.includes(activeWeather.id.toUpperCase())) {
-            console.log(`[Weather] Clearing skies. ${activeWeather.id} invalid in ${biome.id}.`);
-            gameState.world.currentWeather = WeatherFactory.createWeather('CLEAR');
-        }
+        const biome = this.worldManager.getBiomeAt(gameState.player.col, gameState.player.row);
+        TimeSystem.syncBiomeWeather(biome.id);
     }
 
     checkEnvironmentMusic() {
@@ -654,6 +654,7 @@ export class OverworldController extends BaseController {
         return {
             entities: [this.player],
             camera: this.camera,
+            worldManager: this.worldManager, // the minimap reads the terrain around the player from it
             hoveredHitboxId: this.hoveredHitboxId,
             menuToggleHitbox: this.menuToggleHitbox,
             dropdownHitboxes: this.dropdownHitboxes,
@@ -690,6 +691,8 @@ export class OverworldController extends BaseController {
         this.camera.y = this.player.y;
         this.camera.prevX = this.player.x;
         this.camera.prevY = this.player.y;
+
+        this.validateBiomeWeather(); // a new map (a house, a cave, back outside): drop weather that does not belong there, and its sound, right now
     }
 
     createPlayerEntity() {

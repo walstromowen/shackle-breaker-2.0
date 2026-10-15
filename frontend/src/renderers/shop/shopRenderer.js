@@ -117,7 +117,7 @@ export class ShopRenderer {
         this.ui.drawText(title, centerX, y + 48, UITheme.fonts.header, UITheme.colors.textMain, "center");
 
         if (currency !== null && currency !== undefined) {
-            this.ui.drawText(`Currency: ${currency}c`, centerX, y + 108, UITheme.fonts.cardMono, UITheme.colors.textHighlight, "center");
+            this.ui.drawText(`Currency: ${currency}`, centerX, y + 108, UITheme.fonts.cardMono, UITheme.colors.textHighlight, "center");
         } else {
             this.ui.drawText("Prices Fixed", centerX, y + 108, UITheme.fonts.cardMono, UITheme.colors.textMuted, "center");
         }
@@ -270,30 +270,9 @@ export class ShopRenderer {
     _drawIcon(def, x, y) {
         if (!def) return;
 
-        let sheetName = 'items';
-        const type = (def.type || '').toLowerCase();
-        const slot = (def.slot || '').toLowerCase();
-
-        if (slot === 'mainhand' || slot === 'offhand' || type === 'weapon' || type === 'shield' || type === 'tool') {
-            sheetName = 'weapons';
-        } else if (type === 'armor' || ['head', 'body', 'legs', 'feet', 'hands', 'accessory'].includes(slot)) {
-            sheetName = 'armor';
-        } else if (type === 'consumable') {
-            sheetName = 'consumables';
-        } else if (type === 'material') {
-            sheetName = 'materials';
-        }
-
-        const sheet = this.loader.get(sheetName) || this.loader.get('items') || this.loader.get('icons');
-        if (!sheet) return;
-
-        const iconData = def.icon || { col: 0, row: 0 };
-        const ICON_SIZE = this.ICON_SRC_SIZE;
-        const srcX = (iconData.col * ICON_SIZE);
-        const srcY = (iconData.row * ICON_SIZE);
-
-        // 64x64 source drawn at 64x64 (exact 1x)
-        this.ui.drawSprite(sheet, srcX, srcY, ICON_SIZE, ICON_SIZE, x, y, 64, 64);
+        // Picks the right sprite sheet for the item's category (weapons, armor, consumables,
+        // materials ...) - see CanvasUI.drawItemIcon. 64x64 source drawn at 64x64 (exact 1x).
+        this.ui.drawItemIcon(this.loader, def, x, y, 64, this.ICON_SRC_SIZE);
     }
 
     _drawHeldItem(state) {

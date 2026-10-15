@@ -219,7 +219,8 @@ export class BlobTerrainRenderer {
         const lv = (x, y) => this.info(x, y).lv;
         const inLevel = (li) => (x, y) => lv(x, y) > li;
         const noWater = pack.water === false;
-        const voidTop = pack.levelTop === 'void';
+        // levelTop 'void': every cliff level has a void top. voidFromLayer N: only LAYER_N and up do (a cave's rim, while its ledges keep their floor).
+        const voidAt = (li) => pack.levelTop === 'void' || (pack.voidFromLayer !== undefined && li + 3 >= pack.voidFromLayer);
         const gd = noWater
             ? (x, y) => {
                   const i = this.info(x, y);
@@ -268,6 +269,7 @@ export class BlobTerrainRenderer {
         if (lv(x, y) > 0 || this._nearLevel(x, y)) {
             const levels = [];
             for (let li = 0; li < this._levels; li++) {
+                const voidTop = voidAt(li);
                 const get = inLevel(li);
                 const lp = { shadow: null, cell: null, fix: null };
                 let any = false;
@@ -275,12 +277,16 @@ export class BlobTerrainRenderer {
                 // shadow: raw (unreduced) neighbour mask + whether the cell itself is in the level. The cells a stair is cut out of count as NOT in
                 // the level here, so the shadow wraps round the cliff the stair makes (its notch walls and the ends of the cliff beside it).
                 const sh = (a, b) => get(a, b) && !this._stairCarved(a, b);
+                // pack.shadowErode (a cave): the overworld's rock hangs a whole cell below its last row (wall + ext), a cave's rock is one row tall (cliff_height 1). So the shadow
+                // is computed as if every level ended one row earlier: the sides and the south edge of the shadow then start right at the cave's rock, and the north side,
+                // which does not depend on the last row, stays exactly where the overworld puts it
+                const shE = pack.shadowErode ? (a, b) => sh(a, b) && sh(a, b + 1) : sh;
                 let t;
                 if (SHADOW_WIN) {
                     // flat shadows: one tile per cell, picked by which cells of the 3 x 4 window (columns -1..1, rows -2..+1) are in the level, so the rock of
                     // faces two rows up (which a wide shadow reaches past) and of stepped cliff ends is seen by every cell it shades
                     let k = 0, b = 0;
-                    for (let dy = -2; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++, b++) if (sh(x + dx, y + dy)) k |= 1 << b;
+                    for (let dy = -2; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++, b++) if (shE(x + dx, y + dy)) k |= 1 << b;
                     t = SHADOW_WIN_TABLE[k];
                 } else {
                     let m = 0;
@@ -494,6 +500,19 @@ export class BlobTerrainRenderer {
                     if (!sheet || !rect) continue;
                     ctx.drawImage(sheet, rect[0], rect[1], rect[2], rect[3], px(st.ox), py(st.oy), px(st.ox + rect[2] / BLOB_TILE_PX) - px(st.ox), py(st.oy + rect[3] / BLOB_TILE_PX) - py(st.oy));
                 }
+        }
+
+        // depth shade (caves): a pack with `depthShade: { from: N, step: a, max: m, color: 'r,g,b' }` darkens a cell by `step` per layer below LAYER_N,
+        // so the ledges of a cave get darker the deeper they are (the floor in the middle is the darkest)
+        for (let i = 0; i < cells.length; i += 3) {
+            const ds = cells[i + 2].pack.depthShade;
+            if (!ds) continue;
+            const c = cells[i], r = cells[i + 1];
+            const lv = this.info(c, r).lv;
+            const a = Math.min(ds.max !== undefined ? ds.max : 0.6, (ds.from - (lv > 0 ? lv + 2 : 2)) * ds.step);
+            if (a <= 0) continue;
+            ctx.fillStyle = 'rgba(' + (ds.color || '0,0,8') + ',' + a + ')';
+            ctx.fillRect(px(c), py(r), pw(c), ph(r));
         }
     }
 

@@ -8,6 +8,7 @@ export class BiomeModel {
         this.blobTileset = definition.blobTileset || null; // generated blob-47 tilesets (see blobTerrainRenderer.js)
         this.objectSheetId = definition.objectSheetId;
         this.allowedWeather = definition.allowedWeather || [];
+        this.ambientLight = definition.ambientLight || null; // natural darkness { r, g, b, a } of the biome, see MapRenderer.naturalAmbient
         this.battleBackgrounds = definition.battleBackgrounds || { day: null, dusk: null, night: null };
         this.music = definition.music || { day: null, night: null, battle: null };
         this.shapeElevation = definition.shapeElevation || ((noise) => noise);

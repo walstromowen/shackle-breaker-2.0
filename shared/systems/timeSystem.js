@@ -4,6 +4,15 @@ import { WeatherFactory } from '../systems/factories/weatherFactory.js';
 import { events } from '../../frontend/src/core/eventBus.js'; // NEW: Import event bus
 import { WeatherDefinitions } from '../data/weatherDefinitions.js'; // NEW: Needed to look up the audio effect string
 
+/* How likely each weather is when a new one is rolled in a biome. Only the weather a biome lists in its `allowedWeather` (biomeDefinitions.js) can ever be
+   rolled there, whatever this table says, so the two can no longer disagree. A biome that is not listed here gets CLEAR 60 and 20 for every weather it allows;
+   a biome that allows nothing (a house, a cave) is always CLEAR. */
+const WEATHER_WEIGHTS = {
+    PLAINS:          { CLEAR: 60, RAIN: 25, FOG: 15 },
+    DESERT:          { CLEAR: 80, SANDSTORM: 20 },
+    SNOWY_MOUNTAINS: { CLEAR: 70, FOG: 30 },
+};
+
 export class TimeSystem {
     constructor() {
         // --- CONFIGURATION (Static, doesn't need saving) ---
@@ -62,7 +71,10 @@ export class TimeSystem {
             }
         }
         
-        // 3. Roll for new weather when the timer runs out
+        // 3. Weather the player's biome does not allow (rain in a desert, anything in a house) is cleared at once, not only when a step ends
+        TimeSystem.syncBiomeWeather();
+
+        // 4. Roll for new weather when the timer runs out
         if (gameState.world.currentWeather && gameState.world.currentWeather.timeRemaining <= 0) {
             this.generateNewWeather();
         }
@@ -114,50 +126,79 @@ export class TimeSystem {
     }
 
     /**
+     * The weather ids (upper case, always including CLEAR) that the biome allows. Read from the biome's `allowedWeather`, the same list the
+     * overworld uses to clear weather, so rolling and clearing agree. An unknown biome id counts as "CLEAR only".
+     */
+    static allowedWeatherFor(biomeId) {
+        const allowed = new Set(['CLEAR']);
+        if (!biomeId) return allowed;
+        const biome = biomeFactory.getBiome(biomeId);
+        for (const w of (biome && biome.allowedWeather) || []) {
+            const key = String(w).toUpperCase();
+            if (WeatherDefinitions[key]) allowed.add(key);
+        }
+        return allowed;
+    }
+
+    /**
+     * Replace the current weather with a new one AND tell the audio about it. Every change of weather goes through here, so the rain / fog / sand loop
+     * always matches the weather (before, only a freshly rolled weather touched the audio: a weather cleared because the biome changed left its loop playing,
+     * and "no sound" was sent as PLAY_AMBIENCE 'none', which is not a sound).
+     */
+    static setWeather(weatherKey) {
+        const key = String(weatherKey).toUpperCase();
+        gameState.world.currentWeather = WeatherFactory.createWeather(key);
+        const def = WeatherDefinitions[key];
+        const audioAssetId = def && def.audioEffect ? def.audioEffect : 'none';
+        if (audioAssetId === 'none') events.emit('STOP_AMBIENCE', { fadeTime: 2.0 });
+        else events.emit('PLAY_AMBIENCE', { id: audioAssetId, fadeTime: 3.0 });
+    }
+
+    /**
+     * Make the weather fit the biome the player is in: if the current weather is not one the biome allows, it becomes CLEAR (with the sound stopped).
+     * Pass the biome id when it just changed (a step, a warp); without it the last known one (gameState.world.currentBiome) is used.
+     * Returns true when it cleared the weather. Called every update by the TimeSystem and by the OverworldController (every frame, and after every warp).
+     */
+    static syncBiomeWeather(biomeId) {
+        if (biomeId) gameState.world.currentBiome = biomeId;
+        const weather = gameState.world.currentWeather;
+        if (!weather) return false;
+        const id = String(weather.id).toUpperCase();
+        if (id === 'CLEAR') return false;
+        if (TimeSystem.allowedWeatherFor(gameState.world.currentBiome).has(id)) return false;
+        console.log(`[Weather] Clearing skies. ${id} invalid in ${gameState.world.currentBiome || 'an unknown biome'}.`);
+        TimeSystem.setWeather('CLEAR');
+        return true;
+    }
+
+    /**
      * Determines new weather based on the player's current biome
      */
     generateNewWeather() {
-        // Default to PLAINS if the player's biome isn't set yet
-        const currentBiomeId = gameState.world.currentBiome || 'PLAINS';
-        const biome = biomeFactory.getBiome(currentBiomeId);
+        const biomeId = gameState.world.currentBiome; // kept up to date by the OverworldController; unknown (first frame) = CLEAR only
 
         // 1. Identify the weather we are currently experiencing
-        const activeWeatherId = gameState.world.currentWeather ? gameState.world.currentWeather.id.toUpperCase() : null;
+        const activeWeatherId = gameState.world.currentWeather ? String(gameState.world.currentWeather.id).toUpperCase() : null;
 
-        // Define valid weather pools per biome
-        const weatherPools = {
-            'PLAINS': [
-                { id: 'CLEAR', weight: 60 },
-                { id: 'RAIN',  weight: 25 },
-                { id: 'FOG',   weight: 15 }
-            ],
-            'DESERT': [
-                { id: 'CLEAR',     weight: 80 },
-                { id: 'SANDSTORM', weight: 20 }
-            ]
-        };
+        // 2. The pool: only weather this biome allows, weighted by WEATHER_WEIGHTS
+        const table = WEATHER_WEIGHTS[biomeId];
+        let pool = [];
+        for (const key of TimeSystem.allowedWeatherFor(biomeId)) {
+            const weight = table ? (table[key] || 0) : (key === 'CLEAR' ? 60 : 20);
+            if (weight > 0) pool.push({ id: key, weight });
+        }
+        if (pool.length === 0) pool.push({ id: 'CLEAR', weight: 1 });
 
-        // Get the pool for the current biome, fallback to PLAINS if missing
-        let pool = weatherPools[biome.id] || weatherPools['PLAINS'];
-
-        // 2. Filter out the active weather to prevent repeats
+        // 3. Filter out the active weather to prevent repeats (unless it is the only option, e.g. CLEAR in a house)
         if (activeWeatherId) {
             const filteredPool = pool.filter(item => item.id !== activeWeatherId);
-            
-            // Safety check: Only use the filtered pool if there are actually options left!
-            // (e.g., prevents infinite loops if a biome only has 1 valid weather type)
-            if (filteredPool.length > 0) {
-                pool = filteredPool;
-            }
+            if (filteredPool.length > 0) pool = filteredPool;
         }
 
-        // Calculate total weight for random roll based on the *filtered* pool
+        // 4. Weighted roll
         const totalWeight = pool.reduce((sum, item) => sum + item.weight, 0);
         let roll = Math.random() * totalWeight;
-        
-        let selectedWeatherId = 'CLEAR';
-
-        // Select weather based on weights
+        let selectedWeatherId = pool[pool.length - 1].id;
         for (const item of pool) {
             roll -= item.weight;
             if (roll <= 0) {
@@ -166,16 +207,13 @@ export class TimeSystem {
             }
         }
 
-        // Instantiate the new weather model and save it to the state
-        gameState.world.currentWeather = WeatherFactory.createWeather(selectedWeatherId);
-        // ---------------------------------------------------------
-        // NEW: Trigger Audio Sync
-        // ---------------------------------------------------------
-        // Look up the audio string from the definition
-        const newWeatherDef = WeatherDefinitions[selectedWeatherId];
-        const audioAssetId = newWeatherDef ? newWeatherDef.audioEffect : 'none';
+        // 5. Same weather again (only possible when it is the sole option): a fresh timer, but no new sound event
+        if (selectedWeatherId === activeWeatherId) {
+            gameState.world.currentWeather = WeatherFactory.createWeather(selectedWeatherId);
+            return;
+        }
 
-        // Fire the event. The AudioManager will catch it and crossfade!
-        events.emit('PLAY_AMBIENCE', { id: audioAssetId, fadeTime: 3.0 }); 
+        // 6. New weather: saves it and syncs the audio (the AudioManager crossfades)
+        TimeSystem.setWeather(selectedWeatherId);
     }
 }

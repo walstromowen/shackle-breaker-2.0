@@ -116,7 +116,7 @@ export class WorldManager {
                         objId = this.terrain.getObjectIdAt(c, r);
                         if (objId && !objId.includes('DOOR')) {
                             const tileId = this.getTileAt(c, r);
-                            const isWallTile = isPlateau(tileId);
+                            const isWallTile = typeof this.terrain.isWallCell === 'function' ? this.terrain.isWallCell(c, r) : isPlateau(tileId);
                             if (isWallTile || this.isBlockedByFace(c, r) || this.isCliffFace(c, r)) {
                                 objId = null;
                             }
@@ -493,6 +493,8 @@ export class WorldManager {
             return forcedObjId;
         }
         if (!this.GENERATE_MAP_OBJECTS) return null;
+        if (this._isCaveMouth(col, row)) return 'CAVE_ENTRANCE';
+        if (this._nearCaveMouth(col, row)) return null;
         if (this._nearStair(col, row)) return null;
         const myTileId = this.getTileAt(col, row);
         if (this.isBlockedByFace(col, row) || this.isCliffFace(col, row) || this.isBiomeEdge(col, row)) return null;
@@ -506,11 +508,58 @@ export class WorldManager {
         }
         const spawnData = biome.getSpawnId(spawnCategory, objRng, false);
         if (!spawnData) return null;
+        if (spawnData.id === 'CAVE_ENTRANCE') return null; // only _isCaveMouth places one, where a cliff face has room for it
         const def = MAP_OBJECTS_DEFINITIONS[spawnData.id] || {};
         const w = def.w || def.width || 1;
         const h = def.h || def.height || 1;
         if (!this.isFootprintValid(col, row, w, h)) return null;
         return spawnData.id;
+    }
+    /* Cave mouths: a CAVE_ENTRANCE (3 x 3 cells) is painted into a straight, south-facing cliff face. `col, row` is its anchor, the left cell of the ground row
+       in front of the face: the face is the row above, the plateau edge the row above that, and the doorway is the middle cell (col + 1, row). The biome decides
+       how often through a spawn rule at the end of its LAYER_2 list ({ chance: 0.5, id: 'CAVE_ENTRANCE' }: the share of fitting cliff faces that get a mouth).
+       Only every 4th column can be an anchor, so two mouths never overlap. */
+    _isCaveMouth(col, row) {
+        if (gameState.world.isInterior || (col & 3) !== 0) return false;
+        const key = this._s(col, row);
+        this._mouthCache = this._mouthCache || new Map();
+        if (this._mouthCache.has(key)) return this._mouthCache.get(key);
+        const ok = this._caveMouthOk(col, row);
+        this._mouthCache.set(key, ok);
+        return ok;
+    }
+    _caveMouthOk(col, row) {
+        const L2 = this.TILES.LAYER_2;
+        const tile = this.getTileAt(col, row);
+        const g = this.getElevation(col, row);
+        if (g < 2 || (tile !== L2 && !isPlateau(tile))) return false; // the ground, or the top of a lower cliff level (not dirt, water or void)
+        for (let dc = 0; dc < 3; dc++) {
+            const c = col + dc;
+            // rows from the plateau down: plateau, plateau edge (the face hangs under it), face, ground in front, one more row of ground
+            if (this.getElevation(c, row - 1) !== g || this.getElevation(c, row - 2) !== g + 1 || this.getElevation(c, row - 3) !== g + 1 || this.getElevation(c, row + 1) !== g) return false;
+            if (this.getTileAt(c, row) !== tile || this.getTileAt(c, row - 1) !== tile || this.getTileAt(c, row + 1) !== tile) return false;
+        }
+        const biome = this.getBiomeAt(col, row);
+        const rule = (biome.mapObjects && biome.mapObjects[L2] || []).find((r) => r.id === 'CAVE_ENTRANCE');
+        if (!rule || this.pseudoRandom(col * 3 + 7, row * 5 + 11) >= rule.chance) return false; // the biome's `chance` is the share of fitting cliff faces that get a mouth
+        for (let dc = 0; dc < 3; dc++) {
+            const c = col + dc;
+            if (this.getBiomeAt(c, row).id !== biome.id) return false;
+            if (!this.isBlockedByFace(c, row - 1) || !this.isCliffFace(c, row - 2) || this.isBlockedByFace(c, row) || this.isCliffFace(c, row)) return false;
+            if (this.isBiomeEdge(c, row) || this.isBiomeEdge(c, row + 1)) return false;
+            for (let r = row - 3; r <= row + 1; r++) {
+                if (this._nearStair(c, r)) return false;
+                if (gameState.world.changes && gameState.world.changes[this._s(c, r)] !== undefined) return false;
+            }
+        }
+        return true;
+    }
+    /* a cell where another object would stand in front of a cave mouth or hide it: next to the mouth, or on the three rows in front of it */
+    _nearCaveMouth(col, row) {
+        for (let dr = 0; dr <= 2; dr++)
+            for (let a = (col - 2) & ~3; a <= col + 2; a += 4)
+                if (a >= col - 2 && this._isCaveMouth(a, row - dr)) return true;
+        return false;
     }
     createObjectInstance(col, row, id) {
         const biome = this.getBiomeAt(col, row);
@@ -540,6 +589,7 @@ export class WorldManager {
     }
     getObjectAt(col, row) {
         this.ensureChunkLoaded(col, row);
+        this.ensureChunkLoaded(col - 2, row); // an object anchored in the chunk to the left (a cave mouth's doorway is one cell right of its anchor)
         return this._collisionMap.get(this._s(col, row)) || null;
     }
     getSolidObjectAt(col, row) {
@@ -670,6 +720,7 @@ export class WorldManager {
         return isPlateau(tileId) ? 1 : 0;
     }
     isBlockedByFace(col, row) {
+        if (this.terrain && this.terrain.isDoorway && this.terrain.isDoorway(col, row)) return false; // the doorway of a cave mouth in an interior's rim
         const myElev = this.getElevation(col, row);
         const check = (rOffset, depthReq) => {
             const nTile = this.getTileAt(col, row - rOffset);

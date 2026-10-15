@@ -4,10 +4,7 @@ Roguelike turnbased adventure game based on the Shackle Breaker story by Owen Wa
 # PLANNED FEATURES
 hand crafted areas
 autenticaiton (last)
-minimap
 waypoints
-revamped world generation
-sprinting
 party rendering on overworld
 
 # REFINEMENTS
@@ -18,16 +15,16 @@ more consistent sound for UI
 Overall UI polish
 better text style
 targeting ui improvements for splash attacks with mouse
-dynamic lighting system
 
 
 # Bugs
+multi attacks missing one shot if target dies
+attacks like howl used by enemies not correctly targeting
+
 shop system and character summary stacking equipables
-Rain flash
-rain sound effect too slow
 flashing of sprites in battle renderer
 
-Breathe with subtle chest expansion and shoulder rise, settling back into the starting posture with minimal swaying.
+
 Root
 ├── backend/
 ├── frontend/                  

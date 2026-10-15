@@ -339,7 +339,7 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
             const partyCurrency = gameState.party ? (gameState.party.currency || 0) : (state.partyCurrency || 0);
             const hasEnoughCurrency = partyCurrency >= currencyCost;
             const color = hasEnoughCurrency ? UITheme.colors.textHighlight : UITheme.colors.failure;
-            this.ui.drawText(`Cost: ${currencyCost} Gold`, x, materialsY + 22, UITheme.fonts.body, color, "left", "middle");
+            this.ui.drawText(`Cost: ${currencyCost} Currency`, x, materialsY + 22, UITheme.fonts.body, color, "left", "middle");
             this.ui.drawText(`(Owned: ${partyCurrency})`, x + w, materialsY + 22, UITheme.fonts.small, UITheme.colors.textMuted, "right", "middle");
             materialsY += 44;
         }
@@ -631,7 +631,7 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         if (def.weight !== undefined || def.value !== undefined) {
             const rightMeta = [];
             if (def.weight !== undefined) rightMeta.push(`Wt: ${def.weight}`);
-            if (def.value !== undefined) rightMeta.push(`Val: ${def.value}g`);
+            if (def.value !== undefined) rightMeta.push(`Val: ${def.value}`);
             this.ui.drawText(rightMeta.join("   "), x + w - 24, currentY + 74, bodyFont, UITheme.colors.textMuted, "right");
         }
 

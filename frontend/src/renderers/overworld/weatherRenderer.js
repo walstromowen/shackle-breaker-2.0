@@ -1,3 +1,5 @@
+import { gameState } from '../../../../shared/state/gameState.js';
+
 export class WeatherRenderer {
     constructor(canvas, ctx, config) {
         this.canvas = canvas;
@@ -141,6 +143,17 @@ export class WeatherRenderer {
             stateEffect = stateWeather.visualEffect;
         } else if (defaultEffects[stateId]) {
             stateEffect = defaultEffects[stateId];
+        }
+
+        // Indoors (a house, a cave) there is no weather: drop it at once instead of fading rain out inside the room
+        if (gameState.world.isInterior) {
+            this.targetWeatherId = stateId;
+            this.targetIntensity = 0;
+            this.renderIntensity = 0;
+            this.displayEffect = 'none';
+            this.particles = [];
+            this.splashParticles = [];
+            return;
         }
 
         // ---------------------------------------------------------

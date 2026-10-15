@@ -513,7 +513,7 @@ export const aftermath = {
         // ==========================================
         madman_ambush: {
             displayText: "Madmen Approach!",
-            image: { col: 2, row: 0 },
+            image: { col: 3, row: 2 },
             bgm: "plainsBattleBgm",
             text: "As {name} searches the battlefield, a group of madmen appear on the horizon!",
             decisions: [
@@ -526,7 +526,7 @@ export const aftermath = {
 
         alterian_ambush: {
             displayText: "The Dead Stir!",
-            image: { col: 2, row: 1 },
+            image: { col: 1, row: 1 },
             bgm: "plainsBattleBgm",
             text: "While examining the bodies, one of them stirs and glares at {name}! As if on command, others do the same!",
             decisions: [
@@ -539,7 +539,7 @@ export const aftermath = {
 
         warrior_betrayal_ambush: {
             displayText: "Betrayal!",
-            image: { col: 2, row: 1 },
+            image: { col: 1, row: 1 },
             bgm: "plainsBattleBgm",
             text: "As {name} tends to the warrior's wounds, he violently grabs {name} and draws his weapon! Soon, other fallen warriors rise around you!",
             decisions: [

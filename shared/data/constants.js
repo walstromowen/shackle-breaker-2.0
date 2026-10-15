@@ -26,12 +26,48 @@ export const CONFIG = {
     RUN_DURATION: 0.22, // seconds per tile while shift is held
     TILE_TYPES, TILE_DEPTH, BLOB_TILES,
 
-        // Character sprite sheet (see MapRenderer.drawEntity): one frame is w x h pixels, drawn with the frame's centre on the centre of the character's
-    // 32 px tile (a 64 x 64 frame covers the tile and 16 px beyond it on every side). The sheet is 8 frames wide and 12 rows tall (idle, walk, run;
-    // each South, East, North, West), so 512 x 768 px for 64 x 64 frames.
-    // feetPad = how far the frame sits below the tile's bottom edge: (h - 32) / 2 = 16 is exactly centred; 0 would put the frame's bottom on the
-    // tile's bottom edge (frame rising above the tile). shiftX = pixels to nudge a figure that is not centred in its frame (positive = right).
-   CHARACTER_FRAME: { w: 64, h: 64, feetPad: 'auto', shiftX: 0 },
+    // Character sprite sheet (see MapRenderer.drawEntity): one frame is w x h pixels, centred on the character's 32 px tile sideways, with the
+    // lowest drawn pixel of the sprite on the bottom edge of the tile, the same line the bottom of a map object sits on (a 64 x 64 frame with the
+    // feet on its last row rises 32 px above the tile and goes 0 px below it). The sheet is 8 frames wide and 12 rows tall (idle, walk, run; each
+    // South, East, North, West), so 512 x 768 px for 64 x 64 frames.
+    // feetPad = 'auto': the empty rows under the feet are read from the sheet's pixels, so any amount of empty space below the feet is fine.
+    //           A number overrides that (empty rows between the feet and the bottom of the frame; 0 = feet on the last row).
+    // shiftX = pixels to nudge a figure that is not centred in its frame (positive = right).
+    CHARACTER_FRAME: { w: 64, h: 64, feetPad: 'auto', shiftX: 0 },
+
+    // Lighting (see LightingRenderer): every light floods over the tile grid and loses a fixed amount of strength per tile.
+    // LIGHT_DIAGONAL_COST = distance of a diagonal step: 1 = square pools of light, 1.41 = round (smooth, the default), 2 = diamond-shaped. 1.25 gives the
+    //                       old octagon-shaped pools with visible creases along the diagonals.
+    // LIGHT_WALL_ABSORB = extra tiles of distance a wall (a cliff higher than the light, or an object with blocksLight: true) costs the light that
+    //                     enters it. Higher = walls block more; 0 = walls do not dim light at all. A map object can set its own number with blocksLight: <number>.
+    // LIGHT_SMOOTHING = passes of a small blur over the finished light map: 0 = none, 1 = soft (default), 2 = very soft (also blurs the edges of walls).
+    // LIGHT_EDGE_EASE = 0..1: 0 = the light fades in a straight line from the light to its radius, 1 = fully eased (a soft centre and a soft rim). Default 0.5.
+    LIGHT_DIAGONAL_COST: 1.41,
+    LIGHT_WALL_ABSORB: 3,
+    LIGHT_SMOOTHING: 1,
+    LIGHT_EDGE_EASE: 0.5,
+    // LIGHT_COLOR_TINT = how much of a light's own colour shows (the `color` of a light definition, e.g. '255, 120, 50'): 1 = the pure colour (a campfire
+    //                    paints everything orange), 0 = every light is white. In between, the colour is mixed with white.
+    LIGHT_COLOR_TINT: 0.6,
+
+    // Minimap in the bottom-left corner of the overworld (see MinimapRenderer). Every entry is optional; the values below are the defaults.
+    // radius = tiles shown to each side of the player, zoom = screen pixels per tile (keep it a whole number), so the map is 2 x radius x zoom pixels square.
+    // markers = interaction type -> dot colour (doors are WARP). Buildings (solid objects of 6+ tiles with no interaction) show as brown blocks.
+    // The land colours are in biomeDefinitions.js (the `minimap` block of each biome: grass, dirt, water, rock, stair); `colors` here is the fallback for a biome without one.
+    // outline = width in pixels of the line, in the colour of the cliff face, along the north, east and west edge of every cliff level (0 = no line; keep it smaller than zoom).
+    // shape = 'circle' (default) or 'square'. frame = colour of the ring round a circular map. The map is 2 x radius + 1 tiles across and moves a whole tile at a time.
+    // budgetMs = time per frame spent painting new land.
+    MINIMAP: {
+        enabled: true,
+        radius: 32,
+        zoom: 3,
+        outline: 1,
+        shape: 'circle',
+        margin: 24,
+        showView: true,
+        budgetMs: 2,
+        markers: { WARP: '#ffd24a', CRAFTING_STATION: '#e8873a' },
+    },
 
     // --- Not read by any file I have seen (the renderers, world manager, terrain generator, biome definitions). Probably the canvas setup and the
     //     animation code use them: delete each one that a project-wide search for its name finds only here. ---

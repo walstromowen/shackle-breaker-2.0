@@ -647,7 +647,7 @@ export const AbilityDefinitions = {
     },
     "overload": {
         id: "overload",
-        name: "Discharge",
+        name: "Overload",
         description: "Releases pent-up electricity, violently shocking all enemies.",
         range: "ranged",
         tags: ["magical", "aoe", "lightning"],

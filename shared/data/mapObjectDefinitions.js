@@ -17,11 +17,12 @@ export const MAP_OBJECTS_DEFINITIONS = {
     SAND_DUNE_1: { sheet: 'objSandDune1', spriteX: 6, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
     SAND_DUNE_2: { sheet: 'objSandDune2', spriteX: 7, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
     SAND_DUNE_3: { sheet: 'objSandDune3', spriteX: 8, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
-    DESERT_SKULL: { sheet: 'objDesertSkull', spriteX: 3, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
+    DESERT_SKULL: { sheet: 'objDesertSkull', spriteX: 3, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'bone', amount: 1 } },
+    BONE_PILE: { sheet: 'objBonePile', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'bone', amount: 1 } },
 
     // --- BUILDINGS ---
-    ABANDONED_HOUSE_1: { sheet: 'objAbandonedHouse1', spriteX: 5, spriteY: 7, width: 4, height: 4, isSolid: true, isGround: false, isAnchor: true, hitboxes: [{ xOffset: 0, yOffset: 0, w: 1, h: 2 }, { xOffset: 1, yOffset: -1, w: 1, h: 1 }, { xOffset: 2, yOffset: -1, w: 2, h: 2 }] },
-    ABANDONED_HOUSE_2: { sheet: 'objAbandonedHouse2', spriteX: 9, spriteY: 7, width: 4, height: 4, isSolid: true, isGround: false, isAnchor: true, hitboxes: [{ xOffset: 0, yOffset: 0, w: 1, h: 2 }, { xOffset: 1, yOffset: -1, w: 1, h: 1 }, { xOffset: 2, yOffset: -1, w: 2, h: 2 }] },
+    ABANDONED_HOUSE_1: { sheet: 'objAbandonedHouse1', spriteX: 5, spriteY: 7, width: 4, height: 4, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: 0, w: 1, h: 2 }, { xOffset: 1, yOffset: -1, w: 1, h: 1 }, { xOffset: 2, yOffset: -1, w: 2, h: 2 }] },
+    ABANDONED_HOUSE_2: { sheet: 'objAbandonedHouse2', spriteX: 9, spriteY: 7, width: 4, height: 4, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: 0, w: 1, h: 2 }, { xOffset: 1, yOffset: -1, w: 1, h: 1 }, { xOffset: 2, yOffset: -1, w: 2, h: 2 }] },
 
     // --- STRUCTURES / FENCES ---
     WOODEN_FENCE_H: { sheet: 'objWoodenFenceH', spriteX: 5, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
@@ -32,17 +33,20 @@ export const MAP_OBJECTS_DEFINITIONS = {
     WOODEN_FENCE_BR_CORNER: { sheet: 'objWoodenFenceBrCorner', spriteX: 4, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
 
     // --- INTERACTABLES & OBSTACLES ---
-    BOULDER_1: { sheet: 'objBoulder1', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
-    BOULDER_2: { sheet: 'objBoulder2', spriteX: 1, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    BOULDER_1: { sheet: 'objBoulder1', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    BOULDER_2: { sheet: 'objBoulder2', spriteX: 1, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    SNOWY_BOULDER_1: { sheet: 'objSnowyBoulder1', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    SNOWY_BOULDER_2: { sheet: 'objSnowyBoulder2', spriteX: 1, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    
     WOODEN_CHEST: { sheet: 'objWoodenChest', spriteX: 0, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'treasure_chest', isRepeatable: false } },
     PINE_TREE: { sheet: 'objPineTree', spriteX: 3, spriteY: 1, width: 2, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 }, interaction: { type: 'HARVEST', tool: 'axe', itemId: 'soft_wood', amount: 2, duration: 1.5, replaceWith: 'TREE_STUMP' } },
     SNOWY_PINE_TREE: { sheet: 'objPineTreeSnow', spriteX: 3, spriteY: 1, width: 2, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 }, interaction: { type: 'HARVEST', tool: 'axe', itemId: 'soft_wood', amount: 2, duration: 1.5, replaceWith: 'SNOWY_TREE_STUMP' } },
     OAK_TREE_1: { sheet: 'objOakTree1', spriteX: 0, spriteY: 1, width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 1, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'HARVEST', tool: 'axe', itemId: 'hardwood', amount: 2, duration: 2.0, replaceWith: 'TREE_STUMP' } },
     TREE_STUMP: { sheet: 'objTreeStump', spriteX: 0, spriteY: 4, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
     SNOWY_TREE_STUMP: { sheet: 'objTreeStumpSnow', spriteX: 0, spriteY: 4, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
-    SMALL_CACTUS_1: { sheet: 'objSmallCactus1', spriteX: 1, spriteY: 0, width: 1, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
-    SMALL_CACTUS_2: { sheet: 'objSmallCactus2', spriteX: 2, spriteY: 0, width: 1, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
-    STRANGE_OBELISK: { sheet: 'objStrangeObelisk', spriteX: 1, spriteY: 4, width: 2, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'strange_obelisk', isRepeatable: false } },
+    MEDIUM_CACTUS_1: { sheet: 'objMediumCactus1', spriteX: 1, spriteY: 0, width: 2, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 } },
+    SMALL_CACTUS_1: { sheet: 'objSmallCactus1', spriteX: 2, spriteY: 0, width: 1, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    STRANGE_OBELISK: { sheet: 'objStrangeObelisk', spriteX: 1, spriteY: 4, width: 2, height: 2, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'strange_obelisk', isRepeatable: false } },
     
     // --- HERBS ---
     HEALING_HERB: { sheet: 'objHealingHerb', spriteX: 9, spriteY: 1, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'PICKUP', itemId: 'healing_herb', amount: 1 } },
@@ -57,34 +61,75 @@ export const MAP_OBJECTS_DEFINITIONS = {
     TAILORS_BENCH: { sheet: 'objTailorsBench', spriteX: 8, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'CRAFTING_STATION', station: 'tailors_bench', title: "Tailor's Bench" } },
 
     // --- ANIMATED ---
-    CAMPFIRE: { sheet: 'objCampfire', spriteX: 0, spriteY: 6, frames: 4, speed: 0.2, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'bonfire' }, light: { hasLight: true, radius: 5.5, color: '255, 100, 0', maxAlpha: 0.8, flickerSpeed: 0.1, flickerAmp: 0.5 } },
+    CAMPFIRE: { sheet: 'objCampfire', spriteX: 0, spriteY: 6, frames: 16, speed: 0.2, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'bonfire' }, light: { hasLight: true, radius: 5.5, color: '255, 100, 0', maxAlpha: 0.8, flickerSpeed: 0.1, flickerAmp: 0.5 } },
     
-    // ==========================================
-    // DOORS & WARPS
-    // ==========================================
-    HOUSE_DOOR_WOODEN: {
+    // --- HOUSE FURNITURE ---
+    BARREL: { sheet: 'objBarrel', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    CRATE: { sheet: 'objCrate', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    CRATE_SACK: { sheet: 'objCrateSack', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    SACKS: { sheet: 'objSacks', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    POTTED_PLANT: { sheet: 'objPottedPlant', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    STOOL: { sheet: 'objStool', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    CHAIR: { sheet: 'objChair', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    SMALL_TABLE: { sheet: 'objSmallTable', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, light: { hasLight: true, radius: 3.5, color: '255, 190, 110', maxAlpha: 0.55, flickerSpeed: 0.12, flickerAmp: 0.25 } },
+    TABLE_LONG: { sheet: 'objTableLong', spriteX: 0, spriteY: 0, width: 2, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 } },
+    COUNTER: { sheet: 'objCounter', spriteX: 0, spriteY: 0, width: 2, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 } },
+    BED_RED: { sheet: 'objBedRed', spriteX: 0, spriteY: 0, width: 1, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 1, h: 2 } },
+    BED_BLUE: { sheet: 'objBedBlue', spriteX: 0, spriteY: 0, width: 1, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 1, h: 2 } },
+    BOOKSHELF: { sheet: 'objBookshelf', spriteX: 0, spriteY: 0, width: 1, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    WARDROBE: { sheet: 'objWardrobe', spriteX: 0, spriteY: 0, width: 1, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    FIREPLACE: { sheet: 'objFireplace', spriteX: 0, spriteY: 0, width: 2, height: 2, frames: 4, speed: 0.15, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 }, light: { hasLight: true, radius: 7, color: '255, 140, 60', maxAlpha: 0.85, flickerSpeed: 0.1, flickerAmp: 0.3 } },
+    CANDELABRA: { sheet: 'objCandelabra', spriteX: 0, spriteY: 0, width: 1, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, light: { hasLight: true, radius: 5, color: '255, 190, 110', maxAlpha: 0.7, flickerSpeed: 0.12, flickerAmp: 0.3 } },
+    RUG_SMALL: { sheet: 'objRugSmall', spriteX: 0, spriteY: 0, width: 2, height: 2, isSolid: false, isGround: true, hitbox: { xOffset: 0, yOffset: 0, w: 0, h: 0 } },
+    RUG_GREEN: { sheet: 'objRugGreen', spriteX: 0, spriteY: 0, width: 2, height: 2, isSolid: false, isGround: true, hitbox: { xOffset: 0, yOffset: 0, w: 0, h: 0 } },
+    RUG_LONG: { sheet: 'objRugLong', spriteX: 0, spriteY: 0, width: 3, height: 2, isSolid: false, isGround: true, hitbox: { xOffset: 0, yOffset: 0, w: 0, h: 0 } },
+    DOORMAT: { sheet: 'objDoormat', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, hitbox: { xOffset: 0, yOffset: 0, w: 0, h: 0 } },
+
+    /* the inside of a house or workshop door (HouseGenerator / CraftingHouseGenerator put it on the south wall); it leads back out (SceneManager's 'exit_interior'). 2 tiles tall like every door: the door itself is 1.5 tiles (the lowest 48 px of the 64 px frame) and the top 10 px of the frame are the wall above it, painted into objHouseExitDoor.png.
+       The generators put it on the row below the doorway cell, so the sprite fills the two wall-face rows; the hitbox (the cell you walk onto) is the doorway cell one row up. isGround draws it under the player, so you stand in front of the door while it opens. */
+    HOUSE_EXIT_DOOR: {
+      sheet: 'objHouseExitDoor',
+      spriteX: 0, spriteY: 7, width: 1, height: 2, frames: 4, speed: 0.15, isSolid: false, isGround: true, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 1, h: 1 },
+      interaction: { type: 'WARP', id: 'exit_interior', isRepeatable: true }
+    },
+     HOUSE_DOOR_WOODEN: {
       sheet: 'objHouseDoorWooden',
-      spriteX: 0, spriteY: 7, width: 1, height: 1, frames: 4, speed: 0.15, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },
+      spriteX: 0, spriteY: 7, width: 1, height: 2, frames: 4, speed: 0.15, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },
       interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'HOUSE_INTERIOR', isRepeatable: true }
     },
     BLACKSMITH_DOOR: {
         sheet: 'objBlacksmithDoor',
-        spriteX: 0, spriteY: 7, width: 1, height: 1, frames: 4, speed: 0.15, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },
+        spriteX: 0, spriteY: 7, width: 1, height: 2, frames: 4, speed: 0.15, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },
         interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'ABANDONED_BLACKSMITH', isRepeatable: true }
     },
     CARPENTER_DOOR: {
         sheet: 'objCarpenterDoor',
-        spriteX: 0, spriteY: 7, width: 1, height: 1, frames: 4, speed: 0.15, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },
+        spriteX: 0, spriteY: 7, width: 1, height: 2, frames: 4, speed: 0.15, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },
         interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'ABANDONED_CARPENTER', isRepeatable: true }
     },
     MASON_DOOR: {
         sheet: 'objMasonDoor',
-        spriteX: 0, spriteY: 7, width: 1, height: 1, frames: 4, speed: 0.15, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },
+        spriteX: 0, spriteY: 7, width: 1, height: 2, frames: 4, speed: 0.15, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },
         interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'ABANDONED_MASON', isRepeatable: true }
     },
     TAILOR_DOOR: {
         sheet: 'objTailorDoor',
-        spriteX: 0, spriteY: 7, width: 1, height: 1, frames: 4, speed: 0.15, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },
+        spriteX: 0, spriteY: 7, width: 1, height: 2, frames: 4, speed: 0.15, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },
         interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'ABANDONED_TAILOR', isRepeatable: true }
+    },
+
+    // ==========================================
+    // CAVE MOUTHS (3 x 3 cells, painted into a cliff face; only the middle cell of the bottom row is the doorway).
+    // `walkIn: true` on a WARP: with a single frame there is no door to open, so OverworldController.finishMove warps as soon as you step on the doorway cell.
+    // ==========================================
+    CAVE_ENTRANCE: {
+        sheet: { default: 'objCaveEntrance', DESERT: 'objCaveEntranceDesert', SNOWY_MOUNTAINS: 'objCaveEntranceSnow' },
+        spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: false, isGround: false, isAnchor: true, hitboxes: [{ xOffset: 1, yOffset: 0, w: 1, h: 1 }],
+        interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'CAVE', isRepeatable: true, walkIn: true }
+    },
+    CAVE_EXIT_DOOR: {
+        sheet: 'objCaveExit',
+        spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: false, isGround: false, isAnchor: true, hitboxes: [{ xOffset: 1, yOffset: 0, w: 1, h: 1 }],
+        interaction: { type: 'WARP', id: 'exit_interior', isRepeatable: true, walkIn: true }
     },
 };

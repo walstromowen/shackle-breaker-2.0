@@ -222,7 +222,7 @@ export class ItemDetailPanel {
     if (weight !== undefined || value !== undefined) {
       const rightMeta = [];
       if (weight !== undefined) rightMeta.push(`Wt: ${weight}`);
-      if (value !== undefined) rightMeta.push(`Val: ${value}g`);
+      if (value !== undefined) rightMeta.push(`Val: ${value}`);
       this.ui.drawText(rightMeta.join("   "), x + w - this.layout.padding, currentY + 74, bodyFont, UITheme.colors.textMuted, "right");
     }
 
@@ -420,7 +420,7 @@ export class ItemDetailPanel {
     currentY += this.layout.lineHeight;
 
     if (cost.currency !== undefined) {
-      this.ui.drawText(`Gold: ${cost.currency}g`, x, currentY, bodyFont, UITheme.colors.textMain, "left");
+      this.ui.drawText(`Currency: ${cost.currency}`, x, currentY, bodyFont, UITheme.colors.textMain, "left");
       currentY += this.layout.lineHeight;
     }
 

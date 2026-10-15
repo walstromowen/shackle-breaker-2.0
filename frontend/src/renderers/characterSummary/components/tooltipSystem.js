@@ -234,11 +234,12 @@ export class TooltipSystem {
       return undefined;
     };
 
+    // Abbreviated labels only (ATK / DEF / BLK) - never the spelled-out "ATTACK" / "DEFENSE"
     const primaryStats = [
-      { key: 'damage', label: 'ATTACK' },
-      { key: 'attack', label: 'ATTACK' },
-      { key: 'defense', label: 'DEFENSE' },
-      { key: 'block', label: 'BLOCK' }
+      { key: 'damage', label: 'ATK' },
+      { key: 'attack', label: 'ATK' },
+      { key: 'defense', label: 'DEF' },
+      { key: 'block', label: 'BLK' }
     ];
 
     primaryStats.forEach(stat => {
@@ -247,6 +248,10 @@ export class TooltipSystem {
       if (typeof val === 'object' && typeof val.min === 'undefined' && Object.keys(val).length === 0) return;
 
       if (typeof val === 'object' && val.min === undefined) {
+        // Per-type attack/defense tables are listed by the category pass below ("SLA ATK", "BLU DEF"),
+        // so skip them here or every value would appear twice.
+        if (stat.key === 'attack' || stat.key === 'defense') return;
+
         Object.keys(val).forEach(typeKey => {
           const typeAbbr = (Formatting.getAbbreviation ? Formatting.getAbbreviation(typeKey) : typeKey.substring(0, 3)).toUpperCase();
           statItems.push({
@@ -506,7 +511,7 @@ export class TooltipSystem {
     if (weight !== undefined || value !== undefined) {
       const rightMeta = [];
       if (weight !== undefined) rightMeta.push(`Wt: ${weight}`);
-      if (value !== undefined) rightMeta.push(`Val: ${value}g`);
+      if (value !== undefined) rightMeta.push(`Val: ${value}`);
       this.ui.drawText(rightMeta.join("   "), tx + this.WIDTH - this.PADDING, ty + 80, bodyFont, UITheme.colors.textMuted, "right");
     }
 
