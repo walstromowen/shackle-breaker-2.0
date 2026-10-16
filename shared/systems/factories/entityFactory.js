@@ -5,6 +5,11 @@ import { ENTITY_DEFINITIONS } from '../../data/entityDefinitions.js';
 import { EntityModel } from '../../models/entityModel.js';
 import { ExperienceSystem } from '../experienceSystem.js';
 
+// BALANCE KNOB: extra base max HP an entity gets per level above 1, ON TOP of the +2 per level that every level-up gives (ExperienceSystem.applyLevelUpStats).
+// This is what makes same-level enemies slightly tougher than a player who has no gear or upgrades yet. 0 = no edge, 0.5 = +2.5 HP per level in total.
+// The bonus is recorded on the entity (levelEdgeHp) so EntityFactory.removeLevelEdge() can take it away again when an enemy joins the party.
+const LEVEL_EDGE_HP_PER_LEVEL = 0.5;
+
 export class EntityFactory {
     static create(entityId, levelOrOverrides = 1, overrides = {}) {
         const blueprint = ENTITY_DEFINITIONS[entityId];
@@ -88,7 +93,8 @@ export class EntityFactory {
         config.xp = finalOverrides.xp ?? config.xp ?? 0;
         config.skillPoints = finalOverrides.skillPoints ?? config.skillPoints ?? 0;
 
-        this._applyLevelScaling(config, config.level);
+        // Pass levelEdge: false in the overrides to create a leveled entity without the enemy HP edge (e.g. a pre-made ally).
+        this._applyLevelScaling(config, config.level, finalOverrides.levelEdge !== false);
 
         config.id = (typeof crypto !== 'undefined' && crypto.randomUUID) 
             ? crypto.randomUUID() 
@@ -121,7 +127,7 @@ export class EntityFactory {
         return entity;
     }
 
-    static _applyLevelScaling(config, level) {
+    static _applyLevelScaling(config, level, applyEdge = true) {
         const levelDiff = level - 1;
         const totalPointsToDistribute = levelDiff * 1;
 
@@ -138,6 +144,12 @@ export class EntityFactory {
 
         if (config.baseStats) {
             config.baseStats.maxHp += (levelDiff * 2);
+
+            const edge = applyEdge ? Math.floor(levelDiff * LEVEL_EDGE_HP_PER_LEVEL) : 0;
+            if (edge > 0) {
+                config.baseStats.maxHp += edge;
+                config.levelEdgeHp = edge; // stored in the entity state, so it is saved and can be removed on recruit
+            }
         }
 
         if (config.currencyReward) {
@@ -148,5 +160,17 @@ export class EntityFactory {
         if (config.xpReward) {
             config.xpReward = Math.floor(config.xpReward * Math.pow(1.1, levelDiff));
         }
+    }
+
+    // Call this when an enemy joins the party: removes the enemy-only level HP bonus so an ally is exactly as tough as a player-built
+    // character of the same level. Safe to call on any entity (does nothing if it has no bonus) and safe to call twice.
+    static removeLevelEdge(entity) {
+        const edge = entity?.state?.levelEdgeHp || 0;
+        if (edge <= 0) return false;
+
+        entity.state.baseStats.maxHp = Math.max(1, entity.state.baseStats.maxHp - edge);
+        entity.state.levelEdgeHp = 0;
+        if (entity.hp > entity.maxHp) entity.hp = entity.maxHp; // the hp setter already clamps to maxHp
+        return true;
     }
 }

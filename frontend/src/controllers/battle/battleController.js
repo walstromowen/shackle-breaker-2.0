@@ -23,6 +23,9 @@ const KEY_BINDINGS = {
     'KeyH': 'TOGGLE_DETAILS', 'h': 'TOGGLE_DETAILS', 'H': 'TOGGLE_DETAILS'
 };
 
+// Scopes that mean "the caster's own team" (written from the caster's point of view).
+const ALLY_SCOPES = ['ally', 'all_allies', 'random_ally', 'full_ally_party'];
+
 export const PHASE = {
     INTRO: 'INTRO',
     SELECT_ACTION: 'SELECT_ACTION',
@@ -240,6 +243,7 @@ export class BattleController extends BaseController {
         if (!this.state.targetGroup) return false;
         const target = this._getTargetFromHitbox(hitboxId);
         if (!target || target.isDead()) return false;
+        if (this._isAlreadyPicked(target)) return false;
         const validTargets = this._getTargetsFromGroup();
         return validTargets.includes(target);
     }
@@ -372,7 +376,7 @@ export class BattleController extends BaseController {
         return this.commitAction(activeChar);
     }
     if (selectMode === 'random' || scope.includes('random')) {
-        const isPartyTarget = scope.includes('allies') || scope === 'ally';
+        const isPartyTarget = ALLY_SCOPES.includes(scope);
         const targetPool = isPartyTarget ? this.state.activeParty : this.state.activeEnemies;
         const fallbackTarget = targetPool.find(t => t && !t.isDead()) || activeChar;
         return this.commitAction(fallbackTarget);
@@ -401,11 +405,11 @@ export class BattleController extends BaseController {
     }
     // --------------------------------
 
-    const isPartyTarget = scope.includes('allies') || scope === 'ally';
+    const isPartyTarget = ALLY_SCOPES.includes(scope);
     const targetPool = isPartyTarget ? this.state.activeParty : this.state.activeEnemies;
     this.state.targetGroup = isPartyTarget ? 'party' : 'enemy';
 
-    if (['all_enemies', 'all_allies'].includes(scope)) {
+    if (['all_enemies', 'all_allies', 'full_ally_party'].includes(scope)) {
         this.state.message = `Confirm target for ${action.name}`;
         this.state.targetIndex = 'ALL';
     } else {
@@ -449,9 +453,27 @@ export class BattleController extends BaseController {
         let nextIndex = this.state.targetIndex;
         for (let i = 0; i < count; i++) {
             nextIndex = (nextIndex + direction + count) % count;
-            if (targetArray[nextIndex] && !targetArray[nextIndex].isDead()) return nextIndex;
+            if (targetArray[nextIndex] && !targetArray[nextIndex].isDead() && !this._isAlreadyPicked(targetArray[nextIndex])) return nextIndex;
         }
         return this.state.targetIndex;
+    }
+
+    // Multi-select abilities WITHOUT allowRepeats (Flamethrower, Waterfall...) must hit distinct targets.
+    _needsDistinctTargets(action) {
+        const t = action?.targeting;
+        return t?.select === 'multiple' && !t.allowRepeats;
+    }
+
+    _isAlreadyPicked(target) {
+        return this._needsDistinctTargets(this.state.selectedAction) && (this.state.selectedTargets || []).includes(target);
+    }
+
+    // How many picks the player must make. Distinct abilities can't ask for more targets than are alive.
+    _getRequiredPickCount(action) {
+        const wanted = action.targeting?.count || 1;
+        if (!this._needsDistinctTargets(action)) return wanted;
+        const living = this._getTargetsFromGroup().filter(t => t && !t.isDead()).length;
+        return Math.max(1, Math.min(wanted, living));
     }
 
     _selectSpecificTarget(target) {
@@ -462,7 +484,13 @@ export class BattleController extends BaseController {
             return this.commitAction(target);
         }
 
-        const requiredCount = targeting.count || 1;
+        if (this._isAlreadyPicked(target)) {
+            this.playCancelSound();
+            this.state.message = `${target.name} is already selected - choose a different target`;
+            return;
+        }
+
+        const requiredCount = this._getRequiredPickCount(this.state.selectedAction);
         this.state.selectedTargets.push(target);
 
         if (this.state.selectedTargets.length >= requiredCount) {
@@ -470,13 +498,15 @@ export class BattleController extends BaseController {
             this.state.selectedTargets = [];
         } else {
             this.state.message = `Select target ${this.state.selectedTargets.length + 1} of ${requiredCount} for ${this.state.selectedAction.name}`;
+            // Move the cursor off the target that was just picked
+            this.state.targetIndex = this._cycleTarget(this._getTargetsFromGroup(), 1);
         }
     }
 
     _cancelTargetSelection() {
         if (this.state.selectedTargets?.length > 0) {
             this.state.selectedTargets.pop();
-            const requiredCount = this.state.selectedAction.targeting?.count || 1;
+            const requiredCount = this._getRequiredPickCount(this.state.selectedAction);
             this.state.message = `Select target ${this.state.selectedTargets.length + 1} of ${requiredCount} for ${this.state.selectedAction.name}`;
             return;
         }
@@ -607,7 +637,7 @@ export class BattleController extends BaseController {
 
             if (validAbilities.length > 0) {
                 const action = validAbilities[Math.floor(Math.random() * validAbilities.length)];
-                return this.state.turnQueue.push({ actor: enemy, action, target: randomTarget });
+                return this.state.turnQueue.push({ actor: enemy, action, target: this._pickEnemyTarget(enemy, action, livingParty) });
             }
 
             const punch = enemy.abilities.find(a => a.id === 'punch' && a.canPayCost(enemy, InventorySystem));
@@ -618,6 +648,38 @@ export class BattleController extends BaseController {
             const restAction = AbilityFactory.createAbilities(['rest'])[0];
             this.state.turnQueue.push({ actor: enemy, action: restAction, target: enemy });
         });
+    }
+
+    /**
+     * Chooses who an enemy aims an ability at, based on the ability's targeting scope as seen from the
+     * ENEMY's side. (Scopes are written from the caster's point of view: 'ally' means the caster's own
+     * team, so for an enemy that is another enemy, not a party member.)
+     */
+    _pickEnemyTarget(enemy, action, livingParty) {
+        const scope = action.targeting?.scope || 'enemy';
+        const pick = list => list[Math.floor(Math.random() * list.length)];
+        const livingEnemies = this.state.activeEnemies.filter(e => e && !e.isDead());
+
+        let pool;
+        if (scope === 'self') return enemy;
+        else if (scope === 'any') pool = [...livingParty, ...livingEnemies];
+        // Same test the player-side targeting uses, mirrored: ally-type scopes stay on the caster's team.
+        else if (ALLY_SCOPES.includes(scope)) pool = livingEnemies;
+        else pool = livingParty;
+
+        // Splash / distinct multi-select (Flamethrower...): aim at N different targets, never the same one twice.
+        if (this._needsDistinctTargets(action)) {
+            const wanted = Math.min(action.targeting?.count || 1, pool.length);
+            const shuffled = [...pool].sort(() => Math.random() - 0.5);
+            return shuffled.slice(0, Math.max(1, wanted));
+        }
+
+        // Prefer a teammate over the caster (Howl, Rally...), fall back to the caster if alone.
+        if (ALLY_SCOPES.includes(scope)) {
+            const others = pool.filter(e => e !== enemy);
+            return pick(others.length > 0 ? others : pool);
+        }
+        return pick(pool);
     }
 
     _sortTurnQueue() {

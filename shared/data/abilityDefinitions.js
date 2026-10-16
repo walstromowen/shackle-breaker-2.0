@@ -171,13 +171,13 @@ export const AbilityDefinitions = {
     "cleave": {
         id: "cleave",
         name: "Cleave",
-        description: "Strike a target and one adjacent enemy.",
+        description: "Swing wide to strike two enemies at once.",
         range: "melee",
         tags: ["physical", "contact", "blade", "slash", "aoe"],
         battleMessage: "{user} swings wide to {ability} the enemies!",
         icon: { col: 1, row: 0 },
         animationId: "cleave",
-        targeting: { scope: "all_enemies", select: "auto" },
+        targeting: { scope: "enemy", select: "multiple", count: 2 },
         cost: { stamina: 15 },
         accuracy: 0.85,
         effects: [{ type: "damage", damageType: "slash", power: 0.85 }]
@@ -915,6 +915,48 @@ export const AbilityDefinitions = {
         speedModifier: 1.0,
         accuracy: 1.0,
         effects: [{ type: "recover", resource: "insight", calculation: "percent", power: 0.3 }]
+    },
+    "moderate_heal": {
+        id: "moderate_heal",
+        name: "Moderate Heal",
+        description: "Restores a moderate amount of health.",
+        range: "ranged",
+        tags: ["magical", "support", "healing"],
+        battleMessage: "{user} uses a {ability}!",
+        icon: { col: 5, row: 8 },
+        animationId: "melee_lunge",
+        targeting: { scope: "ally", select: "single" },
+        speedModifier: 1.0,
+        accuracy: 1.0,
+        effects: [{ type: "recover", resource: "hp", calculation: "percent", power: 0.6 }]
+    },
+    "moderate_recover": {
+        id: "moderate_recover",
+        name: "Moderate Recover",
+        description: "Restores a moderate amount of stamina.",
+        range: "ranged",
+        tags: ["magical", "support", "healing"],
+        battleMessage: "{user} uses a {ability}!",
+        icon: { col: 6, row: 8 },
+        animationId: "melee_lunge",
+        targeting: { scope: "ally", select: "single" },
+        speedModifier: 1.0,
+        accuracy: 1.0,
+        effects: [{ type: "recover", resource: "stamina", calculation: "percent", power: 0.6 }]
+    },
+    "moderate_channel": {
+        id: "moderate_channel",
+        name: "Moderate Channel",
+        description: "Restores a moderate amount of insight.",
+        range: "ranged",
+        tags: ["magical", "support", "healing"],
+        battleMessage: "{user} uses a {ability}!",
+        icon: { col: 7, row: 8 },
+        animationId: "melee_lunge",
+        targeting: { scope: "ally", select: "single" },
+        speedModifier: 1.0,
+        accuracy: 1.0,
+        effects: [{ type: "recover", resource: "insight", calculation: "percent", power: 0.6 }]
     },
 
     // =========================================================================

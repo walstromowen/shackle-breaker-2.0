@@ -379,13 +379,29 @@ export class BattleHUDRenderer {
     const time = performance.now() * 0.004;
     const pulse = (Math.sin(time) + 1) / 2;
 
+    // The panel only has room for one row of icons, so long lists (e.g. the dev artifact) are paged:
+    // the page follows the highlighted ability and LEFT/RIGHT walk through all of them.
+    const pageCount = Math.max(1, Math.ceil(activeChar.abilities.length / columns));
+    const page = Math.min(pageCount - 1, Math.floor((state.menuIndex || 0) / columns));
+    const firstOnPage = page * columns;
+
+    if (pageCount > 1) {
+      this.ctx.save();
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.font = (UITheme.fonts.small || '18px sans-serif').replace(/\d+px/, '16px');
+      this.ctx.fillStyle = UITheme.colors.textMuted;
+      this.ctx.fillText(`< ${page + 1} / ${pageCount} >`, w / 2, y + 68);
+      this.ctx.restore();
+    }
+
     activeChar.abilities.forEach((ability, index) => {
+      if (index < firstOnPage || index >= firstOnPage + columns) return;
       const isSelected = (index === state.menuIndex);
       const canAfford = ability.canPayCost ? ability.canPayCost(activeChar) : true;
-      const row = Math.floor(index / columns);
-      const col = index % columns;
+      const col = index - firstOnPage;
       const drawX = paddingX + (col * (itemSize + margin));
-      const drawY = startY + (row * (itemSize + margin));
+      const drawY = startY;
       const actionId = `ACTION_${index}`;
 
       hitboxes.push({
@@ -687,7 +703,16 @@ export class BattleHUDRenderer {
       }
     }
 
-    const activeTargets = TargetingResolver.resolve(selectedAbility, activeChar, primaryTarget, state) || [];
+    let activeTargets = TargetingResolver.resolve(selectedAbility, activeChar, primaryTarget, state) || [];
+
+    // Distinct multi-select (Flamethrower, Waterfall...): the preview is only the target being aimed at,
+    // never a second shard stacked on it. Targets already picked keep their locked shards.
+    const targetingRules = selectedAbility.targeting;
+    if (targetingRules?.select === 'multiple' && !targetingRules.allowRepeats) {
+      const aimed = (primaryTarget && primaryTarget !== 'ALL') ? primaryTarget : null;
+      const alreadyPicked = state.selectedTargets || [];
+      activeTargets = (aimed && !aimed.isDead() && !alreadyPicked.includes(aimed)) ? [aimed] : [];
+    }
     const targetTotals = new Map();
 
     if (state.selectedTargets) {

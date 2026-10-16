@@ -35,6 +35,19 @@ export class AbilityModel {
     get cost() { return this._dynamicCost || this.config.cost || {}; }
     get multihit() { return this.config.multihit || null; }
     get targetCount() { return this.config.targeting?.count || 1; }
+
+    /**
+     * Splash-style multi-target: the player picks N DISTINCT targets, one shared animation plays on all of
+     * them at once, and the effect is applied to each. Derived from the data: select 'multiple' without
+     * allowRepeats (Flamethrower, Waterfall...). Abilities that allow repeats (Magic Missile) stay sequential.
+     * Optional override: targeting.simultaneous = true | false.
+     */
+    get isSplash() {
+        const t = this.config.targeting;
+        if (!t || t.select !== 'multiple') return false;
+        if (t.simultaneous !== undefined) return !!t.simultaneous;
+        return !t.allowRepeats;
+    }
     
     // Stats
     get speedModifier() { return this.config.speedModifier || 1.0; }

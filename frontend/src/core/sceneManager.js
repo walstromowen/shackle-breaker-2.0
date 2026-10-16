@@ -385,6 +385,9 @@ export class SceneManager {
         });
 
         events.on('CHARACTER_RECRUITED', (data) => {
+            // An enemy that joins the party loses the enemy-only level HP bonus, so an ally is exactly as tough as a player-built character of the same level.
+            EntityFactory.removeLevelEdge(data.character);
+
             this.transitionRenderer.start(() => {
                 this.characterSummaryController = new CharacterSummaryController(this.input, {
                     character: data.character

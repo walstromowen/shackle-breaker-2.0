@@ -10,17 +10,17 @@ export const treasureChest = {
             text: "{name}'s party spots a locked chest ahead. It looks sturdy, but might contain valuable loot inside.",
             decisions: [
                 {
-                    text: "[Small Key] Use the small key.",
+                    text: "[Small Iron Key] Unlock the chest with the small iron key.",
                     conditions: [
-                        { type: "has_item", itemId: "small_key", qty: 1 },
+                        { type: "has_item", itemId: "small_iron_key", qty: 1 },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} inserts the small key into the lock and turns it with a satisfying click...",
+                    customActionText: "{name} inserts the small iron key into the lock and turns it with a satisfying click...",
                     outcomes: [
                         {
                             weight: 100,
                             results: [
-                                { type: "REMOVE_ITEM", payload: { itemId: "small_key", qty: 1 } },
+                                { type: "REMOVE_ITEM", payload: { itemId: "small_iron_key", qty: 1 } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "opened_chest" } }
                             ]
                         }
@@ -109,11 +109,12 @@ export const treasureChest = {
                     threshold: 12,
                     conditions: [
                         { type: "context_flag_not_set", flagId: "failed_atn" },
+                        { type: "context_flag_not_set", flagId: "found_key" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
                     customActionText: "{name} sweeps the area, searching high and low for the missing key...",
                     successOutcomes: [
-                        { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "found_key" } }] }
+                        { weight: 100, results: [{ type: "SET_CONTEXT_FLAG", payload: { flagId: "found_key" } }, { type: "ADVANCE_STAGE", payload: { stageId: "found_key" } }] }
                     ],
                     failureOutcomes: [
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "ambush" } }] },
@@ -136,8 +137,8 @@ export const treasureChest = {
         },
         found_key: {
             displayText: "A Lucky Find",
-            image: { col: 1, row: 1 },
-            text: "{name} spots a glint of metal partially buried in the dirt nearby. It's a small key!",
+            image: { col: 0, row: 1 },
+            text: "{name} spots a glint of metal partially buried in the dirt nearby. It's a small iron key!",
             decisions: [
                 {
                     text: "Take the key and return.",
@@ -146,7 +147,7 @@ export const treasureChest = {
                         {
                             weight: 100,
                             results: [
-                                { type: "GIVE_ITEM", payload: { items: [{ id: "small_key", qty: 1 }] } },
+                                { type: "GIVE_ITEM", payload: { items: [{ id: "small_iron_key", qty: 1 }] } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "discovery" } }
                             ]
                         }

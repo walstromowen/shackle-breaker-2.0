@@ -10,12 +10,18 @@ import { QuestDefinitions } from '../../../../shared/data/questDefinitions.js';
 import { InventorySystem } from '../../../../shared/systems/inventorySystem.js';
 import { ItemDefinitions } from '../../../../shared/data/itemDefinitions.js';
 
+/* A lit torch (an item with a `lightBuff` block, see itemDefinitions.js) burns for a number of IN-GAME minutes. In its last TORCH_GUTTER_MINUTES the light shrinks back to normal. */
+const TORCH_GUTTER_MINUTES = 30;
+/* The colour is mixed in this many steps (not smoothly), so LightingRenderer's colour cache only ever holds a handful of entries. */
+const TORCH_COLOR_STEPS = 8;
+
 export class OverworldController extends BaseController {
     constructor(input, config, worldManager) {
         super(input);
         this.config = config;
         this.worldManager = worldManager;
         this.player = this.createPlayerEntity();
+        this.baseLight = { ...this.player.light }; // the player's own light; a burning torch lifts it every frame (see currentLight / update)
         this.camera = { x: 0, y: 0, prevX: 0, prevY: 0 };
         this.isLocked = false;
         this.isMenuOpen = false;
@@ -106,6 +112,9 @@ export class OverworldController extends BaseController {
       this.interact();
     }
 
+    // T: light a torch from the bag (a menu "Use" button can call this.lightTorch() the same way)
+    if (code === 'KeyT') this.lightTorch();
+
     // 1: Toggle Menu
     if (code === 'Digit1') {
       events.emit('PLAY_SFX', { id: 'click', volume: 0.6, pitch: 1.0 });
@@ -131,12 +140,82 @@ export class OverworldController extends BaseController {
     }
   }
 
+    /* ---------------------------------------------------------------- carried light (torch) ----------------------------------------------------------------
+       The torch lives in gameState.player.torch = { itemId, name, expiresAt, durationMinutes, light }: plain data, so a save keeps it. Times are absolute in-game
+       minutes (day * 1440 + minute of the day), so it burns on across midnight. The renderer is not involved: it already draws `player.light`. */
+    gameMinutes() {
+        return (gameState.world.day || 0) * 1440 + (gameState.world.time || 0);
+    }
+
+    /* Light one torch from the bag. Lighting again while one burns restarts the clock (they do not add up). Returns { ok, message }. */
+    lightTorch(itemId = 'torch') {
+        const def = ItemDefinitions[itemId];
+        let result;
+        if (!def || !def.lightBuff) {
+            result = { ok: false, message: 'That cannot be lit.' };
+        } else if (!InventorySystem.hasItem(itemId, 1)) {
+            result = { ok: false, message: `You have no ${def.name || itemId}.` };
+        } else {
+            InventorySystem.removeItem(itemId, 1);
+            const minutes = def.lightBuff.minutes !== undefined ? def.lightBuff.minutes : (def.lightBuff.hours !== undefined ? def.lightBuff.hours : 8) * 60;
+            gameState.player.torch = { itemId, name: def.name || 'Torch', expiresAt: this.gameMinutes() + minutes, durationMinutes: minutes, light: { ...(def.lightBuff.light || {}) } };
+            result = { ok: true, message: `You light the ${def.name || itemId}. It will burn for ${Math.round(minutes / 6) / 10} hours.` };
+        }
+        console.log(`[Overworld] ${result.message}`);
+        events.emit('PLAY_SFX', result.ok ? { id: 'pickup_sound', volume: 0.7, pitch: 0.8 } : { id: 'error_buzz', volume: 0.5 });
+        return result;
+    }
+
+    /* The burning torch, or null. One that has run out is removed here. */
+    getTorch() {
+        const torch = gameState.player.torch;
+        if (!torch) return null;
+        const left = torch.expiresAt - this.gameMinutes();
+        if (left <= 0 || left > torch.durationMinutes + 1) { // burnt out (or a nonsense expiry from some other save)
+            gameState.player.torch = null;
+            if (left <= 0) console.log(`[Overworld] The ${torch.name} has burnt out.`);
+            return null;
+        }
+        return torch;
+    }
+
+    /* The player's light for this frame: the normal light, or (while a torch burns) the normal light lifted towards the torch's. 1 = burning fully, 0 = out.
+       A torch never makes the light weaker, and any field it leaves out stays as the normal light has it. */
+    currentLight() {
+        const torch = this.getTorch();
+        if (!torch) return this.baseLight;
+        const base = this.baseLight, T = torch.light || {};
+        const burn = Math.max(0, Math.min(1, (torch.expiresAt - this.gameMinutes()) / TORCH_GUTTER_MINUTES));
+        const lerp = (a, b, t) => a + (b - a) * t;
+        const up = (name, fallback) => {
+            const a = base[name] !== undefined ? base[name] : fallback;
+            return lerp(a, T[name] !== undefined ? Math.max(a, T[name]) : a, burn);
+        };
+        const light = { ...base, hasLight: true, radius: up('radius', 4), maxAlpha: up('maxAlpha', 0.5), flickerAmp: up('flickerAmp', 0) };
+        if (T.flickerSpeed !== undefined) light.flickerSpeed = T.flickerSpeed;
+        if (T.color !== undefined) {
+            const rgb = (c) => { const m = typeof c === 'string' && /(\d+(?:\.\d+)?)\s*[,\s]\s*(\d+(?:\.\d+)?)\s*[,\s]\s*(\d+(?:\.\d+)?)/.exec(c); return m ? [+m[1], +m[2], +m[3]] : null; };
+            const from = rgb(base.color), to = rgb(T.color), t = Math.round(burn * TORCH_COLOR_STEPS) / TORCH_COLOR_STEPS;
+            light.color = from && to ? to.map((v, i) => Math.round(lerp(from[i], v, t))).join(', ') : (burn >= 0.5 ? T.color : base.color);
+        }
+        return light;
+    }
+
+    /* For a HUD: null, or { name, remainingHours, fraction (1 = just lit), guttering }. */
+    getTorchInfo() {
+        const torch = this.getTorch();
+        if (!torch) return null;
+        const left = Math.max(0, torch.expiresAt - this.gameMinutes());
+        return { name: torch.name, remainingHours: left / 60, fraction: left / torch.durationMinutes, guttering: left < TORCH_GUTTER_MINUTES };
+    }
+
     handleMouseDown(x, y, renderer) {
         if (this.isLocked) return;
     }
 
     update(dt) {
         super.update(dt);
+        this.player.light = this.currentLight(); // LightingRenderer draws whatever light the player entity carries: a torch makes it wider, brighter and redder
         this.validateBiomeWeather(); // every frame: the weather must fit the biome the player stands in even when no step ends (a warp, standing still)
         this.checkEnvironmentMusic();
 
@@ -662,6 +741,7 @@ export class OverworldController extends BaseController {
             trackedQuests: this.getTrackedQuests(),
             toasts: (gameState.ui && gameState.ui.toasts) ? gameState.ui.toasts : [],
             facedObject: displayFacedObject, // Passes null if they lack the tool!
+            torch: this.getTorchInfo(), // null, or { name, remainingHours, fraction, guttering } for a HUD
             isHarvesting: this.isHarvesting,
             harvestTimer: this.harvestTimer,
             harvestDuration: this.harvestDuration,

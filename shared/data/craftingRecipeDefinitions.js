@@ -12,8 +12,8 @@ export const craftingRecipeDefinitions = {
     }
   },
   "recipe_spear": {
-    id: "recipe_shortsword",
-    outputItemId: "shortsword",
+    id: "recipe_spear",
+    outputItemId: "spear",
     station: "anvil",
     materials: {
       "soft_wood": 10,
@@ -44,7 +44,18 @@ export const craftingRecipeDefinitions = {
       "sand":3
     }
   },
-    "recipe_shortbow": {
+  "recipe_pickaxe": {
+    id: "recipe_pickaxe",
+    outputItemId: "pickaxe",
+    station: "anvil",
+    materials: {
+      "soft_wood": 6,
+      "stone": 7,
+      "plant_fibers": 4,
+      "sand":3
+    }
+  },
+  "recipe_shortbow": {
     id: "recipe_shortbow",
     outputItemId: "shortbow",
     station: "carpenters_bench",
@@ -53,20 +64,6 @@ export const craftingRecipeDefinitions = {
       "plant_fibers": 15,
     }
   },
- "recipe_handaxe": {
-    id: "recipe_handaxe",
-    outputItemId: "handaxe",
-    locked: true,
-    station: "anvil",
-    materials: {
-      "soft_wood": 7,
-      "stone": 5,
-      "plant_fibers": 3,
-      "sand":3
-    }
-  },
-
-
 
   "recipe_iron_helmet": {
     id: "recipe_iron_helmet",
@@ -127,14 +124,13 @@ export const craftingRecipeDefinitions = {
   },
 
   // --- CONSUMABLE RECIPES ---
-  "recipe_bandage": {
-    id: "recipe_bandage",
-    outputItemId: "bandage",
-    station: "tailors_bench",
+  "recipe_torch": {
+    id: "recipe_torch",
+    outputItemId: "torch",
+    station: "any",
     materials: {
-      "linen": 2,
-      "plant_fibers": 2, // Used to tie the dressing securely
-      "healing_herb": 2,
+      "soft_wood": 2,
+      "plant_fibers": 2
     }
   },
   "recipe_healing_tonic": {

@@ -47,11 +47,12 @@ export class TargetingResolver {
                 else fallbackPool = allLiving; 
                 
                 if (Array.isArray(primaryTarget)) { 
-                    const validTargets = primaryTarget.filter(t => t && !t.isDead()); 
+                    let validTargets = primaryTarget.filter(t => t && !t.isDead()); 
+                    if (action.isSplash) validTargets = [...new Set(validTargets)]; // splash never hits the same target twice 
                     if (validTargets.length > 0) return validTargets; 
                 } 
                 
-                let finalTarget = primaryTarget; 
+                let finalTarget = Array.isArray(primaryTarget) ? null : primaryTarget; 
                 if (finalTarget && !Array.isArray(finalTarget) && finalTarget !== 'ALL') { 
                     if (!fallbackPool.includes(finalTarget)) { 
                         finalTarget = null; 
@@ -108,8 +109,10 @@ export class TargetingResolver {
             } 
             
             case 'full_ally_party': { 
-                const fullLivingParty = (battleState.party || battleState.activeParty).filter(p => p && !p.isDead()); 
-                const fullLivingEnemies = (battleState.enemies || battleState.activeEnemies).filter(e => e && !e.isDead()); 
+                // Whole roster (field + bench). Field first so on-screen animations anchor on a visible unit.
+                const withBench = (field, roster) => [...field, ...(roster || []).filter(m => !field.includes(m))].filter(m => m && !m.isDead());
+                const fullLivingParty = withBench(battleState.activeParty, battleState.partyRoster || battleState.party); 
+                const fullLivingEnemies = withBench(battleState.activeEnemies, battleState.enemyRoster || battleState.enemies); 
                 const targetPool = isParty ? fullLivingParty : fullLivingEnemies; 
                 
                 if (hitCount > 1) { 

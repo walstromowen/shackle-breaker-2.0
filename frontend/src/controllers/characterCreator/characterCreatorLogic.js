@@ -95,10 +95,12 @@ export const CREATION_DATA = {
         { label: "Smith's stash", desc: "Start with a small supply of crafting materials.", items: [{ id: "artifact_of_the_dev", qty: 1 }, { id: "healing_herb", qty: 1 }, { id: "soft_wood", qty: 3 }, { id: "stone", qty: 2 }, { id: "iron_ingot", qty: 1 }] },
         { label: "Healer's Pouch", desc: "Start with various beneficial herbs.", items: [{ id: "healing_herb", qty: 3 }, { id: "invigorating_herb", qty: 3 }, { id: "illuminating_herb", qty: 3 }] },
         { label: "Drunkard", desc: "Start with a bottle of a strange ale.", items: [{ id: "healing_herb", qty: 1 }, { id: "brew_of_madness", qty: 1 }] },
+        { label: "Torchbearer", desc: "Start with a bundle of torches for the dark places. Press T to light one.", items: [{ id: "torch", qty: 5 }] },
     ],
     COMPANIONS: [
         { label: "None", speciesId: null, desc: "Walk the path alone.", attributes: {}, equipment: {} },
         { label: "War Dog", speciesId: "DOG", desc: "Loyal and sturdy.", attributes: { vigor: 12, strength: 10 } },
+        { label: "Snow Leopard", speciesId: "SNOW_LEOPARD", desc: "A swift mountain hunter. Fast and deadly, but fragile.", attributes: { vigor: 10, strength: 12, dexterity: 16, intelligence: 3, attunement: 6 } },
         { 
             label: "Mercenary", 
             speciesId: "HUMANOID", 

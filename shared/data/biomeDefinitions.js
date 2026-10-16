@@ -204,7 +204,7 @@ export const BIOME_DEFINITIONS = {
         minimap: { grass: '#e6eef3', dirt: '#9fa9b0', water: '#4a86b5', rock: '#8c969f', stair: '#e0a030' } /* colours of the minimap (see MinimapRenderer): ground, dirt, water, the rock that the cliff levels turn into, and the walkable part of a stair */,
         allowedWeather: ['fog'] /* add 'snow' here once the weather exists */,
         music: { day: 'snowyMountainsBgmDay', night: 'snowyMountainsBgmNight', battle: 'snowyMountainsBattleBgm' } /* placeholders */,
-        battleBackgrounds: { day: 'snowyMountainsBattleDayBg', dusk: 'snowyMountainsBattleDuskBg', night: 'snowyMountainsBattleNightBg' } /* placeholders */,
+        battleBackgrounds: { day: 'plainsBattleDayBg', dusk: 'plainsBattleDuskBg', night: 'plainsBattleNightBg' } /* placeholders: the plains' backgrounds until snowy ones are registered in main.js */,
         shapeElevation: (noise, hill = 0, c = 1) => {
             /* Snowy mountains: frozen lakes keep their shape on the low ground; everywhere else the ground is nearly flat and the massif field
                carries it up through five tiers (LAYER_3 .. LAYER_7). Tall hills are frequent and very broad. */
@@ -226,6 +226,7 @@ export const BIOME_DEFINITIONS = {
                 { chance: 0.012, pool: ['SNOWY_BOULDER_1', 'SNOWY_BOULDER_2'] },
             ],
         },
+        battles: { rate: 0.005, tables: { day: 'snowy_mountains_battles_day', dusk: 'snowy_mountains_battles_day', night: 'snowy_mountains_battles_night' } } /* half the plains' / desert's 0.01 */,
     },
     HOUSE_INTERIOR: {
         id: 'HOUSE_INTERIOR',
@@ -280,13 +281,13 @@ export const BIOME_DEFINITIONS = {
            Lights (torches, a campfire, anything with a `light`) still cut through it. Leave `ambientLight` out for a biome that follows the clock. */
         ambientLight: { r: 0, g: 0, b: 0, a: 1 } /* pitch black: only lights show anything (try a: 0.85 and r, g, b: 6, 10, 28 for a dim blue dark) */,
         allowedWeather: [],
-        music: { day: 'houseInteriorBgmDay', night: 'houseInteriorBgmNight', battle: 'houseInteriorBattleBgm' } /* placeholders: swap for cave tracks */,
-        battleBackgrounds: { day: 'houseInteriorBg', dusk: 'houseInteriorBg', night: 'houseInteriorBg' } /* placeholder: swap for a cave background */,
+        music: { day: 'houseInteriorBgmDay', night: 'houseInteriorBgmNight', battle: 'plainsBattleBgm' } /* placeholders: swap for cave tracks (the battle track is the plains' for now) */,
+        battleBackgrounds: { day: 'plainsBattleDayBg', dusk: 'plainsBattleDuskBg', night: 'plainsBattleNightBg' } /* placeholder: the plains' backgrounds until there is a cave one */,
         shapeElevation: (noise) => noise,
         structures: { rate: 0, pools: [] },
         mapObjects: { [CONFIG.TILE_TYPES.LAYER_2]: [] } /* the CaveGenerator places the rocks itself (see `scatter` in interiorDefinitions.js) */,
         encounters: { rate: 0, pools: [] },
-        battles: { rate: 0, tables: null },
+        battles: { rate: 0.005, tables: { day: 'cave_battles', dusk: 'cave_battles', night: 'cave_battles' } } /* half the plains' / desert's 0.01; same table at every hour */,
     },
 };
 

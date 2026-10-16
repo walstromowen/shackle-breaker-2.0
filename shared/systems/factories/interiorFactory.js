@@ -2,27 +2,23 @@
 import { INTERIOR_DEFINITIONS } from '../../../shared/data/interiorDefinitions.js';
 import { HouseGenerator } from '../../generators/HouseGenerator.js';
 import { CaveGenerator } from '../../generators/CaveGenerator.js';
-import { CraftingHouseGenerator } from '../../generators/craftingHouseGenerator.js';
+import { CraftingHouseGenerator } from '../../generators/CraftingHouseGenerator.js';
+
+const GENERATORS = { HOUSE: HouseGenerator, CRAFTING_HOUSE: CraftingHouseGenerator, CAVE: CaveGenerator };
 
 export class InteriorFactory {
     static create(seed, interiorType, interiorId) {
-        const config = INTERIOR_DEFINITIONS[interiorType];
+        let type = interiorType, config = INTERIOR_DEFINITIONS[type];
 
         if (!config) {
-            console.warn(`[InteriorFactory] Unknown interior type: ${interiorType}. Falling back to default CAVE.`);
-            return new CaveGenerator(seed, 'CAVE', INTERIOR_DEFINITIONS['CAVE'], interiorId);
+            // An unknown type used to turn into a cave, so a house door with a misspelt type dropped you into a cave. Fall back to a house (and say so loudly).
+            console.error(`[InteriorFactory] Unknown interior type "${interiorType}": add it to interiorDefinitions.js. Using ABANDONED_HOUSE instead.`);
+            type = 'ABANDONED_HOUSE';
+            config = INTERIOR_DEFINITIONS[type];
         }
 
-        switch (config.generatorType) {
-            case 'HOUSE':
-                return new HouseGenerator(seed, interiorType, config, interiorId);
-            case 'CRAFTING_HOUSE':
-                return new CraftingHouseGenerator(seed, interiorType, config, interiorId); // <-- Route to new generator
-            case 'CAVE':
-                return new CaveGenerator(seed, interiorType, config, interiorId);
-            default:
-                console.warn(`[InteriorFactory] Unknown generatorType: ${config.generatorType}. Falling back to HOUSE.`);
-                return new CaveGenerator(seed, interiorType, INTERIOR_DEFINITIONS['HOUSE'], interiorId);
-        }
+        const Generator = GENERATORS[config.generatorType];
+        if (!Generator) throw new Error(`[InteriorFactory] ${type} has unknown generatorType "${config.generatorType}" (use HOUSE, CRAFTING_HOUSE or CAVE)`);
+        return new Generator(seed, type, config, interiorId);
     }
 }

@@ -22,7 +22,7 @@ export const ItemDefinitions = {
     icon: { col: 0, row: 0 },
     attack: { pierce: 3, slash: 2 },
     grantedAbilities: ["slash", "quick_stab"],
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       attack: { pierce: 1, slash: 1 }
     },
@@ -46,7 +46,7 @@ export const ItemDefinitions = {
     icon: { col: 1, row: 0 },
     attack: { pierce: 3, slash: 3 },
     grantedAbilities: ["slash", "thrust"],
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       attack: { pierce: 2, slash: 2 }
     },
@@ -72,7 +72,7 @@ export const ItemDefinitions = {
     attack: { blunt: 3, slash: 3 },
     grantedAbilities: ["slash", "strike"],
     harvestTool: ["axe"],
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       attack: { blunt: 2, slash: 2 }
     },
@@ -87,6 +87,26 @@ export const ItemDefinitions = {
       5: { currency: 500, materials: { "steel_ingot": 5, "iron_ingot": 10, "bronze_ingot": 15 } }
     }
   },
+  "pickaxe": {
+    id: "pickaxe",
+    name: "Pickaxe",
+    slot: "oneHand",
+    type: "weapon",
+    description: 'A stout pickaxe with a stone head lashed to a wooden haft. Built to break rock, not men, though it will do in a pinch. "A pick is patient. Give it time and it will open any mountain." - Commander Mentoras.',
+    value: 18,
+    icon: { col: 13, row: 0 },            // PLACEHOLDER: unused cell on the weapon sheet; draw a pickaxe here
+    attack: { pierce: 2, blunt: 1 },     // deliberately weak: handaxe is 3/3, dagger 3/2
+    grantedAbilities: ["strike"],
+    harvestTool: ["pickaxe"],            // objects that need it use interaction.tool: 'pickaxe'; it must be equipped
+    maxLevel: 3,
+    statGrowth: {
+      attack: { pierce: 1 }
+    },
+    upgradeCosts: {
+      2: { currency: 40, materials: { "hard_wood": 3, "stone": 8 } },
+      3: { currency: 120, materials: { "iron_ingot": 3, "hard_wood": 5 } }
+    }
+  },
     "shortbow": {
     id: "shortbow",
     name: "Shortbow",
@@ -97,7 +117,7 @@ export const ItemDefinitions = {
     icon: { col: 5, row: 0 },
     attack: { pierce: 3, slash: 3 },
     grantedAbilities: ["loose_arrow", "quick_draw"],
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       attack: { pierce: 2, slash: 2 }
     },
@@ -122,7 +142,7 @@ export const ItemDefinitions = {
     icon: { col: 6, row: 0 },
     attack: { pierce: 3, slash: 3 },
     grantedAbilities: ["loose_arrow", "quick_draw"],
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       attack: { pierce: 2, slash: 2 }
     },
@@ -148,7 +168,7 @@ export const ItemDefinitions = {
     attack: { blunt: 5},
     grantedAbilities: ["strike", "cleave"],
     harvestTool: ["hammer"],
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       attack: { blunt: 3 }
     },
@@ -172,7 +192,7 @@ export const ItemDefinitions = {
     icon: { col: 3, row: 0 },
     attack: { pierce: 5},
     grantedAbilities: ["thrust"],
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       attack: { pierce: 2 }
     },
@@ -197,7 +217,7 @@ export const ItemDefinitions = {
     attack: { slash: 5, pierce: 1 },
     grantedAbilities: ["slash"],
     harvestTool: ["sickle"],
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       attack: { slash: 3, pierce: 1 }
     },
@@ -221,7 +241,7 @@ export const ItemDefinitions = {
     icon: { col: 4, row: 0 },
     attack: { slash: 4, pierce: 3 },
     grantedAbilities: ["slash", "thrust"],
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       attack: { slash: 2, pierce: 2 }
     },
@@ -247,7 +267,7 @@ export const ItemDefinitions = {
     defense: { blunt: 2, slash: 2, pierce: 1 },
     resistance: { blunt: 0.02, slash: 0.03, pierce: 0.03},
     grantedAbilities: [],
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       defense: { blunt: 1, slash: 2, pierce: 2 },
     },
@@ -273,7 +293,7 @@ export const ItemDefinitions = {
     icon: { col: 0, row: 1 },
     attack: { fire: 5},
     grantedAbilities: ["fireball"],
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       attack: { fire: 3 }
     },
@@ -295,7 +315,7 @@ export const ItemDefinitions = {
     icon: { col: 1, row: 1 },
     attack: { water: 5},
     grantedAbilities: ["water_blast"],
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       attack: { water: 3 }
     },
@@ -317,7 +337,7 @@ export const ItemDefinitions = {
     icon: { col: 2, row: 1 },
     attack: { earth: 5},
     grantedAbilities: ["vine_lash"],
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       attack: { earth: 3 }
     },
@@ -341,7 +361,7 @@ export const ItemDefinitions = {
     icon: { col: 3, row: 1 },
     attack: { lightning: 5},
     grantedAbilities: ["shock"],
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       attack: { lightning: 3 }
     },
@@ -363,7 +383,7 @@ export const ItemDefinitions = {
     icon: { col: 4, row: 1 },
     attack: { ice: 5},
     grantedAbilities: ["ice_shard"],
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       attack: { ice: 3 }
     },
@@ -385,7 +405,7 @@ export const ItemDefinitions = {
     icon: { col: 5, row: 1 },
     attack: { wind: 5},
     grantedAbilities: ["strike"],
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       attack: { wind: 3 }
     },
@@ -404,7 +424,7 @@ export const ItemDefinitions = {
     icon: { col: 6, row: 1 },
     attack: { arcane: 5},
     grantedAbilities: ["arcane_dart"],
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       attack: { arcane: 3 }
     },
@@ -426,7 +446,7 @@ export const ItemDefinitions = {
     icon: { col: 7, row: 1 },
     attack: { light: 5},
     grantedAbilities: ["spite"],
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       attack: { light: 3 }
     },
@@ -449,7 +469,7 @@ export const ItemDefinitions = {
     icon: { col: 8, row: 1 },
     attack: { dark: 5},
     grantedAbilities: ["spirit_reap"],
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       attack: { dark: 3 }
     },
@@ -527,7 +547,7 @@ export const ItemDefinitions = {
     icon: { col: 1, row: 0 },
     defense: { slash: 1 },
     resistance: { arcane: 0.01, light: 0.01, dark: 0.01 },
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       defense: { slash: 1, blunt: 1 }
     },
@@ -546,7 +566,7 @@ export const ItemDefinitions = {
     icon: { col: 1, row: 1 },
     defense: { blunt: 1, slash: 1, pierce: 1 },
     resistance: { fire: 0.01, ice: 0.01, arcane: 0.02 },
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       defense: { blunt: 1, slash: 1, pierce: 1 }
     },
@@ -565,7 +585,7 @@ export const ItemDefinitions = {
     icon: { col: 1, row: 2 },
     defense: { blunt: 1 },
     resistance: { ice: 0.01 },
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       defense: { blunt: 1 }
     },
@@ -584,7 +604,7 @@ export const ItemDefinitions = {
     icon: { col: 1, row: 3 },
     defense: { blunt: 1, slash: 1 },
     resistance: { arcane: 0.01 },
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       defense: { blunt: 1, slash: 1 }
     },
@@ -603,7 +623,7 @@ export const ItemDefinitions = {
     icon: { col: 1, row: 4 },
     defense: { blunt: 1 },
     resistance: { fire: 0.01 },
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       defense: { blunt: 1 }
     },
@@ -623,7 +643,7 @@ export const ItemDefinitions = {
     value: 15,
     icon: { col: 2, row: 0 },
     defense: { blunt: 1, slash: 2, pierce: 1 },
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       defense: { blunt: 1, slash: 1 }
     },
@@ -641,7 +661,7 @@ export const ItemDefinitions = {
     value: 40,
     icon: { col: 2, row: 1 },
     defense: { blunt: 3, slash: 4, pierce: 2 },
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       defense: { blunt: 1, slash: 2, pierce: 1 }
     },
@@ -659,7 +679,7 @@ export const ItemDefinitions = {
     value: 12,
     icon: { col: 2, row: 2 },
     defense: { blunt: 1, slash: 2, pierce: 1 },
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       defense: { slash: 1 }
     },
@@ -677,7 +697,7 @@ export const ItemDefinitions = {
     value: 25,
     icon: { col: 2, row: 3 },
     defense: { blunt: 2, slash: 2, pierce: 1 },
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       defense: { blunt: 1, slash: 1 }
     },
@@ -696,7 +716,7 @@ export const ItemDefinitions = {
     icon: { col: 2, row: 4 },
     defense: { blunt: 1, slash: 1, pierce: 1 },
     combat: { speed: 1 },
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       defense: { pierce: 1 }
     },
@@ -717,7 +737,7 @@ export const ItemDefinitions = {
     icon: { col: 3, row: 0 },
     defense: { blunt: 2, slash: 3, pierce: 2 },
     combat: { speed: -1 },
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       defense: { blunt: 1, slash: 2, pierce: 1 }
     },
@@ -736,7 +756,7 @@ export const ItemDefinitions = {
     icon: { col: 3, row: 1 },
     defense: { blunt: 5, slash: 6, pierce: 5 },
     combat: { speed: -2 },
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       defense: { blunt: 2, slash: 2, pierce: 2 }
     },
@@ -754,7 +774,7 @@ export const ItemDefinitions = {
     value: 35,
     icon: { col: 3, row: 2 },
     defense: { blunt: 2, slash: 2, pierce: 2 },
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       defense: { blunt: 1, slash: 1, pierce: 1 }
     },
@@ -773,7 +793,7 @@ export const ItemDefinitions = {
     icon: { col: 3, row: 3 },
     defense: { blunt: 3, slash: 4, pierce: 3 },
     combat: { speed: -1 },
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       defense: { blunt: 1, slash: 2, pierce: 1 }
     },
@@ -792,7 +812,7 @@ export const ItemDefinitions = {
     icon: { col: 3, row: 4 },
     defense: { blunt: 2, slash: 2, pierce: 2 },
     combat: { speed: -1 },
-    maxLevel: 3,
+    maxLevel: 5,
     statGrowth: {
       defense: { blunt: 1, slash: 1, pierce: 1 }
     },
@@ -1109,6 +1129,36 @@ export const ItemDefinitions = {
     maxStack: 20
   },
 
+  // Key item: has no use ability, so it can't be used from a menu. Encounters check for it (has_item) and consume it (REMOVE_ITEM).
+  // The icon cell (7, 0) is an unused slot on the item sheet; point it at the real key art.
+  "small_iron_key": {
+    id: "small_iron_key",
+    name: "Small Iron Key",
+    type: "consumable",
+    description: "A small, rust-flecked iron key. It looks like it would fit the lock of a sturdy chest.",
+    value: 5,
+    icon: { col: 6, row: 0 },
+    usability: [],
+    stackable: true,
+    maxStack: 10
+  },
+  // Paste into ItemDefinitions (src/shared/data/itemDefinitions.js), in the CONSUMABLES section.
+  "torch": {
+    id: "torch",
+    name: "Torch",
+    type: "consumable",
+    description: "A pitch-soaked brand. Lit, it burns for 8 hours and throws a wide, warm orange light around you.",
+    value: 6,
+    icon: { col: 5, row: 0 },            // PLACEHOLDER: point this at a free cell of assets/icons/consumables.png (or draw a torch there)
+    usability: ['overworld'],
+    lightBuff: {
+      hours: 8,                          // in-game hours (TimeSystem: 2 game minutes per real second, so 8 h = 4 real minutes)
+      light: { radius: 7, color: '255, 130, 40', maxAlpha: 0.8, flickerAmp: 0.5, flickerSpeed: 0.12 }   // the player's normal light is radius 4, '255, 200, 100', 0.5
+    },
+    stackable: true,
+    maxStack: 10
+  },
+
   // --- ACCESSORIES ---
   "artifact_of_the_dev": {
     id: "artifact_of_the_dev",
@@ -1118,6 +1168,18 @@ export const ItemDefinitions = {
     description: "A testing artifact that buffs EVERYTHING.",
     value: 9999,
     icon: { col: 0, row: 5 },
+    // Testing only: grants EVERY ability in abilityDefinitions.js. Add new ability ids here as you create them.
+    grantedAbilities: [
+      "punch", "strike", "shield_bash", "reckless_charge", "wild_swing", "fire_punch", "slash", "uppercut",
+      "execute", "hit_and_run", "cleave", "flurry", "claw", "eviscerate", "rally", "intimidate",
+      "howl", "hide", "thrust", "bite", "quick_stab", "item_poison_knife", "item_throw_net", "loose_arrow",
+      "quick_draw", "poisoned_arrow", "triple_shot", "arcane_dart", "magic_missile", "hyper_beam", "fireball", "meteor_shower",
+      "inferno", "flamethrower", "water_blast", "waterfall", "ice_shard", "frigid_gale", "shock", "overload",
+      "earthquake", "acid_pool", "vine_lash", "boulder_throw", "solar_beam", "spite", "gravity", "spirit_reap",
+      "drain_life", "healing_rain", "purify", "rest", "brew_of_madness", "minor_heal", "minor_recover", "minor_channel",
+      "moderate_heal", "moderate_recover", "moderate_channel", "osmose", "raise_skeleton", "bear_form", "bolster", "baton_pass",
+      "counter_stance", "retreat", "switch_combatant", "take_flight", "item_bear_trap", "item_smoke_bomb"
+    ],
     attributes: { vigor: 10, strength: 10, dexterity: 10, intelligence: 10, attunement: 10 },
     resources: { maxHp: 100, maxStamina: 50, maxInsight: 50 },
     attack: { blunt: 5, slash: 5, pierce: 5, fire: 5, ice: 5, lightning: 5, arcane: 5 },

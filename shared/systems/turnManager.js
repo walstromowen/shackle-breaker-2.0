@@ -28,6 +28,9 @@ export const TURN_TYPES = {
 export class TurnManager {
     constructor(battleController) {
         this.bc = battleController;
+        // outgoing combatant -> the one who took their slot this battle (so attacks aimed at someone who
+        // switched out land on whoever stepped in)
+        this._slotSuccessors = new Map();
     }
 
     get state() { return this.bc.state; }
@@ -83,6 +86,8 @@ export class TurnManager {
                 return this.bc.endBattle();
             case TURN_TYPES.REINFORCEMENT:
                 const pool = turn.team === 'party' ? this.state.activeParty : this.state.activeEnemies;
+                const outgoing = pool[turn.slotIndex];
+                if (outgoing && outgoing !== turn.replacement) this._slotSuccessors.set(outgoing, turn.replacement);
                 pool[turn.slotIndex] = turn.replacement;
                 this.state.message = turn.message;
                 
@@ -141,13 +146,14 @@ export class TurnManager {
         let { actor, action, targets, isFirstTarget, ignoreCost, allowDeadTarget } = turn;
         
         const canTargetDead = allowDeadTarget || action?.allowDeadTarget;
+        const canTargetBench = this._allowsBench(action);
         
         if (isFirstTarget && !ignoreCost) {
             action.payCost(actor, InventorySystem);
         }
 
         for (let target of targets) {
-            const actualTarget = this.getValidTarget(target, canTargetDead);
+            const actualTarget = this.getValidTarget(target, canTargetDead, canTargetBench);
             if (!actualTarget) continue;
             
             const wasTargetDead = actualTarget.isDead();
@@ -218,11 +224,36 @@ export class TurnManager {
     }
 
     _handleActionExecution(turn) {
-        let { actor, action, target: primaryTarget, ignoreCost, allowDeadActor } = turn;
+        let { actor, action, target: primaryTarget, ignoreCost, allowDeadActor, allowDeadTarget } = turn;
         
         if (actor.isDead() && !allowDeadActor) return this.processNextTurnInQueue();
 
+        // Multi-select casts (Magic Missile, Flamethrower, Waterfall...) arrive as an ARRAY of the
+        // player's picks. Any pick can already be dead by the time the cast resolves (a faster actor
+        // killed it earlier in the round). Retarget those picks the same way _handleAnimationTurn
+        // retargets dead targets mid-cast, so the cast keeps its full shot count instead of losing one.
+        // A pick can also have switched out of the field since the action was queued (the swap resolves at
+        // the swapper's speed, which may be before this action). Those picks go to whoever stepped in.
+        const allowBench = this._allowsBench(action);
+        if (Array.isArray(primaryTarget)) {
+            primaryTarget = this._retargetPicks(primaryTarget, allowDeadTarget || action.allowDeadTarget, !!action.isSplash, allowBench);
+            if (primaryTarget.length === 0) {
+                this.state.message = `${actor.name} tried to use ${action.name}, but there were no targets left!`;
+                return this.processNextTurnInQueue();
+            }
+        } else if (primaryTarget && primaryTarget !== 'ALL' && !allowBench && this._isBenched(primaryTarget)) {
+            primaryTarget = this._activeStandIn(primaryTarget) || primaryTarget;
+        }
+
         let resolvedTargets = TargetingResolver.resolve(action, actor, primaryTarget, this.state, allowDeadActor);
+
+        // Splash abilities never hit the same target twice (e.g. a lone pick expanded by the resolver's hitCount).
+        if (action.isSplash) resolvedTargets = [...new Set(resolvedTargets)];
+
+        // Diagnostic: if this fires, the resolver itself is dropping or de-duplicating picks.
+        if (Array.isArray(primaryTarget) && resolvedTargets.length < primaryTarget.length) {
+            console.warn(`[TARGETING] ${action.name}: ${primaryTarget.length} picks but TargetingResolver returned ${resolvedTargets.length}`);
+        }
         
         if (resolvedTargets.length === 0) {
             this.state.message = `${actor.name} tried to use ${action.name}, but there were no targets left!`;
@@ -237,13 +268,19 @@ export class TurnManager {
         let messageTemplate = action.battleMessage;
         if (action.id === 'rest') messageTemplate = "{user} recovers!";
         
-        let targetName = primaryTarget ? primaryTarget.name : "the field";
+        // Name whoever is actually being hit: the picked target if it survived resolution, otherwise the
+        // first resolved target (covers arrays, 'ALL', and targets the resolver redirected to the right team).
+        const leadTarget = (primaryTarget && !Array.isArray(primaryTarget) && resolvedTargets.includes(primaryTarget))
+            ? primaryTarget
+            : resolvedTargets[0];
+        let targetName = leadTarget ? leadTarget.name : "the field";
         this.state.message = messageTemplate
             .replace(/{user}/g, actor.name)
             .replace(/{ability}/g, action.name)
             .replace(/{target}/g, targetName);
 
-        const isAoE = ['all_enemies', 'all_allies', 'full_ally_party'].includes(action.targeting?.scope) || action.targeting?.isAoE;
+        // Splash multi-target (Flamethrower...) plays ONE shared animation like an AoE, hitting only the chosen targets.
+        const isAoE = ['all_enemies', 'all_allies', 'full_ally_party'].includes(action.targeting?.scope) || action.targeting?.isAoE || action.isSplash;
         
         if (isAoE) {
             this._queueAoEAction(actor, action, resolvedTargets, ignoreCost);
@@ -289,9 +326,10 @@ export class TurnManager {
         const validTargets = [];
         const redirectedTurns = new Set();
         const allowDeadTarget = turn.allowDeadTarget || turn.action?.allowDeadTarget || false;
+        const allowBench = this._allowsBench(turn.action);
 
         for (let target of targetList) {
-            let actualTarget = this.getValidTarget(target, allowDeadTarget);
+            let actualTarget = this.getValidTarget(target, allowDeadTarget, allowBench);
             if (!actualTarget) continue;
             
             if (actualTarget !== target) {
@@ -377,7 +415,75 @@ export class TurnManager {
         this.processNextTurnInQueue();
     }
 
-    getValidTarget(target, allowDeadTarget = false) {
+    /** Only whole-roster abilities (Healing Rain...) are meant to reach members who are not on the field. */
+    _allowsBench(action) {
+        return action?.targeting?.scope === 'full_ally_party';
+    }
+
+    /** Alive, but not currently on the field (switched out / waiting in the roster). */
+    _isBenched(target) {
+        if (!target || typeof target.isDead !== 'function' || target.isDead()) return false;
+        if (target.team !== 'party' && target.team !== 'enemy') return false;
+        return !this.bc.getActivePool(target.team).includes(target);
+    }
+
+    /**
+     * Who should take a hit meant for a combatant who is no longer on the field: whoever stepped into their
+     * slot (following the chain if that one has also left), otherwise a random living combatant on the field.
+     * `taken` lists targets a distinct (splash) cast already uses. Returns null if nobody is available.
+     */
+    _activeStandIn(benched, taken = new Set()) {
+        const pool = this.bc.getActivePool(benched.team);
+        const usable = m => m && !m.isDead() && pool.includes(m) && !taken.has(m);
+
+        const seen = new Set([benched]);
+        let next = this._slotSuccessors.get(benched);
+        while (next && !seen.has(next)) {
+            if (usable(next)) return next;
+            seen.add(next);
+            next = this._slotSuccessors.get(next);
+        }
+
+        const candidates = pool.filter(usable);
+        return candidates.length > 0 ? candidates[Math.floor(Math.random() * candidates.length)] : null;
+    }
+
+    /**
+     * Swaps every pick that can no longer be hit for a replacement: a dead pick becomes a random living
+     * member of its own team (same rule as getValidTarget), a pick that switched out becomes whoever took
+     * their place. Picks with no replacement are dropped. Order of the usable picks is preserved.
+     * With distinct = true (splash abilities) a replacement is never someone already picked.
+     */
+    _retargetPicks(picks, allowDeadTarget = false, distinct = false, allowBench = false) {
+        const list = picks.filter(Boolean);
+        if (!distinct) {
+            return list.map(pick => this.getValidTarget(pick, allowDeadTarget, allowBench)).filter(Boolean);
+        }
+
+        const isUsable = t => (allowDeadTarget || !t.isDead()) && (allowBench || !this._isBenched(t));
+        const taken = new Set(list.filter(isUsable));
+        const result = [];
+        for (const pick of list) {
+            if (isUsable(pick)) {
+                if (!result.includes(pick)) result.push(pick);
+                continue;
+            }
+            let replacement;
+            if (this._isBenched(pick)) {
+                replacement = this._activeStandIn(pick, taken);
+            } else {
+                const candidates = this.bc.getActivePool(pick.team).filter(t => t && !t.isDead() && !taken.has(t));
+                replacement = candidates.length > 0 ? candidates[Math.floor(Math.random() * candidates.length)] : null;
+            }
+            if (!replacement) continue;
+            taken.add(replacement);
+            result.push(replacement);
+        }
+        return result;
+    }
+
+    getValidTarget(target, allowDeadTarget = false, allowBench = false) {
+        if (!allowBench && this._isBenched(target)) return this._activeStandIn(target);
         if (allowDeadTarget || !target.isDead()) return target;
         
         const fallbackPool = this.bc.getActivePool(target.team);

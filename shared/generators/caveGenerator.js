@@ -738,29 +738,107 @@ export class CaveGenerator {
         return true;
     }
 
+    /* A cell for something that is only drawn on the ground (bones...): any open ground the player can reach, off the stairs and away from the doorway. */
+    _groundCell(c, r) {
+        if (!this._walkable(c, r)) return false;
+        const comp = this._reach.comp[this._idx(c, r)];
+        if (comp < 0 || !this._reach.seen.has(comp)) return false;
+        if (this._stairCells.has(KEY(c, r))) return false;
+        if (Math.abs(c - this.doorCol) <= 2 && Math.abs(r - this.doorRow) <= 3) return false;
+        return true;
+    }
+
+    /* Objects of the cave, in this order:
+         1. the bottom of the deepest room: `depthObjects` (a cluster, see _placeDepth) or the single `depthObject`;
+         2. `scatter`, on the ground that is left. Each entry of `scatter` is either
+              'ID'                                       (old style: the entries share `scatterChance`, one picked per cell), or
+              { id | pool: [ids], chance, ground? }      its own chance per cell (0.01 = 1 % of the cells). `ground: true` is for things that are
+                                                         drawn on the floor and never block a step (bones): they may lie anywhere the player can
+                                                         walk. Anything else is solid, so it only goes on open ground (every neighbour open, and no
+                                                         other solid thing next to it: a few of them in a row could wall a pocket off).
+         The result of all of it depends only on the seed and the cell, so a cave is always the same. */
     _scatter() {
         this.objects = new Map();
+        this.solid = new Set();
+        this.reserved = new Set(); // cells kept clear of scatter (the square round the depth cluster)
+        this._placeDepth();
         const list = this.config.scatter || (this.config.lootObject ? [this.config.lootObject] : []);
+        if (!list.length) return;
+        const ruled = list.filter((e) => typeof e === 'object');
+        const plain = list.filter((e) => typeof e === 'string');
         const chance = this.config.scatterChance !== undefined ? this.config.scatterChance : 0.025;
-        if (list.length) {
-            for (let r = this.bounds.minR + 1; r < this.bounds.maxR; r++)
-                for (let c = this.bounds.minC + 1; c < this.bounds.maxC; c++) {
-                    if (!this._openCell(c, r)) continue;
-                    if (this._hash(c, r, 505) >= chance) continue;
-                    // never two objects side by side: a few boulders in a row could wall a pocket off
-                    let crowded = false;
-                    for (let dr = -1; dr <= 1 && !crowded; dr++)
-                        for (let dc = -1; dc <= 1; dc++) if (this.objects.has(`${c + dc},${r + dr}`)) { crowded = true; break; }
-                    if (crowded) continue;
-                    this.objects.set(`${c},${r}`, list[Math.floor(this._hash(c, r, 606) * list.length) % list.length]);
+        const crowded = (c, r) => {
+            for (let dr = -1; dr <= 1; dr++)
+                for (let dc = -1; dc <= 1; dc++) if (this.solid.has(`${c + dc},${r + dr}`)) return true;
+            return false;
+        };
+        for (let r = this.bounds.minR + 1; r < this.bounds.maxR; r++)
+            for (let c = this.bounds.minC + 1; c < this.bounds.maxC; c++) {
+                const key = `${c},${r}`;
+                if (this.objects.has(key) || this.reserved.has(key)) continue;
+                // the rules, each with its own roll (the first that hits wins, so list the common ones last)
+                let done = false;
+                for (let i = 0; i < ruled.length && !done; i++) {
+                    const e = ruled[i];
+                    if (this._hash(c, r, 700 + i * 13) >= e.chance) continue;
+                    const pool = e.pool || [e.id];
+                    const id = pool[Math.floor(this._hash(c, r, 800 + i * 13) * pool.length) % pool.length];
+                    if (e.ground) {
+                        if (!this._groundCell(c, r)) continue;
+                        this.objects.set(key, id);
+                    } else {
+                        if (!this._openCell(c, r) || crowded(c, r)) continue;
+                        this.objects.set(key, id);
+                        this.solid.add(key);
+                    }
+                    done = true;
                 }
-        }
-        // something at the bottom of the deepest room, when the definition asks for it
-        if (this.config.depthObject && this.rooms.length) {
-            const rm = this.rooms[0];
-            for (let k = 0; k < 40; k++) {
-                const c = rm.cx + (k % 5) - 2, r = rm.cy + Math.floor(k / 5) - 2;
-                if (this._openCell(c, r)) { this.objects.set(`${c},${r}`, this.config.depthObject); break; }
+                if (done || !plain.length) continue;
+                // old style
+                if (!this._openCell(c, r) || this._hash(c, r, 505) >= chance || crowded(c, r)) continue;
+                this.objects.set(key, plain[Math.floor(this._hash(c, r, 606) * plain.length) % plain.length]);
+                this.solid.add(key);
+            }
+    }
+
+    /* The bottom of the deepest room. `depthObjects: [{ id, dx, dy }, ...]` is a cluster with offsets from one anchor cell (the first spot, spiralling out from the
+       middle of the main room, where every cell of the cluster is open ground on the lowest level of the cave (its floor), with the cell in front of it (south) open as well, so it can be reached,
+       and every cell of the square the cluster spans is walkable ground on that level; that square is then kept free of scattered objects).
+       The old single `depthObject` is the cluster [{ id, dx: 0, dy: 0 }]. */
+    _placeDepth() {
+        const cluster = this.config.depthObjects || (this.config.depthObject ? [{ id: this.config.depthObject, dx: 0, dy: 0 }] : null);
+        if (!cluster || !this.rooms.length) return;
+        // the bottom is the cave floor; when the clean-up has left too little of it (or filled it in), the lowest ledge with room for the cluster
+        const levels = new Set();
+        for (let r = this.bounds.minR; r <= this.bounds.maxR; r++)
+            for (let c = this.bounds.minC; c <= this.bounds.maxC; c++) if (this._groundCell(c, r)) levels.add(this._lv(c, r));
+        const rm = this.rooms[0];
+        // the square (bounding box) the cluster spans: kept clear of everything else
+        const x0 = Math.min(...cluster.map((o) => o.dx)), x1 = Math.max(...cluster.map((o) => o.dx));
+        const y0 = Math.min(...cluster.map((o) => o.dy)), y1 = Math.max(...cluster.map((o) => o.dy));
+        const area = [];
+        for (let ar = y0; ar <= y1; ar++) for (let ac = x0; ac <= x1; ac++) area.push([ac, ar]);
+        const reach = Math.max(this.halfC, this.halfR);
+        const spots = [];
+        for (let dr = -reach; dr <= reach; dr++) for (let dc = -reach; dc <= reach; dc++) spots.push([dc, dr, dc * dc + dr * dr]);
+        spots.sort((a, b) => a[2] - b[2] || a[1] - b[1] || a[0] - b[0]);
+        for (const low of [...levels].sort((a, b) => a - b)) {
+            for (const [dc, dr] of spots) {
+                const c = rm.cx + dc, r = rm.cy + dr;
+                if (this._lv(c, r) !== low) continue;
+                const ok = cluster.every((o) => this._lv(c + o.dx, r + o.dy) === low && this._openCell(c + o.dx, r + o.dy)) &&
+                    cluster.every((o) => this._openCell(c + o.dx, r + o.dy + 1)) &&
+                    // every cell of the square the cluster spans is ordinary ground on that level, so the whole square can be walked
+                    area.every(([ac, ar]) => this._lv(c + ac, r + ar) === low && this._groundCell(c + ac, r + ar));
+                if (!ok) continue;
+                for (const o of cluster) {
+                    const key = `${c + o.dx},${r + o.dy}`;
+                    this.objects.set(key, o.id);
+                    this.solid.add(key);
+                }
+                for (const [ac, ar] of area) this.reserved.add(`${c + ac},${r + ar}`);
+                this.depthSpot = { c, r };
+                return;
             }
         }
     }

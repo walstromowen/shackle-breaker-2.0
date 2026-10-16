@@ -26,11 +26,8 @@ export const aftermath = {
                         {
                             weight: 100,
                             results: [
+                                // The find message (loot_success) comes first; the loot itself is handed out when the player takes it there
                                 { type: "SET_CONTEXT_FLAG", payload: { flagId: "looted_battlefield" } },
-                                { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "battlefield_loot", rolls: 1 } },
-                                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
-                                // Removes the map object so re-entering can't farm the same loot
-                                { type: "DESTROY_OBJECT" },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "loot_success" } }
                             ]
                         }
@@ -69,12 +66,21 @@ export const aftermath = {
                     customActionText: "{name} carefully searches among the fallen for signs of life...",
                     successOutcomes: [
                         {
-                            weight: 100,
+                            // Most likely result: a wounded warrior
+                            weight: 2,
                             results: [
                                 // FIX: success now sets the flag too, so the XP can't be farmed by repeating the search
                                 { type: "SET_CONTEXT_FLAG", payload: { flagId: "searched_survivors" } },
                                 { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "wounded_warrior" } }
+                            ]
+                        },
+                        {
+                            // Rarer result: a fallen officer. No flag and no XP here (the officer stage pays out), so the player can
+                            // leave the body and search again for the wounded warrior.
+                            weight: 1,
+                            results: [
+                                { type: "ADVANCE_STAGE", payload: { stageId: "fallen_officer" } }
                             ]
                         }
                     ],
@@ -89,39 +95,6 @@ export const aftermath = {
                         {
                             weight: 1,
                             results: [
-                                { type: "ADVANCE_STAGE", payload: { stageId: "madman_ambush" } }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    text: "[INT] Search for a fallen officer.",
-                    type: "skill_check",
-                    attribute: "intelligence",
-                    threshold: 13,
-                    conditions: [
-                        { type: "context_flag_not_set", flagId: "failed_officer_search" },
-                        { type: "has_tag", tag: "HUMANOID" }
-                    ],
-                    customActionText: "{name} scans the bodies for anyone with finer armor or an officer's insignia...",
-                    successOutcomes: [
-                        {
-                            weight: 100,
-                            results: [{ type: "ADVANCE_STAGE", payload: { stageId: "fallen_officer" } }]
-                        }
-                    ],
-                    failureOutcomes: [
-                        {
-                            weight: 3,
-                            results: [
-                                { type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_officer_search" } },
-                                { type: "ADVANCE_STAGE", payload: { stageId: "no_officer_found" } }
-                            ]
-                        },
-                        {
-                            weight: 1,
-                            results: [
-                                { type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_officer_search" } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "madman_ambush" } }
                             ]
                         }
@@ -149,14 +122,25 @@ export const aftermath = {
             text: "{name} finds something useful on one of the fallen warriors.",
             decisions: [
                 {
-                    text: "Reassess the area.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "aftermath" } }] }]
+                    text: "Take what you found.",
+                    outcomes: [
+                        {
+                            weight: 100,
+                            results: [
+                                { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "battlefield_loot", rolls: 1 } },
+                                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
+                                // Removes the map object so re-entering can't farm the same loot
+                                { type: "DESTROY_OBJECT" },
+                                { type: "ADVANCE_STAGE", payload: { stageId: "aftermath" } }
+                            ]
+                        }
+                    ]
                 }
             ]
         },
         loot_fail: {
             displayText: "Nothing of Value",
-            image: { col: 0, row: 0 },
+            image: { col: 2, row: 0 },
             text: "{name} thoroughly searches the area, but sees nothing worth taking.",
             decisions: [
                 {
@@ -167,19 +151,8 @@ export const aftermath = {
         },
         search_fail: {
             displayText: "No Life Signs",
-            image: { col: 0, row: 0 },
+            image: { col: 2, row: 0 },
             text: "{name} searches high and low, but doesn't find any survivors.",
-            decisions: [
-                {
-                    text: "Reassess the area.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "aftermath" } }] }]
-                }
-            ]
-        },
-        no_officer_found: {
-            displayText: "Common Soldiers",
-            image: { col: 0, row: 0 },
-            text: "{name} turns over body after body, but finds only rank-and-file soldiers. If an officer fell here, someone has already taken everything that marked them.",
             decisions: [
                 {
                     text: "Reassess the area.",
@@ -195,7 +168,7 @@ export const aftermath = {
         // Swap it for a real quest ID once the quest is defined.
         fallen_officer: {
             displayText: "A Fallen Officer",
-            image: { col: 1, row: 0 },
+            image: { col: 3, row: 0 },
             text: "{name} spots a figure in finer armor lying apart from the rest, a Royal Guard insignia still pinned to the chest. A leather satchel is strapped across the body.",
             decisions: [
                 {
@@ -204,18 +177,58 @@ export const aftermath = {
                     customActionText: "{name} carefully unbuckles the satchel and sorts through what's inside...",
                     outcomes: [
                         {
-                            // Outcome A: sealed orders -> new quest
+                            // Outcome A: sealed orders -> find message first, the quest is received on the next stage
                             weight: 1,
+                            results: [{ type: "ADVANCE_STAGE", payload: { stageId: "officer_orders_found" } }]
+                        },
+                        {
+                            // Outcome B: the officer's personal gear -> find message first, the item is received on the next stage
+                            weight: 1,
+                            results: [{ type: "ADVANCE_STAGE", payload: { stageId: "officer_gear_found" } }]
+                        }
+                    ]
+                },
+                {
+                    text: "Leave the body.",
+                    customActionText: "{name} steps away from the officer's body.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "aftermath" } }] }]
+                }
+            ]
+        },
+
+        // The find messages for the officer's satchel. The reward is only handed out when the player takes it here.
+        officer_orders_found: {
+            displayText: "Sealed Orders",
+            image: { col: 3, row: 1 },
+            text: "Tucked beneath the officer's rations, {name} finds a wax-sealed letter still bearing the Royal Guard crest.",
+            decisions: [
+                {
+                    text: "Take the orders.",
+                    outcomes: [
+                        {
+                            weight: 100,
                             results: [
                                 { type: "START_QUEST", payload: { questId: "alterian_sealed_orders", questName: "Sealed Orders" } },
                                 { type: "AWARD_XP", payload: { amount: 10, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
-                        },
+                        }
+                    ]
+                }
+            ]
+        },
+
+        officer_gear_found: {
+            displayText: "The Officer's Gear",
+            image: { col: 0, row: 2 },
+            text: "Wrapped in the officer's cloak, {name} finds personal gear that survived the battle.",
+            decisions: [
+                {
+                    text: "Take the gear.",
+                    outcomes: [
                         {
-                            // Outcome B: the officer's personal gear -> item
-                            weight: 1,
+                            weight: 100,
                             results: [
                                 { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "alterian_officer_loot", rolls: 1 } },
                                 { type: "AWARD_XP", payload: { amount: 10, target: "active_character" } },
@@ -224,11 +237,6 @@ export const aftermath = {
                             ]
                         }
                     ]
-                },
-                {
-                    text: "Leave the body.",
-                    customActionText: "{name} steps away from the officer's body.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "aftermath" } }] }]
                 }
             ]
         },
@@ -288,8 +296,6 @@ export const aftermath = {
                             results: [
                                 { type: "SET_CONTEXT_FLAG", payload: { flagId: "tried_robbing" } },
                                 { type: "MODIFY_CORRUPTION", payload: { amount: 5, target: "active_character" } },
-                                { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "battlefield_loot", rolls: 1 } },
-                                { type: "DESTROY_OBJECT" },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "robbed_warrior" } }
                             ]
                         }
@@ -324,12 +330,21 @@ export const aftermath = {
         // searched_survivors is already set, so no second survivor can be found.
         robbed_warrior: {
             displayText: "Cold-Hearted",
-            image: { col: 0, row: 1 },
+            image: { col: 2, row: 1 },
             text: "{name} finds something on the wounded warrior. Meanwhile, the warrior breathes his last breath.",
             decisions: [
                 {
-                    text: "Reassess the area.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "aftermath" } }] }]
+                    text: "Take what he carried.",
+                    outcomes: [
+                        {
+                            weight: 100,
+                            results: [
+                                { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "battlefield_loot", rolls: 1 } },
+                                { type: "DESTROY_OBJECT" },
+                                { type: "ADVANCE_STAGE", payload: { stageId: "aftermath" } }
+                            ]
+                        }
+                    ]
                 }
             ]
         },
@@ -384,7 +399,7 @@ export const aftermath = {
                             results: [
                                 { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                                 // FIX: RECRUIT_ENTITY -> RECRUIT_CHARACTER (the event the other encounters use)
-                                { type: "RECRUIT_CHARACTER", payload: { entityId: "WATCHMAN" } },
+                                { type: "RECRUIT_CHARACTER", payload: { entityId: "LEGIONARY_COMPANION" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
@@ -419,7 +434,7 @@ export const aftermath = {
         // --- Dialogue Branching Stages ---
         survivor_story: {
             displayText: "A Narrow Escape",
-            image: { col: 1, row: 1 },
+            image: { col: 1, row: 2 },
             text: "\"A group of madmen chased me straight into this mess. It's a miracle you showed up, but don't expect any more thanks than that.\"",
             decisions: [
                 {
@@ -444,7 +459,7 @@ export const aftermath = {
 
         survivor_chased_reply: {
             displayText: "No Answers",
-            image: { col: 1, row: 1 },
+            image: { col: 1, row: 2 },
             text: "\"How should I know? Those madmen will chase anything that moves. Speaking of which, you should get a move on if you know what is good for you.\"",
             decisions: [
                 {
@@ -455,9 +470,9 @@ export const aftermath = {
         },
 
         survivor_identity: {
-            displayText: "A Royal Past",
-            image: { col: 1, row: 1 },
-            text: "\"Let's just say I used to be in the Alterian Royal Guard. Catch my meaning?\"",
+            displayText: "Standard Issue",
+            image: { col: 1, row: 2 },
+            text: "\"Legionary, third cohort, Altus legion. Or I was, before all this. Catch my meaning?\"",
             decisions: [
                 {
                     text: "Return to conversation.",
@@ -468,7 +483,7 @@ export const aftermath = {
 
         survivor_refusal: {
             displayText: "Safe? Hah!",
-            image: { col: 1, row: 1 },
+            image: { col: 1, row: 2 },
             text: "\"Safe! Hah! You won't last long out here. I can't remember the last time I felt safe, much less so traveling with others.\"",
             decisions: [
                 {
@@ -480,7 +495,7 @@ export const aftermath = {
 
         survivor_bribe_demand: {
             displayText: "Incentive",
-            image: { col: 1, row: 1 },
+            image: { col: 1, row: 2 },
             text: "\"Hmm... I am not convinced...\"",
             decisions: [
                 {
@@ -492,7 +507,7 @@ export const aftermath = {
                             weight: 100,
                             results: [
                                 { type: "MODIFY_CURRENCY", payload: { amount: -50 } },
-                                { type: "RECRUIT_CHARACTER", payload: { entityId: "WATCHMAN" } },
+                                { type: "RECRUIT_CHARACTER", payload: { entityId: "LEGIONARY_COMPANION" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
@@ -526,7 +541,7 @@ export const aftermath = {
 
         alterian_ambush: {
             displayText: "The Dead Stir!",
-            image: { col: 1, row: 1 },
+            image: { col: 0, row: 3 },
             bgm: "plainsBattleBgm",
             text: "While examining the bodies, one of them stirs and glares at {name}! As if on command, others do the same!",
             decisions: [
@@ -539,7 +554,7 @@ export const aftermath = {
 
         warrior_betrayal_ambush: {
             displayText: "Betrayal!",
-            image: { col: 1, row: 1 },
+            image: { col: 1, row: 3 },
             bgm: "plainsBattleBgm",
             text: "As {name} tends to the warrior's wounds, he violently grabs {name} and draws his weapon! Soon, other fallen warriors rise around you!",
             decisions: [

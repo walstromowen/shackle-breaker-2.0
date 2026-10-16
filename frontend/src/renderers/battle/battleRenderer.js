@@ -88,7 +88,11 @@ export class BattleRenderer {
                 if (vfxCues.length > 0) {
                     const centerPos = { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 };
                     const sourcePos = this.combatantRenderer.getEntityPosition(anim.actor, state) || centerPos;
-                    const targetPos = (anim.targets && anim.targets.length > 0) ? (this.combatantRenderer.getEntityPosition(anim.targets[0], state) || sourcePos) : sourcePos;
+                    // On-screen positions of every target. Benched members (e.g. hit by Healing Rain) have none.
+                    const targetSpots = (anim.targets || [])
+                        .map(t => this.combatantRenderer.getEntityPosition(t, state))
+                        .filter(Boolean);
+                    const targetPos = targetSpots[0] || sourcePos;
 
                     // --- BULLETPROOF ENEMY CHECK ---
                     // Safely evaluate if the actor is an enemy, handling both Object and String ID references
@@ -108,14 +112,26 @@ export class BattleRenderer {
                         // --- MULTI-TARGET MULTIPLEXER ---
                         // If the effect is a flat 'spawn' or a particle 'burst' on the target,
                         // duplicate it for each target individual in a splash attack.
-                        if (cue.origin === 'target' && (cue.type === 'spawn' || cue.type === 'burst') && anim.targets && anim.targets.length > 0) {
-                            anim.targets.forEach(target => {
-                                const tPos = this.combatantRenderer.getEntityPosition(target, state) || sourcePos;
+                        if (cue.origin === 'target' && (cue.type === 'spawn' || cue.type === 'burst') && targetSpots.length > 0) {
+                            targetSpots.forEach(tPos => {
                                 if (cue.type === 'burst') {
                                     this.vfxRenderer.spawnBurst(tPos.x, tPos.y, cue.count || 10, enhancedConfig);
                                 } else if (cue.type === 'spawn') {
                                     this.vfxRenderer.spawn({ ...enhancedConfig, startX: tPos.x, startY: tPos.y });
                                 }
+                            });
+                        } else if (cue.type === 'travel' && targetSpots.length > 1) {
+                            // --- SPLASH PROJECTILES ---
+                            // Send the projectile / stream to EVERY target, not just the first one.
+                            targetSpots.forEach(tPos => {
+                                this.vfxRenderer.spawn({
+                                    ...enhancedConfig,
+                                    startX: sourcePos.x,
+                                    startY: sourcePos.y,
+                                    endX: tPos.x,
+                                    endY: tPos.y,
+                                    movement: cue.config.movement || 'linear'
+                                });
                             });
                         } else {
                             // --- STANDARD FALLBACK ---

@@ -1,3 +1,187 @@
+/* =============================================================================================================
+   STRUCTURES
+
+   Two kinds of entry:
+     PREFAB     a fixed rectangle of terrain + objects, written into the world as it is.
+     BLUEPRINT  a recipe the WorldManager follows: a hub prefab, roads that grow out of it, and buildings that are
+                placed along those roads (see WorldManager._planBlueprint).
+
+   Everything below the helpers is plain data you can tune.
+
+   Grids are indexed [row][col]. In a terrain grid  null = leave the natural tile, 1 = dirt, 2 = grass.
+   In an objects grid  null = nothing (and no random tree / rock is allowed to grow there).
+   ============================================================================================================= */
+
+/* ---------- small helpers, only used to build the tables below ---------- */
+
+const grid = (w, h, v = null) => Array.from({ length: h }, () => Array(w).fill(v));
+
+/* ground decoration that never blocks a step; sprinkled over yards and the plaza (the WorldManager picks per cell,
+   so no two yards look the same). Repeated names make a kind more likely. */
+const GROUND_DECOR = [
+    'GRASS_COVERAGE_1', 'GRASS_COVERAGE_2', 'GRASS_COVERAGE_3', 'GRASS_COVERAGE_1', 'GRASS_COVERAGE_2',
+    'TULIPS_WHITE', 'TULIPS_ORANGE', 'TULIPS_RED',
+    'SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3', 'STICK',
+];
+
+/* ---------- fenced yards (houses, workshops, storehouses) ----------
+
+   Every building is a fenced yard with the same anatomy (8 wide):
+
+          col  0 1 2 3 4 5 6 7
+      row 0    . . . . . . . .      margin (kept clear, the footpath runs through it)
+      row 1    . + - - - - + .      fence
+      row 2    . | H D . . | .      H = house, D = its door (the door faces south into the yard)
+      ...      . | . . . . | .
+      row y2   . + - - - - + .      fence
+      row h-1  . . . . . . . .      margin
+
+   A yard has ONE gate and a dirt footpath from the door to the gate and on to the edge of the prefab, so the
+   footpath always ends right next to the road. The WorldManager picks the variant whose gate faces the road:
+
+      S   gate in the south fence                 (building north of an east-west road)
+      E   gate in the east fence                  (building west of a north-south road)
+      W   gate in the west fence                  (building east of a north-south road)
+      EN  gate in the east fence, alley north     (building south of an east-west road)
+      WN  gate in the west fence, alley north
+
+   The house sprite (4 x 4) stays where it always was, at (2, 2), with its door at (3, 2).
+   `wear` and `scatter` are applied by the WorldManager per placed yard (broken fence pieces, flowers and rocks). */
+
+const GATES = {
+    S: { side: 'S' },
+    E: { side: 'E' },
+    W: { side: 'W' },
+    EN: { side: 'E', alley: true },
+    WN: { side: 'W', alley: true },
+};
+
+function buildYard(spec, gate) {
+    const { w, h } = spec;
+    const x1 = 1, y1 = 1, x2 = 6, y2 = h - 2;
+    const g = GATES[gate];
+    const terrain = grid(w, h);
+    const objects = grid(w, h);
+
+    // the fence
+    for (let x = x1 + 1; x < x2; x++) { objects[y1][x] = 'WOODEN_FENCE_H'; objects[y2][x] = 'WOODEN_FENCE_H'; }
+    for (let y = y1 + 1; y < y2; y++) { objects[y][x1] = 'WOODEN_FENCE_V'; objects[y][x2] = 'WOODEN_FENCE_V'; }
+    objects[y1][x1] = 'WOODEN_FENCE_TL_CORNER';
+    objects[y1][x2] = 'WOODEN_FENCE_TR_CORNER';
+    objects[y2][x1] = 'WOODEN_FENCE_BL_CORNER';
+    objects[y2][x2] = 'WOODEN_FENCE_BR_CORNER';
+
+    // the house and its door, then the props
+    if (spec.house) { objects[2][2] = spec.house; objects[2][3] = spec.door; }
+    for (const [x, y, id] of spec.props) objects[y][x] = id;
+
+    // the footpath: from the cell in front of the door (the anchor) through the gate to the edge of the prefab
+    const [ax, ay] = spec.anchor;
+    const gr = spec.gateRow;
+    const path = [];
+    let gx, gy;
+    if (g.side === 'S') {
+        gx = ax; gy = y2;
+        for (let y = ay; y < h; y++) path.push([ax, y]);
+    } else {
+        for (let y = ay; y <= gr; y++) path.push([ax, y]);
+        if (g.side === 'E') { gx = x2; gy = gr; for (let x = ax + 1; x < w; x++) path.push([x, gr]); }
+        else { gx = x1; gy = gr; for (let x = ax - 1; x >= 0; x--) path.push([x, gr]); }
+        if (g.alley) {
+            const ex = g.side === 'E' ? w - 1 : 0;
+            for (let y = gr - 1; y >= 0; y--) path.push([ex, y]);
+        }
+    }
+    for (const [x, y] of path) terrain[y][x] = 1;
+    objects[gy][gx] = null; // the gate
+
+    // where the footpath leaves the prefab and the way it points: the road has to be on the other side of that cell
+    const [ex, ey] = path[path.length - 1];
+    const entry = g.side === 'S' ? { x: ex, y: ey, dx: 0, dy: 1 }
+        : g.alley ? { x: ex, y: ey, dx: 0, dy: -1 }
+        : g.side === 'E' ? { x: ex, y: ey, dx: 1, dy: 0 }
+        : { x: ex, y: ey, dx: -1, dy: 0 };
+
+    return {
+        type: 'PREFAB',
+        gate,
+        entry,
+        width: w,
+        height: h,
+        terrain,
+        objects,
+        wear: { fenceBreak: 0.12 },
+        scatter: { chance: 0.32, pool: GROUND_DECOR, rect: spec.scatterRect },
+    };
+}
+
+/* the default look of a yard is the S variant (so the entry also works as a plain prefab); `variants` has all five */
+function yard(spec) {
+    const variants = {};
+    for (const key of Object.keys(GATES)) variants[key] = buildYard(spec, key);
+    return { ...variants.S, variants };
+}
+
+/* ---------- the hub: a plaza where the roads meet ----------
+
+   11 x 11. Two 3-wide roads cross in the middle (rows / cols 4..6) inside a 5 x 5 dirt plaza with the campfire in the
+   middle. The four corners hold a little scene each: a loot corner, a market table, a garden, a storage corner.
+   The roads that grow out of the four sides start exactly on the 3-wide road cells. */
+
+function buildCenter() {
+    const N = 11;
+    const terrain = grid(N, N);
+    const objects = grid(N, N);
+    const dirt = (x, y) => (x >= 4 && x <= 6) || (y >= 4 && y <= 6) || (x >= 3 && x <= 7 && y >= 3 && y <= 7);
+
+    for (let y = 0; y < N; y++) {
+        for (let x = 0; x < N; x++) {
+            if (dirt(x, y)) { terrain[y][x] = 1; continue; }
+            // grass wherever dirt is next door, so the edge of the road is always a clean dirt / grass edge; the far corners stay natural
+            let nearDirt = false;
+            for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (dirt(x + dx, y + dy)) nearDirt = true;
+            if (nearDirt) terrain[y][x] = 2;
+        }
+    }
+
+    const put = (x, y, id) => { objects[y][x] = id; };
+    put(5, 5, 'CAMPFIRE');
+    put(3, 3, 'STOOL'); put(7, 3, 'STOOL'); put(3, 7, 'STOOL'); put(7, 7, 'STOOL');
+
+    // north-west: a loot corner
+    put(1, 1, 'WOODEN_CHEST'); put(2, 1, 'TREE_STUMP'); put(1, 2, 'SMALL_ROCKS_1'); put(2, 2, 'GRASS_COVERAGE_1');
+    // north-east: a market table
+    put(8, 1, 'TABLE_LONG'); put(10, 1, 'BARREL'); put(9, 2, 'CRATE_SACK'); put(8, 3, 'TULIPS_WHITE');
+    // south-east: a garden gone wild
+    put(9, 9, 'TREE_STUMP'); put(8, 9, 'TULIPS_RED'); put(9, 8, 'TULIPS_WHITE'); put(8, 8, 'GRASS_COVERAGE_2'); put(10, 9, 'SMALL_ROCKS_2');
+    // south-west: storage
+    put(1, 9, 'CRATE'); put(2, 9, 'BARREL'); put(1, 8, 'SACKS'); put(2, 8, 'GRASS_COVERAGE_3');
+
+    return {
+        type: 'PREFAB',
+        width: N,
+        height: N,
+        terrain,
+        objects,
+        scatter: { chance: 0.18, pool: GROUND_DECOR },
+    };
+}
+
+/* ---------- the buildings ---------- */
+
+/* props sit on row 5 (the second free row of the yard) so the footpath along row 4 / column 3 stays open */
+const HOUSE_SPEC = {
+    w: 8, h: 8, anchor: [3, 3], gateRow: 4, scatterRect: { x: 2, y: 3, w: 4, h: 3 },
+    house: 'ABANDONED_HOUSE_1', door: 'HOUSE_DOOR_WOODEN',
+    props: [[2, 5, 'TREE_STUMP'], [5, 5, 'BARREL']],
+};
+
+const WORKSHOP = (door, props) => ({
+    w: 8, h: 8, anchor: [3, 3], gateRow: 4, scatterRect: { x: 2, y: 3, w: 4, h: 3 },
+    house: 'ABANDONED_HOUSE_2', door,
+    props,
+});
+
 export const STRUCTURES = {
     // ==========================================
     // SUPER STRUCTURE (The Blueprint)
@@ -5,203 +189,115 @@ export const STRUCTURES = {
     ABANDONED_VILLAGE: {
         type: 'BLUEPRINT',
         centerPrefab: 'ABANDONED_CENTER',
-        pathTile: 1,
-        branchChance: 0.8,
-        branchLength: { min: 20, max: 35 },
-        turnChance: 0.20,
-        minStepsBetweenTurns: 5,
+
+        /* ROADS */
+        pathTile: 1,                              // 1 = dirt
+        roadWidth: 3,                             // tiles; odd numbers only (an even number is rounded down to the odd one below)
+        roadGap: 1,                               // grass kept between two roads that run side by side
+        edgeWear: 0.10,                           // share of the road's two edge columns left as grass, so the edge is ragged, never the middle
+        verge: 1,                                 // tiles beside a road kept free of random trees / rocks
+        branchChance: 0.8,                        // chance for each of the hub's four sides to grow a main road (at least two always do)
+        branchLength: { min: 30, max: 50 },
+        turnChance: 0.10,
+        minStepsBetweenTurns: 8,
+        sideStreets: {                            // short streets that fork off the main roads
+            chance: 0.6,                          //   per candidate spot
+            spacing: 8,                           //   steps between two forks on one road
+            startAt: 6,                           //   no fork before this many steps from the hub
+            endBefore: 5,                         //   ... or this close to the end of the road
+            length: { min: 8, max: 20 },
+            max: 14,                              //   per village
+        },
+
+        /* BUILDINGS (along every road, on both sides, gate facing the road) */
+        buildingDensity: 0.9,                     // chance a free spot along a road gets a building
+        maxBuildings: 60,
+        setback: 0,                               // extra grass between a yard and the road
+        /* weight = how often it is picked; required = at least one per village (when there is room); max = cap per village */
         modules: [
-            { prefab: 'ABANDONED_HOUSE',      spacing: 6, offset: 1, spawnChance: 0.1 },
-            { prefab: 'ABANDONED_STORAGE',    spacing: 6, offset: 1, spawnChance: 0.1 },
-            
+            { prefab: 'ABANDONED_HOUSE',      weight: 5 },
+            { prefab: 'ABANDONED_COTTAGE',    weight: 4 },
+            { prefab: 'ABANDONED_FARMHOUSE',  weight: 3 },
+            { prefab: 'ABANDONED_HUT',        weight: 3 },
+            { prefab: 'ABANDONED_STORAGE',    weight: 2 },
+
             // Crafting Station Variants
-            { prefab: 'ABANDONED_BLACKSMITH', spacing: 6, offset: 1, spawnChance: 1.2 },
-            { prefab: 'ABANDONED_CARPENTER',  spacing: 6, offset: 1, spawnChance: 0.2 },
-            { prefab: 'ABANDONED_MASON',      spacing: 6, offset: 1, spawnChance: 0.2 },
-            { prefab: 'ABANDONED_TAILOR',     spacing: 6, offset: 1, spawnChance: 0.2 }
-        ]
+            { prefab: 'ABANDONED_BLACKSMITH', weight: 1.5, required: true, max: 2 },
+            { prefab: 'ABANDONED_CARPENTER',  weight: 1,   required: true, max: 1 },
+            { prefab: 'ABANDONED_MASON',      weight: 1,   required: true, max: 1 },
+            { prefab: 'ABANDONED_TAILOR',     weight: 1,   required: true, max: 1 },
+        ],
+
+        /* TREES along the roads and in the empty lots (a tree keeps its whole footprint off roads and yards). `chance` is per free cell
+           inside `reach` of a road, cells right beside a road are `roadsideBoost` times as likely, and `max` caps a village. */
+        trees: {
+            chance: 0.10,
+            reach: 18,
+            clearRoad: 2,
+            clearBuilding: 1,
+            roadsideBoost: 5,
+            max: 320,
+            pool: [
+                { id: 'OAK_TREE_1', weight: 3 },
+                { id: 'PINE_TREE', weight: 4 },
+                { id: 'TREE_STUMP', weight: 1 },
+            ],
+        },
+
+        /* STREET DRESSING (on the grass just beside the road; the solid ones are never in the way of the road) */
+        streetProps: {
+            chance: 0.10,                         // per step, per side
+            pool: [
+                'GRASS_COVERAGE_1', 'GRASS_COVERAGE_2', 'GRASS_COVERAGE_3',
+                'TULIPS_WHITE', 'TULIPS_RED',
+                'SMALL_ROCKS_1', 'SMALL_ROCKS_2',
+                'TREE_STUMP', 'BARREL', 'CRATE',
+            ],
+        },
     },
 
     // ==========================================
     // SUB-STRUCTURES (The Modular Pieces)
     // ==========================================
-    ABANDONED_CENTER: {
-        type: 'PREFAB',
-        width: 7,
-        height: 7,
-        terrain: [
-            [null, null, 2, 1, 2, null, null],
-            [null, null,    2,    1,    2, null, null],
-            [2,    2,    2,    1,    2,    2, 2],
-            [1,    1,    1,    1,    1,    1, 1],
-            [2,    2,    2,    1,    2,    2, 2],
-            [null, null,    2,    1,    2, null, null],
-            [null, null, 2, 1, 2, null, null],
-        ],
-        objects: [
-            [null, null, null, null, null, null, null],
-            [null, 'GRASS_COVERAGE_1', 'TREE_STUMP', null, 'SMALL_ROCKS_1', null, null],
-            [null, null, null, null, null, null, null],
-            [null, 'TULIPS_WHITE', null, 'CAMPFIRE', null, null, null],
-            [null, null, null, null, null, null, null],
-            [null, null, 'WOODEN_CHEST', null, 'TREE_STUMP', 'GRASS_COVERAGE_2', null],
-            [null, null, null, null, null, null, null]
-        ]
-    },
+    ABANDONED_CENTER: buildCenter(),
 
-    ABANDONED_HOUSE: {
-        type: 'PREFAB',
-        width: 8,
-        height: 8,
-        terrain: [
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null]
-        ],
-        objects: [
-            [null, null, null, null, null, null, null, null],
-            [null, 'WOODEN_FENCE_TL_CORNER', 'WOODEN_FENCE_H', 'WOODEN_FENCE_H', 'WOODEN_FENCE_H', 'WOODEN_FENCE_H', 'WOODEN_FENCE_TR_CORNER', null],
-            [null, 'WOODEN_FENCE_V', 'ABANDONED_HOUSE_1', 'HOUSE_DOOR_WOODEN', null, null, 'WOODEN_FENCE_V', null],
-            [null, 'WOODEN_FENCE_V', 'GRASS_COVERAGE_1', null, null, null, 'WOODEN_FENCE_V', null],
-            [null, 'WOODEN_FENCE_V', 'GRASS_COVERAGE_2', null, null, null, 'WOODEN_FENCE_V', null],
-            [null, 'WOODEN_FENCE_V', null, null, null, 'GRASS_COVERAGE_1', 'WOODEN_FENCE_V', null],
-            [null, 'WOODEN_FENCE_BL_CORNER', 'WOODEN_FENCE_H', 'GRASS_COVERAGE_1', 'GRASS_COVERAGE_1', 'WOODEN_FENCE_H', 'WOODEN_FENCE_BR_CORNER', null],
-            [null, null, null, null, null, null, null, null]
-        ]
-    },
+    ABANDONED_HOUSE: yard(HOUSE_SPEC),
 
-    ABANDONED_STORAGE: {
-        type: 'PREFAB',
-        width: 8,
-        height: 7,
-        terrain: [
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null]
+    /* the same yard with the other house sprite and a different set of props */
+    ABANDONED_COTTAGE: yard({
+        ...HOUSE_SPEC,
+        house: 'ABANDONED_HOUSE_2',
+        props: [[2, 5, 'SACKS'], [5, 5, 'TREE_STUMP']],
+    }),
+
+    /* two more homes, so a street is not a row of the same two houses */
+    ABANDONED_FARMHOUSE: yard({
+        ...HOUSE_SPEC,
+        props: [[2, 5, 'BARREL'], [4, 5, 'CRATE'], [5, 5, 'SACKS']],
+    }),
+
+    ABANDONED_HUT: yard({
+        ...HOUSE_SPEC,
+        house: 'ABANDONED_HOUSE_2',
+        props: [[2, 5, 'TULIPS_RED'], [4, 5, 'TULIPS_WHITE'], [5, 5, 'TREE_STUMP']],
+    }),
+
+    ABANDONED_STORAGE: yard({
+        w: 8, h: 7, anchor: [3, 3], gateRow: 3, scatterRect: { x: 2, y: 2, w: 4, h: 3 },
+        house: null, door: null,
+        props: [
+            [2, 2, 'WOODEN_CHEST'], [3, 2, 'BARREL'], [4, 2, 'CRATE'], [5, 2, 'WOODEN_CHEST'],
+            [2, 4, 'SACKS'], [4, 4, 'WOODEN_CHEST'], [5, 4, 'CRATE_SACK'],
         ],
-        objects: [
-            [null, null, null, null, null, null, null, null],
-            [null, 'WOODEN_FENCE_TL_CORNER', 'WOODEN_FENCE_H', 'WOODEN_FENCE_H', 'WOODEN_FENCE_H', 'WOODEN_FENCE_H', 'WOODEN_FENCE_TR_CORNER', null],
-            [null, 'WOODEN_FENCE_V', 'WOODEN_CHEST', 'GRASS_COVERAGE_1', 'WOODEN_CHEST', 'TULIPS_ORANGE', 'WOODEN_FENCE_V', null],
-            [null, 'WOODEN_FENCE_V', 'TULIPS_WHITE', 'TREE_STUMP', 'GRASS_COVERAGE_2', 'WOODEN_CHEST', 'WOODEN_FENCE_V', null],
-            [null, 'WOODEN_FENCE_V', 'SMALL_ROCKS_1', 'TULIPS_RED', 'SMALL_ROCKS_2', 'GRASS_COVERAGE_3', 'WOODEN_FENCE_V', null],
-            [null, 'WOODEN_FENCE_BL_CORNER', 'GRASS_COVERAGE_2', null, 'GRASS_COVERAGE_1', null, 'WOODEN_FENCE_BR_CORNER', null],
-            [null, null, null, null, null, null, null, null]
-        ]
-    },
+    }),
 
     // --- CRAFTING STATION HOUSES ---
-    
-    ABANDONED_BLACKSMITH: {
-        type: 'PREFAB',
-        width: 8,
-        height: 8,
-        terrain: [
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null]
-        ],
-        objects: [
-            [null, null, null, null, null, null, null, null],
-            [null, 'WOODEN_FENCE_TL_CORNER', 'WOODEN_FENCE_H', 'WOODEN_FENCE_H', 'WOODEN_FENCE_H', 'WOODEN_FENCE_H', null, null],
-            [null, 'WOODEN_FENCE_V', 'ABANDONED_HOUSE_2', 'BLACKSMITH_DOOR', null, null, null, null],
-            [null, 'WOODEN_FENCE_V', 'GRASS_COVERAGE_1', null, null, null, 'WOODEN_FENCE_V', null],
-            [null, 'WOODEN_FENCE_V', 'ANVIL', null, 'FORGE', null, null, null],
-            [null, 'WOODEN_FENCE_V', null, null, null, 'GRASS_COVERAGE_1', null, null],
-            [null, 'WOODEN_FENCE_BL_CORNER', 'WOODEN_FENCE_H', 'GRASS_COVERAGE_1', 'GRASS_COVERAGE_1', 'WOODEN_FENCE_H', null, null],
-            [null, null, null, null, null, null, null, null]
-        ]
-    },
 
-    ABANDONED_CARPENTER: {
-        type: 'PREFAB',
-        width: 8,
-        height: 8,
-        terrain: [
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null]
-        ],
-        objects: [
-            [null, null, null, null, null, null, null, null],
-            [null, null, 'WOODEN_FENCE_H', 'WOODEN_FENCE_H', 'WOODEN_FENCE_H', 'WOODEN_FENCE_H', 'WOODEN_FENCE_TR_CORNER', null],
-            [null, null, 'ABANDONED_HOUSE_2', 'CARPENTER_DOOR', null, null, 'WOODEN_FENCE_V', null],
-            [null, 'WOODEN_FENCE_V', 'GRASS_COVERAGE_1', null, null, null, 'WOODEN_FENCE_V', null],
-            [null, 'WOODEN_FENCE_V', 'TREE_STUMP', null, 'CARPENTERS_BENCH', null, 'WOODEN_FENCE_V', null],
-            [null, null, null, null, null, 'GRASS_COVERAGE_2', 'WOODEN_FENCE_V', null],
-            [null, 'WOODEN_FENCE_H', 'WOODEN_FENCE_H', 'GRASS_COVERAGE_1', 'GRASS_COVERAGE_1', 'WOODEN_FENCE_H', 'WOODEN_FENCE_BR_CORNER', null],
-            [null, null, null, null, null, null, null, null]
-        ]
-    },
+    ABANDONED_BLACKSMITH: yard(WORKSHOP('BLACKSMITH_DOOR', [[2, 5, 'ANVIL'], [4, 5, 'FORGE'], [5, 5, 'BARREL']])),
 
-    ABANDONED_MASON: {
-        type: 'PREFAB',
-        width: 8,
-        height: 8,
-        terrain: [
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null]
-        ],
-        objects: [
-            [null, null, null, null, null, null, null, null],
-            [null, 'WOODEN_FENCE_TL_CORNER', 'WOODEN_FENCE_H', null, null, 'WOODEN_FENCE_H', 'WOODEN_FENCE_TR_CORNER', null],
-            [null, 'WOODEN_FENCE_V', 'ABANDONED_HOUSE_2', 'MASON_DOOR', null, null, 'WOODEN_FENCE_V', null],
-            [null, 'WOODEN_FENCE_V', 'GRASS_COVERAGE_1', null, null, null, 'WOODEN_FENCE_V', null],
-            [null, 'WOODEN_FENCE_V', 'SMALL_ROCKS_2', null, 'STONE_BANKER', 'SMALL_ROCKS_1', null, null],
-            [null, 'WOODEN_FENCE_V', null, null, null, 'GRASS_COVERAGE_1', 'WOODEN_FENCE_V', null],
-            [null, 'WOODEN_FENCE_BL_CORNER', null, 'GRASS_COVERAGE_1', 'GRASS_COVERAGE_1', null, 'WOODEN_FENCE_BR_CORNER', null],
-            [null, null, null, null, null, null, null, null]
-        ]
-    },
+    ABANDONED_CARPENTER: yard(WORKSHOP('CARPENTER_DOOR', [[2, 5, 'TREE_STUMP'], [4, 5, 'CARPENTERS_BENCH'], [5, 5, 'CRATE']])),
 
-    ABANDONED_TAILOR: {
-        type: 'PREFAB',
-        width: 8,
-        height: 8,
-        terrain: [
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null]
-        ],
-        objects: [
-            [null, null, null, null, null, null, null, null],
-            [null, null, 'WOODEN_FENCE_H', null, 'WOODEN_FENCE_H', 'WOODEN_FENCE_H', 'WOODEN_FENCE_TR_CORNER', null],
-            [null, 'WOODEN_FENCE_V', 'ABANDONED_HOUSE_2', 'TAILOR_DOOR', null, null, null, null],
-            [null, null, 'GRASS_COVERAGE_1', null, null, null, 'WOODEN_FENCE_V', null],
-            [null, 'WOODEN_FENCE_V', 'GRASS_COVERAGE_2', null, 'TAILORS_BENCH', null, null, null],
-            [null, 'WOODEN_FENCE_V', null, null, null, 'GRASS_COVERAGE_1', 'WOODEN_FENCE_V', null],
-            [null, 'WOODEN_FENCE_BL_CORNER', 'WOODEN_FENCE_H', 'GRASS_COVERAGE_1', 'GRASS_COVERAGE_1', null, null, null],
-            [null, null, null, null, null, null, null, null]
-        ]
-    }
+    ABANDONED_MASON: yard(WORKSHOP('MASON_DOOR', [[2, 5, 'SMALL_ROCKS_2'], [4, 5, 'STONE_BANKER'], [5, 5, 'CRATE']])),
+
+    ABANDONED_TAILOR: yard(WORKSHOP('TAILOR_DOOR', [[2, 5, 'SACKS'], [4, 5, 'TAILORS_BENCH'], [5, 5, 'CRATE_SACK']])),
 };

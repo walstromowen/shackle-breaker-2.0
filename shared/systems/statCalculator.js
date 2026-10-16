@@ -1,6 +1,11 @@
 import { TRAIT_DEFINITIONS } from '../../shared/data/traitDefinitions.js'; 
 import { DAMAGE_TYPES } from '../../shared/data/constants.js'; 
 
+// BALANCE KNOB: scales the HP that Vigor grants, for EVERYONE (party, enemies, bosses and already-saved characters).
+// Saved characters keep their own copy of statMultipliers.hpPerVigor, so lowering it in the entity templates would not
+// touch them; this applies on top of whatever hpPerVigor an entity has. 1 = unchanged, 0.5 = half the HP from Vigor.
+const HP_PER_VIGOR_SCALE = 0.5;
+
 export class StatCalculator { 
     static get DAMAGE_TYPES() { 
         return DAMAGE_TYPES || [ "blunt", "slash", "pierce", "fire", "ice", "lightning", "water", "earth", "wind", "light", "dark", "arcane" ]; 
@@ -98,7 +103,7 @@ export class StatCalculator {
         const levelDefenseBonus = Math.floor(charLevel * 0.5); 
         
         // Vitality Pillar
-        breakdown.resources.derived.hp = Math.floor(finalStats.vigor * mults.hpPerVigor); 
+        breakdown.resources.derived.hp = Math.floor(finalStats.vigor * mults.hpPerVigor * HP_PER_VIGOR_SCALE); 
         const vigorDefense = Math.floor(finalStats.vigor * 0.5); 
         this.DAMAGE_TYPES.forEach(t => { finalStats.defense[t] += vigorDefense + levelDefenseBonus; }); 
         

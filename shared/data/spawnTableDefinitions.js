@@ -181,6 +181,66 @@ export const SpawnTableDefinitions = {
     },
 
     // ==========================================
+    // CAVE BATTLES (same table at every hour)
+    // ==========================================
+    "cave_battles": {
+        type: "faction_pool",
+        pools: [{
+            factionId: "wildlife",
+            weight: 100,
+            difficultySettings: {
+                easy: { minSize: 1, maxSize: 2 },
+                normal: { minSize: 1, maxSize: 3 },
+                hard: { minSize: 2, maxSize: 4 },
+                nightmare: { minSize: 2, maxSize: 5 }
+            },
+            members: [
+                { id: 'CAVE_SPIDER', weight: 100, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } }
+            ]
+        }]
+    },
+
+    // ==========================================
+    // SNOWY MOUNTAINS BATTLES - DAY
+    // ==========================================
+    "snowy_mountains_battles_day": {
+        type: "faction_pool",
+        pools: [{
+            factionId: "wildlife",
+            weight: 100,
+            difficultySettings: {
+                easy: { minSize: 1, maxSize: 1 },
+                normal: { minSize: 1, maxSize: 2 },
+                hard: { minSize: 1, maxSize: 3 },
+                nightmare: { minSize: 2, maxSize: 4 }
+            },
+            members: [
+                { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } }
+            ]
+        }]
+    },
+
+    // ==========================================
+    // SNOWY MOUNTAINS BATTLES - NIGHT
+    // ==========================================
+    "snowy_mountains_battles_night": {
+        type: "faction_pool",
+        pools: [{
+            factionId: "cursedwildlife",
+            weight: 100,
+            difficultySettings: {
+                easy: { minSize: 1, maxSize: 2 },
+                normal: { minSize: 1, maxSize: 2 },
+                hard: { minSize: 1, maxSize: 3 },
+                nightmare: { minSize: 2, maxSize: 4 }
+            },
+            members: [
+                { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } }
+            ]
+        }]
+    },
+
+    // ==========================================
     // ENCOUNTER BATTLES (Triggered via Events)
     // ==========================================
     "madman_pack": {

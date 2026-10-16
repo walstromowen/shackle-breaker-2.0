@@ -103,7 +103,7 @@ export const ENTITY_DEFINITIONS = {
         deathSound: "madmanCry",
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 20, maxStamina: 10, speed: 5
+            maxHp: 9, maxStamina: 10, speed: 5
         },
         currencyReward: { min: 2, max: 8 },
         lootTableId: "mad_man_drops",
@@ -126,7 +126,7 @@ export const ENTITY_DEFINITIONS = {
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 20, maxStamina: 20, maxInsight: 20,
+            maxHp: 11, maxStamina: 20, maxInsight: 20,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: 2, pierce: 2, blunt: 1 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_arcane" },
@@ -150,7 +150,7 @@ export const ENTITY_DEFINITIONS = {
         traits: ['acidic'],
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 30, maxStamina: 10, speed: 5
+            maxHp: 16, maxStamina: 10, speed: 5
         },
         currencyReward: { min: 2, max: 8 },
         lootTableId: "mad_man_drops",
@@ -174,7 +174,7 @@ export const ENTITY_DEFINITIONS = {
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 25,
+            maxHp: 11,
             maxStamina: 15,
             speed: 7,
             critical: 0.10,
@@ -203,6 +203,12 @@ export const ENTITY_DEFINITIONS = {
             ...HUMANOID_TEMPLATE.attributes,
             vigor: 14, strength: 14, intelligence: 6
         },
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 7,
+            baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: -2 },
+            baseResistance: { slash: 0.25 }
+        },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "shortsword" },
         currencyReward: { min: 5, max: 15 },
         lootTableId: "mad_man_drops",
@@ -210,13 +216,38 @@ export const ENTITY_DEFINITIONS = {
         tags: [...HUMANOID_TEMPLATE.tags, "SOLDIER"]
     },
 
-    // Cursed Alterian soldier armed with a crossbow. Also the recruit target in aftermath_encounter,
-    // so it keeps the HUMANOID tag (encounter choices are gated on it).
+    // Recruitable companion: a free, uncursed soldier of the Altus legion (recruited in the aftermath encounter).
+    // Deliberately NOT the hostile "LEGIONARY": no resistances or negative defense tricks, normal HUMANOID HP, player-like growth.
+    "LEGIONARY_COMPANION": {
+        ...HUMANOID_TEMPLATE,
+        name: "Legionary Companion",
+        level: 1,
+        spriteOverworld: "legionarySprite",
+        spritePortrait: "legionaryPortrait",
+        crySound: "legionaryCry",
+        deathSound: "legionaryCry",
+        attributes: {
+            ...HUMANOID_TEMPLATE.attributes,
+            vigor: 13, strength: 13, dexterity: 9, intelligence: 6, attunement: 8
+        },
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxStamina: 12, speed: 5, critical: 0.05,
+            baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, blunt: 1, slash: 1, pierce: 1 }
+        },
+        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "shortsword" },
+        currencyReward: { min: 0, max: 0 },
+        lootTableId: null,
+        abilities: [...HUMANOID_TEMPLATE.abilities],
+        tags: ["BIOLOGICAL", "HUMANOID", "SOLDIER", "ALTUS"]
+    },
+
+    // Cursed Alterian soldier armed with a crossbow.
     "WATCHMAN": {
         ...HUMANOID_TEMPLATE,
         name: "Watchman",
         level: 1,
-        spriteOverworld: "watchmanSprite",
+        spriteOverworld: "legionarySprite",
         spritePortrait: "watchmanPortrait",
         crySound: "watchmanCry",
         deathSound: "watchmanCry",
@@ -226,7 +257,7 @@ export const ENTITY_DEFINITIONS = {
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 24, maxStamina: 16, speed: 7, critical: 0.12, corruption: 10,
+            maxHp: 12, maxStamina: 16, speed: 7, critical: 0.12, corruption: 10,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: 1, pierce: 1, dark: 2, light: -2 },
             baseResistance: { dark: 0.15, light: -0.15 },
             baseAttack: { blunt: 1, pierce: 4, dark: 1 }
@@ -249,7 +280,7 @@ export const ENTITY_DEFINITIONS = {
         attributes: { vigor: 12, strength: 8, dexterity: 14, intelligence: 14, attunement: 10 },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 32, maxStamina: 15, maxInsight: 15, speed: 6,
+            maxHp: 16, maxStamina: 15, maxInsight: 15, speed: 6,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: 3, dark: 4, arcane: 3, light: -2 },
             baseAttack: { blunt: 0, slash: 5, arcane: 3 }
         },
@@ -274,9 +305,9 @@ export const ENTITY_DEFINITIONS = {
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 24, maxStamina: 12, maxInsight: 25, speed: 7,
+            maxHp: 12, maxStamina: 12, maxInsight: 25, speed: 7,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, fire: 4, light: 3, arcane: 3, water: -3, ice: -2 },
-            baseResistance: { fire: 0.4, light: 0.2 },
+            baseResistance: { fire: 0.4, light: 0.2, earth: 0.5, lightning: 0.5 },
             baseAttack: { blunt: 1, fire: 4, arcane: 2, light: 1 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_fire" },
@@ -299,9 +330,9 @@ export const ENTITY_DEFINITIONS = {
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 18, maxStamina: 20, speed: 10, critical: 0.15,
+            maxHp: 9, maxStamina: 20, speed: 10, critical: 0.15,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, earth: 2, wind: 3, slash: 2 },
-            baseResistance: { wind: 0.25, earth: 0.15 },
+            baseResistance: { wind: 0.25, earth: 0.5, lightning: 0.5 },
             baseAttack: { slash: 4, earth: 1, wind: 2 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "shortsword" },
@@ -325,9 +356,9 @@ export const ENTITY_DEFINITIONS = {
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 28, maxStamina: 15, maxInsight: 35, speed: 9,
+            maxHp: 14, maxStamina: 15, maxInsight: 35, speed: 9,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, ice: 3, water: 2, earth: 2, dark: 4, wind: 3 },
-            baseResistance: { ice: 0.2, water: 0.2, dark: 0.3, wind: 0.2 },
+            baseResistance: { ice: 0.2, water: 0.2, dark: 0.3, wind: 0.2, earth: 0.5, lightning: 0.5 },
             baseAttack: { blunt: 1, ice: 3, dark: 4, wind: 2 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_darkness" },
@@ -351,9 +382,9 @@ export const ENTITY_DEFINITIONS = {
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 45, maxStamina: 16, speed: 3, critical: 0.05,
-            baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: 6, pierce: 5, blunt: 2, earth: 5, wind: -3, water: -4 },
-            baseResistance: { slash: 0.4, pierce: 0.3, earth: 0.3, water: -0.6 },
+            maxHp: 10, maxStamina: 16, speed: 3, critical: 0.05,
+            baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: -2, pierce: 5, blunt: 2, earth: 5, wind: -3, water: -4 },
+            baseResistance: { pierce: 0.4, earth: 0.5, lightning: 0.5, water: -0.6 },
             baseAttack: { slash: 7, earth: 3 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "glaive" },
@@ -382,7 +413,7 @@ export const ENTITY_DEFINITIONS = {
         },
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
-            maxHp: 12, maxStamina: 8, speed: 7, critical: 0.08,
+            maxHp: 4, maxStamina: 8, speed: 7, critical: 0.08,
             baseAttack: { blunt: 2, slash: 4, pierce: 2 }
         },
         lootTableId: "canine_drops",
@@ -404,14 +435,109 @@ export const ENTITY_DEFINITIONS = {
         },
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
-            maxHp: 28, maxStamina: 18, speed: 9, critical: 0.15,
+            maxHp: 13, maxStamina: 18, speed: 9, critical: 0.15,
             baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, ice: 2 },
             baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, fire: -0.25, ice: 0.25 },
             baseAttack: { blunt: 0, slash: 5, pierce: 7 }
         },
         lootTableId: "canine_drops",
-        abilities: [...BEAST_TEMPLATE.abilities, 'howl', 'bite'],
+        abilities: [...BEAST_TEMPLATE.abilities, 'howl'],
         tags: [...BEAST_TEMPLATE.tags, "CANINE"]
+    },
+
+    "SNOW_LEOPARD": {
+        ...BEAST_TEMPLATE,
+        name: "Snow Leopard",
+        level: 1,
+        spriteOverworld: "legionarySprite",
+        spritePortrait: "snowLeopardPortrait",
+        crySound: "snowLeopardCry",
+        deathSound: "snowLeopardCry",
+        attributes: {
+            ...BEAST_TEMPLATE.attributes,
+            vigor: 10,
+            strength: 12,
+            dexterity: 16,
+            intelligence: 3,
+            attunement: 6
+        },
+        baseStats: {
+            ...BEAST_TEMPLATE.baseStats,
+            maxHp: 16,
+            maxStamina: 20,
+            speed: 12,
+            critical: 0.18,
+            baseDefense: {
+                ...BEAST_TEMPLATE.baseStats.baseDefense,
+                ice: 5,
+                water: 3,
+                slash: 3,
+                fire: -3
+            },
+            baseResistance: {
+                ...BEAST_TEMPLATE.baseStats.baseResistance,
+                ice: 0.40,
+                fire: -0.30,
+                wind: 0.20
+            },
+            baseAttack: {
+                blunt: 2,
+                slash: 7,
+                pierce: 5,
+                ice: 2
+            }
+        },
+        currencyReward: { min: 4, max: 14 },
+        lootTableId: "snow_leopard_drops",
+        abilities: [...BEAST_TEMPLATE.abilities, "claw","eviscerate"],
+        tags: [...BEAST_TEMPLATE.tags, "FELINE"]
+    },
+
+    "CAVE_SPIDER": {
+        ...BEAST_TEMPLATE,
+        name: "Cave Spider",
+        level: 1,
+        spriteOverworld: "legionarySprite",
+        spritePortrait: "caveSpiderPortrait",
+        crySound: "caveSpiderCry",
+        deathSound: "caveSpiderDeath",
+        attributes: {
+            ...BEAST_TEMPLATE.attributes,
+            vigor: 7,
+            strength: 7,
+            dexterity: 15,
+            intelligence: 2,
+            attunement: 4
+        },
+        traits: ['acidic'],
+        baseStats: {
+            ...BEAST_TEMPLATE.baseStats,
+            maxHp: 10,
+            maxStamina: 14,
+            speed: 11,
+            critical: 0.12,
+            baseDefense: {
+                ...BEAST_TEMPLATE.baseStats.baseDefense,
+                pierce: 3,
+                blunt: -2,
+                dark: 3,
+                fire: -3
+            },
+            baseResistance: {
+                ...BEAST_TEMPLATE.baseStats.baseResistance,
+                dark: 0.25,
+                fire: -0.25
+            },
+            baseAttack: {
+                blunt: 0,
+                slash: 4,
+                pierce: 5
+            }
+        },
+        currencyReward: { min: 2, max: 8 },
+        lootTableId: "arachnid_drops",
+        abilities: [...BEAST_TEMPLATE.abilities],
+        tags: [...BEAST_TEMPLATE.tags, "ARACHNID", "INSECT", "UNDERGROUND"]
     },
 
     "SHACKLED_STEED": {
@@ -428,7 +554,7 @@ export const ENTITY_DEFINITIONS = {
         },
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
-            maxHp: 40, maxStamina: 18, speed: 9, critical: 0.15,
+            maxHp: 16, maxStamina: 18, speed: 9, critical: 0.15,
             baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, ice: 2 },
             baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, fire: -0.25, ice: 0.25 },
             baseAttack: { blunt: 6, slash: 2, pierce: 2 }
@@ -446,7 +572,7 @@ export const ENTITY_DEFINITIONS = {
         attributes: { vigor: 6, strength: 4, dexterity: 16, intelligence: 6, attunement: 8 },
         baseStats: {
             ...BASE_ENTITY.baseStats,
-            maxHp: 12, maxStamina: 15, maxInsight: 5, staminaRecovery: 3, speed: 10, critical: 0.15,
+            maxHp: 6, maxStamina: 15, maxInsight: 5, staminaRecovery: 3, speed: 10, critical: 0.15,
             baseDefense: { earth: 3 },
             baseResistance: { wind: 0.5, earth: 0.2 },
             baseAttack: { slash: 4, pierce: 4 }
@@ -470,7 +596,7 @@ export const ENTITY_DEFINITIONS = {
         },
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
-            maxHp: 45, maxStamina: 25, maxInsight: 10, speed: 11, critical: 0.08,
+            maxHp: 20, maxStamina: 25, maxInsight: 10, speed: 11, critical: 0.08,
             baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, blunt: 4, slash: 3, pierce: 2, earth: 4, dark: 2 },
             baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, earth: 0.25, dark: 0.1, wind: -0.15 },
             baseAttack: { blunt: 4, slash: 2, pierce: 5, earth: 0 }
@@ -495,9 +621,9 @@ export const ENTITY_DEFINITIONS = {
         },
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
-            maxHp: 45, maxStamina: 12, speed: 5,
+            maxHp: 19, maxStamina: 12, speed: 5,
             baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, blunt: 5, pierce: 4, earth: 4, water: 3, lightning: -3 },
-            baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, earth: 0.25, water: 0.15 },
+            baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, earth: 0.5, lightning: 0.5, water: 0.15 },
             baseAttack: { blunt: 6, pierce: 4, slash: 0 }
         },
         currencyReward: { min: 8, max: 18 },
@@ -520,9 +646,9 @@ export const ENTITY_DEFINITIONS = {
         },
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
-            maxHp: 22, maxStamina: 25, speed: 20, critical: 0.15,
+            maxHp: 11, maxStamina: 25, speed: 20, critical: 0.15,
             baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, lightning: 6, wind: 4, blunt: 1, earth: -3, water: -3 },
-            baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, lightning: 1.0, wind: 0.25, water: -0.5 },
+            baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, lightning: 1.0, earth: 0.5, wind: 0.25, water: -0.5 },
             baseAttack: { pierce: 2, lightning: 5, wind: 2 }
         },
         currencyReward: { min: 3, max: 12 },
@@ -549,8 +675,8 @@ export const ENTITY_DEFINITIONS = {
         },
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
-            maxHp: 75, maxStamina: 30, maxInsight: 10, speed: 10, critical: 0.20,
-            baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, blunt: 6, slash: 5, pierce: 5, earth: 6, dark: 5 },
+            maxHp: 35, maxStamina: 30, maxInsight: 10, speed: 10, critical: 0.20,
+            baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, blunt: 1, slash: -1, pierce: -1, earth: 6, dark: 5 },
             baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, earth: 0.5, dark: 0.4, fire: -0.3 },
             baseAttack: { blunt: 6, slash: 7, pierce: 5, dark: 4 }
         },
@@ -577,10 +703,10 @@ export const ENTITY_DEFINITIONS = {
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 55, maxStamina: 20, maxInsight: 40, speed: 8, critical: 0.1,
+            maxHp: 62, maxStamina: 20, maxInsight: 40, speed: 8, critical: 0.1,
             baseDefense: {
                 ...HUMANOID_TEMPLATE.baseStats.baseDefense,
-                blunt: 3, slash: 3, pierce: 3, arcane: 6,
+                blunt: 1, slash: 1, pierce: 1, arcane: 6,
                 light: -4,
                 fire: -2
             },
