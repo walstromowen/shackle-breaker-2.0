@@ -101,10 +101,48 @@ export const InventorySystem = {
      * Checks if the inventory contains at least X amount of an item
      */
     hasItem(defId, amount = 1) {
-        const total = gameState.party.inventory
+        return InventorySystem.countItem(defId) >= amount;
+    },
+
+    /** How many of an item the party carries, across all stacks. */
+    countItem(defId) {
+        return gameState.party.inventory
             .filter(i => i.defId === defId)
             .reduce((sum, i) => sum + i.qty, 0);
+    },
 
-        return total >= amount;
+    // =========================================================================
+    // HOTBAR: consumables the player can use straight from the overworld (keys 1-9 and 0, or a click).
+    // Stored as item DEFINITION ids in gameState.player.hotbar (plain data, so a save keeps it); the count shown
+    // is however many of that item the party carries, so a slot survives running out and fills again on pickup.
+    // =========================================================================
+    HOTBAR_KEYS: ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0'],   // one slot per key, left to right
+    HOTBAR_LABELS: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],                                                   // what the slot shows as its key
+
+    /** The hotbar array (always at least one entry per key). */
+    getHotbar() {
+        const player = gameState.player;
+        if (!Array.isArray(player.hotbar)) player.hotbar = [];
+        while (player.hotbar.length < InventorySystem.HOTBAR_KEYS.length) player.hotbar.push(null);
+        return player.hotbar;
+    },
+
+    /** Put an item in a slot. An item is on the hotbar once: it leaves any other slot it was in. */
+    setHotbarSlot(index, defId) {
+        const bar = InventorySystem.getHotbar();
+        if (index < 0 || index >= bar.length) return false;
+        for (let i = 0; i < bar.length; i++) if (bar[i] === defId) bar[i] = null;
+        bar[index] = defId;
+        return true;
+    },
+
+    clearHotbarSlot(index) {
+        const bar = InventorySystem.getHotbar();
+        if (index >= 0 && index < bar.length) bar[index] = null;
+    },
+
+    /** The slot an item is in, or -1. */
+    hotbarSlotOf(defId) {
+        return InventorySystem.getHotbar().indexOf(defId);
     }
 };

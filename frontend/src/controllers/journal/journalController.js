@@ -1,18 +1,10 @@
 import { BaseController } from '../core/baseController.js';
+import { UI_SFX } from '../../ui/uiSfx.js';
 import { events } from '../../core/eventBus.js';
 import { gameState } from '../../../../shared/state/gameState.js';
 import { QuestDefinitions } from '../../../../shared/data/questDefinitions.js';
 import { QuestModel } from '../../../../shared/models/questModel.js';
 import { ScrollManager } from '../../ui/scrollManager.js';
-
-const KEY_BINDINGS = {
-    'ArrowUp': 'UP', 'KeyW': 'UP',
-    'ArrowDown': 'DOWN', 'KeyS': 'DOWN',
-    'ArrowLeft': 'LEFT', 'KeyA': 'LEFT',
-    'ArrowRight': 'RIGHT', 'KeyD': 'RIGHT',
-    'Enter': 'CONFIRM', 'Space': 'CONFIRM',
-    'Escape': 'CANCEL', 'Backspace': 'CANCEL', 'KeyP': 'CANCEL', 'Tab': 'CANCEL'
-};
 
 export class JournalController extends BaseController {
     constructor(input) {
@@ -30,10 +22,8 @@ export class JournalController extends BaseController {
         this.scrollManager = new ScrollManager();
         this.scrollManager.registerZone('questList', { viewportH: 700, maxScroll: 0 });
 
-        // --- KEYBOARD & MOUSE STATE ---
-        this.isUsingKeyboard = false;
-        this._lastMouseX = null;
-        this._lastMouseY = null;
+        // The journal key (P) closes the journal, like Esc
+        this.extraBindings = { KeyP: 'CANCEL' };
 
         this.activeSection = 'TABS'; // Start on tabs by default
         this.focusedTabIndex = 0; // 0: active, 1: completed
@@ -45,7 +35,7 @@ export class JournalController extends BaseController {
 
     init() {
         this.activeTab = 'active';
-        this.isUsingKeyboard = true; 
+        this.startInKeyboardMode(); // opens with the keyboard cursor on the tabs
         this.activeSection = 'TABS';
         this.focusedTabIndex = 0;
         this.focusedActionIndex = 0;
@@ -64,36 +54,35 @@ export class JournalController extends BaseController {
         return this.activeTab === 'active' ? Object.keys(gameState.quests.active) : gameState.quests.completed;
     }
 
-    playNavSound() {
-        if (super.playNavSound) super.playNavSound();
-        else events.emit('PLAY_SFX', { id: 'hover', volume: 0.4 });
+    // ========================================================
+    // FOCUS (shared standard, see BaseController)
+    // ========================================================
+    // The mouse moved onto something (silent; UIInteractionManager adds the hover tick)
+    setFocusFromPointer(hitboxId) {
+        this._setFocus(hitboxId);
     }
 
-    playClickSound() {
-        if (super.playClickSound) super.playClickSound();
-        else events.emit('PLAY_SFX', { id: 'click', volume: 0.6 });
-    }
-
-    playCancelSound() {
-        if (super.playCancelSound) super.playCancelSound();
-        else events.emit('PLAY_SFX', { id: 'cancel', volume: 0.6 });
-    }
-
-    handleMouseMove(x, y, isMouseDown, renderer) {
-        const prevHoverId = this.hoveredHitboxId;
-        super.handleMouseMove(x, y, isMouseDown, renderer);
-
-        // Detect any physical mouse movement to disable keyboard mode
-        if (this._lastMouseX !== x || this._lastMouseY !== y) {
-            this.isUsingKeyboard = false;
-            this._lastMouseX = x;
-            this._lastMouseY = y;
+    // The element the keyboard cursor is on
+    getKeyboardFocusId() {
+        if (this.activeSection === 'TABS') {
+            return this.focusedTabIndex === 0 ? 'tab_active' : 'tab_completed';
         }
-
-        // Only switch focus if mouse actively moves to a new element
-        if (!this.isUsingKeyboard && this.hoveredHitboxId && this.hoveredHitboxId !== prevHoverId) {
-            this._setFocus(this.hoveredHitboxId);
+        if (this.activeSection === 'LIST') {
+            return this.selectedQuestId ? `quest_sel_${this.selectedQuestId}` : null;
         }
+        if (this.activeSection === 'ACTIONS') {
+            if (this.availableActions[this.focusedActionIndex]) return this.availableActions[this.focusedActionIndex].id;
+            // Fallback to LIST if no actions are strictly confirmed as visible
+            this.activeSection = 'LIST';
+            return this.selectedQuestId ? `quest_sel_${this.selectedQuestId}` : null;
+        }
+        return null;
+    }
+
+    _switchTab(tab) {
+        this.activeTab = tab;
+        this.scrollManager.setOffset('questList', 0, true);
+        this.selectedQuestId = null; // Clear selection on tab switch
     }
 
     _setFocus(hitboxId) {
@@ -115,31 +104,24 @@ export class JournalController extends BaseController {
     onClick(hitboxId, fromKeyboard = false) {
         if (!hitboxId) return;
 
-        if (!fromKeyboard) {
-            this._setFocus(hitboxId);
-            this.isUsingKeyboard = false;
-        }
+        if (!fromKeyboard) this._setFocus(hitboxId);
 
         if (hitboxId === 'tab_active') {
-            this.playClickSound();
-            this.activeTab = 'active';
-            this.scrollManager.setOffset('questList', 0, true);
-            this.selectedQuestId = null; // Clear selection on tab switch
+            this.playConfirmSound();
+            this._switchTab('active');
         } else if (hitboxId === 'tab_completed') {
-            this.playClickSound();
-            this.activeTab = 'completed';
-            this.scrollManager.setOffset('questList', 0, true);
-            this.selectedQuestId = null; // Clear selection on tab switch
+            this.playConfirmSound();
+            this._switchTab('completed');
         } else if (hitboxId === 'btn_close') {
             this.exit();
         } else if (hitboxId.startsWith('quest_sel_')) {
-            this.playClickSound();
+            this.playConfirmSound();
             this.selectedQuestId = hitboxId.replace('quest_sel_', '');
         } else if (hitboxId.startsWith('btn_collect_')) {
             const questId = hitboxId.replace('btn_collect_', '');
             this.collectRewards(questId);
         } else if (hitboxId.startsWith('btn_track_')) {
-            this.playClickSound();
+            this.playConfirmSound();
             const questId = hitboxId.replace('btn_track_', '');
             
             if (!gameState.quests.trackedIds) {
@@ -162,8 +144,7 @@ export class JournalController extends BaseController {
     }
 
     handleKeyDown(code, e) {
-        this.isUsingKeyboard = true;
-        const intent = (e && KEY_BINDINGS[e.code]) || KEY_BINDINGS[code];
+        const intent = this.resolveIntent(code, e);
         if (!intent) return;
         this.handleNavigatingKeys(intent);
     }
@@ -181,8 +162,7 @@ export class JournalController extends BaseController {
         if (this.activeSection === 'TABS') {
             if (intent === 'LEFT' || intent === 'RIGHT') {
                 this.focusedTabIndex = this.focusedTabIndex === 0 ? 1 : 0;
-                const targetTab = this.focusedTabIndex === 0 ? 'tab_active' : 'tab_completed';
-                this.onClick(targetTab, true);
+                this._switchTab(this.focusedTabIndex === 0 ? 'active' : 'completed');
                 this.playNavSound();
             } else if (intent === 'DOWN' || intent === 'CONFIRM') {
                 if (quests.length > 0) {
@@ -213,7 +193,7 @@ export class JournalController extends BaseController {
                     this._scrollToSelected(currentListIndex + 1);
                     this.playNavSound();
                 }
-            } else if (intent === 'RIGHT') {
+            } else if (intent === 'RIGHT' || intent === 'CONFIRM') {
                 // Strictly guard switching to actions: Only allow if actions are confirmed rendered for the active quest
                 if (this.availableActions.length > 0 && this.activeTab === 'active' && this.selectedQuestId) {
                     this.activeSection = 'ACTIONS';
@@ -266,25 +246,27 @@ export class JournalController extends BaseController {
         }
     }
 
-    handleScroll(deltaX, deltaY, mouseX, mouseY) {
-        this.isUsingKeyboard = false; // Scrolling means the user is interacting with the mouse
-        this.scrollManager.handleScrollWheel(mouseX, mouseY, deltaY);
+    // SceneManager calls handleScroll(delta) (+-30 per wheel notch). The old (deltaX, deltaY, mouseX, mouseY) signature never matched, so the wheel did nothing.
+    handleScroll(delta) {
+        this.scrollManager.handleScrollWheel(this.mouse.x, this.mouse.y, delta * 2);
     }
 
     collectRewards(questId) {
         const success = QuestModel.completeQuest(gameState, questId);
-        if (success) {
-            events.emit('PLAY_SFX', { id: 'quest_complete', volume: 0.8 });
-            
-            if (gameState.quests.trackedIds) {
-                const index = gameState.quests.trackedIds.indexOf(questId);
-                if (index > -1) gameState.quests.trackedIds.splice(index, 1);
-            }
+        if (!success) {
+            this.playErrorSound();
+            return;
+        }
+        this.playSfx(UI_SFX.success, 0.8);
 
-            if (this.activeTab === 'active') {
-                this.selectedQuestId = null; // Clear selection after collect
-                this.activeSection = 'LIST';
-            }
+        if (gameState.quests.trackedIds) {
+            const index = gameState.quests.trackedIds.indexOf(questId);
+            if (index > -1) gameState.quests.trackedIds.splice(index, 1);
+        }
+
+        if (this.activeTab === 'active') {
+            this.selectedQuestId = null; // Clear selection after collect
+            this.activeSection = 'LIST';
         }
     }
 
@@ -307,7 +289,7 @@ export class JournalController extends BaseController {
 
         // --- PREVIEW LOGIC ---
         let displayQuestId = this.selectedQuestId;
-        if (!this.isUsingKeyboard && this.hoveredHitboxId && this.hoveredHitboxId.startsWith('quest_sel_')) {
+        if (this.inputMode === 'mouse' && this.hoveredHitboxId && this.hoveredHitboxId.startsWith('quest_sel_')) {
             displayQuestId = this.hoveredHitboxId.replace('quest_sel_', '');
         }
 
@@ -361,25 +343,8 @@ export class JournalController extends BaseController {
 
         this.updateHitboxes(hitboxes);
 
-        // --- Determine Active Hover Highlight for Keyboard ---
-        let virtualHoverId = this.hoveredHitboxId;
-        if (this.isUsingKeyboard) {
-            if (this.activeSection === 'TABS') {
-                virtualHoverId = this.focusedTabIndex === 0 ? 'tab_active' : 'tab_completed';
-            } else if (this.activeSection === 'LIST') {
-                if (this.selectedQuestId) {
-                    virtualHoverId = `quest_sel_${this.selectedQuestId}`;
-                }
-            } else if (this.activeSection === 'ACTIONS') {
-                if (this.availableActions[this.focusedActionIndex]) {
-                    virtualHoverId = this.availableActions[this.focusedActionIndex].id;
-                } else {
-                    // Fallback to LIST if no actions are strictly confirmed as visible
-                    this.activeSection = 'LIST';
-                    if (this.selectedQuestId) virtualHoverId = `quest_sel_${this.selectedQuestId}`;
-                }
-            }
-        }
+        // One highlighted element: the hovered one in mouse mode, the keyboard cursor in keyboard mode
+        const virtualHoverId = this.getFocusId();
 
         return {
             activeTab: this.activeTab,

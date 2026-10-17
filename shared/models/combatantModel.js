@@ -213,6 +213,11 @@ export class CombatantModel {
     createdAbilities.forEach(ability => {
         if (!ability) return;
         
+        // Overworld-only abilities (torchlight, warp, ...) never enter a battle list. This is the single
+        // chokepoint: every combatant (party, enemies, reinforcements, summons) is built through this
+        // constructor. The entity's own ability list is untouched, so the overworld still sees them.
+        if (typeof ability.usableIn === 'function' && !ability.usableIn('battle')) return;
+        
         // Use Object.create() to make a safe proxy!
         // This prevents mutating shared factory templates while preserving methods like canPayCost()
         const inst = Object.create(ability);
@@ -228,6 +233,14 @@ export class CombatantModel {
         
         finalAbilities.push(inst);
     });
+
+    // If filtering left nothing (an entity that only knew overworld abilities), fall back to the basic attack.
+    if (finalAbilities.length === 0) {
+        const fallback = Object.create(AbilityFactory.createAbility('punch'));
+        fallback.isEquipment = false;
+        fallback.source = 'Intrinsic';
+        finalAbilities.push(fallback);
+    }
 
     return finalAbilities;
 }

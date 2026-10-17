@@ -37,6 +37,10 @@ export const MAP_OBJECTS_DEFINITIONS = {
     BOULDER_2: { sheet: 'objBoulder2', spriteX: 1, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
     SNOWY_BOULDER_1: { sheet: 'objSnowyBoulder1', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
     SNOWY_BOULDER_2: { sheet: 'objSnowyBoulder2', spriteX: 1, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+
+    // --- ANIMAL TRACKS: a ground mark in the snow that starts the "Tracks In The Snow" encounter. Not solid: you walk onto it
+    // (`walkIn: true`, needs the small OverworldController change in overworldController.walkin_encounter.patch.js; without it you face the tracks and press interact).
+    ANIMAL_TRACKS: { sheet: 'objAnimalTracks', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'ENCOUNTER', id: 'tracks_in_the_snow', isRepeatable: false, walkIn: true } },
     
     WOODEN_CHEST: { sheet: 'objWoodenChest', spriteX: 0, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'treasure_chest', isRepeatable: false } },
     IRON_CHEST: { sheet: 'objIronChest', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'iron_chest', isRepeatable: false } },
@@ -49,10 +53,10 @@ export const MAP_OBJECTS_DEFINITIONS = {
     SMALL_CACTUS_1: { sheet: 'objSmallCactus1', spriteX: 2, spriteY: 0, width: 1, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
     STRANGE_OBELISK: { sheet: 'objStrangeObelisk', spriteX: 1, spriteY: 4, width: 2, height: 3, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'strange_obelisk', isRepeatable: false } },
     
-    // --- HERBS ---
-    HEALING_HERB: { sheet: 'objHealingHerb', spriteX: 9, spriteY: 1, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'PICKUP', itemId: 'healing_herb', amount: 1 } },
-    INVIGORATING_HERB: { sheet: 'objInvigoratingHerb', spriteX: 10, spriteY: 1, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'PICKUP', itemId: 'invigorating_herb', amount: 1 } },
-    ILLUMINATING_HERB: { sheet: 'objIlluminatingHerb', spriteX: 11, spriteY: 1, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'PICKUP', itemId: 'illuminating_herb', amount: 1 } },
+    // --- HERBS --- (walk over them to pick them up, like the small rocks and the bones)
+    HEALING_HERB: { sheet: 'objHealingHerb', spriteX: 9, spriteY: 1, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'healing_herb', amount: 1 } },
+    INVIGORATING_HERB: { sheet: 'objInvigoratingHerb', spriteX: 10, spriteY: 1, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'invigorating_herb', amount: 1 } },
+    ILLUMINATING_HERB: { sheet: 'objIlluminatingHerb', spriteX: 11, spriteY: 1, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'illuminating_herb', amount: 1 } },
 
     // --- CRAFTING STATIONS ---
     ANVIL: { sheet: 'objAnvil', spriteX: 6, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'CRAFTING_STATION', station: 'anvil', title: 'Anvil' } },

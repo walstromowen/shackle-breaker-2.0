@@ -26,7 +26,9 @@ export class LevelUpRenderer {
         const w = this.ctx.canvas.width;
         const h = this.ctx.canvas.height;
         this.ui.clearScreen(w, h);
-        const hoveredId = hoveredElement ? hoveredElement.id : null;
+        // The one lit element: the controller gives the mouse hover in mouse mode and the keyboard cursor in keyboard mode,
+        // so only one of them is ever set
+        const hoveredId = (hoveredElement ? hoveredElement.id : null) || selectedElementId || null;
 
         const { p, startY } = this.layout;
         const panelHeight = h - (startY * 2);
@@ -50,13 +52,6 @@ export class LevelUpRenderer {
 
         if (state.onLayoutUpdate) {
             state.onLayoutUpdate(this.hitboxes);
-        }
-
-        if (selectedElementId) {
-            const activeBox = this.hitboxes.find(b => b.id === selectedElementId);
-            if (activeBox) {
-                this.ui.drawSelectionBrackets(activeBox.x, activeBox.y, activeBox.w, activeBox.h, 10);
-            }
         }
     }
 
@@ -124,37 +119,23 @@ export class LevelUpRenderer {
             // --- SUB BUTTON (-) ---
             const canSub = pendingVal > 0;
             const subId = `SUB_${attr.toUpperCase()}`;
-            const isHoveredSub = canSub && hoveredId === subId;
-            const isFocusSub = canSub && (hoveredId === subId || selectedId === subId);
-
-            let subBg = isHoveredSub ? UITheme.colors.states.focusBg : "rgba(0,0,0,0.4)";
-            let subTextCol = canSub ? (isFocusSub ? UITheme.colors.states.focusText : UITheme.colors.textMain) : UITheme.colors.textMuted;
-            let subBorder = canSub ? (isFocusSub ? UITheme.colors.states.focusText : UITheme.colors.border) : UITheme.colors.border;
-
-            this.ui.drawRect(startX + 456, rowY + 5, 40, 40, subBg, true);
-            this.ui.drawRect(startX + 456, rowY + 5, 40, 40, subBorder, false);
-            this.ui.drawText("-", startX + 476, rowY + 34, UITheme.fonts.bold, subTextCol, "center");
+            this.ui.drawButton(startX + 456, rowY + 5, 40, 40, "-",
+                this.ui.flags(subId, hoveredId, { disabled: !canSub }),
+                { font: UITheme.fonts.bold, bg: "rgba(0,0,0,0.4)", color: UITheme.colors.textMain, inset: true });
 
             const subBox = { id: subId, x: startX + 456, y: rowY + 5, w: 40, h: 40 };
-            if (canSub) subBox.hoverSfx = 'hoverTick'; // Only append hover if actionable
+            if (!canSub) subBox.hoverSfx = 'none'; // no hover sound when it can't be used
             this.hitboxes.push(subBox);
 
             // --- ADD BUTTON (+) ---
             const canAdd = availablePoints > 0;
             const addId = `ADD_${attr.toUpperCase()}`;
-            const isHoveredAdd = canAdd && hoveredId === addId;
-            const isFocusAdd = canAdd && (hoveredId === addId || selectedId === addId);
-
-            let addBg = isHoveredAdd ? UITheme.colors.states.focusBg : "rgba(0,0,0,0.4)";
-            let addTextCol = canAdd ? (isFocusAdd ? UITheme.colors.states.focusText : UITheme.colors.success) : UITheme.colors.textMuted;
-            let addBorder = canAdd ? (isFocusAdd ? UITheme.colors.states.focusText : UITheme.colors.success) : UITheme.colors.border;
-
-            this.ui.drawRect(startX + 540, rowY + 5, 40, 40, addBg, true);
-            this.ui.drawRect(startX + 540, rowY + 5, 40, 40, addBorder, false);
-            this.ui.drawText("+", startX + 560, rowY + 34, UITheme.fonts.bold, addTextCol, "center");
+            this.ui.drawButton(startX + 540, rowY + 5, 40, 40, "+",
+                this.ui.flags(addId, hoveredId, { disabled: !canAdd }),
+                { font: UITheme.fonts.bold, bg: "rgba(0,0,0,0.4)", color: UITheme.colors.success, inset: true });
 
             const addBox = { id: addId, x: startX + 540, y: rowY + 5, w: 40, h: 40 };
-            if (canAdd) addBox.hoverSfx = 'hoverTick'; // Only append hover if actionable
+            if (!canAdd) addBox.hoverSfx = 'none'; // no hover sound when it can't be used
             this.hitboxes.push(addBox);
         });
     }
@@ -321,23 +302,12 @@ export class LevelUpRenderer {
         const startX = centerX - (btnW * 1.5) - spacing;
 
         const drawBtn = (id, label, btnX, isClickable, defaultCol) => {
-            const isHovered = hoveredId === id;
-            const isSelected = selectedId === id;
-            const isFocus = isClickable && (isHovered || isSelected);
-
-            // Change hover treatment slightly for disabled buttons
-            let bg = "rgba(0,0,0,0.6)";
-            if (isHovered) bg = isClickable ? UITheme.colors.states.focusBg : "rgba(0,0,0,0.7)";
-            
-            let textCol = isClickable 
-                ? (isFocus ? UITheme.colors.states.focusText : defaultCol) 
-                : UITheme.colors.textMuted;
-
-            this.ui.drawPanel(btnX, btnY, btnW, btnH, bg);
-            this.ui.drawText(label, btnX + (btnW/2), btnY + (btnH / 2) + 10, UITheme.fonts.body, textCol, "center");
+            this.ui.drawButton(btnX, btnY, btnW, btnH, label,
+                this.ui.flags(id, hoveredId, { disabled: !isClickable }),
+                { bg: "rgba(0,0,0,0.6)", color: defaultCol });
 
             const box = { id, x: btnX, y: btnY, w: btnW, h: btnH };
-            if (isClickable) box.hoverSfx = 'hoverTick'; // Only append hover if actionable
+            if (!isClickable) box.hoverSfx = 'none'; // no hover sound when it can't be used
             this.hitboxes.push(box);
         };
 

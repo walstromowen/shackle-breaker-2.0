@@ -189,11 +189,10 @@ export class BattleHUDRenderer {
 
       this.drawDarkPanel(currentX, y, this.HUD.CARD_W, this.HUD.CARD_H);
 
-      const isHoveredTarget = isValidTarget && state.hoveredElement?.id === targetId;
-      if ((isHoveredTarget || isAlreadySelected) && state.phase === 'SELECT_TARGET') {
-        this.ui.drawSelectionBrackets(currentX, y, this.HUD.CARD_W, this.HUD.CARD_H, 4, UITheme.colors.highlight);
-        this.ctx.fillStyle = UITheme.colors.highlightGlow || 'rgba(184, 153, 71, 0.15)';
-        this.ctx.fillRect(currentX, y, this.HUD.CARD_W, this.HUD.CARD_H);
+      // The target being aimed at (mouse hover or keyboard cursor) is "highlighted"; targets already picked are "selected"
+      if (state.phase === 'SELECT_TARGET') {
+        const flags = this.ui.flags(targetId, isValidTarget ? state.hoveredElement?.id : null, { selected: !!isAlreadySelected });
+        this.ui.drawStateBox(currentX, y, this.HUD.CARD_W, this.HUD.CARD_H, flags);
       }
 
       this.ctx.font = UITheme.fonts.body;
@@ -274,11 +273,9 @@ export class BattleHUDRenderer {
 
       this.drawDarkPanel(currentX, y, this.HUD.CARD_W, ENEMY_CARD_H);
 
-      const isHoveredTarget = isValidTarget && state.hoveredElement?.id === targetId;
-      if ((isHoveredTarget || isAlreadySelected) && state.phase === 'SELECT_TARGET') {
-        this.ui.drawSelectionBrackets(currentX, y, this.HUD.CARD_W, ENEMY_CARD_H, 4, UITheme.colors.highlight);
-        this.ctx.fillStyle = UITheme.colors.highlightGlow || 'rgba(184, 153, 71, 0.15)';
-        this.ctx.fillRect(currentX, y, this.HUD.CARD_W, ENEMY_CARD_H);
+      if (state.phase === 'SELECT_TARGET') {
+        const flags = this.ui.flags(targetId, isValidTarget ? state.hoveredElement?.id : null, { selected: !!isAlreadySelected });
+        this.ui.drawStateBox(currentX, y, this.HUD.CARD_W, ENEMY_CARD_H, flags);
       }
 
       this.ctx.font = UITheme.fonts.bodyItalic || `italic ${UITheme.fonts.body}`;
@@ -358,26 +355,10 @@ export class BattleHUDRenderer {
 
     globalBtns.forEach(btn => {
       hitboxes.push({ id: btn.id, x: btn.x, y: btnY, w: btnW, h: btnH, cursor: 'pointer' });
-      const isHovered = state.hoveredElement?.id === btn.id;
-      this.drawDarkPanel(btn.x, btnY, btnW, btnH);
-
-      if (isHovered) {
-        this.ui.drawSelectionBrackets(btn.x, btnY, btnW, btnH, 4, UITheme.colors.highlight);
-        this.ctx.fillStyle = UITheme.colors.highlightGlow || 'rgba(184, 153, 71, 0.15)';
-        this.ctx.fillRect(btn.x, btnY, btnW, btnH);
-      }
-
-      this.ctx.save();
-      this.ctx.textAlign = 'center';
-      this.ctx.textBaseline = 'middle';
-      this.ctx.font = UITheme.fonts.small || '18px sans-serif';
-      this.ctx.fillStyle = isHovered ? (UITheme.colors.textHighlight || UITheme.colors.textMain) : UITheme.colors.textMuted;
-      this.ctx.fillText(btn.text, btn.x + (btnW / 2), btnY + (btnH / 2));
-      this.ctx.restore();
+      this.ui.drawButton(btn.x, btnY, btnW, btnH, btn.text,
+        this.ui.flags(btn.id, state.hoveredElement?.id),
+        { bg: UITheme.colors.panelBg, font: UITheme.fonts.small || '18px sans-serif', color: UITheme.colors.textMuted });
     });
-
-    const time = performance.now() * 0.004;
-    const pulse = (Math.sin(time) + 1) / 2;
 
     // The panel only has room for one row of icons, so long lists (e.g. the dev artifact) are paged:
     // the page follows the highlighted ability and LEFT/RIGHT walk through all of them.
@@ -397,7 +378,6 @@ export class BattleHUDRenderer {
 
     activeChar.abilities.forEach((ability, index) => {
       if (index < firstOnPage || index >= firstOnPage + columns) return;
-      const isSelected = (index === state.menuIndex);
       const canAfford = ability.canPayCost ? ability.canPayCost(activeChar) : true;
       const col = index - firstOnPage;
       const drawX = paddingX + (col * (itemSize + margin));
@@ -415,20 +395,14 @@ export class BattleHUDRenderer {
         cursor: canAfford ? 'pointer' : 'not-allowed'
       });
 
-      const isHovered = state.hoveredElement?.id === actionId;
-      if (isSelected || isHovered) {
-        const brktDist = isSelected ? (5 + (pulse * 5)) : 5;
-        const bracketColor = canAfford ? UITheme.colors.highlight : UITheme.colors.hp;
-        this.ui.drawSelectionBrackets(drawX, drawY, itemSize, itemSize, brktDist, bracketColor);
-        this.ctx.fillStyle = canAfford ? (UITheme.colors.highlightGlow || 'rgba(184, 153, 71, 0.2)') : (UITheme.colors.hpGlow || 'rgba(140, 28, 28, 0.2)');
-        this.ctx.fillRect(drawX, drawY, itemSize, itemSize);
-      }
-
-      if (!canAfford) {
-        this.ctx.globalAlpha = 0.3;
-      }
+      // The ability under the mouse / keyboard cursor is "highlighted"; one that cannot be afforded is faded like any disabled
+      // element (its brackets still show where the cursor is)
+      const flags = this.ui.flags(actionId, state.hoveredElement?.id, { disabled: !canAfford });
+      this.ctx.save();
+      this.ctx.globalAlpha *= this.ui.stateAlpha(flags);
+      this.ui.drawStateBox(drawX, drawY, itemSize, itemSize, flags);
       this.drawIcon(ability.icon, 'abilities', drawX, drawY, itemSize);
-      this.ctx.globalAlpha = 1.0;
+      this.ctx.restore();
     });
   }
 

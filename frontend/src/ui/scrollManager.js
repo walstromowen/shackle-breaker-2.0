@@ -3,8 +3,13 @@ export class ScrollManager {
         this.zones = new Map(); 
         
         // Tuning parameter for smoothness. 
-        // Lower = floatier, Higher = snappier. (e.g., 0.15 is 15% closer per frame)
+        // Lower = floatier, Higher = snappier. (e.g., 0.15 is 15% closer per frame, measured at 60 fps)
         this.lerpSpeed = 0.05; 
+
+        // How far ONE notch of the mouse wheel scrolls, in px, on every screen. The controllers pass the wheel delta (the sign is the
+        // direction); its size and any multiplier a controller adds (x40, x80 ...) no longer matter, so every list scrolls alike.
+        // A zone can override it with  registerZone(id, { wheelStep: n }).
+        this.wheelStep = 96; 
         
         this.dragState = {
             active: false,
@@ -27,16 +32,16 @@ export class ScrollManager {
     // --- SMOOTHNESS UPDATE LOOP ---
     // THIS IS THE METHOD YOUR GAME LOOP WAS LOOKING FOR
     update(dt) {
-        // A simple, bulletproof lerp. 
-        // We move a fixed percentage of the remaining distance every frame.
-        // Set your this.lerpSpeed back to something like 0.25
+        // Glide a fixed percentage of the remaining distance per 1/60 s, so the feel is the same at 30, 60 or 144 fps.
+        const frames = (typeof dt === 'number' && dt > 0) ? Math.min(dt, 0.1) * 60 : 1;
+        const step = 1 - Math.pow(1 - this.lerpSpeed, frames);
         
         for (const [id, zone] of this.zones.entries()) {
             const distance = zone.targetOffset - zone.offset;
 
             // If we are more than half a pixel away, glide towards it
             if (Math.abs(distance) > 0.5) {
-                zone.offset += distance * this.lerpSpeed;
+                zone.offset += distance * step;
             } else {
                 // We are close enough, snap to the exact pixel to prevent jitter
                 zone.offset = zone.targetOffset;
@@ -79,8 +84,10 @@ export class ScrollManager {
     handleScrollWheel(x, y, delta) {
         for (const [id, zone] of this.zones.entries()) {
             if (this._isInside(x, y, zone.bounds)) {
-                // Add delta to the target, not the current offset
-                this.setOffset(id, zone.targetOffset + delta);
+                // One notch = one wheelStep, whatever size of delta the controller sent. Add it to the target, not the current offset.
+                const direction = Math.sign(delta);
+                if (direction === 0) return true;
+                this.setOffset(id, zone.targetOffset + direction * (zone.wheelStep || this.wheelStep));
                 return true; 
             }
         }

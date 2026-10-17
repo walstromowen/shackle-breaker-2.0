@@ -2,26 +2,10 @@ import { events } from '../../core/eventBus.js';
 import { StatCalculator } from '../../../../shared/systems/statCalculator.js';
 import { BaseController } from '../core/baseController.js';
 
-const KEY_BINDINGS = {
-    'ArrowUp': 'UP',
-    'KeyW': 'UP',
-    'ArrowDown': 'DOWN',
-    'KeyS': 'DOWN',
-    'ArrowLeft': 'LEFT',
-    'KeyA': 'LEFT',
-    'ArrowRight': 'RIGHT',
-    'KeyD': 'RIGHT',
-    'Enter': 'CONFIRM',
-    'Space': 'CONFIRM',
-    'Escape': 'CANCEL',
-    'Backspace': 'CANCEL',
-    'KeyP': 'CANCEL',
-    'Tab': 'CANCEL'
-};
-
 export class LevelUpController extends BaseController {
     constructor(input) {
         super(input);
+        this.extraBindings = { KeyP: 'CANCEL' };
         this.member = null;
         this.routeData = null;
         this.availablePoints = 0;
@@ -60,37 +44,33 @@ export class LevelUpController extends BaseController {
     }
 
     // ========================================================
-    // AUDIO WRAPPERS
+    // FOCUS (shared standard, see BaseController)
     // ========================================================
-    playNavSound() {
-        super.playNavSound();
+    // The mouse moved onto something: the keyboard cursor follows it (silent; UIInteractionManager adds the hover tick)
+    setFocusFromPointer(hitboxId) {
+        if (this.isTransitioning) return; // Prevent focus changes during exit
+        this._setFocus(hitboxId);
     }
 
-    playClickSound() {
-        events.emit('PLAY_SFX', { id: 'click', volume: 0.5, pitch: 0.9 + Math.random() * 0.2 });
+    // The element the keyboard cursor is on
+    getKeyboardFocusId() {
+        if (this.activeSection === 'ATTRIBUTES') {
+            return `${this.attributeColumn}_${this.attributes[this.selectedAttributeIndex].toUpperCase()}`;
+        }
+        if (this.activeSection === 'BUTTONS') return this.uiButtons[this.selectedButtonIndex];
+        return null;
     }
 
-    playConfirmSound() {
-        super.playConfirmSound();
-    }
-
-    playCancelSound() {
-        super.playCancelSound();
+    // Back: discard what is pending and return to the party screen
+    _goBack() {
+        if (this.isTransitioning) return;
+        this.playCancelSound();
+        this.cancelAndReturn();
     }
 
     // ========================================================
     // STANDARDIZED INPUT HANDLING
     // ========================================================
-    handleMouseMove(x, y, isMouseDown, renderer) {
-        if (this.isTransitioning) return; // Prevent hover changes during exit
-        
-        const prevHoverId = this.hoveredHitboxId;
-        super.handleMouseMove(x, y, isMouseDown, renderer);
-        
-        if (this.hoveredHitboxId && this.hoveredHitboxId !== prevHoverId) {
-            this._setFocus(this.hoveredHitboxId);
-        }
-    }
 
     _setFocus(hitboxId) {
         if (!hitboxId) return;
@@ -124,18 +104,18 @@ export class LevelUpController extends BaseController {
             if (this.availablePoints > 0) {
                 this.pendingAllocations[attr]++;
                 this.availablePoints--;
-                this.playClickSound();
+                this.playConfirmSound();
             } else {
-                this.playCancelSound();
+                this.playErrorSound(); // no points left
             }
         } else if (hitboxId.startsWith('SUB_')) {
             const attr = hitboxId.split('_')[1].toLowerCase();
             if (this.pendingAllocations[attr] > 0) {
                 this.pendingAllocations[attr]--;
                 this.availablePoints++;
-                this.playClickSound();
+                this.playConfirmSound();
             } else {
-                this.playCancelSound();
+                this.playErrorSound(); // nothing to take back
             }
         } else if (hitboxId === 'BTN_RESET') {
             let hasPending = false;
@@ -147,9 +127,9 @@ export class LevelUpController extends BaseController {
                 }
             });
             if (hasPending) {
-                this.playClickSound();
+                this.playConfirmSound();
             } else {
-                this.playCancelSound(); 
+                this.playErrorSound(); // nothing to reset
             }
         } else if (hitboxId === 'BTN_CONFIRM') {
             const hasPending = Object.values(this.pendingAllocations).some(v => v > 0);
@@ -157,23 +137,20 @@ export class LevelUpController extends BaseController {
                 this.playConfirmSound();
                 this.commitPoints();
             } else {
-                this.playCancelSound();
+                this.playErrorSound(); // nothing allocated yet
             }
         } else if (hitboxId === 'BTN_CANCEL') {
-            this.playCancelSound();
-            this.cancelAndReturn();
+            this._goBack();
         }
     }
 
     onRightClick(hitboxId) {
-        if (this.isTransitioning) return;
-        this.playCancelSound();
-        this.cancelAndReturn();
+        this._goBack();
     }
 
     handleKeyDown(keyCode, e) {
         if (this.isTransitioning) return;
-        const intent = (e && KEY_BINDINGS[e.code]);
+        const intent = this.resolveIntent(keyCode, e);
         if (!intent) return;
         this.handleNavigatingKeys(intent);
     }
@@ -209,8 +186,7 @@ export class LevelUpController extends BaseController {
                 const targetId = `${this.attributeColumn}_${attr}`;
                 this.onClick(targetId, true);
             } else if (intent === 'CANCEL') {
-                this.playCancelSound();
-                this.cancelAndReturn();
+                this._goBack();
             }
         } else if (this.activeSection === 'BUTTONS') {
             if (intent === 'UP') {
@@ -230,8 +206,7 @@ export class LevelUpController extends BaseController {
             } else if (intent === 'CONFIRM') {
                 this.onClick(this.uiButtons[this.selectedButtonIndex], true);
             } else if (intent === 'CANCEL') {
-                this.playCancelSound();
-                this.cancelAndReturn();
+                this._goBack();
             }
         }
     }
@@ -260,13 +235,9 @@ export class LevelUpController extends BaseController {
     }
 
     getState() {
-        let selectedId = null;
-        if (this.activeSection === 'ATTRIBUTES') {
-            const attr = this.attributes[this.selectedAttributeIndex].toUpperCase();
-            selectedId = `${this.attributeColumn}_${attr}`;
-        } else if (this.activeSection === 'BUTTONS') {
-            selectedId = this.uiButtons[this.selectedButtonIndex];
-        }
+        // One highlight at a time: the mouse hover in mouse mode, the keyboard cursor in keyboard mode
+        const focusId = this.getFocusId();
+        const mouseMode = this.inputMode === 'mouse';
 
         return {
             member: this.member,
@@ -275,8 +246,8 @@ export class LevelUpController extends BaseController {
             currentStats: StatCalculator.calculateDetailed(this.member),
             previewStats: StatCalculator.calculateDetailed(this.member, this.pendingAllocations),
             mouse: this.mouse,
-            hoveredElement: this.hoveredHitboxId ? { id: this.hoveredHitboxId } : null,
-            selectedElementId: selectedId,
+            hoveredElement: mouseMode && focusId ? { id: focusId } : null,
+            selectedElementId: mouseMode ? null : focusId,
             onLayoutUpdate: (hitboxes) => this.updateHitboxes(hitboxes)
         };
     }

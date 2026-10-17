@@ -30,7 +30,8 @@ const STAIR_MASK = {
 };
 const KEY = (c, r) => (c + 2048) * 4096 + (r + 2048);
 const layerNumber = (name) => parseInt(String(name).replace('LAYER_', ''), 10);
-const MIN_REGION = 14; // a walkable region smaller than this is not worth a stair (it is left as a nook)
+const MIN_REGION = 14; // a walkable region smaller than this is never counted as lost
+const MIN_STAIR_TARGET = 40; // a region smaller than this is not worth a stair down into it: it would be a dead-end nook with nothing in it, so it is filled in instead
 
 export class CaveGenerator {
     constructor(seed, type, config, interiorId) {
@@ -597,7 +598,7 @@ export class CaveGenerator {
                 const ca = info.at(a), cb = info.at(b);
                 const ra = info.seen.has(ca), rb = info.seen.has(cb);
                 if (ra === rb) continue; // joins two regions that are both reached or both lost
-                if (info.sizes[ra ? cb : ca] < MIN_REGION) continue;
+                if (info.sizes[ra ? cb : ca] < MIN_STAIR_TARGET) continue;
                 cands.push({ plan, cost, a, b, size: info.sizes[ra ? cb : ca], tie: this._hash(c, r, 811) });
             }
             // cheapest pads first, trying them in order until one really joins a lost region

@@ -64,22 +64,27 @@ export class PartyRenderer {
                 w: this.layout.cardW,
                 h: this.layout.cardH,
                 cursor: 'pointer',
-                hoverSfx: 'hoverTick',      // Standard hover tick
-                clickSfx: 'cinematicBoom'   // Standard confirm boom
+// Standard hover tick
+   // Standard confirm boom
             });
-
-            const isHovered = hoveredElement?.id === `CARD_${index}`;
-            const isSelected = (index === selectedIndex);
 
             // Evaluates true whether moving via keyboard (swappingIdx) or mouse (dragState)
             const isBeingDragged = dragState?.active && dragState.payload === member;
             const isBeingMoved = (index === swappingIdx) || isBeingDragged;
 
+            // highlighted = the one focused card (mouse hover or keyboard cursor, never both). While a context menu is open
+            // the menu owns the focus, and the card it belongs to stays marked as selected.
+            const flags = this.ui.flags(`CARD_${index}`, menu ? null : hoveredElement?.id, {
+                selected: isBeingMoved || (!!menu && index === selectedIndex)
+            });
+            const isHolding = swappingIdx !== null || !!dragState?.active;
+            const isDropTarget = isHolding && flags.highlighted && !isBeingMoved;
+
             const isActive = activeIndices.includes(index);
             const isDead = member.hp <= 0;
             const isUnavailable = mode === 'BATTLE_SELECT' && (isActive || isDead);
 
-            this.drawCard(member, pos.x, pos.y, isSelected, isHovered, isBeingMoved, isUnavailable, isActive, mode);
+            this.drawCard(member, pos.x, pos.y, flags, isBeingMoved, isDropTarget, isUnavailable, isActive, mode);
         });
 
         if (menu) {
@@ -138,46 +143,36 @@ export class PartyRenderer {
         };
     }
 
-    drawCard(member, x, y, isSelected, isHovered, isBeingMoved, isUnavailable, isActive, mode) {
+    // flags: { highlighted, pressed, selected } from ui.flags()
+    //   highlighted  the focused card (gold wash + brackets)
+    //   selected     the card the open menu belongs to, or the card being moved (bar down the left edge)
+    // isDropTarget: a card is being carried and this is where it would land
+    drawCard(member, x, y, flags, isBeingMoved, isDropTarget, isUnavailable, isActive, mode) {
         const ctx = this.ctx;
         const { cardW, cardH } = this.layout;
 
         ctx.save();
 
-        // --- 1. RESOLVE GLOBAL STATES ---
-        let bgColor = UITheme.colors.panelBg;
-        let nameColor = UITheme.colors.textMain;
-        let drawBrackets = false;
-        let bracketColor = UITheme.colors.borderHighlight;
-        let strokeColor = null;
+        // --- 1. BACKGROUND, THEN THE SHARED STATE LOOK ---
+        this.ui.drawPanel(x, y, cardW, cardH, UITheme.colors.panelBg);
 
-        if (isBeingMoved) {
-            bgColor = UITheme.colors.stmDim;
-            strokeColor = UITheme.colors.stm;
-        } else if (isSelected) {
-            bgColor = isUnavailable ? 'rgba(100, 0, 0, 0.2)' : UITheme.colors.states.focusBg;
-            nameColor = isUnavailable ? UITheme.colors.textMuted : UITheme.colors.states.focusText;
-            drawBrackets = true;
-            bracketColor = isUnavailable ? UITheme.colors.failure : UITheme.colors.borderHighlight;
-        } else if (isHovered) {
-            bgColor = isUnavailable ? 'rgba(100, 0, 0, 0.2)' : UITheme.colors.states.hoverBg;
-            nameColor = isUnavailable ? UITheme.colors.textMuted : UITheme.colors.states.hoverText;
-        }
-
-        // --- 2. DRAW BACKGROUNDS & BORDERS ---
-        this.ui.drawPanel(x, y, cardW, cardH, bgColor);
-
-        if (strokeColor) {
-            this.ui.drawRect(x, y, cardW, cardH, strokeColor, false);
-        }
-
-        if (drawBrackets) {
-            this.ui.drawSelectionBrackets(x, y, cardW, cardH, 10, bracketColor);
-        }
-
+        // A card that cannot be picked right now keeps its red wash and dimmed contents; it can still be focused
         if (isUnavailable) {
+            this.ui.drawRect(x, y, cardW, cardH, 'rgba(100, 0, 0, 0.2)', true);
             this.ui.drawRect(x, y, cardW, cardH, 'rgba(0, 0, 0, 0.6)', true);
         }
+
+        if (isDropTarget) {
+            this.ui.drawDropTarget(x, y, cardW, cardH, !isUnavailable);
+        } else {
+            this.ui.drawStateBox(x, y, cardW, cardH, flags);
+        }
+
+        // The card being carried is drawn dim, so the gap it left (and the drop target) read clearly
+        if (isBeingMoved) ctx.globalAlpha = 0.5;
+
+        let nameColor = this.ui.stateTextColor(flags, UITheme.colors.textMain);
+        if (isUnavailable) nameColor = UITheme.colors.textMuted;
 
         if (member.skillPoints && member.skillPoints > 0 && !isUnavailable) {
             const time = performance.now() * 0.005;

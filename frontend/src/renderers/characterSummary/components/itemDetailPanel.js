@@ -15,7 +15,7 @@ export class ItemDetailPanel {
     this.ICON_SIZE = 160;          // Main icon draw size (2.5x of 64 source)
     this.ABILITY_ICON_SIZE = 64;   // List icons drawn at 64x64 (1:1 with source)
     this.MATERIAL_ICON_SIZE = 24;  // Material icons base size (drawn at 2x)
-    this.SCROLLBAR_WIDTH = 10;
+    this.SCROLLBAR_WIDTH = UITheme.scrollbar.width;
 
     // --- Vertical Rhythm & Spacing ---
     this.layout = {
@@ -117,18 +117,9 @@ export class ItemDetailPanel {
   }
 
   drawScrollBar(x, y, viewportH, contentH, scrollOffset, hitboxes, state) {
-    this.ui.drawRect(x, y, this.SCROLLBAR_WIDTH, viewportH, UITheme.colors.scrollTrack || UITheme.colors.bgScale[0]);
-
-    const viewRatio = viewportH / contentH;
-    const thumbH = Math.max(48, viewportH * viewRatio);
-    const maxScroll = contentH - viewportH;
-    const scrollRatio = maxScroll > 0 ? (scrollOffset / maxScroll) : 0;
-    const thumbY = y + (scrollRatio * (viewportH - thumbH));
-
-    const isHovered = state && state.hoveredHitboxId === 'SCROLLBAR_THUMB';
-    const thumbColor = isHovered ? UITheme.colors.states.hoverText : (UITheme.colors.scrollThumb || UITheme.colors.borderHighlight);
-
-    this.ui.drawRect(x, thumbY, this.SCROLLBAR_WIDTH, thumbH, thumbColor);
+    // The shared scrollbar: the thumb takes the highlight color while the mouse is on the scroll column
+    this.ui.drawScrollbar(x, y, this.SCROLLBAR_WIDTH, viewportH, scrollOffset, contentH - viewportH, viewportH,
+      this.ui.flags('SCROLLBAR_THUMB', state && state.hoveredHitboxId));
 
     if (hitboxes) {
       hitboxes.push({
@@ -137,8 +128,7 @@ export class ItemDetailPanel {
         x: x - 10,
         y: y,
         w: this.SCROLLBAR_WIDTH + 19,
-        h: viewportH,
-        hoverSfx: 'hoverTick'
+        h: viewportH
       });
     }
   }

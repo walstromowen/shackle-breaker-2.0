@@ -65,6 +65,12 @@ export class ShopRenderer {
             );
         }
 
+        // Report the hitboxes first: the tooltip below can return early (hovering the empty part of a panel, a scrollbar ...),
+        // and the controller must still get this frame's layout.
+        if (state.onLayoutUpdate) {
+            state.onLayoutUpdate([...this.hitboxes].reverse());
+        }
+
         if (!state.heldItem && !state.contextMenu && state.hoveredHitboxId) {
             const tooltipState = { ...state };
 
@@ -100,10 +106,6 @@ export class ShopRenderer {
 
             this.tooltipSystem.render(tooltipState, this.hitboxes);
         }
-
-        if (state.onLayoutUpdate) {
-            state.onLayoutUpdate([...this.hitboxes].reverse());
-        }
     }
 
     _drawShopPanel(inventory, title, currency, prefix, state, x, y, w, h) {
@@ -112,7 +114,6 @@ export class ShopRenderer {
         const COLS = 4;
         const SLOT_SIZE = 96;
         const SLOT_PADDING = 19;
-        const SCROLLBAR_WIDTH = 10;
 
         this.ui.drawText(title, centerX, y + 48, UITheme.fonts.header, UITheme.colors.textMain, "center");
 
@@ -184,18 +185,15 @@ export class ShopRenderer {
 
                 const isHeld = state.heldItem && state.heldItem.item === item;
                 const isActivePane = state.activePanel === prefix.toLowerCase();
-                const isSelected = isActivePane && (index === state.vendorIndex || index === state.partyIndex);
-                const isHovered = state.hoveredHitboxId === `${prefix}_ITEM_${index}`;
+                const isCursorSlot = isActivePane && (index === state.vendorIndex || index === state.partyIndex);
 
-                let bgFill = UITheme.colors.bgScale[1];
-                let drawBrackets = false;
-
-                if (isSelected) {
-                    bgFill = UITheme.colors.states.focusBg;
-                    drawBrackets = true;
-                } else if (isHovered) {
-                    bgFill = UITheme.colors.states.hoverBg;
-                }
+                // highlighted = the focused slot (mouse hover or keyboard cursor). While a menu is open or an item is being
+                // carried the focus belongs to the menu / the drop target, so no slot is highlighted; the slot the menu was
+                // opened on stays "selected".
+                const slotFocus = (state.contextMenu || state.heldItem) ? null : state.hoveredHitboxId;
+                const flags = this.ui.flags(`${prefix}_ITEM_${index}`, slotFocus, {
+                    selected: !!state.contextMenu && isCursorSlot
+                });
 
                 this.hitboxes.push({
                     id: `${prefix}_ITEM_${index}`,
@@ -204,12 +202,13 @@ export class ShopRenderer {
                     w: SLOT_SIZE,
                     h: SLOT_SIZE,
                     type: 'inventory',
-                    index: index,
-                    hoverSfx: 'hoverTick',
-                    clickSfx: 'cinematicBoom'
+                    index: index
+
+
                 });
 
-                this.ui.drawPanel(itemX, itemY, SLOT_SIZE, SLOT_SIZE, bgFill);
+                this.ui.drawPanel(itemX, itemY, SLOT_SIZE, SLOT_SIZE, UITheme.colors.bgScale[1]);
+                this.ui.drawStateBox(itemX, itemY, SLOT_SIZE, SLOT_SIZE, flags);
 
                 if (!def) {
                     this.ui.drawText("?", itemX + (SLOT_SIZE / 2), itemY + (SLOT_SIZE / 2) + 10, UITheme.fonts.header, UITheme.colors.textMuted, "center");
@@ -227,10 +226,6 @@ export class ShopRenderer {
                     const basePrice = def.cost || def.value || 10;
                     const priceStr = prefix === 'VENDOR' ? `${basePrice}` : `${Math.floor(basePrice / 2)}`;
                     this.ui.drawText(priceStr, itemX + 5, itemY + SLOT_SIZE - 5, UITheme.fonts.small, UITheme.colors.textMuted, "left");
-
-                    if (drawBrackets) {
-                        this.ui.drawSelectionBrackets(itemX, itemY, SLOT_SIZE, SLOT_SIZE, 5, UITheme.colors.borderHighlight);
-                    }
                 }
             });
         }
@@ -238,31 +233,32 @@ export class ShopRenderer {
         this.ui.endClip();
         this.ui.ctx.restore();
 
+        // A carried item is bought / sold by dropping it on the OTHER side: mark that whole side as the landing spot
+        if (state.heldItem && state.dropTarget && state.heldItem.source !== prefix.toLowerCase()
+            && String(state.dropTarget).includes(prefix)) {
+            this.ui.drawDropTarget(x + 8, listY - 12, w - 16, listH + 24, true);
+        }
+
         if (currentContentHeight > listH) {
-            const scrollX = x + w - SCROLLBAR_WIDTH - 5;
-            this._drawScrollBar(scrollX, listY, listH, currentContentHeight, renderScroll, prefix);
+            const scrollX = x + w - UITheme.scrollbar.width - 5;
+            this._drawScrollBar(scrollX, listY, listH, currentContentHeight, renderScroll, prefix, state.hoveredHitboxId);
         }
     }
 
-    _drawScrollBar(x, y, viewportH, contentH, scrollOffset, prefix) {
-        const SCROLLBAR_WIDTH = 10;
+    _drawScrollBar(x, y, viewportH, contentH, scrollOffset, prefix, focusId = null) {
+        const width = UITheme.scrollbar.width;
+        const id = `SCROLLBAR_THUMB_${prefix}`;
 
-        this.ui.drawRect(x, y, SCROLLBAR_WIDTH, viewportH, UITheme.colors.scrollTrack || UITheme.colors.bgScale[0]);
-
-        const viewRatio = viewportH / contentH;
-        let thumbH = Math.max(20, viewportH * viewRatio);
-
-        const scrollRatio = scrollOffset / (contentH - viewportH);
-        const thumbY = y + (scrollRatio * (viewportH - thumbH));
-
-        this.ui.drawRect(x, thumbY, SCROLLBAR_WIDTH, thumbH, UITheme.colors.borderHighlight);
+        const thumb = this.ui.drawScrollbar(x, y, width, viewportH, scrollOffset, contentH - viewportH, viewportH,
+            this.ui.flags(id, focusId));
+        if (!thumb) return;
 
         this.hitboxes.push({
-            id: `SCROLLBAR_THUMB_${prefix}`,
+            id,
             x: x - 5,
-            y: thumbY,
-            w: SCROLLBAR_WIDTH + 10,
-            h: thumbH,
+            y: thumb.y,
+            w: width + 10,
+            h: thumb.h,
             type: 'scrollbar_thumb'
         });
     }

@@ -5,19 +5,36 @@ import { WeatherFactory } from '../../../../shared/systems/factories/weatherFact
 import { TimeSystem } from '../../../../shared/systems/timeSystem.js';
 import { PartyManager } from '../../../../shared/systems/partyManager.js';
 import { BaseController } from '../core/baseController.js';
+import { UI_SFX } from '../../ui/uiSfx.js';
 import { DIFFICULTY_MODIFIERS } from '../../../../shared/data/constants.js';
 import { QuestDefinitions } from '../../../../shared/data/questDefinitions.js';
 import { InventorySystem } from '../../../../shared/systems/inventorySystem.js';
 import { ItemDefinitions } from '../../../../shared/data/itemDefinitions.js';
+import { AbilitySystem } from '../../../../shared/systems/abilitySystem.js';
+import { AbilityDefinitions } from '../../../../shared/data/abilityDefinitions.js';
 
-/* A lit torch (an item with a `lightBuff` block, see itemDefinitions.js) burns for a number of IN-GAME minutes. In its last TORCH_GUTTER_MINUTES the light shrinks back to normal. */
+/* A world buff with a `light` (a torch: the ability `torchlight`, see abilityDefinitions.js) lasts a number of IN-GAME minutes. In its last TORCH_GUTTER_MINUTES the light shrinks back to normal. */
 const TORCH_GUTTER_MINUTES = 30;
 /* The colour is mixed in this many steps (not smoothly), so LightingRenderer's colour cache only ever holds a handful of entries. */
 const TORCH_COLOR_STEPS = 8;
 
+/* Keyboard shortcuts of the overworld menu. The number keys 1-9 and 0 belong to the hotbar (InventorySystem.HOTBAR_KEYS), so the menu uses letters. Change a key here
+   and its button badge follows. */
+const MENU_KEYS = {
+    toggle: 'KeyM',     // open / close the menu
+    party: 'KeyP',
+    character: 'KeyC',
+    journal: 'KeyJ',
+    crafting: 'KeyB',   // the crafting Bag
+    system: 'KeyO'      // Options / title
+};
+const keyLabel = (code) => code.replace(/^Key|^Digit/, '');
+
 export class OverworldController extends BaseController {
     constructor(input, config, worldManager) {
         super(input);
+        // The world has nothing to "go back" from: right-click only closes the menu when it is open, and is silent otherwise
+        this.cancelSfxOnRightClick = false;
         this.config = config;
         this.worldManager = worldManager;
         this.player = this.createPlayerEntity();
@@ -40,31 +57,46 @@ export class OverworldController extends BaseController {
 
         this.menuToggleHitbox = {
             id: 'btn_menu_toggle', x: MENU_X, y: MENU_Y, w: BTN_SIZE, h: BTN_SIZE,
-            spriteCol: 0, spriteRow: 0, label: 'Menu', shortcut: '1', zIndex: 100, hoverSfx: 'hoverTick'
+            spriteCol: 0, spriteRow: 0, label: 'Menu', shortcut: keyLabel(MENU_KEYS.toggle), zIndex: 100
         };
 
         this.dropdownHitboxes = [
-            { id: 'btn_party',     x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 1, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 1, spriteRow: 0, label: 'Party', shortcut: '2' },
-            { id: 'btn_character', x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 2, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 2, spriteRow: 0, label: 'Character', shortcut: '3' },
-            { id: 'btn_journal',   x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 3, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 3, spriteRow: 0, label: 'Journal', shortcut: '4' },
-            { id: 'btn_crafting',  x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 4, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 4, spriteRow: 0, label: 'Crafting', shortcut: '5' },
-            { id: 'btn_system',    x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 5, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, hoverSfx: 'hoverTick', spriteCol: 5, spriteRow: 0, label: 'System', shortcut: '6' }
+            { id: 'btn_party',     x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 1, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, spriteCol: 1, spriteRow: 0, label: 'Party', shortcut: keyLabel(MENU_KEYS.party) },
+            { id: 'btn_character', x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 2, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, spriteCol: 2, spriteRow: 0, label: 'Character', shortcut: keyLabel(MENU_KEYS.character) },
+            { id: 'btn_journal',   x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 3, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, spriteCol: 3, spriteRow: 0, label: 'Journal', shortcut: keyLabel(MENU_KEYS.journal) },
+            { id: 'btn_crafting',  x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 4, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, spriteCol: 4, spriteRow: 0, label: 'Crafting', shortcut: keyLabel(MENU_KEYS.crafting) },
+            { id: 'btn_system',    x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 5, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, spriteCol: 5, spriteRow: 0, label: 'System', shortcut: keyLabel(MENU_KEYS.system) }
         ];
+
+        // --- HOTBAR: one clickable slot per key in InventorySystem.HOTBAR_KEYS. Positions here are only a first guess for a 1920x1080 screen:
+        // OverworldUIRenderer.drawHotbar centres the row at the bottom of the real canvas every frame and moves these same objects, so clicks always match what is drawn.
+        this.hotbarHitboxes = InventorySystem.HOTBAR_KEYS.map((key, i) => ({
+            id: 'hotbar_' + i, x: 0, y: 0, w: 68, h: 68, zIndex: 100
+        }));
+        this.hotbarFlash = null; // { index, at, ok }: a short flash on the slot that was just used
+        this.notice = null;      // { text, ok, until }: a line shown above the hotbar ("You light a torch...")
     }
 
     getHitboxes() {
         if (this.isMenuOpen) {
-            return [this.menuToggleHitbox, ...this.dropdownHitboxes];
+            return [this.menuToggleHitbox, ...this.dropdownHitboxes, ...this.hotbarHitboxes];
         }
-        return [this.menuToggleHitbox];
+        return [this.menuToggleHitbox, ...this.hotbarHitboxes];
     }
 
     onClick(hitboxId) {
-        if (this.isLocked) return;
+        if (this.isLocked) return false;
+
+        if (typeof hitboxId === 'string' && hitboxId.startsWith('hotbar_')) {
+            // Using a slot makes its own sound (or none for an empty slot), so no default confirm on top of it
+            this.claimSfx();
+            this.useHotbarSlot(parseInt(hitboxId.slice(7), 10));
+            return;
+        }
 
         switch (hitboxId) {
             case 'btn_menu_toggle':
-                events.emit('PLAY_SFX', { id: 'click', volume: 0.6, pitch: 1.0 });
+                this.playConfirmSound();
                 this.isMenuOpen = !this.isMenuOpen;
                 break;
             case 'btn_party':
@@ -77,7 +109,7 @@ export class OverworldController extends BaseController {
                 this.executeMenuAction('journal');
                 break;
             case 'btn_crafting':
-                events.emit('PLAY_SFX', { id: 'click', volume: 0.6, pitch: 0.95 + Math.random() * 0.1 });
+                this.playConfirmSound();
                 this.isMenuOpen = false;
                 this.isLocked = true;
                 events.emit('OPEN_WORKSHOP', { station: 'any', title: 'Crafting Bag' });
@@ -86,21 +118,29 @@ export class OverworldController extends BaseController {
                 this.executeMenuAction('title');
                 break;
             default:
-                if (this.isMenuOpen) this.isMenuOpen = false;
+                // A click on nothing closes the open menu; with no menu open nothing happened
+                if (this.isMenuOpen) {
+                    this.isMenuOpen = false;
+                    this.playCancelSound();
+                } else {
+                    return false;
+                }
                 break;
         }
     }
 
+    onRightClick(hitboxId) {
+        if (this.isLocked || !this.isMenuOpen) return false;
+        this.isMenuOpen = false;
+        this.playCancelSound();
+    }
+
     executeMenuAction(sceneName) {
-        events.emit('PLAY_SFX', { id: 'click', volume: 0.6, pitch: 0.95 + Math.random() * 0.1 });
+        this.playConfirmSound();
         console.log(`[Overworld] Opening ${sceneName} Menu...`);
         this.isMenuOpen = false;
         this.isLocked = true;
         events.emit('CHANGE_SCENE', { scene: sceneName });
-    }
-
-    onHover(hitboxId) {
-        super.onHover(hitboxId);
     }
 
     handleKeyDown(code, e) {
@@ -112,80 +152,138 @@ export class OverworldController extends BaseController {
       this.interact();
     }
 
-    // T: light a torch from the bag (a menu "Use" button can call this.lightTorch() the same way)
-    if (code === 'KeyT') this.lightTorch();
-
-    // 1: Toggle Menu
-    if (code === 'Digit1') {
-      events.emit('PLAY_SFX', { id: 'click', volume: 0.6, pitch: 1.0 });
+    // M: Toggle Menu
+    if (code === MENU_KEYS.toggle) {
+      this.playConfirmSound();
       this.isMenuOpen = !this.isMenuOpen;
     }
-    // 2: Party
-    if (code === 'Digit2') this.executeMenuAction('party');
-    // 3: Character
-    if (code === 'Digit3') this.executeMenuAction('character_summary');
-    // 4: Journal
-    if (code === 'Digit4') this.executeMenuAction('journal');
-    // 5: Crafting Bag
-    if (code === 'Digit5') {
+    // P: Party
+    if (code === MENU_KEYS.party) this.executeMenuAction('party');
+    // C: Character
+    if (code === MENU_KEYS.character) this.executeMenuAction('character_summary');
+    // J: Journal
+    if (code === MENU_KEYS.journal) this.executeMenuAction('journal');
+    // B: Crafting Bag
+    if (code === MENU_KEYS.crafting) {
+      this.playConfirmSound();
       this.isLocked = true;
       this.isMenuOpen = false;
       events.emit('OPEN_WORKSHOP', { station: 'any', title: 'Crafting Bag' });
     }
-    // 6: System / Title
-    if (code === 'Digit6') this.executeMenuAction('title');
+    // O: System / Title
+    if (code === MENU_KEYS.system) this.executeMenuAction('title');
 
-    if (code === 'Escape' && this.isMenuOpen) {
+    // 1-9 and 0: use the item in that hotbar slot
+    const hotbarIndex = InventorySystem.HOTBAR_KEYS.indexOf(code);
+    if (hotbarIndex !== -1) this.useHotbarSlot(hotbarIndex);
+
+    // Esc / Backspace / Tab: back (closes the menu; there is nothing else to go back from in the world)
+    if ((code === 'Escape' || code === 'Backspace' || code === 'Tab') && this.isMenuOpen) {
       this.isMenuOpen = false;
+      this.playCancelSound();
     }
   }
 
-    /* ---------------------------------------------------------------- carried light (torch) ----------------------------------------------------------------
-       The torch lives in gameState.player.torch = { itemId, name, expiresAt, durationMinutes, light }: plain data, so a save keeps it. Times are absolute in-game
-       minutes (day * 1440 + minute of the day), so it burns on across midnight. The renderer is not involved: it already draws `player.light`. */
+    /* ---------------------------------------------------------------- hotbar ----------------------------------------------------------------
+       The slots live in gameState.player.hotbar (item definition ids, see InventorySystem.getHotbar) and are filled from the item menu of the character summary
+       screen. Using a slot is the same as choosing "Use" there: the item's useAbility runs with { context: 'overworld' }, and one item is spent only when it worked. */
+
+    /* Who an item's ability is aimed at when it is used from the hotbar: the most hurt living party member for a heal, the first fallen one for a revive, every living
+       member for a whole-party ability. Abilities that aim at "self" (a torch) do not care who gets picked. */
+    pickHotbarTargets(abilityId) {
+        const members = (gameState.party && gameState.party.members) || [];
+        const scope = AbilityDefinitions[abilityId] && AbilityDefinitions[abilityId].targeting && AbilityDefinitions[abilityId].targeting.scope;
+        const dead = (m) => (m.hp !== undefined && m.hp <= 0);
+        const living = members.filter(m => !dead(m));
+        if (scope === 'dead_ally') return members.filter(dead).slice(0, 1);
+        if (scope === 'all_allies' || scope === 'full_ally_party') return living;
+        const share = (m) => (m.maxHp ? m.hp / m.maxHp : 1);
+        const hurt = [...living].sort((a, b) => share(a) - share(b))[0];
+        return hurt ? [hurt] : members.slice(0, 1);
+    }
+
+    /* Use the item in a hotbar slot. Returns true when it worked (and one item was spent). */
+    useHotbarSlot(index) {
+        if (this.isLocked || this.isHarvesting) return false;
+        const defId = InventorySystem.getHotbar()[index];
+        if (!defId) return false;
+
+        const def = ItemDefinitions[defId];
+        const abilityId = def && def.useAbility;
+        const fail = (text) => {
+            this.showNotice(text, false);
+            this.hotbarFlash = { index, at: performance.now(), ok: false };
+            this.playErrorSound();
+            return false;
+        };
+
+        if (!def || !abilityId) return fail('Nothing happens.');
+        if (!InventorySystem.hasItem(defId)) return fail(`You have no ${def.name}.`);
+        if (!AbilitySystem.usableIn(abilityId, 'overworld')) return fail('That can only be used in battle.');
+
+        let worked = false, world = false, firstFailure = '';
+        const doneMessages = [];
+        for (const target of this.pickHotbarTargets(abilityId)) {
+            const result = AbilitySystem.execute(abilityId, target, target, { context: 'overworld' });
+            const text = (result.message || '').trim();
+            if (result.success) {
+                worked = true;
+                world = world || result.outcome === 'WORLD';
+                if (text) doneMessages.push(text);
+            } else if (!firstFailure) {
+                firstFailure = text;
+            }
+        }
+        const message = doneMessages.join(' ');
+
+        if (!worked) return fail(firstFailure || 'It has no effect.');
+
+        InventorySystem.removeItem(defId, 1);
+        this.showNotice(message || 'Used.', true);
+        this.hotbarFlash = { index, at: performance.now(), ok: true };
+        this.playSfx(UI_SFX.pickup, 0.7, world ? 0.8 : 1.2);
+        return true;
+    }
+
+    showNotice(text, ok = true, ms = 3000) {
+        this.notice = { text, ok, until: performance.now() + ms };
+    }
+
+    /* One entry per hotbar slot for the HUD. */
+    getHotbarInfo() {
+        const now = performance.now();
+        const bar = InventorySystem.getHotbar();
+        return InventorySystem.HOTBAR_KEYS.map((_, i) => {
+            const defId = bar[i];
+            const def = defId ? ItemDefinitions[defId] : null;
+            const qty = def ? InventorySystem.countItem(defId) : 0;
+            const flashAge = this.hotbarFlash && this.hotbarFlash.index === i ? now - this.hotbarFlash.at : Infinity;
+            return {
+                index: i,
+                hitbox: this.hotbarHitboxes[i],
+                key: InventorySystem.HOTBAR_LABELS[i],
+                defId: def ? defId : null,
+                name: def ? def.name : '',
+                qty,
+                icon: def ? { sheet: this.iconSheetFor(def), col: (def.icon && def.icon.col) || 0, row: (def.icon && def.icon.row) || 0 } : null,
+                flash: flashAge < 300 ? 1 - flashAge / 300 : 0,
+                flashOk: !!(this.hotbarFlash && this.hotbarFlash.ok)
+            };
+        });
+    }
+
+    /* ---------------------------------------------------------------- carried light (world buffs) ----------------------------------------------------------------
+       Timed overworld states (a torch, later a lantern, levitation...) live in gameState.player.buffs and are started by abilities (see AbilitySystem._world_world_buff in
+       shared/systems/abilitySystem.js). This controller only READS them: every buff with a `light` lifts the player's light while it lasts. The renderer is not
+       involved: it already draws `player.light`. */
     gameMinutes() {
-        return (gameState.world.day || 0) * 1440 + (gameState.world.time || 0);
+        return AbilitySystem.worldNow();
     }
 
-    /* Light one torch from the bag. Lighting again while one burns restarts the clock (they do not add up). Returns { ok, message }. */
-    lightTorch(itemId = 'torch') {
-        const def = ItemDefinitions[itemId];
-        let result;
-        if (!def || !def.lightBuff) {
-            result = { ok: false, message: 'That cannot be lit.' };
-        } else if (!InventorySystem.hasItem(itemId, 1)) {
-            result = { ok: false, message: `You have no ${def.name || itemId}.` };
-        } else {
-            InventorySystem.removeItem(itemId, 1);
-            const minutes = def.lightBuff.minutes !== undefined ? def.lightBuff.minutes : (def.lightBuff.hours !== undefined ? def.lightBuff.hours : 8) * 60;
-            gameState.player.torch = { itemId, name: def.name || 'Torch', expiresAt: this.gameMinutes() + minutes, durationMinutes: minutes, light: { ...(def.lightBuff.light || {}) } };
-            result = { ok: true, message: `You light the ${def.name || itemId}. It will burn for ${Math.round(minutes / 6) / 10} hours.` };
-        }
-        console.log(`[Overworld] ${result.message}`);
-        events.emit('PLAY_SFX', result.ok ? { id: 'pickup_sound', volume: 0.7, pitch: 0.8 } : { id: 'error_buzz', volume: 0.5 });
-        return result;
-    }
-
-    /* The burning torch, or null. One that has run out is removed here. */
-    getTorch() {
-        const torch = gameState.player.torch;
-        if (!torch) return null;
-        const left = torch.expiresAt - this.gameMinutes();
-        if (left <= 0 || left > torch.durationMinutes + 1) { // burnt out (or a nonsense expiry from some other save)
-            gameState.player.torch = null;
-            if (left <= 0) console.log(`[Overworld] The ${torch.name} has burnt out.`);
-            return null;
-        }
-        return torch;
-    }
-
-    /* The player's light for this frame: the normal light, or (while a torch burns) the normal light lifted towards the torch's. 1 = burning fully, 0 = out.
-       A torch never makes the light weaker, and any field it leaves out stays as the normal light has it. */
-    currentLight() {
-        const torch = this.getTorch();
-        if (!torch) return this.baseLight;
-        const base = this.baseLight, T = torch.light || {};
-        const burn = Math.max(0, Math.min(1, (torch.expiresAt - this.gameMinutes()) / TORCH_GUTTER_MINUTES));
+    /* The light with one buff's light mixed in. burn: 1 = fully lit, 0 = out. A buff never makes the light weaker, and any field it leaves out stays as it was. */
+    liftLight(base, buff) {
+        const T = buff.light || {};
+        const burn = Math.max(0, Math.min(1, (buff.expiresAt - this.gameMinutes()) / TORCH_GUTTER_MINUTES));
         const lerp = (a, b, t) => a + (b - a) * t;
         const up = (name, fallback) => {
             const a = base[name] !== undefined ? base[name] : fallback;
@@ -201,12 +299,22 @@ export class OverworldController extends BaseController {
         return light;
     }
 
-    /* For a HUD: null, or { name, remainingHours, fraction (1 = just lit), guttering }. */
-    getTorchInfo() {
-        const torch = this.getTorch();
-        if (!torch) return null;
-        const left = Math.max(0, torch.expiresAt - this.gameMinutes());
-        return { name: torch.name, remainingHours: left / 60, fraction: left / torch.durationMinutes, guttering: left < TORCH_GUTTER_MINUTES };
+    /* The player's light for this frame: the normal light, lifted by every running buff that carries a light. */
+    currentLight() {
+        let light = this.baseLight;
+        for (const buff of AbilitySystem.getWorldBuffs()) {
+            if (buff.light) light = this.liftLight(light, buff);
+        }
+        return light;
+    }
+
+    /* For a HUD: one entry per running buff, { id, name, remainingHours, fraction (1 = just started), guttering, hasLight }. */
+    getBuffInfo() {
+        const now = this.gameMinutes();
+        return AbilitySystem.getWorldBuffs().map(b => {
+            const left = Math.max(0, b.expiresAt - now);
+            return { id: b.id, name: b.name, remainingHours: left / 60, fraction: left / b.durationMinutes, guttering: left < TORCH_GUTTER_MINUTES, hasLight: !!b.light };
+        });
     }
 
     handleMouseDown(x, y, renderer) {
@@ -243,7 +351,6 @@ export class OverworldController extends BaseController {
         // --- NEW: Process active harvesting sequence ---
         if (this.isHarvesting && this.harvestTarget) {
             this.harvestTimer += dt;
-            
             if (this.harvestTimer >= this.harvestDuration) {
                 this.completeHarvest();
             }
@@ -266,12 +373,8 @@ export class OverworldController extends BaseController {
         this.updateCamera();
     }
 
-    // --- REUSABLE UI TOAST SYSTEM ---
-    createItemToast(itemId, amount) {
-        const itemDef = ItemDefinitions[itemId];
-        const iconCol = itemDef?.icon?.col || 0;
-        const iconRow = itemDef?.icon?.row || 0;
-
+    /* Which icon sheet an item's icon is on (toasts and the hotbar). */
+    iconSheetFor(itemDef) {
         let sheetName = 'items';
         if (itemDef) {
             const type = (itemDef.type || '').toLowerCase();
@@ -286,6 +389,16 @@ export class OverworldController extends BaseController {
                 sheetName = 'materials';
             }
         }
+        return sheetName;
+    }
+
+    // --- REUSABLE UI TOAST SYSTEM ---
+    createItemToast(itemId, amount) {
+        const itemDef = ItemDefinitions[itemId];
+        const iconCol = itemDef?.icon?.col || 0;
+        const iconRow = itemDef?.icon?.row || 0;
+
+        const sheetName = this.iconSheetFor(itemDef);
 
         if (!gameState.ui) gameState.ui = {};
         if (!gameState.ui.toasts) gameState.ui.toasts = [];
@@ -307,10 +420,8 @@ export class OverworldController extends BaseController {
         targetObj.isFading = true;
         const itemId = targetObj.interaction.itemId;
         const amount = targetObj.interaction.amount || 1;
-        
         InventorySystem.addItem(itemId, amount);
-        events.emit('PLAY_SFX', { id: 'pickup_sound', volume: 0.8, pitch: 1.0 });
-        
+        events.emit('PLAY_SFX', { id: UI_SFX.pickup, volume: 0.8, pitch: 1.0 });
         this.createItemToast(itemId, amount);
 
         // --- FADE OUT MAP OBJECT ---
@@ -364,7 +475,6 @@ export class OverworldController extends BaseController {
             // Since equipped items are ItemModel instances, we just use the getter!
             const checkTool = (item) => {
                 if (!item) return false;
-                
                 // Call the getter directly. It returns an array (or empty array)
                 if (item.harvestTool && Array.isArray(item.harvestTool)) {
                     return item.harvestTool.includes(requiredTool);
@@ -382,7 +492,7 @@ export class OverworldController extends BaseController {
 
         if (!hasTool) {
             console.log(`[Overworld] Requires a ${requiredTool} to harvest this!`);
-            events.emit('PLAY_SFX', { id: 'error_buzz', volume: 0.5 });
+            this.playErrorSound();
             return;
         }
 
@@ -403,16 +513,13 @@ export class OverworldController extends BaseController {
         this.isLocked = false;
         const obj = this.harvestTarget;
         this.harvestTarget = null;
-        
         if (!obj) return;
 
         const itemId = obj.interaction.itemId;
         const amount = obj.interaction.amount || 1;
-        
         InventorySystem.addItem(itemId, amount);
-        events.emit('PLAY_SFX', { id: 'pickup_sound', volume: 0.8, pitch: 1.0 });
+        events.emit('PLAY_SFX', { id: UI_SFX.pickup, volume: 0.8, pitch: 1.0 });
         this.createItemToast(itemId, amount);
-        
         // Check if object leaves a remnant behind (e.g. Tree -> Stump)
         if (obj.interaction.replaceWith) {
             this.worldManager.modifyWorld(obj.col, obj.row, obj.interaction.replaceWith);
@@ -423,11 +530,9 @@ export class OverworldController extends BaseController {
 
     interact() {
         if (this.player.isMoving || this.isLocked) return;
-        
         const obj = this.getFacedObject();
         if (obj && obj.interaction) {
             console.log(`[Overworld] Interacting with ${obj.id} at ${obj.col},${obj.row}`);
-            
             // --- Intercept item pickups so the game doesn't freeze! ---
             if (obj.interaction.type === 'PICKUP') {
                 this.processPickup(obj);
@@ -528,7 +633,6 @@ export class OverworldController extends BaseController {
         if (this.player.moveProgress >= 1) {
             const overshoot = this.player.moveProgress - 1;
             this.finishMove();
-            
             if (this.player.isMoving) {
                 this.player.moveProgress = overshoot;
                 this.player.x = this.player.sourceX + (this.player.destX - this.player.sourceX) * this.player.moveProgress;
@@ -551,12 +655,10 @@ export class OverworldController extends BaseController {
         gameState.player.direction = this.player.direction;
 
         const stepOnObj = this.worldManager.getObjectAt(gameState.player.col, gameState.player.row);
-        
         // --- UPDATED: Handle Walk-Over Pickups ---
         if (stepOnObj && stepOnObj.interaction?.type === 'PICKUP' && !stepOnObj.isFading) {
             this.processPickup(stepOnObj);
         }
-        
         // Existing Warp logic
         if (stepOnObj && stepOnObj.frames > 1 && stepOnObj.interaction?.type === 'WARP') {
             this.isLocked = true;
@@ -569,6 +671,15 @@ export class OverworldController extends BaseController {
 
         // Walk-in warps (cave mouths, `walkIn: true` on the WARP): a single-frame object has no door to open, so stepping onto its doorway cell warps at once
         if (stepOnObj && !(stepOnObj.frames > 1) && stepOnObj.interaction?.type === 'WARP' && stepOnObj.interaction.walkIn) {
+            this.isLocked = true;
+            this.setAnimIdle();
+            events.emit('INTERACT', { ...stepOnObj.interaction, context: { col: stepOnObj.col, row: stepOnObj.row, objectId: stepOnObj.id } });
+            return;
+        }
+
+        // Walk-in encounters (`walkIn: true` on an ENCOUNTER, e.g. ANIMAL_TRACKS): stepping onto the object starts the encounter, no need to face it and press interact.
+        // The object is not solid, so you are standing on its tile; INTERACT carries its col / row / id as the encounter context (DESTROY_OBJECT uses it).
+        if (stepOnObj && !stepOnObj.isFading && stepOnObj.interaction?.type === 'ENCOUNTER' && stepOnObj.interaction.walkIn) {
             this.isLocked = true;
             this.setAnimIdle();
             events.emit('INTERACT', { ...stepOnObj.interaction, context: { col: stepOnObj.col, row: stepOnObj.row, objectId: stepOnObj.id } });
@@ -591,7 +702,6 @@ export class OverworldController extends BaseController {
         const col = Math.floor(this.player.x / this.config.TILE_SIZE);
         const row = Math.floor(this.player.y / this.config.TILE_SIZE);
         const biome = this.worldManager.getBiomeAt(col, row);
-        
         const currentHour = gameState.world.time / 60;
         const encounterData = biome.getEncounter(currentHour);
 
@@ -607,7 +717,6 @@ export class OverworldController extends BaseController {
 
         const difficulty = gameState.difficulty || 'normal';
         const battleData = biome.getBattle(difficulty);
-        
         if (!battleData) return;
 
         console.log(`[Overworld] Ambush triggered in biome: ${biome.id} on ${difficulty} difficulty!`);
@@ -622,7 +731,6 @@ export class OverworldController extends BaseController {
             background: battleBgAsset,
             weather: gameState.world.currentWeather
         };
-        
         events.emit('START_BATTLE', battlePayload);
     }
 
@@ -637,7 +745,6 @@ export class OverworldController extends BaseController {
         const col = gameState.player.col;
         const row = gameState.player.row;
         const biome = this.worldManager.getBiomeAt(col, row);
-        
         const currentHour = (gameState.world.time || 0) / 60;
         const targetTrack = biome.getMusic(currentHour, false);
 
@@ -678,7 +785,6 @@ export class OverworldController extends BaseController {
                 const formattedObjectives = def.objectives.map(obj => {
                     const current = questState.progress[obj.id] || 0;
                     const required = obj.amount || 1;
-                    
                     // Pass the raw data so the UIRenderer can resolve the real names 
                     // using ENTITY_DEFINITIONS and ItemDefinitions
                     return {
@@ -712,7 +818,6 @@ export class OverworldController extends BaseController {
         const lookRow = Math.floor(targetY / TILE_SIZE);
 
         const obj = this.worldManager.getObjectAt(lookCol, lookRow);
-        
         // Only return it if it has an interaction and isn't currently fading
         if (obj && obj.interaction && !obj.isFading) {
             return obj;
@@ -721,6 +826,7 @@ export class OverworldController extends BaseController {
     }
 
     getState() {
+        const buffInfo = this.getBuffInfo();
         let displayFacedObject = this.getFacedObject();
 
         // --- NEW: Hide interaction prompt if missing required harvest tool ---
@@ -741,7 +847,10 @@ export class OverworldController extends BaseController {
             trackedQuests: this.getTrackedQuests(),
             toasts: (gameState.ui && gameState.ui.toasts) ? gameState.ui.toasts : [],
             facedObject: displayFacedObject, // Passes null if they lack the tool!
-            torch: this.getTorchInfo(), // null, or { name, remainingHours, fraction, guttering } for a HUD
+            hotbar: this.getHotbarInfo(),
+            notice: (this.notice && performance.now() < this.notice.until) ? { text: this.notice.text, ok: this.notice.ok, left: this.notice.until - performance.now() } : null,
+            buffs: buffInfo, // running world buffs, for a HUD
+            torch: buffInfo.find(b => b.hasLight) || null, // the first light buff (the old name for it)
             isHarvesting: this.isHarvesting,
             harvestTimer: this.harvestTimer,
             harvestDuration: this.harvestDuration,
@@ -753,20 +862,16 @@ export class OverworldController extends BaseController {
         const { TILE_SIZE } = this.config;
         gameState.player.col = col;
         gameState.player.row = row;
-        
         this.player.x = col * TILE_SIZE;
         this.player.y = row * TILE_SIZE;
-        
         this.player.prevX = this.player.x;
         this.player.prevY = this.player.y;
         this.player.destX = this.player.x;
         this.player.destY = this.player.y;
         this.player.sourceX = this.player.x;
         this.player.sourceY = this.player.y;
-        
         this.player.isMoving = false;
         this.player.moveProgress = 0;
-        
         this.camera.x = this.player.x;
         this.camera.y = this.player.y;
         this.camera.prevX = this.player.x;
@@ -779,7 +884,6 @@ export class OverworldController extends BaseController {
         let startX, startY;
         const savedCol = gameState.player.col;
         const savedRow = gameState.player.row;
-        
         if (savedCol !== 0 || savedRow !== 0) {
             startX = savedCol * this.config.TILE_SIZE;
             startY = savedRow * this.config.TILE_SIZE;

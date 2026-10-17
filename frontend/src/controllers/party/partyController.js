@@ -4,18 +4,10 @@ import { events } from '../../core/eventBus.js';
 import { ContextMenuManager } from '../../ui/contextMenuManager.js';
 import { DragAndDropManager } from '../../ui/dragAndDropManager.js';
 
-const KEY_BINDINGS = {
-    'ArrowUp': 'UP', 'KeyW': 'UP',
-    'ArrowDown': 'DOWN', 'KeyS': 'DOWN',
-    'ArrowLeft': 'LEFT', 'KeyA': 'LEFT',
-    'ArrowRight': 'RIGHT', 'KeyD': 'RIGHT',
-    'Enter': 'CONFIRM', 'Space': 'CONFIRM',
-    'Escape': 'CANCEL', 'Backspace': 'CANCEL', 'KeyP': 'CANCEL', 'Tab': 'CANCEL'
-};
-
 export class PartyController extends BaseController {
     constructor(input) {
         super(input);
+        this.extraBindings = { KeyP: 'CANCEL' }; // the party key closes the party screen, like Esc
         this.selectedIndex = 0;
         this.gridColumns = 3;
 
@@ -28,7 +20,7 @@ export class PartyController extends BaseController {
         this.state = 'NAVIGATING';
 
         // --- MANAGERS ---
-        this.contextMenu = new ContextMenuManager();
+        this.contextMenu = new ContextMenuManager({ owner: this }); // the menu plays its sounds through this controller
         this.dragManager = new DragAndDropManager();
 
         // --- SWAP DATA ---
@@ -54,15 +46,17 @@ export class PartyController extends BaseController {
     // STANDARDIZED INPUT HANDLING
     // ========================================================
 
-    handleMouseMove(x, y, isMouseDown, renderer) {
-        // Cache the previous hover state
-        const prevHoverId = this.hoveredHitboxId;
-        super.handleMouseMove(x, y, isMouseDown, renderer);
+    // The keyboard cursor: the card under selectedIndex, or the lit option while the context menu is open
+    getKeyboardFocusId() {
+        const menu = this.contextMenu.menu;
+        if (menu) return menu.selectedIndex >= 0 ? `MENU_OPT_${menu.selectedIndex}` : null;
+        if (this.selectedIndex < 0 || this.selectedIndex >= gameState.party.members.length) return null;
+        return `CARD_${this.selectedIndex}`;
+    }
 
-        // --- SYNC KEYBOARD LOGIC WITH MOUSE HOVER ---
-        if (this.hoveredHitboxId && this.hoveredHitboxId !== prevHoverId) {
-            this._syncFocusWithHover(this.hoveredHitboxId);
-        }
+    // The mouse moved onto something: the cursor follows it (silent; UIInteractionManager adds the hover tick)
+    setFocusFromPointer(hitboxId) {
+        if (hitboxId) this._syncFocusWithHover(hitboxId);
     }
 
     _syncFocusWithHover(hitboxId) {
@@ -96,7 +90,7 @@ export class PartyController extends BaseController {
                 this.playCancelSound(); // Feedback for closing
                 return;
             }
-            if (hitboxId === 'MENU_BG') return;
+            if (hitboxId === 'MENU_BG') return false; // the menu's background: nothing happens
 
             if (hitboxId.startsWith('MENU_OPT_')) {
                 const menuActionIndex = parseInt(hitboxId.replace('MENU_OPT_', ''), 10);
@@ -104,6 +98,8 @@ export class PartyController extends BaseController {
                 return;
             }
 
+            // Clicking outside the menu closes it
+            this.playCancelSound();
             if (hitboxId.startsWith('CARD_')) {
                 const cardIndex = parseInt(hitboxId.replace('CARD_', ''), 10);
                 if (cardIndex < party.length && cardIndex !== this.selectedIndex) {
@@ -123,7 +119,7 @@ export class PartyController extends BaseController {
 
         if (this.state === 'NAVIGATING') {
             if (this.selectedIndex !== clickedIndex) {
-                this.selectedIndex = clickedIndex;
+                this.selectedIndex = clickedIndex; // just moves the cursor: the default click sound
             } else {
                 // Pass the fromKeyboard flag down!
                 this.confirmSelection(fromKeyboard);
@@ -170,8 +166,7 @@ export class PartyController extends BaseController {
 
             if (member) {
                 this.selectedIndex = clickedIndex;
-                // Added distinct sound for initiating a drag
-                events.emit('PLAY_SFX', { id: 'ui_drag_start', volume: 0.5 });
+                // (the drag-start sound is the standard one, added by UIInteractionManager)
 
                 // Safely use this.mouse.x/y inherited from BaseController
                 this.dragManager.startDrag(
@@ -200,9 +195,11 @@ export class PartyController extends BaseController {
         if (this.dragManager.dragState.active) {
             this.dragManager.endDrag(targetHitboxId);
             
-            // Trigger feedback sound only if dropped on a valid target
+            // Placed on a card: confirm. Dropped anywhere else the drag is simply let go: cancel.
             if (targetHitboxId && targetHitboxId.startsWith('CARD_')) {
-                this.playConfirmSound(); // Reuse cinematicBoom for successful placement
+                this.playConfirmSound();
+            } else {
+                this.playCancelSound();
             }
 
             this.ignoreNextClick = true;
@@ -211,53 +208,53 @@ export class PartyController extends BaseController {
     }
 
     handleKeyDown(keyCode, e) {
-        // 1. Try to get the intent from our explicit bindings first
-        // 2. Fallback to the BaseController's mapper if the key isn't in our list
-        let intent = (e && KEY_BINDINGS[e.code]) || (typeof this._mapKeyCodeToIntent === 'function' ? this._mapKeyCodeToIntent(keyCode) : null);
+        const intent = this.resolveIntent(keyCode, e); // also hands control to the keyboard
+        if (!intent) return;
 
         // Now the context menu will successfully receive 'UP', 'DOWN', 'CONFIRM', etc.
         if (this.contextMenu.menu) {
             this.contextMenu.handleNavigation(intent);
         } else if (this.state === 'NAVIGATING') {
-            this.handleNavigatingKeys(intent, e);
+            this.handleNavigatingKeys(intent);
         } else if (this.state === 'SWAPPING') {
-            this.handleSwappingKeys(intent, e);
+            this.handleSwappingKeys(intent);
         }
+    }
+
+    // Moves the cursor one step on the card grid (shared by NAVIGATING and SWAPPING); plays the nav tick when it really moved
+    _moveCursor(intent) {
+        const memberCount = gameState.party.members.length;
+        const col = this.selectedIndex % this.gridColumns;
+        const oldIndex = this.selectedIndex;
+
+        if (intent === 'RIGHT') {
+            if (col < this.gridColumns - 1 && this.selectedIndex + 1 < memberCount) this.selectedIndex++;
+        } else if (intent === 'LEFT') {
+            if (col > 0) this.selectedIndex--;
+        } else if (intent === 'DOWN') {
+            const target = this.selectedIndex + this.gridColumns;
+            if (target < memberCount) {
+                this.selectedIndex = target;
+            } else if (this.selectedIndex < memberCount - 1) {
+                this.selectedIndex = memberCount - 1;
+            }
+        } else if (intent === 'UP') {
+            if (this.selectedIndex - this.gridColumns >= 0) this.selectedIndex -= this.gridColumns;
+        }
+
+        if (this.selectedIndex !== oldIndex) this.playNavSound();
     }
 
     // ==========================================
     //            STATE 1: NAVIGATING
     // ==========================================
-    handleNavigatingKeys(intent, e) {
-        const memberCount = gameState.party.members.length;
-        const col = this.selectedIndex % this.gridColumns;
-        const oldIndex = this.selectedIndex; // Track index before move
+    handleNavigatingKeys(intent) {
+        this._moveCursor(intent);
 
-        if (intent === 'RIGHT' || e.code === 'ArrowRight' || e.code === 'KeyD') {
-            if (col < this.gridColumns - 1 && this.selectedIndex + 1 < memberCount) this.selectedIndex++;
-        } else if (intent === 'LEFT' || e.code === 'ArrowLeft' || e.code === 'KeyA') {
-            if (col > 0) this.selectedIndex--;
-        } else if (intent === 'DOWN' || e.code === 'ArrowDown' || e.code === 'KeyS') {
-            const target = this.selectedIndex + this.gridColumns;
-            if (target < memberCount) {
-                this.selectedIndex = target;
-            } else if (target >= memberCount && this.selectedIndex < memberCount - 1) {
-                this.selectedIndex = memberCount - 1;
-            }
-        } else if (intent === 'UP' || e.code === 'ArrowUp' || e.code === 'KeyW') {
-            if (this.selectedIndex - this.gridColumns >= 0) this.selectedIndex -= this.gridColumns;
-        } 
-        
-        // --- Added randomized Nav SFX ---
-        if (this.selectedIndex !== oldIndex) this.playNavSound();
-
-        if (intent === 'CONFIRM' || e.code === 'Enter' || e.code === 'Space') {
-            // Added specialized Confirm SFX
-            this.playConfirmSound();
-            // Flag as true so the menu highlights the first option
+        if (intent === 'CONFIRM') {
+            // Flag as true so the menu highlights the first option (confirmSelection plays the sound)
             this.confirmSelection(true);
-        } else if (intent === 'CANCEL' || e.code === 'KeyP' || e.code === 'Escape' || e.code === 'Tab') {
-            // Added specialized Cancel SFX
+        } else if (intent === 'CANCEL') {
             this.playCancelSound();
             this.cancelAndReturn();
         }
@@ -271,9 +268,11 @@ export class PartyController extends BaseController {
 
             if (isDead || isActive) {
                 console.log("[Party] Cannot select this member.");
-                this.playCancelSound(); // Feedback sound for invalid selection
+                this.playErrorSound(); // that member can't be picked
                 return;
             }
+
+            this.playConfirmSound();
 
             if (this.callback) {
                 this.callback(this.selectedIndex);
@@ -281,6 +280,7 @@ export class PartyController extends BaseController {
             const targetScene = this.mode === 'BATTLE_SELECT' ? 'battle' : 'encounter';
             events.emit('CHANGE_SCENE', { scene: targetScene });
         } else {
+            this.playConfirmSound();
             this.openMenu(fromKeyboard);
         }
     }
@@ -372,35 +372,12 @@ export class PartyController extends BaseController {
     // ==========================================
     //             STATE 3: SWAPPING
     // ==========================================
-    handleSwappingKeys(intent, e) {
-        const memberCount = gameState.party.members.length;
-        const col = this.selectedIndex % this.gridColumns;
-        const oldIndex = this.selectedIndex; // Track index before move
+    handleSwappingKeys(intent) {
+        this._moveCursor(intent);
 
-        if (intent === 'RIGHT' || e.code === 'ArrowRight' || e.code === 'KeyD') {
-            if (col < this.gridColumns - 1 && this.selectedIndex + 1 < memberCount) this.selectedIndex++;
-        } else if (intent === 'LEFT' || e.code === 'ArrowLeft' || e.code === 'KeyA') {
-            if (col > 0) this.selectedIndex--;
-        } else if (intent === 'DOWN' || e.code === 'ArrowDown' || e.code === 'KeyS') {
-            const target = this.selectedIndex + this.gridColumns;
-            if (target < memberCount) {
-                this.selectedIndex = target;
-            } else if (target >= memberCount && this.selectedIndex < memberCount - 1) {
-                this.selectedIndex = memberCount - 1;
-            }
-        } else if (intent === 'UP' || e.code === 'ArrowUp' || e.code === 'KeyW') {
-            if (this.selectedIndex - this.gridColumns >= 0) this.selectedIndex -= this.gridColumns;
-        } 
-        
-        // --- Added randomized Nav SFX ---
-        if (this.selectedIndex !== oldIndex) this.playNavSound();
-
-        if (intent === 'CONFIRM' || e.code === 'Enter' || e.code === 'Space') {
-            // Added specialized Confirm SFX
-            this.playConfirmSound();
-            this.completeSwap();
-        } else if (intent === 'CANCEL' || e.code === 'Escape' || e.code === 'Backspace') {
-            // Added specialized Cancel SFX
+        if (intent === 'CONFIRM') {
+            this.completeSwap(); // plays the confirm sound
+        } else if (intent === 'CANCEL') {
             this.playCancelSound();
             this.swappingIdx = null;
             this.state = 'NAVIGATING';
@@ -408,6 +385,7 @@ export class PartyController extends BaseController {
     }
 
     completeSwap() {
+        this.playConfirmSound();
         if (this.swappingIdx !== null && this.swappingIdx !== this.selectedIndex) {
             this.swapMembers(this.swappingIdx, this.selectedIndex);
         }
@@ -432,7 +410,8 @@ export class PartyController extends BaseController {
             mode: this.mode,
             activeIndices: this.activeIndices,
             dragState: this.dragManager.dragState,
-            hoveredElement: this.hoveredHitboxId ? { id: this.hoveredHitboxId } : null,
+            // The one lit element: the card (or menu option) under the mouse, or the keyboard cursor
+            hoveredElement: this.getFocusId() ? { id: this.getFocusId() } : null,
             onLayoutUpdate: (hitboxes) => {
                 this.updateHitboxes(hitboxes);
             }

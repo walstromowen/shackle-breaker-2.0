@@ -1130,5 +1130,22 @@ export const AbilityDefinitions = {
         speedModifier: 1.25,
         accuracy: 1.0,
         statusEffects: [{ id: "evasion_up", chance: 1.0, duration: 3 }]
-    }
+    },
+    // Paste into AbilityDefinitions (src/shared/data/abilityDefinitions.js), e.g. at the end of section 15 (UTILITY, TACTICS & TRAPS).
+    "torchlight": {
+        id: "torchlight",
+        name: "Torchlight",
+        description: "Light a torch. It throws a wide, warm orange light around you for 8 hours.",
+        context: "overworld",                       // never offered in a battle
+        range: "self",
+        tags: ["utility", "item"],
+        targeting: { scope: "self", select: "auto" },
+        accuracy: 1.0,
+        effects: [{
+            type: "world_buff", id: "torchlight", hours: 8,   // in-game hours (2 game minutes per real second, so 8 h = 4 real minutes)
+            refreshBelow: 0.5, stillActive: "Your torch is still burning well.",   // lighting another while this one has more than half left does nothing (and keeps the torch)
+            light: { radius: 7, color: '255, 130, 40', maxAlpha: 0.8, flickerAmp: 0.5, flickerSpeed: 0.12 },   // the player's normal light is radius 4, '255, 200, 100', 0.5
+            message: "You light a torch. It will burn for {hours} hours."
+        }]
+    },
 };

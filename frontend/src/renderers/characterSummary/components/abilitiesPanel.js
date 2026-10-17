@@ -7,7 +7,7 @@ export class AbilitiesPanel {
     this.ui = ui;
     this.loader = loader;
 
-    this.SCROLLBAR_WIDTH = 10;
+    this.SCROLLBAR_WIDTH = UITheme.scrollbar.width;
     this.ABILITY_ICON_SIZE = 64;
     this.ICON_SRC_SIZE = 64; // Sprite sheet cell size (upgraded from 32)
     this.totalContentHeight = 0;
@@ -59,21 +59,14 @@ export class AbilitiesPanel {
 
     // --- Draw Scrollbar ---
     if (this.totalContentHeight > h) {
-      this.drawScrollBar(x + w + 14, y, h, this.totalContentHeight, state.scrollOffset, hitboxes);
+      this.drawScrollBar(x + w + 14, y, h, this.totalContentHeight, state.scrollOffset, hitboxes, state);
     }
   }
 
-  drawScrollBar(x, y, viewportH, contentH, scrollOffset, hitboxes) {
-    this.ui.drawRect(x, y, this.SCROLLBAR_WIDTH, viewportH, UITheme.colors.scrollTrack || "rgba(0,0,0,0.5)");
-
-    const viewRatio = viewportH / contentH;
-    let thumbH = Math.max(48, viewportH * viewRatio);
-    const maxScroll = contentH - viewportH;
-    const scrollRatio = maxScroll > 0 ? (scrollOffset / maxScroll) : 0;
-    const trackSpace = viewportH - thumbH;
-    const thumbY = y + (scrollRatio * trackSpace);
-
-    this.ui.drawRect(x, thumbY, this.SCROLLBAR_WIDTH, thumbH, UITheme.colors.scrollThumb || UITheme.colors.borderHighlight);
+  drawScrollBar(x, y, viewportH, contentH, scrollOffset, hitboxes, state) {
+    // The shared scrollbar: the thumb takes the highlight color while the mouse is on the scroll column
+    this.ui.drawScrollbar(x, y, this.SCROLLBAR_WIDTH, viewportH, scrollOffset, contentH - viewportH, viewportH,
+      this.ui.flags('SCROLLBAR_THUMB', state && state.hoveredHitboxId));
 
     if (hitboxes) {
       hitboxes.push({
@@ -82,8 +75,7 @@ export class AbilitiesPanel {
         x: x - 10,
         y: y,
         w: this.SCROLLBAR_WIDTH + 19,
-        h: viewportH,
-        hoverSfx: 'hoverTick'
+        h: viewportH
       });
     }
   }

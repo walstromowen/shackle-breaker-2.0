@@ -104,6 +104,7 @@ ui_icons: './assets/icons/ui_icons.png',
     objBoulder2: './assets/mapobjects/objBoulder2.png',
     objSnowyBoulder1: './assets/mapobjects/objSnowyBoulder1.png',
     objSnowyBoulder2: './assets/mapobjects/objSnowyBoulder2.png',
+    objAnimalTracks: './assets/mapobjects/objAnimalTracks.png',
     objWoodenChest: './assets/mapobjects/objWoodenChest.png',
     objIronChest: './assets/mapobjects/objIronChest.png',
     objPineTree: './assets/mapobjects/objPineTree.png',
@@ -186,6 +187,11 @@ ui_icons: './assets/icons/ui_icons.png',
     grimStagPortrait: './assets/sprites/grim_stag/grim_stag_portrait.png',
     poachersNightmarePortrait: './assets/sprites/poachers_nightmare/poachers_nightmare_portrait.png',
     hollowHarvesterPortrait: './assets/sprites/hollow_harvester/hollow_harvester_portrait.png',
+    skeletalWarriorPortrait: './assets/sprites/skeletal_warrior/skeletal_warrior_portrait.png',
+    floatingSkullPortrait: './assets/sprites/floating_skull/floating_skull_portrait.png',
+    ancientCultistPortrait: './assets/sprites/ancient_cultist/ancient_cultist_portrait.png',
+    frozenTrapperPortrait: './assets/sprites/frozen_trapper/frozen_trapper_portrait.png',
+    panzerkamferPortrait: './assets/sprites/panzerkamfer/panzerkamfer_portrait.png',
 duneMawPortrait: './assets/sprites/dune_maw/dune_maw_portrait.png',
 scorchedVagrantPortrait: './assets/sprites/scorched_vagrant/scorched_vagrant_portrait.png',
 miragewrightPortrait: './assets/sprites/miragewright/miragewright_portrait.png',
@@ -253,6 +259,10 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     desertBattleDuskBg: './assets/backgrounds/desert_battle_dusk_bg.png',
     desertBattleNightBg: './assets/backgrounds/desert_battle_night_bg.png',
     poachersNightmareBg: './assets/backgrounds/poachers_nightmare_bg.png',
+    snowyMountainsBattleDayBg: './assets/backgrounds/snowy_mountains_battle_day_bg.png',
+    snowyMountainsBattleDuskBg: './assets/backgrounds/snowy_mountains_battle_dusk_bg.png',
+    snowyMountainsBattleNightBg: './assets/backgrounds/snowy_mountains_battle_night_bg.png',
+    caveBattleBg: './assets/backgrounds/cave_battle_bg.png', // one background for every hour: it is always dark down there
     shackle_breaker_theme_1: './assets/audio/music/shackle_breaker_theme_1.mp3',
 
     //Encounters
@@ -266,6 +276,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     encounter_strange_obelisk: './assets/icons/encounters/strange_obelisk.png',
     encounter_suspicious_merchant: './assets/icons/encounters/suspicious_merchant.png',
     encounter_aftermath: './assets/icons/encounters/aftermath.png',
+    encounter_tracks_in_the_snow: './assets/icons/encounters/tracks_in_the_snow.png',
     // --- 1:1 ABILITY AUDIO SFX ---
     earthquake1Sfx: './assets/audio/sfx/abilities/earthquake/earthquake_1.wav',
     earthquake2Sfx: './assets/audio/sfx/abilities/earthquake/earthquake_2.wav',
@@ -320,7 +331,10 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
 
     snowyMountainsBattleBgm: './assets/audio/music/snowy_mountains_battle_1.mp3',
     snowyMountainsBgmDay: './assets/audio/music/snowy_mountains_overworld_day.mp3',
-    //snowyMountainsBgmNight: './assets/audio/music/snowy_mountains_overworld_night.mp3',
+    snowyMountainsBgmNight: './assets/audio/music/snowy_mountains_overworld_night.mp3',
+
+    caveBattleBgm: './assets/audio/music/cave_battle_1.mp3',
+    caveBgm: './assets/audio/music/cave_bgm.mp3',
 
     weatherFog: './assets/audio/sfx/weather_fog.wav',
     weatherRain: './assets/audio/sfx/weather_rain.wav',
@@ -328,6 +342,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     spookyWind: './assets/audio/sfx/spooky_wind.wav',
     aDisturbingSightBgm: './assets/audio/music/a_disturbing_sight.mp3',
     poachersNightmareBgm: './assets/audio/music/poachers_nightmare.mp3',
+    apexPredatorBgm: './assets/audio/music/apex_predator.mp3',
 
     // --- CREATURE CRIES & DEATHS ---
     legionaryCry: './assets/audio/sfx/cries/legionary_cry.wav',
@@ -351,11 +366,23 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     calcifiedCrusaderCry: './assets/audio/sfx/cries/calcified_crusader_cry.wav',
     thunderLocustCry: './assets/audio/sfx/cries/thunder_locust_cry.wav',
     shadyMerchantCry: './assets/audio/sfx/cries/shady_merchant_cry.wav',
+    skeletalWarriorCry: './assets/audio/sfx/cries/skeletal_warrior_cry.wav',
+    floatingSkullCry: './assets/audio/sfx/cries/floating_skull_cry.wav',
+    frozenTrapperCry: './assets/audio/sfx/cries/frozen_trapper_cry.wav',
+    panzerkamferCry: './assets/audio/sfx/cries/panzerkamfer_cry.wav',
     // --- UI SFX ---
     diceTick: './assets/audio/sfx/ui/dice_tick.wav',
     hoverTick: './assets/audio/sfx/ui/hover_tick.wav',
     cinematicBoom: './assets/audio/sfx/ui/cinematic_boom.mp3',
     cinematicBoomCancel: './assets/audio/sfx/ui/cinematic_boom_cancel.wav',
+    craftingSuccess: './assets/audio/sfx/ui/crafting_success.wav',
+    coinsJingle: './assets/audio/sfx/ui/coins_jingle.wav',
+    pickupSound: './assets/audio/sfx/ui/pickup_sound.wav',
+    uiClick: './assets/audio/sfx/ui/ui_click.wav',
+
+
+
+
     ambushColdBreath: './assets/audio/sfx/ui/ambush_cold_breath.wav',
     battleStart: './assets/audio/sfx/ui/battle_start.wav',
     

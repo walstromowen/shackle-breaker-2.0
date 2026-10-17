@@ -15,7 +15,6 @@ export class TitleRenderer {
 
         // 1. Draw Fullscreen Background Image
         const bgImage = this.loader.getImage ? this.loader.getImage('title_bg') : this.loader.get('title_bg');
-        
         if (bgImage) {
             ctx.drawImage(bgImage, 0, 0, width, height);
         } else {
@@ -38,30 +37,11 @@ export class TitleRenderer {
 
             hitboxes.push({ id: item.id, x: x, y: y, w: buttonWidth, h: buttonHeight, zIndex: 10 });
 
-            const isHovered = state.hoveredId === item.id;
-
-            // Semi-transparent panel backing for clear button text legibility
-            ui.drawRect(x, y, buttonWidth, buttonHeight, 'rgba(10, 10, 14, 0.7)', true);
-
-            if (isHovered) {
-                ui.drawRect(x, y, buttonWidth, buttonHeight, UITheme.colors.states.hoverBg, true);
-                ui.drawSelectionBrackets(
-                    x, y, buttonWidth, buttonHeight, 15, UITheme.colors.borderHighlight
-                );
-            } else {
-                ui.drawRect(x, y, buttonWidth, buttonHeight, UITheme.colors.border, false);
-            }
-
-            const textColor = isHovered ? UITheme.colors.states.hoverText : UITheme.colors.textMain;
-            ui.drawText(
-                item.text,
-                width / 2,
-                y + buttonHeight / 2,
-                UITheme.fonts.header,
-                textColor,
-                'center',
-                'middle'
-            );
+            // The standard button: hover / keyboard cursor / pressed all come from the shared state look.
+            // The semi-transparent backing keeps the label legible over the background image.
+            ui.drawButton(x, y, buttonWidth, buttonHeight, item.text,
+                ui.flags(item.id, state.hoveredId),
+                { bg: 'rgba(10, 10, 14, 0.7)', font: UITheme.fonts.header });
         });
 
         // 3. Update Controller Hitbox Cache

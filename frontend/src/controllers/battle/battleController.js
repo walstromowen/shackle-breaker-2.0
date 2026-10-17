@@ -7,20 +7,13 @@ import { TurnManager, TURN_TYPES } from '../../../../shared/systems/turnManager.
 import { InventorySystem } from '../../../../shared/systems/inventorySystem.js';
 import { BaseController } from '../core/baseController.js';
 
-// --- FIXED KEY BINDINGS ---
-const KEY_BINDINGS = {
-    'ArrowUp': 'UP', 'KeyW': 'UP',
-    'ArrowDown': 'DOWN', 'KeyS': 'DOWN',
-    'ArrowLeft': 'LEFT', 'KeyA': 'LEFT',
-    'ArrowRight': 'RIGHT', 'KeyD': 'RIGHT',
-    'Enter': 'CONFIRM', 'Space': 'CONFIRM',
-    'Escape': 'CANCEL', 'Backspace': 'CANCEL', 'Tab': 'CANCEL',
+// The battle's own keys, on top of the shared ones (arrows / WASD, Enter / Space, Esc / Backspace / Tab)
+const BATTLE_KEYS = {
     'KeyP': 'SWAP',
-    'KeyI': 'SUMMARY', 'i': 'SUMMARY',
-    'KeyC': 'DEBUG', 'c': 'DEBUG',
-    // Support both raw event keys and device location codes
-    'ShiftLeft': 'TOGGLE_DETAILS', 'ShiftRight': 'TOGGLE_DETAILS', 'Shift': 'TOGGLE_DETAILS',
-    'KeyH': 'TOGGLE_DETAILS', 'h': 'TOGGLE_DETAILS', 'H': 'TOGGLE_DETAILS'
+    'KeyI': 'SUMMARY',
+    'KeyC': 'DEBUG',
+    'ShiftLeft': 'TOGGLE_DETAILS', 'ShiftRight': 'TOGGLE_DETAILS',
+    'KeyH': 'TOGGLE_DETAILS'
 };
 
 // Scopes that mean "the caster's own team" (written from the caster's point of view).
@@ -38,6 +31,9 @@ export const PHASE = {
 export class BattleController extends BaseController {
     constructor(input, config, worldManager) {
         super(input);
+        this.extraBindings = BATTLE_KEYS;
+        // Backing out only means something while picking a target; every other right-click is silent
+        this.cancelSfxOnRightClick = false;
         this.config = config;
         this.state = null;
         this.timer = 0;
@@ -57,6 +53,7 @@ export class BattleController extends BaseController {
         const maxActive = context.maxActive || 3;
         const party = gameState.party.members.map(member => new CombatantModel(member, 'party'));
         const preparedEnemies = enemies.map(enemy => new CombatantModel(enemy, 'enemy'));
+        [...party, ...preparedEnemies].forEach(c => this._stripNonBattleAbilities(c)); // overworld-only abilities (a torch...) never show up in a fight
 
         this.state = {
             active: true,
@@ -132,6 +129,15 @@ export class BattleController extends BaseController {
         }
 
         this.timer = 0;
+    }
+
+    /* Takes the abilities that only work outside a fight (context 'overworld', see AbilityModel.contextOf) out of a combatant's list, in place. */
+    _stripNonBattleAbilities(combatant) {
+        const list = combatant && combatant.abilities;
+        if (!Array.isArray(list)) return;
+        for (let i = list.length - 1; i >= 0; i--) {
+            if (list[i] && typeof list[i].usableIn === 'function' && !list[i].usableIn('battle')) list.splice(i, 1);
+        }
     }
 
     _queuePreBattleTraits() {
@@ -248,28 +254,44 @@ export class BattleController extends BaseController {
         return validTargets.includes(target);
     }
 
-    onHover(hitboxId) {
-        if (hitboxId === this.lastHoveredHitboxId) return;
-        this.lastHoveredHitboxId = hitboxId;
+    // The keyboard cursor, as a hitbox id: the highlighted ability while choosing an action, the aimed target while choosing a target.
+    // (An "all targets" ability has no single aimed card; the shards over the combatants show the whole group.)
+    getKeyboardFocusId() {
+        const s = this.state;
+        if (!s || !s.active || s.isPausedForUI) return null;
 
-        const prevMenuIndex = this.state?.menuIndex;
-        const prevTargetIndex = this.state?.targetIndex;
+        if (s.phase === PHASE.SELECT_ACTION) return `ACTION_${s.menuIndex}`;
 
-        super.onHover(hitboxId);
-        if (!hitboxId || this.state?.isPausedForUI || !this.state?.active) return;
+        if (s.phase === PHASE.SELECT_TARGET && typeof s.targetIndex === 'number') {
+            const target = this._getTargetsFromGroup()[s.targetIndex];
+            if (!target) return null;
+            const p = s.activeParty.indexOf(target);
+            if (p !== -1) return `TARGET_PARTY_${p}`;
+            const e = s.activeEnemies.indexOf(target);
+            if (e !== -1) return `TARGET_ENEMY_${e}`;
+        }
+        return null;
+    }
 
-        if (this.state.phase === PHASE.SELECT_ACTION && hitboxId.startsWith('ACTION_')) {
-            this.state.menuIndex = parseInt(hitboxId.split('_')[1], 10);
-            if (this.state.menuIndex !== prevMenuIndex) this.playNavSound();
+    // The mouse moved onto something: the cursor follows it (silent; UIInteractionManager adds the hover tick).
+    // Returns false for things that cannot be picked right now, so hovering them is silent too.
+    setFocusFromPointer(hitboxId) {
+        if (!hitboxId || this.state?.isPausedForUI || !this.state?.active) return false;
+
+        if (this.state.phase === PHASE.SELECT_ACTION) {
+            if (hitboxId.startsWith('ACTION_')) {
+                this.state.menuIndex = parseInt(hitboxId.split('_')[1], 10);
+            } else if (hitboxId !== 'BUTTON_PARTY' && hitboxId !== 'BUTTON_INVENTORY') {
+                return false;
+            }
         } else if (this.state.phase === PHASE.SELECT_TARGET && hitboxId.startsWith('TARGET_')) {
+            if (!this._isValidTargetHitbox(hitboxId)) return false;
             if (this.state.targetIndex === 'ALL') return;
 
-            if (this._isValidTargetHitbox(hitboxId)) {
-                const target = this._getTargetFromHitbox(hitboxId);
-                const validTargets = this._getTargetsFromGroup();
-                this.state.targetIndex = validTargets.indexOf(target);
-                if (this.state.targetIndex !== prevTargetIndex) this.playNavSound();
-            }
+            const target = this._getTargetFromHitbox(hitboxId);
+            this.state.targetIndex = this._getTargetsFromGroup().indexOf(target);
+        } else {
+            return false;
         }
     }
 
@@ -292,28 +314,29 @@ export class BattleController extends BaseController {
             }
         } else if (this.state.phase === PHASE.SELECT_ACTION) {
             if (hitboxId === 'BUTTON_PARTY') {
-                this.playConfirmSound('ui_select');
+                this.playConfirmSound();
                 this.requestPartySwap(false, this.state.activePartyIndex);
             } else if (hitboxId === 'BUTTON_INVENTORY') {
-                this.playConfirmSound('ui_select');
+                this.playConfirmSound();
                 this._openCharacterSummary();
             }
         }
     }
 
     onRightClick(hitboxId) {
-        if (this.state?.isPausedForUI || !this.state?.active) return;
+        if (this.state?.isPausedForUI || !this.state?.active) return false;
         if (this.state.phase === PHASE.SELECT_TARGET) {
-            this._handleTargetSelection('CANCEL');
+            this._handleTargetSelection('CANCEL'); // plays the cancel sound
+            return;
         }
+        return false; // nothing to back out of
     }
 
-    handleKeyDown(key) {
-        console.log(`[Input Check] Key pressed: ${key}, Phase: ${this.state?.phase}, Paused: ${this.state?.isPausedForUI}`);
+    handleKeyDown(key, e) {
+        const intent = this.resolveIntent(key, e); // also hands control to the keyboard
+        if (!intent) return;
 
         if (!this.state?.active || this.state.isPausedForUI) return;
-
-        const intent = KEY_BINDINGS[key] || key;
 
         if (intent === 'DEBUG') {
             console.log("Debug View Toggled!");
@@ -325,7 +348,7 @@ export class BattleController extends BaseController {
         if (ignorePhases.includes(this.state.phase)) return;
 
         if (intent === 'SUMMARY') {
-            this.playConfirmSound('ui_select');
+            this.playConfirmSound();
             this._openCharacterSummary();
             return;
         }
@@ -353,15 +376,20 @@ export class BattleController extends BaseController {
             this.playNavSound();
         } else if (intent === 'CONFIRM') {
             const action = activeChar.abilities[this.state.menuIndex];
+            if (typeof action.usableIn === 'function' && !action.usableIn('battle')) { // last line of defence; the menu should never list one
+                this.playErrorSound();
+                this.state.message = `${action.name} can't be used in battle!`;
+                return;
+            }
             if (!action.canPayCost(activeChar, InventorySystem)) {
-                this.playCancelSound();
+                this.playErrorSound();
                 this.state.message = `Not enough resources to use ${action.name}!`;
                 return;
             }
             this.playConfirmSound();
             this._setupTargetSelection(action, activeChar);
         } else if (intent === 'SWAP') {
-            this.playConfirmSound('ui_select');
+            this.playConfirmSound();
             this.requestPartySwap(false, this.state.activePartyIndex);
         }
     }
@@ -424,7 +452,7 @@ export class BattleController extends BaseController {
 
         if (this.state.targetIndex === 'ALL') {
             if (intent === 'CONFIRM') {
-                this.playConfirmSound('ui_select');
+                this.playConfirmSound();
                 this.commitAction('ALL');
             } else if (intent === 'CANCEL') {
                 this.playCancelSound();
@@ -440,7 +468,7 @@ export class BattleController extends BaseController {
             this.state.targetIndex = this._cycleTarget(targetArray, -1);
             if (this.state.targetIndex !== prevIndex) this.playNavSound();
         } else if (intent === 'CONFIRM') {
-            this.playConfirmSound('ui_select');
+            this.playConfirmSound();
             this._selectSpecificTarget(targetArray[this.state.targetIndex]);
         } else if (intent === 'CANCEL') {
             this.playCancelSound();
@@ -485,7 +513,7 @@ export class BattleController extends BaseController {
         }
 
         if (this._isAlreadyPicked(target)) {
-            this.playCancelSound();
+            this.playErrorSound();
             this.state.message = `${target.name} is already selected - choose a different target`;
             return;
         }
@@ -630,7 +658,7 @@ export class BattleController extends BaseController {
             if (!enemy || enemy.isDead()) return;
 
             const validAbilities = enemy.abilities.filter(a =>
-                a.canPayCost(enemy, InventorySystem) && !['rest', 'punch'].includes(a.id)
+                a.canPayCost(enemy, InventorySystem) && !['rest', 'punch'].includes(a.id) && (typeof a.usableIn !== 'function' || a.usableIn('battle'))
             );
 
             const randomTarget = livingParty[Math.floor(Math.random() * livingParty.length)];
@@ -908,7 +936,9 @@ export class BattleController extends BaseController {
                 const [action] = AbilityFactory.createAbilities([abilityId]);
                 const activeChar = this.state.activeParty[this.state.activePartyIndex];
 
-                if (action) {
+                if (action && !action.usableIn('battle')) { // an overworld-only item (a torch) must not be spent here
+                    this.state.message = `${action.name} can't be used in battle!`;
+                } else if (action) {
                     if (itemId) {
                         action.cost = { item: itemId, amount: 1 };
                         action.isItemAction = true;
@@ -973,7 +1003,8 @@ export class BattleController extends BaseController {
         return {
             ...this.state,
             mouse: this.mouse,
-            hoveredElement: this.hoveredHitboxId ? { id: this.hoveredHitboxId } : null,
+            // The one lit element: what the mouse is over, or the keyboard cursor (ACTION_n / TARGET_...)
+            hoveredElement: this.getFocusId() ? { id: this.getFocusId() } : null,
             onLayoutUpdate: (hitboxes) => this.updateHitboxes(hitboxes)
         };
     }

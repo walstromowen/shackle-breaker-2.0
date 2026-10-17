@@ -55,25 +55,17 @@ export class JournalRenderer {
         const activeBox = state.hitboxes.find(h => h.id === 'tab_active');
         const completedBox = state.hitboxes.find(h => h.id === 'tab_completed');
 
-        // Draw Active Tab
-        if (activeBox) {
-            const isHovered = state.hoveredHitboxId === 'tab_active';
-            const isActive = state.activeTab === 'active';
-            ui.drawInteractiveRow(activeBox.x, activeBox.y, activeBox.w, activeBox.h, "Active Quests", UITheme.fonts.body, "center", false, isHovered);
-            if (isActive) {
-                ui.drawSelectionBrackets(activeBox.x, activeBox.y, activeBox.w, activeBox.h, 10);
-            }
-        }
-
-        // Draw Completed Tab
-        if (completedBox) {
-            const isHovered = state.hoveredHitboxId === 'tab_completed';
-            const isActive = state.activeTab === 'completed';
-            ui.drawInteractiveRow(completedBox.x, completedBox.y, completedBox.w, completedBox.h, "Chronicle", UITheme.fonts.body, "center", false, isHovered);
-            if (isActive) {
-                ui.drawSelectionBrackets(completedBox.x, completedBox.y, completedBox.w, completedBox.h, 10);
-            }
-        }
+        // Tabs: the open tab is "selected" (bar), the one under the mouse / keyboard cursor is "highlighted"
+        const tabs = [
+            [activeBox, 'tab_active', 'active', "Active Quests"],
+            [completedBox, 'tab_completed', 'completed', "Chronicle"]
+        ];
+        tabs.forEach(([box, id, tabKey, label]) => {
+            if (!box) return;
+            ui.drawRow(box.x, box.y, box.w, box.h, label,
+                ui.flags(id, state.hoveredHitboxId, { selected: state.activeTab === tabKey }),
+                { align: 'center', inset: true });
+        });
 
         const refBox = activeBox || completedBox;
         if (refBox) {
@@ -100,17 +92,15 @@ export class JournalRenderer {
 
             const drawY = y + currentY - scrollOffset;
             const isSelected = state.selectedQuestId === qId;
-            const isHovered = state.hoveredHitboxId === `quest_sel_${qId}`;
 
             const itemX = x + 16;
             const itemW = w - 40;
             const itemH = rowHeight - 8;
 
-            ui.drawInteractiveRow(itemX, drawY, itemW, itemH, def.name, UITheme.fonts.body, "left", false, isHovered);
-
-            if (isSelected) {
-                ui.drawSelectionBrackets(itemX, drawY, itemW, itemH, 10);
-            }
+            // The chosen quest is "selected" (bar); the row under the mouse / keyboard cursor is "highlighted"
+            ui.drawRow(itemX, drawY, itemW, itemH, def.name,
+                ui.flags(`quest_sel_${qId}`, state.hoveredHitboxId, { selected: isSelected }),
+                { align: 'left', inset: true });
 
             if (state.activeTab === 'active') {
                 const isComplete = QuestModel.checkCompletion(state, qId);
@@ -131,12 +121,7 @@ export class JournalRenderer {
         ui.endClip();
 
         if (currentY > h) {
-            const pct = scrollOffset / (currentY - h);
-            const thumbH = Math.max(50, (h / currentY) * h);
-            const thumbY = y + (pct * (h - thumbH));
-
-            ui.drawRect(x + w - 12, y, 4, h, UITheme.colors.scrollTrack);
-            ui.drawRect(x + w - 12, thumbY, 4, thumbH, UITheme.colors.scrollThumb);
+            ui.drawScrollbar(x + w - 8 - UITheme.scrollbar.width, y, UITheme.scrollbar.width, h, scrollOffset, currentY - h, h);
         }
     }
 
@@ -229,25 +214,18 @@ export class JournalRenderer {
         // Action Buttons
         const btnBox = state.hitboxes.find(box => box.id === `btn_collect_${state.selectedQuestId}`);
         if (btnBox) {
-            const isHovered = state.hoveredHitboxId === btnBox.id;
-            let bg = isHovered ? UITheme.colors.states.focusBg : "rgba(0,0,0,0.6)";
-            let textCol = isHovered ? UITheme.colors.states.focusText : UITheme.colors.success;
-
-            ui.drawPanel(btnBox.x, btnBox.y, btnBox.w, btnBox.h, bg);
-            ui.drawText("COLLECT", btnBox.x + (btnBox.w / 2), btnBox.y + (btnBox.h / 2) + 6, UITheme.fonts.body, textCol, "center", "middle");
+            ui.drawButton(btnBox.x, btnBox.y, btnBox.w, btnBox.h, "COLLECT",
+                ui.flags(btnBox.id, state.hoveredHitboxId),
+                { bg: "rgba(0,0,0,0.6)", color: UITheme.colors.success });
         }
 
         const trackBtnBox = state.hitboxes.find(box => box.id === `btn_track_${state.selectedQuestId}`);
         if (trackBtnBox) {
-            const isHovered = state.hoveredHitboxId === trackBtnBox.id;
             const isTracked = state.trackedIds && state.trackedIds.includes(state.selectedQuestId);
 
-            let bg = isHovered ? UITheme.colors.states.focusBg : "rgba(0,0,0,0.6)";
-            let textCol = isHovered ? UITheme.colors.states.focusText : (isTracked ? UITheme.colors.textHighlight : UITheme.colors.textMuted);
-            let text = isTracked ? "UNTRACK" : "TRACK";
-
-            ui.drawPanel(trackBtnBox.x, trackBtnBox.y, trackBtnBox.w, trackBtnBox.h, bg);
-            ui.drawText(text, trackBtnBox.x + (trackBtnBox.w / 2), trackBtnBox.y + (trackBtnBox.h / 2) + 6, UITheme.fonts.body, textCol, "center", "middle");
+            ui.drawButton(trackBtnBox.x, trackBtnBox.y, trackBtnBox.w, trackBtnBox.h, isTracked ? "UNTRACK" : "TRACK",
+                ui.flags(trackBtnBox.id, state.hoveredHitboxId),
+                { bg: "rgba(0,0,0,0.6)", color: isTracked ? UITheme.colors.textHighlight : UITheme.colors.textMuted });
         }
     }
 

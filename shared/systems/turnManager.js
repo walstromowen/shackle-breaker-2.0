@@ -228,6 +228,12 @@ export class TurnManager {
         
         if (actor.isDead() && !allowDeadActor) return this.processNextTurnInQueue();
 
+        // Last line of defence: an overworld-only ability can never resolve inside a battle.
+        if (action && typeof action.usableIn === 'function' && !action.usableIn('battle')) {
+            this.state.message = `${action.name} can't be used in battle!`;
+            return this.processNextTurnInQueue();
+        }
+
         // Multi-select casts (Magic Missile, Flamethrower, Waterfall...) arrive as an ARRAY of the
         // player's picks. Any pick can already be dead by the time the cast resolves (a faster actor
         // killed it earlier in the round). Retarget those picks the same way _handleAnimationTurn

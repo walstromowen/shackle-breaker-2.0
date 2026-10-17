@@ -74,7 +74,8 @@ export class CharacterSummaryRenderer {
       this.hitboxes,
       state.heldItem,
       state.hoveredHitboxId,
-      isEditingName
+      isEditingName,
+      !!state.contextMenu
     );
 
     // --- ADD NAME EDITING OVERLAY ---
@@ -120,6 +121,7 @@ export class CharacterSummaryRenderer {
     }
 
     // F. Context Menu
+    if (state.notice) this._drawNotice(state.notice, leftW + Math.floor(centerW / 2), h - 160);
     if (state.contextMenu) {
       this._drawContextMenu(state.contextMenu, state.contextMenu.selectedIndex, state.hoveredHitboxId);
     }
@@ -177,44 +179,9 @@ export class CharacterSummaryRenderer {
     const tabH = 67;
     const tabW = contentW / 3;
 
+    // The open tab is "selected" (bar); the one under the mouse / keyboard cursor is "highlighted"
     const drawTab = (label, tx, isActive, id) => {
-      const isHovered = hoveredHitboxId === id;
-
-      let bgColor = "rgba(0,0,0,0.5)";
-      let textCol = UITheme.colors.textMuted;
-      let drawBrackets = false;
-      let strokeColor = UITheme.colors.border;
-
-      if (isActive) {
-        bgColor = UITheme.colors.states.focusBg;
-        textCol = UITheme.colors.states.focusText;
-        drawBrackets = true;
-        strokeColor = null;
-      } else if (isHovered) {
-        bgColor = UITheme.colors.states.hoverBg;
-        textCol = UITheme.colors.states.hoverText;
-        strokeColor = null;
-      }
-
-      this.ui.drawPanel(tx, y, tabW, tabH, bgColor);
-
-      if (strokeColor) {
-        this.ui.drawRect(tx, y, tabW, tabH, strokeColor, false);
-      }
-
-      if (drawBrackets) {
-        this.ui.drawSelectionBrackets(tx, y, tabW, tabH, 5, UITheme.colors.borderHighlight);
-      }
-
-      this.ui.drawText(
-        label,
-        tx + tabW / 2,
-        y + (tabH / 2) + 10,
-        UITheme.fonts.small,
-        textCol,
-        "center",
-        "middle"
-      );
+      this.ui.drawTab(tx, y, tabW, tabH, label, this.ui.flags(id, hoveredHitboxId, { selected: isActive }));
 
       this.hitboxes.push({
         id,
@@ -222,9 +189,9 @@ export class CharacterSummaryRenderer {
         y,
         w: tabW,
         h: tabH,
-        type: 'tab',
-        hoverSfx: 'hoverTick',
-        clickSfx: 'cinematicBoom'
+        type: 'tab'
+
+
       });
     };
 
@@ -273,6 +240,16 @@ export class CharacterSummaryRenderer {
 
     this.ui.drawRect(x, y, drawSize, drawSize, UITheme.colors.borderHighlight, false);
     this.ctx.restore();
+  }
+
+  // A short message from the controller ("You light the Torch...", "Healing Herb is on hotbar 3."), centred above the input prompts
+  _drawNotice(text, centerX, y) {
+    this.ctx.font = UITheme.fonts.body;
+    const textW = this.ctx.measureText(text).width;
+    const boxW = textW + 64;
+    const boxH = 52;
+    this.ui.drawPanel(centerX - boxW / 2, y - boxH / 2, boxW, boxH, "rgba(15, 15, 18, 0.92)");
+    this.ui.drawText(text, centerX, y + 1, UITheme.fonts.body, UITheme.colors.textHighlight, "center", "middle");
   }
 
   _drawContextMenu(menu, selectedIndex = 0, hoveredHitboxId = null) {

@@ -1,23 +1,7 @@
 import { BaseController } from '../core/baseController.js';
 import { CharacterCreatorLogic, CREATION_DATA } from './characterCreatorLogic.js';
 import { ScrollManager } from '../../ui/scrollManager.js';
-
-// --- STANDARDIZED INPUT BINDINGS ---
-const KEY_BINDINGS = {
-    'ArrowUp': 'UP',
-    'KeyW': 'UP',
-    'ArrowDown': 'DOWN',
-    'KeyS': 'DOWN',
-    'ArrowLeft': 'LEFT',
-    'KeyA': 'LEFT',
-    'ArrowRight': 'RIGHT',
-    'KeyD': 'RIGHT',
-    'Enter': 'CONFIRM',
-    'Space': 'CONFIRM',
-    'Escape': 'CANCEL',
-    'Backspace': 'CANCEL',
-    'Tab': 'CANCEL'
-};
+import { events } from '../../core/eventBus.js';
 
 export class CharacterCreatorController extends BaseController {
     constructor(input) {
@@ -52,7 +36,8 @@ export class CharacterCreatorController extends BaseController {
             selections: this.logic.state,
             previewStats: this.logic.getPreviewStats(),
             mouse: this.mouse,
-            hoveredElement: this.hoveredHitboxId ? { id: this.hoveredHitboxId } : null,
+            // The one lit element: what the mouse is over, or the keyboard cursor
+            hoveredElement: this.getFocusId() ? { id: this.getFocusId() } : null,
             scrollOffsets: {
                 preview: this.scrollManager.getOffset('preview_panel'),
                 stats: this.scrollManager.getOffset('stats_panel')
@@ -70,14 +55,19 @@ export class CharacterCreatorController extends BaseController {
     // ========================================================
     // STANDARDIZED INPUT HANDLING (Overrides BaseController)
     // ========================================================
-    handleMouseMove(x, y, isMouseDown, renderer) {
-        const prevHoverId = this.hoveredHitboxId;
-        super.handleMouseMove(x, y, isMouseDown, renderer);
+    // The keyboard cursor: the id of the current row's hitbox
+    getKeyboardFocusId() {
+        const step = this.logic.getCurrentStep();
+        if (step === 'name') return 'INPUT_NAME';
+        if (step === 'seed') return 'INPUT_SEED';
+        if (step === 'start') return 'BTN_START';
+        return step ? `ROW_${step}` : null;
+    }
 
-        // --- SYNC KEYBOARD LOGIC WITH MOUSE HOVER ---
-        if (!this.logic.isEditingName && !this.logic.isEditingSeed && this.hoveredHitboxId && this.hoveredHitboxId !== prevHoverId) {
-            this._syncFocusWithHover(this.hoveredHitboxId);
-        }
+    // The mouse moved onto something: the current row follows it (silent; UIInteractionManager adds the hover tick)
+    setFocusFromPointer(hitboxId) {
+        if (this.logic.isEditingName || this.logic.isEditingSeed || !hitboxId) return;
+        this._syncFocusWithHover(hitboxId);
     }
 
     _syncFocusWithHover(hitboxId) {
@@ -117,21 +107,36 @@ export class CharacterCreatorController extends BaseController {
             this.logic.finalizeCharacter();
         } else if (hitboxId.startsWith('BTN_NEXT_')) {
             this.logic.setRowByStep(hitboxId.replace('BTN_NEXT_', ''));
-            if (this.logic.modifyValue(1)) this.scrollManager.resetAllScrolls();
+            return this._adjustValue(1);
         } else if (hitboxId.startsWith('BTN_PREV_')) {
             this.logic.setRowByStep(hitboxId.replace('BTN_PREV_', ''));
-            if (this.logic.modifyValue(-1)) this.scrollManager.resetAllScrolls();
+            return this._adjustValue(-1);
         } else if (hitboxId.startsWith('ROW_')) {
             this.logic.setRowByStep(hitboxId.replace('ROW_', ''));
         }
     }
 
-    onRightClick(hitboxId) {
+    // Same change as the LEFT / RIGHT keys: one tick when the value really changed, silence when it could not.
+    _adjustValue(direction) {
+        if (!this.logic.modifyValue(direction)) return false;
+        this.scrollManager.resetAllScrolls();
+        this.playNavSound();
+    }
+
+    // Back, one layer at a time: finish typing -> let go of a dragged scrollbar -> leave for the title screen.
+    _goBack() {
         if (this.logic.isEditingName || this.logic.isEditingSeed) {
             this.logic.validateActiveInput();
         } else if (this.scrollManager.isDragging) {
             this.scrollManager.handleDragEnd();
+        } else {
+            events.emit('CHANGE_SCENE', { scene: 'title' });
         }
+        this.playCancelSound();
+    }
+
+    onRightClick(hitboxId) {
+        this._goBack();
     }
 
     // ========================================================
@@ -162,9 +167,12 @@ export class CharacterCreatorController extends BaseController {
     handleKeyDown(keyCode, e) {
         // Intercept typing for either the name or the seed
         if (this.logic.isEditingName || this.logic.isEditingSeed) {
-            if (e.code === "Enter" || e.code === "Escape") {
+            if (e.code === "Enter") {
                 this.logic.validateActiveInput();
                 this.playConfirmSound();
+            } else if (e.code === "Escape") {
+                this.logic.validateActiveInput();
+                this.playCancelSound();
             } else {
                 if (this.logic.isEditingName) {
                     this.logic.nameInput.handleEvent(e);
@@ -177,7 +185,7 @@ export class CharacterCreatorController extends BaseController {
             return;
         }
 
-        const intent = (e && KEY_BINDINGS[e.code]);
+        const intent = this.resolveIntent(keyCode, e);
         if (!intent) return;
 
         // Track state to see if a sound should fire
@@ -190,21 +198,14 @@ export class CharacterCreatorController extends BaseController {
             this.logic.moveRow(1);
             if (this.logic.currentRow !== prevRow) this.playNavSound();
         } else if (intent === 'LEFT') {
-            if (this.logic.modifyValue(-1)) {
-                this.scrollManager.resetAllScrolls();
-                this.playNavSound();
-            }
+            this._adjustValue(-1);
         } else if (intent === 'RIGHT') {
-            if (this.logic.modifyValue(1)) {
-                this.scrollManager.resetAllScrolls();
-                this.playNavSound();
-            }
+            this._adjustValue(1);
         } else if (intent === 'CONFIRM') {
             this.logic.handleAction();
             this.playConfirmSound();
         } else if (intent === 'CANCEL') {
-            this.playCancelSound();
-            if (this.scrollManager.isDragging) this.scrollManager.handleDragEnd();
+            this._goBack();
         }
     }
 }

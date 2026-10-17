@@ -7,15 +7,6 @@ import { EncounterLogic } from './encounterLogic.js';
 import { LootTableFactory } from "../../../../shared/systems/factories/lootTableFactory.js";
 import { ItemDefinitions } from '../../../../shared/data/itemDefinitions.js';
 
-const KEY_BINDINGS = {
-  'ArrowUp': 'UP', 'KeyW': 'UP',
-  'ArrowDown': 'DOWN', 'KeyS': 'DOWN',
-  'ArrowLeft': 'LEFT', 'KeyA': 'LEFT',
-  'ArrowRight': 'RIGHT', 'KeyD': 'RIGHT',
-  'Enter': 'CONFIRM', 'Space': 'CONFIRM',
-  'Escape': 'CANCEL', 'Backspace': 'CANCEL', 'Tab': 'CANCEL'
-};
-
 export class EncounterController extends BaseController {
   constructor(input, config, worldManager) {
     super(input);
@@ -45,9 +36,8 @@ export class EncounterController extends BaseController {
     this.rewardsEndEncounter = false;
     this.pendingSceneChange = null;
     this.rewardReturnStageId = null;
-    this.isUsingKeyboard = false;
-    this._lastMouseX = null;
-    this._lastMouseY = null;
+    // An encounter is never "backed out of": right-click / Esc only let go of a dragged scrollbar, and are silent otherwise
+    this.cancelSfxOnRightClick = false;
     this.updateBGM();
   }
 
@@ -89,15 +79,6 @@ export class EncounterController extends BaseController {
     this.rewardReturnStageId = null;
     this.imageTransition = { active: false, timer: 0, duration: 0.4, previousInfo: null, previousPartyMember: null };
     this.updateBGM();
-  }
-
-  onHover(hitboxId) {
-    super.onHover(hitboxId);
-    if (!hitboxId) return;
-    if (hitboxId.startsWith('DECISION_')) {
-      this.isUsingKeyboard = false;
-      this._setFocus(hitboxId);
-    }
   }
 
   update(dt) {
@@ -219,34 +200,30 @@ export class EncounterController extends BaseController {
     return rawDecisions.filter(decision => EncounterLogic.checkConditions(decision, this.model.context || {}));
   }
 
-  handleMouseMove(x, y, isMouseDown, renderer) {
-    super.handleMouseMove(x, y, isMouseDown, renderer);
-    if (this._lastMouseX !== x || this._lastMouseY !== y) {
-      this.isUsingKeyboard = false;
-      this._lastMouseX = x;
-      this._lastMouseY = y;
-    }
+  // The mouse moved onto a decision: the keyboard cursor follows it (silent; UIInteractionManager adds the hover tick)
+  setFocusFromPointer(hitboxId) {
+    if (!hitboxId || !hitboxId.startsWith('DECISION_')) return;
+    const index = parseInt(hitboxId.replace('DECISION_', ''), 10);
+    if (!isNaN(index)) this.selectedIndex = index;
   }
 
-  _setFocus(hitboxId) {
-    if (!hitboxId) return;
-    if (hitboxId.startsWith('DECISION_')) {
-      const index = parseInt(hitboxId.replace('DECISION_', ''), 10);
-      if (!isNaN(index) && this.selectedIndex !== index) {
-        this.selectedIndex = index;
-        this.playNavSound();
-      }
+  // The element the keyboard cursor is on
+  getKeyboardFocusId() {
+    if (this.actionPhase === 'none') {
+      const options = this._getValidDecisions();
+      if (options && options.length > 0 && this.selectedIndex < options.length) return `DECISION_${this.selectedIndex}`;
+    } else if (this.actionPhase === 'wait_for_roll') {
+      return 'BTN_ROLL';
     }
+    return null;
   }
 
   onClick(hitboxId) {
+    // In an encounter a click either skips text (silent) or does something that makes its own sound, so
+    // UIInteractionManager must not add a second one, not even when the click is ignored.
+    this.claimSfx();
     if (!this.model) return;
     if (this.inputCooldown > 0) return;
-    
-    if (!this.isUsingKeyboard) {
-      this._setFocus(hitboxId);
-      this.isUsingKeyboard = false;
-    }
     
     if (!this.hasDoneIntro) {
       if (this.textTimer < 3.0) {
@@ -304,7 +281,12 @@ export class EncounterController extends BaseController {
   }
 
   onRightClick(hitboxId) {
-    if (this.scrollManager.isDragging) this.scrollManager.handleDragEnd();
+    if (this.scrollManager.isDragging) {
+      this.scrollManager.handleDragEnd();
+      this.playCancelSound();
+      return;
+    }
+    return false; // nothing to go back to
   }
 
   onDragStart(hitboxId) {
@@ -322,16 +304,13 @@ export class EncounterController extends BaseController {
   }
 
   handleScroll(delta) {
-    this.isUsingKeyboard = false;
     this.scrollManager.handleScrollWheel(this.mouse.x, this.mouse.y, delta * 40);
   }
 
   handleKeyDown(keyCode, e) {
-    this.isUsingKeyboard = true;
+    const intent = this.resolveIntent(keyCode, e); // also hands control to the keyboard
     if (!this.model) return;
     if (this.inputCooldown > 0) return;
-    
-    const intent = (e && KEY_BINDINGS[e.code]) || KEY_BINDINGS[keyCode];
     
     if (!this.hasDoneIntro && (intent === 'CONFIRM' || intent === 'CANCEL')) {
       if (this.textTimer < 3.0) {
@@ -359,7 +338,7 @@ export class EncounterController extends BaseController {
     
     if (skipPhases.includes(this.actionPhase) || (this.actionPhase === 'none' && isAnimatingText)) {
       if (intent === 'CONFIRM') {
-        this.playConfirmSound();
+        // skipping text is silent (same as a click)
         if ((this.actionPhase === 'message' || this.actionPhase === 'none' || this.actionPhase === 'reward_delay') && this.textTimer < textEndTime) {
           this.textTimer = textEndTime;
           this.inputCooldown = 0.15;
@@ -385,8 +364,11 @@ export class EncounterController extends BaseController {
     if (!options || options.length === 0) return;
     
     if (intent === 'CANCEL') {
-      this.playCancelSound();
-      if (this.scrollManager.isDragging) this.scrollManager.handleDragEnd();
+      // Nothing to back out of: only let go of a dragged scrollbar
+      if (this.scrollManager.isDragging) {
+        this.scrollManager.handleDragEnd();
+        this.playCancelSound();
+      }
       return;
     }
     
@@ -398,9 +380,8 @@ export class EncounterController extends BaseController {
       this.selectedIndex = (this.selectedIndex + 1) % options.length;
       if (this.selectedIndex !== prevIndex) this.playNavSound();
     } else if (intent === 'CONFIRM') {
-      this.playConfirmSound();
       this.inputCooldown = 0.15;
-      this.executeSelectedDecision();
+      this.executeSelectedDecision(); // plays the confirm sound
     }
   }
 
@@ -409,7 +390,7 @@ export class EncounterController extends BaseController {
     const options = this._getValidDecisions();
     if (!options || options.length === 0) return;
     
-    this.playConfirmSound('ui_select');
+    this.playConfirmSound();
     const selectedDecision = options[this.selectedIndex];
     
     if (selectedDecision.type === 'switch_character') {
@@ -726,18 +707,8 @@ export class EncounterController extends BaseController {
 
   getState() {
     const currentIntroAlpha = this.hasDoneIntro ? 1.0 : Math.max(0, Math.min(1, (this.textTimer - 3.0) / 3.0));
-    let virtualHoverId = this.hoveredHitboxId;
-    
-    if (this.isUsingKeyboard) {
-      if (this.actionPhase === 'none') {
-        const options = this._getValidDecisions();
-        if (options && options.length > 0 && this.selectedIndex < options.length) {
-          virtualHoverId = `DECISION_${this.selectedIndex}`;
-        }
-      } else if (this.actionPhase === 'wait_for_roll') {
-        virtualHoverId = 'BTN_ROLL';
-      }
-    }
+    // One highlight: the hovered element in mouse mode, the keyboard cursor in keyboard mode
+    const virtualHoverId = this.getFocusId();
     
     const basePayload = {
       imageInfo: null,
@@ -760,7 +731,7 @@ export class EncounterController extends BaseController {
       rollData: this.rollData,
       mouse: this.mouse,
       hoveredElement: virtualHoverId ? { id: virtualHoverId } : null,
-      isUsingKeyboard: this.isUsingKeyboard,
+      isUsingKeyboard: this.inputMode === 'keyboard',
       scrollOffsets: {
         decisions: this.scrollManager.getOffset('decision_list'),
         text: this.scrollManager.getOffset('text_content')

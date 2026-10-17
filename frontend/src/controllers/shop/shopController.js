@@ -2,21 +2,13 @@
  * frontend/src/controllers/shop/shopController.js
  */
 import { BaseController } from '../core/baseController.js';
+import { UI_SFX } from '../../ui/uiSfx.js';
 import { events } from '../../core/eventBus.js';
 import { DragAndDropManager } from '../../ui/dragAndDropManager.js';
 import { ScrollManager } from '../../ui/scrollManager.js';
 import { ContextMenuManager } from '../../ui/contextMenuManager.js';
 import { ShopLogic } from './shopLogic.js';
 import { ItemDefinitions } from '../../../../shared/data/itemDefinitions.js';
-
-const KEY_BINDINGS = {
-    'ArrowUp': 'UP', 'KeyW': 'UP',
-    'ArrowDown': 'DOWN', 'KeyS': 'DOWN',
-    'ArrowLeft': 'LEFT', 'KeyA': 'LEFT',
-    'ArrowRight': 'RIGHT', 'KeyD': 'RIGHT',
-    'Enter': 'CONFIRM', 'Space': 'CONFIRM',
-    'Escape': 'CANCEL', 'Backspace': 'CANCEL'
-};
 
 export class ShopController extends BaseController {
     constructor(input, data) {
@@ -43,6 +35,7 @@ export class ShopController extends BaseController {
         this.dragAndDropManager = new DragAndDropManager();
         this.scrollManager = new ScrollManager();
         this.contextMenuManager = new ContextMenuManager({
+            owner: this, // the menu plays its sounds through this controller
             onAction: (actionId, payload) => this.executeMenuAction(actionId, payload)
         });
         
@@ -103,12 +96,8 @@ export class ShopController extends BaseController {
     }
 
     handleKeyDown(code, e) {
-        // Registers that the user is actively using the keyboard
-        super.handleKeyDown(code, e);
-
-        if (e && code === 'Tab') e.preventDefault();
-        
-        const intent = KEY_BINDINGS[code] || KEY_BINDINGS[e?.code];
+        // Also hands control to the keyboard (and keeps Tab away from the browser)
+        const intent = this.resolveIntent(code, e);
         if (!intent) return;
         
         if (this.contextMenuManager.menu) {
@@ -162,7 +151,6 @@ export class ShopController extends BaseController {
         if (currentIndex !== oldIndex) {
             this.playNavSound();
             this._setIndex(currentIndex);
-            this.hoveredHitboxId = null;
             if (['UP', 'DOWN', 'LEFT', 'RIGHT'].includes(intent)) {
                 this.scrollToItem(this.activePanel, currentIndex);
             }
@@ -190,7 +178,6 @@ export class ShopController extends BaseController {
             if (newIndex !== currentIndex) {
                 this.playNavSound();
                 this._setIndex(newIndex);
-                this.hoveredHitboxId = null;
                 this.scrollToItem(this.activePanel, newIndex);
             }
             return;
@@ -201,9 +188,15 @@ export class ShopController extends BaseController {
         
         this.playNavSound();
         this.activePanel = targetPanel;
-        this.hoveredHitboxId = null;
         this._setIndex(newIndex);
         this.scrollToItem(this.activePanel, newIndex);
+    }
+
+    // The keyboard cursor, as a hitbox id (null when it is on neither list)
+    getKeyboardFocusId() {
+        if (this.activePanel === 'vendor' && this.vendorIndex !== -1) return `VENDOR_ITEM_${this.vendorIndex}`;
+        if (this.activePanel === 'party' && this.partyIndex !== -1) return `PARTY_ITEM_${this.partyIndex}`;
+        return null;
     }
 
     _setIndex(index) {
@@ -291,22 +284,22 @@ export class ShopController extends BaseController {
         const { item, source } = payload;
         
         if (actionId === 'BUY' && source === 'vendor') {
-            if(this.logic.buyItem(item, 1)) this.playConfirmSound();
-            else events.emit('PLAY_SFX', { id: 'ui_error' });
+            this._transactionSound(this.logic.buyItem(item, 1));
         } else if (actionId === 'SELL' && source === 'party') {
-            if(this.logic.sellItem(item, 1)) this.playConfirmSound();
-            else events.emit('PLAY_SFX', { id: 'ui_error' });
+            this._transactionSound(this.logic.sellItem(item, 1));
         }
         this._validateIndices();
     }
 
-    onHover(hitboxId) {
-        super.onHover(hitboxId);
-        
-        // 1. If actively typing/navigating, completely ignore the dead resting mouse
-        if (this.inputMode === 'keyboard') return;
+    // A purchase / sale sounds the same whether it came from the menu or from a drag
+    _transactionSound(success) {
+        if (success) this.playSfx(UI_SFX.reward, 0.7);
+        else this.playErrorSound();
+    }
 
-        // 2. Don't process hovers if dragging or menus are active
+    // The mouse moved onto something: the keyboard cursor follows it (silent; UIInteractionManager adds the hover tick)
+    setFocusFromPointer(hitboxId) {
+        // Don't process hovers if dragging or menus are active
         if (this.dragAndDropManager.dragState.active || this.contextMenuManager.menu) return;
 
         if (hitboxId) {
@@ -328,16 +321,21 @@ export class ShopController extends BaseController {
                 this.vendorIndex = -1;
                 this.partyIndex = -1;
             }
-        } else {
+        }
+    }
+
+    onHover(hitboxId) {
+        super.onHover(hitboxId);
+
+        // The mouse left everything: clear the cursor (not while the keyboard is driving, a drag is held or a menu is open)
+        if (!hitboxId && this.inputMode === 'mouse'
+            && !this.dragAndDropManager.dragState.active && !this.contextMenuManager.menu) {
             this.vendorIndex = -1;
             this.partyIndex = -1;
         }
     }
 
     onClick(hitboxId) {
-        // AGGRESSIVE WAKE UP: Clicking any button instantly reclaims control for the mouse
-        this.inputMode = 'mouse';
-
         if (!hitboxId) {
             if (this.contextMenuManager.menu) {
                 this.contextMenuManager.close();
@@ -345,7 +343,7 @@ export class ShopController extends BaseController {
             } else {
                 this.vendorIndex = -1;
                 this.partyIndex = -1;
-                this.playCancelSound();
+                return false; // clicked on nothing: nothing happened, no sound
             }
             return;
         }
@@ -386,12 +384,11 @@ export class ShopController extends BaseController {
     }
 
     onRightClick(hitboxId) {
-        this.inputMode = 'mouse'; // Reclaim control for mouse
-        this.playCancelSound();
         if (this.contextMenuManager.menu) {
             this.contextMenuManager.close();
+            this.playCancelSound();
         } else {
-            this._handleBack();
+            this._handleBack(); // plays its own cancel sound
         }
     }
 
@@ -418,8 +415,6 @@ export class ShopController extends BaseController {
     // DRAG AND DROP
     // ========================================================
     onDragStart(hitboxId) {
-        this.inputMode = 'mouse'; // Reclaim control for mouse
-        
         if (!hitboxId || this.contextMenuManager.menu) return;
         
         if (hitboxId.includes('SCROLLBAR_THUMB')) {
@@ -433,7 +428,6 @@ export class ShopController extends BaseController {
             if (item) {
                 this.activePanel = 'vendor';
                 this.vendorIndex = idx;
-                events.emit('PLAY_SFX', { id: 'ui_drag_start', volume: 0.5 });
                 this.dragAndDropManager.startDrag(
                     item, 'vendor', idx, 
                     this.mouse.x, this.mouse.y, 
@@ -446,7 +440,6 @@ export class ShopController extends BaseController {
             if (item) {
                 this.activePanel = 'party';
                 this.partyIndex = idx;
-                events.emit('PLAY_SFX', { id: 'ui_drag_start', volume: 0.5 });
                 this.dragAndDropManager.startDrag(
                     item, 'party', idx, 
                     this.mouse.x, this.mouse.y, 
@@ -488,18 +481,15 @@ export class ShopController extends BaseController {
         if (source === dropSide) return;
         
         if (source === 'vendor' && dropSide === 'party') {
-            if (this.logic.buyItem(item, 1)) events.emit('PLAY_SFX', { id: 'coins_jingle' });
-            else events.emit('PLAY_SFX', { id: 'ui_error' });
+            this._transactionSound(this.logic.buyItem(item, 1));
         } else if (source === 'party' && dropSide === 'vendor') {
-            if (this.logic.sellItem(item, 1)) events.emit('PLAY_SFX', { id: 'coins_jingle' });
-            else events.emit('PLAY_SFX', { id: 'ui_error' });
+            this._transactionSound(this.logic.sellItem(item, 1));
         }
         
         this._validateIndices();
     }
 
     handleScroll(delta) {
-        this.inputMode = 'mouse'; // Reclaim control for mouse
         this.scrollManager.handleScrollWheel(this.mouse.x, this.mouse.y, delta);
     }
 
@@ -535,13 +525,11 @@ export class ShopController extends BaseController {
     }
 
     getState() {
-        let activeTooltipId = this.hoveredHitboxId;
+        // The hovered element in mouse mode, the keyboard cursor in keyboard mode. If the mouse is over something that is not an
+        // item (a button, empty space) the tooltip still follows the cursor, as before.
+        let activeTooltipId = this.getFocusId();
         if (!activeTooltipId || (!activeTooltipId.includes('VENDOR_ITEM_') && !activeTooltipId.includes('PARTY_ITEM_'))) {
-            if (this.activePanel === 'vendor' && this.vendorIndex !== -1) {
-                activeTooltipId = `VENDOR_ITEM_${this.vendorIndex}`;
-            } else if (this.activePanel === 'party' && this.partyIndex !== -1) {
-                activeTooltipId = `PARTY_ITEM_${this.partyIndex}`;
-            }
+            activeTooltipId = this.getKeyboardFocusId() || activeTooltipId;
         }
         
         return {

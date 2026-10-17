@@ -1,6 +1,7 @@
 // ui/overworld/encounter/encounterRenderer.js
 import { CanvasUI } from '../../ui/canvasUI.js';
 import { UITheme } from '../../ui/UITheme.js';
+import { UI_SFX } from '../../ui/uiSfx.js';
 import { gameState } from "../../../../shared/state/gameState.js";
 import { DIFFICULTY_MODIFIERS } from '../../../../shared/data/constants.js';
 
@@ -125,9 +126,11 @@ export class EncounterRenderer {
             textTimer = 0, actionPhase, rollData, hoveredElement, scrollOffsets, onLayoutUpdate
         } = state;
 
-        const selectedIndex = uiState.selectedDecisionIndex || 0;
         const { CANVAS_WIDTH, CANVAS_HEIGHT } = this.config;
         const ui = new CanvasUI(ctx);
+
+        // The one lit element: what the mouse is over, or the keyboard cursor (DECISION_n / BTN_ROLL)
+        const focusId = hoveredElement ? hoveredElement.id : null;
 
         const leftW = Math.floor(CANVAS_WIDTH * 0.24);
         const centerW = Math.floor(CANVAS_WIDTH * 0.52);
@@ -386,26 +389,23 @@ export class EncounterRenderer {
             ui.endClip();
 
             if (textMaxScroll > 0) {
-                const trackW = 8;
-                const trackX = centerX + centerW - 16;
-                const trackH = textViewportH;
-                const thumbH = Math.max(40, (textViewportH / totalTextHeight) * trackH);
-                const scrollRatio = textScrollOffset / textMaxScroll;
-                const thumbY = textViewportY + (scrollRatio * (trackH - thumbH));
+                const trackW = UITheme.scrollbar.width;
+                const trackX = centerX + centerW - 8 - trackW;
                 const scrollAlpha = skipMessageAnimation ? 1.0 : Math.max(0, Math.min(1, (timeElapsed - T_TEXT_START) / 0.5));
-                
                 if (scrollAlpha > 0) {
                     ctx.save();
                     ctx.globalAlpha = scrollAlpha;
-                    ui.drawRect(trackX, textViewportY, trackW, trackH, this.getAlphaColor(UITheme.colors.scrollTrack, scrollAlpha));
-                    ui.drawRect(trackX, thumbY, trackW, thumbH, this.getAlphaColor(UITheme.colors.scrollThumb, scrollAlpha));
+                    const thumb = ui.drawScrollbar(trackX, textViewportY, trackW, textViewportH, textScrollOffset, textMaxScroll, textViewportH,
+                        ui.flags('SCROLL_THUMB_TEXT', focusId));
                     ctx.restore();
 
-                    this.hotspots.push({
-                        id: 'SCROLL_THUMB_TEXT',
-                        x: trackX - 10, y: thumbY, w: trackW + 20, h: thumbH,
-                        zIndex: 10
-                    });
+                    if (thumb) {
+                        this.hotspots.push({
+                            id: 'SCROLL_THUMB_TEXT',
+                            x: trackX - 10, y: thumb.y, w: trackW + 20, h: thumb.h,
+                            zIndex: 10
+                        });
+                    }
                 }
             }
         }
@@ -458,7 +458,6 @@ export class EncounterRenderer {
 
                 const maxScroll = Math.max(0, totalHeight - decisionViewportH);
                 const scrollOffset = Math.max(0, Math.min(scrollOffsets?.decisions || 0, maxScroll));
-                const safeSelectedIndex = Math.max(0, Math.min(selectedIndex, decisions.length - 1));
 
                 scrollBounds.decisions = {
                     bounds: { x: btnX - 48, y: decisionViewportY, w: btnW + 96, h: decisionViewportH },
@@ -470,7 +469,6 @@ export class EncounterRenderer {
 
                 let renderY = decisionViewportY - scrollOffset;
                 decisions.forEach((opt, index) => {
-                    const isSelected = (index === safeSelectedIndex);
                     const hitId = `DECISION_${index}`;
                     const { decisionHeight, blockHeight } = decisionLayoutData[index];
 
@@ -482,17 +480,17 @@ export class EncounterRenderer {
                                 y: renderY - 8,
                                 w: btnW + 72,
                                 h: decisionHeight + 16,
-                                hoverSfx: 'hoverTick',
-                                clickSfx: 'hoverTick'
+
+                                clickSfx: UI_SFX.step
                             });
                         }
                     }
 
-                    if (isSelected && typeof ui.drawSelectionBrackets === 'function') {
-                        ui.drawSelectionBrackets(btnX - 36, renderY - 8, btnW + 72, decisionHeight + 16, 10, this.getAlphaColor(UITheme.colors.selectedWhite || '#ffffff', decisionsAlpha));
-                    }
+                    // The shared state look (gold wash + brackets, inside because the options sit close together)
+                    const flags = ui.flags(hitId, focusId);
+                    ui.drawStateBox(btnX - 36, renderY - 8, btnW + 72, decisionHeight + 16, flags, { inset: true });
 
-                    const textColor = isSelected ? (UITheme.colors.selectedWhite || '#ffffff') : UITheme.colors.textMuted;
+                    const textColor = ui.stateTextColor(flags, UITheme.colors.textMuted);
                     ui.drawWrappedText(opt.text, btnX, renderY, btnW, lineHeight, UITheme.fonts.body, textColor);
 
                     renderY += blockHeight;
@@ -500,20 +498,16 @@ export class EncounterRenderer {
                 ui.endClip();
 
                 if (maxScroll > 0) {
-                    const trackW = 8;
-                    const trackX = centerX + centerW - 16;
-                    const trackH = decisionViewportH;
-                    const thumbH = Math.max(40, (decisionViewportH / totalHeight) * trackH);
-                    const scrollRatio = scrollOffset / maxScroll;
-                    const thumbY = decisionViewportY + (scrollRatio * (trackH - thumbH));
+                    const trackW = UITheme.scrollbar.width;
+                    const trackX = centerX + centerW - 8 - trackW;
 
-                    ui.drawRect(trackX, decisionViewportY, trackW, trackH, this.getAlphaColor(UITheme.colors.scrollTrack, decisionsAlpha));
-                    ui.drawRect(trackX, thumbY, trackW, thumbH, this.getAlphaColor(UITheme.colors.scrollThumb, decisionsAlpha));
+                    const thumb = ui.drawScrollbar(trackX, decisionViewportY, trackW, decisionViewportH, scrollOffset, maxScroll, decisionViewportH,
+                        ui.flags('SCROLL_THUMB_DECISIONS', focusId));
 
-                    if (decisionsAlpha > 0.8 || skipMessageAnimation) {
+                    if (thumb && (decisionsAlpha > 0.8 || skipMessageAnimation)) {
                         this.hotspots.push({
                             id: 'SCROLL_THUMB_DECISIONS',
-                            x: trackX - 10, y: thumbY, w: trackW + 20, h: thumbH,
+                            x: trackX - 10, y: thumb.y, w: trackW + 20, h: thumb.h,
                             zIndex: 10
                         });
                     }
@@ -729,19 +723,19 @@ export class EncounterRenderer {
                 const btnX = (CANVAS_WIDTH / 2) - (btnW / 2);
                 const btnY = popupY + 528;
                 const rollId = "BTN_ROLL";
-                const isRollHovered = hoveredElement && hoveredElement.id === rollId;
+                const rollFlags = ui.flags(rollId, focusId);
 
                 this.hotspots.push({
-                    id: rollId, x: btnX, y: btnY, w: btnW, h: btnH,
-                    hoverSfx: 'hoverTick', clickSfx: 'cinematicBoom'
+                    id: rollId, x: btnX, y: btnY, w: btnW, h: btnH
                 });
 
-                ui.drawPanel(btnX, btnY, btnW, btnH, isRollHovered ? "rgba(255,255,255,0.1)" : UITheme.colors.bgScale[3]);
+                ui.drawPanel(btnX, btnY, btnW, btnH, UITheme.colors.bgScale[3]);
+                ui.drawStateBox(btnX, btnY, btnW, btnH, rollFlags);
 
                 const alpha = (Math.sin(Date.now() / 200) + 1) / 2;
                 ctx.globalAlpha = 0.6 + (alpha * 0.4);
                 ctx.shadowColor = UITheme.colors.textHighlight;
-                ctx.shadowBlur = isRollHovered ? 30 : 19;
+                ctx.shadowBlur = rollFlags.highlighted ? 30 : 19;
                 ui.drawText("ROLL", CANVAS_WIDTH / 2, btnY + 62, UITheme.fonts.bold, UITheme.colors.textHighlight, "center");
                 ctx.globalAlpha = 1.0;
                 ctx.shadowBlur = 0;
@@ -773,25 +767,19 @@ export class EncounterRenderer {
     drawStatRow(ctx, ui, label, current, max, x, y, barW, h, numW, labelW, color, dimColor, alpha) {
     ctx.save();
     ctx.globalAlpha = alpha;
-    
     const fadedTextMuted = this.getAlphaColor(UITheme.colors.textMuted, alpha);
     const fadedColor = this.getAlphaColor(color, alpha);
     const fadedDimColor = this.getAlphaColor(dimColor, alpha);
 
     ui.drawText(label, x, y + 12, UITheme.fonts.cardMono || UITheme.fonts.mono, fadedTextMuted);
-    
     // TEMPORARY OVERRIDE: Inject alpha into the global border color so the hardcoded
     // globalAlpha inside CanvasUI.drawBar doesn't prevent the border from fading out.
     const oldBorder = UITheme.colors.border;
     UITheme.colors.border = this.getAlphaColor(oldBorder, alpha);
-    
     ui.drawBar(x + labelW, y, barW, h, current, max, fadedColor, fadedDimColor);
-    
     // Restore original border color
     UITheme.colors.border = oldBorder;
-    
     ui.drawText(`${Math.floor(current)}/${max}`, x + labelW + barW + numW, y + 12, UITheme.fonts.cardMono || UITheme.fonts.mono, fadedTextMuted, "right");
-    
     ctx.restore();
   }
 
@@ -830,10 +818,8 @@ export class EncounterRenderer {
 
     drawStatusEffects(ctx, ui, member, pX, pY, pSize, alpha) {
         if (!member.statusEffects || member.statusEffects.length === 0) return;
-        
         ctx.save();
         ctx.globalAlpha = alpha;
-        
         const sheetKey = 'statusEffects';
         const srcSize = 32;
         const drawSize = 32;
@@ -846,7 +832,6 @@ export class EncounterRenderer {
             // Background Box
             ctx.fillStyle = this.getAlphaColor('rgba(0, 0, 0, 0.8)', alpha);
             ctx.fillRect(drawX, drawY, drawSize, drawSize);
-            
             // Border Box
             ui.drawRect(drawX, drawY, drawSize, drawSize, this.getAlphaColor(UITheme.colors.border, alpha), false);
 
@@ -881,7 +866,6 @@ export class EncounterRenderer {
             // Protect against drawing outside portrait bounds
             if (drawX + drawSize > pX + pSize) return;
         });
-        
         ctx.restore();
     }
 

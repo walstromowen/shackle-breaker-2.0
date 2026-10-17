@@ -28,7 +28,6 @@ export class WorkshopInventoryRenderer extends WorkshopBaseRenderer {
         const COLS = 4;
         const SLOT_SIZE = 96;
         const SLOT_PADDING = 19;
-        const SCROLLBAR_WIDTH = 10;
         const totalGridW = (COLS * SLOT_SIZE) + ((COLS - 1) * SLOT_PADDING);
 
         let startX = x + Math.floor((w - totalGridW) / 2);
@@ -68,7 +67,6 @@ export class WorkshopInventoryRenderer extends WorkshopBaseRenderer {
                 if (itemY > listY + listH) return;
                 if (itemY + SLOT_SIZE < listY) return;
 
-                const isHovered = state.hoveredHitboxId === `PARTY_ITEM_${index}`;
                 // Gear entries point at the live item (_ref), so two identical swords - one in the
                 // bag and one equipped - never highlight together. Stacked materials fall back to id.
                 const selectedItem = state.selectedUpgradeItem;
@@ -76,23 +74,15 @@ export class WorkshopInventoryRenderer extends WorkshopBaseRenderer {
                     ? item._ref === selectedItem
                     : (selectedItem.id === item.id && selectedItem.instanceId === item.instanceId));
 
-                let bgFill = UITheme.colors.bgScale[1];
-                let drawBrackets = false;
+                // The item chosen for upgrading is "selected" (bar); the slot under the mouse / keyboard cursor is "highlighted"
+                const flags = this.ui.flags(`PARTY_ITEM_${index}`, state.hoveredHitboxId, { selected: isSelected });
 
-                if (isSelected) {
-                    bgFill = UITheme.colors.states.focusBg;
-                    drawBrackets = true;
-                } else if (isHovered) {
-                    bgFill = UITheme.colors.states.hoverBg;
-                    drawBrackets = true;
-                }
+                hitboxes.push({ id: `PARTY_ITEM_${index}`, x: itemX, y: itemY, w: SLOT_SIZE, h: SLOT_SIZE, type: 'inventory', index: index, clickSfx: 'uiClick' });
 
-                hitboxes.push({ id: `PARTY_ITEM_${index}`, x: itemX, y: itemY, w: SLOT_SIZE, h: SLOT_SIZE, type: 'inventory', index: index, hoverSfx: 'hoverTick', clickSfx: 'uiClick' });
-
-                this.ui.drawPanel(itemX, itemY, SLOT_SIZE, SLOT_SIZE, bgFill);
+                this.ui.drawPanel(itemX, itemY, SLOT_SIZE, SLOT_SIZE, UITheme.colors.bgScale[1]);
+                this.ui.drawStateBox(itemX, itemY, SLOT_SIZE, SLOT_SIZE, flags);
 
                 const iconOffset = (SLOT_SIZE - 64) / 2;
-                
                 // Uses inherited drawIcon
                 this.drawIcon(def, itemX + iconOffset, itemY + iconOffset, 64);
 
@@ -104,9 +94,6 @@ export class WorkshopInventoryRenderer extends WorkshopBaseRenderer {
                 if (item.qty > 1) {
                     this.ui.drawText(`${item.qty}`, itemX + SLOT_SIZE - 5, itemY + SLOT_SIZE - 5, UITheme.fonts.small, UITheme.colors.textHighlight, "right");
                 }
-                if (drawBrackets) {
-                    this.ui.drawSelectionBrackets(itemX, itemY, SLOT_SIZE, SLOT_SIZE, 5, UITheme.colors.borderHighlight);
-                }
             });
         }
 
@@ -114,29 +101,13 @@ export class WorkshopInventoryRenderer extends WorkshopBaseRenderer {
         this.ui.ctx.restore();
 
         if (currentContentHeight > listH) {
-            const scrollX = x + w - SCROLLBAR_WIDTH - 5;
-            this.drawScrollBar(scrollX, listY, listH, currentContentHeight, renderScroll, 'PARTY', hitboxes);
+            const scrollX = x + w - UITheme.scrollbar.width - 5;
+            this.drawListScrollbar(scrollX, listY, listH, currentContentHeight, renderScroll, 'PARTY', hitboxes, state.hoveredHitboxId);
         }
-    }
-
-    drawScrollBar(x, y, viewportH, contentH, scrollOffset, prefix, hitboxes) {
-        const SCROLLBAR_WIDTH = 10;
-        this.ui.drawRect(x, y, SCROLLBAR_WIDTH, viewportH, UITheme.colors.scrollTrack || UITheme.colors.bgScale[0]);
-        
-        const viewRatio = viewportH / contentH;
-        let thumbH = Math.max(20, viewportH * viewRatio);
-        
-        const scrollRatio = scrollOffset / (contentH - viewportH);
-        const thumbY = y + (scrollRatio * (viewportH - thumbH));
-        
-        this.ui.drawRect(x, thumbY, SCROLLBAR_WIDTH, thumbH, UITheme.colors.borderHighlight);
-        
-        hitboxes.push({ id: `SCROLLBAR_THUMB_${prefix}`, x: x - 5, y: thumbY, w: SCROLLBAR_WIDTH + 10, h: thumbH, type: 'scrollbar_thumb' });
     }
 
     drawInputPrompts(state, leftW, centerW, h, hitboxes) {
         let lines = [];
-        
         if (state.hoveredHitboxId === 'BTN_CRAFT') {
             lines.push("[L-Click/SPC] Craft Item      [R-Click/ESC] Close");
         } else if (state.hoveredHitboxId === 'BTN_UPGRADE') {
@@ -144,12 +115,9 @@ export class WorkshopInventoryRenderer extends WorkshopBaseRenderer {
         } else {
             lines.push("[L-Click/WASD] Select Recipe/Item      [R-Click/ESC] Close");
         }
-        
         const centerX = leftW + Math.floor(centerW / 2);
         const flourishW = Math.min(720, centerW - 64);
-        
         this.ui.drawLineWithGothicFlourish(centerX - (flourishW / 2), h - 104, flourishW, UITheme.colors.borderHighlight);
-        
         const startY = h - 64;
         lines.forEach((lineText, index) => {
             this.ui.drawText(

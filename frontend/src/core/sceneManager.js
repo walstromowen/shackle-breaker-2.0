@@ -463,7 +463,16 @@ export class SceneManager {
     update(dt) {
         let click = this.input.getAndResetClick();
         let rightClick = this.input.getAndResetRightClick();
-        const scroll = this.input.getAndResetScroll();
+        let scroll = this.input.getAndResetScroll();
+
+        // While a transition is fading the old screen out, keys are ignored (see _handleGlobalKeydown); the mouse is ignored too,
+        // so a double click can not fire on a screen that is already leaving.
+        const inputLocked = this.transitionRenderer.isActive && this.transitionRenderer.state === 'FADE_OUT';
+        if (inputLocked) {
+            click = null;
+            rightClick = null;
+            scroll = 0;
+        }
         const mousePos = this.input.getMousePosition();
         const isMouseDown = this.input.getIsMouseDown ? this.input.getIsMouseDown() : false;
 
@@ -477,6 +486,9 @@ export class SceneManager {
                 getAndResetClick: () => click,
                 getAndResetRightClick: () => rightClick
             };
+
+            // The wheel is mouse input: the mouse takes control back from the keyboard cursor.
+            if (scroll !== 0 && activeController.notePointerInput) activeController.notePointerInput();
 
             const uiResult = this.uiInteractionManager.update(inputProxy, activeController);
 
@@ -508,8 +520,9 @@ export class SceneManager {
             if (this.currentScene === 'overworld') {
                 this.timeSystem.update(dt);
             }
-            if (this.weatherRenderer.update && this.overworldController.getState().camera) {
-                this.weatherRenderer.update(dt, this.overworldController.getState().camera);
+            const camera = this.overworldController.getState().camera;
+            if (this.weatherRenderer.update && camera) {
+                this.weatherRenderer.update(dt, camera);
             }
         }
     }

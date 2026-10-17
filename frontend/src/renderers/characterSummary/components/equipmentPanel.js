@@ -1,4 +1,5 @@
 import { UITheme } from '../../../ui/UITheme.js';
+import { UI_SFX } from '../../../ui/uiSfx.js';
 import { TRAIT_DEFINITIONS } from '../../../../../shared/data/traitDefinitions.js';
 import { ItemDefinitions } from '../../../../../shared/data/itemDefinitions.js';
 
@@ -19,7 +20,7 @@ export class EquipmentPanel {
     return (v && typeof v === 'object') ? (v.total || v.value || 0) : (Number(v) || 0);
   }
 
-  render(member, stats, activeSlots, selectedIndex, isChoosingItem, x, y, w, h, hitboxes, heldItem, hoveredId = null, isEditingName = false) {
+  render(member, stats, activeSlots, selectedIndex, isChoosingItem, x, y, w, h, hitboxes, heldItem, hoveredId = null, isEditingName = false, menuOpen = false) {
     const centerX = Math.floor(x + (w / 2));
     let headerY = y + 24;
 
@@ -35,12 +36,14 @@ export class EquipmentPanel {
       y: headerY,
       w: nameWidth,
       h: nameHeight,
-      type: 'button',
-      hoverSfx: 'hoverTick'
+      type: 'button'
     });
 
     if (!isEditingName) {
-      this.ui.drawText(member.name, centerX, headerY + 36, UITheme.fonts.header, UITheme.colors.textMain, "center");
+      // The name is a button (click to rename): it takes the shared highlight like everything else you can click
+      const nameFlags = this.ui.flags('BTN_EDIT_NAME', menuOpen ? null : hoveredId);
+      this.ui.drawStateBox(centerX - (nameWidth / 2), headerY, nameWidth, nameHeight, nameFlags);
+      this.ui.drawText(member.name, centerX, headerY + 36, UITheme.fonts.header, this.ui.stateTextColor(nameFlags, UITheme.colors.textMain), "center");
     }
 
     this.ui.drawText(`Level ${actualLevel}`, centerX, headerY + 86, UITheme.fonts.body, UITheme.colors.textHighlight, "center");
@@ -48,10 +51,10 @@ export class EquipmentPanel {
     this._drawVitals(member, stats, centerX, headerY + 139, x, w);
 
     const equipStartY = y + 228;
-    this._drawEquipmentLayout(member, activeSlots, selectedIndex, isChoosingItem, centerX, equipStartY, w, hitboxes, heldItem, hoveredId);
+    this._drawEquipmentLayout(member, activeSlots, selectedIndex, isChoosingItem, centerX, equipStartY, w, hitboxes, heldItem, hoveredId, menuOpen);
 
     const traitsStartY = equipStartY + Math.max(this.PORTRAIT_SIZE, activeSlots.length / 2 * 125) + 60;
-    this._drawTraitBadges(member, x, traitsStartY, w, hitboxes, hoveredId);
+    this._drawTraitBadges(member, x, traitsStartY, w, hitboxes, menuOpen ? null : hoveredId);
   }
 
   _drawVitals(member, stats, centerX, y, fullX, fullW) {
@@ -87,7 +90,7 @@ export class EquipmentPanel {
     this.ui.drawLineWithGothicFlourish(fullX + 96, y + 36, fullW - 192, UITheme.colors.borderHighlight);
   }
 
-  _drawEquipmentLayout(member, activeSlots, selectedIndex, isChoosingItem, centerX, startY, w, hitboxes, heldItem, hoveredId) {
+  _drawEquipmentLayout(member, activeSlots, selectedIndex, isChoosingItem, centerX, startY, w, hitboxes, heldItem, hoveredId, menuOpen = false) {
     const equipData = (member.state && member.state.equipment) ? member.state.equipment : (member.equipment || {});
     const splitIndex = Math.ceil(activeSlots.length / 2);
 
@@ -117,9 +120,6 @@ export class EquipmentPanel {
     this._drawStatusEffects(member, pX, pY, this.PORTRAIT_SIZE);
 
     const drawSlot = (slotName, index, isLeft) => {
-      const globalIndex = isLeft ? index : splitIndex + index;
-      const isSelected = (globalIndex === selectedIndex);
-
       const slotW = Math.floor((w - this.PORTRAIT_SIZE - 62) / 2);
       const slotX = isLeft ? (centerX - (this.PORTRAIT_SIZE / 2) - slotW - 19) : (centerX + (this.PORTRAIT_SIZE / 2) + 19);
       const slotY = startY + (index * (this.SLOT_HEIGHT + 10));
@@ -141,31 +141,10 @@ export class EquipmentPanel {
         }
       }
 
-      let boxColor = UITheme.colors.panelBg;
-      let drawBrackets = false;
-      let bracketColor = UITheme.colors.borderHighlight;
-
-      const isHovered = (hoveredId === `SLOT_${slotName}`);
-
-      if (isValidDrop && !isBlocked) {
-        boxColor = "rgba(201, 180, 117, 0.15)";
-        drawBrackets = true;
-        bracketColor = UITheme.colors.success;
-      } else if (isBlocked) {
-        boxColor = "rgba(140, 28, 28, 0.15)";
-        if (isValidDrop) {
-          drawBrackets = true;
-          bracketColor = UITheme.colors.failure;
-        }
-      }
-
-      if (isSelected) {
-        boxColor = UITheme.colors.states.focusBg;
-        drawBrackets = true;
-        bracketColor = UITheme.colors.borderHighlight;
-      } else if (isHovered) {
-        boxColor = UITheme.colors.states.hoverBg;
-      }
+      // highlighted = the focused slot (mouse hover or keyboard cursor). While a menu is open the menu owns the focus and the
+      // slot it was opened on stays "selected".
+      const slotId = `SLOT_${slotName}`;
+      const flags = this.ui.flags(slotId, menuOpen ? null : hoveredId, { selected: menuOpen && hoveredId === slotId });
 
       hitboxes.push({
         id: `SLOT_${slotName}`,
@@ -175,15 +154,17 @@ export class EquipmentPanel {
         h: this.SLOT_HEIGHT,
         type: 'slot',
         slotId: slotName,
-        hoverSfx: 'hoverTick',
-        clickSfx: isBlocked ? 'cancelSound' : 'cinematicBoom'
+
+        clickSfx: isBlocked ? UI_SFX.error : undefined
       });
 
-      this.ui.drawPanel(slotX, slotY, slotW, this.SLOT_HEIGHT, boxColor);
+      this.ui.drawPanel(slotX, slotY, slotW, this.SLOT_HEIGHT, isBlocked ? "rgba(140, 28, 28, 0.15)" : UITheme.colors.panelBg);
 
-      if (drawBrackets) {
-        this.ui.drawSelectionBrackets(slotX, slotY, slotW, this.SLOT_HEIGHT, 5, bracketColor);
-      }
+      // While an item is carried, every slot that would take it is marked (gold dashes); a blocked slot shows red
+      if (isValidDrop) this.ui.drawDropTarget(slotX, slotY, slotW, this.SLOT_HEIGHT, !isBlocked);
+
+      // The slots are stacked close together, so the brackets are drawn inside
+      this.ui.drawStateBox(slotX, slotY, slotW, this.SLOT_HEIGHT, flags, { inset: true });
 
       let item = equipData[slotName];
 
@@ -263,8 +244,7 @@ export class EquipmentPanel {
         currentY += 72;
       }
 
-      const isHovered = (hoveredId === traitId);
-      const bgColor = isHovered ? UITheme.colors.states.hoverBg : UITheme.colors.bgScale[1];
+      const traitFlags = this.ui.flags(traitId, hoveredId);
 
       hitboxes.push({
         id: traitId,
@@ -272,12 +252,12 @@ export class EquipmentPanel {
         y: currentY,
         w: width,
         h: 53,
-        type: 'trait',
-        hoverSfx: 'hoverTick'
+        type: 'trait'
       });
 
-      this.ui.drawPanel(currentX, currentY, width, 53, bgColor);
-      this.ui.drawText(def.name, currentX + width / 2, currentY + 34, UITheme.fonts.cardSmall, UITheme.colors.textMain, "center", "middle");
+      this.ui.drawPanel(currentX, currentY, width, 53, UITheme.colors.bgScale[1]);
+      this.ui.drawStateBox(currentX, currentY, width, 53, traitFlags, { inset: true });
+      this.ui.drawText(def.name, currentX + width / 2, currentY + 34, UITheme.fonts.cardSmall, this.ui.stateTextColor(traitFlags, UITheme.colors.textMain), "center", "middle");
 
       currentX += width + 19;
     });

@@ -119,6 +119,33 @@ export class AbilityModel {
     }
 
     // =========================================================================
+    // 3b. LOGIC: WHERE CAN IT BE USED? ('battle' | 'overworld' | 'both')
+    // =========================================================================
+    /**
+     * Set `context` on the ability to say so. Without it the answer is worked out, so abilities written before
+     * this existed keep working: anything that needs an enemy, a free space or battle flow is 'battle'; everything
+     * else (Minor Heal, Rest, ally items) is 'both'. A 'overworld' ability is never offered, queued or run in a fight.
+     * Static, so AbilitySystem can ask about a raw definition without building a model.
+     */
+    static contextOf(def) {
+        if (!def) return 'battle';
+        if (def.context) return def.context;
+        const scope = def.targeting && def.targeting.scope;
+        if (['enemy', 'all_enemies', 'random_enemy', 'space'].includes(scope)) return 'battle';
+        if (def.behavior) return 'battle'; // charge_attack, flee_battle, switch_party
+        if ((def.effects || []).some(e => e.type === 'summon' || e.type === 'switch_self')) return 'battle';
+        return 'both';
+    }
+
+    get context() { return AbilityModel.contextOf(this.config); }
+
+    /** where = 'battle' | 'overworld' */
+    usableIn(where) {
+        const ctx = this.context;
+        return ctx === 'both' || ctx === where;
+    }
+
+    // =========================================================================
     // 4. LOGIC: BEHAVIOR FLAGS
     // =========================================================================
     isCharging() { return this.config.behavior === 'charge_attack'; }

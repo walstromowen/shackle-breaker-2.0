@@ -44,6 +44,26 @@ export class WorkshopBaseRenderer {
         this.ui.drawItemIcon(this.loader, def, x, y, size, this.ICON_SRC_SIZE);
     }
 
+    /**
+     * A tab in the shared state look: the open tab is "selected" (bar), the one under the mouse / keyboard cursor is
+     * "highlighted". Registers the tab's hitbox.
+     */
+    drawTab(state, hitboxes, label, x, y, w, h, isActive, id) {
+        this.ui.drawTab(x, y, w, h, label, this.ui.flags(id, state.hoveredHitboxId, { selected: isActive }));
+
+        hitboxes.push({ id, x, y, w, h, type: 'tab' });
+    }
+
+    /** The list scrollbar (shared look). Registers the thumb as a drag hitbox. */
+    drawListScrollbar(x, y, viewportH, contentH, scrollOffset, prefix, hitboxes, focusId = null) {
+        const width = UITheme.scrollbar.width;
+        const id = `SCROLLBAR_THUMB_${prefix}`;
+        const thumb = this.ui.drawScrollbar(x, y, width, viewportH, scrollOffset, contentH - viewportH, viewportH,
+            this.ui.flags(id, focusId));
+        if (!thumb) return;
+        hitboxes.push({ id, x: x - 5, y: thumb.y, w: width + 10, h: thumb.h, type: 'scrollbar_thumb' });
+    }
+
     // --- Equipped-gear holder helpers (shared by the inventory grid and the details panel) ---
 
     /** One stable colour per party slot so members with the same initial can still be told apart. */

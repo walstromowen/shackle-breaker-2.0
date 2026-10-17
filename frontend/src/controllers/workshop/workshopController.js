@@ -1,4 +1,5 @@
 import { BaseController } from '../core/baseController.js';
+import { UI_SFX } from '../../ui/uiSfx.js';
 import { events } from '../../core/eventBus.js';
 import { gameState } from '../../../../shared/state/gameState.js';
 import { CraftingManager } from '../../../../shared/systems/craftingManager.js';
@@ -47,7 +48,69 @@ export class WorkshopController extends BaseController {
         };
         
         this.currentHitboxes = [];
+        this.focusId = null; // the keyboard cursor (a hitbox id)
         this._syncScrollZones();
+    }
+
+    // ========================================================
+    // FOCUS & KEYBOARD (shared standard, see BaseController)
+    // ========================================================
+    // The things the keyboard cursor may land on
+    static FOCUSABLE = /^(BTN_CLOSE|BTN_CRAFT|BTN_UPGRADE|TAB_|RECIPE_|PARTY_ITEM_)/i;
+
+    _focusables() {
+        return this.currentHitboxes.filter(h => WorkshopController.FOCUSABLE.test(h.id));
+    }
+
+    getKeyboardFocusId() {
+        return this.currentHitboxes.some(h => h.id === this.focusId) ? this.focusId : null;
+    }
+
+    // The mouse moved onto something: the keyboard cursor follows it (silent; UIInteractionManager adds the hover tick)
+    setFocusFromPointer(hitboxId) {
+        if (WorkshopController.FOCUSABLE.test(hitboxId)) this.focusId = hitboxId;
+    }
+
+    handleKeyDown(keyCode, e) {
+        const intent = this.resolveIntent(keyCode, e);
+        if (!intent) return;
+
+        if (intent === 'CANCEL') {
+            this._close();
+        } else if (intent === 'CONFIRM') {
+            const id = this.getKeyboardFocusId();
+            if (id) this.onClick(id);
+            else this._moveFocus('DOWN'); // nothing focused yet: the first press just shows the cursor
+        } else {
+            this._moveFocus(intent);
+        }
+    }
+
+    _moveFocus(direction) {
+        const next = this.findSpatialNeighbor(direction, this.getKeyboardFocusId(), this._focusables());
+        if (next && next !== this.focusId) {
+            this.focusId = next;
+            this.playNavSound();
+        } else if (next === null) {
+            this._scrollListAtEdge(direction);
+        }
+    }
+
+    // At the end of the recipe / inventory list the next row is off screen (and so has no hitbox yet): scroll it into view.
+    _scrollListAtEdge(direction) {
+        if (direction !== 'UP' && direction !== 'DOWN') return;
+        const id = (this.focusId || '').toUpperCase();
+        const step = (this.layout.itemHeight || 48) * (direction === 'DOWN' ? 1 : -1);
+        if (id.startsWith('RECIPE_')) {
+            this.scrollManager.setOffset('recipes', Math.max(0, Math.min(this.layout.recipeMaxScroll, this.recipeScrollOffset + step)), true);
+        } else if (id.startsWith('PARTY_ITEM_')) {
+            this.scrollManager.setOffset('party', Math.max(0, Math.min(this.layout.partyMaxScroll, this.partyScrollOffset + step)), true);
+        }
+    }
+
+    _close() {
+        this.playCancelSound();
+        events.emit('CHANGE_SCENE', { scene: 'overworld' });
     }
 
     init(data) {
@@ -124,8 +187,6 @@ export class WorkshopController extends BaseController {
     }
 
     handleScroll(delta) {
-        this.inputMode = 'mouse';
-
         // The centre panel (stats / skills) scrolls when its content is taller than the space
         // above the materials footer.
         const b = this.layout.detailsBounds;
@@ -218,10 +279,11 @@ export class WorkshopController extends BaseController {
             });
         }
 
-        // 5. Refresh UI & Play Sound
+        // 5. Refresh UI & Play Sound (the confirm click, then the crafting flourish on top of it)
         this.checkCraftability();
         this.updateHitboxes(this.currentHitboxes);
-        events.emit('PLAY_SOUND', { id: 'crafting_success' });
+        this.playConfirmSound();
+        this.playSfx(UI_SFX.success, 0.8);
     }
 
     // --- UPGRADING LOGIC ---
@@ -273,35 +335,34 @@ export class WorkshopController extends BaseController {
             // 4. Force a UI refresh and play a sound
             this.updateHitboxes(this.currentHitboxes);
             
-            if (typeof events !== 'undefined') {
-                events.emit('PLAY_SOUND', { id: 'crafting_success' });
-            }
+            this.playConfirmSound();
+            this.playSfx(UI_SFX.success, 0.8);
+        } else {
+            this.playErrorSound();
         }
     }
 
     // --- UI INTERACTION CALLBACKS ---
-    onHover(hitboxId) {
-        super.onHover(hitboxId);
-    }
-
+    // The mouse and the keyboard both arrive here, so every branch makes its own sound.
     onClick(hitboxId) {
-        this.inputMode = 'mouse';
         if (!hitboxId) return;
 
         const normalizedId = hitboxId.toUpperCase();
 
         if (normalizedId === 'BTN_CLOSE') {
-            events.emit('CHANGE_SCENE', { scene: 'overworld' });
+            this._close();
             return;
         }
 
-        if (normalizedId === 'BTN_CRAFT' && this.canCraftSelected) {
-            this.executeCrafting();
+        if (normalizedId === 'BTN_CRAFT') {
+            if (this.canCraftSelected) this.executeCrafting();
+            else this.playErrorSound(); // missing materials / money, or nothing selected
             return;
         }
 
-        if (normalizedId === 'BTN_UPGRADE' && this.canUpgradeSelected) {
-            this.executeUpgrade();
+        if (normalizedId === 'BTN_UPGRADE') {
+            if (this.canUpgradeSelected) this.executeUpgrade();
+            else this.playErrorSound();
             return;
         }
 
@@ -311,7 +372,7 @@ export class WorkshopController extends BaseController {
             if (['description', 'stats', 'skills'].includes(tabName)) {
                 this.activeTab = tabName;
                 this.detailsScrollOffset = 0;
-                events.emit('PLAY_SOUND', { id: 'uiClick' });
+                this.playConfirmSound();
             }
             return;
         }
@@ -323,7 +384,7 @@ export class WorkshopController extends BaseController {
             
             if (recipe) {
                 this.selectRecipe(recipe);
-                events.emit('PLAY_SOUND', { id: 'uiClick' });
+                this.playConfirmSound();
             }
             return;
         }
@@ -345,7 +406,7 @@ export class WorkshopController extends BaseController {
 
                 if (realItem) {
                     this.selectUpgradeItem(realItem);
-                    events.emit('PLAY_SOUND', { id: 'uiClick' });
+                    this.playConfirmSound();
                 }
             }
             return;
@@ -353,7 +414,7 @@ export class WorkshopController extends BaseController {
     }
 
     onRightClick(hitboxId) {
-        events.emit('CHANGE_SCENE', { scene: 'overworld' });
+        this._close();
     }
     
 
@@ -525,7 +586,7 @@ export class WorkshopController extends BaseController {
             onLayoutUpdate: (hitboxes) => this.updateHitboxes(hitboxes),
             
             // Interaction & Data
-            hoveredHitboxId: this.hoveredHitboxId,
+            hoveredHitboxId: this.getFocusId(), // the hovered element in mouse mode, the keyboard cursor in keyboard mode
             mouse: this.mouse,
             partyCurrency: gameState.party.currency,
             partyInventory: this._getFormattedInventory()

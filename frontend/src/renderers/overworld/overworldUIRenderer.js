@@ -21,7 +21,8 @@ export class OverworldUIRenderer {
         const { 
             hoveredHitboxId, isMenuOpen, menuToggleHitbox, dropdownHitboxes, 
             trackedQuests, toasts, facedObject, camera,
-            isHarvesting, harvestTimer, harvestDuration, harvestTarget 
+            isHarvesting, harvestTimer, harvestDuration, harvestTarget,
+            hotbar, notice
         } = state || {};
 
         const ui = new CanvasUI(ctx);
@@ -31,15 +32,14 @@ export class OverworldUIRenderer {
             this.minimap.render(ctx, ui, state);
         }
 
+        // The menu button stays "selected" (bar) while its dropdown is open; the one under the mouse is "highlighted"
         if (menuToggleHitbox) {
-            const isMainHovered = hoveredHitboxId === menuToggleHitbox.id;
-            this.drawSquareButton(ctx, ui, menuToggleHitbox, isMainHovered, isMenuOpen);
+            this.drawSquareButton(ctx, ui, menuToggleHitbox, ui.flags(menuToggleHitbox.id, hoveredHitboxId, { selected: !!isMenuOpen }));
         }
 
         if (isMenuOpen && dropdownHitboxes) {
             for (const btn of dropdownHitboxes) {
-                const isHovered = hoveredHitboxId === btn.id;
-                this.drawSquareButton(ctx, ui, btn, isHovered, false);
+                this.drawSquareButton(ctx, ui, btn, ui.flags(btn.id, hoveredHitboxId));
             }
         }
 
@@ -59,6 +59,86 @@ export class OverworldUIRenderer {
 
         if (toasts && toasts.length > 0) {
             this.drawToasts(ctx, ui, toasts);
+        }
+
+        if (hotbar && hotbar.length > 0) {
+            this.drawHotbar(ctx, ui, hotbar, hoveredHitboxId, notice);
+        }
+    }
+
+    // --- HOTBAR: a row of slots at the bottom centre of the screen (keys 1-9 and 0, or click) ---
+    // The slots' hitboxes belong to the controller; they are placed here, from the real canvas size, every frame, so what is drawn is what is clicked.
+    drawHotbar(ctx, ui, slots, hoveredId, notice) {
+        const SIZE = 68, GAP = 6, MARGIN = 24, ICON = 44;
+        const total = slots.length * SIZE + (slots.length - 1) * GAP;
+        const startX = Math.round((ctx.canvas.width - total) / 2);
+        const baseY = ctx.canvas.height - MARGIN - SIZE;
+        let hovered = null;
+
+        ctx.save();
+        for (const slot of slots) {
+            const x = startX + slot.index * (SIZE + GAP);
+            const flags = slot.hitbox ? ui.flags(slot.hitbox.id, hoveredId) : {};
+            if (slot.hitbox) { slot.hitbox.x = x; slot.hitbox.y = baseY; slot.hitbox.w = SIZE; slot.hitbox.h = SIZE; }
+            if (flags.highlighted) hovered = slot;
+
+            const y = baseY;
+            const out = slot.defId && slot.qty <= 0;
+            ui.drawPanel(x, y, SIZE, SIZE, slot.defId ? "rgba(25, 23, 20, 0.6)" : "rgba(25, 23, 20, 0.35)");
+            // The shared state look (slots sit close together, so the brackets are drawn inside)
+            ui.drawStateBox(x, y, SIZE, SIZE, flags, { inset: true });
+
+            if (slot.icon) {
+                const found = ui.resolveItemSheet(this.loader, slot.icon.sheet || 'items');
+                if (found) {
+                    const src = found.cell || this.ICON_SRC_SIZE;
+                    ctx.globalAlpha = out ? 0.3 : 1;
+                    ctx.drawImage(found.sheet, slot.icon.col * src, slot.icon.row * src, src, src, x + (SIZE - ICON) / 2, y + (SIZE - ICON) / 2, ICON, ICON);
+                    ctx.globalAlpha = 1;
+                }
+                ui.drawText(
+                    String(slot.qty), x + SIZE - 6, y + SIZE - 12,
+                    UITheme.fonts.cardSmall, out ? (UITheme.colors.error || "#e57373") : UITheme.colors.textMain, "right", "middle"
+                );
+            }
+
+            // key badge, top left
+            const badge = 18;
+            ui.drawPanel(x + 4, y + 4, badge, badge, "rgba(0, 0, 0, 0.7)");
+            ui.drawText(slot.key, x + 4 + badge / 2, y + 4 + badge / 2 + 1, UITheme.fonts.cardSmall, UITheme.colors.textMuted || "#AAAAAA", "center", "middle");
+
+            // a short flash when the slot was just used (gold: it worked, red: it did not)
+            if (slot.flash > 0) {
+                ctx.globalAlpha = slot.flash * 0.45;
+                ctx.fillStyle = slot.flashOk ? "#FFD700" : "#d9534f";
+                ctx.fillRect(x, y, SIZE, SIZE);
+                ctx.globalAlpha = 1;
+            }
+        }
+        ctx.restore();
+
+        // the name of the hovered item, and the last line of feedback, above the row
+        let lineY = baseY - 18;
+        if (notice) {
+            let alpha = Math.min(1, notice.left / 400);
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, alpha);
+            ctx.font = UITheme.fonts.body || "16px sans-serif";
+            const w = ctx.measureText(notice.text).width + 32;
+            ui.drawPanel(Math.round((ctx.canvas.width - w) / 2), lineY - 18, w, 36, "rgba(25, 23, 20, 0.8)");
+            ui.drawText(notice.text, ctx.canvas.width / 2, lineY, UITheme.fonts.body || "16px sans-serif",
+                notice.ok ? UITheme.colors.textMain : (UITheme.colors.error || "#e57373"), "center", "middle");
+            ctx.restore();
+            lineY -= 44;
+        }
+        if (hovered && hovered.defId) {
+            ctx.save();
+            ctx.font = UITheme.fonts.body || "16px sans-serif";
+            const label = hovered.name;
+            const w = ctx.measureText(label).width + 32;
+            ui.drawPanel(Math.round((ctx.canvas.width - w) / 2), lineY - 18, w, 36, "rgba(65, 58, 50, 0.85)");
+            ui.drawText(label, ctx.canvas.width / 2, lineY, UITheme.fonts.body || "16px sans-serif", UITheme.colors.states.highlightText, "center", "middle");
+            ctx.restore();
         }
     }
 
@@ -96,7 +176,6 @@ export class OverworldUIRenderer {
         // 6. Draw the Bar
         const barWidth = 60 * resScale;
         const barHeight = 8 * resScale;
-        
         // Center it horizontally over the object, and float it just above the object
         const barX = screenX + (drawW / 2) - (barWidth / 2);
         const barY = drawY - barHeight - (10 * resScale);
@@ -104,7 +183,6 @@ export class OverworldUIRenderer {
         const progress = Math.min(1, Math.max(0, timer / duration));
 
         ctx.save();
-        
         // Background (Dark)
         ctx.fillStyle = "rgba(25, 23, 20, 0.9)";
         ctx.fillRect(barX, barY, barWidth, barHeight);
@@ -191,7 +269,6 @@ export class OverworldUIRenderer {
     const padding = 12;
 
     ctx.save();
-    
     // 1. Measure the shortcut text to dynamically size the black box
     ctx.font = UITheme.fonts.cardSmall || "12px sans-serif";
     const shortcutWidth = ctx.measureText(shortcut).width;
@@ -261,7 +338,6 @@ export class OverworldUIRenderer {
             else if (progress > 0.8) alpha = 1 - ((progress - 0.8) / 0.2);
 
             ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-            
             ctx.font = UITheme.fonts.cardTitle || "16px sans-serif";
             const textString = `+${toast.amount}`;
             const textWidth = ctx.measureText(textString).width;
@@ -309,7 +385,6 @@ export class OverworldUIRenderer {
         const titleHeight = 32;
         const lineHeight = 26;
         const questGap = 20;
-        
         let totalHeight = innerPadding;
         for (const quest of quests) {
             totalHeight += titleHeight;
@@ -330,7 +405,7 @@ export class OverworldUIRenderer {
                 startX + 16, 
                 currentY + (titleHeight / 2), 
                 UITheme.fonts.body, 
-                UITheme.colors.states.hoverText || "#FFD700", 
+                UITheme.colors.textHighlight, 
                 "left", 
                 "middle"
             );
@@ -341,7 +416,6 @@ export class OverworldUIRenderer {
                     const progressText = `${obj.current}/${obj.required}`;
                     const isComplete = obj.current >= obj.required;
                     const textColor = isComplete ? UITheme.colors.success : UITheme.colors.textMain;
-                    
                     let descText = obj.description;
 
                     // Dynamically resolve target names if there is no hardcoded description
@@ -383,7 +457,6 @@ export class OverworldUIRenderer {
                         "left", 
                         "middle"
                     );
-                    
                     ui.drawText(
                         progressText, 
                         startX + trackerWidth - 16, 
@@ -400,19 +473,13 @@ export class OverworldUIRenderer {
         }
     }
 
-    drawSquareButton(ctx, ui, btn, isHovered, isActiveOverride = false) {
-        const isActive = isHovered || isActiveOverride;
-        const bgColor = isActive ? "rgba(65, 58, 50, 0.6)" : "rgba(25, 23, 20, 0.4)";
-        const textColor = isActive ? UITheme.colors.states.hoverText : UITheme.colors.textMain;
-        
-        const yOffset = isHovered ? -3 : 0;
-        const drawY = btn.y + yOffset;
+    // flags from ui.flags(): highlighted = under the mouse, selected = its dropdown is open
+    drawSquareButton(ctx, ui, btn, flags = {}) {
+        const textColor = ui.stateTextColor(flags, UITheme.colors.textMain);
+        const drawY = btn.y;
 
-        ui.drawPanel(btn.x, drawY, btn.w, btn.h, bgColor);
-
-        if (isActive) {
-            ui.drawSelectionBrackets(btn.x - 4, drawY - 4, btn.w + 8, btn.h + 8, 8, UITheme.colors.borderHighlight);
-        }
+        ui.drawPanel(btn.x, drawY, btn.w, btn.h, "rgba(25, 23, 20, 0.4)");
+        ui.drawStateBox(btn.x, drawY, btn.w, btn.h, flags, { inset: true });
 
         if (btn.shortcut) {
             const badgeSize = 22;
@@ -432,14 +499,12 @@ export class OverworldUIRenderer {
 
         const centerX = btn.x + (btn.w / 2);
         const uiSheet = this.loader.get('ui_icons');
-        
         if (uiSheet && btn.spriteCol !== undefined && btn.spriteRow !== undefined) {
             const iconSize = 64;
             const dstX = centerX - (iconSize / 2);
             const dstY = drawY + 8;
             const srcX = btn.spriteCol * iconSize;
             const srcY = btn.spriteRow * iconSize;
-            
             ctx.drawImage(
                 uiSheet,
                 srcX, srcY, iconSize, iconSize,

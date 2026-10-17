@@ -11,7 +11,8 @@ export class Input {
         this.lastClick = null; 
         
         this.lastRightClick = null; 
-        this.isMouseDown = false; 
+        this.isMouseDown = false; // true only while the LEFT button is held (that is the button that drags)
+        this.downButton = null;   // the button that is currently held, whichever it is
         this.scrollDelta = 0;
         this.mousePosition = { x: 0, y: 0 }; 
 
@@ -46,9 +47,18 @@ export class Input {
 
     // --- EVENT HANDLERS ---
 
-    _onKeyDown(e) { this.heldKeys.add(e.code); }
+    _onKeyDown(e) {
+        this.heldKeys.add(e.code);
+        // Tab is the "back" key on every screen: it must never move the browser's focus away from the game.
+        if (e.code === 'Tab') e.preventDefault();
+    }
     _onKeyUp(e) { this.heldKeys.delete(e.code); }
-    _onBlur() { this.heldKeys.clear(); }
+    _onBlur() {
+        this.heldKeys.clear();
+        // A button released outside the window never sends its mouseup, which would leave a drag stuck.
+        this.isMouseDown = false;
+        this.downButton = null;
+    }
     _onContextMenu(e) { e.preventDefault(); }
 
     _getMouseCoords(e) {
@@ -62,21 +72,25 @@ export class Input {
     }
 
     _onMouseDown(e) {
-        this.isMouseDown = true; // Start Dragging
+        // Only the left button drags. A right press used to start a drag as well, so the "back" button could pick items up.
+        this.downButton = e.button;
+        this.isMouseDown = (e.button === 0);
+        this.mousePosition = this._getMouseCoords(e); // a press without any movement (touch, a fast click) must still land where it happened
         // NOTE: Clicks are now strictly generated on mouseup to ensure 
         // the interaction manager can differentiate them from drags.
     }
 
     _onMouseUp(e) {
-        if (!this.isMouseDown) return; 
+        if (this.downButton === null) return;
+        this.downButton = null;
         this.isMouseDown = false; // Stop Dragging
         
         // Register click only if released over the actual canvas
         if (e.target === this.canvas) {
             if (e.button === 2) {
                 this.lastRightClick = this._getMouseCoords(e);
-            } else {
-                this.lastClick = this._getMouseCoords(e);
+            } else if (e.button === 0) {
+                this.lastClick = this._getMouseCoords(e); // the middle button does nothing
             }
         }
     }
@@ -142,6 +156,7 @@ export class Input {
         this.lastClick = null;
         this.lastRightClick = null;
         this.isMouseDown = false;
+        this.downButton = null;
         this.scrollDelta = 0;
     }
 

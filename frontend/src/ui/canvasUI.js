@@ -1,4 +1,4 @@
-import { UITheme } from './UITheme.js'; 
+import { UITheme, UIPointer } from './UITheme.js';
 
 export class CanvasUI {
   /**
@@ -110,6 +110,18 @@ export class CanvasUI {
     this.ctx.globalAlpha = 0.6;
     this.ctx.strokeRect(x, y, w, h);
 
+    this.ctx.restore();
+  }
+
+  /** The panel behind anything that floats above a screen (tooltips, context menus): the standard panel edge plus a drop shadow. */
+  drawPopupPanel(x, y, w, h) {
+    const p = UITheme.popup;
+    this.ctx.save();
+    this.ctx.shadowColor = p.shadowColor;
+    this.ctx.shadowBlur = p.shadowBlur;
+    this.ctx.shadowOffsetX = p.shadowOffset;
+    this.ctx.shadowOffsetY = p.shadowOffset;
+    this.drawPanel(x, y, w, h, p.bg);
     this.ctx.restore();
   }
 
@@ -251,39 +263,200 @@ export class CanvasUI {
     this.ctx.restore();
   }
 
-  drawInteractiveRow(x, y, w, h, label, font, align, isFocused, isHovered) {
+  // ========================================================================
+  // INTERACTION STATES - one visual language for every screen
+  //
+  // Every selectable thing (button, tab, list row, grid cell, card, menu option) is drawn with these, so hovering, keyboard
+  // focus, a chosen item, a held mouse button and a disabled one look the same everywhere. Pass FLAGS:
+  //   { highlighted, hovered, focused, selected, pressed, disabled }
+  // highlighted / hovered / focused all mean "this is what the player is pointing at" - they are one look, and the controllers
+  // only ever report one of them at a time (getFocusId), so just pass  highlighted: (id === state.hoveredHitboxId).
+  // ========================================================================
+
+  /**
+   * The flags for one element, in one line:  ui.flags(id, state.hoveredId, { selected: i === chosen, disabled: !canUse })
+   * highlighted = this is the focused element (mouse hover or keyboard cursor); pressed = the mouse button is held down on it.
+   * `extra` is merged over the result.
+   */
+  flags(id, focusId, extra = {}) {
+    return { highlighted: id != null && id === focusId, pressed: id != null && id === UIPointer.pressedId, ...extra };
+  }
+
+  /** 'disabled' | 'pressed' | 'highlight' | 'selected' | 'normal' */
+  resolveState(flags = {}) {
+    const lit = !!(flags.highlighted || flags.hovered || flags.focused);
+    if (flags.disabled) return 'disabled';
+    if (flags.pressed && lit) return 'pressed';
+    if (lit) return 'highlight';
+    if (flags.selected) return 'selected';
+    return 'normal';
+  }
+
+  /** The text color a state calls for. `base` is what the text uses when nothing is going on. */
+  stateTextColor(flags = {}, base = UITheme.colors.textMuted) {
+    const s = UITheme.colors.states;
+    switch (this.resolveState(flags)) {
+      case 'pressed':   return s.pressedText;
+      case 'highlight': return s.highlightText;
+      case 'selected':  return s.selectedText;
+      default:          return base;
+    }
+  }
+
+  /** 1 normally, the theme's disabled alpha for a disabled element. */
+  stateAlpha(flags = {}) {
+    return flags.disabled ? UITheme.colors.states.disabledAlpha : 1;
+  }
+
+  /**
+   * Draws the background, edge mark and corner brackets for a state. Draw the element's own content (text, icon) afterwards.
+   *   highlight  gold wash + thin gold edge + corner brackets
+   *   pressed    dark wash + brackets pulled in tight
+   *   selected   pale wash + a bar down the left edge (stays on while highlighted, so a chosen item that is also under the
+   *              mouse shows both)
+   * opts: { brackets: false }  no brackets          { inset: true }  brackets inside the box (dense grids, menus)
+   *       { bracketDist: n }   explicit distance    { bar: false }    no selected bar
+   * @returns {string} the resolved state
+   */
+  drawStateBox(x, y, w, h, flags = {}, opts = {}) {
+    const state = this.resolveState(flags);
+
+    // A disabled element is never washed or barred, but the cursor can still be on it: show just the (faded) brackets so a
+    // keyboard cursor resting on it is not lost. The caller's globalAlpha (stateAlpha) does the fading.
+    if (state === 'disabled') {
+      if ((flags.highlighted || flags.hovered || flags.focused) && opts.brackets !== false) {
+        const dist = opts.bracketDist !== undefined ? opts.bracketDist : (opts.inset ? UITheme.selection.bracketInset : null);
+        this.drawSelectionBrackets(x, y, w, h, dist, UITheme.colors.borderHighlight);
+      }
+      return state;
+    }
+
+    const s = UITheme.colors.states;
+    const sel = UITheme.selection;
+
+    if (state === 'pressed') {
+      this.drawRect(x, y, w, h, s.pressedBg, true);
+    } else if (state === 'highlight') {
+      this.drawRect(x, y, w, h, s.highlightBg, true);
+    } else if (state === 'selected') {
+      this.drawRect(x, y, w, h, s.selectedBg, true);
+    }
+
+    if (state === 'highlight' || state === 'pressed') {
+      this.ctx.save();
+      this.ctx.strokeStyle = s.highlightBorder;
+      this.ctx.lineWidth = 1;
+      this.ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+      this.ctx.restore();
+    }
+
+    if (flags.selected && opts.bar !== false) {
+      this.drawRect(x, y, 4, h, s.selectedBar, true);
+    }
+
+    if ((state === 'highlight' || state === 'pressed') && opts.brackets !== false) {
+      let dist = opts.bracketDist;
+      if (dist === undefined) {
+        if (state === 'pressed') dist = opts.inset ? sel.bracketInset : sel.pressedDist;
+        else dist = opts.inset ? sel.bracketInset : null; // null = the theme's normal distance
+      }
+      this.drawSelectionBrackets(x, y, w, h, dist, UITheme.colors.borderHighlight);
+    }
+    return state;
+  }
+
+  /** A standard button: dark face, thin edge, centered label, and the shared state look on top. */
+  drawButton(x, y, w, h, label, flags = {}, opts = {}) {
+    const state = this.resolveState(flags);
     this.ctx.save();
-    let textColor = UITheme.colors.textMuted;
-    let bgColor = null;
+    this.ctx.globalAlpha *= this.stateAlpha(flags); // multiply, so a screen fading in or out still fades
 
-    // 1. Resolve State Colors
-    if (isFocused) {
-      textColor = UITheme.colors.states.focusText;
-      bgColor = UITheme.colors.states.focusBg;
-    } else if (isHovered) {
-      textColor = UITheme.colors.states.hoverText;
-      bgColor = UITheme.colors.states.hoverBg;
-    }
+    this.drawRect(x, y, w, h, opts.bg || UITheme.colors.bgScale[2], true);
+    this.drawRect(x, y, w, h, UITheme.colors.border, false);
+    this.drawStateBox(x, y, w, h, flags, opts);
 
-    // 2. Draw Background
-    if (bgColor) {
-      this.drawRect(x, y, w, h, bgColor, true);
-    }
-
-    // 3. Draw Text
-    const textY = y + (h / 2) + 10;
-    let textX = x;
-    if (align === "center") textX = x + (w / 2);
-    else if (align === "right") textX = x + w - 24;
-    else textX = x + 24; 
-
-    this.drawText(label, textX, textY, font, textColor, align, "alphabetic");
-
-    // 4. Draw Focus Brackets
-    if (isFocused) {
-      this.drawSelectionBrackets(x, y, w, h, 10, UITheme.colors.borderHighlight);
-    }
+    this.drawText(
+      label, x + w / 2, y + h / 2,
+      opts.font || UITheme.fonts.body,
+      this.stateTextColor(flags, opts.color || UITheme.colors.textMain),
+      'center', 'middle'
+    );
     this.ctx.restore();
+    return state;
+  }
+
+  /**
+   * A scrollbar: track + thumb. Returns the thumb rectangle {x,y,w,h} to register as the drag hitbox (or null when there is
+   * nothing to scroll). The thumb takes the highlight color while hovered or dragged, like everything else.
+   */
+  drawScrollbar(x, y, w, h, offset, maxScroll, viewportH, flags = {}) {
+    if (!(maxScroll > 0)) return null;
+
+    const sb = UITheme.scrollbar;
+    this.drawRect(x, y, w, h, UITheme.colors.scrollTrack, true);
+
+    const contentH = maxScroll + viewportH;
+    const thumbH = Math.max(sb.minThumb, Math.min(h, h * (viewportH / contentH)));
+    const t = Math.max(0, Math.min(1, offset / maxScroll));
+    const thumbY = y + (h - thumbH) * t;
+
+    const lit = !!(flags.highlighted || flags.hovered || flags.dragging || flags.focused || flags.pressed);
+    this.ctx.save();
+    this.ctx.globalAlpha = lit ? 0.95 : 0.55;
+    this.ctx.fillStyle = lit ? UITheme.colors.states.highlightText : UITheme.colors.scrollThumb;
+    this.ctx.fillRect(x, thumbY, w, thumbH);
+    this.ctx.restore();
+
+    return { x, y: thumbY, w, h: thumbH };
+  }
+
+  /** Marks where a dragged item would land. valid = gold dashes, not valid = red dashes. */
+  drawDropTarget(x, y, w, h, valid = true) {
+    this.ctx.save();
+    this.ctx.strokeStyle = valid ? UITheme.colors.states.highlightText : UITheme.colors.failure;
+    this.ctx.fillStyle = valid ? UITheme.colors.states.highlightBg : 'rgba(140, 28, 28, 0.12)';
+    this.ctx.lineWidth = 2;
+    this.ctx.setLineDash([10, 6]);
+    this.ctx.fillRect(x, y, w, h);
+    this.ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
+    this.ctx.restore();
+  }
+
+  /**
+   * A selectable text row: menu options, list entries and tabs. flags as for drawStateBox (use ui.flags(...)).
+   * opts: { font, align: 'left'|'center'|'right', inset, brackets, color (text color when nothing is going on) }
+   * Tabs are just rows with  align: 'center', inset: true  - the chosen tab is  selected: true.
+   */
+  drawRow(x, y, w, h, label, flags = {}, opts = {}) {
+    const align = opts.align || 'left';
+    const state = this.resolveState(flags);
+
+    this.ctx.save();
+    this.ctx.globalAlpha *= this.stateAlpha(flags); // multiply, so a screen fading in or out still fades
+
+    // 1. Background, edge, bar and brackets
+    this.drawStateBox(x, y, w, h, flags, { inset: opts.inset, brackets: opts.brackets, bracketDist: opts.bracketDist });
+
+    // 2. Text
+    const textColor = this.stateTextColor(flags, opts.color || UITheme.colors.textMuted);
+    let textX = x + 24;
+    if (align === 'center') textX = x + (w / 2);
+    else if (align === 'right') textX = x + w - 24;
+
+    this.drawText(label, textX, y + (h / 2) + 10, opts.font || UITheme.fonts.body, textColor, align, 'alphabetic');
+    this.ctx.restore();
+    return state;
+  }
+
+  /**
+   * A tab: a dark backing and thin edge with a centered label, in the shared state look. The open tab is
+   * selected: true; the one under the mouse / keyboard cursor is highlighted (ui.flags does this).
+   * opts as for drawRow (font defaults to the small font, brackets are inside).
+   */
+  drawTab(x, y, w, h, label, flags = {}, opts = {}) {
+    this.drawRect(x, y, w, h, opts.bg || 'rgba(0,0,0,0.5)', true);
+    this.drawRect(x, y, w, h, UITheme.colors.border, false);
+    return this.drawRow(x, y, w, h, label, flags, { font: UITheme.fonts.small, align: 'center', inset: true, ...opts });
   }
 
   // --- IMAGES ---
@@ -428,9 +601,14 @@ export class CanvasUI {
   }
 
   // --- HUD ELEMENTS ---
+  // The corner brackets of a highlighted element. dist = px outside the element (negative = inside); null uses the theme's
+  // distance (plus its optional slow breathing), so every bracket on every screen moves the same way.
   drawSelectionBrackets(x, y, w, h, dist = null, color = UITheme.colors.borderHighlight) {
-    const p = dist !== null ? dist : 10 + Math.sin(Date.now() / 150) * 5;
-    const len = 19; 
+    const sel = UITheme.selection;
+    const p = dist !== null && dist !== undefined
+      ? dist
+      : sel.bracketDist + (sel.bracketPulse ? Math.sin(Date.now() / 150) * sel.bracketPulse : 0);
+    const len = Math.max(6, Math.min(sel.bracketLen, Math.floor(Math.min(w, h) / 2)));
     this.ctx.save();
     this.ctx.strokeStyle = color;
     this.ctx.lineWidth = 2; 
@@ -531,97 +709,107 @@ export class CanvasUI {
   }
 
   // --- STANDARDIZED CONTEXT MENU (With Icon & Ability Support) ---
-drawContextMenu(menu, layout, hitboxes = [], hoveredId = null, loader = null) {
-  if (!menu || !menu.options) return;
+  // One option is lit at a time: the one the mouse is over (hoveredId, MENU_OPT_n or CTX_OPT_n) or, if the mouse is not on an
+  // option, the keyboard cursor (menu.selectedIndex; -1 = none). Dividers and info lines are never lit.
+  drawContextMenu(menu, layout, hitboxes = [], hoveredId = null, loader = null) {
+    if (!menu || !menu.options) return;
 
-  const options = menu.options;
-  const highlightIndex = menu.selectedIndex;
-  const padding = menu.padding || 0;
-  const btnHeight = menu.btnHeight || 64;
+    const options = menu.options;
+    const padding = menu.padding || 0;
+    const btnHeight = menu.btnHeight || 64;
 
-  this.drawPanel(layout.x, layout.y, layout.w, layout.h, UITheme.colors.bgScale[1]);
+    let activeIndex = menu.selectedIndex;
+    const hoverMatch = typeof hoveredId === 'string' ? /^(?:MENU_OPT_|CTX_OPT_)(\d+)$/.exec(hoveredId) : null;
+    if (hoverMatch) activeIndex = parseInt(hoverMatch[1], 10);
 
-  hitboxes.unshift({
-    id: 'MENU_BG',
-    type: 'context_bg',
-    x: layout.x,
-    y: layout.y,
-    w: layout.w,
-    h: layout.h,
-    cursor: 'default'
-  });
+    this.drawPopupPanel(layout.x, layout.y, layout.w, layout.h);
 
-  options.forEach((opt, i) => {
-    const btnY = layout.y + padding + (i * btnHeight);
-    const optId = `MENU_OPT_${i}`;
+    hitboxes.unshift({
+      id: 'MENU_BG',
+      type: 'context_bg',
+      x: layout.x,
+      y: layout.y,
+      w: layout.w,
+      h: layout.h,
+      cursor: 'default'
+    });
 
-    // Don't register click hitboxes for informational dividers
-    if (!opt.isDivider) {
-      hitboxes.unshift({
-        id: optId,
-        type: 'context_opt',
-        x: layout.x,
-        y: btnY,
-        w: layout.w,
-        h: btnHeight,
-        cursor: opt.isInfo ? 'default' : 'pointer'
-      });
-    }
+    options.forEach((opt, i) => {
+      const btnY = layout.y + padding + (i * btnHeight);
+      const optId = `MENU_OPT_${i}`;
 
-    const isHovered = (i === highlightIndex) || (hoveredId === optId);
-
-    if (isHovered && !opt.isDivider) {
-      this.drawRect(layout.x + 12, btnY, layout.w - 24, btnHeight, "rgba(255, 255, 255, 0.05)", true);
-    }
-
-    // --- DIVIDER LINE ---
-    if (opt.isDivider) {
-      this.drawLine(
-        layout.x + 16,
-        btnY + (btnHeight / 2),
-        layout.x + layout.w - 16,
-        btnY + (btnHeight / 2),
-        UITheme.colors.border,
-        1
-      );
-      return;
-    }
-
-    // --- ICON RENDERING (32x32) ---
-    let textX = layout.x + (layout.w / 2);
-    let textAlign = "center";
-
-    if (opt.iconSheet && loader) {
-      const sheet = loader.get(opt.iconSheet) || loader.get('abilities') || loader.get('icons');
-      if (sheet) {
-        const iconSize = opt.iconSize || 32;
-        const iconX = layout.x + 16;
-        const iconY = btnY + Math.floor((btnHeight - iconSize) / 2);
-
-        const col = opt.iconCol || 0;
-        const row = opt.iconRow || 0;
-
-        // Draw the 32x32 icon
-        this.drawSprite(sheet, col * iconSize, row * iconSize, iconSize, iconSize, iconX, iconY, iconSize, iconSize);
-
-        // Shift text to the right and left-align
-        textX = iconX + iconSize + 12;
-        textAlign = "left";
+      // Don't register click hitboxes for informational dividers
+      if (!opt.isDivider) {
+        hitboxes.unshift({
+          id: optId,
+          type: 'context_opt',
+          x: layout.x,
+          y: btnY,
+          w: layout.w,
+          h: btnHeight,
+          cursor: opt.isInfo ? 'default' : 'pointer'
+        });
       }
-    }
 
-    // --- TEXT RENDERING ---
-    const textColor = opt.isInfo ? UITheme.colors.textHighlight : UITheme.colors.textMain;
+      // --- DIVIDER LINE ---
+      if (opt.isDivider) {
+        this.drawLine(
+          layout.x + 16,
+          btnY + (btnHeight / 2),
+          layout.x + layout.w - 16,
+          btnY + (btnHeight / 2),
+          UITheme.colors.border,
+          1
+        );
+        return;
+      }
 
-    this.drawText(
-      opt.label,
-      textX,
-      btnY + (btnHeight / 2) + 2,
-      UITheme.fonts.cardSmall,
-      textColor,
-      textAlign,
-      "middle"
-    );
-  });
-}
+      const selectable = !opt.isInfo && !opt.disabled;
+      const flags = { highlighted: selectable && i === activeIndex, disabled: !!opt.disabled };
+
+      this.ctx.save();
+      this.ctx.globalAlpha *= this.stateAlpha(flags); // multiply, so a screen fading in or out still fades
+
+      // The shared highlight, inset so it stays inside the panel
+      this.drawStateBox(layout.x + 12, btnY, layout.w - 24, btnHeight, flags, { inset: true });
+
+      // --- ICON RENDERING (32x32) ---
+      let textX = layout.x + (layout.w / 2);
+      let textAlign = "center";
+
+      if (opt.iconSheet && loader) {
+        const sheet = loader.get(opt.iconSheet) || loader.get('abilities') || loader.get('icons');
+        if (sheet) {
+          const iconSize = opt.iconSize || 32;
+          const iconX = layout.x + 16;
+          const iconY = btnY + Math.floor((btnHeight - iconSize) / 2);
+
+          const col = opt.iconCol || 0;
+          const row = opt.iconRow || 0;
+
+          // Draw the 32x32 icon
+          this.drawSprite(sheet, col * iconSize, row * iconSize, iconSize, iconSize, iconX, iconY, iconSize, iconSize);
+
+          // Shift text to the right and left-align
+          textX = iconX + iconSize + 12;
+          textAlign = "left";
+        }
+      }
+
+      // --- TEXT RENDERING ---
+      const baseColor = opt.isInfo ? UITheme.colors.textHighlight : UITheme.colors.textMain;
+      const textColor = this.stateTextColor(flags, baseColor);
+
+      this.drawText(
+        opt.label,
+        textX,
+        btnY + (btnHeight / 2) + 2,
+        UITheme.fonts.cardSmall,
+        textColor,
+        textAlign,
+        "middle"
+      );
+      this.ctx.restore();
+    });
+  }
 }

@@ -9,7 +9,6 @@ export class WorkshopRecipeRenderer extends WorkshopBaseRenderer {
 
         // --- UPDATED: Use the dynamic station title from state ---
         const displayTitle = state.stationTitle || "Workshop";
-        
         this.ui.drawText(displayTitle, centerX, listY + 24, UITheme.fonts.header, UITheme.colors.textMain, "center");
         listY += 48;
 
@@ -23,24 +22,14 @@ export class WorkshopRecipeRenderer extends WorkshopBaseRenderer {
 
             const isSelected = !state.selectedUpgradeItem && state.selectedRecipe && state.selectedRecipe.id === recipe.id;
             const hitboxId = `RECIPE_${recipe.id}`;
-            const isHovered = state.hoveredHitboxId === hitboxId;
 
             const rowH = 88;
-            let bgColor = null;
-            let textColor = UITheme.colors.textMuted;
-            let drawBrackets = false;
 
-            if (isSelected) {
-                bgColor = UITheme.colors.states.focusBg;
-                textColor = UITheme.colors.states.focusText;
-                drawBrackets = true;
-            } else if (isHovered) {
-                bgColor = UITheme.colors.states.hoverBg;
-                textColor = UITheme.colors.states.hoverText;
-            }
-
-            if (bgColor) this.ui.drawRect(x + 12, listY, w - 24, rowH, bgColor, true);
-            if (drawBrackets) this.ui.drawSelectionBrackets(x + 12, listY, w - 24, rowH, 5, UITheme.colors.borderHighlight);
+            // The chosen recipe is "selected" (bar); the row under the mouse / keyboard cursor is "highlighted".
+            // The name keeps its rarity color.
+            this.ui.drawStateBox(x + 12, listY, w - 24, rowH,
+                this.ui.flags(hitboxId, state.hoveredHitboxId, { selected: !!isSelected }),
+                { inset: true });
 
             this.drawIcon(outDef, x + 24, listY + 12, 64);
             const color = this.getRarityColor(outDef.rarity);
@@ -52,9 +41,9 @@ export class WorkshopRecipeRenderer extends WorkshopBaseRenderer {
                 y: listY,
                 w: w - 24,
                 h: rowH,
-                type: 'recipe',
-                hoverSfx: 'hoverTick',
-                clickSfx: 'cinematicBoom'
+                type: 'recipe'
+
+
             });
 
             listY += rowH + 8;

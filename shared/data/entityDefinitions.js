@@ -112,6 +112,34 @@ export const ENTITY_DEFINITIONS = {
         traitRewards: []
     },
 
+    // Frozen trapper: a snowbound hunter, half-lost to the cold and the madness. Fights with a spear
+    // (thrust comes from the item) and has frost magic of his own (ice_shard / frigid_gale).
+    "FROZEN_TRAPPER": {
+        ...HUMANOID_TEMPLATE,
+        name: "Frozen Trapper",
+        level: 1,
+        spriteOverworld: "frozenTrapperSprite",
+        spritePortrait: "frozenTrapperPortrait",
+        crySound: "frozenTrapperCry",
+        deathSound: "frozenTrapperCry",
+        attributes: {
+            ...HUMANOID_TEMPLATE.attributes,
+            vigor: 10, strength: 11, dexterity: 12, intelligence: 8, attunement: 12
+        },
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 12, maxStamina: 14, maxInsight: 28, speed: 6, critical: 0.08,
+            baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: 1, pierce: 1, ice: 3, water: 1, fire: -2 },
+            baseResistance: { ice: 0.3, fire: -0.2 },
+            baseAttack: { blunt: 1, slash: 0, pierce: 2, ice: 2 }
+        },
+        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "spear", head: "tattered_hood" },
+        currencyReward: { min: 4, max: 12 },
+        lootTableId: "frozen_trapper_drops",
+        abilities: [...HUMANOID_TEMPLATE.abilities, "ice_shard", "frigid_gale"],
+        tags: [...HUMANOID_TEMPLATE.tags, "TRAPPER", "SNOW", "MAGICAL"]
+    },
+
     "MAGIC_ADDICT": {
         ...HUMANOID_TEMPLATE,
         name: "Magic Addict",
@@ -392,6 +420,92 @@ export const ENTITY_DEFINITIONS = {
         lootTableId: "calcified_crusader_drops",
         abilities: [...HUMANOID_TEMPLATE.abilities],
         tags: ["HUMANOID", "CONSTRUCT", "DESERT", "SHIFTING_SANDS", "ELITE"]
+    },
+
+    // -------------------------------------------------------------------------
+    // UNDEAD LINEAGE (no BIOLOGICAL tag: they are not alive)
+    // -------------------------------------------------------------------------
+
+    // Risen bones of a fallen soldier, still gripping a blade. Bone turns away stabs and cuts but shatters under blunt force;
+    // holy light burns it, the dark and the cold feed it. Slow, sturdy, hits steadily.
+    "SKELETAL_WARRIOR": {
+        ...HUMANOID_TEMPLATE,
+        name: "Skeletal Warrior",
+        level: 1,
+        spriteOverworld: "skeletalWarriorSprite",
+        spritePortrait: "skeletalWarriorPortrait",
+        crySound: "skeletalWarriorCry",
+        deathSound: "skeletalWarriorCry",
+        attributes: {
+            ...HUMANOID_TEMPLATE.attributes,
+            vigor: 11, strength: 12, dexterity: 8, intelligence: 3, attunement: 4
+        },
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 13, maxStamina: 12, maxInsight: 4, speed: 4, critical: 0.05,
+            baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, blunt: -3, slash: 2, pierce: 4, ice: 2, dark: 3, light: -3, fire: -1 },
+            baseResistance: { pierce: 0.3, ice: 0.2, dark: 0.4, light: -0.4, fire: -0.15 },
+            baseAttack: { blunt: 1, slash: 4, dark: 1 }
+        },
+        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "shortsword" },
+        currencyReward: { min: 3, max: 10 },
+        lootTableId: "skeletal_warrior_drops",
+        abilities: [...HUMANOID_TEMPLATE.abilities, "strike"],
+        tags: ["HUMANOID", "UNDEAD", "SKELETON", "SOLDIER"]
+    },
+
+    // A skull that drifts on its own, trailing cold fire. Fragile and quick; it bites and throws bolts of raw magic.
+    // Nothing on the ground can reach it (earth), but light shatters it and a solid blow breaks it.
+    "FLOATING_SKULL": {
+        ...BASE_ENTITY,
+        name: "Floating Skull",
+        level: 1,
+        spriteOverworld: "floatingSkullSprite",
+        spritePortrait: "floatingSkullPortrait",
+        crySound: "floatingSkullCry",
+        deathSound: "floatingSkullCry",
+        statMultipliers: { hpPerVigor: 2, staminaPerDex: 2, insightPerAtt: 2 },
+        attributes: { vigor: 4, strength: 3, dexterity: 12, intelligence: 10, attunement: 12 },
+        baseStats: {
+            ...BASE_ENTITY.baseStats,
+            maxHp: 7, maxStamina: 12, maxInsight: 22, staminaRecovery: 2, insightRecovery: 1, speed: 11, critical: 0.1,
+            baseDefense: { blunt: -2, slash: 1, pierce: 3, earth: 4, wind: 2, dark: 4, arcane: 2, light: -4 },
+            baseResistance: { earth: 0.5, dark: 0.5, arcane: 0.2, light: -0.5, wind: 0.1 },
+            baseAttack: { pierce: 2, dark: 3, arcane: 2 }
+        },
+        currencyReward: { min: 2, max: 9 },
+        lootTableId: "floating_skull_drops",
+        abilities: [...BASE_ENTITY.abilities, "bite", "arcane_dart"],
+        tags: ["UNDEAD", "MAGICAL", "SKULL", "FLOATING"]
+    },
+
+    // Skeleton mage of a forgotten order: wields both halves of the old rites. Dark: Spirit Reap (from the staff) and Raise Dead.
+    // Light: Spite and Solar Beam (a two-turn charge). Brittle and slow on its feet, so it wants to be killed before the second cast;
+    // light and blunt hurt it, the dark barely scratches it.
+    "ANCIENT_CULTIST": {
+        ...HUMANOID_TEMPLATE,
+        name: "Ancient Cultist",
+        level: 1,
+        spriteOverworld: "ancientCultistSprite",
+        spritePortrait: "ancientCultistPortrait",
+        crySound: "hollowHarvesterCry",   // placeholder: reuses the Hollow Harvester cry until a cultist cry exists
+        deathSound: "hollowHarvesterCry",
+        attributes: {
+            ...HUMANOID_TEMPLATE.attributes,
+            vigor: 8, strength: 4, dexterity: 9, intelligence: 16, attunement: 16
+        },
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 11, maxStamina: 10, maxInsight: 30, insightRecovery: 2, speed: 6, critical: 0.06,
+            baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, blunt: -2, slash: 1, pierce: 3, ice: 2, dark: 5, arcane: 3, light: -3, fire: -1 },
+            baseResistance: { pierce: 0.2, ice: 0.15, dark: 0.5, arcane: 0.15, light: -0.3, fire: -0.15 },
+            baseAttack: { blunt: 1, dark: 4, light: 3 }
+        },
+        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_darkness", head: "tattered_hood" },
+        currencyReward: { min: 8, max: 20 },
+        lootTableId: "ancient_cultist_drops",
+        abilities: [...HUMANOID_TEMPLATE.abilities, "spite", "solar_beam", "raise_skeleton"],
+        tags: ["HUMANOID", "UNDEAD", "SKELETON", "MAGICAL", "CULTIST"]
     },
 
     // -------------------------------------------------------------------------
@@ -684,6 +798,41 @@ export const ENTITY_DEFINITIONS = {
         lootTableId: "boss_poachers_nightmare_drops",
         abilities: [...BEAST_TEMPLATE.abilities, "eviscerate", "earthquake", "claw", "vine_lash"],
         tags: [...BEAST_TEMPLATE.tags, "BOSS", "ELITE"]
+    },
+
+    // War beast of the Panzerians: a huge snow tiger driven mad, bound in plate.
+    // Plate makes it very hard to cut or pierce, but it is weak to blunt force and
+    // lightning (metal), and it is slow for its size.
+    "PANZERKAMFER": {
+        ...BEAST_TEMPLATE,
+        name: "Panzerkamfer",
+        level: 1,
+        frameSize: 192,
+        spriteOverworld: "panzerkamferSprite",
+        spritePortrait: "panzerkamferPortrait",
+        crySound: "panzerkamferCry",
+        deathSound: "panzerkamferCry",
+        attributes: {
+            ...BEAST_TEMPLATE.attributes,
+            vigor: 20, strength: 20, dexterity: 10, intelligence: 3, attunement: 6
+        },
+        baseStats: {
+            ...BEAST_TEMPLATE.baseStats,
+            maxHp: 40, maxStamina: 28, maxInsight: 0, speed: 8, critical: 0.12,
+            baseDefense: {
+                ...BEAST_TEMPLATE.baseStats.baseDefense,
+                blunt: 2, slash: 7, pierce: 6, ice: 6, water: 3, lightning: -3, fire: -2
+            },
+            baseResistance: {
+                ...BEAST_TEMPLATE.baseStats.baseResistance,
+                ice: 0.5, slash: 0.15, lightning: -0.3, fire: -0.25
+            },
+            baseAttack: { blunt: 6, slash: 9, pierce: 4, ice: 3 }
+        },
+        currencyReward: { min: 250, max: 600 },
+        lootTableId: "boss_panzerkamfer_drops",
+        abilities: [...BEAST_TEMPLATE.abilities, "claw", "eviscerate", "reckless_charge"],
+        tags: [...BEAST_TEMPLATE.tags, "FELINE", "BOSS", "ELITE", "ARMORED", "PANZERIAN"]
     },
 
     "DARIUS_THE_GROVELER": {

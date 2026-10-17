@@ -1,6 +1,5 @@
 import { UITheme } from '../../ui/UITheme.js';
 import { CanvasUI } from '../../ui/canvasUI.js';
-import { events } from '../../core/eventBus.js';
 
 export class BootRenderer {
     constructor(canvas) {
@@ -11,6 +10,8 @@ export class BootRenderer {
         // Clamp progress between 0 and 1
         const safeProgress = Math.max(0, Math.min(1, state.progress || 0));
         const percentage = Math.floor(safeProgress * 100);
+
+        const ui = new CanvasUI(ctx);
 
         // 1. Draw Deep Gothic Background
         ctx.fillStyle = UITheme.colors.background;
@@ -35,22 +36,16 @@ export class BootRenderer {
         const x = this.canvas.width / 2 - barWidth / 2;
         const y = this.canvas.height / 2 + 20;
 
-        // 5. Draw Progress Bar Empty Track (Dimmed Gold/Brown)
-        ctx.fillStyle = UITheme.colors.xpDim; 
-        ctx.fillRect(x, y, barWidth, barHeight);
-
-        // 6. Draw Progress Bar Outline (Tarnished Gold)
-        ctx.strokeStyle = UITheme.colors.borderHighlight;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, barWidth, barHeight);
+        // 5. The bar frame is the same panel every screen uses (dark track, thin gold edge)
+        ui.drawPanel(x, y, barWidth, barHeight, UITheme.colors.bgScale[2]);
 
         // 7. Draw the Progress Bar Fill
-        // We leave a 4px inner padding so the fill doesn't touch the stark gold border
+        // We leave a 4px inner padding so the fill doesn't touch the border
         const padding = 4;
         const fillWidth = barWidth * safeProgress;
         
         if (fillWidth > padding * 2) {
-            ctx.fillStyle = UITheme.colors.borderHighlight; // Tarnished Gold fill
+            ctx.fillStyle = UITheme.colors.states.highlightText; // the shared gold
             ctx.fillRect(
                 x + padding, 
                 y + padding, 
@@ -60,3 +55,4 @@ export class BootRenderer {
         }
     }
 }
+

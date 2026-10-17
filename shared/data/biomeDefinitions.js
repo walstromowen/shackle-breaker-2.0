@@ -203,8 +203,8 @@ export const BIOME_DEFINITIONS = {
         },
         minimap: { grass: '#e6eef3', dirt: '#9fa9b0', water: '#4a86b5', rock: '#8c969f', stair: '#e0a030' } /* colours of the minimap (see MinimapRenderer): ground, dirt, water, the rock that the cliff levels turn into, and the walkable part of a stair */,
         allowedWeather: ['fog'] /* add 'snow' here once the weather exists */,
-        music: { day: 'snowyMountainsBgmDay', night: 'snowyMountainsBgmNight', battle: 'snowyMountainsBattleBgm' } /* placeholders */,
-        battleBackgrounds: { day: 'plainsBattleDayBg', dusk: 'plainsBattleDuskBg', night: 'plainsBattleNightBg' } /* placeholders: the plains' backgrounds until snowy ones are registered in main.js */,
+        music: { day: 'snowyMountainsBgmDay', night: 'snowyMountainsBgmNight', battle: 'snowyMountainsBattleBgm' } /* the battle track is the snowy one; the overworld night track is still a placeholder (its line is commented out in main.js) */,
+        battleBackgrounds: { day: 'snowyMountainsBattleDayBg', dusk: 'snowyMountainsBattleDuskBg', night: 'snowyMountainsBattleNightBg' },
         shapeElevation: (noise, hill = 0, c = 1) => {
             /* Snowy mountains: frozen lakes keep their shape on the low ground; everywhere else the ground is nearly flat and the massif field
                carries it up through five tiers (LAYER_3 .. LAYER_7). Tall hills are frequent and very broad. */
@@ -218,6 +218,7 @@ export const BIOME_DEFINITIONS = {
                 { chance: 0.05, id: 'SNOWY_PINE_TREE' },
                 { chance: 0.01, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
                 { chance: 0.02, pool: ['SNOWY_BOULDER_1', 'SNOWY_BOULDER_2'] },
+                { chance: 0.501, rangeStart: 0.5, id: 'ANIMAL_TRACKS' } /* rare: 0.1% of the ground (about one per chunk), its own band [0.5, 0.501), in a free gap so no other rule's share moves. Walk over it (or face it and interact) to start the Tracks In The Snow encounter */,
                 { chance: 0.04, id: 'CAVE_ENTRANCE' } /* a cave mouth painted into a straight south-facing cliff: the share of fitting cliff faces that get one (WorldManager._isCaveMouth). Keep this rule LAST in the LAYER_2 list */,
             ],
             [CONFIG.TILE_TYPES.LAYER_1]: [{ chance: 0.012, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] }],
@@ -281,8 +282,8 @@ export const BIOME_DEFINITIONS = {
            Lights (torches, a campfire, anything with a `light`) still cut through it. Leave `ambientLight` out for a biome that follows the clock. */
         ambientLight: { r: 0, g: 0, b: 0, a: 1 } /* pitch black: only lights show anything (try a: 0.85 and r, g, b: 6, 10, 28 for a dim blue dark) */,
         allowedWeather: [],
-        music: { day: 'houseInteriorBgmDay', night: 'houseInteriorBgmNight', battle: 'plainsBattleBgm' } /* placeholders: swap for cave tracks (the battle track is the plains' for now) */,
-        battleBackgrounds: { day: 'plainsBattleDayBg', dusk: 'plainsBattleDuskBg', night: 'plainsBattleNightBg' } /* placeholder: the plains' backgrounds until there is a cave one */,
+        music: { day: 'caveBgm', night: 'caveBgm', battle: 'caveBattleBgm' } /* the overworld tracks are still the house's placeholders; the battle track is the cave's own (caveBattleBgm, registered in main.js) */,
+        battleBackgrounds: { day: 'caveBattleBg', dusk: 'caveBattleBg', night: 'caveBattleBg' } /* the same background at every hour: a cave has no daylight */,
         shapeElevation: (noise) => noise,
         structures: { rate: 0, pools: [] },
         mapObjects: { [CONFIG.TILE_TYPES.LAYER_2]: [] } /* the CaveGenerator places the rocks itself (see `scatter` in interiorDefinitions.js) */,

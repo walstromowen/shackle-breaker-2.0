@@ -2,9 +2,22 @@ import { StatCalculator } from './statCalculator.js';
 import { CombatCalculator } from './combatCalculator.js';
 import { StatusEffectFactory } from './factories/statusEffectFactory.js';
 import { AbilityDefinitions } from '../data/abilityDefinitions.js';
+import { AbilityModel } from '../models/abilityModel.js';
+import { gameState } from '../state/gameState.js';
+
+/* Effect types that are real but resolved by the battle code itself, not here: they must not trigger the "unknown effect type" warning. */
+const EFFECTS_HANDLED_ELSEWHERE = ['summon', 'switch_self'];
 
 export class AbilitySystem {
-    static execute(abilityId, source, target) {
+    /* Where may this ability be used? 'battle', 'overworld' or 'both' (see AbilityModel.contextOf). where = 'battle' | 'overworld'. */
+    static usableIn(abilityId, where) {
+        const ctx = AbilityModel.contextOf(AbilityDefinitions[abilityId]);
+        return ctx === 'both' || ctx === where;
+    }
+
+    /* ctx.context = 'overworld' when the ability is used outside a fight (the character summary screen, a hotbar...). Battle callers pass nothing.
+       Overworld effects (the static _world_* methods at the bottom of this class) only run with it; in a battle they are skipped. */
+    static execute(abilityId, source, target, ctx = {}) {
         const def = AbilityDefinitions[abilityId];
         if (!def) return { success: false, message: "Invalid Ability" };
 
@@ -106,6 +119,20 @@ export class AbilitySystem {
                             result.message = result.message ? `${result.message} ${cleanseMsg}` : cleanseMsg;
                         }
                     }
+                } else if (typeof this['_world_' + effect.type] === 'function') {
+                    if (ctx.context !== 'overworld') continue; // overworld effects never run inside a battle
+                    const sub = this['_world_' + effect.type](effect, source, target, def, ctx);
+                    if (sub.success) {
+                        result.success = true;
+                        result.outcome = 'WORLD';
+                        result.message = result.message ? `${result.message} ${sub.message}` : sub.message;
+                        if (sub.worldAction) (result.worldActions = result.worldActions || []).push(sub.worldAction);
+                    } else if (sub.message && !result.success) {
+                        result.message = result.message ? `${result.message} ${sub.message}` : sub.message; // why it did nothing ("Your torch is still burning well.")
+                    }
+                } else if (!EFFECTS_HANDLED_ELSEWHERE.includes(effect.type)) {
+                    const known = Object.getOwnPropertyNames(AbilitySystem).filter(n => n.startsWith('_world_')).map(n => n.slice(7));
+                    console.warn(`[AbilitySystem] "${abilityId}" has an effect of unknown type "${effect.type}"; nothing happened. Known: damage, recover, set, dispel, ${known.join(', ')}.`);
                 }
             }
         }
@@ -265,6 +292,94 @@ export class AbilitySystem {
         if (diff === 0) return { success: false };
         target.modifyResource(effect.resource, diff);
         return { success: true, message: `${effect.resource.toUpperCase()} set to ${effect.value}` };
+    }
+
+    // =========================================================================
+    // OVERWORLD EFFECTS
+    // To add a new kind of overworld effect, add ONE static method named _world_<effect type> here: (effect, source, target, def, ctx) => { success, message }.
+    // execute() finds it by that name (no list to update). The item that carries the ability is only spent when success is true. A handler that needs the
+    // live scene (warp, jump) should not touch it: return `worldAction: { type, ... }` and let the caller send it on.
+    // =========================================================================
+
+    /* { type: 'world_buff', id, minutes | hours, light?: { radius, color, maxAlpha, flickerAmp, flickerSpeed }, grants?: ['climb'], message? }
+       A timed state that runs in IN-GAME time. `light` widens the player's light while it lasts (OverworldController.currentLight); `grants` are permissions
+       other code asks about with AbilitySystem.hasWorldGrant('climb'). Using the same buff again restarts its clock (they do not add up). */
+    static _world_world_buff(effect, source, target, def) {
+        const id = effect.id || def.id;
+        const minutes = effect.minutes !== undefined ? effect.minutes : (effect.hours !== undefined ? effect.hours : 8) * 60;
+        const name = effect.name || def.name || id;
+        // refreshBelow (0..1): while the buff still has MORE than that share of its time left, using the ability again does nothing and costs nothing (so
+        // mashing a hotbar key does not burn a second torch). Leave it out and every use restarts the buff.
+        const running = this.worldBuffStore()[id];
+        if (running && effect.refreshBelow !== undefined && running.durationMinutes > 0 &&
+            (running.expiresAt - this.worldNow()) / running.durationMinutes > effect.refreshBelow) {
+            return { success: false, message: this._fillTemplate(effect.stillActive || '{name} is still active.', { name }) };
+        }
+        this.worldBuffStore()[id] = {
+            id, name,
+            expiresAt: this.worldNow() + minutes,
+            durationMinutes: minutes,
+            light: effect.light ? { ...effect.light } : null,
+            grants: Array.isArray(effect.grants) ? [...effect.grants] : []
+        };
+        const hours = Math.round(minutes / 6) / 10;
+        return { success: true, message: this._fillTemplate(effect.message || '{name} lasts {hours} hours.', { name, hours }) };
+    }
+
+    /* { type: 'grant_currency', amount, message? } */
+    static _world_grant_currency(effect) {
+        const amount = effect.amount || 0;
+        if (!amount) return { success: false, message: '' };
+        gameState.party.currency = (gameState.party.currency || 0) + amount;
+        return { success: true, message: this._fillTemplate(effect.message || 'You gain {amount} currency.', { amount }) };
+    }
+
+    static _fillTemplate(template, vars) {
+        return template.replace(/{(\w+)}/g, (m, k) => (vars[k] !== undefined ? vars[k] : m));
+    }
+
+    // --- timed world buffs: gameState.player.buffs = { [id]: { id, name, expiresAt, durationMinutes, light, grants } } (plain data, so a save keeps it) ---
+    // Times are absolute in-game minutes (day * 1440 + minute of the day), so a buff burns on across midnight.
+
+    static worldNow() {
+        return (gameState.world.day || 0) * 1440 + (gameState.world.time || 0);
+    }
+
+    static worldBuffStore() {
+        if (!gameState.player.buffs) gameState.player.buffs = {};
+        return gameState.player.buffs;
+    }
+
+    /* The buffs still running. Ones that have run out are removed here. */
+    static getWorldBuffs() {
+        const player = gameState.player;
+        const buffs = this.worldBuffStore();
+
+        // saves from before buffs existed kept the torch in player.torch
+        if (player.torch) {
+            const t = player.torch;
+            if (!buffs.torchlight) buffs.torchlight = { id: 'torchlight', name: t.name || 'Torch', expiresAt: t.expiresAt, durationMinutes: t.durationMinutes, light: t.light || null, grants: [] };
+            delete player.torch;
+        }
+
+        const now = this.worldNow();
+        const list = [];
+        for (const id of Object.keys(buffs)) {
+            const b = buffs[id];
+            const left = b.expiresAt - now;
+            if (left <= 0 || left > b.durationMinutes + 1) { // ran out (or a nonsense expiry from some other save)
+                if (left <= 0) console.log(`[World] ${b.name} has run out.`);
+                delete buffs[id];
+                continue;
+            }
+            list.push(b);
+        }
+        return list;
+    }
+
+    /* Is a permission granted by a running buff, e.g. hasWorldGrant('climb')? */
+    static hasWorldGrant(grant) {
+        return this.getWorldBuffs().some(b => b.grants && b.grants.includes(grant));
     }
 
     static _parseMessage(template, source, target, def, extra = {}) {

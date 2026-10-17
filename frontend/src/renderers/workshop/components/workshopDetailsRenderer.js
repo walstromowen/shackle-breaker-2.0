@@ -78,31 +78,8 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         const tabH = 67;
         const tabW = contentW / 3;
 
-        const drawTab = (label, tx, isActive, id) => {
-            const isHovered = state.hoveredHitboxId === id;
-            let bgColor = "rgba(0,0,0,0.5)";
-            let textCol = UITheme.colors.textMuted;
-            let drawBrackets = false;
-            let strokeColor = UITheme.colors.border;
-
-            if (isActive) {
-                bgColor = UITheme.colors.states.focusBg;
-                textCol = UITheme.colors.states.focusText;
-                drawBrackets = true;
-                strokeColor = null;
-            } else if (isHovered) {
-                bgColor = UITheme.colors.states.hoverBg;
-                textCol = UITheme.colors.states.hoverText;
-                strokeColor = null;
-            }
-
-            this.ui.drawPanel(tx, cursorY, tabW, tabH, bgColor);
-            if (strokeColor) this.ui.drawRect(tx, cursorY, tabW, tabH, strokeColor, false);
-            if (drawBrackets) this.ui.drawSelectionBrackets(tx, cursorY, tabW, tabH, 5, UITheme.colors.borderHighlight);
-            this.ui.drawText(label, tx + tabW / 2, cursorY + (tabH / 2) + 10, UITheme.fonts.small, textCol, "center");
-
-            hitboxes.push({ id: id, x: tx, y: cursorY, w: tabW, h: tabH, type: 'tab', hoverSfx: 'hoverTick', clickSfx: 'cinematicBoom' });
-        };
+        const drawTab = (label, tx, isActive, id) =>
+            this.drawTab(state, hitboxes, label, tx, cursorY, tabW, tabH, isActive, id);
 
         drawTab("DESCRIPTION", contentX, activeTab === 'description', 'TAB_DESCRIPTION');
         drawTab("STATS", contentX + tabW, activeTab === 'stats', 'TAB_STATS');
@@ -146,38 +123,13 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         const contentX = x + this.padding;
         const contentW = w - (this.padding * 2);
         const isUpgradeable = item.isUpgradeable || def.isUpgradeable;
-        
         // --- Tabs ---
         const activeTab = state.activeTab || 'description';
         const tabH = 67;
         const tabW = contentW / 3;
 
-        const drawTab = (label, tx, isActive, id) => {
-            const isHovered = state.hoveredHitboxId === id;
-            let bgColor = "rgba(0,0,0,0.5)";
-            let textCol = UITheme.colors.textMuted;
-            let drawBrackets = false;
-            let strokeColor = UITheme.colors.border;
-
-            if (isActive) {
-                bgColor = UITheme.colors.states.focusBg;
-                textCol = UITheme.colors.states.focusText;
-                drawBrackets = true;
-                strokeColor = null;
-            } else if (isHovered) {
-                bgColor = UITheme.colors.states.hoverBg;
-                textCol = UITheme.colors.states.hoverText;
-                strokeColor = null;
-            }
-
-            this.ui.drawPanel(tx, cursorY, tabW, tabH, bgColor);
-            if (strokeColor) this.ui.drawRect(tx, cursorY, tabW, tabH, strokeColor, false);
-            if (drawBrackets) this.ui.drawSelectionBrackets(tx, cursorY, tabW, tabH, 5, UITheme.colors.borderHighlight);
-
-            this.ui.drawText(label, tx + tabW / 2, cursorY + (tabH / 2) + 10, UITheme.fonts.small, textCol, "center");
-
-            hitboxes.push({ id: id, x: tx, y: cursorY, w: tabW, h: tabH, type: 'tab', hoverSfx: 'hoverTick', clickSfx: 'cinematicBoom' });
-        };
+        const drawTab = (label, tx, isActive, id) =>
+            this.drawTab(state, hitboxes, label, tx, cursorY, tabW, tabH, isActive, id);
 
         drawTab("DESCRIPTION", contentX, activeTab === 'description', 'TAB_DESCRIPTION');
         drawTab("STATS", contentX + tabW, activeTab === 'stats', 'TAB_STATS');
@@ -281,11 +233,8 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         }
 
         if (maxScroll > 0) {
-            const trackX = panelX + panelW - 12;
-            const thumbH = Math.max(32, viewH * (viewH / contentH));
-            const thumbY = viewTop + ((scroll / maxScroll) * (viewH - thumbH));
-            this.ui.drawRect(trackX, viewTop, 6, viewH, UITheme.colors.scrollTrack || UITheme.colors.bgScale[0]);
-            this.ui.drawRect(trackX, thumbY, 6, thumbH, UITheme.colors.borderHighlight);
+            const trackX = panelX + panelW - 8 - UITheme.scrollbar.width;
+            this.ui.drawScrollbar(trackX, viewTop, UITheme.scrollbar.width, viewH, scroll, maxScroll, viewH);
         }
     }
 
@@ -309,7 +258,6 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
 
         // Always pinned to the bottom of the column (currentY is no longer used to push it down)
         let materialsY = this._footerTop(materials, currencyCost, h);
-        
         this.ui.drawText("Required Materials", x, materialsY, UITheme.fonts.bold, UITheme.colors.textMain, "left");
         materialsY += 16;
         this.ui.drawLine(x, materialsY, x + w, materialsY, UITheme.colors.border, 1);
@@ -318,20 +266,16 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         for (const [matId, amountNeeded] of materialEntries) {
             const matDef = ItemDefinitions[matId];
             if (!matDef) continue;
-            
             const inventoryItem = (state.partyInventory || []).find(i => i.id === matId);
             const playerHas = inventoryItem ? inventoryItem.qty : 0;
             const hasEnough = playerHas >= amountNeeded;
             const matSlotSize = 64;
-            
             this.ui.drawPanel(x, materialsY, matSlotSize, matSlotSize, UITheme.colors.bgScale[1]);
             this.ui.drawRect(x, materialsY, matSlotSize, matSlotSize, UITheme.colors.border, false);
             this.drawIcon(matDef, x, materialsY, matSlotSize);
-            
             const color = hasEnough ? UITheme.colors.success : UITheme.colors.failure;
             this.ui.drawText(`${matDef.name}`, x + matSlotSize + 16, materialsY + (matSlotSize / 2), UITheme.fonts.body, color, "left", "middle");
             this.ui.drawText(`${playerHas} / ${amountNeeded}`, x + w, materialsY + (matSlotSize / 2), UITheme.fonts.mono, color, "right", "middle");
-            
             materialsY += matSlotSize + 12;
         }
 
@@ -345,30 +289,18 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         }
 
         const btnY = materialsY + 12;
-        const isHoveredBtn = state.hoveredHitboxId === btnHitboxId;
-        
-        let btnBg = isEnabled ? UITheme.colors.panelBg : "rgba(0,0,0,0.5)";
-        let btnTextCol = isEnabled ? UITheme.colors.textMain : UITheme.colors.textMuted;
-        
-        if (isEnabled && isHoveredBtn) {
-            btnBg = UITheme.colors.states.hoverBg;
-            btnTextCol = UITheme.colors.states.hoverText;
-        }
-
-        this.ui.drawPanel(x, btnY, w, btnH, btnBg);
-        if (isEnabled && isHoveredBtn) {
-            this.ui.drawSelectionBrackets(x, btnY, w, btnH, 5, UITheme.colors.borderHighlight);
-        }
-        this.ui.drawText(btnText, x + (w / 2), btnY + (btnH / 2) + 10, UITheme.fonts.bold, btnTextCol, "center");
+        // The action button: highlighted under the mouse / keyboard cursor, faded when it cannot be used yet
+        this.ui.drawButton(x, btnY, w, btnH, btnText,
+            this.ui.flags(btnHitboxId, state.hoveredHitboxId, { disabled: !isEnabled }),
+            { bg: UITheme.colors.panelBg, font: UITheme.fonts.bold });
 
         if (isEnabled) {
-            hitboxes.push({ id: btnHitboxId, x: x, y: btnY, w: w, h: btnH, type: 'action', hoverSfx: 'hoverTick', clickSfx: 'cinematicBoom' });
+            hitboxes.push({ id: btnHitboxId, x: x, y: btnY, w: w, h: btnH, type: 'action' });
         }
     }
 
     _buildUnifiedStats(item, useNext = false) {
         const def = item.definition || ItemDefinitions[item.defId || item.id] || {};
-        
         const getVal = (key, category = null) => {
             if (useNext && item.nextStats) {
                 if (category && item.nextStats[category] && item.nextStats[category][key] !== undefined) return item.nextStats[category][key];
@@ -601,7 +533,6 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         const title = def.name || "Unknown";
         const itemLevel = currentLevel !== null ? currentLevel : (def.level || def.itemLevel);
         let typeText = `${(def.type || "Item").toUpperCase()}`;
-        
         if (def.slot) {
             typeText += ` - ${def.slot.toUpperCase()}`;
         }
@@ -617,7 +548,6 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         const bodyFont = UITheme.fonts.cardSmall || UITheme.fonts.body;
 
         this.ui.drawText(title, x + 24, currentY + 40, headerFont, color, "left");
-        
         if (itemLevel !== undefined) {
             let lvlStr = `Lv. ${itemLevel}`;
             if (nextLevel !== null) {
@@ -627,7 +557,6 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         }
 
         this.ui.drawText(typeText, x + 24, currentY + 74, typeFont, UITheme.colors.textMuted, "left");
-        
         if (def.weight !== undefined || def.value !== undefined) {
             const rightMeta = [];
             if (def.weight !== undefined) rightMeta.push(`Wt: ${def.weight}`);
@@ -650,15 +579,12 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
     _renderItemMainInfo(def, x, y, w) {
         let textY = y;
         const iconSize = 128;
-        
         this.ui.drawPanel(x, y, iconSize, iconSize, UITheme.colors.bgScale[2]);
         this.ui.drawRect(x, y, iconSize, iconSize, UITheme.colors.border, false);
         this.drawIcon(def, x, y, iconSize);
-        
         const textX = x + iconSize + 16;
         const textW = w - iconSize - 16;
         let hasContent = false;
-        
         if (def.effectDescription) {
             const lines = this.ui.getWrappedLines(def.effectDescription, textW, UITheme.fonts.body);
             lines.forEach(line => {
@@ -668,7 +594,6 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
             });
             hasContent = true;
         }
-        
         if (def.description) {
             if (hasContent) textY += 12;
             const lines = this.ui.getWrappedLines(`"${def.description}"`, textW, UITheme.fonts.cardItalic);
@@ -689,7 +614,6 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
 
         let currentY = y;
         const sourceName = def.name || 'Equipment';
-        
         granted.forEach(abilityId => {
             const ability = AbilityDefinitions[abilityId] || { name: abilityId, description: "" };
             currentY = this._drawAbilityCard(ability, x, currentY, w, sourceName);
@@ -822,7 +746,6 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         }
         this.ui.ctx.fill();
         this.ui.ctx.stroke();
-        
         this.ui.ctx.fillStyle = themeColor;
         this.ui.ctx.fillText(displayType, contentX + badgePadX, currentTextY);
         currentTextY += 30;
@@ -878,13 +801,11 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
             this.ui.ctx.textAlign = 'center';
             this.ui.ctx.fillStyle = themeColor;
             this.ui.ctx.font = UITheme.fonts.cardItalic;
-            
             descLines.forEach(line => {
                 this.ui.ctx.fillText(line, x + (w/2), cursorY);
                 cursorY += DESC_LINE_H;
             });
         }
-        
         this.ui.ctx.textBaseline = 'alphabetic';
         return y + cardHeight + 16;
     }
@@ -895,7 +816,6 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
     _drawAbilityIcon(ability, x, y, size) {
         // Try to access the loader (either directly on the class or via this.ui)
         const loader = this.loader || (this.ui && this.ui.loader);
-        
         if (loader && typeof this.ui.drawSprite === 'function') {
             const sheet = loader.get('abilities') || loader.get('items');
             if (sheet) {
@@ -913,7 +833,6 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
                 return; // Successfully drew from the spritesheet
             }
         }
-        
         // Fallback: Use the base class's drawIcon, but force the type 
         // to 'ability' so it knows to look for the correct spritesheet.
         this.drawIcon({ ...ability, type: 'ability' }, x, y, size);

@@ -1,8 +1,8 @@
-
 import { StatCalculator } from '../../../../shared/systems/statCalculator.js';
 import { ItemDefinitions } from '../../../../shared/data/itemDefinitions.js';
 import { AbilitySystem } from '../../../../shared/systems/abilitySystem.js';
 import { TextEntry } from '../../../../shared/utils/textEntry.js';
+import { gameState } from '../../../../shared/state/gameState.js';
 
 const SLOT_ORDER = ['head', 'torso', 'arms', 'mainHand', 'legs', 'feet', 'accessory', 'offHand'];
 
@@ -253,10 +253,22 @@ export class CharacterSummaryLogic {
         if (this.readOnly) return false;
         const def = ItemDefinitions[item.defId];
         if (!def) return false;
-        
+
+        this.lastUseMessage = null; // what happened, for the controller to show the player
+        this.lastUseOk = false;
+        this.lastUseWorld = false;  // true when an overworld effect (a torch, currency...) ran
+
         const abilityId = item.useAbility || def.useAbility;
         if (abilityId) {
-            const result = AbilitySystem.execute(abilityId, targetMember, targetMember);
+            if (!AbilitySystem.usableIn(abilityId, 'overworld')) {
+                this.lastUseMessage = 'That can only be used in battle.';
+                return false;
+            }
+            // context 'overworld' lets the ability's overworld effects run (AbilitySystem skips them in a battle); Minor Heal and the like work the same either way
+            const result = AbilitySystem.execute(abilityId, targetMember, targetMember, { context: 'overworld' });
+            this.lastUseOk = !!result.success;
+            this.lastUseWorld = result.outcome === 'WORLD';
+            this.lastUseMessage = (result.message || '').trim() || (result.success ? 'Used.' : 'It has no effect.');
             if (result.success) {
                 console.log(`[Item Use] Success: ${result.message}`);
                 return this.dropItem(item, 1);

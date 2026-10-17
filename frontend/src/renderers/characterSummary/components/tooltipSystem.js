@@ -48,6 +48,8 @@ export class TooltipSystem {
     } else if (hovered.type === 'inventory') {
       const item = state.filteredInventory[hovered.index];
       if (item) content = this._getItemContent(item);
+    } else if (hovered.type === 'hotbar') {
+      if (hovered.defId) content = this._getItemContent({ defId: hovered.defId });
     } else if (hovered.type === 'slot') {
       const equip = (state.member.state && state.member.state.equipment) ? state.member.state.equipment : state.member.equipment;
       const item = equip ? equip[hovered.slotId] : null;
@@ -483,13 +485,7 @@ export class TooltipSystem {
     if (ty < 24) ty = 24;
 
     // 3. Draw Gothic Panel
-    this.ui.ctx.save();
-    this.ui.ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
-    this.ui.ctx.shadowBlur = 29;
-    this.ui.ctx.shadowOffsetX = 10;
-    this.ui.ctx.shadowOffsetY = 10;
-    this.ui.drawPanel(tx, ty, this.WIDTH, contentHeight, "rgba(15, 15, 18, 0.98)");
-    this.ui.ctx.restore();
+    this.ui.drawPopupPanel(tx, ty, this.WIDTH, contentHeight);
 
     // 4. Draw Header Banner Background
     const inset = 10;

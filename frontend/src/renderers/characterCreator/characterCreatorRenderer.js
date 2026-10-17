@@ -1,5 +1,6 @@
 import { CanvasUI } from '../../ui/canvasUI.js';
 import { UITheme } from '../../ui/UITheme.js';
+import { UI_SFX } from '../../ui/uiSfx.js';
 
 /* The LOOK preview next to the portrait plays the character's South-facing animation from the overworld sprite sheet.
    The sheet layout is the one MapRenderer uses: frames of CONFIG.CHARACTER_FRAME (w x h) in a row of 8, and rows in three sets of four
@@ -39,6 +40,9 @@ export class CharacterCreatorRenderer {
 
         ui.clearScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
 
+        // The one lit element: what the mouse is over, or the keyboard cursor (the controller reports a single focus id)
+        const focusId = hoveredElement ? hoveredElement.id : null;
+
         // --- GLOBAL LAYOUT (Scaled 2.4x for 1920x1080) ---
         const p = 48;
         const startY = 48;
@@ -70,17 +74,13 @@ export class CharacterCreatorRenderer {
 
         // --- NAME INPUT ---
         this.hotspots.push({
-            id: "INPUT_NAME", x: inputX, y: curY, w: inputW, h: inputH,
-            hoverSfx: 'hoverTick', clickSfx: 'cinematicBoom'
+            id: "INPUT_NAME", x: inputX, y: curY, w: inputW, h: inputH
         });
 
-        const isNameSelected = (currentStep === 'name');
+        // A box being typed into stays lit even if the mouse wanders off it
         const nameBg = isEditingName ? "rgba(0, 0, 0, 0.8)" : "rgba(0, 0, 0, 0.4)";
         ui.drawPanel(inputX, curY, inputW, inputH, nameBg);
-
-        if (isNameSelected || isEditingName) {
-            ui.drawSelectionBrackets(inputX, curY, inputW, inputH, 10);
-        }
+        ui.drawStateBox(inputX, curY, inputW, inputH, ui.flags("INPUT_NAME", isEditingName ? "INPUT_NAME" : focusId));
 
         let nameStr = selections.name;
         let nameColor = UITheme.colors.textMain;
@@ -104,7 +104,6 @@ export class CharacterCreatorRenderer {
         // --- C. VISUALS ---
         const VITALS_OFFSET = 380;
         const VITALS_START_Y = identityBottomY + VITALS_OFFSET;
-        
         // The bounding box size for the UI element
         const portraitSize = 256;
         // The sprite box holds exactly one frame of the character sheet (e.g. 64 x 64) at a whole-number zoom, so it is 128 x 128 for 64 px frames
@@ -126,7 +125,6 @@ export class CharacterCreatorRenderer {
             ctx.save();
             const masterSheet = this.loader.get(appData.spritePortrait);
             const overworldSheet = this.loader.get(appData.spriteOverworld);
-            
             const spriteX = startVisualX + portraitSize + visualGap;
 
             ui.drawRect(startVisualX, portraitY, portraitSize, portraitSize, "rgba(0,0,0,0.6)", true);
@@ -138,13 +136,11 @@ export class CharacterCreatorRenderer {
                 const srcRatio = srcW / srcH;
                 let drawW = portraitSize;
                 let drawH = portraitSize;
-                
                 if (srcRatio > 1) {
                     drawH = portraitSize / srcRatio;
                 } else if (srcRatio < 1) {
                     drawW = portraitSize * srcRatio;
                 }
-                
                 // Center the image inside the bounding box
                 const drawX = startVisualX + (portraitSize - drawW) / 2;
                 const drawY = portraitY + (portraitSize - drawH) / 2;
@@ -251,21 +247,22 @@ export class CharacterCreatorRenderer {
         const menuSteps = ['background', 'origin', 'appearance', 'keepsake', 'companion', 'trait', 'difficulty', 'seed', 'start'];
 
         menuSteps.forEach((key) => {
-            const isSelected = (key === currentStep);
             const rowId = key === 'seed' ? "INPUT_SEED" : `ROW_${key}`;
-            const isHovered = (hoveredElement && hoveredElement.id === rowId);
+            const prevId = `BTN_PREV_${key}`;
+            const nextId = `BTN_NEXT_${key}`;
+            // The row is lit when it, or one of its arrows, is the focus
+            const rowFocus = (focusId === prevId || focusId === nextId) ? rowId : focusId;
+            const rowFlags = ui.flags(rowId, rowFocus);
 
             if (key === 'start') {
                 const btnId = "BTN_START";
                 const btnY = menuY + 36;
-                const isBtnHovered = (hoveredElement && hoveredElement.id === btnId);
 
                 this.hotspots.push({
-                    id: btnId, x: menuStartX + 96, y: btnY, w: midW - 192, h: MENU_ITEM_HEIGHT + 24,
-                    hoverSfx: 'hoverTick', clickSfx: 'cinematicBoom'
+                    id: btnId, x: menuStartX + 96, y: btnY, w: midW - 192, h: MENU_ITEM_HEIGHT + 24
                 });
 
-                ui.drawInteractiveRow(menuStartX + 96, btnY, midW - 192, MENU_ITEM_HEIGHT + 24, "START", UITheme.fonts.body, "center", isSelected, isBtnHovered);
+                ui.drawButton(menuStartX + 96, btnY, midW - 192, MENU_ITEM_HEIGHT + 24, "START", ui.flags(btnId, focusId), { font: UITheme.fonts.body });
                 return;
             }
 
@@ -278,25 +275,25 @@ export class CharacterCreatorRenderer {
                 currentItemHeight = 30 + seedBoxH; // Increase total row height allocation
 
                 this.hotspots.push({
-                    id: rowId, x: menuStartX + 24, y: seedBoxY, w: midW - 48, h: seedBoxH, hoverSfx: 'hoverTick'
+                    id: rowId, x: menuStartX + 24, y: seedBoxY, w: midW - 48, h: seedBoxH
                 });
 
                 const seedBg = isEditingSeed ? "rgba(0, 0, 0, 0.8)" : "rgba(0, 0, 0, 0.4)";
                 ui.drawPanel(menuStartX + 24, seedBoxY, midW - 48, seedBoxH, seedBg);
 
-                if (isSelected || isEditingSeed) {
-                    ui.drawSelectionBrackets(menuStartX + 24, seedBoxY, midW - 48, seedBoxH, 10);
-                }
+                // A box being typed into stays lit even if the mouse wanders off it. Rows below it are close by: brackets inside.
+                ui.drawStateBox(menuStartX + 24, seedBoxY, midW - 48, seedBoxH,
+                    ui.flags(rowId, isEditingSeed ? rowId : focusId), { inset: true });
 
                 // Draw label above the actual input box
                 ui.drawText(labels[key], centerColX, menuY + 22, UITheme.fonts.cardSmall, UITheme.colors.textMuted, "center");
-
             } else {
                 this.hotspots.push({
-                    id: rowId, x: menuStartX + 24, y: menuY, w: midW - 48, h: MENU_ITEM_HEIGHT, hoverSfx: 'hoverTick'
+                    id: rowId, x: menuStartX + 24, y: menuY, w: midW - 48, h: MENU_ITEM_HEIGHT
                 });
 
-                ui.drawInteractiveRow(menuStartX + 24, menuY, midW - 48, MENU_ITEM_HEIGHT, "", UITheme.fonts.body, "center", isSelected, isHovered);
+                // Stacked rows: the shared state look, brackets inside so they stay clear of the neighbours
+                ui.drawStateBox(menuStartX + 24, menuY, midW - 48, MENU_ITEM_HEIGHT, rowFlags, { inset: true });
 
                 // Draw normal label
                 const labelY = menuY + 22;
@@ -304,7 +301,7 @@ export class CharacterCreatorRenderer {
             }
 
             let valStr = "";
-            let valColor = UITheme.colors.textMain;
+            let valColor = ui.stateTextColor(rowFlags, UITheme.colors.textMain);
 
             if (key === 'background') valStr = data.BACKGROUNDS?.[selections.backgroundIdx]?.label;
             else if (key === 'origin') valStr = data.ORIGINS?.[selections.originIdx]?.label;
@@ -330,7 +327,6 @@ export class CharacterCreatorRenderer {
                     // Match relative text alignment of the Name input (boxY + 50)
                     const valY = seedBoxY + 50; 
                     const textMaxWidth = midW - 96;
-                    
                     ctx.save();
                     ctx.beginPath();
                     ctx.rect(menuStartX + 24, seedBoxY, midW - 48, seedBoxH);
@@ -340,23 +336,18 @@ export class CharacterCreatorRenderer {
                 } else {
                     const valY = menuY + 56;
                     const textMaxWidth = midW - 336;
-                    const prevId = `BTN_PREV_${key}`;
-                    const nextId = `BTN_NEXT_${key}`;
-                    const isPrevHover = hoveredElement && hoveredElement.id === prevId;
-                    const isNextHover = hoveredElement && hoveredElement.id === nextId;
-
                     const leftArrowX = menuStartX + 72;
                     const rightArrowX = menuStartX + midW - 72;
                     const arrowSize = 12;
 
-                    const arrowColorPrev = isPrevHover ? UITheme.colors.borderHighlight : UITheme.colors.textMuted;
-                    const arrowColorNext = isNextHover ? UITheme.colors.borderHighlight : UITheme.colors.textMuted;
+                    const arrowColorPrev = ui.stateTextColor(ui.flags(prevId, focusId), UITheme.colors.textMuted);
+                    const arrowColorNext = ui.stateTextColor(ui.flags(nextId, focusId), UITheme.colors.textMuted);
 
                     ui.drawArrow(leftArrowX, valY - 10, arrowSize, 'left', arrowColorPrev);
                     ui.drawArrow(rightArrowX, valY - 10, arrowSize, 'right', arrowColorNext);
 
-                    this.hotspots.push({ id: prevId, x: leftArrowX - 48, y: valY - 48, w: 96, h: 96, zIndex: 10, hoverSfx: 'hoverTick', clickSfx: 'hoverTick' });
-                    this.hotspots.push({ id: nextId, x: rightArrowX - 48, y: valY - 48, w: 96, h: 96, zIndex: 10, hoverSfx: 'hoverTick', clickSfx: 'hoverTick' });
+                    this.hotspots.push({ id: prevId, x: leftArrowX - 48, y: valY - 48, w: 96, h: 96, zIndex: 10, clickSfx: UI_SFX.step });
+                    this.hotspots.push({ id: nextId, x: rightArrowX - 48, y: valY - 48, w: 96, h: 96, zIndex: 10, clickSfx: UI_SFX.step });
 
                     ui.drawText(valStr, centerColX, valY, UITheme.fonts.body, valColor, "center", "alphabetic", textMaxWidth);
                 }
@@ -408,20 +399,18 @@ export class CharacterCreatorRenderer {
             ui.endClip();
 
             if (maxScroll > 0) {
-                const trackW = 8;
-                const trackX = rightColX + colW - 24;
-                const trackH = textViewportHeight;
-                const thumbH = Math.max(40, (textViewportHeight / totalTextHeight) * trackH);
-                const scrollRatio = previewOffset / maxScroll;
-                const thumbY = textY + (scrollRatio * (trackH - thumbH));
+                const trackW = UITheme.scrollbar.width;
+                const trackX = rightColX + colW - 16 - trackW;
 
-                ui.drawRect(trackX, textY, trackW, trackH, UITheme.colors.scrollTrack);
-                ui.drawRect(trackX, thumbY, trackW, thumbH, UITheme.colors.scrollThumb);
+                const thumb = ui.drawScrollbar(trackX, textY, trackW, textViewportHeight, previewOffset, maxScroll, textViewportHeight,
+                    ui.flags('SCROLL_THUMB_PREVIEW', focusId));
 
-                this.hotspots.push({
-                    id: 'SCROLL_THUMB_PREVIEW',
-                    x: trackX - 10, y: thumbY, w: trackW + 20, h: thumbH, zIndex: 10
-                });
+                if (thumb) {
+                    this.hotspots.push({
+                        id: 'SCROLL_THUMB_PREVIEW',
+                        x: thumb.x - 10, y: thumb.y, w: thumb.w + 20, h: thumb.h, zIndex: 10
+                    });
+                }
             }
         }
 
