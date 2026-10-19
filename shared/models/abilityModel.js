@@ -1,4 +1,18 @@
 import { AbilityDefinitions } from '../data/abilityDefinitions.js';
+import { StatCalculator } from '../systems/statCalculator.js';
+
+// BALANCE KNOBS: stamina, insight and hp costs grow with the user's max pool of that resource, so a bigger pool means more casts,
+// but not proportionally more. Authored costs in abilityDefinitions.js are what a character with the resource's `ref` pool pays
+// (a fresh character has 30 stamina: 10 base + 2 per Dex x 10, so three 10-cost Slashes are exactly one full bar; same for insight;
+// and 35 max hp: 20 base + 15 from 10 Vigor). Below that pool nothing gets cheaper; above it:
+//   paid = authored x (pool / ref) ^ exponent
+// Exponent 0 = flat costs (the old behaviour), 1 = fully proportional to the pool (a bigger pool would be worth nothing).
+// Item costs are never scaled.
+const COST_RESOURCES = {
+    stamina: { poolKey: 'maxStamina', ref: 30, exponent: 0.5 },
+    insight: { poolKey: 'maxInsight', ref: 30, exponent: 0.5 },
+    hp:      { poolKey: 'maxHp',      ref: 35, exponent: 0.5 },
+};
 
 export class AbilityModel {
     constructor(abilityId) {
@@ -32,7 +46,9 @@ export class AbilityModel {
 
     set cost(newCost) { this._dynamicCost = newCost; }
     
-    get cost() { return this._dynamicCost || this.config.cost || {}; }
+    // The cost the OWNER pays. `owner` is set by CombatantModel on each combatant's own copy of the ability, so the HUD reading
+    // ability.cost shows what canPayCost / payCost charge. An ability with no owner (a bare factory instance) shows the authored cost.
+    get cost() { return this.costFor(this.owner); }
     get multihit() { return this.config.multihit || null; }
     get targetCount() { return this.config.targeting?.count || 1; }
 
@@ -59,32 +75,71 @@ export class AbilityModel {
     // =========================================================================
     // 2. LOGIC: COST & USABILITY
     // =========================================================================
-    canPayCost(user, inventory = null) {
-        if (this.cost.stamina && user.stamina < this.cost.stamina) return false;
-        if (this.cost.insight && user.insight < this.cost.insight) return false;
-        
-        if (this.cost.hp) {
-            if (user.hp <= this.cost.hp) return false;
+    /** The authored cost, with stamina / insight / hp scaled to `user`'s max pool of that resource (see COST_RESOURCES). Item overrides (this.cost = {...}) are never scaled. */
+    costFor(user = this.owner) {
+        if (this._dynamicCost) return this._dynamicCost;
+        return AbilityModel.scaleCost(this.config.cost || {}, user);
+    }
+
+    /** 1 up to the resource's reference pool, then grows with the pool by that resource's exponent. */
+    static costScale(pool, resource = 'stamina') {
+        const { ref, exponent } = COST_RESOURCES[resource];
+        if (!(pool > ref)) return 1;
+        return Math.pow(pool / ref, exponent);
+    }
+
+    /** Max stamina / insight / hp of a combatant (a getter) or of a raw entity (worked out with StatCalculator). */
+    static poolOf(user, resource) {
+        const key = COST_RESOURCES[resource].poolKey;
+        if (typeof user[key] === 'number') return user[key];
+        return StatCalculator.calculateDetailed(user.originalEntity || user)[key]?.total ?? 0;
+    }
+
+    /**
+     * Scales the stamina / insight / hp part of a cost object; returns the same object when there is nothing to scale.
+     * The pool size comes from `pools` ({ stamina, insight, hp } max values, e.g. from the character summary's derived stats) when given,
+     * otherwise from `user`. With neither, the authored cost is returned (the pool size is unknown).
+     */
+    static scaleCost(cost, user, pools = null) {
+        if (!cost || !Object.keys(COST_RESOURCES).some(r => cost[r])) return cost || {};
+        const scaled = { ...cost };
+        for (const resource of Object.keys(COST_RESOURCES)) {
+            if (!cost[resource]) continue;
+            const pool = pools?.[resource] ?? (user ? AbilityModel.poolOf(user, resource) : null);
+            if (!Number.isFinite(pool)) continue;
+            scaled[resource] = Math.max(1, Math.round(cost[resource] * AbilityModel.costScale(pool, resource)));
         }
-        
-        if (this.cost.item) {
+        return scaled;
+    }
+
+    canPayCost(user, inventory = null) {
+        const cost = this.costFor(user);
+        if (cost.stamina && user.stamina < cost.stamina) return false;
+        if (cost.insight && user.insight < cost.insight) return false;
+
+        if (cost.hp) {
+            if (user.hp <= cost.hp) return false;
+        }
+
+        if (cost.item) {
             if (!inventory) {
                 console.warn(`AbilityModel: Item cost check failed. Inventory system missing.`);
                 return false;
             }
-            return inventory.hasItem(this.cost.item, this.cost.amount || 1);
+            return inventory.hasItem(cost.item, cost.amount || 1);
         }
-        
+
         return true;
     }
 
     payCost(user, inventory = null) {
-        if (this.cost.stamina) user.modifyResource('stamina', -this.cost.stamina);
-        if (this.cost.insight) user.modifyResource('insight', -this.cost.insight);
-        if (this.cost.hp) user.modifyResource('hp', -this.cost.hp);
-        
-        if (this.cost.item && inventory) {
-            inventory.removeItem(this.cost.item, this.cost.amount || 1);
+        const cost = this.costFor(user);
+        if (cost.stamina) user.modifyResource('stamina', -cost.stamina);
+        if (cost.insight) user.modifyResource('insight', -cost.insight);
+        if (cost.hp) user.modifyResource('hp', -cost.hp);
+
+        if (cost.item && inventory) {
+            inventory.removeItem(cost.item, cost.amount || 1);
         }
     }
 

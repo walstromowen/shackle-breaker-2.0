@@ -111,10 +111,58 @@ export class TooltipSystem {
     const def = TRAIT_DEFINITIONS[traitId] || { name: traitId, description: "Unknown trait." };
     const lines = [];
 
+    // Pairs the stat blocks into a 2-column grid; returns the number of rows pushed
+    const pushStatGrid = (items) => {
+      this._chunkArray(items, 2).forEach(chunk => lines.push({ type: 'row', items: chunk }));
+    };
+
+    // Description first so the card reads "what it is" -> "what it does"
+    if (def.description) {
+      lines.push({ text: def.description, font: UITheme.fonts.cardItalic, color: UITheme.colors.textMuted });
+    }
+
+    const baseStats = this._collectTraitStats(def);
+    if (baseStats.length > 0) {
+      if (lines.length > 0) lines.push({ type: 'spacer' });
+      pushStatGrid(baseStats);
+    }
+
+    if (def.conditionalStats) {
+      if (lines.length > 0) lines.push({ type: 'spacer' });
+      lines.push({
+        text: this._formatCondition(def.conditionalStats.condition),
+        font: UITheme.fonts.cardItalic,
+        color: UITheme.colors.textHighlight
+      });
+      const condStats = this._collectTraitStats(def.conditionalStats);
+      if (condStats.length > 0) pushStatGrid(condStats);
+    }
+
+    if (def.triggers) {
+      for (const [triggerName, effectObj] of Object.entries(def.triggers)) {
+        if (lines.length > 0) lines.push({ type: 'spacer' });
+        const cleanTrigger = triggerName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+        lines.push({ text: cleanTrigger, font: UITheme.fonts.cardItalic, color: UITheme.colors.textHighlight });
+        lines.push({ text: this._formatEffect(effectObj), color: UITheme.colors.textMain });
+      }
+    }
+
+    return {
+      title: def.name,
+      type: "Trait",
+      color: UITheme.colors.borderHighlight,
+      roomy: true,
+      lines: lines
+    };
+  }
+
+  // Flattens attributes + stats (combat/resources/attack/defense/resistance) into label/value pairs
+  _collectTraitStats(src) {
     const statItems = [];
 
-    if (def.attributes) {
-      for (const [key, val] of Object.entries(def.attributes)) {
+    if (src.attributes) {
+      for (const [key, val] of Object.entries(src.attributes)) {
+        if (typeof val !== 'number' || val === 0) continue;
         statItems.push({
           label: Formatting.getAbbreviation(key).toUpperCase(),
           val: this._formatValue(val, true),
@@ -123,70 +171,57 @@ export class TooltipSystem {
       }
     }
 
-    if (def.stats) {
-      const categories = ['combat', 'resources', 'attack', 'defense'];
+    if (src.stats) {
+      const categories = ['combat', 'resources', 'attack', 'defense', 'resistance'];
       categories.forEach(cat => {
-        if (def.stats[cat]) {
-          for (const [key, val] of Object.entries(def.stats[cat])) {
-            if (typeof val === 'number' && val !== 0) {
-              let label = Formatting.getAbbreviation(key).toUpperCase();
-              if (cat === 'attack') label = `${label} ATK`;
-              if (cat === 'defense') label = `${label} DEF`;
+        if (!src.stats[cat]) return;
+        for (const [key, val] of Object.entries(src.stats[cat])) {
+          if (typeof val !== 'number' || val === 0) continue;
+          let label = Formatting.getAbbreviation(key).toUpperCase();
+          if (cat === 'attack') label = `${label} ATK`;
+          if (cat === 'defense') label = `${label} DEF`;
+          if (cat === 'resistance') label = `${label} RES`;
 
-              statItems.push({
-                label: label,
-                val: this._formatValue(val, true),
-                color: this._getStatColor(key)
-              });
-            }
-          }
+          statItems.push({
+            label: label,
+            val: this._formatValue(val, true),
+            color: this._getStatColor(key)
+          });
         }
       });
     }
 
-    if (statItems.length > 0) {
-      const chunks = this._chunkArray(statItems, 2);
-      chunks.forEach(chunk => lines.push({ type: 'row', items: chunk }));
-      lines.push({ type: 'spacer' });
-    }
+    return statItems;
+  }
 
-    if (def.description) {
-      lines.push({ text: def.description, color: UITheme.colors.textMain });
-    }
+  _formatCondition(condition) {
+    if (!condition) return "Conditional";
+    const m = String(condition).match(/^hp_below_(\d+)_percent$/);
+    if (m) return `While HP is below ${m[1]}%`;
+    if (condition === 'hp_full') return "While at full HP";
+    const clean = String(condition).replace(/_/g, ' ').replace(/\bpercent\b/g, '%');
+    return `While ${clean}`;
+  }
 
-    if (def.triggers) {
-      lines.push({ type: 'spacer' });
-      for (const [triggerName, effectObj] of Object.entries(def.triggers)) {
-        const cleanTrigger = triggerName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-        lines.push({
-          type: 'row',
-          items: [{ label: cleanTrigger, val: this._formatEffect(effectObj) }]
-        });
-      }
-    }
-
-    if (def.conditionalStats) {
-      lines.push({ type: 'spacer' });
-      const cond = def.conditionalStats.condition.replace(/_/g, ' ');
-      lines.push({ type: 'row', items: [{ label: 'Condition', val: cond }] });
-      if (def.conditionalStats.stats) {
-        lines.push({ text: "(Active stats hidden)", font: UITheme.fonts.cardItalic, color: UITheme.colors.textMuted });
-      }
-    }
-
-    return {
-      title: def.name,
-      type: "Trait",
-      color: UITheme.colors.borderHighlight,
-      lines: lines
-    };
+  _titleCase(str) {
+    return String(str).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   }
 
   _formatEffect(effectObj) {
     if (typeof effectObj === 'string') return effectObj;
-    const name = effectObj.effect ? effectObj.effect.replace(/_/g, ' ') : 'Effect';
-    const val = effectObj.value ? `(${effectObj.value})` : '';
-    return `${name} ${val}`;
+    if (!effectObj) return '';
+
+    // Trigger traits cast an ability - say which one and who it lands on
+    if (effectObj.ability) {
+      const abDef = AbilityDefinitions ? AbilityDefinitions[effectObj.ability] : null;
+      const abName = (abDef && abDef.name) ? abDef.name : this._titleCase(effectObj.ability);
+      const target = effectObj.target ? ` on a ${String(effectObj.target).replace(/_/g, ' ')}` : '';
+      return `Casts ${abName}${target}.`;
+    }
+
+    const name = effectObj.effect ? this._titleCase(effectObj.effect) : 'Effect';
+    const val = effectObj.value ? ` (${effectObj.value})` : '';
+    return `${name}${val}`;
   }
 
   _getItemContent(item, slotName) {
@@ -430,12 +465,15 @@ export class TooltipSystem {
     const headerFont = UITheme.fonts.cardTitle;
     const typeFont = UITheme.fonts.cardItalic;
     const bodyFont = UITheme.fonts.cardSmall;
-    const lineHeight = 28;
+    // "roomy" cards (traits) get looser leading, real gaps between sections and bottom padding
+    const roomy = !!content.roomy;
+    const lineHeight = roomy ? 33 : 28;
+    const spacerHeight = roomy ? 16 : 8;
 
     this.ui.ctx.font = bodyFont;
 
     // 1. Calculate Height & Wrap Objects
-    let contentHeight = 111;
+    let contentHeight = 111 + (roomy ? 16 : 0);
     const wrappedLines = [];
 
     lines.forEach(rawLine => {
@@ -454,7 +492,9 @@ export class TooltipSystem {
         wrappedLines.push({ ...rawLine });
         contentHeight += gridHeight;
       } else if (rawLine.type === 'spacer') {
-        contentHeight += 8;
+        // Pushed so the gap is applied between sections (it used to only grow the card's bottom edge)
+        wrappedLines.push({ isSpacer: true });
+        contentHeight += spacerHeight;
       } else {
         let textStr = typeof rawLine === 'string' ? rawLine : rawLine.text;
         let f = (typeof rawLine === 'object' && rawLine.font) ? rawLine.font : bodyFont;
@@ -485,7 +525,13 @@ export class TooltipSystem {
     if (ty < 24) ty = 24;
 
     // 3. Draw Gothic Panel
-    this.ui.drawPopupPanel(tx, ty, this.WIDTH, contentHeight);
+    this.ui.ctx.save();
+    this.ui.ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
+    this.ui.ctx.shadowBlur = 29;
+    this.ui.ctx.shadowOffsetX = 10;
+    this.ui.ctx.shadowOffsetY = 10;
+    this.ui.drawPanel(tx, ty, this.WIDTH, contentHeight, "rgba(15, 15, 18, 0.98)");
+    this.ui.ctx.restore();
 
     // 4. Draw Header Banner Background
     const inset = 10;
@@ -525,14 +571,18 @@ export class TooltipSystem {
     let curY = ty + 128;
 
     wrappedLines.forEach(lineObj => {
-      if (lineObj.isRow) {
+      if (lineObj.isSpacer) {
+        curY += spacerHeight;
+      } else if (lineObj.isRow) {
         const numCols = 2;
-        const colWidth = (this.WIDTH - (this.PADDING * 2)) / numCols;
+        const fullWidth = this.WIDTH - (this.PADDING * 2);
+        // A lone item spans the whole card so its label and value can't collide in a half-width column
+        const colWidth = lineObj.items.length === 1 ? fullWidth : fullWidth / numCols;
 
         lineObj.items.forEach((item, idx) => {
           const startX = tx + this.PADDING + (idx * colWidth);
           let endX = startX + colWidth;
-          if (idx < numCols - 1) endX -= 24;
+          if (idx < numCols - 1 && lineObj.items.length > 1) endX -= 24;
 
           this.ui.drawText(item.label, startX, curY, bodyFont, item.color || UITheme.colors.textMuted, "left");
           this.ui.drawText(item.val.toString(), endX, curY, bodyFont, item.color || UITheme.colors.textMain, "right");

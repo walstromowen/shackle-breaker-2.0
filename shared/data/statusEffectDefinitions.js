@@ -67,6 +67,21 @@ export const StatusEffectDefinitions = {
             { type: 'flat', target: 'resistance.fire', value: 0.5 }
         ]
     },
+    /* The blizzard's status (weatherDefinitions.js BLIZZARD.appliedStatusId): put on everyone when a fight starts in one, like wet for rain. The cold makes
+       ice hit harder and wears the stamina down a little every turn. Icon (4, 0) is an unused cell of the status sheet: draw a snowflake there. */
+    chilled: {
+        id: 'chilled',
+        name: 'Chilled',
+        icon: { col: 4, row: 0 },
+        defaultCharges: 99,
+        maxStacks: 1,
+        modifiers: [
+            { type: 'flat', target: 'resistance.ice', value: -0.5 }
+        ],
+        effects: [
+            { trigger: 'ON_TURN_END', modify: 'stamina', value: -3, battleMessage: "{target} loses {amount} stamina to the bitter cold!" }
+        ]
+    },
     fortified: {
         id: 'fortified',
         name: 'Fortified',

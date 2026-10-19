@@ -13,6 +13,8 @@
  *
  * Place at: ui/abilityPreview.js (display-only helper: no game-state side effects)
  */
+import { AbilityModel } from '../../../shared/models/abilityModel.js';
+
 export class AbilityPreview {
     /** Width every ability card is drawn at, wherever it appears (shrinks only if its container is narrower). */
     static CARD_WIDTH = 480;
@@ -93,6 +95,32 @@ export class AbilityPreview {
     }
 
 
+
+    // --------------------------------------------------------------- cost
+    /**
+     * The cost an ability card should show: what THIS character pays, not the authored number in abilityDefinitions.
+     * Stamina, insight and hp costs scale with the user's max pool of that resource (AbilityModel.scaleCost); item costs are shown as authored.
+     *
+     * @param {object} ability  An ability DEFINITION (has .cost) or an AbilityModel (asked via costFor, so it is never scaled twice)
+     * @param {object|null} actor  Party member / combatant. May be null when `stats` is given or when no character is known
+     * @param {object|null} stats  Pre-computed stats (the summary's derivedStats). Preferred over `actor` for the pool size, so the
+     *                             card follows the attribute points the player is previewing. maxStamina / maxInsight / maxHp may be a number or { total }.
+     * @returns {object} cost object, e.g. { stamina: 13 }. The authored cost when the pool size is unknown.
+     */
+    static getCost(ability, actor = null, stats = null) {
+        if (!ability) return {};
+        if (typeof ability.costFor === 'function') return ability.costFor(actor || undefined);
+
+        const base = ability.cost;
+        if (!base || typeof base !== 'object') return base;
+
+        const poolOf = key => {
+            const v = stats?.[key];
+            const n = (v && typeof v === 'object') ? v.total : v;
+            return Number.isFinite(n) ? n : null;
+        };
+        return AbilityModel.scaleCost(base, actor, { stamina: poolOf('maxStamina'), insight: poolOf('maxInsight'), hp: poolOf('maxHp') });
+    }
 
     /**
      * Returns the primary effect preview for an ability, or null if the

@@ -1,7 +1,7 @@
 import { CONFIG, BITMASK } from '../data/constants.js';
 import { MAP_OBJECTS_DEFINITIONS } from '../data/mapObjectDefinitions.js';
 import { STRUCTURES } from '../data/structures.js';
-import { isPlateau } from '../data/biomeDefinitions.js';
+import { isPlateau, layerIndex } from '../data/biomeDefinitions.js';
 import { gameState } from '../state/gameState.js';
 import { mapObjectFactory } from '../../shared/systems/factories/mapObjectsFactory.js';
 import { WeatherFactory } from '../../shared/systems/factories/weatherFactory.js';
@@ -567,7 +567,10 @@ export class WorldManager {
                     if (plan.roadOwner.has(key) || plan.hubTiles.has(key) || plan.buildingTiles.has(key)) continue;
                     if (gameState.world.changes[key] !== undefined) continue;
                     if (this.getElevation(c, r) !== plan.baseElev || this.isBlockedByFace(c, r) || this.isCliffFace(c, r) || this._nearStair(c, r)) continue;
-                    const id = sp.pool[Math.floor(this.pseudoRandom(c * 73 + 1, r * 79 + 2) * sp.pool.length)];
+                    /* the dressing follows the biome of the cell: `streetProps.biomes[biomeId]` replaces `pool` there (an empty list = nothing) */
+                    const pool = this._biomePool(sp, this.getBiomeAt(c, r).id);
+                    if (pool.length === 0) continue;
+                    const id = pool[Math.floor(this.pseudoRandom(c * 73 + 1, r * 79 + 2) * pool.length)];
                     if (!MAP_OBJECTS_DEFINITIONS[id]) continue;
                     this.modifyWorld(c, r, id);
                     this._placeObject(c, r, id);
@@ -579,9 +582,26 @@ export class WorldManager {
        footprint stays `clearRoad` cells off the road (so the canopy never covers it) and `clearBuilding` cells off every yard, where nothing else is,
        and where the terrain allows (the same test the natural trees pass). Cells close to a road are more likely (an avenue), and a slow wave makes
        the trees come in groves rather than evenly. The footprint is reserved, so the natural trees of the biome cannot grow into it later. */
+    /* the list a village feature (`trees`, `streetProps`) draws from in a biome: `cfg.biomes[biomeId]` when the blueprint lists that biome (an empty
+       list means "none here"), otherwise the default `cfg.pool` */
+    _biomePool(cfg, biomeId) {
+        const own = cfg.biomes && cfg.biomes[biomeId];
+        return own !== undefined ? own : (cfg.pool || []);
+    }
     _planTrees(plan, bp) {
         const tr = bp.trees;
-        if (!tr || !tr.chance || !tr.pool || tr.pool.length === 0) return;
+        if (!tr || !tr.chance || (!tr.pool && !tr.biomes)) return;
+        /* weighted pick lists per biome, built once */
+        const pools = new Map();
+        const poolOf = (biomeId) => {
+            let p = pools.get(biomeId);
+            if (!p) {
+                const list = this._biomePool(tr, biomeId).filter((t) => MAP_OBJECTS_DEFINITIONS[t.id]);
+                p = { list, total: list.reduce((acc, t) => acc + (t.weight ?? 1), 0) };
+                pools.set(biomeId, p);
+            }
+            return p;
+        };
         const cfg = plan.cfg;
         const reach = tr.reach ?? 14;
         const clearRoad = tr.clearRoad ?? 2;
@@ -618,7 +638,6 @@ export class WorldManager {
         const dRoad = this._distanceField(W, H, roadMask, cap);
         const dBld = this._distanceField(W, H, bldMask, cap);
         const taken = new Uint8Array(W * H);
-        const total = tr.pool.reduce((acc, t) => acc + (t.weight ?? 1), 0);
         let planted = 0;
         for (let r = y0; r <= y1 && planted < (tr.max ?? 200); r++) {
             for (let c = x0; c <= x1 && planted < (tr.max ?? 200); c++) {
@@ -630,9 +649,13 @@ export class WorldManager {
                 let p = tr.chance * (0.3 + 1.4 * wave);
                 if (d <= clearRoad + 1) p *= tr.roadsideBoost ?? 1.8;
                 if (this.pseudoRandom(c * 83 + 3, r * 89 + plan.salt) >= p) continue;
-                let roll = this.pseudoRandom(c * 97 + 7, r * 101 + 5) * total;
-                let pick = tr.pool[tr.pool.length - 1];
-                for (const t of tr.pool) {
+                /* the trees of the biome this cell is in (a village road can run out of the plains into a desert or a snowfield) */
+                const biomeId = this.getBiomeAt(c, r).id;
+                const bpool = poolOf(biomeId);
+                if (bpool.list.length === 0) continue;
+                let roll = this.pseudoRandom(c * 97 + 7, r * 101 + 5) * bpool.total;
+                let pick = bpool.list[bpool.list.length - 1];
+                for (const t of bpool.list) {
                     roll -= t.weight ?? 1;
                     if (roll < 0) { pick = t; break; }
                 }
@@ -646,6 +669,9 @@ export class WorldManager {
                         const j = (r + y - y0) * W + (c + x - x0);
                         const key = this._s(c + x, r + y);
                         if (dRoad[j] < clearRoad || dBld[j] < clearBuilding || taken[j] || this._collisionMap.has(key) || gameState.world.changes[key] !== undefined) { ok = false; break; }
+                        /* the whole footprint stays in one biome (isFootprintValid below keeps the other cells off the biome border, the anchor is checked here) */
+                        if ((x || y) && this.getBiomeAt(c + x, r + y).id !== biomeId) { ok = false; break; }
+                        if (!x && !y && this.isBiomeEdge(c, r)) { ok = false; break; }
                     }
                 }
                 if (!ok || !this.isFootprintValid(c, r, w, h)) continue;
@@ -998,6 +1024,20 @@ export class WorldManager {
         let spawnCategory = myTileId;
         if (isPlateau(myTileId)) {
             spawnCategory = '_WALLS';
+        }
+        /* altitude rules (a biome's `mapObjects._ALTITUDE`: { id, chance, minLevel, maxLevel }): objects that only lie on the higher plateau levels, such as the iron of
+           the snowy mountains. Each rule rolls for itself and wins over the ordinary list. */
+        const altRules = isPlateau(myTileId) && biome.mapObjects && biome.mapObjects._ALTITUDE;
+        if (altRules) {
+            const lvl = layerIndex(myTileId);
+            for (let i = 0; i < altRules.length; i++) {
+                const rule = altRules[i];
+                if (lvl < (rule.minLevel ?? 0) || lvl > (rule.maxLevel ?? 99)) continue;
+                if (this.pseudoRandom(col * 31 + i * 7 + 500, row * 37 + i * 11 + 500) >= rule.chance) continue;
+                const adef = MAP_OBJECTS_DEFINITIONS[rule.id];
+                if (!adef || !this.isFootprintValid(col, row, adef.w || adef.width || 1, adef.h || adef.height || 1)) continue;
+                return rule.id;
+            }
         }
         const spawnData = biome.getSpawnId(spawnCategory, objRng, false);
         if (!spawnData) return null;

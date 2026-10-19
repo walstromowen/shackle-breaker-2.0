@@ -38,6 +38,7 @@ import { PartyManager } from '../../../shared/systems/partyManager.js';
 import { WorldManager } from '../../../shared/systems/worldManager.js';
 import { TimeSystem } from '../../../shared/systems/timeSystem.js';
 import { gameState } from '../../../shared/state/gameState.js';
+import { AbilitySystem } from '../../../shared/systems/abilitySystem.js';
 import { DIFFICULTY_MODIFIERS } from '../../../shared/data/constants.js';
 import { EntityFactory } from '../../../shared/systems/factories/entityFactory.js';
 
@@ -240,6 +241,21 @@ export class SceneManager {
             }, 'wipe', { speed: 3.5 });
         });
 
+        // Overworld abilities that need the live scene hand it over here (AbilitySystem.worldActionHandler). An Escape Rope is the same as walking out of the interior:
+        // lock the player, then run the normal exit-door warp (sound, fade, restore the saved overworld and the spot just outside the entrance).
+        AbilitySystem.worldActionHandler = (action) => {
+            if (action.type === 'exit_interior' && gameState.world.isInterior && gameState.world.savedOverworld) {
+                this.overworldController.isLocked = true;
+                events.emit('INTERACT', { type: 'WARP', id: 'exit_interior', context: {} });
+            } else if (action.type === 'start_encounter' && action.encounterId) {
+                // A bedroll (or any item that opens an encounter): lock the player and open it like an object's encounter. Ending it returns to the overworld, which unlocks.
+                this.overworldController.isLocked = true;
+                events.emit('INTERACT', { type: 'ENCOUNTER', id: action.encounterId, context: action.context || {} });
+            } else {
+                console.warn('[SceneManager] Unhandled world action:', action);
+            }
+        };
+
         events.on('INTERACT', (data) => {
             if (data.type === 'ENCOUNTER') {
                 this.transitionRenderer.start(() => {
@@ -264,6 +280,7 @@ export class SceneManager {
                         gameState.world.isInterior = true;
                         gameState.world.interiorType = data.roomType || 'HOUSE_INTERIOR';
                         gameState.world.interiorId = `${data.context.col}_${data.context.row}`;
+                        gameState.world.interiorMapId = null;   // a map read in an earlier visit is spent
 
                         // Generate the interior map
                         this.worldManager = new WorldManager();
@@ -284,6 +301,7 @@ export class SceneManager {
                             gameState.world.isInterior = false;
                             gameState.world.interiorType = null;
                             gameState.world.interiorId = null;
+                            gameState.world.interiorMapId = null;   // the interior map ends when you leave
 
                             // Restore the overworld map
                             this.worldManager = new WorldManager();

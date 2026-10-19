@@ -5,6 +5,7 @@ import { AbilityPreview } from '../../../ui/abilityPreview.js';
 import { Formatting } from '../../../../../shared/utils/formatting.js';
 import { UITheme } from '../../../ui/UITheme.js';
 import { gameState } from '../../../../../shared/state/gameState.js';
+import { ItemUpgradeSystem } from '../../../../../shared/systems/itemUpgradeSystem.js';
 
 // Stat table typography/spacing. Rows are laid out on their vertical middle, and the row height
 // is sized to the font so text never touches the row above or below.
@@ -201,7 +202,9 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
             this._renderMaterialsFooter(
                 state, contentX, viewBottom, contentW, h,
                 costs.materials || {}, costs.currency || 0,
-                state.canUpgradeSelected, 'UPGRADE ITEM', 'BTN_UPGRADE', hitboxes
+                state.canUpgradeSelected, 'UPGRADE ITEM', 'BTN_UPGRADE', hitboxes,
+                // an insight weapon needs ANOTHER copy of itself: the weapon being upgraded is not one of the copies it can spend
+                matId => (matId === (item.defId ?? (item.definition && item.definition.id))) ? ItemUpgradeSystem.countAvailable(matId, item) : null
             );
         }
     }
@@ -252,7 +255,7 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         return h - 90 - this._footerHeight(materials, currencyCost);
     }
 
-    _renderMaterialsFooter(state, x, currentY, w, h, materials, currencyCost, isEnabled, btnText, btnHitboxId, hitboxes) {
+    _renderMaterialsFooter(state, x, currentY, w, h, materials, currencyCost, isEnabled, btnText, btnHitboxId, hitboxes, ownedOf = null) {
         const materialEntries = Object.entries(materials);
         const btnH = 64;
 
@@ -267,7 +270,8 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
             const matDef = ItemDefinitions[matId];
             if (!matDef) continue;
             const inventoryItem = (state.partyInventory || []).find(i => i.id === matId);
-            const playerHas = inventoryItem ? inventoryItem.qty : 0;
+            const owned = ownedOf ? ownedOf(matId) : null; /* null = use the bag count */
+            const playerHas = (owned !== null && owned !== undefined) ? owned : (inventoryItem ? inventoryItem.qty : 0);
             const hasEnough = playerHas >= amountNeeded;
             const matSlotSize = 64;
             this.ui.drawPanel(x, materialsY, matSlotSize, matSlotSize, UITheme.colors.bgScale[1]);
@@ -702,20 +706,23 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
 
         this.ui.ctx.textAlign = 'right';
         this.ui.ctx.font = UITheme.fonts.cardMono;
-        if (ab.cost) {
+        // Stamina / insight / hp costs scale with the previewing character's max pool, so show what they would pay
+        // (the same actor the damage numbers use; the authored cost when no character is known)
+        const shownCost = AbilityPreview.getCost(ab, this._previewActor, this._previewStats);
+        if (shownCost) {
             let costStr = "Free";
             let costCol = UITheme.colors.textMuted;
-            if (ab.cost.hp) {
-                costStr = `${ab.cost.hp} HP`;
+            if (shownCost.hp) {
+                costStr = `${shownCost.hp} HP`;
                 costCol = UITheme.colors.hp;
-            } else if (ab.cost.mana) {
-                costStr = `${ab.cost.mana} MP`;
+            } else if (shownCost.mana) {
+                costStr = `${shownCost.mana} MP`;
                 costCol = UITheme.colors.ins;
-            } else if (ab.cost.stamina) {
-                costStr = `${ab.cost.stamina} STM`;
+            } else if (shownCost.stamina) {
+                costStr = `${shownCost.stamina} STM`;
                 costCol = UITheme.colors.stm;
-            } else if (ab.cost.insight) {
-                costStr = `${ab.cost.insight} INS`;
+            } else if (shownCost.insight) {
+                costStr = `${shownCost.insight} INS`;
                 costCol = UITheme.colors.ins;
             }
             this.ui.ctx.fillStyle = costCol;

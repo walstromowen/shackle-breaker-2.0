@@ -7,7 +7,7 @@ export class AbilitiesPanel {
     this.ui = ui;
     this.loader = loader;
 
-    this.SCROLLBAR_WIDTH = UITheme.scrollbar.width;
+    this.SCROLLBAR_WIDTH = 10;
     this.ABILITY_ICON_SIZE = 64;
     this.ICON_SRC_SIZE = 64; // Sprite sheet cell size (upgraded from 32)
     this.totalContentHeight = 0;
@@ -59,14 +59,21 @@ export class AbilitiesPanel {
 
     // --- Draw Scrollbar ---
     if (this.totalContentHeight > h) {
-      this.drawScrollBar(x + w + 14, y, h, this.totalContentHeight, state.scrollOffset, hitboxes, state);
+      this.drawScrollBar(x + w + 14, y, h, this.totalContentHeight, state.scrollOffset, hitboxes);
     }
   }
 
-  drawScrollBar(x, y, viewportH, contentH, scrollOffset, hitboxes, state) {
-    // The shared scrollbar: the thumb takes the highlight color while the mouse is on the scroll column
-    this.ui.drawScrollbar(x, y, this.SCROLLBAR_WIDTH, viewportH, scrollOffset, contentH - viewportH, viewportH,
-      this.ui.flags('SCROLLBAR_THUMB', state && state.hoveredHitboxId));
+  drawScrollBar(x, y, viewportH, contentH, scrollOffset, hitboxes) {
+    this.ui.drawRect(x, y, this.SCROLLBAR_WIDTH, viewportH, UITheme.colors.scrollTrack || "rgba(0,0,0,0.5)");
+
+    const viewRatio = viewportH / contentH;
+    let thumbH = Math.max(48, viewportH * viewRatio);
+    const maxScroll = contentH - viewportH;
+    const scrollRatio = maxScroll > 0 ? (scrollOffset / maxScroll) : 0;
+    const trackSpace = viewportH - thumbH;
+    const thumbY = y + (scrollRatio * trackSpace);
+
+    this.ui.drawRect(x, thumbY, this.SCROLLBAR_WIDTH, thumbH, UITheme.colors.scrollThumb || UITheme.colors.borderHighlight);
 
     if (hitboxes) {
       hitboxes.push({
@@ -75,7 +82,8 @@ export class AbilitiesPanel {
         x: x - 10,
         y: y,
         w: this.SCROLLBAR_WIDTH + 19,
-        h: viewportH
+        h: viewportH,
+        hoverSfx: 'hoverTick'
       });
     }
   }
@@ -166,15 +174,19 @@ export class AbilitiesPanel {
 
     this.ui.ctx.textAlign = 'right';
     this.ui.ctx.font = UITheme.fonts.cardMono;
-    if (ab.cost) {
+    // Stamina / insight costs scale with the user's max pool, so show what this character really pays. `ab` is the raw definition and
+    // abilityObj is a plain {id, source...} entry from compileAbilities (not an AbilityModel), so ask AbilityPreview, using derivedStats
+    // for the pool size so the card follows the attribute points being previewed.
+    const shownCost = AbilityPreview.getCost(ab, member, derivedStats);
+    if (shownCost) {
       let costStr = "Free";
       let costCol = UITheme.colors.textMuted;
 
       // Restored the spaces here (e.g. "15 STM")
-      if (ab.cost.hp) { costStr = `${ab.cost.hp} HP`; costCol = UITheme.colors.hp; }
-      else if (ab.cost.mana) { costStr = `${ab.cost.mana} MP`; costCol = UITheme.colors.ins; }
-      else if (ab.cost.stamina) { costStr = `${ab.cost.stamina} STM`; costCol = UITheme.colors.stm; }
-      else if (ab.cost.insight) { costStr = `${ab.cost.insight} INS`; costCol = UITheme.colors.ins; }
+      if (shownCost.hp) { costStr = `${shownCost.hp} HP`; costCol = UITheme.colors.hp; }
+      else if (shownCost.mana) { costStr = `${shownCost.mana} MP`; costCol = UITheme.colors.ins; }
+      else if (shownCost.stamina) { costStr = `${shownCost.stamina} STM`; costCol = UITheme.colors.stm; }
+      else if (shownCost.insight) { costStr = `${shownCost.insight} INS`; costCol = UITheme.colors.ins; }
 
       this.ui.ctx.fillStyle = costCol;
       this.ui.ctx.fillText(costStr, x + w - cardPadding, currentTextY);

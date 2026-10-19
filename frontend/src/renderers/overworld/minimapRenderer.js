@@ -23,7 +23,9 @@ import { BIOME_DEFINITIONS, FIRST_PLATEAU, CLIFF_LEVELS, layerIndex } from '../.
  * picture stays up, when the terrain changes (terrain.overrideVersion, e.g. a structure that rewrites tiles), and all are dropped when the world manager
  * changes. It reads tiles only (getTileAt, getBiomeAt, terrain.getStairAt): it never makes the world generate chunks, and the world cannot see it.
  *
- * Not drawn in interiors (gameState.world.isInterior) or when CONFIG.MINIMAP.enabled is false.
+ * Not drawn in interiors (gameState.world.isInterior) unless an Interior Map has been read there (gameState.world.interiorMapId === gameState.world.interiorId; the
+ * item sets it, the scene manager clears it on leaving), and not when CONFIG.MINIMAP.enabled is false. Inside, the void outside the rooms is drawn dark (CONFIG.MINIMAP
+ * colors.void) and the floor in a stone colour (colors.floor) instead of water / ground.
  *
  * Called from OverworldUIRenderer.render(ctx, state) as render(ctx, ui, state), with state = { camera, worldManager, entities } from the controller.
  */
@@ -47,6 +49,7 @@ const DEFAULTS = {
     markers: { WARP: '#ffd24a', CRAFTING_STATION: '#e8873a' },
     buildings: '#7a5a3c',
     colors: { grass: '#5b9448', dirt: '#8c6c47', water: '#3b73a6', rock: '#8f8b82', stair: '#f2e27a' },   // for a biome with no `minimap` block (or a colour missing from it)
+    interior: { void: '#0e0d0b', floor: '#7d6e58' },   // inside an interior with a map: the void round the rooms, and the floor
 };
 
 const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
@@ -84,6 +87,7 @@ export class MinimapRenderer {
         this._viewGen = -1;         // _gen when _view was made
         this._gen = 0;              // counts the chunks that have been painted (or painted again)
         this._ph = [0, 0, 0];       // colour of land that is not painted yet
+        this._inside = false;       // true while the picture is of an interior (set by render; a new world manager clears the chunks, so a chunk is never mixed)
     }
 
     /* The palette of a biome id: its `minimap` colours from biomeDefinitions.js over the defaults. Ids without a `minimap` block share one default palette. */
@@ -92,6 +96,15 @@ export class MinimapRenderer {
         let p = this._pals.get(key);
         if (!p) { p = buildPalette({ ...this.cfg.colors, ...src }); this._pals.set(key, p); }
         return p;
+    }
+
+    /* The colours used inside an interior, as [r, g, b] arrays (CONFIG.MINIMAP.interior over the defaults). */
+    _interiorColors() {
+        if (!this._ic) {
+            const src = { ...DEFAULTS.interior, ...((this.config.MINIMAP && this.config.MINIMAP.interior) || {}) };
+            this._ic = { void: hex(src.void), floor: hex(src.floor) };
+        }
+        return this._ic;
     }
 
     /* Is (c, r) a walkable cell of a stair? */
@@ -114,7 +127,7 @@ export class MinimapRenderer {
             e.cv.height = CHUNK * this.cfg.zoom;
             e.ctx = e.cv.getContext('2d');
         }
-        if (!e.job || e.job.ver !== ver) e.job = { ver, i: 0, lv: new Int8Array(G * G), st: new Uint8Array(G * G), pal: new Array(CHUNK * CHUNK) };
+        if (!e.job || e.job.ver !== ver) e.job = { ver, i: 0, lv: new Int8Array(G * G), st: new Uint8Array(G * G), pal: new Array(CHUNK * CHUNK), inside: this._inside };
         const job = e.job, N = G * G;
         let i = job.i;
         do {
@@ -146,12 +159,15 @@ export class MinimapRenderer {
                 for (let x = 0; x < w; x++, p += 4) { d[p] = rgb[0]; d[p + 1] = rgb[1]; d[p + 2] = rgb[2]; d[p + 3] = 255; }
             }
         };
+        const inside = !!job.inside, iv = this._interiorColors();
         for (let ty = 0; ty < CHUNK; ty++) {
             for (let tx = 0; tx < CHUNK; tx++) {
                 const g = (ty + 1) * G + tx + 1, n = lv[g], up = lv[g - G], pal = job.pal[ty * CHUNK + tx], stair = st[g] === 1;
                 let rgb;
                 if (stair) rgb = pal.stair;
                 else if (up >= FIRST_PLATEAU && n >= 0 && up > n) rgb = pal.face[up - FIRST_PLATEAU];   // the rock face under the edge of a cliff
+                else if (inside && n === 0) rgb = iv.void;                 // an interior: level 0 is the void round the rooms, not water
+                else if (inside && (n < 0 || n === 1 || n === 2)) rgb = iv.floor;
                 else if (n < 0 || n === 1) rgb = pal.dirt;
                 else if (n === 0) rgb = pal.water;
                 else if (n === 2) rgb = pal.grass;
@@ -241,7 +257,7 @@ export class MinimapRenderer {
         }
         const v = this._view.ctx;
         const biome = wm.getBiomeAt(tx, ty), grass = this._pal(biome && biome.id).grass;
-        this._ph = mix(grass, [14, 13, 11], 0.55);
+        this._ph = this._inside ? this._interiorColors().void : mix(grass, [14, 13, 11], 0.55);
         v.fillStyle = 'rgb(' + this._ph.join(',') + ')';
         v.fillRect(0, 0, size, size);
         const c0 = Math.floor(left / CHUNK), c1 = Math.floor((left + span - 1) / CHUNK);
@@ -260,7 +276,10 @@ export class MinimapRenderer {
     render(ctx, ui, state) {
         const cfg = this.cfg;
         const wm = state && state.worldManager, cam = state && state.camera;
-        if (!cfg.enabled || !wm || !cam || (gameState.world && gameState.world.isInterior)) return;
+        const w = gameState.world || {}, inside = !!w.isInterior;
+        // In an interior the map only shows once an Interior Map has been read in this very interior (the item sets interiorMapId, the scene manager clears it on leaving).
+        if (!cfg.enabled || !wm || !cam || (inside && !(w.interiorMapId && w.interiorMapId === w.interiorId))) return;
+        if (inside !== this._inside) { this._inside = inside; this._chunks.clear(); this._marks = null; this._viewKey = null; }   // never mix an interior's chunks with the overworld's
         if (wm !== this._wm) {                 // a new world (interior swap, new game): nothing of the old one is good
             this._wm = wm;
             this._chunks.clear();

@@ -264,11 +264,13 @@ export class HouseGenerator {
         this._furnishHall(F, hall, rand);
         for (const room of L.rooms) if (room !== hall) this._furnishRoom(F, room, rand);
 
-        // the loot chest: in one of the rooms away from the front door
+        // the loot chest (every house has one): in one of the rooms away from the front door, in the hall only if none of them has a free spot
         const lootObject = this.config.lootObject;
         if (lootObject) {
             const rest = rand.shuffle(L.rooms.filter(r => r !== hall));
-            for (const room of rest) if (F.placeOnRing(room, lootObject, rand)) break;
+            let placed = false;
+            for (const room of rest) if (F.placeOnRing(room, lootObject, rand)) { placed = true; break; }
+            if (!placed) F.placeOnRing(hall, lootObject, rand);
         }
         this.furniture = F;
     }

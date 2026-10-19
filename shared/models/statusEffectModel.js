@@ -17,11 +17,15 @@ export class StatusEffectModel {
         // NEW: Array of status IDs that this status removes upon application
         this.cancels = definition.cancels || [];
 
-        // NEW: Handle infinite durations (e.g., -1 for innate trait statuses)
-        this.isInfinite = definition.defaultCharges === -1;
         this.charges = initialCharges !== null && initialCharges !== undefined 
             ? initialCharges 
             : definition.defaultCharges;
+
+        // NEW: Handle infinite durations (e.g., -1 for innate trait statuses). -1 as the STARTING charges counts too, not just -1 as the
+        // definition's default: an ability that says `duration: -1` (Airborne -> flying) means "until removed". Before, such a status
+        // had charges -1, so isExpired() was true at once and it vanished the first time it was checked.
+        this.isInfinite = definition.defaultCharges === -1 || this.charges === -1;
+        this.spent = false; // set by an effect with `expire: true` (a trap that has sprung); an expired status is removed even when it is infinite
             
         this.maxStacks = definition.maxStacks || 1;
         this.inflictor = inflictor;
@@ -43,13 +47,14 @@ export class StatusEffectModel {
     }
 
     isExpired() {
+        if (this.spent) return true;
         // NEW: Infinite statuses never expire naturally
         if (this.isInfinite) return false;
         return this.charges <= 0;
     }
 
     onEvent(eventName, targetEntity, eventData = null) {
-        const result = { messages: [], cancelAction: false };
+        const result = { messages: [], cancelAction: false, applyStatuses: [] };
         
         if (eventName === 'ON_TURN_END') {
             this.consumeCharge();
@@ -57,6 +62,9 @@ export class StatusEffectModel {
         
         this.effects.forEach(effect => {
             if (effect.trigger !== eventName) return;
+
+            // NEW: `range: 'melee'` -- react only to attacks of that range. ON_DAMAGE_RECEIVED carries the range of the ability that hit (AbilitySystem._handleDamage).
+            if (effect.range && !(eventData && eventData.range === effect.range)) return;
             
             if (effect.modify) {
                 const target = (effect.target === 'attacker' && eventData && eventData.attacker) 
@@ -85,6 +93,25 @@ export class StatusEffectModel {
                 if (effect.consumeCharge) {
                     this.consumeCharge();
                 }
+            }
+            
+            // NEW: `applyStatus: { id, charges?, message? }` -- put a status on the same entity `modify` hits ('attacker' or the holder). This model only reports it
+            // in result.applyStatuses; the caller (AbilitySystem._handleDamage) builds and applies it, so the model needs no import of the factory.
+            if (effect.applyStatus) {
+                const victim = (effect.target === 'attacker' && eventData && eventData.attacker)
+                    ? eventData.attacker
+                    : targetEntity;
+                result.applyStatuses.push({
+                    target: victim,
+                    id: effect.applyStatus.id,
+                    charges: effect.applyStatus.charges,
+                    message: effect.applyStatus.message || null
+                });
+            }
+
+            // NEW: `expire: true` -- using the effect up ends the whole status, however long it had left (a bear trap springs once).
+            if (effect.expire) {
+                this.spent = true;
             }
             
             if (effect.flag) {

@@ -151,7 +151,7 @@ export const suspiciousMerchant = {
         distracted_buyer: {
             displayText: "Sleight of Hand",
             image: { col: 1, row: 1 },
-            text: "{name} leans in close to inspect a shiny bauble. The merchant spouts frantic gibberish about sky-demons and shadow-teeth. Suddenly, {name} notices their coin purse feels much lighter...",
+            text: "{name} leans in close to inspect a shiny bauble. The merchant spouts frantic gibberish about sky-demons and shadow-teeth. Suddenly, {name} notices their pack feels much lighter...",
             decisions: [
                 {
                     text: "Check your pockets!",
@@ -159,7 +159,7 @@ export const suspiciousMerchant = {
                         {
                             weight: 100,
                             results: [
-                                { type: "MODIFY_CURRENCY", payload: { amount: -25 } },
+                                { type: "MODIFY_CURRENCY", payload: { amount: -25, stealItemOnShortfall: true } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "merchant_escaped" } }
                             ]
                         }

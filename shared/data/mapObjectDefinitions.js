@@ -11,12 +11,14 @@ export const MAP_OBJECTS_DEFINITIONS = {
     SMALL_ROCKS_1: { sheet: { default: 'objSmallRocks1', DESERT: 'objSmallRocks1Desert', SNOWY_MOUNTAINS: 'objSmallRocks1Snow' }, spriteX: 4, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'stone', amount: 1 } },
     SMALL_ROCKS_2: { sheet: { default: 'objSmallRocks2', DESERT: 'objSmallRocks2Desert', SNOWY_MOUNTAINS: 'objSmallRocks2Snow' }, spriteX: 5, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'stone', amount: 1 } },
     SMALL_ROCKS_3: { sheet: { default: 'objSmallRocks3', DESERT: 'objSmallRocks3Desert', SNOWY_MOUNTAINS: 'objSmallRocks3Snow' }, spriteX: 10, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'stone', amount: 1 } },
+    /* FLINT: a dark nodule with a chalky tan rind. Walk over it (or face it and interact) to pick up 1 flint. Generates on the dirt (LAYER_1) of the plains and the snowy mountains, see biomeDefinitions. */
+    FLINT_ROCK: { sheet: { default: 'objFlintRock', SNOWY_MOUNTAINS: 'objFlintRockSnow' }, spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'flint', amount: 1 } },
     STICK: { sheet: 'objStick', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'soft_wood', amount: 1 } },
     // ----------------------------------------
 
-    SAND_DUNE_1: { sheet: 'objSandDune1', spriteX: 6, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
-    SAND_DUNE_2: { sheet: 'objSandDune2', spriteX: 7, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
-    SAND_DUNE_3: { sheet: 'objSandDune3', spriteX: 8, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
+    SAND_DUNE_1: { sheet: 'objSandDune1', spriteX: 6, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'sand', amount: 1 } },
+    SAND_DUNE_2: { sheet: 'objSandDune2', spriteX: 7, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'sand', amount: 1 } },
+    SAND_DUNE_3: { sheet: 'objSandDune3', spriteX: 8, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'sand', amount: 1 } },
     DESERT_SKULL: { sheet: 'objDesertSkull', spriteX: 3, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'bone', amount: 1 } },
     BONE_PILE: { sheet: 'objBonePile', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'bone', amount: 1 } },
 
@@ -33,10 +35,17 @@ export const MAP_OBJECTS_DEFINITIONS = {
     WOODEN_FENCE_BR_CORNER: { sheet: 'objWoodenFenceBrCorner', spriteX: 4, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
 
     // --- INTERACTABLES & OBSTACLES ---
-    BOULDER_1: { sheet: 'objBoulder1', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
-    BOULDER_2: { sheet: 'objBoulder2', spriteX: 1, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
-    SNOWY_BOULDER_1: { sheet: 'objSnowyBoulder1', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
-    SNOWY_BOULDER_2: { sheet: 'objSnowyBoulder2', spriteX: 1, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    /* BOULDERS: mined with a pickaxe (equipped, like an axe for a tree) for 3 stone, and the boulder is gone. Without a pickaxe they are plain solid rocks and show no prompt. */
+    BOULDER_1: { sheet: 'objBoulder1', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'HARVEST', tool: 'pickaxe', itemId: 'stone', amount: 3, duration: 2.5 } },
+    BOULDER_2: { sheet: 'objBoulder2', spriteX: 1, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'HARVEST', tool: 'pickaxe', itemId: 'stone', amount: 3, duration: 2.5 } },
+    SNOWY_BOULDER_1: { sheet: 'objSnowyBoulder1', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'HARVEST', tool: 'pickaxe', itemId: 'stone', amount: 3, duration: 2.5 } },
+    SNOWY_BOULDER_2: { sheet: 'objSnowyBoulder2', spriteX: 1, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'HARVEST', tool: 'pickaxe', itemId: 'stone', amount: 3, duration: 2.5 } },
+    /* ORE DEPOSITS: solid rock with a vein in it. Mined with a pickaxe (it must be equipped, like an axe for a tree): the deposit gives `amount` of `itemId` and is gone. `duration` = seconds of swinging. */
+    COAL_DEPOSIT: { sheet: 'objCoalDeposit', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'HARVEST', tool: 'pickaxe', itemId: 'coal', amount: 2, duration: 2 } }, // caves
+    IRON_ORE_DEPOSIT: { sheet: { default: 'objIronOreDeposit', SNOWY_MOUNTAINS: 'objIronOreDepositSnow' }, spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'HARVEST', tool: 'pickaxe', itemId: 'iron_ore', amount: 1, duration: 3 } }, // deep caves, high in the snowy mountains
+    COPPER_ORE_DEPOSIT: { sheet: 'objCopperOreDeposit', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'HARVEST', tool: 'pickaxe', itemId: 'copper_ore', amount: 2, duration: 2.5 } }, // caves
+    TIN_ORE_DEPOSIT: { sheet: 'objTinOreDeposit', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'HARVEST', tool: 'pickaxe', itemId: 'tin_ore', amount: 2, duration: 2.5 } }, // plains
+    SALT_DEPOSIT: { sheet: 'objSaltDeposit', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'HARVEST', tool: 'pickaxe', itemId: 'salt', amount: 2, duration: 2 } }, // desert
 
     // --- ANIMAL TRACKS: a ground mark in the snow that starts the "Tracks In The Snow" encounter. Not solid: you walk onto it
     // (`walkIn: true`, needs the small OverworldController change in overworldController.walkin_encounter.patch.js; without it you face the tracks and press interact).
@@ -52,6 +61,7 @@ export const MAP_OBJECTS_DEFINITIONS = {
     MEDIUM_CACTUS_1: { sheet: 'objMediumCactus1', spriteX: 1, spriteY: 0, width: 2, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 } },
     SMALL_CACTUS_1: { sheet: 'objSmallCactus1', spriteX: 2, spriteY: 0, width: 1, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
     STRANGE_OBELISK: { sheet: 'objStrangeObelisk', spriteX: 1, spriteY: 4, width: 2, height: 3, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'strange_obelisk', isRepeatable: false } },
+    MYSTERIOUS_ALTAR: { sheet: 'objMysteriousAltar', spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 3, h: 2 }, interaction: { type: 'ENCOUNTER', id: 'mysterious_altar' } },
     
     // --- HERBS --- (walk over them to pick them up, like the small rocks and the bones)
     HEALING_HERB: { sheet: 'objHealingHerb', spriteX: 9, spriteY: 1, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'healing_herb', amount: 1 } },
@@ -103,25 +113,11 @@ export const MAP_OBJECTS_DEFINITIONS = {
       spriteX: 0, spriteY: 7, width: 1, height: 2, frames: 4, speed: 0.15, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },
       interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'HOUSE_INTERIOR', isRepeatable: true }
     },
-    BLACKSMITH_DOOR: {
+    /* the village's one workshop (every crafting station inside); it uses the blacksmith's door art until it gets one of its own: change `sheet` */
+    WORKSHOP_DOOR: {
         sheet: 'objBlacksmithDoor',
         spriteX: 0, spriteY: 7, width: 1, height: 2, frames: 4, speed: 0.15, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },
-        interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'ABANDONED_BLACKSMITH', isRepeatable: true }
-    },
-    CARPENTER_DOOR: {
-        sheet: 'objCarpenterDoor',
-        spriteX: 0, spriteY: 7, width: 1, height: 2, frames: 4, speed: 0.15, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },
-        interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'ABANDONED_CARPENTER', isRepeatable: true }
-    },
-    MASON_DOOR: {
-        sheet: 'objMasonDoor',
-        spriteX: 0, spriteY: 7, width: 1, height: 2, frames: 4, speed: 0.15, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },
-        interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'ABANDONED_MASON', isRepeatable: true }
-    },
-    TAILOR_DOOR: {
-        sheet: 'objTailorDoor',
-        spriteX: 0, spriteY: 7, width: 1, height: 2, frames: 4, speed: 0.15, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 },
-        interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'ABANDONED_TAILOR', isRepeatable: true }
+        interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'ABANDONED_WORKSHOP', isRepeatable: true }
     },
 
     // ==========================================

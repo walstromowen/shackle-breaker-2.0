@@ -9,6 +9,8 @@ import { strangeObelisk } from './encounters/strangeObelisk.js';
 import { suspiciousMerchant } from './encounters/suspiciousMerchant.js';
 import { aftermath } from './encounters/aftermath.js';
 import { ironChest } from './encounters/ironChest.js';
+import { tracksInTheSnow } from './encounters/tracksInTheSnow.js';
+import { mysteriousAltar } from './encounters/mysteriousAltar.js';
 
 // <-- Import your new encounter here
 
@@ -24,6 +26,8 @@ export const encounterDefinitions = {
     [suspiciousMerchant.id]: suspiciousMerchant,
     [aftermath.id]: aftermath,
     [ironChest.id]: ironChest,
+    [tracksInTheSnow.id]: tracksInTheSnow,
+    [mysteriousAltar.id]: mysteriousAltar,
 
     
     // <-- Add your new encounter here

@@ -10,7 +10,7 @@ import { WeatherDefinitions } from '../data/weatherDefinitions.js'; // NEW: Need
 const WEATHER_WEIGHTS = {
     PLAINS:          { CLEAR: 60, RAIN: 25, FOG: 15 },
     DESERT:          { CLEAR: 80, SANDSTORM: 20 },
-    SNOWY_MOUNTAINS: { CLEAR: 70, FOG: 30 },
+    SNOWY_MOUNTAINS: { CLEAR: 55, FOG: 20, BLIZZARD: 25 },
 };
 
 export class TimeSystem {

@@ -56,8 +56,8 @@ export const tracksInTheSnow = {
         },
 
         // Shared by all three tracking stages. NOTE: START_BATTLE has no "stage after the battle"
-        // option, so the old "fight, then continue to the next stage" flow ends the encounter here.
-        // The tracks object stays on the map, so the player can pick the trail up again afterwards.
+        // option, so the fight ends the encounter. Every battle in this file removes the tracks object first,
+        // so the trail is gone once a fight starts.
         something_approaches: {
             displayText: "Ambush!",
             image: { col: 3, row: 0 },
@@ -66,7 +66,13 @@ export const tracksInTheSnow = {
             decisions: [
                 {
                     text: "Draw your weapon!",
-                    outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { tableId: "snowy_mountains_battles_day" } }] }]
+                    // Always frozen trappers (1-4, equally weighted). The tracks vanish as the fight starts.
+                    outcomes: [
+                        { weight: 1, results: [{ type: "DESTROY_OBJECT" }, { type: "START_BATTLE", payload: { enemies: ["FROZEN_TRAPPER"] } }] },
+                        { weight: 1, results: [{ type: "DESTROY_OBJECT" }, { type: "START_BATTLE", payload: { enemies: ["FROZEN_TRAPPER", "FROZEN_TRAPPER"] } }] },
+                        { weight: 1, results: [{ type: "DESTROY_OBJECT" }, { type: "START_BATTLE", payload: { enemies: ["FROZEN_TRAPPER", "FROZEN_TRAPPER", "FROZEN_TRAPPER"] } }] },
+                        { weight: 1, results: [{ type: "DESTROY_OBJECT" }, { type: "START_BATTLE", payload: { enemies: ["FROZEN_TRAPPER", "FROZEN_TRAPPER", "FROZEN_TRAPPER", "FROZEN_TRAPPER"] } }] }
+                    ]
                 }
             ]
         },
@@ -439,7 +445,7 @@ export const tracksInTheSnow = {
                 {
                     text: "Attack!",
                     customActionText: "{name} attacks!",
-                    outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { enemies: ["PANZERKAMFER"], bgm: "apexPredatorBgm" } }] }]
+                    outcomes: [{ weight: 100, results: [{ type: "DESTROY_OBJECT" }, { type: "START_BATTLE", payload: { enemies: ["PANZERKAMFER"], bgm: "apexPredatorBgm" } }] }]
                 },
                 {
                     // The old check listed ["strength", "dexterity"]; the new system takes a single attribute.
@@ -478,7 +484,7 @@ export const tracksInTheSnow = {
             decisions: [
                 {
                     text: "Fight for your life!",
-                    outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { enemies: ["PANZERKAMFER"], bgm: "apexPredatorBgm" } }] }]
+                    outcomes: [{ weight: 100, results: [{ type: "DESTROY_OBJECT" }, { type: "START_BATTLE", payload: { enemies: ["PANZERKAMFER"], bgm: "apexPredatorBgm" } }] }]
                 }
             ]
         }

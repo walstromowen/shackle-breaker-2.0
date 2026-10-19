@@ -221,11 +221,8 @@ export const STRUCTURES = {
             { prefab: 'ABANDONED_HUT',        weight: 3 },
             { prefab: 'ABANDONED_STORAGE',    weight: 2 },
 
-            // Crafting Station Variants
-            { prefab: 'ABANDONED_BLACKSMITH', weight: 1.5, required: true, max: 2 },
-            { prefab: 'ABANDONED_CARPENTER',  weight: 1,   required: true, max: 1 },
-            { prefab: 'ABANDONED_MASON',      weight: 1,   required: true, max: 1 },
-            { prefab: 'ABANDONED_TAILOR',     weight: 1,   required: true, max: 1 },
+            // The one workshop: its interior holds every crafting station (see ABANDONED_WORKSHOP in interiorDefinitions.js)
+            { prefab: 'ABANDONED_WORKSHOP',   weight: 1.5, required: true, max: 1 },
         ],
 
         /* TREES along the roads and in the empty lots (a tree keeps its whole footprint off roads and yards). `chance` is per free cell
@@ -237,11 +234,20 @@ export const STRUCTURES = {
             clearBuilding: 1,
             roadsideBoost: 5,
             max: 320,
+            /* `pool` is what grows in every biome that has no entry of its own below. The trees follow the biome of the cell they stand on (a road can run
+               out of the plains into a snowfield or a desert), so list a biome here to give it its own trees; an empty list = no trees there. */
             pool: [
                 { id: 'OAK_TREE_1', weight: 3 },
                 { id: 'PINE_TREE', weight: 4 },
                 { id: 'TREE_STUMP', weight: 1 },
             ],
+            biomes: {
+                SNOWY_MOUNTAINS: [
+                    { id: 'SNOWY_PINE_TREE', weight: 7 },
+                    { id: 'SNOWY_TREE_STUMP', weight: 1 },
+                ],
+                DESERT: [],                           // the desert grows no trees
+            },
         },
 
         /* STREET DRESSING (on the grass just beside the road; the solid ones are never in the way of the road) */
@@ -253,6 +259,11 @@ export const STRUCTURES = {
                 'SMALL_ROCKS_1', 'SMALL_ROCKS_2',
                 'TREE_STUMP', 'BARREL', 'CRATE',
             ],
+            /* same rule as the trees: a biome listed here uses its own list instead of `pool` (no grass or tulips on snow or sand) */
+            biomes: {
+                SNOWY_MOUNTAINS: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SNOWY_TREE_STUMP', 'BARREL', 'CRATE'],
+                DESERT: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'BARREL', 'CRATE'],
+            },
         },
     },
 
@@ -291,13 +302,7 @@ export const STRUCTURES = {
         ],
     }),
 
-    // --- CRAFTING STATION HOUSES ---
+    // --- THE WORKSHOP: one per village, with every crafting station inside (the yard is only dressed) ---
 
-    ABANDONED_BLACKSMITH: yard(WORKSHOP('BLACKSMITH_DOOR', [[2, 5, 'ANVIL'], [4, 5, 'FORGE'], [5, 5, 'BARREL']])),
-
-    ABANDONED_CARPENTER: yard(WORKSHOP('CARPENTER_DOOR', [[2, 5, 'TREE_STUMP'], [4, 5, 'CARPENTERS_BENCH'], [5, 5, 'CRATE']])),
-
-    ABANDONED_MASON: yard(WORKSHOP('MASON_DOOR', [[2, 5, 'SMALL_ROCKS_2'], [4, 5, 'STONE_BANKER'], [5, 5, 'CRATE']])),
-
-    ABANDONED_TAILOR: yard(WORKSHOP('TAILOR_DOOR', [[2, 5, 'SACKS'], [4, 5, 'TAILORS_BENCH'], [5, 5, 'CRATE_SACK']])),
+    ABANDONED_WORKSHOP: yard(WORKSHOP('WORKSHOP_DOOR', [[2, 5, 'BARREL'], [4, 5, 'CRATE'], [5, 5, 'CRATE_SACK']])),
 };

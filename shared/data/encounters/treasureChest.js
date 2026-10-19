@@ -260,11 +260,11 @@ export const treasureChest = {
             displayText: "A Dark Presence",
             image: { col: 2, row: 1 },
             bgm: "plainsBattleBgm",
-            text: "The unstable magic backfires terribly! The chest remains locked, but a dark, swirling mass of energy materializes into an evil entity right before {name}'s eyes!",
+            text: "The unstable magic backfires terribly! The chest remains locked, but a dark, swirling mass of energy coalesces into a shadowy spirit, dragging broken shackles, right before {name}'s eyes!",
             decisions: [
                 {
                     text: "Prepare for combat!",
-                    outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { tableId: "dark_spirit" } },{ type: "DESTROY_OBJECT" }, // And added here for the other 50% roll
+                    outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { tableId: "shackled_spirit" } },{ type: "DESTROY_OBJECT" }, // And added here for the other 50% roll
                 ] }]
                 }
             ]

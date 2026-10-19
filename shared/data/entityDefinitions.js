@@ -250,10 +250,10 @@ export const ENTITY_DEFINITIONS = {
         ...HUMANOID_TEMPLATE,
         name: "Legionary Companion",
         level: 1,
-        spriteOverworld: "legionarySprite",
-        spritePortrait: "legionaryPortrait",
-        crySound: "legionaryCry",
-        deathSound: "legionaryCry",
+        spriteOverworld: "legionaryCompanionSprite",
+        spritePortrait: "legionaryCompanionPortrait",
+         crySound: "unsheathSwordSfx",
+        deathSound: "unsheathSwordSfx",
         attributes: {
             ...HUMANOID_TEMPLATE.attributes,
             vigor: 13, strength: 13, dexterity: 9, intelligence: 6, attunement: 8
@@ -475,8 +475,34 @@ export const ENTITY_DEFINITIONS = {
         },
         currencyReward: { min: 2, max: 9 },
         lootTableId: "floating_skull_drops",
-        abilities: [...BASE_ENTITY.abilities, "bite", "arcane_dart"],
+        abilities: [...BASE_ENTITY.abilities, "arcane_dart"],
         tags: ["UNDEAD", "MAGICAL", "SKULL", "FLOATING"]
+    },
+
+    // A shadowy ghost bound in broken shackles, still dragging the chains it died in. Formless: blades and blows pass
+    // through it (strong physical resistance), and the dark is its element. Light burns it and raw arcane unravels it.
+    // Fragile and quick, it hits with dark magic rather than a weapon.
+    "SHACKLED_SPIRIT": {
+        ...BASE_ENTITY,
+        name: "Shackled Spirit",
+        level: 1,
+        spriteOverworld: "shackledSpiritSprite",
+        spritePortrait: "shackledSpiritPortrait",
+        crySound: "floatingSkullCry",   // placeholder: reuses the Floating Skull cry until a spirit cry exists
+        deathSound: "floatingSkullCry",
+        statMultipliers: { hpPerVigor: 2, staminaPerDex: 2, insightPerAtt: 2 },
+        attributes: { vigor: 5, strength: 3, dexterity: 11, intelligence: 12, attunement: 14 },
+        baseStats: {
+            ...BASE_ENTITY.baseStats,
+            maxHp: 10, maxStamina: 10, maxInsight: 24, staminaRecovery: 2, insightRecovery: 1, speed: 8, critical: 0.08,
+            baseDefense: { blunt: 1, slash: 1, pierce: 1, ice: 2, earth: 3, dark: 5, arcane: -1, light: -4 },
+            baseResistance: { blunt: 0.4, slash: 0.4, pierce: 0.4, ice: 0.2, earth: 0.5, dark: 0.6, arcane: -0.2, light: -0.5 },
+            baseAttack: { dark: 4, arcane: 1 }
+        },
+        currencyReward: { min: 3, max: 10 },
+        lootTableId: "floating_skull_drops",   // placeholder: reuses the Floating Skull drops until "shackled_spirit_drops" exists
+        abilities: [...BASE_ENTITY.abilities, "arcane_dart", "spirit_reap"],
+        tags: ["UNDEAD", "MAGICAL", "SPIRIT", "GHOST", "SHADOW", "FLOATING"]
     },
 
     // Skeleton mage of a forgotten order: wields both halves of the old rites. Dark: Spirit Reap (from the staff) and Raise Dead.
@@ -504,7 +530,7 @@ export const ENTITY_DEFINITIONS = {
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_darkness", head: "tattered_hood" },
         currencyReward: { min: 8, max: 20 },
         lootTableId: "ancient_cultist_drops",
-        abilities: [...HUMANOID_TEMPLATE.abilities, "spite", "solar_beam", "raise_skeleton"],
+        abilities: [...HUMANOID_TEMPLATE.abilities, "spite", "healing_rain"],
         tags: ["HUMANOID", "UNDEAD", "SKELETON", "MAGICAL", "CULTIST"]
     },
 
@@ -767,7 +793,7 @@ export const ENTITY_DEFINITIONS = {
         },
         currencyReward: { min: 3, max: 12 },
         lootTableId: "thunder_locust_drops",
-        abilities: [...BEAST_TEMPLATE.abilities, "bite", "shock", "overload"],
+        abilities: [...BEAST_TEMPLATE.abilities, "shock", "overload"],
         tags: ["BIOLOGICAL", "INSECT", "SWARM", "DESERT", "MAGICAL"]
     },
 

@@ -92,10 +92,12 @@ export const CREATION_DATA = {
     TRAITS: UI_TRAITS,
     KEEPSAKES: [
         { label: "None", itemId: null, desc: "You carry nothing but your burden." },
-        { label: "Smith's stash", desc: "Start with a small supply of crafting materials.", items: [{ id: "artifact_of_the_dev", qty: 1 }, { id: "healing_herb", qty: 1 }, { id: "soft_wood", qty: 3 }, { id: "stone", qty: 2 }, { id: "iron_ingot", qty: 1 }] },
-        { label: "Healer's Pouch", desc: "Start with various beneficial herbs.", items: [{ id: "healing_herb", qty: 3 }, { id: "invigorating_herb", qty: 3 }, { id: "illuminating_herb", qty: 3 }] },
-        { label: "Drunkard", desc: "Start with a bottle of a strange ale.", items: [{ id: "healing_herb", qty: 1 }, { id: "brew_of_madness", qty: 1 }] },
-        { label: "Torchbearer", desc: "Start with a bundle of torches for the dark places. Press T to light one.", items: [{ id: "torch", qty: 5 }] },
+        { label: "Smith's stash", desc: "Start with a small supply of crafting materials.", items: [{ id: "torch", qty: 1 }, { id: "healing_herb", qty: 1 }, { id: "hard_wood", qty: 3 }, { id: "leather", qty: 3 }, { id: "stone", qty: 2 }, { id: "iron_ore", qty: 2 }] },
+        { label: "Healer's Pouch", desc: "Start with various beneficial herbs.", items: [{ id: "torch", qty: 1 }, { id: "healing_herb", qty: 3 }, { id: "invigorating_herb", qty: 3 }, { id: "illuminating_herb", qty: 3 }] },
+        { label: "Drunkard", desc: "Start with a bottle of a strange ale.", items: [{ id: "torch", qty: 1 }, { id: "healing_herb", qty: 1 }, { id: "brew_of_madness", qty: 1 }] },
+        { label: "Assassin's Tools", desc: "Start with the tools of a quiet killer: throwing knives, a few dipped in poison, and smoke bombs to vanish behind.", items: [{ id: "torch", qty: 1 }, { id: "throwing_knife", qty: 5 }, { id: "poison_throwing_knife", qty: 3 }, { id: "smoke_bomb", qty: 2 }] },
+        { label: "Explorer's Bag", desc: "Start with what a delver packs for caves and long roads: torches, a bedroll, a map of the next place you enter, and a rope to haul you out of trouble.", items: [{ id: "torch", qty: 3 }, { id: "bedroll", qty: 2 }, { id: "interior_map", qty: 2 }, { id: "escape_rope", qty: 1 }] },
+        { label: "Miner's Supplies", desc: "Start with a pickaxe and a few torches: what it takes to break rock and see where you are breaking it. Equip the pickaxe to mine.", items: [{ id: "pickaxe", qty: 1 }, { id: "torch", qty: 3 }] },
     ],
     COMPANIONS: [
         { label: "None", speciesId: null, desc: "Walk the path alone.", attributes: {}, equipment: {} },
@@ -105,10 +107,13 @@ export const CREATION_DATA = {
             label: "Mercenary", 
             speciesId: "HUMANOID", 
             isRandomizer: true, 
-            desc: "A fellow adventurer seeking fortune and glory. Arrives with a random background, origin, and trait.", 
+            // Always looks like the Legionary Companion (same sprites as LEGIONARY_COMPANION in entityDefinitions) instead of a random hero appearance
+            appearance: { spritePortrait: "legionaryCompanionPortrait", spriteOverworld: "legionaryCompanionSprite" },
+            desc: "A fellow adventurer seeking fortune and glory, in the garb of the Altus legion. Arrives with a random background, origin, and trait.", 
             attributes: {}, 
             equipment: {} 
         },
+        /*
         { 
         label: "Test: 5 Mercs", 
         speciesId: "HUMANOID", 
@@ -118,6 +123,7 @@ export const CREATION_DATA = {
         attributes: {}, 
         equipment: {} 
     }
+        */
     ],
     DIFFICULTIES: [
         { id: "easy", label: "Easy", desc: "Easier challenge." },
@@ -311,7 +317,7 @@ export class CharacterCreatorLogic {
                     const randomElement = (arr) => arr[Math.floor(Math.random() * arr.length)];
                     const bg = randomElement(CREATION_DATA.BACKGROUNDS);
                     const origin = randomElement(CREATION_DATA.ORIGINS);
-                    const app = randomElement(CREATION_DATA.APPEARANCES);
+                    const app = comp.appearance || randomElement(CREATION_DATA.APPEARANCES);
                     const trait = randomElement(CREATION_DATA.TRAITS);
                     const companionName = count > 1 ? `Mercenary ${i + 1}` : "Mercenary";
                     

@@ -1,11 +1,16 @@
 import { Particle } from './particle.js';
 import { UITheme } from '../../ui/UITheme.js';
 
+// A sprite's `filter` (e.g. tint('fire') in animationKit) is applied while it is drawn. Set to false to draw every sprite unfiltered
+// (filters cost frame time, drop-shadow most of all).
+const APPLY_SPRITE_FILTERS = true;
+
 export class VFXRenderer {
     constructor(ctx, loader) {
         this.ctx = ctx;
         this.loader = loader;
         this.particles = [];
+        this._warnedSheets = new Set();
     }
 
     spawn(config) {
@@ -26,18 +31,34 @@ export class VFXRenderer {
         this.particles.push(p);
     }
 
+    /**
+     * A spray of particles from one point.
+     *   angle / cone   optional, in degrees. Without them the spray goes every way. With them it goes towards `angle`
+     *                  (0 = right, 90 = down, 180 = left, 270 = up), fanned out over `cone` degrees (default 30).
+     *   spreadX/spreadY optional. Each particle starts somewhere inside a box that wide / tall around the point, so one cue can cover an area
+     *                  (rain over the whole party, a sandstorm across the field).
+     */
     spawnBurst(x, y, count, baseConfig) {
+        const minSpeed = baseConfig.minSpeed ?? 120;
+        const maxSpeed = baseConfig.maxSpeed ?? 360;
+        const minLife = baseConfig.minLife ?? 0.5;
+        const maxLife = baseConfig.maxLife ?? 1.0;
+        const hasDirection = typeof baseConfig.angle === 'number';
+        const cone = baseConfig.cone ?? 30;
+        const spreadX = baseConfig.spreadX || 0;
+        const spreadY = baseConfig.spreadY || 0;
+
         for (let i = 0; i < count; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const minSpeed = baseConfig.minSpeed || 120;
-            const maxSpeed = baseConfig.maxSpeed || 360;
+            const angle = hasDirection
+                ? ((baseConfig.angle + (Math.random() - 0.5) * cone) * Math.PI) / 180
+                : Math.random() * Math.PI * 2;
             const speed = minSpeed + Math.random() * (maxSpeed - minSpeed);
-            const life = (baseConfig.minLife || 0.5) + Math.random() * ((baseConfig.maxLife || 1.0) - (baseConfig.minLife || 0.5));
-            
+            const life = minLife + Math.random() * (maxLife - minLife);
+
             this.spawn({
                 ...baseConfig,
-                x: x,
-                y: y,
+                x: x + (Math.random() - 0.5) * spreadX,
+                y: y + (Math.random() - 0.5) * spreadY,
                 vx: Math.cos(angle) * speed,
                 vy: Math.sin(angle) * speed,
                 life: life,
@@ -61,10 +82,16 @@ export class VFXRenderer {
     this.ctx.save();
     
     for (const p of this.particles) {
-        this.ctx.globalCompositeOperation = p.blendMode || 'source-over';
+        // 'normal' is not a canvas blend mode (an unknown value is ignored, which left the PREVIOUS particle's mode in force), so it means source-over
+        this.ctx.globalCompositeOperation = (!p.blendMode || p.blendMode === 'normal') ? 'source-over' : p.blendMode;
         this.ctx.globalAlpha = Math.max(0, Math.min(1, p.alpha !== undefined ? p.alpha : 1.0));
         
         this.ctx.save(); // Save per-particle context matrix
+        
+        // 0. Recolour / glow the sprite (restored with the matrix below, so it never leaks to the next particle)
+        if (APPLY_SPRITE_FILTERS && p.config && p.config.filter) {
+            this.ctx.filter = p.config.filter;
+        }
         
         // 1. Move origin to particle center position
         this.ctx.translate(p.x, p.y);
@@ -93,11 +120,15 @@ export class VFXRenderer {
             srcX, srcY, p.frameSize, p.frameSize, 
             -size/2, -size/2, size, size
             );
+        } else if (!this._warnedSheets.has(p.sheetKey)) {
+            // A typo'd or unloaded sheet used to fail silently (nothing is drawn). Say so once.
+            this._warnedSheets.add(p.sheetKey);
+            console.warn(`[VFXRenderer] sprite sheet "${p.sheetKey}" is not loaded; effects that use it will not show.`);
         }
         } else {
         this.ctx.fillStyle = p.color || '#ffffff';
         this.ctx.shadowColor = p.color || '#ffffff';
-        this.ctx.shadowBlur = 24;
+        this.ctx.shadowBlur = (p.config && p.config.glow === false) ? 0 : 24;   // glow: false = a plain dot, much cheaper when hundreds are on screen
         this.ctx.beginPath();
         this.ctx.arc(0, 0, 12 * (p.scale || 1.0), 0, Math.PI * 2);
         this.ctx.fill();

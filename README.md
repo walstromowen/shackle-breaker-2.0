@@ -11,18 +11,12 @@ party rendering on overworld
 enhance battle animations / polish
 particleRenderer revamped(global)
 structures: 
-more consistent sound for UI
-Overall UI polish
 better text style
 targeting ui improvements for splash attacks with mouse
-
+flashing of sprites in battle renderer
 
 # Bugs
-multi attacks missing one shot if target dies
-attacks like howl used by enemies not correctly targeting
-
 shop system and character summary stacking equipables
-flashing of sprites in battle renderer
 
 
 Root

@@ -235,13 +235,32 @@ export class EquipmentPanel {
       return;
     }
 
+    // Measure with the same font the label is drawn in (it used to measure with whatever font
+    // was last set, so badges came out too narrow or too wide and the text crowded the edges)
+    const badgeFont = UITheme.fonts.cardSmall;
+    const badgePadX = 36;
+    const maxBadgeW = Math.max(120, w - 144);
+    const gapX = 24;
+    const rowStep = 77;
+
     traits.forEach(traitId => {
       const def = TRAIT_DEFINITIONS[traitId] || { name: traitId };
-      const width = this.ui.ctx.measureText(def.name).width + 48;
+      this.ui.ctx.save();
+      this.ui.ctx.font = badgeFont;
+      let label = def.name;
+      let textW = this.ui.ctx.measureText(label).width;
+      const maxTextW = maxBadgeW - badgePadX * 2;
+      if (textW > maxTextW) {
+        while (label.length > 1 && this.ui.ctx.measureText(label + '...').width > maxTextW) label = label.slice(0, -1);
+        label += '...';
+        textW = this.ui.ctx.measureText(label).width;
+      }
+      this.ui.ctx.restore();
+      const width = Math.ceil(textW + badgePadX * 2);
 
       if (currentX + width > x + w - 72) {
         currentX = x + 72;
-        currentY += 72;
+        currentY += rowStep;
       }
 
       const traitFlags = this.ui.flags(traitId, hoveredId);
@@ -257,9 +276,9 @@ export class EquipmentPanel {
 
       this.ui.drawPanel(currentX, currentY, width, 53, UITheme.colors.bgScale[1]);
       this.ui.drawStateBox(currentX, currentY, width, 53, traitFlags, { inset: true });
-      this.ui.drawText(def.name, currentX + width / 2, currentY + 34, UITheme.fonts.cardSmall, this.ui.stateTextColor(traitFlags, UITheme.colors.textMain), "center", "middle");
+      this.ui.drawText(label, currentX + width / 2, currentY + 34, badgeFont, this.ui.stateTextColor(traitFlags, UITheme.colors.textMain), "center", "middle");
 
-      currentX += width + 19;
+      currentX += width + gapX;
     });
   }
 

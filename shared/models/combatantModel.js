@@ -221,7 +221,11 @@ export class CombatantModel {
         // Use Object.create() to make a safe proxy!
         // This prevents mutating shared factory templates while preserving methods like canPayCost()
         const inst = Object.create(ability);
-        
+
+        // Whose ability this is. AbilityModel scales its stamina / insight cost to the owner's max pool, so the
+        // battle HUD (which reads ability.cost) shows the same number canPayCost / payCost charge.
+        inst.owner = this;
+
         // If this ID exists in our equipMap, we know it came from an item!
         if (equipMap.has(ability.id)) {
             inst.isEquipment = true;
@@ -237,6 +241,7 @@ export class CombatantModel {
     // If filtering left nothing (an entity that only knew overworld abilities), fall back to the basic attack.
     if (finalAbilities.length === 0) {
         const fallback = Object.create(AbilityFactory.createAbility('punch'));
+        fallback.owner = this;
         fallback.isEquipment = false;
         fallback.source = 'Intrinsic';
         finalAbilities.push(fallback);

@@ -3,9 +3,10 @@ import { CONFIG } from '../../shared/data/constants.js';
 import { biomeFactory } from '../systems/factories/biomeFactory.js';
 import { hashString, makeRng, Furnisher } from './HouseGenerator.js';
 
-/* A single workshop room (9 x 8 cells) with one crafting station against the north wall, dressed for its trade: a hearth and barrels for the
-   smith, crates and shelves for the carpenter, and so on. The trade is read from the interior type (ABANDONED_BLACKSMITH...) or, failing that,
-   from the station's id, so config.craftingStation only has to name the station. The layout and the dressing are fixed by the interior id. */
+/* A single workshop room (9 x 8 cells) with its crafting stations against the north wall. config.craftingStations lists several (the village workshop
+   has them all, in a row in the middle of the wall); config.craftingStation names a single one, and then the room is dressed for that trade: a hearth
+   and barrels for the smith, crates and shelves for the carpenter, and so on (read from the interior type or from the station's id). The layout and
+   the dressing are fixed by the interior id. */
 export class CraftingHouseGenerator {
     constructor(seed, type, config, interiorId) {
         this.type = type;
@@ -19,6 +20,7 @@ export class CraftingHouseGenerator {
 
     _trade() {
         const key = String(this.type || '') + ' ' + String(this.config.craftingStation || '');
+        if (/WORKSHOP/i.test(this.type || '') || (this.config.craftingStations || []).length > 1) return 'workshop';
         if (/BLACKSMITH|ANVIL|FORGE/i.test(key)) return 'smith';
         if (/CARPENTER/i.test(key)) return 'carpenter';
         if (/MASON|STONE/i.test(key)) return 'mason';
@@ -51,21 +53,36 @@ export class CraftingHouseGenerator {
         spots.sort((p, q) => p[2] - q[2]);
         for (const [c, r] of spots) if (F.place('TABLE_LONG', c, r)) { if (rand() < 0.7) F.place('STOOL', c - 1, r); if (rand() < 0.7) F.place('STOOL', c + 2, r); break; }
 
-        // the station: against the north wall, in the middle, with room to stand in front of it
-        const station = this.config.craftingStation;
-        if (station) {
-            const row = a.r0;
-            for (const c of [0, 1, -1, 2, -2]) if (F.place(station, c, row)) { this.stationPos = [c, row]; break; }
+        // the stations: against the north wall, in the middle, with room to stand in front of each
+        const row = a.r0;
+        const stations = this.config.craftingStations || (this.config.craftingStation ? [this.config.craftingStation] : []);
+        this.stationPositions = [];
+        if (stations.length === 1) {
+            for (const c of [0, 1, -1, 2, -2]) if (F.place(stations[0], c, row)) { this.stationPos = [c, row]; this.stationPositions.push([c, row]); break; }
+        } else if (stations.length > 1) {
+            /* a centred row, one cell each; a station whose cell is taken goes to the nearest free cell of the wall row */
+            const first = -Math.floor((stations.length - 1) / 2);
+            stations.forEach((id, i) => {
+                const slots = [first + i];
+                for (let d = 1; d <= a.c1 - a.c0; d++) slots.push(first + i - d, first + i + d);
+                for (const c of slots) {
+                    if (c < a.c0 || c > a.c1) continue;
+                    if (F.place(id, c, row)) { this.stationPositions.push([c, row]); break; }
+                }
+            });
+            if (this.stationPositions.length) this.stationPos = this.stationPositions[Math.floor(this.stationPositions.length / 2)];
         }
         const sc = this.stationPos ? this.stationPos[0] : 0;
         // what the trade has around it
         const wallProps = {
             smith: ['FIREPLACE', 'BARREL'], carpenter: ['BOOKSHELF', 'WARDROBE'], mason: ['BOOKSHELF'], tailor: ['WARDROBE', 'BOOKSHELF'], generic: ['BOOKSHELF'],
+            workshop: ['BOOKSHELF', 'WARDROBE'],
         }[trade];
         for (const id of wallProps) F.placeOnNorthWall(room, id, rand, id === 'FIREPLACE' ? sc + (rand() < 0.5 ? -4 : 3) : sc + rand.pick([-3, 3]));
         const ringProps = {
             smith: ['BARREL', 'BARREL', 'CRATE', 'SACKS'], carpenter: ['CRATE', 'CRATE', 'CRATE_SACK', 'BARREL'], mason: ['CRATE', 'CRATE', 'BARREL', 'SACKS', 'SACKS'],
             tailor: ['SACKS', 'SACKS', 'CRATE_SACK', 'POTTED_PLANT'], generic: ['CRATE', 'BARREL'],
+            workshop: ['BARREL', 'CRATE', 'CRATE', 'SACKS', 'CRATE_SACK'],
         }[trade];
         for (const id of ringProps) F.placeOnRing(room, id, rand);
         if (trade === 'tailor' || trade === 'generic') F.placeAnywhere(room, 'SMALL_TABLE', rand);

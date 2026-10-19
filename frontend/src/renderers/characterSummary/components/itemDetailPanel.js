@@ -15,7 +15,7 @@ export class ItemDetailPanel {
     this.ICON_SIZE = 160;          // Main icon draw size (2.5x of 64 source)
     this.ABILITY_ICON_SIZE = 64;   // List icons drawn at 64x64 (1:1 with source)
     this.MATERIAL_ICON_SIZE = 24;  // Material icons base size (drawn at 2x)
-    this.SCROLLBAR_WIDTH = UITheme.scrollbar.width;
+    this.SCROLLBAR_WIDTH = 10;
 
     // --- Vertical Rhythm & Spacing ---
     this.layout = {
@@ -117,9 +117,18 @@ export class ItemDetailPanel {
   }
 
   drawScrollBar(x, y, viewportH, contentH, scrollOffset, hitboxes, state) {
-    // The shared scrollbar: the thumb takes the highlight color while the mouse is on the scroll column
-    this.ui.drawScrollbar(x, y, this.SCROLLBAR_WIDTH, viewportH, scrollOffset, contentH - viewportH, viewportH,
-      this.ui.flags('SCROLLBAR_THUMB', state && state.hoveredHitboxId));
+    this.ui.drawRect(x, y, this.SCROLLBAR_WIDTH, viewportH, UITheme.colors.scrollTrack || UITheme.colors.bgScale[0]);
+
+    const viewRatio = viewportH / contentH;
+    const thumbH = Math.max(48, viewportH * viewRatio);
+    const maxScroll = contentH - viewportH;
+    const scrollRatio = maxScroll > 0 ? (scrollOffset / maxScroll) : 0;
+    const thumbY = y + (scrollRatio * (viewportH - thumbH));
+
+    const isHovered = state && state.hoveredHitboxId === 'SCROLLBAR_THUMB';
+    const thumbColor = isHovered ? UITheme.colors.states.hoverText : (UITheme.colors.scrollThumb || UITheme.colors.borderHighlight);
+
+    this.ui.drawRect(x, thumbY, this.SCROLLBAR_WIDTH, thumbH, thumbColor);
 
     if (hitboxes) {
       hitboxes.push({
@@ -128,7 +137,8 @@ export class ItemDetailPanel {
         x: x - 10,
         y: y,
         w: this.SCROLLBAR_WIDTH + 19,
-        h: viewportH
+        h: viewportH,
+        hoverSfx: 'hoverTick'
       });
     }
   }
@@ -555,14 +565,16 @@ export class ItemDetailPanel {
 
     this.ui.ctx.textAlign = 'right';
     this.ui.ctx.font = UITheme.fonts.cardMono;
-    if (ab.cost) {
+    // Stamina / insight costs scale with the viewing character's max pool, so show what they would pay (authored cost if no character is known)
+    const shownCost = AbilityPreview.getCost(ab, this._previewActor, this._previewStats);
+    if (shownCost) {
       let costStr = "Free";
       let costCol = UITheme.colors.textMuted;
 
-      if (ab.cost.hp) { costStr = `${ab.cost.hp} HP`; costCol = UITheme.colors.hp; }
-      else if (ab.cost.mana) { costStr = `${ab.cost.mana} MP`; costCol = UITheme.colors.ins; }
-      else if (ab.cost.stamina) { costStr = `${ab.cost.stamina} STM`; costCol = UITheme.colors.stm; }
-      else if (ab.cost.insight) { costStr = `${ab.cost.insight} INS`; costCol = UITheme.colors.ins; }
+      if (shownCost.hp) { costStr = `${shownCost.hp} HP`; costCol = UITheme.colors.hp; }
+      else if (shownCost.mana) { costStr = `${shownCost.mana} MP`; costCol = UITheme.colors.ins; }
+      else if (shownCost.stamina) { costStr = `${shownCost.stamina} STM`; costCol = UITheme.colors.stm; }
+      else if (shownCost.insight) { costStr = `${shownCost.insight} INS`; costCol = UITheme.colors.ins; }
 
       this.ui.ctx.fillStyle = costCol;
       this.ui.ctx.fillText(costStr, x + w - cardPadding, currentTextY);

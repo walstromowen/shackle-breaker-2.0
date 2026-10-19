@@ -5,6 +5,7 @@ import { CombatantModel } from '../../../../shared/models/combatantModel.js';
 import { BattleRewardSystem } from '../../../../shared/systems/battleRewardSystem.js';
 import { TurnManager, TURN_TYPES } from '../../../../shared/systems/turnManager.js';
 import { InventorySystem } from '../../../../shared/systems/inventorySystem.js';
+import { QuestSystem } from '../../../../shared/systems/questSystem.js';
 import { BaseController } from '../core/baseController.js';
 
 // The battle's own keys, on top of the shared ones (arrows / WASD, Enter / Space, Esc / Backspace / Tab)
@@ -38,6 +39,9 @@ export class BattleController extends BaseController {
         this.state = null;
         this.timer = 0;
         this.turnManager = new TurnManager(this);
+
+        // ENEMY_KILLED (emitted in handleDeath) only advances a quest if the QuestSystem is listening. init() is idempotent.
+        QuestSystem.init();
         this.lastHoveredHitboxId = null;
 
         // --- NEW CODE: Listen for the shout from combatantModel.js ---
@@ -872,9 +876,14 @@ export class BattleController extends BaseController {
     _applyRoundEndRecovery() {
         const activeCombatants = [...this.state.activeParty, ...this.state.activeEnemies].filter(c => c && !c.isDead());
         activeCombatants.forEach(c => {
-            c.modifyResource('stamina', c.stats?.staminaRecovery ?? 200);
-            c.modifyResource('insight', c.stats?.insightRecovery ?? 100);
-            if ((c.stats?.hpRecovery ?? 0) > 0) c.modifyResource('hp', c.stats.hpRecovery);
+            const s = c.stats || {}; // c.stats recalculates every time it is read, so read it once
+            // Recovery can be fractional now (it is a small share of the pool, and % status modifiers can touch it), so round it here
+            const stamina = Math.round(s.staminaRecovery ?? 0);
+            const insight = Math.round(s.insightRecovery ?? 0);
+            const hp = Math.round(s.hpRecovery ?? 0);
+            if (stamina) c.modifyResource('stamina', stamina);
+            if (insight) c.modifyResource('insight', insight);
+            if (hp > 0) c.modifyResource('hp', hp);
         });
     }
 

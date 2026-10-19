@@ -3,7 +3,7 @@ export const craftingRecipeDefinitions = {
   "recipe_shortsword": {
     id: "recipe_shortsword",
     outputItemId: "shortsword",
-    station: "anvil",
+    station: "any",   // TESTING: was "anvil"
     materials: {
       "soft_wood": 5,
       "stone": 5,
@@ -14,7 +14,7 @@ export const craftingRecipeDefinitions = {
   "recipe_spear": {
     id: "recipe_spear",
     outputItemId: "spear",
-    station: "anvil",
+    station: "any",   // TESTING: was "anvil"
     materials: {
       "soft_wood": 10,
       "stone": 3,
@@ -25,7 +25,7 @@ export const craftingRecipeDefinitions = {
   "recipe_dagger": {
     id: "recipe_dagger",
     outputItemId: "dagger",
-    station: "anvil",
+    station: "any",   // TESTING: was "anvil"
     materials: {
       "soft_wood": 3,
       "stone": 3,
@@ -36,7 +36,7 @@ export const craftingRecipeDefinitions = {
   "recipe_handaxe": {
     id: "recipe_handaxe",
     outputItemId: "handaxe",
-    station: "anvil",
+    station: "any",   // TESTING: was "anvil"
     materials: {
       "soft_wood": 7,
       "stone": 5,
@@ -47,7 +47,7 @@ export const craftingRecipeDefinitions = {
   "recipe_pickaxe": {
     id: "recipe_pickaxe",
     outputItemId: "pickaxe",
-    station: "anvil",
+    station: "any",   // TESTING: was "anvil"
     materials: {
       "soft_wood": 6,
       "stone": 7,
@@ -58,7 +58,7 @@ export const craftingRecipeDefinitions = {
   "recipe_shortbow": {
     id: "recipe_shortbow",
     outputItemId: "shortbow",
-    station: "carpenters_bench",
+    station: "any",   // TESTING: was "carpenters_bench"
     materials: {
       "soft_wood": 15,
       "plant_fibers": 15,
@@ -69,7 +69,7 @@ export const craftingRecipeDefinitions = {
     id: "recipe_iron_helmet",
     outputItemId: "iron_helmet",
     locked: true,
-    station: "anvil",
+    station: "any",   // TESTING: was "anvil"
     materials: {
       "iron_ingot": 5,
       "leather": 2
@@ -80,7 +80,7 @@ export const craftingRecipeDefinitions = {
   "recipe_iron_ingot": {
     id: "recipe_iron_ingot",
     outputItemId: "iron_ingot",
-    station: "forge",
+    station: "any",   // TESTING: was "forge"
     materials: {
       "iron_ore": 2,
       "coal": 1
@@ -89,7 +89,7 @@ export const craftingRecipeDefinitions = {
   "recipe_linen": {
     id: "recipe_linen",
     outputItemId: "linen",
-    station: "tailors_bench", // Renamed from weaving_loom
+    station: "any",   // TESTING: was "tailors_bench" // Renamed from weaving_loom
     materials: {
       "cotton": 2
     }
@@ -97,7 +97,7 @@ export const craftingRecipeDefinitions = {
   "recipe_leather": {
     id: "recipe_leather",
     outputItemId: "leather",
-    station: "tailors_bench", // Moved from "any"
+    station: "any",   // TESTING: was "tailors_bench" // Moved from "any"
     materials: {
       "fur": 2,
       "salt": 1 // Salt used for curing/tanning the hide
@@ -106,7 +106,7 @@ export const craftingRecipeDefinitions = {
   "recipe_copper_ingot": {
     id: "recipe_copper_ingot",
     outputItemId: "copper_ingot",
-    station: "forge",
+    station: "any",   // TESTING: was "forge"
     materials: {
       "copper_ore": 2,
       "coal": 1
@@ -115,7 +115,7 @@ export const craftingRecipeDefinitions = {
   "recipe_bronze_ingot": {
     id: "recipe_bronze_ingot",
     outputItemId: "bronze_ingot",
-    station: "forge",
+    station: "any",   // TESTING: was "forge"
     materials: {
       "copper_ingot": 1,
       "tin_ore": 2,   // Now uses raw Tin Ore directly
@@ -165,6 +165,74 @@ export const craftingRecipeDefinitions = {
       "meteorite": 1,
       "coal": 2,      // To deeply char and steep the brew
       "sand": 1       // Adds a terrible texture, fits the "bad decisions" theme
+    }
+  },
+
+  // --- COMBAT & TRAVEL CONSUMABLES ---
+  "recipe_escape_rope": {
+    id: "recipe_escape_rope",
+    outputItemId: "escape_rope",
+    station: "any",
+    materials: {
+      "plant_fibers": 30
+    }
+  },
+  "recipe_throwing_knife": {
+    id: "recipe_throwing_knife",
+    outputItemId: "throwing_knife",
+    outputQuantity: 3,        // one batch makes three blades
+    station: "any",
+    materials: {
+      "flint": 3,
+      "plant_fibers": 1,      // Grip wrap
+      "soft_wood": 1          // Handle
+    }
+  },
+  "recipe_poison_throwing_knife": {
+    id: "recipe_poison_throwing_knife",
+    outputItemId: "poison_throwing_knife",
+    station: "any",
+    materials: {
+      "throwing_knife": 1,
+      "invigorating_herb": 2  // STAND-IN: the game has no venom material. Boiled down, a heart-racing herb makes a fair toxin. Swap when one exists.
+    }
+  },
+  "recipe_bear_trap": {
+    id: "recipe_bear_trap",
+    outputItemId: "bear_trap",
+    station: "any",
+    materials: {
+      "iron_ingot": 4
+    }
+  },
+  "recipe_interior_map": {
+    id: "recipe_interior_map",
+    outputItemId: "interior_map",
+    station: "any",
+    materials: {
+      "linen": 1,
+      "coal": 1               // charcoal to draw the plan with
+    }
+  },
+  "recipe_bedroll": {
+    id: "recipe_bedroll",
+    outputItemId: "bedroll",
+    station: "any",
+    materials: {
+      "leather": 2,           // the waterproof outside
+      "linen": 2,             // the blanket
+      "plant_fibers": 4       // cord to tie it
+    }
+  },
+  "recipe_smoke_bomb": {
+    id: "recipe_smoke_bomb",
+    outputItemId: "smoke_bomb",
+    outputQuantity: 2,        // one batch makes two
+    station: "any",
+    materials: {
+      "coal": 2,              // the smoke
+      "sand": 1,              // packing
+      "plant_fibers": 1       // fuse
     }
   }
 };

@@ -69,7 +69,9 @@ export class OverworldUIRenderer {
     // --- HOTBAR: a row of slots at the bottom centre of the screen (keys 1-9 and 0, or click) ---
     // The slots' hitboxes belong to the controller; they are placed here, from the real canvas size, every frame, so what is drawn is what is clicked.
     drawHotbar(ctx, ui, slots, hoveredId, notice) {
-        const SIZE = 68, GAP = 6, MARGIN = 24, ICON = 44;
+        // The item sheets are 64 px cells, so the icon is drawn 1:1 (ICON = 64) on whole pixels, centred in a slot with a margin round it.
+        // (It used to be squeezed into 44 px, which made it soft, and the key / count text was larger than the boxes it sat in.)
+        const SIZE = 104, GAP = 8, MARGIN = 24, ICON = 64;
         const total = slots.length * SIZE + (slots.length - 1) * GAP;
         const startX = Math.round((ctx.canvas.width - total) / 2);
         const baseY = ctx.canvas.height - MARGIN - SIZE;
@@ -89,23 +91,32 @@ export class OverworldUIRenderer {
             ui.drawStateBox(x, y, SIZE, SIZE, flags, { inset: true });
 
             if (slot.icon) {
+                const ix = x + Math.floor((SIZE - ICON) / 2), iy = y + Math.floor((SIZE - ICON) / 2);
                 const found = ui.resolveItemSheet(this.loader, slot.icon.sheet || 'items');
                 if (found) {
                     const src = found.cell || this.ICON_SRC_SIZE;
                     ctx.globalAlpha = out ? 0.3 : 1;
-                    ctx.drawImage(found.sheet, slot.icon.col * src, slot.icon.row * src, src, src, x + (SIZE - ICON) / 2, y + (SIZE - ICON) / 2, ICON, ICON);
+                    ctx.imageSmoothingEnabled = false;   // 64 -> 64: a straight copy of the cell, crisp
+                    ctx.drawImage(found.sheet, slot.icon.col * src, slot.icon.row * src, src, src, ix, iy, ICON, ICON);
                     ctx.globalAlpha = 1;
                 }
-                ui.drawText(
-                    String(slot.qty), x + SIZE - 6, y + SIZE - 12,
-                    UITheme.fonts.cardSmall, out ? (UITheme.colors.error || "#e57373") : UITheme.colors.textMain, "right", "middle"
-                );
+
+                // the count, bottom right, with a dark edge so it reads on top of any icon
+                ctx.font = UITheme.fonts.small;
+                ctx.textAlign = "right";
+                ctx.textBaseline = "alphabetic";
+                ctx.lineJoin = "round";
+                ctx.lineWidth = 5;
+                ctx.strokeStyle = "rgba(0, 0, 0, 0.9)";
+                ctx.strokeText(String(slot.qty), x + SIZE - 8, y + SIZE - 8);
+                ctx.fillStyle = out ? (UITheme.colors.error || "#e57373") : UITheme.colors.textHighlight;
+                ctx.fillText(String(slot.qty), x + SIZE - 8, y + SIZE - 8);
             }
 
             // key badge, top left
-            const badge = 18;
-            ui.drawPanel(x + 4, y + 4, badge, badge, "rgba(0, 0, 0, 0.7)");
-            ui.drawText(slot.key, x + 4 + badge / 2, y + 4 + badge / 2 + 1, UITheme.fonts.cardSmall, UITheme.colors.textMuted || "#AAAAAA", "center", "middle");
+            const badge = 28;   // big enough for the 24 px key font (it was 18, smaller than its own text)
+            ui.drawPanel(x + 3, y + 3, badge, badge, "rgba(0, 0, 0, 0.7)");
+            ui.drawText(slot.key, x + 3 + badge / 2, y + 3 + badge / 2 + 1, UITheme.fonts.cardSmall, UITheme.colors.textMain || "#DDDDDD", "center", "middle");
 
             // a short flash when the slot was just used (gold: it worked, red: it did not)
             if (slot.flash > 0) {

@@ -7,6 +7,7 @@ import { EncounterFactory } from "../../../../shared/systems/factories/encounter
 import { DIFFICULTY_MODIFIERS } from '../../../../shared/data/constants.js';
 import { LootTableFactory } from "../../../../shared/systems/factories/lootTableFactory.js";
 import { SpawnTableFactory } from "../../../../shared/systems/factories/spawnTableFactory.js";
+import { ItemDefinitions } from '../../../../shared/data/itemDefinitions.js';
 
 export class EncounterLogic {
     static checkConditions(decision, context = {}) {
@@ -31,6 +32,10 @@ export class EncounterLogic {
                     const hasTrait = activeCharacter.traits?.includes(targetTag);
                     const hasTag = activeCharacter.tags?.includes(targetTag);
                     return hasTrait || hasTag;
+                }
+                case "has_any_trait": {
+                    const activeCharacter = gameState.party?.members?.[0];
+                    return !!(activeCharacter && activeCharacter.traits && activeCharacter.traits.length > 0);
                 }
                 default:
                     console.warn(`[EncounterLogic] Unknown condition type '${cond.type}'; treating as met.`);
@@ -167,9 +172,16 @@ export class EncounterLogic {
                     break;
                 case "START_QUEST":
                     if (payload.questId) {
-                        events.emit('START_QUEST', { questId: payload.questId });
-                        const questName = payload.questName || payload.questId.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-                        questsStarted.push(`New Quest: ${questName}`);
+                        // QuestSystem starts it (it listens for START_QUEST). A quest the party already has, or has finished, is not
+                        // started again and is not announced again.
+                        const questLog = gameState.quests || {};
+                        const alreadyKnown = !!(questLog.active && questLog.active[payload.questId])
+                            || (Array.isArray(questLog.completed) && questLog.completed.includes(payload.questId));
+                        if (!alreadyKnown) {
+                            events.emit('START_QUEST', { questId: payload.questId });
+                            const questName = payload.questName || payload.questId.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                            questsStarted.push(`New Quest: ${questName}`);
+                        }
                     }
                     break;
                 case "ROLL_LOOT_TABLE":
@@ -230,28 +242,49 @@ export class EncounterLogic {
                         }
                     }
                     break;
-               case "MODIFY_CURRENCY":
+               case "MODIFY_CURRENCY": {
                     if (typeof gameState.party.currency === 'undefined') gameState.party.currency = 0;
-                    
+
                     const amount = payload.amount || 0;
-                    const startingCurrency = gameState.party.currency;
-                    
-                    // Apply the change
-                    gameState.party.currency += amount;
-                    
-                    // Prevent currency from dropping below zero
-                    if (gameState.party.currency < 0) gameState.party.currency = 0;
-                    
-                    // Calculate exactly how much actually changed
-                    const amountChanged = Math.abs(gameState.party.currency - startingCurrency);
-                    
-                    // Notify the player of the gain or loss
-                    if (amount > 0) {
-                        currencyFound.push(`Found ${amountChanged} currency!`);
-                    } else if (amount < 0 && amountChanged > 0) {
-                        generalMessages.push(`Lost ${amountChanged} currency!`);
+                    const purse = Math.max(0, gameState.party.currency);
+
+                    if (amount >= 0) {
+                        gameState.party.currency = purse + amount;
+                        if (amount > 0) currencyFound.push(`Found ${amount} currency!`);
+                        break;
                     }
+
+                    // A loss takes only what the party actually has, and the message reports what was really taken.
+                    const demand = -amount;
+                    const taken = Math.min(purse, demand);
+                    gameState.party.currency = purse - taken;
+                    const shortfall = demand - taken;
+                    const lines = [];
+                    if (taken > 0) lines.push(`Lost ${taken} currency!`);
+
+                    // Optional (payload.stealItemOnShortfall): when the purse can't cover it, take the item whose value is
+                    // closest to what is missing. Equipped gear isn't in the inventory, so it is never touched.
+                    if (shortfall > 0 && payload.stealItemOnShortfall) {
+                        const stealable = (gameState.party.inventory || []).filter(it => {
+                            const id = it && (it.defId ?? (it.definition && it.definition.id));
+                            const def = id && ItemDefinitions[id];
+                            return def && (it.qty || 1) > 0 && !def.questItem && !def.unstealable;
+                        });
+                        if (stealable.length > 0) {
+                            const idOf = (it) => it.defId ?? it.definition.id;
+                            const gap = (it) => Math.abs((ItemDefinitions[idOf(it)].value || 0) - shortfall);
+                            const best = Math.min(...stealable.map(gap));
+                            const closest = stealable.filter(it => gap(it) === best);
+                            const pickId = idOf(closest[Math.floor(Math.random() * closest.length)]);
+                            InventorySystem.removeItem(pickId, 1);
+                            const pickName = ItemDefinitions[pickId].name || pickId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                            lines.push(`Lost ${pickName} x1!`);
+                        }
+                    }
+                    if (lines.length === 0) lines.push("There was nothing to take.");
+                    generalMessages.push(lines.join('\n'));
                     break;
+                }
                 case "MODIFY_VITALS":
                     const targetMembers = payload.target === "entire_party" ? (gameState.party?.members || []) : [gameState.party?.members?.[0]].filter(Boolean);
                     targetMembers.forEach(char => {
@@ -293,6 +326,15 @@ export class EncounterLogic {
                 case "REMOVE_TRAIT": {
                     const removeTargets = payload.target === "entire_party" ? (gameState.party?.members || []) : [gameState.party?.members?.[0]].filter(Boolean);
                     removeTargets.forEach(char => {
+                        // { all: true } (or traitId "all") strips every trait the character has
+                        if (payload.all || payload.traitId === "all") {
+                            const toRemove = [...(char.traits || [])];
+                            if (char.removeTrait && toRemove.length > 0) {
+                                toRemove.forEach(id => char.removeTrait(id));
+                                traitsLost.push(`${char.name} has been stripped of every trait.`);
+                            }
+                            return;
+                        }
                         const hasTrait = char.traits && char.traits.includes(payload.traitId);
                         if (char.removeTrait && hasTrait) {
                             char.removeTrait(payload.traitId);

@@ -189,12 +189,13 @@ export class OverworldController extends BaseController {
        screen. Using a slot is the same as choosing "Use" there: the item's useAbility runs with { context: 'overworld' }, and one item is spent only when it worked. */
 
     /* Who an item's ability is aimed at when it is used from the hotbar: the most hurt living party member for a heal, the first fallen one for a revive, every living
-       member for a whole-party ability. Abilities that aim at "self" (a torch) do not care who gets picked. */
+       member for a whole-party ability. Abilities that aim at "self" go to the first living member, the one in front: a torch does not care who that is, a bear trap is theirs. */
     pickHotbarTargets(abilityId) {
         const members = (gameState.party && gameState.party.members) || [];
         const scope = AbilityDefinitions[abilityId] && AbilityDefinitions[abilityId].targeting && AbilityDefinitions[abilityId].targeting.scope;
         const dead = (m) => (m.hp !== undefined && m.hp <= 0);
         const living = members.filter(m => !dead(m));
+        if (scope === 'self') return living.slice(0, 1);
         if (scope === 'dead_ally') return members.filter(dead).slice(0, 1);
         if (scope === 'all_allies' || scope === 'full_ally_party') return living;
         const share = (m) => (m.maxHp ? m.hp / m.maxHp : 1);
@@ -447,13 +448,7 @@ export class OverworldController extends BaseController {
         const leader = PartyManager.getPlayer();
         let hasTool = false;
 
-        const checkTool = (item) => {
-            if (!item) return false;
-            if (item.harvestTool && Array.isArray(item.harvestTool)) {
-                return item.harvestTool.includes(requiredTool);
-            }
-            return false;
-        };
+        const checkTool = (item) => this.getHarvestTools(item).includes(requiredTool);
 
         if (leader?.equipment) {
             if (checkTool(leader.equipment.mainHand)) hasTool = true;
@@ -463,32 +458,24 @@ export class OverworldController extends BaseController {
 
         return hasTool;
     }
+
+    /* The tools an equipped item works as ('axe', 'pickaxe', 'sickle'...). Reads the item's own harvestTool first, and if the item model does not expose it
+       (or the item is only an id), falls back to the item's definition, so every tool in itemDefinitions.js works, the pickaxe included. */
+    getHarvestTools(item) {
+        if (!item) return [];
+        if (Array.isArray(item.harvestTool) && item.harvestTool.length) return item.harvestTool;
+        const def = (typeof item === 'string' ? ItemDefinitions[item] : null)
+            || item.definition
+            || ItemDefinitions[item.defId]
+            || ItemDefinitions[item.id];
+        return (def && Array.isArray(def.harvestTool)) ? def.harvestTool : [];
+    }
+
     // --- NEW: HARVESTING LOGIC ---
     startHarvest(targetObj) {
         const requiredTool = targetObj.interaction.tool;
-        let hasTool = !requiredTool; // Always true if no tool is required
-
-        // Check if the party leader has the required tool equipped
-        if (requiredTool) {
-            const leader = PartyManager.getPlayer();
-
-            // Since equipped items are ItemModel instances, we just use the getter!
-            const checkTool = (item) => {
-                if (!item) return false;
-                // Call the getter directly. It returns an array (or empty array)
-                if (item.harvestTool && Array.isArray(item.harvestTool)) {
-                    return item.harvestTool.includes(requiredTool);
-                }
-                return false;
-            };
-
-            if (leader?.equipment) {
-                if (checkTool(leader.equipment.mainHand)) hasTool = true;
-                if (checkTool(leader.equipment.twoHand)) hasTool = true;
-                // Might as well check offHand just in case they equip a sickle there!
-                if (checkTool(leader.equipment.offHand)) hasTool = true; 
-            }
-        }
+        // The party leader must have the required tool equipped (same check as the prompt in getState)
+        const hasTool = this.hasRequiredTool(requiredTool);
 
         if (!hasTool) {
             console.log(`[Overworld] Requires a ${requiredTool} to harvest this!`);

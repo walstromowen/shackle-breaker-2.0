@@ -501,15 +501,17 @@ export class BattleHUDRenderer {
 
     this.ctx.textAlign = 'right';
     this.ctx.font = UITheme.fonts.cardMono || UITheme.fonts.bold;
-    if (ability.cost) {
+    // Cost scaled to the acting character's max pools (same number canPayCost / payCost use)
+    const shownCost = AbilityPreview.getCost(ability, actor);
+    if (shownCost) {
       let costStr = "Free";
       let costCol = UITheme.colors.textMuted;
 
       // Render cost with spacing (e.g., "15 STM")
-      if (ability.cost.hp) { costStr = `${ability.cost.hp} HP`; costCol = UITheme.colors.hp; }
-      else if (ability.cost.mana) { costStr = `${ability.cost.mana} MP`; costCol = UITheme.colors.ins; }
-      else if (ability.cost.stamina) { costStr = `${ability.cost.stamina} STM`; costCol = UITheme.colors.stm; }
-      else if (ability.cost.insight) { costStr = `${ability.cost.insight} INS`; costCol = UITheme.colors.ins; }
+      if (shownCost.hp) { costStr = `${shownCost.hp} HP`; costCol = UITheme.colors.hp; }
+      else if (shownCost.mana) { costStr = `${shownCost.mana} MP`; costCol = UITheme.colors.ins; }
+      else if (shownCost.stamina) { costStr = `${shownCost.stamina} STM`; costCol = UITheme.colors.stm; }
+      else if (shownCost.insight) { costStr = `${shownCost.insight} INS`; costCol = UITheme.colors.ins; }
 
       this.ctx.fillStyle = costCol;
       this.ctx.fillText(costStr, x + w - cardPadding, currentTextY);

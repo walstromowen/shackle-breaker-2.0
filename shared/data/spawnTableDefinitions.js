@@ -340,7 +340,8 @@ export const SpawnTableDefinitions = {
         }]
     },
 
-    "dark_spirit": {
+    // Used by treasure_chest: a botched unlocking spell tears a shackled spirit out of the dark. Always a few levels above the area.
+    "shackled_spirit": {
         type: "faction_pool",
         pools: [{
             factionId: "supernatural",
@@ -351,7 +352,7 @@ export const SpawnTableDefinitions = {
                 hard: { minSize: 1, maxSize: 2 },
                 nightmare: { minSize: 2, maxSize: 2 }
             },
-            members: [{ id: 'DARK_SPIRIT', weight: 100, modifiers: { levelOffset: { chance: 1, min: 2, max: 4 } } }]
+            members: [{ id: 'SHACKLED_SPIRIT', weight: 100, modifiers: { levelOffset: { chance: 1, min: 2, max: 4 } } }]
         }]
     },
 
@@ -386,5 +387,40 @@ export const SpawnTableDefinitions = {
                 ]
             }
         ]
-    }
+    },
+    "altar_skeletons": {
+        type: "faction_pool",
+        pools: [{
+            factionId: "supernatural",
+            weight: 100,
+            difficultySettings: {
+                easy: { minSize: 1, maxSize: 2 },
+                normal: { minSize: 2, maxSize: 3 },
+                hard: { minSize: 3, maxSize: 4 },
+                nightmare: { minSize: 4, maxSize: 5 }
+            },
+            members: [
+                { id: 'SKELETAL_WARRIOR', weight: 40 },
+                { id: 'FLOATING_SKULL', weight: 20 },
+                { id: 'ANCIENT_CULTIST', weight: 20 },
+                { id: 'SKELETAL_WARRIOR', weight: 20, modifiers: { levelOffset: { chance: 1, min: 1, max: 2 } } }
+            ]
+        }]
+    },
+
+    // Used by mysterious_altar: the boss fight that starts when a fallen meteorite is set on the altar. Darius the Groveler alone.
+    "darius_boss": {
+        type: "faction_pool",
+        pools: [{
+            factionId: "shackled",
+            weight: 100,
+            difficultySettings: {
+                easy: { minSize: 1, maxSize: 1 },
+                normal: { minSize: 1, maxSize: 1 },
+                hard: { minSize: 1, maxSize: 1 },
+                nightmare: { minSize: 1, maxSize: 1 }
+            },
+            members: [{ id: 'DARIUS_THE_GROVELER', weight: 100 }]
+        }]
+    },
 };

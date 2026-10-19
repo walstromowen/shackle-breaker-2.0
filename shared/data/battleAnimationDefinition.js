@@ -1,1181 +1,979 @@
+/**
+ * shared/data/battleAnimationDefinitions.js
+ * Battle animations, listed alphabetically by id. Written with the helpers in animationKit.js (read its header for the one-page reference).
+ *
+ * Every ability that can be used in a fight points at an animation of its own through `animationId` (the ability's own id is the usual choice).
+ * Status effects, weather and the battle engine use the rest; those have a comment saying so.
+ *
+ * After editing, run:  node tools/checkAnimations.mjs
+ * It checks for typos, missing or shared animations, sounds / sprite sheets that do not exist, cues that run past the end, and look-alike animations.
+ */
+import { anim, sfx, flash, shake, fade, background, lunge, wobble, hop, slideIn, slideOut, spawn, travel, burst, stream, repeat, tint } from './animationKit.js';
+
 export const BattleAnimationDefinitions = {
-    "slash": {
-        duration: 1.5,
-        audio: [{ start: 0.067, key: 'slashSfx', volume: 1.0 }],
-        actor: { type: 'lunge', start: 0.0, end: 0.133, distance: 120 },
+    // Scripted boss ability. Not used by any player ability.
+    "abyssal_void": anim(3, {
+        audio: [sfx(0.033, 'darkMagicSFX', { volume: 1 })],
+        background: background(0.067, 0.933, 'voidBackground', 'brightness(80%) sepia(50%) hue-rotate(250deg)'),
+        actor: { flash: flash(0.067, 0.933, 'brightness(150%) hue-rotate(250deg)') },
+        target: { shake: shake(0.333, 0.833, 36), flash: flash(0.333, 0.833, 'invert(100%)') }
+    }),
+    "acid_pool": anim(2.2, {
+        audio: [sfx(0.05, 'acidPoolSfx', { volume: 1 })],
         vfx: [
-            { start: 0.1, type: 'spawn', origin: 'target', config: { life: 0.2, sheetKey: 'slashAnimation', frameCount: 1, frameSize: 64, movement: 'swipe_diagonal', scale: 1.8, blendMode: 'screen' } }
+            spawn(0, 'acidPoolAnimation', { life: 1.8, move: 'static', scale: 2, blend: 'normal' }),
+            spawn(0.3, 'acidicSmogAnimation', { life: 0.5, move: 'float_up_and_pop', scale: 1.2, blend: 'source-over' })
         ],
-        target: {
-            shake: { start: 0.1, end: 0.233, intensity: 24 },
-            flash: { start: 0.1, end: 0.167, filter: 'brightness(250%)' }
-        }
-    },
-    "strike": {
-        duration: 1.5,
-        audio: [{ start: 0.133, key: 'strikeSfx', volume: 1.0 }],
-        actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 96 },
+        target: { shake: shake(0.1, 0.8, 8), flash: flash(0.05, 1.5, 'hue-rotate(70deg) saturate(180%) brightness(110%)') }
+    }),
+    "arcane_dart": anim(1.5, {
+        audio: [sfx(0.533, 'arcaneDartSfx')],
+        background: background(0, 1, 'arcaneVortexBg'),
+        actor: { flash: flash(0, 0.2, 'brightness(200%) hue-rotate(180deg) saturate(300%)') },
         vfx: [
-            { start: 0.133, type: 'spawn', origin: 'target', config: { life: 0.3, sheetKey: 'strikeAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 1.44, blendMode: 'screen' } }
+            travel(0.2, 'arcaneDartAnimation', { life: 0.4, frames: 4, scale: 2 })
         ],
-        target: {
-            shake: { start: 0.133, end: 0.333, intensity: 29 },
-            flash: { start: 0.133, end: 0.267, filter: 'brightness(200%) sepia(100%) hue-rotate(300deg) saturate(300%)' }
-        }
-    },
-    "thrust": {
-        duration: 1.5,
-        audio: [{ start: 0.133, key: 'thrustSfx', volume: 1.0 }],
-        actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 96 },
+        target: { shake: shake(0.4, 0.6, 24), flash: flash(0.4, 0.533, 'brightness(300%) sepia(50%) hue-rotate(180deg)') }
+    }),
+    "baton_pass": anim(1.2, {
+        audio: [sfx(0.05, 'rallySfx', { volume: 0.8, pitch: 1.4 })],
+        actor: lunge(0, 0.2, -60, { flash: flash(0, 0.5, tint('gold', { glow: 'gold' })) }),
         vfx: [
-            { start: 0.133, type: 'spawn', origin: 'target', config: { life: 0.2, sheetKey: 'thrustAnimation', frameCount: 1, frameSize: 64, movement: 'shrink_and_fade', scale: 2, blendMode: 'screen' } }
-        ],
-        target: {
-            shake: { start: 0.133, end: 0.333, intensity: 29 },
-            flash: { start: 0.133, end: 0.267, filter: 'brightness(200%) sepia(100%) hue-rotate(300deg) saturate(300%)' }
-        }
-    },
-    "bite": {
-        duration: 1.5,
-        audio: [{ start: 0.133, key: 'crunchSfx', volume: 1.0 }],
-        actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 96 },
-        vfx: [
-            { start: 0.133, type: 'spawn', origin: 'target', config: { life: 0.4, sheetKey: 'biteAnimation', frameCount: 1, frameSize: 64, movement: 'shrink_and_fade', scale: 3, blendMode: 'multiply' } }
-        ],
-        target: {
-            shake: { start: 0.133, end: 0.333, intensity: 29 },
-            flash: { start: 0.133, end: 0.267, filter: 'brightness(200%) sepia(100%) hue-rotate(300deg) saturate(300%)' }
-        }
-    },
-    "arcane_dart": {
-        duration: 1.5,
-        audio: [{ start: 0.533, key: 'arcaneDartSfx' }],
-        actor: { flash: { start: 0.0, end: 0.2, filter: 'brightness(200%) hue-rotate(180deg) saturate(300%)' } },
-        background: { start: 0.0, end: 1.0, key: 'arcaneVortexBg' },
-        vfx: [
-            { start: 0.2, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'arcaneDartAnimation', frameCount: 4, frameSize: 64, scale: 2, blendMode: 'screen' } }
-        ],
-        target: {
-            shake: { start: 0.4, end: 0.6, intensity: 24 },
-            flash: { start: 0.4, end: 0.533, filter: 'brightness(300%) sepia(50%) hue-rotate(180deg)' }
-        }
-    },
-    "poison": {
-        duration: 2.0,
-        audio: [{ start: 0.1, key: 'poisonSfx', volume: 0.6, pitch: 1.2 }],
-        vfx: [
-            { start: 0.05, type: 'spawn', origin: 'target', config: { life: 0.4, sheetKey: 'poisonAnimation', frameCount: 1, frameSize: 64, movement: 'float_up_and_pop', scale: 0.6 } },
-            { start: 0.1, type: 'spawn', origin: 'target', config: { life: 0.4, sheetKey: 'poisonAnimation', frameCount: 1, frameSize: 64, movement: 'float_up_and_pop', scale: 0.75 } },
-            { start: 0.15, type: 'spawn', origin: 'target', config: { life: 0.4, sheetKey: 'poisonAnimation', frameCount: 1, frameSize: 64, movement: 'float_up_and_pop', scale: 0.45 } }
-        ],
-        target: { flash: { start: 0.0, end: 0.75, filter: 'brightness(110%) saturate(160%) hue-rotate(100deg)' } }
-    },
-    "earthquake": {
-        duration: 4.0,
+            spawn(0.05, 'rallyAnimation', { at: 'source', life: 0.5, scale: 1.3, move: 'float_up_and_pop', filter: tint('gold', { bright: 130, sat: 200 }) }),
+            burst(0.1, { at: 'source', count: 10, color: '#ffd24a', scale: 1.2, minSpeed: 80, maxSpeed: 220, gravity: -120 })
+        ]
+    }),
+    "bear_form": anim(2.2, {
         audio: [
-            { start: 0.063, key: 'earthquake1Sfx', volume: 1.0 },
-            { start: 0.125, key: 'earthquake2Sfx', volume: 1.0 },
-            { start: 0.2, key: 'earthquake3Sfx', volume: 1.0 }
+            sfx(0.1, 'wolfCry', { volume: 0.8, pitch: 0.5 }),
+            sfx(0.5, 'crunchSfx', { volume: 1, pitch: 0.5 })
         ],
+        actor: wobble(0.1, 0.9, 16, { flash: flash(0, 1.4, 'brightness(70%) sepia(100%) hue-rotate(10deg) saturate(300%)') }),
         vfx: [
-            { start: 0.2, type: 'spawn', origin: 'target', config: { life: 0.8, sheetKey: 'earthquakeAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 2.0 } },
-            { start: 0.4, type: 'spawn', origin: 'target', config: { life: 0.8, sheetKey: 'earthquakeAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 2.5 } },
-            { start: 0.6, type: 'spawn', origin: 'target', config: { life: 0.8, sheetKey: 'earthquakeAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 1.8 } }
+            spawn(0.15, 'smokeAnimation', { life: 0.8, scale: 2.8, blend: 'normal' }),
+            spawn(0.5, 'smokeAnimation', { life: 0.8, scale: 3.4, blend: 'normal' }),
+            spawn(0.7, 'clawAnimation', { life: 0.4, scale: 2, move: 'swipe_diagonal', blend: 'normal' }),
+            burst(0.2, { count: 14, color: '#7a5230', scale: 1.4, gravity: 260, blend: 'source-over' })
+        ]
+    }),
+    "bite": anim(1.5, {
+        audio: [sfx(0.133, 'crunchSfx', { volume: 1 })],
+        actor: lunge(0, 0.2, 96),
+        vfx: [
+            spawn(0.133, 'biteAnimation', { life: 0.4, move: 'shrink_and_fade', scale: 3, blend: 'multiply' })
         ],
-        target: {
-            shake: { start: 0.063, end: 3.6, intensity: 72 },
-            flash: { start: 0.2, end: 0.8, filter: 'sepia(80%) brightness(60%) saturate(120%)' }
-        }
-    },
-    "trait_activate": {
-        duration: 1.2,
-        target: {
-            shake: { start: 0.0, end: 0.3, intensity: 10 },
-            flash: { start: 0.0, end: 0.4, filter: 'brightness(250%) saturate(150%)' }
-        }
-    },
-    "melee_lunge": {
-        duration: 1.5,
+        target: { shake: shake(0.133, 0.333, 29), flash: flash(0.133, 0.267, 'brightness(200%) sepia(100%) hue-rotate(300deg) saturate(300%)') }
+    }),
+    // Status effect animation.
+    "bleed": anim(1.5, {
+        audio: [sfx(0.1, 'slashSfx', { volume: 0.6, pitch: 0.7 })],
+        vfx: [
+            spawn(0.15, 'bleedAnimation', { life: 0.5, move: 'static', scale: 0.8 })
+        ],
+        target: { shake: shake(0.1, 0.3, 10), flash: flash(0.1, 0.6, 'brightness(120%) sepia(100%) hue-rotate(330deg) saturate(400%)') }
+    }),
+    "bolster": anim(1.2, {
+        audio: [sfx(0.05, 'strikeSfx', { volume: 1 })],
+        actor: { flash: flash(0, 0.2, 'brightness(180%) saturate(150%)') },
+        vfx: [
+            spawn(0.05, 'bolsterAnimation', { life: 0.5, move: 'expand_and_fade', scale: 2.2 })
+        ],
+        target: { shake: shake(0.05, 0.2, 15), flash: flash(0.05, 1, 'brightness(130%) sepia(100%) hue-rotate(190deg) saturate(300%)') }
+    }),
+    // The boulder lands at 0.6s.
+    "boulder_throw": anim(1.8, {
         audio: [
-            { start: 0.0, key: 'slashSfx', pitch: 1.1 },
-            { start: 0.133, key: 'slashSfx', volume: 1.0 }
+            sfx(0, 'earthquake1Sfx', { volume: 0.8, pitch: 1.5 }),
+            sfx(0.6, 'earthquake2Sfx', { volume: 1.2, pitch: 0.8 })
         ],
-        actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 96 },
-        target: {
-            shake: { start: 0.133, end: 0.333, intensity: 29 },
-            flash: { start: 0.133, end: 0.267, filter: 'brightness(200%) sepia(100%) hue-rotate(300deg) saturate(300%)' }
-        }
-    },
-    "default_attack": {
-        duration: 0.5,
-        audio: [{ start: 0.2, key: 'strikeSfx' }],
-        target: { flash: { start: 0.2, end: 0.6, filter: 'brightness(200%)' } }
-    },
-    "weatherRain": {
-        duration: 2.5,
-        audio: [{ start: 0.04, key: 'weatherRainShort', volume: 0.8 }],
-        target: { flash: { start: 0.08, end: 0.88, filter: 'brightness(80%) saturate(70%) sepia(30%) hue-rotate(180deg)' } }
-    },
-    "faint": {
-        duration: 2.0,
-        actor: {
-            type: 'shake', start: 0.0, end: 0.75, intensity: 19,
-            fade: { start: 0.1, end: 0.9 },
-            flash: { start: 0.0, end: 0.9, filter: 'sepia(80%) brightness(200%) blur(4px)' }
-        },
+        actor: lunge(0, 0.2, 40),
         vfx: [
-            { start: 0.15, type: 'spawn', origin: 'target', config: { life: 1.0, sheetKey: 'particles', frameCount: 1, frameSize: 64, movement: 'swipe_diagonal', scale: 0.3, blendMode: 'screen' } },
-            { start: 0.25, type: 'spawn', origin: 'target', config: { life: 1.0, sheetKey: 'particles', frameCount: 1, frameSize: 64, movement: 'float_up_and_pop', scale: 0.6, blendMode: 'screen' } },
-            { start: 0.3, type: 'spawn', origin: 'target', config: { life: 1.0, sheetKey: 'particles', frameCount: 1, frameSize: 64, movement: 'swipe_diagonal', scale: 0.4, blendMode: 'screen' } },
-            { start: 0.4, type: 'spawn', origin: 'target', config: { life: 1.0, sheetKey: 'particles', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 0.2, blendMode: 'screen' } },
-            { start: 0.5, type: 'spawn', origin: 'target', config: { life: 1.0, sheetKey: 'particles', frameCount: 1, frameSize: 64, movement: 'swipe_diagonal', scale: 0.5, blendMode: 'screen' } }
+            travel(0.2, 'boulderThrowAnimation', { life: 0.4, frames: 4, scale: 3, blend: 'normal' }),
+            spawn(0.6, 'impactAnimation', { life: 0.5, move: 'expand_and_fade', scale: 2.5, blend: 'multiply' })
         ],
-        target: { flash: { start: 0.0, end: 0.9, filter: 'sepia(80%) brightness(200%) blur(4px)' } }
-    },
-    "enter_battle": {
-        duration: 1.5,
+        target: { shake: shake(0.6, 1.1, 40), flash: flash(0.6, 0.9, 'sepia(80%) brightness(80%) saturate(150%)') }
+    }),
+    // Status effect animation.
+    "bound": anim(1.5, {
+        audio: [sfx(0.1, 'strike', { volume: 0.7, pitch: 0.5 })],
+        vfx: [
+            spawn(0.15, 'boundAnimation', { life: 1, move: 'static', scale: 1.5, blend: 'multiply' })
+        ],
+        target: { shake: shake(0.1, 0.5, 4), flash: flash(0.1, 1.2, 'brightness(70%) sepia(60%) hue-rotate(80deg) saturate(120%)') }
+    }),
+    "brew_of_madness": anim(1.9, {
+        audio: [
+            sfx(0.1, 'crunchSfx', { volume: 0.7, pitch: 1.4 }),
+            sfx(0.7, 'darkMagicSFX', { volume: 0.9, pitch: 1.3 })
+        ],
+        actor: wobble(0.6, 1.4, 14, { flash: flash(0, 1.6, 'brightness(120%) sepia(100%) hue-rotate(280deg) saturate(500%)') }),
+        vfx: [
+            spawn(0.5, 'intimidateAnimation', { life: 0.9, scale: 1.8, blend: 'multiply' }),
+            spawn(0.7, 'burnAnimation', { life: 0.7, scale: 1.2, move: 'float_up_and_pop', filter: tint('pink') }),
+            burst(0.8, { count: 14, color: '#c0305a', scale: 1.3, gravity: -160 })
+        ]
+    }),
+    // Status effect animation.
+    "burn": anim(2, {
+        audio: [sfx(0.1, 'fireballCastSfx', { volume: 0.5, pitch: 1.3 })],
+        vfx: [
+            spawn(0.1, 'burnAnimation', { life: 0.6, move: 'float_up_and_pop', scale: 0.9 })
+        ],
+        target: { shake: shake(0.1, 0.6, 8), flash: flash(0.05, 0.8, 'brightness(180%) sepia(100%) hue-rotate(15deg) saturate(350%)') }
+    }),
+    "claw": anim(1.2, {
+        audio: [sfx(0.1, 'clawSfx', { volume: 1, pitch: 1.1 })],
+        actor: lunge(0, 0.15, 100),
+        vfx: [
+            spawn(0.1, 'clawAnimation', { life: 0.3, move: 'swipe_diagonal', scale: 1.6, blend: 'normal' })
+        ],
+        target: { shake: shake(0.1, 0.3, 22), flash: flash(0.1, 0.3, 'brightness(150%) sepia(100%) hue-rotate(330deg) saturate(300%)') }
+    }),
+    "cleave": anim(1.5, {
+        audio: [sfx(0.08, 'cleaveSfx', { volume: 1 })],
+        actor: lunge(0, 0.15, 130),
+        vfx: [
+            spawn(0.1, 'cleaveAnimation', { life: 0.3, move: 'swipe_diagonal', scale: 2.6 })
+        ],
+        target: { shake: shake(0.1, 0.35, 32), flash: flash(0.1, 0.25, 'brightness(200%) sepia(30%)') }
+    }),
+    "counter_stance": anim(1, {
+        audio: [sfx(0.1, 'strikeSfx', { volume: 0.9, pitch: 1.3 })],
+        actor: lunge(0, 0.15, -24, { flash: flash(0, 0.6, tint('fire', { bright: 140, sat: 250, glow: 'orange', glowSize: 8 })) }),
+        vfx: [
+            spawn(0.1, 'impactAnimation', { life: 0.35, scale: 1.1, move: 'static', filter: tint('fire') }),
+            spawn(0.2, 'impactAnimation', { life: 0.4, scale: 1.8, move: 'expand_and_fade', filter: tint('fire') })
+        ]
+    }),
+    // Fallback used when an ability has no animationId.
+    "default_attack": anim(0.5, {
+        audio: [sfx(0.2, 'strikeSfx')],
+        target: { flash: flash(0.2, 0.6, 'brightness(200%)') }
+    }),
+    "drain_life": anim(2.2, {
+        hit: 0.15,
+        audio: [
+            sfx('hit-0.05', 'spiritReapSfx', { volume: 0.8, pitch: 0.8 }),
+            sfx(1, 'healSfx', { volume: 0.6, pitch: 0.7 })
+        ],
+        actor: { flash: flash(1, 1.8, tint('red', { bright: 150, sat: 350, glow: 'crimson' })) },
+        vfx: [
+            spawn('hit', 'bleedAnimation', { life: 0.9, scale: 1.6, move: 'float_up_and_pop' }),
+            spawn('hit+0.35', 'bleedAnimation', { life: 0.7, scale: 1.1, move: 'shrink_and_fade' }),
+            burst('hit+0.2', { count: 10, color: '#a01030', scale: 1.1, gravity: -140 }),
+            spawn(1, 'bleedAnimation', { at: 'source', life: 0.8, scale: 1.3, move: 'float_up_and_pop' }),
+            burst(1, { at: 'source', count: 10, color: '#e0405a', scale: 1.1, gravity: -140 })
+        ],
+        target: {
+            shake: shake('hit', 1, 14),
+            flash: flash('hit', 1.2, 'brightness(60%) sepia(100%) hue-rotate(330deg) saturate(300%)')
+        }
+    }),
+    "earthquake": anim(4, {
+        audio: [
+            sfx(0.063, 'earthquake1Sfx', { volume: 1 }),
+            sfx(0.125, 'earthquake2Sfx', { volume: 1 }),
+            sfx(0.2, 'earthquake3Sfx', { volume: 1 })
+        ],
+        vfx: [
+            spawn(0.2, 'earthquakeAnimation', { life: 0.8, move: 'expand_and_fade', scale: 2, blend: 'source-over' }),
+            spawn(0.4, 'earthquakeAnimation', { life: 0.8, move: 'expand_and_fade', scale: 2.5, blend: 'source-over' }),
+            spawn(0.6, 'earthquakeAnimation', { life: 0.8, move: 'expand_and_fade', scale: 1.8, blend: 'source-over' })
+        ],
+        target: { shake: shake(0.063, 3.6, 72), flash: flash(0.2, 0.8, 'sepia(80%) brightness(60%) saturate(120%)') }
+    }),
+    // Engine animation: a combatant joins the fight (BattleCombatantRenderer keys off this id).
+    "enter_battle": anim(1.5, {
         audio: [],
-        actor: {
-            type: 'slide_in', start: 0.0, end: 0.5, distance: 240,
-            fadeIn: { start: 0.0, end: 0.4 },
-            flash: { start: 0.4, end: 0.7, filter: 'brightness(200%)' }
-        }
-    },
-    "flee": {
-        duration: 1.5,
-        audio: [{ start: 0.0, key: 'retreatSfx', volume: 1.0 }],
-        actor: { type: 'slide_out', start: 0.0, end: 1.2, distance: 360, fade: { start: 0.4, end: 1.2 } },
-        target: { type: 'slide_out', start: 0.0, end: 1.2, distance: 360, fade: { start: 0.4, end: 1.2 } }
-    },
-    "punch": {
-        duration: 1.0,
-        audio: [{ start: 0.1, key: 'punchSfx', volume: 1.0 }],
-        actor: { type: 'lunge', start: 0.0, end: 0.15, distance: 80 },
+        actor: slideIn(0, 0.5, 240, { fadeIn: fade(0, 0.4), flash: flash(0.4, 0.7, 'brightness(200%)') })
+    }),
+    // Status effect animation.
+    "evasive": anim(1.5, {
+        audio: [sfx(0.1, 'smokeSfx', { volume: 1, pitch: 1.3 })],
         vfx: [
-            { start: 0.1, type: 'spawn', origin: 'target', config: { life: 0.25, sheetKey: 'punchAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 1.3, blendMode: 'screen' } }
+            spawn(0.1, 'smokeAnimation', { life: 0.6, move: 'float_up_and_pop', scale: 1.8 })
         ],
-        target: {
-            shake: { start: 0.1, end: 0.25, intensity: 18 },
-            flash: { start: 0.1, end: 0.2, filter: 'brightness(180%)' }
-        }
-    },
-    "quick_stab": {
-        duration: 0.8,
-        audio: [{ start: 0.05, key: 'quickStabSfx', volume: 1.0, pitch: 1.3 }],
-        actor: { type: 'lunge', start: 0.0, end: 0.1, distance: 100 },
-        vfx: [
-            { start: 0.05, type: 'spawn', origin: 'target', config: { life: 0.15, sheetKey: 'quickStabAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 1.0, blendMode: 'screen' } }
-        ],
-        target: {
-            shake: { start: 0.05, end: 0.2, intensity: 15 },
-            flash: { start: 0.05, end: 0.15, filter: 'brightness(200%)' }
-        }
-    },
-    "uppercut": {
-        duration: 1.4,
-        audio: [{ start: 0.2, key: 'punchSfx', volume: 1.0, pitch: 0.8 }],
-        actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 90 },
-        vfx: [
-            { start: 0.2, type: 'spawn', origin: 'target', config: { life: 0.4, sheetKey: 'uppercutAnimation', frameCount: 1, frameSize: 64, movement: 'float_up_and_pop', scale: 1.8, blendMode: 'screen' } }
-        ],
-        target: {
-            shake: { start: 0.2, end: 0.6, intensity: 35 },
-            flash: { start: 0.2, end: 0.4, filter: 'brightness(250%) sepia(50%) hue-rotate(330deg)' }
-        }
-    },
-    "shield_bash": {
-        duration: 1.3,
-        audio: [{ start: 0.15, key: 'strikeSfx', volume: 1.0, pitch: 0.7 }],
-        actor: { type: 'lunge', start: 0.0, end: 0.2, distance: 110 },
-        vfx: [
-            { start: 0.15, type: 'spawn', origin: 'target', config: { life: 0.3, sheetKey: 'strikeAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 2.2, blendMode: 'screen' } }
-        ],
-        target: {
-            shake: { start: 0.15, end: 0.5, intensity: 40 },
-            flash: { start: 0.15, end: 0.4, filter: 'brightness(150%) sepia(30%) saturate(50%)' }
-        }
-    },
-    "execute": {
-        duration: 2.0,
-        audio: [{ start: 0.15, key: 'eviscerateSfx', volume: 1.0, pitch: 0.8 }],
-        actor: {
-            type: 'lunge', start: 0.0, end: 0.15, distance: 150,
-            flash: { start: 0.0, end: 0.2, filter: 'brightness(50%) sepia(100%) hue-rotate(330deg) saturate(500%)' }
-        },
-        vfx: [
-            { start: 0.15, type: 'spawn', origin: 'target', config: { life: 0.5, sheetKey: 'eviscerateAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 1.5, blendMode: 'multiply' } }
-        ],
-        target: {
-            shake: { start: 0.15, end: 0.7, intensity: 50 },
-            flash: { start: 0.15, end: 0.8, filter: 'brightness(120%) sepia(100%) hue-rotate(330deg) saturate(400%) invert(20%)' }
-        }
-    },
-    "cleave": {
-        duration: 1.5,
-        audio: [{ start: 0.08, key: 'cleaveSfx', volume: 1.0 }],
-        actor: { type: 'lunge', start: 0.0, end: 0.15, distance: 130 },
-        vfx: [
-            { start: 0.1, type: 'spawn', origin: 'target', config: { life: 0.3, sheetKey: 'cleaveAnimation', frameCount: 1, frameSize: 64, movement: 'swipe_diagonal', scale: 2.6, blendMode: 'screen' } }
-        ],
-        target: {
-            shake: { start: 0.1, end: 0.35, intensity: 32 },
-            flash: { start: 0.1, end: 0.25, filter: 'brightness(200%) sepia(30%)' }
-        }
-    },
-    "wild_swing": { 
-        duration: 1.3, 
-        audio: [ 
-            // Pitch dropped to 0.8 to give it a heavy, swooshing "haymaker" feel
-            { start: 0.1, key: 'wildSwingSfx', volume: 1.0, pitch: 0.8 } 
-        ], 
-        actor: { 
-            type: 'lunge', 
-            start: 0.0, 
-            end: 0.25, // A slightly slower, clunkier wind-up
-            distance: 140, // Overextending the lunge distance
-            flash: { start: 0.0, end: 0.3, filter: 'brightness(150%) sepia(50%) hue-rotate(15deg) saturate(200%)' } 
-        }, 
-        vfx: [ 
-            { 
-                start: 0.25, 
-                type: 'spawn', 
-                origin: 'target', 
-                config: { 
-                    life: 0.25, 
-                    sheetKey: 'wildSwingAnimation', 
-                    frameCount: 1, 
-                    frameSize: 64, 
-                    movement: 'swipe_diagonal', 
-                    scale: 3.0, // Massive scale to represent the lack of precision
-                    blendMode: 'screen' 
-                } 
-            } 
-        ], 
-        target: { 
-            // Heavy impact reactions when it finally connects
-            shake: { start: 0.25, end: 0.75, intensity: 45 }, 
-            flash: { start: 0.25, end: 0.45, filter: 'brightness(250%)' } 
-        } 
-    },
-    "purify": {
-        duration: 2.0,
+        target: { flash: flash(0.1, 0.8, 'brightness(150%) saturate(50%) blur(2px) drop-shadow(0 0 10px white)') }
+    }),
+    "eviscerate": anim(1.5, {
         audio: [
-            { start: 0.1, key: 'healSfx', volume: 1.0, pitch: 1.2 }
+            sfx(0.1, 'slashSfx', { volume: 1 }),
+            sfx(0.2, 'eviscerateSfx', { volume: 1 })
         ],
-        actor: {
-            // A brief, bright glow on the caster as they invoke the ability
-            flash: { start: 0.0, end: 0.3, filter: 'brightness(180%) sepia(50%) hue-rotate(180deg) saturate(200%)' }
-        },
+        actor: lunge(0, 0.15, 140),
         vfx: [
-            // Main cleansing aura
-            { 
-                start: 0.2, 
-                type: 'spawn', 
-                origin: 'target', 
-                config: { 
-                    life: 1.0, 
-                    sheetKey: 'purifyAnimation', // Or 'healAnimation' if you share assets
-                    frameCount: 1, 
-                    frameSize: 64, 
-                    movement: 'float_up_and_pop', 
-                    scale: 1.5, 
-                    blendMode: 'screen' 
-                } 
-            },
-            // Secondary sparkles/particles dispersing the status effects
-            { 
-                start: 0.4, 
-                type: 'spawn', 
-                origin: 'target', 
-                config: { 
-                    life: 0.8, 
-                    sheetKey: 'particles', 
-                    frameCount: 1, 
-                    frameSize: 64, 
-                    movement: 'expand_and_fade', 
-                    scale: 1.2, 
-                    blendMode: 'screen' 
-                } 
-            }
+            spawn(0.1, 'eviscerateAnimation', { life: 0.35, move: 'swipe_diagonal', scale: 2.2 })
         ],
-        target: {
-            // A soft, lingering, holy/water-like glow to indicate they feel much better
-            flash: { start: 0.2, end: 1.2, filter: 'brightness(200%) sepia(30%) hue-rotate(180deg) saturate(150%) drop-shadow(0 0 10px white)' }
-        }
-    },
-  "meteor_shower": {
-duration: 1.6, 
-  audio: [
-    // Everything triggers immediately to give the meteor time to fall
-    { start: 0.0, key: 'earthquake1Sfx', volume: 0.8, pitch: 0.5 },
-    { start: 0.0, key: 'fireballCastSfx', volume: 1.2, pitch: 0.6 },
-    // Impact happens exactly at 0.8s, safely before the engine cuts the turn
-    { start: 0.8, key: 'meteorShowerImpactSfx', volume: 1.4, pitch: 0.7 }
-  ],
-  background: {
-    start: 0.0, end: 1.5,
-    key: 'voidBackground',
-    filter: 'brightness(30%) sepia(100%) hue-rotate(330deg) saturate(400%)'
-  },
-  actor: {
-    flash: { 
-      start: 0.0, end: 0.8, 
-      filter: 'brightness(250%) sepia(100%) hue-rotate(350deg) saturate(500%) drop-shadow(0 0 10px orange)' 
-    }
-  },
-  vfx: [
-    // --- THE METEOR ---
-    {
-      start: 0.0, type: 'spawn', origin: 'target',
-      config: { 
-        life: 0.8, // 0.8 second fall time, hits exactly at 0.8s
-        sheetKey: 'meteorShowerAnimation', frameCount: 4, frameSize: 64, 
-        movement: 'diagonal_drop', dropX: 1400, dropY: 1400, 
-        offsetX: 0, offsetY: 0, 
-        scale: 3.5, 
-        blendMode: 'screen',
-        fadeOut: false 
-      }
-    },
-    // --- THE IMPACT ---
-    { 
-      start: 0.8, // Triggered safely at 0.8s
-      type: 'spawn', origin: 'target',
-      config: { 
-        life: 0.6, sheetKey: 'impactAnimation', frameCount: 1, frameSize: 64, 
-        movement: 'expand_and_fade', 
-        scale: 3.5, 
-        blendMode: 'screen' 
-      }
-    }
-  ],
-  target: {
-    // Shake and flash trigger at 0.8s
-    shake: { start: 0.8, end: 1.3, intensity: 55 }, 
-    flash: { start: 0.8, end: 1.4, filter: 'brightness(350%) sepia(100%) hue-rotate(350deg) saturate(600%) drop-shadow(0 0 20px red)' }
-  }
-},
-    "acid_pool": {
-        duration: 2.2,
-        audio: [{ start: 0.05, key: 'acidPoolSfx', volume: 1.0 }],
+        target: { shake: shake(0.1, 0.5, 38), flash: flash(0.1, 0.6, 'brightness(160%) sepia(100%) hue-rotate(330deg) saturate(500%)') }
+    }),
+    "execute": anim(2, {
+        audio: [sfx(0.15, 'eviscerateSfx', { volume: 1, pitch: 0.8 })],
+        actor: lunge(0, 0.15, 150, { flash: flash(0, 0.2, 'brightness(50%) sepia(100%) hue-rotate(330deg) saturate(500%)') }),
         vfx: [
-            { start: 0.0, type: 'spawn', origin: 'target', config: { life: 1.8, sheetKey: 'acidPoolAnimation', frameCount: 1, frameSize: 64, movement: 'static', scale: 2.0, blendMode: 'normal' } },
-            { start: 0.3, type: 'spawn', origin: 'target', config: { life: 0.5, sheetKey: 'acidicSmogAnimation', frameCount: 1, frameSize: 64, movement: 'float_up_and_pop', scale: 1.2 } }
+            spawn(0.15, 'eviscerateAnimation', { life: 0.5, move: 'expand_and_fade', scale: 1.5, blend: 'multiply' })
         ],
-        target: {
-            shake: { start: 0.1, end: 0.8, intensity: 8 },
-            flash: { start: 0.05, end: 1.5, filter: 'hue-rotate(70deg) saturate(180%) brightness(110%)' }
-        }
-    },
-    "fireball": {
-        duration: 1.5,
-        audio: [{ start: 0.0, key: 'fireballCastSfx', volume: 1.0 }],
-        actor: { flash: { start: 0.0, end: 0.2, filter: 'brightness(250%) sepia(100%) hue-rotate(10deg)' } },
+        target: { shake: shake(0.15, 0.7, 50), flash: flash(0.15, 0.8, 'brightness(120%) sepia(100%) hue-rotate(330deg) saturate(400%) invert(20%)') }
+    }),
+    // Engine animation: a combatant is knocked out.
+    "faint": anim(2, {
+        actor: wobble(0, 0.75, 19, { fade: fade(0.1, 0.9), flash: flash(0, 0.9, 'sepia(80%) brightness(200%) blur(4px)') }),
         vfx: [
-            { start: 0.2, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'fireballAnimation', frameCount: 4, frameSize: 64, scale: 2.0, blendMode: 'screen' } }
+            spawn(0.15, 'particles', { life: 1, move: 'swipe_diagonal', scale: 0.3 }),
+            spawn(0.25, 'particles', { life: 1, move: 'float_up_and_pop', scale: 0.6 }),
+            spawn(0.3, 'particles', { life: 1, move: 'swipe_diagonal', scale: 0.4 }),
+            spawn(0.4, 'particles', { life: 1, move: 'expand_and_fade', scale: 0.2 }),
+            spawn(0.5, 'particles', { life: 1, move: 'swipe_diagonal', scale: 0.5 })
         ],
-        target: {
-            shake: { start: 0.4, end: 0.6, intensity: 28 },
-            flash: { start: 0.4, end: 0.6, filter: 'brightness(250%) sepia(100%) hue-rotate(350deg) saturate(500%)' }
-        }
-    },
-    "ice_bolt": {
-        duration: 1.5,
+        target: { flash: flash(0, 0.9, 'sepia(80%) brightness(200%) blur(4px)') }
+    }),
+    "fire_punch": anim(1.5, {
+        audio: [sfx(0.15, 'firePunchSfx', { volume: 1 })],
+        actor: lunge(0, 0.2, 110, { flash: flash(0, 0.2, 'brightness(150%) sepia(100%) hue-rotate(15deg) saturate(400%)') }),
+        vfx: [
+            spawn(0.15, 'firePunchAnimation', { life: 0.4, move: 'expand_and_fade', scale: 2 })
+        ],
+        target: { shake: shake(0.15, 0.5, 35), flash: flash(0.15, 0.5, 'brightness(200%) sepia(100%) hue-rotate(15deg) saturate(400%)') }
+    }),
+    "fireball": anim(1.5, {
+        audio: [sfx(0, 'fireballCastSfx', { volume: 1 })],
+        actor: { flash: flash(0, 0.2, 'brightness(250%) sepia(100%) hue-rotate(10deg)') },
+        vfx: [
+            travel(0.2, 'fireballAnimation', { life: 0.4, frames: 4, scale: 2 })
+        ],
+        target: { shake: shake(0.4, 0.6, 28), flash: flash(0.4, 0.6, 'brightness(250%) sepia(100%) hue-rotate(350deg) saturate(500%)') }
+    }),
+    // Stream of 21 sprites with staggered heights. The target reacts when the fastest one lands (0.5s).
+    "flamethrower": anim(1.3, {
+        audio: [sfx(0, 'fireballCastSfx', { volume: 1, pitch: 1.2 })],
+        actor: { flash: flash(0, 0.6, 'brightness(150%) sepia(100%) hue-rotate(15deg) saturate(300%)') },
+        vfx: [
+            ...stream(0.1, 21, 0.02, 'flamethrowerAnimation', { variants: [
+                { life: 0.5, offsetY: 0, scale: 1.5 },
+                { life: 0.45, offsetY: -15, scale: 1.6 },
+                { life: 0.55, offsetY: 12, scale: 1.4 },
+                { life: 0.4, offsetY: -8, scale: 1.5 },
+                { life: 0.6, offsetY: 20, scale: 1.7 },
+                { life: 0.45, offsetY: -22, scale: 1.5 },
+                { life: 0.5, offsetY: 5, scale: 1.6 },
+                { life: 0.55, offsetY: -18, scale: 1.4 },
+                { life: 0.4, offsetY: 15, scale: 1.5 },
+                { life: 0.6, offsetY: -10, scale: 1.7 },
+                { life: 0.45, offsetY: 25, scale: 1.5 },
+                { life: 0.5, offsetY: -5, scale: 1.6 },
+                { life: 0.55, offsetY: 18, scale: 1.4 },
+                { life: 0.4, offsetY: -20, scale: 1.5 },
+                { life: 0.6, offsetY: 10, scale: 1.7 },
+                { life: 0.45, offsetY: -12, scale: 1.5 },
+                { life: 0.5, offsetY: 22, scale: 1.6 },
+                { life: 0.55, offsetY: -25, scale: 1.4 },
+                { life: 0.4, offsetY: 8, scale: 1.5 },
+                { life: 0.6, offsetY: -15, scale: 1.7 },
+                { life: 0.5, offsetY: 15, scale: 1.5 }
+            ] })
+        ],
+        target: { shake: shake(0.5, 1.1, 25), flash: flash(0.5, 1.1, 'brightness(200%) sepia(100%) hue-rotate(15deg) saturate(400%)') }
+    }),
+    // Engine animation, and the Retreat ability's animation (BattleCombatantRenderer keys off this id).
+    "flee": anim(1.5, {
+        audio: [sfx(0, 'retreatSfx', { volume: 1 })],
+        actor: slideOut(0, 1.2, 360, { fade: fade(0.4, 1.2) }),
+        target: { type: 'slide_out', start: 0, end: 1.2, distance: 360, fade: fade(0.4, 1.2) }
+    }),
+    "flurry": anim(1, {
         audio: [
-            { start: 0.0, key: 'iceBoltCastSfx', volume: 1.0 },
-            { start: 1.0, key: 'iceBoltImpactSfx', volume: 1.0 }
+            sfx(0.15, 'slashSfx', { volume: 1, pitch: 1 }),
+            sfx(0.25, 'slashSfx', { volume: 1, pitch: 1.2 }),
+            sfx(0.35, 'slashSfx', { volume: 1, pitch: 0.9 })
         ],
-        actor: { flash: { start: 0.0, end: 0.2, filter: 'brightness(200%) sepia(100%) hue-rotate(190deg) saturate(300%)' } },
+        actor: lunge(0, 0.15, 120),
         vfx: [
-            { start: 0.2, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'iceBoltAnimation', frameCount: 4, frameSize: 64, scale: 1.0, blendMode: 'screen' } }
+            spawn(0.15, 'slashAnimation', { life: 0.3, move: 'swipe_diagonal', scale: 1.8 }),
+            spawn(0.25, 'slashAnimation', { life: 0.3, move: 'swipe_diagonal_alt', scale: 2 }),
+            spawn(0.35, 'slashAnimation', { life: 0.3, move: 'swipe_diagonal', scale: 2.4 })
         ],
-        target: {
-            shake: { start: 0.4, end: 0.6, intensity: 28 },
-            flash: { start: 0.4, end: 0.6, filter: 'brightness(250%) sepia(100%) hue-rotate(190deg) saturate(500%)' }
-        }
-    },
-    "water_blast": {
-        duration: 2.5,
+        target: { shake: shake(0.15, 0.55, 35), flash: flash(0.15, 0.45, 'brightness(200%) sepia(50%) hue-rotate(330deg) saturate(300%)') }
+    }),
+    "frigid_gale": anim(1.8, {
+        audio: [sfx(0.1, 'iceBoltCastSfx', { volume: 1.2, pitch: 0.7 })],
+        actor: { flash: flash(0, 0.4, 'brightness(180%) sepia(100%) hue-rotate(190deg) saturate(200%)') },
+        vfx: [
+            travel(0.2, 'frigidGaleAnimation', { life: 0.5, frames: 4, scale: 1.5 }),
+            travel(0.4, 'frigidGaleAnimation', { life: 0.5, frames: 4, scale: 2 })
+        ],
+        target: { shake: shake(0.5, 1.2, 25), flash: flash(0.5, 1, 'brightness(200%) sepia(80%) hue-rotate(190deg) saturate(300%) drop-shadow(0 0 10px cyan)') }
+    }),
+    // Status effect animation.
+    "frozen": anim(2, {
+        audio: [sfx(0.05, 'frozenSfx', { volume: 0.8, pitch: 2 })],
+        vfx: [
+            spawn(0.1, 'frozenAnimation', { life: 1.5, move: 'static', scale: 1.8 })
+        ],
+        target: { shake: shake(0.05, 0.2, 10), flash: flash(0.05, 1.8, 'brightness(140%) sepia(100%) hue-rotate(190deg) saturate(250%)') }
+    }),
+    "gravity": anim(2.4, {
         audio: [
-            { start: 0.1, key: 'waterBlastSfx', volume: 1.0 }
+            sfx(0.1, 'darkMagicSFX', { volume: 1, pitch: 0.6 }),
+            sfx(0.9, 'earthquake1Sfx', { volume: 1, pitch: 0.4 })
         ],
-        actor: {
-            flash: { start: 0.0, end: 0.35, filter: 'brightness(200%) sepia(100%) hue-rotate(200deg) saturate(300%) drop-shadow(0 0 10px blue)' }
-        },
+        background: background(0, 1.9, 'voidBackground', 'brightness(40%) sepia(100%) hue-rotate(250deg) saturate(300%)'),
+        actor: { flash: flash(0.1, 0.8, 'brightness(130%) sepia(100%) hue-rotate(250deg) saturate(300%)') },
         vfx: [
-            { start: 0.150, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
-            { start: 0.155, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
-            { start: 0.160, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
-            { start: 0.165, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
-            { start: 0.170, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
-            { start: 0.175, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
-            { start: 0.180, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
-            { start: 0.185, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
-            { start: 0.190, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
-            { start: 0.195, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
-            { start: 0.200, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
-            { start: 0.205, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
-            { start: 0.210, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
-            { start: 0.215, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
-            { start: 0.220, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
-            { start: 0.225, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
-            { start: 0.230, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
-            { start: 0.235, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
-            { start: 0.240, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } },
-            { start: 0.245, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'waterBlastAnimation', frameCount: 1, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } }
+            spawn(0.4, 'intimidateAnimation', { life: 1.2, scale: 2.4, move: 'shrink_and_fade', blend: 'multiply' }),
+            spawn(0.9, 'earthquakeAnimation', { life: 1, scale: 2.2, move: 'static', blend: 'multiply' }),
+            burst(0.9, { count: 16, color: '#5a2a8a', scale: 1.6, minSpeed: 40, maxSpeed: 140, gravity: 500 })
         ],
         target: {
-            // Impact synced: First particle reaches target at 0.150 + 0.400 = 0.550
-            shake: { start: 0.55, end: 1.0, intensity: 35 },
-            flash: { start: 0.55, end: 0.95, filter: 'brightness(250%) sepia(100%) hue-rotate(200deg) saturate(400%) drop-shadow(0 0 10px cyan)' }
+            shake: shake(0.9, 1.8, 10),
+            flash: flash(0.4, 1.9, 'brightness(45%) sepia(100%) hue-rotate(250deg) saturate(250%) invert(10%)')
         }
-    },
-
-    "reckless_charge": { 
-        duration: 1.5, 
-        audio: [ 
-            { start: 0.0, key: 'recklessChargeApproachSfx', volume: 0.8, pitch: 1.0 }, 
-            { start: 0.2, key: 'recklessChargeImpactSfx', volume: 0.8, pitch: 1.0 } 
-        ], 
-        actor: { 
-            type: 'lunge', 
-            start: 0.0, 
-            end: 0.2, 
-            distance: 160, 
-            // Flash delayed slightly after impact to represent the recoil damage hurting the user
-            flash: { start: 0.25, end: 0.55, filter: 'brightness(130%) sepia(100%) hue-rotate(330deg) saturate(400%)' } 
-        }, 
-        vfx: [ 
-            { 
-                start: 0.2, 
-                type: 'spawn', 
-                origin: 'target', 
-                config: { 
-                    life: 0.4, 
-                    sheetKey: 'impactAnimation', 
-                    frameCount: 1, 
-                    frameSize: 64, 
-                    movement: 'expand_and_fade', 
-                    scale: 2.5, 
-                    blendMode: 'screen' 
-                } 
-            } 
-        ], 
-        target: { 
-            shake: { start: 0.2, end: 0.6, intensity: 48 }, 
-            flash: { start: 0.2, end: 0.4, filter: 'brightness(250%)' } 
-        } 
-    },
-    "eviscerate": {
-        duration: 1.5,
+    }),
+    "healing_rain": anim(2.6, {
         audio: [
-            { start: 0.1, key: 'slashSfx', volume: 1.0 },
-            { start: 0.2, key: 'eviscerateSfx', volume: 1.0 }
+            sfx(0.1, 'weatherRainShort', { volume: 0.6, pitch: 1.2 }),
+            sfx(0.5, 'healSfx', { volume: 1, pitch: 1 })
         ],
-        actor: { type: 'lunge', start: 0.0, end: 0.15, distance: 140 },
+        actor: { flash: flash(0, 0.5, 'brightness(160%) sepia(60%) hue-rotate(160deg) saturate(200%)') },
         vfx: [
-            { start: 0.1, type: 'spawn', origin: 'target', config: { life: 0.35, sheetKey: 'eviscerateAnimation', frameCount: 1, frameSize: 64, movement: 'swipe_diagonal', scale: 2.2, blendMode: 'screen' } }
+            spawn(0.2, 'waterfallAnimation', { life: 0.9, frames: 4, scale: 1.6, offsetX: -45, move: 'shrink_and_fade', filter: 'hue-rotate(-40deg) brightness(130%)' }),
+            spawn(0.4, 'waterfallAnimation', { life: 0.9, frames: 4, scale: 1.8, move: 'shrink_and_fade', filter: 'hue-rotate(-40deg) brightness(130%)' }),
+            spawn(0.6, 'waterfallAnimation', { life: 0.9, frames: 4, scale: 1.6, offsetX: 45, move: 'shrink_and_fade', filter: 'hue-rotate(-40deg) brightness(130%)' }),
+            burst(0.4, { count: 16, color: '#7dff9a', scale: 0.9, minSpeed: 20, maxSpeed: 100, gravity: 300 }),
+            spawn(0.9, 'purifyAnimation', { life: 1, scale: 1.6, move: 'float_up_and_pop' })
         ],
-        target: {
-            shake: { start: 0.1, end: 0.5, intensity: 38 },
-            flash: { start: 0.1, end: 0.6, filter: 'brightness(160%) sepia(100%) hue-rotate(330deg) saturate(500%)' }
-        }
-    },
-    "spirit_reap": {
-        duration: 3,
-        audio: [{ start: 0.0, key: 'spiritReapSfx', volume: 1.0 }],
-        actor: {
-            type: 'lunge', start: 0.0, end: 0.15, distance: 80,
-            flash: { start: 2.5, end: 3, filter: 'brightness(180%) saturate(200%) hue-rotate(120deg)' }
-        },
+        target: { flash: flash(0.4, 1.8, 'brightness(150%) sepia(60%) hue-rotate(95deg) saturate(160%)') }
+    }),
+    "hide": anim(1.5, {
+        audio: [sfx(0.1, 'smokeSfx', { volume: 1, pitch: 1.1 })],
+        actor: wobble(0.1, 0.3, 5),
         vfx: [
-            { start: 0.12, type: 'spawn', origin: 'target', config: { life: 2.5, sheetKey: 'spiritReapAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 2.5, blendMode: 'screen' } }
+            spawn(0.1, 'smokeAnimation', { life: 0.6, move: 'expand_and_fade', scale: 1.5, blend: 'normal' })
         ],
-        target: {
-            shake: { start: 0.12, end: 3, intensity: 25 },
-            flash: { start: 0.12, end: 3, filter: 'brightness(130%) sepia(60%) hue-rotate(270deg) saturate(80%)' }
-        }
-    },
-    "shock": {
-        duration: 2.5, 
+        target: { flash: flash(0.1, 1.5, 'brightness(40%) grayscale(50%) blur(1px) drop-shadow(0 0 8px #111)') }
+    }),
+    // Uses an actor motion list (BattleAnimationModel): strike, then fall back.
+    "hit_and_run": anim(1.3, {
         audio: [
-            { start: 0.1, key: 'shockSfx', volume: 1.0 }
+            sfx(0.1, 'slashSfx', { volume: 1, pitch: 1.3 }),
+            sfx(0.35, 'smokeSfx', { volume: 0.5, pitch: 1.5 })
         ],
-        actor: {
-            // Caster maintains the glow while channeling the stream
-            flash: { start: 0.0, end: 0.35, filter: 'brightness(200%) drop-shadow(0 0 5px yellow) drop-shadow(0 0 10px cyan)' }
-        },
+        actor: [
+            lunge(0, 0.12, 150),
+            lunge(0.35, 0.8, -90, { flash: flash(0.35, 0.8, 'brightness(80%) blur(2px)') })
+        ],
         vfx: [
-            // Scale reduced to 1.2. 
-            // Spawn rate increased to every 0.005s to perfectly stitch the smaller sprites together.
-            { start: 0.150, type: 'travel', origin: 'source', config: { life: 0.2, sheetKey: 'shockAnimation', frameCount: 4, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(200%) sepia(60%) hue-rotate(180deg) saturate(300%) drop-shadow(0 0 8px yellow)' } },
-            { start: 0.155, type: 'travel', origin: 'source', config: { life: 0.2, sheetKey: 'shockAnimation', frameCount: 4, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(200%) sepia(60%) hue-rotate(180deg) saturate(300%) drop-shadow(0 0 8px yellow)' } },
-            { start: 0.160, type: 'travel', origin: 'source', config: { life: 0.2, sheetKey: 'shockAnimation', frameCount: 4, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(200%) sepia(60%) hue-rotate(180deg) saturate(300%) drop-shadow(0 0 8px yellow)' } },
-            { start: 0.165, type: 'travel', origin: 'source', config: { life: 0.2, sheetKey: 'shockAnimation', frameCount: 4, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(200%) sepia(60%) hue-rotate(180deg) saturate(300%) drop-shadow(0 0 8px yellow)' } },
-            { start: 0.170, type: 'travel', origin: 'source', config: { life: 0.2, sheetKey: 'shockAnimation', frameCount: 4, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(200%) sepia(60%) hue-rotate(180deg) saturate(300%) drop-shadow(0 0 8px yellow)' } },
-            
-            { start: 0.175, type: 'travel', origin: 'source', config: { life: 0.2, sheetKey: 'shockAnimation', frameCount: 4, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(200%) sepia(60%) hue-rotate(180deg) saturate(300%) drop-shadow(0 0 8px yellow)' } },
-            { start: 0.180, type: 'travel', origin: 'source', config: { life: 0.2, sheetKey: 'shockAnimation', frameCount: 4, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(200%) sepia(60%) hue-rotate(180deg) saturate(300%) drop-shadow(0 0 8px yellow)' } },
-            { start: 0.185, type: 'travel', origin: 'source', config: { life: 0.2, sheetKey: 'shockAnimation', frameCount: 4, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(200%) sepia(60%) hue-rotate(180deg) saturate(300%) drop-shadow(0 0 8px yellow)' } },
-            { start: 0.190, type: 'travel', origin: 'source', config: { life: 0.2, sheetKey: 'shockAnimation', frameCount: 4, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(200%) sepia(60%) hue-rotate(180deg) saturate(300%) drop-shadow(0 0 8px yellow)' } },
-            { start: 0.195, type: 'travel', origin: 'source', config: { life: 0.2, sheetKey: 'shockAnimation', frameCount: 4, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(200%) sepia(60%) hue-rotate(180deg) saturate(300%) drop-shadow(0 0 8px yellow)' } },
-            
-            { start: 0.200, type: 'travel', origin: 'source', config: { life: 0.2, sheetKey: 'shockAnimation', frameCount: 4, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(200%) sepia(60%) hue-rotate(180deg) saturate(300%) drop-shadow(0 0 8px yellow)' } },
-            { start: 0.205, type: 'travel', origin: 'source', config: { life: 0.2, sheetKey: 'shockAnimation', frameCount: 4, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(200%) sepia(60%) hue-rotate(180deg) saturate(300%) drop-shadow(0 0 8px yellow)' } },
-            { start: 0.210, type: 'travel', origin: 'source', config: { life: 0.2, sheetKey: 'shockAnimation', frameCount: 4, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(200%) sepia(60%) hue-rotate(180deg) saturate(300%) drop-shadow(0 0 8px yellow)' } },
-            { start: 0.215, type: 'travel', origin: 'source', config: { life: 0.2, sheetKey: 'shockAnimation', frameCount: 4, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(200%) sepia(60%) hue-rotate(180deg) saturate(300%) drop-shadow(0 0 8px yellow)' } },
-            { start: 0.220, type: 'travel', origin: 'source', config: { life: 0.2, sheetKey: 'shockAnimation', frameCount: 4, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(200%) sepia(60%) hue-rotate(180deg) saturate(300%) drop-shadow(0 0 8px yellow)' } },
-
-            { start: 0.225, type: 'travel', origin: 'source', config: { life: 0.2, sheetKey: 'shockAnimation', frameCount: 4, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(200%) sepia(60%) hue-rotate(180deg) saturate(300%) drop-shadow(0 0 8px yellow)' } },
-            { start: 0.230, type: 'travel', origin: 'source', config: { life: 0.2, sheetKey: 'shockAnimation', frameCount: 4, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(200%) sepia(60%) hue-rotate(180deg) saturate(300%) drop-shadow(0 0 8px yellow)' } },
-            { start: 0.235, type: 'travel', origin: 'source', config: { life: 0.2, sheetKey: 'shockAnimation', frameCount: 4, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(200%) sepia(60%) hue-rotate(180deg) saturate(300%) drop-shadow(0 0 8px yellow)' } },
-            { start: 0.240, type: 'travel', origin: 'source', config: { life: 0.2, sheetKey: 'shockAnimation', frameCount: 4, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(200%) sepia(60%) hue-rotate(180deg) saturate(300%) drop-shadow(0 0 8px yellow)' } },
-            { start: 0.245, type: 'travel', origin: 'source', config: { life: 0.2, sheetKey: 'shockAnimation', frameCount: 4, frameSize: 64, scale: 1.2, blendMode: 'screen', filter: 'brightness(200%) sepia(60%) hue-rotate(180deg) saturate(300%) drop-shadow(0 0 8px yellow)' } }
+            spawn(0.1, 'slashAnimation', { life: 0.2, scale: 1.4, move: 'swipe_diagonal_alt' }),
+            spawn(0.3, 'smokeAnimation', { at: 'source', life: 0.6, scale: 1.4, blend: 'normal' })
         ],
-        target: {
-            // Impact synced to the new tighter cluster (0.35s to 0.445s)
-            shake: { start: 0.32, end: 0.8, intensity: 45 },
-            flash: { start: 0.32, end: 0.7, filter: 'brightness(300%) drop-shadow(0 0 10px yellow) drop-shadow(0 0 15px cyan)' }
-        }
-    },
-    "claw": {
-        duration: 1.2,
-        audio: [{ start: 0.1, key: 'clawSfx', volume: 1.0, pitch: 1.1 }],
-        actor: { type: 'lunge', start: 0.0, end: 0.15, distance: 100 },
-        vfx: [
-            { start: 0.1, type: 'spawn', origin: 'target', config: { life: 0.3, sheetKey: 'clawAnimation', frameCount: 1, frameSize: 64, movement: 'swipe_diagonal', scale: 1.6, blendMode: 'normal' } }
-        ],
-        target: {
-            shake: { start: 0.1, end: 0.3, intensity: 22 },
-            flash: { start: 0.1, end: 0.3, filter: 'brightness(150%) sepia(100%) hue-rotate(330deg) saturate(300%)' }
-        }
-    },
-    "fire_punch": {
-        duration: 1.5,
-        audio: [{ start: 0.15, key: 'firePunchSfx', volume: 1.0 }],
-        actor: {
-            type: 'lunge', start: 0.0, end: 0.2, distance: 110,
-            flash: { start: 0.0, end: 0.2, filter: 'brightness(150%) sepia(100%) hue-rotate(15deg) saturate(400%)' }
-        },
-        vfx: [
-            { start: 0.15, type: 'spawn', origin: 'target', config: { life: 0.4, sheetKey: 'firePunchAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 2.0, blendMode: 'screen' } }
-        ],
-        target: {
-            shake: { start: 0.15, end: 0.5, intensity: 35 },
-            flash: { start: 0.15, end: 0.5, filter: 'brightness(200%) sepia(100%) hue-rotate(15deg) saturate(400%)' }
-        }
-    },
-    "quick_shock": { // Renamed from "shock" so it doesn't overwrite your primary ability
-        duration: 1.0,
-        audio: [{ start: 0.05, key: 'shockZapSfx', volume: 1.0, pitch: 1.4 }],
-        actor: { flash: { start: 0.0, end: 0.15, filter: 'brightness(180%) sepia(50%) hue-rotate(45deg) saturate(400%)' } },
-        vfx: [
-            { start: 0.05, type: 'spawn', origin: 'target', config: { life: 0.25, sheetKey: 'shockAnimation', frameCount: 1, frameSize: 64, movement: 'static', scale: 1.4, blendMode: 'screen' } }
-        ],
-        target: {
-            shake: { start: 0.05, end: 0.35, intensity: 18 },
-            flash: { start: 0.05, end: 0.25, filter: 'brightness(250%) sepia(100%) hue-rotate(45deg) saturate(500%)' }
-        }
-    },
-    "vine_lash": {
-        duration: 1.4,
-        audio: [{ start: 0.1, key: 'vineLashSfx', volume: 1.0 }],
-        actor: { type: 'lunge', start: 0.0, end: 0.15, distance: 60 },
-        vfx: [
-            { start: 0.1, type: 'spawn', origin: 'target', config: { life: 0.35, sheetKey: 'vineLashAnimation', frameCount: 1, frameSize: 64, movement: 'swipe_diagonal', scale: 1.8, blendMode: 'normal' } }
-        ],
-        target: {
-            shake: { start: 0.1, end: 0.4, intensity: 26 },
-            flash: { start: 0.1, end: 0.35, filter: 'brightness(130%) sepia(80%) hue-rotate(90deg) saturate(250%)' }
-        }
-    },
-    "flurry": { 
-        duration: 1.0, 
-        audio: [ 
-            { start: 0.15, key: 'slashSfx', volume: 1.0, pitch: 1.0 },
-            { start: 0.25, key: 'slashSfx', volume: 1.0, pitch: 1.2 }, 
-            { start: 0.35, key: 'slashSfx', volume: 1.0, pitch: 0.9 }  
-        ], 
-        actor: { 
-            type: 'lunge', 
-            start: 0.0, 
-            end: 0.15, 
-            distance: 120 
-        }, 
-        vfx: [ 
-            // First Slash
-            { 
-                start: 0.15, 
-                type: 'spawn', 
-                origin: 'target', 
-                config: { 
-                    life: 0.3, 
-                    sheetKey: 'slashAnimation', 
-                    frameCount: 1, 
-                    frameSize: 64, 
-                    movement: 'swipe_diagonal', 
-                    scale: 1.8, 
-                    blendMode: 'screen' 
-                } 
-            },
-            // Second Slash (Alternative direction)
-            { 
-                start: 0.25, 
-                type: 'spawn', 
-                origin: 'target', 
-                config: { 
-                    life: 0.3, 
-                    sheetKey: 'slashAnimation', 
-                    frameCount: 1, 
-                    frameSize: 64, 
-                    movement: 'swipe_diagonal_alt', 
-                    scale: 2.0, 
-                    blendMode: 'screen' 
-                } 
-            },
-            // Third Slash (Heavier finisher)
-            { 
-                start: 0.35, 
-                type: 'spawn', 
-                origin: 'target', 
-                config: { 
-                    life: 0.3, 
-                    sheetKey: 'slashAnimation', 
-                    frameCount: 1, 
-                    frameSize: 64, 
-                    movement: 'swipe_diagonal', 
-                    scale: 2.4, 
-                    blendMode: 'screen' 
-                } 
-            } 
-        ], 
-        target: { 
-            // Tightened shake and flash to match the faster strikes
-            shake: { start: 0.15, end: 0.55, intensity: 35 }, 
-            flash: { start: 0.15, end: 0.45, filter: 'brightness(200%) sepia(50%) hue-rotate(330deg) saturate(300%)' } 
-        } 
-    },
-    "waterfall": {
-    duration: 2.0,
-    audio: [{ start: 0.1, key: 'waterBlastSfx', volume: 1.2, pitch: 0.8 }],
-    actor: { 
-      flash: { start: 0.0, end: 0.3, filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' } 
-    },
-    vfx: [
-      { start: 0.2, type: 'spawn', origin: 'target', config: { life: 0.6, sheetKey: 'waterfallAnimation', frameCount: 4, frameSize: 64, movement: 'shrink_and_fade', dropX: 0, dropY: 400, scale: 2.5, blendMode: 'screen' } },
-     
-    ],
-    target: {
-      shake: { start: 0.5, end: 1.0, intensity: 30 },
-      flash: { start: 0.5, end: 0.8, filter: 'brightness(200%) sepia(100%) hue-rotate(200deg) saturate(300%) drop-shadow(0 0 10px blue)' }
-    }
-  },
-
-  "inferno": {
-    duration: 2.5,
-    audio: [
-      { start: 0.1, key: 'fireballCastSfx', volume: 1.5, pitch: 0.6 }, 
-      { start: 0.6, key: 'meteorShowerImpactSfx', volume: 1.2 }
-    ],
-    background: { 
-      start: 0.0, end: 2.0, key: 'voidBackground', filter: 'brightness(50%) sepia(100%) hue-rotate(350deg) saturate(500%)' 
-    },
-    actor: {
-      // Recoil damage representation: the caster shakes and flashes alongside the targets
-      shake: { start: 0.6, end: 1.2, intensity: 20 }, 
-      flash: { start: 0.5, end: 1.5, filter: 'brightness(250%) sepia(100%) hue-rotate(350deg) saturate(500%) drop-shadow(0 0 15px red)' }
-    },
-    vfx: [
-      { start: 0.4, type: 'spawn', origin: 'target', config: { life: 1.0, sheetKey: 'firePunchAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 4.5, blendMode: 'screen' } }
-    ],
-    target: {
-      shake: { start: 0.6, end: 1.5, intensity: 45 },
-      flash: { start: 0.6, end: 1.6, filter: 'brightness(300%) sepia(100%) hue-rotate(350deg) saturate(600%) drop-shadow(0 0 15px red)' }
-    }
-  },
-
- "spite": {
-  duration: 1.5, // Back to strike's default duration
-  audio: [
-    { start: 0.0, key: 'spiteCastSfx', volume: 1.0 }, // Chorus plays immediately on attack start
-    { start: 0.133, key: 'strikeSfx', volume: 1.0, pitch: 1.2 } // Strike hits precisely at 0.133s
-  ],
-  actor: { 
-    type: 'lunge', start: 0.0, end: 0.2, distance: 96, // Lunge starts immediately at 0.0 like strike
-    flash: { start: 0.0, end: 0.3, filter: 'brightness(200%) sepia(100%) hue-rotate(35deg) saturate(300%)' } 
-  },
-  vfx: [
-    { 
-      start: 0.133, // Synced with strike's impact timing
-      type: 'spawn', 
-      origin: 'target', 
-      config: { 
-        life: 0.3, 
-        sheetKey: 'spiteAnimation', 
-        frameCount: 1, 
-        frameSize: 64, 
-        movement: 'expand_and_fade', 
-        scale: 2.5, 
-        blendMode: 'screen' 
-      } 
-    }
-  ],
-  target: {
-    shake: { start: 0.133, end: 0.333, intensity: 29 }, // Synced with strike's impact timing
-    flash: { start: 0.133, end: 0.4, filter: 'brightness(300%) sepia(100%) hue-rotate(35deg) saturate(300%) drop-shadow(0 0 15px gold)' }
-  }
-},
-
-"flamethrower": {
-  duration: 1.3, // Attack resolves much faster now
-  audio: [{ start: 0.0, key: 'fireballCastSfx', volume: 1.0, pitch: 1.2 }],
-  actor: {
-    flash: { start: 0.0, end: 0.6, filter: 'brightness(150%) sepia(100%) hue-rotate(15deg) saturate(300%)' }
-  },
-  vfx: [
-    // Life cut down to ~0.5s range for a high-velocity stream
-    { start: 0.10, type: 'travel', origin: 'source', config: { life: 0.50, offsetY: 0,   sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.5, blendMode: 'screen' } },
-    { start: 0.12, type: 'travel', origin: 'source', config: { life: 0.45, offsetY: -15, sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.6, blendMode: 'screen' } },
-    { start: 0.14, type: 'travel', origin: 'source', config: { life: 0.55, offsetY: 12,  sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.4, blendMode: 'screen' } },
-    { start: 0.16, type: 'travel', origin: 'source', config: { life: 0.40, offsetY: -8,  sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.5, blendMode: 'screen' } },
-    { start: 0.18, type: 'travel', origin: 'source', config: { life: 0.60, offsetY: 20,  sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.7, blendMode: 'screen' } },
-    { start: 0.20, type: 'travel', origin: 'source', config: { life: 0.45, offsetY: -22, sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.5, blendMode: 'screen' } },
-    { start: 0.22, type: 'travel', origin: 'source', config: { life: 0.50, offsetY: 5,   sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.6, blendMode: 'screen' } },
-    { start: 0.24, type: 'travel', origin: 'source', config: { life: 0.55, offsetY: -18, sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.4, blendMode: 'screen' } },
-    { start: 0.26, type: 'travel', origin: 'source', config: { life: 0.40, offsetY: 15,  sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.5, blendMode: 'screen' } },
-    { start: 0.28, type: 'travel', origin: 'source', config: { life: 0.60, offsetY: -10, sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.7, blendMode: 'screen' } },
-    { start: 0.30, type: 'travel', origin: 'source', config: { life: 0.45, offsetY: 25,  sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.5, blendMode: 'screen' } },
-    { start: 0.32, type: 'travel', origin: 'source', config: { life: 0.50, offsetY: -5,  sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.6, blendMode: 'screen' } },
-    { start: 0.34, type: 'travel', origin: 'source', config: { life: 0.55, offsetY: 18,  sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.4, blendMode: 'screen' } },
-    { start: 0.36, type: 'travel', origin: 'source', config: { life: 0.40, offsetY: -20, sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.5, blendMode: 'screen' } },
-    { start: 0.38, type: 'travel', origin: 'source', config: { life: 0.60, offsetY: 10,  sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.7, blendMode: 'screen' } },
-    { start: 0.40, type: 'travel', origin: 'source', config: { life: 0.45, offsetY: -12, sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.5, blendMode: 'screen' } },
-    { start: 0.42, type: 'travel', origin: 'source', config: { life: 0.50, offsetY: 22,  sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.6, blendMode: 'screen' } },
-    { start: 0.44, type: 'travel', origin: 'source', config: { life: 0.55, offsetY: -25, sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.4, blendMode: 'screen' } },
-    { start: 0.46, type: 'travel', origin: 'source', config: { life: 0.40, offsetY: 8,   sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.5, blendMode: 'screen' } },
-    { start: 0.48, type: 'travel', origin: 'source', config: { life: 0.60, offsetY: -15, sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.7, blendMode: 'screen' } },
-    { start: 0.50, type: 'travel', origin: 'source', config: { life: 0.50, offsetY: 15,  sheetKey: 'flamethrowerAnimation', frameCount: 1, frameSize: 64, scale: 1.5, blendMode: 'screen' } }
-  ],
-  target: {
-    // Starts exactly as the fastest first particles hit (0.1 start + 0.40 life = 0.50)
-    // Ends when the slowest last particle hits (0.5 start + 0.60 life = 1.10)
-    shake: { start: 0.5, end: 1.1, intensity: 25 },
-    flash: { start: 0.5, end: 1.1, filter: 'brightness(200%) sepia(100%) hue-rotate(15deg) saturate(400%)' }
-  }
-},
-  "boulder_throw": {
-    duration: 1.8,
-    audio: [
-      { start: 0.0, key: 'earthquake1Sfx', volume: 0.8, pitch: 1.5 },
-      { start: 0.6, key: 'earthquake2Sfx', volume: 1.2, pitch: 0.8 }
-    ],
-    actor: { 
-      type: 'lunge', start: 0.0, end: 0.2, distance: 40 
-    },
-    vfx: [
-      { start: 0.2, type: 'travel', origin: 'source', config: { life: 0.4, sheetKey: 'boulderThrowAnimation', frameCount: 4, frameSize: 64, scale: 3.0, blendMode: 'normal' } },
-      { start: 0.6, type: 'spawn', origin: 'target', config: { life: 0.5, sheetKey: 'impactAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 2.5, blendMode: 'multiply' } }
-    ],
-    target: {
-      shake: { start: 0.6, end: 1.1, intensity: 40 },
-      flash: { start: 0.6, end: 0.9, filter: 'sepia(80%) brightness(80%) saturate(150%)' }
-    }
-  },
-
-  "frigid_gale": {
-  duration: 1.8,
-  audio: [{ start: 0.1, key: 'iceBoltCastSfx', volume: 1.2, pitch: 0.7 }],
-  actor: {
-    flash: { start: 0.0, end: 0.4, filter: 'brightness(180%) sepia(100%) hue-rotate(190deg) saturate(200%)' }
-  },
-  vfx: [
-    { 
-      start: 0.2, 
-      type: 'travel', 
-      origin: 'source', 
-      config: { 
-        life: 0.5, 
-        sheetKey: 'frigidGaleAnimation', 
-        frameCount: 4, 
-        frameSize: 64, 
-        scale: 1.5, 
-        blendMode: 'screen' 
-      } 
-    },
-    { 
-      start: 0.4, 
-      type: 'travel', 
-      origin: 'source', 
-      config: { 
-        life: 0.5, 
-        sheetKey: 'frigidGaleAnimation', 
-        frameCount: 4, 
-        frameSize: 64, 
-        scale: 2.0, 
-        blendMode: 'screen' 
-      } 
-    }
-  ],
-  target: {
-    shake: { start: 0.5, end: 1.2, intensity: 25 },
-    flash: { start: 0.5, end: 1.0, filter: 'brightness(200%) sepia(80%) hue-rotate(190deg) saturate(300%) drop-shadow(0 0 10px cyan)' }
-  }
-},
-
-  "overload": {
-    duration: 2.0,
-    audio: [{ start: 0.1, key: 'shockSfx', volume: 1.3, pitch: 0.8 }],
-    actor: { 
-      flash: { start: 0.1, end: 1.0, filter: 'brightness(300%) drop-shadow(0 0 15px yellow)' } 
-    },
-    background: { 
-      start: 0.1, end: 0.5, key: 'voidBackground', filter: 'brightness(200%) sepia(50%) hue-rotate(60deg) invert(10%)' 
-    },
-    vfx: [
-      { start: 0.2, type: 'spawn', origin: 'target', config: { life: 0.8, sheetKey: 'overloadAnimation', frameCount: 4, frameSize: 64, movement: 'expand_and_fade', scale: 3.5, blendMode: 'screen' } },
-      { start: 0.4, type: 'spawn', origin: 'target', config: { life: 0.6, sheetKey: 'overloadAnimation', frameCount: 4, frameSize: 64, movement: 'static', scale: 2.5, blendMode: 'screen' } }
-    ],
-    target: {
-      shake: { start: 0.2, end: 1.2, intensity: 50 },
-      flash: { start: 0.2, end: 1.0, filter: 'brightness(300%) sepia(100%) hue-rotate(50deg) saturate(500%) drop-shadow(0 0 15px yellow)' }
-    }
-  },
-  "rally": {
-        duration: 2.0,
+        target: { shake: shake(0.1, 0.3, 22), flash: flash(0.1, 0.2, 'brightness(220%)') }
+    }),
+    "howl": anim(2, {
+        audio: [sfx(0.05, 'wolfCry', { volume: 1, pitch: 1 })],
+        actor: wobble(0.05, 0.6, 10, { flash: flash(0, 0.6, 'brightness(150%) sepia(100%) hue-rotate(340deg) saturate(400%)') }),
+        vfx: [],
+        target: { shake: shake(0.4, 0.8, 12), flash: flash(0.4, 1.4, 'brightness(160%) sepia(100%) hue-rotate(340deg) saturate(400%) drop-shadow(0 0 12px red)') }
+    }),
+    // Charge (0 to 0.7s), beam stream, impact at `hit`.
+    "hyper_beam": anim(2.8, {
+        hit: 1.05,
         audio: [
-            { start: 0.1, key: 'rallySfx', volume: 1.0, pitch: 1.0 }, // E.g., a horn or a shout
+            sfx(0, 'arcaneDartSfx', { volume: 1.2, pitch: 0.5 }),
+            sfx(0.7, 'shockSfx', { volume: 1.1, pitch: 0.5 }),
+            sfx('hit', 'earthquake1Sfx', { volume: 1.1, pitch: 0.6 })
         ],
-        actor: {
-            // A golden, inspiring glow emits from the caster
-            flash: { start: 0.0, end: 0.5, filter: 'brightness(180%) sepia(80%) hue-rotate(35deg) saturate(300%)' }
-        },
+        background: background(0, 2, 'arcaneVortexBg'),
+        actor: wobble(0, 0.7, 10, { flash: flash(0, 1.3, tint('violet', { bright: 250, sat: 400, glow: 'violet', glowSize: 15 })) }),
         vfx: [
-            // Upward floating light/energy on the targets (allies)
-            { 
-                start: 0.5, type: 'spawn', origin: 'target', 
-                config: { life: 0.6, sheetKey: 'rallyAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 1.5, blendMode: 'screen' } 
-            }
+            spawn(0.2, 'arcaneDartAnimation', { at: 'source', life: 0.6, frames: 4, scale: 2.4, move: 'static' }),
+            ...stream(0.7, 18, 0.025, 'flamethrowerAnimation', { life: 0.35, scale: 2.4, jitter: 10, filter: tint('violet', { bright: 220, sat: 500 }) }),
+            spawn('hit', 'impactAnimation', { life: 0.7, scale: 4.5, filter: tint('violet') }),
+            burst('hit', { count: 24, color: '#b080ff', scale: 1.6, minSpeed: 200, maxSpeed: 520 })
         ],
         target: {
-            // Allies receive a warm, empowering golden flash
-            flash: { start: 0.3, end: 1.2, filter: 'brightness(150%) sepia(80%) hue-rotate(35deg) saturate(300%) drop-shadow(0 0 10px gold)' }
+            shake: shake('hit', 'hit+0.85', 60),
+            flash: flash('hit', 'hit+0.85', tint('violet', { bright: 350, sat: 500, glow: 'violet', glowSize: 20 }))
         }
-    },
-
-    "intimidate": {
-        duration: 2.0,
+    }),
+    // Was "ice_bolt". Renamed to match the ability that uses it.
+    "ice_shard": anim(1.5, {
+        hit: 0.6,
         audio: [
-            { start: 0.1, key: 'intimidateSfx', volume: 1.0, pitch: 0.7 }, // A deep, menacing sound
+            sfx(0, 'iceBoltCastSfx', { volume: 1 }),
+            sfx(1, 'iceBoltImpactSfx', { volume: 1 })
         ],
-        actor: {
-            // Caster lunges forward slightly and turns dark/menacing
-            type: 'lunge', start: 0.0, end: 0.2, distance: 40,
-            flash: { start: 0.0, end: 0.5, filter: 'brightness(50%) sepia(100%) hue-rotate(260deg) saturate(400%) drop-shadow(0 0 10px purple)' }
-        },
+        actor: { flash: flash(0, 0.2, 'brightness(200%) sepia(100%) hue-rotate(190deg) saturate(300%)') },
         vfx: [
-            // A dark, oppressive visual (like a skull, eye, or dark aura) expanding over the enemy
-            { 
-                start: 0.3, type: 'spawn', origin: 'target', 
-                config: { life: 0.6, sheetKey: 'intimidateAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 1.5, blendMode: 'multiply' } 
-            }
+            travel(0.2, 'iceBoltAnimation', { life: 0.4, frames: 4, scale: 1 }),
+            spawn('hit', 'frozenAnimation', { life: 0.5, scale: 1.2 }),
+            burst('hit', { count: 10, color: '#bfeaff', scale: 0.9, minSpeed: 160, maxSpeed: 380, gravity: 400 })
         ],
         target: {
-            // Target shakes out of fear and flashes a sickly, dark purple/blue
-            shake: { start: 0.3, end: 1.2, intensity: 15 },
-            flash: { start: 0.3, end: 1.2, filter: 'brightness(60%) sepia(80%) hue-rotate(260deg) saturate(200%)' }
+            shake: shake(0.4, 0.6, 28),
+            flash: flash(0.4, 0.6, 'brightness(250%) sepia(100%) hue-rotate(190deg) saturate(500%)')
         }
-    },
-
-    "howl": {
-        duration: 2.0,
+    }),
+    "inferno": anim(2.5, {
         audio: [
-            { start: 0.05, key: 'wolfCry', volume: 1.0, pitch: 1.0 }, // A primal wolf-like howl
+            sfx(0.1, 'fireballCastSfx', { volume: 1.5, pitch: 0.6 }),
+            sfx(0.6, 'meteorShowerImpactSfx', { volume: 1.2 })
         ],
-        actor: {
-            // The caster trembles slightly as they howl, glowing red with rage/spirit
-            type: 'shake', start: 0.05, end: 0.6, intensity: 10,
-            flash: { start: 0.0, end: 0.6, filter: 'brightness(150%) sepia(100%) hue-rotate(340deg) saturate(400%)' }
-        },
+        background: background(0, 2, 'voidBackground', 'brightness(50%) sepia(100%) hue-rotate(350deg) saturate(500%)'),
+        actor: { shake: { start: 0.6, end: 1.2, intensity: 20 }, flash: flash(0.5, 1.5, 'brightness(250%) sepia(100%) hue-rotate(350deg) saturate(500%) drop-shadow(0 0 15px red)') },
         vfx: [
-            // A fiery/aggressive aura expanding outward
-           
+            spawn(0.4, 'firePunchAnimation', { life: 1, move: 'expand_and_fade', scale: 4.5 })
         ],
-        target: {
-            // The target's fighting spirit is awakened with an intense, aggressive red flash
-            shake: { start: 0.4, end: 0.8, intensity: 12 }, // A brief shake of adrenaline
-            flash: { start: 0.4, end: 1.4, filter: 'brightness(160%) sepia(100%) hue-rotate(340deg) saturate(400%) drop-shadow(0 0 12px red)' }
-        }
-    },
-    "hide": {
-        duration: 1.5,
+        target: { shake: shake(0.6, 1.5, 45), flash: flash(0.6, 1.6, 'brightness(300%) sepia(100%) hue-rotate(350deg) saturate(600%) drop-shadow(0 0 15px red)') }
+    }),
+    "intimidate": anim(2, {
+        audio: [sfx(0.1, 'intimidateSfx', { volume: 1, pitch: 0.7 })],
+        actor: lunge(0, 0.2, 40, { flash: flash(0, 0.5, 'brightness(50%) sepia(100%) hue-rotate(260deg) saturate(400%) drop-shadow(0 0 10px purple)') }),
+        vfx: [
+            spawn(0.3, 'intimidateAnimation', { life: 0.6, move: 'expand_and_fade', scale: 1.5, blend: 'multiply' })
+        ],
+        target: { shake: shake(0.3, 1.2, 15), flash: flash(0.3, 1.2, 'brightness(60%) sepia(80%) hue-rotate(260deg) saturate(200%)') }
+    }),
+    "item_bear_trap": anim(1.3, {
         audio: [
-            { start: 0.1, key: 'smokeSfx', volume: 1.0, pitch: 1.1 } // A sudden whoosh or smoke puff
+            sfx(0.1, 'strikeSfx', { volume: 0.9, pitch: 0.5 }),
+            sfx(0.4, 'strikeSfx', { volume: 1, pitch: 0.4 })
         ],
-        actor: {
-            // A slight tremble as they quickly duck out of sight
-            type: 'shake', start: 0.1, end: 0.3, intensity: 5 
-        },
+        actor: wobble(0, 0.35, 6),
         vfx: [
-            // A smoke bomb or shadow burst concealing the user
-            { 
-                start: 0.1, type: 'spawn', origin: 'target', 
-                config: { life: 0.6, sheetKey: 'smokeAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 1.5, blendMode: 'normal' } 
-            }
-        ],
-        target: {
-            // The user is darkened, slightly desaturated, and blurred to simulate being hard to hit
-            flash: { start: 0.1, end: 1.5, filter: 'brightness(40%) grayscale(50%) blur(1px) drop-shadow(0 0 8px #111)' }
-        }
-    },
-
-    "abyssal_void": {
-        duration: 3.0,
-        audio: [{ start: 0.033, key: 'darkMagicSFX', volume: 1.0 }],
-        background: { start: 0.067, end: 0.933, key: 'voidBackground', filter: 'brightness(80%) sepia(50%) hue-rotate(250deg)' },
-        actor: { flash: { start: 0.067, end: 0.933, filter: 'brightness(150%) hue-rotate(250deg)' } },
-        target: {
-            shake: { start: 0.333, end: 0.833, intensity: 36 },
-            flash: { start: 0.333, end: 0.833, filter: 'invert(100%)' }
-        }
-    },
-    "bleed": {
-        duration: 1.5,
-        audio: [{ start: 0.1, key: 'slashSfx', volume: 0.6, pitch: 0.7 }],
-        vfx: [
-            { start: 0.15, type: 'spawn', origin: 'target', config: { life: 0.5, sheetKey: 'bleedAnimation', frameCount: 1, frameSize: 64, movement: 'static', scale: 0.8, blendMode: 'screen' } }
-        ],
-        target: {
-            shake: { start: 0.1, end: 0.3, intensity: 10 },
-            flash: { start: 0.1, end: 0.6, filter: 'brightness(120%) sepia(100%) hue-rotate(330deg) saturate(400%)' }
-        }
-    },
-    "burn": {
-        duration: 2.0,
-        audio: [{ start: 0.1, key: 'fireballCastSfx', volume: 0.5, pitch: 1.3 }],
-        vfx: [
-            { start: 0.1, type: 'spawn', origin: 'target', config: { life: 0.6, sheetKey: 'burnAnimation', frameCount: 1, frameSize: 64, movement: 'float_up_and_pop', scale: 0.9, blendMode: 'screen' } }
-        ],
-        target: {
-            shake: { start: 0.1, end: 0.6, intensity: 8 },
-            flash: { start: 0.05, end: 0.8, filter: 'brightness(180%) sepia(100%) hue-rotate(15deg) saturate(350%)' }
-        }
-    },
-    "paralyzed": {
-        duration: 1.5,
+            spawn(0.15, 'boundAnimation', { life: 0.9, scale: 1.2, move: 'static', blend: 'normal' }),
+            spawn(0.4, 'impactAnimation', { life: 0.3, scale: 1, filter: 'brightness(120%) sepia(60%)' }),
+            burst(0.4, { count: 8, color: '#d9d2c3', scale: 0.8, minSpeed: 120, maxSpeed: 300, gravity: 500 })
+        ]
+    }),
+    "item_poison_knife": anim(1.5, {
+        hit: 0.32,
         audio: [
-            { start: 0.1, key: 'paralyzedSfx', volume: 0.6, pitch: 1.8 },
-            { start: 0.5, key: 'paralyzedSfx', volume: 0.4, pitch: 1.9 }
+            sfx(0.05, 'quickStabSfx', { volume: 0.9, pitch: 1 }),
+            sfx('hit+0.03', 'poisonSfx', { volume: 0.6, pitch: 1.1 })
         ],
+        actor: lunge(0, 0.1, -14),
         vfx: [
-            { start: 0.1, type: 'spawn', origin: 'target', config: { life: 0.2, sheetKey: 'particles', frameCount: 1, frameSize: 64, movement: 'static', scale: 1.2, blendMode: 'screen' } },
-            { start: 0.5, type: 'spawn', origin: 'target', config: { life: 0.2, sheetKey: 'particles', frameCount: 1, frameSize: 64, movement: 'static', scale: 0.8, blendMode: 'screen' } }
+            travel(0.1, 'thrustAnimation', { life: 0.22, scale: 1, blend: 'normal', move: 'arc', arc: -50, spin: 22, filter: tint('green', { bright: 130, sat: 200 }) }),
+            spawn('hit', 'poisonAnimation', { life: 0.6, scale: 1.2, move: 'float_up_and_pop', blend: 'multiply' }),
+            burst('hit', { count: 8, color: '#58c040', scale: 0.9, gravity: -90 })
         ],
         target: {
-            shake: { start: 0.1, end: 0.8, intensity: 12 },
-            flash: { start: 0.1, end: 0.8, filter: 'brightness(250%) sepia(100%) hue-rotate(45deg) saturate(500%)' }
+            shake: shake('hit', 'hit+0.18', 12),
+            flash: flash('hit', 1.1, 'brightness(115%) saturate(180%) hue-rotate(100deg)')
         }
-    },
-    "bound": {
-        duration: 1.5,
-        audio: [{ start: 0.1, key: 'strike', volume: 0.7, pitch: 0.5 }],
-        vfx: [
-            { start: 0.15, type: 'spawn', origin: 'target', config: { life: 1.0, sheetKey: 'boundAnimation', frameCount: 1, frameSize: 64, movement: 'static', scale: 1.5, blendMode: 'multiply' } }
-        ],
-        target: {
-            shake: { start: 0.1, end: 0.5, intensity: 4 },
-            flash: { start: 0.1, end: 1.2, filter: 'brightness(70%) sepia(60%) hue-rotate(80deg) saturate(120%)' }
-        }
-    },
-    "frozen": {
-        duration: 2.0,
-        audio: [{ start: 0.05, key: 'frozenSfx', volume: 0.8, pitch: 2.0 }],
-        vfx: [
-            { start: 0.1, type: 'spawn', origin: 'target', config: { life: 1.5, sheetKey: 'frozenAnimation', frameCount: 1, frameSize: 64, movement: 'static', scale: 1.8, blendMode: 'screen' } }
-        ],
-        target: {
-            shake: { start: 0.05, end: 0.2, intensity: 10 },
-            flash: { start: 0.05, end: 1.8, filter: 'brightness(140%) sepia(100%) hue-rotate(190deg) saturate(250%)' }
-        }
-    },
-    "evasive": {
-        duration: 1.5,
+    }),
+    "item_smoke_bomb": anim(1.8, {
         audio: [
-            { start: 0.1, key: 'smokeSfx', volume: 1.0, pitch: 1.3 }
+            sfx(0.05, 'strikeSfx', { volume: 0.5, pitch: 1.6 }),
+            sfx(0.3, 'smokeSfx', { volume: 1, pitch: 0.8 })
         ],
+        actor: lunge(0, 0.12, -12),
         vfx: [
-            { 
-                start: 0.1, type: 'spawn', origin: 'target', 
-                config: { life: 0.6, sheetKey: 'smokeAnimation', frameCount: 1, frameSize: 64, movement: 'float_up_and_pop', scale: 1.8, blendMode: 'screen' } 
-            }
+            travel(0.05, 'particles', { life: 0.25, scale: 0.7, blend: 'normal', move: 'arc', arc: -90 }),
+            spawn(0.3, 'smokeAnimation', { life: 1, scale: 2.8, blend: 'normal' }),
+            spawn(0.45, 'smokeAnimation', { life: 1, scale: 2.2, move: 'float_up_and_pop', blend: 'normal' })
         ],
-        target: {
-            // A quick blur and bright flash to simulate swift movement
-            flash: { start: 0.1, end: 0.8, filter: 'brightness(150%) saturate(50%) blur(2px) drop-shadow(0 0 10px white)' }
-        }
-    },
-
-    "sluggish": {
-        duration: 1.5,
+        target: { flash: flash(0.35, 1.7, 'brightness(55%) grayscale(50%) blur(1px)') }
+    }),
+    "item_throw_net": anim(1.6, {
+        hit: 0.4,
         audio: [
-            { start: 0.1, key: 'strikeSfx', volume: 1.0, pitch: 0.7 }
+            sfx(0.05, 'vineLashSfx', { volume: 0.8, pitch: 0.8 }),
+            sfx('hit', 'strikeSfx', { volume: 0.8, pitch: 0.6 })
         ],
+        actor: lunge(0, 0.15, -20),
         vfx: [
-            { 
-                start: 0.1, type: 'spawn', origin: 'target', 
-                config: { life: 0.6, sheetKey: 'sluggishAnimation', frameCount: 1, frameSize: 64, movement: 'shrink_and_fade', scale: 1.8, blendMode: 'multiply' } 
-            }
+            travel(0.1, 'boundAnimation', { life: 0.3, scale: 1.6, blend: 'normal', move: 'arc', arc: -45, spin: 5 }),
+            spawn('hit', 'boundAnimation', { life: 1, scale: 2, move: 'static', blend: 'normal' })
         ],
         target: {
-            // A heavy, downward-feeling shake and a gray, darkened filter
-            shake: { start: 0.1, end: 0.5, intensity: 10 },
-            flash: { start: 0.1, end: 0.8, filter: 'brightness(60%) grayscale(60%) drop-shadow(0 10px 5px black)' }
+            shake: shake('hit', 'hit+0.3', 14),
+            flash: flash('hit', 'hit+1', 'brightness(80%) sepia(60%) saturate(120%)')
         }
-    },
-    "bolster": {
-        duration: 1.2,
-        audio: [{ start: 0.05, key: 'strikeSfx', volume: 1.0 }],
-        actor: { flash: { start: 0.0, end: 0.2, filter: 'brightness(180%) saturate(150%)' } },
+    }),
+    "item_throwing_knife": anim(1, {
+        hit: 0.22,
+        audio: [
+            sfx(0.03, 'thrustSfx', { volume: 0.8, pitch: 1.5 }),
+            sfx('hit', 'quickStabSfx', { volume: 1, pitch: 1.2 })
+        ],
+        actor: lunge(0, 0.08, -14),
         vfx: [
-            { start: 0.05, type: 'spawn', origin: 'target', config: { life: 0.5, sheetKey: 'bolsterAnimation', frameCount: 1, frameSize: 64, movement: 'expand_and_fade', scale: 2.2, blendMode: 'screen' } }
+            travel(0.08, 'thrustAnimation', { life: 0.14, scale: 0.9, blend: 'normal', move: 'arc', arc: -25, spin: 28 }),
+            spawn('hit', 'slashAnimation', { life: 0.15, scale: 1, move: 'swipe_diagonal' })
+        ],
+        target: { shake: shake('hit', 'hit+0.13', 14), flash: flash('hit', 'hit+0.08', 'brightness(200%)') }
+    }),
+    "loose_arrow": anim(1.2, {
+        audio: [
+            sfx(0.05, 'bowReleaseSfx', { volume: 1 }),
+            sfx(0.25, 'arrowImpactSfx', { volume: 1 })
+        ],
+        actor: lunge(0, 0.1, -12),
+        vfx: [
+            travel(0.1, 'arrowAnimation', { life: 0.15, scale: 1.2, blend: 'normal' })
+        ],
+        target: { shake: shake(0.25, 0.45, 15), flash: flash(0.25, 0.35, 'brightness(180%) sepia(30%)') }
+    }),
+    "magic_missile": anim(0.9, {
+        hit: 0.4,
+        audio: [sfx(0.05, 'arcaneDartSfx', { volume: 0.9, pitch: 1.4 })],
+        actor: { flash: flash(0, 0.12, 'brightness(200%) hue-rotate(250deg) saturate(300%)') },
+        vfx: [
+            travel(0.1, 'arcaneDartAnimation', { life: 0.3, frames: 4, scale: 1.3, move: 'arc', arc: -70, filter: 'hue-rotate(60deg) brightness(130%)' }),
+            spawn('hit', 'impactAnimation', { life: 0.2, scale: 1.1, filter: tint('pink') }),
+            burst('hit', { count: 6, color: '#ff8de0', scale: 0.8, minSpeed: 140, maxSpeed: 300 })
         ],
         target: {
-            shake: { start: 0.05, end: 0.2, intensity: 15 },
-            flash: { start: 0.05, end: 1.0, filter: 'brightness(130%) sepia(100%) hue-rotate(190deg) saturate(300%)' }
+            shake: shake('hit', 'hit+0.15', 16),
+            flash: flash('hit', 'hit+0.1', 'brightness(250%) sepia(60%) hue-rotate(260deg) saturate(300%)')
         }
-    },
-    // --- SHORT BOW ABILITIES ---
-
-  "loose_arrow": {
-    duration: 1.2,
-    audio: [
-      { start: 0.05, key: 'bowReleaseSfx', volume: 1.0 },
-      { start: 0.25, key: 'arrowImpactSfx', volume: 1.0 }
-    ],
-    actor: {
-      type: 'lunge', start: 0.0, end: 0.1, distance: -12 // Slight recoil
-    },
-    vfx: [
-      {
-        start: 0.1,
-        type: 'travel',
-        origin: 'source',
-        config: {
-          life: 0.15,
-          sheetKey: 'arrowAnimation',
-          frameCount: 1,
-          frameSize: 64,
-          scale: 1.2,
-          blendMode: 'normal'
+    }),
+    // Generic lunge. No ability uses this any more; kept for enemies, items and traits that still reference it.
+    "melee_lunge": anim(1.5, {
+        audio: [
+            sfx(0, 'slashSfx', { pitch: 1.1 }),
+            sfx(0.133, 'slashSfx', { volume: 1 })
+        ],
+        actor: lunge(0, 0.2, 96),
+        target: { shake: shake(0.133, 0.333, 29), flash: flash(0.133, 0.267, 'brightness(200%) sepia(100%) hue-rotate(300deg) saturate(300%)') }
+    }),
+    // The meteor lands at 0.8s; the impact, shake and flash are timed to it.
+    "meteor_shower": anim(1.6, {
+        audio: [
+            sfx(0, 'earthquake1Sfx', { volume: 0.8, pitch: 0.5 }),
+            sfx(0, 'fireballCastSfx', { volume: 1.2, pitch: 0.6 }),
+            sfx(0.8, 'meteorShowerImpactSfx', { volume: 1.4, pitch: 0.7 })
+        ],
+        background: background(0, 1.5, 'voidBackground', 'brightness(30%) sepia(100%) hue-rotate(330deg) saturate(400%)'),
+        actor: { flash: flash(0, 0.8, 'brightness(250%) sepia(100%) hue-rotate(350deg) saturate(500%) drop-shadow(0 0 10px orange)') },
+        vfx: [
+            spawn(0, 'meteorShowerAnimation', { life: 0.8, frames: 4, move: 'diagonal_drop', scale: 3.5, offsetX: 0, offsetY: 0, drop: [1400, 1400], fadeOut: false }),
+            spawn(0.8, 'impactAnimation', { life: 0.6, move: 'expand_and_fade', scale: 3.5 })
+        ],
+        target: { shake: shake(0.8, 1.3, 55), flash: flash(0.8, 1.4, 'brightness(350%) sepia(100%) hue-rotate(350deg) saturate(600%) drop-shadow(0 0 20px red)') }
+    }),
+    "minor_channel": anim(1.4, {
+        audio: [sfx(0.1, 'purifySfx', { volume: 0.7, pitch: 1.4 })],
+        vfx: [
+            spawn(0.1, 'particles', { life: 0.7, scale: 0.9, move: 'float_up_and_pop', filter: tint('blue') }),
+            burst(0.15, { count: 6, color: '#6ab4ff', scale: 0.9, minSpeed: 40, maxSpeed: 120, gravity: -160 })
+        ],
+        target: { flash: flash(0.1, 0.8, 'brightness(135%) sepia(60%) hue-rotate(195deg) saturate(160%)') }
+    }),
+    "minor_heal": anim(1.4, {
+        audio: [sfx(0.1, 'healSfx', { volume: 0.7, pitch: 1.3 })],
+        vfx: [
+            spawn(0.1, 'particles', { life: 0.7, scale: 0.9, move: 'float_up_and_pop', filter: tint('green') }),
+            burst(0.15, { count: 6, color: '#7dff9a', scale: 0.9, minSpeed: 40, maxSpeed: 120, gravity: -160 })
+        ],
+        target: { flash: flash(0.1, 0.8, 'brightness(135%) sepia(60%) hue-rotate(95deg) saturate(160%)') }
+    }),
+    "minor_recover": anim(1.4, {
+        audio: [sfx(0.1, 'restSfx', { volume: 0.7, pitch: 1.4 })],
+        vfx: [
+            spawn(0.1, 'particles', { life: 0.7, scale: 0.9, move: 'float_up_and_pop', filter: tint('gold') }),
+            burst(0.15, { count: 6, color: '#ffd24a', scale: 0.9, minSpeed: 40, maxSpeed: 120, gravity: -160 })
+        ],
+        target: { flash: flash(0.1, 0.8, 'brightness(135%) sepia(60%) hue-rotate(40deg) saturate(160%)') }
+    }),
+    "moderate_channel": anim(1.9, {
+        audio: [sfx(0.1, 'purifySfx', { volume: 1, pitch: 0.9 })],
+        vfx: [
+            spawn(0.1, 'purifyAnimation', { life: 0.9, scale: 1.4, move: 'float_up_and_pop', filter: tint('blue', { bright: 130, sat: 200 }) }),
+            spawn(0.3, 'particles', { life: 0.8, scale: 1.1, move: 'float_up_and_pop', filter: tint('blue') }),
+            spawn(0.5, 'particles', { life: 0.8, scale: 1.4, filter: tint('blue') }),
+            burst(0.3, { count: 14, color: '#6ab4ff', scale: 1.1, minSpeed: 60, maxSpeed: 180, gravity: -200 })
+        ],
+        target: { flash: flash(0.1, 1.4, 'brightness(160%) sepia(60%) hue-rotate(195deg) saturate(200%) drop-shadow(0 0 8px dodgerblue)') }
+    }),
+    "moderate_heal": anim(1.9, {
+        audio: [sfx(0.1, 'healSfx', { volume: 1, pitch: 1 })],
+        vfx: [
+            spawn(0.1, 'purifyAnimation', { life: 0.9, scale: 1.4, move: 'float_up_and_pop', filter: tint('green', { bright: 130, sat: 200 }) }),
+            spawn(0.3, 'particles', { life: 0.8, scale: 1.1, move: 'float_up_and_pop', filter: tint('green') }),
+            spawn(0.5, 'particles', { life: 0.8, scale: 1.4, filter: tint('green') }),
+            burst(0.3, { count: 14, color: '#7dff9a', scale: 1.1, minSpeed: 60, maxSpeed: 180, gravity: -200 })
+        ],
+        target: { flash: flash(0.1, 1.4, 'brightness(160%) sepia(60%) hue-rotate(95deg) saturate(200%) drop-shadow(0 0 8px limegreen)') }
+    }),
+    "moderate_recover": anim(1.9, {
+        audio: [sfx(0.1, 'restSfx', { volume: 1, pitch: 1 })],
+        vfx: [
+            spawn(0.1, 'purifyAnimation', { life: 0.9, scale: 1.4, move: 'float_up_and_pop', filter: tint('gold', { bright: 130, sat: 200 }) }),
+            spawn(0.3, 'particles', { life: 0.8, scale: 1.1, move: 'float_up_and_pop', filter: tint('gold') }),
+            spawn(0.5, 'particles', { life: 0.8, scale: 1.4, filter: tint('gold') }),
+            burst(0.3, { count: 14, color: '#ffd24a', scale: 1.1, minSpeed: 60, maxSpeed: 180, gravity: -200 })
+        ],
+        target: { flash: flash(0.1, 1.4, 'brightness(160%) sepia(60%) hue-rotate(40deg) saturate(200%) drop-shadow(0 0 8px gold)') }
+    }),
+    "osmose": anim(2, {
+        audio: [
+            sfx(0.1, 'arcaneDartSfx', { volume: 0.7, pitch: 0.6 }),
+            sfx(0.9, 'spiritReapSfx', { volume: 0.5, pitch: 1.4 })
+        ],
+        actor: { flash: flash(0.9, 1.6, 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)') },
+        vfx: [
+            spawn(0.1, 'particles', { life: 0.8, scale: 1.3, move: 'float_up_and_pop', filter: tint('blue') }),
+            spawn(0.4, 'particles', { life: 0.8, scale: 0.9, move: 'shrink_and_fade', filter: tint('blue') }),
+            burst(0.2, { count: 12, color: '#3a7ad8', scale: 1, minSpeed: 60, maxSpeed: 200, gravity: -60 }),
+            spawn(0.9, 'particles', { at: 'source', life: 0.8, scale: 1.2, move: 'float_up_and_pop', filter: tint('blue') })
+        ],
+        target: {
+            shake: shake(0.1, 0.9, 8),
+            flash: flash(0.1, 1, 'brightness(70%) sepia(100%) hue-rotate(200deg) saturate(250%)')
         }
-      }
-    ],
-    target: {
-      shake: { start: 0.25, end: 0.45, intensity: 15 },
-      flash: { start: 0.25, end: 0.35, filter: 'brightness(180%) sepia(30%)' }
-    }
-  },
-
-  "quick_draw": {
-    duration: 0.8, // Reduced duration for faster execution
-    audio: [
-      { start: 0.0, key: 'bowReleaseSfx', volume: 1.0, pitch: 1.2 }, // Higher pitch to emphasize speed
-      { start: 0.15, key: 'arrowImpactSfx', volume: 0.9 }
-    ],
-    actor: {
-      type: 'lunge', start: 0.0, end: 0.05, distance: -8
-    },
-    vfx: [
-      {
-        start: 0.05,
-        type: 'travel',
-        origin: 'source',
-        config: {
-          life: 0.1, // Faster travel time
-          sheetKey: 'arrowAnimation',
-          frameCount: 1,
-          frameSize: 64,
-          scale: 1.0,
-          blendMode: 'normal'
+    }),
+    "overload": anim(2, {
+        audio: [sfx(0.1, 'shockSfx', { volume: 1.3, pitch: 0.8 })],
+        background: background(0.1, 0.5, 'voidBackground', 'brightness(200%) sepia(50%) hue-rotate(60deg) invert(10%)'),
+        actor: { flash: flash(0.1, 1, 'brightness(300%) drop-shadow(0 0 15px yellow)') },
+        vfx: [
+            spawn(0.2, 'overloadAnimation', { life: 0.8, frames: 4, move: 'expand_and_fade', scale: 3.5 }),
+            spawn(0.4, 'overloadAnimation', { life: 0.6, frames: 4, move: 'static', scale: 2.5 })
+        ],
+        target: { shake: shake(0.2, 1.2, 50), flash: flash(0.2, 1, 'brightness(300%) sepia(100%) hue-rotate(50deg) saturate(500%) drop-shadow(0 0 15px yellow)') }
+    }),
+    // Status effect animation.
+    "paralyzed": anim(1.5, {
+        audio: [
+            sfx(0.1, 'paralyzedSfx', { volume: 0.6, pitch: 1.8 }),
+            sfx(0.5, 'paralyzedSfx', { volume: 0.4, pitch: 1.9 })
+        ],
+        vfx: [
+            spawn(0.1, 'particles', { life: 0.2, move: 'static', scale: 1.2 }),
+            spawn(0.5, 'particles', { life: 0.2, move: 'static', scale: 0.8 })
+        ],
+        target: { shake: shake(0.1, 0.8, 12), flash: flash(0.1, 0.8, 'brightness(250%) sepia(100%) hue-rotate(45deg) saturate(500%)') }
+    }),
+    // Status effect animation.
+    "poison": anim(2, {
+        audio: [sfx(0.1, 'poisonSfx', { volume: 0.6, pitch: 1.2 })],
+        vfx: [
+            spawn(0.05, 'poisonAnimation', { life: 0.4, move: 'float_up_and_pop', scale: 0.6, blend: 'source-over' }),
+            spawn(0.1, 'poisonAnimation', { life: 0.4, move: 'float_up_and_pop', scale: 0.75, blend: 'source-over' }),
+            spawn(0.15, 'poisonAnimation', { life: 0.4, move: 'float_up_and_pop', scale: 0.45, blend: 'source-over' })
+        ],
+        target: { flash: flash(0, 0.75, 'brightness(110%) saturate(160%) hue-rotate(100deg)') }
+    }),
+    "poisoned_arrow": anim(1.8, {
+        audio: [
+            sfx(0.05, 'bowReleaseSfx', { volume: 1, pitch: 0.9 }),
+            sfx(0.3, 'poisonSplashSfx', { volume: 1 })
+        ],
+        actor: lunge(0, 0.1, -14),
+        vfx: [
+            travel(0.1, 'poisonArrowAnimation', { life: 0.2, scale: 1.2, blend: 'normal' }),
+            spawn(0.3, 'poisonAnimation', { life: 0.6, move: 'expand_and_fade', scale: 1.5, blend: 'multiply' })
+        ],
+        target: { shake: shake(0.3, 0.6, 20), flash: flash(0.3, 1.4, 'brightness(120%) saturate(200%) hue-rotate(100deg)') }
+    }),
+    "punch": anim(1, {
+        audio: [sfx(0.1, 'punchSfx', { volume: 1 })],
+        actor: lunge(0, 0.15, 80),
+        vfx: [
+            spawn(0.1, 'punchAnimation', { life: 0.25, move: 'expand_and_fade', scale: 1.3 })
+        ],
+        target: { shake: shake(0.1, 0.25, 18), flash: flash(0.1, 0.2, 'brightness(180%)') }
+    }),
+    "purify": anim(2, {
+        audio: [sfx(0.1, 'healSfx', { volume: 1, pitch: 1.2 })],
+        actor: { flash: flash(0, 0.3, 'brightness(180%) sepia(50%) hue-rotate(180deg) saturate(200%)') },
+        vfx: [
+            spawn(0.2, 'purifyAnimation', { life: 1, move: 'float_up_and_pop', scale: 1.5 }),
+            spawn(0.4, 'particles', { life: 0.8, move: 'expand_and_fade', scale: 1.2 })
+        ],
+        target: { flash: flash(0.2, 1.2, 'brightness(200%) sepia(30%) hue-rotate(180deg) saturate(150%) drop-shadow(0 0 10px white)') }
+    }),
+    // Rapid shot: the arrow is trailed by two faint copies.
+    "quick_draw": anim(0.8, {
+        hit: 0.15,
+        audio: [
+            sfx(0, 'bowReleaseSfx', { volume: 1, pitch: 1.2 }),
+            sfx('hit', 'arrowImpactSfx', { volume: 0.9 })
+        ],
+        actor: lunge(0, 0.05, -8),
+        vfx: [
+            travel(0.05, 'arrowAnimation', { life: 0.1, scale: 1, blend: 'normal' }),
+            travel(0.065, 'arrowAnimation', { life: 0.1, scale: 1, alpha: 0.4, filter: 'brightness(180%)' }),
+            travel(0.08, 'arrowAnimation', { life: 0.1, scale: 1, alpha: 0.2, filter: 'brightness(220%)' })
+        ],
+        target: { shake: shake('hit', 'hit+0.15', 12), flash: flash('hit', 'hit+0.1', 'brightness(150%)') }
+    }),
+    // Not used by any ability (kept in case another file references it).
+    "quick_shock": anim(1, {
+        audio: [sfx(0.05, 'shockZapSfx', { volume: 1, pitch: 1.4 })],
+        actor: { flash: flash(0, 0.15, 'brightness(180%) sepia(50%) hue-rotate(45deg) saturate(400%)') },
+        vfx: [
+            spawn(0.05, 'shockAnimation', { life: 0.25, move: 'static', scale: 1.4 })
+        ],
+        target: { shake: shake(0.05, 0.35, 18), flash: flash(0.05, 0.25, 'brightness(250%) sepia(100%) hue-rotate(45deg) saturate(500%)') }
+    }),
+    "quick_stab": anim(0.8, {
+        audio: [sfx(0.05, 'quickStabSfx', { volume: 1, pitch: 1.3 })],
+        actor: lunge(0, 0.1, 100),
+        vfx: [
+            spawn(0.05, 'quickStabAnimation', { life: 0.15, move: 'expand_and_fade', scale: 1 })
+        ],
+        target: { shake: shake(0.05, 0.2, 15), flash: flash(0.05, 0.15, 'brightness(200%)') }
+    }),
+    "raise_skeleton": anim(2.6, {
+        audio: [
+            sfx(0.1, 'darkMagicSFX', { volume: 1, pitch: 0.9 }),
+            sfx(0.5, 'earthquake2Sfx', { volume: 0.9, pitch: 0.5 }),
+            sfx(1.2, 'crunchSfx', { volume: 0.8, pitch: 0.6 })
+        ],
+        background: background(0.1, 2, 'voidBackground', 'brightness(45%) sepia(100%) hue-rotate(110deg) saturate(250%)'),
+        actor: wobble(0.1, 1, 8, { flash: flash(0.1, 1.4, 'brightness(70%) sepia(100%) hue-rotate(250deg) saturate(300%)') }),
+        vfx: [
+            spawn(0.4, 'earthquakeAnimation', { life: 1.4, scale: 2.4, move: 'static', blend: 'multiply' }),
+            spawn(0.8, 'spiritReapAnimation', { life: 1.4, scale: 2.2, move: 'float_up_and_pop' }),
+            burst(1.1, { count: 14, color: '#e8e2cc', scale: 1.2, minSpeed: 120, maxSpeed: 320, gravity: 700, blend: 'source-over' }),
+            spawn(1.1, 'particles', { life: 1, scale: 1.6, move: 'float_up_and_pop', filter: tint('green') })
+        ]
+    }),
+    "rally": anim(2, {
+        audio: [sfx(0.1, 'rallySfx', { volume: 1, pitch: 1 })],
+        actor: { flash: flash(0, 0.5, 'brightness(180%) sepia(80%) hue-rotate(35deg) saturate(300%)') },
+        vfx: [
+            spawn(0.5, 'rallyAnimation', { life: 0.6, move: 'expand_and_fade', scale: 1.5 })
+        ],
+        target: { flash: flash(0.3, 1.2, 'brightness(150%) sepia(80%) hue-rotate(35deg) saturate(300%) drop-shadow(0 0 10px gold)') }
+    }),
+    "reckless_charge": anim(1.5, {
+        audio: [
+            sfx(0, 'recklessChargeApproachSfx', { volume: 0.8, pitch: 1 }),
+            sfx(0.2, 'recklessChargeImpactSfx', { volume: 0.8, pitch: 1 })
+        ],
+        actor: lunge(0, 0.2, 160, { flash: flash(0.25, 0.55, 'brightness(130%) sepia(100%) hue-rotate(330deg) saturate(400%)') }),
+        vfx: [
+            spawn(0.2, 'impactAnimation', { life: 0.4, move: 'expand_and_fade', scale: 2.5 })
+        ],
+        target: { shake: shake(0.2, 0.6, 48), flash: flash(0.2, 0.4, 'brightness(250%)') }
+    }),
+    "rest": anim(2.6, {
+        audio: [sfx(0.1, 'restSfx', { volume: 1 })],
+        vfx: [
+            spawn(0.2, 'particles', { life: 1, scale: 0.7, offsetX: -20, move: 'float_up_and_pop' }),
+            spawn(0.7, 'particles', { life: 1, scale: 0.9, offsetX: 10, move: 'float_up_and_pop' }),
+            spawn(1.2, 'particles', { life: 1, scale: 1.1, offsetX: 30, move: 'float_up_and_pop' }),
+            spawn(0.3, 'purifyAnimation', { life: 1.6, scale: 1, move: 'static', filter: 'hue-rotate(40deg)' }),
+            burst(0.5, { count: 8, color: '#fff2b0', scale: 0.8, minSpeed: 20, maxSpeed: 70, gravity: -50 })
+        ],
+        target: { flash: flash(0.1, 2, 'brightness(120%) sepia(40%) saturate(120%)') }
+    }),
+    "shield_bash": anim(1.3, {
+        audio: [sfx(0.15, 'strikeSfx', { volume: 1, pitch: 0.7 })],
+        actor: lunge(0, 0.2, 110),
+        vfx: [
+            spawn(0.15, 'impactAnimation', { life: 0.3, move: 'expand_and_fade', scale: 2, blend: 'normal' })
+        ],
+        target: { shake: shake(0.15, 0.5, 40), flash: flash(0.15, 0.4, 'brightness(150%) sepia(30%) saturate(50%)') }
+    }),
+    // Stream of 20 sprites 5ms apart so the bolt reads as one continuous arc. The target reacts as the first one lands (0.32s).
+    "shock": anim(2.5, {
+        audio: [sfx(0.1, 'shockSfx', { volume: 1 })],
+        actor: { flash: flash(0, 0.35, 'brightness(200%) drop-shadow(0 0 5px yellow) drop-shadow(0 0 10px cyan)') },
+        vfx: [
+            ...stream(0.15, 20, 0.005, 'shockAnimation', { life: 0.2, frames: 4, scale: 1.2, filter: 'brightness(200%) sepia(60%) hue-rotate(180deg) saturate(300%) drop-shadow(0 0 8px yellow)' })
+        ],
+        target: { shake: shake(0.32, 0.8, 45), flash: flash(0.32, 0.7, 'brightness(300%) drop-shadow(0 0 10px yellow) drop-shadow(0 0 15px cyan)') }
+    }),
+    "slash": anim(1.5, {
+        audio: [sfx(0.067, 'slashSfx', { volume: 1 })],
+        actor: lunge(0, 0.133, 120),
+        vfx: [
+            spawn(0.1, 'slashAnimation', { life: 0.2, move: 'swipe_diagonal', scale: 1.8 })
+        ],
+        target: { shake: shake(0.1, 0.233, 24), flash: flash(0.1, 0.167, 'brightness(250%)') }
+    }),
+    // Status effect animation.
+    "sluggish": anim(1.5, {
+        audio: [sfx(0.1, 'strikeSfx', { volume: 1, pitch: 0.7 })],
+        vfx: [
+            spawn(0.1, 'sluggishAnimation', { life: 0.6, move: 'shrink_and_fade', scale: 1.8, blend: 'multiply' })
+        ],
+        target: { shake: shake(0.1, 0.5, 10), flash: flash(0.1, 0.8, 'brightness(60%) grayscale(60%) drop-shadow(0 10px 5px black)') }
+    }),
+    // Gather light (0 to 0.7s), beam stream, impact at `hit`.
+    "solar_beam": anim(2.6, {
+        hit: 1,
+        audio: [
+            sfx(0, 'spiteCastSfx', { volume: 1, pitch: 0.8 }),
+            sfx(0.7, 'fireballCastSfx', { volume: 1.2, pitch: 0.7 })
+        ],
+        actor: wobble(0, 0.7, 8, { flash: flash(0, 1.2, tint('gold', { bright: 260, sat: 400, glow: 'gold', glowSize: 15 })) }),
+        vfx: [
+            spawn(0.1, 'spiteAnimation', { at: 'source', life: 0.6, scale: 2.4, move: 'shrink_and_fade' }),
+            ...stream(0.7, 16, 0.025, 'flamethrowerAnimation', { life: 0.3, scale: 2.2, jitter: 8, filter: tint('gold', { bright: 260, sat: 300 }) }),
+            spawn('hit', 'spiteAnimation', { life: 0.8, scale: 4 }),
+            burst('hit', { count: 20, color: '#ffe680', scale: 1.4, minSpeed: 180, maxSpeed: 440 })
+        ],
+        target: {
+            shake: shake('hit', 'hit+0.8', 40),
+            flash: flash('hit', 'hit+0.8', tint('gold', { bright: 350, sat: 300, glow: 'gold', glowSize: 20 }))
         }
-      }
-    ],
-    target: {
-      shake: { start: 0.15, end: 0.3, intensity: 12 },
-      flash: { start: 0.15, end: 0.25, filter: 'brightness(150%)' }
-    }
-  },
-
-  "poisoned_arrow": {
-    duration: 1.8,
-    audio: [
-      { start: 0.05, key: 'bowReleaseSfx', volume: 1.0, pitch: 0.9 },
-      { start: 0.3, key: 'poisonSplashSfx', volume: 1.0 }
-    ],
-    actor: {
-      type: 'lunge', start: 0.0, end: 0.1, distance: -14
-    },
-    vfx: [
-      {
-        start: 0.1,
-        type: 'travel',
-        origin: 'source',
-        config: {
-          life: 0.2,
-          sheetKey: 'poisonArrowAnimation',
-          frameCount: 1,
-          frameSize: 64,
-          scale: 1.2,
-          blendMode: 'normal'
-        }
-      },
-      {
-        start: 0.3,
-        type: 'spawn',
-        origin: 'target',
-        config: {
-          life: 0.6,
-          sheetKey: 'poisonAnimation',
-          frameCount: 1,
-          frameSize: 64,
-          movement: 'expand_and_fade',
-          scale: 1.5,
-          blendMode: 'multiply'
-        }
-      }
-    ],
-    target: {
-      shake: { start: 0.3, end: 0.6, intensity: 20 },
-      flash: { start: 0.3, end: 1.4, filter: 'brightness(120%) saturate(200%) hue-rotate(100deg)' } // Lingering green hue
-    }
-  },
-
-  "triple_shot": {
-    duration: 0.6, // Short duration per arrow so multi-hit sequences fire smoothly
-    audio: [
-      { start: 0.05, key: 'bowReleaseSfx', volume: 0.9, pitch: 1.1 },
-      { start: 0.2, key: 'arrowImpactSfx', volume: 0.9 }
-    ],
-    actor: {
-      type: 'lunge', start: 0.0, end: 0.08, distance: -10
-    },
-    vfx: [
-      {
-        start: 0.08,
-        type: 'travel',
-        origin: 'source',
-        config: {
-          life: 0.12,
-          sheetKey: 'arrowAnimation',
-          frameCount: 1,
-          frameSize: 64,
-          scale: 1.1,
-          blendMode: 'normal'
-        }
-      }
-    ],
-    target: {
-      shake: { start: 0.2, end: 0.35, intensity: 12 },
-      flash: { start: 0.2, end: 0.3, filter: 'brightness(160%)' }
-    }
-  }
+    }),
+    "spirit_reap": anim(3, {
+        audio: [sfx(0, 'spiritReapSfx', { volume: 1 })],
+        actor: lunge(0, 0.15, 80, { flash: flash(2.5, 3, 'brightness(180%) saturate(200%) hue-rotate(120deg)') }),
+        vfx: [
+            spawn(0.12, 'spiritReapAnimation', { life: 2.5, move: 'expand_and_fade', scale: 2.5 })
+        ],
+        target: { shake: shake(0.12, 3, 25), flash: flash(0.12, 3, 'brightness(130%) sepia(60%) hue-rotate(270deg) saturate(80%)') }
+    }),
+    "spite": anim(1.5, {
+        audio: [
+            sfx(0, 'spiteCastSfx', { volume: 1 }),
+            sfx(0.133, 'strikeSfx', { volume: 1, pitch: 1.2 })
+        ],
+        actor: lunge(0, 0.2, 96, { flash: flash(0, 0.3, 'brightness(200%) sepia(100%) hue-rotate(35deg) saturate(300%)') }),
+        vfx: [
+            spawn(0.133, 'spiteAnimation', { life: 0.3, move: 'expand_and_fade', scale: 2.5 })
+        ],
+        target: { shake: shake(0.133, 0.333, 29), flash: flash(0.133, 0.4, 'brightness(300%) sepia(100%) hue-rotate(35deg) saturate(300%) drop-shadow(0 0 15px gold)') }
+    }),
+    "strike": anim(1.5, {
+        audio: [sfx(0.133, 'strikeSfx', { volume: 1 })],
+        actor: lunge(0, 0.2, 96),
+        vfx: [
+            spawn(0.133, 'strikeAnimation', { life: 0.3, move: 'expand_and_fade', scale: 1.44 })
+        ],
+        target: { shake: shake(0.133, 0.333, 29), flash: flash(0.133, 0.267, 'brightness(200%) sepia(100%) hue-rotate(300deg) saturate(300%)') }
+    }),
+    "switch_combatant": anim(0.8, {
+        audio: [sfx(0.05, 'smokeSfx', { volume: 0.5, pitch: 1.6 })],
+        actor: { flash: flash(0, 0.4, 'brightness(150%) blur(2px)') },
+        vfx: [spawn(0.05, 'smokeAnimation', { at: 'source', life: 0.5, scale: 1 })]
+    }),
+    // Uses the new "hop" actor motion (BattleAnimationModel).
+    "take_flight": anim(1.7, {
+        audio: [
+            sfx(0.1, 'bowReleaseSfx', { volume: 0.7, pitch: 0.6 }),
+            sfx(0.2, 'smokeSfx', { volume: 0.6, pitch: 1.5 })
+        ],
+        actor: hop(0, 0.9, 70, { flash: flash(0.2, 1.2, 'brightness(140%) saturate(60%) drop-shadow(0 0 8px white)') }),
+        vfx: [
+            spawn(0.1, 'smokeAnimation', { life: 0.6, scale: 1.5, blend: 'normal' }),
+            spawn(0.3, 'particles', { life: 0.9, scale: 1.2, move: 'float_up_and_pop' }),
+            burst(0.15, { count: 10, color: '#e8f0ff', scale: 0.9, minSpeed: 60, maxSpeed: 180, gravity: 120 })
+        ]
+    }),
+    "thrust": anim(1.5, {
+        audio: [sfx(0.133, 'thrustSfx', { volume: 1 })],
+        actor: lunge(0, 0.2, 96),
+        vfx: [
+            spawn(0.133, 'thrustAnimation', { life: 0.2, move: 'shrink_and_fade', scale: 2 })
+        ],
+        target: { shake: shake(0.133, 0.333, 29), flash: flash(0.133, 0.267, 'brightness(200%) sepia(100%) hue-rotate(300deg) saturate(300%)') }
+    }),
+    // Trait trigger flash (onBattleStart / onDeath). Not an ability animation.
+    "trait_activate": anim(1.2, {
+        target: { shake: shake(0, 0.3, 10), flash: flash(0, 0.4, 'brightness(250%) saturate(150%)') }
+    }),
+    "triple_shot": anim(0.6, {
+        hit: 0.2,
+        audio: [
+            sfx(0.05, 'bowReleaseSfx', { volume: 0.9, pitch: 1.1 }),
+            sfx('hit', 'arrowImpactSfx', { volume: 0.9 })
+        ],
+        actor: lunge(0, 0.08, -10),
+        vfx: [
+            travel(0.08, 'arrowAnimation', { life: 0.12, scale: 1.1, blend: 'normal', move: 'arc', arc: -18, filter: tint('fire', { bright: 130, sat: 200 }) }),
+            spawn('hit', 'impactAnimation', { life: 0.15, scale: 0.6, filter: tint('fire') }),
+            burst('hit', { count: 5, color: '#ff9a3c', scale: 0.7, minSpeed: 120, maxSpeed: 260 })
+        ],
+        target: { shake: shake('hit', 'hit+0.15', 12), flash: flash('hit', 'hit+0.1', 'brightness(160%)') }
+    }),
+    "uppercut": anim(1.4, {
+        audio: [sfx(0.2, 'punchSfx', { volume: 1, pitch: 0.8 })],
+        actor: lunge(0, 0.2, 90),
+        vfx: [
+            spawn(0.2, 'uppercutAnimation', { life: 0.4, move: 'float_up_and_pop', scale: 1.8 })
+        ],
+        target: { shake: shake(0.2, 0.6, 35), flash: flash(0.2, 0.4, 'brightness(250%) sepia(50%) hue-rotate(330deg)') }
+    }),
+    "vine_lash": anim(1.4, {
+        audio: [sfx(0.1, 'vineLashSfx', { volume: 1 })],
+        actor: lunge(0, 0.15, 60),
+        vfx: [
+            spawn(0.1, 'vineLashAnimation', { life: 0.35, move: 'swipe_diagonal', scale: 1.8, blend: 'normal' })
+        ],
+        target: { shake: shake(0.1, 0.4, 26), flash: flash(0.1, 0.35, 'brightness(130%) sepia(80%) hue-rotate(90deg) saturate(250%)') }
+    }),
+    // Stream of 20 sprites; the first reaches the target at 0.55s, which is when the target reacts.
+    "water_blast": anim(2.5, {
+        audio: [sfx(0.1, 'waterBlastSfx', { volume: 1 })],
+        actor: { flash: flash(0, 0.35, 'brightness(200%) sepia(100%) hue-rotate(200deg) saturate(300%) drop-shadow(0 0 10px blue)') },
+        vfx: [
+            ...stream(0.15, 20, 0.005, 'waterBlastAnimation', { life: 0.4, scale: 1.2, filter: 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)' })
+        ],
+        target: { shake: shake(0.55, 1, 35), flash: flash(0.55, 0.95, 'brightness(250%) sepia(100%) hue-rotate(200deg) saturate(400%) drop-shadow(0 0 10px cyan)') }
+    }),
+    "waterfall": anim(2, {
+        audio: [sfx(0.1, 'waterBlastSfx', { volume: 1.2, pitch: 0.8 })],
+        actor: { flash: flash(0, 0.3, 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)') },
+        vfx: [
+            spawn(0.2, 'waterfallAnimation', { life: 0.6, frames: 4, move: 'shrink_and_fade', scale: 2.5, drop: [0, 400] })
+        ],
+        target: { shake: shake(0.5, 1, 30), flash: flash(0.5, 0.8, 'brightness(200%) sepia(100%) hue-rotate(200deg) saturate(300%) drop-shadow(0 0 10px blue)') }
+    }),
+    // Weather animation (WeatherDefinitions BLIZZARD). Plays on everyone in the fight, so it uses no actor motion.
+    "weatherBlizzard": anim(2.8, {
+        audio: [sfx(0, 'spookyWind', { volume: 0.9, pitch: 1.3 })],
+        background: background(0, 2.8, 'current', 'brightness(135%) saturate(35%) hue-rotate(195deg) contrast(90%)'),
+        vfx: [
+            // wind-driven snow, fast and fine
+            repeat(0, 20, 0.13, t => burst(t, { glow: false, count: 16, color: '#ffffff', scale: 0.2, angle: 158, cone: 24, minSpeed: 650, maxSpeed: 1000, minLife: 0.45, maxLife: 0.7, gravity: 150, area: [200, 520], offsetX: 380, alpha: 0.9 })),
+            // big slow flakes tumbling through
+            repeat(0.05, 9, 0.28, t => burst(t, { glow: false, count: 3, color: '#e4f4ff', scale: 0.45, angle: 150, cone: 40, minSpeed: 250, maxSpeed: 450, minLife: 0.8, maxLife: 1.2, gravity: 90, area: [500, 400], offsetX: 200, alpha: 0.8 })),
+            // ice-blue shimmer on each combatant as the cold bites
+            burst(0.4, { count: 12, color: '#9fe3ff', scale: 0.5, minSpeed: 40, maxSpeed: 130, minLife: 0.4, maxLife: 0.8, gravity: -30 })
+        ],
+        target: { shake: shake(0.2, 2.5, 3), flash: flash(0.3, 2.4, 'brightness(125%) saturate(60%) hue-rotate(185deg)') }
+    }),
+    // Weather animation (WeatherDefinitions FOG). Plays on everyone in the fight, so it uses no actor motion.
+    "weatherFog": anim(2.6, {
+        audio: [sfx(0, 'weatherFog', { volume: 0.6, pitch: 0.85 })],
+        background: background(0, 2.6, 'current', 'brightness(115%) saturate(30%) contrast(75%) sepia(10%)'),
+        vfx: [
+            // banks of mist rolling over each combatant
+            spawn(0.0, 'smokeAnimation', { life: 1.6, scale: 4.5, blend: 'normal', move: 'expand_and_fade', alpha: 0.45, offsetX: -50 }),
+            spawn(0.5, 'smokeAnimation', { life: 1.6, scale: 5, blend: 'normal', move: 'expand_and_fade', alpha: 0.4, offsetX: 60, offsetY: 30 }),
+            spawn(1.0, 'smokeAnimation', { life: 1.4, scale: 4.2, blend: 'normal', move: 'expand_and_fade', alpha: 0.4, offsetX: -20, offsetY: -30 }),
+            // slow drifting wisps
+            repeat(0, 6, 0.4, t => burst(t, { count: 4, color: '#d5dbe1', scale: 2.2, angle: 0, cone: 40, minSpeed: 15, maxSpeed: 40, minLife: 1.2, maxLife: 1.8, area: [320, 160], alpha: 0.25 }))
+        ],
+        target: { flash: flash(0.3, 2.2, 'brightness(112%) saturate(55%) contrast(90%)') }
+    }),
+    // Weather animation (WeatherDefinitions RAIN). Plays on everyone in the fight, so it uses no actor motion.
+    "weatherRain": anim(2.5, {
+        audio: [sfx(0.04, 'weatherRainShort', { volume: 0.8 })],
+        background: background(0, 2.5, 'current', 'brightness(70%) saturate(80%) sepia(20%) hue-rotate(170deg)'),
+        vfx: [
+            // sheets of drops falling over every combatant, slightly slanted by the wind
+            repeat(0, 12, 0.19, t => burst(t, { glow: false, count: 14, color: '#9cc2ff', scale: 0.22, angle: 102, cone: 8, minSpeed: 500, maxSpeed: 700, minLife: 0.45, maxLife: 0.6, gravity: 500, area: [420, 40], offsetY: -250, alpha: 0.85 })),
+            // splashes where they land
+            repeat(0.2, 10, 0.22, t => burst(t, { glow: false, count: 5, color: '#dff0ff', scale: 0.18, angle: 270, cone: 140, minSpeed: 60, maxSpeed: 160, minLife: 0.2, maxLife: 0.35, gravity: 600, area: [260, 20], offsetY: 90 }))
+        ],
+        target: { flash: flash(0.08, 0.88, 'brightness(80%) saturate(70%) sepia(30%) hue-rotate(180deg)') }
+    }),
+    // Weather animation (WeatherDefinitions SANDSTORM). Plays on everyone in the fight, so it uses no actor motion.
+    "weatherSandstorm": anim(2.6, {
+        audio: [sfx(0, 'spookyWind', { volume: 0.7, pitch: 0.9 })],
+        background: background(0, 2.6, 'current', 'sepia(85%) saturate(190%) brightness(88%) hue-rotate(-8deg)'),
+        vfx: [
+            // grit blown hard from right to left across the whole field
+            repeat(0, 18, 0.13, t => burst(t, { glow: false, count: 16, color: '#d9b36a', scale: 0.3, angle: 172, cone: 14, minSpeed: 900, maxSpeed: 1300, minLife: 0.4, maxLife: 0.6, area: [200, 520], offsetX: 380, blend: 'source-over', alpha: 0.9 })),
+            // heavier dust that hangs in the air
+            repeat(0.1, 7, 0.33, t => burst(t, { glow: false, count: 4, color: '#b98f4a', scale: 1.6, angle: 175, cone: 20, minSpeed: 150, maxSpeed: 300, minLife: 0.8, maxLife: 1.2, area: [300, 260], blend: 'source-over', alpha: 0.35 }))
+        ],
+        target: { shake: shake(0.2, 2.3, 5), flash: flash(0.3, 2.2, 'sepia(100%) saturate(220%) brightness(105%)') }
+    }),
+    "wild_swing": anim(1.3, {
+        audio: [sfx(0.1, 'wildSwingSfx', { volume: 1, pitch: 0.8 })],
+        actor: lunge(0, 0.25, 140, { flash: flash(0, 0.3, 'brightness(150%) sepia(50%) hue-rotate(15deg) saturate(200%)') }),
+        vfx: [
+            spawn(0.25, 'wildSwingAnimation', { life: 0.25, move: 'swipe_diagonal', scale: 3 })
+        ],
+        target: { shake: shake(0.25, 0.75, 45), flash: flash(0.25, 0.45, 'brightness(250%)') }
+    })
 };

@@ -21,7 +21,7 @@ export const AbilityDefinitions = {
         cost: { stamina: 5 },
         accuracy: 1.0,
         animationId: "punch",
-        effects: [{ type: "damage", damageType: "blunt", power: 0.5 }]
+        effects: [{ type: "damage", damageType: "blunt", power: 0.75 }]
     },
     "strike": {
         id: "strike",
@@ -36,7 +36,7 @@ export const AbilityDefinitions = {
         cost: { stamina: 8 },
         accuracy: 1.0,
         animationId: "strike",
-        effects: [{ type: "damage", damageType: "blunt", power: 1.0 }],
+        effects: [{ type: "damage", damageType: "blunt", power: 1.25 }],
     },
     "shield_bash": {
         id: "shield_bash",
@@ -116,7 +116,7 @@ export const AbilityDefinitions = {
         cost: { stamina: 10 },
         accuracy: 1.0,
         animationId: "slash",
-        effects: [{ type: "damage", damageType: "slash", power: 1.0 }],
+        effects: [{ type: "damage", damageType: "slash", power: 1.25 }],
         statusEffects: [{ id: "bleed", chance: 0.1, duration: 3 }],
         traitRewards: []
     },
@@ -133,7 +133,7 @@ export const AbilityDefinitions = {
         cost: { stamina: 20 },
         accuracy: 0.85,
         animationId: "uppercut",
-        effects: [{ type: "damage", damageType: "slash", power: 1.25 }],
+        effects: [{ type: "damage", damageType: "slash", power: 1.5 }],
         statusEffects: [{ id: "knocked_down", chance: 0.20 }]
     },
     "execute": {
@@ -180,7 +180,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "multiple", count: 2 },
         cost: { stamina: 15 },
         accuracy: 0.85,
-        effects: [{ type: "damage", damageType: "slash", power: 0.85 }]
+        effects: [{ type: "damage", damageType: "slash", power: 1.0 }]
     },
     "flurry": {
         id: "flurry",
@@ -211,7 +211,7 @@ export const AbilityDefinitions = {
         cost: { stamina: 8 },
         accuracy: 0.95,
         animationId: "claw",
-        effects: [{ type: "damage", damageType: "slash", power: 0.9 }],
+        effects: [{ type: "damage", damageType: "slash", power: 1.0 }],
         statusEffects: [{ id: "bleed", chance: 0.2, duration: 3 }]
     },
     "eviscerate": {
@@ -227,7 +227,7 @@ export const AbilityDefinitions = {
         cost: { stamina: 25 },
         accuracy: 0.85,
         animationId: "eviscerate",
-        effects: [{ type: "damage", damageType: "slash", power: 1.5, condition: { target_has_status: "bleed", multiplier: 2.0 } }]
+        effects: [{ type: "damage", damageType: "slash", power: 1.25, condition: { target_has_status: "bleed", multiplier: 2.0 } }]
     },
     "rally": {
         id: "rally",
@@ -306,7 +306,7 @@ export const AbilityDefinitions = {
         cost: { stamina: 10 },
         accuracy: 1.0,
         animationId: "thrust",
-        effects: [{ type: "damage", damageType: "pierce", power: 1.0 }],
+        effects: [{ type: "damage", damageType: "pierce", power: 1.25 }],
         statusEffects: [{ id: "bleed", chance: 0.1, duration: 3 }]
     },
     "bite": {
@@ -321,7 +321,7 @@ export const AbilityDefinitions = {
         cost: { stamina: 10 },
         accuracy: 1.0,
         animationId: "bite",
-        effects: [{ type: "damage", damageType: "pierce", power: 0.85 }],
+        effects: [{ type: "damage", damageType: "pierce", power: 1.0 }],
         statusEffects: [{ id: "bleed", chance: 0.15, duration: 3 }]
     },
     "quick_stab": {
@@ -337,7 +337,22 @@ export const AbilityDefinitions = {
         cost: { stamina: 5 },
         accuracy: 0.8,
         animationId: "quick_stab",
-        effects: [{ type: "damage", damageType: "pierce", power: 0.75 }]
+        effects: [{ type: "damage", damageType: "pierce", power: 1.0 }]
+    },
+    // Thrown by the "throwing_knife" item. Plain damage, no status: the poison version below trades damage for poison.
+    "item_throwing_knife": {
+        id: "item_throwing_knife",
+        name: "Throwing Knife",
+        description: "Hurl a balanced blade at the target.",
+        range: "ranged",
+        tags: ["physical", "projectile", "weapon", "pierce", "item"],
+        battleMessage: "{user} hurls a {ability} at {target}!",
+        icon: { col: 0, row: 8 },            // PLACEHOLDER: shares a cell with another ability icon; point it at a free one
+        animationId: "melee_lunge",
+        targeting: { scope: "enemy", select: "single" },
+        speedModifier: 1.25,
+        accuracy: 0.95,
+        effects: [{ type: "damage", damageType: "pierce", power: 1.25 }]
     },
     "item_poison_knife": {
         id: "item_poison_knife",
@@ -351,7 +366,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         speedModifier: 1.25,
         accuracy: 0.95,
-        effects: [{ type: "damage", damageType: "pierce", power: 0.25 }],
+        effects: [{ type: "damage", damageType: "pierce", power: 0.5 }],
         statusEffects: [{ id: "poison", chance: 1.0, duration: 3 }]
     },
 
@@ -380,13 +395,13 @@ export const AbilityDefinitions = {
         range: "ranged",
         tags: ["physical", "projectile", "weapon", "pierce", "bow"],
         battleMessage: "{user} looses and arrow at {target}!",
-        icon: { col: 2, row: 8 }, 
+        icon: { col: 6, row: 2 }, 
         speedModifier: 1.0,
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 8 },
         accuracy: 0.95,
         animationId: "loose_arrow",
-        effects: [{ type: "damage", damageType: "pierce", power: 1.0 }]
+        effects: [{ type: "damage", damageType: "pierce", power: 1.25 }]
     },
 
     "quick_draw": {
@@ -396,13 +411,13 @@ export const AbilityDefinitions = {
         range: "ranged",
         tags: ["physical", "projectile", "weapon", "pierce", "bow", "fast"],
         battleMessage: "{user} quickly shoots {target}!",
-        icon: { col: 3, row: 8 },
+        icon: { col: 9, row: 2 },
         speedModifier: 1.5,
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 5 },
         accuracy: 0.90,
         animationId: "quick_draw",
-        effects: [{ type: "damage", damageType: "pierce", power: 0.75 }]
+        effects: [{ type: "damage", damageType: "pierce", power: 1.0 }]
     },
 
     "poisoned_arrow": {
@@ -412,13 +427,13 @@ export const AbilityDefinitions = {
         range: "ranged",
         tags: ["physical", "projectile", "weapon", "pierce", "bow", "poison"],
         battleMessage: "{user} hits {target} with a poisoned arrow!",
-        icon: { col: 4, row: 8 },
+        icon: { col: 7, row: 2 },
         speedModifier: 1.0,
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 12 },
         accuracy: 0.95,
         animationId: "loose_arrow",
-        effects: [{ type: "damage", damageType: "pierce", power: 0.85 }],
+        effects: [{ type: "damage", damageType: "pierce", power: 1.0 }],
         statusEffects: [{ id: "poison", chance: 0.50, duration: 3 }]
     },
 
@@ -429,14 +444,14 @@ export const AbilityDefinitions = {
         range: "ranged",
         tags: ["physical", "projectile", "weapon", "pierce", "bow", "multihit"],
         battleMessage: "{user} unleashes {ability} on {target}!",
-        icon: { col: 5, row: 8 },
+        icon: { col: 8, row: 2 },
         speedModifier: 0.9, 
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 20 },
         accuracy: 0.85,
         multihit: { min: 3, max: 3, distinctChecks: true },
         animationId: "triple_shot",
-        effects: [{ type: "damage", damageType: "pierce", power: 0.65 }]
+        effects: [{ type: "damage", damageType: "pierce", power: 1.0 }]
     },
 
     // =========================================================================
@@ -455,7 +470,7 @@ export const AbilityDefinitions = {
         cost: { insight: 8 },
         speedModifier: 1.0,
         accuracy: 1.0,
-        effects: [{ type: "damage", damageType: "arcane", power: 1.2 }]
+        effects: [{ type: "damage", damageType: "arcane", power: 1.25 }]
     },
     "magic_missile": {
         id: "magic_missile",
@@ -503,7 +518,7 @@ export const AbilityDefinitions = {
         cost: { insight: 15 },
         speedModifier: 0.9,
         accuracy: 0.9,
-        effects: [{ type: "damage", damageType: "fire", power: 1.8 }],
+        effects: [{ type: "damage", damageType: "fire", power: 1.25 }],
         statusEffects: [{ id: "burn", chance: 0.3, duration: 3 }]
     },
     "meteor_shower": {
@@ -536,7 +551,7 @@ export const AbilityDefinitions = {
         cost: { insight: 30 },
         speedModifier: 0.8,
         accuracy: 0.90,
-        effects: [{ type: "damage", damageType: "fire", power: 2.2, recoil: 0.30 }]
+        effects: [{ type: "damage", damageType: "fire", power: 2.5, recoil: 0.30 }]
     },
     "flamethrower": {
         id: "flamethrower",
@@ -551,7 +566,7 @@ export const AbilityDefinitions = {
         cost: { insight: 20 },
         speedModifier: 0.95,
         accuracy: 0.90,
-        effects: [{ type: "damage", damageType: "fire", power: 1.4 }],
+        effects: [{ type: "damage", damageType: "fire", power: 1.0 }],
         statusEffects: [{ id: "burn", chance: 0.35, duration: 3 }]
     },
 
@@ -571,7 +586,7 @@ export const AbilityDefinitions = {
         cost: { insight: 12 },
         speedModifier: 0.95,
         accuracy: 0.95,
-        effects: [{ type: "damage", damageType: "water", power: 1.5 }],
+        effects: [{ type: "damage", damageType: "water", power: 1.25 }],
         statusEffects: [{ id: "wet", chance: 0.50, duration: 3 }]
     },
     "waterfall": {
@@ -587,7 +602,7 @@ export const AbilityDefinitions = {
         cost: { insight: 18 },
         speedModifier: 1.0,
         accuracy: 0.95,
-        effects: [{ type: "damage", damageType: "water", power: 1.3 }]
+        effects: [{ type: "damage", damageType: "water", power: 1.0 }]
     },
 
     // =========================================================================
@@ -606,7 +621,7 @@ export const AbilityDefinitions = {
         cost: { insight: 12 },
         speedModifier: 0.95,
         accuracy: 0.95,
-        effects: [{ type: "damage", damageType: "ice", power: 1.5 }],
+        effects: [{ type: "damage", damageType: "ice", power: 1.25 }],
         statusEffects: [{ id: "frozen", chance: 0.25, duration: 2 }]
     },
     "frigid_gale": {
@@ -622,7 +637,7 @@ export const AbilityDefinitions = {
         cost: { insight: 16 },
         speedModifier: 1.0,
         accuracy: 0.90,
-        effects: [{ type: "damage", damageType: "ice", power: 1.1 }],
+        effects: [{ type: "damage", damageType: "ice", power: 1.0 }],
         statusEffects: [{ id: "frozen", chance: 0.15, duration: 2 }]
     },
 
@@ -642,7 +657,7 @@ export const AbilityDefinitions = {
         cost: { insight: 18 },
         accuracy: 0.95,
         animationId: "shock",
-        effects: [{ type: "damage", damageType: "lightning", power: 1.8 }],
+        effects: [{ type: "damage", damageType: "lightning", power: 1.25 }],
         statusEffects: [{ id: "paralyzed", chance: 0.10, duration: 2 }]
     },
     "overload": {
@@ -658,7 +673,7 @@ export const AbilityDefinitions = {
         cost: { insight: 25 },
         speedModifier: 0.90,
         accuracy: 0.95,
-        effects: [{ type: "damage", damageType: "lightning", power: 1.3 }],
+        effects: [{ type: "damage", damageType: "lightning", power: 1.0 }],
         statusEffects: [{ id: "paralyzed", chance: 0.20, duration: 2 }]
     },
 
@@ -707,7 +722,7 @@ export const AbilityDefinitions = {
         cost: { insight: 8, stamina: 5 },
         accuracy: 0.95,
         animationId: "vine_lash",
-        effects: [{ type: "damage", damageType: "earth", power: 1.0 }],
+        effects: [{ type: "damage", damageType: "earth", power: 1.25 }],
         statusEffects: [{ id: "bound", chance: 0.15, duration: 2 }]
     },
     "boulder_throw": {
@@ -723,7 +738,7 @@ export const AbilityDefinitions = {
         cost: { stamina: 18 },
         speedModifier: 0.85,
         accuracy: 0.70,
-        effects: [{ type: "damage", damageType: "earth", power: 1.5 }],
+        effects: [{ type: "damage", damageType: "blunt", power: 1.00 }, { type: "damage", damageType: "earth", power: 0.5 }],
         statusEffects: [{ id: "knocked_down", chance: 0.40 }]
     },
 
@@ -761,7 +776,7 @@ export const AbilityDefinitions = {
         cost: { insight: 10 },
         speedModifier: 1.1,
         accuracy: 1.0,
-        effects: [{ type: "damage", damageType: "light", power: 0.6, condition: { target_has_tag: "undead", multiplier: 3.0 } }]
+        effects: [{ type: "damage", damageType: "light", power: 1.0, condition: { target_has_tag: "undead", multiplier: 3.0 } }]
     },
 
     // =========================================================================
@@ -928,7 +943,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
         accuracy: 1.0,
-        effects: [{ type: "recover", resource: "hp", calculation: "percent", power: 0.6 }]
+        effects: [{ type: "recover", resource: "hp", calculation: "percent", power: 0.5 }]
     },
     "moderate_recover": {
         id: "moderate_recover",
@@ -942,7 +957,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
         accuracy: 1.0,
-        effects: [{ type: "recover", resource: "stamina", calculation: "percent", power: 0.6 }]
+        effects: [{ type: "recover", resource: "stamina", calculation: "percent", power: 0.5 }]
     },
     "moderate_channel": {
         id: "moderate_channel",
@@ -956,7 +971,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
         accuracy: 1.0,
-        effects: [{ type: "recover", resource: "insight", calculation: "percent", power: 0.6 }]
+        effects: [{ type: "recover", resource: "insight", calculation: "percent", power: 0.5 }]
     },
 
     // =========================================================================
@@ -1106,7 +1121,7 @@ export const AbilityDefinitions = {
     "item_bear_trap": {
         id: "item_bear_trap",
         name: "Bear Trap",
-        description: "Set a trap that snaps on the next attacker.",
+        description: "Set a trap that snaps shut on the next enemy to strike you in melee, hurting and binding it. Usable in battle or out of it: a trap set before a fight is still there when it starts.",
         range: "self",
         tags: ["physical", "tactical", "trap", "item"],
         battleMessage: "{user} hurriedly sets a {ability}!",
@@ -1115,12 +1130,18 @@ export const AbilityDefinitions = {
         targeting: { scope: "self", select: "auto" },
         speedModifier: 1.25,
         accuracy: 1.0,
-        statusEffects: [{ id: "trap_set", chance: 1.0, duration: 3 }]
+        // no duration: "trap_set" lasts until it springs. skipIfActive: setting a second one does nothing and keeps the item.
+        statusEffects: [{
+            id: "trap_set", chance: 1.0, skipIfActive: true,
+            applyMessage: "The trap will snap shut on the next enemy to strike {user} in melee.",
+            activeMessage: "A trap is already set."
+        }]
     },
     "item_smoke_bomb": {
         id: "item_smoke_bomb",
         name: "Smoke Bomb",
-        description: "Create a smoke screen to increase evasion.",
+        description: "Throw down a smoke bomb: the smoke hides one ally, raising their evasion for 3 turns.",
+        context: "battle",                            // thrown in a fight only (the bomb is not wasted on the overworld)
         range: "self",
         tags: ["utility", "tactical", "item"],
         battleMessage: "{user} drops a {ability} at their feet!",
@@ -1129,7 +1150,13 @@ export const AbilityDefinitions = {
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.25,
         accuracy: 1.0,
-        statusEffects: [{ id: "evasion_up", chance: 1.0, duration: 3 }]
+        // was "evasion_up", which is not a status in statusEffectDefinitions.js (the bomb did nothing); "evasive" is the +50% evasion status.
+        // skipIfActive: an ally who is already hidden is not stacked or refreshed, and the bomb is kept.
+        statusEffects: [{
+            id: "evasive", chance: 1.0, duration: 3, skipIfActive: true,
+            applyMessage: "{target} is hidden in the smoke!",
+            activeMessage: "{target} is already hidden by smoke."
+        }]
     },
     // Paste into AbilityDefinitions (src/shared/data/abilityDefinitions.js), e.g. at the end of section 15 (UTILITY, TACTICS & TRAPS).
     "torchlight": {
@@ -1146,6 +1173,56 @@ export const AbilityDefinitions = {
             refreshBelow: 0.5, stillActive: "Your torch is still burning well.",   // lighting another while this one has more than half left does nothing (and keeps the torch)
             light: { radius: 7, color: '255, 130, 40', maxAlpha: 0.8, flickerAmp: 0.5, flickerSpeed: 0.12 },   // the player's normal light is radius 4, '255, 200, 100', 0.5
             message: "You light a torch. It will burn for {hours} hours."
+        }]
+    },
+    // Paste into AbilityDefinitions next to "torchlight". Carried by the "escape_rope" item.
+    "escape_rope": {
+        id: "escape_rope",
+        name: "Escape Rope",
+        description: "Haul yourself out of a cave or other interior, back to its entrance.",
+        context: "overworld",                       // never offered in a battle
+        range: "self",
+        tags: ["utility", "item"],
+        targeting: { scope: "self", select: "auto" },
+        accuracy: 1.0,
+        effects: [{
+            type: "exit_interior",                   // AbilitySystem._world_exit_interior: only works while inside (nothing is spent otherwise)
+            message: "The rope pulls taut and hauls you back out to the entrance.",
+            notInside: "There is nothing to escape from out here."
+        }]
+    },
+    // Paste next to "escape_rope". Carried by the "interior_map" item.
+    "read_interior_map": {
+        id: "read_interior_map",
+        name: "Read Map",
+        description: "Unfold a map of the cave or building you are in. Its layout shows on the minimap until you leave.",
+        context: "overworld",                       // never offered in a battle
+        range: "self",
+        tags: ["utility", "item"],
+        targeting: { scope: "self", select: "auto" },
+        accuracy: 1.0,
+        effects: [{
+            type: "show_interior_map",               // AbilitySystem._world_show_interior_map: only works inside (nothing is spent otherwise)
+            message: "You unfold the map. The layout of this place appears on your minimap.",
+            notInside: "There is nothing here to map.",
+            alreadyOpen: "You already have this place mapped."
+        }]
+    },
+    // Paste next to "escape_rope". Carried by the "bedroll" item.
+    "use_bedroll": {
+        id: "use_bedroll",
+        name: "Make Camp",
+        description: "Spread out the bedroll and sleep through the night.",
+        context: "overworld",
+        range: "self",
+        tags: ["utility", "item"],
+        targeting: { scope: "self", select: "auto" },
+        accuracy: 1.0,
+        effects: [{
+            type: "start_encounter",                 // AbilitySystem._world_start_encounter: the scene manager opens the encounter
+            encounterId: "bonfire",                  // PLACEHOLDER: swap for the real sleep encounter when it exists
+            context: { source: "bedroll" },          // handed to the encounter (so it can tell a bedroll from a campfire)
+            message: "You spread out the bedroll and settle in for the night."
         }]
     },
 };

@@ -354,7 +354,7 @@ export const aftermath = {
         // ==========================================
         battle_survivor: {
             displayText: "Battle Survivor",
-            image: { col: 1, row: 1 },
+            image: { col: 1, row: 2 },
             text: "The warrior stands up from the ground and looks at {name}. \"What do you want?\"",
             decisions: [
                 {
@@ -506,10 +506,9 @@ export const aftermath = {
                         {
                             weight: 100,
                             results: [
+                                // The payment is announced here ("Lost 50 currency!"), then the conversation moves on to survivor_bribed
                                 { type: "MODIFY_CURRENCY", payload: { amount: -50 } },
-                                { type: "RECRUIT_CHARACTER", payload: { entityId: "LEGIONARY_COMPANION" } },
-                                { type: "DESTROY_OBJECT" },
-                                { type: "END_ENCOUNTER", payload: null }
+                                { type: "ADVANCE_STAGE", payload: { stageId: "survivor_bribed" } }
                             ]
                         }
                     ]
@@ -517,6 +516,29 @@ export const aftermath = {
                 {
                     text: "Return to conversation.",
                     outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "battle_survivor" } }] }]
+                }
+            ]
+        },
+
+        // A bribe always works. The recruit is the last thing that happens, with no payment or XP message riding on the same result
+        // (the same shape the other recruit stages use), so nothing can cut the recruit short.
+        survivor_bribed: {
+            displayText: "Coin Talks",
+            image: { col: 1, row: 2 },
+            text: "The warrior weighs the coins in his palm and sighs. \"Fine. Put like that, I suppose I can find the time. Lead on.\"",
+            decisions: [
+                {
+                    text: "Welcome him to the party.",
+                    outcomes: [
+                        {
+                            weight: 100,
+                            results: [
+                                { type: "RECRUIT_CHARACTER", payload: { entityId: "LEGIONARY_COMPANION" } },
+                                { type: "DESTROY_OBJECT" },
+                                { type: "END_ENCOUNTER", payload: null }
+                            ]
+                        }
+                    ]
                 }
             ]
         },

@@ -753,7 +753,9 @@ export class CaveGenerator {
          1. the bottom of the deepest room: `depthObjects` (a cluster, see _placeDepth) or the single `depthObject`;
          2. `scatter`, on the ground that is left. Each entry of `scatter` is either
               'ID'                                       (old style: the entries share `scatterChance`, one picked per cell), or
-              { id | pool: [ids], chance, ground? }      its own chance per cell (0.01 = 1 % of the cells). `ground: true` is for things that are
+              { id | pool: [ids], chance, ground?, above? }  its own chance per cell (0.01 = 1 % of the cells). `above: { min, max }` limits the rule to
+                                                         the levels above the cave floor (0 = the floor itself, 1 = the first ledge, ...), so a rarer
+                                                         thing can lie only deep down. `ground: true` is for things that are
                                                          drawn on the floor and never block a step (bones): they may lie anywhere the player can
                                                          walk. Anything else is solid, so it only goes on open ground (every neighbour open, and no
                                                          other solid thing next to it: a few of them in a row could wall a pocket off).
@@ -782,6 +784,10 @@ export class CaveGenerator {
                 for (let i = 0; i < ruled.length && !done; i++) {
                     const e = ruled[i];
                     if (this._hash(c, r, 700 + i * 13) >= e.chance) continue;
+                    if (e.above) {
+                        const up = this._lv(c, r) - this.floorN;
+                        if (up < (e.above.min !== undefined ? e.above.min : 0) || up > (e.above.max !== undefined ? e.above.max : 99)) continue;
+                    }
                     const pool = e.pool || [e.id];
                     const id = pool[Math.floor(this._hash(c, r, 800 + i * 13) * pool.length) % pool.length];
                     if (e.ground) {
@@ -805,41 +811,65 @@ export class CaveGenerator {
     /* The bottom of the deepest room. `depthObjects: [{ id, dx, dy }, ...]` is a cluster with offsets from one anchor cell (the first spot, spiralling out from the
        middle of the main room, where every cell of the cluster is open ground on the lowest level of the cave (its floor), with the cell in front of it (south) open as well, so it can be reached,
        and every cell of the square the cluster spans is walkable ground on that level; that square is then kept free of scattered objects).
-       The old single `depthObject` is the cluster [{ id, dx: 0, dy: 0 }]. */
+       The old single `depthObject` is the cluster [{ id, dx: 0, dy: 0 }].
+       An entry bigger than one cell gives its size in cells, `w` and `h` (default 1): (dx, dy) is then its anchor, the BOTTOM-LEFT cell, and it covers w cells to the
+       right and h cells up from there (the mysterious altar is { id, dx: -1, dy: 1, w: 3, h: 3 }: a 3 x 3 centred on the middle cell of the cluster).
+       `depthAlternatives: [{ chance, objects: [...] }]` are other clusters for the same spot: each cave rolls once per entry (from its own seed, so a cave is
+       always the same), the first that hits replaces `depthObjects` (e.g. the altar in place of the iron chest in about 1 cave in 4). If the alternative does not
+       fit anywhere, the ordinary cluster is placed instead. */
     _placeDepth() {
-        const cluster = this.config.depthObjects || (this.config.depthObject ? [{ id: this.config.depthObject, dx: 0, dy: 0 }] : null);
-        if (!cluster || !this.rooms.length) return;
+        const base = this.config.depthObjects || (this.config.depthObject ? [{ id: this.config.depthObject, dx: 0, dy: 0 }] : null);
+        if (!this.rooms.length) return;
+        const alts = this.config.depthAlternatives || [];
+        const picked = alts.find((alt, i) => this._hash(0, 0, 9100 + i * 17) < alt.chance);
+        const candidates = [];
+        if (picked) candidates.push(picked.objects);
+        if (base) candidates.push(base);
         // the bottom is the cave floor; when the clean-up has left too little of it (or filled it in), the lowest ledge with room for the cluster
         const levels = new Set();
         for (let r = this.bounds.minR; r <= this.bounds.maxR; r++)
             for (let c = this.bounds.minC; c <= this.bounds.maxC; c++) if (this._groundCell(c, r)) levels.add(this._lv(c, r));
         const rm = this.rooms[0];
-        // the square (bounding box) the cluster spans: kept clear of everything else
-        const x0 = Math.min(...cluster.map((o) => o.dx)), x1 = Math.max(...cluster.map((o) => o.dx));
-        const y0 = Math.min(...cluster.map((o) => o.dy)), y1 = Math.max(...cluster.map((o) => o.dy));
-        const area = [];
-        for (let ar = y0; ar <= y1; ar++) for (let ac = x0; ac <= x1; ac++) area.push([ac, ar]);
         const reach = Math.max(this.halfC, this.halfR);
         const spots = [];
         for (let dr = -reach; dr <= reach; dr++) for (let dc = -reach; dc <= reach; dc++) spots.push([dc, dr, dc * dc + dr * dr]);
         spots.sort((a, b) => a[2] - b[2] || a[1] - b[1] || a[0] - b[0]);
-        for (const low of [...levels].sort((a, b) => a - b)) {
-            for (const [dc, dr] of spots) {
-                const c = rm.cx + dc, r = rm.cy + dr;
-                if (this._lv(c, r) !== low) continue;
-                const ok = cluster.every((o) => this._lv(c + o.dx, r + o.dy) === low && this._openCell(c + o.dx, r + o.dy)) &&
-                    cluster.every((o) => this._openCell(c + o.dx, r + o.dy + 1)) &&
-                    // every cell of the square the cluster spans is ordinary ground on that level, so the whole square can be walked
-                    area.every(([ac, ar]) => this._lv(c + ac, r + ar) === low && this._groundCell(c + ac, r + ar));
-                if (!ok) continue;
-                for (const o of cluster) {
-                    const key = `${c + o.dx},${r + o.dy}`;
-                    this.objects.set(key, o.id);
-                    this.solid.add(key);
+        // the cells an entry covers (a plain entry is its own cell) and the row of cells in front of it
+        const footprint = (o) => {
+            const w = o.w || 1, h = o.h || 1, cells = [];
+            for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) cells.push([o.dx + i, o.dy - j]);
+            return cells;
+        };
+        const frontRow = (o) => {
+            const w = o.w || 1, cells = [];
+            for (let i = 0; i < w; i++) cells.push([o.dx + i, o.dy + 1]);
+            return cells;
+        };
+        for (const cluster of candidates) {
+            // the square (bounding box) the cluster spans: kept clear of everything else
+            const all = cluster.flatMap(footprint);
+            const x0 = Math.min(...all.map((p) => p[0])), x1 = Math.max(...all.map((p) => p[0]));
+            const y0 = Math.min(...all.map((p) => p[1])), y1 = Math.max(...all.map((p) => p[1]));
+            const area = [];
+            for (let ar = y0; ar <= y1; ar++) for (let ac = x0; ac <= x1; ac++) area.push([ac, ar]);
+            for (const low of [...levels].sort((a, b) => a - b)) {
+                for (const [dc, dr] of spots) {
+                    const c = rm.cx + dc, r = rm.cy + dr;
+                    if (this._lv(c, r) !== low) continue;
+                    const ok = all.every(([ac, ar]) => this._lv(c + ac, r + ar) === low && this._openCell(c + ac, r + ar)) &&
+                        cluster.every((o) => frontRow(o).every(([ac, ar]) => this._openCell(c + ac, r + ar))) &&
+                        // every cell of the square the cluster spans is ordinary ground on that level, so the whole square can be walked
+                        area.every(([ac, ar]) => this._lv(c + ac, r + ar) === low && this._groundCell(c + ac, r + ar));
+                    if (!ok) continue;
+                    for (const o of cluster) {
+                        this.objects.set(`${c + o.dx},${r + o.dy}`, o.id); // only the anchor cell holds the id; the object's own hitbox does the rest
+                        for (const [ac, ar] of footprint(o)) this.solid.add(`${c + ac},${r + ar}`);
+                    }
+                    for (const [ac, ar] of area) this.reserved.add(`${c + ac},${r + ar}`);
+                    this.depthSpot = { c, r };
+                    this.depthKind = cluster === base ? 'default' : 'alternative';
+                    return;
                 }
-                for (const [ac, ar] of area) this.reserved.add(`${c + ac},${r + ar}`);
-                this.depthSpot = { c, r };
-                return;
             }
         }
     }

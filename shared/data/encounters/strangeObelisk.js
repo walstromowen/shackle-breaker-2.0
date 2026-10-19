@@ -1,81 +1,104 @@
+/* A STRANGE OBELISK
+   Three ways to study it (decipher the glyphs, dig round its base, examine its surface), each ending in a success or a failure stage. Whatever the
+   approach, the party member comes away changed: the success stages hand out a trait (mostly good ones), the failure stages a trait (mostly bad ones),
+   and every implemented trait has a chance to turn up in both. The weights are in one place (GOOD_TRAITS / BAD_TRAITS and the two weights below).
+
+   A fourth option, offered only to a party member who has at least one trait, strips every trait (good and bad) and spends the obelisk. It needs the
+   has_any_trait condition and REMOVE_TRAIT { all: true } in encounterLogic.js.
+
+   Images (encounter_obelisk sheet, 128 x 128 cells): (0,0) the obelisk, (1,0) any success, (2,0) any failure. */
+
+/* every trait in traitDefinitions.js that is fully implemented. 'ghostly' is left out until its ability (become_ethereal) exists in abilityDefinitions.js:
+   add it to GOOD_TRAITS then. */
+const GOOD_TRAITS = [
+  // positive
+  "quick", "inquisitive", "brawler", "tough", "nimble", "deadeye", "pyromaniac", "lumbering", "academic", "athletic", "nocturnal", "ironhide",
+  // conditional
+  "berserker", "claustrophobic", "perfectionist", "enduring", "overconfident",
+  // trigger
+  "martyr", "acidic", "iron_willed", "intimidating", "stealthy", "airborne"
+];
+const BAD_TRAITS = ["clumsy", "frail", "myopic", "superstitious", "lazy", "dull", "sluggish"];
+
+const COMMON = 10;       // weight of each trait the stage favours (good traits after a success, bad traits after a failure)
+const RARE = 1;          // weight of each of the others: a small chance of the unexpected
+const SUCCESS_XP = 40;
+
+/* one outcome: the party member gains `traitId` and the obelisk is spent */
+const gain = (traitId, weight, xp) => ({
+  weight,
+  results: [
+    { type: "ADD_TRAIT", payload: { traitId, target: "active_character" } },
+    ...(xp ? [{ type: "AWARD_XP", payload: { amount: xp, target: "active_character" } }] : []),
+    { type: "DESTROY_OBJECT" },
+    { type: "END_ENCOUNTER", payload: null }
+  ]
+});
+const successTraits = () => [...GOOD_TRAITS.map((t) => gain(t, COMMON, SUCCESS_XP)), ...BAD_TRAITS.map((t) => gain(t, RARE, SUCCESS_XP))];
+const failureTraits = () => [...BAD_TRAITS.map((t) => gain(t, COMMON, 0)), ...GOOD_TRAITS.map((t) => gain(t, RARE, 0))];
+
+/* a skill-check approach: on a failure the flag stops that approach from being tried again at this obelisk */
+const approach = ({ text, attribute, flag, action, success, failure }) => ({
+  text,
+  type: "skill_check",
+  attribute,
+  threshold: 14,
+  conditions: [
+    { type: "context_flag_not_set", flagId: flag },
+    { type: "has_tag", tag: "HUMANOID" }
+  ],
+  customActionText: action,
+  successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: success } }] }],
+  failureOutcomes: [{
+    weight: 100,
+    results: [
+      { type: "SET_CONTEXT_FLAG", payload: { flagId: flag } },
+      { type: "ADVANCE_STAGE", payload: { stageId: failure } }
+    ]
+  }]
+});
+
 export const strangeObelisk = {
   id: "strange_obelisk",
   title: "A Strange Obelisk",
-  imageSheet: "encounter_obelisk", 
+  imageSheet: "encounter_obelisk",
   initialStage: "discovery",
   stages: {
     discovery: {
       displayText: "A Monolith in the Mist",
       image: { col: 0, row: 0 },
-      text: "{name}'s party discovers a towering obelisk of smooth, black stone. It hums with an alien frequency, and the glowing geometries carved into its surface seem to shift when not directly observed.",
+      text: "{name}'s party discovers a towering obelisk of smooth, black stone. Strange geometries are carved into its surface, and they seem to shift when not directly observed. Its base is half buried, and fine seams run across the stone.",
       decisions: [
-        {
-          text: "[INT] Attempt to decipher the shifting glyphs.",
-          type: "skill_check",
+        approach({
+          text: "[INT] Decipher the shifting glyphs.",
           attribute: "intelligence",
-          threshold: 14,
-          conditions: [
-            { type: "context_flag_not_set", flagId: "failed_obelisk_int" },
-            { type: "has_tag", tag: "HUMANOID" }
-          ],
-          customActionText: "{name} steps closer, tracing the impossible geometry with their eyes...",
-          successOutcomes: [
-            { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "decipher_success" } }] }
-          ],
-          failureOutcomes: [
-            { 
-              weight: 100, 
-              results: [
-                { type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_obelisk_int" } },
-                { type: "ADVANCE_STAGE", payload: { stageId: "decipher_fail" } }
-              ] 
-            }
-          ]
-        },
-        {
-          text: "[STR] Touch the stone and channel its raw energy.",
-          type: "skill_check",
+          flag: "failed_obelisk_int",
+          action: "{name} steps closer, tracing the impossible geometry with their eyes...",
+          success: "decipher_success",
+          failure: "decipher_fail"
+        }),
+        approach({
+          text: "[STR] Excavate the earth around its base.",
           attribute: "strength",
-          threshold: 14,
-          conditions: [
-            { type: "context_flag_not_set", flagId: "failed_obelisk_str" },
-            { type: "has_tag", tag: "HUMANOID" }
-          ],
-          customActionText: "{name} braces themselves and places a bare hand against the humming stone...",
-          successOutcomes: [
-            { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "channel_success" } }] }
-          ],
-          failureOutcomes: [
-            { 
-              weight: 100, 
-              results: [
-                { type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_obelisk_str" } },
-                { type: "ADVANCE_STAGE", payload: { stageId: "channel_fail" } }
-              ] 
-            }
-          ]
-        },
+          flag: "failed_obelisk_str",
+          action: "{name} kneels and digs at the packed soil around the base of the stone...",
+          success: "excavate_success",
+          failure: "excavate_fail"
+        }),
+        approach({
+          text: "[DEX] Examine its surface and seams.",
+          attribute: "dexterity",
+          flag: "failed_obelisk_dex",
+          action: "{name} runs careful fingers along the seams, searching for a way in...",
+          success: "examine_success",
+          failure: "examine_fail"
+        }),
         {
-          text: "[ATN] Meditate before the obelisk.",
-          type: "skill_check",
-          attribute: "attunement",
-          threshold: 14,
-          conditions: [
-            { type: "context_flag_not_set", flagId: "failed_obelisk_atn" },
-            { type: "has_tag", tag: "HUMANOID" }
-          ],
-          customActionText: "{name} sits cross-legged before the monolith, opening their mind to its frequency...",
-          successOutcomes: [
-            { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "meditate_success" } }] }
-          ],
-          failureOutcomes: [
-            { 
-              weight: 100, 
-              results: [
-                { type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_obelisk_atn" } },
-                { type: "ADVANCE_STAGE", payload: { stageId: "meditate_fail" } }
-              ] 
-            }
+          text: "Lay a hand on the stone and let it unwrite you.",
+          customActionText: "{name} lays a palm flat against the cold stone...",
+          conditions: [{ type: "has_any_trait" }],
+          outcomes: [
+            { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "unmaking" } }] }
           ]
         },
         {
@@ -85,142 +108,114 @@ export const strangeObelisk = {
         },
         {
           text: "Leave the obelisk alone.",
-          customActionText: "Sensing danger, {name} decides it is best to leave this ancient magic undisturbed.",
+          customActionText: "Sensing danger, {name} decides it is best to leave this ancient stone undisturbed.",
           outcomes: [
             { weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }
           ]
         }
       ]
     },
-    decipher_success: {
-      displayText: "Cosmic Truths",
-      image: { col: 1, row: 0 },
-      text: "The shifting lines suddenly make perfect sense. They recount the early days of the Altus Kingdom. A rush of ancient Alterian knowledge floods {name}'s mind, expanding their understanding of the world.",
+
+    // ---------- unmaking: removes every trait ----------
+    unmaking: {
+      displayText: "The Unwriting",
+      image: { col: 0, row: 0 },
+      text: "The glyphs crawl toward {name}'s hand and the stone grows warm. Whatever {name} has become, for better or worse, it will be unwritten. Every trait, the good with the bad. The stone will not be used twice.",
       decisions: [
         {
-          text: "Absorb the knowledge.",
-          conditions: [{ type: "has_tag", tag: "HUMANOID" }],
+          text: "Let it take everything.",
+          customActionText: "{name} does not pull away. The glyphs sink into the skin and are gone...",
           outcomes: [
             {
               weight: 100,
               results: [
-                { type: "ADD_TRAIT", payload: { traitId: "inquisitive", target: "active_character" } },
-                { type: "AWARD_XP", payload: { amount: 25, target: "active_character" } },
-                { type: "DESTROY_OBJECT" }, // Added to destroy the obelisk
+                { type: "REMOVE_TRAIT", payload: { all: true, target: "active_character" } },
+                { type: "DESTROY_OBJECT" },
                 { type: "END_ENCOUNTER", payload: null }
               ]
             }
           ]
+        },
+        {
+          text: "Pull your hand away.",
+          outcomes: [
+            { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery" } }] }
+          ]
+        }
+      ]
+    },
+
+    // ---------- decipher ----------
+    decipher_success: {
+      displayText: "Cosmic Truths",
+      image: { col: 1, row: 0 },
+      text: "The shifting lines suddenly make perfect sense. They recount the early days of the Altus Kingdom, and the knowledge settles into {name}'s mind and changes who they are.",
+      decisions: [
+        {
+          text: "Take what the stone has taught you.",
+          conditions: [{ type: "has_tag", tag: "HUMANOID" }],
+          outcomes: successTraits()
         }
       ]
     },
     decipher_fail: {
       displayText: "A Fractured Mind",
-      image: { col: 1, row: 1 },
-      text: "The geometries twist in impossible ways. It hurts to look at. A sharp pain shoots behind {name}'s eyes, disrupting their coordination and balance.",
+      image: { col: 2, row: 0 },
+      text: "The geometries twist in impossible ways. It hurts to look at. A sharp pain shoots behind {name}'s eyes, and something in them is left altered.",
       decisions: [
         {
           text: "Stumble away from the stone.",
-          outcomes: [
-            {
-              weight: 100,
-              results: [
-                { type: "ADD_TRAIT", payload: { traitId: "clumsy", target: "active_character" } },
-                { type: "DESTROY_OBJECT" }, // Added to destroy the obelisk
-                { type: "END_ENCOUNTER", payload: null }
-              ]
-            }
-          ]
+          outcomes: failureTraits()
         }
       ]
     },
-    channel_success: {
-      displayText: "Surging Power",
+
+    // ---------- excavate ----------
+    excavate_success: {
+      displayText: "Buried Foundations",
+      image: { col: 1, row: 0 },
+      text: "Beneath the soil, the obelisk's foundation is carved with row upon row of tools, scenes and figures. Working them free, {name} learns more about the first Alterians than any book could say, and takes it to heart.",
+      decisions: [
+        {
+          text: "Take what the stone has taught you.",
+          conditions: [{ type: "has_tag", tag: "HUMANOID" }],
+          outcomes: successTraits()
+        }
+      ]
+    },
+    excavate_fail: {
+      displayText: "A Costly Dig",
       image: { col: 2, row: 0 },
-      text: "Searing energy courses through {name}'s veins! The raw, unbridled magic of the first Alterians hardens their flesh and quickens their reflexes without destroying them.",
+      text: "The earth round the base is packed hard as iron. The stone shifts, grinds, and bites, and by the time {name} pulls free they are bruised, winded, and not quite the same.",
       decisions: [
         {
-          text: "Embrace the physical mutation.",
+          text: "Give up the dig.",
+          outcomes: failureTraits()
+        }
+      ]
+    },
+
+    // ---------- examine ----------
+    examine_success: {
+      displayText: "A Hidden Seam",
+      image: { col: 1, row: 0 },
+      text: "One seam is not a seam at all: a panel slides aside under {name}'s fingers and, inside, a pattern of carvings that teaches the hand something the mind cannot name.",
+      decisions: [
+        {
+          text: "Take what the stone has taught you.",
           conditions: [{ type: "has_tag", tag: "HUMANOID" }],
-          outcomes: [
-            {
-              weight: 50,
-              results: [
-                { type: "ADD_TRAIT", payload: { traitId: "tough", target: "active_character" } },
-                { type: "DESTROY_OBJECT" }, // Added here
-                { type: "END_ENCOUNTER", payload: null }
-              ]
-            },
-            {
-              weight: 50,
-              results: [
-                { type: "ADD_TRAIT", payload: { traitId: "quick", target: "active_character" } },
-                { type: "DESTROY_OBJECT" }, // And added here for the other 50% roll
-                { type: "END_ENCOUNTER", payload: null }
-              ]
-            }
-          ]
+          outcomes: successTraits()
         }
       ]
     },
-    channel_fail: {
-      displayText: "Sapped Strength",
-      image: { col: 2, row: 1 },
-      text: "The obelisk acts as a parasite! As soon as {name} touches it, their vitality is forcefully drained, leaving them feeling hollow, weak, and overly cautious.",
+    examine_fail: {
+      displayText: "The Stone Bites Back",
+      image: { col: 2, row: 0 },
+      text: "A seam snaps shut on {name}'s hand and a dull ache runs up the arm. Something about the stone has left a mark that will not fade.",
       decisions: [
         {
-          text: "Tear your hand away and flee.",
-          outcomes: [
-            {
-              weight: 100,
-              results: [
-                { type: "ADD_TRAIT", payload: { traitId: "timid", target: "active_character" } },
-                { type: "DESTROY_OBJECT" }, // And added here for the other 50% roll
-                { type: "END_ENCOUNTER", payload: null }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    meditate_success: {
-      displayText: "Alterian Echoes",
-      image: { col: 3, row: 0 },
-      text: "{name}'s mind synchronizes with the obelisk's frequency. Visions of the ancient Altus Kingdom flood their thoughts, revealing that this stone was crafted by the early Alterians—the very first to discover magic. As they study the ancient architecture, a sudden, powerful surge of raw magical energy erupts from the stone!",
-      decisions: [
-        {
-          text: "Absorb the magical surge!",
-          conditions: [{ type: "has_tag", tag: "HUMANOID" }],
-          outcomes: [
-            {
-              weight: 100,
-              results: [
-                { type: "AWARD_XP", payload: { amount: 150, target: "active_character" } },
-                { type: "DESTROY_OBJECT" }, // And added here for the other 50% roll
-                { type: "END_ENCOUNTER", payload: null }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    meditate_fail: {
-      displayText: "The Abyss Gazes Back",
-      image: { col: 3, row: 1 },
-      text: "{name} opens their mind to the monolith, but something horrifying is waiting inside its frequency. A massive, cold presence peers into their soul, instilling a deep, shaking terror.",
-      decisions: [
-        {
-          text: "Break the connection in a panic!",
-          outcomes: [
-            {
-              weight: 100,
-              results: [
-                { type: "ADD_TRAIT", payload: { traitId: "cowardly", target: "active_character" } },
-                { type: "DESTROY_OBJECT" }, // Added here to destroy the obelisk after failure  
-                { type: "END_ENCOUNTER", payload: null }
-              ]
-            }
-          ]
+          text: "Pull away from the stone.",
+          outcomes: failureTraits()
         }
       ]
     }

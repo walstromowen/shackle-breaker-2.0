@@ -5,7 +5,6 @@ import { events } from '../../core/eventBus.js';
 import { DragAndDropManager } from '../../ui/dragAndDropManager.js';
 import { ScrollManager } from '../../ui/scrollManager.js';
 import { ContextMenuManager } from '../../ui/contextMenuManager.js';
-import { ItemUpgradeSystem } from '../../../../shared/systems/itemUpgradeSystem.js';
 import { InventorySystem } from '../../../../shared/systems/inventorySystem.js';
 import { ItemDefinitions } from '../../../../shared/data/itemDefinitions.js';
 import { AbilitySystem } from '../../../../shared/systems/abilitySystem.js';
@@ -36,6 +35,7 @@ export class CharacterSummaryController extends BaseController {
         this.viewMode = 'STATS';
         this.activeSlots = [];
         this.slotIndex = -1;
+        this._lastSlotIndex = 0; // the slot the cursor was on before it moved to the inventory (Back returns to it)
         this.filteredInventory = [];
         this.inventoryIndex = -1;
 
@@ -186,6 +186,7 @@ export class CharacterSummaryController extends BaseController {
             } else if (hitboxId.startsWith('INV_ITEM_')) {
                 const idx = parseInt(hitboxId.split('_')[2], 10);
                 if (!isNaN(idx) && (this.inventoryIndex !== idx || this.state !== 'INVENTORY')) {
+                    if (this.slotIndex !== -1) this._lastSlotIndex = this.slotIndex;
                     this.inventoryIndex = idx;
                     this.state = 'INVENTORY';
                     this.slotIndex = -1;
@@ -307,12 +308,32 @@ export class CharacterSummaryController extends BaseController {
             return;
         }
 
+        // Right click undoes the most recent thing, one step per click: a half-made hotbar choice, a held item, an open menu ...
+        if (this.pendingHotbarItem) {
+            this.pendingHotbarItem = null;
+            this.notice = null;
+            this.playCancelSound();
+            return;
+        }
+        if (this.dragAndDropManager.dragState.active) {
+            this.dragAndDropManager.cancelDrag();
+            this.playCancelSound();
+            return;
+        }
         if (this.contextMenuManager.menu) {
             this.contextMenuManager.close();
             this.playCancelSound();
-        } else {
-            this._handleBack(); // plays its own cancel sound
+            return;
         }
+
+        // ... and with nothing left to undo it leaves the screen. It does not go through the keyboard's "inventory -> slots -> leave"
+        // two-step: with the mouse that step is not a place the player ever chose to be in, and it could trap the click (see _handleBack).
+        this._leaveScreen();
+    }
+
+    _leaveScreen() {
+        this.playCancelSound();
+        events.emit('CHANGE_SCENE', { scene: this.returnScene });
     }
 
     onDragStart(hitboxId) {
@@ -418,10 +439,6 @@ export class CharacterSummaryController extends BaseController {
                     }
                 }
                 
-                if (ItemUpgradeSystem.canUpgrade(item)) {
-                    options.push({ label: 'Upgrade', actionId: 'UPGRADE' });
-                }
-
                 if (isStackable) {
                     options.push({ label: 'Drop 1', actionId: 'DROP_ONE' });
                     options.push({ label: 'Drop All', actionId: 'DROP_ALL' });
@@ -487,9 +504,6 @@ export class CharacterSummaryController extends BaseController {
                 } else {
                     console.warn('useItem method missing on CharacterSummaryLogic');
                 }
-                break;
-            case 'UPGRADE':
-                ItemUpgradeSystem.upgradeItem(item);
                 break;
             case 'DROP_ONE':
                 if (this.logic.dropItem) {
@@ -605,13 +619,20 @@ export class CharacterSummaryController extends BaseController {
             return;
         }
 
-        this.playCancelSound();
-        if (this.state === 'INVENTORY') {
+        // From the inventory, Back first returns to the slots; from the slots (or when there are no slots to return to) it leaves.
+        if (this.state === 'INVENTORY' && this.activeSlots.length > 0) {
+            this.playCancelSound();
             this.state = 'SLOTS';
             this.inventoryIndex = -1;
+            // _validateIndices() hands focus straight back to the inventory when no slot is selected (slotIndex -1) and the inventory is not empty.
+            // The cursor is on -1 whenever the inventory was reached by the mouse or by arrowing over from the slots, so Back did nothing and
+            // the player was stuck there. Put the cursor back on a slot first.
+            if (this.slotIndex === -1) {
+                this.slotIndex = (this._lastSlotIndex >= 0 && this._lastSlotIndex < this.activeSlots.length) ? this._lastSlotIndex : 0;
+            }
             this.updateFilteredInventory();
         } else {
-            events.emit('CHANGE_SCENE', { scene: this.returnScene });
+            this._leaveScreen();
         }
     }
 
@@ -621,6 +642,7 @@ export class CharacterSummaryController extends BaseController {
 
         if (targetPanel === 'INVENTORY') {
             if (this.inventoryIndex === -1) this.inventoryIndex = 0;
+            if (this.slotIndex !== -1) this._lastSlotIndex = this.slotIndex;
             this.slotIndex = -1;
             this.scrollToItem(this.inventoryIndex);
         } else {

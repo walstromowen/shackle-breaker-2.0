@@ -9,6 +9,11 @@ import { gameState } from '../state/gameState.js';
 const EFFECTS_HANDLED_ELSEWHERE = ['summon', 'switch_self'];
 
 export class AbilitySystem {
+    /* Set by the scene manager. Overworld effects that must change the live scene (leaving an interior...) return `worldAction: { type, ... }`; it is handed to this
+       function the moment the effect runs, so every caller (hotbar, item menu, anything later) gets the behaviour without doing anything. shared/ may not import
+       the client, which is why the client plugs itself in here. */
+    static worldActionHandler = null;
+
     /* Where may this ability be used? 'battle', 'overworld' or 'both' (see AbilityModel.contextOf). where = 'battle' | 'overworld'. */
     static usableIn(abilityId, where) {
         const ctx = AbilityModel.contextOf(AbilityDefinitions[abilityId]);
@@ -126,7 +131,10 @@ export class AbilitySystem {
                         result.success = true;
                         result.outcome = 'WORLD';
                         result.message = result.message ? `${result.message} ${sub.message}` : sub.message;
-                        if (sub.worldAction) (result.worldActions = result.worldActions || []).push(sub.worldAction);
+                        if (sub.worldAction) {
+                            (result.worldActions = result.worldActions || []).push(sub.worldAction);
+                            this._dispatchWorldAction(sub.worldAction);
+                        }
                     } else if (sub.message && !result.success) {
                         result.message = result.message ? `${result.message} ${sub.message}` : sub.message; // why it did nothing ("Your torch is still burning well.")
                     }
@@ -145,6 +153,12 @@ export class AbilitySystem {
                 if (roll <= chance) {
                     const existingStatus = (target.statusEffects || []).find(s => s.id === statusDef.id);
                     if (existingStatus) {
+                        // `skipIfActive: true` -- do not stack or refresh; nothing happens and (when nothing else worked) the item is kept. A bear trap that is already set.
+                        if (statusDef.skipIfActive) {
+                            const why = this._parseMessage(statusDef.activeMessage || '{target} already has {status}.', source, target, def, { status: existingStatus.name });
+                            if (!result.success) result.message = ((result.message || '') + ' ' + why).trim();
+                            continue;
+                        }
                         existingStatus.addStack();
                         result.success = true;
                         result.addedTags.push(statusDef.id);
@@ -250,10 +264,13 @@ export class AbilitySystem {
             if (target.statusEffects && Array.isArray(target.statusEffects)) {
                 for (let i = target.statusEffects.length - 1; i >= 0; i--) {
                     const status = target.statusEffects[i];
-                    const reaction = status.onEvent('ON_DAMAGE_RECEIVED', target, { attacker: source, damage: calc.damage });
+                    // range = the range of the ability that hit ('melee', 'ranged'), so a status can answer only melee attacks (see StatusEffectModel `range`)
+                    const reaction = status.onEvent('ON_DAMAGE_RECEIVED', target, { attacker: source, damage: calc.damage, range: def && def.range });
                     if (reaction.messages && reaction.messages.length > 0) {
                         calc.message += ` ${reaction.messages.join(' ')}`;
                     }
+                    const applied = this._applyReactionStatuses(reaction, target);
+                    if (applied) calc.message += ` ${applied}`;
                     if (status.isExpired()) {
                         target.removeStatusEffect(status.id);
                     }
@@ -264,6 +281,24 @@ export class AbilitySystem {
             calc.message = this._parseMessage(template, source, target, def);
         }
         return calc;
+    }
+
+    /* A status effect that answers a hit by putting ANOTHER status on someone (the bear trap binds its attacker) reports it in reaction.applyStatuses.
+       Build and apply them here. `holder` is whose status reacted; it is recorded as the inflictor. Returns the messages to add to the log. */
+    static _applyReactionStatuses(reaction, holder) {
+        const messages = [];
+        for (const entry of (reaction && reaction.applyStatuses) || []) {
+            const victim = entry.target;
+            if (!victim || typeof victim.applyStatusEffect !== 'function') continue;
+            const effect = StatusEffectFactory.createEffect(entry.id, entry.charges, holder);
+            if (!effect) {
+                console.error(`[AbilitySystem] A status reacted by applying "${entry.id}", which StatusEffectFactory could not create.`);
+                continue;
+            }
+            victim.applyStatusEffect(effect); // an existing one just has its charges reset
+            if (entry.message) messages.push(entry.message.replace(/{target}/g, victim.name || 'the target').replace(/{status}/g, effect.name));
+        }
+        return messages.join(' ');
     }
 
     static _handleRecover(effect, source, target, def) {
@@ -324,6 +359,46 @@ export class AbilitySystem {
         };
         const hours = Math.round(minutes / 6) / 10;
         return { success: true, message: this._fillTemplate(effect.message || '{name} lasts {hours} hours.', { name, hours }) };
+    }
+
+    /* { type: 'exit_interior', message?, notInside? }
+       Takes the player from inside a cave / house back to the entrance they came in by (the same place walking out of it would). Outside, it does nothing and
+       the item is kept. The actual move is the scene manager's job: this only checks that it makes sense and sends { type: 'exit_interior' } on. */
+    static _world_exit_interior(effect) {
+        const w = gameState.world || {};
+        if (!w.isInterior || !w.savedOverworld) {
+            return { success: false, message: effect.notInside || 'There is nothing to escape from here.' };
+        }
+        return { success: true, message: effect.message || 'You are hauled back out to the entrance.', worldAction: { type: 'exit_interior' } };
+    }
+
+    /* { type: 'show_interior_map', message?, notInside?, alreadyOpen? }
+       Turns the minimap on for the interior the player is standing in. gameState.world.interiorMapId holds the id of that interior (gameState.world.interiorId); the
+       minimap draws inside only while the two match, and the scene manager clears it when the player leaves or enters an interior, so the map is good for this one
+       visit. Outside, or with the map already open, it does nothing and the item is kept. */
+    static _world_show_interior_map(effect) {
+        const w = gameState.world || {};
+        if (!w.isInterior || !w.interiorId) return { success: false, message: effect.notInside || 'There is nothing here to map.' };
+        if (w.interiorMapId === w.interiorId) return { success: false, message: effect.alreadyOpen || 'You already have this place mapped.' };
+        w.interiorMapId = w.interiorId;
+        return { success: true, message: effect.message || 'You unfold the map.' };
+    }
+
+    /* { type: 'start_encounter', encounterId, context?, message? }
+       Opens an encounter from the item (a bedroll: the sleep encounter). The scene manager does the opening (worldAction 'start_encounter'); the item is spent by
+       whoever used it, as for any other successful overworld ability. */
+    static _world_start_encounter(effect) {
+        if (!effect.encounterId) return { success: false, message: 'Nothing happens.' };
+        return {
+            success: true,
+            message: effect.message || '',
+            worldAction: { type: 'start_encounter', encounterId: effect.encounterId, context: { ...(effect.context || {}) } }
+        };
+    }
+
+    static _dispatchWorldAction(action) {
+        if (typeof this.worldActionHandler === 'function') this.worldActionHandler(action);
+        else console.warn(`[AbilitySystem] World action "${action.type}" has no handler (the scene manager sets AbilitySystem.worldActionHandler); nothing happened.`);
     }
 
     /* { type: 'grant_currency', amount, message? } */

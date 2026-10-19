@@ -1,3 +1,5 @@
+// ITEM VALUES (currency): the scale is 5x the old one, so a Shortsword is 100. Every item keeps its price relative to the others.
+// (artifact_of_the_dev, a test item, keeps its 9999.)
 export const ItemDefinitions = {
   // --- WEAPONS ---
   "wooden_stick": {
@@ -6,7 +8,7 @@ export const ItemDefinitions = {
     slot: "oneHand",
     type: "weapon",
     description: "A sturdy branch found on the forest floor.",
-    value: 5,
+    value: 25,
     icon: { col: 11, row: 0 },
     attack: { blunt: 3 },
     grantedAbilities: ["strike"]
@@ -18,7 +20,7 @@ export const ItemDefinitions = {
     slot: "oneHand",
     type: "weapon",
     description: 'A standard dagger, perfect for quick strikes.',
-    value: 20,
+    value: 100,
     icon: { col: 0, row: 0 },
     attack: { pierce: 3, slash: 2 },
     grantedAbilities: ["slash", "quick_stab"],
@@ -42,7 +44,7 @@ export const ItemDefinitions = {
     slot: "oneHand",
     type: "weapon",
     description: 'A standard shortsword. Standard issue shortsword of the Altus legion. "A shorter longsword is a faster longsword" - Commander Mentoras.',
-    value: 20,
+    value: 100,
     icon: { col: 1, row: 0 },
     attack: { pierce: 3, slash: 3 },
     grantedAbilities: ["slash", "thrust"],
@@ -67,7 +69,7 @@ export const ItemDefinitions = {
     slot: "oneHand",
     type: "weapon",
     description: 'A battered handaxe. After the fall of Altus kingdom, many common tools were repurposed as weapons much like this well worn axe. "An axe is a simple lever. The harder you pull the lever, the quicker your work becomes." - Commander Mentoras.',
-    value: 20,
+    value: 100,
     icon: { col: 2, row: 0 },
     attack: { blunt: 3, slash: 3 },
     grantedAbilities: ["slash", "strike"],
@@ -93,7 +95,7 @@ export const ItemDefinitions = {
     slot: "oneHand",
     type: "weapon",
     description: 'A stout pickaxe with a stone head lashed to a wooden haft. Built to break rock, not men, though it will do in a pinch. "A pick is patient. Give it time and it will open any mountain." - Commander Mentoras.',
-    value: 18,
+    value: 90,
     icon: { col: 13, row: 0 },            // PLACEHOLDER: unused cell on the weapon sheet; draw a pickaxe here
     attack: { pierce: 2, blunt: 1 },     // deliberately weak: handaxe is 3/3, dagger 3/2
     grantedAbilities: ["strike"],
@@ -113,7 +115,7 @@ export const ItemDefinitions = {
     slot: "twoHand",
     type: "weapon",
     description: 'A standard shortbow. Common bow used to hunt game and defend against threats. "Sometimes its better to end a fight from afar before it begins." - Commander Mentoras.',
-    value: 20,
+    value: 100,
     icon: { col: 5, row: 0 },
     attack: { pierce: 3, slash: 3 },
     grantedAbilities: ["loose_arrow", "quick_draw"],
@@ -138,7 +140,7 @@ export const ItemDefinitions = {
     slot: "twoHand",
     type: "weapon",
     description: 'A standard crossbow. Standard issue crossbow of the Alterian watchmen. "A crossbow is the bow of a lazy man, and the weapon of an efficient adversary." - Commander Mentoras.',
-    value: 20,
+    value: 100,
     icon: { col: 6, row: 0 },
     attack: { pierce: 3, slash: 3 },
     grantedAbilities: ["loose_arrow", "quick_draw"],
@@ -163,7 +165,7 @@ export const ItemDefinitions = {
     slot: "twoHand",
     type: "weapon",
     description: 'A standard warhammer. Heavy and crushing.',
-    value: 20,
+    value: 100,
     icon: { col: 3, row: 0 },
     attack: { blunt: 5},
     grantedAbilities: ["strike", "cleave"],
@@ -188,8 +190,8 @@ export const ItemDefinitions = {
     slot: "oneHand",
     type: "weapon",
     description: `A standard spear. Standard issue spear of the Altus legion. "Keep your enemies close and your friends at spear's length." - Commander Mentoras.`,
-    value: 20,
-    icon: { col: 3, row: 0 },
+    value: 100,
+    icon: { col: 4, row: 0 },
     attack: { pierce: 5},
     grantedAbilities: ["thrust"],
     maxLevel: 5,
@@ -212,7 +214,7 @@ export const ItemDefinitions = {
     slot: "twoHand",
     type: "weapon",
     description: 'A repurposed farming tool with a wickedly curved blade. Originally forged to reap grain in the fertile valleys of Altus, it now harvests a far more grim crop. "The arc of a scythe is absolute. Do not swing at a single foe; swing to clear the field." - Commander Mentoras.',
-    value: 25,
+    value: 125,
     icon: { col: 8, row: 0 },
     attack: { slash: 5, pierce: 1 },
     grantedAbilities: ["slash"],
@@ -237,8 +239,8 @@ export const ItemDefinitions = {
     slot: "twoHand",
     type: "weapon",
     description: 'A polearm tipped with a sweeping blade. Standard issue for vanguard elite units tasked with holding back swarms. "A spear thrusts to kill one; a glaive sweeps to remind an army why they fear the front line." - Commander Mentoras.',
-    value: 30,
-    icon: { col: 4, row: 0 },
+    value: 150,
+    icon: { col: 7, row: 0 },
     attack: { slash: 4, pierce: 3 },
     grantedAbilities: ["slash", "thrust"],
     maxLevel: 5,
@@ -262,7 +264,7 @@ export const ItemDefinitions = {
     slot: "oneHand",
     type: "shield",
     description: 'A wooden buckler. A buckler fashioned from hard wood. A blue and green symbol of unknown origin is painted on its front.',
-    value: 20,
+    value: 100,
     icon: { col: 3, row: 0 },
     defense: { blunt: 2, slash: 2, pierce: 1 },
     resistance: { blunt: 0.02, slash: 0.03, pierce: 0.03},
@@ -283,13 +285,14 @@ export const ItemDefinitions = {
   },
 
   // --- INSIGHT WEAPONS ---
+  // Upgrading an insight weapon costs ONE MORE copy of the same insight per level (2, 3, 4 and 5), plus currency.
   "insight_of_fire": {
     id: "insight_of_fire",
     name: "Insight of Fire",
     slot: "oneHand",
     type: "weapon",
     description: "An insight into a firey truth.",
-    value: 20,
+    value: 100,
     icon: { col: 0, row: 1 },
     attack: { fire: 5},
     grantedAbilities: ["fireball"],
@@ -301,8 +304,10 @@ export const ItemDefinitions = {
       3: ["meteor_shower"]
     },
     upgradeCosts: {
-      2: { currency: 100, materials: { "stone": 5 } },
-      3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+      2: { currency: 50, materials: { "insight_of_fire": 1 } },
+      3: { currency: 150, materials: { "insight_of_fire": 1 } },
+      4: { currency: 300, materials: { "insight_of_fire": 1 } },
+      5: { currency: 500, materials: { "insight_of_fire": 1 } }
     }
   },
   "insight_of_water": {
@@ -311,7 +316,7 @@ export const ItemDefinitions = {
     slot: "oneHand",
     type: "weapon",
     description: "An insight into a watery truth.",
-    value: 20,
+    value: 100,
     icon: { col: 1, row: 1 },
     attack: { water: 5},
     grantedAbilities: ["water_blast"],
@@ -323,8 +328,10 @@ export const ItemDefinitions = {
       2: ["waterfall"]
     },
     upgradeCosts: {
-      2: { currency: 100, materials: { "stone": 5 } },
-      3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+      2: { currency: 50, materials: { "insight_of_water": 1 } },
+      3: { currency: 150, materials: { "insight_of_water": 1 } },
+      4: { currency: 300, materials: { "insight_of_water": 1 } },
+      5: { currency: 500, materials: { "insight_of_water": 1 } }
     }
   },
   "insight_of_earth": {
@@ -333,7 +340,7 @@ export const ItemDefinitions = {
     slot: "oneHand",
     type: "weapon",
     description: "An insight into an earthy truth.",
-    value: 20,
+    value: 100,
     icon: { col: 2, row: 1 },
     attack: { earth: 5},
     grantedAbilities: ["vine_lash"],
@@ -347,8 +354,10 @@ export const ItemDefinitions = {
       4: ["acid_pool"]
     },
     upgradeCosts: {
-      2: { currency: 100, materials: { "stone": 5 } },
-      3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+      2: { currency: 50, materials: { "insight_of_earth": 1 } },
+      3: { currency: 150, materials: { "insight_of_earth": 1 } },
+      4: { currency: 300, materials: { "insight_of_earth": 1 } },
+      5: { currency: 500, materials: { "insight_of_earth": 1 } }
     }
   },
   "insight_of_lightning": {
@@ -357,7 +366,7 @@ export const ItemDefinitions = {
     slot: "oneHand",
     type: "weapon",
     description: "An insight into an electrifying truth.",
-    value: 20,
+    value: 100,
     icon: { col: 3, row: 1 },
     attack: { lightning: 5},
     grantedAbilities: ["shock"],
@@ -369,8 +378,10 @@ export const ItemDefinitions = {
       2: ["overload"]
     },
     upgradeCosts: {
-      2: { currency: 100, materials: { "stone": 5 } },
-      3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+      2: { currency: 50, materials: { "insight_of_lightning": 1 } },
+      3: { currency: 150, materials: { "insight_of_lightning": 1 } },
+      4: { currency: 300, materials: { "insight_of_lightning": 1 } },
+      5: { currency: 500, materials: { "insight_of_lightning": 1 } }
     }
   },
   "insight_of_ice": {
@@ -379,7 +390,7 @@ export const ItemDefinitions = {
     slot: "oneHand",
     type: "weapon",
     description: "An insight into a frozen truth.",
-    value: 20,
+    value: 100,
     icon: { col: 4, row: 1 },
     attack: { ice: 5},
     grantedAbilities: ["ice_shard"],
@@ -391,8 +402,10 @@ export const ItemDefinitions = {
       2: ["frigid_gale"]
     },
     upgradeCosts: {
-      2: { currency: 100, materials: { "stone": 5 } },
-      3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+      2: { currency: 50, materials: { "insight_of_ice": 1 } },
+      3: { currency: 150, materials: { "insight_of_ice": 1 } },
+      4: { currency: 300, materials: { "insight_of_ice": 1 } },
+      5: { currency: 500, materials: { "insight_of_ice": 1 } }
     }
   },
   "insight_of_wind": {
@@ -401,7 +414,7 @@ export const ItemDefinitions = {
     slot: "oneHand",
     type: "weapon",
     description: "An insight into a booming truth.",
-    value: 20,
+    value: 100,
     icon: { col: 5, row: 1 },
     attack: { wind: 5},
     grantedAbilities: ["strike"],
@@ -410,8 +423,10 @@ export const ItemDefinitions = {
       attack: { wind: 3 }
     },
     upgradeCosts: {
-      2: { currency: 100, materials: { "stone": 5 } },
-      3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+      2: { currency: 50, materials: { "insight_of_wind": 1 } },
+      3: { currency: 150, materials: { "insight_of_wind": 1 } },
+      4: { currency: 300, materials: { "insight_of_wind": 1 } },
+      5: { currency: 500, materials: { "insight_of_wind": 1 } }
     }
   },
   "insight_of_arcane": {
@@ -420,7 +435,7 @@ export const ItemDefinitions = {
     slot: "oneHand",
     type: "weapon",
     description: "An insight into an arcane truth.",
-    value: 20,
+    value: 100,
     icon: { col: 6, row: 1 },
     attack: { arcane: 5},
     grantedAbilities: ["arcane_dart"],
@@ -432,8 +447,10 @@ export const ItemDefinitions = {
       2: ["magic_missile"]
     },
     upgradeCosts: {
-      2: { currency: 0,  },
-      3: { currency: 1000,  }
+      2: { currency: 50, materials: { "insight_of_arcane": 1 } },
+      3: { currency: 150, materials: { "insight_of_arcane": 1 } },
+      4: { currency: 300, materials: { "insight_of_arcane": 1 } },
+      5: { currency: 500, materials: { "insight_of_arcane": 1 } }
     }
   },
   "insight_of_light": {
@@ -442,7 +459,7 @@ export const ItemDefinitions = {
     slot: "oneHand",
     type: "weapon",
     description: "An insight into a luminous truth.",
-    value: 20,
+    value: 100,
     icon: { col: 7, row: 1 },
     attack: { light: 5},
     grantedAbilities: ["spite"],
@@ -455,8 +472,10 @@ export const ItemDefinitions = {
       3: ["healing_rain"]
     },
     upgradeCosts: {
-      2: { currency: 100, materials: { "stone": 5 } },
-      3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+      2: { currency: 50, materials: { "insight_of_light": 1 } },
+      3: { currency: 150, materials: { "insight_of_light": 1 } },
+      4: { currency: 300, materials: { "insight_of_light": 1 } },
+      5: { currency: 500, materials: { "insight_of_light": 1 } }
     }
   },
   "insight_of_darkness": {
@@ -465,7 +484,7 @@ export const ItemDefinitions = {
     slot: "oneHand",
     type: "weapon",
     description: "An insight into a shadowy truth.",
-    value: 20,
+    value: 100,
     icon: { col: 8, row: 1 },
     attack: { dark: 5},
     grantedAbilities: ["spirit_reap"],
@@ -474,8 +493,10 @@ export const ItemDefinitions = {
       attack: { dark: 3 }
     },
     upgradeCosts: {
-      2: { currency: 100, materials: { "stone": 5 } },
-      3: { currency: 300, materials: { "iron_ingot": 2, "stone": 10 } }
+      2: { currency: 50, materials: { "insight_of_darkness": 1 } },
+      3: { currency: 150, materials: { "insight_of_darkness": 1 } },
+      4: { currency: 300, materials: { "insight_of_darkness": 1 } },
+      5: { currency: 500, materials: { "insight_of_darkness": 1 } }
     }
   },
 
@@ -486,7 +507,7 @@ export const ItemDefinitions = {
     slot: "head",
     type: "armor",
     description: "A tattered hood that barely keeps the rain off.",
-    value: 8,
+    value: 40,
     icon: { col: 0, row: 0 },
     defense: { slash: 1 },
     resistance: { lightning: 0.01, ice: 0.01, wind: 0.01, light: 0.01 }
@@ -497,7 +518,7 @@ export const ItemDefinitions = {
     slot: "torso",
     type: "armor",
     description: "A tattered shirt that offers little physical protection but breathes well.",
-    value: 15,
+    value: 75,
     icon: { col: 0, row: 1 },
     defense: { blunt: 1, slash: 1, pierce: 1 },
     resistance: { pierce: 0.01 }
@@ -508,7 +529,7 @@ export const ItemDefinitions = {
     slot: "arms",
     type: "armor",
     description: "Tattered gloves. Better than bare hands.",
-    value: 5,
+    value: 25,
     icon: { col: 1, row: 2 },
     defense: { fire: 1 },
     resistance: { earth: 0.02 }
@@ -519,7 +540,7 @@ export const ItemDefinitions = {
     slot: "legs",
     type: "armor",
     description: "Tattered trousers.",
-    value: 10,
+    value: 50,
     icon: { col: 0, row: 3 },
     defense: { blunt: 1, slash: 1 },
     resistance: { slash: 0.01 }
@@ -530,7 +551,7 @@ export const ItemDefinitions = {
     slot: "feet",
     type: "armor",
     description: "Tattered boots.",
-    value: 6,
+    value: 30,
     icon: { col: 0, row: 4 },
     defense: { blunt: 1 },
     resistance: { fire: 0.01, earth: 0.01 }
@@ -543,7 +564,7 @@ export const ItemDefinitions = {
     slot: "head",
     type: "armor",
     description: "A simple hood that keeps the rain off.",
-    value: 8,
+    value: 40,
     icon: { col: 1, row: 0 },
     defense: { slash: 1 },
     resistance: { arcane: 0.01, light: 0.01, dark: 0.01 },
@@ -562,7 +583,7 @@ export const ItemDefinitions = {
     slot: "torso",
     type: "armor",
     description: "A simple woven robe.",
-    value: 15,
+    value: 75,
     icon: { col: 1, row: 1 },
     defense: { blunt: 1, slash: 1, pierce: 1 },
     resistance: { fire: 0.01, ice: 0.01, arcane: 0.02 },
@@ -581,7 +602,7 @@ export const ItemDefinitions = {
     slot: "arms",
     type: "armor",
     description: "Thin gloves. Better than bare hands.",
-    value: 5,
+    value: 25,
     icon: { col: 1, row: 2 },
     defense: { blunt: 1 },
     resistance: { ice: 0.01 },
@@ -600,7 +621,7 @@ export const ItemDefinitions = {
     slot: "legs",
     type: "armor",
     description: "Standard woven trousers.",
-    value: 10,
+    value: 50,
     icon: { col: 1, row: 3 },
     defense: { blunt: 1, slash: 1 },
     resistance: { arcane: 0.01 },
@@ -619,7 +640,7 @@ export const ItemDefinitions = {
     slot: "feet",
     type: "armor",
     description: "Soft-soled shoes.",
-    value: 6,
+    value: 30,
     icon: { col: 1, row: 4 },
     defense: { blunt: 1 },
     resistance: { fire: 0.01 },
@@ -640,7 +661,7 @@ export const ItemDefinitions = {
     slot: "head",
     type: "armor",
     description: "A boiled leather cap.",
-    value: 15,
+    value: 75,
     icon: { col: 2, row: 0 },
     defense: { blunt: 1, slash: 2, pierce: 1 },
     maxLevel: 5,
@@ -658,7 +679,7 @@ export const ItemDefinitions = {
     slot: "torso",
     type: "armor",
     description: "Toughened leather that provides decent protection.",
-    value: 40,
+    value: 200,
     icon: { col: 2, row: 1 },
     defense: { blunt: 3, slash: 4, pierce: 2 },
     maxLevel: 5,
@@ -676,7 +697,7 @@ export const ItemDefinitions = {
     slot: "arms",
     type: "armor",
     description: "Stiff leather arm guards.",
-    value: 12,
+    value: 60,
     icon: { col: 2, row: 2 },
     defense: { blunt: 1, slash: 2, pierce: 1 },
     maxLevel: 5,
@@ -694,7 +715,7 @@ export const ItemDefinitions = {
     slot: "legs",
     type: "armor",
     description: "Thick leather chaps.",
-    value: 25,
+    value: 125,
     icon: { col: 2, row: 3 },
     defense: { blunt: 2, slash: 2, pierce: 1 },
     maxLevel: 5,
@@ -712,7 +733,7 @@ export const ItemDefinitions = {
     slot: "feet",
     type: "armor",
     description: "Sturdy leather boots with good grip.",
-    value: 18,
+    value: 90,
     icon: { col: 2, row: 4 },
     defense: { blunt: 1, slash: 1, pierce: 1 },
     combat: { speed: 1 },
@@ -733,7 +754,7 @@ export const ItemDefinitions = {
     slot: "head",
     type: "armor",
     description: "A heavy iron helm that protects the skull.",
-    value: 45,
+    value: 225,
     icon: { col: 3, row: 0 },
     defense: { blunt: 2, slash: 3, pierce: 2 },
     combat: { speed: -1 },
@@ -752,7 +773,7 @@ export const ItemDefinitions = {
     slot: "torso",
     type: "armor",
     description: "Heavy iron plates that offer excellent defense.",
-    value: 120,
+    value: 600,
     icon: { col: 3, row: 1 },
     defense: { blunt: 5, slash: 6, pierce: 5 },
     combat: { speed: -2 },
@@ -771,7 +792,7 @@ export const ItemDefinitions = {
     slot: "arms",
     type: "armor",
     description: "Plated gloves. Heavy but highly protective.",
-    value: 35,
+    value: 175,
     icon: { col: 3, row: 2 },
     defense: { blunt: 2, slash: 2, pierce: 2 },
     maxLevel: 5,
@@ -789,7 +810,7 @@ export const ItemDefinitions = {
     slot: "legs",
     type: "armor",
     description: "Solid iron leg guards.",
-    value: 70,
+    value: 350,
     icon: { col: 3, row: 3 },
     defense: { blunt: 3, slash: 4, pierce: 3 },
     combat: { speed: -1 },
@@ -808,7 +829,7 @@ export const ItemDefinitions = {
     slot: "feet",
     type: "armor",
     description: "Heavy iron-shod boots.",
-    value: 40,
+    value: 200,
     icon: { col: 3, row: 4 },
     defense: { blunt: 2, slash: 2, pierce: 2 },
     combat: { speed: -1 },
@@ -828,7 +849,7 @@ export const ItemDefinitions = {
     name: "Soft Wood",
     type: "material",
     description: "A piece of soft, easily workable wood.",
-    value: 5,
+    value: 25,
     icon: { col: 0, row: 1 },
     stackable: true,
     maxStack: 99
@@ -838,7 +859,7 @@ export const ItemDefinitions = {
     name: "Hard Wood",
     type: "material",
     description: "Dense, durable wood ideal for tool handles and weapons.",
-    value: 10,
+    value: 50,
     icon: { col: 1, row: 1 },
     stackable: true,
     maxStack: 99
@@ -848,7 +869,7 @@ export const ItemDefinitions = {
     name: "Stone",
     type: "material",
     description: "A rough stone.",
-    value: 2,
+    value: 10,
     icon: { col: 5, row: 2 },
     stackable: true,
     maxStack: 99
@@ -858,7 +879,7 @@ export const ItemDefinitions = {
     name: "Flint",
     type: "material",
     description: "A sharp, sparking stone.",
-    value: 4,
+    value: 20,
     icon: { col: 2, row: 1 },
     stackable: true,
     maxStack: 99
@@ -868,7 +889,7 @@ export const ItemDefinitions = {
     name: "Bone",
     type: "material",
     description: "A sturdy, bleached bone.",
-    value: 3,
+    value: 15,
     icon: { col: 2, row: 2 },
     stackable: true,
     maxStack: 99
@@ -878,7 +899,7 @@ export const ItemDefinitions = {
     name: "Sand",
     type: "material",
     description: "Fine, gritty sand.",
-    value: 1,
+    value: 5,
     icon: { col: 1, row: 2 },
     stackable: true,
     maxStack: 99
@@ -888,7 +909,7 @@ export const ItemDefinitions = {
     name: "Leather",
     type: "material",
     description: "Hide treated with tannin.",
-    value: 10,
+    value: 50,
     icon: { col: 3, row: 0 },
     stackable: true,
     maxStack: 99
@@ -898,7 +919,7 @@ export const ItemDefinitions = {
     name: "Fur",
     type: "material",
     description: "A warm, thick animal pelt.",
-    value: 6,
+    value: 30,
     icon: { col: 3, row: 1 },
     stackable: true,
     maxStack: 99
@@ -908,7 +929,7 @@ export const ItemDefinitions = {
     name: "Cotton",
     type: "material",
     description: "Fluffy raw cotton, ready to be spun.",
-    value: 4,
+    value: 20,
     icon: { col: 4, row: 0 },
     stackable: true,
     maxStack: 99
@@ -918,7 +939,7 @@ export const ItemDefinitions = {
     name: "Linen",
     type: "material",
     description: "Strong cloth woven from refined fibers.",
-    value: 8,
+    value: 40,
     icon: { col: 4, row: 1 },
     stackable: true,
     maxStack: 99
@@ -928,7 +949,7 @@ export const ItemDefinitions = {
     name: "Wheat",
     type: "material",
     description: "A golden sheaf of harvested wheat.",
-    value: 3,
+    value: 15,
     icon: { col: 3, row: 2 },
     stackable: true,
     maxStack: 99
@@ -938,7 +959,7 @@ export const ItemDefinitions = {
     name: "Salt",
     type: "material",
     description: "Coarse rock salt, useful for preserving and alchemy.",
-    value: 5,
+    value: 25,
     icon: { col: 4, row: 2 },
     stackable: true,
     maxStack: 99
@@ -948,7 +969,7 @@ export const ItemDefinitions = {
     name: "Coal",
     type: "material",
     description: "A combustible black rock used for forging.",
-    value: 6,
+    value: 30,
     icon: { col: 2, row: 0 },
     stackable: true,
     maxStack: 99
@@ -958,7 +979,7 @@ export const ItemDefinitions = {
     name: "Iron Ore",
     type: "material",
     description: "Unrefined iron. Needs to be smelted.",
-    value: 8,
+    value: 40,
     icon: { col: 5, row: 0 },
     stackable: true,
     maxStack: 99
@@ -968,7 +989,7 @@ export const ItemDefinitions = {
     name: "Iron Ingot",
     type: "material",
     description: "A solid ingot of iron.",
-    value: 15,
+    value: 75,
     icon: { col: 5, row: 1 },
     stackable: true,
     maxStack: 99
@@ -978,7 +999,7 @@ export const ItemDefinitions = {
     name: "Copper Ore",
     type: "material",
     description: "Unrefined copper. Highly conductive.",
-    value: 5,
+    value: 25,
     icon: { col: 6, row: 0 },
     stackable: true,
     maxStack: 99
@@ -988,8 +1009,8 @@ export const ItemDefinitions = {
     name: "Tin Ore",
     type: "material",
     description: "Unrefined tin. Soft and silvery.",
-    value: 4,
-    icon: { col: 3, row: 2 },
+    value: 20,
+    icon: { col: 7, row: 0 },            // was (3,2), the wheat sheaf
     stackable: true,
     maxStack: 99
   },
@@ -998,8 +1019,8 @@ export const ItemDefinitions = {
     name: "Copper Ingot",
     type: "material",
     description: "A solid ingot of refined copper. Highly conductive.",
-    value: 12,
-    icon: { col: 5, row: 2 },
+    value: 60,
+    icon: { col: 6, row: 1 },            // was (5,2), the grey stone
     stackable: true,
     maxStack: 99
   },
@@ -1008,8 +1029,8 @@ export const ItemDefinitions = {
     name: "Bronze Ingot",
     type: "material",
     description: "A heavy, golden-colored alloy ingot.",
-    value: 25,
-    icon: { col: 6, row: 2 },
+    value: 125,
+    icon: { col: 9, row: 1 },            // was (6,2), an empty cell. The sprite was also cut across cells 9/10: fixed in materials.png
     stackable: true,
     maxStack: 99
   },
@@ -1018,8 +1039,9 @@ export const ItemDefinitions = {
     name: "Fallen Meteorite",
     type: "material",
     description: "A strange, jagged stone fallen from the heavens. It pulses with a faint, otherworldly glow. Staring into it for too long makes your own thoughts feel loud and unfamiliar.",
-    value: 250,
-    icon: { col: 6, row: 1 },
+    value: 1250,
+    icon: { col: 6, row: 2 },            // PLACEHOLDER (empty cell): the sheet has no meteorite art. It was (6,1), the copper ingot. Draw one here.
+                                         // QUEST ITEM too: encounters check for it with { type: "has_item", itemId: "meteorite" } and take it with REMOVE_ITEM (also a Kurtus Brew ingredient).
     stackable: false,
     maxStack: 1
   },
@@ -1028,7 +1050,7 @@ export const ItemDefinitions = {
     name: "Plant Fibers",
     type: "material",
     description: "Tough fibers extracted from wild stalks like stinging nettle, perfect for hand-twisting into basic reverse-wrap cordage.",
-    value: 2,
+    value: 10,
     icon: { col: 0, row: 3 },
     stackable: true,
     maxStack: 99
@@ -1040,7 +1062,7 @@ export const ItemDefinitions = {
     name: "Healing Herb",
     type: "consumable",
     description: "A simple herb that can be used to treat minor wounds.",
-    value: 10,
+    value: 50,
     icon: { col: 0, row: 0 },
     useAbility: "minor_heal",
     usability: ['overworld', 'battle'],
@@ -1052,7 +1074,7 @@ export const ItemDefinitions = {
     name: "Invigorating Herb",
     type: "consumable",
     description: "A refreshing herb that can be used to restore stamina.",
-    value: 15,
+    value: 75,
     icon: { col: 1, row: 0 },
     useAbility: "minor_recover",
     usability: ['overworld', 'battle'],
@@ -1064,7 +1086,7 @@ export const ItemDefinitions = {
     name: "Illuminating Herb",
     type: "consumable",
     description: "A refreshing herb that can be used to restore insight.",
-    value: 15,
+    value: 75,
     icon: { col: 2, row: 0 },
     useAbility: "minor_channel",
     usability: ['overworld', 'battle'],
@@ -1085,7 +1107,7 @@ export const ItemDefinitions = {
     name: "Bandage",
     type: "consumable",
     description: "A clean strip of woven linen used to stem bleeding and dress wounds in the field.",
-    value: 12,
+    value: 60,
     icon: { col: 5, row: 3 }, 
     useAbility: "minor_heal", 
     usability: ['overworld', 'battle'],
@@ -1097,7 +1119,7 @@ export const ItemDefinitions = {
     name: "Healing Tonic",
     type: "consumable",
     description: "A concentrated, alchemically distilled brew that restores a moderate amount of health much faster than raw herbs.",
-    value: 30,
+    value: 150,
     icon: { col: 0, row: 1 },
     useAbility: "moderate_heal",
     usability: ['overworld', 'battle'],
@@ -1109,7 +1131,7 @@ export const ItemDefinitions = {
     name: "Invigorating Tonic",
     type: "consumable",
     description: "A potent draft that forcefully stimulates the heart, rapidly replenishing stamina for sustained exertion.",
-    value: 40,
+    value: 200,
     icon: { col: 1, row: 1 },
     useAbility: "moderate_recover",
     usability: ['overworld', 'battle'],
@@ -1121,7 +1143,7 @@ export const ItemDefinitions = {
     name: "Illuminating Tonic",
     type: "consumable",
     description: "A glowing elixir that abruptly sharpens the senses and clears the mind, restoring a moderate amount of insight.",
-    value: 40,
+    value: 200,
     icon: { col: 2, row: 1 },
     useAbility: "moderate_channel",
     usability: ['overworld', 'battle'],
@@ -1136,27 +1158,123 @@ export const ItemDefinitions = {
     name: "Small Iron Key",
     type: "consumable",
     description: "A small, rust-flecked iron key. It looks like it would fit the lock of a sturdy chest.",
-    value: 5,
+    value: 25,
     icon: { col: 6, row: 0 },
     usability: [],
     stackable: true,
     maxStack: 10
   },
-  // Paste into ItemDefinitions (src/shared/data/itemDefinitions.js), in the CONSUMABLES section.
+  // QUEST ITEM, same pattern as the small iron key: no useAbility and nothing to use, so it just sits in the bag until an encounter asks for it
+  // ({ type: "has_item", itemId: "large_iron_key" } as a condition, REMOVE_ITEM to spend it).
+  "large_iron_key": {
+    id: "large_iron_key",
+    name: "Large Iron Key",
+    type: "consumable",
+    description: "A heavy, pitted iron key as long as a hand. Whatever it opens was built to keep something in, or someone out.",
+    value: 25,
+    icon: { col: 6, row: 1 },            // consumables.png
+    usability: [],
+    stackable: true,
+    maxStack: 10
+  },
   "torch": {
     id: "torch",
     name: "Torch",
     type: "consumable",
     description: "A pitch-soaked brand. Lit, it burns for 8 hours and throws a wide, warm orange light around you.",
-    value: 6,
-    icon: { col: 5, row: 0 },            // PLACEHOLDER: point this at a free cell of assets/icons/consumables.png (or draw a torch there)
+    value: 30,
+    icon: { col: 5, row: 0 },            // consumables.png
+    useAbility: "torchlight",            // what makes it usable from the item menu AND placeable on the hotbar (the light itself is defined by that ability)
     usability: ['overworld'],
-    lightBuff: {
-      hours: 8,                          // in-game hours (TimeSystem: 2 game minutes per real second, so 8 h = 4 real minutes)
-      light: { radius: 7, color: '255, 130, 40', maxAlpha: 0.8, flickerAmp: 0.5, flickerSpeed: 0.12 }   // the player's normal light is radius 4, '255, 200, 100', 0.5
-    },
     stackable: true,
     maxStack: 10
+  },
+  "escape_rope": {
+    id: "escape_rope",
+    name: "Escape Rope",
+    type: "consumable",
+    description: "A coil of waxed rope that plays out behind you as you go in. Pull it, and you are hauled back out to the entrance of the cave or building you are in. Does nothing outside.",
+    value: 125,
+    icon: { col: 9, row: 0 },            // consumables.png
+    useAbility: "escape_rope",           // usable from the item menu AND placeable on the hotbar (the effect is defined by that ability)
+    usability: ['overworld'],
+    stackable: true,
+    maxStack: 10
+  },
+  "interior_map": {
+    id: "interior_map",
+    name: "Interior Map",
+    type: "consumable",
+    description: "A hand-drawn plan of the place you are standing in. Unfold it inside a cave or building and its layout shows on your minimap until you leave. It is used up. Does nothing outside.",
+    value: 200,
+    icon: { col: 11, row: 0 },           // consumables.png
+    useAbility: "read_interior_map",     // usable from the item menu AND placeable on the hotbar (the effect is defined by that ability)
+    usability: ['overworld'],
+    stackable: true,
+    maxStack: 10
+  },
+  "bedroll": {
+    id: "bedroll",
+    name: "Bedroll",
+    type: "consumable",
+    description: "A rolled-up blanket and a bit of oilcloth. Spread it out to sleep through the night. It wears out and is used up each time.",
+    value: 150,
+    icon: { col: 10, row: 0 },           // consumables.png
+    useAbility: "use_bedroll",           // starts the sleep encounter (the encounter id is in that ability; "bonfire" is a stand-in)
+    usability: ['overworld'],
+    stackable: true,
+    maxStack: 10
+  },
+
+  // --- COMBAT ITEMS (thrown or set in a fight; each spends one when used) ---
+  // usability is only a note: what decides it is the context of the ability (battle-only for a thrown knife, both for the bear trap).
+  "throwing_knife": {
+    id: "throwing_knife",
+    name: "Throwing Knife",
+    type: "consumable",
+    description: "A balanced blade made for throwing. Used in battle; it is not recovered.",
+    value: 40,
+    icon: { col: 7, row: 0 },            // consumables.png
+    useAbility: "item_throwing_knife",
+    usability: ['battle'],
+    stackable: true,
+    maxStack: 20
+  },
+  "poison_throwing_knife": {
+    id: "poison_throwing_knife",
+    name: "Poison Throwing Knife",
+    type: "consumable",
+    description: "A throwing knife coated in a clinging venom. It hits lightly, but the poison keeps working. Used in battle.",
+    value: 100,
+    icon: { col: 8, row: 0 },            // consumables.png
+    useAbility: "item_poison_knife",
+    usability: ['battle'],
+    stackable: true,
+    maxStack: 20
+  },
+  "bear_trap": {
+    id: "bear_trap",
+    name: "Bear Trap",
+    type: "consumable",
+    description: "Heavy iron jaws on a spring. Set it, in battle or before one, and the next enemy to strike you in melee is bitten and held fast.",
+    value: 150,
+    icon: { col: 3, row: 0 },            // consumables.png
+    useAbility: "item_bear_trap",        // usable from the item menu, in battle, and from the hotbar
+    usability: ['overworld', 'battle'],
+    stackable: true,
+    maxStack: 10
+  },
+  "smoke_bomb": {
+    id: "smoke_bomb",
+    name: "Smoke Bomb",
+    type: "consumable",
+    description: "A packed shell of charcoal and sand with a short fuse. Used in battle: it fills the air with thick smoke, making one ally much harder to hit for 3 turns.",
+    value: 75,
+    icon: { col: 4, row: 1 },            // PLACEHOLDER (empty cell): no smoke bomb art on assets/icons/consumables.png yet
+    useAbility: "item_smoke_bomb",
+    usability: ['battle'],
+    stackable: true,
+    maxStack: 20
   },
 
   // --- ACCESSORIES ---
@@ -1178,7 +1296,7 @@ export const ItemDefinitions = {
       "earthquake", "acid_pool", "vine_lash", "boulder_throw", "solar_beam", "spite", "gravity", "spirit_reap",
       "drain_life", "healing_rain", "purify", "rest", "brew_of_madness", "minor_heal", "minor_recover", "minor_channel",
       "moderate_heal", "moderate_recover", "moderate_channel", "osmose", "raise_skeleton", "bear_form", "bolster", "baton_pass",
-      "counter_stance", "retreat", "switch_combatant", "take_flight", "item_bear_trap", "item_smoke_bomb"
+      "counter_stance", "retreat", "switch_combatant", "take_flight", "item_throwing_knife", "item_bear_trap", "item_smoke_bomb"
     ],
     attributes: { vigor: 10, strength: 10, dexterity: 10, intelligence: 10, attunement: 10 },
     resources: { maxHp: 100, maxStamina: 50, maxInsight: 50 },

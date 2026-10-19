@@ -44,7 +44,12 @@ export class WorkshopController extends BaseController {
             partyMaxScroll: 0,
             detailsMaxScroll: 0,
             viewportH: 300,
-            itemHeight: 48
+            itemHeight: 48,
+            // set by the renderers every frame (the recipe list is shorter than the screen and its rows are not as tall as the inventory slots)
+            recipeViewportH: 300,
+            recipeItemH: 96,
+            partyViewportH: 300,
+            partyItemH: 115
         };
         
         this.currentHitboxes = [];
@@ -90,6 +95,7 @@ export class WorkshopController extends BaseController {
         const next = this.findSpatialNeighbor(direction, this.getKeyboardFocusId(), this._focusables());
         if (next && next !== this.focusId) {
             this.focusId = next;
+            this._revealRecipe(next);
             this.playNavSound();
         } else if (next === null) {
             this._scrollListAtEdge(direction);
@@ -100,12 +106,33 @@ export class WorkshopController extends BaseController {
     _scrollListAtEdge(direction) {
         if (direction !== 'UP' && direction !== 'DOWN') return;
         const id = (this.focusId || '').toUpperCase();
-        const step = (this.layout.itemHeight || 48) * (direction === 'DOWN' ? 1 : -1);
+        const sign = direction === 'DOWN' ? 1 : -1;
         if (id.startsWith('RECIPE_')) {
+            const step = (this.layout.recipeItemH || 96) * sign;
             this.scrollManager.setOffset('recipes', Math.max(0, Math.min(this.layout.recipeMaxScroll, this.recipeScrollOffset + step)), true);
         } else if (id.startsWith('PARTY_ITEM_')) {
+            const step = (this.layout.partyItemH || this.layout.itemHeight || 48) * sign;
             this.scrollManager.setOffset('party', Math.max(0, Math.min(this.layout.partyMaxScroll, this.partyScrollOffset + step)), true);
         }
+    }
+
+    // The keyboard cursor moved onto a recipe row that is only partly on screen: scroll so the whole row shows.
+    _revealRecipe(hitboxId) {
+        if (!/^RECIPE_/i.test(hitboxId || '')) return;
+        const recipeId = hitboxId.substring(7).toLowerCase();
+        const rows = this.availableRecipes.filter(r => ItemDefinitions[r.outputItemId]); // same list the renderer draws
+        const index = rows.findIndex(r => String(r.id).toLowerCase() === recipeId);
+        if (index < 0) return;
+
+        const step = this.layout.recipeItemH || 96;
+        const viewH = this.layout.recipeViewportH || 300;
+        const top = index * step;
+        const bottom = top + step - 8; // the rows are 8 px shorter than their step (the gap)
+        const cur = this.recipeScrollOffset;
+        let target = cur;
+        if (top < cur) target = top;
+        else if (bottom > cur + viewH) target = bottom - viewH;
+        if (target !== cur) this.scrollManager.setOffset('recipes', target, true);
     }
 
     _close() {
@@ -135,9 +162,12 @@ export class WorkshopController extends BaseController {
             this.canCraftSelected = false;
         }
 
+        // Back to the top (the scroll manager keeps its own offset and would hand the old one straight back)
+        this._syncScrollZones();
+        this.scrollManager.setOffset('recipes', 0, true);
+        this.scrollManager.setOffset('party', 0, true);
         this.recipeScrollOffset = 0;
         this.partyScrollOffset = 0;
-        this._syncScrollZones();
     }
 
     update(dt) {
@@ -150,7 +180,7 @@ export class WorkshopController extends BaseController {
         this.scrollManager.registerZone('recipes', {
             bounds: this.layout.recipeBounds,
             maxScroll: this.layout.recipeMaxScroll,
-            viewportH: this.layout.viewportH,
+            viewportH: this.layout.recipeViewportH || this.layout.viewportH,
             thumbIds: ['SCROLLBAR_THUMB_RECIPES'],
             onChange: (newOffset) => {
                 this.recipeScrollOffset = newOffset;
@@ -160,7 +190,7 @@ export class WorkshopController extends BaseController {
         this.scrollManager.registerZone('party', {
             bounds: this.layout.partyBounds,
             maxScroll: this.layout.partyMaxScroll,
-            viewportH: this.layout.viewportH,
+            viewportH: this.layout.partyViewportH || this.layout.viewportH,
             thumbIds: ['SCROLLBAR_THUMB_PARTY'],
             onChange: (newOffset) => {
                 this.partyScrollOffset = newOffset;
@@ -172,17 +202,8 @@ export class WorkshopController extends BaseController {
         super.updateHitboxes(hitboxes);
         this.currentHitboxes = hitboxes;
 
-        // Dynamically calculate max scroll heights based on item counts
-        const ROW_H = this.layout.itemHeight || 48;
-        const VIEW_H = this.layout.viewportH || 300;
-        
-        const partyItemsCount = this._getFormattedInventory().length;
-        const recipeRows = this.availableRecipes.length;
-        const partyRows = Math.ceil(partyItemsCount / 4); // 4 columns for inventory
-
-        this.layout.recipeMaxScroll = Math.max(0, (recipeRows * ROW_H) - VIEW_H);
-        this.layout.partyMaxScroll = Math.max(0, (partyRows * ROW_H) - VIEW_H);
-        
+        // The renderers measure their own lists every frame (layout.recipeMaxScroll / partyMaxScroll, viewport and row heights),
+        // so the scroll zones only need to pick those up.
         this._syncScrollZones();
     }
 

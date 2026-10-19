@@ -359,6 +359,16 @@ export class LightingRenderer {
             finalG = Math.floor((finalG * (1 - intensity)) + (stormG * intensity));
             finalB = Math.floor((finalB * (1 - intensity)) + (stormB * intensity));
             finalA = Math.max(finalA, stormMaxAlpha * intensity);
+        } else if (activeWeather && activeWeather.visualEffect === 'particle_blizzard') {
+            // a blizzard greys the day into a cold blue-grey dusk (lighter than a rain storm: the snow itself is bright)
+            const intensity = activeWeather.intensity || 1.0;
+            const coldR = 70, coldG = 84, coldB = 108;
+            const coldMaxAlpha = 0.4;
+
+            finalR = Math.floor((finalR * (1 - intensity)) + (coldR * intensity));
+            finalG = Math.floor((finalG * (1 - intensity)) + (coldG * intensity));
+            finalB = Math.floor((finalB * (1 - intensity)) + (coldB * intensity));
+            finalA = Math.max(finalA, coldMaxAlpha * intensity);
         }
 
         // If completely bright (alpha 0 or less), do nothing

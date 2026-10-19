@@ -6,6 +6,14 @@ import { DAMAGE_TYPES } from '../../shared/data/constants.js';
 // touch them; this applies on top of whatever hpPerVigor an entity has. 1 = unchanged, 0.5 = half the HP from Vigor.
 const HP_PER_VIGOR_SCALE = 0.5;
 
+// BALANCE KNOBS: how much passive per-round recovery each point of Dexterity / Attunement grants.
+// Recovery is the SUSTAIN rate and the max pool is the BURST reserve, so recovery has to grow slower than the pool
+// (a point of Dex gives +2 max stamina, so 0.3 recovery keeps recovery at roughly 13-15% of the pool per round at every level).
+// It used to be 1 per point, which refilled about half the pool every round and made ability costs meaningless.
+// Applies to everyone (party, enemies, saved characters); gear and trait recovery bonuses are flat and added on top.
+const STAMINA_RECOVERY_PER_DEX = 0.3;
+const INSIGHT_RECOVERY_PER_ATT = 0.3;
+
 export class StatCalculator { 
     static get DAMAGE_TYPES() { 
         return DAMAGE_TYPES || [ "blunt", "slash", "pierce", "fire", "ice", "lightning", "water", "earth", "wind", "light", "dark", "arcane" ]; 
@@ -112,7 +120,7 @@ export class StatCalculator {
         finalStats.attack.slash  += finalStats.strength; 
         finalStats.attack.pierce += finalStats.strength; 
         breakdown.resources.derived.stamina = Math.floor(finalStats.dexterity * mults.staminaPerDex); 
-        finalStats.staminaRecovery += finalStats.dexterity; 
+        finalStats.staminaRecovery += Math.round(finalStats.dexterity * STAMINA_RECOVERY_PER_DEX); 
         
         // Magical Pillar 
         const physicalTypes = ["blunt", "slash", "pierce"]; 
@@ -120,7 +128,7 @@ export class StatCalculator {
             if (!physicalTypes.includes(t)) { finalStats.attack[t] += finalStats.intelligence; } 
         }); 
         breakdown.resources.derived.insight = Math.floor(finalStats.attunement * mults.insightPerAtt); 
-        finalStats.insightRecovery += finalStats.attunement; 
+        finalStats.insightRecovery += Math.round(finalStats.attunement * INSIGHT_RECOVERY_PER_ATT); 
         
         // --- STEP 4: FLAT BONUSES & TRAITS --- 
         const applyFlat = (source) => { 

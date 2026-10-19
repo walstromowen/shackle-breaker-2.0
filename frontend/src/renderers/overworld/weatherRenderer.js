@@ -37,6 +37,14 @@ export class WeatherRenderer {
                 speedX: [48, 84], // Scaled from [20, 35]
                 size: [2.4, 4.8] // Scaled from [1, 2]
             },
+            'particle_blizzard': {
+                count: 3600,
+                color: 'rgba(245, 250, 255, 1)',      // flakes: a little transparent according to how near they are (see render)
+                overlay: [222, 232, 244],             // the white-out laid over the whole screen
+                speedX: [60, 150],                    // a hard wind: the flakes fly sideways, the near ones fastest
+                speedY: [10, 70],
+                size: [2.4, 7.2]                      // far flakes are small, near ones big
+            },
             'overlay_fog': {
                 count: 25, // drastically reduced from 230 for scattered wisps
                 speedX: [0.4, 0.9], // Slightly faster horizontal drift
@@ -86,7 +94,7 @@ export class WeatherRenderer {
             speedX: settings.speedX[0] + Math.random() * (settings.speedX[1] - settings.speedX[0])
         };
 
-        if (visualEffect === 'particle_sand' || visualEffect === 'overlay_fog' || randomizeY) {
+        if (visualEffect === 'particle_sand' || visualEffect === 'particle_blizzard' || visualEffect === 'overlay_fog' || randomizeY) {
             p.y = Math.random() * (this.canvas.height + 480) - 240; // Scaled from +200, -100
         } else {
             p.y = -240 - (Math.random() * 480); // Scaled from -100, 200
@@ -106,6 +114,16 @@ export class WeatherRenderer {
             p.size = settings.size[0] + Math.random() * (settings.size[1] - settings.size[0]);
         } else if (settings.size) {
             p.size = settings.size[0] + Math.random() * (settings.size[1] - settings.size[0]);
+        }
+
+        if (visualEffect === 'particle_blizzard') {
+            // one number decides the flake: 0 = far (small, slow, faint), 1 = near (big, fast, bright), so the snow has depth
+            const t = Math.random();
+            const lerp = (r) => r[0] + (r[1] - r[0]) * t;
+            p.size = lerp(settings.size);
+            p.speedX = lerp(settings.speedX);
+            p.speedY = lerp(settings.speedY);
+            p.cls = t < 0.6 ? 0 : (t < 0.9 ? 1 : 2);
         }
 
         return p;
@@ -135,7 +153,8 @@ export class WeatherRenderer {
         const defaultEffects = {
             'SANDSTORM': 'particle_sand',
             'RAIN': 'particle_rain',
-            'FOG': 'overlay_fog'
+            'FOG': 'overlay_fog',
+            'BLIZZARD': 'particle_blizzard'
         };
         
         let stateEffect = 'none';
@@ -251,7 +270,7 @@ export class WeatherRenderer {
                 continue; 
             }
 
-            if (this.displayEffect === 'particle_sand') {
+            if (this.displayEffect === 'particle_sand' || this.displayEffect === 'particle_blizzard') {
                 if (p.x > this.canvas.width + 120) p.x = -120; // Scaled from 50
                 else if (p.x < -120) p.x = this.canvas.width + 120;
 
@@ -275,7 +294,7 @@ export class WeatherRenderer {
         }
     }
 
-    render(ctx, camera) {
+    render(ctx, camera, totalTime = 0) {
         if (this.displayEffect === 'none' || this.renderIntensity <= 0) return;
 
         const settings = this.settings[this.displayEffect];
@@ -291,6 +310,27 @@ export class WeatherRenderer {
             }
             ctx.restore();
             return; 
+        }
+
+        if (this.displayEffect === 'particle_blizzard') {
+            // gusts: the white-out thickens and thins in slow waves (two sines that beat against each other, so it never settles into a pattern)
+            const gust = 0.5 + 0.5 * Math.sin(totalTime * 0.55) * Math.sin(totalTime * 0.23 + 1);
+            const [or, og, ob] = settings.overlay;
+            ctx.fillStyle = `rgba(${or}, ${og}, ${ob}, ${0.24 + 0.14 * gust})`;
+            ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+            // flakes in three depth classes (far, middle, near), one path each; each is a short streak along the wind
+            const alphas = [0.5, 0.7, 0.9];
+            for (let cls = 0; cls < 3; cls++) {
+                ctx.fillStyle = `rgba(245, 250, 255, ${alphas[cls] * (0.85 + 0.15 * gust)})`;
+                ctx.beginPath();
+                for (const p of this.particles) {
+                    if (p.cls === cls) ctx.rect(p.x, p.y, p.size * 3.5, p.size);
+                }
+                ctx.fill();
+            }
+            ctx.restore();
+            return;
         }
 
         if (this.splashParticles.length > 0) {

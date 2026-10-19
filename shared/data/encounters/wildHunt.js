@@ -26,7 +26,7 @@ export const wildHunt = {
           text: "[DEX] Shoot the deer immediately.",
           type: "skill_check",
           attribute: "dexterity",
-          threshold: 2,
+          threshold: 10,
           conditions: [
             { type: "context_flag_not_set", flagId: "failed_wildhunt_shoot1" },
             { type: "has_tag", tag: "HUMANOID" }
@@ -58,7 +58,7 @@ export const wildHunt = {
           text: "[ATT] Keep tracking the nervous deer.",
           type: "skill_check",
           attribute: "attunement",
-          threshold: 2,
+          threshold: 14,
           conditions: [{ type: "context_flag_not_set", flagId: "failed_wildhunt_track2" }],
           customActionText: "{name} focuses on the faint sounds of hooves and snapped twigs to keep pace...",
           successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "ominous_woods" } }] }],
@@ -93,7 +93,7 @@ export const wildHunt = {
           text: "[DEX] Creep silently into the clearing.",
           type: "skill_check",
           attribute: "dexterity",
-          threshold: 4,
+          threshold: 18,
           conditions: [{ type: "context_flag_not_set", flagId: "failed_wildhunt_creep" }],
           customActionText: "{name} slips into the edge of the clearing to get a better look at their quarry...",
           successOutcomes: [

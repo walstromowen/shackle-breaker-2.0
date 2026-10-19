@@ -93,20 +93,20 @@ export const BIOME_DEFINITIONS = {
                 { chance: 0.014, id: 'OAK_TREE_1', footprint: 2 },
                 { chance: 0.044, id: 'PINE_TREE' },
                 { chance: 0.008, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
-                { chance: 0.008, id: 'STICK' } /* rare */,
-                { chance: 0.002, id: 'STRANGE_OBELISK', footprint: 2 } /* rare; this list is also copied to every plateau level as _WALLS (see the loop at the bottom) */,
+                { chance: 0.012, id: 'STICK' } /* a little more common than before (was 0.008): 1.2% of the ground, and of every plateau top (this list is copied to them as _WALLS, see the loop at the bottom) */,
                 { chance: 0.2, rangeStart: 0.128, pool: ['TULIPS_RED', 'TULIPS_WHITE', 'TULIPS_ORANGE'] },
                 { chance: 0.206, rangeStart: 0.2, pool: ['BOULDER_1', 'BOULDER_2'] } /* grey boulders, 0.6% of the ground: their own band [0.2, 0.206), in the free gap between the tulips and the grass, so no other rule's share moves */,
+                { chance: 0.211, rangeStart: 0.206, id: 'TIN_ORE_DEPOSIT' } /* tin: 0.5% of the ground, its own band [0.206, 0.211) in the same gap. Mined with a pickaxe */,
                 { chance: 0.7, rangeStart: 0.3, pool: ['GRASS_COVERAGE_1', 'GRASS_COVERAGE_2', 'GRASS_COVERAGE_3'] },
                 { chance: 0.1, id: 'CAVE_ENTRANCE' } /* a cave mouth painted into a straight south-facing cliff: the share of fitting cliff faces that get one (WorldManager._isCaveMouth). Keep this rule LAST in the LAYER_2 list */,
             ],
             [CONFIG.TILE_TYPES.LAYER_1]: [
                 { chance: 0.01, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
-                { chance: 0.002, id: 'STRANGE_OBELISK', footprint: 2 },
+                { chance: 0.04, rangeStart: 0.01, id: 'FLINT_ROCK' } /* flint: 3% of the dirt (the shores and the dry ravine floors), its own band [0.01, 0.04) so the rocks' share does not move. Walk over it to pick it up */,
             ],
         },
         encounters: {
-            rate: 0.01,
+            rate: 0.005,
             type: 'time_weighted',
             pools: [
                 { weight: 110, id: 'aftermath', allowedTimes: ['day', 'dusk', 'night'] },
@@ -170,8 +170,9 @@ export const BIOME_DEFINITIONS = {
                 { chance: 0.05, id: 'SMALL_CACTUS_1' },
                 { chance: 0.02, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
                 { chance: 0.258, rangeStart: 0.25, pool: ['BOULDER_1', 'BOULDER_2'] } /* grey boulders, 0.8% of the ground: band [0.25, 0.258), in the free gap before the dunes */,
+                { chance: 0.262, rangeStart: 0.26, id: 'SALT_DEPOSIT' } /* salt: 0.2% of the ground (was 0.5%), its own band [0.26, 0.262), in the free gap before the dunes. Mined with a pickaxe */,
                 { chance: 0.244, rangeStart: 0.24, id: 'BONE_PILE' } /* a pile of bones, 0.4% of the ground: walk over it or interact to pick up a bone. Its own band [0.24, 0.244), in the free gap between the cave mouths and the dunes, so no other rule's share moves */,
-                { chance: 0.5, rangeStart: 0.3, pool: ['SAND_DUNE_1', 'SAND_DUNE_2', 'SAND_DUNE_3'] },
+                { chance: 0.36, rangeStart: 0.3, pool: ['SAND_DUNE_1', 'SAND_DUNE_2', 'SAND_DUNE_3'] } /* dunes: 6% of the ground (was 20%, band [0.3, 0.5)); the rest of that band is now empty */,
                 { chance: 0.1, id: 'CAVE_ENTRANCE' } /* a cave mouth painted into a straight south-facing cliff: the share of fitting cliff faces that get one (WorldManager._isCaveMouth). Keep this rule LAST in the LAYER_2 list */,
             ],
             [CONFIG.TILE_TYPES.LAYER_1]: [{ chance: 0.02, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] }],
@@ -202,7 +203,7 @@ export const BIOME_DEFINITIONS = {
             levelDirt: null /* frozen dirt only on the lowest ground, never on the tops of the cliffs */,
         },
         minimap: { grass: '#e6eef3', dirt: '#9fa9b0', water: '#4a86b5', rock: '#8c969f', stair: '#e0a030' } /* colours of the minimap (see MinimapRenderer): ground, dirt, water, the rock that the cliff levels turn into, and the walkable part of a stair */,
-        allowedWeather: ['fog'] /* add 'snow' here once the weather exists */,
+        allowedWeather: ['fog', 'blizzard'],
         music: { day: 'snowyMountainsBgmDay', night: 'snowyMountainsBgmNight', battle: 'snowyMountainsBattleBgm' } /* the battle track is the snowy one; the overworld night track is still a placeholder (its line is commented out in main.js) */,
         battleBackgrounds: { day: 'snowyMountainsBattleDayBg', dusk: 'snowyMountainsBattleDuskBg', night: 'snowyMountainsBattleNightBg' },
         shapeElevation: (noise, hill = 0, c = 1) => {
@@ -218,10 +219,23 @@ export const BIOME_DEFINITIONS = {
                 { chance: 0.05, id: 'SNOWY_PINE_TREE' },
                 { chance: 0.01, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
                 { chance: 0.02, pool: ['SNOWY_BOULDER_1', 'SNOWY_BOULDER_2'] },
+                { chance: 0.01, id: 'STICK' } /* 1% of the ground and of every plateau top (this list is copied to them as _WALLS). Same sprite as the plains' stick */,
                 { chance: 0.501, rangeStart: 0.5, id: 'ANIMAL_TRACKS' } /* rare: 0.1% of the ground (about one per chunk), its own band [0.5, 0.501), in a free gap so no other rule's share moves. Walk over it (or face it and interact) to start the Tracks In The Snow encounter */,
                 { chance: 0.04, id: 'CAVE_ENTRANCE' } /* a cave mouth painted into a straight south-facing cliff: the share of fitting cliff faces that get one (WorldManager._isCaveMouth). Keep this rule LAST in the LAYER_2 list */,
             ],
-            [CONFIG.TILE_TYPES.LAYER_1]: [{ chance: 0.012, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] }],
+            [CONFIG.TILE_TYPES.LAYER_1]: [
+                { chance: 0.012, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
+                { chance: 0.042, rangeStart: 0.012, id: 'FLINT_ROCK' } /* flint: 3% of the frozen dirt, its own band [0.012, 0.042). Walk over it to pick it up */,
+            ],
+            /* `_ALTITUDE`: rules for the plateau levels only (WorldManager._getRawProceduralId). Each rule has its OWN roll per cell and wins before the
+               ordinary `_WALLS` list: { id, chance, minLevel, maxLevel } with the level a LAYER_n number (3 = the first cliff level, 7 = the summit).
+               Iron lies bare on the high slopes. The strange obelisks stand on the summits only (LAYER_7), and nowhere else in the world: raise their
+               chance for more of them. Keep new rules AFTER the existing ones: each rule's roll depends on its position in this list, so inserting one
+               above would re-roll where the iron lies. */
+            _ALTITUDE: [
+                { id: 'IRON_ORE_DEPOSIT', chance: 0.01, minLevel: 5 },
+                { id: 'STRANGE_OBELISK', chance: 0.003, minLevel: 7, maxLevel: 7 },
+            ],
             [CONFIG.TILE_TYPES.LAYER_3]: [
                 { chance: 0.008, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
                 { chance: 0.012, pool: ['SNOWY_BOULDER_1', 'SNOWY_BOULDER_2'] },
@@ -288,7 +302,7 @@ export const BIOME_DEFINITIONS = {
         structures: { rate: 0, pools: [] },
         mapObjects: { [CONFIG.TILE_TYPES.LAYER_2]: [] } /* the CaveGenerator places the rocks itself (see `scatter` in interiorDefinitions.js) */,
         encounters: { rate: 0, pools: [] },
-        battles: { rate: 0.005, tables: { day: 'cave_battles', dusk: 'cave_battles', night: 'cave_battles' } } /* half the plains' / desert's 0.01; same table at every hour */,
+        battles: { rate: 0.01, tables: { day: 'cave_battles', dusk: 'cave_battles', night: 'cave_battles' } } /* half the plains' / desert's 0.01; same table at every hour */,
     },
 };
 
