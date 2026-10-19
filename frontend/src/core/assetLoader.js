@@ -3,6 +3,7 @@ export class AssetLoader {
         this.assets = {};
         this.totalToLoad = 0;
         this.loadedCount = 0;
+        this.failed = [];   // urls that could not be loaded (see loadImage / loadAudio)
         
         // Create an AudioContext specifically for decoding audio data during the load phase
         const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -39,7 +40,13 @@ export class AssetLoader {
             };
 
             img.onerror = () => {
-                reject(new Error(`Failed to load image at: ${url}`));
+                // One missing file must not freeze the boot screen at 99% for everyone (the loader only finishes when EVERY asset has been counted).
+                // The game gets a visible "missing texture" tile instead, and the url is listed in the console and in this.failed.
+                console.warn(`[AssetLoader] Failed to load image at: ${url} (using a placeholder)`);
+                this.failed.push(url);
+                this.assets[key] = this._placeholderImage();
+                this.loadedCount++;
+                resolve(this.assets[key]);
             };
         });
     }
@@ -56,9 +63,22 @@ export class AssetLoader {
             this.loadedCount++;
             return audioBuffer;
         } catch (error) {
-            console.error(`Failed to load audio at: ${url}`, error);
-            throw error;
+            console.warn(`[AssetLoader] Failed to load audio at: ${url} (playing silence instead)`, error);
+            this.failed.push(url);
+            this.assets[key] = this.audioCtx.createBuffer(1, 1, 22050);   // a silent one-sample buffer
+            this.loadedCount++;
+            return this.assets[key];
         }
+    }
+
+    /** A magenta / black checker, drawn in place of an image that did not load. */
+    _placeholderImage() {
+        const c = document.createElement('canvas');
+        c.width = c.height = 32;
+        const g = c.getContext('2d');
+        g.fillStyle = '#000000'; g.fillRect(0, 0, 32, 32);
+        g.fillStyle = '#ff00ff'; g.fillRect(0, 0, 16, 16); g.fillRect(16, 16, 16, 16);
+        return c;
     }
 
     get(key) {
@@ -73,4 +93,4 @@ export class AssetLoader {
     isDone() {
         return this.totalToLoad > 0 && this.loadedCount === this.totalToLoad;
     }
-}
+}

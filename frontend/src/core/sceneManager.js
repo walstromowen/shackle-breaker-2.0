@@ -41,6 +41,7 @@ import { gameState } from '../../../shared/state/gameState.js';
 import { AbilitySystem } from '../../../shared/systems/abilitySystem.js';
 import { DIFFICULTY_MODIFIERS } from '../../../shared/data/constants.js';
 import { EntityFactory } from '../../../shared/systems/factories/entityFactory.js';
+import { SaveManager } from '../../../shared/systems/saveManager.js';
 
 export class SceneManager {
     constructor(canvas, assetLoader, config) {
@@ -56,6 +57,7 @@ export class SceneManager {
         this.uiInteractionManager = new UIInteractionManager();
 
         console.log(`%c[SceneManager] Init. Seed: ${gameState.seed}`, 'color: #00aaaa');
+        window.SaveManager = SaveManager;   // console access: SaveManager.downloadCurrent(), SaveManager.loadFromSlot('previous')...
 
         // --- CONTROLLERS ---
         this.bootController = new BootController(this.input, this.loader);
@@ -152,6 +154,10 @@ export class SceneManager {
         console.log(`[SceneManager] Switching to: ${sceneName}`);
         this.currentScene = sceneName;
 
+        // Every arrival on the overworld (a new game, after a battle, an encounter, a shop, the menus) is a safe moment to save.
+        // Does nothing inside a house / cave (SaveManager.canSaveNow), so the last outdoor save stays the one that loads.
+        if (sceneName === 'overworld') SaveManager.autosave();
+
         const targetBGM = this.resolveTargetBGM(sceneName, sceneContext);
         if (targetBGM !== null) {
             if (gameState.world.currentBgm !== targetBGM) {
@@ -181,7 +187,11 @@ export class SceneManager {
             this.transitionRenderer.start(() => {
                 this.input.reset();
 
-                if (this.currentScene === 'character-creator' && scene === 'overworld') {
+                // A New Game replaces the autosave: keep the old one as 'previous'
+                if (this.currentScene === 'character-creator' && scene === 'overworld') SaveManager.backupAutosave();
+
+                // A new game (coming from the character creator) or a loaded one (LOAD_GAME passes buildWorld) builds the world from gameState.seed
+                if ((this.currentScene === 'character-creator' || (data && data.buildWorld)) && scene === 'overworld') {
                     console.log(`%c[SceneManager] Generating World with finalized seed: ${gameState.seed}`, 'color: #00ff00');
                     this.worldManager = new WorldManager();
                     this.overworldController = new OverworldController(this.input, this.config, this.worldManager);
@@ -207,6 +217,9 @@ export class SceneManager {
                 }
                 if (scene === 'party') {
                     this.partyController.init(data || {});
+                }
+                if (scene === 'title') {
+                    this.titleController.refreshSaveState();   // "Load Game" is greyed out until a save exists
                 }
                 if (scene === 'journal') {
                     this.journalController.init();
@@ -381,6 +394,24 @@ export class SceneManager {
             }, transitionType, { speed: transitionSpeed, color: '#0a0a12' });
         });
 
+        // LOAD_GAME { slot? }: restores a save into gameState, then enters the overworld with a freshly built world.
+        events.on('LOAD_GAME', ({ slot } = {}) => {
+            SaveManager.loadFromSlot(slot).then(result => {
+                if (!result.ok) {
+                    events.emit('LOAD_FAILED', { error: result.error });
+                    return;
+                }
+                events.emit('CHANGE_SCENE', { scene: 'overworld', data: { buildWorld: true } });
+            });
+        });
+
+        // Closing the tab or switching away still saves the current position (localStorage writes are synchronous, so this is in time).
+        const saveOnLeave = () => {
+            if (this.currentScene === 'overworld' && this.overworldController && !this.overworldController.isLocked) SaveManager.autosave(5000);
+        };
+        window.addEventListener('pagehide', saveOnLeave);
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveOnLeave(); });
+
         events.on('BATTLE_ENDED', (data) => {
             this.activeBattleBGM = null;
             if (data.victory) {
@@ -534,6 +565,13 @@ export class SceneManager {
 
         this.transitionRenderer.update(dt);
 
+        // Autosave about once a minute of walking around, so a closed tab or crash never costs more than that.
+        this._autosaveTimer = (this._autosaveTimer || 0) + dt;
+        if (this._autosaveTimer >= 60) {
+            this._autosaveTimer = 0;
+            if (this.currentScene === 'overworld' && this.overworldController && !this.overworldController.isLocked) SaveManager.autosave();
+        }
+
         if (['overworld', 'encounter', 'battle'].includes(this.currentScene)) {
             if (this.currentScene === 'overworld') {
                 this.timeSystem.update(dt);
@@ -632,4 +670,4 @@ export class SceneManager {
         this.input.destroy();
         window.removeEventListener('keydown', this._handleGlobalKeydown);
     }
-}
+}

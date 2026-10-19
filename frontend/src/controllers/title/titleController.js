@@ -1,5 +1,7 @@
 import { BaseController } from '../core/baseController.js';
 import { events } from '../../core/eventBus.js';
+import { SaveManager } from '../../../../shared/systems/saveManager.js';
+import { AuthService } from '../../auth/authService.js';
 
 export class TitleController extends BaseController {
     constructor(input) {
@@ -9,11 +11,22 @@ export class TitleController extends BaseController {
         this.menuItems = [
             { id: 'btn_new_game', text: 'New Game' },
             { id: 'btn_load_game', text: 'Load Game' },
-            { id: 'btn_options', text: 'Settings' }
+            { id: 'btn_options', text: 'Settings' },
+            // Logged in: log out. Playing offline: go back to the login screen.
+            { id: 'btn_account', text: AuthService.isLoggedIn ? 'Log Out' : 'Log In' }
         ];
 
         // Start with -1 so no button is highlighted by default
         this.selectedIndex = -1;
+
+        // "Load Game" needs a save to load; the answer comes from the SaveStore (async), see refreshSaveState()
+        this.hasSave = false;
+        this.message = null;   // a short line under the buttons ("No saved game yet.")
+        this.refreshSaveState();
+        events.on('LOAD_FAILED', ({ error }) => {
+            this.message = error || 'The save could not be loaded.';
+            this.playErrorSound();
+        });
 
         // The title screen is the root: there is nothing to go back to, so Back (right-click / Esc / Tab) is silent here.
         this.cancelSfxOnRightClick = false;
@@ -26,10 +39,28 @@ export class TitleController extends BaseController {
     // Pass necessary data to the renderer
     getState() {
         return {
-            menuItems: this.menuItems,
+            menuItems: this.menuItems.map(item => item.id === 'btn_load_game' ? { ...item, disabled: !this.hasSave } : item),
+            message: this.message,
+            accountLabel: this.getAccountLabel(),
             // One highlighted button: the hovered one in mouse mode, the keyboard cursor in keyboard mode
             hoveredId: this.getFocusId()
         };
+    }
+
+    /** The small line in the corner: who is playing, and whether the saves are reaching the server. */
+    getAccountLabel() {
+        if (!AuthService.isLoggedIn) return 'Playing offline: saves stay on this device';
+        const sync = SaveManager.getStore().syncStatus;
+        const note = sync === 'failed' ? '  (server unreachable: saving on this device)'
+                   : sync === 'auth' ? '  (login expired: log out and back in to sync)'
+                   : '';
+        return `Signed in as ${AuthService.user.username}${note}`;
+    }
+
+    /** Asks the SaveStore whether there is a save to continue (called when the title screen is entered). */
+    refreshSaveState() {
+        this.message = null;
+        SaveManager.hasSave().then(has => { this.hasSave = has; }, () => { this.hasSave = false; });
     }
 
     // ======================================================== //
@@ -90,8 +121,19 @@ export class TitleController extends BaseController {
                 events.emit('CHANGE_SCENE', { scene: 'character-creator' });
                 break;
             case 'btn_load_game':
-                console.log('[TitleController] Load Game clicked - Not implemented');
-                this.playErrorSound();
+                if (!this.hasSave) {
+                    this.message = 'No saved game yet.';
+                    this.playErrorSound();
+                    break;
+                }
+                this.message = null;
+                this.playConfirmSound();
+                events.emit('LOAD_GAME', {});
+                break;
+            case 'btn_account':
+                this.playConfirmSound();
+                AuthService.logout();
+                window.location.reload();      // the simplest clean slate: the next load starts at the login screen
                 break;
             case 'btn_options':
                 console.log('[TitleController] Options clicked - Not implemented');

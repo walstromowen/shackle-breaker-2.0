@@ -1,8 +1,8 @@
 // src/world/generators/factories/interiorFactory.js
 import { INTERIOR_DEFINITIONS } from '../../../shared/data/interiorDefinitions.js';
-import { HouseGenerator } from '../../generators/HouseGenerator.js';
-import { CaveGenerator } from '../../generators/CaveGenerator.js';
-import { CraftingHouseGenerator } from '../../generators/CraftingHouseGenerator.js';
+import { HouseGenerator } from '../../generators/houseGenerator.js';
+import { CaveGenerator } from '../../generators/caveGenerator.js';
+import { CraftingHouseGenerator } from '../../generators/craftingHouseGenerator.js';
 
 const GENERATORS = { HOUSE: HouseGenerator, CRAFTING_HOUSE: CraftingHouseGenerator, CAVE: CaveGenerator };
 

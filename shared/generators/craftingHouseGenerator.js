@@ -1,7 +1,7 @@
 // src/world/generators/CraftingHouseGenerator.js
 import { CONFIG } from '../../shared/data/constants.js';
 import { biomeFactory } from '../systems/factories/biomeFactory.js';
-import { hashString, makeRng, Furnisher } from './HouseGenerator.js';
+import { hashString, makeRng, Furnisher } from './houseGenerator.js';
 
 /* A single workshop room (9 x 8 cells) with its crafting stations against the north wall. config.craftingStations lists several (the village workshop
    has them all, in a row in the middle of the wall); config.craftingStation names a single one, and then the room is dressed for that trade: a hearth
