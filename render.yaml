@@ -1,0 +1,21 @@
+# Render Blueprint: Render > New > Blueprint > pick this repo. One web service serves the game AND the API.
+# MongoDB is not hosted by Render: create a free cluster at https://www.mongodb.com/atlas and paste its connection string when asked.
+services:
+  - type: web
+    name: shackle-breaker
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGODB_URI
+        sync: false          # you paste this in the Render dashboard
+      - key: INVITE_CODE
+        sync: false          # optional: a code testers must enter to create an account

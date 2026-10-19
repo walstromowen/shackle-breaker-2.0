@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "npm start --workspace @shackle-breaker/backend",
+    "dev": "npm run dev --workspace @shackle-breaker/backend",
+    "dev:memory": "npm run dev:memory --workspace @shackle-breaker/backend",
+    "check:db": "npm run check:db --workspace @shackle-breaker/backend",
+    "check:paths": "node tools/checkPaths.mjs",
+    "test": "npm test --workspace @shackle-breaker/backend"
   },
   "keywords": [],
   "author": "",

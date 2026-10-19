@@ -40,9 +40,20 @@ export class TitleRenderer {
             // The standard button: hover / keyboard cursor / pressed all come from the shared state look.
             // The semi-transparent backing keeps the label legible over the background image.
             ui.drawButton(x, y, buttonWidth, buttonHeight, item.text,
-                ui.flags(item.id, state.hoveredId),
+                ui.flags(item.id, state.hoveredId, { disabled: !!item.disabled }),
                 { bg: 'rgba(10, 10, 14, 0.7)', font: UITheme.fonts.header });
         });
+
+        // A short status line under the buttons (e.g. "No saved game yet.")
+        if (state.message) {
+            const lineY = startY + state.menuItems.length * spacing + 10;
+            ui.drawText(state.message, width / 2, lineY, UITheme.fonts.body, UITheme.colors.error, 'center', 'middle');
+        }
+
+        // Who is playing (bottom-left corner)
+        if (state.accountLabel) {
+            ui.drawText(state.accountLabel, 48, height - 48, UITheme.fonts.small, UITheme.colors.textMuted, 'left', 'middle');
+        }
 
         // 3. Update Controller Hitbox Cache
         controller.updateHitboxes(hitboxes);
