@@ -280,6 +280,10 @@ export class SavesController extends BaseController {
         } else if (hitboxId === 'btn_back') {
             this.playCancelSound();
             this._exit();
+        } else if (hitboxId === 'btn_settings') {
+            this.playConfirmSound();
+            this.active = false;
+            events.emit('CHANGE_SCENE', { scene: 'settings', data: { from: 'game' } });
         } else if (hitboxId === 'btn_quit_title') {
             this._quitToTitle();
         }
@@ -416,7 +420,10 @@ export class SavesController extends BaseController {
 
         // footer buttons (left panel)
         hitboxes.push({ id: 'btn_back', x: leftX + 24, y: footerY, w: 300, h: L.btnH, zIndex: 10 });
-        if (this.mode === 'game') hitboxes.push({ id: 'btn_quit_title', x: leftX + L.leftW - 24 - 360, y: footerY, w: 360, h: L.btnH, zIndex: 10 });
+        if (this.mode === 'game') {
+            hitboxes.push({ id: 'btn_settings', x: leftX + 24 + 300 + 24, y: footerY, w: 240, h: L.btnH, zIndex: 10 });
+            hitboxes.push({ id: 'btn_quit_title', x: leftX + L.leftW - 24 - 360, y: footerY, w: 360, h: L.btnH, zIndex: 10 });
+        }
 
         // right panel: the row shown (the hovered row previews in mouse mode, like the journal), its buttons and the name box
         let shownId = this.selectedId;

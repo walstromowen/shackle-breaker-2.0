@@ -132,8 +132,8 @@ export class TitleController extends BaseController {
                 window.location.reload();      // the simplest clean slate: the next load starts at the login screen
                 break;
             case 'btn_options':
-                console.log('[TitleController] Options clicked - Not implemented');
-                this.playErrorSound();
+                this.playConfirmSound();
+                events.emit('CHANGE_SCENE', { scene: 'settings', data: { from: 'title' } });
                 break;
         }
     }

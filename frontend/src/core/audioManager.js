@@ -5,6 +5,30 @@
  */
 import { events } from './eventBus.js';
 
+// ---------------------------------------------------------------------------------------------------------------------------
+// VOLUME SETTINGS (the Settings screen) -- each channel has a slider from 0 to 1, kept in localStorage (per browser, not per account).
+// The channel's real gain is slider * max. The defaults are chosen so the mix sounds like the game always did before there were sliders.
+// ---------------------------------------------------------------------------------------------------------------------------
+const SETTINGS_KEY = 'shackle-breaker:audio';
+export const AUDIO_CHANNELS = {
+    master:  { label: 'Master',   max: 1.0, default: 1.0 },
+    music:   { label: 'Music',    max: 1.0, default: 0.5 },   // 0.5 gain
+    sfx:     { label: 'Effects',  max: 1.6, default: 0.5 },   // 0.8 gain (battle cries, attacks, interface sounds)
+    ambient: { label: 'Ambience', max: 0.8, default: 0.5 }    // 0.4 gain (weather and nature loops)
+};
+
+// ---------------------------------------------------------------------------------------------------------------------------
+// LOUDNESS MATCHING for sound effects. The sound files were recorded at very different levels (a Panzerkamfer cry is 18 dB louder than a
+// Cave Spider's, and most effects peak above full scale), so every effect is measured once, when it is first played, and turned to
+// the same loudness: SFX_TARGET_RMS (the average level of its audible part, as a fraction of full scale). The turn-up is limited so a
+// quiet sound (a hover tick) stays quiet, and no sound is made to clip.
+// ---------------------------------------------------------------------------------------------------------------------------
+const SFX_TARGET_RMS = 0.18;        // about -15 dBFS: a little above the music (music sits near -13 dBFS before its own, lower, gain)
+const SFX_MAX_BOOST = 1.5;
+const SFX_MAX_BOOST_CRY = 3.0;      // a quiet battle cry may be turned up further: they are the sounds that must sit evenly in a fight
+const SFX_MAX_CUT = 0.2;
+const SFX_PEAK_CEILING = 0.95;
+
 class AudioManager {
     constructor() {
         this.ctx = null;
@@ -24,6 +48,9 @@ class AudioManager {
         this.currentAmbientSource = null; // NEW: Tracks active weather audio
         this.currentAmbientId = null;      // NEW
         this.isInitialized = false;
+
+        this.settings = this._loadSettings();
+        this._sfxNormalization = new WeakMap();   // AudioBuffer -> its loudness-matching gain
 
         this._unlockAudioContext = this._unlockAudioContext.bind(this);
         this._setupEventListeners();
@@ -53,11 +80,8 @@ class AudioManager {
         this.sfxGain = this.ctx.createGain();
         this.ambientGain = this.ctx.createGain(); // NEW
 
-        // Default volumes
-        this.masterGain.gain.value = 1.0;
-        this.musicGain.gain.value = 0.5;
-        this.sfxGain.gain.value = 0.8;
-        this.ambientGain.gain.value = 0.4; // NEW: Ambience shouldn't overpower music
+        // Volumes: from the Settings screen's sliders (the defaults reproduce the original mix)
+        this._applySettings(false);
 
         // Connect nodes
         this.musicGain.connect(this.masterGain);
@@ -88,6 +112,91 @@ class AudioManager {
         events.on('STOP_AMBIENCE', (data) => this.stopAmbience(data.fadeTime));
     }
 
+    // ========================================================
+    // VOLUME SETTINGS
+    // ========================================================
+    _loadSettings() {
+        const settings = {};
+        for (const [channel, def] of Object.entries(AUDIO_CHANNELS)) settings[channel] = def.default;
+        try {
+            const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
+            if (saved && typeof saved === 'object') {
+                for (const channel of Object.keys(settings)) {
+                    const v = Number(saved[channel]);
+                    if (Number.isFinite(v)) settings[channel] = Math.max(0, Math.min(1, v));
+                }
+            }
+        } catch (e) { /* no storage, or damaged: the defaults it is */ }
+        return settings;
+    }
+
+    _saveSettings() {
+        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(this.settings)); } catch (e) { /* storage blocked: the change lasts until the page closes */ }
+    }
+
+    /** The channel's slider, 0 to 1. */
+    getVolume(channel) {
+        return this.settings[channel] ?? 0;
+    }
+
+    /** Moves a channel's slider (0 to 1). Takes effect at once, even for the music that is already playing, and is remembered. */
+    setVolume(channel, value) {
+        if (!AUDIO_CHANNELS[channel]) return;
+        this.settings[channel] = Math.max(0, Math.min(1, Number(value) || 0));
+        this._applySettings(true);
+        this._saveSettings();
+    }
+
+    resetVolumes() {
+        for (const [channel, def] of Object.entries(AUDIO_CHANNELS)) this.settings[channel] = def.default;
+        this._applySettings(true);
+        this._saveSettings();
+    }
+
+    _applySettings(smooth) {
+        if (!this.ctx) return;
+        const nodes = { master: this.masterGain, music: this.musicGain, sfx: this.sfxGain, ambient: this.ambientGain };
+        const now = this.ctx.currentTime;
+        for (const [channel, node] of Object.entries(nodes)) {
+            if (!node) continue;
+            const target = this.settings[channel] * AUDIO_CHANNELS[channel].max;
+            node.gain.cancelScheduledValues(now);
+            if (smooth) {                       // a short ramp: no click when a slider is dragged
+                node.gain.setValueAtTime(node.gain.value, now);
+                node.gain.linearRampToValueAtTime(target, now + 0.05);
+            } else {
+                node.gain.value = target;
+            }
+        }
+    }
+
+    /** The gain that brings this effect to the common loudness (measured once per sound, then remembered). */
+    _sfxNormalizationFor(buffer, id = '') {
+        let gain = this._sfxNormalization.get(buffer);
+        if (gain !== undefined) return gain;
+
+        gain = 1;
+        try {
+            let sumSquares = 0, counted = 0, peak = 0;
+            for (let c = 0; c < buffer.numberOfChannels; c++) {
+                const data = buffer.getChannelData(c);
+                for (let i = 0; i < data.length; i++) {
+                    const a = Math.abs(data[i]);
+                    if (a > peak) peak = a;
+                    if (c === 0 && a > 0.02) { sumSquares += a * a; counted++; }   // the audible part only: silence would drag the average down
+                }
+            }
+            if (counted > 0) {
+                const rms = Math.sqrt(sumSquares / counted);
+                gain = Math.max(SFX_MAX_CUT, Math.min(/Cry$/.test(id) ? SFX_MAX_BOOST_CRY : SFX_MAX_BOOST, SFX_TARGET_RMS / rms));
+                if (peak > 0) gain = Math.min(gain, SFX_PEAK_CEILING / peak);
+            }
+        } catch (e) { gain = 1; }
+
+        this._sfxNormalization.set(buffer, gain);
+        return gain;
+    }
+
     /**
      * Plays a sound effect with optional pitch shifting.
      */
@@ -106,7 +215,7 @@ class AudioManager {
 
         // Local gain node for this specific sound
         const localGain = this.ctx.createGain();
-        localGain.gain.value = volume;
+        localGain.gain.value = volume * this._sfxNormalizationFor(buffer, key);
 
         // Apply pitch shift if provided (e.g., 0.9 to 1.1 for variety)
         source.playbackRate.value = pitch;
@@ -273,4 +382,4 @@ class AudioManager {
 }
 
 // Export as a singleton
-export const audioManager = new AudioManager();
+export const audioManager = new AudioManager();

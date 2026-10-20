@@ -138,6 +138,8 @@ export class SavesRenderer {
     _renderFooter(ui, state, focus) {
         const back = this._box(state, 'btn_back');
         if (back) ui.drawButton(back.x, back.y, back.w, back.h, 'Back', ui.flags('btn_back', focus), { font: F.body });
+        const settings = this._box(state, 'btn_settings');
+        if (settings) ui.drawButton(settings.x, settings.y, settings.w, settings.h, 'Settings', ui.flags('btn_settings', focus, { disabled: state.busy }), { font: F.body });
         const quit = this._box(state, 'btn_quit_title');
         if (quit) ui.drawButton(quit.x, quit.y, quit.w, quit.h, 'Quit to Title', ui.flags('btn_quit_title', focus, { disabled: state.busy }), { font: F.body });
     }
