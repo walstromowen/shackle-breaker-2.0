@@ -49,6 +49,14 @@ export const CONFIG = {
     // LIGHT_COLOR_TINT = how much of a light's own colour shows (the `color` of a light definition, e.g. '255, 120, 50'): 1 = the pure colour (a campfire
     //                    paints everything orange), 0 = every light is white. In between, the colour is mixed with white.
     LIGHT_COLOR_TINT: 0.6,
+    // DAY_GLOOM = the overworld is never fully bright: even at midday there is a slight natural darkness, the way a cave or the night has, with a much
+    //             bigger pool of light around the player. At dusk and night the darkness takes over and the pool closes in to the player's own light.
+    //   alpha    = how dark the gloom is at its darkest, away from the player (0 = none, 1 = pitch black). The night is 1.
+    //   color    = the colour of the gloom ('r, g, b'); a cold near-black blue by default.
+    //   radius   = tiles of the daylight pool around the player (the player's own torch light is 4); 0 turns the pool off.
+    //   strength = how clear the pool is at its centre, 0..1.
+    // Leave DAY_GLOOM out (or set alpha: 0) for the old bright days. Weather that darkens the day (rain, a blizzard) shrinks the pool by itself.
+    DAY_GLOOM: { alpha: 0.45, color: '8, 10, 24', radius: 9, strength: 1 },
 
     // Minimap in the bottom-left corner of the overworld (see MinimapRenderer). Every entry is optional; the values below are the defaults.
     // radius = tiles shown to each side of the player, zoom = screen pixels per tile (keep it a whole number), so the map is 2 x radius x zoom pixels square.

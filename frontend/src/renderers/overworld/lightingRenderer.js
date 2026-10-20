@@ -207,6 +207,13 @@ export class LightingRenderer {
         this.tint = config.LIGHT_COLOR_TINT ?? DEFAULT_TINT;
         this.smoothing = Math.max(0, Math.round(config.LIGHT_SMOOTHING ?? DEFAULT_SMOOTHING));
         this.ease = Math.min(1, Math.max(0, config.LIGHT_EDGE_EASE ?? DEFAULT_EASE));
+        const g = config.DAY_GLOOM;      // the natural darkness of the day, see constants.js
+        this.gloom = g && g.alpha > 0 ? {
+            a: Math.min(1, g.alpha),
+            rgb: String(g.color ?? '8, 10, 22').split(',').map((v) => Math.max(0, Math.min(255, Number(v) || 0))),   // 'r, g, b' in 0..255, like the clock's colours
+            radius: g.radius ?? 12,
+            strength: g.strength ?? 1,
+        } : null;
         this._tmp = null;         // scratch for the blur
         this._blockers = new Map(); // tile -> absorption (tenths of a tile) of the blocksLight objects near the view, rebuilt every frame
         this._blockSig = null;      // fingerprint of all blocksLight objects: a change drops the remembered traces
@@ -302,7 +309,7 @@ export class LightingRenderer {
     }
 
     /* Every light in the view as { x, y (tile units), light, fixed }. Positions are the middle of the entity's / map object's box. */
-    collectLights(entities, mapObjects, interpolationFactor) {
+    collectLights(entities, mapObjects, interpolationFactor, daylight = null) {
         const { TILE_SIZE } = this.config;
         const out = [];
         if (entities) {
@@ -310,7 +317,9 @@ export class LightingRenderer {
                 if (!ent.light || !ent.light.hasLight) continue;
                 const rx = ent.prevX !== undefined ? ent.prevX + (ent.x - ent.prevX) * interpolationFactor : ent.x;
                 const ry = ent.prevY !== undefined ? ent.prevY + (ent.y - ent.prevY) * interpolationFactor : ent.y;
-                out.push({ x: (rx + (ent.width || TILE_SIZE) / 2) / TILE_SIZE, y: (ry + (ent.height || TILE_SIZE) / 2) / TILE_SIZE, light: ent.light });
+                const lx = (rx + (ent.width || TILE_SIZE) / 2) / TILE_SIZE, ly = (ry + (ent.height || TILE_SIZE) / 2) / TILE_SIZE;
+                out.push({ x: lx, y: ly, light: ent.light });
+                if (daylight && ent.isPlayer) out.push({ x: lx, y: ly, light: daylight });    // the wide pool of daylight around the player
             }
         }
         if (mapObjects) {
@@ -371,6 +380,22 @@ export class LightingRenderer {
             finalA = Math.max(finalA, coldMaxAlpha * intensity);
         }
 
+        // The daytime gloom: the day is never fully bright. Below the gloom's strength the darkness is raised to it (its colour mixed in by weight), and a wide pool
+        // of daylight is cut around the player; the darker the clock / weather already is, the smaller the pool, until at night only the player's own light is left.
+        let daylight = null;
+        if (this.gloom) {
+            const g = this.gloom;
+            const daylit = Math.min(1, Math.max(0, 1 - finalA * 1.6));
+            if (finalA < g.a) {
+                const wa = finalA, wg = g.a, w = wa + wg;
+                finalR = (finalR * wa + g.rgb[0] * wg) / w;
+                finalG = (finalG * wa + g.rgb[1] * wg) / w;
+                finalB = (finalB * wa + g.rgb[2] * wg) / w;
+                finalA = g.a;
+            }
+            if (daylit > 0 && g.radius > 0 && g.strength > 0) daylight = { hasLight: true, radius: g.radius, maxAlpha: g.strength * daylit };
+        }
+
         // If completely bright (alpha 0 or less), do nothing
         if (finalA <= 0) return;
 
@@ -391,7 +416,7 @@ export class LightingRenderer {
         dark.fill(1);
 
         const wm = worldManager;
-        const lights = this.collectLights(entities, mapObjects, interpolationFactor);
+        const lights = this.collectLights(entities, mapObjects, interpolationFactor, daylight);
         // memo box: the view plus the widest light's reach all round
         let pad = 2;
         for (const L of lights) pad = Math.max(pad, Math.ceil(L.light.radius + 0.15 * Math.abs(L.light.flickerAmp || 0)) + 3);
