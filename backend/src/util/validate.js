@@ -38,6 +38,7 @@ export function cleanSummary(summary) {
     const num = (v) => (Number.isFinite(v) ? v : null);
     return {
         name: typeof s.name === 'string' ? s.name.slice(0, 40) : '',
+        saveName: typeof s.saveName === 'string' ? s.saveName.slice(0, 40) : '',
         level: num(s.level),
         partySize: num(s.partySize),
         day: num(s.day),

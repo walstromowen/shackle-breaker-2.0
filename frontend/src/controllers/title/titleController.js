@@ -23,10 +23,6 @@ export class TitleController extends BaseController {
         this.hasSave = false;
         this.message = null;   // a short line under the buttons ("No saved game yet.")
         this.refreshSaveState();
-        events.on('LOAD_FAILED', ({ error }) => {
-            this.message = error || 'The save could not be loaded.';
-            this.playErrorSound();
-        });
 
         // The title screen is the root: there is nothing to go back to, so Back (right-click / Esc / Tab) is silent here.
         this.cancelSfxOnRightClick = false;
@@ -60,7 +56,7 @@ export class TitleController extends BaseController {
     /** Asks the SaveStore whether there is a save to continue (called when the title screen is entered). */
     refreshSaveState() {
         this.message = null;
-        SaveManager.hasSave().then(has => { this.hasSave = has; }, () => { this.hasSave = false; });
+        SaveManager.list().then(list => { this.hasSave = list.length > 0; }, () => { this.hasSave = false; });
     }
 
     // ======================================================== //
@@ -128,7 +124,7 @@ export class TitleController extends BaseController {
                 }
                 this.message = null;
                 this.playConfirmSound();
-                events.emit('LOAD_GAME', {});
+                events.emit('CHANGE_SCENE', { scene: 'saves', data: { mode: 'title' } });   // pick which save to load
                 break;
             case 'btn_account':
                 this.playConfirmSound();

@@ -15,6 +15,7 @@ import { LevelUpController } from '../controllers/levelUp/levelUpController.js';
 import { JournalController } from '../controllers/journal/journalController.js';
 import { ShopController } from '../controllers/shop/shopController.js';
 import { WorkshopController } from '../controllers/workshop/workshopController.js'; // <-- NEW
+import { SavesController } from '../controllers/saves/savesController.js';
 
 // --- RENDERERS ---
 import { BootRenderer } from '../renderers/boot/bootRenderer.js';
@@ -33,6 +34,7 @@ import { LevelUpRenderer } from '../renderers/levelUp/levelUpRenderer.js';
 import { JournalRenderer } from '../renderers/journal/journalRenderer.js';
 import { ShopRenderer } from '../renderers/shop/shopRenderer.js';
 import { WorkshopRenderer } from '../renderers/workshop/workshopRenderer.js'; // <-- NEW
+import { SavesRenderer } from '../renderers/saves/savesRenderer.js';
 
 import { PartyManager } from '../../../shared/systems/partyManager.js';
 import { WorldManager } from '../../../shared/systems/worldManager.js';
@@ -41,7 +43,7 @@ import { gameState } from '../../../shared/state/gameState.js';
 import { AbilitySystem } from '../../../shared/systems/abilitySystem.js';
 import { DIFFICULTY_MODIFIERS } from '../../../shared/data/constants.js';
 import { EntityFactory } from '../../../shared/systems/factories/entityFactory.js';
-import { SaveManager } from '../../../shared/systems/saveManager.js';
+import { SaveManager, AUTOSAVE_SLOT } from '../../../shared/systems/saveManager.js';
 
 export class SceneManager {
     constructor(canvas, assetLoader, config) {
@@ -68,6 +70,7 @@ export class SceneManager {
         this.journalController = new JournalController(this.input);
         this.shopController = new ShopController(this.input);
         this.workshopController = new WorkshopController(this.input); // <-- NEW
+        this.savesController = new SavesController(this.input);
 
         this.overworldController = null;
         this.encounterController = null;
@@ -91,6 +94,7 @@ export class SceneManager {
         this.journalRenderer = new JournalRenderer(this.config, this.loader);
         this.shopRenderer = new ShopRenderer(this.ctx, this.loader);
         this.workshopRenderer = new WorkshopRenderer(this.ctx, this.loader); // <-- NEW
+        this.savesRenderer = new SavesRenderer(this.config, this.loader);
 
         // State
         this.currentScene = 'boot';
@@ -139,7 +143,7 @@ export class SceneManager {
 
     resolveTargetAmbience(targetScene) {
         // <-- ADDED 'workshop' to keep whatever background ambience is currently playing
-        if (['party', 'character_summary', 'level_up', 'shop', 'workshop'].includes(targetScene)) return null;
+        if (['party', 'character_summary', 'level_up', 'shop', 'workshop', 'saves'].includes(targetScene)) return null;
 
         if (['battle', 'encounter', 'character-creator', 'title', 'boot'].includes(targetScene)) return 'none';
 
@@ -229,6 +233,9 @@ export class SceneManager {
                 }
                 if (scene === 'workshop') {                 // <-- NEW
                     this.workshopController.init(data || {});
+                }
+                if (scene === 'saves') {
+                    this.savesController.init(data || {});   // { mode: 'game' | 'title' }
                 }
 
                 this.changeScene(scene);
@@ -395,7 +402,10 @@ export class SceneManager {
         });
 
         // LOAD_GAME { slot? }: restores a save into gameState, then enters the overworld with a freshly built world.
-        events.on('LOAD_GAME', ({ slot } = {}) => {
+        events.on('LOAD_GAME', async ({ slot, fromGame } = {}) => {
+            // Loading from inside a running game: first keep the current position in the autosave, so nothing played since the last
+            // autosave is lost (SaveManager.loadFromSlot then copies that autosave into the 'previous' slot).
+            if (fromGame && slot && slot !== AUTOSAVE_SLOT && SaveManager.canSaveNow()) await SaveManager.autosave();
             SaveManager.loadFromSlot(slot).then(result => {
                 if (!result.ok) {
                     events.emit('LOAD_FAILED', { error: result.error });
@@ -487,6 +497,7 @@ export class SceneManager {
             case 'journal': return this.journalController;
             case 'shop': return this.shopController;
             case 'workshop': return this.workshopController; // <-- NEW
+            case 'saves': return this.savesController;
             default: return null;
         }
     }
@@ -505,6 +516,7 @@ export class SceneManager {
             case 'journal': return this.journalRenderer;
             case 'shop': return this.shopRenderer;
             case 'workshop': return this.workshopRenderer; // <-- NEW
+            case 'saves': return this.savesRenderer;
             default: return null;
         }
     }
@@ -638,6 +650,9 @@ export class SceneManager {
                     const csState = this.characterSummaryController.getState();
                     this.characterSummaryRenderer.render(csState);
                 }
+                break;
+            case 'saves':
+                this.savesRenderer.render(this.ctx, this.savesController.getState());
                 break;
             case 'level_up':
                 const luState = this.levelUpController.getState();

@@ -69,7 +69,12 @@ export class HybridSaveStore {
     async remove(slot) {
         const ok = await this.local.remove(slot);
         this._pending.delete(slot);
-        AuthService.request('DELETE', `/api/saves/${encodeURIComponent(slot)}`).then(() => this._mark('ok'), (e) => this._markFailure(e));
+        try {
+            await AuthService.request('DELETE', `/api/saves/${encodeURIComponent(slot)}`);   // waited for, so a list refreshed right after does not bring the slot back
+            this._mark('ok');
+        } catch (e) {
+            if (!(e instanceof ApiError && e.status === 404)) this._markFailure(e);
+        }
         return ok;
     }
 

@@ -143,6 +143,19 @@ test('slot limit per account', async () => {
     assert.equal((await call('PUT', '/api/saves/a4', { token, body: { save: makeSave() } })).status, 200);
 });
 
+test('a named manual save keeps its name (and a long name is cut)', async () => {
+    const named = makeSave({ summary: { name: 'Hero', level: 3, partySize: 2, day: 4, difficulty: 'normal', saveName: 'Before the boss' } });
+    assert.equal((await call('PUT', '/api/saves/s-abc123', { token, body: { save: named } })).status, 400);   // the test limit is 3 and the account is full
+    assert.equal((await call('PUT', '/api/saves/a2', { token, body: { save: named } })).status, 200);
+    let list = (await call('GET', '/api/saves', { token })).json.saves;
+    assert.equal(list.find(e => e.slot === 'a2').summary.saveName, 'Before the boss');
+    const long = makeSave({ summary: { name: 'Hero', saveName: 'y'.repeat(200) } });
+    assert.equal((await call('PUT', '/api/saves/a2', { token, body: { save: long } })).status, 200);
+    list = (await call('GET', '/api/saves', { token })).json.saves;
+    assert.equal(list.find(e => e.slot === 'a2').summary.saveName.length, 40);
+    assert.equal(list.find(e => e.slot === 'autosave').summary.saveName, '');   // an autosave carries no player-chosen name
+});
+
 test('malformed JSON and unknown routes answer cleanly', async () => {
     const res = await fetch(base + '/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{not json' });
     assert.equal(res.status, 400);

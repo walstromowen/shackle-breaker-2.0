@@ -31,7 +31,33 @@ const SAVE_VERSION = 1;
 const MIGRATIONS = {};
 
 export const AUTOSAVE_SLOT = 'autosave';
-export const BACKUP_SLOT = 'previous';   // the autosave that a New Game replaced (so starting over never destroys progress for good)
+export const BACKUP_SLOT = 'previous';   // the autosave that a New Game (or loading another save) replaced, so starting over never destroys progress for good
+
+// Manual saves: any number of named slots, 's-' + a short id (the server accepts a-z, 0-9, '-' and '_', up to 32 characters)
+export const MANUAL_SLOT_PREFIX = 's-';
+export const MAX_MANUAL_SAVES = 15;          // the server keeps at most 20 slots per player (MAX_SAVES_PER_USER): these 15 + autosave + previous
+export const MAX_SAVE_NAME = 30;
+export const SAVE_NAME_KEY_PATTERN = /^[A-Za-z0-9 '\-_.,!:()#&]$/;   // keys the name box accepts while typing
+
+export const isManualSlot = (slot) => typeof slot === 'string' && slot.startsWith(MANUAL_SLOT_PREFIX);
+
+/** Tidies a name typed by the player: only the characters the name box allows, single spaces, trimmed, at most MAX_SAVE_NAME. */
+export function cleanSaveName(name) {
+    return String(name ?? '')
+        .replace(/[^A-Za-z0-9 '\-_.,!:()#&]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, MAX_SAVE_NAME)
+        .trim();
+}
+
+function newManualSlotId(taken) {
+    let id;
+    do {
+        id = MANUAL_SLOT_PREFIX + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36).padStart(2, '0');
+    } while (taken.includes(id));
+    return id;
+}
 
 // ---------------------------------------------------------------------------------------------------------------------------------
 // Helpers
@@ -214,7 +240,8 @@ export const SaveManager = {
 
     // ----- snapshot / restore -----------------------------------------------------------------------------------------------
 
-    createSnapshot() {
+    /** @param {{name?: string}} options  name: the player's name for a manual save (stored in summary.saveName) */
+    createSnapshot(options = {}) {
         if (!gameState.party.members.length) throw new Error('[SaveManager] There is no party to save.');
 
         const members = gameState.party.members;
@@ -263,7 +290,8 @@ export const SaveManager = {
                 level: leader.level,
                 partySize: members.length,
                 day: world.day,
-                difficulty: gameState.difficulty
+                difficulty: gameState.difficulty,
+                ...(options.name ? { saveName: String(options.name).slice(0, 40) } : {})
             },
             data
         };
@@ -373,11 +401,47 @@ export const SaveManager = {
         return this.saveToSlot(AUTOSAVE_SLOT);
     },
 
+    /** A suggestion for the name box: "Leader - Day 4". */
+    defaultSaveName() {
+        const leader = gameState.party.members && gameState.party.members[0];
+        return cleanSaveName(`${leader ? leader.name : 'Save'} - Day ${gameState.world.day ?? 1}`);
+    },
+
+    /**
+     * A manual, named save. With no `slot` it takes a new slot (refused past MAX_MANUAL_SAVES); with a manual `slot` it overwrites that one.
+     * Resolves { ok: true, slot, name } or { ok: false, error } (never throws).
+     */
+    async saveManual(name, slot = null) {
+        if (!this.canSaveNow()) return { ok: false, error: 'You can only save on the overworld, outside buildings.' };
+        try {
+            const entries = await store.list();
+            let target = slot;
+            if (target) {
+                if (!isManualSlot(target)) return { ok: false, error: 'That slot cannot be overwritten.' };
+            } else {
+                if (entries.filter(e => isManualSlot(e.slot)).length >= MAX_MANUAL_SAVES) {
+                    return { ok: false, error: `You can keep up to ${MAX_MANUAL_SAVES} saves. Delete one first.` };
+                }
+                target = newManualSlotId(entries.map(e => e.slot));
+            }
+            const finalName = cleanSaveName(name) || this.defaultSaveName();
+            const ok = await store.write(target, this.createSnapshot({ name: finalName }));
+            return ok ? { ok: true, slot: target, name: finalName } : { ok: false, error: 'The save could not be written (browser storage is full or blocked).' };
+        } catch (e) {
+            console.error('[SaveManager] Manual save failed:', e);
+            return { ok: false, error: e.message || String(e) };
+        }
+    },
+
     /** Reads a slot and applies it. Resolves { ok: true } or { ok: false, error } (never throws). */
     async loadFromSlot(slot = AUTOSAVE_SLOT) {
         try {
             const save = await store.read(slot);
             if (!save) return { ok: false, error: 'There is no saved game.' };
+            this.validateAndMigrate(save);   // refuse a damaged save before anything is touched
+            // Loading another save is about to replace the autosave with it: keep what the autosave held in 'previous' first
+            // (the save is already in memory, so loading 'previous' itself is safe).
+            if (slot !== AUTOSAVE_SLOT) await this.backupAutosave();
             this.applySnapshot(save);
             return { ok: true };
         } catch (e) {

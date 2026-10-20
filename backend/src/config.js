@@ -24,7 +24,7 @@ export function loadConfig(env = process.env) {
         inviteCode: env.INVITE_CODE || '',
         corsOrigins: list(env.CORS_ORIGIN),
         serveFrontend: bool(env.SERVE_FRONTEND, true),
-        maxSavesPerUser: Number(env.MAX_SAVES_PER_USER) || 10,
+        maxSavesPerUser: Number(env.MAX_SAVES_PER_USER) || 20,
         maxSaveBytes: Number(env.MAX_SAVE_BYTES) || 3 * 1024 * 1024
     };
 }

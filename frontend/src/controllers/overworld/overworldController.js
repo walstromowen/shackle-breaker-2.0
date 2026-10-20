@@ -26,7 +26,7 @@ const MENU_KEYS = {
     character: 'KeyC',
     journal: 'KeyJ',
     crafting: 'KeyB',   // the crafting Bag
-    system: 'KeyO'      // Options / title
+    system: 'KeyO'      // System: save / load / quit to title
 };
 const keyLabel = (code) => code.replace(/^Key|^Digit/, '');
 
@@ -115,7 +115,7 @@ export class OverworldController extends BaseController {
                 events.emit('OPEN_WORKSHOP', { station: 'any', title: 'Crafting Bag' });
                 break;
             case 'btn_system':
-                this.executeMenuAction('title');
+                this.executeMenuAction('saves', { mode: 'game' });
                 break;
             default:
                 // A click on nothing closes the open menu; with no menu open nothing happened
@@ -135,12 +135,12 @@ export class OverworldController extends BaseController {
         this.playCancelSound();
     }
 
-    executeMenuAction(sceneName) {
+    executeMenuAction(sceneName, data) {
         this.playConfirmSound();
         console.log(`[Overworld] Opening ${sceneName} Menu...`);
         this.isMenuOpen = false;
         this.isLocked = true;
-        events.emit('CHANGE_SCENE', { scene: sceneName });
+        events.emit('CHANGE_SCENE', data ? { scene: sceneName, data } : { scene: sceneName });
     }
 
     handleKeyDown(code, e) {
@@ -170,8 +170,8 @@ export class OverworldController extends BaseController {
       this.isMenuOpen = false;
       events.emit('OPEN_WORKSHOP', { station: 'any', title: 'Crafting Bag' });
     }
-    // O: System / Title
-    if (code === MENU_KEYS.system) this.executeMenuAction('title');
+    // O: System (save / load / quit to title)
+    if (code === MENU_KEYS.system) this.executeMenuAction('saves', { mode: 'game' });
 
     // 1-9 and 0: use the item in that hotbar slot
     const hotbarIndex = InventorySystem.HOTBAR_KEYS.indexOf(code);
@@ -904,4 +904,4 @@ export class OverworldController extends BaseController {
             }
         };
     }
-}
+}
