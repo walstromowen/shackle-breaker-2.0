@@ -15,14 +15,14 @@ export const tracksInTheSnow = {
             sfx: "snowSteps",
             sfxVolume: 0.6,
             image: { col: 0, row: 0 },
-            text: "{name} notices tracks in the snow.",
+            text: "You notice tracks in the snow.",
             decisions: [
                 {
                     text: "[ATN] Follow the tracks.",
                     type: "skill_check",
                     attribute: "attunement",
                     threshold: 12,
-                    customActionText: "{name} follows the tracks.",
+                    customActionText: "You follow the tracks.",
                     successOutcomes: [
                         { weight: 1, results: [{ type: "AWARD_XP", payload: { amount: 5, target: "active_character" } }, { type: "ADVANCE_STAGE", payload: { stageId: "tracks_continue" } }] },
                         { weight: 1, results: [{ type: "AWARD_XP", payload: { amount: 5, target: "active_character" } }, { type: "ADVANCE_STAGE", payload: { stageId: "crimson_snow" } }] },
@@ -40,7 +40,7 @@ export const tracksInTheSnow = {
                 },
                 {
                     text: "Leave.",
-                    customActionText: "{name}'s party moves on.",
+                    customActionText: "You move on.",
                     outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]
@@ -51,7 +51,7 @@ export const tracksInTheSnow = {
         tracks_lost: {
             displayText: "Lost The Trail",
             image: { col: 0, row: 0 },
-            text: "{name} wanders in the snow looking for more tracks.",
+            text: "You wander in the snow looking for more tracks.",
             decisions: [
                 {
                     text: "Look again.",
@@ -70,7 +70,7 @@ export const tracksInTheSnow = {
             sfx: "heartbeat",
             image: { col: 3, row: 0 },
             bgm: "plainsBattleBgm",
-            text: "Something approaches {name}'s position!",
+            text: "Something approaches your position!",
             decisions: [
                 {
                     text: "Draw your weapon!",
@@ -93,14 +93,14 @@ export const tracksInTheSnow = {
             sfx: "snowSteps",
             sfxVolume: 0.6,
             image: { col: 0, row: 0 },
-            text: "{name} sees more tracks ahead.",
+            text: "You see more tracks ahead.",
             decisions: [
                 {
                     text: "[ATN] Follow the tracks.",
                     type: "skill_check",
                     attribute: "attunement",
                     threshold: 12,
-                    customActionText: "{name} follows the tracks.",
+                    customActionText: "You follow the tracks.",
                     successOutcomes: [
                         { weight: 2, results: [{ type: "AWARD_XP", payload: { amount: 5, target: "active_character" } }, { type: "ADVANCE_STAGE", payload: { stageId: "crimson_snow" } }] },
                         { weight: 1, results: [{ type: "AWARD_XP", payload: { amount: 5, target: "active_character" } }, { type: "ADVANCE_STAGE", payload: { stageId: "deer_on_the_road" } }] }
@@ -117,7 +117,7 @@ export const tracksInTheSnow = {
                 },
                 {
                     text: "Leave.",
-                    customActionText: "{name}'s party moves on.",
+                    customActionText: "You move on.",
                     outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]
@@ -125,7 +125,7 @@ export const tracksInTheSnow = {
         tracks_lost_again: {
             displayText: "Lost The Trail",
             image: { col: 0, row: 0 },
-            text: "{name} wanders in the snow looking for more tracks.",
+            text: "You wander in the snow looking for more tracks.",
             decisions: [
                 {
                     text: "Look again.",
@@ -140,7 +140,7 @@ export const tracksInTheSnow = {
         deer_on_the_road: {
             displayText: "A Deer Along The Road",
             image: { col: 1, row: 1 },
-            text: "The tracks lead {name} off the road to a lone deer grazing in the snow. It hasn't noticed the party yet.",
+            text: "The tracks lead you off the road to a lone deer grazing in the snow. It hasn't noticed you yet.",
             decisions: [
                 {
                     text: "[DEX] Stalk and hunt the deer.",
@@ -151,7 +151,7 @@ export const tracksInTheSnow = {
                         { type: "context_flag_not_set", flagId: "failed_deer_hunt" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} crouches low and creeps toward the deer...",
+                    customActionText: "You crouch low and creep toward the deer...",
                     successOutcomes: [
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "deer_hunted" } }] }
                     ],
@@ -166,7 +166,7 @@ export const tracksInTheSnow = {
                 },
                 {
                     text: "Leave the deer in peace.",
-                    customActionText: "{name} lets the deer graze and returns to the road.",
+                    customActionText: "You let the deer graze and return to the road.",
                     outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]
@@ -178,7 +178,7 @@ export const tracksInTheSnow = {
             effect: "jolt",
             sfx: "quickStabSfx",
             image: { col: 2, row: 1 },
-            text: "{name} closes the distance unseen and brings the deer down in a single, clean strike.",
+            text: "You close the distance unseen and bring the deer down in a single, clean strike.",
             decisions: [
                 {
                     text: "Take the hide and bones.",
@@ -203,7 +203,7 @@ export const tracksInTheSnow = {
             effect: "jolt",
             sfx: "hoofbeats",
             image: { col: 1, row: 1 },
-            text: "A branch cracks under {name}'s foot. The deer's head snaps up and it bounds off through the snow, gone in a heartbeat.",
+            text: "A branch cracks under your foot. The deer's head snaps up and it bounds off through the snow, gone in a heartbeat.",
             decisions: [
                 {
                     text: "Return to the road.",
@@ -221,7 +221,7 @@ export const tracksInTheSnow = {
             sfx: "heartbeat",
             sfxVolume: 0.6,
             image: { col: 1, row: 0 },
-            text: "{name} sees crimson red snow ahead.",
+            text: "You see crimson red snow ahead.",
             decisions: [
                 {
                     // The old check listed ["attunement", "panzerian"]; the new system takes a single attribute.
@@ -229,7 +229,7 @@ export const tracksInTheSnow = {
                     type: "skill_check",
                     attribute: "attunement",
                     threshold: 12,
-                    customActionText: "{name} investigates the red snow.",
+                    customActionText: "You investigate the red snow.",
                     successOutcomes: [
                         { weight: 1, results: [{ type: "AWARD_XP", payload: { amount: 5, target: "active_character" } }, { type: "ADVANCE_STAGE", payload: { stageId: "wounded_leopard" } }] },
                         { weight: 1, results: [{ type: "AWARD_XP", payload: { amount: 5, target: "active_character" } }, { type: "ADVANCE_STAGE", payload: { stageId: "apex_predator" } }] }
@@ -246,7 +246,7 @@ export const tracksInTheSnow = {
                 },
                 {
                     text: "Leave.",
-                    customActionText: "{name}'s party moves on.",
+                    customActionText: "You move on.",
                     outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]
@@ -254,7 +254,7 @@ export const tracksInTheSnow = {
         nothing_noteworthy: {
             displayText: "Nothing Found",
             image: { col: 1, row: 0 },
-            text: "{name} doesn't see anything noteworthy.",
+            text: "You don't see anything noteworthy.",
             decisions: [
                 {
                     text: "Look again.",
@@ -271,7 +271,7 @@ export const tracksInTheSnow = {
             sfx: "snowLeopardCry",
             sfxVolume: 0.5,
             image: { col: 2, row: 0 },
-            text: "{name} sees a snow leopard laying in the snow ahead. It appears to be injured.",
+            text: "You see a snow leopard lying in the snow ahead. It appears to be injured.",
             decisions: [
                 {
                     text: "[Healing Herb] Tend the Snow Leopard's wounds.",
@@ -282,7 +282,7 @@ export const tracksInTheSnow = {
                         { type: "has_item", itemId: "healing_herb", qty: 1 },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} crushes a healing herb and presses it into the Snow Leopard's wounds...",
+                    customActionText: "You crush a healing herb and press it into the Snow Leopard's wounds...",
                     successOutcomes: [
                         {
                             weight: 1,
@@ -324,7 +324,7 @@ export const tracksInTheSnow = {
                     type: "skill_check",
                     attribute: "none",
                     threshold: 12,
-                    customActionText: "{name} approaches the Snow Leopard.",
+                    customActionText: "You approach the Snow Leopard.",
                     successOutcomes: [
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "leopard_put_to_rest" } }] }
                     ],
@@ -341,7 +341,7 @@ export const tracksInTheSnow = {
                 },
                 {
                     text: "Leave.",
-                    customActionText: "{name}'s party moves on.",
+                    customActionText: "You move on.",
                     outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]
@@ -353,11 +353,11 @@ export const tracksInTheSnow = {
             sfx: "snowLeopardCry",
             sfxVolume: 0.5,
             image: { col: 2, row: 0 },
-            text: "The Snow Leopard nuzzles {name}.",
+            text: "The Snow Leopard nuzzles you.",
             decisions: [
                 {
                     text: "Signal the Snow Leopard to follow.",
-                    customActionText: "{name} gives the Snow Leopard a gentle pat, signaling it to follow.",
+                    customActionText: "You give the Snow Leopard a gentle pat, signaling it to follow.",
                     outcomes: [
                         {
                             weight: 100,
@@ -377,7 +377,7 @@ export const tracksInTheSnow = {
             effect: "jolt",
             sfx: "quickStabSfx",
             image: { col: 2, row: 1 },
-            text: "{name} ends the Snow Leopard's suffering quickly. Its pelt is still in good condition.",
+            text: "You end the Snow Leopard's suffering quickly. Its pelt is still in good condition.",
             decisions: [
                 {
                     text: "Take the pelts.",
@@ -408,7 +408,7 @@ export const tracksInTheSnow = {
             ambienceFade: 0.4,
             image: { col: 3, row: 0 },
             bgm: "plainsBattleBgm",
-            text: "An arrow flies out of nowhere and hits the Snow Leopard. The Snow Leopard breathes its last breath, leaving {name}'s party alone with a pack of frozen trappers!",
+            text: "An arrow flies out of nowhere and hits the Snow Leopard. The Snow Leopard breathes its last breath, leaving your party alone with a pack of frozen trappers!",
             decisions: [
                 {
                     text: "Draw your weapon!",
@@ -432,7 +432,7 @@ export const tracksInTheSnow = {
             ambienceFade: 0.4,
             image: { col: 3, row: 1 },
             bgm: "plainsBattleBgm",
-            text: "The Snow Leopard stands to its feet and growls at {name}!",
+            text: "The Snow Leopard stands to its feet and growls at you!",
             decisions: [
                 {
                     text: "Defend yourself!",
@@ -459,7 +459,7 @@ export const tracksInTheSnow = {
             ambienceFade: 0.4,
             image: { col: 3, row: 1 },
             bgm: "plainsBattleBgm",
-            text: "An ambush of Snow Leopards surrounds {name}!",
+            text: "An ambush of Snow Leopards surrounds you!",
             decisions: [
                 {
                     text: "Fight for your life!",
@@ -489,7 +489,7 @@ export const tracksInTheSnow = {
             decisions: [
                 {
                     text: "Attack!",
-                    customActionText: "{name} attacks!",
+                    customActionText: "You attack!",
                     outcomes: [{ weight: 100, results: [{ type: "DESTROY_OBJECT" }, { type: "START_BATTLE", payload: { enemies: ["PANZERKAMFER"], bgm: "apexPredatorBgm" } }] }]
                 },
                 {
@@ -498,7 +498,7 @@ export const tracksInTheSnow = {
                     type: "skill_check",
                     attribute: "dexterity",
                     threshold: 15,
-                    customActionText: "{name} attempts to flee!",
+                    customActionText: "You try to flee!",
                     successOutcomes: [
                         { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "predator_escape" } }] }
                     ],
@@ -513,7 +513,7 @@ export const tracksInTheSnow = {
             displayText: "A Narrow Escape",
             sfx: "snowSteps",
             image: { col: 0, row: 1 },
-            text: "{name} escapes the predator!",
+            text: "You escape the predator!",
             decisions: [
                 {
                     text: "Keep moving.",
@@ -531,7 +531,7 @@ export const tracksInTheSnow = {
             ambienceFade: 0.4,
             image: { col: 0, row: 1 },
             bgm: "apexPredatorBgm",
-            text: "The predator cuts off {name}'s escape!",
+            text: "The predator cuts off your escape!",
             decisions: [
                 {
                     text: "Fight for your life!",

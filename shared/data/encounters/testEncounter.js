@@ -12,11 +12,11 @@ export const testEncounter = {
             sfx: "glyphChime",
             sfxVolume: 0.6,
             image: { col: 0, row: 0 },
-            text: "{name}'s party discovers a glowing monolith humming with strange energy. A booming voice echoes in your minds: 'Do you wish to become Tough?'",
+            text: "Your party discovers a glowing monolith humming with strange energy. A booming voice echoes in your minds: 'Do you wish to become Tough?'",
             decisions: [
                 {
                     text: "Grant 'Tough' to {name} only.",
-                    customActionText: "{name} reaches out and touches the monolith alone...",
+                    customActionText: "You reach out and touch the monolith alone...",
                     outcomes: [{
                         weight: 100,
                         results: [
@@ -30,7 +30,7 @@ export const testEncounter = {
                 },
                 {
                     text: "Grant 'Tough' to the entire party.",
-                    customActionText: "{name} gestures for the whole party to touch the monolith together...",
+                    customActionText: "You gesture for the whole party to touch the monolith together...",
                     outcomes: [{
                         weight: 100,
                         results: [
@@ -44,7 +44,7 @@ export const testEncounter = {
                 },
                 {
                     text: "[Test Removal] Remove 'Tough' from {name}.",
-                    customActionText: "The monolith draws the resilience out of {name}'s body...",
+                    customActionText: "The monolith draws the resilience out of your body...",
                     outcomes: [{
                         weight: 100,
                         results: [
@@ -63,7 +63,7 @@ export const testEncounter = {
                 },
                 {
                     text: "Leave the monolith alone.",
-                    customActionText: "Deciding not to mess with strange magic, {name} leads the party away.",
+                    customActionText: "Deciding not to mess with strange magic, you lead the party away.",
                     outcomes: [{
                         weight: 100,
                         results: [
@@ -74,4 +74,4 @@ export const testEncounter = {
             ]
         }
     }
-};
+};

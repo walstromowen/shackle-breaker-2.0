@@ -72,13 +72,13 @@ export const strangeObelisk = {
       sfx: "glyphChime",
       sfxVolume: 0.5,
       image: { col: 0, row: 0 },
-      text: "{name}'s party discovers a towering obelisk of smooth, black stone. Strange geometries are carved into its surface, and they seem to shift when not directly observed. Its base is half buried, and fine seams run across the stone.",
+      text: "Your party discovers a towering obelisk of smooth, black stone. Strange geometries are carved into its surface, and they seem to shift when not directly observed. Its base is half buried, and fine seams run across the stone.",
       decisions: [
         approach({
           text: "[INT] Decipher the shifting glyphs.",
           attribute: "intelligence",
           flag: "failed_obelisk_int",
-          action: "{name} steps closer, tracing the impossible geometry with their eyes...",
+          action: "You step closer, tracing the impossible geometry with your eyes...",
           success: "decipher_success",
           failure: "decipher_fail"
         }),
@@ -86,7 +86,7 @@ export const strangeObelisk = {
           text: "[STR] Excavate the earth around its base.",
           attribute: "strength",
           flag: "failed_obelisk_str",
-          action: "{name} kneels and digs at the packed soil around the base of the stone...",
+          action: "You kneel and dig at the packed soil around the base of the stone...",
           success: "excavate_success",
           failure: "excavate_fail"
         }),
@@ -94,13 +94,13 @@ export const strangeObelisk = {
           text: "[DEX] Examine its surface and seams.",
           attribute: "dexterity",
           flag: "failed_obelisk_dex",
-          action: "{name} runs careful fingers along the seams, searching for a way in...",
+          action: "You run careful fingers along the seams, searching for a way in...",
           success: "examine_success",
           failure: "examine_fail"
         }),
         {
           text: "Lay a hand on the stone and let it unwrite you.",
-          customActionText: "{name} lays a palm flat against the cold stone...",
+          customActionText: "You lay a palm flat against the cold stone...",
           conditions: [{ type: "has_any_trait" }],
           outcomes: [
             { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "unmaking" } }] }
@@ -113,7 +113,7 @@ export const strangeObelisk = {
         },
         {
           text: "Leave the obelisk alone.",
-          customActionText: "Sensing danger, {name} decides it is best to leave this ancient stone undisturbed.",
+          customActionText: "Sensing danger, you decide it is best to leave this ancient stone undisturbed.",
           outcomes: [
             { weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }
           ]
@@ -128,11 +128,11 @@ export const strangeObelisk = {
       effect: "glow_red",
       sfx: "glowSwell",
       image: { col: 0, row: 0 },
-      text: "The glyphs crawl toward {name}'s hand and the stone grows warm. Whatever {name} has become, for better or worse, it will be unwritten. Every trait, the good with the bad. The stone will not be used twice.",
+      text: "The glyphs crawl toward your hand and the stone grows warm. Whatever you have become, for better or worse, it will be unwritten. Every trait, the good with the bad. The stone will not be used twice.",
       decisions: [
         {
           text: "Let it take everything.",
-          customActionText: "{name} does not pull away. The glyphs sink into the skin and are gone...",
+          customActionText: "You do not pull away. The glyphs sink into your skin and are gone...",
           outcomes: [
             {
               weight: 100,
@@ -159,7 +159,7 @@ export const strangeObelisk = {
       effect: "glow_blue",
       sfx: "glyphChime",
       image: { col: 1, row: 0 },
-      text: "The shifting lines suddenly make perfect sense. They recount the early days of the Altus Kingdom, and the knowledge settles into {name}'s mind and changes who they are.",
+      text: "The shifting lines suddenly make perfect sense. They recount the early days of the Altus Kingdom, and the knowledge settles into your mind and changes who you are.",
       decisions: [
         {
           text: "Take what the stone has taught you.",
@@ -175,7 +175,7 @@ export const strangeObelisk = {
       sfx: "shockSfx",
       sfxVolume: 0.6,
       image: { col: 2, row: 0 },
-      text: "The geometries twist in impossible ways. It hurts to look at. A sharp pain shoots behind {name}'s eyes, and something in them is left altered.",
+      text: "The geometries twist in impossible ways. It hurts to look at. A sharp pain shoots behind your eyes, and something in you is left altered.",
       decisions: [
         {
           text: "Stumble away from the stone.",
@@ -191,7 +191,7 @@ export const strangeObelisk = {
       sfx: "stoneGrind",
       sfxVolume: 0.8,
       image: { col: 1, row: 0 },
-      text: "Beneath the soil, the obelisk's foundation is carved with row upon row of tools, scenes and figures. Working them free, {name} learns more about the first Alterians than any book could say, and takes it to heart.",
+      text: "Beneath the soil, the obelisk's foundation is carved with row upon row of tools, scenes and figures. Working them free, you learn more about the first Alterians than any book could say, and you take it to heart.",
       decisions: [
         {
           text: "Take what the stone has taught you.",
@@ -206,7 +206,7 @@ export const strangeObelisk = {
       effect: "shake",
       sfx: "stoneGrind",
       image: { col: 2, row: 0 },
-      text: "The earth round the base is packed hard as iron. The stone shifts, grinds, and bites, and by the time {name} pulls free they are bruised, winded, and not quite the same.",
+      text: "The earth round the base is packed hard as iron. The stone shifts, grinds, and bites, and by the time you pull free you are bruised, winded, and not quite the same.",
       decisions: [
         {
           text: "Give up the dig.",
@@ -221,7 +221,7 @@ export const strangeObelisk = {
       effect: "glow_blue",
       sfx: "glyphChime",
       image: { col: 1, row: 0 },
-      text: "One seam is not a seam at all: a panel slides aside under {name}'s fingers and, inside, a pattern of carvings that teaches the hand something the mind cannot name.",
+      text: "One seam is not a seam at all: a panel slides aside under your fingers and, inside, a pattern of carvings that teaches the hand something the mind cannot name.",
       decisions: [
         {
           text: "Take what the stone has taught you.",
@@ -236,7 +236,7 @@ export const strangeObelisk = {
       effect: "jolt",
       sfx: "lockClick",
       image: { col: 2, row: 0 },
-      text: "A seam snaps shut on {name}'s hand and a dull ache runs up the arm. Something about the stone has left a mark that will not fade.",
+      text: "A seam snaps shut on your hand and a dull ache runs up the arm. Something about the stone has left a mark that will not fade.",
       decisions: [
         {
           text: "Pull away from the stone.",
@@ -245,4 +245,4 @@ export const strangeObelisk = {
       ]
     }
   }
-};
+};

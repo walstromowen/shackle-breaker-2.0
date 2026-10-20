@@ -5,7 +5,7 @@ export const QuestDefinitions = {
     "shackled1": {
     id: "shackled1",
     name: "Shackled",
-    description: "You wake with iron around your wrists. The chain is broken, but the shackles remain locked.",
+    description: "The chain broke, and the convoy marched on into the dark without you. The cuffs are still locked around your wrists, and the fog in your mind has lifted. Learn where this road has left you, and grow strong enough to survive it.",
     objectives: [
         { id: "obj_reach_level_2", type: "party_level", targetLevel: 2, amount: 1 },
     ],
@@ -14,7 +14,7 @@ export const QuestDefinitions = {
     "shackled2": {
         id: "shackled2",
         name: "Shackled",
-        description: "Others wear the same shackles. They laugh in the streets, as though sharing a single dream.",
+        description: "The prisoners on the road were not the only ones. Others wear the same iron here, and they laugh in the streets, as though sharing a single dream.",
         objectives: [
             { id: "obj_kill_madmen_part_2", type: "kill_enemy", targetId: "MAD_MAN", amount: 3 },
             { id: "obj_reach_level_3", type: "party_level", targetLevel: 3, amount: 1 }

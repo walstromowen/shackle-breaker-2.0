@@ -15,7 +15,7 @@ export const midnightHarvest = {
             decisions: [
                 {
                     text: "Approach the scarecrow.",
-                    customActionText: "{name} parts the stalks and walks toward the figure in the middle of the field...",
+                    customActionText: "You part the stalks and walk toward the figure in the middle of the field...",
                     outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "scarecrow" } }] }]
                 },
                 {
@@ -25,7 +25,7 @@ export const midnightHarvest = {
                 },
                 {
                     text: "Leave the field alone.",
-                    customActionText: "{name} decides some fields are better left unharvested and turns back to the road.",
+                    customActionText: "You decide some fields are better left unharvested and turn back to the road.",
                     outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]
@@ -37,11 +37,11 @@ export const midnightHarvest = {
         scarecrow: {
             displayText: "The Scarecrow",
             image: { col: 1, row: 0 },
-            text: "Up close, the scarecrow is taller than it looked. Its tattered coat sways though there is no wind, and its straw fingers are wrapped around a scythe with a bright, unrusted blade. Its sackcloth face has no features, but {name} can't shake the feeling that it is facing {name}.",
+            text: "Up close, the scarecrow is taller than it looked. Its tattered coat sways though there is no wind, and its straw fingers are wrapped around a scythe with a bright, unrusted blade. Its sackcloth face has no features, but you can't shake the feeling that it is facing you.",
             decisions: [
                 {
                     text: "Examine the scarecrow.",
-                    customActionText: "{name} steps close and studies the scarecrow, careful not to touch it yet...",
+                    customActionText: "You step close and study the scarecrow, careful not to touch it yet...",
                     outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "examine_scarecrow" } }] }]
                 },
                 {
@@ -50,7 +50,7 @@ export const midnightHarvest = {
                     attribute: "attunement",
                     threshold: 11,
                     conditions: [{ type: "context_flag_not_set", flagId: "sensed_field" }, { type: "context_flag_not_set", flagId: "failed_harvest_sense" }],
-                    customActionText: "{name} closes their eyes and lets their senses loosen over the silent field...",
+                    customActionText: "You close your eyes and let your senses loosen over the silent field...",
                     successOutcomes: [
                         {
                             weight: 100,
@@ -87,7 +87,7 @@ export const midnightHarvest = {
                         { type: "context_flag_not_set", flagId: "failed_harvest_scythe" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} reaches out and works the scythe's haft free, one straw finger at a time...",
+                    customActionText: "You reach out and work the scythe's haft free, one straw finger at a time...",
                     successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "scythe_taken" } }] }],
                     failureOutcomes: [
                         {
@@ -105,7 +105,7 @@ export const midnightHarvest = {
                         { type: "has_item", itemId: "illuminating_herb", qty: 1 },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} crushes the illuminating herb between their palms. Pale light blooms, and {name} presses it into the scarecrow's chest...",
+                    customActionText: "You crush the illuminating herb between your palms. Pale light blooms, and you press it into the scarecrow's chest...",
                     outcomes: [
                         {
                             weight: 2,
@@ -130,7 +130,7 @@ export const midnightHarvest = {
                 },
                 {
                     text: "Back away slowly.",
-                    customActionText: "{name} backs away without turning around, and does not look back until the field is out of sight.",
+                    customActionText: "You back away without turning around, and do not look back until the field is out of sight.",
                     outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]
@@ -147,7 +147,7 @@ export const midnightHarvest = {
                 {
                     text: "Inspect the stuffing.",
                     conditions: [{ type: "context_flag_not_set", flagId: "examined_straw" }],
-                    customActionText: "{name} parts the coat at the scarecrow's chest and looks inside...",
+                    customActionText: "You part the coat at the scarecrow's chest and look inside...",
                     outcomes: [
                         {
                             weight: 100,
@@ -161,7 +161,7 @@ export const midnightHarvest = {
                 {
                     text: "Inspect the stitched coat.",
                     conditions: [{ type: "context_flag_not_set", flagId: "examined_clothes" }],
-                    customActionText: "{name} turns back the collar of the scarecrow's coat...",
+                    customActionText: "You turn back the collar of the scarecrow's coat...",
                     outcomes: [
                         {
                             weight: 100,
@@ -175,7 +175,7 @@ export const midnightHarvest = {
                 {
                     text: "Study the scythe.",
                     conditions: [{ type: "context_flag_not_set", flagId: "examined_scythe" }],
-                    customActionText: "{name} leans in to study the scarecrow's scythe, close enough to see their own face in the blade...",
+                    customActionText: "You lean in to study the scarecrow's scythe, close enough to see your own face in the blade...",
                     outcomes: [
                         {
                             weight: 100,
@@ -198,7 +198,7 @@ export const midnightHarvest = {
                         { type: "context_flag_set", flagId: "examined_scythe" },
                         { type: "context_flag_not_set", flagId: "failed_harvest_rest" }
                     ],
-                    customActionText: "{name} lays the clues out in their mind and begins to read the stitched names aloud, one by one...",
+                    customActionText: "You lay the clues out in your mind and begin to read the stitched names aloud, one by one...",
                     successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "lay_to_rest" } }] }],
                     failureOutcomes: [
                         {
@@ -227,7 +227,7 @@ export const midnightHarvest = {
         inspect_straw: {
             displayText: "Not Straw",
             image: { col: 2, row: 0 },
-            text: "It isn't straw. The stuffing is grey, fine and faintly warm, like hair, or like something that used to be alive. It clings to {name}'s fingers and hums. Beneath the hum are voices, many of them, too faint to understand, and then gone.",
+            text: "It isn't straw. The stuffing is grey, fine and faintly warm, like hair, or like something that used to be alive. It clings to your fingers and hums. Beneath the hum are voices, many of them, too faint to understand, and then gone.",
             decisions: [
                 {
                     text: "Return to the scarecrow.",
@@ -270,7 +270,7 @@ export const midnightHarvest = {
             decisions: [
                 {
                     text: "Gather the spirits' fading warmth.",
-                    customActionText: "{name} holds out a hand. The dimmest of the lights settles into their palm, grateful, and then it is gone.",
+                    customActionText: "You hold out a hand. The dimmest of the lights settles into your palm, grateful, and then it is gone.",
                     outcomes: [
                         {
                             weight: 100,
@@ -292,7 +292,7 @@ export const midnightHarvest = {
         whispers_overwhelm: {
             displayText: "Too Many Voices",
             image: { col: 1, row: 1 },
-            text: "The whispers rush in all at once: hundreds of voices begging, naming, counting. {name} staggers back with ringing ears and a mind stretched thin.",
+            text: "The whispers rush in all at once: hundreds of voices begging, naming, counting. You stagger back with ringing ears and a mind stretched thin.",
             decisions: [
                 {
                     text: "Steady yourself.",
@@ -307,11 +307,11 @@ export const midnightHarvest = {
         lay_to_rest: {
             displayText: "Laid to Rest",
             image: { col: 2, row: 1 },
-            text: "As {name} reads the last name, the thread unravels on its own. Pale wisps lift from the straw, the wheat and the coat's lining, dozens and then hundreds, thinning into the moonlight. The scarecrow slumps into a pile of old clothes and nothing else. Something small and bright lies in the dirt at its feet.",
+            text: "As you read the last name, the thread unravels on its own. Pale wisps lift from the straw, the wheat and the coat's lining, dozens and then hundreds, thinning into the moonlight. The scarecrow slumps into a pile of old clothes and nothing else. Something small and bright lies in the dirt at its feet.",
             decisions: [
                 {
                     text: "Pick up the bright object.",
-                    customActionText: "{name} kneels and closes a hand around the faintly glowing object.",
+                    customActionText: "You kneel and close a hand around the faintly glowing object.",
                     outcomes: [
                         {
                             weight: 100,
@@ -331,7 +331,7 @@ export const midnightHarvest = {
         words_falter: {
             displayText: "Silence",
             image: { col: 1, row: 0 },
-            text: "The names tangle on {name}'s tongue. The threads tighten instead of loosening, and the scarecrow's head tilts a fraction, as if listening. Nothing else happens. Yet.",
+            text: "The names tangle on your tongue. The threads tighten instead of loosening, and the scarecrow's head tilts a fraction, as if listening. Nothing else happens. Yet.",
             decisions: [
                 {
                     text: "Step back from the scarecrow.",
@@ -346,11 +346,11 @@ export const midnightHarvest = {
         scythe_taken: {
             displayText: "A Borrowed Blade",
             image: { col: 3, row: 1 },
-            text: "The scythe comes free with a soft sigh, like a breath let out. The scarecrow doesn't move. Its straw fingers stay curled around nothing, and its blank sackcloth face follows {name} as they step back.",
+            text: "The scythe comes free with a soft sigh, like a breath let out. The scarecrow doesn't move. Its straw fingers stay curled around nothing, and its blank sackcloth face follows you as you step back.",
             decisions: [
                 {
                     text: "Slip away with the scythe.",
-                    customActionText: "{name} backs out of the field with the scythe held low, and does not hear a single rustle behind them.",
+                    customActionText: "You back out of the field with the scythe held low, and do not hear a single rustle behind you.",
                     outcomes: [
                         {
                             weight: 100,
@@ -376,7 +376,7 @@ export const midnightHarvest = {
             decisions: [
                 {
                     text: "Sift through the ashes.",
-                    customActionText: "{name} crouches and sifts the warm ash through their fingers.",
+                    customActionText: "You crouch and sift the warm ash through your fingers.",
                     outcomes: [
                         {
                             weight: 100,
@@ -400,7 +400,7 @@ export const midnightHarvest = {
             displayText: "Burning Alive!",
             image: { col: 1, row: 2 },
             bgm: "plainsBattleBgm",
-            text: "The straw catches, but the scarecrow doesn't die. It tears free of its post, burning and screeching, and swings its bright scythe at {name}!",
+            text: "The straw catches, but the scarecrow doesn't die. It tears free of its post, burning and screeching, and swings its bright scythe at you!",
             decisions: [
                 {
                     text: "Finish it!",
@@ -413,7 +413,7 @@ export const midnightHarvest = {
             displayText: "It Stirs!",
             image: { col: 2, row: 2 },
             bgm: "plainsBattleBgm",
-            text: "The scarecrow's head snaps toward {name}. Its straw fingers tighten on the scythe, its coat splits open at the seams, and a hollow shape unfolds from the wreckage with wheat and moonlight clinging to its blade.",
+            text: "The scarecrow's head snaps toward you. Its straw fingers tighten on the scythe, its coat splits open at the seams, and a hollow shape unfolds from the wreckage with wheat and moonlight clinging to its blade.",
             decisions: [
                 {
                     text: "Draw your weapon!",
@@ -422,4 +422,4 @@ export const midnightHarvest = {
             ]
         }
     }
-};
+};

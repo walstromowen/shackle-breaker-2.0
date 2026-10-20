@@ -12,12 +12,12 @@ export const aDisturbingSight = {
             sfxVolume: 0.5,
             image: { col: 2, row: 1 },
             bgm: "aDisturbingSightBgm",
-            text: "{name} sees someone digging on the ground ahead. Upon getting closer, {name} realizes that the figure appears to be digging at something unsettling...",
+            text: "You see someone digging on the ground ahead. Getting closer, you realize the figure is digging at something unsettling...",
             decisions: [
                 {
                     text: "Charge directly at the Madman.",
                     conditions: [{ type: "has_tag", tag: "HUMANOID" }],
-                    customActionText: "{name} draws their weapon and charges the Madman!",
+                    customActionText: "You draw your weapon and charge the Madman!",
                     image: { col: 1, row: 0 }, 
                     bgm: "plainsBattleBgm",    
                     outcomes: [
@@ -33,7 +33,7 @@ export const aDisturbingSight = {
                         { type: "context_flag_not_set", flagId: "failed_disturbing_dex" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} sneaks behind the Madman, dagger drawn...",
+                    customActionText: "You sneak behind the Madman, dagger drawn...",
                     successOutcomes: [
                         { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "a_quiet_end" } }] }
                     ],
@@ -57,7 +57,7 @@ export const aDisturbingSight = {
                         { type: "context_flag_not_set", flagId: "failed_disturbing_str" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} picks up a heavy rock and hurls it at the Madman.",
+                    customActionText: "You pick up a heavy rock and hurl it at the Madman.",
                     successOutcomes: [
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "a_lucky_strike" } }] },
                         { weight: 3, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "enraged_lunatic" } }] }
@@ -86,7 +86,7 @@ export const aDisturbingSight = {
                         { type: "context_flag_not_set", flagId: "failed_disturbing_alt" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} steps out and attempts to speak calmly to the Madman.",
+                    customActionText: "You step out and try to speak calmly to the Madman.",
                     successOutcomes: [
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "a_moment_of_clarity" } }] },
                         { weight: 2, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "speaking_to_the_voices" } }] }
@@ -105,7 +105,7 @@ export const aDisturbingSight = {
                 },
                 {
                     text: "Quietly back away.",
-                    customActionText: "{name} quietly backs away from the Madman and takes a different path.",
+                    customActionText: "You quietly back away from the Madman and take a different path.",
                     outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]
@@ -116,7 +116,7 @@ export const aDisturbingSight = {
             effect: "blood",
             sfx: "quickStabSfx",
             image: { col: 2, row: 2 },
-            text: "{name} sneaks up behind the Madman and plunges a dagger into his side, leaving him lifeless on the ground. If he even was alive...",
+            text: "You sneak up behind the Madman and plunge a dagger into his side, leaving him lifeless on the ground. If he even was alive...",
             decisions: [
                 {
                     text: "Search the body for valuables.",
@@ -143,7 +143,7 @@ export const aDisturbingSight = {
             sfx: "madmanCry",
             image: { col: 1, row: 0 },
             bgm: "plainsBattleBgm",
-            text: "The Madman is startled by {name}'s clumsy approach. He shrieks and draws his weapon!",
+            text: "The Madman is startled by your clumsy approach. He shrieks and draws his weapon!",
             decisions: [
                 {
                     text: "Draw your weapon!",
@@ -159,7 +159,7 @@ export const aDisturbingSight = {
             sfx: "quickStabSfx",
             image: { col: 2, row: 0 },
             bgm: "plainsBattleBgm",
-            text: "{name} plunges a dagger into the side of the Madman, leaving him bleeding profusely! He survives the blow and sends a howl into the air, alerting others nearby!",
+            text: "You plunge a dagger into the side of the Madman, leaving him bleeding profusely! He survives the blow and sends a howl into the air, alerting others nearby!",
             decisions: [
                 {
                     text: "Brace for the ambush!",
@@ -213,7 +213,7 @@ export const aDisturbingSight = {
             sfx: "rockThud",
             image: { col: 2, row: 0 },
             bgm: "plainsBattleBgm",
-            text: "The rock hits the Madman's body, injuring him. After wincing from the wound, the Madman looks up and runs screaming at {name}!",
+            text: "The rock hits the Madman's body, injuring him. After wincing from the wound, the Madman looks up and runs screaming at you!",
             decisions: [
                 {
                     text: "Draw your weapon!",
@@ -229,7 +229,7 @@ export const aDisturbingSight = {
             sfx: "madmanCry",
             image: { col: 1, row: 0 },
             bgm: "plainsBattleBgm",
-            text: "The rock goes far over the Madman's head. He snaps his head around, draws his weapon, and rushes at {name}!",
+            text: "The rock goes far over the Madman's head. He snaps his head around, draws his weapon, and rushes at you!",
             decisions: [
                 {
                     text: "Fight for your life!",
@@ -242,7 +242,7 @@ export const aDisturbingSight = {
             sfx: "rockThud",
             sfxVolume: 0.6,
             image: { col: 0, row: 1 },
-            text: "The rock completely misses the Madman and lands softly in the grass. He doesn't seem to have noticed. {name} will have to rethink this approach...",
+            text: "The rock completely misses the Madman and lands softly in the grass. He doesn't seem to have noticed. You will have to rethink this approach...",
             decisions: [
                 {
                     text: "Reassess the situation.",
@@ -257,7 +257,7 @@ export const aDisturbingSight = {
             sfx: "twigSnap",
             image: { col: 3, row: 1 },
             bgm: "plainsBattleBgm",
-            text: "The rock goes nowhere near the Madman. Instead, it lands right in the middle of the bushes, startling a pack of wildlife! They turn and glare fiercely at {name}!",
+            text: "The rock goes nowhere near the Madman. Instead, it lands right in the middle of the bushes, startling a pack of wildlife! They turn and glare fiercely at you!",
             decisions: [
                 {
                     text: "Prepare for a fierce fight!",
@@ -271,7 +271,7 @@ export const aDisturbingSight = {
             sfx: "purifySfx",
             sfxVolume: 0.5,
             image: { col: 3, row: 0 },
-            text: "{name} converses with the Madman about the delusional rants one might expect from a man who has lost his mind. Finally, the Madman smiles, and with tears in his eyes, hands {name} his knapsack. \n\nJust before darting off, he mutters, \"It's really you... Shackle Breaker...\"",
+            text: "You talk with the Madman about the delusional rants one might expect from a man who has lost his mind. Finally, the Madman smiles, and with tears in his eyes, hands you his knapsack. \n\nJust before darting off, he mutters, \"It's really you... Shackle Breaker...\"",
             decisions: [
                 {
                     text: "Accept the knapsack.",
@@ -296,7 +296,7 @@ export const aDisturbingSight = {
             sfx: "madmanCry",
             image: { col: 1, row: 1 },
             bgm: "plainsBattleBgm",
-            text: "The Madman stops, looks {name} dead in the eyes, and bursts into maniacal laughter. He draws a rusted blade!",
+            text: "The Madman stops, looks you dead in the eyes, and bursts into maniacal laughter. He draws a rusted blade!",
             decisions: [
                 {
                     text: "Draw your weapon!",
@@ -311,7 +311,7 @@ export const aDisturbingSight = {
             sfx: "whispers",
             sfxVolume: 0.6,
             image: { col: 0, row: 0 },
-            text: "{name} manages to get the Madman's attention. He tilts his head.\n\n\"Magic tell me things! Hee Hee! Tell me what magic say!\"",
+            text: "You manage to get the Madman's attention. He tilts his head.\n\n\"Magic tell me things! Hee Hee! Tell me what magic say!\"",
             decisions: [
                 {
                     text: "[STR] Shout at the Madman to run away.",
@@ -322,7 +322,7 @@ export const aDisturbingSight = {
                         { type: "context_flag_not_set", flagId: "failed_disturbing_shout" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} puffs out their chest and shouts at the Madman.",
+                    customActionText: "You puff out your chest and shout at the Madman.",
                     successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "fleeing_shadows" } }] }],
                     failureOutcomes: [
                         {
@@ -342,7 +342,7 @@ export const aDisturbingSight = {
                         { type: "context_flag_not_set", flagId: "failed_disturbing_manip" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} attempts to manipulate the man's delusions.",
+                    customActionText: "You try to manipulate the man's delusions.",
                     successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "pleased_the_magic" } }] }],
                     failureOutcomes: [
                         {
@@ -362,7 +362,7 @@ export const aDisturbingSight = {
                         { type: "context_flag_not_set", flagId: "failed_disturbing_bow" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} speaks with booming, terrifying authority.",
+                    customActionText: "You speak with booming, terrifying authority.",
                     successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "a_new_servant" } }] }],
                     failureOutcomes: [
                         {
@@ -380,7 +380,7 @@ export const aDisturbingSight = {
             sfx: "madmanCry",
             sfxVolume: 0.5,
             image: { col: 1, row: 0 },
-            text: "Upon hearing {name}, the Madman falls back and hisses. He scrambles to his feet and runs away, leaving his knapsack behind in his panic.",
+            text: "Upon hearing you, the Madman falls back and hisses. He scrambles to his feet and runs away, leaving his knapsack behind in his panic.",
             decisions: [
                 {
                     text: "Take the abandoned knapsack.",
@@ -484,7 +484,7 @@ export const aDisturbingSight = {
             sfx: "madmanCry",
             image: { col: 0, row: 2 },
             bgm: "plainsBattleBgm",
-            text: "He glares at {name} with sudden, horrifying clarity. \"No hear magic! Me hurt you now!\"",
+            text: "He glares at you with sudden, horrifying clarity. \"No hear magic! Me hurt you now!\"",
             decisions: [
                 {
                     text: "Draw your weapon!",
@@ -502,4 +502,4 @@ export const aDisturbingSight = {
             ]
         }
     }
-};
+};

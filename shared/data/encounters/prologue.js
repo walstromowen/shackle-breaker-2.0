@@ -2,9 +2,9 @@
  *
  * It tells the player nothing of the story. It only puts them in the moment: shackled in a line of cursed prisoners, led somewhere unknown,
  * until the chain breaks, the convoy walks on without them, and they come to their senses. Written like any other encounter: short,
- * plain sentences about {name}, with a couple of small choices.
+ * plain sentences in the second person, a little ominous, with a couple of small choices.
  *
- * The music is the title theme, still playing from the title screen and the character creator (no stage names a track, so it carries on).
+ * The music is the Shackled March, started by the first stage and cut to silence when the chain breaks.
  *
  * Besides the usual stage fields this encounter uses a few that only the encounter scene reads (all optional on any stage):
  *   tone:     'cold'  words glow pale green and the embers turn cold (the cursed road); the default is warm ember
@@ -22,11 +22,12 @@ export const prologue = {
         iron: {
             displayText: "Shackled",
             tone: "cold",
+            bgm: "shackledMarchBgm",
             ambience: "prologueMarch",
-            text: "{name} is led down a dark road in shackles, chained to a line of other prisoners.",
+            text: "Iron on your wrists. A chain pulls, and you follow. The sky is ash, and the dark ahead looks the same as the dark behind.",
             decisions: [
                 {
-                    text: "Keep walking.",
+                    text: "Walk.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_others" } }] }]
                 }
             ]
@@ -35,7 +36,7 @@ export const prologue = {
             displayText: "The Prisoners",
             tone: "cold",
             image: { sheet: "encounter_aftermath", col: 3, row: 2 },
-            text: "The other prisoners laugh and mutter to themselves. Their eyes are hollow and dazed. They look cursed.",
+            text: "The other prisoners laugh and mutter to themselves, the way a wound weeps. Their eyes are hollow. They look cursed.",
             decisions: [
                 {
                     text: "Listen to them.",
@@ -44,7 +45,7 @@ export const prologue = {
                 },
                 {
                     text: "Ignore them.",
-                    customActionText: "{name} stares at the ground and keeps moving.",
+                    customActionText: "You stare at the ground and keep walking.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_guards" } }] }]
                 }
             ]
@@ -53,16 +54,16 @@ export const prologue = {
             displayText: "The Guards",
             tone: "cold",
             image: { sheet: "encounter_aftermath", col: 3, row: 3 },
-            text: "Guards in dark armor walk beside the line. They do not speak, and they do not tire.",
+            text: "Guards in dark armor walk beside the line, carrying green torches. They do not speak, and they do not tire.",
             decisions: [
                 {
-                    text: "Look at the guards.",
-                    customActionText: "Something is wrong with them. They look like the prisoners do.",
+                    text: "Look at their faces.",
+                    customActionText: "Something is wrong with them. They look just like the prisoners.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_road" } }] }]
                 },
                 {
-                    text: "Look away.",
-                    customActionText: "{name} keeps their eyes down and counts their steps.",
+                    text: "Keep your eyes on the ground.",
+                    customActionText: "You count your steps and do not look up.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_road" } }] }]
                 }
             ]
@@ -70,10 +71,10 @@ export const prologue = {
         the_road: {
             displayText: "The Road",
             tone: "cold",
-            text: "No one says where the road leads, or why {name} was taken.",
+            text: "Where this road ends, and why you walk it, no one will say.",
             decisions: [
                 {
-                    text: "Keep walking.",
+                    text: "Walk.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "slack" } }] }]
                 },
                 {
@@ -90,11 +91,11 @@ export const prologue = {
             sfx: "chainSnap",
             bgm: "none",
             ambience: "prologueWind",
-            text: "Suddenly, the chain snaps. The shackles stay locked around {name}'s wrists, but the chain is broken.",
+            text: "A sound like a bell struck underwater. The chain at your wrists goes slack.",
             decisions: [
                 {
-                    text: "Stop walking.",
-                    customActionText: "{name} stands still on the road.",
+                    text: "Look down.",
+                    customActionText: "The chain lies broken in the dust. The cuffs are still locked around your wrists.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "still" } }] }]
                 }
             ]
@@ -102,11 +103,11 @@ export const prologue = {
         still: {
             displayText: "Left Behind",
             tone: "cold",
-            text: "The convoy keeps marching as if nothing happened. Neither the guards nor the prisoners look back.",
+            text: "The convoy walks on. No one turns. No one counts. Neither the guards nor the prisoners look back.",
             decisions: [
                 {
                     text: "Watch them go.",
-                    customActionText: "The line disappears into the dark.",
+                    customActionText: "The line fades into the dark.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "awake" } }] }]
                 }
             ]
@@ -115,10 +116,10 @@ export const prologue = {
             displayText: "Awake",
             sfx: "heartbeat",
             ambience: "none",
-            text: "{name} comes to their senses. The fog in their mind has cleared, and their story begins.",
+            text: "And then, all at once, you are awake. The fog in your mind is gone, {name}, and your story begins.",
             decisions: [
                 {
-                    text: "Move on.",
+                    text: "Draw a breath.",
                     outcomes: [{ weight: 1, results: [{ type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]

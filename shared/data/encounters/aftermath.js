@@ -12,7 +12,7 @@ export const aftermath = {
         aftermath: {
             displayText: "The Aftermath",
             image: { col: 0, row: 0 },
-            text: "{name}'s party stumbles upon an old battlefield. The battle looks to have occurred some time ago.",
+            text: "Your party stumbles upon an old battlefield. The battle looks to have occurred some time ago.",
             decisions: [
                 {
                     text: "[ATN] Loot the battlefield.",
@@ -23,7 +23,7 @@ export const aftermath = {
                         { type: "context_flag_not_set", flagId: "looted_battlefield" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} searches the battlefield for anything of value...",
+                    customActionText: "You search the battlefield for anything of value...",
                     successOutcomes: [
                         {
                             weight: 100,
@@ -65,7 +65,7 @@ export const aftermath = {
                         { type: "context_flag_not_set", flagId: "searched_survivors" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} carefully searches among the fallen for signs of life...",
+                    customActionText: "You carefully search among the fallen for signs of life...",
                     successOutcomes: [
                         {
                             // Most likely result: a wounded warrior
@@ -109,7 +109,7 @@ export const aftermath = {
                 },
                 {
                     text: "Leave the battlefield.",
-                    customActionText: "{name} leaves the battlefield behind.",
+                    customActionText: "You leave the battlefield behind.",
                     outcomes: [
                         { weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }
                     ]
@@ -123,7 +123,7 @@ export const aftermath = {
             tone: "gold",
             sfx: "pickupSound",
             image: { col: 1, row: 0 },
-            text: "{name} finds something useful on one of the fallen warriors.",
+            text: "You find something useful on one of the fallen warriors.",
             decisions: [
                 {
                     text: "Take what you found.",
@@ -145,7 +145,7 @@ export const aftermath = {
         loot_fail: {
             displayText: "Nothing of Value",
             image: { col: 2, row: 0 },
-            text: "{name} thoroughly searches the area, but sees nothing worth taking.",
+            text: "You search the area thoroughly, but see nothing worth taking.",
             decisions: [
                 {
                     text: "Reassess the area.",
@@ -156,7 +156,7 @@ export const aftermath = {
         search_fail: {
             displayText: "No Life Signs",
             image: { col: 2, row: 0 },
-            text: "{name} searches high and low, but doesn't find any survivors.",
+            text: "You search high and low, but find no survivors.",
             decisions: [
                 {
                     text: "Reassess the area.",
@@ -173,12 +173,12 @@ export const aftermath = {
         fallen_officer: {
             displayText: "A Fallen Officer",
             image: { col: 3, row: 0 },
-            text: "{name} spots a figure in finer armor lying apart from the rest, a Royal Guard insignia still pinned to the chest. A leather satchel is strapped across the body.",
+            text: "You spot a figure in finer armor lying apart from the rest, a Royal Guard insignia still pinned to the chest. A leather satchel is strapped across the body.",
             decisions: [
                 {
                     text: "Search the officer's satchel.",
                     conditions: [{ type: "has_tag", tag: "HUMANOID" }],
-                    customActionText: "{name} carefully unbuckles the satchel and sorts through what's inside...",
+                    customActionText: "You carefully unbuckle the satchel and sort through what's inside...",
                     outcomes: [
                         {
                             // Outcome A: sealed orders -> find message first, the quest is received on the next stage
@@ -194,7 +194,7 @@ export const aftermath = {
                 },
                 {
                     text: "Leave the body.",
-                    customActionText: "{name} steps away from the officer's body.",
+                    customActionText: "You step away from the officer's body.",
                     outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "aftermath" } }] }]
                 }
             ]
@@ -206,7 +206,7 @@ export const aftermath = {
             tone: "gold",
             sfx: "pickupSound",
             image: { col: 3, row: 1 },
-            text: "Tucked beneath the officer's rations, {name} finds a wax-sealed letter still bearing the Royal Guard crest.",
+            text: "Tucked beneath the officer's rations, you find a wax-sealed letter still bearing the Royal Guard crest.",
             decisions: [
                 {
                     text: "Take the orders.",
@@ -230,7 +230,7 @@ export const aftermath = {
             tone: "gold",
             sfx: "pickupSound",
             image: { col: 0, row: 2 },
-            text: "Wrapped in the officer's cloak, {name} finds personal gear that survived the battle.",
+            text: "Wrapped in the officer's cloak, you find personal gear that survived the battle.",
             decisions: [
                 {
                     text: "Take the gear.",
@@ -255,7 +255,7 @@ export const aftermath = {
         wounded_warrior: {
             displayText: "Wounded Warrior",
             image: { col: 0, row: 1 },
-            text: "{name} approaches a wounded warrior still breathing, but bleeding badly.",
+            text: "You approach a wounded warrior, still breathing but bleeding badly.",
             decisions: [
                 {
                     text: "[Healing Herb] Treat the warrior.",
@@ -266,7 +266,7 @@ export const aftermath = {
                         { type: "has_item", itemId: "healing_herb", qty: 1 },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} crushes a healing herb and presses it into the warrior's deep wounds...",
+                    customActionText: "You crush a healing herb and press it into the warrior's deep wounds...",
                     successOutcomes: [
                         {
                             weight: 100,
@@ -297,7 +297,7 @@ export const aftermath = {
                         { type: "context_flag_not_set", flagId: "tried_robbing" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} moves in to strip the wounded warrior of their valuables...",
+                    customActionText: "You move in to strip the wounded warrior of his valuables...",
                     successOutcomes: [
                         {
                             weight: 100,
@@ -325,7 +325,7 @@ export const aftermath = {
                 },
                 {
                     text: "Leave the warrior to his fate.",
-                    customActionText: "{name} turns away, leaving the warrior to his fate.",
+                    customActionText: "You turn away, leaving the warrior to his fate.",
                     outcomes: [
                         { weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }
                     ]
@@ -342,7 +342,7 @@ export const aftermath = {
             sfx: "pickupSound",
             sfxVolume: 0.6,
             image: { col: 2, row: 1 },
-            text: "{name} finds something on the wounded warrior. Meanwhile, the warrior breathes his last breath.",
+            text: "You find something on the wounded warrior. Meanwhile, the warrior breathes his last breath.",
             decisions: [
                 {
                     text: "Take what he carried.",
@@ -368,7 +368,7 @@ export const aftermath = {
             sfx: "legionaryCry",
             sfxVolume: 0.6,
             image: { col: 1, row: 1 },
-            text: "The warrior stands up from the ground and looks at {name}. \"What do you want?\"",
+            text: "The warrior stands up from the ground and looks at you. \"What do you want?\"",
             decisions: [
                 {
                     text: "\"What happened?\"",
@@ -405,7 +405,7 @@ export const aftermath = {
                         { type: "context_flag_not_set", flagId: "failed_recruit" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} tries to convince the survivor to join forces...",
+                    customActionText: "You try to convince the survivor to join forces...",
                     successOutcomes: [
                         {
                             weight: 100,
@@ -438,7 +438,7 @@ export const aftermath = {
                 },
                 {
                     text: "Part ways.",
-                    customActionText: "{name} and the warrior part ways.",
+                    customActionText: "You and the warrior part ways.",
                     outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]
@@ -572,7 +572,7 @@ export const aftermath = {
             ambienceFade: 0.4,
             image: { col: 3, row: 2 },
             bgm: "plainsBattleBgm",
-            text: "As {name} searches the battlefield, a group of madmen appear on the horizon!",
+            text: "As you search the battlefield, a group of madmen appear on the horizon!",
             decisions: [
                 {
                     text: "Draw your weapon!",
@@ -590,7 +590,7 @@ export const aftermath = {
             ambienceFade: 0.4,
             image: { col: 0, row: 3 },
             bgm: "plainsBattleBgm",
-            text: "While examining the bodies, one of them stirs and glares at {name}! As if on command, others do the same!",
+            text: "While examining the bodies, one of them stirs and glares at you! As if on command, others do the same!",
             decisions: [
                 {
                     text: "Prepare for battle!",
@@ -608,7 +608,7 @@ export const aftermath = {
             ambienceFade: 0.4,
             image: { col: 1, row: 3 },
             bgm: "plainsBattleBgm",
-            text: "As {name} tends to the warrior's wounds, he violently grabs {name} and draws his weapon! Soon, other fallen warriors rise around you!",
+            text: "As you tend to the warrior's wounds, he violently grabs you and draws his weapon! Soon, other fallen warriors rise around you!",
             decisions: [
                 {
                     text: "Defend yourself!",

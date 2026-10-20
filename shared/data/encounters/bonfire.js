@@ -9,7 +9,7 @@ export const bonfire = {
         discovery: {
             displayText: "Bonfire",
             image: { col: 0, row: 0 },
-            text: "{name}'s party encounters a bonfire. Its embers appear to still be burning.",
+            text: "Your party comes upon a bonfire. Its embers appear to still be burning.",
             decisions: [
                 {
                     text: "Set up camp and rest.",
@@ -20,7 +20,7 @@ export const bonfire = {
                         { type: "context_flag_not_set", flagId: "failed_bonfire_rest" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} sets up camp and rests by the dwindling flames.",
+                    customActionText: "You set up camp and rest by the dwindling flames.",
                     successOutcomes: [
                         {
                             weight: 1,
@@ -56,7 +56,7 @@ export const bonfire = {
                 },
                 {
                     text: "Keep moving.",
-                    customActionText: "{name}'s party decides it's best to move along.",
+                    customActionText: "You decide it's best to move along.",
                     outcomes: [{ weight: 1, results: [{ type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]
@@ -66,7 +66,7 @@ export const bonfire = {
             tone: "gold",
             sfx: "pickupSound",
             image: { col: 0, row: 2 },
-            text: "Upon waking from a rest, {name} finds something half-buried in the dirt beside the burned-out fire.",
+            text: "Upon waking from your rest, you find something half-buried in the dirt beside the burned-out fire.",
             decisions: [
                 {
                     text: "Dig up the half-buried object.",
@@ -94,7 +94,7 @@ export const bonfire = {
             displayText: "Rest",
             sfx: "restSfx",
             image: { col: 1, row: 0 },
-            text: "{name}'s party rests peacefully, recovering their strength. The embers have long since burned out as much time has passed.",
+            text: "Your party rests peacefully, recovering its strength. The embers have long since burned out as much time has passed.",
             decisions: [
                 {
                     text: "Pack up camp and continue.",
@@ -111,7 +111,7 @@ export const bonfire = {
             ambience: "none",
             ambienceFade: 0.4,
             image: { col: 0, row: 1 },
-            text: "The rest is violently interrupted! {name} is ambushed by madmen emerging from the shadows!",
+            text: "The rest is violently interrupted! You are ambushed by madmen emerging from the shadows!",
             bgm: "plainsBattleBgm",
             decisions: [
                 {
@@ -129,7 +129,7 @@ export const bonfire = {
             ambience: "none",
             ambienceFade: 0.4,
             image: { col: 0, row: 1 },
-            text: "A heavy rock flies out of the darkness and strikes {name}! Soon, the party is surrounded by raving madmen!",
+            text: "A heavy rock flies out of the darkness and strikes {name}! Soon, your party is surrounded by raving madmen!",
             bgm: "plainsBattleBgm",
             decisions: [
                 {
@@ -147,7 +147,7 @@ export const bonfire = {
             ambience: "none",
             ambienceFade: 0.4,
             image: { col: 1, row: 1 },
-            text: "A low growl echoes in the dark. {name}'s party is surrounded by a pack of starving wolves!",
+            text: "A low growl echoes in the dark. Your party is surrounded by a pack of starving wolves!",
             bgm: "plainsBattleBgm",
             decisions: [
                 {
@@ -158,4 +158,4 @@ export const bonfire = {
             ]
         }
     }
-};
+};

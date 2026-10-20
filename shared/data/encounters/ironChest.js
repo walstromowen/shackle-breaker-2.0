@@ -20,7 +20,7 @@ export const ironChest = {
                         { type: "has_item", itemId: "large_iron_key", qty: 1 },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} fits the large iron key into the lock and throws the bolt with a heavy clunk...",
+                    customActionText: "You fit the large iron key into the lock and throw the bolt with a heavy clunk...",
                     outcomes: [
                         {
                             weight: 100,
@@ -38,7 +38,7 @@ export const ironChest = {
                 },
                 {
                     text: "Leave the chest where it is.",
-                    customActionText: "{name} leaves the chest locked and moves on.",
+                    customActionText: "You leave the chest locked and move on.",
                     outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]
@@ -68,4 +68,4 @@ export const ironChest = {
             ]
         }
     }
-};
+};

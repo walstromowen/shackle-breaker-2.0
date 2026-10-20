@@ -9,7 +9,7 @@ export const wildHunt = {
     discovery: {
       displayText: "The Woods",
       image: { col: 0, row: 0 },
-      text: "{name} spots a lone deer grazing peacefully at the edge of the woods. It hasn't noticed them yet.",
+      text: "You spot a lone deer grazing peacefully at the edge of the woods. It hasn't noticed you yet.",
       decisions: [
         {
           text: "[DEX] Track the deer quietly.",
@@ -17,7 +17,7 @@ export const wildHunt = {
           attribute: "dexterity",
           threshold: 0,
           conditions: [{ type: "context_flag_not_set", flagId: "failed_wildhunt_track1" }],
-          customActionText: "{name} crouches low, following the deer deeper into the trees...",
+          customActionText: "You crouch low, following the deer deeper into the trees...",
           successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "deep_woods" } }] }],
           failureOutcomes: [
             { weight: 60, results: [{ type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_wildhunt_track1" } }, { type: "ADVANCE_STAGE", payload: { stageId: "lost_trail" } }] },
@@ -33,7 +33,7 @@ export const wildHunt = {
             { type: "context_flag_not_set", flagId: "failed_wildhunt_shoot1" },
             { type: "has_tag", tag: "HUMANOID" }
           ],
-          customActionText: "{name} lines up a careful shot from a distance...",
+          customActionText: "You line up a careful shot from a distance...",
           successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "successful_hunt" } }] }],
           failureOutcomes: [
             { weight: 100, results: [{ type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_wildhunt_shoot1" } }, { type: "ADVANCE_STAGE", payload: { stageId: "missed_shot" } }] }
@@ -46,7 +46,7 @@ export const wildHunt = {
         },
         {
           text: "Ignore the deer and move on.",
-          customActionText: "{name} decides they have more pressing matters and leaves the game in peace.",
+          customActionText: "You decide you have more pressing matters and leave the game in peace.",
           outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
         }
       ]
@@ -54,7 +54,7 @@ export const wildHunt = {
     deep_woods: {
       displayText: "The Deep Woods",
       image: { col: 0, row: 1 },
-      text: "The canopy thickens, casting long shadows. {name} maintains pursuit, but the deer is behaving slightly erratically, pausing often to nervously check its surroundings.",
+      text: "The canopy thickens, casting long shadows. You maintain pursuit, but the deer is behaving slightly erratically, pausing often to nervously check its surroundings.",
       decisions: [
         {
           text: "[ATT] Keep tracking the nervous deer.",
@@ -62,7 +62,7 @@ export const wildHunt = {
           attribute: "attunement",
           threshold: 14,
           conditions: [{ type: "context_flag_not_set", flagId: "failed_wildhunt_track2" }],
-          customActionText: "{name} focuses on the faint sounds of hooves and snapped twigs to keep pace...",
+          customActionText: "You focus on the faint sounds of hooves and snapped twigs to keep pace...",
           successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "ominous_woods" } }] }],
           failureOutcomes: [
             { weight: 60, results: [{ type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_wildhunt_track2" } }, { type: "ADVANCE_STAGE", payload: { stageId: "lost_trail" } }] },
@@ -78,7 +78,7 @@ export const wildHunt = {
             { type: "context_flag_not_set", flagId: "failed_wildhunt_shoot2" },
             { type: "has_tag", tag: "HUMANOID" }
           ],
-          customActionText: "{name} decides not to push their luck and takes aim...",
+          customActionText: "You decide not to push your luck and take aim...",
           successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "successful_hunt" } }] }],
           failureOutcomes: [
             { weight: 100, results: [{ type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_wildhunt_shoot2" } }, { type: "ADVANCE_STAGE", payload: { stageId: "missed_shot" } }] }
@@ -100,7 +100,7 @@ export const wildHunt = {
           attribute: "dexterity",
           threshold: 18,
           conditions: [{ type: "context_flag_not_set", flagId: "failed_wildhunt_creep" }],
-          customActionText: "{name} slips into the edge of the clearing to get a better look at their quarry...",
+          customActionText: "You slip into the edge of the clearing to get a better look at your quarry...",
           successOutcomes: [
             { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_anomaly" } }] }
           ],
@@ -115,7 +115,7 @@ export const wildHunt = {
           attribute: "dexterity",
           threshold: 14,
           conditions: [{ type: "context_flag_not_set", flagId: "failed_wildhunt_shoot3" },{ type: "has_tag", tag: "HUMANOID" }],
-          customActionText: "{name} raises their weapon, ignoring the sudden chill in the air...",
+          customActionText: "You raise your weapon, ignoring the sudden chill in the air...",
           successOutcomes: [
             { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "successful_hunt" } }] }
           ],
@@ -131,7 +131,7 @@ export const wildHunt = {
       sfx: "heartbeat",
       sfxVolume: 0.8,
       image: { col: 1, row: 2 },
-      text: "{name} successfully tracks the deer to the center of the clearing. However, something is deeply wrong. The deer is frozen in place, trembling violently. It isn't grazing; it's staring wide-eyed into the pitch-black tree line, paralyzed by fear.",
+      text: "You track the deer to the center of the clearing. However, something is deeply wrong. The deer is frozen in place, trembling violently. It isn't grazing; it's staring wide-eyed into the pitch-black tree line, paralyzed by fear.",
       decisions: [
         {
           text: "[ATT] Hold perfectly still in the shadows.",
@@ -139,7 +139,7 @@ export const wildHunt = {
           attribute: "attunement",
           threshold: 14,
           conditions: [{ type: "context_flag_not_set", flagId: "failed_wildhunt_hide" }],
-          customActionText: "{name} holds their breath, sensing a malicious aura radiating from the darkness...",
+          customActionText: "You hold your breath, sensing a malicious aura radiating from the darkness...",
           successOutcomes: [
             { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "boss_revealed" } }] }
           ],
@@ -153,7 +153,7 @@ export const wildHunt = {
           attribute: "dexterity",
           threshold: 12,
           conditions: [{ type: "context_flag_not_set", flagId: "failed_wildhunt_shootrun" }, { type: "has_tag", tag: "HUMANOID" }],
-          customActionText: "{name} feels panic set in and fires desperately!",
+          customActionText: "Panic sets in, and you fire desperately!",
           successOutcomes: [
             { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "successful_hunt" } }] }
           ],
@@ -170,11 +170,11 @@ export const wildHunt = {
       sfx: "poachersNightmareCry",
       image: { col: 2, row: 0 },
       bgm: "poachersNightmareBgm",
-      text: "Because {name} stayed perfectly hidden, they bear witness to the horror. A hulking monstrosity drops from the canopy, crushing the deer into the earth with a sickening snap. The creature tosses the ruined carcass aside and begins to sniff the air. It then fixes its terrifying gaze right on {name}!",
+      text: "Because you stayed perfectly hidden, you bear witness to the horror. A hulking monstrosity drops from the canopy, crushing the deer into the earth with a sickening snap. The creature tosses the ruined carcass aside and begins to sniff the air. It then fixes its terrifying gaze right on you!",
       decisions: [
         {
           text: "Charge the monstrosity!",
-          customActionText: "{name}'s party rushes out to attack the monstrosity!",
+          customActionText: "You rush out to attack the monstrosity!",
           outcomes: [
             {
               weight: 100,
@@ -192,7 +192,7 @@ export const wildHunt = {
       effect: "jolt",
       sfx: "twigSnap",
       image: { col: 2, row: 0 },
-      text: "*CRACK.* {name} shifts their weight, snapping a buried root. The deer bolts in terror, but a horrifying monstrosity erupts from the brush, snatching the animal mid-leap and violently snapping its neck. The creature drops the carcass and locks its malevolent gaze onto {name} with a deafening roar!",
+      text: "*CRACK.* You shift your weight, snapping a buried root. The deer bolts in terror, but a horrifying monstrosity erupts from the brush, snatching the animal mid-leap and violently snapping its neck. The creature drops the carcass and locks its malevolent gaze onto you with a deafening roar!",
       decisions: [
         {
           text: "Draw your weapon!",
@@ -213,7 +213,7 @@ export const wildHunt = {
       effect: "jolt",
       sfx: "arrowHit",
       image: { col: 2, row: 3 },
-      text: "A perfect shot. The deer falls instantly. {name} quickly gets to work, harvesting the creature for valuable leather before making their way back to safety.",
+      text: "A perfect shot. The deer falls instantly. You quickly get to work, harvesting the creature for valuable leather before making your way back to safety.",
       decisions: [
         {
           text: "Collect the valuable materials.",
@@ -251,7 +251,7 @@ export const wildHunt = {
       sfx: "twigSnap",
       image: { col: 1, row: 0 },
       bgm: "plainsBattleBgm",
-      text: "*SNAP*. While blindly searching for the lost trail, {name} steps on a dry branch. Suddenly, another stag erupts from the brush, only it looks unnatural...",
+      text: "*SNAP*. While blindly searching for the lost trail, you step on a dry branch. Suddenly, another stag erupts from the brush, only it looks unnatural...",
       decisions: [
         {
           text: "Brace for the sudden fight!",
@@ -269,7 +269,7 @@ export const wildHunt = {
     "lost_trail": {
       displayText: "Trail Goes Cold",
       image: { col: 1, row: 3 },
-      text: "{name} searches the ground intently, but the tracks eventually vanish near a rocky outcrop. The hunt is over.",
+      text: "You search the ground intently, but the tracks eventually vanish near a rocky outcrop. The hunt is over.",
       decisions: [
         {
           text: "Return to the path.",
@@ -280,4 +280,4 @@ export const wildHunt = {
       ]
     }
   }
-};
+};

@@ -11,12 +11,12 @@ export const suspiciousMerchant = {
             sfx: "shadyMerchantCry",
             sfxVolume: 0.6,
             image: { col: 0, row: 0 },
-            text: "{name} spots a robed figure violently scratching his own neck in the shadows. He snaps his head around and hisses, \"Psst! You! Yes, you with the eyes! The shiny things whisper to me! They say you need them... yes, yes, they want you to have them!\"",
+            text: "You spot a robed figure violently scratching his own neck in the shadows. He snaps his head around and hisses, \"Psst! You! Yes, you with the eyes! The shiny things whisper to me! They say you need them... yes, yes, they want you to have them!\"",
             decisions: [
                 {
                     text: "Ask to see his wares.",
                     conditions: [{ type: "has_tag", tag: "HUMANOID" }],
-                    customActionText: "{name} nods cautiously and asks to see what the madman has for sale.",
+                    customActionText: "You nod cautiously and ask to see what the madman has for sale.",
                     outcomes: [
                         { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "browse_wares" } }] }
                     ]
@@ -30,7 +30,7 @@ export const suspiciousMerchant = {
                         { type: "context_flag_not_set", flagId: "failed_merchant_int" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} squints at the junk peeking out of the twitching man's coat...",
+                    customActionText: "You squint at the junk peeking out of the twitching man's coat...",
                     successOutcomes: [
                         { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "call_out_fakes" } }] }
                     ],
@@ -53,7 +53,7 @@ export const suspiciousMerchant = {
                         { type: "context_flag_not_set", flagId: "failed_merchant_str" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} grabs the twitching man by the collar and demands the goods for free.",
+                    customActionText: "You grab the twitching man by the collar and demand the goods for free.",
                     successOutcomes: [
                         { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "merchant_flees" } }] }
                     ],
@@ -74,7 +74,7 @@ export const suspiciousMerchant = {
                 },
                 {
                     text: "Walk away.",
-                    customActionText: "Deciding to leave the raving lunatic alone, {name} walks away.",
+                    customActionText: "Deciding to leave the raving lunatic alone, you walk away.",
                     outcomes: [
                         { weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }
                     ]
@@ -101,14 +101,14 @@ export const suspiciousMerchant = {
                 },
                 {
                     text: "Step back.",
-                    customActionText: "{name} takes a step back to reconsider.",
+                    customActionText: "You take a step back to reconsider.",
                     outcomes: [
                         { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery" } }] }
                     ]
                 },
                 {
                     text: "Leave.",
-                    customActionText: "{name} decides not to buy anything and backs away slowly.",
+                    customActionText: "You decide not to buy anything and back away slowly.",
                     outcomes: [
                         { weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }
                     ]
@@ -122,7 +122,7 @@ export const suspiciousMerchant = {
             sfx: "coinsJingle",
             sfxVolume: 0.6,
             image: { col: 0, row: 1 },
-            text: "{name} quickly realizes that half of the 'magical' gems are just painted glass. Confronted, the merchant violently pulls at his hair. \"Lies! The stones are just sleeping! Hush! Take the loud coins and leave us be!\"",
+            text: "You quickly realize that half of the 'magical' gems are just painted glass. Confronted, the merchant violently pulls at his hair. \"Lies! The stones are just sleeping! Hush! Take the loud coins and leave us be!\"",
             decisions: [
                 {
                     text: "Take the bribe.",
@@ -142,7 +142,7 @@ export const suspiciousMerchant = {
                     // --- NEW: Refusing the bribe triggers the ambush! ---
                     text: "Refuse the bribe.",
                     conditions: [{ type: "has_tag", tag: "HUMANOID" }],
-                    customActionText: "{name} slaps the coins away and draws their weapon.",
+                    customActionText: "You slap the coins away and draw your weapon.",
                     outcomes: [
                         {
                             weight: 100,
@@ -161,7 +161,7 @@ export const suspiciousMerchant = {
             displayText: "Sleight of Hand",
             sfx: "coinsJingle",
             image: { col: 1, row: 1 },
-            text: "{name} leans in close to inspect a shiny bauble. The merchant spouts frantic gibberish about sky-demons and shadow-teeth. Suddenly, {name} notices their pack feels much lighter...",
+            text: "You lean in close to inspect a shiny bauble. The merchant spouts frantic gibberish about sky-demons and shadow-teeth. Suddenly, you notice your pack feels much lighter...",
             decisions: [
                 {
                     text: "Check your pockets!",
@@ -182,7 +182,7 @@ export const suspiciousMerchant = {
             displayText: "He's Gone!",
             sfx: "smokeSfx",
             image: { col: 3, row: 1 },
-            text: "By the time {name} realizes they've been robbed, the mad merchant has vanished into the shadows, leaving nothing behind but manic, echoing giggles.",
+            text: "By the time you realize you've been robbed, the mad merchant has vanished into the shadows, leaving nothing behind but manic, echoing giggles.",
             decisions: [
                 {
                     text: "Curse your luck.",
@@ -255,4 +255,4 @@ export const suspiciousMerchant = {
             ]
         }
     }
-};
+};

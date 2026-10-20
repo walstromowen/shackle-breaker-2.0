@@ -32,7 +32,7 @@ export const mysteriousAltar = {
         approach: {
             displayText: "A Mysterious Altar",
             image: { col: 0, row: 0 },
-            text: "{name}'s party comes upon a mysterious altar of dark stone. Bones lie scattered across the ground around it, and an ominous chill fills the air.",
+            text: "Your party comes upon a mysterious altar of dark stone. Bones lie scattered across the ground around it, and an ominous chill fills the air.",
             decisions: [
                 {
                     text: "[VIG] Approach the altar.",
@@ -43,7 +43,7 @@ export const mysteriousAltar = {
                         { type: "context_flag_not_set", flagId: "altar_approached" },
                         HUMANOID
                     ],
-                    customActionText: "{name} approaches the altar.",
+                    customActionText: "You approach the altar.",
                     successOutcomes: [
                         {
                             weight: 100,
@@ -65,7 +65,7 @@ export const mysteriousAltar = {
                         { type: "context_flag_set", flagId: "altar_approached" },
                         HUMANOID
                     ],
-                    customActionText: "{name} steps up to the altar once more.",
+                    customActionText: "You step up to the altar once more.",
                     outcomes: toStage("at_the_altar")
                 },
                 {
@@ -75,7 +75,7 @@ export const mysteriousAltar = {
                 },
                 {
                     text: "Leave the altar alone.",
-                    customActionText: "{name} continues along the path, leaving the altar alone.",
+                    customActionText: "You continue along the path, leaving the altar alone.",
                     outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]
@@ -89,7 +89,7 @@ export const mysteriousAltar = {
             ambience: "none",
             ambienceFade: 0.4,
             image: { col: 2, row: 0 },
-            text: "As {name} approaches the altar, the skeletons along the ground slowly begin to move. Before the party realizes what is happening, the skeletons are on top of them!",
+            text: "As you approach the altar, the skeletons along the ground slowly begin to move. Before you realize what is happening, the skeletons are on top of you!",
             decisions: [
                 {
                     text: "Draw your weapons!",
@@ -104,7 +104,7 @@ export const mysteriousAltar = {
             effect: "poison",
             sfx: "smokeSfx",
             image: { col: 3, row: 0 },
-            text: "As {name} approaches the altar, it releases a cloud of pale smoke. It sinks into the lungs and the limbs, and {name} feels fatigued.",
+            text: "As you approach the altar, it releases a cloud of pale smoke. It sinks into your lungs and limbs, and {name} feels fatigued.",
             decisions: [
                 {
                     text: "Stagger the rest of the way to the altar.",
@@ -127,7 +127,7 @@ export const mysteriousAltar = {
             sfx: "whispers",
             sfxVolume: 0.6,
             image: { col: 1, row: 0 },
-            text: "{name} walks up to the altar and sees a skull resting high above the bones on the ground. The skull almost feels as if it were placed there on purpose.",
+            text: "You walk up to the altar and see a skull resting high above the bones on the ground. The skull almost feels as if it were placed there on purpose.",
             decisions: [
                 {
                     text: "[INT] Examine the skull.",
@@ -135,7 +135,7 @@ export const mysteriousAltar = {
                     attribute: "intelligence",
                     threshold: 15,
                     conditions: [HUMANOID],
-                    customActionText: "{name} reaches out to examine the skull...",
+                    customActionText: "You reach out to examine the skull...",
                     successOutcomes: [
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "blue_glow" } }] },
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "green_glow" } }] }
@@ -148,7 +148,7 @@ export const mysteriousAltar = {
                         { type: "has_item", itemId: "meteorite", qty: 1 },
                         HUMANOID
                     ],
-                    customActionText: "{name} lifts the fallen meteorite and sets it on the altar beside the skull...",
+                    customActionText: "You lift the fallen meteorite and set it on the altar beside the skull...",
                     outcomes: [
                         {
                             weight: 100,
@@ -161,7 +161,7 @@ export const mysteriousAltar = {
                 },
                 {
                     text: "Back up.",
-                    customActionText: "{name} backs away from the altar.",
+                    customActionText: "You back away from the altar.",
                     outcomes: toStage("approach")
                 }
             ]
@@ -173,7 +173,7 @@ export const mysteriousAltar = {
             effect: "glow_blue",
             sfx: "glowSwell",
             image: { col: 0, row: 1 },
-            text: "As {name} reaches to examine the skull, its eyes begin to glow blue, filling the whole area with a blinding light! When {name} can see again, the skull has disappeared, and a sense of newfound strength fills them.",
+            text: "As you reach to examine the skull, its eyes begin to glow blue, filling the whole area with a blinding light! When you can see again, the skull has disappeared, and a sense of newfound strength fills you.",
             decisions: [
                 {
                     text: "Feel the strength return.",
@@ -197,7 +197,7 @@ export const mysteriousAltar = {
             effect: "glow_green",
             sfx: "glowSwell",
             image: { col: 1, row: 1 },
-            text: "As {name} reaches to examine the skull, its eyes begin to glow green. Suddenly, mysterious objects materialize on the altar, just waiting to be taken.",
+            text: "As you reach to examine the skull, its eyes begin to glow green. Suddenly, mysterious objects materialize on the altar, just waiting to be taken.",
             decisions: [
                 {
                     text: "Gather what the altar offers.",
@@ -223,7 +223,7 @@ export const mysteriousAltar = {
             ambience: "none",
             ambienceFade: 1.0,
             image: { col: 2, row: 1 },
-            text: "As {name} reaches to examine the skull, its eyes begin to glow red, filling the whole area with a blinding light! When {name} can see again, the skull has disappeared and a group of skeletons is quickly approaching!",
+            text: "As you reach to examine the skull, its eyes begin to glow red, filling the whole area with a blinding light! When you can see again, the skull has disappeared and a group of skeletons is quickly approaching!",
             decisions: [
                 {
                     text: "Ready your weapons!",
@@ -241,7 +241,7 @@ export const mysteriousAltar = {
             ambience: "none",
             ambienceFade: 0.6,
             image: { col: 3, row: 1 },
-            text: "The moment the meteorite touches the stone, the altar drinks its glow. The thoughts in {name}'s head turn loud and strange, the skull's eyes flare, and from the dark behind the altar a hunched figure in a tattered hood crawls into view, hands reaching for the light. Darius the Groveler has come for what was brought to the altar.",
+            text: "The moment the meteorite touches the stone, the altar drinks its glow. The thoughts in your head turn loud and strange, the skull's eyes flare, and from the dark behind the altar a hunched figure in a tattered hood crawls into view, hands reaching for the light. Darius the Groveler has come for what was brought to the altar.",
             decisions: [
                 {
                     text: "Face Darius the Groveler!",
@@ -251,4 +251,4 @@ export const mysteriousAltar = {
             ]
         }
     }
-};
+};

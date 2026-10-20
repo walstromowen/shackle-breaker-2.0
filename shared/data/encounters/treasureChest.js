@@ -7,7 +7,7 @@ export const treasureChest = {
         discovery: {
             displayText: "A Locked Chest",
             image: { col: 0, row: 0 },
-            text: "{name}'s party spots a locked chest ahead. It looks sturdy, but might contain valuable loot inside.",
+            text: "Your party spots a locked chest ahead. It looks sturdy, but might contain valuable loot inside.",
             decisions: [
                 {
                     text: "[Small Iron Key] Unlock the chest with the small iron key.",
@@ -15,7 +15,7 @@ export const treasureChest = {
                         { type: "has_item", itemId: "small_iron_key", qty: 1 },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} inserts the small iron key into the lock and turns it with a satisfying click...",
+                    customActionText: "You insert the small iron key into the lock and turn it with a satisfying click...",
                     outcomes: [
                         {
                             weight: 100,
@@ -35,7 +35,7 @@ export const treasureChest = {
                         { type: "context_flag_not_set", flagId: "failed_str" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} attempts to pry the sturdy chest open with brute strength...",
+                    customActionText: "You try to pry the sturdy chest open with brute strength...",
                     successOutcomes: [
                         { 
                             weight: 100, 
@@ -60,7 +60,7 @@ export const treasureChest = {
                         { type: "context_flag_not_set", flagId: "failed_dex" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} focuses closely, attempting to pick the lock mechanism...",
+                    customActionText: "You focus closely, trying to pick the lock mechanism...",
                     successOutcomes: [
                         { 
                             weight: 100, 
@@ -85,7 +85,7 @@ export const treasureChest = {
                         { type: "context_flag_not_set", flagId: "failed_int" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} channels their magical energy toward the locking mechanism...",
+                    customActionText: "You channel your magical energy toward the locking mechanism...",
                     successOutcomes: [
                         { 
                             weight: 100, 
@@ -112,7 +112,7 @@ export const treasureChest = {
                         { type: "context_flag_not_set", flagId: "found_key" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} sweeps the area, searching high and low for the missing key...",
+                    customActionText: "You sweep the area, searching high and low for the missing key...",
                     successOutcomes: [
                         { weight: 100, results: [{ type: "SET_CONTEXT_FLAG", payload: { flagId: "found_key" } }, { type: "ADVANCE_STAGE", payload: { stageId: "found_key" } }] }
                     ],
@@ -130,7 +130,7 @@ export const treasureChest = {
                 },
                 {
                     text: "Leave the chest behind.",
-                    customActionText: "{name} decides to leave the chest alone and continues the journey.",
+                    customActionText: "You decide to leave the chest alone and continue the journey.",
                     outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]
@@ -140,7 +140,7 @@ export const treasureChest = {
             tone: "gold",
             sfx: "pickupSound",
             image: { col: 0, row: 1 },
-            text: "{name} spots a glint of metal partially buried in the dirt nearby. It's a small iron key!",
+            text: "You spot a glint of metal partially buried in the dirt nearby. It's a small iron key!",
             decisions: [
                 {
                     text: "Take the key and return.",
@@ -186,7 +186,7 @@ export const treasureChest = {
             sfx: "chestCreak",
             sfxVolume: 0.6,
             image: { col: 0, row: 0 },
-            text: "{name} pulls and pries with all their might, but the chest won't budge an inch.",
+            text: "You pull and pry with all your might, but the chest won't budge an inch.",
             decisions: [{ text: "Reassess the situation.", outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery" } }] }] }]
         },
         jammed_lock: {
@@ -194,7 +194,7 @@ export const treasureChest = {
             effect: "jolt",
             sfx: "lockClick",
             image: { col: 0, row: 0 },
-            text: "{name} twists the tool slightly too hard, jamming the lock temporarily.",
+            text: "You twist the tool slightly too hard, jamming the lock temporarily.",
             decisions: [{ text: "Rethink the approach.", outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery" } }] }] }]
         },
         spell_fail: {
@@ -203,13 +203,13 @@ export const treasureChest = {
             sfx: "shockSfx",
             sfxVolume: 0.6,
             image: { col: 0, row: 0 },
-            text: "{name}'s spell sparks against the metal bindings and quietly fizzles out into nothingness.",
+            text: "Your spell sparks against the metal bindings and quietly fizzles out into nothingness.",
             decisions: [{ text: "Consider another option.", outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery" } }] }] }]
         },
         no_key: {
             displayText: "Fruitless Search",
             image: { col: 0, row: 0 },
-            text: "{name} searches every nook and cranny nearby, but the key is nowhere to be found.",
+            text: "You search every nook and cranny nearby, but the key is nowhere to be found.",
             decisions: [{ text: "Give up the search.", outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery" } }] }] }]
         },
         chest_explosion: {
@@ -218,7 +218,7 @@ export const treasureChest = {
             effect: "blast",
             sfx: "chestBlast",
             image: { col: 3, row: 0 },
-            text: "A hidden mechanism clicks menacingly. Suddenly, the chest emits a high-pitched whine and violently explodes, destroying the loot and engulfing {name} in searing flames!",
+            text: "A hidden mechanism clicks menacingly. Suddenly, the chest emits a high-pitched whine and violently explodes, destroying the loot and engulfing you in searing flames!",
             decisions: [
                 {
                     text: "Brace for impact!",
@@ -242,7 +242,7 @@ export const treasureChest = {
             effect: "poison",
             sfx: "poisonSfx",
             image: { col: 2, row: 0 },
-            text: "With a grinding creak, the chest pops open—but immediately releases a dense cloud of noxious, green mist! {name} inhales the toxic fumes as they reach for the loot.",
+            text: "With a grinding creak, the chest pops open—but immediately releases a dense cloud of noxious, green mist! You inhale the toxic fumes as you reach for the loot.",
             decisions: [
                 {
                     text: "Cough and grab the loot anyway.",
@@ -268,7 +268,7 @@ export const treasureChest = {
             sfx: "ambushColdBreath",
             image: { col: 3, row: 1 },
             bgm: "plainsBattleBgm",
-            text: "All the commotion attracts unwanted attention. Something approaches {name}'s position rapidly from the shadows!",
+            text: "All the commotion attracts unwanted attention. Something approaches your position rapidly from the shadows!",
             decisions: [
                 {
                     text: "Draw your weapon!",
@@ -284,7 +284,7 @@ export const treasureChest = {
             sfx: "spiteCastSfx",
             image: { col: 2, row: 1 },
             bgm: "plainsBattleBgm",
-            text: "The unstable magic backfires terribly! The chest remains locked, but a dark, swirling mass of energy coalesces into a shadowy spirit, dragging broken shackles, right before {name}'s eyes!",
+            text: "The unstable magic backfires terribly! The chest remains locked, but a dark, swirling mass of energy coalesces into a shadowy spirit, dragging broken shackles, right before your eyes!",
             decisions: [
                 {
                     text: "Prepare for combat!",
@@ -294,4 +294,4 @@ export const treasureChest = {
             ]
         }
     }
-};
+};
