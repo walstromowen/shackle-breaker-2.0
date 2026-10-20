@@ -785,7 +785,7 @@ export class EncounterController extends BaseController {
   }
 
   getState() {
-    const currentIntroAlpha = this.hasDoneIntro ? 1.0 : Math.max(0, Math.min(1, (this.textTimer - 3.0) / 3.0));
+    const currentIntroAlpha = this.hasDoneIntro ? 1.0 : Math.max(0, Math.min(1, (this.textTimer - 0.6) / 1.8));
     // One highlight: the hovered element in mouse mode, the keyboard cursor in keyboard mode
     const virtualHoverId = this.getFocusId();
     

@@ -12,8 +12,8 @@
  * seconds earlier, so there is a moment of darkness before its first word.
  */
 export const NARRATION = {
-    TEXT_START: 6.0,          // textTimer value at which the first word begins (the first stage plays its title / columns intro before it)
-    BEAT: 1.0,                // darkness between a stage change and its first word
+    TEXT_START: 2.6,          // textTimer value at which the first word begins: just after the title / columns intro has finished fading in
+    BEAT: 0.5,                // darkness between a stage change and its first word (the pictures finish their 0.4s cross-fade first)
     WORD_FADE: 1.1,           // how long one word takes to rise out of the dark
     WORD_RISE: 9,             // px a word travels upward while it appears
     EMBER_GLOW: 1.6,          // how long a fresh word keeps its warm ember tint

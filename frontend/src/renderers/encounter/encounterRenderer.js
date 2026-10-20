@@ -152,10 +152,10 @@ export class EncounterRenderer {
         const timeElapsed = textTimer;
         let titleAlpha = 0, colsAlpha = 0, decisionsAlpha = 0;
 
-        const PHASE_TITLE_FADE = 2.5;
-        const PHASE_COLS_FADE = 2.5;
+        const PHASE_TITLE_FADE = 2.0;
+        const PHASE_COLS_FADE = 1.8;
         const T_TITLE_START = 0;
-        const T_COLS_START = T_TITLE_START + PHASE_TITLE_FADE + 0.5;
+        const T_COLS_START = 0.6;                            // the side pictures fade in under the title; the words begin as they finish (T_COLS_START + PHASE_COLS_FADE <= TEXT_START)
         const T_TEXT_START = NARRATION.TEXT_START;          // same clock as the controller (ui/narration.js)
         const T_TEXT_END = textEndTimer(text);
 
@@ -354,9 +354,9 @@ export class EncounterRenderer {
             ctx.restore();
         }
 
-        // Embers fill the whole screen, rising through the party and image columns as well as the text. They begin before the columns fade in.
+        // Embers fill the whole screen, rising through the party and image columns as well as the text. They are there from the first frame of the scene.
         {
-            const emberAlpha = (skipMessageAnimation || hasDoneIntro) ? 1 : ease(Math.max(0, Math.min(1, (timeElapsed - 0.5) / 3.0)));
+            const emberAlpha = (skipMessageAnimation || hasDoneIntro) ? 1 : ease(Math.max(0, Math.min(1, timeElapsed / 0.35)));
             if (emberAlpha > 0) this.drawEmbers(ctx, Date.now() / 1000, 0, CANVAS_WIDTH, CANVAS_HEIGHT, emberAlpha, stageTone === 'cold' ? COLD_EMBER : EMBER);
         }
 
@@ -375,7 +375,7 @@ export class EncounterRenderer {
             const plan = narrationPlan(text);
             const wordT = timeElapsed - T_TEXT_START;
             const now = Date.now() / 1000;
-            const centerLineX = centerX + centerW / 2;
+            const textLeftX = centerX + 96;                  // the narration is left-aligned, matching layoutNarration's width of centerW - 192
             // A short text sits in the middle of the viewport, like the opening of a story; a long one starts at the top and scrolls
             const startY = textViewportY + Math.max(0, (textViewportH - totalHeight) / 2) - textScrollOffset;
 
@@ -387,7 +387,7 @@ export class EncounterRenderer {
             lines.forEach((line) => {
                 const y = startY + line.y;
                 if (y + lineHeight < textViewportY - 16 || y > textViewportY + textViewportH + 16) return;
-                let x = centerLineX - line.width / 2;
+                let x = textLeftX;
                 line.words.forEach((w) => {
                     const a = skipMessageAnimation ? 1 : Math.max(0, Math.min(1, (wordT - plan.starts[w.index]) / NARRATION.WORD_FADE));
                     if (a > 0) {
@@ -811,7 +811,7 @@ export class EncounterRenderer {
     }
 
     /**
-     * Lays the narration out for centered, word-by-word drawing. Paragraphs split at "\n" and words at spaces, exactly as
+     * Lays the narration out for left-aligned, word-by-word drawing. Paragraphs split at "\n" and words at spaces, exactly as
      * narrationPlan() counts them, so `index` is the word's place in the reveal schedule. Picks the largest size that fits.
      */
     layoutNarration(ctx, text, maxWidth, viewportH) {
