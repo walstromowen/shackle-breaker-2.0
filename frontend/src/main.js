@@ -333,7 +333,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
 
     // --- GLOBAL MUSIC & ENVIRONMENT AUDIO ---
     plainsBattleBgm: './assets/audio/music/plains_battle_1.mp3',
-    plainsBgmDay: './assets/audio/music/plains_overworld_day_2.mp3',
+    plainsBgmDay: './assets/audio/music/plains_overworld_day_1.mp3',
     plainsBgmNight: './assets/audio/music/plains_overworld_night.mp3',
 
     desertBattleBgm: './assets/audio/music/desert_battle_1.mp3',
@@ -456,4 +456,4 @@ async function initialize() {
 
 initialize();
 
-window.gameState = gameState; // Expose for console debugging
+window.gameState = gameState; // Expose for console debugging
