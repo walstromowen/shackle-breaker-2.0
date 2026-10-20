@@ -12,8 +12,8 @@ export class LevelUpRenderer {
 
         this.layout = {
             p: 48, startY: 48, titleOffsetY: 64, contentOffsetY: 72,
-            portraitSize: 250, attrRowHeight: 50, attrBlockWidth: 624,
-            btnWidth: 216, btnHeight: 84, btnSpacing: 36
+            portraitSize: 224, attrRowHeight: 50, attrBlockWidth: 624,
+            btnWidth: 216, btnHeight: 76, btnSpacing: 36
         };
     }
 
@@ -47,7 +47,7 @@ export class LevelUpRenderer {
             currentStats, previewStats, rightColX, startY, colW, panelHeight
         );
         this._drawActionButtons(
-            availablePoints, pendingAllocations, hoveredId, selectedElementId, leftColX, startY + panelHeight, colW
+            availablePoints, pendingAllocations, hoveredId, selectedElementId, leftColX, startY + panelHeight, colW, this._attrRowsEndY
         );
 
         if (state.onLayoutUpdate) {
@@ -136,6 +136,9 @@ export class LevelUpRenderer {
             if (!canAdd) addBox.hoverSfx = 'none'; // no hover sound when it can't be used
             this.hitboxes.push(addBox);
         });
+
+        // where the attribute rows end: the Reset / Confirm buttons sit below this, inside the panel
+        this._attrRowsEndY = currentY + attributes.length * this.layout.attrRowHeight;
     }
 
     _renderStatsColumn(currentStats, previewStats, x, y, w, h) {
@@ -155,17 +158,17 @@ export class LevelUpRenderer {
         this.ui.drawStyled('heading', 'Vitals', startX, currentY);
         currentY += 10;
         this.ui.drawLineWithGothicFlourish(startX, currentY, colW, UITheme.colors.borderHighlight);
-        currentY += 32;
+        currentY += 30;
 
-        currentY = this._drawStatDiffRow("Max HP", currentStats.maxHp?.total, previewStats.maxHp?.total, startX, currentY, colW, 42);
-        currentY = this._drawStatDiffRow("Max STM", currentStats.maxStamina?.total, previewStats.maxStamina?.total, startX, currentY, colW, 42);
-        currentY = this._drawStatDiffRow("Max INS", currentStats.maxInsight?.total, previewStats.maxInsight?.total, startX, currentY, colW, 42);
-        currentY += 15;
+        currentY = this._drawStatDiffRow("Max HP", currentStats.maxHp?.total, previewStats.maxHp?.total, startX, currentY, colW, 36);
+        currentY = this._drawStatDiffRow("Max STM", currentStats.maxStamina?.total, previewStats.maxStamina?.total, startX, currentY, colW, 36);
+        currentY = this._drawStatDiffRow("Max INS", currentStats.maxInsight?.total, previewStats.maxInsight?.total, startX, currentY, colW, 36);
+        currentY += 10;
 
         this.ui.drawStyled('heading', 'Combat Stats', startX, currentY);
         currentY += 10;
         this.ui.drawLineWithGothicFlourish(startX, currentY, colW, UITheme.colors.borderHighlight);
-        currentY += 32;
+        currentY += 30;
 
         const combatStats = [
             { label: "SPD", c: currentStats.speed, p: previewStats.speed },
@@ -205,7 +208,7 @@ export class LevelUpRenderer {
             }
         });
 
-        currentY += (Math.ceil(combatStats.length / 2) * rowH) + 24;
+        currentY += (Math.ceil(combatStats.length / 2) * rowH) + 16;
         this._drawProjectedResistanceTable(currentStats, previewStats, startX, currentY, colW);
     }
 
@@ -239,7 +242,7 @@ export class LevelUpRenderer {
         currentY += 30;
 
         const types = ["blunt", "slash", "pierce", "fire", "ice", "lightning", "water", "earth", "wind", "light", "dark", "arcane"];
-        const rowH = 30;
+        const rowH = 28;
 
         types.forEach((type) => {
             const cAtk = (cStats.attack || {})[type] || 0;
@@ -288,11 +291,13 @@ export class LevelUpRenderer {
         });
     }
 
-    _drawActionButtons(availablePoints, pendingAllocations, hoveredId, selectedId, x, bottomY, w) {
+    _drawActionButtons(availablePoints, pendingAllocations, hoveredId, selectedId, x, bottomY, w, rowsEndY) {
         const btnW = this.layout.btnWidth;
         const btnH = this.layout.btnHeight;
         const spacing = this.layout.btnSpacing;
-        const btnY = bottomY - btnH - this.layout.p;
+        // below the attribute rows with a clear gap, and never closer than 28px to the panel's bottom edge
+        const lowest = bottomY - btnH - 28;
+        const btnY = Math.min(lowest, (rowsEndY || 0) + 36);
         const centerX = x + (w / 2);
 
         const hasPending = Object.values(pendingAllocations).some(v => v > 0);

@@ -297,7 +297,10 @@ export class EncounterLogic {
                         let insightChange = payload.insight || 0;
                         let isPct = payload.isPercentage || false;
                         
-                        if (payload.isPercentageOfCurrent || isPct) {
+                        // `isPercentageOfMax: true` -- hp / stamina / insight are percentages of the character's MAX (PartyManager.modifyVitals does the sum): hp 50 heals half of their max HP
+                        if (payload.isPercentageOfMax) {
+                            isPct = true;
+                        } else if (payload.isPercentageOfCurrent || isPct) {
                             hpChange = Math.floor(char.hp * (hpChange / 100));
                             stamChange = Math.floor(char.stamina * (stamChange / 100));
                             insightChange = Math.floor((char.insight || 0) * (insightChange / 100));

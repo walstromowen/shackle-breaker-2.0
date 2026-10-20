@@ -409,7 +409,8 @@ export class CanvasUI {
         this.ctx.save();
         this.ctx.strokeStyle = UITheme.colors.states.highlightBorder;
         this.ctx.lineWidth = 1;
-        this.ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+        this.panelPath(x + 0.5, y + 0.5, w - 1, h - 1);
+        this.ctx.stroke();
         this.ctx.restore();
       }
       return state;
@@ -419,8 +420,15 @@ export class CanvasUI {
     const sel = UITheme.selection;
 
     // The washes fade from the left edge to the right: a lit edge rather than a flat tint
+    // Everything is drawn inside the same outline as a panel (top-left and bottom-right corners cut), so the highlight over a card
+    // follows the card's notches instead of poking out of them. (`opts.notch === false` keeps square corners.)
+    const notched = opts.notch !== false;
+    const ctx = this.ctx;
+    ctx.save();
+    if (notched) { this.panelPath(x, y, w, h); ctx.clip(); }
+
     const wash = (from, to) => {
-      const g = this.ctx.createLinearGradient(x, 0, x + w, 0);
+      const g = ctx.createLinearGradient(x, 0, x + w, 0);
       g.addColorStop(0, from);
       g.addColorStop(1, to);
       this.drawRect(x, y, w, h, g, true);
@@ -433,18 +441,21 @@ export class CanvasUI {
       wash(s.selectedBg, s.selectedBgEnd);
     }
 
-    if ((state === 'highlight' || state === 'pressed') && opts.wash !== false) {
-      this.ctx.save();
-      this.ctx.strokeStyle = s.highlightBorder;
-      this.ctx.lineWidth = 1;
-      this.ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
-      this.ctx.restore();
-    }
-
     // The accent bar down the left edge: pale for a chosen item, brass for the item the cursor is on (there are no corner marks)
     if (opts.bar !== false) {
       if (state === 'highlight' || state === 'pressed') this.drawRect(x, y, 3, h, s.highlightBar, true);
       else if (flags.selected) this.drawRect(x, y, 3, h, s.selectedBar, true);
+    }
+    ctx.restore();
+
+    if ((state === 'highlight' || state === 'pressed') && opts.wash !== false) {
+      ctx.save();
+      ctx.strokeStyle = s.highlightBorder;
+      ctx.lineWidth = 1;
+      if (notched) this.panelPath(x + 0.5, y + 0.5, w - 1, h - 1);
+      else { ctx.beginPath(); ctx.rect(x + 0.5, y + 0.5, w - 1, h - 1); }
+      ctx.stroke();
+      ctx.restore();
     }
     return state;
   }
@@ -475,7 +486,7 @@ export class CanvasUI {
     this.ctx.lineWidth = 1;
     this.ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
     this.ctx.restore();
-    this.drawStateBox(x, y, w, h, flags, { ...opts, bar: false, wash: false });
+    this.drawStateBox(x, y, w, h, flags, { ...opts, bar: false, wash: false, notch: false });   // a button is a plain rectangle
 
     this.drawText(
       opts.upper === false ? label : String(label).toUpperCase(), x + w / 2, y + h / 2,

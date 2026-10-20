@@ -549,7 +549,36 @@ export class WorldManager {
         if (this.getElevation(originC, originR) !== plan.baseElev) return false;
         return this._isStructureFootprintValid(originC, originR, w, h);
     }
+    /* A standing torch now and then beside the road (blueprint `streetTorches`). Same cell rules as the street dressing; planned first, so a torch
+       takes its cell before any barrel or tuft of grass can. */
+    _planStreetTorches(plan, bp) {
+        const tc = bp.streetTorches;
+        if (!tc || !tc.chance || !MAP_OBJECTS_DEFINITIONS[tc.id]) return;
+        const off = plan.cfg.rad + 1;
+        const spacing = tc.spacing ?? 10;
+        for (const road of plan.roads) {
+            const cs = road.centres;
+            let last = -Infinity;
+            for (let i = 2; i < cs.length; i++) {
+                if (i - last < spacing || !this._straightAt(cs, i, 2, 0)) continue;
+                if (this.pseudoRandom(cs[i].c * 83 + plan.salt, cs[i].r * 89 + 17) >= tc.chance) continue;
+                const horizontal = cs[i].d === 1 || cs[i].d === 3;
+                const side = this.pseudoRandom(cs[i].c * 97 + 5, cs[i].r * 101 + plan.salt) < 0.5 ? 0 : 1;
+                const sgn = side === 0 ? -off : off;
+                const c = horizontal ? cs[i].c : cs[i].c + sgn;
+                const r = horizontal ? cs[i].r + sgn : cs[i].r;
+                const key = this._s(c, r);
+                if (plan.roadOwner.has(key) || plan.hubTiles.has(key) || plan.buildingTiles.has(key)) continue;
+                if (gameState.world.changes[key] !== undefined) continue;
+                if (this.getElevation(c, r) !== plan.baseElev || this.isBlockedByFace(c, r) || this.isCliffFace(c, r) || this._nearStair(c, r)) continue;
+                this.modifyWorld(c, r, tc.id);
+                this._placeObject(c, r, tc.id);
+                last = i;
+            }
+        }
+    }
     _planStreetProps(plan, bp) {
+        this._planStreetTorches(plan, bp);
         const sp = bp.streetProps;
         if (!sp || !sp.chance || !sp.pool || sp.pool.length === 0) return;
         const off = plan.cfg.rad + 1;

@@ -76,7 +76,7 @@ export const MAP_OBJECTS_DEFINITIONS = {
     TAILORS_BENCH: { sheet: 'objTailorsBench', spriteX: 8, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'CRAFTING_STATION', station: 'tailors_bench', title: "Tailor's Bench" } },
 
     // --- ANIMATED ---
-    CAMPFIRE: { sheet: 'objCampfire', spriteX: 0, spriteY: 6, frames: 16, speed: 0.2, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'bonfire' }, light: { hasLight: true, radius: 5.5, color: '255, 100, 0', maxAlpha: 0.8, flickerSpeed: 0.1, flickerAmp: 0.5 } },
+    CAMPFIRE: { sheet: 'objCampfire', spriteX: 0, spriteY: 6, frames: 32, speed: 0.1, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'bonfire' }, light: { hasLight: true, radius: 5.5, color: '255, 100, 0', maxAlpha: 0.8, flickerSpeed: 0.1, flickerAmp: 0.5 } },
     STANDING_TORCH: { sheet: 'objStandingTorch', spriteX: 0, spriteY: 0, frames: 4, speed: 0.14, width: 1, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, light: { hasLight: true, radius: 5.5, color: '255, 140, 50', maxAlpha: 0.75, flickerSpeed: 0.1, flickerAmp: 0.4 } },
     
     // --- HOUSE FURNITURE ---
@@ -134,4 +134,4 @@ export const MAP_OBJECTS_DEFINITIONS = {
         spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: false, isGround: false, isAnchor: true, hitboxes: [{ xOffset: 1, yOffset: 0, w: 1, h: 1 }],
         interaction: { type: 'WARP', id: 'exit_interior', isRepeatable: true, walkIn: true }
     },
-};
+};

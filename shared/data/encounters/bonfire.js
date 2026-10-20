@@ -23,7 +23,8 @@ export const bonfire = {
                         {
                             weight: 1,
                             results: [
-                                { type: "MODIFY_VITALS", payload: { hp: 50, stamina: 50, insight: 50, target: "entire_party", isPercentageOfCurrent: true } },
+                                { type: "MODIFY_VITALS", payload: { hp: 50, target: "entire_party", isPercentageOfMax: true } },   // half of everyone's max HP
+                                { type: "MODIFY_VITALS", payload: { stamina: 50, insight: 50, target: "entire_party", isPercentageOfCurrent: true } },
                                 { type: "AWARD_XP", payload: { amount: 5, target: "entire_party" } },
                                 { type: "ADVANCE_TIME", payload: { hours: 12 } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "rest_success_loot" } }
@@ -32,7 +33,8 @@ export const bonfire = {
                         {
                             weight: 2,
                             results: [
-                                { type: "MODIFY_VITALS", payload: { hp: 50, stamina: 50, insight: 50, target: "entire_party", isPercentageOfCurrent: true } },
+                                { type: "MODIFY_VITALS", payload: { hp: 50, target: "entire_party", isPercentageOfMax: true } },   // half of everyone's max HP
+                                { type: "MODIFY_VITALS", payload: { stamina: 50, insight: 50, target: "entire_party", isPercentageOfCurrent: true } },
                                 { type: "AWARD_XP", payload: { amount: 5, target: "entire_party" } },
                                 { type: "ADVANCE_TIME", payload: { hours: 12 } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "rest_success_normal" } }

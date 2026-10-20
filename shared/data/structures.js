@@ -250,6 +250,14 @@ export const STRUCTURES = {
             },
         },
 
+        /* STANDING TORCHES: now and then a lit torch beside the road. Walking a road, each step has `chance` of getting one on a random side, and no two
+           torches on a road are closer than `spacing` steps. (They are solid and give light at night: see STANDING_TORCH in mapObjectDefinitions.js.) */
+        streetTorches: {
+            id: 'STANDING_TORCH',
+            chance: 0.05,
+            spacing: 14,
+        },
+
         /* STREET DRESSING (on the grass just beside the road; the solid ones are never in the way of the road) */
         streetProps: {
             chance: 0.10,                         // per step, per side
