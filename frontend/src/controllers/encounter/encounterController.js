@@ -6,6 +6,7 @@ import { events } from "../../core/eventBus.js";
 import { EncounterLogic } from './encounterLogic.js';
 import { LootTableFactory } from "../../../../shared/systems/factories/lootTableFactory.js";
 import { ItemDefinitions } from '../../../../shared/data/itemDefinitions.js';
+import { NARRATION, STAGE_START_TIMER, narrationPlan, textEndTimer, decisionAlpha, decisionsDoneTimer, actionPadding } from '../../ui/narration.js';
 
 export class EncounterController extends BaseController {
   constructor(input, config, worldManager) {
@@ -30,6 +31,13 @@ export class EncounterController extends BaseController {
     this.hasDoneIntro = false;
     this.skipMessageAnimation = false;
     this.inputCooldown = 0.15;
+    // Nothing is skipped by clicking. Skipping ahead takes a deliberate HOLD (NARRATION.HOLD_TO_SKIP) of the button, Enter or Space.
+    this.holdTimer = 0;               // seconds the skip button has been held (0..HOLD_TO_SKIP)
+    this._holdArmed = false;          // this press began while something was skippable
+    this._wasDown = false;
+    this._swallowClick = false;       // the release of a hold that has just skipped must not also click whatever is under the mouse
+    this._swallowTimer = 0;
+    this.hintPulse = 0;               // a click that did nothing makes the "hold to skip" hint flare for a moment
     this.imageTransition = { active: false, timer: 0, duration: 0.4, previousInfo: null, previousPartyMember: null };
     this.rewardQueue = [];
     this.rewardItemsByMessage = {};   // reward message text -> [{id, qty}] (pictures of the items it lists)
@@ -74,6 +82,7 @@ export class EncounterController extends BaseController {
     this.hasDoneIntro = false;
     this.skipMessageAnimation = false;
     this.inputCooldown = 0.15;
+    this.holdTimer = 0; this._holdArmed = false; this._wasDown = false; this._swallowClick = false; this._swallowTimer = 0; this.hintPulse = 0;
     this.rewardQueue = [];
     this.rewardItemsByMessage = {};   // reward message text -> [{id, qty}] (pictures of the items it lists)
     this.currentRewardItems = null;   // the items of the reward message on screen
@@ -92,9 +101,10 @@ export class EncounterController extends BaseController {
     if (!this.model) return;
     
     this.textTimer += dt;
-    if (this.textTimer >= 6.0) {
+    if (this.textTimer >= NARRATION.TEXT_START) {
       this.hasDoneIntro = true;
     }
+    this._updateHold(dt);
     
     if (this.imageTransition.active) {
       this.imageTransition.timer += dt;
@@ -107,10 +117,7 @@ export class EncounterController extends BaseController {
     }
     
     if (this.actionPhase === 'message') {
-      const charsPerSecond = 25;
-      const totalTypingTime = this.actionMessage.length * (1 / charsPerSecond);
-      const padding = Math.max(0.8, Math.min(2.5, this.actionMessage.length * 0.02));
-      if (this.skipMessageAnimation || this.textTimer >= (6.0 + totalTypingTime + padding)) {
+      if (this.skipMessageAnimation || this.textTimer >= textEndTimer(this.actionMessage) + actionPadding(this.actionMessage)) {
         this.skipMessageAnimation = false;
         if (this.pendingDecision && this.pendingDecision.type === 'skill_check') {
           this.rollData = EncounterLogic.calculateRoll(this.pendingDecision);
@@ -222,49 +229,111 @@ export class EncounterController extends BaseController {
     return null;
   }
 
+  // ---------------------------------------------------------------------------------------------------------------------
+  // PACING AND SKIPPING (see ui/narration.js)
+  // ---------------------------------------------------------------------------------------------------------------------
+
+  /** The text on screen now (a typed result message while one is playing, otherwise the stage text). */
+  _currentText() {
+    return this.actionPhase === 'message' ? this.actionMessage : this.lastText;
+  }
+
+  /** How many choices the stage shows. */
+  _decisionCount() {
+    return this.actionPhase === 'none' ? this._getValidDecisions().length : 0;
+  }
+
+  /** Is choice `index` visible enough to be picked? (The renderer fades them in one after another.) */
+  _decisionReady(index) {
+    if (this.actionPhase !== 'none' || !this.model) return false;
+    if (this.skipMessageAnimation) return true;
+    if (!this.hasDoneIntro) return false;
+    return decisionAlpha(this.textTimer, this._currentText(), index) >= NARRATION.DECISION_READY;
+  }
+
+  /** Is there something on screen that is still being revealed (and so can be skipped by holding)? */
+  _isSkippable() {
+    if (!this.model) return false;
+    if (!this.hasDoneIntro) return true;
+    switch (this.actionPhase) {
+      case 'message': case 'rolling': case 'hold_base': case 'apply_mod': case 'result': case 'reward_delay': case 'ending_delay':
+        return true;
+      case 'none':
+        if (this.skipMessageAnimation) return false;
+        return this.textTimer < decisionsDoneTimer(this._currentText(), this._decisionCount());
+      default:
+        return false;
+    }
+  }
+
+  /** Is the skip control down? The left button (pressed on the canvas), Enter or Space. */
+  _skipControlDown() {
+    const input = this.input;
+    if (!input) return false;
+    const keys = input.heldKeys;
+    return !!(input.isMouseDown || (keys && (keys.has('Enter') || keys.has('NumpadEnter') || keys.has('Space'))));
+  }
+
+  _updateHold(dt) {
+    if (this.hintPulse > 0) this.hintPulse = Math.max(0, this.hintPulse - dt * 1.6);
+    const down = this._skipControlDown();
+
+    if (down && !this._wasDown) {          // a fresh press
+      this._holdArmed = this._isSkippable() && this.inputCooldown <= 0;
+      this.holdTimer = 0;
+    }
+    if (down && this._holdArmed && this._isSkippable()) {
+      this.holdTimer += dt;
+      if (this.holdTimer >= NARRATION.HOLD_TO_SKIP) {
+        this._skipAhead();
+        this.holdTimer = 0;
+        this._holdArmed = false;
+        this._swallowClick = true;         // the release of this hold is not a click on a choice
+        this._swallowTimer = 0;
+        this.inputCooldown = 0.2;
+      }
+    } else if (!down) {
+      this.holdTimer = 0;
+      this._holdArmed = false;
+    } else if (!this._isSkippable()) {
+      this.holdTimer = 0;
+    }
+    this._wasDown = down;
+
+    // A hold that ended outside the canvas never produces a click; do not swallow some later, real one
+    if (this._swallowClick && !down) {
+      this._swallowTimer += dt;
+      if (this._swallowTimer > 0.35) this._swallowClick = false;
+    }
+  }
+
+  /** What a completed hold does: the first one finishes the words, the next one brings the choices / the story on. */
+  _skipAhead() {
+    const text = this._currentText();
+    const end = textEndTimer(text);
+
+    if (!this.hasDoneIntro && this.textTimer < NARRATION.TEXT_START) {
+      this.textTimer = NARRATION.TEXT_START;      // straight into the first words
+      this.hasDoneIntro = true;
+      return;
+    }
+    if ((this.actionPhase === 'message' || this.actionPhase === 'none' || this.actionPhase === 'reward_delay') && this.textTimer < end) {
+      this.textTimer = end;                        // the words are all there; the story waits for the player to read them
+      return;
+    }
+    this.skipMessageAnimation = true;
+    if (this.actionPhase === 'none') this.textTimer = decisionsDoneTimer(text, this._decisionCount());
+    else this.textTimer = end + actionPadding(text);
+  }
+
   onClick(hitboxId) {
-    // In an encounter a click either skips text (silent) or does something that makes its own sound, so
+    // In an encounter a click either does something that makes its own sound or does nothing at all (silent), so
     // UIInteractionManager must not add a second one, not even when the click is ignored.
     this.claimSfx();
     if (!this.model) return;
+    if (this._swallowClick) { this._swallowClick = false; return; }   // the release that ends a hold-to-skip
     if (this.inputCooldown > 0) return;
-    
-    if (!this.hasDoneIntro) {
-      if (this.textTimer < 3.0) {
-        this.textTimer = 3.0;
-        this.inputCooldown = 0.15;
-        return;
-      } else if (this.textTimer < 6.0) {
-        this.textTimer = 6.0;
-        this.inputCooldown = 0.15;
-        return;
-      } else {
-        this.hasDoneIntro = true;
-      }
-    }
-    
-    const charsPerSecond = 25;
-    const currentText = this.actionPhase === 'message' ? this.actionMessage : this.lastText;
-    const totalTypingTime = currentText.length * (1 / charsPerSecond);
-    const decisionFadeTime = this.actionPhase === 'none' ? 3.0 : 0;
-    const padding = Math.max(0.8, Math.min(2.5, currentText.length * 0.02));
-    const textStartTime = 6.0;
-    const textEndTime = textStartTime + totalTypingTime;
-    const isAnimatingText = this.textTimer < (textEndTime + decisionFadeTime);
-    const skipPhases = ['message', 'rolling', 'hold_base', 'apply_mod', 'result', 'ending', 'ending_delay', 'reward_delay'];
-    
-    if (skipPhases.includes(this.actionPhase) || (this.actionPhase === 'none' && isAnimatingText)) {
-      if ((this.actionPhase === 'message' || this.actionPhase === 'none' || this.actionPhase === 'reward_delay') && this.textTimer < textEndTime) {
-        this.textTimer = textEndTime;
-        this.inputCooldown = 0.15;
-        return;
-      }
-      this.skipMessageAnimation = true;
-      this.textTimer = textEndTime + decisionFadeTime + padding;
-      this.inputCooldown = 0.15;
-      return;
-    }
-    
+
     if (this.actionPhase === 'wait_for_roll') {
       if (hitboxId === 'BTN_ROLL') {
         this.playConfirmSound();
@@ -273,15 +342,19 @@ export class EncounterController extends BaseController {
       }
       return;
     }
-    
-    if (hitboxId && hitboxId.startsWith('DECISION_')) {
+
+    if (this.actionPhase === 'none' && hitboxId && hitboxId.startsWith('DECISION_')) {
       const index = parseInt(hitboxId.replace('DECISION_', ''), 10);
-      if (!isNaN(index)) {
+      if (!isNaN(index) && this._decisionReady(index)) {
         this.selectedIndex = index;
-        this.inputCooldown = 0.15;
+        this.inputCooldown = 0.4;
         this.executeSelectedDecision();
+        return;
       }
     }
+
+    // A click that does nothing: show the player what would
+    if (this._isSkippable()) this.hintPulse = 1;
   }
 
   onRightClick(hitboxId) {
@@ -315,46 +388,7 @@ export class EncounterController extends BaseController {
     const intent = this.resolveIntent(keyCode, e); // also hands control to the keyboard
     if (!this.model) return;
     if (this.inputCooldown > 0) return;
-    
-    if (!this.hasDoneIntro && (intent === 'CONFIRM' || intent === 'CANCEL')) {
-      if (this.textTimer < 3.0) {
-        this.textTimer = 3.0;
-        this.inputCooldown = 0.15;
-        return;
-      } else if (this.textTimer < 6.0) {
-        this.textTimer = 6.0;
-        this.inputCooldown = 0.15;
-        return;
-      } else {
-        this.hasDoneIntro = true;
-      }
-    }
-    
-    const charsPerSecond = 25;
-    const currentText = this.actionPhase === 'message' ? this.actionMessage : this.lastText;
-    const totalTypingTime = currentText.length * (1 / charsPerSecond);
-    const decisionFadeTime = this.actionPhase === 'none' ? 3.0 : 0;
-    const padding = Math.max(0.8, Math.min(2.5, currentText.length * 0.02));
-    const textStartTime = 6.0;
-    const textEndTime = textStartTime + totalTypingTime;
-    const isAnimatingText = this.textTimer < (textEndTime + decisionFadeTime);
-    const skipPhases = ['message', 'rolling', 'hold_base', 'apply_mod', 'result', 'ending', 'ending_delay', 'reward_delay'];
-    
-    if (skipPhases.includes(this.actionPhase) || (this.actionPhase === 'none' && isAnimatingText)) {
-      if (intent === 'CONFIRM') {
-        // skipping text is silent (same as a click)
-        if ((this.actionPhase === 'message' || this.actionPhase === 'none' || this.actionPhase === 'reward_delay') && this.textTimer < textEndTime) {
-          this.textTimer = textEndTime;
-          this.inputCooldown = 0.15;
-          return;
-        }
-        this.skipMessageAnimation = true;
-        this.textTimer = textEndTime + decisionFadeTime + padding;
-        this.inputCooldown = 0.15;
-      }
-      return;
-    }
-    
+
     if (this.actionPhase === 'wait_for_roll') {
       if (intent === 'CONFIRM') {
         this.playConfirmSound();
@@ -363,10 +397,18 @@ export class EncounterController extends BaseController {
       }
       return;
     }
-    
+
+    if (this.actionPhase !== 'none') {
+      if (intent === 'CONFIRM' && this._isSkippable()) this.hintPulse = 1;   // skipping is a hold, handled in update()
+      return;
+    }
+
     const options = this._getValidDecisions();
-    if (!options || options.length === 0) return;
-    
+    if (!options || options.length === 0) {
+      if (intent === 'CONFIRM' && this._isSkippable()) this.hintPulse = 1;
+      return;
+    }
+
     if (intent === 'CANCEL') {
       // Nothing to back out of: only let go of a dragged scrollbar
       if (this.scrollManager.isDragging) {
@@ -375,7 +417,13 @@ export class EncounterController extends BaseController {
       }
       return;
     }
-    
+
+    // Until the first choice has appeared there is nothing to move through or pick
+    if (!this._decisionReady(0)) {
+      if (intent === 'CONFIRM' && this._isSkippable()) this.hintPulse = 1;
+      return;
+    }
+
     const prevIndex = this.selectedIndex;
     if (intent === 'UP') {
       this.selectedIndex = (this.selectedIndex - 1 + options.length) % options.length;
@@ -384,7 +432,8 @@ export class EncounterController extends BaseController {
       this.selectedIndex = (this.selectedIndex + 1) % options.length;
       if (this.selectedIndex !== prevIndex) this.playNavSound();
     } else if (intent === 'CONFIRM') {
-      this.inputCooldown = 0.15;
+      if (!this._decisionReady(this.selectedIndex)) { this.hintPulse = 1; return; }
+      this.inputCooldown = 0.4;
       this.executeSelectedDecision(); // plays the confirm sound
     }
   }
@@ -478,7 +527,7 @@ export class EncounterController extends BaseController {
     const actorName = gameState.party?.members?.[0]?.name || "The party";
     if (decision.customActionText) {
       this.actionPhase = 'message';
-      this.textTimer = 6.0;
+      this.textTimer = STAGE_START_TIMER;
       this.hasDoneIntro = true;
       this.skipMessageAnimation = false;
       this.actionMessage = decision.customActionText.replace(/{name}/g, actorName);
@@ -658,11 +707,10 @@ export class EncounterController extends BaseController {
     this.model.advanceToStage("encounter_rewards_stage");
     this.selectedIndex = 0;
     this.actionPhase = 'reward_delay';
-    const typingTime = nextMsg.length / 25;
-    // A message with item pictures stays up a little longer, so they can be seen
-    this.rollTimer = typingTime + 2.0 + (this.currentRewardItems ? 1.5 : 0);
+    // The message is told word by word, then stays up a while so it can be read (and the item pictures, if it has any, seen)
+    this.rollTimer = NARRATION.BEAT + narrationPlan(nextMsg).duration + 3.0 + (this.currentRewardItems ? 1.5 : 0);
     this.lastText = "";
-    this.textTimer = 6.0;
+    this.textTimer = STAGE_START_TIMER;
     this.skipMessageAnimation = false;
   }
 
@@ -686,7 +734,7 @@ export class EncounterController extends BaseController {
     this.selectedIndex = 0;
     this.actionPhase = 'none';
     this.lastText = "";
-    this.textTimer = 6.0;
+    this.textTimer = STAGE_START_TIMER;
     this.skipMessageAnimation = false;
     this.inputCooldown = 0.15;
     this.updateBGM();
@@ -737,6 +785,10 @@ export class EncounterController extends BaseController {
       currency: gameState.party?.currency || 0,
       skipMessageAnimation: this.skipMessageAnimation,
       textTimer: this.textTimer,
+      hasDoneIntro: this.hasDoneIntro,
+      canSkip: this._isSkippable(),
+      holdProgress: Math.min(1, this.holdTimer / NARRATION.HOLD_TO_SKIP),
+      hintPulse: this.hintPulse,
       actionPhase: this.actionPhase,
       rollTimer: this.rollTimer,
       rollData: this.rollData,
@@ -783,7 +835,7 @@ export class EncounterController extends BaseController {
       const isFirstText = this.lastText === "";
       this.lastText = displayText;
       if (!isFirstText) {
-        this.textTimer = 6.0;
+        this.textTimer = STAGE_START_TIMER;
       }
       this.skipMessageAnimation = false;
     }

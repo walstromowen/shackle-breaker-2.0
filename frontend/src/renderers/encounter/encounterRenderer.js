@@ -5,6 +5,11 @@ import { UI_SFX } from '../../ui/uiSfx.js';
 import { gameState } from "../../../../shared/state/gameState.js";
 import { DIFFICULTY_MODIFIERS } from '../../../../shared/data/constants.js';
 import { drawItemChips } from '../../ui/itemChips.js';
+import { NARRATION, narrationPlan, textEndTimer, decisionAlpha } from '../../ui/narration.js';
+
+const EMBER = [232, 160, 84];        // the warm tint a fresh word carries
+const BONE = [226, 218, 200];        // UITheme.colors.textMain
+const NARRATION_SIZES = [44, 40, 36, 32];   // largest first: the text takes the biggest one that fits the viewport
 
 export class EncounterRenderer {
     constructor(config, loader) {
@@ -124,7 +129,7 @@ export class EncounterRenderer {
         const {
             imageInfo, transition, text, title, stageName, encounter, decisions,
             rewards, rewardItems, ui: uiState, party = [], currency = 0, skipMessageAnimation,
-            textTimer = 0, actionPhase, rollData, hoveredElement, scrollOffsets, onLayoutUpdate
+            textTimer = 0, hasDoneIntro = false, canSkip = false, holdProgress = 0, hintPulse = 0, actionPhase, rollData, hoveredElement, scrollOffsets, onLayoutUpdate
         } = state;
 
         const { CANVAS_WIDTH, CANVAS_HEIGHT } = this.config;
@@ -144,47 +149,26 @@ export class EncounterRenderer {
         // ========================================================
         const timeElapsed = textTimer;
         let titleAlpha = 0, colsAlpha = 0, decisionsAlpha = 0;
-        let isTyping = false;
-        let showDecisions = false;
 
-        const charsPerSecond = 25;
-        const secondsPerChar = 1 / charsPerSecond;
-        const totalTypingTime = text.length * secondsPerChar;
-        const charFadeDuration = 0.3;
-
-        const PHASE_BLACK_DUR = 0.0;
         const PHASE_TITLE_FADE = 2.5;
-        const PHASE_TITLE_PAUSE = 0.5;
         const PHASE_COLS_FADE = 2.5;
-        const PHASE_COLS_PAUSE = 0.5;
-        const PHASE_DEC_FADE = 3.0;
-
-        const T_TITLE_START = PHASE_BLACK_DUR;
-        const T_COLS_START = T_TITLE_START + PHASE_TITLE_FADE + PHASE_TITLE_PAUSE;
-        const T_TEXT_START = T_COLS_START + PHASE_COLS_FADE + PHASE_COLS_PAUSE;
-        const T_TEXT_END = T_TEXT_START + totalTypingTime;
-        const T_DEC_START = T_TEXT_END + 0.5;
+        const T_TITLE_START = 0;
+        const T_COLS_START = T_TITLE_START + PHASE_TITLE_FADE + 0.5;
+        const T_TEXT_START = NARRATION.TEXT_START;          // same clock as the controller (ui/narration.js)
+        const T_TEXT_END = textEndTimer(text);
 
         const ease = p => p * p * (3 - 2 * p);
 
-        if (skipMessageAnimation) {
+        if (skipMessageAnimation || hasDoneIntro) {
+            // Only the very first screen of an encounter plays the title / columns intro; later stages start in the dark
             titleAlpha = 1.0;
             colsAlpha = 1.0;
-            decisionsAlpha = 1.0;
-            isTyping = false;
-            showDecisions = true;
         } else {
-            const rawTitleAlpha = Math.max(0, Math.min(1, (timeElapsed - T_TITLE_START) / PHASE_TITLE_FADE));
-            const rawColsAlpha = Math.max(0, Math.min(1, (timeElapsed - T_COLS_START) / PHASE_COLS_FADE));
-            const rawDecisionsAlpha = Math.max(0, Math.min(1, (timeElapsed - T_DEC_START) / PHASE_DEC_FADE));
-
-            titleAlpha = ease(rawTitleAlpha);
-            colsAlpha = ease(rawColsAlpha);
-            decisionsAlpha = ease(rawDecisionsAlpha);
-
-            isTyping = (timeElapsed >= T_TEXT_START) && (timeElapsed < T_TEXT_END + charFadeDuration);
-            showDecisions = (timeElapsed >= T_DEC_START);
+            titleAlpha = ease(Math.max(0, Math.min(1, (timeElapsed - T_TITLE_START) / PHASE_TITLE_FADE)));
+            colsAlpha = ease(Math.max(0, Math.min(1, (timeElapsed - T_COLS_START) / PHASE_COLS_FADE)));
         }
+        // The first choice's fade also gates the divider and the reward block
+        decisionsAlpha = skipMessageAnimation ? 1.0 : decisionAlpha(timeElapsed, text, 0);
 
         ui.clearScreen(CANVAS_WIDTH, CANVAS_HEIGHT);
         ctx.fillStyle = '#000000';
@@ -343,11 +327,26 @@ export class EncounterRenderer {
         const skipPromptX = CANVAS_WIDTH - 48;
         const skipPromptY = CANVAS_HEIGHT - 48;
 
+        // The vignette closes in around the words, and breathes
+        if (colsAlpha > 0) {
+            const now = Date.now() / 1000;
+            const breath = 0.5 + 0.5 * Math.sin(now * 0.7);
+            const vx = centerX + centerW / 2, vy = textViewportY + textViewportH / 2;
+            const vig = ctx.createRadialGradient(vx, vy, 260, vx, vy, 1180);
+            vig.addColorStop(0, 'rgba(0,0,0,0)');
+            vig.addColorStop(1, `rgba(0,0,0,${(0.5 + 0.12 * breath).toFixed(3)})`);
+            ctx.save();
+            ctx.globalAlpha = colsAlpha;
+            ctx.fillStyle = vig;
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            ctx.restore();
+            this.drawEmbers(ctx, now, centerX, centerW, h, colsAlpha);
+        }
+
         if (timeElapsed >= T_TEXT_START || skipMessageAnimation) {
-            const textLineHeight = 62;
-            const textLines = ui.getWrappedLines(text, centerW - 192, UITheme.fonts.body);
-            const totalTextHeight = textLines.length * textLineHeight;
-            const textMaxScroll = Math.max(0, totalTextHeight - textViewportH);
+            const narrationLayout = this.layoutNarration(ctx, text, centerW - 192, textViewportH);
+            const { lines, lineHeight, totalHeight, font } = narrationLayout;
+            const textMaxScroll = Math.max(0, totalHeight - textViewportH);
             const textScrollOffset = Math.max(0, Math.min(scrollOffsets?.text || 0, textMaxScroll));
 
             scrollBounds.text = {
@@ -356,36 +355,42 @@ export class EncounterRenderer {
                 viewportH: textViewportH
             };
 
-            ui.startClip(centerX + 64, textViewportY, centerW - 128, textViewportH);
-            ctx.font = UITheme.fonts.body;
-            let globalCharIndex = 0;
-            let renderY = textViewportY - textScrollOffset;
+            const plan = narrationPlan(text);
+            const wordT = timeElapsed - T_TEXT_START;
+            const now = Date.now() / 1000;
+            const centerLineX = centerX + centerW / 2;
+            // A short text sits in the middle of the viewport, like the opening of a story; a long one starts at the top and scrolls
+            const startY = textViewportY + Math.max(0, (textViewportH - totalHeight) / 2) - textScrollOffset;
 
-            textLines.forEach((line) => {
-                if (renderY + textLineHeight > textViewportY && renderY < textViewportY + textViewportH) {
-                    for (let i = 0; i < line.length; i++) {
-                        const char = line[i];
-                        const charStartTime = T_TEXT_START + globalCharIndex * secondsPerChar;
+            ui.startClip(centerX + 64, textViewportY - 16, centerW - 128, textViewportH + 32);
+            ctx.font = font;
+            ctx.textBaseline = 'top';
+            ctx.textAlign = 'left';
 
-                        if (timeElapsed >= charStartTime || skipMessageAnimation) {
-                            let alpha = skipMessageAnimation ? 1.0 : (timeElapsed - charStartTime) / charFadeDuration;
-                            alpha = Math.max(0, Math.min(1, alpha));
-
-                            if (alpha > 0) {
-                                ctx.save();
-                                ctx.globalAlpha = alpha;
-                                const prefixWidth = ctx.measureText(line.substring(0, i)).width;
-                                ui.drawText(char, centerX + 96 + prefixWidth, renderY, UITheme.fonts.body, UITheme.colors.textMain, "left", "top");
-                                ctx.restore();
-                            }
-                        }
-                        globalCharIndex++;
+            lines.forEach((line) => {
+                const y = startY + line.y;
+                if (y + lineHeight < textViewportY - 16 || y > textViewportY + textViewportH + 16) return;
+                let x = centerLineX - line.width / 2;
+                line.words.forEach((w) => {
+                    const a = skipMessageAnimation ? 1 : Math.max(0, Math.min(1, (wordT - plan.starts[w.index]) / NARRATION.WORD_FADE));
+                    if (a > 0) {
+                        const e = ease(a);
+                        // ember glow: a word is warm as it arrives and cools to bone
+                        const glow = skipMessageAnimation ? 0 : Math.max(0, 1 - (wordT - plan.starts[w.index]) / NARRATION.EMBER_GLOW);
+                        const g = glow * glow;
+                        const r = Math.round(BONE[0] + (EMBER[0] - BONE[0]) * g);
+                        const gr = Math.round(BONE[1] + (EMBER[1] - BONE[1]) * g);
+                        const b = Math.round(BONE[2] + (EMBER[2] - BONE[2]) * g);
+                        ctx.save();
+                        ctx.globalAlpha = e;
+                        ctx.shadowColor = g > 0.02 ? `rgba(${EMBER[0]},${EMBER[1]},${EMBER[2]},${(0.85 * g).toFixed(3)})` : 'rgba(0,0,0,0.9)';
+                        ctx.shadowBlur = g > 0.02 ? 6 + 20 * g : 8;
+                        ctx.fillStyle = `rgb(${r},${gr},${b})`;
+                        ctx.fillText(w.text, x, y + (1 - e) * NARRATION.WORD_RISE);
+                        ctx.restore();
                     }
-                } else {
-                    globalCharIndex += line.length;
-                }
-                globalCharIndex++;
-                renderY += textLineHeight;
+                    x += w.width + line.spaceW;
+                });
             });
             ui.endClip();
 
@@ -411,15 +416,9 @@ export class EncounterRenderer {
             }
         }
 
-        if (isTyping) {
-            ctx.save();
-            const alpha = (Math.sin(Date.now() / 150) + 1) / 2;
-            ctx.globalAlpha = 0.4 + (alpha * 0.6);
-            ctx.fillStyle = UITheme.colors.textHighlight;
-            ctx.font = UITheme.fonts.italic;
-            ctx.textAlign = "right";
-            ctx.fillText("[Left Click / Enter] to Skip", skipPromptX, skipPromptY);
-            ctx.restore();
+        // Skipping is a deliberate act: hold the button / Enter / Space. (The skill-check popup has its own prompt.)
+        if (canSkip && !['rolling', 'hold_base', 'apply_mod', 'wait_for_roll', 'result'].includes(actionPhase)) {
+            this.drawHoldPrompt(ctx, skipPromptX, skipPromptY, 'right', holdProgress, hintPulse, 1);
         }
 
         // ========================================================
@@ -488,8 +487,12 @@ export class EncounterRenderer {
                     const hitId = `DECISION_${index}`;
                     const { decisionHeight, blockHeight } = decisionLayoutData[index];
 
+                    // The choices surface one after another; one can be picked only once it is clearly there
+                    const optAlpha = skipMessageAnimation ? 1.0 : decisionAlpha(timeElapsed, text, index);
+                    const optRise = (1 - optAlpha) * 14;
+
                     if (renderY + blockHeight > decisionViewportY && renderY < decisionViewportY + decisionViewportH) {
-                        if (decisionsAlpha > 0.8 || skipMessageAnimation) {
+                        if (optAlpha >= NARRATION.DECISION_READY) {
                             this.hotspots.push({
                                 id: hitId,
                                 x: btnX - 36,
@@ -502,12 +505,18 @@ export class EncounterRenderer {
                         }
                     }
 
-                    // The shared state look (gold wash + brackets, inside because the options sit close together)
-                    const flags = ui.flags(hitId, focusId);
-                    ui.drawStateBox(btnX - 36, renderY - 8, btnW + 72, decisionHeight + 16, flags, { inset: true });
+                    if (optAlpha > 0) {
+                        ctx.save();
+                        ctx.globalAlpha = optAlpha;
+                        ctx.translate(0, optRise);
+                        // The shared state look (gold wash + brackets, inside because the options sit close together)
+                        const flags = optAlpha >= NARRATION.DECISION_READY ? ui.flags(hitId, focusId) : ui.flags(hitId, null);
+                        ui.drawStateBox(btnX - 36, renderY - 8, btnW + 72, decisionHeight + 16, flags, { inset: true });
 
-                    const textColor = ui.stateTextColor(flags, UITheme.colors.textMuted);
-                    ui.drawWrappedText(opt.text, btnX, renderY, btnW, lineHeight, UITheme.fonts.body, textColor);
+                        const textColor = ui.stateTextColor(flags, UITheme.colors.textMuted);
+                        ui.drawWrappedText(opt.text, btnX, renderY, btnW, lineHeight, UITheme.fonts.body, textColor);
+                        ctx.restore();
+                    }
 
                     renderY += blockHeight;
                 });
@@ -767,10 +776,7 @@ export class EncounterRenderer {
                 ctx.restore();
                 ctx.shadowBlur = 0;
             } else if (['rolling', 'hold_base', 'apply_mod'].includes(actionPhase)) {
-                const alpha = (Math.sin(Date.now() / 150) + 1) / 2;
-                ctx.globalAlpha = 0.4 + (alpha * 0.6);
-                ui.drawText("[Left Click / Enter] to Skip", CANVAS_WIDTH / 2, popupY + 588, UITheme.fonts.italic, UITheme.colors.textHighlight, "center");
-                ctx.globalAlpha = 1.0;
+                this.drawHoldPrompt(ctx, CANVAS_WIDTH / 2, popupY + 588, 'center', holdProgress, hintPulse, 1);
             }
         }
         ctx.restore();
@@ -778,6 +784,108 @@ export class EncounterRenderer {
         if (onLayoutUpdate) {
             onLayoutUpdate(this.hotspots, scrollBounds);
         }
+    }
+
+    /**
+     * Lays the narration out for centered, word-by-word drawing. Paragraphs split at "\n" and words at spaces, exactly as
+     * narrationPlan() counts them, so `index` is the word's place in the reveal schedule. Picks the largest size that fits.
+     */
+    layoutNarration(ctx, text, maxWidth, viewportH) {
+        const key = `${text}|${maxWidth}|${viewportH}`;
+        if (this._layoutKey === key && this._layout) return this._layout;
+
+        const paragraphs = String(text || '').split('\n');
+        let best = null;
+        for (let k = 0; k < NARRATION_SIZES.length; k++) {
+            const size = NARRATION_SIZES[k];
+            const font = `500 ${size}px "Cormorant Garamond", Georgia, serif`;
+            const lineHeight = Math.round(size * 1.42);
+            ctx.save();
+            ctx.font = font;
+            const spaceW = ctx.measureText(' ').width;
+            const lines = [];
+            let index = 0, y = 0;
+            paragraphs.forEach((paragraph, p) => {
+                const words = paragraph.split(' ').filter(Boolean);
+                if (words.length === 0) { if (p > 0) y += lineHeight * 0.4; return; }
+                if (p > 0 && lines.length) y += lineHeight * 0.45;           // a breath between paragraphs
+                let cur = { words: [], width: 0, y, spaceW };
+                words.forEach((word) => {
+                    const w = ctx.measureText(word).width;
+                    const add = cur.words.length ? spaceW + w : w;
+                    if (cur.words.length && cur.width + add > maxWidth) {
+                        lines.push(cur);
+                        y += lineHeight;
+                        cur = { words: [], width: 0, y, spaceW };
+                    }
+                    cur.width += cur.words.length ? spaceW + w : w;
+                    cur.words.push({ text: word, width: w, index: index++ });
+                });
+                lines.push(cur);
+                y += lineHeight;
+            });
+            ctx.restore();
+            best = { lines, lineHeight, totalHeight: y, font };
+            if (y <= viewportH) break;     // fits at this size
+        }
+        this._layoutKey = key;
+        this._layout = best;
+        return best;
+    }
+
+    /** A few embers climbing through the dark. Deterministic from the clock, so there is no state to keep. */
+    drawEmbers(ctx, now, x0, width, height, alpha) {
+        ctx.save();
+        for (let k = 0; k < 26; k++) {
+            const seed = k * 7919 + 13;
+            const rnd = (n) => { const v = Math.sin(seed * (n + 1.37)) * 43758.5453; return v - Math.floor(v); };
+            const speed = 0.018 + rnd(1) * 0.03;
+            const prog = (now * speed + rnd(2)) % 1;                 // 0 at the bottom, 1 at the top
+            const px = x0 + rnd(3) * width + Math.sin(now * (0.4 + rnd(4)) + k) * 26;
+            const py = height * (1 - prog);
+            const life = Math.sin(prog * Math.PI);                    // fades in and out
+            const flicker = 0.65 + 0.35 * Math.sin(now * (2 + rnd(5) * 3) + k * 1.7);
+            const a = alpha * life * flicker * 0.55;
+            if (a <= 0.01) continue;
+            const size = 1.2 + rnd(6) * 2.2;
+            ctx.globalAlpha = a;
+            ctx.fillStyle = `rgb(${EMBER[0]},${EMBER[1] - 30},${EMBER[2] - 40})`;
+            ctx.shadowColor = `rgba(${EMBER[0]},${EMBER[1]},${EMBER[2]},0.9)`;
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(px, py, size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    /** "Hold to skip" with a ring that fills while the button is held. Faint at rest; a click that did nothing makes it flare. */
+    drawHoldPrompt(ctx, x, y, align, progress, pulse, alpha) {
+        const label = 'Hold to skip';
+        const strength = Math.max(0.35 + 0.15 * (0.5 + 0.5 * Math.sin(Date.now() / 600)), pulse, progress > 0 ? 1 : 0);
+        ctx.save();
+        ctx.globalAlpha = alpha * Math.min(1, strength);
+        ctx.font = UITheme.fonts.italic;
+        ctx.textBaseline = 'alphabetic';
+        const tw = ctx.measureText(label).width;
+        const ringR = 15, gap = 14;
+        const totalW = ringR * 2 + gap + tw;
+        const left = align === 'right' ? x - totalW : align === 'center' ? x - totalW / 2 : x;
+        const cx = left + ringR, cy = y - 10;
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(201,166,79,0.28)';
+        ctx.beginPath(); ctx.arc(cx, cy, ringR, 0, Math.PI * 2); ctx.stroke();
+        if (progress > 0) {
+            ctx.strokeStyle = UITheme.colors.textHighlight;
+            ctx.shadowColor = UITheme.colors.textHighlight;
+            ctx.shadowBlur = 12;
+            ctx.beginPath(); ctx.arc(cx, cy, ringR, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress); ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+        ctx.fillStyle = UITheme.colors.textHighlight;
+        ctx.textAlign = 'left';
+        ctx.fillText(label, left + ringR * 2 + gap, y);
+        ctx.restore();
     }
 
     drawStatRow(ctx, ui, label, current, max, x, y, barW, h, numW, labelW, color, dimColor, alpha) {
