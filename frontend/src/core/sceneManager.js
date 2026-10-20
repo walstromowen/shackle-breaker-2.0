@@ -187,9 +187,29 @@ export class SceneManager {
             }
         });
 
-        events.on('CHANGE_SCENE', ({ scene, data }) => {
+        // GAME_OVER: the whole party has fallen (a lost battle, a deadly encounter). Fade to black, then back to the title screen.
+        // Anything that used to emit CHANGE_SCENE { scene: 'game_over' } ends up here too.
+        events.on('GAME_OVER', () => {
+            if (this.gameOverActive) return;
+            this.gameOverActive = true;
+            events.emit('STOP_AMBIENCE', { fadeTime: 1.5 });
             this.transitionRenderer.start(() => {
                 this.input.reset();
+                this.activeBattleBGM = null;
+                this.activeEncounterBGM = null;
+                this.titleController.refreshSaveState();   // "Load Game" picks up the last autosave
+                this.changeScene('title');
+                this.gameOverActive = false;
+            }, 'fade', { speed: 0.5, color: '#000000' });   // about two seconds to black, two seconds back up on the title
+        });
+
+        events.on('CHANGE_SCENE', ({ scene, data }) => {
+            if (scene === 'game_over') { events.emit('GAME_OVER'); return; }
+            this.transitionRenderer.start(() => {
+                this.input.reset();
+
+                // Back on the overworld (after a battle, an encounter, a menu): a fallen member must never be left in the first slot
+                if (scene === 'overworld') PartyManager.ensureLivingLeader();
 
                 // A New Game replaces the autosave: keep the old one as 'previous'
                 if (this.currentScene === 'character-creator' && scene === 'overworld') SaveManager.backupAutosave();
@@ -428,7 +448,7 @@ export class SceneManager {
                 events.emit('CHANGE_SCENE', { scene: 'overworld' });
             } else {
                 console.log("[SceneManager] Game Over...");
-                // Add your game over logic here (e.g., return to title screen)
+                events.emit('GAME_OVER');
             }
         });
 

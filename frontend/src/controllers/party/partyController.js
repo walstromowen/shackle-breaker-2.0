@@ -3,6 +3,7 @@ import { gameState } from '../../../../shared/state/gameState.js';
 import { events } from '../../core/eventBus.js';
 import { ContextMenuManager } from '../../ui/contextMenuManager.js';
 import { DragAndDropManager } from '../../ui/dragAndDropManager.js';
+import { PartyManager } from '../../../../shared/systems/partyManager.js';
 
 export class PartyController extends BaseController {
     constructor(input) {
@@ -27,6 +28,13 @@ export class PartyController extends BaseController {
         this.swappingIdx = null;
         this.hoveredHitboxId = null;
         this.ignoreNextClick = false;
+
+        // --- EXILE CONFIRMATION ---
+        // null, or { index, choice } while the "really exile?" prompt is open. choice is 'NO' or 'YES' (the one the keyboard cursor is on).
+        this.exileConfirm = null;
+
+        // A short red line on the screen ("A fallen member cannot lead the party."), null when there is none
+        this.notice = null;
     }
 
     init(data = {}) {
@@ -38,6 +46,8 @@ export class PartyController extends BaseController {
         this.swappingIdx = null;
         this.hoveredHitboxId = null;
         this.ignoreNextClick = false;
+        this.exileConfirm = null;
+        this.notice = null;
         this.contextMenu.close();
         this.dragManager.cancelDrag();
     }
@@ -48,6 +58,7 @@ export class PartyController extends BaseController {
 
     // The keyboard cursor: the card under selectedIndex, or the lit option while the context menu is open
     getKeyboardFocusId() {
+        if (this.exileConfirm) return `EXILE_${this.exileConfirm.choice}`;
         const menu = this.contextMenu.menu;
         if (menu) return menu.selectedIndex >= 0 ? `MENU_OPT_${menu.selectedIndex}` : null;
         if (this.selectedIndex < 0 || this.selectedIndex >= gameState.party.members.length) return null;
@@ -60,6 +71,12 @@ export class PartyController extends BaseController {
     }
 
     _syncFocusWithHover(hitboxId) {
+        if (this.exileConfirm) {
+            if (hitboxId === 'EXILE_YES') this.exileConfirm.choice = 'YES';
+            else if (hitboxId === 'EXILE_NO') this.exileConfirm.choice = 'NO';
+            return;
+        }
+
         if (this.contextMenu.menu) {
             if (hitboxId.startsWith('MENU_OPT_')) {
                 const menuActionIndex = parseInt(hitboxId.replace('MENU_OPT_', ''), 10);
@@ -83,6 +100,14 @@ export class PartyController extends BaseController {
         if (this.ignoreNextClick) return;
 
         const party = gameState.party.members;
+
+        // The exile prompt owns every click while it is open: only its two buttons do anything
+        if (this.exileConfirm) {
+            if (hitboxId === 'EXILE_YES') this.resolveExileConfirm(true);
+            else if (hitboxId === 'EXILE_NO') this.resolveExileConfirm(false);
+            else return false;
+            return;
+        }
 
         if (this.contextMenu.menu) {
             if (!hitboxId) {
@@ -138,7 +163,9 @@ export class PartyController extends BaseController {
             return;
         }
 
-        if (this.contextMenu.menu) {
+        if (this.exileConfirm) {
+            this.resolveExileConfirm(false);
+        } else if (this.contextMenu.menu) {
             this.contextMenu.close();
             this.playCancelSound();
         } else if (this.state === 'SWAPPING') {
@@ -156,7 +183,7 @@ export class PartyController extends BaseController {
     // ========================================================
 
     onDragStart(hitboxId) {
-        if (this.contextMenu.menu) return;
+        if (this.contextMenu.menu || this.exileConfirm) return;
         // Block drag and drop operations if selecting a member for battle or encounter
         if (this.mode === 'BATTLE_SELECT' || this.mode === 'ENCOUNTER_SELECT') return;
 
@@ -175,8 +202,7 @@ export class PartyController extends BaseController {
                         if (dropTargetId && typeof dropTargetId === 'string' && dropTargetId.startsWith('CARD_')) {
                             const targetIndex = parseInt(dropTargetId.replace('CARD_', ''), 10);
                             if (originSlot !== targetIndex && targetIndex < gameState.party.members.length) {
-                                this.swapMembers(originSlot, targetIndex);
-                                this.selectedIndex = targetIndex;
+                                if (this.swapMembers(originSlot, targetIndex)) this.selectedIndex = targetIndex;
                             }
                         }
                     }
@@ -193,11 +219,14 @@ export class PartyController extends BaseController {
 
     onDrop(sourceHitboxId, targetHitboxId) {
         if (this.dragManager.dragState.active) {
+            const origin = this.dragManager.dragState.originSlot;
             this.dragManager.endDrag(targetHitboxId);
             
-            // Placed on a card: confirm. Dropped anywhere else the drag is simply let go: cancel.
+            // Placed on a card: confirm (or an error when the move is not allowed). Dropped anywhere else the drag is simply let go: cancel.
             if (targetHitboxId && targetHitboxId.startsWith('CARD_')) {
-                this.playConfirmSound();
+                const target = parseInt(targetHitboxId.replace('CARD_', ''), 10);
+                if (origin !== target && target < gameState.party.members.length && !this.canSwap(origin, target)) this.playErrorSound();
+                else this.playConfirmSound();
             } else {
                 this.playCancelSound();
             }
@@ -211,8 +240,10 @@ export class PartyController extends BaseController {
         const intent = this.resolveIntent(keyCode, e); // also hands control to the keyboard
         if (!intent) return;
 
-        // Now the context menu will successfully receive 'UP', 'DOWN', 'CONFIRM', etc.
-        if (this.contextMenu.menu) {
+        if (this.exileConfirm) {
+            this.handleExileConfirmKeys(intent);
+        } else if (this.contextMenu.menu) {
+            // Now the context menu will successfully receive 'UP', 'DOWN', 'CONFIRM', etc.
             this.contextMenu.handleNavigation(intent);
         } else if (this.state === 'NAVIGATING') {
             this.handleNavigatingKeys(intent);
@@ -322,7 +353,7 @@ export class PartyController extends BaseController {
         if (gameState.party.members.length > 1) {
             options.push({
                 label: 'Exile', actionId: 'EXILE', callback: () => {
-                    this.exileMember(this.selectedIndex);
+                    this.askToExile(this.selectedIndex);
                 }
             });
         }
@@ -357,6 +388,37 @@ export class PartyController extends BaseController {
         }
     }
 
+    // Exiling removes the member for good, so it is never done on the first click: a prompt asks first, with "Cancel" lit by default
+    askToExile(index) {
+        if (gameState.party.members.length <= 1 || !gameState.party.members[index]) {
+            this.playErrorSound();
+            return;
+        }
+        this.exileConfirm = { index, choice: 'NO' };
+    }
+
+    handleExileConfirmKeys(intent) {
+        if (intent === 'LEFT' || intent === 'RIGHT' || intent === 'UP' || intent === 'DOWN') {
+            this.exileConfirm.choice = this.exileConfirm.choice === 'NO' ? 'YES' : 'NO';
+            this.playNavSound();
+        } else if (intent === 'CONFIRM') {
+            this.resolveExileConfirm(this.exileConfirm.choice === 'YES');
+        } else if (intent === 'CANCEL') {
+            this.resolveExileConfirm(false);
+        }
+    }
+
+    resolveExileConfirm(confirmed) {
+        const { index } = this.exileConfirm;
+        this.exileConfirm = null;
+        if (confirmed) {
+            this.playConfirmSound();
+            this.exileMember(index);
+        } else {
+            this.playCancelSound();
+        }
+    }
+
     exileMember(index) {
         const party = gameState.party.members;
         if (party.length <= 1) {
@@ -364,6 +426,7 @@ export class PartyController extends BaseController {
             return;
         }
         party.splice(index, 1);
+        PartyManager.ensureLivingLeader();   // exiling the leader must not leave a fallen member in front
         if (this.selectedIndex >= party.length) {
             this.selectedIndex = Math.max(0, party.length - 1);
         }
@@ -385,6 +448,11 @@ export class PartyController extends BaseController {
     }
 
     completeSwap() {
+        if (this.swappingIdx !== null && this.swappingIdx !== this.selectedIndex && !this.canSwap(this.swappingIdx, this.selectedIndex)) {
+            this.notice = { text: 'A fallen member cannot lead the party.', until: Date.now() + 2800 };
+            this.playErrorSound();   // stay in "Move" so another slot can be picked
+            return;
+        }
         this.playConfirmSound();
         if (this.swappingIdx !== null && this.swappingIdx !== this.selectedIndex) {
             this.swapMembers(this.swappingIdx, this.selectedIndex);
@@ -393,9 +461,24 @@ export class PartyController extends BaseController {
         this.state = 'NAVIGATING';
     }
 
+    // A fallen member (0 hp) can never end up in the first slot: that would make them the party's leader
+    canSwap(from, to) {
+        const p = gameState.party.members;
+        if (!p[from] || !p[to]) return false;
+        if (from === 0 && p[to].hp <= 0) return false;
+        if (to === 0 && p[from].hp <= 0) return false;
+        return true;
+    }
+
+    // Returns true when the two members changed places
     swapMembers(from, to) {
         const p = gameState.party.members;
+        if (!this.canSwap(from, to)) {
+            this.notice = { text: 'A fallen member cannot lead the party.', until: Date.now() + 2800 };
+            return false;
+        }
         [p[from], p[to]] = [p[to], p[from]];
+        return true;
     }
 
     // ========================================================
@@ -410,6 +493,11 @@ export class PartyController extends BaseController {
             mode: this.mode,
             activeIndices: this.activeIndices,
             dragState: this.dragManager.dragState,
+            // The "really exile?" prompt: null, or who it is about
+            notice: this.notice && Date.now() < this.notice.until ? this.notice.text : null,
+            exileConfirm: this.exileConfirm
+                ? { name: (gameState.party.members[this.exileConfirm.index] || {}).name || 'this member', choice: this.exileConfirm.choice }
+                : null,
             // The one lit element: the card (or menu option) under the mouse, or the keyboard cursor
             hoveredElement: this.getFocusId() ? { id: this.getFocusId() } : null,
             onLayoutUpdate: (hitboxes) => {
@@ -417,4 +505,4 @@ export class PartyController extends BaseController {
             }
         };
     }
-}
+}

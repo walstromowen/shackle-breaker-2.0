@@ -8,6 +8,19 @@ import { QuestModel } from '../models/questModel.js';
 import { QuestDefinitions } from '../data/questDefinitions.js';
 
 export const PartyManager = {
+    /**
+     * The first party slot (the leader) can never be a fallen member. If it is, the first member still standing steps up to the front and
+     * everyone else keeps their order. Returns true when it moved someone. Does nothing when the whole party is down (that is game over).
+     */
+    ensureLivingLeader() {
+        const members = gameState.party && gameState.party.members;
+        if (!members || members.length < 2 || members[0].hp > 0) return false;
+        const firstLiving = members.findIndex(m => m.hp > 0);
+        if (firstLiving < 1) return false;
+        members.unshift(members.splice(firstLiving, 1)[0]);
+        return true;
+    },
+
     // --- READ OPERATIONS (Getters) ---
     getHighestLevel() {
         const members = this.getMembers();
@@ -252,4 +265,4 @@ export const PartyManager = {
             }
         });
     }
-};
+};

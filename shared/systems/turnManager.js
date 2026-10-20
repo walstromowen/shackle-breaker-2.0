@@ -94,7 +94,7 @@ export class TurnManager {
                 if (this.state.weather && this.state.weather.appliedStatusId && this.state.weather.id !== 'clear') {
                     const hasWeather = turn.replacement.statusEffects.some(s => s.id === this.state.weather.appliedStatusId);
                     if (!hasWeather) {
-                        const weatherStatus = StatusEffectFactory.createEffect(this.state.weather.appliedStatusId, null, turn.replacement);
+                        const weatherStatus = StatusEffectFactory.createEffect(this.state.weather.appliedStatusId, this.state.weather.appliedStatusCharges, turn.replacement);
                         if (weatherStatus) {
                             turn.replacement.applyStatusEffect(weatherStatus);
                         }
@@ -508,7 +508,7 @@ export class TurnManager {
         if (weather.appliedStatusId) {
             targets.forEach(target => {
                 if (target && !target.isDead()) {
-                    const weatherStatus = StatusEffectFactory.createEffect(weather.appliedStatusId, null, target);
+                    const weatherStatus = StatusEffectFactory.createEffect(weather.appliedStatusId, weather.appliedStatusCharges, target);
                     if (weatherStatus) {
                         target.applyStatusEffect(weatherStatus);
                     }
@@ -522,4 +522,4 @@ export class TurnManager {
             this.processNextTurnInQueue();
         }
     }
-}
+}

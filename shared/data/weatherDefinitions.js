@@ -25,6 +25,8 @@ export const WeatherDefinitions = {
         visualEffect: 'overlay_fog',
         audioEffect: 'weatherFog', 
         durationRange: [8, 12],
+        appliedStatusId: 'evasive',   // everyone in the fight is harder to hit while the fog lasts ...
+        appliedStatusCharges: 99,     // ... for the whole fight (evasive normally wears off after 3 turns)
         battleMessage: "A thick fog rolls onto the battlefield!" // ✅ NEW
     },
     SANDSTORM: {
@@ -49,4 +51,4 @@ export const WeatherDefinitions = {
         appliedStatusId: 'chilled',
         battleMessage: "A howling blizzard sweeps across the battlefield!"
     }
-};
+};

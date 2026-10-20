@@ -14,6 +14,7 @@ export class WeatherModel {
         
         // Pull the status effect ID to apply to combatants during this weather
         this.appliedStatusId = definition.appliedStatusId || null;
+        this.appliedStatusCharges = definition.appliedStatusCharges ?? null;   // null = the status's own default charges
         
         // ✅ NEW: Pull the custom battle message (or leave null to trigger the fallback)
         this.battleMessage = definition.battleMessage || null;
@@ -50,4 +51,4 @@ export class WeatherModel {
     isFinished() {
         return this.timeRemaining <= 0;
     }
-}
+}

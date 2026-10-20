@@ -39,6 +39,8 @@ export class PartyRenderer {
             activeIndices = [],
             hoveredElement = null,
             dragState = null,
+            exileConfirm = null,
+            notice = null,
             onLayoutUpdate = null
         } = state;
 
@@ -74,7 +76,7 @@ export class PartyRenderer {
 
             // highlighted = the one focused card (mouse hover or keyboard cursor, never both). While a context menu is open
             // the menu owns the focus, and the card it belongs to stays marked as selected.
-            const flags = this.ui.flags(`CARD_${index}`, menu ? null : hoveredElement?.id, {
+            const flags = this.ui.flags(`CARD_${index}`, (menu || exileConfirm) ? null : hoveredElement?.id, {
                 selected: isBeingMoved || (!!menu && index === selectedIndex)
             });
             const isHolding = swappingIdx !== null || !!dragState?.active;
@@ -99,7 +101,9 @@ export class PartyRenderer {
             guide = "[ARROWS] Navigate   [ENT/CLICK] Select   [ESC/R-CLICK] Cancel";
         } else {
             guide = "[ARROWS] Navigate   [ENT/CLICK] Swap & Menu   [ESC/R-CLICK] Back";
-            if (menu) {
+            if (exileConfirm) {
+                guide = "[ARROWS] Choose   [ENT/CLICK] Select   [ESC/R-CLICK] Cancel";
+            } else if (menu) {
                 guide = "[UP/DOWN] Choose   [ENT/CLICK] Select   [ESC/R-CLICK] Cancel";
             } else if (swappingIdx !== null || (dragState && dragState.active)) {
                 guide = "[ARROWS] Move to Slot   [ENT/CLICK] Place   [ESC/R-CLICK] Cancel";
@@ -107,6 +111,13 @@ export class PartyRenderer {
         }
 
         this.ui.drawText(guide, width / 2, height - 72, UITheme.fonts.mono, UITheme.colors.textMuted, "center");
+        if (notice && !exileConfirm) this.ui.drawText(notice, width / 2, height - 132, UITheme.fonts.body, UITheme.colors.error, "center");
+
+        // The exile prompt sits on top of everything; its hitboxes replace the screen's, so nothing underneath can be clicked
+        if (exileConfirm) {
+            hitboxes.length = 0;
+            this._drawExileConfirm(exileConfirm, width, height, hitboxes, hoveredElement?.id);
+        }
 
         // Fire hitboxes back up to controller before dragging renders
         if (onLayoutUpdate) {
@@ -115,6 +126,33 @@ export class PartyRenderer {
 
         // Draw the dragged card overlay on top of EVERYTHING
         this._renderDraggedItem(dragState);
+    }
+
+    _drawExileConfirm(confirm, width, height, hitboxes, focusId) {
+        const ui = this.ui;
+        const w = 960, h = 432;
+        const x = Math.round((width - w) / 2), y = Math.round((height - h) / 2);
+
+        ui.drawRect(0, 0, width, height, 'rgba(0, 0, 0, 0.72)', true);
+        ui.drawPopupPanel(x, y, w, h);
+
+        ui.drawText('Exile Party Member?', width / 2, y + 96, UITheme.fonts.header, UITheme.colors.textMain, 'center');
+        ui.drawLineWithGothicFlourish(width / 2 - 240, y + 126, 480, UITheme.colors.borderHighlight);
+
+        ui.drawText(confirm.name, width / 2, y + 190, UITheme.fonts.bold, UITheme.colors.textHighlight, 'center');
+        ui.drawText('They will leave your party for good. This cannot be undone.', width / 2, y + 252, UITheme.fonts.italic, UITheme.colors.textMuted, 'center');
+
+        const btnW = 288, btnH = 80, gap = 48;
+        const by = y + h - btnH - 48;
+        const bx = Math.round(width / 2 - btnW - gap / 2);
+        const buttons = [
+            { id: 'EXILE_NO', label: 'Cancel', x: bx, color: undefined },
+            { id: 'EXILE_YES', label: 'Exile', x: bx + btnW + gap, color: UITheme.colors.error }
+        ];
+        buttons.forEach(b => {
+            hitboxes.push({ id: b.id, x: b.x, y: by, w: btnW, h: btnH, cursor: 'pointer' });
+            ui.drawButton(b.x, by, btnW, btnH, b.label, ui.flags(b.id, focusId), { color: b.color });
+        });
     }
 
     getMenuLayout(cardIndex, canvasWidth) {
