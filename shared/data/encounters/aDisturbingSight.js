@@ -3,9 +3,13 @@ export const aDisturbingSight = {
     title: "A Disturbing Sight",
     imageSheet: "encounter_a_disturbing_sight",
     initialStage: "discovery",
+    // Cues: tone / ambience here apply to every stage; a stage sets its own tone, effect, sfx and ambience (see encounters/prologue.js)
+    ambience: "forestNight",
     stages: {
         discovery: {
             displayText: "A Disturbing Sight",
+            sfx: "madmanCry",
+            sfxVolume: 0.5,
             image: { col: 2, row: 1 },
             bgm: "aDisturbingSightBgm",
             text: "{name} sees someone digging on the ground ahead. Upon getting closer, {name} realizes that the figure appears to be digging at something unsettling...",
@@ -108,6 +112,9 @@ export const aDisturbingSight = {
         },
         a_quiet_end: {
             displayText: "A Quiet End",
+            tone: "blood",
+            effect: "blood",
+            sfx: "quickStabSfx",
             image: { col: 2, row: 2 },
             text: "{name} sneaks up behind the Madman and plunges a dagger into his side, leaving him lifeless on the ground. If he even was alive...",
             decisions: [
@@ -131,6 +138,9 @@ export const aDisturbingSight = {
         },
         startled_prey: {
             displayText: "Ambushed!",
+            tone: "blood",
+            effect: "jolt",
+            sfx: "madmanCry",
             image: { col: 1, row: 0 },
             bgm: "plainsBattleBgm",
             text: "The Madman is startled by {name}'s clumsy approach. He shrieks and draws his weapon!",
@@ -144,6 +154,9 @@ export const aDisturbingSight = {
         },
         a_howl_in_the_dark: {
             displayText: "Ambushed!",
+            tone: "blood",
+            effect: "blood",
+            sfx: "quickStabSfx",
             image: { col: 2, row: 0 },
             bgm: "plainsBattleBgm",
             text: "{name} plunges a dagger into the side of the Madman, leaving him bleeding profusely! He survives the blow and sends a howl into the air, alerting others nearby!",
@@ -170,6 +183,8 @@ export const aDisturbingSight = {
         },
         a_lucky_strike: {
             displayText: "The Aftermath",
+            effect: "jolt",
+            sfx: "rockThud",
             image: { col: 1, row: 2 },
             text: "The rock hits the Madman right in the head, dropping him lifeless to the ground.",
             decisions: [
@@ -193,6 +208,9 @@ export const aDisturbingSight = {
         },
         enraged_lunatic: {
             displayText: "Combat",
+            tone: "blood",
+            effect: "jolt",
+            sfx: "rockThud",
             image: { col: 2, row: 0 },
             bgm: "plainsBattleBgm",
             text: "The rock hits the Madman's body, injuring him. After wincing from the wound, the Madman looks up and runs screaming at {name}!",
@@ -206,6 +224,9 @@ export const aDisturbingSight = {
         },
         spotted: {
             displayText: "Combat",
+            tone: "blood",
+            effect: "jolt",
+            sfx: "madmanCry",
             image: { col: 1, row: 0 },
             bgm: "plainsBattleBgm",
             text: "The rock goes far over the Madman's head. He snaps his head around, draws his weapon, and rushes at {name}!",
@@ -218,6 +239,8 @@ export const aDisturbingSight = {
         },
         unnoticed_blunder: {
             displayText: "A Disturbing Sight",
+            sfx: "rockThud",
+            sfxVolume: 0.6,
             image: { col: 0, row: 1 },
             text: "The rock completely misses the Madman and lands softly in the grass. He doesn't seem to have noticed. {name} will have to rethink this approach...",
             decisions: [
@@ -229,6 +252,9 @@ export const aDisturbingSight = {
         },
         unintended_targets: {
             displayText: "Combat",
+            tone: "blood",
+            effect: "jolt",
+            sfx: "twigSnap",
             image: { col: 3, row: 1 },
             bgm: "plainsBattleBgm",
             text: "The rock goes nowhere near the Madman. Instead, it lands right in the middle of the bushes, startling a pack of wildlife! They turn and glare fiercely at {name}!",
@@ -241,6 +267,9 @@ export const aDisturbingSight = {
         },
         a_moment_of_clarity: {
             displayText: "A Fleeting Peace",
+            tone: "gold",
+            sfx: "purifySfx",
+            sfxVolume: 0.5,
             image: { col: 3, row: 0 },
             text: "{name} converses with the Madman about the delusional rants one might expect from a man who has lost his mind. Finally, the Madman smiles, and with tears in his eyes, hands {name} his knapsack. \n\nJust before darting off, he mutters, \"It's really you... Shackle Breaker...\"",
             decisions: [
@@ -262,6 +291,9 @@ export const aDisturbingSight = {
         },
         descent_into_madness: {
             displayText: "Combat",
+            tone: "blood",
+            effect: "blood",
+            sfx: "madmanCry",
             image: { col: 1, row: 1 },
             bgm: "plainsBattleBgm",
             text: "The Madman stops, looks {name} dead in the eyes, and bursts into maniacal laughter. He draws a rusted blade!",
@@ -275,6 +307,9 @@ export const aDisturbingSight = {
         },
         speaking_to_the_voices: {
             displayText: "A Fragile Mind",
+            tone: "arcane",
+            sfx: "whispers",
+            sfxVolume: 0.6,
             image: { col: 0, row: 0 },
             text: "{name} manages to get the Madman's attention. He tilts his head.\n\n\"Magic tell me things! Hee Hee! Tell me what magic say!\"",
             decisions: [
@@ -342,6 +377,8 @@ export const aDisturbingSight = {
         },
         fleeing_shadows: {
             displayText: "The Aftermath",
+            sfx: "madmanCry",
+            sfxVolume: 0.5,
             image: { col: 1, row: 0 },
             text: "Upon hearing {name}, the Madman falls back and hisses. He scrambles to his feet and runs away, leaving his knapsack behind in his panic.",
             decisions: [
@@ -363,6 +400,9 @@ export const aDisturbingSight = {
         },
         a_new_friend: {
             displayText: "Combat",
+            tone: "blood",
+            effect: "jolt",
+            sfx: "madmanCry",
             image: { col: 1, row: 0 },
             bgm: "plainsBattleBgm",
             text: "\"Freak? .. Friend! Magic know many freak friend! You be freak friend too!\" he screams, lunging forward.",
@@ -376,6 +416,9 @@ export const aDisturbingSight = {
         },
         pleased_the_magic: {
             displayText: "The Aftermath",
+            tone: "arcane",
+            sfx: "madmanCry",
+            sfxVolume: 0.6,
             image: { col: 1, row: 1 },
             text: "\"Magic like you! So me like you! Hahahaha! Me give these now!\"",
             decisions: [
@@ -397,6 +440,9 @@ export const aDisturbingSight = {
         },
         rejected_by_the_magic: {
             displayText: "Combat",
+            tone: "blood",
+            effect: "blood",
+            sfx: "madmanCry",
             image: { col: 1, row: 0 },
             bgm: "plainsBattleBgm",
             text: "\"Hahaha! Magic no like you! So me no like neither!\"",
@@ -409,6 +455,9 @@ export const aDisturbingSight = {
         },
         a_new_servant: {
             displayText: "The Aftermath",
+            tone: "gold",
+            sfx: "madmanCry",
+            sfxVolume: 0.5,
             image: { col: 0, row: 2 },
             text: "The man falls to his knees, weeping. \"No no! No hurt! Me help magic! Me help!\"",
             decisions: [
@@ -430,6 +479,9 @@ export const aDisturbingSight = {
         },
         shattered_illusions: {
             displayText: "Combat",
+            tone: "blood",
+            effect: "blood",
+            sfx: "madmanCry",
             image: { col: 0, row: 2 },
             bgm: "plainsBattleBgm",
             text: "He glares at {name} with sudden, horrifying clarity. \"No hear magic! Me hurt you now!\"",

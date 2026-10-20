@@ -3,9 +3,14 @@ export const testEncounter = {
     title: "The Mysterious Monolith",
     imageSheet: "encounter_treasure_chest", // Using your existing chest sheet for testing
     initialStage: "discovery",
+    // Cues: tone / ambience here apply to every stage; a stage sets its own tone, effect, sfx and ambience (see encounters/prologue.js)
+    tone: "arcane",
+    ambience: "obeliskHum",
     stages: {
         "discovery": {
             displayText: "A Strange Phenomenon",
+            sfx: "glyphChime",
+            sfxVolume: 0.6,
             image: { col: 0, row: 0 },
             text: "{name}'s party discovers a glowing monolith humming with strange energy. A booming voice echoes in your minds: 'Do you wish to become Tough?'",
             decisions: [

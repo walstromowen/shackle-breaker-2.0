@@ -3,6 +3,8 @@ export const aftermath = {
     title: "Aftermath",
     imageSheet: "encounter_aftermath",
     initialStage: "aftermath",
+    // Cues: tone / ambience here apply to every stage; a stage sets its own tone, effect, sfx and ambience (see encounters/prologue.js)
+    ambience: "battlefieldWind",
     stages: {
         // ==========================================
         // 1. AFTERMATH STAGE
@@ -118,6 +120,8 @@ export const aftermath = {
         // --- Intermediate Feedback Stages for Aftermath ---
         loot_success: {
             displayText: "A Lucky Find",
+            tone: "gold",
+            sfx: "pickupSound",
             image: { col: 1, row: 0 },
             text: "{name} finds something useful on one of the fallen warriors.",
             decisions: [
@@ -199,6 +203,8 @@ export const aftermath = {
         // The find messages for the officer's satchel. The reward is only handed out when the player takes it here.
         officer_orders_found: {
             displayText: "Sealed Orders",
+            tone: "gold",
+            sfx: "pickupSound",
             image: { col: 3, row: 1 },
             text: "Tucked beneath the officer's rations, {name} finds a wax-sealed letter still bearing the Royal Guard crest.",
             decisions: [
@@ -221,6 +227,8 @@ export const aftermath = {
 
         officer_gear_found: {
             displayText: "The Officer's Gear",
+            tone: "gold",
+            sfx: "pickupSound",
             image: { col: 0, row: 2 },
             text: "Wrapped in the officer's cloak, {name} finds personal gear that survived the battle.",
             decisions: [
@@ -330,6 +338,9 @@ export const aftermath = {
         // searched_survivors is already set, so no second survivor can be found.
         robbed_warrior: {
             displayText: "Cold-Hearted",
+            tone: "blood",
+            sfx: "pickupSound",
+            sfxVolume: 0.6,
             image: { col: 2, row: 1 },
             text: "{name} finds something on the wounded warrior. Meanwhile, the warrior breathes his last breath.",
             decisions: [
@@ -354,6 +365,8 @@ export const aftermath = {
         // ==========================================
         battle_survivor: {
             displayText: "Battle Survivor",
+            sfx: "legionaryCry",
+            sfxVolume: 0.6,
             image: { col: 1, row: 1 },
             text: "The warrior stands up from the ground and looks at {name}. \"What do you want?\"",
             decisions: [
@@ -524,6 +537,8 @@ export const aftermath = {
         // (the same shape the other recruit stages use), so nothing can cut the recruit short.
         survivor_bribed: {
             displayText: "Coin Talks",
+            tone: "gold",
+            sfx: "coinsJingle",
             image: { col: 1, row: 1 },
             text: "The warrior weighs the coins in his palm and sighs. \"Fine. Put like that, I suppose I can find the time. Lead on.\"",
             decisions: [
@@ -550,6 +565,11 @@ export const aftermath = {
         // ==========================================
         madman_ambush: {
             displayText: "Madmen Approach!",
+            tone: "blood",
+            effect: "jolt",
+            sfx: "madmanCry",
+            ambience: "none",
+            ambienceFade: 0.4,
             image: { col: 3, row: 2 },
             bgm: "plainsBattleBgm",
             text: "As {name} searches the battlefield, a group of madmen appear on the horizon!",
@@ -563,6 +583,11 @@ export const aftermath = {
 
         alterian_ambush: {
             displayText: "The Dead Stir!",
+            tone: "blood",
+            effect: "jolt",
+            sfx: "ambushColdBreath",
+            ambience: "none",
+            ambienceFade: 0.4,
             image: { col: 0, row: 3 },
             bgm: "plainsBattleBgm",
             text: "While examining the bodies, one of them stirs and glares at {name}! As if on command, others do the same!",
@@ -576,6 +601,11 @@ export const aftermath = {
 
         warrior_betrayal_ambush: {
             displayText: "Betrayal!",
+            tone: "blood",
+            effect: "blood",
+            sfx: "unsheathSwordSfx",
+            ambience: "none",
+            ambienceFade: 0.4,
             image: { col: 1, row: 3 },
             bgm: "plainsBattleBgm",
             text: "As {name} tends to the warrior's wounds, he violently grabs {name} and draws his weapon! Soon, other fallen warriors rise around you!",

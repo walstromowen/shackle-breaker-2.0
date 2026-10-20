@@ -3,6 +3,8 @@ export const bonfire = {
     title: "Bonfire",
     imageSheet: "encounter_bonfire",
     initialStage: "discovery",
+    // Cues: tone / ambience here apply to every stage; a stage sets its own tone, effect, sfx and ambience (see encounters/prologue.js)
+    ambience: "fireCrackle",
     stages: {
         discovery: {
             displayText: "Bonfire",
@@ -61,6 +63,8 @@ export const bonfire = {
         },
         rest_success_loot: {
             displayText: "Rest",
+            tone: "gold",
+            sfx: "pickupSound",
             image: { col: 0, row: 2 },
             text: "Upon waking from a rest, {name} finds something half-buried in the dirt beside the burned-out fire.",
             decisions: [
@@ -88,6 +92,7 @@ export const bonfire = {
         },
         rest_success_normal: {
             displayText: "Rest",
+            sfx: "restSfx",
             image: { col: 1, row: 0 },
             text: "{name}'s party rests peacefully, recovering their strength. The embers have long since burned out as much time has passed.",
             decisions: [
@@ -100,6 +105,11 @@ export const bonfire = {
         },
         ambush_madman: {
             displayText: "Ambush!",
+            tone: "blood",
+            effect: "jolt",
+            sfx: "madmanCry",
+            ambience: "none",
+            ambienceFade: 0.4,
             image: { col: 0, row: 1 },
             text: "The rest is violently interrupted! {name} is ambushed by madmen emerging from the shadows!",
             bgm: "plainsBattleBgm",
@@ -113,6 +123,11 @@ export const bonfire = {
         },
         ambush_unseen: {
             displayText: "Ambush!",
+            tone: "blood",
+            effect: "blood",
+            sfx: "rockThud",
+            ambience: "none",
+            ambienceFade: 0.4,
             image: { col: 0, row: 1 },
             text: "A heavy rock flies out of the darkness and strikes {name}! Soon, the party is surrounded by raving madmen!",
             bgm: "plainsBattleBgm",
@@ -126,6 +141,11 @@ export const bonfire = {
         },
         ambush_wolves: {
             displayText: "Ambush!",
+            tone: "blood",
+            effect: "jolt",
+            sfx: "wolfCry",
+            ambience: "none",
+            ambienceFade: 0.4,
             image: { col: 1, row: 1 },
             text: "A low growl echoes in the dark. {name}'s party is surrounded by a pack of starving wolves!",
             bgm: "plainsBattleBgm",

@@ -9,6 +9,8 @@ export const ironChest = {
     stages: {
         discovery: {
             displayText: "A Heavy Iron Chest",
+            sfx: "lockClick",
+            sfxVolume: 0.6,
             image: { col: 0, row: 0 },
             text: "A heavy iron chest, bound in riveted bands and shut with a lock the size of a fist. Prying at it would be pointless. This lock was made for one key, and a large one.",
             decisions: [
@@ -43,6 +45,9 @@ export const ironChest = {
         },
         opened_chest: {
             displayText: "The Hoard",
+            tone: "gold",
+            effect: "flash",
+            sfx: "chestOpen",
             image: { col: 1, row: 0 },
             text: "The iron lid swings up on its hinges. Inside, packed tight in rotted cloth, lies a hoard that someone went to great lengths to lock away.",
             decisions: [

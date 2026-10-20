@@ -63,9 +63,14 @@ export const strangeObelisk = {
   title: "A Strange Obelisk",
   imageSheet: "encounter_obelisk",
   initialStage: "discovery",
+  // Cues: tone / ambience here apply to every stage; a stage sets its own tone, effect, sfx and ambience (see encounters/prologue.js)
+  tone: "arcane",
+  ambience: "obeliskHum",
   stages: {
     discovery: {
       displayText: "A Monolith in the Mist",
+      sfx: "glyphChime",
+      sfxVolume: 0.5,
       image: { col: 0, row: 0 },
       text: "{name}'s party discovers a towering obelisk of smooth, black stone. Strange geometries are carved into its surface, and they seem to shift when not directly observed. Its base is half buried, and fine seams run across the stone.",
       decisions: [
@@ -119,6 +124,9 @@ export const strangeObelisk = {
     // ---------- unmaking: removes every trait ----------
     unmaking: {
       displayText: "The Unwriting",
+      tone: "blood",
+      effect: "glow_red",
+      sfx: "glowSwell",
       image: { col: 0, row: 0 },
       text: "The glyphs crawl toward {name}'s hand and the stone grows warm. Whatever {name} has become, for better or worse, it will be unwritten. Every trait, the good with the bad. The stone will not be used twice.",
       decisions: [
@@ -148,6 +156,8 @@ export const strangeObelisk = {
     // ---------- decipher ----------
     decipher_success: {
       displayText: "Cosmic Truths",
+      effect: "glow_blue",
+      sfx: "glyphChime",
       image: { col: 1, row: 0 },
       text: "The shifting lines suddenly make perfect sense. They recount the early days of the Altus Kingdom, and the knowledge settles into {name}'s mind and changes who they are.",
       decisions: [
@@ -160,6 +170,10 @@ export const strangeObelisk = {
     },
     decipher_fail: {
       displayText: "A Fractured Mind",
+      tone: "blood",
+      effect: "jolt",
+      sfx: "shockSfx",
+      sfxVolume: 0.6,
       image: { col: 2, row: 0 },
       text: "The geometries twist in impossible ways. It hurts to look at. A sharp pain shoots behind {name}'s eyes, and something in them is left altered.",
       decisions: [
@@ -173,6 +187,9 @@ export const strangeObelisk = {
     // ---------- excavate ----------
     excavate_success: {
       displayText: "Buried Foundations",
+      tone: "gold",
+      sfx: "stoneGrind",
+      sfxVolume: 0.8,
       image: { col: 1, row: 0 },
       text: "Beneath the soil, the obelisk's foundation is carved with row upon row of tools, scenes and figures. Working them free, {name} learns more about the first Alterians than any book could say, and takes it to heart.",
       decisions: [
@@ -185,6 +202,9 @@ export const strangeObelisk = {
     },
     excavate_fail: {
       displayText: "A Costly Dig",
+      tone: "blood",
+      effect: "shake",
+      sfx: "stoneGrind",
       image: { col: 2, row: 0 },
       text: "The earth round the base is packed hard as iron. The stone shifts, grinds, and bites, and by the time {name} pulls free they are bruised, winded, and not quite the same.",
       decisions: [
@@ -198,6 +218,8 @@ export const strangeObelisk = {
     // ---------- examine ----------
     examine_success: {
       displayText: "A Hidden Seam",
+      effect: "glow_blue",
+      sfx: "glyphChime",
       image: { col: 1, row: 0 },
       text: "One seam is not a seam at all: a panel slides aside under {name}'s fingers and, inside, a pattern of carvings that teaches the hand something the mind cannot name.",
       decisions: [
@@ -210,6 +232,9 @@ export const strangeObelisk = {
     },
     examine_fail: {
       displayText: "The Stone Bites Back",
+      tone: "blood",
+      effect: "jolt",
+      sfx: "lockClick",
       image: { col: 2, row: 0 },
       text: "A seam snaps shut on {name}'s hand and a dull ache runs up the arm. Something about the stone has left a mark that will not fade.",
       decisions: [

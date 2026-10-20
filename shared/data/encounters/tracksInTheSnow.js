@@ -3,12 +3,17 @@ export const tracksInTheSnow = {
     title: "Tracks In The Snow",
     imageSheet: "encounter_tracks_in_the_snow",
     initialStage: "discovery",
+    // Cues: tone / ambience here apply to every stage; a stage sets its own tone, effect, sfx and ambience (see encounters/prologue.js)
+    tone: "frost",
+    ambience: "snowWind",
     stages: {
         // ==========================================
         // 1. TRACKS IN THE SNOW (first set of tracks)
         // ==========================================
         discovery: {
             displayText: "Tracks In The Snow",
+            sfx: "snowSteps",
+            sfxVolume: 0.6,
             image: { col: 0, row: 0 },
             text: "{name} notices tracks in the snow.",
             decisions: [
@@ -60,6 +65,9 @@ export const tracksInTheSnow = {
         // so the trail is gone once a fight starts.
         something_approaches: {
             displayText: "Ambush!",
+            tone: "blood",
+            effect: "jolt",
+            sfx: "heartbeat",
             image: { col: 3, row: 0 },
             bgm: "plainsBattleBgm",
             text: "Something approaches {name}'s position!",
@@ -82,6 +90,8 @@ export const tracksInTheSnow = {
         // ==========================================
         tracks_continue: {
             displayText: "Tracks In The Snow",
+            sfx: "snowSteps",
+            sfxVolume: 0.6,
             image: { col: 0, row: 0 },
             text: "{name} sees more tracks ahead.",
             decisions: [
@@ -164,6 +174,9 @@ export const tracksInTheSnow = {
 
         deer_hunted: {
             displayText: "A Clean Kill",
+            tone: "gold",
+            effect: "jolt",
+            sfx: "quickStabSfx",
             image: { col: 2, row: 1 },
             text: "{name} closes the distance unseen and brings the deer down in a single, clean strike.",
             decisions: [
@@ -187,6 +200,8 @@ export const tracksInTheSnow = {
 
         deer_escapes: {
             displayText: "It Bolts!",
+            effect: "jolt",
+            sfx: "hoofbeats",
             image: { col: 1, row: 1 },
             text: "A branch cracks under {name}'s foot. The deer's head snaps up and it bounds off through the snow, gone in a heartbeat.",
             decisions: [
@@ -202,6 +217,9 @@ export const tracksInTheSnow = {
         // ==========================================
         crimson_snow: {
             displayText: "Crimson Snow",
+            tone: "blood",
+            sfx: "heartbeat",
+            sfxVolume: 0.6,
             image: { col: 1, row: 0 },
             text: "{name} sees crimson red snow ahead.",
             decisions: [
@@ -250,6 +268,8 @@ export const tracksInTheSnow = {
         // ==========================================
         wounded_leopard: {
             displayText: "Wounded Snow Leopard",
+            sfx: "snowLeopardCry",
+            sfxVolume: 0.5,
             image: { col: 2, row: 0 },
             text: "{name} sees a snow leopard laying in the snow ahead. It appears to be injured.",
             decisions: [
@@ -329,6 +349,9 @@ export const tracksInTheSnow = {
 
         leopard_nuzzle: {
             displayText: "A New Friend",
+            tone: "gold",
+            sfx: "snowLeopardCry",
+            sfxVolume: 0.5,
             image: { col: 2, row: 0 },
             text: "The Snow Leopard nuzzles {name}.",
             decisions: [
@@ -351,6 +374,8 @@ export const tracksInTheSnow = {
 
         leopard_put_to_rest: {
             displayText: "A Merciful End",
+            effect: "jolt",
+            sfx: "quickStabSfx",
             image: { col: 2, row: 1 },
             text: "{name} ends the Snow Leopard's suffering quickly. Its pelt is still in good condition.",
             decisions: [
@@ -376,6 +401,11 @@ export const tracksInTheSnow = {
         // (forced fights: no has_tag gate, so a non-humanoid active character can never be soft-locked)
         leopard_trappers: {
             displayText: "Trappers Attack!",
+            tone: "blood",
+            effect: "blood",
+            sfx: "arrowHit",
+            ambience: "none",
+            ambienceFade: 0.4,
             image: { col: 3, row: 0 },
             bgm: "plainsBattleBgm",
             text: "An arrow flies out of nowhere and hits the Snow Leopard. The Snow Leopard breathes its last breath, leaving {name}'s party alone with a pack of frozen trappers!",
@@ -395,6 +425,11 @@ export const tracksInTheSnow = {
 
         leopard_wild: {
             displayText: "The Snow Leopard Rises",
+            tone: "blood",
+            effect: "jolt",
+            sfx: "snowLeopardCry",
+            ambience: "none",
+            ambienceFade: 0.4,
             image: { col: 3, row: 1 },
             bgm: "plainsBattleBgm",
             text: "The Snow Leopard stands to its feet and growls at {name}!",
@@ -417,6 +452,11 @@ export const tracksInTheSnow = {
         // The old ambush rolled 1-4 extra Snow Leopards; that is kept as four equally weighted outcomes.
         leopard_pack_ambush: {
             displayText: "Ambush!",
+            tone: "blood",
+            effect: "shake",
+            sfx: "snowLeopardCry",
+            ambience: "none",
+            ambienceFade: 0.4,
             image: { col: 3, row: 1 },
             bgm: "plainsBattleBgm",
             text: "An ambush of Snow Leopards surrounds {name}!",
@@ -438,6 +478,11 @@ export const tracksInTheSnow = {
         // ==========================================
         apex_predator: {
             displayText: "Apex Predator",
+            tone: "blood",
+            effect: "shake",
+            sfx: "poachersNightmareCry",
+            ambience: "none",
+            ambienceFade: 0.4,
             image: { col: 0, row: 1 },
             bgm: "apexPredatorBgm", // old track: "Escape Route"; register this key in main.js
             text: "(An unnatural beast growls...)",
@@ -466,6 +511,7 @@ export const tracksInTheSnow = {
 
         predator_escape: {
             displayText: "A Narrow Escape",
+            sfx: "snowSteps",
             image: { col: 0, row: 1 },
             text: "{name} escapes the predator!",
             decisions: [
@@ -478,6 +524,11 @@ export const tracksInTheSnow = {
 
         predator_cut_off: {
             displayText: "Cut Off!",
+            tone: "blood",
+            effect: "shake",
+            sfx: "poachersNightmareCry",
+            ambience: "none",
+            ambienceFade: 0.4,
             image: { col: 0, row: 1 },
             bgm: "apexPredatorBgm",
             text: "The predator cuts off {name}'s escape!",

@@ -3,9 +3,13 @@ export const suspiciousMerchant = {
     title: "The Suspicious Merchant",
     imageSheet: "encounter_suspicious_merchant",
     initialStage: "discovery",
+    // Cues: tone / ambience here apply to every stage; a stage sets its own tone, effect, sfx and ambience (see encounters/prologue.js)
+    ambience: "forestNight",
     stages: {
         discovery: {
             displayText: "A Twitching Figure",
+            sfx: "shadyMerchantCry",
+            sfxVolume: 0.6,
             image: { col: 0, row: 0 },
             text: "{name} spots a robed figure violently scratching his own neck in the shadows. He snaps his head around and hisses, \"Psst! You! Yes, you with the eyes! The shiny things whisper to me! They say you need them... yes, yes, they want you to have them!\"",
             decisions: [
@@ -80,6 +84,8 @@ export const suspiciousMerchant = {
 
         browse_wares: {
             displayText: "The Mad Market",
+            tone: "arcane",
+            sfx: "gemChime",
             image: { col: 2, row: 1 },
             text: "He rips his cloak open, giggling wildly! \"Look! Look! The pretties! They sing in the dark! Buy them before they bite me again! Hee hee!\"",
             decisions: [
@@ -112,6 +118,9 @@ export const suspiciousMerchant = {
 
         call_out_fakes: {
             displayText: "Caught Red-Handed",
+            tone: "gold",
+            sfx: "coinsJingle",
+            sfxVolume: 0.6,
             image: { col: 0, row: 1 },
             text: "{name} quickly realizes that half of the 'magical' gems are just painted glass. Confronted, the merchant violently pulls at his hair. \"Lies! The stones are just sleeping! Hush! Take the loud coins and leave us be!\"",
             decisions: [
@@ -150,6 +159,7 @@ export const suspiciousMerchant = {
 
         distracted_buyer: {
             displayText: "Sleight of Hand",
+            sfx: "coinsJingle",
             image: { col: 1, row: 1 },
             text: "{name} leans in close to inspect a shiny bauble. The merchant spouts frantic gibberish about sky-demons and shadow-teeth. Suddenly, {name} notices their pack feels much lighter...",
             decisions: [
@@ -170,6 +180,7 @@ export const suspiciousMerchant = {
 
         merchant_escaped: {
             displayText: "He's Gone!",
+            sfx: "smokeSfx",
             image: { col: 3, row: 1 },
             text: "By the time {name} realizes they've been robbed, the mad merchant has vanished into the shadows, leaving nothing behind but manic, echoing giggles.",
             decisions: [
@@ -189,6 +200,8 @@ export const suspiciousMerchant = {
 
         merchant_flees: {
             displayText: "Cowardly Retreat",
+            effect: "jolt",
+            sfx: "shadyMerchantCry",
             image: { col: 2, row: 0 },
             text: "The merchant's eyes bug out with terror. \"The big ones! The scary ones! They eat the magic!\" He shrieks, dropping his heavy sack and scuttling away on all fours.",
             decisions: [
@@ -212,6 +225,9 @@ export const suspiciousMerchant = {
 
         merchant_attacks: {
             displayText: "A Deadly Mistake",
+            tone: "blood",
+            effect: "blood",
+            sfx: "unsheathSwordSfx",
             image: { col: 3, row: 0 },
             bgm: "plainsBattleBgm",
             text: "The merchant stops twitching. His eyes go completely dead. He draws a wickedly curved, poisoned dagger, giggling softly. \"The voices say you have too much blood... Come out, friends! Let's let it out! Hee hee!\" \n\nFrom the shadows, manic giggling echoes as deranged figures step into the light!",

@@ -137,6 +137,8 @@ export const treasureChest = {
         },
         found_key: {
             displayText: "A Lucky Find",
+            tone: "gold",
+            sfx: "pickupSound",
             image: { col: 0, row: 1 },
             text: "{name} spots a glint of metal partially buried in the dirt nearby. It's a small iron key!",
             decisions: [
@@ -157,6 +159,9 @@ export const treasureChest = {
         },
         opened_chest: {
             displayText: "Treasure Secured",
+            tone: "gold",
+            effect: "flash",
+            sfx: "chestOpen",
             image: { col: 1, row: 0 },
             text: "With a satisfying click, the lid of the chest pops open, revealing the treasures hidden within!",
             decisions: [
@@ -178,18 +183,25 @@ export const treasureChest = {
         },
         wont_budge: {
             displayText: "A Stubborn Chest",
+            sfx: "chestCreak",
+            sfxVolume: 0.6,
             image: { col: 0, row: 0 },
             text: "{name} pulls and pries with all their might, but the chest won't budge an inch.",
             decisions: [{ text: "Reassess the situation.", outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery" } }] }] }]
         },
         jammed_lock: {
             displayText: "Jammed Mechanism",
+            effect: "jolt",
+            sfx: "lockClick",
             image: { col: 0, row: 0 },
             text: "{name} twists the tool slightly too hard, jamming the lock temporarily.",
             decisions: [{ text: "Rethink the approach.", outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery" } }] }] }]
         },
         spell_fail: {
             displayText: "Fizzled Magic",
+            tone: "arcane",
+            sfx: "shockSfx",
+            sfxVolume: 0.6,
             image: { col: 0, row: 0 },
             text: "{name}'s spell sparks against the metal bindings and quietly fizzles out into nothingness.",
             decisions: [{ text: "Consider another option.", outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery" } }] }] }]
@@ -202,6 +214,9 @@ export const treasureChest = {
         },
         chest_explosion: {
             displayText: "A Trap Triggered!",
+            tone: "blood",
+            effect: "blast",
+            sfx: "chestBlast",
             image: { col: 3, row: 0 },
             text: "A hidden mechanism clicks menacingly. Suddenly, the chest emits a high-pitched whine and violently explodes, destroying the loot and engulfing {name} in searing flames!",
             decisions: [
@@ -223,6 +238,9 @@ export const treasureChest = {
         },
         poison_mist: {
             displayText: "A Toxic Trap",
+            tone: "cold",
+            effect: "poison",
+            sfx: "poisonSfx",
             image: { col: 2, row: 0 },
             text: "With a grinding creak, the chest pops open—but immediately releases a dense cloud of noxious, green mist! {name} inhales the toxic fumes as they reach for the loot.",
             decisions: [
@@ -245,6 +263,9 @@ export const treasureChest = {
         },
         ambush: {
             displayText: "Ambush!",
+            tone: "blood",
+            effect: "jolt",
+            sfx: "ambushColdBreath",
             image: { col: 3, row: 1 },
             bgm: "plainsBattleBgm",
             text: "All the commotion attracts unwanted attention. Something approaches {name}'s position rapidly from the shadows!",
@@ -258,6 +279,9 @@ export const treasureChest = {
         },
         summon_evil: {
             displayText: "A Dark Presence",
+            tone: "blood",
+            effect: "glow_red",
+            sfx: "spiteCastSfx",
             image: { col: 2, row: 1 },
             bgm: "plainsBattleBgm",
             text: "The unstable magic backfires terribly! The chest remains locked, but a dark, swirling mass of energy coalesces into a shadowy spirit, dragging broken shackles, right before {name}'s eyes!",

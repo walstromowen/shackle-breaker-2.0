@@ -769,19 +769,28 @@ export class EncounterController extends BaseController {
   }
 
   /**
-   * Optional sound cues of a stage, played once when the stage opens (and not on the frame the scene changes, because SceneManager
-   * stops the ambience as a scene opens): stage.sfx = a one-off sound, stage.ambience = a looping bed ('none' stops the current one).
+   * Optional sound cues of a stage (stage.sfx = a one-off sound, stage.ambience = a looping bed, 'none' stops the current one). The
+   * ambience may also be set once for the whole encounter (definition.ambience), and starts with it. Both are played when the stage opens,
+   * and not on the frame the scene changes, because SceneManager stops the ambience as a scene opens. A stage's sound waits for the same
+   * moment as its screen effect (STAGE_START_TIMER), which is the opening of the encounter's first screen too.
    */
   _playStageCues() {
     if (!this.model || !this.model.getCurrentStage) return;
     const key = `${this.model.instanceId}:${this.model.currentStageId}`;
-    if (this._cueKey === key) return;
-    this._cueKey = key;
     const stage = this.model.getCurrentStage();
     if (!stage) return;
-    if (stage.sfx) events.emit('PLAY_SFX', { id: stage.sfx, volume: stage.sfxVolume ?? 1.0 });
-    if (stage.ambience === 'none') events.emit('STOP_AMBIENCE', { fadeTime: 2.0 });
-    else if (stage.ambience) events.emit('PLAY_AMBIENCE', { id: stage.ambience, fadeTime: stage.ambienceFade ?? 3.0 });
+    if (this._cueKey !== key) {
+      const firstStage = this._cueKey === null || !String(this._cueKey).startsWith(`${this.model.instanceId}:`);
+      this._cueKey = key;
+      this._sfxPending = true;
+      const ambience = stage.ambience !== undefined ? stage.ambience : (firstStage ? this.model.ambience : undefined);
+      if (ambience === 'none') events.emit('STOP_AMBIENCE', { fadeTime: stage.ambienceFade ?? 2.0 });
+      else if (ambience) events.emit('PLAY_AMBIENCE', { id: ambience, fadeTime: stage.ambienceFade ?? 3.0 });
+    }
+    if (this._sfxPending && this.textTimer >= STAGE_START_TIMER) {
+      this._sfxPending = false;
+      if (stage.sfx) events.emit('PLAY_SFX', { id: stage.sfx, volume: stage.sfxVolume ?? 1.0 });
+    }
   }
 
   getState() {
@@ -805,7 +814,7 @@ export class EncounterController extends BaseController {
       currency: gameState.party?.currency || 0,
       skipMessageAnimation: this.skipMessageAnimation,
       textTimer: this.textTimer,
-      stageTone: (this.model.getCurrentStage && this.model.getCurrentStage()?.tone) || null,
+      stageTone: (this.model.getCurrentStage && this.model.getCurrentStage()?.tone) || this.model.tone || null,
       stageEffect: (this.actionPhase === 'none' && this.model.getCurrentStage && this.model.getCurrentStage()?.effect) || null,
       hasDoneIntro: this.hasDoneIntro,
       canSkip: this._isSkippable(),

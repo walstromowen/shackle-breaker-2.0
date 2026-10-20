@@ -5,11 +5,10 @@ import { UI_SFX } from '../../ui/uiSfx.js';
 import { gameState } from "../../../../shared/state/gameState.js";
 import { DIFFICULTY_MODIFIERS } from '../../../../shared/data/constants.js';
 import { drawItemChips } from '../../ui/itemChips.js';
-import { EMBER as EMBER_COLOR, COLD_EMBER, drawEmbers } from '../../ui/embers.js';
+import { drawEmbers } from '../../ui/embers.js';
+import { TONES, fxShake, fxFlash } from '../../ui/encounterFx.js';
 import { NARRATION, STAGE_START_TIMER, narrationPlan, textEndTimer, decisionAlpha } from '../../ui/narration.js';
 
-const EMBER = EMBER_COLOR;           // the warm tint a fresh word carries (the embers use the same one)
-const COLD = [176, 214, 196];        // ... and the pale green of a stage with tone: 'cold' (the prologue's cursed road)
 const BONE = [226, 218, 200];        // UITheme.colors.textMain
 const NARRATION_SIZES = [44, 40, 36, 32];   // largest first: the text takes the biggest one that fits the viewport
 
@@ -177,13 +176,13 @@ export class EncounterRenderer {
         ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
         // A stage's tone colors its fresh words and the embers; a stage's effect plays as it opens (stage fields: see data/encounters/prologue.js)
-        const tint = stageTone === 'cold' ? COLD : EMBER;
+        const tone = TONES[stageTone] || TONES.warm;
+        const tint = tone.word;
         const stageAge = textTimer - STAGE_START_TIMER;
-        const snapAge = (stageEffect === 'snap' && hasDoneIntro && stageAge >= 0) ? stageAge : -1;
         ctx.save();
-        if (snapAge >= 0 && snapAge < 0.7) {
-            const amp = Math.pow(1 - snapAge / 0.7, 2) * 10;
-            ctx.translate(Math.sin(snapAge * 90) * amp, Math.cos(snapAge * 77) * amp);
+        if (stageEffect) {
+            const jolt = fxShake(stageEffect, stageAge);
+            if (jolt.x || jolt.y) ctx.translate(jolt.x, jolt.y);
         }
 
         // ========================================================
@@ -357,7 +356,7 @@ export class EncounterRenderer {
         // Embers fill the whole screen, rising through the party and image columns as well as the text. They are there from the first frame of the scene.
         {
             const emberAlpha = (skipMessageAnimation || hasDoneIntro) ? 1 : ease(Math.max(0, Math.min(1, timeElapsed / 0.35)));
-            if (emberAlpha > 0) this.drawEmbers(ctx, Date.now() / 1000, 0, CANVAS_WIDTH, CANVAS_HEIGHT, emberAlpha, stageTone === 'cold' ? COLD_EMBER : EMBER);
+            if (emberAlpha > 0) this.drawEmbers(ctx, Date.now() / 1000, 0, CANVAS_WIDTH, CANVAS_HEIGHT, emberAlpha, tone.ember);
         }
 
         if (timeElapsed >= T_TEXT_START || skipMessageAnimation) {
@@ -798,9 +797,10 @@ export class EncounterRenderer {
         }
         ctx.restore();
 
-        // the flash of a snapping chain
-        if (snapAge >= 0 && snapAge < 0.5) {
-            ctx.fillStyle = `rgba(215,255,232,${(Math.pow(1 - snapAge / 0.5, 2) * 0.85).toFixed(3)})`;
+        // the colour wash of the stage's effect (a flash, a blast, a glow)
+        const wash = stageEffect ? fxFlash(stageEffect, stageAge) : null;
+        if (wash) {
+            ctx.fillStyle = `rgba(${wash.rgb[0]},${wash.rgb[1]},${wash.rgb[2]},${wash.alpha.toFixed(3)})`;
             ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         }
         ctx.restore();   // (the stage's jolt)
@@ -858,7 +858,7 @@ export class EncounterRenderer {
     }
 
     /** Embers over the whole screen (shared with the title screen and the character creator: ui/embers.js). */
-    drawEmbers(ctx, now, x0, width, height, alpha, tint = EMBER) {
+    drawEmbers(ctx, now, x0, width, height, alpha, tint) {
         drawEmbers(ctx, now, x0, width, height, alpha, tint);
     }
 

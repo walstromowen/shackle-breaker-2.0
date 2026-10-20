@@ -4,6 +4,8 @@ export class EncounterModel {
         this.instanceId = context.instanceId || `${this.id}_${Date.now()}`;
         this.title = definition.title || "Unknown Encounter";
         this.imageSheet = definition.imageSheet || null;
+        this.tone = definition.tone || null;               // a default tone for every stage (a stage's own tone wins)
+        this.ambience = definition.ambience || null;       // a looping bed that starts with the encounter (a stage's own ambience wins)
         this.stages = definition.stages;
         this.context = context;
         this.currentStageId = startingStageId || definition.initialStage;

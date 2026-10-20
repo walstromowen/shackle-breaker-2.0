@@ -3,9 +3,13 @@ export const woundedMutt = {
     title: "The Wounded Mutt",
     imageSheet: "encounter_wounded_mutt",
     initialStage: "discovery",
+    // Cues: tone / ambience here apply to every stage; a stage sets its own tone, effect, sfx and ambience (see encounters/prologue.js)
+    ambience: "forestNight",
     stages: {
         "discovery": {
             displayText: "A Whimper in the Brush",
+            sfx: "dogCry",
+            sfxVolume: 0.6,
             image: { col: 0, row: 0 },
             text: "{name} hears a faint whimper and finds a scruffy dog with a nasty gash on its hind leg. It growls softly, baring its teeth.",
             decisions: [
@@ -55,6 +59,9 @@ export const woundedMutt = {
         },
         "startled_mutt": {
             displayText: "Combat",
+            tone: "blood",
+            effect: "blood",
+            sfx: "dogCry",
             image: { col: 3, row: 0 },
             bgm: "plainsBattleBgm",
             text: "The wild mutt panics! It yelps in sudden terror and snaps fiercely, sinking its teeth deep into {name}'s arm before lunging outright!",
@@ -73,6 +80,9 @@ export const woundedMutt = {
         },
         "success_tame": {
             displayText: "A New Friend",
+            tone: "gold",
+            sfx: "dogCry",
+            sfxVolume: 0.6,
             image: { col: 2, row: 0 },
             bgm: "happy_theme",
             text: "{name} successfully stabilizes the dog's leg. The intense pain eases, and the dog licks {name}'s hand in absolute gratitude. {name} has earned a new friend.",

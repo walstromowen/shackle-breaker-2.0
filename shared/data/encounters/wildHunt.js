@@ -3,6 +3,8 @@ export const wildHunt = {
   title: "Wild Hunt",
   imageSheet: "encounter_wild_hunt",
   initialStage: "discovery",
+  // Cues: tone / ambience here apply to every stage; a stage sets its own tone, effect, sfx and ambience (see encounters/prologue.js)
+  ambience: "forestNight",
   stages: {
     discovery: {
       displayText: "The Woods",
@@ -86,6 +88,9 @@ export const wildHunt = {
     },
     "ominous_woods": {
       displayText: "The Ominous Woods",
+      tone: "cold",
+      ambience: "none",
+      ambienceFade: 3.0,
       image: { col: 0, row: 2 },
       text: "The environment abruptly shifts. The woods here are dead silent—no birds, no insects. The deer finally stops in a fog-choked clearing, completely motionless.",
       decisions: [
@@ -122,6 +127,9 @@ export const wildHunt = {
     },
     "the_anomaly": {
       displayText: "An Unnatural Stillness",
+      tone: "cold",
+      sfx: "heartbeat",
+      sfxVolume: 0.8,
       image: { col: 1, row: 2 },
       text: "{name} successfully tracks the deer to the center of the clearing. However, something is deeply wrong. The deer is frozen in place, trembling violently. It isn't grazing; it's staring wide-eyed into the pitch-black tree line, paralyzed by fear.",
       decisions: [
@@ -157,6 +165,9 @@ export const wildHunt = {
     },
     "boss_revealed": {
       displayText: "The True Predator",
+      tone: "blood",
+      effect: "shake",
+      sfx: "poachersNightmareCry",
       image: { col: 2, row: 0 },
       bgm: "poachersNightmareBgm",
       text: "Because {name} stayed perfectly hidden, they bear witness to the horror. A hulking monstrosity drops from the canopy, crushing the deer into the earth with a sickening snap. The creature tosses the ruined carcass aside and begins to sniff the air. It then fixes its terrifying gaze right on {name}!",
@@ -177,6 +188,9 @@ export const wildHunt = {
     },
     "boss_surprised": {
       displayText: "The Trap is Sprung",
+      tone: "blood",
+      effect: "jolt",
+      sfx: "twigSnap",
       image: { col: 2, row: 0 },
       text: "*CRACK.* {name} shifts their weight, snapping a buried root. The deer bolts in terror, but a horrifying monstrosity erupts from the brush, snatching the animal mid-leap and violently snapping its neck. The creature drops the carcass and locks its malevolent gaze onto {name} with a deafening roar!",
       decisions: [
@@ -195,6 +209,9 @@ export const wildHunt = {
     },
     "successful_hunt": {
       displayText: "A Clean Kill",
+      tone: "gold",
+      effect: "jolt",
+      sfx: "arrowHit",
       image: { col: 2, row: 3 },
       text: "A perfect shot. The deer falls instantly. {name} quickly gets to work, harvesting the creature for valuable leather before making their way back to safety.",
       decisions: [
@@ -214,6 +231,8 @@ export const wildHunt = {
     },
     "missed_shot": {
       displayText: "A Wide Miss",
+      effect: "jolt",
+      sfx: "hoofbeats",
       image: { col: 1, row: 3 },
       text: "The shot goes wide, striking a nearby tree! The deer immediately bolts into the dense underbrush. In seconds, it is completely gone.",
       decisions: [
@@ -227,6 +246,9 @@ export const wildHunt = {
     },
     "startled_stag": {
       displayText: "The Wrong Prey",
+      tone: "blood",
+      effect: "jolt",
+      sfx: "twigSnap",
       image: { col: 1, row: 0 },
       bgm: "plainsBattleBgm",
       text: "*SNAP*. While blindly searching for the lost trail, {name} steps on a dry branch. Suddenly, another stag erupts from the brush, only it looks unnatural...",

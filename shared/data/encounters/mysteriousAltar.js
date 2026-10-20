@@ -25,6 +25,9 @@ export const mysteriousAltar = {
     title: "Mysterious Altar",
     imageSheet: "encounter_mysterious_altar",
     initialStage: "approach",
+    // Cues: tone / ambience here apply to every stage; a stage sets its own tone, effect, sfx and ambience (see encounters/prologue.js)
+    tone: "arcane",
+    ambience: "altarDrone",
     stages: {
         approach: {
             displayText: "A Mysterious Altar",
@@ -80,6 +83,11 @@ export const mysteriousAltar = {
 
         bones_stir: {
             displayText: "The Bones Stir",
+            tone: "blood",
+            effect: "shake",
+            sfx: "bonesRattle",
+            ambience: "none",
+            ambienceFade: 0.4,
             image: { col: 2, row: 0 },
             text: "As {name} approaches the altar, the skeletons along the ground slowly begin to move. Before the party realizes what is happening, the skeletons are on top of them!",
             decisions: [
@@ -92,6 +100,9 @@ export const mysteriousAltar = {
         },
         smoke_cloud: {
             displayText: "A Choking Cloud",
+            tone: "cold",
+            effect: "poison",
+            sfx: "smokeSfx",
             image: { col: 3, row: 0 },
             text: "As {name} approaches the altar, it releases a cloud of pale smoke. It sinks into the lungs and the limbs, and {name} feels fatigued.",
             decisions: [
@@ -113,6 +124,8 @@ export const mysteriousAltar = {
 
         at_the_altar: {
             displayText: "At the Altar",
+            sfx: "whispers",
+            sfxVolume: 0.6,
             image: { col: 1, row: 0 },
             text: "{name} walks up to the altar and sees a skull resting high above the bones on the ground. The skull almost feels as if it were placed there on purpose.",
             decisions: [
@@ -156,6 +169,9 @@ export const mysteriousAltar = {
 
         blue_glow: {
             displayText: "A Blue Light",
+            tone: "frost",
+            effect: "glow_blue",
+            sfx: "glowSwell",
             image: { col: 0, row: 1 },
             text: "As {name} reaches to examine the skull, its eyes begin to glow blue, filling the whole area with a blinding light! When {name} can see again, the skull has disappeared, and a sense of newfound strength fills them.",
             decisions: [
@@ -177,6 +193,9 @@ export const mysteriousAltar = {
         },
         green_glow: {
             displayText: "A Green Light",
+            tone: "cold",
+            effect: "glow_green",
+            sfx: "glowSwell",
             image: { col: 1, row: 1 },
             text: "As {name} reaches to examine the skull, its eyes begin to glow green. Suddenly, mysterious objects materialize on the altar, just waiting to be taken.",
             decisions: [
@@ -198,6 +217,11 @@ export const mysteriousAltar = {
         },
         red_glow: {
             displayText: "A Red Light",
+            tone: "blood",
+            effect: "glow_red",
+            sfx: "glowSwell",
+            ambience: "none",
+            ambienceFade: 1.0,
             image: { col: 2, row: 1 },
             text: "As {name} reaches to examine the skull, its eyes begin to glow red, filling the whole area with a blinding light! When {name} can see again, the skull has disappeared and a group of skeletons is quickly approaching!",
             decisions: [
@@ -211,6 +235,11 @@ export const mysteriousAltar = {
 
         darius_rises: {
             displayText: "Darius the Groveler",
+            tone: "blood",
+            effect: "shake",
+            sfx: "cinematicBoom",
+            ambience: "none",
+            ambienceFade: 0.6,
             image: { col: 3, row: 1 },
             text: "The moment the meteorite touches the stone, the altar drinks its glow. The thoughts in {name}'s head turn loud and strange, the skull's eyes flare, and from the dark behind the altar a hunched figure in a tattered hood crawls into view, hands reaching for the light. Darius the Groveler has come for what was brought to the altar.",
             decisions: [
