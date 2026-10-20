@@ -76,6 +76,9 @@ export class StatusEffectModel {
                     amount = effect.value * this.stacks;
                 } else if (effect.percent !== undefined && eventData && eventData.damage) {
                     amount = -Math.floor(eventData.damage * effect.percent);
+                } else if (effect.percentMaxHp !== undefined) {
+                    // NEW: `percentMaxHp: 0.2` -- a share of the max HP of whoever `modify` hits (at least 1), whatever the hit that set it off did (the bear trap)
+                    amount = -Math.max(1, Math.floor((target.maxHp || 0) * effect.percentMaxHp));
                 }
                 
                 if (amount !== 0) {
@@ -127,4 +130,4 @@ export class StatusEffectModel {
         });
         return result;
     }
-}
+}

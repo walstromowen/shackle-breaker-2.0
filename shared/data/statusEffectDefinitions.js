@@ -44,6 +44,25 @@ export const StatusEffectDefinitions = {
             { trigger: 'ON_DAMAGE_RECEIVED', target: 'attacker', modify: 'hp', percent: 0.5, damageType: 'pierce', consumeCharge: true, battleMessage: "Thorns reflect {amount} damage back at {target}!" }
         ]
     },
+    /* The bear trap (abilityDefinitions.js item_bear_trap). Set it once and it waits, with no turn limit, and a trap set before a fight is still there when it starts.
+       The next enemy to hit its holder in melee takes 20% of its max HP and is bound; the trap then springs and is gone. */
+    trap_set: {
+        id: 'trap_set',
+        name: 'Trap Set',
+        icon: { col: 9, row: 0 },
+        defaultCharges: -1,           // until it springs
+        maxStacks: 1,
+        persistAfterCombat: true,
+        effects: [
+            {
+                trigger: 'ON_DAMAGE_RECEIVED', range: 'melee', target: 'attacker',
+                modify: 'hp', percentMaxHp: 0.2, damageType: 'pierce',
+                applyStatus: { id: 'bound', message: "{target} is held fast by the trap!" },
+                expire: true,
+                battleMessage: "The trap snaps shut on {target} for {amount} damage!"
+            }
+        ]
+    },
     living_bomb: {
         id: 'living_bomb',
         name: 'Living Bomb',
@@ -110,7 +129,7 @@ export const StatusEffectDefinitions = {
     knocked_down: {
         id: 'knocked_down',
         name: 'Knocked Down',
-        icon: { col: 5, row: 1 },
+        icon: { col: 8, row: 0 },
         defaultCharges: 1,
         maxStacks: 1,
         cancels: ['flying'], // NEW: Instantly strips the flying status
