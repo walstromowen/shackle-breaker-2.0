@@ -37,6 +37,20 @@ import { ShopRenderer } from '../renderers/shop/shopRenderer.js';
 import { WorkshopRenderer } from '../renderers/workshop/workshopRenderer.js'; // <-- NEW
 import { SavesRenderer } from '../renderers/saves/savesRenderer.js';
 import { SettingsRenderer } from '../renderers/settings/settingsRenderer.js';
+import { CanvasUI } from '../ui/canvasUI.js';
+import { UITheme } from '../ui/UITheme.js';
+
+// Screens that used to be left only by right-click / Esc get the standard Back button (UITheme.backButton). It is drawn and hit-tested here,
+// after the screen has drawn, so every screen shows the same button; clicking it does exactly what right-click does on that screen.
+// The value is where the button goes ({ x, y } in canvas pixels); null = the standard bottom-left corner.
+const SHARED_BACK_BUTTON = {
+    party: null,
+    journal: null,
+    shop: null,
+    workshop: null,
+    character_summary: { x: 564, y: 960 },
+    'character-creator': { x: 1320, y: 932 }
+};
 
 import { PartyManager } from '../../../shared/systems/partyManager.js';
 import { WorldManager } from '../../../shared/systems/worldManager.js';
@@ -692,7 +706,25 @@ export class SceneManager {
                 break;
         }
 
+        this._drawSharedBackButton();
+
         this.transitionRenderer.render(this.ctx);
+    }
+
+    /** The Back button of the screens in SHARED_BACK_BUTTON: draws it and adds its hitbox to the screen's (see UIInteractionManager for the click). */
+    _drawSharedBackButton() {
+        const spot = SHARED_BACK_BUTTON[this.currentScene];
+        if (spot === undefined) return;
+        const controller = this._getActiveController();
+        if (!controller) return;
+
+        const box = spot ? UITheme.backButtonBox(spot.x, spot.y) : UITheme.backButtonBox();
+        const list = controller.getHitboxes ? controller.getHitboxes() : null;
+        if (Array.isArray(list)) {
+            for (let i = list.length - 1; i >= 0; i--) if (list[i].id === 'btn_back') list.splice(i, 1);
+            list.push({ id: 'btn_back', ...box, zIndex: 1000, sharedBack: true });
+        }
+        new CanvasUI(this.ctx).drawBackButton(controller.getFocusId ? controller.getFocusId() : null, box);
     }
 
     renderOverworld(interpolation, totalTime) {

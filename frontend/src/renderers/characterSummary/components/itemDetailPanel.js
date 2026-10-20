@@ -41,7 +41,7 @@ export class ItemDetailPanel {
 
   render(item, x, y, w, h, state, hitboxes) {
     if (!item) {
-      this.ui.drawText("No item selected", x + w / 2, y + h / 2, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "center");
+      this.ui.drawStyled('empty', 'No item selected', x + w / 2, y + h / 2);
       return;
     }
 
@@ -52,7 +52,7 @@ export class ItemDetailPanel {
     const isAbility = !!(item.abilityId || AbilityDefinitions[item.id] || (def && def.type === 'ability'));
 
     if (!def) {
-      this.ui.drawText("Unknown Definition", x + w / 2, y + h / 2, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "center");
+      this.ui.drawStyled('empty', 'Unknown definition', x + w / 2, y + h / 2);
       return;
     }
 
@@ -206,24 +206,20 @@ export class ItemDetailPanel {
     this.ui.ctx.fillRect(x, currentY, w, 85);
     this.ui.ctx.restore();
 
-    const headerFont = UITheme.fonts.cardTitle || UITheme.fonts.header;
-    const typeFont = UITheme.fonts.cardItalic || UITheme.fonts.italic;
-    const bodyFont = UITheme.fonts.cardSmall || UITheme.fonts.body;
-
     // Header Text
-    this.ui.drawText(title, x + this.layout.padding, currentY + 40, headerFont, color, "left");
+    this.ui.drawStyled('cardTitle', title, x + this.layout.padding, currentY + 40, { color });
 
     if (itemLevel !== undefined) {
-      this.ui.drawText(`Lv. ${itemLevel}`, x + w - this.layout.padding, currentY + 40, headerFont, UITheme.colors.textHighlight, "right");
+      this.ui.drawStyled('cardHeading', `Lv. ${itemLevel}`, x + w - this.layout.padding, currentY + 40, { align: 'right' });
     }
 
-    this.ui.drawText(typeText, x + this.layout.padding, currentY + 74, typeFont, UITheme.colors.textMuted, "left");
+    this.ui.drawStyled('cardNote', typeText, x + this.layout.padding, currentY + 74);
 
     if (weight !== undefined || value !== undefined) {
       const rightMeta = [];
       if (weight !== undefined) rightMeta.push(`Wt: ${weight}`);
       if (value !== undefined) rightMeta.push(`Val: ${value}`);
-      this.ui.drawText(rightMeta.join("   "), x + w - this.layout.padding, currentY + 74, bodyFont, UITheme.colors.textMuted, "right");
+      this.ui.drawStyled('cardLabel', rightMeta.join("   "), x + w - this.layout.padding, currentY + 74, { align: 'right' });
     }
 
     // Banner Border
@@ -257,7 +253,7 @@ export class ItemDetailPanel {
     if (def.effectDescription) {
       const lines = this.ui.getWrappedLines(def.effectDescription, textW, UITheme.fonts.body);
       lines.forEach(line => {
-        this.ui.drawText(line, textX, textY, UITheme.fonts.body, UITheme.colors.textMain, "left");
+        this.ui.drawStyled('body', line, textX, textY);
         textY += this.layout.lineHeight;
       });
       hasContent = true;
@@ -267,7 +263,7 @@ export class ItemDetailPanel {
       if (hasContent) textY += this.layout.innerPadding;
       const lines = this.ui.getWrappedLines(`"${def.description}"`, textW, UITheme.fonts.cardItalic);
       lines.forEach(line => {
-        this.ui.drawText(line, textX, textY, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "left");
+        this.ui.drawStyled('cardNote', line, textX, textY);
         textY += this.layout.lineHeight;
       });
       hasContent = true;
@@ -378,8 +374,6 @@ export class ItemDetailPanel {
 
     const numCols = 2;
     const colWidth = w / numCols;
-    const bodyFont = UITheme.fonts.cardSmall || UITheme.fonts.body;
-
     currentY += this.layout.innerPadding;
 
     for (let i = 0; i < statItems.length; i++) {
@@ -395,8 +389,8 @@ export class ItemDetailPanel {
         labelColor = statItems[i].color;
       }
 
-      this.ui.drawText(statItems[i].label, itemX, itemY, bodyFont, labelColor, "left");
-      this.ui.drawText(String(statItems[i].val), itemX + colWidth - this.layout.innerPadding, itemY, bodyFont, statItems[i].color, "right");
+      this.ui.drawStyled('cardLabel', statItems[i].label, itemX, itemY, { color: labelColor });
+      this.ui.drawStyled('cardLabel', String(statItems[i].val), itemX + colWidth - this.layout.innerPadding, itemY, { color: statItems[i].color, align: 'right' });
     }
 
     const totalRows = Math.ceil(statItems.length / numCols);
@@ -413,19 +407,16 @@ export class ItemDetailPanel {
     if (!cost) return y;
 
     let currentY = y;
-    const titleFont = UITheme.fonts.cardTitle || UITheme.fonts.header;
-    const bodyFont = UITheme.fonts.cardSmall || UITheme.fonts.body;
-
-    this.ui.drawText(`UPGRADE TO LV. ${nextLevel}`, x, currentY, titleFont, UITheme.colors.textHighlight, "left");
+    this.ui.drawStyled('cardHeading', `Upgrade to Lv. ${nextLevel}`, x, currentY);
     currentY += this.layout.lineHeight;
 
     if (cost.currency !== undefined) {
-      this.ui.drawText(`Currency: ${cost.currency}`, x, currentY, bodyFont, UITheme.colors.textMain, "left");
+      this.ui.drawStyled('cardLabel', `Currency: ${cost.currency}`, x, currentY, { color: UITheme.colors.textMain });
       currentY += this.layout.lineHeight;
     }
 
     if (cost.materials && Object.keys(cost.materials).length > 0) {
-      this.ui.drawText("Materials Required:", x, currentY, bodyFont, UITheme.colors.textMuted, "left");
+      this.ui.drawStyled('cardLabel', 'Materials Required:', x, currentY);
       currentY += this.layout.lineHeight;
 
       Object.entries(cost.materials).forEach(([matId, count]) => {
@@ -440,9 +431,9 @@ export class ItemDetailPanel {
         );
 
         if (drewIcon) {
-          this.ui.drawText(`- ${matName}: x${count}`, x + iconSize + 8, currentY, bodyFont, UITheme.colors.textMain, "left");
+          this.ui.drawStyled('cardLabel', `- ${matName}: x${count}`, x + iconSize + 8, currentY, { color: UITheme.colors.textMain });
         } else {
-          this.ui.drawText(`- ${matName}: x${count}`, x + 12, currentY, bodyFont, UITheme.colors.textMain, "left");
+          this.ui.drawStyled('cardLabel', `- ${matName}: x${count}`, x + 12, currentY, { color: UITheme.colors.textMain });
         }
 
         currentY += Math.max(this.layout.lineHeight, iconSize + 4);
@@ -457,10 +448,9 @@ export class ItemDetailPanel {
     if (granted.length === 0) return y;
 
     let currentY = y;
-    const titleFont = UITheme.fonts.cardTitle || UITheme.fonts.header;
 
     if (def.name) {
-      this.ui.drawText("GRANTED ABILITIES", x, currentY, titleFont, UITheme.colors.textHighlight, "left");
+      this.ui.drawStyled('cardHeading', 'Granted Abilities', x, currentY);
       currentY += this.layout.lineHeight + 8;
     }
 
@@ -706,4 +696,4 @@ export class ItemDetailPanel {
   _formatTargetingText(targeting) {
       return AbilityPreview.getTargetText(targeting);
   }
-}
+}

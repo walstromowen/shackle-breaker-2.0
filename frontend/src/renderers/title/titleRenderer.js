@@ -32,7 +32,6 @@ export class TitleRenderer {
         const buttonHeight = 54;
         const startY = height * 0.50;
         const spacing = 66;
-        const buttonFont = 'bold 36px "Georgia", serif';
 
         state.menuItems.forEach((item, index) => {
             const x = width / 2 - buttonWidth / 2;
@@ -42,15 +41,15 @@ export class TitleRenderer {
 
             // The standard button: hover / keyboard cursor / pressed all come from the shared state look.
             // The semi-transparent backing keeps the label legible over the background image.
+            ui.drawRect(x, y, buttonWidth, buttonHeight, 'rgba(6, 7, 10, 0.72)', true);
             ui.drawButton(x, y, buttonWidth, buttonHeight, item.text,
-                ui.flags(item.id, state.hoveredId, { disabled: !!item.disabled }),
-                { bg: 'rgba(10, 10, 14, 0.7)', font: buttonFont });
+                ui.flags(item.id, state.hoveredId, { disabled: !!item.disabled }));
         });
 
         // A short status line under the buttons (e.g. "No saved game yet.")
         if (state.message) {
             const lineY = startY + state.menuItems.length * spacing + 4;
-            ui.drawText(state.message, width / 2, lineY, UITheme.fonts.body, UITheme.colors.error, 'center', 'middle');
+            ui.drawStyled('notice', state.message, width / 2, lineY, { kind: 'error', align: 'center', baseline: 'middle' });
         }
 
         // Who is playing (bottom-left corner)
@@ -64,7 +63,7 @@ export class TitleRenderer {
 
     // "Signed in as ..." in bright gold on a dark plate, so it stands out against the busy background art.
     _drawAccountLabel(ctx, text, x, y) {
-        const font = 'bold 32px "Georgia", serif';
+        const font = '600 32px "Barlow", system-ui, sans-serif';
         ctx.save();
         ctx.font = font;
         const padX = 22, plateH = 56;

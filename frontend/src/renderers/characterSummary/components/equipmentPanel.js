@@ -28,7 +28,7 @@ export class EquipmentPanel {
 
     this.ui.ctx.font = UITheme.fonts.header;
     const nameWidth = this.ui.ctx.measureText(member.name).width + 80;
-    const nameHeight = 60;
+    const nameHeight = 64;
 
     hitboxes.push({
       id: 'BTN_EDIT_NAME',
@@ -43,10 +43,10 @@ export class EquipmentPanel {
       // The name is a button (click to rename): it takes the shared highlight like everything else you can click
       const nameFlags = this.ui.flags('BTN_EDIT_NAME', menuOpen ? null : hoveredId);
       this.ui.drawStateBox(centerX - (nameWidth / 2), headerY, nameWidth, nameHeight, nameFlags);
-      this.ui.drawText(member.name, centerX, headerY + 36, UITheme.fonts.header, this.ui.stateTextColor(nameFlags, UITheme.colors.textMain), "center");
+      this.ui.drawStyled('title', member.name, centerX, headerY + 48, { color: this.ui.stateTextColor(nameFlags, UITheme.colors.textMain) });
     }
 
-    this.ui.drawText(`Level ${actualLevel}`, centerX, headerY + 86, UITheme.fonts.body, UITheme.colors.textHighlight, "center");
+    this.ui.drawStyled('subtitle', `Level ${actualLevel}`, centerX, headerY + 86);
 
     this._drawVitals(member, stats, centerX, headerY + 139, x, w);
 
@@ -197,7 +197,7 @@ export class EquipmentPanel {
 
       if (def) this._drawIcon(def, iconX, slotY + 19);
 
-      this.ui.drawText(slotName.toUpperCase(), textX, slotY + 29, UITheme.fonts.cardMono, UITheme.colors.textMuted, align);
+      this.ui.drawStyled('cardLabel', slotName.toUpperCase(), textX, slotY + 29, { align });
 
       const nameLines = this.ui.getWrappedLines(itemName, textW, UITheme.fonts.cardSmall);
       let nameY = slotY + 58;
@@ -211,7 +211,7 @@ export class EquipmentPanel {
           } else if (item) {
             color = UITheme.colors.textMain;
           }
-          this.ui.drawText(line, textX, nameY + (i * 29), UITheme.fonts.cardSmall, color, align);
+          this.ui.drawStyled('cardLabel', line, textX, nameY + (i * 29), { color, align });
         }
       });
     };
@@ -223,7 +223,7 @@ export class EquipmentPanel {
   _drawTraitBadges(member, x, y, w, hitboxes, hoveredId) {
     const centerX = x + (w / 2);
 
-    this.ui.drawText("Traits", centerX, y, UITheme.fonts.bold, UITheme.colors.textMuted, "center");
+    this.ui.drawStyled('heading', 'Traits', centerX, y, { align: 'center' });
     this.ui.drawLineWithGothicFlourish(centerX - 120, y + 19, 240, UITheme.colors.borderHighlight);
 
     let currentX = x + 72;
@@ -231,7 +231,7 @@ export class EquipmentPanel {
     const traits = member.traits || [];
 
     if (traits.length === 0) {
-      this.ui.drawText("None", centerX, currentY + 29, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "center");
+      this.ui.drawStyled('empty', 'None', centerX, currentY + 29);
       return;
     }
 
@@ -309,7 +309,7 @@ export class EquipmentPanel {
       if (sheet && effect.icon) {
         this.ui.ctx.drawImage(sheet, effect.icon.col * srcSize, effect.icon.row * srcSize, srcSize, srcSize, drawX, drawY, drawSize, drawSize);
       } else {
-        this.ui.drawText(effect.name.charAt(0), drawX + (drawSize / 2), drawY + (drawSize / 2), UITheme.fonts.cardSmall, "white", "center", "middle");
+        this.ui.drawStyled('badge', effect.name.charAt(0), drawX + (drawSize / 2), drawY + (drawSize / 2), { color: UITheme.colors.textOnIcon });
       }
 
       this.ui.ctx.strokeStyle = UITheme.colors.border;
@@ -320,11 +320,11 @@ export class EquipmentPanel {
         this.ui.ctx.beginPath();
         this.ui.ctx.arc(drawX + drawSize, drawY + drawSize, 14, 0, Math.PI * 2);
         this.ui.ctx.fill();
-        this.ui.drawText(effect.stacks.toString(), drawX + drawSize, drawY + drawSize, UITheme.fonts.cardSmall, "white", "center", "middle");
+        this.ui.drawStyled('badge', effect.stacks.toString(), drawX + drawSize, drawY + drawSize, { color: UITheme.colors.textOnIcon });
       }
 
       drawX += (drawSize + spacing);
       if (drawX + drawSize > pX + pSize) return;
     });
   }
-}
+}

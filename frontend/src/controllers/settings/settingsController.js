@@ -212,7 +212,7 @@ export class SettingsController extends BaseController {
         const buttons = [
             { id: 'btn_test',  label: 'Test Sound', x: L.panelX + 64,                     y: footerY, w: 330, h: L.btnH },
             { id: 'btn_reset', label: 'Reset',      x: L.panelX + 64 + 330 + 24,          y: footerY, w: 330, h: L.btnH },
-            { id: 'btn_done',  label: 'Done',       x: L.panelX + L.panelW - 64 - 330,    y: footerY, w: 330, h: L.btnH }
+            { id: 'btn_done',  label: 'Back',       x: L.panelX + L.panelW - 64 - 300,    y: footerY, w: 300, h: L.btnH }
         ];
         buttons.forEach(b => hitboxes.push({ id: b.id, x: b.x, y: b.y, w: b.w, h: b.h, zIndex: 10 }));
 

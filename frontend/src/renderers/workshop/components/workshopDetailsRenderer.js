@@ -9,8 +9,8 @@ import { ItemUpgradeSystem } from '../../../../../shared/systems/itemUpgradeSyst
 
 // Stat table typography/spacing. Rows are laid out on their vertical middle, and the row height
 // is sized to the font so text never touches the row above or below.
-const STAT_LABEL_FONT = UITheme.fonts.small;                        // 29px serif
-const STAT_VALUE_FONT = UITheme.fonts.monoSmall || '29px monospace';
+const STAT_LABEL_FONT = UITheme.text.label.font;
+const STAT_VALUE_FONT = UITheme.fonts.monoSmall;
 const STAT_ROW_H = 40;
 const TABLE_ROW_H = 38;
 const SECTION_GAP = 28;   // empty space between two stat sections
@@ -45,13 +45,13 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         const midY = y + (stripH / 2);
         const slotLabel = this.formatSlotName(holder.slot);
 
-        this.ui.drawText('Equipped by', textX, midY, UITheme.fonts.cardItalic, UITheme.colors.textMuted, 'left', 'middle');
+        this.ui.drawStyled('cardNote', 'Equipped by', textX, midY, { baseline: 'middle' });
         this.ui.ctx.font = UITheme.fonts.cardItalic;
         const prefixW = this.ui.ctx.measureText('Equipped by ').width;
-        this.ui.drawText(holder.name, textX + prefixW, midY, UITheme.fonts.cardTitle, this.getHolderColor(holder.index), 'left', 'middle');
+        this.ui.drawStyled('cardTitle', holder.name, textX + prefixW, midY, { color: this.getHolderColor(holder.index), baseline: 'middle' });
 
         if (slotLabel) {
-            this.ui.drawText(slotLabel, x + w - 16, midY, UITheme.fonts.cardItalic, UITheme.colors.textMuted, 'right', 'middle');
+            this.ui.drawStyled('cardNote', slotLabel, x + w - 16, midY, { align: 'right', baseline: 'middle' });
         }
 
         return y + stripH;
@@ -59,7 +59,7 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
 
     renderRecipeDetails(state, x, w, h, hitboxes) {
         if (!state.selectedRecipe) {
-            this.ui.drawText("- Select a Recipe or Item to Upgrade -", x + (w / 2), h / 2, UITheme.fonts.italic, UITheme.colors.textMuted, "center");
+            this.ui.drawStyled('empty', 'Select a recipe or item to upgrade', x + (w / 2), h / 2);
             return;
         }
 
@@ -109,7 +109,7 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
             return yy;
         });
 
-        this._renderMaterialsFooter(state, contentX, viewBottom, contentW, h, recipeMaterials, recipeCost, state.canCraftSelected, 'CRAFT ITEM', 'BTN_CRAFT', hitboxes);
+        this._renderMaterialsFooter(state, contentX, viewBottom, contentW, h, recipeMaterials, recipeCost, state.canCraftSelected, 'Craft Item', 'BTN_CRAFT', hitboxes);
     }
 
     renderUpgradeDetails(state, x, w, h, hitboxes) {
@@ -165,12 +165,12 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
                 yy = this._renderItemMainInfo(def, contentX, yy, contentW);
 
                 if (isUpgradeable && item.isMaxLevel) {
-                    this.ui.drawText("MAX LEVEL REACHED", contentX + (contentW / 2), yy + 40, UITheme.fonts.header, UITheme.colors.success, "center");
+                    this.ui.drawStyled('title', 'Max level reached', contentX + (contentW / 2), yy + 40, { color: UITheme.colors.success });
                     yy += 80;
                 }
             } else if (activeTab === 'stats') {
                 if (isUpgradeable && !item.isMaxLevel) {
-                    this.ui.drawText("Stat Increases", contentX, yy, UITheme.fonts.bold, UITheme.colors.textHighlight, "left", "top");
+                    this.ui.drawStyled('heading', 'Stat Increases', contentX, yy, { baseline: 'top' });
                     yy += 60;
                 }
                 yy = this._renderDetailedStats(item, contentX, yy, contentW);
@@ -178,7 +178,7 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
                 if (isUpgradeable && !item.isMaxLevel) {
                     const unlocks = def.abilityUnlocks && def.abilityUnlocks[item.level + 1];
                     if (unlocks && unlocks.length > 0) {
-                        this.ui.drawText("New Abilities Unlocked", contentX + (contentW / 2), yy, UITheme.fonts.bold, UITheme.colors.textHighlight, "center", "top");
+                        this.ui.drawStyled('heading', 'New Abilities Unlocked', contentX + (contentW / 2), yy, { align: 'center', baseline: 'top' });
                         yy += 48;
 
                         unlocks.forEach(abilityId => {
@@ -187,7 +187,7 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
                             yy = this._drawAbilityCard(ability, contentX, yy, contentW, def.name);
                         });
                     } else {
-                        this.ui.drawText("- No new skills at next level -", contentX + (contentW / 2), yy + 32, UITheme.fonts.italic, UITheme.colors.textMuted, "center");
+                        this.ui.drawStyled('empty', 'No new skills at next level', contentX + (contentW / 2), yy + 32);
                         yy += 64;
                     }
                 } else {
@@ -202,7 +202,7 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
             this._renderMaterialsFooter(
                 state, contentX, viewBottom, contentW, h,
                 costs.materials || {}, costs.currency || 0,
-                state.canUpgradeSelected, 'UPGRADE ITEM', 'BTN_UPGRADE', hitboxes,
+                state.canUpgradeSelected, 'Upgrade Item', 'BTN_UPGRADE', hitboxes,
                 // an insight weapon needs ANOTHER copy of itself: the weapon being upgraded is not one of the copies it can spend
                 matId => (matId === (item.defId ?? (item.definition && item.definition.id))) ? ItemUpgradeSystem.countAvailable(matId, item) : null
             );
@@ -261,7 +261,7 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
 
         // Always pinned to the bottom of the column (currentY is no longer used to push it down)
         let materialsY = this._footerTop(materials, currencyCost, h);
-        this.ui.drawText("Required Materials", x, materialsY, UITheme.fonts.bold, UITheme.colors.textMain, "left");
+        this.ui.drawStyled('heading', 'Required Materials', x, materialsY);
         materialsY += 16;
         this.ui.drawLine(x, materialsY, x + w, materialsY, UITheme.colors.border, 1);
         materialsY += 24;
@@ -278,8 +278,8 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
             this.ui.drawRect(x, materialsY, matSlotSize, matSlotSize, UITheme.colors.border, false);
             this.drawIcon(matDef, x, materialsY, matSlotSize);
             const color = hasEnough ? UITheme.colors.success : UITheme.colors.failure;
-            this.ui.drawText(`${matDef.name}`, x + matSlotSize + 16, materialsY + (matSlotSize / 2), UITheme.fonts.body, color, "left", "middle");
-            this.ui.drawText(`${playerHas} / ${amountNeeded}`, x + w, materialsY + (matSlotSize / 2), UITheme.fonts.mono, color, "right", "middle");
+            this.ui.drawStyled('body', `${matDef.name}`, x + matSlotSize + 16, materialsY + (matSlotSize / 2), { color, baseline: 'middle' });
+            this.ui.drawStyled('value', `${playerHas} / ${amountNeeded}`, x + w, materialsY + (matSlotSize / 2), { color, align: 'right', baseline: 'middle' });
             materialsY += matSlotSize + 12;
         }
 
@@ -287,8 +287,8 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
             const partyCurrency = gameState.party ? (gameState.party.currency || 0) : (state.partyCurrency || 0);
             const hasEnoughCurrency = partyCurrency >= currencyCost;
             const color = hasEnoughCurrency ? UITheme.colors.textHighlight : UITheme.colors.failure;
-            this.ui.drawText(`Cost: ${currencyCost} Currency`, x, materialsY + 22, UITheme.fonts.body, color, "left", "middle");
-            this.ui.drawText(`(Owned: ${partyCurrency})`, x + w, materialsY + 22, UITheme.fonts.small, UITheme.colors.textMuted, "right", "middle");
+            this.ui.drawStyled('body', `Cost: ${currencyCost} Currency`, x, materialsY + 22, { color, baseline: 'middle' });
+            this.ui.drawStyled('label', `(Owned: ${partyCurrency})`, x + w, materialsY + 22, { align: 'right', baseline: 'middle' });
             materialsY += 44;
         }
 
@@ -357,7 +357,7 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
 
     /** Section title + flourish. Returns the Y where the section's first row starts. */
     _drawSectionHeader(label, x, y, w) {
-        this.ui.drawText(label, x, y, UITheme.fonts.cardTitle, UITheme.colors.textMuted, "left", "top");
+        this.ui.drawStyled('cardHeading', label, x, y, { baseline: 'top' });
         const lineY = y + 46;
         this.ui.drawLineWithGothicFlourish(x, lineY, w, UITheme.colors.borderHighlight);
         return lineY + 18;
@@ -461,7 +461,7 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
 
         // Nothing at all to show (no resources, combat stats or damage types)
         if (resourceRows.length === 0 && combatStats.length === 0 && tableEndY === currentY) {
-            this.ui.drawText("- No stat bonuses -", x + (w / 2), currentY + 32, UITheme.fonts.italic, UITheme.colors.textMuted, "center");
+            this.ui.drawStyled('empty', 'No stat bonuses', x + (w / 2), currentY + 32);
             return currentY + 64;
         }
         return tableEndY;
@@ -494,14 +494,13 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         const colAtk = x + (w * 0.36);
         const colDef = x + (w * 0.62);
         const colRes = x + (w * 0.88);
-        const headerFont = UITheme.fonts.cardTitle;
 
         // Column headers sit on the middle of their own row, with a thin rule underneath
         const headerCy = currentY + (STAT_ROW_H / 2);
-        this.ui.drawText("TYPE", colType, headerCy, headerFont, UITheme.colors.textMuted, "left", "middle");
-        this.ui.drawText("ATK", colAtk, headerCy, headerFont, UITheme.colors.attack, "center", "middle");
-        this.ui.drawText("DEF", colDef, headerCy, headerFont, UITheme.colors.defense, "center", "middle");
-        this.ui.drawText("RES", colRes, headerCy, headerFont, UITheme.colors.resistance, "center", "middle");
+        this.ui.drawStyled('tableHeader', 'Type', colType, headerCy, { baseline: 'middle' });
+        this.ui.drawStyled('tableHeader', 'Atk', colAtk, headerCy, { color: UITheme.colors.attack, align: 'center', baseline: 'middle' });
+        this.ui.drawStyled('tableHeader', 'Def', colDef, headerCy, { color: UITheme.colors.defense, align: 'center', baseline: 'middle' });
+        this.ui.drawStyled('tableHeader', 'Res', colRes, headerCy, { color: UITheme.colors.resistance, align: 'center', baseline: 'middle' });
         currentY += STAT_ROW_H;
         this.ui.drawLine(x, currentY, x + w, currentY, UITheme.colors.border, 1);
         currentY += 8;
@@ -547,25 +546,21 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         this.ui.ctx.fillRect(x, currentY, w, 85);
         this.ui.ctx.restore();
 
-        const headerFont = UITheme.fonts.cardTitle || UITheme.fonts.header;
-        const typeFont = UITheme.fonts.cardItalic || UITheme.fonts.italic;
-        const bodyFont = UITheme.fonts.cardSmall || UITheme.fonts.body;
-
-        this.ui.drawText(title, x + 24, currentY + 40, headerFont, color, "left");
+        this.ui.drawStyled('cardTitle', title, x + 24, currentY + 40, { color });
         if (itemLevel !== undefined) {
             let lvlStr = `Lv. ${itemLevel}`;
             if (nextLevel !== null) {
                 lvlStr += ` -> ${nextLevel}`;
             }
-            this.ui.drawText(lvlStr, x + w - 24, currentY + 40, headerFont, UITheme.colors.textHighlight, "right");
+            this.ui.drawStyled('cardHeading', lvlStr, x + w - 24, currentY + 40, { align: 'right' });
         }
 
-        this.ui.drawText(typeText, x + 24, currentY + 74, typeFont, UITheme.colors.textMuted, "left");
+        this.ui.drawStyled('cardNote', typeText, x + 24, currentY + 74);
         if (def.weight !== undefined || def.value !== undefined) {
             const rightMeta = [];
             if (def.weight !== undefined) rightMeta.push(`Wt: ${def.weight}`);
             if (def.value !== undefined) rightMeta.push(`Val: ${def.value}`);
-            this.ui.drawText(rightMeta.join("   "), x + w - 24, currentY + 74, bodyFont, UITheme.colors.textMuted, "right");
+            this.ui.drawStyled('cardLabel', rightMeta.join("   "), x + w - 24, currentY + 74, { align: 'right' });
         }
 
         this.ui.ctx.save();
@@ -593,7 +588,7 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
             const lines = this.ui.getWrappedLines(def.effectDescription, textW, UITheme.fonts.body);
             lines.forEach(line => {
                 // Top-aligned so the first line starts level with the icon; 40px lines fit the 34px font
-                this.ui.drawText(line, textX, textY + 2, UITheme.fonts.body, UITheme.colors.textMain, "left", "top");
+                this.ui.drawStyled('body', line, textX, textY + 2, { baseline: 'top' });
                 textY += 40;
             });
             hasContent = true;
@@ -602,7 +597,7 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
             if (hasContent) textY += 12;
             const lines = this.ui.getWrappedLines(`"${def.description}"`, textW, UITheme.fonts.cardItalic);
             lines.forEach(line => {
-                this.ui.drawText(line, textX, textY + 2, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "left", "top");
+                this.ui.drawStyled('cardNote', line, textX, textY + 2, { baseline: 'top' });
                 textY += 32;
             });
         }
@@ -612,7 +607,7 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
     _renderAbilities(def, x, y, w) {
         const granted = def.grantedAbilities || [];
         if (granted.length === 0) {
-            this.ui.drawText("- No skills granted -", x + (w/2), y + 32, UITheme.fonts.italic, UITheme.colors.textMuted, "center");
+            this.ui.drawStyled('empty', 'No skills granted', x + (w/2), y + 32);
             return y + 64;
         }
 
@@ -844,4 +839,4 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         // to 'ability' so it knows to look for the correct spritesheet.
         this.drawIcon({ ...ability, type: 'ability' }, x, y, size);
     }
-}
+}

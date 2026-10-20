@@ -38,7 +38,7 @@ export class BattleDebuggerRenderer {
         const headerText = `[ BATTLE DEBUG ]  PHASE: ${state.phase}  |  TIMER: ${state.timer?.toFixed(2) || 0}s  |  QUEUE: ${state.turnQueue?.length || 0}  |  ACTION: ${actionName}  |  TARGETS: ${targetCount}`;
 
         const yPos = screenHeight - 60; 
-        this.ui.drawText(headerText, screenWidth / 2, yPos, 'bold 26px monospace', UITheme.colors.textHighlight, 'center', 'top'); 
+        this.ui.drawText(headerText, screenWidth / 2, yPos, UITheme.fonts.debugTitle, UITheme.colors.textHighlight, 'center', 'top'); 
         this.ui.drawLine(48, yPos - 12, screenWidth - 48, yPos - 12, UITheme.colors.textHighlight, 1); 
     }
 
@@ -132,7 +132,7 @@ export class BattleDebuggerRenderer {
     _renderTeamTable(title, combatants, x, y, width, titleColor) {
         if (!combatants || combatants.length === 0) return;
 
-        this.ui.drawText(title, x, y, 'bold 29px monospace', titleColor, 'left', 'top'); 
+        this.ui.drawText(title, x, y, UITheme.fonts.debugHeader, titleColor, 'left', 'top'); 
         y += 36; 
 
         // REDUCED height to 290 so 3 cards easily fit on a 1080p screen
@@ -158,26 +158,26 @@ export class BattleDebuggerRenderer {
 
             // --- 1. HEADER ---
             const lvl = c.originalEntity?.level || c.level || 1;
-            this.ui.drawText(`${c.name || c.id || 'Unknown'} (Lv.${lvl})`, cx, cy, 'bold 22px monospace', tColor, 'left', 'top'); 
+            this.ui.drawText(`${c.name || c.id || 'Unknown'} (Lv.${lvl})`, cx, cy, UITheme.fonts.debugName, tColor, 'left', 'top'); 
             
             const xp = c.originalEntity?.xp || 0;
             const nextXp = c.originalEntity?.nextLevelXp || 100;
-            this.ui.drawText(`XP: ${xp}/${nextXp}`, x + width - 14, cy, 'bold 22px monospace', UITheme.colors.textHighlight, 'right', 'top'); 
+            this.ui.drawText(`XP: ${xp}/${nextXp}`, x + width - 14, cy, UITheme.fonts.debugName, UITheme.colors.textHighlight, 'right', 'top'); 
             cy += lineH + 4; // Tightened gap
 
             // --- 2. RESOURCES & BARS ---
             const barW = (innerWidth / 3) - 10; 
             
             const hpColor = isDead ? UITheme.colors.textMuted : UITheme.colors.hp;
-            this.ui.drawText(`HP: ${Math.round(c.hp)}/${c.maxHp}`, cx, cy, '20px monospace', hpColor, 'left', 'top'); 
+            this.ui.drawText(`HP: ${Math.round(c.hp)}/${c.maxHp}`, cx, cy, UITheme.fonts.debugRow, hpColor, 'left', 'top'); 
             this.ui.drawBar(cx, cy + 20, barW, 6, c.hp, c.maxHp, UITheme.colors.hp, UITheme.colors.hpDim); 
 
             const stmColor = isDead ? UITheme.colors.textMuted : UITheme.colors.stm;
-            this.ui.drawText(`STM: ${Math.round(c.stamina)}/${c.maxStamina}`, cx + barW + 14, cy, '20px monospace', stmColor, 'left', 'top'); 
+            this.ui.drawText(`STM: ${Math.round(c.stamina)}/${c.maxStamina}`, cx + barW + 14, cy, UITheme.fonts.debugRow, stmColor, 'left', 'top'); 
             this.ui.drawBar(cx + barW + 14, cy + 20, barW, 6, c.stamina, c.maxStamina, UITheme.colors.stm, UITheme.colors.stmDim); 
 
             const insColor = isDead ? UITheme.colors.textMuted : UITheme.colors.ins;
-            this.ui.drawText(`INS: ${Math.round(c.insight)}/${c.maxInsight}`, cx + (barW * 2) + 29, cy, '20px monospace', insColor, 'left', 'top'); 
+            this.ui.drawText(`INS: ${Math.round(c.insight)}/${c.maxInsight}`, cx + (barW * 2) + 29, cy, UITheme.fonts.debugRow, insColor, 'left', 'top'); 
             this.ui.drawBar(cx + (barW * 2) + 29, cy + 20, barW, 6, c.insight, c.maxInsight, UITheme.colors.ins, UITheme.colors.insDim); 
             cy += lineH + 8; 
 
@@ -206,7 +206,7 @@ export class BattleDebuggerRenderer {
             const attrStr = `VIG:${vig} STR:${str} DEX:${dex} INT:${int} ATN:${atn}`;
             const cbtStr = `SPD:${spd} EVA:${eva} CRT:${crt}% DMG:x${crtDmg}`;
 
-            this.ui.drawText(`${attrStr} | ${cbtStr}`, cx, cy, '20px monospace', tColor, 'left', 'top'); 
+            this.ui.drawText(`${attrStr} | ${cbtStr}`, cx, cy, UITheme.fonts.debugRow, tColor, 'left', 'top'); 
             cy += lineH + 4; 
 
             // --- 4. DAMAGE MATRIX ---
@@ -218,7 +218,7 @@ export class BattleDebuggerRenderer {
             this.ui.drawRect(cx, cy - 2, innerWidth, (lineH * 4) + 2, tableBg, true); 
 
             allTypes.forEach((type, i) => {
-                this.ui.drawText(type, cx + labelW + (i * colW) + (colW / 2), cy, '18px monospace', tColor, 'center', 'top'); 
+                this.ui.drawText(type, cx + labelW + (i * colW) + (colW / 2), cy, UITheme.fonts.debugSmall, tColor, 'center', 'top'); 
             });
             cy += lineH;
 
@@ -232,10 +232,10 @@ export class BattleDebuggerRenderer {
                 if (row.bg !== 'transparent') {
                     this.ui.drawRect(cx, cy - 2, innerWidth, lineH, row.bg, true); 
                 }
-                this.ui.drawText(row.label, cx + 5, cy, '18px monospace', row.color, 'left', 'top'); 
+                this.ui.drawText(row.label, cx + 5, cy, UITheme.fonts.debugSmall, row.color, 'left', 'top'); 
                 allTypes.forEach((type, i) => {
                     const dt = this._getDamageType(c, type);
-                    this.ui.drawText(String(dt[row.key]), cx + labelW + (i * colW) + (colW / 2), cy, '18px monospace', tColor, 'center', 'top'); 
+                    this.ui.drawText(String(dt[row.key]), cx + labelW + (i * colW) + (colW / 2), cy, UITheme.fonts.debugSmall, tColor, 'center', 'top'); 
                 });
                 cy += lineH;
             });
@@ -244,7 +244,7 @@ export class BattleDebuggerRenderer {
             // --- 5. EQUIPMENT & FX ---
             const eqLines = this._getEqLines(c);
             eqLines.forEach((line) => {
-                this.ui.drawText(line, cx, cy, '18px monospace', tColor, 'left', 'top');
+                this.ui.drawText(line, cx, cy, UITheme.fonts.debugSmall, tColor, 'left', 'top');
                 cy += 20; // Specific tight padding for equipment lines
             });
             
@@ -252,9 +252,9 @@ export class BattleDebuggerRenderer {
 
             const fxArr = c.statusEffects || [];
             const fxStr = fxArr.length > 0 ? fxArr.map(fx => fx.name || fx.id).join(', ') : 'None';
-            this.ui.drawText(`FX: ${fxStr}`, cx, cy, '18px monospace', tColor, 'left', 'top'); 
+            this.ui.drawText(`FX: ${fxStr}`, cx, cy, UITheme.fonts.debugSmall, tColor, 'left', 'top'); 
             
             y += cardHeight;
         });
     }
-}
+}

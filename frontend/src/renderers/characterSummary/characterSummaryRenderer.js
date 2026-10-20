@@ -91,7 +91,7 @@ export class CharacterSummaryRenderer {
       this.ui.drawRect(centerX - boxW / 2, nameY - 48, boxW, 72, UITheme.colors.borderHighlight, false);
 
       const cursor = (Math.floor(Date.now() / 500) % 2 === 0) ? "|" : "";
-      this.ui.drawText(nameInputValue + cursor, centerX, nameY, UITheme.fonts.header, UITheme.colors.textHighlight, "center");
+      this.ui.drawStyled('title', nameInputValue + cursor, centerX, nameY, { color: UITheme.colors.textHighlight });
     }
 
     // C. Right Column (Inventory Grid)
@@ -249,7 +249,7 @@ export class CharacterSummaryRenderer {
     const boxW = textW + 64;
     const boxH = 52;
     this.ui.drawPanel(centerX - boxW / 2, y - boxH / 2, boxW, boxH, "rgba(15, 15, 18, 0.92)");
-    this.ui.drawText(text, centerX, y + 1, UITheme.fonts.body, UITheme.colors.textHighlight, "center", "middle");
+    this.ui.drawStyled('notice', text, centerX, y + 1, { kind: 'info', align: 'center', baseline: 'middle' });
   }
 
   _drawContextMenu(menu, selectedIndex = 0, hoveredHitboxId = null) {
@@ -304,7 +304,7 @@ export class CharacterSummaryRenderer {
     } else if (state.heldItem) {
       lines.push("[L-Click] Place      [R-Click/ESC] Cancel");
     } else if (state.isChoosingItem) {
-      lines.push("[L-Click/SPC] Menu      [Hover/V] View      [R-Click/ESC] Back");
+      lines.push("[L-Click/SPC] Menu      [Hover/V] View");
     } else {
       const slotName = (state.slots && state.slots[state.selectedSlotIndex]) || null;
       const hasSlotItem = slotName && state.member.equipment[slotName];
@@ -319,28 +319,22 @@ export class CharacterSummaryRenderer {
         row1.push("[L-Click/SPC] Equip");
       }
 
-      row2.push("[R-Click/ESC] Back");
-
-      lines.push(row1.join("      "));
-      lines.push(row2.join("      "));
+      lines.push(row1.join("    "));
+      lines.push(row2.join("    "));
     }
 
-    const centerX = leftW + Math.floor(centerW / 2);
+    // The Back button takes the bottom-left corner of this column (SceneManager draws it), so the hints sit to the right of it
+    const rightEdge = leftW + centerW;
+    const hintLeft = 564 + UITheme.backButton.w + 40;
+    const centerX = Math.floor((hintLeft + rightEdge) / 2);
 
-    const flourishW = Math.min(720, centerW - 64);
+    const flourishW = Math.min(720, rightEdge - hintLeft - 16);
     this.ui.drawLineWithGothicFlourish(centerX - (flourishW / 2), h - 104, flourishW, UITheme.colors.borderHighlight);
 
     const startY = h - (lines.length > 1 ? 64 : 44);
 
     lines.forEach((lineText, index) => {
-      this.ui.drawText(
-        lineText,
-        centerX,
-        startY + (index * 32),
-        UITheme.fonts.small,
-        UITheme.colors.textMuted,
-        "center"
-      );
+      this.ui.drawStyled('hint', lineText, centerX, startY + (index * 32), { maxWidth: rightEdge - hintLeft });
     });
   }
 
@@ -353,4 +347,4 @@ export class CharacterSummaryRenderer {
     }
     return null;
   }
-}
+}

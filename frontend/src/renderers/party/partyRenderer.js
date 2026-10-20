@@ -51,7 +51,7 @@ export class PartyRenderer {
         this.ui.clearScreen(width, height);
 
         const headerText = mode === 'BATTLE_SELECT' ? "Select Reserve to Swap In" : "Party Members";
-        this.ui.drawText(headerText, width / 2, 120, UITheme.fonts.header, UITheme.colors.textMain, "center");
+        this.ui.drawStyled('title', headerText, width / 2, 120);
         this.ui.drawLineWithGothicFlourish((width / 2) - 288, 156, 576, UITheme.colors.borderHighlight);
 
         members.forEach((member, index) => {
@@ -110,8 +110,8 @@ export class PartyRenderer {
             }
         }
 
-        this.ui.drawText(guide, width / 2, height - 72, UITheme.fonts.mono, UITheme.colors.textMuted, "center");
-        if (notice && !exileConfirm) this.ui.drawText(notice, width / 2, height - 132, UITheme.fonts.body, UITheme.colors.error, "center");
+        this.ui.drawStyled('hint', guide, width / 2, height - 72);
+        if (notice && !exileConfirm) this.ui.drawStyled('notice', notice, width / 2, height - 132, { kind: 'error', align: 'center' });
 
         // The exile prompt sits on top of everything; its hitboxes replace the screen's, so nothing underneath can be clicked
         if (exileConfirm) {
@@ -136,11 +136,11 @@ export class PartyRenderer {
         ui.drawRect(0, 0, width, height, 'rgba(0, 0, 0, 0.72)', true);
         ui.drawPopupPanel(x, y, w, h);
 
-        ui.drawText('Exile Party Member?', width / 2, y + 96, UITheme.fonts.header, UITheme.colors.textMain, 'center');
+        ui.drawStyled('title', 'Exile Party Member?', width / 2, y + 96);
         ui.drawLineWithGothicFlourish(width / 2 - 240, y + 126, 480, UITheme.colors.borderHighlight);
 
-        ui.drawText(confirm.name, width / 2, y + 190, UITheme.fonts.bold, UITheme.colors.textHighlight, 'center');
-        ui.drawText('They will leave your party for good. This cannot be undone.', width / 2, y + 252, UITheme.fonts.italic, UITheme.colors.textMuted, 'center');
+        ui.drawStyled('heading', confirm.name, width / 2, y + 190, { align: 'center' });
+        ui.drawStyled('description', 'They will leave your party for good. This cannot be undone.', width / 2, y + 252, { align: 'center' });
 
         const btnW = 288, btnH = 80, gap = 48;
         const by = y + h - btnH - 48;
@@ -242,7 +242,7 @@ export class PartyRenderer {
         const labelWidth = 48;
         const barW = cardW - (pX - x) - pSize - 19 - labelWidth - numberWidth - 19;
 
-        this.ui.drawText(member.name, infoX, y + 43, UITheme.fonts.cardTitle, nameColor);
+        this.ui.drawStyled('cardTitle', member.name, infoX, y + 43, { color: nameColor });
 
         const levelText = `Lv.${member.level || 1}`;
         let statusPrefix = "";
@@ -256,10 +256,10 @@ export class PartyRenderer {
             statusColor = UITheme.colors.failure;
         }
 
-        this.ui.drawText(`${statusPrefix}${levelText}`, infoX, y + 77, UITheme.fonts.cardSmall, statusColor);
+        this.ui.drawStyled('cardLabel', `${statusPrefix}${levelText}`, infoX, y + 77, { color: statusColor });
 
         const xpY = y + 113;
-        this.ui.drawText("XP", infoX, xpY + 12, UITheme.fonts.cardMono, UITheme.colors.textMuted);
+        this.ui.drawStyled('cardValue', 'XP', infoX, xpY + 12, { color: UITheme.colors.textMuted });
         this.ui.drawBar(infoX + labelWidth, xpY, barW, 10, member.xp || 0, member.maxXp || 1, UITheme.colors.xp, UITheme.colors.xpDim);
         this.ui.drawText(`${Math.floor(member.xp || 0)}/${member.maxXp || 1}`, infoX + labelWidth + barW + numberWidth, xpY + 12, UITheme.fonts.cardMono, UITheme.colors.textMuted, "right");
 
@@ -274,7 +274,7 @@ export class PartyRenderer {
     }
 
     drawStatRow(label, current, max, x, y, barW, h, numW, labelW, color, dimColor) {
-        this.ui.drawText(label, x, y + 12, UITheme.fonts.cardMono, UITheme.colors.textMuted);
+        this.ui.drawStyled('cardValue', label, x, y + 12, { color: UITheme.colors.textMuted });
         this.ui.drawBar(x + labelW, y, barW, h, current, max, color, dimColor);
         this.ui.drawText(`${Math.floor(current)}/${max}`, x + labelW + barW + numW, y + 12, UITheme.fonts.cardMono, UITheme.colors.textMuted, "right");
     }
@@ -303,7 +303,7 @@ export class PartyRenderer {
                     drawX, drawY, drawSize, drawSize
                 );
             } else {
-                this.ui.drawText(effect.name.charAt(0), drawX + (drawSize / 2), drawY + (drawSize / 2) + 2, UITheme.fonts.cardSmall, UITheme.colors.textMain, "center", "middle");
+                this.ui.drawStyled('badge', effect.name.charAt(0), drawX + (drawSize / 2), drawY + (drawSize / 2) + 2);
             }
 
             if (effect.stacks && effect.stacks > 1) {
@@ -311,7 +311,7 @@ export class PartyRenderer {
                 this.ctx.beginPath();
                 this.ctx.arc(drawX + drawSize, drawY + drawSize, 14, 0, Math.PI * 2);
                 this.ctx.fill();
-                this.ui.drawText(effect.stacks.toString(), drawX + drawSize, drawY + drawSize + 2, UITheme.fonts.cardMono, "white", "center", "middle");
+                this.ui.drawStyled('badge', effect.stacks.toString(), drawX + drawSize, drawY + drawSize + 2, { font: UITheme.fonts.cardMono, color: UITheme.colors.textOnIcon });
             }
 
             drawX += (drawSize + spacing);

@@ -9,8 +9,8 @@ export class WorkshopRecipeRenderer extends WorkshopBaseRenderer {
 
         // --- UPDATED: Use the dynamic station title from state ---
         const displayTitle = state.stationTitle || "Workshop";
-        this.ui.drawText(displayTitle, centerX, listY + 24, UITheme.fonts.header, UITheme.colors.textMain, "center");
-        listY += 48;
+        this.ui.drawStyled('title', displayTitle, centerX, listY + 44);
+        listY += 60;
 
         const flourishW = w * 0.8;
         this.ui.drawLineWithGothicFlourish(centerX - (flourishW / 2), listY, flourishW, UITheme.colors.borderHighlight);
@@ -24,7 +24,7 @@ export class WorkshopRecipeRenderer extends WorkshopBaseRenderer {
         const STEP = ROW_H + GAP;
 
         const listTop = listY;
-        const listH = Math.max(STEP, h - listTop - 16);
+        const listH = Math.max(STEP, h - listTop - 16 - 136);   // the Back button sits under the list
         const contentH = Math.max(0, recipes.length * STEP - GAP);
         const maxScroll = Math.max(0, contentH - listH);
         const needsBar = maxScroll > 0;
@@ -81,4 +81,4 @@ export class WorkshopRecipeRenderer extends WorkshopBaseRenderer {
             this.drawListScrollbar(barX, listTop, listH, contentH, scroll, 'RECIPES', hitboxes, state.hoveredHitboxId);
         }
     }
-}
+}

@@ -10,11 +10,11 @@ export class WorkshopInventoryRenderer extends WorkshopBaseRenderer {
         const HEADER_HEIGHT = 180;
 
         // --- 1. Draw Fixed Header ---
-        this.ui.drawText("Inventory", centerX, 48, UITheme.fonts.header, UITheme.colors.textMain, "center");
+        this.ui.drawStyled('title', 'Inventory', centerX, 72);
 
         // --- Currency Label ---
         const currencyAmount = gameState.party ? (gameState.party.currency || 0) : (state.partyCurrency || 0);
-        this.ui.drawText(`Currency: ${currencyAmount}`, centerX, 108, UITheme.fonts.cardMono, UITheme.colors.textHighlight, "center");
+        this.ui.drawStyled('subtitle', `Currency: ${currencyAmount}`, centerX, 124);
 
         const dividerY = HEADER_HEIGHT - 24;
         const flourishW = w * 0.8;
@@ -53,7 +53,7 @@ export class WorkshopInventoryRenderer extends WorkshopBaseRenderer {
         this.ui.startClip(x, listY - 24, w, listH + 48);
 
         if (inv.length === 0) {
-            this.ui.drawText("- Empty -", centerX, listY + 72, UITheme.fonts.italic, UITheme.colors.textMuted, "center");
+            this.ui.drawStyled('empty', 'Empty', centerX, listY + 72);
         } else {
             inv.forEach((item, index) => {
                 const def = ItemDefinitions[item.defId || item.id];
@@ -120,14 +120,7 @@ export class WorkshopInventoryRenderer extends WorkshopBaseRenderer {
         this.ui.drawLineWithGothicFlourish(centerX - (flourishW / 2), h - 104, flourishW, UITheme.colors.borderHighlight);
         const startY = h - 64;
         lines.forEach((lineText, index) => {
-            this.ui.drawText(
-                lineText, 
-                centerX, 
-                startY + (index * 32), 
-                UITheme.fonts.small, 
-                UITheme.colors.textMuted, 
-                "center"
-            );
+            this.ui.drawStyled('hint', lineText, centerX, startY + (index * 32));
         });
     }
 }

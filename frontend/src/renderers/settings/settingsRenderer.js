@@ -36,14 +36,14 @@ export class SettingsRenderer {
         ui.drawPanel(L.panelX, L.panelY, L.panelW, L.panelH, C.bgScale[0]);
 
         const cx = L.panelX + L.panelW / 2;
-        ui.drawText('SETTINGS', cx, L.panelY + 112, F.header, C.textMain, 'center', 'alphabetic');
+        ui.drawStyled('title', 'Settings', cx, L.panelY + 112);
         ui.drawLineWithGothicFlourish(cx - 150, L.panelY + 142, 300, C.borderHighlight);
-        ui.drawText('Sound', cx, L.panelY + 200, F.italic, C.textMuted, 'center', 'alphabetic');
+        ui.drawStyled('hint', 'Sound', cx, L.panelY + 200);
 
         for (const row of state.channels) this._renderSlider(ui, state, row, focus);
 
         for (const b of state.buttons) {
-            ui.drawButton(b.x, b.y, b.w, b.h, b.label, ui.flags(b.id, focus), { font: F.body });
+            ui.drawButton(b.x, b.y, b.w, b.h, b.label, ui.flags(b.id, focus), { font: F.medium });
         }
     }
 
@@ -58,8 +58,8 @@ export class SettingsRenderer {
         // a soft highlight behind the whole row when it is the one in focus
         if (lit) ui.drawStateBox(L.panelX + 48, t.y - 14, L.panelW - 96, t.h + 28, flags, { inset: true });
 
-        ui.drawText(row.label, labelX, midY - 2, F.bold, ui.stateTextColor(flags, C.textMain), 'left', 'alphabetic');
-        ui.drawText(HINTS[row.channel] || '', labelX, midY + 28, F.cardSmall, C.textMuted, 'left', 'alphabetic', t.x - labelX - 24);
+        ui.drawStyled('body', row.label, labelX, midY - 2, { font: F.bold, color: ui.stateTextColor(flags, C.textMain) });
+        ui.drawStyled('cardLabel', HINTS[row.channel] || '', labelX, midY + 28, { maxWidth: t.x - labelX - 24 });
 
         // track
         const trackH = 14;
@@ -76,7 +76,7 @@ export class SettingsRenderer {
         ui.drawRect(hx - 9, midY - 24, 18, 48, handleColor, false);
         ui.drawLine(hx, midY - 14, hx, midY + 14, handleColor, 2);
 
-        ui.drawText(`${Math.round(row.value * 100)}%`, L.panelX + L.valueX, midY + 2, F.body,
-            ui.stateTextColor(flags, C.textMain), 'left', 'middle');
+        ui.drawStyled('value', `${Math.round(row.value * 100)}%`, L.panelX + L.valueX, midY + 2,
+            { baseline: 'middle', color: ui.stateTextColor(flags, C.textMain) });
     }
 }

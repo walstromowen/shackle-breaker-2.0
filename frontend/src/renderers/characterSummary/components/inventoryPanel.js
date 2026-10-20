@@ -39,11 +39,11 @@ export class InventoryPanel {
     const centerX = Math.floor(x + (w / 2));
 
     // --- 1. Draw Fixed Header ---
-    this.ui.drawText("Inventory", centerX, y + 48, UITheme.fonts.header, UITheme.colors.textMain, "center");
+    this.ui.drawStyled('title', 'Inventory', centerX, y + 68);
 
     // --- Currency Label ---
     const currencyAmount = gameState.party.currency || 0;
-    this.ui.drawText(`Currency: ${currencyAmount}`, centerX, y + 108, UITheme.fonts.cardMono, UITheme.colors.textHighlight, "center");
+    this.ui.drawStyled('subtitle', `Currency: ${currencyAmount}`, centerX, y + 122);
 
     const dividerY = y + this.HEADER_HEIGHT - 24;
     const flourishW = w * 0.8;
@@ -88,7 +88,7 @@ export class InventoryPanel {
     this.ui.startClip(x, listY - 24, w + 36, listH + 48);
 
     if (!inventory || inventory.length === 0) {
-      this.ui.drawText("- Empty -", centerX, listY + 72, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "center");
+      this.ui.drawStyled('empty', 'Empty', centerX, listY + 72);
     } else {
       inventory.forEach((item, index) => {
         const def = ItemDefinitions[item.defId];
@@ -168,7 +168,7 @@ export class InventoryPanel {
     this.ui.drawRect(x - 12, y, w + 48, bar.height + 60, UITheme.colors.bgScale[0]);
 
     this.ui.drawLineWithGothicFlourish(x + (w - w * 0.8) / 2, y + 6, w * 0.8, UITheme.colors.borderHighlight);
-    this.ui.drawText("Hotbar", centerX, y + 40, UITheme.fonts.bold, UITheme.colors.textMuted, "center");
+    this.ui.drawStyled('heading', 'Hotbar', centerX, y + 40, { align: 'center' });
 
     const gridW = bar.cols * bar.slot + (bar.cols - 1) * bar.gap;
     const startX = x + Math.floor((w - gridW) / 2);
@@ -202,7 +202,7 @@ export class InventoryPanel {
       this.ui.drawStateBox(sx, sy, bar.slot, bar.slot, flags, { inset: true });
 
       // key label, top left
-      this.ui.drawText(entry.key, sx + 8, sy + 18, UITheme.fonts.small, UITheme.colors.textMuted, "left");
+      this.ui.drawStyled('label', entry.key, sx + 8, sy + 18);
 
       if (entry.defId && !isOrigin) {
         const def = ItemDefinitions[entry.defId];
@@ -245,4 +245,4 @@ export class InventoryPanel {
     const ICON_SIZE = 64; // Sprite sheet cell size (upgraded from 32)
     this.ui.drawItemIcon(this.loader, def, x, y, 64, ICON_SIZE);
   }
-}
+}

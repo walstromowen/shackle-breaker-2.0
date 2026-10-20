@@ -310,8 +310,7 @@ export class BattleRenderer {
             this.ctx.save();
             this.ctx.globalAlpha = Math.min(1.0, (ft.life / ft.maxLife) * 2);
 
-            const fontFamily = UITheme.fonts.body.split('px ')[1] || '"Georgia", serif';
-            const fontStr = `italic bold ${ft.fontSize}px ${fontFamily}`;
+            const fontStr = UITheme.font(ft.fontSize, { bold: true, italic: true });
 
             // 1. Setup native canvas text properties
             this.ctx.font = fontStr;
@@ -345,4 +344,4 @@ export class BattleRenderer {
             this.ctx.restore();
         }
     }
-}
+}

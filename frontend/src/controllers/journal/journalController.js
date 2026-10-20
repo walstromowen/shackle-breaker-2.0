@@ -280,7 +280,7 @@ export class JournalController extends BaseController {
         this.availableActions = [];
         
         const { p, startY, tabHeight, rowHeight, btnWidth, btnHeight } = this.layout;
-        const panelHeight = this.screenHeight - (startY * 2);
+        const panelHeight = this.screenHeight - startY - 144;   // room under the panels for the Back button
         
         const halfW = Math.floor(this.screenWidth / 2);
         const colW = halfW - (p * 1.5);
@@ -292,9 +292,6 @@ export class JournalController extends BaseController {
         if (this.inputMode === 'mouse' && this.hoveredHitboxId && this.hoveredHitboxId.startsWith('quest_sel_')) {
             displayQuestId = this.hoveredHitboxId.replace('quest_sel_', '');
         }
-
-        // 1. Close Button
-        hitboxes.push({ id: 'btn_close', x: this.screenWidth - 150, y: 20, w: 120, h: 40, zIndex: 10 });
 
         // 2. Tabs
         const tabW = (colW / 2) - 24;
@@ -359,4 +356,4 @@ export class JournalController extends BaseController {
             trackedIds: gameState.quests.trackedIds || []
         };
     }
-}
+}

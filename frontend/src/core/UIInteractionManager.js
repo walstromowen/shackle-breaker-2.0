@@ -144,6 +144,15 @@ export class UIInteractionManager {
                 const before = this._count(activeScreen);
                 let result;
 
+                if (hit && hit.sharedBack) {
+                    // The shared Back button: the same as a right-click on this screen (which plays its own sound when it closes something)
+                    if (activeScreen.onRightClick) result = activeScreen.onRightClick('btn_back');
+                    if (result !== false && this._count(activeScreen) === before) this._play('cancel');
+                    handledClick = true;
+                    this.mouseDownPos = null; this.activeHitboxDown = null; this.isDragging = false;
+                    UIPointer.pressedId = null;
+                    return { handledClick, handledRightClick };
+                }
                 if (activeScreen.onClick) result = activeScreen.onClick(hit ? hit.id : null);
 
                 // Only a click that landed on something makes a sound (a click on empty space is silent).

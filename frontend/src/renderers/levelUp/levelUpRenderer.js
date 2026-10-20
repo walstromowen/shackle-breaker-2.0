@@ -11,7 +11,7 @@ export class LevelUpRenderer {
         this.hitboxes = [];
 
         this.layout = {
-            p: 48, startY: 48, titleOffsetY: 40, contentOffsetY: 60,
+            p: 48, startY: 48, titleOffsetY: 64, contentOffsetY: 72,
             portraitSize: 250, attrRowHeight: 50, attrBlockWidth: 624,
             btnWidth: 216, btnHeight: 84, btnSpacing: 36
         };
@@ -60,21 +60,19 @@ export class LevelUpRenderer {
         const CONTENT_START_Y = TITLE_Y + this.layout.contentOffsetY;
         const centerX = x + (w / 2);
 
-        const titleStr = member.name ? member.name.toUpperCase() : "LEVEL UP";
-        this.ctx.font = UITheme.fonts.body;
+        const titleStr = member.name || "Level Up";
+        this.ctx.font = UITheme.text.columnLabel.font;
         const titleWidth = this.ctx.measureText(titleStr).width;
 
-        this.ui.drawText(titleStr, centerX, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "center");
+        this.ui.drawStyled('columnLabel', titleStr, centerX, TITLE_Y);
         const lvlText = `Level ${member.level || 1} ${member.class || ''}`;
-        this.ui.drawText(lvlText, centerX + (titleWidth / 2) + 20, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "left");
+        this.ui.drawStyled('columnLabel', lvlText, centerX + (titleWidth / 2) + 20, TITLE_Y, { align: 'left', upper: false });
         this.ui.drawLineWithGothicFlourish(centerX - 120, TITLE_Y + 29, 240, UITheme.colors.borderHighlight);
 
         let currentY = CONTENT_START_Y;
-        const highlightFont = UITheme.fonts.bold || "bold 34px sans-serif";
-        const giantFont = UITheme.fonts.header || "bold 72px sans-serif";
 
         const pointsColor = availablePoints > 0 ? UITheme.colors.success : UITheme.colors.textMuted;
-        this.ui.drawText(`Unspent Points: ${availablePoints}`, centerX, currentY, highlightFont, pointsColor, "center");
+        this.ui.drawStyled('heading', `Unspent Points: ${availablePoints}`, centerX, currentY, { color: pointsColor, align: 'center' });
         currentY += 40;
 
         const pSize = this.layout.portraitSize;
@@ -89,7 +87,7 @@ export class LevelUpRenderer {
             const centeredY = currentY + ((pSize * 1.25) / 2) - (scaledSize / 2);
             this.ui.drawSprite(img, 0, 0, 128, 128, centeredX, centeredY, scaledSize, scaledSize);
         } else {
-            this.ui.drawText("?", centerX, currentY + (pSize * 0.7), giantFont, UITheme.colors.textMuted, "center");
+            this.ui.drawText("?", centerX, currentY + (pSize * 0.7), UITheme.fonts.header, UITheme.colors.textMuted, "center");
         }
 
         currentY += (pSize * 1.25) + 36;
@@ -105,12 +103,12 @@ export class LevelUpRenderer {
                 this.ui.drawRect(startX - 24, rowY, this.layout.attrBlockWidth + 48, this.layout.attrRowHeight, "rgba(255, 255, 255, 0.02)", true);
             }
 
-            this.ui.drawText(Formatting.capitalize(attr), startX, textY, UITheme.fonts.body, UITheme.colors.textMain, "left");
+            this.ui.drawStyled('body', Formatting.capitalize(attr), startX, textY);
 
             const currentVal = member.attributes?.[attr] || 0;
             const pendingVal = pendingAllocations[attr];
 
-            this.ui.drawText(currentVal.toString(), startX + 264, textY, UITheme.fonts.mono, UITheme.colors.textMain, "center");
+            this.ui.drawStyled('value', currentVal.toString(), startX + 264, textY, { align: 'center' });
 
             if (pendingVal > 0) {
                 this.ui.drawText(`+${pendingVal}`, startX + 312, textY, UITheme.fonts.mono, UITheme.colors.success, "left");
@@ -147,14 +145,14 @@ export class LevelUpRenderer {
         const CONTENT_START_Y = TITLE_Y + this.layout.contentOffsetY;
         const centerX = x + (w / 2);
 
-        this.ui.drawText("PROJECTED STATS", centerX, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "center");
+        this.ui.drawStyled('columnLabel', 'Projected Stats', centerX, TITLE_Y);
         this.ui.drawLineWithGothicFlourish(centerX - 120, TITLE_Y + 29, 240, UITheme.colors.borderHighlight);
 
         let currentY = CONTENT_START_Y;
         const startX = x + this.layout.p;
         const colW = w - (this.layout.p * 2);
 
-        this.ui.drawText("Vitals", startX, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
+        this.ui.drawStyled('heading', 'Vitals', startX, currentY);
         currentY += 10;
         this.ui.drawLineWithGothicFlourish(startX, currentY, colW, UITheme.colors.borderHighlight);
         currentY += 32;
@@ -164,7 +162,7 @@ export class LevelUpRenderer {
         currentY = this._drawStatDiffRow("Max INS", currentStats.maxInsight?.total, previewStats.maxInsight?.total, startX, currentY, colW, 42);
         currentY += 15;
 
-        this.ui.drawText("Combat Stats", startX, currentY, UITheme.fonts.bold, UITheme.colors.textMuted, "left");
+        this.ui.drawStyled('heading', 'Combat Stats', startX, currentY);
         currentY += 10;
         this.ui.drawLineWithGothicFlourish(startX, currentY, colW, UITheme.colors.borderHighlight);
         currentY += 32;
@@ -194,8 +192,8 @@ export class LevelUpRenderer {
             let cStr = stat.isPct ? `${cVal.toFixed(0)}%` : cVal.toString();
             let pStr = stat.isPct ? `${pVal.toFixed(0)}%` : pVal.toString();
 
-            this.ui.drawText(stat.label, itemX, itemY, UITheme.fonts.small, UITheme.colors.textMuted, "left");
-            this.ui.drawText(cStr, itemX + 145, itemY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
+            this.ui.drawStyled('label', stat.label, itemX, itemY);
+            this.ui.drawStyled('value', cStr, itemX + 145, itemY);
 
             if (cVal !== pVal) {
                 let arrowColor = (pVal > cVal) ? UITheme.colors.success : UITheme.colors.failure;
@@ -212,9 +210,9 @@ export class LevelUpRenderer {
     }
 
     _drawStatDiffRow(label, curr = 0, prev = 0, x, y, w, rowH = 48) {
-        this.ui.drawText(label, x, y, UITheme.fonts.small, UITheme.colors.textMuted, "left");
+        this.ui.drawStyled('label', label, x, y);
         const valX = x + (w * 0.4);
-        this.ui.drawText(curr.toString(), valX, y, UITheme.fonts.mono, UITheme.colors.textMain, "right");
+        this.ui.drawStyled('value', curr.toString(), valX, y, { align: 'right' });
 
         if (curr !== prev) {
             let arrowColor = (prev > curr) ? UITheme.colors.success : UITheme.colors.failure;
@@ -231,12 +229,11 @@ export class LevelUpRenderer {
         const colAtk = x + (w * 0.35);
         const colDef = x + (w * 0.60);
         const colRes = x + (w * 0.85);
-        const headerFont = UITheme.fonts.cardTitle || "bold 28px sans-serif";
 
-        this.ui.drawText("TYPE", colType, currentY, headerFont, UITheme.colors.textMuted, "left");
-        this.ui.drawText("ATK", colAtk, currentY, headerFont, UITheme.colors.attack, "center");
-        this.ui.drawText("DEF", colDef, currentY, headerFont, UITheme.colors.defense, "center");
-        this.ui.drawText("RES", colRes, currentY, headerFont, UITheme.colors.resistance, "center");
+        this.ui.drawStyled('tableHeader', 'Type', colType, currentY);
+        this.ui.drawStyled('tableHeader', 'Atk', colAtk, currentY, { color: UITheme.colors.attack, align: 'center' });
+        this.ui.drawStyled('tableHeader', 'Def', colDef, currentY, { color: UITheme.colors.defense, align: 'center' });
+        this.ui.drawStyled('tableHeader', 'Res', colRes, currentY, { color: UITheme.colors.resistance, align: 'center' });
         currentY += 10;
         this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.border);
         currentY += 30;
@@ -277,7 +274,7 @@ export class LevelUpRenderer {
                     const totalWidth = cWidth + space + (arrowSize * 2) + space + pWidth;
                     const startX = xPos - (totalWidth / 2);
 
-                    this.ui.drawText(cStr, startX, currentY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
+                    this.ui.drawStyled('value', cStr, startX, currentY);
                     const arrowX = startX + cWidth + space + arrowSize;
                     this.ui.drawArrow(arrowX, currentY - 8, arrowSize, 'right', arrowColor);
                     this.ui.drawText(pStr, arrowX + arrowSize + space, currentY, UITheme.fonts.mono, arrowColor, "left");
@@ -315,4 +312,4 @@ export class LevelUpRenderer {
         drawBtn('BTN_RESET', "Reset", startX + btnW + spacing, hasPending, hasPending ? UITheme.colors.textMain : UITheme.colors.textMuted);
         drawBtn('BTN_CONFIRM', "Confirm", startX + (btnW * 2) + (spacing * 2), hasPending, hasPending ? UITheme.colors.success : UITheme.colors.textMuted);
     }
-}
+}

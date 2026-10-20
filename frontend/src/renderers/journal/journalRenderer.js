@@ -23,7 +23,7 @@ export class JournalRenderer {
         ui.clearScreen(w, h);
 
         const { p, startY } = state.layout;
-        const panelHeight = h - (startY * 2);
+        const panelHeight = h - startY - 144;   // room under the panels for the Back button
         const halfW = Math.floor(w / 2);
         const colW = halfW - (p * 1.5);
         const leftColX = p;
@@ -32,9 +32,6 @@ export class JournalRenderer {
         // 1. Draw Main Panels
         ui.drawPanel(leftColX, startY, colW, panelHeight, UITheme.colors.bgScale[0]);
         ui.drawPanel(rightColX, startY, colW, panelHeight, UITheme.colors.bgScale[1]);
-
-        // 2. Draw Close Hint
-        ui.drawText("Press ESC to Close", w - 24, 30, UITheme.fonts.small, UITheme.colors.textMuted, "right");
 
         // 3. Left Column: Tabs & List
         this._renderTabs(ui, state, leftColX, startY, colW);
@@ -47,7 +44,7 @@ export class JournalRenderer {
         if (state.displayQuestId) {
             this._renderQuestDetails(ui, state, rightColX, startY, colW, panelHeight);
         } else {
-            ui.drawText("Select or hover a quest to view details.", rightColX + (colW / 2), startY + (panelHeight / 2), UITheme.fonts.italic, UITheme.colors.textMuted, "center");
+            ui.drawStyled('hint', 'Select or hover a quest to view details.', rightColX + (colW / 2), startY + (panelHeight / 2));
         }
     }
 
@@ -62,9 +59,8 @@ export class JournalRenderer {
         ];
         tabs.forEach(([box, id, tabKey, label]) => {
             if (!box) return;
-            ui.drawRow(box.x, box.y, box.w, box.h, label,
-                ui.flags(id, state.hoveredHitboxId, { selected: state.activeTab === tabKey }),
-                { align: 'center', inset: true });
+            ui.drawTab(box.x, box.y, box.w, box.h, label,
+                ui.flags(id, state.hoveredHitboxId, { selected: state.activeTab === tabKey }));
         });
 
         const refBox = activeBox || completedBox;
@@ -83,7 +79,7 @@ export class JournalRenderer {
         const quests = state.activeTab === 'active' ? Object.keys(state.quests.active) : state.quests.completed;
 
         if (quests.length === 0) {
-            ui.drawText("No entries found.", x + w / 2, y + 50, UITheme.fonts.italic, UITheme.colors.textMuted, "center");
+            ui.drawStyled('empty', 'No entries found', x + w / 2, y + 50);
         }
 
         quests.forEach(qId => {
@@ -136,7 +132,7 @@ export class JournalRenderer {
         let currentY = TITLE_Y + 50;
 
         // Title & Flourish
-        ui.drawText(def.name.toUpperCase(), centerX, TITLE_Y, UITheme.fonts.header, UITheme.colors.textMain, "center");
+        ui.drawStyled('title', def.name, centerX, TITLE_Y);
         const titleFlourishW = Math.min(300, w - 64);
         ui.drawLineWithGothicFlourish(centerX - (titleFlourishW / 2), TITLE_Y + 29, titleFlourishW, UITheme.colors.borderHighlight);
 
@@ -145,7 +141,7 @@ export class JournalRenderer {
         const descStartX = x + padding;
         const descW = w - (padding * 2);
 
-        ui.drawWrappedText(def.description, descStartX, currentY, descW, 36, UITheme.fonts.body, UITheme.colors.textMuted);
+        ui.drawStyledWrapped('description', def.description, descStartX, currentY, descW, 36);
 
         const charWidthEstimate = 18;
         const charsPerLine = Math.max(10, Math.floor(descW / charWidthEstimate));
@@ -155,7 +151,7 @@ export class JournalRenderer {
         currentY += (lines * 36) + 50;
 
         // Objectives
-        ui.drawText("OBJECTIVES", descStartX, currentY, UITheme.fonts.bold, UITheme.colors.textHighlight, "left");
+        ui.drawStyled('heading', 'Objectives', descStartX, currentY);
         currentY += 10;
         ui.drawLineWithGothicFlourish(descStartX, currentY, descW, UITheme.colors.borderHighlight);
         currentY += 35;
@@ -194,7 +190,7 @@ export class JournalRenderer {
             const checkbox = isDone ? "[X]" : "[ ]";
 
             ui.drawText(`${checkbox}  ${actionText} ${targetText}`, descStartX + 8, currentY, UITheme.fonts.body, color, "left");
-            ui.drawText(`${progress} / ${req}`, descStartX + descW - 8, currentY, UITheme.fonts.mono, color, "right");
+            ui.drawStyled('value', `${progress} / ${req}`, descStartX + descW - 8, currentY, { color, align: 'right' });
 
             currentY += 40;
         });
@@ -202,7 +198,7 @@ export class JournalRenderer {
         currentY += 20;
 
         // Rewards
-        ui.drawText("REWARDS", descStartX, currentY, UITheme.fonts.bold, UITheme.colors.textHighlight, "left");
+        ui.drawStyled('heading', 'Rewards', descStartX, currentY);
         currentY += 10;
         ui.drawLineWithGothicFlourish(descStartX, currentY, descW, UITheme.colors.borderHighlight);
         currentY += 30;
@@ -214,7 +210,7 @@ export class JournalRenderer {
         // Action Buttons
         const btnBox = state.hitboxes.find(box => box.id === `btn_collect_${state.selectedQuestId}`);
         if (btnBox) {
-            ui.drawButton(btnBox.x, btnBox.y, btnBox.w, btnBox.h, "COLLECT",
+            ui.drawButton(btnBox.x, btnBox.y, btnBox.w, btnBox.h, "Collect",
                 ui.flags(btnBox.id, state.hoveredHitboxId),
                 { bg: "rgba(0,0,0,0.6)", color: UITheme.colors.success });
         }
@@ -223,7 +219,7 @@ export class JournalRenderer {
         if (trackBtnBox) {
             const isTracked = state.trackedIds && state.trackedIds.includes(state.selectedQuestId);
 
-            ui.drawButton(trackBtnBox.x, trackBtnBox.y, trackBtnBox.w, trackBtnBox.h, isTracked ? "UNTRACK" : "TRACK",
+            ui.drawButton(trackBtnBox.x, trackBtnBox.y, trackBtnBox.w, trackBtnBox.h, isTracked ? "Untrack" : "Track",
                 ui.flags(trackBtnBox.id, state.hoveredHitboxId),
                 { bg: "rgba(0,0,0,0.6)", color: isTracked ? UITheme.colors.textHighlight : UITheme.colors.textMuted });
         }
@@ -241,8 +237,8 @@ export class JournalRenderer {
 
             if (customDraw) customDraw(startX + 8, currentY + 8, iconSize);
 
-            ui.drawText(label, startX + iconSize + 24, currentY + (rowHeight / 2) + 6, UITheme.fonts.body, UITheme.colors.textMain, "left");
-            ui.drawText(amountText, startX + width - 16, currentY + (rowHeight / 2) + 6, UITheme.fonts.mono, UITheme.colors.textHighlight, "right");
+            ui.drawStyled('body', label, startX + iconSize + 24, currentY + (rowHeight / 2) + 6);
+            ui.drawStyled('value', amountText, startX + width - 16, currentY + (rowHeight / 2) + 6, { color: UITheme.colors.textHighlight, align: 'right' });
 
             currentY += rowHeight + 12;
         };
@@ -257,7 +253,7 @@ export class JournalRenderer {
 
         if (def.rewards.currency) {
             drawRewardRow("Gold", `+${def.rewards.currency}`, (ix, iy, s) => {
-                ui.drawText("$", ix + s / 2, iy + s / 2 + 6, UITheme.fonts.bold, UITheme.colors.textHighlight, "center");
+                ui.drawStyled('heading', "$", ix + s / 2, iy + s / 2 + 6, { align: 'center' });
             });
         }
 
@@ -287,7 +283,7 @@ export class JournalRenderer {
                         const src = this.ICON_SRC_SIZE;
                         ui.drawSprite(sheet, col * src, row * src, src, src, ix, iy, s, s);
                     } else {
-                        ui.drawText("♟", ix + s / 2, iy + s / 2 + 6, UITheme.fonts.bold, UITheme.colors.textHighlight, "center");
+                        ui.drawStyled('heading', "♟", ix + s / 2, iy + s / 2 + 6, { align: 'center' });
                     }
                 });
             });
@@ -322,4 +318,4 @@ export class JournalRenderer {
         ui.drawSprite(sheet, srcX, srcY, ICON_SIZE, ICON_SIZE, x, y, size, size);
         return true;
     }
-}
+}

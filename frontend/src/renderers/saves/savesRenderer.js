@@ -76,16 +76,15 @@ export class SavesRenderer {
             const b = this._box(state, id);
             if (!b) continue;
             const disabled = id === 'tab_save' && !state.canSaveNow;
-            ui.drawRow(b.x, b.y, b.w, b.h, label,
-                ui.flags(id, focus, { selected: state.tab === key, disabled }),
-                { align: 'center', inset: true });
+            ui.drawTab(b.x, b.y, b.w, b.h, label,
+                ui.flags(id, focus, { selected: state.tab === key, disabled }));
         }
 
         ui.drawLineWithGothicFlourish(L.leftX + L.leftW / 4, L.tabY + L.tabH + 18, L.leftW / 2, C.borderHighlight);
 
         if (state.mode === 'game' && !state.canSaveNow) {
-            ui.drawText('You can only save outdoors. Step out of the building first.', L.leftX + L.leftW / 2, L.tabY + L.tabH + 52,
-                F.italic, C.textMuted, 'center', 'middle');
+            ui.drawStyled('hint', 'You can only save outdoors. Step out of the building first.', L.leftX + L.leftW / 2, L.tabY + L.tabH + 52,
+                { baseline: 'middle' });
         }
     }
 
@@ -97,10 +96,10 @@ export class SavesRenderer {
         ui.startClip(x - 6, L.listY - 6, listW + 12, L.listH + 12);
 
         if (state.loading) {
-            ui.drawText('Loading saves...', x + listW / 2, L.listY + 60, F.italic, C.textMuted, 'center', 'middle');
+            ui.drawStyled('hint', 'Loading saves...', x + listW / 2, L.listY + 60, { baseline: 'middle' });
         } else if (state.rows.length === 0) {
-            ui.drawText(state.tab === 'load' ? 'No saved games yet.' : 'Nothing to save over yet.', x + listW / 2, L.listY + 60,
-                F.italic, C.textMuted, 'center', 'middle');
+            ui.drawStyled('empty', state.tab === 'load' ? 'No saved games yet' : 'Nothing to save over yet', x + listW / 2, L.listY + 60,
+                { baseline: 'middle' });
         }
 
         for (const row of state.rows) {
@@ -112,17 +111,17 @@ export class SavesRenderer {
             const titleColor = ui.stateTextColor(flags, C.textMain);
 
             if (row.type === 'new') {
-                ui.drawText('+  New Save', box.x + 28, box.y + 46, F.bold, ui.stateTextColor(flags, C.textHighlight), 'left', 'alphabetic');
-                ui.drawText(`${state.manualCount} of ${state.maxManual} slots used`, box.x + 28, box.y + 84, F.small, C.textMuted, 'left', 'alphabetic');
+                ui.drawStyled('body', '+  New Save', box.x + 28, box.y + 46, { color: ui.stateTextColor(flags, C.textHighlight) });
+                ui.drawStyled('label', `${state.manualCount} of ${state.maxManual} slots used`, box.x + 28, box.y + 84);
                 continue;
             }
 
             const entry = row.entry;
-            ui.drawText(titleOfEntry(entry), box.x + 28, box.y + 46, F.bold, titleColor, 'left', 'alphabetic', box.w - 330);
-            ui.drawText(describe(entry.summary), box.x + 28, box.y + 84, F.small, C.textMuted, 'left', 'alphabetic', box.w - 330);
-            ui.drawText(when(entry.savedAt), box.x + box.w - 28, box.y + 46, F.small, C.textMuted, 'right', 'alphabetic');
-            const tag = row.type === 'auto' ? 'AUTO' : row.type === 'previous' ? 'BACKUP' : '';
-            if (tag) ui.drawText(tag, box.x + box.w - 28, box.y + 84, F.cardSmall, C.textHighlight, 'right', 'alphabetic');
+            ui.drawStyled('body', titleOfEntry(entry), box.x + 28, box.y + 46, { color: titleColor, maxWidth: box.w - 330 });
+            ui.drawStyled('label', describe(entry.summary), box.x + 28, box.y + 84, { maxWidth: box.w - 330 });
+            ui.drawStyled('label', when(entry.savedAt), box.x + box.w - 28, box.y + 46, { align: 'right' });
+            const tag = row.type === 'auto' ? 'Auto' : row.type === 'previous' ? 'Backup' : '';
+            if (tag) ui.drawStyled('cardHeading', tag.toUpperCase(), box.x + box.w - 28, box.y + 84, { align: 'right' });
         }
 
         ui.endClip();
@@ -137,11 +136,11 @@ export class SavesRenderer {
 
     _renderFooter(ui, state, focus) {
         const back = this._box(state, 'btn_back');
-        if (back) ui.drawButton(back.x, back.y, back.w, back.h, 'Back', ui.flags('btn_back', focus), { font: F.body });
+        if (back) ui.drawButton(back.x, back.y, back.w, back.h, 'Back', ui.flags('btn_back', focus), { font: F.medium });
         const settings = this._box(state, 'btn_settings');
-        if (settings) ui.drawButton(settings.x, settings.y, settings.w, settings.h, 'Settings', ui.flags('btn_settings', focus, { disabled: state.busy }), { font: F.body });
+        if (settings) ui.drawButton(settings.x, settings.y, settings.w, settings.h, 'Settings', ui.flags('btn_settings', focus, { disabled: state.busy }), { font: F.medium });
         const quit = this._box(state, 'btn_quit_title');
-        if (quit) ui.drawButton(quit.x, quit.y, quit.w, quit.h, 'Quit to Title', ui.flags('btn_quit_title', focus, { disabled: state.busy }), { font: F.body });
+        if (quit) ui.drawButton(quit.x, quit.y, quit.w, quit.h, 'Quit to Title', ui.flags('btn_quit_title', focus, { disabled: state.busy }), { font: F.medium });
     }
 
     _renderDetails(ui, state, focus) {
@@ -151,17 +150,17 @@ export class SavesRenderer {
         let y = L.panelY + 84;
 
         if (!shown) {
-            ui.drawText(state.tab === 'load' ? 'Pick a save to load.' : 'Pick New Save, or a save to write over.', cx, L.panelY + L.panelH / 2 - 60,
-                F.italic, C.textMuted, 'center', 'middle');
+            ui.drawStyled('hint', state.tab === 'load' ? 'Pick a save to load.' : 'Pick New Save, or a save to write over.', cx, L.panelY + L.panelH / 2 - 60,
+                { baseline: 'middle' });
         } else if (shown.type === 'new') {
-            ui.drawText('NEW SAVE', cx, y, F.header, C.textMain, 'center', 'alphabetic', L.rightW - 64);
+            ui.drawStyled('title', 'New Save', cx, y, { maxWidth: L.rightW - 64 });
             ui.drawLineWithGothicFlourish(cx - 150, y + 28, 300, C.borderHighlight);
-            ui.drawWrappedText('Give this moment a name, then save. You can keep as many as the list allows, and loading one never touches the others.',
-                L.rightX + 48, y + 90, L.rightW - 96, 40, F.body, C.textMuted);
+            ui.drawStyledWrapped('description', 'Give this moment a name, then save. You can keep as many as the list allows, and loading one never touches the others.',
+                L.rightX + 48, y + 90, L.rightW - 96, 40);
         } else {
             const entry = shown.entry;
             const s = entry.summary || {};
-            ui.drawText(titleOfEntry(entry).toUpperCase(), cx, y, F.header, C.textMain, 'center', 'alphabetic', L.rightW - 64);
+            ui.drawStyled('title', titleOfEntry(entry), cx, y, { maxWidth: L.rightW - 64 });
             ui.drawLineWithGothicFlourish(cx - 150, y + 28, 300, C.borderHighlight);
 
             const lines = [
@@ -174,26 +173,26 @@ export class SavesRenderer {
             ];
             let ly = y + 100;
             for (const [label, value] of lines) {
-                ui.drawText(label, L.rightX + 64, ly, F.body, C.textMuted, 'left');
-                ui.drawText(String(value), L.rightX + L.rightW - 64, ly, F.body, C.textMain, 'right', 'alphabetic', L.rightW - 300);
+                ui.drawStyled('label', label, L.rightX + 64, ly);
+                ui.drawStyled('body', String(value), L.rightX + L.rightW - 64, ly, { align: 'right', maxWidth: L.rightW - 300 });
                 ly += 56;
             }
 
             const note = shown.type === 'auto' ? 'Saved for you as you play.'
                 : shown.type === 'previous' ? 'What the autosave held before you last started a new game or loaded another save.'
                 : '';
-            if (note) ui.drawWrappedText(note, L.rightX + 64, ly + 20, L.rightW - 128, 38, F.italic, C.textMuted);
+            if (note) ui.drawStyledWrapped('description', note, L.rightX + 64, ly + 20, L.rightW - 128, 38);
         }
 
         // the name box (New Save)
         const nb = state.nameBox;
         if (nb) {
-            ui.drawText('Save name', nb.x, nb.y - 14, F.small, C.textMuted, 'left');
+            ui.drawStyled('label', 'Save name', nb.x, nb.y - 14);
             ui.drawPanel(nb.x, nb.y, nb.w, nb.h, state.isEditingName ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.4)');
             ui.drawStateBox(nb.x, nb.y, nb.w, nb.h, ui.flags('input_name', state.isEditingName ? 'input_name' : focus));
 
             let text = state.nameText;
-            let color = C.textMain;
+            let color;
             if (state.isEditingName) {
                 if (Math.floor(Date.now() / 500) % 2 === 0) text += '|';
             } else if (!text) {
@@ -201,22 +200,21 @@ export class SavesRenderer {
                 color = C.textMuted;
             }
             ui.startClip(nb.x, nb.y, nb.w, nb.h);
-            ui.drawText(text, nb.x + nb.w / 2, nb.y + nb.h / 2, F.body, color, 'center', 'middle');
+            ui.drawStyled('body', text, nb.x + nb.w / 2, nb.y + nb.h / 2, { color, align: 'center', baseline: 'middle' });
             ui.endClip();
         }
 
         // a one-line message above the buttons
         if (state.notice) {
             const my = (nb ? nb.y - 56 : L.panelY + L.panelH - 24 - 84 - 40);
-            ui.drawWrappedText(state.notice.text, L.rightX + 48, my, L.rightW - 96, 36, F.small,
-                state.notice.kind === 'error' ? C.error : C.success);
+            ui.drawStyledWrapped('notice', state.notice.text, L.rightX + 48, my, L.rightW - 96, 40, { kind: state.notice.kind });
         }
 
         // buttons
         for (const b of state.buttons) {
             const isDanger = b.id === 'btn_delete';
             ui.drawButton(b.x, b.y, b.w, b.h, b.label, ui.flags(b.id, focus, { disabled: state.busy }),
-                { font: F.body, color: isDanger ? C.error : undefined });
+                { font: F.medium, color: isDanger ? C.error : undefined });
         }
     }
 }

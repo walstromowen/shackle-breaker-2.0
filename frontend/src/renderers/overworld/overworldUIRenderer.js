@@ -110,14 +110,14 @@ export class OverworldUIRenderer {
                 ctx.lineWidth = 5;
                 ctx.strokeStyle = "rgba(0, 0, 0, 0.9)";
                 ctx.strokeText(String(slot.qty), x + SIZE - 8, y + SIZE - 8);
-                ctx.fillStyle = out ? (UITheme.colors.error || "#e57373") : UITheme.colors.textHighlight;
+                ctx.fillStyle = out ? UITheme.colors.error : UITheme.colors.textHighlight;
                 ctx.fillText(String(slot.qty), x + SIZE - 8, y + SIZE - 8);
             }
 
             // key badge, top left
             const badge = 28;   // big enough for the 24 px key font (it was 18, smaller than its own text)
             ui.drawPanel(x + 3, y + 3, badge, badge, "rgba(0, 0, 0, 0.7)");
-            ui.drawText(slot.key, x + 3 + badge / 2, y + 3 + badge / 2 + 1, UITheme.fonts.cardSmall, UITheme.colors.textMain || "#DDDDDD", "center", "middle");
+            ui.drawStyled('badge', slot.key, x + 3 + badge / 2, y + 3 + badge / 2 + 1);
 
             // a short flash when the slot was just used (gold: it worked, red: it did not)
             if (slot.flash > 0) {
@@ -135,21 +135,21 @@ export class OverworldUIRenderer {
             let alpha = Math.min(1, notice.left / 400);
             ctx.save();
             ctx.globalAlpha = Math.max(0, alpha);
-            ctx.font = UITheme.fonts.body || "16px sans-serif";
+            ctx.font = UITheme.text.notice.font;
             const w = ctx.measureText(notice.text).width + 32;
             ui.drawPanel(Math.round((ctx.canvas.width - w) / 2), lineY - 18, w, 36, "rgba(25, 23, 20, 0.8)");
-            ui.drawText(notice.text, ctx.canvas.width / 2, lineY, UITheme.fonts.body || "16px sans-serif",
-                notice.ok ? UITheme.colors.textMain : (UITheme.colors.error || "#e57373"), "center", "middle");
+            ui.drawStyled('notice', notice.text, ctx.canvas.width / 2, lineY,
+                { kind: notice.ok ? undefined : 'error', align: 'center', baseline: 'middle' });
             ctx.restore();
             lineY -= 44;
         }
         if (hovered && hovered.defId) {
             ctx.save();
-            ctx.font = UITheme.fonts.body || "16px sans-serif";
+            ctx.font = UITheme.text.notice.font;
             const label = hovered.name;
             const w = ctx.measureText(label).width + 32;
             ui.drawPanel(Math.round((ctx.canvas.width - w) / 2), lineY - 18, w, 36, "rgba(65, 58, 50, 0.85)");
-            ui.drawText(label, ctx.canvas.width / 2, lineY, UITheme.fonts.body || "16px sans-serif", UITheme.colors.states.highlightText, "center", "middle");
+            ui.drawStyled('notice', label, ctx.canvas.width / 2, lineY, { kind: 'info', align: 'center', baseline: 'middle' });
             ctx.restore();
         }
     }
@@ -245,14 +245,14 @@ export class OverworldUIRenderer {
 
         ctx.save();
         ctx.globalAlpha = alpha;
-        ui.drawSelectionBrackets(
-            screenX - padding,
-            drawY - padding,
-            drawW + (padding * 2),
-            drawH + (padding * 2),
-            12,
-            UITheme.colors.borderHighlight || "#FFD700"
-        );
+        // A soft brass outline that breathes (the corner brackets are retired everywhere in the UI)
+        ctx.strokeStyle = UITheme.colors.borderHighlight || "#C2A14F";
+        ctx.lineWidth = 2;
+        ctx.shadowColor = UITheme.colors.borderHighlight || "#C2A14F";
+        ctx.shadowBlur = 14;
+        ctx.beginPath();
+        ctx.roundRect(screenX - padding, drawY - padding, drawW + (padding * 2), drawH + (padding * 2), 8);
+        ctx.stroke();
         ctx.restore();
     }
 
@@ -282,12 +282,12 @@ export class OverworldUIRenderer {
 
     ctx.save();
     // 1. Measure the shortcut text to dynamically size the black box
-    ctx.font = UITheme.fonts.cardSmall || "12px sans-serif";
+    ctx.font = UITheme.text.badge.font;
     const shortcutWidth = ctx.measureText(shortcut).width;
     const badgeWidth = Math.max(52, shortcutWidth + 16); // at least 52px wide, plus 8px padding on each side
 
     // 2. Measure the main text
-    ctx.font = UITheme.fonts.body || "16px sans-serif";
+    ctx.font = UITheme.text.body.font;
     const textWidth = ctx.measureText(text).width;
 
     const gap = 10;
@@ -302,26 +302,11 @@ export class OverworldUIRenderer {
     const badgeY = startY + (height / 2) - (badgeHeight / 2);
     ui.drawPanel(badgeX, badgeY, badgeWidth, badgeHeight, "rgba(0, 0, 0, 0.7)");
 
-    ui.drawText(
-      shortcut,
-      badgeX + (badgeWidth / 2),
-      badgeY + (badgeHeight / 2) + 1, // +1 minor adjustment to visually center text
-      UITheme.fonts.cardSmall || "12px sans-serif",
-      UITheme.colors.textMuted || "#AAAAAA",
-      "center",
-      "middle"
-    );
+    ui.drawStyled('badge', shortcut, badgeX + (badgeWidth / 2), badgeY + (badgeHeight / 2) + 1,   // +1 minor adjustment to visually center text
+      { color: UITheme.colors.textMuted });
 
     const textX = badgeX + badgeWidth + gap;
-    ui.drawText(
-      text,
-      textX,
-      startY + (height / 2),
-      UITheme.fonts.body || "16px sans-serif",
-      UITheme.colors.textMain || "#FFFFFF",
-      "left",
-      "middle"
-    );
+    ui.drawStyled('body', text, textX, startY + (height / 2), { baseline: 'middle' });
 
     ctx.restore();
   }
@@ -350,7 +335,7 @@ export class OverworldUIRenderer {
             else if (progress > 0.8) alpha = 1 - ((progress - 0.8) / 0.2);
 
             ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-            ctx.font = UITheme.fonts.cardTitle || "16px sans-serif";
+            ctx.font = UITheme.text.cardTitle.font;
             const textString = `+${toast.amount}`;
             const textWidth = ctx.measureText(textString).width;
 
@@ -376,15 +361,8 @@ export class OverworldUIRenderer {
                 );
             }
 
-            ui.drawText(
-                textString,
-                startX + padX + iconSize + iconGap,
-                floatY + (toastHeight / 2),
-                UITheme.fonts.cardTitle,
-                UITheme.colors.success || "#4CAF50",
-                "left",
-                "middle"
-            );
+            ui.drawStyled('cardTitle', textString, startX + padX + iconSize + iconGap, floatY + (toastHeight / 2),
+                { color: UITheme.colors.success, baseline: 'middle' });
             ctx.globalAlpha = 1.0;
         }
     }
@@ -412,15 +390,7 @@ export class OverworldUIRenderer {
         for (const quest of quests) {
             const questDisplayName = quest.name || quest.title || "Unknown Quest";
 
-            ui.drawText(
-                questDisplayName, 
-                startX + 16, 
-                currentY + (titleHeight / 2), 
-                UITheme.fonts.body, 
-                UITheme.colors.textHighlight, 
-                "left", 
-                "middle"
-            );
+            ui.drawStyled('heading', questDisplayName, startX + 16, currentY + (titleHeight / 2), { baseline: 'middle' });
             currentY += titleHeight;
 
             if (quest.objectives) {
@@ -460,24 +430,10 @@ export class OverworldUIRenderer {
                         descText = `${actionText} ${targetText}`;
                     }
 
-                    ui.drawText(
-                        `- ${descText || "Objective"}`, 
-                        startX + 24, 
-                        currentY + (lineHeight / 2), 
-                        UITheme.fonts.cardSmall, 
-                        textColor, 
-                        "left", 
-                        "middle"
-                    );
-                    ui.drawText(
-                        progressText, 
-                        startX + trackerWidth - 16, 
-                        currentY + (lineHeight / 2), 
-                        UITheme.fonts.cardSmall, 
-                        textColor, 
-                        "right", 
-                        "middle"
-                    );
+                    ui.drawStyled('cardLabel', `- ${descText || "Objective"}`, startX + 24, currentY + (lineHeight / 2),
+                        { color: textColor, baseline: 'middle' });
+                    ui.drawStyled('cardLabel', progressText, startX + trackerWidth - 16, currentY + (lineHeight / 2),
+                        { color: textColor, align: 'right', baseline: 'middle' });
                     currentY += lineHeight;
                 }
             }
@@ -499,15 +455,7 @@ export class OverworldUIRenderer {
             const bX = btn.x + 4;
             const bY = drawY + 4;
             ui.drawPanel(bX, bY, badgeSize, badgeSize, "rgba(0, 0, 0, 0.7)");
-            ui.drawText(
-                btn.shortcut,
-                bX + (badgeSize / 2),
-                bY + (badgeSize / 2),
-                UITheme.fonts.cardSmall,
-                UITheme.colors.textMuted,
-                "center",
-                "middle"
-            );
+            ui.drawStyled('badge', btn.shortcut, bX + (badgeSize / 2), bY + (badgeSize / 2), { color: UITheme.colors.textMuted });
         }
 
         const centerX = btn.x + (btn.w / 2);
@@ -526,15 +474,8 @@ export class OverworldUIRenderer {
         }
 
         const textY = drawY + btn.h - 18;
-        ui.drawText(
-            btn.label,
-            centerX,
-            textY,
-            UITheme.fonts.cardSmall,
-            textColor,
-            "center",
-            "middle"
-        );
+        ui.drawStyled('badge', btn.label, centerX, textY, { color: textColor });
+
         if (badge) this.drawSkillPointBadge(ctx, btn.x + btn.w - 14, drawY + 14);
     }
 

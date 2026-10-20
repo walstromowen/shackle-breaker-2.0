@@ -64,7 +64,7 @@ export class CharacterCreatorRenderer {
         let curY = CONTENT_START_Y;
 
         // A. Title & Flourish
-        ui.drawText("IDENTITY", leftCenterX, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "center");
+        ui.drawStyled('columnLabel', 'Identity', leftCenterX, TITLE_Y);
         ui.drawLineWithGothicFlourish(leftCenterX - 120, TITLE_Y + 29, 240, UITheme.colors.borderHighlight);
 
         // B. Identity Input (Name only)
@@ -171,7 +171,6 @@ export class CharacterCreatorRenderer {
             const fullW = colW - (innerMargin * 2);
             const thirdW = fullW / 3;
             const vX = p + innerMargin;
-            const RES_FONT = UITheme.fonts.small;
 
             const drawStatBlock = (label, valueOrObj, slotIndex, colorLabel) => {
                 if (valueOrObj === undefined || valueOrObj === null) return;
@@ -179,7 +178,7 @@ export class CharacterCreatorRenderer {
                 let bonus = typeof valueOrObj === 'object' ? (valueOrObj.bonus || 0) : 0;
 
                 const slotCenterX = vX + (slotIndex * thirdW) + (thirdW / 2);
-                ui.drawText(label, slotCenterX - 14, curY, RES_FONT, colorLabel, "right");
+                ui.drawStyled('label', label, slotCenterX - 14, curY, { color: colorLabel, align: 'right' });
                 ui.drawText(`${total}`, slotCenterX + 14, curY, UITheme.fonts.bold, UITheme.colors.textMain, "left");
 
                 if (bonus > 0) {
@@ -204,7 +203,6 @@ export class CharacterCreatorRenderer {
             ];
 
             const ROW_HEIGHT = 58;
-            const ATTR_FONT = UITheme.fonts.small;
 
             attrs.forEach((attr, idx) => {
                 const rowY = curY + (idx * ROW_HEIGHT);
@@ -215,8 +213,8 @@ export class CharacterCreatorRenderer {
                     ui.drawRect(p + 24, rowY - 34, colW - 48, ROW_HEIGHT, "rgba(255, 255, 255, 0.02)", true);
                 }
 
-                ui.drawText(attr.label, leftX, rowY, ATTR_FONT, UITheme.colors.textMuted, "left");
-                ui.drawText(attr.val || 0, rightX, rowY, ATTR_FONT, UITheme.colors.textMain, "right");
+                ui.drawStyled('label', attr.label, leftX, rowY);
+                ui.drawStyled('value', attr.val || 0, rightX, rowY, { align: 'right' });
             });
         }
 
@@ -228,7 +226,7 @@ export class CharacterCreatorRenderer {
         const centerColX = menuStartX + (midW / 2);
 
         ui.drawPanel(menuStartX, startY, midW, panelHeight, UITheme.colors.bgScale[1]);
-        ui.drawText("CUSTOMIZE", centerColX, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "center");
+        ui.drawStyled('columnLabel', 'Customize', centerColX, TITLE_Y);
         ui.drawLineWithGothicFlourish(centerColX - 144, TITLE_Y + 29, 288, UITheme.colors.borderHighlight);
 
         const labels = {
@@ -262,7 +260,7 @@ export class CharacterCreatorRenderer {
                     id: btnId, x: menuStartX + 96, y: btnY, w: midW - 192, h: MENU_ITEM_HEIGHT + 24
                 });
 
-                ui.drawButton(menuStartX + 96, btnY, midW - 192, MENU_ITEM_HEIGHT + 24, "START", ui.flags(btnId, focusId), { font: UITheme.fonts.body });
+                ui.drawButton(menuStartX + 96, btnY, midW - 192, MENU_ITEM_HEIGHT + 24, "Start", ui.flags(btnId, focusId), { font: UITheme.fonts.medium });
                 return;
             }
 
@@ -286,7 +284,7 @@ export class CharacterCreatorRenderer {
                     ui.flags(rowId, isEditingSeed ? rowId : focusId), { inset: true });
 
                 // Draw label above the actual input box
-                ui.drawText(labels[key], centerColX, menuY + 22, UITheme.fonts.cardSmall, UITheme.colors.textMuted, "center");
+                ui.drawStyled('cardLabel', labels[key], centerColX, menuY + 22, { align: 'center' });
             } else {
                 this.hotspots.push({
                     id: rowId, x: menuStartX + 24, y: menuY, w: midW - 48, h: MENU_ITEM_HEIGHT
@@ -297,7 +295,7 @@ export class CharacterCreatorRenderer {
 
                 // Draw normal label
                 const labelY = menuY + 22;
-                ui.drawText(labels[key], centerColX, labelY, UITheme.fonts.cardSmall, UITheme.colors.textMuted, "center");
+                ui.drawStyled('cardLabel', labels[key], centerColX, labelY, { align: 'center' });
             }
 
             let valStr = "";
@@ -363,7 +361,7 @@ export class CharacterCreatorRenderer {
         const rightCenterX = rightColX + colW / 2;
 
         ui.drawPanel(rightColX, startY, colW, panelHeight, UITheme.colors.bgScale[0]);
-        ui.drawText("DETAILS", rightCenterX, TITLE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "center");
+        ui.drawStyled('columnLabel', 'Details', rightCenterX, TITLE_Y);
         ui.drawLineWithGothicFlourish(rightCenterX - 96, TITLE_Y + 29, 192, UITheme.colors.borderHighlight);
 
         const desc = this.getDescription(controllerState);
@@ -373,13 +371,13 @@ export class CharacterCreatorRenderer {
             const textX = rightColX + 48;
             const textY = CONTENT_START_Y;
             const textMaxWidth = colW - 96;
-            const lineHeight = 67;
+            const lineHeight = 48;
             const textViewportHeight = panelHeight - (CONTENT_START_Y - startY) - 48;
 
             const paragraphs = desc.split('\n');
             let totalLines = 0;
             paragraphs.forEach(p => {
-                totalLines += ui.getWrappedLines(p, textMaxWidth, UITheme.fonts.body).length;
+                totalLines += ui.getWrappedLines(p, textMaxWidth, UITheme.text.description.font).length;
             });
 
             const totalTextHeight = totalLines * lineHeight;
@@ -395,7 +393,7 @@ export class CharacterCreatorRenderer {
             };
 
             ui.startClip(textX, textY, textMaxWidth, textViewportHeight);
-            ui.drawWrappedText(desc, textX, textY - previewOffset, textMaxWidth, lineHeight, UITheme.fonts.body, UITheme.colors.textMain);
+            ui.drawStyledWrapped('description', desc, textX, textY - previewOffset, textMaxWidth, lineHeight);
             ui.endClip();
 
             if (maxScroll > 0) {
@@ -439,4 +437,4 @@ export class CharacterCreatorRenderer {
 
         return "";
     }
-}
+}

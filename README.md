@@ -1,21 +1,20 @@
-Volume settings + sound-effect loudness matching
-=================================================
-Copy the frontend/ folder over your project (7 files; 2 are new).
+UI overhaul: the login screen's look on every screen, no selection brackets, Back buttons
+=========================================================================================
+Copy the frontend/ folder over your project. This REPLACES text_standard.zip and sleek_modern.zip (it contains everything in them,
+plus today's work, merged onto your current main), and it includes the Settings screen / volume work from volume_settings.zip.
+Fonts: frontend/src/assets/fonts (Cormorant Garamond, Barlow, DM Mono; licences in LICENSES.txt) are needed.
 
 What changed
-- core/audioManager.js        every sound effect is measured the first time it plays and brought to the same loudness (battle cries
-                              varied by 18 dB between creatures; now within about 2 dB, and none can clip). Four volume channels
-                              (Master / Music / Effects / Ambience) with their levels kept in this browser (localStorage).
-                              The slider defaults (Master 100, Music 50, Effects 50, Ambience 50) give the same music, ambience
-                              and interface levels as before; effects come out about 6 dB quieter against the music than the old cries did.
-- controllers/settings/settingsController.js, renderers/settings/settingsRenderer.js   NEW  the Settings screen.
-- core/sceneManager.js        registers the 'settings' scene.
-- controllers/title/titleController.js   the title screen's Settings button now opens it.
-- controllers/saves/savesController.js, renderers/saves/savesRenderer.js   a Settings button on the in-game System screen
-                              (between Back and Quit to Title); Done / Esc returns there.
+- Same look as the login card everywhere: cool blue-black plates with a brass hairline and cut corners, Cormorant Garamond titles,
+  Barlow text, tracked-capital buttons with the login button's brass-tinted face.
+- The corner brackets are gone from every screen. The item under the mouse or keyboard cursor now shows a gold wash, a fine edge and a
+  brass bar on its left edge (a chosen item keeps the pale bar). Key hints read "R-Click/ESC: Back" instead of "[R-Click/ESC] Back".
+  In the overworld, the object you can interact with gets a soft pulsing brass outline instead of brackets.
+- A standard Back button (300x76, same as the one on the Save screen) on Party, Character, Journal, Crafting Bag, Shop and the
+  Character Creator. Clicking it does exactly what right-click does there (closes a menu first, then leaves). The Settings
+  screen's Done button is now Back too. Right-click and Esc still work everywhere.
+  Where each one sits is in SHARED_BACK_BUTTON at the top of core/sceneManager.js; its look is UITheme.backButton / UITheme.button.
 
-Using it: drag or click a bar, or Up/Down to pick a row and Left/Right to move it 5%. Test Sound plays a battle cry through
-the Effects slider. Reset restores the defaults.
-
-To change the overall loudness of effects against the music for everyone, edit SFX_TARGET_RMS at the top of audioManager.js
-(0.18 now; lower is quieter, 0.13 is about 3 dB down).
+Notes
+- The Journal panels and the Crafting Bag recipe list are a little shorter to make room for the Back button.
+- The Character screen's key hints moved to the right of its Back button.

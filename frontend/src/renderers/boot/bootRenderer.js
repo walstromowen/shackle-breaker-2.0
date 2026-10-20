@@ -18,16 +18,16 @@ export class BootRenderer {
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         // 2. Draw Loading Header Text
-        ctx.fillStyle = UITheme.colors.textMain; // Aged bone white
-        ctx.font = UITheme.fonts.header;
+        ctx.fillStyle = UITheme.text.title.color;
+        ctx.font = UITheme.text.title.font;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         // Thematic flavor text instead of standard "Loading..."
         ctx.fillText('Loading Assets...', this.canvas.width / 2, this.canvas.height / 2 - 80);
 
         // 3. Draw Percentage Text
-        ctx.fillStyle = UITheme.colors.textMuted; 
-        ctx.font = UITheme.fonts.body;
+        ctx.fillStyle = UITheme.colors.textMuted;
+        ctx.font = UITheme.text.body.font;
         ctx.fillText(`Loading assets: ${percentage}%`, this.canvas.width / 2, this.canvas.height / 2 - 20);
 
         // 4. Bar Dimensions

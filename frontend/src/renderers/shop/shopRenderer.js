@@ -115,12 +115,12 @@ export class ShopRenderer {
         const SLOT_SIZE = 96;
         const SLOT_PADDING = 19;
 
-        this.ui.drawText(title, centerX, y + 48, UITheme.fonts.header, UITheme.colors.textMain, "center");
+        this.ui.drawStyled('title', title, centerX, y + 68);
 
         if (currency !== null && currency !== undefined) {
-            this.ui.drawText(`Currency: ${currency}`, centerX, y + 108, UITheme.fonts.cardMono, UITheme.colors.textHighlight, "center");
+            this.ui.drawStyled('subtitle', `Currency: ${currency}`, centerX, y + 122);
         } else {
-            this.ui.drawText("Prices Fixed", centerX, y + 108, UITheme.fonts.cardMono, UITheme.colors.textMuted, "center");
+            this.ui.drawStyled('subtitle', 'Prices Fixed', centerX, y + 122, { color: UITheme.colors.textMuted });
         }
 
         const dividerY = y + HEADER_HEIGHT - 24;
@@ -166,7 +166,7 @@ export class ShopRenderer {
         this.ui.startClip(x, listY - 24, w, listH + 48);
 
         if (!inventory || inventory.length === 0) {
-            this.ui.drawText("- Empty -", centerX, listY + 72, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "center");
+            this.ui.drawStyled('empty', 'Empty', centerX, listY + 72);
         } else {
             inventory.forEach((item, index) => {
                 if (!item) return;
@@ -225,7 +225,7 @@ export class ShopRenderer {
 
                     const basePrice = def.cost || def.value || 10;
                     const priceStr = prefix === 'VENDOR' ? `${basePrice}` : `${Math.floor(basePrice / 2)}`;
-                    this.ui.drawText(priceStr, itemX + 5, itemY + SLOT_SIZE - 5, UITheme.fonts.small, UITheme.colors.textMuted, "left");
+                    this.ui.drawStyled('label', priceStr, itemX + 5, itemY + SLOT_SIZE - 5);
                 }
             });
         }
@@ -359,14 +359,7 @@ export class ShopRenderer {
         const startY = h - 64;
 
         lines.forEach((lineText, index) => {
-            this.ui.drawText(
-                lineText,
-                centerX,
-                startY + (index * 32),
-                UITheme.fonts.small,
-                UITheme.colors.textMuted,
-                "center"
-            );
+            this.ui.drawStyled('hint', lineText, centerX, startY + (index * 32));
         });
     }
 }

@@ -21,7 +21,7 @@ export class AbilitiesPanel {
 
     // --- 2. Render Empty State ---
     if (abilityList.length === 0) {
-      this.ui.drawText("No abilities learned.", x + w / 2, y + 120, UITheme.fonts.cardItalic, UITheme.colors.textMuted, "center");
+      this.ui.drawStyled('cardNote', "No abilities learned.", x + w / 2, y + 120, { align: 'center' });
       return;
     }
 
@@ -301,4 +301,4 @@ export class AbilitiesPanel {
   _formatTargetingText(targeting) {
       return AbilityPreview.getTargetText(targeting);
   }
-}
+}

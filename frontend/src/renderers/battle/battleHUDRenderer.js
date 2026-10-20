@@ -13,7 +13,7 @@ export class BattleHUDRenderer {
     this.SRC_SIZE = 64; // Icon sprite sheet cell size (upgraded from 32)
     this.HUD = {
       CARD_W: 384,
-      CARD_H: 110,
+      CARD_H: 126,
       GAP: 14,
       BAR_HEIGHT: 10,
       BAR_WIDTH: 180,
@@ -151,7 +151,7 @@ export class BattleHUDRenderer {
     const targetX = 36;
     const hiddenX = -this.HUD.CARD_W - 48;
     const startY = 36;
-    const spacingY = 19;
+    const spacingY = 22;
     const activeChar = state.activeParty?.[state.activePartyIndex];
     const selectedAbility = state.selectedAction || (activeChar?.abilities?.[state.menuIndex]);
     const targetGroup = selectedAbility?.targetGroup || state.targetGroup;
@@ -203,7 +203,7 @@ export class BattleHUDRenderer {
       this.ctx.fillStyle = UITheme.colors.textMain;
       this.ctx.textAlign = 'left';
       this.ctx.textBaseline = 'alphabetic';
-      this.ctx.fillText(member.name, currentX + this.HUD.PADDING_X, y + 34);
+      this.ctx.fillText(member.name, currentX + this.HUD.PADDING_X, y + 40);
 
       const textWidth = this.ctx.measureText(member.name).width;
       const safeStatusX = currentX + this.HUD.PADDING_X + textWidth + 24;
@@ -214,7 +214,7 @@ export class BattleHUDRenderer {
       const displayIns = this.getDisplayStat(member, 'insight', member.insight || 0);
 
       const barX = currentX + this.HUD.PADDING_X;
-      let currentY = y + 48;
+      let currentY = y + 60;
 
       this.ui.drawBar(barX, currentY, this.HUD.BAR_WIDTH, this.HUD.BAR_HEIGHT, displayHp, member.maxHp || 10, UITheme.colors.hp, UITheme.colors.hpDim);
       this.drawBarText(displayHp, member.maxHp, barX, currentY);
@@ -282,7 +282,7 @@ export class BattleHUDRenderer {
         this.ui.drawStateBox(currentX, y, this.HUD.CARD_W, ENEMY_CARD_H, flags);
       }
 
-      this.ctx.font = UITheme.fonts.bodyItalic || `italic ${UITheme.fonts.body}`;
+      this.ctx.font = UITheme.fonts.bodyItalic;
       this.ctx.fillStyle = UITheme.colors.textMain;
       this.ctx.textAlign = 'right';
       this.ctx.textBaseline = 'alphabetic'; // Force the text to draw upwards
@@ -306,9 +306,7 @@ export class BattleHUDRenderer {
 
   drawBarText(current, max, barX, barY) {
     this.ctx.save();
-    let fontStr = UITheme.fonts.small || '28px sans-serif';
-    fontStr = fontStr.replace(/\d+px/, match => Math.max(19, parseInt(match) - 5) + 'px');
-    this.ctx.font = fontStr;
+    this.ctx.font = UITheme.fonts.cardMono;
     this.ctx.fillStyle = UITheme.colors.textMuted;
     this.ctx.textAlign = "left";
     this.ctx.textBaseline = "middle";
@@ -341,27 +339,21 @@ export class BattleHUDRenderer {
     this.ctx.lineTo(w, y);
     this.ctx.stroke();
 
-    this.ctx.save();
-    this.ctx.textAlign = 'center';
-    this.ctx.font = UITheme.fonts.bold;
-    this.ctx.fillStyle = UITheme.colors.textMuted;
-    this.ctx.textBaseline = 'alphabetic'; // Force the text to draw upwards
-    this.ctx.fillText(`— ${activeChar.name} —`, w / 2, y + 53);
-    this.ctx.restore();
+    this.ui.drawStyled('heading', `— ${activeChar.name} —`, w / 2, y + 53, { align: 'center' });
 
     const btnW = 160;
     const btnH = 48;
     const btnY = y + 20;
     const globalBtns = [
-      { id: 'BUTTON_PARTY', text: 'Party [P]', x: 48 },
-      { id: 'BUTTON_INVENTORY', text: 'Items [I]', x: w - btnW - 48 }
+      { id: 'BUTTON_PARTY', text: 'Party (P)', x: 48 },
+      { id: 'BUTTON_INVENTORY', text: 'Items (I)', x: w - btnW - 48 }
     ];
 
     globalBtns.forEach(btn => {
       hitboxes.push({ id: btn.id, x: btn.x, y: btnY, w: btnW, h: btnH, cursor: 'pointer' });
       this.ui.drawButton(btn.x, btnY, btnW, btnH, btn.text,
         this.ui.flags(btn.id, state.hoveredElement?.id),
-        { bg: UITheme.colors.panelBg, font: UITheme.fonts.small || '18px sans-serif', color: UITheme.colors.textMuted });
+        { bg: UITheme.colors.panelBg });
     });
 
     // The panel only has room for one row of icons, so long lists (e.g. the dev artifact) are paged:
@@ -371,13 +363,7 @@ export class BattleHUDRenderer {
     const firstOnPage = page * columns;
 
     if (pageCount > 1) {
-      this.ctx.save();
-      this.ctx.textAlign = 'center';
-      this.ctx.textBaseline = 'middle';
-      this.ctx.font = (UITheme.fonts.small || '18px sans-serif').replace(/\d+px/, '16px');
-      this.ctx.fillStyle = UITheme.colors.textMuted;
-      this.ctx.fillText(`< ${page + 1} / ${pageCount} >`, w / 2, y + 68);
-      this.ctx.restore();
+      this.ui.drawStyled('cardLabel', `< ${page + 1} / ${pageCount} >`, w / 2, y + 68, { align: 'center', baseline: 'middle' });
     }
 
     activeChar.abilities.forEach((ability, index) => {
@@ -425,7 +411,7 @@ export class BattleHUDRenderer {
     const w = AbilityPreview.CARD_WIDTH;
     const descW = w - (cardPadding * 2);
     const descStr = ability.description || 'No description available.';
-    const fontItalic = UITheme.fonts.cardItalic || UITheme.fonts.bodyItalic || `italic ${UITheme.fonts.body}`;
+    const fontItalic = UITheme.fonts.cardItalic;
 
     // Measure description lines
     let descLines = [descStr];
@@ -434,7 +420,7 @@ export class BattleHUDRenderer {
     }
 
     // Stat chips (raw damage, effective hit chance, speed, range), wrapped to fit the card
-    const statFont = UITheme.fonts.cardMono || UITheme.fonts.small || '18px monospace';
+    const statFont = UITheme.fonts.cardMono;
     const statChips = AbilityPreview.getStatChips(ability, actor);
     const statRows = this.ui.layoutChipColumn(statChips, statFont, 12);
     const STAT_ROW_H = 30;
@@ -499,12 +485,12 @@ export class BattleHUDRenderer {
     // Row 1: Title & Cost
     this.ctx.textAlign = 'left';
     this.ctx.textBaseline = 'middle';
-    this.ctx.font = UITheme.fonts.cardTitle || UITheme.fonts.bold;
+    this.ctx.font = UITheme.fonts.cardTitle;
     this.ctx.fillStyle = UITheme.colors.textMain;
     this.ctx.fillText(ability.name || 'Unknown Action', contentX, currentTextY);
 
     this.ctx.textAlign = 'right';
-    this.ctx.font = UITheme.fonts.cardMono || UITheme.fonts.bold;
+    this.ctx.font = UITheme.fonts.cardMono;
     // Cost scaled to the acting character's max pools (same number canPayCost / payCost use)
     const shownCost = AbilityPreview.getCost(ability, actor);
     if (shownCost) {
@@ -771,7 +757,7 @@ export class BattleHUDRenderer {
         this.ctx.rotate(-angle);
         this.ctx.fillStyle = isLocked ? '#cccccc' : '#ffffff';
         const fontSize = isLocked ? 14 : 18 + (pulse * 2);
-        this.ctx.font = `bold ${fontSize}px 'Georgia', 'Times New Roman', serif`;
+        this.ctx.font = UITheme.font(fontSize, { bold: true });
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
         this.ctx.fillText(textToDraw, 0, 0);
@@ -811,16 +797,11 @@ export class BattleHUDRenderer {
 
     let textY = y + 72;
     if (title) {
-      this.ctx.save();
-      this.ctx.textAlign = 'center';
-      this.ctx.font = UITheme.fonts.bold;
-      this.ctx.fillStyle = UITheme.colors.textMuted;
-      this.ctx.fillText(title, x + (w / 2), y + 53);
-      this.ctx.restore();
+      this.ui.drawStyled('heading', title, x + (w / 2), y + 53, { align: 'center' });
       textY = y + 108;
     }
 
-    this.ui.drawWrappedText(text, x + 48, textY, w - 96, 48, UITheme.fonts.body, UITheme.colors.textMain);
+    this.ui.drawStyledWrapped('body', text, x + 48, textY, w - 96, 48);
   }
 
   drawCinematicBanner(text, color, alpha = 1.0) {
@@ -889,7 +870,7 @@ export class BattleHUDRenderer {
   drawFallbackEmoji(text, x, y, size) {
     this.ctx.save();
     this.ctx.fillStyle = UITheme.colors.textMain;
-    this.ctx.font = `${Math.floor(size * 0.7)}px sans-serif`;
+    this.ctx.font = UITheme.font(size * 0.7);
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
     this.ctx.fillText(text, x + size / 2, y + size / 2 + 5);

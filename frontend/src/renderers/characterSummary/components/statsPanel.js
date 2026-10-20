@@ -13,7 +13,7 @@ export class StatsPanel {
         // ==========================================
         // 1. ATTRIBUTES SECTION
         // ==========================================
-        this.ui.drawText("Attributes", x, currentY, UITheme.fonts.bold, UITheme.colors.textMain, "left");
+        this.ui.drawStyled('heading', 'Attributes', x, currentY);
         
         // --- Gothic Flourish Header ---
         currentY += 19;
@@ -47,12 +47,12 @@ export class StatsPanel {
 
                 const label = Formatting.getAbbreviation(key);
                 
-                this.ui.drawText(label, itemX, itemY, UITheme.fonts.small, UITheme.colors.textMuted, "left");
+                this.ui.drawStyled('label', label, itemX, itemY);
                 this.ui.drawText(displayVal.toString(), itemX + 72, itemY, UITheme.fonts.mono, valColor, "left");
             });
             currentY += (numRows * rowHeight);
         } else {
-            this.ui.drawText("None", x, currentY, UITheme.fonts.italic, UITheme.colors.textMuted, "left");
+            this.ui.drawStyled('empty', 'None', x, currentY, { align: 'left' });
             currentY += rowHeight;
         }
 
@@ -61,7 +61,7 @@ export class StatsPanel {
         // ==========================================
         // 2. COMBAT & RECOVERY STATS SECTION
         // ==========================================
-        this.ui.drawText("Combat Stats", x, currentY, UITheme.fonts.bold, UITheme.colors.textMain, "left");
+        this.ui.drawStyled('heading', 'Combat Stats', x, currentY);
         currentY += 19;
         this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.borderHighlight);
         currentY += 36;
@@ -100,8 +100,8 @@ export class StatsPanel {
             const itemX = x + (col * colWidth);
             const itemY = currentY + (row * rowHeight);
 
-            this.ui.drawText(stat.label, itemX, itemY, UITheme.fonts.mono, UITheme.colors.textMuted, "left");
-            this.ui.drawText(stat.val, itemX + 144, itemY, UITheme.fonts.mono, UITheme.colors.textMain, "left");
+            this.ui.drawStyled('label', stat.label, itemX, itemY);
+            this.ui.drawStyled('value', stat.val, itemX + 144, itemY);
         });
 
         currentY += (numRows * rowHeight) + 24;
@@ -120,11 +120,10 @@ export class StatsPanel {
         const colDef = x + (w * 0.65);
         const colRes = x + (w * 0.85);
 
-        const headerFont = UITheme.fonts.bold;
-        this.ui.drawText("TYPE", colType, currentY, headerFont, UITheme.colors.textMuted, "left");
-        this.ui.drawText("ATK", colAtk, currentY, headerFont, UITheme.colors.attack, "center");
-        this.ui.drawText("DEF", colDef, currentY, headerFont, UITheme.colors.defense, "center");
-        this.ui.drawText("RES", colRes, currentY, headerFont, UITheme.colors.resistance, "center");
+        this.ui.drawStyled('tableHeader', 'Type', colType, currentY);
+        this.ui.drawStyled('tableHeader', 'Atk', colAtk, currentY, { color: UITheme.colors.attack, align: 'center' });
+        this.ui.drawStyled('tableHeader', 'Def', colDef, currentY, { color: UITheme.colors.defense, align: 'center' });
+        this.ui.drawStyled('tableHeader', 'Res', colRes, currentY, { color: UITheme.colors.resistance, align: 'center' });
         
         currentY += 19;
         this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.borderHighlight);
@@ -167,4 +166,4 @@ export class StatsPanel {
             currentY += 34;
         });
     }
-}
+}

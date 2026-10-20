@@ -402,11 +402,21 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
 let sceneManager;
 let gameLoop;
 
+// The canvas draws with these fonts, so wait for them (or give up after a few seconds: the fallback fonts still read fine)
+const FONT_FACES = ['600 64px "Cormorant Garamond"', '700 40px "Cormorant Garamond"', '400 32px "Barlow"', '500 32px "Barlow"', '600 32px "Barlow"', 'italic 400 28px "Barlow"', '400 28px "DM Mono"'];
+const loadFonts = () => Promise.race([
+    Promise.all(FONT_FACES.map(face => document.fonts.load(face))),
+    new Promise(resolve => setTimeout(resolve, 5000))
+]).catch(err => console.warn('[main] Fonts could not be loaded:', err));
+
 async function initialize() {
+    const fontsReady = loadFonts();
     // 0. Log in / create an account BEFORE the game starts (no boot screen, no canvas yet). The assets download in the background meanwhile,
     //    so by the time the player is through the login the boot screen usually has nothing left to wait for.
     const assetsReady = assetLoader.loadAll(ASSET_MANIFEST).catch(err => console.error('[main] Asset loading failed:', err));
     await runAuthGate();
+
+    await fontsReady;
 
     // 1. Link the AudioManager to the loader so it can fetch decoded audio buffers
     audioManager.init(assetLoader);

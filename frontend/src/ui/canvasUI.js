@@ -10,8 +10,15 @@ export class CanvasUI {
 
   // --- SCREEN MANAGEMENT ---
   clearScreen(width, height) {
-    this.ctx.fillStyle = UITheme.colors.background;
-    this.ctx.fillRect(0, 0, width, height);
+    const ctx = this.ctx;
+    ctx.fillStyle = UITheme.colors.background;
+    ctx.fillRect(0, 0, width, height);
+    // a faint lift in the middle, so a screen is lit from within and the corners fall away
+    const g = ctx.createRadialGradient(width / 2, height * 0.42, height * 0.1, width / 2, height * 0.5, Math.max(width, height) * 0.75);
+    g.addColorStop(0, 'rgba(34, 40, 52, 0.22)');
+    g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, width, height);
   }
 
   // --- CLIPPING (Required for Scrolling Lists) ---
@@ -34,8 +41,8 @@ export class CanvasUI {
       this.ctx.fillRect(x, y, w, h);
     } else {
       this.ctx.strokeStyle = color;
-      this.ctx.lineWidth = 2; 
-      this.ctx.globalAlpha = 0.5;
+      this.ctx.lineWidth = 1.5;
+      this.ctx.globalAlpha = 0.6;
       this.ctx.strokeRect(x, y, w, h);
     }
     this.ctx.restore();
@@ -96,21 +103,44 @@ export class CanvasUI {
   }
 
   // --- PANELS ---
+  /** The outline of a panel: a rectangle with the top-left and bottom-right corners cut off. */
+  panelPath(x, y, w, h) {
+    const c = Math.max(0, Math.min(UITheme.panel.chamfer, Math.floor(Math.min(w, h) / 4)));
+    const ctx = this.ctx;
+    ctx.beginPath();
+    ctx.moveTo(x + c, y);
+    ctx.lineTo(x + w, y);
+    ctx.lineTo(x + w, y + h - c);
+    ctx.lineTo(x + w - c, y + h);
+    ctx.lineTo(x, y + h);
+    ctx.lineTo(x, y + c);
+    ctx.closePath();
+  }
+
   drawPanel(x, y, w, h, bgColor = UITheme.colors.panelBg) {
-    this.ctx.save();
-    // Fill
+    const ctx = this.ctx;
+    const p = UITheme.panel;
+    ctx.save();
+    this.panelPath(x, y, w, h);
+
+    // Fill, with a faint sheen along the top so the plate looks lit from above
     if (bgColor) {
-      this.ctx.fillStyle = bgColor;
-      this.ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = bgColor;
+      ctx.fill();
+      const sheen = ctx.createLinearGradient(0, y, 0, y + Math.min(h, 520));
+      sheen.addColorStop(0, `rgba(150, 165, 195, ${p.sheen})`);
+      sheen.addColorStop(1, 'rgba(150, 165, 195, 0)');
+      ctx.fillStyle = sheen;
+      ctx.fill();
     }
 
-    // --- Single Line Modern Border ---
-    this.ctx.strokeStyle = UITheme.colors.borderHighlight;
-    this.ctx.lineWidth = 2; 
-    this.ctx.globalAlpha = 0.6;
-    this.ctx.strokeRect(x, y, w, h);
+    // Hairline brass edge
+    ctx.strokeStyle = UITheme.colors.borderHighlight;
+    ctx.lineWidth = p.edgeWidth;
+    ctx.globalAlpha = p.edgeAlpha;
+    ctx.stroke();
 
-    this.ctx.restore();
+    ctx.restore();
   }
 
   /** The panel behind anything that floats above a screen (tooltips, context menus): the standard panel edge plus a drop shadow. */
@@ -125,10 +155,29 @@ export class CanvasUI {
     this.ctx.restore();
   }
 
+  /** The same colour with another alpha: '#c2a14f' -> 'rgba(194, 161, 79, 0.3)'. Understands #rgb, #rrggbb and rgb()/rgba(). */
+  withAlpha(color, alpha) {
+    const c = String(color).trim();
+    let m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(c);
+    if (m) {
+      let hex = m[1];
+      if (hex.length === 3) hex = hex.split('').map(ch => ch + ch).join('');
+      const n = parseInt(hex, 16);
+      return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+    }
+    m = /^rgba?\(([^)]+)\)$/i.exec(c);
+    if (m) {
+      const [r, g, b] = m[1].split(',').map(x => parseFloat(x));
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+    return c;
+  }
+
   // --- TEXT RENDERING ---
-  drawText(text, x, y, font = UITheme.fonts.body, color = UITheme.colors.textMain, align = "left", baseline = "alphabetic", maxWidth = undefined) {
+  drawText(text, x, y, font = UITheme.fonts.body, color = UITheme.colors.textMain, align = "left", baseline = "alphabetic", maxWidth = undefined, tracking = 0) {
     this.ctx.save();
     this.ctx.font = font;
+    if (tracking && 'letterSpacing' in this.ctx) this.ctx.letterSpacing = `${tracking}px`;   // part of the saved state, so restore() resets it
     this.ctx.fillStyle = color;
     this.ctx.textAlign = align;
     this.ctx.textBaseline = baseline;
@@ -173,6 +222,39 @@ export class CanvasUI {
         cursorY += lineHeight;
       });
     });
+  }
+
+  // --- TEXT ROLES (see UITheme.text for the list and what each one is for) ---
+
+  /** The role's text, with its capitals / dashes rule applied ("empty" notes become "- text -", "columnLabel" is capitals). */
+  styledText(role, text, opts = {}) {
+    const r = UITheme.text[role];
+    let t = String(text ?? '');
+    if (opts.upper ?? r.upper) t = t.toUpperCase();
+    if (r.dashes) t = `- ${t.replace(/^[-\s]+|[-\s.]+$/g, '')} -`;
+    // Key help is written "[R-Click/ESC] Back" in the screens' strings; it is drawn "R-Click/ESC: Back" (no brackets anywhere in the UI)
+    if (role === 'hint') t = t.replace(/\[([^\]]+)\]\s*/g, '$1: ');
+    return t;
+  }
+
+  /**
+   * Draws one line of text in a role:  ui.drawStyled('heading', 'Objectives', x, y)
+   * opts (all optional) override the role: { align, baseline, color, font, maxWidth, kind, upper }  kind picks a 'notice' color.
+   */
+  drawStyled(role, text, x, y, opts = {}) {
+    const r = UITheme.text[role];
+    if (!r) throw new Error(`[CanvasUI] There is no text role "${role}".`);
+    const color = opts.color || (r.kinds && r.kinds[opts.kind]) || r.color;
+    this.drawText(this.styledText(role, text, opts), x, y, opts.font || r.font, color,
+      opts.align || r.align, opts.baseline || r.baseline || 'alphabetic', opts.maxWidth, opts.tracking ?? r.tracking ?? 0);
+  }
+
+  /** As drawStyled, for text that wraps: ui.drawStyledWrapped('body', text, x, y, maxWidth, lineHeight). */
+  drawStyledWrapped(role, text, x, y, maxWidth, lineHeight, opts = {}) {
+    const r = UITheme.text[role];
+    if (!r) throw new Error(`[CanvasUI] There is no text role "${role}".`);
+    const color = opts.color || (r.kinds && r.kinds[opts.kind]) || r.color;
+    this.drawWrappedText(this.styledText(role, text, opts), x, y, maxWidth, lineHeight, opts.font || r.font, color);
   }
 
   // --- STAT CHIPS ("Label: value" pairs that wrap to fit a width) ---
@@ -310,23 +392,25 @@ export class CanvasUI {
 
   /**
    * Draws the background, edge mark and corner brackets for a state. Draw the element's own content (text, icon) afterwards.
-   *   highlight  gold wash + thin gold edge + corner brackets
-   *   pressed    dark wash + brackets pulled in tight
+   *   highlight  gold wash + thin gold edge + a brass accent bar on the left edge
+   *   pressed    dark wash
    *   selected   pale wash + a bar down the left edge (stays on while highlighted, so a chosen item that is also under the
    *              mouse shows both)
-   * opts: { brackets: false }  no brackets          { inset: true }  brackets inside the box (dense grids, menus)
-   *       { bracketDist: n }   explicit distance    { bar: false }    no selected bar
+   * opts: { bar: false }  no accent bar          { wash: false }  no wash / edge (a button draws its own face)
    * @returns {string} the resolved state
    */
   drawStateBox(x, y, w, h, flags = {}, opts = {}) {
     const state = this.resolveState(flags);
 
-    // A disabled element is never washed or barred, but the cursor can still be on it: show just the (faded) brackets so a
-    // keyboard cursor resting on it is not lost. The caller's globalAlpha (stateAlpha) does the fading.
+    // A disabled element is never washed or barred, but the cursor can still be on it: show just a faint edge so a keyboard
+    // cursor resting on it is not lost. The caller's globalAlpha (stateAlpha) does the fading.
     if (state === 'disabled') {
-      if ((flags.highlighted || flags.hovered || flags.focused) && opts.brackets !== false) {
-        const dist = opts.bracketDist !== undefined ? opts.bracketDist : (opts.inset ? UITheme.selection.bracketInset : null);
-        this.drawSelectionBrackets(x, y, w, h, dist, UITheme.colors.borderHighlight);
+      if (flags.highlighted || flags.hovered || flags.focused) {
+        this.ctx.save();
+        this.ctx.strokeStyle = UITheme.colors.states.highlightBorder;
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+        this.ctx.restore();
       }
       return state;
     }
@@ -334,15 +418,22 @@ export class CanvasUI {
     const s = UITheme.colors.states;
     const sel = UITheme.selection;
 
+    // The washes fade from the left edge to the right: a lit edge rather than a flat tint
+    const wash = (from, to) => {
+      const g = this.ctx.createLinearGradient(x, 0, x + w, 0);
+      g.addColorStop(0, from);
+      g.addColorStop(1, to);
+      this.drawRect(x, y, w, h, g, true);
+    };
     if (state === 'pressed') {
       this.drawRect(x, y, w, h, s.pressedBg, true);
-    } else if (state === 'highlight') {
-      this.drawRect(x, y, w, h, s.highlightBg, true);
+    } else if (state === 'highlight' && opts.wash !== false) {
+      wash(s.highlightBg, s.highlightBgEnd);
     } else if (state === 'selected') {
-      this.drawRect(x, y, w, h, s.selectedBg, true);
+      wash(s.selectedBg, s.selectedBgEnd);
     }
 
-    if (state === 'highlight' || state === 'pressed') {
+    if ((state === 'highlight' || state === 'pressed') && opts.wash !== false) {
       this.ctx.save();
       this.ctx.strokeStyle = s.highlightBorder;
       this.ctx.lineWidth = 1;
@@ -350,19 +441,17 @@ export class CanvasUI {
       this.ctx.restore();
     }
 
-    if (flags.selected && opts.bar !== false) {
-      this.drawRect(x, y, 4, h, s.selectedBar, true);
-    }
-
-    if ((state === 'highlight' || state === 'pressed') && opts.brackets !== false) {
-      let dist = opts.bracketDist;
-      if (dist === undefined) {
-        if (state === 'pressed') dist = opts.inset ? sel.bracketInset : sel.pressedDist;
-        else dist = opts.inset ? sel.bracketInset : null; // null = the theme's normal distance
-      }
-      this.drawSelectionBrackets(x, y, w, h, dist, UITheme.colors.borderHighlight);
+    // The accent bar down the left edge: pale for a chosen item, brass for the item the cursor is on (there are no corner marks)
+    if (opts.bar !== false) {
+      if (state === 'highlight' || state === 'pressed') this.drawRect(x, y, 3, h, s.highlightBar, true);
+      else if (flags.selected) this.drawRect(x, y, 3, h, s.selectedBar, true);
     }
     return state;
+  }
+
+  /** The Back button: the same size, label and look on every screen (UITheme.backButton). Register a hitbox with the same id and box. */
+  drawBackButton(focusId, box = UITheme.backButtonBox(), id = 'btn_back') {
+    return this.drawButton(box.x, box.y, box.w, box.h, UITheme.backButton.label, this.flags(id, focusId));
   }
 
   /** A standard button: dark face, thin edge, centered label, and the shared state look on top. */
@@ -371,15 +460,28 @@ export class CanvasUI {
     this.ctx.save();
     this.ctx.globalAlpha *= this.stateAlpha(flags); // multiply, so a screen fading in or out still fades
 
-    this.drawRect(x, y, w, h, opts.bg || UITheme.colors.bgScale[2], true);
-    this.drawRect(x, y, w, h, UITheme.colors.border, false);
-    this.drawStateBox(x, y, w, h, flags, opts);
+    const b = UITheme.button;
+    if (opts.bg) {
+      this.drawRect(x, y, w, h, opts.bg, true);
+    } else {
+      const lit = state === 'highlight' || state === 'pressed';
+      const face = this.ctx.createLinearGradient(0, y, 0, y + h);
+      face.addColorStop(0, lit ? b.faceTopLit : b.faceTop);
+      face.addColorStop(1, lit ? b.faceBottomLit : b.faceBottom);
+      this.drawRect(x, y, w, h, face, true);
+    }
+    this.ctx.save();
+    this.ctx.strokeStyle = state === 'highlight' || state === 'pressed' ? b.edgeLit : b.edge;
+    this.ctx.lineWidth = 1;
+    this.ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    this.ctx.restore();
+    this.drawStateBox(x, y, w, h, flags, { ...opts, bar: false, wash: false });
 
     this.drawText(
-      label, x + w / 2, y + h / 2,
-      opts.font || UITheme.fonts.body,
+      opts.upper === false ? label : String(label).toUpperCase(), x + w / 2, y + h / 2,
+      (!opts.font || opts.font === UITheme.fonts.medium || opts.font === UITheme.fonts.body) ? UITheme.fonts.button : opts.font,
       this.stateTextColor(flags, opts.color || UITheme.colors.textMain),
-      'center', 'middle'
+      'center', 'middle', undefined, opts.tracking ?? b.tracking
     );
     this.ctx.restore();
     return state;
@@ -393,7 +495,9 @@ export class CanvasUI {
     if (!(maxScroll > 0)) return null;
 
     const sb = UITheme.scrollbar;
-    this.drawRect(x, y, w, h, UITheme.colors.scrollTrack, true);
+    // The hit area stays the full width; what is drawn is a hairline track with a slim rounded thumb down the middle
+    const cx = x + w / 2;
+    this.drawRect(cx - 1, y, 2, h, UITheme.colors.scrollTrack, true);
 
     const contentH = maxScroll + viewportH;
     const thumbH = Math.max(sb.minThumb, Math.min(h, h * (viewportH / contentH)));
@@ -402,9 +506,12 @@ export class CanvasUI {
 
     const lit = !!(flags.highlighted || flags.hovered || flags.dragging || flags.focused || flags.pressed);
     this.ctx.save();
-    this.ctx.globalAlpha = lit ? 0.95 : 0.55;
+    this.ctx.globalAlpha = lit ? 0.95 : 0.5;
     this.ctx.fillStyle = lit ? UITheme.colors.states.highlightText : UITheme.colors.scrollThumb;
-    this.ctx.fillRect(x, thumbY, w, thumbH);
+    const tw = Math.min(w, lit ? 8 : 6);
+    this.ctx.beginPath();
+    this.ctx.roundRect(cx - tw / 2, thumbY, tw, thumbH, tw / 2);
+    this.ctx.fill();
     this.ctx.restore();
 
     return { x, y: thumbY, w, h: thumbH };
@@ -435,7 +542,7 @@ export class CanvasUI {
     this.ctx.globalAlpha *= this.stateAlpha(flags); // multiply, so a screen fading in or out still fades
 
     // 1. Background, edge, bar and brackets
-    this.drawStateBox(x, y, w, h, flags, { inset: opts.inset, brackets: opts.brackets, bracketDist: opts.bracketDist });
+    this.drawStateBox(x, y, w, h, flags, { inset: opts.inset });
 
     // 2. Text
     const textColor = this.stateTextColor(flags, opts.color || UITheme.colors.textMuted);
@@ -443,7 +550,7 @@ export class CanvasUI {
     if (align === 'center') textX = x + (w / 2);
     else if (align === 'right') textX = x + w - 24;
 
-    this.drawText(label, textX, y + (h / 2) + 10, opts.font || UITheme.fonts.body, textColor, align, 'alphabetic');
+    this.drawText(label, textX, y + (h / 2) + 10, opts.font || UITheme.fonts.body, textColor, align, 'alphabetic', undefined, opts.tracking || 0);
     this.ctx.restore();
     return state;
   }
@@ -451,12 +558,12 @@ export class CanvasUI {
   /**
    * A tab: a dark backing and thin edge with a centered label, in the shared state look. The open tab is
    * selected: true; the one under the mouse / keyboard cursor is highlighted (ui.flags does this).
-   * opts as for drawRow (font defaults to the small font, brackets are inside).
+   * Tab labels are always drawn in capitals. opts as for drawRow (font defaults to the small font, brackets are inside).
    */
   drawTab(x, y, w, h, label, flags = {}, opts = {}) {
     this.drawRect(x, y, w, h, opts.bg || 'rgba(0,0,0,0.5)', true);
     this.drawRect(x, y, w, h, UITheme.colors.border, false);
-    return this.drawRow(x, y, w, h, label, flags, { font: UITheme.fonts.small, align: 'center', inset: true, ...opts });
+    return this.drawRow(x, y, w, h, String(label).toUpperCase(), flags, { font: UITheme.fonts.small, align: 'center', inset: true, tracking: 2, ...opts });
   }
 
   // --- IMAGES ---
@@ -604,6 +711,8 @@ export class CanvasUI {
   // The corner brackets of a highlighted element. dist = px outside the element (negative = inside); null uses the theme's
   // distance (plus its optional slow breathing), so every bracket on every screen moves the same way.
   drawSelectionBrackets(x, y, w, h, dist = null, color = UITheme.colors.borderHighlight) {
+    return;   // the corner brackets are retired: a highlighted element now shows the gold wash, a fine edge and an accent bar (drawStateBox)
+    // eslint-disable-next-line no-unreachable
     const sel = UITheme.selection;
     const p = dist !== null && dist !== undefined
       ? dist
@@ -611,9 +720,9 @@ export class CanvasUI {
     const len = Math.max(6, Math.min(sel.bracketLen, Math.floor(Math.min(w, h) / 2)));
     this.ctx.save();
     this.ctx.strokeStyle = color;
-    this.ctx.lineWidth = 2; 
+    this.ctx.lineWidth = 1.5;
     this.ctx.shadowColor = color;
-    this.ctx.shadowBlur = 14; 
+    this.ctx.shadowBlur = 8;
 
     this.ctx.beginPath();
     // Top Left
@@ -677,31 +786,37 @@ export class CanvasUI {
 
   drawLineWithGothicFlourish(x, y, w, color = UITheme.colors.border) {
     this.ctx.save();
-    this.ctx.strokeStyle = color;
+    // Two hairlines that fade out toward their far ends, a gap, and a small diamond in the middle
     this.ctx.fillStyle = color;
-    this.ctx.lineWidth = 2; 
-    this.ctx.globalAlpha = 0.4;
+    this.ctx.lineWidth = 1.5;
     const middleX = x + (w / 2);
-    const pipSize = 5; 
-    const diaSize = 7; 
+    const gap = 16;
+    const diaSize = 5;
+    const left = this.ctx.createLinearGradient(x, 0, middleX - gap, 0);
+    left.addColorStop(0, this.withAlpha(color, 0));
+    left.addColorStop(1, color);
+    const right = this.ctx.createLinearGradient(middleX + gap, 0, x + w, 0);
+    right.addColorStop(0, color);
+    right.addColorStop(1, this.withAlpha(color, 0));
 
-    // Draw Main Line
+    this.ctx.globalAlpha = 0.55;
+    this.ctx.strokeStyle = left;
     this.ctx.beginPath();
-    this.ctx.moveTo(x + pipSize + 5, y); 
-    this.ctx.lineTo(x + w - pipSize - 5, y);
+    this.ctx.moveTo(x, y);
+    this.ctx.lineTo(middleX - gap, y);
+    this.ctx.stroke();
+    this.ctx.strokeStyle = right;
+    this.ctx.beginPath();
+    this.ctx.moveTo(middleX + gap, y);
+    this.ctx.lineTo(x + w, y);
     this.ctx.stroke();
 
-    this.ctx.globalAlpha = 0.7;
-    // End Pips
-    this.ctx.fillRect(x, y - (pipSize / 2), pipSize, pipSize);
-    this.ctx.fillRect(x + w - pipSize, y - (pipSize / 2), pipSize, pipSize);
-
-    // Center Diamond flourish
+    this.ctx.globalAlpha = 0.85;
     this.ctx.beginPath();
-    this.ctx.moveTo(middleX, y - diaSize); // Top
-    this.ctx.lineTo(middleX + diaSize, y); // Right
-    this.ctx.lineTo(middleX, y + diaSize); // Bottom
-    this.ctx.lineTo(middleX - diaSize, y); // Left
+    this.ctx.moveTo(middleX, y - diaSize);
+    this.ctx.lineTo(middleX + diaSize, y);
+    this.ctx.lineTo(middleX, y + diaSize);
+    this.ctx.lineTo(middleX - diaSize, y);
     this.ctx.closePath();
     this.ctx.fill();
 

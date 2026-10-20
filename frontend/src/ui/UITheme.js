@@ -1,22 +1,23 @@
 export const UITheme = {
   colors: {
     // --- Background Scale (Required for Column Renderers) ---
-    bgScale: ["#080809", "#0b0b0d", "#0f0f11", "#141417"],
+    bgScale: ["#07080b", "#0a0c10", "#0e1116", "#13161d"],   // cool iron, darkest to lightest
     
     // Backgrounds
-    background: "#050505",
-    panelBg: "rgba(15, 15, 17, 0.85)",
+    background: "#040508",
+    panelBg: "rgba(10, 12, 16, 0.88)",
     
     // Borders & Lines
-    border: "#3a352c",
-    selectedWhite: "#d4cbb8",
-    borderHighlight: "#b89947", // Tarnished Gold
+    border: "#2a2d34",          // iron hairline
+    selectedWhite: "#e2dac8",
+    borderHighlight: "#c2a14f", // Brass
     
     // Text
-    textMain: "#d4cbb8",      // Aged bone white
-    textMuted: "#8a8578",
-    textHighlight: "#b89947", // Tarnished Gold
-    
+    textMain: "#e2dac8",      // Bone
+    textMuted: "#948f86",     // Ash
+    textHighlight: "#c9a64f", // Brass
+    textOnIcon: "#ffffff",    // small counts / letters drawn on top of an icon or badge
+
     // --- Normalized Stat Colors (Foreground) ---
     hp: "#8c1c1c",      // Health: Dark Crimson
     stm: "#4a5d4e",     // Stamina: Muted Moss Green
@@ -40,10 +41,10 @@ export const UITheme = {
     error: "#e57373",       // Soft red for error lines (hotbar notice, empty counts)
 
     // --- Battle HUD (these were read with fallbacks before; now they are real tokens with the same values) ---
-    highlight: "#b89947",                       // the gold line along the action bar, the active-player marker
-    highlightGlow: "rgba(184, 153, 71, 0.15)",
+    highlight: "#c2a14f",                       // the gold line along the action bar, the active-player marker
+    highlightGlow: "rgba(201, 166, 79, 0.15)",
     menuBg: "rgba(0, 0, 0, 0.8)",
-    panelBorder: "#3a352c",
+    panelBorder: "#2a2d34",
     targetRed: "#9e1a1a",
     hpGlow: "rgba(140, 28, 28, 0.2)",
 
@@ -67,8 +68,8 @@ export const UITheme = {
     },
     
     // Ability Costs & Scrolling
-    scrollTrack: "rgba(15, 15, 17, 0.5)",
-    scrollThumb: "#d4cbb8", // Matched to the white border for visibility
+    scrollTrack: "rgba(226, 218, 200, 0.05)",
+    scrollThumb: "#cfc7b4",
 
     // ========================================================================
     // INTERACTION STATES - the ONE look every screen uses (see CanvasUI.drawStateBox)
@@ -81,40 +82,78 @@ export const UITheme = {
     //   disabled   cannot be used right now
     // ========================================================================
     states: {
-      highlightText: "#b89947",                 // Tarnished Gold
-      highlightBg: "rgba(184, 153, 71, 0.10)",
-      highlightBorder: "rgba(184, 153, 71, 0.45)",
+      highlightText: "#d4b35c",                 // Brass, a little brighter than resting gold
+      highlightBg: "rgba(201, 166, 79, 0.16)",  // the wash fades from this at the left edge ...
+      highlightBgEnd: "rgba(201, 166, 79, 0.02)", // ... to this at the right
+      highlightBorder: "rgba(201, 166, 79, 0.42)",
 
-      selectedText: "#d4cbb8",                  // textMain
-      selectedBg: "rgba(212, 203, 184, 0.06)",
-      selectedBar: "#d4cbb8",
+      selectedText: "#e2dac8",                  // textMain
+      selectedBg: "rgba(226, 218, 200, 0.09)",
+      selectedBgEnd: "rgba(226, 218, 200, 0.01)",
+      selectedBar: "#e2dac8",
+      highlightBar: "#c9a64f",                  // the accent bar on the item the cursor is on
 
-      pressedText: "#8f7a38",
-      pressedBg: "rgba(0, 0, 0, 0.35)",
+      pressedText: "#9a8340",
+      pressedBg: "rgba(0, 0, 0, 0.4)",
 
       disabledAlpha: 0.3
     },
   },
   fonts: {
-    title: 'normal 101px "Georgia", serif',       // Scaled from 42px
-    header: 'bold 58px "Georgia", serif',         // Scaled from 24px
-    body: '34px "Georgia", serif',                // Scaled from 14px
-    bold: 'bold 34px "Georgia", serif',           // Scaled from 14px
-    italic: 'italic 29px "Georgia", serif',       // Scaled from 12px
-    small: '29px "Georgia", serif',               // Scaled from 12px
-    mono: '34px monospace',                       // Scaled from 14px
+    // Cormorant Garamond (display) for titles and headings, Barlow (UI) for everything you read, DM Mono for numbers in tables.
+    // The files are in assets/fonts and declared in styles.css; main.js waits for them before the first frame.
+    title: '600 110px "Cormorant Garamond", Georgia, serif',
+    header: '600 64px "Cormorant Garamond", Georgia, serif',
+    body: '400 34px "Barlow", system-ui, sans-serif',
+    medium: '500 34px "Barlow", system-ui, sans-serif',
+    button: '500 28px "Barlow", system-ui, sans-serif',   // buttons (drawn in tracked capitals, like the login screen's)
+    bold: '600 34px "Barlow", system-ui, sans-serif',
+    italic: 'italic 400 29px "Barlow", system-ui, sans-serif',
+    small: '400 29px "Barlow", system-ui, sans-serif',
+    mono: '400 32px "DM Mono", ui-monospace, monospace',
     
+    bodyItalic: 'italic 400 34px "Barlow", system-ui, sans-serif',
+    monoSmall: '400 27px "DM Mono", ui-monospace, monospace',
+    display: '400 96px "DM Mono", ui-monospace, monospace',   // the big dice number
+    sectionHeading: '700 42px "Cormorant Garamond", Georgia, serif',   // a section inside a panel
+
     // --- Added Micro Fonts for Cards ---
-    cardTitle: 'bold 29px "Georgia", serif',      // Scaled from 12px
-    cardSmall: '24px "Georgia", serif',           // Scaled from 10px
-    cardItalic: 'italic 24px "Georgia", serif',   // Scaled from 10px
-    cardMono: '24px monospace'                    // Scaled from 10px
+    cardTitle: '600 29px "Barlow", system-ui, sans-serif',
+    cardSmall: '400 24px "Barlow", system-ui, sans-serif',
+    cardItalic: 'italic 400 24px "Barlow", system-ui, sans-serif',
+    cardMono: '400 22px "DM Mono", ui-monospace, monospace',
+
+    // --- The battle debugger overlay (developer tool; monospace, dense) ---
+    debugTitle: 'bold 26px monospace',
+    debugHeader: 'bold 29px monospace',
+    debugName: 'bold 22px monospace',
+    debugRow: '20px monospace',
+    debugSmall: '18px monospace'
   },
   layout: {
     padding: 48,          // Scaled from 20
     headerHeight: 120,    // Scaled from 50
     cornerRadius: 0       // Flat, sharp corners fit the aesthetic better
   },
+
+  // Panels (CanvasUI.drawPanel): a hairline brass edge, a soft top-lit fill, and two cut corners (top-left, bottom-right) like riveted plate.
+  panel: {
+    chamfer: 12,
+    edgeAlpha: 0.38,
+    edgeWidth: 1.5,
+    sheen: 0.06        // how much lighter (and cooler) the top of a panel is than its bottom, like the login card
+  },
+
+  // Buttons (CanvasUI.drawButton): the login screen's submit button -- a brass-tinted face, a brass hairline, tracked capitals.
+  button: {
+    faceTop: 'rgba(201, 166, 79, 0.13)',       faceBottom: 'rgba(201, 166, 79, 0.035)',
+    faceTopLit: 'rgba(201, 166, 79, 0.26)',    faceBottomLit: 'rgba(201, 166, 79, 0.09)',
+    edge: 'rgba(194, 161, 79, 0.50)',          edgeLit: 'rgba(212, 179, 92, 0.95)',
+    tracking: 2.5
+  },
+
+  // The Back button every screen without another way out shows (CanvasUI.drawBackButton): one size, one label
+  backButton: { w: 300, h: 76, margin: 48, label: 'Back' },
 
   // Floating panels (tooltips, context menus): CanvasUI.drawPopupPanel. bg is the same value as colors.bgScale[1].
   popup: {
@@ -126,9 +165,9 @@ export const UITheme = {
 
   // The corner brackets drawn on a highlighted element (CanvasUI.drawSelectionBrackets)
   selection: {
-    bracketDist: 10,   // px outside the element (dense grids / menus pass an inset instead)
+    bracketDist: 8,    // px outside the element (dense grids / menus pass an inset instead)
     bracketInset: -6,  // the same, for elements that sit close together: negative = inside the element
-    bracketLen: 19,    // length of each arm
+    bracketLen: 12,    // length of each arm
     bracketPulse: 0,   // px of slow in/out breathing; 0 = perfectly still. The same for every bracket on every screen.
     pressedDist: 4     // brackets pull in tight while the mouse button is held
   },
@@ -138,6 +177,70 @@ export const UITheme = {
     width: 14,
     minThumb: 36
   }
+};
+
+// ============================================================================
+// TEXT ROLES - the ONE way each kind of text looks, on every screen (draw with CanvasUI.drawStyled / drawStyledWrapped).
+//
+//   Big text
+//     title        the title of a screen or panel ("Inventory", a quest name, "Skill Check"). Written in normal capitals.
+//     columnLabel  the label over a column of a screen ("Identity"), muted.
+//     heading      a section inside a panel ("Objectives", "Required Materials"), gold display type.
+//     subtitle     one line under a title ("Currency: 100"), gold, lightly tracked.
+//   Reading text
+//     body         ordinary text, an option, a name
+//     label        the name of a value ("Strength"), small and muted
+//     value        a number or amount, monospace
+//     hint         key help and "Select a quest" (italic, muted, centered)
+//     description  flavour or explanatory text, usually several lines (italic, muted)
+//     empty        "nothing here" notes. Always drawn as "- text -".
+//     notice       a status line: kind 'error' | 'success' | 'info'
+//   Tables and cards (the compact tier, one step smaller)
+//     tableHeader  a column header of a table ("TYPE ATK DEF RES"), always in capitals
+//     cardTitle / cardLabel / cardValue / cardNote   the same four jobs inside a card or tooltip
+//     cardHeading  a section heading inside a card ("Granted Abilities")
+//     badge        a letter or a number drawn on top of an icon
+//
+// Buttons are written in Title Case ("New Game"); tabs are drawn in tracked capitals ("STATS") by CanvasUI.drawTab.
+// Fonts: titles / headings = Cormorant Garamond, everything you read = Barlow, numbers in tables = DM Mono.
+// ============================================================================
+const F = UITheme.fonts;
+const C = UITheme.colors;
+/** Where the Back button goes (bottom-left of the screen unless a screen passes another corner): { x, y, w, h } in canvas pixels. */
+UITheme.backButtonBox = (x, y) => ({
+  x: x ?? UITheme.backButton.margin,
+  y: y ?? (1080 - UITheme.backButton.margin - UITheme.backButton.h),
+  w: UITheme.backButton.w,
+  h: UITheme.backButton.h
+});
+
+UITheme.text = {
+  title:       { font: F.header,         color: C.textMain,      align: 'center' },
+  columnLabel: { font: F.sectionHeading, color: C.textMuted,     align: 'center' },
+  heading:     { font: F.sectionHeading, color: C.textHighlight, align: 'left' },
+  subtitle:    { font: '500 26px "Barlow", system-ui, sans-serif', color: C.textHighlight, align: 'center', tracking: 1.5 },
+
+  body:        { font: F.body,       color: C.textMain,      align: 'left' },
+  label:       { font: F.small,      color: C.textMuted,     align: 'left' },
+  value:       { font: F.mono,       color: C.textMain,      align: 'left' },
+  hint:        { font: F.italic,     color: C.textMuted,     align: 'center' },
+  description: { font: F.italic,     color: C.textMuted,     align: 'left' },
+  empty:       { font: F.italic,     color: C.textMuted,     align: 'center', dashes: true },
+  notice:      { font: F.body,       color: C.textMain,      align: 'left', kinds: { error: C.error, success: C.success, info: C.textHighlight } },
+
+  tableHeader: { font: F.cardTitle,  color: C.textMuted,     align: 'left', upper: true, tracking: 2 },
+  cardTitle:   { font: F.cardTitle,  color: C.textMain,      align: 'left' },
+  cardLabel:   { font: F.cardSmall,  color: C.textMuted,     align: 'left' },
+  cardValue:   { font: F.cardMono,   color: C.textMain,      align: 'left' },
+  cardNote:    { font: F.cardItalic, color: C.textMuted,     align: 'left' },
+  cardHeading: { font: F.cardTitle,  color: C.textHighlight, align: 'left' },
+  badge:       { font: F.cardSmall,  color: C.textMain,      align: 'center', baseline: 'middle' }
+};
+
+/** A font in the theme's family at any size: UITheme.font(40, { bold: true }). For sizes that change while playing (damage numbers). */
+UITheme.font = (px, { bold = false, italic = false, mono = false, display = false } = {}) => {
+  const family = mono ? '"DM Mono", ui-monospace, monospace' : display ? '"Cormorant Garamond", Georgia, serif' : '"Barlow", system-ui, sans-serif';
+  return `${italic ? 'italic ' : ''}${bold ? (display ? '700 ' : '600 ') : '400 '}${Math.round(px)}px ${family}`;
 };
 
 // What the mouse is doing right now, shared by every screen. UIInteractionManager writes it, CanvasUI.flags() reads it.
