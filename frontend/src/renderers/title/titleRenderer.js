@@ -1,5 +1,6 @@
 import { UITheme } from '../../ui/UITheme.js';
 import { CanvasUI } from '../../ui/canvasUI.js';
+import { drawEmbers } from '../../ui/embers.js';
 
 export class TitleRenderer {
     constructor(canvas, config, loader) {
@@ -23,6 +24,9 @@ export class TitleRenderer {
 
         // Note: The dark vignette overlay was removed from here to restore 
         // the original brightness of your background image.
+
+        // Embers rise over the whole screen, behind the menu
+        drawEmbers(ctx, Date.now() / 1000, 0, width, height, 1, undefined, 110, 1.7);   // thicker and bigger: the painted background is busy
 
         // 2. Draw Menu Items & Calculate Hitboxes
         const hitboxes = [];

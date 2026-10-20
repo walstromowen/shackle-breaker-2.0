@@ -1,6 +1,7 @@
 import { CanvasUI } from '../../ui/canvasUI.js';
 import { UITheme } from '../../ui/UITheme.js';
 import { UI_SFX } from '../../ui/uiSfx.js';
+import { drawEmbers } from '../../ui/embers.js';
 
 /* The LOOK preview next to the portrait plays the character's South-facing animation from the overworld sprite sheet.
    The sheet layout is the one MapRenderer uses: frames of CONFIG.CHARACTER_FRAME (w x h) in a row of 8, and rows in three sets of four
@@ -411,6 +412,9 @@ export class CharacterCreatorRenderer {
                 }
             }
         }
+
+        // Embers rise over the whole screen, panels included (drawn last, so the opaque panels do not hide them)
+        drawEmbers(ctx, Date.now() / 1000, 0, CANVAS_WIDTH, CANVAS_HEIGHT, 0.8, undefined, 80, 1.3);
 
         // ========================================================
         // 4. FINALIZE & SEND DATA TO CONTROLLER

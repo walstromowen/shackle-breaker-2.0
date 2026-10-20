@@ -5,11 +5,11 @@ import { UI_SFX } from '../../ui/uiSfx.js';
 import { gameState } from "../../../../shared/state/gameState.js";
 import { DIFFICULTY_MODIFIERS } from '../../../../shared/data/constants.js';
 import { drawItemChips } from '../../ui/itemChips.js';
+import { EMBER as EMBER_COLOR, COLD_EMBER, drawEmbers } from '../../ui/embers.js';
 import { NARRATION, STAGE_START_TIMER, narrationPlan, textEndTimer, decisionAlpha } from '../../ui/narration.js';
 
-const EMBER = [232, 160, 84];        // the warm tint a fresh word carries
+const EMBER = EMBER_COLOR;           // the warm tint a fresh word carries (the embers use the same one)
 const COLD = [176, 214, 196];        // ... and the pale green of a stage with tone: 'cold' (the prologue's cursed road)
-const COLD_EMBER = [112, 232, 168];  // the cold stage's embers, greener than its words
 const BONE = [226, 218, 200];        // UITheme.colors.textMain
 const NARRATION_SIZES = [44, 40, 36, 32];   // largest first: the text takes the biggest one that fits the viewport
 
@@ -857,35 +857,9 @@ export class EncounterRenderer {
         return best;
     }
 
-    /**
-     * Embers climbing through the dark over the whole width of the screen, a near layer (big, quick, bright) over a far one (small, slow).
-     * Deterministic from the clock, so there is no state to keep. `tint` is the ember colour (warm, or the cold green of the prologue).
-     */
+    /** Embers over the whole screen (shared with the title screen and the character creator: ui/embers.js). */
     drawEmbers(ctx, now, x0, width, height, alpha, tint = EMBER) {
-        const COUNT = 64;
-        ctx.save();
-        for (let k = 0; k < COUNT; k++) {
-            const seed = k * 7919 + 13;
-            const rnd = (n) => { const v = Math.sin(seed * (n + 1.37)) * 43758.5453; return v - Math.floor(v); };
-            const near = rnd(7) > 0.62;                                    // about a third are close to the eye
-            const speed = (near ? 0.034 : 0.016) + rnd(1) * (near ? 0.03 : 0.02);
-            const prog = (now * speed + rnd(2)) % 1;                       // 0 at the bottom, 1 at the top
-            const px = x0 + rnd(3) * width + Math.sin(now * (0.35 + rnd(4)) + k) * (near ? 40 : 22);
-            const py = height * (1 - prog);
-            const life = Math.sin(prog * Math.PI);                         // fades in and out
-            const flicker = 0.62 + 0.38 * Math.sin(now * (2 + rnd(5) * 3) + k * 1.7);
-            const a = alpha * life * flicker * (near ? 0.75 : 0.5);
-            if (a <= 0.01) continue;
-            const size = near ? 1.8 + rnd(6) * 2.6 : 0.9 + rnd(6) * 1.5;
-            ctx.globalAlpha = a;
-            ctx.fillStyle = `rgb(${tint[0]},${Math.max(0, tint[1] - 30)},${Math.max(0, tint[2] - 40)})`;
-            ctx.shadowColor = `rgba(${tint[0]},${tint[1]},${tint[2]},0.9)`;
-            ctx.shadowBlur = near ? 14 : 8;
-            ctx.beginPath();
-            ctx.arc(px, py, size, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        ctx.restore();
+        drawEmbers(ctx, now, x0, width, height, alpha, tint);
     }
 
     /** "Hold to skip" with a ring that fills while the button is held. Faint at rest; a click that did nothing makes it flare. */
