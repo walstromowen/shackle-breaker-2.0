@@ -323,7 +323,7 @@ export class AbilityPreview {
             case 'percent': {
                 // Depends on the TARGET's max resource, not the user's stats.
                 const pct = Math.round((effect.power || 0) * 100);
-                return { ...base, amount: null, text: `${pct}% Max ${resource.toUpperCase()}` };
+                return { ...base, amount: null, text: `${pct}% Max ${resource === 'hp' ? 'HP' : resource}` };
             }
             case 'max':
                 return { ...base, amount: null, text: 'Full' };

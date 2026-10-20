@@ -15,9 +15,9 @@ const USERNAME_RE = /^[A-Za-z0-9_]{3,20}$/;   // keep in step with backend/src/u
 
 const CSS = `
 #sbauth { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px;
-  font-family: 'Barlow', system-ui, sans-serif; color: #e2dac8; background: #040508 url('./assets/screens/title_bgh.jpg') center / cover no-repeat;
+  font-family: 'Barlow', system-ui, sans-serif; color: #e2dac8; background: #040508 url('./assets/screens/title_bg.png')   /* the same picture as the title screen */ center / cover no-repeat;
   transition: opacity .35s ease; }
-#sbauth::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(4,5,8,.55) 0%, rgba(4,5,8,.92) 100%); }
+#sbauth::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(4,5,8,.18) 0%, rgba(4,5,8,.62) 100%); }
 #sbauth.sbauth-leaving { opacity: 0; pointer-events: none; }
 #sbauth * { box-sizing: border-box; }
 .sbauth-card { position: relative; width: min(100%, 420px); padding: 36px 34px 28px; background: linear-gradient(180deg, rgba(19,22,29,.94), rgba(10,12,16,.96)); border: 1px solid rgba(194,161,79,.38);
@@ -74,7 +74,7 @@ export const AuthScreen = {
             const who = el('strong', { text: user.username });
             const root = el('div', { id: 'sbauth' }, [
                 el('div', { class: 'sbauth-card' }, [
-                    el('h1', { class: 'sbauth-title', text: 'Shackle-breaker' }),
+                    el('h1', { class: 'sbauth-title', text: 'Shackle Breaker' }),
                     el('p', { class: 'sbauth-sub', text: 'Welcome back' }),
                     el('hr', { class: 'sbauth-rule' }),
                     el('p', { class: 'sbauth-info', style: 'font-size:17px;font-style:normal;color:#e2dac8;text-align:center;margin-bottom:18px' }, ['Signed in as ', who]),
@@ -141,7 +141,7 @@ export const AuthScreen = {
 
             const root = el('div', { id: 'sbauth' }, [
                 el('div', { class: 'sbauth-card' }, [
-                    el('h1', { class: 'sbauth-title', text: 'Shackle-breaker' }),
+                    el('h1', { class: 'sbauth-title', text: 'Shackle Breaker' }),
                     el('p', { class: 'sbauth-sub', text: 'Sign in to keep your journey safe' }),
                     el('hr', { class: 'sbauth-rule' }),
                     el('div', { class: 'sbauth-tabs', role: 'tablist' }, [tabLogin, tabRegister]),

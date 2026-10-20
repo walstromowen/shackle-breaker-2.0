@@ -272,7 +272,7 @@ export const craftingRecipeDefinitions = {
     outputItemId: "linen",
     station: "tailors_bench",   // Renamed from weaving_loom
     materials: {
-      "cotton": 2
+      "plant_fibers": 10   // woven into cloth
     }
   },
   "recipe_leather": {

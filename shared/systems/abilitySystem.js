@@ -467,7 +467,8 @@ export class AbilitySystem {
         if (extra.damage !== undefined) msg = msg.replace(/{damage}/g, extra.damage);
         if (extra.status !== undefined) msg = msg.replace(/{status}/g, extra.status);
         if (extra.amount !== undefined) msg = msg.replace(/{amount}/g, extra.amount);
-        if (extra.resource !== undefined) msg = msg.replace(/{resource}/g, extra.resource.toUpperCase());
+        // HP is an abbreviation and stays in capitals; the other resources are ordinary words ("recovers 10 stamina")
+        if (extra.resource !== undefined) msg = msg.replace(/{resource}/g, extra.resource === 'hp' ? 'HP' : extra.resource);
         if (extra.stackText !== undefined) msg = msg.replace(/{stackText}/g, extra.stackText);
         
         return msg;

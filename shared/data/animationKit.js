@@ -30,7 +30,7 @@
  *  spawn / travel / stream options
  *      life        seconds the sprite lives                 scale     size multiplier
  *      frames      frames in the sheet row (default 1)      size      source frame size in px (default 64)
- *      move        'static' | 'expand_and_fade' | 'shrink_and_fade' | 'float_up_and_pop' | 'swipe_diagonal' | 'swipe_diagonal_alt'
+ *      move        'static' | 'spread_and_fade' (a pool flowing outwards, then thinning away) | 'expand_and_fade' | 'shrink_and_fade' | 'float_up_and_pop' | 'swipe_diagonal' | 'swipe_diagonal_alt'
  *                  | 'diagonal_drop' | 'linear' | 'arc'      (travel defaults to 'linear')
  *      blend       'screen' (default, glowing) | 'normal' | 'multiply' (dark) | 'source-over'
  *      filter      css filter for the sprite (recolour it with tint())

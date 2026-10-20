@@ -127,6 +127,9 @@ export class BattleController extends BaseController {
         if (traitsQueued) preBattleActionsQueued = true;
 
         if (preBattleActionsQueued) {
+            // Entrances, weather and pre-battle traits play out as a "round" of their own; when that queue empties, checkBattleStatus runs.
+            // That is not the end of a real round, so it must not hand out recovery: recovery only starts after the first round has been fought.
+            this._preBattleResolving = true;
             this.state.phase = PHASE.RESOLVE;
         } else {
             this._startActionPhase();
@@ -868,7 +871,8 @@ export class BattleController extends BaseController {
         if (!enemiesAlive) this._handleVictory();
         else if (!partyAlive) this._handleDefeat();
         else {
-            this._applyRoundEndRecovery();
+            if (this._preBattleResolving) this._preBattleResolving = false;   // the opening sequence just finished: no recovery yet
+            else this._applyRoundEndRecovery();
             this._startActionPhase();
         }
     }

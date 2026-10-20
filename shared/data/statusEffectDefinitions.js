@@ -16,11 +16,19 @@ export const StatusEffectDefinitions = {
         name: 'Bleed',
         animationId: "bleed",
         icon: { col: 1, row: 0 },
-        defaultCharges: 3,
-        maxStacks: 1,
+        defaultCharges: 4,
+        maxStacks: 3,            // every new cut makes it worse (value, drain and the penalties below all scale with the stacks)
         persistAfterCombat: true,
+        /* Bleeding is a real wound: it costs blood (HP) and strength (stamina) at the end of every turn, keeps the body from recovering
+           between rounds, and a body that is already cut is easier to cut again. At 3 stacks it is the most dangerous damage-over-time. */
         effects: [
+            { trigger: 'ON_TURN_END', modify: 'hp', value: -5, damageType: 'slash', battleMessage: "{target} bleeds for {amount} damage!" },
             { trigger: 'ON_TURN_END', modify: 'stamina', value: -5, damageType: 'slash', battleMessage: "{target} loses {amount} stamina from bleeding!" }
+        ],
+        modifiers: [
+            { type: 'percent', target: 'hpRecovery', value: -0.33 },
+            { type: 'percent', target: 'staminaRecovery', value: -0.33 },
+            { type: 'flat', target: 'resistance.slash', value: -0.2 }
         ],
     },
     frozen: {

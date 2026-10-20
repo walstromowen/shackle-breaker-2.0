@@ -22,6 +22,7 @@ export class InventoryPanel {
     this.HOTBAR_MAX_SLOT = 80;
     this.HOTBAR_TOP = 56;       // room for the title above the slots
     this.HOTBAR_BOTTOM = 24;
+    this.HOTBAR_KEY_FONT = '500 21px "Barlow", system-ui, sans-serif';   // the key number and the stack count inside a slot
 
     this.totalContentHeight = 0;
   }
@@ -201,8 +202,8 @@ export class InventoryPanel {
       // The slots sit close together, so the brackets are drawn inside
       this.ui.drawStateBox(sx, sy, bar.slot, bar.slot, flags, { inset: true });
 
-      // key label, top left
-      this.ui.drawStyled('label', entry.key, sx + 8, sy + 18);
+      // key label, top left: small enough (and set in from the cut corner) that it sits wholly inside the box
+      this.ui.drawText(entry.key, sx + 14, sy + 26, this.HOTBAR_KEY_FONT, UITheme.colors.textMuted, "left");
 
       if (entry.defId && !isOrigin) {
         const def = ItemDefinitions[entry.defId];
@@ -215,7 +216,7 @@ export class InventoryPanel {
           this.ui.ctx.restore();
         }
         this.ui.drawText(
-          `${entry.qty}`, sx + bar.slot - 5, sy + bar.slot - 5, UITheme.fonts.small,
+          `${entry.qty}`, sx + bar.slot - 12, sy + bar.slot - 11, this.HOTBAR_KEY_FONT,
           out ? UITheme.colors.failure : UITheme.colors.textHighlight, "right"
         );
       }

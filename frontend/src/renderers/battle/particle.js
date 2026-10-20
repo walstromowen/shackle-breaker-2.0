@@ -76,7 +76,7 @@ export class Particle {
 
     // --- FIX: Prevent linear/arc projectiles from fading out mid-flight ---
     // Added 'linear', 'arc', and 'diagonal_drop' so they crash into the target at full opacity.
-    const customAlphas = ['expand_and_fade', 'float_up_and_pop', 'swipe_diagonal', 'swipe_diagonal_alt', 'shrink_and_fade', 'linear', 'arc', 'diagonal_drop'];
+    const customAlphas = ['spread_and_fade', 'expand_and_fade', 'float_up_and_pop', 'swipe_diagonal', 'swipe_diagonal_alt', 'shrink_and_fade', 'linear', 'arc', 'diagonal_drop'];
     
     if (this.fadeOut && !customAlphas.includes(this.movement)) {
       // Changed from 0.5 to 0.85 so standard particles only fade in the last 15% of life
@@ -113,6 +113,19 @@ export class Particle {
           this.rotation = Math.atan2(nextY - this.y, nextX - this.x);
         }
         break;
+      case 'spread_and_fade': {
+        // A pool spreading across the ground: it starts as a small puddle, flows outwards fast and then slows to a stop (ease-out),
+        // stays at full strength while it sits there, and only thins away in the last quarter of its life.
+        const grow = Math.min(1, progress / 0.6);
+        const eased = 1 - Math.pow(1 - grow, 3);
+        this.x = this.startX;
+        this.y = this.startY;
+        this.scale = (this.config.scale || 1.0) * (0.12 + 0.88 * eased);
+        const fadeIn = Math.min(1, progress / 0.08);
+        const fadeOutT = progress > 0.75 ? (1 - progress) / 0.25 : 1;
+        this.alpha = this.baseAlpha * fadeIn * fadeOutT;
+        break;
+      }
       case 'expand_and_fade':
         this.x = this.startX;
         this.y = this.startY;

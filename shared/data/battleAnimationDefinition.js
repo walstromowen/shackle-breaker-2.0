@@ -18,11 +18,15 @@ export const BattleAnimationDefinitions = {
         actor: { flash: flash(0.067, 0.933, 'brightness(150%) hue-rotate(250deg)') },
         target: { shake: shake(0.333, 0.833, 36), flash: flash(0.333, 0.833, 'invert(100%)') }
     }),
-    "acid_pool": anim(2.2, {
+    "acid_pool": anim(2.6, {
         audio: [sfx(0.05, 'acidPoolSfx', { volume: 1 })],
         vfx: [
-            spawn(0, 'acidPoolAnimation', { life: 1.8, move: 'static', scale: 2, blend: 'normal' }),
-            spawn(0.3, 'acidicSmogAnimation', { life: 0.5, move: 'float_up_and_pop', scale: 1.2, blend: 'source-over' })
+            // the pool splashes down small and spreads outwards; a fainter second wave rolls out past it
+            spawn(0, 'acidPoolAnimation', { life: 2.2, move: 'spread_and_fade', scale: 2.6, blend: 'normal' }),
+            spawn(0.15, 'acidPoolAnimation', { life: 1.4, move: 'spread_and_fade', scale: 3.2, blend: 'normal', alpha: 0.45 }),
+            // bubbles pop up as it spreads, and fumes rise off the surface
+            ...repeat(0.25, 6, 0.28, t => burst(t, { count: 3, color: '#9be84a', scale: 1.2, minSpeed: 10, maxSpeed: 40, minLife: 0.4, maxLife: 0.7, gravity: -90, glow: false, area: [150, 40], offsetY: 20 })),
+            ...repeat(0.5, 4, 0.4, t => spawn(t, 'acidicSmogAnimation', { life: 0.7, move: 'float_up_and_pop', scale: 1.2, blend: 'source-over', offsetX: ((t * 100) % 3 - 1) * 40 }))
         ],
         target: { shake: shake(0.1, 0.8, 8), flash: flash(0.05, 1.5, 'hue-rotate(70deg) saturate(180%) brightness(110%)') }
     }),

@@ -13,8 +13,8 @@ export class BattleHUDRenderer {
     this.SRC_SIZE = 64; // Icon sprite sheet cell size (upgraded from 32)
     this.HUD = {
       CARD_W: 384,
-      CARD_H: 126,
-      GAP: 14,
+      CARD_H: 148,          // the name and bars + a strip along the bottom that is only for status icons
+      GAP: 10,
       BAR_HEIGHT: 10,
       BAR_WIDTH: 180,
       PADDING_X: 24,
@@ -151,7 +151,7 @@ export class BattleHUDRenderer {
     const targetX = 36;
     const hiddenX = -this.HUD.CARD_W - 48;
     const startY = 36;
-    const spacingY = 22;
+    const spacingY = 20;
     const activeChar = state.activeParty?.[state.activePartyIndex];
     const selectedAbility = state.selectedAction || (activeChar?.abilities?.[state.menuIndex]);
     const targetGroup = selectedAbility?.targetGroup || state.targetGroup;
@@ -205,16 +205,15 @@ export class BattleHUDRenderer {
       this.ctx.textBaseline = 'alphabetic';
       this.ctx.fillText(member.name, currentX + this.HUD.PADDING_X, y + 40);
 
-      const textWidth = this.ctx.measureText(member.name).width;
-      const safeStatusX = currentX + this.HUD.PADDING_X + textWidth + 24;
-      this.drawStatusEffects(member, safeStatusX, y);
+      // Status icons have a strip of their own along the bottom of the card, so they can never run into the name or off the edge
+      this.drawStatusEffects(member, currentX + this.HUD.PADDING_X, y + 110, { maxWidth: this.HUD.CARD_W - this.HUD.PADDING_X * 2 });
 
       const displayHp = this.getDisplayStat(member, 'hp', member.hp || 0);
       const displayStam = this.getDisplayStat(member, 'stamina', member.stamina || 0);
       const displayIns = this.getDisplayStat(member, 'insight', member.insight || 0);
 
       const barX = currentX + this.HUD.PADDING_X;
-      let currentY = y + 60;
+      let currentY = y + 56;
 
       this.ui.drawBar(barX, currentY, this.HUD.BAR_WIDTH, this.HUD.BAR_HEIGHT, displayHp, member.maxHp || 10, UITheme.colors.hp, UITheme.colors.hpDim);
       this.drawBarText(displayHp, member.maxHp, barX, currentY);
@@ -232,9 +231,9 @@ export class BattleHUDRenderer {
   }
 
   drawEnemyCards(enemies, state, hitboxes = []) {
-    const ENEMY_CARD_H = 77;
+    const ENEMY_CARD_H = 114;   // 77 for the name and HP bar + a strip along the bottom for status icons
     const stackHeight = (enemies.length * ENEMY_CARD_H) + ((enemies.length - 1) * this.HUD.GAP);
-    const bottomMargin = 216;
+    const bottomMargin = 228;
     const targetX = this.config.CANVAS_WIDTH - this.HUD.CARD_W - 36;
     const hiddenX = this.config.CANVAS_WIDTH + 48;
     const startY = this.config.CANVAS_HEIGHT - bottomMargin - stackHeight;
@@ -289,11 +288,8 @@ export class BattleHUDRenderer {
       this.ctx.fillText(enemy.name, currentX + this.HUD.CARD_W - this.HUD.PADDING_X, y + 34);
 
       this.ctx.textAlign = 'left';
-      const textWidth = this.ctx.measureText(enemy.name).width;
-      const activeEffects = enemy.statusEffects ? Math.min(enemy.statusEffects.length, 4) : 0;
-      const iconsWidth = activeEffects * (38 + 14);
-      const safeStatusX = currentX + this.HUD.CARD_W - this.HUD.PADDING_X - textWidth - 24 - iconsWidth;
-      this.drawStatusEffects(enemy, safeStatusX, y);
+      // the icons sit in their own strip under the HP bar, lined up with the right edge like the name and the bar
+      this.drawStatusEffects(enemy, currentX + this.HUD.PADDING_X, y + 72, { maxWidth: this.HUD.CARD_W - this.HUD.PADDING_X * 2, alignRight: true });
 
       const displayHp = this.getDisplayStat(enemy, 'hp', enemy.hp || 0);
       const barX = (currentX + this.HUD.CARD_W - this.HUD.PADDING_X) - this.HUD.BAR_WIDTH;
@@ -838,18 +834,46 @@ export class BattleHUDRenderer {
     this.ctx.restore();
   }
 
-  drawStatusEffects(entity, startX, startY) {
+  /** Status icons in one row inside `opts.maxWidth` (a card's inner width), left-aligned from startX or lined up against its right end (alignRight).
+   *  If they do not all fit, the last slot says how many more there are. A stacked status (bleed x2) shows its stack count on the icon. */
+  drawStatusEffects(entity, startX, startY, opts = {}) {
     if (!entity.statusEffects || entity.statusEffects.length === 0) return;
     const iconSize = 32;
-    const spacing = 14;
-    const maxIcons = 4;
-    const effectsToDraw = entity.statusEffects.slice(0, maxIcons);
+    const spacing = 10;
+    const maxWidth = opts.maxWidth || 4 * (iconSize + spacing);
+    const slots = Math.max(1, Math.floor((maxWidth + spacing) / (iconSize + spacing)));
+    const all = entity.statusEffects;
+    const overflow = all.length > slots;
+    const shown = overflow ? all.slice(0, slots - 1) : all;
+    const count = shown.length + (overflow ? 1 : 0);
+    const rowW = count * iconSize + (count - 1) * spacing;
+    const firstX = opts.alignRight ? startX + maxWidth - rowW : startX;
 
-    effectsToDraw.forEach((effect, index) => {
-      const x = startX + (index * (iconSize + spacing));
-      const iconData = effect.icon || '✨';
-      this.drawIcon(iconData, 'statusEffects', x, startY, iconSize);
+    shown.forEach((effect, index) => {
+      const x = firstX + (index * (iconSize + spacing));
+      this.drawIcon(effect.icon || '✨', 'statusEffects', x, startY, iconSize);
+      if ((effect.stacks || 1) > 1) {
+        this.ctx.save();
+        this.ctx.font = '500 17px "DM Mono", ui-monospace, monospace';
+        this.ctx.textAlign = 'right';
+        this.ctx.textBaseline = 'alphabetic';
+        this.ctx.fillStyle = UITheme.colors.textMain;
+        this.ctx.shadowColor = 'rgba(0,0,0,0.9)';
+        this.ctx.shadowBlur = 4;
+        this.ctx.fillText(`x${effect.stacks}`, x + iconSize + 2, startY + iconSize + 2);
+        this.ctx.restore();
+      }
     });
+
+    if (overflow) {
+      this.ctx.save();
+      this.ctx.font = '500 17px "DM Mono", ui-monospace, monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.fillStyle = UITheme.colors.textMuted;
+      this.ctx.fillText(`+${all.length - shown.length}`, firstX + shown.length * (iconSize + spacing) + iconSize / 2, startY + iconSize / 2);
+      this.ctx.restore();
+    }
   }
 
   drawIcon(iconData, sheetKey, x, y, size = 64) {
