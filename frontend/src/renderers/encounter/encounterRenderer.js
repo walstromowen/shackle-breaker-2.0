@@ -260,7 +260,7 @@ export class EncounterRenderer {
             ctx.globalAlpha = colsAlpha;
             ctx.shadowColor = '#000';
             ctx.shadowBlur = 10;
-            ui.drawStyled('subtitle', `Currency: ${currency}`, leftW / 2, currentY, { baseline: 'middle' });
+            ui.drawText(`Currency: ${currency}`, leftW / 2, currentY, UITheme.fonts.mono, UITheme.colors.textHighlight, "center", "middle");
 
             const rightColX = leftW + centerW;
             const displayStageName = stageName || "Unknown Stage";
@@ -323,7 +323,7 @@ export class EncounterRenderer {
             } else {
                 ctx.save();
                 ctx.globalAlpha = colsAlpha;
-                ui.drawStyled('empty', 'No image defined', rightColX + (rightW / 2), imageY + (targetAreaSize / 2) + 20, { baseline: 'middle' });
+                ui.drawText("No Image defined", rightColX + (rightW / 2), imageY + (targetAreaSize / 2) + 20, UITheme.fonts.italic, UITheme.colors.textMuted, "center", "middle");
                 ctx.restore();
             }
         }
@@ -374,7 +374,7 @@ export class EncounterRenderer {
                                 ctx.save();
                                 ctx.globalAlpha = alpha;
                                 const prefixWidth = ctx.measureText(line.substring(0, i)).width;
-                                ui.drawStyled('body', char, centerX + 96 + prefixWidth, renderY, { baseline: 'top' });
+                                ui.drawText(char, centerX + 96 + prefixWidth, renderY, UITheme.fonts.body, UITheme.colors.textMain, "left", "top");
                                 ctx.restore();
                             }
                         }
@@ -414,8 +414,8 @@ export class EncounterRenderer {
             ctx.save();
             const alpha = (Math.sin(Date.now() / 150) + 1) / 2;
             ctx.globalAlpha = 0.4 + (alpha * 0.6);
-            ctx.fillStyle = UITheme.text.hint.color;
-            ctx.font = UITheme.text.hint.font;
+            ctx.fillStyle = UITheme.colors.textHighlight;
+            ctx.font = UITheme.fonts.italic;
             ctx.textAlign = "right";
             ctx.fillText("[Left Click / Enter] to Skip", skipPromptX, skipPromptY);
             ctx.restore();
@@ -437,8 +437,8 @@ export class EncounterRenderer {
 
                 const alpha = (Math.sin(Date.now() / 150) + 1) / 2;
                 ctx.globalAlpha = decisionsAlpha * (0.4 + (alpha * 0.6));
-                ctx.fillStyle = UITheme.text.hint.color;
-                ctx.font = UITheme.text.hint.font;
+                ctx.fillStyle = UITheme.colors.textHighlight;
+                ctx.font = UITheme.fonts.italic;
                 ctx.textAlign = "right";
                 ctx.fillText("[Left Click / Enter] to Continue", skipPromptX, skipPromptY);
                 ctx.globalAlpha = decisionsAlpha;
@@ -599,7 +599,7 @@ export class EncounterRenderer {
             ctx.shadowColor = '#000';
             ctx.shadowBlur = 14;
             ctx.shadowOffsetY = 5;
-            ui.drawStyled('title', 'Skill Check', CANVAS_WIDTH / 2, popupY + 96);
+            ui.drawText("Skill Check", CANVAS_WIDTH / 2, popupY + 96, UITheme.fonts.header, UITheme.colors.textHighlight, "center");
             ctx.shadowBlur = 0;
             ctx.shadowOffsetY = 0;
 
@@ -655,7 +655,7 @@ export class EncounterRenderer {
             ctx.save();
             ctx.translate(leftModX, diceAreaY);
             if (actionPhase === 'apply_mod') ctx.scale(modPulseScale, modPulseScale);
-            ui.drawStyled('label', 'Modifier', 0, -72, { align: 'center', baseline: 'middle' });
+            ui.drawText("Modifier", 0, -72, UITheme.fonts.small || "34px sans-serif", UITheme.colors.textMuted, "center", "middle");
             if (actionPhase === 'apply_mod' && modGlowIntensity > 0) {
                 ctx.shadowColor = activeModColor;
                 ctx.shadowBlur = 36 * modGlowIntensity;
@@ -703,7 +703,7 @@ export class EncounterRenderer {
             ctx.stroke();
             ctx.shadowBlur = 0;
 
-            ctx.font = UITheme.fonts.display;
+            ctx.font = "bold 96px monospace";
             ctx.fillStyle = diceColor;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
@@ -713,7 +713,7 @@ export class EncounterRenderer {
             // --- 3. THRESHOLD (Right side) ---
             ctx.save();
             ctx.translate(rightThreshX, diceAreaY);
-            ui.drawStyled('label', 'Threshold', 0, -72, { align: 'center', baseline: 'middle' });
+            ui.drawText("Threshold", 0, -72, UITheme.fonts.small || "34px sans-serif", UITheme.colors.textMuted, "center", "middle");
             ui.drawText(dc.toString(), 0, 24, UITheme.fonts.title, UITheme.colors.textMain, "center", "middle");
             ctx.restore();
 
@@ -736,24 +736,24 @@ export class EncounterRenderer {
                 ctx.globalAlpha = 0.6 + (alpha * 0.4);
                 ctx.shadowColor = UITheme.colors.textHighlight;
                 ctx.shadowBlur = rollFlags.highlighted ? 30 : 19;
-                ui.drawStyled('heading', 'Roll', CANVAS_WIDTH / 2, btnY + 62, { align: 'center' });
+                ui.drawText("ROLL", CANVAS_WIDTH / 2, btnY + 62, UITheme.fonts.bold, UITheme.colors.textHighlight, "center");
                 ctx.globalAlpha = 1.0;
                 ctx.shadowBlur = 0;
             } else if (actionPhase === 'result') {
-                const resultText = isSuccess ? "Success!" : "Failed";
+                const resultText = isSuccess ? "SUCCESS!" : "FAILED";
                 ctx.shadowColor = diceColor;
                 ctx.shadowBlur = 24 + (24 * resultGlowIntensity);
                 ctx.save();
                 ctx.translate(CANVAS_WIDTH / 2, popupY + 588);
                 const textBump = 1.0 + (resultGlowIntensity * 0.08);
                 ctx.scale(textBump, textBump);
-                ui.drawStyled('title', resultText, 0, 0, { color: diceColor });
+                ui.drawText(resultText, 0, 0, UITheme.fonts.header, diceColor, "center");
                 ctx.restore();
                 ctx.shadowBlur = 0;
             } else if (['rolling', 'hold_base', 'apply_mod'].includes(actionPhase)) {
                 const alpha = (Math.sin(Date.now() / 150) + 1) / 2;
                 ctx.globalAlpha = 0.4 + (alpha * 0.6);
-                ui.drawStyled('hint', '[Left Click / Enter] to Skip', CANVAS_WIDTH / 2, popupY + 588);
+                ui.drawText("[Left Click / Enter] to Skip", CANVAS_WIDTH / 2, popupY + 588, UITheme.fonts.italic, UITheme.colors.textHighlight, "center");
                 ctx.globalAlpha = 1.0;
             }
         }
@@ -771,7 +771,7 @@ export class EncounterRenderer {
     const fadedColor = this.getAlphaColor(color, alpha);
     const fadedDimColor = this.getAlphaColor(dimColor, alpha);
 
-    ui.drawText(label, x, y + 12, UITheme.fonts.cardMono, fadedTextMuted);
+    ui.drawText(label, x, y + 12, UITheme.fonts.cardMono || UITheme.fonts.mono, fadedTextMuted);
     // TEMPORARY OVERRIDE: Inject alpha into the global border color so the hardcoded
     // globalAlpha inside CanvasUI.drawBar doesn't prevent the border from fading out.
     const oldBorder = UITheme.colors.border;
@@ -779,7 +779,7 @@ export class EncounterRenderer {
     ui.drawBar(x + labelW, y, barW, h, current, max, fadedColor, fadedDimColor);
     // Restore original border color
     UITheme.colors.border = oldBorder;
-    ui.drawText(`${Math.floor(current)}/${max}`, x + labelW + barW + numW, y + 12, UITheme.fonts.cardMono, fadedTextMuted, "right");
+    ui.drawText(`${Math.floor(current)}/${max}`, x + labelW + barW + numW, y + 12, UITheme.fonts.cardMono || UITheme.fonts.mono, fadedTextMuted, "right");
     ctx.restore();
   }
 
@@ -789,28 +789,28 @@ export class EncounterRenderer {
 
         ctx.shadowColor = '#000';
         ctx.shadowBlur = 10;
-        ui.drawStyled('title', 'Rewards Found', x, currentY, { align: 'left' });
+        ui.drawText("Rewards Found", x, currentY, UITheme.fonts.header, UITheme.colors.textHighlight);
         ctx.shadowColor = 'transparent';
         ctx.shadowBlur = 0;
         currentY += lineHeight + 12;
 
         if (rewards.xp) {
-            ui.drawStyled('body', `+ ${rewards.xp} XP`, x + 36, currentY, { color: UITheme.colors.success });
+            ui.drawText(`+ ${rewards.xp} XP`, x + 36, currentY, UITheme.fonts.body, UITheme.colors.success || UITheme.colors.textMain);
             currentY += lineHeight;
         }
 
         if (rewards.currency) {
-            ui.drawStyled('body', `+ ${rewards.currency} Currency`, x + 36, currentY, { color: UITheme.colors.textHighlight });
+            ui.drawText(`+ ${rewards.currency} Currency`, x + 36, currentY, UITheme.fonts.body, UITheme.colors.textHighlight);
             currentY += lineHeight;
         }
 
         if (rewards.items && rewards.items.length > 0) {
             currentY += 24;
-            ui.drawStyled('heading', 'Items Acquired', x + 36, currentY);
+            ui.drawText("Items Acquired:", x + 36, currentY, UITheme.fonts.body, UITheme.colors.textMain);
             currentY += lineHeight;
             rewards.items.forEach(item => {
                 const qtyStr = item.quantity && item.quantity > 1 ? ` (x${item.quantity})` : "";
-                ui.drawStyled('body', `- ${item.name}${qtyStr}`, x + 84, currentY, { color: UITheme.colors.textMuted });
+                ui.drawText(`- ${item.name}${qtyStr}`, x + 84, currentY, UITheme.fonts.body, UITheme.colors.textMuted);
                 currentY += lineHeight;
             });
         }
@@ -850,7 +850,7 @@ export class EncounterRenderer {
             } else {
                 // Fallback text if no sheet/icon mapped
                 const char = effect.name ? effect.name.charAt(0) : '?';
-                ui.drawText(char, drawX + (drawSize / 2), drawY + (drawSize / 2) + 2, UITheme.text.badge.font, this.getAlphaColor(UITheme.colors.textMain, alpha), "center", "middle");
+                ui.drawText(char, drawX + (drawSize / 2), drawY + (drawSize / 2) + 2, UITheme.fonts.cardSmall || UITheme.fonts.small || "12px sans-serif", this.getAlphaColor(UITheme.colors.textMain, alpha), "center", "middle");
             }
 
             // Stack Counter
@@ -859,7 +859,7 @@ export class EncounterRenderer {
                 ctx.beginPath();
                 ctx.arc(drawX + drawSize, drawY + drawSize, 14, 0, Math.PI * 2);
                 ctx.fill();
-                ui.drawText(effect.stacks.toString(), drawX + drawSize, drawY + drawSize + 2, UITheme.fonts.cardMono, this.getAlphaColor(UITheme.colors.textOnIcon, alpha), "center", "middle");
+                ui.drawText(effect.stacks.toString(), drawX + drawSize, drawY + drawSize + 2, UITheme.fonts.cardMono || UITheme.fonts.mono, this.getAlphaColor("white", alpha), "center", "middle");
             }
 
             drawX += (drawSize + spacing);
