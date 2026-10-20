@@ -48,8 +48,8 @@ const SHARED_BACK_BUTTON = {
     journal: null,
     shop: null,
     workshop: null,
-    character_summary: { x: 564, y: 960 },
-    'character-creator': { x: 1320, y: 932 }
+    character_summary: null,
+    'character-creator': null
 };
 
 import { PartyManager } from '../../../shared/systems/partyManager.js';
@@ -749,4 +749,4 @@ export class SceneManager {
         this.input.destroy();
         window.removeEventListener('keydown', this._handleGlobalKeydown);
     }
-}
+}

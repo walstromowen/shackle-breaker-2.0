@@ -201,7 +201,7 @@ export class CharacterSummaryRenderer {
 
     // --- Panel Content ---
     const contentY = y + tabH + 48;
-    const contentH = h - contentY - 48;
+    const contentH = h - contentY - 172;   // the Back button owns the bottom-left corner (y 956 and down)
 
     if (viewMode === 'STATS') {
       this.statsPanel.render(member, stats, x, contentY, contentW);
@@ -323,18 +323,15 @@ export class CharacterSummaryRenderer {
       lines.push(row2.join("    "));
     }
 
-    // The Back button takes the bottom-left corner of this column (SceneManager draws it), so the hints sit to the right of it
-    const rightEdge = leftW + centerW;
-    const hintLeft = 564 + UITheme.backButton.w + 40;
-    const centerX = Math.floor((hintLeft + rightEdge) / 2);
+    const centerX = leftW + Math.floor(centerW / 2);
 
-    const flourishW = Math.min(720, rightEdge - hintLeft - 16);
+    const flourishW = Math.min(720, centerW - 64);
     this.ui.drawLineWithGothicFlourish(centerX - (flourishW / 2), h - 104, flourishW, UITheme.colors.borderHighlight);
 
     const startY = h - (lines.length > 1 ? 64 : 44);
 
     lines.forEach((lineText, index) => {
-      this.ui.drawStyled('hint', lineText, centerX, startY + (index * 32), { maxWidth: rightEdge - hintLeft });
+      this.ui.drawStyled('hint', lineText, centerX, startY + (index * 32), { maxWidth: centerW - 48 });
     });
   }
 
@@ -347,4 +344,4 @@ export class CharacterSummaryRenderer {
     }
     return null;
   }
-}
+}

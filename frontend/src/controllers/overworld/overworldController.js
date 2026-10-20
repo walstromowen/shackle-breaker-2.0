@@ -509,7 +509,13 @@ export class OverworldController extends BaseController {
         this.createItemToast(itemId, amount);
         // Check if object leaves a remnant behind (e.g. Tree -> Stump)
         if (obj.interaction.replaceWith) {
-            this.worldManager.modifyWorld(obj.col, obj.row, obj.interaction.replaceWith);
+            // The remnant stands where the object's solid part stood: the bottom-left cell of its hitbox. The bottom-left of the *sprite* is
+            // often empty ground the player can stand on (the left side of a wide tree), and a stump put there would land on top of them.
+            const hb = (obj.hitboxes && obj.hitboxes[0]) || { xOffset: 0, yOffset: 0, w: 1, h: 1 };
+            const remnantCol = obj.col + (hb.xOffset || 0);
+            const remnantRow = obj.row + (hb.yOffset || 0) + Math.max(1, hb.h || 1) - 1;
+            this.worldManager.modifyWorld(obj.col, obj.row, null);   // the tree is gone (this also frees its hitbox cells)
+            this.worldManager.modifyWorld(remnantCol, remnantRow, obj.interaction.replaceWith);
         } else {
             this.worldManager.modifyWorld(obj.col, obj.row, null);
         }
@@ -905,4 +911,4 @@ export class OverworldController extends BaseController {
             }
         };
     }
-}
+}

@@ -46,14 +46,14 @@ export class CharacterCreatorRenderer {
         // --- GLOBAL LAYOUT (Scaled 2.4x for 1920x1080) ---
         const p = 48;
         const startY = 48;
-        const panelHeight = CANVAS_HEIGHT - (startY * 2);
+        const panelHeight = CANVAS_HEIGHT - startY - 144;   // the bottom-left corner under the panels belongs to the Back button
 
         const colW = CANVAS_WIDTH * 0.3;
         const midW = CANVAS_WIDTH - (colW * 2) - (p * 4);
 
-        const TITLE_OFFSET_Y = 60;
+        const TITLE_OFFSET_Y = 50;
         const TITLE_Y = startY + TITLE_OFFSET_Y;
-        const CONTENT_START_Y = TITLE_Y + 84;
+        const CONTENT_START_Y = TITLE_Y + 74;
 
         // ========================================================
         // 1. LEFT COLUMN (Identity & Stats)
@@ -102,7 +102,7 @@ export class CharacterCreatorRenderer {
         const identityBottomY = curY;
 
         // --- C. VISUALS ---
-        const VITALS_OFFSET = 380;
+        const VITALS_OFFSET = 330;
         const VITALS_START_Y = identityBottomY + VITALS_OFFSET;
         // The bounding box size for the UI element
         const portraitSize = 256;
@@ -190,7 +190,7 @@ export class CharacterCreatorRenderer {
             drawStatBlock("STM", previewStats.maxStamina || previewStats.stamina, 1, UITheme.colors.stm);
             drawStatBlock("INS", previewStats.maxInsight || previewStats.insight, 2, UITheme.colors.ins);
 
-            curY += 84;
+            curY += 78;
 
             // E. Attributes
             const attrSource = previewStats.attributes || previewStats;
@@ -202,7 +202,7 @@ export class CharacterCreatorRenderer {
                 { label: "Attunement", val: attrSource.attunement }
             ];
 
-            const ROW_HEIGHT = 58;
+            const ROW_HEIGHT = 52;
 
             attrs.forEach((attr, idx) => {
                 const rowY = curY + (idx * ROW_HEIGHT);
@@ -240,7 +240,7 @@ export class CharacterCreatorRenderer {
             seed: "WORLD SEED"
         };
 
-        const MENU_ITEM_HEIGHT = 76; 
+        const MENU_ITEM_HEIGHT = 68;
         const ROW_GAP = 4;
         const menuSteps = ['background', 'origin', 'appearance', 'keepsake', 'companion', 'trait', 'difficulty', 'seed', 'start'];
 
@@ -254,13 +254,13 @@ export class CharacterCreatorRenderer {
 
             if (key === 'start') {
                 const btnId = "BTN_START";
-                const btnY = menuY + 36;
+                const btnY = menuY + 24;
 
                 this.hotspots.push({
-                    id: btnId, x: menuStartX + 96, y: btnY, w: midW - 192, h: MENU_ITEM_HEIGHT + 24
+                    id: btnId, x: menuStartX + 96, y: btnY, w: midW - 192, h: MENU_ITEM_HEIGHT + 20
                 });
 
-                ui.drawButton(menuStartX + 96, btnY, midW - 192, MENU_ITEM_HEIGHT + 24, "Start", ui.flags(btnId, focusId), { font: UITheme.fonts.medium });
+                ui.drawButton(menuStartX + 96, btnY, midW - 192, MENU_ITEM_HEIGHT + 20, "Start", ui.flags(btnId, focusId), { font: UITheme.fonts.medium });
                 return;
             }
 
@@ -437,4 +437,4 @@ export class CharacterCreatorRenderer {
 
         return "";
     }
-}
+}

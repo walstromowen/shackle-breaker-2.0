@@ -175,7 +175,7 @@ export class SavesRenderer {
             for (const [label, value] of lines) {
                 ui.drawStyled('label', label, L.rightX + 64, ly);
                 ui.drawStyled('body', String(value), L.rightX + L.rightW - 64, ly, { align: 'right', maxWidth: L.rightW - 300 });
-                ly += 56;
+                ly += 50;
             }
 
             const note = shown.type === 'auto' ? 'Saved for you as you play.'

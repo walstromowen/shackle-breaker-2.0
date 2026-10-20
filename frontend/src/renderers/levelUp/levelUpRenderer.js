@@ -31,7 +31,7 @@ export class LevelUpRenderer {
         const hoveredId = (hoveredElement ? hoveredElement.id : null) || selectedElementId || null;
 
         const { p, startY } = this.layout;
-        const panelHeight = h - (startY * 2);
+        const panelHeight = h - startY - 144;   // the bottom-left corner under the panels belongs to the Back button
         const halfW = Math.floor(w / 2);
         const colW = halfW - (p * 1.5);
         const leftColX = p;
@@ -296,7 +296,7 @@ export class LevelUpRenderer {
         const centerX = x + (w / 2);
 
         const hasPending = Object.values(pendingAllocations).some(v => v > 0);
-        const startX = centerX - (btnW * 1.5) - spacing;
+        const startX = centerX - btnW - (spacing / 2);
 
         const drawBtn = (id, label, btnX, isClickable, defaultCol) => {
             this.ui.drawButton(btnX, btnY, btnW, btnH, label,
@@ -308,8 +308,12 @@ export class LevelUpRenderer {
             this.hitboxes.push(box);
         };
 
-        drawBtn('BTN_CANCEL', "Cancel", startX, true, UITheme.colors.textMain);
-        drawBtn('BTN_RESET', "Reset", startX + btnW + spacing, hasPending, hasPending ? UITheme.colors.textMain : UITheme.colors.textMuted);
-        drawBtn('BTN_CONFIRM', "Confirm", startX + (btnW * 2) + (spacing * 2), hasPending, hasPending ? UITheme.colors.success : UITheme.colors.textMuted);
+        drawBtn('BTN_RESET', "Reset", startX, hasPending, hasPending ? UITheme.colors.textMain : UITheme.colors.textMuted);
+        drawBtn('BTN_CONFIRM', "Confirm", startX + btnW + spacing, hasPending, hasPending ? UITheme.colors.success : UITheme.colors.textMuted);
+
+        // Back: the same button, in the same bottom-left corner, as every other screen (it is still the BTN_CANCEL hitbox)
+        const bb = UITheme.backButtonBox();
+        this.ui.drawBackButton(hoveredId, bb, 'BTN_CANCEL');
+        this.hitboxes.push({ id: 'BTN_CANCEL', x: bb.x, y: bb.y, w: bb.w, h: bb.h });
     }
-}
+}

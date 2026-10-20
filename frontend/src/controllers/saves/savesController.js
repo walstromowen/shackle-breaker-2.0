@@ -26,7 +26,7 @@ export class SavesController extends BaseController {
         this.screenWidth = 1920;
         this.screenHeight = 1080;
         this.layout = {
-            p: 48, panelY: 48, panelH: 984,
+            p: 48, panelY: 48, panelH: 888,
             leftW: 1004, rightW: 788, gap: 32,
             tabH: 64, rowH: 108, btnH: 76
         };
@@ -402,9 +402,9 @@ export class SavesController extends BaseController {
         hitboxes.push({ id: 'tab_load', x: leftX + 24 + (canSaveTab ? tabW + 16 : 0), y: tabY, w: tabW, h: L.tabH, zIndex: 10 });
 
         // list
-        const footerY = L.panelY + L.panelH - 24 - L.btnH;
+        const footerY = L.panelY + L.panelH + 20;        // the bottom row, under the panels: Back sits in the standard bottom-left corner
         const listY = tabY + L.tabH + 40;
-        const listH = footerY - 24 - listY;
+        const listH = L.panelY + L.panelH - 24 - listY;
         const offset = this.scrollManager.getOffset('saveList');
         this.rows.forEach((row, i) => {
             const y = listY + i * L.rowH - offset;
@@ -419,10 +419,10 @@ export class SavesController extends BaseController {
         zone.bounds = { x: leftX, y: listY, w: L.leftW, h: listH };
 
         // footer buttons (left panel)
-        hitboxes.push({ id: 'btn_back', x: leftX + 24, y: footerY, w: 300, h: L.btnH, zIndex: 10 });
+        hitboxes.push({ id: 'btn_back', x: 48, y: footerY, w: 300, h: L.btnH, zIndex: 10 });
         if (this.mode === 'game') {
-            hitboxes.push({ id: 'btn_settings', x: leftX + 24 + 300 + 24, y: footerY, w: 240, h: L.btnH, zIndex: 10 });
-            hitboxes.push({ id: 'btn_quit_title', x: leftX + L.leftW - 24 - 360, y: footerY, w: 360, h: L.btnH, zIndex: 10 });
+            hitboxes.push({ id: 'btn_settings', x: 48 + 300 + 24, y: footerY, w: 240, h: L.btnH, zIndex: 10 });
+            hitboxes.push({ id: 'btn_quit_title', x: 48 + 300 + 24 + 240 + 24, y: footerY, w: 360, h: L.btnH, zIndex: 10 });
         }
 
         // right panel: the row shown (the hovered row previews in mouse mode, like the journal), its buttons and the name box

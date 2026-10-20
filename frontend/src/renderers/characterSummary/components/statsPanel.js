@@ -8,7 +8,7 @@ export class StatsPanel {
 
     render(member, stats, x, y, w) {
         let currentY = y;
-        const rowHeight = 38; // Scaled up 2.4x from 16
+        const rowHeight = 34; // (a little tighter than before: the bottom-left corner of this column belongs to the Back button)
 
         // ==========================================
         // 1. ATTRIBUTES SECTION
@@ -18,7 +18,7 @@ export class StatsPanel {
         // --- Gothic Flourish Header ---
         currentY += 19;
         this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.borderHighlight);
-        currentY += 36; // Space between line and content
+        currentY += 28; // Space between line and content
 
         const attrs = member.attributes || {};
         const attrKeys = Object.keys(attrs);
@@ -56,7 +56,7 @@ export class StatsPanel {
             currentY += rowHeight;
         }
 
-        currentY += 48;
+        currentY += 34;
 
         // ==========================================
         // 2. COMBAT & RECOVERY STATS SECTION
@@ -64,7 +64,7 @@ export class StatsPanel {
         this.ui.drawStyled('heading', 'Combat Stats', x, currentY);
         currentY += 19;
         this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.borderHighlight);
-        currentY += 36;
+        currentY += 28;
 
         const speed = stats.speed || member.attributes?.speed || 0;
         const critChance = (stats.critChance || 0) * 100;
@@ -104,7 +104,7 @@ export class StatsPanel {
             this.ui.drawStyled('value', stat.val, itemX + 144, itemY);
         });
 
-        currentY += (numRows * rowHeight) + 24;
+        currentY += (numRows * rowHeight) + 16;
 
         // ==========================================
         // 3. RESISTANCE TABLE
@@ -127,7 +127,7 @@ export class StatsPanel {
         
         currentY += 19;
         this.ui.drawLineWithGothicFlourish(x, currentY, w, UITheme.colors.borderHighlight);
-        currentY += 36;
+        currentY += 28;
 
         const types = [
             "blunt", "slash", "pierce", 
@@ -163,7 +163,7 @@ export class StatsPanel {
             const resData = (res !== 0) ? { text: `${(res * 100).toFixed(0)}%`, color: UITheme.colors.textMain } : { text: "-", color: UITheme.colors.textMuted };
             this.ui.drawText(resData.text, colRes, currentY, UITheme.fonts.mono, resData.color, "center");
 
-            currentY += 34;
+            currentY += 29;
         });
     }
-}
+}

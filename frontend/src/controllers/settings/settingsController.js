@@ -21,8 +21,8 @@ export class SettingsController extends BaseController {
         super(input);
 
         this.layout = {
-            panelX: 360, panelY: 96, panelW: 1200, panelH: 888,
-            rowsY: 350, rowH: 112,
+            panelX: 360, panelY: 48, panelW: 1200, panelH: 888,
+            rowsY: 302, rowH: 112,
             labelX: 96, trackX: 400, trackW: 560, valueX: 1104,
             btnH: 76
         };
@@ -212,7 +212,7 @@ export class SettingsController extends BaseController {
         const buttons = [
             { id: 'btn_test',  label: 'Test Sound', x: L.panelX + 64,                     y: footerY, w: 330, h: L.btnH },
             { id: 'btn_reset', label: 'Reset',      x: L.panelX + 64 + 330 + 24,          y: footerY, w: 330, h: L.btnH },
-            { id: 'btn_done',  label: 'Back',       x: L.panelX + L.panelW - 64 - 300,    y: footerY, w: 300, h: L.btnH }
+            { id: 'btn_done',  label: 'Back',       x: 48,                             y: 956,     w: 300, h: L.btnH }
         ];
         buttons.forEach(b => hitboxes.push({ id: b.id, x: b.x, y: b.y, w: b.w, h: b.h, zIndex: 10 }));
 
