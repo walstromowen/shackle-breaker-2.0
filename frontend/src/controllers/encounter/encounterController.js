@@ -83,6 +83,7 @@ export class EncounterController extends BaseController {
     this.skipMessageAnimation = false;
     this.inputCooldown = 0.15;
     this.holdTimer = 0; this._holdArmed = false; this._wasDown = false; this._swallowClick = false; this._swallowTimer = 0; this.hintPulse = 0;
+    this._cueKey = null;              // the stage whose sound cues (sfx / ambience) have been played
     this.rewardQueue = [];
     this.rewardItemsByMessage = {};   // reward message text -> [{id, qty}] (pictures of the items it lists)
     this.currentRewardItems = null;   // the items of the reward message on screen
@@ -97,6 +98,7 @@ export class EncounterController extends BaseController {
   update(dt) {
     if (super.update) super.update(dt);
     if (this.inputCooldown > 0) this.inputCooldown -= dt;
+    this._playStageCues();
     this.scrollManager.update(dt);
     if (!this.model) return;
     
@@ -759,9 +761,27 @@ export class EncounterController extends BaseController {
   updateBGM() {
     if (!this.model) return;
     const targetBGM = this.model.getBgm ? this.model.getBgm() : null;
-    if (targetBGM) {
+    if (targetBGM === 'none') {
+      events.emit('STOP_MUSIC', { fadeTime: 0.15 });      // a stage may call for silence
+    } else if (targetBGM) {
       events.emit('PLAY_MUSIC', { id: targetBGM, fadeTime: 1.0 });
     }
+  }
+
+  /**
+   * Optional sound cues of a stage, played once when the stage opens (and not on the frame the scene changes, because SceneManager
+   * stops the ambience as a scene opens): stage.sfx = a one-off sound, stage.ambience = a looping bed ('none' stops the current one).
+   */
+  _playStageCues() {
+    if (!this.model || !this.model.getCurrentStage) return;
+    const key = `${this.model.instanceId}:${this.model.currentStageId}`;
+    if (this._cueKey === key) return;
+    this._cueKey = key;
+    const stage = this.model.getCurrentStage();
+    if (!stage) return;
+    if (stage.sfx) events.emit('PLAY_SFX', { id: stage.sfx, volume: stage.sfxVolume ?? 1.0 });
+    if (stage.ambience === 'none') events.emit('STOP_AMBIENCE', { fadeTime: 2.0 });
+    else if (stage.ambience) events.emit('PLAY_AMBIENCE', { id: stage.ambience, fadeTime: stage.ambienceFade ?? 3.0 });
   }
 
   getState() {
@@ -785,6 +805,8 @@ export class EncounterController extends BaseController {
       currency: gameState.party?.currency || 0,
       skipMessageAnimation: this.skipMessageAnimation,
       textTimer: this.textTimer,
+      stageTone: (this.model.getCurrentStage && this.model.getCurrentStage()?.tone) || null,
+      stageEffect: (this.actionPhase === 'none' && this.model.getCurrentStage && this.model.getCurrentStage()?.effect) || null,
       hasDoneIntro: this.hasDoneIntro,
       canSkip: this._isSkippable(),
       holdProgress: Math.min(1, this.holdTimer / NARRATION.HOLD_TO_SKIP),

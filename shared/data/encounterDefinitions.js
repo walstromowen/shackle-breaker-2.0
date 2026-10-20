@@ -11,6 +11,7 @@ import { aftermath } from './encounters/aftermath.js';
 import { ironChest } from './encounters/ironChest.js';
 import { tracksInTheSnow } from './encounters/tracksInTheSnow.js';
 import { mysteriousAltar } from './encounters/mysteriousAltar.js';
+import { prologue } from './encounters/prologue.js';
 
 // <-- Import your new encounter here
 
@@ -28,6 +29,7 @@ export const encounterDefinitions = {
     [ironChest.id]: ironChest,
     [tracksInTheSnow.id]: tracksInTheSnow,
     [mysteriousAltar.id]: mysteriousAltar,
+    [prologue.id]: prologue,
 
     
     // <-- Add your new encounter here

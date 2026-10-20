@@ -276,6 +276,11 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     snowyMountainsBattleNightBg: './assets/backgrounds/snowy_mountains_battle_night_bg.png',
     caveBattleBg: './assets/backgrounds/cave_battle_bg.png', // one background for every hour: it is always dark down there
     shackle_breaker_theme_1: './assets/audio/music/Shackle_Breaker_Theme_1.mp3',
+    shackledMarchBgm: './assets/audio/music/shackled_march.mp3',   // the prologue (encounter 'prologue')
+    prologueMarch: './assets/audio/sfx/prologue/prologue_march.wav',
+    prologueWind: './assets/audio/sfx/prologue/prologue_wind.wav',
+    chainSnap: './assets/audio/sfx/prologue/chain_snap.wav',
+    heartbeat: './assets/audio/sfx/prologue/heartbeat.wav',
 
     //Encounters
     encounter_wounded_mutt: './assets/icons/encounters/wounded_mutt.png',

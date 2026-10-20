@@ -241,6 +241,16 @@ export class SceneManager {
                     this.battleController = new BattleController(this.input, this.config, this.worldManager);
                 }
 
+                // A NEW game opens with the prologue, an encounter that plays on the fresh world and ends on the overworld (the encounter
+                // is started here, not by an object on the map, so it has no col / row to clear afterwards).
+                if (scene === 'overworld' && this.currentScene === 'character-creator') {
+                    this.overworldController.isLocked = true;
+                    this.activeEncounterBGM = null;
+                    this.encounterController.start('prologue', {});
+                    this.changeScene('encounter');
+                    return;
+                }
+
                 if (scene === 'overworld') {
                     this.overworldController.isLocked = false;
                     
