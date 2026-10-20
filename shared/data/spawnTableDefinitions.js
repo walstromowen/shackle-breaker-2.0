@@ -302,8 +302,7 @@ export const SpawnTableDefinitions = {
                     id: 'WATCHMAN',
                     weight: 50,
                     modifiers: {
-                        levelOffset: { chance: 0.25, min: 1, max: 2 },
-                        equipment: [{ slot: 'mainHand', items: ['spear', 'shortsword'], chance: 0.4 }]
+                        levelOffset: { chance: 0.25, min: 1, max: 2 }   // no weapon swap: a Watchman always carries its crossbow
                     }
                 }
             ]
@@ -423,4 +422,4 @@ export const SpawnTableDefinitions = {
             members: [{ id: 'DARIUS_THE_GROVELER', weight: 100 }]
         }]
     },
-};
+};

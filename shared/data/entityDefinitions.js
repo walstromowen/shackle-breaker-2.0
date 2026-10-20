@@ -60,6 +60,10 @@ const HUMANOID_TEMPLATE = {
     tags: ["BIOLOGICAL", "HUMANOID"]
 };
 
+/* Everything that is not the player gets the humanoid abilities WITHOUT Punch (the player is built from HUMANOID_TEMPLATE itself, so keeps it).
+   An enemy fights with what its weapon grants and what is listed on it; it never falls back to punching. */
+const REGULAR_HUMANOID_ABILITIES = HUMANOID_TEMPLATE.abilities.filter(id => id !== "punch");
+
 const BEAST_TEMPLATE = {
     ...BASE_ENTITY,
     name: "Beast",
@@ -107,7 +111,7 @@ export const ENTITY_DEFINITIONS = {
         },
         currencyReward: { min: 2, max: 8 },
         lootTableId: "mad_man_drops",
-        abilities: [...HUMANOID_TEMPLATE.abilities, "bite", "claw"],
+        abilities: [...REGULAR_HUMANOID_ABILITIES, "bite", "claw"],
         tags: [...HUMANOID_TEMPLATE.tags],
         traitRewards: []
     },
@@ -136,7 +140,7 @@ export const ENTITY_DEFINITIONS = {
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "spear", head: "tattered_hood" },
         currencyReward: { min: 4, max: 12 },
         lootTableId: "frozen_trapper_drops",
-        abilities: [...HUMANOID_TEMPLATE.abilities, "ice_shard", "frigid_gale"],
+        abilities: [...REGULAR_HUMANOID_ABILITIES, "ice_shard", "frigid_gale"],
         tags: [...HUMANOID_TEMPLATE.tags, "TRAPPER", "SNOW", "MAGICAL"]
     },
 
@@ -160,7 +164,7 @@ export const ENTITY_DEFINITIONS = {
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_arcane" },
         currencyReward: { min: 5, max: 15 },
         lootTableId: "magic_addict_drops",
-        abilities: [...HUMANOID_TEMPLATE.abilities],
+        abilities: [...REGULAR_HUMANOID_ABILITIES],
         tags: [...HUMANOID_TEMPLATE.tags]
     },
 
@@ -182,7 +186,7 @@ export const ENTITY_DEFINITIONS = {
         },
         currencyReward: { min: 2, max: 8 },
         lootTableId: "mad_man_drops",
-        abilities: [...HUMANOID_TEMPLATE.abilities, "claw", "bite"],
+        abilities: [...REGULAR_HUMANOID_ABILITIES, "claw", "bite"],
         tags: [...HUMANOID_TEMPLATE.tags]
     },
 
@@ -215,7 +219,7 @@ export const ENTITY_DEFINITIONS = {
         },
         currencyReward: { min: 15, max: 40 },
         lootTableId: "mad_man_drops",
-        abilities: [...HUMANOID_TEMPLATE.abilities, "eviscerate"],
+        abilities: [...REGULAR_HUMANOID_ABILITIES, "eviscerate"],
         tags: [...HUMANOID_TEMPLATE.tags, "MERCHANT", "ROGUE"]
     },
 
@@ -240,7 +244,7 @@ export const ENTITY_DEFINITIONS = {
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "shortsword" },
         currencyReward: { min: 5, max: 15 },
         lootTableId: "mad_man_drops",
-        abilities: [...HUMANOID_TEMPLATE.abilities],
+        abilities: [...REGULAR_HUMANOID_ABILITIES],
         tags: [...HUMANOID_TEMPLATE.tags, "SOLDIER"]
     },
 
@@ -266,7 +270,7 @@ export const ENTITY_DEFINITIONS = {
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "shortsword" },
         currencyReward: { min: 0, max: 0 },
         lootTableId: null,
-        abilities: [...HUMANOID_TEMPLATE.abilities],
+        abilities: [...REGULAR_HUMANOID_ABILITIES],
         tags: ["BIOLOGICAL", "HUMANOID", "SOLDIER", "ALTUS"]
     },
 
@@ -293,7 +297,7 @@ export const ENTITY_DEFINITIONS = {
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "crossbow" },
         currencyReward: { min: 5, max: 15 },
         lootTableId: "watchman_drops",
-        abilities: [...HUMANOID_TEMPLATE.abilities],
+        abilities: [...REGULAR_HUMANOID_ABILITIES],
         tags: [...HUMANOID_TEMPLATE.tags, "SOLDIER", "CURSED", "ALTERIAN"]
     },
 
@@ -315,7 +319,7 @@ export const ENTITY_DEFINITIONS = {
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "scythe" },
         currencyReward: { min: 6, max: 14 },
         lootTableId: "hollow_harvester_drops",
-        abilities: [...HUMANOID_TEMPLATE.abilities, "spirit_reap"],
+        abilities: [...REGULAR_HUMANOID_ABILITIES, "spirit_reap"],
         tags: ["HUMANOID", "MAGICAL", "UNDEAD"]
     },
 
@@ -341,7 +345,7 @@ export const ENTITY_DEFINITIONS = {
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_fire" },
         currencyReward: { min: 6, max: 16 },
         lootTableId: "scorched_vagrant_drops",
-        abilities: [...HUMANOID_TEMPLATE.abilities, "flamethrower"],
+        abilities: [...REGULAR_HUMANOID_ABILITIES, "flamethrower"],
         tags: [...HUMANOID_TEMPLATE.tags, "MAGICAL", "DESERT"]
     },
 
@@ -366,7 +370,7 @@ export const ENTITY_DEFINITIONS = {
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "shortsword" },
         currencyReward: { min: 4, max: 12 },
         lootTableId: "sand_stalker_drops",
-        abilities: [...HUMANOID_TEMPLATE.abilities],
+        abilities: [...REGULAR_HUMANOID_ABILITIES],
         tags: [...HUMANOID_TEMPLATE.tags, "DESERT", "ASSASSIN"]
     },
 
@@ -392,7 +396,7 @@ export const ENTITY_DEFINITIONS = {
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_darkness" },
         currencyReward: { min: 10, max: 25 },
         lootTableId: "miragewright_drops",
-        abilities: [...HUMANOID_TEMPLATE.abilities, "flamethrower", "fireball"],
+        abilities: [...REGULAR_HUMANOID_ABILITIES, "flamethrower", "fireball"],
         tags: ["HUMANOID", "MAGICAL", "DESERT", "ELITE"]
     },
 
@@ -418,7 +422,7 @@ export const ENTITY_DEFINITIONS = {
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "glaive" },
         currencyReward: { min: 10, max: 22 },
         lootTableId: "calcified_crusader_drops",
-        abilities: [...HUMANOID_TEMPLATE.abilities],
+        abilities: [...REGULAR_HUMANOID_ABILITIES],
         tags: ["HUMANOID", "CONSTRUCT", "DESERT", "SHIFTING_SANDS", "ELITE"]
     },
 
@@ -450,7 +454,7 @@ export const ENTITY_DEFINITIONS = {
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "shortsword" },
         currencyReward: { min: 3, max: 10 },
         lootTableId: "skeletal_warrior_drops",
-        abilities: [...HUMANOID_TEMPLATE.abilities, "strike"],
+        abilities: [...REGULAR_HUMANOID_ABILITIES, "strike"],
         tags: ["HUMANOID", "UNDEAD", "SKELETON", "SOLDIER"]
     },
 
@@ -530,7 +534,7 @@ export const ENTITY_DEFINITIONS = {
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_darkness", head: "tattered_hood" },
         currencyReward: { min: 8, max: 20 },
         lootTableId: "ancient_cultist_drops",
-        abilities: [...HUMANOID_TEMPLATE.abilities, "spite", "healing_rain"],
+        abilities: [...REGULAR_HUMANOID_ABILITIES, "spite", "healing_rain"],
         tags: ["HUMANOID", "UNDEAD", "SKELETON", "MAGICAL", "CULTIST"]
     },
 
@@ -895,7 +899,7 @@ export const ENTITY_DEFINITIONS = {
         },
         currencyReward: { min: 200, max: 500 },
         lootTableId: "boss_darius_drops",
-        abilities: [...HUMANOID_TEMPLATE.abilities, "arcane_dart", "magic_missile", "meteor_shower"],
+        abilities: [...REGULAR_HUMANOID_ABILITIES, "arcane_dart", "magic_missile", "meteor_shower"],
         tags: [...HUMANOID_TEMPLATE.tags, "BOSS", "ELITE", "MAGICAL"]
     }
-};
+};
