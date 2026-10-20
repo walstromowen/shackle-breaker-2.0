@@ -33,7 +33,11 @@ export const SpawnTableDefinitions = {
                     { id: 'MAD_MAN', weight: 50, modifiers: { equipment: [{ slot: 'mainHand', items: ['dagger'], chance: 0.5 }] } },
                     { id: 'SHACKLED_STEED', weight: 20 },
                     { id: 'LEGIONARY', weight: 20, modifiers: { levelOffset: { chance: 0.3, min: -1, max: 2 }, equipment: [{ slot: 'mainHand', items: ['warhammer', 'spear'], chance: 0.3 }], traits: [{ id: 'iron_willed', chance: 0.15 }] } },
-                    { id: 'MAGIC_ADDICT', weight: 30 }
+                    { id: 'MAGIC_ADDICT', weight: 30 },
+                    // act 2: the dead no longer stay down, and the old soldiers walk the plains in daylight
+                    { id: 'SKELETAL_WARRIOR', weight: 25, minAct: 2 },
+                    { id: 'WATCHMAN', weight: 20, minAct: 2 },
+                    { id: 'HOLLOW_HARVESTER', weight: 20, minAct: 2, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } }
                 ]
             }
         ]
@@ -110,7 +114,9 @@ export const SpawnTableDefinitions = {
                 },
                 members: [
                     { id: 'SAND_STALKER', weight: 70, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } },
-                    { id: 'CALCIFIED_CRUSADER', weight: 30, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 } } }
+                    { id: 'CALCIFIED_CRUSADER', weight: 30, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 } } },
+                    // act 2
+                    { id: 'MIRAGEWRIGHT', weight: 25, minAct: 2, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } }
                 ]
             },
             {
@@ -235,6 +241,20 @@ export const SpawnTableDefinitions = {
             members: [
                 { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } }
             ]
+        }, {
+            // act 2: the trappers of the peaks hunt the roads
+            factionId: "shackled",
+            weight: 45,
+            minAct: 2,
+            difficultySettings: {
+                easy: { minSize: 1, maxSize: 1 },
+                normal: { minSize: 1, maxSize: 2 },
+                hard: { minSize: 1, maxSize: 3 },
+                nightmare: { minSize: 2, maxSize: 4 }
+            },
+            members: [
+                { id: 'FROZEN_TRAPPER', weight: 100, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 } } }
+            ]
         }]
     },
 
@@ -259,6 +279,156 @@ export const SpawnTableDefinitions = {
     },
 
     // ==========================================
+    // BLOOD MOON NIGHTS (act 2: every night). BiomeModel.getBattle uses a biome's `battles.tables.bloodMoon` instead of its night table.
+    // The dead rise, the cursed come in greater numbers, and nothing is left alone to wander off.
+    // ==========================================
+    "plains_battles_blood_moon": {
+        type: "faction_pool",
+        pools: [
+            {
+                factionId: "shackled",
+                weight: 35,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 2 },
+                    normal: { minSize: 2, maxSize: 3 },
+                    hard: { minSize: 2, maxSize: 4 },
+                    nightmare: { minSize: 3, maxSize: 5 }
+                },
+                members: [
+                    { id: 'SKELETAL_WARRIOR', weight: 50, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 }, equipment: [{ slot: 'mainHand', items: ['spear', 'warhammer'], chance: 0.3 }] } },
+                    { id: 'FLOATING_SKULL', weight: 30, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 } } },
+                    { id: 'ANCIENT_CULTIST', weight: 20, modifiers: { levelOffset: { chance: 0.5, min: 1, max: 2 } } }
+                ]
+            },
+            {
+                factionId: "cursedwildlife",
+                weight: 25,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 3 },
+                    normal: { minSize: 2, maxSize: 3 },
+                    hard: { minSize: 2, maxSize: 4 },
+                    nightmare: { minSize: 3, maxSize: 5 }
+                },
+                members: [
+                    { id: 'GRIM_STAG', weight: 100, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } }
+                ]
+            },
+            {
+                factionId: "shackled",
+                weight: 40,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 2 },
+                    normal: { minSize: 2, maxSize: 3 },
+                    hard: { minSize: 2, maxSize: 4 },
+                    nightmare: { minSize: 3, maxSize: 5 }
+                },
+                members: [
+                    { id: 'HOLLOW_HARVESTER', weight: 50, modifiers: { levelOffset: { chance: 0.6, min: 1, max: 2 } } },
+                    { id: 'LEGIONARY', weight: 40, modifiers: { levelOffset: { chance: 0.4, min: 0, max: 2 }, equipment: [{ slot: 'mainHand', items: ['warhammer', 'spear'], chance: 0.3 }], traits: [{ id: 'iron_willed', chance: 0.25 }] } },
+                    { id: 'MAGIC_ADDICT', weight: 20 },
+                    { id: 'MAD_MAN', weight: 20, modifiers: { equipment: [{ slot: 'mainHand', items: ['dagger'], chance: 0.5 }] } }
+                ]
+            }
+        ]
+    },
+
+    "desert_battles_blood_moon": {
+        type: "faction_pool",
+        pools: [
+            {
+                factionId: "cursedwildlife",
+                weight: 30,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 3 },
+                    normal: { minSize: 2, maxSize: 3 },
+                    hard: { minSize: 2, maxSize: 4 },
+                    nightmare: { minSize: 3, maxSize: 5 }
+                },
+                members: [
+                    { id: 'DUNE_MAW', weight: 60, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } },
+                    { id: 'THUNDER_LOCUST', weight: 40, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 3 } } }
+                ]
+            },
+            {
+                factionId: "shifting_sands",
+                weight: 35,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 3 },
+                    normal: { minSize: 2, maxSize: 3 },
+                    hard: { minSize: 2, maxSize: 4 },
+                    nightmare: { minSize: 3, maxSize: 5 }
+                },
+                members: [
+                    { id: 'SAND_STALKER', weight: 40, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } },
+                    { id: 'MIRAGEWRIGHT', weight: 30, modifiers: { levelOffset: { chance: 0.6, min: 1, max: 2 } } },
+                    { id: 'CALCIFIED_CRUSADER', weight: 30, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 3 } } }
+                ]
+            },
+            {
+                factionId: "shackled",
+                weight: 35,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 2 },
+                    normal: { minSize: 2, maxSize: 3 },
+                    hard: { minSize: 2, maxSize: 4 },
+                    nightmare: { minSize: 3, maxSize: 5 }
+                },
+                members: [
+                    { id: 'SKELETAL_WARRIOR', weight: 45, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } },
+                    { id: 'ANCIENT_CULTIST', weight: 25, modifiers: { levelOffset: { chance: 0.5, min: 1, max: 2 } } },
+                    { id: 'SCORCHED_VAGRANT', weight: 30 }
+                ]
+            }
+        ]
+    },
+
+    "snowy_mountains_battles_blood_moon": {
+        type: "faction_pool",
+        pools: [
+            {
+                factionId: "cursedwildlife",
+                weight: 45,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 2 },
+                    normal: { minSize: 2, maxSize: 3 },
+                    hard: { minSize: 2, maxSize: 4 },
+                    nightmare: { minSize: 3, maxSize: 5 }
+                },
+                members: [
+                    { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 2 } } }
+                ]
+            },
+            {
+                factionId: "shackled",
+                weight: 30,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 1 },
+                    normal: { minSize: 1, maxSize: 2 },
+                    hard: { minSize: 2, maxSize: 3 },
+                    nightmare: { minSize: 2, maxSize: 4 }
+                },
+                members: [
+                    { id: 'FROZEN_TRAPPER', weight: 100, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 2 } } }
+                ]
+            },
+            {
+                factionId: "shackled",
+                weight: 25,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 1 },
+                    normal: { minSize: 1, maxSize: 2 },
+                    hard: { minSize: 2, maxSize: 3 },
+                    nightmare: { minSize: 2, maxSize: 4 }
+                },
+                members: [
+                    { id: 'SKELETAL_WARRIOR', weight: 60, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } },
+                    { id: 'FLOATING_SKULL', weight: 40, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 } } }
+                ]
+            }
+        ]
+    },
+
+    // ==========================================
     // ENCOUNTER BATTLES (Triggered via Events)
     // ==========================================
     "madman_pack": {
@@ -273,6 +443,26 @@ export const SpawnTableDefinitions = {
                 nightmare: { minSize: 5, maxSize: 6 }
             },
             members: [{ id: 'MAD_MAN', weight: 100 }, { id: 'MAGIC_ADDICT', weight: 100 }, { id: 'ROTTER', weight: 100 }]
+        }]
+    },
+
+    // Used by crimson_vigil (act 2): the ring of bones stands up.
+    "risen_pack": {
+        type: "faction_pool",
+        pools: [{
+            factionId: "shackled",
+            weight: 100,
+            difficultySettings: {
+                easy: { minSize: 2, maxSize: 3 },
+                normal: { minSize: 3, maxSize: 3 },
+                hard: { minSize: 3, maxSize: 4 },
+                nightmare: { minSize: 4, maxSize: 5 }
+            },
+            members: [
+                { id: 'SKELETAL_WARRIOR', weight: 60, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } },
+                { id: 'FLOATING_SKULL', weight: 25 },
+                { id: 'ANCIENT_CULTIST', weight: 15, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 2 } } }
+            ]
         }]
     },
 

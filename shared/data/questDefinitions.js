@@ -131,6 +131,27 @@ export const QuestDefinitions = {
     },
 
     // ========================================================
+    // ACT 2 (started by the encounter that follows Darius the Groveler, encounters/actTwo.js)
+    // ========================================================
+    "act2_red_moon": {
+        id: "act2_red_moon",
+        name: "The Red Moon",
+        description: "The moon rises red every night now, and the days are dim. The dead walk the roads, the cursed come in greater numbers, and every enemy is a little stronger than before. Whatever Darius knelt to has woken. Grow strong, and keep your torch lit.",
+        objectives: [
+            { id: "obj_reach_level_12", type: "party_level", targetLevel: 12, amount: 1 },
+            { id: "obj_kill_risen", type: "kill_enemy", targetId: "SKELETAL_WARRIOR", amount: 5 }
+        ],
+        rewards: {
+            exp: 600,
+            currency: 500,
+            items: [
+                { id: "healing_tonic", amount: 3 },
+                { id: "invigorating_tonic", amount: 2 }
+            ]
+        }
+    },
+
+    // ========================================================
     // THE ROYAL GUARD (started from the officer in the Aftermath encounter)
     // The big iron key opens the iron chests at the bottom of the caves.
     // ========================================================

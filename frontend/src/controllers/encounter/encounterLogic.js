@@ -8,6 +8,7 @@ import { DIFFICULTY_MODIFIERS } from '../../../../shared/data/constants.js';
 import { LootTableFactory } from "../../../../shared/systems/factories/lootTableFactory.js";
 import { SpawnTableFactory } from "../../../../shared/systems/factories/spawnTableFactory.js";
 import { ItemDefinitions } from '../../../../shared/data/itemDefinitions.js';
+import { ActSystem } from '../../../../shared/systems/actSystem.js';
 
 export class EncounterLogic {
     static checkConditions(decision, context = {}) {
@@ -24,6 +25,15 @@ export class EncounterLogic {
                     return !!context[cond.flagId];
                 case "context_flag_not_set":
                     return !context[cond.flagId];
+                // The acts (data/actDefinitions.js): a choice that only exists once the world has got harder, or only before
+                case "act_at_least":
+                    return ActSystem.getAct() >= (cond.act || 1);
+                case "act_below":
+                    return ActSystem.getAct() < (cond.act || 1);
+                case "has_milestone":
+                    return ActSystem.hasMilestone(cond.id);
+                case "lacks_milestone":
+                    return !ActSystem.hasMilestone(cond.id);
                 case "has_tag":
                 case "has_trait": {
                     const activeCharacter = gameState.party?.members?.[0];
@@ -134,6 +144,10 @@ export class EncounterLogic {
                         enemyId: payload.enemyId, 
                         amount: payload.amount || 1 
                     });
+                    break;
+                case "GRANT_MILESTONE":
+                    // A turning point of the game (data/actDefinitions.js): granting it moves the world into its next act
+                    if (payload.id) ActSystem.grantMilestone(payload.id);
                     break;
                 case "SET_CONTEXT_FLAG":
                     if (!model.context) model.context = {};
@@ -372,7 +386,9 @@ export class EncounterLogic {
                     events.emit('START_BATTLE', {
                         enemies: enemyList, tableId: payload.tableId || null, difficulty: currentDifficulty,
                         background: battleBgAsset, weather: gameState.world?.currentWeather || 'clear',
-                        context: model.context, bgm: payload.bgm || null
+                        context: model.context, bgm: payload.bgm || null,
+                        // `afterVictory: { encounterId }` plays that encounter when the fight is won, before the overworld (the end of Darius)
+                        afterVictory: payload.afterVictory || null
                     });
                     break;
                 }

@@ -16,6 +16,7 @@
 // never inside a house / cave (see canSaveNow), so none of that transient state ever needs restoring.
 
 import { gameState } from '../state/gameState.js';
+import { ActSystem } from './actSystem.js';
 import { EntityModel } from '../models/entityModel.js';
 import { ItemFactory } from './factories/itemFactory.js';
 import { StatusEffectFactory } from './factories/statusEffectFactory.js';
@@ -265,6 +266,7 @@ export const SaveManager = {
         const data = {
             seed: gameState.seed,
             difficulty: gameState.difficulty,
+            milestones: clone(gameState.milestones || []),
             quests: clone({
                 active: gameState.quests.active,
                 completed: gameState.quests.completed,
@@ -348,11 +350,14 @@ export const SaveManager = {
         gameState.mode = 'overworld';
         gameState.difficulty = data.difficulty || 'normal';
 
+        gameState.milestones = Array.isArray(data.milestones) ? data.milestones : [];   // a save from before the acts: act 1
+
         gameState.quests = {
             active: data.quests?.active || {},
             completed: data.quests?.completed || [],
             trackedIds: data.quests?.trackedIds || []
         };
+        ActSystem.catchUp(gameState);   // a save that had already beaten Darius before the acts existed goes into act 2
 
         replaceContents(gameState.player, {
             col: data.player.col,

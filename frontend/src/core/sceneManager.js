@@ -55,6 +55,7 @@ const SHARED_BACK_BUTTON = {
 import { PartyManager } from '../../../shared/systems/partyManager.js';
 import { WorldManager } from '../../../shared/systems/worldManager.js';
 import { TimeSystem } from '../../../shared/systems/timeSystem.js';
+import { ActSystem } from '../../../shared/systems/actSystem.js';
 import { gameState } from '../../../shared/state/gameState.js';
 import { AbilitySystem } from '../../../shared/systems/abilitySystem.js';
 import { DIFFICULTY_MODIFIERS } from '../../../shared/data/constants.js';
@@ -119,6 +120,7 @@ export class SceneManager {
 
         // --- NEW: Audio Memory Cache ---
         this.activeBattleBGM = null;
+        this.pendingAfterVictory = null;   // { encounterId, context } to play when the battle in progress is won, see the START_BATTLE handler
         this.activeEncounterBGM = null;
 
         this._handleGlobalKeydown = this._handleGlobalKeydown.bind(this);
@@ -407,8 +409,14 @@ export class SceneManager {
             events.emit('PLAY_SFX', { id: 'battleStart', volume: 0.9 });
             const difficulty = gameState.difficulty || 'normal';
             const globalOffset = DIFFICULTY_MODIFIERS[difficulty]?.enemyLevelOffset || 0;
-            const baseLevel = PartyManager.getHighestLevel() + globalOffset;
-            
+            // The act (data/actDefinitions.js) makes every enemy a little stronger: more levels, and a few extra abilities and traits for each kind
+            const baseLevel = PartyManager.getHighestLevel() + globalOffset + ActSystem.getEnemyLevelOffset();
+
+            // `afterVictory: { encounterId }`: an encounter that plays when this fight is won, in place of going straight back to the overworld
+            this.pendingAfterVictory = data.afterVictory && data.afterVictory.encounterId
+                ? { encounterId: data.afterVictory.encounterId, context: { ...(data.context || {}) } }
+                : null;
+
             const scaledEnemies = [];
             
             for (const enemyData of data.enemies) {
@@ -426,6 +434,15 @@ export class SceneManager {
                     finalLevel = Math.max(1, baseLevel + specificOffset);
                     const { id, levelOffset, ...restOfProperties } = enemyData;
                     factoryOverrides = { level: finalLevel, ...restOfProperties };
+                }
+
+                const upgrade = ActSystem.getEnemyUpgrade(enemyId);
+                if (upgrade) {
+                    factoryOverrides = {
+                        ...factoryOverrides,
+                        abilities: [...(factoryOverrides.abilities || []), ...upgrade.abilities],
+                        traits: [...(factoryOverrides.traits || []), ...upgrade.traits]
+                    };
                 }
 
                 const enemyEntity = EntityFactory.create(enemyId, factoryOverrides);
@@ -475,7 +492,12 @@ export class SceneManager {
 
         events.on('BATTLE_ENDED', (data) => {
             this.activeBattleBGM = null;
-            if (data.victory) {
+            const after = this.pendingAfterVictory;
+            this.pendingAfterVictory = null;
+            if (data.victory && !data.fled && after) {
+                // e.g. the end of Darius the Groveler: the act changes in an encounter of its own
+                events.emit('START_ENCOUNTER', { encounterId: after.encounterId, context: after.context });
+            } else if (data.victory) {
                 events.emit('CHANGE_SCENE', { scene: 'overworld' });
             } else {
                 console.log("[SceneManager] Game Over...");
@@ -759,4 +781,4 @@ export class SceneManager {
         this.input.destroy();
         window.removeEventListener('keydown', this._handleGlobalKeydown);
     }
-}
+}

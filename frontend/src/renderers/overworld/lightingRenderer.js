@@ -1,4 +1,5 @@
 import { gameState } from '../../../../shared/state/gameState.js';
+import { ActSystem } from '../../../../shared/systems/actSystem.js';
 
 /* LightingRenderer - tile light map: coloured lights that fade a fixed amount per tile and seep into walls.
  *
@@ -207,13 +208,8 @@ export class LightingRenderer {
         this.tint = config.LIGHT_COLOR_TINT ?? DEFAULT_TINT;
         this.smoothing = Math.max(0, Math.round(config.LIGHT_SMOOTHING ?? DEFAULT_SMOOTHING));
         this.ease = Math.min(1, Math.max(0, config.LIGHT_EDGE_EASE ?? DEFAULT_EASE));
-        const g = config.DAY_GLOOM;      // the natural darkness of the day, see constants.js
-        this.gloom = g && g.alpha > 0 ? {
-            a: Math.min(1, g.alpha),
-            rgb: String(g.color ?? '8, 10, 22').split(',').map((v) => Math.max(0, Math.min(255, Number(v) || 0))),   // 'r, g, b' in 0..255, like the clock's colours
-            radius: g.radius ?? 12,
-            strength: g.strength ?? 1,
-        } : null;
+        this._gloomAct = null;           // the act the gloom below was made for
+        this.gloom = null;               // the natural darkness of the day, see currentGloom()
         this._tmp = null;         // scratch for the blur
         this._blockers = new Map(); // tile -> absorption (tenths of a tile) of the blocksLight objects near the view, rebuilt every frame
         this._blockSig = null;      // fingerprint of all blocksLight objects: a change drops the remembered traces
@@ -225,6 +221,23 @@ export class LightingRenderer {
         this._lvById = new Map();
         const T = config.TILE_TYPES || {};
         for (let n = 3; T['LAYER_' + n] !== undefined; n++) this._lvById.set(T['LAYER_' + n], n - 2);
+    }
+
+    /* The natural darkness of the day: CONFIG.DAY_GLOOM (constants.js), with whatever the current act changes (actDefinitions.js `lighting.dayGloom`: the
+       days of act 2 are darker and redder, with a smaller pool of daylight). Made again only when the act changes. */
+    currentGloom() {
+        const act = ActSystem.getAct();
+        if (this._gloomAct !== act) {
+            this._gloomAct = act;
+            const g = { ...(this.config.DAY_GLOOM || {}), ...(ActSystem.getLighting().dayGloom || {}) };
+            this.gloom = g.alpha > 0 ? {
+                a: Math.min(1, g.alpha),
+                rgb: String(g.color ?? '8, 10, 22').split(',').map((v) => Math.max(0, Math.min(255, Number(v) || 0))),   // 'r, g, b' in 0..255, like the clock's colours
+                radius: g.radius ?? 12,
+                strength: g.strength ?? 1,
+            } : null;
+        }
+        return this.gloom;
     }
 
     /* Cliff level and blocking object of a tile, remembered for the frame: level | (object << 4), where object is 0 (none), 255 (blocksLight: true) or the
@@ -309,7 +322,7 @@ export class LightingRenderer {
     }
 
     /* Every light in the view as { x, y (tile units), light, fixed }. Positions are the middle of the entity's / map object's box. */
-    collectLights(entities, mapObjects, interpolationFactor, daylight = null) {
+    collectLights(entities, mapObjects, interpolationFactor, daylight = null, moonlight = null) {
         const { TILE_SIZE } = this.config;
         const out = [];
         if (entities) {
@@ -320,6 +333,7 @@ export class LightingRenderer {
                 const lx = (rx + (ent.width || TILE_SIZE) / 2) / TILE_SIZE, ly = (ry + (ent.height || TILE_SIZE) / 2) / TILE_SIZE;
                 out.push({ x: lx, y: ly, light: ent.light });
                 if (daylight && ent.isPlayer) out.push({ x: lx, y: ly, light: daylight });    // the wide pool of daylight around the player
+                if (moonlight && ent.isPlayer) out.push({ x: lx, y: ly, light: moonlight });  // the red pool of the blood moon
             }
         }
         if (mapObjects) {
@@ -383,8 +397,9 @@ export class LightingRenderer {
         // The daytime gloom: the day is never fully bright. Below the gloom's strength the darkness is raised to it (its colour mixed in by weight), and a wide pool
         // of daylight is cut around the player; the darker the clock / weather already is, the smaller the pool, until at night only the player's own light is left.
         let daylight = null;
-        if (this.gloom) {
-            const g = this.gloom;
+        const gloom = this.currentGloom();
+        if (gloom) {
+            const g = gloom;
             const daylit = Math.min(1, Math.max(0, 1 - finalA * 1.6));
             if (finalA < g.a) {
                 const wa = finalA, wg = g.a, w = wa + wg;
@@ -416,7 +431,13 @@ export class LightingRenderer {
         dark.fill(1);
 
         const wm = worldManager;
-        const lights = this.collectLights(entities, mapObjects, interpolationFactor, daylight);
+        // The blood moon of act 2: a red pool of moonlight around the player that fades into the black of the night. Outdoors only (a cave or a house is dark in its own way).
+        let moonlight = null;
+        if (!gameState.world.isInterior) {
+            const moon = ActSystem.getMoonlight(gameState.world.time / 60);
+            if (moon && moon.strength > 0) moonlight = { hasLight: true, radius: moon.radius, maxAlpha: moon.strength, color: moon.color };
+        }
+        const lights = this.collectLights(entities, mapObjects, interpolationFactor, daylight, moonlight);
         // memo box: the view plus the widest light's reach all round
         let pad = 2;
         for (const L of lights) pad = Math.max(pad, Math.ceil(L.light.radius + 0.15 * Math.abs(L.light.flickerAmp || 0)) + 3);
@@ -495,4 +516,4 @@ export class LightingRenderer {
         ctx.drawImage(this._add.cv, 0, 0, cols, rows, dx, dy, dw, dh);
         ctx.restore();
     }
-}
+}

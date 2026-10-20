@@ -12,10 +12,10 @@
 
 const HUMANOID = { type: "has_tag", tag: "HUMANOID" };
 const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
-const fight = (tableId, spend) => [{
+const fight = (tableId, spend, afterVictory) => [{
     weight: 100,
     results: [
-        { type: "START_BATTLE", payload: { tableId } },
+        { type: "START_BATTLE", payload: { tableId, ...(afterVictory ? { afterVictory } : {}) } },
         ...(spend ? [{ type: "DESTROY_OBJECT" }] : [])
     ]
 }];
@@ -246,7 +246,8 @@ export const mysteriousAltar = {
                 {
                     text: "Face Darius the Groveler!",
                     conditions: [HUMANOID],
-                    outcomes: fight("darius_boss", true)
+                    // Winning plays the encounter that starts act 2 (encounters/actTwo.js) before the party is back on the map
+                    outcomes: fight("darius_boss", true, { encounterId: "act_two" })
                 }
             ]
         }

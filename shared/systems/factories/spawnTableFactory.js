@@ -1,5 +1,6 @@
 import { SpawnTableDefinitions } from '../../data/spawnTableDefinitions.js';
 import { SpawnTableModel } from '../../models/spawnTableModel.js';
+import { ActSystem } from '../actSystem.js';
 
 export class SpawnTableFactory {
     static generateBattle(tableId, difficulty = 'normal') {
@@ -9,9 +10,13 @@ export class SpawnTableFactory {
             return new SpawnTableModel([]);
         }
 
-        // 1. Roll to see which Faction we are fighting
-        const factionPool = this._rollWeighted(table.pools);
+        // 1. Roll to see which Faction we are fighting. A pool (or a member) can be limited to some acts with `minAct` / `maxAct` (data/actDefinitions.js):
+        //    act 2 adds its own enemies to the same tables. A table that leaves nothing for the current act is used whole, so it can never come up empty.
+        const actPools = table.pools.filter(p => ActSystem.isAvailable(p) && p.members.some(m => ActSystem.isAvailable(m)));
+        const factionPool = this._rollWeighted(actPools.length ? actPools : table.pools);
         if (!factionPool) return new SpawnTableModel([]);
+        const actMembers = factionPool.members.filter(m => ActSystem.isAvailable(m));
+        const members = actMembers.length ? actMembers : factionPool.members;
 
         // 2. Determine party size based on difficulty
         const diffSettings = factionPool.difficultySettings[difficulty] || factionPool.difficultySettings['normal'];
@@ -20,7 +25,7 @@ export class SpawnTableFactory {
         // 3. Generate the specific enemies
         const generatedEnemies = [];
         for (let i = 0; i < partySize; i++) {
-            const rolledMember = this._rollWeighted(factionPool.members);
+            const rolledMember = this._rollWeighted(members);
             const enemyConfig = this._applyModifiers(rolledMember);
             generatedEnemies.push(enemyConfig);
         }
@@ -67,6 +72,16 @@ export class SpawnTableFactory {
             });
         }
 
+        // Apply Abilities (extra ones this enemy can use, each with its own chance)
+        if (mods.abilities && mods.abilities.length > 0) {
+            config.abilities = [];
+            mods.abilities.forEach(abilityModifier => {
+                if (Math.random() <= abilityModifier.chance) {
+                    config.abilities.push(abilityModifier.id);
+                }
+            });
+        }
+
         // Apply Traits
         if (mods.traits && mods.traits.length > 0) {
             config.traits = [];
@@ -95,4 +110,4 @@ export class SpawnTableFactory {
     static _getRandomInt(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
-}
+}

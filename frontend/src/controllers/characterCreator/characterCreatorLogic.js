@@ -350,6 +350,7 @@ export class CharacterCreatorLogic {
         }
 
         // --- NEW GAME GRANTS ---
+        gameState.milestones = [];   // a new game is always act 1
         gameState.party.currency = 100;
         gameState.difficulty = CREATION_DATA.DIFFICULTIES[this.state.difficultyIdx].id;
 
@@ -380,4 +381,4 @@ export class CharacterCreatorLogic {
 
         events.emit('CHANGE_SCENE', { scene: 'overworld' });
     }
-}
+}

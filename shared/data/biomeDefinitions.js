@@ -114,9 +114,10 @@ export const BIOME_DEFINITIONS = {
                 { weight: 10, id: 'wounded_mutt', allowedTimes: ['day', 'dusk', 'night'] },
                 { weight: 20, id: 'a_disturbing_sight', allowedTimes: ['day', 'dusk', 'night'] },
                 { weight: 20, id: 'suspicious_merchant', allowedTimes: ['day', 'dusk', 'night'] },
+                { weight: 18, id: 'crimson_vigil', allowedTimes: ['dusk', 'night'], minAct: 2 },   // act 2 only
             ],
         },
-        battles: { rate: 0.01, tables: { day: 'plains_battles_day', dusk: 'plains_battles_day', night: 'plains_battles_night' } },
+        battles: { rate: 0.01, tables: { day: 'plains_battles_day', dusk: 'plains_battles_day', night: 'plains_battles_night', bloodMoon: 'plains_battles_blood_moon' } },
     },
     DESERT: {
         id: 'DESERT',
@@ -177,8 +178,8 @@ export const BIOME_DEFINITIONS = {
             ],
             [CONFIG.TILE_TYPES.LAYER_1]: [{ chance: 0.02, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] }],
         },
-        encounters: { rate: 0.005, type: 'time_weighted', pools: [{ weight: 100, id: 'suspicious_merchant', allowedTimes: ['day'] }] },
-        battles: { rate: 0.01, tables: { day: 'desert_battles_day', dusk: 'desert_battles_day', night: 'desert_battles_night' } },
+        encounters: { rate: 0.005, type: 'time_weighted', pools: [{ weight: 100, id: 'suspicious_merchant', allowedTimes: ['day'] }, { weight: 60, id: 'crimson_vigil', allowedTimes: ['dusk', 'night'], minAct: 2 }] },
+        battles: { rate: 0.01, tables: { day: 'desert_battles_day', dusk: 'desert_battles_day', night: 'desert_battles_night', bloodMoon: 'desert_battles_blood_moon' } },
     },
     SNOWY_MOUNTAINS: {
         id: 'SNOWY_MOUNTAINS',
@@ -241,7 +242,8 @@ export const BIOME_DEFINITIONS = {
                 { chance: 0.012, pool: ['SNOWY_BOULDER_1', 'SNOWY_BOULDER_2'] },
             ],
         },
-        battles: { rate: 0.005, tables: { day: 'snowy_mountains_battles_day', dusk: 'snowy_mountains_battles_day', night: 'snowy_mountains_battles_night' } } /* half the plains' / desert's 0.01 */,
+        battles: { rate: 0.005, tables: { day: 'snowy_mountains_battles_day', dusk: 'snowy_mountains_battles_day', night: 'snowy_mountains_battles_night', bloodMoon: 'snowy_mountains_battles_blood_moon' } } /* half the plains' / desert's 0.01 */,
+        encounters: { rate: 0.003, type: 'time_weighted', pools: [{ weight: 100, id: 'crimson_vigil', allowedTimes: ['dusk', 'night'], minAct: 2 }] },   /* act 2 only: nothing roams the peaks before it */
     },
     HOUSE_INTERIOR: {
         id: 'HOUSE_INTERIOR',

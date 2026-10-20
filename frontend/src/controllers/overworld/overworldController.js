@@ -709,7 +709,7 @@ export class OverworldController extends BaseController {
         }
 
         const difficulty = gameState.difficulty || 'normal';
-        const battleData = biome.getBattle(difficulty);
+        const battleData = biome.getBattle(difficulty, currentHour);   // the hour picks the day / dusk / night (and blood moon) spawn table
         if (!battleData) return;
 
         console.log(`[Overworld] Ambush triggered in biome: ${biome.id} on ${difficulty} difficulty!`);
@@ -911,4 +911,4 @@ export class OverworldController extends BaseController {
             }
         };
     }
-}
+}

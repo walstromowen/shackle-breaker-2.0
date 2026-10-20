@@ -3,6 +3,7 @@ import { biomeFactory } from '../systems/factories/biomeFactory.js';
 import { WeatherFactory } from '../systems/factories/weatherFactory.js';
 import { events } from '../../frontend/src/core/eventBus.js'; // NEW: Import event bus
 import { WeatherDefinitions } from '../data/weatherDefinitions.js'; // NEW: Needed to look up the audio effect string
+import { ActSystem } from './actSystem.js';
 
 /* How likely each weather is when a new one is rolled in a biome. Only the weather a biome lists in its `allowedWeather` (biomeDefinitions.js) can ever be
    rolled there, whatever this table says, so the two can no longer disagree. A biome that is not listed here gets CLEAR 60 and 20 for every weather it allows;
@@ -35,17 +36,40 @@ export class TimeSystem {
             DUSK:    { r: 200, g: 80,  b: 40,  a: 0.05 }  
         };
 
-        this.keyframes = [
-            { time: 0,   color: this.palette.NIGHT }, 
-            { time: 5,   color: this.palette.NIGHT }, 
-            { time: 6,   color: this.palette.DAWN  }, 
-            { time: 9,   color: this.palette.DAY   }, 
-            { time: 16,  color: this.palette.DAY   }, 
-            { time: 17.5, color: this.palette.GOLDEN }, 
-            { time: 18.5, color: this.palette.DUSK   }, 
-            { time: 20,  color: this.palette.NIGHT  }, 
-            { time: 24,  color: this.palette.NIGHT }  
+        this.keyframes = this.buildKeyframes(this.palette);
+        this._keyframeAct = 1;
+    }
+
+    /** The clock's colours over the day for a palette (NIGHT, DAWN, DAY, GOLDEN, DUSK). */
+    buildKeyframes(palette) {
+        return [
+            { time: 0,   color: palette.NIGHT },
+            { time: 5,   color: palette.NIGHT },
+            { time: 6,   color: palette.DAWN  },
+            { time: 9,   color: palette.DAY   },
+            { time: 16,  color: palette.DAY   },
+            { time: 17.5, color: palette.GOLDEN },
+            { time: 18.5, color: palette.DUSK   },
+            { time: 20,  color: palette.NIGHT  },
+            { time: 24,  color: palette.NIGHT }
         ];
+    }
+
+    /** The keyframes of the current act: act 2 swaps the black night for the red sky of the blood moon (data/actDefinitions.js `lighting`). Rebuilt only when the act changes. */
+    getKeyframes() {
+        const act = ActSystem.getAct();
+        if (act !== this._keyframeAct) {
+            const L = ActSystem.getLighting();
+            this._keyframeAct = act;
+            this.keyframes = this.buildKeyframes({
+                NIGHT:  L.night  || this.palette.NIGHT,
+                DAWN:   L.dawn   || this.palette.DAWN,
+                DAY:    this.palette.DAY,
+                GOLDEN: L.golden || this.palette.GOLDEN,
+                DUSK:   L.dusk   || this.palette.DUSK
+            });
+        }
+        return this.keyframes;
     }
 
     update(dt) {
@@ -89,14 +113,15 @@ export class TimeSystem {
 
     getCurrentColorData() {
         const hour = gameState.world.time / 60;
+        const keyframes = this.getKeyframes();
 
-        let startFrame = this.keyframes[0];
-        let endFrame = this.keyframes[this.keyframes.length - 1];
+        let startFrame = keyframes[0];
+        let endFrame = keyframes[keyframes.length - 1];
 
-        for (let i = 0; i < this.keyframes.length - 1; i++) {
-            if (hour >= this.keyframes[i].time && hour < this.keyframes[i + 1].time) {
-                startFrame = this.keyframes[i];
-                endFrame = this.keyframes[i + 1];
+        for (let i = 0; i < keyframes.length - 1; i++) {
+            if (hour >= keyframes[i].time && hour < keyframes[i + 1].time) {
+                startFrame = keyframes[i];
+                endFrame = keyframes[i + 1];
                 break;
             }
         }
@@ -216,4 +241,4 @@ export class TimeSystem {
         // 6. New weather: saves it and syncs the audio (the AudioManager crossfades)
         TimeSystem.setWeather(selectedWeatherId);
     }
-}
+}

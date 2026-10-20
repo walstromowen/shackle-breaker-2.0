@@ -3,6 +3,9 @@ export const gameState = {
     mode: "overworld",
     difficulty: "normal",
     
+    // Milestones the player has reached ('act2', ...). The current act comes from them: see systems/actSystem.js and data/actDefinitions.js
+    milestones: [],
+
     // <-- NEW: Quest Tracker
     quests: {
         active: {},       // Keyed by questId, stores current progress
@@ -57,4 +60,4 @@ export const gameState = {
         selectedDecisionIndex: 0,
         isMenuOpen: false
     }
-};
+};

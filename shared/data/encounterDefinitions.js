@@ -12,6 +12,8 @@ import { ironChest } from './encounters/ironChest.js';
 import { tracksInTheSnow } from './encounters/tracksInTheSnow.js';
 import { mysteriousAltar } from './encounters/mysteriousAltar.js';
 import { prologue } from './encounters/prologue.js';
+import { actTwo } from './encounters/actTwo.js';
+import { crimsonVigil } from './encounters/crimsonVigil.js';
 
 // <-- Import your new encounter here
 
@@ -30,6 +32,8 @@ export const encounterDefinitions = {
     [tracksInTheSnow.id]: tracksInTheSnow,
     [mysteriousAltar.id]: mysteriousAltar,
     [prologue.id]: prologue,
+    [actTwo.id]: actTwo,
+    [crimsonVigil.id]: crimsonVigil,
 
     
     // <-- Add your new encounter here
@@ -37,4 +41,4 @@ export const encounterDefinitions = {
     // When you make a new encounter, it's just two quick steps:
     // 1. Import it at the top.
     // 2. Add `[yourEncounter.id]: yourEncounter,` right here.
-};
+};

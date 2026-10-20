@@ -1,5 +1,6 @@
 import { CONFIG } from '../data/constants.js';
 import { SpawnTableFactory } from '../systems/factories/spawnTableFactory.js';
+import { ActSystem } from '../systems/actSystem.js';
 
 export class BiomeModel {
     constructor(definition) {
@@ -63,9 +64,12 @@ export class BiomeModel {
 
     getBattle(difficulty = 'normal', currentHour = 12) {
         if (!this.battles || !this.battles.tables) return null;
-        if (Math.random() > this.battles.rate) return null;
+        // The act makes ambushes more frequent, most of all on a blood moon night (data/actDefinitions.js)
+        if (Math.random() > this.battles.rate * ActSystem.getBattleRateMultiplier(currentHour)) return null;
         const timeOfDay = this.getTimeOfDay(currentHour);
-        const tableId = this.battles.tables[timeOfDay] || this.battles.tables.day;
+        // A blood moon night has a table of its own (`tables.bloodMoon`), the dead and the cursed that rise under it
+        const tableId = (ActSystem.isBloodMoon(currentHour) && this.battles.tables.bloodMoon)
+            || this.battles.tables[timeOfDay] || this.battles.tables.day;
         if (!tableId) return null;
         const spawnModel = SpawnTableFactory.generateBattle(tableId, difficulty);
         return spawnModel.hasEnemies() ? { enemies: spawnModel.enemies } : null;
@@ -83,7 +87,8 @@ export class BiomeModel {
         if (Math.random() > this.encounters.rate) return null;
         const timeOfDay = this.getTimeOfDay(currentHour);
         // Filter out encounters that don't match the current time
-        const validPools = this.encounters.pools.filter((pool) => !pool.allowedTimes || pool.allowedTimes.includes(timeOfDay));
+        // A pool can be limited to some acts with `minAct` / `maxAct` (an encounter that only exists after, or only before, a milestone)
+        const validPools = this.encounters.pools.filter((pool) => (!pool.allowedTimes || pool.allowedTimes.includes(timeOfDay)) && ActSystem.isAvailable(pool));
         if (validPools.length === 0) return null;
         // Perform a weighted random roll
         const totalWeight = validPools.reduce((sum, pool) => sum + pool.weight, 0);
@@ -112,4 +117,4 @@ export class BiomeModel {
         }
         return this.music.day;
     }
-}
+}

@@ -36,16 +36,16 @@ export const prologue = {
             displayText: "The Prisoners",
             tone: "cold",
             image: { sheet: "encounter_aftermath", col: 3, row: 2 },
-            text: "The other prisoners laugh and mutter to themselves, the way a wound weeps. Their eyes are hollow. They look cursed.",
+            text: "The other prisoners laugh and mutter to themselves, the way a wound weeps. Their eyes are hollow as they babble about things that make no sense.",
             decisions: [
                 {
                     text: "Listen to them.",
-                    customActionText: "The laughter has no joy in it, and it never stops.",
+                    customActionText: "The prisoners' words make no sense, yet they laugh as if remenicing over a shared memory. Still, their laughter has no joy in it, and it never stops. ",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_guards" } }] }]
                 },
                 {
                     text: "Ignore them.",
-                    customActionText: "You stare at the ground and keep walking.",
+                    customActionText: "You stare at the ground and keep walking, hoping to drown out their endless laughter.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_guards" } }] }]
                 }
             ]
@@ -54,11 +54,11 @@ export const prologue = {
             displayText: "The Guards",
             tone: "cold",
             image: { sheet: "encounter_aftermath", col: 3, row: 3 },
-            text: "Guards in dark armor walk beside the line, carrying green torches. They do not speak, and they do not tire.",
+            text: "Guards in dark armor walk beside the line, their faces hidden beneath visors. They do not speak, and they do not tire.",
             decisions: [
                 {
                     text: "Look at their faces.",
-                    customActionText: "Something is wrong with them. They look just like the prisoners.",
+                    customActionText: "The guards' faces are hidden, but there is a familiarity to them. Some chuckle to themselves while most look straight ahead without expression.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_road" } }] }]
                 },
                 {
@@ -71,7 +71,7 @@ export const prologue = {
         the_road: {
             displayText: "The Road",
             tone: "cold",
-            text: "Where this road ends, and why you walk it, no one will say.",
+            text: "The road stretches endlessly ahead. Where this road ends, and why you walk it, you do not know.",
             decisions: [
                 {
                     text: "Walk.",
