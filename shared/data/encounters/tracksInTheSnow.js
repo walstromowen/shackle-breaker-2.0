@@ -254,20 +254,20 @@ export const tracksInTheSnow = {
             text: "{name} sees a snow leopard laying in the snow ahead. It appears to be injured.",
             decisions: [
                 {
-                    text: "[Bandage] Bandage the Snow Leopard.",
+                    text: "[Healing Herb] Tend the Snow Leopard's wounds.",
                     type: "skill_check",
                     attribute: "none",
                     threshold: 5,
                     conditions: [
-                        { type: "has_item", itemId: "bandage", qty: 1 },
+                        { type: "has_item", itemId: "healing_herb", qty: 1 },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "{name} attempts to bandage the Snow Leopard.",
+                    customActionText: "{name} crushes a healing herb and presses it into the Snow Leopard's wounds...",
                     successOutcomes: [
                         {
                             weight: 1,
                             results: [
-                                { type: "REMOVE_ITEM", payload: { itemId: "bandage", qty: 1 } },
+                                { type: "REMOVE_ITEM", payload: { itemId: "healing_herb", qty: 1 } },
                                 { type: "MODIFY_CORRUPTION", payload: { amount: -5, target: "active_character" } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "leopard_nuzzle" } }
                             ]
@@ -277,7 +277,7 @@ export const tracksInTheSnow = {
                         {
                             weight: 1,
                             results: [
-                                { type: "REMOVE_ITEM", payload: { itemId: "bandage", qty: 1 } },
+                                { type: "REMOVE_ITEM", payload: { itemId: "healing_herb", qty: 1 } },
                                 { type: "MODIFY_CORRUPTION", payload: { amount: -5, target: "active_character" } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "leopard_trappers" } }
                             ]
@@ -285,7 +285,7 @@ export const tracksInTheSnow = {
                         {
                             weight: 1,
                             results: [
-                                { type: "REMOVE_ITEM", payload: { itemId: "bandage", qty: 1 } },
+                                { type: "REMOVE_ITEM", payload: { itemId: "healing_herb", qty: 1 } },
                                 { type: "MODIFY_CORRUPTION", payload: { amount: -2, target: "active_character" } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "leopard_wild" } }
                             ]
@@ -293,7 +293,7 @@ export const tracksInTheSnow = {
                         {
                             weight: 1,
                             results: [
-                                { type: "REMOVE_ITEM", payload: { itemId: "bandage", qty: 1 } },
+                                { type: "REMOVE_ITEM", payload: { itemId: "healing_herb", qty: 1 } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "leopard_pack_ambush" } }
                             ]
                         }
@@ -372,7 +372,7 @@ export const tracksInTheSnow = {
             ]
         },
 
-        // --- Shared failure stages for the bandage and put-to-rest checks ---
+        // --- Shared failure stages for the healing herb and put-to-rest checks ---
         // (forced fights: no has_tag gate, so a non-humanoid active character can never be soft-locked)
         leopard_trappers: {
             displayText: "Trappers Attack!",
@@ -489,4 +489,4 @@ export const tracksInTheSnow = {
             ]
         }
     }
-};
+};

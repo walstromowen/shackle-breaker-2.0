@@ -326,7 +326,7 @@ export const aftermath = {
         },
 
         // FIX: the warrior dies here, so this no longer loops back to wounded_warrior
-        // (which let the player bandage a corpse). It returns to the battlefield hub instead;
+        // (which let the player treat a corpse). It returns to the battlefield hub instead;
         // searched_survivors is already set, so no second survivor can be found.
         robbed_warrior: {
             displayText: "Cold-Hearted",
@@ -587,4 +587,4 @@ export const aftermath = {
             ]
         }
     }
-};
+};

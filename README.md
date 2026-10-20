@@ -3,7 +3,6 @@ Roguelike turnbased adventure game based on the Shackle Breaker story by Owen Wa
 
 # PLANNED FEATURES
 hand crafted areas
-autenticaiton (last)
 waypoints
 party rendering on overworld
 
@@ -11,8 +10,6 @@ party rendering on overworld
 enhance battle animations / polish
 particleRenderer revamped(global)
 structures: 
-better text style
-targeting ui improvements for splash attacks with mouse
 flashing of sprites in battle renderer
 
 # Bugs

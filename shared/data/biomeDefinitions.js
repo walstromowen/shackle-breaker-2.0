@@ -109,7 +109,7 @@ export const BIOME_DEFINITIONS = {
             rate: 0.005,
             type: 'time_weighted',
             pools: [
-                { weight: 110, id: 'aftermath', allowedTimes: ['day', 'dusk', 'night'] },
+                { weight: 10, id: 'aftermath', allowedTimes: ['day', 'dusk', 'night'] },
                 { weight: 10, id: 'wild_hunt', allowedTimes: ['day', 'dusk', 'night'] },
                 { weight: 10, id: 'wounded_mutt', allowedTimes: ['day', 'dusk', 'night'] },
                 { weight: 20, id: 'a_disturbing_sight', allowedTimes: ['day', 'dusk', 'night'] },
@@ -312,4 +312,4 @@ export const BIOME_DEFINITIONS = {
 for (const def of Object.values(BIOME_DEFINITIONS)) {
     const mo = def.mapObjects;
     if (mo && mo._WALLS === undefined) mo._WALLS = mo[CONFIG.TILE_TYPES.LAYER_2] || [];
-}
+}

@@ -24,11 +24,25 @@ import { WeatherFactory } from './factories/weatherFactory.js';
 const SAVE_FORMAT = 'shackle-breaker-save';
 
 /* Bump this when the saved shape changes and add a migration below, so saves from older builds keep loading. */
-const SAVE_VERSION = 1;
+const SAVE_VERSION = 2;
 
 /* MIGRATIONS[n] upgrades the `data` of a version-n save to version n + 1. Example for the day it is needed:
      MIGRATIONS[1] = (data) => { data.party.somethingNew = 0; return data; };                                                            */
-const MIGRATIONS = {};
+const MIGRATIONS = {
+    // v1 -> v2: the Bandage item was replaced by the Healing Herb. Every "bandage" in the save (inventory, hotbar, quest rewards) becomes "healing_herb".
+    1: (data) => renameStrings(data, { bandage: 'healing_herb' })
+};
+
+function renameStrings(node, map) {
+    if (typeof node === 'string') return Object.prototype.hasOwnProperty.call(map, node) ? map[node] : node;
+    if (Array.isArray(node)) return node.map(v => renameStrings(v, map));
+    if (node && typeof node === 'object') {
+        const out = {};
+        for (const k of Object.keys(node)) out[k] = renameStrings(node[k], map);
+        return out;
+    }
+    return node;
+}
 
 export const AUTOSAVE_SLOT = 'autosave';
 export const BACKUP_SLOT = 'previous';   // the autosave that a New Game (or loading another save) replaced, so starting over never destroys progress for good

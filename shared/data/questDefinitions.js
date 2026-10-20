@@ -87,7 +87,7 @@ export const QuestDefinitions = {
             currency: 300,
             items: [
                 { id: "healing_tonic", amount: 2 },
-                { id: "bandage", amount: 3 }
+                { id: "healing_herb", amount: 3 }
             ],
             quests: ["shackled7"]
         }
@@ -530,7 +530,7 @@ export const QuestDefinitions = {
                 { id: "healing_herb", amount: 3 },
                 { id: "leather_leggings", amount: 1 },
                 { id: "scythe", amount: 1 },
-                { id: "bandage", amount: 3 },
+                { id: "healing_herb", amount: 3 },
                 { id: "large_iron_key", amount: 1 }
             ]
         }
@@ -613,9 +613,9 @@ export const QuestDefinitions = {
             items: [
                 { id: "cloth_gloves", amount: 1 },
                 { id: "healing_tonic", amount: 2 },
-                { id: "bandage", amount: 3 },
+                { id: "healing_herb", amount: 3 },
                 { id: "large_iron_key", amount: 1 }
             ]
         }
     }
-};
+};

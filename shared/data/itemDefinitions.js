@@ -1102,18 +1102,6 @@ export const ItemDefinitions = {
     icon: { col: 1, row: 1 },
     stackable: true
   },
-  "bandage": {
-    id: "bandage",
-    name: "Bandage",
-    type: "consumable",
-    description: "A clean strip of woven linen used to stem bleeding and dress wounds in the field.",
-    value: 60,
-    icon: { col: 5, row: 3 }, 
-    useAbility: "minor_heal", 
-    usability: ['overworld', 'battle'],
-    stackable: true,
-    maxStack: 20
-  },
   "healing_tonic": {
     id: "healing_tonic",
     name: "Healing Tonic",
@@ -1312,4 +1300,4 @@ export const ItemDefinitions = {
     staminaRecovery: 20,
     insightRecovery: 5
   }
-};
+};

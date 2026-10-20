@@ -67,6 +67,7 @@ export class TerrainGenerator {
         this._straightNoiseCache = new Map();
         this.temperatureNoise = new PerlinNoise(this.seed + 12345);
         this.moistureNoise = new PerlinNoise(this.seed + 54321);
+        this.plainsNoise = new PerlinNoise(this.seed + 31337);   // the third biome field (see getBiomeAt)
     }
     _s(col, row) {
         return `${col},${row}`;
@@ -96,12 +97,15 @@ export class TerrainGenerator {
     getBiomeAt(col, row) {
         const key = this._s(col, row);
         if (this._biomeCache.has(key)) return this._biomeCache.get(key);
-        const BIOME_FREQ = 0.005;
-        const rawTemp = this.temperatureNoise.get(col * BIOME_FREQ + this.offsetX, row * BIOME_FREQ + this.offsetY);
-        const rawMoist = this.moistureNoise.get(col * BIOME_FREQ + this.offsetX, row * BIOME_FREQ + this.offsetY);
-        const tempVal = Math.min(1, Math.max(0, rawTemp + 0.5));
-        const moistVal = Math.min(1, Math.max(0, rawMoist + 0.5));
-        const biome = biomeFactory.determineBiome(tempVal, moistVal);
+        const BIOME_FREQ = 0.0028;   // biome regions are a few hundred cells across
+        /* One smooth field per biome (cold = snowy mountains, dry = desert, plus plains); the biome of a cell is the field that is highest there.
+           Cutting ONE field into thirds would make the middle biome a thin band that wraps around the other two (a ring); with a field each,
+           every biome grows as its own broad region and borders whichever biome happens to be next to it. */
+        const fx = col * BIOME_FREQ + this.offsetX, fy = row * BIOME_FREQ + this.offsetY;
+        const snowy = this.temperatureNoise.get(fx, fy);
+        const desert = this.moistureNoise.get(fx, fy);
+        const plains = this.plainsNoise.get(fx, fy);
+        const biome = biomeFactory.determineBiome(snowy, plains, desert);
         this._biomeCache.set(key, biome);
         return biome;
     }
@@ -615,4 +619,4 @@ class PerlinNoise {
         );
     }
     invalidateTile(key) {}
-}
+}

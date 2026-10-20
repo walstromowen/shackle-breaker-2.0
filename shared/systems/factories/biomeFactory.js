@@ -27,17 +27,18 @@ class BiomeFactory {
     }
 
     /**
-     * Determines which biome should exist based on temperature and moisture noise values (both 0..1).
-     * Three biomes, each covering a third of the map: the temperature noise is cut at its 1/3 and 2/3 points
-     * (about 0.39 and 0.61: Perlin noise piles up around 0.5, so cutting at 0.33 / 0.67 would make the middle biome far too big).
-     * Moisture is not used for now; it is still passed in for the biomes you add later.
+     * Picks the biome of a cell from one smooth noise field per biome: the highest field wins. Each biome therefore covers about a third of
+     * the map as broad regions of its own. (Cutting a single field into low / middle / high would make the middle biome a thin band, a ring,
+     * around the other two.) A small bonus lets the plains win close calls, since it is the biome the player starts in.
      */
-    determineBiome(temperatureNoise, moistureNoise) {
-        if (temperatureNoise < 0.39) return this.getBiome('SNOWY_MOUNTAINS'); // coldest third
-        if (temperatureNoise < 0.61) return this.getBiome('PLAINS');          // middle third
-        return this.getBiome('DESERT');                                       // hottest third
+    determineBiome(snowyField, plainsField, desertField) {
+        const PLAINS_BONUS = 0.04;
+        const plains = plainsField + PLAINS_BONUS;
+        if (snowyField > plains && snowyField > desertField) return this.getBiome('SNOWY_MOUNTAINS');
+        if (desertField > plains) return this.getBiome('DESERT');
+        return this.getBiome('PLAINS');
     }
 }
 
 // Export as a singleton for easy access
-export const biomeFactory = new BiomeFactory();
+export const biomeFactory = new BiomeFactory();

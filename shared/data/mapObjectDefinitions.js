@@ -55,7 +55,7 @@ export const MAP_OBJECTS_DEFINITIONS = {
     IRON_CHEST: { sheet: 'objIronChest', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'iron_chest', isRepeatable: false } },
     PINE_TREE: { sheet: 'objPineTree', spriteX: 3, spriteY: 1, width: 2, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 }, interaction: { type: 'HARVEST', tool: 'axe', itemId: 'soft_wood', amount: 2, duration: 1.5, replaceWith: 'TREE_STUMP' } },
     SNOWY_PINE_TREE: { sheet: 'objPineTreeSnow', spriteX: 3, spriteY: 1, width: 2, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 }, interaction: { type: 'HARVEST', tool: 'axe', itemId: 'soft_wood', amount: 2, duration: 1.5, replaceWith: 'SNOWY_TREE_STUMP' } },
-    OAK_TREE_1: { sheet: 'objOakTree1', spriteX: 0, spriteY: 1, width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 1, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'HARVEST', tool: 'axe', itemId: 'hardwood', amount: 2, duration: 2.0, replaceWith: 'TREE_STUMP' } },
+    OAK_TREE_1: { sheet: 'objOakTree1', spriteX: 0, spriteY: 1, width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 1, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'HARVEST', tool: 'axe', itemId: 'hard_wood', amount: 2, duration: 2.0, replaceWith: 'TREE_STUMP' } },
     TREE_STUMP: { sheet: 'objTreeStump', spriteX: 0, spriteY: 4, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
     SNOWY_TREE_STUMP: { sheet: 'objTreeStumpSnow', spriteX: 0, spriteY: 4, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
     MEDIUM_CACTUS_1: { sheet: 'objMediumCactus1', spriteX: 1, spriteY: 0, width: 2, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 } },
@@ -134,4 +134,4 @@ export const MAP_OBJECTS_DEFINITIONS = {
         spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: false, isGround: false, isAnchor: true, hitboxes: [{ xOffset: 1, yOffset: 0, w: 1, h: 1 }],
         interaction: { type: 'WARP', id: 'exit_interior', isRepeatable: true, walkIn: true }
     },
-};
+};

@@ -39,7 +39,7 @@ export const LootTableDefinitions = {
             { id: "invigorating_herb", weight: 40, min: 1, max: 2 },
             { id: "illuminating_herb", weight: 40, min: 1, max: 2 },
             { id: "kurtus_brew", weight: 5, min: 1, max: 1 },
-            { id: "bandage", weight: 25, min: 1, max: 2 },
+            { id: "healing_herb", weight: 25, min: 1, max: 2 },
             { id: "torch", weight: 20, min: 1, max: 2 },
             { id: "throwing_knife", weight: 15, min: 1, max: 3 },
             { id: "healing_tonic", weight: 8, min: 1, max: 1 },
@@ -130,7 +130,7 @@ export const LootTableDefinitions = {
             { id: "invigorating_herb", weight: 40, min: 1, max: 2 },
             { id: "illuminating_herb", weight: 40, min: 1, max: 2 },
             { id: "kurtus_brew", weight: 5, min: 1, max: 1 },
-            { id: "bandage", weight: 25, min: 1, max: 2 },
+            { id: "healing_herb", weight: 25, min: 1, max: 2 },
             { id: "torch", weight: 15, min: 1, max: 2 },
             { id: "throwing_knife", weight: 15, min: 1, max: 3 },
             { id: "poison_throwing_knife", weight: 8, min: 1, max: 2 },
@@ -220,7 +220,7 @@ export const LootTableDefinitions = {
             { id: "torch", weight: 30, min: 1, max: 3 },
             { id: "healing_herb", weight: 25, min: 1, max: 2 },
             { id: "illuminating_herb", weight: 25, min: 1, max: 2 },
-            { id: "bandage", weight: 20, min: 1, max: 2 },
+            { id: "healing_herb", weight: 20, min: 1, max: 2 },
             { id: "healing_tonic", weight: 6, min: 1, max: 1 },
             { id: "kurtus_brew", weight: 5, min: 1, max: 1 },
             { id: "invigorating_tonic", weight: 4, min: 1, max: 1 },
@@ -289,7 +289,7 @@ export const LootTableDefinitions = {
             // --- CONSUMABLES ---
             { id: "healing_herb", weight: 30, min: 1, max: 2 },
             { id: "kurtus_brew", weight: 8, min: 1, max: 1 },
-            { id: "bandage", weight: 25, min: 1, max: 3 },
+            { id: "healing_herb", weight: 25, min: 1, max: 3 },
             { id: "healing_tonic", weight: 10, min: 1, max: 1 },
             { id: "invigorating_tonic", weight: 6, min: 1, max: 1 },
             { id: "throwing_knife", weight: 15, min: 1, max: 3 },
@@ -448,7 +448,7 @@ export const LootTableDefinitions = {
             { id: "invigorating_herb", weight: 40, min: 1, max: 2 },
             { id: "illuminating_herb", weight: 40, min: 1, max: 2 },
             { id: "kurtus_brew", weight: 5, min: 1, max: 1 },
-            { id: "bandage", weight: 30, min: 1, max: 2 },
+            { id: "healing_herb", weight: 30, min: 1, max: 2 },
             { id: "torch", weight: 25, min: 1, max: 2 },
             { id: "throwing_knife", weight: 10, min: 1, max: 2 },
             { id: "healing_tonic", weight: 10, min: 1, max: 1 },
@@ -519,7 +519,7 @@ export const LootTableDefinitions = {
         items: [
             { id: "healing_herb", dropRate: 0.1, min: 1, max: 2 },
             { id: "dagger", dropRate: 0.10 },
-            { id: "bandage", dropRate: 0.08 },
+            { id: "healing_herb", dropRate: 0.08 },
             { id: "plant_fibers", dropRate: 0.08, min: 1, max: 2 },
             { id: "throwing_knife", dropRate: 0.05 },
             { id: "small_iron_key", dropRate: 0.02 },
@@ -531,7 +531,7 @@ export const LootTableDefinitions = {
             { id: "healing_herb", dropRate: 0.1 },
             { id: "dagger", dropRate: 0.05 },
             { id: "insight_of_arcane", dropRate: 0.15 },
-            { id: "bandage", dropRate: 0.05 },
+            { id: "healing_herb", dropRate: 0.05 },
             { id: "illuminating_tonic", dropRate: 0.04 },
             { id: "small_iron_key", dropRate: 0.02 },
         ]
@@ -577,7 +577,7 @@ export const LootTableDefinitions = {
             { id: "sand", dropRate: 0.25, min: 1, max: 2 },
             { id: "salt", dropRate: 0.1 },
             { id: "cotton", dropRate: 0.1 },
-            { id: "bandage", dropRate: 0.06 },
+            { id: "healing_herb", dropRate: 0.06 },
             { id: "throwing_knife", dropRate: 0.04 },
             { id: "small_iron_key", dropRate: 0.02 },
         ]
@@ -791,7 +791,7 @@ export const LootTableDefinitions = {
             { id: "leather", dropRate: 0.25, min: 1, max: 2 },
             { id: "flint", dropRate: 0.15 },
             { id: "torch", dropRate: 0.15 },
-            { id: "bandage", dropRate: 0.10 },
+            { id: "healing_herb", dropRate: 0.10 },
             { id: "healing_herb", dropRate: 0.08 },
             { id: "spear", dropRate: 0.08 },
             { id: "dagger", dropRate: 0.05 },
@@ -878,7 +878,7 @@ export const LootTableDefinitions = {
             { id: "leather_armor", dropRate: 0.04 },
             { id: "iron_helmet", dropRate: 0.02 },
             { id: "torch", dropRate: 0.15 },
-            { id: "bandage", dropRate: 0.1 },
+            { id: "healing_herb", dropRate: 0.1 },
             { id: "throwing_knife", dropRate: 0.1, min: 1, max: 2 },
             { id: "bronze_ingot", dropRate: 0.04 },
             { id: "shortbow", dropRate: 0.04 },
@@ -898,4 +898,4 @@ export const LootTableDefinitions = {
 };
 
 // The HOUSE_INTERIOR biome's defaultLootTable is "house"; point it at the house_interior table.
-LootTableDefinitions.house = LootTableDefinitions.house_interior;
+LootTableDefinitions.house = LootTableDefinitions.house_interior;
