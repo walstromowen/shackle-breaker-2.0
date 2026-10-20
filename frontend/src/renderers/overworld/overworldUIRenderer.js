@@ -22,7 +22,7 @@ export class OverworldUIRenderer {
             hoveredHitboxId, isMenuOpen, menuToggleHitbox, dropdownHitboxes, 
             trackedQuests, toasts, facedObject, camera,
             isHarvesting, harvestTimer, harvestDuration, harvestTarget,
-            hotbar, notice
+            hotbar, notice, skillPointReady
         } = state || {};
 
         const ui = new CanvasUI(ctx);
@@ -34,12 +34,13 @@ export class OverworldUIRenderer {
 
         // The menu button stays "selected" (bar) while its dropdown is open; the one under the mouse is "highlighted"
         if (menuToggleHitbox) {
-            this.drawSquareButton(ctx, ui, menuToggleHitbox, ui.flags(menuToggleHitbox.id, hoveredHitboxId, { selected: !!isMenuOpen }));
+            // The Party button is hidden while the dropdown is closed, so the badge also sits on the menu button then
+            this.drawSquareButton(ctx, ui, menuToggleHitbox, ui.flags(menuToggleHitbox.id, hoveredHitboxId, { selected: !!isMenuOpen }), !!skillPointReady && !isMenuOpen);
         }
 
         if (isMenuOpen && dropdownHitboxes) {
             for (const btn of dropdownHitboxes) {
-                this.drawSquareButton(ctx, ui, btn, ui.flags(btn.id, hoveredHitboxId));
+                this.drawSquareButton(ctx, ui, btn, ui.flags(btn.id, hoveredHitboxId), !!skillPointReady && btn.id === 'btn_party');
             }
         }
 
@@ -485,7 +486,8 @@ export class OverworldUIRenderer {
     }
 
     // flags from ui.flags(): highlighted = under the mouse, selected = its dropdown is open
-    drawSquareButton(ctx, ui, btn, flags = {}) {
+    // badge: a pulsing gold star in the corner (a skill point is waiting on the Party screen)
+    drawSquareButton(ctx, ui, btn, flags = {}, badge = false) {
         const textColor = ui.stateTextColor(flags, UITheme.colors.textMain);
         const drawY = btn.y;
 
@@ -533,5 +535,29 @@ export class OverworldUIRenderer {
             "center",
             "middle"
         );
+        if (badge) this.drawSkillPointBadge(ctx, btn.x + btn.w - 14, drawY + 14);
     }
-}
+
+    /** A small pulsing gold disc with a star, centred on (cx, cy). */
+    drawSkillPointBadge(ctx, cx, cy) {
+        const pulse = (Math.sin(performance.now() * 0.006) + 1) / 2;   // 0..1
+        const r = 17 + pulse * 2;
+        ctx.save();
+        ctx.shadowColor = `rgba(255, 210, 90, ${0.45 + pulse * 0.4})`;
+        ctx.shadowBlur = 14 + pulse * 8;
+        ctx.fillStyle = '#e6b93c';
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#1a1710';
+        ctx.stroke();
+        ctx.fillStyle = '#1a1710';
+        ctx.font = 'bold 24px "Georgia", serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('\u2605', cx, cy + 1);
+        ctx.restore();
+    }
+}

@@ -828,6 +828,7 @@ export class OverworldController extends BaseController {
             camera: this.camera,
             worldManager: this.worldManager, // the minimap reads the terrain around the player from it
             hoveredHitboxId: this.hoveredHitboxId,
+            skillPointReady: !!gameState.party?.members?.some(m => m.skillPoints > 0),   // a skill point is waiting to be spent: the menu / Party buttons show a badge
             menuToggleHitbox: this.menuToggleHitbox,
             dropdownHitboxes: this.dropdownHitboxes,
             isMenuOpen: this.isMenuOpen,

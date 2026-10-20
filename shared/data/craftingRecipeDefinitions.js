@@ -5,10 +5,9 @@ export const craftingRecipeDefinitions = {
     outputItemId: "shortsword",
     station: "anvil",
     materials: {
-      "soft_wood": 5,
-      "stone": 5,
-      "plant_fibers": 5,
-      "sand":5
+      "iron_ingot": 3,   // the blade
+      "hard_wood": 1,   // the hilt
+      "leather": 1   // the grip
     }
   },
   "recipe_spear": {
@@ -16,10 +15,9 @@ export const craftingRecipeDefinitions = {
     outputItemId: "spear",
     station: "anvil",
     materials: {
-      "soft_wood": 10,
-      "stone": 3,
-      "plant_fibers": 5,
-      "sand":2
+      "hard_wood": 3,   // the shaft
+      "iron_ingot": 1,   // the spearhead
+      "plant_fibers": 2   // binds the head
     }
   },
   "recipe_dagger": {
@@ -27,10 +25,8 @@ export const craftingRecipeDefinitions = {
     outputItemId: "dagger",
     station: "anvil",
     materials: {
-      "soft_wood": 3,
-      "stone": 3,
-      "plant_fibers": 3,
-      "sand":3
+      "iron_ingot": 1,   // the blade
+      "leather": 1   // the grip
     }
   },
   "recipe_handaxe": {
@@ -38,10 +34,9 @@ export const craftingRecipeDefinitions = {
     outputItemId: "handaxe",
     station: "anvil",
     materials: {
-      "soft_wood": 7,
-      "stone": 5,
-      "plant_fibers": 3,
-      "sand":3
+      "iron_ingot": 2,   // the head
+      "hard_wood": 2,   // the haft
+      "plant_fibers": 2   // binds head to haft
     }
   },
   "recipe_pickaxe": {
@@ -49,10 +44,9 @@ export const craftingRecipeDefinitions = {
     outputItemId: "pickaxe",
     station: "anvil",
     materials: {
-      "soft_wood": 6,
-      "stone": 7,
-      "plant_fibers": 4,
-      "sand":3
+      "stone": 4,   // the head (a stone head, as its description says)
+      "hard_wood": 3,   // the haft
+      "plant_fibers": 3   // lashing
     }
   },
   "recipe_shortbow": {
@@ -60,8 +54,9 @@ export const craftingRecipeDefinitions = {
     outputItemId: "shortbow",
     station: "carpenters_bench",
     materials: {
-      "soft_wood": 15,
-      "plant_fibers": 15,
+      "hard_wood": 3,   // the stave
+      "plant_fibers": 6,   // the bowstring
+      "leather": 1   // the grip
     }
   },
 
@@ -71,9 +66,10 @@ export const craftingRecipeDefinitions = {
     outputItemId: "crossbow",
     station: "carpenters_bench",
     materials: {
-      "hard_wood": 8,
-      "plant_fibers": 12,
-      "iron_ingot": 1
+      "hard_wood": 5,   // the stock and prod
+      "iron_ingot": 1,   // the trigger and latch
+      "plant_fibers": 4,   // the string
+      "leather": 1   // the grip
     }
   },
   "recipe_warhammer": {
@@ -81,9 +77,9 @@ export const craftingRecipeDefinitions = {
     outputItemId: "warhammer",
     station: "anvil",
     materials: {
-      "iron_ingot": 3,
-      "hard_wood": 5,
-      "leather": 1
+      "iron_ingot": 4,   // the head
+      "hard_wood": 3,   // the haft
+      "leather": 1   // the grip
     }
   },
   "recipe_scythe": {
@@ -91,9 +87,9 @@ export const craftingRecipeDefinitions = {
     outputItemId: "scythe",
     station: "anvil",
     materials: {
-      "iron_ingot": 3,
-      "hard_wood": 5,
-      "plant_fibers": 3
+      "iron_ingot": 2,   // the blade
+      "hard_wood": 4,   // the snath
+      "plant_fibers": 2   // binds blade to snath
     }
   },
   "recipe_glaive": {
@@ -101,9 +97,9 @@ export const craftingRecipeDefinitions = {
     outputItemId: "glaive",
     station: "anvil",
     materials: {
-      "iron_ingot": 4,
-      "hard_wood": 6,
-      "leather": 2
+      "iron_ingot": 3,   // the blade
+      "hard_wood": 5,   // the pole
+      "leather": 1   // the grip
     }
   },
   "recipe_wooden_buckler": {
@@ -111,9 +107,9 @@ export const craftingRecipeDefinitions = {
     outputItemId: "wooden_buckler",
     station: "carpenters_bench",
     materials: {
-      "hard_wood": 6,
-      "leather": 1,
-      "plant_fibers": 4
+      "hard_wood": 5,   // the boards
+      "iron_ingot": 1,   // the boss
+      "leather": 1   // the handle strap
     }
   },
 
@@ -216,7 +212,6 @@ export const craftingRecipeDefinitions = {
   "recipe_iron_helmet": {
     id: "recipe_iron_helmet",
     outputItemId: "iron_helmet",
-    locked: true,
     station: "anvil",
     materials: {
       "iron_ingot": 5,
@@ -388,7 +383,7 @@ export const craftingRecipeDefinitions = {
     outputItemId: "bear_trap",
     station: "any",
     materials: {
-      "iron_ingot": 4
+      "iron_ore": 2
     }
   },
   "recipe_interior_map": {

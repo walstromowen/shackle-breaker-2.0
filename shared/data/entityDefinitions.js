@@ -7,7 +7,7 @@ const BASE_ENTITY = {
     level: 1,
     xp: 0,
     maxXp: 100,
-    skillPoints: 1,
+    skillPoints: 0,   // a new character starts with none: one is earned with each level
 
     // --- VISUALS ---
     spriteOverworld: "spritesheet",
