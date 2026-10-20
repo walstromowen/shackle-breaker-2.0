@@ -3,6 +3,7 @@ import { AuthService } from './authService.js';
 import { AuthScreen } from './authScreen.js';
 import { SaveManager } from '../../../shared/systems/saveManager.js';
 import { HybridSaveStore } from './cloudSaveStore.js';
+import { goFullscreenWhenAllowed } from '../core/fullscreen.js';
 
 /**
  * 1. A login remembered from an earlier visit is offered as "Welcome back" (no waiting for a sleeping server: nothing is sent yet).
@@ -19,6 +20,9 @@ export async function runAuthGate() {
         if (remembered) AuthService.logout();     // "Not you?"
         result = await AuthScreen.show();
     }
+
+    // Through the login: go fullscreen now, before the boot screen's loading bar starts (the button the player just pressed allows it)
+    goFullscreenWhenAllowed();
 
     if (result.mode === 'online') {
         result.store = new HybridSaveStore(result.user);

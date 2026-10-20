@@ -754,6 +754,7 @@ export const ENTITY_DEFINITIONS = {
     "DUNE_MAW": {
         ...BEAST_TEMPLATE,
         name: "Dune Maw",
+        frameSize: 192,
         level: 1,
         spriteOverworld: "duneMawSprite",
         spritePortrait: "duneMawPortrait",
@@ -772,7 +773,7 @@ export const ENTITY_DEFINITIONS = {
         },
         currencyReward: { min: 8, max: 18 },
         lootTableId: "dune_maw_drops",
-        abilities: [...BEAST_TEMPLATE.abilities, "bite"],
+        abilities: [...BEAST_TEMPLATE.abilities, "bite", "reckless_charge"],
         tags: [...BEAST_TEMPLATE.tags, "DESERT"]
     },
 

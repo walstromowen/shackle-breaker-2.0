@@ -3,7 +3,7 @@ export const craftingRecipeDefinitions = {
   "recipe_shortsword": {
     id: "recipe_shortsword",
     outputItemId: "shortsword",
-    station: "any",   // TESTING: was "anvil"
+    station: "anvil",
     materials: {
       "soft_wood": 5,
       "stone": 5,
@@ -14,7 +14,7 @@ export const craftingRecipeDefinitions = {
   "recipe_spear": {
     id: "recipe_spear",
     outputItemId: "spear",
-    station: "any",   // TESTING: was "anvil"
+    station: "anvil",
     materials: {
       "soft_wood": 10,
       "stone": 3,
@@ -25,7 +25,7 @@ export const craftingRecipeDefinitions = {
   "recipe_dagger": {
     id: "recipe_dagger",
     outputItemId: "dagger",
-    station: "any",   // TESTING: was "anvil"
+    station: "anvil",
     materials: {
       "soft_wood": 3,
       "stone": 3,
@@ -36,7 +36,7 @@ export const craftingRecipeDefinitions = {
   "recipe_handaxe": {
     id: "recipe_handaxe",
     outputItemId: "handaxe",
-    station: "any",   // TESTING: was "anvil"
+    station: "anvil",
     materials: {
       "soft_wood": 7,
       "stone": 5,
@@ -47,7 +47,7 @@ export const craftingRecipeDefinitions = {
   "recipe_pickaxe": {
     id: "recipe_pickaxe",
     outputItemId: "pickaxe",
-    station: "any",   // TESTING: was "anvil"
+    station: "anvil",
     materials: {
       "soft_wood": 6,
       "stone": 7,
@@ -58,10 +58,158 @@ export const craftingRecipeDefinitions = {
   "recipe_shortbow": {
     id: "recipe_shortbow",
     outputItemId: "shortbow",
-    station: "any",   // TESTING: was "carpenters_bench"
+    station: "carpenters_bench",
     materials: {
       "soft_wood": 15,
       "plant_fibers": 15,
+    }
+  },
+
+  // --- MORE WEAPONS ---
+  "recipe_crossbow": {
+    id: "recipe_crossbow",
+    outputItemId: "crossbow",
+    station: "carpenters_bench",
+    materials: {
+      "hard_wood": 8,
+      "plant_fibers": 12,
+      "iron_ingot": 1
+    }
+  },
+  "recipe_warhammer": {
+    id: "recipe_warhammer",
+    outputItemId: "warhammer",
+    station: "anvil",
+    materials: {
+      "iron_ingot": 3,
+      "hard_wood": 5,
+      "leather": 1
+    }
+  },
+  "recipe_scythe": {
+    id: "recipe_scythe",
+    outputItemId: "scythe",
+    station: "anvil",
+    materials: {
+      "iron_ingot": 3,
+      "hard_wood": 5,
+      "plant_fibers": 3
+    }
+  },
+  "recipe_glaive": {
+    id: "recipe_glaive",
+    outputItemId: "glaive",
+    station: "anvil",
+    materials: {
+      "iron_ingot": 4,
+      "hard_wood": 6,
+      "leather": 2
+    }
+  },
+  "recipe_wooden_buckler": {
+    id: "recipe_wooden_buckler",
+    outputItemId: "wooden_buckler",
+    station: "carpenters_bench",
+    materials: {
+      "hard_wood": 6,
+      "leather": 1,
+      "plant_fibers": 4
+    }
+  },
+
+  // --- CLOTH ARMOR (tailor's bench) ---
+  "recipe_cloth_hood": {
+    id: "recipe_cloth_hood",
+    outputItemId: "cloth_hood",
+    station: "tailors_bench",
+    materials: {
+      "linen": 2,
+      "plant_fibers": 2
+    }
+  },
+  "recipe_cloth_robe": {
+    id: "recipe_cloth_robe",
+    outputItemId: "cloth_robe",
+    station: "tailors_bench",
+    materials: {
+      "linen": 4,
+      "plant_fibers": 4
+    }
+  },
+  "recipe_cloth_gloves": {
+    id: "recipe_cloth_gloves",
+    outputItemId: "cloth_gloves",
+    station: "tailors_bench",
+    materials: {
+      "linen": 1,
+      "plant_fibers": 2
+    }
+  },
+  "recipe_cloth_pants": {
+    id: "recipe_cloth_pants",
+    outputItemId: "cloth_pants",
+    station: "tailors_bench",
+    materials: {
+      "linen": 3,
+      "plant_fibers": 3
+    }
+  },
+  "recipe_cloth_shoes": {
+    id: "recipe_cloth_shoes",
+    outputItemId: "cloth_shoes",
+    station: "tailors_bench",
+    materials: {
+      "linen": 2,
+      "plant_fibers": 2
+    }
+  },
+
+  // --- LEATHER ARMOR (tailor's bench) ---
+  "recipe_leather_helmet": {
+    id: "recipe_leather_helmet",
+    outputItemId: "leather_helmet",
+    station: "tailors_bench",
+    materials: {
+      "leather": 3,
+      "plant_fibers": 2
+    }
+  },
+  "recipe_leather_armor": {
+    id: "recipe_leather_armor",
+    outputItemId: "leather_armor",
+    station: "tailors_bench",
+    materials: {
+      "leather": 6,
+      "linen": 2,
+      "plant_fibers": 4
+    }
+  },
+  "recipe_leather_bracers": {
+    id: "recipe_leather_bracers",
+    outputItemId: "leather_bracers",
+    station: "tailors_bench",
+    materials: {
+      "leather": 2,
+      "plant_fibers": 2
+    }
+  },
+  "recipe_leather_leggings": {
+    id: "recipe_leather_leggings",
+    outputItemId: "leather_leggings",
+    station: "tailors_bench",
+    materials: {
+      "leather": 4,
+      "linen": 1,
+      "plant_fibers": 3
+    }
+  },
+  "recipe_leather_boots": {
+    id: "recipe_leather_boots",
+    outputItemId: "leather_boots",
+    station: "tailors_bench",
+    materials: {
+      "leather": 3,
+      "plant_fibers": 3
     }
   },
 
@@ -69,7 +217,45 @@ export const craftingRecipeDefinitions = {
     id: "recipe_iron_helmet",
     outputItemId: "iron_helmet",
     locked: true,
-    station: "any",   // TESTING: was "anvil"
+    station: "anvil",
+    materials: {
+      "iron_ingot": 5,
+      "leather": 2
+    }
+  },
+
+  // --- IRON ARMOR (anvil; the helmet is above) ---
+  "recipe_iron_armor": {
+    id: "recipe_iron_armor",
+    outputItemId: "iron_armor",
+    station: "anvil",
+    materials: {
+      "iron_ingot": 10,
+      "leather": 4
+    }
+  },
+  "recipe_iron_gauntlets": {
+    id: "recipe_iron_gauntlets",
+    outputItemId: "iron_gauntlets",
+    station: "anvil",
+    materials: {
+      "iron_ingot": 4,
+      "leather": 2
+    }
+  },
+  "recipe_iron_greaves": {
+    id: "recipe_iron_greaves",
+    outputItemId: "iron_greaves",
+    station: "anvil",
+    materials: {
+      "iron_ingot": 8,
+      "leather": 3
+    }
+  },
+  "recipe_iron_boots": {
+    id: "recipe_iron_boots",
+    outputItemId: "iron_boots",
+    station: "anvil",
     materials: {
       "iron_ingot": 5,
       "leather": 2
@@ -80,7 +266,7 @@ export const craftingRecipeDefinitions = {
   "recipe_iron_ingot": {
     id: "recipe_iron_ingot",
     outputItemId: "iron_ingot",
-    station: "any",   // TESTING: was "forge"
+    station: "forge",
     materials: {
       "iron_ore": 2,
       "coal": 1
@@ -89,7 +275,7 @@ export const craftingRecipeDefinitions = {
   "recipe_linen": {
     id: "recipe_linen",
     outputItemId: "linen",
-    station: "any",   // TESTING: was "tailors_bench" // Renamed from weaving_loom
+    station: "tailors_bench",   // Renamed from weaving_loom
     materials: {
       "cotton": 2
     }
@@ -97,7 +283,7 @@ export const craftingRecipeDefinitions = {
   "recipe_leather": {
     id: "recipe_leather",
     outputItemId: "leather",
-    station: "any",   // TESTING: was "tailors_bench" // Moved from "any"
+    station: "tailors_bench",   // Moved from "any"
     materials: {
       "fur": 2,
       "salt": 1 // Salt used for curing/tanning the hide
@@ -106,7 +292,7 @@ export const craftingRecipeDefinitions = {
   "recipe_copper_ingot": {
     id: "recipe_copper_ingot",
     outputItemId: "copper_ingot",
-    station: "any",   // TESTING: was "forge"
+    station: "forge",
     materials: {
       "copper_ore": 2,
       "coal": 1
@@ -115,7 +301,7 @@ export const craftingRecipeDefinitions = {
   "recipe_bronze_ingot": {
     id: "recipe_bronze_ingot",
     outputItemId: "bronze_ingot",
-    station: "any",   // TESTING: was "forge"
+    station: "forge",
     materials: {
       "copper_ingot": 1,
       "tin_ore": 2,   // Now uses raw Tin Ore directly
@@ -159,7 +345,7 @@ export const craftingRecipeDefinitions = {
   },
   "recipe_kurtus_brew": {
     id: "recipe_kurtus_brew",
-    outputItemId: "brew_of_madness",
+    outputItemId: "kurtus_brew",
     station: "any",
     materials: {
       "meteorite": 1,
@@ -235,4 +421,4 @@ export const craftingRecipeDefinitions = {
       "plant_fibers": 1       // fuse
     }
   }
-};
+};
