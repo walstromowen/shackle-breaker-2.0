@@ -354,7 +354,7 @@ export const aftermath = {
         // ==========================================
         battle_survivor: {
             displayText: "Battle Survivor",
-            image: { col: 1, row: 2 },
+            image: { col: 1, row: 1 },
             text: "The warrior stands up from the ground and looks at {name}. \"What do you want?\"",
             decisions: [
                 {
@@ -434,7 +434,7 @@ export const aftermath = {
         // --- Dialogue Branching Stages ---
         survivor_story: {
             displayText: "A Narrow Escape",
-            image: { col: 1, row: 2 },
+            image: { col: 1, row: 1 },
             text: "\"A group of madmen chased me straight into this mess. It's a miracle you showed up, but don't expect any more thanks than that.\"",
             decisions: [
                 {
@@ -459,7 +459,7 @@ export const aftermath = {
 
         survivor_chased_reply: {
             displayText: "No Answers",
-            image: { col: 1, row: 2 },
+            image: { col: 1, row: 1 },
             text: "\"How should I know? Those madmen will chase anything that moves. Speaking of which, you should get a move on if you know what is good for you.\"",
             decisions: [
                 {
@@ -471,7 +471,7 @@ export const aftermath = {
 
         survivor_identity: {
             displayText: "Standard Issue",
-            image: { col: 1, row: 2 },
+            image: { col: 1, row: 1 },
             text: "\"Legionary, third cohort, Altus legion. Or I was, before all this. Catch my meaning?\"",
             decisions: [
                 {
@@ -483,7 +483,7 @@ export const aftermath = {
 
         survivor_refusal: {
             displayText: "Safe? Hah!",
-            image: { col: 1, row: 2 },
+            image: { col: 1, row: 1 },
             text: "\"Safe! Hah! You won't last long out here. I can't remember the last time I felt safe, much less so traveling with others.\"",
             decisions: [
                 {
@@ -495,7 +495,7 @@ export const aftermath = {
 
         survivor_bribe_demand: {
             displayText: "Incentive",
-            image: { col: 1, row: 2 },
+            image: { col: 1, row: 1 },
             text: "\"Hmm... I am not convinced...\"",
             decisions: [
                 {
@@ -524,7 +524,7 @@ export const aftermath = {
         // (the same shape the other recruit stages use), so nothing can cut the recruit short.
         survivor_bribed: {
             displayText: "Coin Talks",
-            image: { col: 1, row: 2 },
+            image: { col: 1, row: 1 },
             text: "The warrior weighs the coins in his palm and sighs. \"Fine. Put like that, I suppose I can find the time. Lead on.\"",
             decisions: [
                 {
@@ -587,4 +587,4 @@ export const aftermath = {
             ]
         }
     }
-};
+};

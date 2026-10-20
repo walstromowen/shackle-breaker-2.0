@@ -32,6 +32,8 @@ export class EncounterController extends BaseController {
     this.inputCooldown = 0.15;
     this.imageTransition = { active: false, timer: 0, duration: 0.4, previousInfo: null, previousPartyMember: null };
     this.rewardQueue = [];
+    this.rewardItemsByMessage = {};   // reward message text -> [{id, qty}] (pictures of the items it lists)
+    this.currentRewardItems = null;   // the items of the reward message on screen
     this.pendingEndEncounterPayload = null;
     this.rewardsEndEncounter = false;
     this.pendingSceneChange = null;
@@ -73,6 +75,8 @@ export class EncounterController extends BaseController {
     this.skipMessageAnimation = false;
     this.inputCooldown = 0.15;
     this.rewardQueue = [];
+    this.rewardItemsByMessage = {};   // reward message text -> [{id, qty}] (pictures of the items it lists)
+    this.currentRewardItems = null;   // the items of the reward message on screen
     this.pendingEndEncounterPayload = null;
     this.rewardsEndEncounter = false;
     this.pendingSceneChange = null;
@@ -596,6 +600,7 @@ export class EncounterController extends BaseController {
       this.rewardReturnStageId = this.model.currentStageId || null;
       this.rewardsEndEncounter = false;
       this.rewardQueue = [...logicResponse.messages];
+      this.rewardItemsByMessage = logicResponse.messageItems || {};
       this.showNextReward();
       return;
     }
@@ -614,6 +619,7 @@ export class EncounterController extends BaseController {
 
     if (hasMessages && logicResponse.shouldEndEncounter) {
       this.rewardQueue = [...logicResponse.messages];
+      this.rewardItemsByMessage = logicResponse.messageItems || {};
       this.pendingEndEncounterPayload = logicResponse.endEncounterPayload;
       this.rewardsEndEncounter = true;
       this.pendingSceneChange = null;
@@ -631,6 +637,7 @@ export class EncounterController extends BaseController {
 
   showNextReward() {
     if (!this.rewardQueue || this.rewardQueue.length === 0) {
+      this.currentRewardItems = null;
       if (this.rewardsEndEncounter) {
         this.endEncounter(this.pendingEndEncounterPayload);
       } else {
@@ -640,6 +647,7 @@ export class EncounterController extends BaseController {
     }
     
     const nextMsg = this.rewardQueue.shift();
+    this.currentRewardItems = this.rewardItemsByMessage[nextMsg] || null;
     this.model.stages = this.model.stages || {};
     this.model.stages["encounter_rewards_stage"] = {
       displayText: this.rewardsEndEncounter ? "Victory" : "Spoils",
@@ -651,7 +659,8 @@ export class EncounterController extends BaseController {
     this.selectedIndex = 0;
     this.actionPhase = 'reward_delay';
     const typingTime = nextMsg.length / 25;
-    this.rollTimer = typingTime + 2.0;
+    // A message with item pictures stays up a little longer, so they can be seen
+    this.rollTimer = typingTime + 2.0 + (this.currentRewardItems ? 1.5 : 0);
     this.lastText = "";
     this.textTimer = 6.0;
     this.skipMessageAnimation = false;
@@ -692,6 +701,8 @@ export class EncounterController extends BaseController {
     this.model = null;
     this.pendingDecision = null;
     this.rewardQueue = [];
+    this.rewardItemsByMessage = {};   // reward message text -> [{id, qty}] (pictures of the items it lists)
+    this.currentRewardItems = null;   // the items of the reward message on screen
     this.pendingSceneChange = null;
     this.rewardReturnStageId = null;
     this.rewardsEndEncounter = false;
@@ -788,7 +799,8 @@ export class EncounterController extends BaseController {
       imageInfo: currentImage,
       text: displayText,
       decisions: displayDecisions,
+      rewardItems: (this.actionPhase === 'reward_delay' && this.currentRewardItems) ? this.currentRewardItems : null,
       ui: { selectedDecisionIndex: this.selectedIndex, introAlpha: currentIntroAlpha }
     };
   }
-}
+}

@@ -4,6 +4,7 @@ import { UITheme } from '../../ui/UITheme.js';
 import { UI_SFX } from '../../ui/uiSfx.js';
 import { gameState } from "../../../../shared/state/gameState.js";
 import { DIFFICULTY_MODIFIERS } from '../../../../shared/data/constants.js';
+import { drawItemChips } from '../../ui/itemChips.js';
 
 export class EncounterRenderer {
     constructor(config, loader) {
@@ -122,7 +123,7 @@ export class EncounterRenderer {
 
         const {
             imageInfo, transition, text, title, stageName, encounter, decisions,
-            rewards, ui: uiState, party = [], currency = 0, skipMessageAnimation,
+            rewards, rewardItems, ui: uiState, party = [], currency = 0, skipMessageAnimation,
             textTimer = 0, actionPhase, rollData, hoveredElement, scrollOffsets, onLayoutUpdate
         } = state;
 
@@ -419,6 +420,21 @@ export class EncounterRenderer {
             ctx.textAlign = "right";
             ctx.fillText("[Left Click / Enter] to Skip", skipPromptX, skipPromptY);
             ctx.restore();
+        }
+
+        // ========================================================
+        // REWARD ITEMS (CENTER COLUMN, BOTTOM): the pictures of the items a reward message lists, on the same plates the
+        // overworld pickup toast uses. They fade in as soon as the message has finished typing.
+        // ========================================================
+        if (rewardItems && rewardItems.length > 0) {
+            const itemsAlpha = skipMessageAnimation ? 1.0 : ease(Math.max(0, Math.min(1, (timeElapsed - T_TEXT_END) / 0.6)));
+            if (itemsAlpha > 0) {
+                ctx.save();
+                ctx.globalAlpha = itemsAlpha;
+                ui.drawLineWithGothicFlourish(centerX + (centerW * 0.1), dividerY, centerW * 0.8, this.getAlphaColor(UITheme.colors.borderHighlight, itemsAlpha));
+                drawItemChips(ui, ctx, this.loader, rewardItems, centerX + centerW / 2, decisionViewportY + 8, { maxWidth: centerW - 192 });
+                ctx.restore();
+            }
         }
 
         // ========================================================
@@ -979,4 +995,4 @@ export class EncounterRenderer {
       drawVitals(member, 1.0);
     }
     }
-}
+}

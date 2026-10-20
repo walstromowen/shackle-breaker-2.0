@@ -9,7 +9,8 @@ export class BattleRewardSystem {
      * @param {Array} partyRoster - Array of CombatantModels
      * @param {Array} enemyRoster - Array of CombatantModels
      * @param {Array} battleLedger - Array of battle events (e.g., kills, ability uses)
-     * @returns {Array<string>} An array of formatted UI messages describing the rewards.
+     * @returns {Array<string>} An array of formatted UI messages describing the rewards. It also carries lootMessage (the text of
+     *          the message that lists the dropped items) and lootItems ([{id, qty}]) when anything dropped.
      */
     static processVictory(partyRoster, enemyRoster, battleLedger = []) {
         let totalXp = 0;
@@ -72,7 +73,11 @@ export class BattleRewardSystem {
                 const readableName = id.replace(/_/g, ' ');
                 return count > 1 ? `${readableName} x${count}` : readableName;
             });
-            messages.push(`Loot recovered: ${lootStrings.join(', ')}`);
+            const lootMessage = `Loot recovered: ${lootStrings.join(', ')}`;
+            messages.push(lootMessage);
+            // Which message lists the items, and what they are, so the battle screen can show their pictures
+            messages.lootMessage = lootMessage;
+            messages.lootItems = Object.entries(itemCounts).map(([id, qty]) => ({ id, qty }));
         } else if (totalCurrency === 0) {
             messages.push(`The enemies left nothing useful behind.`);
         }
@@ -171,4 +176,4 @@ export class BattleRewardSystem {
 
         return messages;
     }
-}
+}

@@ -1,6 +1,7 @@
 import { UITheme } from '../../ui/UITheme.js';
 import { TargetingResolver } from '../../../../shared/systems/targetingResolver.js';
 import { AbilityPreview } from '../../ui/abilityPreview.js';
+import { drawItemChips, itemChipsHeight } from '../../ui/itemChips.js';
 
 export class BattleHUDRenderer {
   constructor(ctx, config, loader, ui, combatantRenderer) {
@@ -91,6 +92,9 @@ export class BattleHUDRenderer {
       // BUT ONLY if the banner is completely faded out!
       if (state.message && !isBannerVisible) {
         this.drawDialogueBox(state.message);
+        // Victory loot: the pictures of the items received, on plates like the overworld pickup toast
+        const loot = state.messageItems;
+        if (loot && loot.text === state.message) this.drawLootChips(loot.items);
       }
     }
 
@@ -781,6 +785,15 @@ export class BattleHUDRenderer {
     activeTargets.forEach(t => drawGothicShard(t, false));
   }
 
+  /** The row of item plates that sits just above the dialogue box. */
+  drawLootChips(items) {
+    const maxWidth = this.config.CANVAS_WIDTH - 192;
+    const h = itemChipsHeight(this.ctx, items, maxWidth);
+    if (h <= 0) return;
+    const y = this.config.CANVAS_HEIGHT - 216 - 24 - h;
+    drawItemChips(this.ui, this.ctx, this.loader, items, this.config.CANVAS_WIDTH / 2, y, { maxWidth });
+  }
+
   drawDialogueBox(text, title = null) {
     const w = this.config.CANVAS_WIDTH;
     const h = 216;
@@ -920,4 +933,4 @@ export class BattleHUDRenderer {
     }
     return stats.slide;
   }
-}
+}

@@ -8,7 +8,7 @@ export const SpawnTableDefinitions = {
         pools: [
             {
                 factionId: "wildlife",
-                weight: 50,
+                weight: 30,
                 difficultySettings: {
                     easy: { minSize: 1, maxSize: 2 },
                     normal: { minSize: 1, maxSize: 2 },
@@ -21,7 +21,7 @@ export const SpawnTableDefinitions = {
             },
             {
                 factionId: "shackled",
-                weight: 50,
+                weight: 70,
                 difficultySettings: {
                     easy: { minSize: 1, maxSize: 1 },
                     normal: { minSize: 1, maxSize: 3 },
@@ -30,7 +30,7 @@ export const SpawnTableDefinitions = {
                 },
                 members: [
                     { id: 'ROTTER', weight: 30 },
-                    { id: 'MAD_MAN', weight: 30, modifiers: { equipment: [{ slot: 'mainHand', items: ['dagger', 'wooden_stick'], chance: 0.5 }] } },
+                    { id: 'MAD_MAN', weight: 50, modifiers: { equipment: [{ slot: 'mainHand', items: ['dagger'], chance: 0.5 }] } },
                     { id: 'SHACKLED_STEED', weight: 20 },
                     { id: 'LEGIONARY', weight: 20, modifiers: { levelOffset: { chance: 0.3, min: -1, max: 2 }, equipment: [{ slot: 'mainHand', items: ['warhammer', 'spear'], chance: 0.3 }], traits: [{ id: 'iron_willed', chance: 0.15 }] } },
                     { id: 'MAGIC_ADDICT', weight: 30 }
@@ -69,7 +69,7 @@ export const SpawnTableDefinitions = {
                 },
                 members: [
                     { id: 'ROTTER', weight: 40 },
-                    { id: 'MAD_MAN', weight: 30, modifiers: { equipment: [{ slot: 'mainHand', items: ['dagger', 'wooden_stick'], chance: 0.5 }] } },
+                    { id: 'MAD_MAN', weight: 30, modifiers: { equipment: [{ slot: 'mainHand', items: ['dagger'], chance: 0.5 }] } },
                     { id: 'SHACKLED_STEED', weight: 20 },
                     { id: 'HOLLOW_HARVESTER', weight: 80, modifiers: { levelOffset: { chance: 0.5, min: 1, max: 2 } } },
                     { id: 'LEGIONARY', weight: 70, modifiers: { levelOffset: { chance: 0.3, min: -1, max: 2 }, equipment: [{ slot: 'mainHand', items: ['warhammer', 'spear'], chance: 0.3 }], traits: [{ id: 'iron_willed', chance: 0.15 }] } },
@@ -422,4 +422,4 @@ export const SpawnTableDefinitions = {
             members: [{ id: 'DARIUS_THE_GROVELER', weight: 100 }]
         }]
     },
-};
+};

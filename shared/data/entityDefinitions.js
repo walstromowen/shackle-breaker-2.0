@@ -790,7 +790,7 @@ export const ENTITY_DEFINITIONS = {
         },
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
-            maxHp: 11, maxStamina: 25, speed: 20, critical: 0.15,
+            maxHp: 11, maxInsight: 25, speed: 20, critical: 0.15,
             baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, lightning: 6, wind: 4, blunt: 1, earth: -3, water: -3 },
             baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, lightning: 1.0, earth: 0.5, wind: 0.25, water: -0.5 },
             baseAttack: { pierce: 2, lightning: 5, wind: 2 }
@@ -902,4 +902,4 @@ export const ENTITY_DEFINITIONS = {
         abilities: [...REGULAR_HUMANOID_ABILITIES, "arcane_dart", "magic_missile", "meteor_shower"],
         tags: [...HUMANOID_TEMPLATE.tags, "BOSS", "ELITE", "MAGICAL"]
     }
-};
+};

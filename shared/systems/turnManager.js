@@ -53,6 +53,7 @@ export class TurnManager {
         const messageTypes = [TURN_TYPES.MESSAGE_VICTORY, TURN_TYPES.MESSAGE_DEFEAT, TURN_TYPES.MESSAGE_STATUS, TURN_TYPES.MESSAGE_DEATH];
         if (messageTypes.includes(turn.type)) {
             this.state.message = turn.message;
+            this.state.messageItems = turn.items ? { text: turn.message, items: turn.items } : null;   // items to show pictures of beside the message
             return;
         }
 
@@ -522,4 +523,4 @@ export class TurnManager {
             this.processNextTurnInQueue();
         }
     }
-}
+}

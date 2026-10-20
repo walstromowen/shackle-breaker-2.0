@@ -245,7 +245,7 @@ export const treasureChest = {
         },
         ambush: {
             displayText: "Ambush!",
-            image: { col: 0, row: 1 },
+            image: { col: 3, row: 1 },
             bgm: "plainsBattleBgm",
             text: "All the commotion attracts unwanted attention. Something approaches {name}'s position rapidly from the shadows!",
             decisions: [

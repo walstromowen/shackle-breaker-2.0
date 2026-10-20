@@ -26,10 +26,13 @@ export class TitleRenderer {
 
         // 2. Draw Menu Items & Calculate Hitboxes
         const hitboxes = [];
-        const buttonWidth = 400;
-        const buttonHeight = 70;
-        const startY = height * 0.52;
-        const spacing = 95;
+        // Compact stack: the whole menu stays above the "SHACKLE BREAKER" lettering painted into the background
+        // (which starts about 83% of the way down), so the buttons never cover the title name.
+        const buttonWidth = 300;
+        const buttonHeight = 54;
+        const startY = height * 0.50;
+        const spacing = 66;
+        const buttonFont = 'bold 36px "Georgia", serif';
 
         state.menuItems.forEach((item, index) => {
             const x = width / 2 - buttonWidth / 2;
@@ -41,21 +44,48 @@ export class TitleRenderer {
             // The semi-transparent backing keeps the label legible over the background image.
             ui.drawButton(x, y, buttonWidth, buttonHeight, item.text,
                 ui.flags(item.id, state.hoveredId, { disabled: !!item.disabled }),
-                { bg: 'rgba(10, 10, 14, 0.7)', font: UITheme.fonts.header });
+                { bg: 'rgba(10, 10, 14, 0.7)', font: buttonFont });
         });
 
         // A short status line under the buttons (e.g. "No saved game yet.")
         if (state.message) {
-            const lineY = startY + state.menuItems.length * spacing + 10;
+            const lineY = startY + state.menuItems.length * spacing + 4;
             ui.drawText(state.message, width / 2, lineY, UITheme.fonts.body, UITheme.colors.error, 'center', 'middle');
         }
 
         // Who is playing (bottom-left corner)
         if (state.accountLabel) {
-            ui.drawText(state.accountLabel, 48, height - 48, UITheme.fonts.small, UITheme.colors.textMuted, 'left', 'middle');
+            this._drawAccountLabel(ctx, state.accountLabel, 48, height - 48);
         }
 
         // 3. Update Controller Hitbox Cache
         controller.updateHitboxes(hitboxes);
+    }
+
+    // "Signed in as ..." in bright gold on a dark plate, so it stands out against the busy background art.
+    _drawAccountLabel(ctx, text, x, y) {
+        const font = 'bold 32px "Georgia", serif';
+        ctx.save();
+        ctx.font = font;
+        const padX = 22, plateH = 56;
+        const plateW = Math.ceil(ctx.measureText(text).width) + padX * 2;
+        const plateY = y - plateH / 2;
+
+        ctx.fillStyle = 'rgba(8, 8, 10, 0.82)';
+        ctx.fillRect(x, plateY, plateW, plateH);
+        ctx.fillStyle = '#e0b84a';                 // a bright gold accent bar on the left edge
+        ctx.fillRect(x, plateY, 5, plateH);
+        ctx.strokeStyle = 'rgba(224, 184, 74, 0.55)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, plateY, plateW, plateH);
+
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.95)';
+        ctx.shadowBlur = 6;
+        ctx.shadowOffsetY = 2;
+        ctx.fillStyle = '#ffd96b';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, x + padX + 5, y + 1);
+        ctx.restore();
     }
 }

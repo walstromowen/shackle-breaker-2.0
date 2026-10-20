@@ -898,7 +898,8 @@ export class BattleController extends BaseController {
         const rewardMessages = BattleRewardSystem.processVictory(this.state.partyRoster, this.state.enemyRoster, this.state.battleLedger);
 
         rewardMessages.forEach(msg => {
-            this.state.turnQueue.push({ type: TURN_TYPES.MESSAGE_VICTORY, message: msg });
+            const items = (msg === rewardMessages.lootMessage) ? rewardMessages.lootItems : null;
+            this.state.turnQueue.push({ type: TURN_TYPES.MESSAGE_VICTORY, message: msg, items });
         });
         this.state.turnQueue.push({ type: TURN_TYPES.BATTLE_END });
     }
@@ -1017,4 +1018,4 @@ export class BattleController extends BaseController {
             onLayoutUpdate: (hitboxes) => this.updateHitboxes(hitboxes)
         };
     }
-}
+}

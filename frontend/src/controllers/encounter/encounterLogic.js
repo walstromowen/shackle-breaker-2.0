@@ -106,13 +106,15 @@ export class EncounterLogic {
             isOpeningShop: false,
             shopId: null,
             wares: [], 
-            returnScene: 'encounter' // <--- ADD THIS HERE!
+            returnScene: 'encounter', // <--- ADD THIS HERE!
+            messageItems: {}   // message text -> [{id, qty}]: the items a reward message lists, so the screen can show their pictures
         };
         
         if (!resultsArray) return response;
         
         // Group the messages to allow sequenced reward screens
         let itemsFound = [];
+        let itemsFoundData = [];   // the same items as {id, qty}
         let xpEarned = [];
         let levelsGained = [];
         let currencyFound = [];
@@ -167,6 +169,7 @@ export class EncounterLogic {
                             InventorySystem.addItem(item.id, item.qty || 1);
                             const formattedName = item.id.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
                             itemsFound.push(`${formattedName} x${item.qty || 1}`);
+                            itemsFoundData.push({ id: item.id, qty: item.qty || 1 });
                         }
                     });
                     break;
@@ -208,6 +211,7 @@ export class EncounterLogic {
                                 InventorySystem.addItem(item.id, item.qty);
                                 const formattedName = item.id.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
                                 itemsFound.push(`${formattedName} x${item.qty}`);
+                                itemsFoundData.push({ id: item.id, qty: item.qty });
                             });
                         }
                         if (lootModel.hasCurrency()) {
@@ -429,9 +433,13 @@ export class EncounterLogic {
         if (traitsGained.length > 0) response.messages.push(traitsGained.join('\n'));
         if (traitsLost.length > 0) response.messages.push(traitsLost.join('\n'));
         if (questsStarted.length > 0) response.messages.push(questsStarted.join('\n'));
-        if (itemsFound.length > 0) response.messages.push(`Obtained Items:\n` + itemsFound.join('\n'));
+        if (itemsFound.length > 0) {
+            const itemsMessage = `Obtained Items:\n` + itemsFound.join('\n');
+            response.messages.push(itemsMessage);
+            response.messageItems[itemsMessage] = itemsFoundData;
+        }
         if (currencyFound.length > 0) response.messages.push(currencyFound.join('\n'));
         
         return response;
     }
-}
+}

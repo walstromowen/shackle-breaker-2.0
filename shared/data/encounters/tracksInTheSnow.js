@@ -395,7 +395,7 @@ export const tracksInTheSnow = {
 
         leopard_wild: {
             displayText: "The Snow Leopard Rises",
-            image: { col: 2, row: 0 },
+            image: { col: 3, row: 1 },
             bgm: "plainsBattleBgm",
             text: "The Snow Leopard stands to its feet and growls at {name}!",
             decisions: [
@@ -417,7 +417,7 @@ export const tracksInTheSnow = {
         // The old ambush rolled 1-4 extra Snow Leopards; that is kept as four equally weighted outcomes.
         leopard_pack_ambush: {
             displayText: "Ambush!",
-            image: { col: 3, row: 0 },
+            image: { col: 3, row: 1 },
             bgm: "plainsBattleBgm",
             text: "An ambush of Snow Leopards surrounds {name}!",
             decisions: [
@@ -489,4 +489,4 @@ export const tracksInTheSnow = {
             ]
         }
     }
-};
+};
