@@ -258,11 +258,11 @@ export class EncounterRenderer {
             ctx.shadowBlur = 10;
             ui.drawText(`Currency: ${currency}`, leftW / 2, currentY, UITheme.fonts.mono, UITheme.colors.textHighlight, "center", "middle");
 
+            // The right column is the picture only: the name of each stage ("The Hollow", "Warm Iron", "Victory") used to be written above it and changed with every
+            // stage, which was too harsh. The stages still have their displayText in the data; it is just not shown.
             const rightColX = leftW + centerW;
-            const displayStageName = stageName || "Unknown Stage";
             ctx.shadowColor = 'transparent';
             ctx.shadowBlur = 0;
-            this.drawCenteredWrappedText(ctx, ui, displayStageName, rightColX + (rightW / 2), 96, rightW - 96, 67, UITheme.fonts.header, UITheme.colors.textMuted, true);
 
             const panelX = rightColX + (rightW / 2) - (targetAreaSize / 2);
             const fadeBorder = this.getAlphaColor(UITheme.colors.border, colsAlpha);
