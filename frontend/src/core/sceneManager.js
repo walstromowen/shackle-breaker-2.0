@@ -207,6 +207,14 @@ export class SceneManager {
             }
         });
 
+        // A stage that calls for silence (bgm: 'none', see the prologue's broken chain) stops the music, so nothing is "current" any more: the next scene
+        // (the overworld) must start its own track again even when it is the very track that was playing before the silence.
+        events.on('STOP_MUSIC', () => {
+            if (gameState && gameState.world) {
+                gameState.world.currentBgm = null;
+            }
+        });
+
         // GAME_OVER: the whole party has fallen (a lost battle, a deadly encounter). Fade to black, then back to the title screen.
         // Anything that used to emit CHANGE_SCENE { scene: 'game_over' } ends up here too.
         events.on('GAME_OVER', () => {

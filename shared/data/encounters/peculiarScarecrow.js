@@ -11,7 +11,8 @@
    Flow:  discovery -> [DEX 12] walk past it
                          success -> pass_by: you walk on, nothing happens
                          failure -> it_stirs: one to three Hollow Harvesters (the `scarecrow_harvesters` table) climb off the post and attack
-   A fight does not remove the scarecrow, and the encounter does not end it either. */
+   Walking past leaves the scarecrow where it stands (it fires again when you leave its line of sight and come back). Once it has stirred and started a fight,
+   it is gone: the stage that starts the battle removes the object (DESTROY_OBJECT) first, so it is not standing there when you win. */
 const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
 
 export const peculiarScarecrow = {
@@ -65,7 +66,7 @@ export const peculiarScarecrow = {
             decisions: [
                 {
                     text: "Ready your weapons!",
-                    outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { tableId: "scarecrow_harvesters" } }] }]
+                    outcomes: [{ weight: 100, results: [{ type: "DESTROY_OBJECT" }, { type: "START_BATTLE", payload: { tableId: "scarecrow_harvesters" } }] }]
                 }
             ]
         }

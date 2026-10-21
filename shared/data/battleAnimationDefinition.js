@@ -816,13 +816,15 @@ export const BattleAnimationDefinitions = {
             flash: flash('hit', 'hit+0.8', tint('gold', { bright: 350, sat: 300, glow: 'gold', glowSize: 20 }))
         }
     }),
-    "spirit_reap": anim(3, {
+    // The dark hand: it used to be drawn with the glowing 'screen' blend (a dark purple hand all but vanishes on it) and to start fading the moment it
+    // appeared, so it was gone in about a second. It is now drawn solid ('normal'), rises, stays fully visible for about two seconds and thins away.
+    "spirit_reap": anim(4, {
         audio: [sfx(0, 'spiritReapSfx', { volume: 1 })],
-        actor: lunge(0, 0.15, 80, { flash: flash(2.5, 3, 'brightness(180%) saturate(200%) hue-rotate(120deg)') }),
+        actor: lunge(0, 0.15, 80, { flash: flash(3.2, 3.8, 'brightness(180%) saturate(200%) hue-rotate(120deg)') }),
         vfx: [
-            spawn(0.12, 'spiritReapAnimation', { life: 2.5, move: 'expand_and_fade', scale: 2.5 })
+            spawn(0.12, 'spiritReapAnimation', { life: 3.6, move: 'rise_and_hold', scale: 2.5, blend: 'normal' })
         ],
-        target: { shake: shake(0.12, 3, 25), flash: flash(0.12, 3, 'brightness(130%) sepia(60%) hue-rotate(270deg) saturate(80%)') }
+        target: { shake: shake(0.12, 3.2, 25), flash: flash(0.12, 3.5, 'brightness(130%) sepia(60%) hue-rotate(270deg) saturate(80%)') }
     }),
     "spite": anim(1.5, {
         audio: [
@@ -980,4 +982,4 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.25, 0.75, 45), flash: flash(0.25, 0.45, 'brightness(250%)') }
     })
-};
+};

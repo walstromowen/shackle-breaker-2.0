@@ -47,11 +47,12 @@ test('walking past is one dexterity check against 12: pass and nothing happens, 
     const fail = enc.stages[advance(check.failureOutcomes)];
     const kinds = (stage) => stage.decisions.flatMap(d => d.outcomes).flatMap(o => o.results).map(r => r.type);
     assert.deepEqual(kinds(pass), ['END_ENCOUNTER'], 'passing ends the encounter with no battle, loot or damage');
-    assert.deepEqual(kinds(fail), ['START_BATTLE']);
-    const battle = fail.decisions[0].outcomes[0].results[0].payload;
+    assert.deepEqual(kinds(fail), ['DESTROY_OBJECT', 'START_BATTLE'], 'the scarecrow is removed as the battle starts');
+    const battle = fail.decisions[0].outcomes[0].results.find(r => r.type === 'START_BATTLE').payload;
     assert.equal(battle.tableId, 'scarecrow_harvesters');
-    // nothing else in the encounter may destroy the scarecrow
-    assert.ok(!JSON.stringify(enc).includes('DESTROY_OBJECT'));
+    // walking past must not remove it: only the stage that starts the fight does
+    assert.equal((JSON.stringify(enc).match(/DESTROY_OBJECT/g) || []).length, 1);
+    assert.ok(!kinds(pass).includes('DESTROY_OBJECT'));
 });
 
 test('every stage the encounter points at exists, and every picture is inside the sheet', () => {
@@ -111,4 +112,21 @@ test('the line of sight is the two columns straight beneath the scarecrow, 5 row
     assert.ok(!sees(10, 19) && !sees(11, 19), 'above it');
     assert.ok(!sees(9, 23) && !sees(12, 23), 'beside the line');
     assert.ok(!sees(5, 20) && !sees(15, 20), 'level with it');
+});
+
+test('Spirit Reap shows the dark hand for a good while: drawn solid, fully visible for most of its life', async () => {
+    const { BattleAnimationDefinitions } = await import('../../shared/data/battleAnimationDefinition.js');
+    const { Particle } = await import('../../frontend/src/renderers/battle/particle.js');
+    const anim = BattleAnimationDefinitions.spirit_reap;
+    const hand = anim.vfx.find(v => v.config && v.config.sheetKey === 'spiritReapAnimation');
+    assert.ok(hand, 'the hand is a sprite cue');
+    assert.equal(hand.config.movement, 'rise_and_hold');
+    assert.equal(hand.config.blendMode, 'normal', 'solid, not the glowing screen blend a dark sprite vanishes on');
+    assert.ok(hand.config.life >= 3, `the hand lives ${hand.config.life}s`);
+    assert.ok(hand.start + hand.config.life <= anim.duration, 'the cue ends before the animation does');
+    // the particle: full strength from 18% to 70% of its life (about 1.9 seconds at 3.6s), and gone at the end
+    const alphaAt = (p) => { const part = new Particle({ life: 1, movement: 'rise_and_hold', startX: 0, startY: 0, scale: 1 }); part.update(p); return part.alpha; };
+    for (const p of [0.2, 0.35, 0.5, 0.65]) assert.equal(alphaAt(p), 1, `alpha at ${p}`);
+    assert.ok(alphaAt(0.05) < 0.4, 'fades in');
+    assert.ok(alphaAt(0.95) < 0.2, 'fades out');
 });

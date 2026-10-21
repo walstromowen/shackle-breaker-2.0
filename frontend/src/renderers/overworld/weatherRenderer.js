@@ -7,7 +7,16 @@ export class WeatherRenderer {
         this.config = config;
         
         this.particles = [];
-        this.splashParticles = []; 
+
+        // Splashes live in flat typed arrays (no object per splash, nothing allocated while it rains) and are drawn in a few alpha batches
+        this.SPLASH_MAX = 8192;
+        this.splashes = {
+            n: 0,
+            x: new Float32Array(this.SPLASH_MAX), y: new Float32Array(this.SPLASH_MAX),
+            vx: new Float32Array(this.SPLASH_MAX), vy: new Float32Array(this.SPLASH_MAX),
+            life: new Float32Array(this.SPLASH_MAX), decay: new Float32Array(this.SPLASH_MAX)
+        };
+        this.rainAtlas = null; // built the first time it rains
         
         // --- UPDATED INTERNAL STATE ---
         this.targetWeatherId = 'CLEAR';
@@ -19,6 +28,19 @@ export class WeatherRenderer {
         this.lastCameraY = null;
 
         this.fogPuffImage = this.createFogAsset();
+
+        this.RAIN_LENGTH_STEPS = 8;
+        this.RAIN_SLANT_STEPS = 4;
+
+        // Weather is pure decoration, so it must never cost the game its frame rate: if the frames stay slow while a particle weather is
+        // on screen (a laptop panel on its integrated graphics, say), the weather thins out step by step until the game runs smoothly again.
+        this.DENSITY_STEPS = [1, 0.6, 0.35];
+        this.SLOW_FRAME_MS = 24;     // slower than ~42 fps on average...
+        this.SLOW_WINDOW_MS = 1500;  // ...for this long counts as struggling
+        this.densityStep = 0;
+        this._lastFrameAt = 0;
+        this._windowMs = 0;
+        this._windowFrames = 0;
 
         // 1920x1080 Scaling applies a 2.4x multiplier to sizes/speeds, and a 5.76x multiplier (Area) to particle counts.
         this.settings = {
@@ -76,7 +98,10 @@ export class WeatherRenderer {
 
     initParticles(visualEffect) {
         this.particles = [];
-        this.splashParticles = [];
+        this.splashes.n = 0;
+        this.densityStep = 0; // every new weather gets a fresh chance at full density
+        this._windowMs = 0;
+        this._windowFrames = 0;
         const settings = this.settings[visualEffect];
         if (!settings || !settings.count) return;
 
@@ -86,13 +111,16 @@ export class WeatherRenderer {
     }
 
     createParticle(visualEffect, randomizeY = false) {
+        return this.resetParticle({}, visualEffect, randomizeY);
+    }
+
+    // (Re)rolls a particle in place, so a drop that lands is reused instead of a new object being allocated for it
+    resetParticle(p, visualEffect, randomizeY = false) {
         const settings = this.settings[visualEffect];
-        
-        let p = {
-            x: Math.random() * (this.canvas.width + 1440) - 720, // Scaled from +600, -300
-            speedY: settings.speedY[0] + Math.random() * (settings.speedY[1] - settings.speedY[0]),
-            speedX: settings.speedX[0] + Math.random() * (settings.speedX[1] - settings.speedX[0])
-        };
+
+        p.x = Math.random() * (this.canvas.width + 1440) - 720; // Scaled from +600, -300
+        p.speedY = settings.speedY[0] + Math.random() * (settings.speedY[1] - settings.speedY[0]);
+        p.speedX = settings.speedX[0] + Math.random() * (settings.speedX[1] - settings.speedX[0]);
 
         if (visualEffect === 'particle_sand' || visualEffect === 'particle_blizzard' || visualEffect === 'overlay_fog' || randomizeY) {
             p.y = Math.random() * (this.canvas.height + 480) - 240; // Scaled from +200, -100
@@ -102,6 +130,7 @@ export class WeatherRenderer {
 
         if (visualEffect === 'particle_rain') {
             p.length = settings.length[0] + Math.random() * (settings.length[1] - settings.length[0]);
+            p.sprite = this.rainSpriteIndex(p.speedX, p.length, settings);
             
             if (randomizeY) {
                 p.targetY = p.y + Math.random() * (this.canvas.height - p.y);
@@ -130,16 +159,83 @@ export class WeatherRenderer {
     }
 
     createSplash(x, y) {
-        for (let i = 0; i < 3; i++) {
-            this.splashParticles.push({
-                x: x,
-                y: y,
-                speedX: (Math.random() * 4.8) - 2.4, // Scaled from *2, -1
-                speedY: (Math.random() * 4.8) - 2.4, // Scaled from *2, -1
-                life: 1.0,
-                decay: 0.1 + (Math.random() * 0.05)
-            });
+        const s = this.splashes;
+        for (let i = 0; i < 3 && s.n < this.SPLASH_MAX; i++) {
+            const k = s.n++;
+            s.x[k] = x;
+            s.y[k] = y;
+            s.vx[k] = (Math.random() * 4.8) - 2.4; // Scaled from *2, -1
+            s.vy[k] = (Math.random() * 4.8) - 2.4; // Scaled from *2, -1
+            s.life[k] = 1.0;
+            s.decay[k] = 0.1 + (Math.random() * 0.05);
         }
+    }
+
+    // ---- Rain streaks -------------------------------------------------------------------------------------------
+    // A streak is a 2.4px line with round caps, slanted by the wind. Stroking 2,600 of those every frame was the weather's whole cost
+    // (the browser has to build and anti-alias a path for each); instead every length/slant combination is drawn ONCE into a small
+    // atlas and the drops are stamped from it, which the browser can batch into a single draw.
+    rainSpriteIndex(speedX, length, settings) {
+        const L = this.RAIN_LENGTH_STEPS, S = this.RAIN_SLANT_STEPS;
+        const li = Math.min(L - 1, Math.floor((length - settings.length[0]) / (settings.length[1] - settings.length[0]) * L));
+        const si = Math.min(S - 1, Math.floor((speedX - settings.speedX[0]) / (settings.speedX[1] - settings.speedX[0]) * S));
+        return li * S + si;
+    }
+
+    buildRainAtlas() {
+        const settings = this.settings.particle_rain;
+        const L = this.RAIN_LENGTH_STEPS, S = this.RAIN_SLANT_STEPS;
+        const width = 2.4, pad = 2;
+        const cellW = Math.ceil(settings.speedX[1] + width) + pad * 2;
+        const cellH = Math.ceil(settings.length[1] + width) + pad * 2;
+
+        const cv = document.createElement('canvas');
+        cv.width = cellW * S;
+        cv.height = cellH * L;
+        const cx = cv.getContext('2d');
+        cx.strokeStyle = settings.color;
+        cx.lineWidth = width;
+        cx.lineCap = 'round';
+
+        const cells = [];
+        for (let li = 0; li < L; li++) {
+            // each cell draws the middle of its range, so the quantised streaks are as long and as slanted as the originals on average
+            const len = settings.length[0] + (li + 0.5) / L * (settings.length[1] - settings.length[0]);
+            for (let si = 0; si < S; si++) {
+                const slant = settings.speedX[0] + (si + 0.5) / S * (settings.speedX[1] - settings.speedX[0]);
+                const ox = Math.ceil(slant + width / 2) + pad;                             // where the drop's (x, y) sits inside its cell
+                const oy = Math.ceil(len + width / 2) + pad;
+                const cellX = si * cellW, cellY = li * cellH;
+                const w = ox + Math.ceil(width / 2) + pad, h = oy + Math.ceil(width / 2) + pad;
+                cx.beginPath();
+                cx.moveTo(cellX + ox, cellY + oy);
+                cx.lineTo(cellX + ox - slant, cellY + oy - len);
+                cx.stroke();
+                cells[li * S + si] = { sx: cellX, sy: cellY, w, h, ox, oy };
+            }
+        }
+        this.rainAtlas = { image: cv, cells };
+    }
+
+    // How many of the particles are in play at the current density
+    activeCount() {
+        return Math.min(this.particles.length, Math.ceil(this.particles.length * this.DENSITY_STEPS[this.densityStep]));
+    }
+
+    watchFrameRate(now) {
+        const gap = now - this._lastFrameAt;
+        this._lastFrameAt = now;
+        if (gap <= 0 || gap > 1000) { // the first frame, a tab that was in the background: not a measure of the weather
+            this._windowMs = 0;
+            this._windowFrames = 0;
+            return;
+        }
+        this._windowMs += gap;
+        this._windowFrames++;
+        if (this._windowMs < this.SLOW_WINDOW_MS) return;
+        if (this._windowMs / this._windowFrames > this.SLOW_FRAME_MS && this.densityStep < this.DENSITY_STEPS.length - 1) this.densityStep++;
+        this._windowMs = 0;
+        this._windowFrames = 0;
     }
 
     update(dt, camera) {
@@ -171,7 +267,7 @@ export class WeatherRenderer {
             this.renderIntensity = 0;
             this.displayEffect = 'none';
             this.particles = [];
-            this.splashParticles = [];
+            this.splashes.n = 0;
             return;
         }
 
@@ -214,7 +310,7 @@ export class WeatherRenderer {
             if (this.renderIntensity <= 0 && this.targetIntensity === 0) {
                 this.displayEffect = 'none';
                 this.particles = [];
-                this.splashParticles = [];
+                this.splashes.n = 0;
             }
         }
 
@@ -238,20 +334,27 @@ export class WeatherRenderer {
 
         const fpsMultiplier = safeDt * 60; 
 
-        // Update Splashes
-        for (let i = this.splashParticles.length - 1; i >= 0; i--) {
-            let p = this.splashParticles[i];
-            p.life -= p.decay * fpsMultiplier;
-            if (p.life <= 0) {
-                this.splashParticles.splice(i, 1);
+        // Update Splashes (a dead one is replaced by the last one in the arrays, so nothing is shifted or allocated)
+        const s = this.splashes;
+        for (let i = s.n - 1; i >= 0; i--) {
+            const life = s.life[i] - s.decay[i] * fpsMultiplier;
+            if (life <= 0) {
+                const last = --s.n;
+                if (i !== last) {
+                    s.x[i] = s.x[last]; s.y[i] = s.y[last];
+                    s.vx[i] = s.vx[last]; s.vy[i] = s.vy[last];
+                    s.life[i] = s.life[last]; s.decay[i] = s.decay[last];
+                }
                 continue;
             }
-            p.x += p.speedX * fpsMultiplier - deltaX;
-            p.y += p.speedY * fpsMultiplier - deltaY;
+            s.life[i] = life;
+            s.x[i] += s.vx[i] * fpsMultiplier - deltaX;
+            s.y[i] += s.vy[i] * fpsMultiplier - deltaY;
         }
 
         // Update Main Particles
-        for (let i = 0; i < this.particles.length; i++) {
+        const active = this.displayEffect === 'overlay_fog' ? this.particles.length : this.activeCount();
+        for (let i = 0; i < active; i++) {
             let p = this.particles[i];
             
             p.y += p.speedY * fpsMultiplier - deltaY;
@@ -283,13 +386,13 @@ export class WeatherRenderer {
                 p.targetY -= deltaY; 
                 if (p.y > p.targetY) {
                     this.createSplash(p.x, p.y);
-                    this.particles[i] = this.createParticle(this.displayEffect, false);
+                    this.resetParticle(p, this.displayEffect, false);
                     continue;
                 }
             }
 
             if (p.y > this.canvas.height + 360 || p.x > this.canvas.width + 360 || p.x < -360) { // Scaled from 150
-                this.particles[i] = this.createParticle(this.displayEffect, false);
+                this.resetParticle(p, this.displayEffect, false);
             }
         }
     }
@@ -300,14 +403,34 @@ export class WeatherRenderer {
         const settings = this.settings[this.displayEffect];
         if (!settings) return;
 
+        if (this.displayEffect !== 'overlay_fog') this.watchFrameRate(performance.now());
+        const active = this.activeCount();
+
         ctx.save();
         
         ctx.globalAlpha = this.renderIntensity; 
 
         if (this.displayEffect === 'overlay_fog') {
-            for (const p of this.particles) {
-                ctx.drawImage(this.fogPuffImage, p.x - (p.size/2), p.y - (p.size/2), p.size, p.size);
+            // The fog is a few huge, soft clouds, so painting them at full size spent the whole frame filling pixels (25 clouds of up to
+            // 1600px, overlapping). They are soft anyway: paint them into a quarter-size layer and stretch that over the screen once.
+            const FOG_DOWN = 4;
+            const lw = Math.ceil(this.canvas.width / FOG_DOWN), lh = Math.ceil(this.canvas.height / FOG_DOWN);
+            if (!this.fogLayer || this.fogLayer.width !== lw || this.fogLayer.height !== lh) {
+                this.fogLayer = document.createElement('canvas');
+                this.fogLayer.width = lw;
+                this.fogLayer.height = lh;
+                this.fogLayerCtx = this.fogLayer.getContext('2d');
             }
+            const lctx = this.fogLayerCtx;
+            lctx.clearRect(0, 0, lw, lh);
+            for (const p of this.particles) {
+                const half = p.size / 2;
+                // clouds that are completely off screen cost nothing
+                if (p.x + half < 0 || p.y + half < 0 || p.x - half > this.canvas.width || p.y - half > this.canvas.height) continue;
+                lctx.drawImage(this.fogPuffImage, (p.x - half) / FOG_DOWN, (p.y - half) / FOG_DOWN, p.size / FOG_DOWN, p.size / FOG_DOWN);
+            }
+            ctx.imageSmoothingEnabled = true;
+            ctx.drawImage(this.fogLayer, 0, 0, lw, lh, 0, 0, this.canvas.width, this.canvas.height);
             ctx.restore();
             return; 
         }
@@ -324,7 +447,8 @@ export class WeatherRenderer {
             for (let cls = 0; cls < 3; cls++) {
                 ctx.fillStyle = `rgba(245, 250, 255, ${alphas[cls] * (0.85 + 0.15 * gust)})`;
                 ctx.beginPath();
-                for (const p of this.particles) {
+                for (let i = 0; i < active; i++) {
+                    const p = this.particles[i];
                     if (p.cls === cls) ctx.rect(p.x, p.y, p.size * 3.5, p.size);
                 }
                 ctx.fill();
@@ -333,11 +457,16 @@ export class WeatherRenderer {
             return;
         }
 
-        if (this.splashParticles.length > 0) {
+        if (this.splashes.n > 0) {
+            // Each splash used to get its own opacity (a canvas state change per dot, thousands of times a frame). They fade over
+            // a handful of frames, so they are drawn in four opacity steps instead, one pass per step.
+            const s = this.splashes, n = s.n, STEPS = 4;
             ctx.fillStyle = settings.splashColor;
-            for (const p of this.splashParticles) {
-                ctx.globalAlpha = p.life * this.renderIntensity;
-                ctx.fillRect(p.x, p.y, 2.4, 2.4); // Scaled from 1, 1 
+            for (let step = 0; step < STEPS; step++) {
+                ctx.globalAlpha = ((step + 0.5) / STEPS) * this.renderIntensity;
+                for (let i = 0; i < n; i++) {
+                    if (Math.min(STEPS - 1, (s.life[i] * STEPS) | 0) === step) ctx.fillRect(s.x[i], s.y[i], 2.4, 2.4); // Scaled from 1, 1
+                }
             }
             ctx.globalAlpha = this.renderIntensity; 
         }
@@ -353,17 +482,18 @@ export class WeatherRenderer {
         ctx.strokeStyle = settings.color;
         
         if (this.displayEffect === 'particle_rain') {
-            ctx.lineWidth = 2.4; // Scaled from 1.0 
-            ctx.lineCap = 'round'; 
-            ctx.beginPath();
-            for (const p of this.particles) {
-                ctx.moveTo(p.x, p.y);
-                ctx.lineTo(p.x - p.speedX, p.y - p.length);
+            if (!this.rainAtlas) this.buildRainAtlas();
+            const { image, cells } = this.rainAtlas;
+            ctx.imageSmoothingEnabled = false;
+            for (let i = 0; i < active; i++) {
+                const p = this.particles[i];
+                const c = cells[p.sprite];
+                ctx.drawImage(image, c.sx, c.sy, c.w, c.h, Math.round(p.x - c.ox), Math.round(p.y - c.oy), c.w, c.h);
             }
-            ctx.stroke(); 
         } else if (this.displayEffect === 'particle_sand') {
             ctx.beginPath();
-            for (const p of this.particles) {
+            for (let i = 0; i < active; i++) {
+                const p = this.particles[i];
                 ctx.rect(p.x, p.y, p.size * 4, p.size); 
             }
             ctx.fill(); 
@@ -371,4 +501,4 @@ export class WeatherRenderer {
 
         ctx.restore();
     }
-}
+}

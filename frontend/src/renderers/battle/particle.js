@@ -76,7 +76,7 @@ export class Particle {
 
     // --- FIX: Prevent linear/arc projectiles from fading out mid-flight ---
     // Added 'linear', 'arc', and 'diagonal_drop' so they crash into the target at full opacity.
-    const customAlphas = ['spread_and_fade', 'expand_and_fade', 'float_up_and_pop', 'swipe_diagonal', 'swipe_diagonal_alt', 'shrink_and_fade', 'linear', 'arc', 'diagonal_drop'];
+    const customAlphas = ['spread_and_fade', 'expand_and_fade', 'rise_and_hold', 'float_up_and_pop', 'swipe_diagonal', 'swipe_diagonal_alt', 'shrink_and_fade', 'linear', 'arc', 'diagonal_drop'];
     
     if (this.fadeOut && !customAlphas.includes(this.movement)) {
       // Changed from 0.5 to 0.85 so standard particles only fade in the last 15% of life
@@ -126,6 +126,19 @@ export class Particle {
         this.alpha = this.baseAlpha * fadeIn * fadeOutT;
         break;
       }
+      case 'rise_and_hold': {
+        // Comes up from below and fades in over the first quarter of its life, then stays at FULL strength (just swelling a little) until the
+        // last 30%, when it thins away. For things that should be looked at: the dark hand of Spirit Reap.
+        const rise = Math.min(1, progress / 0.25);
+        const eased = 1 - Math.pow(1 - rise, 3);
+        this.x = this.startX;
+        this.y = this.startY + (1 - eased) * 56;
+        this.scale = (this.config.scale || 1.0) * (1.0 + 0.12 * progress);
+        const fadeIn = Math.min(1, progress / 0.18);
+        const fadeOutT = progress > 0.7 ? (1 - progress) / 0.3 : 1;
+        this.alpha = this.baseAlpha * fadeIn * fadeOutT;
+        break;
+      }
       case 'expand_and_fade':
         this.x = this.startX;
         this.y = this.startY;
@@ -171,4 +184,4 @@ export class Particle {
   lerp(start, end, amt) {
     return (1 - amt) * start + amt * end;
   }
-}
+}

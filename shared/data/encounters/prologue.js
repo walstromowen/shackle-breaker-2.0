@@ -29,7 +29,7 @@ export const prologue = {
             image: { sheet: "encounter_prologue", col: 0, row: 0 },
             bgm: "plainsBgmDay",
             ambience: "prologueMarch",
-            text: "Iron on your wrists. A chain runs from the shackles to the prisoner ahead of you, and it pulls, and you follow. The sky is ash, and the dark ahead looks the same as the dark behind.",
+            text: "Iron on your wrists runs from the shackles on your wrists to the prisoner ahead of you. It pulls, and you follow.",
             decisions: [
                 {
                     text: "Walk.",
@@ -41,7 +41,7 @@ export const prologue = {
             displayText: "The Prisoners",
             tone: "cold",
             image: { sheet: "encounter_prologue", col: 1, row: 0 },
-            text: "The other prisoners laugh and mutter to themselves, the way a wound weeps. Their eyes are hollow as they babble about things that make no sense.",
+            text: "The prisoners ahead laugh and mutter to themselves, the way a wound weeps.",
             decisions: [
                 {
                     text: "Listen to them.",
@@ -59,16 +59,16 @@ export const prologue = {
             displayText: "The Guards",
             tone: "cold",
             image: { sheet: "encounter_prologue", col: 2, row: 0 },
-            text: "Guards in dark armor walk beside the line, their faces hidden beneath visors. They do not speak, and they do not tire.",
+            text: "A guard in dark armor walks beside you, his faces hidden beneath his helmet. You try to catch a glimpse of his expression, but it remains obscured.",
             decisions: [
                 {
-                    text: "Look at their faces.",
-                    customActionText: "The guards' faces are hidden, but there is a familiarity to them. Some chuckle to themselves while most look straight ahead without expression.",
+                    text: "Look closer.",
+                    customActionText: "The guard's face is hidden, but there is an ominous familiarity to it. Despite your efforts to see it clearly, the guard looks straight ahead without expression.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_road" } }] }]
                 },
                 {
                     text: "Keep your eyes on the ground.",
-                    customActionText: "You count your steps and do not look up.",
+                    customActionText: "You count your steps and do not look up. hoping the guard does not notice your gaze.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_road" } }] }]
                 }
             ]
@@ -85,7 +85,7 @@ export const prologue = {
                 },
                 {
                     text: "Ask where you are going.",
-                    customActionText: "No one answers. Somewhere ahead, someone laughs.",
+                    customActionText: "You sheepishly ask where you are going to anyone who is listing. After a short pause, the prisoners around you burst out in a chorus of laughter.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "slack" } }] }]
                 }
             ]
@@ -98,7 +98,7 @@ export const prologue = {
             sfx: "chainSnap",
             bgm: "none",
             ambience: "prologueWind",
-            text: "A sound like a bell struck underwater. The chain that binds you to the line breaks, and goes slack.",
+            text: "In an instant, a sound like a bell struck underwater fills your ears. The chain that binds you to the line breaks, and goes slack.",
             decisions: [
                 {
                     text: "Look down.",
@@ -111,11 +111,11 @@ export const prologue = {
             displayText: "Left Behind",
             tone: "cold",
             image: { sheet: "encounter_prologue", col: 1, row: 1 },
-            text: "The convoy walks on, and the gap where you were closes behind them. No one turns. No one counts. Neither the guards nor the prisoners look back.",
+            text: "You stand still bewildered, unsure of what just happened. Meanwhile, the convoy walks on, walking past you as if you weren't there.",
             decisions: [
                 {
                     text: "Watch them go.",
-                    customActionText: "The line fades into the dark.",
+                    customActionText: "Neither the guards nor the prisoners seem to take any notice or your absence as the line of prisoners fades into the darkness, out of sight.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "awake" } }] }]
                 }
             ]
@@ -125,7 +125,7 @@ export const prologue = {
             image: { sheet: "encounter_prologue", col: 2, row: 1 },
             sfx: "heartbeat",
             ambience: "none",
-            text: "And then, all at once, you are awake. The fog in your mind is gone, {name}. The shackles are still locked on your wrists, but the chain is broken, and the line is far behind you. Somewhere out here is the reason for all of it, and your story begins.",
+            text: "Suddenly a fog in your mind starts to clear, a fleeting sense of freedom washes over you as you realize you are no longer bound to the chain. Yet looking down at your wrists, you notice shackles are still locked on to your wrists as if convincing you that you are not truly free... ",
             decisions: [
                 {
                     text: "Draw a breath.",
