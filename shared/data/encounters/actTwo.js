@@ -76,7 +76,7 @@ export const actTwo = {
         truth: {
             displayText: "The Curse",
             image: { sheet: "encounter_mysterious_altar", col: 1, row: 1 },
-            text: "There was never a plague, and the stone was never the cause. It only made the cost come due faster. Magic is the curse. It has been taking a little from everyone who used it, for as long as there has been magic to use, and the whole kingdom used it every day.",
+            text: "The metorite's glow grows dim and a dark truth emerges, The magic this land wields is not free. It has a cost. It has been taking a little from everyone who used it, for as long as there has been magic to use, and the whole kingdom used it every day.",
             decisions: [
                 {
                     text: "Think of the madmen.",
