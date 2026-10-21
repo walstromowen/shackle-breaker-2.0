@@ -56,10 +56,10 @@ export const prologue = {
             ]
         },
         the_guards: {
-            displayText: "The Guards",
+            displayText: "The Guard",
             tone: "cold",
             image: { sheet: "encounter_prologue", col: 2, row: 0 },
-            text: "A guard in dark armor walks beside you, his faces hidden beneath his helmet. You try to catch a glimpse of his expression, but it remains obscured.",
+            text: "A guard in dark armor walks beside you, his face hidden beneath his helmet. You try to catch a glimpse of his expression, but it remains obscured.",
             decisions: [
                 {
                     text: "Look closer.",
