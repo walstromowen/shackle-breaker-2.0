@@ -102,6 +102,7 @@ export const ENTITY_DEFINITIONS = {
         ...HUMANOID_TEMPLATE,
         name: "Madman",
         level: 1,
+        spriteOverworld: "madmanSprite",
         spritePortrait: "madmanPortrait",
         crySound: "madmanCry",
         deathSound: "madmanCry",
