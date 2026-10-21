@@ -9,6 +9,7 @@ import { UI_SFX } from '../../ui/uiSfx.js';
 import { DIFFICULTY_MODIFIERS } from '../../../../shared/data/constants.js';
 import { QuestDefinitions } from '../../../../shared/data/questDefinitions.js';
 import { InventorySystem } from '../../../../shared/systems/inventorySystem.js';
+import { LootTableFactory } from '../../../../shared/systems/factories/lootTableFactory.js';
 import { ItemDefinitions } from '../../../../shared/data/itemDefinitions.js';
 import { AbilitySystem } from '../../../../shared/systems/abilitySystem.js';
 import { AbilityDefinitions } from '../../../../shared/data/abilityDefinitions.js';
@@ -420,11 +421,17 @@ export class OverworldController extends BaseController {
 
     processPickup(targetObj) {
         targetObj.isFading = true;
-        const itemId = targetObj.interaction.itemId;
-        const amount = targetObj.interaction.amount || 1;
-        InventorySystem.addItem(itemId, amount);
+        // A pickup gives either one fixed item, or (interaction.lootTableId) whatever the loot table rolls: a stick is mostly soft wood, now and then hard wood
+        let gained = [{ id: targetObj.interaction.itemId, qty: targetObj.interaction.amount || 1 }];
+        if (targetObj.interaction.lootTableId) {
+            const rolled = LootTableFactory.generateLoot(targetObj.interaction.lootTableId, 1).items;
+            if (rolled.length) gained = rolled;
+        }
+        for (const { id, qty } of gained) {
+            InventorySystem.addItem(id, qty);
+            this.createItemToast(id, qty);
+        }
         events.emit('PLAY_SFX', { id: UI_SFX.pickup, volume: 0.8, pitch: 1.0 });
-        this.createItemToast(itemId, amount);
 
         // --- FADE OUT MAP OBJECT ---
         targetObj.alpha = 1.0;

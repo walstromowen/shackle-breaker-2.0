@@ -22,6 +22,7 @@ export const CONFIG = {
     OBJECT_SIZE: 32,
     GAME_SCALE: 1,
     WALL_HEIGHT: 2,
+    START_TIME_MINUTES: 10 * 60, // a new game begins at 10:00 in the morning
     WALK_DURATION: 0.4, // seconds per tile on foot
     RUN_DURATION: 0.22, // seconds per tile while shift is held
     TILE_TYPES, TILE_DEPTH, BLOB_TILES,
@@ -121,4 +122,4 @@ export const DIFFICULTY_MODIFIERS = {
     [DIFFICULTY_LEVELS.NORMAL]: { rollBonus: 0, enemyLevelOffset: 0 },
     [DIFFICULTY_LEVELS.HARD]: { rollBonus: -2, enemyLevelOffset: 1 },
     [DIFFICULTY_LEVELS.NIGHTMARE]: { rollBonus: -3, enemyLevelOffset: 3 }
-};
+};

@@ -10,6 +10,14 @@ export const LootTableDefinitions = {
             { id: "leather", weight: 10 } // Defaults to 1 if min/max omitted
         ]
     },
+    // What picking up a stick gives: one piece of wood, hard wood one time in four
+    "stick_wood": {
+        type: "weighted",
+        items: [
+            { id: "soft_wood", weight: 3 },
+            { id: "hard_wood", weight: 1 }
+        ]
+    },
     "basic_weapons_pool": {
         type: "weighted",
         items: [

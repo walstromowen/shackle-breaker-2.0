@@ -15,8 +15,8 @@
  *   bgm:      a track to switch to, or 'none' to stop the music (silence is part of the scene)
  * Art: assets/icons/encounters/prologue.png registered as `encounter_prologue`, a 4 x 4 grid of 128 px cells (see encounter_prologue_template.png):
  *     (0,0) iron        (1,0) the_others   (2,0) the_guards   (3,0) the_road
- *     (0,1) slack       (1,1) still        (2,1) awake
- *   The prisoners and the guards are painted (copied from the aftermath sheet); the other five cells are placeholder sketches to be painted over.
+ *     (0,1) slack       (1,1) still        (2,1) awake        (3,1) no_key (not painted yet: until it is, no_key shows the slack cell)
+ *   The prisoners and the guards are painted (copied from the aftermath sheet); the other cells are placeholder sketches to be painted over.
  */
 export const prologue = {
     id: "prologue",
@@ -56,10 +56,10 @@ export const prologue = {
             ]
         },
         the_guards: {
-            displayText: "The Guard",
+            displayText: "The Guards",
             tone: "cold",
             image: { sheet: "encounter_prologue", col: 2, row: 0 },
-            text: "A guard in dark armor walks beside you, his face hidden beneath his helmet. You try to catch a glimpse of his expression, but it remains obscured.",
+            text: "A guard in dark armor walks beside you, his faces hidden beneath his helmet. You try to catch a glimpse of his expression, but it remains obscured.",
             decisions: [
                 {
                     text: "Look closer.",
@@ -102,7 +102,25 @@ export const prologue = {
             decisions: [
                 {
                     text: "Look down.",
-                    customActionText: "The chain lies broken in the dust, a few links still hanging from your wrists. The shackles are still locked on, but you are free of the line.",
+                    customActionText: "The chain lies broken in the dust, a few links still hanging from your wrists. You are free of the line.",
+                    outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "no_key" } }] }]
+                }
+            ]
+        },
+        no_key: {
+            displayText: "No Key",
+            tone: "cold",
+            image: { sheet: "encounter_prologue", col: 0, row: 1 }, // shares the chain's picture until its own cell (3,1) is painted
+            text: "The shackles are still locked around your wrists. You turn them over, searching for a keyhole, and find none. The iron is smooth and seamless, as though it was never forged, only grown around you.",
+            decisions: [
+                {
+                    text: "Search for a lock.",
+                    customActionText: "No keyhole, no hinge, no seam. Whatever holds these shackles shut, no key was ever made to open them. The iron is faintly warm, like skin.",
+                    outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "still" } }] }]
+                },
+                {
+                    text: "Pull at the iron.",
+                    customActionText: "It does not give. The broken ends of the chain are clean and bright, with no rust and no wear, as if no smith ever made them. Something about it is deeply wrong.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "still" } }] }]
                 }
             ]

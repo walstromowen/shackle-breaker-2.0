@@ -1,4 +1,5 @@
 import { gameState } from '../state/gameState.js'; 
+import { CONFIG } from '../data/constants.js';
 import { biomeFactory } from '../systems/factories/biomeFactory.js';
 import { WeatherFactory } from '../systems/factories/weatherFactory.js';
 import { events } from '../../frontend/src/core/eventBus.js'; // NEW: Import event bus
@@ -21,10 +22,10 @@ export class TimeSystem {
         this.MAX_TIME = 24 * 60; 
 
         // 2. SYNC ON LOAD
-        // If the state is 0 (New Game), set the default starting time (6:00 AM).
+        // If the state is 0 (New Game), set the default starting time (CONFIG.START_TIME_MINUTES, 10:00 AM).
         // If we loaded a save file, this line skips, preserving the saved time.
         if (gameState.world.time === 0) {
-            gameState.world.time = 12 * 60; 
+            gameState.world.time = CONFIG.START_TIME_MINUTES; 
         }
 
         // --- COLOR PALETTE ---

@@ -51,6 +51,14 @@ export class TerrainGenerator {
         this.crevMaskNoise = new PerlinNoise(this.seed + 8282);
         this.crevWarpA = new PerlinNoise(this.seed + 8383);
         this.crevWarpB = new PerlinNoise(this.seed + 8484);
+        /* Rivers: where two biomes meet the ground used to be a strip of dirt. Along some stretches of that border (where riverNoise is high) the strip
+           is a river instead, wider where the noise is higher and tapering out to a dry bed at both ends; fords (small round patches where fordNoise
+           is high) leave the dirt in place, so a river can always be crossed within a few dozen cells. */
+        this.riverNoise = new PerlinNoise(this.seed + 6767);
+        this.fordNoise = new PerlinNoise(this.seed + 6868);
+        this.RIVER_FREQ = 0.011; this.RIVER_THRESHOLD = 0.16; this.FORD_FREQ = 0.05; this.FORD_THRESHOLD = 0.3;
+        this.RIVER_DEPTH_NOISE = -0.5; // below the water threshold (-0.3) of the elevation map
+        this.RIVER_BANK_NOISE = -0.25;  // dirt: the lowest the land beside a river goes
         this.RIDGE_FREQ = 0.017; this.RIDGE_WARP_FREQ = 0.012; this.RIDGE_WARP_AMP = 26;
         this.RING_CELL = 130; this.RING_CHANCE = 0.72;
         /* Stairs / ramps: rare places where a one-level step of a hill can be climbed (see getStairAt). The world is cut into STAIR_BLOCK x
@@ -272,14 +280,44 @@ export class TerrainGenerator {
             }
         }
         const naturalNoise = centerBiome.shapeElevation(rawNoise, hill, canyon);
+        const riverHalf = this.getRiverHalfWidth(col, row);
+        if (minDistanceToBorder <= riverHalf) return Math.min(naturalNoise, this.RIVER_DEPTH_NOISE);
         if (minDistanceToBorder <= DIRT_RADIUS) {
-            return Math.min(naturalNoise, TARGET_DIRT_NOISE);
+            // beside a river the bank is always dry: a lake of the biome never touches the river (their water would be drawn in two different styles)
+            return riverHalf > 0 ? Math.max(Math.min(naturalNoise, TARGET_DIRT_NOISE), this.RIVER_BANK_NOISE) : Math.min(naturalNoise, TARGET_DIRT_NOISE);
         } else if (minDistanceToBorder <= CHECK_RADIUS) {
             const t = (minDistanceToBorder - DIRT_RADIUS) / (CHECK_RADIUS - DIRT_RADIUS + 1);
             const dampenedNoise = TARGET_DIRT_NOISE + (naturalNoise - TARGET_DIRT_NOISE) * t;
-            return Math.min(naturalNoise, dampenedNoise);
+            const v = Math.min(naturalNoise, dampenedNoise);
+            return riverHalf > 0 ? Math.max(v, this.RIVER_BANK_NOISE) : v;
         }
         return naturalNoise;
+    }
+    /* How many cells either side of a biome border the river is wide here: 0 (no river: the border stays a strip of dirt), 1 (a stream, 2 cells), 2 or 3 (4 or 6 cells). */
+    getRiverHalfWidth(col, row) {
+        const m = this.riverNoise.get(col * this.RIVER_FREQ + this.offsetX, row * this.RIVER_FREQ + this.offsetY);
+        if (m < this.RIVER_THRESHOLD) return 0;
+        if (this.fordNoise.get(col * this.FORD_FREQ + this.offsetX, row * this.FORD_FREQ + this.offsetY) > this.FORD_THRESHOLD) return 0;
+        return m > this.RIVER_THRESHOLD + 0.2 ? 3 : (m > this.RIVER_THRESHOLD + 0.08 ? 2 : 1);
+    }
+    /* Is this cell part of a river: water, within the river's half width of a biome border? (The renderer gives all such cells one water style.) */
+    isRiverCell(col, row) {
+        const half = this.getRiverHalfWidth(col, row);
+        if (!half) return false;
+        const centre = this.getBiomeAt(col, row);
+        for (let d = 1; d <= half; d++) {
+            for (let i = -d; i <= d; i++) {
+                if (this.getBiomeAt(col + i, row - d) !== centre || this.getBiomeAt(col + i, row + d) !== centre
+                    || this.getBiomeAt(col - d, row + i) !== centre || this.getBiomeAt(col + d, row + i) !== centre) {
+                    return this.getTileAt(col, row) === this.TILES.LAYER_0;
+                }
+            }
+        }
+        return false;
+    }
+    /* The biome whose water art every river uses (a river between two biomes is neither one's water). */
+    getRiverBiome() {
+        return biomeFactory.getBiome('PLAINS');
     }
     _jitter(k, salt, amp) {
         let h = Math.imul(k | 0, 73856093) ^ Math.imul(salt, 19349663);

@@ -265,7 +265,7 @@ export const BIOME_DEFINITIONS = {
         /* Dim indoor light (see CAVE_INTERIOR below for how ambientLight works): fireplaces, candelabras and candles cut through it. a: 0 = daylight .. 1 = pitch black. */
         ambientLight: { r: 14, g: 8, b: 18, a: 0.55 },
         allowedWeather: [],
-        music: { day: 'houseInteriorBgmDay', night: 'houseInteriorBgmNight', battle: 'houseInteriorBattleBgm' },
+        music: { day: 'plainsBgmDay', night: 'plainsBgmNight', battle: 'houseInteriorBattleBgm' } /* indoors the plains' own overworld tracks play, day and night (they carry on unbroken when a plains player walks in); the battle track is still the house's */,
         battleBackgrounds: { day: 'houseInteriorBg', dusk: 'houseInteriorBg', night: 'houseInteriorBg' },
         shapeElevation: (noise) => noise,
         structures: { rate: 0, pools: [] },

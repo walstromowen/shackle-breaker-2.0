@@ -14,6 +14,32 @@ export const ItemDefinitions = {
     grantedAbilities: ["strike"]
     // No upgrade data: cannot be upgraded.
   },
+  "wooden_club": {
+    id: "wooden_club",
+    name: "Wooden Club",
+    slot: "oneHand",
+    type: "weapon",
+    description: "A thick length of hardwood, studded with iron nails at the head. It has no edge to dull and nothing to break, and it hits harder the more it is trusted.",
+    value: 60,
+    icon: { col: 11, row: 0 },
+    attack: { blunt: 4 },                // a step above the stick (3), below the two-handed warhammer (5)
+    grantedAbilities: ["strike"],
+    maxLevel: 5,
+    statGrowth: {
+      attack: { blunt: 1 }
+    },
+    abilityUnlocks: {                    // a club teaches its bearer as it is upgraded
+      2: ["rally"],
+      3: ["reckless_charge"],
+      4: ["wild_swing"]
+    },
+    upgradeCosts: {
+      2: { currency: 30, materials: { "hard_wood": 4, "soft_wood": 6 } },
+      3: { currency: 80, materials: { "hard_wood": 6, "stone": 8 } },
+      4: { currency: 160, materials: { "iron_ingot": 3, "hard_wood": 8 } },
+      5: { currency: 300, materials: { "bronze_ingot": 5, "iron_ingot": 5, "hard_wood": 10 } }
+    }
+  },
   "dagger": {
     id: "dagger",
     name: "Dagger",
@@ -265,7 +291,7 @@ export const ItemDefinitions = {
     type: "shield",
     description: 'A wooden buckler. A buckler fashioned from hard wood. A blue and green symbol of unknown origin is painted on its front.',
     value: 100,
-    icon: { col: 3, row: 0 },
+    icon: { col: 0, row: 2 },
     defense: { blunt: 2, slash: 2, pierce: 1 },
     resistance: { blunt: 0.02, slash: 0.03, pierce: 0.03},
     grantedAbilities: [],

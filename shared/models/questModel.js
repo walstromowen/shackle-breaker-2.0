@@ -4,7 +4,19 @@ import { InventorySystem } from '../systems/inventorySystem.js';
 import { ExperienceSystem } from '../systems/experienceSystem.js';
 import { PartyManager } from '../systems/partyManager.js';
 
+// How many quests the HUD tracker shows at once (the journal's Track button keeps to the same limit)
+export const MAX_TRACKED_QUESTS = 3;
+
 export const QuestModel = {
+    /** Puts a quest on the HUD tracker; when it is full the one tracked longest ago makes room. */
+    trackQuest(state, questId) {
+        if (!state.quests.trackedIds) state.quests.trackedIds = [];
+        const tracked = state.quests.trackedIds;
+        if (tracked.includes(questId)) return;
+        while (tracked.length >= MAX_TRACKED_QUESTS) tracked.shift();
+        tracked.push(questId);
+    },
+
     startQuest(state, questId) {
         if (state.quests.active[questId] || state.quests.completed.includes(questId)) {
             return false;
@@ -13,6 +25,7 @@ export const QuestModel = {
         const newQuest = QuestFactory.createActiveQuest(questId);
         if (newQuest) {
             state.quests.active[questId] = newQuest;
+            this.trackQuest(state, questId); // a new quest is tracked from the moment it is given, wherever it came from
             const definition = QuestDefinitions[questId];
             
             if (definition) {
@@ -80,6 +93,10 @@ export const QuestModel = {
         if (!this.checkCompletion(state, questId)) return false;
 
         const definition = QuestDefinitions[questId];
+
+        // a finished quest leaves the tracker first, so the quest it unlocks takes its place instead of pushing another one out
+        const trackedAt = state.quests.trackedIds ? state.quests.trackedIds.indexOf(questId) : -1;
+        if (trackedAt > -1) state.quests.trackedIds.splice(trackedAt, 1);
         
         // --- REWARD DISTRIBUTION SYSTEM ---
         if (definition && definition.rewards) {
@@ -125,4 +142,4 @@ export const QuestModel = {
         
         return true;
     }
-};
+};

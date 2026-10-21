@@ -8,6 +8,7 @@ import { TRAIT_DEFINITIONS } from '../../../../shared/data/traitDefinitions.js';
 import { InventorySystem } from '../../../../shared/systems/inventorySystem.js';
 import { PartyManager } from '../../../../shared/systems/partyManager.js';
 import { QuestModel } from '../../../../shared/models/questModel.js';
+import { CONFIG } from '../../../../shared/data/constants.js';
 const ALLOWED_TRAITS = ['quick', 'inquisitive', 'brawler', 'tough', 'stealthy'];
 const UI_TRAITS = ALLOWED_TRAITS.map(key => ({
     id: key,
@@ -351,6 +352,7 @@ export class CharacterCreatorLogic {
 
         // --- NEW GAME GRANTS ---
         gameState.milestones = [];   // a new game is always act 1
+        gameState.world.time = CONFIG.START_TIME_MINUTES;   // and always starts in the morning, even when an earlier game was played in this session
         gameState.party.currency = 100;
         gameState.difficulty = CREATION_DATA.DIFFICULTIES[this.state.difficultyIdx].id;
 

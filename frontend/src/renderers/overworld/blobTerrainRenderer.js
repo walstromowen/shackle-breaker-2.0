@@ -195,7 +195,10 @@ export class BlobTerrainRenderer {
         return i;
     }
     _pack(col, row) {
-        const b = this._wm.getBiomeAt(col, row);
+        let b = this._wm.getBiomeAt(col, row);
+        // a river runs between two biomes: all of its water is drawn in one style, instead of changing colour down the middle at the border
+        const terrain = this._wm.terrain;
+        if (b && terrain && terrain.isRiverCell && this._wm.getTileAt(col, row) === this.TILES.LAYER_0 && terrain.isRiverCell(col, row)) b = terrain.getRiverBiome();
         return (b && b.blobTileset) || null;
     }
 
@@ -546,4 +549,4 @@ export class BlobTerrainRenderer {
             this._dirtFns.clear();
         }
     }
-}
+}

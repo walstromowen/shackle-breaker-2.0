@@ -457,7 +457,7 @@ export const tracksInTheSnow = {
             sfx: "snowLeopardCry",
             ambience: "none",
             ambienceFade: 0.4,
-            image: { col: 3, row: 1 },
+            image: { col: 3, row: 2 },
             bgm: "plainsBattleBgm",
             text: "An ambush of Snow Leopards surrounds you!",
             decisions: [

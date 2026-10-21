@@ -13,7 +13,7 @@ export const MAP_OBJECTS_DEFINITIONS = {
     SMALL_ROCKS_3: { sheet: { default: 'objSmallRocks3', DESERT: 'objSmallRocks3Desert', SNOWY_MOUNTAINS: 'objSmallRocks3Snow' }, spriteX: 10, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'stone', amount: 1 } },
     /* FLINT: a dark nodule with a chalky tan rind. Walk over it (or face it and interact) to pick up 1 flint. Generates on the dirt (LAYER_1) of the plains and the snowy mountains, see biomeDefinitions. */
     FLINT_ROCK: { sheet: { default: 'objFlintRock', SNOWY_MOUNTAINS: 'objFlintRockSnow' }, spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'flint', amount: 1 } },
-    STICK: { sheet: 'objStick', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'soft_wood', amount: 1 } },
+    STICK: { sheet: 'objStick', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'soft_wood', amount: 1, lootTableId: 'stick_wood' } /* a stick is soft wood, or hard wood one time in four (see LootTableDefinitions.stick_wood) */ },
     // ----------------------------------------
 
     SAND_DUNE_1: { sheet: 'objSandDune1', spriteX: 6, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'sand', amount: 1 } },
@@ -23,8 +23,8 @@ export const MAP_OBJECTS_DEFINITIONS = {
     BONE_PILE: { sheet: 'objBonePile', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'bone', amount: 1 } },
 
     // --- BUILDINGS ---
-    ABANDONED_HOUSE_1: { sheet: 'objAbandonedHouse1', spriteX: 5, spriteY: 7, width: 4, height: 4, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: 0, w: 1, h: 2 }, { xOffset: 1, yOffset: -1, w: 1, h: 1 }, { xOffset: 2, yOffset: -1, w: 2, h: 2 }] },
-    ABANDONED_HOUSE_2: { sheet: 'objAbandonedHouse2', spriteX: 9, spriteY: 7, width: 4, height: 4, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: 0, w: 1, h: 2 }, { xOffset: 1, yOffset: -1, w: 1, h: 1 }, { xOffset: 2, yOffset: -1, w: 2, h: 2 }] },
+    ABANDONED_HOUSE_1: { sheet: 'objAbandonedHouse1', spriteX: 5, spriteY: 7, width: 4, height: 4, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 1, h: 2 } /* the left wall: its two bottom rows, like the right wall's (it used to start a row too low and block the cell in front of the house) */, { xOffset: 1, yOffset: -1, w: 1, h: 1 }, { xOffset: 2, yOffset: -1, w: 2, h: 2 }] },
+    ABANDONED_HOUSE_2: { sheet: 'objAbandonedHouse2', spriteX: 9, spriteY: 7, width: 4, height: 4, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 1, h: 2 } /* the left wall: its two bottom rows, like the right wall's (it used to start a row too low and block the cell in front of the house) */, { xOffset: 1, yOffset: -1, w: 1, h: 1 }, { xOffset: 2, yOffset: -1, w: 2, h: 2 }] },
 
     // --- STRUCTURES / FENCES ---
     WOODEN_FENCE_H: { sheet: 'objWoodenFenceH', spriteX: 5, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },

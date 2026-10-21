@@ -229,7 +229,7 @@ export const aftermath = {
             displayText: "The Officer's Gear",
             tone: "gold",
             sfx: "pickupSound",
-            image: { col: 0, row: 2 },
+            image: { col: 3, row: 0 },
             text: "Wrapped in the officer's cloak, you find personal gear that survived the battle.",
             decisions: [
                 {
