@@ -327,6 +327,7 @@ export class OverworldController extends BaseController {
         this.player.light = this.currentLight(); // LightingRenderer draws whatever light the player entity carries: a torch makes it wider, brighter and redder
         this.validateBiomeWeather(); // every frame: the weather must fit the biome the player stands in even when no step ends (a warp, standing still)
         this.checkEnvironmentMusic();
+        if (!this.encounterZones) this.encounterZones = this.findEncounterZones(gameState.player.col, gameState.player.row); // standing in a zone when the world opens: it does not fire
 
         this.worldManager.getActiveObjects().forEach(obj => {
             if (obj.isAnimating) {
@@ -679,6 +680,9 @@ export class OverworldController extends BaseController {
             return;
         }
 
+        // Lines of sight (`triggerLine` on an ENCOUNTER, e.g. PECULIAR_SCARECROW): stepping onto the cells it sees (5 tiles beneath its base) starts the encounter
+        if (this.checkEncounterZones()) return;
+
         this.checkTileEvents();
         this.validateBiomeWeather();
 
@@ -689,6 +693,49 @@ export class OverworldController extends BaseController {
         } else {
             this.setAnimIdle();
         }
+    }
+
+    /* The ENCOUNTER objects the player is in the line of sight of: a Map of "col,row" -> object. An object with `interaction.triggerLine = { direction, length }`
+       (PECULIAR_SCARECROW: down, 5) sees the cells in a straight line from its base, `length` tiles one way, across its whole width: for the two wide scarecrow,
+       'down' is the two columns straight beneath it. Only the player's own row and column are searched, MAX_LINE_LENGTH tiles each way. */
+    findEncounterZones(col, row) {
+        const MAX_LINE_LENGTH = 8, MAX_WIDTH = 4;
+        const LOOKING = { down: [0, 1], up: [0, -1], right: [1, 0], left: [-1, 0] };
+        const zones = new Map();
+        const wm = this.worldManager;
+        if (!wm || !wm.getObject) return zones;
+        for (const [direction, [dx, dy]] of Object.entries(LOOKING)) {
+            if (wm.ensureChunkLoaded) wm.ensureChunkLoaded(col - dx * MAX_LINE_LENGTH, row - dy * MAX_LINE_LENGTH);
+            for (let k = 1; k <= MAX_LINE_LENGTH; k++) {
+                for (let j = 0; j < MAX_WIDTH; j++) {
+                    // j = how many columns the player stands to the right of the object's own column; up and down lines see its whole width, a line to the right starts at its right edge
+                    const ox = dx === 0 ? col - j : (dx > 0 ? col - k - j : col + k);
+                    const obj = wm.getObject(ox, row - dy * k);   // where an object that looks along (dx, dy) would stand
+                    const line = obj && !obj.isFading && obj.interaction && obj.interaction.type === 'ENCOUNTER' && obj.interaction.triggerLine;
+                    if (!line || line.direction !== direction || k > line.length) continue;
+                    const w = obj.w || 1;
+                    if (dx === 0 ? j >= w : (dx > 0 ? j !== w - 1 : j > 0)) continue;
+                    zones.set(`${obj.col},${obj.row}`, obj);
+                }
+            }
+        }
+        return zones;
+    }
+
+    /* Called when a step ends. A line of sight fires once when the player steps into it; while the player stays inside (after the encounter, or after the
+       fight it led to) it stays quiet, and it is armed again once the player has left. Returns true when an encounter was started. */
+    checkEncounterZones() {
+        const now = this.findEncounterZones(gameState.player.col, gameState.player.row);
+        const before = this.encounterZones || new Map();
+        this.encounterZones = now;
+        for (const [key, obj] of now) {
+            if (before.has(key)) continue;
+            this.isLocked = true;
+            this.setAnimIdle();
+            events.emit('INTERACT', { ...obj.interaction, context: { col: obj.col, row: obj.row, objectId: obj.id } });
+            return true;
+        }
+        return false;
     }
 
     checkTileEvents() {

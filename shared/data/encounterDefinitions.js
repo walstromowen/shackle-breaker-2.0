@@ -14,6 +14,7 @@ import { mysteriousAltar } from './encounters/mysteriousAltar.js';
 import { prologue } from './encounters/prologue.js';
 import { actTwo } from './encounters/actTwo.js';
 import { crimsonVigil } from './encounters/crimsonVigil.js';
+import { peculiarScarecrow } from './encounters/peculiarScarecrow.js';
 
 // <-- Import your new encounter here
 
@@ -34,6 +35,7 @@ export const encounterDefinitions = {
     [prologue.id]: prologue,
     [actTwo.id]: actTwo,
     [crimsonVigil.id]: crimsonVigil,
+    [peculiarScarecrow.id]: peculiarScarecrow,
 
     
     // <-- Add your new encounter here

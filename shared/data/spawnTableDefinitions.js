@@ -446,6 +446,22 @@ export const SpawnTableDefinitions = {
         }]
     },
 
+    // Used by peculiar_scarecrow: a failed sneak past the scarecrow wakes the harvesters in the grass around it (one or more).
+    "scarecrow_harvesters": {
+        type: "faction_pool",
+        pools: [{
+            factionId: "shackled",
+            weight: 100,
+            difficultySettings: {
+                easy: { minSize: 1, maxSize: 2 },
+                normal: { minSize: 1, maxSize: 3 },
+                hard: { minSize: 2, maxSize: 3 },
+                nightmare: { minSize: 3, maxSize: 4 }
+            },
+            members: [{ id: 'HOLLOW_HARVESTER', weight: 100, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } }]
+        }]
+    },
+
     // Used by crimson_vigil (act 2): the ring of bones stands up.
     "risen_pack": {
         type: "faction_pool",

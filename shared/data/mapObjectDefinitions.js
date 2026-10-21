@@ -61,6 +61,11 @@ export const MAP_OBJECTS_DEFINITIONS = {
     MEDIUM_CACTUS_1: { sheet: 'objMediumCactus1', spriteX: 1, spriteY: 0, width: 2, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 } },
     SMALL_CACTUS_1: { sheet: 'objSmallCactus1', spriteX: 2, spriteY: 0, width: 1, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
     STRANGE_OBELISK: { sheet: 'objStrangeObelisk', spriteX: 1, spriteY: 4, width: 2, height: 3, isSolid: true, isGround: false, isAnchor: true, blocksLight: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'strange_obelisk', isRepeatable: false } },
+    /* PECULIAR_SCARECROW: a scarecrow bound to a post, two tiles wide and two tall (64 x 64 sheet, its shadow baked in like the trees'; the two base tiles are solid).
+       Stepping onto any of the 5 rows straight beneath its base, under either of its two columns (`triggerLine`: its line of sight), starts the encounter, once each
+       time you step into that line (OverworldController.checkEncounterZones). It only stands in abandoned villages, on the verge north of an east-west road
+       (structures.js `scarecrows`). */
+    PECULIAR_SCARECROW: { sheet: 'objScarecrow', spriteX: 0, spriteY: 0, width: 2, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'peculiar_scarecrow', triggerLine: { direction: 'down', length: 5 } } },
     MYSTERIOUS_ALTAR: { sheet: 'objMysteriousAltar', spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 3, h: 2 }, interaction: { type: 'ENCOUNTER', id: 'mysterious_altar' } },
     
     // --- HERBS --- (walk over them to pick them up, like the small rocks and the bones)

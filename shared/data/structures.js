@@ -95,6 +95,16 @@ function buildYard(spec, gate) {
     for (const [x, y] of path) terrain[y][x] = 1;
     objects[gy][gx] = null; // the gate
 
+    // a crop field: the plots (spec.crop.plots, [x, y] cells) are tilled earth planted with ONE herb; the footpath stays a path whichever gate was picked
+    if (spec.crop) {
+        const onPath = new Set(path.map(([x, y]) => `${x},${y}`));
+        for (const [x, y] of spec.crop.plots) {
+            if (onPath.has(`${x},${y}`)) continue;
+            terrain[y][x] = 1;
+            objects[y][x] = spec.crop.id;
+        }
+    }
+
     // where the footpath leaves the prefab and the way it points: the road has to be on the other side of that cell
     const [ex, ey] = path[path.length - 1];
     const entry = g.side === 'S' ? { x: ex, y: ey, dx: 0, dy: 1 }
@@ -111,7 +121,7 @@ function buildYard(spec, gate) {
         terrain,
         objects,
         wear: { fenceBreak: 0.12 },
-        scatter: { chance: 0.32, pool: GROUND_DECOR, rect: spec.scatterRect },
+        scatter: { chance: 0.32, pool: spec.scatterPool || GROUND_DECOR, rect: spec.scatterRect },
     };
 }
 
@@ -125,7 +135,8 @@ function yard(spec) {
 /* ---------- the hub: a plaza where the roads meet ----------
 
    11 x 11. Two 3-wide roads cross in the middle (rows / cols 4..6) inside a 5 x 5 dirt plaza with the campfire in the
-   middle. The four corners hold a little scene each: a loot corner, a market table, a garden, a storage corner.
+   middle. The four corners hold a little scene each: a stump and stones, a market table, a garden gone wild, a fallen fence. No chests out here (they are
+   indoors) and no storage corner.
    The roads that grow out of the four sides start exactly on the 3-wide road cells. */
 
 function buildCenter() {
@@ -148,14 +159,14 @@ function buildCenter() {
     put(5, 5, 'CAMPFIRE');
     put(3, 3, 'STOOL'); put(7, 3, 'STOOL'); put(3, 7, 'STOOL'); put(7, 7, 'STOOL');
 
-    // north-west: a loot corner
-    put(1, 1, 'WOODEN_CHEST'); put(2, 1, 'TREE_STUMP'); put(1, 2, 'SMALL_ROCKS_1'); put(2, 2, 'GRASS_COVERAGE_1');
+    // north-west: a stump among the stones
+    put(1, 1, 'SMALL_ROCKS_2'); put(2, 1, 'TREE_STUMP'); put(1, 2, 'SMALL_ROCKS_1'); put(2, 2, 'GRASS_COVERAGE_1');
     // north-east: a market table
     put(8, 1, 'TABLE_LONG'); put(10, 1, 'BARREL'); put(9, 2, 'CRATE_SACK'); put(8, 3, 'TULIPS_WHITE');
     // south-east: a garden gone wild
     put(9, 9, 'TREE_STUMP'); put(8, 9, 'TULIPS_RED'); put(9, 8, 'TULIPS_WHITE'); put(8, 8, 'GRASS_COVERAGE_2'); put(10, 9, 'SMALL_ROCKS_2');
-    // south-west: storage
-    put(1, 9, 'CRATE'); put(2, 9, 'BARREL'); put(1, 8, 'SACKS'); put(2, 8, 'GRASS_COVERAGE_3');
+    // south-west: a fallen fence in the grass
+    put(1, 9, 'WOODEN_FENCE_H'); put(2, 9, 'TREE_STUMP'); put(1, 8, 'GRASS_COVERAGE_3'); put(2, 8, 'GRASS_COVERAGE_2');
 
     return {
         type: 'PREFAB',
@@ -180,6 +191,13 @@ const WORKSHOP = (door, props) => ({
     w: 8, h: 8, anchor: [3, 3], gateRow: 4, scatterRect: { x: 2, y: 3, w: 4, h: 3 },
     house: 'ABANDONED_HOUSE_2', door,
     props,
+});
+
+const CROP_FIELD = (herb) => ({
+    w: 8, h: 8, anchor: [3, 2], gateRow: 5, scatterRect: { x: 2, y: 5, w: 4, h: 1 }, scatterPool: ['GRASS_COVERAGE_1', 'GRASS_COVERAGE_2', 'GRASS_COVERAGE_3'],
+    house: null, door: null,
+    props: [],
+    crop: { id: herb, plots: [2, 3, 4].flatMap(y => [[2, y], [4, y], [5, y]]) },
 });
 
 export const STRUCTURES = {
@@ -219,7 +237,10 @@ export const STRUCTURES = {
             { prefab: 'ABANDONED_COTTAGE',    weight: 4 },
             { prefab: 'ABANDONED_FARMHOUSE',  weight: 3 },
             { prefab: 'ABANDONED_HUT',        weight: 3 },
-            { prefab: 'ABANDONED_STORAGE',    weight: 2 },
+            /* crop fields: a fenced field of one herb each (the three herbs are picked by walking over them) */
+            { prefab: 'ABANDONED_CROP_FIELD_HEALING',       weight: 1 },
+            { prefab: 'ABANDONED_CROP_FIELD_INVIGORATING',  weight: 1 },
+            { prefab: 'ABANDONED_CROP_FIELD_ILLUMINATING',  weight: 1 },
 
             // The one workshop: its interior holds every crafting station (see ABANDONED_WORKSHOP in interiorDefinitions.js)
             { prefab: 'ABANDONED_WORKSHOP',   weight: 1.5, required: true, max: 1 },
@@ -256,6 +277,16 @@ export const STRUCTURES = {
             id: 'STANDING_TORCH',
             chance: 0.05,
             spacing: 14,
+        },
+
+        /* SCARECROWS: the Peculiar Scarecrow, the only place it is made (see _planStreetScarecrows in worldManager.js). It stands on the verge north of an
+           east-west road, looking south, so the 5 tiles beneath it run across the road. Each step along such a road has `chance` of getting one, no two on a
+           road are closer than `spacing` steps, and a village has at most `max`. */
+        scarecrows: {
+            id: 'PECULIAR_SCARECROW',
+            chance: 0.04,
+            spacing: 14,
+            max: 3,
         },
 
         /* STREET DRESSING (on the grass just beside the road; the solid ones are never in the way of the road) */
@@ -301,16 +332,14 @@ export const STRUCTURES = {
         props: [[2, 5, 'TULIPS_RED'], [4, 5, 'TULIPS_WHITE'], [5, 5, 'TREE_STUMP']],
     }),
 
-    ABANDONED_STORAGE: yard({
-        w: 8, h: 7, anchor: [3, 3], gateRow: 3, scatterRect: { x: 2, y: 2, w: 4, h: 3 },
-        house: null, door: null,
-        props: [
-            [2, 2, 'WOODEN_CHEST'], [3, 2, 'BARREL'], [4, 2, 'CRATE'], [5, 2, 'WOODEN_CHEST'],
-            [2, 4, 'SACKS'], [4, 4, 'WOODEN_CHEST'], [5, 4, 'CRATE_SACK'],
-        ],
-    }),
+    /* CROP FIELDS: the same fenced yard with no house. Three rows of tilled earth (rows 2..4: columns 2, 4 and 5, the footpath runs down column 3 and along
+       row 5 to the gate) planted with ONE herb, so a field is a field of Healing, of Invigorating or of Illuminating Herb. Row 5 and the grass between stay
+       open, with a few weeds. (Which gate faces the road only changes where the footpath leaves; it never crosses a plot, and `crop` skips any plot it would.) */
+    ABANDONED_CROP_FIELD_HEALING: yard(CROP_FIELD('HEALING_HERB')),
+    ABANDONED_CROP_FIELD_INVIGORATING: yard(CROP_FIELD('INVIGORATING_HERB')),
+    ABANDONED_CROP_FIELD_ILLUMINATING: yard(CROP_FIELD('ILLUMINATING_HERB')),
 
     // --- THE WORKSHOP: one per village, with every crafting station inside (the yard is only dressed) ---
 
     ABANDONED_WORKSHOP: yard(WORKSHOP('WORKSHOP_DOOR', [[2, 5, 'BARREL'], [4, 5, 'CRATE'], [5, 5, 'CRATE_SACK']])),
-};
+};

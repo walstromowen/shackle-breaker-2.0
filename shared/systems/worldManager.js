@@ -577,7 +577,41 @@ export class WorldManager {
             }
         }
     }
+    /* A scarecrow now and then on the verge NORTH of an east-west road (blueprint `scarecrows`), so that the 5 tiles it sees straight beneath it (the
+       PECULIAR_SCARECROW's `triggerLine`, as wide as the scarecrow) run across the road. Same cell rules as the torches, for every tile of its two wide base
+       and the row above it; planned before them. The only place the object is ever made. */
+    _planStreetScarecrows(plan, bp) {
+        const sc = bp.scarecrows;
+        if (!sc || !sc.chance || !MAP_OBJECTS_DEFINITIONS[sc.id]) return;
+        const off = plan.cfg.rad + 1;
+        const spacing = sc.spacing ?? 12;
+        const w = MAP_OBJECTS_DEFINITIONS[sc.id].width || 1;
+        let placed = 0;
+        for (const road of plan.roads) {
+            const cs = road.centres;
+            let last = -Infinity;
+            for (let i = 2; i < cs.length && placed < (sc.max ?? 3); i++) {
+                const horizontal = cs[i].d === 1 || cs[i].d === 3;
+                if (!horizontal || i - last < spacing || !this._straightAt(cs, i, 2, 0)) continue;
+                if (this.pseudoRandom(cs[i].c * 71 + plan.salt, cs[i].r * 73 + 29) >= sc.chance) continue;
+                const c = cs[i].c, r = cs[i].r - off;
+                let free = true;
+                for (let dc = 0; dc < w && free; dc++) {
+                    const key = this._s(c + dc, r);
+                    if (plan.roadOwner.has(key) || plan.hubTiles.has(key) || plan.buildingTiles.has(key) || plan.buildingTiles.has(this._s(c + dc, r - 1))) free = false;
+                    else if (gameState.world.changes[key] !== undefined) free = false;
+                    else if (this.getElevation(c + dc, r) !== plan.baseElev || this.isBlockedByFace(c + dc, r) || this.isCliffFace(c + dc, r) || this._nearStair(c + dc, r)) free = false;
+                }
+                if (!free) continue;
+                this.modifyWorld(c, r, sc.id);
+                this._placeObject(c, r, sc.id);
+                last = i;
+                placed++;
+            }
+        }
+    }
     _planStreetProps(plan, bp) {
+        this._planStreetScarecrows(plan, bp);
         this._planStreetTorches(plan, bp);
         const sp = bp.streetProps;
         if (!sp || !sp.chance || !sp.pool || sp.pool.length === 0) return;
@@ -1312,4 +1346,4 @@ export class WorldManager {
         const sin = Math.sin(dot) * 43758.5453;
         return sin - Math.floor(sin);
     }
-}
+}
