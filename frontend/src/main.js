@@ -421,6 +421,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     floatingSkullCry: './assets/audio/sfx/cries/floating_skull_cry.wav',
     frozenTrapperCry: './assets/audio/sfx/cries/frozen_trapper_cry.wav',
     panzerkamferCry: './assets/audio/sfx/cries/panzerkamfer_cry.wav',
+    watchmanCry: './assets/audio/sfx/cries/watchman_cry.wav',
     // --- UI SFX ---
     diceTick: './assets/audio/sfx/ui/dice_tick.wav',
     hoverTick: './assets/audio/sfx/ui/hover_tick.wav',
