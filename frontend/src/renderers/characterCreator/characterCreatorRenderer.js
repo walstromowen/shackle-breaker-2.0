@@ -103,8 +103,6 @@ export class CharacterCreatorRenderer {
         const identityBottomY = curY;
 
         // --- C. VISUALS ---
-        const VITALS_OFFSET = 330;
-        const VITALS_START_Y = identityBottomY + VITALS_OFFSET;
         // The bounding box size for the UI element
         const portraitSize = 256;
         // The sprite box holds exactly one frame of the character sheet (e.g. 64 x 64) at a whole-number zoom, so it is 128 x 128 for 64 px frames
@@ -116,8 +114,16 @@ export class CharacterCreatorRenderer {
         const totalVisualWidth = portraitSize + visualGap + spriteBoxW;
         const startVisualX = p + (colW - totalVisualWidth) / 2;
 
-        const portraitY = identityBottomY + (VITALS_OFFSET / 2) - (portraitSize / 2);
-        const spriteY = identityBottomY + (VITALS_OFFSET / 2) - (spriteBoxH / 2);
+        // The portrait and the sprite are centred on one line, and the divider under them is placed from the bottom of the taller of the two, so it can
+        // never cross the picture (it used to sit at a fixed distance that was shorter than the portrait)
+        const VISUAL_TOP_GAP = 24;
+        const visualH = Math.max(portraitSize, spriteBoxH);
+        const visualCenterY = identityBottomY + VISUAL_TOP_GAP + (visualH / 2);
+        const DIVIDER_Y = identityBottomY + VISUAL_TOP_GAP + visualH + 32;
+        const VITALS_START_Y = DIVIDER_Y + 48;
+
+        const portraitY = visualCenterY - (portraitSize / 2);
+        const spriteY = visualCenterY - (spriteBoxH / 2);
 
         const appIdx = selections.appearanceIdx || 0;
         const appData = data.APPEARANCES ? data.APPEARANCES[appIdx] : null;
@@ -165,7 +171,7 @@ export class CharacterCreatorRenderer {
 
         // --- D. STATS TABLE ---
         curY = VITALS_START_Y;
-        ui.drawLineWithGothicFlourish(leftCenterX - 192, curY - 48, 384, UITheme.colors.borderHighlight);
+        ui.drawLineWithGothicFlourish(leftCenterX - 192, DIVIDER_Y, 384, UITheme.colors.borderHighlight);
 
         if (previewStats) {
             const innerMargin = 48;
@@ -441,4 +447,4 @@ export class CharacterCreatorRenderer {
 
         return "";
     }
-}
+}

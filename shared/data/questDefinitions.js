@@ -5,7 +5,7 @@ export const QuestDefinitions = {
     "shackled1": {
     id: "shackled1",
     name: "Shackled",
-    description: "The chain broke, and the convoy marched on into the dark without you. The cuffs are still locked around your wrists, and the fog in your mind has lifted. Learn where this road has left you, and grow strong enough to survive it.",
+    description: "The chain that bound you to the line has broken, and the convoy marched on into the dark without you. The shackles are still locked around your wrists, and the fog in your mind has lifted. You remember the road, and nothing before it. Find out what happened, and grow strong enough to survive the answer.",
     objectives: [
         { id: "obj_reach_level_2", type: "party_level", targetLevel: 2, amount: 1 },
     ],
@@ -14,7 +14,7 @@ export const QuestDefinitions = {
     "shackled2": {
         id: "shackled2",
         name: "Shackled",
-        description: "The prisoners on the road were not the only ones. Others wear the same iron here, and they laugh in the streets, as though sharing a single dream.",
+        description: "The prisoners on the road were not the only ones. Others wear the same iron here, and they laugh in the streets, as though sharing a single dream. Whatever took them has not stopped at the road.",
         objectives: [
             { id: "obj_kill_madmen_part_2", type: "kill_enemy", targetId: "MAD_MAN", amount: 3 },
             { id: "obj_reach_level_3", type: "party_level", targetLevel: 3, amount: 1 }
@@ -24,7 +24,7 @@ export const QuestDefinitions = {
     "shackled3": {
         id: "shackled3",
         name: "Shackled",
-        description: "The shackles have no keyhole, and the spirit weighs as heavy as the iron. Perhaps a scholar remains who knows why. Their ravings speak of a stone fallen from the sky, and of the sand-skinned ones who carried it away.",
+        description: "The shackles have no keyhole, and the weight on your spirit is as heavy as the iron. The ravings of the mad are not all nonsense: they speak of a stone fallen from the sky, and of the sand-skinned ones who carried it away. Many of them still conjure sparks and cannot stop. Listen closely, then put them down.",
         objectives: [
             { id: "obj_reach_level_5", type: "party_level", targetLevel: 5, amount: 1 },
             { id: "obj_kill_magic_addicts", type: "kill_enemy", targetId: "MAGIC_ADDICT", amount: 3 }
@@ -41,7 +41,7 @@ export const QuestDefinitions = {
     "shackled4": {
         id: "shackled4",
         name: "Shackled",
-        description: "Past the plains lie the dunes, and those who walk them unseen. What was taken is not in their hands.",
+        description: "Past the plains lie the dunes, and those who walk them unseen. The stone was last seen with them, but what was taken is no longer in their hands.",
         objectives: [
             { id: "obj_reach_level_6", type: "party_level", targetLevel: 6, amount: 1 },
             { id: "obj_kill_sand_stalkers", type: "kill_enemy", targetId: "SAND_STALKER", amount: 3 }
@@ -59,7 +59,7 @@ export const QuestDefinitions = {
     "shackled5": {
         id: "shackled5",
         name: "Shackled",
-        description: "The dunes keep a second face after dark. A weaver of mirages guards what the sand has swallowed.",
+        description: "The dunes keep a second face after dark. A weaver of mirages guards what the sand has swallowed, and the trail of the stone with it.",
         objectives: [
             { id: "obj_reach_level_7", type: "party_level", targetLevel: 7, amount: 1 },
             { id: "obj_kill_miragewright", type: "kill_enemy", targetId: "MIRAGEWRIGHT", amount: 1 }
@@ -77,7 +77,7 @@ export const QuestDefinitions = {
     "shackled6": {
         id: "shackled6",
         name: "Shackled",
-        description: "The stone passed from the dunes into foreign hands. The Panzerian trappers of the frozen peaks do not speak of where it went.",
+        description: "The stone passed from the dunes into foreign hands. The Panzerian trappers of the frozen peaks do not speak of where it went, or of what they saw.",
         objectives: [
             { id: "obj_reach_level_8", type: "party_level", targetLevel: 8, amount: 1 },
             { id: "obj_kill_frozen_trappers", type: "kill_enemy", targetId: "FROZEN_TRAPPER", amount: 3 }
@@ -95,7 +95,7 @@ export const QuestDefinitions = {
     "shackled7": {
         id: "shackled7",
         name: "Shackled",
-        description: "What went to the peaks came back down to the plains, carried by those who still wear the old colors. They do not rest. The dead stir where battles were fought.",
+        description: "What went to the peaks came back down to the plains, carried by those who still wear the old colors. They do not rest. The dead stir where battles were fought. Whoever carried the stone home has the answer, if any of them can still be reasoned with.",
         objectives: [
             { id: "obj_reach_level_9", type: "party_level", targetLevel: 9, amount: 1 },
             { id: "obj_kill_legionaries", type: "kill_enemy", targetId: "LEGIONARY", amount: 4 },
@@ -115,7 +115,7 @@ export const QuestDefinitions = {
     "shackled8": {
         id: "shackled8",
         name: "Shackled",
-        description: "A stone altar waits in the dark below, though not every depth holds one. A skull rests above a hollow the size of a fallen star. Descend when you are strong.",
+        description: "A stone altar waits in the dark below, though not every depth holds one. A skull rests above a hollow the size of a fallen star. The answer to what happened waits down there. Descend when you are strong.",
         objectives: [
             { id: "obj_reach_level_10", type: "party_level", targetLevel: 10, amount: 1 },
             { id: "obj_kill_darius", type: "kill_enemy", targetId: "DARIUS_THE_GROVELER", amount: 1 }
@@ -136,7 +136,7 @@ export const QuestDefinitions = {
     "act2_red_moon": {
         id: "act2_red_moon",
         name: "The Red Moon",
-        description: "The moon rises red every night now, and the days are dim. The dead walk the roads, the cursed come in greater numbers, and every enemy is a little stronger than before. Whatever Darius knelt to has woken. Grow strong, and keep your torch lit.",
+        description: "The moon rises red every night now, and the days are dim. The dead walk the roads, the cursed come in greater numbers, and every enemy is a little stronger than before. Darius did not curse the world, and neither did the stone. Magic itself is the curse, and every spell cast feeds it. You have cast many. Grow strong, and keep your torch lit.",
         objectives: [
             { id: "obj_reach_level_12", type: "party_level", targetLevel: 12, amount: 1 },
             { id: "obj_kill_risen", type: "kill_enemy", targetId: "SKELETAL_WARRIOR", amount: 5 }
@@ -374,7 +374,7 @@ export const QuestDefinitions = {
     "bg_scholar_3": {
         id: "bg_scholar_3",
         name: "A Flawed Science",
-        description: "The energy of the artifact is corrosive to the mind. Magic is no science. It is a sickness.",
+        description: "The energy of the artifact is corrosive to the mind, yet the first to fall were the ones who worked with it longest. Perhaps the fault was never the artifact alone.",
         objectives: [
             { id: "obj_sch3", type: "kill_enemy", targetId: "MAGIC_ADDICT", amount: 3 }
         ],
@@ -456,7 +456,7 @@ export const QuestDefinitions = {
     "bg_thief_3": {
         id: "bg_thief_3",
         name: "Poverty's Blessing",
-        description: "The nobles hoarded the magic, and it ate their minds. Poverty was a mercy.",
+        description: "The nobles hoarded the glowing things, and their minds went with them. Poverty was a mercy.",
         objectives: [
             { id: "obj_thf3", type: "kill_enemy", targetId: "ROTTER", amount: 2 },
             { id: "obj_thf3b", type: "kill_enemy", targetId: "MAGIC_ADDICT", amount: 1 }
@@ -623,7 +623,7 @@ export const QuestDefinitions = {
     "bg_diseased_3": {
         id: "bg_diseased_3",
         name: "A Toxic Remedy",
-        description: "The artifact's light does not cure madness. It causes it. The magic itself is the sickness.",
+        description: "The artifact's light does not cure madness. It deepens it, and the patients who were treated most often fell furthest. Something in the treatment itself is rotten.",
         objectives: [
             { id: "obj_dis3", type: "kill_enemy", targetId: "ROTTER", amount: 2 },
             { id: "obj_dis3b", type: "kill_enemy", targetId: "MAGIC_ADDICT", amount: 1 }

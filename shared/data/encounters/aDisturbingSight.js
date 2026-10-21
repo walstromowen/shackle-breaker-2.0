@@ -8,7 +8,7 @@ export const aDisturbingSight = {
     stages: {
         discovery: {
             displayText: "A Disturbing Sight",
-            sfx: "madmanCry",
+            sfx: "rotterCry",
             sfxVolume: 0.5,
             image: { col: 2, row: 1 },
             bgm: "aDisturbingSightBgm",

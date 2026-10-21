@@ -5,6 +5,10 @@
  * their act 2 entries and every enemy is a little stronger. Written like the prologue: short, plain sentences in the second person, a little ominous.
  *
  * The altar is underground, so nothing here shows the sky: the change is felt in the iron first, and seen when the player climbs out.
+ *
+ * It is also where the questline ends and the player learns what happened (the goal of the Shackled quests): magic itself is the curse. It slowly
+ * corrupts everyone who uses it, the player included. The stone only sped it up. Nothing before this says so outright; the other quests and encounters
+ * only hint at it (madmen who babble about the magic, scholars and nobles who lost their minds to it).
  * Pictures are borrowed from the altar's sheet (a stage may name any sheet); the stage fields are explained at the top of encounters/prologue.js.
  */
 const toStage = (stageId) => [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
@@ -40,11 +44,65 @@ export const actTwo = {
                 {
                     text: "Touch the meteorite.",
                     customActionText: "It is warm now, like something that was alive.",
-                    outcomes: toStage("iron")
+                    outcomes: toStage("vision")
                 },
                 {
                     text: "Step back.",
-                    customActionText: "You step back from the altar, and the dark follows you.",
+                    customActionText: "You step back from the altar, and the dark follows you. The stone speaks anyway.",
+                    outcomes: toStage("vision")
+                }
+            ]
+        },
+
+        vision: {
+            displayText: "What Darius Knew",
+            image: { sheet: "encounter_mysterious_altar", col: 0, row: 1 },
+            sfx: "whispers",
+            text: "The stone's last light shows you a man in a clean robe, kneeling at this altar. It is Darius, before the hood and the crawling. He is smiling, and he is whole. Each time the light answers him, a small piece of him goes out with it, and he does not feel it go.",
+            decisions: [
+                {
+                    text: "Watch.",
+                    customActionText: "Years pass in a breath. He kneels lower each time. He laughs when there is nothing to laugh at.",
+                    outcomes: toStage("truth")
+                },
+                {
+                    text: "Look away.",
+                    customActionText: "It does not matter. The vision plays on behind your eyes.",
+                    outcomes: toStage("truth")
+                }
+            ]
+        },
+
+        truth: {
+            displayText: "The Curse",
+            image: { sheet: "encounter_mysterious_altar", col: 1, row: 1 },
+            text: "There was never a plague, and the stone was never the cause. It only made the cost come due faster. Magic is the curse. It has been taking a little from everyone who used it, for as long as there has been magic to use, and the whole kingdom used it every day.",
+            decisions: [
+                {
+                    text: "Think of the madmen.",
+                    customActionText: "Every one of them was a healer, a scholar, a guard with an enchanted blade. They did not go mad overnight. They were being spent.",
+                    outcomes: toStage("you")
+                },
+                {
+                    text: "Think of the road.",
+                    customActionText: "The prisoners laughed like the madmen did. You did not understand why. Now you do.",
+                    outcomes: toStage("you")
+                }
+            ]
+        },
+
+        you: {
+            displayText: "What You Carry",
+            text: "You have used it too, {name}. Every time you were hurt and reached for something to mend you. Every spark, every ward, every ember at your fingertips. It has taken a little each time, the same as it takes from everyone. You cannot tell how much.",
+            decisions: [
+                {
+                    text: "Ask how much is left.",
+                    customActionText: "The stone is silent. Only the iron answers, warm against your wrists.",
+                    outcomes: toStage("iron")
+                },
+                {
+                    text: "Close your hands.",
+                    customActionText: "You close your fists around nothing, and wonder what you will do without it.",
                     outcomes: toStage("iron")
                 }
             ]
@@ -75,7 +133,7 @@ export const actTwo = {
             effect: "glow_red",
             sfx: "cinematicBoom",
             ambience: "none",
-            text: "The ground shudders once. Far above, where you cannot see it, the moon turns red. Every cursed thing in the world raises its head at the same moment. They know who you are.",
+            text: "The ground shudders once. Far above, where you cannot see it, the moon turns red. Every cursed thing in the world raises its head at the same moment. They know what you carry.",
             decisions: [
                 {
                     text: "Climb toward the light.",
