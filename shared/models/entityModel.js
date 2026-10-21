@@ -127,15 +127,15 @@ export class EntityModel {
     }
 
     get hp() { return this.state.stats.hp; }
-    set hp(val) { this.state.stats.hp = Math.max(0, Math.min(val, this.maxHp)); }
+    set hp(val) { this.state.stats.hp = Math.max(0, Math.min(Math.round(val), this.maxHp)); }   // whole numbers only
     get maxHp() { return this.calculatedStats.maxHp; }
 
     get stamina() { return this.state.stats.stamina; }
-    set stamina(val) { this.state.stats.stamina = Math.max(0, Math.min(val, this.maxStamina)); }
+    set stamina(val) { this.state.stats.stamina = Math.max(0, Math.min(Math.round(val), this.maxStamina)); }   // whole numbers only
     get maxStamina() { return this.calculatedStats.maxStamina; }
 
     get insight() { return this.state.stats.insight; }
-    set insight(val) { this.state.stats.insight = Math.max(0, Math.min(val, this.maxInsight)); }
+    set insight(val) { this.state.stats.insight = Math.max(0, Math.min(Math.round(val), this.maxInsight)); }   // whole numbers only
     get maxInsight() { return this.calculatedStats.maxInsight; }
 
     addTrait(traitId) {

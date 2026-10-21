@@ -236,7 +236,10 @@ export class MapRenderer {
         return pad;
     }
     drawEntity(entity, camera, interpolationFactor = 1) {
-        const sprite = this.loader.get(gameState.party.members[0].spriteOverworld);
+        // The party leader walks the map. A recruited creature has no walking sheet (the snow leopard and wolf point at a sheet that does not
+        // exist), so if the leader is one, the first member who does have a sheet is drawn instead of the player vanishing.
+        const walker = gameState.party.members.find(m => this.loader.get(m.spriteOverworld));
+        const sprite = walker ? this.loader.get(walker.spriteOverworld) : null;
         if (!sprite) return;
         const { TILE_SIZE, GAME_SCALE } = this.config;
         const scale = GAME_SCALE * this.resScale;
@@ -295,4 +298,4 @@ export class MapRenderer {
     isInBounds(col, row, bounds) {
         return col >= bounds.objStartCol && col <= bounds.objEndCol && row >= bounds.objStartRow && row <= bounds.objEndRow;
     }
-}
+}

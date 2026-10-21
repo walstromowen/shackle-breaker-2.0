@@ -875,7 +875,7 @@ export const ItemDefinitions = {
     name: "Soft Wood",
     type: "material",
     description: "A piece of soft, easily workable wood.",
-    value: 25,
+    value: 5,
     icon: { col: 0, row: 1 },
     stackable: true,
     maxStack: 99
@@ -885,7 +885,7 @@ export const ItemDefinitions = {
     name: "Hard Wood",
     type: "material",
     description: "Dense, durable wood ideal for tool handles and weapons.",
-    value: 50,
+    value: 10,
     icon: { col: 1, row: 1 },
     stackable: true,
     maxStack: 99
@@ -895,7 +895,7 @@ export const ItemDefinitions = {
     name: "Stone",
     type: "material",
     description: "A rough stone.",
-    value: 10,
+    value: 3,
     icon: { col: 5, row: 2 },
     stackable: true,
     maxStack: 99
@@ -905,7 +905,7 @@ export const ItemDefinitions = {
     name: "Flint",
     type: "material",
     description: "A sharp, sparking stone.",
-    value: 20,
+    value: 5,
     icon: { col: 2, row: 1 },
     stackable: true,
     maxStack: 99
@@ -915,7 +915,7 @@ export const ItemDefinitions = {
     name: "Bone",
     type: "material",
     description: "A sturdy, bleached bone.",
-    value: 15,
+    value: 4,
     icon: { col: 2, row: 2 },
     stackable: true,
     maxStack: 99
@@ -925,7 +925,7 @@ export const ItemDefinitions = {
     name: "Sand",
     type: "material",
     description: "Fine, gritty sand.",
-    value: 5,
+    value: 2,
     icon: { col: 1, row: 2 },
     stackable: true,
     maxStack: 99
@@ -935,7 +935,7 @@ export const ItemDefinitions = {
     name: "Leather",
     type: "material",
     description: "Hide treated with tannin.",
-    value: 50,
+    value: 12,
     icon: { col: 3, row: 0 },
     stackable: true,
     maxStack: 99
@@ -945,7 +945,7 @@ export const ItemDefinitions = {
     name: "Fur",
     type: "material",
     description: "A warm, thick animal pelt.",
-    value: 30,
+    value: 7,
     icon: { col: 3, row: 1 },
     stackable: true,
     maxStack: 99
@@ -955,7 +955,7 @@ export const ItemDefinitions = {
     name: "Cotton",
     type: "material",
     description: "Fluffy raw cotton, ready to be spun.",
-    value: 20,
+    value: 5,
     icon: { col: 4, row: 0 },
     stackable: true,
     maxStack: 99
@@ -965,7 +965,7 @@ export const ItemDefinitions = {
     name: "Linen",
     type: "material",
     description: "Strong cloth woven from refined fibers.",
-    value: 40,
+    value: 10,
     icon: { col: 4, row: 1 },
     stackable: true,
     maxStack: 99
@@ -975,7 +975,7 @@ export const ItemDefinitions = {
     name: "Wheat",
     type: "material",
     description: "A golden sheaf of harvested wheat.",
-    value: 15,
+    value: 4,
     icon: { col: 3, row: 2 },
     stackable: true,
     maxStack: 99
@@ -985,7 +985,7 @@ export const ItemDefinitions = {
     name: "Salt",
     type: "material",
     description: "Coarse rock salt, useful for preserving and alchemy.",
-    value: 25,
+    value: 6,
     icon: { col: 4, row: 2 },
     stackable: true,
     maxStack: 99
@@ -995,7 +995,7 @@ export const ItemDefinitions = {
     name: "Coal",
     type: "material",
     description: "A combustible black rock used for forging.",
-    value: 30,
+    value: 7,
     icon: { col: 2, row: 0 },
     stackable: true,
     maxStack: 99
@@ -1005,7 +1005,7 @@ export const ItemDefinitions = {
     name: "Iron Ore",
     type: "material",
     description: "Unrefined iron. Needs to be smelted.",
-    value: 40,
+    value: 12,
     icon: { col: 5, row: 0 },
     stackable: true,
     maxStack: 99
@@ -1015,7 +1015,7 @@ export const ItemDefinitions = {
     name: "Iron Ingot",
     type: "material",
     description: "A solid ingot of iron.",
-    value: 75,
+    value: 30,
     icon: { col: 5, row: 1 },
     stackable: true,
     maxStack: 99
@@ -1025,7 +1025,7 @@ export const ItemDefinitions = {
     name: "Copper Ore",
     type: "material",
     description: "Unrefined copper. Highly conductive.",
-    value: 25,
+    value: 6,
     icon: { col: 6, row: 0 },
     stackable: true,
     maxStack: 99
@@ -1035,7 +1035,7 @@ export const ItemDefinitions = {
     name: "Tin Ore",
     type: "material",
     description: "Unrefined tin. Soft and silvery.",
-    value: 20,
+    value: 6,
     icon: { col: 7, row: 0 },            // was (3,2), the wheat sheaf
     stackable: true,
     maxStack: 99
@@ -1045,7 +1045,7 @@ export const ItemDefinitions = {
     name: "Copper Ingot",
     type: "material",
     description: "A solid ingot of refined copper. Highly conductive.",
-    value: 60,
+    value: 16,
     icon: { col: 6, row: 1 },            // was (5,2), the grey stone
     stackable: true,
     maxStack: 99
@@ -1055,7 +1055,7 @@ export const ItemDefinitions = {
     name: "Bronze Ingot",
     type: "material",
     description: "A heavy, golden-colored alloy ingot.",
-    value: 125,
+    value: 32,
     icon: { col: 9, row: 1 },            // was (6,2), an empty cell. The sprite was also cut across cells 9/10: fixed in materials.png
     stackable: true,
     maxStack: 99
@@ -1076,7 +1076,7 @@ export const ItemDefinitions = {
     name: "Plant Fibers",
     type: "material",
     description: "Tough fibers extracted from wild stalks like stinging nettle, perfect for hand-twisting into basic reverse-wrap cordage.",
-    value: 10,
+    value: 3,
     icon: { col: 0, row: 3 },
     stackable: true,
     maxStack: 99
@@ -1088,7 +1088,7 @@ export const ItemDefinitions = {
     name: "Healing Herb",
     type: "consumable",
     description: "A simple herb that can be used to treat minor wounds.",
-    value: 50,
+    value: 6,
     icon: { col: 0, row: 0 },
     useAbility: "minor_heal",
     usability: ['overworld', 'battle'],
@@ -1100,7 +1100,7 @@ export const ItemDefinitions = {
     name: "Invigorating Herb",
     type: "consumable",
     description: "A refreshing herb that can be used to restore stamina.",
-    value: 75,
+    value: 6,
     icon: { col: 1, row: 0 },
     useAbility: "minor_recover",
     usability: ['overworld', 'battle'],
@@ -1112,7 +1112,7 @@ export const ItemDefinitions = {
     name: "Illuminating Herb",
     type: "consumable",
     description: "A refreshing herb that can be used to restore insight.",
-    value: 75,
+    value: 6,
     icon: { col: 2, row: 0 },
     useAbility: "minor_channel",
     usability: ['overworld', 'battle'],
@@ -1133,7 +1133,7 @@ export const ItemDefinitions = {
     name: "Healing Tonic",
     type: "consumable",
     description: "A concentrated, alchemically distilled brew that restores a moderate amount of health much faster than raw herbs.",
-    value: 150,
+    value: 60,
     icon: { col: 0, row: 1 },
     useAbility: "moderate_heal",
     usability: ['overworld', 'battle'],
@@ -1145,7 +1145,7 @@ export const ItemDefinitions = {
     name: "Invigorating Tonic",
     type: "consumable",
     description: "A potent draft that forcefully stimulates the heart, rapidly replenishing stamina for sustained exertion.",
-    value: 200,
+    value: 60,
     icon: { col: 1, row: 1 },
     useAbility: "moderate_recover",
     usability: ['overworld', 'battle'],
@@ -1157,9 +1157,47 @@ export const ItemDefinitions = {
     name: "Illuminating Tonic",
     type: "consumable",
     description: "A glowing elixir that abruptly sharpens the senses and clears the mind, restoring a moderate amount of insight.",
-    value: 200,
+    value: 60,
     icon: { col: 2, row: 1 },
     useAbility: "moderate_channel",
+    usability: ['overworld', 'battle'],
+    stackable: true,
+    maxStack: 20
+  },
+
+  // --- Status cures: each removes ONE status from the character it is used on (and is only spent if there was something to cure). Icons: consumables sheet cells (7,1) (8,1) (9,1).
+  "bandage": {
+    id: "bandage",
+    name: "Bandage",
+    type: "consumable",
+    description: "A clean roll of cloth pressed hard over a wound. Stops bleeding.",
+    value: 8,
+    icon: { col: 7, row: 1 },
+    useAbility: "item_bandage",
+    usability: ['overworld', 'battle'],
+    stackable: true,
+    maxStack: 20
+  },
+  "antidote": {
+    id: "antidote",
+    name: "Antidote",
+    type: "consumable",
+    description: "A bitter golden draught that drives venom out of the blood. Cures poison.",
+    value: 12,
+    icon: { col: 5, row: 1 },
+    useAbility: "item_antidote",
+    usability: ['overworld', 'battle'],
+    stackable: true,
+    maxStack: 20
+  },
+  "aloe": {
+    id: "aloe",
+    name: "Aloe",
+    type: "consumable",
+    description: "A fleshy leaf full of cool gel that soothes scorched skin. Cures burns. Grows wild in the desert.",
+    value: 6,
+    icon: { col: 8, row: 1 },
+    useAbility: "item_aloe",
     usability: ['overworld', 'battle'],
     stackable: true,
     maxStack: 20

@@ -603,7 +603,6 @@ export const aftermath = {
             displayText: "Betrayal!",
             tone: "blood",
             effect: "blood",
-            sfx: "unsheathSwordSfx",
             ambience: "none",
             ambienceFade: 0.4,
             image: { col: 1, row: 3 },

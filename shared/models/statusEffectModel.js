@@ -1,3 +1,13 @@
+// Damage (and healing) over time grows with the LEVEL of whoever inflicted it, so a poison from a level-10 archer or boss stays dangerous as the
+// fights get bigger, instead of staying at the same 5 HP for the whole game. A status with no known inflictor (a trap, the weather, an encounter)
+// scales with the level of whoever it is on. +10% per level above 1; a status's own `value` is the level-1 amount.
+export const STATUS_POWER_PER_LEVEL = 0.1;
+
+const levelOf = (who) => {
+    const l = who?.level ?? who?.originalEntity?.level;
+    return Number.isFinite(l) && l > 1 ? l : 1;
+};
+
 export class StatusEffectModel {
     constructor(definition, initialCharges = null, inflictor = null) {
         this.def = definition;
@@ -73,7 +83,16 @@ export class StatusEffectModel {
                 
                 let amount = 0;
                 if (effect.value !== undefined) {
-                    amount = effect.value * this.stacks;
+                    // flat per-stack amount, scaled by the inflictor's level; always a whole number, and never less than 1 (so a tick is never lost)
+                    const scale = 1 + STATUS_POWER_PER_LEVEL * (levelOf(this.inflictor || target) - 1);
+                    const raw = effect.value * this.stacks * scale;
+                    amount = raw === 0 ? 0 : Math.sign(raw) * Math.max(1, Math.round(Math.abs(raw)));
+                } else if (effect.percentCurrent !== undefined) {
+                    // NEW: `percentCurrent: 0.5` -- a share of what the holder has RIGHT NOW of the resource `modify` names (at least 1, never more than they have).
+                    // Each extra stack compounds the share (two stacks of 50% take 75%, three take 87.5%), so it can never take everything in one go.
+                    const now = Math.max(0, target[effect.modify] || 0);
+                    const share = 1 - Math.pow(1 - effect.percentCurrent, this.stacks);
+                    amount = now > 0 ? -Math.min(now, Math.max(1, Math.floor(now * share))) : 0;
                 } else if (effect.percent !== undefined && eventData && eventData.damage) {
                     amount = -Math.floor(eventData.damage * effect.percent);
                 } else if (effect.percentMaxHp !== undefined) {

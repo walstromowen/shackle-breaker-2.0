@@ -19,11 +19,12 @@ export const StatusEffectDefinitions = {
         defaultCharges: 4,
         maxStacks: 3,            // every new cut makes it worse (value, drain and the penalties below all scale with the stacks)
         persistAfterCombat: true,
-        /* Bleeding is a real wound: it costs blood (HP) and strength (stamina) at the end of every turn, keeps the body from recovering
-           between rounds, and a body that is already cut is easier to cut again. At 3 stacks it is the most dangerous damage-over-time. */
+        /* Bleeding is a real wound: at the end of every turn it takes HALF of the HP and HALF of the stamina the victim has left at that moment
+           (percentCurrent), so it hurts the healthy most and tapers off as they weaken, keeps the body from recovering between rounds, and a body
+           that is already cut is easier to cut again. More stacks take a larger share (50% / 75% / 87.5%). Flat poison and burn stay flat. */
         effects: [
-            { trigger: 'ON_TURN_END', modify: 'hp', value: -5, damageType: 'slash', battleMessage: "{target} bleeds for {amount} damage!" },
-            { trigger: 'ON_TURN_END', modify: 'stamina', value: -5, damageType: 'slash', battleMessage: "{target} loses {amount} stamina from bleeding!" }
+            { trigger: 'ON_TURN_END', modify: 'hp', percentCurrent: 0.5, damageType: 'slash', battleMessage: "{target} bleeds for {amount} damage!" },
+            { trigger: 'ON_TURN_END', modify: 'stamina', percentCurrent: 0.5, damageType: 'slash', battleMessage: "{target} loses {amount} stamina from bleeding!" }
         ],
         modifiers: [
             { type: 'percent', target: 'hpRecovery', value: -0.33 },

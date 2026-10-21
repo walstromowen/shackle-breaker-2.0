@@ -533,6 +533,40 @@ export const LootTableDefinitions = {
             { id: "small_iron_key", dropRate: 0.02 },
         ]
     },
+    // The madman's own table (mad_man_drops is shared with the merchant, the legionary and others): the same drops plus a very rare piece of leather armor (1% each)
+    "madman_drops": {
+        type: "independent",
+        items: [
+            { id: "healing_herb", dropRate: 0.1, min: 1, max: 2 },
+            { id: "dagger", dropRate: 0.10 },
+            { id: "healing_herb", dropRate: 0.08 },
+            { id: "plant_fibers", dropRate: 0.08, min: 1, max: 2 },
+            { id: "throwing_knife", dropRate: 0.05 },
+            { id: "small_iron_key", dropRate: 0.02 },
+            { id: "leather_helmet", dropRate: 0.01 },
+            { id: "leather_armor", dropRate: 0.01 },
+            { id: "leather_bracers", dropRate: 0.01 },
+            { id: "leather_leggings", dropRate: 0.01 },
+            { id: "leather_boots", dropRate: 0.01 },
+        ]
+    },
+    // The rotter's own table: the same drops plus a very rare piece of iron armor (0.5% each)
+    "rotter_drops": {
+        type: "independent",
+        items: [
+            { id: "healing_herb", dropRate: 0.1, min: 1, max: 2 },
+            { id: "dagger", dropRate: 0.10 },
+            { id: "healing_herb", dropRate: 0.08 },
+            { id: "plant_fibers", dropRate: 0.08, min: 1, max: 2 },
+            { id: "throwing_knife", dropRate: 0.05 },
+            { id: "small_iron_key", dropRate: 0.02 },
+            { id: "iron_helmet", dropRate: 0.005 },
+            { id: "iron_armor", dropRate: 0.005 },
+            { id: "iron_gauntlets", dropRate: 0.005 },
+            { id: "iron_greaves", dropRate: 0.005 },
+            { id: "iron_boots", dropRate: 0.005 },
+        ]
+    },
     "magic_addict_drops": {
         type: "independent",
         items: [
@@ -542,6 +576,12 @@ export const LootTableDefinitions = {
             { id: "healing_herb", dropRate: 0.05 },
             { id: "illuminating_tonic", dropRate: 0.04 },
             { id: "small_iron_key", dropRate: 0.02 },
+            // a very rare piece of cloth armor (1% each)
+            { id: "cloth_hood", dropRate: 0.01 },
+            { id: "cloth_robe", dropRate: 0.01 },
+            { id: "cloth_gloves", dropRate: 0.01 },
+            { id: "cloth_pants", dropRate: 0.01 },
+            { id: "cloth_shoes", dropRate: 0.01 },
         ]
     },
     "hollow_harvester_drops": {

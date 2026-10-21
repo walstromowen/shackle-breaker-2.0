@@ -506,16 +506,19 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake('hit', 'hit+0.13', 14), flash: flash('hit', 'hit+0.08', 'brightness(200%)') }
     }),
-    "loose_arrow": anim(1.2, {
+    // The arrow is the ability's own icon, turned to fly along its path (the icon art points down-right = facing 45).
+    "loose_arrow": anim(1.0, {
+        hit: 0.3,
         audio: [
             sfx(0.05, 'bowReleaseSfx', { volume: 1 }),
-            sfx(0.25, 'arrowImpactSfx', { volume: 1 })
+            sfx('hit', 'arrowImpactSfx', { volume: 1 })
         ],
         actor: lunge(0, 0.1, -12),
         vfx: [
-            travel(0.1, 'arrowAnimation', { life: 0.15, scale: 1.2, blend: 'normal' })
+            travel(0.1, 'looseArrowAnimation', { life: 0.2, scale: 1.0, blend: 'source-over', aim: true, facing: 45, fadeOut: false }),
+            spawn('hit', 'looseArrowImpactAnimation', { life: 0.32, frames: 4, scale: 1.1, blend: 'source-over' })
         ],
-        target: { shake: shake(0.25, 0.45, 15), flash: flash(0.25, 0.35, 'brightness(180%) sepia(30%)') }
+        target: { shake: shake('hit', 'hit+0.2', 15), flash: flash('hit', 'hit+0.1', 'brightness(180%) sepia(30%)') }
     }),
     "magic_missile": anim(0.9, {
         hit: 0.4,
@@ -658,18 +661,23 @@ export const BattleAnimationDefinitions = {
         ],
         target: { flash: flash(0, 0.75, 'brightness(110%) saturate(160%) hue-rotate(100deg)') }
     }),
-    "poisoned_arrow": anim(1.8, {
+    // Cue times in an animation are a fraction of its duration (the renderer compares them with timer / duration), so the
+    // bow animations that are not exactly 1s long convert from seconds with t(): the arrow's flight is in real seconds.
+    "poisoned_arrow": anim(1.8, (() => { const t = (sec) => Math.round(sec / 1.8 * 10000) / 10000; return {
         audio: [
-            sfx(0.05, 'bowReleaseSfx', { volume: 1, pitch: 0.9 }),
-            sfx(0.3, 'poisonSplashSfx', { volume: 1 })
+            sfx(t(0.05), 'bowReleaseSfx', { volume: 1, pitch: 0.9 }),
+            sfx(t(0.32), 'arrowImpactSfx', { volume: 0.9 }),
+            sfx(t(0.35), 'poisonSplashSfx', { volume: 1 })
         ],
-        actor: lunge(0, 0.1, -14),
+        actor: lunge(0, t(0.1), -14),
         vfx: [
-            travel(0.1, 'poisonArrowAnimation', { life: 0.2, scale: 1.2, blend: 'normal' }),
-            spawn(0.3, 'poisonAnimation', { life: 0.6, move: 'expand_and_fade', scale: 1.5, blend: 'multiply' })
+            travel(t(0.1), 'poisonedArrowAnimation', { life: 0.22, scale: 1.0, blend: 'source-over', aim: true, facing: 45, fadeOut: false }),
+            spawn(t(0.32), 'poisonedArrowImpactAnimation', { life: 0.34, frames: 4, scale: 1.1, blend: 'source-over' }),
+            spawn(t(0.37), 'poisonAnimation', { life: 0.6, move: 'expand_and_fade', scale: 1.5, blend: 'multiply' }),
+            burst(t(0.32), { count: 7, color: '#7ddc3a', scale: 0.7, minSpeed: 100, maxSpeed: 240, gravity: 300 })
         ],
-        target: { shake: shake(0.3, 0.6, 20), flash: flash(0.3, 1.4, 'brightness(120%) saturate(200%) hue-rotate(100deg)') }
-    }),
+        target: { shake: shake(t(0.32), t(0.62), 20), flash: flash(t(0.32), t(1.42), 'brightness(120%) saturate(200%) hue-rotate(100deg)') }
+    }; })()),
     "punch": anim(1, {
         audio: [sfx(0.1, 'punchSfx', { volume: 1 })],
         actor: lunge(0, 0.15, 80),
@@ -687,21 +695,21 @@ export const BattleAnimationDefinitions = {
         ],
         target: { flash: flash(0.2, 1.2, 'brightness(200%) sepia(30%) hue-rotate(180deg) saturate(150%) drop-shadow(0 0 10px white)') }
     }),
-    // Rapid shot: the arrow is trailed by two faint copies.
-    "quick_draw": anim(0.8, {
-        hit: 0.15,
+    // Rapid shot: a fast arrow (the ability's icon already carries its speed lines) trailed by two faint copies.
+    "quick_draw": anim(0.8, (() => { const t = (sec) => Math.round(sec / 0.8 * 10000) / 10000; const arrow = { life: 0.15, scale: 1.0, blend: 'source-over', aim: true, facing: 45, fadeOut: false }; return {
         audio: [
             sfx(0, 'bowReleaseSfx', { volume: 1, pitch: 1.2 }),
-            sfx('hit', 'arrowImpactSfx', { volume: 0.9 })
+            sfx(t(0.2), 'arrowImpactSfx', { volume: 0.9, pitch: 1.1 })
         ],
-        actor: lunge(0, 0.05, -8),
+        actor: lunge(0, t(0.05), -8),
         vfx: [
-            travel(0.05, 'arrowAnimation', { life: 0.1, scale: 1, blend: 'normal' }),
-            travel(0.065, 'arrowAnimation', { life: 0.1, scale: 1, alpha: 0.4, filter: 'brightness(180%)' }),
-            travel(0.08, 'arrowAnimation', { life: 0.1, scale: 1, alpha: 0.2, filter: 'brightness(220%)' })
+            travel(t(0.05), 'quickDrawAnimation', arrow),
+            travel(t(0.065), 'quickDrawAnimation', { ...arrow, alpha: 0.35 }),
+            travel(t(0.08), 'quickDrawAnimation', { ...arrow, alpha: 0.18 }),
+            spawn(t(0.2), 'quickDrawImpactAnimation', { life: 0.26, frames: 4, scale: 1.0, blend: 'source-over' })
         ],
-        target: { shake: shake('hit', 'hit+0.15', 12), flash: flash('hit', 'hit+0.1', 'brightness(150%)') }
-    }),
+        target: { shake: shake(t(0.2), t(0.35), 12), flash: flash(t(0.2), t(0.3), 'brightness(150%)') }
+    }; })()),
     // Not used by any ability (kept in case another file references it).
     "quick_shock": anim(1, {
         audio: [sfx(0.05, 'shockZapSfx', { volume: 1, pitch: 1.4 })],
@@ -875,20 +883,26 @@ export const BattleAnimationDefinitions = {
     "trait_activate": anim(1.2, {
         target: { shake: shake(0, 0.3, 10), flash: flash(0, 0.4, 'brightness(250%) saturate(150%)') }
     }),
-    "triple_shot": anim(0.6, {
-        hit: 0.2,
+    // One volley: the icon shows three arrows side by side, so three arrows fly together and three punctures land a beat apart.
+    "triple_shot": anim(0.9, (() => { const t = (sec) => Math.round(sec / 0.9 * 10000) / 10000; return {
         audio: [
-            sfx(0.05, 'bowReleaseSfx', { volume: 0.9, pitch: 1.1 }),
-            sfx('hit', 'arrowImpactSfx', { volume: 0.9 })
+            sfx(t(0.05), 'bowReleaseSfx', { volume: 0.9, pitch: 1.1 }),
+            sfx(t(0.28), 'arrowImpactSfx', { volume: 0.9 }),
+            sfx(t(0.36), 'arrowImpactSfx', { volume: 0.8, pitch: 1.1 }),
+            sfx(t(0.44), 'arrowImpactSfx', { volume: 0.8, pitch: 0.95 })
         ],
-        actor: lunge(0, 0.08, -10),
+        actor: lunge(0, t(0.08), -10),
         vfx: [
-            travel(0.08, 'arrowAnimation', { life: 0.12, scale: 1.1, blend: 'normal', move: 'arc', arc: -18, filter: tint('fire', { bright: 130, sat: 200 }) }),
-            spawn('hit', 'impactAnimation', { life: 0.15, scale: 0.6, filter: tint('fire') }),
-            burst('hit', { count: 5, color: '#ff9a3c', scale: 0.7, minSpeed: 120, maxSpeed: 260 })
+            travel(t(0.08), 'tripleShotAnimation', { life: 0.2, scale: 1.0, blend: 'source-over', aim: true, facing: 45, fadeOut: false }),
+            spawn(t(0.28), 'tripleShotImpactAnimation', { life: 0.4, frames: 4, scale: 1.1, blend: 'source-over' }),
+            burst(t(0.28), { count: 5, color: '#ff9a3c', scale: 0.7, minSpeed: 120, maxSpeed: 260 }),
+            burst(t(0.36), { count: 4, color: '#ffd27a', scale: 0.6, minSpeed: 100, maxSpeed: 220 })
         ],
-        target: { shake: shake('hit', 'hit+0.15', 12), flash: flash('hit', 'hit+0.1', 'brightness(160%)') }
-    }),
+        target: {
+            shake: [shake(t(0.28), t(0.35), 12), shake(t(0.36), t(0.43), 12), shake(t(0.44), t(0.54), 14)],
+            flash: [flash(t(0.28), t(0.34), 'brightness(160%)'), flash(t(0.36), t(0.42), 'brightness(160%)'), flash(t(0.44), t(0.52), 'brightness(170%)')]
+        }
+    }; })()),
     "uppercut": anim(1.4, {
         audio: [sfx(0.2, 'punchSfx', { volume: 1, pitch: 0.8 })],
         actor: lunge(0, 0.2, 90),

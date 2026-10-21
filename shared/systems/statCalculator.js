@@ -11,8 +11,12 @@ const HP_PER_VIGOR_SCALE = 0.5;
 // (a point of Dex gives +2 max stamina, so 0.3 recovery keeps recovery at roughly 13-15% of the pool per round at every level).
 // It used to be 1 per point, which refilled about half the pool every round and made ability costs meaningless.
 // Applies to everyone (party, enemies, saved characters); gear and trait recovery bonuses are flat and added on top.
-const STAMINA_RECOVERY_PER_DEX = 0.3;
-const INSIGHT_RECOVERY_PER_ATT = 0.3;
+// 0.35 (was 0.3): a little more sustain in the early fights, where waiting for stamina slowed combat down. It is added up before rounding (the
+// old code rounded each point's share on its own), so the whole sum steps up about every third point of Dexterity / Attunement.
+const STAMINA_RECOVERY_PER_DEX = 0.35;
+const INSIGHT_RECOVERY_PER_ATT = 0.35;
+const whole = (n) => Math.round(n);
+const hundredths = (n) => Math.round(n * 100) / 100;
 
 export class StatCalculator { 
     static get DAMAGE_TYPES() { 
@@ -120,7 +124,7 @@ export class StatCalculator {
         finalStats.attack.slash  += finalStats.strength; 
         finalStats.attack.pierce += finalStats.strength; 
         breakdown.resources.derived.stamina = Math.floor(finalStats.dexterity * mults.staminaPerDex); 
-        finalStats.staminaRecovery += Math.round(finalStats.dexterity * STAMINA_RECOVERY_PER_DEX); 
+        finalStats.staminaRecovery += finalStats.dexterity * STAMINA_RECOVERY_PER_DEX; 
         
         // Magical Pillar 
         const physicalTypes = ["blunt", "slash", "pierce"]; 
@@ -128,7 +132,7 @@ export class StatCalculator {
             if (!physicalTypes.includes(t)) { finalStats.attack[t] += finalStats.intelligence; } 
         }); 
         breakdown.resources.derived.insight = Math.floor(finalStats.attunement * mults.insightPerAtt); 
-        finalStats.insightRecovery += Math.round(finalStats.attunement * INSIGHT_RECOVERY_PER_ATT); 
+        finalStats.insightRecovery += finalStats.attunement * INSIGHT_RECOVERY_PER_ATT; 
         
         // --- STEP 4: FLAT BONUSES & TRAITS --- 
         const applyFlat = (source) => { 
@@ -196,6 +200,15 @@ export class StatCalculator {
         finalStats.maxHp = breakdown.resources.base.hp + breakdown.resources.derived.hp + breakdown.resources.flat.hp; 
         finalStats.maxStamina = breakdown.resources.base.stamina + breakdown.resources.derived.stamina + breakdown.resources.flat.stamina; 
         finalStats.maxInsight = breakdown.resources.base.insight + breakdown.resources.derived.insight + breakdown.resources.flat.insight; 
+        // Whole numbers for every counted stat, hundredths for the rates (crit chance, crit multiplier, resistances): percent statuses and per-point
+        // maths used to leave things like 4.9 stamina recovery or 12.4 defense on a character.
+        for (const k of ['vigor', 'strength', 'dexterity', 'intelligence', 'attunement', 'speed', 'accuracy', 'evasion', 'corruption', 'maxHp', 'maxStamina', 'maxInsight', 'hpRecovery', 'staminaRecovery', 'insightRecovery']) {
+            if (typeof finalStats[k] === 'number') finalStats[k] = whole(finalStats[k]);
+        }
+        for (const k of ['attack', 'defense']) for (const t of Object.keys(finalStats[k] || {})) finalStats[k][t] = whole(finalStats[k][t]);
+        for (const t of Object.keys(finalStats.resistance || {})) finalStats.resistance[t] = hundredths(finalStats.resistance[t]);
+        finalStats.critChance = hundredths(finalStats.critChance);
+        finalStats.critMultiplier = hundredths(finalStats.critMultiplier);
         finalStats.evasion = Math.max(1, finalStats.evasion); 
         finalStats.accuracy = Math.max(1, finalStats.accuracy); 
         
@@ -230,4 +243,4 @@ export class StatCalculator {
             default: return false; 
         } 
     } 
-}
+}

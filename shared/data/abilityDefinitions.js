@@ -432,7 +432,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 12 },
         accuracy: 0.95,
-        animationId: "loose_arrow",
+        animationId: "poisoned_arrow",
         effects: [{ type: "damage", damageType: "pierce", power: 1.0 }],
         statusEffects: [{ id: "poison", chance: 0.50, duration: 3 }]
     },
@@ -860,6 +860,48 @@ export const AbilityDefinitions = {
             { type: "recover", resource: "hp", calculation: "percent", power: 0.1 }
         ]
     },
+    "item_bandage": {
+        id: "item_bandage",
+        name: "Bandage",
+        description: "Bind a wound and stop it bleeding.",
+        range: "ranged",
+        tags: ["support", "healing", "item"],
+        battleMessage: "{user} binds the wound of {target} with a bandage.",
+        icon: { col: 0, row: 10 },
+        animationId: "purify",
+        targeting: { scope: "ally", select: "single" },
+        speedModifier: 1.0,
+        accuracy: 1.0,
+        effects: [{ type: "dispel", tags: ["bleed"] }]
+    },
+    "item_antidote": {
+        id: "item_antidote",
+        name: "Antidote",
+        description: "Drink an antidote to cure poison.",
+        range: "ranged",
+        tags: ["support", "healing", "item"],
+        battleMessage: "{user} gives {target} an antidote.",
+        icon: { col: 0, row: 10 },
+        animationId: "purify",
+        targeting: { scope: "ally", select: "single" },
+        speedModifier: 1.0,
+        accuracy: 1.0,
+        effects: [{ type: "dispel", tags: ["poison"] }]
+    },
+    "item_aloe": {
+        id: "item_aloe",
+        name: "Aloe",
+        description: "Spread cooling aloe gel over a burn.",
+        range: "ranged",
+        tags: ["support", "healing", "item"],
+        battleMessage: "{user} soothes the burns of {target} with aloe.",
+        icon: { col: 0, row: 10 },
+        animationId: "purify",
+        targeting: { scope: "ally", select: "single" },
+        speedModifier: 1.0,
+        accuracy: 1.0,
+        effects: [{ type: "dispel", tags: ["burn"] }]
+    },
     "rest": {
         id: "rest",
         name: "Rest",
@@ -1225,4 +1267,4 @@ export const AbilityDefinitions = {
             message: "You spread out the bedroll and settle in for the night."
         }]
     },
-};
+};

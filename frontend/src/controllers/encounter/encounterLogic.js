@@ -9,6 +9,7 @@ import { LootTableFactory } from "../../../../shared/systems/factories/lootTable
 import { SpawnTableFactory } from "../../../../shared/systems/factories/spawnTableFactory.js";
 import { ItemDefinitions } from '../../../../shared/data/itemDefinitions.js';
 import { ActSystem } from '../../../../shared/systems/actSystem.js';
+import { EntityFactory } from '../../../../shared/systems/factories/entityFactory.js';
 
 export class EncounterLogic {
     static checkConditions(decision, context = {}) {
@@ -390,6 +391,21 @@ export class EncounterLogic {
                         // `afterVictory: { encounterId }` plays that encounter when the fight is won, before the overworld (the end of Darius)
                         afterVictory: payload.afterVictory || null
                     });
+                    break;
+                }
+                case "RECRUIT_CHARACTER": {
+                    // A creature or person who joins the party: { entityId, overrides }. (This handler went missing in the encounter refactor, so
+                    // every recruit -- the mutt, the snow leopard, the legionary, the madman -- silently did nothing.) The newcomer arrives rested,
+                    // loses the enemy-only level HP bonus, and the player is told; a full party (6) leaves them behind.
+                    const recruit = PartyManager.addMember(payload.entityId, payload.overrides || {});
+                    if (recruit) {
+                        EntityFactory.removeLevelEdge(recruit);
+                        recruit.hp = recruit.maxHp;
+                        recruit.stamina = recruit.maxStamina;
+                        generalMessages.push(`${recruit.name} joined your party!`);
+                    } else {
+                        generalMessages.push(`Your party is full. There is no room for another companion.`);
+                    }
                     break;
                 }
                 case "ADVANCE_TIME":

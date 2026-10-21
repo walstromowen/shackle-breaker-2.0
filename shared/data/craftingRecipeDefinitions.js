@@ -319,7 +319,8 @@ export const craftingRecipeDefinitions = {
     outputItemId: "healing_tonic",
     station: "any",
     materials: {
-      "healing_herb": 5
+      "healing_herb": 3,
+      "bone": 2
     }
   },
   "recipe_invigorating_tonic": {
@@ -327,7 +328,8 @@ export const craftingRecipeDefinitions = {
     outputItemId: "invigorating_tonic",
     station: "any",
     materials: {
-      "invigorating_herb": 5
+      "invigorating_herb": 3,
+      "bone": 2
     }
   },
   "recipe_illuminating_tonic": {
@@ -335,7 +337,26 @@ export const craftingRecipeDefinitions = {
     outputItemId: "illuminating_tonic",
     station: "any",
     materials: {
-      "illuminating_herb": 5
+      "illuminating_herb": 3,
+      "bone": 2
+    }
+  },
+  "recipe_bandage": {
+    id: "recipe_bandage",
+    outputItemId: "bandage",
+    station: "any",
+    materials: {
+      "linen": 1,
+      "plant_fibers": 1
+    }
+  },
+  "recipe_antidote": {
+    id: "recipe_antidote",
+    outputItemId: "antidote",
+    station: "any",
+    materials: {
+      "healing_herb": 2,
+      "salt": 1
     }
   },
   "recipe_kurtus_brew": {

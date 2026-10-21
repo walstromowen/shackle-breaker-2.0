@@ -171,6 +171,7 @@ export const BIOME_DEFINITIONS = {
                 { chance: 0.05, id: 'SMALL_CACTUS_1' },
                 { chance: 0.02, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
                 { chance: 0.258, rangeStart: 0.25, pool: ['BOULDER_1', 'BOULDER_2'] } /* grey boulders, 0.8% of the ground: band [0.25, 0.258), in the free gap before the dunes */,
+                { chance: 0.274, rangeStart: 0.27, id: 'ALOE_PLANT' } /* aloe: 0.4% of the ground (the same as a herb on the plains), its own band [0.27, 0.274), in the free gap between the salt and the dunes. Walk over it to pick it up: it cures burns */,
                 { chance: 0.262, rangeStart: 0.26, id: 'SALT_DEPOSIT' } /* salt: 0.2% of the ground (was 0.5%), its own band [0.26, 0.262), in the free gap before the dunes. Mined with a pickaxe */,
                 { chance: 0.244, rangeStart: 0.24, id: 'BONE_PILE' } /* a pile of bones, 0.4% of the ground: walk over it or interact to pick up a bone. Its own band [0.24, 0.244), in the free gap between the cave mouths and the dunes, so no other rule's share moves */,
                 { chance: 0.36, rangeStart: 0.3, pool: ['SAND_DUNE_1', 'SAND_DUNE_2', 'SAND_DUNE_3'] } /* dunes: 6% of the ground (was 20%, band [0.3, 0.5)); the rest of that band is now empty */,

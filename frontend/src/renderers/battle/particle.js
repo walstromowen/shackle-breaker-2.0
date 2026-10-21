@@ -100,6 +100,11 @@ export class Particle {
       case 'linear':
         this.x = this.lerp(this.startX, this.endX, progress);
         this.y = this.lerp(this.startY, this.endY, progress);
+        // Pointing the sprite along its flight path. rotationOffset (radians) says which way the art faces at rest: an arrow drawn
+        // pointing down-right (45 degrees) needs rotationOffset = -PI/4 to fly true.
+        if (this.config.rotation === 'auto') {
+          this.rotation = Math.atan2(this.endY - this.startY, this.endX - this.startX) + (this.config.rotationOffset || 0);
+        }
         break;
       case 'arc':
         this.x = this.lerp(this.startX, this.endX, progress);
@@ -110,7 +115,7 @@ export class Particle {
           const nextX = this.lerp(this.startX, this.endX, progress + 0.01);
           const nextBaseY = this.lerp(this.startY, this.endY, progress + 0.01);
           const nextY = nextBaseY + (Math.sin((progress + 0.01) * Math.PI) * this.arcHeight);
-          this.rotation = Math.atan2(nextY - this.y, nextX - this.x);
+          this.rotation = Math.atan2(nextY - this.y, nextX - this.x) + (this.config.rotationOffset || 0);
         }
         break;
       case 'spread_and_fade': {

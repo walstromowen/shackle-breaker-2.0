@@ -110,7 +110,7 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 9, maxStamina: 10, speed: 5
         },
         currencyReward: { min: 2, max: 8 },
-        lootTableId: "mad_man_drops",
+        lootTableId: "madman_drops",
         abilities: [...REGULAR_HUMANOID_ABILITIES, "bite", "claw"],
         tags: [...HUMANOID_TEMPLATE.tags],
         traitRewards: []
@@ -185,7 +185,7 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 16, maxStamina: 10, speed: 5
         },
         currencyReward: { min: 2, max: 8 },
-        lootTableId: "mad_man_drops",
+        lootTableId: "rotter_drops",
         abilities: [...REGULAR_HUMANOID_ABILITIES, "claw", "bite"],
         tags: [...HUMANOID_TEMPLATE.tags]
     },

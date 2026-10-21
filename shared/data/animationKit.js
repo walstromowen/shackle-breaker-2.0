@@ -36,7 +36,9 @@
  *      filter      css filter for the sprite (recolour it with tint())
  *      offsetX / offsetY   nudge in px                      drop: [x, y]   start distance for 'diagonal_drop'
  *      arc         arc height in px for move 'arc' (negative = up)       aim: true  turn the sprite to face where it is flying
- *      spin        spin speed in radians/second             fadeOut: false  stay fully visible until it lands
+ *      facing      with aim: which way the art points at rest, in degrees clockwise from right (an arrow drawn pointing
+ *                  down-right is facing: 45)               spin        spin speed in radians/second
+ *      fadeOut: false  stay fully visible until it lands
  *      alpha       0..1 opacity (a faint copy a few ms behind makes a motion trail)
  *  burst options:  count, color, scale, minSpeed, maxSpeed, minLife, maxLife, gravity (negative floats up), drag, blend, at, alpha
  *                  glow: false  a plain dot with no halo (far cheaper; use it for rain, snow, sand and anything with dozens of dots)
@@ -103,6 +105,7 @@ const spriteConfig = (sheetKey, o = {}) => clean({
     movement: o.move,
     arc: o.arc,
     rotation: o.aim ? 'auto' : o.rotation,
+    rotationOffset: o.facing !== undefined ? -o.facing * Math.PI / 180 : undefined,
     rotationDelta: o.spin,
     dropX: o.drop ? o.drop[0] : undefined,
     dropY: o.drop ? o.drop[1] : undefined,
