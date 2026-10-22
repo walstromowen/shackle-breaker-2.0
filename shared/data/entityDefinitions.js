@@ -594,7 +594,7 @@ export const ENTITY_DEFINITIONS = {
         ...BEAST_TEMPLATE,
         name: "Snow Leopard",
         level: 1,
-        spriteOverworld: "legionarySprite",
+        spriteOverworld: "snowLeopardSprite",
         spritePortrait: "snowLeopardPortrait",
         crySound: "snowLeopardCry",
         deathSound: "snowLeopardCry",
