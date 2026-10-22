@@ -6,11 +6,14 @@
  *   - the sliders change the sound at once (AudioManager.setVolume) and are remembered in this browser
  *   - Test Sound plays a battle cry through the Effects slider, so the player can balance it against the music
  *
+ * Replay Tips forgets which first-visit control cards have been seen, so each shows again the next time its screen opens.
+ *
  * Mouse: click a bar to jump there, or hold and drag. Keyboard: Up / Down choose a row, Left / Right move the slider by 5%.
  */
 import { BaseController } from '../core/baseController.js';
 import { events } from '../../core/eventBus.js';
 import { audioManager, AUDIO_CHANNELS } from '../../core/audioManager.js';
+import { tipStore } from '../../ui/tutorialOverlay.js';
 
 const CHANNEL_ORDER = ['master', 'music', 'sfx', 'ambient'];
 const STEP = 0.05;
@@ -31,6 +34,7 @@ export class SettingsController extends BaseController {
         this.from = 'title';
         this.kbFocus = 'slider_master';
         this.draggingChannel = null;
+        this.tipsReset = false;
         this.testIndex = 0;
         this.lastPreviewAt = 0;
         this.updateHitboxes([]);
@@ -42,6 +46,7 @@ export class SettingsController extends BaseController {
         this.from = data.from === 'game' ? 'game' : 'title';
         this.kbFocus = 'slider_master';
         this.draggingChannel = null;
+        this.tipsReset = false;
         this.hoveredHitboxId = null;
         this.startInKeyboardMode();
     }
@@ -53,7 +58,7 @@ export class SettingsController extends BaseController {
     setFocusFromPointer(hitboxId) { this.kbFocus = hitboxId; }
 
     _focusOrder() {
-        return [...CHANNEL_ORDER.map(c => `slider_${c}`), 'btn_test', 'btn_reset', 'btn_done'];
+        return [...CHANNEL_ORDER.map(c => `slider_${c}`), 'btn_test', 'btn_reset', 'btn_tips', 'btn_done'];
     }
 
     // ========================================================
@@ -118,6 +123,10 @@ export class SettingsController extends BaseController {
         } else if (hitboxId === 'btn_reset') {
             audioManager.resetVolumes();
             this.playConfirmSound();
+        } else if (hitboxId === 'btn_tips') {
+            tipStore.reset();
+            this.tipsReset = true;
+            this.playConfirmSound();
         } else if (hitboxId === 'btn_done') {
             this.playCancelSound();
             this._exit();
@@ -169,7 +178,7 @@ export class SettingsController extends BaseController {
             this._preview(channel);
         } else if (intent === 'LEFT' || intent === 'RIGHT') {
             // on the buttons the sideways keys move between them
-            const buttons = ['btn_test', 'btn_reset', 'btn_done'];
+            const buttons = ['btn_test', 'btn_reset', 'btn_tips', 'btn_done'];
             const at = buttons.indexOf(order[index]);
             if (at >= 0) {
                 const n = Math.max(0, Math.min(buttons.length - 1, at + (intent === 'RIGHT' ? 1 : -1)));
@@ -212,6 +221,7 @@ export class SettingsController extends BaseController {
         const buttons = [
             { id: 'btn_test',  label: 'Test Sound', x: L.panelX + 64,                     y: footerY, w: 330, h: L.btnH },
             { id: 'btn_reset', label: 'Reset',      x: L.panelX + 64 + 330 + 24,          y: footerY, w: 330, h: L.btnH },
+            { id: 'btn_tips',  label: this.tipsReset ? 'Tips Reset' : 'Replay Tips', x: L.panelX + 64 + (330 + 24) * 2, y: footerY, w: 330, h: L.btnH },
             { id: 'btn_done',  label: 'Back',       x: 48,                             y: 956,     w: 300, h: L.btnH }
         ];
         buttons.forEach(b => hitboxes.push({ id: b.id, x: b.x, y: b.y, w: b.w, h: b.h, zIndex: 10 }));

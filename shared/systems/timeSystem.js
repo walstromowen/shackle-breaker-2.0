@@ -152,6 +152,23 @@ export class TimeSystem {
     }
 
     /**
+     * Move the clock forward by a number of in-game minutes in one jump (a bedroll's sleep): rolls over midnight into the next day and uses up the same
+     * amount of the current weather's time, as the encounters' ADVANCE_TIME does. The lighting, the music and the timed buffs all read the clock, so they follow.
+     * Returns the minutes actually added.
+     */
+    static advance(minutes) {
+        const add = Math.max(0, Number(minutes) || 0);
+        if (!gameState.world || !add) return 0;
+        gameState.world.time = (gameState.world.time || 0) + add;
+        while (gameState.world.time >= 24 * 60) {
+            gameState.world.time -= 24 * 60;
+            gameState.world.day = (gameState.world.day || 1) + 1;
+        }
+        if (gameState.world.currentWeather) gameState.world.currentWeather.timeRemaining -= add / 60;
+        return add;
+    }
+
+    /**
      * The weather ids (upper case, always including CLEAR) that the biome allows. Read from the biome's `allowedWeather`, the same list the
      * overworld uses to clear weather, so rolling and clearing agree. An unknown biome id counts as "CLEAR only".
      */

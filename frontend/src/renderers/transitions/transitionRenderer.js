@@ -34,6 +34,9 @@ export class TransitionRenderer {
         if (type === 'blade') defaultSpeed = 1.2; // Slower, to let the dramatic greyscale pause sink in
         
         this.speed = options.speed || defaultSpeed;
+        this.hold = options.hold || 0;          // seconds the screen stays covered once the midpoint callback has run (a night's sleep)
+        this.holdLeft = 0;
+        this.onDone = options.onDone || null;   // called when the picture is fully back
     }
 
     update(dt) {
@@ -50,15 +53,21 @@ export class TransitionRenderer {
                     this.callback = null; 
                 }
                 
-                this.state = 'IN';
+                this.holdLeft = this.hold || 0;
+                this.state = this.holdLeft > 0 ? 'HOLD' : 'IN';
             }
         } 
+        else if (this.state === 'HOLD') {
+            this.holdLeft -= dt;
+            if (this.holdLeft <= 0) this.state = 'IN';
+        }
         else if (this.state === 'IN') {
             this.progress -= dt * this.speed;
             if (this.progress <= 0) {
                 this.progress = 0;
                 this.state = 'IDLE';
                 this.isActive = false;
+                if (this.onDone) { const done = this.onDone; this.onDone = null; done(); }
             }
         }
     }
@@ -252,4 +261,4 @@ export class TransitionRenderer {
 
         ctx.restore();
     }
-}
+}

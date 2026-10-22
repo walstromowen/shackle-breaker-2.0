@@ -86,6 +86,28 @@ export class Formatting {
         return Number(amount).toLocaleString();
     }
     /**
+     * A number short enough for a small box: whole numbers up to 9999 as they are, then 12.3k / 123k, 1.2M, 1.2B (never rounds up into the next unit).
+     * "21929" -> "21.9k", "123456" -> "123k", "2500000" -> "2.5M". Anything that is not a finite number is returned as it is.
+     */
+    static compactNumber(num) {
+        const n = Number(num);
+        if (!Number.isFinite(n)) return String(num);
+        const sign = n < 0 ? "-" : "";
+        const a = Math.abs(Math.floor(n));
+        if (a < 10000) return sign + a;
+        const units = [[1e9, "B"], [1e6, "M"], [1e3, "k"]];
+        for (const [size, letter] of units) {
+            if (a >= size) {
+                const v = a / size;
+                const digits = v < 100 ? 1 : 0;
+                const cut = Math.floor(v * 10 ** digits) / 10 ** digits;   // cut, not rounded: 999.9k never becomes "1000k"
+                return sign + (digits ? cut.toFixed(1).replace(/\.0$/, "") : cut) + letter;
+            }
+        }
+        return sign + a;
+    }
+
+    /**
      * Replaces bracketed tokens in a string with values from a context object.
      * Example: parseTokens("{actor} uses {ability}!", { actor: "Hero", ability: "Fireball" })
      * Returns: "Hero uses Fireball!"
@@ -103,4 +125,4 @@ export class Formatting {
             return context[key] !== undefined ? context[key] : match;
         });
     }
-}
+}

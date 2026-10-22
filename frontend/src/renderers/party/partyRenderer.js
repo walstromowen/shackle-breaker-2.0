@@ -238,8 +238,16 @@ export class PartyRenderer {
 
         // --- 3. DRAW TEXT WITH STATE COLORS ---
         const infoX = pX + pSize + 19;
-        const numberWidth = 91;
         const labelWidth = 48;
+        // The number column is 91px, and grows (the bars give up the room) for the widest of the four "current/max" texts, so 3700/3700 or 21929/21929 never run into a bar.
+        // Past MAX_NUMBER_WIDTH the text itself is shortened (21.9k/21.9k) or made smaller (CanvasUI.drawFraction).
+        const MAX_NUMBER_WIDTH = 160, NUMBER_GAP = 10;      // NUMBER_GAP: air between the end of a bar and its numbers
+        const fullWidthOf = (cur, mx) => this.ui.fitFraction(cur, mx, 1e6, UITheme.fonts.cardMono).width;
+        const widest = Math.max(
+            fullWidthOf(member.xp || 0, member.maxXp || 1),
+            fullWidthOf(member.hp, member.maxHp), fullWidthOf(member.stamina, member.maxStamina), fullWidthOf(member.insight, member.maxInsight)
+        );
+        const numberWidth = Math.min(MAX_NUMBER_WIDTH, Math.max(91, Math.ceil(widest) + NUMBER_GAP));
         const barW = cardW - (pX - x) - pSize - 19 - labelWidth - numberWidth - 19;
 
         this.ui.drawStyled('cardTitle', member.name, infoX, y + 43, { color: nameColor });
@@ -261,7 +269,7 @@ export class PartyRenderer {
         const xpY = y + 113;
         this.ui.drawStyled('cardValue', 'XP', infoX, xpY + 12, { color: UITheme.colors.textMuted });
         this.ui.drawBar(infoX + labelWidth, xpY, barW, 10, member.xp || 0, member.maxXp || 1, UITheme.colors.xp, UITheme.colors.xpDim);
-        this.ui.drawText(`${Math.floor(member.xp || 0)}/${member.maxXp || 1}`, infoX + labelWidth + barW + numberWidth, xpY + 12, UITheme.fonts.cardMono, UITheme.colors.textMuted, "right");
+        this.ui.drawFraction(member.xp || 0, member.maxXp || 1, infoX + labelWidth + barW + numberWidth, xpY + 12, numberWidth - NUMBER_GAP);
 
         let currentY = y + 144;
         this.drawStatRow("HP", member.hp, member.maxHp, infoX, currentY, barW, 10, numberWidth, labelWidth, UITheme.colors.hp, UITheme.colors.hpDim);
@@ -276,7 +284,7 @@ export class PartyRenderer {
     drawStatRow(label, current, max, x, y, barW, h, numW, labelW, color, dimColor) {
         this.ui.drawStyled('cardValue', label, x, y + 12, { color: UITheme.colors.textMuted });
         this.ui.drawBar(x + labelW, y, barW, h, current, max, color, dimColor);
-        this.ui.drawText(`${Math.floor(current)}/${max}`, x + labelW + barW + numW, y + 12, UITheme.fonts.cardMono, UITheme.colors.textMuted, "right");
+        this.ui.drawFraction(current, max, x + labelW + barW + numW, y + 12, numW - 10);
     }
 
     drawStatusEffects(member, pX, pY, pSize) {

@@ -396,6 +396,15 @@ export class AbilitySystem {
         };
     }
 
+    /* { type: 'advance_time', hours?, minutes?, message? }
+       Sleeps the clock forward (a bedroll). No encounter: the scene manager (worldAction 'advance_time') fades the screen out, moves the clock while it is dark
+       (TimeSystem.advance) and fades back in. The item is spent by whoever used it, as for any other successful overworld ability. */
+    static _world_advance_time(effect) {
+        const minutes = (effect.hours || 0) * 60 + (effect.minutes || 0);
+        if (minutes <= 0) return { success: false, message: 'Nothing happens.' };
+        return { success: true, message: effect.message || '', worldAction: { type: 'advance_time', minutes } };
+    }
+
     static _dispatchWorldAction(action) {
         if (typeof this.worldActionHandler === 'function') this.worldActionHandler(action);
         else console.warn(`[AbilitySystem] World action "${action.type}" has no handler (the scene manager sets AbilitySystem.worldActionHandler); nothing happened.`);
@@ -473,4 +482,4 @@ export class AbilitySystem {
         
         return msg;
     }
-}
+}

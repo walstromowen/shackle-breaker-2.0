@@ -1,4 +1,5 @@
 import { UITheme, UIPointer } from './UITheme.js';
+import { Formatting } from '../../../shared/utils/formatting.js';
 
 export class CanvasUI {
   /**
@@ -174,6 +175,35 @@ export class CanvasUI {
   }
 
   // --- TEXT RENDERING ---
+  /* The "current/max" of a bar (3700/3700, 21929/21929...) in a column `maxWidth` wide, so a big number never runs into the bar beside it.
+     1. as it is; 2. with the numbers shortened (21.9k/21.9k); 3. the font made smaller (down to 55%) until it fits. Returns { text, font, width }. */
+  fitFraction(current, max, maxWidth, font = UITheme.fonts.cardMono) {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.font = font;
+    const full = `${Math.floor(current || 0)}/${Math.floor(max || 0)}`;
+    const widthOf = (t) => ctx.measureText(t).width;
+    let result = { text: full, font, width: widthOf(full) };
+    if (result.width > maxWidth) {
+      const short = `${Formatting.compactNumber(current || 0)}/${Formatting.compactNumber(max || 0)}`;
+      const w = widthOf(short);
+      result = { text: short, font, width: w };
+      if (w > maxWidth) {
+        const m = /(\d+(?:\.\d+)?)px/.exec(font);
+        const scale = Math.max(0.55, maxWidth / w);
+        if (m) result = { text: short, font: font.replace(m[0], `${Math.floor(parseFloat(m[1]) * scale * 10) / 10}px`), width: w * scale };
+      }
+    }
+    ctx.restore();
+    return result;
+  }
+
+  /* drawText for the "current/max" of a bar, fitted to `maxWidth` with fitFraction. */
+  drawFraction(current, max, x, y, maxWidth, font = UITheme.fonts.cardMono, color = UITheme.colors.textMuted, align = "right") {
+    const fit = this.fitFraction(current, max, maxWidth, font);
+    this.drawText(fit.text, x, y, fit.font, color, align);
+  }
+
   drawText(text, x, y, font = UITheme.fonts.body, color = UITheme.colors.textMain, align = "left", baseline = "alphabetic", maxWidth = undefined, tracking = 0) {
     this.ctx.save();
     this.ctx.font = font;

@@ -1,5 +1,6 @@
 import { CanvasUI } from '../../ui/canvasUI.js';
 import { UITheme } from '../../ui/UITheme.js';
+import { drawStatTooltip } from '../../ui/statTooltip.js';
 import { Formatting } from '../../../../shared/utils/formatting.js';
 
 export class LevelUpRenderer {
@@ -50,9 +51,29 @@ export class LevelUpRenderer {
             availablePoints, pendingAllocations, hoveredId, selectedElementId, leftColX, startY + panelHeight, colW, this._attrRowsEndY
         );
 
+        this._drawStatHelp(state, hoveredId);
+
         if (state.onLayoutUpdate) {
             state.onLayoutUpdate(this.hitboxes);
         }
+    }
+
+    // The card that says what the attribute under the mouse / the keyboard cursor does. The ADD_/SUB_ buttons name their attribute;
+    // the rest of a row is found with the mouse position (keyboard mode has no mouse hover, so a stale pointer is ignored).
+    _drawStatHelp(state, focusId) {
+        let attr = null;
+        const m = /^(?:ADD|SUB)_([A-Z]+)$/.exec(focusId || '');
+        if (m) {
+            attr = m[1].toLowerCase();
+        } else if (!state.selectedElementId && state.mouse) {
+            attr = Object.keys(this._attrRects || {}).find(k => {
+                const r = this._attrRects[k];
+                return state.mouse.x >= r.x && state.mouse.x <= r.x + r.w && state.mouse.y >= r.y && state.mouse.y <= r.y + r.h;
+            }) || null;
+        }
+        const rect = attr && this._attrRects ? this._attrRects[attr] : null;
+        if (!rect) return;
+        drawStatTooltip(this.ui, attr, this._attrBlock, { placement: 'above', gap: 2, width: 800, multipliers: state.member?.statMultipliers || state.member?.state?.statMultipliers });
     }
 
     _renderCharacterColumn(member, availablePoints, pendingAllocations, hoveredId, selectedId, x, y, w, h) {
@@ -94,10 +115,15 @@ export class LevelUpRenderer {
 
         const attributes = ['vigor', 'strength', 'dexterity', 'intelligence', 'attunement'];
         const startX = centerX - (this.layout.attrBlockWidth / 2);
+        this._attrRects = {};
+        // all five rows as one block: the help card sits above it, over the portrait, so it never hides the Projected Stats next door
+        this._attrBlock = { x: startX - 24, y: currentY, w: this.layout.attrBlockWidth + 48, h: attributes.length * this.layout.attrRowHeight };
 
         attributes.forEach((attr, index) => {
             const rowY = currentY + (index * this.layout.attrRowHeight);
             const textY = rowY + 32;
+            // The whole row (name, number and both buttons) explains itself: see _drawStatHelp
+            this._attrRects[attr] = { x: startX - 24, y: rowY, w: this.layout.attrBlockWidth + 48, h: this.layout.attrRowHeight };
 
             if (index % 2 === 0) {
                 this.ui.drawRect(startX - 24, rowY, this.layout.attrBlockWidth + 48, this.layout.attrRowHeight, "rgba(255, 255, 255, 0.02)", true);

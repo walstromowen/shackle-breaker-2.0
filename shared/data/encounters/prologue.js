@@ -29,10 +29,11 @@ export const prologue = {
             image: { sheet: "encounter_prologue", col: 0, row: 0 },
             bgm: "plainsBgmDay",
             ambience: "prologueMarch",
-            text: "Iron on your wrists runs from the shackles on your wrists to the prisoner ahead of you. It pulls, and you follow.",
+            text: "You look down at your wrists. Metal shackles bind you to the prisoner ahead of you. It pulls, and you follow. You don't remember how you got here, or how long you have been walking.",
             decisions: [
                 {
                     text: "Walk.",
+                    customActionText: "You walk forward, as you have done for so long.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_others" } }] }]
                 }
             ]
@@ -41,11 +42,11 @@ export const prologue = {
             displayText: "The Prisoners",
             tone: "cold",
             image: { sheet: "encounter_prologue", col: 1, row: 0 },
-            text: "The prisoners ahead laugh and mutter to themselves, the way a wound weeps.",
+            text: "The prisoners ahead laugh and mutter to themselves, their laughter has no joy in it, and it never stops..",
             decisions: [
                 {
                     text: "Listen to them.",
-                    customActionText: "The prisoners' words make no sense, yet they laugh as if remenicing over a shared memory. Still, their laughter has no joy in it, and it never stops. ",
+                    customActionText: "The prisoners' words make no sense, yet they laugh as if remenicing over a shared memory.  ",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_guards" } }] }]
                 },
                 {
@@ -63,12 +64,12 @@ export const prologue = {
             decisions: [
                 {
                     text: "Look closer.",
-                    customActionText: "The guard's face is hidden, but there is an ominous familiarity to it. Despite your efforts to see it clearly, the guard looks straight ahead without expression.",
+                    customActionText: "The guard's expression is neutral, revealing nothing of his thoughts.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_road" } }] }]
                 },
                 {
                     text: "Keep your eyes on the ground.",
-                    customActionText: "You count your steps and do not look up. hoping the guard does not notice your gaze.",
+                    customActionText: "You count your steps and do not look up. hoping the guard did not notice your gaze.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_road" } }] }]
                 }
             ]
@@ -81,6 +82,7 @@ export const prologue = {
             decisions: [
                 {
                     text: "Walk.",
+                    customActionText: "You continue walking, your labored steps sinking into the mud.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "slack" } }] }]
                 },
                 {
@@ -103,7 +105,7 @@ export const prologue = {
                 {
                     text: "Look down.",
                     customActionText: "The chain lies broken in the dust, a few links still hanging from your wrists. You are free of the line.",
-                    outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "no_key" } }] }]
+                    outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "still" } }] }]
                 }
             ]
         },
@@ -111,17 +113,17 @@ export const prologue = {
             displayText: "No Key",
             tone: "cold",
             image: { sheet: "encounter_prologue", col: 0, row: 1 }, // shares the chain's picture until its own cell (3,1) is painted
-            text: "The shackles are still locked around your wrists. You turn them over, searching for a keyhole, and find none. The iron is smooth and seamless, as though it was never forged, only grown around you.",
+            text: "The shackles are still locked around your wrists. You turn them over, searching for a keyhole, and find none. The metal is smooth and seamless, as though it was never forged, only grown around you.",
             decisions: [
                 {
                     text: "Search for a lock.",
-                    customActionText: "No keyhole, no hinge, no seam. Whatever holds these shackles shut, no key was ever made to open them. The iron is faintly warm, like skin.",
-                    outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "still" } }] }]
+                    customActionText: "No keyhole, no hinge, no seam. Whatever holds these shackles shut, no key was ever made to open them.",
+                    outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "awake" } }] }]
                 },
                 {
-                    text: "Pull at the iron.",
-                    customActionText: "It does not give. The broken ends of the chain are clean and bright, with no rust and no wear, as if no smith ever made them. Something about it is deeply wrong.",
-                    outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "still" } }] }]
+                    text: "Pull at the shackles.",
+                    customActionText: "It does not give, no matter how hard you pull.",
+                    outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "awake" } }] }]
                 }
             ]
         },
@@ -134,7 +136,7 @@ export const prologue = {
                 {
                     text: "Watch them go.",
                     customActionText: "Neither the guards nor the prisoners seem to take any notice or your absence as the line of prisoners fades into the darkness, out of sight.",
-                    outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "awake" } }] }]
+                    outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "no_key" } }] }]
                 }
             ]
         },
@@ -143,7 +145,7 @@ export const prologue = {
             image: { sheet: "encounter_prologue", col: 2, row: 1 },
             sfx: "heartbeat",
             ambience: "none",
-            text: "Suddenly a fog in your mind starts to clear, a fleeting sense of freedom washes over you as you realize you are no longer bound to the chain. Yet looking down at your wrists, you notice shackles are still locked on to your wrists as if convincing you that you are not truly free... ",
+            text: "You draw a steadying breath as reality grounds you. Before you stretches a silent, hollow wasteland. Memories flick in and out of focus making it difficult to discern what is real and what is illusion. But looking down at your wrists one thing is for certain: something is terribly wrong...",
             decisions: [
                 {
                     text: "Draw a breath.",

@@ -220,7 +220,7 @@ export class EncounterLogic {
                         if (payload.minRolls !== undefined && payload.maxRolls !== undefined) {
                             computedRolls = Math.floor(Math.random() * (payload.maxRolls - payload.minRolls + 1)) + payload.minRolls;
                         }
-                        const lootModel = LootTableFactory.generateLoot(actualTableId, computedRolls, payload.baseCurrency || 0);
+                        const lootModel = LootTableFactory.generateLoot(actualTableId, computedRolls, payload.baseCurrency || 0, payload.exclude);
                         if (lootModel.hasItems()) {
                             lootModel.items.forEach(item => {
                                 InventorySystem.addItem(item.id, item.qty);

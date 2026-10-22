@@ -569,7 +569,7 @@ export class WorldManager {
                 const r = horizontal ? cs[i].r + sgn : cs[i].r;
                 const key = this._s(c, r);
                 if (plan.roadOwner.has(key) || plan.hubTiles.has(key) || plan.buildingTiles.has(key)) continue;
-                if (gameState.world.changes[key] !== undefined) continue;
+                if (gameState.world.changes[key] !== undefined || this._collisionMap.has(key)) continue;     // not on a scarecrow's second tile either
                 if (this.getElevation(c, r) !== plan.baseElev || this.isBlockedByFace(c, r) || this.isCliffFace(c, r) || this._nearStair(c, r)) continue;
                 this.modifyWorld(c, r, tc.id);
                 this._placeObject(c, r, tc.id);
@@ -599,7 +599,7 @@ export class WorldManager {
                 for (let dc = 0; dc < w && free; dc++) {
                     const key = this._s(c + dc, r);
                     if (plan.roadOwner.has(key) || plan.hubTiles.has(key) || plan.buildingTiles.has(key) || plan.buildingTiles.has(this._s(c + dc, r - 1))) free = false;
-                    else if (gameState.world.changes[key] !== undefined) free = false;
+                    else if (gameState.world.changes[key] !== undefined || this._collisionMap.has(key)) free = false;
                     else if (this.getElevation(c + dc, r) !== plan.baseElev || this.isBlockedByFace(c + dc, r) || this.isCliffFace(c + dc, r) || this._nearStair(c + dc, r)) free = false;
                 }
                 if (!free) continue;
@@ -628,7 +628,7 @@ export class WorldManager {
                     const r = horizontal ? cs[i].r + sgn : cs[i].r;
                     const key = this._s(c, r);
                     if (plan.roadOwner.has(key) || plan.hubTiles.has(key) || plan.buildingTiles.has(key)) continue;
-                    if (gameState.world.changes[key] !== undefined) continue;
+                    if (gameState.world.changes[key] !== undefined || this._collisionMap.has(key)) continue;     // not on a scarecrow's second tile either
                     if (this.getElevation(c, r) !== plan.baseElev || this.isBlockedByFace(c, r) || this.isCliffFace(c, r) || this._nearStair(c, r)) continue;
                     /* the dressing follows the biome of the cell: `streetProps.biomes[biomeId]` replaces `pool` there (an empty list = nothing) */
                     const pool = this._biomePool(sp, this.getBiomeAt(c, r).id);

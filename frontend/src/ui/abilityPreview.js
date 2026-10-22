@@ -217,6 +217,19 @@ export class AbilityPreview {
             });
         }
 
+        // An ability that recovers more than one resource (Rest: stamina and insight) lists each, not just the first
+        if (preview && preview.kind === 'heal') {
+            const effects = Array.isArray(ability.effects) ? ability.effects : [];
+            const shown = new Set([preview.resource]);
+            for (const effect of effects) {
+                if (effect.type !== 'recover' || shown.has(effect.resource || 'hp')) continue;
+                const more = this._recoverPreview(effect, actor, stats);
+                if (!more) continue;
+                shown.add(more.resource);
+                chips.push({ label: `${more.label}:`, value: more.text + (more.conditional ? '+' : ''), tone: 'accent' });
+            }
+        }
+
         const hit = this.getHitChance(ability, actor, stats);
         if (hit) {
             chips.push({ label: 'Acc:', value: hit.text, tone: 'normal' });
@@ -331,4 +344,4 @@ export class AbilityPreview {
                 return null;
         }
     }
-}
+}

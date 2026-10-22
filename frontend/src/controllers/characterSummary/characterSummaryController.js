@@ -978,6 +978,7 @@ export class CharacterSummaryController extends BaseController {
             scrollOffset: this.detailsScrollOffset,
             inventoryScrollOffset: this.inventoryScrollOffset,
             mouse: this.mouse,
+            inputMode: this.inputMode,
             hoveredHitboxId: activeTooltipId,
             
             // --- EXPORT NAME ENTRY STATE ---

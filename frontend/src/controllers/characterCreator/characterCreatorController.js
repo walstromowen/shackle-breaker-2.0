@@ -36,6 +36,7 @@ export class CharacterCreatorController extends BaseController {
             selections: this.logic.state,
             previewStats: this.logic.getPreviewStats(),
             mouse: this.mouse,
+            inputMode: this.inputMode,
             // The one lit element: what the mouse is over, or the keyboard cursor
             hoveredElement: this.getFocusId() ? { id: this.getFocusId() } : null,
             scrollOffsets: {

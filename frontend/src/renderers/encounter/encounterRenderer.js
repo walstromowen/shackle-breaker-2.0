@@ -6,6 +6,7 @@ import { gameState } from "../../../../shared/state/gameState.js";
 import { DIFFICULTY_MODIFIERS } from '../../../../shared/data/constants.js';
 import { drawItemChips } from '../../ui/itemChips.js';
 import { drawEmbers } from '../../ui/embers.js';
+import { drawStatTooltip } from '../../ui/statTooltip.js';
 import { TONES, fxShake, fxFlash } from '../../ui/encounterFx.js';
 import { NARRATION, STAGE_START_TIMER, narrationPlan, textEndTimer, decisionAlpha } from '../../ui/narration.js';
 
@@ -124,6 +125,7 @@ export class EncounterRenderer {
     render(ctx, state) {
         this.hotspots = [];
         let scrollBounds = {};
+        const attrCells = {}; // attribute -> its cell in the bar at the bottom, so hovering it can say what it does (drawn last)
 
         if (!state || !state.text) return;
 
@@ -600,6 +602,7 @@ export class EncounterRenderer {
                     const topText = `${stat.label}: ${stat.val}`;
                     const bottomText = getModStr(stat.val);
                     const posX = centerX + (i * sectionW) + (sectionW / 2);
+                    attrCells[['vigor', 'strength', 'dexterity', 'intelligence', 'attunement'][i]] = { x: centerX + (i * sectionW), y: attributeBarY + 24, w: sectionW, h: 72 };
 
                     ui.drawText(topText, posX, attributeBarY + 44, UITheme.fonts.mono, UITheme.colors.textMuted, "center", "middle");
                     ui.drawText(bottomText, posX, attributeBarY + 74, UITheme.fonts.mono, UITheme.colors.textMuted, "center", "middle");
@@ -805,6 +808,15 @@ export class EncounterRenderer {
         }
         ctx.restore();   // (the stage's jolt)
 
+        // What the attribute under the mouse does (the bar is passive, so the keyboard has nothing to select here)
+        if (colsAlpha > 0.9 && !popupPhases.includes(actionPhase) && state.mouse && !state.isUsingKeyboard) {
+            const hit = Object.keys(attrCells).find(k => {
+                const r = attrCells[k];
+                return state.mouse.x >= r.x && state.mouse.x <= r.x + r.w && state.mouse.y >= r.y && state.mouse.y <= r.y + r.h;
+            });
+            if (hit) drawStatTooltip(ui, hit, attrCells[hit], { placement: 'above', skillChecks: true, multipliers: party[0]?.statMultipliers || party[0]?.state?.statMultipliers });
+        }
+
         if (onLayoutUpdate) {
             onLayoutUpdate(this.hotspots, scrollBounds);
         }
@@ -906,7 +918,7 @@ export class EncounterRenderer {
     ui.drawBar(x + labelW, y, barW, h, current, max, fadedColor, fadedDimColor);
     // Restore original border color
     UITheme.colors.border = oldBorder;
-    ui.drawText(`${Math.floor(current)}/${max}`, x + labelW + barW + numW, y + 12, UITheme.fonts.cardMono || UITheme.fonts.mono, fadedTextMuted, "right");
+    ui.drawFraction(current, max, x + labelW + barW + numW, y + 12, numW, UITheme.fonts.cardMono || UITheme.fonts.mono, fadedTextMuted, "right");
     ctx.restore();
   }
 

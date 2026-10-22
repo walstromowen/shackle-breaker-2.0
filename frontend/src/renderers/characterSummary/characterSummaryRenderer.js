@@ -9,6 +9,7 @@ import { StatsPanel } from './components/statsPanel.js';
 import { EquipmentPanel } from './components/equipmentPanel.js';
 import { InventoryPanel } from './components/inventoryPanel.js';
 import { TooltipSystem } from './components/tooltipSystem.js';
+import { drawStatTooltip } from '../../ui/statTooltip.js';
 import { AbilitiesPanel } from './components/abilitiesPanel.js';
 
 export class CharacterSummaryRenderer {
@@ -161,6 +162,17 @@ export class CharacterSummaryRenderer {
           this.tooltipSystem.render(tooltipState, this.hitboxes);
         }
       }
+    }
+
+    // H. What the attribute under the mouse does (Stats tab; the attributes have no keyboard cursor, so a parked pointer is ignored then)
+    if (state.viewMode === 'STATS' && !state.heldItem && !state.contextMenu
+        && state.mouse && state.inputMode !== 'keyboard') {
+      const rects = this.statsPanel.attrRects;
+      const hit = Object.keys(rects).find(k => {
+        const r = rects[k];
+        return state.mouse.x >= r.x && state.mouse.x <= r.x + r.w && state.mouse.y >= r.y && state.mouse.y <= r.y + r.h;
+      });
+      if (hit) drawStatTooltip(this.ui, hit, rects[hit], { placement: 'right', multipliers: member.statMultipliers || member.state?.statMultipliers });
     }
 
     // --- 5. Report Hitboxes ---

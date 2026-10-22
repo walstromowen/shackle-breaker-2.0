@@ -302,11 +302,14 @@ export class BattleHUDRenderer {
 
   drawBarText(current, max, barX, barY) {
     this.ctx.save();
-    this.ctx.font = UITheme.fonts.cardMono;
+    // the room between the bar and the card's right edge: a big number is shortened or made smaller (CanvasUI.fitFraction) instead of running off the card
+    const room = this.HUD.CARD_W - this.HUD.PADDING_X * 2 - this.HUD.BAR_WIDTH - 19;
+    const fit = this.ui.fitFraction(current, max, room, UITheme.fonts.cardMono);
+    this.ctx.font = fit.font;
     this.ctx.fillStyle = UITheme.colors.textMuted;
     this.ctx.textAlign = "left";
     this.ctx.textBaseline = "middle";
-    this.ctx.fillText(`${Math.floor(current)}/${max}`, barX + this.HUD.BAR_WIDTH + 19, barY + (this.HUD.BAR_HEIGHT / 2));
+    this.ctx.fillText(fit.text, barX + this.HUD.BAR_WIDTH + 19, barY + (this.HUD.BAR_HEIGHT / 2));
     this.ctx.restore();
   }
 

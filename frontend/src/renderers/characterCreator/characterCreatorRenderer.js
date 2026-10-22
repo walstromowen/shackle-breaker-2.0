@@ -2,6 +2,7 @@ import { CanvasUI } from '../../ui/canvasUI.js';
 import { UITheme } from '../../ui/UITheme.js';
 import { UI_SFX } from '../../ui/uiSfx.js';
 import { drawEmbers } from '../../ui/embers.js';
+import { drawStatTooltip } from '../../ui/statTooltip.js';
 
 /* The LOOK preview next to the portrait plays the character's South-facing animation from the overworld sprite sheet.
    The sheet layout is the one MapRenderer uses: frames of CONFIG.CHARACTER_FRAME (w x h) in a row of 8, and rows in three sets of four
@@ -170,6 +171,7 @@ export class CharacterCreatorRenderer {
         }
 
         // --- D. STATS TABLE ---
+        const attrRects = {}; // each attribute's row, so hovering it can say what it does (drawn last, below)
         curY = VITALS_START_Y;
         ui.drawLineWithGothicFlourish(leftCenterX - 192, DIVIDER_Y, 384, UITheme.colors.borderHighlight);
 
@@ -215,6 +217,7 @@ export class CharacterCreatorRenderer {
                 const rowY = curY + (idx * ROW_HEIGHT);
                 const leftX = p + 72;
                 const rightX = p + colW - 72;
+                attrRects[attr.label.toLowerCase()] = { x: p + 24, y: rowY - 34, w: colW - 48, h: ROW_HEIGHT };
 
                 if (idx % 2 === 0) {
                     ui.drawRect(p + 24, rowY - 34, colW - 48, ROW_HEIGHT, "rgba(255, 255, 255, 0.02)", true);
@@ -421,6 +424,17 @@ export class CharacterCreatorRenderer {
 
         // Embers rise over the whole screen, panels included (drawn last, so the opaque panels do not hide them)
         drawEmbers(ctx, Date.now() / 1000, 0, CANVAS_WIDTH, CANVAS_HEIGHT, 0.8, undefined, 80, 1.3);
+
+        // What the attribute under the mouse does (the keyboard has no cursor on these rows, so a parked pointer is ignored then)
+        const mouse = controllerState.mouse;
+        if (mouse && controllerState.inputMode !== 'keyboard') {
+            const hit = Object.keys(attrRects).find(k => {
+                const r = attrRects[k];
+                return mouse.x >= r.x && mouse.x <= r.x + r.w && mouse.y >= r.y && mouse.y <= r.y + r.h;
+            });
+            // The Details panel is empty-ish and the one thing nobody is aiming at, so the card goes there instead of over the menu
+            if (hit) drawStatTooltip(ui, hit, attrRects[hit], { at: { x: CANVAS_WIDTH - colW - p + 24, y: CONTENT_START_Y }, width: colW - 48 });
+        }
 
         // ========================================================
         // 4. FINALIZE & SEND DATA TO CONTROLLER

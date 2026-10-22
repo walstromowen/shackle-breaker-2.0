@@ -120,8 +120,8 @@ function buildYard(spec, gate) {
         height: h,
         terrain,
         objects,
-        wear: { fenceBreak: 0.12 },
-        scatter: { chance: 0.32, pool: spec.scatterPool || GROUND_DECOR, rect: spec.scatterRect },
+        wear: { fenceBreak: spec.fenceBreak ?? 0.12 },
+        scatter: { chance: spec.scatterChance ?? 0.32, pool: spec.scatterPool || GROUND_DECOR, rect: spec.scatterRect },
     };
 }
 
@@ -139,7 +139,7 @@ function yard(spec) {
    indoors) and no storage corner.
    The roads that grow out of the four sides start exactly on the 3-wide road cells. */
 
-function buildCenter() {
+function buildCenter(theme = {}) {
     const N = 11;
     const terrain = grid(N, N);
     const objects = grid(N, N);
@@ -151,7 +151,7 @@ function buildCenter() {
             // grass wherever dirt is next door, so the edge of the road is always a clean dirt / grass edge; the far corners stay natural
             let nearDirt = false;
             for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (dirt(x + dx, y + dy)) nearDirt = true;
-            if (nearDirt) terrain[y][x] = 2;
+            if (nearDirt && !theme.noGrass) terrain[y][x] = 2;   // sand and snow are left as they are: no grass is laid there
         }
     }
 
@@ -159,14 +159,18 @@ function buildCenter() {
     put(5, 5, 'CAMPFIRE');
     put(3, 3, 'STOOL'); put(7, 3, 'STOOL'); put(3, 7, 'STOOL'); put(7, 7, 'STOOL');
 
-    // north-west: a stump among the stones
-    put(1, 1, 'SMALL_ROCKS_2'); put(2, 1, 'TREE_STUMP'); put(1, 2, 'SMALL_ROCKS_1'); put(2, 2, 'GRASS_COVERAGE_1');
-    // north-east: a market table
-    put(8, 1, 'TABLE_LONG'); put(10, 1, 'BARREL'); put(9, 2, 'CRATE_SACK'); put(8, 3, 'TULIPS_WHITE');
-    // south-east: a garden gone wild
-    put(9, 9, 'TREE_STUMP'); put(8, 9, 'TULIPS_RED'); put(9, 8, 'TULIPS_WHITE'); put(8, 8, 'GRASS_COVERAGE_2'); put(10, 9, 'SMALL_ROCKS_2');
-    // south-west: a fallen fence in the grass
-    put(1, 9, 'WOODEN_FENCE_H'); put(2, 9, 'TREE_STUMP'); put(1, 8, 'GRASS_COVERAGE_3'); put(2, 8, 'GRASS_COVERAGE_2');
+    if (theme.corners) {
+        theme.corners(put);
+    } else {
+        // north-west: a stump among the stones
+        put(1, 1, 'SMALL_ROCKS_2'); put(2, 1, 'TREE_STUMP'); put(1, 2, 'SMALL_ROCKS_1'); put(2, 2, 'GRASS_COVERAGE_1');
+        // north-east: a market table
+        put(8, 1, 'TABLE_LONG'); put(10, 1, 'BARREL'); put(9, 2, 'CRATE_SACK'); put(8, 3, 'TULIPS_WHITE');
+        // south-east: a garden gone wild
+        put(9, 9, 'TREE_STUMP'); put(8, 9, 'TULIPS_RED'); put(9, 8, 'TULIPS_WHITE'); put(8, 8, 'GRASS_COVERAGE_2'); put(10, 9, 'SMALL_ROCKS_2');
+        // south-west: a fallen fence in the grass
+        put(1, 9, 'WOODEN_FENCE_H'); put(2, 9, 'TREE_STUMP'); put(1, 8, 'GRASS_COVERAGE_3'); put(2, 8, 'GRASS_COVERAGE_2');
+    }
 
     return {
         type: 'PREFAB',
@@ -174,7 +178,7 @@ function buildCenter() {
         height: N,
         terrain,
         objects,
-        scatter: { chance: 0.18, pool: GROUND_DECOR },
+        scatter: { chance: 0.18, pool: theme.scatterPool || GROUND_DECOR },
     };
 }
 
@@ -281,12 +285,12 @@ export const STRUCTURES = {
 
         /* SCARECROWS: the Peculiar Scarecrow, the only place it is made (see _planStreetScarecrows in worldManager.js). It stands on the verge north of an
            east-west road, looking south, so the 5 tiles beneath it run across the road. Each step along such a road has `chance` of getting one, no two on a
-           road are closer than `spacing` steps, and a village has at most `max`. */
+           road are closer than `spacing` steps, and a village has at most `max`. (Three times as common as they were: 0.04 / 14 / 3.) */
         scarecrows: {
             id: 'PECULIAR_SCARECROW',
-            chance: 0.04,
-            spacing: 14,
-            max: 3,
+            chance: 0.12,
+            spacing: 8,
+            max: 8,
         },
 
         /* STREET DRESSING (on the grass just beside the road; the solid ones are never in the way of the road) */
@@ -342,4 +346,132 @@ export const STRUCTURES = {
     // --- THE WORKSHOP: one per village, with every crafting station inside (the yard is only dressed) ---
 
     ABANDONED_WORKSHOP: yard(WORKSHOP('WORKSHOP_DOOR', [[2, 5, 'BARREL'], [4, 5, 'CRATE'], [5, 5, 'CRATE_SACK']])),
-};
+};
+
+/* =============================================================================================================
+   BIOME VARIANTS OF THE ABANDONED VILLAGE
+   The desert and the snowy mountains each get their own village: the same roads, yards, workshop and scarecrows (it is copied from ABANDONED_VILLAGE, so
+   every number above, the scarecrow rate included, applies), dressed for the ground it stands on. No grass is laid (sand and snow stay as they are), the
+   plaza and the yards are strewn with the biome's own litter, cacti or snowy pines and stumps stand along the roads, and the desert's crop fields grow
+   aloe (the herbs do not grow there). The houses use the same two sprites as the plains village: give ABANDONED_HOUSE_1 / _2 a per-biome `sheet` in
+   mapObjectDefinitions.js, like the small rocks have, to give them their own look.
+   Biome ids a road can run into: PLAINS, DESERT and SNOWY_MOUNTAINS; each variant lists all three in `trees` and `streetProps`, so a street that leaves
+   its own biome is dressed like the village it came from in that biome.
+   ============================================================================================================= */
+
+const DESERT_DECOR = ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3', 'SAND_DUNE_1', 'SAND_DUNE_2', 'SAND_DUNE_3', 'DESERT_SKULL', 'BONE_PILE'];
+const SNOWY_DECOR = ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3', 'STICK'];
+
+/* the five buildings of a village (house, cottage, farmhouse, hut, workshop) with a biome's props; `base` is merged into every yard spec */
+function themedBuildings(suffix, t) {
+    return {
+        [`ABANDONED_HOUSE_${suffix}`]: yard({ ...HOUSE_SPEC, ...t.base, props: t.house }),
+        [`ABANDONED_COTTAGE_${suffix}`]: yard({ ...HOUSE_SPEC, ...t.base, house: 'ABANDONED_HOUSE_2', props: t.cottage }),
+        [`ABANDONED_FARMHOUSE_${suffix}`]: yard({ ...HOUSE_SPEC, ...t.base, props: t.farmhouse }),
+        [`ABANDONED_HUT_${suffix}`]: yard({ ...HOUSE_SPEC, ...t.base, house: 'ABANDONED_HOUSE_2', props: t.hut }),
+        [`ABANDONED_WORKSHOP_${suffix}`]: yard({ ...WORKSHOP('WORKSHOP_DOOR', t.workshop), ...t.base }),
+    };
+}
+
+Object.assign(STRUCTURES, {
+    ABANDONED_CENTER_DESERT: buildCenter({
+        noGrass: true,
+        scatterPool: DESERT_DECOR,
+        corners(put) {
+            // north-west: bones and stones in the sand
+            put(1, 1, 'SMALL_ROCKS_2'); put(2, 1, 'BONE_PILE'); put(1, 2, 'DESERT_SKULL'); put(2, 2, 'SAND_DUNE_1');
+            // north-east: a market table
+            put(8, 1, 'TABLE_LONG'); put(10, 1, 'BARREL'); put(9, 2, 'CRATE_SACK'); put(8, 3, 'SAND_DUNE_2');
+            // south-east: a lone cactus
+            put(9, 9, 'SMALL_CACTUS_1'); put(8, 9, 'SAND_DUNE_3'); put(8, 8, 'DESERT_SKULL'); put(10, 9, 'SMALL_ROCKS_2');
+            // south-west: a fallen fence, half buried
+            put(1, 9, 'WOODEN_FENCE_H'); put(2, 9, 'BONE_PILE'); put(1, 8, 'SAND_DUNE_1'); put(2, 8, 'SMALL_ROCKS_1');
+        },
+    }),
+    ...themedBuildings('DESERT', {
+        base: { scatterPool: DESERT_DECOR, scatterChance: 0.4, fenceBreak: 0.25 },     // the sand has had the fences down more often
+        house: [[2, 5, 'BONE_PILE'], [5, 5, 'BARREL']],
+        cottage: [[2, 5, 'SACKS'], [5, 5, 'DESERT_SKULL']],
+        farmhouse: [[2, 5, 'BARREL'], [4, 5, 'CRATE'], [5, 5, 'SACKS']],
+        hut: [[2, 5, 'SMALL_ROCKS_1'], [4, 5, 'SAND_DUNE_1'], [5, 5, 'BONE_PILE']],
+        workshop: [[2, 5, 'BARREL'], [4, 5, 'CRATE'], [5, 5, 'CRATE_SACK']],
+    }),
+    /* the desert's crop field: the same fenced field, planted with aloe */
+    ABANDONED_CROP_FIELD_ALOE: yard({ ...CROP_FIELD('ALOE_PLANT'), scatterPool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SAND_DUNE_1'] }),
+
+    ABANDONED_CENTER_SNOWY: buildCenter({
+        noGrass: true,
+        scatterPool: SNOWY_DECOR,
+        corners(put) {
+            // north-west: a stump among the stones
+            put(1, 1, 'SMALL_ROCKS_2'); put(2, 1, 'SNOWY_TREE_STUMP'); put(1, 2, 'SMALL_ROCKS_1'); put(2, 2, 'SMALL_ROCKS_3');
+            // north-east: a market table
+            put(8, 1, 'TABLE_LONG'); put(10, 1, 'BARREL'); put(9, 2, 'CRATE_SACK'); put(8, 3, 'SMALL_ROCKS_1');
+            // south-east: a snowy boulder and a stump
+            put(9, 9, 'SNOWY_TREE_STUMP'); put(10, 9, 'SNOWY_BOULDER_2'); put(9, 8, 'SMALL_ROCKS_3'); put(8, 9, 'SMALL_ROCKS_2'); put(8, 8, 'STICK');
+            // south-west: a fallen fence in the snow
+            put(1, 9, 'WOODEN_FENCE_H'); put(2, 9, 'SNOWY_TREE_STUMP'); put(1, 8, 'SMALL_ROCKS_1'); put(2, 8, 'STICK');
+        },
+    }),
+    ...themedBuildings('SNOWY', {
+        base: { scatterPool: SNOWY_DECOR, scatterChance: 0.3, fenceBreak: 0.18 },
+        house: [[2, 5, 'SNOWY_TREE_STUMP'], [5, 5, 'BARREL']],
+        cottage: [[2, 5, 'SACKS'], [5, 5, 'SNOWY_TREE_STUMP']],
+        farmhouse: [[2, 5, 'BARREL'], [4, 5, 'CRATE'], [5, 5, 'SACKS']],
+        hut: [[2, 5, 'SMALL_ROCKS_1'], [4, 5, 'SMALL_ROCKS_2'], [5, 5, 'SNOWY_TREE_STUMP']],
+        workshop: [[2, 5, 'BARREL'], [4, 5, 'CRATE'], [5, 5, 'CRATE_SACK']],
+    }),
+});
+
+const PLAINS_VILLAGE = STRUCTURES.ABANDONED_VILLAGE;
+const CACTI = [{ id: 'SMALL_CACTUS_1', weight: 2 }, { id: 'MEDIUM_CACTUS_1', weight: 1 }];
+const SNOWY_TREES = PLAINS_VILLAGE.trees.biomes.SNOWY_MOUNTAINS;
+const DESERT_PROPS = ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SAND_DUNE_1', 'SAND_DUNE_2', 'DESERT_SKULL', 'BONE_PILE', 'BARREL', 'CRATE'];
+const SNOWY_PROPS = PLAINS_VILLAGE.streetProps.biomes.SNOWY_MOUNTAINS;
+
+STRUCTURES.ABANDONED_VILLAGE_DESERT = {
+    ...PLAINS_VILLAGE,
+    centerPrefab: 'ABANDONED_CENTER_DESERT',
+    modules: [
+        { prefab: 'ABANDONED_HOUSE_DESERT', weight: 5 },
+        { prefab: 'ABANDONED_COTTAGE_DESERT', weight: 4 },
+        { prefab: 'ABANDONED_FARMHOUSE_DESERT', weight: 3 },
+        { prefab: 'ABANDONED_HUT_DESERT', weight: 3 },
+        { prefab: 'ABANDONED_CROP_FIELD_ALOE', weight: 2 },
+        { prefab: 'ABANDONED_WORKSHOP_DESERT', weight: 1.5, required: true, max: 1 },
+    ],
+    trees: {
+        ...PLAINS_VILLAGE.trees,
+        chance: 0.05,                                 // a cactus is not a tree: the desert village is open
+        max: 160,
+        pool: CACTI,
+        biomes: { PLAINS: PLAINS_VILLAGE.trees.pool, SNOWY_MOUNTAINS: SNOWY_TREES, DESERT: CACTI },
+    },
+    streetProps: {
+        ...PLAINS_VILLAGE.streetProps,
+        pool: DESERT_PROPS,
+        biomes: { PLAINS: PLAINS_VILLAGE.streetProps.pool, SNOWY_MOUNTAINS: SNOWY_PROPS, DESERT: DESERT_PROPS },
+    },
+};
+
+STRUCTURES.ABANDONED_VILLAGE_SNOWY = {
+    ...PLAINS_VILLAGE,
+    centerPrefab: 'ABANDONED_CENTER_SNOWY',
+    modules: [
+        { prefab: 'ABANDONED_HOUSE_SNOWY', weight: 5 },
+        { prefab: 'ABANDONED_COTTAGE_SNOWY', weight: 4 },
+        { prefab: 'ABANDONED_FARMHOUSE_SNOWY', weight: 3 },
+        { prefab: 'ABANDONED_HUT_SNOWY', weight: 3 },
+        { prefab: 'ABANDONED_WORKSHOP_SNOWY', weight: 1.5, required: true, max: 1 },     // no crop fields: the ground is frozen
+    ],
+    trees: {
+        ...PLAINS_VILLAGE.trees,
+        pool: SNOWY_TREES,
+        biomes: { PLAINS: PLAINS_VILLAGE.trees.pool, SNOWY_MOUNTAINS: SNOWY_TREES, DESERT: [] },
+    },
+    streetProps: {
+        ...PLAINS_VILLAGE.streetProps,
+        pool: SNOWY_PROPS,
+        biomes: { PLAINS: PLAINS_VILLAGE.streetProps.pool, SNOWY_MOUNTAINS: SNOWY_PROPS, DESERT: PLAINS_VILLAGE.streetProps.biomes.DESERT },
+    },
+};

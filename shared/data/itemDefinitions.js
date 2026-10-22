@@ -1269,10 +1269,10 @@ export const ItemDefinitions = {
     id: "bedroll",
     name: "Bedroll",
     type: "consumable",
-    description: "A rolled-up blanket and a bit of oilcloth. Spread it out to sleep through the night. It wears out and is used up each time.",
+    description: "A rolled-up blanket and a bit of oilcloth. Spread it out to sleep for twelve hours. It wears out and is used up each time.",
     value: 150,
     icon: { col: 10, row: 0 },           // consumables.png
-    useAbility: "use_bedroll",           // starts the sleep encounter (the encounter id is in that ability; "bonfire" is a stand-in)
+    useAbility: "use_bedroll",           // fades out and moves the clock twelve hours (the hours are in that ability); no encounter
     usability: ['overworld'],
     stackable: true,
     maxStack: 10

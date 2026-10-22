@@ -39,6 +39,7 @@ import { SavesRenderer } from '../renderers/saves/savesRenderer.js';
 import { SettingsRenderer } from '../renderers/settings/settingsRenderer.js';
 import { CanvasUI } from '../ui/canvasUI.js';
 import { UITheme } from '../ui/UITheme.js';
+import { TutorialOverlay } from '../ui/tutorialOverlay.js';
 
 // Screens that used to be left only by right-click / Esc get the standard Back button (UITheme.backButton). It is drawn and hit-tested here,
 // after the screen has drawn, so every screen shows the same button; clicking it does exactly what right-click does on that screen.
@@ -123,6 +124,11 @@ export class SceneManager {
         this.pendingAfterVictory = null;   // { encounterId, context } to play when the battle in progress is won, see the START_BATTLE handler
         this.activeEncounterBGM = null;
 
+        // First-visit control tips (see ui/tutorialOverlay.js). Off until the player reaches the overworld after the prologue (or loads a save),
+        // and off again on the title screen, so the prologue, the character creator and the title menus never show one.
+        this.tutorial = new TutorialOverlay();
+        this._tipsReady = false;
+
         this._handleGlobalKeydown = this._handleGlobalKeydown.bind(this);
         this.setupInputRouting();
         this.setupEventListeners();
@@ -177,6 +183,12 @@ export class SceneManager {
     changeScene(sceneName, sceneContext = {}) {
         console.log(`[SceneManager] Switching to: ${sceneName}`);
         this.currentScene = sceneName;
+
+        // First-visit control tips: a card for this screen if it has not been seen (the scene beneath is paused until it is dismissed)
+        this.tutorial.cancel();
+        if (sceneName === 'title') this._tipsReady = false;
+        if (sceneName === 'overworld') this._tipsReady = true;
+        if (this._tipsReady) this.tutorial.show(sceneName);
 
         // Every arrival on the overworld (a new game, after a battle, an encounter, a shop, the menus) is a safe moment to save.
         // Does nothing inside a house / cave (SaveManager.canSaveNow), so the last outdoor save stays the one that loads.
@@ -332,6 +344,19 @@ export class SceneManager {
                 // A bedroll (or any item that opens an encounter): lock the player and open it like an object's encounter. Ending it returns to the overworld, which unlocks.
                 this.overworldController.isLocked = true;
                 events.emit('INTERACT', { type: 'ENCOUNTER', id: action.encounterId, context: action.context || {} });
+            } else if (action.type === 'advance_time') {
+                // A bedroll: fade to black, move the clock while the screen is dark (the light, the music and the buffs follow it), fade back in. The player stays
+                // locked until the picture is back. Used from a menu, the fade covers the menu and the player is left as they were.
+                const onOverworld = this.currentScene === 'overworld';
+                if (onOverworld) this.overworldController.isLocked = true;
+                events.emit('PLAY_SFX', { id: 'restSfx', volume: 0.7 });
+                this.transitionRenderer.start(() => {
+                    TimeSystem.advance(action.minutes);
+                }, 'fade', {
+                    speed: 0.9,
+                    hold: 0.8,
+                    onDone: () => { if (onOverworld) this.overworldController.isLocked = false; }
+                });
             } else {
                 console.warn('[SceneManager] Unhandled world action:', action);
             }
@@ -556,6 +581,16 @@ export class SceneManager {
 
     _handleGlobalKeydown(e) {
         if (this.transitionRenderer.isActive && this.transitionRenderer.state === 'FADE_OUT') return;
+
+        // A tip card is open: it takes every key. Any key but a bare modifier (or a held key repeating) closes it once it has been up a moment.
+        if (this.tutorial.active) {
+            const modifier = /^(Shift|Control|Alt|Meta|CapsLock)/.test(e.code);
+            if (e.code !== 'Backquote' && !modifier && !e.repeat && this.tutorial.canDismiss) {
+                if (e.preventDefault) e.preventDefault();
+                this._dismissTutorial();
+            }
+            return;
+        }
         if (e.code === 'Backquote') this.mapRenderer.showDebug = !this.mapRenderer.showDebug;
 
         const activeController = this._getActiveController();
@@ -604,10 +639,24 @@ export class SceneManager {
         }
     }
 
+    /** Closes the open tip card; the clicks / keys that were held for the screen underneath are dropped so none of them acts on it. */
+    _dismissTutorial() {
+        this.tutorial.dismiss();
+        this.input.reset();
+    }
+
     update(dt) {
         let click = this.input.getAndResetClick();
         let rightClick = this.input.getAndResetRightClick();
         let scroll = this.input.getAndResetScroll();
+
+        // A tip card is open: the screen underneath waits (no controller update, no clock, no weather). Only the fade and the card move on.
+        if (this.tutorial.active) {
+            if ((click || rightClick) && this.tutorial.canDismiss) this._dismissTutorial();
+            this.tutorial.update(dt);
+            this.transitionRenderer.update(dt);
+            return;
+        }
 
         // While a transition is fading the old screen out, keys are ignored (see _handleGlobalKeydown); the mouse is ignored too,
         // so a double click can not fire on a screen that is already leaving.
@@ -747,6 +796,8 @@ export class SceneManager {
         }
 
         this._drawSharedBackButton();
+
+        this.tutorial.render(this.ctx);
 
         this.transitionRenderer.render(this.ctx);
     }

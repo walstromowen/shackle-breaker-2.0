@@ -2,6 +2,7 @@ import { UITheme } from '../../../ui/UITheme.js';
 import { UI_SFX } from '../../../ui/uiSfx.js';
 import { TRAIT_DEFINITIONS } from '../../../../../shared/data/traitDefinitions.js';
 import { ItemDefinitions } from '../../../../../shared/data/itemDefinitions.js';
+import { Formatting } from '../../../../../shared/utils/formatting.js';
 
 export class EquipmentPanel {
   constructor(ui, loader) {
@@ -65,15 +66,28 @@ export class EquipmentPanel {
     const currentXp = this._getVal(stats.xp) || this._getVal(member.xp);
     const nextXp = this._getVal(stats.xpToNext) || this._getVal(member.xpToNext) || this._getVal(stats.maxXp) || this._getVal(member.maxXp) || 100;
 
-    const hpText = `HP ${this._getVal(member.hp)}/${totalMaxHp}`;
-    const stmText = `STM ${this._getVal(member.stamina)}/${totalMaxStm}`;
-    const insText = `INS ${this._getVal(member.insight)}/${totalMaxIns}`;
-    const xpText = `XP ${currentXp}/${nextXp}`;
+    // The four texts sit in one centred row. When the numbers are too big for the row (XP in the thousands, a long name beside it) they are shortened
+    // (21.9k/21.9k) and the gaps tightened, so the row never runs past the panel.
+    const build = (n) => {
+      const f = (v) => (n ? Formatting.compactNumber(this._getVal(v) ?? v) : v);
+      return [
+        `HP ${f(this._getVal(member.hp))}/${f(totalMaxHp)}`,
+        `STM ${f(this._getVal(member.stamina))}/${f(totalMaxStm)}`,
+        `INS ${f(this._getVal(member.insight))}/${f(totalMaxIns)}`,
+        `XP ${f(currentXp)}/${f(nextXp)}`
+      ];
+    };
 
     this.ui.ctx.font = UITheme.fonts.mono;
-    const gap = 36;
+    let gap = 36;
+    const rowW = (texts) => this.ui.ctx.measureText(texts.join('')).width + (gap * 3);
+    const room = Math.max(200, fullW - 192);
+    let texts = build(false);
+    if (rowW(texts) > room) texts = build(true);
+    if (rowW(texts) > room) gap = 18;
+    const [hpText, stmText, insText, xpText] = texts;
 
-    const totalW = this.ui.ctx.measureText(hpText + stmText + insText + xpText).width + (gap * 3);
+    const totalW = rowW(texts);
     let startX = centerX - (totalW / 2);
 
     const drawVital = (txt, color) => {

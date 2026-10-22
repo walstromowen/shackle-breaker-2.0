@@ -4,9 +4,11 @@ import { Formatting } from '../../../../../shared/utils/formatting.js';
 export class StatsPanel {
     constructor(ui) {
         this.ui = ui;
+        this.attrRects = {}; // attribute -> { x, y, w, h } of its cell, from the last render (the renderer hit-tests them to explain the one under the mouse)
     }
 
     render(member, stats, x, y, w) {
+        this.attrRects = {};
         let currentY = y;
         const rowHeight = 34; // (a little tighter than before: the bottom-left corner of this column belongs to the Back button)
 
@@ -33,6 +35,7 @@ export class StatsPanel {
                 
                 const itemX = x + (col * colWidth);
                 const itemY = currentY + (row * rowHeight);
+                this.attrRects[key] = { x: itemX - 12, y: itemY - 26, w: colWidth - 12, h: rowHeight };
 
                 const baseVal = attrs[key];
                 const finalVal = stats[key];

@@ -15,7 +15,7 @@ export const bonfire = {
                     text: "Set up camp and rest.",
                     type: "skill_check",
                     attribute: null,
-                    threshold: 10,
+                    threshold: 8,
                     conditions: [
                         { type: "context_flag_not_set", flagId: "failed_bonfire_rest" },
                         { type: "has_tag", tag: "HUMANOID" }

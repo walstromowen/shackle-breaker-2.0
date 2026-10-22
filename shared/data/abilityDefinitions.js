@@ -905,7 +905,7 @@ export const AbilityDefinitions = {
     "rest": {
         id: "rest",
         name: "Rest",
-        description: "Recover health, stamina, and insight.",
+        description: "Catch your breath and steady your mind. Recovers stamina and insight.",
         range: "self",
         tags: ["physical", "support", "healing"],
         battleMessage: "{user} takes a moment to {ability} and recover.",
@@ -1254,17 +1254,16 @@ export const AbilityDefinitions = {
     "use_bedroll": {
         id: "use_bedroll",
         name: "Make Camp",
-        description: "Spread out the bedroll and sleep through the night.",
+        description: "Spread out the bedroll and sleep for twelve hours. The day turns to night, or the night to day.",
         context: "overworld",
         range: "self",
         tags: ["utility", "item"],
         targeting: { scope: "self", select: "auto" },
         accuracy: 1.0,
         effects: [{
-            type: "start_encounter",                 // AbilitySystem._world_start_encounter: the scene manager opens the encounter
-            encounterId: "bonfire",                  // PLACEHOLDER: swap for the real sleep encounter when it exists
-            context: { source: "bedroll" },          // handed to the encounter (so it can tell a bedroll from a campfire)
-            message: "You spread out the bedroll and settle in for the night."
+            type: "advance_time",                    // AbilitySystem._world_advance_time: fade out, move the clock while the screen is dark, fade in (no encounter)
+            hours: 12,                               // the same twelve hours as resting at a bonfire
+            message: "You spread out the bedroll and sleep."
         }]
     },
 };

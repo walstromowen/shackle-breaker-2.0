@@ -1,4 +1,4 @@
-import { LootTableDefinitions } from '../../data/lootTableDefinitions.js';
+import { LootTableDefinitions, LootExclusionSets } from '../../data/lootTableDefinitions.js';
 import { LootTableModel } from '../../models/lootTableModel.js';
 
 export class LootTableFactory {
@@ -8,14 +8,23 @@ export class LootTableFactory {
      * @param {string} tableId - The ID of the loot table in LootTableDefinitions.
      * @param {number} rollCount - How many times to roll the table (defaults to 1).
      * @param {number} baseCurrency - Optional currency to inject directly into the final model.
+     * @param {string|string[]} exclude - Optional item ids and / or LootExclusionSets names (e.g. "low_tier") to leave out of every roll.
      * @returns {LootTableModel} - A clean, merged model containing all drops.
      */
-    static generateLoot(tableId, rollCount = 1, baseCurrency = 0) {
-        const table = LootTableDefinitions[tableId];
+    static generateLoot(tableId, rollCount = 1, baseCurrency = 0, exclude = null) {
+        const found = LootTableDefinitions[tableId];
         
-        if (!table || !table.items) {
+        if (!found || !found.items) {
             console.error(`LootTableFactory: Table '${tableId}' not found.`);
             return new LootTableModel([], baseCurrency);
+        }
+
+        // The excluded items are taken out of the table first, so a weighted table simply spreads their share over the rest.
+        let table = found;
+        const skip = this._excludedIds(exclude);
+        if (skip.size > 0) {
+            const items = found.items.filter(entry => !skip.has(entry.id));
+            if (items.length > 0) table = { ...found, items };
         }
 
         let rawDrops = [];
@@ -32,6 +41,17 @@ export class LootTableFactory {
         // Merge duplicate items and return the finalized model
         const mergedDrops = this._mergeDuplicates(rawDrops);
         return new LootTableModel(mergedDrops, baseCurrency);
+    }
+
+    /** The set of item ids named by an `exclude` value: set names expand to their items, anything else is an item id. */
+    static _excludedIds(exclude) {
+        const ids = new Set();
+        if (!exclude) return ids;
+        for (const name of (Array.isArray(exclude) ? exclude : [exclude])) {
+            if (LootExclusionSets[name]) LootExclusionSets[name].forEach(id => ids.add(id));
+            else ids.add(name);
+        }
+        return ids;
     }
 
     // ==========================================
@@ -76,4 +96,4 @@ export class LootTableFactory {
         }
         return Object.values(merged); // Converts the dictionary back to an array
     }
-}
+}

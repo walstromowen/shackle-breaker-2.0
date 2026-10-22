@@ -946,4 +946,13 @@ export const LootTableDefinitions = {
 };
 
 // The HOUSE_INTERIOR biome's defaultLootTable is "house"; point it at the house_interior table.
-LootTableDefinitions.house = LootTableDefinitions.house_interior;
+LootTableDefinitions.house = LootTableDefinitions.house_interior;
+
+/* Items a roll can leave out (a ROLL_LOOT_TABLE payload `exclude`: set names from here and / or plain item ids). A chest is a find, so it never
+   hands out the common stuff you trip over on the road: raw wood, fibres, stone, flint and the like, and the tattered rags. */
+export const LootExclusionSets = {
+    low_tier: [
+        'plant_fibers', 'soft_wood', 'hard_wood', 'wooden_stick', 'stone', 'flint', 'sand', 'wheat', 'cotton', 'bone',
+        'tattered_hood', 'tattered_shirt', 'tattered_gloves', 'tattered_pants', 'tattered_boots',
+    ],
+};
