@@ -1,3 +1,6 @@
+/* The gravestone's body, shared by TOMBSTONE and OLD_GRAVESTONE below: one sprite, one footprint, one hitbox, so nothing on screen tells the two apart. */
+const GRAVESTONE = { sheet: 'objTombstone', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } };
+
 export const MAP_OBJECTS_DEFINITIONS = {
     // --- GROUND DECORATION ---
     GRASS_COVERAGE_1: { sheet: 'objGrassCoverage1', spriteX: 6, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true },
@@ -66,6 +69,10 @@ export const MAP_OBJECTS_DEFINITIONS = {
        time you step into that line (OverworldController.checkEncounterZones). It only stands in abandoned villages, on the verge north of an east-west road
        (structures.js `scarecrows`). */
     PECULIAR_SCARECROW: { sheet: 'objScarecrow', spriteX: 0, spriteY: 0, width: 2, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'peculiar_scarecrow', triggerLine: { direction: 'down', length: 5 } } },
+    /* TOMBSTONE / OLD_GRAVESTONE: the same gravestone twice (GRAVESTONE above). The plain TOMBSTONE is scenery and is the common one; OLD_GRAVESTONE is the rare twin
+       that starts the "Old Gravestone" encounter (dig for what was buried, or wake what was). Both stand on the plains (biomeDefinitions.js PLAINS, each its own band). */
+    TOMBSTONE: { ...GRAVESTONE },
+    OLD_GRAVESTONE: { ...GRAVESTONE, interaction: { type: 'ENCOUNTER', id: 'old_gravestone', isRepeatable: false } },
     MYSTERIOUS_ALTAR: { sheet: 'objMysteriousAltar', spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 3, h: 2 }, interaction: { type: 'ENCOUNTER', id: 'mysterious_altar' } },
     
     // --- HERBS --- (walk over them to pick them up, like the small rocks and the bones)

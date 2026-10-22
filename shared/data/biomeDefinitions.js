@@ -84,6 +84,7 @@ export const BIOME_DEFINITIONS = {
             return Math.min(0.99, ground + _lift(hill - 3 * _cut(c), HILL_TIERS.plains)); /* capped: plains hills stop at LAYER_5 */
         },
         structures: { rate: 0.1, pools: [{ chance: 1.0, id: 'ABANDONED_VILLAGE' }] },
+        landmarks: { rate: 0.08, pools: [{ chance: 1.0, id: 'GRAVEYARD' }] } /* a graveyard in 8% of the chunks that have no village (see GRAVEYARD in structures.js) */,
         mapObjects: {
             [CONFIG.TILE_TYPES.LAYER_3]: [
                 { chance: 0.003, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
@@ -163,6 +164,7 @@ export const BIOME_DEFINITIONS = {
             return ground + _lift(hill - 4 * _cut(c), HILL_TIERS.desert);
         },
         structures: { rate: 0.08, pools: [{ chance: 1.0, id: 'ABANDONED_VILLAGE_DESERT' }] },
+        landmarks: { rate: 0.08, pools: [{ chance: 1.0, id: 'GRAVEYARD_DESERT' }] },
         mapObjects: {
             [CONFIG.TILE_TYPES.LAYER_3]: [{ chance: 0.01, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] }],
             [CONFIG.TILE_TYPES.LAYER_2]: [
@@ -216,6 +218,7 @@ export const BIOME_DEFINITIONS = {
             return ground + _lift(H, HILL_TIERS.snowy, 0.25, 0.07); /* no gorges: every terrace stays whole, so the mountain can be climbed */
         },
         structures: { rate: 0.08, pools: [{ chance: 1.0, id: 'ABANDONED_VILLAGE_SNOWY' }] },
+        landmarks: { rate: 0.08, pools: [{ chance: 1.0, id: 'GRAVEYARD_SNOWY' }] },
         mapObjects: {
             [CONFIG.TILE_TYPES.LAYER_2]: [
                 { chance: 0.05, id: 'SNOWY_PINE_TREE' },

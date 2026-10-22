@@ -18,6 +18,21 @@ export class BiomeModel {
         this.battles = definition.battles;
         this.encounters = definition.encounters;
         this.structures = definition.structures;
+        this.landmarks = definition.landmarks || null; // small stand-alone structures (graveyards) that appear in chunks without a village
+    }
+
+    /* the landmark (a PREFAB id) a chunk gets, or null: `landmarks.rate` is the share of chunks that get one, `pools` picks which */
+    getLandmarkId(rngValue) {
+        const lm = this.landmarks;
+        if (!lm || !lm.rate || !lm.pools || lm.pools.length === 0) return null;
+        if (rngValue > lm.rate) return null;
+        const poolRng = rngValue / lm.rate;
+        let cumulativeChance = 0;
+        for (const pool of lm.pools) {
+            cumulativeChance += pool.chance;
+            if (poolRng <= cumulativeChance) return pool.id;
+        }
+        return lm.pools[0].id;
     }
 
     getStructureId(rngValue) {

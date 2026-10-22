@@ -160,7 +160,8 @@ export class WorldManager {
         const centerRow = startRow + Math.floor(this.CHUNK_SIZE / 2);
         const biome = this.getBiomeAt(centerCol, centerRow);
         const structureRng = this.pseudoRandom(cx * 137, cy * 193);
-        const structureId = biome.getStructureId(structureRng);
+        /* a chunk with no village may get a landmark (a graveyard), on its own roll */
+        const structureId = biome.getStructureId(structureRng) || biome.getLandmarkId(this.pseudoRandom(cx * 271 + 19, cy * 313 + 23));
         if (!structureId) return;
         const prefabOrBlueprint = STRUCTURES[structureId];
         if (!prefabOrBlueprint) return;
@@ -610,9 +611,42 @@ export class WorldManager {
             }
         }
     }
+    /* Old graves on the verge beside the roads (blueprint `gravestones`): the same cell rules as the torches. `encounterChance` of the stones are the
+       dig-able OLD_GRAVESTONE, the rest the plain TOMBSTONE (same sprite). Planned after the scarecrows and torches, before the street dressing. */
+    _planGravestones(plan, bp) {
+        const gc = bp.gravestones;
+        if (!gc || !gc.chance || !MAP_OBJECTS_DEFINITIONS[gc.id]) return;
+        const off = plan.cfg.rad + 1;
+        const spacing = gc.spacing ?? 9;
+        let placed = 0;
+        for (const road of plan.roads) {
+            const cs = road.centres;
+            let last = -Infinity;
+            for (let i = 2; i < cs.length && placed < (gc.max ?? 10); i++) {
+                if (i - last < spacing || !this._straightAt(cs, i, 2, 0)) continue;
+                if (this.pseudoRandom(cs[i].c * 107 + plan.salt, cs[i].r * 109 + 31) >= gc.chance) continue;
+                const horizontal = cs[i].d === 1 || cs[i].d === 3;
+                const side = this.pseudoRandom(cs[i].c * 113 + 7, cs[i].r * 127 + plan.salt) < 0.5 ? 0 : 1;
+                const sgn = side === 0 ? -off : off;
+                const c = horizontal ? cs[i].c : cs[i].c + sgn;
+                const r = horizontal ? cs[i].r + sgn : cs[i].r;
+                const key = this._s(c, r);
+                if (plan.roadOwner.has(key) || plan.hubTiles.has(key) || plan.buildingTiles.has(key)) continue;
+                if (gameState.world.changes[key] !== undefined || this._collisionMap.has(key)) continue;
+                if (this.getElevation(c, r) !== plan.baseElev || this.isBlockedByFace(c, r) || this.isCliffFace(c, r) || this._nearStair(c, r)) continue;
+                const id = gc.encounterId && MAP_OBJECTS_DEFINITIONS[gc.encounterId] && this.pseudoRandom(c * 131 + 3, r * 137 + plan.salt) < (gc.encounterChance ?? 0)
+                    ? gc.encounterId : gc.id;
+                this.modifyWorld(c, r, id);
+                this._placeObject(c, r, id);
+                last = i;
+                placed++;
+            }
+        }
+    }
     _planStreetProps(plan, bp) {
         this._planStreetScarecrows(plan, bp);
         this._planStreetTorches(plan, bp);
+        this._planGravestones(plan, bp);
         const sp = bp.streetProps;
         if (!sp || !sp.chance || !sp.pool || sp.pool.length === 0) return;
         const off = plan.cfg.rad + 1;
@@ -876,6 +910,7 @@ export class WorldManager {
                 }
             }
         }
+        if (prefab.graveyard) this._graveyardObjects(grid, prefab, rnd);
         const sc = prefab.scatter;
         if (sc && sc.chance && sc.pool && sc.pool.length > 0) {
             const rect = sc.rect || { x: 0, y: 0, w: prefab.width, h: prefab.height };
@@ -889,6 +924,48 @@ export class WorldManager {
             }
         }
         return grid;
+    }
+    /* A graveyard (a prefab with `graveyard`, see structures.js): `stones` gravestones at random cells of the box, one of them the OLD_GRAVESTONE with
+       the chance `encounterChance`; then every free cell touching a stone may hold bones or small rocks, and a few diagonal ones a boulder (never one
+       straight beside a stone, so each grave can be walked up to). Written into `grid`, decided per cell from the seed. */
+    _graveyardObjects(grid, prefab, rnd) {
+        const gy = prefab.graveyard;
+        const W = prefab.width, H = prefab.height;
+        const lo = Math.max(1, gy.stones?.min ?? 3);
+        const hi = Math.max(lo, gy.stones?.max ?? 5);
+        const count = lo + Math.floor(rnd(0, 0, 11) * (hi - lo + 1));
+        /* the stones: random cells, a shuffled list of all cells, taken in order */
+        const cells = [];
+        for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) cells.push({ c, r, k: rnd(c, r, 12) });
+        cells.sort((a, b) => a.k - b.k);
+        const stones = cells.slice(0, Math.min(count, cells.length));
+        const isStone = (c, r) => stones.some((s) => s.c === c && s.r === r);
+        const pick = (pool, c, r, salt) => pool[Math.floor(rnd(c, r, salt) * pool.length) % pool.length];
+        const withEncounter = gy.encounterStone && MAP_OBJECTS_DEFINITIONS[gy.encounterStone] && rnd(1, 1, 13) < (gy.encounterChance ?? 0);
+        const special = withEncounter ? Math.min(stones.length - 1, Math.floor(rnd(2, 2, 14) * stones.length)) : -1;
+        stones.forEach((s, i) => { grid[s.r][s.c] = i === special ? gy.encounterStone : gy.stone; });
+        /* what lies beside them */
+        let boulders = 0;
+        const orthStone = (c, r) => isStone(c - 1, r) || isStone(c + 1, r) || isStone(c, r - 1) || isStone(c, r + 1);
+        for (let r = 0; r < H; r++) {
+            for (let c = 0; c < W; c++) {
+                if (grid[r][c] !== null) continue;
+                let touching = false;
+                for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && isStone(c + dx, r + dy)) touching = true;
+                if (!touching) continue;
+                const roll = rnd(c, r, 15);
+                const bo = gy.boulders, bn = gy.bones, rk = gy.rocks;
+                if (bo && bo.pool?.length && !orthStone(c, r) && boulders < (gy.boulderMax ?? 3) && roll < bo.chance) {
+                    grid[r][c] = pick(bo.pool, c, r, 16);
+                    boulders++;
+                } else if (bn && bn.pool?.length && rnd(c, r, 17) < bn.chance) {
+                    grid[r][c] = pick(bn.pool, c, r, 18);
+                } else if (rk && rk.pool?.length && rnd(c, r, 19) < rk.chance) {
+                    grid[r][c] = pick(rk.pool, c, r, 20);
+                }
+                if (grid[r][c] && !MAP_OBJECTS_DEFINITIONS[grid[r][c]]) grid[r][c] = null;
+            }
+        }
     }
     _writePrefabToGlobalState(originCol, originRow, prefab) {
         const cells = this._prefabObjects(originCol, originRow, prefab);

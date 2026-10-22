@@ -386,6 +386,25 @@ export const LootTableDefinitions = {
         ]
     },
 
+    // Used by old_gravestone: what the dead were buried with. Mostly bones and old, plain gear; a tonic or a key now and then.
+    "old_grave_loot": {
+        type: "weighted",
+        items: [
+            { id: "bone", weight: 30, min: 1, max: 3 },
+            { id: "dagger", weight: 12, min: 1, max: 1 },
+            { id: "shortsword", weight: 10, min: 1, max: 1 },
+            { id: "handaxe", weight: 10, min: 1, max: 1 },
+            { id: "tattered_hood", weight: 12, min: 1, max: 1 },
+            { id: "tattered_shirt", weight: 12, min: 1, max: 1 },
+            { id: "tattered_gloves", weight: 12, min: 1, max: 1 },
+            { id: "healing_tonic", weight: 12, min: 1, max: 1 },
+            { id: "bronze_ingot", weight: 10, min: 1, max: 2 },
+            { id: "iron_ingot", weight: 8, min: 1, max: 2 },
+            { id: "small_iron_key", weight: 8, min: 1, max: 1 },
+            { id: "throwing_knife", weight: 6, min: 2, max: 3 }
+        ]
+    },
+
     // The big iron chest: the best the game hands out. Quality over quantity, so roll it only 2 to 3 times.
     // Iron armor and the heavy weapons lead, then the tonics and rare brews, then bronze and iron stock, with a sliver of meteorite.
     "iron_chest_loot": {

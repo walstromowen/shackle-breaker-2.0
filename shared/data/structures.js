@@ -293,6 +293,18 @@ export const STRUCTURES = {
             max: 8,
         },
 
+        /* GRAVESTONES: old graves on the verge beside the roads (see _planGravestones in worldManager.js). Each step along a straight road has `chance` of one,
+           no two on a road are closer than `spacing` steps, and a village has at most `max`. Every stone is the plain TOMBSTONE except `encounterChance` of them,
+           which are the OLD_GRAVESTONE you can dig up (encounter old_gravestone). Both use the same sprite. */
+        gravestones: {
+            id: 'TOMBSTONE',
+            encounterId: 'OLD_GRAVESTONE',
+            encounterChance: 0.05,
+            chance: 0.06,
+            spacing: 9,
+            max: 10,
+        },
+
         /* STREET DRESSING (on the grass just beside the road; the solid ones are never in the way of the road) */
         streetProps: {
             chance: 0.10,                         // per step, per side
@@ -453,6 +465,54 @@ STRUCTURES.ABANDONED_VILLAGE_DESERT = {
         biomes: { PLAINS: PLAINS_VILLAGE.streetProps.pool, SNOWY_MOUNTAINS: SNOWY_PROPS, DESERT: DESERT_PROPS },
     },
 };
+
+/* =============================================================================================================
+   GRAVEYARDS
+   A small landmark in every exterior biome (the biomes' `landmarks` in biomeDefinitions.js say how often and which one): 3 to 5 gravestones strewn at
+   random inside a 7 x 7 box, with bones, small rocks and boulders lying beside them. `graveyard` is read by WorldManager._graveyardObjects:
+     stones         { min, max }   how many gravestones
+     encounterChance               the chance that ONE of them is the OLD_GRAVESTONE (the others are plain TOMBSTONEs)
+     bones / rocks / boulders      what lies beside the stones (a pool of object ids, `chance` = per free cell touching a stone)
+     boulderMax                    a graveyard has at most this many boulders (a boulder is never straight beside a stone, so every grave can be reached)
+   The box is written like any prefab: the natural trees and rocks inside it are cleared, the ground stays as it is.
+   ============================================================================================================= */
+
+function graveyard(spec) {
+    const N = 7;
+    return {
+        type: 'PREFAB',
+        width: N,
+        height: N,
+        terrain: grid(N, N),
+        objects: grid(N, N),
+        graveyard: {
+            stones: { min: 3, max: 5 },
+            encounterChance: 0.5,
+            stone: 'TOMBSTONE',
+            encounterStone: 'OLD_GRAVESTONE',
+            boulderMax: 3,
+            ...spec,
+        },
+    };
+}
+
+Object.assign(STRUCTURES, {
+    GRAVEYARD: graveyard({
+        bones: { chance: 0.30, pool: ['BONE_PILE'] },
+        rocks: { chance: 0.30, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
+        boulders: { chance: 0.25, pool: ['BOULDER_1', 'BOULDER_2'] },
+    }),
+    GRAVEYARD_DESERT: graveyard({
+        bones: { chance: 0.40, pool: ['BONE_PILE', 'DESERT_SKULL'] },
+        rocks: { chance: 0.30, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
+        boulders: { chance: 0.25, pool: ['BOULDER_1', 'BOULDER_2'] },
+    }),
+    GRAVEYARD_SNOWY: graveyard({
+        bones: { chance: 0.30, pool: ['BONE_PILE'] },
+        rocks: { chance: 0.30, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
+        boulders: { chance: 0.25, pool: ['SNOWY_BOULDER_1', 'SNOWY_BOULDER_2'] },
+    }),
+});
 
 STRUCTURES.ABANDONED_VILLAGE_SNOWY = {
     ...PLAINS_VILLAGE,

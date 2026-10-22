@@ -593,6 +593,24 @@ export const SpawnTableDefinitions = {
             }
         ]
     },
+    // Used by old_gravestone: what is dug out of a grave and does not want to be. A few skeletons, mostly warriors, an odd floating skull.
+    "grave_skeletons": {
+        type: "faction_pool",
+        pools: [{
+            factionId: "supernatural",
+            weight: 100,
+            difficultySettings: {
+                easy: { minSize: 1, maxSize: 1 },
+                normal: { minSize: 1, maxSize: 2 },
+                hard: { minSize: 2, maxSize: 3 },
+                nightmare: { minSize: 3, maxSize: 4 }
+            },
+            members: [
+                { id: 'SKELETAL_WARRIOR', weight: 70 },
+                { id: 'FLOATING_SKULL', weight: 30 }
+            ]
+        }]
+    },
     "altar_skeletons": {
         type: "faction_pool",
         pools: [{

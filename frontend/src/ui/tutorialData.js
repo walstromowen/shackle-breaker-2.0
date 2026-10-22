@@ -73,7 +73,7 @@ export const TIPS = {
 
     level_up: {
         title: 'Level Up',
-        intro: 'Every trial leaves its mark. Choose what it makes of you. Nothing is final until you confirm.',
+        intro: 'Every trial leaves its mark. Choose what keeps you whole. Nothing is final until you confirm.',
         rows: [
             { keys: ['W', 'S'], text: 'Choose an attribute' },
             { keys: ['A', 'D'], text: 'Take a point off / put a point on it (or click the − and + buttons)' },

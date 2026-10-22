@@ -23,14 +23,15 @@ const TAGLINES = {
     attunement: 'Affinity with the elements.',
 };
 
-// A line of the game's story for each attribute, shown last and quietly on the card (italic, muted). Second person, a little ominous,
-// like the prologue: the seamless iron, the fog lifting, the stone that fell from the sky. It never carries a number or a rule.
+// A line of the game's story for each attribute, shown last and quietly on the card (italic, muted). Each says how that attribute keeps madness at bay, in the
+// voice of the starting backgrounds (character creator): the blacksmiths who kept their sanity, the rangers who left the cities, the scholars who studied magic and
+// the hermits who studied it alone. Magic is what drives people mad, and Insight is what it costs. It never carries a number or a rule.
 const FLAVOR = {
-    vigor: 'The road took the weak first. You are still walking.',
-    strength: 'You pulled at the iron once. It has not forgotten.',
-    dexterity: 'The convoy never turned its head. Be quick enough that nothing does.',
-    intelligence: 'The fog lifted from your mind. Not everything it hid was gentle.',
-    attunement: 'Something fell from the sky, and the elements have been listening since.',
+    vigor: 'A sound body is the last wall madness must climb.',
+    strength: 'Honest labour leaves little room for the whispers. The smiths kept their wits.',
+    dexterity: 'A mind watching its footing has no time to listen. Keep moving.',
+    intelligence: 'Reason is the lamp you hold against the dark. The scholars found it burns thin.',
+    attunement: 'Touch magic and it touches back. This is how long you can listen before it answers.',
 };
 
 // Statements of fact about stats that are not in the formulas (kept short; the rows below carry the numbers)

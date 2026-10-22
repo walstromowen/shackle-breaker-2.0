@@ -71,7 +71,7 @@ test('the elements are listed in full, the arcane trio by name', () => {
 test('every attribute card carries one short story line that holds no numbers', () => {
     for (const k of ATTRIBUTE_KEYS) {
         const d = getStatDescription(k);
-        assert.ok(d.flavor && d.flavor.length > 20 && d.flavor.length < 90, `${k} flavor: ${d.flavor}`);
+        assert.ok(d.flavor && d.flavor.length > 20 && d.flavor.length < 100, `${k} flavor: ${d.flavor}`);
         assert.ok(!/\d/.test(d.flavor), `${k} flavor must not carry a number`);
     }
 });
