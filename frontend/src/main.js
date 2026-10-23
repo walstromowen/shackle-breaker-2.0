@@ -328,6 +328,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     encounter_tracks_in_the_snow: './assets/icons/encounters/tracks_in_the_snow.png',
     encounter_prologue: './assets/icons/encounters/prologue.png',
     encounter_peculiar_scarecrow: './assets/icons/encounters/peculiar_scarecrow.png',
+    encounter_cave_in: './assets/icons/encounters/cave_in.png',
     // --- 1:1 ABILITY AUDIO SFX ---
     earthquake1Sfx: './assets/audio/sfx/abilities/earthquake/earthquake_1.wav',
     earthquake2Sfx: './assets/audio/sfx/abilities/earthquake/earthquake_2.wav',

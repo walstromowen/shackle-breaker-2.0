@@ -307,7 +307,7 @@ export const BIOME_DEFINITIONS = {
         shapeElevation: (noise) => noise,
         structures: { rate: 0, pools: [] },
         mapObjects: { [CONFIG.TILE_TYPES.LAYER_2]: [] } /* the CaveGenerator places the rocks itself (see `scatter` in interiorDefinitions.js) */,
-        encounters: { rate: 0, pools: [] },
+        encounters: { rate: 0.0015, type: 'time_weighted', pools: [{ weight: 100, id: 'cave_in', allowedTimes: ['day', 'dusk', 'night'] }] } /* RARE: a step in 650 or so, under the rarest elsewhere (the Crimson Vigil's 0.0025); a cave has no daylight, so every hour counts */,
         battles: { rate: 0.01, tables: { day: 'cave_battles', dusk: 'cave_battles', night: 'cave_battles' } } /* half the plains' / desert's 0.01; same table at every hour */,
     },
 };

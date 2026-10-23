@@ -78,6 +78,7 @@ export const treasureChest = {
                 },
                 {
                     text: "[INT] Unlock with a spell.",
+                    corruption: 2,   // magic used or a cruel act: corruption goes up
                     type: "skill_check",
                     attribute: "intelligence",
                     threshold: 12,

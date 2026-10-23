@@ -55,6 +55,8 @@ export class ItemModel {
     // --- USABILITY ---
     // Returns array of contexts, e.g. ['menu', 'battle']
     get usability() { return this.definition.usability || []; }
+    // A non-consumable that still has a "Use" entry in the item menu (the Fallen Meteorite frees a shackled character); its useAbility says what it does
+    get usable() { return !!this.definition.usable; }
 
     // --- DYNAMIC STATS (Updated for scaling) ---
     get attack() { 

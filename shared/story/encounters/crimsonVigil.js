@@ -39,6 +39,7 @@ export const crimsonVigil = {
             decisions: [
                 {
                     text: "[INT] Read the ring.",
+                    corruption: 2,   // magic used or a cruel act: corruption goes up
                     type: "skill_check",
                     attribute: "intelligence",
                     threshold: 13,
@@ -78,6 +79,7 @@ export const crimsonVigil = {
             decisions: [
                 {
                     text: "Take the offering.",
+                    corruption: 2,   // magic used or a cruel act: corruption goes up
                     outcomes: reward(25, 2, "quiet")
                 }
             ]
@@ -90,6 +92,7 @@ export const crimsonVigil = {
             decisions: [
                 {
                     text: "Dig it up.",
+                    corruption: 2,   // magic used or a cruel act: corruption goes up
                     outcomes: reward(15, 3, "quiet")
                 }
             ]

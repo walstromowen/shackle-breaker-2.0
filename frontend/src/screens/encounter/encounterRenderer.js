@@ -7,6 +7,7 @@ import { DIFFICULTY_MODIFIERS } from '../../../../shared/core/constants.js';
 import { drawItemChips } from '../../ui/itemChips.js';
 import { drawEmbers } from '../../ui/embers.js';
 import { drawStatTooltip } from '../../ui/statTooltip.js';
+import { isCursed, drawCursedPortrait } from '../../ui/curseOverlay.js';
 import { TONES, fxShake, fxFlash } from '../../ui/encounterFx.js';
 import { NARRATION, STAGE_START_TIMER, narrationPlan, textEndTimer, decisionAlpha } from '../../ui/narration.js';
 
@@ -1054,7 +1055,8 @@ export class EncounterRenderer {
             ctx.save();
             ctx.globalAlpha = alpha * baseAlpha;
             ctx.imageSmoothingEnabled = false;
-            ctx.drawImage(sheet, 0, 0, nativeRes, nativeRes, imgX, imgY, drawSize, drawSize);
+            if (isCursed(charData)) drawCursedPortrait(ctx, sheet, 0, 0, nativeRes, nativeRes, imgX, imgY, drawSize, drawSize, alpha * baseAlpha);
+            else ctx.drawImage(sheet, 0, 0, nativeRes, nativeRes, imgX, imgY, drawSize, drawSize);
             ctx.imageSmoothingEnabled = true;
             ctx.restore();
 

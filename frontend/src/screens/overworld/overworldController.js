@@ -758,7 +758,7 @@ export class OverworldController extends BaseController {
             this.player.isMoving = false;
             this.player.moveProgress = 0;
             this.player.animFrame = 0;
-            events.emit('START_ENCOUNTER', { encounterId: encounterData.id });
+            events.emit('START_ENCOUNTER', { encounterId: encounterData.id, context: encounterData.context });
             return;
         }
 

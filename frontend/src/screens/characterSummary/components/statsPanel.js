@@ -1,14 +1,15 @@
 import { UITheme } from '../../../ui/UITheme.js';
+import { CorruptionSystem } from '../../../../../shared/characters/corruptionSystem.js';
 import { Formatting } from '../../../../../shared/core/formatting.js';
 
 export class StatsPanel {
     constructor(ui) {
         this.ui = ui;
-        this.attrRects = {}; // attribute -> { x, y, w, h } of its cell, from the last render (the renderer hit-tests them to explain the one under the mouse)
+        this.statRects = {}; // attribute / stat id -> { x, y, w, h } of its cell, from the last render (the renderer hit-tests them to explain the one under the mouse)
     }
 
     render(member, stats, x, y, w) {
-        this.attrRects = {};
+        this.statRects = {};
         let currentY = y;
         const rowHeight = 34; // (a little tighter than before: the bottom-left corner of this column belongs to the Back button)
 
@@ -35,7 +36,7 @@ export class StatsPanel {
                 
                 const itemX = x + (col * colWidth);
                 const itemY = currentY + (row * rowHeight);
-                this.attrRects[key] = { x: itemX - 12, y: itemY - 26, w: colWidth - 12, h: rowHeight };
+                this.statRects[key] = { x: itemX - 12, y: itemY - 26, w: colWidth - 12, h: rowHeight };
 
                 const baseVal = attrs[key];
                 const finalVal = stats[key];
@@ -81,16 +82,16 @@ export class StatsPanel {
         const corruption = stats.corruption || 0;
 
         const combatStats = [
-            { label: "SPD", val: `${speed}` },
-            { label: "CRT %", val: `${critChance.toFixed(0)}%` },
-            { label: "HP REC", val: hpRec > 0 ? `${hpRec}` : `${hpRec}` },
-            { label: "CRT DMG", val: `${critMult}` },
-            { label: "STA REC", val: staRec > 0 ? `${staRec}` : `${staRec}` },
-            { label: "ACC", val: `${accuracy}` },
-            { label: "INS REC", val: insRec > 0 ? `${insRec}` : `${insRec}` },
-            { label: "EVA", val: `${evasion}` },
-            { label: "COR", val: `${corruption}` }
-        ];
+            { id: "speed", label: "SPD", val: `${speed}` },
+            { id: "critChance", label: "CRT %", val: `${critChance.toFixed(0)}%` },
+            { id: "hpRecovery", label: "HP REC", val: hpRec > 0 ? `${hpRec}` : `${hpRec}` },
+            { id: "critMultiplier", label: "CRT DMG", val: `${critMult}` },
+            { id: "staminaRecovery", label: "STA REC", val: staRec > 0 ? `${staRec}` : `${staRec}` },
+            { id: "accuracy", label: "ACC", val: `${accuracy}` },
+            { id: "insightRecovery", label: "INS REC", val: insRec > 0 ? `${insRec}` : `${insRec}` },
+            { id: "evasion", label: "EVA", val: `${evasion}` },
+            { id: "corruption", label: "COR", val: `${corruption}%` }
+        ].filter(stat => stat.id !== "corruption" || CorruptionSystem.isRevealed());   // corruption is a secret until act 2
 
         const colWidth = w / 2;
         const numRows = Math.ceil(combatStats.length / 2);
@@ -102,6 +103,7 @@ export class StatsPanel {
             
             const itemX = x + (col * colWidth);
             const itemY = currentY + (row * rowHeight);
+            this.statRects[stat.id] = { x: itemX - 12, y: itemY - 26, w: colWidth - 12, h: rowHeight };
 
             this.ui.drawStyled('label', stat.label, itemX, itemY);
             this.ui.drawStyled('value', stat.val, itemX + 144, itemY);
@@ -144,6 +146,12 @@ export class StatsPanel {
             const res = (stats.resistance || {})[type] || 0;
 
             if (atk === 0 && defense === 0 && res === 0) return;
+
+            // each figure explains itself: 'attack:fire', 'defense:fire', 'resistance:fire'
+            const cellW = w * 0.2;
+            this.statRects[`attack:${type}`] = { x: colAtk - cellW / 2, y: currentY - 22, w: cellW, h: 29 };
+            this.statRects[`defense:${type}`] = { x: colDef - cellW / 2, y: currentY - 22, w: cellW, h: 29 };
+            this.statRects[`resistance:${type}`] = { x: colRes - cellW / 2, y: currentY - 22, w: cellW, h: 29 };
 
             const label = Formatting.getAbbreviation(type);
             this.ui.drawText(label, colType, currentY, UITheme.fonts.mono, UITheme.colors.textMuted, "left");

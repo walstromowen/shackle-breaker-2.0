@@ -16,6 +16,8 @@ import { actTwo } from './encounters/actTwo.js';
 import { crimsonVigil } from './encounters/crimsonVigil.js';
 import { peculiarScarecrow } from './encounters/peculiarScarecrow.js';
 import { oldGravestone } from './encounters/oldGravestone.js';
+import { caveIn } from './encounters/caveIn.js';
+import { shackledBetrayal, shackledBetrayalEnd } from './encounters/shackledBetrayal.js';
 
 // <-- Import your new encounter here
 
@@ -38,6 +40,9 @@ export const encounterDefinitions = {
     [crimsonVigil.id]: crimsonVigil,
     [peculiarScarecrow.id]: peculiarScarecrow,
     [oldGravestone.id]: oldGravestone,
+    [caveIn.id]: caveIn,
+    [shackledBetrayal.id]: shackledBetrayal,
+    [shackledBetrayalEnd.id]: shackledBetrayalEnd,
 
     
     // <-- Add your new encounter here

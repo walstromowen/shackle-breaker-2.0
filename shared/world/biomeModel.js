@@ -1,6 +1,8 @@
-import { CONFIG } from '../core/constants.js';
+import { CONFIG, CORRUPTION } from '../core/constants.js';
+import { gameState } from '../core/gameState.js';
 import { SpawnTableFactory } from '../battle/spawnTableFactory.js';
 import { ActSystem } from '../story/actSystem.js';
+import { CorruptionSystem } from '../characters/corruptionSystem.js';
 
 export class BiomeModel {
     constructor(definition) {
@@ -98,21 +100,28 @@ export class BiomeModel {
 
     getEncounter(currentHour) {
         // Updated to read directly from the biome's inline encounter pools
-        if (!this.encounters || !this.encounters.pools || this.encounters.pools.length === 0) return null;
+        if (!this.encounters || !(this.encounters.rate > 0)) return null;
         if (Math.random() > this.encounters.rate) return null;
         const timeOfDay = this.getTimeOfDay(currentHour);
         // Filter out encounters that don't match the current time
         // A pool can be limited to some acts with `minAct` / `maxAct` (an encounter that only exists after, or only before, a milestone)
-        const validPools = this.encounters.pools.filter((pool) => (!pool.allowedTimes || pool.allowedTimes.includes(timeOfDay)) && ActSystem.isAvailable(pool));
-        if (validPools.length === 0) return null;
+        const validPools = (this.encounters.pools || []).filter((pool) => (!pool.allowedTimes || pool.allowedTimes.includes(timeOfDay)) && ActSystem.isAvailable(pool));
+        // The Shackling (story/encounters/shackledBetrayal.js) is an ordinary entry in every biome's pool, at any hour, but only while a party member is shackled
+        // (and someone else is still standing to be turned on). It is as likely as CORRUPTION.BETRAYAL_WEIGHT says next to the biome's own weights.
+        const entries = validPools.map((pool) => ({ weight: pool.weight, result: { id: pool.id } }));
+        const betrayer = CorruptionSystem.pickBetrayer();
+        if (betrayer) {
+            entries.push({ weight: CORRUPTION.BETRAYAL_WEIGHT, result: { id: 'shackled_betrayal', context: { betrayerIndex: gameState.party.members.indexOf(betrayer), betrayerName: betrayer.name } } });
+        }
+        if (entries.length === 0) return null;
         // Perform a weighted random roll
-        const totalWeight = validPools.reduce((sum, pool) => sum + pool.weight, 0);
+        const totalWeight = entries.reduce((sum, entry) => sum + entry.weight, 0);
         let roll = Math.random() * totalWeight;
-        for (const pool of validPools) {
-            if (roll < pool.weight) {
-                return { id: pool.id };
+        for (const entry of entries) {
+            if (roll < entry.weight) {
+                return entry.result;
             }
-            roll -= pool.weight;
+            roll -= entry.weight;
         }
         return null;
     }

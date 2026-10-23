@@ -44,22 +44,20 @@ export const INTERIOR_DEFINITIONS = {
             { pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'], chance: 0.04, ground: true }  // loose stones (pick-up), about 80 per cave
         ],
 
-        // The bottom of the deepest room: an iron chest in the middle of a 5 x 5 square with a standing torch on each corner (offsets from the chest's cell).
-        // The whole square is kept clear of other objects.
+        // The bottom of the deepest room: an iron chest flanked by a standing torch on each side, two cells away from it (offsets from the chest's cell).
+        // The row of five cells they span is kept clear of other objects.
         depthObjects: [
             { id: 'IRON_CHEST', dx: 0, dy: 0 },
-            { id: 'STANDING_TORCH', dx: -2, dy: -2 },
-            { id: 'STANDING_TORCH', dx: 2, dy: -2 },
-            { id: 'STANDING_TORCH', dx: -2, dy: 2 },
-            { id: 'STANDING_TORCH', dx: 2, dy: 2 }
+            { id: 'STANDING_TORCH', dx: -2, dy: 0 },
+            { id: 'STANDING_TORCH', dx: 2, dy: 0 }
         ],
 
         // Other things that can lie at the bottom instead (CaveGenerator._placeDepth): each cave rolls once per entry, from its own seed, so a cave is always the same.
-        // The first that hits replaces `depthObjects`: here the mysterious altar in about 1 cave in 4 (0.25), with the same four torches on the same 5 x 5 square.
+        // The first that hits replaces `depthObjects`: here the mysterious altar in about 1 cave in 2 (0.5), with a standing torch on each corner of a 5 x 5 square around it (four in all).
         // A multi-cell entry gives `w` and `h`; (dx, dy) is then its bottom-left cell. The altar is 3 x 3, centred on the middle of the square.
         depthAlternatives: [
             {
-                chance: 0.25,
+                chance: 0.5,
                 objects: [
                     { id: 'MYSTERIOUS_ALTAR', dx: -1, dy: 1, w: 3, h: 3 },
                     { id: 'STANDING_TORCH', dx: -2, dy: -2 },

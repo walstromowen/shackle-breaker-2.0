@@ -27,6 +27,8 @@ export class SpawnTableFactory {
         for (let i = 0; i < partySize; i++) {
             const rolledMember = this._rollWeighted(members);
             const enemyConfig = this._applyModifiers(rolledMember);
+            // The shackled are the cursed: every one of them is born at the top of the corruption scale (see CORRUPTION in core/constants.js)
+            if (factionPool.factionId === 'shackled') enemyConfig.baseStats = { corruption: 100, naturalCorruption: true };
             generatedEnemies.push(enemyConfig);
         }
 

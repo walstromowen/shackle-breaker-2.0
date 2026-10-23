@@ -1,5 +1,6 @@
 import { TRAIT_DEFINITIONS } from '../abilities/traitDefinitions.js'; 
-import { DAMAGE_TYPES, DAMAGE_SCALING } from '../core/constants.js'; 
+import { DAMAGE_TYPES, DAMAGE_SCALING, CORRUPTION, MAGIC_DAMAGE_TYPES } from '../core/constants.js'; 
+import { ActSystem } from '../story/actSystem.js'; 
 
 // BALANCE KNOB: scales the HP that Vigor grants, for EVERYONE (party, enemies, bosses and already-saved characters).
 // Saved characters keep their own copy of statMultipliers.hpPerVigor, so lowering it in the entity templates would not
@@ -43,6 +44,7 @@ export class StatCalculator {
             resistance: finalStats.resistance, 
             speed: finalStats.speed, 
             critChance: finalStats.critChance, 
+            critMultiplier: finalStats.critMultiplier, 
             accuracy: finalStats.accuracy, 
             evasion: finalStats.evasion, 
             corruption: finalStats.corruption 
@@ -69,6 +71,7 @@ export class StatCalculator {
         
         const combatSource = character.baseStats || definition.baseStats || {}; 
         finalStats.speed = combatSource.speed || 0; 
+        finalStats.corruption = combatSource.corruption || 0;   // the character's own corruption (CorruptionSystem moves it); traits and gear add to it below 
         finalStats.critChance = combatSource.critical || 0; 
         if (combatSource.accuracy !== undefined) finalStats.accuracy = combatSource.accuracy; 
         if (combatSource.evasion !== undefined) finalStats.evasion = combatSource.evasion; 
@@ -208,10 +211,27 @@ export class StatCalculator {
         for (const t of Object.keys(finalStats.resistance || {})) finalStats.resistance[t] = hundredths(finalStats.resistance[t]);
         finalStats.critChance = hundredths(finalStats.critChance);
         finalStats.critMultiplier = hundredths(finalStats.critMultiplier);
+        finalStats.corruption = Math.max(0, Math.min(CORRUPTION.MAX, finalStats.corruption)); 
+        
+        // Corruption tiers (core/constants.js): while it is high enough, max health shrinks and magical damage grows. Nothing is stored, so they end when it drops. 
+        // (the shackled faction's natural corruption, set by SpawnTableFactory, is a stat only: those enemies are tuned already, so no tier applies to them) 
+        // (and none is felt before the story reveals corruption: act 2, CORRUPTION.REVEAL_ACT) 
+        const tier = (combatSource.naturalCorruption || ActSystem.getAct() < CORRUPTION.REVEAL_ACT) ? null : this.corruptionTier(finalStats.corruption); 
+        if (tier) { 
+            if (tier.maxHpMultiplier !== undefined) finalStats.maxHp = Math.max(1, Math.floor(finalStats.maxHp * tier.maxHpMultiplier)); 
+            if (tier.magicDamageBonus) MAGIC_DAMAGE_TYPES.forEach(t => { finalStats.attack[t] = whole(finalStats.attack[t] * (1 + tier.magicDamageBonus)); }); 
+        } 
         finalStats.evasion = Math.max(1, finalStats.evasion); 
         finalStats.accuracy = Math.max(1, finalStats.accuracy); 
         
         return { finalStats, breakdown }; 
+    } 
+
+    /* The highest corruption tier a corruption value has reached (core/constants.js CORRUPTION.TIERS), or null. */ 
+    static corruptionTier(corruption) { 
+        let found = null; 
+        for (const tier of CORRUPTION.TIERS) if (corruption >= tier.at && (!found || tier.at > found.at)) found = tier; 
+        return found; 
     } 
 
     static applyModifiers(stats, source) { 

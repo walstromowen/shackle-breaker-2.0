@@ -3,19 +3,19 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { StatCalculator } from '../../shared/characters/statCalculator.js';
 import { DAMAGE_SCALING, DAMAGE_TYPES } from '../../shared/core/constants.js';
-import { ATTRIBUTE_KEYS, getStatDescription, damageTypesFor, trimNumber } from '../../shared/characters/statDescriptions.js';
+import { ATTRIBUTE_KEYS, STAT_KEYS, getStatDescription, damageTypesFor, trimNumber } from '../../shared/characters/statDescriptions.js';
 
 const ZERO = { vigor: 0, strength: 0, dexterity: 0, intelligence: 0, attunement: 0 };
 const calc = (attributes) => StatCalculator.calculate({ level: 1, attributes: { ...ZERO, ...attributes }, baseStats: { maxHp: 10, maxStamina: 10, maxInsight: 10, baseAttack: {} } });
 
-test('all five attributes are described, and anything else is not', () => {
+test('all five attributes are described, and nothing unknown is', () => {
     assert.deepEqual(ATTRIBUTE_KEYS, ['vigor', 'strength', 'dexterity', 'intelligence', 'attunement']);
     for (const k of ATTRIBUTE_KEYS) {
         const d = getStatDescription(k);
-        assert.ok(d && d.name && d.tagline && d.rows.length > 0, `${k} is missing text`);
+        assert.ok(d && d.name && d.description && d.rows.length > 0, `${k} is missing text`);
         assert.ok(d.rows.every(r => r.label && r.value), `${k} has an empty row`);
     }
-    assert.equal(getStatDescription('speed'), null);
+    assert.equal(getStatDescription('nonsense'), null);
     assert.equal(getStatDescription(undefined), null);
     assert.equal(getStatDescription('VIGOR').key, 'vigor');
 });
@@ -76,4 +76,42 @@ test('every attribute card carries one short story line that holds no numbers', 
         assert.ok(d.flavor && d.flavor.length > 20 && d.flavor.length < 100, `${k} flavor: ${d.flavor}`);
         assert.ok(!/\d/.test(d.flavor), `${k} flavor must not carry a number`);
     }
+});
+
+test('the attribute wording is the first version\'s, brought up to date', () => {
+    const d = (k) => getStatDescription(k).description;
+    assert.match(d('vigor'), /^A measure of how many hits one can take\./);
+    assert.match(d('strength'), /blunt, slash and pierce damage/);
+    assert.match(d('dexterity'), /maximum stamina and how quickly it recovers/);
+    assert.match(d('intelligence'), /every magic attack/);
+    assert.match(d('attunement'), /maximum insight and how quickly it recovers/);
+    assert.match(d('attunement'), /attachment to the elements/);
+});
+
+test('every other stat has a card too, in the first version\'s words', () => {
+    for (const k of STAT_KEYS.filter(k => !['attack', 'defense', 'resistance'].includes(k))) {
+        const s = getStatDescription(k);
+        assert.ok(s && s.name && s.description.length > 15, `${k} has no card`);
+    }
+    assert.equal(getStatDescription('speed').description, 'Additive value impacting ability turn order.');
+    assert.equal(getStatDescription('maxHp').description, 'Value measuring one\'s life.');
+    assert.match(getStatDescription('corruption').description, /shackled/);
+    assert.equal(getStatDescription('attack:blunt').description, 'Raw damage delivered to a target as a result of a blunt attack.');
+    assert.equal(getStatDescription('defense:arcane').description, 'Additive value negated on receiving an arcane attack.');
+    assert.equal(getStatDescription('resistance:ice').name, 'Ice Resistance');
+    // the typed ones need a real damage type
+    assert.equal(getStatDescription('attack'), null);
+    assert.equal(getStatDescription('attack:banana'), null);
+    assert.equal(getStatDescription('attack', { type: 'fire' }).name, 'Fire Attack');
+});
+
+test('the stat cards\' numbers come from the same constants as the calculator', () => {
+    const rowValue = (id, label) => getStatDescription(id).rows.find(r => r.label === label)?.value;
+    assert.equal(rowValue('maxHp', 'Vigor'), '+1.5 per point');
+    assert.equal(rowValue('maxStamina', 'Dexterity'), '+2 per point');
+    assert.equal(rowValue('maxInsight', 'Attunement'), '+2 per point');
+    assert.equal(rowValue('staminaRecovery', 'Dexterity'), '+0.5 per point');
+    assert.equal(rowValue('attack:slash', 'Strength'), '+1 per point');
+    assert.equal(rowValue('attack:fire', 'Intelligence'), '+1 per point');
+    assert.equal(getStatDescription('attack:fire').rows.length, 1);
 });

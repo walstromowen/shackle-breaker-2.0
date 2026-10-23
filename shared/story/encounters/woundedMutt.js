@@ -20,6 +20,7 @@ export const woundedMutt = {
                 },
                 {
                     text: "Leave the creature to its fate.",
+                    corruption: 1,   // magic used or a cruel act: corruption goes up
                     customActionText: "You harden your heart and step away, leaving the wilds to claim it.",
                     outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "walk_away" } }] }]
                 }
@@ -32,6 +33,7 @@ export const woundedMutt = {
             decisions: [
                 {
                     text: "[Healing Herb] [ATT] Treat the wound.",
+                    corruption: -2,   // a kind act: corruption goes down
                     type: "skill_check",
                     attribute: "attunement",
                     threshold: 12,
@@ -42,6 +44,7 @@ export const woundedMutt = {
                 },
                 {
                     text: "[DEX] Clean the wound barehanded.",
+                    corruption: -2,   // a kind act: corruption goes down
                     type: "skill_check",
                     attribute: "dexterity",
                     threshold: 15,

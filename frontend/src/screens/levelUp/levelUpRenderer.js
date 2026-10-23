@@ -1,7 +1,9 @@
 import { CanvasUI } from '../../ui/canvasUI.js';
 import { UITheme } from '../../ui/UITheme.js';
-import { drawStatTooltip } from '../../ui/statTooltip.js';
+import { drawStatTooltip, statAt } from '../../ui/statTooltip.js';
 import { Formatting } from '../../../../shared/core/formatting.js';
+import { isCursed, drawCursedPortrait } from '../../ui/curseOverlay.js';
+import { CorruptionSystem } from '../../../../shared/characters/corruptionSystem.js';
 
 export class LevelUpRenderer {
     constructor(ctx, config, loader) {
@@ -72,7 +74,12 @@ export class LevelUpRenderer {
             }) || null;
         }
         const rect = attr && this._attrRects ? this._attrRects[attr] : null;
-        if (!rect) return;
+        if (!rect) {
+            // not an attribute: one of the projected stats on the right (the card goes to its left, over the character column)
+            const stat = !state.selectedElementId ? statAt(this._statRects, state.mouse) : null;
+            if (stat) drawStatTooltip(this.ui, stat, this._statRects[stat], { placement: 'left', multipliers: state.member?.statMultipliers || state.member?.state?.statMultipliers });
+            return;
+        }
         drawStatTooltip(this.ui, attr, this._attrBlock, { placement: 'above', gap: 2, width: 800, multipliers: state.member?.statMultipliers || state.member?.state?.statMultipliers });
     }
 
@@ -106,7 +113,8 @@ export class LevelUpRenderer {
             const scaledSize = 128 * 2;
             const centeredX = portraitX + (pSize / 2) - (scaledSize / 2);
             const centeredY = currentY + ((pSize * 1.25) / 2) - (scaledSize / 2);
-            this.ui.drawSprite(img, 0, 0, 128, 128, centeredX, centeredY, scaledSize, scaledSize);
+            if (isCursed(member)) drawCursedPortrait(this.ui.ctx, img, 0, 0, 128, 128, centeredX, centeredY, scaledSize, scaledSize);
+            else this.ui.drawSprite(img, 0, 0, 128, 128, centeredX, centeredY, scaledSize, scaledSize);
         } else {
             this.ui.drawText("?", centerX, currentY + (pSize * 0.7), UITheme.fonts.header, UITheme.colors.textMuted, "center");
         }
@@ -180,15 +188,16 @@ export class LevelUpRenderer {
         let currentY = CONTENT_START_Y;
         const startX = x + this.layout.p;
         const colW = w - (this.layout.p * 2);
+        this._statRects = {}; // stat id -> rect, so hovering a projected stat can say what it is (see _drawStatHelp)
 
         this.ui.drawStyled('heading', 'Vitals', startX, currentY);
         currentY += 10;
         this.ui.drawLineWithGothicFlourish(startX, currentY, colW, UITheme.colors.borderHighlight);
         currentY += 30;
 
-        currentY = this._drawStatDiffRow("Max HP", currentStats.maxHp?.total, previewStats.maxHp?.total, startX, currentY, colW, 36);
-        currentY = this._drawStatDiffRow("Max STM", currentStats.maxStamina?.total, previewStats.maxStamina?.total, startX, currentY, colW, 36);
-        currentY = this._drawStatDiffRow("Max INS", currentStats.maxInsight?.total, previewStats.maxInsight?.total, startX, currentY, colW, 36);
+        currentY = this._drawStatDiffRow("Max HP", currentStats.maxHp?.total, previewStats.maxHp?.total, startX, currentY, colW, 36, 'maxHp');
+        currentY = this._drawStatDiffRow("Max STM", currentStats.maxStamina?.total, previewStats.maxStamina?.total, startX, currentY, colW, 36, 'maxStamina');
+        currentY = this._drawStatDiffRow("Max INS", currentStats.maxInsight?.total, previewStats.maxInsight?.total, startX, currentY, colW, 36, 'maxInsight');
         currentY += 10;
 
         this.ui.drawStyled('heading', 'Combat Stats', startX, currentY);
@@ -197,16 +206,16 @@ export class LevelUpRenderer {
         currentY += 30;
 
         const combatStats = [
-            { label: "SPD", c: currentStats.speed, p: previewStats.speed },
-            { label: "CRT %", c: (currentStats.critChance || 0)*100, p: (previewStats.critChance || 0)*100, isPct: true },
-            { label: "HP REC", c: currentStats.hpRecovery, p: previewStats.hpRecovery },
-            { label: "CRT DMG", c: currentStats.critMultiplier, p: previewStats.critMultiplier },
-            { label: "STM REC", c: currentStats.staminaRecovery, p: previewStats.staminaRecovery },
-            { label: "ACC", c: currentStats.accuracy, p: previewStats.accuracy },
-            { label: "INS REC", c: currentStats.insightRecovery, p: previewStats.insightRecovery },
-            { label: "EVA", c: currentStats.evasion, p: previewStats.evasion },
-            { label: "COR", c: currentStats.corruption, p: previewStats.corruption }
-        ];
+            { id: "speed", label: "SPD", c: currentStats.speed, p: previewStats.speed },
+            { id: "critChance", label: "CRT %", c: (currentStats.critChance || 0)*100, p: (previewStats.critChance || 0)*100, isPct: true },
+            { id: "hpRecovery", label: "HP REC", c: currentStats.hpRecovery, p: previewStats.hpRecovery },
+            { id: "critMultiplier", label: "CRT DMG", c: currentStats.critMultiplier, p: previewStats.critMultiplier },
+            { id: "staminaRecovery", label: "STM REC", c: currentStats.staminaRecovery, p: previewStats.staminaRecovery },
+            { id: "accuracy", label: "ACC", c: currentStats.accuracy, p: previewStats.accuracy },
+            { id: "insightRecovery", label: "INS REC", c: currentStats.insightRecovery, p: previewStats.insightRecovery },
+            { id: "evasion", label: "EVA", c: currentStats.evasion, p: previewStats.evasion },
+            { id: "corruption", label: "COR", c: currentStats.corruption, p: previewStats.corruption, isPct: true }
+        ].filter(stat => stat.id !== "corruption" || CorruptionSystem.isRevealed());   // corruption is a secret until act 2
 
         const cColW = colW / 2;
         const rowH = 32;
@@ -215,6 +224,7 @@ export class LevelUpRenderer {
             const row = Math.floor(i / 2);
             const itemX = startX + (col * cColW);
             const itemY = currentY + (row * rowH);
+            this._statRects[stat.id] = { x: itemX - 12, y: itemY - 24, w: cColW - 12, h: rowH };
 
             let cVal = stat.c !== undefined ? stat.c : 0;
             let pVal = stat.p !== undefined ? stat.p : 0;
@@ -238,7 +248,8 @@ export class LevelUpRenderer {
         this._drawProjectedResistanceTable(currentStats, previewStats, startX, currentY, colW);
     }
 
-    _drawStatDiffRow(label, curr = 0, prev = 0, x, y, w, rowH = 48) {
+    _drawStatDiffRow(label, curr = 0, prev = 0, x, y, w, rowH = 48, id = null) {
+        if (id) this._statRects[id] = { x: x - 12, y: y - 26, w: w * 0.6, h: rowH };
         this.ui.drawStyled('label', label, x, y);
         const valX = x + (w * 0.4);
         this.ui.drawStyled('value', curr.toString(), valX, y, { align: 'right' });
@@ -279,6 +290,12 @@ export class LevelUpRenderer {
             const pRes = (pStats.resistance || {})[type] || 0;
 
             if (pAtk === 0 && pDef === 0 && pRes === 0 && cAtk === 0 && cDef === 0 && cRes === 0) return;
+
+            // each figure explains itself: 'attack:fire', 'defense:fire', 'resistance:fire'
+            const cellW = w * 0.25;
+            this._statRects[`attack:${type}`] = { x: colAtk - cellW / 2, y: currentY - 22, w: cellW, h: rowH };
+            this._statRects[`defense:${type}`] = { x: colDef - cellW / 2, y: currentY - 22, w: cellW, h: rowH };
+            this._statRects[`resistance:${type}`] = { x: colRes - cellW / 2, y: currentY - 22, w: cellW, h: rowH };
 
             const label = Formatting.getAbbreviation(type);
             this.ui.drawText(label, colType, currentY, UITheme.fonts.mono, UITheme.colors.textMuted, "left");

@@ -38,6 +38,7 @@ export const oldGravestone = {
             decisions: [
                 {
                     text: "Dig it up.",
+                    corruption: 2,   // magic used or a cruel act: corruption goes up
                     conditions: [HUMANOID],
                     customActionText: "You kneel at the foot of the stone and push your hands into the cold earth.",
                     outcomes: toStage("dig")
@@ -72,6 +73,7 @@ export const oldGravestone = {
                 },
                 {
                     text: "Stop. Fill it in.",
+                    corruption: -1,   // a kind act: corruption goes down
                     customActionText: "You press the earth back down with your palms and step away from the stone.",
                     outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
                 }
@@ -85,6 +87,7 @@ export const oldGravestone = {
             decisions: [
                 {
                     text: "Take what was buried.",
+                    corruption: 2,   // magic used or a cruel act: corruption goes up
                     outcomes: [
                         {
                             weight: 100,

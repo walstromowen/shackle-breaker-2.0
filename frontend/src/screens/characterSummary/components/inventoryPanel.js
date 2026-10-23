@@ -15,6 +15,7 @@ export class InventoryPanel {
     // Layout Constants
     this.HEADER_HEIGHT = 180;
     this.SCROLLBAR_WIDTH = UITheme.scrollbar.width;
+    this.statRects = {};   // stat id -> rect of the currency text, from the last render (hover explains it)
 
     // Hotbar block under the grid (two rows of five; the slot order is the key order 1 2 3 4 5 / 6 7 8 9 0)
     this.HOTBAR_COLS = 5;
@@ -44,7 +45,11 @@ export class InventoryPanel {
 
     // --- Currency Label ---
     const currencyAmount = gameState.party.currency || 0;
-    this.ui.drawStyled('subtitle', `Currency: ${currencyAmount}`, centerX, y + 122);
+    const currencyText = `Currency: ${currencyAmount}`;
+    this.ui.drawStyled('subtitle', currencyText, centerX, y + 122);
+    this.ui.ctx.font = UITheme.text.subtitle.font;
+    const currencyW = this.ui.ctx.measureText(currencyText).width + 24;
+    this.statRects = { currency: { x: centerX - currencyW / 2, y: y + 100, w: currencyW, h: 28 } };
 
     const dividerY = y + this.HEADER_HEIGHT - 24;
     const flourishW = w * 0.8;

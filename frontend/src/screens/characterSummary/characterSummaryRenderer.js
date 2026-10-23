@@ -9,7 +9,7 @@ import { StatsPanel } from './components/statsPanel.js';
 import { EquipmentPanel } from './components/equipmentPanel.js';
 import { InventoryPanel } from './components/inventoryPanel.js';
 import { TooltipSystem } from '../../ui/tooltipSystem.js';
-import { drawStatTooltip } from '../../ui/statTooltip.js';
+import { drawStatTooltip, statAt } from '../../ui/statTooltip.js';
 import { AbilitiesPanel } from './components/abilitiesPanel.js';
 
 export class CharacterSummaryRenderer {
@@ -164,15 +164,18 @@ export class CharacterSummaryRenderer {
       }
     }
 
-    // H. What the attribute under the mouse does (Stats tab; the attributes have no keyboard cursor, so a parked pointer is ignored then)
-    if (state.viewMode === 'STATS' && !state.heldItem && !state.contextMenu && !state.quantity
-        && state.mouse && state.inputMode !== 'keyboard') {
-      const rects = this.statsPanel.attrRects;
-      const hit = Object.keys(rects).find(k => {
-        const r = rects[k];
-        return state.mouse.x >= r.x && state.mouse.x <= r.x + r.w && state.mouse.y >= r.y && state.mouse.y <= r.y + r.h;
-      });
-      if (hit) drawStatTooltip(this.ui, hit, rects[hit], { placement: 'right', multipliers: member.statMultipliers || member.state?.statMultipliers });
+    // H. What the attribute / stat under the mouse does: the Stats tab (attributes, combat stats, the damage table) and the level, vitals and currency
+    // in the other two columns. None of them has a keyboard cursor, so a parked pointer is ignored then.
+    if (!state.heldItem && !state.contextMenu && !state.quantity && state.mouse && state.inputMode !== 'keyboard') {
+      const rects = {
+        ...(state.viewMode === 'STATS' ? this.statsPanel.statRects : {}),
+        ...this.equipPanel.statRects,
+        ...this.invPanel.statRects,
+      };
+      const hit = statAt(rects, state.mouse);
+      // the Stats tab's cells take the card on their right; the level, vitals and currency sit in the middle of their columns, so theirs goes below
+      const below = hit in this.equipPanel.statRects || hit in this.invPanel.statRects;
+      if (hit) drawStatTooltip(this.ui, hit, rects[hit], { placement: below ? 'below' : 'right', multipliers: member.statMultipliers || member.state?.statMultipliers });
     }
 
     // I. "How many?" slider (Drop Multiple...): over everything, its hitboxes in front of the screen's own

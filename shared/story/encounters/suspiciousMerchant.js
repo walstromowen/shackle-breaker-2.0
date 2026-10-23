@@ -46,6 +46,7 @@ export const suspiciousMerchant = {
                 },
                 {
                     text: "[STR] Intimidate him into handing over his stash.",
+                    corruption: 3,   // magic used or a cruel act: corruption goes up
                     type: "skill_check",
                     attribute: "strength",
                     threshold: 15,
@@ -126,6 +127,7 @@ export const suspiciousMerchant = {
             decisions: [
                 {
                     text: "Take the bribe.",
+                    corruption: 3,   // magic used or a cruel act: corruption goes up
                     conditions: [{ type: "has_tag", tag: "HUMANOID" }],
                     outcomes: [
                         {
@@ -141,6 +143,7 @@ export const suspiciousMerchant = {
                 {
                     // --- NEW: Refusing the bribe triggers the ambush! ---
                     text: "Refuse the bribe.",
+                    corruption: -2,   // a kind act: corruption goes down
                     conditions: [{ type: "has_tag", tag: "HUMANOID" }],
                     customActionText: "You slap the coins away and draw your weapon.",
                     outcomes: [

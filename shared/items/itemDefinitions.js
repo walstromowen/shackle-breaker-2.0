@@ -1068,6 +1068,10 @@ export const ItemDefinitions = {
     value: 1250,
     icon: { col: 6, row: 2 },            // PLACEHOLDER (empty cell): the sheet has no meteorite art. It was (6,1), the copper ingot. Draw one here.
                                          // QUEST ITEM too: encounters check for it with { type: "has_item", itemId: "meteorite" } and take it with REMOVE_ITEM (also a Kurtus Brew ingredient).
+    usable: true,                        // "Use" in the item menu, on the character viewed: frees a shackled one (see CorruptionSystem). Spent when it works.
+    useAbility: "meteorite_unshackle",
+    usability: ['overworld'],
+    noHotbar: true,                      // the menu only: it is a quest item too, not something to fire off by key
     stackable: false,
     maxStack: 1
   },

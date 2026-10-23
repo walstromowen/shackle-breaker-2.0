@@ -97,12 +97,32 @@ export const actTwo = {
             decisions: [
                 {
                     text: "Ask how much is left.",
-                    customActionText: "The stone is silent. Only the iron answers, warm against your wrists.",
-                    outcomes: toStage("iron")
+                    customActionText: "The stone is silent. Then the dark behind your eyes begins to show you a number.",
+                    outcomes: toStage("gauge")
                 },
                 {
                     text: "Close your hands.",
-                    customActionText: "You close your fists around nothing, and wonder what you will do without it.",
+                    customActionText: "You close your fists around nothing, and wonder what you will do without it. The dark behind your eyes begins to show you a number.",
+                    outcomes: toStage("gauge")
+                }
+            ]
+        },
+
+        gauge: {
+            displayText: "Corruption",
+            image: { sheet: "encounter_mysterious_altar", col: 1, row: 1 },
+            effect: "glow_red",
+            sfx: "whispers",
+            text: "It has a name, and now you can read it. Corruption. It gathers in everyone who reaches for magic, and faster in those who do cruel things. Kindness slows it. At half, the body begins to wither, though the magic answers with a hungry surge. At the whole, the iron closes for good and the one who wears it is no longer yours. Only a stone fallen from the sky can open it again. From now on you will see how much each of you carries.",
+            decisions: [
+                {
+                    text: "Look.",
+                    customActionText: "A number settles behind your eyes, and under it a bar, and it does not go away.",
+                    outcomes: toStage("iron")
+                },
+                {
+                    text: "Refuse to look.",
+                    customActionText: "It does not matter. The number is there anyway, patient as the iron.",
                     outcomes: toStage("iron")
                 }
             ]

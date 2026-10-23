@@ -8,6 +8,7 @@ import { queueDeath, queueFlee } from './battleQueue.js';
 import { getActivePool, registerAbilityUse, registerStatusApplication, registerDeath } from './battleState.js';
 import { StatusEffectFactory } from '../abilities/statusEffectFactory.js';
 import { InventorySystem } from '../items/inventorySystem.js';
+import { CorruptionSystem } from '../characters/corruptionSystem.js';
 
 /* Plays a battle's turn queue (`state.turnQueue`) one turn at a time: abilities, damage, status effects, deaths, messages and animations.
    It needs a `host` for the few things only the screen can do:
@@ -144,6 +145,8 @@ export class TurnManager {
         if (isFirstTarget && !ignoreCost) {
             action.payCost(actor, InventorySystem);
         }
+        const queuedBefore = this.state.turnQueue.length;
+        const actorWasDownAtStart = actor.isDead();
 
         for (let target of targets) {
             const actualTarget = this.getValidTarget(target, canTargetDead, canTargetBench);
@@ -211,6 +214,21 @@ export class TurnManager {
             
             if (!wasActorDead && actor.isDead()) {
                 break;
+            }
+        }
+
+        // Magic costs the caster a little of themselves (CorruptionSystem). It is told after the spell's own lines, and a caster pushed to the top falls.
+        if (isFirstTarget && !ignoreCost) {
+            const corruption = CorruptionSystem.onAbilityUsed(actor, action);
+            if (corruption) {
+                const added = this.state.turnQueue.length - queuedBefore;
+                corruption.messages.forEach((message, i) => {
+                    this.state.turnQueue.splice(added + i, 0, { type: TURN_TYPES.MESSAGE_STATUS, message });
+                });
+                if (corruption.shackled && !actorWasDownAtStart) {
+                    registerDeath(this.state, actor, actor);
+                    queueDeath(this.state, actor);
+                }
             }
         }
         this.processNextTurnInQueue();

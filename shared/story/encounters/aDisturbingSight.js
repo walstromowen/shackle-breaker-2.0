@@ -26,6 +26,7 @@ export const aDisturbingSight = {
                 },
                 {
                     text: "[DEX] Eliminate the Madman quietly.",
+                    corruption: 2,   // magic used or a cruel act: corruption goes up
                     type: "skill_check",
                     attribute: "dexterity",
                     threshold: 12,
@@ -335,6 +336,7 @@ export const aDisturbingSight = {
                 },
                 {
                     text: "[ATN] Manipulate him into giving items.",
+                    corruption: 3,   // magic used or a cruel act: corruption goes up
                     type: "skill_check",
                     attribute: "attunement",
                     threshold: 10,
@@ -355,6 +357,7 @@ export const aDisturbingSight = {
                 },
                 {
                     text: "[STR] Command him to bow.",
+                    corruption: 2,   // magic used or a cruel act: corruption goes up
                     type: "skill_check",
                     attribute: "strength",
                     threshold: 15,
@@ -463,6 +466,7 @@ export const aDisturbingSight = {
             decisions: [
                 {
                     text: "Command the weeping man to follow.",
+                    corruption: 2,   // magic used or a cruel act: corruption goes up
                     conditions: [{ type: "has_tag", tag: "HUMANOID" }],
                     outcomes: [
                         {

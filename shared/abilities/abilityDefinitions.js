@@ -1217,6 +1217,22 @@ export const AbilityDefinitions = {
             message: "You light a torch. It will burn for {hours} hours."
         }]
     },
+    // Carried by the "meteorite" item. Frees the character it is used on from the shackles (CorruptionSystem.unshackle); anyone else is not touched and the meteorite is kept.
+    "meteorite_unshackle": {
+        id: "meteorite_unshackle",
+        name: "Break the Shackles",
+        description: "Press the meteorite to a shackled companion. Its glow burns the iron away.",
+        context: "overworld",                       // never offered in a battle
+        range: "self",
+        tags: ["utility", "item"],
+        targeting: { scope: "self", select: "auto" },
+        accuracy: 1.0,
+        effects: [{
+            type: "unshackle",                       // AbilitySystem._world_unshackle
+            message: "The meteorite flares and the iron falls away. {target} gasps and wakes.",
+            notShackled: "{target} is not shackled."
+        }]
+    },
     // Paste into AbilityDefinitions next to "torchlight". Carried by the "escape_rope" item.
     "escape_rope": {
         id: "escape_rope",

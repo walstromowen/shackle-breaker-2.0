@@ -180,6 +180,16 @@ export class EncounterController extends BaseController {
     }
   }
 
+  /* The party column of the screen: the leader, or in a betrayal encounter the shackled member it is about (drawn cursed, at 0 health). */
+  _shownMembers() {
+    const members = gameState.party?.members || [];
+    const ctx = this.model?.context || {};
+    const byIndex = members[ctx.betrayerIndex];
+    const betrayer = (byIndex && byIndex.shackled) ? byIndex : (ctx.betrayerName ? members.find(m => m.name === ctx.betrayerName && m.shackled) : null);
+    const shown = betrayer || members[0];
+    return shown ? [shown] : [];
+  }
+
   _triggerImageTransition(duration = 0.4) {
     if (!this.model) return;
     const outgoingInfo = this.model.getImage ? this.model.getImage() : null;
@@ -198,6 +208,8 @@ export class EncounterController extends BaseController {
         insight: outgoingMember.insight || 0,
         maxInsight: outgoingMember.maxInsight || 100,
         statusEffects: outgoingMember.statusEffects ? [...outgoingMember.statusEffects] : [],
+        spritePortrait: outgoingMember.spritePortrait,
+        shackled: !!outgoingMember.shackled,
         sheet: outgoingMember.sheet,
         col: outgoingMember.col,
         row: outgoingMember.row
@@ -532,7 +544,7 @@ export class EncounterController extends BaseController {
       this.textTimer = STAGE_START_TIMER;
       this.hasDoneIntro = true;
       this.skipMessageAnimation = false;
-      this.actionMessage = decision.customActionText.replace(/{name}/g, actorName);
+      this.actionMessage = this._fillNames(decision.customActionText, actorName);
       this.lastText = this.actionMessage;
     } else {
       if (decision.type === 'skill_check') {
@@ -542,6 +554,13 @@ export class EncounterController extends BaseController {
         this.applySceneChanges();
       }
     }
+  }
+
+  /* {name} is the leader; {betrayer} is the shackled member a betrayal encounter is about (it is in the encounter's context from the moment it starts). */
+  _fillNames(text, actorName) {
+    return String(text)
+      .replace(/{name}/g, actorName)
+      .replace(/{betrayer}/g, this.model?.context?.betrayerName || 'The shackled one');
   }
 
   executeLogic() {
@@ -564,7 +583,11 @@ export class EncounterController extends BaseController {
     
     const selectedOutcome = EncounterLogic.selectOutcome(targetOutcomes);
     if (selectedOutcome) {
-      const resultsArray = selectedOutcome.results;
+      let resultsArray = selectedOutcome.results;
+      // A decision can carry `corruption: n` (magic used, a cruel act: positive; a kind one: negative): it applies whichever way the outcome falls
+      if (decision.corruption && resultsArray) {
+        resultsArray = [{ type: 'MODIFY_CORRUPTION', payload: { amount: decision.corruption, target: 'active_character' } }, ...resultsArray];
+      }
       let isStartingBattle = false;
       let isGameOverTriggered = false;
       
@@ -810,7 +833,7 @@ export class EncounterController extends BaseController {
       text: "",
       decisions: [],
       ui: { selectedDecisionIndex: this.selectedIndex, introAlpha: currentIntroAlpha },
-      party: gameState.party?.members?.length > 0 ? [gameState.party.members[0]] : [],
+      party: this._shownMembers(),
       currency: gameState.party?.currency || 0,
       skipMessageAnimation: this.skipMessageAnimation,
       textTimer: this.textTimer,
@@ -850,11 +873,11 @@ export class EncounterController extends BaseController {
     let displayStageName = this.model.getStageDisplayText ? this.model.getStageDisplayText() : "Unknown Stage";
     const actorName = gameState.party?.members?.[0]?.name || "The party";
     
-    displayText = displayText.replace(/{name}/g, actorName);
-    displayStageName = displayStageName.replace(/{name}/g, actorName);
+    displayText = this._fillNames(displayText, actorName);
+    displayStageName = this._fillNames(displayStageName, actorName);
     displayDecisions = displayDecisions.map(decision => ({
       ...decision,
-      text: decision.text.replace(/{name}/g, actorName)
+      text: this._fillNames(decision.text, actorName)
     }));
     
     if (this.actionPhase !== 'none' && this.actionPhase !== 'ending_delay' && this.actionPhase !== 'reward_delay') {

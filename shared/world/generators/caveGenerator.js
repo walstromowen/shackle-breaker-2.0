@@ -815,7 +815,7 @@ export class CaveGenerator {
        An entry bigger than one cell gives its size in cells, `w` and `h` (default 1): (dx, dy) is then its anchor, the BOTTOM-LEFT cell, and it covers w cells to the
        right and h cells up from there (the mysterious altar is { id, dx: -1, dy: 1, w: 3, h: 3 }: a 3 x 3 centred on the middle cell of the cluster).
        `depthAlternatives: [{ chance, objects: [...] }]` are other clusters for the same spot: each cave rolls once per entry (from its own seed, so a cave is
-       always the same), the first that hits replaces `depthObjects` (e.g. the altar in place of the iron chest in about 1 cave in 4). If the alternative does not
+       always the same), the first that hits replaces `depthObjects` (e.g. the altar in place of the iron chest in about 1 cave in 2). If the alternative does not
        fit anywhere, the ordinary cluster is placed instead. */
     _placeDepth() {
         const base = this.config.depthObjects || (this.config.depthObject ? [{ id: this.config.depthObject, dx: 0, dy: 0 }] : null);
@@ -866,6 +866,8 @@ export class CaveGenerator {
                         for (const [ac, ar] of footprint(o)) this.solid.add(`${c + ac},${r + ar}`);
                     }
                     for (const [ac, ar] of area) this.reserved.add(`${c + ac},${r + ar}`);
+                    // the cell in front of each piece stays clear as well, so a chest between two torches (a row, not a square) can always be walked up to
+                    for (const o of cluster) for (const [ac, ar] of frontRow(o)) this.reserved.add(`${c + ac},${r + ar}`);
                     this.depthSpot = { c, r };
                     this.depthKind = cluster === base ? 'default' : 'alternative';
                     return;

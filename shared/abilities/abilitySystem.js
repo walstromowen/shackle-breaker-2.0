@@ -4,6 +4,7 @@ import { StatusEffectFactory } from './statusEffectFactory.js';
 import { AbilityDefinitions } from './abilityDefinitions.js';
 import { AbilityModel } from './abilityModel.js';
 import { gameState } from '../core/gameState.js';
+import { CorruptionSystem } from '../characters/corruptionSystem.js';
 
 /* Effect types that are real but resolved by the battle code itself, not here: they must not trigger the "unknown effect type" warning. */
 const EFFECTS_HANDLED_ELSEWHERE = ['summon', 'switch_self'];
@@ -370,6 +371,17 @@ export class AbilitySystem {
             return { success: false, message: effect.notInside || 'There is nothing to escape from here.' };
         }
         return { success: true, message: effect.message || 'You are hauled back out to the entrance.', worldAction: { type: 'exit_interior' } };
+    }
+
+    /* { type: 'unshackle', message?, notShackled? }
+       Frees the target if they are shackled (CorruptionSystem.unshackle): they wake with a quarter of their health and a lower corruption. On anyone else it does
+       nothing and the item is kept. {target} is the target's name. */
+    static _world_unshackle(effect, source, target) {
+        const entity = target && (target.originalEntity || target);
+        if (!CorruptionSystem.unshackle(entity)) {
+            return { success: false, message: this._fillTemplate(effect.notShackled || '{target} is not shackled.', { target: entity?.name || 'They' }) };
+        }
+        return { success: true, message: this._fillTemplate(effect.message || '{target} is free.', { target: entity.name }) };
     }
 
     /* { type: 'show_interior_map', message?, notInside?, alreadyOpen? }

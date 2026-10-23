@@ -559,7 +559,7 @@ export class CharacterSummaryController extends BaseController {
         if (!item || !item.defId) return false;
         const def = ItemDefinitions[item.defId];
         const abilityId = item.useAbility || (def && def.useAbility);
-        if (!abilityId) return false;
+        if (!abilityId || (def && def.noHotbar)) return false;
         const consumable = item.usable || item.type === 'consumable' || (def && (def.usable || def.type === 'consumable'));
         return !!consumable && AbilitySystem.usableIn(abilityId, 'overworld');
     }

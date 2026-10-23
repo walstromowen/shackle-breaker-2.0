@@ -1,5 +1,6 @@
 import { UITheme } from '../../ui/UITheme.js';
 import { CanvasUI } from '../../ui/canvasUI.js';
+import { isCursed, drawCursedPortrait } from '../../ui/curseOverlay.js';
 
 export class PartyRenderer {
     constructor(ctx, loader) {
@@ -229,7 +230,8 @@ export class PartyRenderer {
 
         if (masterSheet) {
             const src = this.PORTRAIT_SRC_SIZE;
-            ctx.drawImage(masterSheet, 0, 0, src, src, pX, pY, pSize, pSize);
+            if (isCursed(member)) drawCursedPortrait(ctx, masterSheet, 0, 0, src, src, pX, pY, pSize, pSize);
+            else ctx.drawImage(masterSheet, 0, 0, src, src, pX, pY, pSize, pSize);
         }
 
         this.ui.drawRect(pX, pY, pSize, pSize, UITheme.colors.border, false);
@@ -348,7 +350,8 @@ export class PartyRenderer {
 
         if (masterSheet) {
             const src = this.PORTRAIT_SRC_SIZE;
-            ctx.drawImage(masterSheet, 0, 0, src, src, drawX, drawY, pSize, pSize);
+            if (isCursed(payload)) drawCursedPortrait(ctx, masterSheet, 0, 0, src, src, drawX, drawY, pSize, pSize);
+            else ctx.drawImage(masterSheet, 0, 0, src, src, drawX, drawY, pSize, pSize);
         }
 
         this.ui.drawRect(drawX, drawY, pSize, pSize, UITheme.colors.borderHighlight, false);

@@ -61,6 +61,7 @@ import { gameState } from '../../../shared/core/gameState.js';
 import { AbilitySystem } from '../../../shared/abilities/abilitySystem.js';
 import { DIFFICULTY_MODIFIERS } from '../../../shared/core/constants.js';
 import { EntityFactory } from '../../../shared/characters/entityFactory.js';
+import { CorruptionSystem } from '../../../shared/characters/corruptionSystem.js';
 import { SaveManager, AUTOSAVE_SLOT } from './saveManager.js';
 
 export class SceneManager {
@@ -453,7 +454,7 @@ export class SceneManager {
             const scaledEnemies = [];
             
             for (const enemyData of data.enemies) {
-                if (enemyData.stats) {
+                if (enemyData.stats || enemyData.state) {   // already a built entity (a shackled companion who turned on the party)
                     scaledEnemies.push(enemyData);
                     continue;
                 }
@@ -552,6 +553,7 @@ export class SceneManager {
         events.on('CHARACTER_RECRUITED', (data) => {
             // An enemy that joins the party loses the enemy-only level HP bonus, so an ally is exactly as tough as a player-built character of the same level.
             EntityFactory.removeLevelEdge(data.character);
+            CorruptionSystem.cleanseNatural(data.character);   // one of the shackled who joins is no longer born cursed
 
             this.transitionRenderer.start(() => {
                 this.characterSummaryController = new CharacterSummaryController(this.input, {

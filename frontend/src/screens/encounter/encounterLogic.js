@@ -10,6 +10,7 @@ import { SpawnTableFactory } from "../../../../shared/battle/spawnTableFactory.j
 import { ItemDefinitions } from '../../../../shared/items/itemDefinitions.js';
 import { ActSystem } from '../../../../shared/story/actSystem.js';
 import { EntityFactory } from '../../../../shared/characters/entityFactory.js';
+import { CorruptionSystem } from '../../../../shared/characters/corruptionSystem.js';
 
 export class EncounterLogic {
     static checkConditions(decision, context = {}) {
@@ -368,6 +369,19 @@ export class EncounterLogic {
                 }
                 case "START_BATTLE": {
                     let enemyList = Array.isArray(payload.enemies) ? [...payload.enemies] : [];
+                    // `betrayer: true`: the shackled member this encounter is about (model.context.betrayerIndex) leaves the party for good and is the enemy
+                    // (shackled_betrayal.js). They fight at full health in whatever they still wear.
+                    if (payload.betrayer) {
+                        const members = gameState.party?.members || [];
+                        const named = members[model.context?.betrayerIndex];
+                        const turned = CorruptionSystem.turnAgainstParty(named && CorruptionSystem.isShackled(named) ? named : CorruptionSystem.pickBetrayer());
+                        if (!turned) {
+                            generalMessages.push("The chains hang still. Whatever stirred is gone.");
+                            break;
+                        }
+                        model.updateContext({ betrayerName: turned.name });
+                        enemyList.push(turned);
+                    }
                     const currentDifficulty = payload.difficulty || gameState.difficulty || 'normal';
                     if (payload.tableId) {
                         const spawnModel = SpawnTableFactory.generateBattle(payload.tableId, currentDifficulty);
@@ -429,6 +443,26 @@ export class EncounterLogic {
                 case "TAKE_DAMAGE":
                     events.emit("TAKE_DAMAGE", payload);
                     break;
+                case "MODIFY_CORRUPTION": {
+                    // { amount, target: 'active_character' (the leader, the default) | 'entire_party' }: cruel or magical choices add, kind ones take away (CorruptionSystem).
+                    // Reaching the top shackles the character (down, like a fainted one): another member steps to the front, and with nobody left standing it is the end.
+                    const members = gameState.party?.members || [];
+                    const targets = payload.target === 'entire_party' ? [...members] : [members[0]];
+                    targets.filter(Boolean).forEach(char => {
+                        const change = CorruptionSystem.change(char, payload.amount || 0);
+                        // Until the story reveals corruption (act 2) it builds quietly: nothing is said about it
+                        if (CorruptionSystem.isRevealed()) {
+                            if (change.amount > 0) generalMessages.push(`${char.name} feels the darkness take hold. (Corruption +${change.amount}%)`);
+                            else if (change.amount < 0) generalMessages.push(`${char.name} feels a weight lift. (Corruption ${change.amount}%)`);
+                        }
+                        change.messages.forEach(line => generalMessages.push(line));
+                        if (change.shackled) {
+                            PartyManager.ensureLivingLeader();
+                            if (!members.some(m => m.hp > 0)) response.isGameOver = true;
+                        }
+                    });
+                    break;
+                }
 
               case "OPEN_SHOP":
                 response.isOpeningShop = true;

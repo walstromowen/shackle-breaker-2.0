@@ -106,6 +106,8 @@ export const DAMAGE_TYPE_LABELS = {
     light: "LGT", dark: "DRK", arcane: "ARC",
 };
 export const DAMAGE_TYPES = Object.keys(DAMAGE_TYPE_LABELS);
+export const PHYSICAL_DAMAGE_TYPES = ['blunt', 'slash', 'pierce'];
+export const MAGIC_DAMAGE_TYPES = DAMAGE_TYPES.filter(t => !PHYSICAL_DAMAGE_TYPES.includes(t));   // the elements, light, dark and arcane
 
 // BALANCE KNOB: which attributes raise the attack of each damage type, and by how much per point (StatCalculator adds attribute x weight to attack[type]).
 //   Strength       blunt, slash, pierce (all physical damage)
@@ -125,6 +127,34 @@ export const DAMAGE_SCALING = {
     light:     { intelligence: 1 },
     dark:      { intelligence: 1 },
     arcane:    { intelligence: 1 },
+};
+
+// ===============================================
+// CORRUPTION
+// ===============================================
+// Each character carries a corruption from 0 to 100 (shown as a percent). Magic raises it, and so do cruel choices; kind ones lower it (CorruptionSystem).
+// BALANCE KNOBS, all in one place:
+//   PER_MAGIC_USE   corruption gained each time a party member uses a magical ability (a tag of 'magical'; an ability can set its own with `corruption: n`)
+//   TIERS           what a corruption of at least `at` does while it lasts. They stop the moment it drops below again (StatCalculator reads them every time).
+//                   maxHpMultiplier scales max health, magicDamageBonus adds to every magical damage type (0.25 = +25%).
+//   SHACKLE_AT      at this much the character is shackled: down like a fainted one, and it cannot be undone without the item named by UNSHACKLE_ITEM
+//   UNSHACKLE_TO    the corruption a freed character is left with (below the first tier, so they come back whole)
+//   REVEAL_ACT      the act in which the stat is revealed (the story tells the player what it is, at the end of act 1). Until then every screen hides it, and it
+//                   cannot climb to the first tier (a quiet build-up the player has not been told about), so nothing it does is felt before the reveal.
+//   BETRAYAL_WEIGHT how likely the Shackling encounter is whenever an encounter happens (BiomeModel.getEncounter) while a member is shackled: its weight in the pool,
+//                   next to the biome's own (a plains encounter is 10 to 20, a lone cave or mountain one is 100, so 80 is about half of everything met). Without a shackled member it is not in the pool at all.
+export const CORRUPTION = {
+    MAX: 100,
+    PER_MAGIC_USE: 1,
+    TIERS: [
+        { at: 50, id: 'corrupted', name: 'Corrupted', maxHpMultiplier: 0.5, magicDamageBonus: 0.25,
+          message: "{name}'s body withers as the darkness spreads, and the magic answers with a hungry surge." },
+    ],
+    SHACKLE_AT: 100,
+    UNSHACKLE_ITEM: 'meteorite',
+    UNSHACKLE_TO: 40,
+    REVEAL_ACT: 2,
+    BETRAYAL_WEIGHT: 80,
 };
 
 // ===============================================

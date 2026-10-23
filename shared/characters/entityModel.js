@@ -127,7 +127,10 @@ export class EntityModel {
     }
 
     get hp() { return this.state.stats.hp; }
-    set hp(val) { this.state.stats.hp = Math.max(0, Math.min(Math.round(val), this.maxHp)); }   // whole numbers only
+    // whole numbers only. A shackled character is down like a fainted one and stays down: no healing, rest or revival gives health back until they are freed
+    // (CorruptionSystem.unshackle clears the flag first).
+    set hp(val) { this.state.stats.hp = this.state.shackled ? 0 : Math.max(0, Math.min(Math.round(val), this.maxHp)); }
+    get shackled() { return !!this.state.shackled; }
     get maxHp() { return this.calculatedStats.maxHp; }
 
     get stamina() { return this.state.stats.stamina; }

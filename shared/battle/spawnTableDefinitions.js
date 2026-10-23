@@ -462,6 +462,22 @@ export const SpawnTableDefinitions = {
         }]
     },
 
+    // Used by cave_in: a dig that breaks into a spider's nest. Only spiders, and more of them than a roaming pack (three to five on Normal).
+    "spider_nest": {
+        type: "faction_pool",
+        pools: [{
+            factionId: "wildlife",
+            weight: 100,
+            difficultySettings: {
+                easy: { minSize: 2, maxSize: 3 },
+                normal: { minSize: 3, maxSize: 5 },
+                hard: { minSize: 4, maxSize: 6 },
+                nightmare: { minSize: 5, maxSize: 7 }
+            },
+            members: [{ id: 'CAVE_SPIDER', weight: 100, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } }]
+        }]
+    },
+
     // Used by crimson_vigil (act 2): the ring of bones stands up.
     "risen_pack": {
         type: "faction_pool",

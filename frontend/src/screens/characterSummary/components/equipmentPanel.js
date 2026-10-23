@@ -3,6 +3,7 @@ import { UI_SFX } from '../../../ui/uiSfx.js';
 import { TRAIT_DEFINITIONS } from '../../../../../shared/abilities/traitDefinitions.js';
 import { ItemDefinitions } from '../../../../../shared/items/itemDefinitions.js';
 import { Formatting } from '../../../../../shared/core/formatting.js';
+import { isCursed, drawCursedPortrait } from '../../../ui/curseOverlay.js';
 
 export class EquipmentPanel {
   constructor(ui, loader) {
@@ -15,6 +16,7 @@ export class EquipmentPanel {
     this.ICON_SRC_SIZE = 64;        // Item icon sprite sheet cell size (upgraded from 32)
     this.STATUS_ICON_SRC_SIZE = 64; // Status effect sprite sheet cell size (upgraded from 32)
     this.PORTRAIT_SRC_SIZE = 128;   // Portraits remain 128x128
+    this.statRects = {};            // stat id -> { x, y, w, h } of the level / vitals text, from the last render (hover explains it)
   }
 
   _getVal(v) {
@@ -24,6 +26,7 @@ export class EquipmentPanel {
   render(member, stats, activeSlots, selectedIndex, isChoosingItem, x, y, w, h, hitboxes, heldItem, hoveredId = null, isEditingName = false, menuOpen = false) {
     const centerX = Math.floor(x + (w / 2));
     let headerY = y + 24;
+    this.statRects = {};
 
     const actualLevel = this._getVal(stats.level) || this._getVal(member.level) || 1;
 
@@ -47,7 +50,15 @@ export class EquipmentPanel {
       this.ui.drawStyled('title', member.name, centerX, headerY + 48, { color: this.ui.stateTextColor(nameFlags, UITheme.colors.textMain) });
     }
 
-    this.ui.drawStyled('subtitle', `Level ${actualLevel}`, centerX, headerY + 86);
+    const levelText = `Level ${actualLevel}`;
+    this.ui.drawStyled('subtitle', levelText, centerX, headerY + 86);
+    this.ui.ctx.font = UITheme.text.subtitle.font;
+    const levelW = this.ui.ctx.measureText(levelText).width + 24;
+    this.statRects.level = { x: centerX - levelW / 2, y: headerY + 66, w: levelW, h: 28 };
+    // A shackled character is down until a meteorite frees them (CorruptionSystem): said in red beside the level
+    if (member.shackled) {
+      this.ui.drawStyled('subtitle', 'Shackled', centerX + levelW / 2 + 8, headerY + 86, { color: UITheme.colors.failure, align: 'left' });
+    }
 
     this._drawVitals(member, stats, centerX, headerY + 139, x, w);
 
@@ -90,16 +101,17 @@ export class EquipmentPanel {
     const totalW = rowW(texts);
     let startX = centerX - (totalW / 2);
 
-    const drawVital = (txt, color) => {
+    const drawVital = (txt, color, id) => {
       const width = this.ui.ctx.measureText(txt).width;
+      this.statRects[id] = { x: startX - 6, y: y - 26, w: width + 12, h: 36 };
       this.ui.drawText(txt, startX + width / 2, y, UITheme.fonts.mono, color, "center");
       startX += width + gap;
     };
 
-    drawVital(hpText, UITheme.colors.hp);
-    drawVital(stmText, UITheme.colors.stm);
-    drawVital(insText, UITheme.colors.ins);
-    drawVital(xpText, UITheme.colors.xp);
+    drawVital(hpText, UITheme.colors.hp, 'maxHp');
+    drawVital(stmText, UITheme.colors.stm, 'maxStamina');
+    drawVital(insText, UITheme.colors.ins, 'maxInsight');
+    drawVital(xpText, UITheme.colors.xp, 'xp');
 
     this.ui.drawLineWithGothicFlourish(fullX + 96, y + 36, fullW - 192, UITheme.colors.borderHighlight);
   }
@@ -128,7 +140,8 @@ export class EquipmentPanel {
     let assetKey = member.spritePortrait;
     const img = this.loader.get(assetKey);
     if (img) {
-      this.ui.drawSprite(img, 0, 0, this.PORTRAIT_SRC_SIZE, this.PORTRAIT_SRC_SIZE, pX, pY, this.PORTRAIT_SIZE, this.PORTRAIT_SIZE);
+      if (isCursed(member)) drawCursedPortrait(this.ui.ctx, img, 0, 0, this.PORTRAIT_SRC_SIZE, this.PORTRAIT_SRC_SIZE, pX, pY, this.PORTRAIT_SIZE, this.PORTRAIT_SIZE);
+      else this.ui.drawSprite(img, 0, 0, this.PORTRAIT_SRC_SIZE, this.PORTRAIT_SRC_SIZE, pX, pY, this.PORTRAIT_SIZE, this.PORTRAIT_SIZE);
     }
 
     this._drawStatusEffects(member, pX, pY, this.PORTRAIT_SIZE);
