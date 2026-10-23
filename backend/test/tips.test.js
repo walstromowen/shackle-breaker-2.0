@@ -29,13 +29,16 @@ test('cards exist only for screens the scene manager really has, and none for th
     for (const id of ['boot', 'title', 'character-creator']) assert.equal(TIPS[id], undefined, `${id} must not have a card`);
 });
 
+/** Runs the overlay forward until its card is fully showing (the screen is not busy). */
+const settle = (overlay) => { for (let i = 0; i < 60 && overlay.phase !== 'open'; i++) overlay.update(0.1); };
+
 test('a card opens once, is remembered, and can be replayed after a reset', () => {
     const store = new TipStore(memoryStorage());
     const overlay = new TutorialOverlay(store);
     assert.equal(overlay.show('overworld'), true);
     assert.equal(overlay.active, true);
     assert.equal(overlay.dismiss(), true);
-    assert.equal(overlay.active, false);
+    assert.equal(overlay.active, false, 'dismissed before it ever showed: gone at once');
     assert.equal(overlay.show('overworld'), false, 'already seen');
     assert.equal(overlay.show('party'), true, 'a different screen is still new');
     store.reset();
@@ -56,14 +59,60 @@ test('a screen without a card never opens one', () => {
     assert.equal(overlay.active, false);
 });
 
-test('input is ignored for the first half second so a held key cannot skip the card', () => {
+test('the card waits, eases in, and does not block the screen until it is on show', () => {
     const overlay = new TutorialOverlay(new TipStore(memoryStorage()));
     overlay.show('shop');
+    assert.equal(overlay.phase, 'wait');
+    assert.equal(overlay.blocking, false, 'the screen is still live while the card waits');
+    assert.equal(overlay.visibility, 0);
+    overlay.update(1, { sceneBusy: true });
+    assert.equal(overlay.phase, 'wait', 'a scene transition still running keeps it waiting');
+    overlay.update(0.5);
+    assert.equal(overlay.phase, 'in');
+    assert.equal(overlay.blocking, true);
+    const early = overlay.visibility;
+    overlay.update(0.2);
+    assert.ok(overlay.visibility > early && overlay.visibility < 1, 'fading in');
+    settle(overlay);
+    assert.equal(overlay.visibility, 1);
+});
+
+test('input is ignored for the first moments so a held key cannot skip the card', () => {
+    const overlay = new TutorialOverlay(new TipStore(memoryStorage()));
+    overlay.show('shop');
+    overlay.update(0.5);   // the wait is over, the fade-in starts
     assert.equal(overlay.canDismiss, false);
-    overlay.update(0.3);
+    overlay.update(0.5);
     assert.equal(overlay.canDismiss, false);
-    overlay.update(0.3);
+    overlay.update(0.5);
     assert.equal(overlay.canDismiss, true);
+});
+
+test('dismissing eases the card out, marks it seen at once, and then hands the screen back', () => {
+    const store = new TipStore(memoryStorage());
+    const overlay = new TutorialOverlay(store);
+    overlay.show('journal');
+    overlay.update(0.5);
+    settle(overlay);
+    overlay.update(1);
+    assert.equal(overlay.dismiss(), true);
+    assert.equal(overlay.phase, 'out');
+    assert.equal(store.hasSeen('journal'), true);
+    assert.equal(overlay.blocking, true, 'the screen stays paused while the card leaves');
+    assert.equal(overlay.canDismiss, false);
+    assert.equal(overlay.dismiss(), false, 'already leaving');
+    overlay.update(0.15);
+    assert.ok(overlay.visibility > 0 && overlay.visibility < 1, 'fading out');
+    overlay.update(0.3);
+    assert.equal(overlay.active, false);
+    assert.equal(overlay.blocking, false);
+});
+
+test('every card has a short label for its Settings tab', () => {
+    for (const id of TIP_SCENES) {
+        assert.ok(TIPS[id].label && TIPS[id].label.length <= 12, `${id} needs a label of 12 characters or fewer`);
+    }
+    assert.equal(new Set(TIP_SCENES.map(id => TIPS[id].label)).size, TIP_SCENES.length, 'labels are unique');
 });
 
 test('seen cards are saved, survive a reload, and a broken or missing store still works', () => {

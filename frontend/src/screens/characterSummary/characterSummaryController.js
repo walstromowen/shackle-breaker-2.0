@@ -3,6 +3,7 @@ import { UI_SFX } from '../../ui/uiSfx.js';
 import { gameState } from '../../../../shared/core/gameState.js';
 import { events } from '../../../../shared/core/eventBus.js';
 import { DragAndDropManager } from '../../ui/dragAndDropManager.js';
+import { QuantityPrompt } from '../../ui/quantityPrompt.js';
 import { ScrollManager } from '../../ui/scrollManager.js';
 import { ContextMenuManager } from '../../ui/contextMenuManager.js';
 import { InventorySystem } from '../../../../shared/items/inventorySystem.js';
@@ -61,6 +62,7 @@ export class CharacterSummaryController extends BaseController {
         // Initialize Managers
         this.dragAndDropManager = new DragAndDropManager();
         this.scrollManager = new ScrollManager();
+        this.quantity = new QuantityPrompt({ owner: this }); // "how many?" slider for Drop Multiple...
         this.contextMenuManager = new ContextMenuManager({
             owner: this, // the menu plays its sounds through this controller
             onAction: (actionId, payload) => this.executeMenuAction(actionId, payload)
@@ -163,7 +165,7 @@ export class CharacterSummaryController extends BaseController {
 
         // The mouse left everything: clear the cursor (not while the keyboard is driving, a drag is held or a menu is open)
         if (!hitboxId && this.inputMode === 'mouse'
-            && !this.dragAndDropManager.dragState.active && !this.contextMenuManager.menu) {
+            && !this.dragAndDropManager.dragState.active && !this.contextMenuManager.menu && !this.quantity.isOpen) {
             this.slotIndex = -1;
             this.inventoryIndex = -1;
         }
@@ -172,7 +174,7 @@ export class CharacterSummaryController extends BaseController {
     // The mouse moved onto something: the keyboard cursor follows it (silent; UIInteractionManager adds the hover tick)
     setFocusFromPointer(hitboxId) {
         // Ignore if dragging or menu is open
-        if (this.dragAndDropManager.dragState.active || this.contextMenuManager.menu) return;
+        if (this.dragAndDropManager.dragState.active || this.contextMenuManager.menu || this.quantity.isOpen) return;
 
         if (hitboxId) {
             if (hitboxId.startsWith('SLOT_')) {
@@ -199,6 +201,8 @@ export class CharacterSummaryController extends BaseController {
     }
 
     onClick(hitboxId, fromKeyboard = false) {
+        if (this.quantity.isOpen) return this.quantity.onClick(hitboxId);
+
         if (this.pendingHotbarItem) { this.pendingHotbarItem = null; this.notice = null; } // a click drops a half-made hotbar choice
 
         // If clicking anywhere else while editing the name, attempt to save
@@ -303,6 +307,7 @@ export class CharacterSummaryController extends BaseController {
     }
 
     onRightClick(hitboxId) {
+        if (this.quantity.isOpen) return this.quantity.onRightClick();
         if (this.logic.isEditingName) {
             if (this.logic.validateName()) this.playConfirmSound();
             return;
@@ -337,6 +342,7 @@ export class CharacterSummaryController extends BaseController {
     }
 
     onDragStart(hitboxId) {
+        if (this.quantity.isOpen) return this.quantity.onDragStart(hitboxId);
         if (!hitboxId || this.contextMenuManager.menu || this.logic.isEditingName) return;
 
         if (hitboxId.includes('SCROLLBAR_THUMB')) {
@@ -390,6 +396,7 @@ export class CharacterSummaryController extends BaseController {
     }
 
     onDragMove(x, y) {
+        if (this.quantity.isOpen) { this.quantity.onDragMove(x); return; }
         if (this.scrollManager.isDragging) {
             this.scrollManager.handleDragMove(y);
         } else if (this.dragAndDropManager.dragState.active) {
@@ -398,6 +405,7 @@ export class CharacterSummaryController extends BaseController {
     }
 
     onDrop(sourceHitboxId, targetHitboxId) {
+        if (this.quantity.isOpen) return this.quantity.onDrop();
         if (this.scrollManager.isDragging) {
             this.scrollManager.handleDragEnd();
         } else if (this.dragAndDropManager.dragState.active) {
@@ -441,7 +449,7 @@ export class CharacterSummaryController extends BaseController {
                 
                 if (isStackable) {
                     options.push({ label: 'Drop 1', actionId: 'DROP_ONE' });
-                    options.push({ label: 'Drop All', actionId: 'DROP_ALL' });
+                    options.push({ label: 'Drop Multiple...', actionId: 'DROP_MANY' }); // a slider; it has an "All" button
                 } else {
                     options.push({ label: 'Drop', actionId: 'DROP_ONE' });
                 }
@@ -517,8 +525,29 @@ export class CharacterSummaryController extends BaseController {
                     this.logic.dropItem(item, item.qty || 1);
                 }
                 break;
+            case 'DROP_MANY':
+                this._openDropPrompt(item);
+                break;
         }
         this.updateFilteredInventory();
+    }
+
+    /** The slider for dropping part of a stack (1 to all of it). */
+    _openDropPrompt(item) {
+        const have = item.qty || 1;
+        this.quantity.open({
+            title: `Drop ${item.name || 'Item'}`,
+            subtitle: `You have ${have}. Dropped items are gone for good.`,
+            max: have,
+            value: 1,
+            confirmLabel: n => `Drop ${n}`,
+            detail: n => (n === have ? 'All of them' : `${have - n} left`),
+            onConfirm: n => {
+                if (this.logic.dropItem) this.logic.dropItem(item, n);
+                this.playConfirmSound();
+                this.updateFilteredInventory();
+            }
+        });
     }
 
     showNotice(text, ms = 3000) {
@@ -585,6 +614,11 @@ export class CharacterSummaryController extends BaseController {
 
         const intent = this.resolveIntent(code, e);
         if (!intent) return;
+
+        if (this.quantity.isOpen) {
+            this.quantity.handleIntent(intent);
+            return;
+        }
 
         if (this.contextMenuManager.menu) {
             this.contextMenuManager.handleNavigation(intent);
@@ -758,6 +792,7 @@ export class CharacterSummaryController extends BaseController {
     }
 
     handleScroll(delta) {
+        if (this.quantity.isOpen) return;
         this.scrollManager.handleScrollWheel(this.mouse.x, this.mouse.y, delta);
     }
 
@@ -992,6 +1027,7 @@ export class CharacterSummaryController extends BaseController {
             dropTarget: this.dragAndDropManager.dragState.active ? this.hoveredHitboxId : null,
             layout: this.layout,
             contextMenu: this.contextMenuManager.menu,
+            quantity: this.quantity.isOpen ? this.quantity : null,
             hotbar: this._getHotbarView(),
             heldHotbarOk: this.dragAndDropManager.dragState.active ? (this.dragAndDropManager.dragState.sourceId === 'hotbar' || this._canHotbar(this.dragAndDropManager.dragState.payload)) : false,
             notice: (this.notice && performance.now() < this.notice.until) ? this.notice.text : null,

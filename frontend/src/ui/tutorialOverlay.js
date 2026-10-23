@@ -3,8 +3,12 @@ import { UITheme } from './UITheme.js';
 import { CanvasUI } from './canvasUI.js';
 
 const STORAGE_KEY = 'shackle-breaker:tips';
-const IGNORE_INPUT_SECONDS = 0.5;   // a key still held from the last screen (or a double click) must not skip a card unread
-const FADE_SECONDS = 0.25;
+// How the card arrives and leaves. The screen is seen first, then the card eases in; closing it eases out before the screen takes over.
+const SHOW_DELAY_SECONDS = 0.45;    // after the screen is fully visible (any scene transition finished)
+const FADE_IN_SECONDS = 0.6;
+const FADE_OUT_SECONDS = 0.35;
+const IGNORE_INPUT_SECONDS = 0.8;   // counted from the start of the fade-in: a key still held from the last screen (or a double click) must not skip a card unread
+const RISE_PIXELS = 36;             // the card drifts up this far as it fades in (and back down as it fades out)
 const PLAIN_TOKENS = new Set(['-', '/', 'or']);   // drawn as text between key caps, not as a key cap
 
 /**
@@ -48,132 +52,205 @@ export class TipStore {
 /** The one store the game uses; Settings > Replay Tips resets it. */
 export const tipStore = new TipStore();
 
+/** Easing: quick start, soft landing (arrivals), and the reverse (departures). */
+const easeOut = (t) => 1 - Math.pow(1 - Math.max(0, Math.min(1, t)), 3);
+const easeIn = (t) => Math.pow(Math.max(0, Math.min(1, t)), 2);
+
+// ============================================================
+// THE CARD'S CONTENT: shared by the pop-up card and the Controls tabs in Settings
+// ============================================================
+
+/** The sizes the pop-up card uses. Settings passes smaller ones to fit a tab. */
+export const TIP_DEFAULTS = Object.freeze({
+    width: 1180 - 72 * 2,   // the width of the content (the card is this plus its side padding)
+    keyColW: 380,           // the column the key caps are drawn in
+    font: 30,               // the row text
+    lineH: 40,
+    rowGap: 22,
+    capH: 50,               // the key caps
+    capFont: 26,
+    showTitle: true         // the title and its flourish above the intro
+});
+
+/** Works out where everything goes, so the caller can size a panel around it before drawing. Returns { height, ... } for drawTip. */
+export function measureTip(ui, tip, options = {}) {
+    const o = { ...TIP_DEFAULTS, ...options };
+    const textW = o.width - o.keyColW - 24;
+    const rowFont = UITheme.font(o.font);
+    const introFont = UITheme.font(o.font, { italic: true });
+    const rows = tip.rows.map(row => {
+        const lines = ui.getWrappedLines(row.text, textW, rowFont);
+        return { row, lines, h: Math.max(o.capH + 14, lines.length * o.lineH) };
+    });
+    const introLines = tip.intro ? ui.getWrappedLines(tip.intro, o.width, introFont) : [];
+    const headH = (o.showTitle ? 100 : 0) + introLines.length * o.lineH + (introLines.length ? 36 : 0);
+    const rowsH = rows.reduce((sum, r) => sum + r.h, 0) + o.rowGap * Math.max(0, rows.length - 1);
+    return { tip, o, rows, introLines, rowFont, introFont, headH, rowsH, height: headH + rowsH };
+}
+
+/** Draws a measured tip with its top-left corner at (x, y). */
+export function drawTip(ctx, ui, m, x, y) {
+    const { o } = m;
+    let cy = y;
+    if (o.showTitle) {
+        ui.drawText(m.tip.title, x + o.width / 2, cy + 40, UITheme.fonts.sectionHeading, UITheme.colors.textHighlight, 'center');
+        ui.drawLineWithGothicFlourish(x, cy + 80, o.width);
+        cy += 100;
+    }
+    m.introLines.forEach(line => {
+        cy += o.lineH;
+        ui.drawText(line, x + o.width / 2, cy, m.introFont, UITheme.colors.textMuted, 'center');
+    });
+    if (m.introLines.length) cy += 36;
+
+    const textX = x + o.keyColW + 24;
+    m.rows.forEach(({ row, lines, h }) => {
+        drawKeys(ctx, ui, row.keys, x, cy + 8, o);
+        lines.forEach((line, i) => {
+            ui.drawText(line, textX, cy + 8 + Math.round(o.capH * 0.68) + i * o.lineH, m.rowFont, UITheme.colors.textMain, 'left');
+        });
+        cy += h + o.rowGap;
+    });
+}
+
+/** One row's keys as small brass-edged caps, left to right from (x, y), the cap tops at y. */
+function drawKeys(ctx, ui, keys, x, y, o) {
+    const h = o.capH, gap = 10, pad = Math.round(h * 0.36);
+    const capFont = UITheme.font(o.capFont, { bold: true });
+    let cx = x;
+    keys.forEach(key => {
+        ctx.save();
+        ctx.font = capFont;
+        const tw = ctx.measureText(key).width;
+        ctx.restore();
+        if (PLAIN_TOKENS.has(key)) {
+            ui.drawText(key === '-' ? '–' : key, cx + tw / 2 + 4, y + Math.round(h * 0.72), UITheme.font(o.capFont + 2), UITheme.colors.textMuted, 'center');
+            cx += tw + 14;
+            return;
+        }
+        const w = Math.max(h, tw + pad * 2);
+        ctx.save();
+        ctx.fillStyle = 'rgba(201, 166, 79, 0.10)';
+        ctx.strokeStyle = 'rgba(194, 161, 79, 0.65)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.rect(cx, y, w, h);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+        ui.drawText(key, cx + w / 2, y + Math.round(h * 0.7), capFont, UITheme.colors.textHighlight, 'center');
+        cx += w + gap;
+    });
+}
+
 /**
- * The card that explains a screen's controls the first time it opens. While it is up the screen underneath is paused: SceneManager
- * hands it every key and click, and any of them (after a short delay) closes it.
+ * The card that explains a screen's controls the first time it opens. It waits for the screen to be fully visible, eases in, and
+ * while it is up the screen underneath is paused: SceneManager hands it every key and click, and any of them (after a short delay)
+ * eases it out again.
+ *
+ *   phase:  null -> 'wait' -> 'in' -> 'open' -> 'out' -> null
+ *   active    a card is pending or showing (any phase)
+ *   blocking  the card is on screen ('in', 'open', 'out'): the screen underneath is paused and the input is the card's
  */
 export class TutorialOverlay {
     constructor(store = tipStore) {
         this.store = store;
         this.sceneId = null;
-        this.age = 0;
+        this.phase = null;
+        this.age = 0;       // seconds since the fade-in began
+        this.phaseTime = 0; // seconds in the current phase
     }
 
     get active() { return this.sceneId !== null; }
 
-    get canDismiss() { return this.active && this.age >= IGNORE_INPUT_SECONDS; }
+    get blocking() { return this.phase === 'in' || this.phase === 'open' || this.phase === 'out'; }
 
-    /** Opens the card for a screen unless there is none or it was seen already. Returns true when it opened. */
+    get canDismiss() { return (this.phase === 'in' || this.phase === 'open') && this.age >= IGNORE_INPUT_SECONDS; }
+
+    /** 0 (not there) to 1 (fully in), eased: how much of the card is showing. */
+    get visibility() {
+        if (this.phase === 'in') return easeOut(this.phaseTime / FADE_IN_SECONDS);
+        if (this.phase === 'open') return 1;
+        if (this.phase === 'out') return 1 - easeIn(this.phaseTime / FADE_OUT_SECONDS);
+        return 0;
+    }
+
+    _enter(phase) { this.phase = phase; this.phaseTime = 0; }
+
+    /** Queues the card for a screen unless there is none or it was seen already. Returns true when it was queued. */
     show(sceneId) {
         if (!TIPS[sceneId] || this.store.hasSeen(sceneId)) return false;
         this.sceneId = sceneId;
         this.age = 0;
+        this._enter('wait');
         return true;
     }
 
-    /** Closes the card and remembers it as seen. Returns false when nothing was open. */
+    /** Starts closing the card and remembers it as seen. Returns false when there is nothing to close (or it is already closing). */
     dismiss() {
-        if (!this.active) return false;
+        if (!this.active || this.phase === 'out') return false;
         this.store.markSeen(this.sceneId);
-        this.sceneId = null;
+        if (this.phase === 'wait') { this.cancel(); return true; }
+        this._enter('out');
         return true;
     }
 
-    /** Closes the card without remembering it (the scene changed before it was read). */
+    /** Closes the card at once without remembering it (the scene changed before it was read). */
     cancel() {
         this.sceneId = null;
+        this.phase = null;
+        this.age = 0;
+        this.phaseTime = 0;
     }
 
-    update(dt) {
-        if (this.active) this.age += dt;
+    /** @param {number} dt  @param {{ sceneBusy?: boolean }} [opts]  sceneBusy: a scene transition is still running, so the card keeps waiting */
+    update(dt, { sceneBusy = false } = {}) {
+        if (!this.active) return;
+        if (this.phase === 'wait') {
+            if (!sceneBusy) this.phaseTime += dt;
+            if (this.phaseTime >= SHOW_DELAY_SECONDS) { this._enter('in'); this.age = 0; }
+            return;
+        }
+        this.phaseTime += dt;
+        if (this.phase === 'in' || this.phase === 'open') {
+            this.age += dt;
+            if (this.phase === 'in' && this.phaseTime >= FADE_IN_SECONDS) this._enter('open');
+        } else if (this.phase === 'out' && this.phaseTime >= FADE_OUT_SECONDS) {
+            this.cancel();
+        }
     }
 
     render(ctx) {
-        if (!this.active) return;
+        if (!this.blocking) return;
         const tip = TIPS[this.sceneId];
         const ui = new CanvasUI(ctx);
         const W = ctx.canvas.width, H = ctx.canvas.height;
-        const fade = Math.min(1, this.age / FADE_SECONDS);
+        const v = this.visibility;
 
         const panelW = 1180;
         const padX = 72;
-        const keyColW = 380;
-        const textX = padX + keyColW + 24;
-        const textW = panelW - textX - padX;
-        const rowFont = UITheme.font(30);
-        const lineH = 40;
-        const rowGap = 22;
-
-        // Measure first, so the card is as tall as its content
-        const rows = tip.rows.map(row => {
-            const lines = ui.getWrappedLines(row.text, textW, rowFont);
-            return { row, lines, h: Math.max(64, lines.length * lineH) };
-        });
-        const introLines = tip.intro ? ui.getWrappedLines(tip.intro, panelW - padX * 2, UITheme.font(30, { italic: true })) : [];
-        const headH = 64 + 56 + introLines.length * lineH + 36;
-        const rowsH = rows.reduce((s, r) => s + r.h, 0) + rowGap * (rows.length - 1);
+        const m = measureTip(ui, tip, { width: panelW - padX * 2 });
         const footH = 120;
-        const panelH = headH + rowsH + footH;
+        const panelH = 24 + m.height + footH;
         const x = Math.round((W - panelW) / 2);
         const y = Math.round((H - panelH) / 2);
 
         ctx.save();
-        ctx.globalAlpha = fade;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.72)';
+        ctx.fillStyle = `rgba(0, 0, 0, ${(0.72 * v).toFixed(3)})`;
         ctx.fillRect(0, 0, W, H);
+
+        // the card drifts up into place as it fades in
+        ctx.globalAlpha = v;
+        ctx.translate(0, Math.round((1 - v) * RISE_PIXELS));
         ui.drawPopupPanel(x, y, panelW, panelH);
+        drawTip(ctx, ui, m, x + padX, y + 24);
 
-        let cy = y + 64;
-        ui.drawText(tip.title, x + panelW / 2, cy, UITheme.fonts.sectionHeading, UITheme.colors.textHighlight, 'center');
-        cy += 40;
-        ui.drawLineWithGothicFlourish(x + padX, cy, panelW - padX * 2);
-        cy += 20;
-        introLines.forEach(line => {
-            cy += lineH;
-            ui.drawText(line, x + panelW / 2, cy, UITheme.font(30, { italic: true }), UITheme.colors.textMuted, 'center');
-        });
-        cy += 36;
-
-        rows.forEach(({ row, lines, h }) => {
-            this._drawKeys(ctx, ui, row.keys, x + padX, cy + 8);
-            lines.forEach((line, i) => {
-                ui.drawText(line, x + textX, cy + 8 + 34 + i * lineH, rowFont, UITheme.colors.textMain, 'left');
-            });
-            cy += h + rowGap;
-        });
-
-        const prompt = this.canDismiss ? 'Press any key or click to continue' : '';
-        ui.drawText(prompt, x + panelW / 2, y + panelH - 52, UITheme.font(26, { italic: true }), UITheme.colors.textMuted, 'center');
+        // the prompt arrives a moment after the card, once a key press would actually count
+        const ready = this.canDismiss ? Math.min(1, (this.age - IGNORE_INPUT_SECONDS) / 0.4) : 0;
+        if (ready > 0) {
+            ctx.globalAlpha = v * ready;
+            ui.drawText('Press any key or click to continue', x + panelW / 2, y + panelH - 52, UITheme.font(26, { italic: true }), UITheme.colors.textMuted, 'center');
+        }
         ctx.restore();
-    }
-
-    /** One row's keys as small brass-edged caps, left to right from (x, y), the cap tops at y. */
-    _drawKeys(ctx, ui, keys, x, y) {
-        const h = 50, gap = 10, pad = 18;
-        const capFont = UITheme.font(26, { bold: true });
-        let cx = x;
-        keys.forEach(key => {
-            ctx.save();
-            ctx.font = capFont;
-            const tw = ctx.measureText(key).width;
-            ctx.restore();
-            if (PLAIN_TOKENS.has(key)) {
-                ui.drawText(key === '-' ? '–' : key, cx + tw / 2 + 4, y + 36, UITheme.font(28), UITheme.colors.textMuted, 'center');
-                cx += tw + 14;
-                return;
-            }
-            const w = Math.max(h, tw + pad * 2);
-            ctx.save();
-            ctx.fillStyle = 'rgba(201, 166, 79, 0.10)';
-            ctx.strokeStyle = 'rgba(194, 161, 79, 0.65)';
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.rect(cx, y, w, h);
-            ctx.fill();
-            ctx.stroke();
-            ctx.restore();
-            ui.drawText(key, cx + w / 2, y + 35, capFont, UITheme.colors.textHighlight, 'center');
-            cx += w + gap;
-        });
     }
 }

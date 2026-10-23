@@ -128,7 +128,7 @@ export class CharacterSummaryRenderer {
     }
 
     // G. Tooltips (Highest Z-Index)
-    if (!state.heldItem && !state.contextMenu) {
+    if (!state.heldItem && !state.contextMenu && !state.quantity) {
       let activeTooltipId = state.hoveredHitboxId;
 
       // 1. Fallback to keyboard focus if no mouse hover exists
@@ -165,7 +165,7 @@ export class CharacterSummaryRenderer {
     }
 
     // H. What the attribute under the mouse does (Stats tab; the attributes have no keyboard cursor, so a parked pointer is ignored then)
-    if (state.viewMode === 'STATS' && !state.heldItem && !state.contextMenu
+    if (state.viewMode === 'STATS' && !state.heldItem && !state.contextMenu && !state.quantity
         && state.mouse && state.inputMode !== 'keyboard') {
       const rects = this.statsPanel.attrRects;
       const hit = Object.keys(rects).find(k => {
@@ -173,6 +173,11 @@ export class CharacterSummaryRenderer {
         return state.mouse.x >= r.x && state.mouse.x <= r.x + r.w && state.mouse.y >= r.y && state.mouse.y <= r.y + r.h;
       });
       if (hit) drawStatTooltip(this.ui, hit, rects[hit], { placement: 'right', multipliers: member.statMultipliers || member.state?.statMultipliers });
+    }
+
+    // I. "How many?" slider (Drop Multiple...): over everything, its hitboxes in front of the screen's own
+    if (state.quantity) {
+      this.hitboxes.push(...state.quantity.render(this.ctx, this.ui, state.hoveredHitboxId));
     }
 
     // --- 5. Report Hitboxes ---

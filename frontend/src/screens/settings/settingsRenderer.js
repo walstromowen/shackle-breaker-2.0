@@ -1,5 +1,7 @@
 import { CanvasUI } from '../../ui/canvasUI.js';
 import { UITheme } from '../../ui/UITheme.js';
+import { TIPS } from '../../ui/tutorialData.js';
+import { measureTip, drawTip } from '../../ui/tutorialOverlay.js';
 
 const C = UITheme.colors;
 const F = UITheme.fonts;
@@ -38,13 +40,44 @@ export class SettingsRenderer {
         const cx = L.panelX + L.panelW / 2;
         ui.drawStyled('title', 'Settings', cx, L.panelY + 112);
         ui.drawLineWithGothicFlourish(cx - 150, L.panelY + 142, 300, C.borderHighlight);
-        ui.drawStyled('hint', 'Sound', cx, L.panelY + 200);
 
-        for (const row of state.channels) this._renderSlider(ui, state, row, focus);
+        for (const t of state.tabs) {
+            ui.drawTab(t.x, t.y, t.w, t.h, t.label, ui.flags(t.id, focus, { selected: state.tab === t.tab }));
+        }
+
+        if (state.tab === 'sound') {
+            for (const row of state.channels) this._renderSlider(ui, state, row, focus);
+        } else {
+            this._renderControls(ctx, ui, state, focus);
+        }
 
         for (const b of state.buttons) {
             ui.drawButton(b.x, b.y, b.w, b.h, b.label, ui.flags(b.id, focus), { font: F.medium });
         }
+    }
+
+    /** Controls tab: one tab per screen down the left, that screen's control card (the same rows as its first-visit tip) on the right. */
+    _renderControls(ctx, ui, state, focus) {
+        const L = state.layout;
+        for (const p of state.pages) {
+            ui.drawTab(p.x, p.y, p.w, p.h, TIPS[p.sceneId].label, ui.flags(p.id, focus, { selected: p.index === state.page }));
+        }
+
+        const tip = TIPS[state.pageSceneId];
+        const x = L.panelX + L.cardX;
+        const w = L.cardW;
+        ui.drawText(tip.title, x + w / 2, L.cardY + 40, F.sectionHeading, C.textHighlight, 'center');
+        ui.drawLineWithGothicFlourish(x, L.cardY + 66, w);
+
+        // the card's rows at a size that fits the tab (the intro line is left to the first-visit card)
+        const key = `${state.pageSceneId}:${w}`;
+        if (!this._tipLayouts) this._tipLayouts = new Map();
+        let m = this._tipLayouts.get(key);
+        if (!m) {
+            m = measureTip(ui, { ...tip, intro: '' }, { width: w, keyColW: 270, font: 26, lineH: 34, rowGap: 16, capH: 44, capFont: 23, showTitle: false });
+            this._tipLayouts.set(key, m);
+        }
+        drawTip(ctx, ui, m, x, L.cardY + 100);
     }
 
     _renderSlider(ui, state, row, focus) {

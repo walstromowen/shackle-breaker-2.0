@@ -9,6 +9,7 @@ import { ScrollManager } from '../../ui/scrollManager.js';
 import { ContextMenuManager } from '../../ui/contextMenuManager.js';
 import { ShopLogic } from './shopLogic.js';
 import { ItemDefinitions } from '../../../../shared/items/itemDefinitions.js';
+import { QuantityPrompt } from '../../ui/quantityPrompt.js';
 
 export class ShopController extends BaseController {
     constructor(input, data) {
@@ -39,6 +40,9 @@ export class ShopController extends BaseController {
             onAction: (actionId, payload) => this.executeMenuAction(actionId, payload)
         });
         
+        // "How many?" slider for Sell / Buy Multiple...
+        this.quantity = new QuantityPrompt({ owner: this });
+
         this.currentHitboxes = [];
         
         this._syncScrollZones();
@@ -61,6 +65,7 @@ export class ShopController extends BaseController {
             
             this.dragAndDropManager.cancelDrag();
             if (this.contextMenuManager) this.contextMenuManager.close();
+            this.quantity.close();
             
             this._syncScrollZones();
         }
@@ -99,6 +104,11 @@ export class ShopController extends BaseController {
         // Also hands control to the keyboard (and keeps Tab away from the browser)
         const intent = this.resolveIntent(code, e);
         if (!intent) return;
+        
+        if (this.quantity.isOpen) {
+            this.quantity.handleIntent(intent);
+            return;
+        }
         
         if (this.contextMenuManager.menu) {
             this.contextMenuManager.handleNavigation(intent);
@@ -264,11 +274,14 @@ export class ShopController extends BaseController {
         const options = [];
         
         if (source === 'vendor') {
-            const cost = def.cost || def.value || 10;
+            const cost = item.cost || def.cost || def.value || 10;
             options.push({ label: `Buy ${itemName} (${cost})`, actionId: 'BUY' });
+            // More than one in stock and more than one affordable: a slider for how many
+            if (this._maxBuyable(item) > 1) options.push({ label: 'Buy Multiple...', actionId: 'BUY_MANY' });
         } else {
-            const value = Math.floor((def.cost || def.value || 10) / 2);
+            const value = this.logic.sellValue(item);
             options.push({ label: `Sell ${itemName} (${value})`, actionId: 'SELL' });
+            if ((item.qty || 1) > 1) options.push({ label: 'Sell Multiple...', actionId: 'SELL_MANY' });
         }
         options.push({ label: "Cancel", actionId: 'CANCEL' });
         
@@ -287,8 +300,53 @@ export class ShopController extends BaseController {
             this._transactionSound(this.logic.buyItem(item, 1));
         } else if (actionId === 'SELL' && source === 'party') {
             this._transactionSound(this.logic.sellItem(item, 1));
+        } else if (actionId === 'SELL_MANY' && source === 'party') {
+            this._openSellPrompt(item);
+        } else if (actionId === 'BUY_MANY' && source === 'vendor') {
+            this._openBuyPrompt(item);
         }
         this._validateIndices();
+    }
+
+    /** The most of this ware the party can buy right now: what is in stock, limited by the coin in the purse. */
+    _maxBuyable(item) {
+        const stock = item.qty || 1;
+        const cost = Math.max(1, item.cost || 1);
+        return Math.max(0, Math.min(stock, Math.floor(this.logic.getPartyCurrency() / cost)));
+    }
+
+    _openSellPrompt(item) {
+        const each = this.logic.sellValue(item);
+        const have = item.qty || 1;
+        this.quantity.open({
+            title: `Sell ${item.name || 'Item'}`,
+            subtitle: `You have ${have}. Each sells for ${each}.`,
+            max: have,
+            value: 1,
+            confirmLabel: n => `Sell ${n}`,
+            detail: n => `${n * each} ${n * each === 1 ? 'coin' : 'coins'}`,
+            onConfirm: n => {
+                this._transactionSound(this.logic.sellItem(item, n));
+                this._validateIndices();
+            }
+        });
+    }
+
+    _openBuyPrompt(item) {
+        const each = item.cost || 1;
+        const most = this._maxBuyable(item);
+        this.quantity.open({
+            title: `Buy ${item.name || 'Item'}`,
+            subtitle: `In stock: ${item.qty || 1}. Each costs ${each}.`,
+            max: most,
+            value: 1,
+            confirmLabel: n => `Buy ${n}`,
+            detail: n => `${n * each} ${n * each === 1 ? 'coin' : 'coins'}`,
+            onConfirm: n => {
+                this._transactionSound(this.logic.buyItem(item, n));
+                this._validateIndices();
+            }
+        });
     }
 
     // A purchase / sale sounds the same whether it came from the menu or from a drag
@@ -300,7 +358,7 @@ export class ShopController extends BaseController {
     // The mouse moved onto something: the keyboard cursor follows it (silent; UIInteractionManager adds the hover tick)
     setFocusFromPointer(hitboxId) {
         // Don't process hovers if dragging or menus are active
-        if (this.dragAndDropManager.dragState.active || this.contextMenuManager.menu) return;
+        if (this.dragAndDropManager.dragState.active || this.contextMenuManager.menu || this.quantity.isOpen) return;
 
         if (hitboxId) {
             if (hitboxId.startsWith('VENDOR_ITEM_')) {
@@ -329,13 +387,15 @@ export class ShopController extends BaseController {
 
         // The mouse left everything: clear the cursor (not while the keyboard is driving, a drag is held or a menu is open)
         if (!hitboxId && this.inputMode === 'mouse'
-            && !this.dragAndDropManager.dragState.active && !this.contextMenuManager.menu) {
+            && !this.dragAndDropManager.dragState.active && !this.contextMenuManager.menu && !this.quantity.isOpen) {
             this.vendorIndex = -1;
             this.partyIndex = -1;
         }
     }
 
     onClick(hitboxId) {
+        if (this.quantity.isOpen) return this.quantity.onClick(hitboxId);
+
         if (!hitboxId) {
             if (this.contextMenuManager.menu) {
                 this.contextMenuManager.close();
@@ -384,6 +444,7 @@ export class ShopController extends BaseController {
     }
 
     onRightClick(hitboxId) {
+        if (this.quantity.isOpen) return this.quantity.onRightClick();
         if (this.contextMenuManager.menu) {
             this.contextMenuManager.close();
             this.playCancelSound();
@@ -415,6 +476,7 @@ export class ShopController extends BaseController {
     // DRAG AND DROP
     // ========================================================
     onDragStart(hitboxId) {
+        if (this.quantity.isOpen) return this.quantity.onDragStart(hitboxId);
         if (!hitboxId || this.contextMenuManager.menu) return;
         
         if (hitboxId.includes('SCROLLBAR_THUMB')) {
@@ -450,6 +512,7 @@ export class ShopController extends BaseController {
     }
 
     onDragMove(x, y) {
+        if (this.quantity.isOpen) { this.quantity.onDragMove(x); return; }
         if (this.scrollManager.isDragging) {
             this.scrollManager.handleDragMove(y);
         } else if (this.dragAndDropManager.dragState.active) {
@@ -458,6 +521,7 @@ export class ShopController extends BaseController {
     }
 
     onDrop(sourceHitboxId, targetHitboxId) {
+        if (this.quantity.isOpen) return this.quantity.onDrop();
         if (this.scrollManager.isDragging) {
             this.scrollManager.handleDragEnd();
         } else if (this.dragAndDropManager.dragState.active) {
@@ -490,6 +554,7 @@ export class ShopController extends BaseController {
     }
 
     handleScroll(delta) {
+        if (this.quantity.isOpen) return;
         this.scrollManager.handleScrollWheel(this.mouse.x, this.mouse.y, delta);
     }
 
@@ -553,6 +618,7 @@ export class ShopController extends BaseController {
             dropTarget: this.dragAndDropManager.dragState.active ? this.hoveredHitboxId : null,
             layout: this.layout,
             contextMenu: this.contextMenuManager.menu,
+            quantity: this.quantity.isOpen ? this.quantity : null,
             onLayoutUpdate: (hitboxes) => this.updateHitboxes(hitboxes)
         };
     }

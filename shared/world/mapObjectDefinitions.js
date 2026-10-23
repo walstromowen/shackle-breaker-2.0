@@ -1,5 +1,10 @@
+import { FENCE_FRAMES, FENCE_CONNECT_KEY } from './fenceConnections.js';
+
 /* The gravestone's body, shared by TOMBSTONE and OLD_GRAVESTONE below: one sprite, one footprint, one hitbox, so nothing on screen tells the two apart. */
 const GRAVESTONE = { sheet: 'objTombstone', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } };
+
+/* A fence piece's body: 32 frames on one sheet, the right one picked by the renderer from the neighbouring fences (fenceConnections.js). */
+const WOODEN_FENCE = { sheet: 'objWoodenFence', spriteX: 0, spriteY: 0, width: 1, height: 1, frames: FENCE_FRAMES, connects: FENCE_CONNECT_KEY, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } };
 
 export const MAP_OBJECTS_DEFINITIONS = {
     // --- GROUND DECORATION ---
@@ -30,12 +35,16 @@ export const MAP_OBJECTS_DEFINITIONS = {
     ABANDONED_HOUSE_2: { sheet: 'objAbandonedHouse2', spriteX: 9, spriteY: 7, width: 4, height: 4, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 1, h: 2 } /* the left wall: its two bottom rows, like the right wall's (it used to start a row too low and block the cell in front of the house) */, { xOffset: 1, yOffset: -1, w: 1, h: 1 }, { xOffset: 2, yOffset: -1, w: 2, h: 2 }] },
 
     // --- STRUCTURES / FENCES ---
-    WOODEN_FENCE_H: { sheet: 'objWoodenFenceH', spriteX: 5, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
-    WOODEN_FENCE_V: { sheet: 'objWoodenFenceV', spriteX: 5, spriteY: 4, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
-    WOODEN_FENCE_TL_CORNER: { sheet: 'objWoodenFenceTlCorner', spriteX: 3, spriteY: 4, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
-    WOODEN_FENCE_TR_CORNER: { sheet: 'objWoodenFenceTrCorner', spriteX: 4, spriteY: 4, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
-    WOODEN_FENCE_BL_CORNER: { sheet: 'objWoodenFenceBlCorner', spriteX: 3, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
-    WOODEN_FENCE_BR_CORNER: { sheet: 'objWoodenFenceBrCorner', spriteX: 4, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    /* The wooden fence: six names for one connecting piece (a post with rails towards its neighbours, see fenceConnections.js). The names stay so
+       the yards in structures.js keep reading like a plan (H a straight run along, V down, four corners); the picture is chosen from the neighbours. */
+    WOODEN_FENCE_H: WOODEN_FENCE,
+    WOODEN_FENCE_V: WOODEN_FENCE,
+    WOODEN_FENCE_TL_CORNER: WOODEN_FENCE,
+    WOODEN_FENCE_TR_CORNER: WOODEN_FENCE,
+    WOODEN_FENCE_BL_CORNER: WOODEN_FENCE,
+    WOODEN_FENCE_BR_CORNER: WOODEN_FENCE,
+    /* A fence piece that has come down: a snapped post and a rail in the grass. It does not connect to anything. */
+    WOODEN_FENCE_FALLEN: { sheet: 'objWoodenFenceFallen', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
 
     // --- INTERACTABLES & OBSTACLES ---
     /* BOULDERS: mined with a pickaxe (equipped, like an axe for a tree) for 3 stone, and the boulder is gone. Without a pickaxe they are plain solid rocks and show no prompt. */

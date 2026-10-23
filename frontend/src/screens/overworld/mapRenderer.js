@@ -1,6 +1,7 @@
 import { CONFIG } from '../../../../shared/core/constants.js';
 import { gameState } from '../../../../shared/core/gameState.js';
 import { BlobTerrainRenderer } from './blobTerrainRenderer.js';
+import { fenceFrame } from '../../../../shared/world/fenceConnections.js';
 export class MapRenderer {
     constructor(canvas, loader, config) {
         this.canvas = canvas;
@@ -132,6 +133,7 @@ export class MapRenderer {
             if (obj.isGround || !obj.isAnchor) continue;
             if (this.isInBounds(obj.col, obj.row, bounds)) {
                 const tileData = worldManager.getTileData(obj.col, obj.row);
+                if (obj.connects) obj.currentFrame = this.connectedFrame(obj, worldManager);
                 const visualBottomOffset = 1;
                 if (!this.renderList[renderIdx]) this.renderList[renderIdx] = {};
                 const item = this.renderList[renderIdx++];
@@ -167,6 +169,13 @@ export class MapRenderer {
                 this.drawEntity(item.data, camera, interpolationFactor);
             }
         }
+    }
+    /* The frame for an object that joins up with its neighbours (the wooden fence): one post, with rails towards every neighbouring fence. */
+    connectedFrame(obj, worldManager) {
+        if (!this._joinsWith) this._joinsWith = (c, r) => { const o = this._joinWorld.getObject(c, r); return !!o && o.connects === this._joinKind; };
+        this._joinWorld = worldManager; // read by _joinsWith: one function for every fence piece, so nothing is allocated per frame
+        this._joinKind = obj.connects;
+        return fenceFrame(obj.col, obj.row, this._joinsWith);
     }
     /* ==========================================  4. DRAWING PRIMITIVES  ========================================== */
     drawObject(obj, dx, dy, totalTime = 0) {
@@ -298,4 +307,4 @@ export class MapRenderer {
     isInBounds(col, row, bounds) {
         return col >= bounds.objStartCol && col <= bounds.objEndCol && row >= bounds.objStartRow && row <= bounds.objEndRow;
     }
-}
+}

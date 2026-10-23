@@ -2,6 +2,7 @@
  * First-visit control tips, one card per screen. Shown once by TutorialOverlay the first time a screen opens after the prologue
  * (Settings > Replay Tips shows them all again).
  *
+ * Each card has a `label` (the short name on its Settings > Controls tab), a `title`, an `intro` line and its rows.
  * A row is  { keys: ['W', 'A', 'S', 'D'], text: 'Walk around' }.
  *   - keys are drawn as little key caps; 'or' between two keys is drawn as plain text, '/' too.
  *   - Mouse actions use the words 'Click', 'Right-click', 'Hover', 'Wheel', 'Drag'.
@@ -11,6 +12,7 @@
 
 export const TIPS = {
     overworld: {
+        label: 'World',
         title: 'Exploring the World',
         intro: 'The road stretches on. Where it ends, you do not yet know.',
         rows: [
@@ -23,6 +25,7 @@ export const TIPS = {
     },
 
     encounter: {
+        label: 'Encounters',
         title: 'Encounters',
         intro: 'Not every meeting on the road ends in blood. Choose with care: the road remembers.',
         rows: [
@@ -35,6 +38,7 @@ export const TIPS = {
     },
 
     battle: {
+        label: 'Battle',
         title: 'Battle',
         intro: 'Steel costs Stamina, spells cost Insight. Turns fall to the quick. Spend either carelessly and the road collects.',
         rows: [
@@ -48,6 +52,7 @@ export const TIPS = {
     },
 
     party: {
+        label: 'Party',
         title: 'Your Party',
         intro: 'You were not the only one in chains. Three fight at the front; the rest wait in reserve.',
         rows: [
@@ -59,6 +64,7 @@ export const TIPS = {
     },
 
     character_summary: {
+        label: 'Character',
         title: 'Character Summary',
         intro: 'Take stock of what the iron has left you.',
         rows: [
@@ -66,12 +72,13 @@ export const TIPS = {
             { keys: ['Q', 'E'], text: 'Previous / next character' },
             { keys: ['Hover'], text: 'Point at an attribute to see what it does' },
             { keys: ['Drag'], text: 'Drag an item onto a gear slot to equip it' },
-            { keys: ['W', 'A', 'S', 'D'], text: 'Move the highlight, Space for an item’s menu' },
+            { keys: ['W', 'A', 'S', 'D'], text: 'Move the highlight; Space opens an item’s menu (Drop Multiple has a slider)' },
             { keys: ['X'], text: 'Unequip the highlighted item (Delete works too)' }
         ]
     },
 
     level_up: {
+        label: 'Level Up',
         title: 'Level Up',
         intro: 'Every trial leaves its mark. Choose what keeps you whole. Nothing is final until you confirm.',
         rows: [
@@ -83,6 +90,7 @@ export const TIPS = {
     },
 
     journal: {
+        label: 'Journal',
         title: 'Journal',
         intro: 'What you remember is little. Here is what you have learned since.',
         rows: [
@@ -94,10 +102,11 @@ export const TIPS = {
     },
 
     shop: {
+        label: 'Shop',
         title: 'Shop',
         intro: 'Coin is coin, even to the cursed.',
         rows: [
-            { keys: ['Click'], text: 'Select an item; Space opens its options (Buy or Sell)' },
+            { keys: ['Click'], text: 'Select an item; Space opens its options (Buy or Sell; Multiple has a slider)' },
             { keys: ['W', 'A', 'S', 'D'], text: 'Move through the stock' },
             { keys: ['Wheel'], text: 'Scroll a long list' },
             { keys: ['Esc'], text: 'Leave the shop, or right-click' }
@@ -105,6 +114,7 @@ export const TIPS = {
     },
 
     workshop: {
+        label: 'Crafting',
         title: 'Crafting',
         intro: 'The shackles stay locked, but the hands are still your own.',
         rows: [
@@ -116,6 +126,7 @@ export const TIPS = {
     },
 
     saves: {
+        label: 'System',
         title: 'System',
         intro: 'Mark your place on the road, or leave it for now.',
         rows: [
@@ -127,12 +138,14 @@ export const TIPS = {
     },
 
     settings: {
+        label: 'Settings',
         title: 'Settings',
         intro: 'Quiet the world, or let it roar.',
         rows: [
             { keys: ['W', 'S'], text: 'Choose a setting' },
-            { keys: ['A', 'D'], text: 'Lower / raise it by 5% (or drag the slider)' },
-            { keys: ['Click'], text: 'Test Sound plays a sample; Reset restores the defaults; Replay Tips shows these cards again' },
+            { keys: ['A', 'D'], text: 'Lower / raise a volume by 5% (or drag the slider)' },
+            { keys: ['Q', 'E'], text: 'Switch between the Sound and Controls tabs' },
+            { keys: ['Click'], text: 'Test Sound plays a sample; Reset restores the defaults; Replay Tips (on Controls) shows the cards again' },
             { keys: ['Esc'], text: 'Go back to the previous screen' }
         ]
     }

@@ -67,6 +67,12 @@ export class ShopLogic {
         });
     }
 
+    /** What the merchant pays for one of this item: half its value. */
+    sellValue(item) {
+        const def = ItemDefinitions[item.defId];
+        return Math.floor((def?.cost || def?.value || 10) * 0.5);
+    }
+
     buyItem(item, amount = 1) {
         const totalCost = item.cost * amount;
         if (gameState.party.currency >= totalCost) {
@@ -88,7 +94,7 @@ export class ShopLogic {
 
     sellItem(item, amount = 1) {
         const def = ItemDefinitions[item.defId];
-        const sellValue = Math.floor((def?.cost || def?.value || 10) * 0.5);
+        const sellValue = this.sellValue(item);
         const bagIdx = gameState.party.inventory.indexOf(item);
 
         if (bagIdx > -1) {

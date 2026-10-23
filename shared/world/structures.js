@@ -169,7 +169,7 @@ function buildCenter(theme = {}) {
         // south-east: a garden gone wild
         put(9, 9, 'TREE_STUMP'); put(8, 9, 'TULIPS_RED'); put(9, 8, 'TULIPS_WHITE'); put(8, 8, 'GRASS_COVERAGE_2'); put(10, 9, 'SMALL_ROCKS_2');
         // south-west: a fallen fence in the grass
-        put(1, 9, 'WOODEN_FENCE_H'); put(2, 9, 'TREE_STUMP'); put(1, 8, 'GRASS_COVERAGE_3'); put(2, 8, 'GRASS_COVERAGE_2');
+        put(1, 9, 'WOODEN_FENCE_FALLEN'); put(2, 9, 'TREE_STUMP'); put(1, 8, 'GRASS_COVERAGE_3'); put(2, 8, 'GRASS_COVERAGE_2');
     }
 
     return {
@@ -397,7 +397,7 @@ Object.assign(STRUCTURES, {
             // south-east: a lone cactus
             put(9, 9, 'SMALL_CACTUS_1'); put(8, 9, 'SAND_DUNE_3'); put(8, 8, 'DESERT_SKULL'); put(10, 9, 'SMALL_ROCKS_2');
             // south-west: a fallen fence, half buried
-            put(1, 9, 'WOODEN_FENCE_H'); put(2, 9, 'BONE_PILE'); put(1, 8, 'SAND_DUNE_1'); put(2, 8, 'SMALL_ROCKS_1');
+            put(1, 9, 'WOODEN_FENCE_FALLEN'); put(2, 9, 'BONE_PILE'); put(1, 8, 'SAND_DUNE_1'); put(2, 8, 'SMALL_ROCKS_1');
         },
     }),
     ...themedBuildings('DESERT', {
@@ -422,7 +422,7 @@ Object.assign(STRUCTURES, {
             // south-east: a snowy boulder and a stump
             put(9, 9, 'SNOWY_TREE_STUMP'); put(10, 9, 'SNOWY_BOULDER_2'); put(9, 8, 'SMALL_ROCKS_3'); put(8, 9, 'SMALL_ROCKS_2'); put(8, 8, 'STICK');
             // south-west: a fallen fence in the snow
-            put(1, 9, 'WOODEN_FENCE_H'); put(2, 9, 'SNOWY_TREE_STUMP'); put(1, 8, 'SMALL_ROCKS_1'); put(2, 8, 'STICK');
+            put(1, 9, 'WOODEN_FENCE_FALLEN'); put(2, 9, 'SNOWY_TREE_STUMP'); put(1, 8, 'SMALL_ROCKS_1'); put(2, 8, 'STICK');
         },
     }),
     ...themedBuildings('SNOWY', {

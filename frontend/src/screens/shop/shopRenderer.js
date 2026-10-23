@@ -65,13 +65,18 @@ export class ShopRenderer {
             );
         }
 
+        // "How many?" slider: on top of everything, its hitboxes in front of the screen's own
+        if (state.quantity) {
+            this.hitboxes.push(...state.quantity.render(this.ctx, this.ui, state.hoveredHitboxId));
+        }
+
         // Report the hitboxes first: the tooltip below can return early (hovering the empty part of a panel, a scrollbar ...),
         // and the controller must still get this frame's layout.
         if (state.onLayoutUpdate) {
             state.onLayoutUpdate([...this.hitboxes].reverse());
         }
 
-        if (!state.heldItem && !state.contextMenu && state.hoveredHitboxId) {
+        if (!state.heldItem && !state.contextMenu && !state.quantity && state.hoveredHitboxId) {
             const tooltipState = { ...state };
 
             if (state.hoveredHitboxId.startsWith('VENDOR_ITEM_')) {
@@ -343,7 +348,9 @@ export class ShopRenderer {
     _drawInputPrompts(state, w, h) {
         let lines = [];
 
-        if (state.contextMenu) {
+        if (state.quantity) {
+            lines.push("");
+        } else if (state.contextMenu) {
             lines.push("[L-Click/SPC] Select      [R-Click/ESC] Close");
         } else if (state.heldItem) {
             lines.push("[L-Click] Place      [R-Click/ESC] Cancel");

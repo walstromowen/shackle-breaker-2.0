@@ -582,8 +582,8 @@ export class SceneManager {
     _handleGlobalKeydown(e) {
         if (this.transitionRenderer.isActive && this.transitionRenderer.state === 'FADE_OUT') return;
 
-        // A tip card is open: it takes every key. Any key but a bare modifier (or a held key repeating) closes it once it has been up a moment.
-        if (this.tutorial.active) {
+        // A tip card is up: it takes every key. Any key but a bare modifier (or a held key repeating) eases it out once it has been up a moment.
+        if (this.tutorial.blocking) {
             const modifier = /^(Shift|Control|Alt|Meta|CapsLock)/.test(e.code);
             if (e.code !== 'Backquote' && !modifier && !e.repeat && this.tutorial.canDismiss) {
                 if (e.preventDefault) e.preventDefault();
@@ -639,7 +639,7 @@ export class SceneManager {
         }
     }
 
-    /** Closes the open tip card; the clicks / keys that were held for the screen underneath are dropped so none of them acts on it. */
+    /** Starts easing the tip card out; the clicks / keys that were held for the screen underneath are dropped so none of them acts on it. */
     _dismissTutorial() {
         this.tutorial.dismiss();
         this.input.reset();
@@ -650,12 +650,18 @@ export class SceneManager {
         let rightClick = this.input.getAndResetRightClick();
         let scroll = this.input.getAndResetScroll();
 
-        // A tip card is open: the screen underneath waits (no controller update, no clock, no weather). Only the fade and the card move on.
-        if (this.tutorial.active) {
+        // A tip card waits for the screen to be fully visible, then eases in. While it is up the screen underneath waits (no controller
+        // update, no clock, no weather): only the fade and the card move on. When it has finished easing out, the screen takes over again.
+        const cardWasUp = this.tutorial.blocking;
+        this.tutorial.update(dt, { sceneBusy: this.transitionRenderer.isActive });
+        if (this.tutorial.blocking) {
             if ((click || rightClick) && this.tutorial.canDismiss) this._dismissTutorial();
-            this.tutorial.update(dt);
             this.transitionRenderer.update(dt);
             return;
+        }
+        if (cardWasUp) { // the card just finished leaving: nothing pressed meanwhile may act on the screen
+            this.input.reset();
+            click = null; rightClick = null; scroll = 0;
         }
 
         // While a transition is fading the old screen out, keys are ignored (see _handleGlobalKeydown); the mouse is ignored too,
@@ -840,4 +846,4 @@ export class SceneManager {
         this.input.destroy();
         window.removeEventListener('keydown', this._handleGlobalKeydown);
     }
-}
+}

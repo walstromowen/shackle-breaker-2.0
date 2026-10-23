@@ -14,6 +14,7 @@ export class MapObjectModel {
         this.frames = definition.frames || 1;
         this.speed = definition.speed || 0.2;
         this.sheet = sheet; // resolved loader key (string), never the per-biome map
+        this.connects = definition.connects || null; // objects of the same kind next to each other join up (the fence): the renderer picks the frame
         this.isAnchor = definition.isAnchor !== undefined ? definition.isAnchor : true;
 
         // Logical/Game Properties
