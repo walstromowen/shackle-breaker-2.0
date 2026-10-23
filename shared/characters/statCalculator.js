@@ -1,5 +1,5 @@
 import { TRAIT_DEFINITIONS } from '../abilities/traitDefinitions.js'; 
-import { DAMAGE_TYPES, DAMAGE_SCALING, DAMAGE_SCALING_MODE } from '../core/constants.js'; 
+import { DAMAGE_TYPES, DAMAGE_SCALING } from '../core/constants.js'; 
 
 // BALANCE KNOB: scales the HP that Vigor grants, for EVERYONE (party, enemies, bosses and already-saved characters).
 // Saved characters keep their own copy of statMultipliers.hpPerVigor, so lowering it in the entity templates would not
@@ -119,11 +119,10 @@ export class StatCalculator {
         const vigorDefense = Math.floor(finalStats.vigor * 0.5); 
         this.DAMAGE_TYPES.forEach(t => { finalStats.defense[t] += vigorDefense + levelDefenseBonus; }); 
         
-        // Attack: each damage type scales with its own attribute(s) (DAMAGE_SCALING in core/constants.js): Strength (blunt), Dexterity (pierce), the higher of the two (slash),
-        // Attunement (the elements), Intelligence (arcane, light, dark).
+        // Attack: each damage type scales with the attribute DAMAGE_SCALING (core/constants.js) names: Strength for blunt, slash and pierce, Intelligence for every
+        // elemental, light, dark and arcane type. Dexterity and Attunement add no attack (they feed the pools below).
         this.DAMAGE_TYPES.forEach(t => { 
-            const parts = Object.entries(DAMAGE_SCALING[t] || {}).map(([attr, weight]) => (finalStats[attr] || 0) * weight); 
-            if (parts.length) finalStats.attack[t] += (DAMAGE_SCALING_MODE[t] === 'highest') ? Math.max(...parts) : parts.reduce((a, b) => a + b, 0); 
+            finalStats.attack[t] += Object.entries(DAMAGE_SCALING[t] || {}).reduce((sum, [attr, weight]) => sum + (finalStats[attr] || 0) * weight, 0); 
         }); 
 
         // Physical Pillar 

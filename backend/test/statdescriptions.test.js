@@ -46,12 +46,13 @@ test('the numbers in the text match what the calculator really does', () => {
     assert.equal(rowValue('attunement', 'Insight recovery'), '+0.5 per point');
 });
 
-test('slash is described as counting only while it is the higher of Strength and Dexterity', () => {
-    for (const a of ['strength', 'dexterity']) {
-        const row = getStatDescription(a).rows.find(r => r.label === 'Slash attack');
-        assert.equal(row.value, '+1 per point, if higher', a);
-    }
-    assert.ok(!getStatDescription('intelligence').rows.some(r => /Slash/.test(r.label)));
+test('only Strength and Intelligence list attack rows; Dexterity and Attunement list their pools', () => {
+    const labels = (k) => getStatDescription(k).rows.map(r => r.label);
+    assert.deepEqual(labels('strength').filter(l => /attack/.test(l)), ['Blunt / Slash / Pierce attack']);
+    assert.deepEqual(labels('intelligence').filter(l => /attack/.test(l)), ['Every magic attack']);
+    for (const k of ['vigor', 'dexterity', 'attunement']) assert.ok(!labels(k).some(l => /attack/.test(l)), `${k} has no attack row`);
+    assert.ok(labels('dexterity').includes('Max stamina') && labels('dexterity').includes('Stamina recovery'));
+    assert.ok(labels('attunement').includes('Max insight') && labels('attunement').includes('Insight recovery'));
 });
 
 test('the text follows a character\'s own multipliers and the skill-check option', () => {
@@ -61,9 +62,10 @@ test('the text follows a character\'s own multipliers and the skill-check option
     assert.ok(getStatDescription('vigor', { skillChecks: true }).rows.some(r => r.label === 'Skill checks'));
 });
 
-test('the elements are listed in full, the arcane trio by name', () => {
-    assert.equal(getStatDescription('attunement').detail, 'Fire, Ice, Lightning, Water, Earth and Wind.');
-    assert.equal(getStatDescription('intelligence').rows[0].label, 'Light / Dark / Arcane attack');
+test('the magic types are listed in full, the physical trio by name', () => {
+    assert.equal(getStatDescription('intelligence').detail, 'Fire, Ice, Lightning, Water, Earth, Wind, Light, Dark and Arcane.');
+    assert.equal(getStatDescription('strength').rows.find(r => /attack/.test(r.label)).label, 'Blunt / Slash / Pierce attack');
+    assert.equal(getStatDescription('attunement').detail, '');
     assert.equal(trimNumber(0.65), '0.65');
     assert.equal(trimNumber(1), '1');
 });

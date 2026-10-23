@@ -108,27 +108,24 @@ export const DAMAGE_TYPE_LABELS = {
 export const DAMAGE_TYPES = Object.keys(DAMAGE_TYPE_LABELS);
 
 // BALANCE KNOB: which attributes raise the attack of each damage type, and by how much per point (StatCalculator adds attribute x weight to attack[type]).
-//   Strength     blunt                                  Dexterity    pierce (bows, daggers, spears, bites)   both: slash (a blade wants a strong, quick arm)
-//   Attunement   fire, ice, lightning, water, earth, wind (the elements)                                      Intelligence   arcane, light, dark
-// A weight of 1 is one attack per point. Slash lists two attributes and DAMAGE_SCALING_MODE says how they combine: 'highest' means only the higher of
-// Strength and Dexterity counts (at full weight). So slash is exactly as strong as blunt for a Strength build and as pierce for a Dexterity build,
-// never behind a specialist and never ahead of one; a split build is a little behind (it has to pick a side). Types not listed in the mode table
-// add their attributes up. backend/test/scaling.test.js keeps the parity and the order of the types.
+//   Strength       blunt, slash, pierce (all physical damage)
+//   Intelligence   fire, ice, lightning, water, earth, wind, light, dark, arcane (all magical damage)
+// Dexterity and Attunement raise no attack: they feed the pools instead (Dexterity: stamina and its recovery, Attunement: insight and its recovery; see
+// StatCalculator). A weight of 1 is one attack per point. backend/test/scaling.test.js keeps this table honest.
 export const DAMAGE_SCALING = {
     blunt:     { strength: 1 },
-    slash:     { strength: 1, dexterity: 1 },
-    pierce:    { dexterity: 1 },
-    fire:      { attunement: 1 },
-    ice:       { attunement: 1 },
-    lightning: { attunement: 1 },
-    water:     { attunement: 1 },
-    earth:     { attunement: 1 },
-    wind:      { attunement: 1 },
+    slash:     { strength: 1 },
+    pierce:    { strength: 1 },
+    fire:      { intelligence: 1 },
+    ice:       { intelligence: 1 },
+    lightning: { intelligence: 1 },
+    water:     { intelligence: 1 },
+    earth:     { intelligence: 1 },
+    wind:      { intelligence: 1 },
     light:     { intelligence: 1 },
     dark:      { intelligence: 1 },
     arcane:    { intelligence: 1 },
 };
-export const DAMAGE_SCALING_MODE = { slash: 'highest' };
 
 // ===============================================
 // DIFFICULTY

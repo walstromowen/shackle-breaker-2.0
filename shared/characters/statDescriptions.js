@@ -1,4 +1,4 @@
-import { DAMAGE_SCALING, DAMAGE_SCALING_MODE } from '../core/constants.js';
+import { DAMAGE_SCALING } from '../core/constants.js';
 import { HP_PER_VIGOR_SCALE, STAMINA_RECOVERY_PER_DEX, INSIGHT_RECOVERY_PER_ATT } from './statCalculator.js';
 
 // What each attribute does, for the in-game help (hover / select an attribute on the level-up, character creator, character
@@ -18,9 +18,9 @@ const NAMES = {
 const TAGLINES = {
     vigor: 'Toughness and endurance.',
     strength: 'Raw physical force.',
-    dexterity: 'Agility and precision.',
+    dexterity: 'Agility and stamina.',
     intelligence: 'Mind and will.',
-    attunement: 'Affinity with the elements.',
+    attunement: 'Reserves of magic.',
 };
 
 // A line of the game's story for each attribute, shown last and quietly on the card (italic, muted). Each says how that attribute keeps madness at bay, in the
@@ -48,19 +48,16 @@ export const trimNumber = (n) => String(Math.round(n * 100) / 100);
 
 const perPoint = (n) => `+${trimNumber(n)} per point`;
 
-// Damage types an attribute feeds, grouped by weight: [{ types: ['blunt'], weight: 1, highest: false }, ...]
-// highest: the type only counts this attribute while it is the higher of the ones feeding it (slash: Strength or Dexterity)
+// Damage types an attribute feeds, grouped by weight: [{ types: ['blunt', 'slash', 'pierce'], weight: 1 }, ...]
 export function damageTypesFor(attr) {
     const groups = new Map();
     for (const [type, weights] of Object.entries(DAMAGE_SCALING)) {
         const w = weights[attr];
         if (!w) continue;
-        const highest = DAMAGE_SCALING_MODE[type] === 'highest';
-        const key = `${w}|${highest}`;
-        if (!groups.has(key)) groups.set(key, { types: [], weight: w, highest });
-        groups.get(key).types.push(type);
+        if (!groups.has(w)) groups.set(w, { types: [], weight: w });
+        groups.get(w).types.push(type);
     }
-    return [...groups.values()].sort((a, b) => (b.weight - a.weight) || (a.highest - b.highest));
+    return [...groups.values()].sort((a, b) => b.weight - a.weight);
 }
 
 const joinNames = (types) => {
@@ -89,9 +86,9 @@ export function getStatDescription(attr, opts = {}) {
     }
 
     // Attack rows come straight from the scaling table
-    for (const { types, weight, highest } of damageTypesFor(key)) {
-        const label = types.length <= 3 ? `${types.map(cap).join(' / ')} attack` : 'Each elemental attack';
-        rows.push({ label, value: perPoint(weight) + (highest ? ', if higher' : ''), kind: 'attack' });
+    for (const { types, weight } of damageTypesFor(key)) {
+        const label = types.length <= 3 ? `${types.map(cap).join(' / ')} attack` : 'Every magic attack';
+        rows.push({ label, value: perPoint(weight), kind: 'attack' });
     }
 
     if (key === 'dexterity') {
@@ -107,7 +104,7 @@ export function getStatDescription(attr, opts = {}) {
         rows.push({ label: 'Skill checks', value: '+1 per 3 above 10', kind: 'check' });
     }
 
-    // For the elements, say which ones (the row label can only say "Elemental")
+    // For the magic types, say which ones (the row label can only say "Every magic attack")
     const wide = damageTypesFor(key).find(g => g.types.length > 3);
     const detail = wide ? `${joinNames(wide.types)}.` : '';
 

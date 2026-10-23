@@ -79,7 +79,7 @@ const BEAST_TEMPLATE = {
         maxHp: 15, maxStamina: 8, maxInsight: 0, staminaRecovery: 10, speed: 7, critical: 0.1,
         baseDefense: { blunt: 4, slash: 2, pierce: 1, water: 2 },
         baseResistance: { fire: -0.2 },
-        baseAttack: { blunt: 6, slash: 8, pierce: -2 } /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
+        baseAttack: { blunt: 6, slash: 8, pierce: 4 }
     },
     equipment: { accessory: null },
     currencyReward: { min: 0, max: 0 },
@@ -108,7 +108,6 @@ export const ENTITY_DEFINITIONS = {
         deathSound: "madmanCry",
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            baseAttack: { blunt: 1, slash: 0, pierce: 0 }, /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
             maxHp: 9, maxStamina: 10, speed: 5
         },
         currencyReward: { min: 2, max: 8 },
@@ -137,7 +136,7 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 12, maxStamina: 14, maxInsight: 28, speed: 6, critical: 0.08,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: 1, pierce: 1, ice: 3, water: 1, fire: -2 },
             baseResistance: { ice: 0.3, fire: -0.2 },
-            baseAttack: { blunt: 1, slash: 3, pierce: 1, ice: -2 } /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
+            baseAttack: { blunt: 1, slash: 0, pierce: 2, ice: 2 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "spear", head: "tattered_hood" },
         currencyReward: { min: 4, max: 12 },
@@ -161,7 +160,6 @@ export const ENTITY_DEFINITIONS = {
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
             maxHp: 11, maxStamina: 20, maxInsight: 20,
-            baseAttack: { ...HUMANOID_TEMPLATE.baseStats.baseAttack, slash: 3 }, /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: 2, pierce: 2, blunt: 1 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_arcane" },
@@ -185,7 +183,6 @@ export const ENTITY_DEFINITIONS = {
         traits: ['acidic'],
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            baseAttack: { blunt: 1, slash: 0, pierce: 3 }, /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
             maxHp: 16, maxStamina: 10, speed: 5
         },
         currencyReward: { min: 2, max: 8 },
@@ -210,7 +207,6 @@ export const ENTITY_DEFINITIONS = {
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            baseAttack: { blunt: 1, slash: -5, pierce: -5 }, /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
             maxHp: 11,
             maxStamina: 15,
             speed: 7,
@@ -242,7 +238,6 @@ export const ENTITY_DEFINITIONS = {
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            baseAttack: { blunt: 1, slash: 0, pierce: 4 }, /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
             maxHp: 7,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: -2 },
             baseResistance: { slash: 0.25 }
@@ -270,7 +265,6 @@ export const ENTITY_DEFINITIONS = {
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            baseAttack: { blunt: 1, slash: 0, pierce: 4 }, /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
             maxStamina: 12, speed: 5, critical: 0.05,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, blunt: 1, slash: 1, pierce: 1 }
         },
@@ -299,7 +293,7 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 12, maxStamina: 16, speed: 7, critical: 0.12, corruption: 10,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: 1, pierce: 1, dark: 2, light: -2 },
             baseResistance: { dark: 0.15, light: -0.15 },
-            baseAttack: { blunt: 1, pierce: -2, dark: 1, slash: 1 } /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
+            baseAttack: { blunt: 1, pierce: 4, dark: 1 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "crossbow" },
         currencyReward: { min: 5, max: 15 },
@@ -321,7 +315,7 @@ export const ENTITY_DEFINITIONS = {
             ...HUMANOID_TEMPLATE.baseStats,
             maxHp: 16, maxStamina: 15, maxInsight: 15, speed: 6,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: 3, dark: 4, arcane: 3, light: -2 },
-            baseAttack: { blunt: 0, slash: -1, arcane: 3 } /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
+            baseAttack: { blunt: 0, slash: 5, arcane: 3 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "scythe" },
         currencyReward: { min: 6, max: 14 },
@@ -347,7 +341,7 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 12, maxStamina: 12, maxInsight: 25, speed: 7,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, fire: 4, light: 3, arcane: 3, water: -3, ice: -2 },
             baseResistance: { fire: 0.4, light: 0.2, earth: 0.5, lightning: 0.5 },
-            baseAttack: { blunt: 1, fire: 6, arcane: 2, light: 1, slash: 1 } /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
+            baseAttack: { blunt: 1, fire: 4, arcane: 2, light: 1 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_fire" },
         currencyReward: { min: 6, max: 16 },
@@ -372,7 +366,7 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 9, maxStamina: 20, speed: 10, critical: 0.15,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, earth: 2, wind: 3, slash: 2 },
             baseResistance: { wind: 0.25, earth: 0.5, lightning: 0.5 },
-            baseAttack: { slash: -2, earth: 1, wind: 2, pierce: -6 } /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
+            baseAttack: { slash: 4, earth: 1, wind: 2 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "shortsword" },
         currencyReward: { min: 4, max: 12 },
@@ -398,7 +392,7 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 14, maxStamina: 15, maxInsight: 35, speed: 9,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, ice: 3, water: 2, earth: 2, dark: 4, wind: 3 },
             baseResistance: { ice: 0.2, water: 0.2, dark: 0.3, wind: 0.2, earth: 0.5, lightning: 0.5 },
-            baseAttack: { blunt: 1, ice: 3, dark: 4, wind: 2, fire: 2 } /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
+            baseAttack: { blunt: 1, ice: 3, dark: 4, wind: 2 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_darkness" },
         currencyReward: { min: 10, max: 25 },
@@ -424,7 +418,7 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 10, maxStamina: 16, speed: 3, critical: 0.05,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: -2, pierce: 5, blunt: 2, earth: 5, wind: -3, water: -4 },
             baseResistance: { pierce: 0.4, earth: 0.5, lightning: 0.5, water: -0.6 },
-            baseAttack: { slash: 7, earth: 3, pierce: 12 } /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
+            baseAttack: { slash: 7, earth: 3 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "glaive" },
         currencyReward: { min: 10, max: 22 },
@@ -456,7 +450,7 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 13, maxStamina: 12, maxInsight: 4, speed: 4, critical: 0.05,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, blunt: -3, slash: 2, pierce: 4, ice: 2, dark: 3, light: -3, fire: -1 },
             baseResistance: { pierce: 0.3, ice: 0.2, dark: 0.4, light: -0.4, fire: -0.15 },
-            baseAttack: { blunt: 1, slash: 4, dark: 1, pierce: 4 } /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
+            baseAttack: { blunt: 1, slash: 4, dark: 1 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "shortsword" },
         currencyReward: { min: 3, max: 10 },
@@ -482,7 +476,7 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 7, maxStamina: 12, maxInsight: 22, staminaRecovery: 2, insightRecovery: 1, speed: 11, critical: 0.1,
             baseDefense: { blunt: -2, slash: 1, pierce: 3, earth: 4, wind: 2, dark: 4, arcane: 2, light: -4 },
             baseResistance: { earth: 0.5, dark: 0.5, arcane: 0.2, light: -0.5, wind: 0.1 },
-            baseAttack: { pierce: 2, dark: 3, arcane: 2, slash: -2 }
+            baseAttack: { pierce: 2, dark: 3, arcane: 2 }
         },
         currencyReward: { min: 2, max: 9 },
         lootTableId: "floating_skull_drops",
@@ -508,7 +502,7 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 10, maxStamina: 10, maxInsight: 24, staminaRecovery: 2, insightRecovery: 1, speed: 8, critical: 0.08,
             baseDefense: { blunt: 1, slash: 1, pierce: 1, ice: 2, earth: 3, dark: 5, arcane: -1, light: -4 },
             baseResistance: { blunt: 0.4, slash: 0.4, pierce: 0.4, ice: 0.2, earth: 0.5, dark: 0.6, arcane: -0.2, light: -0.5 },
-            baseAttack: { dark: 4, arcane: 1, slash: -2 }
+            baseAttack: { dark: 4, arcane: 1 }
         },
         currencyReward: { min: 3, max: 10 },
         lootTableId: "floating_skull_drops",   // placeholder: reuses the Floating Skull drops until "shackled_spirit_drops" exists
@@ -536,7 +530,7 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 11, maxStamina: 10, maxInsight: 30, insightRecovery: 2, speed: 6, critical: 0.06,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, blunt: -2, slash: 1, pierce: 3, ice: 2, dark: 5, arcane: 3, light: -3, fire: -1 },
             baseResistance: { pierce: 0.2, ice: 0.15, dark: 0.5, arcane: 0.15, light: -0.3, fire: -0.15 },
-            baseAttack: { blunt: 1, dark: 4, light: 3, slash: -1 }
+            baseAttack: { blunt: 1, dark: 4, light: 3 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_darkness", head: "tattered_hood" },
         currencyReward: { min: 8, max: 20 },
@@ -565,7 +559,7 @@ export const ENTITY_DEFINITIONS = {
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
             maxHp: 4, maxStamina: 8, speed: 7, critical: 0.08,
-            baseAttack: { blunt: 2, slash: 4, pierce: -4 } /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
+            baseAttack: { blunt: 2, slash: 4, pierce: 2 }
         },
         lootTableId: "canine_drops",
         abilities: [...BEAST_TEMPLATE.abilities, 'howl'],
@@ -589,7 +583,7 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 13, maxStamina: 18, speed: 9, critical: 0.15,
             baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, ice: 2 },
             baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, fire: -0.25, ice: 0.25 },
-            baseAttack: { blunt: 0, slash: 6, pierce: 1 } /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
+            baseAttack: { blunt: 0, slash: 5, pierce: 7 }
         },
         lootTableId: "canine_drops",
         abilities: [...BEAST_TEMPLATE.abilities, 'howl'],
@@ -631,7 +625,12 @@ export const ENTITY_DEFINITIONS = {
                 fire: -0.30,
                 wind: 0.20
             },
-            baseAttack: { blunt: 2, slash: 3, pierce: 1, ice: 2 } /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
+            baseAttack: {
+                blunt: 2,
+                slash: 7,
+                pierce: 5,
+                ice: 2
+            }
         },
         currencyReward: { min: 4, max: 14 },
         lootTableId: "snow_leopard_drops",
@@ -674,7 +673,11 @@ export const ENTITY_DEFINITIONS = {
                 dark: 0.25,
                 fire: -0.25
             },
-            baseAttack: { blunt: 0, slash: 3, pierce: -3 } /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
+            baseAttack: {
+                blunt: 0,
+                slash: 4,
+                pierce: 5
+            }
         },
         currencyReward: { min: 2, max: 8 },
         lootTableId: "arachnid_drops",
@@ -699,7 +702,7 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 16, maxStamina: 18, speed: 9, critical: 0.15,
             baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, ice: 2 },
             baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, fire: -0.25, ice: 0.25 },
-            baseAttack: { blunt: 6, slash: 5, pierce: 2 }
+            baseAttack: { blunt: 6, slash: 2, pierce: 2 }
         },
         lootTableId: "mad_man_drops",
         abilities: [...BEAST_TEMPLATE.abilities, "strike", "reckless_charge"],
@@ -717,7 +720,7 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 6, maxStamina: 15, maxInsight: 5, staminaRecovery: 3, speed: 10, critical: 0.15,
             baseDefense: { earth: 3 },
             baseResistance: { wind: 0.5, earth: 0.2 },
-            baseAttack: { slash: 1, pierce: 4 }
+            baseAttack: { slash: 4, pierce: 4 }
         },
         lootTableId: "mad_man_drops",
         abilities: [...BASE_ENTITY.abilities],
@@ -741,7 +744,7 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 20, maxStamina: 25, maxInsight: 10, speed: 11, critical: 0.08,
             baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, blunt: 4, slash: 3, pierce: 2, earth: 4, dark: 2 },
             baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, earth: 0.25, dark: 0.1, wind: -0.15 },
-            baseAttack: { blunt: 4, slash: 2, pierce: 7, earth: 0 } /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
+            baseAttack: { blunt: 4, slash: 2, pierce: 5, earth: 0 }
         },
         currencyReward: { min: 24, max: 48 },
         lootTableId: "grim_stag_drops",
@@ -767,7 +770,7 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 19, maxStamina: 12, speed: 5,
             baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, blunt: 5, pierce: 4, earth: 4, water: 3, lightning: -3 },
             baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, earth: 0.5, lightning: 0.5, water: 0.15 },
-            baseAttack: { blunt: 6, pierce: 14, slash: -2 } /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
+            baseAttack: { blunt: 6, pierce: 4, slash: 0 }
         },
         currencyReward: { min: 8, max: 18 },
         lootTableId: "dune_maw_drops",
@@ -792,7 +795,7 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 11, maxInsight: 25, speed: 20, critical: 0.15,
             baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, lightning: 6, wind: 4, blunt: 1, earth: -3, water: -3 },
             baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, lightning: 1.0, earth: 0.5, wind: 0.25, water: -0.5 },
-            baseAttack: { pierce: -12, lightning: -7, wind: 2, slash: -4 } /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
+            baseAttack: { pierce: 2, lightning: 5, wind: 2 }
         },
         currencyReward: { min: 3, max: 12 },
         lootTableId: "thunder_locust_drops",
@@ -821,7 +824,7 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 35, maxStamina: 30, maxInsight: 10, speed: 10, critical: 0.20,
             baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, blunt: 1, slash: -1, pierce: -1, earth: 6, dark: 5 },
             baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, earth: 0.5, dark: 0.4, fire: -0.3 },
-            baseAttack: { blunt: 6, slash: 7, pierce: 9, dark: 4, earth: -2 } /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
+            baseAttack: { blunt: 6, slash: 7, pierce: 5, dark: 4 }
         },
         currencyReward: { min: 350, max: 800 },
         lootTableId: "boss_poachers_nightmare_drops",
@@ -856,7 +859,7 @@ export const ENTITY_DEFINITIONS = {
                 ...BEAST_TEMPLATE.baseStats.baseResistance,
                 ice: 0.5, slash: 0.15, lightning: -0.3, fire: -0.25
             },
-            baseAttack: { blunt: 6, slash: 10, pierce: 14, ice: 3 } /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
+            baseAttack: { blunt: 6, slash: 9, pierce: 4, ice: 3 }
         },
         currencyReward: { min: 250, max: 600 },
         lootTableId: "boss_panzerkamfer_drops",
@@ -889,7 +892,7 @@ export const ENTITY_DEFINITIONS = {
                 fire: -2
             },
             baseResistance: { arcane: 0.6, dark: 0.3, light: -0.4 },
-            baseAttack: { blunt: 3, arcane: 6, fire: 4, slash: 3 } /* attack kept at its old level under DAMAGE_SCALING (core/constants.js) */
+            baseAttack: { blunt: 3, arcane: 6 }
         },
         equipment: {
             ...HUMANOID_TEMPLATE.equipment,
