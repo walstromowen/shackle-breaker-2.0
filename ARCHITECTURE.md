@@ -14,7 +14,7 @@ The game is a canvas RPG in three workspaces: `shared/` (the game itself), `fron
 
 | Folder | What lives here |
 |---|---|
-| `core/` | What everything uses: `gameState`, `constants`, the `eventBus`, text and number formatting. |
+| `core/` | What everything uses: `gameState`, `constants`, the `eventBus`, text and number formatting. `devCommands` is the odd one out: the commands of the developer console, which drive the other folders (nothing in `shared/` imports it; the console does). |
 | `battle/` | Fighting: `turnManager` (plays the turn queue), `battleQueue` (builds turns: deaths, swaps, fleeing, victory), `battleState` (the state object, recovery, the ledger), `enemyAI`, `targetingResolver`, `combatCalculator`, `combatantModel`, `battleRewardSystem`, the spawn tables (which enemies appear), and `animation/` (the battle animation data and model). |
 | `abilities/` | Abilities, status effects and traits: their definitions, models, factories and `abilitySystem`. |
 | `characters/` | Entities (the player, companions, enemies): definitions, model, factory, `statCalculator`, XP, the party, the stat descriptions. |
@@ -34,7 +34,7 @@ Inside a folder the file name says what it is:
 |---|---|
 | `screens/<screen>/` | One folder per screen: `<screen>Controller.js` (input and flow), `<screen>Renderer.js` (drawing), `<screen>Logic.js` (rules the screen needs that are not in `shared/`), and `components/` for its pieces. |
 | `engine/` | What runs the screens: `sceneManager` (picks the screen), `input`, `gameLoop`, `audioManager`, `assetLoader`, `baseController`, `saveManager`, scene transitions. |
-| `ui/` | Drawing tools many screens share: `canvasUI`, `UITheme`, tooltips, the tutorial, chips. |
+| `ui/` | Drawing tools many screens share: `canvasUI`, `UITheme`, tooltips, the tutorial, chips, and the developer console (`devConsole`: press `/` in the overworld; switch it off in `DEV_CONSOLE` in `core/constants.js`). |
 | `auth/` | The login screen and the account / cloud save client. |
 | `assets/` | Pictures, sounds and fonts. Everything in here is shipped to players. |
 | `main.js` | Loads the assets (the manifest) and starts the game. |
@@ -57,6 +57,7 @@ The battle is one thing in two places, side by side in the same relative spot:
 | An item | `shared/items/itemDefinitions.js` (+ a loot table or recipe if it should drop or be crafted). |
 | A map object | `shared/world/mapObjectDefinitions.js`; the sheet in `assets/mapObjects/` and in `main.js`; spawn it from a biome in `shared/world/biomeDefinitions.js` or a structure in `structures.js`. |
 | An encounter | A file in `shared/story/encounters/`, registered in `shared/story/encounterDefinitions.js`; its picture sheet in `assets/icons/encounters/` and in `main.js`. |
+| A console command | An entry in `COMMANDS` in `shared/core/devCommands.js`; call the same code the game calls for it, and add a test in `backend/test/devcommands.test.js`. |
 | A screen | A folder in `frontend/src/screens/` with a controller and a renderer, and a line in `engine/sceneManager.js`. |
 | A test | `backend/test/<topic>.test.js`. The tests live here because `backend` is the workspace that runs `npm test`; they cover `shared/` and `frontend/` too. |
 

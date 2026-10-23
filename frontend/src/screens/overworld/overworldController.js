@@ -781,6 +781,20 @@ export class OverworldController extends BaseController {
         events.emit('START_BATTLE', battlePayload);
     }
 
+    /* The developer console (ui/devConsole.js, commands in shared/core/devCommands.js) starts scenes the way a step does (checkTileEvents): the world stops taking
+       input first, and a battle gets the background and weather of where the player stands. */
+    devLockWorld() {
+        this.isLocked = true;
+        this.player.isMoving = false;
+        this.player.moveProgress = 0;
+        this.player.animFrame = 0;
+    }
+
+    devBattleSetup() {
+        const biome = this.worldManager.getBiomeAt(gameState.player.col, gameState.player.row);
+        return { background: biome.getBattleBackground(gameState.world.time / 60), weather: gameState.world.currentWeather };
+    }
+
     /* Keeps gameState.world.currentBiome and the weather in step with where the player stands. The rules live in TimeSystem.syncBiomeWeather:
        weather the biome does not allow becomes CLEAR and its sound is stopped. Cheap (the biome lookup is cached), so it runs every frame. */
     validateBiomeWeather() {

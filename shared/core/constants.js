@@ -167,6 +167,12 @@ export const DIFFICULTY_LEVELS = {
     NIGHTMARE: 'nightmare'
 };
 
+// DEV_CONSOLE: the developer console, a command line that opens with "/" in the overworld (frontend/src/ui/devConsole.js; the commands are in
+// core/devCommands.js). It can hand out items, XP, party members and story milestones, so set ENABLED to false before players get the game.
+export const DEV_CONSOLE = {
+    ENABLED: true,
+};
+
 export const DIFFICULTY_MODIFIERS = {
     [DIFFICULTY_LEVELS.EASY]: { rollBonus: 2, enemyLevelOffset: -1 },
     [DIFFICULTY_LEVELS.NORMAL]: { rollBonus: 0, enemyLevelOffset: 0 },

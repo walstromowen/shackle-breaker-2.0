@@ -59,7 +59,8 @@ import { TimeSystem } from '../../../shared/world/timeSystem.js';
 import { ActSystem } from '../../../shared/story/actSystem.js';
 import { gameState } from '../../../shared/core/gameState.js';
 import { AbilitySystem } from '../../../shared/abilities/abilitySystem.js';
-import { DIFFICULTY_MODIFIERS } from '../../../shared/core/constants.js';
+import { DIFFICULTY_MODIFIERS, DEV_CONSOLE } from '../../../shared/core/constants.js';
+import { DevConsole } from '../ui/devConsole.js';
 import { EntityFactory } from '../../../shared/characters/entityFactory.js';
 import { CorruptionSystem } from '../../../shared/characters/corruptionSystem.js';
 import { SaveManager, AUTOSAVE_SLOT } from './saveManager.js';
@@ -129,6 +130,16 @@ export class SceneManager {
         // and off again on the title screen, so the prologue, the character creator and the title menus never show one.
         this.tutorial = new TutorialOverlay();
         this._tipsReady = false;
+
+        // The developer console ("/" in the overworld, see ui/devConsole.js). While it is open the game lets go of every key, so nothing walks while you type.
+        this.devConsole = DEV_CONSOLE.ENABLED ? new DevConsole({
+            host: {
+                lockWorld: () => this.overworldController.devLockWorld(),
+                battleSetup: () => this.overworldController.devBattleSetup(),
+            },
+            onOpen: () => this.input.reset(),
+            onClose: () => this.input.reset(),
+        }) : null;
 
         this._handleGlobalKeydown = this._handleGlobalKeydown.bind(this);
         this.setupInputRouting();
@@ -594,6 +605,14 @@ export class SceneManager {
             return;
         }
         if (e.code === 'Backquote') this.mapRenderer.showDebug = !this.mapRenderer.showDebug;
+
+        // "/" opens the developer console, in the overworld when nothing else has the screen (a scene is not loading, no menu is up)
+        if (this.devConsole && !this.devConsole.isOpen && e.code === 'Slash' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey
+            && this.currentScene === 'overworld' && !this.overworldController.isLocked && !this.transitionRenderer.isActive) {
+            e.preventDefault();
+            this.devConsole.open('/');
+            return;
+        }
 
         const activeController = this._getActiveController();
         if (activeController && activeController.handleKeyDown) {
