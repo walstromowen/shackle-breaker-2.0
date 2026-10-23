@@ -13,7 +13,7 @@
  *
  * Place at: ui/abilityPreview.js (display-only helper: no game-state side effects)
  */
-import { AbilityModel } from '../../../shared/models/abilityModel.js';
+import { AbilityModel } from '../../../shared/abilities/abilityModel.js';
 
 export class AbilityPreview {
     /** Width every ability card is drawn at, wherever it appears (shrinks only if its container is narrower). */

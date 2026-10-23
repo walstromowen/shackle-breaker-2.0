@@ -6,9 +6,9 @@ Players now see a **Log In / Create Account** screen before the boot screen. Sav
 
 - `backend/` is an Express server. It stores accounts (bcrypt-hashed passwords) and saves in MongoDB, and also serves the game files, so **one Render web service hosts everything** and there is nothing to configure between a separate frontend and backend.
 - `frontend/src/auth/` is the login screen, the session handling and the save store that talks to the server.
-- `shared/systems/saveManager.js` creates and applies save snapshots. Saves only happen on the overworld, never inside buildings.
+- `frontend/src/engine/saveManager.js` creates and applies save snapshots. Saves only happen on the overworld, never inside buildings.
 - **Save slots.** Every player has: one **Autosave** (written when you enter the overworld, about once a minute, and when the tab is hidden or closed), up to **15 named manual saves**, and a **Previous Autosave** that keeps whatever the autosave held before you last started a New Game or loaded another save.
-- **Saves screen** (`frontend/src/controllers/saves/`, `frontend/src/renderers/saves/`): in the game, the **System** button (or the `O` key) opens it with a **Save Game** tab (New Save with a name you type, or overwrite an existing save) and a **Load Game** tab, plus **Quit to Title**. Overwrite and Delete ask for a second click. From the title screen, **Load Game** opens the same list (load only).
+- **Saves screen** (`frontend/src/screens/saves/`): in the game, the **System** button (or the `O` key) opens it with a **Save Game** tab (New Save with a name you type, or overwrite an existing save) and a **Load Game** tab, plus **Quit to Title**. Overwrite and Delete ask for a second click. From the title screen, **Load Game** opens the same list (load only).
 - On the title screen: **Load Game** is greyed out until a save exists and opens the saves list; **Log Out** (or **Log In** when playing offline) is the last menu item.
 
 ## Before the first deploy

@@ -1,8 +1,8 @@
 // backend/test/rivers.test.js: `npm test`. Where two biomes meet, some stretches of the border are a river instead of a strip of dirt.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TerrainGenerator } from '../../shared/systems/terrainGenerator.js';
-import { gameState } from '../../shared/state/gameState.js';
+import { TerrainGenerator } from '../../shared/world/terrainGenerator.js';
+import { gameState } from '../../shared/core/gameState.js';
 
 gameState.world.terrainOverrides = {};
 const SEEDS = [12345, 777, 4242];

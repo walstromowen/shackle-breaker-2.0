@@ -5,10 +5,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import zlib from 'node:zlib';
-import { encounterDefinitions } from '../../shared/data/encounterDefinitions.js';
-import { ItemDefinitions } from '../../shared/data/itemDefinitions.js';
-import { AbilityDefinitions } from '../../shared/data/abilityDefinitions.js';
-import { BattleAnimationDefinitions } from '../../shared/data/battleAnimationDefinition.js';
+import { encounterDefinitions } from '../../shared/story/encounterDefinitions.js';
+import { ItemDefinitions } from '../../shared/items/itemDefinitions.js';
+import { AbilityDefinitions } from '../../shared/abilities/abilityDefinitions.js';
+import { BattleAnimationDefinitions } from '../../shared/battle/animation/battleAnimationDefinition.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const read = (p) => fs.readFileSync(path.join(root, p));

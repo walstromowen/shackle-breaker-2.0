@@ -2,17 +2,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { MAP_OBJECTS_DEFINITIONS } from '../../shared/data/mapObjectDefinitions.js';
-import { LootTableDefinitions } from '../../shared/data/lootTableDefinitions.js';
-import { LootTableFactory } from '../../shared/systems/factories/lootTableFactory.js';
-import { BIOME_DEFINITIONS } from '../../shared/data/biomeDefinitions.js';
-import { biomeFactory } from '../../shared/systems/factories/biomeFactory.js';
-import { ItemDefinitions } from '../../shared/data/itemDefinitions.js';
-import { ItemFactory } from '../../shared/systems/factories/itemFactory.js';
-import { AbilityDefinitions } from '../../shared/data/abilityDefinitions.js';
-import { CONFIG } from '../../shared/data/constants.js';
-import { gameState } from '../../shared/state/gameState.js';
-import { WorldManager } from '../../shared/systems/worldManager.js';
+import { MAP_OBJECTS_DEFINITIONS } from '../../shared/world/mapObjectDefinitions.js';
+import { LootTableDefinitions } from '../../shared/items/lootTableDefinitions.js';
+import { LootTableFactory } from '../../shared/items/lootTableFactory.js';
+import { BIOME_DEFINITIONS } from '../../shared/world/biomeDefinitions.js';
+import { biomeFactory } from '../../shared/world/biomeFactory.js';
+import { ItemDefinitions } from '../../shared/items/itemDefinitions.js';
+import { ItemFactory } from '../../shared/items/itemFactory.js';
+import { AbilityDefinitions } from '../../shared/abilities/abilityDefinitions.js';
+import { CONFIG } from '../../shared/core/constants.js';
+import { gameState } from '../../shared/core/gameState.js';
+import { WorldManager } from '../../shared/world/worldManager.js';
 
 const cells = (def) => def.hitboxes.flatMap(h => Array.from({ length: h.w * h.h }, (_, i) => `${h.xOffset + (i % h.w)},${h.yOffset + Math.floor(i / h.w)}`));
 
@@ -61,7 +61,7 @@ test('a stick is soft wood three times in four and hard wood one time in four, t
 });
 
 test('the pickup code rolls the loot table of a pickup that has one', () => {
-    const src = fs.readFileSync(new URL('../../frontend/src/controllers/overworld/overworldController.js', import.meta.url), 'utf8');
+    const src = fs.readFileSync(new URL('../../frontend/src/screens/overworld/overworldController.js', import.meta.url), 'utf8');
     assert.match(src, /interaction\.lootTableId/);
     assert.match(src, /LootTableFactory\.generateLoot\(targetObj\.interaction\.lootTableId/);
 });
@@ -78,9 +78,9 @@ test('the wooden buckler uses column 0 row 2 of the weapon sheet', () => {
 
 test('a new game starts at 10:00, two hours before noon, and the creator resets the clock', () => {
     assert.equal(CONFIG.START_TIME_MINUTES, 10 * 60);
-    const creator = fs.readFileSync(new URL('../../frontend/src/controllers/characterCreator/characterCreatorLogic.js', import.meta.url), 'utf8');
+    const creator = fs.readFileSync(new URL('../../frontend/src/screens/characterCreator/characterCreatorLogic.js', import.meta.url), 'utf8');
     assert.match(creator, /gameState\.world\.time = CONFIG\.START_TIME_MINUTES/);
-    const time = fs.readFileSync(new URL('../../shared/systems/timeSystem.js', import.meta.url), 'utf8');
+    const time = fs.readFileSync(new URL('../../shared/world/timeSystem.js', import.meta.url), 'utf8');
     assert.match(time, /gameState\.world\.time = CONFIG\.START_TIME_MINUTES/);
 });
 

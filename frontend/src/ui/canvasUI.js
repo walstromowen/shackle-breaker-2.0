@@ -1,5 +1,5 @@
 import { UITheme, UIPointer } from './UITheme.js';
-import { Formatting } from '../../../shared/utils/formatting.js';
+import { Formatting } from '../../../shared/core/formatting.js';
 
 export class CanvasUI {
   /**

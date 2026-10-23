@@ -1,7 +1,7 @@
 // backend/test/prologue.test.js: `npm test`. The prologue is a chain of stages; every ADVANCE_STAGE has to land on a stage that exists.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { prologue } from '../../shared/data/encounters/prologue.js';
+import { prologue } from '../../shared/story/encounters/prologue.js';
 
 const targets = (stage) => (stage.decisions || []).flatMap(d => d.outcomes.flatMap(o => o.results))
     .filter(r => r.type === 'ADVANCE_STAGE').map(r => r.payload.stageId);

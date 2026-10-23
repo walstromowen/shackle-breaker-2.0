@@ -1,8 +1,8 @@
 // backend/test/questTracking.test.js: `npm test`. A quest is tracked on the HUD from the moment it is given, wherever it comes from.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { QuestModel, MAX_TRACKED_QUESTS } from '../../shared/models/questModel.js';
-import { QuestDefinitions } from '../../shared/data/questDefinitions.js';
+import { QuestModel, MAX_TRACKED_QUESTS } from '../../shared/story/questModel.js';
+import { QuestDefinitions } from '../../shared/story/questDefinitions.js';
 
 const fresh = () => ({ quests: { active: {}, completed: [], trackedIds: [] }, party: { inventory: [], members: [], currency: 0 } });
 

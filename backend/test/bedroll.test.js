@@ -1,13 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { AbilityDefinitions } from '../../shared/data/abilityDefinitions.js';
-import { ItemDefinitions } from '../../shared/data/itemDefinitions.js';
-import { encounterDefinitions } from '../../shared/data/encounterDefinitions.js';
-import { AbilitySystem } from '../../shared/systems/abilitySystem.js';
-import { TimeSystem } from '../../shared/systems/timeSystem.js';
-import { gameState } from '../../shared/state/gameState.js';
-import { Formatting } from '../../shared/utils/formatting.js';
-import { TransitionRenderer } from '../../frontend/src/renderers/transitions/transitionRenderer.js';
+import { AbilityDefinitions } from '../../shared/abilities/abilityDefinitions.js';
+import { ItemDefinitions } from '../../shared/items/itemDefinitions.js';
+import { encounterDefinitions } from '../../shared/story/encounterDefinitions.js';
+import { AbilitySystem } from '../../shared/abilities/abilitySystem.js';
+import { TimeSystem } from '../../shared/world/timeSystem.js';
+import { gameState } from '../../shared/core/gameState.js';
+import { Formatting } from '../../shared/core/formatting.js';
+import { TransitionRenderer } from '../../frontend/src/engine/transitionRenderer.js';
 
 test('a bedroll sleeps the clock forward and starts no encounter', () => {
     const ability = AbilityDefinitions.use_bedroll;

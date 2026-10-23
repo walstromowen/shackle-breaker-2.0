@@ -3,12 +3,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { MAP_OBJECTS_DEFINITIONS } from '../../shared/data/mapObjectDefinitions.js';
-import { encounterDefinitions } from '../../shared/data/encounterDefinitions.js';
-import { SpawnTableFactory } from '../../shared/systems/factories/spawnTableFactory.js';
-import { SpawnTableDefinitions } from '../../shared/data/spawnTableDefinitions.js';
-import { LootTableDefinitions } from '../../shared/data/lootTableDefinitions.js';
-import { ItemDefinitions } from '../../shared/data/itemDefinitions.js';
+import { MAP_OBJECTS_DEFINITIONS } from '../../shared/world/mapObjectDefinitions.js';
+import { encounterDefinitions } from '../../shared/story/encounterDefinitions.js';
+import { SpawnTableFactory } from '../../shared/battle/spawnTableFactory.js';
+import { SpawnTableDefinitions } from '../../shared/battle/spawnTableDefinitions.js';
+import { LootTableDefinitions } from '../../shared/items/lootTableDefinitions.js';
+import { ItemDefinitions } from '../../shared/items/itemDefinitions.js';
 
 const mainJs = fs.readFileSync(new URL('../../frontend/src/main.js', import.meta.url), 'utf8');
 const enc = encounterDefinitions.old_gravestone;
@@ -88,7 +88,7 @@ test('the grave loot table rolls only real items', () => {
 });
 
 test('the gravestones are no longer scattered over the plains: they stand in villages and graveyards only', async () => {
-    const { BIOME_DEFINITIONS } = await import('../../shared/data/biomeDefinitions.js');
+    const { BIOME_DEFINITIONS } = await import('../../shared/world/biomeDefinitions.js');
     for (const biome of Object.values(BIOME_DEFINITIONS)) {
         for (const rules of Object.values(biome.mapObjects || {})) {
             for (const r of rules) assert.ok(r.id !== 'TOMBSTONE' && r.id !== 'OLD_GRAVESTONE', `${biome.id} scatters a gravestone`);

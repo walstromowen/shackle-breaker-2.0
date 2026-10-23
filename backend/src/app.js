@@ -68,7 +68,7 @@ export function createApp({ repo, config }) {
                 }
             };
             // The same layout a dev server (Live Server...) gives when it is started in the repo root: the code climbs between
-            // /frontend/src and /shared with relative imports ("../../frontend/src/core/eventBus.js"), so both must sit under one root.
+            // /frontend/src and /shared with relative imports ("../../shared/core/eventBus.js"), so both must sit under one root.
             // Only these two folders are public: backend/, tools/, .env and the rest of the repo are not reachable.
             app.use('/shared', express.static(sharedDir, staticOptions));
             app.use('/frontend/src', express.static(frontendSrc, staticOptions));

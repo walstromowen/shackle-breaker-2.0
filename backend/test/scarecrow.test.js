@@ -2,15 +2,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { MAP_OBJECTS_DEFINITIONS } from '../../shared/data/mapObjectDefinitions.js';
-import { encounterDefinitions } from '../../shared/data/encounterDefinitions.js';
-import { SpawnTableDefinitions } from '../../shared/data/spawnTableDefinitions.js';
-import { SpawnTableFactory } from '../../shared/systems/factories/spawnTableFactory.js';
-import { BIOME_DEFINITIONS } from '../../shared/data/biomeDefinitions.js';
-import { ENTITY_DEFINITIONS } from '../../shared/data/entityDefinitions.js';
-import { STRUCTURES } from '../../shared/data/structures.js';
-import { WorldManager } from '../../shared/systems/worldManager.js';
-import { gameState } from '../../shared/state/gameState.js';
+import { MAP_OBJECTS_DEFINITIONS } from '../../shared/world/mapObjectDefinitions.js';
+import { encounterDefinitions } from '../../shared/story/encounterDefinitions.js';
+import { SpawnTableDefinitions } from '../../shared/battle/spawnTableDefinitions.js';
+import { SpawnTableFactory } from '../../shared/battle/spawnTableFactory.js';
+import { BIOME_DEFINITIONS } from '../../shared/world/biomeDefinitions.js';
+import { ENTITY_DEFINITIONS } from '../../shared/characters/entityDefinitions.js';
+import { STRUCTURES } from '../../shared/world/structures.js';
+import { WorldManager } from '../../shared/world/worldManager.js';
+import { gameState } from '../../shared/core/gameState.js';
 
 const mainJs = fs.readFileSync(new URL('../../frontend/src/main.js', import.meta.url), 'utf8');
 const enc = encounterDefinitions.peculiar_scarecrow;
@@ -102,7 +102,7 @@ test('in a generated world every scarecrow stands north of a road, with road in 
 });
 
 test('the line of sight is the two columns straight beneath the scarecrow, 5 rows long, and no wider', async () => {
-    const { OverworldController } = await import('../../frontend/src/controllers/overworld/overworldController.js');
+    const { OverworldController } = await import('../../frontend/src/screens/overworld/overworldController.js');
     const scarecrow = { col: 10, row: 20, w: 2, interaction: MAP_OBJECTS_DEFINITIONS.PECULIAR_SCARECROW.interaction };
     const world = { getObject: (c, r) => (c === 10 && r === 20 ? scarecrow : null), ensureChunkLoaded() {} };
     const sees = (col, row) => OverworldController.prototype.findEncounterZones.call({ worldManager: world }, col, row).size === 1;
@@ -115,8 +115,8 @@ test('the line of sight is the two columns straight beneath the scarecrow, 5 row
 });
 
 test('Spirit Reap shows the dark hand for a good while: drawn solid, fully visible for most of its life', async () => {
-    const { BattleAnimationDefinitions } = await import('../../shared/data/battleAnimationDefinition.js');
-    const { Particle } = await import('../../frontend/src/renderers/battle/particle.js');
+    const { BattleAnimationDefinitions } = await import('../../shared/battle/animation/battleAnimationDefinition.js');
+    const { Particle } = await import('../../frontend/src/screens/battle/particle.js');
     const anim = BattleAnimationDefinitions.spirit_reap;
     const hand = anim.vfx.find(v => v.config && v.config.sheetKey === 'spiritReapAnimation');
     assert.ok(hand, 'the hand is a sprite cue');

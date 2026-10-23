@@ -4,7 +4,7 @@
 //   write  -> the browser copy is written first (instant, and safe even when the tab is closing), then the server copy follows in the background
 //   read   -> asks the server; if it cannot be reached the browser copy is used; if both exist the NEWER one wins
 //   so playing offline (or while a free server is still waking up) loses nothing: the next read/write catches the server up.
-import { createLocalSaveStore } from '../../../shared/systems/saveManager.js';
+import { createLocalSaveStore } from '../engine/saveManager.js';
 import { AuthService, ApiError } from './authService.js';
 
 const timeOf = (save) => (save && Date.parse(save.savedAt)) || 0;

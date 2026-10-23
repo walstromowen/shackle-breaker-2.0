@@ -1,11 +1,11 @@
 // backend/test/armordrops.test.js: `npm test`. No cotton in recipes, bandage uses linen, and the rare armor drops from magic addicts, madmen and rotters.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ItemDefinitions } from '../../shared/data/itemDefinitions.js';
-import { craftingRecipeDefinitions } from '../../shared/data/craftingRecipeDefinitions.js';
-import { LootTableDefinitions } from '../../shared/data/lootTableDefinitions.js';
-import { ENTITY_DEFINITIONS } from '../../shared/data/entityDefinitions.js';
-import { LootTableFactory } from '../../shared/systems/factories/lootTableFactory.js';
+import { ItemDefinitions } from '../../shared/items/itemDefinitions.js';
+import { craftingRecipeDefinitions } from '../../shared/items/craftingRecipeDefinitions.js';
+import { LootTableDefinitions } from '../../shared/items/lootTableDefinitions.js';
+import { ENTITY_DEFINITIONS } from '../../shared/characters/entityDefinitions.js';
+import { LootTableFactory } from '../../shared/items/lootTableFactory.js';
 
 const SLOTS = ['helmet', 'armor', 'gauntlets', 'greaves', 'boots'];
 const SETS = {

@@ -1,9 +1,9 @@
 // backend/test/rest.test.js: `npm test`. Rest recovers stamina AND insight, and its card says so.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { AbilityDefinitions } from '../../shared/data/abilityDefinitions.js';
-import { AbilitySystem } from '../../shared/systems/abilitySystem.js';
-import { EntityFactory } from '../../shared/systems/factories/entityFactory.js';
+import { AbilityDefinitions } from '../../shared/abilities/abilityDefinitions.js';
+import { AbilitySystem } from '../../shared/abilities/abilitySystem.js';
+import { EntityFactory } from '../../shared/characters/entityFactory.js';
 import { AbilityPreview } from '../../frontend/src/ui/abilityPreview.js';
 
 const rest = () => AbilityDefinitions.rest;

@@ -1,7 +1,7 @@
 // Item reward chips: the same small "icon + amount" plate the overworld pickup toast uses, drawn as a static row.
 // Battle victory messages and encounter reward messages use it to show the pictures of the items the party received.
 import { UITheme } from './UITheme.js';
-import { ItemDefinitions } from '../../../shared/data/itemDefinitions.js';
+import { ItemDefinitions } from '../../../shared/items/itemDefinitions.js';
 
 const ICON_SRC_SIZE = 64;   // one cell of an item sheet
 const ICON_SIZE = 64;       // drawn 1:1, like the toast

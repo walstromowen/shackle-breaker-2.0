@@ -2,12 +2,12 @@
 // a 7 x 7 landmark of 3 to 5 stones with bones, rocks and boulders beside them, in every exterior biome.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STRUCTURES } from '../../shared/data/structures.js';
-import { BIOME_DEFINITIONS } from '../../shared/data/biomeDefinitions.js';
-import { MAP_OBJECTS_DEFINITIONS } from '../../shared/data/mapObjectDefinitions.js';
-import { BiomeModel } from '../../shared/models/biomeModel.js';
-import { WorldManager } from '../../shared/systems/worldManager.js';
-import { gameState } from '../../shared/state/gameState.js';
+import { STRUCTURES } from '../../shared/world/structures.js';
+import { BIOME_DEFINITIONS } from '../../shared/world/biomeDefinitions.js';
+import { MAP_OBJECTS_DEFINITIONS } from '../../shared/world/mapObjectDefinitions.js';
+import { BiomeModel } from '../../shared/world/biomeModel.js';
+import { WorldManager } from '../../shared/world/worldManager.js';
+import { gameState } from '../../shared/core/gameState.js';
 
 const STONES = new Set(['TOMBSTONE', 'OLD_GRAVESTONE']);
 const EXTERIOR = ['PLAINS', 'DESERT', 'SNOWY_MOUNTAINS'];

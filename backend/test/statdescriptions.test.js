@@ -1,9 +1,9 @@
 // backend/test/statdescriptions.test.js: `npm test`. The in-game help for each attribute is built from the real scaling numbers.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { StatCalculator } from '../../shared/systems/statCalculator.js';
-import { DAMAGE_SCALING, DAMAGE_TYPES } from '../../shared/data/constants.js';
-import { ATTRIBUTE_KEYS, getStatDescription, damageTypesFor, trimNumber } from '../../shared/utils/statDescriptions.js';
+import { StatCalculator } from '../../shared/characters/statCalculator.js';
+import { DAMAGE_SCALING, DAMAGE_TYPES } from '../../shared/core/constants.js';
+import { ATTRIBUTE_KEYS, getStatDescription, damageTypesFor, trimNumber } from '../../shared/characters/statDescriptions.js';
 
 const ZERO = { vigor: 0, strength: 0, dexterity: 0, intelligence: 0, attunement: 0 };
 const calc = (attributes) => StatCalculator.calculate({ level: 1, attributes: { ...ZERO, ...attributes }, baseStats: { maxHp: 10, maxStamina: 10, maxInsight: 10, baseAttack: {} } });

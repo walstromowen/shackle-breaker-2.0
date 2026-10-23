@@ -1,11 +1,11 @@
 // backend/test/recruit.test.js: `npm test`. Recruiting (the wounded mutt and the other companions) and the material economy.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { EncounterLogic } from '../../frontend/src/controllers/encounter/encounterLogic.js';
-import { encounterDefinitions } from '../../shared/data/encounterDefinitions.js';
-import { ItemDefinitions } from '../../shared/data/itemDefinitions.js';
-import { gameState } from '../../shared/state/gameState.js';
-import { EntityFactory } from '../../shared/systems/factories/entityFactory.js';
+import { EncounterLogic } from '../../frontend/src/screens/encounter/encounterLogic.js';
+import { encounterDefinitions } from '../../shared/story/encounterDefinitions.js';
+import { ItemDefinitions } from '../../shared/items/itemDefinitions.js';
+import { gameState } from '../../shared/core/gameState.js';
+import { EntityFactory } from '../../shared/characters/entityFactory.js';
 
 const model = () => ({ context: {}, instanceId: 'test' });
 const fresh = () => { gameState.party.members = [EntityFactory.create('MAD_MAN')]; };

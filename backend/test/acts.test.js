@@ -1,19 +1,19 @@
-// backend/test/acts.test.js: `npm test`. The milestones and acts (shared/data/actDefinitions.js, shared/systems/actSystem.js) and the data that hangs off them.
+// backend/test/acts.test.js: `npm test`. The milestones and acts (shared/story/actDefinitions.js, shared/story/actSystem.js) and the data that hangs off them.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ActSystem } from '../../shared/systems/actSystem.js';
-import { ACT_DEFINITIONS } from '../../shared/data/actDefinitions.js';
-import { gameState } from '../../shared/state/gameState.js';
-import { TimeSystem } from '../../shared/systems/timeSystem.js';
-import { SpawnTableFactory } from '../../shared/systems/factories/spawnTableFactory.js';
-import { SpawnTableDefinitions } from '../../shared/data/spawnTableDefinitions.js';
-import { ENTITY_DEFINITIONS } from '../../shared/data/entityDefinitions.js';
-import { TRAIT_DEFINITIONS } from '../../shared/data/traitDefinitions.js';
-import { encounterDefinitions } from '../../shared/data/encounterDefinitions.js';
-import { BIOME_DEFINITIONS } from '../../shared/data/biomeDefinitions.js';
-import { QuestDefinitions } from '../../shared/data/questDefinitions.js';
-import { BiomeModel } from '../../shared/models/biomeModel.js';
-import * as abilityData from '../../shared/data/abilityDefinitions.js';
+import { ActSystem } from '../../shared/story/actSystem.js';
+import { ACT_DEFINITIONS } from '../../shared/story/actDefinitions.js';
+import { gameState } from '../../shared/core/gameState.js';
+import { TimeSystem } from '../../shared/world/timeSystem.js';
+import { SpawnTableFactory } from '../../shared/battle/spawnTableFactory.js';
+import { SpawnTableDefinitions } from '../../shared/battle/spawnTableDefinitions.js';
+import { ENTITY_DEFINITIONS } from '../../shared/characters/entityDefinitions.js';
+import { TRAIT_DEFINITIONS } from '../../shared/abilities/traitDefinitions.js';
+import { encounterDefinitions } from '../../shared/story/encounterDefinitions.js';
+import { BIOME_DEFINITIONS } from '../../shared/world/biomeDefinitions.js';
+import { QuestDefinitions } from '../../shared/story/questDefinitions.js';
+import { BiomeModel } from '../../shared/world/biomeModel.js';
+import * as abilityData from '../../shared/abilities/abilityDefinitions.js';
 
 const ABILITIES = Object.values(abilityData).find(v => v && typeof v === 'object' && v.strike);
 const act1 = () => ({ milestones: [] });

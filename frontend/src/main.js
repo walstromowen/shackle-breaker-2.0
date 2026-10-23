@@ -1,10 +1,10 @@
-import { AssetLoader } from "./core/assetLoader.js";
-import { SceneManager } from "./core/sceneManager.js";
-import { GameLoop } from "./core/gameLoop.js";
-import { audioManager } from './core/audioManager.js';
-import { CONFIG } from "../../shared/data/constants.js";
-import { gameState } from '../../shared/state/gameState.js';
-import { aDisturbingSight } from "../../shared/data/encounters/aDisturbingSight.js";
+import { AssetLoader } from "./engine/assetLoader.js";
+import { SceneManager } from "./engine/sceneManager.js";
+import { GameLoop } from "./engine/gameLoop.js";
+import { audioManager } from './engine/audioManager.js';
+import { CONFIG } from "../../shared/core/constants.js";
+import { gameState } from '../../shared/core/gameState.js';
+import { aDisturbingSight } from "../../shared/story/encounters/aDisturbingSight.js";
 import { runAuthGate } from './auth/authGate.js';
 
 // Moved to top for clean imports

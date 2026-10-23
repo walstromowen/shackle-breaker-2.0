@@ -1,11 +1,11 @@
 // backend/test/crops.test.js: `npm test`. Villages: no storage yards, no chest outdoors, and fenced crop fields of one herb each.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STRUCTURES } from '../../shared/data/structures.js';
-import { MAP_OBJECTS_DEFINITIONS } from '../../shared/data/mapObjectDefinitions.js';
-import { INTERIOR_DEFINITIONS } from '../../shared/data/interiorDefinitions.js';
-import { WorldManager } from '../../shared/systems/worldManager.js';
-import { gameState } from '../../shared/state/gameState.js';
+import { STRUCTURES } from '../../shared/world/structures.js';
+import { MAP_OBJECTS_DEFINITIONS } from '../../shared/world/mapObjectDefinitions.js';
+import { INTERIOR_DEFINITIONS } from '../../shared/world/interiorDefinitions.js';
+import { WorldManager } from '../../shared/world/worldManager.js';
+import { gameState } from '../../shared/core/gameState.js';
 
 const HERBS = ['HEALING_HERB', 'INVIGORATING_HERB', 'ILLUMINATING_HERB'];
 const FIELDS = { ABANDONED_CROP_FIELD_HEALING: 'HEALING_HERB', ABANDONED_CROP_FIELD_INVIGORATING: 'INVIGORATING_HERB', ABANDONED_CROP_FIELD_ILLUMINATING: 'ILLUMINATING_HERB' };

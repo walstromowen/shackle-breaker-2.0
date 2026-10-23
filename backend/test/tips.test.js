@@ -24,7 +24,7 @@ test('every tip card has a title, 3 to 7 rows and keys for each row', () => {
 });
 
 test('cards exist only for screens the scene manager really has, and none for the prologue-era screens', () => {
-    const source = readFileSync(new URL('../../frontend/src/core/sceneManager.js', import.meta.url), 'utf8');
+    const source = readFileSync(new URL('../../frontend/src/engine/sceneManager.js', import.meta.url), 'utf8');
     for (const id of TIP_SCENES) assert.ok(source.includes(`case '${id}':`), `${id} is not a scene`);
     for (const id of ['boot', 'title', 'character-creator']) assert.equal(TIPS[id], undefined, `${id} must not have a card`);
 });

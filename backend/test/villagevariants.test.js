@@ -1,13 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STRUCTURES } from '../../shared/data/structures.js';
-import { BIOME_DEFINITIONS } from '../../shared/data/biomeDefinitions.js';
-import { MAP_OBJECTS_DEFINITIONS } from '../../shared/data/mapObjectDefinitions.js';
-import { LootTableDefinitions, LootExclusionSets } from '../../shared/data/lootTableDefinitions.js';
-import { LootTableFactory } from '../../shared/systems/factories/lootTableFactory.js';
-import { encounterDefinitions } from '../../shared/data/encounterDefinitions.js';
-import { WorldManager } from '../../shared/systems/worldManager.js';
-import { gameState } from '../../shared/state/gameState.js';
+import { STRUCTURES } from '../../shared/world/structures.js';
+import { BIOME_DEFINITIONS } from '../../shared/world/biomeDefinitions.js';
+import { MAP_OBJECTS_DEFINITIONS } from '../../shared/world/mapObjectDefinitions.js';
+import { LootTableDefinitions, LootExclusionSets } from '../../shared/items/lootTableDefinitions.js';
+import { LootTableFactory } from '../../shared/items/lootTableFactory.js';
+import { encounterDefinitions } from '../../shared/story/encounterDefinitions.js';
+import { WorldManager } from '../../shared/world/worldManager.js';
+import { gameState } from '../../shared/core/gameState.js';
 
 const walkObjectIds = (v, out = new Set()) => {
     if (typeof v === 'string') out.add(v);

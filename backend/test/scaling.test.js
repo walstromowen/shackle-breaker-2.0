@@ -1,9 +1,9 @@
-// backend/test/scaling.test.js: `npm test`. Each damage type scales with its own attribute (DAMAGE_SCALING in data/constants.js).
+// backend/test/scaling.test.js: `npm test`. Each damage type scales with its own attribute (DAMAGE_SCALING in core/constants.js).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { StatCalculator } from '../../shared/systems/statCalculator.js';
-import { EntityFactory } from '../../shared/systems/factories/entityFactory.js';
-import { DAMAGE_SCALING, DAMAGE_SCALING_MODE, DAMAGE_TYPES } from '../../shared/data/constants.js';
+import { StatCalculator } from '../../shared/characters/statCalculator.js';
+import { EntityFactory } from '../../shared/characters/entityFactory.js';
+import { DAMAGE_SCALING, DAMAGE_SCALING_MODE, DAMAGE_TYPES } from '../../shared/core/constants.js';
 
 const ELEMENTS = ['fire', 'ice', 'lightning', 'water', 'earth', 'wind'];
 const ARCANE = ['light', 'dark', 'arcane'];

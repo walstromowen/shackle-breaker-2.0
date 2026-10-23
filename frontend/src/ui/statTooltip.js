@@ -1,9 +1,9 @@
 import { UITheme } from './UITheme.js';
-import { getStatDescription } from '../../../shared/utils/statDescriptions.js';
+import { getStatDescription } from '../../../shared/characters/statDescriptions.js';
 
 // The "what does this attribute do" card, shared by every screen that shows attributes (level-up, character creator,
 // character summary, encounters). A screen works out which attribute is under the mouse / selected and where its row is,
-// then calls drawStatTooltip LAST in its render so the card sits on top. The text comes from shared/utils/statDescriptions.js.
+// then calls drawStatTooltip LAST in its render so the card sits on top. The text comes from shared/characters/statDescriptions.js.
 
 const WIDTH = 560;
 const PADDING = 29;

@@ -1,10 +1,10 @@
 // backend/test/balance.test.js: `npm test`. Whole-number stats, recovery from Dexterity / Attunement, status damage scaling, bleed.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ENTITY_DEFINITIONS } from '../../shared/data/entityDefinitions.js';
-import { EntityFactory } from '../../shared/systems/factories/entityFactory.js';
-import { StatCalculator } from '../../shared/systems/statCalculator.js';
-import { StatusEffectFactory } from '../../shared/systems/factories/statusEffectFactory.js';
+import { ENTITY_DEFINITIONS } from '../../shared/characters/entityDefinitions.js';
+import { EntityFactory } from '../../shared/characters/entityFactory.js';
+import { StatCalculator } from '../../shared/characters/statCalculator.js';
+import { StatusEffectFactory } from '../../shared/abilities/statusEffectFactory.js';
 
 const whole = (n) => Number.isInteger(n);
 const hundredths = (n) => Math.abs(n * 100 - Math.round(n * 100)) < 1e-9;

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const scene = fs.readFileSync(new URL('../../frontend/src/core/sceneManager.js', import.meta.url), 'utf8');
+const scene = fs.readFileSync(new URL('../../frontend/src/engine/sceneManager.js', import.meta.url), 'utf8');
 
 test('STOP_MUSIC clears the current track, so the overworld starts its own track again after the prologue\'s silence', () => {
     const m = scene.match(/events\.on\('STOP_MUSIC',[\s\S]*?\n\s*\}\);/);
@@ -14,7 +14,7 @@ test('STOP_MUSIC clears the current track, so the overworld starts its own track
 });
 
 test('the encounters that call for silence are the ones this covers', async () => {
-    const { prologue } = await import('../../shared/data/encounters/prologue.js');
+    const { prologue } = await import('../../shared/story/encounters/prologue.js');
     const silent = Object.entries(prologue.stages).filter(([, s]) => s.bgm === 'none').map(([id]) => id);
     assert.ok(silent.length > 0, `the prologue has a silent stage (${silent})`);
 });

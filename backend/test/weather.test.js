@@ -6,8 +6,8 @@ import assert from 'node:assert/strict';
 // the renderer makes small canvases for its fog texture; a stand-in is enough for the logic
 const fakeCtx = new Proxy({}, { get: (t, k) => (k in t ? t[k] : () => ({ addColorStop() {} })), set: (t, k, v) => { t[k] = v; return true; } });
 globalThis.document = { createElement: () => ({ width: 0, height: 0, getContext: () => fakeCtx }) };
-const { WeatherRenderer } = await import('../../frontend/src/renderers/overworld/weatherRenderer.js');
-const { gameState } = await import('../../shared/state/gameState.js');
+const { WeatherRenderer } = await import('../../frontend/src/screens/overworld/weatherRenderer.js');
+const { gameState } = await import('../../shared/core/gameState.js');
 
 const config = { GAME_SCALE: 1 };
 const canvas = { width: 1920, height: 1080 };

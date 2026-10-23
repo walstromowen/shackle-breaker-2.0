@@ -1,4 +1,4 @@
-import { events } from '../core/eventBus.js';
+import { events } from '../../../shared/core/eventBus.js';
 import { UI_SFX, UI_SFX_VOLUME, uiPitch } from './uiSfx.js';
 
 export class ContextMenuManager {

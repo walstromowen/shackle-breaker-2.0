@@ -1,9 +1,9 @@
 // frontend/src/auth/authGate.js: what main.js runs before anything else. Resolves once we know who is playing.
 import { AuthService } from './authService.js';
 import { AuthScreen } from './authScreen.js';
-import { SaveManager } from '../../../shared/systems/saveManager.js';
+import { SaveManager } from '../engine/saveManager.js';
 import { HybridSaveStore } from './cloudSaveStore.js';
-import { goFullscreenWhenAllowed } from '../core/fullscreen.js';
+import { goFullscreenWhenAllowed } from '../engine/fullscreen.js';
 
 /**
  * 1. A login remembered from an earlier visit is offered as "Welcome back" (no waiting for a sleeping server: nothing is sent yet).
