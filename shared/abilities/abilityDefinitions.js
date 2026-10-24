@@ -369,6 +369,23 @@ export const AbilityDefinitions = {
         effects: [{ type: "damage", damageType: "pierce", power: 0.5 }],
         statusEffects: [{ id: "poison", chance: 1.0, duration: 3 }]
     },
+    // The Poison Knife item's throw as a dagger skill (taught by the dagger at level 3): same hit, same poison, but it costs stamina instead of using up an item.
+    "throw_poison_dagger": {
+        id: "throw_poison_dagger",
+        name: "Throw Poison Dagger",
+        description: "Throw a poison-coated dagger. Causes poison.",
+        range: "ranged",
+        tags: ["physical", "projectile", "weapon", "pierce", "dagger"],
+        battleMessage: "{user} throws a poisoned dagger at {target}!",
+        icon: { col: 11, row: 2 },           // shares the Poison Knife item's icon
+        animationId: "throw_poison_dagger",
+        targeting: { scope: "enemy", select: "single" },
+        cost: { stamina: 10 },
+        speedModifier: 1.25,
+        accuracy: 0.95,
+        effects: [{ type: "damage", damageType: "pierce", power: 0.5 }],
+        statusEffects: [{ id: "poison", chance: 1.0, duration: 3 }]
+    },
 
     // =========================================================================
     // 4. PHYSICAL - RANGED

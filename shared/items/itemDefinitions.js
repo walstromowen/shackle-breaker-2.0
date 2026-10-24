@@ -67,6 +67,7 @@ export const ItemDefinitions = {
     },
     abilityUnlocks: {
       2: ["eviscerate"],
+      3: ["throw_poison_dagger"],
     },
     upgradeCosts: {
       2: { currency: 50, materials: { "hard_wood": 5, "stone": 10, "soft_wood": 10, "plant_fibers": 15 } },
@@ -1399,7 +1400,7 @@ export const ItemDefinitions = {
     grantedAbilities: [
       "punch", "strike", "shield_bash", "reckless_charge", "wild_swing", "fire_punch", "slash", "uppercut",
       "execute", "hit_and_run", "cleave", "flurry", "claw", "eviscerate", "rally", "intimidate",
-      "howl", "hide", "thrust", "bite", "quick_stab", "item_poison_knife", "item_throw_net", "loose_arrow",
+      "howl", "hide", "thrust", "bite", "quick_stab", "item_poison_knife", "throw_poison_dagger", "item_throw_net", "loose_arrow",
       "quick_draw", "poisoned_arrow", "triple_shot", "arcane_dart", "magic_missile", "arcane_blast", "hyper_beam", "fireball", "meteor_shower",
       "inferno", "flamethrower", "water_blast", "waterfall", "ice_shard", "frigid_gale", "shock", "overload",
       "earthquake", "acid_pool", "vine_lash", "boulder_throw", "solar_beam", "spite", "gravity", "spirit_reap",

@@ -7,12 +7,26 @@ import { anim, sfx, burst } from '../../shared/battle/animation/animationKit.js'
 
 const travels = (d) => d.vfx.filter(v => v.type === 'travel');
 
-test('the two knife abilities have an animation of their own', () => {
+test('the knife abilities use the two throw animations (the poison one is shared by the item and the dagger skill)', () => {
     assert.equal(A.item_throwing_knife.animationId, 'throw_dagger');
     assert.equal(A.item_poison_knife.animationId, 'throw_poison_dagger');
     assert.ok(B.throw_dagger && B.throw_poison_dagger);
     const users = Object.values(A).filter(a => a.animationId === 'throw_dagger' || a.animationId === 'throw_poison_dagger');
-    assert.equal(users.length, 2);
+    assert.deepEqual(users.map(a => a.id).sort(), ['item_poison_knife', 'item_throwing_knife', 'throw_poison_dagger']);
+});
+
+test('Throw Poison Dagger is the Poison Knife item\'s throw, paid for with stamina, and the dagger teaches it at level 3', async () => {
+    const { ItemModel } = await import('../../shared/items/itemModel.js');
+    const item = A.item_poison_knife, skill = A.throw_poison_dagger;
+    assert.deepEqual(skill.effects, item.effects);
+    assert.deepEqual(skill.statusEffects, item.statusEffects);
+    assert.deepEqual(skill.targeting, item.targeting);
+    for (const k of ['accuracy', 'speedModifier', 'range', 'animationId']) assert.equal(skill[k], item[k], k);
+    assert.ok(skill.cost.stamina > 0 && !skill.cost.insight);
+    assert.ok(!skill.tags.includes('item'), 'it is a skill, not an item use');
+    assert.ok(!new ItemModel('dagger', { level: 2 }).grantedAbilities.includes('throw_poison_dagger'));
+    assert.ok(new ItemModel('dagger', { level: 3 }).grantedAbilities.includes('throw_poison_dagger'));
+    assert.ok(new ItemModel('dagger', { level: 3 }).grantedAbilities.includes('eviscerate'));
 });
 
 test('the thrown knife has its own sprite drawn pointing right, is aimed, and stays in the target for a moment', () => {
