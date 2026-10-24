@@ -58,19 +58,7 @@ export const peculiarScarecrow = {
         pass_by: {
             displayText: "Past the Scarecrow",
             image: { col: 0, row: 0 },
-            text: "You pass the scarecrow without a sound. It is only a scarecrow, after all.",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "pass_by_2" } }] }]
-                }
-            ]
-        },
-
-        pass_by_2: {
-            displayText: "Past the Scarecrow",
-            image: { col: 0, row: 0 },
-            text: "Some way on, you hear straw rustle behind you. You do not look back.",
+            text: "You pass the scarecrow without a sound. It is only a scarecrow, after all. Some way on, you hear straw rustle behind you. You do not look back.",
             decisions: [
                 {
                     text: "Walk on.",
@@ -86,27 +74,13 @@ export const peculiarScarecrow = {
             sfx: "hollowHarvesterCry",
             image: { col: 1, row: 0 },
             bgm: "plainsBattleBgm",
-            text: "A dry branch snaps under your foot. The scarecrow's head turns, slowly, and two red eyes open in the sackcloth.",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "it_stirs_2" } }] }]
-                }
-            ]
-        },
-
-        it_stirs_2: {
-            displayText: "It Stirs",
-            tone: "blood",
-            image: { col: 1, row: 0 },
-            bgm: "plainsBattleBgm",
-            text: "It steps down off the post, and straw-stuffed things climb out of the grass beside it.",
+            text: "A dry branch snaps under your foot. The scarecrow's head turns, slowly, and two red eyes open in the sackcloth. It steps down off the post, and straw-stuffed things climb out of the grass beside it.",
             decisions: [
                 {
                     text: "Ready your weapons!",
                     outcomes: [{ weight: 100, results: [{ type: "DESTROY_OBJECT" }, { type: "START_BATTLE", payload: { tableId: "scarecrow_harvesters" } }] }]
                 }
             ]
-        }
+        },
     }
 };

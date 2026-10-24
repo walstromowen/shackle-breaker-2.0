@@ -87,25 +87,84 @@ export class ParticleSystem {
         }
     }
 
-    /** A soft round cloud of one colour (a 64px canvas, kept), for the 'puff' particles of fog and smoke. */
-    puffSprite(color = '#aaaaaa') {
+    /* Smoke and ash are drawn from small sprites made once (a few variants per colour, so no two neighbours are the same shape):
+         cloud   a ragged wisp of smoke: eight soft blobs of different sizes piled up unevenly, thick in the middle and thinning to nothing at every edge
+         flake   a torn scrap of ash: an uneven polygon with a different outline each time, or (one in three) a soft speck of soot
+       Nothing here is a rectangle, so a body that comes apart no longer sheds neat little boxes. */
+    static rgbOf(color) {
+        const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(color).trim());
+        if (!m) return [140, 140, 150];
+        let h = m[1];
+        if (h.length === 3) h = h.split('').map(c => c + c).join('');
+        return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+    }
+    _makeCanvas(size) {
+        return typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(size, size) : Object.assign(document.createElement('canvas'), { width: size, height: size });
+    }
+    /** A small repeatable random stream, so a variant always looks the same. */
+    static seeded(seed) {
+        let s = (seed * 9301 + 49297) % 233280;
+        return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+    }
+    puffSprite(color = '#aaaaaa', variant = 0) {
         this._puffs = this._puffs || new Map();
-        let c = this._puffs.get(color);
+        const key = color + '|' + variant;
+        let c = this._puffs.get(key);
         if (!c) {
-            c = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(64, 64) : Object.assign(document.createElement('canvas'), { width: 64, height: 64 });
+            c = this._makeCanvas(128);
             const g = c.getContext('2d');
-            // the colour is blended toward clear by drawing it through a mask: solid core, soft fall-off
-            g.fillStyle = color;
-            g.fillRect(0, 0, 64, 64);
-            g.globalCompositeOperation = 'destination-in';
-            const mask = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-            mask.addColorStop(0, 'rgba(0,0,0,1)');
-            mask.addColorStop(0.3, 'rgba(0,0,0,0.75)');
-            mask.addColorStop(0.7, 'rgba(0,0,0,0.22)');
-            mask.addColorStop(1, 'rgba(0,0,0,0)');
-            g.fillStyle = mask;
-            g.fillRect(0, 0, 64, 64);
-            this._puffs.set(color, c);
+            const [r, gr, b] = ParticleSystem.rgbOf(color);
+            const rand = ParticleSystem.seeded(31 + variant * 97);
+            for (let i = 0; i < 8; i++) {
+                // blobs gather toward the middle but stray to one side or the other, so the outline is lumpy and different each time
+                const ang = rand() * Math.PI * 2, dist = rand() * 30;
+                const cx = 64 + Math.cos(ang) * dist * 1.1, cy = 64 + Math.sin(ang) * dist * 0.8;
+                const rad = 20 + rand() * 24;
+                const grad = g.createRadialGradient(cx, cy, 0, cx, cy, rad);
+                grad.addColorStop(0, `rgba(${r},${gr},${b},0.55)`);
+                grad.addColorStop(0.45, `rgba(${r},${gr},${b},0.28)`);
+                grad.addColorStop(1, `rgba(${r},${gr},${b},0)`);
+                g.fillStyle = grad;
+                g.beginPath();
+                g.arc(cx, cy, rad, 0, Math.PI * 2);
+                g.fill();
+            }
+            this._puffs.set(key, c);
+        }
+        return c;
+    }
+    flakeSprite(color = '#444444', variant = 0) {
+        this._flakes = this._flakes || new Map();
+        const key = color + '|' + variant;
+        let c = this._flakes.get(key);
+        if (!c) {
+            c = this._makeCanvas(32);
+            const g = c.getContext('2d');
+            const rand = ParticleSystem.seeded(17 + variant * 131);
+            if (variant % 3 === 2) {
+                // a speck of soot: round, soft at the edge
+                const [r, gr, b] = ParticleSystem.rgbOf(color);
+                const grad = g.createRadialGradient(16, 16, 0, 16, 16, 10);
+                grad.addColorStop(0, `rgba(${r},${gr},${b},0.95)`);
+                grad.addColorStop(0.55, `rgba(${r},${gr},${b},0.6)`);
+                grad.addColorStop(1, `rgba(${r},${gr},${b},0)`);
+                g.fillStyle = grad;
+                g.beginPath(); g.arc(16, 16, 10, 0, Math.PI * 2); g.fill();
+            } else {
+                // a torn scrap: 6 to 8 corners at uneven distances, stretched one way
+                const n = 6 + Math.floor(rand() * 3), stretch = 1.1 + rand() * 0.7, tilt = rand() * Math.PI;
+                g.fillStyle = color;
+                g.beginPath();
+                for (let i = 0; i < n; i++) {
+                    const a = (i / n) * Math.PI * 2 + (rand() - 0.5) * 0.6, rad = 5 + rand() * 8;
+                    const x = Math.cos(a) * rad * stretch, y = Math.sin(a) * rad / stretch;
+                    const rx = x * Math.cos(tilt) - y * Math.sin(tilt), ry = x * Math.sin(tilt) + y * Math.cos(tilt);
+                    if (i === 0) g.moveTo(16 + rx, 16 + ry); else g.lineTo(16 + rx, 16 + ry);
+                }
+                g.closePath();
+                g.fill();
+            }
+            this._flakes.set(key, c);
         }
         return c;
     }
@@ -163,8 +222,8 @@ export class ParticleSystem {
         }
         } else if (p.shape === 'puff') {
         // a soft cloud: a round gradient (solid in the middle, clear at the edge), made once per colour. No glow, so many are cheap.
-        const puff = this.puffSprite(p.color);
-        const size = 56 * (p.scale || 1.0);
+        const puff = this.puffSprite(p.color, Math.abs(Math.floor((p.swayPhase || 0) * 10)) % 5);
+        const size = 84 * (p.scale || 1.0);
         this.ctx.drawImage(puff, -size / 2, -size / 2, size, size);
         } else if (p.shape === 'streak') {
         // a thin line that is faint at its tail and strongest at its head (the lower end, for lines falling down): concentration / speed lines. No glow.
@@ -175,10 +234,10 @@ export class ParticleSystem {
             this.ctx.fillRect(-w / 2, -len / 2 + (i * len) / segs, w, len / segs + 0.5);
         }
         } else if (p.shape === 'fleck') {
-        // a flake of ash: a small hard-edged chip that tumbles as it blows away
-        const w = Math.max(2, Math.round(5 * (p.scale || 1.0))), h = Math.max(1, Math.round(w * 0.55));
-        this.ctx.fillStyle = p.color || '#444444';
-        this.ctx.fillRect(-w / 2, -h / 2, w, h);
+        // a flake of ash: a torn scrap or a speck of soot that tumbles as it blows away
+        const flake = this.flakeSprite(p.color || '#444444', Math.abs(Math.floor((p.swayPhase || 0) * 10)) % 9);
+        const size = Math.max(6, 9 * (p.scale || 1.0));
+        this.ctx.drawImage(flake, -size / 2, -size / 2, size, size);
         } else {
         this.ctx.fillStyle = p.color || '#ffffff';
         this.ctx.shadowColor = p.color || '#ffffff';

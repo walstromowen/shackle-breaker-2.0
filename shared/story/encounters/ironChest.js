@@ -12,19 +12,7 @@ export const ironChest = {
             sfx: "lockClick",
             sfxVolume: 0.6,
             image: { col: 0, row: 0 },
-            text: "A heavy iron chest, bound in riveted bands and shut with a lock the size of a fist. Prying at it would be pointless.",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery_2" } }] }]
-                }
-            ]
-        },
-
-        discovery_2: {
-            displayText: "A Heavy Iron Chest",
-            image: { col: 0, row: 0 },
-            text: "This lock was made for one key, and a large one.",
+            text: "A heavy iron chest, bound in riveted bands and shut with a lock the size of a fist. Prying at it would be pointless. This lock was made for one key, and a large one.",
             decisions: [
                 {
                     text: "[Large Iron Key] Unlock the chest.",

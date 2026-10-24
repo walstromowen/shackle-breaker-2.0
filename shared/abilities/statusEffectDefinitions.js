@@ -291,7 +291,7 @@ export const StatusEffectDefinitions = {
         defaultCharges: 5,
         maxStacks: 1,
         effects: [
-            { trigger: 'ON_TURN_END', modify: 'insight', recovery: true, battleMessage: "{target}'s mind clears and regains {amount} insight!" }
+            { trigger: 'ON_TURN_END', modify: 'insight', recovery: true, battleMessage: "{target} draws insight and regains {amount} insight!" }
         ]
     },
     evasive: {

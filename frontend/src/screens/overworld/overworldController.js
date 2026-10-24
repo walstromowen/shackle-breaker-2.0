@@ -8,11 +8,14 @@ import { BaseController } from '../../engine/baseController.js';
 import { UI_SFX } from '../../ui/uiSfx.js';
 import { DIFFICULTY_MODIFIERS } from '../../../../shared/core/constants.js';
 import { QuestDefinitions } from '../../../../shared/story/questDefinitions.js';
+import { QuestModel } from '../../../../shared/story/questModel.js';
 import { InventorySystem } from '../../../../shared/items/inventorySystem.js';
 import { LootTableFactory } from '../../../../shared/items/lootTableFactory.js';
 import { ItemDefinitions } from '../../../../shared/items/itemDefinitions.js';
 import { AbilitySystem } from '../../../../shared/abilities/abilitySystem.js';
 import { AbilityDefinitions } from '../../../../shared/abilities/abilityDefinitions.js';
+import { ExploredMap } from '../../../../shared/world/exploredMap.js';
+import { ActSystem } from '../../../../shared/story/actSystem.js';
 
 /* A world buff with a `light` (a torch: the ability `torchlight`, see abilityDefinitions.js) lasts a number of IN-GAME minutes. In its last TORCH_GUTTER_MINUTES the light shrinks back to normal. */
 const TORCH_GUTTER_MINUTES = 30;
@@ -26,6 +29,7 @@ const MENU_KEYS = {
     party: 'KeyP',
     character: 'KeyC',
     journal: 'KeyJ',
+    map: 'KeyN',        // the world map: everything the party has seen so far
     crafting: 'KeyB',   // the crafting Bag
     system: 'KeyO'      // System: save / load / quit to title
 };
@@ -65,8 +69,9 @@ export class OverworldController extends BaseController {
             { id: 'btn_party',     x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 1, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, spriteCol: 1, spriteRow: 0, label: 'Party', shortcut: keyLabel(MENU_KEYS.party) },
             { id: 'btn_character', x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 2, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, spriteCol: 2, spriteRow: 0, label: 'Character', shortcut: keyLabel(MENU_KEYS.character) },
             { id: 'btn_journal',   x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 3, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, spriteCol: 3, spriteRow: 0, label: 'Journal', shortcut: keyLabel(MENU_KEYS.journal) },
-            { id: 'btn_crafting',  x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 4, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, spriteCol: 4, spriteRow: 0, label: 'Crafting', shortcut: keyLabel(MENU_KEYS.crafting) },
-            { id: 'btn_system',    x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 5, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, spriteCol: 5, spriteRow: 0, label: 'System', shortcut: keyLabel(MENU_KEYS.system) }
+            { id: 'btn_map',       x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 4, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, spriteCol: 6, spriteRow: 0, label: 'Map', shortcut: keyLabel(MENU_KEYS.map) },
+            { id: 'btn_crafting',  x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 5, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, spriteCol: 4, spriteRow: 0, label: 'Crafting', shortcut: keyLabel(MENU_KEYS.crafting) },
+            { id: 'btn_system',    x: MENU_X, y: MENU_Y + (BTN_SIZE + GAP) * 6, w: BTN_SIZE, h: BTN_SIZE, zIndex: 101, spriteCol: 5, spriteRow: 0, label: 'System', shortcut: keyLabel(MENU_KEYS.system) }
         ];
 
         // --- HOTBAR: one clickable slot per key in InventorySystem.HOTBAR_KEYS. Positions here are only a first guess for a 1920x1080 screen:
@@ -109,6 +114,9 @@ export class OverworldController extends BaseController {
             case 'btn_journal':
                 this.executeMenuAction('journal');
                 break;
+            case 'btn_map':
+                this.openWorldMap();
+                break;
             case 'btn_crafting':
                 this.playConfirmSound();
                 this.isMenuOpen = false;
@@ -134,6 +142,30 @@ export class OverworldController extends BaseController {
         if (this.isLocked || !this.isMenuOpen) return false;
         this.isMenuOpen = false;
         this.playCancelSound();
+    }
+
+    /* The world map (screens/worldMap): the land the party has seen, with the party on it. Inside a house or cave there is no map to read (the overworld's
+       coordinates do not apply there), so it says so instead. */
+    openWorldMap() {
+        if (gameState.world.isInterior) {
+            this.playErrorSound();
+            this.isMenuOpen = false;
+            this.showNotice('There is no map of the world in here.', false);
+            return;
+        }
+        this.executeMenuAction('world_map', { x: this.camera.x / this.config.TILE_SIZE + 0.5, y: this.camera.y / this.config.TILE_SIZE + 0.5, direction: this.player.direction });
+    }
+
+    /* Every step the party takes shows it more of the world: the blocks round the player's tile are added to the explored map (shared/world/exploredMap.js). */
+    revealSurroundings() {
+        if (gameState.world.isInterior) return;
+        const col = gameState.player.col, row = gameState.player.row;
+        if (!Number.isFinite(col) || !Number.isFinite(row)) return;
+        const key = col + ',' + row;
+        if (this._revealedAt === key && this._revealedMap === gameState.world.discoveredChunks) return;
+        this._revealedAt = key;
+        this._revealedMap = gameState.world.discoveredChunks;
+        ExploredMap.of(gameState.world).reveal(col, row);
     }
 
     executeMenuAction(sceneName, data) {
@@ -164,6 +196,8 @@ export class OverworldController extends BaseController {
     if (code === MENU_KEYS.character) this.executeMenuAction('character_summary');
     // J: Journal
     if (code === MENU_KEYS.journal) this.executeMenuAction('journal');
+    // N: the world map
+    if (code === MENU_KEYS.map) this.openWorldMap();
     // B: Crafting Bag
     if (code === MENU_KEYS.crafting) {
       this.playConfirmSound();
@@ -331,6 +365,7 @@ export class OverworldController extends BaseController {
             this._respawnDay = gameState.world.day;
             this.worldManager.expireRespawns();
         }
+        this.revealSurroundings();   // the world map grows as the party walks
         this.validateBiomeWeather(); // every frame: the weather must fit the biome the player stands in even when no step ends (a warp, standing still)
         this.checkEnvironmentMusic();
         if (!this.encounterZones) this.encounterZones = this.findEncounterZones(gameState.player.col, gameState.player.row); // standing in a zone when the world opens: it does not fire
@@ -751,6 +786,22 @@ export class OverworldController extends BaseController {
         const zones = new Map();
         const wm = this.worldManager;
         if (!wm || !wm.getObject) return zones;
+        /* Circles of unease (`triggerRadius` on an ENCOUNTER, e.g. MADMAN_NPC: 2): coming within that many tiles of the object, in any direction (a square around it,
+           diagonals included), is in its zone. */
+        const MAX_RADIUS = 4;
+        if (wm.ensureChunkLoaded) {
+            wm.ensureChunkLoaded(col - MAX_RADIUS, row - MAX_RADIUS);
+            wm.ensureChunkLoaded(col + MAX_RADIUS, row - MAX_RADIUS);
+            wm.ensureChunkLoaded(col - MAX_RADIUS, row + MAX_RADIUS);
+            wm.ensureChunkLoaded(col + MAX_RADIUS, row + MAX_RADIUS);
+        }
+        for (let dy = -MAX_RADIUS; dy <= MAX_RADIUS; dy++) {
+            for (let dx = -MAX_RADIUS; dx <= MAX_RADIUS; dx++) {
+                const obj = wm.getObject(col + dx, row + dy);
+                const radius = obj && !obj.isFading && obj.interaction && obj.interaction.type === 'ENCOUNTER' && obj.interaction.triggerRadius;
+                if (radius && Math.max(Math.abs(dx), Math.abs(dy)) <= radius) zones.set(`${obj.col},${obj.row}`, obj);
+            }
+        }
         for (const [direction, [dx, dy]] of Object.entries(LOOKING)) {
             if (wm.ensureChunkLoaded) wm.ensureChunkLoaded(col - dx * MAX_LINE_LENGTH, row - dy * MAX_LINE_LENGTH);
             for (let k = 1; k <= MAX_LINE_LENGTH; k++) {
@@ -876,6 +927,16 @@ export class OverworldController extends BaseController {
         this.camera.prevY = this.player.prevY;
     }
 
+    /* True when an active quest has every objective done and is waiting to be collected in the Journal (the Journal button shows a star, like the Party button does for a skill point). */
+    hasQuestReady() {
+        const active = gameState.quests && gameState.quests.active;
+        if (!active) return false;
+        for (const id of Object.keys(active)) {
+            if (QuestModel.checkCompletion(gameState, id)) return true;
+        }
+        return false;
+    }
+
     getTrackedQuests() {
         if (!gameState.quests || !gameState.quests.active) return [];
         const trackedIds = gameState.quests.trackedIds || [];
@@ -944,8 +1005,10 @@ export class OverworldController extends BaseController {
             entities: [this.player],
             camera: this.camera,
             worldManager: this.worldManager, // the minimap reads the terrain around the player from it
+            worldInfo: this.getWorldInfo(), // the status plaque: biome, day, clock, weather
             hoveredHitboxId: this.hoveredHitboxId,
             skillPointReady: !!gameState.party?.members?.some(m => m.skillPoints > 0),   // a skill point is waiting to be spent: the menu / Party buttons show a badge
+            questReady: this.hasQuestReady(),   // a finished quest is waiting in the Journal: the Journal button (and the menu button while it is closed) show a badge
             menuToggleHitbox: this.menuToggleHitbox,
             dropdownHitboxes: this.dropdownHitboxes,
             isMenuOpen: this.isMenuOpen,
@@ -960,6 +1023,22 @@ export class OverworldController extends BaseController {
             harvestTimer: this.harvestTimer,
             harvestDuration: this.harvestDuration,
             harvestTarget: this.harvestTarget
+        };
+    }
+
+    /* What the status plaque at the top of the screen shows: where the player stands, the day, the clock and the weather. */
+    getWorldInfo() {
+        const biome = this.worldManager.getBiomeAt(gameState.player.col, gameState.player.row);
+        const weather = gameState.world.currentWeather;
+        const minutes = gameState.world.time || 0;
+        return {
+            biomeName: biome.name,
+            sheltered: !(biome.allowedWeather && biome.allowedWeather.length > 0),   // a house or a cave: no sky, no weather
+            day: gameState.world.day || 1,
+            minutes,
+            weatherId: weather ? String(weather.id).toLowerCase() : 'clear',
+            weatherName: weather ? weather.name : 'Clear Skies',
+            bloodMoon: ActSystem.isBloodMoon(minutes / 60)
         };
     }
 

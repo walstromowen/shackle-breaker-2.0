@@ -43,6 +43,7 @@ const _lift = (hill, tiers, k = 0.27, w = 0.06) => tiers.reduce((sum, t) => sum 
 export const BIOME_DEFINITIONS = {
     PLAINS: {
         id: 'PLAINS',
+        name: 'The Plains' /* shown on the overworld's status plaque */,
         plateauWidth: 4 /* as in the snowy mountains: every step of a hill is at least 4 cells wide (default 2) */,
         hillField: 'massif' /* broad domes (see TerrainGenerator.getMassifValue) instead of the ridge-and-ring hill field */,
         stairChance: 1.0 /* chance that a 32 x 32 block gets stairs (the default is 0.35) ... */,
@@ -104,6 +105,12 @@ export const BIOME_DEFINITIONS = {
                 { chance: 0.7, rangeStart: 0.3, pool: ['GRASS_COVERAGE_1', 'GRASS_COVERAGE_2', 'GRASS_COVERAGE_3'] },
                 { chance: 0.1, id: 'CAVE_ENTRANCE' } /* a cave mouth painted into a straight south-facing cliff: the share of fitting cliff faces that get one (WorldManager._isCaveMouth). Keep this rule LAST in the LAYER_2 list */,
             ],
+            /* `_ALTITUDE` (see the snowy mountains below): ore lies bare on the higher terraces of the plains (LAYER_4 and LAYER_5), the hills being low.
+               Coal is the commoner (0.8% of those cells), copper very rare (0.2%). Mined with a pickaxe. */
+            _ALTITUDE: [
+                { id: 'COAL_DEPOSIT', chance: 0.008, minLevel: 4 },
+                { id: 'COPPER_ORE_DEPOSIT', chance: 0.002, minLevel: 4 },
+            ],
             [CONFIG.TILE_TYPES.LAYER_1]: [
                 { chance: 0.01, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
                 { chance: 0.04, rangeStart: 0.01, id: 'FLINT_ROCK' } /* flint: 3% of the dirt (the shores and the dry ravine floors), its own band [0.01, 0.04) so the rocks' share does not move. Walk over it to pick it up */,
@@ -122,6 +129,7 @@ export const BIOME_DEFINITIONS = {
     },
     DESERT: {
         id: 'DESERT',
+        name: 'The Desert' /* shown on the overworld's status plaque */,
         plateauWidth: 4 /* as in the snowy mountains: every step is at least 4 cells wide, so the canyon walls come in broad terraces (default 2) */,
         hillField: 'massif' /* broad domes (see TerrainGenerator.getMassifValue) instead of the ridge-and-ring hill field */,
         massifStretch: [2.2, 1.0] /* the domes (and the canyon line) are stretched along x: the mesas are long, east-west */,
@@ -187,6 +195,7 @@ export const BIOME_DEFINITIONS = {
     },
     SNOWY_MOUNTAINS: {
         id: 'SNOWY_MOUNTAINS',
+        name: 'Snowy Mountains' /* shown on the overworld's status plaque */,
         plateauWidth: 4 /* every step of a mountain is at least 4 cells wide (default 2): a ledge can be walked and a stair fits on it */,
         hillField: 'massif' /* broad domes (see TerrainGenerator.getMassifValue) instead of the ridge-and-ring hill field */,
         stairChance: 1.0 /* chance that a 32 x 32 block gets stairs (the default is 0.35) ... */,
@@ -253,6 +262,7 @@ export const BIOME_DEFINITIONS = {
     },
     HOUSE_INTERIOR: {
         id: 'HOUSE_INTERIOR',
+        name: 'Indoors' /* shown on the overworld's status plaque */,
         defaultLootTable: 'house',
         blobTileset: {
             primaryFloor: 'houseInteriorPrimaryFloor',
@@ -281,6 +291,7 @@ export const BIOME_DEFINITIONS = {
     },
     CAVE_INTERIOR: {
         id: 'CAVE_INTERIOR',
+        name: 'The Caves' /* shown on the overworld's status plaque */,
         defaultLootTable: 'cave' /* a loot table named 'cave', or change to 'house' / 'plains' if you have none yet */,
         blobTileset: {
             primaryFloor: 'caveInteriorPrimaryFloor',

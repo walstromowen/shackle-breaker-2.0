@@ -879,9 +879,9 @@ export class EncounterRenderer {
         drawEmbers(ctx, now, x0, width, height, alpha, tint);
     }
 
-    /** "Hold to skip" with a ring that fills while the button is held. Faint at rest; a click that did nothing makes it flare. */
+    /** "Click to skip" (a click finishes the words, a hold skips ahead) with a ring that fills while the button is held. Faint at rest; a click that did nothing makes it flare. */
     drawHoldPrompt(ctx, x, y, align, progress, pulse, alpha) {
-        const label = 'Hold to skip';
+        const label = 'Click to skip';
         const strength = Math.max(0.35 + 0.15 * (0.5 + 0.5 * Math.sin(Date.now() / 600)), pulse, progress > 0 ? 1 : 0);
         ctx.save();
         ctx.globalAlpha = alpha * Math.min(1, strength);

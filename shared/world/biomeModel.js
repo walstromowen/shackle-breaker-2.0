@@ -7,6 +7,7 @@ import { CorruptionSystem } from '../characters/corruptionSystem.js';
 export class BiomeModel {
     constructor(definition) {
         this.id = definition.id;
+        this.name = definition.name || String(definition.id || '').replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()); // the display name
         this.defaultLootTable = definition.defaultLootTable || 'basic_loot'; // Provide a safe fallback
         this.blobTileset = definition.blobTileset || null; // generated blob-47 tilesets (see blobTerrainRenderer.js)
         this.objectSheetId = definition.objectSheetId;

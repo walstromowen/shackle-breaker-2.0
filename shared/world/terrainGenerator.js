@@ -76,6 +76,14 @@ export class TerrainGenerator {
         this.temperatureNoise = new PerlinNoise(this.seed + 12345);
         this.moistureNoise = new PerlinNoise(this.seed + 54321);
         this.plainsNoise = new PerlinNoise(this.seed + 31337);   // the third biome field (see getBiomeAt)
+        /* Ragged biome borders: the position the three biome fields are read at is shaken by three layers of noise (see getBiomeAt): a slow layer
+           that bends a border into wide bays and headlands, a middle one that cuts coves and spurs into those, and a quick one that breaks the edge
+           into short sharp steps. amp = how far a cell can be moved, in cells (the layers add up). */
+        this.biomeEdge = [
+            { freq: 0.03, amp: 16, dx: 0 },
+            { freq: 0.09, amp: 8, dx: 100 },
+            { freq: 0.16, amp: 3, dx: 200 },
+        ].map((l, i) => ({ ...l, nx: new PerlinNoise(this.seed + 2468 + i * 1111), ny: new PerlinNoise(this.seed + 3579 + i * 1111) }));
     }
     _s(col, row) {
         return `${col},${row}`;
@@ -109,7 +117,12 @@ export class TerrainGenerator {
         /* One smooth field per biome (cold = snowy mountains, dry = desert, plus plains); the biome of a cell is the field that is highest there.
            Cutting ONE field into thirds would make the middle biome a thin band that wraps around the other two (a ring); with a field each,
            every biome grows as its own broad region and borders whichever biome happens to be next to it. */
-        const fx = col * BIOME_FREQ + this.offsetX, fy = row * BIOME_FREQ + this.offsetY;
+        let px = col, py = row;
+        for (const L of this.biomeEdge) {
+            px += L.amp * L.nx.get(col * L.freq + this.offsetX + L.dx, row * L.freq + this.offsetY + L.dx);
+            py += L.amp * L.ny.get(col * L.freq + this.offsetX + L.dx + 500, row * L.freq + this.offsetY + L.dx + 500);
+        }
+        const fx = px * BIOME_FREQ + this.offsetX, fy = py * BIOME_FREQ + this.offsetY;
         const snowy = this.temperatureNoise.get(fx, fy);
         const desert = this.moistureNoise.get(fx, fy);
         const plains = this.plainsNoise.get(fx, fy);
@@ -657,4 +670,4 @@ class PerlinNoise {
         );
     }
     invalidateTile(key) {}
-}
+}

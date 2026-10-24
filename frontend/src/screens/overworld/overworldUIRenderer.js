@@ -2,7 +2,8 @@ import { CanvasUI } from '../../ui/canvasUI.js';
 import { UITheme } from '../../ui/UITheme.js';
 import { ItemDefinitions } from '../../../../shared/items/itemDefinitions.js';
 import { ENTITY_DEFINITIONS } from '../../../../shared/characters/entityDefinitions.js';
-import { MinimapRenderer } from './minimapRenderer.js';
+import { MinimapRenderer } from '../../ui/minimapRenderer.js';
+import { WorldStatusPlaque } from './worldStatusPlaque.js';
 
 export class OverworldUIRenderer {
     constructor(config, loader) {
@@ -14,6 +15,9 @@ export class OverworldUIRenderer {
 
         // Minimap in the bottom-left corner (settings: CONFIG.MINIMAP)
         this.minimap = new MinimapRenderer(config);
+
+        // Biome, day, clock and weather, top centre
+        this.statusPlaque = new WorldStatusPlaque();
     }
 
     render(ctx, state) {
@@ -22,7 +26,7 @@ export class OverworldUIRenderer {
             hoveredHitboxId, isMenuOpen, menuToggleHitbox, dropdownHitboxes, 
             trackedQuests, toasts, facedObject, camera,
             isHarvesting, harvestTimer, harvestDuration, harvestTarget,
-            hotbar, notice, skillPointReady
+            hotbar, notice, skillPointReady, questReady, worldInfo
         } = state || {};
 
         const ui = new CanvasUI(ctx);
@@ -32,15 +36,17 @@ export class OverworldUIRenderer {
             this.minimap.render(ctx, ui, state);
         }
 
+        if (worldInfo) this.statusPlaque.render(ctx, ui, worldInfo);
+
         // The menu button stays "selected" (bar) while its dropdown is open; the one under the mouse is "highlighted"
         if (menuToggleHitbox) {
-            // The Party button is hidden while the dropdown is closed, so the badge also sits on the menu button then
-            this.drawSquareButton(ctx, ui, menuToggleHitbox, ui.flags(menuToggleHitbox.id, hoveredHitboxId, { selected: !!isMenuOpen }), !!skillPointReady && !isMenuOpen);
+            // The Party and Journal buttons are hidden while the dropdown is closed, so their badge (a skill point to spend, a finished quest to collect) also sits on the menu button then
+            this.drawSquareButton(ctx, ui, menuToggleHitbox, ui.flags(menuToggleHitbox.id, hoveredHitboxId, { selected: !!isMenuOpen }), (!!skillPointReady || !!questReady) && !isMenuOpen);
         }
 
         if (isMenuOpen && dropdownHitboxes) {
             for (const btn of dropdownHitboxes) {
-                this.drawSquareButton(ctx, ui, btn, ui.flags(btn.id, hoveredHitboxId), !!skillPointReady && btn.id === 'btn_party');
+                this.drawSquareButton(ctx, ui, btn, ui.flags(btn.id, hoveredHitboxId), (!!skillPointReady && btn.id === 'btn_party') || (!!questReady && btn.id === 'btn_journal'));
             }
         }
 
@@ -358,31 +364,89 @@ export class OverworldUIRenderer {
         }
     }
 
+    /* The words of one objective: its own description, or "Defeat Wolf" / "Collect Bone" worked out from its type and target. */
+    questObjectiveText(obj) {
+        let descText = obj.description;
+        // Dynamically resolve target names if there is no hardcoded description
+        if (!descText && obj.type) {
+            let actionText = "Objective";
+            let targetText = obj.targetId;
+
+            if (obj.type === 'kill_enemy') {
+                actionText = "Defeat";
+                const entityDef = ENTITY_DEFINITIONS ? (ENTITY_DEFINITIONS[obj.targetId] || ENTITY_DEFINITIONS[String(obj.targetId).toUpperCase()]) : null;
+                targetText = entityDef?.name || targetText;
+            } else if (obj.type === 'obtain_item') {
+                actionText = "Collect";
+                const itemDef = ItemDefinitions ? (ItemDefinitions[obj.targetId] || ItemDefinitions[String(obj.targetId).toUpperCase()]) : null;
+                targetText = itemDef?.name || targetText;
+            } else if (obj.type === 'craft') {
+                actionText = "Craft";
+                const itemDef = ItemDefinitions ? (ItemDefinitions[obj.targetId] || ItemDefinitions[String(obj.targetId).toUpperCase()]) : null;
+                targetText = itemDef?.name || targetText;
+            } else if (obj.type === 'party_level') {
+                actionText = "Reach Level";
+                targetText = obj.targetLevel;
+            }
+
+            // Fallback formatting if definitions fail to load
+            if (typeof targetText === 'string' && targetText === obj.targetId) {
+                targetText = targetText.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+            }
+
+            descText = `${actionText} ${targetText}`;
+        }
+        return descText || "Objective";
+    }
+
+    /* The quest tracker. A quest name or an objective that is too long for the box wraps onto more lines (the box grows to hold them) instead of running
+       out of it; an objective's count (2/3) stays on its first line, and its words wrap before they reach it. */
+    layoutQuestTracker(ui, quests, trackerWidth, innerPadding) {
+        const ctx = ui.ctx;
+        const titleFont = UITheme.text.heading.font, labelFont = UITheme.text.cardLabel.font;
+        const inner = trackerWidth - innerPadding * 2;
+        return quests.map(quest => {
+            const name = quest.name || quest.title || "Unknown Quest";
+            const titleLines = ui.getWrappedLines(name, inner, titleFont);
+            const objectives = (quest.objectives || []).map(obj => {
+                const progressText = `${obj.current}/${obj.required}`;
+                ctx.save();
+                ctx.font = labelFont;
+                const progressW = ctx.measureText(progressText).width;
+                ctx.restore();
+                const textX = 8, room = inner - textX - progressW - 16;
+                return { obj, progressText, lines: ui.getWrappedLines(`- ${this.questObjectiveText(obj)}`.replace(/\n/g, ' '), room, labelFont) };
+            });
+            return { titleLines, objectives };
+        });
+    }
+
     drawQuestTracker(ctx, ui, quests) {
         const padding = 24;
         const trackerWidth = 420;
         const startX = ctx.canvas.width - trackerWidth - padding;
         const innerPadding = 20;
         const titleHeight = 40;
+        const titleExtra = 38;   // each further line of a wrapped quest name
         const lineHeight = 32;
+        const lineExtra = 26;    // each further line of a wrapped objective
         const questGap = 22;
+        const layout = this.layoutQuestTracker(ui, quests, trackerWidth, innerPadding);
         let totalHeight = innerPadding;
-        for (const quest of quests) {
-            totalHeight += titleHeight;
-            if (quest.objectives) {
-                totalHeight += quest.objectives.length * lineHeight;
-            }
+        for (const q of layout) {
+            totalHeight += titleHeight + (q.titleLines.length - 1) * titleExtra;
+            for (const o of q.objectives) totalHeight += lineHeight + (o.lines.length - 1) * lineExtra;
             totalHeight += questGap;
         }
 
         ui.drawPanel(startX, padding, trackerWidth, totalHeight, "rgba(15, 15, 18, 0.88)");
         let currentY = padding + innerPadding;
 
-        for (const quest of quests) {
-            const questDisplayName = quest.name || quest.title || "Unknown Quest";
-
-            ui.drawStyled('heading', questDisplayName, startX + innerPadding, currentY + (titleHeight / 2) - 2, { baseline: 'middle' });
-            currentY += titleHeight;
+        for (const q of layout) {
+            q.titleLines.forEach((line, i) => {
+                ui.drawStyled('heading', line, startX + innerPadding, currentY + (titleHeight / 2) - 2 + i * titleExtra, { baseline: 'middle' });
+            });
+            currentY += titleHeight + (q.titleLines.length - 1) * titleExtra;
             // a hairline under each quest's name, so the objectives read as that quest's
             ctx.save();
             ctx.strokeStyle = UITheme.colors.borderHighlight;
@@ -393,56 +457,24 @@ export class OverworldUIRenderer {
             ctx.stroke();
             ctx.restore();
 
-            if (quest.objectives) {
-                for (const obj of quest.objectives) {
-                    const progressText = `${obj.current}/${obj.required}`;
-                    const isComplete = obj.current >= obj.required;
-                    const textColor = isComplete ? UITheme.colors.success : UITheme.colors.textMain;
-                    let descText = obj.description;
-
-                    // Dynamically resolve target names if there is no hardcoded description
-                    if (!descText && obj.type) {
-                        let actionText = "Objective";
-                        let targetText = obj.targetId;
-
-                        if (obj.type === 'kill_enemy') {
-                            actionText = "Defeat";
-                            const entityDef = ENTITY_DEFINITIONS ? (ENTITY_DEFINITIONS[obj.targetId] || ENTITY_DEFINITIONS[String(obj.targetId).toUpperCase()]) : null;
-                            targetText = entityDef?.name || targetText;
-                        } else if (obj.type === 'obtain_item') {
-                            actionText = "Collect";
-                            const itemDef = ItemDefinitions ? (ItemDefinitions[obj.targetId] || ItemDefinitions[String(obj.targetId).toUpperCase()]) : null;
-                            targetText = itemDef?.name || targetText;
-                        } else if (obj.type === 'craft') {
-                            actionText = "Craft";
-                            const itemDef = ItemDefinitions ? (ItemDefinitions[obj.targetId] || ItemDefinitions[String(obj.targetId).toUpperCase()]) : null;
-                            targetText = itemDef?.name || targetText;
-                        } else if (obj.type === 'party_level') {
-                            actionText = "Reach Level";
-                            targetText = obj.targetLevel;
-                        }
-
-                        // Fallback formatting if definitions fail to load
-                        if (typeof targetText === 'string' && targetText === obj.targetId) {
-                            targetText = targetText.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-                        }
-
-                        descText = `${actionText} ${targetText}`;
-                    }
-
-                    ui.drawStyled('cardLabel', `- ${descText || "Objective"}`, startX + innerPadding + 8, currentY + (lineHeight / 2),
+            for (const { obj, progressText, lines } of q.objectives) {
+                const isComplete = obj.current >= obj.required;
+                const textColor = isComplete ? UITheme.colors.success : UITheme.colors.textMain;
+                lines.forEach((line, i) => {
+                    // the continuation lines sit under the words, not under the dash
+                    ui.drawStyled('cardLabel', i === 0 ? line : `  ${line}`, startX + innerPadding + 8, currentY + (lineHeight / 2) + i * lineExtra,
                         { color: textColor, baseline: 'middle' });
-                    ui.drawStyled('cardLabel', progressText, startX + trackerWidth - innerPadding, currentY + (lineHeight / 2),
-                        { color: textColor, align: 'right', baseline: 'middle' });
-                    currentY += lineHeight;
-                }
+                });
+                ui.drawStyled('cardLabel', progressText, startX + trackerWidth - innerPadding, currentY + (lineHeight / 2),
+                    { color: textColor, align: 'right', baseline: 'middle' });
+                currentY += lineHeight + (lines.length - 1) * lineExtra;
             }
             currentY += questGap;
         }
     }
 
     // flags from ui.flags(): highlighted = under the mouse, selected = its dropdown is open
-    // badge: a pulsing gold star in the corner (a skill point is waiting on the Party screen)
+    // badge: a pulsing gold star in the corner (a skill point is waiting on the Party screen, or a finished quest in the Journal)
     drawSquareButton(ctx, ui, btn, flags = {}, badge = false) {
         const textColor = ui.stateTextColor(flags, UITheme.colors.textMain);
         const drawY = btn.y;

@@ -13,6 +13,7 @@ import { CharacterSummaryController } from '../screens/characterSummary/characte
 import { BattleController } from '../screens/battle/battleController.js';
 import { LevelUpController } from '../screens/levelUp/levelUpController.js';
 import { JournalController } from '../screens/journal/journalController.js';
+import { WorldMapController } from '../screens/worldMap/worldMapController.js';
 import { ShopController } from '../screens/shop/shopController.js';
 import { WorkshopController } from '../screens/workshop/workshopController.js'; // <-- NEW
 import { SavesController } from '../screens/saves/savesController.js';
@@ -33,6 +34,7 @@ import { CharacterSummaryRenderer } from '../screens/characterSummary/characterS
 import { BattleRenderer } from '../screens/battle/battleRenderer.js';
 import { LevelUpRenderer } from '../screens/levelUp/levelUpRenderer.js';
 import { JournalRenderer } from '../screens/journal/journalRenderer.js';
+import { WorldMapRenderer } from '../screens/worldMap/worldMapRenderer.js';
 import { ShopRenderer } from '../screens/shop/shopRenderer.js';
 import { WorkshopRenderer } from '../screens/workshop/workshopRenderer.js'; // <-- NEW
 import { SavesRenderer } from '../screens/saves/savesRenderer.js';
@@ -47,6 +49,7 @@ import { TutorialOverlay } from '../ui/tutorialOverlay.js';
 const SHARED_BACK_BUTTON = {
     party: null,
     journal: null,
+    world_map: null,
     shop: null,
     workshop: null,
     character_summary: null,
@@ -88,6 +91,7 @@ export class SceneManager {
         this.partyController = new PartyController(this.input);
         this.levelUpController = new LevelUpController(this.input);
         this.journalController = new JournalController(this.input);
+        this.worldMapController = new WorldMapController(this.input);
         this.shopController = new ShopController(this.input);
         this.workshopController = new WorkshopController(this.input); // <-- NEW
         this.savesController = new SavesController(this.input);
@@ -113,6 +117,7 @@ export class SceneManager {
         this.levelUpRenderer = new LevelUpRenderer(this.ctx, this.config, this.loader);
         this.battleRenderer = new BattleRenderer(this.ctx, this.config, this.loader);
         this.journalRenderer = new JournalRenderer(this.config, this.loader);
+        this.worldMapRenderer = new WorldMapRenderer(this.config, this.loader);
         this.shopRenderer = new ShopRenderer(this.ctx, this.loader);
         this.workshopRenderer = new WorkshopRenderer(this.ctx, this.loader); // <-- NEW
         this.savesRenderer = new SavesRenderer(this.config, this.loader);
@@ -266,6 +271,7 @@ export class SceneManager {
                 // A New Game replaces the autosave: keep the old one as 'previous'
                 if (this.currentScene === 'character-creator' && scene === 'overworld') {
                     SaveManager.backupAutosave();
+                    gameState.world.discoveredChunks = [];   // a new world has been seen by no one
                     this.tutorial.store.reset();   // every new game shows each screen's control card again (Settings > Replay Tips does the same by hand)
                 }
 
@@ -312,6 +318,9 @@ export class SceneManager {
                 }
                 if (scene === 'journal') {
                     this.journalController.init();
+                }
+                if (scene === 'world_map') {
+                    this.worldMapController.init({ ...(data || {}), worldManager: this.worldManager });
                 }
                 if (scene === 'shop') {
                     this.shopController.init(data || {});
@@ -635,6 +644,7 @@ export class SceneManager {
             case 'character_summary': return this.characterSummaryController;
             case 'level_up': return this.levelUpController;
             case 'journal': return this.journalController;
+            case 'world_map': return this.worldMapController;
             case 'shop': return this.shopController;
             case 'workshop': return this.workshopController; // <-- NEW
             case 'saves': return this.savesController;
@@ -655,6 +665,7 @@ export class SceneManager {
             case 'character_summary': return this.characterSummaryRenderer;
             case 'level_up': return this.levelUpRenderer;
             case 'journal': return this.journalRenderer;
+            case 'world_map': return this.worldMapRenderer;
             case 'shop': return this.shopRenderer;
             case 'workshop': return this.workshopRenderer; // <-- NEW
             case 'saves': return this.savesRenderer;
@@ -781,6 +792,9 @@ export class SceneManager {
             case 'journal':
                 const journalState = this.journalController.getState();
                 this.journalRenderer.render(this.ctx, journalState);
+                break;
+            case 'world_map':
+                this.worldMapRenderer.render(this.ctx, this.worldMapController.getState());
                 break;
             case 'shop':
                 const shopState = this.shopController.getState();

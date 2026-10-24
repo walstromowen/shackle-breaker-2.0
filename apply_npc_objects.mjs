@@ -18,10 +18,11 @@ function save(file, s, nl) { fs.writeFileSync(file, nl === '\r\n' ? s.replace(/\
     const f = 'frontend/src/main.js';
     const { s: src, nl } = load(f);
     let s = src;
+    s = s.replace('./assets/sprites/shady_merchant/shady_merchant.png', './assets/sprites/shady_merchant/shady_merchant_spritesheet.png'); // the sheet was renamed
     if (!s.includes('shadyMerchantSprite:')) {
         const a = "    madmanSprite: './assets/sprites/madman/madman_sprite.png',\n";
         if (!s.includes(a)) throw new Error(f + ': cannot find madmanSprite');
-        s = s.replace(a, a + "    shadyMerchantSprite: './assets/sprites/shady_merchant/shady_merchant.png',\n");
+        s = s.replace(a, a + "    shadyMerchantSprite: './assets/sprites/shady_merchant/shady_merchant_spritesheet.png',\n");
     }
     s = s.replace(/^ *objShadyMerchant: .*\n/m, '');
     if (s !== src) save(f, s, nl); else console.log(`${f}: already done`);

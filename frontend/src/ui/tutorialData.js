@@ -19,7 +19,7 @@ export const TIPS = {
             { keys: ['W', 'A', 'S', 'D'], text: 'Walk (the arrow keys work too)' },
             { keys: ['Space'], text: 'Talk to, open or use whatever is in front of you (Enter works too)' },
             { keys: ['M'], text: 'Open the menu, or click the menu button' },
-            { keys: ['P', 'C', 'J', 'B', 'O'], text: 'Shortcuts: Party, Character, Journal, crafting Bag, System (save / load / quit)' },
+            { keys: ['P', 'C', 'J', 'N', 'B', 'O'], text: 'Shortcuts: Party, Character, Journal, world map (N), crafting Bag, System (save / load / quit)' },
             { keys: ['1', '-', '9', '0'], text: 'Use the item in that hotbar slot' }
         ]
     },
@@ -31,7 +31,7 @@ export const TIPS = {
         rows: [
             { keys: ['Click'], text: 'Choose an option (Space or Enter picks the highlighted one)' },
             { keys: ['W', 'S'], text: 'Move between options (the up and down arrows work too)' },
-            { keys: ['Space'], text: 'Hold to skip the text as it types out' },
+            { keys: ['Space'], text: 'Tap to finish the text as it types out, tap again to move on' },
             { keys: ['Hover'], text: 'Point at an attribute shown on an option to see what it does' },
             { keys: ['Wheel'], text: 'Scroll long text' }
         ]
@@ -98,6 +98,20 @@ export const TIPS = {
             { keys: ['W', 'S'], text: 'Move through the list' },
             { keys: ['Wheel'], text: 'Scroll a long list' },
             { keys: ['Esc'], text: 'Back to the world (J works too)' }
+        ]
+    },
+
+    world_map: {
+        label: 'World Map',
+        title: 'The World Map',
+        intro: 'Only the land you have walked is drawn. The rest is still a rumour.',
+        rows: [
+            { keys: ['Arrows'], text: 'Pan the map (W A S D work too; hold Shift to go faster)' },
+            { keys: ['Q', 'E'], text: 'Zoom out / in (the minus and plus keys work too), or use the wheel over the map' },
+            { keys: ['Drag'], text: 'Drag the map with the mouse' },
+            { keys: ['F'], text: 'Fit everything you have seen on the screen' },
+            { keys: ['C'], text: 'Center the map on your party (Space works too)' },
+            { keys: ['Esc'], text: 'Back to the world (N works too), or right-click' }
         ]
     },
 

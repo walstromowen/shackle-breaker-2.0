@@ -246,19 +246,7 @@ export const aDisturbingSight = {
             sfx: "rockThud",
             sfxVolume: 0.6,
             image: { col: 0, row: 1 },
-            text: "The rock completely misses the stranger and lands softly in the grass. He doesn't seem to have noticed.",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "unnoticed_blunder_2" } }] }]
-                }
-            ]
-        },
-
-        unnoticed_blunder_2: {
-            displayText: "A Disturbing Sight",
-            image: { col: 0, row: 1 },
-            text: "You will have to rethink this approach...",
+            text: "The rock completely misses the stranger and lands softly in the grass. He doesn't seem to have noticed. You will have to rethink this approach...",
             decisions: [
                 {
                     text: "Reassess the situation.",
@@ -273,21 +261,7 @@ export const aDisturbingSight = {
             sfx: "twigSnap",
             image: { col: 3, row: 1 },
             bgm: "plainsBattleBgm",
-            text: "The rock goes nowhere near the stranger. Instead, it lands right in the middle of the bushes, startling a pack of wildlife!",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "unintended_targets_2" } }] }]
-                }
-            ]
-        },
-
-        unintended_targets_2: {
-            displayText: "Combat",
-            tone: "blood",
-            image: { col: 3, row: 1 },
-            bgm: "plainsBattleBgm",
-            text: "They turn and glare fiercely at you!",
+            text: "The rock goes nowhere near the stranger. Instead, it lands right in the middle of the bushes, startling a pack of wildlife! They turn and glare fiercely at you!",
             decisions: [
                 {
                     text: "Prepare for a fierce fight!",
@@ -301,20 +275,7 @@ export const aDisturbingSight = {
             sfx: "purifySfx",
             sfxVolume: 0.5,
             image: { col: 3, row: 0 },
-            text: "You speak with the stranger, and he answers in rambling, broken scraps.",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "a_moment_of_clarity_2" } }] }]
-                }
-            ]
-        },
-
-        a_moment_of_clarity_2: {
-            displayText: "A Fleeting Peace",
-            tone: "gold",
-            image: { col: 3, row: 0 },
-            text: "Finally, the stranger smiles, and with tears in his eyes, hands you his knapsack. Just before darting off, he mutters, \"It's really you...\"",
+            text: "You speak with the stranger, and he answers in rambling, broken scraps. Finally, the stranger smiles, and with tears in his eyes, hands you his knapsack. Just before darting off, he mutters, \"It's really you...\"",
             decisions: [
                 {
                     text: "Continue.",
@@ -368,33 +329,7 @@ export const aDisturbingSight = {
             sfx: "whispers",
             sfxVolume: 0.6,
             image: { col: 0, row: 0 },
-            text: "You manage to get the stranger's attention. He tilts his head.",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "speaking_to_the_voices_2" } }] }]
-                }
-            ]
-        },
-
-        speaking_to_the_voices_2: {
-            displayText: "An Odd Reply",
-            tone: "arcane",
-            image: { col: 0, row: 0 },
-            text: "\"Magic tell me things! Hee Hee!\"",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "speaking_to_the_voices_3" } }] }]
-                }
-            ]
-        },
-
-        speaking_to_the_voices_3: {
-            displayText: "An Odd Reply",
-            tone: "arcane",
-            image: { col: 0, row: 0 },
-            text: "\"Tell me what magic say!\"",
+            text: "You manage to get the stranger's attention. He tilts his head. \"Magic tell me things! Hee Hee!\" \"Tell me what magic say!\"",
             decisions: [
                 {
                     text: "[STR] Shout at the stranger to run away.",
@@ -491,21 +426,7 @@ export const aDisturbingSight = {
             sfx: "madmanCry",
             image: { col: 1, row: 0 },
             bgm: "plainsBattleBgm",
-            text: "\"Freak? .. Friend!\"",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "a_new_friend_2" } }] }]
-                }
-            ]
-        },
-
-        a_new_friend_2: {
-            displayText: "Combat",
-            tone: "blood",
-            image: { col: 1, row: 0 },
-            bgm: "plainsBattleBgm",
-            text: "\"Magic know many freak friend! You be freak friend too!\" he screams, lunging forward.",
+            text: "\"Freak? .. Friend!\" \"Magic know many freak friend! You be freak friend too!\" he screams, lunging forward.",
             decisions: [
                 {
                     text: "Draw your weapons!",
@@ -520,20 +441,7 @@ export const aDisturbingSight = {
             sfx: "madmanCry",
             sfxVolume: 0.6,
             image: { col: 1, row: 1 },
-            text: "\"Magic like you! So me like you!\"",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "pleased_the_magic_2" } }] }]
-                }
-            ]
-        },
-
-        pleased_the_magic_2: {
-            displayText: "The Aftermath",
-            tone: "arcane",
-            image: { col: 1, row: 1 },
-            text: "\"Hahahaha! Me give these now!\"",
+            text: "\"Magic like you! So me like you!\" \"Hahahaha! Me give these now!\"",
             decisions: [
                 {
                     text: "Accept the bizarre offerings.",
@@ -559,21 +467,7 @@ export const aDisturbingSight = {
             sfx: "madmanCry",
             image: { col: 1, row: 0 },
             bgm: "plainsBattleBgm",
-            text: "\"Hahaha! Magic no like you!\"",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "rejected_by_the_magic_2" } }] }]
-                }
-            ]
-        },
-
-        rejected_by_the_magic_2: {
-            displayText: "Combat",
-            tone: "blood",
-            image: { col: 1, row: 0 },
-            bgm: "plainsBattleBgm",
-            text: "\"So me no like neither!\"",
+            text: "\"Hahaha! Magic no like you!\" \"So me no like neither!\"",
             decisions: [
                 {
                     text: "Prepare for battle!",
@@ -587,33 +481,7 @@ export const aDisturbingSight = {
             sfx: "madmanCry",
             sfxVolume: 0.5,
             image: { col: 0, row: 2 },
-            text: "The man falls to his knees, weeping. \"No no!\"",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "a_new_servant_2" } }] }]
-                }
-            ]
-        },
-
-        a_new_servant_2: {
-            displayText: "The Aftermath",
-            tone: "gold",
-            image: { col: 0, row: 2 },
-            text: "\"No hurt! Me help magic!\"",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "a_new_servant_3" } }] }]
-                }
-            ]
-        },
-
-        a_new_servant_3: {
-            displayText: "The Aftermath",
-            tone: "gold",
-            image: { col: 0, row: 2 },
-            text: "\"Me help!\"",
+            text: "The man falls to his knees, weeping. \"No no!\" \"No hurt! Me help magic!\" \"Me help!\"",
             decisions: [
                 {
                     text: "Command the weeping man to follow.",
@@ -640,21 +508,7 @@ export const aDisturbingSight = {
             sfx: "madmanCry",
             image: { col: 0, row: 2 },
             bgm: "plainsBattleBgm",
-            text: "He glares at you with sudden, horrifying clarity. \"No hear magic!\"",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "shattered_illusions_2" } }] }]
-                }
-            ]
-        },
-
-        shattered_illusions_2: {
-            displayText: "Combat",
-            tone: "blood",
-            image: { col: 0, row: 2 },
-            bgm: "plainsBattleBgm",
-            text: "\"Me hurt you now!\"",
+            text: "He glares at you with sudden, horrifying clarity. \"No hear magic!\" \"Me hurt you now!\"",
             decisions: [
                 {
                     text: "Draw your weapon!",
@@ -671,6 +525,6 @@ export const aDisturbingSight = {
                     ]
                 }
             ]
-        }
+        },
     }
 };

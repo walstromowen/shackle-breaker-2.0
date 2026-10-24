@@ -83,21 +83,27 @@ test('days that are zero or missing schedule nothing', () => {
     assert.deepEqual(Object.keys(gameState.world.changes), []);
 });
 
-test('the item tooltip folds equal damage types into one cell and keeps its sections in order', async () => {
+test('the item tooltip lays damage types out as a Type / Atk / Def / Res table, in the sheet\'s order, with the rest in blocks', async () => {
     const { TooltipSystem } = await import('../../frontend/src/ui/tooltipSystem.js');
     const ts = Object.create(TooltipSystem.prototype);
-    const sections = ts._groupStatSections([
-        { group: 'attack', typeKey: 'blunt', label: 'Blunt', val: '+4' },
-        { group: 'resistance', typeKey: 'blunt', label: 'Blunt', val: '3%' },
-        { group: 'resistance', typeKey: 'slash', label: 'Slash', val: '3%' },
-        { group: 'resistance', typeKey: 'pierce', label: 'Pierce', val: '3%' },
-        { group: 'resistance', typeKey: 'fire', label: 'Fire', val: '1%' },
-        { group: 'resistance', typeKey: 'ice', label: 'Ice', val: '1%' },
-        { group: 'resistance', typeKey: 'water', label: 'Water', val: '1%' },
-        { group: 'attribute', label: 'Vigor', abbr: 'VIG', val: '+2' }
+    const g = ts._groupStatSections([
+        { group: 'attack', typeKey: 'blunt', label: 'Blunt', val: '4' },
+        { group: 'resistance', typeKey: 'fire', label: 'Fire', val: '3%' },
+        { group: 'defense', typeKey: 'fire', label: 'Fire', val: '2' },
+        { group: 'resistance', typeKey: 'blunt', label: 'Blunt', val: '5%' },
+        { group: 'attribute', label: 'Vigor', abbr: 'VIG', val: '+2' },
+        { group: 'resource', label: 'MAX HP', abbr: 'MAX HP', val: '+10' }
     ]);
-    assert.deepEqual(sections.map(s => s.title), ['Attack', 'Resist', 'Attributes']);
-    assert.deepEqual(sections[1].items.map(i => i.label), ['Physical', 'Magic']);
+    assert.deepEqual(g.table.rows.map(r => r.type), ['blunt', 'fire'], 'one row a type, the sheet\'s order');
+    assert.deepEqual(g.table.cols, ['atk', 'def', 'res']);
+    assert.deepEqual(g.table.rows.map(r => r.label), ['BLT', 'FIR'], 'the same three-letter abbreviations as the rest of the card');
+    assert.equal(g.table.rows[0].atk, '4');
+    assert.equal(g.table.rows[0].def, undefined, 'a type without a figure in a column leaves it empty');
+    assert.equal(g.table.rows[1].res, '3%');
+    assert.deepEqual(g.blocks.map(b => b.title), ['Attributes', 'Resources']);
+    const weapon = ts._groupStatSections([{ group: 'attack', typeKey: 'slash', label: 'Slash', val: '3' }]);
+    assert.deepEqual(weapon.table.cols, ['atk'], 'only the columns an item uses');
+    assert.equal(ts._groupStatSections([]).table, null);
 });
 
 test('a message plate is sized to its text and can stack upward', async () => {

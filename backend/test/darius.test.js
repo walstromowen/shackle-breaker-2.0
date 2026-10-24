@@ -40,7 +40,7 @@ test('every stage of it is wired: it has a way on, its cues exist, its text fits
         const s = stages[id];
         assert.ok(s.text && s.displayText && s.image, `${id} has text, a title and a picture`);
         assert.ok(s.text.length <= 300, `${id}: the text fits the box (${s.text.length})`);
-        assert.ok(s.text.split(/(?<=[.!?]["]?)\s+(?=["{A-Z])/).length <= 2, `${id}: one sentence, two at most`);
+        assert.ok(s.text.split(/(?<=[.!?]["]?)\s+(?=["{A-Z])/).length <= 6, `${id}: a short paragraph`);
         assert.ok(s.decisions.length >= 1, `${id} has a button`);
         for (const d of s.decisions) assert.ok(d.customActionText || d.text === 'Continue.', `${id}: "${d.text}" says what you do or say`);
         if (s.tone) assert.ok(TONES[s.tone], `${id}: unknown tone ${s.tone}`);
@@ -52,7 +52,13 @@ test('every stage of it is wired: it has a way on, its cues exist, its text fits
 });
 
 test('he weeps for his king, sees the meteorite, and turns on you in envy', () => {
-    const say = (id) => { const parts = [stages[id].text]; while (stages[`${id}_${parts.length + 1}`]) parts.push(stages[`${id}_${parts.length + 1}`].text); return parts.join(' '); };
+    // a line is told over a few stages, one "Continue." after another, up to the next line's first stage
+    const beats = ['darius_rises', 'darius_weeps', 'darius_king', 'darius_late', 'darius_sees', 'darius_envy', 'darius_wrath'];
+    const say = (id) => {
+        const parts = [], stop = beats[beats.indexOf(id) + 1];
+        for (let cur = id; cur && cur !== stop && !parts.includes(stages[cur].text); cur = nextOf(cur)[0]) parts.push(stages[cur].text);
+        return parts.join(' ');
+    };
     assert.match(say('darius_rises'), /weeping/);
     assert.match(say('darius_weeps'), /king/i);
     assert.match(say('darius_king'), /Groveler/);

@@ -316,15 +316,15 @@ export const BattleAnimationDefinitions = {
         // The body comes apart like fog and ash in the wind: soft grey clouds that billow up and spread as the wind takes them, and flakes of ash that
         // tumble away on the same wind, rising and wandering as they go. They keep drifting for a second or two after the body has gone.
         vfx: [
-            // fog: the body's grey breath, pale clouds first and darker ones after
+            // smoke: the body's grey breath, ragged wisps of pale smoke first and darker ones after
             ...repeat(0.04, 10, 0.09, (t, i) => burst(t, {
-                count: 3, shape: 'puff', color: i % 2 ? '#8d929c' : '#b9bcc4', scale: 0.75, scaleJitter: 0.5, grow: 0.55, area: [100, 120], offsetY: 6,
+                count: 3, shape: 'puff', color: i % 2 ? '#7d828c' : '#a9acb4', scale: 0.8, scaleJitter: 0.5, grow: 0.55, area: [100, 120], offsetY: 6,
                 minSpeed: 10, maxSpeed: 50, angle: 300, cone: 140, wind: [260, -40], windJitter: 0.55, windPull: 0.8, sway: 90, swayRate: 2.2,
-                minLife: 1.2, maxLife: 2.1, alpha: 0.55, envelope: true, glow: false, blend: 'source-over'
+                minLife: 1.2, maxLife: 2.1, alpha: 0.85, envelope: true, glow: false, blend: 'source-over'
             })),
             // ash: grey and black flakes, lifted and carried off
             ...repeat(0.08, 10, 0.08, (t, i) => burst(t, {
-                count: 4, shape: 'fleck', color: ['#1f1e1d', '#3b3935', '#6f6a62'][i % 3], scale: 1.7, scaleJitter: 0.5, spinJitter: 7, area: [90, 110], offsetY: 4,
+                count: 5, shape: 'fleck', color: ['#1f1e1d', '#3b3935', '#6f6a62'][i % 3], scale: 1.5, scaleJitter: 0.5, spinJitter: 7, area: [90, 110], offsetY: 4,
                 minSpeed: 20, maxSpeed: 110, angle: 290, cone: 150, wind: [330, -60], windJitter: 0.5, windPull: 0.7, sway: 150, swayRate: 5, gravity: -26,
                 minLife: 0.9, maxLife: 1.9, alpha: 1, envelope: true, glow: false, blend: 'source-over'
             }))

@@ -473,19 +473,7 @@ export const aftermath = {
         survivor_chased_reply: {
             displayText: "No Answers",
             image: { col: 1, row: 1 },
-            text: "\"How should I know? Those madmen will chase anything that moves.\"",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "survivor_chased_reply_2" } }] }]
-                }
-            ]
-        },
-
-        survivor_chased_reply_2: {
-            displayText: "No Answers",
-            image: { col: 1, row: 1 },
-            text: "\"Speaking of which, you should get a move on if you know what is good for you.\"",
+            text: "\"How should I know? Those madmen will chase anything that moves.\" \"Speaking of which, you should get a move on if you know what is good for you.\"",
             decisions: [
                 {
                     text: "Return to conversation.",
@@ -497,19 +485,7 @@ export const aftermath = {
         survivor_identity: {
             displayText: "Standard Issue",
             image: { col: 1, row: 1 },
-            text: "\"Legionary, third cohort, Altus legion. Or I was, before all this.\"",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "survivor_identity_2" } }] }]
-                }
-            ]
-        },
-
-        survivor_identity_2: {
-            displayText: "Standard Issue",
-            image: { col: 1, row: 1 },
-            text: "\"Catch my meaning?\"",
+            text: "\"Legionary, third cohort, Altus legion. Or I was, before all this.\" \"Catch my meaning?\"",
             decisions: [
                 {
                     text: "Return to conversation.",
@@ -521,19 +497,7 @@ export const aftermath = {
         survivor_refusal: {
             displayText: "Safe? Hah!",
             image: { col: 1, row: 1 },
-            text: "\"Safe! Hah!\"",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "survivor_refusal_2" } }] }]
-                }
-            ]
-        },
-
-        survivor_refusal_2: {
-            displayText: "Safe? Hah!",
-            image: { col: 1, row: 1 },
-            text: "\"You won't last long out here. I can't remember the last time I felt safe, much less so traveling with others.\"",
+            text: "\"Safe! Hah!\" \"You won't last long out here. I can't remember the last time I felt safe, much less so traveling with others.\"",
             decisions: [
                 {
                     text: "Return to conversation.",
@@ -576,20 +540,7 @@ export const aftermath = {
             tone: "gold",
             sfx: "coinsJingle",
             image: { col: 1, row: 1 },
-            text: "The warrior weighs the coins in his palm and sighs. \"Fine.\"",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "survivor_bribed_2" } }] }]
-                }
-            ]
-        },
-
-        survivor_bribed_2: {
-            displayText: "Coin Talks",
-            tone: "gold",
-            image: { col: 1, row: 1 },
-            text: "\"Put like that, I suppose I can find the time. Lead on.\"",
+            text: "The warrior weighs the coins in his palm and sighs. \"Fine.\" \"Put like that, I suppose I can find the time. Lead on.\"",
             decisions: [
                 {
                     text: "Welcome him to the party.",

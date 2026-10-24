@@ -40,3 +40,15 @@ test('wind pulls a particle toward the wind speed, sway makes it wander, and the
     assert.ok(seen[0] < 0.8 && Math.max(...seen) > 0.5 && seen[seen.length - 1] < seen[8], 'rises, then thins away');
     assert.ok(seen.every(a => a <= 0.8 + 1e-9));
 });
+
+test('smoke and ash are drawn from irregular sprites (variants per colour), not rectangles', async () => {
+    const { ParticleSystem } = await import('../../frontend/src/ui/particles/particleSystem.js');
+    assert.deepEqual(ParticleSystem.rgbOf('#8d929c'), [0x8d, 0x92, 0x9c]);
+    assert.deepEqual(ParticleSystem.rgbOf('#fff'), [255, 255, 255]);
+    const a = ParticleSystem.seeded(31), b = ParticleSystem.seeded(31), c = ParticleSystem.seeded(128);
+    assert.equal(a(), b(), 'the same variant is drawn the same way every time');
+    assert.notEqual(ParticleSystem.seeded(31)(), c(), 'and a different variant differently');
+    const src = (await import('node:fs')).readFileSync(new URL('../../frontend/src/ui/particles/particleSystem.js', import.meta.url), 'utf8');
+    const fleck = src.slice(src.indexOf("p.shape === 'fleck'"), src.indexOf('} else {', src.indexOf("p.shape === 'fleck'")));
+    assert.ok(!/fillRect/.test(fleck), 'a flake of ash is not a filled rectangle');
+});

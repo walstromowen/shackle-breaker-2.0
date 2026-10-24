@@ -12,9 +12,7 @@ export class TooltipSystem {
     this.WIDTH = 528;
     this.PADDING = 29;
     this.ICON_SRC_SIZE = 64; // Icon sprite sheet cell size (upgraded from 32)
-    this.TITLE_W = 128;      // the width of a block's heading in the item card
-    this.CELL_H = 32;        // one row of the item card's number cells
-    this.SECTION_GAP = 18;   // between the blocks of the item card
+    this.ROW_H = 30;         // one row of the item card's tables
   }
 
   render(state, hitboxes) {
@@ -146,7 +144,8 @@ export class TooltipSystem {
         if (lines.length > 0) lines.push({ type: 'spacer' });
         const cleanTrigger = triggerName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
         lines.push({ text: cleanTrigger, font: UITheme.fonts.cardItalic, color: UITheme.colors.textHighlight });
-        lines.push({ text: this._formatEffect(effectObj), color: UITheme.colors.textMain });
+        const castAb = effectObj && typeof effectObj === 'object' && effectObj.ability ? (AbilityDefinitions && AbilityDefinitions[effectObj.ability]) : null;
+        lines.push({ text: this._formatEffect(effectObj), color: UITheme.colors.textMain, ...(castAb ? { ability: castAb.icon || { col: 0, row: 0 } } : {}) });
       }
     }
 
@@ -227,37 +226,32 @@ export class TooltipSystem {
     return `${name}${val}`;
   }
 
-  /* An item's numbers, grouped the way a player reads them: Attack, Defense, Resist, Attributes, Resources. Types with the same value are folded
-     into one cell ("Physical 3%", "Magic 1%", or "All types 3%") so armour no longer prints twelve resistance lines. Returns
-     [{ title, items: [{ label, val, color }] }]. */
+  /* An item's numbers, laid out the way the character sheet lays out a character's: one TYPE / ATK / DEF / RES table with a row for each damage type the
+     item touches, then short two-column blocks for what has no damage type (Attributes, Resources, Combat, Tool). Returns
+     { table: { cols: ['atk', 'def', 'res'] (only those with a number), rows: [{ type, label, atk, def, res }] } | null,
+       blocks: [{ title, items: [{ label, val, color }] }] }. */
   _groupStatSections(items) {
-    const PHYS = ['blunt', 'slash', 'pierce'];
+    const ORDER = ['blunt', 'slash', 'pierce', 'fire', 'ice', 'lightning', 'water', 'earth', 'wind', 'light', 'dark', 'arcane'];
+    const COL = { attack: 'atk', defense: 'def', resistance: 'res' };
     const plain = (i) => ({ label: i.abbr || i.label, val: i.val, color: i.color });
-    const same = (list) => list.length > 0 && list.every(i => i.val === list[0].val);
-    // typed rows (one per damage type) fold by family; anything else keeps its own cell
-    const fold = (list) => {
-      if (list.length >= 4 && same(list)) return [{ label: 'All types', val: list[0].val, color: UITheme.colors.textMain }];
-      const phys = list.filter(i => PHYS.includes(i.typeKey));
-      const magic = list.filter(i => i.typeKey && !PHYS.includes(i.typeKey));
-      const rest = list.filter(i => !i.typeKey);
-      const out = [];
-      if (phys.length >= 3 && same(phys)) out.push({ label: 'Physical', val: phys[0].val, color: UITheme.colors.textMain });
-      else out.push(...phys.map(plain));
-      if (magic.length >= 3 && same(magic)) out.push({ label: 'Magic', val: magic[0].val, color: UITheme.colors.textMain });
-      else out.push(...magic.map(plain));
-      out.push(...rest.map(plain));
-      return out;
-    };
+    const byType = new Map();
+    for (const i of items) {
+      const col = COL[i.group];
+      if (!col || !i.typeKey) continue;
+      if (!byType.has(i.typeKey)) byType.set(i.typeKey, { type: i.typeKey, label: Formatting.getAbbreviation(i.typeKey).toUpperCase(), name: this._titleCase(i.typeKey) });
+      const row = byType.get(i.typeKey);
+      if (row[col] === undefined) row[col] = i.val;   // a shield's block shares the DEF column with its defense: the first figure stays
+    }
+    const rows = [...byType.values()].sort((x, y) => (ORDER.indexOf(x.type) + 1 || 99) - (ORDER.indexOf(y.type) + 1 || 99));
+    const cols = ['atk', 'def', 'res'].filter(c => rows.some(r => r[c] !== undefined));
     const by = (g) => items.filter(i => i.group === g);
-    const sections = [];
-    const add = (title, list) => { if (list.length) sections.push({ title, items: list }); };
-    add('Attack', fold(by('attack')));
-    add('Defense', fold(by('defense')));
-    add('Resist', fold(by('resistance')));
+    const blocks = [];
+    const add = (title, list) => { if (list.length) blocks.push({ title, items: list }); };
+    add('Combat', items.filter(i => (i.group === 'attack' || i.group === 'defense' || i.group === 'resistance') && !i.typeKey).map(plain));
     add('Attributes', by('attribute').map(plain));
     add('Resources', by('resource').map(plain));
     add('Tool', by('tool').map(plain));
-    return sections;
+    return { table: rows.length ? { cols, rows } : null, blocks };
   }
 
   _getItemContent(item, slotName) {
@@ -407,10 +401,10 @@ export class TooltipSystem {
         .join(', ');
 
       statItems.push({
-        label: 'TOOL',
-        val: formattedTools,
+        label: 'Harvests',
+        val: this._titleCase(formattedTools.toLowerCase()),
         color: UITheme.colors.textHighlight || "#ffd700",
-        group: 'tool', abbr: 'TOOL'
+        group: 'tool', abbr: 'Harvests'
       });
     }
 
@@ -526,8 +520,9 @@ export class TooltipSystem {
       } else if (rawLine.type === 'sections') {
         // the item's numbers in short labelled blocks, then its skills (see _drawSections)
         let gridHeight = 0;
-        for (const sec of rawLine.sections) gridHeight += this._sectionHeight(sec.items.length, this._sectionCols(sec.items));
-        if (rawLine.abilities.length) gridHeight += this._sectionHeight(rawLine.abilities.length, 2);
+        if (rawLine.sections.table) gridHeight += this._blockHeight(rawLine.sections.table.rows.length, this.ROW_H);
+        for (const blk of rawLine.sections.blocks) gridHeight += this._blockHeight(Math.ceil(blk.items.length / 2), this.ROW_H);
+        if (rawLine.abilities.length) gridHeight += this._blockHeight(Math.ceil(rawLine.abilities.length / 2), this.ROW_H + 2);
         wrappedLines.push({ ...rawLine });
         contentHeight += gridHeight;
       } else if (rawLine.type === 'spacer') {
@@ -539,9 +534,10 @@ export class TooltipSystem {
         let f = (typeof rawLine === 'object' && rawLine.font) ? rawLine.font : bodyFont;
         let c = (typeof rawLine === 'object' && rawLine.color) ? rawLine.color : UITheme.colors.textMain;
 
-        const wLines = this.ui.getWrappedLines(textStr, this.WIDTH - (this.PADDING * 2), f);
-        wLines.forEach(l => {
-          wrappedLines.push({ text: l, font: f, color: c });
+        const iconed = typeof rawLine === 'object' && rawLine.ability;   // a line about an ability: its picture sits to the left
+        const wLines = this.ui.getWrappedLines(textStr, this.WIDTH - (this.PADDING * 2) - (iconed ? 40 : 0), f);
+        wLines.forEach((l, k) => {
+          wrappedLines.push({ text: l, font: f, color: c, ...(iconed ? { indent: 40, icon: k === 0 ? rawLine.ability : null } : {}) });
           contentHeight += lineHeight;
         });
       }
@@ -631,80 +627,90 @@ export class TooltipSystem {
         curY = this._drawSections(lineObj, tx, curY, bodyFont);
       } else if (lineObj.text) {
         this.ui.ctx.font = lineObj.font || bodyFont;
-        this.ui.drawText(lineObj.text, tx + this.PADDING, curY, lineObj.font || bodyFont, lineObj.color || UITheme.colors.textMain, "left");
+        if (lineObj.icon) this._drawAbilityIcon(lineObj.icon, tx + this.PADDING, curY - 24, 30);
+        this.ui.drawText(lineObj.text, tx + this.PADDING + (lineObj.indent || 0), curY, lineObj.font || bodyFont, lineObj.color || UITheme.colors.textMain, "left");
         curY += lineHeight;
       }
     });
   }
 
-  // How many columns a block's cells can have: three when every "label value" fits in a third, else two, else one
-  _sectionCols(items) {
-    const inner = this.WIDTH - this.PADDING * 2 - this.TITLE_W;
-    this.ui.ctx.font = UITheme.fonts.cardSmall;
-    const need = Math.max(...items.map(it => this.ui.ctx.measureText(it.label).width + this.ui.ctx.measureText(String(it.val)).width + 22));
-    for (const cols of [3, 2]) if (need <= (inner - 16 * (cols - 1)) / cols) return cols;
-    return 1;
+  /* An ability's picture from the ability sheet (the same cells the ability cards use), `size` px square at x, y: a thin frame round it so the sheet's own
+     dark corners read as an icon. An ability with no icon of its own gets the sheet's first cell, as on the cards. */
+  _drawAbilityIcon(icon, x, y, size) {
+    const sheet = this.loader && (this.loader.get('abilities') || this.loader.get('items'));
+    if (!sheet) return;
+    const ic = (icon && typeof icon === 'object' && icon.col !== undefined) ? icon : { col: 0, row: 0 };
+    const ctx = this.ui.ctx, src = this.ICON_SRC_SIZE;
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+    ctx.fillRect(x, y, size, size);
+    ctx.drawImage(sheet, ic.col * src, ic.row * src, src, src, x, y, size, size);
+    ctx.strokeStyle = 'rgba(194, 161, 79, 0.45)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 0.5, y + 0.5, size - 1, size - 1);
+    ctx.restore();
   }
 
-  // Height of one block of the item card: `count` cells in `cols` columns, plus the gap under it
-  _sectionHeight(count, cols) {
-    return Math.ceil(count / cols) * this.CELL_H + this.SECTION_GAP;
+  // Height of one block of the item card: its heading and rule, `rows` rows, and the gap under it
+  _blockHeight(rows, rowH) {
+    return 38 + (rows - 1) * rowH + 36;
   }
 
-  /* The item's numbers and skills: each block is a small muted heading on the left and its cells in three even columns beside it
-       Defense   BLT 4     SLS 4     PRC 3
-       Resist    Physical 3%         Magic 1%
-     with a faint line above each block, so a long card stays easy to scan. The skills follow, two to a row, each with its icon. */
+  /* The item's numbers and skills, laid out like the character sheet's stat table. A block is a muted capitalised heading over a faint rule, then its rows:
+       TYPE            ATK     DEF     RES          ATTRIBUTES
+       Slash            3       -       -           STR            +2      VIG    +1
+       Fire             -       2      5%
+     Only the columns an item uses are shown, in the same places the sheet puts them. Skills follow, two to a row, each with its icon. */
   _drawSections(lineObj, tx, y, font) {
     const ctx = this.ui.ctx;
     const left = tx + this.PADDING;
     const inner = this.WIDTH - this.PADDING * 2;
-    const TITLE_W = this.TITLE_W, GAP_X = 16;
-    const hairline = (yy) => {
-      ctx.save();
-      ctx.strokeStyle = UITheme.colors.textMuted;
-      ctx.globalAlpha = 0.18;
-      ctx.beginPath();
-      ctx.moveTo(left, Math.round(yy) + 0.5);
-      ctx.lineTo(left + inner, Math.round(yy) + 0.5);
-      ctx.stroke();
-      ctx.restore();
+    const mono = UITheme.fonts.cardMono;
+    const ROW_H = this.ROW_H;
+    const colX = { atk: left + inner * 0.5, def: left + inner * 0.7, res: left + inner * 0.9 };
+    const colName = { atk: 'Atk', def: 'Def', res: 'Res' };
+    const colColor = { atk: UITheme.colors.attack, def: UITheme.colors.defense, res: UITheme.colors.resistance };
+    const header = (cy, title, cols) => {
+      this.ui.drawStyled('tableHeader', title, left, cy + 4, { font, tracking: 2 });
+      for (const c of cols || []) this.ui.drawStyled('tableHeader', colName[c], colX[c], cy + 4, { font, tracking: 2, color: colColor[c], align: 'center' });
+      this.ui.drawLineWithGothicFlourish(left, cy + 14, inner, UITheme.colors.borderHighlight);
     };
+    const rowY = (cy, i, rowH = ROW_H) => cy + 38 + i * rowH;
     let cy = y;
-    const mid = (row) => cy + row * this.CELL_H + 4;   // baseline of a row of cells
-    lineObj.sections.forEach((sec, si) => {
-      const COLS = this._sectionCols(sec.items);
-      const cellW = (inner - TITLE_W - GAP_X * (COLS - 1)) / COLS;
-      if (si > 0) hairline(cy - this.SECTION_GAP / 2 - 12);
-      this.ui.drawText(sec.title, left, mid(0), font, UITheme.colors.textMuted, 'left');
-      sec.items.forEach((it, i) => {
-        const x = left + TITLE_W + (i % COLS) * (cellW + GAP_X);
-        const by = mid(Math.floor(i / COLS));
-        this.ui.drawText(it.label, x, by, font, it.color || UITheme.colors.textMuted, 'left');
-        // wide cells keep the value next to its label; narrow ones line the values up on the right
-        if (COLS >= 3) this.ui.drawText(String(it.val), x + cellW, by, font, UITheme.colors.textMain, 'right');
-        else this.ui.drawText(String(it.val), x + (ctx.font = font, ctx.measureText(it.label).width) + 14, by, font, UITheme.colors.textMain, 'left');
-      });
-      cy += this._sectionHeight(sec.items.length, COLS);
-    });
-    if (lineObj.abilities.length) {
-      if (lineObj.sections.length) hairline(cy - this.SECTION_GAP / 2 - 12);
-      this.ui.drawText('Skills', left, mid(0), font, UITheme.colors.textMuted, 'left');
-      const colW = (inner - TITLE_W) / 2;
-      lineObj.abilities.forEach((ab, i) => {
-        const x = left + TITLE_W + (i % 2) * colW;
-        const by = mid(Math.floor(i / 2));
-        let textX = x;
-        const sheet = this.loader && (this.loader.get('abilities') || this.loader.get('icons') || this.loader.get('items'));
-        if (ab.icon && sheet && typeof ab.icon === 'object' && ab.icon.col !== undefined) {
-          const src = this.ICON_SRC_SIZE;
-          ctx.imageSmoothingEnabled = false;
-          ctx.drawImage(sheet, ab.icon.col * src, ab.icon.row * src, src, src, x, by - 21, 26, 26);
-          textX += 34;
+    const sec = lineObj.sections;
+    if (sec.table) {
+      header(cy, 'Type', sec.table.cols);
+      sec.table.rows.forEach((r, i) => {
+        const by = rowY(cy, i);
+        this.ui.drawText(r.label, left, by, mono, UITheme.colors.textMuted, 'left');
+        for (const c of sec.table.cols) {
+          const v = r[c];
+          this.ui.drawText(v === undefined ? '-' : String(v), colX[c], by, mono, v === undefined ? UITheme.colors.textMuted : (c === 'res' ? UITheme.colors.textMain : colColor[c]), 'center');
         }
-        this.ui.drawText(ab.name, textX, by, font, ab.color, 'left', 'alphabetic', colW - (textX - x) - 8);
       });
-      cy += this._sectionHeight(lineObj.abilities.length, 2);
+      cy += this._blockHeight(sec.table.rows.length, ROW_H);
+    }
+    const colW = inner / 2;
+    for (const blk of sec.blocks) {
+      header(cy, blk.title);
+      blk.items.forEach((it, i) => {
+        const x = left + (i % 2) * colW, by = rowY(cy, Math.floor(i / 2));
+        this.ui.drawText(it.label, x, by, mono, UITheme.colors.textMuted, 'left');
+        this.ui.drawText(String(it.val), x + colW - 28, by, mono, UITheme.colors.textMain, 'right');
+      });
+      cy += this._blockHeight(Math.ceil(blk.items.length / 2), ROW_H);
+    }
+    if (lineObj.abilities.length) {
+      header(cy, 'Skills');
+      lineObj.abilities.forEach((ab, i) => {
+        const x = left + (i % 2) * colW;
+        const by = rowY(cy, Math.floor(i / 2), ROW_H + 2);
+        const textX = x + 40;
+        this._drawAbilityIcon(ab.icon, x, by - 25, 30);
+        this.ui.drawText(ab.name, textX, by, font, ab.color, 'left', 'alphabetic', colW - 40 - 8);
+      });
+      cy += this._blockHeight(Math.ceil(lineObj.abilities.length / 2), ROW_H + 2);
     }
     return cy;
   }

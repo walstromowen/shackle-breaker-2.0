@@ -43,9 +43,9 @@ const footprint = (img, frameCol, frameRow) => {
 };
 
 test('the merchant sheet is 8 frames across and 12 rows of 64 px, and its shadow lies where the madman\'s lies in every frame', () => {
-    const merchant = readPng('sprites/shady_merchant/shady_merchant.png'), madman = readPng('sprites/madman/madman_sprite.png');
+    const merchant = readPng('sprites/shady_merchant/shady_merchant_spritesheet.png'), madman = readPng('sprites/madman/madman_sprite.png');
     assert.deepEqual([merchant.w, merchant.h], [512, 768]);
-    assert.ok(mainJs.includes("shadyMerchantSprite: './assets/sprites/shady_merchant/shady_merchant.png'"));
+    assert.ok(mainJs.includes("shadyMerchantSprite: './assets/sprites/shady_merchant/shady_merchant_spritesheet.png'"));
     assert.equal(ENTITY_DEFINITIONS.SHADY_MERCHANT.spriteOverworld, 'shadyMerchantSprite');
     const ref = footprint(madman, 0, 0).slice(5, 9); // rows 53..56: the shadow ellipse below the feet (it is the only thing down there)
     assert.deepEqual(ref, [18, 16, 14, 6]);

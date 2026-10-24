@@ -89,21 +89,7 @@ export const woundedMutt = {
             sfxVolume: 0.6,
             image: { col: 2, row: 0 },
             bgm: "happy_theme",
-            text: "You stabilize the dog's leg. The intense pain eases, and the dog licks your hand in absolute gratitude.",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "success_tame_2" } }] }]
-                }
-            ]
-        },
-
-        success_tame_2: {
-            displayText: "A New Friend",
-            tone: "gold",
-            image: { col: 2, row: 0 },
-            bgm: "happy_theme",
-            text: "You have earned a new friend.",
+            text: "You stabilize the dog's leg. The intense pain eases, and the dog licks your hand in absolute gratitude. You have earned a new friend.",
             decisions: [
                 {
                     text: "Signal the dog to follow.",

@@ -340,6 +340,26 @@ export class EncounterController extends BaseController {
     else this.textTimer = end + actionPadding(text);
   }
 
+  /**
+   * A plain click / tap (Enter, Space) on text that is still being told: the first one finishes the words, the next one
+   * moves the story on. Holding still works as before; this just means the "what you did" lines and the single
+   * "Continue" stages never need a long press. Returns true when it did something.
+   */
+  _tapSkip() {
+    if (!this.model || !this._isSkippable()) return false;
+    switch (this.actionPhase) {
+      case 'message': case 'reward_delay': case 'ending_delay': case 'none':
+        break;
+      default:
+        return false;                     // dice and the roll popup keep their own pace (hold to skip)
+    }
+    this._skipAhead();
+    this.holdTimer = 0;
+    this._holdArmed = false;
+    this.inputCooldown = 0.15;
+    return true;
+  }
+
   onClick(hitboxId) {
     // In an encounter a click either does something that makes its own sound or does nothing at all (silent), so
     // UIInteractionManager must not add a second one, not even when the click is ignored.
@@ -367,7 +387,8 @@ export class EncounterController extends BaseController {
       }
     }
 
-    // A click that does nothing: show the player what would
+    // A click on text that is still appearing (or on a choice that has not appeared yet) hurries it along
+    if (this._tapSkip()) return;
     if (this._isSkippable()) this.hintPulse = 1;
   }
 
@@ -413,13 +434,16 @@ export class EncounterController extends BaseController {
     }
 
     if (this.actionPhase !== 'none') {
-      if (intent === 'CONFIRM' && this._isSkippable()) this.hintPulse = 1;   // skipping is a hold, handled in update()
+      if (intent === 'CONFIRM') {
+        if (e && e.repeat) return;                                           // a held key is the hold-to-skip, handled in update()
+        if (!this._tapSkip() && this._isSkippable()) this.hintPulse = 1;
+      }
       return;
     }
 
     const options = this._getValidDecisions();
     if (!options || options.length === 0) {
-      if (intent === 'CONFIRM' && this._isSkippable()) this.hintPulse = 1;
+      if (intent === 'CONFIRM' && !(e && e.repeat) && !this._tapSkip() && this._isSkippable()) this.hintPulse = 1;
       return;
     }
 
@@ -434,7 +458,7 @@ export class EncounterController extends BaseController {
 
     // Until the first choice has appeared there is nothing to move through or pick
     if (!this._decisionReady(0)) {
-      if (intent === 'CONFIRM' && this._isSkippable()) this.hintPulse = 1;
+      if (intent === 'CONFIRM' && !(e && e.repeat) && !this._tapSkip() && this._isSkippable()) this.hintPulse = 1;
       return;
     }
 
