@@ -24,6 +24,12 @@ export class EncounterLogic {
         return (biome && biome.getMusic && biome.getMusic(0, true)) || bgmId;
     }
 
+    /** The music of the stage on screen, when it is a real track (a stage may also call for 'none', silence): the battle that starts from it keeps it. */
+    static stageBattleBgm(model) {
+        const bgm = model && model.getBgm ? model.getBgm() : null;
+        return bgm && bgm !== 'none' ? bgm : null;
+    }
+
     static checkConditions(decision, context = {}) {
         if (!decision || !decision.conditions) return true;
         return decision.conditions.every(cond => {
@@ -412,7 +418,7 @@ export class EncounterLogic {
                     events.emit('START_BATTLE', {
                         enemies: enemyList, tableId: payload.tableId || null, difficulty: currentDifficulty,
                         background: battleBgAsset, weather: gameState.world?.currentWeather || 'clear',
-                        context: model.context, bgm: EncounterLogic.resolveBattleBgm(payload.bgm || (model.getBgm && model.getBgm() ? null : GENERIC_BATTLE_BGM), worldManager),   // no track named anywhere: an ordinary fight, so the biome's battle music (a stage that has its own music keeps it)
+                        context: model.context, bgm: EncounterLogic.resolveBattleBgm(payload.bgm || EncounterLogic.stageBattleBgm(model) || GENERIC_BATTLE_BGM, worldManager),   // the fight's own track, else the music already playing on the stage that led here (so it carries into the battle unbroken), else the biome's battle music
                         // `afterVictory: { encounterId }` plays that encounter when the fight is won, before the overworld (the end of Darius)
                         afterVictory: payload.afterVictory || null
                     });

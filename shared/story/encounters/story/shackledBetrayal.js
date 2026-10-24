@@ -40,6 +40,7 @@ export const shackledBetrayal = {
         rises: {
             displayText: "No Mending This",
             tone: "crimson",
+            bgm: "plainsBattleBgm",   // the biome's battle music begins as they turn on you, and carries into the fight
             image: { col: 1, row: 1 },
             text: "The humming climbs to a whine. {betrayer} lurches upright, the chains dragging, and the dark pours off them like heat from a forge. Whatever you shared on the road is gone. They are coming for you now.",
             decisions: [

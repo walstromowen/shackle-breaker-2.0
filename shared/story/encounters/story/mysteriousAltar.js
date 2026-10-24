@@ -61,6 +61,25 @@ export const mysteriousAltar = {
                     ]
                 },
                 {
+                    text: "[Fallen Meteorite] Approach with the meteorite.",
+                    conditions: [
+                        { type: "context_flag_not_set", flagId: "altar_approached" },
+                        { type: "has_item", itemId: "meteorite", qty: 1 },
+                        HUMANOID
+                    ],
+                    // The meteorite is not spent here (it is set on the altar at_the_altar); the bones and the smoke leave whoever carries it alone
+                    customActionText: "You hold the fallen meteorite out in front of you. The bones lie still, the air stays clear, and you walk up to the altar unchallenged.",
+                    outcomes: [
+                        {
+                            weight: 100,
+                            results: [
+                                { type: "SET_CONTEXT_FLAG", payload: { flagId: "altar_approached" } },
+                                { type: "ADVANCE_STAGE", payload: { stageId: "at_the_altar" } }
+                            ]
+                        }
+                    ]
+                },
+                {
                     text: "Step up to the altar again.",
                     conditions: [
                         { type: "context_flag_set", flagId: "altar_approached" },
@@ -89,6 +108,7 @@ export const mysteriousAltar = {
             sfx: "bonesRattle",
             ambience: "none",
             ambienceFade: 0.4,
+            bgm: "plainsBattleBgm",   // danger: the biome's battle music (the cave's in a cave) starts here and carries on into the fight
             image: { col: 2, row: 0 },
             text: "As you approach the altar, the skeletons along the ground slowly begin to move. Before you realize what is happening, the skeletons are on top of you!",
             decisions: [
@@ -223,6 +243,7 @@ export const mysteriousAltar = {
             sfx: "glowSwell",
             ambience: "none",
             ambienceFade: 1.0,
+            bgm: "plainsBattleBgm",   // as in bones_stir: the battle music begins as the skeletons rise
             image: { col: 2, row: 1 },
             text: "As you reach to examine the skull, its eyes begin to glow red, filling the whole area with a blinding light! When you can see again, the skull has disappeared and a group of skeletons is quickly approaching!",
             decisions: [

@@ -108,6 +108,7 @@ export const oldGravestone = {
             tone: "blood",
             effect: "shake",
             sfx: "bonesRattle",
+            bgm: "plainsBattleBgm",   // danger: the biome's battle music starts as the dead rise and carries into the fight
             image: { col: 3, row: 0 },
             text: "The soil heaves. Fingers of bone claw out of the grave, and what was buried here pulls itself free, and it is not alone.",
             decisions: [
@@ -123,6 +124,7 @@ export const oldGravestone = {
             displayText: "A Cold Breath",
             tone: "cold",
             sfx: "whispers",
+            bgm: "plainsBattleBgm",
             image: { col: 0, row: 1 },
             text: "A cold breath rolls out of the hole, and something pale rises with it, still dragging the broken chains it died in. It turns toward you, and it has noticed you.",
             decisions: [
