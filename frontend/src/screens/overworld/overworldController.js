@@ -762,6 +762,9 @@ export class OverworldController extends BaseController {
             return;
         }
 
+        // The smoke bomb on the overworld (a world buff that grants 'no_ambush') keeps random battles away while it lasts; the roll is not even made
+        if (AbilitySystem.hasWorldGrant('no_ambush')) return;
+
         const difficulty = gameState.difficulty || 'normal';
         const battleData = biome.getBattle(difficulty, currentHour);   // the hour picks the day / dusk / night (and blood moon) spawn table
         if (!battleData) return;

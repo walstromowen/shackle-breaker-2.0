@@ -168,7 +168,7 @@ test('every spawn member exists, and every biome has a blood moon table that exi
 });
 
 test('Darius leads to the encounter that starts act 2, and that encounter grants the milestone', () => {
-    const rises = encounterDefinitions.mysterious_altar.stages.darius_rises;
+    const rises = encounterDefinitions.mysterious_altar.stages.darius_wrath;
     const battle = rises.decisions[0].outcomes[0].results.find(r => r.type === 'START_BATTLE');
     assert.equal(battle.payload.tableId, 'darius_boss');
     assert.equal(battle.payload.afterVictory.encounterId, 'act_two');
@@ -186,7 +186,7 @@ test('every encounter an act asks for exists, with all its stages wired up', () 
     const ids = new Set();
     for (const b of Object.values(BIOME_DEFINITIONS)) for (const p of (b.encounters && b.encounters.pools) || []) ids.add(p.id);
     for (const id of ids) assert.ok(encounterDefinitions[id], `a biome lists the unknown encounter ${id}`);
-    for (const id of ['act_two', 'crimson_vigil']) {
+    for (const id of ['act_two']) {
         const enc = encounterDefinitions[id];
         assert.ok(enc.stages[enc.initialStage], `${id}: missing the first stage`);
         const json = JSON.stringify(enc);
@@ -218,17 +218,22 @@ test('a biome ambush uses the table of the hour: night in act 1, the blood moon 
     }
 });
 
-test('a biome only offers the act 2 encounter in act 2, at dusk and night', () => {
+test('an encounter pool marked minAct 2 is only offered in act 2, at the hours it names', () => {
     const saved = gameState.milestones;
     try {
-        const plains = new BiomeModel({ ...BIOME_DEFINITIONS.PLAINS, encounters: { ...BIOME_DEFINITIONS.PLAINS.encounters, rate: 1000 } });
+        // no encounter needs this today (the Crimson Vigil was removed): a made-up pool keeps the rule honest
+        const plains = new BiomeModel({ ...BIOME_DEFINITIONS.PLAINS, encounters: { rate: 1000, type: 'time_weighted', pools: [
+            { weight: 10, id: 'always_there' },
+            { weight: 10, id: 'late_game_night', allowedTimes: ['dusk', 'night'], minAct: 2 }
+        ] } });
         const sample = (hour) => { const ids = new Set(); for (let i = 0; i < 600; i++) { const e = plains.getEncounter(hour); if (e) ids.add(e.id); } return ids; };
         gameState.milestones = [];
-        assert.ok(!sample(22).has('crimson_vigil'));
+        assert.ok(!sample(22).has('late_game_night'));
+        assert.ok(sample(22).has('always_there'));
         gameState.milestones = ['act2'];
-        assert.ok(sample(22).has('crimson_vigil'));
-        assert.ok(sample(19).has('crimson_vigil'));
-        assert.ok(!sample(12).has('crimson_vigil'));
+        assert.ok(sample(22).has('late_game_night'));
+        assert.ok(sample(19).has('late_game_night'));
+        assert.ok(!sample(12).has('late_game_night'));
     } finally {
         gameState.milestones = saved;
     }

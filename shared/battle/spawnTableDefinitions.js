@@ -478,26 +478,6 @@ export const SpawnTableDefinitions = {
         }]
     },
 
-    // Used by crimson_vigil (act 2): the ring of bones stands up.
-    "risen_pack": {
-        type: "faction_pool",
-        pools: [{
-            factionId: "shackled",
-            weight: 100,
-            difficultySettings: {
-                easy: { minSize: 2, maxSize: 3 },
-                normal: { minSize: 3, maxSize: 3 },
-                hard: { minSize: 3, maxSize: 4 },
-                nightmare: { minSize: 4, maxSize: 5 }
-            },
-            members: [
-                { id: 'SKELETAL_WARRIOR', weight: 60, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } },
-                { id: 'FLOATING_SKULL', weight: 25 },
-                { id: 'ANCIENT_CULTIST', weight: 15, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 2 } } }
-            ]
-        }]
-    },
-
     // Used by aftermath_encounter: the "fallen" Alterian soldiers rise and attack.
     "alterian_warriors": {
         type: "faction_pool",

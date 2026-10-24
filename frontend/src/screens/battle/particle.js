@@ -36,6 +36,17 @@ export class Particle {
     this.color = config.color || '#ffffff';
     this.blendMode = config.blendMode || 'source-over';
 
+    // Drifting things (fog, ash, smoke): `shape` 'puff' (a soft cloud) or 'fleck' (a flake of ash) instead of a glowing dot.
+    // The wind pulls the velocity toward (windX, windY) px/s, `windPull` says how fast (per second); `sway` makes it wander on the way
+    // (a gust that comes and goes), `envelope` fades it in and then thins it out smoothly instead of staying solid until the end.
+    this.shape = config.shape || null;
+    this.windX = config.windX || 0;
+    this.windY = config.windY || 0;
+    this.windPull = config.windPull || 0;
+    this.sway = config.sway || 0;
+    this.swayRate = config.swayRate || 3;
+    this.swayPhase = config.swayPhase !== undefined ? config.swayPhase : Math.random() * Math.PI * 2;
+
     // Sprite/Animation configuration
     this.sheetKey = config.sheetKey || 'battleProjectiles';
     this.frame = config.frame || null;
@@ -78,7 +89,10 @@ export class Particle {
     // Added 'linear', 'arc', and 'diagonal_drop' so they crash into the target at full opacity.
     const customAlphas = ['spread_and_fade', 'expand_and_fade', 'rise_and_hold', 'float_up_and_pop', 'swipe_diagonal', 'swipe_diagonal_alt', 'shrink_and_fade', 'linear', 'arc', 'diagonal_drop'];
     
-    if (this.fadeOut && !customAlphas.includes(this.movement)) {
+    if (this.config.envelope) {
+      const fadeIn = Math.min(1, progress / 0.18);
+      this.alpha = this.baseAlpha * fadeIn * Math.pow(1 - progress, 1.3);
+    } else if (this.fadeOut && !customAlphas.includes(this.movement)) {
       // Changed from 0.5 to 0.85 so standard particles only fade in the last 15% of life
       if (progress > 0.85) { 
         const fadeProgress = (progress - 0.85) / 0.15;
@@ -88,6 +102,16 @@ export class Particle {
   }
 
   applyPhysicsMovement(dt) {
+    if (this.windPull) {
+      const k = Math.min(1, this.windPull * dt);
+      this.vx += (this.windX - this.vx) * k;
+      this.vy += (this.windY - this.vy) * k;
+    }
+    if (this.sway) {
+      const t = this.age * this.swayRate + this.swayPhase;
+      this.vx += Math.cos(t * 0.7) * this.sway * 0.5 * dt;
+      this.vy += Math.sin(t) * this.sway * dt;
+    }
     this.vy += this.gravity * dt;
     this.vx *= this.drag;
     this.vy *= this.drag;

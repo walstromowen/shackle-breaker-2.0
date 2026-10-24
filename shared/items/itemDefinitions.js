@@ -1324,11 +1324,11 @@ export const ItemDefinitions = {
     id: "smoke_bomb",
     name: "Smoke Bomb",
     type: "consumable",
-    description: "A packed shell of charcoal and sand with a short fuse. Used in battle: it fills the air with thick smoke, making one ally much harder to hit for 3 turns.",
+    description: "A packed shell of charcoal and sand with a short fuse. In battle it fills the air with thick smoke, making one ally much harder to hit for 3 turns. Set off on the overworld, the smoke hides the whole party for 4 hours: no random battles (story encounters still find you).",
     value: 75,
     icon: { col: 4, row: 1 },            // PLACEHOLDER (empty cell): no smoke bomb art on assets/icons/consumables.png yet
-    useAbility: "item_smoke_bomb",
-    usability: ['battle'],
+    useAbility: "item_smoke_bomb",       // usable in battle, from the item menu and from the hotbar (the overworld effect is in that ability)
+    usability: ['overworld', 'battle'],
     stackable: true,
     maxStack: 20
   },

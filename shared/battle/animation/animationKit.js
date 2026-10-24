@@ -44,6 +44,12 @@
  *                  glow: false  a plain dot with no halo (far cheaper; use it for rain, snow, sand and anything with dozens of dots)
  *                  angle (degrees: 0 right, 90 down, 180 left, 270 up) + cone (fan width, default 30): send the spray one way instead of every way
  *                  area: [width, height]  start anywhere in a box that size around the point (rain, snow, a sandstorm)
+ *                  shape: 'puff' (a soft cloud, for fog and smoke) | 'fleck' (a tumbling flake of ash) | omitted (a glowing dot)
+ *                  wind: [x, y]  px/s the particles are blown toward, windPull: how fast they get there (per second, ~1 = a second),
+ *                  sway: px/s of wandering as they drift (gusts), grow: scale change per second (a puff spreading out),
+ *                  windJitter (0.5 = each one feels 50-150% of the wind, so a cloud stretches into a stream),
+ *                  scaleJitter (0.4 = 60-140% of the size) and spinJitter (random tumble, radians/second) so no two look alike,
+ *                  envelope: true  fade in, then thin away smoothly (instead of staying solid until the very end)
  *                  offsetX / offsetY      move the whole spray (e.g. offsetY: -260 starts it above the target)
  *  repeat(start, count, gap, (t, i) => cue)   the same cue again and again: repeat(0, 12, 0.2, t => burst(t, { ... }))
  *  stream options: everything above, plus  jitter: n  (spreads the sprites up/down by up to 2n px) and
@@ -130,7 +136,9 @@ export const burst = (start, o = {}) => ({
         gravity: o.gravity, drag: o.drag, blendMode: blendOf(o.blend), alpha: o.alpha, glow: o.glow,
         angle: o.angle, cone: o.cone,
         spreadX: o.area ? o.area[0] : undefined, spreadY: o.area ? o.area[1] : undefined,
-        offsetX: o.offsetX, offsetY: o.offsetY
+        offsetX: o.offsetX, offsetY: o.offsetY,
+        shape: o.shape, windX: o.wind ? o.wind[0] : undefined, windY: o.wind ? o.wind[1] : undefined, windPull: o.windPull,
+        sway: o.sway, swayRate: o.swayRate, scaleDelta: o.grow, windJitter: o.windJitter, scaleJitter: o.scaleJitter, spinJitter: o.spinJitter, envelope: o.envelope
     })
 });
 

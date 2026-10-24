@@ -55,8 +55,18 @@ export class VFXRenderer {
             const speed = minSpeed + Math.random() * (maxSpeed - minSpeed);
             const life = minLife + Math.random() * (maxLife - minLife);
 
+            // scaleJitter: 0.4 = each particle is 60% to 140% of the size asked for. spinJitter: a random turn speed up to that many radians/second.
+            const jitter = baseConfig.scaleJitter ? 1 + (Math.random() - 0.5) * 2 * baseConfig.scaleJitter : 1;
+            const spin = baseConfig.spinJitter ? (Math.random() - 0.5) * 2 * baseConfig.spinJitter : baseConfig.rotationDelta;
             this.spawn({
                 ...baseConfig,
+                // windJitter: 0.5 = each particle feels 50% to 150% of the wind, so a cloud stretches out into a stream instead of moving as one
+                windX: baseConfig.windJitter && baseConfig.windX ? baseConfig.windX * (1 + (Math.random() - 0.5) * 2 * baseConfig.windJitter) : baseConfig.windX,
+                windY: baseConfig.windJitter && baseConfig.windY ? baseConfig.windY * (1 + (Math.random() - 0.5) * 2 * baseConfig.windJitter) : baseConfig.windY,
+                scale: (baseConfig.scale ?? 1) * jitter,
+                scaleDelta: baseConfig.scaleDelta ? baseConfig.scaleDelta * jitter : baseConfig.scaleDelta,
+                rotationDelta: spin,
+                rotation: baseConfig.spinJitter ? Math.random() * Math.PI * 2 : baseConfig.rotation,
                 x: x + (Math.random() - 0.5) * spreadX,
                 y: y + (Math.random() - 0.5) * spreadY,
                 vx: Math.cos(angle) * speed,
@@ -75,6 +85,29 @@ export class VFXRenderer {
                 this.particles.splice(i, 1);
             }
         }
+    }
+
+    /** A soft round cloud of one colour (a 64px canvas, kept), for the 'puff' particles of fog and smoke. */
+    puffSprite(color = '#aaaaaa') {
+        this._puffs = this._puffs || new Map();
+        let c = this._puffs.get(color);
+        if (!c) {
+            c = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(64, 64) : Object.assign(document.createElement('canvas'), { width: 64, height: 64 });
+            const g = c.getContext('2d');
+            // the colour is blended toward clear by drawing it through a mask: solid core, soft fall-off
+            g.fillStyle = color;
+            g.fillRect(0, 0, 64, 64);
+            g.globalCompositeOperation = 'destination-in';
+            const mask = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+            mask.addColorStop(0, 'rgba(0,0,0,1)');
+            mask.addColorStop(0.3, 'rgba(0,0,0,0.75)');
+            mask.addColorStop(0.7, 'rgba(0,0,0,0.22)');
+            mask.addColorStop(1, 'rgba(0,0,0,0)');
+            g.fillStyle = mask;
+            g.fillRect(0, 0, 64, 64);
+            this._puffs.set(color, c);
+        }
+        return c;
     }
 
     render() {
@@ -125,6 +158,16 @@ export class VFXRenderer {
             this._warnedSheets.add(p.sheetKey);
             console.warn(`[VFXRenderer] sprite sheet "${p.sheetKey}" is not loaded; effects that use it will not show.`);
         }
+        } else if (p.shape === 'puff') {
+        // a soft cloud: a round gradient (solid in the middle, clear at the edge), made once per colour. No glow, so many are cheap.
+        const puff = this.puffSprite(p.color);
+        const size = 56 * (p.scale || 1.0);
+        this.ctx.drawImage(puff, -size / 2, -size / 2, size, size);
+        } else if (p.shape === 'fleck') {
+        // a flake of ash: a small hard-edged chip that tumbles as it blows away
+        const w = Math.max(2, Math.round(5 * (p.scale || 1.0))), h = Math.max(1, Math.round(w * 0.55));
+        this.ctx.fillStyle = p.color || '#444444';
+        this.ctx.fillRect(-w / 2, -h / 2, w, h);
         } else {
         this.ctx.fillStyle = p.color || '#ffffff';
         this.ctx.shadowColor = p.color || '#ffffff';

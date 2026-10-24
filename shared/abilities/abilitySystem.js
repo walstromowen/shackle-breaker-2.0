@@ -149,6 +149,7 @@ export class AbilitySystem {
         // 2. Process Status Effects (Only if the attack didn't miss)
         if (attackHit && def.statusEffects && Array.isArray(def.statusEffects)) {
             for (const statusDef of def.statusEffects) {
+                if (statusDef.battleOnly && ctx.context === 'overworld') continue;   // e.g. the smoke bomb's evasion: only a fight has turns to spend it in
                 const roll = Math.random();
                 const chance = statusDef.chance !== undefined ? statusDef.chance : 1.0;
                 if (roll <= chance) {

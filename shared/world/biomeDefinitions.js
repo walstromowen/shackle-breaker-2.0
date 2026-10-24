@@ -115,7 +115,6 @@ export const BIOME_DEFINITIONS = {
                 { weight: 10, id: 'wounded_mutt', allowedTimes: ['day', 'dusk', 'night'] },
                 { weight: 20, id: 'a_disturbing_sight', allowedTimes: ['day', 'dusk', 'night'] },
                 { weight: 20, id: 'suspicious_merchant', allowedTimes: ['day', 'dusk', 'night'] },
-                { weight: 18, id: 'crimson_vigil', allowedTimes: ['dusk', 'night'], minAct: 2 },   // act 2 only
             ],
         },
         battles: { rate: 0.01, tables: { day: 'plains_battles_day', dusk: 'plains_battles_day', night: 'plains_battles_night', bloodMoon: 'plains_battles_blood_moon' } },
@@ -181,7 +180,7 @@ export const BIOME_DEFINITIONS = {
             ],
             [CONFIG.TILE_TYPES.LAYER_1]: [{ chance: 0.02, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] }],
         },
-        encounters: { rate: 0.005, type: 'time_weighted', pools: [{ weight: 100, id: 'suspicious_merchant', allowedTimes: ['day'] }, { weight: 60, id: 'crimson_vigil', allowedTimes: ['dusk', 'night'], minAct: 2 }] },
+        encounters: { rate: 0.005, type: 'time_weighted', pools: [{ weight: 100, id: 'suspicious_merchant', allowedTimes: ['day'] }] },
         battles: { rate: 0.01, tables: { day: 'desert_battles_day', dusk: 'desert_battles_day', night: 'desert_battles_night', bloodMoon: 'desert_battles_blood_moon' } },
     },
     SNOWY_MOUNTAINS: {
@@ -247,7 +246,7 @@ export const BIOME_DEFINITIONS = {
             ],
         },
         battles: { rate: 0.005, tables: { day: 'snowy_mountains_battles_day', dusk: 'snowy_mountains_battles_day', night: 'snowy_mountains_battles_night', bloodMoon: 'snowy_mountains_battles_blood_moon' } } /* half the plains' / desert's 0.01 */,
-        encounters: { rate: 0.0025, type: 'time_weighted', pools: [{ weight: 100, id: 'crimson_vigil', allowedTimes: ['dusk', 'night'], minAct: 2 }] },   /* act 2 only: nothing roams the peaks before it */
+        encounters: { rate: 0.0025, type: 'time_weighted', pools: [] },   /* nothing roams the peaks; the rate stays so the Shackling can still find a party with a shackled member (BiomeModel.getEncounter) */
     },
     HOUSE_INTERIOR: {
         id: 'HOUSE_INTERIOR',
@@ -307,7 +306,7 @@ export const BIOME_DEFINITIONS = {
         shapeElevation: (noise) => noise,
         structures: { rate: 0, pools: [] },
         mapObjects: { [CONFIG.TILE_TYPES.LAYER_2]: [] } /* the CaveGenerator places the rocks itself (see `scatter` in interiorDefinitions.js) */,
-        encounters: { rate: 0.0015, type: 'time_weighted', pools: [{ weight: 100, id: 'cave_in', allowedTimes: ['day', 'dusk', 'night'] }] } /* RARE: a step in 650 or so, under the rarest elsewhere (the Crimson Vigil's 0.0025); a cave has no daylight, so every hour counts */,
+        encounters: { rate: 0.0015, type: 'time_weighted', pools: [{ weight: 100, id: 'cave_in', allowedTimes: ['day', 'dusk', 'night'] }] } /* RARE: a step in 650 or so, under the rarest elsewhere (the snowy mountains' 0.0025); a cave has no daylight, so every hour counts */,
         battles: { rate: 0.01, tables: { day: 'cave_battles', dusk: 'cave_battles', night: 'cave_battles' } } /* half the plains' / desert's 0.01; same table at every hour */,
     },
 };

@@ -1182,8 +1182,8 @@ export const AbilityDefinitions = {
     "item_smoke_bomb": {
         id: "item_smoke_bomb",
         name: "Smoke Bomb",
-        description: "Throw down a smoke bomb: the smoke hides one ally, raising their evasion for 3 turns.",
-        context: "battle",                            // thrown in a fight only (the bomb is not wasted on the overworld)
+        description: "Throw down a smoke bomb. In a fight the smoke hides one ally, raising their evasion for 3 turns. On the overworld it hides the whole party for 4 hours: no random battles.",
+        context: "both",                              // in a fight, or on the overworld (the world_buff below only runs there; the evasion only in a fight)
         range: "self",
         tags: ["utility", "tactical", "item"],
         battleMessage: "{user} drops a {ability} at their feet!",
@@ -1195,9 +1195,17 @@ export const AbilityDefinitions = {
         // was "evasion_up", which is not a status in statusEffectDefinitions.js (the bomb did nothing); "evasive" is the +50% evasion status.
         // skipIfActive: an ally who is already hidden is not stacked or refreshed, and the bomb is kept.
         statusEffects: [{
-            id: "evasive", chance: 1.0, duration: 3, skipIfActive: true,
+            id: "evasive", chance: 1.0, duration: 3, skipIfActive: true, battleOnly: true,   // battleOnly: not applied when thrown on the overworld (it would linger into the next fight)
             applyMessage: "{target} is hidden in the smoke!",
             activeMessage: "{target} is already hidden by smoke."
+        }],
+        // On the overworld: a world buff with no light. While it runs, the 'no_ambush' grant keeps random battles from starting (OverworldController.checkTileEvents asks
+        // AbilitySystem.hasWorldGrant). Story encounters are not random battles and still happen. A second bomb does nothing (and is kept) while more than half is left.
+        effects: [{
+            type: "world_buff", id: "smoke_cover", name: "Smoke Cover", hours: 4,   // in-game hours (2 game minutes per real second, so 4 h = 2 real minutes)
+            refreshBelow: 0.5, stillActive: "The smoke still hides you.",
+            grants: ["no_ambush"],
+            message: "You set off a smoke bomb and let the smoke drift over the party. Nothing will pick you out for the next {hours} hours."
         }]
     },
     // Paste into AbilityDefinitions (shared/abilities/abilityDefinitions.js), e.g. at the end of section 15 (UTILITY, TACTICS & TRAPS).

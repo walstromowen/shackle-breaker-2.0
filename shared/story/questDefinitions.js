@@ -98,7 +98,7 @@ export const QuestDefinitions = {
         description: "What went to the peaks came back down to the plains, carried by those who still wear the old colors. They do not rest. The dead stir where battles were fought. Whoever carried the stone home has the answer, if any of them can still be reasoned with.",
         objectives: [
             { id: "obj_reach_level_9", type: "party_level", targetLevel: 9, amount: 1 },
-            { id: "obj_kill_legionaries", type: "kill_enemy", targetId: "LEGIONARY", amount: 4 },
+            { id: "obj_kill_legionaries", type: "kill_enemy", targetId: "LEGIONARY", amount: 3 },
             { id: "obj_kill_watchmen", type: "kill_enemy", targetId: "WATCHMAN", amount: 2 }
         ],
         rewards: {

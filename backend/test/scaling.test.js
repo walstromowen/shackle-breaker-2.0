@@ -54,3 +54,27 @@ test('enemies and recruits hit as hard as they always did', () => {
         assert.ok(Math.abs(StatCalculator.calculate(e).attack[type] - old) <= 1, `${id} ${type}: ${StatCalculator.calculate(e).attack[type]} (was ${old})`);
     }
 });
+
+test('leather armor gives a little stamina recovery, cloth armor a little insight recovery', async () => {
+    const { ItemFactory } = await import('../../shared/items/itemFactory.js');
+    const wear = (ids) => {
+        const equipment = {};
+        for (const id of ids) { const item = ItemFactory.createItem(id); equipment[item.slot] = item; }
+        return StatCalculator.calculate({ level: 1, attributes: { ...ZERO }, equipment, baseStats: { maxHp: 10, maxStamina: 10, maxInsight: 10, baseAttack: {} } });
+    };
+    const naked = wear([]);
+    const leather = ['leather_helmet', 'leather_armor', 'leather_bracers', 'leather_leggings', 'leather_boots'];
+    const cloth = ['cloth_hood', 'cloth_robe', 'cloth_gloves', 'cloth_pants', 'cloth_shoes'];
+    for (const id of leather) {
+        const s = wear([id]);
+        assert.equal(s.staminaRecovery - naked.staminaRecovery, 1, `${id} adds 1 stamina recovery`);
+        assert.equal(s.insightRecovery, naked.insightRecovery, `${id} adds no insight recovery`);
+    }
+    for (const id of cloth) {
+        const s = wear([id]);
+        assert.equal(s.insightRecovery - naked.insightRecovery, 1, `${id} adds 1 insight recovery`);
+        assert.equal(s.staminaRecovery, naked.staminaRecovery, `${id} adds no stamina recovery`);
+    }
+    assert.equal(wear(leather).staminaRecovery - naked.staminaRecovery, 5, 'a whole leather set adds up');
+    assert.equal(wear(cloth).insightRecovery - naked.insightRecovery, 5, 'a whole cloth set adds up');
+});

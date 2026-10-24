@@ -395,6 +395,8 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     aDisturbingSightBgm: './assets/audio/music/a_disturbing_sight.mp3',
     poachersNightmareBgm: './assets/audio/music/poachers_nightmare.mp3',
     apexPredatorBgm: './assets/audio/music/apex_predator.mp3',
+    dariusEncounterBgm: './assets/audio/music/darius-final-battle.mp3',   // the altar, as Darius the Groveler crawls out (mysteriousAltar.js, stage darius_rises)
+    bossBattleBgm: './assets/audio/music/bossbattle.mp3',               // the fight with Darius itself (the START_BATTLE of that stage)
 
     // --- CREATURE CRIES & DEATHS ---
     legionaryCry: './assets/audio/sfx/cries/legionary_cry.wav',

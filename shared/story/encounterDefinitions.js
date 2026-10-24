@@ -13,7 +13,6 @@ import { tracksInTheSnow } from './encounters/tracksInTheSnow.js';
 import { mysteriousAltar } from './encounters/mysteriousAltar.js';
 import { prologue } from './encounters/prologue.js';
 import { actTwo } from './encounters/actTwo.js';
-import { crimsonVigil } from './encounters/crimsonVigil.js';
 import { peculiarScarecrow } from './encounters/peculiarScarecrow.js';
 import { oldGravestone } from './encounters/oldGravestone.js';
 import { caveIn } from './encounters/caveIn.js';
@@ -37,7 +36,6 @@ export const encounterDefinitions = {
     [mysteriousAltar.id]: mysteriousAltar,
     [prologue.id]: prologue,
     [actTwo.id]: actTwo,
-    [crimsonVigil.id]: crimsonVigil,
     [peculiarScarecrow.id]: peculiarScarecrow,
     [oldGravestone.id]: oldGravestone,
     [caveIn.id]: caveIn,
