@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import zlib from 'node:zlib';
 
-const { formatClock, periodOfDay, describeWorld, bodyPosition, skyColors, PLAQUE } = await import('../../frontend/src/screens/overworld/worldStatusPlaque.js');
+const { formatClock, periodOfDay, describeWorld, bodyPosition, skyColors, PLAQUE, plaqueRect } = await import('../../frontend/src/screens/overworld/worldStatusPlaque.js');
 const { BIOME_DEFINITIONS: BiomeDefinitions } = await import('../../shared/world/biomeDefinitions.js');
 
 test('the clock reads like a clock, and wraps at midnight', () => {
@@ -49,17 +49,24 @@ test('the sky is dark at night, bright at noon, and red under a blood moon', () 
     assert.deepEqual(skyColors(12, true), skyColors(12), 'a blood moon only matters at night');
 });
 
-test('every biome has a name for the plaque, and the plaque fits between the menu button and the quest tracker', () => {
+test('every biome has a name for the plaque, and the plaque sits right of the hotbar', () => {
     for (const id of ['PLAINS', 'DESERT', 'SNOWY_MOUNTAINS', 'HOUSE_INTERIOR', 'CAVE_INTERIOR']) {
         assert.ok(BiomeDefinitions[id].name && !/_/.test(BiomeDefinitions[id].name), id);
     }
-    const left = 48 + 104, right = 1920 - 24 - 420;     // the menu button's right edge; the tracker's left edge
-    const x = (1920 - PLAQUE.w) / 2;
-    assert.ok(x > left + 24 && x + PLAQUE.w < right - 24, `plaque ${x}..${x + PLAQUE.w}`);
+    // bottom right, level with the hotbar and to the right of it (ten 104 px slots, 8 px apart, centred on a 1920 px screen)
+    const hotbarW = 10 * 104 + 9 * 8, hotbarRight = Math.round((1920 - hotbarW) / 2) + hotbarW;
+    const r = plaqueRect(1920, 1080, hotbarRight);
+    assert.ok(r.x >= hotbarRight + 16, 'clear of the last slot');
+    assert.equal(r.x + r.w, 1920 - 24, 'on the right margin');
+    assert.equal(r.y + r.h, 1080 - 24, 'on the hotbar\'s bottom line');
+    assert.equal(r.h, 104, 'as tall as a slot');
+    assert.ok(r.w >= 300 && r.w <= PLAQUE.maxW, `wide enough for "Snowy Mountains" (${r.w})`);
+    assert.equal(plaqueRect(1920, 1080, 0).w, PLAQUE.maxW, 'with no hotbar it keeps its full width');
     const ow = fs.readFileSync(new URL('../../frontend/src/screens/overworld/overworldController.js', import.meta.url), 'utf8');
     assert.match(ow, /worldInfo: this\.getWorldInfo\(\)/);
     const ui = fs.readFileSync(new URL('../../frontend/src/screens/overworld/overworldUIRenderer.js', import.meta.url), 'utf8');
-    assert.match(ui, /statusPlaque\.render\(ctx, ui, worldInfo\)/);
+    assert.match(ui, /statusPlaque\.render\(ctx, ui, worldInfo, plaque\)/);
+    assert.match(ui, /drawToasts\(ctx, ui, toasts, plaque \? plaque\.y - 14/, 'the item toasts rise from just above it');
 });
 
 // --- the merchant's sheet: 8 frames across, rows in sets of four (idle / walk / run), South East North West -------------------------------------------
@@ -105,4 +112,19 @@ test('the shady merchant\'s sheet: 512 x 768, 12 rows of 8 frames, every frame d
             assert.notEqual(key(frame(first + d, 0)), key(frame(d, 0)), `${name} is not the idle pose`);
         }
     }
+});
+
+test('the minimap puts a dot on every person standing in the world (merchant, madman, dog), and still ignores ordinary encounters', async () => {
+    const { MinimapRenderer } = await import('../../frontend/src/ui/minimapRenderer.js');
+    const mm = new MinimapRenderer({ MINIMAP: {}, TILE_SIZE: 32 });
+    const wm = { getActiveObjects: () => [
+        { col: 10, row: 10, w: 1, h: 1, isSolid: true, character: { sheet: 'madmanSprite' }, interaction: { type: 'ENCOUNTER', id: 'a_disturbing_sight' } },
+        { col: 12, row: 10, w: 1, h: 1, isSolid: true, interaction: { type: 'ENCOUNTER', id: 'iron_chest' } },
+        { col: 14, row: 10, w: 1, h: 1, isSolid: true, interaction: { type: 'WARP' } },
+        { col: 300, row: 10, w: 1, h: 1, isSolid: true, character: { sheet: 'x' }, interaction: { type: 'ENCOUNTER', id: 'far_away' } }
+    ] };
+    const list = mm._marksNear(wm, 0, 0, 67, 1000);
+    assert.equal(list.length, 2, 'the person and the door; not the chest, and not the one far off the map');
+    assert.equal(list[0].color, mm.cfg.npc);
+    assert.notEqual(list[1].color, mm.cfg.npc);
 });

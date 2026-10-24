@@ -1,11 +1,19 @@
 import { UITheme } from '../../ui/UITheme.js';
 
-/* WorldStatusPlaque - the small panel at the top centre of the overworld: where you are (the biome), the day, the clock, the weather,
+/* WorldStatusPlaque - the small panel at the bottom right of the overworld, in line with the hotbar and to the right of it: where you are (the biome), the day, the clock, the weather,
  * and a dial that shows the sun or the moon crossing the sky. Purely a picture of the state it is given (see OverworldController.getWorldInfo):
  *   { biomeName, sheltered, day, minutes, weatherId, weatherName, bloodMoon }
  * `describeWorld` turns that into the words, so they can be tested without a canvas. */
 
-export const PLAQUE = { w: 500, h: 124, top: 24 };
+export const PLAQUE = { h: 104, margin: 24, gap: 16, maxW: 380 };   // as tall as a hotbar slot; as wide as the room right of the hotbar, up to maxW
+
+/** Where the plaque goes: the same height and bottom line as the hotbar, between the hotbar's right edge and the screen margin (`hotbarRight` is 0 with no hotbar). */
+export function plaqueRect(canvasW, canvasH, hotbarRight = 0) {
+    const right = canvasW - PLAQUE.margin;
+    const left = hotbarRight > 0 ? hotbarRight + PLAQUE.gap : right - PLAQUE.maxW;
+    const w = Math.max(0, Math.min(PLAQUE.maxW, right - left));
+    return { x: right - w, y: canvasH - PLAQUE.margin - PLAQUE.h, w, h: PLAQUE.h };
+}
 
 /** The clock as the plaque shows it: "10:24 AM". `minutes` is the minute of the day, 0..1439. */
 export function formatClock(minutes) {
@@ -176,34 +184,37 @@ export function drawWeatherGlyph(ctx, id, x, y, night = false) {
 }
 
 export class WorldStatusPlaque {
-    /** Draws the plaque at the top centre of the canvas. `ui` is the CanvasUI of the frame. */
-    render(ctx, ui, info) {
-        if (!info) return;
+    /** Draws the plaque in `rect` ({ x, y, w, h }, see plaqueRect). `ui` is the CanvasUI of the frame. */
+    render(ctx, ui, info, rect) {
+        if (!info || !rect || rect.w < 240) return;
         const d = describeWorld(info);
-        const { w, h, top } = PLAQUE;
-        const x = Math.round((ctx.canvas.width - w) / 2), y = top;
+        const { x, y, w, h } = rect;
         ui.drawPanel(x, y, w, h, 'rgba(15, 15, 18, 0.88)');
 
-        const r = 44, cx = x + 24 + r, cy = y + h / 2;
+        const r = 34, cx = x + 16 + r, cy = y + h / 2;
         drawDial(ctx, cx, cy, r, info.minutes || 0, !!info.bloodMoon);
 
         // a hairline between the dial and the words
-        const tx = cx + r + 24, tr = x + w - 24;
+        const tx = cx + r + 22, tr = x + w - 16;
         ctx.save();
         ctx.strokeStyle = 'rgba(194, 161, 79, 0.28)'; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(tx - 12.5, y + 20); ctx.lineTo(tx - 12.5, y + h - 20); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(tx - 11.5, y + 16); ctx.lineTo(tx - 11.5, y + h - 16); ctx.stroke();
         ctx.restore();
 
-        ui.drawText(d.place, tx, y + 46, '600 40px "Cormorant Garamond", Georgia, serif', UITheme.colors.textMain, 'left', 'alphabetic', tr - tx);
-        ui.drawText(d.day, tx, y + 80, UITheme.fonts.small, UITheme.colors.textMuted, 'left');
-        ui.drawText(d.clock, tr, y + 80, UITheme.fonts.monoSmall, UITheme.colors.textHighlight, 'right');
+        const text = tr - tx;
+        ui.drawText(d.place, tx, y + 36, '600 33px "Cormorant Garamond", Georgia, serif', UITheme.colors.textMain, 'left', 'alphabetic', text);
+        const small = '400 24px "Barlow", system-ui, sans-serif', italic = 'italic 400 24px "Barlow", system-ui, sans-serif', mono = '400 23px "DM Mono", ui-monospace, monospace';
+        ui.drawText(d.day, tx, y + 66, small, UITheme.colors.textMuted, 'left');
+        ui.drawText(d.clock, tr, y + 66, mono, UITheme.colors.textHighlight, 'right');
 
         const night = periodOfDay(info.minutes || 0) === 'Night';
-        drawWeatherGlyph(ctx, d.weatherId, tx + 13, y + 103, night);
-        ctx.save(); ctx.font = UITheme.fonts.italic;
-        const periodW = Math.ceil(ctx.measureText(d.period).width);
+        drawWeatherGlyph(ctx, d.weatherId, tx + 11, y + 88, night);
+        ctx.save();
+        ctx.font = small; const weatherW = Math.ceil(ctx.measureText(d.weather).width);
+        ctx.font = italic; const periodW = Math.ceil(ctx.measureText(d.period).width);
         ctx.restore();
-        ui.drawText(d.weather, tx + 34, y + 110, UITheme.fonts.small, UITheme.colors.textMain, 'left', 'alphabetic', Math.max(60, tr - tx - 34 - periodW - 16));
-        ui.drawText(d.period, tr, y + 110, UITheme.fonts.italic, d.period === 'Blood Moon' ? '#d9534f' : UITheme.colors.textMuted, 'right');
+        const roomForPeriod = 30 + weatherW + 14 + periodW <= text;   // the part of the day only when it fits beside the weather
+        ui.drawText(d.weather, tx + 30, y + 94, small, UITheme.colors.textMain, 'left', 'alphabetic', Math.max(60, text - 30 - (roomForPeriod ? periodW + 14 : 0)));
+        if (roomForPeriod) ui.drawText(d.period, tr, y + 94, italic, d.period === 'Blood Moon' ? '#d9534f' : UITheme.colors.textMuted, 'right');
     }
 }

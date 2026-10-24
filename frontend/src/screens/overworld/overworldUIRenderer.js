@@ -3,7 +3,10 @@ import { UITheme } from '../../ui/UITheme.js';
 import { ItemDefinitions } from '../../../../shared/items/itemDefinitions.js';
 import { ENTITY_DEFINITIONS } from '../../../../shared/characters/entityDefinitions.js';
 import { MinimapRenderer } from '../../ui/minimapRenderer.js';
-import { WorldStatusPlaque } from './worldStatusPlaque.js';
+import { WorldStatusPlaque, plaqueRect } from './worldStatusPlaque.js';
+
+// The hotbar: slot size, gap and the margin under it (the status plaque sits to its right, on the same line)
+const HOTBAR = { SIZE: 104, GAP: 8, MARGIN: 24 };
 
 export class OverworldUIRenderer {
     constructor(config, loader) {
@@ -36,8 +39,6 @@ export class OverworldUIRenderer {
             this.minimap.render(ctx, ui, state);
         }
 
-        if (worldInfo) this.statusPlaque.render(ctx, ui, worldInfo);
-
         // The menu button stays "selected" (bar) while its dropdown is open; the one under the mouse is "highlighted"
         if (menuToggleHitbox) {
             // The Party and Journal buttons are hidden while the dropdown is closed, so their badge (a skill point to spend, a finished quest to collect) also sits on the menu button then
@@ -64,8 +65,12 @@ export class OverworldUIRenderer {
             this.drawInteractionTooltip(ctx, ui, ctx.canvas, facedObject);
         }
 
+        // the status plaque (biome, day, clock, weather), bottom right beside the hotbar; the item toasts rise from just above it
+        const plaque = worldInfo ? this.statusPlaqueRect(ctx.canvas, hotbar) : null;
+        if (plaque) this.statusPlaque.render(ctx, ui, worldInfo, plaque);
+
         if (toasts && toasts.length > 0) {
-            this.drawToasts(ctx, ui, toasts);
+            this.drawToasts(ctx, ui, toasts, plaque ? plaque.y - 14 : ctx.canvas.height - HOTBAR.MARGIN);
         }
 
         if (hotbar && hotbar.length > 0) {
@@ -73,12 +78,22 @@ export class OverworldUIRenderer {
         }
     }
 
+    /* Where the status plaque is: bottom right, to the right of the hotbar (its right edge is worked out from the same numbers the hotbar uses). */
+    statusPlaqueRect(canvas, hotbar) {
+        let hotbarRight = 0;
+        if (hotbar && hotbar.length > 0) {
+            const total = hotbar.length * HOTBAR.SIZE + (hotbar.length - 1) * HOTBAR.GAP;
+            hotbarRight = Math.round((canvas.width - total) / 2) + total;
+        }
+        return plaqueRect(canvas.width, canvas.height, hotbarRight);
+    }
+
     // --- HOTBAR: a row of slots at the bottom centre of the screen (keys 1-9 and 0, or click) ---
     // The slots' hitboxes belong to the controller; they are placed here, from the real canvas size, every frame, so what is drawn is what is clicked.
     drawHotbar(ctx, ui, slots, hoveredId, notice) {
         // The item sheets are 64 px cells, so the icon is drawn 1:1 (ICON = 64) on whole pixels, centred in a slot with a margin round it.
         // (It used to be squeezed into 44 px, which made it soft, and the key / count text was larger than the boxes it sat in.)
-        const SIZE = 104, GAP = 8, MARGIN = 24, ICON = 64;
+        const { SIZE, GAP, MARGIN } = HOTBAR, ICON = 64;
         const total = slots.length * SIZE + (slots.length - 1) * GAP;
         const startX = Math.round((ctx.canvas.width - total) / 2);
         const baseY = ctx.canvas.height - MARGIN - SIZE;
@@ -308,7 +323,8 @@ export class OverworldUIRenderer {
     ctx.restore();
   }
 
-    drawToasts(ctx, ui, toasts) {
+    /* `floor` is the y the lowest toast's bottom edge starts from (just above the status plaque), and they float up from there. */
+    drawToasts(ctx, ui, toasts, floor = ctx.canvas.height - 24) {
         const now = performance.now();
         // Icon is drawn 1:1 with the 64px source cells; the panel grows around it
         const iconSize = 64;
@@ -316,7 +332,7 @@ export class OverworldUIRenderer {
         const padY = 12;
         const iconGap = 18;
         const toastHeight = iconSize + (padY * 2);
-        const baseY = ctx.canvas.height - 150;
+        const baseY = floor - toastHeight;
 
         for (let i = toasts.length - 1; i >= 0; i--) {
             const toast = toasts[i];

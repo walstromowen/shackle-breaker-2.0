@@ -12,7 +12,8 @@ import { BIOME_DEFINITIONS, FIRST_PLATEAU, CLIFF_LEVELS, layerIndex } from '../.
  *     where the land next to it is lower, so the outline of each plateau shows (the south edge is the rock face itself). It is not drawn next to a stair.
  *     The levels come from biomeDefinitions.js too (layerIndex, FIRST_PLATEAU, CLIFF_LEVELS), so a taller TOP_LAYER needs no change here.
  *   - buildings (solid objects of 6+ tiles without an interaction, e.g. the houses) as brown blocks, and dots for doors (WARP) and crafting stations
- *     (CONFIG.MINIMAP.markers: interaction type -> colour). Trees, rocks, pickups, chests and encounters are not shown.
+ *     (CONFIG.MINIMAP.markers: interaction type -> colour), and a red dot for each person standing in the world (an NPC: a character sheet with an encounter).
+ *     Trees, rocks, pickups, chests and other encounters are not shown.
  *   - a faint rectangle for the part of the world the main view shows, and an arrow for the player that points the way the player faces.
  *
  * How it stays cheap: the terrain is painted once into small canvases of CHUNK x CHUNK tiles (zoom pixels per tile, so the outline can be thinner than a tile)
@@ -47,6 +48,7 @@ const DEFAULTS = {
     prefetch: 16,                  // tiles beyond the map edge that are painted ahead of time, so land the player walks towards is ready before it scrolls in
     maxChunks: 150,                // painted chunks kept; the ones furthest from the player are dropped first
     markers: { WARP: '#ffd24a', CRAFTING_STATION: '#e8873a' },
+    npc: '#ff4fa0',                // the people standing in the world (the shady merchant, the madman, the wounded dog): a red dot, so they can be found
     buildings: '#7a5a3c',
     colors: { grass: '#5b9448', dirt: '#8c6c47', water: '#3b73a6', rock: '#8f8b82', stair: '#f2e27a' },   // for a biome with no `minimap` block (or a colour missing from it)
     interior: { void: '#0e0d0b', floor: '#7d6e58' },   // inside an interior with a map: the void round the rooms, and the floor
@@ -75,6 +77,7 @@ export class MinimapRenderer {
         this.cfg = {
             ...DEFAULTS, ...user,
             markers: user.markers || DEFAULTS.markers,
+            npc: user.npc || DEFAULTS.npc,
             colors: { ...DEFAULTS.colors, ...(user.colors || {}) },
         };
         this.cfg.zoom = Math.max(1, Math.round(this.cfg.zoom));
@@ -238,7 +241,8 @@ export class MinimapRenderer {
             const w = o.w || 1, h = o.h || 1, x = o.col, y = o.row - (h - 1);   // a tall object stands on its row and rises above it
             if (x + w < left - pad || x > left + span + pad || y + h < top - pad || y > top + span + pad) continue;
             const type = o.interaction && o.interaction.type;
-            if (type && mk[type]) list.push({ x: x + w / 2, y: y + h / 2, color: mk[type] });
+            if (o.character && type === 'ENCOUNTER') list.push({ x: x + w / 2, y: y + h / 2, color: this.cfg.npc });
+            else if (type && mk[type]) list.push({ x: x + w / 2, y: y + h / 2, color: mk[type] });
             else if (!type && o.isSolid && w * h >= 6) list.push({ box: true, x, y, w, h });
         }
         this._marks = { t: now, list };
