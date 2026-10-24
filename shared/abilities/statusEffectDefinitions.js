@@ -16,15 +16,14 @@ export const StatusEffectDefinitions = {
         name: 'Bleed',
         animationId: "bleed",
         icon: { col: 1, row: 0 },
-        defaultCharges: 4,
-        maxStacks: 3,            // every new cut makes it worse (value, drain and the penalties below all scale with the stacks)
+        defaultCharges: 3,
+        maxStacks: 2,            // every new cut makes it worse (value, drain and the penalties below all scale with the stacks)
         persistAfterCombat: true,
-        /* Bleeding is a real wound: at the end of every turn it takes HALF of the HP and HALF of the stamina the victim has left at that moment
-           (percentCurrent), so it hurts the healthy most and tapers off as they weaken, keeps the body from recovering between rounds, and a body
-           that is already cut is easier to cut again. More stacks take a larger share (50% / 75% / 87.5%). Flat poison and burn stay flat. */
+        /* Bleeding is a slow wound, gentler than poison on purpose: each turn it takes a little HP (2 per stack, so 2 or 4 at the most, where poison takes 5)
+           and a little stamina, keeps the body from recovering between rounds, and a body that is already cut is easier to cut again. */
         effects: [
-            { trigger: 'ON_TURN_END', modify: 'hp', percentCurrent: 0.5, damageType: 'slash', battleMessage: "{target} bleeds for {amount} damage!" },
-            { trigger: 'ON_TURN_END', modify: 'stamina', percentCurrent: 0.5, damageType: 'slash', battleMessage: "{target} loses {amount} stamina from bleeding!" }
+            { trigger: 'ON_TURN_END', modify: 'hp', value: -2, damageType: 'slash', battleMessage: "{target} bleeds for {amount} damage!" },
+            { trigger: 'ON_TURN_END', modify: 'stamina', value: -1, damageType: 'slash', battleMessage: "{target} loses {amount} stamina from bleeding!" }
         ],
         modifiers: [
             { type: 'percent', target: 'hpRecovery', value: -0.33 },
@@ -270,6 +269,28 @@ export const StatusEffectDefinitions = {
             { type: 'percent', target: 'attack.earth', value: 0.5 },
             { type: 'percent', target: 'attack.water', value: 0.5 },
             { type: 'percent', target: 'attack.wind', value: 0.5 }
+        ]
+    },
+    // Given by Recuperate (leather armor): 5 turns of recovery, stamina at the end of each of the holder's turns: 0.35 x the holder's average physical attack (blunt, slash, pierce), so about 4 at level 1.
+    second_wind: {
+        id: 'second_wind',
+        name: 'Second Wind',
+        icon: { col: 7, row: 1 },     // PLACEHOLDER: shares the runner icon with Flying; draw its own
+        defaultCharges: 5,
+        maxStacks: 1,
+        effects: [
+            { trigger: 'ON_TURN_END', modify: 'stamina', attackAverage: 'physical', rate: 0.35, battleMessage: "{target} draws a second wind and regains {amount} stamina!" }
+        ]
+    },
+    // Given by Draw Insight (cloth armor): 5 turns of calm focus, insight at the end of each of the holder's turns: 0.3 x the holder's average magical attack (the nine magic types), so about 3 at level 1.
+    drawing_insight: {
+        id: 'drawing_insight',
+        name: 'Drawing Insight',
+        icon: { col: 6, row: 1 },     // PLACEHOLDER: an unused arrow-up icon; draw its own
+        defaultCharges: 5,
+        maxStacks: 1,
+        effects: [
+            { trigger: 'ON_TURN_END', modify: 'insight', attackAverage: 'magical', rate: 0.3, battleMessage: "{target}'s mind clears and regains {amount} insight!" }
         ]
     },
     evasive: {

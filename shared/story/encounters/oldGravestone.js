@@ -9,9 +9,12 @@
 
    Flow:  approach      -> dig it up, or leave it be
           dig           -> keep digging: what lies below is one roll
-                             50%  buried_things (loot: two rolls of the old_grave_loot table, a little experience)
-                             25%  bones_rise    (a fight with skeletons, spawn table grave_skeletons)
-                             25%  spirit_rises  (a fight with a shackled spirit, spawn table shackled_spirit)
+                             40%  buried_things (loot: two rolls of the old_grave_loot table, a little experience)
+                                                 -> or dig deeper still: 45% a second bundle (four rolls in all), 35% only clay (the first bundle's two rolls), 20% a spirit
+                             20%  bones_rise    (a fight with skeletons, spawn table grave_skeletons)
+                             20%  spirit_rises  (a fight with a shackled spirit, spawn table shackled_spirit)
+                             10%  empty_grave   (only soil and coffin splinters, a crumb of experience)
+                             10%  sealed_coffin ([STR 10] pry the lid: success three rolls of loot; failure 60% skeletons, 40% a spirit)
    Whatever comes out of the ground, the grave is open: the object is destroyed on the button that hands out the loot or starts the fight. Leaving it be
    (or backing out before the first spade) keeps the stone standing for another try. */
 
@@ -34,7 +37,19 @@ export const oldGravestone = {
         approach: {
             displayText: "An Old Gravestone",
             image: { col: 0, row: 0 },
-            text: "A gravestone leans in the long grass, its name worn smooth by the weather. Few graves are tended any more. The earth in front of it has sunk, as though something beneath had settled, or shifted.",
+            text: "A gravestone leans in the long grass, its name worn smooth by the weather. Few graves are tended any more.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "approach_2" } }] }]
+                }
+            ]
+        },
+
+        approach_2: {
+            displayText: "An Old Gravestone",
+            image: { col: 0, row: 0 },
+            text: "The earth in front of it has sunk, as though something beneath had settled, or shifted.",
             decisions: [
                 {
                     text: "Dig it up.",
@@ -66,9 +81,11 @@ export const oldGravestone = {
                     conditions: [HUMANOID],
                     customActionText: "You dig deeper, until the earth gives way.",
                     outcomes: [
-                        { weight: 50, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "buried_things" } }] },
-                        { weight: 25, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "bones_rise" } }] },
-                        { weight: 25, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "spirit_rises" } }] }
+                        { weight: 40, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "buried_things" } }] },
+                        { weight: 20, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "bones_rise" } }] },
+                        { weight: 20, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "spirit_rises" } }] },
+                        { weight: 10, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "empty_grave" } }] },
+                        { weight: 10, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "sealed_coffin" } }] }
                     ]
                 },
                 {
@@ -99,6 +116,124 @@ export const oldGravestone = {
                             ]
                         }
                     ]
+                },
+                {
+                    text: "Dig deeper still.",
+                    corruption: 1,
+                    conditions: [HUMANOID],
+                    customActionText: "You leave the bundle where it lies and dig on, down into the clay.",
+                    outcomes: [
+                        { weight: 45, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "deeper_find" } }] },
+                        { weight: 35, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "deeper_nothing" } }] },
+                        { weight: 20, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "spirit_rises" } }] }
+                    ]
+                }
+            ]
+        },
+
+        deeper_find: {
+            displayText: "A Second Bundle",
+            image: { col: 2, row: 0 },
+            text: "Under the first bundle lies another, wrapped in older cloth and left by a deeper hand.",
+            decisions: [
+                {
+                    text: "Take both bundles.",
+                    corruption: 2,
+                    outcomes: [{
+                        weight: 100,
+                        results: [
+                            { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "old_grave_loot", rolls: 4 } },
+                            { type: "AWARD_XP", payload: { amount: 8, target: "active_character" } },
+                            { type: "DESTROY_OBJECT" },
+                            { type: "END_ENCOUNTER", payload: null }
+                        ]
+                    }]
+                }
+            ]
+        },
+
+        deeper_nothing: {
+            displayText: "Only Clay",
+            image: { col: 1, row: 0 },
+            text: "There is nothing below but wet clay and pale roots. You take the bundle you found first.",
+            decisions: [
+                {
+                    text: "Take what was buried.",
+                    outcomes: [{
+                        weight: 100,
+                        results: [
+                            { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "old_grave_loot", rolls: 2 } },
+                            { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
+                            { type: "DESTROY_OBJECT" },
+                            { type: "END_ENCOUNTER", payload: null }
+                        ]
+                    }]
+                }
+            ]
+        },
+
+        empty_grave: {
+            displayText: "Empty Earth",
+            image: { col: 1, row: 0 },
+            text: "There is only dark soil and a few splinters of coffin wood. Whatever lay here is long gone.",
+            decisions: [
+                {
+                    text: "Fill it in and move on.",
+                    outcomes: [{
+                        weight: 100,
+                        results: [
+                            { type: "AWARD_XP", payload: { amount: 2, target: "active_character" } },
+                            { type: "DESTROY_OBJECT" },
+                            { type: "END_ENCOUNTER", payload: null }
+                        ]
+                    }]
+                }
+            ]
+        },
+
+        sealed_coffin: {
+            displayText: "A Sealed Coffin",
+            image: { col: 1, row: 0 },
+            text: "Your hands strike wood: a coffin lid, nailed shut. It creaks as you press on it.",
+            decisions: [
+                {
+                    text: "[STR] Pry the lid open.",
+                    type: "skill_check",
+                    attribute: "strength",
+                    threshold: 10,
+                    conditions: [HUMANOID],
+                    customActionText: "You work your fingers under the lid and heave.",
+                    successOutcomes: toStage("coffin_opened"),
+                    failureOutcomes: [
+                        { weight: 60, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "bones_rise" } }] },
+                        { weight: 40, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "spirit_rises" } }] }
+                    ]
+                },
+                {
+                    text: "Leave it sealed.",
+                    customActionText: "You push the earth back over the lid and step away from the stone.",
+                    outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
+                }
+            ]
+        },
+
+        coffin_opened: {
+            displayText: "The Lid Gives",
+            image: { col: 2, row: 0 },
+            text: "The nails shriek and the lid comes away. The dead were buried with more than their shrouds.",
+            decisions: [
+                {
+                    text: "Take what lies inside.",
+                    corruption: 2,
+                    outcomes: [{
+                        weight: 100,
+                        results: [
+                            { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "old_grave_loot", rolls: 3 } },
+                            { type: "AWARD_XP", payload: { amount: 7, target: "active_character" } },
+                            { type: "DESTROY_OBJECT" },
+                            { type: "END_ENCOUNTER", payload: null }
+                        ]
+                    }]
                 }
             ]
         },

@@ -12,6 +12,10 @@ const stages = mysteriousAltar.stages;
 const results = (d) => [...(d.outcomes || []), ...(d.successOutcomes || []), ...(d.failureOutcomes || [])].flatMap(o => o.results);
 const nextOf = (stageId) => stages[stageId].decisions.flatMap(d => results(d)).filter(r => r.type === 'ADVANCE_STAGE').map(r => r.payload.stageId);
 
+// his last line is told over a few stages; the fight is on the last of them
+let lastBeat = 'darius_wrath';
+while (stages[`darius_wrath_${lastBeat === 'darius_wrath' ? 2 : Number(lastBeat.split('_').pop()) + 1}`]) lastBeat = lastBeat === 'darius_wrath' ? 'darius_wrath_2' : `darius_wrath_${Number(lastBeat.split('_').pop()) + 1}`;
+
 // walk the conversation from the moment the meteorite is set down
 const walk = () => {
     const seen = [], queue = ['darius_rises'];
@@ -27,26 +31,28 @@ const walk = () => {
 test('setting the meteorite down starts the conversation, and it plays out in order to the fight', () => {
     const setDown = stages.at_the_altar.decisions.find(d => /meteorite/i.test(d.text));
     assert.ok(results(setDown).some(r => r.type === 'ADVANCE_STAGE' && r.payload.stageId === 'darius_rises'));
-    assert.deepEqual(walk(), ['darius_rises', 'darius_weeps', 'darius_king', 'darius_late', 'darius_sees', 'darius_envy', 'darius_wrath']);
+    // each of his lines is told over a few short stages (darius_king, darius_king_2, ...): the beats come in order
+    assert.deepEqual(walk().filter(id => !/_\d+$/.test(id)), ['darius_rises', 'darius_weeps', 'darius_king', 'darius_late', 'darius_sees', 'darius_envy', 'darius_wrath']);
 });
 
 test('every stage of it is wired: it has a way on, its cues exist, its text fits, and only the last one fights', () => {
     for (const id of walk()) {
         const s = stages[id];
         assert.ok(s.text && s.displayText && s.image, `${id} has text, a title and a picture`);
-        assert.ok(s.text.length <= 520, `${id}: the text fits the box (${s.text.length})`);
+        assert.ok(s.text.length <= 300, `${id}: the text fits the box (${s.text.length})`);
+        assert.ok(s.text.split(/(?<=[.!?]["]?)\s+(?=["{A-Z])/).length <= 2, `${id}: one sentence, two at most`);
         assert.ok(s.decisions.length >= 1, `${id} has a button`);
-        for (const d of s.decisions) assert.ok(d.customActionText, `${id}: "${d.text}" says what you do or say`);
+        for (const d of s.decisions) assert.ok(d.customActionText || d.text === 'Continue.', `${id}: "${d.text}" says what you do or say`);
         if (s.tone) assert.ok(TONES[s.tone], `${id}: unknown tone ${s.tone}`);
         if (s.effect) assert.ok(EFFECTS[s.effect], `${id}: unknown effect ${s.effect}`);
         const fights = s.decisions.flatMap(results).filter(r => r.type === 'START_BATTLE');
-        assert.equal(fights.length > 0, id === 'darius_wrath', `${id}: only the last stage starts the fight`);
+        assert.equal(fights.length > 0, id === lastBeat, `${id}: only the last stage starts the fight`);
         for (const n of nextOf(id)) assert.ok(stages[n], `${id}: ADVANCE_STAGE to the missing stage ${n}`);
     }
 });
 
 test('he weeps for his king, sees the meteorite, and turns on you in envy', () => {
-    const say = (id) => stages[id].text;
+    const say = (id) => { const parts = [stages[id].text]; while (stages[`${id}_${parts.length + 1}`]) parts.push(stages[`${id}_${parts.length + 1}`].text); return parts.join(' '); };
     assert.match(say('darius_rises'), /weeping/);
     assert.match(say('darius_weeps'), /king/i);
     assert.match(say('darius_king'), /Groveler/);
@@ -60,7 +66,7 @@ test('the music: darius-final-battle for the encounter, bossbattle for the fight
     assert.equal(stages.darius_rises.bgm, 'dariusEncounterBgm');
     assert.equal(stages.darius_rises.ambience, 'none');
     assert.equal(stages.darius_wrath.ambience, 'altarDrone');
-    const start = stages.darius_wrath.decisions[0].outcomes[0].results.find(r => r.type === 'START_BATTLE');
+    const start = stages[lastBeat].decisions[0].outcomes[0].results.find(r => r.type === 'START_BATTLE');
     assert.equal(start.payload.tableId, 'darius_boss');
     assert.equal(start.payload.bgm, 'bossBattleBgm');
     assert.deepEqual(start.payload.afterVictory, { encounterId: 'act_two' }, 'winning still ends in act 2');

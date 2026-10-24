@@ -1,5 +1,16 @@
 // ITEM VALUES (currency): the scale is 5x the old one, so a Shortsword is 100. Every item keeps its price relative to the others.
 // (artifact_of_the_dev, a test item, keeps its 9999.)
+
+// ARMOR TIERS. Tier 0 is the tattered starter gear. Tier 1 is cloth, leather and iron: the same tier, built for different characters, so a set is chosen
+// by the build and not by which is "best":
+//   cloth    high magic defense and resistance (all nine magic types), low physical, and Insight recovery          -> casters
+//   leather  medium physical and medium magic defense and resistance, Stamina recovery, and light feet           -> quick fighters
+//   iron     the highest physical defense and resistance in the game, low magic, at the cost of speed            -> front-liners
+//   (whole-set resistance: cloth 3% physical / 15% magic, leather 9% physical / 8% magic, iron 15% physical / 3% magic)
+const MAGIC_TYPES = ['fire', 'ice', 'lightning', 'water', 'earth', 'wind', 'light', 'dark', 'arcane'];
+const perMagicType = (n) => Object.fromEntries(MAGIC_TYPES.map(t => [t, n]));
+const perPhysType = (n) => ({ blunt: n, slash: n, pierce: n });
+
 export const ItemDefinitions = {
   // --- WEAPONS ---
   "wooden_stick": {
@@ -97,12 +108,12 @@ export const ItemDefinitions = {
     description: 'A battered handaxe. After the fall of Altus kingdom, many common tools were repurposed as weapons much like this well worn axe. "An axe is a simple lever. The harder you pull the lever, the quicker your work becomes." - Commander Mentoras.',
     value: 100,
     icon: { col: 2, row: 0 },
-    attack: { blunt: 3, slash: 3 },
+    attack: { blunt: 2, slash: 2 },   // a tool first: clearly behind the shortsword (3 / 3, +2 / +2 per level)
     grantedAbilities: ["slash", "strike"],
     harvestTool: ["axe"],
     maxLevel: 5,
     statGrowth: {
-      attack: { blunt: 2, slash: 2 }
+      attack: { blunt: 1, slash: 1 }
     },
     abilityUnlocks: {
       2: ["cleave"],
@@ -111,8 +122,8 @@ export const ItemDefinitions = {
     upgradeCosts: {
       2: { currency: 50, materials: { "hard_wood": 5, "stone": 10, "soft_wood": 10, "plant_fibers": 15 } },
       3: { currency: 150, materials: { "bronze_ingot": 5, "hard_wood": 10, "soft_wood": 15 } },
-      4: { currency: 300, materials: { "iron_ingot": 5, "bronze_ingot": 10, "hard_wood": 15 } },
-      5: { currency: 500, materials: { "steel_ingot": 5, "iron_ingot": 10, "bronze_ingot": 15 } }
+      4: { currency: 300, materials: { "bronze_ingot": 10, "hard_wood": 15, "stone": 10 } },   // no iron: the handaxe is a tool first, like the pickaxe
+      5: { currency: 500, materials: { "bronze_ingot": 15, "hard_wood": 20, "stone": 15 } }
     }
   },
   "pickaxe": {
@@ -143,11 +154,11 @@ export const ItemDefinitions = {
     description: 'A standard shortbow. Common bow used to hunt game and defend against threats. "Sometimes its better to end a fight from afar before it begins." - Commander Mentoras.',
     value: 100,
     icon: { col: 5, row: 0 },
-    attack: { pierce: 3, slash: 3 },
+    attack: { pierce: 4, slash: 3 },
     grantedAbilities: ["loose_arrow", "quick_draw"],
     maxLevel: 5,
     statGrowth: {
-      attack: { pierce: 2, slash: 2 }
+      attack: { pierce: 3, slash: 2 }
     },
     abilityUnlocks: {
       2: ["poisoned_arrow"],
@@ -168,11 +179,11 @@ export const ItemDefinitions = {
     description: 'A standard crossbow. Standard issue crossbow of the Alterian watchmen. "A crossbow is the bow of a lazy man, and the weapon of an efficient adversary." - Commander Mentoras.',
     value: 100,
     icon: { col: 6, row: 0 },
-    attack: { pierce: 3, slash: 3 },
+    attack: { pierce: 4, slash: 3 },
     grantedAbilities: ["loose_arrow", "quick_draw"],
     maxLevel: 5,
     statGrowth: {
-      attack: { pierce: 2, slash: 2 }
+      attack: { pierce: 3, slash: 2 }
     },
     abilityUnlocks: {
       2: ["poisoned_arrow"],
@@ -193,12 +204,12 @@ export const ItemDefinitions = {
     description: 'A standard warhammer. Heavy and crushing.',
     value: 100,
     icon: { col: 3, row: 0 },
-    attack: { blunt: 5},
+    attack: { blunt: 6 },
     grantedAbilities: ["strike", "cleave"],
     harvestTool: ["hammer"],
     maxLevel: 5,
     statGrowth: {
-      attack: { blunt: 3 }
+      attack: { blunt: 4 }
     },
     abilityUnlocks: {
       2: ["wild_swing"]
@@ -242,12 +253,12 @@ export const ItemDefinitions = {
     description: 'A repurposed farming tool with a wickedly curved blade. Originally forged to reap grain in the fertile valleys of Altus, it now harvests a far more grim crop. "The arc of a scythe is absolute. Do not swing at a single foe; swing to clear the field." - Commander Mentoras.',
     value: 125,
     icon: { col: 8, row: 0 },
-    attack: { slash: 5, pierce: 1 },
+    attack: { slash: 6, pierce: 1 },
     grantedAbilities: ["slash"],
     harvestTool: ["sickle"],
     maxLevel: 5,
     statGrowth: {
-      attack: { slash: 3, pierce: 1 }
+      attack: { slash: 4, pierce: 1 }
     },
     abilityUnlocks: {
       2: ["execute"]
@@ -267,11 +278,11 @@ export const ItemDefinitions = {
     description: 'A polearm tipped with a sweeping blade. Standard issue for vanguard elite units tasked with holding back swarms. "A spear thrusts to kill one; a glaive sweeps to remind an army why they fear the front line." - Commander Mentoras.',
     value: 150,
     icon: { col: 7, row: 0 },
-    attack: { slash: 4, pierce: 3 },
+    attack: { slash: 5, pierce: 3 },
     grantedAbilities: ["slash", "thrust"],
     maxLevel: 5,
     statGrowth: {
-      attack: { slash: 2, pierce: 2 }
+      attack: { slash: 3, pierce: 2 }
     },
     abilityUnlocks: {
       2: ["cleave"],
@@ -529,6 +540,7 @@ export const ItemDefinitions = {
   // --- TATTERED ARMOR SET (Non-Upgradeable Starter Gear) ---
   "tattered_hood": {
     id: "tattered_hood",
+    tier: 0,
     name: "Tattered Hood",
     slot: "head",
     type: "armor",
@@ -540,6 +552,7 @@ export const ItemDefinitions = {
   },
   "tattered_shirt": {
     id: "tattered_shirt",
+    tier: 0,
     name: "Tattered Shirt",
     slot: "torso",
     type: "armor",
@@ -551,6 +564,7 @@ export const ItemDefinitions = {
   },
   "tattered_gloves": {
     id: "tattered_gloves",
+    tier: 0,
     name: "Tattered Gloves",
     slot: "arms",
     type: "armor",
@@ -562,6 +576,7 @@ export const ItemDefinitions = {
   },
   "tattered_pants": {
     id: "tattered_pants",
+    tier: 0,
     name: "Tattered Pants",
     slot: "legs",
     type: "armor",
@@ -573,6 +588,7 @@ export const ItemDefinitions = {
   },
   "tattered_boots": {
     id: "tattered_boots",
+    tier: 0,
     name: "Tattered Boots",
     slot: "feet",
     type: "armor",
@@ -589,14 +605,16 @@ export const ItemDefinitions = {
     name: "Cloth Hood",
     slot: "head",
     type: "armor",
-    description: "A simple hood that keeps the rain off.",
+    description: "A hood of tightly woven cloth. Quiet to wear, and it hums faintly against hostile magic.",
     value: 75,
     icon: { col: 1, row: 0 },
-    defense: { slash: 1 },
-    resistance: { arcane: 0.01, light: 0.01, dark: 0.01 },
+    tier: 1,
+    defense: { slash: 1, ...perMagicType(2) },
+    resistance: { ...perPhysType(0.01), ...perMagicType(0.03) },
+    resources: { insightRecovery: 1 },
     maxLevel: 5,
     statGrowth: {
-      defense: { slash: 1, blunt: 1 }
+      defense: perMagicType(1)
     },
     upgradeCosts: {
       2: { currency: 20, materials: { "soft_wood": 2 } },
@@ -608,14 +626,17 @@ export const ItemDefinitions = {
     name: "Cloth Robe",
     slot: "torso",
     type: "armor",
-    description: "A simple woven robe.",
+    description: "A woven robe sewn through with warding thread. Poor against a blade, and very good against a spell.",
     value: 200,
     icon: { col: 1, row: 1 },
-    defense: { blunt: 1, slash: 1, pierce: 1 },
-    resistance: { fire: 0.01, ice: 0.01, arcane: 0.02 },
+    tier: 1,
+    grantedAbilities: ["draw_insight"],
+    defense: { blunt: 1, slash: 1, pierce: 1, ...perMagicType(4) },
+    resistance: { ...perPhysType(0.01), ...perMagicType(0.05) },
+    resources: { insightRecovery: 2 },
     maxLevel: 5,
     statGrowth: {
-      defense: { blunt: 1, slash: 1, pierce: 1 }
+      defense: perMagicType(1)
     },
     upgradeCosts: {
       2: { currency: 40, materials: { "soft_wood": 3 } },
@@ -627,14 +648,15 @@ export const ItemDefinitions = {
     name: "Cloth Gloves",
     slot: "arms",
     type: "armor",
-    description: "Thin gloves. Better than bare hands.",
+    description: "Thin gloves stitched with warding thread.",
     value: 60,
     icon: { col: 1, row: 2 },
-    defense: { blunt: 1 },
-    resistance: { ice: 0.01 },
+    tier: 1,
+    defense: { blunt: 1, ...perMagicType(1) },
+    resistance: perMagicType(0.02),
     maxLevel: 5,
     statGrowth: {
-      defense: { blunt: 1 }
+      defense: perMagicType(1)
     },
     upgradeCosts: {
       2: { currency: 15, materials: { "soft_wood": 1 } },
@@ -646,14 +668,16 @@ export const ItemDefinitions = {
     name: "Cloth Pants",
     slot: "legs",
     type: "armor",
-    description: "Standard woven trousers.",
+    description: "Woven trousers that turn aside a little magic.",
     value: 125,
     icon: { col: 1, row: 3 },
-    defense: { blunt: 1, slash: 1 },
-    resistance: { arcane: 0.01 },
+    tier: 1,
+    defense: { blunt: 1, slash: 1, ...perMagicType(3) },
+    resistance: { ...perPhysType(0.01), ...perMagicType(0.03) },
+    resources: { insightRecovery: 1 },
     maxLevel: 5,
     statGrowth: {
-      defense: { blunt: 1, slash: 1 }
+      defense: perMagicType(1)
     },
     upgradeCosts: {
       2: { currency: 25, materials: { "soft_wood": 2 } },
@@ -665,14 +689,15 @@ export const ItemDefinitions = {
     name: "Cloth Shoes",
     slot: "feet",
     type: "armor",
-    description: "Soft-soled shoes.",
+    description: "Soft-soled shoes. The thread in the hem eases the flow of magic.",
     value: 90,
     icon: { col: 1, row: 4 },
-    defense: { blunt: 1 },
-    resistance: { fire: 0.01 },
+    tier: 1,
+    defense: { blunt: 1, ...perMagicType(1) },
+    resistance: perMagicType(0.02),
     maxLevel: 5,
     statGrowth: {
-      defense: { blunt: 1 }
+      defense: perMagicType(1)
     },
     upgradeCosts: {
       2: { currency: 15, materials: { "soft_wood": 1 } },
@@ -689,7 +714,9 @@ export const ItemDefinitions = {
     description: "A boiled leather cap.",
     value: 75,
     icon: { col: 2, row: 0 },
-    defense: { blunt: 1, slash: 2, pierce: 1 },
+    tier: 1,
+    defense: { blunt: 1, slash: 2, pierce: 2 },
+    resistance: { ...perPhysType(0.02), ...perMagicType(0.02) },
     maxLevel: 5,
     statGrowth: {
       defense: { blunt: 1, slash: 1 }
@@ -707,7 +734,11 @@ export const ItemDefinitions = {
     description: "Toughened leather that provides decent protection.",
     value: 200,
     icon: { col: 2, row: 1 },
-    defense: { blunt: 3, slash: 4, pierce: 2 },
+    tier: 1,
+    grantedAbilities: ["recuperate"],
+    defense: { blunt: 4, slash: 4, pierce: 3 },
+    resistance: { ...perPhysType(0.03), ...perMagicType(0.03) },
+    resources: { staminaRecovery: 2 },
     maxLevel: 5,
     statGrowth: {
       defense: { blunt: 1, slash: 2, pierce: 1 }
@@ -725,7 +756,10 @@ export const ItemDefinitions = {
     description: "Stiff leather arm guards.",
     value: 60,
     icon: { col: 2, row: 2 },
+    tier: 1,
     defense: { blunt: 1, slash: 2, pierce: 1 },
+    resistance: { ...perPhysType(0.01), ...perMagicType(0.01) },
+    resources: { staminaRecovery: 1 },
     maxLevel: 5,
     statGrowth: {
       defense: { slash: 1 }
@@ -743,7 +777,10 @@ export const ItemDefinitions = {
     description: "Thick leather chaps.",
     value: 125,
     icon: { col: 2, row: 3 },
-    defense: { blunt: 2, slash: 2, pierce: 1 },
+    tier: 1,
+    defense: { blunt: 2, slash: 3, pierce: 2 },
+    resistance: { ...perPhysType(0.02), ...perMagicType(0.01) },
+    resources: { staminaRecovery: 1 },
     maxLevel: 5,
     statGrowth: {
       defense: { blunt: 1, slash: 1 }
@@ -761,7 +798,9 @@ export const ItemDefinitions = {
     description: "Sturdy leather boots with good grip.",
     value: 90,
     icon: { col: 2, row: 4 },
-    defense: { blunt: 1, slash: 1, pierce: 1 },
+    tier: 1,
+    defense: { blunt: 1, slash: 2, pierce: 1 },
+    resistance: { ...perPhysType(0.01), ...perMagicType(0.01) },
     combat: { speed: 1 },
     maxLevel: 5,
     statGrowth: {
@@ -782,7 +821,9 @@ export const ItemDefinitions = {
     description: "A heavy iron helm that protects the skull.",
     value: 75,
     icon: { col: 3, row: 0 },
+    tier: 1,
     defense: { blunt: 2, slash: 3, pierce: 2 },
+    resistance: { ...perPhysType(0.03), ...perMagicType(0.01) },
     combat: { speed: -1 },
     maxLevel: 5,
     statGrowth: {
@@ -801,7 +842,10 @@ export const ItemDefinitions = {
     description: "Heavy iron plates that offer excellent defense.",
     value: 200,
     icon: { col: 3, row: 1 },
+    tier: 1,
+    grantedAbilities: ["bolster"],
     defense: { blunt: 5, slash: 6, pierce: 5 },
+    resistance: { ...perPhysType(0.05), ...perMagicType(0.01) },
     combat: { speed: -2 },
     maxLevel: 5,
     statGrowth: {
@@ -820,7 +864,9 @@ export const ItemDefinitions = {
     description: "Plated gloves. Heavy but highly protective.",
     value: 60,
     icon: { col: 3, row: 2 },
+    tier: 1,
     defense: { blunt: 2, slash: 2, pierce: 2 },
+    resistance: { ...perPhysType(0.02) },
     maxLevel: 5,
     statGrowth: {
       defense: { blunt: 1, slash: 1, pierce: 1 }
@@ -838,7 +884,9 @@ export const ItemDefinitions = {
     description: "Solid iron leg guards.",
     value: 125,
     icon: { col: 3, row: 3 },
+    tier: 1,
     defense: { blunt: 3, slash: 4, pierce: 3 },
+    resistance: { ...perPhysType(0.03), ...perMagicType(0.01) },
     combat: { speed: -1 },
     maxLevel: 5,
     statGrowth: {
@@ -857,7 +905,9 @@ export const ItemDefinitions = {
     description: "Heavy iron-shod boots.",
     value: 90,
     icon: { col: 3, row: 4 },
+    tier: 1,
     defense: { blunt: 2, slash: 2, pierce: 2 },
+    resistance: { ...perPhysType(0.02) },
     combat: { speed: -1 },
     maxLevel: 5,
     statGrowth: {
@@ -1174,7 +1224,7 @@ export const ItemDefinitions = {
     id: "bandage",
     name: "Bandage",
     type: "consumable",
-    description: "A clean roll of cloth pressed hard over a wound. Stops bleeding.",
+    description: "A clean roll of cloth pressed hard over a wound. Stops bleeding and closes the wound a little.",
     value: 8,
     icon: { col: 7, row: 1 },
     useAbility: "item_bandage",
@@ -1186,7 +1236,7 @@ export const ItemDefinitions = {
     id: "antidote",
     name: "Antidote",
     type: "consumable",
-    description: "A bitter golden draught that drives venom out of the blood. Cures poison.",
+    description: "A bitter golden draught that drives venom out of the blood. Cures poison and restores a little health.",
     value: 12,
     icon: { col: 5, row: 1 },
     useAbility: "item_antidote",
@@ -1198,7 +1248,7 @@ export const ItemDefinitions = {
     id: "aloe",
     name: "Aloe",
     type: "consumable",
-    description: "A fleshy leaf full of cool gel that soothes scorched skin. Cures burns. Grows wild in the desert.",
+    description: "A fleshy leaf full of cool gel that soothes scorched skin. Cures burns and restores a little health. Grows wild in the desert.",
     value: 6,
     icon: { col: 8, row: 1 },
     useAbility: "item_aloe",

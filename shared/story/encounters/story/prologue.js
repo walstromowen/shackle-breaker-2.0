@@ -29,7 +29,21 @@ export const prologue = {
             image: { sheet: "encounter_prologue", col: 0, row: 0 },
             bgm: "plainsBgmDay",
             ambience: "prologueMarch",
-            text: "You look down at your wrists. Metal shackles bind you to the prisoner ahead of you. It pulls, and you follow. You don't remember how you got here, or how long you have been walking.",
+            text: "You look down at your wrists. Metal shackles bind you to the prisoner ahead of you.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "iron_2" } }] }]
+                }
+            ]
+        },
+
+        iron_2: {
+            displayText: "Shackled",
+            tone: "cold",
+            image: { sheet: "encounter_prologue", col: 0, row: 0 },
+            bgm: "plainsBgmDay",
+            text: "It pulls, and you follow. You don't remember how you got here, or how long you have been walking.",
             decisions: [
                 {
                     text: "Walk.",
@@ -113,7 +127,20 @@ export const prologue = {
             displayText: "No Key",
             tone: "cold",
             image: { sheet: "encounter_prologue", col: 0, row: 1 }, // shares the chain's picture until its own cell (3,1) is painted
-            text: "The shackles are still locked around your wrists. You turn them over, searching for a keyhole, and find none. The metal is smooth and seamless, as though it was never forged, only grown around you.",
+            text: "The shackles are still locked around your wrists. You turn them over, searching for a keyhole, and find none.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "no_key_2" } }] }]
+                }
+            ]
+        },
+
+        no_key_2: {
+            displayText: "No Key",
+            tone: "cold",
+            image: { sheet: "encounter_prologue", col: 0, row: 1 },
+            text: "The metal is smooth and seamless, as though it was never forged, only grown around you.",
             decisions: [
                 {
                     text: "Search for a lock.",
@@ -145,7 +172,31 @@ export const prologue = {
             image: { sheet: "encounter_prologue", col: 2, row: 1 },
             sfx: "heartbeat",
             ambience: "none",
-            text: "You draw a steadying breath as reality grounds you. Before you stretches a silent, hollow wasteland. Memories flick in and out of focus making it difficult to discern what is real and what is illusion. But looking down at your wrists one thing is for certain: something is terribly wrong...",
+            text: "You draw a steadying breath as reality grounds you. Before you stretches a silent, hollow wasteland.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "awake_2" } }] }]
+                }
+            ]
+        },
+
+        awake_2: {
+            displayText: "Awake",
+            image: { sheet: "encounter_prologue", col: 2, row: 1 },
+            text: "Memories flick in and out of focus making it difficult to discern what is real and what is illusion.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "awake_3" } }] }]
+                }
+            ]
+        },
+
+        awake_3: {
+            displayText: "Awake",
+            image: { sheet: "encounter_prologue", col: 2, row: 1 },
+            text: "But looking down at your wrists one thing is for certain: something is terribly wrong...",
             decisions: [
                 {
                     text: "Draw a breath.",

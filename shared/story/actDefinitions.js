@@ -54,7 +54,7 @@ export const ACT_DEFINITIONS = {
         enemies: {
             // --- the shackled ---
             MAD_MAN:          { abilities: ['reckless_charge'], traits: ['quick'] },
-            ROTTER:           { abilities: ['eviscerate'], traits: ['tough'] },
+            ROTTER:           { abilities: ['eviscerate'], traits: ['tough', 'acidic'] },   // under the blood moon the remains turn acidic: the acid pool they leave behind
             MAGIC_ADDICT:     { abilities: ['drain_life'] },
             HOLLOW_HARVESTER: { abilities: ['drain_life'], traits: ['tough'] },
             LEGIONARY:        { abilities: ['shield_bash', 'cleave'], traits: ['iron_willed'] },

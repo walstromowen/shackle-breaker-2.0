@@ -267,7 +267,35 @@ export const mysteriousAltar = {
             ambienceFade: 2.0,
             bgm: "dariusEncounterBgm",   // assets/audio/music/Darius_battle_bgm.mp3
             image: { col: 3, row: 1 },
-            text: "The moment the meteorite touches the stone, the altar drinks its glow, and the hum that has filled this place thins to a single held note. Behind the altar, in the dark, someone is weeping. A hunched figure in a tattered hood kneels with his brow against the floor, shoulders shaking, the way a man weeps when he has done it for so long that it is the only sound he has left.",
+            text: "The moment the meteorite touches the stone, the altar drinks its glow, and the hum that has filled this place thins to a single held note.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_rises_2" } }] }]
+                }
+            ]
+        },
+
+        darius_rises_2: {
+            displayText: "The Kneeling Man",
+            tone: "arcane",
+            image: { col: 3, row: 1 },
+            bgm: "dariusEncounterBgm",
+            text: "Behind the altar, in the dark, someone is weeping.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_rises_3" } }] }]
+                }
+            ]
+        },
+
+        darius_rises_3: {
+            displayText: "The Kneeling Man",
+            tone: "arcane",
+            image: { col: 3, row: 1 },
+            bgm: "dariusEncounterBgm",
+            text: "A hunched figure in a tattered hood kneels with his brow against the floor, shoulders shaking, the way a man weeps when he has done it for so long that it is the only sound he has left.",
             decisions: [
                 {
                     text: "Step closer.",
@@ -281,7 +309,43 @@ export const mysteriousAltar = {
             sfx: "whispers",
             sfxVolume: 0.5,
             image: { col: 3, row: 1 },
-            text: "\"He said he would come,\" the figure whispers, to the stone and not to you. \"Keep the light, Darius, he said. Keep it burning and I shall return for it. So I kept it. Through every winter. Through the long dark, when the torches burned to nothing and I kept it still. My king. My king.\"",
+            text: "\"He said he would come,\" the figure whispers, to the stone and not to you. \"Keep the light, Darius, he said.\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_weeps_2" } }] }]
+                }
+            ]
+        },
+
+        darius_weeps_2: {
+            displayText: "A Promise",
+            image: { col: 3, row: 1 },
+            text: "\"Keep it burning and I shall return for it. So I kept it.\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_weeps_3" } }] }]
+                }
+            ]
+        },
+
+        darius_weeps_3: {
+            displayText: "A Promise",
+            image: { col: 3, row: 1 },
+            text: "\"Through every winter. Through the long dark, when the torches burned to nothing and I kept it still.\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_weeps_4" } }] }]
+                }
+            ]
+        },
+
+        darius_weeps_4: {
+            displayText: "A Promise",
+            image: { col: 3, row: 1 },
+            text: "\"My king. My king.\"",
             decisions: [
                 {
                     text: "\"Darius?\"",
@@ -298,7 +362,67 @@ export const mysteriousAltar = {
         darius_king: {
             displayText: "The Groveler",
             image: { col: 3, row: 1 },
-            text: "The hood lifts, only a little. Beneath it is a face that was kind once. \"They called me the Groveler,\" he says, almost fondly. \"For the kneeling. As if there were shame in it. I knelt because no one else was worthy of my knees.\" He looks past you, down the dark way you came. \"Did you pass him on the road? He would be tall. He would wear the old colors, and he would be smiling. He promised.\"",
+            text: "The hood lifts, only a little. Beneath it is a face that was kind once.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_king_2" } }] }]
+                }
+            ]
+        },
+
+        darius_king_2: {
+            displayText: "The Groveler",
+            image: { col: 3, row: 1 },
+            text: "\"They called me the Groveler,\" he says, almost fondly. \"For the kneeling.\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_king_3" } }] }]
+                }
+            ]
+        },
+
+        darius_king_3: {
+            displayText: "The Groveler",
+            image: { col: 3, row: 1 },
+            text: "\"As if there were shame in it. I knelt because no one else was worthy of my knees.\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_king_4" } }] }]
+                }
+            ]
+        },
+
+        darius_king_4: {
+            displayText: "The Groveler",
+            image: { col: 3, row: 1 },
+            text: "He looks past you, down the dark way you came. \"Did you pass him on the road?\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_king_5" } }] }]
+                }
+            ]
+        },
+
+        darius_king_5: {
+            displayText: "The Groveler",
+            image: { col: 3, row: 1 },
+            text: "\"He would be tall. He would wear the old colors, and he would be smiling.\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_king_6" } }] }]
+                }
+            ]
+        },
+
+        darius_king_6: {
+            displayText: "The Groveler",
+            image: { col: 3, row: 1 },
+            text: "\"He promised.\"",
             decisions: [
                 {
                     text: "\"No one is coming.\"",
@@ -315,7 +439,43 @@ export const mysteriousAltar = {
         darius_late: {
             displayText: "Late",
             image: { col: 3, row: 1 },
-            text: "For a moment the weeping stops, and the silence is worse. \"No,\" Darius says softly, the way one refuses a child who has said something cruel. \"He is only late. Kings are never early. A king comes when the hour is ready for him, and I am ready. I have been ready for so long.\" His pale hands press flat against the stone, as if it were a door he could wear open. \"He told me he would send a sign.\"",
+            text: "For a moment the weeping stops, and the silence is worse. \"No,\" Darius says softly, the way one refuses a child who has said something cruel.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_late_2" } }] }]
+                }
+            ]
+        },
+
+        darius_late_2: {
+            displayText: "Late",
+            image: { col: 3, row: 1 },
+            text: "\"He is only late. Kings are never early.\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_late_3" } }] }]
+                }
+            ]
+        },
+
+        darius_late_3: {
+            displayText: "Late",
+            image: { col: 3, row: 1 },
+            text: "\"A king comes when the hour is ready for him, and I am ready. I have been ready for so long.\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_late_4" } }] }]
+                }
+            ]
+        },
+
+        darius_late_4: {
+            displayText: "Late",
+            image: { col: 3, row: 1 },
+            text: "His pale hands press flat against the stone, as if it were a door he could wear open. \"He told me he would send a sign.\"",
             decisions: [
                 {
                     text: "Wait.",
@@ -329,7 +489,67 @@ export const mysteriousAltar = {
             effect: "jolt",
             sfx: "heartbeat",
             image: { col: 0, row: 1 },
-            text: "He sees it then: the fallen star in the hollow of the altar, black and humming, beside the skull. His eyes go from it to your hands, which carried it here, and to the iron on your wrists. \"That is the king's,\" he breathes. \"A star, from the sky, to the altar. He sent a sign, and it has come to me.\" His mouth trembles into a smile. It does not last. \"No. Not to me. You carried it. You carried it all this way.\"",
+            text: "He sees it then: the fallen star in the hollow of the altar, black and humming, beside the skull.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_sees_2" } }] }]
+                }
+            ]
+        },
+
+        darius_sees_2: {
+            displayText: "The Star",
+            image: { col: 0, row: 1 },
+            text: "His eyes go from it to your hands, which carried it here, and to the iron on your wrists. \"That is the king's,\" he breathes.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_sees_3" } }] }]
+                }
+            ]
+        },
+
+        darius_sees_3: {
+            displayText: "The Star",
+            image: { col: 0, row: 1 },
+            text: "\"A star, from the sky, to the altar. He sent a sign, and it has come to me.\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_sees_4" } }] }]
+                }
+            ]
+        },
+
+        darius_sees_4: {
+            displayText: "The Star",
+            image: { col: 0, row: 1 },
+            text: "His mouth trembles into a smile. It does not last.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_sees_5" } }] }]
+                }
+            ]
+        },
+
+        darius_sees_5: {
+            displayText: "The Star",
+            image: { col: 0, row: 1 },
+            text: "\"No. Not to me.\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_sees_6" } }] }]
+                }
+            ]
+        },
+
+        darius_sees_6: {
+            displayText: "The Star",
+            image: { col: 0, row: 1 },
+            text: "\"You carried it. You carried it all this way.\"",
             decisions: [
                 {
                     text: "\"I only found it.\"",
@@ -347,7 +567,72 @@ export const mysteriousAltar = {
             displayText: "Chosen",
             tone: "gold",
             image: { col: 3, row: 1 },
-            text: "\"He gave it to you.\" It is hardly a voice at all. \"Winter after winter I knelt. I said his name until it wore smooth in my mouth. And he did not come for me. He did not so much as look. He sent the star to a stranger in chains.\" Darius rises, unfolding slowly, far taller than he looked. The pale light in his hands is the same as the light in the stone. \"What did you do to be loved like that? What does a stranger have that I did not?\"",
+            text: "\"He gave it to you.\" It is hardly a voice at all.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_envy_2" } }] }]
+                }
+            ]
+        },
+
+        darius_envy_2: {
+            displayText: "Chosen",
+            tone: "gold",
+            image: { col: 3, row: 1 },
+            text: "\"Winter after winter I knelt. I said his name until it wore smooth in my mouth.\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_envy_3" } }] }]
+                }
+            ]
+        },
+
+        darius_envy_3: {
+            displayText: "Chosen",
+            tone: "gold",
+            image: { col: 3, row: 1 },
+            text: "\"And he did not come for me. He did not so much as look.\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_envy_4" } }] }]
+                }
+            ]
+        },
+
+        darius_envy_4: {
+            displayText: "Chosen",
+            tone: "gold",
+            image: { col: 3, row: 1 },
+            text: "\"He sent the star to a stranger in chains.\" Darius rises, unfolding slowly, far taller than he looked.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_envy_5" } }] }]
+                }
+            ]
+        },
+
+        darius_envy_5: {
+            displayText: "Chosen",
+            tone: "gold",
+            image: { col: 3, row: 1 },
+            text: "The pale light in his hands is the same as the light in the stone. \"What did you do to be loved like that?\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_envy_6" } }] }]
+                }
+            ]
+        },
+
+        darius_envy_6: {
+            displayText: "Chosen",
+            tone: "gold",
+            image: { col: 3, row: 1 },
+            text: "\"What does a stranger have that I did not?\"",
             decisions: [
                 {
                     text: "\"He did not send it to me.\"",
@@ -369,7 +654,46 @@ export const mysteriousAltar = {
             ambience: "altarDrone",
             ambienceFade: 0.6,
             image: { col: 2, row: 1 },
-            text: "\"Then give it back.\" The hum in the stone climbs into a cry, and the dark behind the altar leans toward him like a congregation. \"Give it back. Give me his love. It was mine. It was always going to be mine.\" The weeping has become something else. The light in his hands is no longer gentle, and it is turned on you.",
+            text: "\"Then give it back.\" The hum in the stone climbs into a cry, and the dark behind the altar leans toward him like a congregation.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_wrath_2" } }] }]
+                }
+            ]
+        },
+
+        darius_wrath_2: {
+            displayText: "His Love",
+            tone: "blood",
+            image: { col: 2, row: 1 },
+            text: "\"Give it back. Give me his love.\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_wrath_3" } }] }]
+                }
+            ]
+        },
+
+        darius_wrath_3: {
+            displayText: "His Love",
+            tone: "blood",
+            image: { col: 2, row: 1 },
+            text: "\"It was mine. It was always going to be mine.\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_wrath_4" } }] }]
+                }
+            ]
+        },
+
+        darius_wrath_4: {
+            displayText: "His Love",
+            tone: "blood",
+            image: { col: 2, row: 1 },
+            text: "The weeping has become something else. The light in his hands is no longer gentle, and it is turned on you.",
             decisions: [
                 {
                     text: "Face Darius the Groveler!",

@@ -92,7 +92,20 @@ export const wildHunt = {
       ambience: "none",
       ambienceFade: 3.0,
       image: { col: 0, row: 2 },
-      text: "The environment abruptly shifts. The woods here are dead silent—no birds, no insects. The deer finally stops in a fog-choked clearing, completely motionless.",
+      text: "The environment abruptly shifts. The woods here are dead silent—no birds, no insects.",
+      decisions: [
+          {
+              text: "Continue.",
+              outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "ominous_woods_2" } }] }]
+          }
+      ]
+    },
+
+    ominous_woods_2: {
+      displayText: "The Ominous Woods",
+      tone: "cold",
+      image: { col: 0, row: 2 },
+      text: "The deer finally stops in a fog-choked clearing, completely motionless.",
       decisions: [
         {
           text: "[DEX] Creep silently into the clearing.",
@@ -131,7 +144,20 @@ export const wildHunt = {
       sfx: "heartbeat",
       sfxVolume: 0.8,
       image: { col: 1, row: 2 },
-      text: "You track the deer to the center of the clearing. However, something is deeply wrong. The deer is frozen in place, trembling violently. It isn't grazing; it's staring wide-eyed into the pitch-black tree line, paralyzed by fear.",
+      text: "You track the deer to the center of the clearing. However, something is deeply wrong.",
+      decisions: [
+          {
+              text: "Continue.",
+              outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_anomaly_2" } }] }]
+          }
+      ]
+    },
+
+    the_anomaly_2: {
+      displayText: "An Unnatural Stillness",
+      tone: "cold",
+      image: { col: 1, row: 2 },
+      text: "The deer is frozen in place, trembling violently. It isn't grazing; it's staring wide-eyed into the pitch-black tree line, paralyzed by fear.",
       decisions: [
         {
           text: "[ATT] Hold perfectly still in the shadows.",
@@ -170,7 +196,21 @@ export const wildHunt = {
       sfx: "poachersNightmareCry",
       image: { col: 2, row: 0 },
       bgm: "poachersNightmareBgm",
-      text: "Because you stayed perfectly hidden, you bear witness to the horror. A hulking monstrosity drops from the canopy, crushing the deer into the earth with a sickening snap. The creature tosses the ruined carcass aside and begins to sniff the air. It then fixes its terrifying gaze right on you!",
+      text: "Because you stayed perfectly hidden, you bear witness to the horror. A hulking monstrosity drops from the canopy, crushing the deer into the earth with a sickening snap.",
+      decisions: [
+          {
+              text: "Continue.",
+              outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "boss_revealed_2" } }] }]
+          }
+      ]
+    },
+
+    boss_revealed_2: {
+      displayText: "The True Predator",
+      tone: "blood",
+      image: { col: 2, row: 0 },
+      bgm: "poachersNightmareBgm",
+      text: "The creature tosses the ruined carcass aside and begins to sniff the air. It then fixes its terrifying gaze right on you!",
       decisions: [
         {
           text: "Charge the monstrosity!",
@@ -192,7 +232,33 @@ export const wildHunt = {
       effect: "jolt",
       sfx: "twigSnap",
       image: { col: 2, row: 0 },
-      text: "*CRACK.* You shift your weight, snapping a buried root. The deer bolts in terror, but a horrifying monstrosity erupts from the brush, snatching the animal mid-leap and violently snapping its neck. The creature drops the carcass and locks its malevolent gaze onto you with a deafening roar!",
+      text: "*CRACK.* You shift your weight, snapping a buried root.",
+      decisions: [
+          {
+              text: "Continue.",
+              outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "boss_surprised_2" } }] }]
+          }
+      ]
+    },
+
+    boss_surprised_2: {
+      displayText: "The Trap is Sprung",
+      tone: "blood",
+      image: { col: 2, row: 0 },
+      text: "The deer bolts in terror, but a horrifying monstrosity erupts from the brush, snatching the animal mid-leap and violently snapping its neck.",
+      decisions: [
+          {
+              text: "Continue.",
+              outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "boss_surprised_3" } }] }]
+          }
+      ]
+    },
+
+    boss_surprised_3: {
+      displayText: "The Trap is Sprung",
+      tone: "blood",
+      image: { col: 2, row: 0 },
+      text: "The creature drops the carcass and locks its malevolent gaze onto you with a deafening roar!",
       decisions: [
         {
           text: "Draw your weapon!",
@@ -213,7 +279,20 @@ export const wildHunt = {
       effect: "jolt",
       sfx: "arrowHit",
       image: { col: 2, row: 3 },
-      text: "A perfect shot. The deer falls instantly. You quickly get to work, harvesting the creature for valuable leather before making your way back to safety.",
+      text: "A perfect shot. The deer falls instantly.",
+      decisions: [
+          {
+              text: "Continue.",
+              outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "successful_hunt_2" } }] }]
+          }
+      ]
+    },
+
+    successful_hunt_2: {
+      displayText: "A Clean Kill",
+      tone: "gold",
+      image: { col: 2, row: 3 },
+      text: "You quickly get to work, harvesting the creature for valuable leather before making your way back to safety.",
       decisions: [
         {
           text: "Collect the valuable materials.",
@@ -234,7 +313,19 @@ export const wildHunt = {
       effect: "jolt",
       sfx: "hoofbeats",
       image: { col: 1, row: 3 },
-      text: "The shot goes wide, striking a nearby tree! The deer immediately bolts into the dense underbrush. In seconds, it is completely gone.",
+      text: "The shot goes wide, striking a nearby tree! The deer immediately bolts into the dense underbrush.",
+      decisions: [
+          {
+              text: "Continue.",
+              outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "missed_shot_2" } }] }]
+          }
+      ]
+    },
+
+    missed_shot_2: {
+      displayText: "A Wide Miss",
+      image: { col: 1, row: 3 },
+      text: "In seconds, it is completely gone.",
       decisions: [
         {
           text: "Curse your luck and move on.",
@@ -251,7 +342,21 @@ export const wildHunt = {
       sfx: "twigSnap",
       image: { col: 1, row: 0 },
       bgm: "plainsBattleBgm",
-      text: "*SNAP*. While blindly searching for the lost trail, you step on a dry branch. Suddenly, another stag erupts from the brush, only it looks unnatural...",
+      text: "*SNAP*. While blindly searching for the lost trail, you step on a dry branch.",
+      decisions: [
+          {
+              text: "Continue.",
+              outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "startled_stag_2" } }] }]
+          }
+      ]
+    },
+
+    startled_stag_2: {
+      displayText: "The Wrong Prey",
+      tone: "blood",
+      image: { col: 1, row: 0 },
+      bgm: "plainsBattleBgm",
+      text: "Suddenly, another stag erupts from the brush, only it looks unnatural...",
       decisions: [
         {
           text: "Brace for the sudden fight!",

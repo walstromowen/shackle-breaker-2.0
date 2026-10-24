@@ -168,7 +168,8 @@ test('every spawn member exists, and every biome has a blood moon table that exi
 });
 
 test('Darius leads to the encounter that starts act 2, and that encounter grants the milestone', () => {
-    const rises = encounterDefinitions.mysterious_altar.stages.darius_wrath;
+    // Darius's last line is told over a few short stages: the fight is on the last of them
+    const rises = Object.values(encounterDefinitions.mysterious_altar.stages).find(s => JSON.stringify(s.decisions).includes('darius_boss'));
     const battle = rises.decisions[0].outcomes[0].results.find(r => r.type === 'START_BATTLE');
     assert.equal(battle.payload.tableId, 'darius_boss');
     assert.equal(battle.payload.afterVictory.encounterId, 'act_two');

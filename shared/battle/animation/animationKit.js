@@ -11,7 +11,11 @@
  *  QUICK REFERENCE
  * ---------------------------------------------------------------------------------------------------------------------
  *  anim(duration, { hit, audio, background, actor, vfx, target })
- *      duration   seconds. Everything below is in seconds from the start.
+ *      duration   seconds.
+ *      seconds    TIMES (every start / end below) are normally written as a FRACTION of the duration, because that is what the battle code compares
+ *                 them with (timer / duration): 0.5 is the middle. That is easy to get wrong for an animation that is not 1s long, so pass
+ *                 `seconds: true` to write every start / end in real seconds from the start instead ('hit' and 'end' times too); anim() converts them.
+ *                 (`life`, `hold`, gaps in repeat() / stream() are always seconds.)
  *      hit        optional "moment of impact". Any time can then be written relative to it ('hit', 'hit+0.2', 'end-0.3'),
  *                 so retiming an animation is one number instead of five.
  *
@@ -30,7 +34,8 @@
  *  spawn / travel / stream options
  *      life        seconds the sprite lives                 scale     size multiplier
  *      frames      frames in the sheet row (default 1)      size      source frame size in px (default 64)
- *      move        'static' | 'spread_and_fade' (a pool flowing outwards, then thinning away) | 'expand_and_fade' | 'rise_and_hold' (comes up from below, stays fully visible, then thins away) | 'shrink_and_fade' | 'float_up_and_pop' | 'swipe_diagonal' | 'swipe_diagonal_alt'
+ *      cell        [col, row]: draw ONE cell of a grid sheet (an item icon from 'consumables' or 'weapons' used as a projectile), `size` px per cell
+ *      move        'static' | 'spread_and_fade' (a pool flowing outwards, then thinning away) | 'expand_and_fade' | 'rise_and_hold' (comes up from below, stays fully visible, then thins away) | 'loom_over' (starts small and faint, swells slowly over the target, holds, then thins away) | 'shrink_and_fade' | 'float_up_and_pop' | 'swipe_diagonal' | 'swipe_diagonal_alt'
  *                  | 'diagonal_drop' | 'linear' | 'arc'      (travel defaults to 'linear')
  *      blend       'screen' (default, glowing) | 'normal' | 'multiply' (dark) | 'source-over'
  *      filter      css filter for the sprite (recolour it with tint())
@@ -39,18 +44,22 @@
  *      facing      with aim: which way the art points at rest, in degrees clockwise from right (an arrow drawn pointing
  *                  down-right is facing: 45)               spin        spin speed in radians/second
  *      fadeOut: false  stay fully visible until it lands
+ *      hold        seconds a travel sprite then STAYS at the target (an arrow stuck in it), quivering and fading out; `life` is then only the flight
  *      alpha       0..1 opacity (a faint copy a few ms behind makes a motion trail)
  *  burst options:  count, color, scale, minSpeed, maxSpeed, minLife, maxLife, gravity (negative floats up), drag, blend, at, alpha
  *                  glow: false  a plain dot with no halo (far cheaper; use it for rain, snow, sand and anything with dozens of dots)
  *                  angle (degrees: 0 right, 90 down, 180 left, 270 up) + cone (fan width, default 30): send the spray one way instead of every way
  *                  area: [width, height]  start anywhere in a box that size around the point (rain, snow, a sandstorm)
- *                  shape: 'puff' (a soft cloud, for fog and smoke) | 'fleck' (a tumbling flake of ash) | omitted (a glowing dot)
+ *                  shape: 'puff' (a soft cloud, for fog and smoke) | 'fleck' (a tumbling flake of ash) | 'streak' (a thin line, faint at its tail: concentration
+ *                         / speed lines; `length` px, send it with angle: 90 to fall) | omitted (a glowing dot)
  *                  wind: [x, y]  px/s the particles are blown toward, windPull: how fast they get there (per second, ~1 = a second),
  *                  sway: px/s of wandering as they drift (gusts), grow: scale change per second (a puff spreading out),
  *                  windJitter (0.5 = each one feels 50-150% of the wind, so a cloud stretches into a stream),
  *                  scaleJitter (0.4 = 60-140% of the size) and spinJitter (random tumble, radians/second) so no two look alike,
  *                  envelope: true  fade in, then thin away smoothly (instead of staying solid until the very end)
  *                  offsetX / offsetY      move the whole spray (e.g. offsetY: -260 starts it above the target)
+ *  orbit(start, { at, color, scale, radius, turns, phase, squash, life, alpha, blend, offsetX, offsetY })
+ *                  a glowing dot that circles the target (or at: 'source') and draws in towards it: three of them with phase 0, 2.09 and 4.19 make a ring of orbs
  *  repeat(start, count, gap, (t, i) => cue)   the same cue again and again: repeat(0, 12, 0.2, t => burst(t, { ... }))
  *  stream options: everything above, plus  jitter: n  (spreads the sprites up/down by up to 2n px) and
  *                  variants: [{ life, offsetY, scale }, ...]  (per-sprite values, cycled)
@@ -104,9 +113,12 @@ export const slideOut = (start, end, distance, extra = {}) => ({ type: 'slide_ou
 const blendOf = (b) => (b === undefined ? 'screen' : (b === 'source-over' ? undefined : b));
 
 const spriteConfig = (sheetKey, o = {}) => clean({
-    life: o.life ?? 0.5,
+    life: (o.life ?? 0.5) + (o.hold ?? 0),
+    flight: o.hold ? (o.life ?? 0.5) : undefined,
     sheetKey,
     frameCount: o.frames ?? 1,
+    cellCol: o.cell ? o.cell[0] : undefined,
+    cellRow: o.cell ? o.cell[1] : undefined,
     frameSize: o.size ?? 64,
     movement: o.move,
     arc: o.arc,
@@ -137,8 +149,18 @@ export const burst = (start, o = {}) => ({
         angle: o.angle, cone: o.cone,
         spreadX: o.area ? o.area[0] : undefined, spreadY: o.area ? o.area[1] : undefined,
         offsetX: o.offsetX, offsetY: o.offsetY,
-        shape: o.shape, windX: o.wind ? o.wind[0] : undefined, windY: o.wind ? o.wind[1] : undefined, windPull: o.windPull,
+        shape: o.shape, length: o.length, windX: o.wind ? o.wind[0] : undefined, windY: o.wind ? o.wind[1] : undefined, windPull: o.windPull,
         sway: o.sway, swayRate: o.swayRate, scaleDelta: o.grow, windJitter: o.windJitter, scaleJitter: o.scaleJitter, spinJitter: o.spinJitter, envelope: o.envelope
+    })
+});
+
+/** A dot (no sprite sheet needed) circling a point and drawing in towards it, see 'spiral' in particle.js. */
+export const orbit = (start, o = {}) => ({
+    start, type: 'spawn', origin: o.at || 'target',
+    config: clean({
+        life: o.life ?? 1.2, movement: 'spiral', color: o.color ?? '#ffffff', scale: o.scale ?? 0.5,
+        radius: o.radius, turns: o.turns, phase: o.phase, squash: o.squash,
+        glow: o.glow, alpha: o.alpha, blendMode: blendOf(o.blend), offsetX: o.offsetX, offsetY: o.offsetY
     })
 });
 
@@ -171,14 +193,17 @@ function resolveTime(value, hit, duration, where) {
     return round(base + (m[2] ? Number(m[2].replace(/\s/g, '')) : 0));
 }
 
-function walk(node, hit, duration, where) {
-    if (Array.isArray(node)) return node.flat().map((n, i) => walk(n, hit, duration, `${where}[${i}]`));
+function walk(node, hit, duration, where, seconds) {
+    if (Array.isArray(node)) return node.flat().map((n, i) => walk(n, hit, duration, `${where}[${i}]`, seconds));
     if (node && typeof node === 'object') {
         const out = {};
         for (const [k, v] of Object.entries(node)) {
             if (v === undefined) continue;
-            if ((k === 'start' || k === 'end') ) out[k] = resolveTime(v, hit, duration, `${where}.${k}`);
-            else out[k] = walk(v, hit, duration, `${where}.${k}`);
+            if ((k === 'start' || k === 'end') ) {
+                const at = resolveTime(v, hit, duration, `${where}.${k}`);
+                out[k] = seconds ? round(at / duration) : at;
+            }
+            else out[k] = walk(v, hit, duration, `${where}.${k}`, seconds);
         }
         return out;
     }
@@ -188,11 +213,11 @@ function walk(node, hit, duration, where) {
 /** Assemble an animation definition. Returns the plain object the battle code already understands. */
 export function anim(duration, spec = {}) {
     if (!(duration > 0)) throw new Error(`animationKit: duration must be above 0 (got ${duration})`);
-    const { hit, ...parts } = spec;
+    const { hit, seconds, ...parts } = spec;
     const ORDER = ['audio', 'background', 'actor', 'vfx', 'target'];
     const out = { duration };
     for (const k of [...ORDER, ...Object.keys(parts).filter(k => !ORDER.includes(k))]) {
-        if (parts[k] !== undefined) out[k] = walk(parts[k], hit, duration, k);
+        if (parts[k] !== undefined) out[k] = walk(parts[k], hit, duration, k, seconds);
     }
     return out;
 }

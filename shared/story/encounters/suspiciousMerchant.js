@@ -11,7 +11,31 @@ export const suspiciousMerchant = {
             sfx: "shadyMerchantCry",
             sfxVolume: 0.6,
             image: { col: 0, row: 0 },
-            text: "You spot a robed figure violently scratching his own neck in the shadows. He snaps his head around and hisses, \"Psst! You! Yes, you with the eyes! The shiny things whisper to me! They say you need them... yes, yes, they want you to have them!\"",
+            text: "You spot a robed figure violently scratching his own neck in the shadows. He snaps his head around and hisses, \"Psst!\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery_2" } }] }]
+                }
+            ]
+        },
+
+        discovery_2: {
+            displayText: "A Twitching Figure",
+            image: { col: 0, row: 0 },
+            text: "\"You! Yes, you with the eyes!\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery_3" } }] }]
+                }
+            ]
+        },
+
+        discovery_3: {
+            displayText: "A Twitching Figure",
+            image: { col: 0, row: 0 },
+            text: "\"The shiny things whisper to me! They say you need them... yes, yes, they want you to have them!\"",
             decisions: [
                 {
                     text: "Ask to see his wares.",
@@ -88,7 +112,46 @@ export const suspiciousMerchant = {
             tone: "arcane",
             sfx: "gemChime",
             image: { col: 2, row: 1 },
-            text: "He rips his cloak open, giggling wildly! \"Look! Look! The pretties! They sing in the dark! Buy them before they bite me again! Hee hee!\"",
+            text: "He rips his cloak open, giggling wildly! \"Look!\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "browse_wares_2" } }] }]
+                }
+            ]
+        },
+
+        browse_wares_2: {
+            displayText: "The Mad Market",
+            tone: "arcane",
+            image: { col: 2, row: 1 },
+            text: "\"Look! The pretties!\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "browse_wares_3" } }] }]
+                }
+            ]
+        },
+
+        browse_wares_3: {
+            displayText: "The Mad Market",
+            tone: "arcane",
+            image: { col: 2, row: 1 },
+            text: "\"They sing in the dark! Buy them before they bite me again!\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "browse_wares_4" } }] }]
+                }
+            ]
+        },
+
+        browse_wares_4: {
+            displayText: "The Mad Market",
+            tone: "arcane",
+            image: { col: 2, row: 1 },
+            text: "\"Hee hee!\"",
             decisions: [
                 {
                     text: "Trade with the merchant.",
@@ -104,7 +167,7 @@ export const suspiciousMerchant = {
                     text: "Step back.",
                     customActionText: "You take a step back to reconsider.",
                     outcomes: [
-                        { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery" } }] }
+                        { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery_3" } }] }
                     ]
                 },
                 {
@@ -123,7 +186,33 @@ export const suspiciousMerchant = {
             sfx: "coinsJingle",
             sfxVolume: 0.6,
             image: { col: 0, row: 1 },
-            text: "You quickly realize that half of the 'magical' gems are just painted glass. Confronted, the merchant violently pulls at his hair. \"Lies! The stones are just sleeping! Hush! Take the loud coins and leave us be!\"",
+            text: "You quickly realize that half of the 'magical' gems are just painted glass. Confronted, the merchant violently pulls at his hair.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "call_out_fakes_2" } }] }]
+                }
+            ]
+        },
+
+        call_out_fakes_2: {
+            displayText: "Caught Red-Handed",
+            tone: "gold",
+            image: { col: 0, row: 1 },
+            text: "\"Lies! The stones are just sleeping!\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "call_out_fakes_3" } }] }]
+                }
+            ]
+        },
+
+        call_out_fakes_3: {
+            displayText: "Caught Red-Handed",
+            tone: "gold",
+            image: { col: 0, row: 1 },
+            text: "\"Hush! Take the loud coins and leave us be!\"",
             decisions: [
                 {
                     text: "Take the bribe.",
@@ -164,7 +253,19 @@ export const suspiciousMerchant = {
             displayText: "Sleight of Hand",
             sfx: "coinsJingle",
             image: { col: 1, row: 1 },
-            text: "You lean in close to inspect a shiny bauble. The merchant spouts frantic gibberish about sky-demons and shadow-teeth. Suddenly, you notice your pack feels much lighter...",
+            text: "You lean in close to inspect a shiny bauble. The merchant spouts frantic gibberish about sky-demons and shadow-teeth.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "distracted_buyer_2" } }] }]
+                }
+            ]
+        },
+
+        distracted_buyer_2: {
+            displayText: "Sleight of Hand",
+            image: { col: 1, row: 1 },
+            text: "Suddenly, you notice your pack feels much lighter...",
             decisions: [
                 {
                     text: "Check your pockets!",
@@ -206,7 +307,31 @@ export const suspiciousMerchant = {
             effect: "jolt",
             sfx: "shadyMerchantCry",
             image: { col: 2, row: 0 },
-            text: "The merchant's eyes bug out with terror. \"The big ones! The scary ones! They eat the magic!\" He shrieks, dropping his heavy sack and scuttling away on all fours.",
+            text: "The merchant's eyes bug out with terror. \"The big ones!\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "merchant_flees_2" } }] }]
+                }
+            ]
+        },
+
+        merchant_flees_2: {
+            displayText: "Cowardly Retreat",
+            image: { col: 2, row: 0 },
+            text: "\"The scary ones! They eat the magic!\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "merchant_flees_3" } }] }]
+                }
+            ]
+        },
+
+        merchant_flees_3: {
+            displayText: "Cowardly Retreat",
+            image: { col: 2, row: 0 },
+            text: "He shrieks, dropping his heavy sack and scuttling away on all fours.",
             decisions: [
                 {
                     text: "Loot the abandoned sack.",
@@ -233,7 +358,49 @@ export const suspiciousMerchant = {
             sfx: "unsheathSwordSfx",
             image: { col: 3, row: 0 },
             bgm: "plainsBattleBgm",
-            text: "The merchant stops twitching. His eyes go completely dead. He draws a wickedly curved, poisoned dagger, giggling softly. \"The voices say you have too much blood... Come out, friends! Let's let it out! Hee hee!\" \n\nFrom the shadows, manic giggling echoes as deranged figures step into the light!",
+            text: "The merchant stops twitching. His eyes go completely dead.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "merchant_attacks_2" } }] }]
+                }
+            ]
+        },
+
+        merchant_attacks_2: {
+            displayText: "A Deadly Mistake",
+            tone: "blood",
+            image: { col: 3, row: 0 },
+            bgm: "plainsBattleBgm",
+            text: "He draws a wickedly curved, poisoned dagger, giggling softly. \"The voices say you have too much blood...\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "merchant_attacks_3" } }] }]
+                }
+            ]
+        },
+
+        merchant_attacks_3: {
+            displayText: "A Deadly Mistake",
+            tone: "blood",
+            image: { col: 3, row: 0 },
+            bgm: "plainsBattleBgm",
+            text: "\"Come out, friends! Let's let it out!\"",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "merchant_attacks_4" } }] }]
+                }
+            ]
+        },
+
+        merchant_attacks_4: {
+            displayText: "A Deadly Mistake",
+            tone: "blood",
+            image: { col: 3, row: 0 },
+            bgm: "plainsBattleBgm",
+            text: "\"Hee hee!\" From the shadows, manic giggling echoes as deranged figures step into the light!",
             decisions: [
                 {
                     text: "Draw your weapon!",

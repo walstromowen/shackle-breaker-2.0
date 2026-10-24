@@ -1,7 +1,20 @@
+import { PHYSICAL_DAMAGE_TYPES, MAGIC_DAMAGE_TYPES } from '../core/constants.js';
 // Damage (and healing) over time grows with the LEVEL of whoever inflicted it, so a poison from a level-10 archer or boss stays dangerous as the
 // fights get bigger, instead of staying at the same 5 HP for the whole game. A status with no known inflictor (a trap, the weather, an encounter)
 // scales with the level of whoever it is on. +10% per level above 1; a status's own `value` is the level-1 amount.
 export const STATUS_POWER_PER_LEVEL = 0.1;
+
+// `attackAverage: 'physical' | 'magical'` + `rate`: an amount of (the holder's average attack over blunt / slash / pierce, or over the nine magic types) x rate,
+// so it follows the build and the level (attack already grows with level, so the per-level scaling above is not applied again). Used by Second Wind / Clear Mind.
+const attackOf = (who, type) => {
+    if (typeof who?.getAttack === 'function') return who.getAttack(type) || 0;
+    const stats = who?.calculatedStats || who?.stats || {};
+    return stats.attack?.[type] || 0;
+};
+const averageAttack = (who, group) => {
+    const types = group === 'magical' ? MAGIC_DAMAGE_TYPES : PHYSICAL_DAMAGE_TYPES;
+    return types.reduce((sum, t) => sum + attackOf(who, t), 0) / types.length;
+};
 
 const levelOf = (who) => {
     const l = who?.level ?? who?.originalEntity?.level;
@@ -87,6 +100,8 @@ export class StatusEffectModel {
                     const scale = 1 + STATUS_POWER_PER_LEVEL * (levelOf(this.inflictor || target) - 1);
                     const raw = effect.value * this.stacks * scale;
                     amount = raw === 0 ? 0 : Math.sign(raw) * Math.max(1, Math.round(Math.abs(raw)));
+                } else if (effect.attackAverage) {
+                    amount = Math.max(1, Math.round(averageAttack(this.inflictor || target, effect.attackAverage) * (effect.rate || 0) * this.stacks));
                 } else if (effect.percentCurrent !== undefined) {
                     // NEW: `percentCurrent: 0.5` -- a share of what the holder has RIGHT NOW of the resource `modify` names (at least 1, never more than they have).
                     // Each extra stack compounds the share (two stacks of 50% take 75%, three take 87.5%), so it can never take everything in one go.

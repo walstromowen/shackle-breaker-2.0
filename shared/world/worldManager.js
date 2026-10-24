@@ -370,6 +370,15 @@ export class WorldManager {
         const biome = this.getBiomeAt(col, row);
         return mapObjectFactory.create(id, col, row, biome);
     }
+    /* Containers you search (crate, wardrobe, sacks) stay where they are; the search is remembered in gameState.world.changes (so it is saved)
+       under "searched:<cell key>", the cell key being the same one the object's own changes use (interiors included). */
+    isSearched(col, row) {
+        return gameState.world.changes?.['searched:' + this._s(col, row)] === true;
+    }
+    markSearched(col, row) {
+        if (!gameState.world.changes) gameState.world.changes = {};
+        gameState.world.changes['searched:' + this._s(col, row)] = true;
+    }
     modifyWorld(col, row, newValue, explicitMapId = null) {
         const key = this._s(col, row, explicitMapId);
         gameState.world.changes[key] = newValue;

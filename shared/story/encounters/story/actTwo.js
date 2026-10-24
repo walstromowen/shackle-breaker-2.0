@@ -25,7 +25,20 @@ export const actTwo = {
             bgm: "none",
             ambience: "none",
             sfx: "heartbeat",
-            text: "Darius the Groveler lies still. The skull on the altar has gone dark, and the hum in the stone has stopped. For the first time in this place, there is silence.",
+            text: "Darius the Groveler lies still. The skull on the altar has gone dark, and the hum in the stone has stopped.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "silence_2" } }] }]
+                }
+            ]
+        },
+
+        silence_2: {
+            displayText: "The Groveler Falls",
+            image: { sheet: "encounter_mysterious_altar", col: 3, row: 1 },
+            bgm: "none",
+            text: "For the first time in this place, there is silence.",
             decisions: [
                 {
                     text: "Breathe.",
@@ -39,7 +52,19 @@ export const actTwo = {
             displayText: "The Hollow",
             image: { sheet: "encounter_mysterious_altar", col: 1, row: 0 },
             ambience: "altarDrone",
-            text: "The meteorite lies in the hollow of the altar, black and cold. Its glow is gone. Whatever it fed is not here anymore.",
+            text: "The meteorite lies in the hollow of the altar, black and cold. Its glow is gone.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "hollow_2" } }] }]
+                }
+            ]
+        },
+
+        hollow_2: {
+            displayText: "The Hollow",
+            image: { sheet: "encounter_mysterious_altar", col: 1, row: 0 },
+            text: "Whatever it fed is not here anymore.",
             decisions: [
                 {
                     text: "Touch the meteorite.",
@@ -58,7 +83,19 @@ export const actTwo = {
             displayText: "What Darius Knew",
             image: { sheet: "encounter_mysterious_altar", col: 0, row: 1 },
             sfx: "whispers",
-            text: "The stone's last light shows you a man in a clean robe, kneeling at this altar. It is Darius, before the hood and the crawling. He is smiling, and he is whole. Each time the light answers him, a small piece of him goes out with it, and he does not feel it go.",
+            text: "The stone's last light shows you a man in a clean robe, kneeling at this altar. It is Darius, before the hood and the crawling.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "vision_2" } }] }]
+                }
+            ]
+        },
+
+        vision_2: {
+            displayText: "What Darius Knew",
+            image: { sheet: "encounter_mysterious_altar", col: 0, row: 1 },
+            text: "He is smiling, and he is whole. Each time the light answers him, a small piece of him goes out with it, and he does not feel it go.",
             decisions: [
                 {
                     text: "Watch.",
@@ -76,7 +113,19 @@ export const actTwo = {
         truth: {
             displayText: "The Curse",
             image: { sheet: "encounter_mysterious_altar", col: 1, row: 1 },
-            text: "The metorite's glow grows dim and a dark truth emerges, The magic this land wields is not free. It has a cost. It has been taking a little from everyone who used it, for as long as there has been magic to use, and the whole kingdom used it every day.",
+            text: "The metorite's glow grows dim and a dark truth emerges, The magic this land wields is not free. It has a cost.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "truth_2" } }] }]
+                }
+            ]
+        },
+
+        truth_2: {
+            displayText: "The Curse",
+            image: { sheet: "encounter_mysterious_altar", col: 1, row: 1 },
+            text: "It has been taking a little from everyone who used it, for as long as there has been magic to use, and the whole kingdom used it every day.",
             decisions: [
                 {
                     text: "Think of the madmen.",
@@ -93,7 +142,29 @@ export const actTwo = {
 
         you: {
             displayText: "What You Carry",
-            text: "You have used it too, {name}. Every time you were hurt and reached for something to mend you. Every spark, every ward, every ember at your fingertips. It has taken a little each time, the same as it takes from everyone. You cannot tell how much.",
+            text: "You have used it too, {name}. Every time you were hurt and reached for something to mend you.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "you_2" } }] }]
+                }
+            ]
+        },
+
+        you_2: {
+            displayText: "What You Carry",
+            text: "Every spark, every ward, every ember at your fingertips. It has taken a little each time, the same as it takes from everyone.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "you_3" } }] }]
+                }
+            ]
+        },
+
+        you_3: {
+            displayText: "What You Carry",
+            text: "You cannot tell how much.",
             decisions: [
                 {
                     text: "Ask how much is left.",
@@ -113,7 +184,43 @@ export const actTwo = {
             image: { sheet: "encounter_mysterious_altar", col: 1, row: 1 },
             effect: "glow_red",
             sfx: "whispers",
-            text: "It has a name, and now you can read it. Corruption. It gathers in everyone who reaches for magic, and faster in those who do cruel things. Kindness slows it. At half, the body begins to wither, though the magic answers with a hungry surge. At the whole, the iron closes for good and the one who wears it is no longer yours. Only a stone fallen from the sky can open it again. From now on you will see how much each of you carries.",
+            text: "It has a name, and now you can read it. Corruption.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "gauge_2" } }] }]
+                }
+            ]
+        },
+
+        gauge_2: {
+            displayText: "Corruption",
+            image: { sheet: "encounter_mysterious_altar", col: 1, row: 1 },
+            text: "It gathers in everyone who reaches for magic, and faster in those who do cruel things. Kindness slows it.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "gauge_3" } }] }]
+                }
+            ]
+        },
+
+        gauge_3: {
+            displayText: "Corruption",
+            image: { sheet: "encounter_mysterious_altar", col: 1, row: 1 },
+            text: "At half, the body begins to wither, though the magic answers with a hungry surge. At the whole, the iron closes for good and the one who wears it is no longer yours.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "gauge_4" } }] }]
+                }
+            ]
+        },
+
+        gauge_4: {
+            displayText: "Corruption",
+            image: { sheet: "encounter_mysterious_altar", col: 1, row: 1 },
+            text: "Only a stone fallen from the sky can open it again. From now on you will see how much each of you carries.",
             decisions: [
                 {
                     text: "Look.",
@@ -132,7 +239,18 @@ export const actTwo = {
             displayText: "Warm Iron",
             sfx: "whispers",
             effect: "shake",
-            text: "Your shackles are warm. They have never been warm. Far above, through a mile of stone, many voices begin to laugh at once.",
+            text: "Your shackles are warm. They have never been warm.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "iron_2" } }] }]
+                }
+            ]
+        },
+
+        iron_2: {
+            displayText: "Warm Iron",
+            text: "Far above, through a mile of stone, many voices begin to laugh at once.",
             decisions: [
                 {
                     text: "Listen.",
@@ -153,7 +271,19 @@ export const actTwo = {
             effect: "glow_red",
             sfx: "cinematicBoom",
             ambience: "none",
-            text: "The ground shudders once. Far above, where you cannot see it, the moon turns red. Every cursed thing in the world raises its head at the same moment. They know what you carry.",
+            text: "The ground shudders once. Far above, where you cannot see it, the moon turns red.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "moon_2" } }] }]
+                }
+            ]
+        },
+
+        moon_2: {
+            displayText: "The Red Moon",
+            image: { sheet: "encounter_mysterious_altar", col: 2, row: 1 },
+            text: "Every cursed thing in the world raises its head at the same moment. They know what you carry.",
             decisions: [
                 {
                     text: "Climb toward the light.",

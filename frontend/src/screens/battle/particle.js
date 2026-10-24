@@ -4,6 +4,9 @@ export class Particle {
     this.age = 0;
     this.life = config.life || 1.0;
     this.maxLife = this.life;
+    // A projectile that STAYS where it lands (an arrow stuck in its target): `flight` is how long the trip takes, the rest of `life` is spent
+    // sitting at the end point, with a short quiver at first and a fade over the last fifth.
+    this.flight = config.flight && config.flight < this.life ? config.flight : null;
     this.isDead = false;
 
     // Positioning (Targeted)
@@ -69,6 +72,18 @@ export class Particle {
       return;
     }
 
+    if (this.flight) {
+      const flown = Math.min(this.age / this.flight, 1.0);
+      this.applyTargetedMovement(flown);
+      if (this.age > this.flight) {
+        const stuck = this.age - this.flight, holdLen = this.maxLife - this.flight;
+        this.rotation += Math.sin(stuck * 55) * 0.09 * Math.max(0, 1 - stuck / 0.3);   // the shaft quivers as it lands
+        const fadeStart = holdLen * 0.8;
+        this.alpha = this.baseAlpha * (stuck > fadeStart ? Math.max(0, 1 - (stuck - fadeStart) / (holdLen - fadeStart)) : 1);
+      }
+      return;
+    }
+
     // Route to the correct movement logic
     if (this.movement) {
       this.applyTargetedMovement(progress);
@@ -87,7 +102,7 @@ export class Particle {
 
     // --- FIX: Prevent linear/arc projectiles from fading out mid-flight ---
     // Added 'linear', 'arc', and 'diagonal_drop' so they crash into the target at full opacity.
-    const customAlphas = ['spread_and_fade', 'expand_and_fade', 'rise_and_hold', 'float_up_and_pop', 'swipe_diagonal', 'swipe_diagonal_alt', 'shrink_and_fade', 'linear', 'arc', 'diagonal_drop'];
+    const customAlphas = ['spread_and_fade', 'expand_and_fade', 'rise_and_hold', 'loom_over', 'spiral', 'float_up_and_pop', 'swipe_diagonal', 'swipe_diagonal_alt', 'shrink_and_fade', 'linear', 'arc', 'diagonal_drop'];
     
     if (this.config.envelope) {
       const fadeIn = Math.min(1, progress / 0.18);
@@ -165,6 +180,34 @@ export class Particle {
         this.scale = (this.config.scale || 1.0) * (1.0 + 0.12 * progress);
         const fadeIn = Math.min(1, progress / 0.18);
         const fadeOutT = progress > 0.7 ? (1 - progress) / 0.3 : 1;
+        this.alpha = this.baseAlpha * fadeIn * fadeOutT;
+        break;
+      }
+      case 'loom_over': {
+        // A slow swell: small and faint at first, growing (smoothstep) over the first 70% of its life while it drifts up a little, then it stays at full
+        // strength and thins away over the last 12%. For the dark hand of Spirit Reap, which has to be seen growing over its target.
+        const grow = Math.min(1, progress / 0.7);
+        const eased = grow * grow * (3 - 2 * grow);
+        this.x = this.startX;
+        this.y = this.startY + (1 - eased) * 36;
+        this.scale = (this.config.scale || 1.0) * (0.25 + 0.75 * eased) * (1.0 + 0.06 * progress);
+        const fadeIn = Math.min(1, progress / 0.3);
+        const fadeOutT = progress > 0.88 ? (1 - progress) / 0.12 : 1;
+        this.alpha = this.baseAlpha * fadeIn * fadeOutT;
+        break;
+      }
+      case 'spiral': {
+        // An orb circling its centre (the user): `radius` px at first, drawing in to a fifth of that over `turns` turns, squashed to `squash` of its height so the
+        // circle reads as a ring seen from a little above. `phase` (radians) is where on the ring it starts, so three orbs are 0, 2.09 and 4.19 apart.
+        const r0 = this.config.radius || 100, turns = this.config.turns ?? 1.5, squash = this.config.squash ?? 0.5, phase = this.config.phase || 0;
+        const r = r0 * (1 - 0.8 * progress);
+        const angle = phase + progress * turns * Math.PI * 2;
+        this.x = this.startX + Math.cos(angle) * r;
+        this.y = this.startY + Math.sin(angle) * r * squash;
+        const swell = 1 + 0.3 * Math.sin(progress * Math.PI), settle = progress > 0.8 ? 1 - 0.5 * ((progress - 0.8) / 0.2) : 1;
+        this.scale = (this.config.scale || 1.0) * swell * settle;
+        const fadeIn = Math.min(1, progress / 0.15);
+        const fadeOutT = progress > 0.8 ? (1 - progress) / 0.2 : 1;
         this.alpha = this.baseAlpha * fadeIn * fadeOutT;
         break;
       }

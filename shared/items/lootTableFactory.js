@@ -81,6 +81,17 @@ export class LootTableFactory {
         return drops;
     }
 
+    /* Searching a container on the map (crate, wardrobe, sacks). Now and then it is empty (EMPTY_CHANCE); otherwise one or two rolls of the
+       container's own table, so a wardrobe gives clothes and a crate gives cargo. Returns [{ id, qty }], merged by item, possibly empty. */
+    static EMPTY_CHANCE = 0.25;
+    static searchContainer(tableId) {
+        if (Math.random() < this.EMPTY_CHANCE) return [];
+        const rolls = Math.random() < 0.35 ? 2 : 1;
+        const merged = new Map();
+        for (const { id, qty } of this.generateLoot(tableId, rolls).items) merged.set(id, (merged.get(id) || 0) + qty);
+        return [...merged].map(([id, qty]) => ({ id, qty }));
+    }
+
     static _getQty(min = 1, max = 1) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }

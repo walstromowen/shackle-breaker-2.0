@@ -24,14 +24,26 @@ export const peculiarScarecrow = {
         discovery: {
             displayText: "A Peculiar Scarecrow",
             image: { col: 0, row: 0 },
-            text: "A scarecrow stands on a post beside the path, its hat pulled low over a sackcloth face. No crows perch on it. No crows are anywhere. Its coat sways, though there is no wind, and the only way on leads right past it.",
+            text: "A scarecrow stands on a post beside the path, its hat pulled low over a sackcloth face. No crows perch on it.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery_2" } }] }]
+                }
+            ]
+        },
+
+        discovery_2: {
+            displayText: "A Peculiar Scarecrow",
+            image: { col: 0, row: 0 },
+            text: "The crows keep well away from it, and its coat stirs now and then, though you feel no wind. The only way on leads right past it.",
             decisions: [
                 {
                     text: "[DEX] Walk past the scarecrow.",
                     type: "skill_check",
                     attribute: "dexterity",
                     threshold: 12,
-                    customActionText: "You keep your eyes ahead and walk past the post, as quietly as you can...",
+                    customActionText: "You keep your eyes ahead and walk past the post, quietly, for no reason you could name...",
                     successOutcomes: toStage("pass_by"),
                     failureOutcomes: toStage("it_stirs")
                 },
@@ -46,7 +58,19 @@ export const peculiarScarecrow = {
         pass_by: {
             displayText: "Past the Scarecrow",
             image: { col: 0, row: 0 },
-            text: "You pass the scarecrow without a sound. Its hat does not turn, and nothing follows you. Behind you, the straw rustles once, and is still.",
+            text: "You pass the scarecrow without a sound. It is only a scarecrow, after all.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "pass_by_2" } }] }]
+                }
+            ]
+        },
+
+        pass_by_2: {
+            displayText: "Past the Scarecrow",
+            image: { col: 0, row: 0 },
+            text: "Some way on, you hear straw rustle behind you. You do not look back.",
             decisions: [
                 {
                     text: "Walk on.",
@@ -62,7 +86,21 @@ export const peculiarScarecrow = {
             sfx: "hollowHarvesterCry",
             image: { col: 1, row: 0 },
             bgm: "plainsBattleBgm",
-            text: "A dry branch snaps under your foot. The scarecrow's head turns, slowly, and two red eyes open in the sackcloth. It steps down off the post, and straw-stuffed things climb out of the grass beside it.",
+            text: "A dry branch snaps under your foot. The scarecrow's head turns, slowly, and two red eyes open in the sackcloth.",
+            decisions: [
+                {
+                    text: "Continue.",
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "it_stirs_2" } }] }]
+                }
+            ]
+        },
+
+        it_stirs_2: {
+            displayText: "It Stirs",
+            tone: "blood",
+            image: { col: 1, row: 0 },
+            bgm: "plainsBattleBgm",
+            text: "It steps down off the post, and straw-stuffed things climb out of the grass beside it.",
             decisions: [
                 {
                     text: "Ready your weapons!",

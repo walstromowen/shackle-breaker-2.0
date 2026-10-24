@@ -1,6 +1,9 @@
 /**
  * core/Input.js
  */
+const DIRECTION_KEYS = { ArrowUp: 'UP', KeyW: 'UP', ArrowDown: 'DOWN', KeyS: 'DOWN', ArrowLeft: 'LEFT', KeyA: 'LEFT', ArrowRight: 'RIGHT', KeyD: 'RIGHT' };
+const QUEUE_MAX_AGE_MS = 350;   // a bit under one walking step (CONFIG.WALK_DURATION 0.4 s)
+
 export class Input {
     /**
      * @param {HTMLCanvasElement} canvas 
@@ -8,6 +11,7 @@ export class Input {
     constructor(canvas) {
         this.canvas = canvas;
         this.heldKeys = new Set();
+        this.queuedDirection = null;   // { dir, time }: the latest direction key pressed, kept briefly so a tap is never lost (see consumeDirection)
         this.lastClick = null; 
         
         this.lastRightClick = null; 
@@ -49,12 +53,16 @@ export class Input {
 
     _onKeyDown(e) {
         this.heldKeys.add(e.code);
+        // Remember the press itself (not the key repeating): a tap that is over before the next update, or while a step is still being walked, still counts
+        const dir = DIRECTION_KEYS[e.code];
+        if (dir && !e.repeat) this.queuedDirection = { dir, time: performance.now() };
         // Tab is the "back" key on every screen: it must never move the browser's focus away from the game.
         if (e.code === 'Tab') e.preventDefault();
     }
     _onKeyUp(e) { this.heldKeys.delete(e.code); }
     _onBlur() {
         this.heldKeys.clear();
+        this.queuedDirection = null;
         // A button released outside the window never sends its mouseup, which would leave a drag stuck.
         this.isMouseDown = false;
         this.downButton = null;
@@ -153,6 +161,7 @@ export class Input {
     
     reset() {
         this.heldKeys.clear();
+        this.queuedDirection = null;
         this.lastClick = null;
         this.lastRightClick = null;
         this.isMouseDown = false;
@@ -163,6 +172,21 @@ export class Input {
     /* True while either shift key is down: the overworld runs while it is held. Like `direction`, it is matched on the physical key (e.code). */
     get run() {
         return this.heldKeys.has("ShiftLeft") || this.heldKeys.has("ShiftRight");
+    }
+
+    /** The direction for the next step: the latest press while it is fresh (even if the key is already up again), else whatever is held.
+     *  Taking it uses the press up, so one tap is one step. `maxAgeMs` is about one step of walking: a tap made early in a step still happens right after it. */
+    consumeDirection(maxAgeMs = QUEUE_MAX_AGE_MS) {
+        const q = this.queuedDirection;
+        this.queuedDirection = null;
+        if (q && performance.now() - q.time <= maxAgeMs) return q.dir;
+        return this.direction;
+    }
+
+    /** Whether a step is wanted next (a key held, or a fresh tap waiting), without using the tap up. */
+    wantsToMove(maxAgeMs = QUEUE_MAX_AGE_MS) {
+        const q = this.queuedDirection;
+        return !!((q && performance.now() - q.time <= maxAgeMs) || this.direction);
     }
 
     get direction() {

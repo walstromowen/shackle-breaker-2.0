@@ -144,8 +144,11 @@ export class VFXRenderer {
             const progress = p.maxLife > 0 ? Math.min(p.age / p.maxLife, 1.0) : 1.0;
             const frames = p.frameCount || 1;
             const currentFrame = Math.min(Math.floor(progress * frames), frames - 1);
-            const srcX = currentFrame * p.frameSize;
-            const srcY = 0;
+            // `cellCol` / `cellRow` (animationKit's `cell: [col, row]`) pick one cell of a sheet laid out as a grid (an item icon used as a projectile)
+            // instead of playing a row of frames.
+            const hasCell = p.config && p.config.cellCol !== undefined;
+            const srcX = (hasCell ? p.config.cellCol : currentFrame) * p.frameSize;
+            const srcY = hasCell ? (p.config.cellRow || 0) * p.frameSize : 0;
             const size = p.frameSize * (p.scale || 1.0) * 2.4;
             
             this.ctx.drawImage(
@@ -163,6 +166,14 @@ export class VFXRenderer {
         const puff = this.puffSprite(p.color);
         const size = 56 * (p.scale || 1.0);
         this.ctx.drawImage(puff, -size / 2, -size / 2, size, size);
+        } else if (p.shape === 'streak') {
+        // a thin line that is faint at its tail and strongest at its head (the lower end, for lines falling down): concentration / speed lines. No glow.
+        const len = ((p.config && p.config.length) || 60) * (p.scale || 1.0), w = Math.max(1.5, 2.5 * (p.scale || 1.0)), segs = 5, a = this.ctx.globalAlpha;
+        this.ctx.fillStyle = p.color || '#ffffff';
+        for (let i = 0; i < segs; i++) {
+            this.ctx.globalAlpha = a * ((i + 1) / segs) * ((i + 1) / segs);
+            this.ctx.fillRect(-w / 2, -len / 2 + (i * len) / segs, w, len / segs + 0.5);
+        }
         } else if (p.shape === 'fleck') {
         // a flake of ash: a small hard-edged chip that tumbles as it blows away
         const w = Math.max(2, Math.round(5 * (p.scale || 1.0))), h = Math.max(1, Math.round(w * 0.55));

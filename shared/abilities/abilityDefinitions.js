@@ -247,7 +247,7 @@ export const AbilityDefinitions = {
     "intimidate": {
         id: "intimidate",
         name: "Intimidate",
-        description: "A terrifying display that lowers a single target's attack power for 3 turns.",
+        description: "A terrifying display that lowers a single target's attack power by 20% for 3 turns. Stacks up to 3 times, and using it again resets the turns.",
         range: "ranged",
         tags: ["support", "sound", "debuff", "fear"],
         battleMessage: "{user} glares intensely to {ability} {target}!",
@@ -262,7 +262,7 @@ export const AbilityDefinitions = {
     "howl": {
         id: "howl",
         name: "Howl",
-        description: "A primal howl that awakens a target's fighting spirit, raising their attack power for 3 turns.",
+        description: "A primal howl that awakens a target's fighting spirit, raising their attack power by 20% for 3 turns. Stacks up to 3 times, and using it again resets the turns.",
         range: "ranged",
         tags: ["support", "sound", "buff", "beast"],
         battleMessage: "{user} lets out a ferocious {ability}, boosting {target}'s strength!",
@@ -277,7 +277,7 @@ export const AbilityDefinitions = {
     "hide": {
         id: "hide",
         name: "Hide",
-        description: "The user melts into the shadows, raising their evasion for 3 turns.",
+        description: "The user melts into the shadows, raising their evasion by 20% for 3 turns. Stacks up to 3 times, and using it again resets the turns.",
         range: "self",
         tags: ["utility", "stealth", "buff"],
         battleMessage: "{user} uses a smoke trick to {ability} in the shadows!",
@@ -331,7 +331,7 @@ export const AbilityDefinitions = {
         range: "melee",
         tags: ["physical", "contact", "weapon", "pierce", "fast"],
         battleMessage: "{user} lunges with a {ability} at {target}!",
-        icon: { col: 1, row: 2 },
+        icon: { col: 2, row: 2 },
         speedModifier: 1.5,
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 5 },
@@ -348,7 +348,7 @@ export const AbilityDefinitions = {
         tags: ["physical", "projectile", "weapon", "pierce", "item"],
         battleMessage: "{user} hurls a {ability} at {target}!",
         icon: { col: 0, row: 8 },            // PLACEHOLDER: shares a cell with another ability icon; point it at a free one
-        animationId: "melee_lunge",
+        animationId: "throw_dagger",
         targeting: { scope: "enemy", select: "single" },
         speedModifier: 1.25,
         accuracy: 0.95,
@@ -362,7 +362,7 @@ export const AbilityDefinitions = {
         tags: ["physical", "projectile", "weapon", "pierce", "item"],
         battleMessage: "{user} throws a {ability} at {target}!",
         icon: { col: 1, row: 8 },
-        animationId: "melee_lunge",
+        animationId: "throw_poison_dagger",
         targeting: { scope: "enemy", select: "single" },
         speedModifier: 1.25,
         accuracy: 0.95,
@@ -863,7 +863,7 @@ export const AbilityDefinitions = {
     "item_bandage": {
         id: "item_bandage",
         name: "Bandage",
-        description: "Bind a wound and stop it bleeding.",
+        description: "Bind a wound, stop it bleeding and restore a little health.",
         range: "ranged",
         tags: ["support", "healing", "item"],
         battleMessage: "{user} binds the wound of {target} with a bandage.",
@@ -872,12 +872,12 @@ export const AbilityDefinitions = {
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
         accuracy: 1.0,
-        effects: [{ type: "dispel", tags: ["bleed"] }]
+        effects: [{ type: "recover", resource: "hp", calculation: "percent", power: 0.15 }, { type: "dispel", tags: ["bleed"] }]   // heals half of what a healing herb does (minor_heal 0.3)
     },
     "item_antidote": {
         id: "item_antidote",
         name: "Antidote",
-        description: "Drink an antidote to cure poison.",
+        description: "Drink an antidote to cure poison and restore a little health.",
         range: "ranged",
         tags: ["support", "healing", "item"],
         battleMessage: "{user} gives {target} an antidote.",
@@ -886,12 +886,12 @@ export const AbilityDefinitions = {
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
         accuracy: 1.0,
-        effects: [{ type: "dispel", tags: ["poison"] }]
+        effects: [{ type: "recover", resource: "hp", calculation: "percent", power: 0.15 }, { type: "dispel", tags: ["poison"] }]
     },
     "item_aloe": {
         id: "item_aloe",
         name: "Aloe",
-        description: "Spread cooling aloe gel over a burn.",
+        description: "Spread cooling aloe gel over a burn and restore a little health.",
         range: "ranged",
         tags: ["support", "healing", "item"],
         battleMessage: "{user} soothes the burns of {target} with aloe.",
@@ -900,7 +900,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
         accuracy: 1.0,
-        effects: [{ type: "dispel", tags: ["burn"] }]
+        effects: [{ type: "recover", resource: "hp", calculation: "percent", power: 0.15 }, { type: "dispel", tags: ["burn"] }]
     },
     "rest": {
         id: "rest",
@@ -1065,10 +1065,42 @@ export const AbilityDefinitions = {
     // =========================================================================
     // 15. UTILITY, TACTICS & TRAPS
     // =========================================================================
+    "recuperate": {
+        id: "recuperate",
+        name: "Recuperate",
+        description: "Steady your breathing and let the body recover, regaining stamina at the end of each of your turns for 5 turns (Second Wind). The more power you have in your physical attacks (the average of your blunt, slash and pierce), the more you regain.",
+        range: "self",
+        tags: ["utility", "support", "buff"],
+        battleMessage: "{user} recuperates.",
+        icon: { col: 6, row: 8 },
+        targeting: { scope: "self", select: "auto" },
+        cost: { stamina: 5 },
+        speedModifier: 1.0,
+        accuracy: 1.0,
+        animationId: "recuperate",
+        effects: [],
+        statusEffects: [{ id: "second_wind", chance: 1.0, duration: 5 }]
+    },
+    "draw_insight": {
+        id: "draw_insight",
+        name: "Draw Insight",
+        description: "Quiet your thoughts and gather your focus, regaining insight at the end of each of your turns for 5 turns (Clear Mind). The more power you have in your magical attacks (the average of your nine magic types), the more you regain.",
+        range: "self",
+        tags: ["utility", "support", "buff", "magical"],
+        battleMessage: "{user} draws insight.",
+        icon: { col: 7, row: 8 },
+        targeting: { scope: "self", select: "auto" },
+        cost: { stamina: 5 },
+        speedModifier: 1.0,
+        accuracy: 1.0,
+        animationId: "draw_insight",
+        effects: [],
+        statusEffects: [{ id: "clear_mind", chance: 1.0, duration: 5 }]
+    },
     "bolster": {
         id: "bolster",
         name: "Bolster",
-        description: "Hardens your defenses to increase resistance against physical attacks. Can be stacked up to 3 times.",
+        description: "Hardens your defenses, raising resistance to physical attacks by 20%. Stacks up to 3 times, and using it again resets the turns.",
         range: "self",
         tags: ["physical", "support", "buff", "tactical"],
         battleMessage: "{user} bolsters their physical defenses!",
@@ -1192,7 +1224,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.25,
         accuracy: 1.0,
-        // was "evasion_up", which is not a status in statusEffectDefinitions.js (the bomb did nothing); "evasive" is the +50% evasion status.
+        // was "evasion_up", which is not a status in statusEffectDefinitions.js (the bomb did nothing); "evasive" is the +20% (per stack) evasion status.
         // skipIfActive: an ally who is already hidden is not stacked or refreshed, and the bomb is kept.
         statusEffects: [{
             id: "evasive", chance: 1.0, duration: 3, skipIfActive: true, battleOnly: true,   // battleOnly: not applied when thrown on the overworld (it would linger into the next fight)
@@ -1290,4 +1322,4 @@ export const AbilityDefinitions = {
             message: "You spread out the bedroll and sleep."
         }]
     },
-};
+};

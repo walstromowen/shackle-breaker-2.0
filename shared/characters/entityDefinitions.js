@@ -180,7 +180,7 @@ export const ENTITY_DEFINITIONS = {
             ...HUMANOID_TEMPLATE.attributes,
             vigor: 11, strength: 11, dexterity: 8
         },
-        traits: ['acidic'],
+        // No traits: a rotter's remains turn acidic only once the blood moon is up (act 2, story/actDefinitions.js `enemies.ROTTER`)
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
             maxHp: 16, maxStamina: 10, speed: 5

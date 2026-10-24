@@ -964,6 +964,79 @@ export const LootTableDefinitions = {
     }
 };
 
+// ==========================================
+// CONTAINERS you search on the map (map objects with `interaction.type: 'SEARCH'`, see world/mapObjectDefinitions.js): each holds what you would
+// expect to find in it. One item per roll; the searcher rolls 1 or 2 times, and now and then finds the thing empty.
+// ==========================================
+// A crate: cargo and building stock, and the odd tool.
+LootTableDefinitions.container_crate = {
+    type: "weighted",
+    items: [
+        { id: "soft_wood", weight: 30, min: 1, max: 3 },
+        { id: "hard_wood", weight: 16, min: 1, max: 2 },
+        { id: "stone", weight: 14, min: 1, max: 3 },
+        { id: "coal", weight: 14, min: 1, max: 2 },
+        { id: "iron_ore", weight: 10, min: 1, max: 2 },
+        { id: "copper_ore", weight: 8, min: 1, max: 2 },
+        { id: "tin_ore", weight: 8, min: 1, max: 2 },
+        { id: "iron_ingot", weight: 6, min: 1, max: 2 },
+        { id: "torch", weight: 14, min: 1, max: 2 },
+        { id: "escape_rope", weight: 4, min: 1, max: 1 },
+        { id: "pickaxe", weight: 2, min: 1, max: 1 }
+    ]
+};
+// A crate packed with sacks: provisions and dry goods.
+LootTableDefinitions.container_crate_sack = {
+    type: "weighted",
+    items: [
+        { id: "wheat", weight: 34, min: 1, max: 3 },
+        { id: "salt", weight: 18, min: 1, max: 2 },
+        { id: "plant_fibers", weight: 14, min: 1, max: 3 },
+        { id: "cotton", weight: 12, min: 1, max: 2 },
+        { id: "healing_herb", weight: 12, min: 1, max: 2 },
+        { id: "bandage", weight: 10, min: 1, max: 2 },
+        { id: "aloe", weight: 6, min: 1, max: 1 },
+        { id: "antidote", weight: 4, min: 1, max: 1 }
+    ]
+};
+// A traveller's pack, or a sack of goods: grain, supplies and bedding.
+LootTableDefinitions.container_sacks = {
+    type: "weighted",
+    items: [
+        { id: "wheat", weight: 26, min: 1, max: 3 },
+        { id: "cotton", weight: 14, min: 1, max: 2 },
+        { id: "plant_fibers", weight: 12, min: 1, max: 2 },
+        { id: "fur", weight: 8, min: 1, max: 1 },
+        { id: "leather", weight: 8, min: 1, max: 1 },
+        { id: "bandage", weight: 12, min: 1, max: 2 },
+        { id: "healing_herb", weight: 10, min: 1, max: 2 },
+        { id: "torch", weight: 10, min: 1, max: 1 },
+        { id: "throwing_knife", weight: 5, min: 1, max: 2 },
+        { id: "bedroll", weight: 4, min: 1, max: 1 },
+        { id: "small_iron_key", weight: 2, min: 1, max: 1 }
+    ]
+};
+// A wardrobe: clothes, cloth and whatever has been folded away in it.
+LootTableDefinitions.container_wardrobe = {
+    type: "weighted",
+    items: [
+        { id: "tattered_hood", weight: 12 },
+        { id: "tattered_shirt", weight: 12 },
+        { id: "tattered_gloves", weight: 12 },
+        { id: "tattered_pants", weight: 12 },
+        { id: "tattered_boots", weight: 12 },
+        { id: "cloth_hood", weight: 6 },
+        { id: "cloth_robe", weight: 4 },
+        { id: "cloth_gloves", weight: 6 },
+        { id: "cloth_pants", weight: 5 },
+        { id: "cloth_shoes", weight: 6 },
+        { id: "cotton", weight: 14, min: 1, max: 3 },
+        { id: "linen", weight: 8, min: 1, max: 2 },
+        { id: "fur", weight: 6, min: 1, max: 2 },
+        { id: "bedroll", weight: 3, min: 1, max: 1 }
+    ]
+};
+
 // The HOUSE_INTERIOR biome's defaultLootTable is "house"; point it at the house_interior table.
 LootTableDefinitions.house = LootTableDefinitions.house_interior;
 
@@ -973,5 +1046,7 @@ export const LootExclusionSets = {
     low_tier: [
         'plant_fibers', 'soft_wood', 'hard_wood', 'wooden_stick', 'stone', 'flint', 'sand', 'wheat', 'cotton', 'bone',
         'tattered_hood', 'tattered_shirt', 'tattered_gloves', 'tattered_pants', 'tattered_boots',
+        'wooden_club', 'fur', 'salt', 'coal', 'copper_ore', 'tin_ore', 'iron_ore', 'leather', 'torch',
+        'healing_herb', 'invigorating_herb', 'illuminating_herb', 'bandage', 'aloe', 'antidote', 'linen', 'copper_ingot',
     ],
 };

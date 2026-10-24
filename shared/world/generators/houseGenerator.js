@@ -2,6 +2,9 @@
 import { CONFIG } from '../../core/constants.js';
 import { biomeFactory } from '../biomeFactory.js';
 
+/* the share of houses that hold a second loot chest, besides the one every house has */
+export const SECOND_CHEST_CHANCE = 0.25;
+
 /* ===== Interior kit: shared helpers for the house and the workshop (CraftingHouseGenerator imports them from this file) ===== */
 // Shared helpers for the house generators: a seeded random generator, the furniture catalogue and a "Furnisher" that places furniture
 // without ever blocking a doorway or cutting a room in two.
@@ -268,9 +271,14 @@ export class HouseGenerator {
         const lootObject = this.config.lootObject;
         if (lootObject) {
             const rest = rand.shuffle(L.rooms.filter(r => r !== hall));
-            let placed = false;
-            for (const room of rest) if (F.placeOnRing(room, lootObject, rand)) { placed = true; break; }
-            if (!placed) F.placeOnRing(hall, lootObject, rand);
+            let placedRoom = null;
+            for (const room of rest) if (F.placeOnRing(room, lootObject, rand)) { placedRoom = room; break; }
+            if (!placedRoom && F.placeOnRing(hall, lootObject, rand)) placedRoom = hall;
+            // now and then a second chest, in another room (the last thing placed, so the rest of the furnishing is the same as before)
+            if (rand() < (this.config.secondChestChance ?? SECOND_CHEST_CHANCE)) {
+                const others = rest.filter(r => r !== placedRoom);
+                for (const room of rand.shuffle(others.length ? others : [hall])) if (F.placeOnRing(room, lootObject, rand)) break;
+            }
         }
         this.furniture = F;
     }

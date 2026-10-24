@@ -65,16 +65,18 @@ test('leather armor gives a little stamina recovery, cloth armor a little insigh
     const naked = wear([]);
     const leather = ['leather_helmet', 'leather_armor', 'leather_bracers', 'leather_leggings', 'leather_boots'];
     const cloth = ['cloth_hood', 'cloth_robe', 'cloth_gloves', 'cloth_pants', 'cloth_shoes'];
+    // the torso gives the most, the limbs a little, the helmet and boots none (the numbers are in itemDefinitions)
+    const { ItemDefinitions } = await import('../../shared/items/itemDefinitions.js');
     for (const id of leather) {
         const s = wear([id]);
-        assert.equal(s.staminaRecovery - naked.staminaRecovery, 1, `${id} adds 1 stamina recovery`);
+        assert.equal(s.staminaRecovery - naked.staminaRecovery, ItemDefinitions[id].resources?.staminaRecovery || 0, `${id} adds its stamina recovery`);
         assert.equal(s.insightRecovery, naked.insightRecovery, `${id} adds no insight recovery`);
     }
     for (const id of cloth) {
         const s = wear([id]);
-        assert.equal(s.insightRecovery - naked.insightRecovery, 1, `${id} adds 1 insight recovery`);
+        assert.equal(s.insightRecovery - naked.insightRecovery, ItemDefinitions[id].resources?.insightRecovery || 0, `${id} adds its insight recovery`);
         assert.equal(s.staminaRecovery, naked.staminaRecovery, `${id} adds no stamina recovery`);
     }
-    assert.equal(wear(leather).staminaRecovery - naked.staminaRecovery, 5, 'a whole leather set adds up');
-    assert.equal(wear(cloth).insightRecovery - naked.insightRecovery, 5, 'a whole cloth set adds up');
+    assert.equal(wear(leather).staminaRecovery - naked.staminaRecovery, 4, 'a whole leather set adds up');
+    assert.equal(wear(cloth).insightRecovery - naked.insightRecovery, 4, 'a whole cloth set adds up');
 });

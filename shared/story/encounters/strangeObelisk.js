@@ -72,7 +72,19 @@ export const strangeObelisk = {
       sfx: "glyphChime",
       sfxVolume: 0.5,
       image: { col: 0, row: 0 },
-      text: "Your party discovers a towering obelisk of smooth, black stone. Strange geometries are carved into its surface, and they seem to shift when not directly observed. Its base is half buried, and fine seams run across the stone.",
+      text: "Your party discovers a towering obelisk of smooth, black stone. Strange geometries are carved into its surface, and they seem to shift when not directly observed.",
+      decisions: [
+          {
+              text: "Continue.",
+              outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery_2" } }] }]
+          }
+      ]
+    },
+
+    discovery_2: {
+      displayText: "A Monolith in the Mist",
+      image: { col: 0, row: 0 },
+      text: "Its base is half buried, and fine seams run across the stone.",
       decisions: [
         approach({
           text: "[INT] Decipher the shifting glyphs.",
@@ -128,7 +140,20 @@ export const strangeObelisk = {
       effect: "glow_red",
       sfx: "glowSwell",
       image: { col: 0, row: 0 },
-      text: "The glyphs crawl toward your hand and the stone grows warm. Whatever you have become, for better or worse, it will be unwritten. Every trait, the good with the bad. The stone will not be used twice.",
+      text: "The glyphs crawl toward your hand and the stone grows warm. Whatever you have become, for better or worse, it will be unwritten.",
+      decisions: [
+          {
+              text: "Continue.",
+              outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "unmaking_2" } }] }]
+          }
+      ]
+    },
+
+    unmaking_2: {
+      displayText: "The Unwriting",
+      tone: "blood",
+      image: { col: 0, row: 0 },
+      text: "Every trait, the good with the bad. The stone will not be used twice.",
       decisions: [
         {
           text: "Let it take everything.",
@@ -147,7 +172,7 @@ export const strangeObelisk = {
         {
           text: "Pull your hand away.",
           outcomes: [
-            { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery" } }] }
+            { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery_2" } }] }
           ]
         }
       ]
@@ -175,7 +200,20 @@ export const strangeObelisk = {
       sfx: "shockSfx",
       sfxVolume: 0.6,
       image: { col: 2, row: 0 },
-      text: "The geometries twist in impossible ways. It hurts to look at. A sharp pain shoots behind your eyes, and something in you is left altered.",
+      text: "The geometries twist in impossible ways. It hurts to look at.",
+      decisions: [
+          {
+              text: "Continue.",
+              outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "decipher_fail_2" } }] }]
+          }
+      ]
+    },
+
+    decipher_fail_2: {
+      displayText: "A Fractured Mind",
+      tone: "blood",
+      image: { col: 2, row: 0 },
+      text: "A sharp pain shoots behind your eyes, and something in you is left altered.",
       decisions: [
         {
           text: "Stumble away from the stone.",

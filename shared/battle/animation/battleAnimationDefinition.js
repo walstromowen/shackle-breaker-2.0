@@ -8,7 +8,7 @@
  * After editing, run:  node tools/checkAnimations.mjs
  * It checks for typos, missing or shared animations, sounds / sprite sheets that do not exist, cues that run past the end, and look-alike animations.
  */
-import { anim, sfx, flash, shake, fade, background, lunge, wobble, hop, slideIn, slideOut, spawn, travel, burst, stream, repeat, tint } from './animationKit.js';
+import { anim, sfx, flash, shake, fade, background, lunge, wobble, hop, slideIn, slideOut, spawn, travel, burst, stream, repeat, tint, orbit } from './animationKit.js';
 
 export const BattleAnimationDefinitions = {
     // Scripted boss ability. Not used by any player ability.
@@ -83,6 +83,34 @@ export const BattleAnimationDefinitions = {
             spawn(0.05, 'bolsterAnimation', { life: 0.5, move: 'expand_and_fade', scale: 2.2 })
         ],
         target: { shake: shake(0.05, 0.2, 15), flash: flash(0.05, 1, 'brightness(130%) sepia(100%) hue-rotate(190deg) saturate(300%)') }
+    }),
+    // Leather armor's ability: a deep breath, a green glow rising off the user.
+    "recuperate": anim(2.2, {
+        seconds: true,
+        audio: [sfx(0.1, 'rallySfx', { volume: 0.6, pitch: 0.8 })],
+        actor: { flash: flash(0.1, 1.9, 'brightness(125%) sepia(50%) hue-rotate(60deg) saturate(200%)') },
+        vfx: [
+            // concentration lines: thin pale-green streaks falling straight down over the user, wave after wave, with a few finer white ones between
+            ...repeat(0.1, 12, 0.11, t => burst(t, { at: 'source', count: 5, color: '#b4f08a', shape: 'streak', length: 95, scale: 1, angle: 90, cone: 3, minSpeed: 520, maxSpeed: 760, minLife: 0.45, maxLife: 0.7, area: [150, 10], offsetY: -190, glow: false, envelope: true })),
+            ...repeat(0.15, 8, 0.16, t => burst(t, { at: 'source', count: 3, color: '#ffffff', shape: 'streak', length: 60, scale: 0.6, angle: 90, cone: 3, minSpeed: 600, maxSpeed: 820, minLife: 0.4, maxLife: 0.6, area: [150, 10], offsetY: -190, glow: false, envelope: true, alpha: 0.7 }))
+        ]
+    }),
+    // Cloth armor's ability: a still moment, a blue light settling over the user.
+    "draw_insight": anim(2.3, {
+        seconds: true,
+        audio: [
+            sfx(0.1, 'purifySfx', { volume: 0.6, pitch: 0.9 }),
+            sfx(1.55, 'arcaneDartSfx', { volume: 0.5, pitch: 1.4 })
+        ],
+        actor: { flash: flash(1.3, 2.0, 'brightness(150%) sepia(60%) hue-rotate(250deg) saturate(250%)') },
+        vfx: [
+            // three small arcane orbs (a third of a turn apart), each with a fainter copy just behind it, spiral in around the user and are drawn in
+            ...[0, 2.094, 4.189].flatMap(phase => [
+                orbit(0.1, { at: 'source', life: 1.5, turns: 1.75, radius: 120, squash: 0.5, phase, scale: 0.5, color: '#b07cff', offsetY: -30 }),
+                orbit(0.1, { at: 'source', life: 1.5, turns: 1.75, radius: 120, squash: 0.5, phase: phase - 0.35, scale: 0.3, color: '#d8b8ff', alpha: 0.4, offsetY: -30 })
+            ]),
+            burst(1.55, { at: 'source', count: 12, color: '#d8b8ff', scale: 0.4, minSpeed: 30, maxSpeed: 110, minLife: 0.3, maxLife: 0.6, gravity: -40, offsetY: -30 })
+        ]
     }),
     // The boulder lands at 0.6s.
     "boulder_throw": anim(1.8, {
@@ -502,6 +530,43 @@ export const BattleAnimationDefinitions = {
             flash: flash('hit', 'hit+1', 'brightness(80%) sepia(60%) saturate(120%)')
         }
     }),
+    // Throw Dagger: the throwing knife's own icon (consumables sheet, cell 7,0: it points down-right, so facing 45) flies straight at the target, buries itself in it, and
+    // stays there for a moment, quivering, before it fades.
+    "throw_dagger": anim(2.0, {
+        seconds: true,
+        hit: 0.4,
+        audio: [
+            sfx(0.06, 'thrustSfx', { volume: 0.8, pitch: 1.5 }),
+            sfx('hit', 'quickStabSfx', { volume: 1, pitch: 0.95 })
+        ],
+        actor: lunge(0, 0.18, -14),
+        vfx: [
+            travel(0.12, 'consumables', { cell: [7, 0], size: 64, life: 0.28, hold: 1.3, scale: 0.6, blend: 'source-over', aim: true, facing: 45, fadeOut: false }),
+            travel(0.15, 'consumables', { cell: [7, 0], size: 64, life: 0.28, scale: 0.6, blend: 'source-over', aim: true, facing: 45, fadeOut: false, alpha: 0.25 }),
+            burst('hit', { count: 7, color: '#e8e8f0', scale: 0.3, minSpeed: 60, maxSpeed: 180, gravity: 320, minLife: 0.25, maxLife: 0.5, glow: false })
+        ],
+        target: { shake: shake('hit', 'hit+0.2', 14), flash: flash('hit', 'hit+0.12', 'brightness(190%)') }
+    }),
+    // Throw Poison Dagger: the same throw with the coated knife (cell 8,0). It sticks, drips poison for a while, and the target is shaded sickly green.
+    "throw_poison_dagger": anim(2.4, {
+        seconds: true,
+        hit: 0.4,
+        audio: [
+            sfx(0.06, 'thrustSfx', { volume: 0.8, pitch: 1.4 }),
+            sfx('hit', 'quickStabSfx', { volume: 0.9, pitch: 1.0 }),
+            sfx('hit+0.05', 'poisonSfx', { volume: 0.6, pitch: 1.1 })
+        ],
+        actor: lunge(0, 0.18, -14),
+        vfx: [
+            travel(0.12, 'consumables', { cell: [8, 0], size: 64, life: 0.28, hold: 1.7, scale: 0.6, blend: 'source-over', aim: true, facing: 45, fadeOut: false }),
+            travel(0.15, 'consumables', { cell: [8, 0], size: 64, life: 0.28, scale: 0.6, blend: 'source-over', aim: true, facing: 45, fadeOut: false, alpha: 0.25 }),
+            spawn('hit+0.05', 'poisonAnimation', { life: 0.8, scale: 0.7, move: 'expand_and_fade', blend: 'multiply' }),
+            burst('hit', { count: 8, color: '#58c040', scale: 0.45, minSpeed: 60, maxSpeed: 200, gravity: 300 }),
+            // drops of poison falling off the knife for as long as it hangs in the target
+            ...repeat(0.5, 9, 0.17, t => burst(t, { count: 2, color: '#58c040', scale: 0.3, minSpeed: 5, maxSpeed: 40, gravity: 280, minLife: 0.35, maxLife: 0.6, glow: false, area: [16, 6] }))
+        ],
+        target: { shake: shake('hit', 'hit+0.2', 12), flash: flash('hit', 'hit+1.6', 'brightness(115%) saturate(180%) hue-rotate(100deg)') }
+    }),
     "item_throwing_knife": anim(1, {
         hit: 0.22,
         audio: [
@@ -516,18 +581,21 @@ export const BattleAnimationDefinitions = {
         target: { shake: shake('hit', 'hit+0.13', 14), flash: flash('hit', 'hit+0.08', 'brightness(200%)') }
     }),
     // The arrow is the ability's own icon, turned to fly along its path (the icon art points down-right = facing 45).
-    "loose_arrow": anim(1.0, {
-        hit: 0.3,
+    // Arrows (loose_arrow, quick_draw, poisoned_arrow, triple_shot) fly for a visible moment and then STAY in the target for about a second (travel `hold`),
+    // quivering, before they fade, so the hit can actually be seen. The turn waits for the whole animation.
+    "loose_arrow": anim(2.1, {
+        seconds: true,
+        hit: 0.55,
         audio: [
             sfx(0.05, 'bowReleaseSfx', { volume: 1 }),
             sfx('hit', 'arrowImpactSfx', { volume: 1 })
         ],
-        actor: lunge(0, 0.1, -12),
+        actor: lunge(0, 0.2, -12),
         vfx: [
-            travel(0.1, 'looseArrowAnimation', { life: 0.2, scale: 1.0, blend: 'source-over', aim: true, facing: 45, fadeOut: false }),
-            spawn('hit', 'looseArrowImpactAnimation', { life: 0.32, frames: 4, scale: 1.1, blend: 'source-over' })
+            travel(0.1, 'looseArrowAnimation', { life: 0.45, hold: 1.4, scale: 1.0, blend: 'source-over', aim: true, facing: 45, fadeOut: false }),
+            spawn('hit', 'looseArrowImpactAnimation', { life: 0.5, frames: 4, scale: 1.1, blend: 'source-over' })
         ],
-        target: { shake: shake('hit', 'hit+0.2', 15), flash: flash('hit', 'hit+0.1', 'brightness(180%) sepia(30%)') }
+        target: { shake: shake('hit', 'hit+0.3', 15), flash: flash('hit', 'hit+0.2', 'brightness(180%) sepia(30%)') }
     }),
     "magic_missile": anim(0.9, {
         hit: 0.4,
@@ -670,23 +738,25 @@ export const BattleAnimationDefinitions = {
         ],
         target: { flash: flash(0, 0.75, 'brightness(110%) saturate(160%) hue-rotate(100deg)') }
     }),
-    // Cue times in an animation are a fraction of its duration (the renderer compares them with timer / duration), so the
-    // bow animations that are not exactly 1s long convert from seconds with t(): the arrow's flight is in real seconds.
-    "poisoned_arrow": anim(1.8, (() => { const t = (sec) => Math.round(sec / 1.8 * 10000) / 10000; return {
+    // Cue times are a fraction of the duration (the renderer compares them with timer / duration); `seconds: true` lets an animation that is not
+    // 1s long write them in real seconds instead (the arrow's flight is in real seconds).
+    "poisoned_arrow": anim(3.0, {
+        seconds: true,
+        hit: 0.6,
         audio: [
-            sfx(t(0.05), 'bowReleaseSfx', { volume: 1, pitch: 0.9 }),
-            sfx(t(0.32), 'arrowImpactSfx', { volume: 0.9 }),
-            sfx(t(0.35), 'poisonSplashSfx', { volume: 1 })
+            sfx(0.05, 'bowReleaseSfx', { volume: 1, pitch: 0.9 }),
+            sfx('hit', 'arrowImpactSfx', { volume: 0.9 }),
+            sfx('hit+0.05', 'poisonSplashSfx', { volume: 1 })
         ],
-        actor: lunge(0, t(0.1), -14),
+        actor: lunge(0, 0.2, -14),
         vfx: [
-            travel(t(0.1), 'poisonedArrowAnimation', { life: 0.22, scale: 1.0, blend: 'source-over', aim: true, facing: 45, fadeOut: false }),
-            spawn(t(0.32), 'poisonedArrowImpactAnimation', { life: 0.34, frames: 4, scale: 1.1, blend: 'source-over' }),
-            spawn(t(0.37), 'poisonAnimation', { life: 0.6, move: 'expand_and_fade', scale: 1.5, blend: 'multiply' }),
-            burst(t(0.32), { count: 7, color: '#7ddc3a', scale: 0.7, minSpeed: 100, maxSpeed: 240, gravity: 300 })
+            travel(0.1, 'poisonedArrowAnimation', { life: 0.5, hold: 1.8, scale: 1.0, blend: 'source-over', aim: true, facing: 45, fadeOut: false }),
+            spawn('hit', 'poisonedArrowImpactAnimation', { life: 0.5, frames: 4, scale: 1.1, blend: 'source-over' }),
+            spawn('hit+0.1', 'poisonAnimation', { life: 1.2, move: 'expand_and_fade', scale: 1.5, blend: 'multiply' }),
+            burst('hit', { count: 7, color: '#7ddc3a', scale: 0.7, minSpeed: 100, maxSpeed: 240, gravity: 300 })
         ],
-        target: { shake: shake(t(0.32), t(0.62), 20), flash: flash(t(0.32), t(1.42), 'brightness(120%) saturate(200%) hue-rotate(100deg)') }
-    }; })()),
+        target: { shake: shake('hit', 'hit+0.4', 20), flash: flash('hit', 'hit+1.4', 'brightness(120%) saturate(200%) hue-rotate(100deg)') }
+    }),
     "punch": anim(1, {
         audio: [sfx(0.1, 'punchSfx', { volume: 1 })],
         actor: lunge(0, 0.15, 80),
@@ -705,19 +775,21 @@ export const BattleAnimationDefinitions = {
         target: { flash: flash(0.2, 1.2, 'brightness(200%) sepia(30%) hue-rotate(180deg) saturate(150%) drop-shadow(0 0 10px white)') }
     }),
     // Rapid shot: a fast arrow (the ability's icon already carries its speed lines) trailed by two faint copies.
-    "quick_draw": anim(0.8, (() => { const t = (sec) => Math.round(sec / 0.8 * 10000) / 10000; const arrow = { life: 0.15, scale: 1.0, blend: 'source-over', aim: true, facing: 45, fadeOut: false }; return {
+    "quick_draw": anim(1.8, (() => { const arrow = { life: 0.3, hold: 1.2, scale: 1.0, blend: 'source-over', aim: true, facing: 45, fadeOut: false }; return {
+        seconds: true,
+        hit: 0.4,
         audio: [
             sfx(0, 'bowReleaseSfx', { volume: 1, pitch: 1.2 }),
-            sfx(t(0.2), 'arrowImpactSfx', { volume: 0.9, pitch: 1.1 })
+            sfx('hit', 'arrowImpactSfx', { volume: 0.9, pitch: 1.1 })
         ],
-        actor: lunge(0, t(0.05), -8),
+        actor: lunge(0, 0.1, -8),
         vfx: [
-            travel(t(0.05), 'quickDrawAnimation', arrow),
-            travel(t(0.065), 'quickDrawAnimation', { ...arrow, alpha: 0.35 }),
-            travel(t(0.08), 'quickDrawAnimation', { ...arrow, alpha: 0.18 }),
-            spawn(t(0.2), 'quickDrawImpactAnimation', { life: 0.26, frames: 4, scale: 1.0, blend: 'source-over' })
+            travel(0.1, 'quickDrawAnimation', arrow),
+            travel(0.13, 'quickDrawAnimation', { ...arrow, hold: undefined, alpha: 0.35 }),
+            travel(0.16, 'quickDrawAnimation', { ...arrow, hold: undefined, alpha: 0.18 }),
+            spawn('hit', 'quickDrawImpactAnimation', { life: 0.4, frames: 4, scale: 1.0, blend: 'source-over' })
         ],
-        target: { shake: shake(t(0.2), t(0.35), 12), flash: flash(t(0.2), t(0.3), 'brightness(150%)') }
+        target: { shake: shake('hit', 'hit+0.25', 12), flash: flash('hit', 'hit+0.2', 'brightness(150%)') }
     }; })()),
     // Not used by any ability (kept in case another file references it).
     "quick_shock": anim(1, {
@@ -833,15 +905,17 @@ export const BattleAnimationDefinitions = {
             flash: flash('hit', 'hit+0.8', tint('gold', { bright: 350, sat: 300, glow: 'gold', glowSize: 20 }))
         }
     }),
-    // The dark hand: it used to be drawn with the glowing 'screen' blend (a dark purple hand all but vanishes on it) and to start fading the moment it
-    // appeared, so it was gone in about a second. It is now drawn solid ('normal'), rises, stays fully visible for about two seconds and thins away.
-    "spirit_reap": anim(4, {
-        audio: [sfx(0, 'spiritReapSfx', { volume: 1 })],
-        actor: lunge(0, 0.15, 80, { flash: flash(3.2, 3.8, 'brightness(180%) saturate(200%) hue-rotate(120deg)') }),
+    // The dark hand: drawn solid ('normal'; a dark purple hand all but vanishes on the glowing 'screen' blend). It is a slow, long cast on purpose: the hand
+    // starts small and faint and swells over the target for about four seconds ('loom_over'), stays there, and thins away at the end. The sound is played
+    // slowed down (pitch 0.65, about 6 seconds) so it lasts as long as the hand does, and the target trembles only lightly until the hand has grown.
+    "spirit_reap": anim(6.6, {
+        seconds: true,
+        audio: [sfx(0, 'spiritReapSfx', { volume: 1, pitch: 0.65 })],
+        actor: lunge(0, 0.15, 80, { flash: flash(5.6, 6.3, 'brightness(180%) saturate(200%) hue-rotate(120deg)') }),
         vfx: [
-            spawn(0.12, 'spiritReapAnimation', { life: 3.6, move: 'rise_and_hold', scale: 2.5, blend: 'normal' })
+            spawn(0.2, 'spiritReapAnimation', { life: 6.2, move: 'loom_over', scale: 2.5, blend: 'normal' })
         ],
-        target: { shake: shake(0.12, 3.2, 25), flash: flash(0.12, 3.5, 'brightness(130%) sepia(60%) hue-rotate(270deg) saturate(80%)') }
+        target: { shake: shake(2.4, 5.8, 14), flash: flash(0.4, 6.0, 'brightness(130%) sepia(60%) hue-rotate(270deg) saturate(80%)') }
     }),
     "spite": anim(1.5, {
         audio: [
@@ -893,25 +967,28 @@ export const BattleAnimationDefinitions = {
         target: { shake: shake(0, 0.3, 10), flash: flash(0, 0.4, 'brightness(250%) saturate(150%)') }
     }),
     // One volley: the icon shows three arrows side by side, so three arrows fly together and three punctures land a beat apart.
-    "triple_shot": anim(0.9, (() => { const t = (sec) => Math.round(sec / 0.9 * 10000) / 10000; return {
+    "triple_shot": anim(2.4, {
+        seconds: true,
+        hit: 0.55,
         audio: [
-            sfx(t(0.05), 'bowReleaseSfx', { volume: 0.9, pitch: 1.1 }),
-            sfx(t(0.28), 'arrowImpactSfx', { volume: 0.9 }),
-            sfx(t(0.36), 'arrowImpactSfx', { volume: 0.8, pitch: 1.1 }),
-            sfx(t(0.44), 'arrowImpactSfx', { volume: 0.8, pitch: 0.95 })
+            sfx(0.05, 'bowReleaseSfx', { volume: 0.9, pitch: 1.1 }),
+            sfx('hit', 'arrowImpactSfx', { volume: 0.9 }),
+            sfx('hit+0.1', 'arrowImpactSfx', { volume: 0.8, pitch: 1.1 }),
+            sfx('hit+0.2', 'arrowImpactSfx', { volume: 0.8, pitch: 0.95 })
         ],
-        actor: lunge(0, t(0.08), -10),
+        actor: lunge(0, 0.2, -10),
         vfx: [
-            travel(t(0.08), 'tripleShotAnimation', { life: 0.2, scale: 1.0, blend: 'source-over', aim: true, facing: 45, fadeOut: false }),
-            spawn(t(0.28), 'tripleShotImpactAnimation', { life: 0.4, frames: 4, scale: 1.1, blend: 'source-over' }),
-            burst(t(0.28), { count: 5, color: '#ff9a3c', scale: 0.7, minSpeed: 120, maxSpeed: 260 }),
-            burst(t(0.36), { count: 4, color: '#ffd27a', scale: 0.6, minSpeed: 100, maxSpeed: 220 })
+            travel(0.1, 'tripleShotAnimation', { life: 0.45, hold: 1.6, scale: 1.0, blend: 'source-over', aim: true, facing: 45, fadeOut: false }),
+            spawn('hit', 'tripleShotImpactAnimation', { life: 0.6, frames: 4, scale: 1.1, blend: 'source-over' }),
+            burst('hit', { count: 5, color: '#ff9a3c', scale: 0.7, minSpeed: 120, maxSpeed: 260 }),
+            burst('hit+0.1', { count: 4, color: '#ffd27a', scale: 0.6, minSpeed: 100, maxSpeed: 220 })
         ],
-        target: {
-            shake: [shake(t(0.28), t(0.35), 12), shake(t(0.36), t(0.43), 12), shake(t(0.44), t(0.54), 14)],
-            flash: [flash(t(0.28), t(0.34), 'brightness(160%)'), flash(t(0.36), t(0.42), 'brightness(160%)'), flash(t(0.44), t(0.52), 'brightness(170%)')]
-        }
-    }; })()),
+        target: [
+            { shake: shake('hit', 'hit+0.15', 14), flash: flash('hit', 'hit+0.1', 'brightness(170%)') },
+            { shake: shake('hit+0.1', 'hit+0.25', 14), flash: flash('hit+0.1', 'hit+0.2', 'brightness(170%)') },
+            { shake: shake('hit+0.2', 'hit+0.4', 14), flash: flash('hit+0.2', 'hit+0.3', 'brightness(170%)') }
+        ]
+    }),
     "uppercut": anim(1.4, {
         audio: [sfx(0.2, 'punchSfx', { volume: 1, pitch: 0.8 })],
         actor: lunge(0, 0.2, 90),

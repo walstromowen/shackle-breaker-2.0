@@ -422,7 +422,10 @@ export class OverworldController extends BaseController {
     processPickup(targetObj) {
         targetObj.isFading = true;
         // A pickup gives either one fixed item, or (interaction.lootTableId) whatever the loot table rolls: a stick is mostly soft wood, now and then hard wood
-        let gained = [{ id: targetObj.interaction.itemId, qty: targetObj.interaction.amount || 1 }];
+        // (interaction.maxAmount: a pickup that gives anywhere from `amount` to `maxAmount`; the herbs give 1 or 2)
+        const minQty = targetObj.interaction.amount || 1;
+        const maxQty = Math.max(minQty, targetObj.interaction.maxAmount || minQty);
+        let gained = [{ id: targetObj.interaction.itemId, qty: minQty + Math.floor(Math.random() * (maxQty - minQty + 1)) }];
         if (targetObj.interaction.lootTableId) {
             const rolled = LootTableFactory.generateLoot(targetObj.interaction.lootTableId, 1).items;
             if (rolled.length) gained = rolled;
@@ -447,6 +450,26 @@ export class OverworldController extends BaseController {
                 clearInterval(fadeInterval);
             }
         }, stepTime);
+    }
+
+    /* Search a container on the map: what it holds comes from its own loot table (interaction.lootTableId), and it can only be searched once. */
+    searchContainer(obj) {
+        const name = obj.interaction.name || 'container';
+        if (this.worldManager.isSearched(obj.col, obj.row)) {
+            this.showNotice(`You already searched the ${name}.`, false);
+            return;
+        }
+        this.worldManager.markSearched(obj.col, obj.row);
+        const found = LootTableFactory.searchContainer(obj.interaction.lootTableId);
+        if (!found.length) {
+            this.showNotice(`The ${name} is empty.`, false);
+            return;
+        }
+        for (const { id, qty } of found) {
+            InventorySystem.addItem(id, qty);
+            this.createItemToast(id, qty);
+        }
+        events.emit('PLAY_SFX', { id: UI_SFX.pickup, volume: 0.8, pitch: 1.0 });
     }
 
    // --- NEW: Helper to check if party leader has required tool ---
@@ -537,6 +560,12 @@ export class OverworldController extends BaseController {
             // --- Intercept item pickups so the game doesn't freeze! ---
             if (obj.interaction.type === 'PICKUP') {
                 this.processPickup(obj);
+                return;
+            }
+
+            // --- Search a crate, wardrobe or sacks (no encounter) ---
+            if (obj.interaction.type === 'SEARCH') {
+                this.searchContainer(obj);
                 return;
             }
 

@@ -366,6 +366,9 @@ export class ItemDetailPanel {
       if (key === 'maxHp') label = "MAX HP";
       else if (key === 'maxStamina') label = "MAX STM";
       else if (key === 'maxInsight') label = "MAX INS";
+      else if (key === 'hpRecovery') label = "HP REC";
+      else if (key === 'staminaRecovery') label = "STM REC";
+      else if (key === 'insightRecovery') label = "INS REC";
 
       statItems.push({ label: label, val: this._formatValue(val, true), color: this._getStatColor(key) });
     });
