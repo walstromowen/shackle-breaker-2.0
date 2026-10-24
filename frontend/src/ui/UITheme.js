@@ -86,6 +86,8 @@ export const UITheme = {
       highlightBg: "rgba(201, 166, 79, 0.16)",  // the wash fades from this at the left edge ...
       highlightBgEnd: "rgba(201, 166, 79, 0.02)", // ... to this at the right
       highlightBorder: "rgba(201, 166, 79, 0.42)",
+      highlightGlow: "rgba(214, 180, 92, 0.55)",   // the soft light the edge of the highlighted element gives off
+      highlightGlowBlur: 12,
 
       selectedText: "#e2dac8",                  // textMain
       selectedBg: "rgba(226, 218, 200, 0.09)",
@@ -138,10 +140,17 @@ export const UITheme = {
 
   // Panels (CanvasUI.drawPanel): a hairline brass edge, a soft top-lit fill, and two cut corners (top-left, bottom-right) like riveted plate.
   panel: {
-    chamfer: 12,
-    edgeAlpha: 0.38,
-    edgeWidth: 1.5,
-    sheen: 0.06        // how much lighter (and cooler) the top of a panel is than its bottom, like the login card
+    chamfer: 0,        // 0 = square corners (Dark Souls style); 12 gives the old cut top-left / bottom-right corners
+    edgeColor: '#b8ad96',      // the thin worn-bone edge of a plate
+    edgeAlpha: 0.34,
+    edgeWidth: 1.25,
+    sheen: 0.06,       // how much lighter (and cooler) the top of a panel is than its bottom, like the login card
+    mottle: 0.3,      // how strongly the soft blotches show in the plate (0 = none)
+    grain: 0.16,       // and the film grain
+    innerShadow: 0.85,         // the dark fall-off along the inside of the edge: strength ...
+    innerShadowBlur: 34,       // ... and reach
+    // The doubled corner brackets a large panel wears, like the frame round the item grid: outer arm, inner arm, how far in, and how big a panel must be
+    brackets: { on: true, minSize: 220, inset: 7, outerArm: 26, innerArm: 13, gap: 4, alpha: 0.5 }
   },
 
   // Buttons (CanvasUI.drawButton): the login screen's submit button -- a brass-tinted face, a brass hairline, tracked capitals.
@@ -215,9 +224,9 @@ UITheme.backButtonBox = (x, y) => ({
 });
 
 UITheme.text = {
-  title:       { font: F.header,         color: C.textMain,      align: 'center' },
+  title:       { font: F.header,         color: C.textMain,      align: 'center', shadow: { color: 'rgba(0, 0, 0, 0.9)', blur: 14, dy: 3 } },
   columnLabel: { font: F.sectionHeading, color: C.textMuted,     align: 'center' },
-  heading:     { font: F.sectionHeading, color: C.textHighlight, align: 'left' },
+  heading:     { font: F.sectionHeading, color: C.textHighlight, align: 'left', shadow: { color: 'rgba(0, 0, 0, 0.85)', blur: 10, dy: 2 } },
   subtitle:    { font: '500 26px "Barlow", system-ui, sans-serif', color: C.textHighlight, align: 'center', tracking: 1.5 },
 
   body:        { font: F.body,       color: C.textMain,      align: 'left' },

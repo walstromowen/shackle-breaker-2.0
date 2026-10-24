@@ -135,7 +135,7 @@ export class EquipmentPanel {
     const pX = Math.floor(centerX - (this.PORTRAIT_SIZE / 2));
     const pY = startY + 24;
 
-    this.ui.drawPanel(pX, pY, this.PORTRAIT_SIZE, this.PORTRAIT_SIZE, UITheme.colors.bgScale[0]);
+    this.ui.drawSlot(pX, pY, this.PORTRAIT_SIZE, this.PORTRAIT_SIZE, UITheme.colors.bgScale[0]);
 
     let assetKey = member.spritePortrait;
     const img = this.loader.get(assetKey);

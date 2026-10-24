@@ -12,7 +12,18 @@ import { ActSystem } from '../../../../shared/story/actSystem.js';
 import { EntityFactory } from '../../../../shared/characters/entityFactory.js';
 import { CorruptionSystem } from '../../../../shared/characters/corruptionSystem.js';
 
+// The plains battle track is what encounter definitions name for "an ordinary fight". It stands in for the music of the biome the party is in
+// (the cave's battle track in a cave, the desert's in the desert...). Tracks made for one scene (a boss, a creature's theme) are played as named.
+const GENERIC_BATTLE_BGM = 'plainsBattleBgm';
+
 export class EncounterLogic {
+    /** The battle track to play for `bgmId`: the biome's own when `bgmId` is the generic one, else `bgmId` untouched. */
+    static resolveBattleBgm(bgmId, worldManager) {
+        if (bgmId !== GENERIC_BATTLE_BGM || !worldManager || !gameState.player) return bgmId;
+        const biome = worldManager.getBiomeAt(gameState.player.col, gameState.player.row);
+        return (biome && biome.getMusic && biome.getMusic(0, true)) || bgmId;
+    }
+
     static checkConditions(decision, context = {}) {
         if (!decision || !decision.conditions) return true;
         return decision.conditions.every(cond => {
@@ -401,7 +412,7 @@ export class EncounterLogic {
                     events.emit('START_BATTLE', {
                         enemies: enemyList, tableId: payload.tableId || null, difficulty: currentDifficulty,
                         background: battleBgAsset, weather: gameState.world?.currentWeather || 'clear',
-                        context: model.context, bgm: payload.bgm || null,
+                        context: model.context, bgm: EncounterLogic.resolveBattleBgm(payload.bgm || (model.getBgm && model.getBgm() ? null : GENERIC_BATTLE_BGM), worldManager),   // no track named anywhere: an ordinary fight, so the biome's battle music (a stage that has its own music keeps it)
                         // `afterVictory: { encounterId }` plays that encounter when the fight is won, before the overworld (the end of Darius)
                         afterVictory: payload.afterVictory || null
                     });

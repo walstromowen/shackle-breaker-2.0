@@ -79,7 +79,7 @@ export class WorkshopInventoryRenderer extends WorkshopBaseRenderer {
 
                 hitboxes.push({ id: `PARTY_ITEM_${index}`, x: itemX, y: itemY, w: SLOT_SIZE, h: SLOT_SIZE, type: 'inventory', index: index, clickSfx: 'uiClick' });
 
-                this.ui.drawPanel(itemX, itemY, SLOT_SIZE, SLOT_SIZE, UITheme.colors.bgScale[1]);
+                this.ui.drawSlot(itemX, itemY, SLOT_SIZE, SLOT_SIZE, UITheme.colors.bgScale[1]);
                 this.ui.drawStateBox(itemX, itemY, SLOT_SIZE, SLOT_SIZE, flags);
 
                 const iconOffset = (SLOT_SIZE - 64) / 2;

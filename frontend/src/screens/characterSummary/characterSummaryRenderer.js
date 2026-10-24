@@ -47,9 +47,9 @@ export class CharacterSummaryRenderer {
     const rightW = w - leftW - centerW;
 
     // 3. Draw Global Backgrounds & Borders
-    this.ui.drawRect(0, 0, leftW, h, UITheme.colors.bgScale[0]);
-    this.ui.drawRect(leftW, 0, centerW, h, UITheme.colors.bgScale[1]);
-    this.ui.drawRect(leftW + centerW, 0, rightW, h, UITheme.colors.bgScale[0]);
+    this.ui.drawColumn(0, 0, leftW, h, UITheme.colors.bgScale[0]);
+    this.ui.drawColumn(leftW, 0, centerW, h, UITheme.colors.bgScale[1]);
+    this.ui.drawColumn(leftW + centerW, 0, rightW, h, UITheme.colors.bgScale[0]);
 
     // Delicate column dividers
     this.ui.drawLine(leftW, 0, leftW, h, UITheme.colors.border, 1);

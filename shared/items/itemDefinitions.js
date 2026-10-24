@@ -1066,7 +1066,7 @@ export const ItemDefinitions = {
     type: "material",
     description: "A strange, jagged stone fallen from the heavens. It pulses with a faint, otherworldly glow. Staring into it for too long makes your own thoughts feel loud and unfamiliar.",
     value: 1250,
-    icon: { col: 6, row: 2 },            // PLACEHOLDER (empty cell): the sheet has no meteorite art. It was (6,1), the copper ingot. Draw one here.
+    icon: { col: 3, row: 2 },            // PLACEHOLDER (empty cell): the sheet has no meteorite art. It was (6,1), the copper ingot. Draw one here.
                                          // QUEST ITEM too: encounters check for it with { type: "has_item", itemId: "meteorite" } and take it with REMOVE_ITEM (also a Kurtus Brew ingredient).
     usable: true,                        // "Use" in the item menu, on the character viewed: frees a shackled one (see CorruptionSystem). Spent when it works.
     useAbility: "meteorite_unshackle",

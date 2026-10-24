@@ -91,7 +91,7 @@ export class InventoryPanel {
 
     // --- 4. Draw Grid Content ---
     this.ui.ctx.save();
-    this.ui.startClip(x, listY - 24, w + 36, listH + 48);
+    this.ui.startClip(x, listY - 24, w + 36, listH + 24);   // (the bottom is the list's own edge: the hotbar starts there)
 
     if (!inventory || inventory.length === 0) {
       this.ui.drawStyled('empty', 'Empty', centerX, listY + 72);
@@ -135,7 +135,7 @@ export class InventoryPanel {
         }
 
         // --- DRAW SLOT ---
-        this.ui.drawPanel(itemX, itemY, this.SLOT_SIZE, this.SLOT_SIZE, UITheme.colors.bgScale[1]);
+        this.ui.drawSlot(itemX, itemY, this.SLOT_SIZE, this.SLOT_SIZE, UITheme.colors.bgScale[1]);
         this.ui.drawStateBox(itemX, itemY, this.SLOT_SIZE, this.SLOT_SIZE, flags);
 
         if (!isHeld) {
@@ -170,9 +170,7 @@ export class InventoryPanel {
   _drawHotbar(slots, bar, state, x, y, w, hitboxes) {
     const centerX = Math.floor(x + (w / 2));
 
-    // cover the few pixels of the grid that bleed below its clip
-    this.ui.drawRect(x - 12, y, w + 48, bar.height + 60, UITheme.colors.bgScale[0]);
-
+    // (the grid above is clipped at its own bottom edge, so nothing bleeds into the hotbar and there is nothing to cover)
     this.ui.drawLineWithGothicFlourish(x + (w - w * 0.8) / 2, y + 6, w * 0.8, UITheme.colors.borderHighlight);
     this.ui.drawStyled('heading', 'Hotbar', centerX, y + 40, { align: 'center' });
 
@@ -198,7 +196,7 @@ export class InventoryPanel {
         type: 'hotbar', index: i, defId: entry.defId
       });
 
-      this.ui.drawPanel(sx, sy, bar.slot, bar.slot, UITheme.colors.bgScale[1]);
+      this.ui.drawSlot(sx, sy, bar.slot, bar.slot, UITheme.colors.bgScale[1]);
 
       // While something is carried every slot that would take it is marked; the one under the mouse that would NOT take it shows red
       if (canDrop) this.ui.drawDropTarget(sx, sy, bar.slot, bar.slot, true);

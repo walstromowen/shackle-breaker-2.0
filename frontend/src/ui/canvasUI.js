@@ -1,5 +1,20 @@
 import { UITheme, UIPointer } from './UITheme.js';
 import { Formatting } from '../../../shared/core/formatting.js';
+import { UITextures } from './uiTextures.js';
+
+// Panels are painted once into an offscreen picture and drawn from it every frame (a panel costs a texture fill, a blurred inner shadow and a
+// frame; doing that sixty times a second for a dozen panels would be wasteful). The picture is kept per size + fill + screen density.
+// The pixel budget keeps the cache small: the least recently drawn panels are dropped first.
+const PANEL_CACHE_BUDGET = 20_000_000;
+const PANEL_MARGIN = 3;                    // room around the picture for the half of the edge line that falls outside the outline
+const _panelCache = new Map();
+let _panelCachePixels = 0;
+function makeLayer(w, h) {
+  if (typeof OffscreenCanvas !== 'undefined') return new OffscreenCanvas(w, h);
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  return c;
+}
 
 export class CanvasUI {
   /**
@@ -10,16 +25,9 @@ export class CanvasUI {
   }
 
   // --- SCREEN MANAGEMENT ---
+  /** The background of a screen: the blurred world it opened over (or a mottled near-black), a vignette and film grain (UITextures). */
   clearScreen(width, height) {
-    const ctx = this.ctx;
-    ctx.fillStyle = UITheme.colors.background;
-    ctx.fillRect(0, 0, width, height);
-    // a faint lift in the middle, so a screen is lit from within and the corners fall away
-    const g = ctx.createRadialGradient(width / 2, height * 0.42, height * 0.1, width / 2, height * 0.5, Math.max(width, height) * 0.75);
-    g.addColorStop(0, 'rgba(34, 40, 52, 0.22)');
-    g.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, width, height);
+    UITextures.drawScreenBackground(this.ctx, width, height);
   }
 
   // --- CLIPPING (Required for Scrolling Lists) ---
@@ -82,32 +90,59 @@ export class CanvasUI {
 
   // --- HUD ELEMENTS ---
   drawBar(x, y, w, h, current, max, color = UITheme.colors.hp, bgColor = "rgba(0,0,0,0.5)") {
-    this.ctx.save();
-    // 1. Draw Background (Track)
-    this.ctx.fillStyle = bgColor;
-    this.ctx.fillRect(x, y, w, h);
+    const ctx = this.ctx;
+    ctx.save();
+    // 1. The track: a dark trough
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(x, y, w, h);
 
-    // 2. Calculate Fill Amount
+    // 2. How full
     if (max <= 0) max = 1;
     const pct = Math.max(0, Math.min(1, current / max));
+    const fw = w * pct;
 
-    // 3. Draw Foreground (Fill)
-    this.ctx.fillStyle = color;
-    this.ctx.fillRect(x, y, w * pct, h);
+    // 3. The fill, shaded like a rounded tube: lit along the top, deepest at the bottom, with a bright line where it ends
+    if (fw > 0) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, fw, h);
+      if (h >= 6) {
+        const tube = ctx.createLinearGradient(0, y, 0, y + h);
+        tube.addColorStop(0, 'rgba(255, 245, 225, 0.22)');
+        tube.addColorStop(0.45, 'rgba(255, 245, 225, 0)');
+        tube.addColorStop(1, 'rgba(0, 0, 0, 0.38)');
+        ctx.fillStyle = tube;
+        ctx.fillRect(x, y, fw, h);
+        if (pct < 1 && fw > 3) {
+          ctx.fillStyle = 'rgba(255, 245, 225, 0.5)';
+          ctx.fillRect(x + fw - 1.5, y, 1.5, h);
+        }
+      }
+    }
 
-    // 4. Crisp Border Frame
-    this.ctx.strokeStyle = UITheme.colors.border;
-    this.ctx.globalAlpha = 0.4;
-    this.ctx.lineWidth = 2; 
-    this.ctx.strokeRect(x, y, w, h);
-    this.ctx.restore();
+    // 4. The trough's inner shadow, then a fine frame
+    if (h >= 6) {
+      ctx.beginPath();
+      ctx.rect(x, y, w, h);
+      ctx.clip();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+      ctx.shadowBlur = Math.min(8, h * 0.6);
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, w, h);
+    }
+    ctx.restore();
+    ctx.save();
+    ctx.strokeStyle = UITheme.colors.border;
+    ctx.globalAlpha = 0.7;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    ctx.restore();
   }
 
   // --- PANELS ---
   /** The outline of a panel: a rectangle with the top-left and bottom-right corners cut off. */
-  panelPath(x, y, w, h) {
-    const c = Math.max(0, Math.min(UITheme.panel.chamfer, Math.floor(Math.min(w, h) / 4)));
-    const ctx = this.ctx;
+  panelPath(x, y, w, h, chamfer = UITheme.panel.chamfer, ctx = this.ctx) {
+    const c = Math.max(0, Math.min(chamfer, Math.floor(Math.min(w, h) / 4)));
     ctx.beginPath();
     ctx.moveTo(x + c, y);
     ctx.lineTo(x + w, y);
@@ -118,30 +153,158 @@ export class CanvasUI {
     ctx.closePath();
   }
 
-  drawPanel(x, y, w, h, bgColor = UITheme.colors.panelBg) {
+  /**
+   * A panel: a dark plate with grain and soft blotches in it, a shadowed inner edge, a brass hairline and a fainter second line inside it,
+   * and small diamonds on its corners. The top-left and bottom-right corners are cut. Drawn from a cached picture (see PANEL_CACHE_BUDGET).
+   */
+  drawPanel(x, y, w, h, bgColor = UITheme.colors.panelBg, variant = 'plate') {
+    const ctx = this.ctx;
+    if (!(w > 1 && h > 1)) return;
+    const scale = Math.round(Math.max(1, ctx.getTransform().a) * 2) / 2;
+    const cacheable = bgColor === null || bgColor === undefined || typeof bgColor === 'string';
+    if (!cacheable) {   // a gradient or pattern fill: painted directly, as before
+      ctx.save();
+      this.panelPath(x, y, w, h);
+      ctx.fillStyle = bgColor;
+      ctx.fill();
+      ctx.restore();
+      this._paintPanelSurface(ctx, x, y, w, h, false, variant);
+      return;
+    }
+    const key = `${Math.round(w)}x${Math.round(h)}|${scale}|${variant}|${bgColor || ''}`;
+    let layer = _panelCache.get(key);
+    if (layer) {
+      _panelCache.delete(key);          // re-insert: most recently used goes last
+    } else {
+      const pw = Math.ceil((Math.round(w) + PANEL_MARGIN * 2) * scale), ph = Math.ceil((Math.round(h) + PANEL_MARGIN * 2) * scale);
+      layer = makeLayer(pw, ph);
+      const g = layer.getContext('2d');
+      g.scale(scale, scale);
+      g.translate(PANEL_MARGIN, PANEL_MARGIN);
+      if (bgColor) {
+        this.panelPath(0, 0, Math.round(w), Math.round(h), UITheme.panel.chamfer, g);
+        g.fillStyle = bgColor;
+        g.fill();
+      }
+      this._paintPanelSurface(g, 0, 0, Math.round(w), Math.round(h), !!bgColor, variant);
+      _panelCachePixels += pw * ph;
+      for (const [k, old] of _panelCache) {
+        if (_panelCachePixels <= PANEL_CACHE_BUDGET) break;
+        _panelCache.delete(k);
+        _panelCachePixels -= old.width * old.height;
+      }
+    }
+    _panelCache.set(key, layer);
+    ctx.drawImage(layer, 0, 0, layer.width, layer.height, x - PANEL_MARGIN, y - PANEL_MARGIN, layer.width / scale, layer.height / scale);
+  }
+
+  /** Everything of a panel but its fill: texture, lit top, shadowed inner edge, frame lines, corner marks. `g` is the context to draw on. */
+  _paintPanelSurface(g, x, y, w, h, textured, variant = 'plate') {
+    const p = UITheme.panel;
+    const slot = variant === 'slot';   // an item slot: a dark recess, not a plate
+    const small = slot || Math.min(w, h) < 60;
+    g.save();
+    this.panelPath(x, y, w, h, p.chamfer, g);
+    g.clip();
+    if (textured) {
+      // the material: soft blotches and grain, a faint cool light along the top
+      g.globalAlpha = slot ? p.mottle * 0.5 : p.mottle;
+      g.fillStyle = g.createPattern(UITextures.mottle(), 'repeat');
+      g.fillRect(x, y, w, h);
+      g.globalAlpha = p.grain;
+      g.fillStyle = g.createPattern(UITextures.grain(), 'repeat');
+      g.fillRect(x, y, w, h);
+      g.globalAlpha = 1;
+      const sheen = g.createLinearGradient(0, y, 0, y + Math.min(h, 520));
+      sheen.addColorStop(0, `rgba(150, 165, 195, ${p.sheen})`);
+      sheen.addColorStop(1, 'rgba(150, 165, 195, 0)');
+      g.fillStyle = sheen;
+      g.fillRect(x, y, w, h);
+    }
+    // the inner edge falls into shadow: a blurred dark line along the outline, clipped to the inside
+    g.shadowColor = `rgba(0, 0, 0, ${slot ? 1 : p.innerShadow})`;
+    g.shadowBlur = slot ? 22 : small ? 10 : p.innerShadowBlur;
+    g.strokeStyle = '#000';
+    g.lineWidth = 2;
+    this.panelPath(x, y, w, h, p.chamfer, g);
+    g.stroke();
+    g.restore();
+
+    g.save();
+    // the thin worn edge
+    g.strokeStyle = p.edgeColor;
+    g.lineWidth = slot ? 1 : p.edgeWidth;
+    g.globalAlpha = slot ? p.edgeAlpha * 0.7 : p.edgeAlpha;
+    this.panelPath(x, y, w, h, p.chamfer, g);
+    g.stroke();
+    if (slot) {   // a recess catches light on its lower lip
+      g.globalAlpha = 0.16;
+      g.strokeStyle = '#cfc7b4';
+      g.beginPath();
+      g.moveTo(x + 3, y + h - 0.5);
+      g.lineTo(x + w - p.chamfer - 2, y + h - 0.5);
+      g.stroke();
+    }
+
+    const b = p.brackets;
+    if (b.on && !slot && Math.min(w, h) >= b.minSize) {
+      // a large panel wears a doubled bracket on each corner: a longer outer arm and a shorter inner one just inside it
+      g.strokeStyle = p.edgeColor;
+      const corner = (cx, cy, sx, sy) => {
+        for (const [off, arm, width, alpha] of [[b.inset, b.outerArm, 1.5, b.alpha], [b.inset + b.gap, b.innerArm, 1, b.alpha * 0.6]]) {
+          g.globalAlpha = alpha;
+          g.lineWidth = width;
+          g.beginPath();
+          g.moveTo(cx + sx * (off + arm), cy + sy * off);
+          g.lineTo(cx + sx * off, cy + sy * off);
+          g.lineTo(cx + sx * off, cy + sy * (off + arm));
+          g.stroke();
+        }
+      };
+      corner(x, y, 1, 1);
+      corner(x + w, y, -1, 1);
+      corner(x, y + h, 1, -1);
+      corner(x + w, y + h, -1, -1);
+    }
+    g.restore();
+  }
+
+  /**
+   * A full-height column of a screen (the three columns of the summary, the two halves of the shop): the fill colour with the same grain and
+   * blotches as a panel, a shadow falling in from both long edges and a faint line down the side where it meets the next column.
+   */
+  drawColumn(x, y, w, h, bgColor = UITheme.colors.bgScale[0]) {
     const ctx = this.ctx;
     const p = UITheme.panel;
     ctx.save();
-    this.panelPath(x, y, w, h);
-
-    // Fill, with a faint sheen along the top so the plate looks lit from above
-    if (bgColor) {
-      ctx.fillStyle = bgColor;
-      ctx.fill();
-      const sheen = ctx.createLinearGradient(0, y, 0, y + Math.min(h, 520));
-      sheen.addColorStop(0, `rgba(150, 165, 195, ${p.sheen})`);
-      sheen.addColorStop(1, 'rgba(150, 165, 195, 0)');
-      ctx.fillStyle = sheen;
-      ctx.fill();
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.clip();
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(x, y, w, h);
+    ctx.globalAlpha = p.mottle * 0.8;
+    ctx.fillStyle = ctx.createPattern(UITextures.mottle(), 'repeat');
+    ctx.fillRect(x, y, w, h);
+    ctx.globalAlpha = p.grain * 0.8;
+    ctx.fillStyle = ctx.createPattern(UITextures.grain(), 'repeat');
+    ctx.fillRect(x, y, w, h);
+    ctx.globalAlpha = 1;
+    const reach = Math.min(40, w / 3);
+    for (const [from, to, edge] of [[x, x + reach, x], [x + w, x + w - reach, x + w]]) {
+      const fall = ctx.createLinearGradient(from, 0, to, 0);
+      fall.addColorStop(0, 'rgba(0, 0, 0, 0.45)');
+      fall.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = fall;
+      ctx.fillRect(Math.min(from, to), y, reach, h);
     }
-
-    // Hairline brass edge
-    ctx.strokeStyle = UITheme.colors.borderHighlight;
-    ctx.lineWidth = p.edgeWidth;
-    ctx.globalAlpha = p.edgeAlpha;
-    ctx.stroke();
-
+    ctx.fillStyle = 'rgba(194, 161, 79, 0.14)';
+    ctx.fillRect(x + w - 1, y, 1, h);
     ctx.restore();
+  }
+
+  /** An item slot: a recess in the surface with a deep inner shadow (the same outline as a panel, so highlights fit it). */
+  drawSlot(x, y, w, h, bgColor = UITheme.colors.bgScale[1]) {
+    this.drawPanel(x, y, w, h, bgColor, 'slot');
   }
 
   /** The panel behind anything that floats above a screen (tooltips, context menus): the standard panel edge plus a drop shadow. */
@@ -275,8 +438,14 @@ export class CanvasUI {
     const r = UITheme.text[role];
     if (!r) throw new Error(`[CanvasUI] There is no text role "${role}".`);
     const color = opts.color || (r.kinds && r.kinds[opts.kind]) || r.color;
+    const lift = r.shadow || null;   // titles and headings sit on a soft shadow, so they stand off whatever is behind them
+    if (lift) {
+      this.ctx.save();
+      this.ctx.shadowColor = lift.color; this.ctx.shadowBlur = lift.blur; this.ctx.shadowOffsetY = lift.dy;
+    }
     this.drawText(this.styledText(role, text, opts), x, y, opts.font || r.font, color,
       opts.align || r.align, opts.baseline || r.baseline || 'alphabetic', opts.maxWidth, opts.tracking ?? r.tracking ?? 0);
+    if (lift) this.ctx.restore();
   }
 
   /** As drawStyled, for text that wraps: ui.drawStyledWrapped('body', text, x, y, maxWidth, lineHeight). */
@@ -482,6 +651,8 @@ export class CanvasUI {
       ctx.save();
       ctx.strokeStyle = s.highlightBorder;
       ctx.lineWidth = 1;
+      ctx.shadowColor = s.highlightGlow;     // the edge gives off a soft light
+      ctx.shadowBlur = s.highlightGlowBlur;
       if (notched) this.panelPath(x + 0.5, y + 0.5, w - 1, h - 1);
       else { ctx.beginPath(); ctx.rect(x + 0.5, y + 0.5, w - 1, h - 1); }
       ctx.stroke();
@@ -514,7 +685,15 @@ export class CanvasUI {
     this.ctx.save();
     this.ctx.strokeStyle = state === 'highlight' || state === 'pressed' ? b.edgeLit : b.edge;
     this.ctx.lineWidth = 1;
+    if (state === 'highlight') { this.ctx.shadowColor = UITheme.colors.states.highlightGlow; this.ctx.shadowBlur = UITheme.colors.states.highlightGlowBlur; }
     this.ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    this.ctx.shadowBlur = 0;
+    this.ctx.globalAlpha = 0.5;                       // the top edge catches the light
+    this.ctx.strokeStyle = 'rgba(255, 238, 200, 0.3)';
+    this.ctx.beginPath();
+    this.ctx.moveTo(x + 2, y + 1.5);
+    this.ctx.lineTo(x + w - 2, y + 1.5);
+    this.ctx.stroke();
     this.ctx.restore();
     this.drawStateBox(x, y, w, h, flags, { ...opts, bar: false, wash: false, notch: false });   // a button is a plain rectangle
 

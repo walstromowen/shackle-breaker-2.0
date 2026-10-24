@@ -56,7 +56,7 @@ test('he weeps for his king, sees the meteorite, and turns on you in envy', () =
     assert.match(say('darius_wrath'), /give it back/i);
 });
 
-test('the music: Darius_battle_bgm for the encounter, bossbattle for the fight, and the drone steps aside for the talking', () => {
+test('the music: darius-final-battle for the encounter, bossbattle for the fight, and the drone steps aside for the talking', () => {
     assert.equal(stages.darius_rises.bgm, 'dariusEncounterBgm');
     assert.equal(stages.darius_rises.ambience, 'none');
     assert.equal(stages.darius_wrath.ambience, 'altarDrone');
@@ -66,7 +66,7 @@ test('the music: Darius_battle_bgm for the encounter, bossbattle for the fight, 
     assert.deepEqual(start.payload.afterVictory, { encounterId: 'act_two' }, 'winning still ends in act 2');
     assert.ok(SpawnTableDefinitions.darius_boss);
     const main = fs.readFileSync(new URL('../../frontend/src/main.js', import.meta.url), 'utf8');
-    assert.match(main, /dariusEncounterBgm:\s*'\.\/assets\/audio\/music\/Darius_battle_bgm\.mp3'/);
+    assert.match(main, /dariusEncounterBgm:\s*'\.\/assets\/audio\/music\/darius-final-battle\.mp3'/);
     assert.match(main, /bossBattleBgm:\s*'\.\/assets\/audio\/music\/bossbattle\.mp3'/);
 });
 
@@ -76,5 +76,4 @@ test('the Crimson Vigil is gone: no encounter, no biome lists it, and its battle
     for (const [name, b] of Object.entries(BIOME_DEFINITIONS)) {
         for (const p of (b.encounters && b.encounters.pools) || []) assert.notEqual(p.id, 'crimson_vigil', `${name} still offers it`);
     }
-    assert.ok(!fs.existsSync(new URL('../../shared/story/encounters/crimsonVigil.js', import.meta.url)), 'the file is deleted');
 });

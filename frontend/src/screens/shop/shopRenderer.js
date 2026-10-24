@@ -29,8 +29,8 @@ export class ShopRenderer {
         this.hitboxes.push({ id: 'PANEL_VENDOR', x: 0, y: 0, w: halfW, h: h, type: 'panel' });
         this.hitboxes.push({ id: 'PANEL_PARTY', x: halfW, y: 0, w: halfW, h: h, type: 'panel' });
 
-        this.ui.drawRect(0, 0, halfW, h, UITheme.colors.bgScale[0]);
-        this.ui.drawRect(halfW, 0, halfW, h, UITheme.colors.bgScale[1]);
+        this.ui.drawColumn(0, 0, halfW, h, UITheme.colors.bgScale[0]);
+        this.ui.drawColumn(halfW, 0, halfW, h, UITheme.colors.bgScale[1]);
         this.ui.drawLine(halfW, 0, halfW, h, UITheme.colors.border, 1);
 
         this._drawShopPanel(
@@ -212,7 +212,7 @@ export class ShopRenderer {
 
                 });
 
-                this.ui.drawPanel(itemX, itemY, SLOT_SIZE, SLOT_SIZE, UITheme.colors.bgScale[1]);
+                this.ui.drawSlot(itemX, itemY, SLOT_SIZE, SLOT_SIZE, UITheme.colors.bgScale[1]);
                 this.ui.drawStateBox(itemX, itemY, SLOT_SIZE, SLOT_SIZE, flags);
 
                 if (!def) {

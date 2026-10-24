@@ -516,10 +516,9 @@ export class EncounterController extends BaseController {
     if (!decision) return;
     this.pendingDecision = decision;
     
-    if (decision.bgm) {
-      events.emit('PLAY_MUSIC', { id: decision.bgm, fadeTime: 0.5 });
-    } else if (decision.outcomes && decision.outcomes[0] && decision.outcomes[0].bgm) {
-      events.emit('PLAY_MUSIC', { id: decision.outcomes[0].bgm, fadeTime: 0.5 });
+    const decisionBgm = decision.bgm || (decision.outcomes && decision.outcomes[0] && decision.outcomes[0].bgm);
+    if (decisionBgm) {
+      events.emit('PLAY_MUSIC', { id: EncounterLogic.resolveBattleBgm(decisionBgm, this.worldManager), fadeTime: 0.5 });
     }
     
     if (decision.image) {
@@ -787,7 +786,7 @@ export class EncounterController extends BaseController {
     if (targetBGM === 'none') {
       events.emit('STOP_MUSIC', { fadeTime: 0.15 });      // a stage may call for silence
     } else if (targetBGM) {
-      events.emit('PLAY_MUSIC', { id: targetBGM, fadeTime: 1.0 });
+      events.emit('PLAY_MUSIC', { id: EncounterLogic.resolveBattleBgm(targetBGM, this.worldManager), fadeTime: 1.0 });
     }
   }
 
