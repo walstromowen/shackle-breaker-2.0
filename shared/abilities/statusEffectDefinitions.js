@@ -8,7 +8,8 @@ export const StatusEffectDefinitions = {
         maxStacks: 1,
         persistAfterCombat: true,
         effects: [
-            { trigger: 'ON_TURN_END', modify: 'hp', value: -5, damageType: 'dark', battleMessage: "{target} suffers {amount} poison damage!" }
+            // 8% of max HP every turn (at least 1), whoever it is on
+            { trigger: 'ON_TURN_END', modify: 'hp', percentMax: 0.08, damageType: 'dark', battleMessage: "{target} suffers {amount} poison damage!" }
         ],
     },
     bleed: {
@@ -19,11 +20,11 @@ export const StatusEffectDefinitions = {
         defaultCharges: 3,
         maxStacks: 2,            // every new cut makes it worse (value, drain and the penalties below all scale with the stacks)
         persistAfterCombat: true,
-        /* Bleeding is a slow wound, gentler than poison on purpose: each turn it takes a little HP (2 per stack, so 2 or 4 at the most, where poison takes 5)
-           and a little stamina, keeps the body from recovering between rounds, and a body that is already cut is easier to cut again. */
+        /* Bleeding is a slow wound, gentler than poison on purpose: each turn it takes a little HP (3% of max HP per stack, so 6% at the most, where poison takes 8%)
+           and a little stamina (4% of max stamina per stack), keeps the body from recovering between rounds, and a body that is already cut is easier to cut again. */
         effects: [
-            { trigger: 'ON_TURN_END', modify: 'hp', value: -2, damageType: 'slash', battleMessage: "{target} bleeds for {amount} damage!" },
-            { trigger: 'ON_TURN_END', modify: 'stamina', value: -1, damageType: 'slash', battleMessage: "{target} loses {amount} stamina from bleeding!" }
+            { trigger: 'ON_TURN_END', modify: 'hp', percentMax: 0.03, damageType: 'slash', battleMessage: "{target} bleeds for {amount} damage!" },
+            { trigger: 'ON_TURN_END', modify: 'stamina', percentMax: 0.04, damageType: 'slash', battleMessage: "{target} loses {amount} stamina from bleeding!" }
         ],
         modifiers: [
             { type: 'percent', target: 'hpRecovery', value: -0.33 },

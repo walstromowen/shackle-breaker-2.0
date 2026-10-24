@@ -15,15 +15,13 @@ test('the two knife abilities have an animation of their own', () => {
     assert.equal(users.length, 2);
 });
 
-test('the thrown knife is the item icon (consumables sheet cells 7,0 and 8,0), aimed, and stays in the target for a moment', () => {
-    for (const [id, col] of [['throw_dagger', 7], ['throw_poison_dagger', 8]]) {
+test('the thrown knife has its own sprite drawn pointing right, is aimed, and stays in the target for a moment', () => {
+    for (const [id, sheet] of [['throw_dagger', 'throwingKnifeAnimation'], ['throw_poison_dagger', 'poisonKnifeAnimation']]) {
         const main = travels(B[id]).find(v => v.config.flight);
         assert.ok(main, `${id} has a travel sprite that holds`);
-        assert.equal(main.config.sheetKey, 'consumables');
-        assert.equal(main.config.cellCol, col);
-        assert.equal(main.config.cellRow, 0);
-        assert.equal(main.config.frameSize, 64);
+        assert.equal(main.config.sheetKey, sheet);
         assert.equal(main.config.rotation, 'auto');
+        assert.equal(main.config.rotationOffset, undefined, 'the art already points right');
         assert.ok(main.config.life - main.config.flight >= 1, `${id} stays in the target for at least a second`);
     }
 });
@@ -46,7 +44,7 @@ test('both throws hit at the same moment the knife lands, and the poison one add
 // Cue times are compared with timer / duration, so a cue written as 4.5 (seconds) in a 6.6s animation would never play. These animations are written in
 // seconds with `seconds: true`; this checks none of them is left past the end. (A few older weather / beam animations still have cues past 1; they are left as they were.)
 test('every cue in the long gear / ability animations falls inside the animation', () => {
-    const ids = ['recuperate', 'draw_insight', 'throw_dagger', 'throw_poison_dagger', 'loose_arrow', 'poisoned_arrow', 'quick_draw', 'triple_shot', 'spirit_reap'];
+    const ids = ['recuperate', 'draw_insight', 'throw_dagger', 'throw_poison_dagger', 'loose_arrow', 'poisoned_arrow', 'quick_draw', 'spirit_reap', 'arcane_blast'];
     for (const id of ids) {
         const d = B[id];
         const times = [...(d.audio || []).map(a => a.start), ...(d.vfx || []).map(v => v.start)];
@@ -60,4 +58,22 @@ test('anim({ seconds: true }) turns real seconds into a fraction of the duration
     assert.equal(a.vfx[0].start, 0.75);
     const b = anim(2, { hit: 0.5, audio: [sfx('hit+0.25', 'x')] });
     assert.equal(b.audio[0].start, 0.75);
+});
+
+test('arrow and knife sprites are all drawn pointing right: no animation turns them by an offset', () => {
+    for (const id of ['loose_arrow', 'quick_draw', 'poisoned_arrow', 'throw_dagger', 'throw_poison_dagger']) {
+        const flying = travels(B[id]).filter(v => v.config.rotation === 'auto');
+        assert.ok(flying.length > 0, `${id} has an aimed sprite`);
+        for (const v of flying) assert.equal(v.config.rotationOffset, undefined, `${id} still turns its sprite`);
+    }
+});
+
+test('those sprite files exist and are wider than tall (pointing right)', async () => {
+    const fs = await import('node:fs');
+    const dir = new URL('../../frontend/src/assets/abilityAnimations/', import.meta.url);
+    for (const f of ['loose_arrow', 'quick_draw', 'poisoned_arrow', 'throwing_knife', 'poison_throwing_knife']) {
+        const png = fs.readFileSync(new URL(`${f}.png`, dir));
+        assert.equal(png.readUInt32BE(16), 64, `${f} is 64 wide`);
+        assert.equal(png.readUInt32BE(20), 64, `${f} is 64 tall`);
+    }
 });

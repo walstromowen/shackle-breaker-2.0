@@ -5,20 +5,25 @@ import { ItemDefinitions as I } from '../../shared/items/itemDefinitions.js';
 import { AbilityDefinitions as A } from '../../shared/abilities/abilityDefinitions.js';
 import { BattleAnimationDefinitions as B } from '../../shared/battle/animation/battleAnimationDefinition.js';
 import { StatusEffectDefinitions as S } from '../../shared/abilities/statusEffectDefinitions.js';
+import { ItemModel } from '../../shared/items/itemModel.js';
 import { StatusEffectModel } from '../../shared/abilities/statusEffectModel.js';
 import { craftingRecipeDefinitions as R } from '../../shared/items/craftingRecipeDefinitions.js';
 
 const sumAttack = (o = {}) => Object.values(o).reduce((a, b) => a + b, 0);
 
-test('the tier 1 body armors each grant an ability: cloth Draw Insight, leather Recuperate, iron Bolster', () => {
-    assert.deepEqual(I.cloth_robe.grantedAbilities, ['draw_insight']);
-    assert.deepEqual(I.leather_armor.grantedAbilities, ['recuperate']);
-    assert.deepEqual(I.iron_armor.grantedAbilities, ['bolster']);
-    for (const id of ['draw_insight', 'recuperate', 'bolster']) assert.ok(A[id], id);
+test('body armor abilities by level: cloth Draw Insight at 1, leather Recuperate at 1 and Hide at 2, iron Bolster at 2', () => {
+    const at = (id, level) => new ItemModel(id, { level }).grantedAbilities;
+    assert.deepEqual(at('cloth_robe', 1), ['draw_insight']);
+    assert.deepEqual(at('leather_armor', 1), ['recuperate']);
+    assert.deepEqual(at('leather_armor', 2), ['recuperate', 'hide']);
+    assert.deepEqual(at('iron_armor', 1), []);
+    assert.deepEqual(at('iron_armor', 2), ['bolster']);
+    assert.deepEqual(at('iron_armor', 3), ['bolster']);
+    for (const id of ['draw_insight', 'recuperate', 'bolster', 'hide']) assert.ok(A[id], id);
 });
 
 test('Recuperate and Draw Insight give a 5 turn status that restores stamina / insight each turn', () => {
-    for (const [ability, status, resource] of [['recuperate', 'second_wind', 'stamina'], ['draw_insight', 'clear_mind', 'insight']]) {
+    for (const [ability, status, resource] of [['recuperate', 'second_wind', 'stamina'], ['draw_insight', 'drawing_insight', 'insight']]) {
         const ab = A[ability];
         assert.equal(ab.targeting.scope, 'self');
         assert.deepEqual(ab.statusEffects.map(s => s.id), [status]);
@@ -41,8 +46,8 @@ test('the status ticks follow the holder\'s average physical / magical attack', 
     assert.equal(strong, Math.round(15 * S.second_wind.effects[0].rate));
     assert.ok(strong > weak, 'a stronger build regains more');
     assert.equal(tick('second_wind', holder({ ...magic })).stamina, 1, 'magic attack does not feed Second Wind (no physical attack: the minimum of 1)');
-    assert.equal(tick('clear_mind', holder({ ...magic, fire: 40 })).insight, Math.round(((40 + 80) / 9) * S.clear_mind.effects[0].rate));
-    assert.equal(tick('clear_mind', holder({ blunt: 50, slash: 50, pierce: 50 })).insight, 1, 'physical attack does not feed Clear Mind');
+    assert.equal(tick('drawing_insight', holder({ ...magic, fire: 40 })).insight, Math.round(((40 + 80) / 9) * S.drawing_insight.effects[0].rate));
+    assert.equal(tick('drawing_insight', holder({ blunt: 50, slash: 50, pierce: 50 })).insight, 1, 'physical attack does not feed Drawing Insight');
     // a real entity (no getAttack): the stats come from calculatedStats
     const entity = { name: 'E', level: 1, stamina: 0, calculatedStats: { attack: phys }, modifyResource(k, n) { this[k] += n; } };
     assert.equal(tick('second_wind', entity).stamina, strong);
@@ -67,7 +72,7 @@ test('two-handed weapons got a small bump over what they were', () => {
 });
 
 test('every bow animation lets the arrow land and stay in the target for a while', () => {
-    for (const id of ['loose_arrow', 'quick_draw', 'poisoned_arrow', 'triple_shot']) {
+    for (const id of ['loose_arrow', 'quick_draw', 'poisoned_arrow']) {
         const a = B[id];
         const arrow = a.vfx.find(v => v.type === 'travel');
         const c = arrow.config;
@@ -102,4 +107,16 @@ test('Draw Insight shows three small arcane orbs spiralling round the user; Recu
         assert.equal(l.origin, 'source');
         assert.ok(l.start + l.config.maxLife <= rc.duration + 1e-6);
     }
+});
+
+test('Triple Shot reuses the Loose Arrow animation and fires at up to three different enemies at once', async () => {
+    const { AbilityModel } = await import('../../shared/abilities/abilityModel.js');
+    const t = A.triple_shot;
+    assert.equal(t.animationId, 'loose_arrow');
+    assert.equal(t.targeting.select, 'multiple');
+    assert.equal(t.targeting.count, 3);
+    assert.ok(!t.targeting.allowRepeats, 'distinct targets, one shared animation');
+    assert.ok(!t.multihit, 'one arrow per target, not three on one');
+    assert.ok(B.loose_arrow && !B.triple_shot, 'no animation of its own any more');
+    assert.equal(new AbilityModel('triple_shot').isSplash, true);
 });

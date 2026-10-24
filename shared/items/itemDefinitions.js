@@ -481,7 +481,8 @@ export const ItemDefinitions = {
       attack: { arcane: 3 }
     },
     abilityUnlocks: {
-      2: ["magic_missile"]
+      2: ["magic_missile"],
+      3: ["arcane_blast"]
     },
     upgradeCosts: {
       2: { currency: 50, materials: { "insight_of_arcane": 1 } },
@@ -736,6 +737,7 @@ export const ItemDefinitions = {
     icon: { col: 2, row: 1 },
     tier: 1,
     grantedAbilities: ["recuperate"],
+    abilityUnlocks: { 2: ["hide"] },
     defense: { blunt: 4, slash: 4, pierce: 3 },
     resistance: { ...perPhysType(0.03), ...perMagicType(0.03) },
     resources: { staminaRecovery: 2 },
@@ -843,7 +845,8 @@ export const ItemDefinitions = {
     value: 200,
     icon: { col: 3, row: 1 },
     tier: 1,
-    grantedAbilities: ["bolster"],
+    grantedAbilities: [],
+    abilityUnlocks: { 2: ["bolster"] },
     defense: { blunt: 5, slash: 6, pierce: 5 },
     resistance: { ...perPhysType(0.05), ...perMagicType(0.01) },
     combat: { speed: -2 },
@@ -1397,7 +1400,7 @@ export const ItemDefinitions = {
       "punch", "strike", "shield_bash", "reckless_charge", "wild_swing", "fire_punch", "slash", "uppercut",
       "execute", "hit_and_run", "cleave", "flurry", "claw", "eviscerate", "rally", "intimidate",
       "howl", "hide", "thrust", "bite", "quick_stab", "item_poison_knife", "item_throw_net", "loose_arrow",
-      "quick_draw", "poisoned_arrow", "triple_shot", "arcane_dart", "magic_missile", "hyper_beam", "fireball", "meteor_shower",
+      "quick_draw", "poisoned_arrow", "triple_shot", "arcane_dart", "magic_missile", "arcane_blast", "hyper_beam", "fireball", "meteor_shower",
       "inferno", "flamethrower", "water_blast", "waterfall", "ice_shard", "frigid_gale", "shock", "overload",
       "earthquake", "acid_pool", "vine_lash", "boulder_throw", "solar_beam", "spite", "gravity", "spirit_reap",
       "drain_life", "healing_rain", "purify", "rest", "brew_of_madness", "minor_heal", "minor_recover", "minor_channel",

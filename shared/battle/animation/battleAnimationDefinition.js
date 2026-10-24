@@ -30,6 +30,31 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.1, 0.8, 8), flash: flash(0.05, 1.5, 'hue-rotate(70deg) saturate(180%) brightness(110%)') }
     }),
+    // Arcane Blast: two sparks circle in while the caster gathers, then the Arcane Blast orbs are fired out to the target in one straight line, close enough to run together into a solid beam, for
+    // about a second and a half. The first swirl lands at `hit`. Nothing is drawn on the target itself: it just shakes and flashes until the beam dies.
+    "arcane_blast": anim(2.8, {
+        seconds: true,
+        hit: 1.0,
+        audio: [
+            sfx(0, 'arcaneDartSfx', { volume: 1.1, pitch: 0.6 }),
+            sfx(0.65, 'shockSfx', { volume: 0.7, pitch: 0.55 }),
+            sfx('hit', 'earthquake1Sfx', { volume: 0.8, pitch: 1.2 })
+        ],
+        actor: wobble(0, 0.8, 6, { flash: flash(0, 1.9, tint('cyan', { bright: 200, sat: 300, glow: 'cyan', glowSize: 12 })) }),
+        vfx: [
+            orbit(0.05, { at: 'source', life: 0.6, turns: 1.25, radius: 90, squash: 0.6, phase: 0, scale: 0.5, color: '#7fe0ff', offsetY: -30 }),
+            orbit(0.05, { at: 'source', life: 0.6, turns: 1.25, radius: 90, squash: 0.6, phase: 3.1416, scale: 0.35, color: '#ffffff', offsetY: -30 }),
+            spawn(0.25, 'arcaneBlastAnimation', { at: 'source', life: 0.45, scale: 0.7, move: 'static', spin: 6 }),
+            // the beam: orbs fired one after another along ONE line (no scatter), close enough together to overlap into a solid, hard-driven cord,
+            // with a wider, fainter row of orbs over it for the glow
+            ...stream(0.7, 70, 0.015, 'arcaneBlastAnimation', { life: 0.3, scale: 0.7, spin: 8 }),
+            ...stream(0.7, 35, 0.03, 'arcaneBlastAnimation', { life: 0.3, scale: 1.1, spin: -5, alpha: 0.3 })
+        ],
+        target: {
+            shake: shake('hit', 'hit+1.0', 40),
+            flash: flash('hit', 'hit+1.0', tint('cyan', { bright: 300, sat: 300, glow: 'cyan', glowSize: 18 }))
+        }
+    }),
     "arcane_dart": anim(1.5, {
         audio: [sfx(0.533, 'arcaneDartSfx')],
         background: background(0, 1, 'arcaneVortexBg'),
@@ -530,7 +555,7 @@ export const BattleAnimationDefinitions = {
             flash: flash('hit', 'hit+1', 'brightness(80%) sepia(60%) saturate(120%)')
         }
     }),
-    // Throw Dagger: the throwing knife's own icon (consumables sheet, cell 7,0: it points down-right, so facing 45) flies straight at the target, buries itself in it, and
+    // Throw Dagger: the throwing knife (throwing_knife.png, drawn pointing right) flies straight at the target, buries itself in it, and
     // stays there for a moment, quivering, before it fades.
     "throw_dagger": anim(2.0, {
         seconds: true,
@@ -541,13 +566,13 @@ export const BattleAnimationDefinitions = {
         ],
         actor: lunge(0, 0.18, -14),
         vfx: [
-            travel(0.12, 'consumables', { cell: [7, 0], size: 64, life: 0.28, hold: 1.3, scale: 0.6, blend: 'source-over', aim: true, facing: 45, fadeOut: false }),
-            travel(0.15, 'consumables', { cell: [7, 0], size: 64, life: 0.28, scale: 0.6, blend: 'source-over', aim: true, facing: 45, fadeOut: false, alpha: 0.25 }),
+            travel(0.12, 'throwingKnifeAnimation', { life: 0.28, hold: 1.3, scale: 0.5, blend: 'source-over', aim: true, fadeOut: false }),
+            travel(0.15, 'throwingKnifeAnimation', { life: 0.28, scale: 0.5, blend: 'source-over', aim: true, fadeOut: false, alpha: 0.25 }),
             burst('hit', { count: 7, color: '#e8e8f0', scale: 0.3, minSpeed: 60, maxSpeed: 180, gravity: 320, minLife: 0.25, maxLife: 0.5, glow: false })
         ],
         target: { shake: shake('hit', 'hit+0.2', 14), flash: flash('hit', 'hit+0.12', 'brightness(190%)') }
     }),
-    // Throw Poison Dagger: the same throw with the coated knife (cell 8,0). It sticks, drips poison for a while, and the target is shaded sickly green.
+    // Throw Poison Dagger: the same throw with the coated knife (poison_throwing_knife.png). It sticks, drips poison for a while, and the target is shaded sickly green.
     "throw_poison_dagger": anim(2.4, {
         seconds: true,
         hit: 0.4,
@@ -558,9 +583,9 @@ export const BattleAnimationDefinitions = {
         ],
         actor: lunge(0, 0.18, -14),
         vfx: [
-            travel(0.12, 'consumables', { cell: [8, 0], size: 64, life: 0.28, hold: 1.7, scale: 0.6, blend: 'source-over', aim: true, facing: 45, fadeOut: false }),
-            travel(0.15, 'consumables', { cell: [8, 0], size: 64, life: 0.28, scale: 0.6, blend: 'source-over', aim: true, facing: 45, fadeOut: false, alpha: 0.25 }),
-            spawn('hit+0.05', 'poisonAnimation', { life: 0.8, scale: 0.7, move: 'expand_and_fade', blend: 'multiply' }),
+            travel(0.12, 'poisonKnifeAnimation', { life: 0.28, hold: 1.7, scale: 0.5, blend: 'source-over', aim: true, fadeOut: false }),
+            travel(0.15, 'poisonKnifeAnimation', { life: 0.28, scale: 0.5, blend: 'source-over', aim: true, fadeOut: false, alpha: 0.25 }),
+            spawn('hit+0.05', 'poisonAnimation', { life: 0.8, scale: 0.5, move: 'expand_and_fade', blend: 'multiply' }),
             burst('hit', { count: 8, color: '#58c040', scale: 0.45, minSpeed: 60, maxSpeed: 200, gravity: 300 }),
             // drops of poison falling off the knife for as long as it hangs in the target
             ...repeat(0.5, 9, 0.17, t => burst(t, { count: 2, color: '#58c040', scale: 0.3, minSpeed: 5, maxSpeed: 40, gravity: 280, minLife: 0.35, maxLife: 0.6, glow: false, area: [16, 6] }))
@@ -580,8 +605,8 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake('hit', 'hit+0.13', 14), flash: flash('hit', 'hit+0.08', 'brightness(200%)') }
     }),
-    // The arrow is the ability's own icon, turned to fly along its path (the icon art points down-right = facing 45).
-    // Arrows (loose_arrow, quick_draw, poisoned_arrow, triple_shot) fly for a visible moment and then STAY in the target for about a second (travel `hold`),
+    // The arrow sprites are drawn pointing right, and turn to fly along their path.
+    // Arrows (loose_arrow, which Triple Shot also uses, quick_draw, poisoned_arrow) fly for a visible moment and then STAY in the target for about a second (travel `hold`),
     // quivering, before they fade, so the hit can actually be seen. The turn waits for the whole animation.
     "loose_arrow": anim(2.1, {
         seconds: true,
@@ -592,8 +617,8 @@ export const BattleAnimationDefinitions = {
         ],
         actor: lunge(0, 0.2, -12),
         vfx: [
-            travel(0.1, 'looseArrowAnimation', { life: 0.45, hold: 1.4, scale: 1.0, blend: 'source-over', aim: true, facing: 45, fadeOut: false }),
-            spawn('hit', 'looseArrowImpactAnimation', { life: 0.5, frames: 4, scale: 1.1, blend: 'source-over' })
+            travel(0.1, 'looseArrowAnimation', { life: 0.45, hold: 1.4, scale: 0.85, blend: 'source-over', aim: true, fadeOut: false }),
+            spawn('hit', 'looseArrowImpactAnimation', { life: 0.5, frames: 4, scale: 0.75, blend: 'source-over' })
         ],
         target: { shake: shake('hit', 'hit+0.3', 15), flash: flash('hit', 'hit+0.2', 'brightness(180%) sepia(30%)') }
     }),
@@ -750,9 +775,9 @@ export const BattleAnimationDefinitions = {
         ],
         actor: lunge(0, 0.2, -14),
         vfx: [
-            travel(0.1, 'poisonedArrowAnimation', { life: 0.5, hold: 1.8, scale: 1.0, blend: 'source-over', aim: true, facing: 45, fadeOut: false }),
-            spawn('hit', 'poisonedArrowImpactAnimation', { life: 0.5, frames: 4, scale: 1.1, blend: 'source-over' }),
-            spawn('hit+0.1', 'poisonAnimation', { life: 1.2, move: 'expand_and_fade', scale: 1.5, blend: 'multiply' }),
+            travel(0.1, 'poisonedArrowAnimation', { life: 0.5, hold: 1.8, scale: 0.85, blend: 'source-over', aim: true, fadeOut: false }),
+            spawn('hit', 'poisonedArrowImpactAnimation', { life: 0.5, frames: 4, scale: 0.75, blend: 'source-over' }),
+            spawn('hit+0.1', 'poisonAnimation', { life: 1.2, move: 'expand_and_fade', scale: 1.0, blend: 'multiply' }),
             burst('hit', { count: 7, color: '#7ddc3a', scale: 0.7, minSpeed: 100, maxSpeed: 240, gravity: 300 })
         ],
         target: { shake: shake('hit', 'hit+0.4', 20), flash: flash('hit', 'hit+1.4', 'brightness(120%) saturate(200%) hue-rotate(100deg)') }
@@ -775,7 +800,7 @@ export const BattleAnimationDefinitions = {
         target: { flash: flash(0.2, 1.2, 'brightness(200%) sepia(30%) hue-rotate(180deg) saturate(150%) drop-shadow(0 0 10px white)') }
     }),
     // Rapid shot: a fast arrow (the ability's icon already carries its speed lines) trailed by two faint copies.
-    "quick_draw": anim(1.8, (() => { const arrow = { life: 0.3, hold: 1.2, scale: 1.0, blend: 'source-over', aim: true, facing: 45, fadeOut: false }; return {
+    "quick_draw": anim(1.8, (() => { const arrow = { life: 0.3, hold: 1.2, scale: 0.9, blend: 'source-over', aim: true, fadeOut: false }; return {
         seconds: true,
         hit: 0.4,
         audio: [
@@ -787,7 +812,7 @@ export const BattleAnimationDefinitions = {
             travel(0.1, 'quickDrawAnimation', arrow),
             travel(0.13, 'quickDrawAnimation', { ...arrow, hold: undefined, alpha: 0.35 }),
             travel(0.16, 'quickDrawAnimation', { ...arrow, hold: undefined, alpha: 0.18 }),
-            spawn('hit', 'quickDrawImpactAnimation', { life: 0.4, frames: 4, scale: 1.0, blend: 'source-over' })
+            spawn('hit', 'quickDrawImpactAnimation', { life: 0.4, frames: 4, scale: 0.7, blend: 'source-over' })
         ],
         target: { shake: shake('hit', 'hit+0.25', 12), flash: flash('hit', 'hit+0.2', 'brightness(150%)') }
     }; })()),
@@ -965,29 +990,6 @@ export const BattleAnimationDefinitions = {
     // Trait trigger flash (onBattleStart / onDeath). Not an ability animation.
     "trait_activate": anim(1.2, {
         target: { shake: shake(0, 0.3, 10), flash: flash(0, 0.4, 'brightness(250%) saturate(150%)') }
-    }),
-    // One volley: the icon shows three arrows side by side, so three arrows fly together and three punctures land a beat apart.
-    "triple_shot": anim(2.4, {
-        seconds: true,
-        hit: 0.55,
-        audio: [
-            sfx(0.05, 'bowReleaseSfx', { volume: 0.9, pitch: 1.1 }),
-            sfx('hit', 'arrowImpactSfx', { volume: 0.9 }),
-            sfx('hit+0.1', 'arrowImpactSfx', { volume: 0.8, pitch: 1.1 }),
-            sfx('hit+0.2', 'arrowImpactSfx', { volume: 0.8, pitch: 0.95 })
-        ],
-        actor: lunge(0, 0.2, -10),
-        vfx: [
-            travel(0.1, 'tripleShotAnimation', { life: 0.45, hold: 1.6, scale: 1.0, blend: 'source-over', aim: true, facing: 45, fadeOut: false }),
-            spawn('hit', 'tripleShotImpactAnimation', { life: 0.6, frames: 4, scale: 1.1, blend: 'source-over' }),
-            burst('hit', { count: 5, color: '#ff9a3c', scale: 0.7, minSpeed: 120, maxSpeed: 260 }),
-            burst('hit+0.1', { count: 4, color: '#ffd27a', scale: 0.6, minSpeed: 100, maxSpeed: 220 })
-        ],
-        target: [
-            { shake: shake('hit', 'hit+0.15', 14), flash: flash('hit', 'hit+0.1', 'brightness(170%)') },
-            { shake: shake('hit+0.1', 'hit+0.25', 14), flash: flash('hit+0.1', 'hit+0.2', 'brightness(170%)') },
-            { shake: shake('hit+0.2', 'hit+0.4', 14), flash: flash('hit+0.2', 'hit+0.3', 'brightness(170%)') }
-        ]
     }),
     "uppercut": anim(1.4, {
         audio: [sfx(0.2, 'punchSfx', { volume: 1, pitch: 0.8 })],

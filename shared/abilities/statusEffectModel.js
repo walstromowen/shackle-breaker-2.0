@@ -110,6 +110,11 @@ export class StatusEffectModel {
                     amount = now > 0 ? -Math.min(now, Math.max(1, Math.floor(now * share))) : 0;
                 } else if (effect.percent !== undefined && eventData && eventData.damage) {
                     amount = -Math.floor(eventData.damage * effect.percent);
+                } else if (effect.percentMax !== undefined) {
+                    // NEW: `percentMax: 0.05` -- a share of the MAX of the resource `modify` names (maxHp for hp, maxStamina for stamina, maxInsight for insight), per stack,
+                    // at least 1. Poison and bleed use it, so they hurt a big pool and a small one by the same proportion.
+                    const max = target['max' + effect.modify.charAt(0).toUpperCase() + effect.modify.slice(1)] || 0;
+                    amount = -Math.max(1, Math.floor(max * effect.percentMax * this.stacks));
                 } else if (effect.percentMaxHp !== undefined) {
                     // NEW: `percentMaxHp: 0.2` -- a share of the max HP of whoever `modify` hits (at least 1), whatever the hit that set it off did (the bear trap)
                     amount = -Math.max(1, Math.floor((target.maxHp || 0) * effect.percentMaxHp));

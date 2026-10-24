@@ -11,7 +11,7 @@ import { HouseGenerator } from '../../shared/world/generators/houseGenerator.js'
 import { INTERIOR_DEFINITIONS } from '../../shared/world/interiorDefinitions.js';
 
 // ---------- bleed ----------
-const fakeTarget = () => ({ name: 'T', level: 1, hp: 100, stamina: 100, modifyResource(k, n) { this[k] += n; } });
+const fakeTarget = (max = 100) => ({ name: 'T', level: 1, hp: max, maxHp: max, stamina: max, maxStamina: max, modifyResource(k, n) { this[k] += n; } });
 const tickHp = (id, stacks) => {
     const m = new StatusEffectModel(StatusEffectDefinitions[id]);
     m.stacks = stacks;
@@ -22,7 +22,7 @@ const tickHp = (id, stacks) => {
 
 test('bleed hurts less per turn than poison, even fully stacked', () => {
     const poison = tickHp('poison', 1);
-    assert.equal(poison, 5);
+    assert.equal(poison, 8);
     for (let s = 1; s <= (StatusEffectDefinitions.bleed.maxStacks || 1); s++) assert.ok(tickHp('bleed', s) < poison, `bleed x${s} < poison`);
     assert.ok(tickHp('bleed', 1) >= 1);
 });
@@ -151,4 +151,21 @@ test('chest loot never holds low-tier items', () => {
             }
         }
     }
+});
+
+test('poison and bleed take a percentage of the holder\'s MAX hp (and bleed of max stamina), so a big pool loses more than a small one', () => {
+    const tick = (id, stacks, max) => {
+        const m = new StatusEffectModel(StatusEffectDefinitions[id]);
+        m.stacks = stacks;
+        const t = fakeTarget(max);
+        m.onEvent('ON_TURN_END', t);
+        return { hp: max - t.hp, stamina: max - t.stamina };
+    };
+    assert.deepEqual(tick('poison', 1, 100), { hp: 8, stamina: 0 });
+    assert.deepEqual(tick('poison', 1, 500), { hp: 40, stamina: 0 });
+    assert.deepEqual(tick('bleed', 1, 100), { hp: 3, stamina: 4 });
+    assert.deepEqual(tick('bleed', 2, 100), { hp: 6, stamina: 8 });
+    assert.deepEqual(tick('bleed', 1, 500), { hp: 15, stamina: 20 });
+    assert.equal(tick('poison', 1, 5).hp, 1, 'a tick is never lost on a tiny pool');
+    assert.equal(tick('bleed', 1, 5).stamina, 1);
 });

@@ -347,7 +347,7 @@ export const AbilityDefinitions = {
         range: "ranged",
         tags: ["physical", "projectile", "weapon", "pierce", "item"],
         battleMessage: "{user} hurls a {ability} at {target}!",
-        icon: { col: 0, row: 8 },            // PLACEHOLDER: shares a cell with another ability icon; point it at a free one
+        icon: { col: 10, row: 2 },            // PLACEHOLDER: shares a cell with another ability icon; point it at a free one
         animationId: "throw_dagger",
         targeting: { scope: "enemy", select: "single" },
         speedModifier: 1.25,
@@ -361,7 +361,7 @@ export const AbilityDefinitions = {
         range: "ranged",
         tags: ["physical", "projectile", "weapon", "pierce", "item"],
         battleMessage: "{user} throws a {ability} at {target}!",
-        icon: { col: 1, row: 8 },
+        icon: { col: 11, row: 2 },
         animationId: "throw_poison_dagger",
         targeting: { scope: "enemy", select: "single" },
         speedModifier: 1.25,
@@ -440,17 +440,16 @@ export const AbilityDefinitions = {
     "triple_shot": {
         id: "triple_shot",
         name: "Triple Shot",
-        description: "Nock and fire three arrows in rapid succession at a single target.",
+        description: "Nock and loose three arrows at once, each at a different enemy.",
         range: "ranged",
         tags: ["physical", "projectile", "weapon", "pierce", "bow", "multihit"],
         battleMessage: "{user} unleashes {ability} on {target}!",
         icon: { col: 8, row: 2 },
         speedModifier: 0.9, 
-        targeting: { scope: "enemy", select: "single" },
+        targeting: { scope: "enemy", select: "multiple", count: 3 },
         cost: { stamina: 20 },
         accuracy: 0.85,
-        multihit: { min: 3, max: 3, distinctChecks: true },
-        animationId: "triple_shot",
+        animationId: "loose_arrow",
         effects: [{ type: "damage", damageType: "pierce", power: 1.0 }]
     },
 
@@ -485,6 +484,22 @@ export const AbilityDefinitions = {
         cost: { insight: 12 },
         accuracy: 1.0,
         effects: [{ type: "damage", damageType: "arcane", power: 0.75 }]
+    },
+    // A heavy, slow beam: no drawback, unlike Hyper Beam, but it costs a lot of insight and goes late in the round.
+    "arcane_blast": {
+        id: "arcane_blast",
+        name: "Arcane Blast",
+        description: "Pour raw insight into a roaring beam of arcane force. Slow to gather, but it hits very hard.",
+        range: "ranged",
+        tags: ["magical", "projectile", "arcane", "heavy"],
+        battleMessage: "{user} unleashes an {ability} at {target}!",
+        icon: { col: 4, row: 9 },
+        animationId: "arcane_blast",
+        targeting: { scope: "enemy", select: "single" },
+        cost: { insight: 16 },
+        speedModifier: 0.85,
+        accuracy: 0.95,
+        effects: [{ type: "damage", damageType: "arcane", power: 2.0 }]
     },
     "hyper_beam": {
         id: "hyper_beam",
@@ -1068,11 +1083,11 @@ export const AbilityDefinitions = {
     "recuperate": {
         id: "recuperate",
         name: "Recuperate",
-        description: "Steady your breathing and let the body recover, regaining stamina at the end of each of your turns for 5 turns (Second Wind). The more power you have in your physical attacks (the average of your blunt, slash and pierce), the more you regain.",
+        description: "Steady your breathing and let the body recover, regaining stamina at the end of each of your turns for 5 turns. The more power you have in your physical attacks (the average of your blunt, slash and pierce), the more you regain.",
         range: "self",
         tags: ["utility", "support", "buff"],
         battleMessage: "{user} recuperates.",
-        icon: { col: 6, row: 8 },
+        icon: { col: 5, row: 1 },
         targeting: { scope: "self", select: "auto" },
         cost: { stamina: 5 },
         speedModifier: 1.0,
@@ -1084,18 +1099,18 @@ export const AbilityDefinitions = {
     "draw_insight": {
         id: "draw_insight",
         name: "Draw Insight",
-        description: "Quiet your thoughts and gather your focus, regaining insight at the end of each of your turns for 5 turns (Clear Mind). The more power you have in your magical attacks (the average of your nine magic types), the more you regain.",
+        description: "Quiet your thoughts and gather your focus, regaining insight at the end of each of your turns for 5 turns. The more power you have in your magical attacks (the average of your nine magic types), the more you regain.",
         range: "self",
         tags: ["utility", "support", "buff", "magical"],
         battleMessage: "{user} draws insight.",
-        icon: { col: 7, row: 8 },
+        icon: { col: 5, row: 9 },
         targeting: { scope: "self", select: "auto" },
         cost: { stamina: 5 },
         speedModifier: 1.0,
         accuracy: 1.0,
         animationId: "draw_insight",
         effects: [],
-        statusEffects: [{ id: "clear_mind", chance: 1.0, duration: 5 }]
+        statusEffects: [{ id: "drawing_insight", chance: 1.0, duration: 5 }]
     },
     "bolster": {
         id: "bolster",
