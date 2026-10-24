@@ -6,6 +6,7 @@ import { gameState } from "../../../../shared/core/gameState.js";
 import { DIFFICULTY_MODIFIERS } from '../../../../shared/core/constants.js';
 import { drawItemChips } from '../../ui/itemChips.js';
 import { drawEmbers } from '../../ui/embers.js';
+import { drawSmoke } from '../../ui/smoke.js';
 import { drawStatTooltip } from '../../ui/statTooltip.js';
 import { isCursed, drawCursedPortrait } from '../../ui/curseOverlay.js';
 import { TONES, fxShake, fxFlash } from '../../ui/encounterFx.js';
@@ -178,7 +179,7 @@ export class EncounterRenderer {
         ctx.fillStyle = '#000000';
         ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-        // A stage's tone colors its fresh words and the embers; a stage's effect plays as it opens (stage fields: see data/encounters/prologue.js)
+        // A stage's tone colors its fresh words and the embers; a stage's effect plays as it opens (stage fields: see story/encounters/story/prologue.js)
         const tone = TONES[stageTone] || TONES.warm;
         const tint = tone.word;
         const stageAge = textTimer - STAGE_START_TIMER;
@@ -217,6 +218,9 @@ export class EncounterRenderer {
             ui.drawLine(leftW, 0, leftW, h, this.getAlphaColor(UITheme.colors.border, colsAlpha), 2);
             ui.drawLine(leftW + centerW, 0, leftW + centerW, h, this.getAlphaColor(UITheme.colors.border, colsAlpha), 2);
             ctx.restore();
+
+            // Smoke drifts over the columns, behind the picture and the words
+            drawSmoke(ctx, Date.now() / 1000, CANVAS_WIDTH, CANVAS_HEIGHT, 0.6 * colsAlpha);
         }
 
         // ========================================================

@@ -3,7 +3,7 @@ export const aftermath = {
     title: "Aftermath",
     imageSheet: "encounter_aftermath",
     initialStage: "aftermath",
-    // Cues: tone / ambience here apply to every stage; a stage sets its own tone, effect, sfx and ambience (see story/encounters/prologue.js)
+    // Cues: tone / ambience here apply to every stage; a stage sets its own tone, effect, sfx and ambience (see story/encounters/story/prologue.js)
     ambience: "battlefieldWind",
     stages: {
         // ==========================================

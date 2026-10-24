@@ -131,7 +131,7 @@ export const QuestDefinitions = {
     },
 
     // ========================================================
-    // ACT 2 (started by the encounter that follows Darius the Groveler, story/encounters/actTwo.js)
+    // ACT 2 (started by the encounter that follows Darius the Groveler, story/encounters/story/actTwo.js)
     // ========================================================
     "act2_red_moon": {
         id: "act2_red_moon",

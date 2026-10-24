@@ -5,6 +5,7 @@ import { BattleCombatantRenderer } from './battleCombatantRenderer.js';
 import { BattleHUDRenderer } from './battleHUDRenderer.js';
 import { BattleDebuggerRenderer } from './battleDebuggerRenderer.js';
 import { VFXRenderer } from './VFXRenderer.js';
+import { drawSmoke } from '../../ui/smoke.js';
 
 export class BattleRenderer {
     constructor(ctx, config, loader) {
@@ -210,6 +211,9 @@ export class BattleRenderer {
                 this.ctx.restore();
             }
         }
+
+        // Smoke drifts along the ground and through the sky, behind the fighters
+        drawSmoke(this.ctx, Date.now() / 1000, CANVAS_WIDTH, CANVAS_HEIGHT, 0.55);
 
         // 2. Draw Entities
         this.combatantRenderer.drawGroup(state.activeEnemies, false, state, hitboxes);

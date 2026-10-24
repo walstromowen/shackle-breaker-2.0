@@ -26,8 +26,8 @@ export class CanvasUI {
 
   // --- SCREEN MANAGEMENT ---
   /** The background of a screen: the blurred world it opened over (or a mottled near-black), a vignette and film grain (UITextures). */
-  clearScreen(width, height) {
-    UITextures.drawScreenBackground(this.ctx, width, height);
+  clearScreen(width, height, smoke = true) {
+    UITextures.drawScreenBackground(this.ctx, width, height, smoke);
   }
 
   // --- CLIPPING (Required for Scrolling Lists) ---

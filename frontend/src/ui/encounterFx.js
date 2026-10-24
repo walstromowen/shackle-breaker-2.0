@@ -1,7 +1,7 @@
 /**
  * ui/encounterFx.js
  *
- * The look of an encounter stage's optional `tone` and `effect` (see the header of data/encounters/prologue.js for every stage field).
+ * The look of an encounter stage's optional `tone` and `effect` (see the header of story/encounters/story/prologue.js for every stage field).
  *
  *   tone    colours the words as they arrive and the embers. A stage may set one, or the whole encounter may (`tone` on the definition);
  *           a stage can go back to the default with tone: 'warm'.

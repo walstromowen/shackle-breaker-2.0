@@ -106,7 +106,7 @@ export class BiomeModel {
         // Filter out encounters that don't match the current time
         // A pool can be limited to some acts with `minAct` / `maxAct` (an encounter that only exists after, or only before, a milestone)
         const validPools = (this.encounters.pools || []).filter((pool) => (!pool.allowedTimes || pool.allowedTimes.includes(timeOfDay)) && ActSystem.isAvailable(pool));
-        // The Shackling (story/encounters/shackledBetrayal.js) is an ordinary entry in every biome's pool, at any hour, but only while a party member is shackled
+        // The Shackling (story/encounters/story/shackledBetrayal.js) is an ordinary entry in every biome's pool, at any hour, but only while a party member is shackled
         // (and someone else is still standing to be turned on). It is as likely as CORRUPTION.BETRAYAL_WEIGHT says next to the biome's own weights.
         const entries = validPools.map((pool) => ({ weight: pool.weight, result: { id: pool.id } }));
         const betrayer = CorruptionSystem.pickBetrayer();

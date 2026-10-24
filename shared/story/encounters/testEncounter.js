@@ -3,7 +3,7 @@ export const testEncounter = {
     title: "The Mysterious Monolith",
     imageSheet: "encounter_treasure_chest", // Using your existing chest sheet for testing
     initialStage: "discovery",
-    // Cues: tone / ambience here apply to every stage; a stage sets its own tone, effect, sfx and ambience (see story/encounters/prologue.js)
+    // Cues: tone / ambience here apply to every stage; a stage sets its own tone, effect, sfx and ambience (see story/encounters/story/prologue.js)
     tone: "arcane",
     ambience: "obeliskHum",
     stages: {

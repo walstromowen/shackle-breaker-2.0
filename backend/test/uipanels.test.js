@@ -61,12 +61,15 @@ test('the textures are made in code, once, and a screen background draws them', 
     const ctx = makeCtx();
     let blits = 0; ctx.drawImage = () => { blits++; };
     UITextures.clearBackdrop();
-    UITextures.drawScreenBackground(ctx, 1920, 1080);
+    UITextures.drawScreenBackground(ctx, 1920, 1080, false);
     assert.equal(blits, 2, 'the base and the vignette');
+    blits = 0;
+    UITextures.drawScreenBackground(ctx, 1920, 1080);
+    assert.ok(blits > 2, 'with smoke on (the default) it also draws the drifting smoke, between the base and the vignette');
     UITextures.captureBackdrop({ width: 3840, height: 2160 });
     assert.ok(UITextures.backdrop, 'a captured world becomes the backdrop');
     blits = 0;
-    UITextures.drawScreenBackground(ctx, 1920, 1080);
+    UITextures.drawScreenBackground(ctx, 1920, 1080, false);
     assert.equal(blits, 3, 'the world, the texture over it and the vignette');
     UITextures.clearBackdrop();
     assert.equal(UITextures.backdrop, null);

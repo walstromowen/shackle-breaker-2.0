@@ -8,7 +8,7 @@ import { ItemDefinitions } from '../../shared/items/itemDefinitions.js';
 import { AbilityDefinitions } from '../../shared/abilities/abilityDefinitions.js';
 import { EntityFactory } from '../../shared/characters/entityFactory.js';
 import { QuestDefinitions } from '../../shared/story/questDefinitions.js';
-import { mysteriousAltar } from '../../shared/story/encounters/mysteriousAltar.js';
+import { mysteriousAltar } from '../../shared/story/encounters/story/mysteriousAltar.js';
 
 const quiet = (fn) => { const log = console.log, warn = console.warn; console.log = console.warn = () => {}; try { return fn(); } finally { console.log = log; console.warn = warn; } };
 const src = (rel) => fs.readFileSync(new URL(`../../${rel}`, import.meta.url), 'utf8');

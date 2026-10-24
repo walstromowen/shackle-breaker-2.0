@@ -10,13 +10,13 @@ import { suspiciousMerchant } from './encounters/suspiciousMerchant.js';
 import { aftermath } from './encounters/aftermath.js';
 import { ironChest } from './encounters/ironChest.js';
 import { tracksInTheSnow } from './encounters/tracksInTheSnow.js';
-import { mysteriousAltar } from './encounters/mysteriousAltar.js';
-import { prologue } from './encounters/prologue.js';
-import { actTwo } from './encounters/actTwo.js';
+import { mysteriousAltar } from './encounters/story/mysteriousAltar.js';
+import { prologue } from './encounters/story/prologue.js';
+import { actTwo } from './encounters/story/actTwo.js';
 import { peculiarScarecrow } from './encounters/peculiarScarecrow.js';
 import { oldGravestone } from './encounters/oldGravestone.js';
 import { caveIn } from './encounters/caveIn.js';
-import { shackledBetrayal, shackledBetrayalEnd } from './encounters/shackledBetrayal.js';
+import { shackledBetrayal, shackledBetrayalEnd } from './encounters/story/shackledBetrayal.js';
 
 // <-- Import your new encounter here
 

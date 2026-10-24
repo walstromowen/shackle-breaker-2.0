@@ -3,7 +3,7 @@ export const wildHunt = {
   title: "Wild Hunt",
   imageSheet: "encounter_wild_hunt",
   initialStage: "discovery",
-  // Cues: tone / ambience here apply to every stage; a stage sets its own tone, effect, sfx and ambience (see story/encounters/prologue.js)
+  // Cues: tone / ambience here apply to every stage; a stage sets its own tone, effect, sfx and ambience (see story/encounters/story/prologue.js)
   ambience: "forestNight",
   stages: {
     discovery: {

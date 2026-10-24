@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { mysteriousAltar } from '../../shared/story/encounters/mysteriousAltar.js';
+import { mysteriousAltar } from '../../shared/story/encounters/story/mysteriousAltar.js';
 import { encounterDefinitions } from '../../shared/story/encounterDefinitions.js';
 import { SpawnTableDefinitions } from '../../shared/battle/spawnTableDefinitions.js';
 import { BIOME_DEFINITIONS } from '../../shared/world/biomeDefinitions.js';

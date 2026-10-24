@@ -1,7 +1,7 @@
 /* ACTS: how the world gets harder when a milestone is reached.
  *
  * The game keeps a list of milestones (gameState.milestones: ['act2', ...]). A milestone is granted by the GRANT_MILESTONE result of an encounter
- * (see story/encounters/actTwo.js, which plays right after Darius the Groveler falls). The current act is the highest act whose `milestone` has been granted,
+ * (see story/encounters/story/actTwo.js, which plays right after Darius the Groveler falls). The current act is the highest act whose `milestone` has been granted,
  * and every system asks ActSystem (story/actSystem.js) instead of reading this file: the clock colours (TimeSystem), the daytime gloom
  * (LightingRenderer), the spawn tables (SpawnTableFactory, BiomeModel), the enemies themselves (SceneManager when a battle is built) and the encounters
  * (conditions `act_at_least` / `act_below` / `milestone`, and `minAct` / `maxAct` on the pools of a biome's encounters).

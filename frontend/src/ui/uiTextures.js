@@ -7,6 +7,8 @@
 //   backdrop     a blurred, darkened, drained copy of the game world that menus open over (captured from the canvas, see SceneManager)
 // Every texture is made from a fixed seed, so the game looks the same on every machine and every run.
 
+import { drawSmoke } from './smoke.js';
+
 const SCREEN_W = 1920;
 const SCREEN_H = 1080;
 
@@ -193,8 +195,11 @@ export const UITextures = {
         this.backdrop = null;
     },
 
-    /** Draws the menu background: the blurred world when there is one, else the plain mottled one, then vignette and grain. */
-    drawScreenBackground(ctx, width, height) {
+    /**
+     * Draws the menu background: the blurred world when there is one, else the plain mottled one, then drifting smoke, vignette and grain.
+     * `smoke` false leaves the smoke out (a screen that draws its own, like the title).
+     */
+    drawScreenBackground(ctx, width, height, smoke = true) {
         ctx.save();
         ctx.imageSmoothingEnabled = true;
         if (this.backdrop) {
@@ -207,6 +212,7 @@ export const UITextures = {
             ctx.drawImage(this.screenBase(), 0, 0, width, height);
         }
         ctx.globalAlpha = 1;
+        if (smoke) drawSmoke(ctx, Date.now() / 1000, width, height, 0.6);   // behind every panel and text the screen draws next
         ctx.drawImage(this.screenFx(), 0, 0, width, height);
         ctx.restore();
     }

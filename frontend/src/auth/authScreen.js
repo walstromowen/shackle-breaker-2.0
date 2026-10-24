@@ -8,6 +8,7 @@
 //
 // Set ALLOW_OFFLINE_PLAY to false to make an account compulsory (testers then cannot skip it).
 import { AuthService } from './authService.js';
+import { drawSmoke } from '../ui/smoke.js';
 
 const ALLOW_OFFLINE_PLAY = true;
 
@@ -19,6 +20,7 @@ const CSS = `
   transition: opacity .35s ease; }
 #sbauth::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(4,5,8,.18) 0%, rgba(4,5,8,.62) 100%); }
 #sbauth.sbauth-leaving { opacity: 0; pointer-events: none; }
+.sbauth-smoke { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; mix-blend-mode: screen; }
 #sbauth * { box-sizing: border-box; }
 .sbauth-card { position: relative; width: min(100%, 420px); padding: 36px 34px 28px; background: linear-gradient(180deg, rgba(19,22,29,.94), rgba(10,12,16,.96)); border: 1px solid rgba(194,161,79,.38);
   clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
@@ -61,6 +63,28 @@ const el = (tag, props = {}, children = []) => {
     return node;
 };
 
+/**
+ * Wisps of smoke drifting over the picture behind the form (the same ones as on the title screen, ui/smoke.js). The canvas is half the
+ * size it is shown at, because smoke is soft anyway, and it is drawn about thirty times a second. It stops by itself when the screen is gone.
+ */
+function startSmoke(root) {
+    const canvas = el('canvas', { class: 'sbauth-smoke', width: 960, height: 540 });
+    canvas.setAttribute('aria-hidden', 'true');
+    root.prepend(canvas);
+    const ctx = canvas.getContext('2d');
+    let last = 0;
+    const frame = (time) => {
+        if (!root.isConnected) return;
+        if (time - last >= 33) {
+            last = time;
+            ctx.clearRect(0, 0, 960, 540);
+            drawSmoke(ctx, Date.now() / 1000, 960, 540);
+        }
+        requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+}
+
 export const AuthScreen = {
     /**
      * For a player who is already logged in from an earlier visit: a small "Welcome back" card. It also gives the browser the click it needs
@@ -91,6 +115,7 @@ export const AuthScreen = {
             switchAccount.addEventListener('click', () => finish('switch'));
             document.head.append(style);
             document.body.append(root);
+            startSmoke(root);
             go.focus();
         });
     },
@@ -229,6 +254,7 @@ export const AuthScreen = {
 
             document.head.append(style);
             document.body.append(root);
+            startSmoke(root);
             render();
             username.focus();
 

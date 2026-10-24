@@ -1,6 +1,6 @@
 /* The Crimson Vigil: an act 2 encounter (the biomes list it with `minAct: 2`, at dusk and night only, see world/biomeDefinitions.js).
  * Candles nobody lit burn red along the road, around a ring of bones whose skulls all face the blood moon. It has no map object, so it is found by
- * walking, like the other roaming encounters. Written like the prologue: short, plain sentences in the second person. Fields: see story/encounters/prologue.js.
+ * walking, like the other roaming encounters. Written like the prologue: short, plain sentences in the second person. Fields: see story/encounters/story/prologue.js.
  *
  * Flow:  discovery -> [INT] read the ring            -> read_success (loot, XP)  / the dead rise (a fight)
  *                  -> [VIG] snuff a candle            -> snuff_success (loot, XP) / the dead rise (a fight)

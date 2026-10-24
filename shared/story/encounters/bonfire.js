@@ -3,7 +3,7 @@ export const bonfire = {
     title: "Bonfire",
     imageSheet: "encounter_bonfire",
     initialStage: "discovery",
-    // Cues: tone / ambience here apply to every stage; a stage sets its own tone, effect, sfx and ambience (see story/encounters/prologue.js)
+    // Cues: tone / ambience here apply to every stage; a stage sets its own tone, effect, sfx and ambience (see story/encounters/story/prologue.js)
     ambience: "fireCrackle",
     stages: {
         discovery: {

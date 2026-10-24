@@ -3,7 +3,7 @@ export const tracksInTheSnow = {
     title: "Tracks In The Snow",
     imageSheet: "encounter_tracks_in_the_snow",
     initialStage: "discovery",
-    // Cues: tone / ambience here apply to every stage; a stage sets its own tone, effect, sfx and ambience (see story/encounters/prologue.js)
+    // Cues: tone / ambience here apply to every stage; a stage sets its own tone, effect, sfx and ambience (see story/encounters/story/prologue.js)
     tone: "frost",
     ambience: "snowWind",
     stages: {

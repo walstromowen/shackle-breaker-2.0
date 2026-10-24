@@ -1,6 +1,7 @@
 import { UITheme } from '../../ui/UITheme.js';
 import { CanvasUI } from '../../ui/canvasUI.js';
 import { drawEmbers } from '../../ui/embers.js';
+import { drawSmoke } from '../../ui/smoke.js';
 
 export class TitleRenderer {
     constructor(canvas, config, loader) {
@@ -11,19 +12,23 @@ export class TitleRenderer {
 
     render(ctx, state, controller) {
         const ui = new CanvasUI(ctx);
-        const width = this.canvas.width;
-        const height = this.canvas.height;
+        // The screen is drawn in 1920 x 1080 units whatever the pixel density (the context is already scaled for it), so these are not canvas.width
+        const width = (this.config && this.config.CANVAS_WIDTH) || 1920;
+        const height = (this.config && this.config.CANVAS_HEIGHT) || 1080;
 
         // 1. Draw Fullscreen Background Image
         const bgImage = this.loader.getImage ? this.loader.getImage('title_bg') : this.loader.get('title_bg');
         if (bgImage) {
             ctx.drawImage(bgImage, 0, 0, width, height);
         } else {
-            ui.clearScreen(width, height);
+            ui.clearScreen(width, height, false);   // the smoke is drawn just below
         }
 
         // Note: The dark vignette overlay was removed from here to restore 
         // the original brightness of your background image.
+
+        // Wisps of smoke drift through the clouds and along the ground, behind the menu
+        drawSmoke(ctx, Date.now() / 1000, width, height);
 
         // Embers rise over the whole screen, behind the menu
         drawEmbers(ctx, Date.now() / 1000, 0, width, height, 1, undefined, 110, 1.7);   // thicker and bigger: the painted background is busy
