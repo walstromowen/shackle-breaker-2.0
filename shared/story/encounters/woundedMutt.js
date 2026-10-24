@@ -75,6 +75,7 @@ export const woundedMutt = {
                         weight: 100, results: [
                             { type: "MODIFY_VITALS", payload: { hp: -35, stamina: -15, insight: 0, damageType: "pierce", isPercentage: false, bypassDefense: false } },
                             { type: "APPLY_STATUS_EFFECT", payload: { effectId: "bleed", charges: 3, target: "active_character" } },
+                            { type: "DESTROY_OBJECT" },   // the dog has gone for you: it is no longer lying by the road
                             { type: "START_BATTLE", payload: { tableId: "rabid_dog" } }
                         ]
                     }]
@@ -107,7 +108,7 @@ export const woundedMutt = {
                 {
                     text: "Signal the dog to follow.",
                     customActionText: "You give the dog an affectionate pat, signaling it to follow.",
-                    outcomes: [{ weight: 100, results: [{ type: "RECRUIT_CHARACTER", payload: { entityId: "DOG" } }, { type: "END_ENCOUNTER", payload: null }] }]
+                    outcomes: [{ weight: 100, results: [{ type: "DESTROY_OBJECT" }, { type: "RECRUIT_CHARACTER", payload: { entityId: "DOG" } }, { type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]
         },

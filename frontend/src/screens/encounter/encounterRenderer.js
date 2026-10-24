@@ -5,8 +5,8 @@ import { UI_SFX } from '../../ui/uiSfx.js';
 import { gameState } from "../../../../shared/core/gameState.js";
 import { DIFFICULTY_MODIFIERS } from '../../../../shared/core/constants.js';
 import { drawItemChips } from '../../ui/itemChips.js';
-import { drawEmbers } from '../../ui/embers.js';
-import { drawSmoke } from '../../ui/smoke.js';
+import { drawEmbers } from '../../ui/particles/embers.js';
+import { drawSmoke } from '../../ui/particles/smoke.js';
 import { drawStatTooltip } from '../../ui/statTooltip.js';
 import { isCursed, drawCursedPortrait } from '../../ui/curseOverlay.js';
 import { TONES, fxShake, fxFlash } from '../../ui/encounterFx.js';
@@ -874,7 +874,7 @@ export class EncounterRenderer {
         return best;
     }
 
-    /** Embers over the whole screen (shared with the title screen and the character creator: ui/embers.js). */
+    /** Embers over the whole screen (shared with the title screen and the character creator: ui/particles/embers.js). */
     drawEmbers(ctx, now, x0, width, height, alpha, tint) {
         drawEmbers(ctx, now, x0, width, height, alpha, tint);
     }

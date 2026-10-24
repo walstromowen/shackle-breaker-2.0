@@ -227,7 +227,7 @@ export class SavesController extends BaseController {
         if (this.busy) return;
         this.busy = true;
         this.playConfirmSound();
-        // keep the latest position before leaving (does nothing inside a building)
+        // keep the latest position before leaving 
         SaveManager.autosave().finally(() => events.emit('CHANGE_SCENE', { scene: 'title' }));
     }
 

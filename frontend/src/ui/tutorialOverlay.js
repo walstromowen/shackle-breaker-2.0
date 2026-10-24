@@ -66,7 +66,7 @@ export const TIP_DEFAULTS = Object.freeze({
     keyColW: 380,           // the column the key caps are drawn in
     font: 30,               // the row text
     lineH: 40,
-    rowGap: 22,
+    rowGap: 32,
     capH: 50,               // the key caps
     capFont: 26,
     showTitle: true         // the title and its flourish above the intro
@@ -75,7 +75,10 @@ export const TIP_DEFAULTS = Object.freeze({
 /** Works out where everything goes, so the caller can size a panel around it before drawing. Returns { height, ... } for drawTip. */
 export function measureTip(ui, tip, options = {}) {
     const o = { ...TIP_DEFAULTS, ...options };
-    const textW = o.width - o.keyColW - 24;
+    // the key column is as wide as the widest row of caps (plus a gutter), never wider than `keyColW`: the text sits close to its keys, not across the card
+    const widest = Math.max(0, ...tip.rows.map(r => keysWidth(ui.ctx, r.keys, o)));
+    o.keyColUsed = Math.min(o.keyColW, Math.round(widest + 48));
+    const textW = o.width - o.keyColUsed - 24;
     const rowFont = UITheme.font(o.font);
     const introFont = UITheme.font(o.font, { italic: true });
     const rows = tip.rows.map(row => {
@@ -103,14 +106,39 @@ export function drawTip(ctx, ui, m, x, y) {
     });
     if (m.introLines.length) cy += 36;
 
-    const textX = x + o.keyColW + 24;
-    m.rows.forEach(({ row, lines, h }) => {
+    const textX = x + o.keyColUsed + 24;
+    m.rows.forEach(({ row, lines, h }, idx) => {
         drawKeys(ctx, ui, row.keys, x, cy + 8, o);
         lines.forEach((line, i) => {
             ui.drawText(line, textX, cy + 8 + Math.round(o.capH * 0.68) + i * o.lineH, m.rowFont, UITheme.colors.textMain, 'left');
         });
         cy += h + o.rowGap;
+        // a faint rule between rows, halfway down the gap, so each control reads as its own line
+        if (idx < m.rows.length - 1) {
+            ctx.save();
+            ctx.strokeStyle = UITheme.colors.textMuted;
+            ctx.globalAlpha = 0.16;
+            ctx.beginPath();
+            ctx.moveTo(x, Math.round(cy - o.rowGap / 2) + 0.5);
+            ctx.lineTo(x + o.width, Math.round(cy - o.rowGap / 2) + 0.5);
+            ctx.stroke();
+            ctx.restore();
+        }
     });
+}
+
+/** How wide a row of key caps is drawn (the same arithmetic as drawKeys). */
+function keysWidth(ctx, keys, o) {
+    const h = o.capH, gap = 10, pad = Math.round(h * 0.36);
+    ctx.save();
+    ctx.font = UITheme.font(o.capFont, { bold: true });
+    let w = 0;
+    keys.forEach(key => {
+        const tw = ctx.measureText(key).width;
+        w += PLAIN_TOKENS.has(key) ? tw + 14 : Math.max(h, tw + pad * 2) + gap;
+    });
+    ctx.restore();
+    return Math.max(0, w - gap);
 }
 
 /** One row's keys as small brass-edged caps, left to right from (x, y), the cap tops at y. */

@@ -46,9 +46,10 @@ test('every physical type hits with Strength alone, and every magic type with In
 });
 
 // Entities keep the attack they had before the 5da4655 experiment (baseAttack is back to the original numbers): anchors recorded from them, level 1
+// (the Legionary's is the one change: trained soldiers got +3 on every physical attack, 14 -> 17, when enemies were made hit harder)
 test('enemies and recruits hit as hard as they always did', () => {
     const anchors = [['WOLF', 'pierce', 17], ['DOG', 'pierce', 8], ['DUNE_MAW', 'pierce', 20], ['MAD_MAN', 'slash', 10], ['THUNDER_LOCUST', 'lightning', 9],
-        ['THUNDER_LOCUST', 'pierce', 6], ['SCORCHED_VAGRANT', 'fire', 20], ['LEGIONARY', 'slash', 14], ['PANZERKAMFER', 'pierce', 24], ['SNOW_LEOPARD', 'slash', 19]];
+        ['THUNDER_LOCUST', 'pierce', 6], ['SCORCHED_VAGRANT', 'fire', 20], ['LEGIONARY', 'slash', 17], ['PANZERKAMFER', 'pierce', 24], ['SNOW_LEOPARD', 'slash', 19]];
     for (const [id, type, old] of anchors) {
         const e = EntityFactory.create(id, 1);
         assert.ok(Math.abs(StatCalculator.calculate(e).attack[type] - old) <= 1, `${id} ${type}: ${StatCalculator.calculate(e).attack[type]} (was ${old})`);
@@ -79,4 +80,75 @@ test('leather armor gives a little stamina recovery, cloth armor a little insigh
     }
     assert.equal(wear(leather).staminaRecovery - naked.staminaRecovery, 4, 'a whole leather set adds up');
     assert.equal(wear(cloth).insightRecovery - naked.insightRecovery, 4, 'a whole cloth set adds up');
+});
+
+// ---- enemies keep up with armor: the level edge, the damage floor ----
+test('an enemy gains attack with its level in the attribute its best attack scales with, a recruit does not keep it, and an ally never gets it', () => {
+    const atk = (e, t) => StatCalculator.calculate(e).attack[t];
+    const wolf1 = EntityFactory.create('WOLF', 1), wolf9 = EntityFactory.create('WOLF', 9);
+    assert.equal(wolf9.state.levelEdgeAttr.attribute, 'strength');
+    assert.equal(wolf9.state.levelEdgeAttr.amount, 12, '8 levels x 1.5');
+    assert.ok(atk(wolf9, 'pierce') - atk(wolf1, 'pierce') >= 12, 'at least the edge, plus the one point per level spread over the attributes');
+    const addict9 = EntityFactory.create('MAGIC_ADDICT', 9);
+    assert.equal(addict9.state.levelEdgeAttr.attribute, 'intelligence', 'a mage grows in the attribute its spells scale with');
+    assert.equal(EntityFactory.create('WOLF', 1).state.levelEdgeAttr, undefined, 'level 1 gets nothing');
+
+    const ally = EntityFactory.create('LEGIONARY_COMPANION', 9, { levelEdge: false });
+    assert.equal(ally.state.levelEdgeAttr, undefined, 'an ally is built like a player');
+
+    const before = atk(wolf9, 'pierce');
+    assert.equal(EntityFactory.removeLevelEdge(wolf9), true);
+    assert.equal(atk(wolf9, 'pierce'), before - 12);
+    assert.equal(EntityFactory.removeLevelEdge(wolf9), false, 'taking it off twice is harmless');
+});
+
+test('armor can blunt a hit but never cancel it: a hit does at least 10% of its damage, and a resisted one 10% of what is left', async () => {
+    const { CombatCalculator } = await import('../../shared/battle/combatCalculator.js');
+    assert.equal(CombatCalculator.calculateMitigatedDamage(30, 40, 0, false), 3);
+    assert.equal(CombatCalculator.calculateMitigatedDamage(30, 40, 0.5, false), 1, '10% of 15 is 1.5: whole numbers only');
+    assert.equal(CombatCalculator.calculateMitigatedDamage(5, 99, 0, false), 1);
+    assert.equal(CombatCalculator.calculateMitigatedDamage(20, 5, 0, false), 15, 'an ordinary hit is unchanged');
+});
+
+// ---- the XP curve: act 2 at about level 20, the last level at 150 ----
+test('XP: what an enemy is worth is close to the straight line the curve is built on, at every level', async () => {
+    const { BattleRewardSystem } = await import('../../shared/battle/battleRewardSystem.js');
+    const { ExperienceSystem } = await import('../../shared/characters/experienceSystem.js');
+    for (const id of ['WOLF', 'ROTTER', 'LEGIONARY', 'MAGIC_ADDICT', 'SKELETAL_WARRIOR']) {
+        for (const level of [1, 5, 10, 20, 50, 100, 150]) {
+            const e = EntityFactory.create(id, level);
+            const stats = StatCalculator.calculate(e);
+            const real = BattleRewardSystem._calculateEnemyXp({ originalEntity: e, maxHp: stats.maxHp, stats });
+            const fit = ExperienceSystem.enemyXp(level);
+            assert.ok(Math.abs(real - fit) / fit <= 0.35, `${id} L${level}: worth ${real}, the curve assumes ${fit}`);
+        }
+    }
+});
+
+test('XP: a level takes about 2 fights at the start and 6 at the end; level 20 comes after about 50 fights, level 150 after about 600', async () => {
+    const { ExperienceSystem, XP_CURVE, MAX_LEVEL } = await import('../../shared/characters/experienceSystem.js');
+    assert.equal(MAX_LEVEL, 150);
+    let fights = 0, at20 = 0;
+    for (let level = 1; level < MAX_LEVEL; level++) {
+        const perFight = ExperienceSystem.enemyXp(level) * XP_CURVE.ENEMIES_PER_FIGHT;
+        const need = ExperienceSystem.getMaxXP(level);
+        assert.ok(need > (level > 1 ? ExperienceSystem.getMaxXP(level - 1) : 0), `level ${level} takes more XP than the one before`);
+        fights += need / perFight;
+        if (level === 19) at20 = fights;
+    }
+    assert.ok(at20 >= 40 && at20 <= 65, `level 20 after ${at20.toFixed(0)} fights`);
+    assert.ok(fights >= 450 && fights <= 750, `level 150 after ${fights.toFixed(0)} fights`);
+    assert.ok(Math.abs(ExperienceSystem.getMaxXP(1) / (ExperienceSystem.enemyXp(1) * 2) - 2) < 0.05);
+});
+
+test('XP: a reward written for the early game grows with the level, an old save adopts the new curve, and nobody passes level 150', async () => {
+    const { ExperienceSystem } = await import('../../shared/characters/experienceSystem.js');
+    assert.equal(ExperienceSystem.scaleReward(10, 1), 10);
+    assert.ok(ExperienceSystem.scaleReward(10, 20) > 60 && ExperienceSystem.scaleReward(10, 20) < 80);
+    const old = { level: 5, xp: 0, maxXp: 99999, skillPoints: 0, baseStats: { maxHp: 10 } };
+    ExperienceSystem.addXp(old, 1);
+    assert.equal(old.maxXp, ExperienceSystem.getMaxXP(5), 'the stale maxXp of an old save is replaced');
+    const top = { level: 150, xp: 0, maxXp: 1, skillPoints: 0, baseStats: { maxHp: 10 } };
+    ExperienceSystem.addXp(top, 10 ** 9);
+    assert.equal(top.level, 150);
 });

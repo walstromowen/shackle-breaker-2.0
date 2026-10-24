@@ -83,7 +83,7 @@ export class SavesRenderer {
         ui.drawLineWithGothicFlourish(L.leftX + L.leftW / 4, L.tabY + L.tabH + 18, L.leftW / 2, C.borderHighlight);
 
         if (state.mode === 'game' && !state.canSaveNow) {
-            ui.drawStyled('hint', 'You can only save outdoors. Step out of the building first.', L.leftX + L.leftW / 2, L.tabY + L.tabH + 52,
+            ui.drawStyled('hint', 'You can\'t save right now.', L.leftX + L.leftW / 2, L.tabY + L.tabH + 52,
                 { baseline: 'middle' });
         }
     }

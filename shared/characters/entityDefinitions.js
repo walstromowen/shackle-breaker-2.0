@@ -240,7 +240,8 @@ export const ENTITY_DEFINITIONS = {
             ...HUMANOID_TEMPLATE.baseStats,
             maxHp: 7,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: -2 },
-            baseResistance: { slash: 0.25 }
+            baseResistance: { slash: 0.25 },
+            baseAttack: { blunt: 3, slash: 3, pierce: 3 }   // trained soldiers hit harder than the template's bare-handed 1
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "shortsword" },
         currencyReward: { min: 5, max: 15 },
@@ -293,7 +294,7 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 12, maxStamina: 16, speed: 7, critical: 0.12, corruption: 10,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: 1, pierce: 1, dark: 2, light: -2 },
             baseResistance: { dark: 0.15, light: -0.15 },
-            baseAttack: { blunt: 1, pierce: 4, dark: 1 }
+            baseAttack: { blunt: 1, pierce: 8, dark: 1 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "crossbow" },
         currencyReward: { min: 5, max: 15 },
@@ -315,7 +316,7 @@ export const ENTITY_DEFINITIONS = {
             ...HUMANOID_TEMPLATE.baseStats,
             maxHp: 16, maxStamina: 15, maxInsight: 15, speed: 6,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: 3, dark: 4, arcane: 3, light: -2 },
-            baseAttack: { blunt: 0, slash: 5, arcane: 3 }
+            baseAttack: { blunt: 0, slash: 9, arcane: 6 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "scythe" },
         currencyReward: { min: 6, max: 14 },
@@ -450,7 +451,7 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 13, maxStamina: 12, maxInsight: 4, speed: 4, critical: 0.05,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, blunt: -3, slash: 2, pierce: 4, ice: 2, dark: 3, light: -3, fire: -1 },
             baseResistance: { pierce: 0.3, ice: 0.2, dark: 0.4, light: -0.4, fire: -0.15 },
-            baseAttack: { blunt: 1, slash: 4, dark: 1 }
+            baseAttack: { blunt: 1, slash: 8, dark: 2 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "shortsword" },
         currencyReward: { min: 3, max: 10 },

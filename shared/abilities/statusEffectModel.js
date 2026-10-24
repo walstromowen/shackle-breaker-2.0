@@ -5,7 +5,9 @@ import { PHYSICAL_DAMAGE_TYPES, MAGIC_DAMAGE_TYPES } from '../core/constants.js'
 export const STATUS_POWER_PER_LEVEL = 0.1;
 
 // `attackAverage: 'physical' | 'magical'` + `rate`: an amount of (the holder's average attack over blunt / slash / pierce, or over the nine magic types) x rate,
-// so it follows the build and the level (attack already grows with level, so the per-level scaling above is not applied again). Used by Second Wind / Clear Mind.
+// so it follows the build and the level (attack already grows with level, so the per-level scaling above is not applied again).
+// `recovery: true` (with `modify: 'stamina' | 'insight' | 'hp'`): the holder's own recovery value for that resource, the amount they get back at the end of every round,
+// per stack and at least 1. Second Wind (Recuperate) and Drawing Insight (Draw Insight) use it: while they last, the holder recovers twice as fast.
 const attackOf = (who, type) => {
     if (typeof who?.getAttack === 'function') return who.getAttack(type) || 0;
     const stats = who?.calculatedStats || who?.stats || {};
@@ -100,6 +102,9 @@ export class StatusEffectModel {
                     const scale = 1 + STATUS_POWER_PER_LEVEL * (levelOf(this.inflictor || target) - 1);
                     const raw = effect.value * this.stacks * scale;
                     amount = raw === 0 ? 0 : Math.sign(raw) * Math.max(1, Math.round(Math.abs(raw)));
+                } else if (effect.recovery) {
+                    const own = target[effect.modify + 'Recovery'] || 0;
+                    amount = Math.max(1, Math.round(own * this.stacks));
                 } else if (effect.attackAverage) {
                     amount = Math.max(1, Math.round(averageAttack(this.inflictor || target, effect.attackAverage) * (effect.rate || 0) * this.stacks));
                 } else if (effect.percentCurrent !== undefined) {

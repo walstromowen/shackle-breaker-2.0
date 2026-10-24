@@ -985,6 +985,22 @@ LootTableDefinitions.container_crate = {
         { id: "pickaxe", weight: 2, min: 1, max: 1 }
     ]
 };
+// A barrel: stored provisions and drink, and now and then something useful tucked in among them.
+LootTableDefinitions.container_barrel = {
+    type: "weighted",
+    items: [
+        { id: "salt", weight: 24, min: 1, max: 3 },
+        { id: "wheat", weight: 22, min: 1, max: 3 },
+        { id: "kurtus_brew", weight: 14, min: 1, max: 1 },
+        { id: "coal", weight: 12, min: 1, max: 2 },
+        { id: "flint", weight: 10, min: 1, max: 2 },
+        { id: "torch", weight: 10, min: 1, max: 2 },
+        { id: "plant_fibers", weight: 8, min: 1, max: 2 },
+        { id: "healing_herb", weight: 8, min: 1, max: 1 },
+        { id: "healing_tonic", weight: 3, min: 1, max: 1 },
+        { id: "escape_rope", weight: 3, min: 1, max: 1 }
+    ]
+};
 // A crate packed with sacks: provisions and dry goods.
 LootTableDefinitions.container_crate_sack = {
     type: "weighted",

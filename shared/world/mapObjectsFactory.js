@@ -10,6 +10,7 @@ import { MapObjectModel } from './mapObjectModel.js';
  */
 class MapObjectFactory {
     resolveSheet(definition, biome) {
+        if (definition.character) return definition.character.sheet || null; // an NPC: the character sheet itself
         const s = definition.sheet;
         if (!s) return null;
         if (typeof s === 'string') return s;

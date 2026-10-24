@@ -162,7 +162,7 @@ export const AbilityDefinitions = {
         cost: { stamina: 20 },
         speedModifier: 1.2,
         accuracy: 0.95,
-        animationId: "melee_lunge",
+        animationId: "hit_and_run",
         effects: [
             { type: "damage", damageType: "slash", power: 0.8 },
             { type: "switch_self", method: "menu" }
@@ -398,7 +398,7 @@ export const AbilityDefinitions = {
         tags: ["physical", "projectile", "utility", "item"],
         battleMessage: "{user} tosses a {ability} at {target}!",
         icon: { col: 3, row: 8 },
-        animationId: "melee_lunge",
+        animationId: "item_throw_net",
         targeting: { scope: "enemy", select: "single" },
         speedModifier: 1.25,
         accuracy: 0.90,
@@ -502,11 +502,11 @@ export const AbilityDefinitions = {
         accuracy: 1.0,
         effects: [{ type: "damage", damageType: "arcane", power: 0.75 }]
     },
-    // A heavy, slow beam: no drawback, unlike Hyper Beam, but it costs a lot of insight and goes late in the round.
+    // The heaviest arcane attack: a slow, roaring beam that hits enormously hard, but the user must recharge on their next turn (the 'recharging' status skips it).
     "arcane_blast": {
         id: "arcane_blast",
         name: "Arcane Blast",
-        description: "Pour raw insight into a roaring beam of arcane force. Slow to gather, but it hits very hard.",
+        description: "Pour raw insight into a roaring beam of arcane force. Slow to gather and devastating, but the user must recharge next turn.",
         range: "ranged",
         tags: ["magical", "projectile", "arcane", "heavy"],
         battleMessage: "{user} unleashes an {ability} at {target}!",
@@ -516,20 +516,6 @@ export const AbilityDefinitions = {
         cost: { insight: 16 },
         speedModifier: 0.85,
         accuracy: 0.95,
-        effects: [{ type: "damage", damageType: "arcane", power: 2.0 }]
-    },
-    "hyper_beam": {
-        id: "hyper_beam",
-        name: "Hyper Beam",
-        description: "A massive beam. User must recharge next turn.",
-        range: "ranged",
-        tags: ["magical", "projectile", "arcane", "heavy"],
-        battleMessage: "{user} fires a devastating {ability} at {target}!",
-        icon: { col: 2, row: 4 },
-        targeting: { scope: "enemy", select: "single" },
-        cost: { insight: 20 },
-        accuracy: 0.95,
-        animationId: "melee_lunge",
         effects: [{ type: "damage", damageType: "arcane", power: 2.5 }],
         selfStatusEffects: [{ id: "recharging", chance: 1.0, duration: 1 }]
     },
@@ -789,7 +775,7 @@ export const AbilityDefinitions = {
         cost: { insight: 15 },
         accuracy: 1.0,
         behavior: "charge_attack",
-        animationId: "melee_lunge",
+        animationId: "solar_beam",
         chargeConfig: {
             statusId: "charging_solar",
             damageEffect: { type: "damage", damageType: "light", power: 2.0 }
@@ -825,7 +811,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { insight: 25 },
         accuracy: 0.90,
-        animationId: "melee_lunge",
+        animationId: "gravity",
         effects: [{ type: "damage", damageType: "dark", calculation: "percent_current", power: 0.5 }]
     },
     "spirit_reap": {
@@ -836,6 +822,7 @@ export const AbilityDefinitions = {
         tags: ["magical", "dark", "leech"],
         battleMessage: "{user} reaps {target}'s spirit!",
         icon: { col: 3, row: 11 },
+        animationId: "spirit_reap",
         targeting: { scope: "enemy", select: "single" },
         cost: { insight: 20 },
         effects: [
@@ -854,7 +841,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { insight: 15 },
         accuracy: 1.0,
-        animationId: "melee_lunge",
+        animationId: "drain_life",
         effects: [{ type: "damage", damageType: "dark", power: 1.0, drain: 0.5 }]
     },
 
@@ -872,7 +859,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "full_ally_party", select: "auto" },
         cost: { insight: 25 },
         accuracy: 1.0,
-        animationId: "melee_lunge",
+        animationId: "healing_rain",
         effects: [{ type: "recover", resource: "hp", calculation: "percent", power: 0.3 }]
     },
     "purify": {
@@ -944,7 +931,7 @@ export const AbilityDefinitions = {
         icon: { col: 3, row: 12 },
         targeting: { scope: "self", select: "auto" },
         accuracy: 1.0,
-        animationId: "melee_lunge",
+        animationId: "rest",
         effects: [
             { type: "recover", resource: "stamina", calculation: "percent", power: 0.25 },
             { type: "recover", resource: "insight", calculation: "percent", power: 0.25 }
@@ -957,7 +944,7 @@ export const AbilityDefinitions = {
         tags: ["utility", "item", "buff"],
         battleMessage: "{user} chugs a {ability}!",
         targeting: { scope: "self" },
-        animationId: "melee_lunge",
+        animationId: "brew_of_madness",
         effects: [
             { type: "set", resource: "hp", value: 1 },
             { type: "recover", resource: "insight", calculation: "max" }
@@ -971,7 +958,7 @@ export const AbilityDefinitions = {
         tags: ["magical", "support", "healing"],
         battleMessage: "{user} uses a {ability}!",
         icon: { col: 5, row: 8 },
-        animationId: "melee_lunge",
+        animationId: "minor_heal",
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
         accuracy: 1.0,
@@ -985,7 +972,7 @@ export const AbilityDefinitions = {
         tags: ["magical", "support", "healing"],
         battleMessage: "{user} uses a {ability}!",
         icon: { col: 6, row: 8 },
-        animationId: "melee_lunge",
+        animationId: "minor_recover",
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
         accuracy: 1.0,
@@ -999,7 +986,7 @@ export const AbilityDefinitions = {
         tags: ["magical", "support", "healing"],
         battleMessage: "{user} uses a {ability}!",
         icon: { col: 7, row: 8 },
-        animationId: "melee_lunge",
+        animationId: "minor_channel",
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
         accuracy: 1.0,
@@ -1013,7 +1000,7 @@ export const AbilityDefinitions = {
         tags: ["magical", "support", "healing"],
         battleMessage: "{user} uses a {ability}!",
         icon: { col: 5, row: 8 },
-        animationId: "melee_lunge",
+        animationId: "moderate_heal",
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
         accuracy: 1.0,
@@ -1027,7 +1014,7 @@ export const AbilityDefinitions = {
         tags: ["magical", "support", "healing"],
         battleMessage: "{user} uses a {ability}!",
         icon: { col: 6, row: 8 },
-        animationId: "melee_lunge",
+        animationId: "moderate_recover",
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
         accuracy: 1.0,
@@ -1041,7 +1028,7 @@ export const AbilityDefinitions = {
         tags: ["magical", "support", "healing"],
         battleMessage: "{user} uses a {ability}!",
         icon: { col: 7, row: 8 },
-        animationId: "melee_lunge",
+        animationId: "moderate_channel",
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
         accuracy: 1.0,
@@ -1062,7 +1049,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { stamina: 5 },
         accuracy: 1.0,
-        animationId: "melee_lunge",
+        animationId: "osmose",
         effects: [{ type: "damage", resource: "insight", power: 0.5, drain: 1.0 }]
     },
     "raise_skeleton": {
@@ -1076,7 +1063,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "space", select: "auto" },
         cost: { insight: 30 },
         accuracy: 1.0,
-        animationId: "melee_lunge",
+        animationId: "raise_skeleton",
         effects: [{ type: "summon", entityId: "skeleton_warrior", levelScale: 1.0, maxActive: 2 }]
     },
     "bear_form": {
@@ -1090,7 +1077,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "self", select: "auto" },
         cost: { insight: 20 },
         accuracy: 1.0,
-        animationId: "melee_lunge",
+        animationId: "bear_form",
         effects: [{ type: "summon", entityId: "dire_bear", replaceUser: true, revertOnDeath: true }]
     },
 
@@ -1100,7 +1087,7 @@ export const AbilityDefinitions = {
     "recuperate": {
         id: "recuperate",
         name: "Recuperate",
-        description: "Steady your breathing and let the body recover, regaining stamina at the end of each of your turns for 5 turns. The more power you have in your physical attacks (the average of your blunt, slash and pierce), the more you regain.",
+        description: "Steady your breathing and let the body recover, regaining stamina equal to your stamina recovery at the end of each of your turns for 5 turns.",
         range: "self",
         tags: ["utility", "support", "buff"],
         battleMessage: "{user} recuperates.",
@@ -1116,7 +1103,7 @@ export const AbilityDefinitions = {
     "draw_insight": {
         id: "draw_insight",
         name: "Draw Insight",
-        description: "Quiet your thoughts and gather your focus, regaining insight at the end of each of your turns for 5 turns. The more power you have in your magical attacks (the average of your nine magic types), the more you regain.",
+        description: "Quiet your thoughts and gather your focus, regaining insight equal to your insight recovery at the end of each of your turns for 5 turns.",
         range: "self",
         tags: ["utility", "support", "buff", "magical"],
         battleMessage: "{user} draws insight.",
@@ -1157,7 +1144,7 @@ export const AbilityDefinitions = {
         cost: { insight: 15 },
         speedModifier: 1.0,
         accuracy: 1.0,
-        animationId: "melee_lunge",
+        animationId: "baton_pass",
         effects: [{ type: "switch_self", method: "menu", keepBuffs: true }]
     },
     "counter_stance": {
@@ -1172,7 +1159,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "self", select: "auto" },
         cost: { stamina: 15 },
         accuracy: 1.0,
-        animationId: "melee_lunge",
+        animationId: "counter_stance",
         statusEffects: [{ id: "counter_ready", chance: 1.0, duration: 1 }]
     },
     "retreat": {
@@ -1198,7 +1185,7 @@ export const AbilityDefinitions = {
         icon: { col: 5, row: 7 },
         targeting: { scope: "ally", select: "menu" },
         behavior: "switch_party",
-        animationId: "melee_lunge",
+        animationId: "switch_combatant",
         accuracy: 1.0
     },
     // =========================================================================
@@ -1232,7 +1219,7 @@ export const AbilityDefinitions = {
         tags: ["physical", "tactical", "trap", "item"],
         battleMessage: "{user} hurriedly sets a {ability}!",
         icon: { col: 2, row: 8 },
-        animationId: "melee_lunge",
+        animationId: "item_bear_trap",
         targeting: { scope: "self", select: "auto" },
         speedModifier: 1.25,
         accuracy: 1.0,
@@ -1252,7 +1239,7 @@ export const AbilityDefinitions = {
         tags: ["utility", "tactical", "item"],
         battleMessage: "{user} drops a {ability} at their feet!",
         icon: { col: 4, row: 8 },
-        animationId: "melee_lunge",
+        animationId: "item_smoke_bomb",
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.25,
         accuracy: 1.0,

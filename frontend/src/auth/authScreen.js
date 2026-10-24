@@ -8,7 +8,7 @@
 //
 // Set ALLOW_OFFLINE_PLAY to false to make an account compulsory (testers then cannot skip it).
 import { AuthService } from './authService.js';
-import { drawSmoke } from '../ui/smoke.js';
+import { drawSmoke } from '../ui/particles/smoke.js';
 
 const ALLOW_OFFLINE_PLAY = true;
 
@@ -64,7 +64,7 @@ const el = (tag, props = {}, children = []) => {
 };
 
 /**
- * Wisps of smoke drifting over the picture behind the form (the same ones as on the title screen, ui/smoke.js). The canvas is half the
+ * Wisps of smoke drifting over the picture behind the form (the same ones as on the title screen, ui/particles/smoke.js). The canvas is half the
  * size it is shown at, because smoke is soft anyway, and it is drawn about thirty times a second. It stops by itself when the screen is gone.
  */
 function startSmoke(root) {

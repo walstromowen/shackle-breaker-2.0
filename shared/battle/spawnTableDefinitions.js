@@ -30,9 +30,9 @@ export const SpawnTableDefinitions = {
                 },
                 members: [
                     { id: 'ROTTER', weight: 30 },
-                    { id: 'MAD_MAN', weight: 50, modifiers: { equipment: [{ slot: 'mainHand', items: ['dagger'], chance: 0.5 }] } },
+                    { id: 'MAD_MAN', weight: 50, modifiers: { equipment: [{ slot: 'mainHand', items: ['dagger'], chance: 0.7 }] } },
                     { id: 'SHACKLED_STEED', weight: 20 },
-                    { id: 'LEGIONARY', weight: 20, modifiers: { levelOffset: { chance: 0.3, min: -1, max: 2 }, equipment: [{ slot: 'mainHand', items: ['warhammer', 'spear'], chance: 0.3 }], traits: [{ id: 'iron_willed', chance: 0.15 }] } },
+                    { id: 'LEGIONARY', weight: 20, modifiers: { levelOffset: { chance: 0.3, min: -1, max: 2 }, equipment: [{ slot: 'mainHand', items: ['warhammer', 'spear'], chance: 0.5 }], traits: [{ id: 'iron_willed', chance: 0.15 }] } },
                     { id: 'MAGIC_ADDICT', weight: 30 },
                     // act 2: the dead no longer stay down, and the old soldiers walk the plains in daylight
                     { id: 'SKELETAL_WARRIOR', weight: 25, minAct: 2 },
@@ -73,10 +73,10 @@ export const SpawnTableDefinitions = {
                 },
                 members: [
                     { id: 'ROTTER', weight: 40 },
-                    { id: 'MAD_MAN', weight: 30, modifiers: { equipment: [{ slot: 'mainHand', items: ['dagger'], chance: 0.5 }] } },
+                    { id: 'MAD_MAN', weight: 30, modifiers: { equipment: [{ slot: 'mainHand', items: ['dagger'], chance: 0.7 }] } },
                     { id: 'SHACKLED_STEED', weight: 20 },
                     { id: 'HOLLOW_HARVESTER', weight: 80, modifiers: { levelOffset: { chance: 0.5, min: 1, max: 2 } } },
-                    { id: 'LEGIONARY', weight: 70, modifiers: { levelOffset: { chance: 0.3, min: -1, max: 2 }, equipment: [{ slot: 'mainHand', items: ['warhammer', 'spear'], chance: 0.3 }], traits: [{ id: 'iron_willed', chance: 0.15 }] } },
+                    { id: 'LEGIONARY', weight: 70, modifiers: { levelOffset: { chance: 0.3, min: -1, max: 2 }, equipment: [{ slot: 'mainHand', items: ['warhammer', 'spear'], chance: 0.5 }], traits: [{ id: 'iron_willed', chance: 0.15 }] } },
                     { id: 'MAGIC_ADDICT', weight: 30 }
                 ]
             }
@@ -216,7 +216,7 @@ export const SpawnTableDefinitions = {
                     nightmare: { minSize: 2, maxSize: 4 }
                 },
                 members: [
-                    { id: 'SKELETAL_WARRIOR', weight: 55, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 }, equipment: [{ slot: 'mainHand', items: ['spear', 'warhammer'], chance: 0.3 }] } },
+                    { id: 'SKELETAL_WARRIOR', weight: 55, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 }, equipment: [{ slot: 'mainHand', items: ['spear', 'warhammer'], chance: 0.5 }] } },
                     { id: 'FLOATING_SKULL', weight: 35, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } },
                     { id: 'ANCIENT_CULTIST', weight: 20, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 2 } } }
                 ]
@@ -295,7 +295,7 @@ export const SpawnTableDefinitions = {
                     nightmare: { minSize: 3, maxSize: 5 }
                 },
                 members: [
-                    { id: 'SKELETAL_WARRIOR', weight: 50, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 }, equipment: [{ slot: 'mainHand', items: ['spear', 'warhammer'], chance: 0.3 }] } },
+                    { id: 'SKELETAL_WARRIOR', weight: 50, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 }, equipment: [{ slot: 'mainHand', items: ['spear', 'warhammer'], chance: 0.5 }] } },
                     { id: 'FLOATING_SKULL', weight: 30, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 } } },
                     { id: 'ANCIENT_CULTIST', weight: 20, modifiers: { levelOffset: { chance: 0.5, min: 1, max: 2 } } }
                 ]
@@ -324,9 +324,9 @@ export const SpawnTableDefinitions = {
                 },
                 members: [
                     { id: 'HOLLOW_HARVESTER', weight: 50, modifiers: { levelOffset: { chance: 0.6, min: 1, max: 2 } } },
-                    { id: 'LEGIONARY', weight: 40, modifiers: { levelOffset: { chance: 0.4, min: 0, max: 2 }, equipment: [{ slot: 'mainHand', items: ['warhammer', 'spear'], chance: 0.3 }], traits: [{ id: 'iron_willed', chance: 0.25 }] } },
+                    { id: 'LEGIONARY', weight: 40, modifiers: { levelOffset: { chance: 0.4, min: 0, max: 2 }, equipment: [{ slot: 'mainHand', items: ['warhammer', 'spear'], chance: 0.5 }], traits: [{ id: 'iron_willed', chance: 0.25 }] } },
                     { id: 'MAGIC_ADDICT', weight: 20 },
-                    { id: 'MAD_MAN', weight: 20, modifiers: { equipment: [{ slot: 'mainHand', items: ['dagger'], chance: 0.5 }] } }
+                    { id: 'MAD_MAN', weight: 20, modifiers: { equipment: [{ slot: 'mainHand', items: ['dagger'], chance: 0.7 }] } }
                 ]
             }
         ]
@@ -496,7 +496,7 @@ export const SpawnTableDefinitions = {
                     weight: 50,
                     modifiers: {
                         levelOffset: { chance: 0.3, min: -1, max: 2 },
-                        equipment: [{ slot: 'mainHand', items: ['warhammer', 'spear'], chance: 0.3 }],
+                        equipment: [{ slot: 'mainHand', items: ['warhammer', 'spear'], chance: 0.5 }],
                         traits: [{ id: 'iron_willed', chance: 0.15 }]
                     }
                 },

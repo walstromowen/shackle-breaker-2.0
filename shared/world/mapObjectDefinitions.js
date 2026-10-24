@@ -102,7 +102,7 @@ export const MAP_OBJECTS_DEFINITIONS = {
     STANDING_TORCH: { sheet: 'objStandingTorch', spriteX: 0, spriteY: 0, frames: 4, speed: 0.14, width: 1, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, light: { hasLight: true, radius: 5.5, color: '255, 140, 50', maxAlpha: 0.75, flickerSpeed: 0.1, flickerAmp: 0.4 } },
     
     // --- HOUSE FURNITURE ---
-    BARREL: { sheet: 'objBarrel', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    BARREL: { sheet: 'objBarrel', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } , interaction: { type: 'SEARCH', lootTableId: 'container_barrel', name: 'barrel' } },
     CRATE: { sheet: 'objCrate', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'SEARCH', lootTableId: 'container_crate', name: 'crate' } },
     CRATE_SACK: { sheet: 'objCrateSack', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'SEARCH', lootTableId: 'container_crate_sack', name: 'crate of sacks' } },
     SACKS: { sheet: 'objSacks', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'SEARCH', lootTableId: 'container_sacks', name: 'sacks' } },
@@ -157,3 +157,34 @@ export const MAP_OBJECTS_DEFINITIONS = {
         interaction: { type: 'WARP', id: 'exit_interior', isRepeatable: true, walkIn: true }
     },
 };
+
+/* ==========================================
+   RESPAWNING: what grows back, and after how many in-game days.
+   A tree you cut, a herb you pick, a stick, a flower or a rock you gather comes back this many days later (OverworldController schedules it through
+   WorldManager.scheduleRespawn; WorldManager.expireRespawns brings it back). Anything not listed stays gone for good: ore deposits that hold iron,
+   bones, chests, searched containers (a container only refills if it is listed in CONTAINER_REFILL_DAYS below) and every story object.
+   Only the open world respawns things; houses and caves are built fresh from their seed and keep their own changes.
+   ========================================== */
+const HERB_DAYS = 7, TREE_DAYS = 7, SCRAP_DAYS = 7, ROCK_DAYS = 14;
+export const RESPAWN_DAYS = {
+    // trees (the stump goes with the cut tree)
+    PINE_TREE: TREE_DAYS, SNOWY_PINE_TREE: TREE_DAYS, OAK_TREE_1: TREE_DAYS,
+    // herbs and plants
+    HEALING_HERB: HERB_DAYS, ALOE_PLANT: HERB_DAYS, INVIGORATING_HERB: HERB_DAYS, ILLUMINATING_HERB: HERB_DAYS,
+    TULIPS_ORANGE: HERB_DAYS, TULIPS_WHITE: HERB_DAYS, TULIPS_RED: HERB_DAYS,
+    // things lying on the ground
+    STICK: SCRAP_DAYS, FLINT_ROCK: SCRAP_DAYS, SMALL_ROCKS_1: SCRAP_DAYS, SMALL_ROCKS_2: SCRAP_DAYS, SMALL_ROCKS_3: SCRAP_DAYS,
+    SAND_DUNE_1: SCRAP_DAYS, SAND_DUNE_2: SCRAP_DAYS, SAND_DUNE_3: SCRAP_DAYS,
+    // rock you mine (iron ore deposits are left out on purpose: they stay a finite, hard-won resource)
+    BOULDER_1: ROCK_DAYS, BOULDER_2: ROCK_DAYS, SNOWY_BOULDER_1: ROCK_DAYS, SNOWY_BOULDER_2: ROCK_DAYS,
+    COAL_DEPOSIT: ROCK_DAYS, COPPER_ORE_DEPOSIT: ROCK_DAYS, TIN_ORE_DEPOSIT: ROCK_DAYS, SALT_DEPOSIT: ROCK_DAYS
+};
+/* Containers you search (barrel, crate, wardrobe, sacks) refill after this many days. Left empty: searched containers stay searched. Add e.g. BARREL: 30 to refill them. */
+export const CONTAINER_REFILL_DAYS = {};
+
+for (const [id, days] of Object.entries(RESPAWN_DAYS)) {
+    if (MAP_OBJECTS_DEFINITIONS[id]?.interaction) MAP_OBJECTS_DEFINITIONS[id].interaction.respawnDays = days;
+}
+for (const [id, days] of Object.entries(CONTAINER_REFILL_DAYS)) {
+    if (MAP_OBJECTS_DEFINITIONS[id]?.interaction) MAP_OBJECTS_DEFINITIONS[id].interaction.refillDays = days;
+}

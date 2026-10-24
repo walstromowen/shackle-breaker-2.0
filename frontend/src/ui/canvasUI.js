@@ -198,6 +198,48 @@ export class CanvasUI {
     ctx.drawImage(layer, 0, 0, layer.width, layer.height, x - PANEL_MARGIN, y - PANEL_MARGIN, layer.width / scale, layer.height / scale);
   }
 
+  /**
+   * A short message in a plate of its own, sized to the text with even padding all round: the one look for every notice, label and prompt
+   * that floats over a screen (the overworld's "You already searched the barrel.", the hovered hotbar item, the summary's "You light the Torch...").
+   * The plate is centred on (cx, cy); a thin line along its top edge says what kind of message it is.
+   * @param {string} text
+   * @param {number} cx  centre x
+   * @param {number} cy  centre y (or the bottom edge, with opts.bottom)
+   * @param {{ kind?: 'error'|'success'|'info'|undefined, role?: string, bg?: string, alpha?: number, padX?: number, padY?: number, maxWidth?: number, bottom?: boolean }} [opts]
+   *        role: a text role from UITheme.text (default 'notice'); maxWidth: the text is cut short with "..." past it
+   * @returns {{ x:number, y:number, w:number, h:number }} the plate, so a caller can stack the next one above it
+   */
+  drawMessageBox(text, cx, cy, opts = {}) {
+    const ctx = this.ctx;
+    const role = UITheme.text[opts.role || 'notice'] || UITheme.text.notice;
+    const padX = opts.padX ?? UITheme.messageBox.padX;
+    const padY = opts.padY ?? UITheme.messageBox.padY;
+    const size = parseFloat((/(\d+(?:\.\d+)?)px/.exec(role.font) || [])[1]) || 24;
+    ctx.save();
+    ctx.font = role.font;
+    let shown = String(text);
+    const limit = opts.maxWidth ? opts.maxWidth - padX * 2 : Infinity;
+    while (shown.length > 1 && ctx.measureText(shown).width > limit) shown = shown.slice(0, -2).trimEnd() + '\u2026';
+    const w = Math.round(ctx.measureText(shown).width + padX * 2);
+    const h = Math.round(size + padY * 2);
+    const x = Math.round(cx - w / 2), y = Math.round(opts.bottom ? cy - h : cy - h / 2);   // `bottom`: cy is the plate's bottom edge, to stack plates upward
+    ctx.restore();
+    const accent = opts.kind === 'error' ? UITheme.colors.error
+        : opts.kind === 'success' ? UITheme.colors.success
+        : opts.kind === 'info' ? UITheme.colors.textHighlight
+        : null;
+    this.drawPanel(x, y, w, h, opts.bg || UITheme.messageBox.bg);
+    if (accent) {
+        ctx.save();
+        ctx.globalAlpha = 0.85;
+        ctx.fillStyle = accent;
+        ctx.fillRect(x + 14, y + 2, w - 28, 2);
+        ctx.restore();
+    }
+    this.drawStyled(opts.role || 'notice', shown, x + w / 2, y + h / 2 + 1, { kind: opts.kind, align: 'center', baseline: 'middle' });
+    return { x, y, w, h };
+  }
+
   /** Everything of a panel but its fill: texture, lit top, shadowed inner edge, frame lines, corner marks. `g` is the context to draw on. */
   _paintPanelSurface(g, x, y, w, h, textured, variant = 'plate') {
     const p = UITheme.panel;

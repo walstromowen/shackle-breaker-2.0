@@ -7,9 +7,9 @@ export const QuestDefinitions = {
     name: "Shackled",
     description: "The chain that bound you to the line has broken, and the convoy marched on into the dark without you. The shackles are still locked around your wrists, and the fog in your mind has lifted. You remember the road, and nothing before it. Find out what happened, and grow strong enough to survive the answer.",
     objectives: [
-        { id: "obj_reach_level_2", type: "party_level", targetLevel: 2, amount: 1 },
+        { id: "obj_reach_level_2", type: "party_level", targetLevel: 3, amount: 1 },
     ],
-    rewards: { exp: 50, currency: 50, quests: ["shackled2"] }
+    rewards: { exp: 60, currency: 50, quests: ["shackled2"] }
 },
     "shackled2": {
         id: "shackled2",
@@ -17,20 +17,20 @@ export const QuestDefinitions = {
         description: "The prisoners on the road were not the only ones. Others wear the same iron here, and they laugh in the streets, as though sharing a single dream. Whatever took them has not stopped at the road.",
         objectives: [
             { id: "obj_kill_madmen_part_2", type: "kill_enemy", targetId: "MAD_MAN", amount: 3 },
-            { id: "obj_reach_level_3", type: "party_level", targetLevel: 3, amount: 1 }
+            { id: "obj_reach_level_3", type: "party_level", targetLevel: 5, amount: 1 }
         ],
-        rewards: { exp: 100, currency: 100, quests: ["shackled3"] }
+        rewards: { exp: 140, currency: 100, quests: ["shackled3"] }
     },
     "shackled3": {
         id: "shackled3",
         name: "Shackled",
         description: "The shackles have no keyhole, and the weight on your spirit is as heavy as the iron. The ravings of the mad are not all nonsense: they speak of a stone fallen from the sky, and of the sand-skinned ones who carried it away. Many of them still conjure sparks and cannot stop. Listen closely, then put them down.",
         objectives: [
-            { id: "obj_reach_level_5", type: "party_level", targetLevel: 5, amount: 1 },
+            { id: "obj_reach_level_5", type: "party_level", targetLevel: 8, amount: 1 },
             { id: "obj_kill_magic_addicts", type: "kill_enemy", targetId: "MAGIC_ADDICT", amount: 3 }
         ],
         rewards: {
-            exp: 150,
+            exp: 210,
             currency: 150,
             items: [
                 { id: "healing_tonic", amount: 1 }
@@ -43,11 +43,11 @@ export const QuestDefinitions = {
         name: "Shackled",
         description: "Past the plains lie the dunes, and those who walk them unseen. The stone was last seen with them, but what was taken is no longer in their hands.",
         objectives: [
-            { id: "obj_reach_level_6", type: "party_level", targetLevel: 6, amount: 1 },
+            { id: "obj_reach_level_6", type: "party_level", targetLevel: 10, amount: 1 },
             { id: "obj_kill_sand_stalkers", type: "kill_enemy", targetId: "SAND_STALKER", amount: 3 }
         ],
         rewards: {
-            exp: 200,
+            exp: 300,
             currency: 200,
             items: [
                 { id: "healing_tonic", amount: 1 },
@@ -61,11 +61,11 @@ export const QuestDefinitions = {
         name: "Shackled",
         description: "The dunes keep a second face after dark. A weaver of mirages guards what the sand has swallowed, and the trail of the stone with it.",
         objectives: [
-            { id: "obj_reach_level_7", type: "party_level", targetLevel: 7, amount: 1 },
+            { id: "obj_reach_level_7", type: "party_level", targetLevel: 12, amount: 1 },
             { id: "obj_kill_miragewright", type: "kill_enemy", targetId: "MIRAGEWRIGHT", amount: 1 }
         ],
         rewards: {
-            exp: 250,
+            exp: 380,
             currency: 250,
             items: [
                 { id: "smoke_bomb", amount: 2 },
@@ -79,11 +79,11 @@ export const QuestDefinitions = {
         name: "Shackled",
         description: "The stone passed from the dunes into foreign hands. The Panzerian trappers of the frozen peaks do not speak of where it went, or of what they saw.",
         objectives: [
-            { id: "obj_reach_level_8", type: "party_level", targetLevel: 8, amount: 1 },
+            { id: "obj_reach_level_8", type: "party_level", targetLevel: 14, amount: 1 },
             { id: "obj_kill_frozen_trappers", type: "kill_enemy", targetId: "FROZEN_TRAPPER", amount: 3 }
         ],
         rewards: {
-            exp: 300,
+            exp: 470,
             currency: 300,
             items: [
                 { id: "healing_tonic", amount: 2 },
@@ -97,12 +97,12 @@ export const QuestDefinitions = {
         name: "Shackled",
         description: "What went to the peaks came back down to the plains, carried by those who still wear the old colors. They do not rest. The dead stir where battles were fought. Whoever carried the stone home has the answer, if any of them can still be reasoned with.",
         objectives: [
-            { id: "obj_reach_level_9", type: "party_level", targetLevel: 9, amount: 1 },
+            { id: "obj_reach_level_9", type: "party_level", targetLevel: 17, amount: 1 },
             { id: "obj_kill_legionaries", type: "kill_enemy", targetId: "LEGIONARY", amount: 3 },
             { id: "obj_kill_watchmen", type: "kill_enemy", targetId: "WATCHMAN", amount: 2 }
         ],
         rewards: {
-            exp: 350,
+            exp: 600,
             currency: 350,
             items: [
                 { id: "meteorite", amount: 1 },
@@ -117,11 +117,11 @@ export const QuestDefinitions = {
         name: "Shackled",
         description: "A stone altar waits in the dark below, though not every depth holds one. A skull rests above a hollow the size of a fallen star. The answer to what happened waits down there. Descend when you are strong.",
         objectives: [
-            { id: "obj_reach_level_10", type: "party_level", targetLevel: 10, amount: 1 },
+            { id: "obj_reach_level_10", type: "party_level", targetLevel: 20, amount: 1 },
             { id: "obj_kill_darius", type: "kill_enemy", targetId: "DARIUS_THE_GROVELER", amount: 1 }
         ],
         rewards: {
-            exp: 400,
+            exp: 720,
             currency: 400,
             items: [
                 { id: "healing_tonic", amount: 3 },
@@ -138,11 +138,11 @@ export const QuestDefinitions = {
         name: "The Red Moon",
         description: "The moon rises red every night now, and the days are dim. The dead walk the roads, the cursed come in greater numbers, and every enemy is a little stronger than before. Darius did not curse the world, and neither did the stone. Magic itself is the curse, and every spell cast feeds it. You have cast many. Grow strong, and keep your torch lit.",
         objectives: [
-            { id: "obj_reach_level_12", type: "party_level", targetLevel: 12, amount: 1 },
+            { id: "obj_reach_level_12", type: "party_level", targetLevel: 25, amount: 1 },
             { id: "obj_kill_risen", type: "kill_enemy", targetId: "SKELETAL_WARRIOR", amount: 5 }
         ],
         rewards: {
-            exp: 600,
+            exp: 1150,
             currency: 500,
             items: [
                 { id: "healing_tonic", amount: 3 },
@@ -164,7 +164,7 @@ export const QuestDefinitions = {
             { id: "obj_orders_watchmen", type: "kill_enemy", targetId: "WATCHMAN", amount: 2 }
         ],
         rewards: {
-            exp: 250,
+            exp: 750,
             currency: 150,
             items: [
                 { id: "large_iron_key", amount: 1 },
@@ -183,7 +183,7 @@ export const QuestDefinitions = {
         objectives: [
             { id: "obj_kill_madmen", type: "kill_enemy", targetId: "MAD_MAN", amount: 3 }
         ],
-        rewards: { exp: 50, currency: 100 }
+        rewards: { exp: 150, currency: 100 }
     },
     "unnatural_flora": {
         id: "unnatural_flora",
@@ -193,7 +193,7 @@ export const QuestDefinitions = {
             { id: "obj_get_healing_herbs", type: "obtain_item", targetId: "healing_herb", amount: 2 },
             { id: "obj_get_invigorating_herbs", type: "obtain_item", targetId: "invigorating_herb", amount: 2 }
         ],
-        rewards: { exp: 50, items: [{ id: "insight_of_earth", amount: 1 }], currency: 50, quests: ["cure_the_afflicted"] }
+        rewards: { exp: 150, items: [{ id: "insight_of_earth", amount: 1 }], currency: 50, quests: ["cure_the_afflicted"] }
     },
     "men_no_less": {
         id: "men_no_less",
@@ -205,7 +205,7 @@ export const QuestDefinitions = {
             { id: "obj_cure_madmen_rotter", type: "kill_enemy", targetId: "ROTTER", amount: 2 }
         ],
         rewards: { 
-            exp: 75, 
+            exp: 225, 
             currency: 150, 
             companions: [{ id: "MAD_MAN", overrides: { name: "survivor" } }] 
         }
@@ -236,7 +236,7 @@ export const QuestDefinitions = {
         objectives: [
             { id: "obj_trav1", type: "kill_enemy", targetId: "MAD_MAN", amount: 3 }
         ],
-        rewards: { exp: 50, currency: 20, quests: ["bg_traveler_2"] }
+        rewards: { exp: 150, currency: 20, quests: ["bg_traveler_2"] }
     },
     "bg_traveler_2": {
         id: "bg_traveler_2",
@@ -245,7 +245,7 @@ export const QuestDefinitions = {
         objectives: [
             { id: "obj_trav2", type: "obtain_item", targetId: "healing_herb", amount: 3 }
         ],
-        rewards: { exp: 100, currency: 40, quests: ["bg_traveler_3"] }
+        rewards: { exp: 300, currency: 40, quests: ["bg_traveler_3"] }
     },
     "bg_traveler_3": {
         id: "bg_traveler_3",
@@ -256,7 +256,7 @@ export const QuestDefinitions = {
             { id: "obj_trav3b", type: "kill_enemy", targetId: "MAGIC_ADDICT", amount: 1 }
         ],
         rewards: {
-            exp: 200,
+            exp: 600,
             currency: 50,
             items: [
                 { id: "cloth_shoes", amount: 1 },
@@ -277,7 +277,7 @@ export const QuestDefinitions = {
         objectives: [
             { id: "obj_bs1", type: "obtain_item", targetId: "iron_ingot", amount: 1 }
         ],
-        rewards: { exp: 50, currency: 20, quests: ["bg_blacksmith_2"] }
+        rewards: { exp: 150, currency: 20, quests: ["bg_blacksmith_2"] }
     },
     "bg_blacksmith_2": {
         id: "bg_blacksmith_2",
@@ -286,7 +286,7 @@ export const QuestDefinitions = {
         objectives: [
             { id: "obj_bs2", type: "obtain_item", targetId: "invigorating_herb", amount: 3 }
         ],
-        rewards: { exp: 100, currency: 40, quests: ["bg_blacksmith_3"] }
+        rewards: { exp: 300, currency: 40, quests: ["bg_blacksmith_3"] }
     },
     "bg_blacksmith_3": {
         id: "bg_blacksmith_3",
@@ -297,7 +297,7 @@ export const QuestDefinitions = {
             { id: "obj_bs3b", type: "kill_enemy", targetId: "LEGIONARY", amount: 1 }
         ],
         rewards: {
-            exp: 200,
+            exp: 600,
             currency: 50,
             items: [
                 { id: "shortsword", amount: 1 },
@@ -318,7 +318,7 @@ export const QuestDefinitions = {
         objectives: [
             { id: "obj_ran1", type: "kill_enemy", targetId: "WOLF", amount: 3 }
         ],
-        rewards: { exp: 50, currency: 20, quests: ["bg_ranger_2"] }
+        rewards: { exp: 150, currency: 20, quests: ["bg_ranger_2"] }
     },
     "bg_ranger_2": {
         id: "bg_ranger_2",
@@ -327,7 +327,7 @@ export const QuestDefinitions = {
         objectives: [
             { id: "obj_ran2", type: "obtain_item", targetId: "healing_herb", amount: 3 }
         ],
-        rewards: { exp: 100, currency: 40, quests: ["bg_ranger_3"] }
+        rewards: { exp: 300, currency: 40, quests: ["bg_ranger_3"] }
     },
     "bg_ranger_3": {
         id: "bg_ranger_3",
@@ -338,7 +338,7 @@ export const QuestDefinitions = {
             { id: "obj_ran3b", type: "kill_enemy", targetId: "SNOW_LEOPARD", amount: 2 }
         ],
         rewards: {
-            exp: 200,
+            exp: 600,
             currency: 50,
             items: [
                 { id: "dagger", amount: 1 },
@@ -360,7 +360,7 @@ export const QuestDefinitions = {
         objectives: [
             { id: "obj_sch1", type: "kill_enemy", targetId: "MAGIC_ADDICT", amount: 1 }
         ],
-        rewards: { exp: 50, currency: 20, quests: ["bg_scholar_2"] }
+        rewards: { exp: 150, currency: 20, quests: ["bg_scholar_2"] }
     },
     "bg_scholar_2": {
         id: "bg_scholar_2",
@@ -369,7 +369,7 @@ export const QuestDefinitions = {
         objectives: [
             { id: "obj_sch2", type: "obtain_item", targetId: "illuminating_herb", amount: 2 }
         ],
-        rewards: { exp: 100, currency: 40, quests: ["bg_scholar_3"] }
+        rewards: { exp: 300, currency: 40, quests: ["bg_scholar_3"] }
     },
     "bg_scholar_3": {
         id: "bg_scholar_3",
@@ -379,7 +379,7 @@ export const QuestDefinitions = {
             { id: "obj_sch3", type: "kill_enemy", targetId: "MAGIC_ADDICT", amount: 3 }
         ],
         rewards: {
-            exp: 200,
+            exp: 600,
             currency: 50,
             items: [
                 { id: "insight_of_arcane", amount: 1 },
@@ -400,7 +400,7 @@ export const QuestDefinitions = {
         objectives: [
             { id: "obj_war1", type: "kill_enemy", targetId: "LEGIONARY", amount: 2 }
         ],
-        rewards: { exp: 50, currency: 20, quests: ["bg_warrior_2"] }
+        rewards: { exp: 150, currency: 20, quests: ["bg_warrior_2"] }
     },
     "bg_warrior_2": {
         id: "bg_warrior_2",
@@ -409,7 +409,7 @@ export const QuestDefinitions = {
         objectives: [
             { id: "obj_war2", type: "obtain_item", targetId: "stone", amount: 2 }
         ],
-        rewards: { exp: 100, currency: 40, quests: ["bg_warrior_3"] }
+        rewards: { exp: 300, currency: 40, quests: ["bg_warrior_3"] }
     },
     "bg_warrior_3": {
         id: "bg_warrior_3",
@@ -420,7 +420,7 @@ export const QuestDefinitions = {
             { id: "obj_war3b", type: "kill_enemy", targetId: "SHACKLED_STEED", amount: 1 }
         ],
         rewards: {
-            exp: 200,
+            exp: 600,
             currency: 50,
             items: [
                 { id: "handaxe", amount: 1 },
@@ -442,7 +442,7 @@ export const QuestDefinitions = {
         objectives: [
             { id: "obj_thf1", type: "kill_enemy", targetId: "MAD_MAN", amount: 2 }
         ],
-        rewards: { exp: 50, currency: 30, quests: ["bg_thief_2"] }
+        rewards: { exp: 150, currency: 30, quests: ["bg_thief_2"] }
     },
     "bg_thief_2": {
         id: "bg_thief_2",
@@ -451,7 +451,7 @@ export const QuestDefinitions = {
         objectives: [
             { id: "obj_thf2", type: "obtain_item", targetId: "healing_herb", amount: 2 }
         ],
-        rewards: { exp: 100, currency: 60, quests: ["bg_thief_3"] }
+        rewards: { exp: 300, currency: 60, quests: ["bg_thief_3"] }
     },
     "bg_thief_3": {
         id: "bg_thief_3",
@@ -462,7 +462,7 @@ export const QuestDefinitions = {
             { id: "obj_thf3b", type: "kill_enemy", targetId: "MAGIC_ADDICT", amount: 1 }
         ],
         rewards: {
-            exp: 200,
+            exp: 600,
             currency: 150,
             items: [
                 { id: "leather_boots", amount: 1 },
@@ -484,7 +484,7 @@ export const QuestDefinitions = {
         objectives: [
             { id: "obj_her1", type: "obtain_item", targetId: "illuminating_herb", amount: 3 }
         ],
-        rewards: { exp: 50, currency: 20, quests: ["bg_hermit_2"] }
+        rewards: { exp: 150, currency: 20, quests: ["bg_hermit_2"] }
     },
     "bg_hermit_2": {
         id: "bg_hermit_2",
@@ -493,7 +493,7 @@ export const QuestDefinitions = {
         objectives: [
             { id: "obj_her2", type: "kill_enemy", targetId: "MAD_MAN", amount: 4 }
         ],
-        rewards: { exp: 100, currency: 40, quests: ["bg_hermit_3"] }
+        rewards: { exp: 300, currency: 40, quests: ["bg_hermit_3"] }
     },
     "bg_hermit_3": {
         id: "bg_hermit_3",
@@ -503,7 +503,7 @@ export const QuestDefinitions = {
             { id: "obj_her3", type: "kill_enemy", targetId: "MAGIC_ADDICT", amount: 2 }
         ],
         rewards: {
-            exp: 200,
+            exp: 600,
             currency: 50,
             items: [
                 { id: "insight_of_fire", amount: 1 },
@@ -525,7 +525,7 @@ export const QuestDefinitions = {
         objectives: [
             { id: "obj_far1", type: "kill_enemy", targetId: "MAD_MAN", amount: 3 }
         ],
-        rewards: { exp: 50, currency: 20, quests: ["bg_farmer_2"] }
+        rewards: { exp: 150, currency: 20, quests: ["bg_farmer_2"] }
     },
     "bg_farmer_2": {
         id: "bg_farmer_2",
@@ -534,7 +534,7 @@ export const QuestDefinitions = {
         objectives: [
             { id: "obj_far2", type: "obtain_item", targetId: "stone", amount: 4 }
         ],
-        rewards: { exp: 100, currency: 40, quests: ["bg_farmer_3"] }
+        rewards: { exp: 300, currency: 40, quests: ["bg_farmer_3"] }
     },
     "bg_farmer_3": {
         id: "bg_farmer_3",
@@ -545,7 +545,7 @@ export const QuestDefinitions = {
             { id: "obj_far3b", type: "kill_enemy", targetId: "MAD_MAN", amount: 2 }
         ],
         rewards: {
-            exp: 200,
+            exp: 600,
             currency: 50,
             items: [
                 { id: "healing_herb", amount: 3 },
@@ -567,7 +567,7 @@ export const QuestDefinitions = {
         objectives: [
             { id: "obj_bh1", type: "kill_enemy", targetId: "SHADY_MERCHANT", amount: 1 }
         ],
-        rewards: { exp: 50, currency: 50, quests: ["bg_bounty_hunter_2"] }
+        rewards: { exp: 150, currency: 50, quests: ["bg_bounty_hunter_2"] }
     },
     "bg_bounty_hunter_2": {
         id: "bg_bounty_hunter_2",
@@ -576,7 +576,7 @@ export const QuestDefinitions = {
         objectives: [
             { id: "obj_bh2", type: "obtain_item", targetId: "healing_herb", amount: 2 }
         ],
-        rewards: { exp: 100, currency: 60, quests: ["bg_bounty_hunter_3"] }
+        rewards: { exp: 300, currency: 60, quests: ["bg_bounty_hunter_3"] }
     },
     "bg_bounty_hunter_3": {
         id: "bg_bounty_hunter_3",
@@ -587,7 +587,7 @@ export const QuestDefinitions = {
             { id: "obj_bh3b", type: "kill_enemy", targetId: "SHACKLED_STEED", amount: 1 }
         ],
         rewards: {
-            exp: 200,
+            exp: 600,
             currency: 80,
             items: [
                 { id: "shortsword", amount: 1 },
@@ -609,7 +609,7 @@ export const QuestDefinitions = {
         objectives: [
             { id: "obj_dis1", type: "obtain_item", targetId: "healing_herb", amount: 2 }
         ],
-        rewards: { exp: 50, currency: 10, quests: ["bg_diseased_2"] }
+        rewards: { exp: 150, currency: 10, quests: ["bg_diseased_2"] }
     },
     "bg_diseased_2": {
         id: "bg_diseased_2",
@@ -618,7 +618,7 @@ export const QuestDefinitions = {
         objectives: [
             { id: "obj_dis2", type: "kill_enemy", targetId: "MAGIC_ADDICT", amount: 1 }
         ],
-        rewards: { exp: 100, currency: 30, quests: ["bg_diseased_3"] }
+        rewards: { exp: 300, currency: 30, quests: ["bg_diseased_3"] }
     },
     "bg_diseased_3": {
         id: "bg_diseased_3",
@@ -629,7 +629,7 @@ export const QuestDefinitions = {
             { id: "obj_dis3b", type: "kill_enemy", targetId: "MAGIC_ADDICT", amount: 1 }
         ],
         rewards: {
-            exp: 200,
+            exp: 600,
             currency: 50,
             items: [
                 { id: "cloth_gloves", amount: 1 },

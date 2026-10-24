@@ -4,8 +4,8 @@ import { events } from '../../../../shared/core/eventBus.js';
 import { BattleCombatantRenderer } from './battleCombatantRenderer.js';
 import { BattleHUDRenderer } from './battleHUDRenderer.js';
 import { BattleDebuggerRenderer } from './battleDebuggerRenderer.js';
-import { VFXRenderer } from './VFXRenderer.js';
-import { drawSmoke } from '../../ui/smoke.js';
+import { ParticleSystem } from '../../ui/particles/particleSystem.js';
+import { drawSmoke } from '../../ui/particles/smoke.js';
 
 export class BattleRenderer {
     constructor(ctx, config, loader) {
@@ -15,7 +15,7 @@ export class BattleRenderer {
         this.ui = new CanvasUI(ctx);
 
         // --- SUBCOMPONENTS ---
-        this.vfxRenderer = new VFXRenderer(ctx, loader);
+        this.vfxRenderer = new ParticleSystem(ctx, loader);
         this.combatantRenderer = new BattleCombatantRenderer(ctx, config, loader, this.ui, this.vfxRenderer);
         this.hudRenderer = new BattleHUDRenderer(ctx, config, loader, this.ui, this.combatantRenderer);
         this.debugRenderer = new BattleDebuggerRenderer(ctx, config);

@@ -34,7 +34,7 @@ Inside a folder the file name says what it is:
 |---|---|
 | `screens/<screen>/` | One folder per screen: `<screen>Controller.js` (input and flow), `<screen>Renderer.js` (drawing), `<screen>Logic.js` (rules the screen needs that are not in `shared/`), and `components/` for its pieces. |
 | `engine/` | What runs the screens: `sceneManager` (picks the screen), `input`, `gameLoop`, `audioManager`, `assetLoader`, `baseController`, `saveManager`, scene transitions. |
-| `ui/` | Drawing tools many screens share: `canvasUI`, `UITheme`, tooltips, the tutorial, chips, and the developer console (`devConsole`: press `/` in the overworld; switch it off in `DEV_CONSOLE` in `core/constants.js`). |
+| `ui/` | Drawing tools many screens share: `canvasUI` (panels, text, the `drawMessageBox` plate every notice and toast uses), `UITheme`, tooltips, `abilityCard` (the one ability card the Skills view, item details and workshop all draw), the tutorial, chips, `particles/` (every shared particle effect: the battle's `ParticleSystem`, the ambient embers and smoke; `particles/index.js` says which to use), and the developer console (`devConsole`: press `/` in the overworld; switch it off in `DEV_CONSOLE` in `core/constants.js`). |
 | `auth/` | The login screen and the account / cloud save client. |
 | `assets/` | Pictures, sounds and fonts. Everything in here is shipped to players. |
 | `main.js` | Loads the assets (the manifest) and starts the game. |

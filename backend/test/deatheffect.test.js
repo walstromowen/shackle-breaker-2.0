@@ -1,7 +1,7 @@
 // backend/test/deatheffect.test.js: `npm test`. A combatant that dies comes apart like fog and ash in the wind (the 'faint' animation + the drifting particles).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Particle } from '../../frontend/src/screens/battle/particle.js';
+import { Particle } from '../../frontend/src/ui/particles/particle.js';
 import * as defs from '../../shared/battle/animation/battleAnimationDefinition.js';
 
 const faint = Object.values(defs).map(v => v && v.faint).find(Boolean);

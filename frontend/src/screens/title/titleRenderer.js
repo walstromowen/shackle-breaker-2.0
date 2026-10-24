@@ -1,7 +1,7 @@
 import { UITheme } from '../../ui/UITheme.js';
 import { CanvasUI } from '../../ui/canvasUI.js';
-import { drawEmbers } from '../../ui/embers.js';
-import { drawSmoke } from '../../ui/smoke.js';
+import { drawEmbers } from '../../ui/particles/embers.js';
+import { drawSmoke } from '../../ui/particles/smoke.js';
 
 export class TitleRenderer {
     constructor(canvas, config, loader) {

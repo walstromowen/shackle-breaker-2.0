@@ -2,6 +2,7 @@ export const gameState = {
     seed: null,
     mode: "overworld",
     difficulty: "normal",
+    cheats: false,        // chosen when the game is created: may the developer console be used in this game (see engine/sceneManager.js)
     
     // Milestones the player has reached ('act2', ...). The current act comes from them: see story/actSystem.js and story/actDefinitions.js
     milestones: [],

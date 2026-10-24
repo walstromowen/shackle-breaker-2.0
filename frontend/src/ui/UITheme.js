@@ -164,6 +164,9 @@ export const UITheme = {
   // The Back button every screen without another way out shows (CanvasUI.drawBackButton): one size, one label
   backButton: { w: 300, h: 76, margin: 48, label: 'Back' },
 
+  // The plate behind every floating message (CanvasUI.drawMessageBox): the space between the text and the plate's edge, and its fill
+  messageBox: { padX: 30, padY: 14, bg: 'rgba(15, 15, 18, 0.92)', gap: 10 },
+
   // Floating panels (tooltips, context menus): CanvasUI.drawPopupPanel. bg is the same value as colors.bgScale[1].
   popup: {
     bg: "#0b0b0d",

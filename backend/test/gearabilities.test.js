@@ -32,25 +32,20 @@ test('Recuperate and Draw Insight give a 5 turn status that restores stamina / i
         const def = S[status];
         assert.equal(def.defaultCharges, 5);
         const tick = def.effects.find(e => e.trigger === 'ON_TURN_END' && e.modify === resource);
-        assert.ok(tick && tick.rate > 0 && tick.attackAverage === (resource === 'stamina' ? 'physical' : 'magical'), `${status} restores ${resource} from the average ${resource === 'stamina' ? 'physical' : 'magical'} attack`);
+        assert.ok(tick && tick.recovery === true, `${status} restores ${resource} equal to the holder's own ${resource} recovery`);
     }
 });
 
-test('the status ticks follow the holder\'s average physical / magical attack', () => {
-    const holder = (attack) => ({ name: 'T', level: 1, stamina: 0, insight: 0, getAttack: (t) => attack[t] || 0, modifyResource(k, n) { this[k] += n; } });
+test('the status ticks give back as much as the holder\'s own recovery value', () => {
+    const holder = (rec) => ({ name: 'T', level: 1, stamina: 0, insight: 0, ...rec, modifyResource(k, n) { this[k] += n; } });
     const tick = (status, h) => { new StatusEffectModel(S[status]).onEvent('ON_TURN_END', h); return h; };
-    const phys = { blunt: 10, slash: 20, pierce: 15 };                 // average 15
-    const magic = Object.fromEntries(['fire', 'ice', 'lightning', 'water', 'earth', 'wind', 'light', 'dark', 'arcane'].map(t => [t, 10]));
-    const weak = tick('second_wind', holder({ blunt: 6, slash: 6, pierce: 6 })).stamina;
-    const strong = tick('second_wind', holder({ ...phys })).stamina;
-    assert.equal(strong, Math.round(15 * S.second_wind.effects[0].rate));
-    assert.ok(strong > weak, 'a stronger build regains more');
-    assert.equal(tick('second_wind', holder({ ...magic })).stamina, 1, 'magic attack does not feed Second Wind (no physical attack: the minimum of 1)');
-    assert.equal(tick('drawing_insight', holder({ ...magic, fire: 40 })).insight, Math.round(((40 + 80) / 9) * S.drawing_insight.effects[0].rate));
-    assert.equal(tick('drawing_insight', holder({ blunt: 50, slash: 50, pierce: 50 })).insight, 1, 'physical attack does not feed Drawing Insight');
-    // a real entity (no getAttack): the stats come from calculatedStats
-    const entity = { name: 'E', level: 1, stamina: 0, calculatedStats: { attack: phys }, modifyResource(k, n) { this[k] += n; } };
-    assert.equal(tick('second_wind', entity).stamina, strong);
+    assert.equal(tick('second_wind', holder({ staminaRecovery: 6, insightRecovery: 2 })).stamina, 6);
+    assert.equal(tick('second_wind', holder({ staminaRecovery: 6, insightRecovery: 2 })).insight, 0, 'only stamina');
+    assert.equal(tick('drawing_insight', holder({ staminaRecovery: 6, insightRecovery: 2 })).insight, 2);
+    assert.equal(tick('drawing_insight', holder({ staminaRecovery: 6, insightRecovery: 2 })).stamina, 0, 'only insight');
+    assert.equal(tick('second_wind', holder({ staminaRecovery: 11 })).stamina, 11, 'a stronger recovery gives back more');
+    assert.equal(tick('drawing_insight', holder({ insightRecovery: 0 })).insight, 1, 'never less than 1');
+    assert.equal(tick('second_wind', holder({ staminaRecovery: 4.6 })).stamina, 5, 'rounded, like the round-end recovery');
 });
 
 test('the handaxe costs no iron anywhere, and is weaker than the shortsword', () => {

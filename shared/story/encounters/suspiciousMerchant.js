@@ -224,6 +224,7 @@ export const suspiciousMerchant = {
                             results: [
                                 { type: "MODIFY_CURRENCY", payload: { amount: 50 } },
                                 { type: "AWARD_XP", payload: { amount: 10, target: "active_character" } },
+                                { type: "DESTROY_OBJECT" },   // he takes the quiet and is gone: the bribe cannot be collected twice
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
                         }
@@ -294,6 +295,7 @@ export const suspiciousMerchant = {
                         {
                             weight: 100,
                             results: [
+                                { type: "DESTROY_OBJECT" },   // the thief has vanished: so has the figure standing in the world
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
                         }
@@ -409,6 +411,7 @@ export const suspiciousMerchant = {
                         {
                             weight: 100,
                             results: [
+                                { type: "DESTROY_OBJECT" },   // the fight is the end of him on the map
                                 { 
                                     type: "START_BATTLE", 
                                     payload: { 

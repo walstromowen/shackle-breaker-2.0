@@ -4,7 +4,7 @@
  *
  * The animation system itself has not changed: an animation is still a plain object
  *   { duration, audio[], background, actor, vfx[], target }
- * and BattleAnimationModel / BattleRenderer / VFXRenderer read exactly that. This file only makes the object easier to write and
+ * and BattleAnimationModel / BattleRenderer / ParticleSystem (ui/particles/) read exactly that. This file only makes the object easier to write and
  * hard to get wrong. Every helper returns plain data, so you can still write a raw object anywhere if you need something unusual.
  *
  * ---------------------------------------------------------------------------------------------------------------------
@@ -57,6 +57,7 @@
  *                  windJitter (0.5 = each one feels 50-150% of the wind, so a cloud stretches into a stream),
  *                  scaleJitter (0.4 = 60-140% of the size) and spinJitter (random tumble, radians/second) so no two look alike,
  *                  envelope: true  fade in, then thin away smoothly (instead of staying solid until the very end)
+ *                  rotation: radians, how a 'streak' is turned (default 0: it stands upright, as in rain; Math.PI / 2 lays it flat, Math.PI / 4 slants it)
  *                  offsetX / offsetY      move the whole spray (e.g. offsetY: -260 starts it above the target)
  *  orbit(start, { at, color, scale, radius, turns, phase, squash, life, alpha, blend, offsetX, offsetY })
  *                  a glowing dot that circles the target (or at: 'source') and draws in towards it: three of them with phase 0, 2.09 and 4.19 make a ring of orbs
@@ -150,7 +151,7 @@ export const burst = (start, o = {}) => ({
         spreadX: o.area ? o.area[0] : undefined, spreadY: o.area ? o.area[1] : undefined,
         offsetX: o.offsetX, offsetY: o.offsetY,
         shape: o.shape, length: o.length, windX: o.wind ? o.wind[0] : undefined, windY: o.wind ? o.wind[1] : undefined, windPull: o.windPull,
-        sway: o.sway, swayRate: o.swayRate, scaleDelta: o.grow, windJitter: o.windJitter, scaleJitter: o.scaleJitter, spinJitter: o.spinJitter, envelope: o.envelope
+        sway: o.sway, swayRate: o.swayRate, scaleDelta: o.grow, windJitter: o.windJitter, scaleJitter: o.scaleJitter, spinJitter: o.spinJitter, envelope: o.envelope, rotation: o.rotation
     })
 });
 

@@ -141,6 +141,17 @@ export class WorldManager {
         }
         this.chunks.set(chunkKey, chunk);
     }
+    /* forget one loaded chunk (its objects, collision cells and cached terrain); it is generated afresh the next time something asks for it */
+    _unloadChunk(chunkKey) {
+        const chunk = this.chunks.get(chunkKey);
+        if (!chunk) return;
+        this.terrain.clearCacheForKeys(chunk.keys);
+        for (const key of chunk.keys) {
+            if (this.objects.has(key)) this.objects.delete(key);
+            if (this._collisionMap.has(key)) this._collisionMap.delete(key);
+        }
+        this.chunks.delete(chunkKey);
+    }
     prune(cameraX, cameraY) {
         const TILE_SIZE = CONFIG.TILE_SIZE;
         const SAFE_DISTANCE = 2500;
@@ -150,14 +161,7 @@ export class WorldManager {
             const chunkPixelY = (chunk.cy * this.CHUNK_SIZE + this.CHUNK_SIZE / 2) * TILE_SIZE;
             const dx = chunkPixelX - cameraX;
             const dy = chunkPixelY - cameraY;
-            if (dx * dx + dy * dy > distSq) {
-                this.terrain.clearCacheForKeys(chunk.keys);
-                for (const key of chunk.keys) {
-                    if (this.objects.has(key)) this.objects.delete(key);
-                    if (this._collisionMap.has(key)) this._collisionMap.delete(key);
-                }
-                this.chunks.delete(chunkKey);
-            }
+            if (dx * dx + dy * dy > distSq) this._unloadChunk(chunkKey);
         }
     }
     getTileData(col, row) {
@@ -378,6 +382,36 @@ export class WorldManager {
     markSearched(col, row) {
         if (!gameState.world.changes) gameState.world.changes = {};
         gameState.world.changes['searched:' + this._s(col, row)] = true;
+    }
+    /* Respawning: a tree you cut, a herb you picked... is remembered in gameState.world.changes like any other change, and `scheduleRespawn` writes beside it
+       "respawn:<the same key>" = the in-game day it comes back (the day counter is saved with the world, so this is saved too). `expireRespawns` forgets every
+       change whose day has come, so the world generates that cell as it first did, and unloads the chunks that held them so the change shows up at once.
+       Only the open world respawns (the keys of a house or cave start with INT_). */
+    scheduleRespawn(col, row, days, prefix = '') {
+        if (gameState.world.isInterior || !(days > 0)) return;
+        if (!gameState.world.changes) gameState.world.changes = {};
+        const cellKey = prefix + this._s(col, row);
+        gameState.world.changes['respawn:' + cellKey] = (gameState.world.day || 1) + days;
+    }
+    expireRespawns() {
+        if (gameState.world.isInterior) return 0;
+        const changes = gameState.world.changes;
+        if (!changes) return 0;
+        const today = gameState.world.day || 1;
+        let expired = 0;
+        const reload = new Set();
+        for (const key of Object.keys(changes)) {
+            if (!key.startsWith('respawn:')) continue;
+            if (changes[key] > today) continue;
+            const cellKey = key.slice('respawn:'.length);
+            delete changes[key];
+            delete changes[cellKey];
+            expired++;
+            const m = /(-?\d+),(-?\d+)$/.exec(cellKey);
+            if (m && !cellKey.startsWith('INT_')) reload.add(Math.floor(+m[1] / this.CHUNK_SIZE) + ',' + Math.floor(+m[2] / this.CHUNK_SIZE));
+        }
+        for (const chunkKey of reload) this._unloadChunk(chunkKey);
+        return expired;
     }
     modifyWorld(col, row, newValue, explicitMapId = null) {
         const key = this._s(col, row, explicitMapId);

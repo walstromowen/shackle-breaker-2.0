@@ -2,11 +2,11 @@
 // The surfaces the dark UI is made of, generated once in code (no image files) and cached:
 //   grain()      fine film grain, a tile that repeats without a seam
 //   mottle()     soft low-frequency blotches (aged leather / stone), also a seamless tile
-//   screenBase() the whole-screen background of a menu: blank near-black (the smoke drifts over it, see smoke.js)
+//   screenBase() the whole-screen background of a menu: blank near-black (the smoke drifts over it, see particles/smoke.js)
 //   screenFx()   a vignette (no film grain: the screens are smooth) laid over everything a menu draws as its background
 // Every texture is made from a fixed seed, so the game looks the same on every machine and every run.
 
-import { drawSmoke } from './smoke.js';
+import { drawSmoke } from './particles/smoke.js';
 
 const SCREEN_W = 1920;
 const SCREEN_H = 1080;

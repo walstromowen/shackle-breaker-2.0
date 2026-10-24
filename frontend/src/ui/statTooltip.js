@@ -5,14 +5,24 @@ import { getStatDescription } from '../../../shared/characters/statDescriptions.
 // character summary, encounters). A screen works out which attribute is under the mouse / selected and where its row is,
 // then calls drawStatTooltip LAST in its render so the card sits on top. The text comes from shared/characters/statDescriptions.js.
 
-const WIDTH = 560;
-const PADDING = 29;
+const WIDTH = 500;
+const PADDING = 26;
 const GAP = 16;
-const HEADER_H = 111;     // banner, same proportions as the item cards (TooltipSystem)
-const LINE_H = 30;
-const SECTION_GAP = 14;
-const DETAIL_GAP = 8;     // between the numbers and the list of types under them, and between the description and the numbers
+const HEADER_H = 84;      // the banner (name on the left, what kind of stat it is on the right) and the rule under it
+const LINE_H = 29;
+const SECTION_GAP = 12;
+const DETAIL_GAP = 12;    // between the description and the numbers, and between the numbers and the notes under them
 const FLAVOR_GAP = 20;    // above the story line, which sits under a hairline at the foot of the card
+
+// What kind of stat a card is about, shown quietly on the right of the banner so the name stays short
+const KIND = {
+    level: 'Progress', xp: 'Progress', currency: 'Progress', skillPoints: 'Progress',
+    maxHp: 'Resource', maxStamina: 'Resource', maxInsight: 'Resource',
+    hpRecovery: 'Recovery', staminaRecovery: 'Recovery', insightRecovery: 'Recovery',
+    speed: 'Combat', accuracy: 'Combat', evasion: 'Combat', critChance: 'Combat', critMultiplier: 'Combat',
+    corruption: 'Curse', attack: 'Attack', defense: 'Defense', resistance: 'Resistance'
+};
+const kindOf = (desc) => { const k = String(desc.key).split(':')[0]; return k in KIND ? KIND[k] : 'Attribute'; };
 
 /** Which of `rects` ({ id: {x,y,w,h} }) the point is inside, or null. Screens use it to find the stat under the mouse. */
 export function statAt(rects, point) {
@@ -37,14 +47,14 @@ export function layoutStatTooltip(ui, attr, opts = {}) {
     const noteLines = desc.note ? ui.getWrappedLines(desc.note, textW, UITheme.fonts.cardSmall) : [];
     const flavorLines = desc.flavor ? ui.getWrappedLines(desc.flavor, textW, UITheme.fonts.cardItalic) : [];
 
-    let h = HEADER_H;
+    let h = HEADER_H + SECTION_GAP;
     h += descLines.length * LINE_H;
     if (descLines.length && desc.rows.length) h += DETAIL_GAP;
     h += desc.rows.length * LINE_H;
     if (detailLines.length) h += DETAIL_GAP + detailLines.length * LINE_H;
     if (noteLines.length) h += SECTION_GAP + noteLines.length * LINE_H;
     if (flavorLines.length) h += FLAVOR_GAP + flavorLines.length * LINE_H;
-    h += PADDING - 11;
+    h += PADDING - 2;
     return { w, h, desc, descLines, detailLines, noteLines, flavorLines };
 }
 
@@ -103,27 +113,38 @@ export function drawStatTooltip(ui, attr, anchor, opts = {}) {
     ctx.save();
     ctx.fillStyle = color;
     ctx.globalAlpha = 0.12;
-    ctx.fillRect(x + inset + 2, y + inset + 2, w - inset * 2 - 4, 85);
+    ctx.fillRect(x + inset + 2, y + inset + 2, w - inset * 2 - 4, 58);
     ctx.restore();
-    ui.drawText(desc.name, x + PADDING, y + 56, UITheme.fonts.cardTitle, color, 'left');
+    ui.drawText(desc.name, x + PADDING, y + 46, UITheme.fonts.cardTitle, color, 'left');
+    ui.drawText(kindOf(desc), x + w - PADDING, y + 46, UITheme.fonts.cardItalic, UITheme.colors.textMuted, 'right');
     ctx.save();
     ctx.strokeStyle = color;
     ctx.globalAlpha = 0.6;
     ctx.beginPath();
-    ctx.moveTo(x + inset + 2, y + 97);
-    ctx.lineTo(x + w - inset - 2, y + 97);
+    ctx.moveTo(x + inset + 2, y + 70);
+    ctx.lineTo(x + w - inset - 2, y + 70);
     ctx.stroke();
     ctx.restore();
 
     // What it is, in the game's own words
-    let curY = y + 128;
+    let curY = y + HEADER_H + SECTION_GAP + 14;
     for (const line of descLines) {
         ui.drawText(line, x + PADDING, curY, UITheme.fonts.cardSmall, UITheme.colors.textMain, 'left');
         curY += LINE_H;
     }
     if (descLines.length && desc.rows.length) curY += DETAIL_GAP;
 
-    // Rows: what a point is worth
+    // Rows: what a point is worth (a faint rule above, so the numbers read as their own block)
+    if (desc.rows.length) {
+        ctx.save();
+        ctx.strokeStyle = UITheme.colors.textMuted;
+        ctx.globalAlpha = 0.2;
+        ctx.beginPath();
+        ctx.moveTo(x + PADDING, Math.round(curY - LINE_H + 8) + 0.5);
+        ctx.lineTo(x + w - PADDING, Math.round(curY - LINE_H + 8) + 0.5);
+        ctx.stroke();
+        ctx.restore();
+    }
     for (const row of desc.rows) {
         ui.drawText(row.label, x + PADDING, curY, UITheme.fonts.cardSmall, UITheme.colors.textMuted, 'left');
         ui.drawText(row.value, x + w - PADDING, curY, UITheme.fonts.cardSmall, UITheme.colors.textMain, 'right');

@@ -168,7 +168,8 @@ export const DIFFICULTY_LEVELS = {
 };
 
 // DEV_CONSOLE: the developer console, a command line that opens with "/" in the overworld (frontend/src/ui/devConsole.js; the commands are in
-// core/devCommands.js). It can hand out items, XP, party members and story milestones, so set ENABLED to false before players get the game.
+// core/devCommands.js). It can hand out items, XP, party members and story milestones. A game can only use it if its player turned Cheats on when creating it
+// (the character creator's Cheats row, saved with the game); ENABLED is the master switch: set it to false and there is no console and no Cheats row.
 export const DEV_CONSOLE = {
     ENABLED: true,
 };

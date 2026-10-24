@@ -12,6 +12,9 @@ export class TooltipSystem {
     this.WIDTH = 528;
     this.PADDING = 29;
     this.ICON_SRC_SIZE = 64; // Icon sprite sheet cell size (upgraded from 32)
+    this.TITLE_W = 128;      // the width of a block's heading in the item card
+    this.CELL_H = 32;        // one row of the item card's number cells
+    this.SECTION_GAP = 18;   // between the blocks of the item card
   }
 
   render(state, hitboxes) {
@@ -224,6 +227,39 @@ export class TooltipSystem {
     return `${name}${val}`;
   }
 
+  /* An item's numbers, grouped the way a player reads them: Attack, Defense, Resist, Attributes, Resources. Types with the same value are folded
+     into one cell ("Physical 3%", "Magic 1%", or "All types 3%") so armour no longer prints twelve resistance lines. Returns
+     [{ title, items: [{ label, val, color }] }]. */
+  _groupStatSections(items) {
+    const PHYS = ['blunt', 'slash', 'pierce'];
+    const plain = (i) => ({ label: i.abbr || i.label, val: i.val, color: i.color });
+    const same = (list) => list.length > 0 && list.every(i => i.val === list[0].val);
+    // typed rows (one per damage type) fold by family; anything else keeps its own cell
+    const fold = (list) => {
+      if (list.length >= 4 && same(list)) return [{ label: 'All types', val: list[0].val, color: UITheme.colors.textMain }];
+      const phys = list.filter(i => PHYS.includes(i.typeKey));
+      const magic = list.filter(i => i.typeKey && !PHYS.includes(i.typeKey));
+      const rest = list.filter(i => !i.typeKey);
+      const out = [];
+      if (phys.length >= 3 && same(phys)) out.push({ label: 'Physical', val: phys[0].val, color: UITheme.colors.textMain });
+      else out.push(...phys.map(plain));
+      if (magic.length >= 3 && same(magic)) out.push({ label: 'Magic', val: magic[0].val, color: UITheme.colors.textMain });
+      else out.push(...magic.map(plain));
+      out.push(...rest.map(plain));
+      return out;
+    };
+    const by = (g) => items.filter(i => i.group === g);
+    const sections = [];
+    const add = (title, list) => { if (list.length) sections.push({ title, items: list }); };
+    add('Attack', fold(by('attack')));
+    add('Defense', fold(by('defense')));
+    add('Resist', fold(by('resistance')));
+    add('Attributes', by('attribute').map(plain));
+    add('Resources', by('resource').map(plain));
+    add('Tool', by('tool').map(plain));
+    return sections;
+  }
+
   _getItemContent(item, slotName) {
     if (!item) {
       if (slotName) {
@@ -294,7 +330,8 @@ export class TooltipSystem {
           statItems.push({
             label: `${typeAbbr} ${stat.label}`,
             val: this._formatValue(val[typeKey]),
-            color: this._getStatColor(typeKey)
+            color: this._getStatColor(typeKey),
+            group: stat.key === 'block' || stat.key === 'defense' ? 'defense' : 'attack', typeKey, abbr: typeAbbr
           });
         });
         return;
@@ -307,7 +344,8 @@ export class TooltipSystem {
         valStr = this._formatValue(val);
       }
 
-      statItems.push({ label: stat.label, val: valStr, color: this._getStatColor(stat.key) });
+      statItems.push({ label: stat.label, val: valStr, color: this._getStatColor(stat.key),
+        group: stat.key === 'block' || stat.key === 'defense' ? 'defense' : 'attack', abbr: stat.label });
     });
 
     ['attack', 'defense', 'resistance'].forEach(category => {
@@ -323,7 +361,8 @@ export class TooltipSystem {
         statItems.push({
           label: `${typeAbbr} ${catAbbr}`,
           val: this._formatValue(catObj[k]),
-          color: this._getStatColor(k)
+          color: this._getStatColor(k),
+          group: category, typeKey: k, abbr: typeAbbr
         });
       });
     });
@@ -340,7 +379,7 @@ export class TooltipSystem {
       const val = attributes[key];
       if (val === 0) return;
       const label = (Formatting.getAbbreviation ? Formatting.getAbbreviation(key) : key.substring(0, 3)).toUpperCase();
-      statItems.push({ label: label, val: this._formatValue(val, true), color: this._getStatColor(key) });
+      statItems.push({ label: label, val: this._formatValue(val, true), color: this._getStatColor(key), group: 'attribute', abbr: label });
     });
 
     Object.keys(resources).forEach(key => {
@@ -355,7 +394,7 @@ export class TooltipSystem {
       else if (key === 'staminaRecovery') label = "STM REC";
       else if (key === 'insightRecovery') label = "INS REC";
 
-      statItems.push({ label: label, val: this._formatValue(val, true), color: this._getStatColor(key) });
+      statItems.push({ label: label, val: this._formatValue(val, true), color: this._getStatColor(key), group: 'resource', abbr: label });
     });
 
     // ==========================================
@@ -370,7 +409,8 @@ export class TooltipSystem {
       statItems.push({
         label: 'TOOL',
         val: formattedTools,
-        color: UITheme.colors.textHighlight || "#ffd700"
+        color: UITheme.colors.textHighlight || "#ffd700",
+        group: 'tool', abbr: 'TOOL'
       });
     }
 
@@ -439,7 +479,7 @@ export class TooltipSystem {
 
     // 4. Implement Stats (Left) / Abilities (Right) Split Grid
     if (statItems.length > 0 || abilityLines.length > 0) {
-      lines.push({ type: 'split-grid', stats: statItems, abilities: abilityLines });
+      lines.push({ type: 'sections', sections: this._groupStatSections(statItems), abilities: abilityLines });
       lines.push({ type: 'spacer' });
     }
 
@@ -476,22 +516,18 @@ export class TooltipSystem {
     this.ui.ctx.font = bodyFont;
 
     // 1. Calculate Height & Wrap Objects
-    let contentHeight = 111 + (roomy ? 16 : 0);
+    let contentHeight = 108 + (roomy ? 16 : 0);   // the header (title, type line, rule) and the padding under the last line
     const wrappedLines = [];
 
     lines.forEach(rawLine => {
       if (rawLine.type === 'row') {
         wrappedLines.push({ ...rawLine, isRow: true });
         contentHeight += lineHeight;
-      } else if (rawLine.type === 'split-grid') {
-        const maxItems = Math.max(rawLine.abilities.length, rawLine.stats.length);
+      } else if (rawLine.type === 'sections') {
+        // the item's numbers in short labelled blocks, then its skills (see _drawSections)
         let gridHeight = 0;
-
-        if (maxItems > 0) {
-          gridHeight += lineHeight;
-          gridHeight += (maxItems * 32);
-        }
-
+        for (const sec of rawLine.sections) gridHeight += this._sectionHeight(sec.items.length, this._sectionCols(sec.items));
+        if (rawLine.abilities.length) gridHeight += this._sectionHeight(rawLine.abilities.length, 2);
         wrappedLines.push({ ...rawLine });
         contentHeight += gridHeight;
       } else if (rawLine.type === 'spacer') {
@@ -541,23 +577,23 @@ export class TooltipSystem {
     this.ui.ctx.save();
     this.ui.ctx.fillStyle = color;
     this.ui.ctx.globalAlpha = 0.12;
-    this.ui.ctx.fillRect(tx + inset + 2, ty + inset + 2, this.WIDTH - (inset * 2) - 4, 85);
+    this.ui.ctx.fillRect(tx + inset + 2, ty + inset + 2, this.WIDTH - (inset * 2) - 4, 68);
     this.ui.ctx.restore();
 
     // 5. Draw Header Text
-    this.ui.drawText(title, tx + this.PADDING, ty + 46, headerFont, color, "left");
+    this.ui.drawText(title, tx + this.PADDING, ty + 42, headerFont, color, "left");
 
     if (level !== undefined) {
-      this.ui.drawText(`Lv. ${level}`, tx + this.WIDTH - this.PADDING, ty + 46, headerFont, UITheme.colors.textHighlight, "right");
+      this.ui.drawText(`Lv. ${level}`, tx + this.WIDTH - this.PADDING, ty + 42, headerFont, UITheme.colors.textHighlight, "right");
     }
 
-    this.ui.drawText(type, tx + this.PADDING, ty + 80, typeFont, UITheme.colors.textMuted, "left");
+    this.ui.drawText(type, tx + this.PADDING, ty + 70, typeFont, UITheme.colors.textMuted, "left");
 
     if (weight !== undefined || value !== undefined) {
       const rightMeta = [];
       if (weight !== undefined) rightMeta.push(`Wt: ${weight}`);
       if (value !== undefined) rightMeta.push(`Val: ${value}`);
-      this.ui.drawText(rightMeta.join("   "), tx + this.WIDTH - this.PADDING, ty + 80, bodyFont, UITheme.colors.textMuted, "right");
+      this.ui.drawText(rightMeta.join("   "), tx + this.WIDTH - this.PADDING, ty + 70, bodyFont, UITheme.colors.textMuted, "right");
     }
 
     // Header Bottom Border Line
@@ -565,13 +601,13 @@ export class TooltipSystem {
     this.ui.ctx.strokeStyle = color;
     this.ui.ctx.globalAlpha = 0.6;
     this.ui.ctx.beginPath();
-    this.ui.ctx.moveTo(tx + inset + 2, ty + 97);
-    this.ui.ctx.lineTo(tx + this.WIDTH - inset - 2, ty + 97);
+    this.ui.ctx.moveTo(tx + inset + 2, ty + 82);
+    this.ui.ctx.lineTo(tx + this.WIDTH - inset - 2, ty + 82);
     this.ui.ctx.stroke();
     this.ui.ctx.restore();
 
     // 6. Draw Body Text & Grid Layout
-    let curY = ty + 128;
+    let curY = ty + 112;
 
     wrappedLines.forEach(lineObj => {
       if (lineObj.isSpacer) {
@@ -591,57 +627,86 @@ export class TooltipSystem {
           this.ui.drawText(item.val.toString(), endX, curY, bodyFont, item.color || UITheme.colors.textMain, "right");
         });
         curY += lineHeight;
-      } else if (lineObj.type === 'split-grid') {
-        const colWidth = (this.WIDTH - (this.PADDING * 2)) / 2;
-        const leftStart = tx + this.PADDING;
-        const rightStart = leftStart + colWidth;
-        const leftEnd = rightStart - 24;
-
-        if (lineObj.stats.length > 0 || lineObj.abilities.length > 0) {
-          if (lineObj.stats.length > 0) this.ui.drawText("Stats", leftStart, curY, typeFont, UITheme.colors.textMuted, "left");
-          if (lineObj.abilities.length > 0) this.ui.drawText("Abilities", rightStart, curY, typeFont, UITheme.colors.textMuted, "left");
-          curY += lineHeight;
-        }
-
-        const maxRows = Math.max(lineObj.stats.length, lineObj.abilities.length);
-        const rowHeight = 32;
-
-        for (let i = 0; i < maxRows; i++) {
-          const st = lineObj.stats[i];
-          const ab = lineObj.abilities[i];
-          const itemY = curY;
-
-          if (st) {
-            this.ui.drawText(st.label, leftStart, itemY, bodyFont, st.color || UITheme.colors.textMuted, "left");
-            this.ui.drawText(st.val.toString(), leftEnd, itemY, bodyFont, st.color || UITheme.colors.textMain, "right");
-          }
-
-          if (ab) {
-            let textX = rightStart;
-            const drawSize = 24;
-
-            if (ab.icon && this.loader) {
-              const iconSheet = this.loader.get('abilities') || this.loader.get('icons') || this.loader.get('items');
-              if (iconSheet && typeof ab.icon === 'object' && ab.icon.col !== undefined && ab.icon.row !== undefined) {
-                const sourceSize = this.ICON_SRC_SIZE;
-                const sx = ab.icon.col * sourceSize;
-                const sy = ab.icon.row * sourceSize;
-                this.ui.ctx.drawImage(iconSheet, sx, sy, sourceSize, sourceSize, textX, itemY - 20, drawSize, drawSize);
-              }
-              textX += drawSize + 8;
-            }
-
-            this.ui.drawText(ab.name, textX, itemY, bodyFont, ab.color, "left");
-          }
-
-          curY += rowHeight;
-        }
+      } else if (lineObj.type === 'sections') {
+        curY = this._drawSections(lineObj, tx, curY, bodyFont);
       } else if (lineObj.text) {
         this.ui.ctx.font = lineObj.font || bodyFont;
         this.ui.drawText(lineObj.text, tx + this.PADDING, curY, lineObj.font || bodyFont, lineObj.color || UITheme.colors.textMain, "left");
         curY += lineHeight;
       }
     });
+  }
+
+  // How many columns a block's cells can have: three when every "label value" fits in a third, else two, else one
+  _sectionCols(items) {
+    const inner = this.WIDTH - this.PADDING * 2 - this.TITLE_W;
+    this.ui.ctx.font = UITheme.fonts.cardSmall;
+    const need = Math.max(...items.map(it => this.ui.ctx.measureText(it.label).width + this.ui.ctx.measureText(String(it.val)).width + 22));
+    for (const cols of [3, 2]) if (need <= (inner - 16 * (cols - 1)) / cols) return cols;
+    return 1;
+  }
+
+  // Height of one block of the item card: `count` cells in `cols` columns, plus the gap under it
+  _sectionHeight(count, cols) {
+    return Math.ceil(count / cols) * this.CELL_H + this.SECTION_GAP;
+  }
+
+  /* The item's numbers and skills: each block is a small muted heading on the left and its cells in three even columns beside it
+       Defense   BLT 4     SLS 4     PRC 3
+       Resist    Physical 3%         Magic 1%
+     with a faint line above each block, so a long card stays easy to scan. The skills follow, two to a row, each with its icon. */
+  _drawSections(lineObj, tx, y, font) {
+    const ctx = this.ui.ctx;
+    const left = tx + this.PADDING;
+    const inner = this.WIDTH - this.PADDING * 2;
+    const TITLE_W = this.TITLE_W, GAP_X = 16;
+    const hairline = (yy) => {
+      ctx.save();
+      ctx.strokeStyle = UITheme.colors.textMuted;
+      ctx.globalAlpha = 0.18;
+      ctx.beginPath();
+      ctx.moveTo(left, Math.round(yy) + 0.5);
+      ctx.lineTo(left + inner, Math.round(yy) + 0.5);
+      ctx.stroke();
+      ctx.restore();
+    };
+    let cy = y;
+    const mid = (row) => cy + row * this.CELL_H + 4;   // baseline of a row of cells
+    lineObj.sections.forEach((sec, si) => {
+      const COLS = this._sectionCols(sec.items);
+      const cellW = (inner - TITLE_W - GAP_X * (COLS - 1)) / COLS;
+      if (si > 0) hairline(cy - this.SECTION_GAP / 2 - 12);
+      this.ui.drawText(sec.title, left, mid(0), font, UITheme.colors.textMuted, 'left');
+      sec.items.forEach((it, i) => {
+        const x = left + TITLE_W + (i % COLS) * (cellW + GAP_X);
+        const by = mid(Math.floor(i / COLS));
+        this.ui.drawText(it.label, x, by, font, it.color || UITheme.colors.textMuted, 'left');
+        // wide cells keep the value next to its label; narrow ones line the values up on the right
+        if (COLS >= 3) this.ui.drawText(String(it.val), x + cellW, by, font, UITheme.colors.textMain, 'right');
+        else this.ui.drawText(String(it.val), x + (ctx.font = font, ctx.measureText(it.label).width) + 14, by, font, UITheme.colors.textMain, 'left');
+      });
+      cy += this._sectionHeight(sec.items.length, COLS);
+    });
+    if (lineObj.abilities.length) {
+      if (lineObj.sections.length) hairline(cy - this.SECTION_GAP / 2 - 12);
+      this.ui.drawText('Skills', left, mid(0), font, UITheme.colors.textMuted, 'left');
+      const colW = (inner - TITLE_W) / 2;
+      lineObj.abilities.forEach((ab, i) => {
+        const x = left + TITLE_W + (i % 2) * colW;
+        const by = mid(Math.floor(i / 2));
+        let textX = x;
+        const sheet = this.loader && (this.loader.get('abilities') || this.loader.get('icons') || this.loader.get('items'));
+        if (ab.icon && sheet && typeof ab.icon === 'object' && ab.icon.col !== undefined) {
+          const src = this.ICON_SRC_SIZE;
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(sheet, ab.icon.col * src, ab.icon.row * src, src, src, x, by - 21, 26, 26);
+          textX += 34;
+        }
+        this.ui.drawText(ab.name, textX, by, font, ab.color, 'left', 'alphabetic', colW - (textX - x) - 8);
+      });
+      cy += this._sectionHeight(lineObj.abilities.length, 2);
+    }
+    return cy;
   }
 
   _getRarityColor(rarity) {

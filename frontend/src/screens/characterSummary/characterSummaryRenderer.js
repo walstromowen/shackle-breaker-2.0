@@ -264,12 +264,7 @@ export class CharacterSummaryRenderer {
 
   // A short message from the controller ("You light the Torch...", "Healing Herb is on hotbar 3."), centred above the input prompts
   _drawNotice(text, centerX, y) {
-    this.ctx.font = UITheme.fonts.body;
-    const textW = this.ctx.measureText(text).width;
-    const boxW = textW + 64;
-    const boxH = 52;
-    this.ui.drawPanel(centerX - boxW / 2, y - boxH / 2, boxW, boxH, "rgba(15, 15, 18, 0.92)");
-    this.ui.drawStyled('notice', text, centerX, y + 1, { kind: 'info', align: 'center', baseline: 'middle' });
+    this.ui.drawMessageBox(text, centerX, y, { kind: 'info', maxWidth: 760 });
   }
 
   _drawContextMenu(menu, selectedIndex = 0, hoveredHitboxId = null) {

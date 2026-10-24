@@ -1,7 +1,7 @@
 import { CanvasUI } from '../../ui/canvasUI.js';
 import { UITheme } from '../../ui/UITheme.js';
 import { UI_SFX } from '../../ui/uiSfx.js';
-import { drawEmbers } from '../../ui/embers.js';
+import { drawEmbers } from '../../ui/particles/embers.js';
 import { drawStatTooltip } from '../../ui/statTooltip.js';
 
 /* The LOOK preview next to the portrait plays the character's South-facing animation from the overworld sprite sheet.

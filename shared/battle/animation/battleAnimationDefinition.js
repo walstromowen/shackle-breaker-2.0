@@ -10,6 +10,26 @@
  */
 import { anim, sfx, flash, shake, fade, background, lunge, wobble, hop, slideIn, slideOut, spawn, travel, burst, stream, repeat, tint, orbit } from './animationKit.js';
 
+// Heal / Recover / Channel, minor and moderate: motes of light rise off the target and a soft ring draws in, in the colour of what it restores
+// (green health, gold stamina, blue insight). `big` is the moderate version: longer, more motes, a ring of orbs and a closing flare.
+const restoring = ({ big, hex, pale, hue, sound, pitch }) => {
+    const d = big ? 1.9 : 1.4;
+    return anim(d, {
+        seconds: true,
+        audio: [
+            sfx(0.05, sound, { volume: big ? 0.9 : 0.7, pitch }),
+            ...(big ? [sfx(0.9, 'purifySfx', { volume: 0.5, pitch: pitch * 1.4 })] : [])
+        ],
+        vfx: [
+            ...repeat(0.05, big ? 9 : 5, 0.12, t => burst(t, { count: big ? 5 : 3, color: hex, scale: 0.55, area: [110, 30], offsetY: 40, angle: 270, cone: 20, minSpeed: 90, maxSpeed: 170, minLife: 0.6, maxLife: 0.9, gravity: -20, envelope: true })),
+            ...repeat(0.1, big ? 5 : 3, 0.2, t => burst(t, { count: 2, color: pale, scale: 0.35, area: [90, 30], offsetY: 50, angle: 270, cone: 15, minSpeed: 120, maxSpeed: 200, minLife: 0.5, maxLife: 0.8, envelope: true })),
+            ...(big ? [0, 2.094, 4.189].map(phase => orbit(0.1, { life: 1.0, turns: 1, radius: 90, squash: 0.45, phase, scale: 0.45, color: hex, offsetY: -20 })) : []),
+            burst(big ? 1.1 : 0.7, { count: big ? 16 : 8, color: pale, scale: 0.5, minSpeed: 50, maxSpeed: 150, minLife: 0.3, maxLife: 0.6, gravity: -60, offsetY: -30 })
+        ],
+        target: { flash: flash(0.1, d * 0.85, `brightness(${big ? 150 : 130}%) sepia(60%) hue-rotate(${hue}deg) saturate(180%)`) }
+    });
+};
+
 export const BattleAnimationDefinitions = {
     // Scripted boss ability. Not used by any player ability.
     "abyssal_void": anim(3, {
@@ -18,13 +38,14 @@ export const BattleAnimationDefinitions = {
         actor: { flash: flash(0.067, 0.933, 'brightness(150%) hue-rotate(250deg)') },
         target: { shake: shake(0.333, 0.833, 36), flash: flash(0.333, 0.833, 'invert(100%)') }
     }),
+    // The pool splashes down small and spreads outwards; a fainter second wave rolls out past it. Bubbles pop up as it spreads and fumes rise off it.
     "acid_pool": anim(2.6, {
-        audio: [sfx(0.05, 'acidPoolSfx', { volume: 1 })],
+        seconds: true,
+        audio: [sfx(0.05, 'acidPoolSfx', { volume: 1 }), sfx(0.9, 'poisonSplashSfx', { volume: 0.4, pitch: 1.5 })],
         vfx: [
-            // the pool splashes down small and spreads outwards; a fainter second wave rolls out past it
             spawn(0, 'acidPoolAnimation', { life: 2.2, move: 'spread_and_fade', scale: 2.6, blend: 'normal' }),
             spawn(0.15, 'acidPoolAnimation', { life: 1.4, move: 'spread_and_fade', scale: 3.2, blend: 'normal', alpha: 0.45 }),
-            // bubbles pop up as it spreads, and fumes rise off the surface
+            burst(0.05, { count: 14, color: '#9be84a', scale: 0.9, minSpeed: 140, maxSpeed: 320, minLife: 0.4, maxLife: 0.7, gravity: 600, offsetY: 20 }),
             ...repeat(0.25, 6, 0.28, t => burst(t, { count: 3, color: '#9be84a', scale: 1.2, minSpeed: 10, maxSpeed: 40, minLife: 0.4, maxLife: 0.7, gravity: -90, glow: false, area: [150, 40], offsetY: 20 })),
             ...repeat(0.5, 4, 0.4, t => spawn(t, 'acidicSmogAnimation', { life: 0.7, move: 'float_up_and_pop', scale: 1.2, blend: 'source-over', offsetX: ((t * 100) % 3 - 1) * 40 }))
         ],
@@ -64,25 +85,31 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.4, 0.6, 24), flash: flash(0.4, 0.533, 'brightness(300%) sepia(50%) hue-rotate(180deg)') }
     }),
+    // Baton Pass: the caster steps back and the glow of their turn is sent sweeping off to the side.
     "baton_pass": anim(1.2, {
+        seconds: true,
         audio: [sfx(0.05, 'rallySfx', { volume: 0.8, pitch: 1.4 })],
-        actor: lunge(0, 0.2, -60, { flash: flash(0, 0.5, tint('gold', { glow: 'gold' })) }),
+        actor: lunge(0, 0.25, -60, { flash: flash(0, 0.6, tint('gold', { glow: 'gold' })) }),
         vfx: [
-            spawn(0.05, 'rallyAnimation', { at: 'source', life: 0.5, scale: 1.3, move: 'float_up_and_pop', filter: tint('gold', { bright: 130, sat: 200 }) }),
-            burst(0.1, { at: 'source', count: 10, color: '#ffd24a', scale: 1.2, minSpeed: 80, maxSpeed: 220, gravity: -120 })
+            spawn(0.05, 'rallyAnimation', { at: 'source', life: 0.55, scale: 1.3, move: 'float_up_and_pop', filter: tint('gold', { bright: 130, sat: 200 }) }),
+            ...repeat(0.1, 5, 0.06, t => burst(t, { at: 'source', count: 4, color: '#ffd24a', shape: 'streak', length: 80, scale: 0.7, rotation: 1.571, angle: 180, cone: 10, minSpeed: 420, maxSpeed: 640, minLife: 0.25, maxLife: 0.4, area: [20, 80], glow: false, envelope: true })),
+            burst(0.1, { at: 'source', count: 10, color: '#ffd24a', scale: 0.9, minSpeed: 80, maxSpeed: 220, gravity: -120 })
         ]
     }),
+    // Bear Form: dust billows up around the caster, who grows and roars; claw marks flash across the cloud.
     "bear_form": anim(2.2, {
+        seconds: true,
         audio: [
             sfx(0.1, 'wolfCry', { volume: 0.8, pitch: 0.5 }),
-            sfx(0.5, 'crunchSfx', { volume: 1, pitch: 0.5 })
+            sfx(0.6, 'crunchSfx', { volume: 1, pitch: 0.5 })
         ],
-        actor: wobble(0.1, 0.9, 16, { flash: flash(0, 1.4, 'brightness(70%) sepia(100%) hue-rotate(10deg) saturate(300%)') }),
+        actor: wobble(0.1, 1.0, 16, { flash: flash(0, 1.6, 'brightness(70%) sepia(100%) hue-rotate(10deg) saturate(300%)') }),
         vfx: [
-            spawn(0.15, 'smokeAnimation', { life: 0.8, scale: 2.8, blend: 'normal' }),
-            spawn(0.5, 'smokeAnimation', { life: 0.8, scale: 3.4, blend: 'normal' }),
-            spawn(0.7, 'clawAnimation', { life: 0.4, scale: 2, move: 'swipe_diagonal', blend: 'normal' }),
-            burst(0.2, { count: 14, color: '#7a5230', scale: 1.4, gravity: 260, blend: 'source-over' })
+            spawn(0.15, 'smokeAnimation', { life: 0.9, scale: 2.8, blend: 'normal' }),
+            spawn(0.6, 'smokeAnimation', { life: 0.9, scale: 3.4, blend: 'normal' }),
+            spawn(0.8, 'clawAnimation', { life: 0.4, scale: 2, move: 'swipe_diagonal', blend: 'normal' }),
+            ...repeat(0.2, 5, 0.12, t => burst(t, { count: 5, color: '#9a6a3a', scale: 0.8, minSpeed: 90, maxSpeed: 260, gravity: 260, blend: 'source-over', offsetY: 30 })),
+            burst(0.65, { count: 14, color: '#c8a070', shape: 'streak', length: 80, scale: 0.8, spinJitter: 0.01, minSpeed: 420, maxSpeed: 680, minLife: 0.25, maxLife: 0.4, glow: false, envelope: true, offsetY: -30 })
         ]
     }),
     "bite": anim(1.5, {
@@ -95,7 +122,7 @@ export const BattleAnimationDefinitions = {
     }),
     // Status effect animation.
     "bleed": anim(1.5, {
-        audio: [sfx(0.1, 'slashSfx', { volume: 0.6, pitch: 0.7 })],
+        audio: [sfx(0.1, 'slashSfx', { volume: 0.6, pitch: 0.7 }), sfx(0.12, 'bleedSfx', { volume: 0.8 })],
         vfx: [
             spawn(0.15, 'bleedAnimation', { life: 0.5, move: 'static', scale: 0.8 })
         ],
@@ -152,27 +179,30 @@ export const BattleAnimationDefinitions = {
     }),
     // Status effect animation.
     "bound": anim(1.5, {
-        audio: [sfx(0.1, 'strike', { volume: 0.7, pitch: 0.5 })],
+        audio: [sfx(0.1, 'strikeSfx', { volume: 0.7, pitch: 0.5 })],
         vfx: [
             spawn(0.15, 'boundAnimation', { life: 1, move: 'static', scale: 1.5, blend: 'multiply' })
         ],
         target: { shake: shake(0.1, 0.5, 4), flash: flash(0.1, 1.2, 'brightness(70%) sepia(60%) hue-rotate(80deg) saturate(120%)') }
     }),
+    // Brew of Madness: the caster downs it, convulses, and ragged magenta spikes burst out of them.
     "brew_of_madness": anim(1.9, {
+        seconds: true,
         audio: [
             sfx(0.1, 'crunchSfx', { volume: 0.7, pitch: 1.4 }),
-            sfx(0.7, 'darkMagicSFX', { volume: 0.9, pitch: 1.3 })
+            sfx(0.75, 'intimidateSfx', { volume: 0.9, pitch: 1.3 })
         ],
-        actor: wobble(0.6, 1.4, 14, { flash: flash(0, 1.6, 'brightness(120%) sepia(100%) hue-rotate(280deg) saturate(500%)') }),
+        actor: wobble(0.6, 1.5, 14, { flash: flash(0, 1.7, 'brightness(120%) sepia(100%) hue-rotate(280deg) saturate(500%)') }),
         vfx: [
-            spawn(0.5, 'intimidateAnimation', { life: 0.9, scale: 1.8, blend: 'multiply' }),
-            spawn(0.7, 'burnAnimation', { life: 0.7, scale: 1.2, move: 'float_up_and_pop', filter: tint('pink') }),
-            burst(0.8, { count: 14, color: '#c0305a', scale: 1.3, gravity: -160 })
+            burst(0.2, { count: 6, color: '#e060a0', scale: 0.7, minSpeed: 60, maxSpeed: 140, gravity: 200, offsetY: -60 }),
+            ...[0, 1.571, 3.1416, 4.712].map(phase => orbit(0.6, { life: 0.9, turns: 3, radius: 80, squash: 0.6, phase, scale: 0.4, color: '#ff4aa0', offsetY: -30 })),
+            burst(0.7, { count: 10, color: '#7a1a50', shape: 'puff', scale: 1.4, grow: 2, minSpeed: 30, maxSpeed: 120, minLife: 0.6, maxLife: 0.9, blend: 'normal', glow: false, envelope: true, offsetY: -30 }),
+            ...repeat(0.8, 3, 0.1, t => burst(t, { count: 7, color: '#ff4aa0', shape: 'streak', length: 90, scale: 0.8, spinJitter: 0.01, minSpeed: 380, maxSpeed: 620, minLife: 0.25, maxLife: 0.4, glow: false, envelope: true, offsetY: -30 }))
         ]
     }),
     // Status effect animation.
     "burn": anim(2, {
-        audio: [sfx(0.1, 'fireballCastSfx', { volume: 0.5, pitch: 1.3 })],
+        audio: [sfx(0.1, 'fireballCastSfx', { volume: 0.5, pitch: 1.3 }), sfx(0.1, 'burnSfx', { volume: 0.8 })],
         vfx: [
             spawn(0.1, 'burnAnimation', { life: 0.6, move: 'float_up_and_pop', scale: 0.9 })
         ],
@@ -194,12 +224,15 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.1, 0.35, 32), flash: flash(0.1, 0.25, 'brightness(200%) sepia(30%)') }
     }),
+    // Counter Stance: the caster plants their feet, a ring of orange force snaps out, and sparks spit off it.
     "counter_stance": anim(1, {
+        seconds: true,
         audio: [sfx(0.1, 'strikeSfx', { volume: 0.9, pitch: 1.3 })],
         actor: lunge(0, 0.15, -24, { flash: flash(0, 0.6, tint('fire', { bright: 140, sat: 250, glow: 'orange', glowSize: 8 })) }),
         vfx: [
-            spawn(0.1, 'impactAnimation', { life: 0.35, scale: 1.1, move: 'static', filter: tint('fire') }),
-            spawn(0.2, 'impactAnimation', { life: 0.4, scale: 1.8, move: 'expand_and_fade', filter: tint('fire') })
+            spawn(0.1, 'impactAnimation', { at: 'source', life: 0.35, scale: 1.1, move: 'static', filter: tint('fire') }),
+            spawn(0.2, 'impactAnimation', { at: 'source', life: 0.4, scale: 1.8, move: 'expand_and_fade', filter: tint('fire') }),
+            burst(0.2, { at: 'source', count: 12, color: '#ffb040', scale: 0.7, minSpeed: 160, maxSpeed: 360, minLife: 0.2, maxLife: 0.4 })
         ]
     }),
     // Fallback used when an ability has no animationId.
@@ -207,37 +240,43 @@ export const BattleAnimationDefinitions = {
         audio: [sfx(0.2, 'strikeSfx')],
         target: { flash: flash(0.2, 0.6, 'brightness(200%)') }
     }),
+    // Drain Life: the target is cut, its life rises as red motes, and they are drawn into the caster, who glows with it.
     "drain_life": anim(2.2, {
-        hit: 0.15,
+        seconds: true,
+        hit: 0.2,
         audio: [
             sfx('hit-0.05', 'spiritReapSfx', { volume: 0.8, pitch: 0.8 }),
-            sfx(1, 'healSfx', { volume: 0.6, pitch: 0.7 })
+            sfx(1.1, 'purifySfx', { volume: 0.6, pitch: 0.7 })
         ],
-        actor: { flash: flash(1, 1.8, tint('red', { bright: 150, sat: 350, glow: 'crimson' })) },
+        actor: { flash: flash(1.1, 2.0, tint('red', { bright: 150, sat: 350, glow: 'crimson' })) },
         vfx: [
-            spawn('hit', 'bleedAnimation', { life: 0.9, scale: 1.6, move: 'float_up_and_pop' }),
-            spawn('hit+0.35', 'bleedAnimation', { life: 0.7, scale: 1.1, move: 'shrink_and_fade' }),
-            burst('hit+0.2', { count: 10, color: '#a01030', scale: 1.1, gravity: -140 }),
-            spawn(1, 'bleedAnimation', { at: 'source', life: 0.8, scale: 1.3, move: 'float_up_and_pop' }),
-            burst(1, { at: 'source', count: 10, color: '#e0405a', scale: 1.1, gravity: -140 })
+            spawn('hit', 'bleedAnimation', { life: 0.8, scale: 1.6, move: 'float_up_and_pop' }),
+            ...repeat(0.3, 7, 0.1, t => burst(t, { count: 3, color: '#c01838', scale: 0.7, area: [90, 40], offsetY: 20, angle: 270, cone: 25, minSpeed: 100, maxSpeed: 200, minLife: 0.6, maxLife: 0.9, gravity: -30, envelope: true })),
+            // and the same motes gathering around the caster
+            ...[0, 2.094, 4.189].map(phase => orbit(0.9, { at: 'source', life: 1.0, turns: 1.25, radius: 100, squash: 0.45, phase, scale: 0.45, color: '#e0405a', offsetY: -30 })),
+            burst(1.8, { at: 'source', count: 12, color: '#ff8090', scale: 0.5, minSpeed: 40, maxSpeed: 130, gravity: -60, offsetY: -30 })
         ],
         target: {
-            shake: shake('hit', 1, 14),
+            shake: shake('hit', 1.0, 14),
             flash: flash('hit', 1.2, 'brightness(60%) sepia(100%) hue-rotate(330deg) saturate(300%)')
         }
     }),
+    // Earthquake: the ground splits under the target three times, and stones and dust are thrown up and rain back down while it trembles.
     "earthquake": anim(4, {
+        seconds: true,
         audio: [
-            sfx(0.063, 'earthquake1Sfx', { volume: 1 }),
-            sfx(0.125, 'earthquake2Sfx', { volume: 1 }),
-            sfx(0.2, 'earthquake3Sfx', { volume: 1 })
+            sfx(0.25, 'earthquake1Sfx', { volume: 1 }),
+            sfx(0.5, 'earthquake2Sfx', { volume: 1 }),
+            sfx(0.8, 'earthquake3Sfx', { volume: 1 })
         ],
         vfx: [
-            spawn(0.2, 'earthquakeAnimation', { life: 0.8, move: 'expand_and_fade', scale: 2, blend: 'source-over' }),
-            spawn(0.4, 'earthquakeAnimation', { life: 0.8, move: 'expand_and_fade', scale: 2.5, blend: 'source-over' }),
-            spawn(0.6, 'earthquakeAnimation', { life: 0.8, move: 'expand_and_fade', scale: 1.8, blend: 'source-over' })
+            spawn(0.8, 'earthquakeAnimation', { life: 0.8, move: 'expand_and_fade', scale: 2, blend: 'source-over' }),
+            spawn(1.6, 'earthquakeAnimation', { life: 0.8, move: 'expand_and_fade', scale: 2.5, blend: 'source-over' }),
+            spawn(2.4, 'earthquakeAnimation', { life: 0.8, move: 'expand_and_fade', scale: 1.8, blend: 'source-over' }),
+            ...repeat(0.8, 3, 0.8, t => burst(t, { count: 12, color: '#6b5a44', scale: 1.0, minSpeed: 160, maxSpeed: 420, minLife: 0.6, maxLife: 1.0, gravity: 800, angle: 270, cone: 70, blend: 'source-over', offsetY: 50 })),
+            ...repeat(0.8, 14, 0.2, t => burst(t, { count: 4, color: '#a08a6a', shape: 'puff', scale: 0.9, grow: 1.5, minSpeed: 20, maxSpeed: 90, minLife: 0.6, maxLife: 1.0, gravity: -30, glow: false, area: [170, 30], offsetY: 60, blend: 'normal', envelope: true }))
         ],
-        target: { shake: shake(0.063, 3.6, 72), flash: flash(0.2, 0.8, 'sepia(80%) brightness(60%) saturate(120%)') }
+        target: { shake: shake(0.25, 3.6, 72), flash: flash(0.8, 3.2, 'sepia(80%) brightness(60%) saturate(120%)') }
     }),
     // Engine animation: a combatant joins the fight (BattleCombatantRenderer keys off this id).
     "enter_battle": anim(1.5, {
@@ -301,7 +340,7 @@ export const BattleAnimationDefinitions = {
         target: { shake: shake(0.15, 0.5, 35), flash: flash(0.15, 0.5, 'brightness(200%) sepia(100%) hue-rotate(15deg) saturate(400%)') }
     }),
     "fireball": anim(1.5, {
-        audio: [sfx(0, 'fireballCastSfx', { volume: 1 })],
+        audio: [sfx(0, 'fireballCastSfx', { volume: 1 }), sfx(0.4, 'fireballImpactSfx', { volume: 1 })],
         actor: { flash: flash(0, 0.2, 'brightness(250%) sepia(100%) hue-rotate(10deg)') },
         vfx: [
             travel(0.2, 'fireballAnimation', { life: 0.4, frames: 4, scale: 2 })
@@ -376,37 +415,42 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.05, 0.2, 10), flash: flash(0.05, 1.8, 'brightness(140%) sepia(100%) hue-rotate(190deg) saturate(250%)') }
     }),
+    // Gravity: the air darkens, motes of dark violet are dragged down onto the target, and it is slammed into the ground.
     "gravity": anim(2.4, {
+        seconds: true,
         audio: [
-            sfx(0.1, 'darkMagicSFX', { volume: 1, pitch: 0.6 }),
-            sfx(0.9, 'earthquake1Sfx', { volume: 1, pitch: 0.4 })
+            sfx(0.1, 'spiteCastSfx', { volume: 1, pitch: 0.55 }),
+            sfx(1.2, 'earthquake1Sfx', { volume: 1, pitch: 0.5 })
         ],
-        background: background(0, 1.9, 'voidBackground', 'brightness(40%) sepia(100%) hue-rotate(250deg) saturate(300%)'),
-        actor: { flash: flash(0.1, 0.8, 'brightness(130%) sepia(100%) hue-rotate(250deg) saturate(300%)') },
+        background: background(0, 2.0, 'arcaneVortexBg', 'brightness(35%) sepia(100%) hue-rotate(250deg) saturate(300%)'),
+        actor: { flash: flash(0.1, 1.0, 'brightness(130%) sepia(100%) hue-rotate(250deg) saturate(300%)') },
         vfx: [
-            spawn(0.4, 'intimidateAnimation', { life: 1.2, scale: 2.4, move: 'shrink_and_fade', blend: 'multiply' }),
-            spawn(0.9, 'earthquakeAnimation', { life: 1, scale: 2.2, move: 'static', blend: 'multiply' }),
-            burst(0.9, { count: 16, color: '#5a2a8a', scale: 1.6, minSpeed: 40, maxSpeed: 140, gravity: 500 })
+            // dark motes fall onto the target from above, faster and faster, as if the air itself were pressing down
+            ...repeat(0.3, 10, 0.09, t => burst(t, { count: 4, color: '#8a4ad8', shape: 'streak', length: 90, scale: 0.9, angle: 90, cone: 4, minSpeed: 500, maxSpeed: 800, minLife: 0.35, maxLife: 0.5, area: [130, 10], offsetY: -240, glow: false, envelope: true })),
+            ...[0, 2.094, 4.189].map(phase => orbit(0.3, { life: 0.9, turns: 1.25, radius: 110, squash: 0.4, phase, scale: 0.5, color: '#5a2a8a', offsetY: -40 })),
+            spawn(1.2, 'earthquakeAnimation', { life: 0.9, scale: 2.2, move: 'static', blend: 'multiply' }),
+            burst(1.2, { count: 12, color: '#2a1050', shape: 'puff', scale: 1.6, grow: 2.5, minSpeed: 80, maxSpeed: 220, minLife: 0.6, maxLife: 0.9, blend: 'normal', glow: false, envelope: true, offsetY: 50 }),
+            burst(1.2, { count: 18, color: '#5a2a8a', scale: 1.4, minSpeed: 60, maxSpeed: 220, gravity: 500, offsetY: 40 })
         ],
         target: {
-            shake: shake(0.9, 1.8, 10),
-            flash: flash(0.4, 1.9, 'brightness(45%) sepia(100%) hue-rotate(250deg) saturate(250%) invert(10%)')
+            shake: shake(1.2, 2.0, 12),
+            flash: flash(0.5, 2.0, 'brightness(45%) sepia(100%) hue-rotate(250deg) saturate(250%)')
         }
     }),
+    // Healing Rain: a soft green-teal rain falls on every ally, and warm motes lift off them as they mend.
     "healing_rain": anim(2.6, {
+        seconds: true,
         audio: [
-            sfx(0.1, 'weatherRainShort', { volume: 0.6, pitch: 1.2 }),
-            sfx(0.5, 'healSfx', { volume: 1, pitch: 1 })
+            sfx(0.05, 'weatherRainShort', { volume: 0.6, pitch: 1.2 }),
+            sfx(0.6, 'purifySfx', { volume: 0.8, pitch: 1.1 })
         ],
-        actor: { flash: flash(0, 0.5, 'brightness(160%) sepia(60%) hue-rotate(160deg) saturate(200%)') },
+        actor: { flash: flash(0, 0.6, 'brightness(160%) sepia(60%) hue-rotate(160deg) saturate(200%)') },
         vfx: [
-            spawn(0.2, 'waterfallAnimation', { life: 0.9, frames: 4, scale: 1.6, offsetX: -45, move: 'shrink_and_fade', filter: 'hue-rotate(-40deg) brightness(130%)' }),
-            spawn(0.4, 'waterfallAnimation', { life: 0.9, frames: 4, scale: 1.8, move: 'shrink_and_fade', filter: 'hue-rotate(-40deg) brightness(130%)' }),
-            spawn(0.6, 'waterfallAnimation', { life: 0.9, frames: 4, scale: 1.6, offsetX: 45, move: 'shrink_and_fade', filter: 'hue-rotate(-40deg) brightness(130%)' }),
-            burst(0.4, { count: 16, color: '#7dff9a', scale: 0.9, minSpeed: 20, maxSpeed: 100, gravity: 300 }),
-            spawn(0.9, 'purifyAnimation', { life: 1, scale: 1.6, move: 'float_up_and_pop' })
+            ...repeat(0.2, 14, 0.12, t => burst(t, { count: 8, color: '#9affd0', shape: 'streak', length: 90, scale: 1.1, angle: 90, cone: 3, minSpeed: 640, maxSpeed: 880, minLife: 0.35, maxLife: 0.5, area: [160, 10], offsetY: -240, glow: false, envelope: true })),
+            ...repeat(0.7, 7, 0.2, t => burst(t, { count: 3, color: '#7dff9a', scale: 0.5, area: [120, 30], offsetY: 40, angle: 270, cone: 20, minSpeed: 70, maxSpeed: 150, minLife: 0.7, maxLife: 1.0, gravity: -20, envelope: true })),
+            burst(1.9, { count: 14, color: '#d8ffe8', scale: 0.5, minSpeed: 50, maxSpeed: 140, minLife: 0.3, maxLife: 0.6, gravity: -50, offsetY: -30 })
         ],
-        target: { flash: flash(0.4, 1.8, 'brightness(150%) sepia(60%) hue-rotate(95deg) saturate(160%)') }
+        target: { flash: flash(0.5, 2.2, 'brightness(145%) sepia(60%) hue-rotate(95deg) saturate(160%)') }
     }),
     "hide": anim(1.5, {
         audio: [sfx(0.1, 'smokeSfx', { volume: 1, pitch: 1.1 })],
@@ -416,48 +460,37 @@ export const BattleAnimationDefinitions = {
         ],
         target: { flash: flash(0.1, 1.5, 'brightness(40%) grayscale(50%) blur(1px) drop-shadow(0 0 8px #111)') }
     }),
-    // Uses an actor motion list (BattleAnimationModel): strike, then fall back.
+    // Hit and run: a slash, then the caster slips back in a smear of dust.
     "hit_and_run": anim(1.3, {
+        seconds: true,
         audio: [
-            sfx(0.1, 'slashSfx', { volume: 1, pitch: 1.3 }),
-            sfx(0.35, 'smokeSfx', { volume: 0.5, pitch: 1.5 })
+            sfx(0.12, 'slashSfx', { volume: 1, pitch: 1.3 }),
+            sfx(0.45, 'smokeSfx', { volume: 0.5, pitch: 1.5 })
         ],
         actor: [
-            lunge(0, 0.12, 150),
-            lunge(0.35, 0.8, -90, { flash: flash(0.35, 0.8, 'brightness(80%) blur(2px)') })
+            lunge(0, 0.15, 150),
+            lunge(0.45, 1.0, -90, { flash: flash(0.45, 1.0, 'brightness(80%) blur(2px)') })
         ],
         vfx: [
-            spawn(0.1, 'slashAnimation', { life: 0.2, scale: 1.4, move: 'swipe_diagonal_alt' }),
-            spawn(0.3, 'smokeAnimation', { at: 'source', life: 0.6, scale: 1.4, blend: 'normal' })
+            spawn(0.13, 'slashAnimation', { life: 0.2, scale: 1.4, move: 'swipe_diagonal_alt' }),
+            burst(0.14, { count: 8, color: '#ffffff', scale: 0.6, minSpeed: 160, maxSpeed: 360, minLife: 0.2, maxLife: 0.4 }),
+            // speed lines trailing the caster as it pulls away, and the dust it kicks up
+            ...repeat(0.45, 4, 0.08, t => burst(t, { at: 'source', count: 3, color: '#e8e0cc', shape: 'streak', length: 70, scale: 0.6, rotation: 1.571, angle: 0, cone: 8, minSpeed: 380, maxSpeed: 560, minLife: 0.2, maxLife: 0.35, area: [20, 70], glow: false, envelope: true })),
+            spawn(0.4, 'smokeAnimation', { at: 'source', life: 0.7, scale: 1.4, blend: 'normal' })
         ],
-        target: { shake: shake(0.1, 0.3, 22), flash: flash(0.1, 0.2, 'brightness(220%)') }
+        target: { shake: shake(0.13, 0.4, 22), flash: flash(0.13, 0.3, 'brightness(220%)') }
     }),
+    // Howl: the caster throws back their head and a red shockwave rolls out of them; the target is shaken by it.
     "howl": anim(2, {
-        audio: [sfx(0.05, 'wolfCry', { volume: 1, pitch: 1 })],
-        actor: wobble(0.05, 0.6, 10, { flash: flash(0, 0.6, 'brightness(150%) sepia(100%) hue-rotate(340deg) saturate(400%)') }),
-        vfx: [],
-        target: { shake: shake(0.4, 0.8, 12), flash: flash(0.4, 1.4, 'brightness(160%) sepia(100%) hue-rotate(340deg) saturate(400%) drop-shadow(0 0 12px red)') }
-    }),
-    // Charge (0 to 0.7s), beam stream, impact at `hit`.
-    "hyper_beam": anim(2.8, {
-        hit: 1.05,
-        audio: [
-            sfx(0, 'arcaneDartSfx', { volume: 1.2, pitch: 0.5 }),
-            sfx(0.7, 'shockSfx', { volume: 1.1, pitch: 0.5 }),
-            sfx('hit', 'earthquake1Sfx', { volume: 1.1, pitch: 0.6 })
-        ],
-        background: background(0, 2, 'arcaneVortexBg'),
-        actor: wobble(0, 0.7, 10, { flash: flash(0, 1.3, tint('violet', { bright: 250, sat: 400, glow: 'violet', glowSize: 15 })) }),
+        seconds: true,
+        audio: [sfx(0.05, 'wolfCry', { volume: 1, pitch: 1 }), sfx(0.5, 'intimidateSfx', { volume: 0.5, pitch: 1.2 })],
+        actor: wobble(0.05, 0.9, 10, { flash: flash(0, 0.9, 'brightness(150%) sepia(100%) hue-rotate(340deg) saturate(400%)') }),
         vfx: [
-            spawn(0.2, 'arcaneDartAnimation', { at: 'source', life: 0.6, frames: 4, scale: 2.4, move: 'static' }),
-            ...stream(0.7, 18, 0.025, 'flamethrowerAnimation', { life: 0.35, scale: 2.4, jitter: 10, filter: tint('violet', { bright: 220, sat: 500 }) }),
-            spawn('hit', 'impactAnimation', { life: 0.7, scale: 4.5, filter: tint('violet') }),
-            burst('hit', { count: 24, color: '#b080ff', scale: 1.6, minSpeed: 200, maxSpeed: 520 })
+            // three rings of red dots rolling outwards, one after another
+            ...repeat(0.3, 3, 0.22, t => burst(t, { at: 'source', count: 36, color: '#ff3030', scale: 1.1, minSpeed: 460, maxSpeed: 470, minLife: 0.55, maxLife: 0.6, drag: 1.5, offsetY: -40 })),
+            ...repeat(0.3, 4, 0.1, t => burst(t, { at: 'source', count: 6, color: '#ff4a4a', shape: 'streak', length: 90, scale: 0.8, spinJitter: 0.01, minSpeed: 380, maxSpeed: 620, minLife: 0.25, maxLife: 0.4, glow: false, envelope: true, offsetY: -40 }))
         ],
-        target: {
-            shake: shake('hit', 'hit+0.85', 60),
-            flash: flash('hit', 'hit+0.85', tint('violet', { bright: 350, sat: 500, glow: 'violet', glowSize: 20 }))
-        }
+        target: { shake: shake(0.7, 1.4, 12), flash: flash(0.7, 1.7, 'brightness(160%) sepia(100%) hue-rotate(340deg) saturate(400%) drop-shadow(0 0 12px red)') }
     }),
     // Was "ice_bolt". Renamed to match the ability that uses it.
     "ice_shard": anim(1.5, {
@@ -497,16 +530,19 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.3, 1.2, 15), flash: flash(0.3, 1.2, 'brightness(60%) sepia(80%) hue-rotate(260deg) saturate(200%)') }
     }),
+    // Bear trap: iron jaws snap shut. Two bars of steel slam together from either side, with a flash and flying splinters.
     "item_bear_trap": anim(1.3, {
+        seconds: true,
         audio: [
             sfx(0.1, 'strikeSfx', { volume: 0.9, pitch: 0.5 }),
-            sfx(0.4, 'strikeSfx', { volume: 1, pitch: 0.4 })
+            sfx(0.45, 'strikeSfx', { volume: 1, pitch: 0.4 })
         ],
-        actor: wobble(0, 0.35, 6),
+        actor: wobble(0, 0.4, 6),
         vfx: [
-            spawn(0.15, 'boundAnimation', { life: 0.9, scale: 1.2, move: 'static', blend: 'normal' }),
-            spawn(0.4, 'impactAnimation', { life: 0.3, scale: 1, filter: 'brightness(120%) sepia(60%)' }),
-            burst(0.4, { count: 8, color: '#d9d2c3', scale: 0.8, minSpeed: 120, maxSpeed: 300, gravity: 500 })
+            burst(0.15, { count: 4, color: '#aab0b8', shape: 'streak', length: 130, scale: 1.1, rotation: 1.571, angle: 20, cone: 4, minSpeed: 500, maxSpeed: 560, minLife: 0.22, maxLife: 0.26, offsetX: -110, offsetY: 40, glow: false, envelope: true }),
+            burst(0.15, { count: 4, color: '#aab0b8', shape: 'streak', length: 130, scale: 1.1, rotation: 1.571, angle: 160, cone: 4, minSpeed: 500, maxSpeed: 560, minLife: 0.22, maxLife: 0.26, offsetX: 110, offsetY: 40, glow: false, envelope: true }),
+            spawn(0.4, 'impactAnimation', { life: 0.3, scale: 1.2, filter: 'brightness(120%) sepia(60%)' }),
+            burst(0.4, { count: 12, color: '#d9d2c3', scale: 0.8, minSpeed: 140, maxSpeed: 340, gravity: 500 })
         ]
     }),
     "item_poison_knife": anim(1.5, {
@@ -526,33 +562,41 @@ export const BattleAnimationDefinitions = {
             flash: flash('hit', 1.1, 'brightness(115%) saturate(180%) hue-rotate(100deg)')
         }
     }),
+    // Smoke bomb: thrown with a hiss, bursting into a thick cloud that lingers over the target.
     "item_smoke_bomb": anim(1.8, {
+        seconds: true,
         audio: [
             sfx(0.05, 'strikeSfx', { volume: 0.5, pitch: 1.6 }),
-            sfx(0.3, 'smokeSfx', { volume: 1, pitch: 0.8 })
+            sfx(0.4, 'smokeSfx', { volume: 1, pitch: 0.8 })
         ],
-        actor: lunge(0, 0.12, -12),
+        actor: lunge(0, 0.15, -12),
         vfx: [
-            travel(0.05, 'particles', { life: 0.25, scale: 0.7, blend: 'normal', move: 'arc', arc: -90 }),
-            spawn(0.3, 'smokeAnimation', { life: 1, scale: 2.8, blend: 'normal' }),
-            spawn(0.45, 'smokeAnimation', { life: 1, scale: 2.2, move: 'float_up_and_pop', blend: 'normal' })
+            travel(0.08, 'smokeAnimation', { life: 0.3, scale: 0.4, blend: 'normal', move: 'arc', arc: -90 }),
+            spawn(0.4, 'smokeAnimation', { life: 1.1, scale: 2.8, blend: 'normal' }),
+            spawn(0.55, 'smokeAnimation', { life: 1.1, scale: 2.2, move: 'float_up_and_pop', blend: 'normal' }),
+            burst(0.4, { count: 10, color: '#b8b8b8', shape: 'puff', scale: 1.2, minSpeed: 60, maxSpeed: 200, minLife: 0.6, maxLife: 1.0, glow: false, envelope: true })
         ],
-        target: { flash: flash(0.35, 1.7, 'brightness(55%) grayscale(50%) blur(1px)') }
+        target: { flash: flash(0.45, 1.7, 'brightness(55%) grayscale(50%) blur(1px)') }
     }),
+    // A net thrown over the target: it flies out spinning, opens, and settles over it as crossed cords for a second.
     "item_throw_net": anim(1.6, {
-        hit: 0.4,
+        seconds: true,
+        hit: 0.45,
         audio: [
             sfx(0.05, 'vineLashSfx', { volume: 0.8, pitch: 0.8 }),
             sfx('hit', 'strikeSfx', { volume: 0.8, pitch: 0.6 })
         ],
-        actor: lunge(0, 0.15, -20),
+        actor: lunge(0, 0.2, -20),
         vfx: [
-            travel(0.1, 'boundAnimation', { life: 0.3, scale: 1.6, blend: 'normal', move: 'arc', arc: -45, spin: 5 }),
-            spawn('hit', 'boundAnimation', { life: 1, scale: 2, move: 'static', blend: 'normal' })
+            travel(0.1, 'boundAnimation', { life: 0.35, scale: 0.9, blend: 'normal', move: 'arc', arc: -50, spin: 7 }),
+            // the cords: two crossing sets of lines laid over the target, a few at a time, so it reads as a mesh
+            ...repeat(0.45, 3, 0.05, t => burst(t, { count: 5, color: '#e8d098', shape: 'streak', length: 150, scale: 1.4, rotation: 0.785, angle: 0, cone: 0, minSpeed: 1, maxSpeed: 3, minLife: 1.0, maxLife: 1.1, area: [110, 110], offsetY: -30, glow: false, envelope: true })),
+            ...repeat(0.45, 3, 0.05, t => burst(t, { count: 5, color: '#e8d098', shape: 'streak', length: 150, scale: 1.4, rotation: -0.785, angle: 0, cone: 0, minSpeed: 1, maxSpeed: 3, minLife: 1.0, maxLife: 1.1, area: [110, 110], offsetY: -30, glow: false, envelope: true })),
+            burst('hit', { count: 10, color: '#d8c08a', scale: 0.6, minSpeed: 80, maxSpeed: 220, minLife: 0.3, maxLife: 0.5, gravity: 300 })
         ],
         target: {
             shake: shake('hit', 'hit+0.3', 14),
-            flash: flash('hit', 'hit+1', 'brightness(80%) sepia(60%) saturate(120%)')
+            flash: flash('hit', 'hit+1.0', 'brightness(80%) sepia(60%) saturate(120%)')
         }
     }),
     // Throw Dagger: the throwing knife (throwing_knife.png, drawn pointing right) flies straight at the target, buries itself in it, and
@@ -660,75 +704,29 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.8, 1.3, 55), flash: flash(0.8, 1.4, 'brightness(350%) sepia(100%) hue-rotate(350deg) saturate(600%) drop-shadow(0 0 20px red)') }
     }),
-    "minor_channel": anim(1.4, {
-        audio: [sfx(0.1, 'purifySfx', { volume: 0.7, pitch: 1.4 })],
-        vfx: [
-            spawn(0.1, 'particles', { life: 0.7, scale: 0.9, move: 'float_up_and_pop', filter: tint('blue') }),
-            burst(0.15, { count: 6, color: '#6ab4ff', scale: 0.9, minSpeed: 40, maxSpeed: 120, gravity: -160 })
-        ],
-        target: { flash: flash(0.1, 0.8, 'brightness(135%) sepia(60%) hue-rotate(195deg) saturate(160%)') }
-    }),
-    "minor_heal": anim(1.4, {
-        audio: [sfx(0.1, 'healSfx', { volume: 0.7, pitch: 1.3 })],
-        vfx: [
-            spawn(0.1, 'particles', { life: 0.7, scale: 0.9, move: 'float_up_and_pop', filter: tint('green') }),
-            burst(0.15, { count: 6, color: '#7dff9a', scale: 0.9, minSpeed: 40, maxSpeed: 120, gravity: -160 })
-        ],
-        target: { flash: flash(0.1, 0.8, 'brightness(135%) sepia(60%) hue-rotate(95deg) saturate(160%)') }
-    }),
-    "minor_recover": anim(1.4, {
-        audio: [sfx(0.1, 'restSfx', { volume: 0.7, pitch: 1.4 })],
-        vfx: [
-            spawn(0.1, 'particles', { life: 0.7, scale: 0.9, move: 'float_up_and_pop', filter: tint('gold') }),
-            burst(0.15, { count: 6, color: '#ffd24a', scale: 0.9, minSpeed: 40, maxSpeed: 120, gravity: -160 })
-        ],
-        target: { flash: flash(0.1, 0.8, 'brightness(135%) sepia(60%) hue-rotate(40deg) saturate(160%)') }
-    }),
-    "moderate_channel": anim(1.9, {
-        audio: [sfx(0.1, 'purifySfx', { volume: 1, pitch: 0.9 })],
-        vfx: [
-            spawn(0.1, 'purifyAnimation', { life: 0.9, scale: 1.4, move: 'float_up_and_pop', filter: tint('blue', { bright: 130, sat: 200 }) }),
-            spawn(0.3, 'particles', { life: 0.8, scale: 1.1, move: 'float_up_and_pop', filter: tint('blue') }),
-            spawn(0.5, 'particles', { life: 0.8, scale: 1.4, filter: tint('blue') }),
-            burst(0.3, { count: 14, color: '#6ab4ff', scale: 1.1, minSpeed: 60, maxSpeed: 180, gravity: -200 })
-        ],
-        target: { flash: flash(0.1, 1.4, 'brightness(160%) sepia(60%) hue-rotate(195deg) saturate(200%) drop-shadow(0 0 8px dodgerblue)') }
-    }),
-    "moderate_heal": anim(1.9, {
-        audio: [sfx(0.1, 'healSfx', { volume: 1, pitch: 1 })],
-        vfx: [
-            spawn(0.1, 'purifyAnimation', { life: 0.9, scale: 1.4, move: 'float_up_and_pop', filter: tint('green', { bright: 130, sat: 200 }) }),
-            spawn(0.3, 'particles', { life: 0.8, scale: 1.1, move: 'float_up_and_pop', filter: tint('green') }),
-            spawn(0.5, 'particles', { life: 0.8, scale: 1.4, filter: tint('green') }),
-            burst(0.3, { count: 14, color: '#7dff9a', scale: 1.1, minSpeed: 60, maxSpeed: 180, gravity: -200 })
-        ],
-        target: { flash: flash(0.1, 1.4, 'brightness(160%) sepia(60%) hue-rotate(95deg) saturate(200%) drop-shadow(0 0 8px limegreen)') }
-    }),
-    "moderate_recover": anim(1.9, {
-        audio: [sfx(0.1, 'restSfx', { volume: 1, pitch: 1 })],
-        vfx: [
-            spawn(0.1, 'purifyAnimation', { life: 0.9, scale: 1.4, move: 'float_up_and_pop', filter: tint('gold', { bright: 130, sat: 200 }) }),
-            spawn(0.3, 'particles', { life: 0.8, scale: 1.1, move: 'float_up_and_pop', filter: tint('gold') }),
-            spawn(0.5, 'particles', { life: 0.8, scale: 1.4, filter: tint('gold') }),
-            burst(0.3, { count: 14, color: '#ffd24a', scale: 1.1, minSpeed: 60, maxSpeed: 180, gravity: -200 })
-        ],
-        target: { flash: flash(0.1, 1.4, 'brightness(160%) sepia(60%) hue-rotate(40deg) saturate(200%) drop-shadow(0 0 8px gold)') }
-    }),
+    "minor_channel": restoring({ big: false, hex: '#6ab4ff', pale: '#d0e8ff', hue: 195, sound: 'arcaneDartSfx', pitch: 1.7 }),
+    "minor_heal": restoring({ big: false, hex: '#7dff9a', pale: '#d8ffe8', hue: 95, sound: 'purifySfx', pitch: 1.3 }),
+    "minor_recover": restoring({ big: false, hex: '#ffd24a', pale: '#fff2c0', hue: 40, sound: 'restSfx', pitch: 1.4 }),
+    "moderate_channel": restoring({ big: true, hex: '#6ab4ff', pale: '#d0e8ff', hue: 195, sound: 'arcaneDartSfx', pitch: 1.3 }),
+    "moderate_heal": restoring({ big: true, hex: '#7dff9a', pale: '#d8ffe8', hue: 95, sound: 'purifySfx', pitch: 1 }),
+    "moderate_recover": restoring({ big: true, hex: '#ffd24a', pale: '#fff2c0', hue: 40, sound: 'restSfx', pitch: 1 }),
+    // Osmose: insight drawn out of the target as blue motes, which stream across and settle into the caster.
     "osmose": anim(2, {
+        seconds: true,
         audio: [
             sfx(0.1, 'arcaneDartSfx', { volume: 0.7, pitch: 0.6 }),
-            sfx(0.9, 'spiritReapSfx', { volume: 0.5, pitch: 1.4 })
+            sfx(1.1, 'purifySfx', { volume: 0.5, pitch: 1.4 })
         ],
-        actor: { flash: flash(0.9, 1.6, 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)') },
+        actor: { flash: flash(1.1, 1.8, 'brightness(150%) sepia(100%) hue-rotate(200deg) saturate(300%)') },
         vfx: [
-            spawn(0.1, 'particles', { life: 0.8, scale: 1.3, move: 'float_up_and_pop', filter: tint('blue') }),
-            spawn(0.4, 'particles', { life: 0.8, scale: 0.9, move: 'shrink_and_fade', filter: tint('blue') }),
-            burst(0.2, { count: 12, color: '#3a7ad8', scale: 1, minSpeed: 60, maxSpeed: 200, gravity: -60 }),
-            spawn(0.9, 'particles', { at: 'source', life: 0.8, scale: 1.2, move: 'float_up_and_pop', filter: tint('blue') })
+            ...[0, 2.094, 4.189].map(phase => orbit(0.1, { life: 0.9, turns: 1.5, radius: 90, squash: 0.5, phase, scale: 0.45, color: '#3a7ad8', offsetY: -30 })),
+            ...repeat(0.3, 8, 0.1, t => burst(t, { count: 3, color: '#6ab4ff', scale: 0.6, area: [90, 40], offsetY: 10, angle: 180, cone: 60, minSpeed: 220, maxSpeed: 380, minLife: 0.4, maxLife: 0.7, envelope: true })),
+            ...[0, 2.094, 4.189].map(phase => orbit(1.0, { at: 'source', life: 0.8, turns: 1.25, radius: 100, squash: 0.45, phase, scale: 0.45, color: '#6ab4ff', offsetY: -30 })),
+            burst(1.7, { at: 'source', count: 12, color: '#d0e8ff', scale: 0.45, minSpeed: 40, maxSpeed: 120, gravity: -50, offsetY: -30 })
         ],
         target: {
-            shake: shake(0.1, 0.9, 8),
-            flash: flash(0.1, 1, 'brightness(70%) sepia(100%) hue-rotate(200deg) saturate(250%)')
+            shake: shake(0.1, 1.0, 8),
+            flash: flash(0.1, 1.1, 'brightness(70%) sepia(100%) hue-rotate(200deg) saturate(250%)')
         }
     }),
     "overload": anim(2, {
@@ -748,8 +746,8 @@ export const BattleAnimationDefinitions = {
             sfx(0.5, 'paralyzedSfx', { volume: 0.4, pitch: 1.9 })
         ],
         vfx: [
-            spawn(0.1, 'particles', { life: 0.2, move: 'static', scale: 1.2 }),
-            spawn(0.5, 'particles', { life: 0.2, move: 'static', scale: 0.8 })
+            burst(0.1, { count: 10, color: '#fff7a0', scale: 0.8, minSpeed: 120, maxSpeed: 340, minLife: 0.15, maxLife: 0.3 }),
+            burst(0.5, { count: 6, color: '#c8f0ff', scale: 0.6, minSpeed: 80, maxSpeed: 240, minLife: 0.15, maxLife: 0.3 })
         ],
         target: { shake: shake(0.1, 0.8, 12), flash: flash(0.1, 0.8, 'brightness(250%) sepia(100%) hue-rotate(45deg) saturate(500%)') }
     }),
@@ -790,14 +788,17 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.1, 0.25, 18), flash: flash(0.1, 0.2, 'brightness(180%)') }
     }),
+    // Purify: a cool light falls over the target, washing a few motes of white upward as it clears.
     "purify": anim(2, {
-        audio: [sfx(0.1, 'healSfx', { volume: 1, pitch: 1.2 })],
-        actor: { flash: flash(0, 0.3, 'brightness(180%) sepia(50%) hue-rotate(180deg) saturate(200%)') },
+        seconds: true,
+        audio: [sfx(0.1, 'healSfx', { volume: 1, pitch: 1.2 }), sfx(0.9, 'purifySfx', { volume: 0.6, pitch: 1.3 })],
+        actor: { flash: flash(0, 0.6, 'brightness(180%) sepia(50%) hue-rotate(180deg) saturate(200%)') },
         vfx: [
-            spawn(0.2, 'purifyAnimation', { life: 1, move: 'float_up_and_pop', scale: 1.5 }),
-            spawn(0.4, 'particles', { life: 0.8, move: 'expand_and_fade', scale: 1.2 })
+            spawn(0.4, 'purifyAnimation', { life: 1.2, move: 'float_up_and_pop', scale: 1.5 }),
+            ...repeat(0.5, 8, 0.1, t => burst(t, { count: 3, color: '#d8f4ff', scale: 0.5, area: [100, 30], offsetY: 40, angle: 270, cone: 20, minSpeed: 90, maxSpeed: 180, minLife: 0.6, maxLife: 0.9, envelope: true })),
+            burst(1.0, { count: 14, color: '#ffffff', scale: 0.5, minSpeed: 40, maxSpeed: 140, minLife: 0.3, maxLife: 0.6, gravity: -50, offsetY: -30 })
         ],
-        target: { flash: flash(0.2, 1.2, 'brightness(200%) sepia(30%) hue-rotate(180deg) saturate(150%) drop-shadow(0 0 10px white)') }
+        target: { flash: flash(0.4, 2.0, 'brightness(200%) sepia(30%) hue-rotate(180deg) saturate(150%) drop-shadow(0 0 10px white)') }
     }),
     // Rapid shot: a fast arrow (the ability's icon already carries its speed lines) trailed by two faint copies.
     "quick_draw": anim(1.8, (() => { const arrow = { life: 0.3, hold: 1.2, scale: 0.9, blend: 'source-over', aim: true, fadeOut: false }; return {
@@ -833,19 +834,22 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.05, 0.2, 15), flash: flash(0.05, 0.15, 'brightness(200%)') }
     }),
+    // Raise Skeleton: the ground darkens and cracks, green wisps rise, and a shower of bone breaks out of it.
     "raise_skeleton": anim(2.6, {
+        seconds: true,
         audio: [
-            sfx(0.1, 'darkMagicSFX', { volume: 1, pitch: 0.9 }),
-            sfx(0.5, 'earthquake2Sfx', { volume: 0.9, pitch: 0.5 }),
-            sfx(1.2, 'crunchSfx', { volume: 0.8, pitch: 0.6 })
+            sfx(0.1, 'spiritReapSfx', { volume: 0.8, pitch: 0.7 }),
+            sfx(0.8, 'earthquake2Sfx', { volume: 0.9, pitch: 0.5 }),
+            sfx(1.5, 'crunchSfx', { volume: 0.8, pitch: 0.6 })
         ],
-        background: background(0.1, 2, 'voidBackground', 'brightness(45%) sepia(100%) hue-rotate(110deg) saturate(250%)'),
-        actor: wobble(0.1, 1, 8, { flash: flash(0.1, 1.4, 'brightness(70%) sepia(100%) hue-rotate(250deg) saturate(300%)') }),
+        background: background(0.1, 2.2, 'arcaneVortexBg', 'brightness(40%) sepia(100%) hue-rotate(100deg) saturate(250%)'),
+        actor: wobble(0.1, 1.2, 8, { flash: flash(0.1, 1.6, 'brightness(70%) sepia(100%) hue-rotate(250deg) saturate(300%)') }),
         vfx: [
-            spawn(0.4, 'earthquakeAnimation', { life: 1.4, scale: 2.4, move: 'static', blend: 'multiply' }),
-            spawn(0.8, 'spiritReapAnimation', { life: 1.4, scale: 2.2, move: 'float_up_and_pop' }),
-            burst(1.1, { count: 14, color: '#e8e2cc', scale: 1.2, minSpeed: 120, maxSpeed: 320, gravity: 700, blend: 'source-over' }),
-            spawn(1.1, 'particles', { life: 1, scale: 1.6, move: 'float_up_and_pop', filter: tint('green') })
+            spawn(0.6, 'earthquakeAnimation', { life: 1.4, scale: 2.4, move: 'static', blend: 'multiply' }),
+            ...repeat(0.7, 8, 0.12, t => burst(t, { count: 3, color: '#7dff9a', scale: 0.6, area: [140, 20], offsetY: 40, angle: 270, cone: 15, minSpeed: 90, maxSpeed: 200, minLife: 0.7, maxLife: 1.0, gravity: -20, envelope: true })),
+            spawn(1.0, 'spiritReapAnimation', { life: 1.4, scale: 2.0, move: 'float_up_and_pop' }),
+            burst(1.5, { count: 16, color: '#e8e2cc', scale: 1.2, minSpeed: 140, maxSpeed: 340, gravity: 700, blend: 'source-over', offsetY: 30 }),
+            burst(1.5, { count: 10, color: '#7dff9a', scale: 0.7, minSpeed: 40, maxSpeed: 130, minLife: 0.6, maxLife: 1.0, gravity: -70, offsetY: -20 })
         ]
     }),
     "rally": anim(2, {
@@ -867,16 +871,16 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.2, 0.6, 48), flash: flash(0.2, 0.4, 'brightness(250%)') }
     }),
+    // Rest: a slow breath. Warm motes drift up, a pale glow settles, and it all fades gently.
     "rest": anim(2.6, {
+        seconds: true,
         audio: [sfx(0.1, 'restSfx', { volume: 1 })],
         vfx: [
-            spawn(0.2, 'particles', { life: 1, scale: 0.7, offsetX: -20, move: 'float_up_and_pop' }),
-            spawn(0.7, 'particles', { life: 1, scale: 0.9, offsetX: 10, move: 'float_up_and_pop' }),
-            spawn(1.2, 'particles', { life: 1, scale: 1.1, offsetX: 30, move: 'float_up_and_pop' }),
-            spawn(0.3, 'purifyAnimation', { life: 1.6, scale: 1, move: 'static', filter: 'hue-rotate(40deg)' }),
-            burst(0.5, { count: 8, color: '#fff2b0', scale: 0.8, minSpeed: 20, maxSpeed: 70, gravity: -50 })
+            ...repeat(0.2, 10, 0.2, t => burst(t, { count: 2, color: '#ffe9a8', scale: 0.55, area: [100, 30], offsetY: 40, angle: 270, cone: 30, minSpeed: 40, maxSpeed: 90, minLife: 1.0, maxLife: 1.5, gravity: -10, envelope: true })),
+            ...[0, 3.1416].map(phase => orbit(0.3, { life: 1.8, turns: 0.75, radius: 70, squash: 0.35, phase, scale: 0.4, color: '#fff2b0', offsetY: -40, alpha: 0.7 })),
+            burst(1.9, { count: 10, color: '#fff7d6', scale: 0.45, minSpeed: 20, maxSpeed: 70, minLife: 0.5, maxLife: 0.9, gravity: -40, offsetY: -30 })
         ],
-        target: { flash: flash(0.1, 2, 'brightness(120%) sepia(40%) saturate(120%)') }
+        target: { flash: flash(0.1, 2.4, 'brightness(120%) sepia(40%) saturate(120%)') }
     }),
     "shield_bash": anim(1.3, {
         audio: [sfx(0.15, 'strikeSfx', { volume: 1, pitch: 0.7 })],
@@ -911,23 +915,31 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.1, 0.5, 10), flash: flash(0.1, 0.8, 'brightness(60%) grayscale(60%) drop-shadow(0 10px 5px black)') }
     }),
-    // Gather light (0 to 0.7s), beam stream, impact at `hit`.
+    // Solar Beam: light gathers into the caster from every side, then a golden beam is driven into the target and the whole thing flares.
     "solar_beam": anim(2.6, {
-        hit: 1,
+        seconds: true,
+        hit: 1.35,
         audio: [
-            sfx(0, 'spiteCastSfx', { volume: 1, pitch: 0.8 }),
-            sfx(0.7, 'fireballCastSfx', { volume: 1.2, pitch: 0.7 })
+            sfx(0.05, 'spiteCastSfx', { volume: 1, pitch: 0.8 }),
+            sfx(0.95, 'fireballCastSfx', { volume: 1.2, pitch: 0.7 }),
+            sfx('hit', 'shockSfx', { volume: 0.7, pitch: 0.7 })
         ],
-        actor: wobble(0, 0.7, 8, { flash: flash(0, 1.2, tint('gold', { bright: 260, sat: 400, glow: 'gold', glowSize: 15 })) }),
+        actor: wobble(0, 1.0, 8, { flash: flash(0, 1.9, tint('gold', { bright: 260, sat: 400, glow: 'gold', glowSize: 15 })) }),
         vfx: [
-            spawn(0.1, 'spiteAnimation', { at: 'source', life: 0.6, scale: 2.4, move: 'shrink_and_fade' }),
-            ...stream(0.7, 16, 0.025, 'flamethrowerAnimation', { life: 0.3, scale: 2.2, jitter: 8, filter: tint('gold', { bright: 260, sat: 300 }) }),
+            // motes of sunlight spiral in while the caster gathers
+            ...[0, 2.094, 4.189].flatMap(phase => [
+                orbit(0.05, { at: 'source', life: 0.95, turns: 1.5, radius: 130, squash: 0.55, phase, scale: 0.55, color: '#ffe680', offsetY: -30 }),
+                orbit(0.05, { at: 'source', life: 0.95, turns: 1.5, radius: 130, squash: 0.55, phase: phase - 0.35, scale: 0.3, color: '#ffffff', alpha: 0.4, offsetY: -30 })
+            ]),
+            spawn(0.4, 'spiteAnimation', { at: 'source', life: 0.55, scale: 2.2, move: 'shrink_and_fade' }),
+            ...stream(0.95, 40, 0.02, 'flamethrowerAnimation', { life: 0.3, scale: 1.8, jitter: 6, filter: tint('gold', { bright: 260, sat: 300 }) }),
+            ...stream(0.95, 20, 0.04, 'flamethrowerAnimation', { life: 0.3, scale: 2.6, jitter: 6, alpha: 0.35, filter: tint('gold', { bright: 260, sat: 300 }) }),
             spawn('hit', 'spiteAnimation', { life: 0.8, scale: 4 }),
-            burst('hit', { count: 20, color: '#ffe680', scale: 1.4, minSpeed: 180, maxSpeed: 440 })
+            burst('hit', { count: 22, color: '#ffe680', scale: 1.2, minSpeed: 180, maxSpeed: 440 })
         ],
         target: {
-            shake: shake('hit', 'hit+0.8', 40),
-            flash: flash('hit', 'hit+0.8', tint('gold', { bright: 350, sat: 300, glow: 'gold', glowSize: 20 }))
+            shake: shake('hit', 'hit+0.8', 36),
+            flash: flash('hit', 'hit+1.0', tint('gold', { bright: 350, sat: 300, glow: 'gold', glowSize: 20 }))
         }
     }),
     // The dark hand: drawn solid ('normal'; a dark purple hand all but vanishes on the glowing 'screen' blend). It is a slow, long cast on purpose: the hand
@@ -961,10 +973,15 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.133, 0.333, 29), flash: flash(0.133, 0.267, 'brightness(200%) sepia(100%) hue-rotate(300deg) saturate(300%)') }
     }),
+    // Swapping places: a puff of smoke and a flicker.
     "switch_combatant": anim(0.8, {
+        seconds: true,
         audio: [sfx(0.05, 'smokeSfx', { volume: 0.5, pitch: 1.6 })],
         actor: { flash: flash(0, 0.4, 'brightness(150%) blur(2px)') },
-        vfx: [spawn(0.05, 'smokeAnimation', { at: 'source', life: 0.5, scale: 1 })]
+        vfx: [
+            spawn(0.05, 'smokeAnimation', { at: 'source', life: 0.5, scale: 1 }),
+            burst(0.05, { at: 'source', count: 8, color: '#ffffff', scale: 0.5, minSpeed: 60, maxSpeed: 180, minLife: 0.2, maxLife: 0.4, offsetY: -30 })
+        ]
     }),
     // Uses the new "hop" actor motion (BattleAnimationModel).
     "take_flight": anim(1.7, {
@@ -975,7 +992,7 @@ export const BattleAnimationDefinitions = {
         actor: hop(0, 0.9, 70, { flash: flash(0.2, 1.2, 'brightness(140%) saturate(60%) drop-shadow(0 0 8px white)') }),
         vfx: [
             spawn(0.1, 'smokeAnimation', { life: 0.6, scale: 1.5, blend: 'normal' }),
-            spawn(0.3, 'particles', { life: 0.9, scale: 1.2, move: 'float_up_and_pop' }),
+            burst(0.3, { count: 10, color: '#ffffff', scale: 0.7, minSpeed: 50, maxSpeed: 150, minLife: 0.5, maxLife: 0.9, gravity: -60 }),
             burst(0.15, { count: 10, color: '#e8f0ff', scale: 0.9, minSpeed: 60, maxSpeed: 180, gravity: 120 })
         ]
     }),

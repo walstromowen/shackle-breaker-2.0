@@ -21,7 +21,7 @@ export const aDisturbingSight = {
                     image: { col: 1, row: 0 }, 
                     bgm: "plainsBattleBgm",    
                     outcomes: [
-                        { weight: 100, results: [{ type: "START_BATTLE", payload: { tableId: "madman_pack", enemies: ["MAD_MAN"] } }] }
+                        { weight: 100, results: [{ type: "DESTROY_OBJECT" }, { type: "START_BATTLE", payload: { tableId: "madman_pack", enemies: ["MAD_MAN"] } }] }
                     ]
                 },
                 {
@@ -130,6 +130,7 @@ export const aDisturbingSight = {
                                 { type: "RECORD_KILL", payload: { enemyId: "MAD_MAN", amount: 1 } },
                                 { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "plains", rolls: 1 } },
                                 { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
+                                { type: "DESTROY_OBJECT" },   // the madman is gone from the map
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
                         }
@@ -149,7 +150,7 @@ export const aDisturbingSight = {
                 {
                     text: "Draw your weapon!",
                     conditions: [{ type: "has_tag", tag: "HUMANOID" }],
-                    outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { tableId: "madman_pack", enemies: ["MAD_MAN"] } }] }]
+                    outcomes: [{ weight: 100, results: [{ type: "DESTROY_OBJECT" }, { type: "START_BATTLE", payload: { tableId: "madman_pack", enemies: ["MAD_MAN"] } }] }]
                 }
             ]
         },
@@ -168,6 +169,7 @@ export const aDisturbingSight = {
                         {
                             weight: 100,
                             results: [
+                                { type: "DESTROY_OBJECT" },
                                 {
                                     type: "START_BATTLE", payload: {
                                         tableId: "madman_pack", enemies: [
@@ -200,6 +202,7 @@ export const aDisturbingSight = {
                                 { type: "RECORD_KILL", payload: { enemyId: "MAD_MAN", amount: 1 } },
                                 { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "plains", rolls: 1 } },
                                 { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
+                                { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
                         }
@@ -219,7 +222,7 @@ export const aDisturbingSight = {
                 {
                     text: "Draw your weapon!",
                     conditions: [{ type: "has_tag", tag: "HUMANOID" }],
-                    outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { tableId: "madman_pack", enemies: [{ id: "MAD_MAN", startingHpPercent: 0.5 }] } }] }]
+                    outcomes: [{ weight: 100, results: [{ type: "DESTROY_OBJECT" }, { type: "START_BATTLE", payload: { tableId: "madman_pack", enemies: [{ id: "MAD_MAN", startingHpPercent: 0.5 }] } }] }]
                 }
             ]
         },
@@ -234,7 +237,7 @@ export const aDisturbingSight = {
             decisions: [
                 {
                     text: "Fight for your life!",
-                    outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { tableId: "madman_pack", enemies: ["MAD_MAN"] } }] }]
+                    outcomes: [{ weight: 100, results: [{ type: "DESTROY_OBJECT" }, { type: "START_BATTLE", payload: { tableId: "madman_pack", enemies: ["MAD_MAN"] } }] }]
                 }
             ]
         },
@@ -335,6 +338,7 @@ export const aDisturbingSight = {
                             results: [
                                 { type: "GIVE_ITEM", payload: { items: [{ id: "wooden_stick", qty: 2 }, { id: "dagger", qty: 1 }] } },
                                 { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
+                                { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
                         }
@@ -354,7 +358,7 @@ export const aDisturbingSight = {
                 {
                     text: "Draw your weapon!",
                     conditions: [{ type: "has_tag", tag: "HUMANOID" }],
-                    outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { tableId: "madman_pack", enemies: ["MAD_MAN"] } }] }]
+                    outcomes: [{ weight: 100, results: [{ type: "DESTROY_OBJECT" }, { type: "START_BATTLE", payload: { tableId: "madman_pack", enemies: ["MAD_MAN"] } }] }]
                 }
             ]
         },
@@ -472,6 +476,7 @@ export const aDisturbingSight = {
                             results: [
                                 { type: "GIVE_ITEM", payload: { items: [{ id: "wooden_stick", qty: 2 }, { id: "dagger", qty: 1 }] } },
                                 { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
+                                { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
                         }
@@ -505,7 +510,7 @@ export const aDisturbingSight = {
                 {
                     text: "Draw your weapons!",
                     conditions: [{ type: "has_tag", tag: "HUMANOID" }],
-                    outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { tableId: "madman_pack", enemies: ["MAD_MAN"] } }] }]
+                    outcomes: [{ weight: 100, results: [{ type: "DESTROY_OBJECT" }, { type: "START_BATTLE", payload: { tableId: "madman_pack", enemies: ["MAD_MAN"] } }] }]
                 }
             ]
         },
@@ -539,6 +544,7 @@ export const aDisturbingSight = {
                             results: [
                                 { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "plains", rolls: 1 } },
                                 { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
+                                { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
                         }
@@ -571,7 +577,7 @@ export const aDisturbingSight = {
             decisions: [
                 {
                     text: "Prepare for battle!",
-                    outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: { tableId: "madman_pack", enemies: ["MAD_MAN"] } }] }]
+                    outcomes: [{ weight: 100, results: [{ type: "DESTROY_OBJECT" }, { type: "START_BATTLE", payload: { tableId: "madman_pack", enemies: ["MAD_MAN"] } }] }]
                 }
             ]
         },
@@ -618,6 +624,7 @@ export const aDisturbingSight = {
                             weight: 100,
                             results: [
                                 { type: "MODIFY_VITALS", payload: { insight: 5 } },
+                                { type: "DESTROY_OBJECT" },
                                 { type: "RECRUIT_CHARACTER", payload: { entityId: "MAD_MAN" } },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
@@ -657,6 +664,7 @@ export const aDisturbingSight = {
                             weight: 100,
                             results: [
                                 { type: "MODIFY_VITALS", payload: { insight: 5 } },
+                                { type: "DESTROY_OBJECT" },
                                 { type: "START_BATTLE", payload: { tableId: "madman_pack", enemies: ["MAD_MAN"] } }
                             ]
                         }

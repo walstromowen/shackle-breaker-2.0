@@ -181,6 +181,7 @@ export class MapRenderer {
     drawObject(obj, dx, dy, totalTime = 0) {
         const imageSource = obj.sheet ? this.loader.get(obj.sheet) : null;
         if (!imageSource) return;
+        if (obj.character) return this.drawCharacterObject(obj, imageSource, dx, dy, totalTime);
         const { OBJECT_SIZE, GAME_SCALE } = this.config;
         const scale = GAME_SCALE * this.resScale;
         const wTiles = obj.w || 1;
@@ -211,6 +212,32 @@ export class MapRenderer {
         if (obj.alpha !== undefined) {
             this.ctx.globalAlpha = prevAlpha;
         }
+    }
+    /* A map object that is a person or an animal (an NPC standing in the world): it is drawn straight from a character sheet, with one of that sheet's
+       idle rows, the same way drawEntity draws the party leader. definition.character = { sheet, facing }, facing being South / East / North / West
+       as 'DOWN' / 'RIGHT' / 'UP' / 'LEFT' (default 'DOWN'). The frame is centred on the tile and stands on the bottom edge of it, so the sheet's shadow
+       sits exactly where the shadow of every other character sits. */
+    drawCharacterObject(obj, sprite, dx, dy, totalTime = 0) {
+        const { TILE_SIZE, GAME_SCALE } = this.config;
+        const scale = GAME_SCALE * this.resScale;
+        const fr = obj.character.frame || this.config.CHARACTER_FRAME || {};
+        const FW = fr.w || TILE_SIZE, FH = fr.h || TILE_SIZE;
+        const shiftX = fr.shiftX || 0;
+        let feetPad = fr.feetPad;
+        if (typeof feetPad !== 'number') feetPad = this.characterFeetPad(sprite, FH) ?? 0;
+        const A = this.charAnim;
+        const dirIndex = Math.max(0, A.directionOrder.indexOf(obj.character.facing || 'DOWN'));
+        const phase = Math.abs((obj.col || 0) * 7 + (obj.row || 0) * 13) % A.frames; // two of them side by side do not breathe in step
+        const frame = (Math.floor(totalTime * A.idleFps) + phase) % A.frames;
+        const sx = frame * FW;
+        const sy = (A.firstRow.idle + dirIndex) * FH;
+        const offX = Math.floor(((FW - TILE_SIZE) / 2 - shiftX) * scale);
+        const dW = Math.ceil(FW * scale), dH = Math.ceil(FH * scale);
+        const tileBottom = dy + Math.ceil(TILE_SIZE * scale);
+        const prevAlpha = this.ctx.globalAlpha;
+        if (obj.alpha !== undefined) this.ctx.globalAlpha = Math.max(0, Math.min(1, obj.alpha));
+        this.ctx.drawImage(sprite, sx, sy, FW, FH, dx - offX, tileBottom - dH + Math.floor(feetPad * dH / FH), dW, dH);
+        if (obj.alpha !== undefined) this.ctx.globalAlpha = prevAlpha;
     }
     /* Number of empty rows between the lowest drawn pixel and the bottom of a character frame, read from the sheet's own pixels: the lowest opaque row
        of any frame in the sheet (so a lifted foot does not drag the ground line up). Found once per sheet and remembered. Returns null when the pixels

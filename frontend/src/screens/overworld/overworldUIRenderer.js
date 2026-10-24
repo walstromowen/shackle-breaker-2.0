@@ -130,27 +130,18 @@ export class OverworldUIRenderer {
         ctx.restore();
 
         // the name of the hovered item, and the last line of feedback, above the row
-        let lineY = baseY - 18;
+        // (each plate sits on the one below it, with the same gap: drawMessageBox returns where it was drawn)
+        const cx = ctx.canvas.width / 2;
+        let stackY = baseY - 14;
         if (notice) {
-            let alpha = Math.min(1, notice.left / 400);
             ctx.save();
-            ctx.globalAlpha = Math.max(0, alpha);
-            ctx.font = UITheme.text.notice.font;
-            const w = ctx.measureText(notice.text).width + 32;
-            ui.drawPanel(Math.round((ctx.canvas.width - w) / 2), lineY - 18, w, 36, "rgba(25, 23, 20, 0.8)");
-            ui.drawStyled('notice', notice.text, ctx.canvas.width / 2, lineY,
-                { kind: notice.ok ? undefined : 'error', align: 'center', baseline: 'middle' });
+            ctx.globalAlpha = Math.max(0, Math.min(1, notice.left / 400));
+            const box = ui.drawMessageBox(notice.text, cx, stackY, { kind: notice.ok ? undefined : 'error', bottom: true, maxWidth: ctx.canvas.width - 200 });
             ctx.restore();
-            lineY -= 44;
+            stackY = box.y - UITheme.messageBox.gap;
         }
         if (hovered && hovered.defId) {
-            ctx.save();
-            ctx.font = UITheme.text.notice.font;
-            const label = hovered.name;
-            const w = ctx.measureText(label).width + 32;
-            ui.drawPanel(Math.round((ctx.canvas.width - w) / 2), lineY - 18, w, 36, "rgba(65, 58, 50, 0.85)");
-            ui.drawStyled('notice', label, ctx.canvas.width / 2, lineY, { kind: 'info', align: 'center', baseline: 'middle' });
-            ctx.restore();
+            ui.drawMessageBox(hovered.name, cx, stackY, { kind: 'info', bottom: true, maxWidth: ctx.canvas.width - 200 });
         }
     }
 
@@ -276,9 +267,9 @@ export class OverworldUIRenderer {
 
     const shortcut = "SPACE";
     const margin = 24;
-    const height = 44;
-    const badgeHeight = 26; 
-    const padding = 12;
+    const height = 60;
+    const badgeHeight = 34;
+    const padding = 16;
 
     ctx.save();
     // 1. Measure the shortcut text to dynamically size the black box
@@ -290,12 +281,12 @@ export class OverworldUIRenderer {
     ctx.font = UITheme.text.body.font;
     const textWidth = ctx.measureText(text).width;
 
-    const gap = 10;
-    const width = padding + badgeWidth + gap + textWidth + padding;
+    const gap = 16;
+    const width = padding + badgeWidth + gap + textWidth + padding + 8;
     const startX = canvas.width - width - margin;
     const startY = canvas.height - height - margin;
 
-    const bgColor = "rgba(65, 58, 50, 0.8)";
+    const bgColor = UITheme.messageBox.bg;
     ui.drawPanel(startX, startY, width, height, bgColor);
 
     const badgeX = startX + padding;
@@ -315,9 +306,9 @@ export class OverworldUIRenderer {
         const now = performance.now();
         // Icon is drawn 1:1 with the 64px source cells; the panel grows around it
         const iconSize = 64;
-        const padX = 12;
-        const padY = 8;
-        const iconGap = 14;
+        const padX = 16;
+        const padY = 12;
+        const iconGap = 18;
         const toastHeight = iconSize + (padY * 2);
         const baseY = ctx.canvas.height - 150;
 
@@ -328,7 +319,7 @@ export class OverworldUIRenderer {
 
             const progress = elapsed / toast.duration;
             const activeIndex = toasts.length - 1 - i;
-            const floatY = baseY - (progress * 40) - (activeIndex * (toastHeight + 10));
+            const floatY = baseY - (progress * 40) - (activeIndex * (toastHeight + 12));
 
             let alpha = 1;
             if (progress < 0.1) alpha = progress / 0.1;
@@ -339,7 +330,7 @@ export class OverworldUIRenderer {
             const textString = `+${toast.amount}`;
             const textWidth = ctx.measureText(textString).width;
 
-            const toastWidth = padX + iconSize + iconGap + textWidth + 16;
+            const toastWidth = padX + iconSize + iconGap + textWidth + padX + 8;
             const startX = ctx.canvas.width - toastWidth - 24;
 
             ui.drawPanel(startX, floatY, toastWidth, toastHeight, "rgba(25, 23, 20, 0.8)");
@@ -369,12 +360,12 @@ export class OverworldUIRenderer {
 
     drawQuestTracker(ctx, ui, quests) {
         const padding = 24;
-        const trackerWidth = 380;
+        const trackerWidth = 420;
         const startX = ctx.canvas.width - trackerWidth - padding;
-        const innerPadding = 16;
-        const titleHeight = 32;
-        const lineHeight = 26;
-        const questGap = 20;
+        const innerPadding = 20;
+        const titleHeight = 40;
+        const lineHeight = 32;
+        const questGap = 22;
         let totalHeight = innerPadding;
         for (const quest of quests) {
             totalHeight += titleHeight;
@@ -384,14 +375,23 @@ export class OverworldUIRenderer {
             totalHeight += questGap;
         }
 
-        ui.drawPanel(startX, padding, trackerWidth, totalHeight, "rgba(25, 23, 20, 0.6)");
+        ui.drawPanel(startX, padding, trackerWidth, totalHeight, "rgba(15, 15, 18, 0.88)");
         let currentY = padding + innerPadding;
 
         for (const quest of quests) {
             const questDisplayName = quest.name || quest.title || "Unknown Quest";
 
-            ui.drawStyled('heading', questDisplayName, startX + 16, currentY + (titleHeight / 2), { baseline: 'middle' });
+            ui.drawStyled('heading', questDisplayName, startX + innerPadding, currentY + (titleHeight / 2) - 2, { baseline: 'middle' });
             currentY += titleHeight;
+            // a hairline under each quest's name, so the objectives read as that quest's
+            ctx.save();
+            ctx.strokeStyle = UITheme.colors.borderHighlight;
+            ctx.globalAlpha = 0.45;
+            ctx.beginPath();
+            ctx.moveTo(startX + innerPadding, Math.round(currentY - 6) + 0.5);
+            ctx.lineTo(startX + trackerWidth - innerPadding, Math.round(currentY - 6) + 0.5);
+            ctx.stroke();
+            ctx.restore();
 
             if (quest.objectives) {
                 for (const obj of quest.objectives) {
@@ -430,9 +430,9 @@ export class OverworldUIRenderer {
                         descText = `${actionText} ${targetText}`;
                     }
 
-                    ui.drawStyled('cardLabel', `- ${descText || "Objective"}`, startX + 24, currentY + (lineHeight / 2),
+                    ui.drawStyled('cardLabel', `- ${descText || "Objective"}`, startX + innerPadding + 8, currentY + (lineHeight / 2),
                         { color: textColor, baseline: 'middle' });
-                    ui.drawStyled('cardLabel', progressText, startX + trackerWidth - 16, currentY + (lineHeight / 2),
+                    ui.drawStyled('cardLabel', progressText, startX + trackerWidth - innerPadding, currentY + (lineHeight / 2),
                         { color: textColor, align: 'right', baseline: 'middle' });
                     currentY += lineHeight;
                 }

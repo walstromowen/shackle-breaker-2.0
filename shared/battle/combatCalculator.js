@@ -1,3 +1,7 @@
+// BALANCE KNOB: armor can blunt a hit but never cancel it. Whatever the defense, a hit still does at least this share of its damage (after resistance),
+// and never less than 1. Without it, flat defense turned most enemy hits into a flat 1.
+const MIN_DAMAGE_SHARE = 0.1;
+
 export class CombatCalculator { 
     /** 
      * Pure math function to calculate mitigated damage. 
@@ -6,7 +10,7 @@ export class CombatCalculator {
     static calculateMitigatedDamage(rawDamage, defenseVal, resistanceVal, applyVariance = true) { 
         const r_modifier = Math.max(0, 1 - resistanceVal); 
         let baseDamage = (rawDamage * r_modifier) - defenseVal; 
-        let damage = Math.max(1, baseDamage); 
+        let damage = Math.max(1, rawDamage * r_modifier * MIN_DAMAGE_SHARE, baseDamage); 
         
         if (applyVariance) { 
             const variance = 0.9 + (Math.random() * 0.2); 

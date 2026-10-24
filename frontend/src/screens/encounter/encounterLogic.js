@@ -260,9 +260,11 @@ export class EncounterLogic {
                     InventorySystem.removeItem(payload.itemId, payload.qty || 1);
                     break;
                 case "AWARD_XP":
-                    const xpAmount = payload.amount || 0;
-                    if (xpAmount <= 0) break;
+                    const xpBase = payload.amount || 0;
+                    if (xpBase <= 0) break;
+                    // the amounts are written for the early game: they grow with the level like an enemy's XP does (ExperienceSystem.scaleReward)
                     if (payload.target === "entire_party") {
+                        const xpAmount = ExperienceSystem.scaleReward(xpBase, PartyManager.getHighestLevel());
                         gameState.party?.members?.forEach(m => {
                             if (ExperienceSystem.addXp(m, xpAmount)) {
                                 levelsGained.push(`${m.name} hit Lvl ${m.level}!`);
@@ -272,6 +274,7 @@ export class EncounterLogic {
                     } else {
                         const active = gameState.party?.members?.[0];
                         if (active) {
+                            const xpAmount = ExperienceSystem.scaleReward(xpBase, active.level);
                             if (ExperienceSystem.addXp(active, xpAmount)) {
                                 levelsGained.push(`${active.name} hit Lvl ${active.level}!`);
                             }

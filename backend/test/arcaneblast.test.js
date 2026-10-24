@@ -9,13 +9,16 @@ import { ItemDefinitions as I } from '../../shared/items/itemDefinitions.js';
 test('Arcane Blast hits harder than Arcane Dart and Magic Missile, costs more insight, and is slower', () => {
     const a = A.arcane_blast, dart = A.arcane_dart;
     assert.equal(a.effects[0].damageType, 'arcane');
-    assert.ok(a.effects[0].power >= 1.75 && a.effects[0].power < A.hyper_beam.effects[0].power, `power ${a.effects[0].power}`);
+    assert.ok(a.effects[0].power >= 2.25, `power ${a.effects[0].power}`);
     assert.ok(a.cost.insight > dart.cost.insight);
     assert.ok(a.speedModifier < 1);
     assert.equal(a.targeting.scope, 'enemy');
     assert.equal(a.targeting.select, 'single');
     assert.equal(a.animationId, 'arcane_blast');
-    assert.ok(!a.selfStatusEffects, 'no recharge drawback (that is Hyper Beam)');
+    assert.deepEqual(a.selfStatusEffects.map(e => e.id), ['recharging'], 'the user must recharge next turn');
+    assert.equal(a.selfStatusEffects[0].chance, 1.0);
+    assert.equal(A.hyper_beam, undefined, 'Hyper Beam is gone; Arcane Blast replaces it');
+    assert.equal(B.hyper_beam, undefined);
     const sameIcon = Object.values(A).filter(x => x.icon && x.icon.col === a.icon.col && x.icon.row === a.icon.row);
     assert.equal(sameIcon.length, 1, 'the icon cell is its own');
 });

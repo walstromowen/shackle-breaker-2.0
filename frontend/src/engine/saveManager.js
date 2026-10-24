@@ -12,8 +12,8 @@
 //
 // What is saved: the seed and difficulty, quests, the player's position / hotbar / world buffs, the world (time, day, weather, every change the
 // player made to the map), the party (entities with gear, traits and status effects), the inventory (with item levels), currency, recipes, shops.
-// What is NOT saved (rebuilt fresh on load): an encounter or battle in progress, open menus, toasts. Saves are only made from the overworld,
-// never inside a house / cave (see canSaveNow), so none of that transient state ever needs restoring.
+// What is NOT saved (rebuilt fresh on load): an encounter or battle in progress, open menus, toasts. Saves are made from the overworld or
+// from inside a house / cave (see canSaveNow), never mid-encounter, so none of that transient state ever needs restoring.
 
 import { gameState } from '../../../shared/core/gameState.js';
 import { ActSystem } from '../../../shared/story/actSystem.js';
@@ -243,13 +243,14 @@ export const SaveManager = {
     getStore() { return store; },
 
     /**
-     * Saving is only allowed with a started game, on the overworld map. Inside a house or cave the world seed is temporarily shifted
-     * (see SceneManager's WARP handling), so a save there would restore into the wrong map.
+     * Saving is allowed with a started game, anywhere: on the overworld, or inside a house or cave. Inside, the world seed is temporarily shifted
+     * (see SceneManager's WARP handling) and the way back out is kept in world.savedOverworld, so a snapshot keeps both (`world.interior`) and a load
+     * puts the player back in the same room, with the door still leading out to the same spot.
      */
     canSaveNow() {
         if (gameState.seed === null || gameState.seed === undefined) return false;
         if (!gameState.party.members || gameState.party.members.length === 0) return false;
-        if (gameState.world.isInterior) return false;
+        if (gameState.world.isInterior && !gameState.world.savedOverworld) return false;   // inside, but with no way out recorded: a save could never find the door
         return true;
     },
 
@@ -286,7 +287,14 @@ export const SaveManager = {
                 changes: clone(world.changes || {}),
                 terrainOverrides: clone(world.terrainOverrides || {}),
                 discoveredChunks: clone(world.discoveredChunks || []),
-                weather: serializeWeather(world.currentWeather)
+                weather: serializeWeather(world.currentWeather),
+                // inside a house or cave: which one, and the overworld seed and spot to return to (`data.seed` is then the interior's shifted seed)
+                interior: world.isInterior ? clone({
+                    type: world.interiorType,
+                    id: world.interiorId,
+                    mapId: world.interiorMapId || null,
+                    savedOverworld: world.savedOverworld
+                }) : null
             },
             party: {
                 members: members.map(serializeEntity),
@@ -367,11 +375,13 @@ export const SaveManager = {
             buffs: data.player.buffs || {}
         });
 
+        const interior = data.world.interior && data.world.interior.savedOverworld ? data.world.interior : null;   // saved inside a house or cave
         replaceContents(gameState.world, {
             currentBiomeId: null,
             currentBiome: data.world.currentBiome || null,
-            isInterior: false,
-            interiorType: null,
+            isInterior: !!interior,
+            interiorType: interior ? interior.type : null,
+            ...(interior ? { interiorId: interior.id, interiorMapId: interior.mapId || null, savedOverworld: interior.savedOverworld } : {}),
             time: data.world.time,
             day: data.world.day,
             changes: data.world.changes || {},
@@ -431,7 +441,7 @@ export const SaveManager = {
      * Resolves { ok: true, slot, name } or { ok: false, error } (never throws).
      */
     async saveManual(name, slot = null) {
-        if (!this.canSaveNow()) return { ok: false, error: 'You can only save on the overworld, outside buildings.' };
+        if (!this.canSaveNow()) return { ok: false, error: 'There is no game to save yet.' };
         try {
             const entries = await store.list();
             let target = slot;

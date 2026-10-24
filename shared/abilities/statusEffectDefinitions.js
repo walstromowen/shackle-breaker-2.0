@@ -272,7 +272,7 @@ export const StatusEffectDefinitions = {
             { type: 'percent', target: 'attack.wind', value: 0.5 }
         ]
     },
-    // Given by Recuperate (leather armor): 5 turns of recovery, stamina at the end of each of the holder's turns: 0.35 x the holder's average physical attack (blunt, slash, pierce), so about 4 at level 1.
+    // Given by Recuperate (leather armor): 5 turns of recovery, at the end of each of the holder's turns they regain stamina equal to their stamina recovery (on top of the usual end-of-round recovery).
     second_wind: {
         id: 'second_wind',
         name: 'Second Wind',
@@ -280,10 +280,10 @@ export const StatusEffectDefinitions = {
         defaultCharges: 5,
         maxStacks: 1,
         effects: [
-            { trigger: 'ON_TURN_END', modify: 'stamina', attackAverage: 'physical', rate: 0.35, battleMessage: "{target} draws a second wind and regains {amount} stamina!" }
+            { trigger: 'ON_TURN_END', modify: 'stamina', recovery: true, battleMessage: "{target} draws a second wind and regains {amount} stamina!" }
         ]
     },
-    // Given by Draw Insight (cloth armor): 5 turns of calm focus, insight at the end of each of the holder's turns: 0.3 x the holder's average magical attack (the nine magic types), so about 3 at level 1.
+    // Given by Draw Insight (cloth armor): 5 turns of calm focus, at the end of each of the holder's turns they regain insight equal to their insight recovery (on top of the usual end-of-round recovery).
     drawing_insight: {
         id: 'drawing_insight',
         name: 'Drawing Insight',
@@ -291,7 +291,7 @@ export const StatusEffectDefinitions = {
         defaultCharges: 5,
         maxStacks: 1,
         effects: [
-            { trigger: 'ON_TURN_END', modify: 'insight', attackAverage: 'magical', rate: 0.3, battleMessage: "{target}'s mind clears and regains {amount} insight!" }
+            { trigger: 'ON_TURN_END', modify: 'insight', recovery: true, battleMessage: "{target}'s mind clears and regains {amount} insight!" }
         ]
     },
     evasive: {

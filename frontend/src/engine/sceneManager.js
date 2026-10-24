@@ -203,7 +203,7 @@ export class SceneManager {
         if (this._tipsReady) this.tutorial.show(sceneName);
 
         // Every arrival on the overworld (a new game, after a battle, an encounter, a shop, the menus) is a safe moment to save.
-        // Does nothing inside a house / cave (SaveManager.canSaveNow), so the last outdoor save stays the one that loads.
+        // Saves from inside a house or cave too (SaveManager keeps the way back out), so loading returns to the same room.
         if (sceneName === 'overworld') SaveManager.autosave();
 
         const targetBGM = this.resolveTargetBGM(sceneName, sceneContext);

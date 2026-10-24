@@ -8,7 +8,7 @@ import { TRAIT_DEFINITIONS } from '../../../../shared/abilities/traitDefinitions
 import { InventorySystem } from '../../../../shared/items/inventorySystem.js';
 import { PartyManager } from '../../../../shared/characters/partyManager.js';
 import { QuestModel } from '../../../../shared/story/questModel.js';
-import { CONFIG } from '../../../../shared/core/constants.js';
+import { CONFIG, DEV_CONSOLE } from '../../../../shared/core/constants.js';
 const ALLOWED_TRAITS = ['quick', 'inquisitive', 'brawler', 'tough', 'stealthy'];
 const UI_TRAITS = ALLOWED_TRAITS.map(key => ({
     id: key,
@@ -131,12 +131,18 @@ export const CREATION_DATA = {
         { id: "normal", label: "Normal", desc: "Balanced challenge." },
         { id: "hard", label: "Hard", desc: "Difficult challenge" },
         { id: "nightmare", label: "Nightmare", desc: "Hope is an illusion..." }
-    ]
+    ],
+    // Cheats: lets this game use the developer console ("/" in the overworld): items, XP, party members, story milestones. Off unless chosen here. The row is
+    // left out of the menu altogether when the console is switched off for a release (DEV_CONSOLE.ENABLED in constants.js).
+    CHEATS: DEV_CONSOLE.ENABLED ? [
+        { id: false, label: "Off", desc: "No cheats. The game is played as it was meant to be." },
+        { id: true, label: "On", desc: "Allows the developer console in this game: press / in the overworld to give yourself items, XP, party members and more. It is saved with the game." }
+    ] : null
 };
 
 export class CharacterCreatorLogic {
     constructor() {
-        this.menuOrder = ['name', 'background', 'origin', 'appearance', 'keepsake', 'companion', 'trait', 'difficulty', 'seed', 'start'];
+        this.menuOrder = ['name', 'background', 'origin', 'appearance', 'keepsake', 'companion', 'trait', 'difficulty', ...(CREATION_DATA.CHEATS ? ['cheats'] : []), 'seed', 'start'];
         this.currentRow = 0;
         this.nameInput = new TextEntry("Shackle Breaker", 16);
         this.seedInput = new TextEntry("", 16);
@@ -152,7 +158,8 @@ export class CharacterCreatorLogic {
             keepsakeIdx: 0,
             companionIdx: 0,
             traitIdx: 0,
-            difficultyIdx: 1
+            difficultyIdx: 1,
+            cheatsIdx: 0
         };
 
         this.cachedStats = null;
@@ -179,7 +186,8 @@ export class CharacterCreatorLogic {
             keepsake: { key: 'keepsakeIdx', max: d.KEEPSAKES.length, triggersDirty: true },
             companion: { key: 'companionIdx', max: d.COMPANIONS.length, triggersDirty: false },
             trait: { key: 'traitIdx', max: d.TRAITS.length, triggersDirty: true },
-            difficulty: { key: 'difficultyIdx', max: d.DIFFICULTIES.length, triggersDirty: false }
+            difficulty: { key: 'difficultyIdx', max: d.DIFFICULTIES.length, triggersDirty: false },
+            cheats: { key: 'cheatsIdx', max: d.CHEATS ? d.CHEATS.length : 1, triggersDirty: false }
         };
 
         if (stepConfig[step]) {
@@ -355,6 +363,7 @@ export class CharacterCreatorLogic {
         gameState.world.time = CONFIG.START_TIME_MINUTES;   // and always starts in the morning, even when an earlier game was played in this session
         gameState.party.currency = 100;
         gameState.difficulty = CREATION_DATA.DIFFICULTIES[this.state.difficultyIdx].id;
+        gameState.cheats = CREATION_DATA.CHEATS ? CREATION_DATA.CHEATS[this.state.cheatsIdx].id === true : false;   // may the developer console be used in this game
 
         // ---> START QUESTS <---
         

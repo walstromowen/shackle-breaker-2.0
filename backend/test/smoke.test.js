@@ -7,7 +7,7 @@ const noop = () => {};
 const makeCtx = () => ({ createImageData: (w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }), putImageData: noop });
 globalThis.OffscreenCanvas = class { constructor(w, h) { this.width = w; this.height = h; tilesMade++; this._ctx = makeCtx(); } getContext() { return this._ctx; } };
 
-const { drawSmoke } = await import('../../frontend/src/ui/smoke.js');
+const { drawSmoke } = await import('../../frontend/src/ui/particles/smoke.js');
 
 const recorder = () => {
     const calls = [];

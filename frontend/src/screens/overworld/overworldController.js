@@ -326,6 +326,11 @@ export class OverworldController extends BaseController {
     update(dt) {
         super.update(dt);
         this.player.light = this.currentLight(); // LightingRenderer draws whatever light the player entity carries: a torch makes it wider, brighter and redder
+        // a new day (a night's walk, a bedroll's sleep): what has had its time grows back (WorldManager.expireRespawns)
+        if (this._respawnDay !== gameState.world.day) {
+            this._respawnDay = gameState.world.day;
+            this.worldManager.expireRespawns();
+        }
         this.validateBiomeWeather(); // every frame: the weather must fit the biome the player stands in even when no step ends (a warp, standing still)
         this.checkEnvironmentMusic();
         if (!this.encounterZones) this.encounterZones = this.findEncounterZones(gameState.player.col, gameState.player.row); // standing in a zone when the world opens: it does not fire
@@ -447,6 +452,7 @@ export class OverworldController extends BaseController {
             targetObj.alpha -= alphaDrop;
             if (targetObj.alpha <= 0) {
                 this.worldManager.modifyWorld(targetObj.col, targetObj.row, null);
+                this.worldManager.scheduleRespawn(targetObj.col, targetObj.row, targetObj.interaction?.respawnDays);
                 clearInterval(fadeInterval);
             }
         }, stepTime);
@@ -460,6 +466,7 @@ export class OverworldController extends BaseController {
             return;
         }
         this.worldManager.markSearched(obj.col, obj.row);
+        this.worldManager.scheduleRespawn(obj.col, obj.row, obj.interaction.refillDays, 'searched:');
         const found = LootTableFactory.searchContainer(obj.interaction.lootTableId);
         if (!found.length) {
             this.showNotice(`The ${name} is empty.`, false);
@@ -547,8 +554,12 @@ export class OverworldController extends BaseController {
             const remnantRow = obj.row + (hb.yOffset || 0) + Math.max(1, hb.h || 1) - 1;
             this.worldManager.modifyWorld(obj.col, obj.row, null);   // the tree is gone (this also frees its hitbox cells)
             this.worldManager.modifyWorld(remnantCol, remnantRow, obj.interaction.replaceWith);
+            // it grows back: the stump goes and the tree returns
+            this.worldManager.scheduleRespawn(obj.col, obj.row, obj.interaction.respawnDays);
+            this.worldManager.scheduleRespawn(remnantCol, remnantRow, obj.interaction.respawnDays);
         } else {
             this.worldManager.modifyWorld(obj.col, obj.row, null);
+            this.worldManager.scheduleRespawn(obj.col, obj.row, obj.interaction.respawnDays);
         }
     }
 
