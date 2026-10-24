@@ -39,7 +39,6 @@ import { SavesRenderer } from '../screens/saves/savesRenderer.js';
 import { SettingsRenderer } from '../screens/settings/settingsRenderer.js';
 import { CanvasUI } from '../ui/canvasUI.js';
 import { UITheme } from '../ui/UITheme.js';
-import { UITextures } from '../ui/uiTextures.js';
 import { TutorialOverlay } from '../ui/tutorialOverlay.js';
 
 // Screens that used to be left only by right-click / Esc get the standard Back button (UITheme.backButton). It is drawn and hit-tested here,
@@ -65,9 +64,6 @@ import { DevConsole } from '../ui/devConsole.js';
 import { EntityFactory } from '../../../shared/characters/entityFactory.js';
 import { CorruptionSystem } from '../../../shared/characters/corruptionSystem.js';
 import { SaveManager, AUTOSAVE_SLOT } from './saveManager.js';
-
-// Screens that open over the (blurred) overworld: they keep the backdrop captured from it (see SceneManager._keepBackdropFresh)
-const MENU_SCENES = new Set(['party', 'character_summary', 'journal', 'level_up', 'shop', 'workshop', 'saves', 'settings']);
 
 export class SceneManager {
     constructor(canvas, assetLoader, config) {
@@ -198,7 +194,6 @@ export class SceneManager {
 
     changeScene(sceneName, sceneContext = {}) {
         console.log(`[SceneManager] Switching to: ${sceneName}`);
-        if (sceneName !== 'overworld' && !MENU_SCENES.has(sceneName)) UITextures.clearBackdrop();
         this.currentScene = sceneName;
 
         // First-visit control tips: a card for this screen if it has not been seen (the scene beneath is paused until it is dismissed)
@@ -827,24 +822,11 @@ export class SceneManager {
                 break;
         }
 
-        this._keepBackdropFresh();
-
         this._drawSharedBackButton();
 
         this.tutorial.render(this.ctx);
 
         this.transitionRenderer.render(this.ctx);
-    }
-
-    /**
-     * The menus (party, summary, journal, shop...) open over a blurred, darkened copy of the world. While the overworld is on screen (and no
-     * transition is covering it) a small copy is kept up to date, twice a second; opening a menu then uses the latest one. Any other screen
-     * (a battle, the title) drops it, so a menu opened from there gets the plain background.
-     */
-    _keepBackdropFresh() {
-        if (this.currentScene !== 'overworld' || this.transitionRenderer.isActive) return;
-        this._backdropFrames = (this._backdropFrames || 0) + 1;
-        if (this._backdropFrames % 30 === 1 || !UITextures.backdrop) UITextures.captureBackdrop(this.canvas);
     }
 
     /** The Back button of the screens in SHARED_BACK_BUTTON: draws it and adds its hitbox to the screen's (see UIInteractionManager for the click). */

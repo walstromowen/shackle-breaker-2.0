@@ -25,7 +25,7 @@ export class CanvasUI {
   }
 
   // --- SCREEN MANAGEMENT ---
-  /** The background of a screen: the blurred world it opened over (or a mottled near-black), a vignette and film grain (UITextures). */
+  /** The background of a screen: blank near-black with drifting smoke, a vignette and film grain (UITextures). */
   clearScreen(width, height, smoke = true) {
     UITextures.drawScreenBackground(this.ctx, width, height, smoke);
   }
@@ -154,7 +154,7 @@ export class CanvasUI {
   }
 
   /**
-   * A panel: a dark plate with grain and soft blotches in it, a shadowed inner edge, a brass hairline and a fainter second line inside it,
+   * A panel: a dark plate (smooth: no grain or blotches unless UITheme.panel.mottle / grain are raised), a shadowed inner edge, a brass hairline and a fainter second line inside it,
    * and small diamonds on its corners. The top-left and bottom-right corners are cut. Drawn from a cached picture (see PANEL_CACHE_BUDGET).
    */
   drawPanel(x, y, w, h, bgColor = UITheme.colors.panelBg, variant = 'plate') {
@@ -208,12 +208,16 @@ export class CanvasUI {
     g.clip();
     if (textured) {
       // the material: soft blotches and grain, a faint cool light along the top
-      g.globalAlpha = slot ? p.mottle * 0.5 : p.mottle;
-      g.fillStyle = g.createPattern(UITextures.mottle(), 'repeat');
-      g.fillRect(x, y, w, h);
-      g.globalAlpha = p.grain;
-      g.fillStyle = g.createPattern(UITextures.grain(), 'repeat');
-      g.fillRect(x, y, w, h);
+      if (p.mottle > 0) {
+        g.globalAlpha = slot ? p.mottle * 0.5 : p.mottle;
+        g.fillStyle = g.createPattern(UITextures.mottle(), 'repeat');
+        g.fillRect(x, y, w, h);
+      }
+      if (p.grain > 0) {
+        g.globalAlpha = p.grain;
+        g.fillStyle = g.createPattern(UITextures.grain(), 'repeat');
+        g.fillRect(x, y, w, h);
+      }
       g.globalAlpha = 1;
       const sheen = g.createLinearGradient(0, y, 0, y + Math.min(h, 520));
       sheen.addColorStop(0, `rgba(150, 165, 195, ${p.sheen})`);
@@ -270,8 +274,8 @@ export class CanvasUI {
   }
 
   /**
-   * A full-height column of a screen (the three columns of the summary, the two halves of the shop): the fill colour with the same grain and
-   * blotches as a panel, a shadow falling in from both long edges and a faint line down the side where it meets the next column.
+   * A full-height column of a screen (the three columns of the summary, the two halves of the shop): the fill colour (with the same grain and
+   * blotches as a panel, if those are on), a shadow falling in from both long edges and a faint line down the side where it meets the next column.
    */
   drawColumn(x, y, w, h, bgColor = UITheme.colors.bgScale[0]) {
     const ctx = this.ctx;
@@ -282,12 +286,16 @@ export class CanvasUI {
     ctx.clip();
     ctx.fillStyle = bgColor;
     ctx.fillRect(x, y, w, h);
-    ctx.globalAlpha = p.mottle * 0.8;
-    ctx.fillStyle = ctx.createPattern(UITextures.mottle(), 'repeat');
-    ctx.fillRect(x, y, w, h);
-    ctx.globalAlpha = p.grain * 0.8;
-    ctx.fillStyle = ctx.createPattern(UITextures.grain(), 'repeat');
-    ctx.fillRect(x, y, w, h);
+    if (p.mottle > 0) {
+      ctx.globalAlpha = p.mottle * 0.8;
+      ctx.fillStyle = ctx.createPattern(UITextures.mottle(), 'repeat');
+      ctx.fillRect(x, y, w, h);
+    }
+    if (p.grain > 0) {
+      ctx.globalAlpha = p.grain * 0.8;
+      ctx.fillStyle = ctx.createPattern(UITextures.grain(), 'repeat');
+      ctx.fillRect(x, y, w, h);
+    }
     ctx.globalAlpha = 1;
     const reach = Math.min(40, w / 3);
     for (const [from, to, edge] of [[x, x + reach, x], [x + w, x + w - reach, x + w]]) {

@@ -2,9 +2,8 @@
 // The surfaces the dark UI is made of, generated once in code (no image files) and cached:
 //   grain()      fine film grain, a tile that repeats without a seam
 //   mottle()     soft low-frequency blotches (aged leather / stone), also a seamless tile
-//   screenBase() the whole-screen background of a menu: near-black, mottled, with a lit middle and fallen-away corners
-//   screenFx()   a vignette and grain laid over everything a menu draws as its background
-//   backdrop     a blurred, darkened, drained copy of the game world that menus open over (captured from the canvas, see SceneManager)
+//   screenBase() the whole-screen background of a menu: blank near-black (the smoke drifts over it, see smoke.js)
+//   screenFx()   a vignette (no film grain: the screens are smooth) laid over everything a menu draws as its background
 // Every texture is made from a fixed seed, so the game looks the same on every machine and every run.
 
 import { drawSmoke } from './smoke.js';
@@ -56,8 +55,6 @@ export const UITextures = {
     _mottle: null,
     _screenBase: null,
     _screenFx: null,
-    backdrop: null,          // the captured world, or null: menus then draw their plain background
-    _backdropSmall: null,
 
     /** Film grain: black and white specks of random strength, mostly transparent. Tile size 256. */
     grain() {
@@ -117,26 +114,18 @@ export const UITextures = {
         return c;
     },
 
-    /** The plain menu background: near-black, mottled, lit from within, 1920 x 1080. */
+    /** The menu background: blank near-black, 1920 x 1080. No blotches and no lit middle: the only thing moving on it is the smoke. */
     screenBase() {
         if (this._screenBase) return this._screenBase;
         const c = makeCanvas(SCREEN_W, SCREEN_H);
         const g = c.getContext('2d');
         g.fillStyle = '#05060a';
         g.fillRect(0, 0, SCREEN_W, SCREEN_H);
-        const lift = g.createRadialGradient(SCREEN_W / 2, SCREEN_H * 0.42, SCREEN_H * 0.1, SCREEN_W / 2, SCREEN_H * 0.5, SCREEN_W * 0.75);
-        lift.addColorStop(0, 'rgba(46, 44, 50, 0.34)');
-        lift.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        g.fillStyle = lift;
-        g.fillRect(0, 0, SCREEN_W, SCREEN_H);
-        g.globalAlpha = 0.6;
-        g.fillStyle = g.createPattern(this.mottle(), 'repeat');
-        g.fillRect(0, 0, SCREEN_W, SCREEN_H);
         this._screenBase = c;
         return c;
     },
 
-    /** A vignette and grain, drawn last over a menu's background (before its panels). 1920 x 1080. */
+    /** A vignette and two thin rules, drawn last over a menu's background (before its panels). 1920 x 1080. */
     screenFx() {
         if (this._screenFx) return this._screenFx;
         const c = makeCanvas(SCREEN_W, SCREEN_H);
@@ -146,9 +135,6 @@ export const UITextures = {
         v.addColorStop(0.6, 'rgba(0, 0, 0, 0.32)');
         v.addColorStop(1, 'rgba(0, 0, 0, 0.78)');
         g.fillStyle = v;
-        g.fillRect(0, 0, SCREEN_W, SCREEN_H);
-        g.globalAlpha = 0.3;
-        g.fillStyle = g.createPattern(this.grain(), 'repeat');
         g.fillRect(0, 0, SCREEN_W, SCREEN_H);
         // a thin rule near the top and the bottom edge of the screen, fading out toward the sides (the frame menus sit inside)
         g.globalAlpha = 1;
@@ -165,53 +151,13 @@ export const UITextures = {
     },
 
     /**
-     * Keeps a blurred, darkened, drained copy of what `source` (the game canvas) shows now, for the menus to open over.
-     * The blur is made by shrinking the picture and stretching it back, which looks the same in every browser and costs almost nothing.
-     */
-    captureBackdrop(source) {
-        if (!source || !source.width || !source.height) return;
-        if (!this._backdropSmall) this._backdropSmall = makeCanvas(120, 68);
-        const small = this._backdropSmall.getContext('2d');
-        small.imageSmoothingEnabled = true;
-        small.imageSmoothingQuality = 'high';
-        small.clearRect(0, 0, 120, 68);
-        small.drawImage(source, 0, 0, source.width, source.height, 0, 0, 120, 68);
-        if (!this.backdrop) this.backdrop = makeCanvas(480, 270);
-        const g = this.backdrop.getContext('2d');
-        g.imageSmoothingEnabled = true;
-        g.imageSmoothingQuality = 'high';
-        g.globalCompositeOperation = 'source-over';
-        g.globalAlpha = 1;
-        g.drawImage(this._backdropSmall, 0, 0, 120, 68, 0, 0, 480, 270);
-        g.globalCompositeOperation = 'saturation';               // drain most of the colour ...
-        g.fillStyle = 'rgba(120, 120, 120, 0.5)';
-        g.fillRect(0, 0, 480, 270);
-        g.globalCompositeOperation = 'source-over';              // ... and sink it into the dark
-        g.fillStyle = 'rgba(5, 6, 9, 0.6)';
-        g.fillRect(0, 0, 480, 270);
-    },
-
-    clearBackdrop() {
-        this.backdrop = null;
-    },
-
-    /**
-     * Draws the menu background: the blurred world when there is one, else the plain mottled one, then drifting smoke, vignette and grain.
+     * Draws the menu background: blank near-black, then drifting smoke, vignette and grain.
      * `smoke` false leaves the smoke out (a screen that draws its own, like the title).
      */
     drawScreenBackground(ctx, width, height, smoke = true) {
         ctx.save();
         ctx.imageSmoothingEnabled = true;
-        if (this.backdrop) {
-            ctx.fillStyle = '#040508';
-            ctx.fillRect(0, 0, width, height);
-            ctx.drawImage(this.backdrop, 0, 0, width, height);
-            ctx.globalAlpha = 0.32;
-            ctx.drawImage(this.screenBase(), 0, 0, width, height);   // the mottle sits on the picture too, so it reads as a surface
-        } else {
-            ctx.drawImage(this.screenBase(), 0, 0, width, height);
-        }
-        ctx.globalAlpha = 1;
+        ctx.drawImage(this.screenBase(), 0, 0, width, height);
         if (smoke) drawSmoke(ctx, Date.now() / 1000, width, height, 0.85, true);   // behind every panel and text the screen draws next
         ctx.drawImage(this.screenFx(), 0, 0, width, height);
         ctx.restore();

@@ -145,8 +145,8 @@ export const UITheme = {
     edgeAlpha: 0.34,
     edgeWidth: 1.25,
     sheen: 0.06,       // how much lighter (and cooler) the top of a panel is than its bottom, like the login card
-    mottle: 0.3,      // how strongly the soft blotches show in the plate (0 = none)
-    grain: 0.16,       // and the film grain
+    mottle: 0,        // how strongly the soft blotches show in the plate (0 = none: panels are smooth)
+    grain: 0,          // and the film grain (0 = none)
     innerShadow: 0.85,         // the dark fall-off along the inside of the edge: strength ...
     innerShadowBlur: 34,       // ... and reach
     // The doubled corner brackets a large panel wears, like the frame round the item grid: outer arm, inner arm, how far in, and how big a panel must be
