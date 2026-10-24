@@ -264,7 +264,10 @@ export class SceneManager {
                 if (scene === 'overworld') PartyManager.ensureLivingLeader();
 
                 // A New Game replaces the autosave: keep the old one as 'previous'
-                if (this.currentScene === 'character-creator' && scene === 'overworld') SaveManager.backupAutosave();
+                if (this.currentScene === 'character-creator' && scene === 'overworld') {
+                    SaveManager.backupAutosave();
+                    this.tutorial.store.reset();   // every new game shows each screen's control card again (Settings > Replay Tips does the same by hand)
+                }
 
                 // A new game (coming from the character creator) or a loaded one (LOAD_GAME passes buildWorld) builds the world from gameState.seed
                 if ((this.currentScene === 'character-creator' || (data && data.buildWorld)) && scene === 'overworld') {
