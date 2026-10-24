@@ -220,7 +220,7 @@ export class EncounterRenderer {
             ctx.restore();
 
             // Smoke drifts over the columns, behind the picture and the words
-            drawSmoke(ctx, Date.now() / 1000, CANVAS_WIDTH, CANVAS_HEIGHT, 0.6 * colsAlpha);
+            drawSmoke(ctx, Date.now() / 1000, CANVAS_WIDTH, CANVAS_HEIGHT, 0.85 * colsAlpha, true);
         }
 
         // ========================================================

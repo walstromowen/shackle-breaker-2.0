@@ -54,7 +54,7 @@ function makeCanvas(w, h) {
  * fades to nothing at the top and the bottom, so the band it is drawn in has no hard edges.
  * `thread` 0..1 is how much of it is thread rather than body; `bodyShare` how strong the soft body is.
  */
-function makeTile(seed, { thread, bodyShare, cellsX, cellsY }) {
+function makeTile(seed, { thread, bodyShare, cellsX, cellsY }, look) {
     const rand = rng(seed);
     const octaves = [1, 2, 4, 8].map((k) => ({ weight: 1 / k, lattice: makeLattice(cellsX * k, cellsY * k, rand) }));
     const warpX = makeLattice(3, 4, rand), warpY = makeLattice(3, 4, rand);
@@ -75,9 +75,9 @@ function makeTile(seed, { thread, bodyShare, cellsX, cellsY }) {
             const body = Math.max(0, Math.min(1, (n - 0.42) * 3.2));      // soft cloud where the noise is high
             const ridge = 1 - Math.abs(n - 0.5) * 2;                      // 1 along the line where n = 0.5, falling away to both sides
             const threads = Math.pow(Math.max(0, ridge), 7);               // a thin bright thread along that line
-            const a = (body * bodyShare + threads * thread) * edge;
+            const a = (body * bodyShare * look.body + threads * thread * look.thread) * edge;
             const i = (py * TILE_W + px) * 4;
-            img.data[i] = 214; img.data[i + 1] = 220; img.data[i + 2] = 230;   // pale, a little cool
+            img.data[i] = look.rgb[0]; img.data[i + 1] = look.rgb[1]; img.data[i + 2] = look.rgb[2];   // pale, a little cool
             img.data[i + 3] = Math.round(Math.max(0, Math.min(1, a)) * 255);
         }
     }
@@ -93,15 +93,26 @@ const LAYERS = [
     { name: 'sky',    band: [-0.06, 0.52], spread: 2.0, speed: 7,  alpha: 0.34, period: 24, bob: 0.02,  a: { seed: 31, thread: 0.35, bodyShare: 0.7, cellsX: 3, cellsY: 3 }, b: { seed: 32, thread: 0.35, bodyShare: 0.7, cellsX: 3, cellsY: 3 } }
 ];
 
-let _tiles = null;
-function tiles() {
-    if (!_tiles) _tiles = LAYERS.map((layer) => ({ a: makeTile(layer.a.seed, layer.a), b: makeTile(layer.b.seed, layer.b) }));
-    return _tiles;
+// Two looks. 'full' is thick drifts of pale smoke (the painted title and login backgrounds can take it). 'wisp' is for the dark screens (menus,
+// encounters, battles): almost none of the soft body, only the thin curling threads, and dimmer, so the screen stays dark and moody with smoke
+// drifting through it rather than a pale haze lying on it.
+const LOOKS = {
+    full: { body: 1,    thread: 1,   rgb: [214, 220, 230] },
+    wisp: { body: 0.06, thread: 0.9, rgb: [150, 158, 174] }
+};
+
+const _tiles = {};
+function tiles(mode) {
+    if (!_tiles[mode]) _tiles[mode] = LAYERS.map((layer) => ({ a: makeTile(layer.a.seed, layer.a, LOOKS[mode]), b: makeTile(layer.b.seed, layer.b, LOOKS[mode]) }));
+    return _tiles[mode];
 }
 
-/** Draws the smoke over the whole `width` x `height` area. `now` is seconds (any steadily growing clock). */
-export function drawSmoke(ctx, now, width, height, alpha = 1) {
-    const made = tiles();
+/**
+ * Draws the smoke over the whole `width` x `height` area. `now` is seconds (any steadily growing clock).
+ * `wisp` true: only thin dim threads of smoke, for dark screens (see LOOKS).
+ */
+export function drawSmoke(ctx, now, width, height, alpha = 1, wisp = false) {
+    const made = tiles(wisp ? 'wisp' : 'full');
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
     ctx.imageSmoothingEnabled = true;

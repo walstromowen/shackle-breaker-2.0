@@ -212,7 +212,7 @@ export const UITextures = {
             ctx.drawImage(this.screenBase(), 0, 0, width, height);
         }
         ctx.globalAlpha = 1;
-        if (smoke) drawSmoke(ctx, Date.now() / 1000, width, height, 0.6);   // behind every panel and text the screen draws next
+        if (smoke) drawSmoke(ctx, Date.now() / 1000, width, height, 0.85, true);   // behind every panel and text the screen draws next
         ctx.drawImage(this.screenFx(), 0, 0, width, height);
         ctx.restore();
     }

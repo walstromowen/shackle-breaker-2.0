@@ -51,6 +51,16 @@ test('the smoke moves: the same call a little later draws somewhere else', () =>
     assert.notDeepEqual(a.calls.map(c => c.a[5]), b.calls.map(c => c.a[5]));
 });
 
+test('the wisp look is made separately (six more tiles, once) and draws just the same way', () => {
+    const before = tilesMade;
+    const { ctx, calls } = recorder();
+    drawSmoke(ctx, 4, 1920, 1080, 1, true);
+    assert.equal(tilesMade, before + 6);
+    drawSmoke(ctx, 9, 1920, 1080, 1, true);
+    assert.equal(tilesMade, before + 6, 'reused');
+    assert.ok(calls.length >= 6 && calls.every(c => c.op === 'screen'));
+});
+
 test('an alpha of 0 draws nothing', () => {
     const { ctx, calls } = recorder();
     drawSmoke(ctx, 7, 1920, 1080, 0);

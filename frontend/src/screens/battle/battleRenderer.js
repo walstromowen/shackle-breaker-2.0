@@ -213,7 +213,7 @@ export class BattleRenderer {
         }
 
         // Smoke drifts along the ground and through the sky, behind the fighters
-        drawSmoke(this.ctx, Date.now() / 1000, CANVAS_WIDTH, CANVAS_HEIGHT, 0.55);
+        drawSmoke(this.ctx, Date.now() / 1000, CANVAS_WIDTH, CANVAS_HEIGHT, 0.8, true);
 
         // 2. Draw Entities
         this.combatantRenderer.drawGroup(state.activeEnemies, false, state, hitboxes);
