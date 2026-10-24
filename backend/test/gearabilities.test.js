@@ -120,3 +120,10 @@ test('Triple Shot reuses the Loose Arrow animation and fires at up to three diff
     assert.ok(B.loose_arrow && !B.triple_shot, 'no animation of its own any more');
     assert.equal(new AbilityModel('triple_shot').isSplash, true);
 });
+
+test('the Artifact of the Developer grants every ability there is', () => {
+    const granted = new Set(I.artifact_of_the_dev.grantedAbilities);
+    const missing = Object.keys(A).filter(id => !granted.has(id));
+    assert.deepEqual(missing, []);
+    assert.equal(granted.size, Object.keys(A).length);
+});

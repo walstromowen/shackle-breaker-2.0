@@ -1,3 +1,4 @@
+import { AbilityDefinitions } from '../abilities/abilityDefinitions.js';
 // ITEM VALUES (currency): the scale is 5x the old one, so a Shortsword is 100. Every item keeps its price relative to the others.
 // (artifact_of_the_dev, a test item, keeps its 9999.)
 
@@ -1396,18 +1397,8 @@ export const ItemDefinitions = {
     description: "A testing artifact that buffs EVERYTHING.",
     value: 9999,
     icon: { col: 0, row: 5 },
-    // Testing only: grants EVERY ability in abilityDefinitions.js. Add new ability ids here as you create them.
-    grantedAbilities: [
-      "punch", "strike", "shield_bash", "reckless_charge", "wild_swing", "fire_punch", "slash", "uppercut",
-      "execute", "hit_and_run", "cleave", "flurry", "claw", "eviscerate", "rally", "intimidate",
-      "howl", "hide", "thrust", "bite", "quick_stab", "item_poison_knife", "throw_poison_dagger", "item_throw_net", "loose_arrow",
-      "quick_draw", "poisoned_arrow", "triple_shot", "arcane_dart", "magic_missile", "arcane_blast", "hyper_beam", "fireball", "meteor_shower",
-      "inferno", "flamethrower", "water_blast", "waterfall", "ice_shard", "frigid_gale", "shock", "overload",
-      "earthquake", "acid_pool", "vine_lash", "boulder_throw", "solar_beam", "spite", "gravity", "spirit_reap",
-      "drain_life", "healing_rain", "purify", "rest", "brew_of_madness", "minor_heal", "minor_recover", "minor_channel",
-      "moderate_heal", "moderate_recover", "moderate_channel", "osmose", "raise_skeleton", "bear_form", "bolster", "baton_pass",
-      "counter_stance", "retreat", "switch_combatant", "take_flight", "item_throwing_knife", "item_bear_trap", "item_smoke_bomb"
-    ],
+    // Testing only: grants EVERY ability in abilityDefinitions.js, including the ones you add later (the list is read from there, so it never goes stale).
+    grantedAbilities: Object.keys(AbilityDefinitions),
     attributes: { vigor: 10, strength: 10, dexterity: 10, intelligence: 10, attunement: 10 },
     resources: { maxHp: 100, maxStamina: 50, maxInsight: 50 },
     attack: { blunt: 5, slash: 5, pierce: 5, fire: 5, ice: 5, lightning: 5, arcane: 5 },
