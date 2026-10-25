@@ -74,3 +74,21 @@ test('the creator screen draws the Cheats row only when the console is available
     const src = read('frontend/src/screens/characterCreator/characterCreatorRenderer.js');
     assert.ok(/'cheats'/.test(src) && /data\.CHEATS/.test(src));
 });
+
+test('the battle debugger (C in a battle) and the map debug key ("`") are cheats too', () => {
+    const bc = read('frontend/src/screens/battle/battleController.js');
+    assert.ok(/if \(intent === 'DEBUG'\) \{\s*if \(gameState\.cheats !== true\) return;/.test(bc), 'C does nothing without cheats');
+    const br = read('frontend/src/screens/battle/battleRenderer.js');
+    assert.ok(/this\.showDebug = gameState\.cheats === true && !this\.showDebug/.test(br), 'the toggle event cannot switch it on either');
+    assert.ok(/if \(this\.showDebug && gameState\.cheats === true\)/.test(br), 'and it is not drawn');
+    const sm = read('frontend/src/engine/sceneManager.js');
+    assert.ok(/e\.code === 'Backquote' && gameState\.cheats === true/.test(sm));
+});
+
+test('the creator draws the Cheats row, with its own label and description', () => {
+    const src = read('frontend/src/screens/characterCreator/characterCreatorRenderer.js');
+    assert.ok(/cheats: "CHEATS"/.test(src));
+    assert.ok(/\.\.\.\(data\.CHEATS \? \['cheats'\] : \[\]\)/.test(src), 'the row is only in the menu while the console is switched on');
+    assert.ok(/currentStep === 'cheats'\) return data\.CHEATS/.test(src));
+    assert.ok(/battle debugger/.test(CREATION_DATA.CHEATS[1].desc), 'the On description says the battle debugger is included');
+});

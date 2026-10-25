@@ -29,9 +29,9 @@ const BUTTONS = [
 export class WorldMapController extends BaseController {
     constructor(input) {
         super(input);
-        // N (the key that opened it) closes it, like Esc. The zoom and view keys are the screen's own.
+        // M (the key that opened it) closes it, like Esc. The zoom and view keys are the screen's own.
         this.extraBindings = {
-            KeyN: 'CANCEL',
+            KeyM: 'CANCEL',
             Equal: 'ZOOM_IN', NumpadAdd: 'ZOOM_IN', KeyE: 'ZOOM_IN',
             Minus: 'ZOOM_OUT', NumpadSubtract: 'ZOOM_OUT', KeyQ: 'ZOOM_OUT',
             KeyF: 'FIT', KeyC: 'CENTER', Space: 'CENTER', Enter: 'CENTER'

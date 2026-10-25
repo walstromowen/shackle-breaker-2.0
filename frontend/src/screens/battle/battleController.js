@@ -1,5 +1,6 @@
 import { AbilityFactory } from '../../../../shared/abilities/abilityFactory.js';
 import { events } from '../../../../shared/core/eventBus.js';
+import { gameState } from '../../../../shared/core/gameState.js';
 import { TurnManager } from '../../../../shared/battle/turnManager.js';
 import { PHASE, TURN_TYPES } from '../../../../shared/battle/battleConstants.js';
 import { createBattleState, applyRoundEndRecovery, commitBattleResults, registerStatusApplication } from '../../../../shared/battle/battleState.js';
@@ -143,6 +144,7 @@ export class BattleController extends BaseController {
         if (!this.state?.active || this.state.isPausedForUI) return;
 
         if (intent === 'DEBUG') {
+            if (gameState.cheats !== true) return;   // the battle debugger is a cheat: only in a game created with Cheats on
             console.log("Debug View Toggled!");
             events.emit('TOGGLE_BATTLE_DEBUG');
             return;

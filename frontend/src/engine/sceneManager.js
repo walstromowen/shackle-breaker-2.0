@@ -616,10 +616,10 @@ export class SceneManager {
             }
             return;
         }
-        if (e.code === 'Backquote') this.mapRenderer.showDebug = !this.mapRenderer.showDebug;
+        if (e.code === 'Backquote' && gameState.cheats === true) this.mapRenderer.showDebug = !this.mapRenderer.showDebug;
 
         // "/" opens the developer console, in the overworld when nothing else has the screen (a scene is not loading, no menu is up)
-        if (this.devConsole && !this.devConsole.isOpen && e.code === 'Slash' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey
+        if (this.devConsole && gameState.cheats === true && !this.devConsole.isOpen && e.code === 'Slash' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey
             && this.currentScene === 'overworld' && !this.overworldController.isLocked && !this.transitionRenderer.isActive) {
             e.preventDefault();
             this.devConsole.open('/');

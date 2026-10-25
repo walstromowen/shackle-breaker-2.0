@@ -206,7 +206,7 @@ test('the Shackling is an ordinary encounter in the pool: only with a shackled m
     const lead = hero('Lead');
     const bound = hero('Bound');
     gameState.party.members = [lead, bound];
-    const biome = new BiomeModel(BIOME_DEFINITIONS.PLAINS);
+    const biome = new BiomeModel(BIOME_DEFINITIONS.CAVE_INTERIOR);   // the one biome that still has a random encounter of its own (the cave-in); the plains have none now
     const real = Math.random;
     // the first roll of getEncounter is "does an encounter happen" (0 always lets it); the next ones (who is shackled, then the pool) all use `pick`
     const withRoll = (pick) => { let n = 0; Math.random = () => (n++ === 0 ? 0 : pick); };
@@ -438,4 +438,23 @@ test('the cursed portrait is used for exactly the shackled, and every portrait s
         const src = fs.readFileSync(new URL(`../../frontend/src/${file}`, import.meta.url), 'utf8');
         assert.match(src, /CorruptionSystem\.isRevealed\(\)/, `${file} hides corruption until act 2`);
     }
+});
+
+test('nothing is met by chance except in the caves; on the plains only the Shackling can still happen', () => {
+    for (const id of Object.keys(BIOME_DEFINITIONS)) {
+        const pools = (BIOME_DEFINITIONS[id].encounters && BIOME_DEFINITIONS[id].encounters.pools) || [];
+        assert.deepEqual(pools.map(p => p.id), id === 'CAVE_INTERIOR' ? ['cave_in'] : [], id);
+    }
+    const lead = hero('Lead'), bound = hero('Bound');
+    gameState.party.members = [lead, bound];
+    const plains = new BiomeModel(BIOME_DEFINITIONS.PLAINS);
+    const real = Math.random;
+    try {
+        Math.random = () => 0;
+        assert.equal(plains.getEncounter(12), null, 'nobody shackled: nothing');
+        CorruptionSystem.change(bound, 100);
+        assert.equal(plains.getEncounter(12).id, 'shackled_betrayal', 'a shackled member: the Shackling, as before');
+    } finally { Math.random = real; }
+    // it comes up as often as it did when it shared the pool with the two old encounters: 0.005 x 80 / (80 + 40)
+    assert.ok(Math.abs(BIOME_DEFINITIONS.PLAINS.encounters.rate - 0.005 * 80 / 120) < 0.0001);
 });

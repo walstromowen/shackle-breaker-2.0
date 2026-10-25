@@ -2,6 +2,7 @@ import { CONFIG } from '../../../../shared/core/constants.js';
 import { gameState } from '../../../../shared/core/gameState.js';
 import { BlobTerrainRenderer } from './blobTerrainRenderer.js';
 import { fenceFrame } from '../../../../shared/world/fenceConnections.js';
+import { PartyFollowers } from './partyFollowers.js';
 export class MapRenderer {
     constructor(canvas, loader, config) {
         this.canvas = canvas;
@@ -48,6 +49,8 @@ export class MapRenderer {
         const renderCamera = { x: interpCamX - centerOffsetX, y: interpCamY - centerOffsetY };
         /* A biome with `ambientLight` (a cave) is dark whatever the clock says: blended into the day / night colour before the lighting pass. */
         ambientData = this.naturalAmbient(worldManager, interpCamX, interpCamY, ambientData, totalTime);
+        /* Who is on the map: the party's first three members who are on their feet. The first is the player, the next two follow (PartyFollowers). */
+        this.lineup = PartyFollowers.lineup(gameState.party && gameState.party.members, (key) => !!this.loader.get(key));
         const bounds = this.updateViewBounds(renderCamera);
         /* Pass 1: Flat Terrain & Ground Objects */
         this.renderTerrainPass(worldManager, renderCamera, bounds, totalTime);
@@ -214,7 +217,7 @@ export class MapRenderer {
         }
     }
     /* A map object that is a person or an animal (an NPC standing in the world): it is drawn straight from a character sheet, with one of that sheet's
-       idle rows, the same way drawEntity draws the party leader. definition.character = { sheet, facing }, facing being South / East / North / West
+       idle rows, the same way drawEntity draws the party leader. definition.character = { entity, sheet, facing, row } (see npcBody in mapObjectDefinitions.js), facing being South / East / North / West
        as 'DOWN' / 'RIGHT' / 'UP' / 'LEFT' (default 'DOWN'). The frame is centred on the tile and stands on the bottom edge of it, so the sheet's shadow
        sits exactly where the shadow of every other character sits. */
     drawCharacterObject(obj, sprite, dx, dy, totalTime = 0) {
@@ -226,7 +229,7 @@ export class MapRenderer {
         let feetPad = fr.feetPad;
         if (typeof feetPad !== 'number') feetPad = this.characterFeetPad(sprite, FH) ?? 0;
         const A = this.charAnim;
-        const dirIndex = Math.max(0, A.directionOrder.indexOf(obj.character.facing || 'DOWN'));
+        const dirIndex = Number.isInteger(obj.character.row) ? obj.character.row : Math.max(0, A.directionOrder.indexOf(obj.character.facing || 'DOWN')); // the row the definition names, else by facing
         const phase = Math.abs((obj.col || 0) * 7 + (obj.row || 0) * 13) % A.frames; // two of them side by side do not breathe in step
         const frame = (Math.floor(totalTime * A.idleFps) + phase) % A.frames;
         const sx = frame * FW;
@@ -272,9 +275,10 @@ export class MapRenderer {
         return pad;
     }
     drawEntity(entity, camera, interpolationFactor = 1) {
-        // The party leader walks the map. A recruited creature has no walking sheet (the snow leopard and wolf point at a sheet that does not
-        // exist), so if the leader is one, the first member who does have a sheet is drawn instead of the player vanishing.
-        const walker = gameState.party.members.find(m => this.loader.get(m.spriteOverworld));
+        // The party leader walks the map: the first member on their feet who has a sheet (this.lineup, worked out once a frame). A recruited creature has no walking sheet
+        // (the snow leopard and wolf point at a sheet that does not exist), so it is skipped and the next member is drawn instead of the player vanishing. The two after the leader are the followers.
+        const lineup = this.lineup || PartyFollowers.lineup(gameState.party.members, (key) => !!this.loader.get(key));
+        const walker = lineup[entity.followerSlot || 0];
         const sprite = walker ? this.loader.get(walker.spriteOverworld) : null;
         if (!sprite) return;
         const { TILE_SIZE, GAME_SCALE } = this.config;

@@ -102,6 +102,7 @@ export const BIOME_DEFINITIONS = {
                 { chance: 0.211, rangeStart: 0.206, id: 'TIN_ORE_DEPOSIT' } /* tin: 0.5% of the ground, its own band [0.206, 0.211) in the same gap. Mined with a pickaxe */,
                 { chance: 0.2205, rangeStart: 0.22, id: 'DOG_NPC' } /* a wounded dog lying by the road, 0.05% of the ground: its own band [0.22, 0.2205), in the free gap between the tin and the grass. It used to be the "wounded mutt" random encounter; now it is found in the world (mapObjectDefinitions.js NPCS) */,
                 { chance: 0.2305, rangeStart: 0.23, id: 'MADMAN_NPC' } /* a madman standing in the grass, 0.05% of the ground: band [0.23, 0.2305). Coming within 2 tiles of him starts "A Disturbing Sight" (it used to be a random encounter) */,
+                { chance: 0.261, rangeStart: 0.26, id: 'AFTERMATH_REMAINS' } /* a helmet with a sword through it, the remains of an old battle, 0.1% of the ground: band [0.26, 0.261), in the free gap after the shady merchant's band. Interacting starts the Aftermath encounter (it used to be a random encounter) */,
                 { chance: 0.7, rangeStart: 0.3, pool: ['GRASS_COVERAGE_1', 'GRASS_COVERAGE_2', 'GRASS_COVERAGE_3'] },
                 { chance: 0.1, id: 'CAVE_ENTRANCE' } /* a cave mouth painted into a straight south-facing cliff: the share of fitting cliff faces that get one (WorldManager._isCaveMouth). Keep this rule LAST in the LAYER_2 list */,
             ],
@@ -117,13 +118,12 @@ export const BIOME_DEFINITIONS = {
             ],
         },
         encounters: {
-            rate: 0.005,
+            rate: 0.0033,
             type: 'time_weighted',
-            // the wounded mutt, the disturbing sight and the suspicious merchant are people standing in the world now (DOG_NPC, MADMAN_NPC, SHADY_MERCHANT_NPC, mapObjects above); these two kept doubled weights so the Shackling stays about as likely next to them as it was
-            pools: [
-                { weight: 20, id: 'aftermath', allowedTimes: ['day', 'dusk', 'night'] },
-                { weight: 20, id: 'wild_hunt', allowedTimes: ['day', 'dusk', 'night'] },
-            ],
+            // nothing is met by chance on the plains any more: the wounded mutt, the disturbing sight, the suspicious merchant and the aftermath are things standing in the world
+            // (DOG_NPC, MADMAN_NPC, SHADY_MERCHANT_NPC, AFTERMATH_REMAINS in mapObjects above). The rate stays so the Shackling can still find a party with a shackled member (BiomeModel.getEncounter);
+            // it is 0.0033 because that was how often the Shackling came up here when it shared the pool with the two old encounters (0.005 x 80 / (80 + 40)), so it is no more and no less likely than before.
+            pools: [],
         },
         battles: { rate: 0.01, tables: { day: 'plains_battles_day', dusk: 'plains_battles_day', night: 'plains_battles_night', bloodMoon: 'plains_battles_blood_moon' } },
     },

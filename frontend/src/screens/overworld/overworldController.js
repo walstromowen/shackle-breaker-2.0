@@ -16,6 +16,7 @@ import { AbilitySystem } from '../../../../shared/abilities/abilitySystem.js';
 import { AbilityDefinitions } from '../../../../shared/abilities/abilityDefinitions.js';
 import { ExploredMap } from '../../../../shared/world/exploredMap.js';
 import { ActSystem } from '../../../../shared/story/actSystem.js';
+import { PartyFollowers } from './partyFollowers.js';
 
 /* A world buff with a `light` (a torch: the ability `torchlight`, see abilityDefinitions.js) lasts a number of IN-GAME minutes. In its last TORCH_GUTTER_MINUTES the light shrinks back to normal. */
 const TORCH_GUTTER_MINUTES = 30;
@@ -25,15 +26,15 @@ const TORCH_COLOR_STEPS = 8;
 /* Keyboard shortcuts of the overworld menu. The number keys 1-9 and 0 belong to the hotbar (InventorySystem.HOTBAR_KEYS), so the menu uses letters. Change a key here
    and its button badge follows. */
 const MENU_KEYS = {
-    toggle: 'KeyM',     // open / close the menu
+    toggle: 'Escape',   // open / close the menu
     party: 'KeyP',
     character: 'KeyC',
     journal: 'KeyJ',
-    map: 'KeyN',        // the world map: everything the party has seen so far
+    map: 'KeyM',        // the world map: everything the party has seen so far
     crafting: 'KeyB',   // the crafting Bag
     system: 'KeyO'      // System: save / load / quit to title
 };
-const keyLabel = (code) => code.replace(/^Key|^Digit/, '');
+const keyLabel = (code) => (code === 'Escape' ? 'Esc' : code.replace(/^Key|^Digit/, ''));
 
 export class OverworldController extends BaseController {
     constructor(input, config, worldManager) {
@@ -43,6 +44,7 @@ export class OverworldController extends BaseController {
         this.config = config;
         this.worldManager = worldManager;
         this.player = this.createPlayerEntity();
+        this.followers = new PartyFollowers(this.config.TILE_SIZE); // the next two party members, walking behind the player (see partyFollowers.js)
         this.baseLight = { ...this.player.light }; // the player's own light; a burning torch lifts it every frame (see currentLight / update)
         this.camera = { x: 0, y: 0, prevX: 0, prevY: 0 };
         this.isLocked = false;
@@ -185,8 +187,8 @@ export class OverworldController extends BaseController {
       this.interact();
     }
 
-    // M: Toggle Menu
-    if (code === MENU_KEYS.toggle) {
+    // Esc: Toggle Menu (holding the key does not flicker it open and shut)
+    if (code === MENU_KEYS.toggle && !(e && e.repeat)) {
       this.playConfirmSound();
       this.isMenuOpen = !this.isMenuOpen;
     }
@@ -196,7 +198,7 @@ export class OverworldController extends BaseController {
     if (code === MENU_KEYS.character) this.executeMenuAction('character_summary');
     // J: Journal
     if (code === MENU_KEYS.journal) this.executeMenuAction('journal');
-    // N: the world map
+    // M: the world map
     if (code === MENU_KEYS.map) this.openWorldMap();
     // B: Crafting Bag
     if (code === MENU_KEYS.crafting) {
@@ -212,8 +214,8 @@ export class OverworldController extends BaseController {
     const hotbarIndex = InventorySystem.HOTBAR_KEYS.indexOf(code);
     if (hotbarIndex !== -1) this.useHotbarSlot(hotbarIndex);
 
-    // Esc / Backspace / Tab: back (closes the menu; there is nothing else to go back from in the world)
-    if ((code === 'Escape' || code === 'Backspace' || code === 'Tab') && this.isMenuOpen) {
+    // Backspace / Tab: back (closes the menu; Esc, which also opens it, is handled above as the menu toggle)
+    if ((code === 'Backspace' || code === 'Tab') && this.isMenuOpen) {
       this.isMenuOpen = false;
       this.playCancelSound();
     }
@@ -397,10 +399,11 @@ export class OverworldController extends BaseController {
             if (this.harvestTimer >= this.harvestDuration) {
                 this.completeHarvest();
             }
+            this.syncFollowers(dt);
             return; // Block movement and other updates while harvesting
         }
 
-        if (this.isLocked) return;
+        if (this.isLocked) { this.syncFollowers(dt); return; }
 
         this.player.prevX = this.player.x;
         this.player.prevY = this.player.y;
@@ -414,6 +417,12 @@ export class OverworldController extends BaseController {
         }
 
         this.updateCamera();
+        this.syncFollowers(dt);
+    }
+
+    /* The party members behind the player keep to its trail (PartyFollowers). They are only drawn: nothing in the world knows they are there. */
+    syncFollowers(dt) {
+        this.followers.sync(this.player, dt, (c0, r0, c1, r1, dir) => this.worldManager.canMove(c0, r0, c1, r1, dir));
     }
 
     /* Which icon sheet an item's icon is on (toasts and the hotbar). */
@@ -1002,7 +1011,7 @@ export class OverworldController extends BaseController {
         }
 
         return {
-            entities: [this.player],
+            entities: [this.player, ...this.followers.entities],   // the player, then the two party members who follow (MapRenderer draws the ones that are on their feet)
             camera: this.camera,
             worldManager: this.worldManager, // the minimap reads the terrain around the player from it
             worldInfo: this.getWorldInfo(), // the status plaque: biome, day, clock, weather

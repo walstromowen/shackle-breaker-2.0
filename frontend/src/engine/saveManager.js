@@ -267,6 +267,7 @@ export const SaveManager = {
         const data = {
             seed: gameState.seed,
             difficulty: gameState.difficulty,
+            cheats: gameState.cheats === true,   // chosen when the game was created: may the developer console and the battle debugger be used
             milestones: clone(gameState.milestones || []),
             quests: clone({
                 active: gameState.quests.active,
@@ -357,6 +358,7 @@ export const SaveManager = {
         gameState.seed = data.seed;
         gameState.mode = 'overworld';
         gameState.difficulty = data.difficulty || 'normal';
+        gameState.cheats = data.cheats === true;   // a save from before the toggle has cheats off
 
         gameState.milestones = Array.isArray(data.milestones) ? data.milestones : [];   // a save from before the acts: act 1
 

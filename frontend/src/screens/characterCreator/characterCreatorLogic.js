@@ -136,7 +136,7 @@ export const CREATION_DATA = {
     // left out of the menu altogether when the console is switched off for a release (DEV_CONSOLE.ENABLED in constants.js).
     CHEATS: DEV_CONSOLE.ENABLED ? [
         { id: false, label: "Off", desc: "No cheats. The game is played as it was meant to be." },
-        { id: true, label: "On", desc: "Allows the developer console in this game: press / in the overworld to give yourself items, XP, party members and more. It is saved with the game." }
+        { id: true, label: "On", desc: "Allows the developer console in this game: press / in the overworld to give yourself items, XP, party members and more, and C in a battle opens the battle debugger. It is saved with the game. Without it neither can be used." }
     ] : null
 };
 

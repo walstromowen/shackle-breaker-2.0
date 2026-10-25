@@ -500,10 +500,11 @@ export class OverworldUIRenderer {
 
         if (btn.shortcut) {
             const badgeSize = 22;
+            const badgeW = btn.shortcut.length > 1 ? 46 : badgeSize;   // "Esc" is wider than a letter
             const bX = btn.x + 4;
             const bY = drawY + 4;
-            ui.drawPanel(bX, bY, badgeSize, badgeSize, "rgba(0, 0, 0, 0.7)");
-            ui.drawStyled('badge', btn.shortcut, bX + (badgeSize / 2), bY + (badgeSize / 2), { color: UITheme.colors.textMuted });
+            ui.drawPanel(bX, bY, badgeW, badgeSize, "rgba(0, 0, 0, 0.7)");
+            ui.drawStyled('badge', btn.shortcut, bX + (badgeW / 2), bY + (badgeSize / 2), { color: UITheme.colors.textMuted });
         }
 
         const centerX = btn.x + (btn.w / 2);

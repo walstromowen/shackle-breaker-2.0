@@ -247,12 +247,16 @@ export class CharacterCreatorRenderer {
             companion: "COMPANION",
             trait: "TRAIT",
             difficulty: "DIFFICULTY",
+            cheats: "CHEATS",
             seed: "WORLD SEED"
         };
 
-        const MENU_ITEM_HEIGHT = 68;
+        // One row more (Cheats) and the rows get a little shorter, so the Start button still sits inside the panel
+        const MENU_ITEM_HEIGHT = data.CHEATS ? 64 : 68;
+        const START_GAP = data.CHEATS ? 16 : 24, START_EXTRA = data.CHEATS ? 16 : 20;
         const ROW_GAP = 4;
-        const menuSteps = ['background', 'origin', 'appearance', 'keepsake', 'companion', 'trait', 'difficulty', 'seed', 'start'];
+        // The Cheats row is only there while the developer console is switched on for this build (data.CHEATS is undefined otherwise)
+        const menuSteps = ['background', 'origin', 'appearance', 'keepsake', 'companion', 'trait', 'difficulty', ...(data.CHEATS ? ['cheats'] : []), 'seed', 'start'];
 
         menuSteps.forEach((key) => {
             const rowId = key === 'seed' ? "INPUT_SEED" : `ROW_${key}`;
@@ -264,13 +268,13 @@ export class CharacterCreatorRenderer {
 
             if (key === 'start') {
                 const btnId = "BTN_START";
-                const btnY = menuY + 24;
+                const btnY = menuY + START_GAP;
 
                 this.hotspots.push({
-                    id: btnId, x: menuStartX + 96, y: btnY, w: midW - 192, h: MENU_ITEM_HEIGHT + 20
+                    id: btnId, x: menuStartX + 96, y: btnY, w: midW - 192, h: MENU_ITEM_HEIGHT + START_EXTRA
                 });
 
-                ui.drawButton(menuStartX + 96, btnY, midW - 192, MENU_ITEM_HEIGHT + 20, "Start", ui.flags(btnId, focusId), { font: UITheme.fonts.medium });
+                ui.drawButton(menuStartX + 96, btnY, midW - 192, MENU_ITEM_HEIGHT + START_EXTRA, "Start", ui.flags(btnId, focusId), { font: UITheme.fonts.medium });
                 return;
             }
 
@@ -320,6 +324,10 @@ export class CharacterCreatorRenderer {
             else if (key === 'difficulty') {
                 const d = data.DIFFICULTIES?.[selections.difficultyIdx];
                 valStr = d?.label;
+            } else if (key === 'cheats') {
+                const c = data.CHEATS?.[selections.cheatsIdx];
+                valStr = c?.label;
+                if (c?.id === true) valColor = UITheme.colors.textHighlight;
             } else if (key === 'seed') {
                 valStr = selections.seed;
                 if (isEditingSeed) {
@@ -458,6 +466,7 @@ export class CharacterCreatorRenderer {
         if (currentStep === 'companion') return data.COMPANIONS?.[selections.companionIdx]?.desc;
         if (currentStep === 'trait') return data.TRAITS?.[selections.traitIdx]?.desc;
         if (currentStep === 'difficulty') return data.DIFFICULTIES?.[selections.difficultyIdx]?.desc;
+        if (currentStep === 'cheats') return data.CHEATS?.[selections.cheatsIdx]?.desc;
 
         return "";
     }

@@ -1,10 +1,21 @@
 import { FENCE_FRAMES, FENCE_CONNECT_KEY } from './fenceConnections.js';
+import { ENTITY_DEFINITIONS } from '../characters/entityDefinitions.js';
 
 /* The gravestone's body, shared by TOMBSTONE and OLD_GRAVESTONE below: one sprite, one footprint, one hitbox, so nothing on screen tells the two apart. */
 const GRAVESTONE = { sheet: 'objTombstone', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } };
 
 /* A fence piece's body: 32 frames on one sheet, the right one picked by the renderer from the neighbouring fences (fenceConnections.js). */
 const WOODEN_FENCE = { sheet: 'objWoodenFence', spriteX: 0, spriteY: 0, width: 1, height: 1, frames: FENCE_FRAMES, connects: FENCE_CONNECT_KEY, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } };
+
+/* An NPC standing in the world is the character entity itself: it takes the overworld sheet of that entity (ENTITY_DEFINITIONS[entityId].spriteOverworld, the sheet the
+   creature walks and runs from) and shows the idle animation of that sheet, rows 0-3 (South, East, North, West), in the direction `facing`. `row` is that row's index within the idle block (0 = the first row
+   of the sheet while the idle block starts there), worked out here so it can be read at a glance and checked by a test; MapRenderer.drawCharacterObject draws that row. */
+const IDLE_ROW_OF = { DOWN: 0, RIGHT: 1, UP: 2, LEFT: 3 };
+const npcBody = (entityId, facing = 'DOWN') => {
+    const entity = ENTITY_DEFINITIONS[entityId];
+    if (!entity || !entity.spriteOverworld) throw new Error(`[mapObjectDefinitions] an NPC needs a character entity with an overworld sheet, got "${entityId}"`);
+    return { character: { entity: entityId, sheet: entity.spriteOverworld, facing, row: IDLE_ROW_OF[facing] }, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } };
+};
 
 export const MAP_OBJECTS_DEFINITIONS = {
     // --- GROUND DECORATION ---
@@ -81,6 +92,8 @@ export const MAP_OBJECTS_DEFINITIONS = {
     /* TOMBSTONE / OLD_GRAVESTONE: the same gravestone twice (GRAVESTONE above). The plain TOMBSTONE is scenery and is the common one; OLD_GRAVESTONE is the rare twin
        that starts the "Old Gravestone" encounter (dig for what was buried, or wake what was). Both stand on the plains (biomeDefinitions.js PLAINS, each its own band). */
     TOMBSTONE: { ...GRAVESTONE },
+    /* AFTERMATH_REMAINS: a helmet on the ground with a sword through it, what an old battle left behind. Face it and interact to start the Aftermath encounter (biomeDefinitions.js PLAINS, its own band). */
+    AFTERMATH_REMAINS: { sheet: 'objAftermath', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'aftermath' } },
     OLD_GRAVESTONE: { ...GRAVESTONE, interaction: { type: 'ENCOUNTER', id: 'old_gravestone', isRepeatable: false } },
     MYSTERIOUS_ALTAR: { sheet: 'objMysteriousAltar', spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 3, h: 2 }, interaction: { type: 'ENCOUNTER', id: 'mysterious_altar' } },
     
@@ -96,6 +109,17 @@ export const MAP_OBJECTS_DEFINITIONS = {
     CARPENTERS_BENCH: { sheet: 'objCarpentersBench', spriteX: 7, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'CRAFTING_STATION', station: 'carpenters_bench', title: "Carpenter's Bench" } },
     STONE_BANKER: { sheet: 'objStoneBanker', spriteX: 9, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'CRAFTING_STATION', station: 'stone_banker', title: 'Stone Banker' } },
     TAILORS_BENCH: { sheet: 'objTailorsBench', spriteX: 8, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'CRAFTING_STATION', station: 'tailors_bench', title: "Tailor's Bench" } },
+
+    // --- NPCS ---
+    /* People and animals standing in the world. They are map objects (placed by a biome's mapObjects rules like a tree, see PLAINS / DESERT / SNOWY_MOUNTAINS), but they have no
+       picture of their own: `...npcBody(entityId, facing)` takes the creature's own character entity (ENTITY_DEFINITIONS) and draws the idle row of its overworld sheet (the one it walks and runs from) facing South / East / North / West
+       ('DOWN' / 'RIGHT' / 'UP' / 'LEFT'), standing on the tile exactly as a character does (MapRenderer.drawCharacterObject). Face one and interact to start its encounter; the
+       encounter takes the object off the map (DESTROY_OBJECT) when the creature leaves, flees, is fought or joins you.
+         interaction.triggerRadius: the encounter also starts by itself when you step within that many tiles of it, in every direction (a square, diagonals too), once each time
+                                    you come into range (OverworldController.findEncounterZones, the same as the scarecrow's `triggerLine` but all around). */
+    SHADY_MERCHANT_NPC: { ...npcBody('SHADY_MERCHANT'), interaction: { type: 'ENCOUNTER', id: 'suspicious_merchant' } },
+    DOG_NPC: { ...npcBody('DOG'), interaction: { type: 'ENCOUNTER', id: 'wounded_mutt' } },
+    MADMAN_NPC: { ...npcBody('MAD_MAN'), interaction: { type: 'ENCOUNTER', id: 'a_disturbing_sight', triggerRadius: 2 } },
 
     // --- ANIMATED ---
     CAMPFIRE: { sheet: 'objCampfire', spriteX: 0, spriteY: 6, frames: 32, speed: 0.1, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'bonfire' }, light: { hasLight: true, radius: 5.5, color: '255, 100, 0', maxAlpha: 0.8, flickerSpeed: 0.1, flickerAmp: 0.5 } },

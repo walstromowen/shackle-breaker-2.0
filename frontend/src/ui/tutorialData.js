@@ -18,8 +18,8 @@ export const TIPS = {
         rows: [
             { keys: ['W', 'A', 'S', 'D'], text: 'Walk (the arrow keys work too)' },
             { keys: ['Space'], text: 'Talk to, open or use whatever is in front of you (Enter works too)' },
-            { keys: ['M'], text: 'Open the menu, or click the menu button' },
-            { keys: ['P', 'C', 'J', 'N', 'B', 'O'], text: 'Shortcuts: Party, Character, Journal, world map (N), crafting Bag, System (save / load / quit)' },
+            { keys: ['Esc'], text: 'Open the menu (Esc again closes it), or click the menu button' },
+            { keys: ['P', 'C', 'J', 'M', 'B', 'O'], text: 'Shortcuts: Party, Character, Journal, world Map (M), crafting Bag, System (save / load / quit)' },
             { keys: ['1', '-', '9', '0'], text: 'Use the item in that hotbar slot' }
         ]
     },
@@ -111,7 +111,7 @@ export const TIPS = {
             { keys: ['Drag'], text: 'Drag the map with the mouse' },
             { keys: ['F'], text: 'Fit everything you have seen on the screen' },
             { keys: ['C'], text: 'Center the map on your party (Space works too)' },
-            { keys: ['Esc'], text: 'Back to the world (N works too), or right-click' }
+            { keys: ['Esc'], text: 'Back to the world (M works too), or right-click' }
         ]
     },
 

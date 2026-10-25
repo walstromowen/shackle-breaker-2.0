@@ -1,6 +1,7 @@
 import { CanvasUI } from '../../ui/canvasUI.js';
 import { UITheme } from '../../ui/UITheme.js';
 import { events } from '../../../../shared/core/eventBus.js';
+import { gameState } from '../../../../shared/core/gameState.js';
 import { BattleCombatantRenderer } from './battleCombatantRenderer.js';
 import { BattleHUDRenderer } from './battleHUDRenderer.js';
 import { BattleDebuggerRenderer } from './battleDebuggerRenderer.js';
@@ -51,7 +52,7 @@ export class BattleRenderer {
         });
 
         events.on('TOGGLE_BATTLE_DEBUG', () => {
-            this.showDebug = !this.showDebug;
+            this.showDebug = gameState.cheats === true && !this.showDebug;
         });
     }
 
@@ -229,7 +230,7 @@ export class BattleRenderer {
         this.drawFloatingTexts(this.dt);
 
         // 6. Draw Debug Overlay
-        if (this.showDebug) {
+        if (this.showDebug && gameState.cheats === true) {
             this.debugRenderer.render(state);
         }
 

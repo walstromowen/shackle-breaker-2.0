@@ -47,8 +47,8 @@ test('the merchant sheet is 8 frames across and 12 rows of 64 px, and its shadow
     assert.deepEqual([merchant.w, merchant.h], [512, 768]);
     assert.ok(mainJs.includes("shadyMerchantSprite: './assets/sprites/shady_merchant/shady_merchant_spritesheet.png'"));
     assert.equal(ENTITY_DEFINITIONS.SHADY_MERCHANT.spriteOverworld, 'shadyMerchantSprite');
-    const ref = footprint(madman, 0, 0).slice(5, 9); // rows 53..56: the shadow ellipse below the feet (it is the only thing down there)
-    assert.deepEqual(ref, [18, 16, 14, 6]);
+    const ref = footprint(madman, 0, 0).slice(5, 9); // rows 53..56: the oval shadow below the feet (it is the only thing down there)
+    assert.deepEqual(ref, [20, 20, 18, 12]);
     for (let row = 0; row < 12; row++) {
         for (let col = 0; col < 8; col++) {
             const f = footprint(merchant, col, row);
@@ -139,4 +139,17 @@ test('the madman starts his encounter from 2 tiles away in every direction, once
     // a vanished madman (isFading) no longer sees you
     madman.isFading = true;
     assert.equal(zones(11, 10).size, 0);
+});
+
+test('an NPC is its character entity: it takes the entity\'s own overworld sheet and shows an idle row (rows 0-3 of that sheet)', () => {
+    const NPCS = { SHADY_MERCHANT_NPC: 'SHADY_MERCHANT', DOG_NPC: 'DOG', MADMAN_NPC: 'MAD_MAN' };
+    for (const [obj, entity] of Object.entries(NPCS)) {
+        const c = MAP_OBJECTS_DEFINITIONS[obj].character;
+        assert.equal(c.entity, entity, `${obj} stands for ${entity}`);
+        assert.equal(c.sheet, ENTITY_DEFINITIONS[entity].spriteOverworld, `${obj} uses the sheet ${entity} walks from`);
+        assert.ok(c.row >= 0 && c.row <= 3, 'an idle row: the top four rows of the sheet are the idle animations');
+        assert.equal(['DOWN', 'RIGHT', 'UP', 'LEFT'][c.row], c.facing, 'the row is the one for the way it faces');
+        assert.equal(mapObjectFactory.create(obj, 1, 1, null).sheet, c.sheet, 'and the placed object hands that sheet to the renderer');
+        assert.ok(mainJs.includes(`${c.sheet}: './assets/`), 'the sheet is registered');
+    }
 });

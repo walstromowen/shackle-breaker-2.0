@@ -59,14 +59,15 @@ test('the map is a screen of its own: a menu button and key on the overworld, a 
     const read = (p) => fs.readFileSync(new URL(p, import.meta.url), 'utf8');
     const ow = read('../../frontend/src/screens/overworld/overworldController.js');
     assert.match(ow, /id: 'btn_map'/);
-    assert.match(ow, /map: 'KeyN'/);
+    assert.match(ow, /map: 'KeyM'/);
+    assert.match(ow, /toggle: 'Escape'/, 'Esc opens the menu');
     assert.match(ow, /scene: sceneName|executeMenuAction\('world_map'/);
     const sm = read('../../frontend/src/engine/sceneManager.js');
     assert.match(sm, /world_map: null/, 'it gets the standard Back button');
     assert.match(sm, /case 'world_map': return this\.worldMapController/);
     assert.match(sm, /case 'world_map': return this\.worldMapRenderer/);
     assert.ok(TIPS.world_map && TIPS.world_map.rows.length >= 4 && TIPS.world_map.rows.length <= 7, 'a control card, 4 to 7 rows');
-    assert.ok(TIPS.overworld.rows.some(r => r.keys.includes('N')), 'the overworld card names the key');
+    assert.ok(TIPS.overworld.rows.some(r => r.keys.includes('M')), 'the overworld card names the key');
 });
 
 function makeController(held = []) {
