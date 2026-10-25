@@ -194,12 +194,27 @@ export class BlobTerrainRenderer {
         this._infos.set(key, i);
         return i;
     }
+    _isRiverWater(col, row) {
+        const terrain = this._wm.terrain;
+        return !!(terrain && terrain.isRiverCell && this._wm.getTileAt(col, row) === this.TILES.LAYER_0 && terrain.isRiverCell(col, row));
+    }
     _pack(col, row) {
         let b = this._wm.getBiomeAt(col, row);
         // a river runs between two biomes: all of its water is drawn in one style, instead of changing colour down the middle at the border
-        const terrain = this._wm.terrain;
-        if (b && terrain && terrain.isRiverCell && this._wm.getTileAt(col, row) === this.TILES.LAYER_0 && terrain.isRiverCell(col, row)) b = terrain.getRiverBiome();
+        if (b && this._isRiverWater(col, row)) b = this._wm.terrain.getRiverBiome();
         return (b && b.blobTileset) || null;
+    }
+    // The pack whose ground a river cell lies on: the bank beside it. The water is one style all along the river, but the bed that shows
+    // under the shore wash (the fringe along the bank) is the dirt of the biome the bank belongs to, so the edge matches the land it
+    // borders and not the biome on the far side of the river. Open water (no bank within a cell) hides its bed, so it keeps the river's own pack.
+    _bankPack(col, row) {
+        const T = this.TILES;
+        for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+            if (this._wm.getTileAt(col + dx, row + dy) === T.LAYER_0) continue;
+            const b = this._wm.getBiomeAt(col + dx, row + dy);
+            if (b && b.blobTileset && b.blobTileset.water !== false) return b.blobTileset;
+        }
+        return null;
     }
 
     /** True when this renderer draws the terrain of the cell (so MapRenderer must not draw its own tiles / wall faces there). */
@@ -215,9 +230,10 @@ export class BlobTerrainRenderer {
         let p = this._plans.get(key);
         if (p) return p;
         const pack = this._pack(col, row);
-        p = { pack, ground: null, water: null, levels: null };
+        p = { pack, groundPack: null, ground: null, water: null, levels: null };
         this._plans.set(key, p);
         if (!pack) return p;
+        if (this._isRiverWater(col, row)) p.groundPack = this._bankPack(col, row);
 
         const lv = (x, y) => this.info(x, y).lv;
         const inLevel = (li) => (x, y) => lv(x, y) > li;
@@ -433,7 +449,8 @@ export class BlobTerrainRenderer {
                 p = cells[i + 2],
                 imgs = this._images(p.pack);
             if (!imgs) continue;
-            for (const op of p.ground) draw(imgs, op, c, r, p.pack);
+            const gp = p.groundPack, gimgs = (gp && this._images(gp)) || imgs;
+            for (const op of p.ground) draw(gimgs, op, c, r, gp || p.pack);
             const w = p.water;
             if (w) {
                 if (w.interior) {
@@ -451,9 +468,9 @@ export class BlobTerrainRenderer {
                         ph(r),
                     );
                 } else {
-                    // shore: every cell on the same frame so the wash lines up along the bank
+                    // shore: every cell on the same frame so the wash lines up along the bank. A river's shore wears the bank's colours (riverShoreAnim)
                     ctx.drawImage(
-                        imgs[SLOT.waterAnim],
+                        (gp && gp.riverShoreAnim && this.loader.get(gp.riverShoreAnim)) || imgs[SLOT.waterAnim],
                         (w.pos[0] + frame * BLOB_SHEET_COLS) * BLOB_TILE_PX,
                         w.pos[1] * BLOB_TILE_PX,
                         BLOB_TILE_PX,

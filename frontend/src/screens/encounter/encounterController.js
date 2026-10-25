@@ -8,6 +8,8 @@ import { LootTableFactory } from "../../../../shared/items/lootTableFactory.js";
 import { ItemDefinitions } from '../../../../shared/items/itemDefinitions.js';
 import { NARRATION, STAGE_START_TIMER, narrationPlan, textEndTimer, decisionAlpha, decisionsDoneTimer, actionPadding } from '../../ui/narration.js';
 
+const PROLOGUE_HOLD = 1.2;     // seconds the "skip the prologue" button (or Escape) is held
+
 export class EncounterController extends BaseController {
   constructor(input, config, worldManager) {
     super(input);
@@ -33,6 +35,8 @@ export class EncounterController extends BaseController {
     this.inputCooldown = 0.15;
     // Nothing is skipped by clicking. Skipping ahead takes a deliberate HOLD (NARRATION.HOLD_TO_SKIP) of the button, Enter or Space.
     this.holdTimer = 0;               // seconds the skip button has been held (0..HOLD_TO_SKIP)
+    this.prologueHold = 0;            // seconds the "skip the prologue" button (or Escape) has been held
+    this.prologueHint = 0;            // a click on that button makes it flare
     this._holdArmed = false;          // this press began while something was skippable
     this._wasDown = false;
     this._swallowClick = false;       // the release of a hold that has just skipped must not also click whatever is under the mouse
@@ -67,6 +71,8 @@ export class EncounterController extends BaseController {
     }
     
     this.model = EncounterFactory.create(encounterId, context);
+    this._encounterId = encounterId;
+    this.prologueHold = 0;
     if (!this.model) {
       events.emit('CHANGE_SCENE', { scene: 'overworld' });
       return;
@@ -107,6 +113,7 @@ export class EncounterController extends BaseController {
       this.hasDoneIntro = true;
     }
     this._updateHold(dt);
+    this._updatePrologueHold(dt);
     
     if (this.imageTransition.active) {
       this.imageTransition.timer += dt;
@@ -284,8 +291,35 @@ export class EncounterController extends BaseController {
   _skipControlDown() {
     const input = this.input;
     if (!input) return false;
+    if (this._onPrologueButton()) return false;      // a press on the prologue's own button is not a press on the text
     const keys = input.heldKeys;
     return !!(input.isMouseDown || (keys && (keys.has('Enter') || keys.has('NumpadEnter') || keys.has('Space'))));
+  }
+
+  /** Is this the opening prologue? It can be skipped altogether (hold the button, or Escape). */
+  _isPrologue() {
+    return !!this.model && this._encounterId === 'prologue' && this.actionPhase !== 'ending';
+  }
+
+  _onPrologueButton() {
+    return this._isPrologue() && this.getFocusId() === 'BTN_SKIP_PROLOGUE';
+  }
+
+  /** Holding the "skip the prologue" button (or Escape) for PROLOGUE_HOLD seconds ends the encounter at once, as its last stage would. */
+  _updatePrologueHold(dt) {
+    if (this.prologueHint > 0) this.prologueHint = Math.max(0, this.prologueHint - dt * 1.6);
+    if (!this._isPrologue()) { this.prologueHold = 0; return; }
+    const input = this.input;
+    const keys = input && input.heldKeys;
+    const down = !!(input && ((input.isMouseDown && this._onPrologueButton()) || (keys && keys.has('Escape'))));
+    if (!down) { this.prologueHold = 0; return; }
+    this.prologueHold += dt;
+    if (this.prologueHold >= PROLOGUE_HOLD) {
+      this.prologueHold = 0;
+      this._swallowClick = true;
+      this._swallowTimer = 0;
+      this.endEncounter(null);
+    }
   }
 
   _updateHold(dt) {
@@ -340,27 +374,8 @@ export class EncounterController extends BaseController {
     else this.textTimer = end + actionPadding(text);
   }
 
-  /**
-   * A plain click / tap (Enter, Space) on text that is still being told: the first one finishes the words, the next one
-   * moves the story on. Holding still works as before; this just means the "what you did" lines and the single
-   * "Continue" stages never need a long press. Returns true when it did something.
-   */
-  _tapSkip() {
-    if (!this.model || !this._isSkippable()) return false;
-    switch (this.actionPhase) {
-      case 'message': case 'reward_delay': case 'ending_delay': case 'none':
-        break;
-      default:
-        return false;                     // dice and the roll popup keep their own pace (hold to skip)
-    }
-    this._skipAhead();
-    this.holdTimer = 0;
-    this._holdArmed = false;
-    this.inputCooldown = 0.15;
-    return true;
-  }
-
   onClick(hitboxId) {
+    if (hitboxId === 'BTN_SKIP_PROLOGUE') { this.claimSfx(); this.prologueHint = 1; return; }     // a click on it only reminds: skipping takes a hold
     // In an encounter a click either does something that makes its own sound or does nothing at all (silent), so
     // UIInteractionManager must not add a second one, not even when the click is ignored.
     this.claimSfx();
@@ -388,8 +403,7 @@ export class EncounterController extends BaseController {
     }
 
     // A click on text that is still appearing (or on a choice that has not appeared yet) hurries it along
-    if (this._tapSkip()) return;
-    if (this._isSkippable()) this.hintPulse = 1;
+    if (this._isSkippable()) this.hintPulse = 1;      // a click never skips: only a hold does
   }
 
   onRightClick(hitboxId) {
@@ -436,14 +450,14 @@ export class EncounterController extends BaseController {
     if (this.actionPhase !== 'none') {
       if (intent === 'CONFIRM') {
         if (e && e.repeat) return;                                           // a held key is the hold-to-skip, handled in update()
-        if (!this._tapSkip() && this._isSkippable()) this.hintPulse = 1;
+        if (this._isSkippable()) this.hintPulse = 1;
       }
       return;
     }
 
     const options = this._getValidDecisions();
     if (!options || options.length === 0) {
-      if (intent === 'CONFIRM' && !(e && e.repeat) && !this._tapSkip() && this._isSkippable()) this.hintPulse = 1;
+      if (intent === 'CONFIRM' && !(e && e.repeat) && this._isSkippable()) this.hintPulse = 1;
       return;
     }
 
@@ -458,7 +472,7 @@ export class EncounterController extends BaseController {
 
     // Until the first choice has appeared there is nothing to move through or pick
     if (!this._decisionReady(0)) {
-      if (intent === 'CONFIRM' && !(e && e.repeat) && !this._tapSkip() && this._isSkippable()) this.hintPulse = 1;
+      if (intent === 'CONFIRM' && !(e && e.repeat) && this._isSkippable()) this.hintPulse = 1;
       return;
     }
 
@@ -864,6 +878,7 @@ export class EncounterController extends BaseController {
       stageEffect: (this.actionPhase === 'none' && this.model.getCurrentStage && this.model.getCurrentStage()?.effect) || null,
       hasDoneIntro: this.hasDoneIntro,
       canSkip: this._isSkippable(),
+      prologueSkip: this._isPrologue() ? { progress: Math.min(1, this.prologueHold / PROLOGUE_HOLD), pulse: this.prologueHint } : null,
       holdProgress: Math.min(1, this.holdTimer / NARRATION.HOLD_TO_SKIP),
       hintPulse: this.hintPulse,
       actionPhase: this.actionPhase,

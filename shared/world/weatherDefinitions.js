@@ -38,7 +38,7 @@ export const WeatherDefinitions = {
         durationRange: [10,20],
         battleMessage: "A blinding sandstorm whips up around you!" // ✅ NEW
     },
-    /* Wind-driven snow that whites out the screen and chills everyone in a fight (status 'chilled', see statusEffectDefinitions.js).
+    /* Wind-driven snow that whites out the screen and slows everyone in a fight (status 'slowed', see statusEffectDefinitions.js).
        Only a biome that lists 'blizzard' in its allowedWeather can roll it (the snowy mountains); its odds are in WEATHER_WEIGHTS (timeSystem.js).
        audioEffect is the fog loop until there is a wind loop: register e.g. weatherBlizzard in main.js and put its key here. */
     BLIZZARD: {
@@ -48,7 +48,7 @@ export const WeatherDefinitions = {
         visualEffect: 'particle_blizzard',
         audioEffect: 'weatherFog',
         durationRange: [6, 14],
-        appliedStatusId: 'chilled',
+        appliedStatusId: 'slowed',
         battleMessage: "A howling blizzard sweeps across the battlefield!"
     }
 };

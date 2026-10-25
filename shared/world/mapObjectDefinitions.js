@@ -137,7 +137,7 @@ export const MAP_OBJECTS_DEFINITIONS = {
                                     you come into range (OverworldController.findEncounterZones, the same as the scarecrow's `triggerLine` but all around). */
     SHADY_MERCHANT_NPC: { ...npcBody('SHADY_MERCHANT'), interaction: { type: 'ENCOUNTER', id: 'suspicious_merchant' } },
     DOG_NPC: { ...npcBody('DOG'), interaction: { type: 'ENCOUNTER', id: 'wounded_mutt' } },
-    MADMAN_NPC: { ...npcBody('MAD_MAN'), interaction: { type: 'ENCOUNTER', id: 'a_disturbing_sight', triggerRadius: 2 } },
+    MADMAN_NPC: { ...npcBody('MAD_MAN', 'UP'), interaction: { type: 'ENCOUNTER', id: 'a_disturbing_sight', triggerRadius: 2 } },
 
     // --- ANIMATED ---
     CAMPFIRE: { sheet: 'objCampfire', spriteX: 0, spriteY: 6, frames: 32, speed: 0.1, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'bonfire' }, light: { hasLight: true, radius: 5.5, color: '255, 100, 0', maxAlpha: 0.8, flickerSpeed: 0.1, flickerAmp: 0.5 } },

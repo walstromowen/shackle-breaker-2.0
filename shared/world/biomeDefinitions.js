@@ -213,6 +213,7 @@ export const BIOME_DEFINITIONS = {
             cliffShadow: 'snowyMountainsCliffShadow',
             cliffStairs: 'snowyMountainsCliffStairs',
             waterAnim: 'snowyMountainsWaterAnim',
+            riverShoreAnim: 'snowyMountainsRiverShore' /* the shore wash a river wears where it runs along this biome's bank: the river's own water colours with this biome's bank colours (see BlobTerrainRenderer._bankPack) */,
             waterInterior: 'snowyMountainsWaterInterior',
             levelDirt: null /* frozen dirt only on the lowest ground, never on the tops of the cliffs */,
         },

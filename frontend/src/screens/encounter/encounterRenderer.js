@@ -134,7 +134,7 @@ export class EncounterRenderer {
         const {
             imageInfo, transition, text, title, stageName, encounter, decisions,
             rewards, rewardItems, ui: uiState, party = [], currency = 0, skipMessageAnimation,
-            textTimer = 0, stageTone = null, stageEffect = null, hasDoneIntro = false, canSkip = false, holdProgress = 0, hintPulse = 0, actionPhase, rollData, hoveredElement, scrollOffsets, onLayoutUpdate
+            textTimer = 0, stageTone = null, stageEffect = null, hasDoneIntro = false, canSkip = false, holdProgress = 0, hintPulse = 0, prologueSkip = null, actionPhase, rollData, hoveredElement, scrollOffsets, onLayoutUpdate
         } = state;
 
         const { CANVAS_WIDTH, CANVAS_HEIGHT } = this.config;
@@ -442,6 +442,19 @@ export class EncounterRenderer {
         // Skipping is a deliberate act: hold the button / Enter / Space. (The skill-check popup has its own prompt.)
         if (canSkip && !['rolling', 'hold_base', 'apply_mod', 'wait_for_roll', 'result'].includes(actionPhase)) {
             this.drawHoldPrompt(ctx, skipPromptX, skipPromptY, 'right', holdProgress, hintPulse, 1);
+        }
+
+        // The prologue can be skipped as a whole: hold this button (or Escape). Top right, out of the way of the words.
+        if (prologueSkip) {
+            const label = 'Hold to skip the prologue';
+            ctx.save();
+            ctx.font = UITheme.fonts.italic;
+            const totalW = 30 + 14 + ctx.measureText(label).width;
+            ctx.restore();
+            const px = CANVAS_WIDTH - 48, py = 84;
+            this.hotspots.push({ id: 'BTN_SKIP_PROLOGUE', x: px - totalW - 16, y: py - 40, w: totalW + 32, h: 56 });
+            const over = focusId === 'BTN_SKIP_PROLOGUE';
+            this.drawHoldPrompt(ctx, px, py, 'right', prologueSkip.progress, Math.max(prologueSkip.pulse, over ? 0.9 : 0), 1, label);
         }
 
         // ========================================================
@@ -879,9 +892,9 @@ export class EncounterRenderer {
         drawEmbers(ctx, now, x0, width, height, alpha, tint);
     }
 
-    /** "Click to skip" (a click finishes the words, a hold skips ahead) with a ring that fills while the button is held. Faint at rest; a click that did nothing makes it flare. */
-    drawHoldPrompt(ctx, x, y, align, progress, pulse, alpha) {
-        const label = 'Click to skip';
+    /** "Hold to skip" (nothing is skipped by a click, only by a hold) with a ring that fills while the button is held. Faint at rest; a click that did nothing makes it flare. */
+    drawHoldPrompt(ctx, x, y, align, progress, pulse, alpha, text = 'Hold to skip') {
+        const label = text;
         const strength = Math.max(0.35 + 0.15 * (0.5 + 0.5 * Math.sin(Date.now() / 600)), pulse, progress > 0 ? 1 : 0);
         ctx.save();
         ctx.globalAlpha = alpha * Math.min(1, strength);

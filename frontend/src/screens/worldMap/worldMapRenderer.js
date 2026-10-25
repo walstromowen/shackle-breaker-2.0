@@ -2,6 +2,8 @@ import { CanvasUI } from '../../ui/canvasUI.js';
 import { UITheme } from '../../ui/UITheme.js';
 import { MinimapRenderer } from '../../ui/minimapRenderer.js';
 import { BLOCK } from '../../../../shared/world/exploredMap.js';
+import { gameState } from '../../../../shared/core/gameState.js';
+import { MAP_OBJECTS_DEFINITIONS } from '../../../../shared/world/mapObjectDefinitions.js';
 import { VIEW } from './worldMapController.js';
 
 /* WorldMapRenderer - draws the world map screen (see worldMapController.js).
@@ -26,6 +28,7 @@ export class WorldMapRenderer {
         this.painter.cfg.maxChunks = Infinity;
         this._wm = null;
         this._masked = new Map();   // "cx,cy" -> { cv, ver (the painted version it was made from), xv (the explored version) }
+        this._houses = null;        // { t, list } the buildings the world has placed, as { x, y, w, h } in tiles (see _buildings)
     }
 
     _reset(wm) {
@@ -34,6 +37,26 @@ export class WorldMapRenderer {
         this.painter._chunks.clear();
         this.painter._inside = false;
         this._masked.clear();
+        this._houses = null;
+    }
+
+    /* Every building the world has placed (the village houses, smithies, workshops): a solid object of 6 or more tiles that does nothing when touched, the minimap's own rule. They are
+       read from the world's changes, where the villages write them, so a house is on the map when its village was generated, however far away the party has walked since. Cached for a second. */
+    _buildings() {
+        const now = performance.now();
+        if (this._houses && now - this._houses.t < 1000) return this._houses.list;
+        const list = [];
+        const changes = (gameState.world && gameState.world.changes) || {};
+        for (const key in changes) {
+            const def = changes[key] && MAP_OBJECTS_DEFINITIONS[changes[key]];
+            if (!def || def.isGround || !def.isSolid || def.interaction) continue;
+            const w = def.width || 1, h = def.height || 1;
+            if (w * h < 6) continue;
+            const [col, row] = key.split(',').map(Number);
+            list.push({ x: col, y: row - (h - 1), w, h });   // a tall object stands on its row and rises above it
+        }
+        this._houses = { t: now, list };
+        return list;
     }
 
     /* The painted-and-masked canvas of chunk (cx, cy), or null when nothing there has been seen or it is not painted yet. Paints within `deadline`. */
@@ -104,6 +127,21 @@ export class WorldMapRenderer {
                 const x0 = Math.round(sx(c * CHUNK)), y0 = Math.round(sy(r * CHUNK));
                 const x1 = Math.round(sx((c + 1) * CHUNK)), y1 = Math.round(sy((r + 1) * CHUNK));
                 ctx.drawImage(cv, x0, y0, x1 - x0, y1 - y0);
+            }
+        }
+
+        // the buildings, on the land the party has seen
+        if (wm && explored) {
+            ctx.fillStyle = this.painter.cfg.buildings || '#7a5a3c';
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)';
+            ctx.lineWidth = 1;
+            for (const b of this._buildings()) {
+                if (b.x + b.w < left || b.x > right || b.y + b.h < top || b.y > bottom) continue;
+                if (!explored.has(b.x + (b.w >> 1), b.y + (b.h >> 1))) continue;
+                const x0 = Math.round(sx(b.x)), y0 = Math.round(sy(b.y));
+                const w = Math.max(2, Math.round(sx(b.x + b.w)) - x0), h = Math.max(2, Math.round(sy(b.y + b.h)) - y0);
+                ctx.fillRect(x0, y0, w, h);
+                if (w >= 8) ctx.strokeRect(x0 + 0.5, y0 + 0.5, w - 1, h - 1);
             }
         }
 

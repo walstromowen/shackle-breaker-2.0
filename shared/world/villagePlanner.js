@@ -67,7 +67,13 @@ export class VillagePlanner {
         this._planMainRoads(plan, startCol, startRow, hub, blueprint, cx, cy);
         this._planSideStreets(plan);
         this._linkLevels(plan);
+        /* buildings, then the alleys no yard opens on are taken back (they only ate the ground), and the freed ground is built on: twice over */
         this._planBuildings(plan, blueprint);
+        for (let pass = 0; pass < 2; pass++) {
+            if (!this._pruneAlleys(plan)) break;
+            this._planBuildings(plan, blueprint);
+        }
+        this._pruneAlleys(plan);
         this._planStreetProps(plan, blueprint);
         this._planTrees(plan, blueprint);
         this._paveRoads(plan);
@@ -90,6 +96,7 @@ export class VillagePlanner {
             foldSteps: 2 * (2 * rad + gap),
             /* a side street may touch its parent for this many steps (the junction) */
             graceSteps: 2 * rad + gap,
+            sideRad: side.width !== undefined ? Math.floor((Math.max(1, Math.round(side.width)) - 1) / 2) : rad,
             sideChance: side.chance ?? 0,
             sideSpacing: side.spacing ?? 10,
             sideStart: side.startAt ?? 8,
@@ -119,6 +126,10 @@ export class VillagePlanner {
             upperMin: lv.upper ? lv.upper.min : 8,        // length of the street on the far side, at least
             upperMax: lv.upper ? lv.upper.max : 34,
         };
+    }
+    /* the half width of a road: the main roads and the streets that climb to a stair use the village's `rad`, the alleys that fork off them are narrower (`sideStreets.width`) */
+    _rad(plan, road) {
+        return road && road.rad !== undefined ? road.rad : plan.cfg.rad;
     }
     /* the level a road runs on */
     _roadElev(plan, road) {
@@ -158,7 +169,7 @@ export class VillagePlanner {
     /* can the road `road` have a centre at (c, r)? `step` is the index that centre would get on the road */
     _centreOk(plan, road, c, r, step) {
         const cfg = plan.cfg;
-        const rad = cfg.rad;
+        const rad = this._rad(plan, road);
         const elev = this._roadElev(plan, road);
         if (plan.hubTiles.has(this._s(c, r))) return false; // a road leaves the hub, it never runs inside it
         for (let dy = -rad; dy <= rad; dy++) {
@@ -183,7 +194,7 @@ export class VillagePlanner {
         return true;
     }
     _stampRoad(plan, road, c, r, step, created = null) {
-        const rad = plan.cfg.rad;
+        const rad = this._rad(plan, road);
         for (let dy = -rad; dy <= rad; dy++) {
             for (let dx = -rad; dx <= rad; dx++) {
                 const key = this._s(c + dx, r + dy);
@@ -474,9 +485,26 @@ export class VillagePlanner {
         }
         return made;
     }
+    /* An alley that no yard opens on only takes ground from the yards beside it: take it back (its cells go, so the plots round it can be built). A road with a street
+       still growing out of it stays. Returns true when something was taken back. */
+    _pruneAlleys(plan) {
+        let any = false;
+        for (let again = true; again;) {
+            again = false;
+            for (const road of plan.roads) {
+                if (!road.alley || road.dead || road.served) continue;
+                if (plan.roads.some((o) => !o.dead && o.parent === road.id)) continue;
+                for (const [key, o] of plan.roadOwner) if (o.road === road.id) plan.roadOwner.delete(key);
+                road.dead = true;
+                road.centres = [];
+                again = any = true;
+            }
+        }
+        return any;
+    }
     _growSideStreet(plan, parent, at, dirIndex, len) {
         const cfg = plan.cfg;
-        const road = { id: plan.roads.length, kind: 'side', parent: parent.id, elev: this._roadElev(plan, parent), depth: parent.depth || 0, centres: [{ c: at.c, r: at.r, d: dirIndex }] };
+        const road = { id: plan.roads.length, kind: 'side', alley: true, parent: parent.id, rad: cfg.sideRad, elev: this._roadElev(plan, parent), depth: parent.depth || 0, centres: [{ c: at.c, r: at.r, d: dirIndex }] };
         const d = VILLAGE_DIRS[dirIndex];
         const created = [];
         let c = at.c;
@@ -501,7 +529,8 @@ export class VillagePlanner {
     }
     _planBuildings(plan, bp) {
         const cfg = plan.cfg;
-        const mods = (bp.modules || []).filter((m) => STRUCTURES[m.prefab]).map((m) => ({ ...m, placed: 0 }));
+        plan.placedBy = plan.placedBy || {};
+        const mods = (bp.modules || []).filter((m) => STRUCTURES[m.prefab]).map((m) => ({ ...m, placed: plan.placedBy[m.prefab] || 0 }));
         if (mods.length === 0) return;
         /* every spot along a road where a yard could stand, on either side: centred on a road cell, on the straight parts. Whether it really fits
            (nothing in the way, and its footpath ends right on the road) is decided in _placeModule. */
@@ -518,11 +547,13 @@ export class VillagePlanner {
             const ctr = slot.road.centres[slot.i];
             return this.pseudoRandom(ctr.c * 19 + slot.side * 7 + salt * 5, ctr.r * 23 + salt * 3 + plan.salt);
         };
-        let total = 0;
+        let total = plan.buildingCount || 0;
         const place = (slot, mod) => {
             if (!this._placeModule(plan, slot, mod)) return false;
             mod.placed++;
-            total++;
+            plan.placedBy[mod.prefab] = mod.placed;
+            plan.buildingCount = ++total;
+            slot.road.served = (slot.road.served || 0) + 1;
             return true;
         };
         /* a module's weight depends on the street: `verticalWeight` beside a north-south road, `horizontalWeight` beside an east-west one (0 = never there; the side houses show
@@ -531,7 +562,7 @@ export class VillagePlanner {
         const weightOn = (m, vertical) => (vertical ? (m.verticalWeight ?? m.weight ?? 1) : (m.horizontalWeight ?? m.weight ?? 1));
         /* 1. the buildings every village must have (the crafting stations): the first spot that fits, nearest the hub first, with some jitter */
         mods.forEach((mod, m) => {
-            if (!mod.required) return;
+            if (!mod.required || mod.placed > 0) return;
             const order = slots.map((s) => ({ s, k: s.i + hash(s, 11 + m) * 14 })).sort((a, b) => a.k - b.k);
             for (const { s } of order) {
                 if (total >= cfg.maxBuildings) break;
@@ -579,7 +610,7 @@ export class VillagePlanner {
         const prefab = (proto.variants && proto.variants[gate]) || proto;
         const w = prefab.width;
         const h = prefab.height;
-        const off = cfg.rad + 1 + cfg.setback;
+        const off = this._rad(plan, slot.road) + 1 + cfg.setback;
         let originC;
         let originR;
         if (horizontal) {
@@ -618,7 +649,7 @@ export class VillagePlanner {
     _planStreetTorches(plan, bp) {
         const tc = bp.streetTorches;
         if (!tc || !tc.chance || !MAP_OBJECTS_DEFINITIONS[tc.id]) return;
-        const off = plan.cfg.rad + 1;
+        const offOf = (rd) => this._rad(plan, rd) + 1;
         const spacing = tc.spacing ?? 10;
         for (const road of plan.roads) {
             const cs = road.centres;
@@ -628,7 +659,7 @@ export class VillagePlanner {
                 if (this.pseudoRandom(cs[i].c * 83 + plan.salt, cs[i].r * 89 + 17) >= tc.chance) continue;
                 const horizontal = cs[i].d === 1 || cs[i].d === 3;
                 const side = this.pseudoRandom(cs[i].c * 97 + 5, cs[i].r * 101 + plan.salt) < 0.5 ? 0 : 1;
-                const sgn = side === 0 ? -off : off;
+                const sgn = side === 0 ? -offOf(road) : offOf(road);
                 const c = horizontal ? cs[i].c : cs[i].c + sgn;
                 const r = horizontal ? cs[i].r + sgn : cs[i].r;
                 const key = this._s(c, r);
@@ -647,7 +678,7 @@ export class VillagePlanner {
     _planStreetScarecrows(plan, bp) {
         const sc = bp.scarecrows;
         if (!sc || !sc.chance || !MAP_OBJECTS_DEFINITIONS[sc.id]) return;
-        const off = plan.cfg.rad + 1;
+        const offOf = (rd) => this._rad(plan, rd) + 1;
         const spacing = sc.spacing ?? 12;
         const w = MAP_OBJECTS_DEFINITIONS[sc.id].width || 1;
         let placed = 0;
@@ -658,7 +689,7 @@ export class VillagePlanner {
                 const horizontal = cs[i].d === 1 || cs[i].d === 3;
                 if (!horizontal || i - last < spacing || !this._straightAt(cs, i, 2, 0)) continue;
                 if (this.pseudoRandom(cs[i].c * 71 + plan.salt, cs[i].r * 73 + 29) >= sc.chance) continue;
-                const c = cs[i].c, r = cs[i].r - off;
+                const c = cs[i].c, r = cs[i].r - offOf(road);
                 let free = true;
                 for (let dc = 0; dc < w && free; dc++) {
                     const key = this._s(c + dc, r);
@@ -679,7 +710,7 @@ export class VillagePlanner {
     _planGravestones(plan, bp) {
         const gc = bp.gravestones;
         if (!gc || !gc.chance || !MAP_OBJECTS_DEFINITIONS[gc.id]) return;
-        const off = plan.cfg.rad + 1;
+        const offOf = (rd) => this._rad(plan, rd) + 1;
         const spacing = gc.spacing ?? 9;
         let placed = 0;
         for (const road of plan.roads) {
@@ -690,7 +721,7 @@ export class VillagePlanner {
                 if (this.pseudoRandom(cs[i].c * 107 + plan.salt, cs[i].r * 109 + 31) >= gc.chance) continue;
                 const horizontal = cs[i].d === 1 || cs[i].d === 3;
                 const side = this.pseudoRandom(cs[i].c * 113 + 7, cs[i].r * 127 + plan.salt) < 0.5 ? 0 : 1;
-                const sgn = side === 0 ? -off : off;
+                const sgn = side === 0 ? -offOf(road) : offOf(road);
                 const c = horizontal ? cs[i].c : cs[i].c + sgn;
                 const r = horizontal ? cs[i].r + sgn : cs[i].r;
                 const key = this._s(c, r);
@@ -712,7 +743,7 @@ export class VillagePlanner {
         this._planGravestones(plan, bp);
         const sp = bp.streetProps;
         if (!sp || !sp.chance || !sp.pool || sp.pool.length === 0) return;
-        const off = plan.cfg.rad + 1;
+        const offOf = (rd) => this._rad(plan, rd) + 1;
         for (const road of plan.roads) {
             const cs = road.centres;
             for (let i = 2; i < cs.length; i++) {
@@ -720,7 +751,7 @@ export class VillagePlanner {
                 const horizontal = cs[i].d === 1 || cs[i].d === 3;
                 for (let side = 0; side < 2; side++) {
                     if (this.pseudoRandom(cs[i].c * 61 + side * 13 + plan.salt, cs[i].r * 67 + 11) >= sp.chance) continue;
-                    const sgn = side === 0 ? -off : off;
+                    const sgn = side === 0 ? -offOf(road) : offOf(road);
                     const c = horizontal ? cs[i].c : cs[i].c + sgn;
                     const r = horizontal ? cs[i].r + sgn : cs[i].r;
                     const key = this._s(c, r);

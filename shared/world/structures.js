@@ -183,7 +183,7 @@ function buildCenter(theme = {}) {
 
     const put = (x, y, id) => { objects[y][x] = id; };
     put(5, 5, 'CAMPFIRE');
-    put(3, 3, 'STOOL'); put(7, 3, 'STOOL'); put(3, 7, 'STOOL'); put(7, 7, 'STOOL');
+    put(4, 4, 'STOOL'); put(6, 4, 'STOOL'); put(4, 6, 'STOOL'); put(6, 6, 'STOOL');   // right round the fire
 
     if (theme.corners) {
         theme.corners(put);
@@ -329,14 +329,15 @@ export const STRUCTURES = {
         branchLength: { min: 36, max: 56 },                // longer streets: more plots, a town rather than a hamlet
         turnChance: 0.10,
         minStepsBetweenTurns: 8,
-        sideStreets: {                            // short streets that fork off the main roads
-            chance: 0.85,                         //   per candidate spot
-            spacing: 22,                          //   steps between two forks on one road (a plot is 8 to 9 rows deep: two fit between two streets)
-            startAt: 7,                           //   no fork before this many steps from the hub
-            endBefore: 5,                         //   ... or this close to the end of the road
-            length: { min: 10, max: 26 },
-            max: 26,                              //   per village
-            depth: 2,                             //   2 = streets fork off the side streets too (alleys between the blocks)
+        sideStreets: {                            // alleys that fork off the main roads (and off each other)
+            chance: 1,                            //   per candidate spot
+            width: 1,                             //   the alleys are one tile wide (the main roads are `roadWidth`): the yards stand right along them, fence to fence
+            spacing: 16,                          //   steps between two forks on one road: two yards (7 to 8 wide) fit between two alleys
+            startAt: 5,                           //   no fork before this many steps from the hub
+            endBefore: 4,                         //   ... or this close to the end of the road
+            length: { min: 9, max: 32 },
+            max: 48,                              //   per village
+            depth: 3,                             //   3 = alleys fork off the side streets, and off those again (a lattice of lanes between the blocks)
         },
         levels: {                                 // a street that meets a cliff gets a stair and goes on up (or down) the next level, with side streets and yards of its own
             max: 6,                               //   stairs per village
@@ -350,7 +351,7 @@ export const STRUCTURES = {
 
         /* BUILDINGS (along every road, on both sides, gate facing the road) */
         buildingDensity: 1,                       // chance a free spot along a road gets a building (1 = every free spot: the plots touch)
-        buildingTries: 4,                         // when the module a spot rolled does not fit, up to this many others are tried, so the streets fill without gaps
+        buildingTries: 10,                        // when the module a spot rolled does not fit, up to this many others are tried, so the streets fill without gaps
         maxBuildings: 150,
         setback: 0,                               // extra grass between a yard and the road
         /* weight = how often it is picked; required = at least one per village (when there is room); max = cap per village */

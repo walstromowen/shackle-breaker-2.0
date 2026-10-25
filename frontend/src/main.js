@@ -48,6 +48,7 @@ ui_icons: './assets/icons/ui_icons.png',
     snowyMountainsCliffExt:         './assets/tilesets/snowy_mountains/cliff_blob47_ext.png',
     snowyMountainsCliffShadow:      './assets/tilesets/snowy_mountains/cliff_blob47_shadow.png',
     snowyMountainsWaterAnim:        './assets/tilesets/snowy_mountains/water_blob47_anim.png',
+    snowyMountainsRiverShore:       './assets/tilesets/snowy_mountains/river_shore_blob47_anim.png',
     snowyMountainsWaterInterior:    './assets/tilesets/snowy_mountains/water_interior_anim.png',
     snowyMountainsCliffStairs:      './assets/tilesets/snowy_mountains/cliff_stairs.png',   // after snowyMountainsCliffShadow
 
