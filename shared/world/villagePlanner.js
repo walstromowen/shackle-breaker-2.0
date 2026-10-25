@@ -81,10 +81,12 @@ export class VillagePlanner {
             sideMin: side.length ? side.length.min : 7,
             sideMax: side.length ? side.length.max : 14,
             sideCount: side.max ?? 6,
+            sideDepth: Math.max(1, side.depth ?? 1),
             density: bp.buildingDensity ?? 0.5,
             maxBuildings: bp.maxBuildings ?? 28,
             setback: bp.setback ?? 0,
             skipStart: 3,
+            tries: Math.max(1, bp.buildingTries ?? 1),
         };
     }
     /* a cell a road may be painted on */
@@ -223,12 +225,21 @@ export class VillagePlanner {
         const cfg = plan.cfg;
         if (!cfg.sideChance) return;
         let made = 0;
-        const arms = plan.roads.filter((rd) => rd.kind === 'arm');
+        /* streets fork off the main roads; with `sideStreets.depth` 2 or more, streets fork off those streets too (alleys between the blocks of a town) */
+        let arms = plan.roads.filter((rd) => rd.kind === 'arm');
+        for (let generation = 1; generation <= cfg.sideDepth && arms.length > 0; generation++) {
+            const before = plan.roads.length;
+            made = this._forkSideStreets(plan, arms, made);
+            arms = plan.roads.slice(before);
+        }
+    }
+    _forkSideStreets(plan, arms, made) {
+        const cfg = plan.cfg;
         for (const arm of arms) {
             const cs = arm.centres;
             let last = -999;
             for (let i = cfg.sideStart; i < cs.length - cfg.sideEnd; i++) {
-                if (made >= cfg.sideCount) return;
+                if (made >= cfg.sideCount) return made;
                 if (i - last < cfg.sideSpacing) continue;
                 /* the junction needs a straight stretch on both sides, so the parent cannot bend into the new street */
                 if (!this._straightAt(cs, i, 6, 6)) continue;
@@ -246,6 +257,7 @@ export class VillagePlanner {
                 }
             }
         }
+        return made;
     }
     _growSideStreet(plan, parent, at, dirIndex, len) {
         const cfg = plan.cfg;
@@ -298,33 +310,42 @@ export class VillagePlanner {
             total++;
             return true;
         };
+        /* a module's weight depends on the street: `verticalWeight` beside a north-south road, `horizontalWeight` beside an east-west one (0 = never there; the side houses show
+           their long wall to a north-south street and have no door), both default to `weight` */
+        const isVertical = (slot) => { const d = slot.road.centres[slot.i].d; return d === 0 || d === 2; };
+        const weightOn = (m, vertical) => (vertical ? (m.verticalWeight ?? m.weight ?? 1) : (m.horizontalWeight ?? m.weight ?? 1));
         /* 1. the buildings every village must have (the crafting stations): the first spot that fits, nearest the hub first, with some jitter */
         mods.forEach((mod, m) => {
             if (!mod.required) return;
             const order = slots.map((s) => ({ s, k: s.i + hash(s, 11 + m) * 14 })).sort((a, b) => a.k - b.k);
             for (const { s } of order) {
                 if (total >= cfg.maxBuildings) break;
+                if (weightOn(mod, isVertical(s)) <= 0) continue;
                 if (place(s, mod)) break;
             }
         });
-        /* 2. everything else, walking outwards from the hub */
+        /* 2. everything else, walking outwards from the hub. A spot takes the module it rolled; when that one does not fit (a wider yard against its neighbour, a junction) the
+           next roll is tried, up to `tries` times, so a street fills up with no gaps */
         slots.sort((a, b) => a.i - b.i || hash(a, 3) - hash(b, 3));
         for (const s of slots) {
             if (total >= cfg.maxBuildings) break;
             if (hash(s, 5) >= cfg.density) continue;
-            const open = mods.filter((m) => m.max === undefined || m.placed < m.max);
-            const sum = open.reduce((acc, m) => acc + (m.weight ?? 1), 0);
-            if (sum <= 0) break;
-            let roll = hash(s, 7) * sum;
-            let pick = open[open.length - 1];
-            for (const m of open) {
-                roll -= m.weight ?? 1;
-                if (roll < 0) {
-                    pick = m;
-                    break;
+            const vertical = isVertical(s);
+            let pool = mods.filter((m) => (m.max === undefined || m.placed < m.max) && weightOn(m, vertical) > 0).map((m) => ({ m, w: weightOn(m, vertical) }));
+            for (let attempt = 0; attempt < cfg.tries && pool.length > 0; attempt++) {
+                const sum = pool.reduce((acc, e) => acc + e.w, 0);
+                let roll = hash(s, 7 + attempt * 3) * sum;
+                let pick = pool[pool.length - 1];
+                for (const e of pool) {
+                    roll -= e.w;
+                    if (roll < 0) {
+                        pick = e;
+                        break;
+                    }
                 }
+                if (place(s, pick.m)) break;
+                pool = pool.filter((e) => e !== pick);
             }
-            place(s, pick);
         }
     }
     _placeModule(plan, slot, mod) {

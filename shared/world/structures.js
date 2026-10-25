@@ -45,7 +45,10 @@ const GROUND_DECOR = [
       EN  gate in the east fence, alley north     (building south of an east-west road)
       WN  gate in the west fence, alley north
 
-   The house sprite (4 x 4) stays where it always was, at (2, 2), with its door at (3, 2).
+   The yard grows with its house: `houseW` x `houseH` tiles (default 4 x 4, like a crop field's empty yard) put the house's bottom-left cell at (2, houseH - 1), so the
+   whole sprite sits inside the prefab, the fence is houseW + 2 wide, and the door is on column `doorCol` of the house's bottom row. Three free rows lie between the house
+   and the front fence (the cell in front of the door, the footpath row, the prop row). Prop columns are written for the old 4-wide yard (2 = left of the door, 3 = the
+   door's own column, 4 and 5 = right of it) and are moved to the matching places of a wider house.
    `wear` and `scatter` are applied by the WorldManager per placed yard (broken fence pieces, flowers and rocks). */
 
 const GATES = {
@@ -56,10 +59,34 @@ const GATES = {
     WN: { side: 'W', alley: true },
 };
 
+/* COMPACT YARDS (every house): the fence is the edge of the yard, so a yard is only `houseW + 2` wide and `houseRow + 4` tall (two free rows in front of the house: the footpath row, with the gate of a side gate in it, and a row of props), and only has an empty column beside the fence where the
+   footpath needs one (an alley running along the side) or where it keeps two neighbours one tile apart. The sprite's own top row is the empty row between a yard and the next one down a
+   north-south road. The gate is in the fence itself, so the road runs right along the fence (a street of tightly packed plots, not a village of fields). Margins per gate:
+        S  one column on the left     E, W  none     EN  one on the right (the alley)     WN  one on the left (the alley) */
+const COMPACT_MARGIN = {
+    S: { l: 1, r: 0 },
+    E: { l: 0, r: 0 },
+    W: { l: 0, r: 0 },
+    EN: { l: 0, r: 1 },
+    WN: { l: 1, r: 0 },
+};
+
 function buildYard(spec, gate) {
-    const { w, h } = spec;
-    const x1 = 1, y1 = 1, x2 = 6, y2 = h - 2;
     const g = GATES[gate];
+    const m = spec.compact ? COMPACT_MARGIN[gate] : null;
+    const hr = spec.houseRow ?? 2;                         // the row of the house's bottom edge (and of its door)
+    const houseW = spec.houseW ?? 4;
+    const w = m ? houseW + 2 + m.l + m.r : spec.w;
+    const h = m ? hr + 4 : spec.h;
+    const x1 = m ? m.l : 1, y1 = 1, x2 = m ? w - 1 - m.r : w - 2, y2 = m ? h - 1 : h - 2;
+    const hc = m ? m.l + 1 : 2;                            // the column of the house's left edge
+    const doorCol = m ? hc + (spec.doorIdx ?? 0) : (spec.doorCol ?? 3);
+    const anchor = m ? [hc + (spec.doorIdx ?? (houseW >> 1)), hr + 1] : spec.anchor;
+    const gr = m ? hr + 1 : spec.gateRow;
+    const shift = m ? m.l - 1 : 0;                         // props are written for a yard whose house starts on column 2
+    const widen = houseW - 4;
+    const propCell = ([x, y, id]) => [Math.min(Math.max(x <= 2 ? x + shift : x === 3 ? doorCol : x + widen + shift, x1 + 1), x2 - 1), y + (hr - (m ? 3 : 2)), id];
+    const houseId = spec.houseByGate ? spec.houseByGate[gate] : spec.house;
     const terrain = grid(w, h);
     const objects = grid(w, h);
 
@@ -72,12 +99,11 @@ function buildYard(spec, gate) {
     objects[y2][x2] = 'WOODEN_FENCE_BR_CORNER';
 
     // the house and its door, then the props
-    if (spec.house) { objects[2][2] = spec.house; objects[2][3] = spec.door; }
-    for (const [x, y, id] of spec.props) objects[y][x] = id;
+    if (houseId) { objects[hr][hc] = houseId; if (spec.door) objects[hr][doorCol] = spec.door; }
+    for (const prop of spec.props) { const [x, y, id] = propCell(prop); objects[y][x] = id; }
 
     // the footpath: from the cell in front of the door (the anchor) through the gate to the edge of the prefab
-    const [ax, ay] = spec.anchor;
-    const gr = spec.gateRow;
+    const [ax, ay] = anchor;
     const path = [];
     let gx, gy;
     if (g.side === 'S') {
@@ -121,7 +147,7 @@ function buildYard(spec, gate) {
         terrain,
         objects,
         wear: { fenceBreak: spec.fenceBreak ?? 0.12 },
-        scatter: { chance: spec.scatterChance ?? 0.32, pool: spec.scatterPool || GROUND_DECOR, rect: spec.scatterRect },
+        scatter: { chance: spec.scatterChance ?? 0.32, pool: spec.scatterPool || GROUND_DECOR, rect: m ? { x: x1 + 1, y: hr + 1, w: houseW, h: 3 } : spec.scatterRect },
     };
 }
 
@@ -184,18 +210,40 @@ function buildCenter(theme = {}) {
 
 /* ---------- the buildings ---------- */
 
-/* props sit on row 5 (the second free row of the yard) so the footpath along row 4 / column 3 stays open */
-const HOUSE_SPEC = {
-    w: 8, h: 8, anchor: [3, 3], gateRow: 4, scatterRect: { x: 2, y: 3, w: 4, h: 3 },
-    house: 'ABANDONED_HOUSE_1', door: 'HOUSE_DOOR_WOODEN',
-    props: [[2, 5, 'TREE_STUMP'], [5, 5, 'BARREL']],
+/* the houses' size in tiles and the column (counted from the left edge of the sprite) of the door gap painted into it; the yard is built around it (see buildYard).
+   A SIDE house (`_LEFT` / `_RIGHT`: the same house seen from the side, for a plot beside a north-south road) has no door: it is a sealed shell, so it has no `doorIdx`.
+   Props sit on the second free row below the house (row hr + 2) so the footpath along the first one stays open. */
+const HOUSE_SIZES = {
+    ABANDONED_HOUSE_1: { w: 5, h: 5, doorIdx: 2 },
+    ABANDONED_STONE_HOUSE: { w: 5, h: 5, doorIdx: 2 },
+    ABANDONED_SMITHY: { w: 5, h: 5, doorIdx: 2 },
+    CRAFTING_HOUSE: { w: 7, h: 6, doorIdx: 2 },
+    ABANDONED_HOUSE_1_LEFT: { w: 5, h: 5 }, ABANDONED_HOUSE_1_RIGHT: { w: 5, h: 5 },
+    ABANDONED_STONE_HOUSE_LEFT: { w: 5, h: 5 }, ABANDONED_STONE_HOUSE_RIGHT: { w: 5, h: 5 },
+    ABANDONED_SMITHY_LEFT: { w: 5, h: 5 }, ABANDONED_SMITHY_RIGHT: { w: 5, h: 5 },
+    CRAFTING_HOUSE_LEFT: { w: 6, h: 6 }, CRAFTING_HOUSE_RIGHT: { w: 6, h: 6 },
 };
 
-const WORKSHOP = (door, props) => ({
-    w: 8, h: 8, anchor: [3, 3], gateRow: 4, scatterRect: { x: 2, y: 3, w: 4, h: 3 },
-    house: 'ABANDONED_HOUSE_2', door,
-    props,
-});
+function houseSpec(house, door, props) {
+    const { w, h, doorIdx } = HOUSE_SIZES[house];
+    return { compact: true, houseW: w, houseH: h, houseRow: h - 1, doorIdx, house, door, props };
+}
+
+/* a side-view house: which sprite it is depends on the gate (a plot west of the road has its gable towards the east); `swap` flips left and right so the two modules of a kind differ */
+function sideSpec(base, props, swap = false) {
+    const { w, h } = HOUSE_SIZES[`${base}_LEFT`];
+    const [onE, onW] = swap ? ['LEFT', 'RIGHT'] : ['RIGHT', 'LEFT'];
+    const byGate = { E: `${base}_${onE}`, EN: `${base}_${onE}`, W: `${base}_${onW}`, WN: `${base}_${onW}`, S: `${base}_${onE}` };
+    return { compact: true, houseW: w, houseH: h, houseRow: h - 1, houseByGate: byGate, door: null, props };
+}
+
+const HOUSE_SPEC = houseSpec('ABANDONED_HOUSE_1', 'HOUSE_DOOR_WOODEN', [[2, 5, 'TREE_STUMP'], [5, 5, 'BARREL']]);
+
+const STONE_HOUSE_SPEC = houseSpec('ABANDONED_STONE_HOUSE', 'HOUSE_DOOR_WOODEN', [[2, 5, 'CRATE'], [5, 5, 'SMALL_ROCKS_2']]);
+
+const SMITHY_SPEC = houseSpec('ABANDONED_SMITHY', 'SMITHY_DOOR', [[2, 5, 'BARREL'], [5, 5, 'CRATE']]);
+
+const WORKSHOP = (door, props) => houseSpec('CRAFTING_HOUSE', door, props);
 
 const CROP_FIELD = (herb) => ({
     w: 8, h: 8, anchor: [3, 2], gateRow: 5, scatterRect: { x: 2, y: 5, w: 4, h: 1 }, scatterPool: ['GRASS_COVERAGE_1', 'GRASS_COVERAGE_2', 'GRASS_COVERAGE_3'],
@@ -203,6 +251,65 @@ const CROP_FIELD = (herb) => ({
     props: [],
     crop: { id: herb, plots: [2, 3, 4].flatMap(y => [[2, y], [4, y], [5, y]]) },
 });
+
+/* the buildings of a village, each as a yard with a biome's props (`t`): the five houses, the smithy and the workshop (every one has a door), and the SIDE houses for the
+   plots beside north-south roads (sealed: no door). `suffix` names the biome ('' for the plains: ABANDONED_HOUSE, 'DESERT': ABANDONED_HOUSE_DESERT, ...); `t.base` is merged into
+   every yard spec, `t.sides.<kind>` holds the props of the two modules of each side house (the second one has its left and right sprites swapped). */
+function buildingSet(suffix, t) {
+    const n = (base) => (suffix ? `${base}_${suffix}` : base);
+    const b = t.base || {};
+    const side = (key, base, i) => ({ [n(`${key}_SIDE_${i + 1}`)]: yard({ ...sideSpec(base, t.sides[key][i], i === 1), ...b }) });
+    return {
+        [n('ABANDONED_HOUSE')]: yard({ ...HOUSE_SPEC, ...b, props: t.house }),
+        [n('ABANDONED_COTTAGE')]: yard({ ...HOUSE_SPEC, ...b, props: t.cottage }),
+        [n('ABANDONED_FARMHOUSE')]: yard({ ...HOUSE_SPEC, ...b, props: t.farmhouse }),
+        [n('ABANDONED_HUT')]: yard({ ...HOUSE_SPEC, ...b, props: t.hut }),
+        [n('ABANDONED_STONE_HOUSE')]: yard({ ...STONE_HOUSE_SPEC, ...b, props: t.stone }),
+        [n('ABANDONED_SMITHY')]: yard({ ...SMITHY_SPEC, ...b, props: t.smithy }),
+        [n('ABANDONED_WORKSHOP')]: yard({ ...WORKSHOP('WORKSHOP_DOOR', t.workshop), ...b }),
+        ...side('ABANDONED_HOUSE', 'ABANDONED_HOUSE_1', 0), ...side('ABANDONED_HOUSE', 'ABANDONED_HOUSE_1', 1),
+        ...side('ABANDONED_STONE_HOUSE', 'ABANDONED_STONE_HOUSE', 0), ...side('ABANDONED_STONE_HOUSE', 'ABANDONED_STONE_HOUSE', 1),
+        ...side('ABANDONED_SMITHY', 'ABANDONED_SMITHY', 0), ...side('ABANDONED_SMITHY', 'ABANDONED_SMITHY', 1),
+        ...side('ABANDONED_WORKSHOP', 'CRAFTING_HOUSE', 0), ...side('ABANDONED_WORKSHOP', 'CRAFTING_HOUSE', 1),
+    };
+}
+
+/* the modules of a village (see `modules` in ABANDONED_VILLAGE): `verticalWeight` is the weight beside a north-south road, `horizontalWeight` beside an east-west one (both default to `weight`).
+   The side houses show their long wall to a street that runs north-south and have no door, so they are only ever put there (horizontalWeight 0); the houses with a door are the ones
+   that stand on every street. */
+function villageModules(suffix) {
+    const n = (base) => (suffix ? `${base}_${suffix}` : base);
+    const sides = (key, weight, max) => [1, 2].map(i => ({ prefab: n(`${key}_SIDE_${i}`), weight, horizontalWeight: 0, ...(max ? { max } : {}) }));
+    return [
+        { prefab: n('ABANDONED_HOUSE'), weight: 4, verticalWeight: 1.5 },
+        { prefab: n('ABANDONED_COTTAGE'), weight: 3, verticalWeight: 1 },
+        { prefab: n('ABANDONED_FARMHOUSE'), weight: 2, verticalWeight: 0.8 },
+        { prefab: n('ABANDONED_HUT'), weight: 2, verticalWeight: 0.8 },
+        { prefab: n('ABANDONED_STONE_HOUSE'), weight: 3, verticalWeight: 1.5 },
+        { prefab: n('ABANDONED_SMITHY'), weight: 1.5, verticalWeight: 0.8, max: 3 },
+        ...sides('ABANDONED_HOUSE', 3.5),
+        ...sides('ABANDONED_STONE_HOUSE', 3),
+        ...sides('ABANDONED_SMITHY', 1, 3),
+        ...sides('ABANDONED_WORKSHOP', 0.6, 2),
+    ];
+}
+
+const PLAINS_BUILDINGS = {
+    base: {},
+    house: [[2, 5, 'TREE_STUMP'], [5, 5, 'BARREL']],
+    cottage: [[2, 5, 'SACKS'], [5, 5, 'TREE_STUMP']],
+    farmhouse: [[2, 5, 'BARREL'], [4, 5, 'CRATE'], [5, 5, 'SACKS']],
+    hut: [[2, 5, 'TULIPS_RED'], [4, 5, 'TULIPS_WHITE'], [5, 5, 'TREE_STUMP']],
+    stone: [[2, 5, 'CRATE'], [5, 5, 'SMALL_ROCKS_2']],
+    smithy: [[2, 5, 'BARREL'], [4, 5, 'SMALL_ROCKS_1'], [5, 5, 'CRATE']],
+    workshop: [[2, 5, 'BARREL'], [4, 5, 'CRATE'], [5, 5, 'CRATE_SACK']],
+    sides: {
+        ABANDONED_HOUSE: [[[2, 5, 'TULIPS_RED'], [5, 5, 'BARREL']], [[2, 5, 'SACKS'], [4, 5, 'TREE_STUMP']]],
+        ABANDONED_STONE_HOUSE: [[[2, 5, 'CRATE'], [5, 5, 'SMALL_ROCKS_2']], [[2, 5, 'BARREL'], [5, 5, 'TULIPS_WHITE']]],
+        ABANDONED_SMITHY: [[[2, 5, 'BARREL'], [5, 5, 'CRATE']], [[2, 5, 'SMALL_ROCKS_1'], [4, 5, 'BARREL']]],
+        ABANDONED_WORKSHOP: [[[2, 5, 'CRATE'], [5, 5, 'CRATE_SACK']], [[2, 5, 'BARREL'], [5, 5, 'SACKS']]],
+    },
+};
 
 export const STRUCTURES = {
     // ==========================================
@@ -219,32 +326,31 @@ export const STRUCTURES = {
         edgeWear: 0.10,                           // share of the road's two edge columns left as grass, so the edge is ragged, never the middle
         verge: 1,                                 // tiles beside a road kept free of random trees / rocks
         branchChance: 0.8,                        // chance for each of the hub's four sides to grow a main road (at least two always do)
-        branchLength: { min: 30, max: 50 },
+        branchLength: { min: 36, max: 56 },                // longer streets: more plots, a town rather than a hamlet
         turnChance: 0.10,
         minStepsBetweenTurns: 8,
         sideStreets: {                            // short streets that fork off the main roads
-            chance: 0.6,                          //   per candidate spot
-            spacing: 8,                           //   steps between two forks on one road
-            startAt: 6,                           //   no fork before this many steps from the hub
+            chance: 0.85,                         //   per candidate spot
+            spacing: 22,                          //   steps between two forks on one road (a plot is 8 to 9 rows deep: two fit between two streets)
+            startAt: 7,                           //   no fork before this many steps from the hub
             endBefore: 5,                         //   ... or this close to the end of the road
-            length: { min: 8, max: 20 },
-            max: 14,                              //   per village
+            length: { min: 10, max: 26 },
+            max: 26,                              //   per village
+            depth: 2,                             //   2 = streets fork off the side streets too (alleys between the blocks)
         },
 
         /* BUILDINGS (along every road, on both sides, gate facing the road) */
-        buildingDensity: 0.9,                     // chance a free spot along a road gets a building
-        maxBuildings: 60,
+        buildingDensity: 1,                       // chance a free spot along a road gets a building (1 = every free spot: the plots touch)
+        buildingTries: 4,                         // when the module a spot rolled does not fit, up to this many others are tried, so the streets fill without gaps
+        maxBuildings: 150,
         setback: 0,                               // extra grass between a yard and the road
         /* weight = how often it is picked; required = at least one per village (when there is room); max = cap per village */
         modules: [
-            { prefab: 'ABANDONED_HOUSE',      weight: 5 },
-            { prefab: 'ABANDONED_COTTAGE',    weight: 4 },
-            { prefab: 'ABANDONED_FARMHOUSE',  weight: 3 },
-            { prefab: 'ABANDONED_HUT',        weight: 3 },
-            /* crop fields: a fenced field of one herb each (the three herbs are picked by walking over them) */
-            { prefab: 'ABANDONED_CROP_FIELD_HEALING',       weight: 1 },
-            { prefab: 'ABANDONED_CROP_FIELD_INVIGORATING',  weight: 1 },
-            { prefab: 'ABANDONED_CROP_FIELD_ILLUMINATING',  weight: 1 },
+            ...villageModules(''),
+            /* crop fields: a fenced field of one herb each (the three herbs are picked by walking over them); a town has fewer of them than a village */
+            { prefab: 'ABANDONED_CROP_FIELD_HEALING',       weight: 0.6 },
+            { prefab: 'ABANDONED_CROP_FIELD_INVIGORATING',  weight: 0.6 },
+            { prefab: 'ABANDONED_CROP_FIELD_ILLUMINATING',  weight: 0.6 },
 
             // The one workshop: its interior holds every crafting station (see ABANDONED_WORKSHOP in interiorDefinitions.js)
             { prefab: 'ABANDONED_WORKSHOP',   weight: 1.5, required: true, max: 1 },
@@ -253,12 +359,12 @@ export const STRUCTURES = {
         /* TREES along the roads and in the empty lots (a tree keeps its whole footprint off roads and yards). `chance` is per free cell
            inside `reach` of a road, cells right beside a road are `roadsideBoost` times as likely, and `max` caps a village. */
         trees: {
-            chance: 0.10,
+            chance: 0.05,                         // a town has fewer trees than a village: the plots are packed, the trees stand in the gaps and at the edge
             reach: 18,
             clearRoad: 2,
             clearBuilding: 1,
-            roadsideBoost: 5,
-            max: 320,
+            roadsideBoost: 3,
+            max: 200,
             /* `pool` is what grows in every biome that has no entry of its own below. The trees follow the biome of the cell they stand on (a road can run
                out of the plains into a snowfield or a desert), so list a biome here to give it its own trees; an empty list = no trees there. */
             pool: [
@@ -279,8 +385,8 @@ export const STRUCTURES = {
            torches on a road are closer than `spacing` steps. (They are solid and give light at night: see STANDING_TORCH in mapObjectDefinitions.js.) */
         streetTorches: {
             id: 'STANDING_TORCH',
-            chance: 0.05,
-            spacing: 14,
+            chance: 0.08,
+            spacing: 10,
         },
 
         /* SCARECROWS: the Peculiar Scarecrow, the only place it is made (see _planStreetScarecrows in worldManager.js). It stands on the verge north of an
@@ -327,26 +433,8 @@ export const STRUCTURES = {
     // ==========================================
     ABANDONED_CENTER: buildCenter(),
 
-    ABANDONED_HOUSE: yard(HOUSE_SPEC),
-
-    /* the same yard with the other house sprite and a different set of props */
-    ABANDONED_COTTAGE: yard({
-        ...HOUSE_SPEC,
-        house: 'ABANDONED_HOUSE_2',
-        props: [[2, 5, 'SACKS'], [5, 5, 'TREE_STUMP']],
-    }),
-
-    /* two more homes, so a street is not a row of the same two houses */
-    ABANDONED_FARMHOUSE: yard({
-        ...HOUSE_SPEC,
-        props: [[2, 5, 'BARREL'], [4, 5, 'CRATE'], [5, 5, 'SACKS']],
-    }),
-
-    ABANDONED_HUT: yard({
-        ...HOUSE_SPEC,
-        house: 'ABANDONED_HOUSE_2',
-        props: [[2, 5, 'TULIPS_RED'], [4, 5, 'TULIPS_WHITE'], [5, 5, 'TREE_STUMP']],
-    }),
+    /* the houses, the smithy, the workshop and the sealed side houses (see buildingSet) */
+    ...buildingSet('', PLAINS_BUILDINGS),
 
     /* CROP FIELDS: the same fenced yard with no house. Three rows of tilled earth (rows 2..4: columns 2, 4 and 5, the footpath runs down column 3 and along
        row 5 to the gate) planted with ONE herb, so a field is a field of Healing, of Invigorating or of Illuminating Herb. Row 5 and the grass between stay
@@ -355,9 +443,6 @@ export const STRUCTURES = {
     ABANDONED_CROP_FIELD_INVIGORATING: yard(CROP_FIELD('INVIGORATING_HERB')),
     ABANDONED_CROP_FIELD_ILLUMINATING: yard(CROP_FIELD('ILLUMINATING_HERB')),
 
-    // --- THE WORKSHOP: one per village, with every crafting station inside (the yard is only dressed) ---
-
-    ABANDONED_WORKSHOP: yard(WORKSHOP('WORKSHOP_DOOR', [[2, 5, 'BARREL'], [4, 5, 'CRATE'], [5, 5, 'CRATE_SACK']])),
 };
 
 /* =============================================================================================================
@@ -365,25 +450,14 @@ export const STRUCTURES = {
    The desert and the snowy mountains each get their own village: the same roads, yards, workshop and scarecrows (it is copied from ABANDONED_VILLAGE, so
    every number above, the scarecrow rate included, applies), dressed for the ground it stands on. No grass is laid (sand and snow stay as they are), the
    plaza and the yards are strewn with the biome's own litter, cacti or snowy pines and stumps stand along the roads, and the desert's crop fields grow
-   aloe (the herbs do not grow there). The houses use the same two sprites as the plains village: give ABANDONED_HOUSE_1 / _2 a per-biome `sheet` in
-   mapObjectDefinitions.js, like the small rocks have, to give them their own look.
+   aloe (the herbs do not grow there). The houses use the same two sprites as the plains village (the abandoned house, the crafting house for the workshop): give ABANDONED_HOUSE_1 /
+   CRAFTING_HOUSE a per-biome `sheet` in mapObjectDefinitions.js, like the small rocks have, to give them their own look.
    Biome ids a road can run into: PLAINS, DESERT and SNOWY_MOUNTAINS; each variant lists all three in `trees` and `streetProps`, so a street that leaves
    its own biome is dressed like the village it came from in that biome.
    ============================================================================================================= */
 
 const DESERT_DECOR = ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3', 'SAND_DUNE_1', 'SAND_DUNE_2', 'SAND_DUNE_3', 'DESERT_SKULL', 'BONE_PILE'];
 const SNOWY_DECOR = ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3', 'STICK'];
-
-/* the five buildings of a village (house, cottage, farmhouse, hut, workshop) with a biome's props; `base` is merged into every yard spec */
-function themedBuildings(suffix, t) {
-    return {
-        [`ABANDONED_HOUSE_${suffix}`]: yard({ ...HOUSE_SPEC, ...t.base, props: t.house }),
-        [`ABANDONED_COTTAGE_${suffix}`]: yard({ ...HOUSE_SPEC, ...t.base, house: 'ABANDONED_HOUSE_2', props: t.cottage }),
-        [`ABANDONED_FARMHOUSE_${suffix}`]: yard({ ...HOUSE_SPEC, ...t.base, props: t.farmhouse }),
-        [`ABANDONED_HUT_${suffix}`]: yard({ ...HOUSE_SPEC, ...t.base, house: 'ABANDONED_HOUSE_2', props: t.hut }),
-        [`ABANDONED_WORKSHOP_${suffix}`]: yard({ ...WORKSHOP('WORKSHOP_DOOR', t.workshop), ...t.base }),
-    };
-}
 
 Object.assign(STRUCTURES, {
     ABANDONED_CENTER_DESERT: buildCenter({
@@ -400,13 +474,21 @@ Object.assign(STRUCTURES, {
             put(1, 9, 'WOODEN_FENCE_FALLEN'); put(2, 9, 'BONE_PILE'); put(1, 8, 'SAND_DUNE_1'); put(2, 8, 'SMALL_ROCKS_1');
         },
     }),
-    ...themedBuildings('DESERT', {
+    ...buildingSet('DESERT', {
         base: { scatterPool: DESERT_DECOR, scatterChance: 0.4, fenceBreak: 0.25 },     // the sand has had the fences down more often
         house: [[2, 5, 'BONE_PILE'], [5, 5, 'BARREL']],
         cottage: [[2, 5, 'SACKS'], [5, 5, 'DESERT_SKULL']],
         farmhouse: [[2, 5, 'BARREL'], [4, 5, 'CRATE'], [5, 5, 'SACKS']],
         hut: [[2, 5, 'SMALL_ROCKS_1'], [4, 5, 'SAND_DUNE_1'], [5, 5, 'BONE_PILE']],
+        stone: [[2, 5, 'CRATE'], [5, 5, 'DESERT_SKULL']],
+        smithy: [[2, 5, 'BARREL'], [4, 5, 'SMALL_ROCKS_1'], [5, 5, 'BONE_PILE']],
         workshop: [[2, 5, 'BARREL'], [4, 5, 'CRATE'], [5, 5, 'CRATE_SACK']],
+        sides: {
+            ABANDONED_HOUSE: [[[2, 5, 'BONE_PILE'], [5, 5, 'BARREL']], [[2, 5, 'SACKS'], [4, 5, 'SAND_DUNE_1']]],
+            ABANDONED_STONE_HOUSE: [[[2, 5, 'CRATE'], [5, 5, 'DESERT_SKULL']], [[2, 5, 'BARREL'], [5, 5, 'SMALL_ROCKS_2']]],
+            ABANDONED_SMITHY: [[[2, 5, 'BARREL'], [5, 5, 'CRATE']], [[2, 5, 'SMALL_ROCKS_1'], [4, 5, 'BONE_PILE']]],
+            ABANDONED_WORKSHOP: [[[2, 5, 'CRATE'], [5, 5, 'CRATE_SACK']], [[2, 5, 'BARREL'], [5, 5, 'SACKS']]],
+        },
     }),
     /* the desert's crop field: the same fenced field, planted with aloe */
     ABANDONED_CROP_FIELD_ALOE: yard({ ...CROP_FIELD('ALOE_PLANT'), scatterPool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SAND_DUNE_1'] }),
@@ -425,13 +507,21 @@ Object.assign(STRUCTURES, {
             put(1, 9, 'WOODEN_FENCE_FALLEN'); put(2, 9, 'SNOWY_TREE_STUMP'); put(1, 8, 'SMALL_ROCKS_1'); put(2, 8, 'STICK');
         },
     }),
-    ...themedBuildings('SNOWY', {
+    ...buildingSet('SNOWY', {
         base: { scatterPool: SNOWY_DECOR, scatterChance: 0.3, fenceBreak: 0.18 },
         house: [[2, 5, 'SNOWY_TREE_STUMP'], [5, 5, 'BARREL']],
         cottage: [[2, 5, 'SACKS'], [5, 5, 'SNOWY_TREE_STUMP']],
         farmhouse: [[2, 5, 'BARREL'], [4, 5, 'CRATE'], [5, 5, 'SACKS']],
         hut: [[2, 5, 'SMALL_ROCKS_1'], [4, 5, 'SMALL_ROCKS_2'], [5, 5, 'SNOWY_TREE_STUMP']],
+        stone: [[2, 5, 'CRATE'], [5, 5, 'SNOWY_TREE_STUMP']],
+        smithy: [[2, 5, 'BARREL'], [4, 5, 'SMALL_ROCKS_1'], [5, 5, 'CRATE']],
         workshop: [[2, 5, 'BARREL'], [4, 5, 'CRATE'], [5, 5, 'CRATE_SACK']],
+        sides: {
+            ABANDONED_HOUSE: [[[2, 5, 'SNOWY_TREE_STUMP'], [5, 5, 'BARREL']], [[2, 5, 'SACKS'], [4, 5, 'SMALL_ROCKS_3']]],
+            ABANDONED_STONE_HOUSE: [[[2, 5, 'CRATE'], [5, 5, 'SNOWY_TREE_STUMP']], [[2, 5, 'BARREL'], [5, 5, 'SMALL_ROCKS_2']]],
+            ABANDONED_SMITHY: [[[2, 5, 'BARREL'], [5, 5, 'CRATE']], [[2, 5, 'SMALL_ROCKS_1'], [4, 5, 'SNOWY_TREE_STUMP']]],
+            ABANDONED_WORKSHOP: [[[2, 5, 'CRATE'], [5, 5, 'CRATE_SACK']], [[2, 5, 'BARREL'], [5, 5, 'SACKS']]],
+        },
     }),
 });
 
@@ -445,11 +535,8 @@ STRUCTURES.ABANDONED_VILLAGE_DESERT = {
     ...PLAINS_VILLAGE,
     centerPrefab: 'ABANDONED_CENTER_DESERT',
     modules: [
-        { prefab: 'ABANDONED_HOUSE_DESERT', weight: 5 },
-        { prefab: 'ABANDONED_COTTAGE_DESERT', weight: 4 },
-        { prefab: 'ABANDONED_FARMHOUSE_DESERT', weight: 3 },
-        { prefab: 'ABANDONED_HUT_DESERT', weight: 3 },
-        { prefab: 'ABANDONED_CROP_FIELD_ALOE', weight: 2 },
+        ...villageModules('DESERT'),
+        { prefab: 'ABANDONED_CROP_FIELD_ALOE', weight: 1 },
         { prefab: 'ABANDONED_WORKSHOP_DESERT', weight: 1.5, required: true, max: 1 },
     ],
     trees: {
@@ -518,10 +605,7 @@ STRUCTURES.ABANDONED_VILLAGE_SNOWY = {
     ...PLAINS_VILLAGE,
     centerPrefab: 'ABANDONED_CENTER_SNOWY',
     modules: [
-        { prefab: 'ABANDONED_HOUSE_SNOWY', weight: 5 },
-        { prefab: 'ABANDONED_COTTAGE_SNOWY', weight: 4 },
-        { prefab: 'ABANDONED_FARMHOUSE_SNOWY', weight: 3 },
-        { prefab: 'ABANDONED_HUT_SNOWY', weight: 3 },
+        ...villageModules('SNOWY'),
         { prefab: 'ABANDONED_WORKSHOP_SNOWY', weight: 1.5, required: true, max: 1 },     // no crop fields: the ground is frozen
     ],
     trees: {
