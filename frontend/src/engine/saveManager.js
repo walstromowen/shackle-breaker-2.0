@@ -287,6 +287,8 @@ export const SaveManager = {
                 currentBiome: world.currentBiome || null,
                 changes: clone(world.changes || {}),
                 terrainOverrides: clone(world.terrainOverrides || {}),
+                villageStairs: clone(world.villageStairs || []),
+                levelPaths: clone(world.levelPaths || {}),
                 discoveredChunks: clone(world.discoveredChunks || []),
                 weather: serializeWeather(world.currentWeather),
                 // inside a house or cave: which one, and the overworld seed and spot to return to (`data.seed` is then the interior's shifted seed)
@@ -388,6 +390,8 @@ export const SaveManager = {
             day: data.world.day,
             changes: data.world.changes || {},
             terrainOverrides: data.world.terrainOverrides || {},
+            villageStairs: data.world.villageStairs || [],
+            levelPaths: data.world.levelPaths || {},
             discoveredChunks: data.world.discoveredChunks || [],
             currentWeather: weather            // null -> WorldManager creates clear skies
         });

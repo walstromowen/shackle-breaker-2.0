@@ -24,6 +24,8 @@ export class WorldManager {
         if (!gameState.seed) gameState.seed = Math.floor(Math.random() * 1000000);
         if (!gameState.world.changes) gameState.world.changes = {};
         if (!gameState.world.terrainOverrides) gameState.world.terrainOverrides = {};
+        if (!gameState.world.villageStairs) gameState.world.villageStairs = [];
+        if (!gameState.world.levelPaths) gameState.world.levelPaths = {};
         if (!gameState.world.currentWeather) {
             gameState.world.currentWeather = WeatherFactory.createWeather('CLEAR');
             gameState.world.currentWeather.intensity = 1.0;
@@ -273,6 +275,11 @@ export class WorldManager {
     _stairWallAt(col, row) {
         const c = this._stairCell(col, row);
         return !!c && c.t === 'R';
+    }
+    // a cell of a village street on a cliff level: drawn as dirt (it cannot be a dirt tile there, a dirt tile is the low ground); see VillagePlanner._paveRoads
+    isLevelPath(col, row) {
+        const p = gameState.world.levelPaths;
+        return !!p && p[this._s(col, row)] === 1;
     }
     _nearStair(col, row) {
         if (!this.terrain || !this.terrain.getStairAt) return false;
@@ -598,7 +605,8 @@ export class WorldManager {
         const sin = Math.sin(dot) * 43758.5453;
         return sin - Math.floor(sin);
     }
-}
+}
+
 
 /* The village planner and the structure spawner are methods of the WorldManager that live in files of their own (see their headers). */
 for (const part of [VillagePlanner, StructureSpawner]) {

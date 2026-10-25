@@ -7,6 +7,7 @@
 import { MAP_OBJECTS_DEFINITIONS } from './mapObjectDefinitions.js';
 import { STRUCTURES } from './structures.js';
 import { gameState } from '../core/gameState.js';
+import { BIOME_DEFINITIONS, isPlateau } from './biomeDefinitions.js';
 
 /* N, E, S, W: the ways a road can head (the index is the `d` of a road cell) */
 const VILLAGE_DIRS = [
@@ -15,6 +16,17 @@ const VILLAGE_DIRS = [
     { c: 0, r: 1 },
     { c: -1, r: 0 },
 ];
+
+/* The stairs a village can cut where a road meets a cliff, by the way the road is heading (index into VILLAGE_DIRS): { kind, up }. `up` is true when the road
+   climbs a level on the way (it stands on the low side of the piece), false when it comes down (it stands on the high side). The pieces are the natural ones
+   (terrainGenerator.js, STAIR_MASK): 'S' and 'N' are 5 x 3 / 5 x 2 and are walked north / south, 'E' and 'W' are 3 x 4 side views walked west / east. */
+const STAIR_SITES = [
+    [{ kind: 'S', up: true }, { kind: 'N', up: false }],
+    [{ kind: 'W', up: true }, { kind: 'E', up: false }],
+    [{ kind: 'N', up: true }, { kind: 'S', up: false }],
+    [{ kind: 'E', up: true }, { kind: 'W', up: false }],
+];
+const STAIR_SIZE = { S: [5, 3], N: [5, 2], E: [3, 4], W: [3, 4] };
 
 export class VillagePlanner {
     /* ================================================================================================================
@@ -25,6 +37,8 @@ export class VillagePlanner {
           (2 * rad + 1) x (2 * rad + 1) square (3 x 3 for a 3-wide road), which gives a clean band in every direction and
           filled corners where a road turns. Nothing is written yet: the roads only claim cells in `plan.roadOwner`;
        3. side streets fork off the straight parts of the main roads;
+       3b. where a street meets a cliff the village cuts a stair into it, and the streets go on up (or down) the level beyond, with side streets of their own
+          (`levels` in the blueprint, _linkLevels);
        4. buildings are placed along every road, on both sides, with the gate facing the road;
        5. street dressing is put on the grass beside the roads, and trees are planted along them and in the empty lots;
        6. finally the roads are painted into the terrain and the cells they cover (and a verge around them) are cleared.
@@ -44,13 +58,15 @@ export class VillagePlanner {
             hubTiles: new Set(),
             buildingTiles: new Set(),
             roadOwner: new Map() /* cell key -> { road: id, step } */,
-            roads: [] /* { id, kind: 'arm' | 'side', parent, centres: [{ c, r, d }] } (d = the way the road was heading when it reached the cell) */,
+            roads: [] /* { id, kind: 'arm' | 'side', parent, elev, depth, centres: [{ c, r, d }] } (d = the way the road was heading when it reached the cell; elev = the level it runs on, depth = stairs between it and the hub) */,
+            stairs: [] /* the stairs this village cut (terrain.addVillageStair) */,
         };
         for (let y = 0; y < hub.height; y++) {
             for (let x = 0; x < hub.width; x++) plan.hubTiles.add(this._s(startCol + x, startRow + y));
         }
         this._planMainRoads(plan, startCol, startRow, hub, blueprint, cx, cy);
         this._planSideStreets(plan);
+        this._linkLevels(plan);
         this._planBuildings(plan, blueprint);
         this._planStreetProps(plan, blueprint);
         this._planTrees(plan, blueprint);
@@ -87,27 +103,67 @@ export class VillagePlanner {
             setback: bp.setback ?? 0,
             skipStart: 3,
             tries: Math.max(1, bp.buildingTries ?? 1),
+            levels: this._levelConfig(bp.levels),
         };
     }
+    _levelConfig(lv) {
+        lv = lv || {};
+        return {
+            max: lv.max ?? 0,                              // most stairs one village cuts
+            depth: lv.depth ?? 2,                          // most stairs between a street and the hub (levels climbed or descended)
+            chance: lv.chance ?? 1,
+            spacing: lv.spacing ?? 10,                     // empty cells between two stairs
+            probeStep: lv.probeStep ?? 2,                  // a spur toward a cliff is tried from every n-th cell of a street
+            spurMin: lv.spur ? lv.spur.min : 2,            // length of the spur leading to the stair
+            spurMax: lv.spur ? lv.spur.max : 16,
+            upperMin: lv.upper ? lv.upper.min : 8,        // length of the street on the far side, at least
+            upperMax: lv.upper ? lv.upper.max : 34,
+        };
+    }
+    /* the level a road runs on */
+    _roadElev(plan, road) {
+        return road && road.elev !== undefined ? road.elev : plan.baseElev;
+    }
+    /* a stair of this village (or a natural one) is where a road, a yard or a prop may not be: a village stair only blocks its own cells (the road to it
+       ends right against it), a natural stair its cells and one more ring */
+    _stairBlocksRoad(c, r) {
+        const t = this.terrain;
+        if (!t || !t.getStairAt) return false;
+        for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+                const st = t.getStairAt(c + dc, r + dr);
+                if (st && (!st.village || (dc === 0 && dr === 0))) return true;
+            }
+        }
+        return false;
+    }
+    /* within `pad` cells of a stair this village cut: no yard goes there (a yard's footpath is dirt, which would pull the cliff down, see _wouldClip) */
+    _nearVillageStair(plan, c, r, pad) {
+        for (const st of plan.stairs) {
+            if (c >= st.ox - pad && c < st.ox + st.w + pad && r >= st.oy - pad && r < st.oy + st.h + pad) return true;
+        }
+        return false;
+    }
     /* a cell a road may be painted on */
-    _roadTileOk(plan, c, r) {
+    _roadTileOk(plan, c, r, elev) {
         const key = this._s(c, r);
         if (plan.hubTiles.has(key)) return true;
         if (plan.buildingTiles.has(key)) return false;
         if (gameState.world.changes[key] !== undefined) return false;
-        if (this.getElevation(c, r) !== plan.baseElev) return false;
+        if (this.getElevation(c, r) !== (elev ?? plan.baseElev)) return false;
         if (this.isBlockedByFace(c, r) || this.isCliffFace(c, r)) return false;
-        if (this._nearStair(c, r)) return false;
+        if (this._stairBlocksRoad(c, r)) return false;
         return true;
     }
     /* can the road `road` have a centre at (c, r)? `step` is the index that centre would get on the road */
     _centreOk(plan, road, c, r, step) {
         const cfg = plan.cfg;
         const rad = cfg.rad;
+        const elev = this._roadElev(plan, road);
         if (plan.hubTiles.has(this._s(c, r))) return false; // a road leaves the hub, it never runs inside it
         for (let dy = -rad; dy <= rad; dy++) {
             for (let dx = -rad; dx <= rad; dx++) {
-                if (!this._roadTileOk(plan, c + dx, r + dy)) return false;
+                if (!this._roadTileOk(plan, c + dx, r + dy, elev)) return false;
             }
         }
         /* keep `gap` cells of grass between this road and any other road, and do not fold back onto an older stretch of itself */
@@ -224,14 +280,173 @@ export class VillagePlanner {
     _planSideStreets(plan) {
         const cfg = plan.cfg;
         if (!cfg.sideChance) return;
+        this._growDistrict(plan, plan.roads.filter((rd) => rd.kind === 'arm'));
+    }
+    /* streets fork off the roads `arms`; with `sideStreets.depth` 2 or more, streets fork off those streets too (alleys between the blocks of a town) */
+    _growDistrict(plan, arms) {
+        const cfg = plan.cfg;
         let made = 0;
-        /* streets fork off the main roads; with `sideStreets.depth` 2 or more, streets fork off those streets too (alleys between the blocks of a town) */
-        let arms = plan.roads.filter((rd) => rd.kind === 'arm');
         for (let generation = 1; generation <= cfg.sideDepth && arms.length > 0; generation++) {
             const before = plan.roads.length;
             made = this._forkSideStreets(plan, arms, made);
             arms = plan.roads.slice(before);
         }
+    }
+    /* ---- levels ----------------------------------------------------------------------------------------------------------------
+       A street that meets a cliff does not have to stop there: the village cuts a stair into the cliff (the same four pieces as the natural stairs, kept in
+       gameState.world.villageStairs) and the street goes on over the top (or down below), as a district of its own with side streets, yards and, where it
+       meets another cliff, another stair. Each street has the level it runs on (road.elev) and the number of stairs between it and the hub (road.depth).
+
+       The search: from every other cell of every street, a spur is probed straight out to the side (and straight ahead from the end of a street) as far as
+       the ground stays level and free; where it ends the cliff is, and _stairSites tests the four pieces against the terrain there (the piece must sit
+       on a straight run of cliff, see terrainGenerator._stairShapesAt). */
+    _linkLevels(plan) {
+        const lv = plan.cfg.levels;
+        if (!lv.max || !this.terrain || !this.terrain.villageStairShape) return;
+        const cands = [];
+        const hashOf = (cand) => { const o = cand.road.centres[cand.i]; return this.pseudoRandom(o.c * 59 + cand.dir * 7 + plan.salt, o.r * 61 + cand.road.id * 3 + 13); };
+        const addCandidates = (road) => {
+            if ((road.depth || 0) >= lv.depth) return;
+            const cs = road.centres;
+            for (let i = 2; i < cs.length - 1; i += lv.probeStep) {
+                if (!this._straightAt(cs, i, 1, 1)) continue;
+                for (const turn of [1, 3]) cands.push({ road, i, dir: (cs[i].d + turn) % 4 });
+            }
+            if (cs.length > 3) cands.push({ road, i: cs.length - 1, dir: cs[cs.length - 1].d, tip: true });
+        };
+        for (const road of plan.roads.slice()) addCandidates(road);
+        let made = 0;
+        while (cands.length > 0 && made < lv.max) {
+            /* the streets nearest the hub first, in a random order among themselves */
+            let best = 0;
+            let bestKey = Infinity;
+            for (let k = 0; k < cands.length; k++) {
+                const key = (cands[k].road.depth || 0) * 10 + hashOf(cands[k]);
+                if (key < bestKey) { bestKey = key; best = k; }
+            }
+            const cand = cands.splice(best, 1)[0];
+            if (this.pseudoRandom(cand.road.centres[cand.i].c * 67 + 5, cand.road.centres[cand.i].r * 71 + plan.salt) >= lv.chance) continue;
+            const fresh = this._tryLink(plan, cand);
+            if (!fresh) continue;
+            made++;
+            for (const road of fresh) addCandidates(road);
+        }
+    }
+    /* the stair pieces that fit the terrain with the end of a street at `tip` heading `dir` on level `elev`: [{ cd, up, far: { c, r }, farElev }] */
+    _stairSites(tip, dir, elev) {
+        const out = [];
+        for (const { kind, up } of STAIR_SITES[dir]) {
+            const [w, h] = STAIR_SIZE[kind];
+            let ox, oy;
+            if (dir === 0) { ox = tip.c - 2; oy = tip.r - h - 1; }
+            else if (dir === 2) { ox = tip.c - 2; oy = tip.r + 2; }
+            else if (dir === 1) { ox = tip.c + 2; oy = tip.r - 2; }
+            else { ox = tip.c - 2 - (w - 1); oy = tip.r - 2; }
+            const anchor = kind === 'S' ? [ox + 1, oy + 1] : kind === 'N' ? [ox + 1, oy] : kind === 'E' ? [ox + 2, oy + 2] : [ox, oy + 2];
+            const cd = this.terrain.villageStairShape(anchor[0], anchor[1], kind);
+            if (!cd || cd.ox !== ox || cd.oy !== oy) continue;
+            const far = dir === 0 ? { c: tip.c, r: oy - 2 } : dir === 2 ? { c: tip.c, r: oy + h + 1 } : dir === 1 ? { c: ox + w + 1, r: tip.r } : { c: ox - 2, r: tip.r };
+            const farElev = elev + (up ? 1 : -1);
+            if (farElev < 2 || this.getElevation(far.c, far.r) !== farElev) continue;
+            out.push({ cd, up, far, farElev });
+        }
+        return out;
+    }
+    /* probe a spur from the street cell `cand` points at; when it ends at a cliff where a stair fits, build the spur, the stair, the street beyond it and the
+       side streets of that. Returns the new roads, or null. */
+    _tryLink(plan, cand) {
+        const cfg = plan.cfg;
+        const lv = cfg.levels;
+        const road = cand.road;
+        const elev = this._roadElev(plan, road);
+        const origin = road.centres[cand.i];
+        const vec = VILLAGE_DIRS[cand.dir];
+        const spur = { id: plan.roads.length, kind: 'side', parent: road.id, elev, depth: road.depth || 0, centres: [{ c: origin.c, r: origin.r, d: cand.dir }] };
+        const run = [{ c: origin.c, r: origin.r }];
+        for (let k = 1; k <= lv.spurMax; k++) {
+            const c = origin.c + vec.c * k;
+            const r = origin.r + vec.r * k;
+            if (!this._centreOk(plan, spur, c, r, k)) break;
+            run.push({ c, r });
+        }
+        for (let back = 0; back <= 5; back++) {
+            const idx = run.length - 1 - back;
+            if (idx < (cand.tip ? 0 : lv.spurMin)) break;
+            for (const site of this._stairSites(run[idx], cand.dir, elev)) {
+                const made = this._buildLink(plan, road, spur, run, idx, cand, site);
+                if (made) return made;
+            }
+        }
+        return null;
+    }
+    _buildLink(plan, road, spur0, run, idx, cand, site) {
+        const cfg = plan.cfg;
+        const lv = cfg.levels;
+        const cd = site.cd;
+        /* stairs keep their distance from each other */
+        for (const st of plan.stairs) {
+            if (cd.ox < st.ox + st.w + lv.spacing && st.ox < cd.ox + cd.w + lv.spacing && cd.oy < st.oy + st.h + lv.spacing && st.oy < cd.oy + cd.h + lv.spacing) return null;
+        }
+        const created = [];
+        const rollback = () => { for (const key of created) plan.roadOwner.delete(key); return null; };
+        /* the spur claims its cells first, so the street beyond sees them */
+        const spur = { ...spur0, centres: [spur0.centres[0]] };
+        if (idx > 0) {
+            for (let k = 1; k <= idx; k++) {
+                spur.centres.push({ c: run[k].c, r: run[k].r, d: cand.dir });
+                this._stampRoad(plan, spur, run[k].c, run[k].r, k, created);
+            }
+        }
+        /* the street beyond: straight on from the far side of the stair, bending round the ledge it is on */
+        const far = { id: plan.roads.length + (idx > 0 ? 1 : 0), kind: 'side', parent: idx > 0 ? spur.id : road.id, elev: site.farElev, depth: (road.depth || 0) + 1, centres: [{ c: site.far.c, r: site.far.r, d: cand.dir }] };
+        if (!this._centreOk(plan, far, site.far.c, site.far.r, 0)) return rollback();
+        this._stampRoad(plan, far, site.far.c, site.far.r, 0, created);
+        const want = lv.upperMin + Math.floor(this.pseudoRandom(site.far.c * 73 + 11, site.far.r * 79 + plan.salt) * (lv.upperMax - lv.upperMin + 1));
+        const len = this._extendRoad(plan, far, cand.dir, want, created);
+        if (len < lv.upperMin) return rollback();
+        const st = this.terrain.addVillageStair(cd);
+        plan.stairs.push(st);
+        const fresh = [];
+        if (idx > 0) { plan.roads.push(spur); fresh.push(spur); }
+        plan.roads.push(far);
+        fresh.push(far);
+        const before = plan.roads.length;
+        this._growDistrict(plan, [far]);
+        for (let k = before; k < plan.roads.length; k++) fresh.push(plan.roads[k]);
+        return fresh;
+    }
+    /* grow `road` on from its last centre for up to `maxLen` cells, heading `dir`: straight, a turn now and then, and a bend round whatever is in the way (the
+       same rules as the main roads). Returns how many cells it grew. */
+    _extendRoad(plan, road, dir, maxLen, created) {
+        const cfg = plan.cfg;
+        let { c, r } = road.centres[road.centres.length - 1];
+        let sinceTurn = 0;
+        let len = 0;
+        while (len < maxLen) {
+            if (sinceTurn >= cfg.minTurn && this.pseudoRandom(c * 53 + 3, r * 67 + 5) < cfg.turnChance) {
+                const turn = this.pseudoRandom(c * 71 + 1, r * 79 + 2) < 0.5 ? (dir + 3) % 4 : (dir + 1) % 4;
+                if (this._centreOk(plan, road, c + VILLAGE_DIRS[turn].c, r + VILLAGE_DIRS[turn].r, len + 1)) { dir = turn; sinceTurn = 0; }
+            }
+            let nc = c + VILLAGE_DIRS[dir].c;
+            let nr = r + VILLAGE_DIRS[dir].r;
+            let valid = this._centreOk(plan, road, nc, nr, len + 1);
+            if (!valid) {
+                const first = this.pseudoRandom(c, r) < 0.5 ? (dir + 3) % 4 : (dir + 1) % 4;
+                for (const turn of [first, first === (dir + 3) % 4 ? (dir + 1) % 4 : (dir + 3) % 4]) {
+                    const tc = c + VILLAGE_DIRS[turn].c;
+                    const tr = r + VILLAGE_DIRS[turn].r;
+                    if (this._centreOk(plan, road, tc, tr, len + 1)) { dir = turn; nc = tc; nr = tr; valid = true; sinceTurn = 0; break; }
+                }
+            }
+            if (!valid) break;
+            c = nc;
+            r = nr;
+            len++;
+            sinceTurn++;
+            road.centres.push({ c, r, d: dir });
+            this._stampRoad(plan, road, c, r, len, created);
+        }
+        return len;
     }
     _forkSideStreets(plan, arms, made) {
         const cfg = plan.cfg;
@@ -261,7 +476,7 @@ export class VillagePlanner {
     }
     _growSideStreet(plan, parent, at, dirIndex, len) {
         const cfg = plan.cfg;
-        const road = { id: plan.roads.length, kind: 'side', parent: parent.id, centres: [{ c: at.c, r: at.r, d: dirIndex }] };
+        const road = { id: plan.roads.length, kind: 'side', parent: parent.id, elev: this._roadElev(plan, parent), depth: parent.depth || 0, centres: [{ c: at.c, r: at.r, d: dirIndex }] };
         const d = VILLAGE_DIRS[dirIndex];
         const created = [];
         let c = at.c;
@@ -380,22 +595,22 @@ export class VillagePlanner {
             const key = this._s(originC + e.x + e.dx, originR + e.y + e.dy);
             if (!plan.roadOwner.has(key) && !plan.hubTiles.has(key)) return false;
         }
-        if (!this._moduleFits(plan, originC, originR, w, h)) return false;
+        if (!this._moduleFits(plan, originC, originR, w, h, this._roadElev(plan, slot.road))) return false;
         this._writePrefabToGlobalState(originC, originR, prefab);
         for (let y = 0; y < h; y++) {
             for (let x = 0; x < w; x++) plan.buildingTiles.add(this._s(originC + x, originR + y));
         }
         return true;
     }
-    _moduleFits(plan, originC, originR, w, h) {
+    _moduleFits(plan, originC, originR, w, h, elev) {
         for (let y = 0; y < h; y++) {
             for (let x = 0; x < w; x++) {
                 const key = this._s(originC + x, originR + y);
                 if (plan.roadOwner.has(key) || plan.hubTiles.has(key) || plan.buildingTiles.has(key)) return false;
-                if (this._nearStair(originC + x, originR + y)) return false;
+                if (this._nearStair(originC + x, originR + y) || this._nearVillageStair(plan, originC + x, originR + y, 5)) return false;
             }
         }
-        if (this.getElevation(originC, originR) !== plan.baseElev) return false;
+        if (this.getElevation(originC, originR) !== (elev ?? plan.baseElev)) return false;
         return this._isStructureFootprintValid(originC, originR, w, h);
     }
     /* A standing torch now and then beside the road (blueprint `streetTorches`). Same cell rules as the street dressing; planned first, so a torch
@@ -419,7 +634,7 @@ export class VillagePlanner {
                 const key = this._s(c, r);
                 if (plan.roadOwner.has(key) || plan.hubTiles.has(key) || plan.buildingTiles.has(key)) continue;
                 if (gameState.world.changes[key] !== undefined || this._collisionMap.has(key)) continue;     // not on a scarecrow's second tile either
-                if (this.getElevation(c, r) !== plan.baseElev || this.isBlockedByFace(c, r) || this.isCliffFace(c, r) || this._nearStair(c, r)) continue;
+                if (this.getElevation(c, r) !== this._roadElev(plan, road) || this.isBlockedByFace(c, r) || this.isCliffFace(c, r) || this._nearStair(c, r)) continue;
                 this.modifyWorld(c, r, tc.id);
                 this._placeObject(c, r, tc.id);
                 last = i;
@@ -449,7 +664,7 @@ export class VillagePlanner {
                     const key = this._s(c + dc, r);
                     if (plan.roadOwner.has(key) || plan.hubTiles.has(key) || plan.buildingTiles.has(key) || plan.buildingTiles.has(this._s(c + dc, r - 1))) free = false;
                     else if (gameState.world.changes[key] !== undefined || this._collisionMap.has(key)) free = false;
-                    else if (this.getElevation(c + dc, r) !== plan.baseElev || this.isBlockedByFace(c + dc, r) || this.isCliffFace(c + dc, r) || this._nearStair(c + dc, r)) free = false;
+                    else if (this.getElevation(c + dc, r) !== this._roadElev(plan, road) || this.isBlockedByFace(c + dc, r) || this.isCliffFace(c + dc, r) || this._nearStair(c + dc, r)) free = false;
                 }
                 if (!free) continue;
                 this.modifyWorld(c, r, sc.id);
@@ -481,7 +696,7 @@ export class VillagePlanner {
                 const key = this._s(c, r);
                 if (plan.roadOwner.has(key) || plan.hubTiles.has(key) || plan.buildingTiles.has(key)) continue;
                 if (gameState.world.changes[key] !== undefined || this._collisionMap.has(key)) continue;
-                if (this.getElevation(c, r) !== plan.baseElev || this.isBlockedByFace(c, r) || this.isCliffFace(c, r) || this._nearStair(c, r)) continue;
+                if (this.getElevation(c, r) !== this._roadElev(plan, road) || this.isBlockedByFace(c, r) || this.isCliffFace(c, r) || this._nearStair(c, r)) continue;
                 const id = gc.encounterId && MAP_OBJECTS_DEFINITIONS[gc.encounterId] && this.pseudoRandom(c * 131 + 3, r * 137 + plan.salt) < (gc.encounterChance ?? 0)
                     ? gc.encounterId : gc.id;
                 this.modifyWorld(c, r, id);
@@ -511,7 +726,7 @@ export class VillagePlanner {
                     const key = this._s(c, r);
                     if (plan.roadOwner.has(key) || plan.hubTiles.has(key) || plan.buildingTiles.has(key)) continue;
                     if (gameState.world.changes[key] !== undefined || this._collisionMap.has(key)) continue;     // not on a scarecrow's second tile either
-                    if (this.getElevation(c, r) !== plan.baseElev || this.isBlockedByFace(c, r) || this.isCliffFace(c, r) || this._nearStair(c, r)) continue;
+                    if (this.getElevation(c, r) !== this._roadElev(plan, road) || this.isBlockedByFace(c, r) || this.isCliffFace(c, r) || this._nearStair(c, r)) continue;
                     /* the dressing follows the biome of the cell: `streetProps.biomes[biomeId]` replaces `pool` there (an empty list = nothing) */
                     const pool = this._biomePool(sp, this.getBiomeAt(c, r).id);
                     if (pool.length === 0) continue;
@@ -668,6 +883,21 @@ export class VillagePlanner {
         }
         return dist;
     }
+    /* would a dirt tile at (c, r) lower a cliff beside it? The terrain keeps a hill's slope gentle (terrainGenerator._computeLevel): a plateau cell can be at most
+       2 + floor((d - 1) / plateauWidth) levels high with a dirt cell d cells away, so a cell of a higher level that close to the new dirt is cut down */
+    _wouldClip(c, r) {
+        const bdef = BIOME_DEFINITIONS[this.getBiomeAt(c, r).id];
+        const width = bdef && bdef.plateauWidth ? bdef.plateauWidth : 2;
+        const reach = 2 * width + 2;
+        for (let dr = -reach; dr <= reach; dr++) {
+            for (let dc = -reach; dc <= reach; dc++) {
+                const d = Math.max(Math.abs(dr), Math.abs(dc));
+                if (d === 0) continue;
+                if (this.terrain._baseLevel(c + dc, r + dr) > 2 + Math.floor((d - 1) / width)) return true;
+            }
+        }
+        return false;
+    }
     _paveRoads(plan) {
         const cfg = plan.cfg;
         const overrides = gameState.world.terrainOverrides;
@@ -714,15 +944,24 @@ export class VillagePlanner {
             const [c, r] = key.split(',').map(Number);
             if (cfg.wear > 0 && !centreSet.has(key) && !nextToBuilding(c, r) && straightEdge(c, r) && !nearWorn(c, r) && this.pseudoRandom(c * 41 + 5, r * 43 + 9) < cfg.wear) worn.add(key);
         }
+        /* a street on a cliff level is dirt only to the eye (a dirt TILE there would be a pit); on the low ground it is a dirt tile, except where that would
+           pull a cliff down (_wouldClip: those cells stay grass, so the stair and the cliff beside the street keep their shape) */
+        let levelPaths = false;
         for (const key of roadKeys) {
             const [c, r] = key.split(',').map(Number);
             const paved = !worn.has(key);
             if (paved) {
-                overrides[key] = cfg.pathTile;
-                this.terrain.invalidateTile(key);
+                if (isPlateau(this.getTileAt(c, r))) {
+                    gameState.world.levelPaths[key] = 1;
+                    levelPaths = true;
+                } else if (!this._wouldClip(c, r)) {
+                    overrides[key] = cfg.pathTile;
+                    this.terrain.invalidateTile(key);
+                }
             }
             this.modifyWorld(c, r, null);
         }
+        if (levelPaths) this.terrain.overrideVersion = (this.terrain.overrideVersion || 0) + 1;
         /* a verge round the roads: no random tree or rock grows right up to the dirt (structures and anything already decided are left alone) */
         if (cfg.verge > 0) {
             const v = cfg.verge;

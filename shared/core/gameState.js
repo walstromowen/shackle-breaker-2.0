@@ -28,6 +28,8 @@ export const gameState = {
         day: 1,
         changes: {},
         terrainOverrides: {},
+        villageStairs: [],   // stairs cut by villages (terrainGenerator.addVillageStair)
+        levelPaths: {},      // cells of village streets on a cliff level, drawn as dirt (visual only; see blobTerrainRenderer)
         discoveredChunks: [],
         currentWeather: null
     },
@@ -61,4 +63,4 @@ export const gameState = {
         selectedDecisionIndex: 0,
         isMenuOpen: false
     }
-};
+};

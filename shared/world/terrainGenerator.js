@@ -523,6 +523,8 @@ export class TerrainGenerator {
        A stair only goes where one level meets the next (the plateau is exactly one level above the ground in front of it) along a straight
        run of edge with room around it; nothing about the terrain is changed. */
     getStairAt(col, row) {
+        const vs = this._villageStairAt(col, row);
+        if (vs) return vs;
         const B = this.STAIR_BLOCK;
         const bx = Math.floor(col / B), by = Math.floor(row / B);
         const key = bx + ',' + by;
@@ -536,6 +538,80 @@ export class TerrainGenerator {
         }
         return null;
     }
+    /* ---- stairs a village builds ---------------------------------------------------------------------------------------------
+       A village whose road meets a cliff cuts a stair into it (VillagePlanner._linkLevels): the same four pieces, drawn and walked exactly like the natural ones,
+       but kept in a list of their own, gameState.world.villageStairs (saved with the world), because they are decided when the village is planned, not by the
+       terrain. getStairAt looks at this list first, and a natural stair never overlaps one. */
+    _villageStairList() {
+        const w = gameState.world;
+        return w.villageStairs || (w.villageStairs = []);
+    }
+    _villageStairAt(col, row) {
+        const list = this._villageStairList();
+        if (!list.length) return null;
+        if (this._vsList !== list || this._vsLen !== list.length) {
+            this._vsList = list; this._vsLen = list.length;
+            this._vsCells = new Map();
+            for (const st of list) for (let r = st.oy; r < st.oy + st.h; r++) for (let c = st.ox; c < st.ox + st.w; c++) this._vsCells.set(c + ',' + r, st);
+        }
+        return this._vsCells.get(col + ',' + row) || null;
+    }
+    _overlapsVillageStair(cd, pad) {
+        for (const st of this._villageStairList()) {
+            if (cd.ox < st.ox + st.w + pad && st.ox < cd.ox + cd.w + pad && cd.oy < st.oy + st.h + pad && st.oy < cd.oy + cd.h + pad) return true;
+        }
+        return false;
+    }
+    /* the pieces of kind `kind` whose anchor cell is (c, r), if the terrain there has the shape (see _stairShapesAt); null when it has not or the biome has no stair sheet */
+    villageStairShape(c, r, kind) {
+        const found = this._stairShapesAt(c, r, [], kind)[0];
+        if (!found) return null;
+        const biome = this.getBiomeAt(found.ox, found.oy);
+        if (!biome || !biome.blobTileset || !biome.blobTileset.cliffStairs) return null;
+        for (let rr = found.oy - 1; rr <= found.oy + found.h; rr++) for (let cc = found.ox - 1; cc <= found.ox + found.w; cc++) if (this.getBiomeAt(cc, rr) !== biome) return null;
+        if (this._overlapsVillageStair(found, 3)) return null;
+        return found;
+    }
+    addVillageStair(cd) {
+        const st = { ...cd, village: true };
+        st.style = Math.floor(this._hash(cd.ox, cd.oy, 47) * 2);
+        st.mask = STAIR_MASK[cd.kind].slice();
+        st.id = 'v' + cd.ox + ',' + cd.oy;
+        this._villageStairList().push(st);
+        this._stairBlocks.clear();
+        this.overrideVersion = (this.overrideVersion || 0) + 1;
+        return st;
+    }
+    /* every stair piece whose anchor cell (c, r) is this one: the shape tests of the four kinds, shared by the natural stairs (_computeStairBlock) and
+       the stairs a village builds (VillagePlanner). `only` limits it to one kind. Pieces are pushed onto `out`. */
+    _stairShapesAt(c, r, out, only) {
+        const T = (a, b) => this.getTileAt(a, b);
+        const rowsEq = (cc, r0, r1, t) => { for (let rr = r0; rr <= r1; rr++) if (T(cc, rr) !== t) return false; return true; };
+        const colsEq = (c0, c1, rr, t) => { for (let cc = c0; cc <= c1; cc++) if (T(cc, rr) !== t) return false; return true; };
+        const cands = out;
+        const h = T(c, r);
+        if (!isPlateau(h)) return out;
+        {
+            const lo = h - 1;
+            // All four stairs are cut INTO the plateau (the notch lies on plateau cells). walk = [col, row, w, h] is the part that can be walked.
+            // S: the edge row r is a plateau row whose south side is one level lower. Piece rows r-1..r+1, 3 cells c..c+2, plateau also at r-2.
+            if (colsEq(c - 2, c + 4, r, h) && colsEq(c - 2, c + 4, r - 1, h) && colsEq(c - 2, c + 4, r - 2, h) && colsEq(c - 2, c + 4, r + 1, lo) && colsEq(c - 2, c + 4, r + 2, lo) && colsEq(c - 2, c + 4, r + 3, lo))
+                if (!only || only === 'S') cands.push({ kind: 'S', ox: c - 1, oy: r - 1, w: 5, h: 3, walk: [c, r - 1, 3, 3], carve: [c, r, 3, 1], dirs: ['UP', 'DOWN'] });
+            // N: edge row r (plateau), ground rows above it r-1..r-3; the plateau continues south (rows r..r+3, so the cell the stair leads onto is not itself the lip of a south face). Piece rows r..r+1.
+            if (colsEq(c - 2, c + 4, r, h) && colsEq(c - 2, c + 4, r + 1, h) && colsEq(c - 2, c + 4, r + 2, h) && colsEq(c - 2, c + 4, r + 3, h) && colsEq(c - 2, c + 4, r - 1, lo) && colsEq(c - 2, c + 4, r - 2, lo) && colsEq(c - 2, c + 4, r - 3, lo))
+                if (!only || only === 'N') cands.push({ kind: 'N', ox: c - 1, oy: r, w: 5, h: 2, walk: [c, r, 3, 2], carve: [c, r, 3, 1], dirs: ['UP', 'DOWN'] });
+            // E: the plateau's east edge column c (straight over rows r-3..r+2), ground east of it. The notch (walk row r) takes cols c-2..c; the cliff wall
+            // of its north side is drawn in rows r-2, r-1 and the rim of its south side in row r+1, so the piece is 3 x 4 and only row r can be walked.
+            if (rowsEq(c, r - 3, r + 2, h) && rowsEq(c - 1, r - 3, r + 2, h) && rowsEq(c - 2, r - 3, r + 2, h) && rowsEq(c - 3, r - 3, r + 2, h)
+                && rowsEq(c + 1, r - 3, r + 2, lo) && rowsEq(c + 2, r - 3, r + 2, lo) && rowsEq(c + 3, r - 3, r + 2, lo))
+                if (!only || only === 'E') cands.push({ kind: 'E', ox: c - 2, oy: r - 2, w: 3, h: 4, walk: [c - 2, r, 3, 1], carve: [c - 2, r - 1, 3, 2], dirs: ['LEFT', 'RIGHT'] });
+            // W: the plateau's west edge column c, ground west of it; the notch takes cols c..c+2
+            if (rowsEq(c, r - 3, r + 2, h) && rowsEq(c + 1, r - 3, r + 2, h) && rowsEq(c + 2, r - 3, r + 2, h) && rowsEq(c + 3, r - 3, r + 2, h)
+                && rowsEq(c - 1, r - 3, r + 2, lo) && rowsEq(c - 2, r - 3, r + 2, lo) && rowsEq(c - 3, r - 3, r + 2, lo))
+                if (!only || only === 'W') cands.push({ kind: 'W', ox: c, oy: r - 2, w: 3, h: 4, walk: [c, r, 3, 1], carve: [c, r - 1, 3, 2], dirs: ['LEFT', 'RIGHT'] });
+        }
+        return out;
+    }
     _computeStairBlock(bx, by) {
         const B = this.STAIR_BLOCK;
         // a biome can ask for more (or fewer) stairs with `stairChance` in its definition: the snowy mountains have five levels to climb
@@ -544,35 +620,10 @@ export class TerrainGenerator {
         if (this._hash(bx, by, 41) >= chance) return [];
         const M = bd && BIOME_DEFINITIONS[bd.id] && BIOME_DEFINITIONS[bd.id].stairMargin !== undefined ? BIOME_DEFINITIONS[bd.id].stairMargin : this.STAIR_MARGIN;
         const perBlock = bd && BIOME_DEFINITIONS[bd.id] && BIOME_DEFINITIONS[bd.id].stairsPerBlock ? BIOME_DEFINITIONS[bd.id].stairsPerBlock : 1;
-        const T = (c, r) => this.getTileAt(c, r);
-        const IS = this.TILES;
         const cands = [];
         const x0 = bx * B + M, x1 = bx * B + B - M, y0 = by * B + M, y1 = by * B + B - M;
-        const rowsEq = (c, r0, r1, t) => { for (let r = r0; r <= r1; r++) if (T(c, r) !== t) return false; return true; };
-        const colsEq = (c0, c1, r, t) => { for (let c = c0; c <= c1; c++) if (T(c, r) !== t) return false; return true; };
         for (let r = y0; r < y1; r++) {
-            for (let c = x0; c < x1; c++) {
-                const h = T(c, r);
-                if (isPlateau(h)) {
-                    const lo = h - 1;
-                    // All four stairs are cut INTO the plateau (the notch lies on plateau cells). walk = [col, row, w, h] is the part that can be walked.
-                    // S: the edge row r is a plateau row whose south side is one level lower. Piece rows r-1..r+1, 3 cells c..c+2, plateau also at r-2.
-                    if (colsEq(c - 2, c + 4, r, h) && colsEq(c - 2, c + 4, r - 1, h) && colsEq(c - 2, c + 4, r - 2, h) && colsEq(c - 2, c + 4, r + 1, lo) && colsEq(c - 2, c + 4, r + 2, lo) && colsEq(c - 2, c + 4, r + 3, lo))
-                        cands.push({ kind: 'S', ox: c - 1, oy: r - 1, w: 5, h: 3, walk: [c, r - 1, 3, 3], carve: [c, r, 3, 1], dirs: ['UP', 'DOWN'] });
-                    // N: edge row r (plateau), ground rows above it r-1..r-3; the plateau continues south (rows r..r+3, so the cell the stair leads onto is not itself the lip of a south face). Piece rows r..r+1.
-                    if (colsEq(c - 2, c + 4, r, h) && colsEq(c - 2, c + 4, r + 1, h) && colsEq(c - 2, c + 4, r + 2, h) && colsEq(c - 2, c + 4, r + 3, h) && colsEq(c - 2, c + 4, r - 1, lo) && colsEq(c - 2, c + 4, r - 2, lo) && colsEq(c - 2, c + 4, r - 3, lo))
-                        cands.push({ kind: 'N', ox: c - 1, oy: r, w: 5, h: 2, walk: [c, r, 3, 2], carve: [c, r, 3, 1], dirs: ['UP', 'DOWN'] });
-                    // E: the plateau's east edge column c (straight over rows r-3..r+2), ground east of it. The notch (walk row r) takes cols c-2..c; the cliff wall
-                    // of its north side is drawn in rows r-2, r-1 and the rim of its south side in row r+1, so the piece is 3 x 4 and only row r can be walked.
-                    if (rowsEq(c, r - 3, r + 2, h) && rowsEq(c - 1, r - 3, r + 2, h) && rowsEq(c - 2, r - 3, r + 2, h) && rowsEq(c - 3, r - 3, r + 2, h)
-                        && rowsEq(c + 1, r - 3, r + 2, lo) && rowsEq(c + 2, r - 3, r + 2, lo) && rowsEq(c + 3, r - 3, r + 2, lo))
-                        cands.push({ kind: 'E', ox: c - 2, oy: r - 2, w: 3, h: 4, walk: [c - 2, r, 3, 1], carve: [c - 2, r - 1, 3, 2], dirs: ['LEFT', 'RIGHT'] });
-                    // W: the plateau's west edge column c, ground west of it; the notch takes cols c..c+2
-                    if (rowsEq(c, r - 3, r + 2, h) && rowsEq(c + 1, r - 3, r + 2, h) && rowsEq(c + 2, r - 3, r + 2, h) && rowsEq(c + 3, r - 3, r + 2, h)
-                        && rowsEq(c - 1, r - 3, r + 2, lo) && rowsEq(c - 2, r - 3, r + 2, lo) && rowsEq(c - 3, r - 3, r + 2, lo))
-                        cands.push({ kind: 'W', ox: c, oy: r - 2, w: 3, h: 4, walk: [c, r, 3, 1], carve: [c, r - 1, 3, 2], dirs: ['LEFT', 'RIGHT'] });
-                }
-            }
+            for (let c = x0; c < x1; c++) this._stairShapesAt(c, r, cands);
         }
         if (!cands.length) return [];
         // one biome under the piece (a blob biome with a stair sheet), no structure tiles: the piece is drawn from the biome's own sheet
@@ -586,7 +637,7 @@ export class TerrainGenerator {
                     if (this.getBiomeAt(c, r) !== biome) ok = false;
                     if (gameState.world.terrainOverrides[this._s(c, r)] !== undefined) ok = false;
                 }
-            if (!ok) continue;
+            if (!ok || this._overlapsVillageStair(cd, 3)) continue;
             cd.score = this._hash(cd.ox, cd.oy, 43);
             good.push(cd);
         }

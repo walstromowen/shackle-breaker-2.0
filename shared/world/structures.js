@@ -338,6 +338,15 @@ export const STRUCTURES = {
             max: 26,                              //   per village
             depth: 2,                             //   2 = streets fork off the side streets too (alleys between the blocks)
         },
+        levels: {                                 // a street that meets a cliff gets a stair and goes on up (or down) the next level, with side streets and yards of its own
+            max: 6,                               //   stairs per village
+            depth: 3,                             //   most stairs between a street and the hub (3 = up three levels)
+            chance: 1,                            //   per spur tried
+            spacing: 8,                           //   empty cells between two stairs
+            probeStep: 2,                         //   a spur is tried from every n-th cell of a street
+            spur: { min: 2, max: 30 },            //   length of the short street that leads to the stair
+            upper: { min: 8, max: 40 },           //   length of the street on the far side of the stair (it bends round the ledge it is on)
+        },
 
         /* BUILDINGS (along every road, on both sides, gate facing the road) */
         buildingDensity: 1,                       // chance a free spot along a road gets a building (1 = every free spot: the plots touch)

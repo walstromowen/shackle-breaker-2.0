@@ -531,7 +531,9 @@ export class BlobTerrainRenderer {
     _dirtFn(pack) {
         let f = this._dirtFns.get(pack);
         if (!f) {
-            f = makeLevelDirt(pack.levelDirt, this._wm.seed);
+            const natural = makeLevelDirt(pack.levelDirt, this._wm.seed), wm = this._wm;
+            // the streets a village lays on a cliff level (WorldManager.isLevelPath) are dirt too
+            f = (x, y, li) => (wm.isLevelPath && wm.isLevelPath(x, y)) || natural(x, y, li);
             this._dirtFns.set(pack, f);
         }
         return f;

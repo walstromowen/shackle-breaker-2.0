@@ -5,6 +5,7 @@
 // worldManager.js copies them onto WorldManager.prototype, so `this` is the WorldManager.
 import { MAP_OBJECTS_DEFINITIONS } from './mapObjectDefinitions.js';
 import { STRUCTURES } from './structures.js';
+import { isPlateau } from './biomeDefinitions.js';
 import { gameState } from '../core/gameState.js';
 
 export class StructureSpawner {
@@ -143,16 +144,24 @@ export class StructureSpawner {
             }
         }
         if (prefab.terrain) {
+            /* on a cliff level a dirt tile would be a pit, so a path there is only drawn as dirt (gameState.world.levelPaths, see isLevelPath); other tiles are left as they are.
+               Asked before anything is written: painting a neighbour changes what a cell reads as. */
+            const onCliff = prefab.terrain.map((line, r) => line.map((tileId, c) => tileId !== null && isPlateau(this.getTileAt(originCol + c, originRow + r))));
+            let paths = false;
             for (let r = 0; r < prefab.height; r++) {
                 for (let c = 0; c < prefab.width; c++) {
                     const tileId = prefab.terrain[r][c];
-                    if (tileId !== null) {
-                        const key = this._s(originCol + c, originRow + r);
-                        gameState.world.terrainOverrides[key] = tileId;
-                        this.terrain.invalidateTile(key);
+                    if (tileId === null) continue;
+                    const key = this._s(originCol + c, originRow + r);
+                    if (onCliff[r][c]) {
+                        if (tileId === 1) { gameState.world.levelPaths[key] = 1; paths = true; }
+                        continue;
                     }
+                    gameState.world.terrainOverrides[key] = tileId;
+                    this.terrain.invalidateTile(key);
                 }
             }
+            if (paths) this.terrain.overrideVersion = (this.terrain.overrideVersion || 0) + 1;
         }
     }
     _isStructureFootprintValid(col, row, w, h) {
