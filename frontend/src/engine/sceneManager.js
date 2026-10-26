@@ -59,6 +59,7 @@ const SHARED_BACK_BUTTON = {
 import { PartyManager } from '../../../shared/characters/partyManager.js';
 import { WorldManager } from '../../../shared/world/worldManager.js';
 import { TimeSystem } from '../../../shared/world/timeSystem.js';
+import { placeWaypoint, frontTile, getWaypoints, landingTile } from '../../../shared/world/waypoints.js';
 import { ActSystem } from '../../../shared/story/actSystem.js';
 import { gameState } from '../../../shared/core/gameState.js';
 import { AbilitySystem } from '../../../shared/abilities/abilitySystem.js';
@@ -272,6 +273,7 @@ export class SceneManager {
                 if (this.currentScene === 'character-creator' && scene === 'overworld') {
                     SaveManager.backupAutosave();
                     gameState.world.discoveredChunks = [];   // a new world has been seen by no one
+                    gameState.world.waypoints = [];          // ... and holds no banners
                     this.tutorial.store.reset();   // every new game shows each screen's control card again (Settings > Replay Tips does the same by hand)
                 }
 
@@ -296,6 +298,17 @@ export class SceneManager {
 
                 if (scene === 'overworld') {
                     this.overworldController.isLocked = false;
+
+                    // Fast travel from the world map (WorldMapController.fastTravel): the party has paid; put it down beside the banner and move the clock by the tiles it crossed
+                    if (data && data.fastTravel) {
+                        const wp = getWaypoints().find((w) => w.id === data.fastTravel.id);
+                        if (wp && this.worldManager) {
+                            const at = landingTile(this.worldManager, wp);
+                            this.overworldController.warpTo(at.col, at.row);
+                            TimeSystem.advance(data.fastTravel.minutes || 0);
+                            events.emit('PLAY_SFX', { id: 'doorOpen', volume: 0.6 });
+                        }
+                    }
                     
                     // --- FIX: Check for the map object destruction payload ---
                     if (data && data.col !== undefined && data.row !== undefined) {
@@ -360,6 +373,15 @@ export class SceneManager {
 
         // Overworld abilities that need the live scene hand it over here (AbilitySystem.worldActionHandler). An Escape Rope is the same as walking out of the interior:
         // lock the player, then run the normal exit-door warp (sound, fade, restore the saved overworld and the spot just outside the entrance).
+        // The Waypoint item plants its banner on the tile in front of the player (not indoors, not where something stands); nothing is spent when it cannot
+        AbilitySystem.waypointPlacer = () => {
+            if (!this.worldManager || gameState.world.isInterior) return { success: false, message: 'A banner needs open ground: not in here.' };
+            const p = gameState.player;
+            const at = frontTile(p.col, p.row, p.direction);
+            const r = placeWaypoint(this.worldManager, at.col, at.row, this.worldManager.getElevation(p.col, p.row));
+            if (r.success) events.emit('PLAY_SFX', { id: 'doorOpen', volume: 0.5 });
+            return r;
+        };
         AbilitySystem.worldActionHandler = (action) => {
             if (action.type === 'exit_interior' && gameState.world.isInterior && gameState.world.savedOverworld) {
                 this.overworldController.isLocked = true;

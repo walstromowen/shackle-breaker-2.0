@@ -4,6 +4,7 @@ import { MinimapRenderer } from '../../ui/minimapRenderer.js';
 import { BLOCK } from '../../../../shared/world/exploredMap.js';
 import { gameState } from '../../../../shared/core/gameState.js';
 import { MAP_OBJECTS_DEFINITIONS } from '../../../../shared/world/mapObjectDefinitions.js';
+import { formatDuration, ORIGINS, waypointOrigin } from '../../../../shared/world/waypoints.js';
 import { VIEW } from './worldMapController.js';
 
 /* WorldMapRenderer - draws the world map screen (see worldMapController.js).
@@ -145,6 +146,7 @@ export class WorldMapRenderer {
             }
         }
 
+        this._banners(ctx, state);
         this._party(ctx, sx(player.x), sy(player.y), player.direction, scale);
         ctx.restore();
 
@@ -158,11 +160,57 @@ export class WorldMapRenderer {
         this._compass(ctx, ui);
 
         // buttons, and the key help between them and the Back button (the Back button itself is drawn by SceneManager)
+        this._travelPanel(ctx, ui, state);
         for (const b of state.hitboxes) {
             if (!b.label) continue;
-            ui.drawButton(b.x, b.y, b.w, b.h, b.label, ui.flags(b.id, state.hoveredHitboxId));
+            const cantPay = b.id === 'btn_fast_travel' && state.travelPlan && !state.travelPlan.affordable;
+            ui.drawButton(b.x, b.y, b.w, b.h, b.label, ui.flags(b.id, state.hoveredHitboxId, cantPay ? { disabled: true } : {}));
         }
-        ui.drawStyled('hint', 'Arrows pan  ·  Wheel zooms  ·  F fits all  ·  C centers', 820, H - 48 - 28, { maxWidth: 900 });
+        ui.drawStyled('hint', 'Arrows pan  ·  Wheel zooms  ·  F fits all  ·  C centers  ·  T picks a waypoint', 820, H - 48 - 28, { maxWidth: 900 });
+    }
+
+    /* The waypoint banners: the banner sprite of the origin that planted it (its first frame) standing on its tile at any zoom; the picked one is bigger and ringed. */
+    _banners(ctx, state) {
+        const get = (key) => (this.loader && this.loader.get ? this.loader.get(key) : null);
+        for (const { wp, x, y } of state.banners || []) {
+            const img = get(ORIGINS[waypointOrigin(wp)].sheet);
+            const picked = state.selectedWaypoint && state.selectedWaypoint.id === wp.id;
+            const w = picked ? 30 : 22, h = w * 2;
+            ctx.save();
+            if (picked) {
+                ctx.strokeStyle = `rgba(255, 210, 90, ${0.55 + (Math.sin(performance.now() * 0.005) + 1) * 0.2})`;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.ellipse(x, y - 2, 26, 11, 0, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            ctx.imageSmoothingEnabled = false;
+            if (img && img.width) ctx.drawImage(img, 0, 0, 32, 64, x - w / 2, y - h, w, h);
+            else {
+                ctx.fillStyle = '#2a5f96';
+                ctx.fillRect(x - w / 3, y - h, w * 2 / 3, h * 0.6);
+                ctx.fillStyle = '#6a4828';
+                ctx.fillRect(x - 1.5, y - h, 3, h);
+            }
+            ctx.restore();
+        }
+    }
+
+    /* Bottom left of the window, while a waypoint is picked: where it is, what the trip costs in currency and time, and the Fast Travel button (drawn with the other buttons). */
+    _travelPanel(ctx, ui, state) {
+        const wp = state.selectedWaypoint, plan = state.travelPlan, p = state.panel;
+        if (state.notice) ui.drawStyled('label', state.notice, VIEW.x + VIEW.w / 2, VIEW.y + 28, { align: 'center', color: '#e8a86a' });
+        if (!wp || !plan) return;
+        ctx.save();
+        ctx.fillStyle = 'rgba(12, 11, 9, 0.82)';
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+        ctx.strokeStyle = UITheme.colors.border;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(p.x + 1, p.y + 1, p.w - 2, p.h - 2);
+        ctx.restore();
+        ui.drawStyled('subtitle', wp.name, p.x + 24, p.y + 40, { align: 'left', maxWidth: p.w - 48 });
+        ui.drawStyled('label', `${plan.tiles} tiles away  ·  ${formatDuration(plan.minutes)}`, p.x + 24, p.y + 74, { align: 'left' });
+        ui.drawStyled('label', `Cost: ${plan.cost}  (you have ${state.currency})`, p.x + 24, p.y + 106, plan.affordable ? { align: 'left' } : { align: 'left', color: '#e8806a' });
     }
 
     /* Top right: what is under the pointer (only land that has been seen is named), else the tile in the middle. */

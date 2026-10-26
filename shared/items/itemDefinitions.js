@@ -1337,6 +1337,19 @@ export const ItemDefinitions = {
     maxStack: 10
   },
 
+  "waypoint": {
+    id: "waypoint",
+    name: "Waypoint",
+    type: "consumable",
+    description: "A cairn, a pole and a bundle of tattered cloth, rolled up for the road. Plant it on the ground in front of you and it unfurls in the colours of your people, standing there for good: open the world map and fast travel back to it, for a price in currency and a stretch of time that grow with the distance. Cannot be planted indoors.",
+    value: 900,
+    icon: { col: 9, row: 1 },            // consumables.png
+    useAbility: "place_waypoint",        // usable from the item menu AND placeable on the hotbar (the effect is defined by that ability)
+    usability: ['overworld'],
+    stackable: true,
+    maxStack: 10
+  },
+
   // --- COMBAT ITEMS (thrown or set in a fight; each spends one when used) ---
   // usability is only a note: what decides it is the context of the ability (battle-only for a thrown knife, both for the bear trap).
   "throwing_knife": {

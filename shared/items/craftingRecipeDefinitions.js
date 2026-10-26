@@ -426,6 +426,18 @@ export const craftingRecipeDefinitions = {
       "plant_fibers": 4       // cord to tie it
     }
   },
+  "recipe_waypoint": {
+    id: "recipe_waypoint",
+    outputItemId: "waypoint",
+    station: "any",
+    materials: {
+      "stone": 100,           // the cairn
+      "soft_wood": 100,       // the frame and the stakes
+      "iron_ingot": 5,        // the fittings
+      "linen": 30,            // the banner
+      "hard_wood": 20         // the pole
+    }
+  },
   "recipe_smoke_bomb": {
     id: "recipe_smoke_bomb",
     outputItemId: "smoke_bomb",

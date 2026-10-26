@@ -26,6 +26,7 @@ export class WorldManager {
         if (!gameState.world.terrainOverrides) gameState.world.terrainOverrides = {};
         if (!gameState.world.villageStairs) gameState.world.villageStairs = [];
         if (!gameState.world.levelPaths) gameState.world.levelPaths = {};
+        if (!gameState.world.waypoints) gameState.world.waypoints = [];
         if (!gameState.world.currentWeather) {
             gameState.world.currentWeather = WeatherFactory.createWeather('CLEAR');
             gameState.world.currentWeather.intensity = 1.0;

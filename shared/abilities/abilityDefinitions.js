@@ -1325,6 +1325,21 @@ export const AbilityDefinitions = {
             alreadyOpen: "You already have this place mapped."
         }]
     },
+    // Carried by the "waypoint" item. Plants a waypoint banner on the tile in front of the player (shared/world/waypoints.js); nothing is spent when it cannot stand there.
+    "place_waypoint": {
+        id: "place_waypoint",
+        name: "Plant Waypoint",
+        description: "Plant a banner on the ground in front of you. Open the world map to return to it later, for a price.",
+        context: "overworld",
+        range: "self",
+        tags: ["utility", "item"],
+        targeting: { scope: "self", select: "auto" },
+        accuracy: 1.0,
+        effects: [{
+            type: "place_waypoint",                  // AbilitySystem._world_place_waypoint: asks the scene for the tile in front of the player
+            notHere: "A banner cannot be planted here."
+        }]
+    },
     // Paste next to "escape_rope". Carried by the "bedroll" item.
     "use_bedroll": {
         id: "use_bedroll",

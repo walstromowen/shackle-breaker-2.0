@@ -397,6 +397,15 @@ export class AbilitySystem {
         return { success: true, message: effect.message || 'You unfold the map.' };
     }
 
+    /* { type: 'place_waypoint', notHere? }
+       Plants a waypoint banner on the tile in front of the player. The scene manager sets AbilitySystem.waypointPlacer (it knows where the player stands and faces and holds the
+       world); it returns { success, message }. With no placer (or inside a cave) nothing is planted and the item is kept. */
+    static _world_place_waypoint(effect) {
+        if (typeof this.waypointPlacer !== 'function') return { success: false, message: effect.notHere || 'A banner cannot be planted here.' };
+        const r = this.waypointPlacer() || {};
+        return { success: !!r.success, message: r.message || (r.success ? '' : (effect.notHere || 'A banner cannot be planted here.')) };
+    }
+
     /* { type: 'start_encounter', encounterId, context?, message? }
        Opens an encounter from the item (a bedroll: the sleep encounter). The scene manager does the opening (worldAction 'start_encounter'); the item is spent by
        whoever used it, as for any other successful overworld ability. */

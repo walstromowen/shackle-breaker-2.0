@@ -31,6 +31,7 @@ export const gameState = {
         villageStairs: [],   // stairs cut by villages (terrainGenerator.addVillageStair)
         levelPaths: {},      // cells of village streets on a cliff level, drawn as dirt (visual only; see blobTerrainRenderer)
         discoveredChunks: [],
+        waypoints: [],       // the banners the party has planted: { id, col, row, biome } (shared/world/waypoints.js)
         currentWeather: null
     },
     

@@ -7,3 +7,5 @@ rm -f shared/story/encounters/prologue.js shared/story/encounters/actTwo.js shar
 rm -f frontend/src/assets/mapObjects/objAbandonedHouse2.png
 echo "cleanup done"
 rm -f backend/test/encountertapskip.test.js
+
+rm -f frontend/src/assets/mapObjects/objWaypointBanner.png

@@ -141,6 +141,11 @@ export const MAP_OBJECTS_DEFINITIONS = {
 
     // --- ANIMATED ---
     CAMPFIRE: { sheet: 'objCampfire', spriteX: 0, spriteY: 6, frames: 32, speed: 0.1, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'bonfire' }, light: { hasLight: true, radius: 5.5, color: '255, 100, 0', maxAlpha: 0.8, flickerSpeed: 0.1, flickerAmp: 0.5 } },
+    /* The waypoint banners, planted by the Waypoint item (shared/world/waypoints.js): 32 x 64, tattered, swaying (4 frames), one per origin in that origin's colours (Alterian: legionary crimson, Panzerian: warlord steel, Namuh: nightblade black). The cairn at the foot is solid; the world map lists them and fast travel goes to them. */
+    WAYPOINT_BANNER_ALTERIAN: { sheet: 'objWaypointAlterian', spriteX: 0, spriteY: 0, frames: 4, speed: 0.22, width: 1, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    WAYPOINT_BANNER_PANZERIAN: { sheet: 'objWaypointPanzerian', spriteX: 0, spriteY: 0, frames: 4, speed: 0.22, width: 1, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    WAYPOINT_BANNER_NAMUH: { sheet: 'objWaypointNamuh', spriteX: 0, spriteY: 0, frames: 4, speed: 0.22, width: 1, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    WAYPOINT_BANNER: { sheet: 'objWaypointAlterian', spriteX: 0, spriteY: 0, frames: 4, speed: 0.22, width: 1, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },   // older saves: the plain banner is the Alterian one
     STANDING_TORCH: { sheet: 'objStandingTorch', spriteX: 0, spriteY: 0, frames: 4, speed: 0.14, width: 1, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, light: { hasLight: true, radius: 5.5, color: '255, 140, 50', maxAlpha: 0.75, flickerSpeed: 0.1, flickerAmp: 0.4 } },
     
     // --- HOUSE FURNITURE ---
