@@ -50,10 +50,13 @@ export class VillagePlanner {
         const cfg = this._villageConfig(blueprint);
         /* read before the hub is written: its terrain changes the corner cell */
         const baseElev = this.getElevation(startCol, startRow);
+        /* the biome the village belongs to (its plaza stands wholly in it): its yards are dressed for it, so they are only built inside it */
+        const homeBiome = this.getBiomeAt(startCol, startRow).id;
         this._writePrefabToGlobalState(startCol, startRow, hub);
         const plan = {
             cfg,
             baseElev,
+            homeBiome,
             salt: (cx * 31 + cy * 17) % 997,
             hubTiles: new Set(),
             buildingTiles: new Set(),
@@ -642,7 +645,7 @@ export class VillagePlanner {
             }
         }
         if (this.getElevation(originC, originR) !== (elev ?? plan.baseElev)) return false;
-        return this._isStructureFootprintValid(originC, originR, w, h);
+        return this._isStructureFootprintValid(originC, originR, w, h, plan.homeBiome);
     }
     /* A standing torch now and then beside the road (blueprint `streetTorches`). Same cell rules as the street dressing; planned first, so a torch
        takes its cell before any barrel or tuft of grass can. */
@@ -866,6 +869,9 @@ export class VillagePlanner {
                     }
                 }
                 if (!ok || !this.isFootprintValid(c, r, w, h)) continue;
+                /* isFootprintValid does not judge the anchor cell itself: keep the trunk off the ground under a cliff face, and the crown (drawn above the
+                   footprint) off the rock face of higher ground just above or beside it */
+                if (this.isBlockedByFace(c, r) || this.isCliffFace(c, r) || this._higherNear(c, r, w, h, this.getElevation(c, r))) continue;
                 /* reserve the footprint and a ring round it, so trees never touch */
                 for (let y = -1; y <= h; y++) {
                     for (let x = -1; x <= w; x++) {

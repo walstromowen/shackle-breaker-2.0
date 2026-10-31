@@ -9,13 +9,43 @@ import { isPlateau } from './biomeDefinitions.js';
 import { gameState } from '../core/gameState.js';
 
 export class StructureSpawner {
+    /* Each chunk gets its turn at a structure ONCE per world. The record (gameState.world.structureChunks) is saved with the world: without it,
+       every new WorldManager (loading a save, leaving a house or cave) ran the roll again, found the old structure in the way and built another
+       copy beside it. */
     _ensureStructuresSpawned(cx, cy) {
         const key = `${cx},${cy}`;
         if (this._structureSpawnedChunks.has(key)) return;
         this._structureSpawnedChunks.add(key);
+        const record = this._structureRecord();
+        if (record.chunks[key]) return;
+        record.chunks[key] = 1;
         const startCol = cx * this.CHUNK_SIZE;
         const startRow = cy * this.CHUNK_SIZE;
+        /* a save from before the record: a chunk that has anything written in it has had its turn already */
+        if (record.legacy && this._chunkHasChanges(startCol, startRow)) return;
         this._spawnStructuresForChunk(cx, cy, startCol, startRow);
+    }
+    /* { seed, chunks: { 'cx,cy': 1 }, legacy } for this world. A record for another seed, or one left beside an emptied world (a test, a reset), is
+       started afresh; a world with changes but no record at all is a save from before the record existed (legacy). */
+    _structureRecord() {
+        const world = gameState.world;
+        let record = world.structureChunks;
+        const hasChanges = !!world.changes && Object.keys(world.changes).length > 0;
+        if (!record || record.seed !== this.seed || (!hasChanges && Object.keys(record.chunks || {}).length > 0)) {
+            record = { seed: this.seed, chunks: {}, legacy: !record && hasChanges };
+            world.structureChunks = record;
+        }
+        if (!record.chunks) record.chunks = {};
+        return record;
+    }
+    _chunkHasChanges(startCol, startRow) {
+        const changes = gameState.world.changes || {};
+        for (let r = startRow; r < startRow + this.CHUNK_SIZE; r++) {
+            for (let c = startCol; c < startCol + this.CHUNK_SIZE; c++) {
+                if (changes[this._s(c, r)] !== undefined) return true;
+            }
+        }
+        return false;
     }
     _spawnStructuresForChunk(cx, cy, startCol, startRow) {
         const centerCol = startCol + Math.floor(this.CHUNK_SIZE / 2);
@@ -41,7 +71,7 @@ export class StructureSpawner {
                 const localRow = (startY + rOffset) % maxLocalRow;
                 const originCol = startCol + localCol;
                 const originRow = startRow + localRow;
-                if (this._isStructureFootprintValid(originCol, originRow, checkWidth, checkHeight)) {
+                if (this._isStructureFootprintValid(originCol, originRow, checkWidth, checkHeight, biome.id)) {
                     if (prefabOrBlueprint.type === 'BLUEPRINT') {
                         this._planBlueprint(originCol, originRow, prefabOrBlueprint, cx, cy);
                     } else {
@@ -164,7 +194,11 @@ export class StructureSpawner {
             if (paths) this.terrain.overrideVersion = (this.terrain.overrideVersion || 0) + 1;
         }
     }
-    _isStructureFootprintValid(col, row, w, h) {
+    /* Can a structure of w x h cells stand with its top-left corner at (col, row)? Every cell is free (nothing written there yet), on one level, and
+       not a cliff face or the ground under one. With `biomeId`, every cell is in that biome: a structure is dressed for the biome that rolled it,
+       so it may not reach over a border (that is also where the rivers run). And no higher ground right beside it, or in the two rows above it
+       (_higherNear): a house's roof, a tree's crown or a gravestone is drawn taller than its cell and would lie over the rock face. */
+    _isStructureFootprintValid(col, row, w, h, biomeId = null) {
         const baseElev = this.getElevation(col, row);
         if (baseElev <= 0) return false;
         for (let r = row; r < row + h; r++) {
@@ -174,8 +208,19 @@ export class StructureSpawner {
                 if (this.getElevation(c, r) !== baseElev) return false;
                 if (this.isBlockedByFace(c, r)) return false;
                 if (this.isCliffFace(c, r)) return false;
+                if (biomeId && this.getBiomeAt(c, r).id !== biomeId) return false;
             }
         }
-        return true;
+        return !this._higherNear(col, row, w, h, baseElev);
+    }
+    /* is any cell in the ring round the w x h box at (col, row), or in the two rows above it, on a higher level than `elev`? */
+    _higherNear(col, row, w, h, elev) {
+        for (let r = row - 2; r <= row + h; r++) {
+            for (let c = col - 1; c <= col + w; c++) {
+                const inside = r >= row && r < row + h && c >= col && c < col + w;
+                if (!inside && this.getElevation(c, r) > elev) return true;
+            }
+        }
+        return false;
     }
 }

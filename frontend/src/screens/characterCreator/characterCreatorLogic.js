@@ -1,4 +1,4 @@
-import { gameState } from '../../../../shared/core/gameState.js';
+import { gameState, resetWorldForNewGame } from '../../../../shared/core/gameState.js';
 import { EntityFactory } from '../../../../shared/characters/entityFactory.js';
 import { ItemFactory } from '../../../../shared/items/itemFactory.js';
 import { events } from '../../../../shared/core/eventBus.js';
@@ -305,6 +305,7 @@ export class CharacterCreatorLogic {
         }
         
         gameState.seed = finalSeed;
+        resetWorldForNewGame();   // nothing of an earlier game in this session (its villages, roads, quests) may carry over onto the new world
 
         // Note: Make sure PartyManager.createMainCharacter NO LONGER injects the quest
         // if you previously added it there!
@@ -392,4 +393,4 @@ export class CharacterCreatorLogic {
 
         events.emit('CHANGE_SCENE', { scene: 'overworld' });
     }
-}
+}

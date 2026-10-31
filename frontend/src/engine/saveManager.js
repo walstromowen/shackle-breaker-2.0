@@ -291,6 +291,7 @@ export const SaveManager = {
                 levelPaths: clone(world.levelPaths || {}),
                 waypoints: clone(world.waypoints || []),
                 discoveredChunks: clone(world.discoveredChunks || []),
+                structureChunks: clone(world.structureChunks || {}),
                 weather: serializeWeather(world.currentWeather),
                 // inside a house or cave: which one, and the overworld seed and spot to return to (`data.seed` is then the interior's shifted seed)
                 interior: world.isInterior ? clone({
@@ -395,6 +396,8 @@ export const SaveManager = {
             levelPaths: data.world.levelPaths || {},
             waypoints: data.world.waypoints || [],
             discoveredChunks: data.world.discoveredChunks || [],
+            // undefined in a save made before the record existed: WorldManager then works out which chunks already have their structure (see structureSpawner.js)
+            structureChunks: data.world.structureChunks,
             currentWeather: weather            // null -> WorldManager creates clear skies
         });
 

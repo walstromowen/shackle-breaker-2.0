@@ -32,6 +32,7 @@ export const gameState = {
         levelPaths: {},      // cells of village streets on a cliff level, drawn as dirt (visual only; see blobTerrainRenderer)
         discoveredChunks: [],
         waypoints: [],       // the banners the party has planted: { id, col, row, biome } (shared/world/waypoints.js)
+        structureChunks: {}, // chunks ('cx,cy') whose village / graveyard has been generated, so a reload never builds them again (structureSpawner.js)
         currentWeather: null
     },
     
@@ -65,3 +66,29 @@ export const gameState = {
         isMenuOpen: false
     }
 };
+
+/**
+ * Clears everything a world has written into gameState.world, for a New Game. The world is stored as changes on top of the seed (objects,
+ * roads, stairs, level paths, keyed by cell), so anything left over from the last game in this session would be laid over the new world's terrain:
+ * graves in its rivers, roads up its cliffs, plains trees in its deserts.
+ */
+export function resetWorldForNewGame() {
+    const w = gameState.world;
+    w.isInterior = false;
+    w.interiorType = null;
+    w.interiorId = null;
+    w.interiorMapId = null;
+    w.savedOverworld = null;
+    w.currentBiomeId = null;
+    w.currentBiome = null;
+    w.day = 1;
+    w.changes = {};
+    w.terrainOverrides = {};
+    w.villageStairs = [];
+    w.levelPaths = {};
+    w.discoveredChunks = [];
+    w.waypoints = [];
+    w.structureChunks = {};
+    w.currentWeather = null;
+    gameState.quests = { active: {}, completed: [], trackedIds: [] };
+}

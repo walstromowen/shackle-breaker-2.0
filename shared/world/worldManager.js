@@ -109,7 +109,8 @@ export class WorldManager {
                 if (this._collisionMap.has(key)) continue;
                 const forcedObjId = gameState.world.changes?.[key];
                 if (forcedObjId !== undefined) {
-                    if (forcedObjId !== null) {
+                    /* nothing is ever placed on open water; a saved object there is left over from another world (see resetWorldForNewGame) */
+                    if (forcedObjId !== null && (gameState.world.isInterior || this.getTileAt(c, r) !== this.TILES.LAYER_0)) {
                         this._placeObject(c, r, forcedObjId);
                     }
                     continue;
