@@ -7,12 +7,11 @@ export class GameLoop {
         this.lastTimeStamp = 0;
         this.isRunning = false;
 
-        // Frame pacing. The logic steps 60 times a second and the overworld blends between steps (interpolation), so drawing faster than about 60
-        // buys little and costs a lot on 120-240 Hz screens (most gaming laptops). The loop draws on every Nth screen refresh, N chosen so the draw
-        // rate lands at or just above 60: 60 Hz -> every refresh, 120 Hz -> every 2nd (60), 144 Hz -> every 2nd (72), 165 Hz -> every 2nd (82),
-        // 240 Hz -> every 4th (60). Drawing on whole refreshes keeps the gaps between frames equal; a fixed 60 cap on a 144 Hz screen would
-        // alternate 2- and 3-refresh gaps, which reads as judder.
-        this.targetRenderFps = 60;
+        // Frame pacing. By default the loop draws on every screen refresh: the overworld blends between logic steps (interpolation), so a 144 Hz
+        // monitor shows 144 smooth frames. Set targetRenderFps (e.g. 60) to draw only on every Nth refresh, N chosen so the rate lands at or just
+        // above it with equal gaps (144 Hz -> every 2nd = 72, 165 Hz -> 82, 240 Hz -> 60): that saves GPU work on a weak machine with a fast screen,
+        // but a fast monitor that keeps up looks choppier, so it is off (null).
+        this.targetRenderFps = null;
         this.refreshDeltas = [];     // the last few gaps between animation frames (ms), to measure the screen's refresh rate
         this.frameStride = 1;        // draw every Nth animation frame
         this.frameCounter = 0;
@@ -74,6 +73,7 @@ export class GameLoop {
      * that cannot keep up gets long gaps, a low measured rate and a stride of 1: it draws every frame it can.
      */
     _measureRefresh(gapMs) {
+        if (!this.targetRenderFps) { this.frameStride = 1; return; }
         if (!(gapMs > 0) || gapMs > 250) return;
         this.refreshDeltas.push(gapMs);
         if (this.refreshDeltas.length < 30) return;

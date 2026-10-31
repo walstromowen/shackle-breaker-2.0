@@ -7,7 +7,8 @@
  * Stamping a cached picture of the same dot costs about as much as drawing a plain image.
  *
  * The sprite is built exactly the way the dot used to be drawn (same fill, same shadow colour and blur), so it looks the same. Radii are
- * rounded to the nearest quarter pixel, which keeps the cache small without a visible difference.
+ * rounded to whole pixels (half pixels below 3 px): battle particles grow and shrink every frame, and finer steps meant a burst kept building
+ * new sprites while it played. The core is under the glow, so a fraction of a pixel of radius does not show.
  */
 const cache = new Map();
 const MAX_CACHED = 600;   // plenty for every colour and size in use; cleared (and rebuilt as needed) if something ever floods it
@@ -20,7 +21,7 @@ const MAX_CACHED = 600;   // plenty for every colour and size in use; cleared (a
  * @returns {{ canvas: HTMLCanvasElement, half: number }}  draw it at (x - half, y - half) for a dot centred on (x, y)
  */
 export function glowSprite(fill, glow, radius, blur) {
-    const r = Math.max(0.25, Math.round(radius * 4) / 4);
+    const r = radius < 3 ? Math.max(0.5, Math.round(radius * 2) / 2) : Math.round(radius);
     const key = `${fill}|${glow}|${r}|${blur}`;
     let sprite = cache.get(key);
     if (sprite) return sprite;
