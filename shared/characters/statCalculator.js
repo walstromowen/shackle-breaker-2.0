@@ -1,6 +1,7 @@
 import { TRAIT_DEFINITIONS } from '../abilities/traitDefinitions.js'; 
 import { DAMAGE_TYPES, CORRUPTION, MAGIC_DAMAGE_TYPES, DEFENSE_PER_SCALING_POINT, scalingFor } from '../core/constants.js'; 
 import { ActSystem } from '../story/actSystem.js'; 
+import { requirementsOf, unmetRequirements, UNMET_REQUIREMENT_DAMAGE_SCALE } from '../items/weaponRequirements.js'; 
 
 // BALANCE KNOB: scales the HP that Vigor grants, for EVERYONE (party, enemies, bosses and already-saved characters).
 // Saved characters keep their own copy of statMultipliers.hpPerVigor, so lowering it in the entity templates would not
@@ -8,18 +9,26 @@ import { ActSystem } from '../story/actSystem.js';
 // 1 (was 0.5): a new character's Vigor gives the full +3 max HP per point (hpPerVigor 3).
 export const HP_PER_VIGOR_SCALE = 1;
 
-// BALANCE KNOBS: how much passive per-round recovery each point of the recovery attributes grants.
-// Stamina recovery scales with Dexterity AND Strength, insight recovery with Intelligence AND Attunement (each point of either counts).
+// BALANCE KNOB: defense against every damage type per point of Vigor. 0 (was 0.5): Vigor now gives double the HP, and stacking a flat defense on
+// top made Vigor the one attribute worth buying; defense comes from the attributes each damage type scales with instead (DEFENSE_PER_SCALING_POINT).
+export const VIGOR_DEFENSE_PER_POINT = 0;
+
+// BALANCE KNOBS: how much passive per-round recovery each point of the pool attributes grants.
+// Max stamina and its recovery scale with Dexterity AND Strength, max insight and its recovery with Attunement AND Intelligence (each point of either counts;
+// the max pool uses the entity's own staminaPerDex / insightPerAtt multiplier for both attributes).
+// 0.25 per point of EACH attribute: since two attributes feed every pool, a character with 10 / 10 recovers what a 20-point specialist did at 0.5 (keeps
+// recovery below the cost of a basic ability, so stamina and insight still matter).
 // Recovery is the SUSTAIN rate and the max pool is the BURST reserve, so recovery has to grow slower than the pool
 // (a point of Dex gives +2 max stamina, so 0.5 recovery is a quarter of the pool a point adds, per round, at every level).
 // It used to be 1 per point, which refilled about half the pool every round and made ability costs meaningless.
 // Applies to everyone (party, enemies, saved characters); gear and trait recovery bonuses are flat and added on top.
 // 0.5 (was 0.35, and 0.3 before that): more sustain, so waiting for stamina or insight slows fights down less (a quarter of what a point adds to the pool, per round). It is added up before rounding (the
 // old code rounded each point's share on its own), so the whole sum steps up every second point of Dexterity / Attunement.
-export const STAMINA_RECOVERY_PER_DEX = 0.5;   // per point of Dexterity and per point of Strength
-export const INSIGHT_RECOVERY_PER_ATT = 0.5;   // per point of Attunement and per point of Intelligence
-export const STAMINA_RECOVERY_ATTRIBUTES = ['dexterity', 'strength'];
-export const INSIGHT_RECOVERY_ATTRIBUTES = ['intelligence', 'attunement'];
+export const STAMINA_RECOVERY_PER_DEX = 0.25;   // per point of Dexterity and per point of Strength
+export const INSIGHT_RECOVERY_PER_ATT = 0.25;   // per point of Attunement and per point of Intelligence
+export const STAMINA_ATTRIBUTES = ['dexterity', 'strength'];
+export const INSIGHT_ATTRIBUTES = ['attunement', 'intelligence'];
+const sumOf = (stats, attrs) => attrs.reduce((sum, a) => sum + (stats[a] || 0), 0);
 const whole = (n) => Math.round(n);
 const hundredths = (n) => Math.round(n * 100) / 100;
 
@@ -51,7 +60,8 @@ export class StatCalculator {
             critMultiplier: finalStats.critMultiplier, 
             accuracy: finalStats.accuracy, 
             evasion: finalStats.evasion, 
-            corruption: finalStats.corruption 
+            corruption: finalStats.corruption, 
+            unmetRequirements: breakdown.unmetRequirements || [] 
         }; 
     } 
 
@@ -123,7 +133,8 @@ export class StatCalculator {
         
         // Vitality Pillar
         breakdown.resources.derived.hp = Math.floor(finalStats.vigor * mults.hpPerVigor * HP_PER_VIGOR_SCALE); 
-        const vigorDefense = Math.floor(finalStats.vigor * 0.5); 
+        // Vigor is health, not armour: defense comes from the attributes each damage type scales with (below) and from level. 
+        const vigorDefense = Math.floor(finalStats.vigor * VIGOR_DEFENSE_PER_POINT); 
         this.DAMAGE_TYPES.forEach(t => { finalStats.defense[t] += vigorDefense + levelDefenseBonus; }); 
         
         // Attack and defense: each damage type scales with the attributes DAMAGE_SCALING (core/constants.js) names: Strength for blunt, Dexterity for pierce,
@@ -135,12 +146,12 @@ export class StatCalculator {
         }); 
 
         // Physical Pillar 
-        breakdown.resources.derived.stamina = Math.floor(finalStats.dexterity * mults.staminaPerDex); 
-        finalStats.staminaRecovery += STAMINA_RECOVERY_ATTRIBUTES.reduce((sum, a) => sum + (finalStats[a] || 0), 0) * STAMINA_RECOVERY_PER_DEX; 
+        breakdown.resources.derived.stamina = Math.floor(sumOf(finalStats, STAMINA_ATTRIBUTES) * mults.staminaPerDex); 
+        finalStats.staminaRecovery += sumOf(finalStats, STAMINA_ATTRIBUTES) * STAMINA_RECOVERY_PER_DEX; 
         
         // Magical Pillar 
-        breakdown.resources.derived.insight = Math.floor(finalStats.attunement * mults.insightPerAtt); 
-        finalStats.insightRecovery += INSIGHT_RECOVERY_ATTRIBUTES.reduce((sum, a) => sum + (finalStats[a] || 0), 0) * INSIGHT_RECOVERY_PER_ATT; 
+        breakdown.resources.derived.insight = Math.floor(sumOf(finalStats, INSIGHT_ATTRIBUTES) * mults.insightPerAtt); 
+        finalStats.insightRecovery += sumOf(finalStats, INSIGHT_ATTRIBUTES) * INSIGHT_RECOVERY_PER_ATT; 
         
         // --- STEP 4: FLAT BONUSES & TRAITS --- 
         const applyFlat = (source) => { 
@@ -168,6 +179,22 @@ export class StatCalculator {
             } 
         }); 
         
+        // --- STEP 4.25: WEAPON REQUIREMENTS --- 
+        // A weapon whose requirements (items/weaponRequirements.js) the wielder does not meet cuts the wielder's attack in that weapon's damage types. 
+        // Measured against the attributes after gear and traits, so a ring of Strength can carry a sword. 
+        breakdown.unmetRequirements = []; 
+        // (an enemy's gear written as a bare item id adds no stats here, its baseAttack already counts it, so it is not judged either) 
+        Object.values(equipment).forEach(item => { 
+            if (!item || typeof item !== 'object') return; 
+            const unmet = unmetRequirements(requirementsOf(item), finalStats); 
+            if (unmet.length === 0) return; 
+            const eff = getEffectiveStats(item) || {}; 
+            for (const t of Object.keys(eff.attack || {})) { 
+                if (finalStats.attack[t] !== undefined) finalStats.attack[t] *= UNMET_REQUIREMENT_DAMAGE_SCALE; 
+            } 
+            breakdown.unmetRequirements.push({ item: eff.name || eff.id || item.defId, unmet }); 
+        }); 
+
         // --- STEP 4.5: STATUS EFFECTS & STACKING --- 
         const activeStatuses = character.statusEffects || character.state?.statusEffects || []; 
         const flatModifiers = []; 

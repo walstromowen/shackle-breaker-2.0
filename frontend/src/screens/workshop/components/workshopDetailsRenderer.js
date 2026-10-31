@@ -8,6 +8,8 @@ import { UITheme } from '../../../ui/UITheme.js';
 import { gameState } from '../../../../../shared/core/gameState.js';
 import { CorruptionSystem } from '../../../../../shared/characters/corruptionSystem.js';
 import { ItemUpgradeSystem } from '../../../../../shared/items/itemUpgradeSystem.js';
+import { StatCalculator } from '../../../../../shared/characters/statCalculator.js';
+import { requirementsAt, requirementRows, UNMET_REQUIREMENT_DAMAGE_SCALE } from '../../../../../shared/items/weaponRequirements.js';
 
 // Stat table typography/spacing. Rows are laid out on their vertical middle, and the row height
 // is sized to the font so text never touches the row above or below.
@@ -105,6 +107,7 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
             } else if (activeTab === 'stats') {
                 const mockItem = { definition: outDef, stats: outDef.stats };
                 yy = this._renderDetailedStats(mockItem, contentX, yy, contentW);
+                yy = this._renderRequirements(outDef, 1, null, contentX, yy + SECTION_GAP, contentW);
             } else if (activeTab === 'skills') {
                 yy = this._renderAbilities(outDef, contentX, yy, contentW);
             }
@@ -176,6 +179,9 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
                     yy += 60;
                 }
                 yy = this._renderDetailedStats(item, contentX, yy, contentW);
+                const reqLevel = item.level || 1;
+                const reqNext = (isUpgradeable && !item.isMaxLevel) ? reqLevel + 1 : null;
+                yy = this._renderRequirements(def, reqLevel, reqNext, contentX, yy + SECTION_GAP, contentW);
             } else if (activeTab === 'skills') {
                 if (isUpgradeable && !item.isMaxLevel) {
                     const unlocks = def.abilityUnlocks && def.abilityUnlocks[item.level + 1];
@@ -469,6 +475,63 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         return tableEndY;
     }
 
+    /**
+     * The weapon's attribute requirements at `level`, and with `nextLevel` what the upgrade will raise them to ("8 > 10"). Each value is red when the
+     * previewed character (whoever holds the item, else the party leader) falls short of it; their own score is shown at the end of the row.
+     * Returns the Y below (unchanged for an item without requirements).
+     */
+    _renderRequirements(def, level, nextLevel, x, y, w) {
+        const cur = requirementsAt(def, level);
+        const next = nextLevel !== null ? requirementsAt(def, nextLevel) : null;
+        const attrs = Object.keys({ ...cur, ...(next || {}) });
+        if (attrs.length === 0) return y - SECTION_GAP;
+
+        let actorAttrs = null;
+        const actor = this._previewActor;
+        if (actor && (actor.attributes || actor.state?.attributes)) {
+            try { actorAttrs = StatCalculator.calculate(actor); } catch (e) { actorAttrs = null; }
+        }
+        const curRows = requirementRows(cur, actorAttrs);
+        const nextRows = next ? requirementRows(next, actorAttrs) : null;
+
+        let currentY = this._drawSectionHeader("Requirements", x, y, w);
+        const valueX = x + 150;
+        const haveX = x + w;
+        attrs.forEach(attr => {
+            const cy = currentY + (STAT_ROW_H / 2);
+            const c = curRows.find(r => r.attr === attr) || { need: 0, met: true, have: actorAttrs ? (actorAttrs[attr] || 0) : null };
+            const n = nextRows ? (nextRows.find(r => r.attr === attr) || { need: 0, met: true }) : null;
+            const label = (Formatting.getAbbreviation ? Formatting.getAbbreviation(attr) : attr.substring(0, 3)).toUpperCase();
+            this.ui.drawText(label, x, cy, STAT_LABEL_FONT, UITheme.colors.textMuted, "left", "middle");
+
+            const cStr = `${c.need}`;
+            const cColor = c.met ? UITheme.colors.textMain : UITheme.colors.failure;
+            this.ui.drawText(cStr, valueX, cy, STAT_VALUE_FONT, cColor, "left", "middle");
+            if (n && n.need !== c.need) {
+                const arrowSize = 6, space = 10;
+                const arrowX = valueX + this._measure(cStr) + space + arrowSize;
+                const nColor = n.met ? UITheme.colors.textMain : UITheme.colors.failure;
+                this.ui.drawArrow(arrowX, cy, arrowSize, 'right', nColor);
+                this.ui.drawText(`${n.need}`, arrowX + arrowSize + space, cy, STAT_VALUE_FONT, nColor, "left", "middle");
+            }
+            if (c.have !== null && c.have !== undefined) {
+                this.ui.drawText(`You: ${c.have}`, haveX, cy, STAT_LABEL_FONT, UITheme.colors.textMuted, "right", "middle");
+            }
+            currentY += STAT_ROW_H;
+        });
+
+        const pct = Math.round((1 - UNMET_REQUIREMENT_DAMAGE_SCALE) * 100);
+        const noteRows = nextRows || curRows;
+        if (noteRows.some(r => !r.met)) {
+            const msg = nextRows && curRows.every(r => r.met)
+                ? `After the upgrade: requirements not met, ${pct}% less damage`
+                : `Requirements not met: ${pct}% less damage`;
+            this.ui.drawText(msg, x, currentY + (STAT_ROW_H / 2), STAT_LABEL_FONT, UITheme.colors.failure, "left", "middle");
+            currentY += STAT_ROW_H;
+        }
+        return currentY;
+    }
+
     /** One labelled row: label on the left, "current > projected" in a fixed value column. */
     _drawStatDiffRow(label, curr = 0, prev = 0, x, y, w, rowH = STAT_ROW_H) {
         const cy = y + (rowH / 2);
@@ -657,4 +720,4 @@ export class WorkshopDetailsRenderer extends WorkshopBaseRenderer {
         // to 'ability' so it knows to look for the correct spritesheet.
         this.drawIcon({ ...ability, type: 'ability' }, x, y, size);
     }
-}
+}

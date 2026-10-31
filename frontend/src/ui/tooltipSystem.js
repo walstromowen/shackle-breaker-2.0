@@ -3,6 +3,8 @@ import { TRAIT_DEFINITIONS } from '../../../shared/abilities/traitDefinitions.js
 import { Formatting } from '../../../shared/core/formatting.js';
 import { ItemDefinitions } from '../../../shared/items/itemDefinitions.js';
 import { AbilityDefinitions } from '../../../shared/abilities/abilityDefinitions.js';
+import { requirementsOf, UNMET_REQUIREMENT_DAMAGE_SCALE } from '../../../shared/items/weaponRequirements.js';
+import { StatCalculator } from '../../../shared/characters/statCalculator.js';
 
 export class TooltipSystem {
   constructor(ui, loader = null) {
@@ -48,13 +50,13 @@ export class TooltipSystem {
       content = this._getTraitContent(hovered.id);
     } else if (hovered.type === 'inventory') {
       const item = state.filteredInventory[hovered.index];
-      if (item) content = this._getItemContent(item);
+      if (item) content = this._getItemContent(item, undefined, state.member);
     } else if (hovered.type === 'hotbar') {
-      if (hovered.defId) content = this._getItemContent({ defId: hovered.defId });
+      if (hovered.defId) content = this._getItemContent({ defId: hovered.defId }, undefined, state.member);
     } else if (hovered.type === 'slot') {
       const equip = (state.member.state && state.member.state.equipment) ? state.member.state.equipment : state.member.equipment;
       const item = equip ? equip[hovered.slotId] : null;
-      content = this._getItemContent(item, hovered.slotId);
+      content = this._getItemContent(item, hovered.slotId, state.member);
     }
 
     if (content) {
@@ -254,7 +256,36 @@ export class TooltipSystem {
     return { table: rows.length ? { cols, rows } : null, blocks };
   }
 
-  _getItemContent(item, slotName) {
+  /**
+   * The weapon's attribute requirements as tooltip lines: a heading, then rows of two ("STR 12   DEX 12"). With a character (`member`) each requirement
+   * they fall short of is red, and a last line says what that costs. [] for an item without requirements.
+   */
+  _requirementLines(item, member) {
+    const reqs = requirementsOf(item);
+    const keys = Object.keys(reqs);
+    if (keys.length === 0) return [];
+
+    let attrs = null;
+    if (member && (member.attributes || member.state?.attributes)) {
+      try { attrs = StatCalculator.calculate(member); } catch (e) { attrs = null; }
+    }
+    const items = keys.map(attr => {
+      const met = !attrs || (attrs[attr] || 0) >= reqs[attr];
+      const abbr = (Formatting.getAbbreviation ? Formatting.getAbbreviation(attr) : attr.substring(0, 3)).toUpperCase();
+      return { label: abbr, val: reqs[attr], color: met ? UITheme.colors.textMain : UITheme.colors.failure, met };
+    });
+
+    const lines = [{ text: 'Requires', color: UITheme.colors.textMuted }];
+    this._chunkArray(items, 2).forEach(pair => lines.push({ type: 'row', items: pair }));
+    if (items.some(i => !i.met)) {
+      const pct = Math.round((1 - UNMET_REQUIREMENT_DAMAGE_SCALE) * 100);
+      lines.push({ text: `Requirements not met: ${pct}% less damage`, color: UITheme.colors.failure });
+    }
+    lines.push({ type: 'spacer' });
+    return lines;
+  }
+
+  _getItemContent(item, slotName, member = null) {
     if (!item) {
       if (slotName) {
         return {
@@ -476,6 +507,9 @@ export class TooltipSystem {
       lines.push({ type: 'sections', sections: this._groupStatSections(statItems), abilities: abilityLines });
       lines.push({ type: 'spacer' });
     }
+
+    // 4b. Attribute requirements (weapons), at the item's own level
+    lines.push(...this._requirementLines(item, member));
 
     // 5. Descriptions
     if (def.effectDescription) {

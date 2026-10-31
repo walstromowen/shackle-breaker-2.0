@@ -2,6 +2,11 @@
 // and never less than 1. Without it, flat defense turned most enemy hits into a flat 1.
 const MIN_DAMAGE_SHARE = 0.1;
 
+// BALANCE KNOB: every ability hit in battle deals attack x power x this, before defense and resistance. Vigor gives twice the HP it used to, so hits
+// had to grow with it: at 1.4 a level 1 Traveler kills a level 1 Madman in 2 to 3 Slashes (backend/test/scaling.test.js checks it).
+// Encounter (out-of-battle) damage is written as raw numbers and does not use it. The ability preview (frontend/src/ui/abilityPreview.js) does.
+export const DAMAGE_SCALE = 1.4;
+
 export class CombatCalculator { 
     /** 
      * Pure math function to calculate mitigated damage. 
@@ -50,7 +55,7 @@ export class CombatCalculator {
         const defenseVal = defender.getDefense ? defender.getDefense(safeType) : (defStats.defense?.[safeType] || 0); 
         const resistanceVal = defender.getResistance ? defender.getResistance(safeType) : (defStats.resistance?.[safeType] || 0); 
         
-        let rawDamage = attackVal * power; 
+        let rawDamage = attackVal * power * DAMAGE_SCALE; 
         
         if (result.crit) { 
             const multi = attStats.critMultiplier ?? 1.5; 

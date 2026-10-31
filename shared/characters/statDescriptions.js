@@ -1,5 +1,5 @@
 import { DAMAGE_SCALING, BEST_OF_SCALING, DEFENSE_PER_SCALING_POINT, CORRUPTION } from '../core/constants.js';
-import { HP_PER_VIGOR_SCALE, STAMINA_RECOVERY_PER_DEX, INSIGHT_RECOVERY_PER_ATT, STAMINA_RECOVERY_ATTRIBUTES, INSIGHT_RECOVERY_ATTRIBUTES } from './statCalculator.js';
+import { HP_PER_VIGOR_SCALE, VIGOR_DEFENSE_PER_POINT, STAMINA_RECOVERY_PER_DEX, INSIGHT_RECOVERY_PER_ATT, STAMINA_ATTRIBUTES, INSIGHT_ATTRIBUTES } from './statCalculator.js';
 
 // What each attribute and stat does, for the in-game help (hover / select one on the level-up, character creator, character summary and
 // encounter screens). The words are the game's own: the descriptions come from the first version of the game's stat help, brought up to date.
@@ -18,10 +18,10 @@ const NAMES = {
 
 // The first version's wording, with the facts brought up to date (what each attribute really feeds now) and the spelling mended.
 const DESCRIPTIONS = {
-    vigor: "A measure of how many hits one can take. Affects max health points as well as one's defense against every kind of attack. Also determines the effectiveness of decisions that require one to endure hardship.",
-    strength: "A measure of one's physical prowess. Affects blunt and slash damage and defense, and how quickly one's stamina recovers. Also determines the effectiveness of decisions that require one to utilize strength.",
+    vigor: "A measure of how many hits one can take. Affects max health points. Also determines the effectiveness of decisions that require one to endure hardship.",
+    strength: "A measure of one's physical prowess. Affects blunt and slash damage and defense, one's maximum stamina and how quickly it recovers. Also determines the effectiveness of decisions that require one to utilize strength.",
     dexterity: "A measure of one's finesse. Affects slash and pierce damage and defense, one's maximum stamina and how quickly it recovers. Also determines the effectiveness of decisions that require sleight of hand, stealth, and mobility.",
-    intelligence: "A measure of one's knowledge. Affects light, dark and arcane damage and defense, and how quickly one's insight recovers. Also determines the effectiveness of decisions that require perception, problem solving, academia, and logical reasoning.",
+    intelligence: "A measure of one's knowledge. Affects light, dark and arcane damage and defense, one's maximum insight and how quickly it recovers. Also determines the effectiveness of decisions that require perception, problem solving, academia, and logical reasoning.",
     attunement: "A measure of one's attachment to the elements. Affects the damage and defense of the six elements, one's maximum insight and how quickly it recovers. Also determines the effectiveness of decisions that utilize perception, intuition, and nature.",
 };
 
@@ -38,9 +38,10 @@ const FLAVOR = {
 
 // Statements of fact about stats that are not in the formulas (kept short; the rows below carry the numbers)
 const NOTES = {
-    vigor: 'Defense is taken off every hit you receive.',
-    strength: 'Slash uses the higher of Strength or Dexterity, not both.',
+    vigor: 'Health is what every hit takes away; the other attributes decide how much of each hit gets through.',
+    strength: 'Stamina pays for physical abilities. Slash uses the higher of Strength or Dexterity, not both.',
     dexterity: 'Stamina pays for physical abilities. Slash uses the higher of Strength or Dexterity, not both.',
+    intelligence: 'Insight pays for spells.',
     attunement: 'Insight pays for spells.',
 };
 
@@ -176,15 +177,15 @@ function describeStat(key, type, opts) {
     } else if (key === 'maxHp') {
         rows.push({ label: NAMES.vigor, value: perPoint(mults.hpPerVigor * HP_PER_VIGOR_SCALE), kind: 'hp' });
     } else if (key === 'maxStamina') {
-        rows.push({ label: NAMES.dexterity, value: perPoint(mults.staminaPerDex), kind: 'stamina' });
+        for (const a of STAMINA_ATTRIBUTES) rows.push({ label: NAMES[a], value: perPoint(mults.staminaPerDex), kind: 'stamina' });
         note = 'Stamina pays for physical abilities.';
     } else if (key === 'maxInsight') {
-        rows.push({ label: NAMES.attunement, value: perPoint(mults.insightPerAtt), kind: 'insight' });
+        for (const a of INSIGHT_ATTRIBUTES) rows.push({ label: NAMES[a], value: perPoint(mults.insightPerAtt), kind: 'insight' });
         note = 'Insight pays for spells.';
     } else if (key === 'staminaRecovery') {
-        for (const a of STAMINA_RECOVERY_ATTRIBUTES) rows.push({ label: NAMES[a], value: perPoint(STAMINA_RECOVERY_PER_DEX), kind: 'stamina' });
+        for (const a of STAMINA_ATTRIBUTES) rows.push({ label: NAMES[a], value: perPoint(STAMINA_RECOVERY_PER_DEX), kind: 'stamina' });
     } else if (key === 'insightRecovery') {
-        for (const a of INSIGHT_RECOVERY_ATTRIBUTES) rows.push({ label: NAMES[a], value: perPoint(INSIGHT_RECOVERY_PER_ATT), kind: 'insight' });
+        for (const a of INSIGHT_ATTRIBUTES) rows.push({ label: NAMES[a], value: perPoint(INSIGHT_RECOVERY_PER_ATT), kind: 'insight' });
     } else if (key === 'corruption') {
         // What it does comes from the same table the game plays by (CORRUPTION in core/constants.js)
         rows.push({ label: 'Each magical ability used', value: `+${CORRUPTION.PER_MAGIC_USE}%`, kind: 'attack' });
@@ -196,7 +197,7 @@ function describeStat(key, type, opts) {
         note = bestOfNote(type) + "A weapon adds to it, and each ability multiplies it by its power.";
     } else if (key === 'defense') {
         rows.push(...feederRows(type, 'defense'));
-        rows.push({ label: NAMES.vigor, value: '+1 per 2 points', kind: 'defense' });
+        if (VIGOR_DEFENSE_PER_POINT) rows.push({ label: NAMES.vigor, value: halfRate(VIGOR_DEFENSE_PER_POINT / DEFENSE_PER_SCALING_POINT), kind: 'defense' });
         rows.push({ label: 'Level', value: '+1 per 2 levels', kind: 'defense' });
         note = bestOfNote(type) + 'Taken off every hit of this type, after resistance.';
     } else if (key === 'resistance') {
@@ -218,7 +219,7 @@ function describeAttribute(key, opts) {
 
     if (key === 'vigor') {
         rows.push({ label: 'Max HP', value: perPoint(mults.hpPerVigor * HP_PER_VIGOR_SCALE), kind: 'hp' });
-        rows.push({ label: 'Defense (all types)', value: '+1 per 2 points', kind: 'defense' });
+        if (VIGOR_DEFENSE_PER_POINT) rows.push({ label: 'Defense (all types)', value: halfRate(VIGOR_DEFENSE_PER_POINT / DEFENSE_PER_SCALING_POINT), kind: 'defense' });
     }
 
     // Attack and defense rows come straight from the scaling table
@@ -227,14 +228,14 @@ function describeAttribute(key, opts) {
         rows.push({ label: groupLabel(types, 'defense'), value: halfRate(weight), kind: 'defense' });
     }
 
-    if (key === 'dexterity') {
+    if (STAMINA_ATTRIBUTES.includes(key)) {
         rows.push({ label: 'Max stamina', value: perPoint(mults.staminaPerDex), kind: 'stamina' });
+        rows.push({ label: 'Stamina recovery', value: perPoint(STAMINA_RECOVERY_PER_DEX), kind: 'stamina' });
     }
-    if (STAMINA_RECOVERY_ATTRIBUTES.includes(key)) rows.push({ label: 'Stamina recovery', value: perPoint(STAMINA_RECOVERY_PER_DEX), kind: 'stamina' });
-    if (key === 'attunement') {
+    if (INSIGHT_ATTRIBUTES.includes(key)) {
         rows.push({ label: 'Max insight', value: perPoint(mults.insightPerAtt), kind: 'insight' });
+        rows.push({ label: 'Insight recovery', value: perPoint(INSIGHT_RECOVERY_PER_ATT), kind: 'insight' });
     }
-    if (INSIGHT_RECOVERY_ATTRIBUTES.includes(key)) rows.push({ label: 'Insight recovery', value: perPoint(INSIGHT_RECOVERY_PER_ATT), kind: 'insight' });
 
     if (opts.skillChecks) {
         rows.push({ label: 'Skill checks', value: '+1 per 3 above 10', kind: 'check' });

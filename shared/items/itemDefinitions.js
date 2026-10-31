@@ -23,6 +23,7 @@ export const ItemDefinitions = {
     value: 25,
     icon: { col: 11, row: 0 },
     attack: { blunt: 3 },
+    requirements: { strength: 5 },
     grantedAbilities: ["strike"]
     // No upgrade data: cannot be upgraded.
   },
@@ -35,6 +36,8 @@ export const ItemDefinitions = {
     value: 60,
     icon: { col: 11, row: 0 },
     attack: { blunt: 4 },                // a step above the stick (3), below the two-handed warhammer (5)
+    requirements: { strength: 8, vigor: 6 },
+    requirementGrowth: { strength: 2, vigor: 2 },
     grantedAbilities: ["strike"],
     maxLevel: 5,
     statGrowth: {
@@ -61,6 +64,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 0, row: 0 },
     attack: { pierce: 3, slash: 2 },
+    requirements: { dexterity: 10, intelligence: 6 },
+    requirementGrowth: { dexterity: 2, intelligence: 2 },
     grantedAbilities: ["slash", "quick_stab"],
     maxLevel: 5,
     statGrowth: {
@@ -86,6 +91,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 1, row: 0 },
     attack: { pierce: 3, slash: 3 },
+    requirements: { strength: 8, dexterity: 8 },
+    requirementGrowth: { strength: 2, dexterity: 2 },
     grantedAbilities: ["slash", "thrust"],
     maxLevel: 5,
     statGrowth: {
@@ -111,6 +118,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 2, row: 0 },
     attack: { blunt: 2, slash: 2 },   // a tool first: clearly behind the shortsword (3 / 3, +2 / +2 per level)
+    requirements: { strength: 10, dexterity: 6 },
+    requirementGrowth: { strength: 2, dexterity: 2 },
     grantedAbilities: ["slash", "strike"],
     harvestTool: ["axe"],
     maxLevel: 5,
@@ -137,6 +146,8 @@ export const ItemDefinitions = {
     value: 90,
     icon: { col: 13, row: 0 },            // PLACEHOLDER: unused cell on the weapon sheet; draw a pickaxe here
     attack: { pierce: 2, blunt: 1 },     // deliberately weak: handaxe is 3/3, dagger 3/2
+    requirements: { strength: 7, vigor: 6 },
+    requirementGrowth: { strength: 2, vigor: 1 },
     grantedAbilities: ["strike"],
     harvestTool: ["pickaxe"],            // objects that need it use interaction.tool: 'pickaxe'; it must be equipped
     maxLevel: 3,
@@ -157,6 +168,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 5, row: 0 },
     attack: { pierce: 4, slash: 3 },
+    requirements: { dexterity: 10, attunement: 6 },
+    requirementGrowth: { dexterity: 2, attunement: 2 },
     grantedAbilities: ["loose_arrow", "quick_draw"],
     maxLevel: 5,
     statGrowth: {
@@ -182,6 +195,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 6, row: 0 },
     attack: { pierce: 4, slash: 3 },
+    requirements: { dexterity: 8, intelligence: 8 },
+    requirementGrowth: { dexterity: 2, intelligence: 2 },
     grantedAbilities: ["loose_arrow", "quick_draw"],
     maxLevel: 5,
     statGrowth: {
@@ -207,6 +222,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 3, row: 0 },
     attack: { blunt: 6 },
+    requirements: { strength: 12, vigor: 10 },
+    requirementGrowth: { strength: 3, vigor: 2 },
     grantedAbilities: ["strike", "cleave"],
     harvestTool: ["hammer"],
     maxLevel: 5,
@@ -232,6 +249,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 4, row: 0 },
     attack: { pierce: 5},
+    requirements: { dexterity: 9, strength: 8 },
+    requirementGrowth: { dexterity: 2, strength: 2 },
     grantedAbilities: ["thrust"],
     maxLevel: 5,
     statGrowth: {
@@ -256,6 +275,8 @@ export const ItemDefinitions = {
     value: 125,
     icon: { col: 8, row: 0 },
     attack: { slash: 6, pierce: 1 },
+    requirements: { strength: 10, attunement: 6 },
+    requirementGrowth: { strength: 2, attunement: 2 },
     grantedAbilities: ["slash"],
     harvestTool: ["sickle"],
     maxLevel: 5,
@@ -281,6 +302,8 @@ export const ItemDefinitions = {
     value: 150,
     icon: { col: 7, row: 0 },
     attack: { slash: 5, pierce: 3 },
+    requirements: { strength: 10, dexterity: 10 },
+    requirementGrowth: { strength: 2, dexterity: 2 },
     grantedAbilities: ["slash", "thrust"],
     maxLevel: 5,
     statGrowth: {
@@ -334,6 +357,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 0, row: 1 },
     attack: { fire: 5},
+    requirements: { attunement: 9, intelligence: 7 },
+    requirementGrowth: { attunement: 2, intelligence: 2 },
     grantedAbilities: ["fireball"],
     maxLevel: 5,
     statGrowth: {
@@ -358,6 +383,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 1, row: 1 },
     attack: { water: 5},
+    requirements: { attunement: 9, intelligence: 7 },
+    requirementGrowth: { attunement: 2, intelligence: 2 },
     grantedAbilities: ["water_blast"],
     maxLevel: 5,
     statGrowth: {
@@ -382,6 +409,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 2, row: 1 },
     attack: { earth: 5},
+    requirements: { attunement: 9, intelligence: 7 },
+    requirementGrowth: { attunement: 2, intelligence: 2 },
     grantedAbilities: ["vine_lash"],
     maxLevel: 5,
     statGrowth: {
@@ -408,6 +437,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 3, row: 1 },
     attack: { lightning: 5},
+    requirements: { attunement: 9, intelligence: 7 },
+    requirementGrowth: { attunement: 2, intelligence: 2 },
     grantedAbilities: ["shock"],
     maxLevel: 5,
     statGrowth: {
@@ -432,6 +463,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 4, row: 1 },
     attack: { ice: 5},
+    requirements: { attunement: 9, intelligence: 7 },
+    requirementGrowth: { attunement: 2, intelligence: 2 },
     grantedAbilities: ["ice_shard"],
     maxLevel: 5,
     statGrowth: {
@@ -456,6 +489,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 5, row: 1 },
     attack: { wind: 5},
+    requirements: { attunement: 9, intelligence: 7 },
+    requirementGrowth: { attunement: 2, intelligence: 2 },
     grantedAbilities: ["strike"],
     maxLevel: 5,
     statGrowth: {
@@ -477,6 +512,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 6, row: 1 },
     attack: { arcane: 5},
+    requirements: { intelligence: 10, attunement: 7 },
+    requirementGrowth: { intelligence: 2, attunement: 2 },
     grantedAbilities: ["arcane_dart"],
     maxLevel: 5,
     statGrowth: {
@@ -502,6 +539,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 7, row: 1 },
     attack: { light: 5},
+    requirements: { intelligence: 10, attunement: 7 },
+    requirementGrowth: { intelligence: 2, attunement: 2 },
     grantedAbilities: ["spite"],
     maxLevel: 5,
     statGrowth: {
@@ -527,6 +566,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 8, row: 1 },
     attack: { dark: 5},
+    requirements: { intelligence: 10, attunement: 7 },
+    requirementGrowth: { intelligence: 2, attunement: 2 },
     grantedAbilities: ["spirit_reap"],
     maxLevel: 5,
     statGrowth: {

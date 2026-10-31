@@ -4,7 +4,7 @@
  *
  * Mirrors the "attacker side" of AbilitySystem / CombatCalculator so the UI
  * and combat agree:
- *   damage  = attackStat(damageType) * effect.power
+ *   damage  = attackStat(damageType) * effect.power * DAMAGE_SCALE (CombatCalculator)
  *
  * It deliberately EXCLUDES everything that depends on the target or on RNG:
  *   - target defense / resistance (applied in CombatCalculator.calculateMitigatedDamage)
@@ -14,6 +14,7 @@
  * Place at: ui/abilityPreview.js (display-only helper: no game-state side effects)
  */
 import { AbilityModel } from '../../../shared/abilities/abilityModel.js';
+import { DAMAGE_SCALE } from '../../../shared/battle/combatCalculator.js';
 
 export class AbilityPreview {
     /** Width every ability card is drawn at, wherever it appears (shrinks only if its container is narrower). */
@@ -282,7 +283,7 @@ export class AbilityPreview {
             };
         }
 
-        const amount = Math.max(0, Math.floor(attackVal * power));
+        const amount = Math.max(0, Math.floor(attackVal * power * DAMAGE_SCALE));
 
         return {
             kind: 'damage',
@@ -344,4 +345,4 @@ export class AbilityPreview {
                 return null;
         }
     }
-}
+}

@@ -38,14 +38,16 @@ test('the numbers in the text match what the calculator really does', () => {
     const rowValue = (attr, label) => getStatDescription(attr).rows.find(r => r.label === label)?.value;
     const hp = calc({ vigor: 40 }).maxHp.total ?? calc({ vigor: 40 }).maxHp;
     assert.equal(rowValue('vigor', 'Max HP'), '+3 per point');
-    assert.equal(rowValue('vigor', 'Defense (all types)'), '+1 per 2 points');
+    assert.equal(rowValue('vigor', 'Defense (all types)'), undefined, 'Vigor is health only');
     assert.ok(hp >= 40 * 3, `Vigor 40 should give about 120 HP, got ${hp}`);
     assert.equal(rowValue('dexterity', 'Max stamina'), '+2 per point');
-    assert.equal(rowValue('dexterity', 'Stamina recovery'), '+0.5 per point');
+    assert.equal(rowValue('dexterity', 'Stamina recovery'), '+0.25 per point');
+    assert.equal(rowValue('strength', 'Max stamina'), '+2 per point');
+    assert.equal(rowValue('intelligence', 'Max insight'), '+2 per point');
     assert.equal(rowValue('attunement', 'Max insight'), '+2 per point');
-    assert.equal(rowValue('attunement', 'Insight recovery'), '+0.5 per point');
-    assert.equal(rowValue('strength', 'Stamina recovery'), '+0.5 per point');
-    assert.equal(rowValue('intelligence', 'Insight recovery'), '+0.5 per point');
+    assert.equal(rowValue('attunement', 'Insight recovery'), '+0.25 per point');
+    assert.equal(rowValue('strength', 'Stamina recovery'), '+0.25 per point');
+    assert.equal(rowValue('intelligence', 'Insight recovery'), '+0.25 per point');
     assert.equal(rowValue('strength', 'Blunt / Slash defense'), '+1 per 2 points');
 });
 
@@ -117,11 +119,13 @@ test('the stat cards\' numbers come from the same constants as the calculator', 
     assert.equal(rowValue('maxHp', 'Vigor'), '+3 per point');
     assert.equal(rowValue('maxStamina', 'Dexterity'), '+2 per point');
     assert.equal(rowValue('maxInsight', 'Attunement'), '+2 per point');
-    assert.equal(rowValue('staminaRecovery', 'Dexterity'), '+0.5 per point');
+    assert.equal(rowValue('staminaRecovery', 'Dexterity'), '+0.25 per point');
+    assert.equal(rowValue('maxStamina', 'Strength'), '+2 per point');
+    assert.equal(rowValue('maxInsight', 'Intelligence'), '+2 per point');
     assert.equal(rowValue('attack:slash', 'Strength'), '+1 per point');
     assert.equal(rowValue('attack:slash', 'Dexterity'), '+1 per point');
-    assert.equal(rowValue('staminaRecovery', 'Strength'), '+0.5 per point');
-    assert.equal(rowValue('insightRecovery', 'Intelligence'), '+0.5 per point');
+    assert.equal(rowValue('staminaRecovery', 'Strength'), '+0.25 per point');
+    assert.equal(rowValue('insightRecovery', 'Intelligence'), '+0.25 per point');
     assert.equal(rowValue('attack:fire', 'Attunement'), '+1 per point');
     assert.equal(rowValue('defense:arcane', 'Intelligence'), '+1 per 2 points');
     assert.equal(getStatDescription('attack:fire').rows.length, 1);

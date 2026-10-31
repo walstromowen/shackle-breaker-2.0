@@ -5,6 +5,8 @@ import { ItemDefinitions } from '../../../../../shared/items/itemDefinitions.js'
 import { gameState } from '../../../../../shared/core/gameState.js';
 import { AbilityPreview } from '../../../ui/abilityPreview.js';
 import { drawAbilityCard } from '../../../ui/abilityCard.js';
+import { StatCalculator } from '../../../../../shared/characters/statCalculator.js';
+import { requirementsAt, requirementRows, UNMET_REQUIREMENT_DAMAGE_SCALE } from '../../../../../shared/items/weaponRequirements.js';
 
 export class ItemDetailPanel {
   constructor(ui, loader) {
@@ -93,6 +95,7 @@ export class ItemDetailPanel {
 
     if (!isAbility) {
       currentY = this._drawStatsGrid(item, def, contentX, currentY, contentW);
+      currentY = this._drawRequirements(item, def, contentX, currentY, contentW);
       currentY = this._drawUpgradeCosts(item, def, contentX, currentY, contentW);
       currentY = this._drawAbilities(def, x, currentY, w);
     } else {
@@ -401,6 +404,45 @@ export class ItemDetailPanel {
     return currentY + (totalRows * (this.layout.lineHeight + 4)) + this.layout.sectionGap;
   }
 
+  /** The previewed character's final attributes (gear and traits included), or null. */
+  _actorAttributes() {
+    const actor = this._previewActor;
+    if (!actor || !(actor.attributes || actor.state?.attributes)) return null;
+    try { return StatCalculator.calculate(actor); } catch (e) { return null; }
+  }
+
+  /** "STR 12 (have 10)" pairs in two columns; red where the character falls short. Returns the Y below. */
+  _drawRequirementGrid(rows, x, y, w) {
+    const colWidth = w / 2;
+    rows.forEach((r, i) => {
+      const itemX = x + ((i % 2) * colWidth);
+      const itemY = y + (Math.floor(i / 2) * (this.layout.lineHeight + 4));
+      const color = r.met ? UITheme.colors.textMain : UITheme.colors.failure;
+      const label = (Formatting.getAbbreviation ? Formatting.getAbbreviation(r.attr) : r.attr.substring(0, 3)).toUpperCase();
+      const val = r.have === null ? `${r.need}` : `${r.need} (${r.have})`;
+      this.ui.drawStyled('cardLabel', label, itemX, itemY, { color: r.met ? UITheme.colors.textMuted : UITheme.colors.failure });
+      this.ui.drawStyled('cardLabel', val, itemX + colWidth - this.layout.innerPadding, itemY, { color, align: 'right' });
+    });
+    return y + (Math.ceil(rows.length / 2) * (this.layout.lineHeight + 4));
+  }
+
+  /** The weapon's attribute requirements at its current level, against the previewed character (the number in brackets is theirs). */
+  _drawRequirements(item, def, x, y, w) {
+    const rows = requirementRows(requirementsAt(def, item.level || 1), this._actorAttributes());
+    if (rows.length === 0) return y;
+
+    let currentY = y;
+    this.ui.drawStyled('cardHeading', 'Requirements', x, currentY);
+    currentY += this.layout.lineHeight + this.layout.innerPadding;
+    currentY = this._drawRequirementGrid(rows, x, currentY, w);
+    if (rows.some(r => !r.met)) {
+      const pct = Math.round((1 - UNMET_REQUIREMENT_DAMAGE_SCALE) * 100);
+      this.ui.drawStyled('cardLabel', `Not met: ${pct}% less damage with this weapon`, x, currentY, { color: UITheme.colors.failure });
+      currentY += this.layout.lineHeight;
+    }
+    return currentY + this.layout.sectionGap;
+  }
+
   _drawUpgradeCosts(item, def, x, y, w) {
     if (!def.upgradeCosts) return y;
 
@@ -417,6 +459,14 @@ export class ItemDetailPanel {
     if (cost.currency !== undefined) {
       this.ui.drawStyled('cardLabel', `Currency: ${cost.currency}`, x, currentY, { color: UITheme.colors.textMain });
       currentY += this.layout.lineHeight;
+    }
+
+    // What the weapon will ask for once upgraded
+    const nextReqs = requirementRows(requirementsAt(def, nextLevel), this._actorAttributes());
+    if (nextReqs.length > 0) {
+      this.ui.drawStyled('cardLabel', `Requires at Lv. ${nextLevel}:`, x, currentY);
+      currentY += this.layout.lineHeight + 4;
+      currentY = this._drawRequirementGrid(nextReqs, x, currentY, w) + 4;
     }
 
     if (cost.materials && Object.keys(cost.materials).length > 0) {
@@ -501,4 +551,4 @@ export class ItemDetailPanel {
   _formatTargetingText(targeting) {
       return AbilityPreview.getTargetText(targeting);
   }
-}
+}
