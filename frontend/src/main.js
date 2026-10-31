@@ -494,29 +494,13 @@ async function initialize() {
     const canvas = document.getElementById('game-canvas');
     const ctx = canvas.getContext('2d'); // <-- Grab the context here to apply scaling
 
-    // --- NEW: Handle Window Resizing and High-DPI screens ---
-    function applyCrispScaling() {
-        const dpr = window.devicePixelRatio || 1;
-
-        // Multiply your internal 1920x1080 by the monitor's pixel density
-        canvas.width = CONFIG.CANVAS_WIDTH * dpr;  
-        canvas.height = CONFIG.CANVAS_HEIGHT * dpr;
-
-        // Scale the canvas context. 
-        // This is the magic part: your game logic still draws at 1920x1080,
-        // but the browser renders it using the extra pixels!
-        ctx.scale(dpr, dpr);
-        
-        // Force crisp pixels (MUST be reapplied every time canvas dimensions change)
-        ctx.imageSmoothingEnabled = false; 
-    }
-
-    // Apply the scaling right now
-    applyCrispScaling();
-
-    // Re-apply if the user drags the window to a different monitor with a different DPI
-    window.addEventListener('resize', applyCrispScaling);
-    // ---------------------------------------------------------
+    // The canvas always draws at the game's own 1920x1080; CSS stretches it to fit the window (styles.css).
+    // It used to be multiplied by window.devicePixelRatio. On a laptop with Windows display scaling at 125% or 150% that drew 1.6x to 2.3x the pixels
+    // every frame (for nothing: the browser shrank it back to the screen), and the mouse no longer lined up, since input and many screens read
+    // canvas.width as the 1920-wide game space.
+    canvas.width = CONFIG.CANVAS_WIDTH;
+    canvas.height = CONFIG.CANVAS_HEIGHT;
+    ctx.imageSmoothingEnabled = false;
 
 
     // 2. Initialize SceneManager and GameLoop FIRST so the Boot screen can render

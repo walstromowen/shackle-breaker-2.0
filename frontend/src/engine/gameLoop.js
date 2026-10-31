@@ -7,6 +7,12 @@ export class GameLoop {
         this.lastTimeStamp = 0;
         this.isRunning = false;
 
+        // Drawing is capped at the logic rate. The game logic steps at 60 per second, so a 120 / 144 / 165 Hz screen (most gaming laptops) only
+        // redrew the same picture 2 to 3 times over, at 2 to 3 times the cost. The frames are paced on a schedule (nextRenderTime), so a 144 Hz
+        // screen still averages 60 even though 144 is not a multiple of 60.
+        this.maxRenderFps = 60;
+        this.nextRenderTime = 0;
+
         this.update = updateCallback;
         this.render = renderCallback;
     }
@@ -45,10 +51,17 @@ export class GameLoop {
             this.timeAccumulator -= this.fixedTimeStep;
         }
 
-        const interpolationFactor = this.timeAccumulator / this.fixedTimeStep;
-        const totalTime = currentTimeStamp / 1000;
+        // Skip the draw when it is not yet time for the next frame (1 ms early is fine: vsync timestamps jitter a little)
+        const renderInterval = 1000 / this.maxRenderFps;
+        if (currentTimeStamp >= this.nextRenderTime - 1) {
+            // On schedule, or reset after a stall so a slow frame does not cause a burst of catch-up draws
+            this.nextRenderTime += renderInterval;
+            if (this.nextRenderTime < currentTimeStamp) this.nextRenderTime = currentTimeStamp + renderInterval;
 
-        this.render(interpolationFactor, totalTime);
+            const interpolationFactor = this.timeAccumulator / this.fixedTimeStep;
+            const totalTime = currentTimeStamp / 1000;
+            this.render(interpolationFactor, totalTime);
+        }
 
         requestAnimationFrame((timeStamp) => this.fireGameLoop(timeStamp));
     }
