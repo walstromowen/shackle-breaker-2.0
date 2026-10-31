@@ -1,5 +1,4 @@
 import { ItemDefinitions } from './itemDefinitions.js';
-import { requirementsAt } from './weaponRequirements.js';
 
 export class ItemModel {
     constructor(defId, instanceState = {}) {
@@ -134,10 +133,6 @@ export class ItemModel {
     }
 
     get useAbility() { return this.definition.useAbility || null; }
-
-    // --- ATTRIBUTE REQUIREMENTS (weapons; see weaponRequirements.js) ---
-    get requirements() { return requirementsAt(this.definition, this.level); }
-    get nextRequirements() { return (this.isUpgradeable && !this.isMaxLevel) ? requirementsAt(this.definition, this.level + 1) : null; }
 
     // --- SERIALIZATION (Updated to save level) ---
     toJSON() {

@@ -12,12 +12,13 @@ import { ItemDefinitions } from './itemDefinitions.js';
 // BALANCE KNOB: share of the attack a wielder keeps, in the weapon's damage types, while any requirement is unmet. 0.6 = 40% less damage.
 export const UNMET_REQUIREMENT_DAMAGE_SCALE = 0.6;
 
-export const REQUIREMENT_ORDER = ['vigor', 'strength', 'dexterity', 'intelligence', 'attunement'];
+const REQUIREMENT_ORDER = ['vigor', 'strength', 'dexterity', 'intelligence', 'attunement'];
 
 const defOf = (itemOrDef) => {
     if (!itemOrDef) return null;
     if (typeof itemOrDef === 'string') return ItemDefinitions[itemOrDef] || null;
-    return itemOrDef.definition || ItemDefinitions[itemOrDef.defId] || (itemOrDef.requirements || itemOrDef.type ? itemOrDef : ItemDefinitions[itemOrDef.id]) || null;
+    // an item instance (ItemModel), a { defId } stub, or a definition itself
+    return itemOrDef.definition || ItemDefinitions[itemOrDef.defId] || (itemOrDef.type ? itemOrDef : ItemDefinitions[itemOrDef.id]) || null;
 };
 
 /** The requirements of a weapon definition at an item level (1 = as crafted). {} when it has none. */
