@@ -7,11 +7,15 @@ export class GameLoop {
         this.lastTimeStamp = 0;
         this.isRunning = false;
 
-        // Drawing is capped at the logic rate. The game logic steps at 60 per second, so a 120 / 144 / 165 Hz screen (most gaming laptops) only
-        // redrew the same picture 2 to 3 times over, at 2 to 3 times the cost. The frames are paced on a schedule (nextRenderTime), so a 144 Hz
-        // screen still averages 60 even though 144 is not a multiple of 60.
-        this.maxRenderFps = 60;
-        this.nextRenderTime = 0;
+        // Frame pacing. The logic steps 60 times a second and the overworld blends between steps (interpolation), so drawing faster than about 60
+        // buys little and costs a lot on 120-240 Hz screens (most gaming laptops). The loop draws on every Nth screen refresh, N chosen so the draw
+        // rate lands at or just above 60: 60 Hz -> every refresh, 120 Hz -> every 2nd (60), 144 Hz -> every 2nd (72), 165 Hz -> every 2nd (82),
+        // 240 Hz -> every 4th (60). Drawing on whole refreshes keeps the gaps between frames equal; a fixed 60 cap on a 144 Hz screen would
+        // alternate 2- and 3-refresh gaps, which reads as judder.
+        this.targetRenderFps = 60;
+        this.refreshDeltas = [];     // the last few gaps between animation frames (ms), to measure the screen's refresh rate
+        this.frameStride = 1;        // draw every Nth animation frame
+        this.frameCounter = 0;
 
         this.update = updateCallback;
         this.render = renderCallback;
@@ -31,8 +35,10 @@ export class GameLoop {
     fireGameLoop(currentTimeStamp) {
         if (!this.isRunning) return;
 
-        let deltaTime = (currentTimeStamp - this.lastTimeStamp) / 1000;
+        const frameGapMs = currentTimeStamp - this.lastTimeStamp;
+        let deltaTime = frameGapMs / 1000;
         this.lastTimeStamp = currentTimeStamp;
+        this._measureRefresh(frameGapMs);
 
         // Prevent "spiral of death" if the tab is inactive
         deltaTime = Math.min(deltaTime, this.deltaTimeClampValue);
@@ -51,18 +57,34 @@ export class GameLoop {
             this.timeAccumulator -= this.fixedTimeStep;
         }
 
-        // Skip the draw when it is not yet time for the next frame (1 ms early is fine: vsync timestamps jitter a little)
-        const renderInterval = 1000 / this.maxRenderFps;
-        if (currentTimeStamp >= this.nextRenderTime - 1) {
-            // On schedule, or reset after a stall so a slow frame does not cause a burst of catch-up draws
-            this.nextRenderTime += renderInterval;
-            if (this.nextRenderTime < currentTimeStamp) this.nextRenderTime = currentTimeStamp + renderInterval;
-
+        // Draw on every Nth refresh only (see frameStride)
+        this.frameCounter = (this.frameCounter + 1) % this.frameStride;
+        if (this.frameCounter === 0) {
             const interpolationFactor = this.timeAccumulator / this.fixedTimeStep;
             const totalTime = currentTimeStamp / 1000;
             this.render(interpolationFactor, totalTime);
         }
 
         requestAnimationFrame((timeStamp) => this.fireGameLoop(timeStamp));
+    }
+
+    /**
+     * Keeps frameStride in step with the screen. The refresh rate is the median gap between animation frames (the median ignores the odd slow
+     * frame or tab switch), re-measured every 30 frames, so dragging the window to another monitor adapts within half a second. A machine
+     * that cannot keep up gets long gaps, a low measured rate and a stride of 1: it draws every frame it can.
+     */
+    _measureRefresh(gapMs) {
+        if (!(gapMs > 0) || gapMs > 250) return;
+        this.refreshDeltas.push(gapMs);
+        if (this.refreshDeltas.length < 30) return;
+        const sorted = this.refreshDeltas.slice().sort((a, b) => a - b);
+        this.refreshDeltas.length = 0;
+        const refreshHz = 1000 / sorted[sorted.length >> 1];
+        // +0.05 so a 119.8 Hz reading still counts as twice 60
+        const stride = Math.max(1, Math.floor(refreshHz / this.targetRenderFps + 0.05));
+        if (stride !== this.frameStride) {
+            this.frameStride = stride;
+            this.frameCounter = 0;
+        }
     }
 }

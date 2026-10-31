@@ -5,11 +5,15 @@
  * Deterministic from the clock, so no scene has any state to keep. Used by the title screen, the character creator and the encounters.
  * `count` / `sizeMul` thicken them for busy backgrounds. `tint` is the ember colour (EMBER is warm; COLD_EMBER is the cold green of the prologue).
  */
+import { drawGlowDot } from './glowSprite.js';
+
 export const EMBER = [232, 160, 84];
 export const COLD_EMBER = [112, 232, 168];
 
 export function drawEmbers(ctx, now, x0, width, height, alpha = 1, tint = EMBER, count = 64, sizeMul = 1) {
     ctx.save();
+    const fill = `rgb(${tint[0]},${Math.max(0, tint[1] - 30)},${Math.max(0, tint[2] - 40)})`;
+    const glow = `rgba(${tint[0]},${tint[1]},${tint[2]},0.9)`;
     for (let k = 0; k < count; k++) {
         const seed = k * 7919 + 13;
         const rnd = (n) => { const v = Math.sin(seed * (n + 1.37)) * 43758.5453; return v - Math.floor(v); };
@@ -24,12 +28,8 @@ export function drawEmbers(ctx, now, x0, width, height, alpha = 1, tint = EMBER,
         if (a <= 0.01) continue;
         const size = (near ? 1.8 + rnd(6) * 2.6 : 0.9 + rnd(6) * 1.5) * sizeMul;
         ctx.globalAlpha = a;
-        ctx.fillStyle = `rgb(${tint[0]},${Math.max(0, tint[1] - 30)},${Math.max(0, tint[2] - 40)})`;
-        ctx.shadowColor = `rgba(${tint[0]},${tint[1]},${tint[2]},0.9)`;
-        ctx.shadowBlur = near ? 14 : 8;
-        ctx.beginPath();
-        ctx.arc(px, py, size, 0, Math.PI * 2);
-        ctx.fill();
+        // a cached picture of the glowing dot (glowSprite.js): a shadowBlur per ember per frame was the costliest thing on these screens
+        drawGlowDot(ctx, px, py, fill, glow, size, near ? 14 : 8);
     }
     ctx.restore();
 }

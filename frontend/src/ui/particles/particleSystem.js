@@ -1,5 +1,6 @@
 import { Particle } from './particle.js';
 import { UITheme } from '../UITheme.js';
+import { drawGlowDot } from './glowSprite.js';
 
 // A sprite's `filter` (e.g. tint('fire') in animationKit) is applied while it is drawn. Set to false to draw every sprite unfiltered
 // (filters cost frame time, drop-shadow most of all).
@@ -238,13 +239,16 @@ export class ParticleSystem {
         const flake = this.flakeSprite(p.color || '#444444', Math.abs(Math.floor((p.swayPhase || 0) * 10)) % 9);
         const size = Math.max(6, 9 * (p.scale || 1.0));
         this.ctx.drawImage(flake, -size / 2, -size / 2, size, size);
-        } else {
+        } else if (p.config && p.config.glow === false) {
+        // glow: false = a plain dot
         this.ctx.fillStyle = p.color || '#ffffff';
-        this.ctx.shadowColor = p.color || '#ffffff';
-        this.ctx.shadowBlur = (p.config && p.config.glow === false) ? 0 : 24;   // glow: false = a plain dot, much cheaper when hundreds are on screen
         this.ctx.beginPath();
         this.ctx.arc(0, 0, 12 * (p.scale || 1.0), 0, Math.PI * 2);
         this.ctx.fill();
+        } else {
+        // a glowing dot, stamped from a cached picture (glowSprite.js) instead of a shadowBlur per particle per frame
+        const color = p.color || '#ffffff';
+        drawGlowDot(this.ctx, 0, 0, color, color, 12 * (p.scale || 1.0), 24);
         }
         
         this.ctx.restore(); // Instantly clean-restores the matrix stack for the next particle
