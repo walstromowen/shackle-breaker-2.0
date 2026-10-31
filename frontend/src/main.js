@@ -511,6 +511,8 @@ async function initialize() {
         (interpolation, totalTime) => sceneManager.render(interpolation, totalTime)
     );
 
+    sceneManager.debugOverlayRenderer.loop = gameLoop;   // the debug overlay ("~") reads the loop's frame timing
+
     // 3. START the game loop! The Boot screen will begin drawing immediately.
     gameLoop.start();
 

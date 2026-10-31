@@ -68,6 +68,7 @@ import { DevConsole } from '../ui/devConsole.js';
 import { EntityFactory } from '../../../shared/characters/entityFactory.js';
 import { CorruptionSystem } from '../../../shared/characters/corruptionSystem.js';
 import { SaveManager, AUTOSAVE_SLOT } from './saveManager.js';
+import { debugOverlay, DebugOverlayRenderer } from '../ui/debugOverlay.js';
 
 export class SceneManager {
     constructor(canvas, assetLoader, config) {
@@ -135,6 +136,8 @@ export class SceneManager {
         // First-visit control tips (see ui/tutorialOverlay.js). Off until the player reaches the overworld after the prologue (or loads a save),
         // and off again on the title screen, so the prologue, the character creator and the title menus never show one.
         this.tutorial = new TutorialOverlay();
+        // The debug overlay ("~" on any screen; main.js hands it the game loop for its frame timing)
+        this.debugOverlayRenderer = new DebugOverlayRenderer();
         this._tipsReady = false;
 
         // The developer console ("/" in the overworld, see ui/devConsole.js). While it is open the game lets go of every key, so nothing walks while you type.
@@ -627,6 +630,12 @@ export class SceneManager {
     }
 
     _handleGlobalKeydown(e) {
+        // "~" (Backquote) shows / hides the debug overlay on any screen, even under a tip card or a fade. Not while the developer console is being typed in.
+        if (e.code === 'Backquote' && !e.repeat && !(this.devConsole && this.devConsole.isOpen)) {
+            if (e.preventDefault) e.preventDefault();
+            debugOverlay.toggle();
+            return;
+        }
         if (this.transitionRenderer.isActive && this.transitionRenderer.state === 'FADE_OUT') return;
 
         // A tip card is up: it takes every key. Any key but a bare modifier (or a held key repeating) eases it out once it has been up a moment.
@@ -638,7 +647,6 @@ export class SceneManager {
             }
             return;
         }
-        if (e.code === 'Backquote' && gameState.cheats === true) this.mapRenderer.showDebug = !this.mapRenderer.showDebug;
 
         // "/" opens the developer console, in the overworld when nothing else has the screen (a scene is not loading, no menu is up)
         if (this.devConsole && gameState.cheats === true && !this.devConsole.isOpen && e.code === 'Slash' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey
@@ -866,6 +874,10 @@ export class SceneManager {
         this.tutorial.render(this.ctx);
 
         this.transitionRenderer.render(this.ctx);
+
+        if (debugOverlay.visible) {
+            this.debugOverlayRenderer.render(this.ctx, { scene: this.currentScene, canvas: this.canvas, worldManager: this.worldManager, player: gameState.player });
+        }
     }
 
     /** The Back button of the screens in SHARED_BACK_BUTTON: draws it and adds its hitbox to the screen's (see UIInteractionManager for the click). */

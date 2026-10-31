@@ -15,7 +15,6 @@ import { TargetSelection } from './targetSelection.js';
 const BATTLE_KEYS = {
     'KeyP': 'SWAP',
     'KeyI': 'SUMMARY',
-    'KeyC': 'DEBUG',
     'ShiftLeft': 'TOGGLE_DETAILS', 'ShiftRight': 'TOGGLE_DETAILS',
     'KeyH': 'TOGGLE_DETAILS'
 };
@@ -142,13 +141,6 @@ export class BattleController extends BaseController {
         if (!intent) return;
 
         if (!this.state?.active || this.state.isPausedForUI) return;
-
-        if (intent === 'DEBUG') {
-            if (gameState.cheats !== true) return;   // the battle debugger is a cheat: only in a game created with Cheats on
-            console.log("Debug View Toggled!");
-            events.emit('TOGGLE_BATTLE_DEBUG');
-            return;
-        }
 
         const ignorePhases = [PHASE.INTRO, PHASE.RESOLVE, PHASE.VICTORY, PHASE.DEFEAT];
         if (ignorePhases.includes(this.state.phase)) return;
@@ -396,4 +388,4 @@ export class BattleController extends BaseController {
             onLayoutUpdate: (hitboxes) => this.updateHitboxes(hitboxes)
         };
     }
-}
+}

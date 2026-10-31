@@ -1,3 +1,5 @@
+const FRAME_HISTORY = 600;   // about 10 seconds at 60 fps
+
 export class GameLoop {
     constructor(updateCallback, renderCallback) {
         this.fixedTimeStep = 1 / 60;
@@ -18,6 +20,12 @@ export class GameLoop {
 
         this.update = updateCallback;
         this.render = renderCallback;
+
+        // Frame timing for the debug overlay (ui/debugOverlay.js): the last FRAME_HISTORY animation frames, oldest overwritten first.
+        //   gap     ms since the frame before (what the player feels: 16.7 = 60 fps)
+        //   update  ms spent in the game logic that frame, render ms spent drawing it (0 when the frame was skipped by the frame stride)
+        //   at      the frame's timestamp, so the overlay can count frames per second and find recent hitches
+        this.timing = { size: FRAME_HISTORY, count: 0, next: 0, gap: new Float32Array(FRAME_HISTORY), update: new Float32Array(FRAME_HISTORY), render: new Float32Array(FRAME_HISTORY), at: new Float64Array(FRAME_HISTORY) };
     }
 
     start() {
@@ -51,18 +59,28 @@ export class GameLoop {
         }
 
         // Update Physics/Logic in fixed steps
+        const updateStart = performance.now();
         while (this.timeAccumulator >= this.fixedTimeStep) {
             this.update(this.fixedTimeStep);
             this.timeAccumulator -= this.fixedTimeStep;
         }
+        const updateMs = performance.now() - updateStart;
+        let renderMs = 0;
 
         // Draw on every Nth refresh only (see frameStride)
         this.frameCounter = (this.frameCounter + 1) % this.frameStride;
         if (this.frameCounter === 0) {
             const interpolationFactor = this.timeAccumulator / this.fixedTimeStep;
             const totalTime = currentTimeStamp / 1000;
+            const renderStart = performance.now();
             this.render(interpolationFactor, totalTime);
+            renderMs = performance.now() - renderStart;
         }
+
+        const t = this.timing, i = t.next;
+        t.gap[i] = frameGapMs; t.update[i] = updateMs; t.render[i] = renderMs; t.at[i] = currentTimeStamp;
+        t.next = (i + 1) % t.size;
+        if (t.count < t.size) t.count++;
 
         requestAnimationFrame((timeStamp) => this.fireGameLoop(timeStamp));
     }
