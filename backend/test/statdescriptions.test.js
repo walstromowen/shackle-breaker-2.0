@@ -37,35 +37,41 @@ test('the numbers in the text match what the calculator really does', () => {
     }
     const rowValue = (attr, label) => getStatDescription(attr).rows.find(r => r.label === label)?.value;
     const hp = calc({ vigor: 40 }).maxHp.total ?? calc({ vigor: 40 }).maxHp;
-    assert.equal(rowValue('vigor', 'Max HP'), '+1.5 per point');
+    assert.equal(rowValue('vigor', 'Max HP'), '+3 per point');
     assert.equal(rowValue('vigor', 'Defense (all types)'), '+1 per 2 points');
-    assert.ok(hp >= 40 * 1.5, `Vigor 40 should give about 60 HP, got ${hp}`);
+    assert.ok(hp >= 40 * 3, `Vigor 40 should give about 120 HP, got ${hp}`);
     assert.equal(rowValue('dexterity', 'Max stamina'), '+2 per point');
     assert.equal(rowValue('dexterity', 'Stamina recovery'), '+0.5 per point');
     assert.equal(rowValue('attunement', 'Max insight'), '+2 per point');
     assert.equal(rowValue('attunement', 'Insight recovery'), '+0.5 per point');
+    assert.equal(rowValue('strength', 'Stamina recovery'), '+0.5 per point');
+    assert.equal(rowValue('intelligence', 'Insight recovery'), '+0.5 per point');
+    assert.equal(rowValue('strength', 'Blunt / Slash defense'), '+1 per 2 points');
 });
 
-test('only Strength and Intelligence list attack rows; Dexterity and Attunement list their pools', () => {
+test('each attribute lists the attacks and defenses it feeds; Dexterity and Attunement also list their pools', () => {
     const labels = (k) => getStatDescription(k).rows.map(r => r.label);
-    assert.deepEqual(labels('strength').filter(l => /attack/.test(l)), ['Blunt / Slash / Pierce attack']);
-    assert.deepEqual(labels('intelligence').filter(l => /attack/.test(l)), ['Every magic attack']);
-    for (const k of ['vigor', 'dexterity', 'attunement']) assert.ok(!labels(k).some(l => /attack/.test(l)), `${k} has no attack row`);
+    assert.deepEqual(labels('strength').filter(l => /attack/.test(l)), ['Blunt / Slash attack']);
+    assert.deepEqual(labels('dexterity').filter(l => /attack/.test(l)), ['Slash / Pierce attack']);
+    assert.deepEqual(labels('attunement').filter(l => /attack/.test(l)), ['Every elemental attack']);
+    assert.deepEqual(labels('intelligence').filter(l => /attack/.test(l)), ['Light / Dark / Arcane attack']);
+    assert.ok(!labels('vigor').some(l => /attack/.test(l)), 'vigor has no attack row');
     assert.ok(labels('dexterity').includes('Max stamina') && labels('dexterity').includes('Stamina recovery'));
     assert.ok(labels('attunement').includes('Max insight') && labels('attunement').includes('Insight recovery'));
 });
 
 test('the text follows a character\'s own multipliers and the skill-check option', () => {
     const tough = getStatDescription('vigor', { multipliers: { hpPerVigor: 4 } });
-    assert.equal(tough.rows.find(r => r.label === 'Max HP').value, '+2 per point');
+    assert.equal(tough.rows.find(r => r.label === 'Max HP').value, '+4 per point');
     assert.ok(!getStatDescription('vigor').rows.some(r => r.label === 'Skill checks'));
     assert.ok(getStatDescription('vigor', { skillChecks: true }).rows.some(r => r.label === 'Skill checks'));
 });
 
-test('the magic types are listed in full, the physical trio by name', () => {
-    assert.equal(getStatDescription('intelligence').detail, 'Fire, Ice, Lightning, Water, Earth, Wind, Light, Dark and Arcane.');
-    assert.equal(getStatDescription('strength').rows.find(r => /attack/.test(r.label)).label, 'Blunt / Slash / Pierce attack');
-    assert.equal(getStatDescription('attunement').detail, '');
+test('the six elements are listed in full, the smaller groups by name', () => {
+    assert.equal(getStatDescription('attunement').detail, 'Fire, Ice, Lightning, Water, Earth and Wind.');
+    assert.equal(getStatDescription('strength').rows.find(r => /attack/.test(r.label)).label, 'Blunt / Slash attack');
+    assert.equal(getStatDescription('intelligence').detail, '');
+    assert.match(getStatDescription('attack:slash').note, /higher of Strength or Dexterity/);
     assert.equal(trimNumber(0.65), '0.65');
     assert.equal(trimNumber(1), '1');
 });
@@ -81,9 +87,10 @@ test('every attribute card carries one short story line that holds no numbers', 
 test('the attribute wording is the first version\'s, brought up to date', () => {
     const d = (k) => getStatDescription(k).description;
     assert.match(d('vigor'), /^A measure of how many hits one can take\./);
-    assert.match(d('strength'), /blunt, slash and pierce damage/);
+    assert.match(d('strength'), /blunt and slash damage/);
+    assert.match(d('dexterity'), /slash and pierce damage/);
     assert.match(d('dexterity'), /maximum stamina and how quickly it recovers/);
-    assert.match(d('intelligence'), /every magic attack/);
+    assert.match(d('intelligence'), /light, dark and arcane/);
     assert.match(d('attunement'), /maximum insight and how quickly it recovers/);
     assert.match(d('attunement'), /attachment to the elements/);
 });
@@ -107,11 +114,15 @@ test('every other stat has a card too, in the first version\'s words', () => {
 
 test('the stat cards\' numbers come from the same constants as the calculator', () => {
     const rowValue = (id, label) => getStatDescription(id).rows.find(r => r.label === label)?.value;
-    assert.equal(rowValue('maxHp', 'Vigor'), '+1.5 per point');
+    assert.equal(rowValue('maxHp', 'Vigor'), '+3 per point');
     assert.equal(rowValue('maxStamina', 'Dexterity'), '+2 per point');
     assert.equal(rowValue('maxInsight', 'Attunement'), '+2 per point');
     assert.equal(rowValue('staminaRecovery', 'Dexterity'), '+0.5 per point');
     assert.equal(rowValue('attack:slash', 'Strength'), '+1 per point');
-    assert.equal(rowValue('attack:fire', 'Intelligence'), '+1 per point');
+    assert.equal(rowValue('attack:slash', 'Dexterity'), '+1 per point');
+    assert.equal(rowValue('staminaRecovery', 'Strength'), '+0.5 per point');
+    assert.equal(rowValue('insightRecovery', 'Intelligence'), '+0.5 per point');
+    assert.equal(rowValue('attack:fire', 'Attunement'), '+1 per point');
+    assert.equal(rowValue('defense:arcane', 'Intelligence'), '+1 per 2 points');
     assert.equal(getStatDescription('attack:fire').rows.length, 1);
 });

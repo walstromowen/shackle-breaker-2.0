@@ -1,5 +1,5 @@
-import { DAMAGE_SCALING, CORRUPTION } from '../core/constants.js';
-import { HP_PER_VIGOR_SCALE, STAMINA_RECOVERY_PER_DEX, INSIGHT_RECOVERY_PER_ATT } from './statCalculator.js';
+import { DAMAGE_SCALING, BEST_OF_SCALING, DEFENSE_PER_SCALING_POINT, CORRUPTION } from '../core/constants.js';
+import { HP_PER_VIGOR_SCALE, STAMINA_RECOVERY_PER_DEX, INSIGHT_RECOVERY_PER_ATT, STAMINA_RECOVERY_ATTRIBUTES, INSIGHT_RECOVERY_ATTRIBUTES } from './statCalculator.js';
 
 // What each attribute and stat does, for the in-game help (hover / select one on the level-up, character creator, character summary and
 // encounter screens). The words are the game's own: the descriptions come from the first version of the game's stat help, brought up to date.
@@ -19,10 +19,10 @@ const NAMES = {
 // The first version's wording, with the facts brought up to date (what each attribute really feeds now) and the spelling mended.
 const DESCRIPTIONS = {
     vigor: "A measure of how many hits one can take. Affects max health points as well as one's defense against every kind of attack. Also determines the effectiveness of decisions that require one to endure hardship.",
-    strength: "A measure of one's physical prowess. Affects blunt, slash and pierce damage. Also determines the effectiveness of decisions that require one to utilize strength.",
-    dexterity: "A measure of one's finesse. Affects one's maximum stamina and how quickly it recovers. Also determines the effectiveness of decisions that require sleight of hand, stealth, and mobility.",
-    intelligence: "A measure of one's knowledge. Affects the damage of every magic attack: the elements, and arcane, light and dark. Also determines the effectiveness of decisions that require perception, problem solving, academia, and logical reasoning.",
-    attunement: "A measure of one's attachment to the elements. Affects one's maximum insight and how quickly it recovers. Also determines the effectiveness of decisions that utilize perception, intuition, and nature.",
+    strength: "A measure of one's physical prowess. Affects blunt and slash damage and defense, and how quickly one's stamina recovers. Also determines the effectiveness of decisions that require one to utilize strength.",
+    dexterity: "A measure of one's finesse. Affects slash and pierce damage and defense, one's maximum stamina and how quickly it recovers. Also determines the effectiveness of decisions that require sleight of hand, stealth, and mobility.",
+    intelligence: "A measure of one's knowledge. Affects light, dark and arcane damage and defense, and how quickly one's insight recovers. Also determines the effectiveness of decisions that require perception, problem solving, academia, and logical reasoning.",
+    attunement: "A measure of one's attachment to the elements. Affects the damage and defense of the six elements, one's maximum insight and how quickly it recovers. Also determines the effectiveness of decisions that utilize perception, intuition, and nature.",
 };
 
 // A line of the game's story for each attribute, shown last and quietly on the card (italic, muted). Each says how that attribute keeps madness at bay, in the
@@ -39,7 +39,8 @@ const FLAVOR = {
 // Statements of fact about stats that are not in the formulas (kept short; the rows below carry the numbers)
 const NOTES = {
     vigor: 'Defense is taken off every hit you receive.',
-    dexterity: 'Stamina pays for physical abilities.',
+    strength: 'Slash uses the higher of Strength or Dexterity, not both.',
+    dexterity: 'Stamina pays for physical abilities. Slash uses the higher of Strength or Dexterity, not both.',
     attunement: 'Insight pays for spells.',
 };
 
@@ -61,6 +62,18 @@ export function damageTypesFor(attr) {
     }
     return [...groups.values()].sort((a, b) => b.weight - a.weight);
 }
+
+const ELEMENTS = ['fire', 'ice', 'lightning', 'water', 'earth', 'wind'];
+// 'Blunt / Slash attack', or 'Every elemental attack' for the six elements (the card's detail line names them)
+const groupLabel = (types, stat) => {
+    if (types.length === ELEMENTS.length && ELEMENTS.every(t => types.includes(t))) return `Every elemental ${stat}`;
+    if (types.length <= 3) return `${types.map(cap).join(' / ')} ${stat}`;
+    return `${types.length} damage types (${stat})`;
+};
+const halfRate = (w) => {
+    const per = w * DEFENSE_PER_SCALING_POINT;
+    return per === 0.5 ? '+1 per 2 points' : perPoint(per);
+};
 
 const joinNames = (types) => {
     const names = types.map(cap);
@@ -140,7 +153,11 @@ const tierEffects = (tier) => {
 };
 
 const multipliersOf = (opts) => ({ hpPerVigor: 3, staminaPerDex: 2, insightPerAtt: 2, ...(opts.multipliers || {}) });
-const feederRows = (type) => Object.entries(DAMAGE_SCALING[type] || {}).map(([attr, w]) => ({ label: NAMES[attr], value: perPoint(w), kind: 'attack' }));
+const feederRows = (type, kind = 'attack') => Object.entries(DAMAGE_SCALING[type] || {}).map(([attr, w]) => ({ label: NAMES[attr], value: kind === 'attack' ? perPoint(w) : halfRate(w), kind }));
+const bestOfNote = (type) => {
+    if (!BEST_OF_SCALING.includes(type)) return '';
+    return `Uses the higher of ${Object.keys(DAMAGE_SCALING[type]).map(a => NAMES[a]).join(' or ')}, not both. `;
+};
 
 function describeStat(key, type, opts) {
     const mults = multipliersOf(opts);
@@ -165,9 +182,9 @@ function describeStat(key, type, opts) {
         rows.push({ label: NAMES.attunement, value: perPoint(mults.insightPerAtt), kind: 'insight' });
         note = 'Insight pays for spells.';
     } else if (key === 'staminaRecovery') {
-        rows.push({ label: NAMES.dexterity, value: perPoint(STAMINA_RECOVERY_PER_DEX), kind: 'stamina' });
+        for (const a of STAMINA_RECOVERY_ATTRIBUTES) rows.push({ label: NAMES[a], value: perPoint(STAMINA_RECOVERY_PER_DEX), kind: 'stamina' });
     } else if (key === 'insightRecovery') {
-        rows.push({ label: NAMES.attunement, value: perPoint(INSIGHT_RECOVERY_PER_ATT), kind: 'insight' });
+        for (const a of INSIGHT_RECOVERY_ATTRIBUTES) rows.push({ label: NAMES[a], value: perPoint(INSIGHT_RECOVERY_PER_ATT), kind: 'insight' });
     } else if (key === 'corruption') {
         // What it does comes from the same table the game plays by (CORRUPTION in core/constants.js)
         rows.push({ label: 'Each magical ability used', value: `+${CORRUPTION.PER_MAGIC_USE}%`, kind: 'attack' });
@@ -176,11 +193,12 @@ function describeStat(key, type, opts) {
         note = 'Cruel choices raise it and kind ones lower it. A shackled member is down until a fallen meteorite breaks the chains, and may turn on the party first.';
     } else if (key === 'attack') {
         rows.push(...feederRows(type));
-        note = "A weapon adds to it, and each ability multiplies it by its power.";
+        note = bestOfNote(type) + "A weapon adds to it, and each ability multiplies it by its power.";
     } else if (key === 'defense') {
+        rows.push(...feederRows(type, 'defense'));
         rows.push({ label: NAMES.vigor, value: '+1 per 2 points', kind: 'defense' });
         rows.push({ label: 'Level', value: '+1 per 2 levels', kind: 'defense' });
-        note = 'Taken off every hit of this type, after resistance.';
+        note = bestOfNote(type) + 'Taken off every hit of this type, after resistance.';
     } else if (key === 'resistance') {
         note = 'A share of the damage, taken off before defense.';
     } else if (key === 'speed') {
@@ -203,26 +221,26 @@ function describeAttribute(key, opts) {
         rows.push({ label: 'Defense (all types)', value: '+1 per 2 points', kind: 'defense' });
     }
 
-    // Attack rows come straight from the scaling table
+    // Attack and defense rows come straight from the scaling table
     for (const { types, weight } of damageTypesFor(key)) {
-        const label = types.length <= 3 ? `${types.map(cap).join(' / ')} attack` : 'Every magic attack';
-        rows.push({ label, value: perPoint(weight), kind: 'attack' });
+        rows.push({ label: groupLabel(types, 'attack'), value: perPoint(weight), kind: 'attack' });
+        rows.push({ label: groupLabel(types, 'defense'), value: halfRate(weight), kind: 'defense' });
     }
 
     if (key === 'dexterity') {
         rows.push({ label: 'Max stamina', value: perPoint(mults.staminaPerDex), kind: 'stamina' });
-        rows.push({ label: 'Stamina recovery', value: `+${trimNumber(STAMINA_RECOVERY_PER_DEX)} per point`, kind: 'stamina' });
     }
+    if (STAMINA_RECOVERY_ATTRIBUTES.includes(key)) rows.push({ label: 'Stamina recovery', value: perPoint(STAMINA_RECOVERY_PER_DEX), kind: 'stamina' });
     if (key === 'attunement') {
         rows.push({ label: 'Max insight', value: perPoint(mults.insightPerAtt), kind: 'insight' });
-        rows.push({ label: 'Insight recovery', value: `+${trimNumber(INSIGHT_RECOVERY_PER_ATT)} per point`, kind: 'insight' });
     }
+    if (INSIGHT_RECOVERY_ATTRIBUTES.includes(key)) rows.push({ label: 'Insight recovery', value: perPoint(INSIGHT_RECOVERY_PER_ATT), kind: 'insight' });
 
     if (opts.skillChecks) {
         rows.push({ label: 'Skill checks', value: '+1 per 3 above 10', kind: 'check' });
     }
 
-    // For the magic types, say which ones (the row label can only say "Every magic attack")
+    // For the elements, say which ones (the row label can only say "Every elemental attack")
     const wide = damageTypesFor(key).find(g => g.types.length > 3);
     const detail = wide ? `${joinNames(wide.types)}.` : '';
 

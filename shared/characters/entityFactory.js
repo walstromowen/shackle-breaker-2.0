@@ -4,7 +4,7 @@
 import { ENTITY_DEFINITIONS } from './entityDefinitions.js';
 import { EntityModel } from './entityModel.js';
 import { ExperienceSystem } from './experienceSystem.js';
-import { DAMAGE_SCALING } from '../core/constants.js';
+import { DAMAGE_SCALING, scalingFor } from '../core/constants.js';
 import { ItemDefinitions } from '../items/itemDefinitions.js';
 
 // BALANCE KNOB: extra base max HP an entity gets per level above 1, ON TOP of the +2 per level that every level-up gives (ExperienceSystem.applyLevelUpStats).
@@ -12,8 +12,8 @@ import { ItemDefinitions } from '../items/itemDefinitions.js';
 // The bonus is recorded on the entity (levelEdgeHp) so EntityFactory.removeLevelEdge() can take it away again when an enemy joins the party.
 const LEVEL_EDGE_HP_PER_LEVEL = 0.5;
 
-// BALANCE KNOB: extra points an enemy gets per level above 1 in the attribute its best attack scales with (Strength for blunt, slash and pierce,
-// Intelligence for the magic types: core/constants.js DAMAGE_SCALING), ON TOP of the 1 point per level spread over every attribute. Player defense grows
+// BALANCE KNOB: extra points an enemy gets per level above 1 in the attribute its best attack scales with (Strength for blunt, Dexterity for pierce,
+// the higher of the two for slash, Attunement for the elements, Intelligence for light, dark and arcane: core/constants.js DAMAGE_SCALING), ON TOP of the 1 point per level spread over every attribute. Player defense grows
 // with level and Vigor while an enemy's attack used to stay almost flat, so late fights got easier; this keeps an enemy's hits growing with its level.
 // 1.5 = +1.5 attack per level (about +10 at level 8, +16 at level 12); 0 switches it off. Like the HP edge, it is recorded on the entity (levelEdgeAttr) and EntityFactory.removeLevelEdge() takes it away on recruit.
 const LEVEL_EDGE_ATTACK_PER_LEVEL = 1.5;
@@ -187,14 +187,10 @@ export class EntityFactory {
             if (def && def.attack) for (const [t, v] of Object.entries(def.attack)) weapon[t] = (weapon[t] || 0) + v;
         }
         let best = null;
-        for (const [type, scaling] of Object.entries(DAMAGE_SCALING)) {
-            let total = (config.baseStats?.baseAttack?.[type] || 0) + (weapon[type] || 0);
-            let topAttr = null, topWeight = 0;
-            for (const [attr, weight] of Object.entries(scaling)) {
-                total += (config.attributes[attr] || 0) * weight;
-                if (weight > topWeight) { topWeight = weight; topAttr = attr; }
-            }
-            if (topAttr && (!best || total > best.total)) best = { total, attr: topAttr };
+        for (const type of Object.keys(DAMAGE_SCALING)) {
+            const { value, attr } = scalingFor(type, config.attributes);
+            const total = (config.baseStats?.baseAttack?.[type] || 0) + (weapon[type] || 0) + value;
+            if (attr && (!best || total > best.total)) best = { total, attr };
         }
         return best ? best.attr : null;
     }

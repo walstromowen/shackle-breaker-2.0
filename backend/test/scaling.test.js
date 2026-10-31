@@ -1,55 +1,73 @@
-// backend/test/scaling.test.js: `npm test`. Strength drives all physical damage, Intelligence all magical damage; Dexterity and Attunement feed the pools (DAMAGE_SCALING in core/constants.js).
+// backend/test/scaling.test.js: `npm test`. Strength: blunt and slash; Dexterity: slash and pierce (slash takes the higher of the two); Attunement: the six
+// elements; Intelligence: light, dark and arcane. The same attributes raise the matching defenses. Stamina recovery follows Dexterity and Strength, insight
+// recovery Intelligence and Attunement (DAMAGE_SCALING in core/constants.js, StatCalculator).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { StatCalculator } from '../../shared/characters/statCalculator.js';
 import { EntityFactory } from '../../shared/characters/entityFactory.js';
 import { DAMAGE_SCALING, DAMAGE_TYPES } from '../../shared/core/constants.js';
 
-const PHYSICAL = ['blunt', 'slash', 'pierce'];
-const MAGIC = ['fire', 'ice', 'lightning', 'water', 'earth', 'wind', 'light', 'dark', 'arcane'];
+const ELEMENTS = ['fire', 'ice', 'lightning', 'water', 'earth', 'wind'];
+const ARCANE = ['light', 'dark', 'arcane'];
+const FEEDS = { strength: ['blunt', 'slash'], dexterity: ['slash', 'pierce'], attunement: ELEMENTS, intelligence: ARCANE, vigor: [] };
 const ZERO = { vigor: 0, strength: 0, dexterity: 0, intelligence: 0, attunement: 0 };
 const statsOf = (attributes) => StatCalculator.calculate({ level: 1, attributes: { ...ZERO, ...attributes }, baseStats: { maxHp: 10, maxStamina: 10, maxInsight: 10, baseAttack: {} } });
 const attackOf = (attributes) => statsOf(attributes).attack;
 
-test('every damage type has a scaling entry, and only Strength and Intelligence raise attack', () => {
+test('every damage type has a scaling entry, and each attribute raises exactly its own attack and defense types', () => {
     for (const t of DAMAGE_TYPES) assert.ok(DAMAGE_SCALING[t], `${t} has no scaling`);
-    const str = attackOf({ strength: 20 }), int = attackOf({ intelligence: 20 });
-    for (const t of PHYSICAL) { assert.equal(str[t], 20, `Strength raises ${t}`); assert.equal(int[t], 0, `Intelligence does not raise ${t}`); }
-    for (const t of MAGIC) { assert.equal(int[t], 20, `Intelligence raises ${t}`); assert.equal(str[t], 0, `Strength does not raise ${t}`); }
-    for (const attr of ['vigor', 'dexterity', 'attunement']) {
-        const a = attackOf({ [attr]: 20 });
-        for (const t of DAMAGE_TYPES) assert.equal(a[t], 0, `${attr} raises no attack (${t})`);
+    const base = statsOf({});
+    for (const [attr, types] of Object.entries(FEEDS)) {
+        const s = statsOf({ [attr]: 20 });
+        const vigorDef = attr === 'vigor' ? 10 : 0;   // Vigor still gives +1 defense per 2 points against everything
+        for (const t of DAMAGE_TYPES) {
+            const feeds = types.includes(t);
+            assert.equal(s.attack[t], feeds ? 20 : 0, `${attr} -> ${t} attack`);
+            assert.equal(s.defense[t] - base.defense[t], (feeds ? 10 : 0) + vigorDef, `${attr} -> ${t} defense`);
+        }
     }
 });
 
-test('Dexterity and Attunement feed the pools: max, and recovery per round', () => {
-    const base = statsOf({}), dex = statsOf({ dexterity: 20 }), att = statsOf({ attunement: 20 });
+test('slash scales with the higher of Strength or Dexterity, never both', () => {
+    assert.equal(attackOf({ strength: 12, dexterity: 7 }).slash, 12);
+    assert.equal(attackOf({ strength: 7, dexterity: 12 }).slash, 12);
+    assert.equal(attackOf({ strength: 10, dexterity: 10 }).slash, 10);
+    const base = statsOf({});
+    assert.equal(statsOf({ strength: 10, dexterity: 20 }).defense.slash - base.defense.slash, 10, 'slash defense also takes the higher one');
+});
+
+test('Vigor gives +3 max HP per point to a new character', () => {
+    assert.equal(statsOf({ vigor: 20 }).maxHp - statsOf({}).maxHp, 60);
+});
+
+test('pools and recovery: Dexterity feeds max stamina, Attunement max insight; recovery follows two attributes each', () => {
+    const base = statsOf({}), dex = statsOf({ dexterity: 20 }), str = statsOf({ strength: 20 }), att = statsOf({ attunement: 20 }), int = statsOf({ intelligence: 20 });
     assert.equal(dex.maxStamina - base.maxStamina, 40, '+2 max stamina per Dexterity');
-    assert.equal(dex.staminaRecovery - base.staminaRecovery, 10, '+0.5 stamina recovery per Dexterity');
     assert.equal(att.maxInsight - base.maxInsight, 40, '+2 max insight per Attunement');
-    assert.equal(att.insightRecovery - base.insightRecovery, 10, '+0.5 insight recovery per Attunement');
-    for (const stat of [statsOf({ strength: 20 }), statsOf({ intelligence: 20 })]) {
-        assert.equal(stat.maxStamina, base.maxStamina); assert.equal(stat.maxInsight, base.maxInsight);
-        assert.equal(stat.staminaRecovery, base.staminaRecovery); assert.equal(stat.insightRecovery, base.insightRecovery);
-    }
+    assert.equal(str.maxStamina, base.maxStamina, 'Strength adds no max stamina');
+    assert.equal(int.maxInsight, base.maxInsight, 'Intelligence adds no max insight');
+    for (const s of [dex, str]) { assert.equal(s.staminaRecovery - base.staminaRecovery, 10, '+0.5 stamina recovery per Dexterity / Strength'); assert.equal(s.insightRecovery, base.insightRecovery); }
+    for (const s of [att, int]) { assert.equal(s.insightRecovery - base.insightRecovery, 10, '+0.5 insight recovery per Attunement / Intelligence'); assert.equal(s.staminaRecovery, base.staminaRecovery); }
+    assert.equal(statsOf({ dexterity: 10, strength: 10 }).staminaRecovery - base.staminaRecovery, 10, 'both add up');
 });
 
 // the starting backgrounds (characterCreatorLogic.js): [vigor, strength, dexterity, intelligence, attunement]
 const BACKGROUNDS = { Warrior: [13, 15, 9, 7, 6], Thief: [9, 8, 16, 9, 8], Ranger: [10, 9, 15, 8, 8], Scholar: [8, 7, 9, 14, 12], Hermit: [10, 7, 9, 13, 11], Traveler: [11, 11, 10, 9, 9] };
 const at = ([vigor, strength, dexterity, intelligence, attunement]) => attackOf({ vigor, strength, dexterity, intelligence, attunement });
 
-test('every physical type hits with Strength alone, and every magic type with Intelligence alone', () => {
-    const warrior = at(BACKGROUNDS.Warrior), scholar = at(BACKGROUNDS.Scholar);
-    for (const t of PHYSICAL) assert.equal(warrior[t], 15, `Warrior ${t}`);
-    for (const t of MAGIC) assert.equal(scholar[t], 14, `Scholar ${t}`);
-    assert.ok(warrior.blunt > scholar.blunt && scholar.arcane > warrior.arcane);
+test('the backgrounds hit hardest with the types their best attributes feed', () => {
+    const warrior = at(BACKGROUNDS.Warrior), thief = at(BACKGROUNDS.Thief), scholar = at(BACKGROUNDS.Scholar);
+    assert.equal(warrior.blunt, 15); assert.equal(warrior.slash, 15); assert.equal(warrior.pierce, 9);
+    assert.equal(thief.pierce, 16); assert.equal(thief.slash, 16); assert.equal(thief.blunt, 8);
+    for (const t of ARCANE) assert.equal(scholar[t], 14, `Scholar ${t}`);
+    for (const t of ELEMENTS) assert.equal(scholar[t], 12, `Scholar ${t}`);
 });
 
-// Entities keep the attack they had before the 5da4655 experiment (baseAttack is back to the original numbers): anchors recorded from them, level 1
-// (the Legionary's is the one change: trained soldiers got +3 on every physical attack, 14 -> 17, when enemies were made hit harder)
-test('enemies and recruits hit as hard as they always did', () => {
-    const anchors = [['WOLF', 'pierce', 17], ['DOG', 'pierce', 8], ['DUNE_MAW', 'pierce', 20], ['MAD_MAN', 'slash', 10], ['THUNDER_LOCUST', 'lightning', 9],
-        ['THUNDER_LOCUST', 'pierce', 6], ['SCORCHED_VAGRANT', 'fire', 20], ['LEGIONARY', 'slash', 17], ['PANZERKAMFER', 'pierce', 24], ['SNOW_LEOPARD', 'slash', 19]];
+// Anchors recorded at level 1 after the stat rework (pierce follows Dexterity, the elements Attunement, slash the higher of Strength or Dexterity).
+// Before it: WOLF pierce 17, DOG 8, DUNE_MAW 20, THUNDER_LOCUST lightning 9 / pierce 6, SCORCHED_VAGRANT fire 20, PANZERKAMFER pierce 24, SNOW_LEOPARD slash 19.
+test('enemies and recruits hit as hard as the balance expects', () => {
+    const anchors = [['WOLF', 'pierce', 23], ['DOG', 'pierce', 14], ['DUNE_MAW', 'pierce', 10], ['MAD_MAN', 'slash', 10], ['THUNDER_LOCUST', 'lightning', 21],
+        ['THUNDER_LOCUST', 'pierce', 20], ['SCORCHED_VAGRANT', 'fire', 18], ['LEGIONARY', 'slash', 17], ['PANZERKAMFER', 'pierce', 14], ['SNOW_LEOPARD', 'slash', 23]];
     for (const [id, type, old] of anchors) {
         const e = EntityFactory.create(id, 1);
         assert.ok(Math.abs(StatCalculator.calculate(e).attack[type] - old) <= 1, `${id} ${type}: ${StatCalculator.calculate(e).attack[type]} (was ${old})`);
@@ -86,7 +104,7 @@ test('leather armor gives a little stamina recovery, cloth armor a little insigh
 test('an enemy gains attack with its level in the attribute its best attack scales with, a recruit does not keep it, and an ally never gets it', () => {
     const atk = (e, t) => StatCalculator.calculate(e).attack[t];
     const wolf1 = EntityFactory.create('WOLF', 1), wolf9 = EntityFactory.create('WOLF', 9);
-    assert.equal(wolf9.state.levelEdgeAttr.attribute, 'strength');
+    assert.equal(wolf9.state.levelEdgeAttr.attribute, 'dexterity', 'a wolf bites (pierce), so it grows in Dexterity');
     assert.equal(wolf9.state.levelEdgeAttr.amount, 12, '8 levels x 1.5');
     assert.ok(atk(wolf9, 'pierce') - atk(wolf1, 'pierce') >= 12, 'at least the edge, plus the one point per level spread over the attributes');
     const addict9 = EntityFactory.create('MAGIC_ADDICT', 9);

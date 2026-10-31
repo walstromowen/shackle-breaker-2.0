@@ -1,21 +1,25 @@
 import { TRAIT_DEFINITIONS } from '../abilities/traitDefinitions.js'; 
-import { DAMAGE_TYPES, DAMAGE_SCALING, CORRUPTION, MAGIC_DAMAGE_TYPES } from '../core/constants.js'; 
+import { DAMAGE_TYPES, CORRUPTION, MAGIC_DAMAGE_TYPES, DEFENSE_PER_SCALING_POINT, scalingFor } from '../core/constants.js'; 
 import { ActSystem } from '../story/actSystem.js'; 
 
 // BALANCE KNOB: scales the HP that Vigor grants, for EVERYONE (party, enemies, bosses and already-saved characters).
 // Saved characters keep their own copy of statMultipliers.hpPerVigor, so lowering it in the entity templates would not
 // touch them; this applies on top of whatever hpPerVigor an entity has. 1 = unchanged, 0.5 = half the HP from Vigor.
-export const HP_PER_VIGOR_SCALE = 0.5;
+// 1 (was 0.5): a new character's Vigor gives the full +3 max HP per point (hpPerVigor 3).
+export const HP_PER_VIGOR_SCALE = 1;
 
-// BALANCE KNOBS: how much passive per-round recovery each point of Dexterity / Attunement grants.
+// BALANCE KNOBS: how much passive per-round recovery each point of the recovery attributes grants.
+// Stamina recovery scales with Dexterity AND Strength, insight recovery with Intelligence AND Attunement (each point of either counts).
 // Recovery is the SUSTAIN rate and the max pool is the BURST reserve, so recovery has to grow slower than the pool
 // (a point of Dex gives +2 max stamina, so 0.5 recovery is a quarter of the pool a point adds, per round, at every level).
 // It used to be 1 per point, which refilled about half the pool every round and made ability costs meaningless.
 // Applies to everyone (party, enemies, saved characters); gear and trait recovery bonuses are flat and added on top.
 // 0.5 (was 0.35, and 0.3 before that): more sustain, so waiting for stamina or insight slows fights down less (a quarter of what a point adds to the pool, per round). It is added up before rounding (the
 // old code rounded each point's share on its own), so the whole sum steps up every second point of Dexterity / Attunement.
-export const STAMINA_RECOVERY_PER_DEX = 0.5;
-export const INSIGHT_RECOVERY_PER_ATT = 0.5;
+export const STAMINA_RECOVERY_PER_DEX = 0.5;   // per point of Dexterity and per point of Strength
+export const INSIGHT_RECOVERY_PER_ATT = 0.5;   // per point of Attunement and per point of Intelligence
+export const STAMINA_RECOVERY_ATTRIBUTES = ['dexterity', 'strength'];
+export const INSIGHT_RECOVERY_ATTRIBUTES = ['intelligence', 'attunement'];
 const whole = (n) => Math.round(n);
 const hundredths = (n) => Math.round(n * 100) / 100;
 
@@ -122,19 +126,21 @@ export class StatCalculator {
         const vigorDefense = Math.floor(finalStats.vigor * 0.5); 
         this.DAMAGE_TYPES.forEach(t => { finalStats.defense[t] += vigorDefense + levelDefenseBonus; }); 
         
-        // Attack: each damage type scales with the attribute DAMAGE_SCALING (core/constants.js) names: Strength for blunt, slash and pierce, Intelligence for every
-        // elemental, light, dark and arcane type. Dexterity and Attunement add no attack (they feed the pools below).
+        // Attack and defense: each damage type scales with the attributes DAMAGE_SCALING (core/constants.js) names: Strength for blunt, Dexterity for pierce,
+        // the higher of Strength or Dexterity for slash, Attunement for the six elements and Intelligence for light, dark and arcane.
         this.DAMAGE_TYPES.forEach(t => { 
-            finalStats.attack[t] += Object.entries(DAMAGE_SCALING[t] || {}).reduce((sum, [attr, weight]) => sum + (finalStats[attr] || 0) * weight, 0); 
+            const { value } = scalingFor(t, finalStats); 
+            finalStats.attack[t] += value; 
+            finalStats.defense[t] += value * DEFENSE_PER_SCALING_POINT; 
         }); 
 
         // Physical Pillar 
         breakdown.resources.derived.stamina = Math.floor(finalStats.dexterity * mults.staminaPerDex); 
-        finalStats.staminaRecovery += finalStats.dexterity * STAMINA_RECOVERY_PER_DEX; 
+        finalStats.staminaRecovery += STAMINA_RECOVERY_ATTRIBUTES.reduce((sum, a) => sum + (finalStats[a] || 0), 0) * STAMINA_RECOVERY_PER_DEX; 
         
         // Magical Pillar 
         breakdown.resources.derived.insight = Math.floor(finalStats.attunement * mults.insightPerAtt); 
-        finalStats.insightRecovery += finalStats.attunement * INSIGHT_RECOVERY_PER_ATT; 
+        finalStats.insightRecovery += INSIGHT_RECOVERY_ATTRIBUTES.reduce((sum, a) => sum + (finalStats[a] || 0), 0) * INSIGHT_RECOVERY_PER_ATT; 
         
         // --- STEP 4: FLAT BONUSES & TRAITS --- 
         const applyFlat = (source) => { 
@@ -262,4 +268,4 @@ export class StatCalculator {
             default: return false; 
         } 
     } 
-}
+}
