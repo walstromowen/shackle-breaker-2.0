@@ -1,5 +1,5 @@
 import { TRAIT_DEFINITIONS } from '../abilities/traitDefinitions.js'; 
-import { DAMAGE_TYPES, CORRUPTION, MAGIC_DAMAGE_TYPES, DEFENSE_PER_SCALING_POINT, scalingFor } from '../core/constants.js'; 
+import { DAMAGE_TYPES, CORRUPTION, MAGIC_DAMAGE_TYPES, DEFENSE_PER_SCALING_POINT, ENEMY_DAMAGE_SCALING, scalingFor } from '../core/constants.js'; 
 import { ActSystem } from '../story/actSystem.js'; 
 import { requirementsOf, unmetRequirements, UNMET_REQUIREMENT_DAMAGE_SCALE } from '../items/weaponRequirements.js'; 
 
@@ -29,6 +29,11 @@ export const INSIGHT_RECOVERY_PER_ATT = 0.25;   // per point of Attunement and p
 export const STAMINA_ATTRIBUTES = ['dexterity', 'strength'];
 export const INSIGHT_ATTRIBUTES = ['attunement', 'intelligence'];
 const sumOf = (stats, attrs) => attrs.reduce((sum, a) => sum + (stats[a] || 0), 0);
+
+// ENEMY RULES (see ENEMY_DAMAGE_SCALING in core/constants.js): an enemy's defense is Vigor's, +1 against everything per 2 points, and its pools come
+// from Dexterity / Attunement alone, at the recovery rate it was balanced with.
+const ENEMY_VIGOR_DEFENSE_PER_POINT = 0.5;
+const ENEMY_RECOVERY_PER_POINT = 0.5;
 const whole = (n) => Math.round(n);
 const hundredths = (n) => Math.round(n * 100) / 100;
 
@@ -64,6 +69,14 @@ export class StatCalculator {
             unmetRequirements: breakdown.unmetRequirements || [] 
         }; 
     } 
+
+    /* Does this character play by the enemy rules? Everything made from an entity template other than HUMANOID (the player and the hired
+       mercenaries are HUMANOIDs): enemies, and the beasts and soldiers that join the party, which keep the numbers they were balanced with.
+       A plain stat object without a template (tests, previews) uses the player's rules. */
+    static usesEnemyScaling(character) {
+        const id = character && (character.templateId || character.definitionKey || character.state?.templateId);
+        return !!id && id !== 'HUMANOID';
+    }
 
     static _runPipeline(character, allocations = null) { 
         const finalStats = { attack: {}, defense: {}, resistance: {}, vigor: 0, strength: 0, dexterity: 0, intelligence: 0, attunement: 0, speed: 0, critChance: 0, critMultiplier: 1.5, accuracy: 100, evasion: 100, corruption: 0, maxHp: 0, maxStamina: 0, maxInsight: 0, hpRecovery: 0, staminaRecovery: 0, insightRecovery: 0 }; 
@@ -134,24 +147,28 @@ export class StatCalculator {
         // Vitality Pillar
         breakdown.resources.derived.hp = Math.floor(finalStats.vigor * mults.hpPerVigor * HP_PER_VIGOR_SCALE); 
         // Vigor is health, not armour: defense comes from the attributes each damage type scales with (below) and from level. 
-        const vigorDefense = Math.floor(finalStats.vigor * VIGOR_DEFENSE_PER_POINT); 
+        const enemyRules = this.usesEnemyScaling(character); 
+        const vigorDefense = Math.floor(finalStats.vigor * (enemyRules ? ENEMY_VIGOR_DEFENSE_PER_POINT : VIGOR_DEFENSE_PER_POINT)); 
         this.DAMAGE_TYPES.forEach(t => { finalStats.defense[t] += vigorDefense + levelDefenseBonus; }); 
         
         // Attack and defense: each damage type scales with the attributes DAMAGE_SCALING (core/constants.js) names: Strength for blunt, Dexterity for pierce,
         // the higher of Strength or Dexterity for slash, Attunement for the six elements and Intelligence for light, dark and arcane.
         this.DAMAGE_TYPES.forEach(t => { 
+            if (enemyRules) { finalStats.attack[t] += scalingFor(t, finalStats, ENEMY_DAMAGE_SCALING).value; return; } 
             const { value } = scalingFor(t, finalStats); 
             finalStats.attack[t] += value; 
             finalStats.defense[t] += value * DEFENSE_PER_SCALING_POINT; 
         }); 
 
         // Physical Pillar 
-        breakdown.resources.derived.stamina = Math.floor(sumOf(finalStats, STAMINA_ATTRIBUTES) * mults.staminaPerDex); 
-        finalStats.staminaRecovery += sumOf(finalStats, STAMINA_ATTRIBUTES) * STAMINA_RECOVERY_PER_DEX; 
+        const staminaAttrs = enemyRules ? ['dexterity'] : STAMINA_ATTRIBUTES; 
+        breakdown.resources.derived.stamina = Math.floor(sumOf(finalStats, staminaAttrs) * mults.staminaPerDex); 
+        finalStats.staminaRecovery += sumOf(finalStats, staminaAttrs) * (enemyRules ? ENEMY_RECOVERY_PER_POINT : STAMINA_RECOVERY_PER_DEX); 
         
         // Magical Pillar 
-        breakdown.resources.derived.insight = Math.floor(sumOf(finalStats, INSIGHT_ATTRIBUTES) * mults.insightPerAtt); 
-        finalStats.insightRecovery += sumOf(finalStats, INSIGHT_ATTRIBUTES) * INSIGHT_RECOVERY_PER_ATT; 
+        const insightAttrs = enemyRules ? ['attunement'] : INSIGHT_ATTRIBUTES; 
+        breakdown.resources.derived.insight = Math.floor(sumOf(finalStats, insightAttrs) * mults.insightPerAtt); 
+        finalStats.insightRecovery += sumOf(finalStats, insightAttrs) * (enemyRules ? ENEMY_RECOVERY_PER_POINT : INSIGHT_RECOVERY_PER_ATT); 
         
         // --- STEP 4: FLAT BONUSES & TRAITS --- 
         const applyFlat = (source) => { 

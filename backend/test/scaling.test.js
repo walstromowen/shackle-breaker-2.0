@@ -69,11 +69,12 @@ test('the backgrounds hit hardest with the types their best attributes feed', ()
     for (const t of ELEMENTS) assert.equal(scholar[t], 12, `Scholar ${t}`);
 });
 
-// Anchors recorded at level 1 after the stat rework (pierce follows Dexterity, the elements Attunement, slash the higher of Strength or Dexterity).
-// Before it: WOLF pierce 17, DOG 8, DUNE_MAW 20, THUNDER_LOCUST lightning 9 / pierce 6, SCORCHED_VAGRANT fire 20, PANZERKAMFER pierce 24, SNOW_LEOPARD slash 19.
-test('enemies and recruits hit as hard as the balance expects', () => {
-    const anchors = [['WOLF', 'pierce', 23], ['DOG', 'pierce', 14], ['DUNE_MAW', 'pierce', 10], ['MAD_MAN', 'slash', 10], ['THUNDER_LOCUST', 'lightning', 21],
-        ['THUNDER_LOCUST', 'pierce', 20], ['SCORCHED_VAGRANT', 'fire', 18], ['LEGIONARY', 'slash', 17], ['PANZERKAMFER', 'pierce', 14], ['SNOW_LEOPARD', 'slash', 23]];
+// Enemies play by the enemy rules (Strength for physical, Intelligence for magic: ENEMY_DAMAGE_SCALING), so they keep the attack they were balanced
+// with: anchors recorded from them, level 1 (the Legionary's is the one change: trained soldiers got +3 on every physical attack, 14 -> 17, when enemies
+// were made hit harder). Under the player's hybrid rules the agile ones would hit far harder (a Thunder Locust's lightning 9 -> 21).
+test('enemies and recruits hit as hard as they always did', () => {
+    const anchors = [['WOLF', 'pierce', 17], ['DOG', 'pierce', 8], ['DUNE_MAW', 'pierce', 20], ['MAD_MAN', 'slash', 10], ['THUNDER_LOCUST', 'lightning', 9],
+        ['THUNDER_LOCUST', 'pierce', 6], ['SCORCHED_VAGRANT', 'fire', 20], ['LEGIONARY', 'slash', 17], ['PANZERKAMFER', 'pierce', 24], ['SNOW_LEOPARD', 'slash', 19]];
     for (const [id, type, old] of anchors) {
         const e = EntityFactory.create(id, 1);
         assert.ok(Math.abs(StatCalculator.calculate(e).attack[type] - old) <= 1, `${id} ${type}: ${StatCalculator.calculate(e).attack[type]} (was ${old})`);
@@ -110,7 +111,7 @@ test('leather armor gives a little stamina recovery, cloth armor a little insigh
 test('an enemy gains attack with its level in the attribute its best attack scales with, a recruit does not keep it, and an ally never gets it', () => {
     const atk = (e, t) => StatCalculator.calculate(e).attack[t];
     const wolf1 = EntityFactory.create('WOLF', 1), wolf9 = EntityFactory.create('WOLF', 9);
-    assert.equal(wolf9.state.levelEdgeAttr.attribute, 'dexterity', 'a wolf bites (pierce), so it grows in Dexterity');
+    assert.equal(wolf9.state.levelEdgeAttr.attribute, 'strength', 'under the enemy rules a bite (pierce) scales with Strength');
     assert.equal(wolf9.state.levelEdgeAttr.amount, 12, '8 levels x 1.5');
     assert.ok(atk(wolf9, 'pierce') - atk(wolf1, 'pierce') >= 12, 'at least the edge, plus the one point per level spread over the attributes');
     const addict9 = EntityFactory.create('MAGIC_ADDICT', 9);
@@ -242,4 +243,34 @@ test('a level 1 Traveler kills a level 1 Madman in 2 to 3 Slashes', async () => 
     const avg = counts.reduce((a, b) => a + b, 0) / counts.length;
     assert.ok(avg >= 2 && avg <= 3, `average ${avg.toFixed(2)} Slashes`);
     assert.ok(counts.every(n => n >= 2 && n <= 3), `always 2 or 3 landed Slashes (${Math.min(...counts)}-${Math.max(...counts)})`);
+});
+
+test('enemies use the enemy rules, the player the hybrid ones', () => {
+    const wolf = EntityFactory.create('WOLF', 1);
+    assert.equal(StatCalculator.usesEnemyScaling(wolf), true);
+    const hero = EntityFactory.create('HUMANOID', { attributes: { vigor: 10, strength: 10, dexterity: 10, intelligence: 10, attunement: 10 }, level: 1 });
+    assert.equal(StatCalculator.usesEnemyScaling(hero), false, 'the player is a HUMANOID');
+    assert.equal(StatCalculator.usesEnemyScaling({ attributes: {} }), false, 'a plain stat object uses the player rules');
+    // the same attributes, both rule sets
+    const attrs = { vigor: 10, strength: 4, dexterity: 20, intelligence: 6, attunement: 16 };
+    const asEnemy = StatCalculator.calculate({ templateId: 'WOLF', level: 1, attributes: attrs, baseStats: { maxHp: 10, baseAttack: {} } });
+    const asPlayer = StatCalculator.calculate({ templateId: 'HUMANOID', level: 1, attributes: attrs, baseStats: { maxHp: 10, baseAttack: {} } });
+    assert.equal(asEnemy.attack.pierce, 4, 'enemy pierce follows Strength');
+    assert.equal(asPlayer.attack.pierce, 20, 'player pierce follows Dexterity');
+    assert.equal(asEnemy.attack.fire, 6, 'enemy fire follows Intelligence');
+    assert.equal(asPlayer.attack.fire, 16, 'player fire follows Attunement');
+    assert.equal(asEnemy.defense.blunt, 5, 'enemy defense: +1 per 2 Vigor');
+});
+
+test('enemies deal ENEMY_DAMAGE_SCALE of the damage; the party is not scaled by it', async () => {
+    const { CombatCalculator, ENEMY_DAMAGE_SCALE } = await import('../../shared/battle/combatCalculator.js');
+    assert.ok(ENEMY_DAMAGE_SCALE > 0 && ENEMY_DAMAGE_SCALE < 1);
+    const stats = { attack: { blunt: 100 }, defense: { blunt: 0 }, resistance: { blunt: 0 }, accuracy: 1000, evasion: 1, critChance: 0 };
+    const hit = (team) => {
+        const real = Math.random, log = console.log;
+        Math.random = () => 0.5; console.log = () => {};
+        try { return CombatCalculator.calculateDamage({ team, stats }, { stats }, 1, 'blunt', 1).damage; } finally { Math.random = real; console.log = log; }
+    };
+    const party = hit('party'), enemy = hit('enemy');
+    assert.ok(Math.abs(enemy / party - ENEMY_DAMAGE_SCALE) < 0.02, `enemy ${enemy} vs party ${party}`);
 });

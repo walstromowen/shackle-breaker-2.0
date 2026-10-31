@@ -14,7 +14,7 @@
  * Place at: ui/abilityPreview.js (display-only helper: no game-state side effects)
  */
 import { AbilityModel } from '../../../shared/abilities/abilityModel.js';
-import { DAMAGE_SCALE } from '../../../shared/battle/combatCalculator.js';
+import { DAMAGE_SCALE, ENEMY_DAMAGE_SCALE } from '../../../shared/battle/combatCalculator.js';
 
 export class AbilityPreview {
     /** Width every ability card is drawn at, wherever it appears (shrinks only if its container is narrower). */
@@ -283,7 +283,7 @@ export class AbilityPreview {
             };
         }
 
-        const amount = Math.max(0, Math.floor(attackVal * power * DAMAGE_SCALE));
+        const amount = Math.max(0, Math.floor(attackVal * power * DAMAGE_SCALE * (actor && actor.team === 'enemy' ? ENEMY_DAMAGE_SCALE : 1)));
 
         return {
             kind: 'damage',

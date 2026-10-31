@@ -7,6 +7,11 @@ const MIN_DAMAGE_SHARE = 0.1;
 // Encounter (out-of-battle) damage is written as raw numbers and does not use it. The ability preview (frontend/src/ui/abilityPreview.js) does.
 export const DAMAGE_SCALE = 1.4;
 
+// BALANCE KNOB: on top of DAMAGE_SCALE, the share of their damage that ENEMIES (the 'enemy' team in battle) deal. 1 = as hard as the party hits,
+// 0.75 = a quarter less. With it a fight costs the party about a third less health than before the stat rework, at every level; raise it toward 1
+// for harder fights. (A party member's hits are never scaled by it.)
+export const ENEMY_DAMAGE_SCALE = 0.75;
+
 export class CombatCalculator { 
     /** 
      * Pure math function to calculate mitigated damage. 
@@ -55,7 +60,7 @@ export class CombatCalculator {
         const defenseVal = defender.getDefense ? defender.getDefense(safeType) : (defStats.defense?.[safeType] || 0); 
         const resistanceVal = defender.getResistance ? defender.getResistance(safeType) : (defStats.resistance?.[safeType] || 0); 
         
-        let rawDamage = attackVal * power * DAMAGE_SCALE; 
+        let rawDamage = attackVal * power * DAMAGE_SCALE * (attacker.team === 'enemy' ? ENEMY_DAMAGE_SCALE : 1); 
         
         if (result.crit) { 
             const multi = attStats.critMultiplier ?? 1.5; 

@@ -134,6 +134,16 @@ export const DAMAGE_SCALING = {
     arcane:    { intelligence: 1 },
 };
 
+// ENEMY scaling: every enemy (anything not built from the player's HUMANOID template) keeps the rules its numbers were balanced for: Strength
+// raises all physical attack, Intelligence all magic attack, and defense comes from Vigor (StatCalculator.usesEnemyScaling). The hybrid rules above are
+// there to shape the player's build; under them the agile enemies (wolves, locusts, spiders, stalkers: high Dexterity / Attunement) suddenly hit
+// two to seven times as hard.
+export const ENEMY_DAMAGE_SCALING = {
+    blunt: { strength: 1 }, slash: { strength: 1 }, pierce: { strength: 1 },
+    fire: { intelligence: 1 }, ice: { intelligence: 1 }, lightning: { intelligence: 1 }, water: { intelligence: 1 }, earth: { intelligence: 1 }, wind: { intelligence: 1 },
+    light: { intelligence: 1 }, dark: { intelligence: 1 }, arcane: { intelligence: 1 },
+};
+
 // Damage types that scale with the best ONE of their attributes (the highest attribute x weight) instead of adding them all up.
 export const BEST_OF_SCALING = ['slash'];
 
@@ -144,8 +154,8 @@ export const DEFENSE_PER_SCALING_POINT = 0.5;
  * How much a set of attributes adds to one damage type, per DAMAGE_SCALING (before the defense multiplier).
  * @returns {{ value: number, attr: string|null }} the amount, and the attribute that supplies the most of it
  */
-export function scalingFor(type, attributes = {}) {
-    const weights = DAMAGE_SCALING[type] || {};
+export function scalingFor(type, attributes = {}, table = DAMAGE_SCALING) {
+    const weights = table[type] || {};
     const bestOf = BEST_OF_SCALING.includes(type);
     let value = 0, attr = null, top = -Infinity;
     for (const [a, w] of Object.entries(weights)) {
