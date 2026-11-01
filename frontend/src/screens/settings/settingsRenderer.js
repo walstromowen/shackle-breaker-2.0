@@ -6,6 +6,13 @@ import { measureTip, drawTip } from '../../ui/tutorialOverlay.js';
 const C = UITheme.colors;
 const F = UITheme.fonts;
 
+const MODE_LABELS = { auto: 'Auto', full: 'Full', light: 'Light' };
+const MODE_HINTS = {
+    auto: 'Light graphics only when the browser is drawing without the graphics card.',
+    full: 'Every effect: shadows, smoke and embers.',
+    light: 'No shadows or smoke and fewer embers, for slower computers.',
+};
+
 const HINTS = {
     master:  'Everything at once.',
     music:   'The background score.',
@@ -47,6 +54,8 @@ export class SettingsRenderer {
 
         if (state.tab === 'sound') {
             for (const row of state.channels) this._renderSlider(ui, state, row, focus);
+        } else if (state.tab === 'display') {
+            this._renderDisplay(ui, state, focus);
         } else {
             this._renderControls(ctx, ui, state, focus);
         }
@@ -78,6 +87,34 @@ export class SettingsRenderer {
             this._tipLayouts.set(key, m);
         }
         drawTip(ctx, ui, m, x, L.cardY + 100);
+    }
+
+    /** Display tab: Graphics (Auto / Full / Light), what each does, and whether the browser is drawing with the graphics card. */
+    _renderDisplay(ui, state, focus) {
+        const L = state.layout;
+        const cx = L.panelX + L.panelW / 2;
+        const g = state.graphics;
+        ui.drawText('Graphics', cx, L.rowsY + 26, F.sectionHeading, C.textHighlight, 'center');
+        for (const m of state.modes) {
+            ui.drawTab(m.x, m.y, m.w, m.h, MODE_LABELS[m.mode], ui.flags(m.id, focus, { selected: g.mode === m.mode }));
+        }
+        let y = L.rowsY + 186;
+        ui.drawText(MODE_HINTS[g.mode], cx, y, F.italic, C.textMain, 'center', 'alphabetic', L.panelW - 160);
+        y += 70;
+        ui.drawLineWithGothicFlourish(cx - 300, y, 600, C.border);
+        y += 62;
+        const onCard = g.info && g.info.known && !g.info.software;
+        const status = !g.info || !g.info.known ? 'Could not tell whether the graphics card is in use'
+            : onCard ? 'Your graphics card is in use' : 'Your browser is drawing without the graphics card';
+        ui.drawText(status, cx, y, F.bold, onCard ? C.success : (g.info && g.info.known ? C.failure : C.textMuted), 'center');
+        y += 44;
+        ui.drawText(`Drawing with: ${g.info ? g.info.renderer : 'unknown'}`, cx, y, F.small, C.textMuted, 'center', 'alphabetic', L.panelW - 160);
+        y += 44;
+        ui.drawText(`Light graphics is ${g.light ? 'on' : 'off'} now.`, cx, y, F.small, C.textMain, 'center');
+        if (g.info && g.info.software) {
+            y += 56;
+            ui.drawText('Turning on hardware acceleration in your browser and updating the graphics driver usually fixes this.', cx, y, F.italic, C.textHighlight, 'center', 'alphabetic', L.panelW - 160);
+        }
     }
 
     _renderSlider(ui, state, row, focus) {

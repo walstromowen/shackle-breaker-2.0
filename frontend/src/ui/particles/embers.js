@@ -5,10 +5,13 @@
  * Deterministic from the clock, so no scene has any state to keep. Used by the title screen, the character creator and the encounters.
  * `count` / `sizeMul` thicken them for busy backgrounds. `tint` is the ember colour (EMBER is warm; COLD_EMBER is the cold green of the prologue).
  */
+import { graphics } from '../../engine/graphics.js';
+
 export const EMBER = [232, 160, 84];
 export const COLD_EMBER = [112, 232, 168];
 
 export function drawEmbers(ctx, now, x0, width, height, alpha = 1, tint = EMBER, count = 64, sizeMul = 1) {
+    if (graphics.light) count = Math.ceil(count / 3);   // Light graphics: fewer, and (the screen ignores shadows then) without their glow
     ctx.save();
     for (let k = 0; k < count; k++) {
         const seed = k * 7919 + 13;

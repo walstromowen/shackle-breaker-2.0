@@ -2,6 +2,8 @@ import { BaseController } from '../../engine/baseController.js';
 import { events } from '../../../../shared/core/eventBus.js';
 import { SaveManager } from '../../engine/saveManager.js';
 import { AuthService } from '../../auth/authService.js';
+import { graphics } from '../../engine/graphics.js';
+import { NOTICE_BUTTONS } from '../../ui/graphicsNotice.js';
 
 export class TitleController extends BaseController {
     constructor(input) {
@@ -34,7 +36,14 @@ export class TitleController extends BaseController {
 
     // Pass necessary data to the renderer
     getState() {
+        // the graphics notice (ui/graphicsNotice.js): once a visit, when the browser draws without the graphics card
+        if (this.notice === undefined) {
+            this.notice = graphics.noticeWanted;
+            this.noticeIndex = 0;
+            if (this.notice) graphics.noticeShown = true;
+        }
         return {
+            gpuNotice: !!this.notice,
             menuItems: this.menuItems.map(item => item.id === 'btn_load_game' ? { ...item, disabled: !this.hasSave } : item),
             message: this.message,
             accountLabel: this.getAccountLabel(),
@@ -64,11 +73,17 @@ export class TitleController extends BaseController {
     // ======================================================== //
 
     getKeyboardFocusId() {
+        if (this.notice) return NOTICE_BUTTONS[this.noticeIndex].id;
         return this.selectedIndex >= 0 ? (this.menuItems[this.selectedIndex]?.id ?? null) : null;
     }
 
     // The mouse moved onto a button: the keyboard cursor follows it (silent; UIInteractionManager adds the hover tick)
     setFocusFromPointer(hitboxId) {
+        if (this.notice) {
+            const n = NOTICE_BUTTONS.findIndex(b => b.id === hitboxId);
+            if (n >= 0) this.noticeIndex = n;
+            return;
+        }
         const index = this.menuItems.findIndex(item => item.id === hitboxId);
         if (index >= 0) this.selectedIndex = index;
     }
@@ -86,6 +101,19 @@ export class TitleController extends BaseController {
     handleKeyDown(keyCode, e) {
         const intent = this.resolveIntent(keyCode, e);
         if (!intent) return;
+
+        if (this.notice) {
+            if (intent === 'LEFT' || intent === 'RIGHT' || intent === 'UP' || intent === 'DOWN') {
+                this.noticeIndex = (this.noticeIndex + 1) % NOTICE_BUTTONS.length;
+                this.playNavSound();
+            } else if (intent === 'CONFIRM') {
+                this.onClick(NOTICE_BUTTONS[this.noticeIndex].id);
+            } else if (intent === 'CANCEL') {
+                this.notice = false;
+                this.playCancelSound();
+            }
+            return;
+        }
 
         const count = this.menuItems.length;
         const prevIndex = this.selectedIndex;
@@ -110,6 +138,16 @@ export class TitleController extends BaseController {
     // Left-Click / CONFIRM: Selecting/Advancing
     onClick(hitboxId) {
         if (!hitboxId) return;
+
+        // the graphics notice is in front of the menu: only its buttons answer
+        if (this.notice) {
+            if (hitboxId === 'gpu_never') graphics.hideNoticeForGood();
+            if (hitboxId === 'gpu_ok' || hitboxId === 'gpu_never') {
+                this.notice = false;
+                this.playConfirmSound();
+            }
+            return;
+        }
 
         switch (hitboxId) {
             case 'btn_new_game':

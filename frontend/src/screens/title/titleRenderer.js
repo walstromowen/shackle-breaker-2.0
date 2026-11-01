@@ -2,6 +2,7 @@ import { UITheme } from '../../ui/UITheme.js';
 import { CanvasUI } from '../../ui/canvasUI.js';
 import { drawEmbers } from '../../ui/particles/embers.js';
 import { drawSmoke } from '../../ui/particles/smoke.js';
+import { drawGraphicsNotice } from '../../ui/graphicsNotice.js';
 
 export class TitleRenderer {
     constructor(canvas, config, loader) {
@@ -64,6 +65,13 @@ export class TitleRenderer {
         // Who is playing (bottom-left corner)
         if (state.accountLabel) {
             this._drawAccountLabel(ctx, state.accountLabel, 48, height - 48);
+        }
+
+        // The graphics notice, in front of everything: while it is up, only its buttons can be clicked (ui/graphicsNotice.js)
+        if (state.gpuNotice) {
+            const noticeBoxes = drawGraphicsNotice(ctx, state.hoveredId);
+            controller.updateHitboxes(noticeBoxes);
+            return;
         }
 
         // 3. Update Controller Hitbox Cache

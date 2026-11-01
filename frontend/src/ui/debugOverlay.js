@@ -9,6 +9,7 @@
  * every frame in between only puts that picture on screen, so it costs next to nothing (and does not skew what it measures).
  */
 import { UITheme } from './UITheme.js';
+import { graphics } from '../engine/graphics.js';
 
 /** Shown or hidden, for every screen at once. */
 export const debugOverlay = {
@@ -170,6 +171,7 @@ export class DebugOverlayRenderer {
             lines.push({ label: 'Display scale', value: `${Math.round(dpr * 100)}%  window ${window.innerWidth}x${window.innerHeight}` });
         }
         lines.push({ label: 'GPU', value: readGpuName() });
+        lines.push({ label: 'Graphics', value: `${graphics.light ? 'Light' : 'Full'} (setting: ${graphics.mode}${graphics.software ? ', drawing in software' : ''})`, color: graphics.software ? BAD : MUTED_OK });
         if (performance.memory) lines.push({ label: 'JS memory', value: `${Math.round(performance.memory.usedJSHeapSize / 1048576)} MB` });
         lines.push({ label: 'Scene', value: String(info.scene || '?') });
         const wm = info.worldManager;

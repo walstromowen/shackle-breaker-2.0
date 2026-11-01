@@ -1,4 +1,5 @@
 import { AssetLoader } from "./engine/assetLoader.js";
+import { graphics } from './engine/graphics.js';
 import { SceneManager } from "./engine/sceneManager.js";
 import { GameLoop } from "./engine/gameLoop.js";
 import { audioManager } from './engine/audioManager.js';
@@ -501,6 +502,11 @@ async function initialize() {
     canvas.width = CONFIG.CANVAS_WIDTH;
     canvas.height = CONFIG.CANVAS_HEIGHT;
     ctx.imageSmoothingEnabled = false;
+
+    // Is the browser drawing with the graphics card? Without it, Light graphics (Settings > Display, 'auto') keeps the game playable, and the
+    // title screen tells the player how to get the card back (engine/graphics.js)
+    graphics.detect();
+    graphics.applyTo(ctx);
 
 
     // 2. Initialize SceneManager and GameLoop FIRST so the Boot screen can render

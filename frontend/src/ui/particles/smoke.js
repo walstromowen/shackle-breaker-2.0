@@ -9,6 +9,7 @@
  *   sky      a slow haze in the clouds
  * Deterministic from the clock, so no scene has any state to keep (like embers.js, next to it).
  */
+import { graphics } from '../../engine/graphics.js';
 
 const TILE_W = 256, TILE_H = 128;
 
@@ -112,6 +113,7 @@ function tiles(mode) {
  * `wisp` true: only thin dim threads of smoke, for dark screens (see LOOKS).
  */
 export function drawSmoke(ctx, now, width, height, alpha = 1, wisp = false) {
+    if (graphics.light) return;   // Light graphics: no smoke (big layers blended over the whole screen)
     const made = tiles(wisp ? 'wisp' : 'full');
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
