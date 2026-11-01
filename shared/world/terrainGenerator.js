@@ -578,7 +578,7 @@ export class TerrainGenerator {
         st.mask = STAIR_MASK[cd.kind].slice();
         st.id = 'v' + cd.ox + ',' + cd.oy;
         this._villageStairList().push(st);
-        this._stairBlocks.clear();
+        this._dropStairBlocksNear(st.ox, st.oy, st.ox + st.w - 1, st.oy + st.h - 1);
         this.overrideVersion = (this.overrideVersion || 0) + 1;
         return st;
     }
@@ -611,6 +611,16 @@ export class TerrainGenerator {
                 if (!only || only === 'W') cands.push({ kind: 'W', ox: c, oy: r - 2, w: 3, h: 4, walk: [c, r, 3, 1], carve: [c, r - 1, 3, 2], dirs: ['LEFT', 'RIGHT'] });
         }
         return out;
+    }
+    /* Forget the natural stairs worked out for the blocks a change in cells c0..c1 x r0..r1 can reach. A block's stairs read the terrain a few cells
+       beyond the block (the piece shapes, the tile fix-up two rows down) and a changed cell moves the slope-limited levels around it (up to
+       (level - 2) * plateauWidth cells away), so blocks within STAIR_REACH cells are dropped. It used to drop every block in the world for each
+       changed cell: a village paints a few thousand, so planning one rebuilt the same stairs thousands of times (most of its second or so). */
+    _dropStairBlocksNear(c0, r0, c1, r1) {
+        const B = this.STAIR_BLOCK, R = STAIR_REACH;
+        const bx0 = Math.floor((c0 - R) / B), bx1 = Math.floor((c1 + R) / B);
+        const by0 = Math.floor((r0 - R) / B), by1 = Math.floor((r1 + R) / B);
+        for (let by = by0; by <= by1; by++) for (let bx = bx0; bx <= bx1; bx++) this._stairBlocks.delete(bx + ',' + by);
     }
     _computeStairBlock(bx, by) {
         const B = this.STAIR_BLOCK;
@@ -657,7 +667,7 @@ export class TerrainGenerator {
         return out;
     }
     invalidateTile(key) {
-        this._stairBlocks.clear();
+        { const [kc, kr] = key.split(',').map(Number); this._dropStairBlocksNear(kc, kr, kc, kr); }
         this._dropTile(key);
         this._rawElevCache.delete(key);
         { const [kc, kr] = key.split(',').map(Number); this._rawNum.delete(kc * 4194304 + kr); }
@@ -670,6 +680,9 @@ export class TerrainGenerator {
    G  low ground inside a side-view notch (its upper row): reached from the walkway or from the ground in front of the notch, not from the plateau
    T  plateau ground inside the piece that is NOT connected to the walkway or to G: reached only from the plateau (the grass strip under a side-view notch)
    R  rock: solid. */
+// how far (cells) a change of terrain can move a natural stair: the slope reach of the tallest levels plus the size of a piece (_dropStairBlocksNear)
+const STAIR_REACH = 24;
+
 const STAIR_MASK = {
     S: ['FWWWF', 'RWWWR', 'RWWWR'],
     N: ['FWWWF', 'FWWWF'],

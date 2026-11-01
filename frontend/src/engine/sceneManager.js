@@ -85,6 +85,10 @@ export class SceneManager {
 
         console.log(`%c[SceneManager] Init. Seed: ${gameState.seed}`, 'color: #00aaaa');
         window.SaveManager = SaveManager;   // console access: SaveManager.downloadCurrent(), SaveManager.loadFromSlot('previous')...
+        // a save never holds half a village: the structure being planned ahead of the player is finished first (StructureSpawner.prepareAhead)
+        SaveManager.beforeSnapshot = () => {
+            if (this.worldManager && !gameState.world.isInterior && this.worldManager.finishPendingWork) this.worldManager.finishPendingWork();
+        };
 
         // --- CONTROLLERS ---
         this.bootController = new BootController(this.input, this.loader);
@@ -283,10 +287,12 @@ export class SceneManager {
                 // A new game (coming from the character creator) or a loaded one (LOAD_GAME passes buildWorld) builds the world from gameState.seed
                 if ((this.currentScene === 'character-creator' || (data && data.buildWorld)) && scene === 'overworld') {
                     console.log(`%c[SceneManager] Generating World with finalized seed: ${gameState.seed}`, 'color: #00ff00');
+                    if (this.worldManager && this.worldManager.dropPendingWork) this.worldManager.dropPendingWork();   // the old world is gone: never finish its plans in the new one
                     this.worldManager = new WorldManager();
                     this.overworldController = new OverworldController(this.input, this.config, this.worldManager);
                     this.encounterController = new EncounterController(this.input, this.config, this.worldManager);
                     this.battleController = new BattleController(this.input, this.config, this.worldManager);
+                    this._prebuildWorld(gameState.player.col, gameState.player.row);
                 }
 
                 // A NEW game opens with the prologue, an encounter that plays on the fresh world and ends on the overworld (the encounter
@@ -423,6 +429,8 @@ export class SceneManager {
                 events.emit('PLAY_SFX', { id: 'doorOpen', volume: 0.8 });
                 this.transitionRenderer.start(() => {
                     if (data.id === 'procedural_room_trigger') {
+                        // a village being planned ahead is finished now, while the overworld is still the world (inside, cells are keyed to the room)
+                        if (this.worldManager && this.worldManager.finishPendingWork) this.worldManager.finishPendingWork();
                         // Save Overworld state
                         gameState.world.savedOverworld = {
                             seed: gameState.seed,
@@ -468,6 +476,7 @@ export class SceneManager {
 
                             this.overworldController.warpTo(saved.returnCol, saved.returnRow);
                             this.overworldController.isLocked = false;
+                            this._prebuildWorld(saved.returnCol, saved.returnRow);
                         }
                     }
 
@@ -878,6 +887,14 @@ export class SceneManager {
         if (debugOverlay.visible) {
             this.debugOverlayRenderer.render(this.ctx, { scene: this.currentScene, canvas: this.canvas, worldManager: this.worldManager, player: gameState.player });
         }
+    }
+
+    /** Builds the world around (col, row) while the screen is covered: a loading screen at the midpoint of the current transition (see
+        WorldManager.prebuildSteps), so the first steps on a new, loaded or re-entered overworld do not stall on generating it. */
+    _prebuildWorld(col, row) {
+        const wm = this.worldManager;
+        if (!wm || !wm.prebuildSteps || gameState.world.isInterior) return;
+        this.transitionRenderer.setWork(wm.prebuildSteps(col, row), 'Building the world');
     }
 
     /** The Back button of the screens in SHARED_BACK_BUTTON: draws it and adds its hitbox to the screen's (see UIInteractionManager for the click). */

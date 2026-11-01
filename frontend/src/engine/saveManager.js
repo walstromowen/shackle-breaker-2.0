@@ -259,6 +259,8 @@ export const SaveManager = {
     /** @param {{name?: string}} options  name: the player's name for a manual save (stored in summary.saveName) */
     createSnapshot(options = {}) {
         if (!gameState.party.members.length) throw new Error('[SaveManager] There is no party to save.');
+        // a structure being planned ahead of the player is finished first, so a save never holds half a village (SceneManager sets this)
+        if (typeof SaveManager.beforeSnapshot === 'function') SaveManager.beforeSnapshot();
 
         const members = gameState.party.members;
         const leader = members[0];

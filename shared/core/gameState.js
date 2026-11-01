@@ -91,4 +91,8 @@ export function resetWorldForNewGame() {
     w.structureChunks = {};
     w.currentWeather = null;
     gameState.quests = { active: {}, completed: [], trackedIds: [] };
+    // the spot the last game ended on means nothing in the new world (0, 0 = "find a spawn point", see OverworldController.createPlayerEntity)
+    gameState.player.col = 0;
+    gameState.player.row = 0;
+    gameState.player.direction = 'down';
 }

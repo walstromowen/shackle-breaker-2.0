@@ -111,3 +111,62 @@ test('a New Game starts from an empty world: nothing of the last game is laid ov
     assert.equal(w.isInterior, false);
     assert.deepEqual(gameState.quests, { active: {}, completed: [], trackedIds: [] });
 });
+
+// ---- planning ahead of the player, in slices ----
+const snapshot = () => JSON.stringify({
+    changes: Object.entries(gameState.world.changes).sort(),
+    terrain: Object.entries(gameState.world.terrainOverrides).sort(),
+    paths: Object.keys(gameState.world.levelPaths).sort(),
+    stairs: gameState.world.villageStairs.map(s => `${s.kind}${s.ox},${s.oy}`).sort(),
+});
+
+test('a village planned in slices (ahead of the player) comes out exactly as one planned in one go', async () => {
+    const { drain } = await import('../../shared/world/villagePlanner.js');
+    for (const seed of [16, 487594]) {
+        const order = [];
+        for (let cy = -3; cy <= 3; cy++) for (let cx = -3; cx <= 3; cx++) order.push([cx, cy]);
+        const whole = quiet(() => {
+            freshWorld(seed);
+            const wm = new WorldManager();
+            for (const [cx, cy] of order) wm._ensureStructuresSpawned(cx, cy);
+            return snapshot();
+        });
+        const sliced = quiet(() => {
+            freshWorld(seed);
+            const wm = new WorldManager();
+            for (const [cx, cy] of order) if (wm._claimStructureChunk(cx, cy)) drain(wm._spawnStructuresSteps(cx, cy, true));
+            return snapshot();
+        });
+        assert.ok(whole.length > 200, `seed ${seed} builds something`);
+        assert.equal(sliced, whole, `seed ${seed}: the sliced plan differs`);
+    }
+});
+
+test('the look-ahead plans structures a little at a time, and a chunk that needs one first finishes the job in progress', () => {
+    quiet(() => {
+        freshWorld(16);
+        const wm = new WorldManager();
+        // a tiny budget: the look-ahead stops part way through a structure's work
+        let calls = 0;
+        while (calls++ < 20000 && !(wm._structureJob && Object.keys(gameState.world.changes).length > 0)) wm.prepareAhead(0, 0, 0.01);
+        assert.ok(wm._structureJob, 'a structure is half built');
+        // a chunk generated now asks for its neighbours' structures: the job in progress is finished first
+        wm.generateChunk(0, 0, '0,0');
+        assert.equal(wm._structureJob, null, 'no job is left half done');
+        // and given time, every chunk around the player gets its turn, once
+        for (let i = 0; i < 4000 && wm._nextChunkAhead(0, 0); i++) wm.prepareAhead(0, 0, 5);
+        assert.equal(wm._nextChunkAhead(0, 0), null, 'every chunk around the player has had its turn');
+    });
+});
+
+test('the loading screen builds the structures and the chunks around the player', () => {
+    quiet(() => {
+        freshWorld(16);
+        const wm = new WorldManager();
+        let last = null;
+        for (const p of wm.prebuildSteps(40, 40)) last = p;
+        assert.ok(last && last.done === last.total && last.total > 0);
+        assert.ok(wm.chunks.size >= 25, `${wm.chunks.size} chunks generated`);
+        assert.equal(wm._nextChunkAhead(2, 2), null, 'and every structure within reach planned');
+    });
+});

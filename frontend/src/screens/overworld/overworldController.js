@@ -22,6 +22,8 @@ import { PartyFollowers } from './partyFollowers.js';
 const TORCH_GUTTER_MINUTES = 30;
 /* The colour is mixed in this many steps (not smoothly), so LightingRenderer's colour cache only ever holds a handful of entries. */
 const TORCH_COLOR_STEPS = 8;
+// milliseconds per logic step (60 a second) the world may spend planning the structures ahead of the party (WorldManager.prepareAhead)
+const AHEAD_BUDGET_MS = 6;
 
 /* Keyboard shortcuts of the overworld menu. The number keys 1-9 and 0 belong to the hotbar (InventorySystem.HOTBAR_KEYS), so the menu uses letters. Change a key here
    and its button badge follows. */
@@ -367,6 +369,8 @@ export class OverworldController extends BaseController {
             this._respawnDay = gameState.world.day;
             this.worldManager.expireRespawns();
         }
+        // villages and graveyards ahead of the party are planned a few milliseconds a frame, so walking up to one never freezes the game
+        if (this.worldManager.prepareAhead) this.worldManager.prepareAhead(gameState.player.col, gameState.player.row, AHEAD_BUDGET_MS);
         this.revealSurroundings();   // the world map grows as the party walks
         this.validateBiomeWeather(); // every frame: the weather must fit the biome the player stands in even when no step ends (a warp, standing still)
         this.checkEnvironmentMusic();
@@ -1110,4 +1114,4 @@ export class OverworldController extends BaseController {
             }
         };
     }
-}
+}
