@@ -116,7 +116,7 @@ export class SceneManager {
         this.weatherRenderer = new WeatherRenderer(this.canvas, this.ctx, this.config, this.loader);
         this.overworldUIRenderer = new OverworldUIRenderer(this.config, this.loader);
         this.encounterRenderer = new EncounterRenderer(this.config, this.loader);
-        this.transitionRenderer = new TransitionRenderer(this.config);
+        this.transitionRenderer = new TransitionRenderer(this.config); this.transitionRenderer.loader = this.loader;   // the loading screen shows an item's icon
         this.characterCreatorRenderer = new CharacterCreatorRenderer(this.config, this.loader);
         this.partyRenderer = new PartyRenderer(this.ctx, this.loader);
         this.characterSummaryRenderer = new CharacterSummaryRenderer(this.ctx, this.loader);
