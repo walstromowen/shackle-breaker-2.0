@@ -1,7 +1,8 @@
 /**
  * ui/loadingScreen.js
  *
- * The loading screen shown while the world is built (TransitionRenderer.setWork): smoke and embers over the dark, and in the middle a piece of
+ * The loading screen, shown at boot while the game's pictures and sounds download (screens/boot/bootRenderer.js) and while the world is built
+ * (TransitionRenderer.setWork): smoke and embers over the dark, and in the middle a piece of
  * the world's lore, one item's description (its icon, its name and its words, the quote and who said it set apart); what is being done and
  * a brass progress bar below. A different item each time.
  */
@@ -90,7 +91,14 @@ export function drawLoadingScreen(ctx, o) {
         ctx.fillRect(W / 2 - ICON * 1.2, y - ICON * 0.7, ICON * 2.4, ICON * 2.4);
         ctx.fillStyle = 'rgba(12, 12, 16, 0.9)';
         ctx.fillRect(ix, y, ICON, ICON);
-        if (loader) ui.drawItemIcon(loader, splash.def, ix + 8, y + 8, ICON - 16);
+        // the icon (at boot its sheet may not have arrived yet: a small brass diamond keeps the frame from looking empty)
+        const sheetsReady = loader && (typeof loader.isDone !== 'function' || loader.isDone());
+        const drawn = sheetsReady && ui.drawItemIcon(loader, splash.def, ix + 8, y + 8, ICON - 16);
+        if (!drawn) {
+            const cx = W / 2, cy = y + ICON / 2, d = 9;
+            ctx.fillStyle = BRASS;
+            ctx.beginPath(); ctx.moveTo(cx, cy - d); ctx.lineTo(cx + d, cy); ctx.lineTo(cx, cy + d); ctx.lineTo(cx - d, cy); ctx.closePath(); ctx.fill();
+        }
         ctx.strokeStyle = BRASS;
         ctx.lineWidth = 2;
         ctx.strokeRect(ix + 1, y + 1, ICON - 2, ICON - 2);

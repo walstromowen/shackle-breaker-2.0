@@ -109,7 +109,7 @@ export class SceneManager {
         this.characterSummaryController = null;
 
         // --- RENDERERS ---
-        this.bootRenderer = new BootRenderer(this.canvas);
+        this.bootRenderer = new BootRenderer(this.canvas, this.loader);
         this.titleRenderer = new TitleRenderer(this.canvas, this.config, this.loader);
         this.mapRenderer = new MapRenderer(this.canvas, this.loader, this.config);
         this.lightingRenderer = new LightingRenderer(this.config);
