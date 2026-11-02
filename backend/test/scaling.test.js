@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { StatCalculator } from '../../shared/characters/statCalculator.js';
-import { EntityFactory } from '../../shared/characters/entityFactory.js';
+import { EntityFactory, LEVEL_EDGE_ATTACK_PER_LEVEL } from '../../shared/characters/entityFactory.js';
 import { DAMAGE_SCALING, DAMAGE_TYPES } from '../../shared/core/constants.js';
 
 const ELEMENTS = ['fire', 'ice', 'lightning', 'water', 'earth', 'wind'];
@@ -112,8 +112,9 @@ test('an enemy gains attack with its level in the attribute its best attack scal
     const atk = (e, t) => StatCalculator.calculate(e).attack[t];
     const wolf1 = EntityFactory.create('WOLF', 1), wolf9 = EntityFactory.create('WOLF', 9);
     assert.equal(wolf9.state.levelEdgeAttr.attribute, 'strength', 'under the enemy rules a bite (pierce) scales with Strength');
-    assert.equal(wolf9.state.levelEdgeAttr.amount, 12, '8 levels x 1.5');
-    assert.ok(atk(wolf9, 'pierce') - atk(wolf1, 'pierce') >= 12, 'at least the edge, plus the one point per level spread over the attributes');
+    assert.equal(wolf9.state.levelEdgeAttr.amount, Math.floor(8 * LEVEL_EDGE_ATTACK_PER_LEVEL), '8 levels x LEVEL_EDGE_ATTACK_PER_LEVEL');
+    const edge = wolf9.state.levelEdgeAttr.amount;
+    assert.ok(atk(wolf9, 'pierce') - atk(wolf1, 'pierce') >= edge, 'at least the edge, plus the one point per level spread over the attributes');
     const addict9 = EntityFactory.create('MAGIC_ADDICT', 9);
     assert.equal(addict9.state.levelEdgeAttr.attribute, 'intelligence', 'a mage grows in the attribute its spells scale with');
     assert.equal(EntityFactory.create('WOLF', 1).state.levelEdgeAttr, undefined, 'level 1 gets nothing');
@@ -123,7 +124,7 @@ test('an enemy gains attack with its level in the attribute its best attack scal
 
     const before = atk(wolf9, 'pierce');
     assert.equal(EntityFactory.removeLevelEdge(wolf9), true);
-    assert.equal(atk(wolf9, 'pierce'), before - 12);
+    assert.equal(atk(wolf9, 'pierce'), before - edge);
     assert.equal(EntityFactory.removeLevelEdge(wolf9), false, 'taking it off twice is harmless');
 });
 
@@ -262,15 +263,21 @@ test('enemies use the enemy rules, the player the hybrid ones', () => {
     assert.equal(asEnemy.defense.blunt, 5, 'enemy defense: +1 per 2 Vigor');
 });
 
-test('enemies deal ENEMY_DAMAGE_SCALE of the damage; the party is not scaled by it', async () => {
-    const { CombatCalculator, ENEMY_DAMAGE_SCALE } = await import('../../shared/battle/combatCalculator.js');
-    assert.ok(ENEMY_DAMAGE_SCALE > 0 && ENEMY_DAMAGE_SCALE < 1);
+test('enemies deal enemyDamageScale(level) of the damage: gentle at level 1, harsher with every level, capped; the party is not scaled', async () => {
+    const { CombatCalculator, ENEMY_DAMAGE, enemyDamageScale } = await import('../../shared/battle/combatCalculator.js');
+    assert.equal(enemyDamageScale(1), ENEMY_DAMAGE.atLevel1);
+    assert.ok(enemyDamageScale(20) > enemyDamageScale(10) && enemyDamageScale(10) > enemyDamageScale(1), 'grows with level');
+    assert.equal(enemyDamageScale(999), ENEMY_DAMAGE.max, 'capped');
+    assert.ok(ENEMY_DAMAGE.max <= 1);
     const stats = { attack: { blunt: 100 }, defense: { blunt: 0 }, resistance: { blunt: 0 }, accuracy: 1000, evasion: 1, critChance: 0 };
-    const hit = (team) => {
+    const hit = (team, level) => {
         const real = Math.random, log = console.log;
         Math.random = () => 0.5; console.log = () => {};
-        try { return CombatCalculator.calculateDamage({ team, stats }, { stats }, 1, 'blunt', 1).damage; } finally { Math.random = real; console.log = log; }
+        try { return CombatCalculator.calculateDamage({ team, stats, level }, { stats }, 1, 'blunt', 1).damage; } finally { Math.random = real; console.log = log; }
     };
-    const party = hit('party'), enemy = hit('enemy');
-    assert.ok(Math.abs(enemy / party - ENEMY_DAMAGE_SCALE) < 0.02, `enemy ${enemy} vs party ${party}`);
+    const party = hit('party', 30);
+    for (const lv of [1, 15, 40]) {
+        const enemy = hit('enemy', lv);
+        assert.ok(Math.abs(enemy / party - enemyDamageScale(lv)) < 0.02, `level ${lv}: enemy ${enemy} vs party ${party}`);
+    }
 });
