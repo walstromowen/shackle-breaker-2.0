@@ -498,15 +498,6 @@ export class OverworldUIRenderer {
         ui.drawPanel(btn.x, drawY, btn.w, btn.h, "rgba(25, 23, 20, 0.4)");
         ui.drawStateBox(btn.x, drawY, btn.w, btn.h, flags, { inset: true });
 
-        if (btn.shortcut) {
-            const badgeSize = 22;
-            const badgeW = btn.shortcut.length > 1 ? 46 : badgeSize;   // "Esc" is wider than a letter
-            const bX = btn.x + 4;
-            const bY = drawY + 4;
-            ui.drawPanel(bX, bY, badgeW, badgeSize, "rgba(0, 0, 0, 0.7)");
-            ui.drawStyled('badge', btn.shortcut, bX + (badgeW / 2), bY + (badgeSize / 2), { color: UITheme.colors.textMuted });
-        }
-
         const centerX = btn.x + (btn.w / 2);
         const uiSheet = this.loader.get('ui_icons');
         if (uiSheet && btn.spriteCol !== undefined && btn.spriteRow !== undefined) {
@@ -524,6 +515,16 @@ export class OverworldUIRenderer {
 
         const textY = drawY + btn.h - 18;
         ui.drawStyled('badge', btn.label, centerX, textY, { color: textColor });
+
+        // the key's badge goes on last, over the icon (the wide "Esc" one reaches into it)
+        if (btn.shortcut) {
+            const badgeSize = 22;
+            const badgeW = btn.shortcut.length > 1 ? 46 : badgeSize;   // "Esc" is wider than a letter
+            const bX = btn.x + 4;
+            const bY = drawY + 4;
+            ui.drawPanel(bX, bY, badgeW, badgeSize, "rgba(0, 0, 0, 0.7)");
+            ui.drawStyled('badge', btn.shortcut, bX + (badgeW / 2), bY + (badgeSize / 2), { color: UITheme.colors.textMuted });
+        }
 
         if (badge) this.drawSkillPointBadge(ctx, btn.x + btn.w - 14, drawY + 14);
     }

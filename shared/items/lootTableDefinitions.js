@@ -62,7 +62,7 @@ export const LootTableDefinitions = {
             { id: "small_iron_key", weight: 3, min: 1, max: 1 },
 
             // --- WEAPONS & SHIELDS (Standard Drop Rate) ---
-            { id: "wooden_stick", weight: 30, min: 1, max: 1 },
+            { id: "wooden_club", weight: 30, min: 1, max: 1 },
             { id: "dagger", weight: 20, min: 1, max: 1 },
             { id: "shortsword", weight: 15, min: 1, max: 1 },
             { id: "handaxe", weight: 15, min: 1, max: 1 },
@@ -152,7 +152,7 @@ export const LootTableDefinitions = {
             { id: "small_iron_key", weight: 3, min: 1, max: 1 },
 
             // --- WEAPONS & SHIELDS (Standard Drop Rate) ---
-            { id: "wooden_stick", weight: 30, min: 1, max: 1 },
+            { id: "wooden_club", weight: 30, min: 1, max: 1 },
             { id: "dagger", weight: 20, min: 1, max: 1 },
             { id: "shortsword", weight: 15, min: 1, max: 1 },
             { id: "handaxe", weight: 15, min: 1, max: 1 },
@@ -487,7 +487,7 @@ export const LootTableDefinitions = {
             { id: "small_iron_key", weight: 8, min: 1, max: 1 },
 
             // --- WEAPONS & SHIELDS (Standard Drop Rate) ---
-            { id: "wooden_stick", weight: 30, min: 1, max: 1 },
+            { id: "wooden_club", weight: 30, min: 1, max: 1 },
             { id: "dagger", weight: 20, min: 1, max: 1 },
             { id: "shortsword", weight: 15, min: 1, max: 1 },
             { id: "handaxe", weight: 15, min: 1, max: 1 },
@@ -1060,7 +1060,7 @@ LootTableDefinitions.house = LootTableDefinitions.house_interior;
    hands out the common stuff you trip over on the road: raw wood, fibres, stone, flint and the like, and the tattered rags. */
 export const LootExclusionSets = {
     low_tier: [
-        'plant_fibers', 'soft_wood', 'hard_wood', 'wooden_stick', 'stone', 'flint', 'sand', 'wheat', 'cotton', 'bone',
+        'plant_fibers', 'soft_wood', 'hard_wood', 'stone', 'flint', 'sand', 'wheat', 'cotton', 'bone',
         'tattered_hood', 'tattered_shirt', 'tattered_gloves', 'tattered_pants', 'tattered_boots',
         'wooden_club', 'fur', 'salt', 'coal', 'copper_ore', 'tin_ore', 'iron_ore', 'leather', 'torch',
         'healing_herb', 'invigorating_herb', 'illuminating_herb', 'bandage', 'aloe', 'antidote', 'linen', 'copper_ingot',

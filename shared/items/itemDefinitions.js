@@ -14,19 +14,6 @@ const perPhysType = (n) => ({ blunt: n, slash: n, pierce: n });
 
 export const ItemDefinitions = {
   // --- WEAPONS ---
-  "wooden_stick": {
-    id: "wooden_stick",
-    name: "Wooden Stick",
-    slot: "oneHand",
-    type: "weapon",
-    description: "A sturdy branch found on the forest floor.",
-    value: 25,
-    icon: { col: 11, row: 0 },
-    attack: { blunt: 3 },
-    requirements: { strength: 5 },
-    grantedAbilities: ["strike"]
-    // No upgrade data: cannot be upgraded.
-  },
   "wooden_club": {
     id: "wooden_club",
     name: "Wooden Club",
@@ -35,7 +22,7 @@ export const ItemDefinitions = {
     description: "A thick length of hardwood, studded with iron nails at the head. It has no edge to dull and nothing to break, and it hits harder the more it is trusted.",
     value: 60,
     icon: { col: 11, row: 0 },
-    attack: { blunt: 4 },                // a step above the stick (3), below the two-handed warhammer (5)
+    attack: { blunt: 4 },                // below the two-handed warhammer (5)
     requirements: { strength: 8, vigor: 6 },
     requirementGrowth: { strength: 2, vigor: 2 },
     grantedAbilities: ["strike"],

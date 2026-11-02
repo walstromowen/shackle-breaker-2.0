@@ -297,7 +297,7 @@ export const aDisturbingSight = {
                         {
                             weight: 100,
                             results: [
-                                { type: "GIVE_ITEM", payload: { items: [{ id: "wooden_stick", qty: 2 }, { id: "dagger", qty: 1 }] } },
+                                { type: "GIVE_ITEM", payload: { items: [{ id: "wooden_club", qty: 1 }, { id: "dagger", qty: 1 }] } },
                                 { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
@@ -409,7 +409,7 @@ export const aDisturbingSight = {
                         {
                             weight: 100,
                             results: [
-                                { type: "GIVE_ITEM", payload: { items: [{ id: "wooden_stick", qty: 2 }, { id: "dagger", qty: 1 }] } },
+                                { type: "GIVE_ITEM", payload: { items: [{ id: "wooden_club", qty: 1 }, { id: "dagger", qty: 1 }] } },
                                 { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
