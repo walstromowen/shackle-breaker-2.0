@@ -7,6 +7,8 @@
 //   JSON=1 node tools/playthroughSim.mjs ...                                            the raw numbers as JSON instead
 //   KNOBS='{"dmgBase":0.4,"dmgPerLevel":0.015}' node tools/playthroughSim.mjs ...       a what-if with other dials (defaults: the game's)
 //   TRACE=Traveler,Hermit node tools/playthroughSim.mjs                                 how those classes' builds grow
+//   STATS=1 node tools/playthroughSim.mjs [runs] > stats.json                           every enemy's stats at levels 1-20, and every class's
+//                                                                                        build (averaged over the runs) at levels 1-30, as JSON
 const ROOT = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
 const RUNS = +(process.argv[2] || 100), MAXL = +(process.argv[3] || 50), FIGHTS = +(process.argv[4] || 3);
 const noop = () => {};
@@ -238,6 +240,53 @@ if (process.env.TRACE) {
             }
         }
     }
+    process.exit(0);
+}
+if (process.env.STATS) {
+    const PHYS = ['blunt', 'slash', 'pierce'], MAGIC = ['fire', 'ice', 'lightning', 'water', 'earth', 'wind', 'light', 'dark', 'arcane'];
+    const avg = (o, ks) => ks.reduce((t, k) => t + (o[k] || 0), 0) / ks.length;
+    const best = (o) => Object.entries(o).reduce((b, [k, v]) => (v > b[1] ? [k, v] : b), ['', -1]);
+    const { SpawnTableDefinitions } = await import(ROOT + '/shared/battle/spawnTableDefinitions.js');
+    const { enemyDamageScale } = await import(ROOT + '/shared/battle/combatCalculator.js');
+    const tables = {};
+    for (const [tid, t] of Object.entries(SpawnTableDefinitions)) for (const m of JSON.stringify(t).matchAll(/"id":"([A-Z_]+)"/g)) (tables[m[1]] ??= new Set()).add(tid);
+    const enemies = {};
+    for (const [id, inTables] of Object.entries(tables)) {
+        const rows = [];
+        for (let level = 1; level <= 20; level++) {
+            const e = EntityFactory.create(id, level);   // the game's own enemy, level edge and all
+            if (!e) break;
+            const st = StatCalculator.calculate(e);
+            const [type, attack] = best(st.attack);
+            rows.push({ level, hp: st.maxHp, attackType: type, attack, damageScale: +enemyDamageScale(level).toFixed(3), effectiveAttack: +(attack * enemyDamageScale(level)).toFixed(1),
+                physDef: +avg(st.defense, PHYS).toFixed(1), magicDef: +avg(st.defense, MAGIC).toFixed(1), speed: st.speed, evasion: st.evasion, accuracy: st.accuracy });
+        }
+        if (rows.length) enemies[id] = { name: EntityFactory.create(id, 1).name, tables: [...inTables], rows };
+    }
+    const classes = {};
+    for (const [name, cls] of Object.entries(CLASSES)) {
+        const sum = Array.from({ length: 30 }, () => ({}));
+        const add = (row, k, v) => { row[k] = (row[k] || 0) + v; };
+        let attackType = {};
+        for (let run = 0; run < RUNS; run++) {
+            const r = newRun(cls);
+            for (let level = 1; level <= 30; level++) {
+                if (level > 1) spendPoint(r, cls, level);
+                const p = buildPlayer(r, cls, level), st = StatCalculator.calculate(p), row = sum[level - 1];
+                const [type, attack] = best(st.attack);
+                attackType[level] = attackType[level] || {}; attackType[level][type] = (attackType[level][type] || 0) + 1;
+                for (const k of ATTRS) add(row, k, r.attrs[k]);
+                add(row, 'hp', st.maxHp); add(row, 'stamina', st.maxStamina); add(row, 'insight', st.maxInsight);
+                add(row, 'attack', attack); add(row, 'physDef', avg(st.defense, PHYS)); add(row, 'magicDef', avg(st.defense, MAGIC));
+                add(row, 'speed', st.speed); add(row, 'weaponLevel', r.weaponLevel);
+                add(row, 'armorLevel', level >= r.armorAt ? Math.min(5, 1 + Math.floor((level - r.armorAt) / 6)) : 0);
+            }
+        }
+        classes[name] = { weapon: cls.weapon, armor: cls.armor, rows: sum.map((row, i) => ({ level: i + 1,
+            attackType: Object.entries(attackType[i + 1]).sort((a, b) => b[1] - a[1])[0][0],
+            ...Object.fromEntries(Object.entries(row).map(([k, v]) => [k, +(v / RUNS).toFixed(1)])) })) };
+    }
+    process.stdout.write(JSON.stringify({ runs: RUNS, enemies, classes }) + '\n');
     process.exit(0);
 }
 // ---- run ----
