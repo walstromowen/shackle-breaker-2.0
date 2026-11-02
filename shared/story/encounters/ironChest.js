@@ -58,7 +58,6 @@ export const ironChest = {
                             weight: 100,
                             results: [
                                 { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "iron_chest_loot", rolls: 3 } },
-                                { type: "AWARD_XP", payload: { amount: 15, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]

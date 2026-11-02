@@ -105,6 +105,13 @@ export class EncounterLogic {
         };
     }
 
+    /** The XP a successful roll earns the one who rolled (party leader), as an AWARD_XP result; null when it is worth nothing (DC 0) */
+    static rollXpResult(dc) {
+        const roller = gameState.party?.members?.[0];
+        const amount = ExperienceSystem.rollXp(roller?.level || 1, dc);
+        return amount > 0 ? { type: "AWARD_XP", payload: { amount, exact: true, target: "active_character" } } : null;
+    }
+
     static selectOutcome(outcomes) {
         if (!outcomes || outcomes.length === 0) return null;
         const totalWeight = outcomes.reduce((sum, outcome) => sum + (outcome.weight || 1), 0);
@@ -264,7 +271,7 @@ export class EncounterLogic {
                     if (xpBase <= 0) break;
                     // the amounts are written for the early game: they grow with the level like an enemy's XP does (ExperienceSystem.scaleReward)
                     if (payload.target === "entire_party") {
-                        const xpAmount = ExperienceSystem.scaleReward(xpBase, PartyManager.getHighestLevel());
+                        const xpAmount = payload.exact ? Math.round(xpBase) : ExperienceSystem.scaleReward(xpBase, PartyManager.getHighestLevel());
                         gameState.party?.members?.forEach(m => {
                             if (ExperienceSystem.addXp(m, xpAmount)) {
                                 levelsGained.push(`${m.name} hit Lvl ${m.level}!`);
@@ -274,7 +281,7 @@ export class EncounterLogic {
                     } else {
                         const active = gameState.party?.members?.[0];
                         if (active) {
-                            const xpAmount = ExperienceSystem.scaleReward(xpBase, active.level);
+                            const xpAmount = payload.exact ? Math.round(xpBase) : ExperienceSystem.scaleReward(xpBase, active.level);
                             if (ExperienceSystem.addXp(active, xpAmount)) {
                                 levelsGained.push(`${active.name} hit Lvl ${active.level}!`);
                             }

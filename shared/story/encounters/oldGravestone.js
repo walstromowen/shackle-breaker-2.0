@@ -7,19 +7,22 @@
      (0,0) approach       (1,0) dig            (2,0) buried_things   (3,0) bones_rise
      (0,1) spirit_rises
 
+   Nothing in the ground is certain, and the party's attributes decide how it goes (every roll is d20 + (attribute - 10) / 3, like every skill check):
    Flow:  approach      -> dig it up, or leave it be
-          dig           -> keep digging: what lies below is one roll
-                             40%  buried_things (loot: two rolls of the old_grave_loot table, a little experience)
-                                                 -> or dig deeper still: 45% a second bundle (four rolls in all), 35% only clay (the first bundle's two rolls), 20% a spirit
-                             20%  bones_rise    (a fight with skeletons, spawn table grave_skeletons)
-                             20%  spirit_rises  (a fight with a shackled spirit, spawn table shackled_spirit)
-                             10%  empty_grave   (only soil and coffin splinters, a crumb of experience)
-                             10%  sealed_coffin ([STR 10] pry the lid: success three rolls of loot; failure 60% skeletons, 40% a spirit)
-   Attunement (the sense for what is under the surface; the roll is d20 + (ATT - 10) / 3, like every skill check):
-          approach      -> [ATT 11] listen to the ground before the first spade. A success reads the grave for you: it names what lies below (the same shares as the dig:
-                           40% a bundle, 20% bones, 20% a spirit, 10% nothing, 10% a coffin) and you choose with that knowledge, so you can leave a fight in the ground.
+          dig           -> [STR 12] heave the earth out, or [DEX 12] dig slowly by hand. A success finds the grave goods before it wakes anything
+                           (DIG_SUCCESS: 60% bundle, 15% coffin, 10% empty, 10% bones, 5% spirit); a failure makes noise and wakes the dead
+                           (DIG_FAILURE: 20% bundle, 5% coffin, 10% empty, 30% bones, 35% spirit). Half and half, that is DIG_ODDS (40 / 10 / 10 / 20 / 20).
+          buried_things -> take the bundle (two rolls of old_grave_loot), or [STR 13] dig deeper still: a success 75% a second bundle (four rolls in all),
+                           25% only clay (the first bundle's two rolls); a failure 40% only clay, 60% the spirit below wakes
+          sealed_coffin -> [STR 10] pry the lid: success three rolls of loot; failure 60% skeletons, 40% a spirit
+          bones_rise    -> fight the skeletons (spawn table grave_skeletons), or [DEX 13] scramble out of the grave: a success escapes with nothing,
+                           a failure and they drag you back into the fight
+   Attunement (the sense for what is under the surface):
+          approach      -> [ATT 11] listen to the ground before the first spade. A success reads the grave for you: it names what lies below (DIG_ODDS)
+                           and you choose with that knowledge, so you can leave a fight in the ground. Digging down to what you heard is still a
+                           [DEX 10] roll: a clumsy spade over a bundle or a coffin can wake bones beside it (half the time).
                            A failure teaches nothing, costs a quarter of your insight, and cannot be tried again at this stone.
-          spirit_rises  -> [ATT 14] speak to the spirit instead of fighting it. A success lets it rest (a little experience, the grave goods, less corruption);
+          spirit_rises  -> [ATT 14] speak to the spirit instead of fighting it. A success lets it rest (the grave goods, less corruption);
                            a failure and it comes at you as before.
    Whatever comes out of the ground, the grave is open: the object is destroyed on the button that hands out the loot or starts the fight. Leaving it be
    (or backing out before the first spade) keeps the stone standing for another try. */
@@ -34,13 +37,19 @@ const fight = (tableId) => [{
     ]
 }];
 
-/* What a successful listen tells you, and where each answer leads. The shares are the shares of the dig below, so listening never changes the odds, it only shows them. */
+/* What lies under the stone: a dig that succeeds finds the goods before it wakes anything, one that fails makes noise. DIG_ODDS is the two half and half. */
+const DIG_SUCCESS = { buried_things: 60, sealed_coffin: 15, empty_grave: 10, bones_rise: 10, spirit_rises: 5 };
+const DIG_FAILURE = { buried_things: 20, sealed_coffin: 5, empty_grave: 10, bones_rise: 30, spirit_rises: 35 };
+export const DIG_ODDS = Object.fromEntries(Object.keys(DIG_SUCCESS).map(k => [k, (DIG_SUCCESS[k] + DIG_FAILURE[k]) / 2]));
+const digOutcomes = (table) => Object.entries(table).map(([stageId, weight]) => ({ weight, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }));
+
+/* What a successful listen tells you, and where each answer leads. The shares are DIG_ODDS, so listening never changes the odds, it only shows them. */
 const LISTEN = [
-    { weight: 40, stage: "listen_bundle", then: "buried_things", dig: "Dig down to the bundle." },
-    { weight: 20, stage: "listen_bones", then: "bones_rise", dig: "Dig anyway." },
-    { weight: 20, stage: "listen_spirit", then: "spirit_rises", dig: "Dig anyway." },
-    { weight: 10, stage: "listen_hollow", then: "empty_grave", dig: "Dig anyway." },
-    { weight: 10, stage: "listen_coffin", then: "sealed_coffin", dig: "Dig down to the coffin." }
+    { weight: DIG_ODDS.buried_things, stage: "listen_bundle", then: "buried_things", dig: "[DEX] Dig carefully down to the bundle.", fragile: true },
+    { weight: DIG_ODDS.bones_rise, stage: "listen_bones", then: "bones_rise", dig: "[DEX] Dig anyway." },
+    { weight: DIG_ODDS.spirit_rises, stage: "listen_spirit", then: "spirit_rises", dig: "[DEX] Dig anyway." },
+    { weight: DIG_ODDS.empty_grave, stage: "listen_hollow", then: "empty_grave", dig: "[DEX] Dig anyway." },
+    { weight: DIG_ODDS.sealed_coffin, stage: "listen_coffin", then: "sealed_coffin", dig: "[DEX] Dig carefully down to the coffin.", fragile: true }
 ];
 const listenStage = (stage, text) => {
     const l = LISTEN.find(x => x.stage === stage);
@@ -51,10 +60,17 @@ const listenStage = (stage, text) => {
         decisions: [
             {
                 text: l.dig,
+                type: "skill_check",
+                attribute: "dexterity",
+                threshold: 10,
                 corruption: 2,   // a grave robbed: corruption goes up
                 conditions: [HUMANOID],
                 customActionText: "You dig where the quiet led you.",
-                outcomes: toStage(l.then)
+                successOutcomes: toStage(l.then),
+                // a clumsy spade over goods worth keeping can strike the bones buried beside them
+                failureOutcomes: l.fragile
+                    ? [{ weight: 50, results: [{ type: "ADVANCE_STAGE", payload: { stageId: l.then } }] }, { weight: 50, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "bones_rise" } }] }]
+                    : toStage(l.then)
             },
             {
                 text: "Leave the dead in peace.",
@@ -146,16 +162,24 @@ export const oldGravestone = {
             text: "The soil is loose, as if it has been turned before. Something shifts beneath your hands, and the air around the stone grows quiet.",
             decisions: [
                 {
-                    text: "Keep digging.",
+                    text: "[STR] Heave the earth out.",
+                    type: "skill_check",
+                    attribute: "strength",
+                    threshold: 12,
                     conditions: [HUMANOID],
-                    customActionText: "You dig deeper, until the earth gives way.",
-                    outcomes: [
-                        { weight: 40, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "buried_things" } }] },
-                        { weight: 20, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "bones_rise" } }] },
-                        { weight: 20, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "spirit_rises" } }] },
-                        { weight: 10, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "empty_grave" } }] },
-                        { weight: 10, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "sealed_coffin" } }] }
-                    ]
+                    customActionText: "You throw your back into it, hauling the soil out in great clods until the earth gives way.",
+                    successOutcomes: digOutcomes(DIG_SUCCESS),
+                    failureOutcomes: digOutcomes(DIG_FAILURE)
+                },
+                {
+                    text: "[DEX] Dig slowly, by hand.",
+                    type: "skill_check",
+                    attribute: "dexterity",
+                    threshold: 12,
+                    conditions: [HUMANOID],
+                    customActionText: "You scoop the earth away a handful at a time, feeling for whatever lies below before it can feel you.",
+                    successOutcomes: digOutcomes(DIG_SUCCESS),
+                    failureOutcomes: digOutcomes(DIG_FAILURE)
                 },
                 {
                     text: "Stop. Fill it in.",
@@ -179,7 +203,6 @@ export const oldGravestone = {
                             weight: 100,
                             results: [
                                 { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "old_grave_loot", rolls: 2 } },
-                                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
@@ -187,15 +210,15 @@ export const oldGravestone = {
                     ]
                 },
                 {
-                    text: "Dig deeper still.",
+                    text: "[STR] Dig deeper still.",
+                    type: "skill_check",
+                    attribute: "strength",
+                    threshold: 13,
                     corruption: 1,
                     conditions: [HUMANOID],
                     customActionText: "You leave the bundle where it lies and dig on, down into the clay.",
-                    outcomes: [
-                        { weight: 45, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "deeper_find" } }] },
-                        { weight: 35, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "deeper_nothing" } }] },
-                        { weight: 20, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "spirit_rises" } }] }
-                    ]
+                    successOutcomes: digOutcomes({ deeper_find: 75, deeper_nothing: 25 }),
+                    failureOutcomes: digOutcomes({ deeper_nothing: 40, spirit_rises: 60 })
                 }
             ]
         },
@@ -212,7 +235,6 @@ export const oldGravestone = {
                         weight: 100,
                         results: [
                             { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "old_grave_loot", rolls: 4 } },
-                            { type: "AWARD_XP", payload: { amount: 8, target: "active_character" } },
                             { type: "DESTROY_OBJECT" },
                             { type: "END_ENCOUNTER", payload: null }
                         ]
@@ -232,7 +254,6 @@ export const oldGravestone = {
                         weight: 100,
                         results: [
                             { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "old_grave_loot", rolls: 2 } },
-                            { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                             { type: "DESTROY_OBJECT" },
                             { type: "END_ENCOUNTER", payload: null }
                         ]
@@ -251,7 +272,6 @@ export const oldGravestone = {
                     outcomes: [{
                         weight: 100,
                         results: [
-                            { type: "AWARD_XP", payload: { amount: 2, target: "active_character" } },
                             { type: "DESTROY_OBJECT" },
                             { type: "END_ENCOUNTER", payload: null }
                         ]
@@ -298,7 +318,6 @@ export const oldGravestone = {
                         weight: 100,
                         results: [
                             { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "old_grave_loot", rolls: 3 } },
-                            { type: "AWARD_XP", payload: { amount: 7, target: "active_character" } },
                             { type: "DESTROY_OBJECT" },
                             { type: "END_ENCOUNTER", payload: null }
                         ]
@@ -315,6 +334,45 @@ export const oldGravestone = {
             bgm: "plainsBattleBgm",   // danger: the biome's battle music starts as the dead rise and carries into the fight
             image: { col: 3, row: 0 },
             text: "The soil heaves. Fingers of bone claw out of the grave, and what was buried here pulls itself free, and it is not alone.",
+            decisions: [
+                {
+                    text: "Draw your weapons!",
+                    conditions: [HUMANOID],
+                    outcomes: fight("grave_skeletons")
+                },
+                {
+                    text: "[DEX] Scramble out of the grave.",
+                    type: "skill_check",
+                    attribute: "dexterity",
+                    threshold: 13,
+                    conditions: [HUMANOID],
+                    customActionText: "You kick free of the grasping bones and claw your way up the crumbling side of the hole.",
+                    successOutcomes: toStage("escaped_the_grave"),
+                    failureOutcomes: toStage("dragged_back")
+                }
+            ]
+        },
+
+        escaped_the_grave: {
+            displayText: "Out Of The Hole",
+            image: { col: 3, row: 0 },
+            text: "You roll out onto the grass and run. Behind you the bones rattle at the lip of the grave, then sink back into the dark, and whatever was buried with them goes down too.",
+            decisions: [
+                {
+                    text: "Keep running.",
+                    outcomes: [{ weight: 100, results: [{ type: "DESTROY_OBJECT" }, { type: "END_ENCOUNTER", payload: null }] }]
+                }
+            ]
+        },
+
+        dragged_back: {
+            displayText: "The Dead Rise",
+            tone: "blood",
+            effect: "shake",
+            sfx: "bonesRattle",
+            bgm: "plainsBattleBgm",
+            image: { col: 3, row: 0 },
+            text: "A hand of bone closes on your ankle and drags you back down into the grave. There is no way out but through them.",
             decisions: [
                 {
                     text: "Draw your weapons!",
@@ -363,7 +421,6 @@ export const oldGravestone = {
                         weight: 100,
                         results: [
                             { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "old_grave_loot", rolls: 1 } },
-                            { type: "AWARD_XP", payload: { amount: 8, target: "active_character" } },
                             { type: "DESTROY_OBJECT" },
                             { type: "END_ENCOUNTER", payload: null }
                         ]

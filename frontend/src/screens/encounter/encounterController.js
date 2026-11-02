@@ -619,8 +619,11 @@ export class EncounterController extends BaseController {
     }
     
     const selectedOutcome = EncounterLogic.selectOutcome(targetOutcomes);
-    if (selectedOutcome) {
-      let resultsArray = selectedOutcome.results;
+    // encounters give XP for a successful roll and at no other time (ExperienceSystem.rollXp: it grows with the roller's level and the DC)
+    const rollXp = decision.type === 'skill_check' && this.rollData.isSuccess ? EncounterLogic.rollXpResult(this.rollData.dc) : null;
+    if (selectedOutcome || rollXp) {
+      let resultsArray = selectedOutcome?.results || [];
+      if (rollXp) resultsArray = [rollXp, ...resultsArray];
       // A decision can carry `corruption: n` (magic used, a cruel act: positive; a kind one: negative): it applies whichever way the outcome falls
       if (decision.corruption && resultsArray) {
         resultsArray = [{ type: 'MODIFY_CORRUPTION', payload: { amount: decision.corruption, target: 'active_character' } }, ...resultsArray];

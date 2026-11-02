@@ -103,7 +103,7 @@ test('they are no longer random encounters, and every way they leave the scene t
     for (const [stage, results] of all('a_disturbing_sight')) {
         const types = results.map(r => r.type);
         const fights = results.some(r => r.type === 'START_BATTLE' && JSON.stringify(r.payload).includes('MAD_MAN'));
-        const ends = results.some(r => r.type === 'END_ENCOUNTER') && (types.includes('AWARD_XP') || types.includes('RECRUIT_CHARACTER'));
+        const ends = results.some(r => r.type === 'END_ENCOUNTER') && !types.includes('ADVANCE_STAGE');
         if (fights || ends) assert.ok(types.includes('DESTROY_OBJECT'), `a_disturbing_sight/${stage} removes the madman`);
     }
     for (const [stage, results] of all('wounded_mutt')) {

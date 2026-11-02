@@ -281,3 +281,18 @@ test('enemies deal enemyDamageScale(level) of the damage: gentle at level 1, har
         assert.ok(Math.abs(enemy / party - enemyDamageScale(lv)) < 0.02, `level ${lv}: enemy ${enemy} vs party ${party}`);
     }
 });
+
+test('encounters give XP only for a successful roll, and what a roll is worth grows with the level and the DC', async () => {
+    const { ExperienceSystem, ROLL_XP } = await import('../../shared/characters/experienceSystem.js');
+    const fs = await import('node:fs');
+    const share = (lv, dc) => ExperienceSystem.rollXp(lv, dc) / ExperienceSystem.getMaxXP(lv);
+    assert.ok(Math.abs(share(1, 12) - ROLL_XP.SHARE) < 0.01, 'a DC 12 success is ROLL_XP.SHARE of a level');
+    assert.ok(Math.abs(share(40, 12) - ROLL_XP.SHARE) < 0.01, '... at any level');
+    assert.ok(ExperienceSystem.rollXp(30, 12) > ExperienceSystem.rollXp(5, 12) * 5, 'the amount grows with the level');
+    assert.ok(ExperienceSystem.rollXp(10, 15) > ExperienceSystem.rollXp(10, 12) && ExperienceSystem.rollXp(10, 12) > ExperienceSystem.rollXp(10, 8));
+    assert.equal(ExperienceSystem.rollXp(10, 0), 0, 'a roll that cannot fail is worth nothing');
+    // no encounter hands out XP by itself
+    const dir = new URL('../../shared/story/encounters/', import.meta.url);
+    const files = fs.readdirSync(dir, { recursive: true }).filter(f => String(f).endsWith('.js'));
+    for (const f of files) assert.ok(!fs.readFileSync(new URL(String(f), dir), 'utf8').includes('AWARD_XP'), `${f} awards no XP of its own`);
+});

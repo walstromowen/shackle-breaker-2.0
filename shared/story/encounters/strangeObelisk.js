@@ -22,20 +22,18 @@ const BAD_TRAITS = ["clumsy", "frail", "myopic", "superstitious", "lazy", "dull"
 
 const COMMON = 10;       // weight of each trait the stage favours (good traits after a success, bad traits after a failure)
 const RARE = 1;          // weight of each of the others: a small chance of the unexpected
-const SUCCESS_XP = 40;
 
 /* one outcome: the party member gains `traitId` and the obelisk is spent */
-const gain = (traitId, weight, xp) => ({
+const gain = (traitId, weight) => ({
   weight,
   results: [
     { type: "ADD_TRAIT", payload: { traitId, target: "active_character" } },
-    ...(xp ? [{ type: "AWARD_XP", payload: { amount: xp, target: "active_character" } }] : []),
     { type: "DESTROY_OBJECT" },
     { type: "END_ENCOUNTER", payload: null }
   ]
 });
-const successTraits = () => [...GOOD_TRAITS.map((t) => gain(t, COMMON, SUCCESS_XP)), ...BAD_TRAITS.map((t) => gain(t, RARE, SUCCESS_XP))];
-const failureTraits = () => [...BAD_TRAITS.map((t) => gain(t, COMMON, 0)), ...GOOD_TRAITS.map((t) => gain(t, RARE, 0))];
+const successTraits = () => [...GOOD_TRAITS.map((t) => gain(t, COMMON)), ...BAD_TRAITS.map((t) => gain(t, RARE))];
+const failureTraits = () => [...BAD_TRAITS.map((t) => gain(t, COMMON)), ...GOOD_TRAITS.map((t) => gain(t, RARE))];
 
 /* a skill-check approach: on a failure the flag stops that approach from being tried again at this obelisk */
 const approach = ({ text, attribute, flag, action, success, failure }) => ({

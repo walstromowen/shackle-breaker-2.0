@@ -50,7 +50,6 @@ export const mysteriousAltar = {
                             weight: 100,
                             results: [
                                 { type: "SET_CONTEXT_FLAG", payload: { flagId: "altar_approached" } },
-                                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "at_the_altar" } }
                             ]
                         }
@@ -203,7 +202,6 @@ export const mysteriousAltar = {
                             weight: 100,
                             results: [
                                 { type: "MODIFY_VITALS", payload: { hp: 9999, stamina: 9999, insight: 9999, damageType: "true" } },
-                                { type: "AWARD_XP", payload: { amount: 10, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
@@ -227,7 +225,6 @@ export const mysteriousAltar = {
                             weight: 100,
                             results: [
                                 { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "biome_default", rolls: 2 } },
-                                { type: "AWARD_XP", payload: { amount: 10, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]

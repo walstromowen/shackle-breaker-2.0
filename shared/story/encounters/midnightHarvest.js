@@ -276,7 +276,6 @@ export const midnightHarvest = {
                             weight: 100,
                             results: [
                                 { type: "MODIFY_VITALS", payload: { insight: 15, stamina: 10 } },
-                                { type: "AWARD_XP", payload: { amount: 10, target: "active_character" } },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
                         }
@@ -318,7 +317,6 @@ export const midnightHarvest = {
                             results: [
                                 { type: "GIVE_ITEM", payload: { itemId: "insight_of_light", qty: 1 } },
                                 { type: "MODIFY_VITALS", payload: { insight: 10 } },
-                                { type: "AWARD_XP", payload: { amount: 25, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
@@ -356,7 +354,6 @@ export const midnightHarvest = {
                             weight: 100,
                             results: [
                                 { type: "GIVE_ITEM", payload: { itemId: "scythe", qty: 1 } },
-                                { type: "AWARD_XP", payload: { amount: 10, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
@@ -382,7 +379,6 @@ export const midnightHarvest = {
                             weight: 100,
                             results: [
                                 { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "plains", rolls: 2 } },
-                                { type: "AWARD_XP", payload: { amount: 15, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]

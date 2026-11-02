@@ -3,20 +3,39 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { encounterDefinitions } from '../../shared/story/encounterDefinitions.js';
+import { DIG_ODDS } from '../../shared/story/encounters/oldGravestone.js';
 
 const g = encounterDefinitions.old_gravestone;
 const weightsOf = (outs) => Object.fromEntries(outs.map(o => [o.results[0].payload.stageId, o.weight]));
 
-test('digging has five possible finds, adding up to 100', () => {
-    const w = weightsOf(g.stages.dig.decisions[0].outcomes);
-    assert.deepEqual(Object.keys(w).sort(), ['bones_rise', 'buried_things', 'empty_grave', 'sealed_coffin', 'spirit_rises']);
-    assert.equal(Object.values(w).reduce((a, b) => a + b, 0), 100);
+test('digging is a strength or a dexterity roll: a success mostly finds the goods, a failure mostly wakes the dead', () => {
+    const checks = g.stages.dig.decisions.filter(d => d.type === 'skill_check');
+    assert.deepEqual(checks.map(d => d.attribute).sort(), ['dexterity', 'strength']);
+    assert.ok(!g.stages.dig.decisions.some(d => d.type !== 'skill_check' && (d.outcomes || []).some(o => o.results.some(r => r.type === 'ADVANCE_STAGE'))), 'no dig without a roll');
+    for (const d of checks) {
+        const win = weightsOf(d.successOutcomes), lose = weightsOf(d.failureOutcomes);
+        for (const w of [win, lose]) {
+            assert.deepEqual(Object.keys(w).sort(), ['bones_rise', 'buried_things', 'empty_grave', 'sealed_coffin', 'spirit_rises']);
+            assert.equal(Object.values(w).reduce((a, b) => a + b, 0), 100);
+        }
+        assert.ok(win.buried_things > lose.buried_things && win.bones_rise + win.spirit_rises < lose.bones_rise + lose.spirit_rises);
+    }
+});
+
+test('the dead can be escaped with a dexterity roll; a miss is the fight', () => {
+    const run = g.stages.bones_rise.decisions.find(d => d.type === 'skill_check');
+    assert.equal(run.attribute, 'dexterity');
+    assert.equal(run.successOutcomes[0].results[0].payload.stageId, 'escaped_the_grave');
+    assert.equal(run.failureOutcomes[0].results[0].payload.stageId, 'dragged_back');
+    assert.equal(g.stages.dragged_back.decisions[0].outcomes[0].results[0].type, 'START_BATTLE');
 });
 
 test('the buried bundle can be dug deeper for more, or less', () => {
-    const d = g.stages.buried_things.decisions.find(x => x.text === 'Dig deeper still.');
-    const w = weightsOf(d.outcomes);
-    assert.equal(Object.values(w).reduce((a, b) => a + b, 0), 100);
+    const d = g.stages.buried_things.decisions.find(x => x.text === '[STR] Dig deeper still.');
+    assert.equal(d.type, 'skill_check');
+    assert.equal(d.attribute, 'strength');
+    for (const outs of [d.successOutcomes, d.failureOutcomes]) assert.equal(Object.values(weightsOf(outs)).reduce((a, b) => a + b, 0), 100);
+    assert.ok(weightsOf(d.successOutcomes).deeper_find > 0 && !weightsOf(d.failureOutcomes).deeper_find, 'only a success finds more');
     const rolls = (id) => g.stages[id].decisions[0].outcomes[0].results.find(r => r.type === 'ROLL_LOOT_TABLE').payload.rolls;
     assert.ok(rolls('deeper_find') > rolls('deeper_nothing'));
     assert.equal(rolls('deeper_nothing'), 2);
@@ -34,16 +53,17 @@ test('listening to the ground is an attunement check that shows the dig\'s own o
     const l = g.stages.approach.decisions.find(d => d.text.startsWith('[ATT]'));
     assert.equal(l.type, 'skill_check');
     assert.equal(l.attribute, 'attunement');
-    const shown = weightsOf(l.successOutcomes), dug = weightsOf(g.stages.dig.decisions[0].outcomes);
+    const shown = weightsOf(l.successOutcomes), dug = DIG_ODDS;
     assert.deepEqual(Object.values(shown).reduce((a, b) => a + b, 0), 100);
     // each thing it can tell you has the same share as the thing it stands for in the dig
     const stands = { listen_bundle: 'buried_things', listen_bones: 'bones_rise', listen_spirit: 'spirit_rises', listen_hollow: 'empty_grave', listen_coffin: 'sealed_coffin' };
     assert.deepEqual(Object.keys(shown).sort(), Object.keys(stands).sort());
     for (const [stage, target] of Object.entries(stands)) {
         assert.equal(shown[stage], dug[target], `${stage} has the share of ${target}`);
-        const digs = g.stages[stage].decisions.find(d => d.outcomes[0].results[0].type === 'ADVANCE_STAGE');
-        assert.equal(digs.outcomes[0].results[0].payload.stageId, target, `${stage} leads to ${target}`);
-        assert.ok(g.stages[stage].decisions.some(d => d.outcomes[0].results[0].type === 'END_ENCOUNTER'), `${stage} lets you walk away`);
+        const digs = g.stages[stage].decisions.find(d => d.type === 'skill_check');
+        assert.equal(digs.attribute, 'dexterity', `${stage}: digging down to it is still a roll`);
+        assert.equal(digs.successOutcomes[0].results[0].payload.stageId, target, `${stage} leads to ${target}`);
+        assert.ok(g.stages[stage].decisions.some(d => d.outcomes && d.outcomes[0].results[0].type === 'END_ENCOUNTER'), `${stage} lets you walk away`);
     }
     const fail = l.failureOutcomes[0].results.map(r => r.type);
     assert.deepEqual(fail, ['SET_CONTEXT_FLAG', 'MODIFY_VITALS', 'ADVANCE_STAGE']);

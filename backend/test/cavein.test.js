@@ -39,8 +39,8 @@ test('digging is one strength check against 12: success finds loot one time in t
 
 test('the rewards and costs are handed out on the buttons after each stage', () => {
     const typesOf = (stageId) => resultsOf(enc.stages[stageId].decisions.flatMap(d => d.outcomes || [])).map(r => r.type);
-    assert.deepEqual(typesOf('found_something'), ['ROLL_LOOT_TABLE', 'AWARD_XP', 'END_ENCOUNTER']);
-    assert.deepEqual(typesOf('path_cleared'), ['AWARD_XP', 'END_ENCOUNTER']);
+    assert.deepEqual(typesOf('found_something'), ['ROLL_LOOT_TABLE', 'END_ENCOUNTER']);
+    assert.deepEqual(typesOf('path_cleared'), ['END_ENCOUNTER']);
     const exhausted = resultsOf(enc.stages.exhausted.decisions.flatMap(d => d.outcomes)).find(r => r.type === 'MODIFY_VITALS').payload;
     assert.equal(exhausted.stamina, -25); assert.equal(exhausted.insight, -25); assert.equal(exhausted.isPercentageOfCurrent, true); assert.equal(exhausted.target, 'entire_party');
     const rocks = resultsOf(enc.stages.rocks_fall.decisions.flatMap(d => d.outcomes));

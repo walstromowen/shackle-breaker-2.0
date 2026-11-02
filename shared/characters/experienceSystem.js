@@ -21,6 +21,9 @@ export const XP_CURVE = {
     ENEMY_XP_PER_LEVEL: 13
 };
 
+/* A successful encounter roll: 15% of a level at DC 12 (scaled by DC / 12, at most x1.5): about a third of a fight's XP */
+export const ROLL_XP = { SHARE: 0.15, BASE_DC: 12, MAX_HARDNESS: 1.5 };
+
 export const ExperienceSystem = {
   /** About what an enemy of this level is worth in XP (see the note above). */
   enemyXp(level) {
@@ -34,6 +37,16 @@ export const ExperienceSystem = {
 
   getMaxXP(level) {
     return Math.floor(this.enemyXp(level) * XP_CURVE.ENEMIES_PER_FIGHT * this.fightsPerLevel(level));
+  },
+
+  /**
+   * What a successful encounter roll is worth: the only XP an encounter gives (EncounterController.executeLogic awards it to whoever rolled).
+   * A share of the XP the roller's level takes, so it is worth the same at level 1 and level 100: ROLL_XP.SHARE of a level against
+   * DC 12, more against a harder DC and less against an easy one (nothing against DC 0, which cannot fail).
+   */
+  rollXp(level, dc) {
+    const hardness = Math.min(ROLL_XP.MAX_HARDNESS, Math.max(0, (dc || 0) / ROLL_XP.BASE_DC));
+    return Math.round(this.getMaxXP(Math.max(1, level || 1)) * ROLL_XP.SHARE * hardness);
   },
 
   /** A reward written for the early game (an encounter's "5 XP") grows with the level, as an enemy's XP does: x1 at level 1, x20 at level 100. */

@@ -173,7 +173,6 @@ export const treasureChest = {
                             weight: 100,
                             results: [
                                 { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "biome_default", rolls: 2, exclude: "low_tier" } },
-                                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
@@ -253,7 +252,6 @@ export const treasureChest = {
                             results: [
                                 { type: "APPLY_STATUS_EFFECT", payload: { effectId: "poison", charges: 3, target: "active_character" } },
                                 { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "biome_default", rolls: 2, exclude: "low_tier" } },
-                                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
