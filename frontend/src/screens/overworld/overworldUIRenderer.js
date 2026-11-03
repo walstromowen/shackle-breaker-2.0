@@ -76,6 +76,24 @@ export class OverworldUIRenderer {
         if (hotbar && hotbar.length > 0) {
             this.drawHotbar(ctx, ui, hotbar, hoveredHitboxId, notice);
         }
+
+        if (state && state.mpMessages && state.mpMessages.length) this.drawMultiplayerMessages(ctx, ui, state.mpMessages);
+    }
+
+    /* Multiplayer: "Ann joined the world." and the like, top centre, fading out after a few seconds (engine/multiplayerSession.js). */
+    drawMultiplayerMessages(ctx, ui, messages) {
+        const cx = ctx.canvas.width / 2;
+        let y = 64;
+        ctx.save();
+        for (const m of messages) {
+            ctx.globalAlpha = Math.max(0, Math.min(1, m.alpha));
+            ctx.font = UITheme.fonts.body;
+            const w = ctx.measureText(m.text).width + 48;
+            ui.drawPanel(cx - w / 2, y, w, 48, 'rgba(10, 11, 14, 0.85)');
+            ui.drawText(m.text, cx, y + 33, UITheme.fonts.body, UITheme.colors.textHighlight, 'center');
+            y += 58;
+        }
+        ctx.restore();
     }
 
     /* Where the status plaque is: bottom right, to the right of the hotbar (its right edge is worked out from the same numbers the hotbar uses). */

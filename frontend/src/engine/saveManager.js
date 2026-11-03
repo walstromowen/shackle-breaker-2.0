@@ -236,6 +236,9 @@ let store = LocalSaveStore;
 let lastAutosaveAt = 0;
 
 export const SaveManager = {
+    /* Set by engine/multiplayerSession.js while this player is a guest in someone else's world: (snapshot) => Promise<boolean>. Saves go to the host. */
+    guestSink: null,
+
     SAVE_VERSION,
 
     /** Swap where saves go (e.g. a store that talks to the server). */
@@ -309,7 +312,9 @@ export const SaveManager = {
                 currency: gameState.party.currency || 0,
                 unlockedCraftingRecipes: clone(gameState.party.unlockedCraftingRecipes || [])
             },
-            shops: clone(gameState.shops || {})
+            shops: clone(gameState.shops || {}),
+            // a world that has been played in multiplayer keeps each guest's party, inventory and position (shared/core/multiplayerSave.js)
+            ...(gameState.multiplayer && gameState.multiplayer.guests && Object.keys(gameState.multiplayer.guests).length ? { multiplayer: clone(gameState.multiplayer) } : {})
         };
 
         return {
@@ -326,6 +331,11 @@ export const SaveManager = {
             },
             data
         };
+    },
+
+    /** A save around a `data` put together elsewhere (a multiplayer guest's world and party, shared/core/multiplayerSave.js), ready for applySnapshot. */
+    wrapData(data) {
+        return { format: SAVE_FORMAT, saveVersion: SAVE_VERSION, savedAt: new Date().toISOString(), summary: {}, data };
     },
 
     /** Throws a readable Error if `save` is not something this build can load. Upgrades older saves. Returns the usable `data`. */
@@ -411,6 +421,7 @@ export const SaveManager = {
         });
 
         gameState.shops = data.shops || {};
+        gameState.multiplayer = data.multiplayer && typeof data.multiplayer === 'object' && data.multiplayer.guests ? data.multiplayer : { guests: {} };
 
         // Transient state always starts clean.
         gameState.encounter = { activeData: null, currentStageId: null, history: [], context: { col: null, row: null, objectId: null } };
@@ -427,6 +438,10 @@ export const SaveManager = {
     /** Saves into `slot`. Resolves true on success. Never throws (a failed save must not crash the game). */
     async saveToSlot(slot = AUTOSAVE_SLOT) {
         if (!this.canSaveNow()) return false;
+        // a guest in someone else's world: their characters are kept in the host's save, never in a slot of their own (engine/multiplayerSession.js)
+        if (this.guestSink) {
+            try { return await this.guestSink(this.createSnapshot()); } catch (e) { console.error('[SaveManager] Guest save failed:', e); return false; }
+        }
         try {
             const ok = await store.write(slot, this.createSnapshot());
             if (ok) lastAutosaveAt = Date.now();
@@ -455,6 +470,10 @@ export const SaveManager = {
      */
     async saveManual(name, slot = null) {
         if (!this.canSaveNow()) return { ok: false, error: 'There is no game to save yet.' };
+        if (this.guestSink) {
+            const ok = await this.saveToSlot();
+            return ok ? { ok: true, slot: null, name: 'the host\'s world' } : { ok: false, error: 'Your characters are saved in the host\'s world, and it could not be reached.' };
+        }
         try {
             const entries = await store.list();
             let target = slot;

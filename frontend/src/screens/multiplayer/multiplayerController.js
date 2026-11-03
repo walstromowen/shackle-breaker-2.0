@@ -17,6 +17,7 @@ import { events } from '../../../../shared/core/eventBus.js';
 import { SaveManager } from '../../engine/saveManager.js';
 import { AuthService } from '../../auth/authService.js';
 import { multiplayer } from '../../engine/multiplayerClient.js';
+import { multiplayerSession } from '../../engine/multiplayerSession.js';
 import { TextEntry } from '../../../../shared/core/textEntry.js';
 import { UITheme } from '../../ui/UITheme.js';
 
@@ -46,7 +47,10 @@ export class MultiplayerController extends BaseController {
             this.active = true;
             this.message = { text: error || 'That save could not be loaded.', kind: 'error' };
         });
-        events.on('CHANGE_SCENE', ({ scene } = {}) => { if (scene === 'overworld') this.loadingWorld = false; });
+        events.on('CHANGE_SCENE', ({ scene } = {}) => {
+            if (scene === 'overworld') this.loadingWorld = false;
+            if (scene !== 'multiplayer') this.active = false;   // off this screen: its sounds and messages stop (init() turns them back on)
+        });
         this.updateHitboxes([]);
     }
 
@@ -72,6 +76,8 @@ export class MultiplayerController extends BaseController {
                 if (this.view !== 'lobby') { this.view = 'lobby'; this.message = null; this.kbFocus = this._focusOrder()[0]; this.playConfirmSound(); }
                 this.waitingFor = null;
                 if (!this._focusOrder().includes(this.kbFocus)) this.kbFocus = this._focusOrder()[0];
+                // the host's world is already open: a guest goes straight in (players can join at any time while the host is on)
+                if (!multiplayer.isHost && multiplayer.room && multiplayer.room.state === 'playing') this._joinWorld();
             }),
             multiplayer.on('error', (err) => {
                 if (!this.active) return;
@@ -99,11 +105,19 @@ export class MultiplayerController extends BaseController {
             this.playConfirmSound();
             this.active = false;
             this.loadingWorld = true;
+            multiplayerSession.hostWhenLoaded();
             events.emit('LOAD_GAME', { slot: room.world.slot });   // the host's world loads as it always does; the room stays open
         } else {
-            this.startedAsGuest = true;
-            this.message = { text: 'The host has gone into their world. Walking it together comes with the next update, so wait here for now.', kind: 'info' };
+            this._joinWorld();
         }
+    }
+
+    /** A guest: ask the host to be let into their world (engine/multiplayerSession.js takes it from there). */
+    _joinWorld() {
+        if (multiplayerSession.role) return;
+        this.startedAsGuest = true;
+        this.message = { text: 'Joining the world…', kind: 'info' };
+        multiplayerSession.requestJoin();
     }
 
     // ========================================================
@@ -298,6 +312,13 @@ export class MultiplayerController extends BaseController {
     // STATE for the renderer (builds the hitboxes)
     // ========================================================
     getState() {
+        if (this.view === 'lobby' && !multiplayer.room && this.active) {
+            const notice = multiplayerSession.takeEndNotice();
+            this.view = 'menu';
+            this.startedAsGuest = false;
+            this.message = notice ? { text: notice, kind: 'error' } : null;
+            this.kbFocus = this._focusOrder()[0];
+        }
         const L = this.layout;
         const cx = L.panelX + L.panelW / 2;
         const hitboxes = [];

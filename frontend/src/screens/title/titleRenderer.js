@@ -59,6 +59,11 @@ export class TitleRenderer {
         // A short status line under the buttons (e.g. "No saved game yet.")
         if (state.message) {
             const lineY = startY + state.menuItems.length * spacing + 4;
+            ctx.save();
+            ctx.font = UITheme.text.notice.font;
+            const plateW = ctx.measureText(state.message).width + 48;
+            ctx.restore();
+            ui.drawRect(width / 2 - plateW / 2, lineY - 22, plateW, 44, 'rgba(6, 7, 10, 0.85)', true);   // legible over the painted background
             ui.drawStyled('notice', state.message, width / 2, lineY, { kind: 'error', align: 'center', baseline: 'middle' });
         }
 

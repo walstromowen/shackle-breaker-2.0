@@ -9,6 +9,13 @@ import { TerrainGenerator } from './terrainGenerator.js';
 import { InteriorFactory } from './interiorFactory.js';
 import { VillagePlanner } from './villagePlanner.js';
 import { StructureSpawner } from './structureSpawner.js';
+/* Multiplayer: every change a player makes to the map (an object taken away or put down, a container searched, a regrowth scheduled) is
+   reported through worldSync.onLocalChange(key, value) so it can be sent to the others; a change that arrives from another player is put in
+   with WorldManager.applyRemoteChange, which is not reported again. Null when nobody is listening (single player). Generated structures
+   are not reported: every player's browser builds the same villages from the same seed. */
+export const worldSync = { onLocalChange: null };
+const reportChange = (key, value) => { if (worldSync.onLocalChange) worldSync.onLocalChange(key, value); };
+
 const MASK_DIRECTIONS = [
     { c: 0, r: -1, bit: BITMASK.TOP },
     { c: 1, r: -1, bit: BITMASK.TOP_RIGHT },
@@ -391,6 +398,7 @@ export class WorldManager {
     markSearched(col, row) {
         if (!gameState.world.changes) gameState.world.changes = {};
         gameState.world.changes['searched:' + this._s(col, row)] = true;
+        reportChange('searched:' + this._s(col, row), true);
     }
     /* Respawning: a tree you cut, a herb you picked... is remembered in gameState.world.changes like any other change, and `scheduleRespawn` writes beside it
        "respawn:<the same key>" = the in-game day it comes back (the day counter is saved with the world, so this is saved too). `expireRespawns` forgets every
@@ -401,6 +409,26 @@ export class WorldManager {
         if (!gameState.world.changes) gameState.world.changes = {};
         const cellKey = prefix + this._s(col, row);
         gameState.world.changes['respawn:' + cellKey] = (gameState.world.day || 1) + days;
+        reportChange('respawn:' + cellKey, gameState.world.changes['respawn:' + cellKey]);
+    }
+
+    /**
+     * A change another player made (worldSync): written into gameState.world.changes (value undefined = the change is gone), and the chunk
+     * that holds the cell is dropped so it is built again with the change in it, if that chunk is part of the map this player is on.
+     */
+    applyRemoteChange(key, value) {
+        if (typeof key !== 'string' || !key) return;
+        if (!gameState.world.changes) gameState.world.changes = {};
+        if (value === undefined || value === '__deleted__') delete gameState.world.changes[key];
+        else gameState.world.changes[key] = value;
+        const cell = key.replace(/^(searched|respawn):/, '');
+        const m = /^(?:INT_(.+)_)?(-?\d+),(-?\d+)$/.exec(cell);
+        if (!m) return;
+        const interiorId = m[1] || null;
+        const here = gameState.world.isInterior ? String(gameState.world.interiorId || '') : null;
+        if ((interiorId === null && here === null) || (interiorId !== null && here === interiorId)) {
+            this._unloadChunk(Math.floor(+m[2] / this.CHUNK_SIZE) + ',' + Math.floor(+m[3] / this.CHUNK_SIZE));
+        }
     }
     expireRespawns() {
         if (gameState.world.isInterior) return 0;
@@ -425,6 +453,7 @@ export class WorldManager {
     modifyWorld(col, row, newValue, explicitMapId = null) {
         const key = this._s(col, row, explicitMapId);
         gameState.world.changes[key] = newValue;
+        reportChange(key, newValue === undefined ? '__deleted__' : newValue);
         if (this.objects.has(key)) {
             const oldObj = this.objects.get(key);
             let activeHitboxes = [];

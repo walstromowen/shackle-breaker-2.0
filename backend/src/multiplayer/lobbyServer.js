@@ -8,7 +8,7 @@ import jwt from 'jsonwebtoken';
 import { Lobby } from './lobby.js';
 
 export const MP_PATH = '/api/mp';
-const MAX_MESSAGE_BYTES = 64 * 1024;
+const MAX_MESSAGE_BYTES = 4 * 1024 * 1024;   // the host sends a joining guest the whole world (a save is at most 3 MB)
 const HELLO_TIMEOUT_MS = 10000;
 const PING_EVERY_MS = 25000;         // keeps the connection open through proxies, and finds dead ones
 const SWEEP_EVERY_MS = 5000;
@@ -26,7 +26,8 @@ export function attachLobbyServer(httpServer, { config, lobby: givenLobby } = {}
             if (ws && ws.readyState === ws.OPEN) ws.send(JSON.stringify(msg));
         },
     });
-    const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_MESSAGE_BYTES });
+    // compressed: a world is a lot of very repetitive JSON
+    const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_MESSAGE_BYTES, perMessageDeflate: { threshold: 1024 } });
 
     httpServer.on('upgrade', (req, socket, head) => {
         let path = '';

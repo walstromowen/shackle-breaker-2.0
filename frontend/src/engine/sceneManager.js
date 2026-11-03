@@ -71,6 +71,7 @@ import { EntityFactory } from '../../../shared/characters/entityFactory.js';
 import { CorruptionSystem } from '../../../shared/characters/corruptionSystem.js';
 import { SaveManager, AUTOSAVE_SLOT } from './saveManager.js';
 import { debugOverlay, DebugOverlayRenderer } from '../ui/debugOverlay.js';
+import { multiplayerSession } from './multiplayerSession.js';
 
 export class SceneManager {
     constructor(canvas, assetLoader, config) {
@@ -91,6 +92,14 @@ export class SceneManager {
         SaveManager.beforeSnapshot = () => {
             if (this.worldManager && !gameState.world.isInterior && this.worldManager.finishPendingWork) this.worldManager.finishPendingWork();
         };
+
+        // multiplayer: the shared world needs the current map, the player on it and the screen that is up (engine/multiplayerSession.js)
+        multiplayerSession.attach({
+            config: this.config,
+            getWorldManager: () => this.worldManager,
+            getLocalPlayer: () => (this.overworldController ? this.overworldController.player : null),
+            getScene: () => this.currentScene,
+        });
 
         // --- CONTROLLERS ---
         this.bootController = new BootController(this.input, this.loader);
@@ -281,7 +290,8 @@ export class SceneManager {
                 if (scene === 'overworld') PartyManager.ensureLivingLeader();
 
                 // A New Game replaces the autosave: keep the old one as 'previous'
-                if (this.currentScene === 'character-creator' && scene === 'overworld') {
+                const mpJoin = !!(data && data.mpJoin);   // a multiplayer guest stepping into the host's world: not a new game of their own
+                if (this.currentScene === 'character-creator' && scene === 'overworld' && !mpJoin) {
                     SaveManager.backupAutosave();
                     gameState.world.discoveredChunks = [];   // a new world has been seen by no one
                     gameState.world.waypoints = [];          // ... and holds no banners
@@ -301,7 +311,7 @@ export class SceneManager {
 
                 // A NEW game opens with the prologue, an encounter that plays on the fresh world and ends on the overworld (the encounter
                 // is started here, not by an object on the map, so it has no col / row to clear afterwards).
-                if (scene === 'overworld' && this.currentScene === 'character-creator') {
+                if (scene === 'overworld' && this.currentScene === 'character-creator' && !mpJoin) {
                     this.overworldController.isLocked = true;
                     this.activeEncounterBGM = null;
                     this.encounterController.start('prologue', {});
@@ -729,6 +739,7 @@ export class SceneManager {
     }
 
     update(dt) {
+        multiplayerSession.update(dt);   // positions, the clock and saves go on under menus and tip cards too
         let click = this.input.getAndResetClick();
         let rightClick = this.input.getAndResetRightClick();
         let scroll = this.input.getAndResetScroll();

@@ -4,6 +4,7 @@ import { SaveManager } from '../../engine/saveManager.js';
 import { AuthService } from '../../auth/authService.js';
 import { graphics } from '../../engine/graphics.js';
 import { NOTICE_BUTTONS } from '../../ui/graphicsNotice.js';
+import { multiplayerSession } from '../../engine/multiplayerSession.js';
 
 export class TitleController extends BaseController {
     constructor(input) {
@@ -37,6 +38,9 @@ export class TitleController extends BaseController {
 
     // Pass necessary data to the renderer
     getState() {
+        // back from someone else's world: why (the host closed it, the connection dropped...)
+        const ended = multiplayerSession.takeEndNotice();
+        if (ended) this.message = ended;
         // the graphics notice (ui/graphicsNotice.js): once a visit, when the browser draws without the graphics card
         if (this.notice === undefined) {
             this.notice = graphics.noticeWanted;

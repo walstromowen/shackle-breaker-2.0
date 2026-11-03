@@ -17,6 +17,7 @@ import { AbilityDefinitions } from '../../../../shared/abilities/abilityDefiniti
 import { ExploredMap } from '../../../../shared/world/exploredMap.js';
 import { ActSystem } from '../../../../shared/story/actSystem.js';
 import { PartyFollowers } from './partyFollowers.js';
+import { multiplayerSession } from '../../engine/multiplayerSession.js';
 
 /* A world buff with a `light` (a torch: the ability `torchlight`, see abilityDefinitions.js) lasts a number of IN-GAME minutes. In its last TORCH_GUTTER_MINUTES the light shrinks back to normal. */
 const TORCH_GUTTER_MINUTES = 30;
@@ -422,6 +423,13 @@ export class OverworldController extends BaseController {
 
         this.updateCamera();
         this.syncFollowers(dt);
+    }
+
+    /* The other players in a multiplayer world who are on this map (engine/multiplayerSession.js), lit like the player so they show at night. */
+    _otherPlayers() {
+        const others = multiplayerSession.visibleEntities();
+        for (const e of others) e.light = this.player.light;
+        return others;
     }
 
     /* The party members behind the player keep to its trail (PartyFollowers). They are only drawn: nothing in the world knows they are there. */
@@ -1015,7 +1023,7 @@ export class OverworldController extends BaseController {
         }
 
         return {
-            entities: [this.player, ...this.followers.entities],   // the player, then the two party members who follow (MapRenderer draws the ones that are on their feet)
+            entities: [this.player, ...this.followers.entities, ...this._otherPlayers()],   // the player, then the two party members who follow (MapRenderer draws the ones that are on their feet)
             camera: this.camera,
             worldManager: this.worldManager, // the minimap reads the terrain around the player from it
             worldInfo: this.getWorldInfo(), // the status plaque: biome, day, clock, weather
@@ -1027,6 +1035,7 @@ export class OverworldController extends BaseController {
             isMenuOpen: this.isMenuOpen,
             trackedQuests: this.getTrackedQuests(),
             toasts: (gameState.ui && gameState.ui.toasts) ? gameState.ui.toasts : [],
+            mpMessages: multiplayerSession.visibleMessages(),   // multiplayer: who joined or left the world
             facedObject: displayFacedObject, // Passes null if they lack the tool!
             hotbar: this.getHotbarInfo(),
             notice: (this.notice && performance.now() < this.notice.until) ? { text: this.notice.text, ok: this.notice.ok, left: this.notice.until - performance.now() } : null,

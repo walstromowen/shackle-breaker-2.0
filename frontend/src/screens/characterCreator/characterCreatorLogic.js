@@ -9,6 +9,7 @@ import { InventorySystem } from '../../../../shared/items/inventorySystem.js';
 import { PartyManager } from '../../../../shared/characters/partyManager.js';
 import { QuestModel } from '../../../../shared/story/questModel.js';
 import { CONFIG, DEV_CONSOLE } from '../../../../shared/core/constants.js';
+import { multiplayerSession } from '../../engine/multiplayerSession.js';
 const ALLOWED_TRAITS = ['quick', 'inquisitive', 'brawler', 'tough', 'stealthy'];
 const UI_TRAITS = ALLOWED_TRAITS.map(key => ({
     id: key,
@@ -390,6 +391,9 @@ export class CharacterCreatorLogic {
         if (!gameState.quests.trackedIds.includes(backgroundQuestId)) {
             gameState.quests.trackedIds.push(backgroundQuestId);
         }
+
+        // a multiplayer guest's first visit: the party steps into the host's world instead of a new one (engine/multiplayerSession.js)
+        if (multiplayerSession.creatingCharacter) { multiplayerSession.characterCreated(); return; }
 
         events.emit('CHANGE_SCENE', { scene: 'overworld' });
     }

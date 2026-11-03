@@ -278,8 +278,9 @@ export class MapRenderer {
         // The party leader walks the map: the first member on their feet who has a sheet (this.lineup, worked out once a frame). A recruited creature has no walking sheet
         // (the snow leopard and wolf point at a sheet that does not exist), so it is skipped and the next member is drawn instead of the player vanishing. The two after the leader are the followers.
         const lineup = this.lineup || PartyFollowers.lineup(gameState.party.members, (key) => !!this.loader.get(key));
-        const walker = lineup[entity.followerSlot || 0];
-        const sprite = walker ? this.loader.get(walker.spriteOverworld) : null;
+        // another player in a multiplayer world (engine/multiplayerSession.js) walks with their own leader's sheet
+        const walker = entity.remote ? null : lineup[entity.followerSlot || 0];
+        const sprite = entity.remote ? (entity.spriteKey ? this.loader.get(entity.spriteKey) : null) : (walker ? this.loader.get(walker.spriteOverworld) : null);
         if (!sprite) return;
         const { TILE_SIZE, GAME_SCALE } = this.config;
         const scale = GAME_SCALE * this.resScale;
@@ -313,6 +314,28 @@ export class MapRenderer {
         const dW = Math.ceil(FW * scale), dH = Math.ceil(FH * scale);
         const tileBottom = dy + Math.ceil(TILE_SIZE * scale); // the same screen line drawObject puts the bottom of a 1-tile object on, at any scale
         this.ctx.drawImage(sprite, sx, sy, FW, FH, dx - offX, tileBottom - dH + Math.floor(feetPad * dH / FH), dW, dH);
+        if (entity.label) this.drawNameTag(entity, dx + Math.floor(TILE_SIZE * scale / 2), tileBottom - dH + Math.floor(feetPad * dH / FH));
+    }
+
+    /* Another player's name over their head (and "In battle" under it while they fight), so friends can find each other on the map. */
+    drawNameTag(entity, cx, topY) {
+        const ctx = this.ctx;
+        ctx.save();
+        ctx.font = '600 22px "Barlow", system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        const w = ctx.measureText(entity.label).width + 18;
+        const y = topY - 4;
+        ctx.fillStyle = 'rgba(8, 9, 12, 0.72)';
+        ctx.fillRect(Math.round(cx - w / 2), y - 28, Math.round(w), 28);
+        ctx.fillStyle = '#c9a64f';
+        ctx.fillText(entity.label, cx, y - 3);
+        if (entity.busy) {
+            ctx.font = 'italic 400 18px "Barlow", system-ui, sans-serif';
+            ctx.fillStyle = '#e2dac8';
+            ctx.fillText(entity.busy, cx, y - 32);
+        }
+        ctx.restore();
     }
     updateViewBounds(camera) {
         const { TILE_SIZE, GAME_SCALE, WALL_HEIGHT } = this.config;
