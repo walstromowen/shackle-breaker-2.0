@@ -18,6 +18,7 @@ import { ShopController } from '../screens/shop/shopController.js';
 import { WorkshopController } from '../screens/workshop/workshopController.js'; // <-- NEW
 import { SavesController } from '../screens/saves/savesController.js';
 import { SettingsController } from '../screens/settings/settingsController.js';
+import { MultiplayerController } from '../screens/multiplayer/multiplayerController.js';
 
 // --- RENDERERS ---
 import { BootRenderer } from '../screens/boot/bootRenderer.js';
@@ -39,6 +40,7 @@ import { ShopRenderer } from '../screens/shop/shopRenderer.js';
 import { WorkshopRenderer } from '../screens/workshop/workshopRenderer.js'; // <-- NEW
 import { SavesRenderer } from '../screens/saves/savesRenderer.js';
 import { SettingsRenderer } from '../screens/settings/settingsRenderer.js';
+import { MultiplayerRenderer } from '../screens/multiplayer/multiplayerRenderer.js';
 import { CanvasUI } from '../ui/canvasUI.js';
 import { UITheme } from '../ui/UITheme.js';
 import { TutorialOverlay } from '../ui/tutorialOverlay.js';
@@ -102,6 +104,7 @@ export class SceneManager {
         this.workshopController = new WorkshopController(this.input); // <-- NEW
         this.savesController = new SavesController(this.input);
         this.settingsController = new SettingsController(this.input);
+        this.multiplayerController = new MultiplayerController(this.input);
 
         this.overworldController = null;
         this.encounterController = null;
@@ -128,6 +131,7 @@ export class SceneManager {
         this.workshopRenderer = new WorkshopRenderer(this.ctx, this.loader); // <-- NEW
         this.savesRenderer = new SavesRenderer(this.config, this.loader);
         this.settingsRenderer = new SettingsRenderer(this.config, this.loader);
+        this.multiplayerRenderer = new MultiplayerRenderer(this.config, this.loader);
 
         // State
         this.currentScene = 'boot';
@@ -165,7 +169,7 @@ export class SceneManager {
 
         // 2. Main menu and Boot exceptions
         if (targetScene === 'boot') return null;
-        if (targetScene === 'title') return 'shackle_breaker_theme_1';
+        if (targetScene === 'title' || targetScene === 'multiplayer') return 'shackle_breaker_theme_1';
         if (targetScene === 'character-creator') return null;
 
         // 3. Cached Battle/Encounter overrides
@@ -196,7 +200,7 @@ export class SceneManager {
         // <-- ADDED 'workshop' to keep whatever background ambience is currently playing
         if (['party', 'character_summary', 'level_up', 'shop', 'workshop', 'saves', 'settings'].includes(targetScene)) return null;
 
-        if (['battle', 'encounter', 'character-creator', 'title', 'boot'].includes(targetScene)) return 'none';
+        if (['battle', 'encounter', 'character-creator', 'title', 'boot', 'multiplayer'].includes(targetScene)) return 'none';
 
         if (gameState.world && gameState.world.currentWeather) {
             return gameState.world.currentWeather.audioEffect || 'none';
@@ -355,6 +359,9 @@ export class SceneManager {
                 }
                 if (scene === 'settings') {
                     this.settingsController.init(data || {});   // { from: 'game' | 'title' }
+                }
+                if (scene === 'multiplayer') {
+                    this.multiplayerController.init(data || {});
                 }
 
                 this.changeScene(scene);
@@ -688,6 +695,7 @@ export class SceneManager {
             case 'workshop': return this.workshopController; // <-- NEW
             case 'saves': return this.savesController;
             case 'settings': return this.settingsController;
+            case 'multiplayer': return this.multiplayerController;
             default: return null;
         }
     }
@@ -709,6 +717,7 @@ export class SceneManager {
             case 'workshop': return this.workshopRenderer; // <-- NEW
             case 'saves': return this.savesRenderer;
             case 'settings': return this.settingsRenderer;
+            case 'multiplayer': return this.multiplayerRenderer;
             default: return null;
         }
     }
@@ -871,6 +880,9 @@ export class SceneManager {
                 break;
             case 'settings':
                 this.settingsRenderer.render(this.ctx, this.settingsController.getState());
+                break;
+            case 'multiplayer':
+                this.multiplayerRenderer.render(this.ctx, this.multiplayerController.getState());
                 break;
             case 'level_up':
                 const luState = this.levelUpController.getState();

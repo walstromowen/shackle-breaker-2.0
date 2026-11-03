@@ -13,6 +13,7 @@ export class TitleController extends BaseController {
         this.menuItems = [
             { id: 'btn_new_game', text: 'New Game' },
             { id: 'btn_load_game', text: 'Load Game' },
+            { id: 'btn_multiplayer', text: 'Multiplayer' },
             { id: 'btn_options', text: 'Settings' },
             // Logged in: log out. Playing offline: go back to the login screen.
             { id: 'btn_account', text: AuthService.isLoggedIn ? 'Log Out' : 'Log In' }
@@ -163,6 +164,16 @@ export class TitleController extends BaseController {
                 this.message = null;
                 this.playConfirmSound();
                 events.emit('CHANGE_SCENE', { scene: 'saves', data: { mode: 'title' } });   // pick which save to load
+                break;
+            case 'btn_multiplayer':
+                if (!AuthService.isLoggedIn) {
+                    this.message = 'Log in to play online.';
+                    this.playErrorSound();
+                    break;
+                }
+                this.message = null;
+                this.playConfirmSound();
+                events.emit('CHANGE_SCENE', { scene: 'multiplayer' });
                 break;
             case 'btn_account':
                 this.playConfirmSound();
