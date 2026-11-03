@@ -95,6 +95,10 @@ export class OverworldController extends BaseController {
     getHitboxes() {
         const prompt = this._promptLayout();
         if (prompt) return prompt.options.map(o => ({ id: o.hitId, x: o.x, y: o.y, w: o.w, h: o.h, zIndex: 500 }));
+        const plaque = this._partyPlaque();
+        const extra = plaque ? [{ id: 'mp_leave', x: plaque.x, y: plaque.y, w: plaque.w, h: plaque.h, zIndex: 120 }] : [];
+        if (this.isMenuOpen) return [this.menuToggleHitbox, ...this.dropdownHitboxes, ...this.hotbarHitboxes, ...extra];
+        if (extra.length) return [this.menuToggleHitbox, ...this.hotbarHitboxes, ...extra];
         if (this.isMenuOpen) {
             return [this.menuToggleHitbox, ...this.dropdownHitboxes, ...this.hotbarHitboxes];
         }
@@ -107,6 +111,8 @@ export class OverworldController extends BaseController {
             return;
         }
         if (this.isLocked) return false;
+
+        if (hitboxId === 'mp_leave') { this.playConfirmSound(); this._askLeaveParty(); return; }
 
         if (typeof hitboxId === 'string' && hitboxId.startsWith('hotbar_')) {
             // Using a slot makes its own sound (or none for an empty slot), so no default confirm on top of it
@@ -221,6 +227,8 @@ export class OverworldController extends BaseController {
       this.isMenuOpen = false;
       events.emit('OPEN_WORKSHOP', { station: 'any', title: 'Crafting Bag' });
     }
+    // L: leave a party of players (a leader breaks it up)
+    if (code === 'KeyL' && multiplayerSocial.myGroup()) { this.playConfirmSound(); this._askLeaveParty(); }
     // O: System (save / load / quit to title)
     if (code === MENU_KEYS.system) this.executeMenuAction('saves', { mode: 'game' });
 
@@ -477,6 +485,31 @@ export class OverworldController extends BaseController {
         else if (intent === 'DOWN' || intent === 'RIGHT') { p.focus = (p.focus + 1) % p.options.length; this.playNavSound(); }
         else if (intent === 'CONFIRM') { this.playConfirmSound(); multiplayerSocial.pickPrompt(p.focus); }
         else if (intent === 'CANCEL') { this.playCancelSound(); multiplayerSocial.cancelPrompt(); }
+    }
+
+    /* L, or a click on the party plaque: leave the party (members get their own movement and party back), or break it up (the leader). */
+    _askLeaveParty() {
+        const g = multiplayerSocial.myGroup();
+        if (!g) return;
+        const leading = g.leader === multiplayerSocial.me;
+        multiplayerSocial.prompt = {
+            title: leading ? 'Break up the party?' : `Leave ${multiplayerSocial.nameOf(g.leader)}'s party?`,
+            text: leading ? 'Everyone goes back to their own party and their own way.' : 'You go back to your own party and your own way.',
+            options: [{ id: 'yes', label: leading ? 'Break Up' : 'Leave' }, { id: 'cancel', label: 'Stay' }], focus: 0,
+            onPick: (id) => { if (id === 'yes') multiplayerSocial.leaveGroup(); },
+        };
+    }
+
+    /** The party plaque, top centre under the multiplayer messages: who is in the party, and how to leave (null with no party). */
+    _partyPlaque() {
+        const g = multiplayerSocial.myGroup();
+        if (!g || !multiplayerSession.active) return null;
+        const me = multiplayerSocial.me;
+        const names = [g.leader, ...g.members].map(id => (id === me ? 'You' : multiplayerSocial.nameOf(id)));
+        const leading = g.leader === me;
+        const text = `${leading ? 'Leading' : 'Party'}: ${names.join(', ')}   ·   [L] ${leading ? 'Break up' : 'Leave'}`;
+        const w = Math.min(900, 120 + text.length * 13), h = 46;
+        return { x: (1920 - w) / 2, y: 16, w, h, text, id: 'mp_leave' };
     }
 
     /** Where the question box and its buttons are (null when there is none). */
@@ -1098,7 +1131,9 @@ export class OverworldController extends BaseController {
         }
 
         return {
-            entities: [this.player, ...this.followers.entities, ...this._otherPlayers()],   // the player, then the two party members who follow (MapRenderer draws the ones that are on their feet)
+            // in a party of players each player walks the map as their lead character alone (the party's line is the players), so the
+            // followers of one's own party stay out of sight until the party splits up
+            entities: [this.player, ...(multiplayerSocial.myGroup() ? [] : this.followers.entities), ...this._otherPlayers()],   // the player, then the two party members who follow (MapRenderer draws the ones that are on their feet)
             camera: this.camera,
             worldManager: this.worldManager, // the minimap reads the terrain around the player from it
             worldInfo: this.getWorldInfo(), // the status plaque: biome, day, clock, weather
@@ -1112,6 +1147,7 @@ export class OverworldController extends BaseController {
             toasts: (gameState.ui && gameState.ui.toasts) ? gameState.ui.toasts : [],
             mpMessages: multiplayerSession.visibleMessages(),   // multiplayer: who joined or left the world
             mpPrompt: this._promptLayout(),                     // multiplayer: a request to answer, or the menu for the player in front
+            mpParty: this._partyPlaque(),                       // multiplayer: the party of players this one is in, and how to leave it
             facedObject: displayFacedObject, // Passes null if they lack the tool!
             hotbar: this.getHotbarInfo(),
             notice: (this.notice && performance.now() < this.notice.until) ? { text: this.notice.text, ok: this.notice.ok, left: this.notice.until - performance.now() } : null,

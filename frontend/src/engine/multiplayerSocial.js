@@ -140,7 +140,7 @@ class MultiplayerSocial {
             if (this.trail.length > 8) this.trail.length = 8;
         }
         const place = Math.max(1, g.members.indexOf(this.me) + 1);
-        return this.trail[Math.min(place, this.trail.length - 1)] || this.trail[0];
+        return this.trail[place] || null;   // until the leader has walked that far there is no place behind them: stay put
     }
 
     get isFollowing() { return this.isMember && multiplayerSession.active; }
@@ -398,6 +398,28 @@ class MultiplayerSocial {
         events.emit('MP_START_BATTLE', { enemies, context: { mp, partyEntities, backgroundId: spec.background || undefined, weather: null }, bgm: spec.bgm || null });
     }
 
+    /** Of these players, the ones still in the world. */
+    partyHere(players) {
+        const room = multiplayer.room;
+        return (players || []).filter(id => room && room.players.some(p => p.id === id && p.connected));
+    }
+
+    /* ---- shared encounters: the leader's encounter, played on every member's screen, decided by vote (EncounterController) ---- */
+    /** The leader opens an encounter: the members open it too. Returns the leader's own part of it, for EncounterController.start. */
+    startPartyEncounter(data) {
+        const g = this.groups.get(this.me) || [];
+        const players = [this.me, ...this.partyHere(g)];
+        const eid = newId(), seed = (Math.random() * 0xffffffff) >>> 0;
+        const base = { eid, seed, players, leader: this.me };
+        for (const id of players) if (id !== this.me) this._send({ k: 'enc_start', mp: base, encounterId: data.encounterId, context: data.context || {}, bgm: data.bgm || null }, id);
+        return { ...base, me: this.me, isLeader: true };
+    }
+
+    sendEncounter(mp, d, to) {
+        if (to) { this._send({ ...d, eid: mp.eid }, to); return; }
+        for (const id of mp.players) if (id !== mp.me) this._send({ ...d, eid: mp.eid }, id);
+    }
+
     sendBattleDecision(mp, d) {
         for (const id of mp.players) if (id !== mp.me) this._send({ k: 'bt_dec', bid: mp.bid, ...d }, id);
     }
@@ -462,6 +484,15 @@ class MultiplayerSocial {
                 if (g && g.includes(from) && Array.isArray(d.members)) this.groupParties.set(from, d.members);
                 break;
             }
+            case 'enc_start':
+                if (d.mp && multiplayerSession.active && !this.battle) {
+                    this.prompt = null;
+                    events.emit('START_ENCOUNTER', { encounterId: d.encounterId, context: d.context || {}, bgm: d.bgm || null, mp: { ...d.mp, me: this.me, isLeader: false } });
+                }
+                break;
+            case 'enc_vote': case 'enc_tally': case 'enc_go': case 'enc_opts':
+                events.emit('MP_ENCOUNTER', { ...d, from });
+                break;
             case 'bt_start':
                 if (d.spec && multiplayerSession.active) this._beginBattle(d.spec);
                 break;

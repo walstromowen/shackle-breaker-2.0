@@ -101,7 +101,7 @@ test('a jump (a warp, a door, a loaded game) lays the trail out again; nothing s
 test('the overworld hands the followers to the renderer, and the renderer draws each from its own member\'s sheet', () => {
     const ow = read('frontend/src/screens/overworld/overworldController.js');
     assert.match(ow, /import \{ PartyFollowers \} from '\.\/partyFollowers\.js'/);
-    assert.match(ow, /entities: \[this\.player, \.\.\.this\.followers\.entities[,\]]/);   // (then any other players in a multiplayer world)
+    assert.match(ow, /entities: \[this\.player, [^\n]*this\.followers\.entities/);   // (out of sight in a party of players; then the other players)
     assert.match(ow, /this\.followers\.sync\(this\.player, dt/);
     const mr = read('frontend/src/screens/overworld/mapRenderer.js');
     assert.match(mr, /PartyFollowers\.lineup\(/);

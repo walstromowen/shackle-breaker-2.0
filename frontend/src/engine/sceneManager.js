@@ -514,8 +514,11 @@ export class SceneManager {
 
         events.on('START_ENCOUNTER', (data) => {
             events.emit('PLAY_SFX', { id: 'cinematicBoom', volume: 1.0 });
+            // a party of players: the leader's encounter is the party's, decided by vote (engine/multiplayerSocial.js, EncounterController)
+            const mp = data.mp || (multiplayerSocial.sharesFights ? multiplayerSocial.startPartyEncounter(data) : null);
+            if (this.overworldController) this.overworldController.isLocked = true;
             this.transitionRenderer.start(() => {
-                this.encounterController.start(data.encounterId, data.context || {});
+                this.encounterController.start(data.encounterId, data.context || {}, mp);
                 const customBGM = data.bgm || data.context?.bgm || null;
                 this.activeEncounterBGM = customBGM;
                 this.changeScene('encounter', { bgm: customBGM });

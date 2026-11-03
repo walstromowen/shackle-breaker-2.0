@@ -11,6 +11,20 @@ import { ItemDefinitions } from '../../../../shared/items/itemDefinitions.js';
 import { ActSystem } from '../../../../shared/story/actSystem.js';
 import { EntityFactory } from '../../../../shared/characters/entityFactory.js';
 import { CorruptionSystem } from '../../../../shared/characters/corruptionSystem.js';
+import { rng, withoutSeed } from '../../../../shared/core/random.js';
+
+/* A party of several players in one encounter (EncounterController, engine/multiplayerSocial.js): every member's browser plays it with the
+   same dice, so the results here are cut to each player's part. The leader's lead character is the one who rolls and the one an
+   "active_character" result is about, so those (and starting a fight, a recruit, a shop, the XP for a roll, an object taken off the map)
+   happen on the leader's browser only. Found items go one at a time to a player picked by the dice; found coin is split evenly. */
+const LEADER_ONLY = new Set(['DESTROY_OBJECT', 'START_BATTLE', 'RECRUIT_CHARACTER', 'OPEN_SHOP', 'AWARD_XP', 'ADVANCE_TIME', 'REMOVE_ITEM', 'TRIGGER_GAME_OVER']);
+const ABOUT_THE_ROLLER = new Set(['ADD_TRAIT', 'REMOVE_TRAIT', 'MODIFY_CORRUPTION', 'MODIFY_VITALS', 'APPLY_STATUS_EFFECT', 'TAKE_DAMAGE']);
+function leaderOnly(type, payload) {
+    if (LEADER_ONLY.has(type)) return true;
+    if (ABOUT_THE_ROLLER.has(type)) return payload.target !== 'entire_party';
+    if (type === 'MODIFY_CURRENCY') return (payload.amount || 0) < 0;   // a price or a theft is the leader's
+    return false;
+}
 
 // The plains battle track is what encounter definitions name for "an ordinary fight". It stands in for the music of the biome the party is in
 // (the cave's battle track in a cave, the desert's in the desert...). Tracks made for one scene (a boss, a creature's theme) are played as named.
@@ -73,9 +87,30 @@ export class EncounterLogic {
         });
     }
 
+    /* Set while a party of players shares an encounter: { players: [ids], me, isLeader, roller: the leader's lead character's attributes } */
+    static shared = null;
+
+    /** How many of `qty` found items this player keeps (each to one player of the party, by the shared dice). */
+    static _keepOf(qty) {
+        const s = EncounterLogic.shared;
+        if (!s || !s.players || s.players.length < 2) return qty;
+        let kept = 0;
+        for (let i = 0; i < qty; i++) if (s.players[Math.floor(rng() * s.players.length)] === s.me) kept++;
+        return kept;
+    }
+
+    /** This player's part of `amount` found coin: an even split, the odd coins to one player by the dice. */
+    static _coinOf(amount) {
+        const s = EncounterLogic.shared;
+        if (!s || !s.players || s.players.length < 2 || amount <= 0) return amount;
+        const each = Math.floor(amount / s.players.length);
+        const odd = s.players[Math.floor(rng() * s.players.length)];
+        return each + (odd === s.me ? amount - each * s.players.length : 0);
+    }
+
     static calculateRoll(decision) {
         const roller = gameState.party.members[0];
-        const attributes = roller?.attributes || {};
+        const attributes = (EncounterLogic.shared && EncounterLogic.shared.roller) || roller?.attributes || {};
         const difficulty = gameState.difficulty || 'normal';
         const globalConfig = DIFFICULTY_MODIFIERS[difficulty] || { rollBonus: 0 };
         const difficultyRollMod = globalConfig.rollBonus || 0;
@@ -96,7 +131,7 @@ export class EncounterLogic {
             finalizedNightmareMod = Math.floor(finalAppliedMod / 2);
         }
         
-        const d20 = Math.floor(Math.random() * 20) + 1;
+        const d20 = Math.floor(rng() * 20) + 1;
         const total = d20 + finalizedNightmareMod;
         
         return {
@@ -115,7 +150,7 @@ export class EncounterLogic {
     static selectOutcome(outcomes) {
         if (!outcomes || outcomes.length === 0) return null;
         const totalWeight = outcomes.reduce((sum, outcome) => sum + (outcome.weight || 1), 0);
-        let roll = Math.random() * totalWeight;
+        let roll = rng() * totalWeight;
         let selectedOutcome = null;
         
         for (const outcome of outcomes) {
@@ -163,6 +198,7 @@ export class EncounterLogic {
         resultsArray.forEach(result => {
             const type = result.type;
             const payload = result.payload || {};
+            if (EncounterLogic.shared && !EncounterLogic.shared.isLeader && leaderOnly(type, payload)) return;
             
             switch (type) {
                 case "RECORD_KILL":
@@ -205,11 +241,12 @@ export class EncounterLogic {
                         itemsToGive.push({ id: payload.itemId, qty: payload.qty || 1 });
                     }
                     itemsToGive.forEach(item => {
-                        if (item.id) {
-                            InventorySystem.addItem(item.id, item.qty || 1);
+                        const qty = item.id ? EncounterLogic._keepOf(item.qty || 1) : 0;
+                        if (item.id && qty > 0) {
+                            InventorySystem.addItem(item.id, qty);
                             const formattedName = item.id.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-                            itemsFound.push(`${formattedName} x${item.qty || 1}`);
-                            itemsFoundData.push({ id: item.id, qty: item.qty || 1 });
+                            itemsFound.push(`${formattedName} x${qty}`);
+                            itemsFoundData.push({ id: item.id, qty });
                         }
                     });
                     break;
@@ -243,23 +280,26 @@ export class EncounterLogic {
                         }
                         let computedRolls = payload.rolls || 1;
                         if (payload.minRolls !== undefined && payload.maxRolls !== undefined) {
-                            computedRolls = Math.floor(Math.random() * (payload.maxRolls - payload.minRolls + 1)) + payload.minRolls;
+                            computedRolls = Math.floor(rng() * (payload.maxRolls - payload.minRolls + 1)) + payload.minRolls;
                         }
                         const lootModel = LootTableFactory.generateLoot(actualTableId, computedRolls, payload.baseCurrency || 0, payload.exclude);
                         if (lootModel.hasItems()) {
                             lootModel.items.forEach(item => {
-                                InventorySystem.addItem(item.id, item.qty);
+                                const qty = EncounterLogic._keepOf(item.qty);
+                                if (qty <= 0) return;
+                                InventorySystem.addItem(item.id, qty);
                                 const formattedName = item.id.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-                                itemsFound.push(`${formattedName} x${item.qty}`);
-                                itemsFoundData.push({ id: item.id, qty: item.qty });
+                                itemsFound.push(`${formattedName} x${qty}`);
+                                itemsFoundData.push({ id: item.id, qty });
                             });
                         }
                         if (lootModel.hasCurrency()) {
                             if (typeof gameState.party.currency === 'undefined') {
                                 gameState.party.currency = 0;
                             }
-                            gameState.party.currency += lootModel.currency;
-                            currencyFound.push(`Found ${lootModel.currency} currency!`);
+                            const coin = EncounterLogic._coinOf(lootModel.currency);
+                            gameState.party.currency += coin;
+                            if (coin > 0) currencyFound.push(coin === lootModel.currency ? `Found ${coin} currency!` : `Found ${lootModel.currency} currency: your share is ${coin}.`);
                         }
                     }
                     break;
@@ -296,8 +336,9 @@ export class EncounterLogic {
                     const purse = Math.max(0, gameState.party.currency);
 
                     if (amount >= 0) {
-                        gameState.party.currency = purse + amount;
-                        if (amount > 0) currencyFound.push(`Found ${amount} currency!`);
+                        const coin = EncounterLogic._coinOf(amount);
+                        gameState.party.currency = purse + coin;
+                        if (coin > 0) currencyFound.push(coin === amount ? `Found ${coin} currency!` : `Found ${amount} currency: your share is ${coin}.`);
                         break;
                     }
 
@@ -503,7 +544,8 @@ export class EncounterLogic {
                 
                 if (payload.lootTableId) {
                     const rolls = payload.rolls || 5;
-                    const lootModel = LootTableFactory.generateLoot(payload.lootTableId, rolls);
+                    // a shop's wares are the leader's alone: rolled off the shared dice, so the others' dice stay in step
+                    const lootModel = withoutSeed(() => LootTableFactory.generateLoot(payload.lootTableId, rolls));
                     if (lootModel.hasItems()) {
                         const generatedWares = lootModel.items.map(item => ({
                             id: item.id,

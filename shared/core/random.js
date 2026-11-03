@@ -26,3 +26,10 @@ export function seedRandom(seed) {
 export function unseedRandom() { seeded = null; }
 
 export const isSeeded = () => seeded !== null;
+
+/** Runs fn with Math.random in place of the seeded stream (something only one player's browser does), and returns its result. */
+export function withoutSeed(fn) {
+    const kept = seeded;
+    seeded = null;
+    try { return fn(); } finally { seeded = kept; }
+}

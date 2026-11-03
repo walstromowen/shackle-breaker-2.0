@@ -78,6 +78,12 @@ export class OverworldUIRenderer {
         }
 
         if (state && state.mpMessages && state.mpMessages.length) this.drawMultiplayerMessages(ctx, ui, state.mpMessages);
+        if (state && state.mpParty) {
+            const p = state.mpParty;
+            ui.drawPanel(p.x, p.y, p.w, p.h, 'rgba(10, 11, 14, 0.85)');
+            ui.drawStateBox(p.x, p.y, p.w, p.h, ui.flags(p.id, hoveredHitboxId), { inset: true });
+            ui.drawText(p.text, p.x + p.w / 2, p.y + 31, UITheme.fonts.small, UITheme.colors.textHighlight, 'center', 'alphabetic', p.w - 30);
+        }
         if (state && state.mpPrompt) this.drawMultiplayerPrompt(ctx, ui, state.mpPrompt);
     }
 
@@ -93,7 +99,7 @@ export class OverworldUIRenderer {
     /* Multiplayer: "Ann joined the world." and the like, top centre, fading out after a few seconds (engine/multiplayerSession.js). */
     drawMultiplayerMessages(ctx, ui, messages) {
         const cx = ctx.canvas.width / 2;
-        let y = 64;
+        let y = 76;   // under the party plaque
         ctx.save();
         for (const m of messages) {
             ctx.globalAlpha = Math.max(0, Math.min(1, m.alpha));
