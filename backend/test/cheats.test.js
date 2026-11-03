@@ -62,12 +62,14 @@ test('the choice is saved and loaded with the game; old saves have cheats off', 
     assert.equal(gameState.cheats, false, 'a save from before the toggle has no cheats');
 });
 
-test('"/" only opens the console in a game with cheats on', () => {
+test('"/" opens the console in a game with cheats on (or as the chat in a multiplayer world), and commands still need cheats', () => {
     const src = read('frontend/src/engine/sceneManager.js');
     const line = src.split('\n').find(l => /e\.code === 'Slash'/.test(l));
     assert.ok(line, 'the "/" handler exists');
     assert.ok(/gameState\.cheats === true/.test(line), 'and it checks the game\'s cheats flag');
+    assert.ok(/multiplayerSession\.active/.test(line), 'or a multiplayer world (chat)');
     assert.ok(/this\.devConsole/.test(line));
+    assert.ok(/allowCommands: \(\) => gameState\.cheats === true/.test(src), 'a command needs cheats even when the box is open for chat');
 });
 
 test('the creator screen draws the Cheats row only when the console is available', () => {

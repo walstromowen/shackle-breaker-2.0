@@ -171,7 +171,12 @@ export class SceneManager {
             },
             onOpen: () => this.input.reset(),
             onClose: () => this.input.reset(),
+            // it is the chat in a multiplayer world (T); commands still need a game made with Cheats on
+            allowCommands: () => gameState.cheats === true,
+            chatActive: () => multiplayerSession.active,
+            onChat: (text) => multiplayerSocial.sendChat(text),
         }) : null;
+        events.on('MP_CHAT', ({ name, text }) => { if (this.devConsole) this.devConsole.showChat(name, text); });
 
         this._handleGlobalKeydown = this._handleGlobalKeydown.bind(this);
         this.setupInputRouting();
@@ -710,11 +715,18 @@ export class SceneManager {
             return;
         }
 
-        // "/" opens the developer console, in the overworld when nothing else has the screen (a scene is not loading, no menu is up)
-        if (this.devConsole && gameState.cheats === true && !this.devConsole.isOpen && e.code === 'Slash' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey
-            && this.currentScene === 'overworld' && !this.overworldController.isLocked && !this.transitionRenderer.isActive) {
+        // "/" opens the developer console (in a game with cheats on, or as the chat in a multiplayer world) and T opens the chat, in the overworld when
+        // nothing else has the screen (a scene is not loading, no menu is up)
+        const consoleFree = this.devConsole && !this.devConsole.isOpen && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey
+            && this.currentScene === 'overworld' && !this.overworldController.isLocked && !this.transitionRenderer.isActive && !multiplayerSocial.prompt;
+        if (consoleFree && (gameState.cheats === true || multiplayerSession.active) && e.code === 'Slash' && this.devConsole) {
             e.preventDefault();
             this.devConsole.open('/');
+            return;
+        }
+        if (consoleFree && multiplayerSession.active && e.code === 'KeyT') {
+            e.preventDefault();
+            this.devConsole.open('');
             return;
         }
 

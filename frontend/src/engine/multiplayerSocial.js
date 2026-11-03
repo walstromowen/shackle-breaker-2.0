@@ -29,6 +29,7 @@ import { multiplayerSession } from './multiplayerSession.js';
 import { serializeEntity, hydrateEntity, hydrateItem } from './saveManager.js';
 
 const REQUEST_SECONDS = 20;
+const CHAT_MAX = 200;   // characters in one chat line
 const MAX_GROUP = 3;
 const PARTY_SEND_EVERY = 4;   // seconds between a member's character updates to the leader (only when they changed)
 const KIND_TEXT = { trade: 'wants to trade with you.', party: 'invites you to their party.', duel: 'challenges you to a duel (nothing at stake).' };
@@ -420,6 +421,14 @@ class MultiplayerSocial {
         for (const id of mp.players) if (id !== mp.me) this._send({ ...d, eid: mp.eid }, id);
     }
 
+    /** Chat: a line to everyone in the world (the developer console is the chat box). True when it was sent. */
+    sendChat(text) {
+        const line = String(text || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, CHAT_MAX);
+        if (!line || !multiplayerSession.active || multiplayer.status !== 'online') return false;
+        this._send({ k: 'chat', text: line });
+        return true;
+    }
+
     sendBattleDecision(mp, d) {
         for (const id of mp.players) if (id !== mp.me) this._send({ k: 'bt_dec', bid: mp.bid, ...d }, id);
     }
@@ -482,6 +491,11 @@ class MultiplayerSocial {
             case 'grp_party': {
                 const g = this.groups.get(this.me);
                 if (g && g.includes(from) && Array.isArray(d.members)) this.groupParties.set(from, d.members);
+                break;
+            }
+            case 'chat': {
+                const text = String(d.text || '').replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, CHAT_MAX);
+                if (text && multiplayerSession.active) events.emit('MP_CHAT', { from, name: this.nameOf(from), text });
                 break;
             }
             case 'enc_start':
