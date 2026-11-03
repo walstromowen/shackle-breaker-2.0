@@ -526,16 +526,42 @@ export class OverworldController extends BaseController {
         return { x, y, w: PROMPT.w, h, title: p.title, text: p.text, options, focusId: hovered ? hovered.hitId : `mp_opt_${p.focus}` };
     }
 
-    /* The other players in a multiplayer world who are on this map (engine/multiplayerSession.js), lit like the player so they show at night. */
+    /* The other players in a multiplayer world who are on this map (engine/multiplayerSession.js), lit like the player so they show at night,
+       each with the two members of their own party who walk behind them (as yours do) unless they are in a party of players. */
     _otherPlayers() {
-        const others = multiplayerSession.visibleEntities();
-        for (const e of others) e.light = this.player.light;
-        return others;
+        const out = [];
+        for (const r of multiplayerSession.visibleRemotes()) {
+            r.entity.light = this.player.light;
+            out.push(r.entity);
+            const line = this.remoteFollowers && this.remoteFollowers.get(r.id);
+            if (line && !r.grouped) for (const f of line.entities) if (f.spriteKey) out.push(f);
+        }
+        return out;
+    }
+
+    /* Moves the follower lines of the other players along their steps (once an update; PartyFollowers keeps each line on its leader's trail). */
+    _syncOtherPlayersFollowers(dt) {
+        if (!multiplayerSession.active) { this.remoteFollowers = null; return; }
+        if (!this.remoteFollowers) this.remoteFollowers = new Map();
+        const seen = new Set();
+        for (const r of multiplayerSession.visibleRemotes()) {
+            seen.add(r.id);
+            let line = this.remoteFollowers.get(r.id);
+            if (!line) {
+                line = new PartyFollowers(this.config.TILE_SIZE);
+                line.entities.forEach(e => { e.id = `remote_${r.id}_${e.followerSlot}`; e.remote = true; });
+                this.remoteFollowers.set(r.id, line);
+            }
+            line.entities.forEach((e, k) => { e.spriteKey = r.grouped ? null : (r.party[k] || null); });
+            line.sync(r.entity, dt, (c0, r0, c1, r1, dir) => this.worldManager.canMove(c0, r0, c1, r1, dir));
+        }
+        for (const id of [...this.remoteFollowers.keys()]) if (!seen.has(id)) this.remoteFollowers.delete(id);
     }
 
     /* The party members behind the player keep to its trail (PartyFollowers). They are only drawn: nothing in the world knows they are there. */
     syncFollowers(dt) {
         this.followers.sync(this.player, dt, (c0, r0, c1, r1, dir) => this.worldManager.canMove(c0, r0, c1, r1, dir));
+        this._syncOtherPlayersFollowers(dt);
     }
 
     /* Which icon sheet an item's icon is on (toasts and the hotbar). */
@@ -1122,6 +1148,12 @@ export class OverworldController extends BaseController {
     getState() {
         const buffInfo = this.getBuffInfo();
         let displayFacedObject = this.getFacedObject();
+        // another player in front: an outline around them (MapRenderer measured their sprite), and what Space does
+        if (!displayFacedObject && !this.player.isMoving && !this.isLocked) {
+            const other = this._playerInFront();
+            const r = other && multiplayerSession.remotes.get(other);
+            if (r) displayFacedObject = { interaction: { type: 'PLAYER' }, _screenRect: r.entity._screenRect, col: r.col, row: r.row };
+        }
 
         // --- NEW: Hide interaction prompt if missing required harvest tool ---
         if (displayFacedObject && displayFacedObject.interaction?.type === 'HARVEST') {

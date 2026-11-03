@@ -59,18 +59,20 @@ export class OverworldUIRenderer {
         if (isHarvesting && harvestTarget && camera) {
             // If actively harvesting, show the progress bar instead of standard interaction brackets
             this.drawHarvestProgressBar(ctx, ui, harvestTarget, harvestTimer, harvestDuration, camera);
-        } else if (facedObject && camera) {
-            // Standard interaction prompts
-            this.drawInteractionBrackets(ctx, ui, facedObject, camera);
-            this.drawInteractionTooltip(ctx, ui, ctx.canvas, facedObject);
         }
 
-        // the status plaque (biome, day, clock, weather), bottom right beside the hotbar; the item toasts rise from just above it
+        // the status plaque (biome, day, clock, weather), bottom right beside the hotbar; the key prompt sits on it and the item toasts rise above both
         const plaque = worldInfo ? this.statusPlaqueRect(ctx.canvas, hotbar) : null;
         if (plaque) this.statusPlaque.render(ctx, ui, worldInfo, plaque);
+        let floor = plaque ? plaque.y - 14 : ctx.canvas.height - HOTBAR.MARGIN;
+        if (!(isHarvesting && harvestTarget) && facedObject && camera) {
+            // what is in front of the player: an outline around it, and the key that uses it
+            this.drawInteractionBrackets(ctx, ui, facedObject, camera);
+            floor = this.drawInteractionTooltip(ctx, ui, ctx.canvas, facedObject, plaque ? plaque.y - 12 : null) - 12;
+        }
 
         if (toasts && toasts.length > 0) {
-            this.drawToasts(ctx, ui, toasts, plaque ? plaque.y - 14 : ctx.canvas.height - HOTBAR.MARGIN);
+            this.drawToasts(ctx, ui, toasts, floor);
         }
 
         if (hotbar && hotbar.length > 0) {
@@ -258,6 +260,8 @@ export class OverworldUIRenderer {
     }
 
     drawInteractionBrackets(ctx, ui, facedObject, camera) {
+        // the map renderer measured what it drew (MapRenderer.screenRectOf): the outline follows the art itself, not its tiles or hitbox
+        if (facedObject._screenRect) return this._drawOutline(ctx, facedObject._screenRect);
         const { TILE_SIZE, GAME_SCALE, OBJECT_SIZE } = this.config;
         const objSize = OBJECT_SIZE || TILE_SIZE;
 
@@ -302,8 +306,25 @@ export class OverworldUIRenderer {
         ctx.restore();
     }
 
-    drawInteractionTooltip(ctx, ui, canvas, facedObject) {
-    if (!facedObject) return;
+    /* The breathing brass outline around a box on screen (x, y, w, h in canvas pixels). */
+    _drawOutline(ctx, r) {
+        const wave = (Math.sin(performance.now() / 350) + 1) / 2;
+        const pad = 6 + wave * 6;
+        ctx.save();
+        ctx.globalAlpha = 0.6 + (1 - wave) * 0.4;
+        ctx.strokeStyle = UITheme.colors.borderHighlight || "#C2A14F";
+        ctx.lineWidth = 2;
+        ctx.shadowColor = UITheme.colors.borderHighlight || "#C2A14F";
+        ctx.shadowBlur = 14;
+        ctx.beginPath();
+        ctx.roundRect(r.x - pad, r.y - pad, r.w + pad * 2, r.h + pad * 2, 8);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    /* The key prompt ("SPACE  Enter"), bottom right; `bottom` is where its lower edge goes (on top of the status plaque). Returns its top edge. */
+    drawInteractionTooltip(ctx, ui, canvas, facedObject, bottom = null) {
+    if (!facedObject) return bottom ?? canvas.height;
 
     // --- NEW: Dynamic Interaction Text ---
     let text = "Interact"; // Default fallback
@@ -312,6 +333,7 @@ export class OverworldUIRenderer {
         case 'PICKUP': text = "Pick Up"; break;
         case 'HARVEST': text = "Harvest"; break;
         case 'WARP': text = "Enter"; break;
+        case 'PLAYER': text = "Trade, Party, Duel"; break;
         case 'CRAFTING_STATION':
         case 'WORKSHOP': text = "Craft"; break;
         default:
@@ -339,7 +361,7 @@ export class OverworldUIRenderer {
     const gap = 16;
     const width = padding + badgeWidth + gap + textWidth + padding + 8;
     const startX = canvas.width - width - margin;
-    const startY = canvas.height - height - margin;
+    const startY = (bottom ?? canvas.height - margin) - height;
 
     const bgColor = UITheme.messageBox.bg;
     ui.drawPanel(startX, startY, width, height, bgColor);
@@ -355,6 +377,7 @@ export class OverworldUIRenderer {
     ui.drawStyled('body', text, textX, startY + (height / 2), { baseline: 'middle' });
 
     ctx.restore();
+    return startY;
   }
 
     /* `floor` is the y the lowest toast's bottom edge starts from (just above the status plaque), and they float up from there. */

@@ -38,6 +38,8 @@ const leaderSprite = () => {
     const m = (gameState.party.members || []).find(x => x && x.spriteOverworld && !(x.hp <= 0)) || (gameState.party.members || []).find(x => x && x.spriteOverworld);
     return m ? m.spriteOverworld : null;
 };
+/** The sheets of the two members who walk behind the leader (the next two on their feet), so the others can draw them following too. */
+const followerSprites = () => (gameState.party.members || []).filter(x => x && x.spriteOverworld && !(x.hp <= 0)).slice(1, 3).map(x => x.spriteOverworld);
 
 class MultiplayerSession {
     constructor() {
@@ -52,6 +54,7 @@ class MultiplayerSession {
         this._lastPos = '';
         this._hostWhenLoaded = false;
         this._wired = false;
+        this.groupedProbe = () => false;   // set by engine/multiplayerSocial.js: is this player in a party of players (then only the lead character walks)
     }
 
     get active() { return this.role === 'host' || this.role === 'guest'; }
@@ -280,6 +283,8 @@ class MultiplayerSession {
         if (r.map !== d.map) r.placed = false;   // through a door: they appear, they do not slide there
         r.map = String(d.map || 'world');
         r.sprite = typeof d.sprite === 'string' ? d.sprite : null;
+        r.party = Array.isArray(d.party) ? d.party.filter(x => typeof x === 'string').slice(0, 2) : [];   // the two who walk behind them
+        r.grouped = !!d.grouped;
         r.scene = String(d.scene || 'overworld');
         r.dur = Math.max(0.05, Math.min(1, Number(d.dur) || 0.25));
         r.entity.spriteKey = r.sprite;
@@ -323,11 +328,12 @@ class MultiplayerSession {
             const cfg = this.env.config;
             dur = run ? (cfg.RUN_DURATION ?? cfg.WALK_DURATION * 0.55) : cfg.WALK_DURATION;
         }
-        const sig = `${col},${row},${dir},${moving},${run},${mapKey()},${scene}`;
+        const party = followerSprites(), grouped = !!this.groupedProbe();
+        const sig = `${col},${row},${dir},${moving},${run},${mapKey()},${scene},${party.join('|')},${grouped}`;
         if (sig !== this._lastPos || this._t.pos >= POS_HEARTBEAT) {
             this._lastPos = sig;
             this._t.pos = 0;
-            multiplayer.relay({ k: 'pos', col, row, dir, moving, run, dur, map: mapKey(), sprite: leaderSprite(), scene });
+            multiplayer.relay({ k: 'pos', col, row, dir, moving, run, dur, map: mapKey(), sprite: leaderSprite(), party, grouped, scene });
         }
 
         // the others, walking towards the tile they last said they were on
@@ -341,12 +347,21 @@ class MultiplayerSession {
         const dx = tx - e.x, dy = ty - e.y;
         const dist = Math.hypot(dx, dy);
         e.direction = r.dir;
+        if (e.tgtCol !== r.col || e.tgtRow !== r.row) {   // a new step: it starts from the tile they were heading for
+            e.sourceX = (e.tgtCol ?? r.col) * T; e.sourceY = (e.tgtRow ?? r.row) * T;
+            e.tgtCol = r.col; e.tgtRow = r.row;
+        }
         if (!r.placed || dist > 4 * T) {
             e.x = e.prevX = tx; e.y = e.prevY = ty;
+            e.sourceX = tx; e.sourceY = ty;
             r.placed = true;
             e.animState = 'idle';
+            e.isMoving = false;
             return;
         }
+        const span = Math.max(1, Math.hypot(tx - e.sourceX, ty - e.sourceY));
+        e.isMoving = dist > 0.01;
+        e.moveProgress = Math.max(0, Math.min(1, 1 - dist / span));
         if (dist > 0.01) {
             const stepLen = Math.min(dist, (T / r.dur) * dt);
             e.x += dx / dist * stepLen;
@@ -358,6 +373,13 @@ class MultiplayerSession {
             if (e.animState !== 'idle') { e.animState = 'idle'; e.idleTimer = 0; }
             e.idleTimer += dt;
         }
+    }
+
+    /** The other players on this player's map (their records: entity, party sprites, grouped). */
+    visibleRemotes() {
+        if (!this.active) return [];
+        const here = mapKey();
+        return [...this.remotes.values()].filter(r => r.placed && r.map === here && r.sprite);
     }
 
     /** The other players standing on the same map as this player, for the overworld to draw. */

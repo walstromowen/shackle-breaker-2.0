@@ -212,6 +212,9 @@ export class MapRenderer {
             this.ctx.globalAlpha = Math.max(0, Math.min(1, obj.alpha));
         }
         this.ctx.drawImage(imageSource, sx, 0, wTiles * OBJECT_SIZE, hTiles * OBJECT_SIZE, dx, drawY, dW, dH);
+        // where the art actually is on screen (every frame of it), for the interaction outline (OverworldUIRenderer.drawInteractionBrackets)
+        const fw = wTiles * OBJECT_SIZE, fh = hTiles * OBJECT_SIZE;
+        obj._screenRect = this.screenRectOf(this.opaqueBounds(imageSource, fw, fh, Math.max(1, obj.frames || 1), 1), dx, drawY, dW / fw, dH / fh, dW, dH);
         if (obj.alpha !== undefined) {
             this.ctx.globalAlpha = prevAlpha;
         }
@@ -241,6 +244,67 @@ export class MapRenderer {
         if (obj.alpha !== undefined) this.ctx.globalAlpha = Math.max(0, Math.min(1, obj.alpha));
         this.ctx.drawImage(sprite, sx, sy, FW, FH, dx - offX, tileBottom - dH + Math.floor(feetPad * dH / FH), dW, dH);
         if (obj.alpha !== undefined) this.ctx.globalAlpha = prevAlpha;
+        obj._screenRect = this.screenRectOf(this.characterBounds(sprite, FW, FH), dx - offX, tileBottom - dH + Math.floor(feetPad * dH / FH), dW / FW, dH / FH, dW, dH);
+    }
+
+    /* The box around what is drawn of a sheet, in a frame's own pixels: { x0, y0, x1, y1 } over every frame (so the outline does not jump as
+       it animates), from the sheet's pixels; null when they cannot be read. `cols` x `rows` frames of fw x fh, laid out from the top left. */
+    opaqueBounds(image, fw, fh, cols = 1, rows = 1) {
+        if (!this._bounds) this._bounds = new WeakMap();
+        let perImage = this._bounds.get(image);
+        if (!perImage) { perImage = new Map(); this._bounds.set(image, perImage); }
+        const key = `${fw}x${fh}:${cols}x${rows}`;
+        if (perImage.has(key)) return perImage.get(key);
+        let b = null;
+        try {
+            const px = this._pixelsOf(image);
+            if (px) {
+                let x0 = fw, y0 = fh, x1 = -1, y1 = -1;
+                for (let fy = 0; fy < rows; fy++) for (let fx = 0; fx < cols; fx++) {
+                    for (let y = 0; y < fh; y++) {
+                        const gy = fy * fh + y;
+                        if (gy >= px.h) break;
+                        for (let x = 0; x < fw; x++) {
+                            const gx = fx * fw + x;
+                            if (gx >= px.w) break;
+                            if (px.data[(gy * px.w + gx) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+                        }
+                    }
+                }
+                if (x1 >= 0) b = { x0, y0, x1, y1 };
+            }
+        } catch (e) { b = null; }
+        perImage.set(key, b);
+        return b;
+    }
+
+    /* A character sheet's box: every frame of every row (walk, run, idle in all directions). */
+    characterBounds(sprite, FW, FH) {
+        const w = sprite.naturalWidth || sprite.width, h = sprite.naturalHeight || sprite.height;
+        return this.opaqueBounds(sprite, FW, FH, Math.max(1, Math.floor(w / FW)), Math.max(1, Math.floor(h / FH)));
+    }
+
+    /* A sheet's pixels, read once. */
+    _pixelsOf(image) {
+        if (!this._pixels) this._pixels = new WeakMap();
+        if (this._pixels.has(image)) return this._pixels.get(image);
+        let out = null;
+        const w = image.naturalWidth || image.width, h = image.naturalHeight || image.height;
+        if (w > 0 && h > 0 && typeof document !== 'undefined') {
+            const cv = document.createElement('canvas');
+            cv.width = w; cv.height = h;
+            const cx = cv.getContext('2d', { willReadFrequently: true });
+            cx.drawImage(image, 0, 0);
+            out = { w, h, data: cx.getImageData(0, 0, w, h).data };
+        }
+        this._pixels.set(image, out);
+        return out;
+    }
+
+    /* The on-screen box of a frame drawn at (x, y) scaled by (kx, ky); the whole frame (w x h) when its pixels could not be read. */
+    screenRectOf(b, x, y, kx, ky, w, h) {
+        if (!b) return { x, y, w, h };
+        return { x: x + b.x0 * kx, y: y + b.y0 * ky, w: (b.x1 - b.x0 + 1) * kx, h: (b.y1 - b.y0 + 1) * ky };
     }
     /* Number of empty rows between the lowest drawn pixel and the bottom of a character frame, read from the sheet's own pixels: the lowest opaque row
        of any frame in the sheet (so a lifted foot does not drag the ground line up). Found once per sheet and remembered. Returns null when the pixels
@@ -314,6 +378,7 @@ export class MapRenderer {
         const dW = Math.ceil(FW * scale), dH = Math.ceil(FH * scale);
         const tileBottom = dy + Math.ceil(TILE_SIZE * scale); // the same screen line drawObject puts the bottom of a 1-tile object on, at any scale
         this.ctx.drawImage(sprite, sx, sy, FW, FH, dx - offX, tileBottom - dH + Math.floor(feetPad * dH / FH), dW, dH);
+        entity._screenRect = this.screenRectOf(this.characterBounds(sprite, FW, FH), dx - offX, tileBottom - dH + Math.floor(feetPad * dH / FH), dW / FW, dH / FH, dW, dH);
         if (entity.label) this.drawNameTag(entity, dx + Math.floor(TILE_SIZE * scale / 2), tileBottom - dH + Math.floor(feetPad * dH / FH));
     }
 

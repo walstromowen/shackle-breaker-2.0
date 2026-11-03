@@ -60,6 +60,7 @@ class MultiplayerSocial {
         multiplayer.on('relay', (msg) => this._onRelay(msg.from, msg.data || {}));
         multiplayer.on('room', (room) => this._onRoom(room));
         multiplayer.on('closed', () => this.reset());
+        multiplayerSession.groupedProbe = () => !!this.myGroup();
     }
 
     reset() {
