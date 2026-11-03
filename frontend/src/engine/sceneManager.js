@@ -19,6 +19,7 @@ import { WorkshopController } from '../screens/workshop/workshopController.js'; 
 import { SavesController } from '../screens/saves/savesController.js';
 import { SettingsController } from '../screens/settings/settingsController.js';
 import { MultiplayerController } from '../screens/multiplayer/multiplayerController.js';
+import { TradeController } from '../screens/trade/tradeController.js';
 
 // --- RENDERERS ---
 import { BootRenderer } from '../screens/boot/bootRenderer.js';
@@ -41,6 +42,7 @@ import { WorkshopRenderer } from '../screens/workshop/workshopRenderer.js'; // <
 import { SavesRenderer } from '../screens/saves/savesRenderer.js';
 import { SettingsRenderer } from '../screens/settings/settingsRenderer.js';
 import { MultiplayerRenderer } from '../screens/multiplayer/multiplayerRenderer.js';
+import { TradeRenderer } from '../screens/trade/tradeRenderer.js';
 import { CanvasUI } from '../ui/canvasUI.js';
 import { UITheme } from '../ui/UITheme.js';
 import { TutorialOverlay } from '../ui/tutorialOverlay.js';
@@ -72,6 +74,7 @@ import { CorruptionSystem } from '../../../shared/characters/corruptionSystem.js
 import { SaveManager, AUTOSAVE_SLOT } from './saveManager.js';
 import { debugOverlay, DebugOverlayRenderer } from '../ui/debugOverlay.js';
 import { multiplayerSession } from './multiplayerSession.js';
+import { multiplayerSocial } from './multiplayerSocial.js';
 
 export class SceneManager {
     constructor(canvas, assetLoader, config) {
@@ -100,6 +103,7 @@ export class SceneManager {
             getLocalPlayer: () => (this.overworldController ? this.overworldController.player : null),
             getScene: () => this.currentScene,
         });
+        multiplayerSocial.wire();   // trading, parties and duels between players in a shared world
 
         // --- CONTROLLERS ---
         this.bootController = new BootController(this.input, this.loader);
@@ -114,6 +118,7 @@ export class SceneManager {
         this.savesController = new SavesController(this.input);
         this.settingsController = new SettingsController(this.input);
         this.multiplayerController = new MultiplayerController(this.input);
+        this.tradeController = new TradeController(this.input);
 
         this.overworldController = null;
         this.encounterController = null;
@@ -141,6 +146,7 @@ export class SceneManager {
         this.savesRenderer = new SavesRenderer(this.config, this.loader);
         this.settingsRenderer = new SettingsRenderer(this.config, this.loader);
         this.multiplayerRenderer = new MultiplayerRenderer(this.config, this.loader);
+        this.tradeRenderer = new TradeRenderer(this.config, this.loader);
 
         // State
         this.currentScene = 'boot';
@@ -207,7 +213,7 @@ export class SceneManager {
 
     resolveTargetAmbience(targetScene) {
         // <-- ADDED 'workshop' to keep whatever background ambience is currently playing
-        if (['party', 'character_summary', 'level_up', 'shop', 'workshop', 'saves', 'settings'].includes(targetScene)) return null;
+        if (['party', 'character_summary', 'level_up', 'shop', 'workshop', 'saves', 'settings', 'trade'].includes(targetScene)) return null;
 
         if (['battle', 'encounter', 'character-creator', 'title', 'boot', 'multiplayer'].includes(targetScene)) return 'none';
 
@@ -372,6 +378,9 @@ export class SceneManager {
                 }
                 if (scene === 'multiplayer') {
                     this.multiplayerController.init(data || {});
+                }
+                if (scene === 'trade') {
+                    this.tradeController.init(data || {});
                 }
 
                 this.changeScene(scene);
@@ -557,6 +566,12 @@ export class SceneManager {
                 scaledEnemies.push(enemyEntity);
             }
             
+            // a party of several players: the leader's fight is everyone's (engine/multiplayerSocial.js), played on every member's screen
+            if (multiplayerSocial.sharesFights) {
+                multiplayerSocial.startPartyBattle(scaledEnemies, { background: data.background, bgm: data.bgm || (data.context && data.context.bgm) || null });
+                return;
+            }
+
             const isFromOverworld = this.currentScene === 'overworld';
             const transitionType = isFromOverworld ? 'blade' : 'ethereal';
             const transitionSpeed = isFromOverworld ? 1.5 : 2.5;
@@ -598,8 +613,26 @@ export class SceneManager {
         window.addEventListener('pagehide', saveOnLeave);
         document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveOnLeave(); });
 
+        // a shared multiplayer fight (a duel, or a party's fight) starts on this player's screen (engine/multiplayerSocial.js)
+        events.on('MP_START_BATTLE', ({ enemies, context, bgm }) => {
+            events.emit('PLAY_SFX', { id: 'battleStart', volume: 0.9 });
+            if (this.overworldController) this.overworldController.isLocked = true;
+            const fromOverworld = this.currentScene === 'overworld';
+            this.transitionRenderer.start(() => {
+                this.battleController.start(enemies, context);
+                this.activeBattleBGM = bgm || null;
+                this.changeScene('battle', { bgm: bgm || null });
+            }, fromOverworld ? 'blade' : 'ethereal', { speed: fromOverworld ? 1.5 : 2.5, color: '#0a0a12' });
+        });
+
         events.on('BATTLE_ENDED', (data) => {
             this.activeBattleBGM = null;
+            // a duel is for nothing: both parties are put back as they were, win or lose, and nobody falls for good
+            if (data.mp && multiplayerSocial.battleEnded(data.mp)) {
+                this.pendingAfterVictory = null;
+                events.emit('CHANGE_SCENE', { scene: 'overworld' });
+                return;
+            }
             const after = this.pendingAfterVictory;
             this.pendingAfterVictory = null;
             if (data.victory && !data.fled && after) {
@@ -706,6 +739,7 @@ export class SceneManager {
             case 'saves': return this.savesController;
             case 'settings': return this.settingsController;
             case 'multiplayer': return this.multiplayerController;
+            case 'trade': return this.tradeController;
             default: return null;
         }
     }
@@ -728,6 +762,7 @@ export class SceneManager {
             case 'saves': return this.savesRenderer;
             case 'settings': return this.settingsRenderer;
             case 'multiplayer': return this.multiplayerRenderer;
+            case 'trade': return this.tradeRenderer;
             default: return null;
         }
     }
@@ -740,6 +775,7 @@ export class SceneManager {
 
     update(dt) {
         multiplayerSession.update(dt);   // positions, the clock and saves go on under menus and tip cards too
+        if (multiplayerSession.active) multiplayerSocial.update(dt);
         let click = this.input.getAndResetClick();
         let rightClick = this.input.getAndResetRightClick();
         let scroll = this.input.getAndResetScroll();
@@ -894,6 +930,9 @@ export class SceneManager {
                 break;
             case 'multiplayer':
                 this.multiplayerRenderer.render(this.ctx, this.multiplayerController.getState());
+                break;
+            case 'trade':
+                this.tradeRenderer.render(this.ctx, this.tradeController.getState());
                 break;
             case 'level_up':
                 const luState = this.levelUpController.getState();

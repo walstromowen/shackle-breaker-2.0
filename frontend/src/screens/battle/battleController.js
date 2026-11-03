@@ -10,6 +10,14 @@ import { InventorySystem } from '../../../../shared/items/inventorySystem.js';
 import { QuestSystem } from '../../../../shared/story/questSystem.js';
 import { BaseController } from '../../engine/baseController.js';
 import { TargetSelection } from './targetSelection.js';
+import { seedRandom, unseedRandom } from '../../../../shared/core/random.js';
+import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
+
+/* A shared multiplayer fight (a duel, or a party of several players): every player's browser plays the same battle from the same seed
+   (shared/core/random.js). Each player picks for their own characters only; the others' picks arrive as messages (MP_BATTLE_DECISION),
+   and the round plays out once every pick is in. The lead browser sends the true health of everyone at each round's start (MP_BATTLE_SYNC),
+   so a slip anywhere is put right. */
+const WAIT_REMOTE = 'WAIT_REMOTE';
 
 // The battle's own keys, on top of the shared ones (arrows / WASD, Enter / Space, Esc / Backspace / Tab)
 const BATTLE_KEYS = {
@@ -39,6 +47,9 @@ export class BattleController extends BaseController {
         QuestSystem.init();
         this.lastHoveredHitboxId = null;
 
+        events.on('MP_BATTLE_DECISION', (d) => this._onRemoteDecision(d));
+        events.on('MP_BATTLE_SYNC', (d) => this._onRemoteSync(d));
+
         // Statuses announce themselves on the event bus (combatantModel.js); the ledger keeps them for the trait checks after a win
         events.on('ON_STATUS_APPLIED', (data) => {
             // Make sure we are currently in a battle with a ledger before recording
@@ -49,7 +60,9 @@ export class BattleController extends BaseController {
     }
 
     start(enemies, context = {}) {
+        if (context.mp) seedRandom(context.mp.seed); else unseedRandom();
         this.state = createBattleState(enemies, context);
+        if (context.mp) this._setupShared(context.mp);
 
         const preBattleActionsQueued = queueOpeningSequence(this.state);
 
@@ -193,6 +206,11 @@ export class BattleController extends BaseController {
     }
 
     requestPartySwap(isForced = false, slotIndex = -1) {
+        if (!isForced && this.state.mp) {   // a shared fight: a fallen character's place is filled by itself, and nobody swaps by hand
+            this.playErrorSound();
+            this.state.message = 'No swapping in a shared fight: a fallen fighter is replaced by itself.';
+            return;
+        }
         const activeIndices = this.state.activeParty
             .map(p => p ? this.state.partyRoster.indexOf(p) : -1)
             .filter(i => i !== -1);
@@ -228,7 +246,9 @@ export class BattleController extends BaseController {
     }
 
     _executeSwap(selectedRosterIndex, isForced, slotIndex) {
-        queueSwap(this.state, this.state.partyRoster[selectedRosterIndex], isForced, slotIndex);
+        const replacement = this.state.partyRoster[selectedRosterIndex];
+        if (this.state.mp && !isForced) multiplayerSocial.sendBattleDecision(this.state.mp, { round: this.state.mp.round, actor: this.state.activeParty[slotIndex]?.netId, kind: 'swap', replacement: replacement?.netId, slotIndex });
+        queueSwap(this.state, replacement, isForced, slotIndex);
         if (!isForced) this._advancePartyTurn();
     }
 
@@ -238,6 +258,13 @@ export class BattleController extends BaseController {
             return;
         }
         this.state.turnQueue.push({ actor: activeChar, action: this.state.selectedAction, target: primaryTarget });
+        if (this.state.mp) {
+            const action = this.state.selectedAction;
+            multiplayerSocial.sendBattleDecision(this.state.mp, {
+                round: this.state.mp.round, actor: activeChar.netId, kind: 'act', ability: action.id,
+                item: action.isItemAction && action.cost ? action.cost.item : null, target: this._encodeTarget(primaryTarget)
+            });
+        }
         this._advancePartyTurn();
     }
 
@@ -246,13 +273,15 @@ export class BattleController extends BaseController {
             this.state.activePartyIndex++;
         } while (
             this.state.activePartyIndex < this.state.activeParty.length &&
-            (!this.state.activeParty[this.state.activePartyIndex] || this.state.activeParty[this.state.activePartyIndex].isDead())
+            (!this.state.activeParty[this.state.activePartyIndex] || this.state.activeParty[this.state.activePartyIndex].isDead() || !this._isMine(this.state.activeParty[this.state.activePartyIndex]))
         );
 
         if (this.state.activePartyIndex < this.state.activeParty.length) {
             this.state.phase = PHASE.SELECT_ACTION;
             this.state.menuIndex = 0;
             this.state.selectedAction = null;
+        } else if (this.state.mp) {
+            this._waitForOthers();
         } else {
             queueEnemyActions(this.state);
             sortTurnQueue(this.state);
@@ -302,13 +331,19 @@ export class BattleController extends BaseController {
         this.timer = 0;
         this.state.showAbilityDetails = true;
 
+        if (this.state.mp) this._beginSharedRound();
+
         while (
             this.state.activePartyIndex < this.state.activeParty.length &&
-            (!this.state.activeParty[this.state.activePartyIndex] || this.state.activeParty[this.state.activePartyIndex].isDead())
+            (!this.state.activeParty[this.state.activePartyIndex] || this.state.activeParty[this.state.activePartyIndex].isDead() || !this._isMine(this.state.activeParty[this.state.activePartyIndex]))
         ) {
             this.state.activePartyIndex++;
         }
 
+        if (this.state.activePartyIndex >= this.state.activeParty.length && this.state.mp) {
+            this._waitForOthers();
+            return;
+        }
         if (this.state.activePartyIndex >= this.state.activeParty.length) {
             queueEnemyActions(this.state);
             sortTurnQueue(this.state);
@@ -347,7 +382,122 @@ export class BattleController extends BaseController {
     endBattle() {
         const victory = commitBattleResults(this.state);
         this.state.active = false;
-        events.emit('BATTLE_ENDED', { victory, fled: !!this.state.fled });
+        const mp = this.state.mp;
+        unseedRandom();
+        events.emit('BATTLE_ENDED', { victory, fled: !!this.state.fled, mp: mp ? { kind: mp.kind, bid: mp.bid, opponent: mp.opponent || null } : null });
+    }
+
+    // ================================================================ SHARED (MULTIPLAYER) FIGHTS
+    _setupShared(mp) {
+        const s = this.state;
+        s.mp = { ...mp, round: 0, decisions: new Map(), syncs: new Map() };
+        const tag = (c, meta) => { if (c && meta) { c.netId = meta.netId; c.netOwner = meta.owner || null; c.isPlayerCharacter = !!meta.owner; } };
+        s.partyRoster.forEach((c, i) => tag(c, mp.partyMeta[i]));
+        s.enemyRoster.forEach((c, i) => tag(c, (mp.enemyMeta || [])[i]));
+        this.byNet = new Map([...s.partyRoster, ...s.enemyRoster].filter(c => c.netId).map(c => [c.netId, c]));
+        multiplayerSocial.battleState = () => this.state;   // a look at the shared fight (the debug overlay, tests)
+        for (const d of mp.early || []) this._onRemoteDecision(d);   // picks that arrived before this screen was ready
+    }
+
+    _isMine(c) { return !this.state.mp || !c || c.netOwner === this.state.mp.me; }
+
+    /** The combatants whose picks come from other players this round: their characters on the field who can still act. */
+    _othersToWaitFor() {
+        const s = this.state;
+        const field = s.mp.kind === 'duel' ? [...s.activeParty, ...s.activeEnemies] : s.activeParty;
+        return field.filter(c => c && !c.isDead() && c.netOwner && c.netOwner !== s.mp.me);
+    }
+
+    _beginSharedRound() {
+        const s = this.state;
+        s.mp.round++;
+        if (s.mp.authority === s.mp.me) {
+            const vitals = {};
+            for (const c of this.byNet.values()) vitals[c.netId] = [c.hp, c.stamina, c.insight];
+            multiplayerSocial.sendBattleSync(s.mp, { round: s.mp.round, vitals });
+        } else if (s.mp.syncs.has(s.mp.round)) {
+            this._applySync(s.mp.syncs.get(s.mp.round));
+        }
+    }
+
+    _waitForOthers() {
+        this.state.phase = WAIT_REMOTE;
+        this.state.selectedAction = null;
+        this._tryResolveShared();
+    }
+
+    _tryResolveShared() {
+        const s = this.state;
+        if (!s || !s.mp || s.phase !== WAIT_REMOTE) return;
+        const others = this._othersToWaitFor();
+        const missing = others.filter(c => !s.mp.decisions.has(`${s.mp.round}:${c.netId}`));
+        if (missing.length) {
+            const names = [...new Set(missing.map(c => (s.mp.names || {})[c.netOwner] || 'the other player'))];
+            s.message = `Waiting for ${names.join(' and ')}…`;
+            return;
+        }
+        // every pick is in: the same order on every screen (sortTurnQueue settles ties by network id)
+        for (const c of others.sort((a, b) => (a.netId < b.netId ? -1 : 1))) this._applyDecision(c, s.mp.decisions.get(`${s.mp.round}:${c.netId}`));
+        if (s.mp.kind !== 'duel') queueEnemyActions(s);
+        sortTurnQueue(s);
+        s.phase = PHASE.RESOLVE;
+        s.message = "Turns Processing...";
+        this.timer = 0;
+    }
+
+    _applyDecision(actor, d) {
+        const s = this.state;
+        if (!actor || !d) return;
+        if (d.kind === 'swap') {
+            const replacement = this.byNet.get(d.replacement);
+            if (replacement && !replacement.isDead()) queueSwap(s, replacement, false, d.slotIndex);
+            return;
+        }
+        let action = actor.abilities.find(a => a.id === d.ability) || null;
+        if (!action && d.ability) {
+            [action] = AbilityFactory.createAbilities([d.ability]);
+            if (action && d.item) { action.cost = { item: d.item, amount: 1 }; action.isItemAction = true; }
+        }
+        if (!action) return;
+        s.turnQueue.push({ actor, action, target: this._decodeTarget(d.target, actor) });
+    }
+
+    _encodeTarget(t) {
+        if (t === 'ALL') return 'ALL';
+        if (Array.isArray(t)) return t.map(x => (x && x.netId) || null);
+        return t && t.netId ? t.netId : null;
+    }
+
+    _decodeTarget(t, actor) {
+        if (t === 'ALL') return 'ALL';
+        if (Array.isArray(t)) return t.map(id => this.byNet.get(id)).filter(Boolean);
+        return this.byNet.get(t) || actor;
+    }
+
+    _onRemoteDecision(d) {
+        const s = this.state;
+        if (!s || !s.mp || !d || d.bid !== s.mp.bid) return;
+        s.mp.decisions.set(`${d.round}:${d.actor}`, d);
+        this._tryResolveShared();
+    }
+
+    /* The lead browser's health totals for the start of a round: put in at that round's start here (never in the middle of a round
+       that is still playing out, which would count its blows twice). */
+    _onRemoteSync(d) {
+        const s = this.state;
+        if (!s || !s.mp || !d || d.bid !== s.mp.bid || s.mp.authority === s.mp.me) return;
+        if (d.round === s.mp.round && s.phase !== PHASE.RESOLVE && s.phase !== PHASE.INTRO) this._applySync(d);
+        else if (d.round > s.mp.round) s.mp.syncs.set(d.round, d);
+    }
+
+    _applySync(d) {
+        for (const [netId, v] of Object.entries(d.vitals || {})) {
+            const c = this.byNet.get(netId);
+            if (!c || !Array.isArray(v)) continue;
+            if (c.isDead() !== (v[0] <= 0)) continue;   // never raise or fell anyone by a correction
+            const e = c.originalEntity;   // a combatant's health is its character's
+            e.hp = v[0]; e.stamina = v[1]; e.insight = v[2];
+        }
     }
 
     _openCharacterSummary() {

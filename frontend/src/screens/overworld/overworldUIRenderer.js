@@ -78,6 +78,16 @@ export class OverworldUIRenderer {
         }
 
         if (state && state.mpMessages && state.mpMessages.length) this.drawMultiplayerMessages(ctx, ui, state.mpMessages);
+        if (state && state.mpPrompt) this.drawMultiplayerPrompt(ctx, ui, state.mpPrompt);
+    }
+
+    /* Multiplayer: another player's request (Accept / Decline), or what to do with the player in front of you. */
+    drawMultiplayerPrompt(ctx, ui, p) {
+        ui.drawRect(0, 0, ctx.canvas.width, ctx.canvas.height, 'rgba(4, 4, 7, 0.45)', true);
+        ui.drawPanel(p.x, p.y, p.w, p.h, UITheme.colors.bgScale[0]);
+        ui.drawText(p.title, p.x + p.w / 2, p.y + 70, UITheme.fonts.sectionHeading, UITheme.colors.textHighlight, 'center', 'alphabetic', p.w - 60);
+        ui.drawText(p.text, p.x + p.w / 2, p.y + 118, UITheme.fonts.small, UITheme.colors.textMain, 'center', 'alphabetic', p.w - 60);
+        for (const o of p.options) ui.drawButton(o.x, o.y, o.w, o.h, o.label, ui.flags(o.hitId, p.focusId), { font: UITheme.fonts.medium });
     }
 
     /* Multiplayer: "Ann joined the world." and the like, top centre, fading out after a few seconds (engine/multiplayerSession.js). */

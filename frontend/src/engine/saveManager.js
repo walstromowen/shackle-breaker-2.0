@@ -91,7 +91,7 @@ function serializeStatusEffect(effect) {
     return { id: effect.id, charges: effect.charges, stacks: effect.stacks || 1 };
 }
 
-function serializeEntity(entity) {
+export function serializeEntity(entity) {
     const state = { ...entity.state, statusEffects: (entity.state.statusEffects || []).map(serializeStatusEffect) };
     // JSON.stringify calls ItemModel.toJSON() for the equipped / carried items.
     const saved = clone(state);
@@ -100,7 +100,7 @@ function serializeEntity(entity) {
     return saved;
 }
 
-function hydrateItem(saved) {
+export function hydrateItem(saved) {
     if (!saved || !saved.defId) return null;
     return ItemFactory.createItem(saved.defId, saved);   // null (and a warning) if the item no longer exists in this build
 }
@@ -111,7 +111,7 @@ function hydrateGear(value) {
     return typeof value === 'string' ? value : hydrateItem(value);
 }
 
-function hydrateEntity(saved) {
+export function hydrateEntity(saved) {
     const state = clone(saved);
 
     // Gear and carried items go back to real ItemModels (an item that no longer exists in this build is dropped, not fatal).

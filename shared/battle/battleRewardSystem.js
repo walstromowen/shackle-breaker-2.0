@@ -2,6 +2,7 @@ import { gameState } from '../core/gameState.js';
 import { ExperienceSystem } from '../characters/experienceSystem.js';
 import { InventorySystem } from '../items/inventorySystem.js';
 import { LootTableFactory } from '../items/lootTableFactory.js';
+import { rng } from '../core/random.js';
 
 export class BattleRewardSystem {
     /**
@@ -12,7 +13,10 @@ export class BattleRewardSystem {
      * @returns {Array<string>} An array of formatted UI messages describing the rewards. It also carries lootMessage (the text of
      *          the message that lists the dropped items) and lootItems ([{id, qty}]) when anything dropped.
      */
-    static processVictory(partyRoster, enemyRoster, battleLedger = []) {
+    /* `share`: a party of several players (multiplayer): { players: [ids, the same order everywhere], me: this player's id }. The money is
+       split evenly (the odd coins to one player, by the battle's dice), each dropped item goes to one player at random, and this browser
+       only puts THIS player's share in this player's bag. Every player's browser rolls the same dice, so they all agree who got what. */
+    static processVictory(partyRoster, enemyRoster, battleLedger = [], share = null) {
         let totalXp = 0;
         let totalCurrency = 0;
         const droppedItems = [];
@@ -24,7 +28,7 @@ export class BattleRewardSystem {
 
             const currReward = enemy.originalEntity.currencyReward || { min: 0, max: 0 };
             if (currReward.max > 0) {
-                totalCurrency += Math.floor(Math.random() * (currReward.max - currReward.min + 1)) + currReward.min;
+                totalCurrency += Math.floor(rng() * (currReward.max - currReward.min + 1)) + currReward.min;
             }
 
             // --- Process Loot Table ID via Factory ---
@@ -56,9 +60,25 @@ export class BattleRewardSystem {
         });
 
         // 3. Distribute Currency
-        if (totalCurrency > 0) {
+        const players = share && Array.isArray(share.players) && share.players.length > 1 ? share.players : null;
+        if (totalCurrency > 0 && players) {
+            const each = Math.floor(totalCurrency / players.length);
+            const oddTo = players[Math.floor(rng() * players.length)];
+            const mine = each + (oddTo === share.me ? totalCurrency - each * players.length : 0);
+            gameState.party.currency = (gameState.party.currency || 0) + mine;
+            messages.push(`The party found ${totalCurrency} currency: your share is ${mine}.`);
+        } else if (totalCurrency > 0) {
             gameState.party.currency = (gameState.party.currency || 0) + totalCurrency;
             messages.push(`The party found ${totalCurrency} currency!`);
+        }
+        if (players && droppedItems.length > 0) {
+            // each item to one player; only this player's items are kept here
+            const kept = [];
+            for (const id of droppedItems) if (players[Math.floor(rng() * players.length)] === share.me) kept.push(id);
+            const given = droppedItems.length - kept.length;
+            droppedItems.length = 0;
+            droppedItems.push(...kept);
+            if (given > 0) messages.push(given === 1 ? 'One item went to another player.' : `${given} items went to the other players.`);
         }
 
         // 4. Distribute Loot
@@ -117,7 +137,7 @@ export class BattleRewardSystem {
                 const traitId = typeof traitDef === 'string' ? traitDef : traitDef.id;
                 const chance = (typeof traitDef === 'object' && traitDef.chance !== undefined) ? traitDef.chance : 1.0;
 
-                if (Math.random() <= chance) {
+                if (rng() <= chance) {
                     const entity = partyMember.originalEntity;
                     const currentTraits = entity.traits || [];
 

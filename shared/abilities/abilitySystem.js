@@ -5,6 +5,7 @@ import { AbilityDefinitions } from './abilityDefinitions.js';
 import { AbilityModel } from './abilityModel.js';
 import { gameState } from '../core/gameState.js';
 import { CorruptionSystem } from '../characters/corruptionSystem.js';
+import { rng } from '../core/random.js';
 
 /* Effect types that are real but resolved by the battle code itself, not here: they must not trigger the "unknown effect type" warning. */
 const EFFECTS_HANDLED_ELSEWHERE = ['summon', 'switch_self'];
@@ -34,7 +35,7 @@ export class AbilitySystem {
             const abilityAcc = def.accuracy !== undefined ? def.accuracy : 1.0;
             let fleeChance = abilityAcc * (evasion / 100);
             fleeChance = Math.max(0.05, Math.min(1.0, fleeChance));
-            const roll = Math.random();
+            const roll = rng();
             const isSuccess = roll <= fleeChance;
             console.log(`[MATH DEBUG] Flee Check -> Evasion: ${evasion} | Chance: ${(fleeChance * 100).toFixed(1)}% | Roll: ${(roll * 100).toFixed(1)}% | Success: ${isSuccess}`);
             return {
@@ -150,7 +151,7 @@ export class AbilitySystem {
         if (attackHit && def.statusEffects && Array.isArray(def.statusEffects)) {
             for (const statusDef of def.statusEffects) {
                 if (statusDef.battleOnly && ctx.context === 'overworld') continue;   // e.g. the smoke bomb's evasion: only a fight has turns to spend it in
-                const roll = Math.random();
+                const roll = rng();
                 const chance = statusDef.chance !== undefined ? statusDef.chance : 1.0;
                 if (roll <= chance) {
                     const existingStatus = (target.statusEffects || []).find(s => s.id === statusDef.id);

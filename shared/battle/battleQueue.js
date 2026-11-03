@@ -170,7 +170,8 @@ export function queueDeath(state, combatant) {
         );
 
         if (livingReserves.length > 0) {
-            if (isParty) {
+            // In a shared multiplayer fight every browser must make the same choice, so the party's reserve steps in by itself too
+            if (isParty && !state.mp) {
                 state.turnQueue.unshift({
                     type: TURN_TYPES.PROMPT_REINFORCEMENT,
                     slotIndex
@@ -190,7 +191,7 @@ export function queueDeath(state, combatant) {
                 });
                 state.turnQueue.unshift({
                     type: TURN_TYPES.REINFORCEMENT,
-                    team: 'enemy',
+                    team: combatant.team,
                     slotIndex,
                     replacement
                 });
@@ -254,8 +255,15 @@ export function queueVictory(state) {
     // Stall the queue for 3.0 seconds to let the visual banner play out seamlessly!
     state.turnQueue.push({ type: TURN_TYPES.WAIT, duration: 3.0 });
 
-    // Pass battleLedger so BattleRewardSystem can process trait conditions
-    const rewardMessages = BattleRewardSystem.processVictory(state.partyRoster, state.enemyRoster, state.battleLedger);
+    // A duel between players is for nothing: no XP, no loot (both parties are put back as they were afterwards)
+    if (state.mp && state.mp.kind === 'duel') {
+        state.turnQueue.push({ type: TURN_TYPES.MESSAGE_VICTORY, message: `You won the duel against ${state.mp.opponentName || 'your rival'}!` });
+        state.turnQueue.push({ type: TURN_TYPES.BATTLE_END });
+        return;
+    }
+
+    // Pass battleLedger so BattleRewardSystem can process trait conditions. A party of several players shares the spoils (state.mp.share).
+    const rewardMessages = BattleRewardSystem.processVictory(state.partyRoster, state.enemyRoster, state.battleLedger, state.mp ? state.mp.share : null);
 
     rewardMessages.forEach(msg => {
         const items = (msg === rewardMessages.lootMessage) ? rewardMessages.lootItems : null;
@@ -268,7 +276,7 @@ export function queueDefeat(state) {
     state.turnQueue = [
         // Stalling here as well so the "PARTY SLAIN" banner gets its spotlight
         { type: TURN_TYPES.WAIT, duration: 3.0 },
-        { type: TURN_TYPES.MESSAGE_DEFEAT, message: `The party has fallen in battle...` },
+        { type: TURN_TYPES.MESSAGE_DEFEAT, message: state.mp && state.mp.kind === 'duel' ? `${state.mp.opponentName || 'Your rival'} won the duel.` : `The party has fallen in battle...` },
         { type: TURN_TYPES.BATTLE_END }
     ];
 }
@@ -284,6 +292,10 @@ export function sortTurnQueue(state) {
         }
         const orderA = a.swapSequenceOrder ?? 99;
         const orderB = b.swapSequenceOrder ?? 99;
-        return orderA - orderB;
+        if (orderA !== orderB) return orderA - orderB;
+        // a shared multiplayer fight: every browser holds the sides in its own order (each sees its own party at the bottom), so a tie is
+        // settled by the combatants' network ids, the same everywhere (in single player there are none and the queue order stands)
+        const netA = a.actor?.netId, netB = b.actor?.netId;
+        return netA && netB && netA !== netB ? (netA < netB ? -1 : 1) : 0;
     });
 }

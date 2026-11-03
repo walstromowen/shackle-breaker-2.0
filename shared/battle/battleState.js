@@ -9,7 +9,8 @@ import { PHASE } from './battleConstants.js';
 /* A fresh battle: the party and the enemies as combatants, the first `maxActive` of each on the field, the rest in reserve. */
 export function createBattleState(enemies, context = {}) {
     const maxActive = context.maxActive || 3;
-    const party = gameState.party.members.map(member => new CombatantModel(member, 'party'));
+    // a shared multiplayer fight brings its own line-up (several players' characters); otherwise the party is this player's own
+    const party = (context.partyEntities || gameState.party.members).map(member => new CombatantModel(member, 'party'));
     const preparedEnemies = enemies.map(enemy => new CombatantModel(enemy, 'enemy'));
     [...party, ...preparedEnemies].forEach(c => stripNonBattleAbilities(c)); // overworld-only abilities (a torch...) never show up in a fight
 

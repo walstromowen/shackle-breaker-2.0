@@ -18,6 +18,10 @@ import { ExploredMap } from '../../../../shared/world/exploredMap.js';
 import { ActSystem } from '../../../../shared/story/actSystem.js';
 import { PartyFollowers } from './partyFollowers.js';
 import { multiplayerSession } from '../../engine/multiplayerSession.js';
+import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
+
+/* Multiplayer: the question box (another player's request, or what to do with the player in front of you), centred on the screen */
+const PROMPT = { w: 640, optH: 58, gap: 10, pad: 36 };
 
 /* A world buff with a `light` (a torch: the ability `torchlight`, see abilityDefinitions.js) lasts a number of IN-GAME minutes. In its last TORCH_GUTTER_MINUTES the light shrinks back to normal. */
 const TORCH_GUTTER_MINUTES = 30;
@@ -89,6 +93,8 @@ export class OverworldController extends BaseController {
     }
 
     getHitboxes() {
+        const prompt = this._promptLayout();
+        if (prompt) return prompt.options.map(o => ({ id: o.hitId, x: o.x, y: o.y, w: o.w, h: o.h, zIndex: 500 }));
         if (this.isMenuOpen) {
             return [this.menuToggleHitbox, ...this.dropdownHitboxes, ...this.hotbarHitboxes];
         }
@@ -96,6 +102,10 @@ export class OverworldController extends BaseController {
     }
 
     onClick(hitboxId) {
+        if (multiplayerSocial.prompt) {
+            if (typeof hitboxId === 'string' && hitboxId.startsWith('mp_opt_')) { this.playConfirmSound(); multiplayerSocial.pickPrompt(parseInt(hitboxId.slice(7), 10)); }
+            return;
+        }
         if (this.isLocked) return false;
 
         if (typeof hitboxId === 'string' && hitboxId.startsWith('hotbar_')) {
@@ -182,6 +192,7 @@ export class OverworldController extends BaseController {
     }
 
     handleKeyDown(code, e) {
+    if (multiplayerSocial.prompt) { this._promptKey(code, e); return; }
     if (this.isLocked) return;
 
     // Change interaction key to Spacebar (and prevent page scrolling)
@@ -425,6 +436,63 @@ export class OverworldController extends BaseController {
         this.syncFollowers(dt);
     }
 
+    // ================================================================ MULTIPLAYER
+    /** The id of the other player standing on the tile in front of this one, or null. */
+    _playerInFront() {
+        if (!multiplayerSession.active) return null;
+        const { TILE_SIZE } = this.config;
+        const step = { UP: [0, -1], DOWN: [0, 1], LEFT: [-1, 0], RIGHT: [1, 0] }[this.player.direction] || [0, 1];
+        const col = Math.round(this.player.x / TILE_SIZE) + step[0], row = Math.round(this.player.y / TILE_SIZE) + step[1];
+        const here = gameState.world.isInterior ? `INT_${gameState.world.interiorId}` : 'world';
+        for (const r of multiplayerSession.remotes.values()) {
+            if (!r.placed || r.map !== here) continue;
+            const rc = Math.round(r.entity.x / TILE_SIZE), rr = Math.round(r.entity.y / TILE_SIZE);
+            if ((rc === col && rr === row) || (r.col === col && r.row === row)) return r.id;
+        }
+        return null;
+    }
+
+    /* A party member walks behind the leader, on the tiles the leader walked: a step at a time while close, running to catch up, a jump when far. */
+    _followLeader() {
+        const t = multiplayerSocial.followTarget();
+        if (!t) return;
+        const { TILE_SIZE } = this.config;
+        const col = Math.round(this.player.x / TILE_SIZE), row = Math.round(this.player.y / TILE_SIZE);
+        const dx = t.col - col, dy = t.row - row, far = Math.abs(dx) + Math.abs(dy);
+        if (far === 0) return;
+        if (far > 4) { this.warpTo(t.col, t.row); return; }
+        const sx = Math.abs(dx) >= Math.abs(dy) ? Math.sign(dx) : 0, sy = sx === 0 ? Math.sign(dy) : 0;
+        this.player.direction = sx > 0 ? 'RIGHT' : sx < 0 ? 'LEFT' : sy > 0 ? 'DOWN' : 'UP';
+        const nx = this.player.x + sx * TILE_SIZE, ny = this.player.y + sy * TILE_SIZE;
+        if (!this.isSpaceFree(nx, ny)) { this.warpTo(t.col, t.row); return; }
+        this.startMove(nx, ny);
+        if (far > 1) { this.player.isRunning = true; this.player.animState = 'run'; }
+    }
+
+    _promptKey(code, e) {
+        const p = multiplayerSocial.prompt;
+        const intent = this.resolveIntent(code, e);
+        if (!intent || !p) return;
+        if (intent === 'UP' || intent === 'LEFT') { p.focus = (p.focus - 1 + p.options.length) % p.options.length; this.playNavSound(); }
+        else if (intent === 'DOWN' || intent === 'RIGHT') { p.focus = (p.focus + 1) % p.options.length; this.playNavSound(); }
+        else if (intent === 'CONFIRM') { this.playConfirmSound(); multiplayerSocial.pickPrompt(p.focus); }
+        else if (intent === 'CANCEL') { this.playCancelSound(); multiplayerSocial.cancelPrompt(); }
+    }
+
+    /** Where the question box and its buttons are (null when there is none). */
+    _promptLayout() {
+        const p = multiplayerSocial.prompt;
+        if (!p) return null;
+        const W = 1920, H = 1080;
+        const h = PROMPT.pad * 2 + 110 + p.options.length * (PROMPT.optH + PROMPT.gap);
+        const x = (W - PROMPT.w) / 2, y = (H - h) / 2;
+        const options = p.options.map((o, i) => ({
+            ...o, hitId: `mp_opt_${i}`, x: x + PROMPT.pad, y: y + PROMPT.pad + 110 + i * (PROMPT.optH + PROMPT.gap), w: PROMPT.w - PROMPT.pad * 2, h: PROMPT.optH,
+        }));
+        const hovered = this.hoveredHitboxId && options.find(o => o.hitId === this.hoveredHitboxId);
+        return { x, y, w: PROMPT.w, h, title: p.title, text: p.text, options, focusId: hovered ? hovered.hitId : `mp_opt_${p.focus}` };
+    }
+
     /* The other players in a multiplayer world who are on this map (engine/multiplayerSession.js), lit like the player so they show at night. */
     _otherPlayers() {
         const others = multiplayerSession.visibleEntities();
@@ -621,6 +689,10 @@ export class OverworldController extends BaseController {
 
     interact() {
         if (this.player.isMoving || this.isLocked) return;
+        // another player in front of you: trade, party up or duel (engine/multiplayerSocial.js)
+        const other = this._playerInFront();
+        if (other) { this.playConfirmSound(); multiplayerSocial.openPlayerMenu(other); return; }
+        if (multiplayerSocial.isFollowing) return;   // in someone's party, the leader does the exploring
         const obj = this.getFacedObject();
         if (obj && obj.interaction) {
             console.log(`[Overworld] Interacting with ${obj.id} at ${obj.col},${obj.row}`);
@@ -657,6 +729,8 @@ export class OverworldController extends BaseController {
     }
 
     checkForNewMove() {
+        if (multiplayerSocial.prompt) return;
+        if (multiplayerSocial.isFollowing) { this._followLeader(); return; }
         const dir = this.input.direction;
         if (!dir) return;
 
@@ -858,6 +932,7 @@ export class OverworldController extends BaseController {
     }
 
     checkTileEvents() {
+        if (multiplayerSocial.isFollowing) return;   // a party member's ambushes and encounters are the leader's
         const col = Math.floor(this.player.x / this.config.TILE_SIZE);
         const row = Math.floor(this.player.y / this.config.TILE_SIZE);
         const biome = this.worldManager.getBiomeAt(col, row);
@@ -1036,6 +1111,7 @@ export class OverworldController extends BaseController {
             trackedQuests: this.getTrackedQuests(),
             toasts: (gameState.ui && gameState.ui.toasts) ? gameState.ui.toasts : [],
             mpMessages: multiplayerSession.visibleMessages(),   // multiplayer: who joined or left the world
+            mpPrompt: this._promptLayout(),                     // multiplayer: a request to answer, or the menu for the player in front
             facedObject: displayFacedObject, // Passes null if they lack the tool!
             hotbar: this.getHotbarInfo(),
             notice: (this.notice && performance.now() < this.notice.until) ? { text: this.notice.text, ok: this.notice.ok, left: this.notice.until - performance.now() } : null,

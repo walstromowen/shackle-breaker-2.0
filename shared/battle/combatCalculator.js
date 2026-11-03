@@ -1,3 +1,4 @@
+import { rng } from '../core/random.js';
 // BALANCE KNOB: armor can blunt a hit but never cancel it. Whatever the defense, a hit still does at least this share of its damage (after resistance),
 // and never less than 1. Without it, flat defense turned most enemy hits into a flat 1.
 const MIN_DAMAGE_SHARE = 0.1;
@@ -32,7 +33,7 @@ export class CombatCalculator {
         let damage = Math.max(1, rawDamage * r_modifier * MIN_DAMAGE_SHARE, baseDamage); 
         
         if (applyVariance) { 
-            const variance = 0.9 + (Math.random() * 0.2); 
+            const variance = 0.9 + (rng() * 0.2); 
             damage *= variance; 
         } 
         
@@ -51,7 +52,7 @@ export class CombatCalculator {
         
         const rawHitChance = abilityAccuracy * (attackerAcc / Math.max(1, defenderEvasion)); 
         const hitChance = Math.min(0.95, rawHitChance); 
-        const hitRoll = Math.random(); 
+        const hitRoll = rng(); 
         
         console.log(`[MATH DEBUG] Hit Check -> Acc:${abilityAccuracy} * (AtkAcc:${attackerAcc} / DefEva:${defenderEvasion}) = Raw ${(rawHitChance * 100).toFixed(1)}% | Capped: ${(hitChance * 100).toFixed(1)}% | Roll: ${(hitRoll * 100).toFixed(1)}% | Hit: ${hitRoll <= hitChance}`); 
         
@@ -62,14 +63,14 @@ export class CombatCalculator {
         
         // --- 2. Crit Check --- 
         const critChance = attStats.critChance ?? 0.05; 
-        if (Math.random() < critChance) result.crit = true; 
+        if (rng() < critChance) result.crit = true; 
         
         // --- 3. Gather Initial Stats --- 
         const attackVal = attacker.getAttack ? attacker.getAttack(safeType) : (attStats.attack?.[safeType] || 0); 
         const defenseVal = defender.getDefense ? defender.getDefense(safeType) : (defStats.defense?.[safeType] || 0); 
         const resistanceVal = defender.getResistance ? defender.getResistance(safeType) : (defStats.resistance?.[safeType] || 0); 
         
-        let rawDamage = attackVal * power * DAMAGE_SCALE * (attacker.team === 'enemy' ? enemyDamageScale(levelOf(attacker)) : 1); 
+        let rawDamage = attackVal * power * DAMAGE_SCALE * (attacker.team === 'enemy' && !attacker.isPlayerCharacter ? enemyDamageScale(levelOf(attacker)) : 1);   // a duel opponent is a player: never scaled 
         
         if (result.crit) { 
             const multi = attStats.critMultiplier ?? 1.5; 
