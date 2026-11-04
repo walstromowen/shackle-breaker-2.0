@@ -1,3 +1,5 @@
+/* A locked chest. The key always works; each other way in is open at only some chests (offerChance: 20% each, rolled once for each chest and
+   remembered, so a chest you leave and come back to offers the same choices). */
 export const treasureChest = {
     id: "treasure_chest",
     title: "Treasure Chest",
@@ -28,6 +30,7 @@ export const treasureChest = {
                 },
                 {
                     text: "[STR] Pry the chest open by force.",
+                    offerChance: 0.2,   // not every chest can be opened this way (rolled once per chest, see EncounterController._isOffered)
                     type: "skill_check",
                     attribute: "strength",
                     threshold: 12,
@@ -53,6 +56,7 @@ export const treasureChest = {
                 },
                 {
                     text: "[DEX] Pick the lock.",
+                    offerChance: 0.2,   // not every chest can be opened this way (rolled once per chest, see EncounterController._isOffered)
                     type: "skill_check",
                     attribute: "dexterity",
                     threshold: 12,
@@ -78,6 +82,7 @@ export const treasureChest = {
                 },
                 {
                     text: "[INT] Unlock with a spell.",
+                    offerChance: 0.2,   // not every chest can be opened this way (rolled once per chest, see EncounterController._isOffered)
                     corruption: 2,   // magic used or a cruel act: corruption goes up
                     type: "skill_check",
                     attribute: "intelligence",
@@ -105,6 +110,7 @@ export const treasureChest = {
                 },
                 {
                     text: "[ATN] Search the area for a hidden key.",
+                    offerChance: 0.2,   // not every chest can be opened this way (rolled once per chest, see EncounterController._isOffered)
                     type: "skill_check",
                     attribute: "attunement",
                     threshold: 12,

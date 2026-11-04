@@ -9,6 +9,7 @@ import { ItemDefinitions } from '../../../../shared/items/itemDefinitions.js';
 import { NARRATION, STAGE_START_TIMER, narrationPlan, textEndTimer, decisionAlpha, decisionsDoneTimer, actionPadding } from '../../ui/narration.js';
 import { seedRandom, unseedRandom, withoutSeed } from '../../../../shared/core/random.js';
 import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
+import { worldSync } from '../../../../shared/world/worldManager.js';
 
 /* A party of several players shares an encounter: every member's browser plays it from the same seed. A choice is a vote (the leader's
    too); when everyone has voted, or VOTE_SECONDS after the first vote, the most votes win and a tie goes the leader's way. The leader
@@ -250,7 +251,32 @@ export class EncounterController extends BaseController {
       if (!o || o.step !== this.mp.step || o.stage !== this.model.currentStageId) return [];
       return o.allowed.map(i => rawDecisions[i]).filter(Boolean);
     }
-    return rawDecisions.filter(decision => EncounterLogic.checkConditions(decision, this.model.context || {}));
+    return rawDecisions.filter((decision, i) => EncounterLogic.checkConditions(decision, this.model.context || {}) && this._isOffered(decision, i));
+  }
+
+  /* `offerChance: 0.2` on a decision: this particular object (a chest at its spot on the map) offers that choice only that often. It is rolled the
+     first time the object is looked at and kept in the world's changes (saved, and shared with the other players in a multiplayer world), so
+     walking away and coming back offers the same choices. An encounter that is not about an object on the map rolls once per visit. */
+  _isOffered(decision, index) {
+    if (decision.offerChance === undefined || decision.offerChance >= 1) return true;
+    const ctx = (this.model && this.model.context) || {};
+    const slot = `${this.model.currentStageId}#${index}`;
+    if (ctx.col === undefined || ctx.row === undefined) {
+      const rolled = (this.model.offered ||= {});
+      if (rolled[slot] === undefined) rolled[slot] = withoutSeed(() => Math.random()) < decision.offerChance;
+      return rolled[slot];
+    }
+    const where = gameState.world.isInterior && gameState.world.interiorId ? `INT_${gameState.world.interiorId}_` : '';
+    const key = `choices:${this._encounterId}:${where}${ctx.col},${ctx.row}`;
+    const changes = gameState.world.changes || (gameState.world.changes = {});
+    const kept = changes[key] && typeof changes[key] === 'object' ? changes[key] : {};
+    if (kept[slot] === undefined) {
+      const next = { ...kept, [slot]: withoutSeed(() => Math.random()) < decision.offerChance };
+      changes[key] = next;
+      if (worldSync.onLocalChange) worldSync.onLocalChange(key, next);   // the same choices for every player at this chest
+      return next[slot];
+    }
+    return kept[slot];
   }
 
   // ================================================================ SHARED ENCOUNTERS (a party of players)
