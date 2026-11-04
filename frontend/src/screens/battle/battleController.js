@@ -3,7 +3,7 @@ import { events } from '../../../../shared/core/eventBus.js';
 import { gameState } from '../../../../shared/core/gameState.js';
 import { TurnManager } from '../../../../shared/battle/turnManager.js';
 import { PHASE, TURN_TYPES } from '../../../../shared/battle/battleConstants.js';
-import { createBattleState, applyRoundEndRecovery, commitBattleResults, registerStatusApplication } from '../../../../shared/battle/battleState.js';
+import { createBattleState, applyRoundEndRecovery, commitBattleResults, registerStatusApplication, noEscapeMessage } from '../../../../shared/battle/battleState.js';
 import { queueOpeningSequence, queueSwap, queueVictory, queueDefeat, sortTurnQueue } from '../../../../shared/battle/battleQueue.js';
 import { queueEnemyActions } from '../../../../shared/battle/enemyAI.js';
 import { InventorySystem } from '../../../../shared/items/inventorySystem.js';
@@ -190,6 +190,11 @@ export class BattleController extends BaseController {
             if (typeof action.usableIn === 'function' && !action.usableIn('battle')) { // last line of defence; the menu should never list one
                 this.playErrorSound();
                 this.state.message = `${action.name} can't be used in battle!`;
+                return;
+            }
+            if (this.state.noEscape && typeof action.isFlee === 'function' && action.isFlee()) {
+                this.playErrorSound();
+                this.state.message = noEscapeMessage(this.state);
                 return;
             }
             if (!action.canPayCost(activeChar, InventorySystem)) {

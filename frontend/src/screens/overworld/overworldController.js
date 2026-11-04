@@ -1012,7 +1012,8 @@ export class OverworldController extends BaseController {
         if (AbilitySystem.hasWorldGrant('no_ambush')) return;
 
         const difficulty = gameState.difficulty || 'normal';
-        const battleData = biome.getBattle(difficulty, currentHour);   // the hour picks the day / dusk / night (and blood moon) spawn table
+        // the hour picks the day / dusk / night (and blood moon) spawn table; the party's size, how big the group is
+        const battleData = biome.getBattle(difficulty, currentHour, multiplayerSocial.partySize());
         if (!battleData) return;
 
         console.log(`[Overworld] Ambush triggered in biome: ${biome.id} on ${difficulty} difficulty!`);

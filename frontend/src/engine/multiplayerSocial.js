@@ -24,6 +24,8 @@ import { gameState } from '../../../shared/core/gameState.js';
 import { ItemDefinitions } from '../../../shared/items/itemDefinitions.js';
 import { InventorySystem } from '../../../shared/items/inventorySystem.js';
 import { buildLineup } from '../../../shared/core/multiplayerParty.js';
+import { PartyManager } from '../../../shared/characters/partyManager.js';
+import { CorruptionSystem } from '../../../shared/characters/corruptionSystem.js';
 import { multiplayer } from './multiplayerClient.js';
 import { multiplayerSession } from './multiplayerSession.js';
 import { serializeEntity, hydrateEntity, hydrateItem } from './saveManager.js';
@@ -44,6 +46,12 @@ class MultiplayerSocial {
         this.incoming = null;        // { rid, kind, from }
         this.trade = null;           // the trade in progress (see openTrade)
         this.groups = new Map();     // leaderId -> [memberIds], as the leaders last said
+        // the betrayal encounter can pick another player's shackled companion while we share fights (CorruptionSystem.pickAnyBetrayer)
+        CorruptionSystem.groupParties = () => {
+            if (!this.sharesFights) return [];
+            const g = this.groups.get(this.me) || [];
+            return g.filter(id => id !== this.me && this.groupParties.has(id)).map(id => ({ owner: id, members: this.groupParties.get(id) }));
+        };
         this.groupParties = new Map();   // leader only: memberId -> their characters (serialized), for building a fight
         this.trail = [];             // a member: the tiles the leader has stood on, newest first
         this.battle = null;          // the shared fight this player is in: { bid, kind, players, ... }
@@ -336,8 +344,40 @@ class MultiplayerSocial {
         return !!g && g.some(id => this.groupParties.has(id)) && multiplayerSession.active;
     }
 
+    /** How many fighters a fight will face the enemy with (1-3), for the size of the group that spawns: in a party of players it is the
+     *  shared line-up, otherwise this player's own party (PartyManager.getFighterCount). */
+    fighterCount() {
+        if (!this.sharesFights) return PartyManager.getFighterCount();
+        const g = this.groups.get(this.me) || [];
+        const ids = [this.me, ...g.filter(id => this.groupParties.has(id))];
+        const parties = { [this.me]: gameState.party.members };
+        for (const id of ids) if (id !== this.me) parties[id] = this.groupParties.get(id) || [];
+        const lineup = buildLineup(ids.map(id => ({ id, members: parties[id].map(m => ({ alive: living(m) })) })));
+        return Math.max(1, Math.min(3, lineup.length));
+    }
+
+    /** How many players share this player's fights (1 alone or outside a party of players). */
+    playerCount() {
+        if (!this.sharesFights) return 1;
+        const g = this.groups.get(this.me) || [];
+        return 1 + g.filter(id => id !== this.me && this.groupParties.has(id)).length;
+    }
+
+    /** { fighters, players } for the spawn tables (SpawnTableFactory.generateBattle). */
+    partySize() { return { fighters: this.fighterCount(), players: this.playerCount() }; }
+
+    /** The leader's side of another player's companion turning (encounterLogic, betrayal): taken out of my copy of their party, so the
+     *  line-up is built without them, and rebuilt as the enemy. Their own browser lets them go when the fight starts (_beginBattle). */
+    takeBetrayer(owner, idx) {
+        const list = this.groupParties.get(owner);
+        const data = list && list[idx];
+        if (!data || !CorruptionSystem.isShackled(data)) return null;
+        list.splice(idx, 1);
+        return CorruptionSystem.turnFoe(hydrateEntity(data));
+    }
+
     /** The leader's fight (sceneManager START_BATTLE): the party's line-up against these enemies, on every member's browser too. */
-    startPartyBattle(enemies, { background = null, bgm = null } = {}) {
+    startPartyBattle(enemies, { background = null, bgm = null, noEscape = false, betrayal = null } = {}) {
         const g = this.groups.get(this.me) || [];
         const ids = [this.me, ...g.filter(id => this.groupParties.has(id))];
         const parties = { [this.me]: gameState.party.members.map(serializeEntity) };
@@ -347,7 +387,7 @@ class MultiplayerSocial {
             bid: newId(), kind: 'party', seed: (Math.random() * 0xffffffff) >>> 0, authority: this.me, players: ids,
             names: Object.fromEntries(ids.map(id => [id, this.nameOf(id)])),
             lineup: lineup.map(e => ({ ...e, data: parties[e.owner][e.idx] })),
-            enemies: enemies.map(serializeEntity), background, bgm,
+            enemies: enemies.map(serializeEntity), background, bgm, noEscape, betrayal,
         };
         for (const id of ids) if (id !== this.me) this._send({ k: 'bt_start', spec }, id);
         this._beginBattle(spec);
@@ -383,6 +423,13 @@ class MultiplayerSocial {
             enemies = (spec.sides[opponent] || []).map(hydrateEntity);
             enemyMeta = enemies.map((_, i) => ({ netId: `${opponent}#${i}`, owner: opponent }));
         } else {
+            // one of my shackled companions turned on the group (the leader's betrayal encounter): they leave my party before the line-up is read,
+            // which the leader built without them
+            const b = spec.betrayal;
+            if (b && b.owner === me && spec.authority !== me) {
+                const turned = gameState.party.members[b.idx];
+                if (turned && CorruptionSystem.isShackled(turned)) { CorruptionSystem.turnAgainstParty(turned); this._say(`${turned.name} has turned on the party!`); }
+            }
             partyEntities = spec.lineup.map(e => (e.owner === me ? gameState.party.members[e.idx] : hydrateEntity(e.data))).filter(Boolean);
             partyMeta = spec.lineup.map(e => ({ netId: `${e.owner}#${e.idx}`, owner: e.owner }));
             enemies = spec.enemies.map(hydrateEntity);
@@ -397,7 +444,7 @@ class MultiplayerSocial {
             early: this.early.get(spec.bid) || [],
         };
         this.early.delete(spec.bid);
-        events.emit('MP_START_BATTLE', { enemies, context: { mp, partyEntities, backgroundId: spec.background || undefined, weather: null }, bgm: spec.bgm || null });
+        events.emit('MP_START_BATTLE', { enemies, context: { mp, partyEntities, backgroundId: spec.background || undefined, weather: null, noEscape: !!spec.noEscape }, bgm: spec.bgm || null });
     }
 
     /** Of these players, the ones still in the world. */

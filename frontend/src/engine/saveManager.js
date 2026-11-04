@@ -88,7 +88,7 @@ function replaceContents(target, source) {
 
 function serializeStatusEffect(effect) {
     // A StatusEffectModel carries its whole definition (and who inflicted it, which leads back to an entity): save only what changes.
-    return { id: effect.id, charges: effect.charges, stacks: effect.stacks || 1 };
+    return { id: effect.id, charges: effect.charges, stacks: effect.stacks || 1, turnsActive: effect.turnsActive || 0 };
 }
 
 export function serializeEntity(entity) {
@@ -138,6 +138,7 @@ export function hydrateEntity(saved) {
         const effect = StatusEffectFactory.createEffect(saved.id, saved.charges, null);
         if (!effect) continue;                       // the effect was removed from the game: skip it
         effect.stacks = saved.stacks || 1;
+        effect.turnsActive = saved.turnsActive || 0;   // a bleed keeps getting worse across a save
         entity.state.statusEffects.push(effect);
     }
     return entity;

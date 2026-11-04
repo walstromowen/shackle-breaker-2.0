@@ -80,7 +80,9 @@ export class BiomeModel {
         return null;
     }
 
-    getBattle(difficulty = 'normal', currentHour = 12) {
+    /* `size` = { fighters, players }: how many the party can put on the field (1-3) and how many players share it; a bigger party meets
+       a bigger group (SpawnTableFactory, PARTY_SCALING). */
+    getBattle(difficulty = 'normal', currentHour = 12, size = {}) {
         if (!this.battles || !this.battles.tables) return null;
         // The act makes ambushes more frequent, most of all on a blood moon night (story/actDefinitions.js)
         if (Math.random() > this.battles.rate * ActSystem.getBattleRateMultiplier(currentHour)) return null;
@@ -89,7 +91,7 @@ export class BiomeModel {
         const tableId = (ActSystem.isBloodMoon(currentHour) && this.battles.tables.bloodMoon)
             || this.battles.tables[timeOfDay] || this.battles.tables.day;
         if (!tableId) return null;
-        const spawnModel = SpawnTableFactory.generateBattle(tableId, difficulty);
+        const spawnModel = SpawnTableFactory.generateBattle(tableId, difficulty, size);
         return spawnModel.hasEnemies() ? { enemies: spawnModel.enemies } : null;
     }
 
@@ -110,9 +112,10 @@ export class BiomeModel {
         // The Shackling (story/encounters/story/shackledBetrayal.js) is an ordinary entry in every biome's pool, at any hour, but only while a party member is shackled
         // (and someone else is still standing to be turned on). It is as likely as CORRUPTION.BETRAYAL_WEIGHT says next to the biome's own weights.
         const entries = validPools.map((pool) => ({ weight: pool.weight, result: { id: pool.id } }));
-        const betrayer = CorruptionSystem.pickBetrayer();
+        // In a party of players any player's shackled companion can turn (betrayerOwner: whose it is; null = this player's)
+        const betrayer = CorruptionSystem.pickAnyBetrayer();
         if (betrayer) {
-            entries.push({ weight: CORRUPTION.BETRAYAL_WEIGHT, result: { id: 'shackled_betrayal', context: { betrayerIndex: gameState.party.members.indexOf(betrayer), betrayerName: betrayer.name } } });
+            entries.push({ weight: CORRUPTION.BETRAYAL_WEIGHT, result: { id: 'shackled_betrayal', context: { betrayerIndex: betrayer.idx, betrayerName: betrayer.name, betrayerOwner: betrayer.owner } } });
         }
         if (entries.length === 0) return null;
         // Perform a weighted random roll

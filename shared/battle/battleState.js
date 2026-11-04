@@ -33,8 +33,22 @@ export function createBattleState(enemies, context = {}) {
         selectedTargets: [],
         message: `Battle started!`,
         fled: false,
+        // a boss fight (or a story fight that says so) cannot be run from: Retreat is greyed out and refused
+        noEscape: !!context.noEscape || preparedEnemies.some(isBoss),
         showAbilityDetails: true
     };
+}
+
+/* A BOSS-tagged enemy (entityDefinitions.js) is a fight to the end. */
+export function isBoss(combatant) {
+    const tags = (combatant && (combatant.originalEntity?.tags || combatant.tags || combatant.state?.tags)) || [];
+    return Array.isArray(tags) && tags.includes('BOSS');
+}
+
+/* The line shown when someone tries to retreat from a fight that has no escape. */
+export function noEscapeMessage(state) {
+    const boss = (state.enemyRoster || []).find(isBoss);
+    return boss ? `There is no escaping ${boss.name}!` : 'There is no escape from this fight!';
 }
 
 /* Takes the abilities that only work outside a fight (context 'overworld', see AbilityModel.contextOf) out of a combatant's list, in place. */

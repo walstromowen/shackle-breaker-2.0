@@ -73,6 +73,33 @@ test('a fight played through the controller ends once, writes health back to the
     }
 });
 
+test('a boss cannot be run from: Retreat is refused before and during the turn, and an ordinary fight still lets the party go', () => {
+    withSeed(5, () => {
+        party(['MAD_MAN', 30]);
+        const bc = newBattle([['DARIUS_THE_GROVELER', 1]]);
+        assert.equal(bc.state.noEscape, true, 'a BOSS-tagged enemy means no escape');
+        while (bc.state.phase !== PHASE.SELECT_ACTION) bc.update(0.4);
+        const hero = bc.state.activeParty[0];
+        bc.state.menuIndex = hero.abilities.findIndex(a => a.isFlee && a.isFlee());
+        assert.ok(bc.state.menuIndex >= 0, 'the party still has Retreat in its list');
+        key(bc, 'Enter');
+        assert.equal(bc.state.phase, PHASE.SELECT_ACTION, 'choosing it does nothing');
+        assert.match(bc.state.message, /no escaping/);
+        // even a Retreat that reaches the queue (a shared fight, an old save) is refused there
+        const tm = new TurnManager(bc);
+        bc.state.turnQueue = [{ type: TURN_TYPES.APPLY_ABILITY_EFFECTS, actor: hero, action: hero.abilities[bc.state.menuIndex], targets: [hero], isFirstTarget: true, ignoreCost: true }];
+        const real = Math.random; Math.random = () => 0;   // the flee roll would succeed
+        try { tm.processNextTurnInQueue(); } finally { Math.random = real; }
+        assert.equal(bc.state.fled, false, 'nobody gets away');
+    });
+    withSeed(6, () => {
+        party(['MAD_MAN', 3]);
+        const bc = newBattle([['WOLF', 1]]);
+        assert.equal(bc.state.noEscape, false, 'a wolf can be run from');
+        assert.equal(newBattle([['WOLF', 1]], { maxActive: 3, noEscape: true }).state.noEscape, true, 'a story fight can ask for no escape');
+    });
+});
+
 test('a party that cannot win loses: the defeat banner, then the end of the battle', () => {
     withSeed(4, () => {
         party(['MAD_MAN', 1]);
@@ -234,4 +261,15 @@ test('the opening: everyone steps in, and the ledger and the active pools work o
         registerDeath(state, state.activeParty[0], state.activeEnemies[0]);
         assert.deepEqual(state.battleLedger.map(e => e.type), ['ABILITY_USED', 'DEATH']);
     });
+});
+
+test('a recruit joins at the party\'s average level, rested, without the enemy level edge', async () => {
+    const { PartyManager } = await import('../../shared/characters/partyManager.js');
+    party(['MAD_MAN', 10], ['DOG', 6], ['MAD_MAN', 9]);   // average 8.33 -> 8
+    const dog = PartyManager.recruit('DOG');
+    assert.equal(dog.level, 8);
+    assert.equal(dog.hp, dog.maxHp);
+    assert.ok(!dog.state.levelEdgeAttr || !dog.state.levelEdgeAttr.amount, 'no enemy edge');
+    assert.equal(gameState.party.members.length, 4);
+    assert.equal(PartyManager.recruit('DOG', { level: 2 }).level, 2, 'an encounter can still name a level');
 });

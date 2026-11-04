@@ -8,17 +8,17 @@ import { ENEMY_DAMAGE_SCALING, DAMAGE_SCALING, scalingFor } from '../core/consta
 import { ItemDefinitions } from '../items/itemDefinitions.js';
 
 // BALANCE KNOB: base max HP an enemy gets per level above 1 on top of (or, below 0, taken from) the +2 per level that every level-up gives
-// (ExperienceSystem.applyLevelUpStats). -1 = an enemy grows 1 HP a level: a player's weapon stops growing once it is fully upgraded, and an enemy that
-// kept growing 2.5 a level took twice the hits by level 50. Tuned with tools/playthroughSim.mjs (enemies are not handicapped by a damage share: their attributes set how hard they hit).
+// (ExperienceSystem.applyLevelUpStats). 0 = an enemy grows like a player does (it was -1 while enemies outgrew fully upgraded weapons; with the attack
+// edge now carrying their damage, full HP growth keeps late fights the hardest). Tuned with tools/playthroughSim.mjs (enemies are not handicapped by a damage share: their attributes set how hard they hit).
 // It is recorded on the entity (levelEdgeHp) so EntityFactory.removeLevelEdge() can undo it when an enemy joins the party.
-export const LEVEL_EDGE_HP_PER_LEVEL = -1;
+export const LEVEL_EDGE_HP_PER_LEVEL = 0;
 
 // BALANCE KNOB: extra points an enemy gets per level above 1 in the attribute its best attack scales with (Strength for blunt, slash and pierce,
 // Intelligence for the magic types: the enemy rules, core/constants.js ENEMY_DAMAGE_SCALING), ON TOP of the 1 point per level spread over every attribute. Player defense grows
 // with level and Vigor while an enemy's attack used to stay almost flat, so late fights got easier; this keeps an enemy's hits growing with its level.
-// 0.5 = +5 attack by level 11 (0.3 while enemies still had a flat damage multiplier; that multiplier is gone, so the edge carries their growth; see tools/playthroughSim.mjs); 0 switches it off. Like the HP edge, it is recorded on the entity (levelEdgeAttr) and
+// 0.4 = +4 attack by level 11 (0.3 while enemies still had a flat damage multiplier; that multiplier is gone, so the edge carries their growth; see tools/playthroughSim.mjs); 0 switches it off. Like the HP edge, it is recorded on the entity (levelEdgeAttr) and
 // EntityFactory.removeLevelEdge() takes it away on recruit.
-export const LEVEL_EDGE_ATTACK_PER_LEVEL = 0.5;
+export const LEVEL_EDGE_ATTACK_PER_LEVEL = 0.4;
 
 export class EntityFactory {
     static create(entityId, levelOrOverrides = 1, overrides = {}) {

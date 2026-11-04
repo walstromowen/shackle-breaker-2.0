@@ -5,7 +5,7 @@ import { BattleAnimationFactory } from './animation/battleAnimationFactory.js';
 import { AbilityFactory } from '../abilities/abilityFactory.js';
 import { PHASE, TURN_TYPES } from './battleConstants.js';
 import { queueDeath, queueFlee } from './battleQueue.js';
-import { getActivePool, registerAbilityUse, registerStatusApplication, registerDeath } from './battleState.js';
+import { getActivePool, registerAbilityUse, registerStatusApplication, registerDeath, noEscapeMessage } from './battleState.js';
 import { StatusEffectFactory } from '../abilities/statusEffectFactory.js';
 import { InventorySystem } from '../items/inventorySystem.js';
 import { CorruptionSystem } from '../characters/corruptionSystem.js';
@@ -186,6 +186,10 @@ export class TurnManager {
             // --- Normal Ability Execution ---
             const statusSnapshots = (actualTarget.statusEffects || []).map(s => ({ id: s.id, stacks: s.stacks }));
             
+            if (this.state.noEscape && typeof action.isFlee === 'function' && action.isFlee()) {   // a boss fight: nobody gets away
+                this.queueMessage(noEscapeMessage(this.state));
+                break;
+            }
             const result = AbilitySystem.execute(action.id, actor, actualTarget);
             
             if (actualTarget.statusEffects) {

@@ -83,7 +83,7 @@ export class SettingsRenderer {
         if (!this._tipLayouts) this._tipLayouts = new Map();
         let m = this._tipLayouts.get(key);
         if (!m) {
-            m = measureTip(ui, { ...tip, intro: '' }, { width: w, keyColW: 270, font: 26, lineH: 34, rowGap: 16, capH: 44, capFont: 23, showTitle: false });
+            m = measureTip(ui, { ...tip, intro: '' }, { width: w, keyColW: 400, font: 26, lineH: 34, rowGap: 20, capH: 44, capFont: 23, showTitle: false });
             this._tipLayouts.set(key, m);
         }
         drawTip(ctx, ui, m, x, L.cardY + 100);

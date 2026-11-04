@@ -12,6 +12,7 @@ import { ActSystem } from '../../../../shared/story/actSystem.js';
 import { EntityFactory } from '../../../../shared/characters/entityFactory.js';
 import { CorruptionSystem } from '../../../../shared/characters/corruptionSystem.js';
 import { rng, withoutSeed } from '../../../../shared/core/random.js';
+import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
 
 /* A party of several players in one encounter (EncounterController, engine/multiplayerSocial.js): every member's browser plays it with the
    same dice, so the results here are cut to each player's part. The leader's lead character is the one who rolls and the one an
@@ -437,12 +438,22 @@ export class EncounterLogic {
                 }
                 case "START_BATTLE": {
                     let enemyList = Array.isArray(payload.enemies) ? [...payload.enemies] : [];
+                    let betrayal = null;
                     // `betrayer: true`: the shackled member this encounter is about (model.context.betrayerIndex) leaves the party for good and is the enemy
                     // (shackled_betrayal.js). They fight at full health in whatever they still wear.
+                    // In a party of players it can be another player's companion (context.betrayerOwner): the leader rebuilds them as the enemy and the
+                    // owner's browser lets them go when the fight starts (multiplayerSocial._beginBattle). Nobody can run from a betrayal.
                     if (payload.betrayer) {
                         const members = gameState.party?.members || [];
-                        const named = members[model.context?.betrayerIndex];
-                        const turned = CorruptionSystem.turnAgainstParty(named && CorruptionSystem.isShackled(named) ? named : CorruptionSystem.pickBetrayer());
+                        const owner = model.context?.betrayerOwner;
+                        let turned;
+                        if (owner && owner !== multiplayerSocial.me) {
+                            turned = multiplayerSocial.takeBetrayer(owner, model.context.betrayerIndex);
+                            if (turned) betrayal = { owner, idx: model.context.betrayerIndex };
+                        } else {
+                            const named = members[model.context?.betrayerIndex];
+                            turned = CorruptionSystem.turnAgainstParty(named && CorruptionSystem.isShackled(named) ? named : CorruptionSystem.pickBetrayer());
+                        }
                         if (!turned) {
                             generalMessages.push("The chains hang still. Whatever stirred is gone.");
                             break;
@@ -452,7 +463,7 @@ export class EncounterLogic {
                     }
                     const currentDifficulty = payload.difficulty || gameState.difficulty || 'normal';
                     if (payload.tableId) {
-                        const spawnModel = SpawnTableFactory.generateBattle(payload.tableId, currentDifficulty);
+                        const spawnModel = SpawnTableFactory.generateBattle(payload.tableId, currentDifficulty, multiplayerSocial.partySize());
                         if (spawnModel && spawnModel.hasEnemies()) {
                             enemyList = [...enemyList, ...spawnModel.enemies];
                         }
@@ -471,20 +482,19 @@ export class EncounterLogic {
                         background: battleBgAsset, weather: gameState.world?.currentWeather || 'clear',
                         context: model.context, bgm: EncounterLogic.resolveBattleBgm(payload.bgm || EncounterLogic.stageBattleBgm(model) || GENERIC_BATTLE_BGM, worldManager),   // the fight's own track, else the music already playing on the stage that led here (so it carries into the battle unbroken), else the biome's battle music
                         // `afterVictory: { encounterId }` plays that encounter when the fight is won, before the overworld (the end of Darius)
-                        afterVictory: payload.afterVictory || null
+                        afterVictory: payload.afterVictory || null,
+                        noEscape: !!(payload.betrayer || payload.noEscape), betrayal,
                     });
                     break;
                 }
                 case "RECRUIT_CHARACTER": {
                     // A creature or person who joins the party: { entityId, overrides }. (This handler went missing in the encounter refactor, so
                     // every recruit -- the mutt, the snow leopard, the legionary, the madman -- silently did nothing.) The newcomer arrives rested,
-                    // loses the enemy-only level HP bonus, and the player is told; a full party (6) leaves them behind.
-                    const recruit = PartyManager.addMember(payload.entityId, payload.overrides || {});
+                    // loses the enemy-only level edge, joins at the party's average level (PartyManager.recruit), and the player is told; a full party (6)
+                    // leaves them behind.
+                    const recruit = PartyManager.recruit(payload.entityId, payload.overrides || {});
                     if (recruit) {
-                        EntityFactory.removeLevelEdge(recruit);
-                        recruit.hp = recruit.maxHp;
-                        recruit.stamina = recruit.maxStamina;
-                        generalMessages.push(`${recruit.name} joined your party!`);
+                        generalMessages.push(`${recruit.name} joined your party at level ${recruit.level}!`);
                     } else {
                         generalMessages.push(`Your party is full. There is no room for another companion.`);
                     }

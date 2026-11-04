@@ -9,6 +9,9 @@
 //   TRACE=Traveler,Hermit node tools/playthroughSim.mjs                                 how those classes' builds grow
 //   STATS=1 node tools/playthroughSim.mjs [runs] > stats.json                           every enemy's stats at levels 1-20, and every class's
 //                                                                                        build (averaged over the runs) at levels 1-30, as JSON
+//   PARTY=3 node tools/playthroughSim.mjs ...                                           fight with companions: 3 fighters (the class plus two of random
+//   PARTY='1:1,5:2,12:3' ...                                                            classes, built the same way), or a party size that grows by level
+//   DIFF=hard node tools/playthroughSim.mjs ...                                         the game's difficulty: spawn group sizes and the enemy level offset
 const ROOT = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
 const RUNS = +(process.argv[2] || 100), MAXL = +(process.argv[3] || 50), FIGHTS = +(process.argv[4] || 3);
 const noop = () => {};
@@ -34,6 +37,12 @@ const { CombatCalculator } = await import(ROOT + '/shared/battle/combatCalculato
 const { SpawnTableFactory } = await import(ROOT + '/shared/battle/spawnTableFactory.js');
 const { ActSystem } = await import(ROOT + '/shared/story/actSystem.js');
 const { requirementsAt } = await import(ROOT + '/shared/items/weaponRequirements.js');
+const { DIFFICULTY_MODIFIERS } = await import(ROOT + '/shared/core/constants.js');
+const DIFF = process.env.DIFF || 'normal';
+const DIFF_OFFSET = DIFFICULTY_MODIFIERS[DIFF]?.enemyLevelOffset || 0;
+// PARTY: '3' or '1:1,5:2,12:3' (from level 1 one fighter, from level 5 two, from level 12 three)
+const PARTY_STEPS = String(process.env.PARTY || '1').split(',').map(x => x.includes(':') ? x.split(':').map(Number) : [1, +x]).sort((a, b) => a[0] - b[0]);
+const partySizeAt = (level) => PARTY_STEPS.filter(([l]) => level >= l).reduce((n, [, k]) => k, 1);
 
 // ---- the classes (characterCreatorLogic.js) ----
 const CLASSES = {
@@ -153,57 +162,63 @@ function act(c, a, foes, log) {
     }
 }
 const REST = () => { const r = AbilityFactory.createAbilities(['rest'])[0]; r._cost = {}; r._dmg = []; return r; };
-function battle(player, enemies) {
-    const p = combatant(player, 'party');
+function battle(players, enemies, carryHp = null) {
+    const party = (Array.isArray(players) ? players : [players]).map(e => combatant(e, 'party'));
+    if (carryHp) party.forEach((c, i) => { c.hp = Math.max(0, Math.round(c.maxHp * (carryHp[i] ?? 1))); });   // wounds from the last fight
+    const p = party[0];
     const foes = enemies.map(e => combatant(e, 'enemy'));
-    const startHp = p.hp, foeHp = foes.reduce((s, f) => s + f.maxHp, 0);
+    const startHp = party.reduce((s, c) => s + c.hp, 0), foeHp = foes.reduce((s, f) => s + f.maxHp, 0);
+    const alive = () => party.some(c => c.hp > 0);
     let rounds = 0, playerAttacks = 0;
     const log = { dealt: 0 };
     const rest = REST();
-    while (rounds < 60 && p.hp > 0 && foes.some(f => f.hp > 0)) {
+    while (rounds < 60 && alive() && foes.some(f => f.hp > 0)) {
         rounds++;
-        const order = [p, ...foes.filter(f => f.hp > 0)].sort((x, y) => (y.stats.speed || 0) - (x.stats.speed || 0) + (rnd() - 0.5) * 0.01);
+        const field = () => foes.filter(f => f.hp > 0).slice(0, 3);   // three enemies on the field, the rest wait in reserve and step in as others fall
+        const order = [...party.filter(c => c.hp > 0), ...field()].sort((x, y) => (y.stats.speed || 0) - (x.stats.speed || 0) + (rnd() - 0.5) * 0.01);
         for (const c of order) {
-            if (c.hp <= 0 || p.hp <= 0 || !foes.some(f => f.hp > 0)) continue;
-            if (c === p) {
+            if (c.hp <= 0 || !alive() || !foes.some(f => f.hp > 0)) continue;
+            if (c.team === 'party') {
                 let best = null, bestV = 0, topV = 0;
-                for (const a of p.abilities) {
+                for (const a of c.abilities) {
                     if (!a._dmg.length) continue;
-                    const v = expected(a, p, foes);
+                    const v = expected(a, c, field());
                     if (v > topV) topV = v;
-                    if (canPay(p, a) && v > bestV) { bestV = v; best = a; }
+                    if (canPay(c, a) && v > bestV) { bestV = v; best = a; }
                 }
                 // a player rests a turn rather than poke with an attack far weaker than the one the rest would pay for
                 if (best && bestV < topV * 0.5) best = null;
-                if (best) { act(p, best, foes, log); playerAttacks++; } else act(p, rest, foes);
+                if (best) { act(c, best, field(), c === p ? log : null); if (c === p) playerAttacks++; } else act(c, rest, field());
             } else {
                 const valid = c.abilities.filter(a => canPay(c, a) && !['rest', 'punch'].includes(a.id));
                 const choice = valid.length ? pick(valid) : (c.abilities.find(a => a.id === 'punch' && canPay(c, a)) || rest);
-                act(c, choice, [p]);
+                act(c, choice, [pick(party.filter(m => m.hp > 0))]);   // the enemy AI picks among the living fighters
             }
         }
-        for (const c of [p, ...foes]) {
+        for (const c of [...party, ...foes]) {
             if (c.hp <= 0) continue;
             c.stamina = Math.min(c.maxStamina, c.stamina + Math.round(c.stats.staminaRecovery || 0));
             c.insight = Math.min(c.maxInsight, c.insight + Math.round(c.stats.insightRecovery || 0));
             c.hp = Math.min(c.maxHp, c.hp + Math.round(c.stats.hpRecovery || 0));
         }
     }
-    const won = p.hp > 0 && !foes.some(f => f.hp > 0);
+    const won = alive() && !foes.some(f => f.hp > 0);
     const killed = foes.filter(f => f.hp <= 0).length;
-    return { won, hpLeft: Math.max(0, p.hp) / startHp, rounds, n: foes.length, attacksPerKill: killed ? playerAttacks / killed : null, dmgShare: log.dealt / Math.max(1, playerAttacks) / (foeHp / foes.length) };
+    return { won, hpEach: party.map(c => Math.max(0, c.hp) / c.maxHp), hpLeft: party.reduce((s, c) => s + Math.max(0, c.hp), 0) / Math.max(1, startHp), rounds, n: foes.length, attacksPerKill: killed ? playerAttacks / killed : null, dmgShare: log.dealt / Math.max(1, playerAttacks) / (foeHp / foes.length) };
 }
 
 // ---- encounters ----
-function encounter(level) {
+const { PARTY_SCALING } = await import(ROOT + '/shared/battle/spawnTableFactory.js');
+const SCALE = { ...PARTY_SCALING, ...JSON.parse(process.env.PSCALE || '{}') };   // PSCALE='{"EXTRA_ENEMIES":[0,1.5,3]}': other group growth with party size
+function encounter(level, fighters = 1) {
     const act2 = level >= 20;
     gameState.milestones = act2 ? ['act2'] : [];
     const biomes = level < 6 ? ['plains'] : ['plains', 'desert', 'snowy_mountains'];
     const b = pick(biomes);
     const night = rnd() < 0.3;
     const table = act2 && night && rnd() < 0.6 ? `${b}_battles_blood_moon` : `${b}_battles_${night ? 'night' : 'day'}`;
-    const model = SpawnTableFactory.generateBattle(table, 'normal');
-    const base = level + ActSystem.getEnemyLevelOffset();
+    const model = SpawnTableFactory.generateBattle(table, DIFF, { fighters }, SCALE);
+    const base = level + DIFF_OFFSET + ActSystem.getEnemyLevelOffset();
     return (model.enemies || []).map(cfg => {
         const id = cfg.id; const { id: _, levelOffset = 0, ...rest } = cfg;
         let overrides = { level: Math.max(1, base + levelOffset), ...rest };
@@ -323,34 +338,47 @@ const BANDS = [[1, 5], [6, 10], [11, 15], [16, 20], [21, 30], [31, 40], [41, 50]
 const stats = {};
 const t0 = Date.now();
 for (const [name, cls] of Object.entries(CLASSES)) {
-    const S = stats[name] = BANDS.map(() => ({ fights: 0, wins: 0, hpLeft: 0, rounds: 0, apk: 0, apkN: 0, enemies: 0, dmg: 0 }));
+    const S = stats[name] = BANDS.map(() => ({ fights: 0, wins: 0, hpLeft: 0, rounds: 0, apk: 0, apkN: 0, enemies: 0, dmg: 0, chain: 0, chainN: 0 }));
     for (let run = 0; run < RUNS; run++) {
         const r = newRun(cls);
+        // companions: other classes, levelled and geared the same way (a recruit is on the player rules)
+        const mates = [1, 2].map(() => { const c = CLASSES[pick(Object.keys(CLASSES).filter(n => n !== 'Diseased'))]; return { c, r: newRun(c) }; });
         for (let level = 1; level <= MAXL; level++) {
-            if (level > 1) spendPoint(r, cls, level);
-            const player = buildPlayer(r, cls, level);
+            if (level > 1) { spendPoint(r, cls, level); for (const m of mates) spendPoint(m.r, m.c, level); }
+            const player = [buildPlayer(r, cls, level), ...mates.slice(0, partySizeAt(level) - 1).map(m => buildPlayer(m.r, m.c, level))];
             const band = BANDS.findIndex(([a, b]) => level >= a && level <= b);
             for (let f = 0; f < FIGHTS; f++) {
-                const foes = encounter(level);
+                const foes = encounter(level, player.length);
                 if (!foes.length) continue;
                 const res = battle(player, foes);
                 const s = S[band];
                 s.fights++; if (res.won) s.wins++; s.hpLeft += res.won ? res.hpLeft : 0; s.rounds += res.rounds; s.enemies += res.n; s.dmg += res.dmgShare;
                 if (res.attacksPerKill !== null) { s.apk += res.attacksPerKill; s.apkN++; }
             }
+            // attrition: fights in a row, wounds carried over and no healing, until the party falls (at most 12)
+            let hp = null, n = 0;
+            while (n < 12) {
+                const foes = encounter(level, player.length);
+                if (!foes.length) continue;
+                const res = battle(player, foes, hp);
+                if (!res.won) break;
+                n++; hp = res.hpEach;
+            }
+            S[band].chain += n; S[band].chainN++;
         }
     }
 }
 const result = { knobs: K, runs: RUNS, maxLevel: MAXL, fights: FIGHTS, bands: BANDS, stats, seconds: (Date.now() - t0) / 1000 };
 if (process.env.JSON) { process.stdout.write(JSON.stringify(result) + '\n'); process.exit(0); }
 const bandName = ([a, b]) => `L${a}-${b}`;
-out(`dials ${JSON.stringify(K)}`);
+out(`dials ${JSON.stringify(K)}  difficulty ${DIFF}  party ${process.env.PARTY || '1'}`);
 out(`${RUNS} runs x ${FIGHTS} fights a level, levels 1-${MAXL}, ${result.seconds.toFixed(0)}s`);
 const METRICS = [
     ['WIN RATE (fresh HP)', s => s.wins / s.fights * 100, '%'],
     ['HP LEFT AFTER A WIN', s => s.hpLeft / Math.max(1, s.wins) * 100, '%'],
     ['PLAYER ATTACKS PER KILL', s => s.apk / Math.max(1, s.apkN), ' '],
     ['ROUNDS PER FIGHT', s => s.rounds / s.fights, ' '],
+    ['FIGHTS IN A ROW BEFORE THE PARTY FALLS (wounds carried, no healing, max 12)', s => s.chain / Math.max(1, s.chainN), ' '],
 ];
 for (const [title, fn, unit] of METRICS) {
     out(`\n${title}`);

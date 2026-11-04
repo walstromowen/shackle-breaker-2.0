@@ -20,11 +20,23 @@ const tickHp = (id, stacks) => {
     return 100 - t.hp;
 };
 
-test('bleed hurts less per turn than poison, even fully stacked', () => {
-    const poison = tickHp('poison', 1);
-    assert.equal(poison, 8);
-    for (let s = 1; s <= (StatusEffectDefinitions.bleed.maxStacks || 1); s++) assert.ok(tickHp('bleed', s) < poison, `bleed x${s} < poison`);
-    assert.ok(tickHp('bleed', 1) >= 1);
+test('bleed gets worse the longer it lasts: more stamina every turn, then HP once the stamina is gone; poison takes 10% a turn', () => {
+    assert.equal(tickHp('poison', 1), 10);
+    const m = new StatusEffectModel(StatusEffectDefinitions.bleed);
+    const t = fakeTarget(100);
+    const drains = [];
+    for (let i = 0; i < 4; i++) { const before = t.stamina; m.onEvent('ON_TURN_END', t); drains.push(before - t.stamina); }
+    assert.deepEqual(drains, [6, 9, 12, 15], 'half as much again every turn');
+    assert.equal(t.hp, 100, 'no HP lost while there was stamina to drain');
+    // a body with no strength left bleeds: what could not be drained is taken from HP as the same share of max HP
+    const dry = fakeTarget(100); dry.stamina = 4;
+    const b = new StatusEffectModel(StatusEffectDefinitions.bleed); b.turnsActive = 2;   // the third turn: 12% wanted
+    b.onEvent('ON_TURN_END', dry);
+    assert.equal(dry.stamina, 0);
+    assert.equal(dry.hp, 92, '8% of max HP for the 8% of stamina it could not take');
+    const two = new StatusEffectModel(StatusEffectDefinitions.bleed); two.stacks = 2;
+    const t2 = fakeTarget(100); two.onEvent('ON_TURN_END', t2);
+    assert.equal(100 - t2.stamina, 12, 'a second cut doubles it');
 });
 
 // ---------- armor ----------
@@ -153,7 +165,7 @@ test('chest loot never holds low-tier items', () => {
     }
 });
 
-test('poison and bleed take a percentage of the holder\'s MAX hp (and bleed of max stamina), so a big pool loses more than a small one', () => {
+test('poison takes a percentage of the holder\'s MAX hp and bleed of max stamina, so a big pool loses more than a small one', () => {
     const tick = (id, stacks, max) => {
         const m = new StatusEffectModel(StatusEffectDefinitions[id]);
         m.stacks = stacks;
@@ -161,11 +173,11 @@ test('poison and bleed take a percentage of the holder\'s MAX hp (and bleed of m
         m.onEvent('ON_TURN_END', t);
         return { hp: max - t.hp, stamina: max - t.stamina };
     };
-    assert.deepEqual(tick('poison', 1, 100), { hp: 8, stamina: 0 });
-    assert.deepEqual(tick('poison', 1, 500), { hp: 40, stamina: 0 });
-    assert.deepEqual(tick('bleed', 1, 100), { hp: 3, stamina: 4 });
-    assert.deepEqual(tick('bleed', 2, 100), { hp: 6, stamina: 8 });
-    assert.deepEqual(tick('bleed', 1, 500), { hp: 15, stamina: 20 });
+    assert.deepEqual(tick('poison', 1, 100), { hp: 10, stamina: 0 });
+    assert.deepEqual(tick('poison', 1, 500), { hp: 50, stamina: 0 });
+    assert.deepEqual(tick('bleed', 1, 100), { hp: 0, stamina: 6 });
+    assert.deepEqual(tick('bleed', 2, 100), { hp: 0, stamina: 12 });
+    assert.deepEqual(tick('bleed', 1, 500), { hp: 0, stamina: 30 });
     assert.equal(tick('poison', 1, 5).hp, 1, 'a tick is never lost on a tiny pool');
     assert.equal(tick('bleed', 1, 5).stamina, 1);
 });

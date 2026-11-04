@@ -458,3 +458,24 @@ test('nothing is met by chance except in the caves; on the plains only the Shack
     // it comes up as often as it did when it shared the pool with the two old encounters: 0.005 x 80 / (80 + 40)
     assert.ok(Math.abs(BIOME_DEFINITIONS.PLAINS.encounters.rate - 0.005 * 80 / 120) < 0.0001);
 });
+
+test('in a party of players any player\'s shackled companion can turn, and is rebuilt as the enemy without touching this party', () => {
+    const lead = hero('Lead');
+    gameState.party.members = [lead];
+    const theirs = hero('Theirs');
+    CorruptionSystem.change(theirs, 100);
+    const saved = { ...theirs.state, name: theirs.name };
+    CorruptionSystem.groupParties = () => [{ owner: 'p2', members: [{ name: 'Mate', hp: 10 }, saved] }];
+    try {
+        assert.deepEqual(CorruptionSystem.pickAnyBetrayer(), { owner: 'p2', idx: 1, name: theirs.name });
+        lead.hp = 0;
+        assert.deepEqual(CorruptionSystem.pickAnyBetrayer(), { owner: 'p2', idx: 1, name: theirs.name }, 'their other companion still stands to fight');
+        CorruptionSystem.groupParties = () => [{ owner: 'p2', members: [saved] }];
+        assert.equal(CorruptionSystem.pickAnyBetrayer(), null, 'nobody unshackled left standing in the whole group');
+        lead.hp = lead.maxHp;
+        const foe = CorruptionSystem.turnFoe(theirs);
+        assert.equal(foe.shackled, false);
+        assert.equal(foe.hp, foe.maxHp);
+        assert.deepEqual(gameState.party.members, [lead], 'this player\'s party is untouched');
+    } finally { CorruptionSystem.groupParties = null; }
+});

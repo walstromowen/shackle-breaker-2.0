@@ -367,7 +367,7 @@ export class BattleHUDRenderer {
 
     activeChar.abilities.forEach((ability, index) => {
       if (index < firstOnPage || index >= firstOnPage + columns) return;
-      const canAfford = ability.canPayCost ? ability.canPayCost(activeChar) : true;
+      const canAfford = (ability.canPayCost ? ability.canPayCost(activeChar) : true) && !(state.noEscape && ability.isFlee && ability.isFlee());   // no retreat from a boss
       const col = index - firstOnPage;
       const drawX = paddingX + (col * (itemSize + margin));
       const drawY = startY;

@@ -75,6 +75,7 @@ import { SaveManager, AUTOSAVE_SLOT } from './saveManager.js';
 import { debugOverlay, DebugOverlayRenderer } from '../ui/debugOverlay.js';
 import { multiplayerSession } from './multiplayerSession.js';
 import { multiplayerSocial } from './multiplayerSocial.js';
+import { PARTY_SCALING } from '../../../shared/battle/spawnTableFactory.js';
 
 export class SceneManager {
     constructor(canvas, assetLoader, config) {
@@ -537,7 +538,9 @@ export class SceneManager {
             const difficulty = gameState.difficulty || 'normal';
             const globalOffset = DIFFICULTY_MODIFIERS[difficulty]?.enemyLevelOffset || 0;
             // The act (story/actDefinitions.js) makes every enemy a little stronger: more levels, and a few extra abilities and traits for each kind
-            const baseLevel = PartyManager.getHighestLevel() + globalOffset + ActSystem.getEnemyLevelOffset();
+            // A party of several players meets stronger enemies (PARTY_SCALING.LEVELS_PER_PLAYER for every player beyond the first)
+            const playerLevels = (multiplayerSocial.playerCount() - 1) * PARTY_SCALING.LEVELS_PER_PLAYER;
+            const baseLevel = PartyManager.getHighestLevel() + globalOffset + ActSystem.getEnemyLevelOffset() + playerLevels;
 
             // `afterVictory: { encounterId }`: an encounter that plays when this fight is won, in place of going straight back to the overworld
             this.pendingAfterVictory = data.afterVictory && data.afterVictory.encounterId
@@ -578,7 +581,7 @@ export class SceneManager {
             
             // a party of several players: the leader's fight is everyone's (engine/multiplayerSocial.js), played on every member's screen
             if (multiplayerSocial.sharesFights) {
-                multiplayerSocial.startPartyBattle(scaledEnemies, { background: data.background, bgm: data.bgm || (data.context && data.context.bgm) || null });
+                multiplayerSocial.startPartyBattle(scaledEnemies, { background: data.background, bgm: data.bgm || (data.context && data.context.bgm) || null, noEscape: !!data.noEscape, betrayal: data.betrayal || null });
                 return;
             }
 
@@ -591,6 +594,7 @@ export class SceneManager {
                 const context = data.context || {};
                 context.backgroundId = data.background;
                 context.weather = data.weather;
+                if (data.noEscape) context.noEscape = true;   // a betrayal (or a story fight that says so): no Retreat
                 this.battleController.start(scaledEnemies, context);
                 
                 // --- FIX: Fallback to currently playing encounter music if no explicit BGM was passed ---

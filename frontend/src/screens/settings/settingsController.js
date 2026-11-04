@@ -35,13 +35,13 @@ export class SettingsController extends BaseController {
         this.extraBindings = { KeyQ: 'PREV_TAB', KeyE: 'NEXT_TAB' };
 
         this.layout = {
-            panelX: 360, panelY: 48, panelW: 1200, panelH: 888,
+            panelX: 160, panelY: 48, panelW: 1600, panelH: 888,
             tabsY: 214, tabW: 300, tabH: 64,
             rowsY: 336, rowH: 108,
-            labelX: 96, trackX: 400, trackW: 560, valueX: 1104,
-            // Controls: the pages down the left, the card on the right
-            pagesX: 48, pagesY: 306, pageW: 300, pageH: 44, pageGap: 4,
-            cardX: 392, cardY: 306, cardW: 760,
+            labelX: 120, trackX: 480, trackW: 820, valueX: 1350,
+            // Controls: the pages in two columns on the left (12 of them did not fit in one), the card on the right
+            pagesX: 56, pagesY: 316, pageW: 210, pageH: 50, pageGap: 8, pageCols: 2,
+            cardX: 540, cardY: 306, cardW: 1004,
             btnH: 76
         };
 
@@ -232,6 +232,18 @@ export class SettingsController extends BaseController {
         const focused = order[index];
         const channel = this._channelOf(focused);
 
+        // the Controls pages are a grid (layout.pageCols wide): the arrows move across and down it; off its top, bottom or a side, the usual order
+        const pageAt = focused.startsWith('page_') ? parseInt(focused.slice('page_'.length), 10) : -1;
+        if (pageAt >= 0 && ['UP', 'DOWN', 'LEFT', 'RIGHT'].includes(intent)) {
+            const cols = this.layout.pageCols || 1;
+            const step = { UP: -cols, DOWN: cols, LEFT: -1, RIGHT: 1 }[intent];
+            const sameRow = intent === 'LEFT' || intent === 'RIGHT' ? Math.floor((pageAt + step) / cols) === Math.floor(pageAt / cols) : true;
+            const to = pageAt + step;
+            if (sameRow && to >= 0 && to < TIP_SCENES.length) { this._moveFocus(`page_${to}`); this.playNavSound(); return; }
+            if (intent === 'DOWN') { this._moveFocus('btn_tips'); this.playNavSound(); return; }
+            if (intent === 'LEFT' || intent === 'RIGHT') return;
+        }
+
         if (intent === 'UP' || intent === 'DOWN') {
             index = (index + (intent === 'DOWN' ? 1 : order.length - 1)) % order.length;
             this._moveFocus(order[index]);
@@ -318,21 +330,22 @@ export class SettingsController extends BaseController {
             pages = TIP_SCENES.map((sceneId, i) => {
                 const box = {
                     id: `page_${i}`, sceneId, index: i,
-                    x: L.panelX + L.pagesX, y: L.pagesY + i * (L.pageH + L.pageGap), w: L.pageW, h: L.pageH
+                    x: L.panelX + L.pagesX + (i % L.pageCols) * (L.pageW + L.pageGap), y: L.pagesY + Math.floor(i / L.pageCols) * (L.pageH + L.pageGap), w: L.pageW, h: L.pageH
                 };
                 hitboxes.push({ id: box.id, x: box.x, y: box.y, w: box.w, h: box.h, zIndex: 10 });
                 return box;
             });
         }
 
-        const footerY = L.panelY + L.panelH - 40 - L.btnH;
+        const footerY = L.panelY + L.panelH - 64 - L.btnH;
+        const pageRows = Math.ceil(TIP_SCENES.length / L.pageCols);
         const buttons = this.tab === 'display' ? [] : this.tab === 'sound'
             ? [
                 { id: 'btn_test',  label: 'Test Sound', x: L.panelX + 64,            y: footerY, w: 330, h: L.btnH },
                 { id: 'btn_reset', label: 'Reset',      x: L.panelX + 64 + 330 + 24, y: footerY, w: 330, h: L.btnH }
             ]
             : [
-                { id: 'btn_tips',  label: this.tipsReset ? 'Tips Reset' : 'Replay Tips', x: L.panelX + L.pagesX, y: L.pagesY + TIP_SCENES.length * (L.pageH + L.pageGap) + 10, w: L.pageW, h: 64 }
+                { id: 'btn_tips',  label: this.tipsReset ? 'Tips Reset' : 'Replay Tips', x: L.panelX + L.pagesX, y: L.pagesY + pageRows * (L.pageH + L.pageGap) + 24, w: L.pageW * L.pageCols + L.pageGap, h: 64 }
             ];
         buttons.push({ id: 'btn_done', label: 'Back', x: 48, y: 956, w: 300, h: L.btnH });
         buttons.forEach(b => hitboxes.push({ id: b.id, x: b.x, y: b.y, w: b.w, h: b.h, zIndex: 10 }));
