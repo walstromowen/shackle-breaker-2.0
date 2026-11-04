@@ -889,8 +889,12 @@ export class OverworldController extends BaseController {
         if (stepOnObj && stepOnObj.interaction?.type === 'PICKUP' && !stepOnObj.isFading) {
             this.processPickup(stepOnObj);
         }
+        // A party member following the leader walks the same tiles, but the doors and encounters there are the leader's: the leader's warp
+        // brings the party through with it (multiplayerSocial grp_warp), and the leader's step opens an encounter for everyone (sceneManager
+        // INTERACT), so a follower's step never sets either off on its own.
+        const following = multiplayerSocial.isFollowing;
         // Existing Warp logic
-        if (stepOnObj && stepOnObj.frames > 1 && stepOnObj.interaction?.type === 'WARP') {
+        if (!following && stepOnObj && stepOnObj.frames > 1 && stepOnObj.interaction?.type === 'WARP') {
             this.isLocked = true;
             stepOnObj.isAnimating = true;
             stepOnObj.currentFrame = 0;
@@ -900,7 +904,7 @@ export class OverworldController extends BaseController {
         }
 
         // Walk-in warps (cave mouths, `walkIn: true` on the WARP): a single-frame object has no door to open, so stepping onto its doorway cell warps at once
-        if (stepOnObj && !(stepOnObj.frames > 1) && stepOnObj.interaction?.type === 'WARP' && stepOnObj.interaction.walkIn) {
+        if (!following && stepOnObj && !(stepOnObj.frames > 1) && stepOnObj.interaction?.type === 'WARP' && stepOnObj.interaction.walkIn) {
             this.isLocked = true;
             this.setAnimIdle();
             events.emit('INTERACT', { ...stepOnObj.interaction, context: { col: stepOnObj.col, row: stepOnObj.row, objectId: stepOnObj.id } });
@@ -909,9 +913,6 @@ export class OverworldController extends BaseController {
 
         // Walk-in encounters (`walkIn: true` on an ENCOUNTER, e.g. ANIMAL_TRACKS): stepping onto the object starts the encounter, no need to face it and press interact.
         // The object is not solid, so you are standing on its tile; INTERACT carries its col / row / id as the encounter context (DESTROY_OBJECT uses it).
-        // A party member following the leader walks the same tiles: the encounter is the leader's to start, and it opens for the whole party then
-        // (sceneManager INTERACT), so a follower's step never starts one of its own.
-        const following = multiplayerSocial.isFollowing;
         if (!following && stepOnObj && !stepOnObj.isFading && stepOnObj.interaction?.type === 'ENCOUNTER' && stepOnObj.interaction.walkIn) {
             this.isLocked = true;
             this.setAnimIdle();

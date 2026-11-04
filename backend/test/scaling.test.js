@@ -304,14 +304,14 @@ test('encounters give XP only for a successful roll, and what a roll is worth gr
     for (const f of files) assert.ok(!fs.readFileSync(new URL(String(f), dir), 'utf8').includes('AWARD_XP'), `${f} awards no XP of its own`);
 });
 
-test('a bigger party meets a bigger group, a lone fighter a smaller one, and every extra player adds more (PARTY_SCALING)', async () => {
+test('a bigger party meets a bigger group, a lone fighter a smaller one, and more players do not add enemies (PARTY_SCALING)', async () => {
     const { SpawnTableFactory, PARTY_SCALING } = await import('../../shared/battle/spawnTableFactory.js');
     const sizes = (size) => { const out = new Set(); for (let i = 0; i < 300; i++) out.add(SpawnTableFactory.generateBattle('spider_nest', 'normal', size).enemies.length); return [...out].sort((a, b) => a - b); };
     assert.deepEqual(sizes(undefined), [3, 4, 5], 'no party size: the table as written');
     const shift = (n) => [3 + n, 4 + n, 5 + n];
     assert.deepEqual(sizes({ fighters: 1 }), shift(PARTY_SCALING.EXTRA_ENEMIES[0]));
     assert.deepEqual(sizes({ fighters: 2 }), shift(PARTY_SCALING.EXTRA_ENEMIES[1]));
-    assert.deepEqual(sizes({ fighters: 2, players: 3 }), shift(PARTY_SCALING.EXTRA_ENEMIES[1] + 2 * PARTY_SCALING.EXTRA_ENEMIES_PER_PLAYER), 'two more players, two more enemies');
+    assert.deepEqual(sizes({ fighters: 2, players: 3 }), sizes({ fighters: 2 }), 'more players, the same number of enemies as one player with as many fighters');
     const three = sizes({ fighters: 3 });
     assert.ok(three[0] === 3 + Math.floor(PARTY_SCALING.EXTRA_ENEMIES[2]) && three[three.length - 1] === 5 + Math.ceil(PARTY_SCALING.EXTRA_ENEMIES[2]), 'a fraction: sometimes one more');
     assert.ok(PARTY_SCALING.EXTRA_ENEMIES[0] < 0 && PARTY_SCALING.EXTRA_ENEMIES[2] > PARTY_SCALING.EXTRA_ENEMIES[1]);

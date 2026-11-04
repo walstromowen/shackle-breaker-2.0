@@ -286,6 +286,25 @@ export class SceneManager {
         events.on('GAME_OVER', () => {
             if (this.gameOverActive) return;
             this.gameOverActive = true;
+            // In a multiplayer world the title screen would mean leaving it (and for the host, closing it for everyone): the party is dragged
+            // back to its feet instead, a quarter of its health each, and carries on where it fell.
+            if (multiplayerSession.active) {
+                this.transitionRenderer.start(() => {
+                    this.input.reset();
+                    this.activeBattleBGM = null;
+                    this.activeEncounterBGM = null;
+                    for (const m of gameState.party.members || []) {
+                        if (!m) continue;
+                        if (m.clearAllStatusEffects) m.clearAllStatusEffects();
+                        m.hp = Math.max(1, Math.ceil((m.maxHp || 1) / 4));
+                    }
+                    multiplayerSession._say('Your party was beaten, but barely escaped with their lives.');
+                    this.changeScene('overworld');
+                    if (this.overworldController) this.overworldController.isLocked = false;
+                    this.gameOverActive = false;
+                }, 'fade', { speed: 0.5, color: '#000000' });
+                return;
+            }
             events.emit('STOP_AMBIENCE', { fadeTime: 1.5 });
             this.transitionRenderer.start(() => {
                 this.input.reset();
@@ -467,6 +486,8 @@ export class SceneManager {
                     this.changeScene('encounter', { bgm: customBGM });
                 }, 'fade');
             } else if (data.type === 'WARP') {
+                // a party of players goes through doors together: the leader's warp is sent to the others (multiplayerSocial grp_warp)
+                if (multiplayerSocial.isLeader) multiplayerSocial.sendGroupWarp(data);
                 events.emit('PLAY_SFX', { id: 'doorOpen', volume: 0.8 });
                 this.transitionRenderer.start(() => {
                     if (data.id === 'procedural_room_trigger') {

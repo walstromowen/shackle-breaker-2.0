@@ -7,9 +7,10 @@ import { ActSystem } from '../story/actSystem.js';
    (never less than one). Without it two companions turned every fight into a rout: 99% wins (tools/playthroughSim.mjs, PARTY=3); with it an
    ordinary fight is usually won (about 95% for a party) but costs about a quarter of the party's HP, so three or so in a row without
    healing wear a party down.
-   A party of several players (multiplayer) is harder still: every player beyond the first adds EXTRA_ENEMIES_PER_PLAYER to the group, and
-   LEVELS_PER_PLAYER levels to every enemy in the fight (sceneManager START_BATTLE), since they bring reserves and the whole group's abilities. */
-export const PARTY_SCALING = { EXTRA_ENEMIES: [-1, 0, 1.5], MAX_FIGHTERS: 3, EXTRA_ENEMIES_PER_PLAYER: 1, LEVELS_PER_PLAYER: 1 };
+   A party of several players (multiplayer) meets the same number of enemies as one player with that many fighters (EXTRA_ENEMIES_PER_PLAYER
+   0), but every player beyond the first adds LEVELS_PER_PLAYER levels to every enemy in the fight (sceneManager START_BATTLE), since they
+   bring deeper reserves and the whole group's abilities. */
+export const PARTY_SCALING = { EXTRA_ENEMIES: [-1, 0, 1.5], MAX_FIGHTERS: 3, EXTRA_ENEMIES_PER_PLAYER: 0, LEVELS_PER_PLAYER: 1 };
 
 export class SpawnTableFactory {
     /* `fighters`: how many of the party can fight at once (1-3); `players`: how many players share the fight. See PARTY_SCALING.

@@ -23,6 +23,7 @@ import { worldSync } from '../../../shared/world/worldManager.js';
 import { worldPart, playerPart, mergeParts, placeOnOverworld } from '../../../shared/core/multiplayerSave.js';
 import { multiplayer } from './multiplayerClient.js';
 import { SaveManager } from './saveManager.js';
+import { TimeSystem } from '../../../shared/world/timeSystem.js';
 
 const TIME_EVERY = 5;          // seconds between the host's clock messages
 const POS_HEARTBEAT = 2;       // seconds between position messages while standing still
@@ -114,6 +115,14 @@ class MultiplayerSession {
 
     _hostSaveSoon(minGapMs) {
         if (this.env && this.env.getScene() === 'overworld') SaveManager.autosave(minGapMs);
+    }
+
+    /** A shared encounter let `minutes` pass on its players' clocks (EncounterLogic ADVANCE_TIME): the host moves the world's clock with
+     *  them when they were not in it. */
+    sharedTimePassed(minutes, players) {
+        if (this.role !== 'guest' || !multiplayer.room) return;
+        const host = multiplayer.room.players.find(p => p.isHost);
+        if (host && !(players || []).includes(host.id)) multiplayer.relay({ k: 'time_add', minutes }, host.id);
     }
 
     _sendTime() {
@@ -210,6 +219,9 @@ class MultiplayerSession {
             case 'world': this._onWorld(data); break;
             case 'player_save':
                 if (this.role === 'host') { this._keepGuest(from, data.data); this._hostSaveSoon(30000); }
+                break;
+            case 'time_add':   // a party's encounter that the host was not in let time pass (a rest): the world's clock is the host's
+                if (this.role === 'host' && Number(data.minutes) > 0) { TimeSystem.advance(Math.min(48 * 60, Number(data.minutes))); this._sendTime(); }
                 break;
             case 'time':
                 if (this.role === 'guest') {

@@ -10,6 +10,7 @@ import { NARRATION, STAGE_START_TIMER, narrationPlan, textEndTimer, decisionAlph
 import { seedRandom, unseedRandom, withoutSeed } from '../../../../shared/core/random.js';
 import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
 import { hydrateEntity } from '../../engine/saveManager.js';
+import { multiplayerSession } from '../../engine/multiplayerSession.js';
 import { worldSync } from '../../../../shared/world/worldManager.js';
 
 /* A party of several players shares an encounter: every member's browser plays it from the same seed. A choice is a vote (the leader's
@@ -78,6 +79,7 @@ export class EncounterController extends BaseController {
       this.mp.lineup = (mp.lineup || []).map(e => ({ owner: e.owner, idx: e.idx, entity: e.owner === mp.me ? gameState.party.members[e.idx] : hydrateEntity(e.data) }))
         .filter(e => e.entity);
       EncounterLogic.shared.lineupSize = this.mp.lineup.length;
+      EncounterLogic.onSharedTime = (minutes, players) => multiplayerSession.sharedTimePassed(minutes, players);
       this._setActive(0);
     }
     else { unseedRandom(); EncounterLogic.shared = null; }
@@ -156,7 +158,7 @@ export class EncounterController extends BaseController {
       if (this.skipMessageAnimation || this.textTimer >= textEndTimer(this.actionMessage) + actionPadding(this.actionMessage)) {
         this.skipMessageAnimation = false;
         if (this.pendingDecision && this.pendingDecision.type === 'skill_check') {
-          this.rollData = EncounterLogic.calculateRoll(this.pendingDecision);
+          this.rollData = this._takeRoll(this.pendingDecision);
           this.actionPhase = 'wait_for_roll';
         } else {
           this.applySceneChanges();
@@ -335,6 +337,12 @@ export class EncounterController extends BaseController {
     }
   }
 
+  /** The roll for a skill check: in a shared encounter the leader's (sent with the choice, _settleVote), on every screen alike. */
+  _takeRoll(decision) {
+    if (this.mp && this.sharedRoll) { const r = { ...this.sharedRoll }; this.sharedRoll = null; return r; }
+    return EncounterLogic.calculateRoll(decision);
+  }
+
   _castVote(rawIndex) {
     const mp = this.mp;
     mp.myVote = rawIndex;
@@ -366,7 +374,16 @@ export class EncounterController extends BaseController {
     const raw = tied.includes(mine) ? mine : tied.map(String).sort()[0];   // a tie goes the leader's way
     const who = EncounterLogic.rollerEntity();
     const roller = who ? { ...who.attributes } : null;
-    const go = { k: 'enc_go', step: mp.step, raw, roller };
+    // the leader rolls, once, for the whole party: the same d20, modifier and total on every screen (each player's own difficulty setting
+    // would give their own modifier), and a fresh seed for what follows (the outcome, loot, who gets which item), so a stray draw on one
+    // screen in an earlier step can never send the screens different ways
+    const decision = typeof raw === 'number' ? (this.model.getAvailableDecisions() || [])[raw] : null;
+    const prevRoller = EncounterLogic.shared.roller;
+    EncounterLogic.shared.roller = roller;
+    const rollData = decision && decision.type === 'skill_check' ? withoutSeed(() => EncounterLogic.calculateRoll(decision)) : null;
+    EncounterLogic.shared.roller = prevRoller;
+    const seed = (Math.random() * 0xffffffff) >>> 0;
+    const go = { k: 'enc_go', step: mp.step, raw, roller, rollData, seed };
     multiplayerSocial.sendEncounter(mp, go);
     this._onGo({ ...go, eid: mp.eid });
   }
@@ -378,6 +395,8 @@ export class EncounterController extends BaseController {
     mp.step++;
     mp.votes.clear(); mp.voteTimer = 0; mp.myVote = null; mp.tally = {};
     EncounterLogic.shared.roller = d.roller || null;
+    if (d.seed !== undefined) seedRandom(d.seed);
+    this.sharedRoll = d.rollData || null;
     // the party chose someone else to step forward: the same stage, with them
     if (typeof d.raw === 'string' && d.raw.startsWith('sw:')) {
       this._triggerImageTransition();
@@ -770,7 +789,7 @@ export class EncounterController extends BaseController {
       this.lastText = this.actionMessage;
     } else {
       if (decision.type === 'skill_check') {
-        this.rollData = EncounterLogic.calculateRoll(this.pendingDecision);
+        this.rollData = this._takeRoll(this.pendingDecision);
         this.actionPhase = 'wait_for_roll';
       } else {
         this.applySceneChanges();
@@ -1160,4 +1179,4 @@ export class EncounterController extends BaseController {
       ui: { selectedDecisionIndex: this.selectedIndex, introAlpha: currentIntroAlpha }
     };
   }
-}
+}

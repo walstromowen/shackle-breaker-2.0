@@ -15,16 +15,18 @@ import { rng, withoutSeed } from '../../../../shared/core/random.js';
 import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
 
 /* A party of several players in one encounter (EncounterController, engine/multiplayerSocial.js): every member's browser plays it with the
-   same dice, so the results here are cut to each player's part. The leader's lead character is the one who rolls and the one an
-   "active_character" result is about, so those (and starting a fight, a recruit, a shop, the XP for a roll, an object taken off the map)
-   happen on the leader's browser only. Found items go one at a time to a player picked by the dice; found coin is split evenly. */
-const LEADER_ONLY = new Set(['DESTROY_OBJECT', 'START_BATTLE', 'RECRUIT_CHARACTER', 'OPEN_SHOP', 'ADVANCE_TIME', 'REMOVE_ITEM', 'TRIGGER_GAME_OVER']);
+   same roll (the leader's, sent with each choice) and the same seed, so every screen reaches the same outcome. What it gives the party is
+   every player's: healing, time passing, found items and coin (each player gets the whole find) and the XP for a successful roll. What
+   happens to the active character happens on its owner's browser; starting a fight, a recruit, a price, an object taken off the map are
+   the leader's (see notMine). */
+const LEADER_ONLY = new Set(['DESTROY_OBJECT', 'START_BATTLE', 'RECRUIT_CHARACTER', 'OPEN_SHOP', 'REMOVE_ITEM', 'TRIGGER_GAME_OVER']);
 const ABOUT_THE_ROLLER = new Set(['ADD_TRAIT', 'REMOVE_TRAIT', 'MODIFY_CORRUPTION', 'MODIFY_VITALS', 'APPLY_STATUS_EFFECT', 'TAKE_DAMAGE', 'AWARD_XP']);
 /* Whether this browser leaves a result to someone else. The active character (the one who rolls: any character in the party's line-up, the
    leader's lead to begin with, see EncounterController's switch) belongs to one player: what happens to them happens on that player's
    browser. What happens to the "entire_party" happens to every player's own party (XP included). The rest is the leader's. */
 function notMine(type, payload) {
     const s = EncounterLogic.shared;
+    if (type === 'AWARD_XP' && payload.shared) return false;   // the XP for a roll: every player's (EncounterLogic.myRewardee)
     if (ABOUT_THE_ROLLER.has(type)) return payload.target === 'entire_party' ? false : !EncounterLogic.isActiveOwner();
     if (LEADER_ONLY.has(type)) return !s.isLeader;
     if (type === 'MODIFY_CURRENCY') return (payload.amount || 0) < 0 && !s.isLeader;   // a price or a theft is the leader's
@@ -98,22 +100,16 @@ export class EncounterLogic {
        choice), active: { owner, idx, entity }: the line-up character the encounter is about } */
     static shared = null;
 
-    /** How many of `qty` found items this player keeps (each to one player of the party, by the shared dice). */
-    static _keepOf(qty) {
-        const s = EncounterLogic.shared;
-        if (!s || !s.players || s.players.length < 2) return qty;
-        let kept = 0;
-        for (let i = 0; i < qty; i++) if (s.players[Math.floor(rng() * s.players.length)] === s.me) kept++;
-        return kept;
-    }
+    /** How many of `qty` found items this player keeps: in a shared encounter every player gets the whole find (it is the party's reward, and
+     *  each player's own game holds their own bag). Battles still split their loot (BattleRewardSystem). */
+    static _keepOf(qty) { return qty; }
 
-    /** This player's part of `amount` found coin: an even split, the odd coins to one player by the dice. */
-    static _coinOf(amount) {
-        const s = EncounterLogic.shared;
-        if (!s || !s.players || s.players.length < 2 || amount <= 0) return amount;
-        const each = Math.floor(amount / s.players.length);
-        const odd = s.players[Math.floor(rng() * s.players.length)];
-        return each + (odd === s.me ? amount - each * s.players.length : 0);
+    /** This player's part of `amount` found coin: all of it, on every player's game (see _keepOf). */
+    static _coinOf(amount) { return amount; }
+
+    /** A shared encounter: the character of mine a reward for the whole party's roll goes to (the active one if it is mine, else my lead). */
+    static myRewardee() {
+        return EncounterLogic.activeMember() || (gameState.party?.members || []).find(m => m && m.hp > 0) || null;
     }
 
     /** The character the encounter is about (who rolls, whose portrait shows): in a shared encounter the line-up's active character, on
@@ -172,7 +168,8 @@ export class EncounterLogic {
     static rollXpResult(dc) {
         const roller = EncounterLogic.rollerEntity();
         const amount = ExperienceSystem.rollXp(roller?.level || 1, dc);
-        return amount > 0 ? { type: "AWARD_XP", payload: { amount, exact: true, target: "active_character" } } : null;
+        // `shared`: in a party of players everyone shares a successful roll (EncounterLogic.myRewardee)
+        return amount > 0 ? { type: "AWARD_XP", payload: { amount, exact: true, target: "active_character", shared: true } } : null;
     }
 
     static selectOutcome(outcomes) {
@@ -347,7 +344,7 @@ export class EncounterLogic {
                         });
                         xpEarned.push(`The party gained ${xpAmount} XP.`);
                     } else {
-                        const active = EncounterLogic.activeMember();
+                        const active = payload.shared && EncounterLogic.shared ? EncounterLogic.myRewardee() : EncounterLogic.activeMember();
                         if (active) {
                             const xpAmount = payload.exact ? Math.round(xpBase) : ExperienceSystem.scaleReward(xpBase, active.level);
                             if (ExperienceSystem.addXp(active, xpAmount)) {
@@ -538,6 +535,10 @@ export class EncounterLogic {
                         if (gameState.world.currentWeather) {
                             gameState.world.currentWeather.timeRemaining -= (minutesToAdvance / 60);
                         }
+                        // a shared encounter: every player's clock moves (they all play this result); the host keeps the world's clock, so when
+                        // the host is not in this encounter the leader tells them (multiplayerSession: time_add)
+                        const sh = EncounterLogic.shared;
+                        if (sh && sh.isLeader && EncounterLogic.onSharedTime) EncounterLogic.onSharedTime(minutesToAdvance, sh.players);
                         if (payload.hours) {
                             response.messages.push(`${payload.hours} hours have passed.`);
                         } else if (payload.minutes) {

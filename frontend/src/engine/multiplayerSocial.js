@@ -356,6 +356,15 @@ class MultiplayerSocial {
         return Math.max(1, Math.min(3, lineup.length));
     }
 
+    /** The leader went through a door (into a house or cave, or back out): the party comes along (grp_warp, the same warp on their game). */
+    sendGroupWarp(data) {
+        const g = this.myGroup();
+        if (!g || g.leader !== this.me || !multiplayerSession.active) return;
+        const warp = { type: data.type, id: data.id, roomType: data.roomType || null, context: data.context || {} };
+        for (const id of this.partyHere(g.members)) this._send({ k: 'grp_warp', warp }, id);
+        this.trail = [];
+    }
+
     /** How many players share this player's fights (1 alone or outside a party of players). */
     playerCount() {
         if (!this.sharesFights) return 1;
@@ -540,6 +549,16 @@ class MultiplayerSocial {
             case 'grp_leave': {
                 const g = this.groups.get(this.me);
                 if (g && g.includes(from)) this.removeFromGroup(from);
+                break;
+            }
+            case 'grp_warp': {
+                // my leader went through a door: through it with them (the room is the same for everyone: it is keyed by the door)
+                const g = this.myGroup();
+                if (g && g.leader === from && d.warp && d.warp.type === 'WARP' && !this.battle && multiplayerSession.active) {
+                    this.trail = [];
+                    this.prompt = null;
+                    events.emit('INTERACT', { ...d.warp, fromLeader: true });
+                }
                 break;
             }
             case 'grp_party': {
