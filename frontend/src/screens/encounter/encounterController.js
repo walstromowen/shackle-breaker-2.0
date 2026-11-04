@@ -15,6 +15,7 @@ import { worldSync } from '../../../../shared/world/worldManager.js';
    too); when everyone has voted, or VOTE_SECONDS after the first vote, the most votes win and a tie goes the leader's way. The leader
    announces the choice and every screen plays it. "Switch party member" and shops are the leader's own (they are not voted on). */
 const VOTE_SECONDS = 20;
+const OPTS_RESEND = 1;   // seconds: how often the leader repeats what can be chosen (_leaderTick)
 const LEADER_OWN = new Set(['switch_character', 'open_shop']);
 
 const PROLOGUE_HOLD = 1.2;     // seconds the "skip the prologue" button (or Escape) is held
@@ -280,16 +281,20 @@ export class EncounterController extends BaseController {
   }
 
   // ================================================================ SHARED ENCOUNTERS (a party of players)
-  /** The leader: tell the party what can be chosen now (once per step and stage), and settle the vote when it is time. */
+  /** The leader: tell the party what can be chosen now, and settle the vote when it is time. The choices are sent again every
+   *  OPTS_RESEND seconds while they are up: a member whose screen was still fading in when the first copy came would never see them. */
   _leaderTick(dt) {
     const mp = this.mp;
     if (!this.model) return;
     const key = `${mp.step}:${this.model.currentStageId}`;
-    if (mp.optsSentKey !== key && this.actionPhase === 'none') {
+    mp.optsAge = (mp.optsAge || 0) + dt;
+    if (this.actionPhase === 'none' && (mp.optsSentKey !== key || mp.optsAge >= OPTS_RESEND)) {
       mp.optsSentKey = key;
+      mp.optsAge = 0;
       const raw = this.model.getAvailableDecisions() || [];
       const allowed = this._getValidDecisions().filter(d => !LEADER_OWN.has(d.type)).map(d => raw.indexOf(d)).filter(i => i >= 0);
       multiplayerSocial.sendEncounter(mp, { k: 'enc_opts', step: mp.step, stage: this.model.currentStageId, allowed });
+      if (mp.votes.size) multiplayerSocial.sendEncounter(mp, { k: 'enc_tally', step: mp.step, tally: mp.tally });
     }
     if (mp.votes.size > 0) {
       mp.voteTimer += dt;

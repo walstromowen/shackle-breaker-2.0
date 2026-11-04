@@ -453,8 +453,13 @@ export class SceneManager {
 
         events.on('INTERACT', (data) => {
             if (data.type === 'ENCOUNTER') {
+                // a chest, a gravestone, a stranger, a line of sight... In a party of players it is the party's: every member sees it and votes
+                // (the same shared encounter as a random one, START_ENCOUNTER below)
+                const mp = multiplayerSocial.sharesFights
+                    ? multiplayerSocial.startPartyEncounter({ encounterId: data.id, context: data.context || {}, bgm: data.context?.bgm || null, quiet: true })
+                    : null;
                 this.transitionRenderer.start(() => {
-                    this.encounterController.start(data.id, data.context);
+                    this.encounterController.start(data.id, data.context, mp);
                     const customBGM = data.context?.bgm || null;
                     this.activeEncounterBGM = customBGM;
                     this.changeScene('encounter', { bgm: customBGM });
@@ -521,7 +526,7 @@ export class SceneManager {
         });
 
         events.on('START_ENCOUNTER', (data) => {
-            events.emit('PLAY_SFX', { id: 'cinematicBoom', volume: 1.0 });
+            if (!data.quiet) events.emit('PLAY_SFX', { id: 'cinematicBoom', volume: 1.0 });   // quiet: an encounter the party walked up to (a chest...)
             // a party of players: the leader's encounter is the party's, decided by vote (engine/multiplayerSocial.js, EncounterController)
             const mp = data.mp || (multiplayerSocial.sharesFights ? multiplayerSocial.startPartyEncounter(data) : null);
             if (this.overworldController) this.overworldController.isLocked = true;

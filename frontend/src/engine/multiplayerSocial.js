@@ -460,7 +460,7 @@ class MultiplayerSocial {
         const players = [this.me, ...this.partyHere(g)];
         const eid = newId(), seed = (Math.random() * 0xffffffff) >>> 0;
         const base = { eid, seed, players, leader: this.me };
-        for (const id of players) if (id !== this.me) this._send({ k: 'enc_start', mp: base, encounterId: data.encounterId, context: data.context || {}, bgm: data.bgm || null }, id);
+        for (const id of players) if (id !== this.me) this._send({ k: 'enc_start', mp: base, encounterId: data.encounterId, context: data.context || {}, bgm: data.bgm || null, quiet: !!data.quiet }, id);
         return { ...base, me: this.me, isLeader: true };
     }
 
@@ -549,7 +549,7 @@ class MultiplayerSocial {
             case 'enc_start':
                 if (d.mp && multiplayerSession.active && !this.battle) {
                     this.prompt = null;
-                    events.emit('START_ENCOUNTER', { encounterId: d.encounterId, context: d.context || {}, bgm: d.bgm || null, mp: { ...d.mp, me: this.me, isLeader: false } });
+                    events.emit('START_ENCOUNTER', { encounterId: d.encounterId, context: d.context || {}, bgm: d.bgm || null, quiet: !!d.quiet, mp: { ...d.mp, me: this.me, isLeader: false } });
                 }
                 break;
             case 'enc_vote': case 'enc_tally': case 'enc_go': case 'enc_opts':
