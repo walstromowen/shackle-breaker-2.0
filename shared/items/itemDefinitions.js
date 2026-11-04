@@ -33,7 +33,8 @@ export const ItemDefinitions = {
     abilityUnlocks: {                    // a club teaches its bearer as it is upgraded
       2: ["rally"],
       3: ["reckless_charge"],
-      4: ["wild_swing"]
+      4: ["wild_swing"],
+      5: ["guard_break"]
     },
     upgradeCosts: {
       2: { currency: 30, materials: { "hard_wood": 4, "soft_wood": 6 } },
@@ -87,7 +88,9 @@ export const ItemDefinitions = {
     },
     abilityUnlocks: {
       2: ["cleave"],
-      3: ["flurry"]
+      3: ["flurry"],
+      4: ["low_sweep"],
+      5: ["leaping_slash"]
     },
     upgradeCosts: {
       2: { currency: 50, materials: { "hard_wood": 5, "stone": 10, "soft_wood": 10, "plant_fibers": 15 } },
@@ -115,7 +118,8 @@ export const ItemDefinitions = {
     },
     abilityUnlocks: {
       2: ["cleave"],
-      3: ["wild_swing"]
+      3: ["wild_swing"],
+      4: ["leaping_slash"]
     },
     upgradeCosts: {
       2: { currency: 50, materials: { "hard_wood": 5, "stone": 10, "soft_wood": 10, "plant_fibers": 15 } },
@@ -218,7 +222,8 @@ export const ItemDefinitions = {
       attack: { blunt: 4 }
     },
     abilityUnlocks: {
-      2: ["wild_swing"]
+      2: ["wild_swing"],
+      3: ["guard_break"]
     },
     upgradeCosts: {
       2: { currency: 50, materials: { "hard_wood": 5, "stone": 10, "soft_wood": 10, "plant_fibers": 15 } },
@@ -271,7 +276,9 @@ export const ItemDefinitions = {
       attack: { slash: 4, pierce: 1 }
     },
     abilityUnlocks: {
-      2: ["execute"]
+      2: ["execute"],
+      3: ["low_sweep"],
+      4: ["whirlwind_slash"]
     },
     upgradeCosts: {
       2: { currency: 50, materials: { "hard_wood": 5, "stone": 10, "soft_wood": 10, "plant_fibers": 15 } },
@@ -298,7 +305,9 @@ export const ItemDefinitions = {
     },
     abilityUnlocks: {
       2: ["cleave"],
-      3: ["execute"]
+      3: ["execute"],
+      4: ["whirlwind_slash"],
+      5: ["leaping_slash"]
     },
     upgradeCosts: {
       2: { currency: 50, materials: { "hard_wood": 5, "stone": 10, "soft_wood": 10, "plant_fibers": 15 } },

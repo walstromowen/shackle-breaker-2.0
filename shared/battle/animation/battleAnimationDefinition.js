@@ -136,6 +136,41 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.05, 0.2, 15), flash: flash(0.05, 1, 'brightness(130%) sepia(100%) hue-rotate(190deg) saturate(300%)') }
     }),
+    // Guard Break: a heavy blunt blow; the guard bursts into shards around the target, with a crunch under the thud.
+    "guard_break": anim(1.5, {
+        audio: [sfx(0.2, 'strikeSfx', { volume: 1, pitch: 0.8 }), sfx(0.24, 'crunchSfx', { volume: 0.9 })],
+        actor: lunge(0, 0.2, 120),
+        vfx: [
+            spawn(0.2, 'impactAnimation', { life: 0.3, move: 'expand_and_fade', scale: 1.8 }),
+            spawn(0.22, 'guardBreakAnimation', { life: 0.5, move: 'expand_and_fade', scale: 1.7, blend: 'source-over' }),
+            burst(0.22, { count: 10, color: '#c9d2df', scale: 0.6, minSpeed: 140, maxSpeed: 320, gravity: 500, glow: false })
+        ],
+        target: { shake: shake(0.2, 0.6, 40), flash: flash(0.2, 0.4, 'brightness(230%)') }
+    }),
+    // Leaping Slash: the wielder springs up and comes down on the target; a tall falling crescent, sparks, and a heavy shake.
+    "leaping_slash": anim(1.8, {
+        seconds: true,
+        hit: 0.55,
+        audio: [sfx(0.05, 'wildSwingSfx', { volume: 0.8, pitch: 1.3 }), sfx('hit', 'cleaveSfx', { volume: 1, pitch: 0.85 }), sfx('hit+0.03', 'strikeSfx', { volume: 0.9, pitch: 0.7 })],
+        actor: hop(0, 0.6, 150),
+        vfx: [
+            spawn(0.45, 'leapingSlashAnimation', { life: 0.3, move: 'swipe_diagonal', scale: 3, offsetY: -40 }),
+            burst('hit', { count: 14, color: '#fff3d0', scale: 0.6, minSpeed: 120, maxSpeed: 320, gravity: 400 })
+        ],
+        target: { shake: shake('hit', 'hit+0.45', 52), flash: flash('hit', 'hit+0.3', 'brightness(260%)') }
+    }),
+    // Low Sweep: a flat crescent skims along the ground under the target, left to right, kicking up dust.
+    "low_sweep": anim(1.4, {
+        audio: [sfx(0.1, 'slashSfx', { volume: 1, pitch: 0.8 })],
+        actor: lunge(0, 0.15, 110),
+        vfx: [
+            spawn(0.1, 'lowSweepAnimation', { life: 0.22, move: 'static', scale: 2.2, offsetX: -70, offsetY: 60, alpha: 0.4 }),
+            spawn(0.13, 'lowSweepAnimation', { life: 0.22, move: 'static', scale: 2.2, offsetY: 60 }),
+            spawn(0.16, 'lowSweepAnimation', { life: 0.22, move: 'static', scale: 2.2, offsetX: 70, offsetY: 60, alpha: 0.4 }),
+            burst(0.15, { count: 8, color: '#b59a76', scale: 0.7, offsetY: 80, angle: 270, cone: 60, minSpeed: 60, maxSpeed: 160, gravity: 300, glow: false })
+        ],
+        target: { shake: shake(0.13, 0.4, 22), flash: flash(0.13, 0.3, 'brightness(220%)') }
+    }),
     // Leather armor's ability: a deep breath, a green glow rising off the user.
     "recuperate": anim(2.2, {
         seconds: true,
@@ -656,7 +691,7 @@ export const BattleAnimationDefinitions = {
         seconds: true,
         hit: 0.55,
         audio: [
-            sfx(0.05, 'bowReleaseSfx', { volume: 1 }),
+            sfx(0.09, 'bowReleaseSfx', { volume: 1 }),   // the twang peaks at once: as the arrow leaves (travel at 0.1)
             sfx('hit', 'arrowImpactSfx', { volume: 1 })
         ],
         actor: lunge(0, 0.2, -12),
@@ -767,7 +802,7 @@ export const BattleAnimationDefinitions = {
         seconds: true,
         hit: 0.6,
         audio: [
-            sfx(0.05, 'bowReleaseSfx', { volume: 1, pitch: 0.9 }),
+            sfx(0.09, 'bowReleaseSfx', { volume: 1, pitch: 0.9 }),
             sfx('hit', 'arrowImpactSfx', { volume: 0.9 }),
             sfx('hit+0.05', 'poisonSplashSfx', { volume: 1 })
         ],
@@ -805,7 +840,7 @@ export const BattleAnimationDefinitions = {
         seconds: true,
         hit: 0.4,
         audio: [
-            sfx(0, 'bowReleaseSfx', { volume: 1, pitch: 1.2 }),
+            sfx(0.09, 'bowReleaseSfx', { volume: 1, pitch: 1.2 }),
             sfx('hit', 'arrowImpactSfx', { volume: 0.9, pitch: 1.1 })
         ],
         actor: lunge(0, 0.1, -8),
@@ -1024,6 +1059,14 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.1, 0.4, 26), flash: flash(0.1, 0.35, 'brightness(130%) sepia(80%) hue-rotate(90deg) saturate(250%)') }
     }),
+    // Status effect animation: the guard cracks and sinks (Vulnerable, after a Leaping Slash).
+    "vulnerable": anim(1.4, {
+        audio: [sfx(0.1, 'crunchSfx', { volume: 0.6, pitch: 1.3 })],
+        vfx: [
+            spawn(0.1, 'vulnerableAnimation', { life: 0.7, move: 'shrink_and_fade', scale: 1.6, blend: 'source-over' })
+        ],
+        target: { flash: flash(0.1, 0.8, 'brightness(80%) sepia(40%) hue-rotate(200deg) saturate(160%)') }
+    }),
     // Stream of 20 sprites; the first reaches the target at 0.55s, which is when the target reacts.
     "water_blast": anim(2.5, {
         audio: [sfx(0.1, 'waterBlastSfx', { volume: 1 })],
@@ -1093,6 +1136,16 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.2, 2.3, 5), flash: flash(0.3, 2.2, 'sepia(100%) saturate(220%) brightness(105%)') }
     }),
+    // Whirlwind Slash: the wielder spins (a ring of cuts around them), then a spinning ring tears through every enemy.
+    "whirlwind_slash": anim(1.7, {
+        audio: [sfx(0.08, 'cleaveSfx', { volume: 0.9, pitch: 1.1 }), sfx(0.32, 'slashSfx', { volume: 1, pitch: 1.2 })],
+        actor: wobble(0, 0.35, 14),
+        vfx: [
+            spawn(0.05, 'whirlwindSlashAnimation', { at: 'source', life: 0.4, move: 'static', scale: 2.2, spin: 16 }),
+            spawn(0.3, 'whirlwindSlashAnimation', { life: 0.35, move: 'expand_and_fade', scale: 1.8, spin: 14 })
+        ],
+        target: { shake: shake(0.3, 0.6, 28), flash: flash(0.3, 0.45, 'brightness(230%)') }
+    }),
     "wild_swing": anim(1.3, {
         audio: [sfx(0.1, 'wildSwingSfx', { volume: 1, pitch: 0.8 })],
         actor: lunge(0, 0.25, 140, { flash: flash(0, 0.3, 'brightness(150%) sepia(50%) hue-rotate(15deg) saturate(200%)') }),
@@ -1101,4 +1154,4 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.25, 0.75, 45), flash: flash(0.25, 0.45, 'brightness(250%)') }
     })
-};
+};

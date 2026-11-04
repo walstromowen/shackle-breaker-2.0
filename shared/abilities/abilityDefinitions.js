@@ -66,6 +66,22 @@ export const AbilityDefinitions = {
         animationId: "reckless_charge",
         effects: [{ type: "damage", damageType: "blunt", power: 2.5, recoil: 0.25 }]
     },
+    // A blow meant for a raised guard: against a Fortified target it shatters the guard (the status is gone) and lands far harder.
+    "guard_break": {
+        id: "guard_break",
+        name: "Guard Break",
+        description: "A crushing blow aimed at the guard. Against a Fortified target it shatters the guard and deals heavy bonus damage.",
+        range: "melee",
+        tags: ["physical", "contact", "blunt", "heavy"],
+        battleMessage: "{user} brings a {ability} down on {target}!",
+        icon: { col: 6, row: 1 },
+        animationId: "guard_break",
+        speedModifier: 0.95,
+        targeting: { scope: "enemy", select: "single" },
+        cost: { stamina: 16 },
+        accuracy: 0.9,
+        effects: [{ type: "damage", damageType: "blunt", power: 1.4, shatter: { status: "fortified", multiplier: 1.75, message: "{target}'s guard is broken!" } }]
+    },
     "wild_swing": {
         id: "wild_swing",
         name: "Wild Swing",
@@ -167,6 +183,56 @@ export const AbilityDefinitions = {
             { type: "damage", damageType: "slash", power: 0.8 },
             { type: "switch_self", method: "menu" }
         ]
+    },
+    // A spin with the blade held out: every enemy on the field takes a cut of middling weight.
+    "whirlwind_slash": {
+        id: "whirlwind_slash",
+        name: "Whirlwind Slash",
+        description: "Spin with the blade held wide, cutting every enemy on the field.",
+        range: "melee",
+        tags: ["physical", "contact", "blade", "slash", "aoe"],
+        battleMessage: "{user} spins into a {ability}!",
+        icon: { col: 7, row: 0 },
+        animationId: "whirlwind_slash",
+        speedModifier: 0.9,
+        targeting: { scope: "all_enemies", select: "auto" },
+        cost: { stamina: 22 },
+        accuracy: 0.85,
+        effects: [{ type: "damage", damageType: "slash", power: 1.1 }]
+    },
+    // A cut at the legs: it can take the target off their feet (they lose their next turn), make them bleed, or both.
+    "low_sweep": {
+        id: "low_sweep",
+        name: "Low Sweep",
+        description: "A low cut at the legs. Can knock the target down, make them bleed, or both.",
+        range: "melee",
+        tags: ["physical", "contact", "blade", "slash"],
+        battleMessage: "{user} sweeps low at {target}'s legs!",
+        icon: { col: 8, row: 0 },
+        animationId: "low_sweep",
+        speedModifier: 1.1,
+        targeting: { scope: "enemy", select: "single" },
+        cost: { stamina: 14 },
+        accuracy: 0.9,
+        effects: [{ type: "damage", damageType: "slash", power: 1.0 }],
+        statusEffects: [{ id: "knocked_down", chance: 0.3 }, { id: "bleed", chance: 0.35, duration: 3 }]
+    },
+    // A leap and a falling cut: the hardest single slash there is, at a heavy price in stamina, and the landing leaves the wielder open (Vulnerable).
+    "leaping_slash": {
+        id: "leaping_slash",
+        name: "Leaping Slash",
+        description: "Leap high and bring the blade down with your whole weight. Hits very hard and costs a lot of stamina, but the landing leaves you Vulnerable.",
+        range: "melee",
+        tags: ["physical", "contact", "blade", "slash", "heavy"],
+        battleMessage: "{user} leaps at {target} with a {ability}!",
+        icon: { col: 9, row: 0 },
+        animationId: "leaping_slash",
+        speedModifier: 0.8,
+        targeting: { scope: "enemy", select: "single" },
+        cost: { stamina: 30 },
+        accuracy: 0.85,
+        effects: [{ type: "damage", damageType: "slash", power: 2.6 }],
+        selfStatusEffects: [{ id: "vulnerable", chance: 1.0, duration: 2 }]
     },
     "cleave": {
         id: "cleave",

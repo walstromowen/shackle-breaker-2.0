@@ -226,7 +226,15 @@ export class AbilitySystem {
     }
 
     static _handleDamage(effect, source, target, abilityAccuracy = 1.0, def) {
-        const conditionMultiplier = this._calculateConditionalMultiplier(effect, source, target);
+        // `shatter: { status, multiplier, message }`: a target carrying that status loses it before the blow is worked out, and the blow lands
+        // harder (Guard Break against Fortified: the guard's resistance would otherwise turn the hit into almost nothing)
+        let shattered = null;
+        if (effect.shatter && target.statusEffects && target.statusEffects.some(st => st.id === effect.shatter.status)) {
+            shattered = effect.shatter;
+            if (typeof target.removeStatusEffect === 'function') target.removeStatusEffect(effect.shatter.status);
+            else target.statusEffects = target.statusEffects.filter(st => st.id !== effect.shatter.status);
+        }
+        const conditionMultiplier = this._calculateConditionalMultiplier(effect, source, target) * (shattered ? (shattered.multiplier || 1.5) : 1);
         const basePower = effect.power || 10;
         const finalPower = basePower * conditionMultiplier;
 
@@ -241,6 +249,7 @@ export class AbilitySystem {
             target.modifyResource(targetResource, -calc.damage);
             const template = calc.crit ? (def.critMessage || "{target} takes {damage} damage (Critical)") : (def.hitMessage || "{target} takes {damage} damage");
             calc.message = this._parseMessage(template, source, target, def, { damage: calc.damage });
+            if (shattered) calc.message = `${this._parseMessage(shattered.message || "{target}'s guard is broken!", source, target, def)} ${calc.message}`;
             
             if (targetResource !== 'hp') {
                 calc.message = calc.message.replace("damage", `${targetResource.toUpperCase()} damage`);

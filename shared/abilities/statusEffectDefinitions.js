@@ -302,6 +302,20 @@ export const StatusEffectDefinitions = {
             { type: 'percent', target: 'evasion', value: 0.5 }
         ]
     },
+    // Left open after an all-out attack (Leaping Slash): physical defense is halved for a short while.
+    vulnerable: {
+        id: 'vulnerable',
+        name: 'Vulnerable',
+        animationId: "vulnerable",
+        icon: { col: 8, row: 2 },
+        defaultCharges: 2,
+        maxStacks: 1,
+        modifiers: [
+            { type: 'percent', target: 'defense.slash', value: -0.5 },
+            { type: 'percent', target: 'defense.blunt', value: -0.5 },
+            { type: 'percent', target: 'defense.pierce', value: -0.5 }
+        ]
+    },
     exposed: {
         id: 'exposed',
         name: 'Exposed',

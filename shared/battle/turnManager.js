@@ -227,6 +227,20 @@ export class TurnManager {
             }
         }
 
+        // `selfStatusEffects`: what an attack does to its own user, once per use (Arcane Blast's recharge, Leaping Slash's Vulnerable landing)
+        if (isFirstTarget && !actor.isDead() && Array.isArray(action.config?.selfStatusEffects)) {
+            for (const sd of action.config.selfStatusEffects) {
+                if (rng() > (sd.chance ?? 1)) continue;
+                const existing = (actor.statusEffects || []).find(st => st.id === sd.id);
+                if (existing) { existing.addStack && existing.addStack(); continue; }
+                const effect = StatusEffectFactory.createEffect(sd.id, sd.duration, actor);
+                if (!effect) continue;
+                actor.applyStatusEffect(effect);
+                registerStatusApplication(this.state, effect, actor, actor);
+                this.queueMessage(`${actor.name} is ${effect.name}!`);
+            }
+        }
+
         // Magic costs the caster a little of themselves (CorruptionSystem). It is told after the spell's own lines, and a caster pushed to the top falls.
         if (isFirstTarget && !ignoreCost) {
             const corruption = CorruptionSystem.onAbilityUsed(actor, action);

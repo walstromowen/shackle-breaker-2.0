@@ -103,6 +103,7 @@ export class SceneManager {
             getLocalPlayer: () => (this.overworldController ? this.overworldController.player : null),
             getScene: () => this.currentScene,
             getOverworld: () => this.overworldController,   // (tests and the debug overlay)
+            getBattle: () => this.battleController,
         });
         multiplayerSocial.wire();   // trading, parties and duels between players in a shared world
 
