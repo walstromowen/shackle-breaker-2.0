@@ -1220,7 +1220,7 @@ export const ItemDefinitions = {
     name: "Kurtus's Brew of Madness",
     type: "consumable",
     useAbility: "brew_of_madness",
-    description: "Smells like ozone and bad decisions. Sets HP to 1, fills Insight.",
+    description: "Smells like ozone and bad decisions. Drops you to 1 HP and leaves you Enraged: physical attack +50% for 3 turns.",
     icon: { col: 1, row: 1 },
     stackable: true
   },
@@ -1228,7 +1228,7 @@ export const ItemDefinitions = {
     id: "healing_tonic",
     name: "Healing Tonic",
     type: "consumable",
-    description: "A concentrated, alchemically distilled brew that restores a moderate amount of health much faster than raw herbs.",
+    description: "A concentrated, alchemically distilled brew: as much healing as five Healing Herbs in a single draught.",
     value: 60,
     icon: { col: 0, row: 1 },
     useAbility: "moderate_heal",

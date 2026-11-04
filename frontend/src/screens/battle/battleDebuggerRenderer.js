@@ -13,7 +13,7 @@
  */
 import { UITheme } from '../../ui/UITheme.js';
 import { StatCalculator } from '../../../../shared/characters/statCalculator.js';
-import { CombatCalculator, DAMAGE_SCALE, ENEMY_DAMAGE, enemyDamageScale, levelOf } from '../../../../shared/battle/combatCalculator.js';
+import { CombatCalculator, DAMAGE_SCALE } from '../../../../shared/battle/combatCalculator.js';
 import { requirementsOf, unmetRequirements, UNMET_REQUIREMENT_DAMAGE_SCALE } from '../../../../shared/items/weaponRequirements.js';
 import { TURN_TYPES } from '../../../../shared/battle/battleConstants.js';
 import { DAMAGE_TYPE_LABELS } from '../../../../shared/core/constants.js';
@@ -184,11 +184,10 @@ export class BattleDebuggerRenderer {
         if (!effects.length) return null;
         const a = from.stats, d = to.stats;
         const hit = Math.min(0.95, (ability.accuracy ?? 1) * (a.accuracy ?? 100) / Math.max(1, d.evasion ?? 100));
-        const teamScale = from.team === 'enemy' ? enemyDamageScale(levelOf(from.c)) : 1;
         let base = 0, crit = 0;
         for (const f of effects) {
             const type = (f.damageType || 'blunt').toLowerCase();
-            const raw = (a.attack?.[type] || 0) * (f.power || 1) * DAMAGE_SCALE * teamScale;
+            const raw = (a.attack?.[type] || 0) * (f.power || 1) * DAMAGE_SCALE;
             const def = d.defense?.[type] || 0, res = d.resistance?.[type] || 0;
             base += CombatCalculator.calculateMitigatedDamage(raw, def, res, false);
             crit += CombatCalculator.calculateMitigatedDamage(raw * (a.critMultiplier ?? 1.5), def, res, false);
@@ -276,7 +275,6 @@ export class BattleDebuggerRenderer {
         this._runs(runs, x + 290, y + 12, F.rowBold, x + w - 14);
         this._runs([
             ['damage x', MUTED()], [String(DAMAGE_SCALE), MAIN()],
-            ['   enemy damage x', MUTED()], [`${ENEMY_DAMAGE.atLevel1}+${ENEMY_DAMAGE.perLevel}/lv (max ${ENEMY_DAMAGE.max})`, MAIN()],
             ['   unmet weapon reqs x', MUTED()], [String(UNMET_REQUIREMENT_DAMAGE_SCALE), MAIN()],
             ['   on field ', MUTED()], [`${m.party.length} v ${m.enemies.length}`, MAIN()],
         ], x + 290, y + 34, F.small, x + w - 14);

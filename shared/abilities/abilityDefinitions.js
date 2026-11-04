@@ -1011,10 +1011,11 @@ export const AbilityDefinitions = {
         battleMessage: "{user} chugs a {ability}!",
         targeting: { scope: "self" },
         animationId: "brew_of_madness",
+        // Kurtus's brew: fury for a price. Health drops to 1 and the drinker is Enraged (physical attack +50% for 3 turns).
         effects: [
-            { type: "set", resource: "hp", value: 1 },
-            { type: "recover", resource: "insight", calculation: "max" }
-        ]
+            { type: "set", resource: "hp", value: 1 }
+        ],
+        statusEffects: [{ id: "enraged", chance: 1.0, duration: 3 }]
     },
     "minor_heal": {
         id: "minor_heal",
@@ -1070,7 +1071,8 @@ export const AbilityDefinitions = {
         targeting: { scope: "ally", select: "single" },
         speedModifier: 1.0,
         accuracy: 1.0,
-        effects: [{ type: "recover", resource: "hp", calculation: "percent", power: 0.5 }]
+        // a Healing Tonic is worth five Healing Herbs (minor_heal is 30% of max HP each), so buying or brewing one pays off
+        effects: [{ type: "recover", resource: "hp", calculation: "percent", power: 1.5 }]
     },
     "moderate_recover": {
         id: "moderate_recover",

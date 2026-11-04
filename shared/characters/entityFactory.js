@@ -4,22 +4,21 @@
 import { ENTITY_DEFINITIONS } from './entityDefinitions.js';
 import { EntityModel } from './entityModel.js';
 import { ExperienceSystem } from './experienceSystem.js';
-import { ENEMY_DAMAGE_SCALING, scalingFor } from '../core/constants.js';
+import { ENEMY_DAMAGE_SCALING, DAMAGE_SCALING, scalingFor } from '../core/constants.js';
 import { ItemDefinitions } from '../items/itemDefinitions.js';
 
 // BALANCE KNOB: base max HP an enemy gets per level above 1 on top of (or, below 0, taken from) the +2 per level that every level-up gives
 // (ExperienceSystem.applyLevelUpStats). -1 = an enemy grows 1 HP a level: a player's weapon stops growing once it is fully upgraded, and an enemy that
-// kept growing 2.5 a level took twice the hits by level 50. Tuned with tools/playthroughSim.mjs (see ENEMY_DAMAGE in battle/combatCalculator.js).
+// kept growing 2.5 a level took twice the hits by level 50. Tuned with tools/playthroughSim.mjs (enemies are not handicapped by a damage share: their attributes set how hard they hit).
 // It is recorded on the entity (levelEdgeHp) so EntityFactory.removeLevelEdge() can undo it when an enemy joins the party.
 export const LEVEL_EDGE_HP_PER_LEVEL = -1;
 
 // BALANCE KNOB: extra points an enemy gets per level above 1 in the attribute its best attack scales with (Strength for blunt, slash and pierce,
 // Intelligence for the magic types: the enemy rules, core/constants.js ENEMY_DAMAGE_SCALING), ON TOP of the 1 point per level spread over every attribute. Player defense grows
 // with level and Vigor while an enemy's attack used to stay almost flat, so late fights got easier; this keeps an enemy's hits growing with its level.
-// 0.3 = +3 attack by level 11 (it was 1.5: enemies kept outgrowing players once their gear was fully upgraded; the enemy damage scale now does the
-// ramping, see ENEMY_DAMAGE in battle/combatCalculator.js); 0 switches it off. Like the HP edge, it is recorded on the entity (levelEdgeAttr) and
+// 0.5 = +5 attack by level 11 (0.3 while enemies still had a flat damage multiplier; that multiplier is gone, so the edge carries their growth; see tools/playthroughSim.mjs); 0 switches it off. Like the HP edge, it is recorded on the entity (levelEdgeAttr) and
 // EntityFactory.removeLevelEdge() takes it away on recruit.
-export const LEVEL_EDGE_ATTACK_PER_LEVEL = 0.3;
+export const LEVEL_EDGE_ATTACK_PER_LEVEL = 0.5;
 
 export class EntityFactory {
     static create(entityId, levelOrOverrides = 1, overrides = {}) {
@@ -190,8 +189,10 @@ export class EntityFactory {
             if (def && def.attack) for (const [t, v] of Object.entries(def.attack)) weapon[t] = (weapon[t] || 0) + v;
         }
         let best = null;
-        for (const type of Object.keys(ENEMY_DAMAGE_SCALING)) {
-            const { value, attr } = scalingFor(type, config.attributes, ENEMY_DAMAGE_SCALING);   // enemies play by the enemy rules (StatCalculator.usesEnemyScaling)
+        // a humanoid is built like a player (StatCalculator.usesEnemyScaling): its attacks scale by the player's table; everything else by the enemy rules
+        const table = Array.isArray(config.tags) && config.tags.includes('HUMANOID') ? DAMAGE_SCALING : ENEMY_DAMAGE_SCALING;
+        for (const type of Object.keys(table)) {
+            const { value, attr } = scalingFor(type, config.attributes, table);
             const total = (config.baseStats?.baseAttack?.[type] || 0) + (weapon[type] || 0) + value;
             if (attr && (!best || total > best.total)) best = { total, attr };
         }

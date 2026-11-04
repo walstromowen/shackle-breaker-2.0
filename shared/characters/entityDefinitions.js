@@ -108,7 +108,7 @@ export const ENTITY_DEFINITIONS = {
         deathSound: "madmanCry",
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 9, maxStamina: 10, speed: 5
+            maxHp: 20, maxStamina: 10, speed: 5
         },
         currencyReward: { min: 2, max: 8 },
         lootTableId: "madman_drops",
@@ -129,11 +129,11 @@ export const ENTITY_DEFINITIONS = {
         deathSound: "frozenTrapperCry",
         attributes: {
             ...HUMANOID_TEMPLATE.attributes,
-            vigor: 10, strength: 11, dexterity: 12, intelligence: 8, attunement: 12
+            vigor: 10, strength: 10, dexterity: 11, intelligence: 8, attunement: 11
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 12, maxStamina: 14, maxInsight: 28, speed: 6, critical: 0.08,
+            maxHp: 20, maxStamina: 14, maxInsight: 28, speed: 6, critical: 0.08,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: 1, pierce: 1, ice: 3, water: 1, fire: -2 },
             baseResistance: { ice: 0.3, fire: -0.2 },
             baseAttack: { blunt: 1, slash: 0, pierce: 2, ice: 2 }
@@ -155,11 +155,11 @@ export const ENTITY_DEFINITIONS = {
         deathSound: "magicAddictCry",
         attributes: {
             ...HUMANOID_TEMPLATE.attributes,
-            vigor: 6, intelligence: 14, attunement: 12
+            vigor: 6, intelligence: 13, attunement: 11
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 11, maxStamina: 20, maxInsight: 20,
+            maxHp: 20, maxStamina: 20, maxInsight: 20,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: 2, pierce: 2, blunt: 1 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "insight_of_arcane" },
@@ -183,7 +183,7 @@ export const ENTITY_DEFINITIONS = {
         // No traits: a rotter's remains turn acidic only once the blood moon is up (act 2, story/actDefinitions.js `enemies.ROTTER`)
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 16, maxStamina: 10, speed: 5
+            maxHp: 20, maxStamina: 10, speed: 5
         },
         currencyReward: { min: 2, max: 8 },
         lootTableId: "rotter_drops",
@@ -201,13 +201,11 @@ export const ENTITY_DEFINITIONS = {
         deathSound: "shadyMerchantCry",
         attributes: {
             ...HUMANOID_TEMPLATE.attributes,
-            vigor: 12,
-            dexterity: 14,
-            strength: 9
+            vigor: 11, strength: 8, dexterity: 13, intelligence: 9, attunement: 9
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 11,
+            maxHp: 20,
             maxStamina: 15,
             speed: 7,
             critical: 0.10,
@@ -234,11 +232,11 @@ export const ENTITY_DEFINITIONS = {
         deathSound: "legionaryCry",
         attributes: {
             ...HUMANOID_TEMPLATE.attributes,
-            vigor: 14, strength: 14, intelligence: 6
+            vigor: 13, strength: 13, dexterity: 9, intelligence: 6, attunement: 9
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 7,
+            maxHp: 20,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: -2 },
             baseResistance: { slash: 0.25 },
             baseAttack: { blunt: 3, slash: 3, pierce: 3 }   // trained soldiers hit harder than the template's bare-handed 1
@@ -262,7 +260,7 @@ export const ENTITY_DEFINITIONS = {
         deathSound: "unsheathSwordSfx",
         attributes: {
             ...HUMANOID_TEMPLATE.attributes,
-            vigor: 13, strength: 13, dexterity: 9, intelligence: 6, attunement: 8
+            vigor: 14, strength: 13, dexterity: 9, intelligence: 6, attunement: 8
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
@@ -287,11 +285,11 @@ export const ENTITY_DEFINITIONS = {
         deathSound: "watchmanCry",
         attributes: {
             ...HUMANOID_TEMPLATE.attributes,
-            vigor: 10, strength: 9, dexterity: 15, intelligence: 8, attunement: 10
+            vigor: 10, strength: 9, dexterity: 14, intelligence: 8, attunement: 9
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 12, maxStamina: 16, speed: 7, critical: 0.12, corruption: 10,
+            maxHp: 20, maxStamina: 16, speed: 7, critical: 0.12, corruption: 10,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: 1, pierce: 1, dark: 2, light: -2 },
             baseResistance: { dark: 0.15, light: -0.15 },
             baseAttack: { blunt: 1, pierce: 8, dark: 1 }
@@ -311,10 +309,10 @@ export const ENTITY_DEFINITIONS = {
         spritePortrait: "hollowHarvesterPortrait",
         crySound: "hollowHarvesterCry",
         deathSound: "hollowHarvesterCry",
-        attributes: { vigor: 12, strength: 8, dexterity: 14, intelligence: 14, attunement: 10 },
+        attributes: { vigor: 10, strength: 7, dexterity: 12, intelligence: 12, attunement: 9 },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 16, maxStamina: 15, maxInsight: 15, speed: 6,
+            maxHp: 20, maxStamina: 15, maxInsight: 15, speed: 6,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: 3, dark: 4, arcane: 3, light: -2 },
             baseAttack: { blunt: 0, slash: 9, arcane: 6 }
         },
@@ -335,11 +333,11 @@ export const ENTITY_DEFINITIONS = {
         deathSound: "scorchedVagrantCry",
         attributes: {
             ...HUMANOID_TEMPLATE.attributes,
-            vigor: 9, strength: 7, dexterity: 10, intelligence: 16, attunement: 14
+            vigor: 8, strength: 6, dexterity: 9, intelligence: 14, attunement: 13
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 12, maxStamina: 12, maxInsight: 25, speed: 7,
+            maxHp: 20, maxStamina: 12, maxInsight: 25, speed: 7,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, fire: 4, light: 3, arcane: 3, water: -3, ice: -2 },
             baseResistance: { fire: 0.4, light: 0.2, earth: 0.5, lightning: 0.5 },
             baseAttack: { blunt: 1, fire: 4, arcane: 2, light: 1 }
@@ -360,11 +358,11 @@ export const ENTITY_DEFINITIONS = {
         deathSound: "sandStalkerCry",
         attributes: {
             ...HUMANOID_TEMPLATE.attributes,
-            vigor: 8, strength: 10, dexterity: 16, intelligence: 8, attunement: 10
+            vigor: 8, strength: 10, dexterity: 15, intelligence: 8, attunement: 9
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 9, maxStamina: 20, speed: 10, critical: 0.15,
+            maxHp: 20, maxStamina: 20, speed: 10, critical: 0.15,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, earth: 2, wind: 3, slash: 2 },
             baseResistance: { wind: 0.25, earth: 0.5, lightning: 0.5 },
             baseAttack: { slash: 4, earth: 1, wind: 2 }
@@ -444,11 +442,11 @@ export const ENTITY_DEFINITIONS = {
         deathSound: "skeletalWarriorCry",
         attributes: {
             ...HUMANOID_TEMPLATE.attributes,
-            vigor: 11, strength: 12, dexterity: 8, intelligence: 3, attunement: 4
+            vigor: 14, strength: 16, dexterity: 11, intelligence: 4, attunement: 5
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 13, maxStamina: 12, maxInsight: 4, speed: 4, critical: 0.05,
+            maxHp: 20, maxStamina: 12, maxInsight: 4, speed: 4, critical: 0.05,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, blunt: -3, slash: 2, pierce: 4, ice: 2, dark: 3, light: -3, fire: -1 },
             baseResistance: { pierce: 0.3, ice: 0.2, dark: 0.4, light: -0.4, fire: -0.15 },
             baseAttack: { blunt: 1, slash: 8, dark: 2 }
@@ -524,11 +522,11 @@ export const ENTITY_DEFINITIONS = {
         deathSound: "hollowHarvesterCry",
         attributes: {
             ...HUMANOID_TEMPLATE.attributes,
-            vigor: 8, strength: 4, dexterity: 9, intelligence: 16, attunement: 16
+            vigor: 8, strength: 4, dexterity: 8, intelligence: 15, attunement: 15
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 11, maxStamina: 10, maxInsight: 30, insightRecovery: 2, speed: 6, critical: 0.06,
+            maxHp: 20, maxStamina: 10, maxInsight: 30, insightRecovery: 2, speed: 6, critical: 0.06,
             baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, blunt: -2, slash: 1, pierce: 3, ice: 2, dark: 5, arcane: 3, light: -3, fire: -1 },
             baseResistance: { pierce: 0.2, ice: 0.15, dark: 0.5, arcane: 0.15, light: -0.3, fire: -0.15 },
             baseAttack: { blunt: 1, dark: 4, light: 3 }
@@ -696,7 +694,7 @@ export const ENTITY_DEFINITIONS = {
         deathSound: "shackledSteedCry",
         attributes: {
             ...BEAST_TEMPLATE.attributes,
-            vigor: 14, dexterity: 10, strength: 10
+            vigor: 10, dexterity: 10, strength: 7
         },
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
@@ -738,7 +736,7 @@ export const ENTITY_DEFINITIONS = {
         deathSound: "grimStagCry",
         attributes: {
             ...BEAST_TEMPLATE.attributes,
-            vigor: 14, strength: 13, dexterity: 11, intelligence: 5, attunement: 4
+            vigor: 10, strength: 10, dexterity: 11, intelligence: 5, attunement: 4
         },
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
@@ -764,7 +762,7 @@ export const ENTITY_DEFINITIONS = {
         deathSound: "duneMawCry",
         attributes: {
             ...BEAST_TEMPLATE.attributes,
-            vigor: 15, strength: 16, dexterity: 6, intelligence: 2, attunement: 4
+            vigor: 9, strength: 10, dexterity: 6, intelligence: 2, attunement: 4
         },
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,

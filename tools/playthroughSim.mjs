@@ -5,7 +5,7 @@
 //
 //   node tools/playthroughSim.mjs [runs=100] [maxLevel=50] [fightsPerLevel=3]          a table per metric, per class and level band
 //   JSON=1 node tools/playthroughSim.mjs ...                                            the raw numbers as JSON instead
-//   KNOBS='{"dmgBase":0.4,"dmgPerLevel":0.015}' node tools/playthroughSim.mjs ...       a what-if with other dials (defaults: the game's)
+//   KNOBS='{"edgeAtk":0.5,"edgeHp":0}' node tools/playthroughSim.mjs ...               a what-if with other dials (defaults: the game's)
 //   TRACE=Traveler,Hermit node tools/playthroughSim.mjs                                 how those classes' builds grow
 //   STATS=1 node tools/playthroughSim.mjs [runs] > stats.json                           every enemy's stats at levels 1-20, and every class's
 //                                                                                        build (averaged over the runs) at levels 1-30, as JSON
@@ -17,12 +17,13 @@ globalThis.OffscreenCanvas = class { constructor(w, h) { this.width = w; this.he
 const realLog = console.log;
 console.log = noop; console.warn = noop; console.error = noop;
 const out = (s) => process.stdout.write(s + '\n');
-// the dials (the game's values as defaults): enemy damage = dmgBase + dmgPerLevel * (level - 1), at most dmgCap; per level above 1 an enemy gains
+// the dials (the game's values as defaults): per level above 1 an enemy gains
 // edgeHp max HP and edgeAtk points in the attribute its best attack scales with (on top of the 2 HP and 1 attribute point every level gives)
-const { ENEMY_DAMAGE } = await import(ROOT + '/shared/battle/combatCalculator.js');
 const { LEVEL_EDGE_HP_PER_LEVEL, LEVEL_EDGE_ATTACK_PER_LEVEL } = await import(ROOT + '/shared/characters/entityFactory.js');
-const K = { dmgBase: ENEMY_DAMAGE.atLevel1, dmgPerLevel: ENEMY_DAMAGE.perLevel, dmgCap: ENEMY_DAMAGE.max, edgeHp: LEVEL_EDGE_HP_PER_LEVEL, edgeAtk: LEVEL_EDGE_ATTACK_PER_LEVEL, ...JSON.parse(process.env.KNOBS || '{}') };
-const enemyDamage = (level) => Math.min(K.dmgCap, K.dmgBase + K.dmgPerLevel * (level - 1));
+const K = { edgeHp: LEVEL_EDGE_HP_PER_LEVEL, edgeAtk: LEVEL_EDGE_ATTACK_PER_LEVEL, ...JSON.parse(process.env.KNOBS || '{}') };
+// ATTRS='{"WOLF":{"strength":8}}': try other attributes for some enemy kinds (merged over their definitions)
+const ATTR_OVERRIDES = JSON.parse(process.env.ATTRS || '{}');
+const makeEnemy = (id, overrides) => EntityFactory.create(id, ATTR_OVERRIDES[id] ? { ...overrides, attributes: { ...(overrides.attributes || {}), ...ATTR_OVERRIDES[id] } } : overrides);
 
 const { gameState } = await import(ROOT + '/shared/core/gameState.js');
 const { StatCalculator } = await import(ROOT + '/shared/characters/statCalculator.js');
@@ -110,13 +111,7 @@ const abilityIdsOf = (e) => {
     return [...ids];
 };
 function combatant(e, team) {
-    let stats = StatCalculator.calculate(e);
-    if (team === 'enemy') {
-        // the enemy damage dial, applied the way the game applies ENEMY_DAMAGE_SCALE (to raw damage = attack x power x DAMAGE_SCALE)
-        const f = enemyDamage(e.level || e.state?.level || 1);
-        stats = { ...stats, attack: Object.fromEntries(Object.entries(stats.attack).map(([k, v]) => [k, v * f])) };
-        team = 'scaled-enemy';
-    }
+    const stats = StatCalculator.calculate(e);   // enemies hit by the same rule as the party: their attributes are what make them dangerous
     const c = { e, team, stats, name: e.name, hp: stats.maxHp, stamina: stats.maxStamina, insight: stats.maxInsight, maxHp: stats.maxHp, maxStamina: stats.maxStamina, maxInsight: stats.maxInsight };
     c.abilities = AbilityFactory.createAbilities(abilityIdsOf(e)).filter(a => a && (typeof a.usableIn !== 'function' || a.usableIn('battle')));
     for (const a of c.abilities) { a._cost = a.costFor({ maxStamina: c.maxStamina, maxInsight: c.maxInsight, maxHp: c.maxHp }); a._dmg = (a.effects || []).filter(f => f.type === 'damage'); }
@@ -214,12 +209,12 @@ function encounter(level) {
         let overrides = { level: Math.max(1, base + levelOffset), ...rest };
         const up = ActSystem.getEnemyUpgrade(id);
         if (up) overrides = { ...overrides, abilities: [...(overrides.abilities || []), ...up.abilities], traits: [...(overrides.traits || []), ...up.traits] };
-        const e = EntityFactory.create(id, { ...overrides, levelEdge: false });
+        const e = makeEnemy(id, { ...overrides, levelEdge: false });
         if (!e) return null;
         // the level edge, from the dials
         const lv = overrides.level, st = e.state || e;
         if (lv > 1) {
-            const main = EntityFactory._mainAttackAttribute({ attributes: st.attributes, equipment: st.equipment, baseStats: st.baseStats });
+            const main = EntityFactory._mainAttackAttribute({ attributes: st.attributes, equipment: st.equipment, baseStats: st.baseStats, tags: st.tags });
             if (main) st.attributes[main] += Math.floor((lv - 1) * K.edgeAtk);
             st.baseStats.maxHp += Math.trunc((lv - 1) * K.edgeHp);
             e.hp = e.maxHp;
@@ -228,6 +223,40 @@ function encounter(level) {
     }).filter(Boolean);
 }
 
+// MATCHUP=level: every enemy kind, one on one, against each class at that level (fresh HP, 60 fights each): who is too strong or too weak
+if (process.env.MATCHUP) {
+    const level = +process.env.MATCHUP;
+    const { SpawnTableDefinitions } = await import(ROOT + '/shared/battle/spawnTableDefinitions.js');
+    const kinds = new Set();
+    for (const [tid, t] of Object.entries(SpawnTableDefinitions)) if (/_battles_/.test(tid)) for (const m of JSON.stringify(t).matchAll(/"id":"([A-Z_]+)"/g)) kinds.add(m[1]);
+    const names = Object.keys(CLASSES).filter(n => n !== 'Diseased');
+    out(`level ${level}: player win % one on one`);
+    out('enemy'.padEnd(20) + names.map(n => n.slice(0, 7).padStart(8)).join('') + '     avg');
+    const only = process.env.ONLY ? process.env.ONLY.split(',') : null;
+    for (const id of [...kinds].sort().filter(k => !only || only.includes(k))) {
+        const row = [];
+        for (const name of names) {
+            const cls = CLASSES[name]; let wins = 0; const N = +(process.env.N || 60);
+            for (let i = 0; i < N; i++) {
+                const r = newRun(cls);
+                for (let l = 2; l <= level; l++) spendPoint(r, cls, l);
+                const p = buildPlayer(r, cls, level);
+                const e = makeEnemy(id, { level, levelEdge: false });
+                const st = e.state || e;
+                if (level > 1) {
+                    const main = EntityFactory._mainAttackAttribute({ attributes: st.attributes, equipment: st.equipment, baseStats: st.baseStats, tags: st.tags });
+                    if (main) st.attributes[main] += Math.floor((level - 1) * K.edgeAtk);
+                    st.baseStats.maxHp += Math.trunc((level - 1) * K.edgeHp);
+                    e.hp = e.maxHp;
+                }
+                if (battle(p, [e]).won) wins++;
+            }
+            row.push(wins / N * 100);
+        }
+        out(id.padEnd(20) + row.map(v => v.toFixed(0).padStart(8)).join('') + (row.reduce((a, b) => a + b, 0) / row.length).toFixed(0).padStart(8));
+    }
+    process.exit(0);
+}
 if (process.env.TRACE) {
     for (const name of process.env.TRACE.split(',')) {
         const cls = CLASSES[name]; const r = newRun(cls);
@@ -247,7 +276,7 @@ if (process.env.STATS) {
     const avg = (o, ks) => ks.reduce((t, k) => t + (o[k] || 0), 0) / ks.length;
     const best = (o) => Object.entries(o).reduce((b, [k, v]) => (v > b[1] ? [k, v] : b), ['', -1]);
     const { SpawnTableDefinitions } = await import(ROOT + '/shared/battle/spawnTableDefinitions.js');
-    const { enemyDamageScale } = await import(ROOT + '/shared/battle/combatCalculator.js');
+    
     const tables = {};
     for (const [tid, t] of Object.entries(SpawnTableDefinitions)) for (const m of JSON.stringify(t).matchAll(/"id":"([A-Z_]+)"/g)) (tables[m[1]] ??= new Set()).add(tid);
     const enemies = {};
@@ -258,7 +287,7 @@ if (process.env.STATS) {
             if (!e) break;
             const st = StatCalculator.calculate(e);
             const [type, attack] = best(st.attack);
-            rows.push({ level, hp: st.maxHp, attackType: type, attack, damageScale: +enemyDamageScale(level).toFixed(3), effectiveAttack: +(attack * enemyDamageScale(level)).toFixed(1),
+            rows.push({ level, hp: st.maxHp, attackType: type, attack, 
                 physDef: +avg(st.defense, PHYS).toFixed(1), magicDef: +avg(st.defense, MAGIC).toFixed(1), speed: st.speed, evasion: st.evasion, accuracy: st.accuracy });
         }
         if (rows.length) enemies[id] = { name: EntityFactory.create(id, 1).name, tables: [...inTables], rows };

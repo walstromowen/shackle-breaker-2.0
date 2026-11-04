@@ -70,12 +70,14 @@ export class StatCalculator {
         }; 
     } 
 
-    /* Does this character play by the enemy rules? Everything made from an entity template other than HUMANOID (the player and the hired
-       mercenaries are HUMANOIDs): enemies, and the beasts and soldiers that join the party, which keep the numbers they were balanced with.
+    /* Does this character play by the enemy rules? Beasts, insects, spirits and the like (anything not made from the player's HUMANOID template and
+       not tagged HUMANOID). Every humanoid, friend or foe (a Madman, a Legionary, a recruited soldier), is built exactly like a player character.
        A plain stat object without a template (tests, previews) uses the player's rules. */
     static usesEnemyScaling(character) {
         const id = character && (character.templateId || character.definitionKey || character.state?.templateId);
-        return !!id && id !== 'HUMANOID';
+        if (!id || id === 'HUMANOID') return false;
+        const tags = character.tags || character.state?.tags || [];
+        return !(Array.isArray(tags) && tags.includes('HUMANOID'));
     }
 
     static _runPipeline(character, allocations = null) { 

@@ -72,9 +72,9 @@ test('the backgrounds hit hardest with the types their best attributes feed', ()
 // Enemies play by the enemy rules (Strength for physical, Intelligence for magic: ENEMY_DAMAGE_SCALING), so they keep the attack they were balanced
 // with: anchors recorded from them, level 1 (the Legionary's is the one change: trained soldiers got +3 on every physical attack, 14 -> 17, when enemies
 // were made hit harder). Under the player's hybrid rules the agile ones would hit far harder (a Thunder Locust's lightning 9 -> 21).
-test('enemies and recruits hit as hard as they always did', () => {
-    const anchors = [['WOLF', 'pierce', 17], ['DOG', 'pierce', 8], ['DUNE_MAW', 'pierce', 20], ['MAD_MAN', 'slash', 10], ['THUNDER_LOCUST', 'lightning', 9],
-        ['THUNDER_LOCUST', 'pierce', 6], ['SCORCHED_VAGRANT', 'fire', 20], ['LEGIONARY', 'slash', 17], ['PANZERKAMFER', 'pierce', 24], ['SNOW_LEOPARD', 'slash', 19]];
+test('enemies and recruits hit as their attributes say (humanoids on the player rules, beasts on the enemy rules)', () => {
+    const anchors = [['WOLF', 'pierce', 17], ['DOG', 'pierce', 8], ['DUNE_MAW', 'pierce', 14], ['MAD_MAN', 'slash', 10], ['THUNDER_LOCUST', 'lightning', 9],
+        ['THUNDER_LOCUST', 'pierce', 6], ['SCORCHED_VAGRANT', 'fire', 17], ['LEGIONARY', 'slash', 16], ['PANZERKAMFER', 'pierce', 24], ['SNOW_LEOPARD', 'slash', 19]];
     for (const [id, type, old] of anchors) {
         const e = EntityFactory.create(id, 1);
         assert.ok(Math.abs(StatCalculator.calculate(e).attack[type] - old) <= 1, `${id} ${type}: ${StatCalculator.calculate(e).attack[type]} (was ${old})`);
@@ -263,22 +263,29 @@ test('enemies use the enemy rules, the player the hybrid ones', () => {
     assert.equal(asEnemy.defense.blunt, 5, 'enemy defense: +1 per 2 Vigor');
 });
 
-test('enemies deal enemyDamageScale(level) of the damage: gentle at level 1, harsher with every level, capped; the party is not scaled', async () => {
-    const { CombatCalculator, ENEMY_DAMAGE, enemyDamageScale } = await import('../../shared/battle/combatCalculator.js');
-    assert.equal(enemyDamageScale(1), ENEMY_DAMAGE.atLevel1);
-    assert.ok(enemyDamageScale(20) > enemyDamageScale(10) && enemyDamageScale(10) > enemyDamageScale(1), 'grows with level');
-    assert.equal(enemyDamageScale(999), ENEMY_DAMAGE.max, 'capped');
-    assert.ok(ENEMY_DAMAGE.max <= 1);
+test('enemies and the party turn attack into damage by the same rule: no handicap for being hostile', async () => {
+    const CC = await import('../../shared/battle/combatCalculator.js');
+    assert.equal(CC.enemyDamageScale, undefined, 'the enemy damage multiplier is gone');
+    assert.equal(CC.ENEMY_DAMAGE, undefined);
     const stats = { attack: { blunt: 100 }, defense: { blunt: 0 }, resistance: { blunt: 0 }, accuracy: 1000, evasion: 1, critChance: 0 };
     const hit = (team, level) => {
         const real = Math.random, log = console.log;
         Math.random = () => 0.5; console.log = () => {};
-        try { return CombatCalculator.calculateDamage({ team, stats, level }, { stats }, 1, 'blunt', 1).damage; } finally { Math.random = real; console.log = log; }
+        try { return CC.CombatCalculator.calculateDamage({ team, stats, level }, { stats }, 1, 'blunt', 1).damage; } finally { Math.random = real; console.log = log; }
     };
     const party = hit('party', 30);
-    for (const lv of [1, 15, 40]) {
-        const enemy = hit('enemy', lv);
-        assert.ok(Math.abs(enemy / party - enemyDamageScale(lv)) < 0.02, `level ${lv}: enemy ${enemy} vs party ${party}`);
+    for (const lv of [1, 15, 40]) assert.equal(hit('enemy', lv), party, `a level ${lv} enemy hits like the party`);
+});
+
+test('humanoid enemies stand on the player rules: the same 50 attribute points and base HP as a new character', async () => {
+    const { ENTITY_DEFINITIONS } = await import('../../shared/characters/entityDefinitions.js');
+    for (const [id, def] of Object.entries(ENTITY_DEFINITIONS)) {
+        const tags = def.tags || [];
+        if (id === 'HUMANOID' || !tags.includes('HUMANOID') || tags.includes('BOSS') || tags.includes('ELITE')) continue;
+        const total = Object.values(def.attributes).reduce((a, b) => a + b, 0);
+        assert.equal(total, 50, `${id} has ${total} attribute points`);
+        assert.equal(def.baseStats.maxHp, 20, `${id} base HP`);
+        assert.equal(StatCalculator.usesEnemyScaling(EntityFactory.create(id, 1)), false, `${id} uses the player rules`);
     }
 });
 

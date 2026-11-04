@@ -59,7 +59,7 @@ test('a fight played through the controller ends once, writes health back to the
             const kills = [];
             const onKill = (d) => kills.push(d);
             events.on('ENEMY_KILLED', onKill);
-            const bc = newBattle([['SKELETAL_WARRIOR', 1], ['FLOATING_SKULL', 1]]);
+            const bc = newBattle([['DOG', 1], ['FLOATING_SKULL', 1]]);
             const { ended, guard } = fight(bc);
             events.off('ENEMY_KILLED', onKill);
             assert.ok(guard < 3000, 'the fight finishes');
