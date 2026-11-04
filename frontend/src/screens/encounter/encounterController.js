@@ -9,6 +9,7 @@ import { ItemDefinitions } from '../../../../shared/items/itemDefinitions.js';
 import { NARRATION, STAGE_START_TIMER, narrationPlan, textEndTimer, decisionAlpha, decisionsDoneTimer, actionPadding } from '../../ui/narration.js';
 import { seedRandom, unseedRandom, withoutSeed } from '../../../../shared/core/random.js';
 import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
+import { hydrateEntity } from '../../engine/saveManager.js';
 import { worldSync } from '../../../../shared/world/worldManager.js';
 
 /* A party of several players shares an encounter: every member's browser plays it from the same seed. A choice is a vote (the leader's
@@ -16,7 +17,7 @@ import { worldSync } from '../../../../shared/world/worldManager.js';
    announces the choice and every screen plays it. "Switch party member" and shops are the leader's own (they are not voted on). */
 const VOTE_SECONDS = 20;
 const OPTS_RESEND = 1;   // seconds: how often the leader repeats what can be chosen (_leaderTick)
-const LEADER_OWN = new Set(['switch_character', 'open_shop']);
+const LEADER_OWN = new Set();   // decisions one player makes alone in a shared encounter: none now, switching and shops are voted on too
 
 const PROLOGUE_HOLD = 1.2;     // seconds the "skip the prologue" button (or Escape) is held
 
@@ -69,10 +70,19 @@ export class EncounterController extends BaseController {
   start(encounterId, context = {}, mp = null) {
     // a shared encounter (see the note at the top): the dice, and who keeps what (EncounterLogic.shared)
     this.mp = mp ? { ...mp, step: 0, votes: new Map(), voteTimer: 0, myVote: null, tally: {}, opts: null, optsSentKey: null } : null;
-    if (mp) { seedRandom(mp.seed); EncounterLogic.shared = { players: mp.players, me: mp.me, isLeader: !!mp.isLeader, roller: null }; multiplayerSocial.encounterState = () => this; }
+    if (mp) {
+      seedRandom(mp.seed);
+      EncounterLogic.shared = { players: mp.players, me: mp.me, isLeader: !!mp.isLeader, roller: null, active: null };
+      multiplayerSocial.encounterState = () => this;
+      // the party's line-up (every player's first characters, as for a fight): any of them can be the one the encounter is about
+      this.mp.lineup = (mp.lineup || []).map(e => ({ owner: e.owner, idx: e.idx, entity: e.owner === mp.me ? gameState.party.members[e.idx] : hydrateEntity(e.data) }))
+        .filter(e => e.entity);
+      EncounterLogic.shared.lineupSize = this.mp.lineup.length;
+      this._setActive(0);
+    }
     else { unseedRandom(); EncounterLogic.shared = null; }
 
-    if (gameState.party && gameState.party.members && gameState.party.members.length > 0) {
+    if (!mp && gameState.party && gameState.party.members && gameState.party.members.length > 0) {   // (a line-up has only the living)
       const members = gameState.party.members;
       if (members[0].hp <= 0) {
         const firstLivingIndex = members.findIndex(m => m.hp > 0);
@@ -210,14 +220,37 @@ export class EncounterController extends BaseController {
     const ctx = this.model?.context || {};
     const byIndex = members[ctx.betrayerIndex];
     const betrayer = (byIndex && byIndex.shackled) ? byIndex : (ctx.betrayerName ? members.find(m => m.name === ctx.betrayerName && m.shackled) : null);
-    const shown = betrayer || members[0];
+    const shown = betrayer || EncounterLogic.rollerEntity();
     return shown ? [shown] : [];
+  }
+
+  /** A shared encounter: which line-up character it is about now (EncounterLogic.shared.active). */
+  _setActive(k) {
+    const mp = this.mp;
+    const e = mp && mp.lineup && mp.lineup[k];
+    if (!e) return;
+    mp.active = k;
+    EncounterLogic.shared.active = { owner: e.owner, idx: e.idx, entity: e.entity };
+  }
+
+  /** A shared encounter: the line-up as cards to pick the next active character from (the party screen), each vote 'sw:<index>'. */
+  _pickFromLineup() {
+    const mp = this.mp;
+    this.inputCooldown = 0.5;
+    events.emit('CHANGE_SCENE', {
+      scene: 'party',
+      data: {
+        mode: 'ENCOUNTER_SELECT', title: 'Vote: Who Steps Forward',
+        activeIndices: [mp.active], members: mp.lineup.map(e => e.entity), owners: mp.lineup.map(e => multiplayerSocial.nameOf(e.owner)),
+        callback: (k) => { if (k !== null && k >= 0 && k < mp.lineup.length && k !== mp.active) this._castVote(`sw:${k}`); }
+      }
+    });
   }
 
   _triggerImageTransition(duration = 0.4) {
     if (!this.model) return;
     const outgoingInfo = this.model.getImage ? this.model.getImage() : null;
-    const outgoingMember = gameState.party?.members?.[0] || null;
+    const outgoingMember = EncounterLogic.rollerEntity();
     this.imageTransition.active = true;
     this.imageTransition.timer = 0;
     this.imageTransition.duration = duration;
@@ -330,8 +363,9 @@ export class EncounterController extends BaseController {
     const best = Math.max(...counts.values());
     const tied = [...counts].filter(([, n]) => n === best).map(([raw]) => raw);
     const mine = mp.votes.get(mp.me);
-    const raw = tied.includes(mine) ? mine : Math.min(...tied);   // a tie goes the leader's way
-    const roller = gameState.party.members[0] ? { ...gameState.party.members[0].attributes } : null;
+    const raw = tied.includes(mine) ? mine : tied.map(String).sort()[0];   // a tie goes the leader's way
+    const who = EncounterLogic.rollerEntity();
+    const roller = who ? { ...who.attributes } : null;
     const go = { k: 'enc_go', step: mp.step, raw, roller };
     multiplayerSocial.sendEncounter(mp, go);
     this._onGo({ ...go, eid: mp.eid });
@@ -344,9 +378,18 @@ export class EncounterController extends BaseController {
     mp.step++;
     mp.votes.clear(); mp.voteTimer = 0; mp.myVote = null; mp.tally = {};
     EncounterLogic.shared.roller = d.roller || null;
+    // the party chose someone else to step forward: the same stage, with them
+    if (typeof d.raw === 'string' && d.raw.startsWith('sw:')) {
+      this._triggerImageTransition();
+      this._setActive(parseInt(d.raw.slice(3), 10));
+      this.selectedIndex = 0;
+      this.playConfirmSound();
+      return;
+    }
     const decision = (this.model.getAvailableDecisions() || [])[d.raw];
     if (!decision) return;
     this.playConfirmSound();
+    if (decision.type === 'open_shop') { this._openShop(decision); return; }   // every player shops for themselves
     this.beginActionSequence(decision);
   }
 
@@ -625,9 +668,10 @@ export class EncounterController extends BaseController {
     this.playConfirmSound();
     const selectedDecision = options[this.selectedIndex];
 
-    // a shared encounter: a choice is a vote (the leader's own switch / shop are not)
-    if (this.mp && !(this.mp.isLeader && LEADER_OWN.has(selectedDecision.type))) {
-      if (!LEADER_OWN.has(selectedDecision.type)) this._castVote((this.model.getAvailableDecisions() || []).indexOf(selectedDecision));
+    // a shared encounter: every choice is a vote; switching is a vote for one of the line-up's characters
+    if (this.mp) {
+      if (selectedDecision.type === 'switch_character') this._pickFromLineup();
+      else this._castVote((this.model.getAvailableDecisions() || []).indexOf(selectedDecision));
       return;
     }
     
@@ -651,11 +695,21 @@ export class EncounterController extends BaseController {
       });
     }
     else if (selectedDecision.type === 'open_shop') {
+      this._openShop(selectedDecision);
+    } else {
+      this.beginActionSequence(selectedDecision);
+    }
+  }
+
+  /** A trader's wares (an open_shop decision). In a shared encounter every player opens their own shop when the party chooses it; a
+   *  rolled stock is rolled on each screen, off the shared dice. */
+  _openShop(selectedDecision) {
+    {
       this.inputCooldown = 0.5;
       let finalWares = selectedDecision.wares || [];
       if (selectedDecision.lootTableId) {
         const rolls = selectedDecision.rolls || 5;
-        const lootModel = withoutSeed(() => LootTableFactory.generateLoot(selectedDecision.lootTableId, rolls));   // the leader's alone: off the shared dice
+        const lootModel = withoutSeed(() => LootTableFactory.generateLoot(selectedDecision.lootTableId, rolls));   // off the shared dice
         if (lootModel.hasItems()) {
           const dynamicWares = lootModel.items.map(item => ({ id: item.id, qty: item.qty }));
           finalWares = [...finalWares, ...dynamicWares];
@@ -671,8 +725,6 @@ export class EncounterController extends BaseController {
           this.updateBGM();
         }
       });
-    } else {
-      this.beginActionSequence(selectedDecision);
     }
   }
 
@@ -708,7 +760,7 @@ export class EncounterController extends BaseController {
       this.executeLogic();
     }
     
-    const actorName = gameState.party?.members?.[0]?.name || "The party";
+    const actorName = EncounterLogic.rollerEntity()?.name || "The party";
     if (decision.customActionText) {
       this.actionPhase = 'message';
       this.textTimer = STAGE_START_TIMER;
@@ -1055,7 +1107,7 @@ export class EncounterController extends BaseController {
     let displayText = this.model.getCurrentText() || "";
     let displayDecisions = this._getValidDecisions();
     let displayStageName = this.model.getStageDisplayText ? this.model.getStageDisplayText() : "Unknown Stage";
-    const actorName = gameState.party?.members?.[0]?.name || "The party";
+    const actorName = EncounterLogic.rollerEntity()?.name || "The party";
     
     displayText = this._fillNames(displayText, actorName);
     displayStageName = this._fillNames(displayStageName, actorName);
@@ -1065,7 +1117,14 @@ export class EncounterController extends BaseController {
       // a shared encounter: who has voted for what
       if (this.mp) {
         const i = raw.indexOf(decision);
-        const voters = this.mp.isLeader ? this._tallyOf(this.mp.votes)[i] : this.mp.tally[i];
+        const tally = this.mp.isLeader ? this._tallyOf(this.mp.votes) : this.mp.tally;
+        let voters = tally[i] || [];
+        // votes to switch: who wants whom
+        if (decision.type === 'switch_character') for (const [key, names] of Object.entries(tally)) {
+          if (!key.startsWith('sw:')) continue;
+          const e = this.mp.lineup && this.mp.lineup[parseInt(key.slice(3), 10)];
+          voters = voters.concat(names.map(n => `${n} > ${e ? e.entity.name : '?'}`));
+        }
         if (voters && voters.length) text += `   [${voters.join(', ')}]`;
         else if (LEADER_OWN.has(decision.type) && this.mp.isLeader) text += '   (yours alone)';
       }

@@ -479,3 +479,32 @@ test('in a party of players any player\'s shackled companion can turn, and is re
         assert.deepEqual(gameState.party.members, [lead], 'this player\'s party is untouched');
     } finally { CorruptionSystem.groupParties = null; }
 });
+
+test('a shared encounter: what happens to the active character happens on its owner\'s screen, what happens to the entire party on every screen', () => {
+    const lead = hero('Lead');
+    const second = hero('Second');
+    gameState.party.members = [lead, second];
+    const model = { context: {} };
+    const corr = (c) => CorruptionSystem.valueOf(c);
+    const run = (results) => quiet(() => EncounterLogic.resolveResults(results, model, null));
+    try {
+        // the active character is another player's: my screen leaves their wounds alone (theirs applies them)
+        EncounterLogic.shared = { players: ['me', 'p2'], me: 'me', isLeader: true, roller: null, active: { owner: 'p2', idx: 0, entity: hero('Theirs') } };
+        const before = corr(lead);
+        run([{ type: 'MODIFY_CORRUPTION', payload: { amount: 7, target: 'active_character' } }]);
+        assert.equal(corr(lead), before, 'not my character, not my result');
+        assert.equal(EncounterLogic.activeMember(), null);
+        assert.equal(EncounterLogic.rollerEntity().name, 'Theirs', 'but it is who every screen shows and rolls for');
+        // my second character steps forward: their results are mine, even though I am not the leader
+        EncounterLogic.shared = { players: ['p2', 'me'], me: 'me', isLeader: false, roller: null, active: { owner: 'me', idx: 1, entity: second } };
+        const s0 = corr(second), l0 = corr(lead);
+        run([{ type: 'MODIFY_CORRUPTION', payload: { amount: 7, target: 'active_character' } }]);
+        assert.equal(corr(second), s0 + 7, 'my active character');
+        assert.equal(corr(lead), l0, 'and only them');
+        // XP for the whole party reaches a member's party too (it used to be the leader's alone)
+        const xp0 = second.xp || second.state?.xp || 0;
+        const r = run([{ type: 'AWARD_XP', payload: { amount: 5, exact: true, target: 'entire_party' } }]);
+        assert.ok((second.xp || second.state?.xp || 0) > xp0 || second.level > 1, 'a party member\'s party gets the XP');
+        assert.ok(r);
+    } finally { EncounterLogic.shared = null; }
+});

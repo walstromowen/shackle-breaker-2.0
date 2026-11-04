@@ -37,10 +37,17 @@ export class PartyController extends BaseController {
         this.notice = null;
     }
 
+    /** The characters on the cards: the line-up a pick was given (init data.members), else the party. */
+    _members() { return this.roster || gameState.party.members; }
+
     init(data = {}) {
         this.mode = data.mode || 'DEFAULT';
         this.activeIndices = data.activeIndices || [];
         this.callback = data.callback || null;
+        // a pick from someone else's list: a shared fight's or encounter's line-up (every player's characters), with whose each one is
+        this.roster = Array.isArray(data.members) ? data.members : null;
+        this.owners = Array.isArray(data.owners) ? data.owners : null;
+        this.title = data.title || null;
         this.state = 'NAVIGATING';
         this.selectedIndex = 0;
         this.swappingIdx = null;
@@ -61,7 +68,7 @@ export class PartyController extends BaseController {
         if (this.exileConfirm) return `EXILE_${this.exileConfirm.choice}`;
         const menu = this.contextMenu.menu;
         if (menu) return menu.selectedIndex >= 0 ? `MENU_OPT_${menu.selectedIndex}` : null;
-        if (this.selectedIndex < 0 || this.selectedIndex >= gameState.party.members.length) return null;
+        if (this.selectedIndex < 0 || this.selectedIndex >= this._members().length) return null;
         return `CARD_${this.selectedIndex}`;
     }
 
@@ -90,7 +97,7 @@ export class PartyController extends BaseController {
 
         if (hitboxId.startsWith('CARD_')) {
             const cardIndex = parseInt(hitboxId.replace('CARD_', ''), 10);
-            if (cardIndex < gameState.party.members.length) {
+            if (cardIndex < this._members().length) {
                 this.selectedIndex = cardIndex;
             }
         }
@@ -99,7 +106,7 @@ export class PartyController extends BaseController {
     onClick(hitboxId, fromKeyboard = false) {
         if (this.ignoreNextClick) return;
 
-        const party = gameState.party.members;
+        const party = this._members();
 
         // The exile prompt owns every click while it is open: only its two buttons do anything
         if (this.exileConfirm) {
@@ -189,7 +196,7 @@ export class PartyController extends BaseController {
 
         if (hitboxId && typeof hitboxId === 'string' && hitboxId.startsWith('CARD_')) {
             const clickedIndex = parseInt(hitboxId.replace('CARD_', ''), 10);
-            const member = gameState.party.members[clickedIndex];
+            const member = this._members()[clickedIndex];
 
             if (member) {
                 this.selectedIndex = clickedIndex;
@@ -201,7 +208,7 @@ export class PartyController extends BaseController {
                     (payload, sourceId, originSlot, dropTargetId) => {
                         if (dropTargetId && typeof dropTargetId === 'string' && dropTargetId.startsWith('CARD_')) {
                             const targetIndex = parseInt(dropTargetId.replace('CARD_', ''), 10);
-                            if (originSlot !== targetIndex && targetIndex < gameState.party.members.length) {
+                            if (originSlot !== targetIndex && targetIndex < this._members().length) {
                                 if (this.swapMembers(originSlot, targetIndex)) this.selectedIndex = targetIndex;
                             }
                         }
@@ -225,7 +232,7 @@ export class PartyController extends BaseController {
             // Placed on a card: confirm (or an error when the move is not allowed). Dropped anywhere else the drag is simply let go: cancel.
             if (targetHitboxId && targetHitboxId.startsWith('CARD_')) {
                 const target = parseInt(targetHitboxId.replace('CARD_', ''), 10);
-                if (origin !== target && target < gameState.party.members.length && !this.canSwap(origin, target)) this.playErrorSound();
+                if (origin !== target && target < this._members().length && !this.canSwap(origin, target)) this.playErrorSound();
                 else this.playConfirmSound();
             } else {
                 this.playCancelSound();
@@ -254,7 +261,7 @@ export class PartyController extends BaseController {
 
     // Moves the cursor one step on the card grid (shared by NAVIGATING and SWAPPING); plays the nav tick when it really moved
     _moveCursor(intent) {
-        const memberCount = gameState.party.members.length;
+        const memberCount = this._members().length;
         const col = this.selectedIndex % this.gridColumns;
         const oldIndex = this.selectedIndex;
 
@@ -293,7 +300,7 @@ export class PartyController extends BaseController {
 
     confirmSelection(fromKeyboard = false) {
         if (this.mode === 'BATTLE_SELECT' || this.mode === 'ENCOUNTER_SELECT') {
-            const member = gameState.party.members[this.selectedIndex];
+            const member = this._members()[this.selectedIndex];
             const isDead = member.hp <= 0;
             const isActive = this.activeIndices.includes(this.selectedIndex);
 
@@ -332,7 +339,7 @@ export class PartyController extends BaseController {
     //             STATE 2: MENU
     // ==========================================
     openMenu(fromKeyboard = false) {
-        const member = gameState.party.members[this.selectedIndex];
+        const member = this._members()[this.selectedIndex];
         if (!member) return;
 
         const options = [
@@ -350,7 +357,7 @@ export class PartyController extends BaseController {
         ];
 
         // Render the Exile option ONLY if there is more than 1 party member
-        if (gameState.party.members.length > 1) {
+        if (this._members().length > 1) {
             options.push({
                 label: 'Exile', actionId: 'EXILE', callback: () => {
                     this.askToExile(this.selectedIndex);
@@ -390,7 +397,7 @@ export class PartyController extends BaseController {
 
     // Exiling removes the member for good, so it is never done on the first click: a prompt asks first, with "Cancel" lit by default
     askToExile(index) {
-        if (gameState.party.members.length <= 1 || !gameState.party.members[index]) {
+        if (this._members().length <= 1 || !this._members()[index]) {
             this.playErrorSound();
             return;
         }
@@ -420,7 +427,7 @@ export class PartyController extends BaseController {
     }
 
     exileMember(index) {
-        const party = gameState.party.members;
+        const party = this._members();
         if (party.length <= 1) {
             console.warn("Cannot exile the last party member.");
             return;
@@ -463,7 +470,7 @@ export class PartyController extends BaseController {
 
     // A fallen member (0 hp) can never end up in the first slot: that would make them the party's leader
     canSwap(from, to) {
-        const p = gameState.party.members;
+        const p = this._members();
         if (!p[from] || !p[to]) return false;
         if (from === 0 && p[to].hp <= 0) return false;
         if (to === 0 && p[from].hp <= 0) return false;
@@ -472,7 +479,7 @@ export class PartyController extends BaseController {
 
     // Returns true when the two members changed places
     swapMembers(from, to) {
-        const p = gameState.party.members;
+        const p = this._members();
         if (!this.canSwap(from, to)) {
             this.notice = { text: 'A fallen member cannot lead the party.', until: Date.now() + 2800 };
             return false;
@@ -486,7 +493,9 @@ export class PartyController extends BaseController {
     // ========================================================
     getState() {
         return {
-            members: gameState.party.members,
+            members: this._members(),
+            owners: this.owners,
+            title: this.title,
             selectedIndex: this.selectedIndex,
             swappingIdx: this.swappingIdx,
             menu: this.contextMenu.menu,
@@ -496,7 +505,7 @@ export class PartyController extends BaseController {
             // The "really exile?" prompt: null, or who it is about
             notice: this.notice && Date.now() < this.notice.until ? this.notice.text : null,
             exileConfirm: this.exileConfirm
-                ? { name: (gameState.party.members[this.exileConfirm.index] || {}).name || 'this member', choice: this.exileConfirm.choice }
+                ? { name: (this._members()[this.exileConfirm.index] || {}).name || 'this member', choice: this.exileConfirm.choice }
                 : null,
             // The one lit element: the card (or menu option) under the mouse, or the keyboard cursor
             hoveredElement: this.getFocusId() ? { id: this.getFocusId() } : null,

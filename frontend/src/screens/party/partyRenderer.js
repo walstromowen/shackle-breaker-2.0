@@ -42,6 +42,8 @@ export class PartyRenderer {
             dragState = null,
             exileConfirm = null,
             notice = null,
+            owners = null,
+            title = null,
             onLayoutUpdate = null
         } = state;
 
@@ -51,7 +53,7 @@ export class PartyRenderer {
 
         this.ui.clearScreen(width, height);
 
-        const headerText = mode === 'BATTLE_SELECT' ? "Select Reserve to Swap In" : "Party Members";
+        const headerText = title || (mode === 'BATTLE_SELECT' ? "Select Reserve to Swap In" : "Party Members");
         this.ui.drawStyled('title', headerText, width / 2, 120);
         this.ui.drawLineWithGothicFlourish((width / 2) - 288, 156, 576, UITheme.colors.borderHighlight);
 
@@ -85,9 +87,11 @@ export class PartyRenderer {
 
             const isActive = activeIndices.includes(index);
             const isDead = member.hp <= 0;
-            const isUnavailable = mode === 'BATTLE_SELECT' && (isActive || isDead);
+            const isUnavailable = (mode === 'BATTLE_SELECT' || (owners && mode === 'ENCOUNTER_SELECT')) && (isActive || isDead);
 
             this.drawCard(member, pos.x, pos.y, flags, isBeingMoved, isDropTarget, isUnavailable, isActive, mode);
+            // a shared line-up: whose character this is
+            if (owners && owners[index]) this.ui.drawText(owners[index], pos.x + this.layout.cardW / 2, pos.y - 12, UITheme.fonts.small, UITheme.colors.textHighlight, 'center');
         });
 
         if (menu) {
@@ -98,7 +102,7 @@ export class PartyRenderer {
         }
 
         let guide = "";
-        if (mode === 'BATTLE_SELECT') {
+        if (mode === 'BATTLE_SELECT' || mode === 'ENCOUNTER_SELECT') {
             guide = "[ARROWS] Navigate   [ENT/CLICK] Select   [ESC/R-CLICK] Cancel";
         } else {
             guide = "[ARROWS] Navigate   [ENT/CLICK] Swap & Menu   [ESC/R-CLICK] Back";

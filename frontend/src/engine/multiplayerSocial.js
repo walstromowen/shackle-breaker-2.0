@@ -459,7 +459,13 @@ class MultiplayerSocial {
         const g = this.groups.get(this.me) || [];
         const players = [this.me, ...this.partyHere(g)];
         const eid = newId(), seed = (Math.random() * 0xffffffff) >>> 0;
-        const base = { eid, seed, players, leader: this.me };
+        // the line-up, as for a fight: every player's first characters (3 each for two players, 2 each for three), the leader's lead first.
+        // Any of them can step forward (a switch is voted on), and each screen shows the one who did.
+        const parties = { [this.me]: gameState.party.members.map(serializeEntity) };
+        for (const id of players) if (id !== this.me) parties[id] = this.groupParties.get(id) || [];
+        const lineup = buildLineup(players.map(id => ({ id, members: parties[id].map(m => ({ alive: living(m) })) })))
+            .map(e => ({ owner: e.owner, idx: e.idx, data: parties[e.owner][e.idx] }));
+        const base = { eid, seed, players, leader: this.me, lineup };
         for (const id of players) if (id !== this.me) this._send({ k: 'enc_start', mp: base, encounterId: data.encounterId, context: data.context || {}, bgm: data.bgm || null, quiet: !!data.quiet }, id);
         return { ...base, me: this.me, isLeader: true };
     }

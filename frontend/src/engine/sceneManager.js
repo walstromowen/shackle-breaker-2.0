@@ -240,7 +240,9 @@ export class SceneManager {
         this.tutorial.cancel();
         if (sceneName === 'title') this._tipsReady = false;
         if (sceneName === 'overworld') this._tipsReady = true;
-        if (this._tipsReady) this.tutorial.show(sceneName);
+        // (not over the party screen when it is only a pick: a swap in a fight, a switch in an encounter; its card is about managing the party)
+        const isPick = sceneName === 'party' && this.partyController && this.partyController.mode !== 'DEFAULT';
+        if (this._tipsReady && !isPick) this.tutorial.show(sceneName);
 
         // Every arrival on the overworld (a new game, after a battle, an encounter, a shop, the menus) is a safe moment to save.
         // Saves from inside a house or cave too (SaveManager keeps the way back out), so loading returns to the same room.
@@ -670,7 +672,8 @@ export class SceneManager {
                 this.partyController.init({
                     mode: data.mode || 'BATTLE_SELECT',
                     activeIndices: data.activeIndices,
-                    callback: data.callback
+                    callback: data.callback,
+                    members: data.members, owners: data.owners, title: data.title
                 });
                 this.changeScene('party');
             }, 'wipe', { speed: 3.0 });

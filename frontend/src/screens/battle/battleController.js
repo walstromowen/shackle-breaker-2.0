@@ -62,6 +62,7 @@ export class BattleController extends BaseController {
     start(enemies, context = {}) {
         if (context.mp) seedRandom(context.mp.seed); else unseedRandom();
         this.state = createBattleState(enemies, context);
+        this._mySwaps = [];   // a shared fight: my swaps this round, held until every pick is in (_settleSwaps)
         if (context.mp) this._setupShared(context.mp);
 
         const preBattleActionsQueued = queueOpeningSequence(this.state);
@@ -211,14 +212,22 @@ export class BattleController extends BaseController {
     }
 
     requestPartySwap(isForced = false, slotIndex = -1) {
-        if (!isForced && this.state.mp) {   // a shared fight: a fallen character's place is filled by itself, and nobody swaps by hand
+        const mp = this.state.mp;
+        if (!isForced && mp && mp.kind === 'duel') {   // a duel is fought with what is on the field
             this.playErrorSound();
-            this.state.message = 'No swapping in a shared fight: a fallen fighter is replaced by itself.';
+            this.state.message = 'No swapping in a duel.';
             return;
         }
         const activeIndices = this.state.activeParty
             .map(p => p ? this.state.partyRoster.indexOf(p) : -1)
             .filter(i => i !== -1);
+        // a shared fight: the reserves are the whole line-up (every player's characters); one another player (or I) already called in this
+        // round is taken
+        if (mp) {
+            const called = [...(this._mySwaps || []).map(x => x.d.replacement)];
+            for (const [key, d] of mp.decisions || []) if (key.startsWith(`${mp.round}:`) && d && d.kind === 'swap') called.push(d.replacement);
+            for (const id of called) { const i = this.state.partyRoster.indexOf(this.byNet.get(id)); if (i !== -1 && !activeIndices.includes(i)) activeIndices.push(i); }
+        }
 
         this.state.turnQueue.forEach(turn => {
             if (turn.type === TURN_TYPES.REINFORCEMENT && turn.team === 'party' && turn.replacement) {
@@ -234,6 +243,9 @@ export class BattleController extends BaseController {
         events.emit('REQUEST_PARTY_SWAP', { 
             mode: 'BATTLE_SELECT', 
             activeIndices: activeIndices, 
+            // the cards are the fight's roster (in a shared fight: the line-up, with whose each character is)
+            members: this.state.partyRoster.map(c => c.originalEntity),
+            owners: mp ? this.state.partyRoster.map(c => (mp.names || {})[c.netOwner] || '') : null,
             callback: (selectedRosterIndex) => {
                 // ---> THE FIX: Guard against UI double-clicks! <---
                 // If it's already false, this callback has already been handled.
@@ -252,7 +264,14 @@ export class BattleController extends BaseController {
 
     _executeSwap(selectedRosterIndex, isForced, slotIndex) {
         const replacement = this.state.partyRoster[selectedRosterIndex];
-        if (this.state.mp && !isForced) multiplayerSocial.sendBattleDecision(this.state.mp, { round: this.state.mp.round, actor: this.state.activeParty[slotIndex]?.netId, kind: 'swap', replacement: replacement?.netId, slotIndex });
+        if (this.state.mp && !isForced) {
+            // a shared fight: sent, and kept until every pick is in, so every screen settles the swaps in the same order (_tryResolveShared)
+            const d = { round: this.state.mp.round, actor: this.state.activeParty[slotIndex]?.netId, kind: 'swap', replacement: replacement?.netId, slotIndex };
+            multiplayerSocial.sendBattleDecision(this.state.mp, d);
+            (this._mySwaps ||= []).push({ actor: this.state.activeParty[slotIndex], d });
+            this._advancePartyTurn();
+            return;
+        }
         queueSwap(this.state, replacement, isForced, slotIndex);
         if (!isForced) this._advancePartyTurn();
     }
@@ -442,12 +461,35 @@ export class BattleController extends BaseController {
             return;
         }
         // every pick is in: the same order on every screen (sortTurnQueue settles ties by network id)
-        for (const c of others.sort((a, b) => (a.netId < b.netId ? -1 : 1))) this._applyDecision(c, s.mp.decisions.get(`${s.mp.round}:${c.netId}`));
+        const swaps = this._mySwaps || [];
+        this._mySwaps = [];
+        for (const c of others.sort((a, b) => (a.netId < b.netId ? -1 : 1))) {
+            const d = s.mp.decisions.get(`${s.mp.round}:${c.netId}`);
+            if (d && d.kind === 'swap') swaps.push({ actor: c, d }); else this._applyDecision(c, d);
+        }
+        this._settleSwaps(swaps);
         if (s.mp.kind !== 'duel') queueEnemyActions(s);
         sortTurnQueue(s);
         s.phase = PHASE.RESOLVE;
         s.message = "Turns Processing...";
         this.timer = 0;
+    }
+
+    /* The round's swaps, mine and the others', in network-id order on every screen: a reserve two players both called in goes to the first,
+       and the second stays on the field (the line-up is everyone's, so anyone can bring in anyone's character; its owner plays it). */
+    _settleSwaps(swaps) {
+        const s = this.state;
+        const taken = new Set(s.activeParty.filter(Boolean));
+        for (const { actor, d } of swaps.sort((a, b) => (a.d.actor < b.d.actor ? -1 : 1))) {
+            const replacement = this.byNet.get(d.replacement);
+            const slot = s.activeParty.indexOf(actor);
+            if (!replacement || replacement.isDead() || taken.has(replacement) || slot === -1) {
+                if (actor) s.turnQueue.push({ type: TURN_TYPES.MESSAGE_STATUS, message: `${actor.name} holds the line: ${replacement ? replacement.name : 'that fighter'} cannot step in.`, speedOverride: actor.stats?.speed ?? 10 });
+                continue;
+            }
+            taken.add(replacement);
+            queueSwap(s, replacement, false, slot);
+        }
     }
 
     _applyDecision(actor, d) {
