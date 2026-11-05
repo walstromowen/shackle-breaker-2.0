@@ -151,7 +151,7 @@ test('XP: what an enemy is worth is close to the straight line the curve is buil
     }
 });
 
-test('XP: a level takes about 2 fights at the start and 6 at the end; level 20 comes after about 50 fights, level 150 after about 600', async () => {
+test('XP: a level takes about 1 fight at the start and 3 at the end; level 20 comes after about 25 fights, level 150 after about 300', async () => {
     const { ExperienceSystem, XP_CURVE, MAX_LEVEL } = await import('../../shared/characters/experienceSystem.js');
     assert.equal(MAX_LEVEL, 150);
     let fights = 0, at20 = 0;
@@ -162,9 +162,9 @@ test('XP: a level takes about 2 fights at the start and 6 at the end; level 20 c
         fights += need / perFight;
         if (level === 19) at20 = fights;
     }
-    assert.ok(at20 >= 40 && at20 <= 65, `level 20 after ${at20.toFixed(0)} fights`);
-    assert.ok(fights >= 450 && fights <= 750, `level 150 after ${fights.toFixed(0)} fights`);
-    assert.ok(Math.abs(ExperienceSystem.getMaxXP(1) / (ExperienceSystem.enemyXp(1) * 2) - 2) < 0.05);
+    assert.ok(at20 >= 20 && at20 <= 33, `level 20 after ${at20.toFixed(0)} fights`);
+    assert.ok(fights >= 225 && fights <= 375, `level 150 after ${fights.toFixed(0)} fights`);
+    assert.ok(Math.abs(ExperienceSystem.getMaxXP(1) / (ExperienceSystem.enemyXp(1) * 2) - 1) < 0.05);
 });
 
 test('XP: a reward written for the early game grows with the level, an old save adopts the new curve, and nobody passes level 150', async () => {
@@ -315,4 +315,16 @@ test('a bigger party meets a bigger group, a lone fighter a smaller one, and mor
     const three = sizes({ fighters: 3 });
     assert.ok(three[0] === 3 + Math.floor(PARTY_SCALING.EXTRA_ENEMIES[2]) && three[three.length - 1] === 5 + Math.ceil(PARTY_SCALING.EXTRA_ENEMIES[2]), 'a fraction: sometimes one more');
     assert.ok(PARTY_SCALING.EXTRA_ENEMIES[0] < 0 && PARTY_SCALING.EXTRA_ENEMIES[2] > PARTY_SCALING.EXTRA_ENEMIES[1]);
+});
+
+test('an ambush brings 1-3 enemies on easy and normal, 1-4 on hard, 2-4 on nightmare, whatever the table and the party size', async () => {
+    const { SpawnTableFactory, AMBUSH_SIZE } = await import('../../shared/battle/spawnTableFactory.js');
+    const { SpawnTableDefinitions } = await import('../../shared/battle/spawnTableDefinitions.js');
+    assert.deepEqual(AMBUSH_SIZE, { easy: [1, 3], normal: [1, 3], hard: [1, 4], nightmare: [2, 4] });
+    const tables = Object.keys(SpawnTableDefinitions).filter(t => /_battles_/.test(t));
+    for (const diff of Object.keys(AMBUSH_SIZE)) for (const t of tables) for (const fighters of [1, 3]) for (let i = 0; i < 20; i++) {
+        const n = SpawnTableFactory.generateBattle(t, diff, { fighters, ambush: true }).enemies.length;
+        if (!n) continue;
+        assert.ok(n >= AMBUSH_SIZE[diff][0] && n <= AMBUSH_SIZE[diff][1], `${t} on ${diff} with ${fighters} fighters: ${n}`);
+    }
 });

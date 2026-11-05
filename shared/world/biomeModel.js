@@ -91,7 +91,7 @@ export class BiomeModel {
         const tableId = (ActSystem.isBloodMoon(currentHour) && this.battles.tables.bloodMoon)
             || this.battles.tables[timeOfDay] || this.battles.tables.day;
         if (!tableId) return null;
-        const spawnModel = SpawnTableFactory.generateBattle(tableId, difficulty, size);
+        const spawnModel = SpawnTableFactory.generateBattle(tableId, difficulty, { ...size, ambush: true });   // an ambush: AMBUSH_SIZE
         return spawnModel.hasEnemies() ? { enemies: spawnModel.enemies } : null;
     }
 

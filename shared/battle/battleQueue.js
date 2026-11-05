@@ -170,8 +170,10 @@ export function queueDeath(state, combatant) {
         );
 
         if (livingReserves.length > 0) {
-            // In a shared multiplayer fight every browser must make the same choice, so the party's reserve steps in by itself too
-            if (isParty && !state.mp) {
+            // The party chooses who steps in, as in a fight of one's own; in a shared fight the fallen character's owner does, and the other
+            // screens wait for their pick (BattleController.requestPartySwap). A duel's sides are each other's enemies, whose reserves step in
+            // by themselves, so in a duel both sides' do (or the two screens would choose differently).
+            if (isParty && !(state.mp && state.mp.kind === 'duel')) {
                 state.turnQueue.unshift({
                     type: TURN_TYPES.PROMPT_REINFORCEMENT,
                     slotIndex

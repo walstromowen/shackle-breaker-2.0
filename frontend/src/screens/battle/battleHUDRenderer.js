@@ -87,7 +87,8 @@ export class BattleHUDRenderer {
     // Frame-exact visibility flag
     const isBannerVisible = this.bannerAlpha > 0.0;
 
-    if (isCinematicPhase) {
+    // a shared fight: my picks are in and the others' are not yet; the box says who the fight is waiting for
+    if (isCinematicPhase || state.phase === 'WAIT_REMOTE') {
       // 2. Draw the dialogue box if there's a message,
       // BUT ONLY if the banner is completely faded out!
       if (state.message && !isBannerVisible) {

@@ -63,6 +63,8 @@ export class BattleController extends BaseController {
         if (context.mp) seedRandom(context.mp.seed); else unseedRandom();
         this.state = createBattleState(enemies, context);
         this._mySwaps = [];   // a shared fight: my swaps this round, held until every pick is in (_settleSwaps)
+        this._awaitReinforce = null;   // a shared fight: waiting for another player's pick of who steps in for their fallen fighter
+        this._reinforceIn = new Map(); // ... and those picks as they come (one can come before this screen gets there)
         if (context.mp) this._setupShared(context.mp);
 
         const preBattleActionsQueued = queueOpeningSequence(this.state);
@@ -218,6 +220,21 @@ export class BattleController extends BaseController {
             this.state.message = 'No swapping in a duel.';
             return;
         }
+        // a shared fight, a fighter has fallen: their owner picks who steps in; everyone else waits for that pick
+        if (isForced && mp) {
+            const fallen = this.state.activeParty[slotIndex];
+            const owner = fallen && fallen.netOwner;
+            if (owner !== mp.me) {
+                const key = `${slotIndex}:${fallen ? fallen.netId : ''}`;
+                this._awaitReinforce = { key, slotIndex, owner, t: 0 };
+                const here = multiplayerSocial.partyHere(mp.players);
+                if (!owner || !here.includes(owner)) { this._applyReinforce(null); return; }   // their owner has left: the first one standing
+                this.state.message = `Waiting for ${(mp.names || {})[owner] || 'your ally'} to choose who steps in…`;
+                const early = this._reinforceIn.get(key);
+                if (early) this._applyReinforce(early);
+                return;
+            }
+        }
         const activeIndices = this.state.activeParty
             .map(p => p ? this.state.partyRoster.indexOf(p) : -1)
             .filter(i => i !== -1);
@@ -262,8 +279,25 @@ export class BattleController extends BaseController {
         });
     }
 
+    /** A shared fight: the pick of who steps into a fallen fighter's place came from its owner (null: nobody answered, the first one standing). */
+    _applyReinforce(d) {
+        const s = this.state, w = this._awaitReinforce;
+        if (!s || !w) return;
+        this._awaitReinforce = null;
+        const free = (c) => c && !c.isDead() && !s.activeParty.includes(c) && !s.turnQueue.some(t => t.replacement === c);
+        let replacement = d ? this.byNet.get(d.replacement) : null;
+        if (!free(replacement)) replacement = s.partyRoster.find(free) || null;
+        s.isPausedForUI = false;
+        if (replacement) this._executeSwap(s.partyRoster.indexOf(replacement), true, w.slotIndex);
+    }
+
     _executeSwap(selectedRosterIndex, isForced, slotIndex) {
         const replacement = this.state.partyRoster[selectedRosterIndex];
+        // a shared fight: my pick for my fallen fighter's place goes to the others, who are waiting for it
+        if (this.state.mp && isForced) {
+            const fallen = this.state.activeParty[slotIndex];
+            multiplayerSocial.sendBattleDecision(this.state.mp, { round: this.state.mp.round, kind: 'reinforce', key: `${slotIndex}:${fallen ? fallen.netId : ''}`, replacement: replacement?.netId });
+        }
         if (this.state.mp && !isForced) {
             // a shared fight: sent, and kept until every pick is in, so every screen settles the swaps in the same order (_tryResolveShared)
             const d = { round: this.state.mp.round, actor: this.state.activeParty[slotIndex]?.netId, kind: 'swap', replacement: replacement?.netId, slotIndex };
@@ -316,6 +350,14 @@ export class BattleController extends BaseController {
     }
 
     update(dt) {
+        // a shared fight waiting on another player's pick of who steps into a fallen fighter's place: if they leave the world before
+        // answering, the first one standing steps in by itself (every screen sees them go, so every screen does the same)
+        if (this._awaitReinforce && this.state?.active) {
+            const w = this._awaitReinforce;
+            w.t += dt;
+            if (w.t >= 1) { w.t = 0; if (!multiplayerSocial.partyHere(this.state.mp.players).includes(w.owner)) this._applyReinforce(null); }
+            return;
+        }
         if (!this.state?.active || this.state.isPausedForUI) return;
 
         this.state.timer = this.timer;
@@ -457,7 +499,7 @@ export class BattleController extends BaseController {
         const missing = others.filter(c => !s.mp.decisions.has(`${s.mp.round}:${c.netId}`));
         if (missing.length) {
             const names = [...new Set(missing.map(c => (s.mp.names || {})[c.netOwner] || 'the other player'))];
-            s.message = `Waiting for ${names.join(' and ')}…`;
+            s.message = `Waiting for ${names.join(' and ')} to choose ${missing.length > 1 ? 'their actions' : 'an action'}…`;
             return;
         }
         // every pick is in: the same order on every screen (sortTurnQueue settles ties by network id)
@@ -524,6 +566,11 @@ export class BattleController extends BaseController {
     _onRemoteDecision(d) {
         const s = this.state;
         if (!s || !s.mp || !d || d.bid !== s.mp.bid) return;
+        if (d.kind === 'reinforce') {   // another player's pick of who steps into their fallen fighter's place
+            this._reinforceIn.set(d.key, d);
+            if (this._awaitReinforce && this._awaitReinforce.key === d.key) this._applyReinforce(d);
+            return;
+        }
         s.mp.decisions.set(`${d.round}:${d.actor}`, d);
         this._tryResolveShared();
     }
