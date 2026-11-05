@@ -377,15 +377,14 @@ export class MapRenderer {
         const sy = (A.firstRow[state] + dirIndex) * FH;
         const offX = Math.floor(((FW - TILE_SIZE) / 2 - shiftX) * scale);
         const dW = Math.ceil(FW * scale), dH = Math.ceil(FH * scale);
-        // going through a door or into a cave (OverworldController._startEntering): a little further up into the opening, darkening away
+        // going through a door or into a cave (OverworldController._startEntering): a little further up into the opening, standing in it, in its shadow
         const ent = entity.entering;
         const shiftY = ent ? Math.floor((ent.oy || 0) * scale) : 0;
         if (ent) dx += Math.floor((ent.ox || 0) * scale);
         const tileBottom = dy + Math.ceil(TILE_SIZE * scale) + shiftY; // the same screen line drawObject puts the bottom of a 1-tile object on, at any scale
         if (ent && ent.fade > 0) {
             this.ctx.save();
-            this.ctx.globalAlpha *= Math.max(0, 1 - ent.fade);
-            this.ctx.filter = `brightness(${Math.max(0, 1 - ent.fade * 0.8)})`;
+            this.ctx.filter = `brightness(${Math.max(0.3, 1 - ent.fade * 0.7)})`;   // in the doorway's shadow, still there
             this.ctx.drawImage(sprite, sx, sy, FW, FH, dx - offX, tileBottom - dH + Math.floor(feetPad * dH / FH), dW, dH);
             this.ctx.restore();
             entity._screenRect = null;

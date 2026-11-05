@@ -728,6 +728,16 @@ export const LootTableDefinitions = {
             { id: "bone", dropRate: 0.3, min: 1, max: 2 },
         ]
     },
+    "icecoil_drops": {
+        type: "independent",
+        items: [
+            { id: "leather", dropRate: 0.40, min: 1, max: 2 },
+            { id: "bone", dropRate: 0.35, min: 1, max: 2 },
+            { id: "stone", dropRate: 0.30, min: 1, max: 2 },
+            { id: "iron_ingot", dropRate: 0.08 },
+            { id: "insight_of_ice", dropRate: 0.04 },
+        ]
+    },
     "thunder_locust_drops": {
         type: "independent",
         items: [

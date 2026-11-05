@@ -894,7 +894,7 @@ export class OverworldController extends BaseController {
             stepOnObj.isAnimating = true;
             stepOnObj.currentFrame = 0;
             stepOnObj.animTimer = 0;
-            // the player steps up into the doorway as the door swings open, in front of it, and fades into the dark inside (the door's own
+            // the player steps up into the doorway as the door swings open, in front of it, and darkens in its shadow (the door's own
             // animation warps when it ends)
             this._startEntering((stepOnObj.frames || 4) * (stepOnObj.speed || 0.15), true, null);
             events.emit('PLAY_SFX', { id: 'door_open', volume: 0.6, pitch: 1.0 });
@@ -905,9 +905,9 @@ export class OverworldController extends BaseController {
         if (stepOnObj && !(stepOnObj.frames > 1) && stepOnObj.interaction?.type === 'WARP' && stepOnObj.interaction.walkIn) {
             this.isLocked = true;
             this.setAnimIdle();
-            // a cave mouth: the player walks on into it, behind its rock, and the darkness takes them before the warp
+            // a cave mouth: the player walks on up into it and stands in the entrance, darkened by its shadow, until the warp
             const warp = { ...stepOnObj.interaction, context: { col: stepOnObj.col, row: stepOnObj.row, objectId: stepOnObj.id } };
-            this._startEntering(ENTER_CAVE_SECONDS, false, () => events.emit('INTERACT', warp));
+            this._startEntering(ENTER_CAVE_SECONDS, true, () => events.emit('INTERACT', warp));
             return;
         }
 
@@ -1213,8 +1213,8 @@ export class OverworldController extends BaseController {
         };
     }
 
-    /* Going through a door or into a cave: for `seconds` the player walks on up into the opening (ENTER_LIFT of a tile) and darkens away; `above`
-       draws them in front of the object (a door, so they are seen stepping in) instead of behind it (a cave's rock, whose darkness swallows them).
+    /* Going through a door or into a cave: for `seconds` the player walks on up into the opening (ENTER_LIFT of a tile) and stands in it, seen
+       the whole time (in front of the door or the cave's rock), darkening in its shadow (MapRenderer: a darker figure, never a fading one).
        `then` runs when it is over (the cave's warp; a door warps when its own animation ends). MapRenderer.drawEntity reads player.entering. */
     _startEntering(seconds, above, then) {
         this._entering = { t: 0, dur: Math.max(0.1, seconds), above, then };
@@ -1230,7 +1230,7 @@ export class OverworldController extends BaseController {
         // on in the way they are walking: up into a door or a cave mouth, down through a house's way out
         const d = { UP: [0, -1], DOWN: [0, 1], LEFT: [-1, 0], RIGHT: [1, 0] }[String(this.player.direction || 'UP').toUpperCase()] || [0, -1];
         const step = ease * ENTER_LIFT * this.config.TILE_SIZE;
-        // seen walking in first (the door is open by then), darkening only over the last part of the way
+        // seen walking in first (the door is open by then), darkening in the shadow over the last part of the way
         const fade = Math.max(0, Math.min(1, (p - ENTER_FADE_FROM) / (1 - ENTER_FADE_FROM)));
         this.player.entering = { ox: d[0] * step, oy: d[1] * step, fade, above: e.above || d[1] > 0 };
         if (p >= 1 && e.then) { const then = e.then; e.then = null; then(); }

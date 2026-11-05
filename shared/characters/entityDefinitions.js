@@ -777,6 +777,34 @@ export const ENTITY_DEFINITIONS = {
         tags: [...BEAST_TEMPLATE.tags, "DESERT"]
     },
 
+    /* ICECOIL: the snowy mountains' serpent, coiled in the drifts: what the Dune Maw is to the desert (as common there), but cold-blooded and
+       magical: it bites, and spits ice. Some are bold enough to cow a party before the fight (spawnTableDefinitions: Intimidating, 1 in 4). */
+    "ICECOIL": {
+        ...BEAST_TEMPLATE,
+        name: "Icecoil",
+        level: 1,
+        spriteOverworld: "iceCoilPortrait",
+        spritePortrait: "iceCoilPortrait",
+        battlePortraitFramesFront: 32,
+        crySound: "duneMawCry",
+        deathSound: "duneMawCry",
+        attributes: {
+            ...BEAST_TEMPLATE.attributes,
+            vigor: 11, strength: 8, dexterity: 7, intelligence: 13, attunement: 6   // tools/playthroughSim.mjs MATCHUP: players win ~63% at level 4, ~75% at 8
+        },
+        baseStats: {
+            ...BEAST_TEMPLATE.baseStats,
+            maxHp: 19, maxStamina: 12, maxInsight: 30, speed: 6,
+            baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, slash: 4, pierce: 4, ice: 6, water: 3, fire: -3 },
+            baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, ice: 0.5, water: 0.2 },
+            baseAttack: { pierce: 5, ice: 6 }
+        },
+        currencyReward: { min: 8, max: 18 },
+        lootTableId: "icecoil_drops",
+        abilities: [...BEAST_TEMPLATE.abilities, "bite", "ice_shard", "frigid_gale"],
+        tags: [...BEAST_TEMPLATE.tags, "SNOWY_MOUNTAINS", "REPTILE"]
+    },
+
     "THUNDER_LOCUST": {
         ...BEAST_TEMPLATE,
         name: "Thunder Locust Swarm",

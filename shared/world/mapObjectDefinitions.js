@@ -169,8 +169,9 @@ export const MAP_OBJECTS_DEFINITIONS = {
     CRATE_SACK: { sheet: 'objCrateSack', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'SEARCH', lootTableId: 'container_crate_sack', name: 'crate of sacks' } },
     SACKS: { sheet: 'objSacks', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'SEARCH', lootTableId: 'container_sacks', name: 'sacks' } },
     POTTED_PLANT: { sheet: 'objPottedPlant', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
-    STOOL: { sheet: 'objStool', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
-    CHAIR: { sheet: 'objChair', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    /* stools and chairs can be walked over (not solid), and are drawn with the floor, under whoever steps on them */
+    STOOL: { sheet: 'objStool', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    CHAIR: { sheet: 'objChair', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
     SMALL_TABLE: { sheet: 'objSmallTable', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, light: { hasLight: true, radius: 3.5, color: '255, 190, 110', maxAlpha: 0.55, flickerSpeed: 0.12, flickerAmp: 0.25 } },
     TABLE_LONG: { sheet: 'objTableLong', spriteX: 0, spriteY: 0, width: 2, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 } },
     COUNTER: { sheet: 'objCounter', spriteX: 0, spriteY: 0, width: 2, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 } },

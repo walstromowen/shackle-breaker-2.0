@@ -239,7 +239,8 @@ export const SpawnTableDefinitions = {
                 nightmare: { minSize: 2, maxSize: 4 }
             },
             members: [
-                { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } }
+                { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } },
+                { id: 'ICECOIL', weight: 22, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } }   // as common as the Dune Maw in the desert (18% of ambushes)
             ]
         }, {
             // act 2: the trappers of the peaks hunt the roads
@@ -273,7 +274,8 @@ export const SpawnTableDefinitions = {
                 nightmare: { minSize: 2, maxSize: 4 }
             },
             members: [
-                { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } }
+                { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } },
+                { id: 'ICECOIL', weight: 22, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } }   // as common as the Dune Maw in the desert (18% of ambushes)
             ]
         }]
     },
@@ -395,7 +397,8 @@ export const SpawnTableDefinitions = {
                     nightmare: { minSize: 3, maxSize: 5 }
                 },
                 members: [
-                    { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 2 } } }
+                    { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 2 } } },
+                { id: 'ICECOIL', weight: 67, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } }   // as common as the Dune Maw in the desert (18% of ambushes)
                 ]
             },
             {
