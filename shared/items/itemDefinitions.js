@@ -30,11 +30,11 @@ export const ItemDefinitions = {
     statGrowth: {
       attack: { blunt: 1 }
     },
-    abilityUnlocks: {                    // a club teaches its bearer as it is upgraded
+    abilityUnlocks: {                    // a club teaches its bearer as it is upgraded (the newer attacks at the middle levels)
       2: ["rally"],
-      3: ["reckless_charge"],
-      4: ["wild_swing"],
-      5: ["guard_break"]
+      3: ["guard_break"],
+      4: ["reckless_charge"],
+      5: ["wild_swing"]
     },
     upgradeCosts: {
       2: { currency: 30, materials: { "hard_wood": 4, "soft_wood": 6 } },
@@ -61,7 +61,8 @@ export const ItemDefinitions = {
     },
     abilityUnlocks: {
       2: ["eviscerate"],
-      3: ["throw_poison_dagger"],
+      3: ["low_sweep"],
+      4: ["throw_poison_dagger"]
     },
     upgradeCosts: {
       2: { currency: 50, materials: { "hard_wood": 5, "stone": 10, "soft_wood": 10, "plant_fibers": 15 } },
@@ -87,10 +88,10 @@ export const ItemDefinitions = {
       attack: { pierce: 2, slash: 2 }
     },
     abilityUnlocks: {
-      2: ["cleave"],
-      3: ["flurry"],
-      4: ["low_sweep"],
-      5: ["leaping_slash"]
+      2: ["low_sweep"],
+      3: ["leaping_slash"],
+      4: ["cleave"],
+      5: ["flurry"]
     },
     upgradeCosts: {
       2: { currency: 50, materials: { "hard_wood": 5, "stone": 10, "soft_wood": 10, "plant_fibers": 15 } },
@@ -118,8 +119,9 @@ export const ItemDefinitions = {
     },
     abilityUnlocks: {
       2: ["cleave"],
-      3: ["wild_swing"],
-      4: ["leaping_slash"]
+      3: ["leaping_slash"],
+      4: ["wild_swing"],
+      5: ["guard_break"]
     },
     upgradeCosts: {
       2: { currency: 50, materials: { "hard_wood": 5, "stone": 10, "soft_wood": 10, "plant_fibers": 15 } },
@@ -140,6 +142,9 @@ export const ItemDefinitions = {
     requirements: { strength: 7, vigor: 6 },
     requirementGrowth: { strength: 2, vigor: 1 },
     grantedAbilities: ["strike"],
+    abilityUnlocks: {
+      2: ["guard_break"]                 // a pick through armour
+    },
     harvestTool: ["pickaxe"],            // objects that need it use interaction.tool: 'pickaxe'; it must be equipped
     maxLevel: 3,
     statGrowth: {
@@ -222,8 +227,9 @@ export const ItemDefinitions = {
       attack: { blunt: 4 }
     },
     abilityUnlocks: {
-      2: ["wild_swing"],
-      3: ["guard_break"]
+      2: ["guard_break"],
+      3: ["wild_swing"],
+      4: ["reckless_charge"]
     },
     upgradeCosts: {
       2: { currency: 50, materials: { "hard_wood": 5, "stone": 10, "soft_wood": 10, "plant_fibers": 15 } },
@@ -249,7 +255,9 @@ export const ItemDefinitions = {
       attack: { pierce: 2 }
     },
     abilityUnlocks: {
-      2: ["execute"]
+      2: ["low_sweep"],
+      3: ["execute"],
+      4: ["leaping_slash"]
     },
     upgradeCosts: {
       2: { currency: 50, materials: { "hard_wood": 5, "stone": 10, "soft_wood": 10, "plant_fibers": 15 } },
@@ -276,9 +284,9 @@ export const ItemDefinitions = {
       attack: { slash: 4, pierce: 1 }
     },
     abilityUnlocks: {
-      2: ["execute"],
-      3: ["low_sweep"],
-      4: ["whirlwind_slash"]
+      2: ["low_sweep"],
+      3: ["whirlwind_slash"],
+      4: ["execute"]
     },
     upgradeCosts: {
       2: { currency: 50, materials: { "hard_wood": 5, "stone": 10, "soft_wood": 10, "plant_fibers": 15 } },
@@ -304,10 +312,10 @@ export const ItemDefinitions = {
       attack: { slash: 4, pierce: 2 }
     },
     abilityUnlocks: {
-      2: ["cleave"],
-      3: ["execute"],
-      4: ["whirlwind_slash"],
-      5: ["leaping_slash"]
+      2: ["whirlwind_slash"],
+      3: ["leaping_slash"],
+      4: ["cleave"],
+      5: ["execute"]
     },
     upgradeCosts: {
       2: { currency: 50, materials: { "hard_wood": 5, "stone": 10, "soft_wood": 10, "plant_fibers": 15 } },
