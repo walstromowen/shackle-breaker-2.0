@@ -333,6 +333,7 @@ export class OverworldUIRenderer {
         case 'PICKUP': text = "Pick Up"; break;
         case 'HARVEST': text = "Harvest"; break;
         case 'WARP': text = "Enter"; break;
+        case 'GRAVE': text = "Dig Up"; break;
         case 'PLAYER': text = "Trade, Party, Duel"; break;
         case 'CRAFTING_STATION':
         case 'WORKSHOP': text = "Craft"; break;

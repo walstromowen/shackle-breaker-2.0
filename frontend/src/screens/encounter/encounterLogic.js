@@ -537,6 +537,10 @@ export class EncounterLogic {
                         }
                         // a shared encounter: every player's clock moves (they all play this result); the host keeps the world's clock, so when
                         // the host is not in this encounter the leader tells them (multiplayerSession: time_add)
+                        // a night's rest out in the open (a bonfire): where a beaten party wakes in a multiplayer world (SceneManager GAME_OVER)
+                        if (minutesToAdvance >= 4 * 60 && !gameState.world.isInterior && gameState.player) {
+                            gameState.player.respawn = { col: gameState.player.col, row: gameState.player.row };
+                        }
                         const sh = EncounterLogic.shared;
                         if (sh && sh.isLeader && EncounterLogic.onSharedTime) EncounterLogic.onSharedTime(minutesToAdvance, sh.players);
                         if (payload.hours) {

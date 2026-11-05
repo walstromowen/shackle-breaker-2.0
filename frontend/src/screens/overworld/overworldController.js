@@ -19,6 +19,7 @@ import { ActSystem } from '../../../../shared/story/actSystem.js';
 import { PartyFollowers } from './partyFollowers.js';
 import { multiplayerSession } from '../../engine/multiplayerSession.js';
 import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
+import { collectGrave } from '../../../../shared/world/graves.js';
 
 /* Multiplayer: the question box (another player's request, or what to do with the player in front of you), centred on the screen */
 const PROMPT = { w: 640, optH: 58, gap: 10, pad: 36 };
@@ -758,6 +759,16 @@ export class OverworldController extends BaseController {
             // --- Intercept item pickups so the game doesn't freeze! ---
             if (obj.interaction.type === 'PICKUP') {
                 this.processPickup(obj);
+                return;
+            }
+
+            // --- A grave a beaten party left behind (multiplayer): its owner digs up their bag and coin ---
+            if (obj.interaction.type === 'GRAVE') {
+                const r = collectGrave(this.worldManager, obj.col, obj.row, multiplayerSocial.me);
+                if (!r.ok) { this.showNotice(r.message, false); return; }
+                for (const { id, qty } of r.items) this.createItemToast(id, qty);
+                this.showNotice(r.message, true);
+                events.emit('PLAY_SFX', { id: UI_SFX.pickup, volume: 0.8, pitch: 1.0 });
                 return;
             }
 

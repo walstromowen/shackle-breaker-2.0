@@ -113,6 +113,8 @@ export const MAP_OBJECTS_DEFINITIONS = {
     /* AFTERMATH_REMAINS: a helmet on the ground with a sword through it, what an old battle left behind. Face it and interact to start the Aftermath encounter (biomeDefinitions.js PLAINS, its own band). */
     AFTERMATH_REMAINS: { sheet: 'objAftermath', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'aftermath' } },
     OLD_GRAVESTONE: { ...GRAVESTONE, interaction: { type: 'ENCOUNTER', id: 'old_gravestone', isRepeatable: false } },
+    /* PLAYER_GRAVE: where a multiplayer party fell, holding its bag and coin until its owner digs it up (world/graves.js). */
+    PLAYER_GRAVE: { ...GRAVESTONE, interaction: { type: 'GRAVE', isRepeatable: true } },
     MYSTERIOUS_ALTAR: { sheet: 'objMysteriousAltar', spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 3, h: 2 }, interaction: { type: 'ENCOUNTER', id: 'mysterious_altar' } },
     
     // --- HERBS --- (walk over them to pick them up, like the small rocks and the bones)

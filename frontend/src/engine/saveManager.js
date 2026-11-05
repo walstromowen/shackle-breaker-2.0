@@ -285,7 +285,8 @@ export const SaveManager = {
                 row: gameState.player.row,
                 direction: gameState.player.direction,
                 hotbar: gameState.player.hotbar || [],
-                buffs: gameState.player.buffs || {}
+                buffs: gameState.player.buffs || {},
+                respawn: gameState.player.respawn || null   // the last rest out in the open (multiplayer: where a beaten party wakes)
             }),
             world: {
                 time: world.time,
@@ -391,7 +392,8 @@ export const SaveManager = {
             row: data.player.row,
             direction: data.player.direction || 'DOWN',
             hotbar: data.player.hotbar || [],
-            buffs: data.player.buffs || {}
+            buffs: data.player.buffs || {},
+            respawn: data.player.respawn || null
         });
 
         const interior = data.world.interior && data.world.interior.savedOverworld ? data.world.interior : null;   // saved inside a house or cave

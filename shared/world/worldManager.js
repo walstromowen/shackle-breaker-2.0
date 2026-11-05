@@ -450,6 +450,14 @@ export class WorldManager {
         for (const chunkKey of reload) this._unloadChunk(chunkKey);
         return expired;
     }
+    /** A change that is not an object on a cell (what a grave holds, see world/graves.js): kept in the world's changes and sent to the other players.
+     *  undefined removes it. */
+    setChange(key, value) {
+        if (!gameState.world.changes) gameState.world.changes = {};
+        if (value === undefined) delete gameState.world.changes[key]; else gameState.world.changes[key] = value;
+        reportChange(key, value === undefined ? '__deleted__' : value);
+    }
+
     modifyWorld(col, row, newValue, explicitMapId = null) {
         const key = this._s(col, row, explicitMapId);
         gameState.world.changes[key] = newValue;

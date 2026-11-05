@@ -76,6 +76,7 @@ import { debugOverlay, DebugOverlayRenderer } from '../ui/debugOverlay.js';
 import { multiplayerSession } from './multiplayerSession.js';
 import { multiplayerSocial } from './multiplayerSocial.js';
 import { PARTY_SCALING } from '../../../shared/battle/spawnTableFactory.js';
+import { dropGrave } from '../../../shared/world/graves.js';
 
 export class SceneManager {
     constructor(canvas, assetLoader, config) {
@@ -286,21 +287,31 @@ export class SceneManager {
         events.on('GAME_OVER', () => {
             if (this.gameOverActive) return;
             this.gameOverActive = true;
-            // In a multiplayer world the title screen would mean leaving it (and for the host, closing it for everyone): the party is dragged
-            // back to its feet instead, a quarter of its health each, and carries on where it fell.
+            // In a multiplayer world the title screen would mean leaving it (and for the host, closing it for everyone). The party's bag and
+            // coin stay behind in a grave where it fell (world/graves.js: only its owner can dig it up), and the party wakes at its last rest
+            // point (a bonfire, a bedroll; the world's starting spot when it has never rested) with a quarter of its health.
             if (multiplayerSession.active) {
                 this.transitionRenderer.start(() => {
                     this.input.reset();
                     this.activeBattleBGM = null;
                     this.activeEncounterBGM = null;
+                    const p = gameState.player;
+                    const me = multiplayerSocial.me;
+                    const grave = this.worldManager ? dropGrave(this.worldManager, p.col, p.row, me, multiplayerSocial.nameOf(me)) : null;
                     for (const m of gameState.party.members || []) {
                         if (!m) continue;
                         if (m.clearAllStatusEffects) m.clearAllStatusEffects();
                         m.hp = Math.max(1, Math.ceil((m.maxHp || 1) / 4));
                     }
-                    multiplayerSession._say('Your party was beaten, but barely escaped with their lives.');
+                    if (gameState.world.isInterior) this._leaveInterior();
+                    const spot = p.respawn || this.worldManager.findSpawnPoint();
+                    this.overworldController.warpTo(spot.col, spot.row);
+                    this.overworldController.isLocked = false;
+                    this._prebuildWorld(spot.col, spot.row);
+                    multiplayerSession._say(grave
+                        ? `Your party was beaten. Your bag${grave.currency ? ` and ${grave.currency} coin` : ''} lie in a grave where you fell.`
+                        : 'Your party was beaten, but woke where it last rested.');
                     this.changeScene('overworld');
-                    if (this.overworldController) this.overworldController.isLocked = false;
                     this.gameOverActive = false;
                 }, 'fade', { speed: 0.5, color: '#000000' });
                 return;
@@ -455,6 +466,8 @@ export class SceneManager {
                 this.overworldController.isLocked = true;
                 events.emit('INTERACT', { type: 'ENCOUNTER', id: action.encounterId, context: action.context || {} });
             } else if (action.type === 'advance_time') {
+                // a rest out in the open is where a beaten party wakes in a multiplayer world (GAME_OVER)
+                if (!gameState.world.isInterior) gameState.player.respawn = { col: gameState.player.col, row: gameState.player.row };
                 // A bedroll: fade to black, move the clock while the screen is dark (the light, the music and the buffs follow it), fade back in. The player stays
                 // locked until the picture is back. Used from a menu, the fade covers the menu and the player is left as they were.
                 const onOverworld = this.currentScene === 'overworld';
@@ -519,23 +532,8 @@ export class SceneManager {
                         this.overworldController.warpTo(interiorSpawn.col, interiorSpawn.row);
                         this.overworldController.isLocked = false;
                     } else if (data.id === 'exit_interior') {
-                        const saved = gameState.world.savedOverworld;
+                        const saved = this._leaveInterior();
                         if (saved) {
-                            // Restore Overworld state
-                            gameState.seed = saved.seed;
-                            gameState.world.isInterior = false;
-                            gameState.world.interiorType = null;
-                            gameState.world.interiorId = null;
-                            gameState.world.interiorMapId = null;   // the interior map ends when you leave
-
-                            // Restore the overworld map
-                            this.worldManager = new WorldManager();
-                            
-                            // --- FIX: Restore the overworld map for ALL controllers! ---
-                            this.overworldController.worldManager = this.worldManager;
-                            this.encounterController.worldManager = this.worldManager;
-                            this.battleController.worldManager = this.worldManager;
-
                             this.overworldController.warpTo(saved.returnCol, saved.returnRow);
                             this.overworldController.isLocked = false;
                             this._prebuildWorld(saved.returnCol, saved.returnRow);
@@ -1003,6 +1001,25 @@ export class SceneManager {
 
     /** Builds the world around (col, row) while the screen is covered: a loading screen at the midpoint of the current transition (see
         WorldManager.prebuildSteps), so the first steps on a new, loaded or re-entered overworld do not stall on generating it. */
+
+    /** Out of the house or cave the party is in, onto the overworld it came from (the door or Escape Rope, and a defeat inside in a multiplayer
+     *  world): the world state and the map are put back. Returns the saved overworld ({ returnCol, returnRow }), or null when there is none. */
+    _leaveInterior() {
+        const saved = gameState.world.savedOverworld;
+        if (!saved) return null;
+        gameState.seed = saved.seed;
+        gameState.world.isInterior = false;
+        gameState.world.interiorType = null;
+        gameState.world.interiorId = null;
+        gameState.world.interiorMapId = null;   // the interior map ends when you leave
+        this.worldManager = new WorldManager();
+        // every controller gets the overworld map back
+        this.overworldController.worldManager = this.worldManager;
+        this.encounterController.worldManager = this.worldManager;
+        this.battleController.worldManager = this.worldManager;
+        return saved;
+    }
+
     _prebuildWorld(col, row) {
         const wm = this.worldManager;
         if (!wm || !wm.prebuildSteps || gameState.world.isInterior) return;
