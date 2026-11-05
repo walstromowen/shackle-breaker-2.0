@@ -15,19 +15,31 @@ import { rng, withoutSeed } from '../../../../shared/core/random.js';
 import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
 
 /* A party of several players in one encounter (EncounterController, engine/multiplayerSocial.js): every member's browser plays it with the
-   same roll (the leader's, sent with each choice) and the same seed, so every screen reaches the same outcome. What it gives the party is
-   every player's: healing, time passing, found items and coin (each player gets the whole find) and the XP for a successful roll. What
-   happens to the active character happens on its owner's browser; starting a fight, a recruit, a price, an object taken off the map are
-   the leader's (see notMine). */
+   same roll (the leader's, sent with each choice: the one who started it) and the same seed, so every screen reaches the same outcome. Who a
+   result is for (partyMode):
+     split   shared out among the players in it: XP (the roll's too), found coin, found items (each to one player, by the shared dice)
+     all     happens to each of them: anything for the "entire_party", time passing, quests and kills, and what an encounter marks
+             `party: 'all'` (the exploding chest, the poison mist, the altar's smoke and light, the obelisk's bad traits)
+     (none)  the active character's owner (what is aimed at {name}: a rock, a bite, a whisper, a moral choice, a good trait), or the leader
+             (starting a fight, a recruit, a shop, a price, an object taken off the map). */
 const LEADER_ONLY = new Set(['DESTROY_OBJECT', 'START_BATTLE', 'RECRUIT_CHARACTER', 'OPEN_SHOP', 'REMOVE_ITEM', 'TRIGGER_GAME_OVER']);
 const ABOUT_THE_ROLLER = new Set(['ADD_TRAIT', 'REMOVE_TRAIT', 'MODIFY_CORRUPTION', 'MODIFY_VITALS', 'APPLY_STATUS_EFFECT', 'TAKE_DAMAGE', 'AWARD_XP']);
 /* Whether this browser leaves a result to someone else. The active character (the one who rolls: any character in the party's line-up, the
    leader's lead to begin with, see EncounterController's switch) belongs to one player: what happens to them happens on that player's
    browser. What happens to the "entire_party" happens to every player's own party (XP included). The rest is the leader's. */
+export function partyMode(type, payload = {}) {
+    if (payload.party) return payload.party;
+    if (type === 'AWARD_XP' || type === 'ROLL_LOOT_TABLE' || type === 'GIVE_ITEM' || type === 'ADD_ITEM') return 'split';
+    if (type === 'MODIFY_CURRENCY') return (payload.amount || 0) > 0 ? 'split' : null;
+    if (type === 'ADVANCE_TIME' || type === 'START_QUEST' || type === 'RECORD_KILL') return 'all';
+    if (payload.target === 'entire_party') return 'all';
+    return null;
+}
 function notMine(type, payload) {
     const s = EncounterLogic.shared;
-    if (type === 'AWARD_XP' && payload.shared) return false;   // the XP for a roll: every player's (EncounterLogic.myRewardee)
-    if (ABOUT_THE_ROLLER.has(type)) return payload.target === 'entire_party' ? false : !EncounterLogic.isActiveOwner();
+    const mode = partyMode(type, payload);
+    if (mode === 'split' || mode === 'all') return false;   // every player's game plays it (its part of it)
+    if (ABOUT_THE_ROLLER.has(type)) return !EncounterLogic.isActiveOwner();
     if (LEADER_ONLY.has(type)) return !s.isLeader;
     if (type === 'MODIFY_CURRENCY') return (payload.amount || 0) < 0 && !s.isLeader;   // a price or a theft is the leader's
     return false;
@@ -100,14 +112,38 @@ export class EncounterLogic {
        choice), active: { owner, idx, entity }: the line-up character the encounter is about } */
     static shared = null;
 
-    /** How many of `qty` found items this player keeps: in a shared encounter every player gets the whole find (it is the party's reward, and
-     *  each player's own game holds their own bag). Battles still split their loot (BattleRewardSystem). */
-    static _keepOf(qty) { return qty; }
+    /** How many of `qty` found items this player keeps: each item goes to one player in the encounter, picked by the shared dice. */
+    static _keepOf(qty) {
+        const s = EncounterLogic.shared;
+        if (!s || !s.players || s.players.length < 2) return qty;
+        let kept = 0;
+        for (let i = 0; i < qty; i++) if (s.players[Math.floor(rng() * s.players.length)] === s.me) kept++;
+        return kept;
+    }
 
-    /** This player's part of `amount` found coin: all of it, on every player's game (see _keepOf). */
-    static _coinOf(amount) { return amount; }
+    /** This player's part of `amount` found coin: an even split, the odd coins to one player by the dice. */
+    static _coinOf(amount) {
+        const s = EncounterLogic.shared;
+        if (!s || !s.players || s.players.length < 2 || amount <= 0) return amount;
+        const each = Math.floor(amount / s.players.length);
+        const odd = s.players[Math.floor(rng() * s.players.length)];
+        return each + (odd === s.me ? amount - each * s.players.length : 0);
+    }
 
-    /** A shared encounter: the character of mine a reward for the whole party's roll goes to (the active one if it is mine, else my lead). */
+    /** This player's share of `amount` XP (split evenly, rounded up so nobody gets nothing). */
+    static _xpOf(amount) {
+        const s = EncounterLogic.shared;
+        if (!s || !s.players || s.players.length < 2) return amount;
+        return Math.max(1, Math.ceil(amount / s.players.length));
+    }
+
+    /** Who of mine a result is about: in a shared encounter, one marked for everyone (partyMode 'all') lands on the active character if
+     *  they are mine, else on my lead; otherwise only the active character's owner has one (activeMember). */
+    static subject(payload = {}) {
+        return EncounterLogic.shared && payload.party === 'all' ? EncounterLogic.myRewardee() : EncounterLogic.activeMember();
+    }
+
+    /** A shared encounter: the character of mine a reward for the whole party goes to (the active one if it is mine, else my lead). */
     static myRewardee() {
         return EncounterLogic.activeMember() || (gameState.party?.members || []).find(m => m && m.hp > 0) || null;
     }
@@ -168,8 +204,8 @@ export class EncounterLogic {
     static rollXpResult(dc) {
         const roller = EncounterLogic.rollerEntity();
         const amount = ExperienceSystem.rollXp(roller?.level || 1, dc);
-        // `shared`: in a party of players everyone shares a successful roll (EncounterLogic.myRewardee)
-        return amount > 0 ? { type: "AWARD_XP", payload: { amount, exact: true, target: "active_character", shared: true } } : null;
+        // in a party of players the XP is split among everyone in the encounter (partyMode 'split', EncounterLogic.myRewardee)
+        return amount > 0 ? { type: "AWARD_XP", payload: { amount, exact: true, target: "active_character" } } : null;
     }
 
     static selectOutcome(outcomes) {
@@ -336,7 +372,7 @@ export class EncounterLogic {
                     if (xpBase <= 0) break;
                     // the amounts are written for the early game: they grow with the level like an enemy's XP does (ExperienceSystem.scaleReward)
                     if (payload.target === "entire_party") {
-                        const xpAmount = payload.exact ? Math.round(xpBase) : ExperienceSystem.scaleReward(xpBase, PartyManager.getHighestLevel());
+                        const xpAmount = EncounterLogic._xpOf(payload.exact ? Math.round(xpBase) : ExperienceSystem.scaleReward(xpBase, PartyManager.getHighestLevel()));   // a shared encounter: split
                         gameState.party?.members?.forEach(m => {
                             if (ExperienceSystem.addXp(m, xpAmount)) {
                                 levelsGained.push(`${m.name} hit Lvl ${m.level}!`);
@@ -344,9 +380,10 @@ export class EncounterLogic {
                         });
                         xpEarned.push(`The party gained ${xpAmount} XP.`);
                     } else {
-                        const active = payload.shared && EncounterLogic.shared ? EncounterLogic.myRewardee() : EncounterLogic.activeMember();
+                        // a shared encounter: every player's share goes to their active character, or their lead (myRewardee)
+                        const active = EncounterLogic.shared ? EncounterLogic.myRewardee() : EncounterLogic.activeMember();
                         if (active) {
-                            const xpAmount = payload.exact ? Math.round(xpBase) : ExperienceSystem.scaleReward(xpBase, active.level);
+                            const xpAmount = EncounterLogic._xpOf(payload.exact ? Math.round(xpBase) : ExperienceSystem.scaleReward(xpBase, active.level));
                             if (ExperienceSystem.addXp(active, xpAmount)) {
                                 levelsGained.push(`${active.name} hit Lvl ${active.level}!`);
                             }
@@ -399,7 +436,7 @@ export class EncounterLogic {
                     break;
                 }
                 case "MODIFY_VITALS":
-                    const targetMembers = payload.target === "entire_party" ? (gameState.party?.members || []) : [EncounterLogic.activeMember()].filter(Boolean);
+                    const targetMembers = payload.target === "entire_party" ? (gameState.party?.members || []) : [EncounterLogic.subject(payload)].filter(Boolean);
                     targetMembers.forEach(char => {
                         let hpChange = payload.hp || 0;
                         let stamChange = payload.stamina || 0;
@@ -419,7 +456,7 @@ export class EncounterLogic {
                     });
                     break;
                 case "APPLY_STATUS_EFFECT": {
-                    const effectTargets = payload.target === "entire_party" ? (gameState.party?.members || []) : [EncounterLogic.activeMember()].filter(Boolean);
+                    const effectTargets = payload.target === "entire_party" ? (gameState.party?.members || []) : [EncounterLogic.subject(payload)].filter(Boolean);
                     effectTargets.forEach(char => {
                         PartyManager.applyStatusEffect(char, payload.effectId, payload.charges);
                         const effectName = (payload.effectId || "a status effect").replace(/_/g, ' ');
@@ -428,7 +465,7 @@ export class EncounterLogic {
                     break;
                 }
                 case "ADD_TRAIT": {
-                    const traitTargets = payload.target === "entire_party" ? (gameState.party?.members || []) : [EncounterLogic.activeMember()].filter(Boolean);
+                    const traitTargets = payload.target === "entire_party" ? (gameState.party?.members || []) : [EncounterLogic.subject(payload)].filter(Boolean);
                     traitTargets.forEach(char => {
                         const alreadyHasTrait = char.traits && char.traits.includes(payload.traitId);
                         if (char.addTrait && !alreadyHasTrait) {
@@ -440,7 +477,7 @@ export class EncounterLogic {
                     break;
                 }
                 case "REMOVE_TRAIT": {
-                    const removeTargets = payload.target === "entire_party" ? (gameState.party?.members || []) : [EncounterLogic.activeMember()].filter(Boolean);
+                    const removeTargets = payload.target === "entire_party" ? (gameState.party?.members || []) : [EncounterLogic.subject(payload)].filter(Boolean);
                     removeTargets.forEach(char => {
                         // { all: true } (or traitId "all") strips every trait the character has
                         if (payload.all || payload.traitId === "all") {
@@ -557,7 +594,7 @@ export class EncounterLogic {
                     // { amount, target: 'active_character' (the leader, the default) | 'entire_party' }: cruel or magical choices add, kind ones take away (CorruptionSystem).
                     // Reaching the top shackles the character (down, like a fainted one): another member steps to the front, and with nobody left standing it is the end.
                     const members = gameState.party?.members || [];
-                    const targets = payload.target === 'entire_party' ? [...members] : [EncounterLogic.activeMember()].filter(Boolean);
+                    const targets = payload.target === 'entire_party' ? [...members] : [EncounterLogic.subject(payload)].filter(Boolean);
                     targets.filter(Boolean).forEach(char => {
                         const change = CorruptionSystem.change(char, payload.amount || 0);
                         // Until the story reveals corruption (act 2) it builds quietly: nothing is said about it

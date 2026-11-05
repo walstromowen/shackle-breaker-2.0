@@ -132,7 +132,7 @@ export const mysteriousAltar = {
                         {
                             weight: 100,
                             results: [
-                                { type: "MODIFY_VITALS", payload: { stamina: -25, insight: -25, isPercentageOfCurrent: true, damageType: "true" } },
+                                { type: "MODIFY_VITALS", payload: { stamina: -25, insight: -25, isPercentageOfCurrent: true, damageType: "true", party: "all" } },   // the smoke reaches the whole party
                                 { type: "SET_CONTEXT_FLAG", payload: { flagId: "altar_approached" } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "at_the_altar" } }
                             ]
@@ -201,7 +201,7 @@ export const mysteriousAltar = {
                         {
                             weight: 100,
                             results: [
-                                { type: "MODIFY_VITALS", payload: { hp: 9999, stamina: 9999, insight: 9999, damageType: "true" } },
+                                { type: "MODIFY_VITALS", payload: { hp: 9999, stamina: 9999, insight: 9999, damageType: "true", party: "all" } },   // the light fills the whole area
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]

@@ -487,7 +487,7 @@ export class SceneManager {
 
         events.on('INTERACT', (data) => {
             if (data.type === 'ENCOUNTER') {
-                // a chest, a gravestone, a stranger, a line of sight... In a party of players it is the party's: every member sees it and votes
+                // a chest, a gravestone, a stranger, a line of sight... In a party of players, the ones near me are pulled in and vote; I lead it
                 // (the same shared encounter as a random one, START_ENCOUNTER below)
                 const mp = multiplayerSocial.sharesFights
                     ? multiplayerSocial.startPartyEncounter({ encounterId: data.id, context: data.context || {}, bgm: data.context?.bgm || null, quiet: true })
@@ -499,8 +499,6 @@ export class SceneManager {
                     this.changeScene('encounter', { bgm: customBGM });
                 }, 'fade');
             } else if (data.type === 'WARP') {
-                // a party of players goes through doors together: the leader's warp is sent to the others (multiplayerSocial grp_warp)
-                if (multiplayerSocial.isLeader) multiplayerSocial.sendGroupWarp(data);
                 events.emit('PLAY_SFX', { id: 'doorOpen', volume: 0.8 });
                 this.transitionRenderer.start(() => {
                     if (data.id === 'procedural_room_trigger') {
@@ -548,7 +546,7 @@ export class SceneManager {
 
         events.on('START_ENCOUNTER', (data) => {
             if (!data.quiet) events.emit('PLAY_SFX', { id: 'cinematicBoom', volume: 1.0 });   // quiet: an encounter the party walked up to (a chest...)
-            // a party of players: the leader's encounter is the party's, decided by vote (engine/multiplayerSocial.js, EncounterController)
+            // a party of players: an encounter I start pulls in the party near me (I lead it, everyone votes: engine/multiplayerSocial.js, EncounterController)
             const mp = data.mp || (multiplayerSocial.sharesFights ? multiplayerSocial.startPartyEncounter(data) : null);
             if (this.overworldController) this.overworldController.isLocked = true;
             this.transitionRenderer.start(() => {
@@ -605,9 +603,12 @@ export class SceneManager {
                 scaledEnemies.push(enemyEntity);
             }
             
-            // a party of several players: the leader's fight is everyone's (engine/multiplayerSocial.js), played on every member's screen
-            if (multiplayerSocial.sharesFights) {
-                multiplayerSocial.startPartyBattle(scaledEnemies, { background: data.background, bgm: data.bgm || (data.context && data.context.bgm) || null, noEscape: !!data.noEscape, betrayal: data.betrayal || null });
+            // a party of players: a fight I start pulls in the party near me (a fight out of a shared encounter: that encounter's players), played on
+            // every one of their screens (engine/multiplayerSocial.js)
+            const encMp = this.currentScene === 'encounter' && this.encounterController && this.encounterController.mp;
+            const fromEncounter = encMp && encMp.players && encMp.players.length > 1 ? encMp.players : null;
+            if (fromEncounter || multiplayerSocial.sharesFights) {
+                multiplayerSocial.startPartyBattle(scaledEnemies, { background: data.background, bgm: data.bgm || (data.context && data.context.bgm) || null, noEscape: !!data.noEscape, betrayal: data.betrayal || null, players: fromEncounter });
                 return;
             }
 

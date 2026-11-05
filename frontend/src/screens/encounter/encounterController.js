@@ -75,6 +75,7 @@ export class EncounterController extends BaseController {
       seedRandom(mp.seed);
       EncounterLogic.shared = { players: mp.players, me: mp.me, isLeader: !!mp.isLeader, roller: null, active: null };
       multiplayerSocial.encounterState = () => this;
+      multiplayerSocial.encounterPlayers = mp.players;   // while it lasts, a fight out of it is theirs (nearbyParty)
       // the party's line-up (every player's first characters, as for a fight): any of them can be the one the encounter is about
       this.mp.lineup = (mp.lineup || []).map(e => ({ owner: e.owner, idx: e.idx, entity: e.owner === mp.me ? gameState.party.members[e.idx] : hydrateEntity(e.data) }))
         .filter(e => e.entity);
@@ -1019,6 +1020,7 @@ export class EncounterController extends BaseController {
   _leaveShared() {
     if (!this.mp) return;
     this.mp = null;
+    multiplayerSocial.encounterPlayers = null;
     EncounterLogic.shared = null;
     unseedRandom();
   }

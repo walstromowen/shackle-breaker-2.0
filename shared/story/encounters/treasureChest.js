@@ -232,8 +232,9 @@ export const treasureChest = {
                         {
                             weight: 100,
                             results: [
-                                { type: "MODIFY_VITALS", payload: { hp: -25, damageType: "fire", target: "active_character" } },
-                                { type: "APPLY_STATUS_EFFECT", payload: { effectId: "burn", charges: 3, target: "active_character" } },
+                                // party: 'all' -- in a party of players the blast catches everyone standing round the chest
+                                { type: "MODIFY_VITALS", payload: { hp: -25, damageType: "fire", target: "active_character", party: "all" } },
+                                { type: "APPLY_STATUS_EFFECT", payload: { effectId: "burn", charges: 3, target: "active_character", party: "all" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
@@ -256,7 +257,7 @@ export const treasureChest = {
                         {
                             weight: 100,
                             results: [
-                                { type: "APPLY_STATUS_EFFECT", payload: { effectId: "poison", charges: 3, target: "active_character" } },
+                                { type: "APPLY_STATUS_EFFECT", payload: { effectId: "poison", charges: 3, target: "active_character", party: "all" } },   // the cloud reaches everyone
                                 { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "biome_default", rolls: 2, exclude: "low_tier" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }

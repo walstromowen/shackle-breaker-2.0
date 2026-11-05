@@ -23,11 +23,12 @@ const BAD_TRAITS = ["clumsy", "frail", "myopic", "superstitious", "lazy", "dull"
 const COMMON = 10;       // weight of each trait the stage favours (good traits after a success, bad traits after a failure)
 const RARE = 1;          // weight of each of the others: a small chance of the unexpected
 
-/* one outcome: the party member gains `traitId` and the obelisk is spent */
+/* one outcome: the party member gains `traitId` and the obelisk is spent. In a party of players a bad trait marks everyone who was there
+   (party: 'all'); a good one is only the toucher's. */
 const gain = (traitId, weight) => ({
   weight,
   results: [
-    { type: "ADD_TRAIT", payload: { traitId, target: "active_character" } },
+    { type: "ADD_TRAIT", payload: { traitId, target: "active_character", ...(BAD_TRAITS.includes(traitId) ? { party: "all" } : {}) } },
     { type: "DESTROY_OBJECT" },
     { type: "END_ENCOUNTER", payload: null }
   ]

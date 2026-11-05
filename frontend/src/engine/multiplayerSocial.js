@@ -33,7 +33,10 @@ import { serializeEntity, hydrateEntity, hydrateItem } from './saveManager.js';
 const REQUEST_SECONDS = 20;
 const CHAT_MAX = 200;   // characters in one chat line
 const MAX_GROUP = 3;
-const PARTY_SEND_EVERY = 4;   // seconds between a member's character updates to the leader (only when they changed)
+const PARTY_SEND_EVERY = 4;   // seconds between a player's character updates to the rest of their party (only when they changed)
+/* A party of players walks freely; a fight or an encounter one of them starts pulls in the others standing within this many tiles of them, on
+   the same map and out in the world (not in a menu, a fight or an encounter of their own). Those further off carry on as they were. */
+export const PARTY_PULL_RADIUS = 12;
 const KIND_TEXT = { trade: 'wants to trade with you.', party: 'invites you to their party.', duel: 'challenges you to a duel (nothing at stake).' };
 
 const newId = () => Math.random().toString(36).slice(2, 10);
@@ -47,13 +50,9 @@ class MultiplayerSocial {
         this.trade = null;           // the trade in progress (see openTrade)
         this.groups = new Map();     // leaderId -> [memberIds], as the leaders last said
         // the betrayal encounter can pick another player's shackled companion while we share fights (CorruptionSystem.pickAnyBetrayer)
-        CorruptionSystem.groupParties = () => {
-            if (!this.sharesFights) return [];
-            const g = this.groups.get(this.me) || [];
-            return g.filter(id => id !== this.me && this.groupParties.has(id)).map(id => ({ owner: id, members: this.groupParties.get(id) }));
-        };
-        this.groupParties = new Map();   // leader only: memberId -> their characters (serialized), for building a fight
-        this.trail = [];             // a member: the tiles the leader has stood on, newest first
+        CorruptionSystem.groupParties = () => this.nearbyParty().map(id => ({ owner: id, members: this.groupParties.get(id) }));
+        this.groupParties = new Map();   // the other players of my party -> their characters (serialized), for building a shared fight
+        this._partySentTo = new Set();   // who has my characters (a newcomer to the party gets them at once)
         this.battle = null;          // the shared fight this player is in: { bid, kind, players, ... }
         this.early = new Map();      // bid -> [picks] that came before the fight was set up
         this.duelBackup = null;      // my party as it was before a duel
@@ -68,13 +67,13 @@ class MultiplayerSocial {
         multiplayer.on('relay', (msg) => this._onRelay(msg.from, msg.data || {}));
         multiplayer.on('room', (room) => this._onRoom(room));
         multiplayer.on('closed', () => this.reset());
-        multiplayerSession.groupedProbe = () => !!this.myGroup();
+        multiplayerSession.groupedProbe = () => false;   // a party of players walks freely, each with their own party behind them
     }
 
     reset() {
         if (this.trade) this._closeTrade('The world closed, so the trade was called off.');
         this.prompt = null; this.outgoing = null; this.incoming = null;
-        this.groups.clear(); this.groupParties.clear(); this.trail = [];
+        this.groups.clear(); this.groupParties.clear();
     }
 
     get me() { return multiplayer.you ? multiplayer.you.id : null; }
@@ -121,7 +120,7 @@ class MultiplayerSocial {
         } else {
             this._send({ k: 'grp_leave' }, g.leader);
             this.groups.set(g.leader, g.members.filter(id => id !== this.me));
-            this.trail = [];
+            this.groupParties.clear();
             this._say(`You left ${this.nameOf(g.leader)}'s party.`);
         }
     }
@@ -135,25 +134,29 @@ class MultiplayerSocial {
         this._say(`${this.nameOf(id)} left the party.`);
     }
 
-    /** A member walks behind the leader: the tile they should be on, or null to stand (no party, or the leader is on another map). */
-    followTarget() {
+    /** The other players of my party (connected), anywhere in the world. */
+    partyPlayers() {
         const g = this.myGroup();
-        if (!g || g.leader === this.me || !multiplayerSession.active) return null;
-        const r = multiplayerSession.remotes.get(g.leader);
-        if (!r || !r.placed) return null;
-        const here = gameState.world.isInterior ? `INT_${gameState.world.interiorId}` : 'world';
-        if (r.map !== here) return null;
-        const head = this.trail[0];
-        if (!head || head.col !== r.col || head.row !== r.row) {
-            if (head && Math.abs(head.col - r.col) + Math.abs(head.row - r.row) > 3) this.trail = [];   // a jump (a door, fast travel)
-            this.trail.unshift({ col: r.col, row: r.row, dir: r.dir });
-            if (this.trail.length > 8) this.trail.length = 8;
-        }
-        const place = Math.max(1, g.members.indexOf(this.me) + 1);
-        return this.trail[place] || null;   // until the leader has walked that far there is no place behind them: stay put
+        if (!g || !multiplayerSession.active) return [];
+        return this.partyHere([g.leader, ...g.members].filter(id => id !== this.me));
     }
 
-    get isFollowing() { return this.isMember && multiplayerSession.active; }
+    /** The players of my party a fight or an encounter I start pulls in: on my map, out in the world, within PARTY_PULL_RADIUS tiles, and whose
+     *  characters I know (they send them every few seconds). */
+    nearbyParty() {
+        // in a shared encounter (and the fight it leads to), the players in it
+        if (this.encounterPlayers) return this.encounterPlayers.filter(id => id !== this.me && this.groupParties.has(id) && this.partyHere([id]).length);
+        const here = gameState.world.isInterior ? `INT_${gameState.world.interiorId}` : 'world';
+        const me = gameState.player;
+        return this.partyPlayers().filter(id => {
+            const r = multiplayerSession.remotes.get(id);
+            if (!r || !r.placed || r.map !== here || (r.scene && r.scene !== 'overworld') || !this.groupParties.has(id)) return false;
+            return Math.max(Math.abs(r.col - me.col), Math.abs(r.row - me.row)) <= PARTY_PULL_RADIUS;
+        });
+    }
+
+    /** Party members used to walk behind their leader; they keep their own feet now (every player explores, picks up and interacts). */
+    get isFollowing() { return false; }
 
     // ================================================================ REQUESTS
     /** The menu for the player standing in front of me. */
@@ -211,7 +214,7 @@ class MultiplayerSocial {
         this._send(ans, q.from);
         if (!ok) return;
         if (q.kind === 'trade') this.openTrade(q.from);
-        if (q.kind === 'party') { this.trail = []; this._lastPartyJson = ''; this._say(`You joined ${this.nameOf(q.from)}'s party.`); }
+        if (q.kind === 'party') { this._lastPartyJson = ''; this._say(`You joined ${this.nameOf(q.from)}'s party.`); }
         if (q.kind === 'duel') this._say(`The duel with ${this.nameOf(q.from)} begins!`);
     }
 
@@ -338,39 +341,23 @@ class MultiplayerSocial {
     }
 
     // ================================================================ SHARED FIGHTS
-    /** The leader of a party with its members here: their fights are shared. */
-    get sharesFights() {
-        const g = this.groups.get(this.me);
-        return !!g && g.some(id => this.groupParties.has(id)) && multiplayerSession.active;
-    }
+    /** Anyone of my party near enough to be pulled into a fight or an encounter I start (nearbyParty). */
+    get sharesFights() { return this.nearbyParty().length > 0; }
 
     /** How many fighters a fight will face the enemy with (1-3), for the size of the group that spawns: in a party of players it is the
      *  shared line-up, otherwise this player's own party (PartyManager.getFighterCount). */
     fighterCount() {
-        if (!this.sharesFights) return PartyManager.getFighterCount();
-        const g = this.groups.get(this.me) || [];
-        const ids = [this.me, ...g.filter(id => this.groupParties.has(id))];
+        const near = this.nearbyParty();
+        if (!near.length) return PartyManager.getFighterCount();
+        const ids = [this.me, ...near];
         const parties = { [this.me]: gameState.party.members };
         for (const id of ids) if (id !== this.me) parties[id] = this.groupParties.get(id) || [];
         const lineup = buildLineup(ids.map(id => ({ id, members: parties[id].map(m => ({ alive: living(m) })) })));
         return Math.max(1, Math.min(3, lineup.length));
     }
 
-    /** The leader went through a door (into a house or cave, or back out): the party comes along (grp_warp, the same warp on their game). */
-    sendGroupWarp(data) {
-        const g = this.myGroup();
-        if (!g || g.leader !== this.me || !multiplayerSession.active) return;
-        const warp = { type: data.type, id: data.id, roomType: data.roomType || null, context: data.context || {} };
-        for (const id of this.partyHere(g.members)) this._send({ k: 'grp_warp', warp }, id);
-        this.trail = [];
-    }
-
     /** How many players share this player's fights (1 alone or outside a party of players). */
-    playerCount() {
-        if (!this.sharesFights) return 1;
-        const g = this.groups.get(this.me) || [];
-        return 1 + g.filter(id => id !== this.me && this.groupParties.has(id)).length;
-    }
+    playerCount() { return 1 + this.nearbyParty().length; }
 
     /** { fighters, players } for the spawn tables (SpawnTableFactory.generateBattle). */
     partySize() { return { fighters: this.fighterCount(), players: this.playerCount() }; }
@@ -385,10 +372,10 @@ class MultiplayerSocial {
         return CorruptionSystem.turnFoe(hydrateEntity(data));
     }
 
-    /** The leader's fight (sceneManager START_BATTLE): the party's line-up against these enemies, on every member's browser too. */
-    startPartyBattle(enemies, { background = null, bgm = null, noEscape = false, betrayal = null } = {}) {
-        const g = this.groups.get(this.me) || [];
-        const ids = [this.me, ...g.filter(id => this.groupParties.has(id))];
+    /** A fight I start (sceneManager START_BATTLE) with my party near me (or `players`: the ones in the encounter it came out of): our
+     *  line-up against these enemies, on every one of their screens too. I am its authority. */
+    startPartyBattle(enemies, { background = null, bgm = null, noEscape = false, betrayal = null, players = null } = {}) {
+        const ids = [this.me, ...(players ? players.filter(id => id !== this.me && this.groupParties.has(id) && this.partyHere([id]).length) : this.nearbyParty())];
         const parties = { [this.me]: gameState.party.members.map(serializeEntity) };
         for (const id of ids) if (id !== this.me) parties[id] = this.groupParties.get(id);
         const lineup = buildLineup(ids.map(id => ({ id, members: parties[id].map(m => ({ alive: living(m) })) })));
@@ -465,8 +452,8 @@ class MultiplayerSocial {
     /* ---- shared encounters: the leader's encounter, played on every member's screen, decided by vote (EncounterController) ---- */
     /** The leader opens an encounter: the members open it too. Returns the leader's own part of it, for EncounterController.start. */
     startPartyEncounter(data) {
-        const g = this.groups.get(this.me) || [];
-        const players = [this.me, ...this.partyHere(g)];
+        // the one who started it leads it (their roll, their tie-break); the party near them is pulled in and votes
+        const players = [this.me, ...this.nearbyParty()];
         const eid = newId(), seed = (Math.random() * 0xffffffff) >>> 0;
         // the line-up, as for a fight: every player's first characters (3 each for two players, 2 each for three), the leader's lead first.
         // Any of them can step forward (a switch is voted on), and each screen shows the one who did.
@@ -543,7 +530,7 @@ class MultiplayerSocial {
                 const before = this.myGroup();
                 this._setGroup(from, Array.isArray(d.members) ? d.members : []);
                 const after = this.myGroup();
-                if (before && before.leader === from && !after) { this.trail = []; this._say(`You are no longer in ${this.nameOf(from)}'s party.`); }
+                if (before && before.leader === from && !after) { this.groupParties.clear(); this._say(`You are no longer in ${this.nameOf(from)}'s party.`); }
                 break;
             }
             case 'grp_leave': {
@@ -551,19 +538,9 @@ class MultiplayerSocial {
                 if (g && g.includes(from)) this.removeFromGroup(from);
                 break;
             }
-            case 'grp_warp': {
-                // my leader went through a door: through it with them (the room is the same for everyone: it is keyed by the door)
+            case 'grp_party': {   // another player of my party's characters (every player of a party sends theirs to the others)
                 const g = this.myGroup();
-                if (g && g.leader === from && d.warp && d.warp.type === 'WARP' && !this.battle && multiplayerSession.active) {
-                    this.trail = [];
-                    this.prompt = null;
-                    events.emit('INTERACT', { ...d.warp, fromLeader: true });
-                }
-                break;
-            }
-            case 'grp_party': {
-                const g = this.groups.get(this.me);
-                if (g && g.includes(from) && Array.isArray(d.members)) this.groupParties.set(from, d.members);
+                if (g && (g.leader === from || g.members.includes(from)) && Array.isArray(d.members)) this.groupParties.set(from, d.members);
                 break;
             }
             case 'chat': {
@@ -617,14 +594,20 @@ class MultiplayerSocial {
             this.prompt = null;
             if (this.incoming) { this._send({ k: 'rq_ans', rid: this.incoming.rid, ok: false, why: 'timeout' }, this.incoming.from); this.incoming = null; }
         }
-        const g = this.myGroup();
-        if (g && g.leader !== this.me && !this.battle) {
+        // my characters, to every other player of my party (any of us can start a fight that pulls the others in)
+        const others = this.partyPlayers();
+        if (others.length && !this.battle) {
             this._t.party += dt;
             if (this._t.party >= PARTY_SEND_EVERY) {
                 this._t.party = 0;
                 const members = gameState.party.members.map(serializeEntity);
                 const json = JSON.stringify(members);
-                if (json !== this._lastPartyJson) { this._lastPartyJson = json; this._send({ k: 'grp_party', members }, g.leader); }
+                const newcomer = others.some(id => !this._partySentTo.has(id));
+                if (json !== this._lastPartyJson || newcomer) {
+                    this._lastPartyJson = json;
+                    this._partySentTo = new Set(others);
+                    for (const id of others) this._send({ k: 'grp_party', members }, id);
+                }
             }
         }
     }

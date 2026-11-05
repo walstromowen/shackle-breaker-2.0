@@ -462,22 +462,6 @@ export class OverworldController extends BaseController {
     }
 
     /* A party member walks behind the leader, on the tiles the leader walked: a step at a time while close, running to catch up, a jump when far. */
-    _followLeader() {
-        const t = multiplayerSocial.followTarget();
-        if (!t) return;
-        const { TILE_SIZE } = this.config;
-        const col = Math.round(this.player.x / TILE_SIZE), row = Math.round(this.player.y / TILE_SIZE);
-        const dx = t.col - col, dy = t.row - row, far = Math.abs(dx) + Math.abs(dy);
-        if (far === 0) return;
-        if (far > 4) { this.warpTo(t.col, t.row); return; }
-        const sx = Math.abs(dx) >= Math.abs(dy) ? Math.sign(dx) : 0, sy = sx === 0 ? Math.sign(dy) : 0;
-        this.player.direction = sx > 0 ? 'RIGHT' : sx < 0 ? 'LEFT' : sy > 0 ? 'DOWN' : 'UP';
-        const nx = this.player.x + sx * TILE_SIZE, ny = this.player.y + sy * TILE_SIZE;
-        if (!this.isSpaceFree(nx, ny)) { this.warpTo(t.col, t.row); return; }
-        this.startMove(nx, ny);
-        if (far > 1) { this.player.isRunning = true; this.player.animState = 'run'; }
-    }
-
     _promptKey(code, e) {
         const p = multiplayerSocial.prompt;
         const intent = this.resolveIntent(code, e);
@@ -752,7 +736,6 @@ export class OverworldController extends BaseController {
         // another player in front of you: trade, party up or duel (engine/multiplayerSocial.js)
         const other = this._playerInFront();
         if (other) { this.playConfirmSound(); multiplayerSocial.openPlayerMenu(other); return; }
-        if (multiplayerSocial.isFollowing) return;   // in someone's party, the leader does the exploring
         const obj = this.getFacedObject();
         if (obj && obj.interaction) {
             console.log(`[Overworld] Interacting with ${obj.id} at ${obj.col},${obj.row}`);
@@ -800,7 +783,6 @@ export class OverworldController extends BaseController {
 
     checkForNewMove() {
         if (multiplayerSocial.prompt) return;
-        if (multiplayerSocial.isFollowing) { this._followLeader(); return; }
         const dir = this.input.direction;
         if (!dir) return;
 
@@ -900,12 +882,8 @@ export class OverworldController extends BaseController {
         if (stepOnObj && stepOnObj.interaction?.type === 'PICKUP' && !stepOnObj.isFading) {
             this.processPickup(stepOnObj);
         }
-        // A party member following the leader walks the same tiles, but the doors and encounters there are the leader's: the leader's warp
-        // brings the party through with it (multiplayerSocial grp_warp), and the leader's step opens an encounter for everyone (sceneManager
-        // INTERACT), so a follower's step never sets either off on its own.
-        const following = multiplayerSocial.isFollowing;
         // Existing Warp logic
-        if (!following && stepOnObj && stepOnObj.frames > 1 && stepOnObj.interaction?.type === 'WARP') {
+        if (stepOnObj && stepOnObj.frames > 1 && stepOnObj.interaction?.type === 'WARP') {
             this.isLocked = true;
             stepOnObj.isAnimating = true;
             stepOnObj.currentFrame = 0;
@@ -915,7 +893,7 @@ export class OverworldController extends BaseController {
         }
 
         // Walk-in warps (cave mouths, `walkIn: true` on the WARP): a single-frame object has no door to open, so stepping onto its doorway cell warps at once
-        if (!following && stepOnObj && !(stepOnObj.frames > 1) && stepOnObj.interaction?.type === 'WARP' && stepOnObj.interaction.walkIn) {
+        if (stepOnObj && !(stepOnObj.frames > 1) && stepOnObj.interaction?.type === 'WARP' && stepOnObj.interaction.walkIn) {
             this.isLocked = true;
             this.setAnimIdle();
             events.emit('INTERACT', { ...stepOnObj.interaction, context: { col: stepOnObj.col, row: stepOnObj.row, objectId: stepOnObj.id } });
@@ -924,7 +902,7 @@ export class OverworldController extends BaseController {
 
         // Walk-in encounters (`walkIn: true` on an ENCOUNTER, e.g. ANIMAL_TRACKS): stepping onto the object starts the encounter, no need to face it and press interact.
         // The object is not solid, so you are standing on its tile; INTERACT carries its col / row / id as the encounter context (DESTROY_OBJECT uses it).
-        if (!following && stepOnObj && !stepOnObj.isFading && stepOnObj.interaction?.type === 'ENCOUNTER' && stepOnObj.interaction.walkIn) {
+        if (stepOnObj && !stepOnObj.isFading && stepOnObj.interaction?.type === 'ENCOUNTER' && stepOnObj.interaction.walkIn) {
             this.isLocked = true;
             this.setAnimIdle();
             events.emit('INTERACT', { ...stepOnObj.interaction, context: { col: stepOnObj.col, row: stepOnObj.row, objectId: stepOnObj.id } });
@@ -932,7 +910,7 @@ export class OverworldController extends BaseController {
         }
 
         // Lines of sight (`triggerLine` on an ENCOUNTER, e.g. PECULIAR_SCARECROW): stepping onto the cells it sees (5 tiles beneath its base) starts the encounter
-        if (!following && this.checkEncounterZones()) return;
+        if (this.checkEncounterZones()) return;
 
         this.checkTileEvents();
         this.validateBiomeWeather();
@@ -1006,12 +984,13 @@ export class OverworldController extends BaseController {
     }
 
     checkTileEvents() {
-        if (multiplayerSocial.isFollowing) return;   // a party member's ambushes and encounters are the leader's
         const col = Math.floor(this.player.x / this.config.TILE_SIZE);
         const row = Math.floor(this.player.y / this.config.TILE_SIZE);
         const biome = this.worldManager.getBiomeAt(col, row);
         const currentHour = gameState.world.time / 60;
-        const encounterData = biome.getEncounter(currentHour);
+        // a party of players: every one of them rolls as they walk, so each roll is that much rarer (BiomeModel.getBattle)
+        const rateScale = 1 / (1 + multiplayerSocial.partyPlayers().length);
+        const encounterData = biome.getEncounter(currentHour, rateScale);
 
         if (encounterData) {
             console.log(`[Overworld] Encounter triggered in ${biome.id} at hour ${Math.floor(currentHour)}: ${encounterData.id}!`);
@@ -1028,7 +1007,7 @@ export class OverworldController extends BaseController {
 
         const difficulty = gameState.difficulty || 'normal';
         // the hour picks the day / dusk / night (and blood moon) spawn table; the party's size, how big the group is
-        const battleData = biome.getBattle(difficulty, currentHour, multiplayerSocial.partySize());
+        const battleData = biome.getBattle(difficulty, currentHour, multiplayerSocial.partySize(), rateScale);
         if (!battleData) return;
 
         console.log(`[Overworld] Ambush triggered in biome: ${biome.id} on ${difficulty} difficulty!`);
@@ -1179,9 +1158,8 @@ export class OverworldController extends BaseController {
         }
 
         return {
-            // in a party of players each player walks the map as their lead character alone (the party's line is the players), so the
-            // followers of one's own party stay out of sight until the party splits up
-            entities: [this.player, ...(multiplayerSocial.myGroup() ? [] : this.followers.entities), ...this._otherPlayers()],   // the player, then the two party members who follow (MapRenderer draws the ones that are on their feet)
+            // every player walks with their own party behind them (a party of players moves freely: engine/multiplayerSocial.js)
+            entities: [this.player, ...this.followers.entities, ...this._otherPlayers()],   // the player, then the two party members who follow (MapRenderer draws the ones that are on their feet)
             camera: this.camera,
             worldManager: this.worldManager, // the minimap reads the terrain around the player from it
             worldInfo: this.getWorldInfo(), // the status plaque: biome, day, clock, weather

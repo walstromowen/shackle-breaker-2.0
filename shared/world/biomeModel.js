@@ -85,7 +85,9 @@ export class BiomeModel {
 
     /* `size` = { fighters, players }: how many the party can put on the field (1-3) and how many players share it; a bigger party meets
        a bigger group (SpawnTableFactory, PARTY_SCALING). */
-    getBattle(difficulty = 'normal', currentHour = 12, size = {}) {
+    /* `rateScale`: a party of players walks as several, each step of each player able to set off an ambush that pulls the others in, so each one's
+       chance is divided by how many there are (1 / players): together they meet fights about as often as one player alone. */
+    getBattle(difficulty = 'normal', currentHour = 12, size = {}, rateScale = 1) {
         if (!this.battles || !this.battles.tables) return null;
         const timeOfDay = this.getTimeOfDay(currentHour);
         // Out in the open an ambush is one step in 200 by day (and at dusk) and one in 100 at night, in every biome (OUTDOOR_BATTLE_RATE); a blood
@@ -95,7 +97,7 @@ export class BiomeModel {
             ? this.battles.rate * ActSystem.getBattleRateMultiplier(currentHour)
             : (timeOfDay === 'night' ? OUTDOOR_BATTLE_RATE.night : OUTDOOR_BATTLE_RATE.day)
                 * (ActSystem.isBloodMoon(currentHour) ? ActSystem.getBattleRateMultiplier(currentHour) : 1);
-        if (!(this.battles.rate > 0) || Math.random() > rate) return null;
+        if (!(this.battles.rate > 0) || Math.random() > rate * rateScale) return null;
         // A blood moon night has a table of its own (`tables.bloodMoon`), the dead and the cursed that rise under it
         const tableId = (ActSystem.isBloodMoon(currentHour) && this.battles.tables.bloodMoon)
             || this.battles.tables[timeOfDay] || this.battles.tables.day;
@@ -110,10 +112,10 @@ export class BiomeModel {
         return 'dusk';
     }
 
-    getEncounter(currentHour) {
+    getEncounter(currentHour, rateScale = 1) {   // rateScale: as for getBattle
         // Updated to read directly from the biome's inline encounter pools
         if (!this.encounters || !(this.encounters.rate > 0)) return null;
-        if (Math.random() > this.encounters.rate) return null;
+        if (Math.random() > this.encounters.rate * rateScale) return null;
         const timeOfDay = this.getTimeOfDay(currentHour);
         // Filter out encounters that don't match the current time
         // A pool can be limited to some acts with `minAct` / `maxAct` (an encounter that only exists after, or only before, a milestone)
