@@ -44,6 +44,11 @@ const MENU_KEYS = {
 };
 const keyLabel = (code) => (code === 'Escape' ? 'Esc' : code.replace(/^Key|^Digit/, ''));
 
+/* Going through a door or into a cave mouth: how far up into the opening the player walks before the warp (in tiles), and how long a cave takes. */
+const ENTER_LIFT = 0.6;
+const ENTER_CAVE_SECONDS = 0.6;
+const ENTER_FADE_FROM = 0.55;   // the part of the way in (0..1) after which the player starts to darken away
+
 export class OverworldController extends BaseController {
     constructor(input, config, worldManager) {
         super(input);
@@ -396,6 +401,7 @@ export class OverworldController extends BaseController {
         this.validateBiomeWeather(); // every frame: the weather must fit the biome the player stands in even when no step ends (a warp, standing still)
         this.checkEnvironmentMusic();
         if (!this.encounterZones) this.encounterZones = this.findEncounterZones(gameState.player.col, gameState.player.row); // standing in a zone when the world opens: it does not fire
+        this._updateEntering(dt);
 
         this.worldManager.getActiveObjects().forEach(obj => {
             if (obj.isAnimating) {
@@ -888,6 +894,9 @@ export class OverworldController extends BaseController {
             stepOnObj.isAnimating = true;
             stepOnObj.currentFrame = 0;
             stepOnObj.animTimer = 0;
+            // the player steps up into the doorway as the door swings open, in front of it, and fades into the dark inside (the door's own
+            // animation warps when it ends)
+            this._startEntering((stepOnObj.frames || 4) * (stepOnObj.speed || 0.15), true, null);
             events.emit('PLAY_SFX', { id: 'door_open', volume: 0.6, pitch: 1.0 });
             return;
         }
@@ -896,7 +905,9 @@ export class OverworldController extends BaseController {
         if (stepOnObj && !(stepOnObj.frames > 1) && stepOnObj.interaction?.type === 'WARP' && stepOnObj.interaction.walkIn) {
             this.isLocked = true;
             this.setAnimIdle();
-            events.emit('INTERACT', { ...stepOnObj.interaction, context: { col: stepOnObj.col, row: stepOnObj.row, objectId: stepOnObj.id } });
+            // a cave mouth: the player walks on into it, behind its rock, and the darkness takes them before the warp
+            const warp = { ...stepOnObj.interaction, context: { col: stepOnObj.col, row: stepOnObj.row, objectId: stepOnObj.id } };
+            this._startEntering(ENTER_CAVE_SECONDS, false, () => events.emit('INTERACT', warp));
             return;
         }
 
@@ -1202,8 +1213,33 @@ export class OverworldController extends BaseController {
         };
     }
 
+    /* Going through a door or into a cave: for `seconds` the player walks on up into the opening (ENTER_LIFT of a tile) and darkens away; `above`
+       draws them in front of the object (a door, so they are seen stepping in) instead of behind it (a cave's rock, whose darkness swallows them).
+       `then` runs when it is over (the cave's warp; a door warps when its own animation ends). MapRenderer.drawEntity reads player.entering. */
+    _startEntering(seconds, above, then) {
+        this._entering = { t: 0, dur: Math.max(0.1, seconds), above, then };
+        this.player.entering = { ox: 0, oy: 0, fade: 0, above };
+    }
+
+    _updateEntering(dt) {
+        const e = this._entering;
+        if (!e) return;
+        e.t += dt;
+        const p = Math.min(1, e.t / e.dur);
+        const ease = p * p * (3 - 2 * p);
+        // on in the way they are walking: up into a door or a cave mouth, down through a house's way out
+        const d = { UP: [0, -1], DOWN: [0, 1], LEFT: [-1, 0], RIGHT: [1, 0] }[String(this.player.direction || 'UP').toUpperCase()] || [0, -1];
+        const step = ease * ENTER_LIFT * this.config.TILE_SIZE;
+        // seen walking in first (the door is open by then), darkening only over the last part of the way
+        const fade = Math.max(0, Math.min(1, (p - ENTER_FADE_FROM) / (1 - ENTER_FADE_FROM)));
+        this.player.entering = { ox: d[0] * step, oy: d[1] * step, fade, above: e.above || d[1] > 0 };
+        if (p >= 1 && e.then) { const then = e.then; e.then = null; then(); }
+    }
+
     warpTo(col, row) {
         const { TILE_SIZE } = this.config;
+        this._entering = null;          // through the door: standing in the room (or out) as anyone would
+        this.player.entering = null;
         gameState.player.col = col;
         gameState.player.row = row;
         this.player.x = col * TILE_SIZE;

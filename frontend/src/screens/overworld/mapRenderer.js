@@ -159,6 +159,7 @@ export class MapRenderer {
             if (!this.renderList[renderIdx]) this.renderList[renderIdx] = {};
             const item = this.renderList[renderIdx++];
             item.y = (renderY + entityHitboxBottom * TILE_SIZE) * scale;
+            if (entity.entering && entity.entering.above) item.y += TILE_SIZE * scale;   // stepping through a door: in front of it
             item.type = 'ENTITY';
             item.data = entity;
         }
@@ -350,7 +351,7 @@ export class MapRenderer {
         const scale = GAME_SCALE * this.resScale;
         const renderX = entity.prevX !== undefined ? entity.prevX + (entity.x - entity.prevX) * interpolationFactor : entity.x;
         const renderY = entity.prevY !== undefined ? entity.prevY + (entity.y - entity.prevY) * interpolationFactor : entity.y;
-        const dx = Math.floor((renderX - camera.x) * scale);
+        let dx = Math.floor((renderX - camera.x) * scale);
         const dy = Math.floor((renderY - camera.y) * scale);
         /* A character frame can be bigger than a tile (e.g. 64 x 64). entity.x / y stay the tile the character stands on, so collision, the hitbox and
            the depth sort do not change; the frame is only DRAWN around that tile: centred sideways, with the lowest drawn pixel of the sprite on the
@@ -376,7 +377,20 @@ export class MapRenderer {
         const sy = (A.firstRow[state] + dirIndex) * FH;
         const offX = Math.floor(((FW - TILE_SIZE) / 2 - shiftX) * scale);
         const dW = Math.ceil(FW * scale), dH = Math.ceil(FH * scale);
-        const tileBottom = dy + Math.ceil(TILE_SIZE * scale); // the same screen line drawObject puts the bottom of a 1-tile object on, at any scale
+        // going through a door or into a cave (OverworldController._startEntering): a little further up into the opening, darkening away
+        const ent = entity.entering;
+        const shiftY = ent ? Math.floor((ent.oy || 0) * scale) : 0;
+        if (ent) dx += Math.floor((ent.ox || 0) * scale);
+        const tileBottom = dy + Math.ceil(TILE_SIZE * scale) + shiftY; // the same screen line drawObject puts the bottom of a 1-tile object on, at any scale
+        if (ent && ent.fade > 0) {
+            this.ctx.save();
+            this.ctx.globalAlpha *= Math.max(0, 1 - ent.fade);
+            this.ctx.filter = `brightness(${Math.max(0, 1 - ent.fade * 0.8)})`;
+            this.ctx.drawImage(sprite, sx, sy, FW, FH, dx - offX, tileBottom - dH + Math.floor(feetPad * dH / FH), dW, dH);
+            this.ctx.restore();
+            entity._screenRect = null;
+            return;
+        }
         this.ctx.drawImage(sprite, sx, sy, FW, FH, dx - offX, tileBottom - dH + Math.floor(feetPad * dH / FH), dW, dH);
         entity._screenRect = this.screenRectOf(this.characterBounds(sprite, FW, FH), dx - offX, tileBottom - dH + Math.floor(feetPad * dH / FH), dW / FW, dH / FH, dW, dH);
         if (entity.label) this.drawNameTag(entity, dx + Math.floor(TILE_SIZE * scale / 2), tileBottom - dH + Math.floor(feetPad * dH / FH));
