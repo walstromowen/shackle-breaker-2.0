@@ -6,6 +6,11 @@
 
 export const MAX_LINEUP = 6;
 
+/* A party of players walks freely; a fight or an encounter one of them starts pulls in the others standing within this many tiles of them
+   (a square: up to this many tiles across and this many down), on the same map and out in the world (not in a menu, a fight or an
+   encounter of their own). Those further off carry on as they were. The dev console's /radius shows it. */
+export const PARTY_PULL_RADIUS = 12;
+
 /**
  * @param {Array<{ id: string, members: Array<{ alive: boolean }> }>} players  in party order (the leader first)
  * @returns {Array<{ owner: string, idx: number }>}  idx = the member's place in that player's own party

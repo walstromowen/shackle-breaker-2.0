@@ -16,6 +16,11 @@ const WEATHER_WEIGHTS = {
 };
 
 export class TimeSystem {
+    /* Multiplayer (engine/multiplayerSession.js): a guest follows the host's weather instead of rolling their own. sharedWeather is the host's
+       outdoor weather as last heard: { id, timeRemaining }. */
+    static followsWeather = false;
+    static sharedWeather = null;
+
     constructor() {
         // --- CONFIGURATION (Static, doesn't need saving) ---
         this.GAME_MINUTES_PER_REAL_SEC = 2; 
@@ -204,6 +209,17 @@ export class TimeSystem {
      */
     static syncBiomeWeather(biomeId) {
         if (biomeId) gameState.world.currentBiome = biomeId;
+        // a multiplayer guest out in the open has the host's weather, whatever the biome (everyone in the world sees the same sky); indoors it
+        // clears like anyone's
+        if (TimeSystem.followsWeather && !gameState.world.isInterior) {
+            const sw = TimeSystem.sharedWeather;
+            const cur = gameState.world.currentWeather;
+            if (sw && (!cur || String(cur.id).toUpperCase() !== sw.id)) {
+                TimeSystem.setWeather(sw.id);
+                if (Number.isFinite(sw.timeRemaining)) gameState.world.currentWeather.timeRemaining = sw.timeRemaining;
+            }
+            return false;
+        }
         const weather = gameState.world.currentWeather;
         if (!weather) return false;
         const id = String(weather.id).toUpperCase();
@@ -218,6 +234,12 @@ export class TimeSystem {
      * Determines new weather based on the player's current biome
      */
     generateNewWeather() {
+        // a multiplayer guest does not roll weather of their own: the host's comes with the clock (TimeSystem.sharedWeather)
+        if (TimeSystem.followsWeather) {
+            if (!gameState.world.currentWeather) TimeSystem.setWeather((TimeSystem.sharedWeather && TimeSystem.sharedWeather.id) || 'CLEAR');
+            else gameState.world.currentWeather.timeRemaining = Math.max(gameState.world.currentWeather.timeRemaining, 0.1);
+            return;
+        }
         const biomeId = gameState.world.currentBiome; // kept up to date by the OverworldController; unknown (first frame) = CLEAR only
 
         // 1. Identify the weather we are currently experiencing

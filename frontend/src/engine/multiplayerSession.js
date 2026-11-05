@@ -125,8 +125,11 @@ class MultiplayerSession {
         if (host && !(players || []).includes(host.id)) multiplayer.relay({ k: 'time_add', minutes }, host.id);
     }
 
+    /* The clock, and the world's weather: the host's weather out in the open (kept while the host is indoors, where it is always clear). */
     _sendTime() {
-        multiplayer.relay({ k: 'time', time: gameState.world.time, day: gameState.world.day });
+        const w = this._outdoorWeather;
+        multiplayer.relay({ k: 'time', time: gameState.world.time, day: gameState.world.day, weather: w ? { id: w.id, timeRemaining: w.timeRemaining } : null });
+        this._sentWeatherId = w ? w.id : null;
     }
 
     // ================================================================ GUEST
@@ -172,6 +175,7 @@ class MultiplayerSession {
             return;
         }
         this.role = 'guest';
+        TimeSystem.followsWeather = true;   // the host's weather from now on
         this.remotes.clear();
         this._remember(multiplayer.room);
         SaveManager.guestSink = async (snapshot) => multiplayer.relay({ k: 'player_save', data: playerPart(snapshot.data) });
@@ -195,6 +199,9 @@ class MultiplayerSession {
         }
         this.role = null;
         this.pending = null;
+        TimeSystem.followsWeather = false;
+        TimeSystem.sharedWeather = null;
+        this._outdoorWeather = null;
         worldSync.onLocalChange = null;
         this.remotes.clear();
         this._known.clear();
@@ -227,6 +234,12 @@ class MultiplayerSession {
                 if (this.role === 'guest') {
                     if (typeof data.time === 'number') gameState.world.time = data.time;
                     if (typeof data.day === 'number') gameState.world.day = data.day;
+                    if (data.weather && data.weather.id) {   // the world's weather (TimeSystem.syncBiomeWeather puts it up when this player is outside)
+                        TimeSystem.sharedWeather = { id: String(data.weather.id).toUpperCase(), timeRemaining: Number(data.weather.timeRemaining) };
+                        TimeSystem.syncBiomeWeather();
+                        const cur = gameState.world.currentWeather;
+                        if (cur && !gameState.world.isInterior && Number.isFinite(TimeSystem.sharedWeather.timeRemaining)) cur.timeRemaining = TimeSystem.sharedWeather.timeRemaining;
+                    }
                 }
                 break;
             case 'change': {
@@ -321,8 +334,11 @@ class MultiplayerSession {
         const scene = this.env ? this.env.getScene() : 'overworld';
 
         if (this.role === 'host') {
+            // the world's weather is the host's outside; a change goes out at once, not at the next tick of the clock
+            const cw = gameState.world.currentWeather;
+            if (!gameState.world.isInterior && cw) this._outdoorWeather = { id: String(cw.id).toUpperCase(), timeRemaining: cw.timeRemaining };
             this._t.time += dt;
-            if (this._t.time >= TIME_EVERY) { this._t.time = 0; this._sendTime(); }
+            if (this._t.time >= TIME_EVERY || (this._outdoorWeather && this._outdoorWeather.id !== this._sentWeatherId)) { this._t.time = 0; this._sendTime(); }
         } else {
             this._t.save += dt;
             if (this._t.save >= GUEST_SAVE_EVERY) { this._t.save = 0; if (scene === 'overworld') SaveManager.autosave(); }

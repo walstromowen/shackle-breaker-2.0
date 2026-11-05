@@ -172,6 +172,7 @@ export class SceneManager {
             host: {
                 lockWorld: () => this.overworldController.devLockWorld(),
                 battleSetup: () => this.overworldController.devBattleSetup(),
+                teleport: (target) => this._devTeleport(target),
             },
             onOpen: () => this.input.reset(),
             onClose: () => this.input.reset(),
@@ -1005,6 +1006,38 @@ export class SceneManager {
 
     /** Out of the house or cave the party is in, onto the overworld it came from (the door or Escape Rope, and a defeat inside in a multiplayer
      *  world): the world state and the map are put back. Returns the saved overworld ({ returnCol, returnRow }), or null when there is none. */
+    /** The dev console's /tp: { col, row, world } (world: out of the interior to that spot on the overworld) or { player: name }. Lands on the
+     *  nearest free tile to the one asked for. Returns { ok, message }. */
+    _devTeleport(target = {}) {
+        let col = target.col, row = target.row, outside = !!target.world;
+        if (target.player) {
+            const key = String(target.player).toLowerCase();
+            const r = [...multiplayerSession.remotes.values()].find(x => x && x.placed && String(x.username || '').toLowerCase().startsWith(key));
+            if (!r) return { ok: false, message: `No player "${target.player}" in this world.` };
+            const here = gameState.world.isInterior ? `INT_${gameState.world.interiorId}` : 'world';
+            if (r.map !== here && r.map !== 'world') return { ok: false, message: `${r.username} is inside somewhere else: go through the same door.` };
+            col = r.col; row = r.row; outside = r.map === 'world';
+        }
+        if (!Number.isFinite(col) || !Number.isFinite(row)) return { ok: false, message: 'Usage: /tp <col> <row>  |  /tp world <col> <row>  |  /tp <player>' };
+        if (outside && gameState.world.isInterior && !this._leaveInterior()) return { ok: false, message: 'There is no way back out from here.' };
+        const wm = this.worldManager;
+        // the land there has to be built before it can be stood on (a far tile, or the overworld just after leaving an interior)
+        for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) if (wm.ensureChunkLoaded) wm.ensureChunkLoaded(col + dc * 16, row + dr * 16);
+        let spot = null;
+        for (let r = 0; r <= 8 && !spot; r++) {
+            for (let dr = -r; dr <= r && !spot; dr++) for (let dc = -r; dc <= r && !spot; dc++) {
+                if (Math.max(Math.abs(dr), Math.abs(dc)) !== r) continue;
+                if (wm.isTileFree(col + dc, row + dr)) spot = { col: col + dc, row: row + dr };
+            }
+        }
+        if (!spot) spot = { col, row };   // nothing free nearby (deep water, the void of an interior): the tile asked for, as asked
+        this.overworldController.warpTo(spot.col, spot.row);
+        this.overworldController.isLocked = false;
+        if (!gameState.world.isInterior) this._prebuildWorld(spot.col, spot.row);
+        const where = gameState.world.isInterior ? 'in this interior' : 'on the overworld';
+        return { ok: true, message: `Teleported to ${spot.col}, ${spot.row} ${where}${spot.col !== col || spot.row !== row ? ` (the nearest free tile to ${col}, ${row})` : ''}.` };
+    }
+
     _leaveInterior() {
         const saved = gameState.world.savedOverworld;
         if (!saved) return null;

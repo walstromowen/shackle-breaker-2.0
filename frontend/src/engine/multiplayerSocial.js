@@ -23,7 +23,7 @@ import { events } from '../../../shared/core/eventBus.js';
 import { gameState } from '../../../shared/core/gameState.js';
 import { ItemDefinitions } from '../../../shared/items/itemDefinitions.js';
 import { InventorySystem } from '../../../shared/items/inventorySystem.js';
-import { buildLineup } from '../../../shared/core/multiplayerParty.js';
+import { buildLineup, PARTY_PULL_RADIUS } from '../../../shared/core/multiplayerParty.js';
 import { PartyManager } from '../../../shared/characters/partyManager.js';
 import { CorruptionSystem } from '../../../shared/characters/corruptionSystem.js';
 import { multiplayer } from './multiplayerClient.js';
@@ -34,9 +34,7 @@ const REQUEST_SECONDS = 20;
 const CHAT_MAX = 200;   // characters in one chat line
 const MAX_GROUP = 3;
 const PARTY_SEND_EVERY = 4;   // seconds between a player's character updates to the rest of their party (only when they changed)
-/* A party of players walks freely; a fight or an encounter one of them starts pulls in the others standing within this many tiles of them, on
-   the same map and out in the world (not in a menu, a fight or an encounter of their own). Those further off carry on as they were. */
-export const PARTY_PULL_RADIUS = 12;
+export { PARTY_PULL_RADIUS };
 const KIND_TEXT = { trade: 'wants to trade with you.', party: 'invites you to their party.', duel: 'challenges you to a duel (nothing at stake).' };
 
 const newId = () => Math.random().toString(36).slice(2, 10);

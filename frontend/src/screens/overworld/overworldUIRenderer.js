@@ -4,6 +4,10 @@ import { ItemDefinitions } from '../../../../shared/items/itemDefinitions.js';
 import { ENTITY_DEFINITIONS } from '../../../../shared/characters/entityDefinitions.js';
 import { MinimapRenderer } from '../../ui/minimapRenderer.js';
 import { WorldStatusPlaque, plaqueRect } from './worldStatusPlaque.js';
+import { gameState } from '../../../../shared/core/gameState.js';
+import { DEV_FLAGS } from '../../../../shared/core/devCommands.js';
+import { PARTY_PULL_RADIUS } from '../../../../shared/core/multiplayerParty.js';
+import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
 
 // The hotbar: slot size, gap and the margin under it (the status plaque sits to its right, on the same line)
 const HOTBAR = { SIZE: 104, GAP: 8, MARGIN: 24 };
@@ -33,6 +37,9 @@ export class OverworldUIRenderer {
         } = state || {};
 
         const ui = new CanvasUI(ctx);
+
+        // the dev console's /radius: the party pull radius round the player (a party member inside it is pulled into a fight or encounter I start)
+        if (DEV_FLAGS.showPullRadius && camera) this.drawPullRadius(ctx, ui, camera);
 
         // --- Minimap (bottom-left). Needs state.worldManager and state.camera from the controller ---
         if (state && state.worldManager) {
@@ -320,6 +327,36 @@ export class OverworldUIRenderer {
         ctx.roundRect(r.x - pad, r.y - pad, r.w + pad * 2, r.h + pad * 2, 8);
         ctx.stroke();
         ctx.restore();
+    }
+
+    /* /radius: a square of PARTY_PULL_RADIUS tiles each way round the player's tile (the same test as multiplayerSocial.nearbyParty), and who of
+       the party is inside it now. */
+    drawPullRadius(ctx, ui, camera) {
+        const { GAME_SCALE, TILE_SIZE: T } = this.config;
+        const scale = GAME_SCALE * (ctx.canvas.width / 800);
+        const W = ctx.canvas.width, H = ctx.canvas.height;
+        const col = gameState.player.col, row = gameState.player.row, R = PARTY_PULL_RADIUS;
+        const sx = (c) => (c * T - camera.x) * scale + W / 2 - T * scale / 2;
+        const sy = (r) => (r * T - camera.y) * scale + H / 2 - T * scale / 2;
+        const x0 = sx(col - R), y0 = sy(row - R), x1 = sx(col + R + 1), y1 = sy(row + R + 1);
+        const pulse = 0.6 + 0.4 * Math.sin(performance.now() * 0.004);
+        ctx.save();
+        ctx.fillStyle = 'rgba(89, 212, 255, 0.07)';
+        ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+        ctx.strokeStyle = `rgba(89, 212, 255, ${0.5 + 0.4 * pulse})`;
+        ctx.lineWidth = 3;
+        ctx.setLineDash([14, 8]);
+        ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
+        ctx.restore();
+        const near = multiplayerSocial.nearbyParty().map(id => multiplayerSocial.nameOf(id));
+        const all = multiplayerSocial.partyPlayers().length;
+        const text = `Party pull radius: ${R} tiles  ·  ${all ? (near.length ? `pulled in: ${near.join(', ')}` : 'no party member inside') : 'not in a party'}`;
+        // below the party plaque (top centre) when the square reaches past the top of the screen
+        const ly = Math.max(118, y0 - 14);
+        const tw = Math.min(W - 40, ctx.measureText ? (ctx.font = UITheme.fonts.bold, ctx.measureText(text).width + 40) : 900);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.fillRect(W / 2 - tw / 2, ly - 30, tw, 42);
+        ui.drawText(text, W / 2, ly, UITheme.fonts.bold, '#9fe6ff', 'center');
     }
 
     /* The key prompt ("SPACE  Enter"), bottom right; `bottom` is where its lower edge goes (on top of the status plaque). Returns its top edge. */
