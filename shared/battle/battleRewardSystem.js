@@ -154,13 +154,18 @@ export class BattleRewardSystem {
             });
         };
 
+        // the last ability each party member used on each enemy: the one a kill is credited to
+        const lastBlow = new Map();
         battleLedger.forEach(entry => {
             if (entry.type === 'DEATH') {
                 if (entry.killer?.team === 'party' && entry.killed?.team === 'enemy') {
                     tryAwardTrait(entry.killer, entry.killed.originalEntity, 'kill');
+                    const blow = lastBlow.get(entry.killed);
+                    if (blow && blow.actor === entry.killer) tryAwardTrait(entry.killer, blow.action, 'kill');   // finishing a foe with it
                 }
             }
             else if (entry.type === 'ABILITY_USED') {
+                if (entry.actor?.team === 'party' && entry.target?.team === 'enemy') lastBlow.set(entry.target, { actor: entry.actor, action: entry.action });
                 if (entry.actor?.team === 'party') {
                     tryAwardTrait(entry.actor, entry.action, 'use_ability');
                     if (entry.target?.team === 'enemy') {
