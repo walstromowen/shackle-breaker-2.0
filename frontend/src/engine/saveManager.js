@@ -300,6 +300,8 @@ export const SaveManager = {
                 discoveredChunks: clone(world.discoveredChunks || []),
                 structureChunks: clone(world.structureChunks || {}),
                 weather: serializeWeather(world.currentWeather),
+                biomeWeather: clone(world.biomeWeather || {}),   // each biome's remembered weather
+                weatherBiome: world.weatherBiome || null,
                 // inside a house or cave: which one, and the overworld seed and spot to return to (`data.seed` is then the interior's shifted seed)
                 interior: world.isInterior ? clone({
                     type: world.interiorType,
@@ -413,7 +415,9 @@ export const SaveManager = {
             discoveredChunks: data.world.discoveredChunks || [],
             // undefined in a save made before the record existed: WorldManager then works out which chunks already have their structure (see structureSpawner.js)
             structureChunks: data.world.structureChunks,
-            currentWeather: weather            // null -> WorldManager creates clear skies
+            currentWeather: weather,           // null -> WorldManager creates clear skies
+            biomeWeather: data.world.biomeWeather || {},
+            weatherBiome: data.world.weatherBiome || null
         });
 
         replaceContents(gameState.party, {

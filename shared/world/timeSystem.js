@@ -193,9 +193,12 @@ export class TimeSystem {
      * always matches the weather (before, only a freshly rolled weather touched the audio: a weather cleared because the biome changed left its loop playing,
      * and "no sound" was sent as PLAY_AMBIENCE 'none', which is not a sound).
      */
-    static setWeather(weatherKey) {
+    static setWeather(weatherKey, { flash = true } = {}) {
         const key = String(weatherKey).toUpperCase();
+        const prev = gameState.world.currentWeather ? String(gameState.world.currentWeather.id).toUpperCase() : null;
         gameState.world.currentWeather = WeatherFactory.createWeather(key);
+        // the sky stutters with a light flash when the weather turns (WeatherRenderer draws it); not when the very first weather is set
+        if (flash && prev && prev !== key) events.emit('WEATHER_CHANGED', { from: prev, to: key });
         const def = WeatherDefinitions[key];
         const audioAssetId = def && def.audioEffect ? def.audioEffect : 'none';
         if (audioAssetId === 'none') events.emit('STOP_AMBIENCE', { fadeTime: 2.0 });
@@ -214,20 +217,68 @@ export class TimeSystem {
         if (TimeSystem.followsWeather && !gameState.world.isInterior) {
             const sw = TimeSystem.sharedWeather;
             const cur = gameState.world.currentWeather;
+            // no flash when the change only comes from stepping back outside (out of a house: the host's sky was there all along)
+            const stepped = gameState.world.weatherBiome !== gameState.world.currentBiome;
+            gameState.world.weatherBiome = gameState.world.currentBiome;
             if (sw && (!cur || String(cur.id).toUpperCase() !== sw.id)) {
-                TimeSystem.setWeather(sw.id);
+                TimeSystem.setWeather(sw.id, { flash: !stepped });
                 if (Number.isFinite(sw.timeRemaining)) gameState.world.currentWeather.timeRemaining = sw.timeRemaining;
             }
             return false;
         }
-        const weather = gameState.world.currentWeather;
-        if (!weather) return false;
+        const w = gameState.world;
+        const weather = w.currentWeather;
+        const biome = w.currentBiome;
+        if (!weather) { if (biome && !w.weatherBiome) w.weatherBiome = biome; return false; }
+        // Each biome keeps its own weather. Crossing into another biome (or a house, or back out) remembers the weather of the one left behind,
+        // and coming back finds it again, as long as it has not run out in the meantime (it keeps ticking while you are away).
+        if (biome && w.weatherBiome && w.weatherBiome !== biome) {
+            TimeSystem._rememberWeather(w.weatherBiome);
+            const allowed = TimeSystem.allowedWeatherFor(biome);
+            const id = String(weather.id).toUpperCase();
+            const back = TimeSystem._recallWeather(biome);
+            // walking into or out of a house or cave changes the sky without a flash; crossing between two outdoor biomes flashes like any change of weather
+            const flash = !/_INTERIOR$/.test(w.weatherBiome) && !/_INTERIOR$/.test(biome);
+            w.weatherBiome = biome;
+            if (id !== 'CLEAR' && allowed.has(id)) return false;          // the same sky carries on over a border both sides allow
+            if (back && back.id !== 'CLEAR' && allowed.has(back.id)) {    // this biome's own weather, where it was left
+                if (back.id !== id) TimeSystem.setWeather(back.id, { flash });
+                w.currentWeather.timeRemaining = back.timeRemaining;
+                return false;
+            }
+            if (id === 'CLEAR') return false;
+            console.log(`[Weather] Clearing skies. ${id} invalid in ${biome}.`);
+            TimeSystem.setWeather('CLEAR', { flash });
+            return true;
+        }
+        if (biome && !w.weatherBiome) w.weatherBiome = biome;
         const id = String(weather.id).toUpperCase();
         if (id === 'CLEAR') return false;
-        if (TimeSystem.allowedWeatherFor(gameState.world.currentBiome).has(id)) return false;
-        console.log(`[Weather] Clearing skies. ${id} invalid in ${gameState.world.currentBiome || 'an unknown biome'}.`);
+        if (TimeSystem.allowedWeatherFor(biome).has(id)) return false;
+        console.log(`[Weather] Clearing skies. ${id} invalid in ${biome || 'an unknown biome'}.`);
         TimeSystem.setWeather('CLEAR');
         return true;
+    }
+
+    /** Minutes since the world began (day 1, 00:00): what the remembered weathers are timed against. */
+    static _absMinutes() {
+        return ((gameState.world.day || 1) - 1) * 24 * 60 + (gameState.world.time || 0);
+    }
+
+    /** Keep the current weather as the remembered weather of a biome (gameState.world.biomeWeather, saved with the game). */
+    static _rememberWeather(biomeId) {
+        const w = gameState.world, cur = w.currentWeather;
+        if (!biomeId || !cur) return;
+        if (!w.biomeWeather || typeof w.biomeWeather !== 'object') w.biomeWeather = {};
+        w.biomeWeather[biomeId] = { id: String(cur.id).toUpperCase(), timeRemaining: cur.timeRemaining, at: TimeSystem._absMinutes() };
+    }
+
+    /** The weather a biome was left with, aged by the time since: { id, timeRemaining } or null when there is none or it has run out. */
+    static _recallWeather(biomeId) {
+        const rec = gameState.world.biomeWeather && gameState.world.biomeWeather[biomeId];
+        if (!rec || !rec.id) return null;
+        const left = (Number(rec.timeRemaining) || 0) - Math.max(0, TimeSystem._absMinutes() - (Number(rec.at) || 0)) / 60;
+        return left > 0 ? { id: String(rec.id).toUpperCase(), timeRemaining: left } : null;
     }
 
     /**

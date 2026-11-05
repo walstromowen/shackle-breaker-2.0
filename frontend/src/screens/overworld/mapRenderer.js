@@ -3,6 +3,22 @@ import { gameState } from '../../../../shared/core/gameState.js';
 import { BlobTerrainRenderer } from './blobTerrainRenderer.js';
 import { fenceFrame } from '../../../../shared/world/fenceConnections.js';
 import { PartyFollowers } from './partyFollowers.js';
+import { events } from '../../../../shared/core/eventBus.js';
+
+/* The light flash of a change of weather: a few quick, uneven flickers of pale light over the whole screen (TimeSystem.setWeather emits WEATHER_CHANGED).
+   Each pulse is [start s, length s, peak alpha]; drawn after the lighting, so it shows at night too. */
+const WEATHER_FLASH = [[0, 0.07, 0.34], [0.11, 0.05, 0.12], [0.19, 0.09, 0.26], [0.34, 0.05, 0.08], [0.42, 0.35, 0.16]];
+let weatherFlashAt = -Infinity;
+// at most one flash every few seconds, so pacing back and forth over a biome border does not strobe
+events.on('WEATHER_CHANGED', () => { const now = performance.now(); if (now - weatherFlashAt > 3000) weatherFlashAt = now; });
+export function weatherFlashAlpha(seconds) {
+    let a = 0;
+    for (const [start, len, peak] of WEATHER_FLASH) {
+        const t = seconds - start;
+        if (t >= 0 && t < len) a = Math.max(a, peak * (1 - t / len));
+    }
+    return a;
+}
 export class MapRenderer {
     constructor(canvas, loader, config) {
         this.canvas = canvas;
@@ -64,6 +80,15 @@ export class MapRenderer {
         if (lightingRenderer && ambientData) {
             const lightObjects = worldManager.getLightObjects(camera, this.canvas.width, this.canvas.height);
             lightingRenderer.render(this.ctx, ambientData, renderCamera, entities, lightObjects, worldManager, interpolationFactor);
+        }
+        /* Pass 4: the stutter of light when the weather turns */
+        const flash = weatherFlashAlpha((performance.now() - weatherFlashAt) / 1000);
+        if (flash > 0) {
+            this.ctx.save();
+            this.ctx.globalCompositeOperation = 'lighter';
+            this.ctx.fillStyle = `rgba(225, 232, 255, ${flash.toFixed(3)})`;
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.restore();
         }
     }
     /* Natural darkness. The biome under the camera may carry `ambientLight: { r, g, b, a }` (biomeDefinitions.js). The result is the darker of that and the

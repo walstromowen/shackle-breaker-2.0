@@ -231,7 +231,7 @@ export const SpawnTableDefinitions = {
         type: "faction_pool",
         pools: [{
             factionId: "wildlife",
-            weight: 100,
+            weight: 50,
             difficultySettings: {
                 easy: { minSize: 1, maxSize: 1 },
                 normal: { minSize: 1, maxSize: 2 },
@@ -240,13 +240,12 @@ export const SpawnTableDefinitions = {
             },
             members: [
                 { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } },
-                { id: 'ICECOIL', weight: 22, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } }   // as common as the Dune Maw in the desert (18% of ambushes)
+                { id: 'ICECOIL', weight: 56, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } }   // as common as the Dune Maw in the desert (18% of ambushes)
             ]
         }, {
-            // act 2: the trappers of the peaks hunt the roads
+            // the trappers of the peaks hunt the roads: about half of the mountain's ambushes
             factionId: "shackled",
-            weight: 45,
-            minAct: 2,
+            weight: 50,
             difficultySettings: {
                 easy: { minSize: 1, maxSize: 1 },
                 normal: { minSize: 1, maxSize: 2 },
@@ -266,7 +265,7 @@ export const SpawnTableDefinitions = {
         type: "faction_pool",
         pools: [{
             factionId: "cursedwildlife",
-            weight: 100,
+            weight: 50,
             difficultySettings: {
                 easy: { minSize: 1, maxSize: 2 },
                 normal: { minSize: 1, maxSize: 2 },
@@ -275,7 +274,20 @@ export const SpawnTableDefinitions = {
             },
             members: [
                 { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } },
-                { id: 'ICECOIL', weight: 22, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } }   // as common as the Dune Maw in the desert (18% of ambushes)
+                { id: 'ICECOIL', weight: 56, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } }   // as common as the Dune Maw in the desert (18% of ambushes)
+            ]
+        }, {
+            // the trappers work by night too, half of the mountain's ambushes
+            factionId: "shackled",
+            weight: 50,
+            difficultySettings: {
+                easy: { minSize: 1, maxSize: 2 },
+                normal: { minSize: 1, maxSize: 2 },
+                hard: { minSize: 1, maxSize: 3 },
+                nightmare: { minSize: 2, maxSize: 4 }
+            },
+            members: [
+                { id: 'FROZEN_TRAPPER', weight: 100, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } }
             ]
         }]
     },
@@ -389,7 +401,7 @@ export const SpawnTableDefinitions = {
         pools: [
             {
                 factionId: "cursedwildlife",
-                weight: 45,
+                weight: 50,
                 difficultySettings: {
                     easy: { minSize: 1, maxSize: 2 },
                     normal: { minSize: 2, maxSize: 3 },
@@ -398,12 +410,12 @@ export const SpawnTableDefinitions = {
                 },
                 members: [
                     { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 2 } } },
-                { id: 'ICECOIL', weight: 67, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } }   // as common as the Dune Maw in the desert (18% of ambushes)
+                { id: 'ICECOIL', weight: 56, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } }   // as common as the Dune Maw in the desert (18% of ambushes)
                 ]
             },
             {
                 factionId: "shackled",
-                weight: 30,
+                weight: 25,
                 difficultySettings: {
                     easy: { minSize: 1, maxSize: 1 },
                     normal: { minSize: 1, maxSize: 2 },

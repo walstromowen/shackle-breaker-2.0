@@ -33,7 +33,9 @@ export const gameState = {
         discoveredChunks: [],
         waypoints: [],       // the banners the party has planted: { id, col, row, biome } (shared/world/waypoints.js)
         structureChunks: {}, // chunks ('cx,cy') whose village / graveyard has been generated, so a reload never builds them again (structureSpawner.js)
-        currentWeather: null
+        currentWeather: null,
+        biomeWeather: {},      // the weather each biome was left with (TimeSystem.syncBiomeWeather)
+        weatherBiome: null     // the biome the current weather belongs to
     },
     
     party: {
@@ -90,6 +92,8 @@ export function resetWorldForNewGame() {
     w.waypoints = [];
     w.structureChunks = {};
     w.currentWeather = null;
+    w.biomeWeather = {};
+    w.weatherBiome = null;
     gameState.quests = { active: {}, completed: [], trackedIds: [] };
     gameState.multiplayer = { guests: {} };   // a new world has had no visitors
     // the spot the last game ended on means nothing in the new world (0, 0 = "find a spawn point", see OverworldController.createPlayerEntity)
