@@ -3,6 +3,7 @@ import { ExperienceSystem } from '../characters/experienceSystem.js';
 import { InventorySystem } from '../items/inventorySystem.js';
 import { LootTableFactory } from '../items/lootTableFactory.js';
 import { rng } from '../core/random.js';
+import { ABILITY_TRAIT_CHANCE, SCAR_TRAITS, scarForAbility } from '../abilities/abilityTraits.js';
 
 export class BattleRewardSystem {
     /**
@@ -102,10 +103,11 @@ export class BattleRewardSystem {
             messages.push(`The enemies left nothing useful behind.`);
         }
 
-        // 5. Process Trait Rewards from the Ledger
+        // 5. Process Trait Rewards from the Ledger, and the scars of those who fell
         if (battleLedger && battleLedger.length > 0) {
             const traitMessages = this._processTraitRewards(battleLedger, partyRoster, enemyRoster);
             messages.push(...traitMessages);
+            messages.push(...this.processDeathScars(battleLedger));
         }
 
         return messages;
@@ -117,6 +119,32 @@ export class BattleRewardSystem {
         const sumStats = (statObj) => statObj ? Object.values(statObj).reduce((sum, val) => sum + val, 0) : 0;
         const statSum = enemy.maxHp + (enemy.stats.speed ?? 10) + sumStats(enemy.stats.attack) + sumStats(enemy.stats.defense);
         return Math.floor(statSum * 0.15) + ((enemy.originalEntity.level || 1) * 10);
+    }
+
+    /**
+     * Party members an enemy struck down in this fight: each may carry a scar out of it (ABILITY_TRAIT_CHANCE.killed_by_ability), a bad trait
+     * that fits the blow (abilityTraits.scarForAbility: magic -> Superstitious, an arrow -> Myopic, a heavy blow -> Frail, ...), or another bad
+     * one they do not have yet. After a win, and after a loss in a multiplayer world (where the party carries on). Returns the lines to show.
+     */
+    static processDeathScars(battleLedger) {
+        const messages = [];
+        const lastHit = new Map();   // party member -> the last ability an enemy hit them with
+        for (const entry of battleLedger || []) {
+            if (entry.type === 'ABILITY_USED' && entry.actor?.team === 'enemy' && entry.target?.team === 'party') lastHit.set(entry.target, entry.action);
+            if (entry.type !== 'DEATH' || entry.killed?.team !== 'party' || entry.killer?.team !== 'enemy') continue;
+            const fallen = entry.killed, entity = fallen.originalEntity;
+            if (!entity || typeof entity.addTrait !== 'function' || rng() > ABILITY_TRAIT_CHANCE.killed_by_ability) continue;
+            const held = entity.traits || [];
+            const action = lastHit.get(fallen);
+            const fit = scarForAbility(action && (action.config || action));
+            const open = SCAR_TRAITS.filter(t => !held.includes(t));
+            if (!open.length) continue;
+            const scar = open.includes(fit) ? fit : open[Math.floor(rng() * open.length)];
+            entity.addTrait(scar);
+            const readable = scar.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            messages.push(`${fallen.name} was struck down and carries a scar from it: ${readable}.`);
+        }
+        return messages;
     }
 
     static _processTraitRewards(battleLedger, partyRoster, enemyRoster) {

@@ -275,10 +275,14 @@ export function queueVictory(state) {
 }
 
 export function queueDefeat(state) {
+    const duel = state.mp && state.mp.kind === 'duel';
+    // the fallen may carry scars out of it (a multiplayer world carries on after a defeat; alone, the game goes back to the last save anyway); never from a duel
+    const scars = duel ? [] : BattleRewardSystem.processDeathScars(state.battleLedger);
     state.turnQueue = [
         // Stalling here as well so the "PARTY SLAIN" banner gets its spotlight
         { type: TURN_TYPES.WAIT, duration: 3.0 },
-        { type: TURN_TYPES.MESSAGE_DEFEAT, message: state.mp && state.mp.kind === 'duel' ? `${state.mp.opponentName || 'Your rival'} won the duel.` : `The party has fallen in battle...` },
+        { type: TURN_TYPES.MESSAGE_DEFEAT, message: duel ? `${state.mp.opponentName || 'Your rival'} won the duel.` : `The party has fallen in battle...` },
+        ...scars.map(message => ({ type: TURN_TYPES.MESSAGE_DEFEAT, message })),
         { type: TURN_TYPES.BATTLE_END }
     ];
 }

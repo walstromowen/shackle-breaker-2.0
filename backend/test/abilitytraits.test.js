@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { AbilityDefinitions } from '../../shared/abilities/abilityDefinitions.js';
 import { AbilityFactory } from '../../shared/abilities/abilityFactory.js';
 import { TRAIT_DEFINITIONS as TraitDefinitions } from '../../shared/abilities/traitDefinitions.js';
-import { traitsForAbility, ABILITY_TRAIT_CHANCE } from '../../shared/abilities/abilityTraits.js';
+import { traitsForAbility, ABILITY_TRAIT_CHANCE, scarForAbility, SCAR_TRAITS } from '../../shared/abilities/abilityTraits.js';
 import { BattleRewardSystem } from '../../shared/battle/battleRewardSystem.js';
 
 test('every fighting ability fits a trait that exists; items, retreats and world actions teach nothing', () => {
@@ -47,4 +47,33 @@ test('after a fight: using an ability, finishing a foe with it and living throug
         assert.ok(msgs.some(m => /Pyromaniac/.test(m)));
         assert.equal(new Set(hero.originalEntity.traits).size, hero.originalEntity.traits.length, 'never the same trait twice');
     } finally { Math.random = real; }
+});
+
+test('struck down by an enemy: a fair chance of a scar that fits the blow, another bad trait when that one is already carried, never from a duel', async () => {
+    assert.equal(ABILITY_TRAIT_CHANCE.killed_by_ability, 0.25);
+    for (const t of SCAR_TRAITS) assert.ok(TraitDefinitions[t], `${t} is a trait`);
+    assert.equal(scarForAbility(AbilityDefinitions.fireball), 'superstitious');
+    assert.equal(scarForAbility(AbilityDefinitions.loose_arrow), 'myopic');
+    assert.equal(scarForAbility(AbilityDefinitions.reckless_charge), 'frail');
+    assert.equal(scarForAbility(AbilityDefinitions.claw), 'clumsy');
+    const member = (name, team) => ({ name, team, originalEntity: { traits: [], addTrait(t) { this.traits.push(t); } }, isDead: () => true });
+    const hero = member('Hero', 'party'), wolf = member('Wolf', 'enemy');
+    const [arrow] = AbilityFactory.createAbilities(['loose_arrow']);
+    const ledger = [{ type: 'ABILITY_USED', action: arrow, actor: wolf, target: hero }, { type: 'DEATH', killer: wolf, killed: hero }];
+    const real = Math.random;
+    try {
+        Math.random = () => 0.9;
+        assert.deepEqual(BattleRewardSystem.processDeathScars(ledger), [], 'mostly they get back up whole');
+        Math.random = () => 0.1;
+        const lines = BattleRewardSystem.processDeathScars(ledger);
+        assert.deepEqual(hero.originalEntity.traits, ['myopic'], 'shot down: Myopic');
+        assert.ok(/scar/.test(lines[0]));
+        BattleRewardSystem.processDeathScars(ledger);
+        assert.equal(hero.originalEntity.traits.length, 2, 'already myopic: another bad trait');
+        assert.ok(SCAR_TRAITS.includes(hero.originalEntity.traits[1]) && hero.originalEntity.traits[1] !== 'myopic');
+    } finally { Math.random = real; }
+    const { queueDefeat } = await import('../../shared/battle/battleQueue.js');
+    const duel = { mp: { kind: 'duel', opponentName: 'Rival' }, battleLedger: ledger, turnQueue: [] };
+    Math.random = () => 0; try { queueDefeat(duel); } finally { Math.random = real; }
+    assert.equal(duel.turnQueue.filter(t => /scar/.test(t.message || '')).length, 0, 'a duel leaves no scars');
 });

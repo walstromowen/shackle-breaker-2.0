@@ -107,7 +107,7 @@ export const suspiciousMerchant = {
                     type: "open_shop",
                     shopId: "black_market_shop",
                     lootTableId: "plains",
-                    rolls: 3,
+                    rolls: 7,   // eight things in all on his cloak (the herb and seven picks from the table)
                     wares: [
                         { id: "healing_herb", price: 150 }
                     ]

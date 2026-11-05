@@ -5,6 +5,7 @@
 // (ABILITY_TRAIT_CHANCE: per use, per kill, per hit), so a trait turns up once in a long while and says something about how that character fights.
 // An ability's own `traitRewards` (abilityDefinitions.js), when it has any, are used instead of these.
 export const ABILITY_TRAIT_CHANCE = {
+    killed_by_ability: 0.25, // struck down by it: a bad trait, a scar (scarForAbility), on a fair chance
     use_ability: 0.004,      // each time they use it
     kill: 0.02,              // each enemy they finish with it
     hit_by_ability: 0.002,   // each time it hits them and they live
@@ -66,4 +67,20 @@ export function traitRewardsFor(def) {
         out.push({ id: physical ? 'ironhide' : 'tough', condition: 'hit_by_ability', chance: ABILITY_TRAIT_CHANCE.hit_by_ability });
     }
     return out;
+}
+
+/* The bad traits a fall can leave (traitDefinitions.js), and the one that fits how the character was struck down. */
+export const SCAR_TRAITS = ['clumsy', 'frail', 'myopic', 'superstitious', 'lazy', 'dull', 'sluggish'];
+
+/** The scar a character struck down by this ability (null: unknown, a blow with no ability) carries out of the fight. */
+export function scarForAbility(def) {
+    if (!def) return 'frail';
+    const dmg = damageTypes(def);
+    if (has(def, 'leech')) return 'dull';                                                   // drained of their wits
+    if (has(def, 'magical')) return 'superstitious';                                        // the arcane frightens them now
+    if (has(def, 'projectile') || has(def, 'bow')) return 'myopic';                         // never saw it coming
+    if (has(def, 'heavy') || dmg.has('blunt')) return 'frail';                              // broken bones
+    if (has(def, 'fast') || has(def, 'multihit')) return 'sluggish';                        // too slow to keep up
+    if (dmg.has('slash') || dmg.has('pierce')) return 'clumsy';                             // a wound that never set right
+    return 'lazy';
 }
