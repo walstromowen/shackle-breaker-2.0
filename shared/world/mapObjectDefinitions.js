@@ -46,8 +46,15 @@ export const MAP_OBJECTS_DEFINITIONS = {
        is placed in that gap by the yard (structures.js). The object's cell is the bottom-left tile of the sprite. Only the walls are solid: the bottom two rows, except the gap, whose own
        door object is the way in (the one cell above it is wall). The roof rows above are not solid, so you can walk behind a house and it draws over you. */
     ABANDONED_HOUSE_1: { sheet: 'objAbandonedHouse1', spriteX: 5, spriteY: 7, width: 5, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 2, h: 2 } /* the wall left of the door */, { xOffset: 2, yOffset: -1, w: 1, h: 1 } /* the wall above the door */, { xOffset: 3, yOffset: -1, w: 2, h: 2 } /* the wall right of the door */] },
-    /* the stone-walled house: the same size, door gap and walls as ABANDONED_HOUSE_1, with fieldstone instead of planks */
-    ABANDONED_STONE_HOUSE: { sheet: 'objAbandonedStoneHouse', spriteX: 5, spriteY: 7, width: 5, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 2, h: 2 }, { xOffset: 2, yOffset: -1, w: 1, h: 1 }, { xOffset: 3, yOffset: -1, w: 2, h: 2 }] },
+    /* the stone-walled house: the same size, door gap and walls as ABANDONED_HOUSE_1, with fieldstone instead of planks. It is the WORKSHOP (structures.js):
+       someone still works there, so its windows glow and its chimney smoulders (objStoneWorkshop, the stone house lit), and it gives off a faint warm
+       light at the gable window, on the ground before the lower window (the wall itself blocks light) and above the chimney (`lights`: tiles from its top left). */
+    ABANDONED_STONE_HOUSE: { sheet: 'objStoneWorkshop',
+        lights: [
+            { hasLight: true, dx: 2.5, dy: 2.85, radius: 2.6, maxAlpha: 0.55, color: '255, 170, 80', flickerAmp: 0.12, flickerSpeed: 0.06 },
+            { hasLight: true, dx: 1.25, dy: 5.1, radius: 2.2, maxAlpha: 0.42, color: '255, 165, 75', flickerAmp: 0.12, flickerSpeed: 0.06 },
+            { hasLight: true, dx: 3.6, dy: 0.9, radius: 1.8, maxAlpha: 0.45, color: '255, 115, 45', flickerAmp: 0.35, flickerSpeed: 0.12 },
+        ], spriteX: 5, spriteY: 7, width: 5, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 2, h: 2 }, { xOffset: 2, yOffset: -1, w: 1, h: 1 }, { xOffset: 3, yOffset: -1, w: 2, h: 2 }] },
     /* the workshop: a main gable (5 wide, with the door) and a lower side wing (3 wide) */
     CRAFTING_HOUSE: { sheet: 'objCraftingHouse', spriteX: 5, spriteY: 7, width: 7, height: 6, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 2, h: 2 }, { xOffset: 2, yOffset: -1, w: 1, h: 1 }, { xOffset: 3, yOffset: -1, w: 4, h: 2 } /* the wall right of the door, wing included */] },
     /* the blacksmith's house: house A's size and door gap in fieldstone under a slate roof; its door is the blacksmith's door art and leads into an ordinary house */
@@ -123,6 +130,9 @@ export const MAP_OBJECTS_DEFINITIONS = {
     // --- HERBS --- (walk over them to pick them up, like the small rocks and the bones)
     HEALING_HERB: { sheet: 'objHealingHerb', spriteX: 9, spriteY: 1, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'healing_herb', amount: 1, maxAmount: 2 } },
     ALOE_PLANT: { sheet: 'objAloe', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'aloe', amount: 1, maxAmount: 2 } },  // desert only (biomeDefinitions.js DESERT)
+    /* the crops of the villages' fields besides the herbs: cotton (for cloth) and wheat, picked by walking over them like the herbs (structures.js CROP_FIELD) */
+    COTTON_PLANT: { sheet: 'objCottonPlant', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'cotton', amount: 1, maxAmount: 2 } },
+    WHEAT_PLANT: { sheet: 'objWheatPlant', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'wheat', amount: 1, maxAmount: 2 } },
     INVIGORATING_HERB: { sheet: 'objInvigoratingHerb', spriteX: 10, spriteY: 1, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'invigorating_herb', amount: 1, maxAmount: 2 } },
     ILLUMINATING_HERB: { sheet: 'objIlluminatingHerb', spriteX: 11, spriteY: 1, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'illuminating_herb', amount: 1, maxAmount: 2 } },
 
@@ -228,7 +238,7 @@ export const RESPAWN_DAYS = {
     // trees (the stump goes with the cut tree)
     PINE_TREE: TREE_DAYS, SNOWY_PINE_TREE: TREE_DAYS, OAK_TREE_1: TREE_DAYS,
     // herbs and plants
-    HEALING_HERB: HERB_DAYS, ALOE_PLANT: HERB_DAYS, INVIGORATING_HERB: HERB_DAYS, ILLUMINATING_HERB: HERB_DAYS,
+    HEALING_HERB: HERB_DAYS, ALOE_PLANT: HERB_DAYS, INVIGORATING_HERB: HERB_DAYS, ILLUMINATING_HERB: HERB_DAYS, COTTON_PLANT: HERB_DAYS, WHEAT_PLANT: HERB_DAYS,
     TULIPS_ORANGE: HERB_DAYS, TULIPS_WHITE: HERB_DAYS, TULIPS_RED: HERB_DAYS,
     // things lying on the ground
     STICK: SCRAP_DAYS, FLINT_ROCK: SCRAP_DAYS, SMALL_ROCKS_1: SCRAP_DAYS, SMALL_ROCKS_2: SCRAP_DAYS, SMALL_ROCKS_3: SCRAP_DAYS,

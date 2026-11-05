@@ -243,7 +243,9 @@ const STONE_HOUSE_SPEC = houseSpec('ABANDONED_STONE_HOUSE', 'HOUSE_DOOR_WOODEN',
 
 const SMITHY_SPEC = houseSpec('ABANDONED_SMITHY', 'SMITHY_DOOR', [[2, 5, 'BARREL'], [5, 5, 'CRATE']]);
 
-const WORKSHOP = (door, props) => houseSpec('CRAFTING_HOUSE', door, props);
+/* the workshop is the stone house (lit at its windows and chimney: ABANDONED_STONE_HOUSE in mapObjectDefinitions.js); the plain stone houses and side shells
+   are no longer built, so the stone house always means the workshop */
+const WORKSHOP = (door, props) => houseSpec('ABANDONED_STONE_HOUSE', door, props);
 
 const CROP_FIELD = (herb) => ({
     w: 8, h: 8, anchor: [3, 2], gateRow: 5, scatterRect: { x: 2, y: 5, w: 4, h: 1 }, scatterPool: ['GRASS_COVERAGE_1', 'GRASS_COVERAGE_2', 'GRASS_COVERAGE_3'],
@@ -285,12 +287,9 @@ function villageModules(suffix) {
         { prefab: n('ABANDONED_COTTAGE'), weight: 3, verticalWeight: 1 },
         { prefab: n('ABANDONED_FARMHOUSE'), weight: 2, verticalWeight: 0.8 },
         { prefab: n('ABANDONED_HUT'), weight: 2, verticalWeight: 0.8 },
-        { prefab: n('ABANDONED_STONE_HOUSE'), weight: 3, verticalWeight: 1.5 },
         { prefab: n('ABANDONED_SMITHY'), weight: 1.5, verticalWeight: 0.8, max: 3 },
         ...sides('ABANDONED_HOUSE', 3.5),
-        ...sides('ABANDONED_STONE_HOUSE', 3),
         ...sides('ABANDONED_SMITHY', 1, 3),
-        ...sides('ABANDONED_WORKSHOP', 0.6, 2),
     ];
 }
 
@@ -357,10 +356,12 @@ export const STRUCTURES = {
         /* weight = how often it is picked; required = at least one per village (when there is room); max = cap per village */
         modules: [
             ...villageModules(''),
-            /* crop fields: a fenced field of one herb each (the three herbs are picked by walking over them); a town has fewer of them than a village */
-            { prefab: 'ABANDONED_CROP_FIELD_HEALING',       weight: 0.6 },
-            { prefab: 'ABANDONED_CROP_FIELD_INVIGORATING',  weight: 0.6 },
-            { prefab: 'ABANDONED_CROP_FIELD_ILLUMINATING',  weight: 0.6 },
+            /* crop fields: a fenced field of one crop each, picked by walking over it: cotton, wheat or one of the three herbs. Common: about one plot in four */
+            { prefab: 'ABANDONED_CROP_FIELD_COTTON',        weight: 2.2 },
+            { prefab: 'ABANDONED_CROP_FIELD_WHEAT',         weight: 2.2 },
+            { prefab: 'ABANDONED_CROP_FIELD_HEALING',       weight: 1.6 },
+            { prefab: 'ABANDONED_CROP_FIELD_INVIGORATING',  weight: 1.6 },
+            { prefab: 'ABANDONED_CROP_FIELD_ILLUMINATING',  weight: 1.6 },
 
             // The one workshop: its interior holds every crafting station (see ABANDONED_WORKSHOP in interiorDefinitions.js)
             { prefab: 'ABANDONED_WORKSHOP',   weight: 1.5, required: true, max: 1 },
@@ -452,6 +453,8 @@ export const STRUCTURES = {
     ABANDONED_CROP_FIELD_HEALING: yard(CROP_FIELD('HEALING_HERB')),
     ABANDONED_CROP_FIELD_INVIGORATING: yard(CROP_FIELD('INVIGORATING_HERB')),
     ABANDONED_CROP_FIELD_ILLUMINATING: yard(CROP_FIELD('ILLUMINATING_HERB')),
+    ABANDONED_CROP_FIELD_COTTON: yard(CROP_FIELD('COTTON_PLANT')),
+    ABANDONED_CROP_FIELD_WHEAT: yard(CROP_FIELD('WHEAT_PLANT')),
 
 };
 
@@ -546,7 +549,7 @@ STRUCTURES.ABANDONED_VILLAGE_DESERT = {
     centerPrefab: 'ABANDONED_CENTER_DESERT',
     modules: [
         ...villageModules('DESERT'),
-        { prefab: 'ABANDONED_CROP_FIELD_ALOE', weight: 1 },
+        { prefab: 'ABANDONED_CROP_FIELD_ALOE', weight: 2.5 },   // the desert's fields: aloe (the herbs, cotton and wheat do not grow there)
         { prefab: 'ABANDONED_WORKSHOP_DESERT', weight: 1.5, required: true, max: 1 },
     ],
     trees: {

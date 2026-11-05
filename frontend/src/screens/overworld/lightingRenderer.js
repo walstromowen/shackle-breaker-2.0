@@ -338,6 +338,8 @@ export class LightingRenderer {
         }
         if (mapObjects) {
             for (const obj of mapObjects) {
+                // `lights`: several lights at points of the object (a lit window, a chimney), dx / dy in tiles from its top-left (a tall object rises above its row)
+                if (obj.lights) for (const L of obj.lights) if (L && L.hasLight) out.push({ x: obj.col + L.dx, y: obj.row - ((obj.h || 1) - 1) + L.dy, light: L, fixed: true });
                 if (!obj.light || !obj.light.hasLight) continue;
                 out.push({ x: obj.col + obj.w / 2, y: obj.row + obj.h / 2, light: obj.light, fixed: true }); // a map object never moves: its trace can be remembered
             }

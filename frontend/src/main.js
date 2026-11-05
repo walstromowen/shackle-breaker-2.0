@@ -98,6 +98,7 @@ ui_icons: './assets/icons/ui_icons.png',
     objBonePile: './assets/mapObjects/objBonePile.png',
     objAbandonedHouse1: './assets/mapObjects/objAbandonedHouse1.png',
     objAbandonedStoneHouse: './assets/mapObjects/objAbandonedStoneHouse.png',
+    objStoneWorkshop: './assets/mapObjects/objStoneWorkshop.png',   // the stone house as the workshop: lit windows, a smouldering chimney
     objCraftingHouse: './assets/mapObjects/objCraftingHouse.png',
     objAbandonedSmithy: './assets/mapObjects/objAbandonedSmithy.png',
     objAbandonedHouse1Left: './assets/mapObjects/objAbandonedHouse1Left.png',
@@ -140,6 +141,8 @@ ui_icons: './assets/icons/ui_icons.png',
     objCaveEntranceSnow: './assets/mapObjects/objCaveEntranceSnow.png',
     objCaveExit: './assets/mapObjects/objCaveExit.png',
     objHealingHerb: './assets/mapObjects/objHealingHerb.png',
+    objCottonPlant: './assets/mapObjects/objCottonPlant.png',   // a village crop field's cotton (COTTON_PLANT)
+    objWheatPlant: './assets/mapObjects/objWheatPlant.png',     // ... and its wheat (WHEAT_PLANT)
     objAloe: './assets/mapObjects/objAloe.png',
     objInvigoratingHerb: './assets/mapObjects/objInvigoratingHerb.png',
     objIlluminatingHerb: './assets/mapObjects/objIlluminatingHerb.png',

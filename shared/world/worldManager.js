@@ -599,7 +599,7 @@ export class WorldManager {
         for (let r = startRow; r <= endRow; r++) {
             for (let c = startCol; c <= endCol; c++) {
                 const obj = this.getObject(c, r);
-                if (obj && obj.light && obj.light.hasLight) lightObjects.push(obj);
+                if (obj && ((obj.light && obj.light.hasLight) || obj.lights)) lightObjects.push(obj);   // `lights`: a lit window, a chimney (the workshop)
             }
         }
         return lightObjects;
