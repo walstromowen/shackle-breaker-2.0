@@ -15,7 +15,7 @@ test('the knife abilities use the two throw animations (the poison one is shared
     assert.deepEqual(users.map(a => a.id).sort(), ['item_poison_knife', 'item_throwing_knife', 'throw_poison_dagger']);
 });
 
-test('Throw Poison Dagger is the Poison Knife item\'s throw, paid for with stamina, and the dagger teaches it at level 4 (Low Sweep comes at 3)', async () => {
+test('Throw Poison Dagger is the Poison Knife item\'s throw, paid for with stamina, and the dagger teaches it at level 3 (alongside Low Sweep)', async () => {
     const { ItemModel } = await import('../../shared/items/itemModel.js');
     const item = A.item_poison_knife, skill = A.throw_poison_dagger;
     assert.deepEqual(skill.effects, item.effects);
@@ -24,8 +24,8 @@ test('Throw Poison Dagger is the Poison Knife item\'s throw, paid for with stami
     for (const k of ['accuracy', 'speedModifier', 'range', 'animationId']) assert.equal(skill[k], item[k], k);
     assert.ok(skill.cost.stamina > 0 && !skill.cost.insight);
     assert.ok(!skill.tags.includes('item'), 'it is a skill, not an item use');
-    assert.ok(!new ItemModel('dagger', { level: 3 }).grantedAbilities.includes('throw_poison_dagger'));
-    assert.ok(new ItemModel('dagger', { level: 4 }).grantedAbilities.includes('throw_poison_dagger'));
+    assert.ok(!new ItemModel('dagger', { level: 2 }).grantedAbilities.includes('throw_poison_dagger'));
+    assert.ok(new ItemModel('dagger', { level: 3 }).grantedAbilities.includes('throw_poison_dagger'));
     assert.ok(new ItemModel('dagger', { level: 3 }).grantedAbilities.includes('low_sweep'));
     assert.ok(new ItemModel('dagger', { level: 3 }).grantedAbilities.includes('eviscerate'));
 });
@@ -93,13 +93,13 @@ test('those sprite files exist and are wider than tall (pointing right)', async 
     }
 });
 
-test('the newer attacks come at the middle upgrade levels (2 and 3) of the weapons they fit', async () => {
+test('the newer attacks come at the middle upgrade levels (2 and 3) of the weapons they fit, alongside the old ones', async () => {
     const { ItemModel } = await import('../../shared/items/itemModel.js');
     const at = (w, lvl) => new ItemModel(w, { level: lvl }).grantedAbilities;
-    for (const [w, id] of [['shortsword', 'low_sweep'], ['scythe', 'low_sweep'], ['spear', 'low_sweep'], ['warhammer', 'guard_break'], ['pickaxe', 'guard_break'], ['glaive', 'whirlwind_slash']]) {
+    for (const [w, id] of [['shortsword', 'low_sweep'], ['spear', 'low_sweep'], ['pickaxe', 'guard_break'], ['glaive', 'whirlwind_slash']]) {
         assert.ok(at(w, 2).includes(id) && !at(w, 1).includes(id), `${w} teaches ${id} at level 2`);
     }
-    for (const [w, id] of [['shortsword', 'leaping_slash'], ['handaxe', 'leaping_slash'], ['glaive', 'leaping_slash'], ['dagger', 'low_sweep'], ['wooden_club', 'guard_break'], ['scythe', 'whirlwind_slash']]) {
+    for (const [w, id] of [['shortsword', 'leaping_slash'], ['handaxe', 'leaping_slash'], ['glaive', 'leaping_slash'], ['spear', 'leaping_slash'], ['dagger', 'low_sweep'], ['wooden_club', 'guard_break'], ['scythe', 'low_sweep'], ['scythe', 'whirlwind_slash'], ['warhammer', 'guard_break']]) {
         assert.ok(at(w, 3).includes(id) && !at(w, 2).includes(id), `${w} teaches ${id} at level 3`);
     }
     assert.ok(at('shortbow', 2).includes('poisoned_arrow') && at('shortbow', 3).includes('triple_shot'), 'the bows are as they were');
