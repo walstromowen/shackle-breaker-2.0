@@ -12,7 +12,7 @@ import { TRAIT_DEFINITIONS } from '../../shared/abilities/traitDefinitions.js';
 import { encounterDefinitions } from '../../shared/story/encounterDefinitions.js';
 import { BIOME_DEFINITIONS } from '../../shared/world/biomeDefinitions.js';
 import { QuestDefinitions } from '../../shared/story/questDefinitions.js';
-import { BiomeModel } from '../../shared/world/biomeModel.js';
+import { BiomeModel, OUTDOOR_BATTLE_RATE } from '../../shared/world/biomeModel.js';
 import * as abilityData from '../../shared/abilities/abilityDefinitions.js';
 
 const ABILITIES = Object.values(abilityData).find(v => v && typeof v === 'object' && v.strike);
@@ -200,7 +200,8 @@ test('every encounter an act asks for exists, with all its stages wired up', () 
 test('a biome ambush uses the table of the hour: night in act 1, the blood moon table in act 2', () => {
     const saved = gameState.milestones;
     try {
-        const plains = new BiomeModel({ ...BIOME_DEFINITIONS.PLAINS, battles: { ...BIOME_DEFINITIONS.PLAINS.battles, rate: 1000 } });
+        const plains = new BiomeModel(BIOME_DEFINITIONS.PLAINS);
+        Object.assign(OUTDOOR_BATTLE_RATE, { day: 1000, night: 1000 });   // every roll an ambush
         const idsOf = (tableId) => new Set(SpawnTableDefinitions[tableId].pools.flatMap(p => p.members.map(m => m.id)));
         const night = idsOf('plains_battles_night'), blood = idsOf('plains_battles_blood_moon');
         const sample = (hour) => { const ids = new Set(); for (let i = 0; i < 400; i++) (plains.getBattle('hard', hour)?.enemies || []).forEach(e => ids.add(e.id)); return ids; };
@@ -216,7 +217,22 @@ test('a biome ambush uses the table of the hour: night in act 1, the blood moon 
         assert.ok(sample(12).has('SKELETAL_WARRIOR'), 'act 2 days have their skeletons too');
     } finally {
         gameState.milestones = saved;
+        Object.assign(OUTDOOR_BATTLE_RATE, { day: 1 / 200, night: 1 / 100 });
     }
+});
+
+test('ambushes out in the open: 1 step in 200 by day, 1 in 100 at night, in every outdoor biome', () => {
+    assert.deepEqual(OUTDOOR_BATTLE_RATE, { day: 1 / 200, night: 1 / 100 });
+    const saved = gameState.milestones, real = Math.random;
+    gameState.milestones = [];
+    try {
+        for (const id of ['PLAINS', 'DESERT', 'SNOWY_MOUNTAINS']) {
+            const b = new BiomeModel(BIOME_DEFINITIONS[id]);
+            Math.random = () => 0.007;   // under 1/100, over 1/200
+            assert.ok(!b.getBattle('normal', 12), `${id}: no ambush on that roll by day`);
+            assert.ok(b.getBattle('normal', 23), `${id}: an ambush on it at night`);
+        }
+    } finally { Math.random = real; gameState.milestones = saved; }
 });
 
 test('an encounter pool marked minAct 2 is only offered in act 2, at the hours it names', () => {

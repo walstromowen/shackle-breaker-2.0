@@ -4,6 +4,9 @@ import { SpawnTableFactory } from '../battle/spawnTableFactory.js';
 import { ActSystem } from '../story/actSystem.js';
 import { CorruptionSystem } from '../characters/corruptionSystem.js';
 
+/* How often a step out in the open starts an ambush, in every outdoor biome: 1 in 200 by day (dusk counts as day), 1 in 100 at night. */
+export const OUTDOOR_BATTLE_RATE = { day: 1 / 200, night: 1 / 100 };
+
 export class BiomeModel {
     constructor(definition) {
         this.id = definition.id;
@@ -84,9 +87,15 @@ export class BiomeModel {
        a bigger group (SpawnTableFactory, PARTY_SCALING). */
     getBattle(difficulty = 'normal', currentHour = 12, size = {}) {
         if (!this.battles || !this.battles.tables) return null;
-        // The act makes ambushes more frequent, most of all on a blood moon night (story/actDefinitions.js)
-        if (Math.random() > this.battles.rate * ActSystem.getBattleRateMultiplier(currentHour)) return null;
         const timeOfDay = this.getTimeOfDay(currentHour);
+        // Out in the open an ambush is one step in 200 by day (and at dusk) and one in 100 at night, in every biome (OUTDOOR_BATTLE_RATE); a blood
+        // moon night is more dangerous still (story/actDefinitions.js). Under ground (a cave) the biome's own rate, raised by the act, stands.
+        const indoors = !!(gameState.world && gameState.world.isInterior);
+        const rate = indoors
+            ? this.battles.rate * ActSystem.getBattleRateMultiplier(currentHour)
+            : (timeOfDay === 'night' ? OUTDOOR_BATTLE_RATE.night : OUTDOOR_BATTLE_RATE.day)
+                * (ActSystem.isBloodMoon(currentHour) ? ActSystem.getBattleRateMultiplier(currentHour) : 1);
+        if (!(this.battles.rate > 0) || Math.random() > rate) return null;
         // A blood moon night has a table of its own (`tables.bloodMoon`), the dead and the cursed that rise under it
         const tableId = (ActSystem.isBloodMoon(currentHour) && this.battles.tables.bloodMoon)
             || this.battles.tables[timeOfDay] || this.battles.tables.day;

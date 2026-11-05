@@ -158,13 +158,13 @@ export const ItemDefinitions = {
     description: 'A standard shortbow. Common bow used to hunt game and defend against threats. "Sometimes its better to end a fight from afar before it begins." - Commander Mentoras.',
     value: 100,
     icon: { col: 5, row: 0 },
-    attack: { pierce: 4, slash: 3 },
+    attack: { pierce: 7, slash: 4 },
     requirements: { dexterity: 10, attunement: 6 },
     requirementGrowth: { dexterity: 2, attunement: 2 },
     grantedAbilities: ["loose_arrow", "quick_draw"],
     maxLevel: 5,
     statGrowth: {
-      attack: { pierce: 3, slash: 2 }
+      attack: { pierce: 4, slash: 2 }
     },
     abilityUnlocks: {
       2: ["poisoned_arrow"],
@@ -185,13 +185,13 @@ export const ItemDefinitions = {
     description: 'A standard crossbow. Standard issue crossbow of the Alterian watchmen. "A crossbow is the bow of a lazy man, and the weapon of an efficient adversary." - Commander Mentoras.',
     value: 100,
     icon: { col: 6, row: 0 },
-    attack: { pierce: 4, slash: 3 },
+    attack: { pierce: 8, slash: 3 },
     requirements: { dexterity: 8, intelligence: 8 },
     requirementGrowth: { dexterity: 2, intelligence: 2 },
     grantedAbilities: ["loose_arrow", "quick_draw"],
     maxLevel: 5,
     statGrowth: {
-      attack: { pierce: 3, slash: 2 }
+      attack: { pierce: 4, slash: 1 }
     },
     abilityUnlocks: {
       2: ["poisoned_arrow"],
@@ -212,7 +212,7 @@ export const ItemDefinitions = {
     description: 'A standard warhammer. Heavy and crushing.',
     value: 100,
     icon: { col: 3, row: 0 },
-    attack: { blunt: 6 },
+    attack: { blunt: 9 },
     requirements: { strength: 12, vigor: 10 },
     requirementGrowth: { strength: 3, vigor: 2 },
     grantedAbilities: ["strike", "cleave"],
@@ -266,7 +266,7 @@ export const ItemDefinitions = {
     description: 'A repurposed farming tool with a wickedly curved blade. Originally forged to reap grain in the fertile valleys of Altus, it now harvests a far more grim crop. "The arc of a scythe is absolute. Do not swing at a single foe; swing to clear the field." - Commander Mentoras.',
     value: 125,
     icon: { col: 8, row: 0 },
-    attack: { slash: 6, pierce: 1 },
+    attack: { slash: 8, pierce: 2 },
     requirements: { strength: 10, attunement: 6 },
     requirementGrowth: { strength: 2, attunement: 2 },
     grantedAbilities: ["slash"],
@@ -295,13 +295,13 @@ export const ItemDefinitions = {
     description: 'A polearm tipped with a sweeping blade. Standard issue for vanguard elite units tasked with holding back swarms. "A spear thrusts to kill one; a glaive sweeps to remind an army why they fear the front line." - Commander Mentoras.',
     value: 150,
     icon: { col: 7, row: 0 },
-    attack: { slash: 5, pierce: 3 },
+    attack: { slash: 7, pierce: 4 },
     requirements: { strength: 10, dexterity: 10 },
     requirementGrowth: { strength: 2, dexterity: 2 },
     grantedAbilities: ["slash", "thrust"],
     maxLevel: 5,
     statGrowth: {
-      attack: { slash: 3, pierce: 2 }
+      attack: { slash: 4, pierce: 2 }
     },
     abilityUnlocks: {
       2: ["cleave"],

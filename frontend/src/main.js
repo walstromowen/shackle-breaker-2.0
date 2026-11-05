@@ -134,6 +134,7 @@ ui_icons: './assets/icons/ui_icons.png',
     objMysteriousAltar: './assets/mapObjects/objMysteriousAltar.png',
     objScarecrow: './assets/mapObjects/objScarecrow.png',
     objTombstone: './assets/mapObjects/objTombstone.png',
+    objCursedGrave: './assets/mapObjects/objCursedGrave.png',   // a beaten multiplayer party's grave (PLAYER_GRAVE): the tombstone, cursed
     objCaveEntrance: './assets/mapObjects/objCaveEntrance.png',
     objCaveEntranceDesert: './assets/mapObjects/objCaveEntranceDesert.png',
     objCaveEntranceSnow: './assets/mapObjects/objCaveEntranceSnow.png',

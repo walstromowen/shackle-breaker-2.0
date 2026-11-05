@@ -57,13 +57,14 @@ test('the handaxe costs no iron anywhere, and is weaker than the shortsword', ()
     assert.deepEqual(I.handaxe.harvestTool, ['axe']);
 });
 
-test('two-handed weapons got a small bump over what they were', () => {
-    const was = { warhammer: 5, shortbow: 6, crossbow: 6, scythe: 6, glaive: 7 };
-    for (const [id, total] of Object.entries(was)) {
-        const now = sumAttack(I[id].attack);
+test('a two-handed weapon is worth about two one-handed ones: at least a pair of one-handers\' best damage type, fresh and fully upgraded', () => {
+    const best = (def, level) => Math.max(...Object.entries(def.attack || {}).map(([t, v]) => v + ((def.statGrowth?.attack || {})[t] || 0) * (level - 1)));
+    const pair = (id, level) => 2 * best(I[id], level);
+    for (const id of ['warhammer', 'shortbow', 'crossbow', 'scythe', 'glaive']) {
         assert.equal(I[id].slot, 'twoHand');
-        assert.equal(now, total + 1, `${id} +1 attack`);
+        for (const level of [1, 5]) assert.ok(best(I[id], level) >= pair('shortsword', level) * 0.95, `${id} at level ${level}: ${best(I[id], level)} against two shortswords' ${pair('shortsword', level)}`);
     }
+    assert.ok(best(I.warhammer, 1) > pair('wooden_club', 1), 'the warhammer beats two clubs');
 });
 
 test('every bow animation lets the arrow land and stay in the target for a while', () => {

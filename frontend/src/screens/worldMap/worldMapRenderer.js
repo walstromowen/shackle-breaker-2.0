@@ -6,6 +6,8 @@ import { gameState } from '../../../../shared/core/gameState.js';
 import { MAP_OBJECTS_DEFINITIONS } from '../../../../shared/world/mapObjectDefinitions.js';
 import { formatDuration, ORIGINS, waypointOrigin } from '../../../../shared/world/waypoints.js';
 import { VIEW } from './worldMapController.js';
+import { multiplayerSession } from '../../engine/multiplayerSession.js';
+import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
 
 /* WorldMapRenderer - draws the world map screen (see worldMapController.js).
  *
@@ -147,6 +149,8 @@ export class WorldMapRenderer {
         }
 
         this._banners(ctx, state);
+        this._graves(ctx, sx, sy, scale);
+        this._others(ctx, sx, sy, scale);
         this._party(ctx, sx(player.x), sy(player.y), player.direction, scale);
         ctx.restore();
 
@@ -192,6 +196,54 @@ export class WorldMapRenderer {
                 ctx.fillStyle = '#6a4828';
                 ctx.fillRect(x - 1.5, y - h, 3, h);
             }
+            ctx.restore();
+        }
+    }
+
+    /* The graves beaten multiplayer parties left on the overworld (world/graves.js): the cursed grave in a violet glow, mine named. */
+    _graves(ctx, sx, sy, scale) {
+        const img = this.loader && this.loader.get ? this.loader.get('objCursedGrave') : null;
+        const me = multiplayerSocial.me;
+        const k = Math.max(1, Math.min(1.6, 0.7 + scale / 8));
+        for (const [key, g] of Object.entries(gameState.world.changes || {})) {
+            if (!key.startsWith('grave:') || key.startsWith('grave:INT_') || !g) continue;
+            const [c, r] = key.slice(6).split(',').map(Number);
+            const x = sx(c + 0.5), y = sy(r + 0.5);
+            const pulse = (Math.sin(performance.now() * 0.004 + c) + 1) / 2;
+            ctx.save();
+            const glow = ctx.createRadialGradient(x, y, 0, x, y, 22 * k);
+            glow.addColorStop(0, `rgba(160, 70, 255, ${0.45 + pulse * 0.25})`);
+            glow.addColorStop(1, 'rgba(160, 70, 255, 0)');
+            ctx.fillStyle = glow;
+            ctx.beginPath(); ctx.arc(x, y, 22 * k, 0, Math.PI * 2); ctx.fill();
+            const s = 26 * k;
+            ctx.imageSmoothingEnabled = false;
+            if (img && img.width) ctx.drawImage(img, 0, 0, 32, 32, x - s / 2, y - s / 2, s, s);
+            else { ctx.fillStyle = '#5a3a7a'; ctx.fillRect(x - s / 4, y - s / 2, s / 2, s); }
+            if (g.owner && g.owner === me) {
+                ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+                ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)'; ctx.fillStyle = '#d9b8ff';
+                ctx.strokeText('Your grave', x, y - s / 2 - 6); ctx.fillText('Your grave', x, y - s / 2 - 6);
+            }
+            ctx.restore();
+        }
+    }
+
+    /* The other players in a multiplayer world, out on the overworld: a blue dot with their name (white-ringed for my party). */
+    _others(ctx, sx, sy, scale) {
+        const party = multiplayerSocial.myGroup();
+        const k = Math.max(1, Math.min(1.6, 0.7 + scale / 8));
+        for (const r of multiplayerSession.remotes.values()) {
+            if (!r || !r.placed || r.map !== 'world') continue;
+            const x = sx(r.col + 0.5), y = sy(r.row + 0.5);
+            const mine = party && (party.leader === r.id || party.members.includes(r.id));
+            ctx.save();
+            ctx.beginPath(); ctx.arc(x, y, 9 * k, 0, Math.PI * 2);
+            ctx.fillStyle = '#59d4ff'; ctx.fill();
+            ctx.lineWidth = 3; ctx.strokeStyle = mine ? '#ffffff' : 'rgba(0, 0, 0, 0.85)'; ctx.stroke();
+            ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
+            ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)'; ctx.fillStyle = '#bfefff';
+            ctx.strokeText(r.username || 'Player', x, y - 14 * k); ctx.fillText(r.username || 'Player', x, y - 14 * k);
             ctx.restore();
         }
     }
