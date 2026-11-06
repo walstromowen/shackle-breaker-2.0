@@ -33,7 +33,7 @@ function readPng(rel) {
             px[y * stride + x] = v & 255;
         }
     }
-    return { w, h, alpha: (x, y) => px[y * stride + x * 4 + 3] };
+    return { w, h, alpha: (x, y) => px[y * stride + x * 4 + 3], at: (x, y) => px.subarray(y * stride + x * 4, y * stride + x * 4 + 4) };
 }
 /* How many opaque pixels each of the rows 48..58 of one 64 x 64 frame has (the feet and the shadow they stand on). */
 const footprint = (img, frameCol, frameRow) => {
@@ -42,19 +42,27 @@ const footprint = (img, frameCol, frameRow) => {
     return out;
 };
 
-test('the merchant sheet is 8 frames across and 12 rows of 64 px, and its shadow lies where the madman\'s lies in every frame', () => {
+test('the merchant sheet is 8 frames across and 12 rows of 64 px, and every frame has the soft shadow under the feet, as the madman\'s does', () => {
     const merchant = readPng('sprites/shady_merchant/shady_merchant_spritesheet.png'), madman = readPng('sprites/madman/madman_sprite.png');
     assert.deepEqual([merchant.w, merchant.h], [512, 768]);
     assert.ok(mainJs.includes("shadyMerchantSprite: './assets/sprites/shady_merchant/shady_merchant_spritesheet.png'"));
     assert.equal(ENTITY_DEFINITIONS.SHADY_MERCHANT.spriteOverworld, 'shadyMerchantSprite');
-    const ref = footprint(madman, 0, 0).slice(5, 9); // rows 53..56: the oval shadow below the feet (it is the only thing down there)
-    assert.deepEqual(ref, [20, 20, 18, 12]);
-    for (let row = 0; row < 12; row++) {
-        for (let col = 0; col < 8; col++) {
-            const f = footprint(merchant, col, row);
-            assert.deepEqual(f.slice(5, 9), ref, `frame ${col},${row}: the same shadow rows as the madman`);
-            assert.equal(f[9], 0, `frame ${col},${row}: nothing below the shadow`);
+    // the shadow (rows 49..54) is see-through dark ink, the same in both sheets; nothing is drawn more than 2 px below it
+    const shadowRows = (img, col, row) => {
+        const rows = new Set(); let lowest = -1;
+        for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) {
+            const p = img.at(col * 64 + x, row * 64 + y);
+            if (p[3] > 0) lowest = Math.max(lowest, y);
+            if (p[3] > 0 && p[3] < 128 && p[0] === 8 && p[1] === 6 && p[2] === 10) rows.add(y);
         }
+        return { min: Math.min(...rows), max: Math.max(...rows), lowest };
+    };
+    const ref = shadowRows(madman, 0, 0);
+    assert.deepEqual([ref.min, ref.max], [49, 54]);
+    for (let row = 0; row < 12; row++) for (let col = 0; col < 8; col++) {
+        const f = shadowRows(merchant, col, row);
+        assert.deepEqual([f.min, f.max], [ref.min, ref.max], `frame ${col},${row}: the same shadow rows as the madman`);
+        assert.ok(f.lowest <= 56, `frame ${col},${row}: nothing far below the shadow`);
     }
 });
 

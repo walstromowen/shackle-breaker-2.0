@@ -34,9 +34,10 @@ export const CONFIG = {
     // feetPad = 'auto': the empty rows under the feet are read from the sheet's pixels, so any amount of empty space below the feet is fine.
     //           A number overrides that (empty rows between the feet and the bottom of the frame; 0 = feet on the last row).
     // shiftX = pixels to nudge a figure that is not centred in its frame (positive = right).
-    // Every character sheet has the same shadow, ending on row 56 of its 64-row frame, so feetPad is 7 for all of them: the same standing line, the same shadow, whoever it is
-    // (backend/test/charactersheets.test.js). 'auto' still works for a sheet that is different, but one stray pixel under the shadow then lifts that character off the ground.
-    CHARACTER_FRAME: { w: 64, h: 64, feetPad: 7, shiftX: 0 },
+    // Every character sheet has the same kind of shadow: a soft, see-through oval under the feet, rows 49..54 of its 64-row frame (the feet stand on row 51, inside it),
+    // so feetPad is 9 for all of them: the same standing line whoever it is (backend/test/charactersheets.test.js). 'auto' would read the lowest drawn pixel, which in a
+    // running frame can be a foot below the shadow, and lift that character off the ground.
+    CHARACTER_FRAME: { w: 64, h: 64, feetPad: 9, shiftX: 0 },
 
     // Lighting (see LightingRenderer): every light floods over the tile grid and loses a fixed amount of strength per tile.
     // LIGHT_DIAGONAL_COST = distance of a diagonal step: 1 = square pools of light, 1.41 = round (smooth, the default), 2 = diamond-shaped. 1.25 gives the

@@ -403,7 +403,7 @@ export class CatacombGenerator {
                 }
             }
         }
-        // the dead's own stores: a few ancient barrels and crates against the walls of most rooms (searched like any container)
+        // the dead's own stores: a few barrels (ancient, or burst and ruined) and crates against the walls of most rooms (searched like any container)
         for (const rm of this.rooms) {
             if (rm.role !== 'room' && rm.role !== 'lever' && rm.role !== 'antechamber') continue;
             if (this._hash(rm.id, 3, 71) > 0.75) continue;
@@ -414,7 +414,8 @@ export class CatacombGenerator {
                 const r = rm.y0 + 2 + Math.floor(this._hash(rm.id, k, 74) * Math.max(1, rm.y1 - rm.y0 - 2));
                 const byWall = !this._floor(c - 2, r) || !this._floor(c + 2, r) || !this._floor(c, r + 2) || !this._floor(c, r - 3);
                 if (!byWall || !this._roomy(c, r)) continue;
-                this._put(c, r, this._hash(c, r, 75) < 0.5 ? 'ANCIENT_BARREL' : 'ANCIENT_CRATE');
+                const h = this._hash(c, r, 75);
+                this._put(c, r, h < 0.4 ? 'ANCIENT_BARREL' : h < 0.65 ? 'RUINED_BARREL' : 'CRATE');
                 placed++;
             }
         }

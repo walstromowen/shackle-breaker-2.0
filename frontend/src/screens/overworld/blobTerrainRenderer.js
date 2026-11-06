@@ -443,8 +443,15 @@ export class BlobTerrainRenderer {
                 const nv = Math.round(img.width / baseW);
                 if (wallStyle && nv >= 16 && op[0] !== SLOT.onLevel) sx += (((c & 3) + 4 * ((r + op[3]) & 1)) % 8 + (wallStyle(c, r) === 'natural' ? 8 : 0)) * baseW;
                 else if (nv > 1) sx += ((c & 3) + 4 * ((r + op[3]) & 1)) % nv * baseW;
-            } else if (op[0] === SLOT.primary && floorStyle && img.width >= 2 * BLOB_SHEET_COLS * BLOB_TILE_PX && floorStyle(c, r) === 'natural') {
-                sx += BLOB_SHEET_COLS * BLOB_TILE_PX;
+            } else if ((op[0] === SLOT.primary || op[0] === SLOT.secondary) && img.width >= 2 * BLOB_SHEET_COLS * BLOB_TILE_PX) {
+                // Floor variants: a floor sheet may hold several copies of its blob set side by side (the caves' and catacombs' do); a cell takes the one its
+                // place picks, so the same tile is not repeated on a grid. On a map that mixes two looks (the catacombs: getFloorStyle) the primary sheet holds
+                // both, [brick 0..n-1][natural 0..n-1].
+                const block = BLOB_SHEET_COLS * BLOB_TILE_PX;
+                const twoLooks = op[0] === SLOT.primary && floorStyle;
+                const per = Math.max(1, Math.floor(img.width / block / (twoLooks ? 2 : 1)));
+                const v = per > 1 ? (((Math.imul(c, 73856093) ^ Math.imul(r, 19349663)) >>> 0) % per) : 0;
+                sx += ((twoLooks && floorStyle(c, r) === 'natural' ? per : 0) + v) * block;
             }
             ctx.drawImage(img, sx, op[2] * BLOB_TILE_PX, BLOB_TILE_PX, BLOB_TILE_PX, px(c), py(r + op[3]), pw(c), ph(r + op[3]));
         };

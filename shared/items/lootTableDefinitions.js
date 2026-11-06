@@ -1027,21 +1027,16 @@ LootTableDefinitions.container_ancient_barrel = {
         { id: "kurtus_brew", weight: 4, min: 1, max: 1 }
     ]
 };
-// An ancient crate in the catacombs: grave goods and old metal, now and then a blade.
-LootTableDefinitions.container_ancient_crate = {
+// A ruined barrel in the catacombs: burst long ago; mostly its own staves, and whatever rolled out and was never picked up.
+LootTableDefinitions.container_ruined_barrel = {
     type: "weighted",
     items: [
-        { id: "bone", weight: 20, min: 1, max: 3 },
-        { id: "linen", weight: 14, min: 1, max: 3 },
-        { id: "bronze_ingot", weight: 12, min: 1, max: 2 },
-        { id: "copper_ingot", weight: 12, min: 1, max: 2 },
-        { id: "iron_ingot", weight: 9, min: 1, max: 2 },
-        { id: "throwing_knife", weight: 8, min: 1, max: 3 },
-        { id: "poison_throwing_knife", weight: 5, min: 1, max: 2 },
-        { id: "escape_rope", weight: 6, min: 1, max: 1 },
-        { id: "cloth_hood", weight: 3, min: 1, max: 1 },
-        { id: "cloth_robe", weight: 3, min: 1, max: 1 },
-        { id: "dagger", weight: 2, min: 1, max: 1 }
+        { id: "soft_wood", weight: 40, min: 1, max: 2 },
+        { id: "bone", weight: 22, min: 1, max: 2 },
+        { id: "plant_fibers", weight: 12, min: 1, max: 2 },
+        { id: "linen", weight: 10, min: 1, max: 1 },
+        { id: "torch", weight: 10, min: 1, max: 1 },
+        { id: "salt", weight: 6, min: 1, max: 1 }
     ]
 };
 // A crate packed with sacks: provisions and dry goods.

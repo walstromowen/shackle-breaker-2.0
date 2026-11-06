@@ -162,8 +162,8 @@ ui_icons: './assets/icons/ui_icons.png',
     objTrapPitSprung: './assets/mapObjects/objTrapPitSprung.png',
     objTrapAxes: './assets/mapObjects/objTrapAxes.png',
     objTrapAxesSprung: './assets/mapObjects/objTrapAxesSprung.png',
-    objAncientBarrel: './assets/mapObjects/objAncientBarrel.png',       // the catacombs' containers
-    objAncientCrate: './assets/mapObjects/objAncientCrate.png',
+    objAncientBarrel: './assets/mapObjects/objAncientBarrel.png',       // the catacombs' barrels
+    objRuinedBarrel: './assets/mapObjects/objRuinedBarrel.png',
     objHealingHerb: './assets/mapObjects/objHealingHerb.png',
     objCottonPlant: './assets/mapObjects/objCottonPlant.png',   // a village crop field's cotton (COTTON_PLANT)
     objWheatPlant: './assets/mapObjects/objWheatPlant.png',     // ... and its wheat (WHEAT_PLANT)

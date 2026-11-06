@@ -255,9 +255,10 @@ export const MAP_OBJECTS_DEFINITIONS = {
     TRAP_PIT_SPRUNG: { sheet: 'objTrapPitSprung', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, hitbox: { xOffset: 0, yOffset: 0, w: 0, h: 0 } },
     TRAP_AXES: { sheet: 'objTrapAxes', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'swinging_axes', walkIn: true } },
     TRAP_AXES_SPRUNG: { sheet: 'objTrapAxesSprung', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, hitbox: { xOffset: 0, yOffset: 0, w: 0, h: 0 } },
-    // the catacombs' own containers: old, rotten, cobwebbed, holding what the dead were laid to rest with
+    // the catacombs' own barrels (the ordinary CRATE stands among them): an ancient one holds what the dead were laid to rest with; a ruined one has burst,
+    // and little is left in it but staves and scraps
     ANCIENT_BARREL: { sheet: 'objAncientBarrel', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'SEARCH', lootTableId: 'container_ancient_barrel', name: 'ancient barrel' } },
-    ANCIENT_CRATE: { sheet: 'objAncientCrate', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'SEARCH', lootTableId: 'container_ancient_crate', name: 'ancient crate' } },
+    RUINED_BARREL: { sheet: 'objRuinedBarrel', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'SEARCH', lootTableId: 'container_ruined_barrel', name: 'ruined barrel' } },
     CAVE_EXIT_DOOR: {
         sheet: 'objCaveExit',
         spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: false, isGround: false, isAnchor: true, hitboxes: [{ xOffset: 1, yOffset: 0, w: 1, h: 1 }],

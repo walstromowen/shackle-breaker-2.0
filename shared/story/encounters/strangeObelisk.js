@@ -60,7 +60,7 @@ const approach = ({ text, attribute, flag, action, success, failure }) => ({
 export const strangeObelisk = {
   id: "strange_obelisk",
   title: "A Strange Obelisk",
-  imageSheet: "encounter_obelisk",
+  imageSheet: "encounter_strange_obelisk",
   initialStage: "discovery",
   // Cues: tone / ambience here apply to every stage; a stage sets its own tone, effect, sfx and ambience (see story/encounters/story/prologue.js)
   tone: "arcane",

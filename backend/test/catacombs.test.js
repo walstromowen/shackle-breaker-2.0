@@ -124,7 +124,7 @@ test('every catacomb has its three kinds of trap in the halls, spread out and aw
             for (const u of g.traps) if (u !== t) assert.ok(Math.abs(u.c - t.c) + Math.abs(u.r - t.r) >= 9, 'spread out');
         }
         const ids = [...g.objects.values()];
-        assert.ok(ids.includes('ANCIENT_BARREL') || ids.includes('ANCIENT_CRATE'));
+        assert.ok(ids.includes('ANCIENT_BARREL') && ids.includes('RUINED_BARREL') && ids.includes('CRATE'), 'ancient and ruined barrels, and crates');
     }
 });
 
@@ -148,18 +148,19 @@ test('each trap is a walk-in encounter with a Vigor saving throw: a failure hurt
     }
 });
 
-test('the ancient barrel and crate are searched for grave goods that exist', async () => {
+test('the ancient and ruined barrels are searched for things that exist; the ancient crate is gone', async () => {
+    assert.ok(!MAP_OBJECTS_DEFINITIONS.ANCIENT_CRATE);
     const { LootTableDefinitions } = await import('../../shared/items/lootTableDefinitions.js');
     const { ItemDefinitions } = await import('../../shared/items/itemDefinitions.js');
-    for (const id of ['ANCIENT_BARREL', 'ANCIENT_CRATE']) {
+    for (const id of ['ANCIENT_BARREL', 'RUINED_BARREL']) {
         const def = MAP_OBJECTS_DEFINITIONS[id];
         assert.equal(def.interaction.type, 'SEARCH');
         const table = LootTableDefinitions[def.interaction.lootTableId];
-        assert.ok(table && table.items.length >= 8);
+        assert.ok(table && table.items.length >= 5);
         for (const it of table.items) assert.ok(ItemDefinitions[it.id], `${it.id} exists`);
     }
     const main = read('../../frontend/src/main.js');
-    for (const k of ['objTrapArrow', 'objTrapArrowSprung', 'objTrapPit', 'objTrapPitSprung', 'objTrapAxes', 'objTrapAxesSprung', 'objAncientBarrel', 'objAncientCrate', 'encounter_catacomb_traps']) {
+    for (const k of ['objTrapArrow', 'objTrapArrowSprung', 'objTrapPit', 'objTrapPitSprung', 'objTrapAxes', 'objTrapAxesSprung', 'objAncientBarrel', 'objRuinedBarrel', 'encounter_catacomb_traps']) {
         const m = main.match(new RegExp(`${k}:\\s*'\\./(assets/[^']+)'`));
         assert.ok(m && fs.existsSync(new URL(`../../frontend/src/${m[1]}`, import.meta.url)), `${k} is registered and on disk`);
     }
@@ -174,5 +175,18 @@ test('every trap is one floor tile on the flagstone floor, so it can hardly be t
     for (let k = 0; k < 4; k++) {
         const g = InteriorFactory.create(31 + k * 977, 'CATACOMBS', `${k}_1_1_${k}`);
         for (const t of g.traps) assert.equal(g.getFloorStyle(t.c, t.r), 'brick', 'on flagstones');
+    }
+});
+
+test('every encounter has a picture sheet that is registered and on disk, for every stage', async () => {
+    const { encounterDefinitions } = await import('../../shared/story/encounterDefinitions.js');
+    const main = read('../../frontend/src/main.js');
+    for (const [id, enc] of Object.entries(encounterDefinitions)) {
+        for (const [sid, st] of Object.entries(enc.stages)) {
+            if (!st.image) continue;
+            const key = st.image.sheet || enc.imageSheet;
+            const m = main.match(new RegExp(`\\b${key}:\\s*'\\./([^']+)'`));
+            assert.ok(m && fs.existsSync(new URL(`../../frontend/src/${m[1]}`, import.meta.url)), `${id}.${sid}: sheet ${key} is registered and on disk`);
+        }
     }
 });

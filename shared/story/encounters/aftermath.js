@@ -142,7 +142,7 @@ export const aftermath = {
         },
         loot_fail: {
             displayText: "Nothing of Value",
-            image: { col: 2, row: 0 },
+            image: { col: 0, row: 0 },   // the battlefield (cell 2,0 of the sheet is empty)
             text: "You search the area thoroughly, but see nothing worth taking.",
             decisions: [
                 {
@@ -153,7 +153,7 @@ export const aftermath = {
         },
         search_fail: {
             displayText: "No Life Signs",
-            image: { col: 2, row: 0 },
+            image: { col: 0, row: 0 },   // the battlefield (cell 2,0 of the sheet is empty)
             text: "You search high and low, but find no survivors.",
             decisions: [
                 {
@@ -598,7 +598,7 @@ export const aftermath = {
             effect: "blood",
             ambience: "none",
             ambienceFade: 0.4,
-            image: { col: 1, row: 3 },
+            image: { col: 3, row: 3 },   // the fallen rising to fight (cell 1,3 is a placeholder square)
             bgm: "plainsBattleBgm",
             text: "As you tend to the warrior's wounds, he violently grabs you and draws his weapon! Soon, other fallen warriors rise around you!",
             decisions: [
