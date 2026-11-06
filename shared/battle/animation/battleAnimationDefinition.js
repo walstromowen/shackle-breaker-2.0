@@ -980,14 +980,15 @@ export const BattleAnimationDefinitions = {
     // The dark hand: drawn solid ('normal'; a dark purple hand all but vanishes on the glowing 'screen' blend). It is a slow, long cast on purpose: the hand
     // starts small and faint and swells over the target for about four seconds ('loom_over'), stays there, and thins away at the end. The sound is played
     // slowed down (pitch 0.65, about 6 seconds) so it lasts as long as the hand does, and the target trembles only lightly until the hand has grown.
-    "spirit_reap": anim(6.6, {
+    // 4.6 s (it was 6.6): every cue is drawn in by the same proportion, and the sound (4 s long) plays a little faster so it ends with the reaper
+    "spirit_reap": anim(4.6, {
         seconds: true,
-        audio: [sfx(0, 'spiritReapSfx', { volume: 1, pitch: 0.65 })],
-        actor: lunge(0, 0.15, 80, { flash: flash(5.6, 6.3, 'brightness(180%) saturate(200%) hue-rotate(120deg)') }),
+        audio: [sfx(0, 'spiritReapSfx', { volume: 1, pitch: 0.9 })],
+        actor: lunge(0, 0.15, 80, { flash: flash(3.9, 4.4, 'brightness(180%) saturate(200%) hue-rotate(120deg)') }),
         vfx: [
-            spawn(0.2, 'spiritReapAnimation', { life: 6.2, move: 'loom_over', scale: 2.5, blend: 'normal' })
+            spawn(0.2, 'spiritReapAnimation', { life: 4.2, move: 'loom_over', scale: 2.5, blend: 'normal' })
         ],
-        target: { shake: shake(2.4, 5.8, 14), flash: flash(0.4, 6.0, 'brightness(130%) sepia(60%) hue-rotate(270deg) saturate(80%)') }
+        target: { shake: shake(1.7, 4.0, 14), flash: flash(0.3, 4.2, 'brightness(130%) sepia(60%) hue-rotate(270deg) saturate(80%)') }
     }),
     "spite": anim(1.5, {
         audio: [

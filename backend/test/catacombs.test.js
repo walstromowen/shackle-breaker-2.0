@@ -111,3 +111,68 @@ test('the catacombs\' own fights come from the dead and the spiders', async () =
     for (let i = 0; i < 60; i++) { const b = SpawnTableFactory.generateBattle('catacombs_battles', 'normal', 1); if (b) for (const e of b.enemies) seen.add(e.entityId || e.id || e.definitionId); }
     assert.ok(seen.size >= 2, [...seen].join(','));
 });
+
+test('every catacomb has its three kinds of trap in the halls, spread out and away from the stairs, and ancient barrels and crates to search', () => {
+    for (let k = 0; k < 6; k++) {
+        const g = InteriorFactory.create(777 + k * 4321, 'CATACOMBS', `${k}_${k}_2_2`);
+        const kinds = new Set(g.traps.map(t => t.kind));
+        assert.ok(kinds.has('TRAP_ARROW') && kinds.has('TRAP_PIT') && kinds.has('TRAP_AXES'), [...kinds].join(','));
+        assert.ok(g.traps.length >= 6);
+        for (const t of g.traps) {
+            assert.ok(g._walkable(t.c, t.r), 'on open floor');
+            assert.ok(g._reach.distance[g._idx(t.c, t.r)] >= 14, 'not by the stairs');
+            for (const u of g.traps) if (u !== t) assert.ok(Math.abs(u.c - t.c) + Math.abs(u.r - t.r) >= 9, 'spread out');
+        }
+        const ids = [...g.objects.values()];
+        assert.ok(ids.includes('ANCIENT_BARREL') || ids.includes('ANCIENT_CRATE'));
+    }
+});
+
+test('each trap is a walk-in encounter with a Vigor saving throw: a failure hurts, and either way the trap is spent', async () => {
+    const { encounterDefinitions } = await import('../../shared/story/encounterDefinitions.js');
+    for (const [obj, id, sprung] of [['TRAP_ARROW', 'arrow_trap', 'TRAP_ARROW_SPRUNG'], ['TRAP_PIT', 'pit_trap', 'TRAP_PIT_SPRUNG'], ['TRAP_AXES', 'swinging_axes', 'TRAP_AXES_SPRUNG']]) {
+        const def = MAP_OBJECTS_DEFINITIONS[obj];
+        assert.equal(def.interaction.type, 'ENCOUNTER'); assert.equal(def.interaction.id, id); assert.ok(def.interaction.walkIn);
+        assert.equal(def.isSolid, false, 'a trap never blocks the way');
+        assert.ok(!MAP_OBJECTS_DEFINITIONS[sprung].interaction, 'spent, it does nothing');
+        const enc = encounterDefinitions[id];
+        const first = enc.stages[enc.initialStage];
+        const save = first.decisions.find(d => d.type === 'skill_check');
+        assert.equal(save.attribute, 'vigor');
+        const failStage = enc.stages[save.failureOutcomes[0].results[0].payload.stageId];
+        const okStage = enc.stages[save.successOutcomes[0].results[0].payload.stageId];
+        const failRes = failStage.decisions[0].outcomes[0].results, okRes = okStage.decisions[0].outcomes[0].results;
+        assert.ok(failRes.some(r => r.type === 'MODIFY_VITALS' && r.payload.hp < 0), `${id}: a failure hurts`);
+        assert.ok(!okRes.some(r => r.type === 'MODIFY_VITALS'), `${id}: a success does not`);
+        for (const res of [failRes, okRes]) assert.ok(res.some(r => r.type === 'REPLACE_OBJECT' && r.payload.objectId === sprung), `${id}: spent either way`);
+    }
+});
+
+test('the ancient barrel and crate are searched for grave goods that exist', async () => {
+    const { LootTableDefinitions } = await import('../../shared/items/lootTableDefinitions.js');
+    const { ItemDefinitions } = await import('../../shared/items/itemDefinitions.js');
+    for (const id of ['ANCIENT_BARREL', 'ANCIENT_CRATE']) {
+        const def = MAP_OBJECTS_DEFINITIONS[id];
+        assert.equal(def.interaction.type, 'SEARCH');
+        const table = LootTableDefinitions[def.interaction.lootTableId];
+        assert.ok(table && table.items.length >= 8);
+        for (const it of table.items) assert.ok(ItemDefinitions[it.id], `${it.id} exists`);
+    }
+    const main = read('../../frontend/src/main.js');
+    for (const k of ['objTrapArrow', 'objTrapArrowSprung', 'objTrapPit', 'objTrapPitSprung', 'objTrapAxes', 'objTrapAxesSprung', 'objAncientBarrel', 'objAncientCrate', 'encounter_catacomb_traps']) {
+        const m = main.match(new RegExp(`${k}:\\s*'\\./(assets/[^']+)'`));
+        assert.ok(m && fs.existsSync(new URL(`../../frontend/src/${m[1]}`, import.meta.url)), `${k} is registered and on disk`);
+    }
+});
+
+test('every trap is one floor tile on the flagstone floor, so it can hardly be told from the floor around it', () => {
+    for (const id of ['TRAP_ARROW', 'TRAP_PIT', 'TRAP_AXES', 'TRAP_ARROW_SPRUNG', 'TRAP_PIT_SPRUNG', 'TRAP_AXES_SPRUNG']) {
+        const d = MAP_OBJECTS_DEFINITIONS[id];
+        assert.equal(d.width, 1); assert.equal(d.height, 1); assert.equal(d.isGround, true, `${id} lies flat on the floor`);
+        assert.ok(!(d.frames > 1), `${id} does not move`);
+    }
+    for (let k = 0; k < 4; k++) {
+        const g = InteriorFactory.create(31 + k * 977, 'CATACOMBS', `${k}_1_1_${k}`);
+        for (const t of g.traps) assert.equal(g.getFloorStyle(t.c, t.r), 'brick', 'on flagstones');
+    }
+});

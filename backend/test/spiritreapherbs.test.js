@@ -6,25 +6,26 @@ import { BattleAnimationDefinitions as A } from '../../shared/battle/animation/b
 import { AbilityDefinitions } from '../../shared/abilities/abilityDefinitions.js';
 import { MAP_OBJECTS_DEFINITIONS as M } from '../../shared/world/mapObjectDefinitions.js';
 
-test('Spirit Reap runs long, the hand swells slowly, and its sound lasts about as long', () => {
+test('Spirit Reap runs about 4.6 s (2 s shorter than it was), the hand swells slowly, and its sound lasts about as long', () => {
     const a = A.spirit_reap;
-    assert.ok(a.duration >= 6, `lasts ${a.duration}s`);
+    assert.ok(Math.abs(a.duration - 4.6) < 0.05, `lasts ${a.duration}s`);
     const hand = a.vfx.find(v => v.config.sheetKey === 'spiritReapAnimation' || v.config.sheet === 'spiritReapAnimation' || JSON.stringify(v).includes('spiritReapAnimation'));
     assert.ok(hand, 'the hand is drawn');
     const cfg = hand.config;
     assert.equal(cfg.movement ?? cfg.move, 'loom_over');
     const life = cfg.life ?? cfg.lifetime ?? cfg.duration;
-    assert.ok(life >= 5, `the hand lives ${life}s`);
+    assert.ok(life >= 4, `the hand lives ${life}s`);
     assert.ok(hand.start * a.duration + life <= a.duration + 0.01, 'the hand does not outlive the cast');
     const snd = a.audio[0];
-    assert.ok((snd.pitch ?? snd.config?.pitch) <= 0.7, 'the sound is slowed so it spans the cast');
+    const pitch = snd.pitch ?? snd.config?.pitch;
+    assert.ok(Math.abs(4.0 / pitch - a.duration) < 0.4, `the 4 s sound at pitch ${pitch} spans the cast`);
     const particle = fs.readFileSync(new URL('../../frontend/src/ui/particles/particle.js', import.meta.url), 'utf8');
     assert.ok(particle.includes("case 'loom_over'") && /customAlphas = \[[^\]]*'loom_over'/.test(particle), 'the particle knows loom_over');
 });
 
 test('the Spirit Reap ability actually plays that long animation (not the half-second default)', () => {
     assert.equal(AbilityDefinitions.spirit_reap.animationId, 'spirit_reap');
-    assert.ok(A[AbilityDefinitions.spirit_reap.animationId].duration >= 6);
+    assert.ok(A[AbilityDefinitions.spirit_reap.animationId].duration >= 4.5);
 });
 
 test('an ability with an animation of its own id always names an animation (never the half-second default)', () => {

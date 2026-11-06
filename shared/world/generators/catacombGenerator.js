@@ -403,6 +403,22 @@ export class CatacombGenerator {
                 }
             }
         }
+        // the dead's own stores: a few ancient barrels and crates against the walls of most rooms (searched like any container)
+        for (const rm of this.rooms) {
+            if (rm.role !== 'room' && rm.role !== 'lever' && rm.role !== 'antechamber') continue;
+            if (this._hash(rm.id, 3, 71) > 0.75) continue;
+            const want = 1 + Math.floor(this._hash(rm.id, 4, 72) * 3);
+            let placed = 0;
+            for (let k = 0; k < 60 && placed < want; k++) {
+                const c = rm.x0 + 1 + Math.floor(this._hash(rm.id, k, 73) * Math.max(1, rm.x1 - rm.x0 - 1));
+                const r = rm.y0 + 2 + Math.floor(this._hash(rm.id, k, 74) * Math.max(1, rm.y1 - rm.y0 - 2));
+                const byWall = !this._floor(c - 2, r) || !this._floor(c + 2, r) || !this._floor(c, r + 2) || !this._floor(c, r - 3);
+                if (!byWall || !this._roomy(c, r)) continue;
+                this._put(c, r, this._hash(c, r, 75) < 0.5 ? 'ANCIENT_BARREL' : 'ANCIENT_CRATE');
+                placed++;
+            }
+        }
+        this._placeTraps();
         // loose things everywhere a foot can go; boulders only in the natural parts
         for (let r = this.bounds.minR; r <= this.bounds.maxR; r++) for (let c = this.bounds.minC; c <= this.bounds.maxC; c++) {
             if (!this._walkable(c, r) || !this._free(c, r)) continue;
@@ -411,6 +427,33 @@ export class CatacombGenerator {
             if (h > 0.96) this._put(c, r, 'BONE_PILE', false);
             else if (h > 0.948) this._put(c, r, 'DESERT_SKULL', false);
             else if (nat && h > 0.93) this._put(c, r, ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'][Math.floor(this._hash(c, r, 63) * 3) % 3], false);
+        }
+    }
+
+    /* The traps: an arrow plate, a sinking floor or swinging blades in the halls (and now and then a room), never near the stairway, never on the
+       puzzle's cells, at least SPACING cells from one another. Each is one floor tile drawn from the flagstone floor, so only flagstone cells take one
+       (on the rough rock of a cavern it would stand out). They block nothing: each is a walk-in encounter you can survive. */
+    _placeTraps() {
+        const SPACING = 9, MIN_FROM_STAIRS = 14;
+        const want = this._int(9, 13);
+        const cands = [];
+        for (let r = this.bounds.minR; r <= this.bounds.maxR; r++) for (let c = this.bounds.minC; c <= this.bounds.maxC; c++) {
+            if (!this._walkable(c, r) || !this._free(c, r) || this.style[this._idx(c, r)] !== BRICK) continue;
+            const d = this._reach.distance[this._idx(c, r)];
+            if (d < MIN_FROM_STAIRS) continue;
+            const hall = this.corridor[this._idx(c, r)];
+            if (!hall && this._hash(c, r, 81) > 0.25) continue;            // mostly the halls
+            cands.push({ c, r, key: this._hash(c, r, 82) });
+        }
+        cands.sort((a, b) => a.key - b.key);
+        this.traps = [];
+        const kinds = ['TRAP_ARROW', 'TRAP_PIT', 'TRAP_AXES'];
+        for (const p of cands) {
+            if (this.traps.length >= want) break;
+            if (this.traps.some((t) => Math.abs(t.c - p.c) + Math.abs(t.r - p.r) < SPACING)) continue;
+            const kind = kinds[this.traps.length % 3];
+            this._put(p.c, p.r, kind, false);
+            this.traps.push({ c: p.c, r: p.r, kind });
         }
     }
 

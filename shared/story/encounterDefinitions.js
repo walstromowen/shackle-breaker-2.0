@@ -16,6 +16,7 @@ import { actTwo } from './encounters/story/actTwo.js';
 import { peculiarScarecrow } from './encounters/peculiarScarecrow.js';
 import { oldGravestone } from './encounters/oldGravestone.js';
 import { caveIn } from './encounters/caveIn.js';
+import { arrowTrap, pitTrap, swingingAxes } from './encounters/catacombTraps.js';
 import { shackledBetrayal, shackledBetrayalEnd } from './encounters/story/shackledBetrayal.js';
 
 // <-- Import your new encounter here
@@ -39,6 +40,9 @@ export const encounterDefinitions = {
     [peculiarScarecrow.id]: peculiarScarecrow,
     [oldGravestone.id]: oldGravestone,
     [caveIn.id]: caveIn,
+    [arrowTrap.id]: arrowTrap,       // the catacombs' traps (map objects TRAP_ARROW / TRAP_PIT / TRAP_AXES)
+    [pitTrap.id]: pitTrap,
+    [swingingAxes.id]: swingingAxes,
     [shackledBetrayal.id]: shackledBetrayal,
     [shackledBetrayalEnd.id]: shackledBetrayalEnd,
 

@@ -244,6 +244,20 @@ export const MAP_OBJECTS_DEFINITIONS = {
     /* 3 cells wide, 2 tall; its bottom row closes the corridor into the main chamber. Raised, it can be walked under. */
     CATACOMB_GATE: { sheet: 'objCatacombGate', spriteX: 0, spriteY: 0, width: 3, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 3, h: 1 } },
     CATACOMB_GATE_OPEN: { sheet: 'objCatacombGateOpen', spriteX: 0, spriteY: 0, width: 3, height: 2, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 0, h: 0 } },
+    // ==========================================
+    // THE CATACOMBS' TRAPS (story/encounters/catacombTraps.js): stepping on one springs it (a walk-in encounter, a Vigor saving throw). Each is one floor tile:
+    // a raised pressure plate of the floor's own stone with a few slight cracks, all three alike, so in the dark they are easy to miss and impossible to tell
+    // apart. Spent, the plate is pressed down level with the floor and does nothing more.
+    // ==========================================
+    TRAP_ARROW: { sheet: 'objTrapArrow', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'arrow_trap', walkIn: true } },
+    TRAP_ARROW_SPRUNG: { sheet: 'objTrapArrowSprung', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, hitbox: { xOffset: 0, yOffset: 0, w: 0, h: 0 } },
+    TRAP_PIT: { sheet: 'objTrapPit', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'pit_trap', walkIn: true } },
+    TRAP_PIT_SPRUNG: { sheet: 'objTrapPitSprung', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, hitbox: { xOffset: 0, yOffset: 0, w: 0, h: 0 } },
+    TRAP_AXES: { sheet: 'objTrapAxes', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'swinging_axes', walkIn: true } },
+    TRAP_AXES_SPRUNG: { sheet: 'objTrapAxesSprung', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, hitbox: { xOffset: 0, yOffset: 0, w: 0, h: 0 } },
+    // the catacombs' own containers: old, rotten, cobwebbed, holding what the dead were laid to rest with
+    ANCIENT_BARREL: { sheet: 'objAncientBarrel', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'SEARCH', lootTableId: 'container_ancient_barrel', name: 'ancient barrel' } },
+    ANCIENT_CRATE: { sheet: 'objAncientCrate', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'SEARCH', lootTableId: 'container_ancient_crate', name: 'ancient crate' } },
     CAVE_EXIT_DOOR: {
         sheet: 'objCaveExit',
         spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: false, isGround: false, isAnchor: true, hitboxes: [{ xOffset: 1, yOffset: 0, w: 1, h: 1 }],

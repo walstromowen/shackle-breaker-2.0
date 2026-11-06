@@ -1011,6 +1011,39 @@ LootTableDefinitions.container_barrel = {
         { id: "escape_rope", weight: 3, min: 1, max: 1 }
     ]
 };
+// An ancient barrel in the catacombs: what the dead were sent off with, oils and tonics gone strange with age, bones.
+LootTableDefinitions.container_ancient_barrel = {
+    type: "weighted",
+    items: [
+        { id: "bone", weight: 24, min: 1, max: 3 },
+        { id: "linen", weight: 18, min: 1, max: 2 },
+        { id: "torch", weight: 14, min: 1, max: 2 },
+        { id: "bandage", weight: 12, min: 1, max: 2 },
+        { id: "healing_tonic", weight: 9, min: 1, max: 1 },
+        { id: "invigorating_tonic", weight: 7, min: 1, max: 1 },
+        { id: "illuminating_tonic", weight: 7, min: 1, max: 1 },
+        { id: "antidote", weight: 6, min: 1, max: 1 },
+        { id: "illuminating_herb", weight: 6, min: 1, max: 2 },
+        { id: "kurtus_brew", weight: 4, min: 1, max: 1 }
+    ]
+};
+// An ancient crate in the catacombs: grave goods and old metal, now and then a blade.
+LootTableDefinitions.container_ancient_crate = {
+    type: "weighted",
+    items: [
+        { id: "bone", weight: 20, min: 1, max: 3 },
+        { id: "linen", weight: 14, min: 1, max: 3 },
+        { id: "bronze_ingot", weight: 12, min: 1, max: 2 },
+        { id: "copper_ingot", weight: 12, min: 1, max: 2 },
+        { id: "iron_ingot", weight: 9, min: 1, max: 2 },
+        { id: "throwing_knife", weight: 8, min: 1, max: 3 },
+        { id: "poison_throwing_knife", weight: 5, min: 1, max: 2 },
+        { id: "escape_rope", weight: 6, min: 1, max: 1 },
+        { id: "cloth_hood", weight: 3, min: 1, max: 1 },
+        { id: "cloth_robe", weight: 3, min: 1, max: 1 },
+        { id: "dagger", weight: 2, min: 1, max: 1 }
+    ]
+};
 // A crate packed with sacks: provisions and dry goods.
 LootTableDefinitions.container_crate_sack = {
     type: "weighted",

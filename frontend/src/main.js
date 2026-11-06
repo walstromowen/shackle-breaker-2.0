@@ -156,6 +156,14 @@ ui_icons: './assets/icons/ui_icons.png',
     objBrazierUnlit: './assets/mapObjects/objBrazierUnlit.png',
     objCatacombGate: './assets/mapObjects/objCatacombGate.png',
     objCatacombGateOpen: './assets/mapObjects/objCatacombGateOpen.png',
+    objTrapArrow: './assets/mapObjects/objTrapArrow.png',               // the catacombs' traps (story/encounters/catacombTraps.js)
+    objTrapArrowSprung: './assets/mapObjects/objTrapArrowSprung.png',
+    objTrapPit: './assets/mapObjects/objTrapPit.png',
+    objTrapPitSprung: './assets/mapObjects/objTrapPitSprung.png',
+    objTrapAxes: './assets/mapObjects/objTrapAxes.png',
+    objTrapAxesSprung: './assets/mapObjects/objTrapAxesSprung.png',
+    objAncientBarrel: './assets/mapObjects/objAncientBarrel.png',       // the catacombs' containers
+    objAncientCrate: './assets/mapObjects/objAncientCrate.png',
     objHealingHerb: './assets/mapObjects/objHealingHerb.png',
     objCottonPlant: './assets/mapObjects/objCottonPlant.png',   // a village crop field's cotton (COTTON_PLANT)
     objWheatPlant: './assets/mapObjects/objWheatPlant.png',     // ... and its wheat (WHEAT_PLANT)
@@ -375,6 +383,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     encounter_prologue: './assets/icons/encounters/story/prologue.png',
     encounter_peculiar_scarecrow: './assets/icons/encounters/peculiar_scarecrow.png',
     encounter_cave_in: './assets/icons/encounters/cave_in.png',
+    encounter_catacomb_traps: './assets/icons/encounters/catacomb_traps.png',
     // --- 1:1 ABILITY AUDIO SFX ---
     earthquake1Sfx: './assets/audio/sfx/abilities/earthquake/earthquake_1.wav',
     earthquake2Sfx: './assets/audio/sfx/abilities/earthquake/earthquake_2.wav',
