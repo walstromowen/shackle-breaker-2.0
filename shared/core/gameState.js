@@ -81,6 +81,7 @@ export function resetWorldForNewGame() {
     w.interiorId = null;
     w.interiorMapId = null;
     w.savedOverworld = null;
+    w.interiorStack = [];   // interiors entered from inside another (the catacombs under a cave): what to climb back into (SceneManager)
     w.currentBiomeId = null;
     w.currentBiome = null;
     w.day = 1;

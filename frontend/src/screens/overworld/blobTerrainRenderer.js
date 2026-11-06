@@ -422,6 +422,11 @@ export class BlobTerrainRenderer {
         const py = (r) => Math.floor((r * TILE - camY) * scale);
         const pw = (c) => px(c + 1) - px(c);
         const ph = (r) => py(r + 1) - py(r);
+        // A map that mixes two looks (the catacombs: stone brick and natural rock) says which one each cell has; its sheets then hold both, side by side:
+        // the cliff sheets 16 variants (8 brick, then 8 natural), the floor sheet two blob sets (brick, then natural).
+        const styled = this._wm && this._wm.terrain;
+        const wallStyle = styled && styled.getWallStyle ? (c, r) => styled.getWallStyle(c, r) : null;
+        const floorStyle = styled && styled.getFloorStyle ? (c, r) => styled.getFloorStyle(c, r) : null;
         const draw = (imgs, op, c, r, pack) => {
             if (op[0] < 0) {
                 ctx.fillStyle = pack.voidColor || '#000';
@@ -436,7 +441,10 @@ export class BlobTerrainRenderer {
             if (op[0] === SLOT.cliffFloor || op[0] === SLOT.cliffWall || op[0] === SLOT.cliffExt || op[0] === SLOT.onLevel) {
                 const baseW = (op[0] === SLOT.onLevel ? OVERLAY_COLS : BLOB_SHEET_COLS) * BLOB_TILE_PX;
                 const nv = Math.round(img.width / baseW);
-                if (nv > 1) sx += ((c & 3) + 4 * ((r + op[3]) & 1)) % nv * baseW;
+                if (wallStyle && nv >= 16 && op[0] !== SLOT.onLevel) sx += (((c & 3) + 4 * ((r + op[3]) & 1)) % 8 + (wallStyle(c, r) === 'natural' ? 8 : 0)) * baseW;
+                else if (nv > 1) sx += ((c & 3) + 4 * ((r + op[3]) & 1)) % nv * baseW;
+            } else if (op[0] === SLOT.primary && floorStyle && img.width >= 2 * BLOB_SHEET_COLS * BLOB_TILE_PX && floorStyle(c, r) === 'natural') {
+                sx += BLOB_SHEET_COLS * BLOB_TILE_PX;
             }
             ctx.drawImage(img, sx, op[2] * BLOB_TILE_PX, BLOB_TILE_PX, BLOB_TILE_PX, px(c), py(r + op[3]), pw(c), ph(r + op[3]));
         };

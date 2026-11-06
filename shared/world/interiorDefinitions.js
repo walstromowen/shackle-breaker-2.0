@@ -67,5 +67,19 @@ export const INTERIOR_DEFINITIONS = {
                 ]
             }
         ]
+    },
+    /* The catacombs under a mysterious altar: only reached from inside a cave, down the hidden staircase (CATACOMBS_STAIRS) that the altar gives way to once
+       Darius the Groveler is beaten. A dungeon (generators/catacombGenerator.js): built rooms of stone brick and natural caverns joined by halls and tunnels, and a
+       main chamber at the far end behind a gate that only opens once a lever has been pulled in each of the dungeon's farthest rooms (world/catacombPuzzle.js).
+       Like a cave it is the same every time and keeps what was done in it (its changes are keyed INT_<cave id>_<stair col>_<stair row>_...). */
+    CATACOMBS: {
+        generatorType: 'CATACOMBS',
+        biome: 'CATACOMBS_INTERIOR',
+        floorTile: 'LAYER_6',   // one flat floor ...
+        wallTile: 'LAYER_7',    // ... cut out of rock whose top is void (CATACOMBS_INTERIOR voidFromLayer 7)
+        doorObject: 'CATACOMBS_EXIT',
+        size: { min: 46, max: 56 },   // half-width of the square map: about 100 x 100 cells
+        rooms: { min: 11, max: 15 },  // besides the entrance, the antechamber and the main chamber
+        levers: { min: 3, max: 4 }
     }
 };

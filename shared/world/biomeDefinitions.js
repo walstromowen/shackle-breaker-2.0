@@ -325,6 +325,38 @@ export const BIOME_DEFINITIONS = {
         encounters: { rate: 0.0015, type: 'time_weighted', pools: [{ weight: 100, id: 'cave_in', allowedTimes: ['day', 'dusk', 'night'] }] } /* RARE: a step in 650 or so, under the rarest elsewhere (the snowy mountains' 0.0025); a cave has no daylight, so every hour counts */,
         battles: { rate: 0.01, tables: { day: 'cave_battles', dusk: 'cave_battles', night: 'cave_battles' } } /* half the plains' / desert's 0.01; same table at every hour */,
     },
+    /* The catacombs (interiorDefinitions.js CATACOMBS): a cave the dead were laid in, under the mysterious altar. Like CAVE_INTERIOR, but darker and colder:
+       crypt-stone tiles (assets/tilesets/catacombs_interior: bricked walls, flagstones, bones, grave soil), every ledge further down sinks deeper into a green-black
+       dark, a carried light falls a little short (lightScale), and what walks here is mostly the dead. */
+    CATACOMBS_INTERIOR: {
+        id: 'CATACOMBS_INTERIOR',
+        name: 'The Catacombs',
+        defaultLootTable: 'cave',
+        blobTileset: {
+            primaryFloor: 'catacombsPrimaryFloor',
+            secondaryFloor: 'catacombsSecondaryFloor',
+            secondaryOnLevel: 'catacombsSecondaryOnLevel',
+            cliffFloor: 'catacombsCliffFloor',
+            cliffWall: 'catacombsCliffWall',
+            cliffExt: 'catacombsCliffExt',
+            cliffShadow: 'plainsCliffShadow',
+            cliffStairs: 'catacombsCliffStairs',
+            water: false,
+            voidColor: '#030404',
+            voidFromLayer: 7,
+            depthShade: { from: 6, step: 0.1, max: 0.46, color: '1,6,4' },   /* a shade deeper than the cave's 0.42, and colder */
+        },
+        ambientLight: { r: 0, g: 0, b: 0, a: 1 },
+        lightScale: 0.9 /* the dark here swallows light: carried lights (the player's, the party's) reach 90% as far (LightingRenderer) */,
+        allowedWeather: [],
+        music: { day: 'caveBgm', night: 'caveBgm', battle: 'caveBattleBgm' },
+        battleBackgrounds: { day: 'caveBattleBg', dusk: 'caveBattleBg', night: 'caveBattleBg' },
+        shapeElevation: (noise) => noise,
+        structures: { rate: 0, pools: [] },
+        mapObjects: { [CONFIG.TILE_TYPES.LAYER_2]: [] },
+        encounters: { rate: 0, pools: [] },
+        battles: { rate: 0.014, tables: { day: 'catacombs_battles', dusk: 'catacombs_battles', night: 'catacombs_battles' } } /* a little more often than a cave: the dead do not sleep */,
+    },
 };
 
 /* The tops of the cliff levels (LAYER_3 and up) spawn exactly the map objects the ground level (LAYER_2) does, in every biome: the `_WALLS` category the

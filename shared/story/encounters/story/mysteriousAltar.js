@@ -79,6 +79,13 @@ export const mysteriousAltar = {
                     ]
                 },
                 {
+                    // once Darius the Groveler is beaten (act 2), every altar hides the same thing: a stair down into the catacombs
+                    text: "[The Groveler is dead] Search behind the altar.",
+                    conditions: [{ type: "has_milestone", id: "act2" }, HUMANOID],
+                    customActionText: "You put your shoulder to the altar. Stone grinds on stone, and it slides aside.",
+                    outcomes: toStage("hidden_stair")
+                },
+                {
                     text: "Step up to the altar again.",
                     conditions: [
                         { type: "context_flag_set", flagId: "altar_approached" },
@@ -96,6 +103,22 @@ export const mysteriousAltar = {
                     text: "Leave the altar alone.",
                     customActionText: "You continue along the path, leaving the altar alone.",
                     outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
+                }
+            ]
+        },
+
+        hidden_stair: {
+            displayText: "A Hidden Stair",
+            tone: "cold",
+            sfx: "whispers",
+            sfxVolume: 0.5,
+            image: { col: 1, row: 0 },
+            text: "Under the altar, worn steps lead down into the dark. Cold air rises from below, and it smells of old bones.",
+            decisions: [
+                {
+                    text: "Leave the way open.",
+                    customActionText: "You leave the stair uncovered. Whatever lies below can wait for you.",
+                    outcomes: [{ weight: 100, results: [{ type: "REPLACE_OBJECT", payload: { objectId: "CATACOMBS_STAIRS" } }, { type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]
         },

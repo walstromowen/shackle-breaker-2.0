@@ -22,7 +22,7 @@ import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
              `party: 'all'` (the exploding chest, the poison mist, the altar's smoke and light, the obelisk's bad traits)
      (none)  the active character's owner (what is aimed at {name}: a rock, a bite, a whisper, a moral choice, a good trait), or the leader
              (starting a fight, a recruit, a shop, a price, an object taken off the map). */
-const LEADER_ONLY = new Set(['DESTROY_OBJECT', 'START_BATTLE', 'RECRUIT_CHARACTER', 'OPEN_SHOP', 'REMOVE_ITEM', 'TRIGGER_GAME_OVER']);
+const LEADER_ONLY = new Set(['DESTROY_OBJECT', 'REPLACE_OBJECT', 'START_BATTLE', 'RECRUIT_CHARACTER', 'OPEN_SHOP', 'REMOVE_ITEM', 'TRIGGER_GAME_OVER']);
 const ABOUT_THE_ROLLER = new Set(['ADD_TRAIT', 'REMOVE_TRAIT', 'MODIFY_CORRUPTION', 'MODIFY_VITALS', 'APPLY_STATUS_EFFECT', 'TAKE_DAMAGE', 'AWARD_XP']);
 /* Whether this browser leaves a result to someone else. The active character (the one who rolls: any character in the party's line-up, the
    leader's lead to begin with, see EncounterController's switch) belongs to one player: what happens to them happens on that player's
@@ -288,6 +288,15 @@ export class EncounterLogic {
                     response.shouldEndEncounter = true;
                     response.endEncounterPayload = payload;
                     break;
+                case "REPLACE_OBJECT": {
+                    // the object this encounter is about becomes another, in the same cell: `{ objectId }` (the mysterious altar giving way to the hidden staircase)
+                    const at = model.context;
+                    if (at && at.col !== undefined && at.row !== undefined && payload.objectId) {
+                        worldManager.modifyWorld(at.col, at.row, payload.objectId, at.mapId);
+                        if (!at.mapId) worldManager._placeObject(at.col, at.row, payload.objectId);
+                    }
+                    break;
+                }
                 case "DESTROY_OBJECT":
                     const ctx = model.context;
                     if (ctx && ctx.col !== undefined && ctx.row !== undefined) {

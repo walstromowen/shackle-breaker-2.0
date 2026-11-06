@@ -220,6 +220,30 @@ export const MAP_OBJECTS_DEFINITIONS = {
         spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: false, isGround: false, isAnchor: true, hitboxes: [{ xOffset: 1, yOffset: 0, w: 1, h: 1 }],
         interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'CAVE', isRepeatable: true, walkIn: true }
     },
+    /* The hidden staircase: what the mysterious altar gives way to once Darius the Groveler is beaten (the act_two encounter, or searching any altar in act 2:
+       REPLACE_OBJECT). The altar's 3 x 3 cells; the stairwell runs down the middle column and its top step (the middle of the bottom row) leads into the
+       catacombs under the cave. walkIn: stepping onto it goes down. */
+    CATACOMBS_STAIRS: {
+        sheet: 'objCatacombsStairs',
+        spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: false, isGround: true, isAnchor: true, hitboxes: [{ xOffset: 1, yOffset: 0, w: 1, h: 1 }],
+        interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'CATACOMBS', isRepeatable: true, walkIn: true }
+    },
+    /* the way back up out of the catacombs, in the south rim where a cave has its mouth: it leads back to the cave, at the foot of the hidden staircase */
+    CATACOMBS_EXIT: {
+        sheet: 'objCatacombsExit',
+        spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: false, isGround: false, isAnchor: true, hitboxes: [{ xOffset: 1, yOffset: 0, w: 1, h: 1 }],
+        interaction: { type: 'WARP', id: 'exit_interior', isRepeatable: true, walkIn: true }
+    },
+    // ==========================================
+    // THE CATACOMBS' GATE PUZZLE (world/catacombPuzzle.js): a lever in each far room, a cold brazier for each lever by the gate, and the gate itself.
+    // ==========================================
+    // an unpulled lever's rune glows faintly, so it can be found in the dark; pulled, it burns bright
+    LEVER: { sheet: 'objLever', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'SWITCH', isRepeatable: true }, light: { hasLight: true, radius: 1.4, color: '120, 200, 255', maxAlpha: 0.3, flickerSpeed: 0.05, flickerAmp: 0.3 } },
+    LEVER_ON: { sheet: 'objLeverOn', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, light: { hasLight: true, radius: 1.6, color: '120, 220, 255', maxAlpha: 0.45 } },
+    BRAZIER_UNLIT: { sheet: 'objBrazierUnlit', spriteX: 0, spriteY: 0, width: 1, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    /* 3 cells wide, 2 tall; its bottom row closes the corridor into the main chamber. Raised, it can be walked under. */
+    CATACOMB_GATE: { sheet: 'objCatacombGate', spriteX: 0, spriteY: 0, width: 3, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 3, h: 1 } },
+    CATACOMB_GATE_OPEN: { sheet: 'objCatacombGateOpen', spriteX: 0, spriteY: 0, width: 3, height: 2, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 0, h: 0 } },
     CAVE_EXIT_DOOR: {
         sheet: 'objCaveExit',
         spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: false, isGround: false, isAnchor: true, hitboxes: [{ xOffset: 1, yOffset: 0, w: 1, h: 1 }],

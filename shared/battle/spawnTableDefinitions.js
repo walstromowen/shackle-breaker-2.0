@@ -225,6 +225,43 @@ export const SpawnTableDefinitions = {
     },
 
     // ==========================================
+    // CATACOMBS (under the mysterious altar): the shackled dead, in numbers, and the spiders that nest among them. A few levels deeper than a cave.
+    // ==========================================
+    "catacombs_battles": {
+        type: "faction_pool",
+        pools: [
+            {
+                factionId: "shackled",
+                weight: 85,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 2 },
+                    normal: { minSize: 1, maxSize: 3 },
+                    hard: { minSize: 2, maxSize: 3 },
+                    nightmare: { minSize: 2, maxSize: 4 }
+                },
+                members: [
+                    { id: 'SKELETAL_WARRIOR', weight: 50, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 3 }, equipment: [{ slot: 'mainHand', items: ['spear', 'warhammer', 'glaive'], chance: 0.6 }] } },
+                    { id: 'FLOATING_SKULL', weight: 35, modifiers: { levelOffset: { chance: 0.35, min: 1, max: 3 } } },
+                    { id: 'ANCIENT_CULTIST', weight: 25, modifiers: { levelOffset: { chance: 0.5, min: 1, max: 3 } } }
+                ]
+            },
+            {
+                factionId: "wildlife",
+                weight: 15,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 2 },
+                    normal: { minSize: 1, maxSize: 3 },
+                    hard: { minSize: 2, maxSize: 3 },
+                    nightmare: { minSize: 2, maxSize: 4 }
+                },
+                members: [
+                    { id: 'CAVE_SPIDER', weight: 100, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } }
+                ]
+            }
+        ]
+    },
+
+    // ==========================================
     // SNOWY MOUNTAINS BATTLES - DAY
     // ==========================================
     "snowy_mountains_battles_day": {

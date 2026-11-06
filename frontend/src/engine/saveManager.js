@@ -307,7 +307,8 @@ export const SaveManager = {
                     type: world.interiorType,
                     id: world.interiorId,
                     mapId: world.interiorMapId || null,
-                    savedOverworld: world.savedOverworld
+                    savedOverworld: world.savedOverworld,
+                    ...((world.interiorStack || []).length ? { stack: world.interiorStack } : {})   // the cave above the catacombs, when saved down there
                 }) : null
             },
             party: {
@@ -405,6 +406,7 @@ export const SaveManager = {
             isInterior: !!interior,
             interiorType: interior ? interior.type : null,
             ...(interior ? { interiorId: interior.id, interiorMapId: interior.mapId || null, savedOverworld: interior.savedOverworld } : {}),
+            interiorStack: interior && Array.isArray(interior.stack) ? interior.stack : [],
             time: data.world.time,
             day: data.world.day,
             changes: data.world.changes || {},

@@ -71,6 +71,15 @@ ui_icons: './assets/icons/ui_icons.png',
     caveInteriorCliffExt:         './assets/tilesets/cave_interior/cliff_blob47_ext.png',
     caveInteriorCliffShadow:      './assets/tilesets/cave_interior/cliff_blob47_shadow.png',
     caveInteriorCliffStairs:      './assets/tilesets/cave_interior/cliff_stairs.png',   // after caveInteriorCliffShadow
+    // the catacombs under the mysterious altar: the cave's tiles made into crypt stone (bricked walls, flagstones, bones, grave soil), darker
+    catacombsPrimaryFloor:     './assets/tilesets/catacombs_interior/primary_floor_blob47.png',
+    catacombsSecondaryFloor:   './assets/tilesets/catacombs_interior/secondary_floor_blob47.png',
+    catacombsSecondaryOnLevel: './assets/tilesets/catacombs_interior/secondary_floor_on_level.png',
+    catacombsCliffFloor:       './assets/tilesets/catacombs_interior/cliff_blob47_floor.png',
+    catacombsCliffWall:        './assets/tilesets/catacombs_interior/cliff_blob47_wall.png',
+    catacombsCliffExt:         './assets/tilesets/catacombs_interior/cliff_blob47_ext.png',
+    catacombsCliffShadow:      './assets/tilesets/catacombs_interior/cliff_blob47_shadow.png',
+    catacombsCliffStairs:      './assets/tilesets/catacombs_interior/cliff_stairs.png',
 
     /* map objects: one image per object (the `sheet` of each MAP_OBJECTS_DEFINITIONS entry). Delete the line of any object whose PNG does not exist yet;
        that object then keeps drawing from the plains / desert sheet above. */
@@ -140,6 +149,13 @@ ui_icons: './assets/icons/ui_icons.png',
     objCaveEntranceDesert: './assets/mapObjects/objCaveEntranceDesert.png',
     objCaveEntranceSnow: './assets/mapObjects/objCaveEntranceSnow.png',
     objCaveExit: './assets/mapObjects/objCaveExit.png',
+    objCatacombsStairs: './assets/mapObjects/objCatacombsStairs.png',   // the hidden staircase under the mysterious altar
+    objCatacombsExit: './assets/mapObjects/objCatacombsExit.png',       // the stairway up out of the catacombs
+    objLever: './assets/mapObjects/objLever.png',                       // the catacombs' gate puzzle (world/catacombPuzzle.js)
+    objLeverOn: './assets/mapObjects/objLeverOn.png',
+    objBrazierUnlit: './assets/mapObjects/objBrazierUnlit.png',
+    objCatacombGate: './assets/mapObjects/objCatacombGate.png',
+    objCatacombGateOpen: './assets/mapObjects/objCatacombGateOpen.png',
     objHealingHerb: './assets/mapObjects/objHealingHerb.png',
     objCottonPlant: './assets/mapObjects/objCottonPlant.png',   // a village crop field's cotton (COTTON_PLANT)
     objWheatPlant: './assets/mapObjects/objWheatPlant.png',     // ... and its wheat (WHEAT_PLANT)

@@ -287,10 +287,11 @@ export const actTwo = {
             decisions: [
                 {
                     text: "Climb toward the light.",
-                    customActionText: "You climb. The air gets colder, and the dark gets no lighter.",
+                    customActionText: "Behind the broken altar the floor has split, and worn steps lead down into a deeper dark. You climb the other way. The air gets colder, and the dark gets no lighter.",
                     outcomes: [{
                         weight: 1,
                         results: [
+                            { type: "REPLACE_OBJECT", payload: { objectId: "CATACOMBS_STAIRS" } },   // the altar gives way to the hidden staircase into the catacombs
                             { type: "GRANT_MILESTONE", payload: { id: "act2" } },
                             { type: "START_QUEST", payload: { questId: "act2_red_moon", questName: "The Red Moon" } },
                             { type: "END_ENCOUNTER", payload: null }

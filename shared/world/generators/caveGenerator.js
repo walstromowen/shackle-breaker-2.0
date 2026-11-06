@@ -878,7 +878,7 @@ export class CaveGenerator {
 
     /* ------------------------------------------------------------------ the generator interface */
     getBiomeAt(col, row) {
-        return biomeFactory.getBiome('CAVE_INTERIOR') || biomeFactory.getBiome('PLAINS');
+        return biomeFactory.getBiome(this.config.biome || 'CAVE_INTERIOR') || biomeFactory.getBiome('PLAINS');   // `biome` in the definition: the catacombs have their own
     }
 
     getTileAt(col, row) {

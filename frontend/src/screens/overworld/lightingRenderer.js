@@ -1,5 +1,6 @@
 import { gameState } from '../../../../shared/core/gameState.js';
 import { ActSystem } from '../../../../shared/story/actSystem.js';
+import { BIOME_DEFINITIONS } from '../../../../shared/world/biomeDefinitions.js';
 
 /* LightingRenderer - tile light map: coloured lights that fade a fixed amount per tile and seep into walls.
  *
@@ -457,9 +458,12 @@ export class LightingRenderer {
             this._blockSig = blockSig;
         }
 
+        // a biome whose dark swallows light (the catacombs: `lightScale`) shortens every light that is carried; lamps and torches standing on the map keep theirs
+        const biomeDef = BIOME_DEFINITIONS[gameState.world.currentBiome];
+        const carried = biomeDef && biomeDef.lightScale > 0 ? biomeDef.lightScale : 1;
         for (const L of lights) {
             const lc = L.light;
-            let radius = lc.radius;
+            let radius = lc.radius * (L.fixed ? 1 : carried);
             if (lc.flickerAmp) {
                 // flickerSpeed 0.1 is the speed the flicker always had; lights on map objects start at different points of it, so a row of torches does not pulse as one
                 const time = Date.now() * 0.05 * (lc.flickerSpeed ?? 0.1) + (L.fixed ? (L.x * 12.9898 + L.y * 78.233) % 6.283 : 0);

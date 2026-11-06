@@ -20,6 +20,7 @@ import { PartyFollowers } from './partyFollowers.js';
 import { multiplayerSession } from '../../engine/multiplayerSession.js';
 import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
 import { collectGrave } from '../../../../shared/world/graves.js';
+import { pullLever } from '../../../../shared/world/catacombPuzzle.js';
 
 /* Multiplayer: the question box (another player's request, or what to do with the player in front of you), centred on the screen */
 const PROMPT = { w: 640, optH: 58, gap: 10, pad: 36 };
@@ -758,6 +759,17 @@ export class OverworldController extends BaseController {
                 for (const { id, qty } of r.items) this.createItemToast(id, qty);
                 this.showNotice(r.message, true);
                 events.emit('PLAY_SFX', { id: UI_SFX.pickup, volume: 0.8, pitch: 1.0 });
+                return;
+            }
+
+            // --- A lever of the catacombs' gate puzzle (world/catacombPuzzle.js): down for good, a brazier lights, the last one opens the gate ---
+            if (obj.interaction.type === 'SWITCH') {
+                const r = pullLever(this.worldManager, obj.col, obj.row);
+                this.showNotice(r.message, r.ok);
+                if (r.ok) {
+                    events.emit('PLAY_SFX', { id: 'doorOpen', volume: 0.7, pitch: 0.55 });
+                    if (r.opened) events.emit('PLAY_SFX', { id: 'cinematicBoom', volume: 0.8 });
+                }
                 return;
             }
 

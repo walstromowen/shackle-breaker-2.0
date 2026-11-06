@@ -3,8 +3,9 @@ import { INTERIOR_DEFINITIONS } from './interiorDefinitions.js';
 import { HouseGenerator } from './generators/houseGenerator.js';
 import { CaveGenerator } from './generators/caveGenerator.js';
 import { CraftingHouseGenerator } from './generators/craftingHouseGenerator.js';
+import { CatacombGenerator } from './generators/catacombGenerator.js';
 
-const GENERATORS = { HOUSE: HouseGenerator, CRAFTING_HOUSE: CraftingHouseGenerator, CAVE: CaveGenerator };
+const GENERATORS = { HOUSE: HouseGenerator, CRAFTING_HOUSE: CraftingHouseGenerator, CAVE: CaveGenerator, CATACOMBS: CatacombGenerator };
 
 export class InteriorFactory {
     static create(seed, interiorType, interiorId) {
@@ -18,7 +19,7 @@ export class InteriorFactory {
         }
 
         const Generator = GENERATORS[config.generatorType];
-        if (!Generator) throw new Error(`[InteriorFactory] ${type} has unknown generatorType "${config.generatorType}" (use HOUSE, CRAFTING_HOUSE or CAVE)`);
+        if (!Generator) throw new Error(`[InteriorFactory] ${type} has unknown generatorType "${config.generatorType}" (use HOUSE, CRAFTING_HOUSE, CAVE or CATACOMBS)`);
         return new Generator(seed, type, config, interiorId);
     }
 }

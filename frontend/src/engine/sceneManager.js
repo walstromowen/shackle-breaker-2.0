@@ -106,6 +106,7 @@ export class SceneManager {
             getScene: () => this.currentScene,
             getOverworld: () => this.overworldController,   // (tests and the debug overlay)
             getBattle: () => this.battleController,
+            getEncounter: () => this.encounterController,   // (tests and the debug overlay)
         });
         multiplayerSocial.wire();   // trading, parties and duels between players in a shared world
 
@@ -461,7 +462,7 @@ export class SceneManager {
         AbilitySystem.worldActionHandler = (action) => {
             if (action.type === 'exit_interior' && gameState.world.isInterior && gameState.world.savedOverworld) {
                 this.overworldController.isLocked = true;
-                events.emit('INTERACT', { type: 'WARP', id: 'exit_interior', context: {} });
+                events.emit('INTERACT', { type: 'WARP', id: 'exit_interior', context: { toWorld: true } });   // all the way out, from however deep
             } else if (action.type === 'start_encounter' && action.encounterId) {
                 // A bedroll (or any item that opens an encounter): lock the player and open it like an object's encounter. Ending it returns to the overworld, which unlocks.
                 this.overworldController.isLocked = true;
@@ -505,19 +506,30 @@ export class SceneManager {
                     if (data.id === 'procedural_room_trigger') {
                         // a village being planned ahead is finished now, while the overworld is still the world (inside, cells are keyed to the room)
                         if (this.worldManager && this.worldManager.finishPendingWork) this.worldManager.finishPendingWork();
-                        // Save Overworld state
-                        gameState.world.savedOverworld = {
-                            seed: gameState.seed,
-                            returnCol: data.context.col,
-                            returnRow: data.context.row + 1
-                        };
-
-                        // Shift into interior state
-                        gameState.seed = gameState.seed + (data.context.col * 73856) + (data.context.row * 19349);
-                        gameState.world.isInterior = true;
-                        gameState.world.interiorType = data.roomType || 'HOUSE_INTERIOR';
-                        gameState.world.interiorId = `${data.context.col}_${data.context.row}`;
-                        gameState.world.interiorMapId = null;   // a map read in an earlier visit is spent
+                        const w = gameState.world;
+                        if (w.isInterior && w.savedOverworld) {
+                            // A way further down from inside an interior (the hidden staircase in a cave, down into the catacombs): the interior we are in
+                            // goes on a stack, with the spot at the foot of the stairs, so climbing back up returns to it (the overworld stays saved below it).
+                            // The deeper interior's id is the outer one's plus the stair's cell, so its changes are its own and it is the same on every visit.
+                            if (!Array.isArray(w.interiorStack)) w.interiorStack = [];
+                            w.interiorStack.push({ type: w.interiorType, id: w.interiorId, seed: gameState.seed, returnCol: gameState.player.col, returnRow: gameState.player.row + 1 });
+                            gameState.seed = gameState.seed + (data.context.col * 73856) + (data.context.row * 19349) + 104729;
+                            w.interiorId = `${w.interiorId}_${data.context.col}_${data.context.row}`;
+                        } else {
+                            // Save Overworld state
+                            w.savedOverworld = {
+                                seed: gameState.seed,
+                                returnCol: data.context.col,
+                                returnRow: data.context.row + 1
+                            };
+                            w.interiorStack = [];
+                            // Shift into interior state
+                            gameState.seed = gameState.seed + (data.context.col * 73856) + (data.context.row * 19349);
+                            w.interiorId = `${data.context.col}_${data.context.row}`;
+                        }
+                        w.isInterior = true;
+                        w.interiorType = data.roomType || 'HOUSE_INTERIOR';
+                        w.interiorMapId = null;   // a map read in an earlier visit is spent
 
                         // Generate the interior map
                         this.worldManager = new WorldManager();
@@ -529,6 +541,11 @@ export class SceneManager {
 
                         const interiorSpawn = this.worldManager.findSpawnPoint() || { col: 3, row: 5 };
                         this.overworldController.warpTo(interiorSpawn.col, interiorSpawn.row);
+                        this.overworldController.isLocked = false;
+                    } else if (data.id === 'exit_interior' && !(data.context && data.context.toWorld) && (gameState.world.interiorStack || []).length) {
+                        // up the stairs out of a deeper interior (the catacombs): back into the one above it, at the foot of the stairs
+                        const back = this._leaveToOuterInterior();
+                        this.overworldController.warpTo(back.returnCol, back.returnRow);
                         this.overworldController.isLocked = false;
                     } else if (data.id === 'exit_interior') {
                         const saved = this._leaveInterior();
@@ -1038,10 +1055,25 @@ export class SceneManager {
         return { ok: true, message: `Teleported to ${spot.col}, ${spot.row} ${where}${spot.col !== col || spot.row !== row ? ` (the nearest free tile to ${col}, ${row})` : ''}.` };
     }
 
+    /* Out of a deeper interior (the catacombs) into the one it was entered from (the cave): its seed, type and id come off the stack. Returns the stack entry. */
+    _leaveToOuterInterior() {
+        const back = gameState.world.interiorStack.pop();
+        gameState.seed = back.seed;
+        gameState.world.interiorType = back.type;
+        gameState.world.interiorId = back.id;
+        gameState.world.interiorMapId = null;
+        this.worldManager = new WorldManager();
+        this.overworldController.worldManager = this.worldManager;
+        this.encounterController.worldManager = this.worldManager;
+        this.battleController.worldManager = this.worldManager;
+        return back;
+    }
+
     _leaveInterior() {
         const saved = gameState.world.savedOverworld;
         if (!saved) return null;
         gameState.seed = saved.seed;
+        gameState.world.interiorStack = [];   // out of every interior at once (an Escape Rope from the catacombs, a teleport)
         gameState.world.isInterior = false;
         gameState.world.interiorType = null;
         gameState.world.interiorId = null;
