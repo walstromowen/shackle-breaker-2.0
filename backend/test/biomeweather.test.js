@@ -77,3 +77,21 @@ test('wild cotton grows on the plains', () => {
     const rules = Object.values(BIOME_DEFINITIONS.PLAINS.mapObjects).flat();
     assert.ok(rules.some(r => r.id === 'COTTON_PLANT'));
 });
+
+test('a thunderstorm is its own weather: rain with lightning, rolled on the plains, soaking a fight like rain', async () => {
+    const { WeatherDefinitions } = await import('../../shared/world/weatherDefinitions.js');
+    const fs = await import('node:fs');
+    const t = WeatherDefinitions.THUNDERSTORM;
+    assert.equal(t.id, 'thunderstorm');
+    assert.equal(t.visualEffect, 'particle_rain');
+    assert.equal(t.appliedStatusId, 'wet');
+    assert.ok(TimeSystem.allowedWeatherFor('PLAINS').has('THUNDERSTORM'));
+    assert.ok(!TimeSystem.allowedWeatherFor('DESERT').has('THUNDERSTORM'));
+    const anims = fs.readFileSync(new URL('../../shared/battle/animation/battleAnimationDefinition.js', import.meta.url), 'utf8');
+    assert.ok(anims.includes('"weatherThunderstorm": anim('));
+    const main = fs.readFileSync(new URL('../../frontend/src/main.js', import.meta.url), 'utf8');
+    for (const k of ['thunderClose', 'thunderMid', 'thunderFar']) {
+        const m = main.match(new RegExp(`${k}: '\\./(assets/[^']+)'`));
+        assert.ok(m && fs.existsSync(new URL(`../../frontend/src/${m[1]}`, import.meta.url)), `${k} is registered and on disk`);
+    }
+});

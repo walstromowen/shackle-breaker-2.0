@@ -1,4 +1,9 @@
 import { gameState } from '../../../../shared/core/gameState.js';
+import { events } from '../../../../shared/core/eventBus.js';
+
+/* A thunderstorm's lightning: a strike every GAP seconds (random in the range); how far off it struck (0 = overhead .. 1 = on the horizon) sets how bright
+   the flash is, whether a bolt is seen, and how long until the thunder (about 3 s at the farthest) and which thunder plays. */
+const LIGHTNING = { GAP: [10, 35], FIRST: [3, 10], THUNDER_DELAY: 3.2 };
 
 export class WeatherRenderer {
     constructor(canvas, ctx, config) {
@@ -249,6 +254,7 @@ export class WeatherRenderer {
         const defaultEffects = {
             'SANDSTORM': 'particle_sand',
             'RAIN': 'particle_rain',
+            'THUNDERSTORM': 'particle_rain',
             'FOG': 'overlay_fog',
             'BLIZZARD': 'particle_blizzard'
         };
@@ -259,6 +265,8 @@ export class WeatherRenderer {
         } else if (defaultEffects[stateId]) {
             stateEffect = defaultEffects[stateId];
         }
+
+        this.updateLightning(safeDt, stateId);
 
         // Indoors (a house, a cave) there is no weather: drop it at once instead of fading rain out inside the room
         if (gameState.world.isInterior) {
@@ -395,6 +403,34 @@ export class WeatherRenderer {
                 this.resetParticle(p, this.displayEffect, false);
             }
         }
+    }
+
+    /* Lightning while a thunderstorm is overhead (outdoors, the storm mostly faded in). A strike emits LIGHTNING_STRIKE { distance, x } for the
+       MapRenderer's flash and bolt; its thunder is played after a delay that grows with the distance. Indoors a storm is still heard, muffled and
+       without the flash. */
+    updateLightning(dt, stateId) {
+        const st = this._lightning || (this._lightning = { next: null, thunder: [] });
+        for (const th of st.thunder) th.in -= dt;
+        while (st.thunder.length && st.thunder[0].in <= 0) {
+            const th = st.thunder.shift();
+            events.emit('PLAY_SFX', th.sfx);
+        }
+        const storm = stateId === 'THUNDERSTORM';
+        if (!storm) { st.next = null; return; }
+        const rnd = (r) => r[0] + Math.random() * (r[1] - r[0]);
+        if (st.next === null) st.next = rnd(LIGHTNING.FIRST);
+        const strength = gameState.world.isInterior ? 1 : this.renderIntensity;
+        if (strength < 0.5) return;
+        st.next -= dt;
+        if (st.next > 0) return;
+        st.next = rnd(LIGHTNING.GAP);
+        const distance = Math.random();
+        const indoors = !!gameState.world.isInterior;
+        if (!indoors) events.emit('LIGHTNING_STRIKE', { distance, x: 0.15 + Math.random() * 0.7 });
+        const id = distance < 0.3 ? 'thunderClose' : distance < 0.7 ? 'thunderMid' : 'thunderFar';
+        const volume = (indoors ? 0.45 : 1) * (0.95 - distance * 0.45);
+        st.thunder.push({ in: 0.15 + distance * LIGHTNING.THUNDER_DELAY, sfx: { id, volume, pitch: 0.92 + Math.random() * 0.16 } });
+        st.thunder.sort((a, b) => a.in - b.in);
     }
 
     render(ctx, camera, totalTime = 0) {

@@ -10,7 +10,7 @@ import { ActSystem } from '../story/actSystem.js';
    rolled there, whatever this table says, so the two can no longer disagree. A biome that is not listed here gets CLEAR 60 and 20 for every weather it allows;
    a biome that allows nothing (a house, a cave) is always CLEAR. */
 const WEATHER_WEIGHTS = {
-    PLAINS:          { CLEAR: 60, RAIN: 25, FOG: 15 },
+    PLAINS:          { CLEAR: 60, RAIN: 17, THUNDERSTORM: 8, FOG: 15 },   // a third of the wet weather is a storm
     DESERT:          { CLEAR: 80, SANDSTORM: 20 },
     SNOWY_MOUNTAINS: { CLEAR: 55, FOG: 20, BLIZZARD: 25 },
 };

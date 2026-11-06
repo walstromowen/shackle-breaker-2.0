@@ -428,6 +428,9 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     weatherFog: './assets/audio/sfx/weather_fog.wav',
     weatherRain: './assets/audio/sfx/weather_rain.wav',
     weatherRainShort: './assets/audio/sfx/weather_rain_short.wav',
+    thunderClose: './assets/audio/sfx/thunder_close.wav',   // a thunderstorm's lightning, by how far off it struck (WeatherRenderer.updateLightning)
+    thunderMid: './assets/audio/sfx/thunder_mid.wav',
+    thunderFar: './assets/audio/sfx/thunder_far.wav',
     spookyWind: './assets/audio/sfx/spooky_wind.wav',
     aDisturbingSightBgm: './assets/audio/music/a_disturbing_sight.mp3',
     poachersNightmareBgm: './assets/audio/music/poachers_nightmare.mp3',

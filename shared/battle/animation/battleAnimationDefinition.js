@@ -1124,6 +1124,16 @@ export const BattleAnimationDefinitions = {
         ],
         target: { flash: flash(0.08, 0.88, 'brightness(80%) saturate(70%) sepia(30%) hue-rotate(180deg)') }
     }),
+    // Weather animation (WeatherDefinitions THUNDERSTORM): the rain, a darker sky, and a lightning flash over everyone followed by a clap of thunder.
+    "weatherThunderstorm": anim(2.8, {
+        audio: [sfx(0.04, 'weatherRainShort', { volume: 0.8 }), sfx(0.75, 'thunderClose', { volume: 0.85 })],
+        background: background(0, 2.8, 'current', 'brightness(55%) saturate(70%) sepia(25%) hue-rotate(180deg)'),
+        vfx: [
+            repeat(0, 14, 0.19, t => burst(t, { glow: false, count: 16, color: '#9cc2ff', scale: 0.22, angle: 100, cone: 10, minSpeed: 550, maxSpeed: 750, minLife: 0.45, maxLife: 0.6, gravity: 500, area: [420, 40], offsetY: -250, alpha: 0.85 })),
+            repeat(0.2, 12, 0.2, t => burst(t, { glow: false, count: 5, color: '#dff0ff', scale: 0.18, angle: 270, cone: 140, minSpeed: 60, maxSpeed: 160, minLife: 0.2, maxLife: 0.35, gravity: 600, area: [260, 20], offsetY: 90 }))
+        ],
+        target: { flash: flash(0.6, 0.85, 'brightness(260%) saturate(30%) contrast(120%)'), shake: shake(0.75, 1.1, 8) }
+    }),
     // Weather animation (WeatherDefinitions SANDSTORM). Plays on everyone in the fight, so it uses no actor motion.
     "weatherSandstorm": anim(2.6, {
         audio: [sfx(0, 'spookyWind', { volume: 0.7, pitch: 0.9 })],

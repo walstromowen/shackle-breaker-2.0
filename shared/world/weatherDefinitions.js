@@ -18,6 +18,19 @@ export const WeatherDefinitions = {
         appliedStatusId: 'wet',
         battleMessage: "A heavy rain begins to fall!" // ✅ NEW
     },
+    /* A thunderstorm: rain (the same drops, a darker sky) with lightning. On the overworld a bolt flashes every 10-35 seconds and its thunder follows,
+       sooner and louder the closer it struck (WeatherRenderer.updateLightning, the flash in MapRenderer). In a fight it soaks everyone like rain
+       (wet: weaker to lightning). Only a biome that lists 'thunderstorm' in its allowedWeather can roll it (the plains). */
+    THUNDERSTORM: {
+        id: 'thunderstorm',
+        name: 'Thunderstorm',
+        animationId: 'weatherThunderstorm',
+        visualEffect: 'particle_rain',
+        audioEffect: 'weatherRain',
+        durationRange: [4, 10],
+        appliedStatusId: 'wet',
+        battleMessage: "Thunder rolls overhead as a storm breaks!"
+    },
     FOG: {
         id: 'fog',
         name: 'Dense Fog',

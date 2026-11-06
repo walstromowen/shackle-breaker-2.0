@@ -11,6 +11,39 @@ const WEATHER_FLASH = [[0, 0.07, 0.34], [0.11, 0.05, 0.12], [0.19, 0.09, 0.26], 
 let weatherFlashAt = -Infinity;
 // at most one flash every few seconds, so pacing back and forth over a biome border does not strobe
 events.on('WEATHER_CHANGED', () => { const now = performance.now(); if (now - weatherFlashAt > 3000) weatherFlashAt = now; });
+/* Lightning (WeatherRenderer.updateLightning): a hard white flash, a second flicker, then a fading afterglow; the nearer the strike the brighter.
+   A strike nearer than BOLT_WITHIN is seen as a jagged bolt from the top of the screen for a moment. */
+const LIGHTNING_FLASH = [[0, 0.08, 0.75], [0.13, 0.06, 0.45], [0.22, 0.5, 0.3]];
+const BOLT_WITHIN = 0.45, BOLT_SECONDS = 0.22;
+let lightning = null;
+events.on('LIGHTNING_STRIKE', ({ distance = 0.5, x = 0.5 } = {}) => {
+    lightning = { at: performance.now(), strength: 1 - distance * 0.7, bolt: distance < BOLT_WITHIN ? makeBolt(x, 0.35 + Math.random() * 0.35) : null };
+});
+/* A bolt as fractions of the screen: a crooked main line from the top down to `depth`, with a couple of forks. */
+function makeBolt(x, depth) {
+    const lines = [];
+    const walk = (x0, y0, len, steps, width) => {
+        const pts = [[x0, y0]];
+        let px = x0, py = y0;
+        for (let i = 0; i < steps; i++) { px += (Math.random() - 0.5) * 0.06; py += len / steps; pts.push([px, py]); }
+        lines.push({ pts, width });
+        return pts;
+    };
+    const main = walk(x, -0.02, depth, 14, 1);
+    for (let f = 0; f < 3; f++) {
+        const from = main[3 + Math.floor(Math.random() * 8)];
+        walk(from[0], from[1], depth * (0.2 + Math.random() * 0.25), 6, 0.5);
+    }
+    return lines;
+}
+export function lightningAlpha(seconds, strength) {
+    let a = 0;
+    for (const [start, len, peak] of LIGHTNING_FLASH) {
+        const t = seconds - start;
+        if (t >= 0 && t < len) a = Math.max(a, peak * strength * (1 - t / len));
+    }
+    return a;
+}
 export function weatherFlashAlpha(seconds) {
     let a = 0;
     for (const [start, len, peak] of WEATHER_FLASH) {
@@ -81,7 +114,8 @@ export class MapRenderer {
             const lightObjects = worldManager.getLightObjects(camera, this.canvas.width, this.canvas.height);
             lightingRenderer.render(this.ctx, ambientData, renderCamera, entities, lightObjects, worldManager, interpolationFactor);
         }
-        /* Pass 4: the stutter of light when the weather turns */
+        /* Pass 4: lightning, and the stutter of light when the weather turns */
+        if (lightning && !gameState.world.isInterior) this.drawLightning();
         const flash = weatherFlashAlpha((performance.now() - weatherFlashAt) / 1000);
         if (flash > 0) {
             this.ctx.save();
@@ -90,6 +124,28 @@ export class MapRenderer {
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
             this.ctx.restore();
         }
+    }
+    drawLightning() {
+        const t = (performance.now() - lightning.at) / 1000;
+        const a = lightningAlpha(t, lightning.strength);
+        if (a <= 0 && t > 1) { lightning = null; return; }
+        const ctx = this.ctx, W = this.canvas.width, H = this.canvas.height;
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        if (a > 0) { ctx.fillStyle = `rgba(215, 225, 255, ${a.toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
+        if (lightning.bolt && t < BOLT_SECONDS) {
+            const fade = 1 - t / BOLT_SECONDS;
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            for (const { pts, width } of lightning.bolt) {
+                for (const [w, col] of [[10 * width, `rgba(150, 170, 255, ${0.25 * fade})`], [3.5 * width, `rgba(235, 240, 255, ${0.95 * fade})`]]) {
+                    ctx.lineWidth = w * this.resScale; ctx.strokeStyle = col;
+                    ctx.beginPath();
+                    pts.forEach(([px, py], i) => (i ? ctx.lineTo(px * W, py * H) : ctx.moveTo(px * W, py * H)));
+                    ctx.stroke();
+                }
+            }
+        }
+        ctx.restore();
     }
     /* Natural darkness. The biome under the camera may carry `ambientLight: { r, g, b, a }` (biomeDefinitions.js). The result is the darker of that and the
        day / night colour (alpha = the larger of the two, colour = the two weighted by their alphas), so a cave is as dark as night by day and no darker than the

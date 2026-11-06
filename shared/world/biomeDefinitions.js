@@ -72,7 +72,7 @@ export const BIOME_DEFINITIONS = {
             levelDirt: null /* dirt only generates on the lower (ground) level, never on the tops of cliffs */,
         },
         minimap: { grass: '#5b9448', dirt: '#8c6c47', water: '#3b73a6', rock: '#8f8b82', stair: '#f2e27a' } /* colours of the minimap (see MinimapRenderer): ground, dirt, water, the rock that the cliff levels turn into, and the walkable part of a stair */,
-        allowedWeather: ['rain', 'fog'],
+        allowedWeather: ['rain', 'thunderstorm', 'fog'],
         music: { day: 'plainsBgmDay', night: 'plainsBgmNight', battle: 'plainsBattleBgm' },
         battleBackgrounds: { day: 'plainsBattleDayBg', dusk: 'plainsBattleDuskBg', night: 'plainsBattleNightBg' },
         shapeElevation: (noise, hill = 0, c = 1) => {

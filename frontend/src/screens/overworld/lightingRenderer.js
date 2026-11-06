@@ -378,7 +378,7 @@ export class LightingRenderer {
             const stormR = 15;
             const stormG = 20;
             const stormB = 35;
-            const stormMaxAlpha = 0.65;
+            const stormMaxAlpha = String(activeWeather.id).toLowerCase() === 'thunderstorm' ? 0.75 : 0.65;   // a thunderstorm's sky is darker still
 
             finalR = Math.floor((finalR * (1 - intensity)) + (stormR * intensity));
             finalG = Math.floor((finalG * (1 - intensity)) + (stormG * intensity));
