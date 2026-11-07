@@ -8,7 +8,8 @@
      swinging_axes   [VIG 14]  blades swing down from the ceiling              fail: 30% of max HP, slash
 
    Art: assets/icons/encounters/catacomb_traps.png registered as `encounter_catacomb_traps`, a 4 x 4 grid of 128 px cells:
-     (0,0) the plate clicks   (1,0) arrows dodged   (2,0) arrows strike   (3,0) the floor gives way
+     (0,0) (1,0) (2,0) the arrow trap: the stone wall with its arrow slits loosing arrows (the same picture for the click, the dodge and the hit)
+     (3,0) the floor gives way
      (0,1) caught the edge    (1,1) onto the stakes (2,1) the blades drop  (3,1) dashed through
      (0,2) the blade strikes */
 

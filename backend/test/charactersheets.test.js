@@ -42,6 +42,9 @@ function readPng(rel) {
     return { w, h, at: (x, y) => px.subarray(y * stride + x * 4, y * stride + x * 4 + 4) };
 }
 const isShadow = (p) => p[3] > 0 && p[3] < 128 && p[0] === INK[0] && p[1] === INK[1] && p[2] === INK[2];
+// the old shadow's oval (rows 51..56, widths 12 18 20 20 18 12 round the middle line): only there was its grey a shadow; the same grey elsewhere is the figure's own
+const OLD_OVAL = [12, 18, 20, 20, 18, 12];
+const inOldOval = (x, y) => y >= 51 && y <= 56 && Math.abs(x + 0.5 - 32) <= OLD_OVAL[y - 51] / 2;
 const isOldShadow = (p) => p[3] === 255 && p[0] === OLD_SHADOW_RGB[0] && p[1] === OLD_SHADOW_RGB[1] && p[2] === OLD_SHADOW_RGB[2];
 
 /* The cells of a sheet that hold a figure, as { col, row }. */
@@ -65,7 +68,7 @@ test('every character sheet is 8 frames across, and every frame has a soft shado
             let shadow = 0, lo = 99, hi = -1, left = 0, right = 0;
             for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) {
                 const p = img.at(c.col * 64 + x, c.row * 64 + y);
-                assert.ok(!isOldShadow(p), `${key} frame ${c.col},${c.row}: the old opaque shadow is gone (${x},${y})`);
+                if (inOldOval(x, y)) assert.ok(!isOldShadow(p), `${key} frame ${c.col},${c.row}: the old opaque shadow is gone (${x},${y})`);
                 if (isShadow(p)) { shadow++; lo = Math.min(lo, y); hi = Math.max(hi, y); if (x < 32) left++; else right++; }
             }
             assert.ok(shadow > 20, `${key} frame ${c.col},${c.row}: has its shadow`);
@@ -105,4 +108,13 @@ test('the figures of every sheet stand with their feet on the same row (51), in 
 test('the map no longer reads the standing line from each sheet\'s pixels', () => {
     assert.equal(typeof CONFIG.CHARACTER_FRAME.feetPad, 'number');
     assert.ok(/feetPad: 9/.test(read('shared/core/constants.js')));
+});
+
+test('the figures keep every pixel of their own, including the ones that share the old shadow\'s grey (armour, boots): no holes to see the floor through', () => {
+    for (const key of ['legionaryHeroSprite', 'legionaryCompanionSprite', 'warlordHeroSprite', 'nightbladeHeroSprite']) {
+        const img = readPng(SHEETS[key]);
+        let kept = 0;
+        for (let y = 0; y < img.h; y++) for (let x = 0; x < img.w; x++) if (!inOldOval(x % 64, y % 64) && isOldShadow(img.at(x, y))) kept++;
+        assert.ok(kept > 100, `${key}: ${kept} pixels of that grey are still in the figures`);
+    }
 });
