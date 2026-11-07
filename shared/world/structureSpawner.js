@@ -319,11 +319,30 @@ export class StructureSpawner {
             taken.push({ c, r });
             placed++;
         }
-        const rk = bf.rocks;
-        if (rk && rk.pool?.length) for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
-            if (grid[r][c] !== null || near(c, r)) continue;
-            if (rnd(c, r, 24) < rk.chance) grid[r][c] = rk.pool[Math.floor(rnd(c, r, 25) * rk.pool.length) % rk.pool.length];
-        }
+        // bones, then loose stones, in the free grass (not under the remains or a body)
+        const strew = (spec, s1, s2) => {
+            if (!spec || !spec.pool?.length) return;
+            for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
+                if (grid[r][c] !== null || near(c, r)) continue;
+                if (rnd(c, r, s1) < spec.chance) {
+                    const id = spec.pool[Math.floor(rnd(c, r, s2) * spec.pool.length) % spec.pool.length];
+                    if (MAP_OBJECTS_DEFINITIONS[id]) grid[r][c] = id;
+                }
+            }
+            // at least `min` of them: the rest go on the free cells the seed ranks first
+            const placed = grid.flat().filter(id => spec.pool.includes(id)).length;
+            if (spec.min && placed < spec.min) {
+                const free = [];
+                for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) if (grid[r][c] === null && !near(c, r)) free.push([rnd(c, r, s1 + 2), c, r]);
+                free.sort((a, b) => a[0] - b[0]);
+                for (const [, c, r] of free.slice(0, spec.min - placed)) {
+                    const id = spec.pool[Math.floor(rnd(c, r, s2) * spec.pool.length) % spec.pool.length];
+                    if (MAP_OBJECTS_DEFINITIONS[id]) grid[r][c] = id;
+                }
+            }
+        };
+        strew(bf.bones, 26, 27);
+        strew(bf.rocks, 24, 25);
     }
 
     _writePrefabToGlobalState(originCol, originRow, prefab) {

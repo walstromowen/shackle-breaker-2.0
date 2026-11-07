@@ -34,23 +34,28 @@ test('AFTERMATH_REMAINS starts the Aftermath when the party comes within 3 tiles
     assert.deepEqual([png.readUInt32BE(16), png.readUInt32BE(20)], [32, 32]);
 });
 
-test('the battlefield: the remains in the middle, 5 to 8 fallen soldiers around them, none touching the centre or each other', async () => {
+test('the battlefield: the remains in the middle, 5 to 8 fallen soldiers around them (none touching the centre or each other), and bones among them', async () => {
     const { STRUCTURES } = await import('../../shared/world/structures.js');
     gameState.seed = 4242;
     gameState.world.isInterior = false;
     gameState.world.changes = {};
     const wm = new WorldManager();
+    let bonesSeen = 0;
     for (const [oc, or] of [[0, 0], [130, -40], [-77, 512]]) {
         const grid = wm._prefabObjects(oc, or, STRUCTURES.BATTLEFIELD);
         assert.equal(grid[3][3], 'AFTERMATH_REMAINS', 'the remains are in the middle');
         const bodies = [];
         grid.forEach((row, r) => row.forEach((id, c) => { if (id && id.startsWith('FALLEN_SOLDIER_')) bodies.push({ c, r }); }));
         assert.ok(bodies.length >= 5 && bodies.length <= 8, `${bodies.length} bodies`);
+        const bones = grid.flat().filter(id => id === 'BONE_PILE').length;
+        assert.ok(bones >= 2, `${bones} bone piles`);
+        bonesSeen += bones;
         for (const b of bodies) {
             assert.ok(Math.abs(b.c - 3) > 1 || Math.abs(b.r - 3) > 1, 'not beside the remains');
             for (const o of bodies) if (o !== b) assert.ok(Math.abs(o.c - b.c) > 1 || Math.abs(o.r - b.r) > 1, 'bodies do not touch');
         }
     }
+    assert.ok(bonesSeen > 0, `bones lie among the dead (${bonesSeen})`);
     const main = fs.readFileSync(new URL('frontend/src/main.js', root), 'utf8');
     for (let i = 1; i <= 15; i++) {
         assert.ok(MAP_OBJECTS_DEFINITIONS[`FALLEN_SOLDIER_${i}`] && MAP_OBJECTS_DEFINITIONS[`FALLEN_SOLDIER_${i}`].isSolid === false, `FALLEN_SOLDIER_${i} is walked over`);
