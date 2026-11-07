@@ -63,12 +63,12 @@ export function createApp({ repo, config }) {
         const frontendSrc = path.join(REPO_ROOT, 'frontend', 'src');
         const sharedDir = path.join(REPO_ROOT, 'shared');
         if (fs.existsSync(frontendSrc) && fs.existsSync(sharedDir)) {
-            // Code files are always revalidated (testers get a new build on refresh); art and sound can be cached for a while.
+            // Every file is revalidated on each load (no-cache + ETag): an unchanged one costs a 304, and art or sound that was replaced
+            // (a new portrait at the same path) shows on the next refresh instead of the browser's old copy for up to an hour.
             const staticOptions = {
                 etag: true,
-                setHeaders(res, filePath) {
-                    const code = /\.(js|mjs|html|css|json)$/i.test(filePath);
-                    res.setHeader('Cache-Control', code ? 'no-cache' : 'public, max-age=3600');
+                setHeaders(res) {
+                    res.setHeader('Cache-Control', 'no-cache');
                 }
             };
             // The same layout a dev server (Live Server...) gives when it is started in the repo root: the code climbs between
