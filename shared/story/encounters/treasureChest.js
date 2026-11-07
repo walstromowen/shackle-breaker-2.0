@@ -38,7 +38,6 @@ export const treasureChest = {
                         { type: "context_flag_not_set", flagId: "failed_str" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "You try to pry the sturdy chest open with brute strength...",
                     successOutcomes: [
                         { 
                             weight: 100, 
@@ -64,7 +63,6 @@ export const treasureChest = {
                         { type: "context_flag_not_set", flagId: "failed_dex" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "You focus closely, trying to pick the lock mechanism...",
                     successOutcomes: [
                         { 
                             weight: 100, 
@@ -91,7 +89,6 @@ export const treasureChest = {
                         { type: "context_flag_not_set", flagId: "failed_int" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "You channel your magical energy toward the locking mechanism...",
                     successOutcomes: [
                         { 
                             weight: 100, 
@@ -119,7 +116,6 @@ export const treasureChest = {
                         { type: "context_flag_not_set", flagId: "found_key" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "You sweep the area, searching high and low for the missing key...",
                     successOutcomes: [
                         { weight: 100, results: [{ type: "SET_CONTEXT_FLAG", payload: { flagId: "found_key" } }, { type: "ADVANCE_STAGE", payload: { stageId: "found_key" } }] }
                     ],

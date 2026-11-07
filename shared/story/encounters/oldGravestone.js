@@ -65,7 +65,6 @@ const listenStage = (stage, text) => {
                 threshold: 10,
                 corruption: 2,   // a grave robbed: corruption goes up
                 conditions: [HUMANOID],
-                customActionText: "You dig where the quiet led you.",
                 successOutcomes: toStage(l.then),
                 // a clumsy spade over goods worth keeping can strike the bones buried beside them
                 failureOutcomes: l.fragile
@@ -106,7 +105,6 @@ export const oldGravestone = {
                     attribute: "attunement",
                     threshold: 11,
                     conditions: [HUMANOID, { type: "context_flag_not_set", flagId: "failed_gravestone_listen" }],
-                    customActionText: "You kneel, lay a palm flat on the cold ground, and let the quiet settle in.",
                     successOutcomes: LISTEN.map(l => ({ weight: l.weight, results: [{ type: "ADVANCE_STAGE", payload: { stageId: l.stage } }] })),
                     failureOutcomes: [{
                         weight: 100,
@@ -167,7 +165,6 @@ export const oldGravestone = {
                     attribute: "strength",
                     threshold: 12,
                     conditions: [HUMANOID],
-                    customActionText: "You throw your back into it, hauling the soil out in great clods until the earth gives way.",
                     successOutcomes: digOutcomes(DIG_SUCCESS),
                     failureOutcomes: digOutcomes(DIG_FAILURE)
                 },
@@ -177,7 +174,6 @@ export const oldGravestone = {
                     attribute: "dexterity",
                     threshold: 12,
                     conditions: [HUMANOID],
-                    customActionText: "You scoop the earth away a handful at a time, feeling for whatever lies below before it can feel you.",
                     successOutcomes: digOutcomes(DIG_SUCCESS),
                     failureOutcomes: digOutcomes(DIG_FAILURE)
                 },
@@ -216,7 +212,6 @@ export const oldGravestone = {
                     threshold: 13,
                     corruption: 1,
                     conditions: [HUMANOID],
-                    customActionText: "You leave the bundle where it lies and dig on, down into the clay.",
                     successOutcomes: digOutcomes({ deeper_find: 75, deeper_nothing: 25 }),
                     failureOutcomes: digOutcomes({ deeper_nothing: 40, spirit_rises: 60 })
                 }
@@ -291,7 +286,6 @@ export const oldGravestone = {
                     attribute: "strength",
                     threshold: 10,
                     conditions: [HUMANOID],
-                    customActionText: "You work your fingers under the lid and heave.",
                     successOutcomes: toStage("coffin_opened"),
                     failureOutcomes: [
                         { weight: 60, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "bones_rise" } }] },
@@ -346,7 +340,6 @@ export const oldGravestone = {
                     attribute: "dexterity",
                     threshold: 13,
                     conditions: [HUMANOID],
-                    customActionText: "You kick free of the grasping bones and claw your way up the crumbling side of the hole.",
                     successOutcomes: toStage("escaped_the_grave"),
                     failureOutcomes: toStage("dragged_back")
                 }
@@ -396,7 +389,6 @@ export const oldGravestone = {
                     attribute: "attunement",
                     threshold: 14,
                     conditions: [HUMANOID],
-                    customActionText: "You lower your weapon, open your empty hand, and speak to what is left of the one who lies here.",
                     successOutcomes: toStage("spirit_at_rest"),
                     failureOutcomes: toStage("spirit_unmoved")
                 },

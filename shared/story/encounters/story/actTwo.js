@@ -16,7 +16,7 @@ export const actTwo = {
     stages: {
         silence: {
             displayText: "Silence",
-            image: { sheet: "encounter_darius_defeated", col: 0, row: 0, size: 193 },   // Darius slumped over the altar
+            image: { sheet: "encounter_darius_defeated", col: 0, row: 0 },   // Darius slumped over the altar
             bgm: "none",
             ambience: "none",
             sfx: "heartbeat",

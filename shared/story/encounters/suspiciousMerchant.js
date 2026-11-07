@@ -42,7 +42,6 @@ export const suspiciousMerchant = {
                         { type: "context_flag_not_set", flagId: "failed_merchant_int" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "You squint at the junk peeking out of the twitching man's coat...",
                     successOutcomes: [
                         { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "call_out_fakes" } }] }
                     ],
@@ -66,7 +65,6 @@ export const suspiciousMerchant = {
                         { type: "context_flag_not_set", flagId: "failed_merchant_str" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "You grab the twitching man by the collar and demand the goods for free.",
                     successOutcomes: [
                         { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "merchant_flees" } }] }
                     ],

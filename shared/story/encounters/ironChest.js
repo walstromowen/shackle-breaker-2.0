@@ -38,7 +38,6 @@ export const ironChest = {
                 },
                 {
                     text: "Leave the chest where it is.",
-                    customActionText: "You leave the chest locked and move on.",
                     outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]

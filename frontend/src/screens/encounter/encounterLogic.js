@@ -13,6 +13,9 @@ import { EntityFactory } from '../../../../shared/characters/entityFactory.js';
 import { CorruptionSystem } from '../../../../shared/characters/corruptionSystem.js';
 import { rng, withoutSeed } from '../../../../shared/core/random.js';
 import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
+import { pushItemToast, pushTextToast } from '../../ui/toasts.js';
+import { UITheme } from '../../ui/UITheme.js';
+import { UI_SFX } from '../../ui/uiSfx.js';
 
 /* A party of several players in one encounter (EncounterController, engine/multiplayerSocial.js): every member's browser plays it with the
    same roll (the leader's, sent with each choice: the one who started it) and the same seed, so every screen reaches the same outcome. Who a
@@ -369,7 +372,7 @@ export class EncounterLogic {
                             }
                             const coin = EncounterLogic._coinOf(lootModel.currency);
                             gameState.party.currency += coin;
-                            if (coin > 0) currencyFound.push(coin === lootModel.currency ? `Found ${coin} currency!` : `Found ${lootModel.currency} currency: your share is ${coin}.`);
+                            if (coin > 0) currencyFound.push(`+${coin} coins`);
                         }
                     }
                     break;
@@ -387,7 +390,7 @@ export class EncounterLogic {
                                 levelsGained.push(`${m.name} hit Lvl ${m.level}!`);
                             }
                         });
-                        xpEarned.push(`The party gained ${xpAmount} XP.`);
+                        xpEarned.push(`Party +${xpAmount} XP`);
                     } else {
                         // a shared encounter: every player's share goes to their active character, or their lead (myRewardee)
                         const active = EncounterLogic.shared ? EncounterLogic.myRewardee() : EncounterLogic.activeMember();
@@ -396,7 +399,7 @@ export class EncounterLogic {
                             if (ExperienceSystem.addXp(active, xpAmount)) {
                                 levelsGained.push(`${active.name} hit Lvl ${active.level}!`);
                             }
-                            xpEarned.push(`${active.name} gained ${xpAmount} XP.`);
+                            xpEarned.push(`+${xpAmount} XP`);
                         }
                     }
                     break;
@@ -409,7 +412,7 @@ export class EncounterLogic {
                     if (amount >= 0) {
                         const coin = EncounterLogic._coinOf(amount);
                         gameState.party.currency = purse + coin;
-                        if (coin > 0) currencyFound.push(coin === amount ? `Found ${coin} currency!` : `Found ${amount} currency: your share is ${coin}.`);
+                        if (coin > 0) currencyFound.push(`+${coin} coins`);
                         break;
                     }
 
@@ -654,17 +657,16 @@ export class EncounterLogic {
         // Grouping the collected messages sequentially
         if (generalMessages.length > 0) response.messages.push(...generalMessages);
         if (statusEffects.length > 0) response.messages.push(statusEffects.join('\n'));
-        if (xpEarned.length > 0) response.messages.push(xpEarned.join('\n'));
         if (levelsGained.length > 0) response.messages.push(levelsGained.join('\n'));
         if (traitsGained.length > 0) response.messages.push(traitsGained.join('\n'));
         if (traitsLost.length > 0) response.messages.push(traitsLost.join('\n'));
         if (questsStarted.length > 0) response.messages.push(questsStarted.join('\n'));
-        if (itemsFound.length > 0) {
-            const itemsMessage = `Obtained Items:\n` + itemsFound.join('\n');
-            response.messages.push(itemsMessage);
-            response.messageItems[itemsMessage] = itemsFoundData;
-        }
-        if (currencyFound.length > 0) response.messages.push(currencyFound.join('\n'));
+        // XP, items and coin gained do not stop the story for a screen of their own: they float up as toasts (ui/toasts.js) while it goes on
+        xpEarned.forEach(label => pushTextToast(label, UITheme.colors.textHighlight));
+        itemsFoundData.forEach(({ id, qty }) => pushItemToast(id, qty));
+        currencyFound.forEach(label => pushTextToast(label, UITheme.colors.textHighlight));
+        if (itemsFoundData.length > 0 || currencyFound.length > 0) events.emit('PLAY_SFX', { id: UI_SFX.pickup, volume: 0.8, pitch: 1.0 });
+        response.toasts = { xp: [...xpEarned], items: [...itemsFoundData], currency: [...currencyFound] };
         
         return response;
     }

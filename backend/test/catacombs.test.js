@@ -138,6 +138,7 @@ test('each trap is a walk-in encounter with a Vigor saving throw: a failure hurt
         const enc = encounterDefinitions[id];
         const first = enc.stages[enc.initialStage];
         const save = first.decisions.find(d => d.type === 'skill_check');
+        assert.ok(!first.decisions.some(d => d.type === 'switch_character'), `${id}: a trap springs on whoever stepped on it, no switching`);
         assert.equal(save.attribute, 'vigor');
         const failStage = enc.stages[save.failureOutcomes[0].results[0].payload.stageId];
         const okStage = enc.stages[save.successOutcomes[0].results[0].payload.stageId];

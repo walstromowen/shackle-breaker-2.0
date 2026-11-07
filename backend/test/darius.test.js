@@ -36,7 +36,7 @@ test('Darius does all the talking: up to the fight, the only button is "Continue
     for (const id of ['darius_rises', 'darius_speaks', 'darius_late', 'darius_sees']) {
         assert.deepEqual(stages[id].decisions.map(d => d.text), ['Continue.'], id);
     }
-    assert.deepEqual(stages.darius_wrath.decisions.map(d => d.text), ['Face Darius the Groveler!']);
+    assert.deepEqual(stages.darius_wrath.decisions.map(d => d.text), ['Draw your weapon.']);
 });
 
 test('every stage of it is wired: it has a way on, its cues exist, its text fits, and only the last one fights', () => {
@@ -56,10 +56,14 @@ test('every stage of it is wired: it has a way on, its cues exist, its text fits
 });
 
 test('he talks to you: every stage is his own words, spoken to you, with no narration', () => {
-    for (const id of walk()) {
+    for (const id of walk().filter(id => id !== 'darius_wrath')) {
         const t = stages[id].text.trim();
         assert.ok(t.startsWith('"') && t.endsWith('"'), `${id}: only his words, in quotes`);
+        assert.doesNotMatch(t, /turns? around/i, `${id}: his back is still to you`);
     }
+    // he turns around only on the last stage, right before the fight
+    assert.match(stages.darius_wrath.text, /^Darius turns around\./);
+    assert.ok(stages.darius_wrath.text.trim().endsWith('"'));
     const all = walk().map(id => stages[id].text).join(' ');
     assert.match(all, /\byou\b/, 'he speaks to the player');
     assert.match(stages.darius_rises.text, /king/i);

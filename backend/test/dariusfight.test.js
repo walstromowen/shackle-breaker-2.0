@@ -22,8 +22,18 @@ test('Darius resists every kind of attack, so no single blow takes a big bite (l
     assert.ok(D.baseStats.maxHp >= 80);
 });
 
+test('his moveset is exactly Acid Pool, Magic Missile, Bless, Cleanse and Spirit Reap (rest only as the fallback), and he holds no gear', () => {
+    const moves = ['acid_pool', 'magic_missile', 'bless', 'cleanse', 'spirit_reap'];
+    assert.deepEqual(D.abilities.filter(id => id !== 'rest').sort(), [...moves].sort());
+    assert.ok(Object.values(D.equipment).every(v => v == null), 'no gear, so nothing grants him extra abilities');
+});
+
+test('Spirit Reap: 3x dark damage to stamina only, half of it stolen back as stamina', () => {
+    assert.deepEqual(AbilityDefinitions.spirit_reap.effects, [{ type: 'damage', damageType: 'dark', resource: 'stamina', power: 3.0, drain: 0.5 }]);
+});
+
 test('he can Bless, Cleanse and pool acid', () => {
-    for (const id of ['bless', 'cleanse', 'acid_pool']) {
+    for (const id of ['bless', 'cleanse', 'acid_pool', 'magic_missile', 'spirit_reap']) {
         assert.ok(D.abilities.includes(id), `Darius knows ${id}`);
         assert.ok(AbilityDefinitions[id], `${id} exists`);
         assert.ok(BattleAnimationDefinitions[AbilityDefinitions[id].animationId], `${id} has its animation`);
@@ -60,4 +70,25 @@ test('the enemy AI does not waste a turn: no Bless while blessed, no Cleanse wit
     assert.equal(worthUsing(cleanse, caster([])), false);
     assert.equal(worthUsing(cleanse, caster(['poison'])), true);
     assert.equal(worthUsing(acid, caster(['blessed', 'poison'])), true, 'attacks are always worth it');
+});
+
+test('built for battle, Darius has only his five moves (plus rest), and Spirit Reap leaves HP alone and steals half the stamina it takes', async () => {
+    const { EntityFactory } = await import('../../shared/characters/entityFactory.js');
+    const { CombatantModel } = await import('../../shared/battle/combatantModel.js');
+    const { AbilitySystem } = await import('../../shared/abilities/abilitySystem.js');
+    const darius = new CombatantModel(EntityFactory.create('DARIUS_THE_GROVELER', { level: 8 }), 'enemy');
+    const ids = darius.abilities.map(a => a.id).filter(id => id !== 'rest').sort();
+    assert.deepEqual(ids, ['acid_pool', 'bless', 'cleanse', 'magic_missile', 'spirit_reap']);
+
+    const hero = new CombatantModel(EntityFactory.create('HUMANOID', { level: 8, levelEdge: false }), 'party');
+    darius.modifyResource('stamina', -darius.stamina);
+    assert.equal(darius.stamina, 0);
+    const hp = hero.hp, stamina = hero.stamina;
+    const log = console.log; console.log = () => {};
+    const rnd = Math.random; Math.random = () => 0.5;
+    try { AbilitySystem.execute('spirit_reap', darius, hero); } finally { Math.random = rnd; console.log = log; }
+    const taken = stamina - hero.stamina;
+    assert.equal(hero.hp, hp, 'HP untouched');
+    assert.ok(taken > 0, `stamina taken: ${taken}`);
+    assert.equal(darius.stamina, Math.min(darius.maxStamina, Math.floor(taken * 0.5)), 'half is stolen back');
 });

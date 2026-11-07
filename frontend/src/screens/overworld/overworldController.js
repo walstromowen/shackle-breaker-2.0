@@ -21,6 +21,7 @@ import { multiplayerSession } from '../../engine/multiplayerSession.js';
 import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
 import { collectGrave } from '../../../../shared/world/graves.js';
 import { pullLever } from '../../../../shared/world/catacombPuzzle.js';
+import { iconSheetFor, pushItemToast } from '../../ui/toasts.js';
 
 /* Multiplayer: the question box (another player's request, or what to do with the player in front of you), centred on the screen */
 const PROMPT = { w: 640, optH: 58, gap: 10, pad: 36 };
@@ -557,47 +558,10 @@ export class OverworldController extends BaseController {
     }
 
     /* Which icon sheet an item's icon is on (toasts and the hotbar). */
-    iconSheetFor(itemDef) {
-        let sheetName = 'items';
-        if (itemDef) {
-            const type = (itemDef.type || '').toLowerCase();
-            const slot = (itemDef.slot || '').toLowerCase();
-            if (slot === 'mainhand' || slot === 'offhand' || type === 'weapon' || type === 'shield' || type === 'tool') {
-                sheetName = 'weapons';
-            } else if (type === 'armor' || ['head', 'body', 'legs', 'feet', 'hands', 'accessory'].includes(slot)) {
-                sheetName = 'armor';
-            } else if (type === 'consumable') {
-                sheetName = 'consumables';
-            } else if (type === 'material') {
-                sheetName = 'materials';
-            }
-        }
-        return sheetName;
-    }
+    iconSheetFor(itemDef) { return iconSheetFor(itemDef); }
 
-    // --- REUSABLE UI TOAST SYSTEM ---
-    createItemToast(itemId, amount) {
-        const itemDef = ItemDefinitions[itemId];
-        const iconCol = itemDef?.icon?.col || 0;
-        const iconRow = itemDef?.icon?.row || 0;
-
-        const sheetName = this.iconSheetFor(itemDef);
-
-        if (!gameState.ui) gameState.ui = {};
-        if (!gameState.ui.toasts) gameState.ui.toasts = [];
-
-        gameState.ui.toasts.push({
-            itemId: itemId,
-            amount: amount,
-            createdAt: performance.now(),
-            duration: 2500,
-            iconSheet: sheetName,
-            iconCol: iconCol,
-            iconRow: iconRow
-        });
-
-        gameState.ui.toasts = gameState.ui.toasts.filter(t => performance.now() - t.createdAt < 3000);
-    }
+    // --- REUSABLE UI TOAST SYSTEM (ui/toasts.js) ---
+    createItemToast(itemId, amount) { pushItemToast(itemId, amount); }
 
     processPickup(targetObj) {
         targetObj.isFading = true;

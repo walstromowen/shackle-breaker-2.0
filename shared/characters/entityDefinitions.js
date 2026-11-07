@@ -927,15 +927,13 @@ export const ENTITY_DEFINITIONS = {
             },
             baseAttack: { blunt: 3, arcane: 6 }
         },
-        equipment: {
-            ...HUMANOID_TEMPLATE.equipment,
-            mainHand: "insight_of_arcane",
-            head: "tattered_hood"
-        },
+        // no gear: nothing he holds grants abilities beyond his own moveset below
+        equipment: { ...HUMANOID_TEMPLATE.equipment },
         currencyReward: { min: 200, max: 500 },
         lootTableId: "boss_darius_drops",
-        // his own light: Bless mends him over five turns, Cleanse throws off whatever the party puts on him, Acid Pool burns them all
-        abilities: [...REGULAR_HUMANOID_ABILITIES, "arcane_dart", "magic_missile", "meteor_shower", "bless", "cleanse", "acid_pool"],
+        // his moveset, exactly: Acid Pool burns them all, Magic Missile, Bless mends him over five turns, Cleanse throws off whatever the party puts on him,
+        // Spirit Reap tears at their stamina. ("rest" is only the AI's fallback when he can afford nothing.)
+        abilities: ["rest", "acid_pool", "magic_missile", "bless", "cleanse", "spirit_reap"],
         tags: [...HUMANOID_TEMPLATE.tags, "BOSS", "ELITE", "MAGICAL"]
     }
 };

@@ -23,7 +23,6 @@ export const aftermath = {
                         { type: "context_flag_not_set", flagId: "looted_battlefield" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "You search the battlefield for anything of value...",
                     successOutcomes: [
                         {
                             weight: 100,
@@ -65,7 +64,6 @@ export const aftermath = {
                         { type: "context_flag_not_set", flagId: "searched_survivors" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "You carefully search among the fallen for signs of life...",
                     successOutcomes: [
                         {
                             // Most likely result: a wounded warrior
@@ -108,7 +106,6 @@ export const aftermath = {
                 },
                 {
                     text: "Leave the battlefield.",
-                    customActionText: "You leave the battlefield behind.",
                     outcomes: [
                         { weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }
                     ]
@@ -176,7 +173,6 @@ export const aftermath = {
                 {
                     text: "Search the officer's satchel.",
                     conditions: [{ type: "has_tag", tag: "HUMANOID" }],
-                    customActionText: "You carefully unbuckle the satchel and sort through what's inside...",
                     outcomes: [
                         {
                             // Outcome A: sealed orders -> find message first, the quest is received on the next stage
@@ -192,7 +188,6 @@ export const aftermath = {
                 },
                 {
                     text: "Leave the body.",
-                    customActionText: "You step away from the officer's body.",
                     outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "aftermath" } }] }]
                 }
             ]
@@ -262,7 +257,6 @@ export const aftermath = {
                         { type: "has_item", itemId: "healing_herb", qty: 1 },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "You crush a healing herb and press it into the warrior's deep wounds...",
                     successOutcomes: [
                         {
                             weight: 100,
@@ -292,7 +286,6 @@ export const aftermath = {
                         { type: "context_flag_not_set", flagId: "tried_robbing" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "You move in to strip the wounded warrior of his valuables...",
                     successOutcomes: [
                         {
                             weight: 100,
@@ -320,7 +313,6 @@ export const aftermath = {
                 },
                 {
                     text: "Leave the warrior to his fate.",
-                    customActionText: "You turn away, leaving the warrior to his fate.",
                     outcomes: [
                         { weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }
                     ]
@@ -400,7 +392,6 @@ export const aftermath = {
                         { type: "context_flag_not_set", flagId: "failed_recruit" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "You try to convince the survivor to join forces...",
                     successOutcomes: [
                         {
                             weight: 100,
@@ -431,7 +422,6 @@ export const aftermath = {
                 },
                 {
                     text: "Part ways.",
-                    customActionText: "You and the warrior part ways.",
                     outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]

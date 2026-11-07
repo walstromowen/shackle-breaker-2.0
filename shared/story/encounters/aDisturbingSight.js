@@ -17,7 +17,6 @@ export const aDisturbingSight = {
                 {
                     text: "Charge the stranger.",
                     conditions: [{ type: "has_tag", tag: "HUMANOID" }],
-                    customActionText: "You draw your weapon and charge the stranger!",
                     image: { col: 1, row: 0 }, 
                     bgm: "plainsBattleBgm",    
                     outcomes: [
@@ -34,7 +33,6 @@ export const aDisturbingSight = {
                         { type: "context_flag_not_set", flagId: "failed_disturbing_dex" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "You sneak behind the stranger, dagger drawn...",
                     successOutcomes: [
                         { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "a_quiet_end" } }] }
                     ],
@@ -58,7 +56,6 @@ export const aDisturbingSight = {
                         { type: "context_flag_not_set", flagId: "failed_disturbing_str" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "You pick up a heavy rock and hurl it at the stranger.",
                     successOutcomes: [
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "a_lucky_strike" } }] },
                         { weight: 3, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "enraged_lunatic" } }] }
@@ -87,7 +84,6 @@ export const aDisturbingSight = {
                         { type: "context_flag_not_set", flagId: "failed_disturbing_alt" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "You step out and try to speak calmly to the stranger.",
                     successOutcomes: [
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "a_moment_of_clarity" } }] },
                         { weight: 2, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "speaking_to_the_voices" } }] }
@@ -106,7 +102,6 @@ export const aDisturbingSight = {
                 },
                 {
                     text: "Quietly back away.",
-                    customActionText: "You quietly back away from the stranger and take a different path.",
                     outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]
@@ -337,7 +332,6 @@ export const aDisturbingSight = {
                         { type: "context_flag_not_set", flagId: "failed_disturbing_shout" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "You puff out your chest and shout at the stranger.",
                     successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "fleeing_shadows" } }] }],
                     failureOutcomes: [
                         {
@@ -358,7 +352,6 @@ export const aDisturbingSight = {
                         { type: "context_flag_not_set", flagId: "failed_disturbing_manip" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "You try to play along with the man's muttering.",
                     successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "pleased_the_magic" } }] }],
                     failureOutcomes: [
                         {
@@ -379,7 +372,6 @@ export const aDisturbingSight = {
                         { type: "context_flag_not_set", flagId: "failed_disturbing_bow" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "You speak with booming, terrifying authority.",
                     successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "a_new_servant" } }] }],
                     failureOutcomes: [
                         {

@@ -33,7 +33,6 @@ export const caveIn = {
                     type: "skill_check",
                     attribute: "strength",
                     threshold: 12,
-                    customActionText: "{name} attempts to dig a path through the rubble.",
                     successOutcomes: weighted([1, "found_something"], [2, "path_cleared"]),
                     failureOutcomes: weighted([1, "exhausted"], [2, "rocks_fall"], [1, "spider_nest"])
                 },

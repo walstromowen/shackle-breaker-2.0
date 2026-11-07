@@ -1,7 +1,7 @@
 /* The catacombs' traps (map objects TRAP_ARROW, TRAP_PIT, TRAP_AXES, placed in the halls by the CatacombGenerator). All three look the same: a raised stone
    pressure plate with a few slight cracks, so which one it is is only found out by stepping on it. Each is a walk-in encounter: stepping onto it springs it. One Vigor saving throw decides how it goes; on a failure the one who rolled takes damage (a share of their max HP, of a real
    damage type, so armour takes the edge off it). Either way the trap is spent afterwards (REPLACE_OBJECT with its sprung look) and never fires again.
-   Like the cave-in, the party can send someone else in to make the roll ("Switch party member").
+   A trap springs on whoever stepped on it: there is no time to send someone else (no "Switch party member").
 
      arrow_trap      [VIG 12]  a pressure plate; arrows from the walls          fail: 20% of max HP, pierce
      pit_trap        [VIG 13]  the floor drops into a pit of stakes            fail: 25% of max HP, pierce, and half an hour to climb out
@@ -13,7 +13,6 @@
      (2,1) the blades drop  (3,1) dashed through
      (0,2) the blade strikes */
 
-const SWITCH = { text: "Switch party member.", type: "switch_character", conditions: [{ type: "has_other_party_members" }] };
 const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
 const spend = (objectId, extra = []) => [{ weight: 100, results: [...extra, { type: "REPLACE_OBJECT", payload: { objectId } }, { type: "END_ENCOUNTER", payload: null }] }];
 
@@ -35,11 +34,9 @@ export const arrowTrap = {
                     type: "skill_check",
                     attribute: "vigor",
                     threshold: 12,
-                    customActionText: "{name} drops to the floor.",
                     successOutcomes: toStage("dodged"),
                     failureOutcomes: toStage("struck")
-                },
-                SWITCH
+                }
             ]
         },
         dodged: {
@@ -81,11 +78,9 @@ export const pitTrap = {
                     type: "skill_check",
                     attribute: "vigor",
                     threshold: 13,
-                    customActionText: "{name} lunges for the edge of the pit.",
                     successOutcomes: toStage("caught"),
                     failureOutcomes: toStage("fell")
-                },
-                SWITCH
+                }
             ]
         },
         caught: {
@@ -129,11 +124,9 @@ export const swingingAxes = {
                     type: "skill_check",
                     attribute: "vigor",
                     threshold: 14,
-                    customActionText: "{name} watches the swing, counts, and runs.",
                     successOutcomes: toStage("through"),
                     failureOutcomes: toStage("cut")
-                },
-                SWITCH
+                }
             ]
         },
         through: {

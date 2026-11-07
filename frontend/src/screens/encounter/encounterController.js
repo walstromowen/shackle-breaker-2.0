@@ -790,6 +790,9 @@ export class EncounterController extends BaseController {
       this.lastText = this.actionMessage;
     } else {
       if (decision.type === 'skill_check') {
+        // no narration before a roll (the player just chose it): the stage's own words stay on screen, already told, under the dice
+        this.actionMessage = this.lastText;
+        this.skipMessageAnimation = true;
         this.rollData = this._takeRoll(this.pendingDecision);
         this.actionPhase = 'wait_for_roll';
       } else {
