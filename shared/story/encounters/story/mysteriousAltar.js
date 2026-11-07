@@ -291,7 +291,7 @@ export const mysteriousAltar = {
             ambience: "altarDrone",
             ambienceVolume: 0.35,
             ambienceFade: 1.5,
-            image: { sheet: "encounter_darius_kneeling", col: 0, row: 0 },   // Darius kneeling at the altar
+            image: { sheet: "encounter_darius_approach", col: 0, row: 0 },   // Darius bowed over the altar, as you find him
             text: "\"Footsteps... after so long. Is it you, my king? Have you come back for the light?\" \"No. No, you are not him. Forgive an old man his hope.\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_speaks") }]
         },
