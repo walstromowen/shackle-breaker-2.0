@@ -251,7 +251,7 @@ ui_icons: './assets/icons/ui_icons.png',
     frozenTrapperPortrait: './assets/sprites/frozen_trapper/frozen_trapper_portrait.png',
     panzerkamferPortrait: './assets/sprites/panzerkamfer/panzerkamfer_portrait.png',
 duneMawPortrait: './assets/sprites/dune_maw/dune_maw_portrait.png',
-iceCoilPortrait: './assets/sprites/ice_coil/ice_coil_portrait.png',   // the Icecoil's battle sheet (16 x 6 frames of 128: rows 0-1 idle facing the party)
+iceCoilPortrait: './assets/sprites/ice_coil/ice_coil_portrait.png',   // the Icecoil's battle sheet (16 x 6 frames of 128: rows 0-1 idle facing the party, side-on; rows 4-5 its other pose)
 scorchedVagrantPortrait: './assets/sprites/scorched_vagrant/scorched_vagrant_portrait.png',
 miragewrightPortrait: './assets/sprites/miragewright/miragewright_portrait.png',
 calcifiedCrusaderPortrait: './assets/sprites/calcified_crusader/calcified_crusader_portrait.png',
