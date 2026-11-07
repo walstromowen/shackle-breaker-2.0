@@ -102,7 +102,7 @@ export const hoodedStranger = {
         ...waiting('shackled1',
             "\"Not yet. You still walk like a prisoner.\"",
             "\"Don't take it badly. I walked like that for a year. Then I stopped walking much at all.\"",
-            "\"Go on. Get some blood on your boots. Some of it your own. That's how you learn.\""),
+            "\"Go. Come back when the iron feels lighter. It won't, but you'll stop noticing.\""),
         turnin_shackled1: turnIn("shackled1", "\"Still sane? Good. Enjoy it. It doesn't keep.\"", "lore_shackled1"),
         lore_shackled1: stage("\"The iron isn't there to hold you. It's there to count you. Every one of us in chains was being kept for something.\"", next("lore_shackled1_2")),
         lore_shackled1_2: stage("\"I never found out what. I stopped asking when the voices started answering. They're no help. They mostly want to talk about the weather.\"", next("give_shackled2")),

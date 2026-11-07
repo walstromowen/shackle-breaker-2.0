@@ -87,10 +87,12 @@ export class EncounterController extends BaseController {
     if (items.some(i => i.file)) {
       // keep time with the recording only when every spoken line of it has a clip with a known length
       setVoiceTiming(text, complete && parts.every(p => p.pause || p.dur > 0) ? parts : null);
-      audioManager.playVoice(items, Math.max(0, NARRATION.TEXT_START - this.textTimer));
+      audioManager.stopVoice();
+      this._pendingVoice = items;          // played by update() when the first word appears
     } else {
       clearVoiceTiming(text);
       audioManager.stopVoice();
+      this._pendingVoice = null;
     }
     this._preloadAhead();
   }
@@ -158,6 +160,7 @@ export class EncounterController extends BaseController {
     this.rollTimer = 0;
     this.lastText = "";
     this.textTimer = 0;
+    this._pendingVoice = null;   // a voice waiting for its first word belongs to the encounter that ended
     this.hasDoneIntro = false;
     this.skipMessageAnimation = false;
     this.inputCooldown = 0.15;
@@ -183,6 +186,12 @@ export class EncounterController extends BaseController {
     if (!this.model) return;
     
     this.textTimer += dt;
+    // the voice starts with the first word, on the encounter's own clock (so it waits behind a fade-in or a paused tip card, as the words do)
+    if (this._pendingVoice && this.textTimer >= NARRATION.TEXT_START) {
+      const items = this._pendingVoice;
+      this._pendingVoice = null;
+      audioManager.playVoice(items);
+    }
     if (this.textTimer >= NARRATION.TEXT_START) {
       this.hasDoneIntro = true;
     }

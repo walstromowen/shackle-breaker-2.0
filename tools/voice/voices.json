@@ -4,7 +4,7 @@
   "defaultSettings": { "stability": 0.5, "similarity_boost": 0.75, "style": 0.2, "use_speaker_boost": true },
   "voices": {
     "NARRATOR": { "id": "ybjoxm7ASLDUFh2pC2eM", "name": "Jasper Vayne - Epic Grim Dark Narrator" },
-    "STRANGER": { "id": "cymHWdiF8WjUCg6vvFxx", "name": "Vane - Rugged and gravelly" },
+    "STRANGER": { "id": "goT3UYdM9bhm0n2lmKQx", "name": "Edward - British, Dark, Seductive, Low" },
     "DARIUS": { "id": "S9V0fuqWOqX0i8Kb8ctu", "name": "Alden - Tired Old Man" }
   }
 }

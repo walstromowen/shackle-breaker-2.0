@@ -692,7 +692,7 @@ STRANGER: "Don't take it badly. I walked like that for a year. Then I stopped wa
   > Continue.
 
 [waiting_shackled1_3]
-STRANGER: "Go on. Get some blood on your boots. Some of it your own. That's how you learn."
+STRANGER: "Go. Come back when the iron feels lighter. It won't, but you'll stop noticing."
   > Leave him to his work.
 
 [turnin_shackled1]
