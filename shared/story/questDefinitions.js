@@ -24,27 +24,10 @@ export const QuestDefinitions = {
     "shackled3": {
         id: "shackled3",
         name: "Shackled",
-        description: "The shackles have no keyhole, and the weight on your spirit is as heavy as the iron. The ravings of the mad are not all nonsense: they speak of a stone fallen from the sky, and of the sand-skinned ones who carried it away. Many of them still conjure sparks and cannot stop. Listen closely, then put them down.",
+        description: "The shackles have no keyhole, and the weight on your spirit is as heavy as the iron. The ravings of the mad are not all nonsense: they speak of a stone fallen from the sky, and of soldiers in the old colors who carried it away. Many of the mad still conjure sparks and cannot stop. Listen closely, then put them down.",
         objectives: [
-            { id: "obj_reach_level_5", type: "party_level", targetLevel: 8, amount: 1 },
+            { id: "obj_reach_level_5", type: "party_level", targetLevel: 7, amount: 1 },
             { id: "obj_kill_magic_addicts", type: "kill_enemy", targetId: "MAGIC_ADDICT", amount: 3 }
-        ],
-        rewards: {
-            exp: 210,
-            currency: 150,
-            items: [
-                { id: "healing_tonic", amount: 1 }
-            ],
-            quests: ["shackled4"]
-        }
-    },
-    "shackled4": {
-        id: "shackled4",
-        name: "Shackled",
-        description: "Past the plains lie the dunes, and those who walk them unseen. The stone was last seen with them, but what was taken is no longer in their hands.",
-        objectives: [
-            { id: "obj_reach_level_6", type: "party_level", targetLevel: 10, amount: 1 },
-            { id: "obj_kill_sand_stalkers", type: "kill_enemy", targetId: "SAND_STALKER", amount: 3 }
         ],
         rewards: {
             exp: 300,
@@ -53,51 +36,15 @@ export const QuestDefinitions = {
                 { id: "healing_tonic", amount: 1 },
                 { id: "bedroll", amount: 1 }
             ],
-            quests: ["shackled5"]
-        }
-    },
-    "shackled5": {
-        id: "shackled5",
-        name: "Shackled",
-        description: "The dunes keep a second face after dark. A weaver of mirages guards what the sand has swallowed, and the trail of the stone with it.",
-        objectives: [
-            { id: "obj_reach_level_7", type: "party_level", targetLevel: 12, amount: 1 },
-            { id: "obj_kill_miragewright", type: "kill_enemy", targetId: "MIRAGEWRIGHT", amount: 1 }
-        ],
-        rewards: {
-            exp: 380,
-            currency: 250,
-            items: [
-                { id: "smoke_bomb", amount: 2 },
-                { id: "healing_tonic", amount: 1 }
-            ],
-            quests: ["shackled6"]
-        }
-    },
-    "shackled6": {
-        id: "shackled6",
-        name: "Shackled",
-        description: "The stone passed from the dunes into foreign hands. The Panzerian trappers of the frozen peaks do not speak of where it went, or of what they saw.",
-        objectives: [
-            { id: "obj_reach_level_8", type: "party_level", targetLevel: 14, amount: 1 },
-            { id: "obj_kill_frozen_trappers", type: "kill_enemy", targetId: "FROZEN_TRAPPER", amount: 3 }
-        ],
-        rewards: {
-            exp: 470,
-            currency: 300,
-            items: [
-                { id: "healing_tonic", amount: 2 },
-                { id: "healing_herb", amount: 3 }
-            ],
-            quests: ["shackled7"]
+            quests: ["shackled7"]   // (the dunes and the peaks, shackled4-6, were cut: the stone's trail stays on the plains)
         }
     },
     "shackled7": {
         id: "shackled7",
         name: "Shackled",
-        description: "What went to the peaks came back down to the plains, carried by those who still wear the old colors. They do not rest. The dead stir where battles were fought. Whoever carried the stone home has the answer, if any of them can still be reasoned with.",
+        description: "The stone went with those who still wear the old colors, and they have not given it up. Legionaries and watchmen still march the plains as if the war never ended. Whoever carried the stone home has the answer, if any of them can still be reasoned with.",
         objectives: [
-            { id: "obj_reach_level_9", type: "party_level", targetLevel: 17, amount: 1 },
+            { id: "obj_reach_level_9", type: "party_level", targetLevel: 9, amount: 1 },
             { id: "obj_kill_legionaries", type: "kill_enemy", targetId: "LEGIONARY", amount: 3 },
             { id: "obj_kill_watchmen", type: "kill_enemy", targetId: "WATCHMAN", amount: 2 }
         ],
@@ -117,7 +64,7 @@ export const QuestDefinitions = {
         name: "Shackled",
         description: "A stone altar waits in the dark below, though not every depth holds one. A skull rests above a hollow the size of a fallen star. The answer to what happened waits down there. Descend when you are strong.",
         objectives: [
-            { id: "obj_reach_level_10", type: "party_level", targetLevel: 20, amount: 1 },
+            { id: "obj_reach_level_10", type: "party_level", targetLevel: 10, amount: 1 },   // Darius is met around level 10
             { id: "obj_kill_darius", type: "kill_enemy", targetId: "DARIUS_THE_GROVELER", amount: 1 }
         ],
         rewards: {

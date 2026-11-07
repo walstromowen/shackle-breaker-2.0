@@ -34,8 +34,7 @@ export const SpawnTableDefinitions = {
                     { id: 'SHACKLED_STEED', weight: 20 },
                     { id: 'LEGIONARY', weight: 20, modifiers: { levelOffset: { chance: 0.3, min: -1, max: 2 }, equipment: [{ slot: 'mainHand', items: ['warhammer', 'spear'], chance: 0.5 }], traits: [{ id: 'iron_willed', chance: 0.15 }] } },
                     { id: 'MAGIC_ADDICT', weight: 30 },
-                    // act 2: the dead no longer stay down, and the old soldiers walk the plains in daylight
-                    { id: 'SKELETAL_WARRIOR', weight: 25, minAct: 2 },
+                    // act 2: the old soldiers walk the plains in daylight (the dead walk only in the catacombs)
                     { id: 'WATCHMAN', weight: 20, minAct: 2 },
                     { id: 'HOLLOW_HARVESTER', weight: 20, minAct: 2, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } }
                 ]
@@ -206,7 +205,7 @@ export const SpawnTableDefinitions = {
                 ]
             },
             {
-                // The shackled dead: bones and a skull that never lay down, led now and then by a robed cultist.
+                // The cursed who crawl into the dark: rotters, madmen and the addicts who cannot stop conjuring. (The dead walk only in the catacombs.)
                 factionId: "shackled",
                 weight: 60,
                 difficultySettings: {
@@ -216,9 +215,9 @@ export const SpawnTableDefinitions = {
                     nightmare: { minSize: 2, maxSize: 4 }
                 },
                 members: [
-                    { id: 'SKELETAL_WARRIOR', weight: 55, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 }, equipment: [{ slot: 'mainHand', items: ['spear', 'warhammer'], chance: 0.5 }] } },
-                    { id: 'FLOATING_SKULL', weight: 35, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } },
-                    { id: 'ANCIENT_CULTIST', weight: 20, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 2 } } }
+                    { id: 'ROTTER', weight: 35, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } },
+                    { id: 'MAD_MAN', weight: 35, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 }, equipment: [{ slot: 'mainHand', items: ['dagger'], chance: 0.7 }] } },
+                    { id: 'MAGIC_ADDICT', weight: 30, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } }
                 ]
             }
         ]
@@ -346,9 +345,7 @@ export const SpawnTableDefinitions = {
                     nightmare: { minSize: 3, maxSize: 5 }
                 },
                 members: [
-                    { id: 'SKELETAL_WARRIOR', weight: 50, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 }, equipment: [{ slot: 'mainHand', items: ['spear', 'warhammer'], chance: 0.5 }] } },
-                    { id: 'FLOATING_SKULL', weight: 30, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 } } },
-                    { id: 'ANCIENT_CULTIST', weight: 20, modifiers: { levelOffset: { chance: 0.5, min: 1, max: 2 } } }
+                    { id: 'ANCIENT_CULTIST', weight: 100, modifiers: { levelOffset: { chance: 0.5, min: 1, max: 2 } } }
                 ]
             },
             {
@@ -425,7 +422,6 @@ export const SpawnTableDefinitions = {
                     nightmare: { minSize: 3, maxSize: 5 }
                 },
                 members: [
-                    { id: 'SKELETAL_WARRIOR', weight: 45, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } },
                     { id: 'ANCIENT_CULTIST', weight: 25, modifiers: { levelOffset: { chance: 0.5, min: 1, max: 2 } } },
                     { id: 'SCORCHED_VAGRANT', weight: 30 }
                 ]
@@ -452,7 +448,7 @@ export const SpawnTableDefinitions = {
             },
             {
                 factionId: "shackled",
-                weight: 25,
+                weight: 50,   // half the ambushes are the shackled, as in the day and night tables
                 difficultySettings: {
                     easy: { minSize: 1, maxSize: 1 },
                     normal: { minSize: 1, maxSize: 2 },
@@ -461,20 +457,6 @@ export const SpawnTableDefinitions = {
                 },
                 members: [
                     { id: 'FROZEN_TRAPPER', weight: 100, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 2 } } }
-                ]
-            },
-            {
-                factionId: "shackled",
-                weight: 25,
-                difficultySettings: {
-                    easy: { minSize: 1, maxSize: 1 },
-                    normal: { minSize: 1, maxSize: 2 },
-                    hard: { minSize: 2, maxSize: 3 },
-                    nightmare: { minSize: 2, maxSize: 4 }
-                },
-                members: [
-                    { id: 'SKELETAL_WARRIOR', weight: 60, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } },
-                    { id: 'FLOATING_SKULL', weight: 40, modifiers: { levelOffset: { chance: 0.25, min: 1, max: 2 } } }
                 ]
             }
         ]

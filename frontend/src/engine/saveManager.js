@@ -17,6 +17,7 @@
 
 import { gameState } from '../../../shared/core/gameState.js';
 import { ActSystem } from '../../../shared/story/actSystem.js';
+import { retireQuests } from '../../../shared/story/questSystem.js';
 import { EntityModel } from '../../../shared/characters/entityModel.js';
 import { ItemFactory } from '../../../shared/items/itemFactory.js';
 import { StatusEffectFactory } from '../../../shared/abilities/statusEffectFactory.js';
@@ -388,6 +389,7 @@ export const SaveManager = {
             completed: data.quests?.completed || [],
             trackedIds: data.quests?.trackedIds || []
         };
+        retireQuests(gameState);       // a save on a quest that was cut picks up from the one that replaced it
         ActSystem.catchUp(gameState);   // a save that had already beaten Darius before the acts existed goes into act 2
 
         replaceContents(gameState.player, {

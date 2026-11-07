@@ -213,8 +213,10 @@ test('a biome ambush uses the table of the hour: night in act 1, the blood moon 
         gameState.milestones = ['act2'];
         const bloodSeen = sample(23);
         for (const id of bloodSeen) assert.ok(blood.has(id), `act 2, night: ${id} is not on the blood moon table`);
-        assert.ok(bloodSeen.has('SKELETAL_WARRIOR'), 'the dead rise on a blood moon night');
-        assert.ok(sample(12).has('SKELETAL_WARRIOR'), 'act 2 days have their skeletons too');
+        assert.ok(bloodSeen.has('ANCIENT_CULTIST'), 'the cultists come out on a blood moon night');
+        // the dead walk only in the catacombs: never out on the plains, not even in act 2
+        assert.ok(!bloodSeen.has('SKELETAL_WARRIOR') && !bloodSeen.has('FLOATING_SKULL'), 'no skeletons under the blood moon');
+        assert.ok(!sample(12).has('SKELETAL_WARRIOR'), 'no skeletons on act 2 days');
     } finally {
         gameState.milestones = saved;
         Object.assign(OUTDOOR_BATTLE_RATE, { day: 1 / 200, night: 1 / 100 });
@@ -254,4 +256,15 @@ test('an encounter pool marked minAct 2 is only offered in act 2, at the hours i
     } finally {
         gameState.milestones = saved;
     }
+});
+
+test('skeletons and floating skulls only ever come in random fights in the catacombs; caves have spiders, rotters, madmen and magic addicts', () => {
+    const undead = new Set(['SKELETAL_WARRIOR', 'FLOATING_SKULL']);
+    for (const [id, table] of Object.entries(SpawnTableDefinitions)) {
+        if (!/_battles/.test(id) || id === 'catacombs_battles') continue;
+        for (const p of table.pools || []) for (const m of p.members || []) assert.ok(!undead.has(m.id), `${id} has ${m.id}`);
+    }
+    const cave = new Set(SpawnTableDefinitions.cave_battles.pools.flatMap(p => p.members.map(m => m.id)));
+    assert.deepEqual([...cave].sort(), ['CAVE_SPIDER', 'MAD_MAN', 'MAGIC_ADDICT', 'ROTTER']);
+    assert.ok(SpawnTableDefinitions.catacombs_battles.pools.some(p => p.members.some(m => m.id === 'SKELETAL_WARRIOR')));
 });

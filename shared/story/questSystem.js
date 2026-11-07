@@ -10,6 +10,26 @@ import { QuestDefinitions } from './questDefinitions.js';
 
 let initialised = false;
 
+/* Quests that were cut, and the quest that took their place. A save made while one of them was in the journal picks up from its successor
+   (SaveManager calls retireQuests when it loads). The Shackled chain lost its trips to the dunes and the peaks (shackled4-6): it goes from
+   the magic addicts (shackled3) straight to the legionaries (shackled7). */
+const RETIRED_QUESTS = { shackled4: 'shackled7', shackled5: 'shackled7', shackled6: 'shackled7' };
+
+export function retireQuests(state) {
+    const quests = state && state.quests;
+    if (!quests) return;
+    quests.active = quests.active || {};
+    quests.completed = Array.isArray(quests.completed) ? quests.completed : [];
+    quests.trackedIds = Array.isArray(quests.trackedIds) ? quests.trackedIds : [];
+    for (const [old, next] of Object.entries(RETIRED_QUESTS)) {
+        const wasActive = !!quests.active[old];
+        delete quests.active[old];
+        quests.completed = quests.completed.filter(id => id !== old);
+        quests.trackedIds = quests.trackedIds.filter(id => id !== old);
+        if (wasActive && QuestDefinitions[next] && !quests.active[next] && !quests.completed.includes(next)) QuestModel.startQuest(state, next);
+    }
+}
+
 export const QuestSystem = {
     /** Safe to call more than once: the listeners are only attached the first time (a second call would double-count every kill). */
     init() {
