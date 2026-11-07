@@ -1064,7 +1064,7 @@ export class EncounterController extends BaseController {
       this._sfxPending = true;
       const ambience = stage.ambience !== undefined ? stage.ambience : (firstStage ? this.model.ambience : undefined);
       if (ambience === 'none') events.emit('STOP_AMBIENCE', { fadeTime: stage.ambienceFade ?? 2.0 });
-      else if (ambience) events.emit('PLAY_AMBIENCE', { id: ambience, fadeTime: stage.ambienceFade ?? 3.0 });
+      else if (ambience) events.emit('PLAY_AMBIENCE', { id: ambience, fadeTime: stage.ambienceFade ?? 3.0, volume: stage.ambienceVolume ?? 1.0 });   // ambienceVolume: 0..1, a quieter bed
     }
     if (this._sfxPending && this.textTimer >= STAGE_START_TIMER) {
       this._sfxPending = false;

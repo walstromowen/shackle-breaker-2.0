@@ -7,8 +7,8 @@
    Flow:  approach     -> [VIG] walk up to the altar (a miss: the bones stir, or a cloud of smoke drains stamina and insight)
           at_the_altar -> [INT] examine the skull: blue glow (full restore) / green glow (loot) on a success, red glow (skeleton fight) on a failure
                           [Fallen Meteorite] set it on the altar: Darius the Groveler crawls out of the dark. Only offered while the party carries one.
-                          darius_rises .. darius_wrath: four short stages where Darius alone speaks (he weeps for the king who never came, sees the meteorite, and turns on
-                          you in envy), then the boss fight. His music starts when he turns and carries on into the fight.
+                          darius_rises .. darius_wrath: five short stages of Darius speaking to you (the king who never came, the light he kept, the star you carry,
+                          and envy), then the boss fight. No music while he talks, only the altar's drone kept low; his music starts when he turns and carries on into the fight.
    Every find or ambush is announced on its own stage first and the effect is handed out on the button after it. A fight that starts from the
    approach leaves the altar standing (it can be tried again); anything that spends the skull or the meteorite destroys the altar. */
 
@@ -279,37 +279,47 @@ export const mysteriousAltar = {
         // ---- Darius the Groveler: a conversation, then the fight. Each line of his is a stage, and each reply of yours is the text of the button you press. ----
         // Written quietly: a man who has waited a very long time for a king who never came, who sees the meteorite in the stranger's hands and takes it for the king's
         // favour. Nothing in it is shown, only said. The altar's drone fades out for the talking and comes back when he turns on you.
-        // Darius the Groveler: told like a boss's first words in a dark fantasy game. He does all the talking; the player only watches and listens
-        // ("Continue"). No music while he grieves, only the altar's drone; his track starts the moment he turns on you, and the fight plays the same
-        // track, so it carries on unbroken into the battle (the AudioManager never restarts a track that is already playing).
+        // Darius the Groveler: he speaks to you, the way a boss speaks to the player in a dark fantasy game. No narration: every stage is his own words, and
+        // the screen effects carry what he does. The player never answers ("Continue."). While he talks there is no music at all, only the altar's drone,
+        // kept low; his track starts the moment he turns on you, and the fight plays the same track, so it carries on unbroken into the battle.
         darius_rises: {
-            displayText: "The Kneeling Man",
+            displayText: "A Voice in the Dark",
             tone: "arcane",
             effect: "glow_blue",
             sfx: "glowSwell",
             bgm: "none",
+            ambience: "altarDrone",
+            ambienceVolume: 0.35,
+            ambienceFade: 1.5,
             image: { col: 3, row: 1 },
-            text: "The altar drinks the meteorite's glow, and the hum of this place thins to a single held note. In the dark behind the altar a hunched figure kneels with his brow against the stone, weeping the way a man weeps when it is the only sound he has left.",
+            text: "\"Footsteps... after so long. Is it you, my king? Have you come back for the light?\" \"No. No, you are not him. Forgive an old man his hope.\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_speaks") }]
         },
         darius_speaks: {
-            displayText: "The Groveler",
+            displayText: "Darius the Groveler",
+            bgm: "none",
             image: { col: 3, row: 1 },
-            sfx: "whispers",
-            sfxVolume: 0.5,
-            text: "\"He said he would come. Keep the light, Darius, and I shall return for it.\" The hood lifts a little. \"So I kept it, every winter, and they named me the Groveler for the kneeling. He is only late; kings are never early.\"",
+            text: "\"He told me, keep the light burning, Darius, and I shall return for it. So I kept it, every winter, every long dark.\" \"They call me the Groveler, for the kneeling. Let them. I knelt for a king.\"",
+            decisions: [{ text: "Continue.", outcomes: toStage("darius_late") }]
+        },
+        darius_late: {
+            displayText: "Darius the Groveler",
+            bgm: "none",
+            image: { col: 3, row: 1 },
+            text: "\"You think he is not coming. I can see it on you.\" \"He is only late, friend. Kings are never early.\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_sees") }]
         },
         darius_sees: {
-            displayText: "The Star",
+            displayText: "Darius the Groveler",
             effect: "jolt",
             sfx: "heartbeat",
+            bgm: "none",
             image: { col: 0, row: 1 },
-            text: "Then he sees the fallen star in the hollow of the altar, and the hands that carried it. \"His sign. Not to me. To a stranger in chains.\" Darius rises, far taller than he looked. \"What did you do to be loved like that?\"",
+            text: "\"That light you carry... that is his. His sign, at last.\" \"But he gave it to you. A stranger in chains.\" \"What did you do to be loved like that?\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_wrath") }]
         },
         darius_wrath: {
-            displayText: "His Love",
+            displayText: "Darius the Groveler",
             tone: "blood",
             effect: "shake",
             sfx: "cinematicBoom",
@@ -317,7 +327,7 @@ export const mysteriousAltar = {
             ambienceFade: 0.6,
             bgm: "dariusEncounterBgm",   // his track: from the moment he turns, on into the fight
             image: { col: 2, row: 1 },
-            text: "\"Then give it back.\" The held note becomes a cry, and the dark behind the altar leans toward him like a congregation. \"Give me his love. It was mine. It was always going to be mine.\"",
+            text: "\"Give it to me.\" \"Give it back! His love was mine. It was always meant to be mine!\"",
             decisions: [
                 {
                     text: "Face Darius the Groveler!",
