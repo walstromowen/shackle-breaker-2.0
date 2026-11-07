@@ -9,8 +9,8 @@
 
    Art: assets/icons/encounters/catacomb_traps.png registered as `encounter_catacomb_traps`, a 4 x 4 grid of 128 px cells:
      (0,0) (1,0) (2,0) the arrow trap: the stone wall with its arrow slits loosing arrows (the same picture for the click, the dodge and the hit)
-     (3,0) the floor gives way
-     (0,1) caught the edge    (1,1) onto the stakes (2,1) the blades drop  (3,1) dashed through
+     (3,0) (0,1) (1,1) the pit trap: the open pit in the floor, its stakes at the bottom (the same picture for the drop, the catch and the fall)
+     (2,1) the blades drop  (3,1) dashed through
      (0,2) the blade strikes */
 
 const SWITCH = { text: "Switch party member.", type: "switch_character", conditions: [{ type: "has_other_party_members" }] };

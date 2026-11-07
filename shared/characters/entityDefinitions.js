@@ -901,8 +901,8 @@ export const ENTITY_DEFINITIONS = {
         frameSize: 192,
         spriteOverworld: "dariusSprite",
         spritePortrait: "dariusTheGrovelerPortrait",
-        crySound: "magicAddictCry", // He is the apex of the Magic Addicts
-        deathSound: "magicAddictCry",
+        crySound: "dariusCry",      // his own cry (assets/audio/sfx/cries/darius_cry.wav)
+        deathSound: "dariusCry",
         attributes: {
             ...HUMANOID_TEMPLATE.attributes,
             vigor: 18, strength: 10, dexterity: 11,

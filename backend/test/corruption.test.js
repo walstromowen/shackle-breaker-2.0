@@ -411,17 +411,13 @@ test('every enemy of the shackled faction is born at 100% corruption, as a stat 
     assert.equal(CorruptionSystem.cleanseNatural(plain), false);
 });
 
-test('the act 2 story explains corruption (the gauge stage) before the milestone is granted', () => {
+test('the act 2 story is short and leaves corruption for the player to find out: no stage names it or explains it', () => {
     const stages = encounterDefinitions.act_two.stages;
-    // a long beat is told over several short stages: gauge, gauge_2, gauge_3...
-    const beat = (id) => { const ids = [id]; while (stages[`${id}_${ids.length + 1}`]) ids.push(`${id}_${ids.length + 1}`); return ids; };
-    const text = (id) => beat(id).map(s => stages[s].text).join(' ');
-    const last = (id) => beat(id).at(-1);
-    assert.ok(stages.gauge, 'there is a stage that names it');
-    assert.match(text('gauge'), /Corruption/);
-    const next = (id) => stages[id].decisions.flatMap(d => d.outcomes.flatMap(o => o.results.map(r => r.payload?.stageId)));
-    assert.ok(next(last('you')).every(s => s === 'gauge'), 'what you carry leads into it');
-    assert.ok(next(last('gauge')).every(s => s === 'iron'), 'and on into the iron');
+    assert.ok(Object.keys(stages).length <= 5, 'a few short stages');
+    for (const [id, s] of Object.entries(stages)) {
+        assert.doesNotMatch(s.text, /corruption/i, `${id} does not name it`);
+        assert.ok(s.text.length <= 220, `${id}: short`);
+    }
 });
 
 test('the cursed portrait is used for exactly the shackled, and every portrait screen draws it', () => {

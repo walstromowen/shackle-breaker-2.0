@@ -471,6 +471,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     shackledSteedCry: './assets/audio/sfx/cries/shackled_steed_cry.wav',
     madmanCry: './assets/audio/sfx/cries/madman_cry.wav',
     magicAddictCry: './assets/audio/sfx/cries/magic_addict_cry.wav',
+    dariusCry: './assets/audio/sfx/cries/darius_cry.wav',   // Darius the Groveler's own cry (and his death)
     sandStalkerCry: './assets/audio/sfx/cries/sand_stalker_cry.wav',
     dogDeath: './assets/audio/sfx/deaths/dog_death.wav',
     unsheathSwordSfx: './assets/audio/sfx/unsheath_sword.wav',
