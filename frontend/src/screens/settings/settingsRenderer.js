@@ -17,7 +17,8 @@ const HINTS = {
     master:  'Everything at once.',
     music:   'The background score.',
     sfx:     'Battle cries, blows and clicks.',
-    ambient: 'Wind, rain and nature.'
+    ambient: 'Wind, rain and nature.',
+    voice:   'The spoken lines of the story.'
 };
 
 export class SettingsRenderer {

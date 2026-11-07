@@ -37,7 +37,7 @@ export class SettingsController extends BaseController {
         this.layout = {
             panelX: 160, panelY: 48, panelW: 1600, panelH: 888,
             tabsY: 214, tabW: 300, tabH: 64,
-            rowsY: 336, rowH: 108,
+            rowsY: 324, rowH: 92,       // five sliders (master, music, sfx, ambient, voice) clear of the Test / Reset buttons below
             labelX: 120, trackX: 480, trackW: 820, valueX: 1350,
             // Controls: the pages in two columns on the left (12 of them did not fit in one), the card on the right
             pagesX: 56, pagesY: 316, pageW: 210, pageH: 50, pageGap: 8, pageCols: 2,
