@@ -22,7 +22,6 @@ export const tracksInTheSnow = {
                     type: "skill_check",
                     attribute: "attunement",
                     threshold: 12,
-                    customActionText: "You follow the tracks.",
                     successOutcomes: [
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "tracks_continue" } }] },
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "crimson_snow" } }] },
@@ -100,7 +99,6 @@ export const tracksInTheSnow = {
                     type: "skill_check",
                     attribute: "attunement",
                     threshold: 12,
-                    customActionText: "You follow the tracks.",
                     successOutcomes: [
                         { weight: 2, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "crimson_snow" } }] },
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "deer_on_the_road" } }] }
@@ -151,7 +149,6 @@ export const tracksInTheSnow = {
                         { type: "context_flag_not_set", flagId: "failed_deer_hunt" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "You crouch low and creep toward the deer...",
                     successOutcomes: [
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "deer_hunted" } }] }
                     ],
@@ -228,7 +225,6 @@ export const tracksInTheSnow = {
                     type: "skill_check",
                     attribute: "attunement",
                     threshold: 12,
-                    customActionText: "You investigate the red snow.",
                     successOutcomes: [
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "wounded_leopard" } }] },
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "apex_predator" } }] }
@@ -281,7 +277,6 @@ export const tracksInTheSnow = {
                         { type: "has_item", itemId: "healing_herb", qty: 1 },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "You crush a healing herb and press it into the Snow Leopard's wounds...",
                     successOutcomes: [
                         {
                             weight: 1,
@@ -323,7 +318,6 @@ export const tracksInTheSnow = {
                     type: "skill_check",
                     attribute: "none",
                     threshold: 12,
-                    customActionText: "You approach the Snow Leopard.",
                     successOutcomes: [
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "leopard_put_to_rest" } }] }
                     ],
@@ -496,7 +490,6 @@ export const tracksInTheSnow = {
                     type: "skill_check",
                     attribute: "dexterity",
                     threshold: 15,
-                    customActionText: "You try to flee!",
                     successOutcomes: [
                         { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "predator_escape" } }] }
                     ],

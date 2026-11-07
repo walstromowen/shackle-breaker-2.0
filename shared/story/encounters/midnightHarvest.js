@@ -25,7 +25,6 @@ export const midnightHarvest = {
                 },
                 {
                     text: "Leave the field alone.",
-                    customActionText: "You decide some fields are better left unharvested and turn back to the road.",
                     outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]
@@ -50,7 +49,6 @@ export const midnightHarvest = {
                     attribute: "attunement",
                     threshold: 11,
                     conditions: [{ type: "context_flag_not_set", flagId: "sensed_field" }, { type: "context_flag_not_set", flagId: "failed_harvest_sense" }],
-                    customActionText: "You close your eyes and let your senses loosen over the silent field...",
                     successOutcomes: [
                         {
                             weight: 100,
@@ -87,7 +85,6 @@ export const midnightHarvest = {
                         { type: "context_flag_not_set", flagId: "failed_harvest_scythe" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "You reach out and work the scythe's haft free, one straw finger at a time...",
                     successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "scythe_taken" } }] }],
                     failureOutcomes: [
                         {
@@ -198,7 +195,6 @@ export const midnightHarvest = {
                         { type: "context_flag_set", flagId: "examined_scythe" },
                         { type: "context_flag_not_set", flagId: "failed_harvest_rest" }
                     ],
-                    customActionText: "You lay the clues out in your mind and begin to read the stitched names aloud, one by one...",
                     successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "lay_to_rest" } }] }],
                     failureOutcomes: [
                         {

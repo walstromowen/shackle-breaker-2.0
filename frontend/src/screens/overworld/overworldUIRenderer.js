@@ -8,6 +8,7 @@ import { gameState } from '../../../../shared/core/gameState.js';
 import { DEV_FLAGS } from '../../../../shared/core/devCommands.js';
 import { PARTY_PULL_RADIUS } from '../../../../shared/core/multiplayerParty.js';
 import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
+import { drawToasts } from '../../ui/toasts.js';
 
 // The hotbar: slot size, gap and the margin under it (the status plaque sits to its right, on the same line)
 const HOTBAR = { SIZE: 104, GAP: 8, MARGIN: 24 };
@@ -421,59 +422,7 @@ export class OverworldUIRenderer {
 
     /* `floor` is the y the lowest toast's bottom edge starts from (just above the status plaque), and they float up from there. */
     drawToasts(ctx, ui, toasts, floor = ctx.canvas.height - 24) {
-        const now = performance.now();
-        // Icon is drawn 1:1 with the 64px source cells; the panel grows around it
-        const iconSize = 64;
-        const padX = 16;
-        const padY = 12;
-        const iconGap = 18;
-        const toastHeight = iconSize + (padY * 2);
-        const baseY = floor - toastHeight;
-
-        for (let i = toasts.length - 1; i >= 0; i--) {
-            const toast = toasts[i];
-            const elapsed = now - toast.createdAt;
-            if (elapsed > toast.duration) continue;
-
-            const progress = elapsed / toast.duration;
-            const activeIndex = toasts.length - 1 - i;
-            const floatY = baseY - (progress * 40) - (activeIndex * (toastHeight + 12));
-
-            let alpha = 1;
-            if (progress < 0.1) alpha = progress / 0.1;
-            else if (progress > 0.8) alpha = 1 - ((progress - 0.8) / 0.2);
-
-            ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-            ctx.font = UITheme.text.cardTitle.font;
-            const textString = `+${toast.amount}`;
-            const textWidth = ctx.measureText(textString).width;
-
-            const toastWidth = padX + iconSize + iconGap + textWidth + padX + 8;
-            const startX = ctx.canvas.width - toastWidth - 24;
-
-            ui.drawPanel(startX, floatY, toastWidth, toastHeight, "rgba(25, 23, 20, 0.8)");
-
-            // toast.iconSheet names a sheet (e.g. 'consumables'); resolve it the same way every
-            // other item icon is resolved so alternate sheet keys still work
-            const found = ui.resolveItemSheet(this.loader, toast.iconSheet || 'items');
-            if (found) {
-                const srcSize = found.cell || this.ICON_SRC_SIZE;
-                const srcX = toast.iconCol * srcSize;
-                const srcY = toast.iconRow * srcSize;
-
-                ctx.drawImage(
-                    found.sheet,
-                    srcX, srcY, srcSize, srcSize,
-                    startX + padX,
-                    floatY + padY,
-                    iconSize, iconSize
-                );
-            }
-
-            ui.drawStyled('cardTitle', textString, startX + padX + iconSize + iconGap, floatY + (toastHeight / 2),
-                { color: UITheme.colors.success, baseline: 'middle' });
-            ctx.globalAlpha = 1.0;
-        }
+        drawToasts(ctx, ui, this.loader, toasts, floor);
     }
 
     /* The words of one objective: its own description, or "Defeat Wolf" / "Collect Bone" worked out from its type and target. */

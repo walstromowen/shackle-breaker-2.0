@@ -5,6 +5,7 @@ import { UI_SFX } from '../../ui/uiSfx.js';
 import { gameState } from "../../../../shared/core/gameState.js";
 import { DIFFICULTY_MODIFIERS } from '../../../../shared/core/constants.js';
 import { drawItemChips } from '../../ui/itemChips.js';
+import { drawToasts } from '../../ui/toasts.js';
 import { drawEmbers } from '../../ui/particles/embers.js';
 import { drawSmoke } from '../../ui/particles/smoke.js';
 import { drawStatTooltip } from '../../ui/statTooltip.js';
@@ -834,6 +835,10 @@ export class EncounterRenderer {
             });
             if (hit) drawStatTooltip(ui, hit, attrCells[hit], { placement: 'above', skillChecks: true, multipliers: party[0]?.statMultipliers || party[0]?.state?.statMultipliers });
         }
+
+        // XP, items and coin gained float up the right-hand column as toasts (ui/toasts.js), over the party, while the story goes on
+        const toasts = gameState.ui?.toasts;
+        if (toasts && toasts.length > 0) drawToasts(ctx, ui, this.loader, toasts, CANVAS_HEIGHT - 150, CANVAS_WIDTH - 24);
 
         if (onLayoutUpdate) {
             onLayoutUpdate(this.hotspots, scrollBounds);

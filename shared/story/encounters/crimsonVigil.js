@@ -43,7 +43,6 @@ export const crimsonVigil = {
                     attribute: "intelligence",
                     threshold: 13,
                     conditions: [{ type: "context_flag_not_set", flagId: "vigil_tried" }, HUMANOID],
-                    customActionText: "You crouch beside the ring and follow the pattern of the bones...",
                     successOutcomes: toStage("read_success"),
                     failureOutcomes: wakeTheDead
                 },
@@ -53,7 +52,6 @@ export const crimsonVigil = {
                     attribute: "vigor",
                     threshold: 12,
                     conditions: [{ type: "context_flag_not_set", flagId: "vigil_tried" }, HUMANOID],
-                    customActionText: "You close your hand around a red flame...",
                     successOutcomes: toStage("snuff_success"),
                     failureOutcomes: wakeTheDead
                 },

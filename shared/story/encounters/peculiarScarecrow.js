@@ -43,7 +43,6 @@ export const peculiarScarecrow = {
                     type: "skill_check",
                     attribute: "dexterity",
                     threshold: 12,
-                    customActionText: "You keep your eyes ahead and walk past the post, quietly, for no reason you could name...",
                     successOutcomes: toStage("pass_by"),
                     failureOutcomes: toStage("it_stirs")
                 },

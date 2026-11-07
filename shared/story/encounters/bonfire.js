@@ -20,7 +20,6 @@ export const bonfire = {
                         { type: "context_flag_not_set", flagId: "failed_bonfire_rest" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
-                    customActionText: "You set up camp and rest by the dwindling flames.",
                     successOutcomes: [
                         {
                             weight: 1,
@@ -54,7 +53,6 @@ export const bonfire = {
                 },
                 {
                     text: "Keep moving.",
-                    customActionText: "You decide it's best to move along.",
                     outcomes: [{ weight: 1, results: [{ type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]

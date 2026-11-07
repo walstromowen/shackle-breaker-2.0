@@ -34,7 +34,6 @@ export const arrowTrap = {
                     type: "skill_check",
                     attribute: "vigor",
                     threshold: 12,
-                    customActionText: "{name} drops to the floor.",
                     successOutcomes: toStage("dodged"),
                     failureOutcomes: toStage("struck")
                 }
@@ -79,7 +78,6 @@ export const pitTrap = {
                     type: "skill_check",
                     attribute: "vigor",
                     threshold: 13,
-                    customActionText: "{name} lunges for the edge of the pit.",
                     successOutcomes: toStage("caught"),
                     failureOutcomes: toStage("fell")
                 }
@@ -126,7 +124,6 @@ export const swingingAxes = {
                     type: "skill_check",
                     attribute: "vigor",
                     threshold: 14,
-                    customActionText: "{name} watches the swing, counts, and runs.",
                     successOutcomes: toStage("through"),
                     failureOutcomes: toStage("cut")
                 }

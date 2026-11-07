@@ -17,7 +17,6 @@ export const wildHunt = {
           attribute: "dexterity",
           threshold: 0,
           conditions: [{ type: "context_flag_not_set", flagId: "failed_wildhunt_track1" }],
-          customActionText: "You crouch low, following the deer deeper into the trees...",
           successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "deep_woods" } }] }],
           failureOutcomes: [
             { weight: 60, results: [{ type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_wildhunt_track1" } }, { type: "ADVANCE_STAGE", payload: { stageId: "lost_trail" } }] },
@@ -33,7 +32,6 @@ export const wildHunt = {
             { type: "context_flag_not_set", flagId: "failed_wildhunt_shoot1" },
             { type: "has_tag", tag: "HUMANOID" }
           ],
-          customActionText: "You line up a careful shot from a distance...",
           successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "successful_hunt" } }] }],
           failureOutcomes: [
             { weight: 100, results: [{ type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_wildhunt_shoot1" } }, { type: "ADVANCE_STAGE", payload: { stageId: "missed_shot" } }] }
@@ -62,7 +60,6 @@ export const wildHunt = {
           attribute: "attunement",
           threshold: 14,
           conditions: [{ type: "context_flag_not_set", flagId: "failed_wildhunt_track2" }],
-          customActionText: "You focus on the faint sounds of hooves and snapped twigs to keep pace...",
           successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "ominous_woods" } }] }],
           failureOutcomes: [
             { weight: 60, results: [{ type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_wildhunt_track2" } }, { type: "ADVANCE_STAGE", payload: { stageId: "lost_trail" } }] },
@@ -78,7 +75,6 @@ export const wildHunt = {
             { type: "context_flag_not_set", flagId: "failed_wildhunt_shoot2" },
             { type: "has_tag", tag: "HUMANOID" }
           ],
-          customActionText: "You decide not to push your luck and take aim...",
           successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "successful_hunt" } }] }],
           failureOutcomes: [
             { weight: 100, results: [{ type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_wildhunt_shoot2" } }, { type: "ADVANCE_STAGE", payload: { stageId: "missed_shot" } }] }
@@ -100,7 +96,6 @@ export const wildHunt = {
           attribute: "dexterity",
           threshold: 18,
           conditions: [{ type: "context_flag_not_set", flagId: "failed_wildhunt_creep" }],
-          customActionText: "You slip into the edge of the clearing to get a better look at your quarry...",
           successOutcomes: [
             { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_anomaly" } }] }
           ],
@@ -115,7 +110,6 @@ export const wildHunt = {
           attribute: "dexterity",
           threshold: 14,
           conditions: [{ type: "context_flag_not_set", flagId: "failed_wildhunt_shoot3" },{ type: "has_tag", tag: "HUMANOID" }],
-          customActionText: "You raise your weapon, ignoring the sudden chill in the air...",
           successOutcomes: [
             { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "successful_hunt" } }] }
           ],
@@ -139,7 +133,6 @@ export const wildHunt = {
           attribute: "attunement",
           threshold: 14,
           conditions: [{ type: "context_flag_not_set", flagId: "failed_wildhunt_hide" }],
-          customActionText: "You hold your breath, sensing a malicious aura radiating from the darkness...",
           successOutcomes: [
             { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "boss_revealed" } }] }
           ],
@@ -153,7 +146,6 @@ export const wildHunt = {
           attribute: "dexterity",
           threshold: 12,
           conditions: [{ type: "context_flag_not_set", flagId: "failed_wildhunt_shootrun" }, { type: "has_tag", tag: "HUMANOID" }],
-          customActionText: "Panic sets in, and you fire desperately!",
           successOutcomes: [
             { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "successful_hunt" } }] }
           ],

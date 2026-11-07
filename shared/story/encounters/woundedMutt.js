@@ -38,7 +38,6 @@ export const woundedMutt = {
                     attribute: "attunement",
                     threshold: 12,
                     conditions: [{ type: "has_item", itemId: "healing_herb", qty: 1 }, { type: "context_flag_not_set", flagId: "failed_mutt_herb" }],
-                    customActionText: "You crush the healing herb and carefully reach toward the raw, bleeding leg...",
                     successOutcomes: [{ weight: 100, results: [{ type: "REMOVE_ITEM", payload: { itemId: "healing_herb", qty: 1 } }, { type: "ADVANCE_STAGE", payload: { stageId: "success_tame" } }] }],
                     failureOutcomes: [{ weight: 100, results: [{ type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_mutt_herb" } }, { type: "REMOVE_ITEM", payload: { itemId: "healing_herb", qty: 1 } }, { type: "ADVANCE_STAGE", payload: { stageId: "startled_mutt" } }] }]
                 },
@@ -49,7 +48,6 @@ export const woundedMutt = {
                     attribute: "dexterity",
                     threshold: 15,
                     conditions: [{ type: "context_flag_not_set", flagId: "failed_mutt_dex" }],
-                    customActionText: "You try to clean the dirt away from the jagged slash with your bare hands, quick and precise...",
                     successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "success_tame" } }] }],
                     failureOutcomes: [{ weight: 100, results: [{ type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_mutt_dex" } }, { type: "ADVANCE_STAGE", payload: { stageId: "startled_mutt" } }] }]
                 },

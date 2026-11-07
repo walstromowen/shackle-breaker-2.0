@@ -37,7 +37,7 @@ const successTraits = () => [...GOOD_TRAITS.map((t) => gain(t, COMMON)), ...BAD_
 const failureTraits = () => [...BAD_TRAITS.map((t) => gain(t, COMMON)), ...GOOD_TRAITS.map((t) => gain(t, RARE))];
 
 /* a skill-check approach: on a failure the flag stops that approach from being tried again at this obelisk */
-const approach = ({ text, attribute, flag, action, success, failure }) => ({
+const approach = ({ text, attribute, flag, success, failure }) => ({
   text,
   type: "skill_check",
   attribute,
@@ -46,7 +46,6 @@ const approach = ({ text, attribute, flag, action, success, failure }) => ({
     { type: "context_flag_not_set", flagId: flag },
     { type: "has_tag", tag: "HUMANOID" }
   ],
-  customActionText: action,
   successOutcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: success } }] }],
   failureOutcomes: [{
     weight: 100,
@@ -89,7 +88,6 @@ export const strangeObelisk = {
           text: "[INT] Decipher the shifting glyphs.",
           attribute: "intelligence",
           flag: "failed_obelisk_int",
-          action: "You step closer, tracing the impossible geometry with your eyes...",
           success: "decipher_success",
           failure: "decipher_fail"
         }),
@@ -97,7 +95,6 @@ export const strangeObelisk = {
           text: "[STR] Excavate the earth around its base.",
           attribute: "strength",
           flag: "failed_obelisk_str",
-          action: "You kneel and dig at the packed soil around the base of the stone...",
           success: "excavate_success",
           failure: "excavate_fail"
         }),
@@ -105,7 +102,6 @@ export const strangeObelisk = {
           text: "[DEX] Examine its surface and seams.",
           attribute: "dexterity",
           flag: "failed_obelisk_dex",
-          action: "You run careful fingers along the seams, searching for a way in...",
           success: "examine_success",
           failure: "examine_fail"
         }),

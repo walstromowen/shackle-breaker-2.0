@@ -44,7 +44,6 @@ export const mysteriousAltar = {
                         { type: "context_flag_not_set", flagId: "altar_approached" },
                         HUMANOID
                     ],
-                    customActionText: "You approach the altar.",
                     successOutcomes: [
                         {
                             weight: 100,
@@ -65,7 +64,6 @@ export const mysteriousAltar = {
                         { type: "context_flag_set", flagId: "altar_approached" },
                         HUMANOID
                     ],
-                    customActionText: "You step up to the altar once more.",
                     outcomes: toStage("at_the_altar")
                 },
                 {
@@ -75,7 +73,6 @@ export const mysteriousAltar = {
                 },
                 {
                     text: "Leave the altar alone.",
-                    customActionText: "You continue along the path, leaving the altar alone.",
                     outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]
@@ -135,7 +132,6 @@ export const mysteriousAltar = {
                     attribute: "intelligence",
                     threshold: 15,
                     conditions: [HUMANOID],
-                    customActionText: "You reach out to examine the skull...",
                     successOutcomes: [
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "blue_glow" } }] },
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "green_glow" } }] }
@@ -161,7 +157,6 @@ export const mysteriousAltar = {
                 },
                 {
                     text: "Back up.",
-                    customActionText: "You back away from the altar.",
                     outcomes: toStage("approach")
                 }
             ]
