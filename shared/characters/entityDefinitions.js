@@ -943,8 +943,8 @@ export const ENTITY_DEFINITIONS = {
         currencyReward: { min: 200, max: 500 },
         lootTableId: "boss_darius_drops",
         // his moveset, exactly: Acid Pool burns them all, Magic Missile, Bless mends him over five turns, Cleanse throws off whatever the party puts on him,
-        // Spirit Reap tears at their stamina. ("rest" is only the AI's fallback when he can afford nothing.)
-        abilities: ["rest", "acid_pool", "magic_missile", "bless", "cleanse", "spirit_reap"],
+        // Arcane Blast. ("rest" is only the AI's fallback when he can afford nothing.)
+        abilities: ["rest", "acid_pool", "magic_missile", "bless", "cleanse", "arcane_blast"],
         tags: [...HUMANOID_TEMPLATE.tags, "BOSS", "ELITE", "MAGICAL"]
     }
 };

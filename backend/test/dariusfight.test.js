@@ -22,8 +22,8 @@ test('Darius resists every kind of attack, so no single blow takes a big bite (l
     assert.ok(D.baseStats.maxHp >= 80);
 });
 
-test('his moveset is exactly Acid Pool, Magic Missile, Bless, Cleanse and Spirit Reap (rest only as the fallback), and he holds no gear', () => {
-    const moves = ['acid_pool', 'magic_missile', 'bless', 'cleanse', 'spirit_reap'];
+test('his moveset is exactly Acid Pool, Magic Missile, Bless, Cleanse and Arcane Blast (rest only as the fallback), and he holds no gear', () => {
+    const moves = ['acid_pool', 'magic_missile', 'bless', 'cleanse', 'arcane_blast'];
     assert.deepEqual(D.abilities.filter(id => id !== 'rest').sort(), [...moves].sort());
     assert.ok(Object.values(D.equipment).every(v => v == null), 'no gear, so nothing grants him extra abilities');
 });
@@ -33,7 +33,7 @@ test('Spirit Reap: 3x dark damage to stamina only, half of it stolen back as sta
 });
 
 test('he can Bless, Cleanse and pool acid', () => {
-    for (const id of ['bless', 'cleanse', 'acid_pool', 'magic_missile', 'spirit_reap']) {
+    for (const id of ['bless', 'cleanse', 'acid_pool', 'magic_missile', 'arcane_blast']) {
         assert.ok(D.abilities.includes(id), `Darius knows ${id}`);
         assert.ok(AbilityDefinitions[id], `${id} exists`);
         assert.ok(BattleAnimationDefinitions[AbilityDefinitions[id].animationId], `${id} has its animation`);
@@ -78,7 +78,7 @@ test('built for battle, Darius has only his five moves (plus rest), and Spirit R
     const { AbilitySystem } = await import('../../shared/abilities/abilitySystem.js');
     const darius = new CombatantModel(EntityFactory.create('DARIUS_THE_GROVELER', { level: 8 }), 'enemy');
     const ids = darius.abilities.map(a => a.id).filter(id => id !== 'rest').sort();
-    assert.deepEqual(ids, ['acid_pool', 'bless', 'cleanse', 'magic_missile', 'spirit_reap']);
+    assert.deepEqual(ids, ['acid_pool', 'arcane_blast', 'bless', 'cleanse', 'magic_missile']);
 
     const hero = new CombatantModel(EntityFactory.create('HUMANOID', { level: 8, levelEdge: false }), 'party');
     darius.modifyResource('stamina', -darius.stamina);
