@@ -376,6 +376,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     encounter_treasure_chest: './assets/icons/encounters/treasure_chest.png',
     encounter_strange_obelisk: './assets/icons/encounters/strange_obelisk.png',
     encounter_mysterious_altar: './assets/icons/encounters/story/mysterious_altar.png',
+    encounter_darius_kneeling: './assets/icons/encounters/story/darius_kneeling.png',   // Darius kneeling at the altar, crowned, as he talks to you
     encounter_darius_defeated: './assets/icons/encounters/story/darius_defeated.png',   // 193 px, one picture: Darius slumped over the altar (act_two)
     encounter_old_gravestone: './assets/icons/encounters/old_gravestone.png',
     encounter_suspicious_merchant: './assets/icons/encounters/suspicious_merchant.png',

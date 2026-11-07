@@ -291,21 +291,21 @@ export const mysteriousAltar = {
             ambience: "altarDrone",
             ambienceVolume: 0.35,
             ambienceFade: 1.5,
-            image: { col: 3, row: 1 },
+            image: { sheet: "encounter_darius_kneeling", col: 0, row: 0 },   // Darius kneeling at the altar
             text: "\"Footsteps... after so long. Is it you, my king? Have you come back for the light?\" \"No. No, you are not him. Forgive an old man his hope.\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_speaks") }]
         },
         darius_speaks: {
             displayText: "Darius the Groveler",
             bgm: "none",
-            image: { col: 3, row: 1 },
+            image: { sheet: "encounter_darius_kneeling", col: 0, row: 0 },   // Darius kneeling at the altar
             text: "\"He told me, keep the light burning, Darius, and I shall return for it. So I kept it, every winter, every long dark.\" \"They call me the Groveler, for the kneeling. Let them. I knelt for a king.\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_late") }]
         },
         darius_late: {
             displayText: "Darius the Groveler",
             bgm: "none",
-            image: { col: 3, row: 1 },
+            image: { sheet: "encounter_darius_kneeling", col: 0, row: 0 },   // Darius kneeling at the altar
             text: "\"You think he is not coming. I can see it on you.\" \"He is only late, friend. Kings are never early.\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_sees") }]
         },
@@ -314,7 +314,7 @@ export const mysteriousAltar = {
             effect: "jolt",
             sfx: "heartbeat",
             bgm: "none",
-            image: { col: 0, row: 1 },
+            image: { sheet: "encounter_darius_kneeling", col: 0, row: 0 },   // Darius kneeling at the altar
             text: "\"That light you carry... that is his. His sign, at last.\" \"But he gave it to you. A stranger in chains.\" \"What did you do to be loved like that?\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_wrath") }]
         },

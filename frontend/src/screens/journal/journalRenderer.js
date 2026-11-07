@@ -125,7 +125,12 @@ export class JournalRenderer {
         const def = state.definitions[state.displayQuestId];
         if (!def) return;
 
-        ui.startClip(x, y, w, h);
+        // Everything above the buttons scrolls (mouse wheel, JournalController's 'questDetails' zone): a quest with many rewards is never cut off
+        const viewH = state.detailsViewH || h;
+        const scroll = state.detailsScroll || 0;
+        ui.startClip(x, y, w, viewH);
+        const top = y;
+        y = y - scroll;
 
         const centerX = x + (w / 2);
         const TITLE_Y = y + 60;
@@ -203,9 +208,14 @@ export class JournalRenderer {
         ui.drawLineWithGothicFlourish(descStartX, currentY, descW, UITheme.colors.borderHighlight);
         currentY += 30;
 
-        this._renderRewardsList(ui, def, descStartX, currentY, descW);
+        currentY = this._renderRewardsList(ui, def, descStartX, currentY, descW);
 
         ui.endClip();
+        const contentH = currentY + 16 - y;
+        if (state.setDetailsHeight) state.setDetailsHeight(contentH);
+        if (contentH > viewH) {
+            ui.drawScrollbar(x + w - 8 - UITheme.scrollbar.width, top + 8, UITheme.scrollbar.width, viewH - 16, scroll, contentH - viewH, viewH);
+        }
 
         // Action Buttons
         const btnBox = state.hitboxes.find(box => box.id === `btn_collect_${state.selectedQuestId}`);
@@ -243,7 +253,7 @@ export class JournalRenderer {
             currentY += rowHeight + 12;
         };
 
-        if (!def.rewards) return;
+        if (!def.rewards) return currentY;
 
         if (def.rewards.exp) {
             drawRewardRow("Experience", `+${def.rewards.exp}`, (ix, iy, s) => {
@@ -288,6 +298,7 @@ export class JournalRenderer {
                 });
             });
         }
+        return currentY;
     }
 
     _drawItemIcon(ui, def, x, y, size) {

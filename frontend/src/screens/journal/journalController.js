@@ -21,6 +21,7 @@ export class JournalController extends BaseController {
 
         this.scrollManager = new ScrollManager();
         this.scrollManager.registerZone('questList', { viewportH: 700, maxScroll: 0 });
+        this.scrollManager.registerZone('questDetails', { viewportH: 600, maxScroll: 0 });   // the quest on the right: a long one (several rewards) scrolls
 
         // The journal key (P) closes the journal, like Esc
         this.extraBindings = { KeyP: 'CANCEL' };
@@ -293,6 +294,13 @@ export class JournalController extends BaseController {
             displayQuestId = this.hoveredHitboxId.replace('quest_sel_', '');
         }
 
+        // the details on the right scroll on their own; a different quest starts at the top
+        if (displayQuestId !== this._detailsQuestId) { this._detailsQuestId = displayQuestId; this.scrollManager.setOffset('questDetails', 0, true); }
+        const detailsViewH = panelHeight - (btnHeight + 48);   // above the Collect / Track button
+        const detailsZone = this.scrollManager.zones.get('questDetails');
+        detailsZone.bounds = { x: rightColX, y: startY, w: colW, h: detailsViewH };
+        detailsZone.viewportH = detailsViewH;
+
         // 2. Tabs
         const tabW = (colW / 2) - 24;
         const tabY = startY + 24;
@@ -352,6 +360,10 @@ export class JournalController extends BaseController {
             quests: gameState.quests,
             definitions: QuestDefinitions,
             scrollOffset: scrollOffset,
+            detailsScroll: this.scrollManager.getOffset('questDetails'),
+            detailsViewH,
+            // the renderer measures the details and says how tall they are, so the scroll knows how far it may go
+            setDetailsHeight: (contentH) => { detailsZone.maxScroll = Math.max(0, contentH - detailsViewH); },
             layout: this.layout,
             trackedIds: gameState.quests.trackedIds || []
         };
