@@ -883,7 +883,7 @@ export const AbilityDefinitions = {
     "spirit_reap": {
         id: "spirit_reap",
         name: "Spirit Reap",
-        description: "A spectral reaping that graps at physical flesh and psychic energy. Deals dark damage to health and siphons the target's stamina to replenish your own.",
+        description: "A spectral reaping that tears at the target's spirit. Deals heavy dark damage (three times a normal blow) to stamina only, and steals half of the stamina it takes to replenish your own.",
         range: "ranged",
         tags: ["magical", "dark", "leech"],
         battleMessage: "{user} reaps {target}'s spirit!",
@@ -892,8 +892,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "enemy", select: "single" },
         cost: { insight: 20 },
         effects: [
-            { type: "damage", damageType: "dark", power: 1.0 },
-            { type: "damage", resource: "stamina", power: 0.6, drain: 1.0 }
+            { type: "damage", damageType: "dark", resource: "stamina", power: 3.0, drain: 0.5 }
         ]
     },
     "drain_life": {

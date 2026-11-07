@@ -246,6 +246,8 @@ export class AbilitySystem {
 
         if (calc.hit) {
             const targetResource = effect.resource || 'hp';
+            // what the target had BEFORE the blow: a drain steals a share of what the blow really took (it cannot take more than was there)
+            const resourceBefore = Math.max(0, (target[targetResource] ?? target.stats?.[targetResource]) || 0);
             target.modifyResource(targetResource, -calc.damage);
             const template = calc.crit ? (def.critMessage || "{target} takes {damage} damage (Critical)") : (def.hitMessage || "{target} takes {damage} damage");
             calc.message = this._parseMessage(template, source, target, def, { damage: calc.damage });
@@ -256,8 +258,7 @@ export class AbilitySystem {
             }
 
             if (effect.drain && effect.drain > 0) {
-                const currentResourceAmount = Math.max(0, (target[targetResource] || target.stats[targetResource]));
-                const effectiveDamage = Math.min(calc.damage, currentResourceAmount);
+                const effectiveDamage = Math.min(calc.damage, resourceBefore);
                 const drainAmount = Math.floor(effectiveDamage * effect.drain);
                 if (drainAmount > 0) {
                     const drainResource = effect.drainResource || targetResource;
