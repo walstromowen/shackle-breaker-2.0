@@ -12,6 +12,8 @@
  *   host -> all     time { time, day }       the clock, every 5 seconds: everyone sees the same hour
  *   any -> all      change { key, value }    a change to the map (WorldManager worldSync): an object taken, a chest searched
  *   any -> all      pos { col, row, dir, moving, run, map, sprite, scene }   where a player is, for drawing them
+ *   guest -> host   stranger_claim { id }    a guest walked into a workshop before the Hooded Stranger had one: the host keeps the first claim
+ *   host -> all     stranger_home { id }     the Hooded Stranger's workshop, as the host's world has it (there is only one, for everyone)
  *
  * Players come and go at any time while the host is on. A join or leave shows as a message on the overworld and nobody else is
  * interrupted. The host leaving (quitting to the title) closes the world: the guests go back to their title screen, their characters
@@ -24,6 +26,7 @@ import { worldPart, playerPart, mergeParts, placeOnOverworld } from '../../../sh
 import { multiplayer } from './multiplayerClient.js';
 import { SaveManager } from './saveManager.js';
 import { TimeSystem } from '../../../shared/world/timeSystem.js';
+import { InteriorFactory } from '../../../shared/world/interiorFactory.js';
 
 const TIME_EVERY = 5;          // seconds between the host's clock messages
 const POS_HEARTBEAT = 2;       // seconds between position messages while standing still
@@ -90,6 +93,8 @@ class MultiplayerSession {
         this.remotes.clear();
         this._remember(multiplayer.room);
         worldSync.onLocalChange = (key, value) => multiplayer.relay({ k: 'change', key, value });
+        // the host picks the Hooded Stranger's workshop for the whole world, and tells everyone
+        InteriorFactory.onStrangerHome = (id) => { if (this.role === 'host') multiplayer.relay({ k: 'stranger_home', id }); };
         if (!gameState.multiplayer || !gameState.multiplayer.guests) gameState.multiplayer = { guests: {} };
         this._say('Your world is open to your friends.');
         this._sendTime();
@@ -180,6 +185,11 @@ class MultiplayerSession {
         this._remember(multiplayer.room);
         SaveManager.guestSink = async (snapshot) => multiplayer.relay({ k: 'player_save', data: playerPart(snapshot.data) });
         worldSync.onLocalChange = (key, value) => multiplayer.relay({ k: 'change', key, value });
+        // a guest never decides where the Hooded Stranger lives: a workshop it walks into first is only a claim, which the host answers
+        InteriorFactory.onStrangerHome = (id) => {
+            const host = this.role === 'guest' && multiplayer.room && multiplayer.room.players.find(p => p.isHost);
+            if (host) multiplayer.relay({ k: 'stranger_claim', id }, host.id);
+        };
         this._t.save = 0;
         const host = multiplayer.room && multiplayer.room.players.find(p => p.isHost);
         this._say(`You are in ${host ? host.username : 'the host'}'s world.`);
@@ -198,6 +208,7 @@ class MultiplayerSession {
             try { multiplayer.relay({ k: 'player_save', data: playerPart(SaveManager.createSnapshot().data) }); } catch (e) { /* the host will have the last one */ }
         }
         this.role = null;
+        InteriorFactory.onStrangerHome = null;   // alone again: this world decides the Hooded Stranger's workshop itself
         this.pending = null;
         TimeSystem.followsWeather = false;
         TimeSystem.sharedWeather = null;
@@ -250,6 +261,15 @@ class MultiplayerSession {
                 break;
             }
             case 'pos': if (this.active) this._onPos(from, data); break;
+            case 'stranger_claim':   // the host keeps the first claim and tells everyone the answer (the claimant takes it if it lost)
+                if (this.role === 'host') {
+                    if (!gameState.world.strangerHome && typeof data.id === 'string') { gameState.world.strangerHome = data.id; this._hostSaveSoon(5000); }
+                    multiplayer.relay({ k: 'stranger_home', id: gameState.world.strangerHome });
+                }
+                break;
+            case 'stranger_home':
+                if (this.role === 'guest' && typeof data.id === 'string') gameState.world.strangerHome = data.id;
+                break;
         }
     }
 

@@ -95,3 +95,22 @@ test('the first step reads "Find someone who can help" in the tracker and the jo
     const journal = fs.readFileSync(new URL('../../frontend/src/screens/journal/journalRenderer.js', import.meta.url), 'utf8');
     assert.match(journal, /if \(obj\.description\)/, 'the journal shows an objective\'s own words');
 });
+
+test('in multiplayer there is still only one: the host\'s world decides, and a joining guest gets it with the world', async () => {
+    const { worldPart, mergeParts, playerPart } = await import('../../shared/core/multiplayerSave.js');
+    const data = { seed: 7, world: { strangerHome: '10_20', changes: {} }, quests: { active: {}, completed: [], trackedIds: [] }, player: {}, party: {} };
+    const joined = mergeParts(worldPart(data), playerPart({ ...data, world: { strangerHome: 'someone_elses' } }));
+    assert.equal(joined.world.strangerHome, '10_20', 'the guest takes the host\'s workshop, not its own');
+    const session = fs.readFileSync(new URL('../../frontend/src/engine/multiplayerSession.js', import.meta.url), 'utf8');
+    assert.match(session, /case 'stranger_claim':[\s\S]*if \(!gameState\.world\.strangerHome/, 'the host keeps the first claim');
+    assert.match(session, /case 'stranger_home':[\s\S]*this\.role === 'guest'/, 'guests take the host\'s answer');
+    // a claim made while a session is on goes through the hook (InteriorFactory.onStrangerHome), and is made only once
+    resetWorldForNewGame();
+    const claims = [];
+    InteriorFactory.onStrangerHome = (id) => claims.push(id);
+    try {
+        InteriorFactory.create(1, 'ABANDONED_WORKSHOP', '1_1');
+        InteriorFactory.create(1, 'ABANDONED_WORKSHOP', '2_2');
+    } finally { InteriorFactory.onStrangerHome = null; }
+    assert.deepEqual(claims, ['1_1']);
+});

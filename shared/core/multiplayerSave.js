@@ -32,6 +32,7 @@ export function worldPart(data) {
             levelPaths: w.levelPaths || {},
             structureChunks: w.structureChunks,
             weather: w.weather || null,
+            strangerHome: w.strangerHome || null,   // the one workshop the Hooded Stranger lives in: the host's world decides it for everyone
         },
     });
 }
