@@ -26,14 +26,14 @@ const walk = () => {
     return seen;
 };
 
-test('walking up with the meteorite starts the scene, and it plays out in five short stages to the fight', () => {
+test('walking up with the meteorite starts the scene, and it plays out in six short stages to the fight', () => {
     const withIt = stages.approach.decisions.find(d => /meteorite/i.test(d.text));
     assert.ok(results(withIt).some(r => r.type === 'ADVANCE_STAGE' && r.payload.stageId === 'darius_rises'));
-    assert.deepEqual(walk(), ['darius_rises', 'darius_speaks', 'darius_late', 'darius_sees', 'darius_wrath']);
+    assert.deepEqual(walk(), ['darius_rises', 'darius_speaks', 'darius_late', 'darius_sees', 'darius_pause', 'darius_wrath']);
 });
 
 test('Darius does all the talking: up to the fight, the only button is "Continue."', () => {
-    for (const id of ['darius_rises', 'darius_speaks', 'darius_late', 'darius_sees']) {
+    for (const id of ['darius_rises', 'darius_speaks', 'darius_late', 'darius_sees', 'darius_pause']) {
         assert.deepEqual(stages[id].decisions.map(d => d.text), ['Continue.'], id);
     }
     assert.deepEqual(stages.darius_wrath.decisions.map(d => d.text), ['Draw your weapon.']);
@@ -55,13 +55,20 @@ test('every stage of it is wired: it has a way on, its cues exist, its text fits
     }
 });
 
-test('his back is to you while he talks; you see his face only when he turns and his music starts', () => {
+test('his back is to you while he talks; a silent pause starts his music; you see his face only when he turns', () => {
     for (const id of ['darius_rises', 'darius_speaks', 'darius_late', 'darius_sees']) {
         assert.equal(stages[id].image.sheet, 'encounter_darius_approach', `${id}: his back`);
         assert.equal(stages[id].bgm, 'none', `${id}: no music yet`);
     }
+    // he understands the meteorite was given to you: he says nothing, and his music begins, his back still to you
+    assert.equal(nextOf('darius_sees')[0], 'darius_pause');
+    assert.equal(stages.darius_pause.text, '"......"');
+    assert.equal(stages.darius_pause.image.sheet, 'encounter_darius_approach');
+    assert.equal(stages.darius_pause.bgm, 'dariusEncounterBgm');
+    // then he turns around
+    assert.equal(nextOf('darius_pause')[0], 'darius_wrath');
     assert.equal(stages.darius_wrath.image.sheet, 'encounter_darius_kneeling', 'his face, as he turns');
-    assert.equal(stages.darius_wrath.bgm, 'dariusEncounterBgm');
+    assert.equal(stages.darius_wrath.bgm, 'dariusEncounterBgm', 'the same track carries on');
 });
 
 test('he talks to you: every stage is his own words, spoken to you, with no narration', () => {

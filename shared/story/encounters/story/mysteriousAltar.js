@@ -7,8 +7,9 @@
    Flow:  approach     -> [VIG] walk up to the altar (a miss: the bones stir, or a cloud of smoke drains stamina and insight)
           at_the_altar -> [INT] examine the skull: blue glow (full restore) / green glow (loot) on a success, red glow (skeleton fight) on a failure
    (approach)  [Fallen Meteorite] approach with it: no roll, and Darius the Groveler wakes at once (the meteorite is spent). Offered while the party carries one.
-                          darius_rises .. darius_wrath: five short stages of Darius speaking to you (the king who never came, the light he kept, the star you carry,
-                          and envy), then the boss fight. No music while he talks, only the altar's drone kept low; his music starts when he turns and carries on into the fight.
+                          darius_rises .. darius_wrath: Darius speaking to you (the king who never came, the light he kept, the star you carry), a silent pause
+                          as he understands, then envy and the boss fight. No music while he talks, only the altar's drone kept low; his music starts on the
+                          pause, with his back still to you, and carries on through his turn into the fight.
    Every find or ambush is announced on its own stage first and the effect is handed out on the button after it. A fight that starts from the
    approach leaves the altar standing (it can be tried again); anything that spends the skull or the meteorite destroys the altar. */
 
@@ -296,6 +297,17 @@ export const mysteriousAltar = {
             bgm: "none",
             image: { sheet: "encounter_darius_approach", col: 0, row: 0 },   // his back to you, bowed over the altar
             text: "\"That light at my back... I can feel it. His sign, at last.\" \"But he gave it to you. A stranger in chains.\" \"What did you do to be loved like that?\"",
+            decisions: [{ text: "Continue.", outcomes: toStage("darius_pause") }]
+        },
+        // He has understood: the light was given to you, not to him. He says nothing. This is where his music starts, still with his back to you.
+        darius_pause: {
+            displayText: "Darius the Groveler",
+            tone: "blood",
+            ambience: "none",
+            ambienceFade: 1.2,
+            bgm: "dariusEncounterBgm",   // his track: from here, through the turn, on into the fight (the same track carries on, it does not restart)
+            image: { sheet: "encounter_darius_approach", col: 0, row: 0 },   // his back to you, still bowed over the altar
+            text: "\"......\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_wrath") }]
         },
         darius_wrath: {
@@ -304,8 +316,7 @@ export const mysteriousAltar = {
             effect: "shake",
             sfx: "cinematicBoom",
             ambience: "none",
-            ambienceFade: 0.6,
-            bgm: "dariusEncounterBgm",   // his track: from the moment he turns, on into the fight
+            bgm: "dariusEncounterBgm",   // his track, already playing since the pause, carries on into the fight
             image: { sheet: "encounter_darius_kneeling", col: 0, row: 0 },   // he turns: his face, his eyes, for the first time
             text: "Darius turns around. \"Give it to me.\" \"Give it back! His love was mine. It was always meant to be mine!\"",
             decisions: [
