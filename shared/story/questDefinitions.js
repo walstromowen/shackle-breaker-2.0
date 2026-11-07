@@ -6,7 +6,7 @@ export const QuestDefinitions = {
     // Collect for these). He gives the next step when you hand one in (story/encounters/story/hoodedStranger.js), so no step starts the next by itself.
     "shackled_stranger": {
         id: "shackled_stranger",
-        name: "Shackled",
+        name: "The Broken Line",
         description: "The chain that bound you to the line has broken, and the convoy marched on into the dark without you. The shackles are still locked around your wrists. Everyone on the road laughs at nothing. Somewhere in the villages, in a workshop where the forge is still lit, there may be someone who can help.",
         turnIn: "HOODED_STRANGER",
         objectives: [
@@ -16,7 +16,7 @@ export const QuestDefinitions = {
     },
     "shackled1": {
     id: "shackled1",
-    name: "Shackled",
+    name: "Stronger Than Iron",
         turnIn: "HOODED_STRANGER",
     description: "The Hooded Stranger will tell you nothing while you are this weak. Grow strong enough to survive the answer, then go back to him.",
     objectives: [
@@ -26,7 +26,7 @@ export const QuestDefinitions = {
 },
     "shackled2": {
         id: "shackled2",
-        name: "Shackled",
+        name: "Laughter in the Grass",
         turnIn: "HOODED_STRANGER",
         description: "The prisoners on the road were not the only ones. Others wear the same iron here, and they laugh in the streets, as though sharing a single dream. Whatever took them has not stopped at the road.",
         objectives: [
@@ -37,7 +37,7 @@ export const QuestDefinitions = {
     },
     "shackled3": {
         id: "shackled3",
-        name: "Shackled",
+        name: "Sparks of the Mad",
         turnIn: "HOODED_STRANGER",
         description: "The shackles have no keyhole, and the weight on your spirit is as heavy as the iron. The ravings of the mad are not all nonsense: they speak of a stone fallen from the sky, and of soldiers in the old colors who carried it away. Many of the mad still conjure sparks and cannot stop. Listen closely, then put them down.",
         objectives: [
@@ -55,7 +55,7 @@ export const QuestDefinitions = {
     },
     "shackled7": {
         id: "shackled7",
-        name: "Shackled",
+        name: "The Old Colors",
         turnIn: "HOODED_STRANGER",
         description: "The stone went with those who still wear the old colors, and they have not given it up. Legionaries and watchmen still march the plains as if the war never ended. Whoever carried the stone home has the answer, if any of them can still be reasoned with.",
         objectives: [
@@ -74,7 +74,7 @@ export const QuestDefinitions = {
     },
     "shackled8": {
         id: "shackled8",
-        name: "Shackled",
+        name: "The Groveler",
         turnIn: "HOODED_STRANGER",
         description: "A stone altar waits in the dark below, though not every depth holds one. A skull rests above a hollow the size of a fallen star. The answer to what happened waits down there. Descend when you are strong.",
         objectives: [
