@@ -45,7 +45,7 @@ test('what he opens with follows the quests: first meeting, a reminder, a hand-i
     freshQuests();
     gameState.quests.completed = ['shackled_stranger'];
     QuestModel.startQuest(gameState, 'shackled2');
-    assert.equal(E.initialStage(), 'give_shackled1', 'shackled1 was never given');
+    assert.equal(E.initialStage(), 'offer_shackled1', 'shackled1 was never given: he remembers, then gives it');
     gameState.quests.completed.push('shackled1');
     assert.equal(E.initialStage(), 'waiting_shackled2');
     for (const o of Q.shackled2.objectives) QuestModel.updateProgress(gameState, 'shackled2', o.id, o.amount || 1);
@@ -71,7 +71,8 @@ test('the first meeting hands in "find him" and gives the first step; a hand-in 
     assert.ok(gameState.quests.completed.includes('shackled1'));
     assert.equal(gameState.party.currency, coins + Q.shackled1.rewards.currency, 'its rewards are paid');
     assert.equal(r.newStageId, 'lore_shackled1', 'a piece of the story first');
-    assert.deepEqual(E.stages.lore_shackled1.decisions[0].outcomes[0].results.map(x => x.payload?.stageId), ['give_shackled2'], 'then the next step');
+    const nextOf = (id) => E.stages[id].decisions[0].outcomes[0].results.find(x => x.type === 'ADVANCE_STAGE')?.payload.stageId;
+    assert.equal(nextOf(nextOf('lore_shackled1')), 'give_shackled2', 'then the next step');
     quiet(() => EncounterLogic.resolveResults(results('give_shackled2'), model, null));
     assert.ok(gameState.quests.active.shackled2);
 });
@@ -125,4 +126,15 @@ test('every hand-in tells a new piece of the story before the next step', () => 
         assert.ok(after.some(x => x.type === 'ADVANCE_STAGE' && x.payload.stageId === `lore_${id}`), `${id}: his lore comes next`);
     }
     for (const s of Object.values(E.stages)) assert.ok(s.text.length <= 230, `fits the box: ${s.text.slice(0, 40)}...`);
+});
+
+test('every conversation with him is three to five stages, and he never says outright that magic is behind it', () => {
+    const nexts = (st) => st.decisions.flatMap(d => (d.outcomes || []).flatMap(o => o.results)).filter(r => r.type === 'ADVANCE_STAGE').map(r => r.payload.stageId);
+    const length = (start) => { const seen = []; let id = start; while (id && !seen.includes(id)) { seen.push(id); id = nexts(E.stages[id])[0]; } return seen.length; };
+    const starts = ['meet', 'after_darius', ...STRANGER_CHAIN.slice(1).flatMap(i => [`turnin_${i}`, `waiting_${i}`, `offer_${i}`])];
+    for (const start of starts) {
+        const n = length(start);
+        assert.ok(n >= 3 && n <= 5, `${start}: ${n} stages`);
+    }
+    for (const [id, st] of Object.entries(E.stages)) assert.doesNotMatch(st.text, /\bmagic\b/i, `${id}: he only alludes to it`);
 });
