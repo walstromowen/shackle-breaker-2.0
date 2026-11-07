@@ -711,7 +711,7 @@ export const AbilityDefinitions = {
     "frigid_gale": {
         id: "frigid_gale",
         name: "Frigid Gale",
-        description: "A blast of freezing wind that strikes up to two enemies.",
+        description: "A blast of freezing wind that strikes up to two enemies and slows them.",
         range: "ranged",
         tags: ["magical", "aoe", "ice", "wind"],
         battleMessage: "{user} conjures a {ability}!",
@@ -722,7 +722,7 @@ export const AbilityDefinitions = {
         speedModifier: 1.0,
         accuracy: 0.90,
         effects: [{ type: "damage", damageType: "ice", power: 1.0 }],
-        statusEffects: [{ id: "frozen", chance: 0.15, duration: 2 }]
+        statusEffects: [{ id: "slowed", chance: 1.0, duration: 3 }, { id: "frozen", chance: 0.15, duration: 2 }]
     },
 
     // =========================================================================

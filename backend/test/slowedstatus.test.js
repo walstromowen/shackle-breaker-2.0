@@ -12,7 +12,7 @@ test('slowed only lowers speed', () => {
     const s = StatusEffectDefinitions.slowed;
     assert.ok(s);
     assert.equal(s.name, 'Slowed');
-    assert.deepEqual(s.icon, { col: 3, row: 1 });
+    assert.deepEqual(s.icon, { col: 3, row: 2 }, 'the figure with the down arrow');
     assert.equal(s.effects, undefined, 'nothing happens on a turn');
     assert.equal(s.immunities, undefined);
     assert.equal(s.modifiers.length, 1);
@@ -45,4 +45,15 @@ test('the world map draws the buildings the world has placed, (the explored-land
     const def = MAP_OBJECTS_DEFINITIONS.ABANDONED_HOUSE_1;
     const h = list.find((b) => b.x === 10);
     assert.deepEqual([h.w, h.h, h.y], [def.width, def.height, 10 - (def.height - 1)], 'a house rises above the row it stands on');
+});
+
+test('the blizzard, the sandstorm and Frigid Gale all slow; Blessed has its own icon', async () => {
+    const { WeatherDefinitions } = await import('../../shared/world/weatherDefinitions.js');
+    const { AbilityDefinitions } = await import('../../shared/abilities/abilityDefinitions.js');
+    assert.equal(WeatherDefinitions.BLIZZARD.appliedStatusId, 'slowed');
+    assert.equal(WeatherDefinitions.SANDSTORM.appliedStatusId, 'slowed');
+    assert.ok(AbilityDefinitions.frigid_gale.statusEffects.some(e => e.id === 'slowed' && e.chance === 1), 'Frigid Gale always slows');
+    assert.deepEqual(StatusEffectDefinitions.blessed.icon, { col: 10, row: 0 });
+    const taken = Object.values(StatusEffectDefinitions).filter(d => d.icon && d.icon.col === 10 && d.icon.row === 0);
+    assert.equal(taken.length, 1, 'nothing else uses that cell');
 });

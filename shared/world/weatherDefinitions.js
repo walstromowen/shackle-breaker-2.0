@@ -49,6 +49,7 @@ export const WeatherDefinitions = {
         visualEffect: 'particle_sand',
         audioEffect: 'weatherFog',
         durationRange: [10,20],
+        appliedStatusId: 'slowed',   // like the blizzard: everyone in the fight is slowed while it blows
         battleMessage: "A blinding sandstorm whips up around you!" // ✅ NEW
     },
     /* Wind-driven snow that whites out the screen and slows everyone in a fight (status 'slowed', see statusEffectDefinitions.js).

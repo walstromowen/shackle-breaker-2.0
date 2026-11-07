@@ -101,7 +101,7 @@ export const StatusEffectDefinitions = {
     slowed: {
         id: 'slowed',
         name: 'Slowed',
-        icon: { col: 3, row: 1 },
+        icon: { col: 3, row: 2 },
         defaultCharges: 99,
         maxStacks: 1,
         modifiers: [
@@ -210,7 +210,7 @@ export const StatusEffectDefinitions = {
         id: 'blessed',
         name: 'Blessed',
         animationId: "bless",
-        icon: { col: 2, row: 2 },
+        icon: { col: 10, row: 0 },   // a golden heart under a halo
         defaultCharges: 5,
         maxStacks: 1,
         effects: [
