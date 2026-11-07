@@ -14,8 +14,11 @@ export const AUDIO_CHANNELS = {
     master:  { label: 'Master',   max: 1.0, default: 1.0 },
     music:   { label: 'Music',    max: 1.0, default: 0.5 },   // 0.5 gain
     sfx:     { label: 'Effects',  max: 1.6, default: 0.5 },   // 0.8 gain (battle cries, attacks, interface sounds)
-    ambient: { label: 'Ambience', max: 0.8, default: 0.5 }    // 0.4 gain (weather and nature loops)
+    ambient: { label: 'Ambience', max: 0.8, default: 0.5 },   // 0.4 gain (weather and nature loops)
+    voice:   { label: 'Voices',   max: 1.4, default: 0.6 }    // 0.84 gain (the recorded encounter lines: assets/audio/voice, tools/voice)
 };
+const VOICE_DIR = './assets/audio/voice/';
+const VOICE_DUCK = 0.55;   // the music while someone speaks (a share of its own level)
 
 // ---------------------------------------------------------------------------------------------------------------------------
 // LOUDNESS MATCHING for sound effects. The sound files were recorded at very different levels (a Panzerkamfer cry is 18 dB louder than a
@@ -84,13 +87,18 @@ class AudioManager {
         this._applySettings(false);
 
         // Connect nodes
-        this.musicGain.connect(this.masterGain);
+        this.voiceGain = this.ctx.createGain();
+        this.musicDuck = this.ctx.createGain();   // the music dips under a voice (playVoice), on top of its own slider
+        this.musicGain.connect(this.musicDuck);
+        this.musicDuck.connect(this.masterGain);
+        this.voiceGain.connect(this.masterGain);
         this.sfxGain.connect(this.masterGain);
         this.ambientGain.connect(this.masterGain); // NEW
         this.masterGain.connect(this.ctx.destination);
 
         this.isInitialized = true;
         console.log("%c[AudioManager] Web Audio API Initialized", "color: #ffaa00");
+        this.voiceManifest();   // the recorded lines' index, ready before the first encounter
 
         // Cleanup unlock listeners once triggered
         window.removeEventListener('mousedown', this._unlockAudioContext);
@@ -98,7 +106,8 @@ class AudioManager {
     }
 
     _setupEventListeners() {
-        // Wait for user interaction to start audio engine
+        // Wait for user interaction to start audio engine (no window outside a browser: the tests load the screens that use this)
+        if (typeof window === 'undefined') return;
         window.addEventListener('mousedown', this._unlockAudioContext);
         window.addEventListener('keydown', this._unlockAudioContext);
 
@@ -155,7 +164,7 @@ class AudioManager {
 
     _applySettings(smooth) {
         if (!this.ctx) return;
-        const nodes = { master: this.masterGain, music: this.musicGain, sfx: this.sfxGain, ambient: this.ambientGain };
+        const nodes = { master: this.masterGain, music: this.musicGain, sfx: this.sfxGain, ambient: this.ambientGain, voice: this.voiceGain };
         const now = this.ctx.currentTime;
         for (const [channel, node] of Object.entries(nodes)) {
             if (!node) continue;
@@ -367,6 +376,76 @@ class AudioManager {
         this.currentAmbientSource = { source, gain: localGain };
         this.currentAmbientId = key;
         this.currentAmbientVolume = vol;
+    }
+
+    // ========================================================
+    // VOICE (recorded encounter lines)
+    // ========================================================
+    /** The voice manifest (line key -> clip file), loaded once; {} until it arrives or when there is none. */
+    voiceManifest() {
+        if (!this._voiceManifestPromise) {
+            this._voiceManifest = {};
+            this._voiceManifestPromise = fetch(VOICE_DIR + 'manifest.json')
+                .then(r => (r.ok ? r.json() : {}))
+                .then(m => { this._voiceManifest = m || {}; return this._voiceManifest; })
+                .catch(() => this._voiceManifest);
+        }
+        return this._voiceManifest;
+    }
+
+    async _voiceBuffer(file) {
+        if (!this._voiceBuffers) this._voiceBuffers = new Map();
+        if (!this._voiceBuffers.has(file)) {
+            this._voiceBuffers.set(file, fetch(VOICE_DIR + file).then(r => r.arrayBuffer()).then(b => this.ctx.decodeAudioData(b)).catch(() => null));
+        }
+        return this._voiceBuffers.get(file);
+    }
+
+    /** Loads clips ahead of time (an encounter's lines when it starts), so the first words are not late. */
+    preloadVoice(files) {
+        if (!this.isInitialized) return;
+        for (const f of files) this._voiceBuffer(f);
+    }
+
+    /** Plays one stage's lines in order: items are { file } (a clip) or { pause: seconds }. Stops whatever voice was playing first. */
+    async playVoice(items) {
+        this.stopVoice();
+        if (!this.isInitialized || !items || !items.length) return;
+        const token = this._voiceToken = (this._voiceToken || 0) + 1;
+        this._duck(true);
+        try {
+            for (const item of items) {
+                if (token !== this._voiceToken) return;
+                if (item.pause) { await new Promise(r => setTimeout(r, item.pause * 1000)); continue; }
+                const buffer = await this._voiceBuffer(item.file);
+                if (!buffer || token !== this._voiceToken) continue;
+                await new Promise((resolve) => {
+                    const src = this.ctx.createBufferSource();
+                    src.buffer = buffer;
+                    src.connect(this.voiceGain);
+                    src.onended = resolve;
+                    this._voiceSource = src;
+                    src.start();
+                });
+            }
+        } finally {
+            if (token === this._voiceToken) { this._voiceSource = null; this._duck(false); }
+        }
+    }
+
+    /** Stops the voice at once (the stage changed, the encounter ended). */
+    stopVoice() {
+        this._voiceToken = (this._voiceToken || 0) + 1;
+        if (this._voiceSource) { try { this._voiceSource.stop(); } catch (e) { /* already done */ } this._voiceSource = null; }
+        this._duck(false);
+    }
+
+    _duck(on) {
+        if (!this.musicDuck) return;
+        const now = this.ctx.currentTime;
+        this.musicDuck.gain.cancelScheduledValues(now);
+        this.musicDuck.gain.setValueAtTime(this.musicDuck.gain.value, now);
+        this.musicDuck.gain.linearRampToValueAtTime(on ? VOICE_DUCK : 1, now + (on ? 0.25 : 0.8));
     }
 
     stopAmbience(fadeTime = 2.0) {

@@ -22,7 +22,7 @@ import { tipStore } from '../../ui/tutorialOverlay.js';
 import { TIP_SCENES } from '../../ui/tutorialData.js';
 import { graphics, GRAPHICS_MODES } from '../../engine/graphics.js';
 
-const CHANNEL_ORDER = ['master', 'music', 'sfx', 'ambient'];
+const CHANNEL_ORDER = ['master', 'music', 'sfx', 'ambient', 'voice'];
 const TABS = ['sound', 'display', 'controls'];
 const TAB_LABELS = { sound: 'Sound', display: 'Display', controls: 'Controls' };
 const STEP = 0.05;

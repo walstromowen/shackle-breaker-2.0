@@ -78,6 +78,7 @@ import { multiplayerSocial } from './multiplayerSocial.js';
 import { PARTY_SCALING } from '../../../shared/battle/spawnTableFactory.js';
 import { dropGrave } from '../../../shared/world/graves.js';
 import { encounterDefinitions } from '../../../shared/story/encounterDefinitions.js';
+import { audioManager } from './audioManager.js';
 
 export class SceneManager {
     constructor(canvas, assetLoader, config) {
@@ -237,6 +238,7 @@ export class SceneManager {
     }
 
     changeScene(sceneName, sceneContext = {}) {
+        if (this.currentScene === 'encounter' && sceneName !== 'encounter') audioManager.stopVoice();   // a voice never follows you out of an encounter
         console.log(`[SceneManager] Switching to: ${sceneName}`);
         this.currentScene = sceneName;
 

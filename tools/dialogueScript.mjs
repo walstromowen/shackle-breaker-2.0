@@ -7,14 +7,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { encounterDefinitions } from '../shared/story/encounterDefinitions.js';
+import { speakerOf as voiceSpeakerOf } from '../shared/story/voiceLines.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'docs', 'encounter-dialogue.md');
 const SCRIPT_OUT = path.join(ROOT, 'docs', 'encounter-script.txt');
 
-// Who speaks a stage's quoted words (everything unquoted is the narrator). Encounter id -> stage id pattern -> speaker.
-const SPEAKERS = { mysterious_altar: [[/^darius_/, 'DARIUS']], hooded_stranger: [[/./, 'STRANGER']] };
-const speakerOf = (encId, stageId) => ((SPEAKERS[encId] || []).find(([re]) => re.test(stageId)) || [])[1] || null;
+// Who speaks a stage's quoted words (everything unquoted is the narrator): the same list the voice lines use (shared/story/voiceLines.js).
+const speakerOf = (encId, stageId) => voiceSpeakerOf(encId, stageId);
 // A stage's text as script lines: with a speaker, each quoted run is that speaker's line and the words between are the narrator's.
 function scriptLines(text, speaker) {
     if (!speaker) return [text];

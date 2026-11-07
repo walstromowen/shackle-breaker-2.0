@@ -9,6 +9,7 @@
     "check:db": "npm run check:db --workspace @shackle-breaker/backend",
     "check:paths": "node tools/checkPaths.mjs",
     "dialogue": "node tools/dialogueScript.mjs",
+    "voices": "node tools/voice/generateVoices.mjs",
     "test": "npm test --workspace @shackle-breaker/backend"
   },
   "keywords": [],

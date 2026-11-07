@@ -12,6 +12,9 @@ import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
 import { hydrateEntity } from '../../engine/saveManager.js';
 import { multiplayerSession } from '../../engine/multiplayerSession.js';
 import { worldSync } from '../../../../shared/world/worldManager.js';
+import { audioManager } from '../../engine/audioManager.js';
+import { segmentsOf, lineKey, linesOf, VOICED } from '../../../../shared/story/voiceLines.js';
+import { encounterDefinitions } from '../../../../shared/story/encounterDefinitions.js';
 
 /* A party of several players shares an encounter: every member's browser plays it from the same seed. A choice is a vote (the leader's
    too); when everyone has voted, or VOTE_SECONDS after the first vote, the most votes win and a tie goes the leader's way. The leader
@@ -68,7 +71,24 @@ export class EncounterController extends BaseController {
     this.updateBGM();
   }
 
+  /* The recorded voice of the words now on screen (tools/voice: only the voiced encounters have clips; anything else is silent). */
+  _speak(text) {
+    if (!this.model || !text) { audioManager.stopVoice(); return; }
+    const manifest = audioManager.voiceManifest();
+    const items = segmentsOf(this.model.id, this.model.currentStageId, text)
+      .map(s => (s.pause ? { pause: s.pause } : (manifest[lineKey(s.speaker, s.text)] ? { file: manifest[lineKey(s.speaker, s.text)] } : null)))
+      .filter(Boolean);
+    if (items.some(i => i.file)) audioManager.playVoice(items);
+    else audioManager.stopVoice();
+  }
+
   start(encounterId, context = {}, mp = null) {
+    // its recorded lines load now, so the first words are not late
+    const def = encounterDefinitions[encounterId];
+    if (def && VOICED[encounterId]) {
+      const manifest = audioManager.voiceManifest();
+      audioManager.preloadVoice(linesOf(encounterId, def).map(l => manifest[l.key]).filter(Boolean));
+    }
     // a shared encounter (see the note at the top): the dice, and who keeps what (EncounterLogic.shared)
     this.mp = mp ? { ...mp, step: 0, votes: new Map(), voteTimer: 0, myVote: null, tally: {}, opts: null, optsSentKey: null } : null;
     if (mp) {
@@ -1191,6 +1211,7 @@ export class EncounterController extends BaseController {
     if (this.lastText !== displayText) {
       const isFirstText = this.lastText === "";
       this.lastText = displayText;
+      this._speak(displayText);
       if (!isFirstText) {
         this.textTimer = STAGE_START_TIMER;
       }

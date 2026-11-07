@@ -1,0 +1,98 @@
+// tools/voice/generateVoices.mjs: records the voiced encounters' lines with ElevenLabs, only the ones that have no clip yet.
+//
+//   node tools/voice/generateVoices.mjs                 a dry run: what would be recorded, and how many characters it costs (nothing is sent)
+//   node tools/voice/generateVoices.mjs --generate      record the missing clips (and drop clips no line uses any more)
+//   node tools/voice/generateVoices.mjs --generate --only STRANGER     one voice only
+//   node tools/voice/generateVoices.mjs --sample "Some words." --voice <voiceId> --out sample.mp3      try a voice on one line
+//
+// Which encounters are voiced, and who speaks what: shared/story/voiceLines.js (VOICED, SPEAKERS). The voices: tools/voice/voices.json.
+// Clips go to frontend/src/assets/audio/voice/, named by the line's key and the voice that read it, with manifest.json mapping each line's
+// key to its file (the game looks the clip up from the words on screen). A changed line is a new key, so only it is recorded again; changing
+// a voice in voices.json re-records that voice's lines. The API key is read from ELEVENLABS_API_KEY (a cloud session's network proxy puts
+// it in for you: any value works there).
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
+
+// Behind an HTTPS proxy (a cloud session), Node's fetch only uses it with NODE_USE_ENV_PROXY=1: run again with it set.
+if (process.env.HTTPS_PROXY && !process.env.NODE_USE_ENV_PROXY) {
+    const r = spawnSync(process.execPath, ['--no-warnings', ...process.argv.slice(1)], { stdio: 'inherit', env: { ...process.env, NODE_USE_ENV_PROXY: '1' } });
+    process.exit(r.status ?? 1);
+}
+import { encounterDefinitions } from '../../shared/story/encounterDefinitions.js';
+import { VOICED, linesOf } from '../../shared/story/voiceLines.js';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const OUT_DIR = path.join(ROOT, 'frontend', 'src', 'assets', 'audio', 'voice');
+const MANIFEST = path.join(OUT_DIR, 'manifest.json');
+const CONFIG = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools', 'voice', 'voices.json'), 'utf8'));
+const API = 'https://api.elevenlabs.io/v1/text-to-speech';
+const KEY = process.env.ELEVENLABS_API_KEY || 'proxy-injected';
+
+const args = process.argv.slice(2);
+const flag = (name) => args.includes(name);
+const opt = (name) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : null; };
+
+async function tts(voiceId, text, settings) {
+    const res = await fetch(`${API}/${voiceId}?output_format=${CONFIG.outputFormat || 'mp3_44100_128'}`, {
+        method: 'POST',
+        headers: { 'xi-api-key': KEY, 'content-type': 'application/json', accept: 'audio/mpeg' },
+        body: JSON.stringify({ text, model_id: CONFIG.model, voice_settings: settings || CONFIG.defaultSettings })
+    });
+    if (!res.ok) throw new Error(`ElevenLabs ${res.status}: ${(await res.text()).slice(0, 300)}`);
+    return Buffer.from(await res.arrayBuffer());
+}
+
+/** A short tag for the voice and the way it reads: a clip made with another voice or settings has another file name. */
+const voiceTag = (speaker) => {
+    const v = CONFIG.voices[speaker];
+    return crypto.createHash('sha1').update(JSON.stringify([v.id, CONFIG.model, v.settings || CONFIG.defaultSettings])).digest('hex').slice(0, 8);
+};
+
+async function main() {
+    if (opt('--sample')) {
+        const out = opt('--out') || 'sample.mp3';
+        fs.writeFileSync(out, await tts(opt('--voice'), opt('--sample'), CONFIG.defaultSettings));
+        console.log(`wrote ${out}`);
+        return;
+    }
+    const only = opt('--only');
+    const lines = [];
+    const seen = new Set();
+    for (const id of Object.keys(VOICED)) {
+        if (!encounterDefinitions[id]) { console.warn(`(no encounter ${id})`); continue; }
+        for (const l of linesOf(id, encounterDefinitions[id])) if (!seen.has(l.key)) { seen.add(l.key); lines.push(l); }
+    }
+    for (const l of lines) if (!CONFIG.voices[l.speaker]) throw new Error(`No voice for ${l.speaker} in tools/voice/voices.json`);
+
+    fs.mkdirSync(OUT_DIR, { recursive: true });
+    const manifest = fs.existsSync(MANIFEST) ? JSON.parse(fs.readFileSync(MANIFEST, 'utf8')) : {};
+    const fileOf = (l) => `${l.key}-${voiceTag(l.speaker)}.mp3`;
+    const missing = lines.filter(l => (!only || l.speaker === only) && !(manifest[l.key] === fileOf(l) && fs.existsSync(path.join(OUT_DIR, fileOf(l)))));
+    const chars = missing.reduce((n, l) => n + l.text.length, 0);
+    const bySpeaker = {};
+    for (const l of missing) bySpeaker[l.speaker] = (bySpeaker[l.speaker] || 0) + l.text.length;
+    console.log(`${lines.length} voiced lines in ${Object.keys(VOICED).join(', ')}; ${missing.length} need recording: ${chars} characters ${JSON.stringify(bySpeaker)}`);
+
+    if (!flag('--generate')) { console.log('Dry run: nothing was sent. Add --generate to record them.'); return; }
+    let done = 0;
+    for (const l of missing) {
+        const v = CONFIG.voices[l.speaker];
+        const audio = await tts(v.id, l.text, v.settings || CONFIG.defaultSettings);
+        fs.writeFileSync(path.join(OUT_DIR, fileOf(l)), audio);
+        manifest[l.key] = fileOf(l);
+        done++;
+        console.log(`  [${done}/${missing.length}] ${l.speaker}: ${l.text.slice(0, 70)}${l.text.length > 70 ? '...' : ''}`);
+        fs.writeFileSync(MANIFEST, JSON.stringify(manifest, null, 1));   // after every clip: an interrupted run keeps what it made
+    }
+    // clips no line uses any more (the words changed, or the voice did)
+    const used = new Set(lines.map(fileOf));
+    for (const key of Object.keys(manifest)) if (!seen.has(key)) delete manifest[key];
+    for (const f of fs.readdirSync(OUT_DIR)) if (f.endsWith('.mp3') && !used.has(f)) fs.unlinkSync(path.join(OUT_DIR, f));
+    fs.writeFileSync(MANIFEST, JSON.stringify(manifest, null, 1));
+    console.log(`Recorded ${done} clips.`);
+}
+
+main().catch(e => { console.error(e.message); process.exit(1); });
