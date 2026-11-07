@@ -53,7 +53,10 @@ test('a toast raised for an item carries its icon; a batch staggers in', async (
 
 test('a roll with no narration keeps the stage on screen under the dice (it does not draw a blank screen)', () => {
     const c = read('frontend/src/screens/encounter/encounterController.js');
-    assert.match(c, /this\.actionMessage = this\.lastText;\s*\r?\n\s*this\.skipMessageAnimation = true;\s*\r?\n\s*this\.rollData = this\._takeRoll/);
+    assert.match(c, /this\.actionMessage = this\.lastText;\s*\r?\n\s*this\.textTimer = Math\.max\(this\.textTimer, textEndTimer\(this\.lastText\)\);\s*\r?\n\s*this\.rollData = this\._takeRoll/);
+    // the dice must roll: nothing on the way to the roll may set skipMessageAnimation, which makes the dice jump to their result
+    const start = c.indexOf("if (decision.type === 'skill_check') {\n        // no narration") >= 0 ? c.indexOf("if (decision.type === 'skill_check') {\n        // no narration") : c.indexOf('// no narration before a roll');
+    assert.ok(!/skipMessageAnimation = true/.test(c.slice(start, start + 600)), 'the roll is not skipped');
 });
 
 test('no encounter line that will be read aloud carries a player-chosen name (a recorded voice cannot say it)', async () => {

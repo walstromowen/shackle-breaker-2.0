@@ -138,3 +138,13 @@ test('every conversation with him is three to five stages, and he never says out
     }
     for (const [id, st] of Object.entries(E.stages)) assert.doesNotMatch(st.text, /\bmagic\b/i, `${id}: he only alludes to it`);
 });
+
+test('the first workshop the player walks into is his, however far away; walking into another one later changes nothing', () => {
+    const spawner = fs.readFileSync(new URL('../../shared/world/structureSpawner.js', import.meta.url), 'utf8');
+    assert.ok(!/claimStrangerHome/.test(spawner), 'building a village claims nothing: only walking in does');
+    resetWorldForNewGame();
+    assert.ok(InteriorFactory.create(5, 'ABANDONED_WORKSHOP', '900_-400').questGiverPos, 'the first one entered, far from the spawn');
+    assert.ok(!InteriorFactory.create(5, 'ABANDONED_WORKSHOP', '3_4').questGiverPos, 'not a later one, even near the spawn');
+    assert.equal(gameState.world.strangerHome, '900_-400');
+    resetWorldForNewGame();
+});

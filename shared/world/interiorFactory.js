@@ -12,6 +12,16 @@ export class InteriorFactory {
     /** Called with the interior id when this browser picks the Hooded Stranger's workshop (multiplayerSession sends it to the host). */
     static onStrangerHome = null;
 
+    /** The Hooded Stranger's workshop, if the world has none yet: `id` is the workshop's interior id (its door's cell, "col_row"). The first
+     *  workshop the player walks into is his, however far from the spawn it is; once claimed it never changes. */
+    static claimStrangerHome(id) {
+        const w = gameState.world;
+        if (!w || w.strangerHome || !id) return false;
+        w.strangerHome = id;
+        if (typeof InteriorFactory.onStrangerHome === 'function') InteriorFactory.onStrangerHome(id);
+        return true;
+    }
+
     static create(seed, interiorType, interiorId) {
         let type = interiorType, config = INTERIOR_DEFINITIONS[type];
 
@@ -22,16 +32,13 @@ export class InteriorFactory {
             config = INTERIOR_DEFINITIONS[type];
         }
 
-        // The Hooded Stranger (the Shackled quest giver) lives in exactly one village workshop in the world: the first one walked into
-        // becomes his (world.strangerHome, saved with the world), and he is there on every visit; no other workshop ever has him.
+        // The Hooded Stranger (the Shackled quest giver) lives in exactly one village workshop in the world: the first one the player walks
+        // into is his (claimStrangerHome), wherever it is, saved with the world, and he is there on every visit; no other workshop ever has him.
         // In multiplayer the host's world decides, however many players there are: the claim goes to the host (onStrangerHome, set by
         // multiplayerSession), whose answer every player takes, and a guest who joins gets it with the world.
         if (type === 'ABANDONED_WORKSHOP' && interiorId) {
             const w = gameState.world;
-            if (w && !w.strangerHome) {
-                w.strangerHome = interiorId;
-                if (typeof InteriorFactory.onStrangerHome === 'function') InteriorFactory.onStrangerHome(interiorId);
-            }
+            InteriorFactory.claimStrangerHome(interiorId);
             if (w && w.strangerHome === interiorId) config = { ...config, questGiver: 'HOODED_STRANGER_NPC' };
         }
 
