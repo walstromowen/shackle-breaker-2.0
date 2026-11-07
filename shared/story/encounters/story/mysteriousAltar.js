@@ -279,7 +279,8 @@ export const mysteriousAltar = {
         // ---- Darius the Groveler: a conversation, then the fight. Each line of his is a stage, and each reply of yours is the text of the button you press. ----
         // Written quietly: a man who has waited a very long time for a king who never came, who sees the meteorite in the stranger's hands and takes it for the king's
         // favour. Nothing in it is shown, only said. The altar's drone fades out for the talking and comes back when he turns on you.
-        // Darius the Groveler: he speaks to you, the way a boss speaks to the player in a dark fantasy game. No narration: every stage is his own words, and
+        // Darius the Groveler: he speaks to you, the way a boss speaks to the player in a dark fantasy game. He talks with his back to you, kneeling at the
+        // altar, and only turns around on the last stage, right before the fight. No narration but that turn: every stage is his own words, and
         // the screen effects carry what he does. The player never answers ("Continue."). While he talks there is no music at all, only the altar's drone,
         // kept low; his track starts the moment he turns on you, and the fight plays the same track, so it carries on unbroken into the battle.
         darius_rises: {
@@ -306,7 +307,7 @@ export const mysteriousAltar = {
             displayText: "Darius the Groveler",
             bgm: "none",
             image: { sheet: "encounter_darius_kneeling", col: 0, row: 0 },   // Darius kneeling at the altar
-            text: "\"You think he is not coming. I can see it on you.\" \"He is only late, friend. Kings are never early.\"",
+            text: "\"You think he is not coming. I can hear it in your silence.\" \"He is only late, friend. Kings are never early.\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_sees") }]
         },
         darius_sees: {
@@ -315,7 +316,7 @@ export const mysteriousAltar = {
             sfx: "heartbeat",
             bgm: "none",
             image: { sheet: "encounter_darius_kneeling", col: 0, row: 0 },   // Darius kneeling at the altar
-            text: "\"That light you carry... that is his. His sign, at last.\" \"But he gave it to you. A stranger in chains.\" \"What did you do to be loved like that?\"",
+            text: "\"That light at my back... I can feel it. His sign, at last.\" \"But he gave it to you. A stranger in chains.\" \"What did you do to be loved like that?\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_wrath") }]
         },
         darius_wrath: {
@@ -327,11 +328,11 @@ export const mysteriousAltar = {
             ambienceFade: 0.6,
             bgm: "dariusEncounterBgm",   // his track: from the moment he turns, on into the fight
             image: { col: 2, row: 1 },
-            text: "\"Give it to me.\" \"Give it back! His love was mine. It was always meant to be mine!\"",
+            text: "Darius turns around. \"Give it to me.\" \"Give it back! His love was mine. It was always meant to be mine!\"",
             decisions: [
                 {
-                    text: "Face Darius the Groveler!",
-                    customActionText: "You set your feet.",
+                    text: "Draw your weapon.",
+                    customActionText: "You draw your weapon.",
                     conditions: [HUMANOID],
                     // Winning plays the encounter that starts act 2 (story/encounters/story/actTwo.js) before the party is back on the map
                     outcomes: fight("darius_boss", true, { encounterId: "act_two" }, "dariusEncounterBgm")
