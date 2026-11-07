@@ -1,5 +1,6 @@
 export const aftermath = {
     id: "aftermath",
+    consumesObject: true,   // the remains at the heart of the battlefield are gone once this is over, however it ends
     title: "Aftermath",
     imageSheet: "encounter_aftermath",
     initialStage: "aftermath",

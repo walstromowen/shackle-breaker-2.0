@@ -238,6 +238,7 @@ export class StructureSpawner {
             }
         }
         if (prefab.graveyard) this._graveyardObjects(grid, prefab, rnd);
+        if (prefab.battlefield) this._battlefieldObjects(grid, prefab, rnd);
         const sc = prefab.scatter;
         if (sc && sc.chance && sc.pool && sc.pool.length > 0) {
             const rect = sc.rect || { x: 0, y: 0, w: prefab.width, h: prefab.height };
@@ -294,6 +295,37 @@ export class StructureSpawner {
             }
         }
     }
+    /* A battlefield (a prefab with `battlefield`, see structures.js): the centre object in the middle, then `bodies` fallen soldiers at random cells,
+       none touching the centre or another body (they are 2 x 2 tiles of art), and a few loose stones. Decided per cell from the seed. */
+    _battlefieldObjects(grid, prefab, rnd) {
+        const bf = prefab.battlefield;
+        const W = prefab.width, H = prefab.height;
+        const cx = Math.floor(W / 2), cy = Math.floor(H / 2);
+        if (bf.centre && MAP_OBJECTS_DEFINITIONS[bf.centre]) grid[cy][cx] = bf.centre;
+        const lo = Math.max(1, bf.bodies?.min ?? 5), hi = Math.max(lo, bf.bodies?.max ?? 8);
+        const want = lo + Math.floor(rnd(0, 0, 21) * (hi - lo + 1));
+        const cells = [];
+        for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) cells.push({ c, r, k: rnd(c, r, 22) });
+        cells.sort((a, b) => a.k - b.k);
+        const taken = [{ c: cx, r: cy }];
+        const near = (c, r) => taken.some(t => Math.abs(t.c - c) <= 1 && Math.abs(t.r - r) <= 1);
+        let placed = 0;
+        for (const { c, r } of cells) {
+            if (placed >= want) break;
+            if (grid[r][c] !== null || near(c, r) || c >= W - 1 || r < 1) continue;   // (2 x 2 art: keep it inside the box)
+            const id = bf.pool[Math.floor(rnd(c, r, 23) * bf.pool.length) % bf.pool.length];
+            if (!MAP_OBJECTS_DEFINITIONS[id]) continue;
+            grid[r][c] = id;
+            taken.push({ c, r });
+            placed++;
+        }
+        const rk = bf.rocks;
+        if (rk && rk.pool?.length) for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
+            if (grid[r][c] !== null || near(c, r)) continue;
+            if (rnd(c, r, 24) < rk.chance) grid[r][c] = rk.pool[Math.floor(rnd(c, r, 25) * rk.pool.length) % rk.pool.length];
+        }
+    }
+
     _writePrefabToGlobalState(originCol, originRow, prefab) {
         const cells = this._prefabObjects(originCol, originRow, prefab);
         for (let r = 0; r < prefab.height; r++) {

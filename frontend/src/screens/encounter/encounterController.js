@@ -924,6 +924,11 @@ export class EncounterController extends BaseController {
         }
       }
       
+      // an encounter that `consumesObject` (the Aftermath): its object is gone once it is over, however it ends (left, finished or fought)
+      const def = encounterDefinitions[this.model.id];
+      if (def && def.consumesObject && resultsArray.some(r => r.type === 'END_ENCOUNTER' || r.type === 'START_BATTLE') && !resultsArray.some(r => r.type === 'DESTROY_OBJECT')) {
+        resultsArray = [{ type: 'DESTROY_OBJECT' }, ...resultsArray];
+      }
       const logicResponse = EncounterLogic.resolveResults(resultsArray, this.model, this.worldManager);
       this.pendingLogicResponse = { response: logicResponse, isStartingBattle, isGameOverTriggered };
     }

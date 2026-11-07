@@ -286,6 +286,8 @@ export const LootTableDefinitions = {
     "battlefield_loot": {
         type: "weighted",
         items: [
+            // a fallen standard-bearer's waypoint (about 1 roll in 20)
+            { id: "waypoint", weight: 30, min: 1, max: 1 },
             // --- MATERIALS ---
             { id: "iron_ingot", weight: 40, min: 1, max: 3 },
             { id: "leather", weight: 30, min: 1, max: 2 },

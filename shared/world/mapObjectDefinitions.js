@@ -118,7 +118,23 @@ export const MAP_OBJECTS_DEFINITIONS = {
        that starts the "Old Gravestone" encounter (dig for what was buried, or wake what was). Both stand on the plains (biomeDefinitions.js PLAINS, each its own band). */
     TOMBSTONE: { ...GRAVESTONE },
     /* AFTERMATH_REMAINS: a helmet on the ground with a sword through it, what an old battle left behind. Face it and interact to start the Aftermath encounter (biomeDefinitions.js PLAINS, its own band). */
-    AFTERMATH_REMAINS: { sheet: 'objAftermath', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'aftermath' } },
+    AFTERMATH_REMAINS: { sheet: 'objAftermath', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'aftermath', triggerRadius: 3 } },
+    /* the battlefield's dead (BATTLEFIELD in structures.js): soldiers in dark armour, slumped (1-8) or lying (9-15). 64 px, so 2 x 2 tiles; walked over. */
+    FALLEN_SOLDIER_1: { sheet: 'objFallenSoldier1', width: 2, height: 2, isSolid: false, isGround: false },
+    FALLEN_SOLDIER_2: { sheet: 'objFallenSoldier2', width: 2, height: 2, isSolid: false, isGround: false },
+    FALLEN_SOLDIER_3: { sheet: 'objFallenSoldier3', width: 2, height: 2, isSolid: false, isGround: false },
+    FALLEN_SOLDIER_4: { sheet: 'objFallenSoldier4', width: 2, height: 2, isSolid: false, isGround: false },
+    FALLEN_SOLDIER_5: { sheet: 'objFallenSoldier5', width: 2, height: 2, isSolid: false, isGround: false },
+    FALLEN_SOLDIER_6: { sheet: 'objFallenSoldier6', width: 2, height: 2, isSolid: false, isGround: false },
+    FALLEN_SOLDIER_7: { sheet: 'objFallenSoldier7', width: 2, height: 2, isSolid: false, isGround: false },
+    FALLEN_SOLDIER_8: { sheet: 'objFallenSoldier8', width: 2, height: 2, isSolid: false, isGround: false },
+    FALLEN_SOLDIER_9: { sheet: 'objFallenSoldier9', width: 2, height: 2, isSolid: false, isGround: false },
+    FALLEN_SOLDIER_10: { sheet: 'objFallenSoldier10', width: 2, height: 2, isSolid: false, isGround: false },
+    FALLEN_SOLDIER_11: { sheet: 'objFallenSoldier11', width: 2, height: 2, isSolid: false, isGround: false },
+    FALLEN_SOLDIER_12: { sheet: 'objFallenSoldier12', width: 2, height: 2, isSolid: false, isGround: false },
+    FALLEN_SOLDIER_13: { sheet: 'objFallenSoldier13', width: 2, height: 2, isSolid: false, isGround: false },
+    FALLEN_SOLDIER_14: { sheet: 'objFallenSoldier14', width: 2, height: 2, isSolid: false, isGround: false },
+    FALLEN_SOLDIER_15: { sheet: 'objFallenSoldier15', width: 2, height: 2, isSolid: false, isGround: false },
     OLD_GRAVESTONE: { ...GRAVESTONE, interaction: { type: 'ENCOUNTER', id: 'old_gravestone', isRepeatable: false } },
     /* PLAYER_GRAVE: where a multiplayer party fell, holding its bag and coin until its owner digs it up (world/graves.js). The gravestone's shape,
        cursed: violet-black stone with glowing cracks, a breathing aura and wisps rising off it (4 frames), and a faint violet light at night.

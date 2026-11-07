@@ -85,7 +85,7 @@ export const BIOME_DEFINITIONS = {
             return Math.min(0.99, ground + _lift(hill - 3 * _cut(c), HILL_TIERS.plains)); /* capped: plains hills stop at LAYER_5 */
         },
         structures: { rate: 0.1, pools: [{ chance: 1.0, id: 'ABANDONED_VILLAGE' }] },
-        landmarks: { rate: 0.08, pools: [{ chance: 1.0, id: 'GRAVEYARD' }] } /* a graveyard in 8% of the chunks that have no village (see GRAVEYARD in structures.js) */,
+        landmarks: { rate: 0.12, pools: [{ chance: 0.5, id: 'GRAVEYARD' }, { chance: 0.5, id: 'BATTLEFIELD' }] } /* 12% of the chunks that have no village: half a graveyard, half an old battlefield with the Aftermath at its heart (GRAVEYARD / BATTLEFIELD in structures.js) */,
         mapObjects: {
             [CONFIG.TILE_TYPES.LAYER_3]: [
                 { chance: 0.003, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
@@ -103,7 +103,6 @@ export const BIOME_DEFINITIONS = {
                 { chance: 0.22035, rangeStart: 0.22, id: 'DOG_NPC' } /* a wounded dog lying by the road, 0.035% of the ground (was 0.05%): its own band [0.22, 0.22035), in the free gap between the tin and the grass. It used to be the "wounded mutt" random encounter; now it is found in the world (mapObjectDefinitions.js NPCS) */,
                 { chance: 0.23035, rangeStart: 0.23, id: 'MADMAN_NPC' } /* a madman standing in the grass, 0.035% of the ground (was 0.05%): band [0.23, 0.23035). Coming within 2 tiles of him starts "A Disturbing Sight" (it used to be a random encounter) */,
                 { chance: 0.244, rangeStart: 0.24, id: 'COTTON_PLANT' } /* wild cotton, 0.4% of the ground (as common as a herb): its own band [0.24, 0.244), in the free gap between the madman and the shady merchant. Walk over it to pick it up, like the cotton of the village fields */,
-                { chance: 0.261, rangeStart: 0.26, id: 'AFTERMATH_REMAINS' } /* a helmet with a sword through it, the remains of an old battle, 0.1% of the ground: band [0.26, 0.261), in the free gap after the shady merchant's band. Interacting starts the Aftermath encounter (it used to be a random encounter) */,
                 { chance: 0.7, rangeStart: 0.3, pool: ['GRASS_COVERAGE_1', 'GRASS_COVERAGE_2', 'GRASS_COVERAGE_3'] },
                 { chance: 0.1, id: 'CAVE_ENTRANCE' } /* a cave mouth painted into a straight south-facing cliff: the share of fitting cliff faces that get one (WorldManager._isCaveMouth). Keep this rule LAST in the LAYER_2 list */,
             ],
@@ -122,7 +121,7 @@ export const BIOME_DEFINITIONS = {
             rate: 0.0033,
             type: 'time_weighted',
             // nothing is met by chance on the plains any more: the wounded mutt, the disturbing sight, the suspicious merchant and the aftermath are things standing in the world
-            // (DOG_NPC, MADMAN_NPC, SHADY_MERCHANT_NPC, AFTERMATH_REMAINS in mapObjects above). The rate stays so the Shackling can still find a party with a shackled member (BiomeModel.getEncounter);
+            // (DOG_NPC, MADMAN_NPC, SHADY_MERCHANT_NPC in mapObjects above; the aftermath is the heart of a BATTLEFIELD landmark). The rate stays so the Shackling can still find a party with a shackled member (BiomeModel.getEncounter);
             // it is 0.0033 because that was how often the Shackling came up here when it shared the pool with the two old encounters (0.005 x 80 / (80 + 40)), so it is no more and no less likely than before.
             pools: [],
         },
