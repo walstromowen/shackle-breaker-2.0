@@ -125,7 +125,7 @@ export const bonfire = {
             ambience: "none",
             ambienceFade: 0.4,
             image: { col: 0, row: 1 },
-            text: "A heavy rock flies out of the darkness and strikes {name}! Soon, your party is surrounded by raving madmen!",
+            text: "A heavy rock flies out of the darkness and strikes you! Soon, your party is surrounded by raving madmen!",
             bgm: "plainsBattleBgm",
             decisions: [
                 {

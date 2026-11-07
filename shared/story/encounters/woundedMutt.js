@@ -65,7 +65,7 @@ export const woundedMutt = {
             sfx: "dogCry",
             image: { col: 3, row: 0 },
             bgm: "plainsBattleBgm",
-            text: "The wild mutt panics! It yelps in sudden terror and snaps fiercely, sinking its teeth deep into {name}'s arm before lunging outright!",
+            text: "The wild mutt panics! It yelps in sudden terror and snaps fiercely, sinking its teeth deep into your arm before lunging outright!",
             decisions: [
                 {
                     text: "Defend against the rabid mutt!",

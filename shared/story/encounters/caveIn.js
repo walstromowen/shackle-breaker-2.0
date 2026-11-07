@@ -26,7 +26,7 @@ export const caveIn = {
         discovery: {
             displayText: "Cave In",
             image: { col: 0, row: 0 },
-            text: "{name}'s party encounters a pile of rubble blocking the path.",
+            text: "Your party encounters a pile of rubble blocking the path.",
             decisions: [
                 {
                     text: "[STR] Dig through the rubble.",
@@ -48,7 +48,7 @@ export const caveIn = {
             displayText: "Something in the Rubble",
             tone: "gold",
             image: { col: 1, row: 0 },
-            text: "While digging, {name} finds something in the rubble.",
+            text: "While digging, you find something in the rubble.",
             decisions: [
                 {
                     text: "Take it and move on.",
@@ -66,7 +66,7 @@ export const caveIn = {
         path_cleared: {
             displayText: "A Clear Path",
             image: { col: 2, row: 0 },
-            text: "{name}'s party digs through the rubble!",
+            text: "Your party digs through the rubble!",
             decisions: [
                 {
                     text: "Move on.",
@@ -83,7 +83,7 @@ export const caveIn = {
         exhausted: {
             displayText: "Hours of Digging",
             image: { col: 3, row: 0 },
-            text: "{name}'s party digs through the rubble for what feels like hours. Eventually the exhausted party clears a path through.",
+            text: "Your party digs through the rubble for what feels like hours. Eventually the exhausted party clears a path through.",
             decisions: [
                 {
                     text: "Press on.",
@@ -104,7 +104,7 @@ export const caveIn = {
             effect: "jolt",
             sfx: "rockThud",
             image: { col: 0, row: 1 },
-            text: "As {name} works to clear the path, heavy rocks fall on {name}!",
+            text: "As you work to clear the path, heavy rocks fall on you!",
             decisions: [
                 {
                     text: "Shake it off and keep digging.",
@@ -126,7 +126,7 @@ export const caveIn = {
             sfx: "caveSpiderCry",
             image: { col: 1, row: 1 },
             bgm: "caveBattleBgm",
-            text: "While digging, {name} breaks into a spider's nest!",
+            text: "While digging, you break into a spider's nest!",
             decisions: [
                 {
                     text: "Defend yourselves!",

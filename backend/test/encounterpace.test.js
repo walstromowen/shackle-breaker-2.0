@@ -55,3 +55,20 @@ test('a roll with no narration keeps the stage on screen under the dice (it does
     const c = read('frontend/src/screens/encounter/encounterController.js');
     assert.match(c, /this\.actionMessage = this\.lastText;\s*\r?\n\s*this\.skipMessageAnimation = true;\s*\r?\n\s*this\.rollData = this\._takeRoll/);
 });
+
+test('no encounter line that will be read aloud carries a player-chosen name (a recorded voice cannot say it)', async () => {
+    const offenders = [];
+    for (const f of encounterFiles()) {
+        if (/testEncounter/.test(f)) continue;
+        const mod = await import(f);
+        const seen = new Set();
+        const walk = (o) => {
+            if (!o || typeof o !== 'object' || seen.has(o)) return; seen.add(o);
+            if (o.stages) for (const [id, st] of Object.entries(o.stages)) if (/{name}|{betrayer}/.test(st.text || '')) offenders.push(`${path.basename(f)} ${id}`);
+            if (/{name}|{betrayer}/.test(o.customActionText || '')) offenders.push(`${path.basename(f)}: ${o.text}`);
+            Object.values(o).forEach(walk);
+        };
+        Object.values(mod).forEach(walk);
+    }
+    assert.deepEqual(offenders, []);
+});

@@ -147,7 +147,7 @@ export const mysteriousAltar = {
             effect: "poison",
             sfx: "smokeSfx",
             image: { col: 3, row: 0 },
-            text: "As you approach the altar, it releases a cloud of pale smoke. It sinks into your lungs and limbs, and {name} feels fatigued.",
+            text: "As you approach the altar, it releases a cloud of pale smoke. It sinks into your lungs and limbs, and you feel fatigued.",
             decisions: [
                 {
                     text: "Stagger the rest of the way to the altar.",

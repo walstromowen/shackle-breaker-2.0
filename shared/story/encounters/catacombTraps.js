@@ -27,7 +27,7 @@ export const arrowTrap = {
             displayText: "A Pressure Plate",
             image: { col: 0, row: 0 },
             sfx: "rockThud",
-            text: "A stone plate sinks under {name}'s foot with a dry click. Dark holes stare out of the walls on either side.",
+            text: "A stone plate sinks under your foot with a dry click. Dark holes stare out of the walls on either side.",
             decisions: [
                 {
                     text: "[VIG] Throw yourself flat!",
@@ -42,7 +42,7 @@ export const arrowTrap = {
         dodged: {
             displayText: "Arrows Overhead",
             image: { col: 1, row: 0 },
-            text: "A volley of arrows hisses over {name}'s back and shatters against the far wall.",
+            text: "A volley of arrows hisses over your back and shatters against the far wall.",
             decisions: [{ text: "Get up and move on.", outcomes: spend("TRAP_ARROW_SPRUNG") }]
         },
         struck: {
@@ -50,7 +50,7 @@ export const arrowTrap = {
             tone: "blood",
             effect: "jolt",
             image: { col: 2, row: 0 },
-            text: "The arrows are faster. {name} is hit before they can drop.",
+            text: "The arrows are faster. You are hit before you can drop.",
             decisions: [{
                 text: "Pull the arrows out and press on.",
                 outcomes: spend("TRAP_ARROW_SPRUNG", [{ type: "MODIFY_VITALS", payload: { hp: -20, isPercentageOfMax: true, damageType: "pierce" } }])
@@ -71,7 +71,7 @@ export const pitTrap = {
             image: { col: 3, row: 0 },
             effect: "shake",
             sfx: "rockThud",
-            text: "A stone plate sinks under {name}'s foot, and the floor around it tilts and drops away. Below, sharpened stakes wait in the dark.",
+            text: "A stone plate sinks under your foot, and the floor around it tilts and drops away. Below, sharpened stakes wait in the dark.",
             decisions: [
                 {
                     text: "[VIG] Catch the edge!",
@@ -86,7 +86,7 @@ export const pitTrap = {
         caught: {
             displayText: "Hanging On",
             image: { col: 0, row: 1 },
-            text: "{name}'s fingers find the lip of the pit. They haul themselves up as the last loose stones rattle down onto the stakes.",
+            text: "Your fingers find the lip of the pit. You haul yourself up as the last loose stones rattle down onto the stakes.",
             decisions: [{ text: "Climb out and step around it.", outcomes: spend("TRAP_PIT_SPRUNG") }]
         },
         fell: {
@@ -94,7 +94,7 @@ export const pitTrap = {
             tone: "blood",
             effect: "jolt",
             image: { col: 1, row: 1 },
-            text: "{name} drops onto the stakes. Climbing back out of the pit takes a long, painful while.",
+            text: "You drop onto the stakes. Climbing back out of the pit takes a long, painful while.",
             decisions: [{
                 text: "Drag yourself out.",
                 outcomes: spend("TRAP_PIT_SPRUNG", [
@@ -117,7 +117,7 @@ export const swingingAxes = {
             displayText: "Swinging Blades",
             image: { col: 2, row: 1 },
             effect: "shake",
-            text: "A stone plate sinks under {name}'s foot. Chains grind overhead, and great blades drop from slots in the ceiling to swing across the hall, one after another.",
+            text: "A stone plate sinks under your foot. Chains grind overhead, and great blades drop from slots in the ceiling to swing across the hall, one after another.",
             decisions: [
                 {
                     text: "[VIG] Dash between the blades!",
@@ -132,7 +132,7 @@ export const swingingAxes = {
         through: {
             displayText: "Through",
             image: { col: 3, row: 1 },
-            text: "{name} slips between the blades, close enough to feel the wind of them. Behind them one bites deep into the floor and jams the rest.",
+            text: "You slip between the blades, close enough to feel the wind of them. Behind you one bites deep into the floor and jams the rest.",
             decisions: [{ text: "Move on.", outcomes: spend("TRAP_AXES_SPRUNG") }]
         },
         cut: {
@@ -140,7 +140,7 @@ export const swingingAxes = {
             tone: "blood",
             effect: "jolt",
             image: { col: 0, row: 2 },
-            text: "A blade catches {name} across the side and throws them to the floor. It bites into the stone and jams the rest.",
+            text: "A blade catches you across the side and throws you to the floor. It bites into the stone and jams the rest.",
             decisions: [{
                 text: "Get up, holding the wound.",
                 outcomes: spend("TRAP_AXES_SPRUNG", [{ type: "MODIFY_VITALS", payload: { hp: -30, isPercentageOfMax: true, damageType: "slash" } }])

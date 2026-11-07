@@ -18,11 +18,11 @@ export const shackledBetrayal = {
     initialStage: "awake",
     stages: {
         awake: {
-            displayText: "Something Is Wrong",
+            displayText: "Something Is Wrong with {betrayer}",
             tone: "crimson",
             sfx: "whispers",
             image: { col: 1, row: 1 },
-            text: "{betrayer} has not been right since the iron closed on their wrists.",
+            text: "Your companion has not been right since the iron closed on their wrists.",
             decisions: [
                 {
                     text: "Continue.",
@@ -52,12 +52,12 @@ export const shackledBetrayal = {
             decisions: [
                 {
                     text: "Kneel beside {betrayer}.",
-                    customActionText: "You reach out. {betrayer}'s head turns toward you, too slowly and too smoothly. A voice that is not theirs answers with their mouth.",
+                    customActionText: "You reach out. Their head turns toward you, too slowly and too smoothly. A voice that is not theirs answers with their mouth.",
                     outcomes: toStage("rises")
                 },
                 {
                     text: "Back away and reach for your weapon.",
-                    customActionText: "Your hand finds the grip. {betrayer} watches it, and smiles with a face that has forgotten how.",
+                    customActionText: "Your hand finds the grip. Your companion watches it, and smiles with a face that has forgotten how.",
                     outcomes: toStage("rises")
                 }
             ]
@@ -68,7 +68,7 @@ export const shackledBetrayal = {
             tone: "crimson",
             bgm: "plainsBattleBgm",   // the biome's battle music begins as they turn on you, and carries into the fight
             image: { col: 1, row: 1 },
-            text: "The humming climbs to a whine. {betrayer} lurches upright, the chains dragging, and the dark pours off them like heat from a forge.",
+            text: "The humming climbs to a whine. Your companion lurches upright, the chains dragging, and the dark pours off them like heat from a forge.",
             decisions: [
                 {
                     text: "Continue.",
@@ -108,7 +108,7 @@ export const shackledBetrayalEnd = {
         after: {
             displayText: "The Quiet After",
             image: { col: 0, row: 0 },
-            text: "{betrayer} falls, and the dark that wore them goes out like a blown flame. The chains lie in the dirt.",
+            text: "Your companion falls, and the dark that wore them goes out like a blown flame. The chains lie in the dirt.",
             decisions: [
                 {
                     text: "Continue.",

@@ -273,7 +273,9 @@ test('the betrayal encounter: every stage it names exists, it ends in a fight ag
     const battle = results.find(r => r.type === 'START_BATTLE');
     assert.ok(battle && battle.payload.betrayer === true);
     assert.equal(battle.payload.afterVictory.encounterId, 'shackled_betrayal_end');
-    assert.ok(Object.values(enc.stages).some(s => /{betrayer}/.test(s.text)), 'the text names who it is');
+    // who it is is named on screen (the stage title), not in the words, which are spoken aloud by a recorded voice and so never carry a name
+    assert.ok(Object.values(enc.stages).some(s => /{betrayer}/.test(s.displayText)), 'the screen names who it is');
+    assert.ok(!Object.values(enc.stages).some(s => /{betrayer}|{name}/.test(s.text)), 'the spoken text names nobody');
     const mainJs = fs.readFileSync(new URL('../../frontend/src/main.js', import.meta.url), 'utf8');
     for (const e of [enc, end]) assert.ok(mainJs.includes(`${e.imageSheet}:`), `${e.id} has a registered picture sheet`);
 });
