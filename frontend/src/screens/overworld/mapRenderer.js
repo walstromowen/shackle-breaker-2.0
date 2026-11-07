@@ -5,12 +5,7 @@ import { fenceFrame } from '../../../../shared/world/fenceConnections.js';
 import { PartyFollowers } from './partyFollowers.js';
 import { events } from '../../../../shared/core/eventBus.js';
 
-/* The light flash of a change of weather: a few quick, uneven flickers of pale light over the whole screen (TimeSystem.setWeather emits WEATHER_CHANGED).
-   Each pulse is [start s, length s, peak alpha]; drawn after the lighting, so it shows at night too. */
-const WEATHER_FLASH = [[0, 0.07, 0.34], [0.11, 0.05, 0.12], [0.19, 0.09, 0.26], [0.34, 0.05, 0.08], [0.42, 0.35, 0.16]];
-let weatherFlashAt = -Infinity;
-// at most one flash every few seconds, so pacing back and forth over a biome border does not strobe
-events.on('WEATHER_CHANGED', () => { const now = performance.now(); if (now - weatherFlashAt > 3000) weatherFlashAt = now; });
+/* A change of weather has no flash: the old weather fades out and the new one fades in (WeatherRenderer). Only lightning flashes. */
 /* Lightning (WeatherRenderer.updateLightning): no bolt is seen, only its light: a fast, hard white flash and a quick flicker after it, all over in a third of a
    second; the nearer the strike, the brighter. */
 const LIGHTNING_FLASH = [[0, 0.05, 0.72], [0.08, 0.04, 0.4], [0.14, 0.16, 0.14]];
@@ -23,14 +18,6 @@ export function lightningAlpha(seconds, strength) {
     for (const [start, len, peak] of LIGHTNING_FLASH) {
         const t = seconds - start;
         if (t >= 0 && t < len) a = Math.max(a, peak * strength * (1 - t / len));
-    }
-    return a;
-}
-export function weatherFlashAlpha(seconds) {
-    let a = 0;
-    for (const [start, len, peak] of WEATHER_FLASH) {
-        const t = seconds - start;
-        if (t >= 0 && t < len) a = Math.max(a, peak * (1 - t / len));
     }
     return a;
 }
@@ -96,16 +83,8 @@ export class MapRenderer {
             const lightObjects = worldManager.getLightObjects(camera, this.canvas.width, this.canvas.height);
             lightingRenderer.render(this.ctx, ambientData, renderCamera, entities, lightObjects, worldManager, interpolationFactor);
         }
-        /* Pass 4: lightning, and the stutter of light when the weather turns */
+        /* Pass 4: lightning */
         if (lightning && !gameState.world.isInterior) this.drawLightning();
-        const flash = weatherFlashAlpha((performance.now() - weatherFlashAt) / 1000);
-        if (flash > 0) {
-            this.ctx.save();
-            this.ctx.globalCompositeOperation = 'lighter';
-            this.ctx.fillStyle = `rgba(225, 232, 255, ${flash.toFixed(3)})`;
-            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            this.ctx.restore();
-        }
     }
     drawLightning() {
         const t = (performance.now() - lightning.at) / 1000;

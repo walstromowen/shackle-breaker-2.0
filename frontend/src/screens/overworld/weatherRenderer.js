@@ -284,21 +284,21 @@ export class WeatherRenderer {
         // ---------------------------------------------------------
         if (this.targetWeatherId !== stateId) {
             this.targetWeatherId = stateId;
-
-            // Only initialize new particles if it's not CLEAR
-            if (stateId !== 'CLEAR' && stateEffect !== 'none') {
-                if (this.displayEffect !== stateEffect) {
-                    this.displayEffect = stateEffect;
-                    this.initParticles(this.displayEffect);
-                }
-            }
+        }
+        // A new kind of weather starts only once the old one has faded out (rain into snow: the rain thins away, then the snow comes in),
+        // never as a sudden swap of every particle on screen.
+        const wanted = (stateId !== 'CLEAR' && stateEffect !== 'none') ? stateEffect : 'none';
+        const swapping = wanted !== 'none' && this.displayEffect !== wanted && this.displayEffect !== 'none' && this.renderIntensity > 0;
+        if (wanted !== 'none' && this.displayEffect !== wanted && !swapping) {
+            this.displayEffect = wanted;
+            this.initParticles(this.displayEffect);
         }
 
         // ---------------------------------------------------------
         // 2. FIXED: Sync Target Intensity (Runs EVERY FRAME)
         // ---------------------------------------------------------
-        if (stateId === 'CLEAR' || stateEffect === 'none') {
-            this.targetIntensity = 0; 
+        if (stateId === 'CLEAR' || stateEffect === 'none' || swapping) {
+            this.targetIntensity = 0;   // (while swapping: the old weather fades out first)
         } else {
             // Now continuously tracks the WeatherModel as it fades in/out!
             this.targetIntensity = (stateWeather.intensity !== undefined) ? stateWeather.intensity : 1.0;
