@@ -7,6 +7,8 @@
 //   water      false for packs without water (interiors): LAYER_0 cells are filled with `voidColor` instead of water and no water
 //              sheets are needed
 //   voidColor  CSS colour of the void (default '#000')
+//   blendPriority  number (default 0): at a border between two biomes, the one with the higher number spreads its ground over the line with a
+//              wavy edge (ties go by sheet name). Every outdoor biome blends with every other on its own; this only picks the side (see _planBlend).
 //   levelTop   'void' for interiors: the top of a cliff level (the roof of a wall) is void instead of floor, so only the wall face
 //              (wall + ext) is drawn on those cells
 //
@@ -217,6 +219,44 @@ export class BlobTerrainRenderer {
         return null;
     }
 
+    /* Biome borders: where two biomes' ground meets, the edge is wavy like the dirt / grass edge inside a biome instead of a straight cut along the cells.
+       One side of the border (the biome that ranks lower, see _blendRank) lays the neighbouring biome's ground under its border cells and cuts its own
+       ground to the blob-47 shape of the cells around it that are its own biome. The shape is the alpha of the pack's own secondary-floor sheet: the
+       same wave its dirt patches have. Nothing here is per biome: any biome with a blobTileset (and water, i.e. an outdoor one) blends with any other.
+       A biome can set `blendPriority` in its blobTileset to choose which side's ground spreads over the line (higher spreads into lower). */
+    _blendRank(pack) {
+        return [pack.blendPriority ?? 0, String(pack.primaryFloor || '')];
+    }
+    _outranks(a, b) {
+        const ra = this._blendRank(a), rb = this._blendRank(b);
+        return ra[0] !== rb[0] ? ra[0] > rb[0] : ra[1] > rb[1];
+    }
+    _planBlend(x, y, pack) {
+        const counts = new Map();
+        const same = (a, b) => {
+            if (this.info(a, b).water) return true;   // water keeps its own shore; it is not a biome edge
+            const q = this._pack(a, b);
+            if (!q || q === pack || q.water === false) return true;
+            counts.set(q, (counts.get(q) || 0) + 1);
+            return false;
+        };
+        const bm = neighbourMask(same, x, y);
+        if (bm === 255 && counts.size === 0) return null;
+        // the neighbouring biome with most cells around this one (a tie goes to the higher rank)
+        let under = null, best = -1;
+        for (const [q, n] of counts) if (n > best || (n === best && this._outranks(q, under))) { under = q; best = n; }
+        if (!under || !this._outranks(under, pack)) return null;
+        // its ground as it lies beside this cell: dirt if most of its cells next to this one are dirt
+        let dirt = 0, all = 0;
+        for (const [, dx, dy] of OFFS8) {
+            if (this._pack(x + dx, y + dy) !== under || this.info(x + dx, y + dy).water) continue;
+            all++;
+            if (this.info(x + dx, y + dy).dirt) dirt++;
+        }
+        const full = SHEET_POS[255];
+        return { under, underOp: [dirt * 2 > all ? SLOT.secondary : SLOT.primary, full[0], full[1], 0], mask: SHEET_POS[bm], canvas: null };
+    }
+
     /** True when this renderer draws the terrain of the cell (so MapRenderer must not draw its own tiles / wall faces there). */
     coversCell(col, row) {
         const p = this._plans.get(col * 4194304 + row);
@@ -283,6 +323,9 @@ export class BlobTerrainRenderer {
                 p.water = { interior: true, variant: cellHash(x, y, 1) % WATER_VARIANTS, start: cellHash(x, y, 2) % WATER_FRAMES };
             else p.water = { interior: false, pos: pos(bm) };
         }
+
+        // ---------- biome border blend ----------
+        if (!noWater && !p.water && !above0(x, y)) p.blend = this._planBlend(x, y, pack);
 
         // ---------- cliff levels ----------
         if (lv(x, y) > 0 || this._nearLevel(x, y)) {
@@ -427,10 +470,13 @@ export class BlobTerrainRenderer {
         const styled = this._wm && this._wm.terrain;
         const wallStyle = styled && styled.getWallStyle ? (c, r) => styled.getWallStyle(c, r) : null;
         const floorStyle = styled && styled.getFloorStyle ? (c, r) => styled.getFloorStyle(c, r) : null;
-        const draw = (imgs, op, c, r, pack) => {
+        // draw(imgs, op, c, r, pack) draws an op into its cell on the screen; `to` = [ctx, x, y, w, h] draws it somewhere else (a blend's own canvas)
+        const draw = (imgs, op, c, r, pack, to = null) => {
             if (op[0] < 0) {
-                ctx.fillStyle = pack.voidColor || '#000';
-                ctx.fillRect(px(c), py(r), pw(c), ph(r));
+                const g = to ? to[0] : ctx;
+                g.fillStyle = pack.voidColor || '#000';
+                if (to) g.fillRect(to[1], to[2], to[3], to[4]);
+                else g.fillRect(px(c), py(r), pw(c), ph(r));
                 return;
             }
             const img = imgs[op[0]];
@@ -453,7 +499,33 @@ export class BlobTerrainRenderer {
                 const v = per > 1 ? (((Math.imul(c, 73856093) ^ Math.imul(r, 19349663)) >>> 0) % per) : 0;
                 sx += ((twoLooks && floorStyle(c, r) === 'natural' ? per : 0) + v) * block;
             }
-            ctx.drawImage(img, sx, op[2] * BLOB_TILE_PX, BLOB_TILE_PX, BLOB_TILE_PX, px(c), py(r + op[3]), pw(c), ph(r + op[3]));
+            if (to) to[0].drawImage(img, sx, op[2] * BLOB_TILE_PX, BLOB_TILE_PX, BLOB_TILE_PX, to[1], to[2], to[3], to[4]);
+            else ctx.drawImage(img, sx, op[2] * BLOB_TILE_PX, BLOB_TILE_PX, BLOB_TILE_PX, px(c), py(r + op[3]), pw(c), ph(r + op[3]));
+        };
+        // A border cell's own ground cut to its wavy shape, made once (both packs' sheets loaded) and kept with the cell's plan
+        const blendCanvas = (b, imgs, ops, c, r, pack) => {
+            if (b.canvas) return b.canvas;
+            if (typeof document === 'undefined') return null;
+            const cv = document.createElement('canvas');
+            cv.width = cv.height = BLOB_TILE_PX;
+            const g = cv.getContext('2d');
+            g.imageSmoothingEnabled = false;
+            for (const op of ops) draw(imgs, op, c, r, pack, [g, 0, 0, BLOB_TILE_PX, BLOB_TILE_PX]);
+            const mx = b.mask[0] * BLOB_TILE_PX, my = b.mask[1] * BLOB_TILE_PX;
+            g.globalCompositeOperation = 'destination-in';
+            g.drawImage(imgs[SLOT.secondary], mx, my, BLOB_TILE_PX, BLOB_TILE_PX, 0, 0, BLOB_TILE_PX, BLOB_TILE_PX);
+            // a thin dark rim just outside the wave, like the edge of a dirt patch inside a biome: the shape a pixel out each way, darkened, under the ground
+            const rim = document.createElement('canvas');
+            rim.width = rim.height = BLOB_TILE_PX;
+            const rg = rim.getContext('2d');
+            for (const [ox, oy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) rg.drawImage(imgs[SLOT.secondary], mx, my, BLOB_TILE_PX, BLOB_TILE_PX, ox, oy, BLOB_TILE_PX, BLOB_TILE_PX);
+            rg.globalCompositeOperation = 'source-in';
+            rg.fillStyle = 'rgba(20, 14, 10, 0.38)';
+            rg.fillRect(0, 0, BLOB_TILE_PX, BLOB_TILE_PX);
+            g.globalCompositeOperation = 'destination-over';
+            g.drawImage(rim, 0, 0);
+            b.canvas = cv;
+            return cv;
         };
         const frame = Math.floor(totalTime / WATER_FRAME_SECONDS) % WATER_FRAMES;
 
@@ -465,7 +537,13 @@ export class BlobTerrainRenderer {
                 imgs = this._images(p.pack);
             if (!imgs) continue;
             const gp = p.groundPack, gimgs = (gp && this._images(gp)) || imgs;
-            for (const op of p.ground) draw(gimgs, op, c, r, gp || p.pack);
+            const b = p.blend, bimgs = b && this._images(b.under);
+            const cut = b && bimgs && blendCanvas(b, gimgs, p.ground, c, r, gp || p.pack);
+            if (cut) {
+                // the neighbouring biome's ground underneath, this cell's own ground over it with a wavy edge
+                draw(bimgs, b.underOp, c, r, b.under);
+                ctx.drawImage(cut, 0, 0, BLOB_TILE_PX, BLOB_TILE_PX, px(c), py(r), pw(c), ph(r));
+            } else for (const op of p.ground) draw(gimgs, op, c, r, gp || p.pack);
             const w = p.water;
             if (w) {
                 if (w.interior) {
