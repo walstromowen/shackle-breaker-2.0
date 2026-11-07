@@ -47,6 +47,7 @@ test('the first piece of a beat carries its sound and effect; the pieces after i
 test('no beat is chopped into crumbs: a bare "Continue." stage is never followed by one that would fit beside it', () => {
     const outs = (d) => [...(d.outcomes || []), ...(d.successOutcomes || []), ...(d.failureOutcomes || [])];
     const exempt = new Set(['prologue', 'act_two', 'shackled_betrayal', 'shackled_betrayal_end']);   // told slowly on purpose
+    const slowStage = (id, sid) => id === 'mysterious_altar' && sid.startsWith('darius_');   // Darius speaks one line at a time, on purpose
     for (const [id, enc] of Object.entries(encounterDefinitions)) {
         if (exempt.has(id)) continue;
         const inbound = {};
@@ -54,7 +55,7 @@ test('no beat is chopped into crumbs: a bare "Continue." stage is never followed
         for (const [sid, s] of Object.entries(enc.stages)) {
             const d = s.decisions[0];
             const bare = s.decisions.length === 1 && !d.customActionText && !d.type && !d.conditions && outs(d).length === 1 && outs(d)[0].results.length === 1 && outs(d)[0].results[0].type === 'ADVANCE_STAGE';
-            if (!bare) continue;
+            if (!bare || slowStage(id, sid)) continue;
             const to = outs(d)[0].results[0].payload.stageId, next = enc.stages[to];
             if (!next || inbound[to].size !== 1 || to === enc.initialStage) continue;
             const same = !next.sfx && !next.effect && next.tone === s.tone && next.bgm === s.bgm && next.displayText === s.displayText && JSON.stringify(next.image) === JSON.stringify(s.image);

@@ -266,21 +266,34 @@ export const mysteriousAltar = {
         darius_rises: {
             displayText: "A Voice in the Dark",
             tone: "arcane",
-            effect: "glow_blue",
-            sfx: "glowSwell",
+            effect: "glow_blue",   // (silent: no whoosh with the light)
             bgm: "none",
             ambience: "altarDrone",
             ambienceVolume: 0.35,
             ambienceFade: 1.5,
             image: { sheet: "encounter_darius_approach", col: 0, row: 0 },   // Darius bowed over the altar, as you find him
-            text: "\"Footsteps... after so long. Is it you, my king? Have you come back for the light?\" \"No. No, you are not him. Forgive an old man his hope.\"",
+            text: "\"Footsteps... after so long. Is it you, my king? Have you come back for the light?\"",
+            decisions: [{ text: "Continue.", outcomes: toStage("darius_rises_2") }]
+        },
+        darius_rises_2: {
+            displayText: "A Voice in the Dark",
+            bgm: "none",
+            image: { sheet: "encounter_darius_approach", col: 0, row: 0 },   // his back to you, bowed over the altar
+            text: "\"No. No, you are not him. Forgive an old man his hope.\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_speaks") }]
         },
         darius_speaks: {
             displayText: "Darius the Groveler",
             bgm: "none",
             image: { sheet: "encounter_darius_approach", col: 0, row: 0 },   // his back to you, bowed over the altar
-            text: "\"He told me, keep the light burning, Darius, and I shall return for it. So I kept it, every winter, every long dark.\" \"They call me the Groveler, for the kneeling. Let them. I knelt for a king.\"",
+            text: "\"He told me, keep the light burning, Darius, and I shall return for it. So I kept it, every winter, every long dark.\"",
+            decisions: [{ text: "Continue.", outcomes: toStage("darius_speaks_2") }]
+        },
+        darius_speaks_2: {
+            displayText: "Darius the Groveler",
+            bgm: "none",
+            image: { sheet: "encounter_darius_approach", col: 0, row: 0 },   // his back to you, bowed over the altar
+            text: "\"They call me the Groveler, for the kneeling. Let them. I knelt for a king.\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_late") }]
         },
         darius_late: {
@@ -307,7 +320,7 @@ export const mysteriousAltar = {
             ambienceFade: 1.2,
             bgm: "dariusEncounterBgm",   // his track: from here, through the turn, on into the fight (the same track carries on, it does not restart)
             image: { sheet: "encounter_darius_approach", col: 0, row: 0 },   // his back to you, still bowed over the altar
-            text: "\"......\"",
+            text: "[Deep breathing]",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_wrath") }]
         },
         darius_wrath: {

@@ -367,11 +367,17 @@ As you approach the altar, it releases a cloud of pale smoke. It sinks into your
 
 [darius_rises]
 DARIUS: "Footsteps... after so long. Is it you, my king? Have you come back for the light?"
+  > Continue.
+
+[darius_rises_2]
 DARIUS: "No. No, you are not him. Forgive an old man his hope."
   > Continue.
 
 [darius_speaks]
 DARIUS: "He told me, keep the light burning, Darius, and I shall return for it. So I kept it, every winter, every long dark."
+  > Continue.
+
+[darius_speaks_2]
 DARIUS: "They call me the Groveler, for the kneeling. Let them. I knelt for a king."
   > Continue.
 
@@ -387,7 +393,7 @@ DARIUS: "What did you do to be loved like that?"
   > Continue.
 
 [darius_pause]
-DARIUS: "......"
+[Deep breathing]
   > Continue.
 
 [darius_wrath]
