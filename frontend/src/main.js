@@ -225,6 +225,7 @@ ui_icons: './assets/icons/ui_icons.png',
     snowLeopardSprite: './assets/sprites/snow_leopard/snow_leopard_sprite.png',
     artificerHeroPortrait: './assets/sprites/artificer_hero/artificer_hero_portrait.png',
     avalancherHeroPortrait: './assets/sprites/avalancher_hero/avalancher_hero_portrait.png',
+    avalancherHeroSprite: './assets/sprites/avalancher_hero/avalancher_hero_sprite.png',   // made from its 8-direction idle frames (idle, walk and run rows like every hero sheet)
     shadowCasterHeroPortrait: './assets/sprites/shadow_caster_hero/shadow_caster_hero_portrait.png',
 
     legionaryPortrait: './assets/sprites/legionary/legionary_portrait.png',

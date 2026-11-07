@@ -90,8 +90,7 @@ export const CREATION_DATA = {
         { label: "Legionary", spritePortrait: "legionaryHeroPortrait", spriteOverworld: "legionaryHeroSprite" },
         { label: "Warlord", spritePortrait: "warlordHeroPortrait", spriteOverworld: "warlordHeroSprite" },
         { label: "Nightblade", spritePortrait: "nightbladeHeroPortrait", spriteOverworld: "nightbladeHeroSprite" },
-        // no overworld sprite of its own yet: walks the map as the Warlord until one is drawn
-        { label: "Avalancher", spritePortrait: "avalancherHeroPortrait", spriteOverworld: "warlordHeroSprite" },
+        { label: "Avalancher", spritePortrait: "avalancherHeroPortrait", spriteOverworld: "avalancherHeroSprite" },
     ],
     TRAITS: UI_TRAITS,
     KEEPSAKES: [
