@@ -13,7 +13,7 @@ import { hydrateEntity } from '../../engine/saveManager.js';
 import { multiplayerSession } from '../../engine/multiplayerSession.js';
 import { worldSync } from '../../../../shared/world/worldManager.js';
 import { audioManager } from '../../engine/audioManager.js';
-import { segmentsOf, lineKey, linesOf, VOICED } from '../../../../shared/story/voiceLines.js';
+import { segmentsOf, lineKey, VOICED } from '../../../../shared/story/voiceLines.js';
 import { encounterDefinitions } from '../../../../shared/story/encounterDefinitions.js';
 
 /* A party of several players shares an encounter: every member's browser plays it from the same seed. A choice is a vote (the leader's
@@ -80,15 +80,28 @@ export class EncounterController extends BaseController {
       .filter(Boolean);
     if (items.some(i => i.file)) audioManager.playVoice(items);
     else audioManager.stopVoice();
+    this._preloadAhead();
+  }
+
+  /* The clips of the stages one choice away (and the lines the choices say), loaded while this one plays: never the whole encounter. */
+  _preloadAhead() {
+    const def = this.model && encounterDefinitions[this.model.id];
+    const stage = this.model && this.model.getCurrentStage && this.model.getCurrentStage();
+    if (!def || !stage || !VOICED[this.model.id]) return;
+    const manifest = audioManager.voiceManifest();
+    const files = [];
+    const add = (stageId, text) => { for (const s of segmentsOf(this.model.id, stageId, text)) if (s.text && manifest[lineKey(s.speaker, s.text)]) files.push(manifest[lineKey(s.speaker, s.text)]); };
+    for (const d of stage.decisions || []) {
+      if (d.customActionText) add(this.model.currentStageId, d.customActionText);
+      for (const o of [...(d.outcomes || []), ...(d.successOutcomes || []), ...(d.failureOutcomes || [])]) {
+        for (const r of o.results || []) if (r.type === 'ADVANCE_STAGE' && def.stages[r.payload.stageId]) add(r.payload.stageId, def.stages[r.payload.stageId].text);
+      }
+    }
+    audioManager.preloadVoice(files);
   }
 
   start(encounterId, context = {}, mp = null) {
-    // its recorded lines load now, so the first words are not late
-    const def = encounterDefinitions[encounterId];
-    if (def && VOICED[encounterId]) {
-      const manifest = audioManager.voiceManifest();
-      audioManager.preloadVoice(linesOf(encounterId, def).map(l => manifest[l.key]).filter(Boolean));
-    }
+    // (its recorded lines load a stage ahead as it goes: _speak / _preloadAhead)
     // a shared encounter (see the note at the top): the dice, and who keeps what (EncounterLogic.shared)
     this.mp = mp ? { ...mp, step: 0, votes: new Map(), voteTimer: 0, myVote: null, tally: {}, opts: null, optsSentKey: null } : null;
     if (mp) {
