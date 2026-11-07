@@ -6,7 +6,7 @@ import { events } from "../../../../shared/core/eventBus.js";
 import { EncounterLogic } from './encounterLogic.js';
 import { LootTableFactory } from "../../../../shared/items/lootTableFactory.js";
 import { ItemDefinitions } from '../../../../shared/items/itemDefinitions.js';
-import { NARRATION, STAGE_START_TIMER, narrationPlan, textEndTimer, decisionAlpha, decisionsDoneTimer, actionPadding } from '../../ui/narration.js';
+import { NARRATION, STAGE_START_TIMER, narrationPlan, textEndTimer, decisionAlpha, decisionsDoneTimer, actionPadding, setVoiceTiming, clearVoiceTiming } from '../../ui/narration.js';
 import { seedRandom, unseedRandom, withoutSeed } from '../../../../shared/core/random.js';
 import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
 import { hydrateEntity } from '../../engine/saveManager.js';
@@ -72,14 +72,26 @@ export class EncounterController extends BaseController {
   }
 
   /* The recorded voice of the words now on screen (tools/voice: only the voiced encounters have clips; anything else is silent). */
+  // The words appear in step with the voice: the reveal follows the clips' lengths (setVoiceTiming), and the voice starts with the first word.
   _speak(text) {
     if (!this.model || !text) { audioManager.stopVoice(); return; }
-    const manifest = audioManager.voiceManifest();
-    const items = segmentsOf(this.model.id, this.model.currentStageId, text)
-      .map(s => (s.pause ? { pause: s.pause } : (manifest[lineKey(s.speaker, s.text)] ? { file: manifest[lineKey(s.speaker, s.text)] } : null)))
-      .filter(Boolean);
-    if (items.some(i => i.file)) audioManager.playVoice(items);
-    else audioManager.stopVoice();
+    const parts = [], items = [];
+    let complete = true;
+    for (const s of segmentsOf(this.model.id, this.model.currentStageId, text)) {
+      if (s.pause) { parts.push({ pause: s.pause }); items.push({ pause: s.pause }); continue; }
+      const clip = audioManager.voiceClip(lineKey(s.speaker, s.text));
+      if (!clip) { complete = false; continue; }
+      parts.push({ text: s.text, dur: clip.d || 0 });
+      items.push({ file: clip.f });
+    }
+    if (items.some(i => i.file)) {
+      // keep time with the recording only when every spoken line of it has a clip with a known length
+      setVoiceTiming(text, complete && parts.every(p => p.pause || p.dur > 0) ? parts : null);
+      audioManager.playVoice(items, Math.max(0, NARRATION.TEXT_START - this.textTimer));
+    } else {
+      clearVoiceTiming(text);
+      audioManager.stopVoice();
+    }
     this._preloadAhead();
   }
 
@@ -88,9 +100,8 @@ export class EncounterController extends BaseController {
     const def = this.model && encounterDefinitions[this.model.id];
     const stage = this.model && this.model.getCurrentStage && this.model.getCurrentStage();
     if (!def || !stage || !VOICED[this.model.id]) return;
-    const manifest = audioManager.voiceManifest();
     const files = [];
-    const add = (stageId, text) => { for (const s of segmentsOf(this.model.id, stageId, text)) if (s.text && manifest[lineKey(s.speaker, s.text)]) files.push(manifest[lineKey(s.speaker, s.text)]); };
+    const add = (stageId, text) => { for (const s of segmentsOf(this.model.id, stageId, text)) { const c = s.text && audioManager.voiceClip(lineKey(s.speaker, s.text)); if (c) files.push(c.f); } };
     for (const d of stage.decisions || []) {
       if (d.customActionText) add(this.model.currentStageId, d.customActionText);
       for (const o of [...(d.outcomes || []), ...(d.successOutcomes || []), ...(d.failureOutcomes || [])]) {
@@ -844,6 +855,7 @@ export class EncounterController extends BaseController {
       this.skipMessageAnimation = false;
       this.actionMessage = this._fillNames(decision.customActionText, actorName);
       this.lastText = this.actionMessage;
+      this._speak(this.actionMessage);   // the line the choice says is read aloud too
     } else {
       if (decision.type === 'skill_check') {
         // no narration before a roll (the player just chose it): the stage's own words stay on screen, already told, under the dice.
@@ -1224,11 +1236,11 @@ export class EncounterController extends BaseController {
     if (this.lastText !== displayText) {
       const isFirstText = this.lastText === "";
       this.lastText = displayText;
-      this._speak(displayText);
       if (!isFirstText) {
         this.textTimer = STAGE_START_TIMER;
       }
       this.skipMessageAnimation = false;
+      this._speak(displayText);
     }
     
     let currentImage = this.model.getImage ? this.model.getImage() : null;

@@ -34,3 +34,18 @@ test('the voiced encounters exist and every speaker in them has a voice', () => 
         for (const l of linesOf(id, E[id])) assert.ok(voices[l.speaker], `${l.speaker} has a voice`);
     }
 });
+
+test('with a recording, the words appear as they are said and are done when the voice is', async () => {
+    const n = await import('../../frontend/src/ui/narration.js');
+    const text = 'Darius turns around. "Give it to me." [Deep breathing]';
+    n.setVoiceTiming(text, [{ text: 'Darius turns around.', dur: 1.6 }, { pause: 1 }, { text: 'Give it to me.', dur: 2.0 }]);
+    const plan = n.narrationPlan(text);
+    assert.equal(plan.voiced, true);
+    assert.equal(plan.starts[0], 0);
+    assert.equal(plan.starts[3], 2.6, 'his first word comes after the narrator\'s clip and the pause');
+    assert.ok(plan.duration >= 4.6, 'not done before the voice is');
+    n.clearVoiceTiming(text);
+    assert.ok(!n.narrationPlan(text).voiced, 'without it, the usual pace');
+    const controller = fs.readFileSync(new URL('../../frontend/src/screens/encounter/encounterController.js', import.meta.url), 'utf8');
+    assert.match(controller, /this\.lastText = this\.actionMessage;\s*\r?\n\s*this\._speak\(this\.actionMessage\);/, 'the line a choice says is spoken too');
+});

@@ -45,6 +45,30 @@ async function tts(voiceId, text, settings) {
     return Buffer.from(await res.arrayBuffer());
 }
 
+/** The length of an MP3 in seconds, from its frame headers (MPEG-1/2 Layer III; skips an ID3v2 tag). */
+export function mp3Duration(buf) {
+    let i = 0;
+    if (buf.length > 10 && buf.toString('latin1', 0, 3) === 'ID3') {
+        i = 10 + ((buf[6] & 0x7f) << 21 | (buf[7] & 0x7f) << 14 | (buf[8] & 0x7f) << 7 | (buf[9] & 0x7f));
+    }
+    const BITRATES = { 1: [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320], 2: [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160] };
+    const RATES = { 3: [44100, 48000, 32000], 2: [22050, 24000, 16000], 0: [11025, 12000, 8000] };
+    let seconds = 0;
+    while (i + 4 <= buf.length) {
+        if (buf[i] !== 0xff || (buf[i + 1] & 0xe0) !== 0xe0) { i++; continue; }
+        const ver = (buf[i + 1] >> 3) & 3, layer = (buf[i + 1] >> 1) & 3, br = (buf[i + 2] >> 4) & 15, sr = (buf[i + 2] >> 2) & 3, pad = (buf[i + 2] >> 1) & 1;
+        if (ver === 1 || layer !== 1 || br === 0 || br === 15 || sr === 3) { i++; continue; }
+        const mpeg1 = ver === 3;
+        const bitrate = BITRATES[mpeg1 ? 1 : 2][br] * 1000, rate = RATES[ver][sr];
+        const samples = mpeg1 ? 1152 : 576;
+        const len = Math.floor((samples / 8) * bitrate / rate) + pad;
+        if (len < 4) { i++; continue; }
+        seconds += samples / rate;
+        i += len;
+    }
+    return Math.round(seconds * 1000) / 1000;
+}
+
 /** A short tag for the voice and the way it reads: a clip made with another voice or settings has another file name. */
 const voiceTag = (speaker) => {
     const v = CONFIG.voices[speaker];
@@ -70,19 +94,26 @@ async function main() {
     fs.mkdirSync(OUT_DIR, { recursive: true });
     const manifest = fs.existsSync(MANIFEST) ? JSON.parse(fs.readFileSync(MANIFEST, 'utf8')) : {};
     const fileOf = (l) => `${l.key}-${voiceTag(l.speaker)}.mp3`;
-    const missing = lines.filter(l => (!only || l.speaker === only) && !(manifest[l.key] === fileOf(l) && fs.existsSync(path.join(OUT_DIR, fileOf(l)))));
+    const fileIn = (e) => (typeof e === 'string' ? e : e && e.f);
+    // an older manifest (key -> file name): each clip's length is measured now
+    for (const [k, e] of Object.entries(manifest)) if (typeof e === 'string' && fs.existsSync(path.join(OUT_DIR, e))) manifest[k] = { f: e, d: mp3Duration(fs.readFileSync(path.join(OUT_DIR, e))) };
+    const missing = lines.filter(l => (!only || l.speaker === only) && !(fileIn(manifest[l.key]) === fileOf(l) && fs.existsSync(path.join(OUT_DIR, fileOf(l)))));
     const chars = missing.reduce((n, l) => n + l.text.length, 0);
     const bySpeaker = {};
     for (const l of missing) bySpeaker[l.speaker] = (bySpeaker[l.speaker] || 0) + l.text.length;
     console.log(`${lines.length} voiced lines in ${Object.keys(VOICED).join(', ')}; ${missing.length} need recording: ${chars} characters ${JSON.stringify(bySpeaker)}`);
 
-    if (!flag('--generate')) { console.log('Dry run: nothing was sent. Add --generate to record them.'); return; }
+    if (!flag('--generate')) {
+        fs.writeFileSync(MANIFEST, JSON.stringify(manifest, null, 1));   // (only adds lengths to an older manifest)
+        console.log('Dry run: nothing was sent. Add --generate to record them.');
+        return;
+    }
     let done = 0;
     for (const l of missing) {
         const v = CONFIG.voices[l.speaker];
         const audio = await tts(v.id, l.text, v.settings || CONFIG.defaultSettings);
         fs.writeFileSync(path.join(OUT_DIR, fileOf(l)), audio);
-        manifest[l.key] = fileOf(l);
+        manifest[l.key] = { f: fileOf(l), d: mp3Duration(audio) };   // the file, and its length in seconds (the words on screen keep time with it)
         done++;
         console.log(`  [${done}/${missing.length}] ${l.speaker}: ${l.text.slice(0, 70)}${l.text.length > 70 ? '...' : ''}`);
         fs.writeFileSync(MANIFEST, JSON.stringify(manifest, null, 1));   // after every clip: an interrupted run keeps what it made

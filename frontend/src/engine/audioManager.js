@@ -401,17 +401,27 @@ class AudioManager {
         return this._voiceBuffers.get(file);
     }
 
+    /** A line's clip: { f: file, d: seconds } (an older manifest held only the file name), or null. */
+    voiceClip(key) {
+        const e = this.voiceManifest()[key];
+        if (!e) return null;
+        return typeof e === 'string' ? { f: e, d: 0 } : e;
+    }
+
     /** Loads clips ahead of time (an encounter's lines when it starts), so the first words are not late. */
     preloadVoice(files) {
         if (!this.isInitialized) return;
         for (const f of files) this._voiceBuffer(f);
     }
 
-    /** Plays one stage's lines in order: items are { file } (a clip) or { pause: seconds }. Stops whatever voice was playing first. */
-    async playVoice(items) {
+    /** Plays one stage's lines in order: items are { file } (a clip) or { pause: seconds }, starting after `delay` seconds (when the first
+     *  word appears). Stops whatever voice was playing first. */
+    async playVoice(items, delay = 0) {
         this.stopVoice();
         if (!this.isInitialized || !items || !items.length) return;
         const token = this._voiceToken = (this._voiceToken || 0) + 1;
+        if (delay > 0) await new Promise(r => setTimeout(r, delay * 1000));
+        if (token !== this._voiceToken) return;
         this._duck(true);
         try {
             for (const item of items) {

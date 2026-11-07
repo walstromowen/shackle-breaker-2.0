@@ -41,6 +41,52 @@ export const NARRATION = {
 export const STAGE_START_TIMER = NARRATION.TEXT_START - NARRATION.BEAT;
 
 const PLAN_CACHE = new Map();
+const VOICE_TIMING = new Map();   // text -> its voiced parts, for a plan that keeps time with the recording (setVoiceTiming)
+
+const bare = (w) => String(w).toLowerCase().replace(/[^a-z0-9']/g, '');
+
+/**
+ * The words of `text` are about to be spoken by recorded clips: `parts` is the recording in order, [{ text, dur }] (a clip: its words and its
+ * length in seconds) and [{ pause }]. The text's reveal then keeps time with it: each word appears as it is said (spread over its clip by the
+ * letters before it), words that are not spoken (a stage direction) appear with the next spoken one, and the last word is not done before
+ * the voice is. Clear it with clearVoiceTiming(text) (or call again with null).
+ */
+export function setVoiceTiming(text, parts) {
+    const key = String(text || '');
+    PLAN_CACHE.delete(key);
+    if (parts && parts.some(p => p.text)) VOICE_TIMING.set(key, parts); else VOICE_TIMING.delete(key);
+    if (VOICE_TIMING.size > 50) VOICE_TIMING.delete(VOICE_TIMING.keys().next().value);
+}
+export function clearVoiceTiming(text) { setVoiceTiming(text, null); }
+
+function voicedPlan(key, parts) {
+    // the spoken words, each with the time it is said
+    const said = [];
+    let t = 0, total = 0;
+    for (const p of parts) {
+        if (p.pause) { t += p.pause; continue; }
+        const words = String(p.text).split(/\s+/).filter(Boolean);
+        const letters = words.reduce((n, w) => n + w.length + 1, 0) || 1;
+        let before = 0;
+        for (const w of words) { said.push({ w: bare(w), at: t + p.dur * 0.94 * (before / letters) }); before += w.length + 1; }
+        t += p.dur;
+    }
+    total = t;
+    // the words on screen, matched in order to the spoken ones
+    const starts = [];
+    let k = 0;
+    const shown = [];
+    for (const paragraph of key.split('\n')) for (const w of paragraph.split(' ').filter(Boolean)) shown.push(w);
+    for (let i = 0; i < shown.length; i++) {
+        const b = bare(shown[i]);
+        if (b && k < said.length && said[k].w === b) { starts.push(said[k].at); k++; continue; }
+        // not said (a direction, punctuation): with the next spoken word, or at the end
+        starts.push(k < said.length ? said[k].at : total);
+    }
+    for (let i = 1; i < starts.length; i++) if (starts[i] < starts[i - 1]) starts[i] = starts[i - 1];
+    const lastStart = starts.length ? starts[starts.length - 1] : 0;
+    return { starts, duration: Math.max(starts.length ? lastStart + NARRATION.WORD_FADE * 0.6 : 0, total), voiced: true };
+}
 
 /**
  * The reveal schedule of a text: `starts[i]` is when word i begins (seconds after TEXT_START), `duration` is when the last word has
@@ -50,6 +96,11 @@ export function narrationPlan(text) {
     const key = String(text || '');
     let plan = PLAN_CACHE.get(key);
     if (plan) return plan;
+    if (VOICE_TIMING.has(key)) {
+        plan = voicedPlan(key, VOICE_TIMING.get(key));
+        PLAN_CACHE.set(key, plan);
+        return plan;
+    }
 
     const starts = [];
     let t = 0;
