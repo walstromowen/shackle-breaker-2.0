@@ -53,7 +53,7 @@ test('what he opens with follows the quests: first meeting, a reminder, a hand-i
     gameState.quests = { active: {}, completed: [...STRANGER_CHAIN], trackedIds: [] };
     assert.equal(E.initialStage(), 'after_darius');
     // every stage an opening can name exists
-    for (const id of STRANGER_CHAIN.slice(1)) for (const k of ['give', 'waiting', 'turnin']) assert.ok(E.stages[`${k}_${id}`], `${k}_${id}`);
+    for (const id of STRANGER_CHAIN.slice(1)) for (const k of ['give', 'waiting', 'turnin', 'lore']) assert.ok(E.stages[`${k}_${id}`], `${k}_${id}`);
 });
 
 test('the first meeting hands in "find him" and gives the first step; a hand-in pays its rewards and leads to the next step', () => {
@@ -70,7 +70,8 @@ test('the first meeting hands in "find him" and gives the first step; a hand-in 
     const r = quiet(() => EncounterLogic.resolveResults(results('turnin_shackled1'), model, null));
     assert.ok(gameState.quests.completed.includes('shackled1'));
     assert.equal(gameState.party.currency, coins + Q.shackled1.rewards.currency, 'its rewards are paid');
-    assert.equal(r.newStageId, 'give_shackled2', 'on to the next step');
+    assert.equal(r.newStageId, 'lore_shackled1', 'a piece of the story first');
+    assert.deepEqual(E.stages.lore_shackled1.decisions[0].outcomes[0].results.map(x => x.payload?.stageId), ['give_shackled2'], 'then the next step');
     quiet(() => EncounterLogic.resolveResults(results('give_shackled2'), model, null));
     assert.ok(gameState.quests.active.shackled2);
 });
@@ -113,4 +114,15 @@ test('in multiplayer there is still only one: the host\'s world decides, and a j
         InteriorFactory.create(1, 'ABANDONED_WORKSHOP', '2_2');
     } finally { InteriorFactory.onStrangerHome = null; }
     assert.deepEqual(claims, ['1_1']);
+});
+
+test('every hand-in tells a new piece of the story before the next step', () => {
+    const lore = STRANGER_CHAIN.slice(1).map(id => E.stages[`lore_${id}`].text);
+    assert.equal(new Set(lore).size, lore.length, 'a different piece each visit');
+    for (const id of STRANGER_CHAIN.slice(1)) {
+        const after = E.stages[`turnin_${id}`].decisions[0].outcomes[0].results;
+        assert.ok(after.some(x => x.type === 'COMPLETE_QUEST' && x.payload.questId === id));
+        assert.ok(after.some(x => x.type === 'ADVANCE_STAGE' && x.payload.stageId === `lore_${id}`), `${id}: his lore comes next`);
+    }
+    for (const s of Object.values(E.stages)) assert.ok(s.text.length <= 230, `fits the box: ${s.text.slice(0, 40)}...`);
 });

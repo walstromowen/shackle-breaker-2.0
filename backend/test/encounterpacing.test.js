@@ -48,7 +48,8 @@ test('the first piece of a beat carries its sound and effect; the pieces after i
 test('no beat is chopped into crumbs: a bare "Continue." stage is never followed by one that would fit beside it', () => {
     const outs = (d) => [...(d.outcomes || []), ...(d.successOutcomes || []), ...(d.failureOutcomes || [])];
     const exempt = new Set(['prologue', 'act_two', 'shackled_betrayal', 'shackled_betrayal_end']);   // told slowly on purpose
-    const slowStage = (id, sid) => id === 'mysterious_altar' && sid.startsWith('darius_');   // Darius speaks one line at a time, on purpose
+    // Darius, and the Hooded Stranger, speak one line at a time, on purpose
+    const slowStage = (id, sid) => (id === 'mysterious_altar' && sid.startsWith('darius_')) || id === 'hooded_stranger';
     for (const [id, enc] of Object.entries(encounterDefinitions)) {
         if (exempt.has(id)) continue;
         const inbound = {};
