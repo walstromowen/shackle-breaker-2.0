@@ -60,11 +60,11 @@ test('every sound, sprite sheet and background any battle animation names is loa
     }
 });
 
-test('every asset file main.js loads exists, except the one boss track that has not been made yet', () => {
+test('every asset file main.js loads exists', () => {
     const missing = [...main.matchAll(/^\s*(\w+):\s*'\.\/([^']+)'/gm)]
         .filter(m => !fs.existsSync(new URL(`../../frontend/src/${m[2]}`, import.meta.url)))
         .map(m => m[1]);
-    assert.deepEqual(missing, ['bossBattleBgm']);
+    assert.deepEqual(missing, []);
 });
 
 test('the old catch-all "particles" sheet is gone: no animation draws it any more', () => {

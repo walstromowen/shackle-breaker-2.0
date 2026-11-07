@@ -682,6 +682,7 @@ export const SpawnTableDefinitions = {
     // Used by mysterious_altar: the boss fight that starts when a fallen meteorite is set on the altar. Darius the Groveler alone.
     "darius_boss": {
         type: "faction_pool",
+        fixedSize: true,   // one Darius, whatever the party (no party scaling)
         pools: [{
             factionId: "shackled",
             weight: 100,

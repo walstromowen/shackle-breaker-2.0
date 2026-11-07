@@ -61,16 +61,13 @@ test('a second one does nothing while more than half is left, and the overworld 
     assert.ok(check > ctl.indexOf('START_ENCOUNTER'), 'but after story encounters, which are not random battles');
 });
 
-test('Darius: the encounter stage plays Darius_battle_bgm and his fight plays bossbattle', () => {
-    const stage = mysteriousAltar.stages.darius_rises;
-    assert.equal(stage.bgm, 'dariusEncounterBgm');
-    const start = stage.decisions[0].outcomes[0].results.find(r => r.type === 'START_BATTLE');
+test('Darius: his track starts when he turns on you and plays on into his fight', () => {
+    assert.equal(mysteriousAltar.stages.darius_wrath.bgm, 'dariusEncounterBgm');
+    const start = mysteriousAltar.stages.darius_wrath.decisions[0].outcomes[0].results.find(r => r.type === 'START_BATTLE');
     assert.equal(start.payload.tableId, 'darius_boss');
-    assert.equal(start.payload.bgm, 'bossBattleBgm');
+    assert.equal(start.payload.bgm, 'dariusEncounterBgm');
     assert.deepEqual(start.payload.afterVictory, { encounterId: 'act_two' }, 'still ends in act 2');
-    const main = src('frontend/src/main.js');
-    assert.match(main, /dariusEncounterBgm:\s*'\.\/assets\/audio\/music\/Darius_battle_bgm\.mp3'/);
-    assert.match(main, /bossBattleBgm:\s*'\.\/assets\/audio\/music\/bossbattle\.mp3'/);
+    assert.match(src('frontend/src/main.js'), /dariusEncounterBgm:\s*'\.\/assets\/audio\/music\/darius-final-battle\.mp3'/);
 });
 
 test('the Shackled quest asks for 3 legionaries, not 4', () => {

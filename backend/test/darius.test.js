@@ -1,4 +1,4 @@
-// backend/test/darius.test.js: `npm test`. Darius the Groveler: a conversation at the altar, then the boss fight, with his own music. And the Crimson Vigil is gone.
+// backend/test/darius.test.js: `npm test`. Darius the Groveler: a short scene at the altar where he alone speaks, then the boss fight (one Darius), with his music from the moment he turns. And the Crimson Vigil is gone.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -12,9 +12,7 @@ const stages = mysteriousAltar.stages;
 const results = (d) => [...(d.outcomes || []), ...(d.successOutcomes || []), ...(d.failureOutcomes || [])].flatMap(o => o.results);
 const nextOf = (stageId) => stages[stageId].decisions.flatMap(d => results(d)).filter(r => r.type === 'ADVANCE_STAGE').map(r => r.payload.stageId);
 
-// his last line is told over a few stages; the fight is on the last of them
-let lastBeat = 'darius_wrath';
-while (stages[`darius_wrath_${lastBeat === 'darius_wrath' ? 2 : Number(lastBeat.split('_').pop()) + 1}`]) lastBeat = lastBeat === 'darius_wrath' ? 'darius_wrath_2' : `darius_wrath_${Number(lastBeat.split('_').pop()) + 1}`;
+const lastBeat = 'darius_wrath';   // the fight starts on the last stage
 
 // walk the conversation from the moment the meteorite is set down
 const walk = () => {
@@ -28,11 +26,17 @@ const walk = () => {
     return seen;
 };
 
-test('setting the meteorite down starts the conversation, and it plays out in order to the fight', () => {
+test('setting the meteorite down starts the scene, and it plays out in four stages to the fight', () => {
     const setDown = stages.at_the_altar.decisions.find(d => /meteorite/i.test(d.text));
     assert.ok(results(setDown).some(r => r.type === 'ADVANCE_STAGE' && r.payload.stageId === 'darius_rises'));
-    // each of his lines is told over a few short stages (darius_king, darius_king_2, ...): the beats come in order
-    assert.deepEqual(walk().filter(id => !/_\d+$/.test(id)), ['darius_rises', 'darius_weeps', 'darius_king', 'darius_late', 'darius_sees', 'darius_envy', 'darius_wrath']);
+    assert.deepEqual(walk(), ['darius_rises', 'darius_speaks', 'darius_sees', 'darius_wrath']);
+});
+
+test('Darius does all the talking: up to the fight, the only button is "Continue."', () => {
+    for (const id of ['darius_rises', 'darius_speaks', 'darius_sees']) {
+        assert.deepEqual(stages[id].decisions.map(d => d.text), ['Continue.'], id);
+    }
+    assert.deepEqual(stages.darius_wrath.decisions.map(d => d.text), ['Face Darius the Groveler!']);
 });
 
 test('every stage of it is wired: it has a way on, its cues exist, its text fits, and only the last one fights', () => {
@@ -52,34 +56,34 @@ test('every stage of it is wired: it has a way on, its cues exist, its text fits
 });
 
 test('he weeps for his king, sees the meteorite, and turns on you in envy', () => {
-    // a line is told over a few stages, one "Continue." after another, up to the next line's first stage
-    const beats = ['darius_rises', 'darius_weeps', 'darius_king', 'darius_late', 'darius_sees', 'darius_envy', 'darius_wrath'];
-    const say = (id) => {
-        const parts = [], stop = beats[beats.indexOf(id) + 1];
-        for (let cur = id; cur && cur !== stop && !parts.includes(stages[cur].text); cur = nextOf(cur)[0]) parts.push(stages[cur].text);
-        return parts.join(' ');
-    };
-    assert.match(say('darius_rises'), /weeping/);
-    assert.match(say('darius_weeps'), /king/i);
-    assert.match(say('darius_king'), /Groveler/);
-    assert.match(say('darius_late'), /late/i);
-    assert.match(say('darius_sees'), /meteorite|star/i);
-    assert.match(say('darius_envy'), /gave it to you/);
-    assert.match(say('darius_wrath'), /give it back/i);
+    assert.match(stages.darius_rises.text, /weeping/);
+    assert.match(stages.darius_speaks.text, /Groveler/);
+    assert.match(stages.darius_speaks.text, /late/i);
+    assert.match(stages.darius_sees.text, /star/i);
+    assert.match(stages.darius_sees.text, /loved/);
+    assert.match(stages.darius_wrath.text, /give it back/i);
 });
 
-test('the music: darius-final-battle for the encounter, bossbattle for the fight, and the drone steps aside for the talking', () => {
-    assert.equal(stages.darius_rises.bgm, 'dariusEncounterBgm');
-    assert.equal(stages.darius_rises.ambience, 'none');
-    assert.equal(stages.darius_wrath.ambience, 'altarDrone');
+test('the music: silence while he grieves, his track the moment he turns, and the same track carries on into the fight', async () => {
+    assert.equal(stages.darius_rises.bgm, 'none', 'no music while he weeps, only the altar');
+    assert.equal(stages.darius_speaks.bgm, undefined);
+    assert.equal(stages.darius_sees.bgm, undefined);
+    assert.equal(stages.darius_wrath.bgm, 'dariusEncounterBgm', 'his track starts when he turns');
     const start = stages[lastBeat].decisions[0].outcomes[0].results.find(r => r.type === 'START_BATTLE');
     assert.equal(start.payload.tableId, 'darius_boss');
-    assert.equal(start.payload.bgm, 'bossBattleBgm');
+    assert.equal(start.payload.bgm, 'dariusEncounterBgm', 'the fight plays the same track, so it never stops');
     assert.deepEqual(start.payload.afterVictory, { encounterId: 'act_two' }, 'winning still ends in act 2');
-    assert.ok(SpawnTableDefinitions.darius_boss);
     const main = fs.readFileSync(new URL('../../frontend/src/main.js', import.meta.url), 'utf8');
-    assert.match(main, /dariusEncounterBgm:\s*'\.\/assets\/audio\/music\/darius-final-battle\.mp3'/);
-    assert.match(main, /bossBattleBgm:\s*'\.\/assets\/audio\/music\/bossbattle\.mp3'/);
+    const m = main.match(/dariusEncounterBgm:\s*'\.\/([^']+)'/);
+    assert.ok(m && fs.existsSync(new URL(`../../frontend/src/${m[1]}`, import.meta.url)), 'his track is registered and on disk');
+});
+
+test('there is only ever one Darius, whatever the size of the party or the difficulty', async () => {
+    const { SpawnTableFactory } = await import('../../shared/battle/spawnTableFactory.js');
+    assert.equal(SpawnTableDefinitions.darius_boss.fixedSize, true);
+    for (const difficulty of ['easy', 'normal', 'hard', 'nightmare'])
+        for (const fighters of [1, 2, 3])
+            for (let i = 0; i < 30; i++) assert.equal(SpawnTableFactory.generateBattle('darius_boss', difficulty, { fighters, players: 3 }).enemies.length, 1);
 });
 
 test('the Crimson Vigil is gone: no encounter, no biome lists it, and its battle table went with it', () => {

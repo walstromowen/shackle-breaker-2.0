@@ -36,8 +36,9 @@ export class SpawnTableFactory {
 
         // 2. Determine party size based on difficulty
         const diffSettings = factionPool.difficultySettings[difficulty] || factionPool.difficultySettings['normal'];
-        const want = (fighters ? scaling.EXTRA_ENEMIES[Math.min(scaling.MAX_FIGHTERS, Math.max(1, fighters)) - 1] || 0 : 0)
-            + Math.max(0, players - 1) * (scaling.EXTRA_ENEMIES_PER_PLAYER || 0);
+        // `fixedSize: true` on a table (a boss): exactly the group it lists, whatever the size of the party, never scaled
+        const want = table.fixedSize ? 0 : ((fighters ? scaling.EXTRA_ENEMIES[Math.min(scaling.MAX_FIGHTERS, Math.max(1, fighters)) - 1] || 0 : 0)
+            + Math.max(0, players - 1) * (scaling.EXTRA_ENEMIES_PER_PLAYER || 0));
         const extra = Math.floor(want) + (Math.random() < want - Math.floor(want) ? 1 : 0);
         const lo = Math.max(1, diffSettings.minSize + extra);
         let partySize = this._getRandomInt(lo, Math.max(lo, diffSettings.maxSize + extra));
