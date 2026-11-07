@@ -7,6 +7,18 @@ import { InventorySystem } from '../items/inventorySystem.js';
 import { ALLY_SCOPES, needsDistinctTargets } from './targetingResolver.js';
 import { rng } from '../core/random.js';
 
+/* A support move that would change nothing is not worth a turn: a status-only move whose statuses the caster already has (Bless when blessed), or a
+   cleanse-only move when the caster has none of what it removes (Cleanse with nothing on them). Attacks are always worth it. */
+export function worthUsing(ability, caster) {
+    const effects = ability.effects || [], statuses = ability.statusEffects || [];
+    const has = (id) => (caster.statusEffects || []).some(s => s && s.id === id);
+    const selfScope = ['self', 'ally', 'full_ally_party'].includes(ability.targeting && ability.targeting.scope);
+    if (!selfScope) return true;
+    if (effects.length === 0 && statuses.length > 0) return !statuses.every(s => has(s.id));
+    if (effects.length > 0 && effects.every(e => e.type === 'dispel')) return effects.some(e => (e.tags || []).some(has));
+    return true;
+}
+
 export function queueEnemyActions(state) {
     const livingParty = state.activeParty.filter(p => p && !p.isDead());
     if (livingParty.length === 0) return;
@@ -15,7 +27,7 @@ export function queueEnemyActions(state) {
         if (!enemy || enemy.isDead()) return;
 
         const validAbilities = enemy.abilities.filter(a =>
-            a.canPayCost(enemy, InventorySystem) && !['rest', 'punch'].includes(a.id) && (typeof a.usableIn !== 'function' || a.usableIn('battle'))
+            a.canPayCost(enemy, InventorySystem) && !['rest', 'punch'].includes(a.id) && (typeof a.usableIn !== 'function' || a.usableIn('battle')) && worthUsing(a, enemy)
         );
 
         const randomTarget = livingParty[Math.floor(rng() * livingParty.length)];

@@ -911,14 +911,20 @@ export const ENTITY_DEFINITIONS = {
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 62, maxStamina: 20, maxInsight: 40, speed: 8, critical: 0.1,
+            maxHp: 84, maxStamina: 20, maxInsight: 60, speed: 8, critical: 0.1,
+            // A boss: blows glance off him. Every kind of attack loses a good share against him (resistance comes off before armour), so no single
+            // hit takes a big bite. Light is still his weakness, and less so than it was.
             baseDefense: {
                 ...HUMANOID_TEMPLATE.baseStats.baseDefense,
-                blunt: 1, slash: 1, pierce: 1, arcane: 6,
-                light: -4,
-                fire: -2
+                blunt: 4, slash: 4, pierce: 4, arcane: 8,
+                fire: 2, ice: 2, lightning: 2, earth: 2, wind: 2, water: 2, dark: 4,
+                light: -2
             },
-            baseResistance: { arcane: 0.6, dark: 0.3, light: -0.4 },
+            baseResistance: {
+                blunt: 0.35, slash: 0.35, pierce: 0.35,
+                fire: 0.3, ice: 0.3, lightning: 0.3, earth: 0.3, wind: 0.3, water: 0.3,
+                arcane: 0.6, dark: 0.5, light: -0.2
+            },
             baseAttack: { blunt: 3, arcane: 6 }
         },
         equipment: {
@@ -928,7 +934,8 @@ export const ENTITY_DEFINITIONS = {
         },
         currencyReward: { min: 200, max: 500 },
         lootTableId: "boss_darius_drops",
-        abilities: [...REGULAR_HUMANOID_ABILITIES, "arcane_dart", "magic_missile", "meteor_shower"],
+        // his own light: Bless mends him over five turns, Cleanse throws off whatever the party puts on him, Acid Pool burns them all
+        abilities: [...REGULAR_HUMANOID_ABILITIES, "arcane_dart", "magic_missile", "meteor_shower", "bless", "cleanse", "acid_pool"],
         tags: [...HUMANOID_TEMPLATE.tags, "BOSS", "ELITE", "MAGICAL"]
     }
 };

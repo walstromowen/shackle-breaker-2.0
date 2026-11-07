@@ -928,6 +928,37 @@ export const AbilityDefinitions = {
         animationId: "healing_rain",
         effects: [{ type: "recover", resource: "hp", calculation: "percent", power: 0.3 }]
     },
+    // Bless: a holy light that settles on the target and mends them a little every turn (Blessed: 6 percent of max HP at the end of each turn, for 5 turns).
+    "bless": {
+        id: "bless",
+        name: "Bless",
+        description: "Bathe an ally in holy light. They recover a share of their health at the end of each turn, for 5 turns.",
+        range: "ranged",
+        tags: ["magical", "support", "healing", "light"],
+        battleMessage: "{user} calls down a {ability} upon {target}!",
+        icon: { col: 0, row: 10 },
+        targeting: { scope: "ally", select: "single" },
+        cost: { insight: 14 },
+        accuracy: 1.0,
+        animationId: "bless",
+        effects: [],
+        statusEffects: [{ id: "blessed", chance: 1.0, duration: 5 }]
+    },
+    // Cleanse: the caster throws off every harmful effect at once.
+    "cleanse": {
+        id: "cleanse",
+        name: "Cleanse",
+        description: "Throw off every harmful effect: poison, bleeding, burns, chills, bonds and curses alike.",
+        range: "self",
+        tags: ["magical", "support", "light"],
+        battleMessage: "{user} uses {ability}!",
+        icon: { col: 0, row: 10 },
+        targeting: { scope: "self", select: "auto" },
+        cost: { insight: 12 },
+        accuracy: 1.0,
+        animationId: "purify",
+        effects: [{ type: "dispel", tags: ["poison", "bleed", "burn", "frozen", "wet", "slowed", "knocked_down", "bound", "paralyzed", "dimmed", "weakened", "suppressed", "vulnerable", "exposed", "living_bomb"] }]
+    },
     "purify": {
         id: "purify",
         name: "Purify",

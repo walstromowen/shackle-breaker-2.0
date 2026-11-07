@@ -205,15 +205,16 @@ export const StatusEffectDefinitions = {
             { type: 'percent', target: 'attack.arcane', value: 0.5 }
         ]
     },
+    /* Blessed (the Bless ability): heals 6% of max HP at the end of each of the holder's turns, for 5 turns. */
     blessed: {
         id: 'blessed',
         name: 'Blessed',
-        animationId: "blessed",
+        animationId: "bless",
         icon: { col: 2, row: 2 },
-        defaultCharges: 3,
+        defaultCharges: 5,
         maxStacks: 1,
         effects: [
-            { trigger: 'ON_TURN_END', modify: 'hp', percent: 0.05, battleMessage: "{target} is blessed and recovers {amount} HP!" }
+            { trigger: 'ON_TURN_END', modify: 'hp', healPercentMax: 0.06, battleMessage: "{target} is blessed and recovers {amount} HP!" }
         ]
     },
     enraged: {

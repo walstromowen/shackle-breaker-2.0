@@ -248,6 +248,7 @@ if (process.env.MATCHUP) {
     out(`level ${level}: player win % one on one`);
     out('enemy'.padEnd(20) + names.map(n => n.slice(0, 7).padStart(8)).join('') + '     avg');
     const only = process.env.ONLY ? process.env.ONLY.split(',') : null;
+    if (only) for (const id of only) kinds.add(id);   // ONLY may name any enemy, a boss too
     for (const id of [...kinds].sort().filter(k => !only || only.includes(k))) {
         const row = [];
         for (const name of names) {

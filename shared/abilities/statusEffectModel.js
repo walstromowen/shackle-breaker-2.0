@@ -122,6 +122,10 @@ export class StatusEffectModel {
                     // at least 1. Poison and bleed use it, so they hurt a big pool and a small one by the same proportion.
                     const max = target['max' + effect.modify.charAt(0).toUpperCase() + effect.modify.slice(1)] || 0;
                     amount = -Math.max(1, Math.floor(max * effect.percentMax * this.stacks));
+                } else if (effect.healPercentMax !== undefined) {
+                    // `healPercentMax: 0.06` -- HEALS a share of the MAX of the resource `modify` names, per stack, at least 1 (Blessed). percentMax is the hurting kind.
+                    const max = target['max' + effect.modify.charAt(0).toUpperCase() + effect.modify.slice(1)] || 0;
+                    amount = Math.max(1, Math.floor(max * effect.healPercentMax * this.stacks));
                 } else if (effect.percentMaxHp !== undefined) {
                     // NEW: `percentMaxHp: 0.2` -- a share of the max HP of whoever `modify` hits (at least 1), whatever the hit that set it off did (the bear trap)
                     amount = -Math.max(1, Math.floor((target.maxHp || 0) * effect.percentMaxHp));

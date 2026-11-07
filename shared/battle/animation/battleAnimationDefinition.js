@@ -824,6 +824,18 @@ export const BattleAnimationDefinitions = {
         target: { shake: shake(0.1, 0.25, 18), flash: flash(0.1, 0.2, 'brightness(180%)') }
     }),
     // Purify: a cool light falls over the target, washing a few motes of white upward as it clears.
+    // Bless (and the Blessed status): purify's shape in gold, a warm light settling down onto the target.
+    "bless": anim(2, {
+        seconds: true,
+        audio: [sfx(0.1, 'healSfx', { volume: 1, pitch: 0.9 }), sfx(0.8, 'purifySfx', { volume: 0.6, pitch: 1.0 })],
+        actor: { flash: flash(0, 0.6, 'brightness(170%) sepia(80%) hue-rotate(5deg) saturate(220%)') },
+        vfx: [
+            spawn(0.35, 'purifyAnimation', { life: 1.3, move: 'float_up_and_pop', scale: 1.6 }),
+            ...repeat(0.3, 10, 0.1, t => burst(t, { count: 3, color: '#ffe9a8', scale: 0.5, area: [110, 20], offsetY: -90, angle: 90, cone: 18, minSpeed: 60, maxSpeed: 130, minLife: 0.7, maxLife: 1.0, envelope: true })),
+            burst(1.1, { count: 16, color: '#fff6d6', scale: 0.5, minSpeed: 40, maxSpeed: 130, minLife: 0.3, maxLife: 0.6, gravity: -40, offsetY: -20 })
+        ],
+        target: { flash: flash(0.35, 2.0, 'brightness(190%) sepia(70%) hue-rotate(5deg) saturate(180%) drop-shadow(0 0 10px #ffd86b)') }
+    }),
     "purify": anim(2, {
         seconds: true,
         audio: [sfx(0.1, 'healSfx', { volume: 1, pitch: 1.2 }), sfx(0.9, 'purifySfx', { volume: 0.6, pitch: 1.3 })],
