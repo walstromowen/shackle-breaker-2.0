@@ -198,7 +198,7 @@ export const strangeObelisk = {
       sfx: "stoneGrind",
       sfxVolume: 0.8,
       image: { col: 1, row: 0 },
-      text: "Beneath the soil, the obelisk's foundation is carved with row upon row of tools, scenes and figures. Working them free, you learn more about the first Alterians than any book could say, and you take it to heart.",
+      text: "Beneath the soil, the obelisk's foundation is carved with row upon row of tools, scenes and figures. Working them free, you learn of a strange people group, in a world backward your own.",
       decisions: [
         {
           text: "Take what the stone has taught you.",

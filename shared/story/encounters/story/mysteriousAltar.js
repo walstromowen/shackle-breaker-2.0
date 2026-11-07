@@ -318,7 +318,7 @@ export const mysteriousAltar = {
             ambience: "none",
             bgm: "dariusEncounterBgm",   // his track, already playing since the pause, carries on into the fight
             image: { sheet: "encounter_darius_kneeling", col: 0, row: 0 },   // he turns: his face, his eyes, for the first time
-            text: "Darius turns around. \"Give it to me.\" \"Give it back! His love was mine. It was always meant to be mine!\"",
+            text: "Darius turns around. \"Give it to me.\" \"Give it back! That stone is mine. It was always meant to be mine!\"",
             decisions: [
                 {
                     text: "Draw your weapon.",

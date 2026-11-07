@@ -468,7 +468,7 @@ export const aftermath = {
         survivor_identity: {
             displayText: "Standard Issue",
             image: { col: 1, row: 1 },
-            text: "\"Legionary, third cohort, Altus legion. Or I was, before all this.\" \"Catch my meaning?\"",
+            text: "\"Legionary, thirty first cohort. Or I was, before all this.\"",
             decisions: [
                 {
                     text: "Return to conversation.",
@@ -480,7 +480,7 @@ export const aftermath = {
         survivor_refusal: {
             displayText: "Safe? Hah!",
             image: { col: 1, row: 1 },
-            text: "\"Safe! Hah!\" \"You won't last long out here. I can't remember the last time I felt safe, much less so traveling with others.\"",
+            text: "\"Safe! Heh.\" \"You won't last long out here. I can't remember the last time I felt safe, much less so traveling with others.\"",
             decisions: [
                 {
                     text: "Return to conversation.",
@@ -496,7 +496,7 @@ export const aftermath = {
             decisions: [
                 {
                     // Needs the has_currency condition added to EncounterLogic.checkConditions
-                    text: "[50g] \"Perhaps some incentive?\"",
+                    text: "[50 currency] \"Perhaps some incentive?\"",
                     conditions: [{ type: "has_currency", amount: 50 }],
                     outcomes: [
                         {

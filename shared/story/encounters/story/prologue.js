@@ -60,7 +60,7 @@ export const prologue = {
             decisions: [
                 {
                     text: "Listen to them.",
-                    customActionText: "The prisoners' words make no sense, yet they laugh as if remenicing over a shared memory.  ",
+                    customActionText: "The prisoners' words make no sense, yet they laugh as if remenicing over a shared memory.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_guards" } }] }]
                 },
                 {

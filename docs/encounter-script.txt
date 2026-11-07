@@ -65,10 +65,6 @@ The rock goes nowhere near the stranger. Instead, it lands right in the middle o
 
 [a_moment_of_clarity]
 You speak with the stranger, and he answers in rambling, broken scraps. Finally, the stranger smiles, and with tears in his eyes, hands you his knapsack. Just before darting off, he mutters, "It's really you..."
-  > Continue.
-
-[a_moment_of_clarity_3]
-"Shackle Breaker..."
   > Accept the knapsack.
 
 [speaking_to_the_voices]
@@ -132,7 +128,7 @@ The geometries twist in impossible ways. It hurts to look at. A sharp pain shoot
   > Stumble away from the stone.
 
 [excavate_success]
-Beneath the soil, the obelisk's foundation is carved with row upon row of tools, scenes and figures. Working them free, you learn more about the first Alterians than any book could say, and you take it to heart.
+Beneath the soil, the obelisk's foundation is carved with row upon row of tools, scenes and figures. Working them free, you learn of a strange people group, in a world backward your own.
   > Take what the stone has taught you.
 
 [excavate_fail]
@@ -203,16 +199,16 @@ The warrior stands up from the ground and looks at you. "What do you want?"
   > Return to conversation.
 
 [survivor_identity]
-"Legionary, third cohort, Altus legion. Or I was, before all this." "Catch my meaning?"
+"Legionary, thirty first cohort. Or I was, before all this."
   > Return to conversation.
 
 [survivor_refusal]
-"Safe! Hah!" "You won't last long out here. I can't remember the last time I felt safe, much less so traveling with others."
+"Safe! Heh." "You won't last long out here. I can't remember the last time I felt safe, much less so traveling with others."
   > Return to conversation.
 
 [survivor_bribe_demand]
 "Hmm... I am not convinced..."
-  > [50g] "Perhaps some incentive?"
+  > [50 currency] "Perhaps some incentive?"
   > Return to conversation.
 
 [survivor_bribed]
@@ -397,7 +393,7 @@ DARIUS: "......"
 [darius_wrath]
 Darius turns around.
 DARIUS: "Give it to me."
-DARIUS: "Give it back! His love was mine. It was always meant to be mine!"
+DARIUS: "Give it back! That stone is mine. It was always meant to be mine!"
   > Draw your weapon.
       You draw your weapon.
 
@@ -565,7 +561,7 @@ It pulls, and you follow. You don't remember how you got here, or how long you h
 [the_others]
 The prisoners ahead laugh and mutter to themselves, their laughter has no joy in it, and it never stops..
   > Listen to them.
-      The prisoners' words make no sense, yet they laugh as if remenicing over a shared memory.  
+      The prisoners' words make no sense, yet they laugh as if remenicing over a shared memory.
   > Ignore them.
       You stare at the ground and keep walking, hoping to drown out their endless laughter.
 

@@ -271,19 +271,6 @@ export const aDisturbingSight = {
             text: "You speak with the stranger, and he answers in rambling, broken scraps. Finally, the stranger smiles, and with tears in his eyes, hands you his knapsack. Just before darting off, he mutters, \"It's really you...\"",
             decisions: [
                 {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "a_moment_of_clarity_3" } }] }]
-                }
-            ]
-        },
-
-        a_moment_of_clarity_3: {
-            displayText: "A Fleeting Peace",
-            tone: "gold",
-            image: { col: 3, row: 0 },
-            text: "\"Shackle Breaker...\"",
-            decisions: [
-                {
                     text: "Accept the knapsack.",
                     conditions: [{ type: "has_tag", tag: "HUMANOID" }],
                     outcomes: [
