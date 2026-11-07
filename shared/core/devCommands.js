@@ -9,6 +9,7 @@
 //   /milestone    ActSystem.grantMilestone         (the GRANT_MILESTONE result)
 //   /encounter    the START_ENCOUNTER event        (what the overworld emits when a step triggers one)
 //   /battle       the START_BATTLE event           (what the overworld emits for an ambush)
+//   /seed         gameState.seed                   (the world's seed, also from inside an interior: world.savedOverworld.seed)
 //
 // To add a command: add an entry to COMMANDS below ({ usage, summary, run(args, host), complete?(index, typed, args) }). `run` returns a list of lines
 // (use ok / info / fail) and may add `closeConsole: true`. `host` is whatever the screen offers (all optional, so tests run without it):
@@ -112,6 +113,21 @@ const COMMANDS = {
             return r.ok ? { lines: [ok(r.message)], closeConsole: true } : [fail(r.message)];
         },
         complete: (i, typed) => (i === 0 ? starting(['world'], typed) : []),
+    },
+
+    seed: {
+        free: true,   // changes nothing: allowed in a game made without Cheats too
+        usage: '/seed',
+        summary: 'Show the world seed (the one to type into World Seed in the character creator to get this world again).',
+        run() {
+            const w = gameState.world;
+            // inside a house or cave the game runs on the interior's own seed; the world's is the one kept for the way back out
+            const world = w.isInterior && w.savedOverworld ? w.savedOverworld.seed : gameState.seed;
+            if (world === null || world === undefined) return [fail('There is no world yet.')];
+            const lines = [ok(`World seed: ${world}`)];
+            if (w.isInterior && gameState.seed !== world) lines.push(info(`(this interior runs on its own seed, ${gameState.seed})`));
+            return lines;
+        },
     },
 
     radius: {
@@ -319,6 +335,12 @@ const COMMANDS = {
 export const DevCommands = {
     /** The command names, for completion and the help list. */
     names() { return Object.keys(COMMANDS); },
+
+    /** Whether a line is a command that changes nothing (`free`), and so may run in a game made without Cheats (/seed). */
+    isFree(line) {
+        const name = norm(tokenize(String(line || '').trim().replace(/^\//, ''))[0] || '');
+        return !!(COMMANDS[name] && COMMANDS[name].free);
+    },
 
     /**
      * Runs one line ("/additem meteorite 2"; the slash is optional). Returns { lines: [{ kind: 'ok' | 'info' | 'error', text }], closeConsole }.

@@ -199,3 +199,24 @@ test('the console is wired in: "/" opens it only in the overworld, it can be swi
         }
     }
 });
+
+test('/seed shows the world seed, also from inside an interior', async () => {
+    const { DevCommands } = await import('../../shared/core/devCommands.js');
+    const { gameState } = await import('../../shared/core/gameState.js');
+    const saved = { seed: gameState.seed, isInterior: gameState.world.isInterior, savedOverworld: gameState.world.savedOverworld };
+    try {
+        gameState.seed = 424242; gameState.world.isInterior = false;
+        assert.match(DevCommands.run('/seed').lines[0].text, /World seed: 424242/);
+        gameState.world.isInterior = true; gameState.world.savedOverworld = { seed: 424242 }; gameState.seed = 999;
+        const r = DevCommands.run('seed').lines.map(l => l.text).join(' ');
+        assert.match(r, /World seed: 424242/);
+        assert.match(r, /its own seed, 999/);
+    } finally { Object.assign(gameState, { seed: saved.seed }); gameState.world.isInterior = saved.isInterior; gameState.world.savedOverworld = saved.savedOverworld; }
+});
+
+test('/seed changes nothing, so it runs without Cheats; the other commands do not', async () => {
+    const { DevCommands } = await import('../../shared/core/devCommands.js');
+    assert.equal(DevCommands.isFree('/seed'), true);
+    assert.equal(DevCommands.isFree('seed'), true);
+    assert.equal(DevCommands.isFree('/additem meteorite 2'), false);
+});

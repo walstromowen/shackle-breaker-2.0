@@ -184,8 +184,8 @@ export class DevConsole {
         }
         this.print([{ kind: 'echo', text: `> ${text}` }]);
         if (/^\/?clear\s*$/i.test(text)) { this.clear(); this.input.value = '/'; return { lines: [], closeConsole: false }; }
-        if (!this.allowCommands()) {
-            this.print([{ kind: 'error', text: 'Commands only work in a game made with Cheats on. Type without "/" to chat.' }]);
+        if (!this.allowCommands() && !DevCommands.isFree(text)) {
+            this.print([{ kind: 'error', text: 'Commands only work in a game made with Cheats on (/seed works anywhere). Type without "/" to chat.' }]);
             this.input.value = '';
             return { lines: [], closeConsole: false };
         }
