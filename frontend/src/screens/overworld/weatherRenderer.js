@@ -2,7 +2,7 @@ import { gameState } from '../../../../shared/core/gameState.js';
 import { events } from '../../../../shared/core/eventBus.js';
 
 /* A thunderstorm's lightning: a strike every GAP seconds (random in the range); how far off it struck (0 = overhead .. 1 = on the horizon) sets how bright
-   the flash is, whether a bolt is seen, and how long until the thunder (about 3 s at the farthest) and which thunder plays. */
+   the flash is, and how long until the thunder (about 3 s at the farthest) and which thunder plays. */
 const LIGHTNING = { GAP: [10, 35], FIRST: [3, 10], THUNDER_DELAY: 3.2 };
 
 export class WeatherRenderer {
@@ -406,7 +406,7 @@ export class WeatherRenderer {
     }
 
     /* Lightning while a thunderstorm is overhead (outdoors, the storm mostly faded in). A strike emits LIGHTNING_STRIKE { distance, x } for the
-       MapRenderer's flash and bolt; its thunder is played after a delay that grows with the distance. Indoors a storm is still heard, muffled and
+       MapRenderer's flash; its thunder is played after a delay that grows with the distance. Indoors a storm is still heard, muffled and
        without the flash. */
     updateLightning(dt, stateId) {
         const st = this._lightning || (this._lightning = { next: null, thunder: [] });
