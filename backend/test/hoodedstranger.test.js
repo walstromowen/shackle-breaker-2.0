@@ -88,3 +88,10 @@ test('only one workshop in the world has him: the first one entered', () => {
     resetWorldForNewGame();
     assert.equal(gameState.world.strangerHome, null, 'a new world: he has not chosen yet');
 });
+
+test('the first step reads "Find someone who can help" in the tracker and the journal', () => {
+    const o = Q.shackled_stranger.objectives[0];
+    assert.equal(o.description, 'Find someone who can help');
+    const journal = fs.readFileSync(new URL('../../frontend/src/screens/journal/journalRenderer.js', import.meta.url), 'utf8');
+    assert.match(journal, /if \(obj\.description\)/, 'the journal shows an objective\'s own words');
+});

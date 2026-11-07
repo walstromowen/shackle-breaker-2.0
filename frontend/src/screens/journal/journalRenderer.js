@@ -193,11 +193,13 @@ export class JournalRenderer {
             if (typeof targetText === 'string' && targetText === obj.targetId) {
                 targetText = Formatting.capitalize(targetText.split('_').join(' '));
             }
+            // an objective with its own words ("Find someone who can help") shows them instead
+            if (obj.description) { actionText = obj.description; targetText = ''; }
 
             const color = isDone ? UITheme.colors.success : UITheme.colors.textMain;
             const checkbox = isDone ? "[X]" : "[ ]";
 
-            ui.drawText(`${checkbox}  ${actionText} ${targetText}`, descStartX + 8, currentY, UITheme.fonts.body, color, "left");
+            ui.drawText(`${checkbox}  ${`${actionText} ${targetText}`.trim()}`, descStartX + 8, currentY, UITheme.fonts.body, color, "left");
             ui.drawStyled('value', `${progress} / ${req}`, descStartX + descW - 8, currentY, { color, align: 'right' });
 
             currentY += 40;

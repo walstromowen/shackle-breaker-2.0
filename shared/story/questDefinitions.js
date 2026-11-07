@@ -7,10 +7,10 @@ export const QuestDefinitions = {
     "shackled_stranger": {
         id: "shackled_stranger",
         name: "Shackled",
-        description: "The chain that bound you to the line has broken, and the convoy marched on into the dark without you. The shackles are still locked around your wrists. Somewhere in the villages, in a workshop where the forge is still lit, a hooded man is said to know what the iron means. Find him.",
+        description: "The chain that bound you to the line has broken, and the convoy marched on into the dark without you. The shackles are still locked around your wrists. Everyone on the road laughs at nothing. Somewhere in the villages, in a workshop where the forge is still lit, there may be someone who can help.",
         turnIn: "HOODED_STRANGER",
         objectives: [
-            { id: "obj_find_stranger", type: "talk", targetId: "HOODED_STRANGER", amount: 1 }
+            { id: "obj_find_stranger", type: "talk", targetId: "HOODED_STRANGER", amount: 1, description: "Find someone who can help" }
         ],
         rewards: { exp: 20 }
     },
