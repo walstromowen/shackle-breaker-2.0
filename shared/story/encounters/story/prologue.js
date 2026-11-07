@@ -131,38 +131,19 @@ export const prologue = {
             decisions: [
                 {
                     text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "no_key_2" } }] }]
+                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "awake" } }] }]
                 }
             ]
         },
 
-        no_key_2: {
-            displayText: "No Key",
-            tone: "cold",
-            image: { sheet: "encounter_prologue", col: 0, row: 1 },
-            text: "The metal is smooth and seamless, as though it was never forged, only grown around you.",
-            decisions: [
-                {
-                    text: "Search for a lock.",
-                    customActionText: "No keyhole, no hinge, no seam. Whatever holds these shackles shut, no key was ever made to open them.",
-                    outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "awake" } }] }]
-                },
-                {
-                    text: "Pull at the shackles.",
-                    customActionText: "It does not give, no matter how hard you pull.",
-                    outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "awake" } }] }]
-                }
-            ]
-        },
         still: {
             displayText: "Left Behind",
             tone: "cold",
             image: { sheet: "encounter_prologue", col: 1, row: 1 },
-            text: "You stand still bewildered, unsure of what just happened. Meanwhile, the convoy walks on, walking past you as if you weren't there.",
+            text: "You stand still, bewildered, as the convoy walks on past you as if you weren't there. Neither the guards nor the prisoners take any notice of your absence, and the line fades into the darkness, out of sight.",
             decisions: [
                 {
-                    text: "Watch them go.",
-                    customActionText: "Neither the guards nor the prisoners seem to take any notice or your absence as the line of prisoners fades into the darkness, out of sight.",
+                    text: "Continue.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "no_key" } }] }]
                 }
             ]

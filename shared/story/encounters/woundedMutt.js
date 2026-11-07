@@ -8,8 +8,6 @@ export const woundedMutt = {
     stages: {
         "discovery": {
             displayText: "A Whimper in the Brush",
-            sfx: "dogCry",
-            sfxVolume: 0.6,
             image: { col: 0, row: 0 },
             text: "You hear a faint whimper and find a scruffy dog with a nasty gash on its hind leg. It growls softly, baring its teeth.",
             decisions: [
@@ -28,6 +26,8 @@ export const woundedMutt = {
         },
         "offer_help": {
             displayText: "Offering Help",
+            sfx: "dogCry",   // the only bark: as the dog gets to its feet
+            sfxVolume: 0.6,
             image: { col: 1, row: 0 },
             text: "Hearing your gentle tone, the dog stands up.",
             decisions: [
@@ -62,7 +62,6 @@ export const woundedMutt = {
             displayText: "Combat",
             tone: "blood",
             effect: "blood",
-            sfx: "dogCry",
             image: { col: 3, row: 0 },
             bgm: "plainsBattleBgm",
             text: "The wild mutt panics! It yelps in sudden terror and snaps fiercely, sinking its teeth deep into your arm before lunging outright!",
@@ -83,8 +82,6 @@ export const woundedMutt = {
         "success_tame": {
             displayText: "A New Friend",
             tone: "gold",
-            sfx: "dogCry",
-            sfxVolume: 0.6,
             image: { col: 2, row: 0 },
             bgm: "happy_theme",
             text: "You stabilize the dog's leg. The intense pain eases, and the dog licks your hand in absolute gratitude. You have earned a new friend.",

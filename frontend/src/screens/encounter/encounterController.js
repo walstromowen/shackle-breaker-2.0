@@ -156,8 +156,12 @@ export class EncounterController extends BaseController {
     }
     
     if (this.actionPhase === 'message') {
-      if (this.skipMessageAnimation || this.textTimer >= textEndTimer(this.actionMessage) + actionPadding(this.actionMessage)) {
+      // A line said after a choice waits for "Continue." (or a hold) before the story moves on. In a shared encounter it moves on by itself,
+      // so nobody waits on one player.
+      const timedOut = this.mp && this.textTimer >= textEndTimer(this.actionMessage) + actionPadding(this.actionMessage);
+      if (this.skipMessageAnimation || this._continuePressed || timedOut) {
         this.skipMessageAnimation = false;
+        this._continuePressed = false;
         if (this.pendingDecision && this.pendingDecision.type === 'skill_check') {
           this.rollData = this._takeRoll(this.pendingDecision);
           this.actionPhase = 'wait_for_roll';
@@ -205,8 +209,10 @@ export class EncounterController extends BaseController {
       }
     } else if (this.actionPhase === 'reward_delay') {
       this.rollTimer -= dt;
-      if (this.rollTimer <= 0 || this.skipMessageAnimation) {
+      // like a line after a choice: it waits for "Continue." (by itself only in a shared encounter)
+      if ((this.mp && this.rollTimer <= 0) || this.skipMessageAnimation || this._continuePressed) {
         this.skipMessageAnimation = false;
+        this._continuePressed = false;
         this.showNextReward();
       }
     } else if (this.actionPhase === 'ending_delay') {
@@ -454,6 +460,19 @@ export class EncounterController extends BaseController {
     return this.actionPhase === 'none' ? this._getValidDecisions().length : 0;
   }
 
+  /** A line after a choice, or a reward line, that has finished appearing and now waits for its "Continue." button (not in a shared encounter). */
+  _continueReady() {
+    if (this.mp || !this.model) return false;
+    if (this.actionPhase !== 'message' && this.actionPhase !== 'reward_delay') return false;
+    return decisionAlpha(this.textTimer, this._currentText(), 0) >= NARRATION.DECISION_READY;
+  }
+
+  _pressContinue() {
+    this.playConfirmSound();
+    this.inputCooldown = 0.3;
+    this._continuePressed = true;
+  }
+
   /** Is choice `index` visible enough to be picked? (The renderer fades them in one after another.) */
   _decisionReady(index) {
     if (this.actionPhase !== 'none' || !this.model) return false;
@@ -467,8 +486,8 @@ export class EncounterController extends BaseController {
     if (!this.model) return false;
     if (!this.hasDoneIntro) return true;
     switch (this.actionPhase) {
-      case 'message': case 'rolling': case 'hold_base': case 'apply_mod': case 'result': case 'reward_delay': case 'ending_delay':
-        return true;
+      case 'message': case 'reward_delay': case 'rolling': case 'hold_base': case 'apply_mod': case 'result': case 'ending_delay':
+        return true;   // (a told line waits for its "Continue.", which a hold also presses)
       case 'none':
         if (this.skipMessageAnimation) return false;
         return this.textTimer < decisionsDoneTimer(this._currentText(), this._decisionCount());
@@ -582,6 +601,8 @@ export class EncounterController extends BaseController {
       return;
     }
 
+    if (hitboxId === 'DECISION_0' && this._continueReady()) { this._pressContinue(); return; }
+
     if (this.actionPhase === 'none' && hitboxId && hitboxId.startsWith('DECISION_')) {
       const index = parseInt(hitboxId.replace('DECISION_', ''), 10);
       if (!isNaN(index) && this._decisionReady(index)) {
@@ -640,6 +661,7 @@ export class EncounterController extends BaseController {
     if (this.actionPhase !== 'none') {
       if (intent === 'CONFIRM') {
         if (e && e.repeat) return;                                           // a held key is the hold-to-skip, handled in update()
+        if (this._continueReady()) { this._pressContinue(); return; }
         if (this._isSkippable()) this.hintPulse = 1;
       }
       return;
@@ -783,6 +805,7 @@ export class EncounterController extends BaseController {
     const actorName = EncounterLogic.rollerEntity()?.name || "The party";
     if (decision.customActionText) {
       this.actionPhase = 'message';
+      this.selectedIndex = 0;   // its "Continue." is the only button
       this.textTimer = STAGE_START_TIMER;
       this.hasDoneIntro = true;
       this.skipMessageAnimation = false;
@@ -1158,6 +1181,10 @@ export class EncounterController extends BaseController {
     if (this.actionPhase !== 'none' && this.actionPhase !== 'ending_delay' && this.actionPhase !== 'reward_delay') {
       displayText = this.actionPhase === 'ending' ? this.lastText : this.actionMessage;
       displayDecisions = [];
+    }
+    // a line after a choice, or a reward line: its own "Continue." (the renderer fades it in when the words are done, like any choice)
+    if (!this.mp && (this.actionPhase === 'message' || this.actionPhase === 'reward_delay')) {
+      displayDecisions = [{ text: 'Continue.' }];
     }
     
     if (this.lastText !== displayText) {

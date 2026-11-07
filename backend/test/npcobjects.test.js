@@ -84,19 +84,19 @@ test('the NPC objects draw a character sheet\'s idle row: the sheet is registere
     assert.ok(!mainJs.includes('objShadyMerchant'), 'the separate object picture is gone');
 });
 
-test('each one is placed in the plains, 5 rolls in 10000, and takes nothing from the other objects', () => {
+test('each one is placed in the plains, 35 rolls in 100000 (a little rarer than it was), and takes nothing from the other objects', () => {
     for (const [id, types] of [['PLAINS', ['SHADY_MERCHANT_NPC', 'DOG_NPC', 'MADMAN_NPC']], ['DESERT', ['SHADY_MERCHANT_NPC']], ['SNOWY_MOUNTAINS', ['SHADY_MERCHANT_NPC']]]) {
         const biome = new BiomeModel(BIOME_DEFINITIONS[id]);
         const without = new BiomeModel({ ...BIOME_DEFINITIONS[id], mapObjects: Object.fromEntries(Object.entries(BIOME_DEFINITIONS[id].mapObjects)
             .map(([tile, rules]) => [tile, rules.filter(r => !types.includes(r.id))])) });
         const found = Object.fromEntries(types.map(t => [t, 0]));
-        for (let i = 0; i < 10000; i++) {
-            const roll = i / 10000;
+        for (let i = 0; i < 100000; i++) {
+            const roll = i / 100000;
             const a = biome.getSpawnId(CONFIG.TILE_TYPES.LAYER_2, roll), b = without.getSpawnId(CONFIG.TILE_TYPES.LAYER_2, roll);
             if (a && types.includes(a.id)) { found[a.id]++; assert.equal(b, null, `${id}: ${a.id}'s band was free at ${roll}`); }
             else assert.deepEqual(a, b, `${id}: roll ${roll} gives the same as without them`);
         }
-        for (const t of types) assert.equal(found[t], 5, `${id}: ${t}'s share`);
+        for (const t of types) assert.ok(Math.abs(found[t] - 35) <= 1, `${id}: ${t}'s share (${found[t]})`);
     }
 });
 

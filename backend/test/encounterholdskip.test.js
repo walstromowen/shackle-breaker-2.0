@@ -95,3 +95,20 @@ test('Escape held also skips the prologue; a press elsewhere on the screen does 
     for (let i = 0; i < 10; i++) e._updatePrologueHold(0.4);
     assert.ok(!e.ended && e._isPrologue() === false);
 });
+
+test('a line said after a choice waits for its "Continue." once told: it never moves on by itself', () => {
+    const c = make();
+    c.playConfirmSound = () => {};
+    let moved = 0;
+    c.applySceneChanges = () => { moved++; };
+    c.pendingDecision = { text: 'Look down.' };
+    c.actionPhase = 'message';
+    c.actionMessage = 'You take a step back to reconsider.';
+    c.textTimer = textEndTimer(c.actionMessage) + 30;   // long after the words are done
+    c.update(0.016);
+    assert.equal(moved, 0, 'still waiting');
+    assert.equal(c._continueReady(), true, 'its button is up');
+    c.onClick('DECISION_0');
+    c.update(0.016);
+    assert.equal(moved, 1, 'Continue moves the story on');
+});

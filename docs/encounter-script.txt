@@ -585,20 +585,12 @@ In an instant, a sound like a bell struck underwater fills your ears. The chain 
       The chain lies broken in the dust, a few links still hanging from your wrists. You are free of the line.
 
 [still]
-You stand still bewildered, unsure of what just happened. Meanwhile, the convoy walks on, walking past you as if you weren't there.
-  > Watch them go.
-      Neither the guards nor the prisoners seem to take any notice or your absence as the line of prisoners fades into the darkness, out of sight.
+You stand still, bewildered, as the convoy walks on past you as if you weren't there. Neither the guards nor the prisoners take any notice of your absence, and the line fades into the darkness, out of sight.
+  > Continue.
 
 [no_key]
 The shackles are still locked around your wrists. You turn them over, searching for a keyhole, and find none.
   > Continue.
-
-[no_key_2]
-The metal is smooth and seamless, as though it was never forged, only grown around you.
-  > Search for a lock.
-      No keyhole, no hinge, no seam. Whatever holds these shackles shut, no key was ever made to open them.
-  > Pull at the shackles.
-      It does not give, no matter how hard you pull.
 
 [awake]
 You draw a steadying breath as reality grounds you. Before you stretches a silent, hollow wasteland.
