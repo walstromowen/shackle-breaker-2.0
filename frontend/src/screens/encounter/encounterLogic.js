@@ -201,8 +201,19 @@ export class EncounterLogic {
         
         return {
             d20, mod: finalizedNightmareMod, total, dc: decision.threshold || 0,
-            isSuccess: total >= (decision.threshold || 0), displayVal: "?", duration: 1.5
+            isSuccess: total >= (decision.threshold || 0), displayVal: "?"
         };
+    }
+
+    /** When the dice tick while they roll, in seconds from the click on Roll: a burst of fast ticks, then each gap a little longer than the
+     *  last, so the numbers flash by and then slow down; the last time is when they land on the roll. The same on every screen. */
+    static rollTickSchedule() {
+        const times = [];
+        let at = 0, gap = 0.05;
+        for (let i = 0; i < 10; i++) { times.push(at); at += gap; }      // the burst: 10 numbers in half a second
+        while (gap < 0.4) { times.push(at); gap *= 1.18; at += gap; }   // slowing down
+        times.push(at);                                                  // the landing
+        return times.map(t => Math.round(t * 1000) / 1000);
     }
 
     /** The XP a successful roll earns the one who rolled (party leader), as an AWARD_XP result; null when it is worth nothing (DC 0) */

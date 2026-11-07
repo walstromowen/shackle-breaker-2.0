@@ -42,8 +42,10 @@ export class EncounterController extends BaseController {
     this.pendingLogicResponse = null;
     this.actionMessage = "";
     this.rollTimer = 0;
-    this.rollTickTimer = 0;
-    this.rollData = { displayVal: "?", d20: 0, mod: 0, total: 0, dc: 0, isSuccess: false, duration: 2.5 };
+    this.rollTicks = [];       // when the dice tick while rolling (EncounterLogic.rollTickSchedule), the last one is the landing
+    this.rollTickIndex = 0;
+    this.rollElapsed = 0;
+    this.rollData = { displayVal: "?", d20: 0, mod: 0, total: 0, dc: 0, isSuccess: false };
     this.lastText = "";
     this.textTimer = 0;
     this.hasDoneIntro = false;
@@ -223,19 +225,27 @@ export class EncounterController extends BaseController {
         }
       }
     } else if (this.actionPhase === 'rolling') {
-      this.rollTimer -= dt;
-      this.rollTickTimer -= dt;
-      if (this.rollTimer <= 0 || this.skipMessageAnimation) {
+      // The numbers flash by with a tick each, slow down, and the last slow tick lands on the roll (EncounterLogic.rollTickSchedule)
+      this.rollElapsed += dt;
+      const ticks = this.rollTicks;
+      const landing = ticks.length - 1;
+      if (this.rollElapsed >= ticks[landing] || this.skipMessageAnimation) {
         this.rollData.displayVal = this.rollData.d20;
         this.actionPhase = 'hold_base';
         this.rollTimer = 1.0;
         this.skipMessageAnimation = false;
         events.emit('PLAY_SFX', { id: 'dice_land', volume: 0.7 });
-      } else if (this.rollTickTimer <= 0) {
-        this.rollData.displayVal = Math.floor(Math.random() * 20) + 1;
-        const progress = 1.0 - (this.rollTimer / this.rollData.duration);
-        this.rollTickTimer = 0.04 + (Math.pow(progress, 6) * 1.2);
-        events.emit('PLAY_SFX', { id: 'diceTick', volume: 0.3, pitch: 0.9 + (Math.random() * 0.2) });
+      } else if (this.rollTickIndex < landing && this.rollElapsed >= ticks[this.rollTickIndex]) {
+        // one number per frame: ticks a slow frame skipped are dropped, not played on top of each other
+        while (this.rollTickIndex + 1 < landing && this.rollElapsed >= ticks[this.rollTickIndex + 1]) this.rollTickIndex++;
+        const lastBeforeLanding = this.rollTickIndex === landing - 1;
+        const prev = this.rollData.displayVal;
+        let n;
+        do { n = Math.floor(Math.random() * 20) + 1; } while (n === prev || (lastBeforeLanding && n === this.rollData.d20));
+        this.rollData.displayVal = n;
+        const progress = this.rollTickIndex / landing;
+        events.emit('PLAY_SFX', { id: 'diceTick', volume: 0.3, pitch: 1.05 - progress * 0.15 + (Math.random() * 0.08) });
+        this.rollTickIndex++;
       }
     } else if (this.actionPhase === 'hold_base') {
       this.rollTimer -= dt;
@@ -825,8 +835,9 @@ export class EncounterController extends BaseController {
 
   triggerRoll() {
     this.actionPhase = 'rolling';
-    this.rollTimer = this.rollData.duration;
-    this.rollTickTimer = 0;
+    this.rollTicks = EncounterLogic.rollTickSchedule();
+    this.rollTickIndex = 0;
+    this.rollElapsed = 0;
     events.emit('PLAY_SFX', { id: 'dice_throw', volume: 0.8 });
   }
 
