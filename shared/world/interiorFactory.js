@@ -4,6 +4,7 @@ import { HouseGenerator } from './generators/houseGenerator.js';
 import { CaveGenerator } from './generators/caveGenerator.js';
 import { CraftingHouseGenerator } from './generators/craftingHouseGenerator.js';
 import { CatacombGenerator } from './generators/catacombGenerator.js';
+import { gameState } from '../core/gameState.js';
 
 const GENERATORS = { HOUSE: HouseGenerator, CRAFTING_HOUSE: CraftingHouseGenerator, CAVE: CaveGenerator, CATACOMBS: CatacombGenerator };
 
@@ -16,6 +17,14 @@ export class InteriorFactory {
             console.error(`[InteriorFactory] Unknown interior type "${interiorType}": add it to interiorDefinitions.js. Using ABANDONED_HOUSE instead.`);
             type = 'ABANDONED_HOUSE';
             config = INTERIOR_DEFINITIONS[type];
+        }
+
+        // The Hooded Stranger (the Shackled quest giver) lives in exactly one village workshop in the world: the first one the party walks into
+        // becomes his (world.strangerHome, saved with the world), and he is there on every visit; no other workshop ever has him.
+        if (type === 'ABANDONED_WORKSHOP' && interiorId) {
+            const w = gameState.world;
+            if (w && !w.strangerHome) w.strangerHome = interiorId;
+            if (w && w.strangerHome === interiorId) config = { ...config, questGiver: 'HOODED_STRANGER_NPC' };
         }
 
         const Generator = GENERATORS[config.generatorType];

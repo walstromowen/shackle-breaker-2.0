@@ -38,7 +38,9 @@ test('the tracker holds three: the quest tracked longest ago makes room', () => 
 
 test('finishing a quest hands its place to the quest it unlocks, instead of pushing another one out', () => {
     const s = fresh();
-    const first = 'shackled1', next = QuestDefinitions[first].rewards.quests[0];
+    // a quest that starts the next one by itself (the Shackled steps are handed out by the Hooded Stranger instead)
+    const first = Object.keys(QuestDefinitions).find(id => QuestDefinitions[id].rewards?.quests?.length && !QuestDefinitions[id].turnIn && QuestDefinitions[QuestDefinitions[id].rewards.quests[0]]);
+    const next = QuestDefinitions[first].rewards.quests[0];
     QuestModel.startQuest(s, 'bg_a');          // unknown: refused
     QuestModel.startQuest(s, first);
     const others = Object.keys(QuestDefinitions).filter(id => id !== first && id !== next).slice(0, 2);

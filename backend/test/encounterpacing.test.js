@@ -25,7 +25,8 @@ test('every stage of every encounter is a short paragraph', () => {
 
 test('every stage has a button, and every stage a button leads to exists', () => {
     for (const [id, enc] of Object.entries(encounterDefinitions)) {
-        assert.ok(enc.stages[enc.initialStage], `${id}: no first stage`);
+        // an opening picked from the game's state (the Hooded Stranger) is checked in its own test (hoodedstranger.test.js)
+        if (typeof enc.initialStage !== 'function') assert.ok(enc.stages[enc.initialStage], `${id}: no first stage`);
         for (const [sid, s] of Object.entries(enc.stages)) {
             assert.ok(s.decisions && s.decisions.length, `${id}.${sid}: no way on`);
             for (const t of targets(s.decisions)) assert.ok(enc.stages[t], `${id}.${sid} -> missing ${t}`);

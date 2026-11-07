@@ -222,6 +222,7 @@ ui_icons: './assets/icons/ui_icons.png',
     nightbladeHeroSprite: './assets/sprites/nightblade_hero/nightblade_hero_sprite.png',
     madmanSprite: './assets/sprites/madman/madman_sprite.png',
     shadyMerchantSprite: './assets/sprites/shady_merchant/shady_merchant_spritesheet.png',
+    hoodedStrangerSprite: './assets/sprites/hooded_stranger/hooded_stranger_sprite.png',   // the quest giver in a village workshop (one front frame; tools/art/overworldSheetFromFrame.py)
     snowLeopardSprite: './assets/sprites/snow_leopard/snow_leopard_sprite.png',
     artificerHeroPortrait: './assets/sprites/artificer_hero/artificer_hero_portrait.png',
     avalancherHeroPortrait: './assets/sprites/avalancher_hero/avalancher_hero_portrait.png',
@@ -379,7 +380,8 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     encounter_mysterious_altar: './assets/icons/encounters/story/mysterious_altar.png',
     encounter_darius_approach: './assets/icons/encounters/story/darius_approach.png',   // Darius bowed over the altar, as you find him
     encounter_darius_kneeling: './assets/icons/encounters/story/darius_kneeling.png',   // Darius turned to face you, crowned: only when he turns on you, right before the fight
-    encounter_darius_defeated: './assets/icons/encounters/story/darius_defeated.png',   // Darius slumped over the altar (act_two)
+    encounter_darius_defeated: './assets/icons/encounters/story/darius_defeated.png',
+    encounter_hooded_stranger: './assets/icons/encounters/story/hooded_stranger.png',   // the Hooded Stranger, arms folded (story/encounters/story/hoodedStranger.js)   // Darius slumped over the altar (act_two)
     encounter_old_gravestone: './assets/icons/encounters/old_gravestone.png',
     encounter_suspicious_merchant: './assets/icons/encounters/suspicious_merchant.png',
     encounter_aftermath: './assets/icons/encounters/aftermath.png',

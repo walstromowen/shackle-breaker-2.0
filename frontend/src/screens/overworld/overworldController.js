@@ -8,6 +8,7 @@ import { BaseController } from '../../engine/baseController.js';
 import { UI_SFX } from '../../ui/uiSfx.js';
 import { DIFFICULTY_MODIFIERS } from '../../../../shared/core/constants.js';
 import { QuestDefinitions } from '../../../../shared/story/questDefinitions.js';
+import { ENTITY_DEFINITIONS } from '../../../../shared/characters/entityDefinitions.js';
 import { QuestModel } from '../../../../shared/story/questModel.js';
 import { InventorySystem } from '../../../../shared/items/inventorySystem.js';
 import { LootTableFactory } from '../../../../shared/items/lootTableFactory.js';
@@ -1098,6 +1099,11 @@ export class OverworldController extends BaseController {
                         required: required
                     };
                 });
+                // all done, and it is handed in to its giver: the tracker says where to go
+                if (def.turnIn && formattedObjectives.every(o => o.current >= o.required)) {
+                    const giver = ENTITY_DEFINITIONS[def.turnIn]?.name || 'the quest giver';
+                    formattedObjectives.push({ description: `Return to the ${giver}`, current: 0, required: 1 });
+                }
                 trackedQuests.push({ title: def.name, objectives: formattedObjectives });
             }
         }

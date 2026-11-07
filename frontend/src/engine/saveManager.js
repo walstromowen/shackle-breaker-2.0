@@ -298,6 +298,7 @@ export const SaveManager = {
                 villageStairs: clone(world.villageStairs || []),
                 levelPaths: clone(world.levelPaths || {}),
                 waypoints: clone(world.waypoints || []),
+                strangerHome: world.strangerHome || null,   // the workshop the Hooded Stranger lives in (InteriorFactory)
                 discoveredChunks: clone(world.discoveredChunks || []),
                 structureChunks: clone(world.structureChunks || {}),
                 weather: serializeWeather(world.currentWeather),
@@ -416,6 +417,7 @@ export const SaveManager = {
             villageStairs: data.world.villageStairs || [],
             levelPaths: data.world.levelPaths || {},
             waypoints: data.world.waypoints || [],
+            strangerHome: data.world.strangerHome || null,
             discoveredChunks: data.world.discoveredChunks || [],
             // undefined in a save made before the record existed: WorldManager then works out which chunks already have their structure (see structureSpawner.js)
             structureChunks: data.world.structureChunks,

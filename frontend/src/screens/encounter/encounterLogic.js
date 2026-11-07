@@ -16,6 +16,8 @@ import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
 import { pushItemToast, pushTextToast } from '../../ui/toasts.js';
 import { UITheme } from '../../ui/UITheme.js';
 import { UI_SFX } from '../../ui/uiSfx.js';
+import { QuestDefinitions } from '../../../../shared/story/questDefinitions.js';
+import { QuestModel } from '../../../../shared/story/questModel.js';
 
 /* A party of several players in one encounter (EncounterController, engine/multiplayerSocial.js): every member's browser plays it with the
    same roll (the leader's, sent with each choice: the one who started it) and the same seed, so every screen reaches the same outcome. Who a
@@ -34,7 +36,7 @@ export function partyMode(type, payload = {}) {
     if (payload.party) return payload.party;
     if (type === 'AWARD_XP' || type === 'ROLL_LOOT_TABLE' || type === 'GIVE_ITEM' || type === 'ADD_ITEM') return 'split';
     if (type === 'MODIFY_CURRENCY') return (payload.amount || 0) > 0 ? 'split' : null;
-    if (type === 'ADVANCE_TIME' || type === 'START_QUEST' || type === 'RECORD_KILL') return 'all';
+    if (type === 'ADVANCE_TIME' || type === 'START_QUEST' || type === 'COMPLETE_QUEST' || type === 'RECORD_KILL') return 'all';
     if (payload.target === 'entire_party') return 'all';
     return null;
 }
@@ -332,11 +334,30 @@ export class EncounterLogic {
                             || (Array.isArray(questLog.completed) && questLog.completed.includes(payload.questId));
                         if (!alreadyKnown) {
                             events.emit('START_QUEST', { questId: payload.questId });
-                            const questName = payload.questName || payload.questId.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                            const questName = payload.questName || QuestDefinitions[payload.questId]?.name || payload.questId.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
                             questsStarted.push(`New Quest: ${questName}`);
                         }
                     }
                     break;
+                case "COMPLETE_QUEST": {
+                    // A quest turned in to the one who gave it (the Hooded Stranger): its rewards are handed out here, as the journal's COLLECT would.
+                    // `force: true` counts its objectives done first (a "find him" quest, finished by the very talk that turns it in).
+                    const qid = payload.questId;
+                    const def = qid && QuestDefinitions[qid];
+                    const quest = def && gameState.quests?.active?.[qid];
+                    if (!quest) break;
+                    if (payload.force) for (const o of def.objectives) quest.progress[o.id] = o.amount || 1;
+                    if (!QuestModel.checkCompletion(gameState, qid)) break;
+                    const r = def.rewards || {};
+                    if (QuestModel.completeQuest(gameState, qid)) {
+                        questsStarted.push(`Quest Complete: ${def.name}`);
+                        if (r.exp) xpEarned.push(`Party +${r.exp} XP`);
+                        if (r.currency) currencyFound.push(`+${r.currency} coins`);
+                        for (const it of r.items || []) itemsFoundData.push({ id: it.id, qty: it.amount || 1 });
+                        events.emit('QUEST_COMPLETED', { questId: qid });
+                    }
+                    break;
+                }
                 case "ROLL_LOOT_TABLE":
                     if (payload.lootTableId) {
                         let actualTableId = payload.lootTableId;

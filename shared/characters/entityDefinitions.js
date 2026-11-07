@@ -191,6 +191,17 @@ export const ENTITY_DEFINITIONS = {
         tags: [...HUMANOID_TEMPLATE.tags]
     },
 
+    /* The Hooded Stranger: the quest giver of the Shackled questline. Never fought; he stands in one village workshop (world.strangerHome, see
+       InteriorFactory) and talks (story/encounters/story/hoodedStranger.js). */
+    "HOODED_STRANGER": {
+        ...HUMANOID_TEMPLATE,
+        name: "Hooded Stranger",
+        level: 1,
+        spriteOverworld: "hoodedStrangerSprite",
+        spritePortrait: "encounter_hooded_stranger",
+        tags: [...HUMANOID_TEMPLATE.tags]
+    },
+
     "SHADY_MERCHANT": {
         ...HUMANOID_TEMPLATE,
         name: "Shady Merchant",

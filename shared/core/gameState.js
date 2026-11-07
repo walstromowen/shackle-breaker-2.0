@@ -91,6 +91,7 @@ export function resetWorldForNewGame() {
     w.levelPaths = {};
     w.discoveredChunks = [];
     w.waypoints = [];
+    w.strangerHome = null;   // a new world: the Hooded Stranger has not chosen his workshop yet
     w.structureChunks = {};
     w.currentWeather = null;
     w.biomeWeather = {};

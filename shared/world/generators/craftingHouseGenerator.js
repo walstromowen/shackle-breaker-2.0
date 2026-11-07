@@ -73,6 +73,12 @@ export class CraftingHouseGenerator {
             if (this.stationPositions.length) this.stationPos = this.stationPositions[Math.floor(this.stationPositions.length / 2)];
         }
         const sc = this.stationPos ? this.stationPos[0] : 0;
+        // the quest giver (config.questGiver: the one workshop he lives in): standing beside the work table, facing the door
+        if (this.config.questGiver) {
+            for (const [c, r] of [[a.c1 - 1, a.r0 + 2], [a.c0 + 1, a.r0 + 2], [a.c1 - 1, a.r0 + 3], [a.c0 + 1, a.r0 + 3], [a.c1, a.r0 + 2], [a.c0, a.r0 + 2]]) {
+                if (F.place(this.config.questGiver, c, r)) { this.questGiverPos = [c, r]; break; }
+            }
+        }
         // what the trade has around it
         const wallProps = {
             smith: ['FIREPLACE', 'BARREL'], carpenter: ['BOOKSHELF', 'WARDROBE'], mason: ['BOOKSHELF'], tailor: ['WARDROBE', 'BOOKSHELF'], generic: ['BOOKSHELF'],

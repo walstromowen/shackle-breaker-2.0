@@ -2,28 +2,43 @@ export const QuestDefinitions = {
     // ========================================================
     // MAIN QUESTLINE (SHACKLED)
     // ========================================================
+    // Every step of the questline is handed out, and handed in, by the Hooded Stranger in a village workshop (turnIn: talk to him; the journal has no
+    // Collect for these). He gives the next step when you hand one in (story/encounters/story/hoodedStranger.js), so no step starts the next by itself.
+    "shackled_stranger": {
+        id: "shackled_stranger",
+        name: "Shackled",
+        description: "The chain that bound you to the line has broken, and the convoy marched on into the dark without you. The shackles are still locked around your wrists. Somewhere in the villages, in a workshop where the forge is still lit, a hooded man is said to know what the iron means. Find him.",
+        turnIn: "HOODED_STRANGER",
+        objectives: [
+            { id: "obj_find_stranger", type: "talk", targetId: "HOODED_STRANGER", amount: 1 }
+        ],
+        rewards: { exp: 20 }
+    },
     "shackled1": {
     id: "shackled1",
     name: "Shackled",
-    description: "The chain that bound you to the line has broken, and the convoy marched on into the dark without you. The shackles are still locked around your wrists, and the fog in your mind has lifted. You remember the road, and nothing before it. Find out what happened, and grow strong enough to survive the answer.",
+        turnIn: "HOODED_STRANGER",
+    description: "The Hooded Stranger will tell you nothing while you are this weak. Grow strong enough to survive the answer, then go back to him.",
     objectives: [
         { id: "obj_reach_level_2", type: "party_level", targetLevel: 3, amount: 1 },
     ],
-    rewards: { exp: 60, currency: 50, quests: ["shackled2"] }
+    rewards: { exp: 60, currency: 50 }
 },
     "shackled2": {
         id: "shackled2",
         name: "Shackled",
+        turnIn: "HOODED_STRANGER",
         description: "The prisoners on the road were not the only ones. Others wear the same iron here, and they laugh in the streets, as though sharing a single dream. Whatever took them has not stopped at the road.",
         objectives: [
             { id: "obj_kill_madmen_part_2", type: "kill_enemy", targetId: "MAD_MAN", amount: 3 },
             { id: "obj_reach_level_3", type: "party_level", targetLevel: 5, amount: 1 }
         ],
-        rewards: { exp: 140, currency: 100, quests: ["shackled3"] }
+        rewards: { exp: 140, currency: 100 }
     },
     "shackled3": {
         id: "shackled3",
         name: "Shackled",
+        turnIn: "HOODED_STRANGER",
         description: "The shackles have no keyhole, and the weight on your spirit is as heavy as the iron. The ravings of the mad are not all nonsense: they speak of a stone fallen from the sky, and of soldiers in the old colors who carried it away. Many of the mad still conjure sparks and cannot stop. Listen closely, then put them down.",
         objectives: [
             { id: "obj_reach_level_5", type: "party_level", targetLevel: 7, amount: 1 },
@@ -35,13 +50,13 @@ export const QuestDefinitions = {
             items: [
                 { id: "healing_tonic", amount: 1 },
                 { id: "bedroll", amount: 1 }
-            ],
-            quests: ["shackled7"]   // (the dunes and the peaks, shackled4-6, were cut: the stone's trail stays on the plains)
+            ]
         }
     },
     "shackled7": {
         id: "shackled7",
         name: "Shackled",
+        turnIn: "HOODED_STRANGER",
         description: "The stone went with those who still wear the old colors, and they have not given it up. Legionaries and watchmen still march the plains as if the war never ended. Whoever carried the stone home has the answer, if any of them can still be reasoned with.",
         objectives: [
             { id: "obj_reach_level_9", type: "party_level", targetLevel: 9, amount: 1 },
@@ -55,13 +70,12 @@ export const QuestDefinitions = {
                 { id: "meteorite", amount: 1 },
                 { id: "torch", amount: 3 },
                 { id: "interior_map", amount: 1 }
-            ],
-            quests: ["shackled8"]
-        }
+            ] }
     },
     "shackled8": {
         id: "shackled8",
         name: "Shackled",
+        turnIn: "HOODED_STRANGER",
         description: "A stone altar waits in the dark below, though not every depth holds one. A skull rests above a hollow the size of a fallen star. The answer to what happened waits down there. Descend when you are strong.",
         objectives: [
             { id: "obj_reach_level_10", type: "party_level", targetLevel: 10, amount: 1 },   // Darius is met around level 10

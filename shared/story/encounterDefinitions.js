@@ -11,6 +11,7 @@ import { aftermath } from './encounters/aftermath.js';
 import { ironChest } from './encounters/ironChest.js';
 import { tracksInTheSnow } from './encounters/tracksInTheSnow.js';
 import { mysteriousAltar } from './encounters/story/mysteriousAltar.js';
+import { hoodedStranger } from './encounters/story/hoodedStranger.js';
 import { prologue } from './encounters/story/prologue.js';
 import { actTwo } from './encounters/story/actTwo.js';
 import { peculiarScarecrow } from './encounters/peculiarScarecrow.js';
@@ -35,6 +36,7 @@ export const encounterDefinitions = {
     [ironChest.id]: ironChest,
     [tracksInTheSnow.id]: tracksInTheSnow,
     [mysteriousAltar.id]: mysteriousAltar,
+    [hoodedStranger.id]: hoodedStranger,   // the Shackled quest giver, in one village workshop
     [prologue.id]: prologue,
     [actTwo.id]: actTwo,
     [peculiarScarecrow.id]: peculiarScarecrow,

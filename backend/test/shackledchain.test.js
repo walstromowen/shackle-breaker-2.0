@@ -4,13 +4,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { QuestDefinitions as Q } from '../../shared/story/questDefinitions.js';
 import { retireQuests } from '../../shared/story/questSystem.js';
+import { STRANGER_CHAIN } from '../../shared/story/encounters/story/hoodedStranger.js';
 
-const chain = () => {
-    const ids = [];
-    let id = 'shackled1';
-    while (id) { ids.push(id); id = (Q[id].rewards.quests || []).find(q => q.startsWith('shackled')); }
-    return ids;
-};
+// the steps after "find him", in the order the Hooded Stranger hands them out
+const chain = () => STRANGER_CHAIN.slice(1);
 
 test('the chain: level 3, madmen, magic addicts, the old soldiers, then Darius', () => {
     assert.deepEqual(chain(), ['shackled1', 'shackled2', 'shackled3', 'shackled7', 'shackled8']);

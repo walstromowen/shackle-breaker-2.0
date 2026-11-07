@@ -77,6 +77,7 @@ import { multiplayerSession } from './multiplayerSession.js';
 import { multiplayerSocial } from './multiplayerSocial.js';
 import { PARTY_SCALING } from '../../../shared/battle/spawnTableFactory.js';
 import { dropGrave } from '../../../shared/world/graves.js';
+import { encounterDefinitions } from '../../../shared/story/encounterDefinitions.js';
 
 export class SceneManager {
     constructor(canvas, assetLoader, config) {
@@ -491,7 +492,9 @@ export class SceneManager {
             if (data.type === 'ENCOUNTER') {
                 // a chest, a gravestone, a stranger, a line of sight... In a party of players, the ones near me are pulled in and vote; I lead it
                 // (the same shared encounter as a random one, START_ENCOUNTER below)
-                const mp = multiplayerSocial.sharesFights
+                // an encounter marked `personal` (the quest giver: it is about this player's own quests) is never shared
+                const personal = !!(encounterDefinitions[data.id] && encounterDefinitions[data.id].personal);
+                const mp = multiplayerSocial.sharesFights && !personal
                     ? multiplayerSocial.startPartyEncounter({ encounterId: data.id, context: data.context || {}, bgm: data.context?.bgm || null, quiet: true })
                     : null;
                 this.transitionRenderer.start(() => {

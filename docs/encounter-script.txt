@@ -653,6 +653,86 @@ A blade catches you across the side and throws you to the floor. It bites into t
   > Get up, holding the wound.
 
 
+===== THE HOODED STRANGER (hooded_stranger) =====
+
+[meet]
+A hooded man leans against the workbench with his arms folded, as if he has been waiting a long time. He looks at your wrists before he looks at your face.
+STRANGER: "So the line broke. I wondered which of you it would be."
+  > Continue.
+
+[meet_3]
+STRANGER: "Those shackles have no lock because they were never meant to come off. I have seen a great many wrists like yours. Most of them laugh now."
+  > Continue.
+
+[meet_4]
+STRANGER: "You are weak, and the road does not forgive weakness. Grow stronger. When you can stand on your own, come back, and I will tell you where to look."
+  > "I will be back."
+
+[give_shackled1]
+STRANGER: "You are weak, and the road does not forgive weakness. Grow stronger, then come back to me."
+  > "It will be done."
+
+[waiting_shackled1]
+STRANGER: "Not yet. You still walk like a prisoner."
+  > Leave him to his work.
+
+[turnin_shackled1]
+STRANGER: "Better. You have stopped looking over your shoulder."
+  > Continue.
+
+[give_shackled2]
+STRANGER: "Others wear the same iron as you. They laugh in the grass, sharing a dream they cannot wake from. Put three of them to rest, and listen to what they say before they go."
+  > "It will be done."
+
+[waiting_shackled2]
+STRANGER: "The madmen still laugh in the grass. Three of them. And come back stronger than you left."
+  > Leave him to his work.
+
+[turnin_shackled2]
+STRANGER: "You heard them, then. A stone that fell from the sky. Their minds broke, but the memory did not."
+  > Continue.
+
+[give_shackled3]
+STRANGER: "The ones who still conjure sparks were the first to touch it. They cannot stop now. Find three of them, and end it."
+  > "It will be done."
+
+[waiting_shackled3]
+STRANGER: "The ones who conjure sparks. Three of them. It is a mercy, whatever they tell you."
+  > Leave him to his work.
+
+[turnin_shackled3]
+STRANGER: "Magic does that. It gives, and it keeps a tally."
+  > Continue.
+
+[give_shackled7]
+STRANGER: "The stone went with the soldiers who still wear the old colors. Legionaries, watchmen. They march as if the war never ended. Take it back from them."
+  > "It will be done."
+
+[waiting_shackled7]
+STRANGER: "The old soldiers still have it. Three legionaries, two watchmen. Do not come back empty-handed."
+  > Leave him to his work.
+
+[turnin_shackled7]
+STRANGER: "You have it. Keep it close. It is warm, isn't it? It should not be."
+  > Continue.
+
+[give_shackled8]
+STRANGER: "There is an altar of dark stone deep in the caves, a skull above a hollow the size of a fallen star. Someone still kneels there. Bring him the stone, and be ready."
+  > "It will be done."
+
+[waiting_shackled8]
+STRANGER: "The altar is waiting, and so is he. Carry the stone, and be strong when you go."
+  > Leave him to his work.
+
+[turnin_shackled8]
+STRANGER: "So the Groveler is dead, and the stone is spent."
+  > Continue.
+
+[after_darius]
+STRANGER: "Look up tonight. If the moon has turned red, then it has begun. Come back when you have seen what walks under it."
+  > Leave.
+
+
 ===== THE QUIET AFTER (shackled_betrayal_end) =====
 
 [after]

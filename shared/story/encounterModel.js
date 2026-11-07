@@ -8,7 +8,8 @@ export class EncounterModel {
         this.ambience = definition.ambience || null;       // a looping bed that starts with the encounter (a stage's own ambience wins)
         this.stages = definition.stages;
         this.context = context;
-        this.currentStageId = startingStageId || definition.initialStage;
+        // initialStage may be a function of the game's state (the Hooded Stranger: what he says first depends on the player's quests)
+        this.currentStageId = startingStageId || (typeof definition.initialStage === 'function' ? definition.initialStage(context) : definition.initialStage);
     }
 
     getCurrentStage() {

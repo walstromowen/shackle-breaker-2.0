@@ -448,6 +448,10 @@ export class OverworldUIRenderer {
             } else if (obj.type === 'party_level') {
                 actionText = "Reach Level";
                 targetText = obj.targetLevel;
+            } else if (obj.type === 'talk') {
+                actionText = "Find";
+                const entityDef = ENTITY_DEFINITIONS ? ENTITY_DEFINITIONS[obj.targetId] : null;
+                targetText = `the ${entityDef?.name || targetText}`;
             }
 
             // Fallback formatting if definitions fail to load

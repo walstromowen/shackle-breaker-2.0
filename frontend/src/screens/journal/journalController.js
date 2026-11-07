@@ -253,6 +253,7 @@ export class JournalController extends BaseController {
     }
 
     collectRewards(questId) {
+        if (QuestDefinitions[questId]?.turnIn) { this.playErrorSound(); return; }   // handed in to its giver, in person
         const success = QuestModel.completeQuest(gameState, questId);
         if (!success) {
             this.playErrorSound();
@@ -331,7 +332,8 @@ export class JournalController extends BaseController {
 
         // 4. Action Buttons (Only render if the previewed quest is securely locked as selected)
         if (this.selectedQuestId && displayQuestId === this.selectedQuestId && this.activeTab === 'active') {
-            const isComplete = QuestModel.checkCompletion(gameState, this.selectedQuestId);
+            // a quest with a turnIn giver is handed in by talking to them, never collected here
+            const isComplete = QuestModel.checkCompletion(gameState, this.selectedQuestId) && !QuestDefinitions[this.selectedQuestId]?.turnIn;
             const btnX = rightColX + (colW / 2) - (btnWidth / 2);
             const btnY = startY + panelHeight - btnHeight - 32;
 

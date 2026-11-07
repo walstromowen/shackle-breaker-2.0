@@ -371,7 +371,7 @@ export class CharacterCreatorLogic {
         // ---> START QUESTS <---
         
         // 1. Start the main tutorial quest
-        QuestModel.startQuest(gameState, 'shackled1');
+        QuestModel.startQuest(gameState, 'shackled_stranger');   // find the Hooded Stranger: he hands out the rest of the questline
         
         // 2. Start the background-specific quest
         const selectedBackground = CREATION_DATA.BACKGROUNDS[this.state.backgroundIdx];
@@ -384,8 +384,8 @@ export class CharacterCreatorLogic {
         }
         
         // Track Main Quest
-        if (!gameState.quests.trackedIds.includes('shackled1')) {
-            gameState.quests.trackedIds.push('shackled1');
+        if (!gameState.quests.trackedIds.includes('shackled_stranger')) {
+            gameState.quests.trackedIds.push('shackled_stranger');
         }
         
         // Track Background Quest

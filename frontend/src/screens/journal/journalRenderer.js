@@ -184,6 +184,9 @@ export class JournalRenderer {
             } else if (obj.type === 'party_level') {
                 actionText = "Reach Level";
                 targetText = obj.targetLevel;
+            } else if (obj.type === 'talk') {
+                actionText = "Find";
+                targetText = `the ${ENTITY_DEFINITIONS[obj.targetId]?.name || targetText}`;
             }
 
             // Fallback formatting only if it's still the raw ID format
@@ -199,6 +202,12 @@ export class JournalRenderer {
 
             currentY += 40;
         });
+
+        // a quest handed in to the one who gave it: say so once its objectives are done (it has no Collect button)
+        if (def.turnIn && state.activeTab === 'active' && questState && def.objectives.every(o => (questState.progress[o.id] || 0) >= (o.amount || 1))) {
+            ui.drawText(`Return to the ${ENTITY_DEFINITIONS[def.turnIn]?.name || 'quest giver'} to hand this in.`, descStartX + 8, currentY, UITheme.fonts.body, UITheme.colors.textHighlight, "left");
+            currentY += 40;
+        }
 
         currentY += 20;
 
