@@ -98,6 +98,12 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 
 - **Continue.**  _(→ a_moment_of_clarity_3)_
 
+### A Fleeting Peace  `a_moment_of_clarity_3`
+
+> "Shackle Breaker..."
+
+- **Accept the knapsack.**  _(ends)_
+
 ### An Odd Reply  `speaking_to_the_voices`
 
 > You manage to get the stranger's attention. He tilts his head. "Magic tell me things! Hee Hee!" "Tell me what magic say!"
@@ -105,18 +111,6 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 - **[STR] Shout at the stranger to run away.**  _(roll STR 5: pass → fleeing_shadows, fail → a_new_friend)_
 - **[ATN] Manipulate him into giving items.**  _(roll ATT 10: pass → pleased_the_magic, fail → rejected_by_the_magic)_
 - **[STR] Command him to bow.**  _(roll STR 15: pass → a_new_servant, fail → shattered_illusions)_
-
-### Combat  `descent_into_madness`
-
-> The stranger stops, looks you dead in the eyes, and bursts into laughter that is far too loud. He draws a rusted blade!
-
-- **Draw your weapon!**  _(fight)_
-
-### A Fleeting Peace  `a_moment_of_clarity_3`
-
-> "Shackle Breaker..."
-
-- **Accept the knapsack.**  _(ends)_
 
 ### The Aftermath  `fleeing_shadows`
 
@@ -151,6 +145,12 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 ### Combat  `shattered_illusions`
 
 > He glares at you with sudden, horrifying clarity. "No hear magic!" "Me hurt you now!"
+
+- **Draw your weapon!**  _(fight)_
+
+### Combat  `descent_into_madness`
+
+> The stranger stops, looks you dead in the eyes, and bursts into laughter that is far too loud. He draws a rusted blade!
 
 - **Draw your weapon!**  _(fight)_
 
@@ -267,19 +267,6 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 - **Switch party member.**  _(switch party member)_
 - **Leave the warrior to his fate.**  _(ends)_
 
-### A Fallen Officer  `fallen_officer`
-
-> You spot a figure in finer armor lying apart from the rest, a Royal Guard insignia still pinned to the chest. A leather satchel is strapped across the body.
-
-- **Search the officer's satchel.**  _(→ officer_orders_found / officer_gear_found)_
-- **Leave the body.**  _(→ aftermath)_
-
-### No Life Signs  `search_fail`
-
-> You search high and low, but find no survivors.
-
-- **Reassess the area.**  _(→ aftermath)_
-
 ### Battle Survivor  `battle_survivor`
 
 > The warrior stands up from the ground and looks at you. "What do you want?"
@@ -289,35 +276,17 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 - **[ALT] "You should come with me, we are safer together."**  _(roll ALT 10: pass → end, fail → survivor_refusal / survivor_bribe_demand, ends)_
 - **Part ways.**  _(ends)_
 
-### Betrayal!  `warrior_betrayal_ambush`
-
-> As you tend to the warrior's wounds, he violently grabs you and draws his weapon! Soon, other fallen warriors rise around you!
-
-- **Defend yourself!**  _(fight)_
-
-### Cold-Hearted  `robbed_warrior`
-
-> You find something on the wounded warrior. Meanwhile, the warrior breathes his last breath.
-
-- **Take what he carried.**  _(→ aftermath)_
-
-### Sealed Orders  `officer_orders_found`
-
-> Tucked beneath the officer's rations, you find a wax-sealed letter still bearing the Royal Guard crest.
-
-- **Take the orders.**  _(ends)_
-
-### The Officer's Gear  `officer_gear_found`
-
-> Wrapped in the officer's cloak, you find personal gear that survived the battle.
-
-- **Take the gear.**  _(ends)_
-
 ### A Narrow Escape  `survivor_story`
 
 > "A group of madmen chased me straight into this mess. It's a miracle you showed up, but don't expect any more thanks than that."
 
 - **"Why were they chasing you?"**  _(→ survivor_chased_reply)_
+- **Return to conversation.**  _(→ battle_survivor)_
+
+### No Answers  `survivor_chased_reply`
+
+> "How should I know? Those madmen will chase anything that moves." "Speaking of which, you should get a move on if you know what is good for you."
+
 - **Return to conversation.**  _(→ battle_survivor)_
 
 ### Standard Issue  `survivor_identity`
@@ -339,17 +308,48 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 - **[50g] "Perhaps some incentive?"**  _(→ survivor_bribed)_
 - **Return to conversation.**  _(→ battle_survivor)_
 
-### No Answers  `survivor_chased_reply`
-
-> "How should I know? Those madmen will chase anything that moves." "Speaking of which, you should get a move on if you know what is good for you."
-
-- **Return to conversation.**  _(→ battle_survivor)_
-
 ### Coin Talks  `survivor_bribed`
 
 > The warrior weighs the coins in his palm and sighs. "Fine." "Put like that, I suppose I can find the time. Lead on."
 
 - **Welcome him to the party.**  _(ends)_
+
+### Betrayal!  `warrior_betrayal_ambush`
+
+> As you tend to the warrior's wounds, he violently grabs you and draws his weapon! Soon, other fallen warriors rise around you!
+
+- **Defend yourself!**  _(fight)_
+
+### Cold-Hearted  `robbed_warrior`
+
+> You find something on the wounded warrior. Meanwhile, the warrior breathes his last breath.
+
+- **Take what he carried.**  _(→ aftermath)_
+
+### A Fallen Officer  `fallen_officer`
+
+> You spot a figure in finer armor lying apart from the rest, a Royal Guard insignia still pinned to the chest. A leather satchel is strapped across the body.
+
+- **Search the officer's satchel.**  _(→ officer_orders_found / officer_gear_found)_
+- **Leave the body.**  _(→ aftermath)_
+
+### Sealed Orders  `officer_orders_found`
+
+> Tucked beneath the officer's rations, you find a wax-sealed letter still bearing the Royal Guard crest.
+
+- **Take the orders.**  _(ends)_
+
+### The Officer's Gear  `officer_gear_found`
+
+> Wrapped in the officer's cloak, you find personal gear that survived the battle.
+
+- **Take the gear.**  _(ends)_
+
+### No Life Signs  `search_fail`
+
+> You search high and low, but find no survivors.
+
+- **Reassess the area.**  _(→ aftermath)_
 
 ## Arrow Trap
 
@@ -499,31 +499,6 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 - **[INT] Examine the skull.**  _(roll INT 15: pass → blue_glow / green_glow, fail → red_glow)_
 - **Back up.**  _(→ approach)_
 
-### The Bones Stir  `bones_stir`
-
-> As you approach the altar, the skeletons along the ground slowly begin to move. Before you realize what is happening, the skeletons are on top of you!
-
-- **Draw your weapons!**  _(fight)_
-
-### A Choking Cloud  `smoke_cloud`
-
-> As you approach the altar, it releases a cloud of pale smoke. It sinks into your lungs and limbs, and you feel fatigued.
-
-- **Stagger the rest of the way to the altar.**  _(→ at_the_altar)_
-
-### A Voice in the Dark  `darius_rises`
-
-> "Footsteps... after so long. Is it you, my king? Have you come back for the light?" "No. No, you are not him. Forgive an old man his hope."
-
-- **Continue.**  _(→ darius_speaks)_
-
-### A Hidden Stair  `hidden_stair`
-
-> Under the altar, worn steps lead down into the dark. Cold air rises from below, and it smells of old bones.
-
-- **Leave the way open.**  _(ends)_
-  - _spoken:_ You leave the stair uncovered. Whatever lies below can wait for you.
-
 ### A Blue Light  `blue_glow`
 
 > As you reach to examine the skull, its eyes begin to glow blue, filling the whole area with a blinding light! When you can see again, the skull has disappeared, and a sense of newfound strength fills you.
@@ -541,6 +516,24 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 > As you reach to examine the skull, its eyes begin to glow red, filling the whole area with a blinding light! When you can see again, the skull has disappeared and a group of skeletons is quickly approaching!
 
 - **Ready your weapons!**  _(fight)_
+
+### The Bones Stir  `bones_stir`
+
+> As you approach the altar, the skeletons along the ground slowly begin to move. Before you realize what is happening, the skeletons are on top of you!
+
+- **Draw your weapons!**  _(fight)_
+
+### A Choking Cloud  `smoke_cloud`
+
+> As you approach the altar, it releases a cloud of pale smoke. It sinks into your lungs and limbs, and you feel fatigued.
+
+- **Stagger the rest of the way to the altar.**  _(→ at_the_altar)_
+
+### A Voice in the Dark  `darius_rises`
+
+> "Footsteps... after so long. Is it you, my king? Have you come back for the light?" "No. No, you are not him. Forgive an old man his hope."
+
+- **Continue.**  _(→ darius_speaks)_
 
 ### Darius the Groveler  `darius_speaks`
 
@@ -573,6 +566,13 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 - **Draw your weapon.**  _(fight)_
   - _spoken:_ You draw your weapon.
 
+### A Hidden Stair  `hidden_stair`
+
+> Under the altar, worn steps lead down into the dark. Cold air rises from below, and it smells of old bones.
+
+- **Leave the way open.**  _(ends)_
+  - _spoken:_ You leave the stair uncovered. Whatever lies below can wait for you.
+
 ## Old Gravestone
 
 `old_gravestone`
@@ -596,6 +596,83 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 - **[DEX] Dig slowly, by hand.**  _(roll DEX 12: pass → buried_things / sealed_coffin / empty_grave / bones_rise / spirit_rises, fail → buried_things / sealed_coffin / empty_grave / bones_rise / spirit_rises)_
 - **Stop. Fill it in.**  _(ends)_
   - _spoken:_ You press the earth back down with your palms and step away from the stone.
+
+### Buried With The Dead  `buried_things`
+
+> Beneath the stone lies a bundle wrapped in rotted oilcloth, left with the dead for reasons no one remembers. Whatever bound it here has loosened its grip.
+
+- **Take what was buried.**  _(ends)_
+- **[STR] Dig deeper still.**  _(roll STR 13: pass → deeper_find / deeper_nothing, fail → deeper_nothing / spirit_rises)_
+
+### A Second Bundle  `deeper_find`
+
+> Under the first bundle lies another, wrapped in older cloth and left by a deeper hand.
+
+- **Take both bundles.**  _(ends)_
+
+### Only Clay  `deeper_nothing`
+
+> There is nothing below but wet clay and pale roots. You take the bundle you found first.
+
+- **Take what was buried.**  _(ends)_
+
+### A Cold Breath  `spirit_rises`
+
+> A cold breath rolls out of the hole, and something pale rises with it, still dragging the broken chains it died in. It turns toward you, and it has noticed you.
+
+- **[ATT] Speak to the spirit.**  _(roll ATT 14: pass → spirit_at_rest, fail → spirit_unmoved)_
+- **Stand your ground!**  _(fight)_
+
+### Laid To Rest  `spirit_at_rest`
+
+> The chains stop dragging, and the pale shape bows its head and lets go of whatever it was holding. Then it is gone.
+
+- **Take the grave goods and fill it in.**  _(ends)_
+
+### A Cold Breath  `spirit_unmoved`
+
+> It does not hear you, or it hears and does not care. The chains lift, and the cold comes at you.
+
+- **Stand your ground!**  _(fight)_
+
+### A Sealed Coffin  `sealed_coffin`
+
+> Your hands strike wood: a coffin lid, nailed shut. It creaks as you press on it.
+
+- **[STR] Pry the lid open.**  _(roll STR 10: pass → coffin_opened, fail → bones_rise / spirit_rises)_
+- **Leave it sealed.**  _(ends)_
+  - _spoken:_ You push the earth back over the lid and step away from the stone.
+
+### The Lid Gives  `coffin_opened`
+
+> The nails shriek and the lid comes away. The dead were buried with more than their shrouds.
+
+- **Take what lies inside.**  _(ends)_
+
+### The Dead Rise  `bones_rise`
+
+> The soil heaves. Fingers of bone claw out of the grave, and what was buried here pulls itself free, and it is not alone.
+
+- **Draw your weapons!**  _(fight)_
+- **[DEX] Scramble out of the grave.**  _(roll DEX 13: pass → escaped_the_grave, fail → dragged_back)_
+
+### Out Of The Hole  `escaped_the_grave`
+
+> You roll out onto the grass and run. Behind you the bones rattle at the lip of the grave, then sink back into the dark, and whatever was buried with them goes down too.
+
+- **Keep running.**  _(ends)_
+
+### The Dead Rise  `dragged_back`
+
+> A hand of bone closes on your ankle and drags you back down into the grave. There is no way out but through them.
+
+- **Draw your weapons!**  _(fight)_
+
+### Empty Earth  `empty_grave`
+
+> There is only dark soil and a few splinters of coffin wood. Whatever lay here is long gone.
+
+- **Fill it in and move on.**  _(ends)_
 
 ### Listening  `listen_bundle`
 
@@ -645,83 +722,6 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
   - _spoken:_ You shake the noise out of your head and push your hands into the earth.
 - **Leave the dead in peace.**  _(ends)_
   - _spoken:_ You rub your temples, give the stone a last look, and walk on.
-
-### Buried With The Dead  `buried_things`
-
-> Beneath the stone lies a bundle wrapped in rotted oilcloth, left with the dead for reasons no one remembers. Whatever bound it here has loosened its grip.
-
-- **Take what was buried.**  _(ends)_
-- **[STR] Dig deeper still.**  _(roll STR 13: pass → deeper_find / deeper_nothing, fail → deeper_nothing / spirit_rises)_
-
-### A Sealed Coffin  `sealed_coffin`
-
-> Your hands strike wood: a coffin lid, nailed shut. It creaks as you press on it.
-
-- **[STR] Pry the lid open.**  _(roll STR 10: pass → coffin_opened, fail → bones_rise / spirit_rises)_
-- **Leave it sealed.**  _(ends)_
-  - _spoken:_ You push the earth back over the lid and step away from the stone.
-
-### Empty Earth  `empty_grave`
-
-> There is only dark soil and a few splinters of coffin wood. Whatever lay here is long gone.
-
-- **Fill it in and move on.**  _(ends)_
-
-### The Dead Rise  `bones_rise`
-
-> The soil heaves. Fingers of bone claw out of the grave, and what was buried here pulls itself free, and it is not alone.
-
-- **Draw your weapons!**  _(fight)_
-- **[DEX] Scramble out of the grave.**  _(roll DEX 13: pass → escaped_the_grave, fail → dragged_back)_
-
-### A Cold Breath  `spirit_rises`
-
-> A cold breath rolls out of the hole, and something pale rises with it, still dragging the broken chains it died in. It turns toward you, and it has noticed you.
-
-- **[ATT] Speak to the spirit.**  _(roll ATT 14: pass → spirit_at_rest, fail → spirit_unmoved)_
-- **Stand your ground!**  _(fight)_
-
-### A Second Bundle  `deeper_find`
-
-> Under the first bundle lies another, wrapped in older cloth and left by a deeper hand.
-
-- **Take both bundles.**  _(ends)_
-
-### Only Clay  `deeper_nothing`
-
-> There is nothing below but wet clay and pale roots. You take the bundle you found first.
-
-- **Take what was buried.**  _(ends)_
-
-### The Lid Gives  `coffin_opened`
-
-> The nails shriek and the lid comes away. The dead were buried with more than their shrouds.
-
-- **Take what lies inside.**  _(ends)_
-
-### Out Of The Hole  `escaped_the_grave`
-
-> You roll out onto the grass and run. Behind you the bones rattle at the lip of the grave, then sink back into the dark, and whatever was buried with them goes down too.
-
-- **Keep running.**  _(ends)_
-
-### The Dead Rise  `dragged_back`
-
-> A hand of bone closes on your ankle and drags you back down into the grave. There is no way out but through them.
-
-- **Draw your weapons!**  _(fight)_
-
-### Laid To Rest  `spirit_at_rest`
-
-> The chains stop dragging, and the pale shape bows its head and lets go of whatever it was holding. Then it is gone.
-
-- **Take the grave goods and fill it in.**  _(ends)_
-
-### A Cold Breath  `spirit_unmoved`
-
-> It does not hear you, or it hears and does not care. The chains lift, and the cold comes at you.
-
-- **Stand your ground!**  _(fight)_
 
 ## Peculiar Scarecrow
 
@@ -1010,23 +1010,23 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 - **Refuse the bribe.**  _(→ merchant_attacks)_
   - _spoken:_ You slap the coins away and draw your weapon.
 
-### Sleight of Hand  `distracted_buyer`
-
-> You lean in close to inspect a shiny bauble. The merchant spouts frantic gibberish about sky-demons and shadow-teeth. Suddenly, you notice your pack feels much lighter...
-
-- **Check your pockets!**  _(→ merchant_escaped)_
-
-### Cowardly Retreat  `merchant_flees`
-
-> The merchant's eyes bug out with terror. "The big ones! The scary ones! They eat the magic!" He shrieks, dropping his heavy sack and scuttling away on all fours.
-
-- **Loot the abandoned sack.**  _(ends)_
-
 ### A Deadly Mistake  `merchant_attacks`
 
 > The merchant stops twitching. His eyes go completely dead. He draws a wickedly curved, poisoned dagger, giggling softly. "The voices say you have too much blood..." "Come out, friends! Let's let it out!"
 
 - **Continue.**  _(→ merchant_attacks_4)_
+
+### A Deadly Mistake  `merchant_attacks_4`
+
+> "Hee hee!" From the shadows, manic giggling echoes as deranged figures step into the light!
+
+- **Draw your weapon!**  _(fight)_
+
+### Sleight of Hand  `distracted_buyer`
+
+> You lean in close to inspect a shiny bauble. The merchant spouts frantic gibberish about sky-demons and shadow-teeth. Suddenly, you notice your pack feels much lighter...
+
+- **Check your pockets!**  _(→ merchant_escaped)_
 
 ### He's Gone!  `merchant_escaped`
 
@@ -1034,11 +1034,11 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 
 - **Curse your luck.**  _(ends)_
 
-### A Deadly Mistake  `merchant_attacks_4`
+### Cowardly Retreat  `merchant_flees`
 
-> "Hee hee!" From the shadows, manic giggling echoes as deranged figures step into the light!
+> The merchant's eyes bug out with terror. "The big ones! The scary ones! They eat the magic!" He shrieks, dropping his heavy sack and scuttling away on all fours.
 
-- **Draw your weapon!**  _(fight)_
+- **Loot the abandoned sack.**  _(ends)_
 
 ## The Wounded Mutt
 
@@ -1062,13 +1062,6 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 - **Back away slowly.**  _(→ walk_away)_
   - _spoken:_ You decide not to push your luck any further and slip away.
 
-### Left to the Wilds  `walk_away`
-
-> You turn your back on the whimpering animal. The wilds are unforgiving, and one must look out for oneself.
-
-- **Continue your journey.**  _(ends)_
-  - _spoken:_ You press onward, trying to ignore the fading whimpers.
-
 ### A New Friend  `success_tame`
 
 > You stabilize the dog's leg. The intense pain eases, and the dog licks your hand in absolute gratitude. You have earned a new friend.
@@ -1081,6 +1074,13 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 > The wild mutt panics! It yelps in sudden terror and snaps fiercely, sinking its teeth deep into your arm before lunging outright!
 
 - **Defend against the rabid mutt!**  _(fight)_
+
+### Left to the Wilds  `walk_away`
+
+> You turn your back on the whimpering animal. The wilds are unforgiving, and one must look out for oneself.
+
+- **Continue your journey.**  _(ends)_
+  - _spoken:_ You press onward, trying to ignore the fading whimpers.
 
 ## Tracks In The Snow
 
@@ -1113,33 +1113,6 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 - **Leave.**  _(ends)_
   - _spoken:_ You move on.
 
-### A Deer Along The Road  `deer_on_the_road`
-
-> The tracks lead you off the road to a lone deer grazing in the snow. It hasn't noticed you yet.
-
-- **[DEX] Stalk and hunt the deer.**  _(roll DEX 12: pass → deer_hunted, fail → deer_escapes)_
-- **Switch party member.**  _(switch party member)_
-- **Leave the deer in peace.**  _(ends)_
-  - _spoken:_ You let the deer graze and return to the road.
-
-### Ambush!  `something_approaches`
-
-> Something approaches your position!
-
-- **Draw your weapon!**  _(fight)_
-
-### Lost The Trail  `tracks_lost`
-
-> You wander in the snow looking for more tracks.
-
-- **Look again.**  _(→ discovery)_
-
-### Lost The Trail  `tracks_lost_again`
-
-> You wander in the snow looking for more tracks.
-
-- **Look again.**  _(→ tracks_continue)_
-
 ### Wounded Snow Leopard  `wounded_leopard`
 
 > You see a snow leopard lying in the snow ahead. It appears to be injured.
@@ -1149,32 +1122,6 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 - **Switch party member.**  _(switch party member)_
 - **Leave.**  _(ends)_
   - _spoken:_ You move on.
-
-### Apex Predator  `apex_predator`
-
-> (An unnatural beast growls...)
-
-- **Attack!**  _(fight)_
-  - _spoken:_ You attack!
-- **[DEX] Run!**  _(roll DEX 15: pass → predator_escape, fail → predator_cut_off)_
-
-### Nothing Found  `nothing_noteworthy`
-
-> You don't see anything noteworthy.
-
-- **Look again.**  _(→ crimson_snow)_
-
-### A Clean Kill  `deer_hunted`
-
-> You close the distance unseen and bring the deer down in a single, clean strike.
-
-- **Take the hide and bones.**  _(ends)_
-
-### It Bolts!  `deer_escapes`
-
-> A branch cracks under your foot. The deer's head snaps up and it bounds off through the snow, gone in a heartbeat.
-
-- **Return to the road.**  _(ends)_
 
 ### A New Friend  `leopard_nuzzle`
 
@@ -1207,6 +1154,14 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 
 - **Take the pelts.**  _(ends)_
 
+### Apex Predator  `apex_predator`
+
+> (An unnatural beast growls...)
+
+- **Attack!**  _(fight)_
+  - _spoken:_ You attack!
+- **[DEX] Run!**  _(roll DEX 15: pass → predator_escape, fail → predator_cut_off)_
+
 ### A Narrow Escape  `predator_escape`
 
 > You escape the predator!
@@ -1218,6 +1173,51 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 > The predator cuts off your escape!
 
 - **Fight for your life!**  _(fight)_
+
+### Ambush!  `something_approaches`
+
+> Something approaches your position!
+
+- **Draw your weapon!**  _(fight)_
+
+### Nothing Found  `nothing_noteworthy`
+
+> You don't see anything noteworthy.
+
+- **Look again.**  _(→ crimson_snow)_
+
+### A Deer Along The Road  `deer_on_the_road`
+
+> The tracks lead you off the road to a lone deer grazing in the snow. It hasn't noticed you yet.
+
+- **[DEX] Stalk and hunt the deer.**  _(roll DEX 12: pass → deer_hunted, fail → deer_escapes)_
+- **Switch party member.**  _(switch party member)_
+- **Leave the deer in peace.**  _(ends)_
+  - _spoken:_ You let the deer graze and return to the road.
+
+### A Clean Kill  `deer_hunted`
+
+> You close the distance unseen and bring the deer down in a single, clean strike.
+
+- **Take the hide and bones.**  _(ends)_
+
+### It Bolts!  `deer_escapes`
+
+> A branch cracks under your foot. The deer's head snaps up and it bounds off through the snow, gone in a heartbeat.
+
+- **Return to the road.**  _(ends)_
+
+### Lost The Trail  `tracks_lost_again`
+
+> You wander in the snow looking for more tracks.
+
+- **Look again.**  _(→ tracks_continue)_
+
+### Lost The Trail  `tracks_lost`
+
+> You wander in the snow looking for more tracks.
+
+- **Look again.**  _(→ discovery)_
 
 ## Treasure Chest
 
@@ -1318,30 +1318,6 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 - **[ATT] Keep tracking the nervous deer.**  _(roll ATT 14: pass → ominous_woods, fail → lost_trail / startled_stag)_
 - **[DEX] Take aim and shoot here.**  _(roll DEX 13: pass → successful_hunt, fail → missed_shot)_
 
-### Trail Goes Cold  `lost_trail`
-
-> You search the ground intently, but the tracks eventually vanish near a rocky outcrop. The hunt is over.
-
-- **Return to the path.**  _(ends)_
-
-### The Wrong Prey  `startled_stag`
-
-> *SNAP*. While blindly searching for the lost trail, you step on a dry branch. Suddenly, another stag erupts from the brush, only it looks unnatural...
-
-- **Brace for the sudden fight!**  _(fight)_
-
-### A Clean Kill  `successful_hunt`
-
-> A perfect shot. The deer falls instantly. You quickly get to work, harvesting the creature for valuable leather before making your way back to safety.
-
-- **Collect the valuable materials.**  _(ends)_
-
-### A Wide Miss  `missed_shot`
-
-> The shot goes wide, striking a nearby tree! The deer immediately bolts into the dense underbrush. In seconds, it is completely gone.
-
-- **Curse your luck and move on.**  _(ends)_
-
 ### The Ominous Woods  `ominous_woods`
 
 > The environment abruptly shifts. The woods here are dead silent—no birds, no insects. The deer finally stops in a fog-choked clearing, completely motionless.
@@ -1362,12 +1338,6 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 
 - **Continue.**  _(→ boss_revealed_2)_
 
-### The Trap is Sprung  `boss_surprised`
-
-> *CRACK.* You shift your weight, snapping a buried root. The deer bolts in terror, but a horrifying monstrosity erupts from the brush, snatching the animal mid-leap and violently snapping its neck.
-
-- **Continue.**  _(→ boss_surprised_3)_
-
 ### The True Predator  `boss_revealed_2`
 
 > The creature tosses the ruined carcass aside and begins to sniff the air. It then fixes its terrifying gaze right on you!
@@ -1375,8 +1345,38 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 - **Charge the monstrosity!**  _(fight)_
   - _spoken:_ You rush out to attack the monstrosity!
 
+### The Trap is Sprung  `boss_surprised`
+
+> *CRACK.* You shift your weight, snapping a buried root. The deer bolts in terror, but a horrifying monstrosity erupts from the brush, snatching the animal mid-leap and violently snapping its neck.
+
+- **Continue.**  _(→ boss_surprised_3)_
+
 ### The Trap is Sprung  `boss_surprised_3`
 
 > The creature drops the carcass and locks its malevolent gaze onto you with a deafening roar!
 
 - **Draw your weapon!**  _(fight)_
+
+### A Clean Kill  `successful_hunt`
+
+> A perfect shot. The deer falls instantly. You quickly get to work, harvesting the creature for valuable leather before making your way back to safety.
+
+- **Collect the valuable materials.**  _(ends)_
+
+### A Wide Miss  `missed_shot`
+
+> The shot goes wide, striking a nearby tree! The deer immediately bolts into the dense underbrush. In seconds, it is completely gone.
+
+- **Curse your luck and move on.**  _(ends)_
+
+### Trail Goes Cold  `lost_trail`
+
+> You search the ground intently, but the tracks eventually vanish near a rocky outcrop. The hunt is over.
+
+- **Return to the path.**  _(ends)_
+
+### The Wrong Prey  `startled_stag`
+
+> *SNAP*. While blindly searching for the lost trail, you step on a dry branch. Suddenly, another stag erupts from the brush, only it looks unnatural...
+
+- **Brace for the sudden fight!**  _(fight)_
