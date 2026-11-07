@@ -1,5 +1,5 @@
 // backend/test/dangermusic.test.js: `npm test`. When danger is imminent in an encounter (the skeletons rise at the altar), the battle music of the biome plays at once,
-// and the fight that follows keeps that same track. And a party carrying the meteorite can walk up to the altar without the roll.
+// and the fight that follows keeps that same track. And a party carrying the meteorite walks up to the altar without the roll, and Darius wakes.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { gameState } from '../../shared/core/gameState.js';
@@ -64,18 +64,17 @@ test('every stage that starts a fight without naming a track has music of its ow
     assert.deepEqual(quiet.sort(), []);
 });
 
-test('the meteorite lets the party walk up to the altar without rolling, and is not spent doing it', () => {
+test('approaching with the meteorite needs no roll and wakes Darius at once (the meteorite is his: it is spent)', () => {
     const roll = stages.approach.decisions.find(d => d.type === 'skill_check');
     const shortcut = stages.approach.decisions.find(d => /meteorite/i.test(d.text));
     assert.ok(roll && shortcut);
     assert.notEqual(shortcut.type, 'skill_check', 'no roll');
     assert.ok(shortcut.conditions.some(c => c.type === 'has_item' && c.itemId === 'meteorite'), 'only while the party carries one');
-    assert.ok(shortcut.conditions.some(c => c.type === 'context_flag_not_set' && c.flagId === 'altar_approached'));
     const r = results(shortcut);
-    assert.ok(r.some(x => x.type === 'ADVANCE_STAGE' && x.payload.stageId === 'at_the_altar'));
-    assert.ok(r.some(x => x.type === 'SET_CONTEXT_FLAG' && x.payload.flagId === 'altar_approached'));
-    assert.ok(!r.some(x => x.type === 'REMOVE_ITEM' || x.type === 'START_BATTLE'), 'nothing is spent or fought');
-    assert.ok(shortcut.customActionText);
+    assert.ok(r.some(x => x.type === 'ADVANCE_STAGE' && x.payload.stageId === 'darius_rises'), 'straight into his scene');
+    assert.ok(r.some(x => x.type === 'REMOVE_ITEM' && x.payload.itemId === 'meteorite'));
+    assert.ok(!r.some(x => x.type === 'START_BATTLE'), 'he talks first');
+    assert.ok(!stages.at_the_altar.decisions.some(d => /meteorite/i.test(d.text)), 'nobody is asked to set it down');
 });
 
 test('the stages it walks to exist', () => {

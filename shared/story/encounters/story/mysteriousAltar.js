@@ -6,7 +6,7 @@
 
    Flow:  approach     -> [VIG] walk up to the altar (a miss: the bones stir, or a cloud of smoke drains stamina and insight)
           at_the_altar -> [INT] examine the skull: blue glow (full restore) / green glow (loot) on a success, red glow (skeleton fight) on a failure
-                          [Fallen Meteorite] set it on the altar: Darius the Groveler crawls out of the dark. Only offered while the party carries one.
+   (approach)  [Fallen Meteorite] approach with it: no roll, and Darius the Groveler wakes at once (the meteorite is spent). Offered while the party carries one.
                           darius_rises .. darius_wrath: five short stages of Darius speaking to you (the king who never came, the light he kept, the star you carry,
                           and envy), then the boss fight. No music while he talks, only the altar's drone kept low; his music starts when he turns and carries on into the fight.
    Every find or ambush is announced on its own stage first and the effect is handed out on the button after it. A fight that starts from the
@@ -61,19 +61,20 @@ export const mysteriousAltar = {
                 },
                 {
                     text: "[Fallen Meteorite] Approach with the meteorite.",
+                    // Offered whenever the party carries one: the bones and the smoke leave whoever carries it alone, and walking up with it is what wakes
+                    // Darius the Groveler (he feels the light at his back). The meteorite is his to take: it is spent here, and his scene begins.
                     conditions: [
-                        { type: "context_flag_not_set", flagId: "altar_approached" },
                         { type: "has_item", itemId: "meteorite", qty: 1 },
                         HUMANOID
                     ],
-                    // The meteorite is not spent here (it is set on the altar at_the_altar); the bones and the smoke leave whoever carries it alone
                     customActionText: "You hold the fallen meteorite out in front of you. The bones lie still, the air stays clear, and you walk up to the altar unchallenged.",
                     outcomes: [
                         {
                             weight: 100,
                             results: [
                                 { type: "SET_CONTEXT_FLAG", payload: { flagId: "altar_approached" } },
-                                { type: "ADVANCE_STAGE", payload: { stageId: "at_the_altar" } }
+                                { type: "REMOVE_ITEM", payload: { itemId: "meteorite", qty: 1 } },
+                                { type: "ADVANCE_STAGE", payload: { stageId: "darius_rises" } }
                             ]
                         }
                     ]
@@ -183,23 +184,6 @@ export const mysteriousAltar = {
                     failureOutcomes: toStage("red_glow")
                 },
                 {
-                    text: "[Fallen Meteorite] Set the meteorite on the altar.",
-                    conditions: [
-                        { type: "has_item", itemId: "meteorite", qty: 1 },
-                        HUMANOID
-                    ],
-                    customActionText: "You lift the fallen meteorite and set it on the altar beside the skull...",
-                    outcomes: [
-                        {
-                            weight: 100,
-                            results: [
-                                { type: "REMOVE_ITEM", payload: { itemId: "meteorite", qty: 1 } },
-                                { type: "ADVANCE_STAGE", payload: { stageId: "darius_rises" } }
-                            ]
-                        }
-                    ]
-                },
-                {
                     text: "Back up.",
                     outcomes: toStage("approach")
                 }
@@ -294,14 +278,14 @@ export const mysteriousAltar = {
         darius_speaks: {
             displayText: "Darius the Groveler",
             bgm: "none",
-            image: { sheet: "encounter_darius_kneeling", col: 0, row: 0 },   // Darius kneeling at the altar
+            image: { sheet: "encounter_darius_approach", col: 0, row: 0 },   // his back to you, bowed over the altar
             text: "\"He told me, keep the light burning, Darius, and I shall return for it. So I kept it, every winter, every long dark.\" \"They call me the Groveler, for the kneeling. Let them. I knelt for a king.\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_late") }]
         },
         darius_late: {
             displayText: "Darius the Groveler",
             bgm: "none",
-            image: { sheet: "encounter_darius_kneeling", col: 0, row: 0 },   // Darius kneeling at the altar
+            image: { sheet: "encounter_darius_approach", col: 0, row: 0 },   // his back to you, bowed over the altar
             text: "\"You think he is not coming. I can hear it in your silence.\" \"He is only late, friend. Kings are never early.\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_sees") }]
         },
@@ -310,7 +294,7 @@ export const mysteriousAltar = {
             effect: "jolt",
             sfx: "heartbeat",
             bgm: "none",
-            image: { sheet: "encounter_darius_kneeling", col: 0, row: 0 },   // Darius kneeling at the altar
+            image: { sheet: "encounter_darius_approach", col: 0, row: 0 },   // his back to you, bowed over the altar
             text: "\"That light at my back... I can feel it. His sign, at last.\" \"But he gave it to you. A stranger in chains.\" \"What did you do to be loved like that?\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_wrath") }]
         },
@@ -322,7 +306,7 @@ export const mysteriousAltar = {
             ambience: "none",
             ambienceFade: 0.6,
             bgm: "dariusEncounterBgm",   // his track: from the moment he turns, on into the fight
-            image: { col: 2, row: 1 },
+            image: { sheet: "encounter_darius_kneeling", col: 0, row: 0 },   // he turns: his face, his eyes, for the first time
             text: "Darius turns around. \"Give it to me.\" \"Give it back! His love was mine. It was always meant to be mine!\"",
             decisions: [
                 {

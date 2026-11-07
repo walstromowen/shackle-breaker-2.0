@@ -14,7 +14,7 @@ const nextOf = (stageId) => stages[stageId].decisions.flatMap(d => results(d)).f
 
 const lastBeat = 'darius_wrath';   // the fight starts on the last stage
 
-// walk the conversation from the moment the meteorite is set down
+// walk the conversation from the moment the party walks up with the meteorite
 const walk = () => {
     const seen = [], queue = ['darius_rises'];
     while (queue.length) {
@@ -26,9 +26,9 @@ const walk = () => {
     return seen;
 };
 
-test('setting the meteorite down starts the scene, and it plays out in five short stages to the fight', () => {
-    const setDown = stages.at_the_altar.decisions.find(d => /meteorite/i.test(d.text));
-    assert.ok(results(setDown).some(r => r.type === 'ADVANCE_STAGE' && r.payload.stageId === 'darius_rises'));
+test('walking up with the meteorite starts the scene, and it plays out in five short stages to the fight', () => {
+    const withIt = stages.approach.decisions.find(d => /meteorite/i.test(d.text));
+    assert.ok(results(withIt).some(r => r.type === 'ADVANCE_STAGE' && r.payload.stageId === 'darius_rises'));
     assert.deepEqual(walk(), ['darius_rises', 'darius_speaks', 'darius_late', 'darius_sees', 'darius_wrath']);
 });
 
@@ -53,6 +53,15 @@ test('every stage of it is wired: it has a way on, its cues exist, its text fits
         assert.equal(fights.length > 0, id === lastBeat, `${id}: only the last stage starts the fight`);
         for (const n of nextOf(id)) assert.ok(stages[n], `${id}: ADVANCE_STAGE to the missing stage ${n}`);
     }
+});
+
+test('his back is to you while he talks; you see his face only when he turns and his music starts', () => {
+    for (const id of ['darius_rises', 'darius_speaks', 'darius_late', 'darius_sees']) {
+        assert.equal(stages[id].image.sheet, 'encounter_darius_approach', `${id}: his back`);
+        assert.equal(stages[id].bgm, 'none', `${id}: no music yet`);
+    }
+    assert.equal(stages.darius_wrath.image.sheet, 'encounter_darius_kneeling', 'his face, as he turns');
+    assert.equal(stages.darius_wrath.bgm, 'dariusEncounterBgm');
 });
 
 test('he talks to you: every stage is his own words, spoken to you, with no narration', () => {
