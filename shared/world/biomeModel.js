@@ -4,6 +4,9 @@ import { SpawnTableFactory } from '../battle/spawnTableFactory.js';
 import { ActSystem } from '../story/actSystem.js';
 import { CorruptionSystem } from '../characters/corruptionSystem.js';
 
+/* How often a step out in the open starts an ambush, in every outdoor biome: 1 in 200 by day (dusk counts as day), 1 in 100 at night. */
+export const OUTDOOR_BATTLE_RATE = { day: 1 / 200, night: 1 / 100 };
+
 export class BiomeModel {
     constructor(definition) {
         this.id = definition.id;
@@ -80,16 +83,26 @@ export class BiomeModel {
         return null;
     }
 
-    getBattle(difficulty = 'normal', currentHour = 12) {
+    /* `size` = { fighters, players }: how many the party can put on the field (1-3) and how many players share it; a bigger party meets
+       a bigger group (SpawnTableFactory, PARTY_SCALING). */
+    /* `rateScale`: a party of players walks as several, each step of each player able to set off an ambush that pulls the others in, so each one's
+       chance is divided by how many there are (1 / players): together they meet fights about as often as one player alone. */
+    getBattle(difficulty = 'normal', currentHour = 12, size = {}, rateScale = 1) {
         if (!this.battles || !this.battles.tables) return null;
-        // The act makes ambushes more frequent, most of all on a blood moon night (story/actDefinitions.js)
-        if (Math.random() > this.battles.rate * ActSystem.getBattleRateMultiplier(currentHour)) return null;
         const timeOfDay = this.getTimeOfDay(currentHour);
+        // Out in the open an ambush is one step in 200 by day (and at dusk) and one in 100 at night, in every biome (OUTDOOR_BATTLE_RATE); a blood
+        // moon night is more dangerous still (story/actDefinitions.js). Under ground (a cave) the biome's own rate, raised by the act, stands.
+        const indoors = !!(gameState.world && gameState.world.isInterior);
+        const rate = indoors
+            ? this.battles.rate * ActSystem.getBattleRateMultiplier(currentHour)
+            : (timeOfDay === 'night' ? OUTDOOR_BATTLE_RATE.night : OUTDOOR_BATTLE_RATE.day)
+                * (ActSystem.isBloodMoon(currentHour) ? ActSystem.getBattleRateMultiplier(currentHour) : 1);
+        if (!(this.battles.rate > 0) || Math.random() > rate * rateScale) return null;
         // A blood moon night has a table of its own (`tables.bloodMoon`), the dead and the cursed that rise under it
         const tableId = (ActSystem.isBloodMoon(currentHour) && this.battles.tables.bloodMoon)
             || this.battles.tables[timeOfDay] || this.battles.tables.day;
         if (!tableId) return null;
-        const spawnModel = SpawnTableFactory.generateBattle(tableId, difficulty);
+        const spawnModel = SpawnTableFactory.generateBattle(tableId, difficulty, { ...size, ambush: true });   // an ambush: AMBUSH_SIZE
         return spawnModel.hasEnemies() ? { enemies: spawnModel.enemies } : null;
     }
 
@@ -99,10 +112,10 @@ export class BiomeModel {
         return 'dusk';
     }
 
-    getEncounter(currentHour) {
+    getEncounter(currentHour, rateScale = 1) {   // rateScale: as for getBattle
         // Updated to read directly from the biome's inline encounter pools
         if (!this.encounters || !(this.encounters.rate > 0)) return null;
-        if (Math.random() > this.encounters.rate) return null;
+        if (Math.random() > this.encounters.rate * rateScale) return null;
         const timeOfDay = this.getTimeOfDay(currentHour);
         // Filter out encounters that don't match the current time
         // A pool can be limited to some acts with `minAct` / `maxAct` (an encounter that only exists after, or only before, a milestone)
@@ -110,9 +123,10 @@ export class BiomeModel {
         // The Shackling (story/encounters/story/shackledBetrayal.js) is an ordinary entry in every biome's pool, at any hour, but only while a party member is shackled
         // (and someone else is still standing to be turned on). It is as likely as CORRUPTION.BETRAYAL_WEIGHT says next to the biome's own weights.
         const entries = validPools.map((pool) => ({ weight: pool.weight, result: { id: pool.id } }));
-        const betrayer = CorruptionSystem.pickBetrayer();
+        // In a party of players any player's shackled companion can turn (betrayerOwner: whose it is; null = this player's)
+        const betrayer = CorruptionSystem.pickAnyBetrayer();
         if (betrayer) {
-            entries.push({ weight: CORRUPTION.BETRAYAL_WEIGHT, result: { id: 'shackled_betrayal', context: { betrayerIndex: gameState.party.members.indexOf(betrayer), betrayerName: betrayer.name } } });
+            entries.push({ weight: CORRUPTION.BETRAYAL_WEIGHT, result: { id: 'shackled_betrayal', context: { betrayerIndex: betrayer.idx, betrayerName: betrayer.name, betrayerOwner: betrayer.owner } } });
         }
         if (entries.length === 0) return null;
         // Perform a weighted random roll

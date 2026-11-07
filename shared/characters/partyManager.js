@@ -22,6 +22,33 @@ export const PartyManager = {
     },
 
     // --- READ OPERATIONS (Getters) ---
+    /** How many of the party can fight at once: the members still standing, up to the 3 that fit on the field. Bigger parties meet bigger
+     *  groups (battle/spawnTableFactory.js, PARTY_SCALING). */
+    getFighterCount() {
+        const members = this.getMembers() || [];
+        return Math.max(1, Math.min(3, members.filter(m => m && m.hp > 0).length));
+    },
+
+    /** The party's average level, rounded (1 for an empty party). A recruit joins at it. */
+    getAverageLevel() {
+        const members = (this.getMembers() || []).filter(Boolean);
+        if (!members.length) return 1;
+        return Math.max(1, Math.round(members.reduce((s, m) => s + (m.level || 1), 0) / members.length));
+    },
+
+    /** A companion who joins on the road (an encounter's RECRUIT_CHARACTER, a quest reward): levelled to the party's average level (unless the
+     *  overrides name one), rested, and without the enemy-only level edge. Returns the new member, or null when the party is full. */
+    recruit(entityId, overrides = {}) {
+        const level = overrides.level || this.getAverageLevel();
+        const member = this.addMember(entityId, { ...overrides, level });
+        if (!member) return null;
+        EntityFactory.removeLevelEdge(member);
+        member.hp = member.maxHp;
+        member.stamina = member.maxStamina;
+        if (member.maxInsight) member.insight = member.maxInsight;
+        return member;
+    },
+
     getHighestLevel() {
         const members = this.getMembers();
         if (!members || members.length === 0) return 1;

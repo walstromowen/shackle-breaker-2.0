@@ -129,7 +129,6 @@ export const aDisturbingSight = {
                                 // ADDED: Report the out-of-combat kill to the quest system!
                                 { type: "RECORD_KILL", payload: { enemyId: "MAD_MAN", amount: 1 } },
                                 { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "plains", rolls: 1 } },
-                                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },   // the madman is gone from the map
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
@@ -201,7 +200,6 @@ export const aDisturbingSight = {
                                 // ADDED: Report the out-of-combat kill to the quest system!
                                 { type: "RECORD_KILL", payload: { enemyId: "MAD_MAN", amount: 1 } },
                                 { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "plains", rolls: 1 } },
-                                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
@@ -297,8 +295,7 @@ export const aDisturbingSight = {
                         {
                             weight: 100,
                             results: [
-                                { type: "GIVE_ITEM", payload: { items: [{ id: "wooden_stick", qty: 2 }, { id: "dagger", qty: 1 }] } },
-                                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
+                                { type: "GIVE_ITEM", payload: { items: [{ id: "wooden_club", qty: 1 }, { id: "dagger", qty: 1 }] } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
@@ -409,8 +406,7 @@ export const aDisturbingSight = {
                         {
                             weight: 100,
                             results: [
-                                { type: "GIVE_ITEM", payload: { items: [{ id: "wooden_stick", qty: 2 }, { id: "dagger", qty: 1 }] } },
-                                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
+                                { type: "GIVE_ITEM", payload: { items: [{ id: "wooden_club", qty: 1 }, { id: "dagger", qty: 1 }] } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
@@ -451,7 +447,6 @@ export const aDisturbingSight = {
                             weight: 100,
                             results: [
                                 { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "plains", rolls: 1 } },
-                                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]

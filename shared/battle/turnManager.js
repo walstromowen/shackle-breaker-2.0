@@ -5,10 +5,11 @@ import { BattleAnimationFactory } from './animation/battleAnimationFactory.js';
 import { AbilityFactory } from '../abilities/abilityFactory.js';
 import { PHASE, TURN_TYPES } from './battleConstants.js';
 import { queueDeath, queueFlee } from './battleQueue.js';
-import { getActivePool, registerAbilityUse, registerStatusApplication, registerDeath } from './battleState.js';
+import { getActivePool, registerAbilityUse, registerStatusApplication, registerDeath, noEscapeMessage } from './battleState.js';
 import { StatusEffectFactory } from '../abilities/statusEffectFactory.js';
 import { InventorySystem } from '../items/inventorySystem.js';
 import { CorruptionSystem } from '../characters/corruptionSystem.js';
+import { rng } from '../core/random.js';
 
 /* Plays a battle's turn queue (`state.turnQueue`) one turn at a time: abilities, damage, status effects, deaths, messages and animations.
    It needs a `host` for the few things only the screen can do:
@@ -18,6 +19,8 @@ import { CorruptionSystem } from '../characters/corruptionSystem.js';
      host.requestPartySwap(forced, slotIndex)   ask the player who steps into a slot
      host.endBattle()            the BATTLE_END turn was reached
    Everything else (deaths, fleeing, the ledger, the active pools) goes straight through the functions in battleQueue.js / battleState.js. */
+const OTHER_PLAYERS_BAG = { hasItem: () => true, removeItem: () => {} };
+
 export class TurnManager {
     constructor(host) {
         this.host = host;
@@ -27,6 +30,13 @@ export class TurnManager {
     }
 
     get state() { return this.host.state; }
+
+    /* Whose bag an item cost comes out of. In a shared multiplayer fight another player's character spends from THEIR bag, on their
+       own browser: everywhere else the item is taken as given (that player could only pick what they had). */
+    _bagOf(actor) {
+        const mp = this.state && this.state.mp;
+        return mp && actor && actor.netOwner && actor.netOwner !== mp.me ? OTHER_PLAYERS_BAG : InventorySystem;
+    }
 
     processNextTurnInQueue() {
         this.host.timer = 0;
@@ -143,7 +153,7 @@ export class TurnManager {
         const canTargetBench = this._allowsBench(action);
         
         if (isFirstTarget && !ignoreCost) {
-            action.payCost(actor, InventorySystem);
+            action.payCost(actor, this._bagOf(actor));
         }
         const queuedBefore = this.state.turnQueue.length;
         const actorWasDownAtStart = actor.isDead();
@@ -176,6 +186,10 @@ export class TurnManager {
             // --- Normal Ability Execution ---
             const statusSnapshots = (actualTarget.statusEffects || []).map(s => ({ id: s.id, stacks: s.stacks }));
             
+            if (this.state.noEscape && typeof action.isFlee === 'function' && action.isFlee()) {   // a boss fight: nobody gets away
+                this.queueMessage(noEscapeMessage(this.state));
+                break;
+            }
             const result = AbilitySystem.execute(action.id, actor, actualTarget);
             
             if (actualTarget.statusEffects) {
@@ -214,6 +228,20 @@ export class TurnManager {
             
             if (!wasActorDead && actor.isDead()) {
                 break;
+            }
+        }
+
+        // `selfStatusEffects`: what an attack does to its own user, once per use (Arcane Blast's recharge, Leaping Slash's Vulnerable landing)
+        if (isFirstTarget && !actor.isDead() && Array.isArray(action.config?.selfStatusEffects)) {
+            for (const sd of action.config.selfStatusEffects) {
+                if (rng() > (sd.chance ?? 1)) continue;
+                const existing = (actor.statusEffects || []).find(st => st.id === sd.id);
+                if (existing) { existing.addStack && existing.addStack(); continue; }
+                const effect = StatusEffectFactory.createEffect(sd.id, sd.duration, actor);
+                if (!effect) continue;
+                actor.applyStatusEffect(effect);
+                registerStatusApplication(this.state, effect, actor, actor);
+                this.queueMessage(`${actor.name} is ${effect.name}!`);
             }
         }
 
@@ -277,7 +305,7 @@ export class TurnManager {
             return this.processNextTurnInQueue();
         }
 
-        if (!ignoreCost && !action.canPayCost(actor, InventorySystem)) {
+        if (!ignoreCost && !action.canPayCost(actor, this._bagOf(actor))) {
             action = AbilityFactory.createAbilities(['rest'])[0];
             resolvedTargets = [actor];
         }
@@ -462,7 +490,7 @@ export class TurnManager {
         }
 
         const candidates = pool.filter(usable);
-        return candidates.length > 0 ? candidates[Math.floor(Math.random() * candidates.length)] : null;
+        return candidates.length > 0 ? candidates[Math.floor(rng() * candidates.length)] : null;
     }
 
     /**
@@ -490,7 +518,7 @@ export class TurnManager {
                 replacement = this._activeStandIn(pick, taken);
             } else {
                 const candidates = getActivePool(this.state, pick.team).filter(t => t && !t.isDead() && !taken.has(t));
-                replacement = candidates.length > 0 ? candidates[Math.floor(Math.random() * candidates.length)] : null;
+                replacement = candidates.length > 0 ? candidates[Math.floor(rng() * candidates.length)] : null;
             }
             if (!replacement) continue;
             taken.add(replacement);
@@ -507,7 +535,7 @@ export class TurnManager {
         const livingTargets = fallbackPool.filter(t => t && !t.isDead());
         
         if (livingTargets.length === 0) return null;
-        return livingTargets[Math.floor(Math.random() * livingTargets.length)];
+        return livingTargets[Math.floor(rng() * livingTargets.length)];
     }
 
     queueMessage(message, type = TURN_TYPES.MESSAGE_STATUS) {

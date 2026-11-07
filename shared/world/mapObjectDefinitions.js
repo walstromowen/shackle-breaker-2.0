@@ -46,8 +46,15 @@ export const MAP_OBJECTS_DEFINITIONS = {
        is placed in that gap by the yard (structures.js). The object's cell is the bottom-left tile of the sprite. Only the walls are solid: the bottom two rows, except the gap, whose own
        door object is the way in (the one cell above it is wall). The roof rows above are not solid, so you can walk behind a house and it draws over you. */
     ABANDONED_HOUSE_1: { sheet: 'objAbandonedHouse1', spriteX: 5, spriteY: 7, width: 5, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 2, h: 2 } /* the wall left of the door */, { xOffset: 2, yOffset: -1, w: 1, h: 1 } /* the wall above the door */, { xOffset: 3, yOffset: -1, w: 2, h: 2 } /* the wall right of the door */] },
-    /* the stone-walled house: the same size, door gap and walls as ABANDONED_HOUSE_1, with fieldstone instead of planks */
-    ABANDONED_STONE_HOUSE: { sheet: 'objAbandonedStoneHouse', spriteX: 5, spriteY: 7, width: 5, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 2, h: 2 }, { xOffset: 2, yOffset: -1, w: 1, h: 1 }, { xOffset: 3, yOffset: -1, w: 2, h: 2 }] },
+    /* the stone-walled house: the same size, door gap and walls as ABANDONED_HOUSE_1, with fieldstone instead of planks. It is the WORKSHOP (structures.js):
+       someone still works there, so its windows glow and its chimney smoulders (objStoneWorkshop, the stone house lit), and it gives off a faint warm
+       light at the gable window, on the ground before the lower window (the wall itself blocks light) and above the chimney (`lights`: tiles from its top left). */
+    ABANDONED_STONE_HOUSE: { sheet: 'objStoneWorkshop',
+        lights: [
+            { hasLight: true, dx: 2.5, dy: 2.85, radius: 2.6, maxAlpha: 0.55, color: '255, 170, 80', flickerAmp: 0.12, flickerSpeed: 0.06 },
+            { hasLight: true, dx: 1.25, dy: 5.1, radius: 2.2, maxAlpha: 0.42, color: '255, 165, 75', flickerAmp: 0.12, flickerSpeed: 0.06 },
+            { hasLight: true, dx: 3.6, dy: 0.9, radius: 1.8, maxAlpha: 0.45, color: '255, 115, 45', flickerAmp: 0.35, flickerSpeed: 0.12 },
+        ], spriteX: 5, spriteY: 7, width: 5, height: 5, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 2, h: 2 }, { xOffset: 2, yOffset: -1, w: 1, h: 1 }, { xOffset: 3, yOffset: -1, w: 2, h: 2 }] },
     /* the workshop: a main gable (5 wide, with the door) and a lower side wing (3 wide) */
     CRAFTING_HOUSE: { sheet: 'objCraftingHouse', spriteX: 5, spriteY: 7, width: 7, height: 6, isSolid: true, isGround: false, isAnchor: true, blocksLight: 6, hitboxes: [{ xOffset: 0, yOffset: -1, w: 2, h: 2 }, { xOffset: 2, yOffset: -1, w: 1, h: 1 }, { xOffset: 3, yOffset: -1, w: 4, h: 2 } /* the wall right of the door, wing included */] },
     /* the blacksmith's house: house A's size and door gap in fieldstone under a slate roof; its door is the blacksmith's door art and leads into an ordinary house */
@@ -113,11 +120,19 @@ export const MAP_OBJECTS_DEFINITIONS = {
     /* AFTERMATH_REMAINS: a helmet on the ground with a sword through it, what an old battle left behind. Face it and interact to start the Aftermath encounter (biomeDefinitions.js PLAINS, its own band). */
     AFTERMATH_REMAINS: { sheet: 'objAftermath', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'aftermath' } },
     OLD_GRAVESTONE: { ...GRAVESTONE, interaction: { type: 'ENCOUNTER', id: 'old_gravestone', isRepeatable: false } },
+    /* PLAYER_GRAVE: where a multiplayer party fell, holding its bag and coin until its owner digs it up (world/graves.js). The gravestone's shape,
+       cursed: violet-black stone with glowing cracks, a breathing aura and wisps rising off it (4 frames), and a faint violet light at night.
+       The world map and the minimap mark it. */
+    PLAYER_GRAVE: { ...GRAVESTONE, sheet: 'objCursedGrave', frames: 4, speed: 0.22, interaction: { type: 'GRAVE', isRepeatable: true },
+        light: { hasLight: true, radius: 2.5, color: '150, 70, 255', maxAlpha: 0.55, flickerSpeed: 0.08, flickerAmp: 0.25 } },
     MYSTERIOUS_ALTAR: { sheet: 'objMysteriousAltar', spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 3, h: 2 }, interaction: { type: 'ENCOUNTER', id: 'mysterious_altar' } },
     
     // --- HERBS --- (walk over them to pick them up, like the small rocks and the bones)
     HEALING_HERB: { sheet: 'objHealingHerb', spriteX: 9, spriteY: 1, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'healing_herb', amount: 1, maxAmount: 2 } },
     ALOE_PLANT: { sheet: 'objAloe', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'aloe', amount: 1, maxAmount: 2 } },  // desert only (biomeDefinitions.js DESERT)
+    /* the crops of the villages' fields besides the herbs: cotton (for cloth) and wheat, picked by walking over them like the herbs (structures.js CROP_FIELD) */
+    COTTON_PLANT: { sheet: 'objCottonPlant', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'cotton', amount: 1, maxAmount: 2 } },
+    WHEAT_PLANT: { sheet: 'objWheatPlant', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'wheat', amount: 1, maxAmount: 2 } },
     INVIGORATING_HERB: { sheet: 'objInvigoratingHerb', spriteX: 10, spriteY: 1, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'invigorating_herb', amount: 1, maxAmount: 2 } },
     ILLUMINATING_HERB: { sheet: 'objIlluminatingHerb', spriteX: 11, spriteY: 1, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'illuminating_herb', amount: 1, maxAmount: 2 } },
 
@@ -154,8 +169,9 @@ export const MAP_OBJECTS_DEFINITIONS = {
     CRATE_SACK: { sheet: 'objCrateSack', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'SEARCH', lootTableId: 'container_crate_sack', name: 'crate of sacks' } },
     SACKS: { sheet: 'objSacks', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'SEARCH', lootTableId: 'container_sacks', name: 'sacks' } },
     POTTED_PLANT: { sheet: 'objPottedPlant', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
-    STOOL: { sheet: 'objStool', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
-    CHAIR: { sheet: 'objChair', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    /* stools and chairs can be walked over (not solid), and are drawn with the floor, under whoever steps on them */
+    STOOL: { sheet: 'objStool', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    CHAIR: { sheet: 'objChair', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
     SMALL_TABLE: { sheet: 'objSmallTable', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, light: { hasLight: true, radius: 3.5, color: '255, 190, 110', maxAlpha: 0.55, flickerSpeed: 0.12, flickerAmp: 0.25 } },
     TABLE_LONG: { sheet: 'objTableLong', spriteX: 0, spriteY: 0, width: 2, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 } },
     COUNTER: { sheet: 'objCounter', spriteX: 0, spriteY: 0, width: 2, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 } },
@@ -204,6 +220,45 @@ export const MAP_OBJECTS_DEFINITIONS = {
         spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: false, isGround: false, isAnchor: true, hitboxes: [{ xOffset: 1, yOffset: 0, w: 1, h: 1 }],
         interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'CAVE', isRepeatable: true, walkIn: true }
     },
+    /* The hidden staircase: what the mysterious altar gives way to once Darius the Groveler is beaten (the act_two encounter, or searching any altar in act 2:
+       REPLACE_OBJECT). The altar's 3 x 3 cells; the stairwell runs down the middle column and its top step (the middle of the bottom row) leads into the
+       catacombs under the cave. walkIn: stepping onto it goes down. */
+    CATACOMBS_STAIRS: {
+        sheet: 'objCatacombsStairs',
+        spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: false, isGround: true, isAnchor: true, hitboxes: [{ xOffset: 1, yOffset: 0, w: 1, h: 1 }],
+        interaction: { type: 'WARP', id: 'procedural_room_trigger', roomType: 'CATACOMBS', isRepeatable: true, walkIn: true }
+    },
+    /* the way back up out of the catacombs, in the south rim where a cave has its mouth: it leads back to the cave, at the foot of the hidden staircase */
+    CATACOMBS_EXIT: {
+        sheet: 'objCatacombsExit',
+        spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: false, isGround: false, isAnchor: true, hitboxes: [{ xOffset: 1, yOffset: 0, w: 1, h: 1 }],
+        interaction: { type: 'WARP', id: 'exit_interior', isRepeatable: true, walkIn: true }
+    },
+    // ==========================================
+    // THE CATACOMBS' GATE PUZZLE (world/catacombPuzzle.js): a lever in each far room, a cold brazier for each lever by the gate, and the gate itself.
+    // ==========================================
+    // an unpulled lever's rune glows faintly, so it can be found in the dark; pulled, it burns bright
+    LEVER: { sheet: 'objLever', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'SWITCH', isRepeatable: true }, light: { hasLight: true, radius: 1.4, color: '120, 200, 255', maxAlpha: 0.3, flickerSpeed: 0.05, flickerAmp: 0.3 } },
+    LEVER_ON: { sheet: 'objLeverOn', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, light: { hasLight: true, radius: 1.6, color: '120, 220, 255', maxAlpha: 0.45 } },
+    BRAZIER_UNLIT: { sheet: 'objBrazierUnlit', spriteX: 0, spriteY: 0, width: 1, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } },
+    /* 3 cells wide, 2 tall; its bottom row closes the corridor into the main chamber. Raised, it can be walked under. */
+    CATACOMB_GATE: { sheet: 'objCatacombGate', spriteX: 0, spriteY: 0, width: 3, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 3, h: 1 } },
+    CATACOMB_GATE_OPEN: { sheet: 'objCatacombGateOpen', spriteX: 0, spriteY: 0, width: 3, height: 2, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 0, h: 0 } },
+    // ==========================================
+    // THE CATACOMBS' TRAPS (story/encounters/catacombTraps.js): stepping on one springs it (a walk-in encounter, a Vigor saving throw). Each is one floor tile:
+    // a raised pressure plate of the floor's own stone with a few slight cracks, all three alike, so in the dark they are easy to miss and impossible to tell
+    // apart. Spent, the plate is pressed down level with the floor and does nothing more.
+    // ==========================================
+    TRAP_ARROW: { sheet: 'objTrapArrow', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'arrow_trap', walkIn: true } },
+    TRAP_ARROW_SPRUNG: { sheet: 'objTrapArrowSprung', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, hitbox: { xOffset: 0, yOffset: 0, w: 0, h: 0 } },
+    TRAP_PIT: { sheet: 'objTrapPit', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'pit_trap', walkIn: true } },
+    TRAP_PIT_SPRUNG: { sheet: 'objTrapPitSprung', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, hitbox: { xOffset: 0, yOffset: 0, w: 0, h: 0 } },
+    TRAP_AXES: { sheet: 'objTrapAxes', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'swinging_axes', walkIn: true } },
+    TRAP_AXES_SPRUNG: { sheet: 'objTrapAxesSprung', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: false, isGround: true, hitbox: { xOffset: 0, yOffset: 0, w: 0, h: 0 } },
+    // the catacombs' own barrels (the ordinary CRATE stands among them): an ancient one holds what the dead were laid to rest with; a ruined one has burst,
+    // and little is left in it but staves and scraps
+    ANCIENT_BARREL: { sheet: 'objAncientBarrel', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'SEARCH', lootTableId: 'container_ancient_barrel', name: 'ancient barrel' } },
+    RUINED_BARREL: { sheet: 'objRuinedBarrel', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'SEARCH', lootTableId: 'container_ruined_barrel', name: 'ruined barrel' } },
     CAVE_EXIT_DOOR: {
         sheet: 'objCaveExit',
         spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: false, isGround: false, isAnchor: true, hitboxes: [{ xOffset: 1, yOffset: 0, w: 1, h: 1 }],
@@ -223,7 +278,7 @@ export const RESPAWN_DAYS = {
     // trees (the stump goes with the cut tree)
     PINE_TREE: TREE_DAYS, SNOWY_PINE_TREE: TREE_DAYS, OAK_TREE_1: TREE_DAYS,
     // herbs and plants
-    HEALING_HERB: HERB_DAYS, ALOE_PLANT: HERB_DAYS, INVIGORATING_HERB: HERB_DAYS, ILLUMINATING_HERB: HERB_DAYS,
+    HEALING_HERB: HERB_DAYS, ALOE_PLANT: HERB_DAYS, INVIGORATING_HERB: HERB_DAYS, ILLUMINATING_HERB: HERB_DAYS, COTTON_PLANT: HERB_DAYS, WHEAT_PLANT: HERB_DAYS,
     TULIPS_ORANGE: HERB_DAYS, TULIPS_WHITE: HERB_DAYS, TULIPS_RED: HERB_DAYS,
     // things lying on the ground
     STICK: SCRAP_DAYS, FLINT_ROCK: SCRAP_DAYS, SMALL_ROCKS_1: SCRAP_DAYS, SMALL_ROCKS_2: SCRAP_DAYS, SMALL_ROCKS_3: SCRAP_DAYS,

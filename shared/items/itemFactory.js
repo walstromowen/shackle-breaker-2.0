@@ -1,6 +1,9 @@
 import { ItemModel } from './itemModel.js';
 import { ItemDefinitions } from './itemDefinitions.js';
 
+/* Items taken out of the game, and what an old save's copy becomes when it is loaded */
+export const RETIRED_ITEMS = { wooden_stick: 'wooden_club' };
+
 export class ItemFactory {
     
     /**
@@ -9,6 +12,7 @@ export class ItemFactory {
      * @param {object} extraState - (Optional) Pre-existing state (for loading saves)
      */
     static createItem(defId, extraState = {}) {
+        if (RETIRED_ITEMS[defId]) defId = RETIRED_ITEMS[defId];
         if (!ItemDefinitions[defId]) {
             console.warn(`[ItemFactory] Item ID '${defId}' does not exist.`);
             return null;

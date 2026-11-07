@@ -18,6 +18,8 @@ import { ShopController } from '../screens/shop/shopController.js';
 import { WorkshopController } from '../screens/workshop/workshopController.js'; // <-- NEW
 import { SavesController } from '../screens/saves/savesController.js';
 import { SettingsController } from '../screens/settings/settingsController.js';
+import { MultiplayerController } from '../screens/multiplayer/multiplayerController.js';
+import { TradeController } from '../screens/trade/tradeController.js';
 
 // --- RENDERERS ---
 import { BootRenderer } from '../screens/boot/bootRenderer.js';
@@ -39,6 +41,8 @@ import { ShopRenderer } from '../screens/shop/shopRenderer.js';
 import { WorkshopRenderer } from '../screens/workshop/workshopRenderer.js'; // <-- NEW
 import { SavesRenderer } from '../screens/saves/savesRenderer.js';
 import { SettingsRenderer } from '../screens/settings/settingsRenderer.js';
+import { MultiplayerRenderer } from '../screens/multiplayer/multiplayerRenderer.js';
+import { TradeRenderer } from '../screens/trade/tradeRenderer.js';
 import { CanvasUI } from '../ui/canvasUI.js';
 import { UITheme } from '../ui/UITheme.js';
 import { TutorialOverlay } from '../ui/tutorialOverlay.js';
@@ -68,6 +72,11 @@ import { DevConsole } from '../ui/devConsole.js';
 import { EntityFactory } from '../../../shared/characters/entityFactory.js';
 import { CorruptionSystem } from '../../../shared/characters/corruptionSystem.js';
 import { SaveManager, AUTOSAVE_SLOT } from './saveManager.js';
+import { debugOverlay, DebugOverlayRenderer } from '../ui/debugOverlay.js';
+import { multiplayerSession } from './multiplayerSession.js';
+import { multiplayerSocial } from './multiplayerSocial.js';
+import { PARTY_SCALING } from '../../../shared/battle/spawnTableFactory.js';
+import { dropGrave } from '../../../shared/world/graves.js';
 
 export class SceneManager {
     constructor(canvas, assetLoader, config) {
@@ -84,6 +93,22 @@ export class SceneManager {
 
         console.log(`%c[SceneManager] Init. Seed: ${gameState.seed}`, 'color: #00aaaa');
         window.SaveManager = SaveManager;   // console access: SaveManager.downloadCurrent(), SaveManager.loadFromSlot('previous')...
+        // a save never holds half a village: the structure being planned ahead of the player is finished first (StructureSpawner.prepareAhead)
+        SaveManager.beforeSnapshot = () => {
+            if (this.worldManager && !gameState.world.isInterior && this.worldManager.finishPendingWork) this.worldManager.finishPendingWork();
+        };
+
+        // multiplayer: the shared world needs the current map, the player on it and the screen that is up (engine/multiplayerSession.js)
+        multiplayerSession.attach({
+            config: this.config,
+            getWorldManager: () => this.worldManager,
+            getLocalPlayer: () => (this.overworldController ? this.overworldController.player : null),
+            getScene: () => this.currentScene,
+            getOverworld: () => this.overworldController,   // (tests and the debug overlay)
+            getBattle: () => this.battleController,
+            getEncounter: () => this.encounterController,   // (tests and the debug overlay)
+        });
+        multiplayerSocial.wire();   // trading, parties and duels between players in a shared world
 
         // --- CONTROLLERS ---
         this.bootController = new BootController(this.input, this.loader);
@@ -97,6 +122,8 @@ export class SceneManager {
         this.workshopController = new WorkshopController(this.input); // <-- NEW
         this.savesController = new SavesController(this.input);
         this.settingsController = new SettingsController(this.input);
+        this.multiplayerController = new MultiplayerController(this.input);
+        this.tradeController = new TradeController(this.input);
 
         this.overworldController = null;
         this.encounterController = null;
@@ -104,14 +131,14 @@ export class SceneManager {
         this.characterSummaryController = null;
 
         // --- RENDERERS ---
-        this.bootRenderer = new BootRenderer(this.canvas);
+        this.bootRenderer = new BootRenderer(this.canvas, this.loader);
         this.titleRenderer = new TitleRenderer(this.canvas, this.config, this.loader);
         this.mapRenderer = new MapRenderer(this.canvas, this.loader, this.config);
         this.lightingRenderer = new LightingRenderer(this.config);
         this.weatherRenderer = new WeatherRenderer(this.canvas, this.ctx, this.config, this.loader);
         this.overworldUIRenderer = new OverworldUIRenderer(this.config, this.loader);
         this.encounterRenderer = new EncounterRenderer(this.config, this.loader);
-        this.transitionRenderer = new TransitionRenderer(this.config);
+        this.transitionRenderer = new TransitionRenderer(this.config); this.transitionRenderer.loader = this.loader;   // the loading screen shows an item's icon
         this.characterCreatorRenderer = new CharacterCreatorRenderer(this.config, this.loader);
         this.partyRenderer = new PartyRenderer(this.ctx, this.loader);
         this.characterSummaryRenderer = new CharacterSummaryRenderer(this.ctx, this.loader);
@@ -123,6 +150,8 @@ export class SceneManager {
         this.workshopRenderer = new WorkshopRenderer(this.ctx, this.loader); // <-- NEW
         this.savesRenderer = new SavesRenderer(this.config, this.loader);
         this.settingsRenderer = new SettingsRenderer(this.config, this.loader);
+        this.multiplayerRenderer = new MultiplayerRenderer(this.config, this.loader);
+        this.tradeRenderer = new TradeRenderer(this.config, this.loader);
 
         // State
         this.currentScene = 'boot';
@@ -135,6 +164,8 @@ export class SceneManager {
         // First-visit control tips (see ui/tutorialOverlay.js). Off until the player reaches the overworld after the prologue (or loads a save),
         // and off again on the title screen, so the prologue, the character creator and the title menus never show one.
         this.tutorial = new TutorialOverlay();
+        // The debug overlay ("~" on any screen; main.js hands it the game loop for its frame timing)
+        this.debugOverlayRenderer = new DebugOverlayRenderer();
         this._tipsReady = false;
 
         // The developer console ("/" in the overworld, see ui/devConsole.js). While it is open the game lets go of every key, so nothing walks while you type.
@@ -142,10 +173,16 @@ export class SceneManager {
             host: {
                 lockWorld: () => this.overworldController.devLockWorld(),
                 battleSetup: () => this.overworldController.devBattleSetup(),
+                teleport: (target) => this._devTeleport(target),
             },
             onOpen: () => this.input.reset(),
             onClose: () => this.input.reset(),
+            // it is the chat in a multiplayer world (T); commands still need a game made with Cheats on
+            allowCommands: () => gameState.cheats === true,
+            chatActive: () => multiplayerSession.active,
+            onChat: (text) => multiplayerSocial.sendChat(text),
         }) : null;
+        events.on('MP_CHAT', ({ name, text }) => { if (this.devConsole) this.devConsole.showChat(name, text); });
 
         this._handleGlobalKeydown = this._handleGlobalKeydown.bind(this);
         this.setupInputRouting();
@@ -158,7 +195,7 @@ export class SceneManager {
 
         // 2. Main menu and Boot exceptions
         if (targetScene === 'boot') return null;
-        if (targetScene === 'title') return 'shackle_breaker_theme_1';
+        if (targetScene === 'title' || targetScene === 'multiplayer') return 'shackle_breaker_theme_1';
         if (targetScene === 'character-creator') return null;
 
         // 3. Cached Battle/Encounter overrides
@@ -187,9 +224,9 @@ export class SceneManager {
 
     resolveTargetAmbience(targetScene) {
         // <-- ADDED 'workshop' to keep whatever background ambience is currently playing
-        if (['party', 'character_summary', 'level_up', 'shop', 'workshop', 'saves', 'settings'].includes(targetScene)) return null;
+        if (['party', 'character_summary', 'level_up', 'shop', 'workshop', 'saves', 'settings', 'trade'].includes(targetScene)) return null;
 
-        if (['battle', 'encounter', 'character-creator', 'title', 'boot'].includes(targetScene)) return 'none';
+        if (['battle', 'encounter', 'character-creator', 'title', 'boot', 'multiplayer'].includes(targetScene)) return 'none';
 
         if (gameState.world && gameState.world.currentWeather) {
             return gameState.world.currentWeather.audioEffect || 'none';
@@ -206,7 +243,9 @@ export class SceneManager {
         this.tutorial.cancel();
         if (sceneName === 'title') this._tipsReady = false;
         if (sceneName === 'overworld') this._tipsReady = true;
-        if (this._tipsReady) this.tutorial.show(sceneName);
+        // (not over the party screen when it is only a pick: a swap in a fight, a switch in an encounter; its card is about managing the party)
+        const isPick = sceneName === 'party' && this.partyController && this.partyController.mode !== 'DEFAULT';
+        if (this._tipsReady && !isPick) this.tutorial.show(sceneName);
 
         // Every arrival on the overworld (a new game, after a battle, an encounter, a shop, the menus) is a safe moment to save.
         // Saves from inside a house or cave too (SaveManager keeps the way back out), so loading returns to the same room.
@@ -250,6 +289,35 @@ export class SceneManager {
         events.on('GAME_OVER', () => {
             if (this.gameOverActive) return;
             this.gameOverActive = true;
+            // In a multiplayer world the title screen would mean leaving it (and for the host, closing it for everyone). The party's bag and
+            // coin stay behind in a grave where it fell (world/graves.js: only its owner can dig it up), and the party wakes at its last rest
+            // point (a bonfire, a bedroll; the world's starting spot when it has never rested) with a quarter of its health.
+            if (multiplayerSession.active) {
+                this.transitionRenderer.start(() => {
+                    this.input.reset();
+                    this.activeBattleBGM = null;
+                    this.activeEncounterBGM = null;
+                    const p = gameState.player;
+                    const me = multiplayerSocial.me;
+                    const grave = this.worldManager ? dropGrave(this.worldManager, p.col, p.row, me, multiplayerSocial.nameOf(me)) : null;
+                    for (const m of gameState.party.members || []) {
+                        if (!m) continue;
+                        if (m.clearAllStatusEffects) m.clearAllStatusEffects();
+                        m.hp = Math.max(1, Math.ceil((m.maxHp || 1) / 4));
+                    }
+                    if (gameState.world.isInterior) this._leaveInterior();
+                    const spot = p.respawn || this.worldManager.findSpawnPoint();
+                    this.overworldController.warpTo(spot.col, spot.row);
+                    this.overworldController.isLocked = false;
+                    this._prebuildWorld(spot.col, spot.row);
+                    multiplayerSession._say(grave
+                        ? `Your party was beaten. Your bag${grave.currency ? ` and ${grave.currency} coin` : ''} lie in a grave where you fell.`
+                        : 'Your party was beaten, but woke where it last rested.');
+                    this.changeScene('overworld');
+                    this.gameOverActive = false;
+                }, 'fade', { speed: 0.5, color: '#000000' });
+                return;
+            }
             events.emit('STOP_AMBIENCE', { fadeTime: 1.5 });
             this.transitionRenderer.start(() => {
                 this.input.reset();
@@ -270,7 +338,8 @@ export class SceneManager {
                 if (scene === 'overworld') PartyManager.ensureLivingLeader();
 
                 // A New Game replaces the autosave: keep the old one as 'previous'
-                if (this.currentScene === 'character-creator' && scene === 'overworld') {
+                const mpJoin = !!(data && data.mpJoin);   // a multiplayer guest stepping into the host's world: not a new game of their own
+                if (this.currentScene === 'character-creator' && scene === 'overworld' && !mpJoin) {
                     SaveManager.backupAutosave();
                     gameState.world.discoveredChunks = [];   // a new world has been seen by no one
                     gameState.world.waypoints = [];          // ... and holds no banners
@@ -280,15 +349,17 @@ export class SceneManager {
                 // A new game (coming from the character creator) or a loaded one (LOAD_GAME passes buildWorld) builds the world from gameState.seed
                 if ((this.currentScene === 'character-creator' || (data && data.buildWorld)) && scene === 'overworld') {
                     console.log(`%c[SceneManager] Generating World with finalized seed: ${gameState.seed}`, 'color: #00ff00');
+                    if (this.worldManager && this.worldManager.dropPendingWork) this.worldManager.dropPendingWork();   // the old world is gone: never finish its plans in the new one
                     this.worldManager = new WorldManager();
                     this.overworldController = new OverworldController(this.input, this.config, this.worldManager);
                     this.encounterController = new EncounterController(this.input, this.config, this.worldManager);
                     this.battleController = new BattleController(this.input, this.config, this.worldManager);
+                    this._prebuildWorld(gameState.player.col, gameState.player.row);
                 }
 
                 // A NEW game opens with the prologue, an encounter that plays on the fresh world and ends on the overworld (the encounter
                 // is started here, not by an object on the map, so it has no col / row to clear afterwards).
-                if (scene === 'overworld' && this.currentScene === 'character-creator') {
+                if (scene === 'overworld' && this.currentScene === 'character-creator' && !mpJoin) {
                     this.overworldController.isLocked = true;
                     this.activeEncounterBGM = null;
                     this.encounterController.start('prologue', {});
@@ -347,6 +418,12 @@ export class SceneManager {
                 if (scene === 'settings') {
                     this.settingsController.init(data || {});   // { from: 'game' | 'title' }
                 }
+                if (scene === 'multiplayer') {
+                    this.multiplayerController.init(data || {});
+                }
+                if (scene === 'trade') {
+                    this.tradeController.init(data || {});
+                }
 
                 this.changeScene(scene);
             }, 'fade');
@@ -385,12 +462,14 @@ export class SceneManager {
         AbilitySystem.worldActionHandler = (action) => {
             if (action.type === 'exit_interior' && gameState.world.isInterior && gameState.world.savedOverworld) {
                 this.overworldController.isLocked = true;
-                events.emit('INTERACT', { type: 'WARP', id: 'exit_interior', context: {} });
+                events.emit('INTERACT', { type: 'WARP', id: 'exit_interior', context: { toWorld: true } });   // all the way out, from however deep
             } else if (action.type === 'start_encounter' && action.encounterId) {
                 // A bedroll (or any item that opens an encounter): lock the player and open it like an object's encounter. Ending it returns to the overworld, which unlocks.
                 this.overworldController.isLocked = true;
                 events.emit('INTERACT', { type: 'ENCOUNTER', id: action.encounterId, context: action.context || {} });
             } else if (action.type === 'advance_time') {
+                // a rest out in the open is where a beaten party wakes in a multiplayer world (GAME_OVER)
+                if (!gameState.world.isInterior) gameState.player.respawn = { col: gameState.player.col, row: gameState.player.row };
                 // A bedroll: fade to black, move the clock while the screen is dark (the light, the music and the buffs follow it), fade back in. The player stays
                 // locked until the picture is back. Used from a menu, the fade covers the menu and the player is left as they were.
                 const onOverworld = this.currentScene === 'overworld';
@@ -410,8 +489,13 @@ export class SceneManager {
 
         events.on('INTERACT', (data) => {
             if (data.type === 'ENCOUNTER') {
+                // a chest, a gravestone, a stranger, a line of sight... In a party of players, the ones near me are pulled in and vote; I lead it
+                // (the same shared encounter as a random one, START_ENCOUNTER below)
+                const mp = multiplayerSocial.sharesFights
+                    ? multiplayerSocial.startPartyEncounter({ encounterId: data.id, context: data.context || {}, bgm: data.context?.bgm || null, quiet: true })
+                    : null;
                 this.transitionRenderer.start(() => {
-                    this.encounterController.start(data.id, data.context);
+                    this.encounterController.start(data.id, data.context, mp);
                     const customBGM = data.context?.bgm || null;
                     this.activeEncounterBGM = customBGM;
                     this.changeScene('encounter', { bgm: customBGM });
@@ -420,19 +504,32 @@ export class SceneManager {
                 events.emit('PLAY_SFX', { id: 'doorOpen', volume: 0.8 });
                 this.transitionRenderer.start(() => {
                     if (data.id === 'procedural_room_trigger') {
-                        // Save Overworld state
-                        gameState.world.savedOverworld = {
-                            seed: gameState.seed,
-                            returnCol: data.context.col,
-                            returnRow: data.context.row + 1
-                        };
-
-                        // Shift into interior state
-                        gameState.seed = gameState.seed + (data.context.col * 73856) + (data.context.row * 19349);
-                        gameState.world.isInterior = true;
-                        gameState.world.interiorType = data.roomType || 'HOUSE_INTERIOR';
-                        gameState.world.interiorId = `${data.context.col}_${data.context.row}`;
-                        gameState.world.interiorMapId = null;   // a map read in an earlier visit is spent
+                        // a village being planned ahead is finished now, while the overworld is still the world (inside, cells are keyed to the room)
+                        if (this.worldManager && this.worldManager.finishPendingWork) this.worldManager.finishPendingWork();
+                        const w = gameState.world;
+                        if (w.isInterior && w.savedOverworld) {
+                            // A way further down from inside an interior (the hidden staircase in a cave, down into the catacombs): the interior we are in
+                            // goes on a stack, with the spot at the foot of the stairs, so climbing back up returns to it (the overworld stays saved below it).
+                            // The deeper interior's id is the outer one's plus the stair's cell, so its changes are its own and it is the same on every visit.
+                            if (!Array.isArray(w.interiorStack)) w.interiorStack = [];
+                            w.interiorStack.push({ type: w.interiorType, id: w.interiorId, seed: gameState.seed, returnCol: gameState.player.col, returnRow: gameState.player.row + 1 });
+                            gameState.seed = gameState.seed + (data.context.col * 73856) + (data.context.row * 19349) + 104729;
+                            w.interiorId = `${w.interiorId}_${data.context.col}_${data.context.row}`;
+                        } else {
+                            // Save Overworld state
+                            w.savedOverworld = {
+                                seed: gameState.seed,
+                                returnCol: data.context.col,
+                                returnRow: data.context.row + 1
+                            };
+                            w.interiorStack = [];
+                            // Shift into interior state
+                            gameState.seed = gameState.seed + (data.context.col * 73856) + (data.context.row * 19349);
+                            w.interiorId = `${data.context.col}_${data.context.row}`;
+                        }
+                        w.isInterior = true;
+                        w.interiorType = data.roomType || 'HOUSE_INTERIOR';
+                        w.interiorMapId = null;   // a map read in an earlier visit is spent
 
                         // Generate the interior map
                         this.worldManager = new WorldManager();
@@ -445,26 +542,17 @@ export class SceneManager {
                         const interiorSpawn = this.worldManager.findSpawnPoint() || { col: 3, row: 5 };
                         this.overworldController.warpTo(interiorSpawn.col, interiorSpawn.row);
                         this.overworldController.isLocked = false;
+                    } else if (data.id === 'exit_interior' && !(data.context && data.context.toWorld) && (gameState.world.interiorStack || []).length) {
+                        // up the stairs out of a deeper interior (the catacombs): back into the one above it, at the foot of the stairs
+                        const back = this._leaveToOuterInterior();
+                        this.overworldController.warpTo(back.returnCol, back.returnRow);
+                        this.overworldController.isLocked = false;
                     } else if (data.id === 'exit_interior') {
-                        const saved = gameState.world.savedOverworld;
+                        const saved = this._leaveInterior();
                         if (saved) {
-                            // Restore Overworld state
-                            gameState.seed = saved.seed;
-                            gameState.world.isInterior = false;
-                            gameState.world.interiorType = null;
-                            gameState.world.interiorId = null;
-                            gameState.world.interiorMapId = null;   // the interior map ends when you leave
-
-                            // Restore the overworld map
-                            this.worldManager = new WorldManager();
-                            
-                            // --- FIX: Restore the overworld map for ALL controllers! ---
-                            this.overworldController.worldManager = this.worldManager;
-                            this.encounterController.worldManager = this.worldManager;
-                            this.battleController.worldManager = this.worldManager;
-
                             this.overworldController.warpTo(saved.returnCol, saved.returnRow);
                             this.overworldController.isLocked = false;
+                            this._prebuildWorld(saved.returnCol, saved.returnRow);
                         }
                     }
 
@@ -475,9 +563,12 @@ export class SceneManager {
         });
 
         events.on('START_ENCOUNTER', (data) => {
-            events.emit('PLAY_SFX', { id: 'cinematicBoom', volume: 1.0 });
+            if (!data.quiet) events.emit('PLAY_SFX', { id: 'cinematicBoom', volume: 1.0 });   // quiet: an encounter the party walked up to (a chest...)
+            // a party of players: an encounter I start pulls in the party near me (I lead it, everyone votes: engine/multiplayerSocial.js, EncounterController)
+            const mp = data.mp || (multiplayerSocial.sharesFights ? multiplayerSocial.startPartyEncounter(data) : null);
+            if (this.overworldController) this.overworldController.isLocked = true;
             this.transitionRenderer.start(() => {
-                this.encounterController.start(data.encounterId, data.context || {});
+                this.encounterController.start(data.encounterId, data.context || {}, mp);
                 const customBGM = data.bgm || data.context?.bgm || null;
                 this.activeEncounterBGM = customBGM;
                 this.changeScene('encounter', { bgm: customBGM });
@@ -489,7 +580,9 @@ export class SceneManager {
             const difficulty = gameState.difficulty || 'normal';
             const globalOffset = DIFFICULTY_MODIFIERS[difficulty]?.enemyLevelOffset || 0;
             // The act (story/actDefinitions.js) makes every enemy a little stronger: more levels, and a few extra abilities and traits for each kind
-            const baseLevel = PartyManager.getHighestLevel() + globalOffset + ActSystem.getEnemyLevelOffset();
+            // A party of several players meets stronger enemies (PARTY_SCALING.LEVELS_PER_PLAYER for every player beyond the first)
+            const playerLevels = (multiplayerSocial.playerCount() - 1) * PARTY_SCALING.LEVELS_PER_PLAYER;
+            const baseLevel = PartyManager.getHighestLevel() + globalOffset + ActSystem.getEnemyLevelOffset() + playerLevels;
 
             // `afterVictory: { encounterId }`: an encounter that plays when this fight is won, in place of going straight back to the overworld
             this.pendingAfterVictory = data.afterVictory && data.afterVictory.encounterId
@@ -528,6 +621,15 @@ export class SceneManager {
                 scaledEnemies.push(enemyEntity);
             }
             
+            // a party of players: a fight I start pulls in the party near me (a fight out of a shared encounter: that encounter's players), played on
+            // every one of their screens (engine/multiplayerSocial.js)
+            const encMp = this.currentScene === 'encounter' && this.encounterController && this.encounterController.mp;
+            const fromEncounter = encMp && encMp.players && encMp.players.length > 1 ? encMp.players : null;
+            if (fromEncounter || multiplayerSocial.sharesFights) {
+                multiplayerSocial.startPartyBattle(scaledEnemies, { background: data.background, bgm: data.bgm || (data.context && data.context.bgm) || null, noEscape: !!data.noEscape, betrayal: data.betrayal || null, players: fromEncounter });
+                return;
+            }
+
             const isFromOverworld = this.currentScene === 'overworld';
             const transitionType = isFromOverworld ? 'blade' : 'ethereal';
             const transitionSpeed = isFromOverworld ? 1.5 : 2.5;
@@ -537,6 +639,7 @@ export class SceneManager {
                 const context = data.context || {};
                 context.backgroundId = data.background;
                 context.weather = data.weather;
+                if (data.noEscape) context.noEscape = true;   // a betrayal (or a story fight that says so): no Retreat
                 this.battleController.start(scaledEnemies, context);
                 
                 // --- FIX: Fallback to currently playing encounter music if no explicit BGM was passed ---
@@ -569,8 +672,26 @@ export class SceneManager {
         window.addEventListener('pagehide', saveOnLeave);
         document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveOnLeave(); });
 
+        // a shared multiplayer fight (a duel, or a party's fight) starts on this player's screen (engine/multiplayerSocial.js)
+        events.on('MP_START_BATTLE', ({ enemies, context, bgm }) => {
+            events.emit('PLAY_SFX', { id: 'battleStart', volume: 0.9 });
+            if (this.overworldController) this.overworldController.isLocked = true;
+            const fromOverworld = this.currentScene === 'overworld';
+            this.transitionRenderer.start(() => {
+                this.battleController.start(enemies, context);
+                this.activeBattleBGM = bgm || null;
+                this.changeScene('battle', { bgm: bgm || null });
+            }, fromOverworld ? 'blade' : 'ethereal', { speed: fromOverworld ? 1.5 : 2.5, color: '#0a0a12' });
+        });
+
         events.on('BATTLE_ENDED', (data) => {
             this.activeBattleBGM = null;
+            // a duel is for nothing: both parties are put back as they were, win or lose, and nobody falls for good
+            if (data.mp && multiplayerSocial.battleEnded(data.mp)) {
+                this.pendingAfterVictory = null;
+                events.emit('CHANGE_SCENE', { scene: 'overworld' });
+                return;
+            }
             const after = this.pendingAfterVictory;
             this.pendingAfterVictory = null;
             if (data.victory && !data.fled && after) {
@@ -589,7 +710,8 @@ export class SceneManager {
                 this.partyController.init({
                     mode: data.mode || 'BATTLE_SELECT',
                     activeIndices: data.activeIndices,
-                    callback: data.callback
+                    callback: data.callback,
+                    members: data.members, owners: data.owners, title: data.title
                 });
                 this.changeScene('party');
             }, 'wipe', { speed: 3.0 });
@@ -627,6 +749,12 @@ export class SceneManager {
     }
 
     _handleGlobalKeydown(e) {
+        // "~" (Backquote) shows / hides the debug overlay on any screen, even under a tip card or a fade. Not while the developer console is being typed in.
+        if (e.code === 'Backquote' && !e.repeat && !(this.devConsole && this.devConsole.isOpen)) {
+            if (e.preventDefault) e.preventDefault();
+            debugOverlay.toggle();
+            return;
+        }
         if (this.transitionRenderer.isActive && this.transitionRenderer.state === 'FADE_OUT') return;
 
         // A tip card is up: it takes every key. Any key but a bare modifier (or a held key repeating) eases it out once it has been up a moment.
@@ -638,13 +766,19 @@ export class SceneManager {
             }
             return;
         }
-        if (e.code === 'Backquote' && gameState.cheats === true) this.mapRenderer.showDebug = !this.mapRenderer.showDebug;
 
-        // "/" opens the developer console, in the overworld when nothing else has the screen (a scene is not loading, no menu is up)
-        if (this.devConsole && gameState.cheats === true && !this.devConsole.isOpen && e.code === 'Slash' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey
-            && this.currentScene === 'overworld' && !this.overworldController.isLocked && !this.transitionRenderer.isActive) {
+        // "/" opens the developer console (in a game with cheats on, or as the chat in a multiplayer world) and T opens the chat, in the overworld when
+        // nothing else has the screen (a scene is not loading, no menu is up)
+        const consoleFree = this.devConsole && !this.devConsole.isOpen && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey
+            && this.currentScene === 'overworld' && !this.overworldController.isLocked && !this.transitionRenderer.isActive && !multiplayerSocial.prompt;
+        if (consoleFree && (gameState.cheats === true || multiplayerSession.active) && e.code === 'Slash' && this.devConsole) {
             e.preventDefault();
             this.devConsole.open('/');
+            return;
+        }
+        if (consoleFree && multiplayerSession.active && e.code === 'KeyT') {
+            e.preventDefault();
+            this.devConsole.open('');
             return;
         }
 
@@ -671,6 +805,8 @@ export class SceneManager {
             case 'workshop': return this.workshopController; // <-- NEW
             case 'saves': return this.savesController;
             case 'settings': return this.settingsController;
+            case 'multiplayer': return this.multiplayerController;
+            case 'trade': return this.tradeController;
             default: return null;
         }
     }
@@ -692,6 +828,8 @@ export class SceneManager {
             case 'workshop': return this.workshopRenderer; // <-- NEW
             case 'saves': return this.savesRenderer;
             case 'settings': return this.settingsRenderer;
+            case 'multiplayer': return this.multiplayerRenderer;
+            case 'trade': return this.tradeRenderer;
             default: return null;
         }
     }
@@ -703,6 +841,8 @@ export class SceneManager {
     }
 
     update(dt) {
+        multiplayerSession.update(dt);   // positions, the clock and saves go on under menus and tip cards too
+        if (multiplayerSession.active) multiplayerSocial.update(dt);
         let click = this.input.getAndResetClick();
         let rightClick = this.input.getAndResetRightClick();
         let scroll = this.input.getAndResetScroll();
@@ -855,6 +995,12 @@ export class SceneManager {
             case 'settings':
                 this.settingsRenderer.render(this.ctx, this.settingsController.getState());
                 break;
+            case 'multiplayer':
+                this.multiplayerRenderer.render(this.ctx, this.multiplayerController.getState());
+                break;
+            case 'trade':
+                this.tradeRenderer.render(this.ctx, this.tradeController.getState());
+                break;
             case 'level_up':
                 const luState = this.levelUpController.getState();
                 this.levelUpRenderer.render(luState);
@@ -866,6 +1012,84 @@ export class SceneManager {
         this.tutorial.render(this.ctx);
 
         this.transitionRenderer.render(this.ctx);
+
+        if (debugOverlay.visible) {
+            this.debugOverlayRenderer.render(this.ctx, { scene: this.currentScene, canvas: this.canvas, worldManager: this.worldManager, player: gameState.player });
+        }
+    }
+
+    /** Builds the world around (col, row) while the screen is covered: a loading screen at the midpoint of the current transition (see
+        WorldManager.prebuildSteps), so the first steps on a new, loaded or re-entered overworld do not stall on generating it. */
+
+    /** Out of the house or cave the party is in, onto the overworld it came from (the door or Escape Rope, and a defeat inside in a multiplayer
+     *  world): the world state and the map are put back. Returns the saved overworld ({ returnCol, returnRow }), or null when there is none. */
+    /** The dev console's /tp: { col, row, world } (world: out of the interior to that spot on the overworld) or { player: name }. Lands on the
+     *  nearest free tile to the one asked for. Returns { ok, message }. */
+    _devTeleport(target = {}) {
+        let col = target.col, row = target.row, outside = !!target.world;
+        if (target.player) {
+            const key = String(target.player).toLowerCase();
+            const r = [...multiplayerSession.remotes.values()].find(x => x && x.placed && String(x.username || '').toLowerCase().startsWith(key));
+            if (!r) return { ok: false, message: `No player "${target.player}" in this world.` };
+            const here = gameState.world.isInterior ? `INT_${gameState.world.interiorId}` : 'world';
+            if (r.map !== here && r.map !== 'world') return { ok: false, message: `${r.username} is inside somewhere else: go through the same door.` };
+            col = r.col; row = r.row; outside = r.map === 'world';
+        }
+        if (!Number.isFinite(col) || !Number.isFinite(row)) return { ok: false, message: 'Usage: /tp <col> <row>  |  /tp world <col> <row>  |  /tp <player>' };
+        if (outside && gameState.world.isInterior && !this._leaveInterior()) return { ok: false, message: 'There is no way back out from here.' };
+        const wm = this.worldManager;
+        // the land there has to be built before it can be stood on (a far tile, or the overworld just after leaving an interior)
+        for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) if (wm.ensureChunkLoaded) wm.ensureChunkLoaded(col + dc * 16, row + dr * 16);
+        let spot = null;
+        for (let r = 0; r <= 8 && !spot; r++) {
+            for (let dr = -r; dr <= r && !spot; dr++) for (let dc = -r; dc <= r && !spot; dc++) {
+                if (Math.max(Math.abs(dr), Math.abs(dc)) !== r) continue;
+                if (wm.isTileFree(col + dc, row + dr)) spot = { col: col + dc, row: row + dr };
+            }
+        }
+        if (!spot) spot = { col, row };   // nothing free nearby (deep water, the void of an interior): the tile asked for, as asked
+        this.overworldController.warpTo(spot.col, spot.row);
+        this.overworldController.isLocked = false;
+        if (!gameState.world.isInterior) this._prebuildWorld(spot.col, spot.row);
+        const where = gameState.world.isInterior ? 'in this interior' : 'on the overworld';
+        return { ok: true, message: `Teleported to ${spot.col}, ${spot.row} ${where}${spot.col !== col || spot.row !== row ? ` (the nearest free tile to ${col}, ${row})` : ''}.` };
+    }
+
+    /* Out of a deeper interior (the catacombs) into the one it was entered from (the cave): its seed, type and id come off the stack. Returns the stack entry. */
+    _leaveToOuterInterior() {
+        const back = gameState.world.interiorStack.pop();
+        gameState.seed = back.seed;
+        gameState.world.interiorType = back.type;
+        gameState.world.interiorId = back.id;
+        gameState.world.interiorMapId = null;
+        this.worldManager = new WorldManager();
+        this.overworldController.worldManager = this.worldManager;
+        this.encounterController.worldManager = this.worldManager;
+        this.battleController.worldManager = this.worldManager;
+        return back;
+    }
+
+    _leaveInterior() {
+        const saved = gameState.world.savedOverworld;
+        if (!saved) return null;
+        gameState.seed = saved.seed;
+        gameState.world.interiorStack = [];   // out of every interior at once (an Escape Rope from the catacombs, a teleport)
+        gameState.world.isInterior = false;
+        gameState.world.interiorType = null;
+        gameState.world.interiorId = null;
+        gameState.world.interiorMapId = null;   // the interior map ends when you leave
+        this.worldManager = new WorldManager();
+        // every controller gets the overworld map back
+        this.overworldController.worldManager = this.worldManager;
+        this.encounterController.worldManager = this.worldManager;
+        this.battleController.worldManager = this.worldManager;
+        return saved;
+    }
+
+    _prebuildWorld(col, row) {
+        const wm = this.worldManager;
+        if (!wm || !wm.prebuildSteps || gameState.world.isInterior) return;
+        this.transitionRenderer.setWork(wm.prebuildSteps(col, row), 'Building the world');
     }
 
     /** The Back button of the screens in SHARED_BACK_BUTTON: draws it and adds its hitbox to the screen's (see UIInteractionManager for the click). */

@@ -1,4 +1,6 @@
 // frontend/src/ui/devConsole.js: the developer console, a Minecraft-style command line over the game. Press "/" in the overworld.
+// In a multiplayer world it is the chat too (T opens it empty): a line that does not start with "/" is said to everyone in the world, and
+// what the others say shows here on any screen, then fades. Commands ("/...") still need a game made with Cheats on.
 //
 // It is a small HTML box laid over the bottom of the page (like the login screen, instead of something drawn on the canvas) so the browser's own text field
 // does the typing: paste, held keys repeating, accented letters. What the commands do lives in shared/core/devCommands.js; this file only reads the line and
@@ -27,6 +29,7 @@ const CSS = `
 .sbc-line-out { white-space: pre-wrap; word-break: break-word; text-shadow: 0 1px 2px #000; }
 .sbc-recent:not(.sbc-open) .sbc-line-out:not(:nth-last-child(-n+6)) { display: none; }   /* closed: only the last few answers linger */
 .sbc-recent:not(.sbc-open) .sbc-line-out { background: rgba(6,8,12,.55); width: fit-content; max-width: 100%; padding: 0 6px; }
+.sbc-chat { color: #f0e8d4; } .sbc-chat-me { color: #d9c48a; }
 .sbc-ok { color: #8fc28a; } .sbc-info { color: #b9b2a2; } .sbc-error { color: #e07a6a; } .sbc-echo { color: #c2a14f; }
 .sbc-bar { display: none; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(10,12,16,.94); border: 1px solid rgba(194,161,79,.5); pointer-events: auto; }
 .sbc-open .sbc-bar { display: flex; }
@@ -43,8 +46,16 @@ export class DevConsole {
      * @param {function} [options.onClose] called when it closes
      * @param {Document} [options.doc]     (for tests)
      */
-    constructor({ host = {}, onOpen = () => {}, onClose = () => {}, doc = (typeof document !== 'undefined' ? document : null) } = {}) {
+    /**
+     * @param {function} [options.allowCommands]  may "/" commands run now (the game was made with Cheats on)
+     * @param {function} [options.chatActive]     is there anyone to talk to (a multiplayer world)
+     * @param {function} [options.onChat]         says a line to the others: (text) => true when it was sent
+     */
+    constructor({ host = {}, onOpen = () => {}, onClose = () => {}, allowCommands = () => true, chatActive = () => false, onChat = () => false, doc = (typeof document !== 'undefined' ? document : null) } = {}) {
         this.host = host;
+        this.allowCommands = allowCommands;
+        this.chatActive = chatActive;
+        this.onChat = onChat;
         this.onOpen = onOpen;
         this.onClose = onClose;
         this.doc = doc;
@@ -68,10 +79,11 @@ export class DevConsole {
         }
         this.root = d.createElement('div');
         this.root.id = 'sbconsole';
-        this.root.innerHTML = '<div class="sbc-log"></div><div class="sbc-bar"><input class="sbc-input" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Developer console"><span class="sbc-hint">Enter run, Tab complete, Esc close</span></div>';
+        this.root.innerHTML = '<div class="sbc-log"></div><div class="sbc-bar"><input class="sbc-input" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Developer console"><span class="sbc-hint"></span></div>';
         d.body.appendChild(this.root);
         this.logEl = this.root.querySelector('.sbc-log');
         this.input = this.root.querySelector('.sbc-input');
+        this.hintEl = this.root.querySelector('.sbc-hint');
 
         // Every key typed in the box stays in the box: the game listens on the window and must not see them
         for (const type of ['keydown', 'keyup', 'keypress']) this.input.addEventListener(type, (e) => e.stopPropagation());
@@ -95,6 +107,9 @@ export class DevConsole {
         this._place();
         this.isOpen = true;
         this.root.classList.add('sbc-open');
+        this.hintEl.textContent = this.chatActive()
+            ? (this.allowCommands() ? 'Enter send, /command, Tab complete, Esc close' : 'Enter send, Esc close')
+            : 'Enter run, Tab complete, Esc close';
         this.input.value = prefill;
         this.historyIndex = -1;
         this.onOpen();
@@ -109,15 +124,27 @@ export class DevConsole {
         this.root.classList.remove('sbc-open');
         this.input.blur();
         // the last answers linger a moment, then fade, like chat
-        if (this.logEl.children.length) {
-            this.root.classList.add('sbc-recent');
-            clearTimeout(this._fadeTimer);
-            this._fadeTimer = setTimeout(() => {
-                this.root.classList.add('sbc-fading');
-                this._fadeTimer = setTimeout(() => this.root.classList.remove('sbc-recent', 'sbc-fading'), 1300);
-            }, FADE_AFTER_MS);
-        }
+        this._linger();
         this.onClose();
+    }
+
+    _linger() {
+        if (!this.logEl || !this.logEl.children.length || this.isOpen) return;
+        this.root.classList.remove('sbc-fading');
+        this.root.classList.add('sbc-recent');
+        clearTimeout(this._fadeTimer);
+        this._fadeTimer = setTimeout(() => {
+            this.root.classList.add('sbc-fading');
+            this._fadeTimer = setTimeout(() => this.root.classList.remove('sbc-recent', 'sbc-fading'), 1300);
+        }, FADE_AFTER_MS);
+    }
+
+    /** Another player said something (multiplayer chat): shown on any screen, open or not. */
+    showChat(name, text) {
+        if (!this.root) return;
+        this._place();
+        this.print([{ kind: 'chat', text: `<${name}> ${text}` }]);
+        this._linger();
     }
 
     /** Adds lines ({ kind, text }) to the box. */
@@ -147,8 +174,21 @@ export class DevConsole {
         if (this.history[this.history.length - 1] !== text) this.history.push(text);
         if (this.history.length > HISTORY_LIMIT) this.history.shift();
         this.historyIndex = -1;
+        // in a multiplayer world a line without "/" is chat
+        if (this.chatActive() && !text.startsWith('/')) {
+            const sent = this.onChat(text);
+            this.print([sent ? { kind: 'chat-me', text: `<You> ${text}` } : { kind: 'error', text: 'Not connected: the message was not sent.' }]);
+            this.input.value = '';
+            this.close();
+            return { lines: [], closeConsole: true };
+        }
         this.print([{ kind: 'echo', text: `> ${text}` }]);
         if (/^\/?clear\s*$/i.test(text)) { this.clear(); this.input.value = '/'; return { lines: [], closeConsole: false }; }
+        if (!this.allowCommands()) {
+            this.print([{ kind: 'error', text: 'Commands only work in a game made with Cheats on. Type without "/" to chat.' }]);
+            this.input.value = '';
+            return { lines: [], closeConsole: false };
+        }
         const result = DevCommands.run(text, this.host);
         this.print(result.lines);
         this.input.value = '/';

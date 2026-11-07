@@ -113,14 +113,14 @@ export const craftingRecipeDefinitions = {
     }
   },
 
-  // --- CLOTH ARMOR (tailor's bench) ---
+  // --- CLOTH ARMOR (tailor's bench): linen, padded with cotton (the villages' crop fields grow it) ---
   "recipe_cloth_hood": {
     id: "recipe_cloth_hood",
     outputItemId: "cloth_hood",
     station: "tailors_bench",
     materials: {
       "linen": 2,
-      "plant_fibers": 2
+      "cotton": 2
     }
   },
   "recipe_cloth_robe": {
@@ -129,7 +129,7 @@ export const craftingRecipeDefinitions = {
     station: "tailors_bench",
     materials: {
       "linen": 4,
-      "plant_fibers": 4
+      "cotton": 4
     }
   },
   "recipe_cloth_gloves": {
@@ -138,7 +138,7 @@ export const craftingRecipeDefinitions = {
     station: "tailors_bench",
     materials: {
       "linen": 1,
-      "plant_fibers": 2
+      "cotton": 2
     }
   },
   "recipe_cloth_pants": {
@@ -147,7 +147,7 @@ export const craftingRecipeDefinitions = {
     station: "tailors_bench",
     materials: {
       "linen": 3,
-      "plant_fibers": 3
+      "cotton": 3
     }
   },
   "recipe_cloth_shoes": {
@@ -156,7 +156,7 @@ export const craftingRecipeDefinitions = {
     station: "tailors_bench",
     materials: {
       "linen": 2,
-      "plant_fibers": 2
+      "cotton": 2
     }
   },
 
@@ -423,6 +423,7 @@ export const craftingRecipeDefinitions = {
     materials: {
       "leather": 2,           // the waterproof outside
       "linen": 2,             // the blanket
+      "wheat": 3,             // straw to stuff it (the villages' crop fields grow wheat)
       "plant_fibers": 4       // cord to tie it
     }
   },

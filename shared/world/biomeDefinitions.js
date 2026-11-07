@@ -72,7 +72,7 @@ export const BIOME_DEFINITIONS = {
             levelDirt: null /* dirt only generates on the lower (ground) level, never on the tops of cliffs */,
         },
         minimap: { grass: '#5b9448', dirt: '#8c6c47', water: '#3b73a6', rock: '#8f8b82', stair: '#f2e27a' } /* colours of the minimap (see MinimapRenderer): ground, dirt, water, the rock that the cliff levels turn into, and the walkable part of a stair */,
-        allowedWeather: ['rain', 'fog'],
+        allowedWeather: ['rain', 'thunderstorm', 'fog'],
         music: { day: 'plainsBgmDay', night: 'plainsBgmNight', battle: 'plainsBattleBgm' },
         battleBackgrounds: { day: 'plainsBattleDayBg', dusk: 'plainsBattleDuskBg', night: 'plainsBattleNightBg' },
         shapeElevation: (noise, hill = 0, c = 1) => {
@@ -102,6 +102,7 @@ export const BIOME_DEFINITIONS = {
                 { chance: 0.211, rangeStart: 0.206, id: 'TIN_ORE_DEPOSIT' } /* tin: 0.5% of the ground, its own band [0.206, 0.211) in the same gap. Mined with a pickaxe */,
                 { chance: 0.2205, rangeStart: 0.22, id: 'DOG_NPC' } /* a wounded dog lying by the road, 0.05% of the ground: its own band [0.22, 0.2205), in the free gap between the tin and the grass. It used to be the "wounded mutt" random encounter; now it is found in the world (mapObjectDefinitions.js NPCS) */,
                 { chance: 0.2305, rangeStart: 0.23, id: 'MADMAN_NPC' } /* a madman standing in the grass, 0.05% of the ground: band [0.23, 0.2305). Coming within 2 tiles of him starts "A Disturbing Sight" (it used to be a random encounter) */,
+                { chance: 0.244, rangeStart: 0.24, id: 'COTTON_PLANT' } /* wild cotton, 0.4% of the ground (as common as a herb): its own band [0.24, 0.244), in the free gap between the madman and the shady merchant. Walk over it to pick it up, like the cotton of the village fields */,
                 { chance: 0.261, rangeStart: 0.26, id: 'AFTERMATH_REMAINS' } /* a helmet with a sword through it, the remains of an old battle, 0.1% of the ground: band [0.26, 0.261), in the free gap after the shady merchant's band. Interacting starts the Aftermath encounter (it used to be a random encounter) */,
                 { chance: 0.7, rangeStart: 0.3, pool: ['GRASS_COVERAGE_1', 'GRASS_COVERAGE_2', 'GRASS_COVERAGE_3'] },
                 { chance: 0.1, id: 'CAVE_ENTRANCE' } /* a cave mouth painted into a straight south-facing cliff: the share of fitting cliff faces that get one (WorldManager._isCaveMouth). Keep this rule LAST in the LAYER_2 list */,
@@ -323,6 +324,38 @@ export const BIOME_DEFINITIONS = {
         mapObjects: { [CONFIG.TILE_TYPES.LAYER_2]: [] } /* the CaveGenerator places the rocks itself (see `scatter` in interiorDefinitions.js) */,
         encounters: { rate: 0.0015, type: 'time_weighted', pools: [{ weight: 100, id: 'cave_in', allowedTimes: ['day', 'dusk', 'night'] }] } /* RARE: a step in 650 or so, under the rarest elsewhere (the snowy mountains' 0.0025); a cave has no daylight, so every hour counts */,
         battles: { rate: 0.01, tables: { day: 'cave_battles', dusk: 'cave_battles', night: 'cave_battles' } } /* half the plains' / desert's 0.01; same table at every hour */,
+    },
+    /* The catacombs (interiorDefinitions.js CATACOMBS): a cave the dead were laid in, under the mysterious altar. Like CAVE_INTERIOR, but darker and colder:
+       crypt-stone tiles (assets/tilesets/catacombs_interior: bricked walls, flagstones, bones, grave soil), every ledge further down sinks deeper into a green-black
+       dark, a carried light falls a little short (lightScale), and what walks here is mostly the dead. */
+    CATACOMBS_INTERIOR: {
+        id: 'CATACOMBS_INTERIOR',
+        name: 'The Catacombs',
+        defaultLootTable: 'cave',
+        blobTileset: {
+            primaryFloor: 'catacombsPrimaryFloor',
+            secondaryFloor: 'catacombsSecondaryFloor',
+            secondaryOnLevel: 'catacombsSecondaryOnLevel',
+            cliffFloor: 'catacombsCliffFloor',
+            cliffWall: 'catacombsCliffWall',
+            cliffExt: 'catacombsCliffExt',
+            cliffShadow: 'plainsCliffShadow',
+            cliffStairs: 'catacombsCliffStairs',
+            water: false,
+            voidColor: '#030404',
+            voidFromLayer: 7,
+            depthShade: { from: 6, step: 0.1, max: 0.46, color: '1,6,4' },   /* a shade deeper than the cave's 0.42, and colder */
+        },
+        ambientLight: { r: 0, g: 0, b: 0, a: 1 },
+        lightScale: 0.9 /* the dark here swallows light: carried lights (the player's, the party's) reach 90% as far (LightingRenderer) */,
+        allowedWeather: [],
+        music: { day: 'caveBgm', night: 'caveBgm', battle: 'caveBattleBgm' },
+        battleBackgrounds: { day: 'caveBattleBg', dusk: 'caveBattleBg', night: 'caveBattleBg' },
+        shapeElevation: (noise) => noise,
+        structures: { rate: 0, pools: [] },
+        mapObjects: { [CONFIG.TILE_TYPES.LAYER_2]: [] },
+        encounters: { rate: 0, pools: [] },
+        battles: { rate: 0.014, tables: { day: 'catacombs_battles', dusk: 'catacombs_battles', night: 'catacombs_battles' } } /* a little more often than a cave: the dead do not sleep */,
     },
 };
 

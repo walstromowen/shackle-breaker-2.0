@@ -16,10 +16,9 @@ const wakeTheDead = [{
         { type: "ADVANCE_STAGE", payload: { stageId: "risen" } }
     ]
 }];
-const reward = (xp, rolls, stageId) => [{
+const reward = (rolls, stageId) => [{
     weight: 1,
     results: [
-        { type: "AWARD_XP", payload: { amount: xp, target: "entire_party" } },
         { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "biome_default", rolls } },
         { type: "ADVANCE_STAGE", payload: { stageId } }
     ]
@@ -80,7 +79,7 @@ export const crimsonVigil = {
                 {
                     text: "Take the offering.",
                     corruption: 2,   // magic used or a cruel act: corruption goes up
-                    outcomes: reward(25, 2, "quiet")
+                    outcomes: reward(2, "quiet")
                 }
             ]
         },
@@ -93,7 +92,7 @@ export const crimsonVigil = {
                 {
                     text: "Dig it up.",
                     corruption: 2,   // magic used or a cruel act: corruption goes up
-                    outcomes: reward(15, 3, "quiet")
+                    outcomes: reward(3, "quiet")
                 }
             ]
         },

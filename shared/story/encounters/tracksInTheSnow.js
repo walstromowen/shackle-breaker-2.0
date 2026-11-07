@@ -24,9 +24,9 @@ export const tracksInTheSnow = {
                     threshold: 12,
                     customActionText: "You follow the tracks.",
                     successOutcomes: [
-                        { weight: 1, results: [{ type: "AWARD_XP", payload: { amount: 5, target: "active_character" } }, { type: "ADVANCE_STAGE", payload: { stageId: "tracks_continue" } }] },
-                        { weight: 1, results: [{ type: "AWARD_XP", payload: { amount: 5, target: "active_character" } }, { type: "ADVANCE_STAGE", payload: { stageId: "crimson_snow" } }] },
-                        { weight: 1, results: [{ type: "AWARD_XP", payload: { amount: 5, target: "active_character" } }, { type: "ADVANCE_STAGE", payload: { stageId: "deer_on_the_road" } }] }
+                        { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "tracks_continue" } }] },
+                        { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "crimson_snow" } }] },
+                        { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "deer_on_the_road" } }] }
                     ],
                     failureOutcomes: [
                         { weight: 2, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "something_approaches" } }] },
@@ -102,8 +102,8 @@ export const tracksInTheSnow = {
                     threshold: 12,
                     customActionText: "You follow the tracks.",
                     successOutcomes: [
-                        { weight: 2, results: [{ type: "AWARD_XP", payload: { amount: 5, target: "active_character" } }, { type: "ADVANCE_STAGE", payload: { stageId: "crimson_snow" } }] },
-                        { weight: 1, results: [{ type: "AWARD_XP", payload: { amount: 5, target: "active_character" } }, { type: "ADVANCE_STAGE", payload: { stageId: "deer_on_the_road" } }] }
+                        { weight: 2, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "crimson_snow" } }] },
+                        { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "deer_on_the_road" } }] }
                     ],
                     failureOutcomes: [
                         { weight: 2, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "something_approaches" } }] },
@@ -188,7 +188,6 @@ export const tracksInTheSnow = {
                             results: [
                                 // No raw meat / venison item exists yet; swap in one here when it does.
                                 { type: "GIVE_ITEM", payload: { items: [{ id: "fur", qty: 2 }, { id: "bone", qty: 2 }] } },
-                                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
@@ -231,8 +230,8 @@ export const tracksInTheSnow = {
                     threshold: 12,
                     customActionText: "You investigate the red snow.",
                     successOutcomes: [
-                        { weight: 1, results: [{ type: "AWARD_XP", payload: { amount: 5, target: "active_character" } }, { type: "ADVANCE_STAGE", payload: { stageId: "wounded_leopard" } }] },
-                        { weight: 1, results: [{ type: "AWARD_XP", payload: { amount: 5, target: "active_character" } }, { type: "ADVANCE_STAGE", payload: { stageId: "apex_predator" } }] }
+                        { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "wounded_leopard" } }] },
+                        { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "apex_predator" } }] }
                     ],
                     failureOutcomes: [
                         { weight: 2, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "something_approaches" } }] },
@@ -387,7 +386,6 @@ export const tracksInTheSnow = {
                             results: [
                                 // The old reward was 3 Pelts; the item list has "fur" instead (used by the leather recipe).
                                 { type: "GIVE_ITEM", payload: { items: [{ id: "fur", qty: 3 }] } },
-                                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]

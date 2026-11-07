@@ -8,6 +8,9 @@ import { fileURLToPath } from 'node:url';
 import { authRoutes } from './routes/auth.js';
 import { saveRoutes } from './routes/saves.js';
 
+/* The page's own address for the CSP (only the characters a host name and port can have) */
+const hostOf = (req) => String(req.headers.host || 'localhost').replace(/[^A-Za-z0-9.:\-\[\]]/g, '');
+
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 export function createApp({ repo, config }) {
@@ -25,7 +28,8 @@ export function createApp({ repo, config }) {
                 imgSrc: ["'self'", 'data:', 'blob:'],
                 mediaSrc: ["'self'", 'blob:'],
                 fontSrc: ["'self'", 'data:'],
-                connectSrc: ["'self'", ...config.corsOrigins],
+                // 'self' covers the multiplayer WebSocket in current browsers; the ws(s):// form of this address is listed for older ones
+                connectSrc: ["'self'", ...config.corsOrigins, (req) => `wss://${hostOf(req)}`, (req) => `ws://${hostOf(req)}`],
                 objectSrc: ["'none'"],
                 baseUri: ["'self'"],
                 formAction: ["'self'"]

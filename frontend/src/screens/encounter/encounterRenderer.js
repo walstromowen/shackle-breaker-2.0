@@ -293,16 +293,16 @@ export class EncounterRenderer {
                 const sheetImg = this.loader.get(info.sheet);
                 if (!sheetImg) return;
 
-                const nativeRes = 128;
-                const imgScale = 2;
-                const drawSize = nativeRes * imgScale;
+                // a sheet is a grid of 128 px cells; a picture made at another size names it (image: { sheet, col, row, size: 193 }) and is drawn in the same frame
+                const nativeRes = info.size || 128;
+                const drawSize = 128 * 2;
                 const imgX = rightColX + (rightW / 2) - (drawSize / 2);
                 const imgY = imageY + (targetAreaSize / 2) - (drawSize / 2);
 
                 ctx.save();
                 ctx.globalAlpha = alpha * colsAlpha;
                 ctx.imageSmoothingEnabled = false;
-                ui.drawSprite(sheetImg, info.col * nativeRes, info.row * nativeRes, nativeRes, nativeRes, imgX, imgY, drawSize, drawSize);
+                ui.drawSprite(sheetImg, (info.col || 0) * nativeRes, (info.row || 0) * nativeRes, nativeRes, nativeRes, imgX, imgY, drawSize, drawSize);
                 ctx.imageSmoothingEnabled = true;
                 ctx.restore();
             };

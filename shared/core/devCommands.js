@@ -16,6 +16,7 @@
 //   host.battleSetup()    { background, weather } for a battle started from where the player stands
 // Nothing in the game imports this file: only the console does.
 import { gameState } from './gameState.js';
+import { PARTY_PULL_RADIUS } from './multiplayerParty.js';
 import { events } from './eventBus.js';
 import { InventorySystem } from '../items/inventorySystem.js';
 import { ItemDefinitions } from '../items/itemDefinitions.js';
@@ -90,7 +91,38 @@ const LISTABLE = {
     milestones: () => milestoneIds(),
 };
 
+/* Things the dev console turns on for the screens to draw (read by the overworld's UI renderer). */
+export const DEV_FLAGS = { showPullRadius: false };
+
 const COMMANDS = {
+    tp: {
+        usage: '/tp [col row] | /tp world <col> <row> | /tp <player>',
+        summary: 'Teleport: to a tile of the map you are on (the overworld, or the interior you are in), out of an interior to an overworld tile, or to another player. /tp alone says where you are.',
+        run(args, host = {}) {
+            const p = gameState.player;
+            const where = () => `You are at ${p.col}, ${p.row} ${gameState.world.isInterior ? `in interior ${gameState.world.interiorId}` : 'on the overworld'}.`;
+            if (!args.length) return [info(where())];
+            if (!host.teleport) return [fail('Teleporting needs the overworld.')];
+            let target;
+            if (norm(args[0]) === 'world') target = { world: true, col: toInt(args[1]), row: toInt(args[2]) };
+            else if (toInt(args[0]) !== null) target = { col: toInt(args[0]), row: toInt(args[1]) };
+            else target = { player: args[0] };
+            if (!target.player && (target.col === null || target.row === null)) return [fail('Usage: /tp <col> <row>  |  /tp world <col> <row>  |  /tp <player>')];
+            const r = host.teleport(target);
+            return r.ok ? { lines: [ok(r.message)], closeConsole: true } : [fail(r.message)];
+        },
+        complete: (i, typed) => (i === 0 ? starting(['world'], typed) : []),
+    },
+
+    radius: {
+        usage: '/radius',
+        summary: `Show or hide the party pull radius: the party members within ${PARTY_PULL_RADIUS} tiles are pulled into a fight or encounter you start.`,
+        run() {
+            DEV_FLAGS.showPullRadius = !DEV_FLAGS.showPullRadius;
+            return { lines: [ok(DEV_FLAGS.showPullRadius ? `Party pull radius shown: ${PARTY_PULL_RADIUS} tiles each way. /radius again hides it.` : 'Party pull radius hidden.')], closeConsole: true };
+        },
+    },
+
     help: {
         usage: '/help [command]',
         summary: 'List the commands, or explain one.',

@@ -17,11 +17,20 @@ import { AbilityDefinitions } from '../../../../shared/abilities/abilityDefiniti
 import { ExploredMap } from '../../../../shared/world/exploredMap.js';
 import { ActSystem } from '../../../../shared/story/actSystem.js';
 import { PartyFollowers } from './partyFollowers.js';
+import { multiplayerSession } from '../../engine/multiplayerSession.js';
+import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
+import { collectGrave } from '../../../../shared/world/graves.js';
+import { pullLever } from '../../../../shared/world/catacombPuzzle.js';
+
+/* Multiplayer: the question box (another player's request, or what to do with the player in front of you), centred on the screen */
+const PROMPT = { w: 640, optH: 58, gap: 10, pad: 36 };
 
 /* A world buff with a `light` (a torch: the ability `torchlight`, see abilityDefinitions.js) lasts a number of IN-GAME minutes. In its last TORCH_GUTTER_MINUTES the light shrinks back to normal. */
 const TORCH_GUTTER_MINUTES = 30;
 /* The colour is mixed in this many steps (not smoothly), so LightingRenderer's colour cache only ever holds a handful of entries. */
 const TORCH_COLOR_STEPS = 8;
+// milliseconds per logic step (60 a second) the world may spend planning the structures ahead of the party (WorldManager.prepareAhead)
+const AHEAD_BUDGET_MS = 6;
 
 /* Keyboard shortcuts of the overworld menu. The number keys 1-9 and 0 belong to the hotbar (InventorySystem.HOTBAR_KEYS), so the menu uses letters. Change a key here
    and its button badge follows. */
@@ -35,6 +44,11 @@ const MENU_KEYS = {
     system: 'KeyO'      // System: save / load / quit to title
 };
 const keyLabel = (code) => (code === 'Escape' ? 'Esc' : code.replace(/^Key|^Digit/, ''));
+
+/* Going through a door or into a cave mouth: how far up into the opening the player walks before the warp (in tiles), and how long a cave takes. */
+const ENTER_LIFT = 0.6;
+const ENTER_CAVE_SECONDS = 0.6;
+const ENTER_FADE_FROM = 0.55;   // the part of the way in (0..1) after which the player starts to darken away
 
 export class OverworldController extends BaseController {
     constructor(input, config, worldManager) {
@@ -86,6 +100,12 @@ export class OverworldController extends BaseController {
     }
 
     getHitboxes() {
+        const prompt = this._promptLayout();
+        if (prompt) return prompt.options.map(o => ({ id: o.hitId, x: o.x, y: o.y, w: o.w, h: o.h, zIndex: 500 }));
+        const plaque = this._partyPlaque();
+        const extra = plaque ? [{ id: 'mp_leave', x: plaque.x, y: plaque.y, w: plaque.w, h: plaque.h, zIndex: 120 }] : [];
+        if (this.isMenuOpen) return [this.menuToggleHitbox, ...this.dropdownHitboxes, ...this.hotbarHitboxes, ...extra];
+        if (extra.length) return [this.menuToggleHitbox, ...this.hotbarHitboxes, ...extra];
         if (this.isMenuOpen) {
             return [this.menuToggleHitbox, ...this.dropdownHitboxes, ...this.hotbarHitboxes];
         }
@@ -93,7 +113,13 @@ export class OverworldController extends BaseController {
     }
 
     onClick(hitboxId) {
+        if (multiplayerSocial.prompt) {
+            if (typeof hitboxId === 'string' && hitboxId.startsWith('mp_opt_')) { this.playConfirmSound(); multiplayerSocial.pickPrompt(parseInt(hitboxId.slice(7), 10)); }
+            return;
+        }
         if (this.isLocked) return false;
+
+        if (hitboxId === 'mp_leave') { this.playConfirmSound(); this._askLeaveParty(); return; }
 
         if (typeof hitboxId === 'string' && hitboxId.startsWith('hotbar_')) {
             // Using a slot makes its own sound (or none for an empty slot), so no default confirm on top of it
@@ -179,6 +205,7 @@ export class OverworldController extends BaseController {
     }
 
     handleKeyDown(code, e) {
+    if (multiplayerSocial.prompt) { this._promptKey(code, e); return; }
     if (this.isLocked) return;
 
     // Change interaction key to Spacebar (and prevent page scrolling)
@@ -207,6 +234,8 @@ export class OverworldController extends BaseController {
       this.isMenuOpen = false;
       events.emit('OPEN_WORKSHOP', { station: 'any', title: 'Crafting Bag' });
     }
+    // L: leave a party of players (a leader breaks it up)
+    if (code === 'KeyL' && multiplayerSocial.myGroup()) { this.playConfirmSound(); this._askLeaveParty(); }
     // O: System (save / load / quit to title)
     if (code === MENU_KEYS.system) this.executeMenuAction('saves', { mode: 'game' });
 
@@ -367,10 +396,13 @@ export class OverworldController extends BaseController {
             this._respawnDay = gameState.world.day;
             this.worldManager.expireRespawns();
         }
+        // villages and graveyards ahead of the party are planned a few milliseconds a frame, so walking up to one never freezes the game
+        if (this.worldManager.prepareAhead) this.worldManager.prepareAhead(gameState.player.col, gameState.player.row, AHEAD_BUDGET_MS);
         this.revealSurroundings();   // the world map grows as the party walks
         this.validateBiomeWeather(); // every frame: the weather must fit the biome the player stands in even when no step ends (a warp, standing still)
         this.checkEnvironmentMusic();
         if (!this.encounterZones) this.encounterZones = this.findEncounterZones(gameState.player.col, gameState.player.row); // standing in a zone when the world opens: it does not fire
+        this._updateEntering(dt);
 
         this.worldManager.getActiveObjects().forEach(obj => {
             if (obj.isAnimating) {
@@ -420,9 +452,108 @@ export class OverworldController extends BaseController {
         this.syncFollowers(dt);
     }
 
+    // ================================================================ MULTIPLAYER
+    /** The id of the other player standing on the tile in front of this one, or null. */
+    _playerInFront() {
+        if (!multiplayerSession.active) return null;
+        const { TILE_SIZE } = this.config;
+        const step = { UP: [0, -1], DOWN: [0, 1], LEFT: [-1, 0], RIGHT: [1, 0] }[this.player.direction] || [0, 1];
+        const col = Math.round(this.player.x / TILE_SIZE) + step[0], row = Math.round(this.player.y / TILE_SIZE) + step[1];
+        const here = gameState.world.isInterior ? `INT_${gameState.world.interiorId}` : 'world';
+        for (const r of multiplayerSession.remotes.values()) {
+            if (!r.placed || r.map !== here) continue;
+            const rc = Math.round(r.entity.x / TILE_SIZE), rr = Math.round(r.entity.y / TILE_SIZE);
+            if ((rc === col && rr === row) || (r.col === col && r.row === row)) return r.id;
+        }
+        return null;
+    }
+
+    /* A party member walks behind the leader, on the tiles the leader walked: a step at a time while close, running to catch up, a jump when far. */
+    _promptKey(code, e) {
+        const p = multiplayerSocial.prompt;
+        const intent = this.resolveIntent(code, e);
+        if (!intent || !p) return;
+        if (intent === 'UP' || intent === 'LEFT') { p.focus = (p.focus - 1 + p.options.length) % p.options.length; this.playNavSound(); }
+        else if (intent === 'DOWN' || intent === 'RIGHT') { p.focus = (p.focus + 1) % p.options.length; this.playNavSound(); }
+        else if (intent === 'CONFIRM') { this.playConfirmSound(); multiplayerSocial.pickPrompt(p.focus); }
+        else if (intent === 'CANCEL') { this.playCancelSound(); multiplayerSocial.cancelPrompt(); }
+    }
+
+    /* L, or a click on the party plaque: leave the party (members get their own movement and party back), or break it up (the leader). */
+    _askLeaveParty() {
+        const g = multiplayerSocial.myGroup();
+        if (!g) return;
+        const leading = g.leader === multiplayerSocial.me;
+        multiplayerSocial.prompt = {
+            title: leading ? 'Break up the party?' : `Leave ${multiplayerSocial.nameOf(g.leader)}'s party?`,
+            text: leading ? 'Everyone goes back to their own party and their own way.' : 'You go back to your own party and your own way.',
+            options: [{ id: 'yes', label: leading ? 'Break Up' : 'Leave' }, { id: 'cancel', label: 'Stay' }], focus: 0,
+            onPick: (id) => { if (id === 'yes') multiplayerSocial.leaveGroup(); },
+        };
+    }
+
+    /** The party plaque, top centre under the multiplayer messages: who is in the party, and how to leave (null with no party). */
+    _partyPlaque() {
+        const g = multiplayerSocial.myGroup();
+        if (!g || !multiplayerSession.active) return null;
+        const me = multiplayerSocial.me;
+        const names = [g.leader, ...g.members].map(id => (id === me ? 'You' : multiplayerSocial.nameOf(id)));
+        const leading = g.leader === me;
+        const text = `${leading ? 'Leading' : 'Party'}: ${names.join(', ')}   ·   [L] ${leading ? 'Break up' : 'Leave'}`;
+        const w = Math.min(900, 120 + text.length * 13), h = 46;
+        return { x: (1920 - w) / 2, y: 16, w, h, text, id: 'mp_leave' };
+    }
+
+    /** Where the question box and its buttons are (null when there is none). */
+    _promptLayout() {
+        const p = multiplayerSocial.prompt;
+        if (!p) return null;
+        const W = 1920, H = 1080;
+        const h = PROMPT.pad * 2 + 110 + p.options.length * (PROMPT.optH + PROMPT.gap);
+        const x = (W - PROMPT.w) / 2, y = (H - h) / 2;
+        const options = p.options.map((o, i) => ({
+            ...o, hitId: `mp_opt_${i}`, x: x + PROMPT.pad, y: y + PROMPT.pad + 110 + i * (PROMPT.optH + PROMPT.gap), w: PROMPT.w - PROMPT.pad * 2, h: PROMPT.optH,
+        }));
+        const hovered = this.hoveredHitboxId && options.find(o => o.hitId === this.hoveredHitboxId);
+        return { x, y, w: PROMPT.w, h, title: p.title, text: p.text, options, focusId: hovered ? hovered.hitId : `mp_opt_${p.focus}` };
+    }
+
+    /* The other players in a multiplayer world who are on this map (engine/multiplayerSession.js), lit like the player so they show at night,
+       each with the two members of their own party who walk behind them (as yours do) unless they are in a party of players. */
+    _otherPlayers() {
+        const out = [];
+        for (const r of multiplayerSession.visibleRemotes()) {
+            r.entity.light = this.player.light;
+            out.push(r.entity);
+            const line = this.remoteFollowers && this.remoteFollowers.get(r.id);
+            if (line && !r.grouped) for (const f of line.entities) if (f.spriteKey) out.push(f);
+        }
+        return out;
+    }
+
+    /* Moves the follower lines of the other players along their steps (once an update; PartyFollowers keeps each line on its leader's trail). */
+    _syncOtherPlayersFollowers(dt) {
+        if (!multiplayerSession.active) { this.remoteFollowers = null; return; }
+        if (!this.remoteFollowers) this.remoteFollowers = new Map();
+        const seen = new Set();
+        for (const r of multiplayerSession.visibleRemotes()) {
+            seen.add(r.id);
+            let line = this.remoteFollowers.get(r.id);
+            if (!line) {
+                line = new PartyFollowers(this.config.TILE_SIZE);
+                line.entities.forEach(e => { e.id = `remote_${r.id}_${e.followerSlot}`; e.remote = true; });
+                this.remoteFollowers.set(r.id, line);
+            }
+            line.entities.forEach((e, k) => { e.spriteKey = r.grouped ? null : (r.party[k] || null); });
+            line.sync(r.entity, dt, (c0, r0, c1, r1, dir) => this.worldManager.canMove(c0, r0, c1, r1, dir));
+        }
+        for (const id of [...this.remoteFollowers.keys()]) if (!seen.has(id)) this.remoteFollowers.delete(id);
+    }
+
     /* The party members behind the player keep to its trail (PartyFollowers). They are only drawn: nothing in the world knows they are there. */
     syncFollowers(dt) {
         this.followers.sync(this.player, dt, (c0, r0, c1, r1, dir) => this.worldManager.canMove(c0, r0, c1, r1, dir));
+        this._syncOtherPlayersFollowers(dt);
     }
 
     /* Which icon sheet an item's icon is on (toasts and the hotbar). */
@@ -609,12 +740,36 @@ export class OverworldController extends BaseController {
 
     interact() {
         if (this.player.isMoving || this.isLocked) return;
+        // another player in front of you: trade, party up or duel (engine/multiplayerSocial.js)
+        const other = this._playerInFront();
+        if (other) { this.playConfirmSound(); multiplayerSocial.openPlayerMenu(other); return; }
         const obj = this.getFacedObject();
         if (obj && obj.interaction) {
             console.log(`[Overworld] Interacting with ${obj.id} at ${obj.col},${obj.row}`);
             // --- Intercept item pickups so the game doesn't freeze! ---
             if (obj.interaction.type === 'PICKUP') {
                 this.processPickup(obj);
+                return;
+            }
+
+            // --- A grave a beaten party left behind (multiplayer): its owner digs up their bag and coin ---
+            if (obj.interaction.type === 'GRAVE') {
+                const r = collectGrave(this.worldManager, obj.col, obj.row, multiplayerSocial.me);
+                if (!r.ok) { this.showNotice(r.message, false); return; }
+                for (const { id, qty } of r.items) this.createItemToast(id, qty);
+                this.showNotice(r.message, true);
+                events.emit('PLAY_SFX', { id: UI_SFX.pickup, volume: 0.8, pitch: 1.0 });
+                return;
+            }
+
+            // --- A lever of the catacombs' gate puzzle (world/catacombPuzzle.js): down for good, a brazier lights, the last one opens the gate ---
+            if (obj.interaction.type === 'SWITCH') {
+                const r = pullLever(this.worldManager, obj.col, obj.row);
+                this.showNotice(r.message, r.ok);
+                if (r.ok) {
+                    events.emit('PLAY_SFX', { id: 'doorOpen', volume: 0.7, pitch: 0.55 });
+                    if (r.opened) events.emit('PLAY_SFX', { id: 'cinematicBoom', volume: 0.8 });
+                }
                 return;
             }
 
@@ -645,6 +800,7 @@ export class OverworldController extends BaseController {
     }
 
     checkForNewMove() {
+        if (multiplayerSocial.prompt) return;
         const dir = this.input.direction;
         if (!dir) return;
 
@@ -750,6 +906,9 @@ export class OverworldController extends BaseController {
             stepOnObj.isAnimating = true;
             stepOnObj.currentFrame = 0;
             stepOnObj.animTimer = 0;
+            // the player steps up into the doorway as the door swings open, in front of it, and darkens in its shadow (the door's own
+            // animation warps when it ends)
+            this._startEntering((stepOnObj.frames || 4) * (stepOnObj.speed || 0.15), true, null);
             events.emit('PLAY_SFX', { id: 'door_open', volume: 0.6, pitch: 1.0 });
             return;
         }
@@ -758,7 +917,9 @@ export class OverworldController extends BaseController {
         if (stepOnObj && !(stepOnObj.frames > 1) && stepOnObj.interaction?.type === 'WARP' && stepOnObj.interaction.walkIn) {
             this.isLocked = true;
             this.setAnimIdle();
-            events.emit('INTERACT', { ...stepOnObj.interaction, context: { col: stepOnObj.col, row: stepOnObj.row, objectId: stepOnObj.id } });
+            // a cave mouth: the player walks on up into it and stands in the entrance, darkened by its shadow, until the warp
+            const warp = { ...stepOnObj.interaction, context: { col: stepOnObj.col, row: stepOnObj.row, objectId: stepOnObj.id } };
+            this._startEntering(ENTER_CAVE_SECONDS, true, () => events.emit('INTERACT', warp));
             return;
         }
 
@@ -850,7 +1011,9 @@ export class OverworldController extends BaseController {
         const row = Math.floor(this.player.y / this.config.TILE_SIZE);
         const biome = this.worldManager.getBiomeAt(col, row);
         const currentHour = gameState.world.time / 60;
-        const encounterData = biome.getEncounter(currentHour);
+        // a party of players: every one of them rolls as they walk, so each roll is that much rarer (BiomeModel.getBattle)
+        const rateScale = 1 / (1 + multiplayerSocial.partyPlayers().length);
+        const encounterData = biome.getEncounter(currentHour, rateScale);
 
         if (encounterData) {
             console.log(`[Overworld] Encounter triggered in ${biome.id} at hour ${Math.floor(currentHour)}: ${encounterData.id}!`);
@@ -866,7 +1029,8 @@ export class OverworldController extends BaseController {
         if (AbilitySystem.hasWorldGrant('no_ambush')) return;
 
         const difficulty = gameState.difficulty || 'normal';
-        const battleData = biome.getBattle(difficulty, currentHour);   // the hour picks the day / dusk / night (and blood moon) spawn table
+        // the hour picks the day / dusk / night (and blood moon) spawn table; the party's size, how big the group is
+        const battleData = biome.getBattle(difficulty, currentHour, multiplayerSocial.partySize(), rateScale);
         if (!battleData) return;
 
         console.log(`[Overworld] Ambush triggered in biome: ${biome.id} on ${difficulty} difficulty!`);
@@ -1002,6 +1166,12 @@ export class OverworldController extends BaseController {
     getState() {
         const buffInfo = this.getBuffInfo();
         let displayFacedObject = this.getFacedObject();
+        // another player in front: an outline around them (MapRenderer measured their sprite), and what Space does
+        if (!displayFacedObject && !this.player.isMoving && !this.isLocked) {
+            const other = this._playerInFront();
+            const r = other && multiplayerSession.remotes.get(other);
+            if (r) displayFacedObject = { interaction: { type: 'PLAYER' }, _screenRect: r.entity._screenRect, col: r.col, row: r.row };
+        }
 
         // --- NEW: Hide interaction prompt if missing required harvest tool ---
         if (displayFacedObject && displayFacedObject.interaction?.type === 'HARVEST') {
@@ -1011,7 +1181,8 @@ export class OverworldController extends BaseController {
         }
 
         return {
-            entities: [this.player, ...this.followers.entities],   // the player, then the two party members who follow (MapRenderer draws the ones that are on their feet)
+            // every player walks with their own party behind them (a party of players moves freely: engine/multiplayerSocial.js)
+            entities: [this.player, ...this.followers.entities, ...this._otherPlayers()],   // the player, then the two party members who follow (MapRenderer draws the ones that are on their feet)
             camera: this.camera,
             worldManager: this.worldManager, // the minimap reads the terrain around the player from it
             worldInfo: this.getWorldInfo(), // the status plaque: biome, day, clock, weather
@@ -1023,6 +1194,9 @@ export class OverworldController extends BaseController {
             isMenuOpen: this.isMenuOpen,
             trackedQuests: this.getTrackedQuests(),
             toasts: (gameState.ui && gameState.ui.toasts) ? gameState.ui.toasts : [],
+            mpMessages: multiplayerSession.visibleMessages(),   // multiplayer: who joined or left the world
+            mpPrompt: this._promptLayout(),                     // multiplayer: a request to answer, or the menu for the player in front
+            mpParty: this._partyPlaque(),                       // multiplayer: the party of players this one is in, and how to leave it
             facedObject: displayFacedObject, // Passes null if they lack the tool!
             hotbar: this.getHotbarInfo(),
             notice: (this.notice && performance.now() < this.notice.until) ? { text: this.notice.text, ok: this.notice.ok, left: this.notice.until - performance.now() } : null,
@@ -1051,8 +1225,33 @@ export class OverworldController extends BaseController {
         };
     }
 
+    /* Going through a door or into a cave: for `seconds` the player walks on up into the opening (ENTER_LIFT of a tile) and stands in it, seen
+       the whole time (in front of the door or the cave's rock), darkening in its shadow (MapRenderer: a darker figure, never a fading one).
+       `then` runs when it is over (the cave's warp; a door warps when its own animation ends). MapRenderer.drawEntity reads player.entering. */
+    _startEntering(seconds, above, then) {
+        this._entering = { t: 0, dur: Math.max(0.1, seconds), above, then };
+        this.player.entering = { ox: 0, oy: 0, fade: 0, above };
+    }
+
+    _updateEntering(dt) {
+        const e = this._entering;
+        if (!e) return;
+        e.t += dt;
+        const p = Math.min(1, e.t / e.dur);
+        const ease = p * p * (3 - 2 * p);
+        // on in the way they are walking: up into a door or a cave mouth, down through a house's way out
+        const d = { UP: [0, -1], DOWN: [0, 1], LEFT: [-1, 0], RIGHT: [1, 0] }[String(this.player.direction || 'UP').toUpperCase()] || [0, -1];
+        const step = ease * ENTER_LIFT * this.config.TILE_SIZE;
+        // seen walking in first (the door is open by then), darkening in the shadow over the last part of the way
+        const fade = Math.max(0, Math.min(1, (p - ENTER_FADE_FROM) / (1 - ENTER_FADE_FROM)));
+        this.player.entering = { ox: d[0] * step, oy: d[1] * step, fade, above: e.above || d[1] > 0 };
+        if (p >= 1 && e.then) { const then = e.then; e.then = null; then(); }
+    }
+
     warpTo(col, row) {
         const { TILE_SIZE } = this.config;
+        this._entering = null;          // through the door: standing in the room (or out) as anyone would
+        this.player.entering = null;
         gameState.player.col = col;
         gameState.player.row = row;
         this.player.x = col * TILE_SIZE;
@@ -1110,4 +1309,4 @@ export class OverworldController extends BaseController {
             }
         };
     }
-}
+}

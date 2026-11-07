@@ -2,6 +2,7 @@ import { UITheme } from '../../ui/UITheme.js';
 import { CanvasUI } from '../../ui/canvasUI.js';
 import { drawEmbers } from '../../ui/particles/embers.js';
 import { drawSmoke } from '../../ui/particles/smoke.js';
+import { drawGraphicsNotice } from '../../ui/graphicsNotice.js';
 
 export class TitleRenderer {
     constructor(canvas, config, loader) {
@@ -58,12 +59,24 @@ export class TitleRenderer {
         // A short status line under the buttons (e.g. "No saved game yet.")
         if (state.message) {
             const lineY = startY + state.menuItems.length * spacing + 4;
+            ctx.save();
+            ctx.font = UITheme.text.notice.font;
+            const plateW = ctx.measureText(state.message).width + 48;
+            ctx.restore();
+            ui.drawRect(width / 2 - plateW / 2, lineY - 22, plateW, 44, 'rgba(6, 7, 10, 0.85)', true);   // legible over the painted background
             ui.drawStyled('notice', state.message, width / 2, lineY, { kind: 'error', align: 'center', baseline: 'middle' });
         }
 
         // Who is playing (bottom-left corner)
         if (state.accountLabel) {
             this._drawAccountLabel(ctx, state.accountLabel, 48, height - 48);
+        }
+
+        // The graphics notice, in front of everything: while it is up, only its buttons can be clicked (ui/graphicsNotice.js)
+        if (state.gpuNotice) {
+            const noticeBoxes = drawGraphicsNotice(ctx, state.hoveredId);
+            controller.updateHitboxes(noticeBoxes);
+            return;
         }
 
         // 3. Update Controller Hitbox Cache

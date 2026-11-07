@@ -31,6 +31,7 @@ export class MapObjectModel {
                         w x h when it has no hitboxes. true = the default absorption (CONFIG.LIGHT_WALL_ABSORB), a number = that many tiles of light
                         swallowed per tile (a thin fence 1, a house 6). Leave it out for objects light passes through (trees, flowers, furniture). */
         this.light = definition.light || null;
+        this.lights = definition.lights || null;   // several lights at points of the object: [{ ...a light, dx, dy }] (tiles from its top-left)
         this.blocksLight = definition.blocksLight || false;
 
         // --- HYBRID HITBOX RESOLUTION ---

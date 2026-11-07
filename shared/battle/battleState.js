@@ -9,7 +9,8 @@ import { PHASE } from './battleConstants.js';
 /* A fresh battle: the party and the enemies as combatants, the first `maxActive` of each on the field, the rest in reserve. */
 export function createBattleState(enemies, context = {}) {
     const maxActive = context.maxActive || 3;
-    const party = gameState.party.members.map(member => new CombatantModel(member, 'party'));
+    // a shared multiplayer fight brings its own line-up (several players' characters); otherwise the party is this player's own
+    const party = (context.partyEntities || gameState.party.members).map(member => new CombatantModel(member, 'party'));
     const preparedEnemies = enemies.map(enemy => new CombatantModel(enemy, 'enemy'));
     [...party, ...preparedEnemies].forEach(c => stripNonBattleAbilities(c)); // overworld-only abilities (a torch...) never show up in a fight
 
@@ -32,8 +33,22 @@ export function createBattleState(enemies, context = {}) {
         selectedTargets: [],
         message: `Battle started!`,
         fled: false,
+        // a boss fight (or a story fight that says so) cannot be run from: Retreat is greyed out and refused
+        noEscape: !!context.noEscape || preparedEnemies.some(isBoss),
         showAbilityDetails: true
     };
+}
+
+/* A BOSS-tagged enemy (entityDefinitions.js) is a fight to the end. */
+export function isBoss(combatant) {
+    const tags = (combatant && (combatant.originalEntity?.tags || combatant.tags || combatant.state?.tags)) || [];
+    return Array.isArray(tags) && tags.includes('BOSS');
+}
+
+/* The line shown when someone tries to retreat from a fight that has no escape. */
+export function noEscapeMessage(state) {
+    const boss = (state.enemyRoster || []).find(isBoss);
+    return boss ? `There is no escaping ${boss.name}!` : 'There is no escape from this fight!';
 }
 
 /* Takes the abilities that only work outside a fight (context 'overworld', see AbilityModel.contextOf) out of a combatant's list, in place. */

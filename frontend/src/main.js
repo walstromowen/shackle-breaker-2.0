@@ -1,4 +1,5 @@
 import { AssetLoader } from "./engine/assetLoader.js";
+import { graphics } from './engine/graphics.js';
 import { SceneManager } from "./engine/sceneManager.js";
 import { GameLoop } from "./engine/gameLoop.js";
 import { audioManager } from './engine/audioManager.js';
@@ -70,6 +71,15 @@ ui_icons: './assets/icons/ui_icons.png',
     caveInteriorCliffExt:         './assets/tilesets/cave_interior/cliff_blob47_ext.png',
     caveInteriorCliffShadow:      './assets/tilesets/cave_interior/cliff_blob47_shadow.png',
     caveInteriorCliffStairs:      './assets/tilesets/cave_interior/cliff_stairs.png',   // after caveInteriorCliffShadow
+    // the catacombs under the mysterious altar: the cave's tiles made into crypt stone (bricked walls, flagstones, bones, grave soil), darker
+    catacombsPrimaryFloor:     './assets/tilesets/catacombs_interior/primary_floor_blob47.png',
+    catacombsSecondaryFloor:   './assets/tilesets/catacombs_interior/secondary_floor_blob47.png',
+    catacombsSecondaryOnLevel: './assets/tilesets/catacombs_interior/secondary_floor_on_level.png',
+    catacombsCliffFloor:       './assets/tilesets/catacombs_interior/cliff_blob47_floor.png',
+    catacombsCliffWall:        './assets/tilesets/catacombs_interior/cliff_blob47_wall.png',
+    catacombsCliffExt:         './assets/tilesets/catacombs_interior/cliff_blob47_ext.png',
+    catacombsCliffShadow:      './assets/tilesets/catacombs_interior/cliff_blob47_shadow.png',
+    catacombsCliffStairs:      './assets/tilesets/catacombs_interior/cliff_stairs.png',
 
     /* map objects: one image per object (the `sheet` of each MAP_OBJECTS_DEFINITIONS entry). Delete the line of any object whose PNG does not exist yet;
        that object then keeps drawing from the plains / desert sheet above. */
@@ -97,6 +107,7 @@ ui_icons: './assets/icons/ui_icons.png',
     objBonePile: './assets/mapObjects/objBonePile.png',
     objAbandonedHouse1: './assets/mapObjects/objAbandonedHouse1.png',
     objAbandonedStoneHouse: './assets/mapObjects/objAbandonedStoneHouse.png',
+    objStoneWorkshop: './assets/mapObjects/objStoneWorkshop.png',   // the stone house as the workshop: lit windows, a smouldering chimney
     objCraftingHouse: './assets/mapObjects/objCraftingHouse.png',
     objAbandonedSmithy: './assets/mapObjects/objAbandonedSmithy.png',
     objAbandonedHouse1Left: './assets/mapObjects/objAbandonedHouse1Left.png',
@@ -133,11 +144,29 @@ ui_icons: './assets/icons/ui_icons.png',
     objMysteriousAltar: './assets/mapObjects/objMysteriousAltar.png',
     objScarecrow: './assets/mapObjects/objScarecrow.png',
     objTombstone: './assets/mapObjects/objTombstone.png',
+    objCursedGrave: './assets/mapObjects/objCursedGrave.png',   // a beaten multiplayer party's grave (PLAYER_GRAVE): the tombstone, cursed
     objCaveEntrance: './assets/mapObjects/objCaveEntrance.png',
     objCaveEntranceDesert: './assets/mapObjects/objCaveEntranceDesert.png',
     objCaveEntranceSnow: './assets/mapObjects/objCaveEntranceSnow.png',
     objCaveExit: './assets/mapObjects/objCaveExit.png',
+    objCatacombsStairs: './assets/mapObjects/objCatacombsStairs.png',   // the hidden staircase under the mysterious altar
+    objCatacombsExit: './assets/mapObjects/objCatacombsExit.png',       // the stairway up out of the catacombs
+    objLever: './assets/mapObjects/objLever.png',                       // the catacombs' gate puzzle (world/catacombPuzzle.js)
+    objLeverOn: './assets/mapObjects/objLeverOn.png',
+    objBrazierUnlit: './assets/mapObjects/objBrazierUnlit.png',
+    objCatacombGate: './assets/mapObjects/objCatacombGate.png',
+    objCatacombGateOpen: './assets/mapObjects/objCatacombGateOpen.png',
+    objTrapArrow: './assets/mapObjects/objTrapArrow.png',               // the catacombs' traps (story/encounters/catacombTraps.js)
+    objTrapArrowSprung: './assets/mapObjects/objTrapArrowSprung.png',
+    objTrapPit: './assets/mapObjects/objTrapPit.png',
+    objTrapPitSprung: './assets/mapObjects/objTrapPitSprung.png',
+    objTrapAxes: './assets/mapObjects/objTrapAxes.png',
+    objTrapAxesSprung: './assets/mapObjects/objTrapAxesSprung.png',
+    objAncientBarrel: './assets/mapObjects/objAncientBarrel.png',       // the catacombs' barrels
+    objRuinedBarrel: './assets/mapObjects/objRuinedBarrel.png',
     objHealingHerb: './assets/mapObjects/objHealingHerb.png',
+    objCottonPlant: './assets/mapObjects/objCottonPlant.png',   // a village crop field's cotton (COTTON_PLANT)
+    objWheatPlant: './assets/mapObjects/objWheatPlant.png',     // ... and its wheat (WHEAT_PLANT)
     objAloe: './assets/mapObjects/objAloe.png',
     objInvigoratingHerb: './assets/mapObjects/objInvigoratingHerb.png',
     objIlluminatingHerb: './assets/mapObjects/objIlluminatingHerb.png',
@@ -222,6 +251,7 @@ ui_icons: './assets/icons/ui_icons.png',
     frozenTrapperPortrait: './assets/sprites/frozen_trapper/frozen_trapper_portrait.png',
     panzerkamferPortrait: './assets/sprites/panzerkamfer/panzerkamfer_portrait.png',
 duneMawPortrait: './assets/sprites/dune_maw/dune_maw_portrait.png',
+iceCoilPortrait: './assets/sprites/ice_coil/ice_coil_portrait.png',   // the Icecoil's battle sheet (16 x 6 frames of 128: rows 0-1 idle facing the party)
 scorchedVagrantPortrait: './assets/sprites/scorched_vagrant/scorched_vagrant_portrait.png',
 miragewrightPortrait: './assets/sprites/miragewright/miragewright_portrait.png',
 calcifiedCrusaderPortrait: './assets/sprites/calcified_crusader/calcified_crusader_portrait.png',
@@ -275,6 +305,11 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     bolsterAnimation: './assets/abilityAnimations/bolster.png',
     cleaveAnimation: './assets/abilityAnimations/cleave.png',
     wildSwingAnimation: './assets/abilityAnimations/wild_swing.png',
+    whirlwindSlashAnimation: './assets/abilityAnimations/whirlwind_slash.png',
+    lowSweepAnimation: './assets/abilityAnimations/low_sweep.png',
+    leapingSlashAnimation: './assets/abilityAnimations/leaping_slash.png',
+    guardBreakAnimation: './assets/abilityAnimations/guard_break.png',
+    vulnerableAnimation: './assets/abilityAnimations/vulnerable.png',
     purifyAnimation: './assets/abilityAnimations/purify.png',
     meteorShowerAnimation: './assets/abilityAnimations/meteor_shower.png',
     frigidGaleAnimation: './assets/abilityAnimations/frigid_gale.png',
@@ -341,6 +376,8 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     encounter_treasure_chest: './assets/icons/encounters/treasure_chest.png',
     encounter_strange_obelisk: './assets/icons/encounters/strange_obelisk.png',
     encounter_mysterious_altar: './assets/icons/encounters/story/mysterious_altar.png',
+    encounter_darius_kneeling: './assets/icons/encounters/story/darius_kneeling.png',   // Darius kneeling at the altar, crowned, as he talks to you
+    encounter_darius_defeated: './assets/icons/encounters/story/darius_defeated.png',   // 193 px, one picture: Darius slumped over the altar (act_two)
     encounter_old_gravestone: './assets/icons/encounters/old_gravestone.png',
     encounter_suspicious_merchant: './assets/icons/encounters/suspicious_merchant.png',
     encounter_aftermath: './assets/icons/encounters/aftermath.png',
@@ -348,6 +385,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     encounter_prologue: './assets/icons/encounters/story/prologue.png',
     encounter_peculiar_scarecrow: './assets/icons/encounters/peculiar_scarecrow.png',
     encounter_cave_in: './assets/icons/encounters/cave_in.png',
+    encounter_catacomb_traps: './assets/icons/encounters/catacomb_traps.png',
     // --- 1:1 ABILITY AUDIO SFX ---
     earthquake1Sfx: './assets/audio/sfx/abilities/earthquake/earthquake_1.wav',
     earthquake2Sfx: './assets/audio/sfx/abilities/earthquake/earthquake_2.wav',
@@ -417,12 +455,14 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     weatherFog: './assets/audio/sfx/weather_fog.wav',
     weatherRain: './assets/audio/sfx/weather_rain.wav',
     weatherRainShort: './assets/audio/sfx/weather_rain_short.wav',
+    thunderClose: './assets/audio/sfx/thunder_close.wav',   // a thunderstorm's lightning, by how far off it struck (WeatherRenderer.updateLightning)
+    thunderMid: './assets/audio/sfx/thunder_mid.wav',
+    thunderFar: './assets/audio/sfx/thunder_far.wav',
     spookyWind: './assets/audio/sfx/spooky_wind.wav',
     aDisturbingSightBgm: './assets/audio/music/a_disturbing_sight.mp3',
     poachersNightmareBgm: './assets/audio/music/poachers_nightmare.mp3',
     apexPredatorBgm: './assets/audio/music/apex_predator.mp3',
-    dariusEncounterBgm: './assets/audio/music/darius-final-battle.mp3',   // the altar, as Darius the Groveler crawls out (mysteriousAltar.js, stage darius_rises)
-    bossBattleBgm: './assets/audio/music/bossbattle.mp3',               // the fight with Darius itself (the START_BATTLE of that stage)
+    dariusEncounterBgm: './assets/audio/music/darius-final-battle.mp3',   // Darius the Groveler: from the moment he turns on you (mysteriousAltar.js, stage darius_wrath) on into his fight
 
     // --- CREATURE CRIES & DEATHS ---
     legionaryCry: './assets/audio/sfx/cries/legionary_cry.wav',
@@ -433,6 +473,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     shackledSteedCry: './assets/audio/sfx/cries/shackled_steed_cry.wav',
     madmanCry: './assets/audio/sfx/cries/madman_cry.wav',
     magicAddictCry: './assets/audio/sfx/cries/magic_addict_cry.wav',
+    dariusCry: './assets/audio/sfx/cries/darius_cry.wav',   // Darius the Groveler's own cry (and his death)
     sandStalkerCry: './assets/audio/sfx/cries/sand_stalker_cry.wav',
     dogDeath: './assets/audio/sfx/deaths/dog_death.wav',
     unsheathSwordSfx: './assets/audio/sfx/unsheath_sword.wav',
@@ -494,29 +535,18 @@ async function initialize() {
     const canvas = document.getElementById('game-canvas');
     const ctx = canvas.getContext('2d'); // <-- Grab the context here to apply scaling
 
-    // --- NEW: Handle Window Resizing and High-DPI screens ---
-    function applyCrispScaling() {
-        const dpr = window.devicePixelRatio || 1;
+    // The canvas always draws at the game's own 1920x1080; CSS stretches it to fit the window (styles.css).
+    // It used to be multiplied by window.devicePixelRatio. On a laptop with Windows display scaling at 125% or 150% that drew 1.6x to 2.3x the pixels
+    // every frame (for nothing: the browser shrank it back to the screen), and the mouse no longer lined up, since input and many screens read
+    // canvas.width as the 1920-wide game space.
+    canvas.width = CONFIG.CANVAS_WIDTH;
+    canvas.height = CONFIG.CANVAS_HEIGHT;
+    ctx.imageSmoothingEnabled = false;
 
-        // Multiply your internal 1920x1080 by the monitor's pixel density
-        canvas.width = CONFIG.CANVAS_WIDTH * dpr;  
-        canvas.height = CONFIG.CANVAS_HEIGHT * dpr;
-
-        // Scale the canvas context. 
-        // This is the magic part: your game logic still draws at 1920x1080,
-        // but the browser renders it using the extra pixels!
-        ctx.scale(dpr, dpr);
-        
-        // Force crisp pixels (MUST be reapplied every time canvas dimensions change)
-        ctx.imageSmoothingEnabled = false; 
-    }
-
-    // Apply the scaling right now
-    applyCrispScaling();
-
-    // Re-apply if the user drags the window to a different monitor with a different DPI
-    window.addEventListener('resize', applyCrispScaling);
-    // ---------------------------------------------------------
+    // Is the browser drawing with the graphics card? Without it, Light graphics (Settings > Display, 'auto') keeps the game playable, and the
+    // title screen tells the player how to get the card back (engine/graphics.js)
+    graphics.detect();
+    graphics.applyTo(ctx);
 
 
     // 2. Initialize SceneManager and GameLoop FIRST so the Boot screen can render
@@ -526,6 +556,8 @@ async function initialize() {
         (deltaTime) => sceneManager.update(deltaTime),
         (interpolation, totalTime) => sceneManager.render(interpolation, totalTime)
     );
+
+    sceneManager.debugOverlayRenderer.loop = gameLoop;   // the debug overlay ("~") reads the loop's frame timing
 
     // 3. START the game loop! The Boot screen will begin drawing immediately.
     gameLoop.start();

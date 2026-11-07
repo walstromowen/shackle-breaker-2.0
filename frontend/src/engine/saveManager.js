@@ -88,10 +88,10 @@ function replaceContents(target, source) {
 
 function serializeStatusEffect(effect) {
     // A StatusEffectModel carries its whole definition (and who inflicted it, which leads back to an entity): save only what changes.
-    return { id: effect.id, charges: effect.charges, stacks: effect.stacks || 1 };
+    return { id: effect.id, charges: effect.charges, stacks: effect.stacks || 1, turnsActive: effect.turnsActive || 0 };
 }
 
-function serializeEntity(entity) {
+export function serializeEntity(entity) {
     const state = { ...entity.state, statusEffects: (entity.state.statusEffects || []).map(serializeStatusEffect) };
     // JSON.stringify calls ItemModel.toJSON() for the equipped / carried items.
     const saved = clone(state);
@@ -100,7 +100,7 @@ function serializeEntity(entity) {
     return saved;
 }
 
-function hydrateItem(saved) {
+export function hydrateItem(saved) {
     if (!saved || !saved.defId) return null;
     return ItemFactory.createItem(saved.defId, saved);   // null (and a warning) if the item no longer exists in this build
 }
@@ -111,7 +111,7 @@ function hydrateGear(value) {
     return typeof value === 'string' ? value : hydrateItem(value);
 }
 
-function hydrateEntity(saved) {
+export function hydrateEntity(saved) {
     const state = clone(saved);
 
     // Gear and carried items go back to real ItemModels (an item that no longer exists in this build is dropped, not fatal).
@@ -138,6 +138,7 @@ function hydrateEntity(saved) {
         const effect = StatusEffectFactory.createEffect(saved.id, saved.charges, null);
         if (!effect) continue;                       // the effect was removed from the game: skip it
         effect.stacks = saved.stacks || 1;
+        effect.turnsActive = saved.turnsActive || 0;   // a bleed keeps getting worse across a save
         entity.state.statusEffects.push(effect);
     }
     return entity;
@@ -236,6 +237,9 @@ let store = LocalSaveStore;
 let lastAutosaveAt = 0;
 
 export const SaveManager = {
+    /* Set by engine/multiplayerSession.js while this player is a guest in someone else's world: (snapshot) => Promise<boolean>. Saves go to the host. */
+    guestSink: null,
+
     SAVE_VERSION,
 
     /** Swap where saves go (e.g. a store that talks to the server). */
@@ -259,6 +263,8 @@ export const SaveManager = {
     /** @param {{name?: string}} options  name: the player's name for a manual save (stored in summary.saveName) */
     createSnapshot(options = {}) {
         if (!gameState.party.members.length) throw new Error('[SaveManager] There is no party to save.');
+        // a structure being planned ahead of the player is finished first, so a save never holds half a village (SceneManager sets this)
+        if (typeof SaveManager.beforeSnapshot === 'function') SaveManager.beforeSnapshot();
 
         const members = gameState.party.members;
         const leader = members[0];
@@ -279,7 +285,8 @@ export const SaveManager = {
                 row: gameState.player.row,
                 direction: gameState.player.direction,
                 hotbar: gameState.player.hotbar || [],
-                buffs: gameState.player.buffs || {}
+                buffs: gameState.player.buffs || {},
+                respawn: gameState.player.respawn || null   // the last rest out in the open (multiplayer: where a beaten party wakes)
             }),
             world: {
                 time: world.time,
@@ -291,13 +298,17 @@ export const SaveManager = {
                 levelPaths: clone(world.levelPaths || {}),
                 waypoints: clone(world.waypoints || []),
                 discoveredChunks: clone(world.discoveredChunks || []),
+                structureChunks: clone(world.structureChunks || {}),
                 weather: serializeWeather(world.currentWeather),
+                biomeWeather: clone(world.biomeWeather || {}),   // each biome's remembered weather
+                weatherBiome: world.weatherBiome || null,
                 // inside a house or cave: which one, and the overworld seed and spot to return to (`data.seed` is then the interior's shifted seed)
                 interior: world.isInterior ? clone({
                     type: world.interiorType,
                     id: world.interiorId,
                     mapId: world.interiorMapId || null,
-                    savedOverworld: world.savedOverworld
+                    savedOverworld: world.savedOverworld,
+                    ...((world.interiorStack || []).length ? { stack: world.interiorStack } : {})   // the cave above the catacombs, when saved down there
                 }) : null
             },
             party: {
@@ -306,7 +317,9 @@ export const SaveManager = {
                 currency: gameState.party.currency || 0,
                 unlockedCraftingRecipes: clone(gameState.party.unlockedCraftingRecipes || [])
             },
-            shops: clone(gameState.shops || {})
+            shops: clone(gameState.shops || {}),
+            // a world that has been played in multiplayer keeps each guest's party, inventory and position (shared/core/multiplayerSave.js)
+            ...(gameState.multiplayer && gameState.multiplayer.guests && Object.keys(gameState.multiplayer.guests).length ? { multiplayer: clone(gameState.multiplayer) } : {})
         };
 
         return {
@@ -323,6 +336,11 @@ export const SaveManager = {
             },
             data
         };
+    },
+
+    /** A save around a `data` put together elsewhere (a multiplayer guest's world and party, shared/core/multiplayerSave.js), ready for applySnapshot. */
+    wrapData(data) {
+        return { format: SAVE_FORMAT, saveVersion: SAVE_VERSION, savedAt: new Date().toISOString(), summary: {}, data };
     },
 
     /** Throws a readable Error if `save` is not something this build can load. Upgrades older saves. Returns the usable `data`. */
@@ -377,7 +395,8 @@ export const SaveManager = {
             row: data.player.row,
             direction: data.player.direction || 'DOWN',
             hotbar: data.player.hotbar || [],
-            buffs: data.player.buffs || {}
+            buffs: data.player.buffs || {},
+            respawn: data.player.respawn || null
         });
 
         const interior = data.world.interior && data.world.interior.savedOverworld ? data.world.interior : null;   // saved inside a house or cave
@@ -387,6 +406,7 @@ export const SaveManager = {
             isInterior: !!interior,
             interiorType: interior ? interior.type : null,
             ...(interior ? { interiorId: interior.id, interiorMapId: interior.mapId || null, savedOverworld: interior.savedOverworld } : {}),
+            interiorStack: interior && Array.isArray(interior.stack) ? interior.stack : [],
             time: data.world.time,
             day: data.world.day,
             changes: data.world.changes || {},
@@ -395,7 +415,11 @@ export const SaveManager = {
             levelPaths: data.world.levelPaths || {},
             waypoints: data.world.waypoints || [],
             discoveredChunks: data.world.discoveredChunks || [],
-            currentWeather: weather            // null -> WorldManager creates clear skies
+            // undefined in a save made before the record existed: WorldManager then works out which chunks already have their structure (see structureSpawner.js)
+            structureChunks: data.world.structureChunks,
+            currentWeather: weather,           // null -> WorldManager creates clear skies
+            biomeWeather: data.world.biomeWeather || {},
+            weatherBiome: data.world.weatherBiome || null
         });
 
         replaceContents(gameState.party, {
@@ -406,6 +430,7 @@ export const SaveManager = {
         });
 
         gameState.shops = data.shops || {};
+        gameState.multiplayer = data.multiplayer && typeof data.multiplayer === 'object' && data.multiplayer.guests ? data.multiplayer : { guests: {} };
 
         // Transient state always starts clean.
         gameState.encounter = { activeData: null, currentStageId: null, history: [], context: { col: null, row: null, objectId: null } };
@@ -422,6 +447,10 @@ export const SaveManager = {
     /** Saves into `slot`. Resolves true on success. Never throws (a failed save must not crash the game). */
     async saveToSlot(slot = AUTOSAVE_SLOT) {
         if (!this.canSaveNow()) return false;
+        // a guest in someone else's world: their characters are kept in the host's save, never in a slot of their own (engine/multiplayerSession.js)
+        if (this.guestSink) {
+            try { return await this.guestSink(this.createSnapshot()); } catch (e) { console.error('[SaveManager] Guest save failed:', e); return false; }
+        }
         try {
             const ok = await store.write(slot, this.createSnapshot());
             if (ok) lastAutosaveAt = Date.now();
@@ -450,6 +479,10 @@ export const SaveManager = {
      */
     async saveManual(name, slot = null) {
         if (!this.canSaveNow()) return { ok: false, error: 'There is no game to save yet.' };
+        if (this.guestSink) {
+            const ok = await this.saveToSlot();
+            return ok ? { ok: true, slot: null, name: 'the host\'s world' } : { ok: false, error: 'Your characters are saved in the host\'s world, and it could not be reached.' };
+        }
         try {
             const entries = await store.list();
             let target = slot;

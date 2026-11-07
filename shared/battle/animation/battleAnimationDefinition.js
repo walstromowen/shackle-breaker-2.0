@@ -136,6 +136,41 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.05, 0.2, 15), flash: flash(0.05, 1, 'brightness(130%) sepia(100%) hue-rotate(190deg) saturate(300%)') }
     }),
+    // Guard Break: a heavy blunt blow; the guard bursts into shards around the target, with a crunch under the thud.
+    "guard_break": anim(1.5, {
+        audio: [sfx(0.2, 'strikeSfx', { volume: 1, pitch: 0.8 }), sfx(0.24, 'crunchSfx', { volume: 0.9 })],
+        actor: lunge(0, 0.2, 120),
+        vfx: [
+            spawn(0.2, 'impactAnimation', { life: 0.3, move: 'expand_and_fade', scale: 1.8 }),
+            spawn(0.22, 'guardBreakAnimation', { life: 0.5, move: 'expand_and_fade', scale: 1.7, blend: 'source-over' }),
+            burst(0.22, { count: 10, color: '#c9d2df', scale: 0.6, minSpeed: 140, maxSpeed: 320, gravity: 500, glow: false })
+        ],
+        target: { shake: shake(0.2, 0.6, 40), flash: flash(0.2, 0.4, 'brightness(230%)') }
+    }),
+    // Leaping Slash: the wielder springs up and comes down on the target; a tall falling crescent, sparks, and a heavy shake.
+    "leaping_slash": anim(1.8, {
+        seconds: true,
+        hit: 0.55,
+        audio: [sfx(0.05, 'wildSwingSfx', { volume: 0.8, pitch: 1.3 }), sfx('hit', 'cleaveSfx', { volume: 1, pitch: 0.85 }), sfx('hit+0.03', 'strikeSfx', { volume: 0.9, pitch: 0.7 })],
+        actor: hop(0, 0.6, 150),
+        vfx: [
+            spawn(0.45, 'leapingSlashAnimation', { life: 0.3, move: 'swipe_diagonal', scale: 3, offsetY: -40 }),
+            burst('hit', { count: 14, color: '#fff3d0', scale: 0.6, minSpeed: 120, maxSpeed: 320, gravity: 400 })
+        ],
+        target: { shake: shake('hit', 'hit+0.45', 52), flash: flash('hit', 'hit+0.3', 'brightness(260%)') }
+    }),
+    // Low Sweep: a flat crescent skims along the ground under the target, left to right, kicking up dust.
+    "low_sweep": anim(1.4, {
+        audio: [sfx(0.1, 'slashSfx', { volume: 1, pitch: 0.8 })],
+        actor: lunge(0, 0.15, 110),
+        vfx: [
+            spawn(0.1, 'lowSweepAnimation', { life: 0.22, move: 'static', scale: 2.2, offsetX: -70, offsetY: 60, alpha: 0.4 }),
+            spawn(0.13, 'lowSweepAnimation', { life: 0.22, move: 'static', scale: 2.2, offsetY: 60 }),
+            spawn(0.16, 'lowSweepAnimation', { life: 0.22, move: 'static', scale: 2.2, offsetX: 70, offsetY: 60, alpha: 0.4 }),
+            burst(0.15, { count: 8, color: '#b59a76', scale: 0.7, offsetY: 80, angle: 270, cone: 60, minSpeed: 60, maxSpeed: 160, gravity: 300, glow: false })
+        ],
+        target: { shake: shake(0.13, 0.4, 22), flash: flash(0.13, 0.3, 'brightness(220%)') }
+    }),
     // Leather armor's ability: a deep breath, a green glow rising off the user.
     "recuperate": anim(2.2, {
         seconds: true,
@@ -656,7 +691,7 @@ export const BattleAnimationDefinitions = {
         seconds: true,
         hit: 0.55,
         audio: [
-            sfx(0.05, 'bowReleaseSfx', { volume: 1 }),
+            sfx(0.09, 'bowReleaseSfx', { volume: 1 }),   // the twang peaks at once: as the arrow leaves (travel at 0.1)
             sfx('hit', 'arrowImpactSfx', { volume: 1 })
         ],
         actor: lunge(0, 0.2, -12),
@@ -767,7 +802,7 @@ export const BattleAnimationDefinitions = {
         seconds: true,
         hit: 0.6,
         audio: [
-            sfx(0.05, 'bowReleaseSfx', { volume: 1, pitch: 0.9 }),
+            sfx(0.09, 'bowReleaseSfx', { volume: 1, pitch: 0.9 }),
             sfx('hit', 'arrowImpactSfx', { volume: 0.9 }),
             sfx('hit+0.05', 'poisonSplashSfx', { volume: 1 })
         ],
@@ -789,6 +824,18 @@ export const BattleAnimationDefinitions = {
         target: { shake: shake(0.1, 0.25, 18), flash: flash(0.1, 0.2, 'brightness(180%)') }
     }),
     // Purify: a cool light falls over the target, washing a few motes of white upward as it clears.
+    // Bless (and the Blessed status): purify's shape in gold, a warm light settling down onto the target.
+    "bless": anim(2, {
+        seconds: true,
+        audio: [sfx(0.1, 'healSfx', { volume: 1, pitch: 0.9 }), sfx(0.8, 'purifySfx', { volume: 0.6, pitch: 1.0 })],
+        actor: { flash: flash(0, 0.6, 'brightness(170%) sepia(80%) hue-rotate(5deg) saturate(220%)') },
+        vfx: [
+            spawn(0.35, 'purifyAnimation', { life: 1.3, move: 'float_up_and_pop', scale: 1.6 }),
+            ...repeat(0.3, 10, 0.1, t => burst(t, { count: 3, color: '#ffe9a8', scale: 0.5, area: [110, 20], offsetY: -90, angle: 90, cone: 18, minSpeed: 60, maxSpeed: 130, minLife: 0.7, maxLife: 1.0, envelope: true })),
+            burst(1.1, { count: 16, color: '#fff6d6', scale: 0.5, minSpeed: 40, maxSpeed: 130, minLife: 0.3, maxLife: 0.6, gravity: -40, offsetY: -20 })
+        ],
+        target: { flash: flash(0.35, 2.0, 'brightness(190%) sepia(70%) hue-rotate(5deg) saturate(180%) drop-shadow(0 0 10px #ffd86b)') }
+    }),
     "purify": anim(2, {
         seconds: true,
         audio: [sfx(0.1, 'healSfx', { volume: 1, pitch: 1.2 }), sfx(0.9, 'purifySfx', { volume: 0.6, pitch: 1.3 })],
@@ -805,7 +852,7 @@ export const BattleAnimationDefinitions = {
         seconds: true,
         hit: 0.4,
         audio: [
-            sfx(0, 'bowReleaseSfx', { volume: 1, pitch: 1.2 }),
+            sfx(0.09, 'bowReleaseSfx', { volume: 1, pitch: 1.2 }),
             sfx('hit', 'arrowImpactSfx', { volume: 0.9, pitch: 1.1 })
         ],
         actor: lunge(0, 0.1, -8),
@@ -945,14 +992,15 @@ export const BattleAnimationDefinitions = {
     // The dark hand: drawn solid ('normal'; a dark purple hand all but vanishes on the glowing 'screen' blend). It is a slow, long cast on purpose: the hand
     // starts small and faint and swells over the target for about four seconds ('loom_over'), stays there, and thins away at the end. The sound is played
     // slowed down (pitch 0.65, about 6 seconds) so it lasts as long as the hand does, and the target trembles only lightly until the hand has grown.
-    "spirit_reap": anim(6.6, {
+    // 4.6 s (it was 6.6): every cue is drawn in by the same proportion, and the sound (4 s long) plays a little faster so it ends with the reaper
+    "spirit_reap": anim(4.6, {
         seconds: true,
-        audio: [sfx(0, 'spiritReapSfx', { volume: 1, pitch: 0.65 })],
-        actor: lunge(0, 0.15, 80, { flash: flash(5.6, 6.3, 'brightness(180%) saturate(200%) hue-rotate(120deg)') }),
+        audio: [sfx(0, 'spiritReapSfx', { volume: 1, pitch: 0.9 })],
+        actor: lunge(0, 0.15, 80, { flash: flash(3.9, 4.4, 'brightness(180%) saturate(200%) hue-rotate(120deg)') }),
         vfx: [
-            spawn(0.2, 'spiritReapAnimation', { life: 6.2, move: 'loom_over', scale: 2.5, blend: 'normal' })
+            spawn(0.2, 'spiritReapAnimation', { life: 4.2, move: 'loom_over', scale: 2.5, blend: 'normal' })
         ],
-        target: { shake: shake(2.4, 5.8, 14), flash: flash(0.4, 6.0, 'brightness(130%) sepia(60%) hue-rotate(270deg) saturate(80%)') }
+        target: { shake: shake(1.7, 4.0, 14), flash: flash(0.3, 4.2, 'brightness(130%) sepia(60%) hue-rotate(270deg) saturate(80%)') }
     }),
     "spite": anim(1.5, {
         audio: [
@@ -1024,6 +1072,14 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.1, 0.4, 26), flash: flash(0.1, 0.35, 'brightness(130%) sepia(80%) hue-rotate(90deg) saturate(250%)') }
     }),
+    // Status effect animation: the guard cracks and sinks (Vulnerable, after a Leaping Slash).
+    "vulnerable": anim(1.4, {
+        audio: [sfx(0.1, 'crunchSfx', { volume: 0.6, pitch: 1.3 })],
+        vfx: [
+            spawn(0.1, 'vulnerableAnimation', { life: 0.7, move: 'shrink_and_fade', scale: 1.6, blend: 'source-over' })
+        ],
+        target: { flash: flash(0.1, 0.8, 'brightness(80%) sepia(40%) hue-rotate(200deg) saturate(160%)') }
+    }),
     // Stream of 20 sprites; the first reaches the target at 0.55s, which is when the target reacts.
     "water_blast": anim(2.5, {
         audio: [sfx(0.1, 'waterBlastSfx', { volume: 1 })],
@@ -1081,6 +1137,16 @@ export const BattleAnimationDefinitions = {
         ],
         target: { flash: flash(0.08, 0.88, 'brightness(80%) saturate(70%) sepia(30%) hue-rotate(180deg)') }
     }),
+    // Weather animation (WeatherDefinitions THUNDERSTORM): the rain, a darker sky, and a lightning flash over everyone followed by a clap of thunder.
+    "weatherThunderstorm": anim(2.8, {
+        audio: [sfx(0.04, 'weatherRainShort', { volume: 0.8 }), sfx(0.75, 'thunderClose', { volume: 0.85 })],
+        background: background(0, 2.8, 'current', 'brightness(55%) saturate(70%) sepia(25%) hue-rotate(180deg)'),
+        vfx: [
+            repeat(0, 14, 0.19, t => burst(t, { glow: false, count: 16, color: '#9cc2ff', scale: 0.22, angle: 100, cone: 10, minSpeed: 550, maxSpeed: 750, minLife: 0.45, maxLife: 0.6, gravity: 500, area: [420, 40], offsetY: -250, alpha: 0.85 })),
+            repeat(0.2, 12, 0.2, t => burst(t, { glow: false, count: 5, color: '#dff0ff', scale: 0.18, angle: 270, cone: 140, minSpeed: 60, maxSpeed: 160, minLife: 0.2, maxLife: 0.35, gravity: 600, area: [260, 20], offsetY: 90 }))
+        ],
+        target: { flash: flash(0.6, 0.85, 'brightness(260%) saturate(30%) contrast(120%)'), shake: shake(0.75, 1.1, 8) }
+    }),
     // Weather animation (WeatherDefinitions SANDSTORM). Plays on everyone in the fight, so it uses no actor motion.
     "weatherSandstorm": anim(2.6, {
         audio: [sfx(0, 'spookyWind', { volume: 0.7, pitch: 0.9 })],
@@ -1093,6 +1159,16 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.2, 2.3, 5), flash: flash(0.3, 2.2, 'sepia(100%) saturate(220%) brightness(105%)') }
     }),
+    // Whirlwind Slash: the wielder spins (a ring of cuts around them), then a spinning ring tears through every enemy.
+    "whirlwind_slash": anim(1.7, {
+        audio: [sfx(0.08, 'cleaveSfx', { volume: 0.9, pitch: 1.1 }), sfx(0.32, 'slashSfx', { volume: 1, pitch: 1.2 })],
+        actor: wobble(0, 0.35, 14),
+        vfx: [
+            spawn(0.05, 'whirlwindSlashAnimation', { at: 'source', life: 0.4, move: 'static', scale: 2.2, spin: 16 }),
+            spawn(0.3, 'whirlwindSlashAnimation', { life: 0.35, move: 'expand_and_fade', scale: 1.8, spin: 14 })
+        ],
+        target: { shake: shake(0.3, 0.6, 28), flash: flash(0.3, 0.45, 'brightness(230%)') }
+    }),
     "wild_swing": anim(1.3, {
         audio: [sfx(0.1, 'wildSwingSfx', { volume: 1, pitch: 0.8 })],
         actor: lunge(0, 0.25, 140, { flash: flash(0, 0.3, 'brightness(150%) sepia(50%) hue-rotate(15deg) saturate(200%)') }),
@@ -1101,4 +1177,4 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.25, 0.75, 45), flash: flash(0.25, 0.45, 'brightness(250%)') }
     })
-};
+};

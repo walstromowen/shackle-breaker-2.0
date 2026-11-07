@@ -4,19 +4,21 @@
 import { ENTITY_DEFINITIONS } from './entityDefinitions.js';
 import { EntityModel } from './entityModel.js';
 import { ExperienceSystem } from './experienceSystem.js';
-import { DAMAGE_SCALING } from '../core/constants.js';
+import { ENEMY_DAMAGE_SCALING, DAMAGE_SCALING, scalingFor } from '../core/constants.js';
 import { ItemDefinitions } from '../items/itemDefinitions.js';
 
-// BALANCE KNOB: extra base max HP an entity gets per level above 1, ON TOP of the +2 per level that every level-up gives (ExperienceSystem.applyLevelUpStats).
-// This is what makes same-level enemies slightly tougher than a player who has no gear or upgrades yet. 0 = no edge, 0.5 = +2.5 HP per level in total.
-// The bonus is recorded on the entity (levelEdgeHp) so EntityFactory.removeLevelEdge() can take it away again when an enemy joins the party.
-const LEVEL_EDGE_HP_PER_LEVEL = 0.5;
+// BALANCE KNOB: base max HP an enemy gets per level above 1 on top of (or, below 0, taken from) the +2 per level that every level-up gives
+// (ExperienceSystem.applyLevelUpStats). 0 = an enemy grows like a player does (it was -1 while enemies outgrew fully upgraded weapons; with the attack
+// edge now carrying their damage, full HP growth keeps late fights the hardest). Tuned with tools/playthroughSim.mjs (enemies are not handicapped by a damage share: their attributes set how hard they hit).
+// It is recorded on the entity (levelEdgeHp) so EntityFactory.removeLevelEdge() can undo it when an enemy joins the party.
+export const LEVEL_EDGE_HP_PER_LEVEL = 0;
 
 // BALANCE KNOB: extra points an enemy gets per level above 1 in the attribute its best attack scales with (Strength for blunt, slash and pierce,
-// Intelligence for the magic types: core/constants.js DAMAGE_SCALING), ON TOP of the 1 point per level spread over every attribute. Player defense grows
+// Intelligence for the magic types: the enemy rules, core/constants.js ENEMY_DAMAGE_SCALING), ON TOP of the 1 point per level spread over every attribute. Player defense grows
 // with level and Vigor while an enemy's attack used to stay almost flat, so late fights got easier; this keeps an enemy's hits growing with its level.
-// 1.5 = +1.5 attack per level (about +10 at level 8, +16 at level 12); 0 switches it off. Like the HP edge, it is recorded on the entity (levelEdgeAttr) and EntityFactory.removeLevelEdge() takes it away on recruit.
-const LEVEL_EDGE_ATTACK_PER_LEVEL = 1.5;
+// 0.4 = +4 attack by level 11 (0.3 while enemies still had a flat damage multiplier; that multiplier is gone, so the edge carries their growth; see tools/playthroughSim.mjs); 0 switches it off. Like the HP edge, it is recorded on the entity (levelEdgeAttr) and
+// EntityFactory.removeLevelEdge() takes it away on recruit.
+export const LEVEL_EDGE_ATTACK_PER_LEVEL = 0.4;
 
 export class EntityFactory {
     static create(entityId, levelOrOverrides = 1, overrides = {}) {
@@ -160,8 +162,8 @@ export class EntityFactory {
         if (config.baseStats) {
             config.baseStats.maxHp += (levelDiff * 2);
 
-            const edge = applyEdge ? Math.floor(levelDiff * LEVEL_EDGE_HP_PER_LEVEL) : 0;
-            if (edge > 0) {
+            const edge = applyEdge ? Math.trunc(levelDiff * LEVEL_EDGE_HP_PER_LEVEL) : 0;
+            if (edge !== 0) {
                 config.baseStats.maxHp += edge;
                 config.levelEdgeHp = edge; // stored in the entity state, so it is saved and can be removed on recruit
             }
@@ -187,14 +189,12 @@ export class EntityFactory {
             if (def && def.attack) for (const [t, v] of Object.entries(def.attack)) weapon[t] = (weapon[t] || 0) + v;
         }
         let best = null;
-        for (const [type, scaling] of Object.entries(DAMAGE_SCALING)) {
-            let total = (config.baseStats?.baseAttack?.[type] || 0) + (weapon[type] || 0);
-            let topAttr = null, topWeight = 0;
-            for (const [attr, weight] of Object.entries(scaling)) {
-                total += (config.attributes[attr] || 0) * weight;
-                if (weight > topWeight) { topWeight = weight; topAttr = attr; }
-            }
-            if (topAttr && (!best || total > best.total)) best = { total, attr: topAttr };
+        // a humanoid is built like a player (StatCalculator.usesEnemyScaling): its attacks scale by the player's table; everything else by the enemy rules
+        const table = Array.isArray(config.tags) && config.tags.includes('HUMANOID') ? DAMAGE_SCALING : ENEMY_DAMAGE_SCALING;
+        for (const type of Object.keys(table)) {
+            const { value, attr } = scalingFor(type, config.attributes, table);
+            const total = (config.baseStats?.baseAttack?.[type] || 0) + (weapon[type] || 0) + value;
+            if (attr && (!best || total > best.total)) best = { total, attr };
         }
         return best ? best.attr : null;
     }
@@ -208,7 +208,7 @@ export class EntityFactory {
             entity.state.attributes[edgeAttr.attribute] = Math.max(1, (entity.state.attributes[edgeAttr.attribute] || 0) - edgeAttr.amount);
             entity.state.levelEdgeAttr = null;
         }
-        if (edge <= 0) return !!edgeAttr;
+        if (!edge) return !!edgeAttr;
 
         entity.state.baseStats.maxHp = Math.max(1, entity.state.baseStats.maxHp - edge);
         entity.state.levelEdgeHp = 0;

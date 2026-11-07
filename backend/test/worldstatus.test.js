@@ -66,7 +66,8 @@ test('every biome has a name for the plaque, and the plaque sits right of the ho
     assert.match(ow, /worldInfo: this\.getWorldInfo\(\)/);
     const ui = fs.readFileSync(new URL('../../frontend/src/screens/overworld/overworldUIRenderer.js', import.meta.url), 'utf8');
     assert.match(ui, /statusPlaque\.render\(ctx, ui, worldInfo, plaque\)/);
-    assert.match(ui, /drawToasts\(ctx, ui, toasts, plaque \? plaque\.y - 14/, 'the item toasts rise from just above it');
+    assert.match(ui, /let floor = plaque \? plaque\.y - 14/, 'the item toasts rise from just above it');
+    assert.match(ui, /drawToasts\(ctx, ui, toasts, floor\)/, '(above the key prompt when one is up)');
 });
 
 // --- the merchant's sheet: 8 frames across, rows in sets of four (idle / walk / run), South East North West -------------------------------------------

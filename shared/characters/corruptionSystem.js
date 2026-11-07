@@ -150,12 +150,36 @@ export const CorruptionSystem = {
         return shackled[Math.floor(Math.random() * shackled.length)];
     },
 
+    /** In a party of players (frontend engine/multiplayerSocial.js sets this): the other players' parties, [{ owner, members: [saved entity] }],
+     *  so one of their shackled companions can turn on the whole group. */
+    groupParties: null,
+
+    /**
+     * pickBetrayer for a party of players: any player's shackled companion can turn, as long as someone in the group who is not shackled
+     * still stands. Returns { owner (null = this player), idx, name } or null.
+     */
+    pickAnyBetrayer() {
+        const lists = [{ owner: null, members: gameState.party?.members || [] }, ...((this.groupParties && this.groupParties()) || [])];
+        const all = lists.flatMap(l => (l.members || []).map((m, idx) => ({ owner: l.owner, idx, name: m && m.name, m })));
+        const shackled = all.filter(x => this.isShackled(x.m));
+        if (!shackled.length || !all.some(x => x.m && x.m.hp > 0 && !this.isShackled(x.m))) return null;
+        const pick = shackled[Math.floor(Math.random() * shackled.length)];
+        return { owner: pick.owner, idx: pick.idx, name: pick.name };
+    },
+
     /** The betrayer leaves the party for good and comes back as an enemy at full health, wearing whatever they still had on. */
     turnAgainstParty(entity) {
         const members = gameState.party?.members;
-        const idx = members ? members.indexOf(entity) : -1;
+        const idx = members && entity ? members.indexOf(entity) : -1;
         if (idx === -1) return null;
         members.splice(idx, 1);
+        return this.turnFoe(entity);
+    },
+
+    /** Makes a shackled character the enemy (turnAgainstParty; and in a party of players, another player's companion rebuilt from their
+     *  saved state, which their own browser lets go of). */
+    turnFoe(entity) {
+        if (!entity || !entity.state) return null;
         const state = entity.state;
         state.shackled = false;
         state.baseStats.corruption = 0;   // no tier: they fight at full strength, with no penalty to take the edge off

@@ -131,7 +131,7 @@ export const QuestModel = {
             // Reward Companions
             if (rewards.companions) {
                 rewards.companions.forEach(compDef => {
-                    PartyManager.addMember(compDef.id, compDef.overrides || {});
+                    PartyManager.recruit(compDef.id, compDef.overrides || {});   // at the party's average level
                 });
             }
         }

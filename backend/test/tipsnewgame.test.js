@@ -21,7 +21,7 @@ test('a card shows once, is remembered by the browser, and shows again after a r
 
 test('starting a new game (character creator to the world) resets the cards', () => {
     const src = fs.readFileSync(new URL('../../frontend/src/engine/sceneManager.js', import.meta.url), 'utf8');
-    const block = src.match(/currentScene === 'character-creator' && scene === 'overworld'\) \{[\s\S]*?\n\s*\}/);
+    const block = src.match(/currentScene === 'character-creator' && scene === 'overworld'(?: && !mpJoin)?\) \{[\s\S]*?\n\s*\}/);
     assert.ok(block && /this\.tutorial\.store\.reset\(\)/.test(block[0]), 'sceneManager resets the tip store on a new game');
     assert.ok(!/LOAD_GAME[\s\S]{0,200}store\.reset/.test(src), 'loading a save does not reset them');
 });

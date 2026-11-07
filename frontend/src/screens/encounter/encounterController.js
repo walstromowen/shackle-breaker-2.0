@@ -7,12 +7,25 @@ import { EncounterLogic } from './encounterLogic.js';
 import { LootTableFactory } from "../../../../shared/items/lootTableFactory.js";
 import { ItemDefinitions } from '../../../../shared/items/itemDefinitions.js';
 import { NARRATION, STAGE_START_TIMER, narrationPlan, textEndTimer, decisionAlpha, decisionsDoneTimer, actionPadding } from '../../ui/narration.js';
+import { seedRandom, unseedRandom, withoutSeed } from '../../../../shared/core/random.js';
+import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
+import { hydrateEntity } from '../../engine/saveManager.js';
+import { multiplayerSession } from '../../engine/multiplayerSession.js';
+import { worldSync } from '../../../../shared/world/worldManager.js';
+
+/* A party of several players shares an encounter: every member's browser plays it from the same seed. A choice is a vote (the leader's
+   too); when everyone has voted, or VOTE_SECONDS after the first vote, the most votes win and a tie goes the leader's way. The leader
+   announces the choice and every screen plays it. "Switch party member" and shops are the leader's own (they are not voted on). */
+const VOTE_SECONDS = 20;
+const OPTS_RESEND = 1;   // seconds: how often the leader repeats what can be chosen (_leaderTick)
+const LEADER_OWN = new Set();   // decisions one player makes alone in a shared encounter: none now, switching and shops are voted on too
 
 const PROLOGUE_HOLD = 1.2;     // seconds the "skip the prologue" button (or Escape) is held
 
 export class EncounterController extends BaseController {
   constructor(input, config, worldManager) {
     super(input);
+    events.on('MP_ENCOUNTER', (d) => this._onRemote(d));   // a shared encounter's votes and choices (engine/multiplayerSocial.js)
     this.config = config;
     this.worldManager = worldManager;
     this.scrollManager = new ScrollManager();
@@ -55,8 +68,24 @@ export class EncounterController extends BaseController {
     this.updateBGM();
   }
 
-  start(encounterId, context = {}) {
-    if (gameState.party && gameState.party.members && gameState.party.members.length > 0) {
+  start(encounterId, context = {}, mp = null) {
+    // a shared encounter (see the note at the top): the dice, and who keeps what (EncounterLogic.shared)
+    this.mp = mp ? { ...mp, step: 0, votes: new Map(), voteTimer: 0, myVote: null, tally: {}, opts: null, optsSentKey: null } : null;
+    if (mp) {
+      seedRandom(mp.seed);
+      EncounterLogic.shared = { players: mp.players, me: mp.me, isLeader: !!mp.isLeader, roller: null, active: null };
+      multiplayerSocial.encounterState = () => this;
+      multiplayerSocial.encounterPlayers = mp.players;   // while it lasts, a fight out of it is theirs (nearbyParty)
+      // the party's line-up (every player's first characters, as for a fight): any of them can be the one the encounter is about
+      this.mp.lineup = (mp.lineup || []).map(e => ({ owner: e.owner, idx: e.idx, entity: e.owner === mp.me ? gameState.party.members[e.idx] : hydrateEntity(e.data) }))
+        .filter(e => e.entity);
+      EncounterLogic.shared.lineupSize = this.mp.lineup.length;
+      EncounterLogic.onSharedTime = (minutes, players) => multiplayerSession.sharedTimePassed(minutes, players);
+      this._setActive(0);
+    }
+    else { unseedRandom(); EncounterLogic.shared = null; }
+
+    if (!mp && gameState.party && gameState.party.members && gameState.party.members.length > 0) {   // (a line-up has only the living)
       const members = gameState.party.members;
       if (members[0].hp <= 0) {
         const firstLivingIndex = members.findIndex(m => m.hp > 0);
@@ -103,6 +132,7 @@ export class EncounterController extends BaseController {
 
   update(dt) {
     if (super.update) super.update(dt);
+    if (this.mp && this.mp.isLeader) this._leaderTick(dt);
     if (this.inputCooldown > 0) this.inputCooldown -= dt;
     this._playStageCues();
     this.scrollManager.update(dt);
@@ -129,7 +159,7 @@ export class EncounterController extends BaseController {
       if (this.skipMessageAnimation || this.textTimer >= textEndTimer(this.actionMessage) + actionPadding(this.actionMessage)) {
         this.skipMessageAnimation = false;
         if (this.pendingDecision && this.pendingDecision.type === 'skill_check') {
-          this.rollData = EncounterLogic.calculateRoll(this.pendingDecision);
+          this.rollData = this._takeRoll(this.pendingDecision);
           this.actionPhase = 'wait_for_roll';
         } else {
           this.applySceneChanges();
@@ -193,14 +223,37 @@ export class EncounterController extends BaseController {
     const ctx = this.model?.context || {};
     const byIndex = members[ctx.betrayerIndex];
     const betrayer = (byIndex && byIndex.shackled) ? byIndex : (ctx.betrayerName ? members.find(m => m.name === ctx.betrayerName && m.shackled) : null);
-    const shown = betrayer || members[0];
+    const shown = betrayer || EncounterLogic.rollerEntity();
     return shown ? [shown] : [];
+  }
+
+  /** A shared encounter: which line-up character it is about now (EncounterLogic.shared.active). */
+  _setActive(k) {
+    const mp = this.mp;
+    const e = mp && mp.lineup && mp.lineup[k];
+    if (!e) return;
+    mp.active = k;
+    EncounterLogic.shared.active = { owner: e.owner, idx: e.idx, entity: e.entity };
+  }
+
+  /** A shared encounter: the line-up as cards to pick the next active character from (the party screen), each vote 'sw:<index>'. */
+  _pickFromLineup() {
+    const mp = this.mp;
+    this.inputCooldown = 0.5;
+    events.emit('CHANGE_SCENE', {
+      scene: 'party',
+      data: {
+        mode: 'ENCOUNTER_SELECT', title: 'Vote: Who Steps Forward',
+        activeIndices: [mp.active], members: mp.lineup.map(e => e.entity), owners: mp.lineup.map(e => multiplayerSocial.nameOf(e.owner)),
+        callback: (k) => { if (k !== null && k >= 0 && k < mp.lineup.length && k !== mp.active) this._castVote(`sw:${k}`); }
+      }
+    });
   }
 
   _triggerImageTransition(duration = 0.4) {
     if (!this.model) return;
     const outgoingInfo = this.model.getImage ? this.model.getImage() : null;
-    const outgoingMember = gameState.party?.members?.[0] || null;
+    const outgoingMember = EncounterLogic.rollerEntity();
     this.imageTransition.active = true;
     this.imageTransition.timer = 0;
     this.imageTransition.duration = duration;
@@ -229,7 +282,144 @@ export class EncounterController extends BaseController {
   _getValidDecisions() {
     if (!this.model) return [];
     const rawDecisions = this.model.getAvailableDecisions() || [];
-    return rawDecisions.filter(decision => EncounterLogic.checkConditions(decision, this.model.context || {}));
+    // a party member votes on what the leader can do (the leader's party decides what is open), not on what their own party could
+    if (this.mp && !this.mp.isLeader) {
+      const o = this.mp.opts;
+      if (!o || o.step !== this.mp.step || o.stage !== this.model.currentStageId) return [];
+      return o.allowed.map(i => rawDecisions[i]).filter(Boolean);
+    }
+    return rawDecisions.filter((decision, i) => EncounterLogic.checkConditions(decision, this.model.context || {}) && this._isOffered(decision, i));
+  }
+
+  /* `offerChance: 0.2` on a decision: this particular object (a chest at its spot on the map) offers that choice only that often. It is rolled the
+     first time the object is looked at and kept in the world's changes (saved, and shared with the other players in a multiplayer world), so
+     walking away and coming back offers the same choices. An encounter that is not about an object on the map rolls once per visit. */
+  _isOffered(decision, index) {
+    if (decision.offerChance === undefined || decision.offerChance >= 1) return true;
+    const ctx = (this.model && this.model.context) || {};
+    const slot = `${this.model.currentStageId}#${index}`;
+    if (ctx.col === undefined || ctx.row === undefined) {
+      const rolled = (this.model.offered ||= {});
+      if (rolled[slot] === undefined) rolled[slot] = withoutSeed(() => Math.random()) < decision.offerChance;
+      return rolled[slot];
+    }
+    const where = gameState.world.isInterior && gameState.world.interiorId ? `INT_${gameState.world.interiorId}_` : '';
+    const key = `choices:${this._encounterId}:${where}${ctx.col},${ctx.row}`;
+    const changes = gameState.world.changes || (gameState.world.changes = {});
+    const kept = changes[key] && typeof changes[key] === 'object' ? changes[key] : {};
+    if (kept[slot] === undefined) {
+      const next = { ...kept, [slot]: withoutSeed(() => Math.random()) < decision.offerChance };
+      changes[key] = next;
+      if (worldSync.onLocalChange) worldSync.onLocalChange(key, next);   // the same choices for every player at this chest
+      return next[slot];
+    }
+    return kept[slot];
+  }
+
+  // ================================================================ SHARED ENCOUNTERS (a party of players)
+  /** The leader: tell the party what can be chosen now, and settle the vote when it is time. The choices are sent again every
+   *  OPTS_RESEND seconds while they are up: a member whose screen was still fading in when the first copy came would never see them. */
+  _leaderTick(dt) {
+    const mp = this.mp;
+    if (!this.model) return;
+    const key = `${mp.step}:${this.model.currentStageId}`;
+    mp.optsAge = (mp.optsAge || 0) + dt;
+    if (this.actionPhase === 'none' && (mp.optsSentKey !== key || mp.optsAge >= OPTS_RESEND)) {
+      mp.optsSentKey = key;
+      mp.optsAge = 0;
+      const raw = this.model.getAvailableDecisions() || [];
+      const allowed = this._getValidDecisions().filter(d => !LEADER_OWN.has(d.type)).map(d => raw.indexOf(d)).filter(i => i >= 0);
+      multiplayerSocial.sendEncounter(mp, { k: 'enc_opts', step: mp.step, stage: this.model.currentStageId, allowed });
+      if (mp.votes.size) multiplayerSocial.sendEncounter(mp, { k: 'enc_tally', step: mp.step, tally: mp.tally });
+    }
+    if (mp.votes.size > 0) {
+      mp.voteTimer += dt;
+      if (mp.voteTimer >= VOTE_SECONDS || mp.votes.size >= multiplayerSocial.partyHere(mp.players).length) this._settleVote();
+    }
+  }
+
+  /** The roll for a skill check: in a shared encounter the leader's (sent with the choice, _settleVote), on every screen alike. */
+  _takeRoll(decision) {
+    if (this.mp && this.sharedRoll) { const r = { ...this.sharedRoll }; this.sharedRoll = null; return r; }
+    return EncounterLogic.calculateRoll(decision);
+  }
+
+  _castVote(rawIndex) {
+    const mp = this.mp;
+    mp.myVote = rawIndex;
+    if (mp.isLeader) this._onVote({ eid: mp.eid, step: mp.step, raw: rawIndex, from: mp.me });
+    else multiplayerSocial.sendEncounter(mp, { k: 'enc_vote', step: mp.step, raw: rawIndex }, mp.leader);
+  }
+
+  _onVote(d) {
+    const mp = this.mp;
+    if (!mp || !mp.isLeader || d.eid !== mp.eid || d.step !== mp.step) return;
+    mp.votes.set(d.from, d.raw);
+    mp.tally = this._tallyOf(mp.votes);
+    multiplayerSocial.sendEncounter(mp, { k: 'enc_tally', step: mp.step, tally: mp.tally });
+  }
+
+  _tallyOf(votes) {
+    const t = {};
+    for (const [who, raw] of votes) (t[raw] ??= []).push(multiplayerSocial.nameOf(who));
+    return t;
+  }
+
+  _settleVote() {
+    const mp = this.mp;
+    const counts = new Map();
+    for (const raw of mp.votes.values()) counts.set(raw, (counts.get(raw) || 0) + 1);
+    const best = Math.max(...counts.values());
+    const tied = [...counts].filter(([, n]) => n === best).map(([raw]) => raw);
+    const mine = mp.votes.get(mp.me);
+    const raw = tied.includes(mine) ? mine : tied.map(String).sort()[0];   // a tie goes the leader's way
+    const who = EncounterLogic.rollerEntity();
+    const roller = who ? { ...who.attributes } : null;
+    // the leader rolls, once, for the whole party: the same d20, modifier and total on every screen (each player's own difficulty setting
+    // would give their own modifier), and a fresh seed for what follows (the outcome, loot, who gets which item), so a stray draw on one
+    // screen in an earlier step can never send the screens different ways
+    const decision = typeof raw === 'number' ? (this.model.getAvailableDecisions() || [])[raw] : null;
+    const prevRoller = EncounterLogic.shared.roller;
+    EncounterLogic.shared.roller = roller;
+    const rollData = decision && decision.type === 'skill_check' ? withoutSeed(() => EncounterLogic.calculateRoll(decision)) : null;
+    EncounterLogic.shared.roller = prevRoller;
+    const seed = (Math.random() * 0xffffffff) >>> 0;
+    const go = { k: 'enc_go', step: mp.step, raw, roller, rollData, seed };
+    multiplayerSocial.sendEncounter(mp, go);
+    this._onGo({ ...go, eid: mp.eid });
+  }
+
+  /** Everyone: play the choice the party made. */
+  _onGo(d) {
+    const mp = this.mp;
+    if (!mp || d.eid !== mp.eid || d.step !== mp.step || !this.model) return;
+    mp.step++;
+    mp.votes.clear(); mp.voteTimer = 0; mp.myVote = null; mp.tally = {};
+    EncounterLogic.shared.roller = d.roller || null;
+    if (d.seed !== undefined) seedRandom(d.seed);
+    this.sharedRoll = d.rollData || null;
+    // the party chose someone else to step forward: the same stage, with them
+    if (typeof d.raw === 'string' && d.raw.startsWith('sw:')) {
+      this._triggerImageTransition();
+      this._setActive(parseInt(d.raw.slice(3), 10));
+      this.selectedIndex = 0;
+      this.playConfirmSound();
+      return;
+    }
+    const decision = (this.model.getAvailableDecisions() || [])[d.raw];
+    if (!decision) return;
+    this.playConfirmSound();
+    if (decision.type === 'open_shop') { this._openShop(decision); return; }   // every player shops for themselves
+    this.beginActionSequence(decision);
+  }
+
+  _onRemote(d) {
+    const mp = this.mp;
+    if (!mp || !d || d.eid !== mp.eid) return;
+    if (d.k === 'enc_vote') this._onVote(d);
+    else if (d.k === 'enc_go') this._onGo(d);
+    else if (d.k === 'enc_tally' && d.step === mp.step) mp.tally = d.tally || {};
+    else if (d.k === 'enc_opts') mp.opts = { step: d.step, stage: d.stage, allowed: d.allowed || [] };
   }
 
   // The mouse moved onto a decision: the keyboard cursor follows it (silent; UIInteractionManager adds the hover tick)
@@ -497,6 +687,13 @@ export class EncounterController extends BaseController {
     
     this.playConfirmSound();
     const selectedDecision = options[this.selectedIndex];
+
+    // a shared encounter: every choice is a vote; switching is a vote for one of the line-up's characters
+    if (this.mp) {
+      if (selectedDecision.type === 'switch_character') this._pickFromLineup();
+      else this._castVote((this.model.getAvailableDecisions() || []).indexOf(selectedDecision));
+      return;
+    }
     
     if (selectedDecision.type === 'switch_character') {
       this.inputCooldown = 0.5;
@@ -518,11 +715,21 @@ export class EncounterController extends BaseController {
       });
     }
     else if (selectedDecision.type === 'open_shop') {
+      this._openShop(selectedDecision);
+    } else {
+      this.beginActionSequence(selectedDecision);
+    }
+  }
+
+  /** A trader's wares (an open_shop decision). In a shared encounter every player opens their own shop when the party chooses it; a
+   *  rolled stock is rolled on each screen, off the shared dice. */
+  _openShop(selectedDecision) {
+    {
       this.inputCooldown = 0.5;
       let finalWares = selectedDecision.wares || [];
       if (selectedDecision.lootTableId) {
         const rolls = selectedDecision.rolls || 5;
-        const lootModel = LootTableFactory.generateLoot(selectedDecision.lootTableId, rolls);
+        const lootModel = withoutSeed(() => LootTableFactory.generateLoot(selectedDecision.lootTableId, rolls));   // off the shared dice
         if (lootModel.hasItems()) {
           const dynamicWares = lootModel.items.map(item => ({ id: item.id, qty: item.qty }));
           finalWares = [...finalWares, ...dynamicWares];
@@ -538,8 +745,6 @@ export class EncounterController extends BaseController {
           this.updateBGM();
         }
       });
-    } else {
-      this.beginActionSequence(selectedDecision);
     }
   }
 
@@ -575,7 +780,7 @@ export class EncounterController extends BaseController {
       this.executeLogic();
     }
     
-    const actorName = gameState.party?.members?.[0]?.name || "The party";
+    const actorName = EncounterLogic.rollerEntity()?.name || "The party";
     if (decision.customActionText) {
       this.actionPhase = 'message';
       this.textTimer = STAGE_START_TIMER;
@@ -585,7 +790,7 @@ export class EncounterController extends BaseController {
       this.lastText = this.actionMessage;
     } else {
       if (decision.type === 'skill_check') {
-        this.rollData = EncounterLogic.calculateRoll(this.pendingDecision);
+        this.rollData = this._takeRoll(this.pendingDecision);
         this.actionPhase = 'wait_for_roll';
       } else {
         this.applySceneChanges();
@@ -619,8 +824,11 @@ export class EncounterController extends BaseController {
     }
     
     const selectedOutcome = EncounterLogic.selectOutcome(targetOutcomes);
-    if (selectedOutcome) {
-      let resultsArray = selectedOutcome.results;
+    // encounters give XP for a successful roll and at no other time (ExperienceSystem.rollXp: it grows with the roller's level and the DC)
+    const rollXp = decision.type === 'skill_check' && this.rollData.isSuccess ? EncounterLogic.rollXpResult(this.rollData.dc) : null;
+    if (selectedOutcome || rollXp) {
+      let resultsArray = selectedOutcome?.results || [];
+      if (rollXp) resultsArray = [rollXp, ...resultsArray];
       // A decision can carry `corruption: n` (magic used, a cruel act: positive; a kind one: negative): it applies whichever way the outcome falls
       if (decision.corruption && resultsArray) {
         resultsArray = [{ type: 'MODIFY_CORRUPTION', payload: { amount: decision.corruption, target: 'active_character' } }, ...resultsArray];
@@ -804,10 +1012,21 @@ export class EncounterController extends BaseController {
 
   endEncounter(payload = null) {
     this.actionPhase = 'ending';
+    this._leaveShared();
     events.emit('CHANGE_SCENE', { scene: 'overworld', data: payload });
   }
 
+  /* A shared encounter is over: back to the game's own dice. */
+  _leaveShared() {
+    if (!this.mp) return;
+    this.mp = null;
+    multiplayerSocial.encounterPlayers = null;
+    EncounterLogic.shared = null;
+    unseedRandom();
+  }
+
   cleanup() {
+    this._leaveShared();
     this.model = null;
     this.pendingDecision = null;
     this.rewardQueue = [];
@@ -845,7 +1064,7 @@ export class EncounterController extends BaseController {
       this._sfxPending = true;
       const ambience = stage.ambience !== undefined ? stage.ambience : (firstStage ? this.model.ambience : undefined);
       if (ambience === 'none') events.emit('STOP_AMBIENCE', { fadeTime: stage.ambienceFade ?? 2.0 });
-      else if (ambience) events.emit('PLAY_AMBIENCE', { id: ambience, fadeTime: stage.ambienceFade ?? 3.0 });
+      else if (ambience) events.emit('PLAY_AMBIENCE', { id: ambience, fadeTime: stage.ambienceFade ?? 3.0, volume: stage.ambienceVolume ?? 1.0 });   // ambienceVolume: 0..1, a quieter bed
     }
     if (this._sfxPending && this.textTimer >= STAGE_START_TIMER) {
       this._sfxPending = false;
@@ -909,14 +1128,29 @@ export class EncounterController extends BaseController {
     let displayText = this.model.getCurrentText() || "";
     let displayDecisions = this._getValidDecisions();
     let displayStageName = this.model.getStageDisplayText ? this.model.getStageDisplayText() : "Unknown Stage";
-    const actorName = gameState.party?.members?.[0]?.name || "The party";
+    const actorName = EncounterLogic.rollerEntity()?.name || "The party";
     
     displayText = this._fillNames(displayText, actorName);
     displayStageName = this._fillNames(displayStageName, actorName);
-    displayDecisions = displayDecisions.map(decision => ({
-      ...decision,
-      text: this._fillNames(decision.text, actorName)
-    }));
+    const raw = this.model.getAvailableDecisions() || [];
+    displayDecisions = displayDecisions.map(decision => {
+      let text = this._fillNames(decision.text, actorName);
+      // a shared encounter: who has voted for what
+      if (this.mp) {
+        const i = raw.indexOf(decision);
+        const tally = this.mp.isLeader ? this._tallyOf(this.mp.votes) : this.mp.tally;
+        let voters = tally[i] || [];
+        // votes to switch: who wants whom
+        if (decision.type === 'switch_character') for (const [key, names] of Object.entries(tally)) {
+          if (!key.startsWith('sw:')) continue;
+          const e = this.mp.lineup && this.mp.lineup[parseInt(key.slice(3), 10)];
+          voters = voters.concat(names.map(n => `${n} > ${e ? e.entity.name : '?'}`));
+        }
+        if (voters && voters.length) text += `   [${voters.join(', ')}]`;
+        else if (LEADER_OWN.has(decision.type) && this.mp.isLeader) text += '   (yours alone)';
+      }
+      return { ...decision, text };
+    });
     
     if (this.actionPhase !== 'none' && this.actionPhase !== 'ending_delay' && this.actionPhase !== 'reward_delay') {
       displayText = this.actionPhase === 'ending' ? this.lastText : this.actionMessage;
@@ -947,4 +1181,4 @@ export class EncounterController extends BaseController {
       ui: { selectedDecisionIndex: this.selectedIndex, introAlpha: currentIntroAlpha }
     };
   }
-}
+}

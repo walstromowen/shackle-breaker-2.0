@@ -1,3 +1,4 @@
+import { rng } from '../core/random.js';
 /* Scopes that mean "the caster's own team" (written from the caster's point of view). */
 export const ALLY_SCOPES = ['ally', 'all_allies', 'random_ally', 'full_ally_party'];
 
@@ -25,7 +26,7 @@ export class TargetingResolver {
         if (action.multihit) { 
             const min = action.multihit.min || 1; 
             const max = action.multihit.max || 1; 
-            hitCount = Math.floor(Math.random() * (max - min + 1)) + min; 
+            hitCount = Math.floor(rng() * (max - min + 1)) + min; 
         } 
 
         // ---> NEW: Tag & Reach Filters to prevent Random targets from wasting hits! <---
@@ -98,7 +99,7 @@ export class TargetingResolver {
                 
                 const randomTargets = []; 
                 for (let i = 0; i < hitCount; i++) { 
-                    const randomEnemy = validEnemies[Math.floor(Math.random() * validEnemies.length)]; 
+                    const randomEnemy = validEnemies[Math.floor(rng() * validEnemies.length)]; 
                     randomTargets.push(randomEnemy); 
                 } 
                 return randomTargets; 
@@ -111,7 +112,7 @@ export class TargetingResolver {
                 
                 const randomTargets = []; 
                 for (let i = 0; i < hitCount; i++) { 
-                    const randomAlly = validAllies[Math.floor(Math.random() * validAllies.length)]; 
+                    const randomAlly = validAllies[Math.floor(rng() * validAllies.length)]; 
                     randomTargets.push(randomAlly); 
                 } 
                 return randomTargets; 

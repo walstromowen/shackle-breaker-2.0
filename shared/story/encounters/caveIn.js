@@ -57,7 +57,6 @@ export const caveIn = {
                         weight: 100,
                         results: [
                             { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "biome_default", rolls: 1 } },
-                            { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                             { type: "END_ENCOUNTER", payload: null }
                         ]
                     }]
@@ -75,7 +74,6 @@ export const caveIn = {
                     outcomes: [{
                         weight: 100,
                         results: [
-                            { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                             { type: "END_ENCOUNTER", payload: null }
                         ]
                     }]

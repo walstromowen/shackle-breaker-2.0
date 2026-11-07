@@ -5,6 +5,19 @@
 import { AbilityFactory } from '../abilities/abilityFactory.js';
 import { InventorySystem } from '../items/inventorySystem.js';
 import { ALLY_SCOPES, needsDistinctTargets } from './targetingResolver.js';
+import { rng } from '../core/random.js';
+
+/* A support move that would change nothing is not worth a turn: a status-only move whose statuses the caster already has (Bless when blessed), or a
+   cleanse-only move when the caster has none of what it removes (Cleanse with nothing on them). Attacks are always worth it. */
+export function worthUsing(ability, caster) {
+    const effects = ability.effects || [], statuses = ability.statusEffects || [];
+    const has = (id) => (caster.statusEffects || []).some(s => s && s.id === id);
+    const selfScope = ['self', 'ally', 'full_ally_party'].includes(ability.targeting && ability.targeting.scope);
+    if (!selfScope) return true;
+    if (effects.length === 0 && statuses.length > 0) return !statuses.every(s => has(s.id));
+    if (effects.length > 0 && effects.every(e => e.type === 'dispel')) return effects.some(e => (e.tags || []).some(has));
+    return true;
+}
 
 export function queueEnemyActions(state) {
     const livingParty = state.activeParty.filter(p => p && !p.isDead());
@@ -14,13 +27,13 @@ export function queueEnemyActions(state) {
         if (!enemy || enemy.isDead()) return;
 
         const validAbilities = enemy.abilities.filter(a =>
-            a.canPayCost(enemy, InventorySystem) && !['rest', 'punch'].includes(a.id) && (typeof a.usableIn !== 'function' || a.usableIn('battle'))
+            a.canPayCost(enemy, InventorySystem) && !['rest', 'punch'].includes(a.id) && (typeof a.usableIn !== 'function' || a.usableIn('battle')) && worthUsing(a, enemy)
         );
 
-        const randomTarget = livingParty[Math.floor(Math.random() * livingParty.length)];
+        const randomTarget = livingParty[Math.floor(rng() * livingParty.length)];
 
         if (validAbilities.length > 0) {
-            const action = validAbilities[Math.floor(Math.random() * validAbilities.length)];
+            const action = validAbilities[Math.floor(rng() * validAbilities.length)];
             return state.turnQueue.push({ actor: enemy, action, target: pickEnemyTarget(state, enemy, action, livingParty) });
         }
 
@@ -41,7 +54,7 @@ export function queueEnemyActions(state) {
  */
 export function pickEnemyTarget(state, enemy, action, livingParty) {
     const scope = action.targeting?.scope || 'enemy';
-    const pick = list => list[Math.floor(Math.random() * list.length)];
+    const pick = list => list[Math.floor(rng() * list.length)];
     const livingEnemies = state.activeEnemies.filter(e => e && !e.isDead());
 
     let pool;
@@ -54,7 +67,8 @@ export function pickEnemyTarget(state, enemy, action, livingParty) {
     // Splash / distinct multi-select (Flamethrower...): aim at N different targets, never the same one twice.
     if (needsDistinctTargets(action)) {
         const wanted = Math.min(action.targeting?.count || 1, pool.length);
-        const shuffled = [...pool].sort(() => Math.random() - 0.5);
+        const shuffled = [...pool];   // Fisher-Yates: the same shuffle in every browser for the same dice (a random sort comparator is not)
+        for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; }
         return shuffled.slice(0, Math.max(1, wanted));
     }
 

@@ -1,5 +1,6 @@
 import { LootTableDefinitions, LootExclusionSets } from './lootTableDefinitions.js';
 import { LootTableModel } from './lootTableModel.js';
+import { rng } from '../core/random.js';
 
 export class LootTableFactory {
     
@@ -60,7 +61,7 @@ export class LootTableFactory {
 
     static _rollWeighted(items) {
         const totalWeight = items.reduce((sum, entry) => sum + entry.weight, 0);
-        let random = Math.random() * totalWeight;
+        let random = rng() * totalWeight;
         
         for (const entry of items) {
             random -= entry.weight;
@@ -74,7 +75,7 @@ export class LootTableFactory {
     static _rollIndependent(items) {
         let drops = [];
         for (const entry of items) {
-            if (Math.random() <= entry.dropRate) {
+            if (rng() <= entry.dropRate) {
                 drops.push({ id: entry.id, qty: this._getQty(entry.min, entry.max) });
             }
         }
@@ -85,15 +86,15 @@ export class LootTableFactory {
        container's own table, so a wardrobe gives clothes and a crate gives cargo. Returns [{ id, qty }], merged by item, possibly empty. */
     static EMPTY_CHANCE = 0.25;
     static searchContainer(tableId) {
-        if (Math.random() < this.EMPTY_CHANCE) return [];
-        const rolls = Math.random() < 0.35 ? 2 : 1;
+        if (rng() < this.EMPTY_CHANCE) return [];
+        const rolls = rng() < 0.35 ? 2 : 1;
         const merged = new Map();
         for (const { id, qty } of this.generateLoot(tableId, rolls).items) merged.set(id, (merged.get(id) || 0) + qty);
         return [...merged].map(([id, qty]) => ({ id, qty }));
     }
 
     static _getQty(min = 1, max = 1) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
+        return Math.floor(rng() * (max - min + 1)) + min;
     }
 
     static _mergeDuplicates(drops) {

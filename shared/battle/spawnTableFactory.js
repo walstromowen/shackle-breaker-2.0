@@ -2,8 +2,24 @@ import { SpawnTableDefinitions } from './spawnTableDefinitions.js';
 import { SpawnTableModel } from './spawnTableModel.js';
 import { ActSystem } from '../story/actSystem.js';
 
+/* A bigger party meets bigger groups. EXTRA_ENEMIES[n - 1] is added to both ends of the spawn table's group size when n party members can
+   fight (alive, up to the 3 that fit on the field); a fraction is a chance of one more (1.5 = one or two), and a lone fighter meets one fewer
+   (never less than one). Without it two companions turned every fight into a rout: 99% wins (tools/playthroughSim.mjs, PARTY=3); with it an
+   ordinary fight is usually won (about 95% for a party) but costs about a quarter of the party's HP, so three or so in a row without
+   healing wear a party down.
+   A party of several players (multiplayer) meets the same number of enemies as one player with that many fighters (EXTRA_ENEMIES_PER_PLAYER
+   0), but every player beyond the first adds LEVELS_PER_PLAYER levels to every enemy in the fight (sceneManager START_BATTLE), since they
+   bring deeper reserves and the whole group's abilities. */
+/* How many enemies an ambush (a random fight on the overworld, BiomeModel.getBattle) can bring, whatever the table and the party size say:
+   one to three on easy and normal, up to four on hard, and two to four on nightmare. Story and encounter fights keep their own sizes. */
+export const AMBUSH_SIZE = { easy: [1, 3], normal: [1, 3], hard: [1, 4], nightmare: [2, 4] };
+
+export const PARTY_SCALING = { EXTRA_ENEMIES: [-1, 0, 1.5], MAX_FIGHTERS: 3, EXTRA_ENEMIES_PER_PLAYER: 0, LEVELS_PER_PLAYER: 1 };
+
 export class SpawnTableFactory {
-    static generateBattle(tableId, difficulty = 'normal') {
+    /* `fighters`: how many of the party can fight at once (1-3); `players`: how many players share the fight. See PARTY_SCALING.
+       Without them the table's own group size is used as written. */
+    static generateBattle(tableId, difficulty = 'normal', { fighters, players = 1, ambush = false } = {}, scaling = PARTY_SCALING) {
         const table = SpawnTableDefinitions[tableId];
         if (!table || table.type !== 'faction_pool') {
             console.error(`SpawnTableFactory: Table '${tableId}' not found or invalid type.`);
@@ -20,7 +36,16 @@ export class SpawnTableFactory {
 
         // 2. Determine party size based on difficulty
         const diffSettings = factionPool.difficultySettings[difficulty] || factionPool.difficultySettings['normal'];
-        const partySize = this._getRandomInt(diffSettings.minSize, diffSettings.maxSize);
+        // `fixedSize: true` on a table (a boss): exactly the group it lists, whatever the size of the party, never scaled
+        const want = table.fixedSize ? 0 : ((fighters ? scaling.EXTRA_ENEMIES[Math.min(scaling.MAX_FIGHTERS, Math.max(1, fighters)) - 1] || 0 : 0)
+            + Math.max(0, players - 1) * (scaling.EXTRA_ENEMIES_PER_PLAYER || 0));
+        const extra = Math.floor(want) + (Math.random() < want - Math.floor(want) ? 1 : 0);
+        const lo = Math.max(1, diffSettings.minSize + extra);
+        let partySize = this._getRandomInt(lo, Math.max(lo, diffSettings.maxSize + extra));
+        if (ambush) {
+            const [min, max] = AMBUSH_SIZE[difficulty] || AMBUSH_SIZE.normal;
+            partySize = Math.max(min, Math.min(max, partySize));
+        }
 
         // 3. Generate the specific enemies
         const generatedEnemies = [];

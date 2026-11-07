@@ -7,7 +7,8 @@
    Flow:  approach     -> [VIG] walk up to the altar (a miss: the bones stir, or a cloud of smoke drains stamina and insight)
           at_the_altar -> [INT] examine the skull: blue glow (full restore) / green glow (loot) on a success, red glow (skeleton fight) on a failure
                           [Fallen Meteorite] set it on the altar: Darius the Groveler crawls out of the dark. Only offered while the party carries one.
-                          darius_rises .. darius_wrath: a conversation (he weeps for the king who never came, sees the meteorite, and turns on you in envy), then the boss fight.
+                          darius_rises .. darius_wrath: five short stages of Darius speaking to you (the king who never came, the light he kept, the star you carry,
+                          and envy), then the boss fight. No music while he talks, only the altar's drone kept low; his music starts when he turns and carries on into the fight.
    Every find or ambush is announced on its own stage first and the effect is handed out on the button after it. A fight that starts from the
    approach leaves the altar standing (it can be tried again); anything that spends the skull or the meteorite destroys the altar. */
 
@@ -50,7 +51,6 @@ export const mysteriousAltar = {
                             weight: 100,
                             results: [
                                 { type: "SET_CONTEXT_FLAG", payload: { flagId: "altar_approached" } },
-                                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "at_the_altar" } }
                             ]
                         }
@@ -80,6 +80,13 @@ export const mysteriousAltar = {
                     ]
                 },
                 {
+                    // once Darius the Groveler is beaten (act 2), every altar hides the same thing: a stair down into the catacombs
+                    text: "[The Groveler is dead] Search behind the altar.",
+                    conditions: [{ type: "has_milestone", id: "act2" }, HUMANOID],
+                    customActionText: "You put your shoulder to the altar. Stone grinds on stone, and it slides aside.",
+                    outcomes: toStage("hidden_stair")
+                },
+                {
                     text: "Step up to the altar again.",
                     conditions: [
                         { type: "context_flag_set", flagId: "altar_approached" },
@@ -97,6 +104,22 @@ export const mysteriousAltar = {
                     text: "Leave the altar alone.",
                     customActionText: "You continue along the path, leaving the altar alone.",
                     outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }]
+                }
+            ]
+        },
+
+        hidden_stair: {
+            displayText: "A Hidden Stair",
+            tone: "cold",
+            sfx: "whispers",
+            sfxVolume: 0.5,
+            image: { col: 1, row: 0 },
+            text: "Under the altar, worn steps lead down into the dark. Cold air rises from below, and it smells of old bones.",
+            decisions: [
+                {
+                    text: "Leave the way open.",
+                    customActionText: "You leave the stair uncovered. Whatever lies below can wait for you.",
+                    outcomes: [{ weight: 100, results: [{ type: "REPLACE_OBJECT", payload: { objectId: "CATACOMBS_STAIRS" } }, { type: "END_ENCOUNTER", payload: null }] }]
                 }
             ]
         },
@@ -133,7 +156,7 @@ export const mysteriousAltar = {
                         {
                             weight: 100,
                             results: [
-                                { type: "MODIFY_VITALS", payload: { stamina: -25, insight: -25, isPercentageOfCurrent: true, damageType: "true" } },
+                                { type: "MODIFY_VITALS", payload: { stamina: -25, insight: -25, isPercentageOfCurrent: true, damageType: "true", party: "all" } },   // the smoke reaches the whole party
                                 { type: "SET_CONTEXT_FLAG", payload: { flagId: "altar_approached" } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "at_the_altar" } }
                             ]
@@ -202,8 +225,7 @@ export const mysteriousAltar = {
                         {
                             weight: 100,
                             results: [
-                                { type: "MODIFY_VITALS", payload: { hp: 9999, stamina: 9999, insight: 9999, damageType: "true" } },
-                                { type: "AWARD_XP", payload: { amount: 10, target: "active_character" } },
+                                { type: "MODIFY_VITALS", payload: { hp: 9999, stamina: 9999, insight: 9999, damageType: "true", party: "all" } },   // the light fills the whole area
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
@@ -227,7 +249,6 @@ export const mysteriousAltar = {
                             weight: 100,
                             results: [
                                 { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "biome_default", rolls: 2 } },
-                                { type: "AWARD_XP", payload: { amount: 10, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
@@ -258,238 +279,62 @@ export const mysteriousAltar = {
         // ---- Darius the Groveler: a conversation, then the fight. Each line of his is a stage, and each reply of yours is the text of the button you press. ----
         // Written quietly: a man who has waited a very long time for a king who never came, who sees the meteorite in the stranger's hands and takes it for the king's
         // favour. Nothing in it is shown, only said. The altar's drone fades out for the talking and comes back when he turns on you.
+        // Darius the Groveler: he speaks to you, the way a boss speaks to the player in a dark fantasy game. No narration: every stage is his own words, and
+        // the screen effects carry what he does. The player never answers ("Continue."). While he talks there is no music at all, only the altar's drone,
+        // kept low; his track starts the moment he turns on you, and the fight plays the same track, so it carries on unbroken into the battle.
         darius_rises: {
-            displayText: "The Kneeling Man",
+            displayText: "A Voice in the Dark",
             tone: "arcane",
             effect: "glow_blue",
             sfx: "glowSwell",
-            ambience: "none",
-            ambienceFade: 2.0,
-            bgm: "dariusEncounterBgm",   // assets/audio/music/Darius_battle_bgm.mp3
-            image: { col: 3, row: 1 },
-            text: "The moment the meteorite touches the stone, the altar drinks its glow, and the hum that has filled this place thins to a single held note. Behind the altar, in the dark, someone is weeping.",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_rises_3" } }] }]
-                }
-            ]
+            bgm: "none",
+            ambience: "altarDrone",
+            ambienceVolume: 0.35,
+            ambienceFade: 1.5,
+            image: { sheet: "encounter_darius_kneeling", col: 0, row: 0 },   // Darius kneeling at the altar
+            text: "\"Footsteps... after so long. Is it you, my king? Have you come back for the light?\" \"No. No, you are not him. Forgive an old man his hope.\"",
+            decisions: [{ text: "Continue.", outcomes: toStage("darius_speaks") }]
         },
-
-        darius_rises_3: {
-            displayText: "The Kneeling Man",
-            tone: "arcane",
-            image: { col: 3, row: 1 },
-            bgm: "dariusEncounterBgm",
-            text: "A hunched figure in a tattered hood kneels with his brow against the floor, shoulders shaking, the way a man weeps when he has done it for so long that it is the only sound he has left.",
-            decisions: [
-                {
-                    text: "Step closer.",
-                    customActionText: "You take a step toward him. The weeping does not stop, and it does not hurry.",
-                    outcomes: toStage("darius_weeps")
-                }
-            ]
-        },
-        darius_weeps: {
-            displayText: "A Promise",
-            sfx: "whispers",
-            sfxVolume: 0.5,
-            image: { col: 3, row: 1 },
-            text: "\"He said he would come,\" the figure whispers, to the stone and not to you. \"Keep the light, Darius, he said.\" \"Keep it burning and I shall return for it. So I kept it.\"",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_weeps_3" } }] }]
-                }
-            ]
-        },
-
-        darius_weeps_3: {
-            displayText: "A Promise",
-            image: { col: 3, row: 1 },
-            text: "\"Through every winter. Through the long dark, when the torches burned to nothing and I kept it still.\" \"My king. My king.\"",
-            decisions: [
-                {
-                    text: "\"Darius?\"",
-                    customActionText: "\"Darius,\" you say, gently. \"Is that your name?\"",
-                    outcomes: toStage("darius_king")
-                },
-                {
-                    text: "Say nothing.",
-                    customActionText: "You say nothing. His grief is too old to be interrupted.",
-                    outcomes: toStage("darius_king")
-                }
-            ]
-        },
-        darius_king: {
-            displayText: "The Groveler",
-            image: { col: 3, row: 1 },
-            text: "The hood lifts, only a little. Beneath it is a face that was kind once. \"They called me the Groveler,\" he says, almost fondly. \"For the kneeling.\" \"As if there were shame in it. I knelt because no one else was worthy of my knees.\"",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_king_4" } }] }]
-                }
-            ]
-        },
-
-        darius_king_4: {
-            displayText: "The Groveler",
-            image: { col: 3, row: 1 },
-            text: "He looks past you, down the dark way you came. \"Did you pass him on the road?\" \"He would be tall. He would wear the old colors, and he would be smiling.\" \"He promised.\"",
-            decisions: [
-                {
-                    text: "\"No one is coming.\"",
-                    customActionText: "\"No one is coming, Darius,\" you say. \"It has been a very long time.\"",
-                    outcomes: toStage("darius_late")
-                },
-                {
-                    text: "\"I saw no one.\"",
-                    customActionText: "\"I am sorry,\" you say. \"There was no one on the road but the dead.\"",
-                    outcomes: toStage("darius_late")
-                }
-            ]
+        darius_speaks: {
+            displayText: "Darius the Groveler",
+            bgm: "none",
+            image: { sheet: "encounter_darius_kneeling", col: 0, row: 0 },   // Darius kneeling at the altar
+            text: "\"He told me, keep the light burning, Darius, and I shall return for it. So I kept it, every winter, every long dark.\" \"They call me the Groveler, for the kneeling. Let them. I knelt for a king.\"",
+            decisions: [{ text: "Continue.", outcomes: toStage("darius_late") }]
         },
         darius_late: {
-            displayText: "Late",
-            image: { col: 3, row: 1 },
-            text: "For a moment the weeping stops, and the silence is worse. \"No,\" Darius says softly, the way one refuses a child who has said something cruel. \"He is only late. Kings are never early.\"",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_late_3" } }] }]
-                }
-            ]
-        },
-
-        darius_late_3: {
-            displayText: "Late",
-            image: { col: 3, row: 1 },
-            text: "\"A king comes when the hour is ready for him, and I am ready. I have been ready for so long.\" His pale hands press flat against the stone, as if it were a door he could wear open. \"He told me he would send a sign.\"",
-            decisions: [
-                {
-                    text: "Wait.",
-                    customActionText: "You wait. Behind you the meteorite hums, and Darius lifts his head toward the sound.",
-                    outcomes: toStage("darius_sees")
-                }
-            ]
+            displayText: "Darius the Groveler",
+            bgm: "none",
+            image: { sheet: "encounter_darius_kneeling", col: 0, row: 0 },   // Darius kneeling at the altar
+            text: "\"You think he is not coming. I can see it on you.\" \"He is only late, friend. Kings are never early.\"",
+            decisions: [{ text: "Continue.", outcomes: toStage("darius_sees") }]
         },
         darius_sees: {
-            displayText: "The Star",
+            displayText: "Darius the Groveler",
             effect: "jolt",
             sfx: "heartbeat",
-            image: { col: 0, row: 1 },
-            text: "He sees it then: the fallen star in the hollow of the altar, black and humming, beside the skull. His eyes go from it to your hands, which carried it here, and to the iron on your wrists. \"That is the king's,\" he breathes.",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_sees_3" } }] }]
-                }
-            ]
-        },
-
-        darius_sees_3: {
-            displayText: "The Star",
-            image: { col: 0, row: 1 },
-            text: "\"A star, from the sky, to the altar. He sent a sign, and it has come to me.\" His mouth trembles into a smile. It does not last. \"No. Not to me.\"",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_sees_6" } }] }]
-                }
-            ]
-        },
-
-        darius_sees_6: {
-            displayText: "The Star",
-            image: { col: 0, row: 1 },
-            text: "\"You carried it. You carried it all this way.\"",
-            decisions: [
-                {
-                    text: "\"I only found it.\"",
-                    customActionText: "\"I found it, Darius. That is all. I did not know it was meant for anyone.\"",
-                    outcomes: toStage("darius_envy")
-                },
-                {
-                    text: "Step back from the altar.",
-                    customActionText: "You step back. The hum in the stone climbs with every step you take.",
-                    outcomes: toStage("darius_envy")
-                }
-            ]
-        },
-        darius_envy: {
-            displayText: "Chosen",
-            tone: "gold",
-            image: { col: 3, row: 1 },
-            text: "\"He gave it to you.\" It is hardly a voice at all. \"Winter after winter I knelt. I said his name until it wore smooth in my mouth.\" \"And he did not come for me. He did not so much as look.\"",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_envy_4" } }] }]
-                }
-            ]
-        },
-
-        darius_envy_4: {
-            displayText: "Chosen",
-            tone: "gold",
-            image: { col: 3, row: 1 },
-            text: "\"He sent the star to a stranger in chains.\" Darius rises, unfolding slowly, far taller than he looked. The pale light in his hands is the same as the light in the stone. \"What did you do to be loved like that?\"",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_envy_6" } }] }]
-                }
-            ]
-        },
-
-        darius_envy_6: {
-            displayText: "Chosen",
-            tone: "gold",
-            image: { col: 3, row: 1 },
-            text: "\"What does a stranger have that I did not?\"",
-            decisions: [
-                {
-                    text: "\"He did not send it to me.\"",
-                    customActionText: "\"He did not send it to me, Darius,\" you say. \"No one did.\"",
-                    outcomes: toStage("darius_wrath")
-                },
-                {
-                    text: "Reach for your weapon.",
-                    customActionText: "Your hand finds your weapon. He watches it, and does not seem to see it.",
-                    outcomes: toStage("darius_wrath")
-                }
-            ]
+            bgm: "none",
+            image: { sheet: "encounter_darius_kneeling", col: 0, row: 0 },   // Darius kneeling at the altar
+            text: "\"That light you carry... that is his. His sign, at last.\" \"But he gave it to you. A stranger in chains.\" \"What did you do to be loved like that?\"",
+            decisions: [{ text: "Continue.", outcomes: toStage("darius_wrath") }]
         },
         darius_wrath: {
-            displayText: "His Love",
+            displayText: "Darius the Groveler",
             tone: "blood",
             effect: "shake",
             sfx: "cinematicBoom",
-            ambience: "altarDrone",
+            ambience: "none",
             ambienceFade: 0.6,
+            bgm: "dariusEncounterBgm",   // his track: from the moment he turns, on into the fight
             image: { col: 2, row: 1 },
-            text: "\"Then give it back.\" The hum in the stone climbs into a cry, and the dark behind the altar leans toward him like a congregation.",
-            decisions: [
-                {
-                    text: "Continue.",
-                    outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "darius_wrath_2" } }] }]
-                }
-            ]
-        },
-
-        darius_wrath_2: {
-            displayText: "His Love",
-            tone: "blood",
-            image: { col: 2, row: 1 },
-            text: "\"Give it back. Give me his love.\" \"It was mine. It was always going to be mine.\" The weeping has become something else. The light in his hands is no longer gentle, and it is turned on you.",
+            text: "\"Give it to me.\" \"Give it back! His love was mine. It was always meant to be mine!\"",
             decisions: [
                 {
                     text: "Face Darius the Groveler!",
-                    customActionText: "You set your feet. There is nothing left to say to him.",
+                    customActionText: "You set your feet.",
                     conditions: [HUMANOID],
                     // Winning plays the encounter that starts act 2 (story/encounters/story/actTwo.js) before the party is back on the map
-                    outcomes: fight("darius_boss", true, { encounterId: "act_two" }, "bossBattleBgm")   // the boss track: assets/audio/music/bossbattle.mp3
+                    outcomes: fight("darius_boss", true, { encounterId: "act_two" }, "dariusEncounterBgm")
                 }
             ]
         },

@@ -32,7 +32,10 @@ export const gameState = {
         levelPaths: {},      // cells of village streets on a cliff level, drawn as dirt (visual only; see blobTerrainRenderer)
         discoveredChunks: [],
         waypoints: [],       // the banners the party has planted: { id, col, row, biome } (shared/world/waypoints.js)
-        currentWeather: null
+        structureChunks: {}, // chunks ('cx,cy') whose village / graveyard has been generated, so a reload never builds them again (structureSpawner.js)
+        currentWeather: null,
+        biomeWeather: {},      // the weather each biome was left with (TimeSystem.syncBiomeWeather)
+        weatherBiome: null     // the biome the current weather belongs to
     },
     
     party: {
@@ -65,3 +68,37 @@ export const gameState = {
         isMenuOpen: false
     }
 };
+
+/**
+ * Clears everything a world has written into gameState.world, for a New Game. The world is stored as changes on top of the seed (objects,
+ * roads, stairs, level paths, keyed by cell), so anything left over from the last game in this session would be laid over the new world's terrain:
+ * graves in its rivers, roads up its cliffs, plains trees in its deserts.
+ */
+export function resetWorldForNewGame() {
+    const w = gameState.world;
+    w.isInterior = false;
+    w.interiorType = null;
+    w.interiorId = null;
+    w.interiorMapId = null;
+    w.savedOverworld = null;
+    w.interiorStack = [];   // interiors entered from inside another (the catacombs under a cave): what to climb back into (SceneManager)
+    w.currentBiomeId = null;
+    w.currentBiome = null;
+    w.day = 1;
+    w.changes = {};
+    w.terrainOverrides = {};
+    w.villageStairs = [];
+    w.levelPaths = {};
+    w.discoveredChunks = [];
+    w.waypoints = [];
+    w.structureChunks = {};
+    w.currentWeather = null;
+    w.biomeWeather = {};
+    w.weatherBiome = null;
+    gameState.quests = { active: {}, completed: [], trackedIds: [] };
+    gameState.multiplayer = { guests: {} };   // a new world has had no visitors
+    // the spot the last game ended on means nothing in the new world (0, 0 = "find a spawn point", see OverworldController.createPlayerEntity)
+    gameState.player.col = 0;
+    gameState.player.row = 0;
+    gameState.player.direction = 'down';
+}

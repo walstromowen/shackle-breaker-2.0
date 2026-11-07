@@ -108,7 +108,7 @@ class AudioManager {
         events.on('STOP_MUSIC', (data) => this.stopMusic(data.fadeTime));
 
         // NEW: Event listeners for environmental audio
-        events.on('PLAY_AMBIENCE', (data) => this.playAmbience(data.id, data.fadeTime));
+        events.on('PLAY_AMBIENCE', (data) => this.playAmbience(data.id, data.fadeTime, data.volume));
         events.on('STOP_AMBIENCE', (data) => this.stopAmbience(data.fadeTime));
     }
 
@@ -322,9 +322,19 @@ class AudioManager {
     // =========================================================
     // NEW: Ambient Audio Methods
     // =========================================================
-    playAmbience(key, fadeTime = 2.0) { // Longer default fade for weather
+    /* volume: 0..1 of the ambience bus (default 1). Asking again for the track that is already playing only eases it to the new volume. */
+    playAmbience(key, fadeTime = 2.0, volume = 1.0) { // Longer default fade for weather
         if (!this.isInitialized || !this.loader) return;
-        if (this.currentAmbientId === key) return;
+        const vol = Number.isFinite(volume) ? Math.max(0, Math.min(1, volume)) : 1.0;
+        if (this.currentAmbientId === key) {
+            if (this.currentAmbientSource && this.currentAmbientVolume !== vol) {
+                const g = this.currentAmbientSource.gain.gain;
+                g.setValueAtTime(g.value, this.ctx.currentTime);
+                g.linearRampToValueAtTime(vol, this.ctx.currentTime + Math.max(0.05, fadeTime));
+                this.currentAmbientVolume = vol;
+            }
+            return;
+        }
 
         if (this.currentAmbientSource) {
             this.stopAmbience(fadeTime);
@@ -352,10 +362,11 @@ class AudioManager {
         source.start(0);
 
         // Fade in
-        localGain.gain.linearRampToValueAtTime(1.0, this.ctx.currentTime + fadeTime);
+        localGain.gain.linearRampToValueAtTime(vol, this.ctx.currentTime + fadeTime);
 
         this.currentAmbientSource = { source, gain: localGain };
         this.currentAmbientId = key;
+        this.currentAmbientVolume = vol;
     }
 
     stopAmbience(fadeTime = 2.0) {

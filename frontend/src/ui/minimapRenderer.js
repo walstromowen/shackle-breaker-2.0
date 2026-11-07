@@ -1,4 +1,6 @@
 import { gameState } from '../../../shared/core/gameState.js';
+import { multiplayerSession } from '../engine/multiplayerSession.js';
+import { multiplayerSocial } from '../engine/multiplayerSocial.js';
 import { BIOME_DEFINITIONS, FIRST_PLATEAU, CLIFF_LEVELS, layerIndex } from '../../../shared/world/biomeDefinitions.js';
 
 /* MinimapRenderer - a small round, north-up map of the terrain around the player, drawn in the bottom-left corner of the overworld screen.
@@ -47,7 +49,8 @@ const DEFAULTS = {
     budgetMs: 2,                   // time per frame spent painting new chunks
     prefetch: 16,                  // tiles beyond the map edge that are painted ahead of time, so land the player walks towards is ready before it scrolls in
     maxChunks: 150,                // painted chunks kept; the ones furthest from the player are dropped first
-    markers: { WARP: '#ffd24a', CRAFTING_STATION: '#e8873a' },
+    markers: { WARP: '#ffd24a', CRAFTING_STATION: '#e8873a', GRAVE: '#b05cff' },   // GRAVE: a beaten multiplayer party's grave (world/graves.js)
+    others: '#59d4ff',             // other players in a multiplayer world (party members ringed in white)
     npc: '#ff4fa0',                // the people standing in the world (the shady merchant, the madman, the wounded dog): a red dot, so they can be found
     buildings: '#7a5a3c',
     colors: { grass: '#5b9448', dirt: '#8c6c47', water: '#3b73a6', rock: '#8f8b82', stair: '#f2e27a' },   // for a biome with no `minimap` block (or a colour missing from it)
@@ -76,7 +79,8 @@ export class MinimapRenderer {
         const user = config.MINIMAP || {};
         this.cfg = {
             ...DEFAULTS, ...user,
-            markers: user.markers || DEFAULTS.markers,
+            markers: { ...DEFAULTS.markers, ...(user.markers || {}) },
+            others: user.others || DEFAULTS.others,
             npc: user.npc || DEFAULTS.npc,
             colors: { ...DEFAULTS.colors, ...(user.colors || {}) },
         };
@@ -335,6 +339,19 @@ export class MinimapRenderer {
             ctx.fillRect(dx - half - 1, dy - half - 1, dot + 2, dot + 2);
             ctx.fillStyle = m.color;
             ctx.fillRect(dx - half, dy - half, dot, dot);
+        }
+
+        // the other players in a multiplayer world, on this same map: a blue dot each (white-ringed for my party)
+        const here = inside ? `INT_${w.interiorId}` : 'world';
+        const party = multiplayerSocial.myGroup();
+        for (const r of multiplayerSession.remotes.values()) {
+            if (!r || !r.placed || r.map !== here) continue;
+            const dx = sx(r.col + 0.5), dy = sy(r.row + 0.5), s = Z + 4, h = s >> 1;
+            const mine = party && (party.leader === r.id || party.members.includes(r.id));
+            ctx.fillStyle = mine ? '#ffffff' : 'rgba(0, 0, 0, 0.8)';
+            ctx.fillRect(dx - h - 1, dy - h - 1, s + 2, s + 2);
+            ctx.fillStyle = cfg.others;
+            ctx.fillRect(dx - h, dy - h, s, s);
         }
 
         // the area the main view shows

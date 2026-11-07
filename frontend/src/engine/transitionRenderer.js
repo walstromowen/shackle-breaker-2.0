@@ -1,3 +1,10 @@
+import { drawLoadingScreen, pickSplash } from '../ui/loadingScreen.js';
+
+// milliseconds a frame a loading screen spends on its work (setWork): the rest of the frame keeps the screen and its progress bar moving
+const WORK_BUDGET_MS = 14;
+// a loading screen stays up at least this long (seconds), so its lore can be read even when the work is quick
+const LOADING_MIN_SHOWN = 1.4;
+
 export class TransitionRenderer {
     constructor(config) {
         this.config = config;
@@ -34,9 +41,31 @@ export class TransitionRenderer {
         if (type === 'blade') defaultSpeed = 1.2; // Slower, to let the dramatic greyscale pause sink in
         
         this.speed = options.speed || defaultSpeed;
+        this.loading = null;
         this.hold = options.hold || 0;          // seconds the screen stays covered once the midpoint callback has run (a night's sleep)
         this.holdLeft = 0;
+        this.work = null;                        // work done while the screen is covered (setWork): a loading screen
+        this.loading = null;                     // the loading screen being shown: { label, splash, shown }
         this.onDone = options.onDone || null;   // called when the picture is fully back
+    }
+
+    /**
+     * Keeps the screen covered after the midpoint until `steps` (a generator that yields { done, total }) has run out, running it WORK_BUDGET_MS
+     * a frame and showing `label` with a progress bar. Call it from the midpoint callback (e.g. building the world around the player).
+     */
+    setWork(steps, label = 'Loading') {
+        this.work = steps;
+        this.workProgress = 0;
+        this.loading = { label, splash: pickSplash(), shown: 0 };
+    }
+
+    _runWork() {
+        const deadline = performance.now() + WORK_BUDGET_MS;
+        while (this.work && performance.now() < deadline) {
+            const r = this.work.next();
+            if (r.done) { this.work = null; this.workProgress = 1; break; }
+            if (r.value && r.value.total) this.workProgress = r.value.done / r.value.total;
+        }
     }
 
     update(dt) {
@@ -54,12 +83,15 @@ export class TransitionRenderer {
                 }
                 
                 this.holdLeft = this.hold || 0;
-                this.state = this.holdLeft > 0 ? 'HOLD' : 'IN';
+                this.state = (this.holdLeft > 0 || this.work) ? 'HOLD' : 'IN';
             }
         } 
         else if (this.state === 'HOLD') {
+            if (this.work) this._runWork();
+            if (this.loading) this.loading.shown += dt;
             this.holdLeft -= dt;
-            if (this.holdLeft <= 0) this.state = 'IN';
+            const readLongEnough = !this.loading || this.loading.shown >= LOADING_MIN_SHOWN;
+            if (this.holdLeft <= 0 && !this.work && readLongEnough) this.state = 'IN';
         }
         else if (this.state === 'IN') {
             this.progress -= dt * this.speed;
@@ -67,6 +99,7 @@ export class TransitionRenderer {
                 this.progress = 0;
                 this.state = 'IDLE';
                 this.isActive = false;
+                this.loading = null;
                 if (this.onDone) { const done = this.onDone; this.onDone = null; done(); }
             }
         }
@@ -257,6 +290,16 @@ export class TransitionRenderer {
                     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
                 }
                 break;
+        }
+
+        // a loading screen (setWork): it fades out with the cover once the work is done
+        if (this.loading && (this.state === 'HOLD' || this.state === 'IN')) {
+            drawLoadingScreen(ctx, {
+                W: CANVAS_WIDTH, H: CANVAS_HEIGHT,
+                alpha: this.state === 'IN' ? Math.max(0, Math.min(1, this.progress)) : 1,
+                progress: this.work ? this.workProgress : 1,
+                label: this.loading.label, splash: this.loading.splash, loader: this.loader, shown: this.loading.shown,
+            });
         }
 
         ctx.restore();

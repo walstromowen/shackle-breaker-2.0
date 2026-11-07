@@ -1,5 +1,6 @@
 import { gameState } from '../../../../shared/core/gameState.js';
 import { ActSystem } from '../../../../shared/story/actSystem.js';
+import { BIOME_DEFINITIONS } from '../../../../shared/world/biomeDefinitions.js';
 
 /* LightingRenderer - tile light map: coloured lights that fade a fixed amount per tile and seep into walls.
  *
@@ -338,6 +339,8 @@ export class LightingRenderer {
         }
         if (mapObjects) {
             for (const obj of mapObjects) {
+                // `lights`: several lights at points of the object (a lit window, a chimney), dx / dy in tiles from its top-left (a tall object rises above its row)
+                if (obj.lights) for (const L of obj.lights) if (L && L.hasLight) out.push({ x: obj.col + L.dx, y: obj.row - ((obj.h || 1) - 1) + L.dy, light: L, fixed: true });
                 if (!obj.light || !obj.light.hasLight) continue;
                 out.push({ x: obj.col + obj.w / 2, y: obj.row + obj.h / 2, light: obj.light, fixed: true }); // a map object never moves: its trace can be remembered
             }
@@ -376,7 +379,7 @@ export class LightingRenderer {
             const stormR = 15;
             const stormG = 20;
             const stormB = 35;
-            const stormMaxAlpha = 0.65;
+            const stormMaxAlpha = String(activeWeather.id).toLowerCase() === 'thunderstorm' ? 0.75 : 0.65;   // a thunderstorm's sky is darker still
 
             finalR = Math.floor((finalR * (1 - intensity)) + (stormR * intensity));
             finalG = Math.floor((finalG * (1 - intensity)) + (stormG * intensity));
@@ -455,9 +458,12 @@ export class LightingRenderer {
             this._blockSig = blockSig;
         }
 
+        // a biome whose dark swallows light (the catacombs: `lightScale`) shortens every light that is carried; lamps and torches standing on the map keep theirs
+        const biomeDef = BIOME_DEFINITIONS[gameState.world.currentBiome];
+        const carried = biomeDef && biomeDef.lightScale > 0 ? biomeDef.lightScale : 1;
         for (const L of lights) {
             const lc = L.light;
-            let radius = lc.radius;
+            let radius = lc.radius * (L.fixed ? 1 : carried);
             if (lc.flickerAmp) {
                 // flickerSpeed 0.1 is the speed the flicker always had; lights on map objects start at different points of it, so a row of torches does not pulse as one
                 const time = Date.now() * 0.05 * (lc.flickerSpeed ?? 0.1) + (L.fixed ? (L.x * 12.9898 + L.y * 78.233) % 6.283 : 0);

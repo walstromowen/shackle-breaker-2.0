@@ -62,7 +62,7 @@ export const LootTableDefinitions = {
             { id: "small_iron_key", weight: 3, min: 1, max: 1 },
 
             // --- WEAPONS & SHIELDS (Standard Drop Rate) ---
-            { id: "wooden_stick", weight: 30, min: 1, max: 1 },
+            { id: "wooden_club", weight: 30, min: 1, max: 1 },
             { id: "dagger", weight: 20, min: 1, max: 1 },
             { id: "shortsword", weight: 15, min: 1, max: 1 },
             { id: "handaxe", weight: 15, min: 1, max: 1 },
@@ -152,7 +152,7 @@ export const LootTableDefinitions = {
             { id: "small_iron_key", weight: 3, min: 1, max: 1 },
 
             // --- WEAPONS & SHIELDS (Standard Drop Rate) ---
-            { id: "wooden_stick", weight: 30, min: 1, max: 1 },
+            { id: "wooden_club", weight: 30, min: 1, max: 1 },
             { id: "dagger", weight: 20, min: 1, max: 1 },
             { id: "shortsword", weight: 15, min: 1, max: 1 },
             { id: "handaxe", weight: 15, min: 1, max: 1 },
@@ -487,7 +487,7 @@ export const LootTableDefinitions = {
             { id: "small_iron_key", weight: 8, min: 1, max: 1 },
 
             // --- WEAPONS & SHIELDS (Standard Drop Rate) ---
-            { id: "wooden_stick", weight: 30, min: 1, max: 1 },
+            { id: "wooden_club", weight: 30, min: 1, max: 1 },
             { id: "dagger", weight: 20, min: 1, max: 1 },
             { id: "shortsword", weight: 15, min: 1, max: 1 },
             { id: "handaxe", weight: 15, min: 1, max: 1 },
@@ -726,6 +726,16 @@ export const LootTableDefinitions = {
             { id: "insight_of_earth", dropRate: 0.04 },
             { id: "sand", dropRate: 0.35, min: 1, max: 3 },
             { id: "bone", dropRate: 0.3, min: 1, max: 2 },
+        ]
+    },
+    "icecoil_drops": {
+        type: "independent",
+        items: [
+            { id: "leather", dropRate: 0.40, min: 1, max: 2 },
+            { id: "bone", dropRate: 0.35, min: 1, max: 2 },
+            { id: "stone", dropRate: 0.30, min: 1, max: 2 },
+            { id: "iron_ingot", dropRate: 0.08 },
+            { id: "insight_of_ice", dropRate: 0.04 },
         ]
     },
     "thunder_locust_drops": {
@@ -1001,6 +1011,34 @@ LootTableDefinitions.container_barrel = {
         { id: "escape_rope", weight: 3, min: 1, max: 1 }
     ]
 };
+// An ancient barrel in the catacombs: what the dead were sent off with, oils and tonics gone strange with age, bones.
+LootTableDefinitions.container_ancient_barrel = {
+    type: "weighted",
+    items: [
+        { id: "bone", weight: 24, min: 1, max: 3 },
+        { id: "linen", weight: 18, min: 1, max: 2 },
+        { id: "torch", weight: 14, min: 1, max: 2 },
+        { id: "bandage", weight: 12, min: 1, max: 2 },
+        { id: "healing_tonic", weight: 9, min: 1, max: 1 },
+        { id: "invigorating_tonic", weight: 7, min: 1, max: 1 },
+        { id: "illuminating_tonic", weight: 7, min: 1, max: 1 },
+        { id: "antidote", weight: 6, min: 1, max: 1 },
+        { id: "illuminating_herb", weight: 6, min: 1, max: 2 },
+        { id: "kurtus_brew", weight: 4, min: 1, max: 1 }
+    ]
+};
+// A ruined barrel in the catacombs: burst long ago; mostly its own staves, and whatever rolled out and was never picked up.
+LootTableDefinitions.container_ruined_barrel = {
+    type: "weighted",
+    items: [
+        { id: "soft_wood", weight: 40, min: 1, max: 2 },
+        { id: "bone", weight: 22, min: 1, max: 2 },
+        { id: "plant_fibers", weight: 12, min: 1, max: 2 },
+        { id: "linen", weight: 10, min: 1, max: 1 },
+        { id: "torch", weight: 10, min: 1, max: 1 },
+        { id: "salt", weight: 6, min: 1, max: 1 }
+    ]
+};
 // A crate packed with sacks: provisions and dry goods.
 LootTableDefinitions.container_crate_sack = {
     type: "weighted",
@@ -1060,7 +1098,7 @@ LootTableDefinitions.house = LootTableDefinitions.house_interior;
    hands out the common stuff you trip over on the road: raw wood, fibres, stone, flint and the like, and the tattered rags. */
 export const LootExclusionSets = {
     low_tier: [
-        'plant_fibers', 'soft_wood', 'hard_wood', 'wooden_stick', 'stone', 'flint', 'sand', 'wheat', 'cotton', 'bone',
+        'plant_fibers', 'soft_wood', 'hard_wood', 'stone', 'flint', 'sand', 'wheat', 'cotton', 'bone',
         'tattered_hood', 'tattered_shirt', 'tattered_gloves', 'tattered_pants', 'tattered_boots',
         'wooden_club', 'fur', 'salt', 'coal', 'copper_ore', 'tin_ore', 'iron_ore', 'leather', 'torch',
         'healing_herb', 'invigorating_herb', 'illuminating_herb', 'bandage', 'aloe', 'antidote', 'linen', 'copper_ingot',

@@ -28,6 +28,15 @@ const STAIR_SITES = [
 ];
 const STAIR_SIZE = { S: [5, 3], N: [5, 2], E: [3, 4], W: [3, 4] };
 
+/* Runs a step generator to its end and gives back what it returned. The heavy parts of the planner are generators that pause (yield) between small
+   units of work, so the world can plan a village a few milliseconds per frame ahead of the player (StructureSpawner.prepareAhead); the plain methods
+   (_planMainRoads, _planBuildings ...) run the same steps in one go. */
+export function drain(gen) {
+    let r = gen.next();
+    while (!r.done) r = gen.next();
+    return r.value;
+}
+
 export class VillagePlanner {
     /* ================================================================================================================
        VILLAGE PLANNER (a BLUEPRINT in structures.js)
@@ -50,10 +59,13 @@ export class VillagePlanner {
         const cfg = this._villageConfig(blueprint);
         /* read before the hub is written: its terrain changes the corner cell */
         const baseElev = this.getElevation(startCol, startRow);
+        /* the biome the village belongs to (its plaza stands wholly in it): its yards are dressed for it, so they are only built inside it */
+        const homeBiome = this.getBiomeAt(startCol, startRow).id;
         this._writePrefabToGlobalState(startCol, startRow, hub);
         const plan = {
             cfg,
             baseElev,
+            homeBiome,
             salt: (cx * 31 + cy * 17) % 997,
             hubTiles: new Set(),
             buildingTiles: new Set(),
@@ -77,6 +89,39 @@ export class VillagePlanner {
         this._planStreetProps(plan, blueprint);
         this._planTrees(plan, blueprint);
         this._paveRoads(plan);
+    }
+    /* _planBlueprint in steps (the same work in the same order; see drain). Used by the structure jobs of StructureSpawner. */
+    *_planBlueprintSteps(startCol, startRow, blueprint, cx, cy) {
+        const hub = STRUCTURES[blueprint.centerPrefab];
+        if (!hub) return;
+        const cfg = this._villageConfig(blueprint);
+        const baseElev = this.getElevation(startCol, startRow);
+        const homeBiome = this.getBiomeAt(startCol, startRow).id;
+        this._writePrefabToGlobalState(startCol, startRow, hub);
+        const plan = {
+            cfg, baseElev, homeBiome,
+            salt: (cx * 31 + cy * 17) % 997,
+            hubTiles: new Set(), buildingTiles: new Set(), roadOwner: new Map(), roads: [], stairs: [],
+        };
+        for (let y = 0; y < hub.height; y++) {
+            for (let x = 0; x < hub.width; x++) plan.hubTiles.add(this._s(startCol + x, startRow + y));
+        }
+        yield;
+        yield* this._planMainRoadsSteps(plan, startCol, startRow, hub, blueprint, cx, cy);
+        this._planSideStreets(plan);
+        yield;
+        yield* this._linkLevelsSteps(plan);
+        yield* this._planBuildingsSteps(plan, blueprint);
+        for (let pass = 0; pass < 2; pass++) {
+            if (!this._pruneAlleys(plan)) break;
+            yield* this._planBuildingsSteps(plan, blueprint);
+        }
+        this._pruneAlleys(plan);
+        yield;
+        this._planStreetProps(plan, blueprint);
+        yield;
+        yield* this._planTreesSteps(plan, blueprint);
+        yield* this._paveRoadsSteps(plan);
     }
     _villageConfig(bp) {
         const width = Math.max(1, Math.round(bp.roadWidth ?? 3));
@@ -217,7 +262,8 @@ export class VillagePlanner {
         }
         return true;
     }
-    _planMainRoads(plan, startCol, startRow, hub, bp, cx, cy) {
+    _planMainRoads(...args) { return drain(this._planMainRoadsSteps(...args)); }
+    *_planMainRoadsSteps(plan, startCol, startRow, hub, bp, cx, cy) {
         const cfg = plan.cfg;
         const midC = startCol + Math.floor(hub.width / 2);
         const midR = startRow + Math.floor(hub.height / 2);
@@ -242,6 +288,7 @@ export class VillagePlanner {
         }
         /* all roads grow one step at a time, in turns, so none of them gets first pick of the land */
         while (active.length > 0) {
+            yield;
             const nextActive = [];
             for (const p of active) {
                 if (p.len >= p.maxLen) continue;
@@ -311,7 +358,8 @@ export class VillagePlanner {
        The search: from every other cell of every street, a spur is probed straight out to the side (and straight ahead from the end of a street) as far as
        the ground stays level and free; where it ends the cliff is, and _stairSites tests the four pieces against the terrain there (the piece must sit
        on a straight run of cliff, see terrainGenerator._stairShapesAt). */
-    _linkLevels(plan) {
+    _linkLevels(plan) { return drain(this._linkLevelsSteps(plan)); }
+    *_linkLevelsSteps(plan) {
         const lv = plan.cfg.levels;
         if (!lv.max || !this.terrain || !this.terrain.villageStairShape) return;
         const cands = [];
@@ -335,6 +383,7 @@ export class VillagePlanner {
                 const key = (cands[k].road.depth || 0) * 10 + hashOf(cands[k]);
                 if (key < bestKey) { bestKey = key; best = k; }
             }
+            yield;
             const cand = cands.splice(best, 1)[0];
             if (this.pseudoRandom(cand.road.centres[cand.i].c * 67 + 5, cand.road.centres[cand.i].r * 71 + plan.salt) >= lv.chance) continue;
             const fresh = this._tryLink(plan, cand);
@@ -527,7 +576,8 @@ export class VillagePlanner {
         plan.roads.push(road);
         return true;
     }
-    _planBuildings(plan, bp) {
+    _planBuildings(plan, bp) { return drain(this._planBuildingsSteps(plan, bp)); }
+    *_planBuildingsSteps(plan, bp) {
         const cfg = plan.cfg;
         plan.placedBy = plan.placedBy || {};
         const mods = (bp.modules || []).filter((m) => STRUCTURES[m.prefab]).map((m) => ({ ...m, placed: plan.placedBy[m.prefab] || 0 }));
@@ -561,21 +611,26 @@ export class VillagePlanner {
         const isVertical = (slot) => { const d = slot.road.centres[slot.i].d; return d === 0 || d === 2; };
         const weightOn = (m, vertical) => (vertical ? (m.verticalWeight ?? m.weight ?? 1) : (m.horizontalWeight ?? m.weight ?? 1));
         /* 1. the buildings every village must have (the crafting stations): the first spot that fits, nearest the hub first, with some jitter */
-        mods.forEach((mod, m) => {
-            if (!mod.required || mod.placed > 0) return;
+        for (let m = 0; m < mods.length; m++) {
+            const mod = mods[m];
+            if (!mod.required || mod.placed > 0) continue;
             const order = slots.map((s) => ({ s, k: s.i + hash(s, 11 + m) * 14 })).sort((a, b) => a.k - b.k);
+            let tried = 0;
             for (const { s } of order) {
                 if (total >= cfg.maxBuildings) break;
                 if (weightOn(mod, isVertical(s)) <= 0) continue;
                 if (place(s, mod)) break;
+                if (++tried % 4 === 0) yield;
             }
-        });
+            yield;
+        }
         /* 2. everything else, walking outwards from the hub. A spot takes the module it rolled; when that one does not fit (a wider yard against its neighbour, a junction) the
            next roll is tried, up to `tries` times, so a street fills up with no gaps */
         slots.sort((a, b) => a.i - b.i || hash(a, 3) - hash(b, 3));
         for (const s of slots) {
             if (total >= cfg.maxBuildings) break;
             if (hash(s, 5) >= cfg.density) continue;
+            yield;
             const vertical = isVertical(s);
             let pool = mods.filter((m) => (m.max === undefined || m.placed < m.max) && weightOn(m, vertical) > 0).map((m) => ({ m, w: weightOn(m, vertical) }));
             for (let attempt = 0; attempt < cfg.tries && pool.length > 0; attempt++) {
@@ -642,7 +697,7 @@ export class VillagePlanner {
             }
         }
         if (this.getElevation(originC, originR) !== (elev ?? plan.baseElev)) return false;
-        return this._isStructureFootprintValid(originC, originR, w, h);
+        return this._isStructureFootprintValid(originC, originR, w, h, plan.homeBiome);
     }
     /* A standing torch now and then beside the road (blueprint `streetTorches`). Same cell rules as the street dressing; planned first, so a torch
        takes its cell before any barrel or tuft of grass can. */
@@ -779,7 +834,8 @@ export class VillagePlanner {
         const own = cfg.biomes && cfg.biomes[biomeId];
         return own !== undefined ? own : (cfg.pool || []);
     }
-    _planTrees(plan, bp) {
+    _planTrees(plan, bp) { return drain(this._planTreesSteps(plan, bp)); }
+    *_planTreesSteps(plan, bp) {
         const tr = bp.trees;
         if (!tr || !tr.chance || (!tr.pool && !tr.biomes)) return;
         /* weighted pick lists per biome, built once */
@@ -831,6 +887,7 @@ export class VillagePlanner {
         const taken = new Uint8Array(W * H);
         let planted = 0;
         for (let r = y0; r <= y1 && planted < (tr.max ?? 200); r++) {
+            yield;
             for (let c = x0; c <= x1 && planted < (tr.max ?? 200); c++) {
                 const i = (r - y0) * W + (c - x0);
                 const d = dRoad[i];
@@ -866,6 +923,9 @@ export class VillagePlanner {
                     }
                 }
                 if (!ok || !this.isFootprintValid(c, r, w, h)) continue;
+                /* isFootprintValid does not judge the anchor cell itself: keep the trunk off the ground under a cliff face, and the crown (drawn above the
+                   footprint) off the rock face of higher ground just above or beside it */
+                if (this.isBlockedByFace(c, r) || this.isCliffFace(c, r) || this._higherNear(c, r, w, h, this.getElevation(c, r))) continue;
                 /* reserve the footprint and a ring round it, so trees never touch */
                 for (let y = -1; y <= h; y++) {
                     for (let x = -1; x <= w; x++) {
@@ -929,7 +989,8 @@ export class VillagePlanner {
         }
         return false;
     }
-    _paveRoads(plan) {
+    _paveRoads(plan) { return drain(this._paveRoadsSteps(plan)); }
+    *_paveRoadsSteps(plan) {
         const cfg = plan.cfg;
         const overrides = gameState.world.terrainOverrides;
         const centreSet = new Set();
@@ -978,7 +1039,9 @@ export class VillagePlanner {
         /* a street on a cliff level is dirt only to the eye (a dirt TILE there would be a pit); on the low ground it is a dirt tile, except where that would
            pull a cliff down (_wouldClip: those cells stay grass, so the stair and the cliff beside the street keep their shape) */
         let levelPaths = false;
+        let n = 0;
         for (const key of roadKeys) {
+            if (++n % 24 === 0) yield;
             const [c, r] = key.split(',').map(Number);
             const paved = !worn.has(key);
             if (paved) {

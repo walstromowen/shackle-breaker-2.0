@@ -3,19 +3,26 @@ import { events } from '../../../../shared/core/eventBus.js';
 import { gameState } from '../../../../shared/core/gameState.js';
 import { TurnManager } from '../../../../shared/battle/turnManager.js';
 import { PHASE, TURN_TYPES } from '../../../../shared/battle/battleConstants.js';
-import { createBattleState, applyRoundEndRecovery, commitBattleResults, registerStatusApplication } from '../../../../shared/battle/battleState.js';
+import { createBattleState, applyRoundEndRecovery, commitBattleResults, registerStatusApplication, noEscapeMessage } from '../../../../shared/battle/battleState.js';
 import { queueOpeningSequence, queueSwap, queueVictory, queueDefeat, sortTurnQueue } from '../../../../shared/battle/battleQueue.js';
 import { queueEnemyActions } from '../../../../shared/battle/enemyAI.js';
 import { InventorySystem } from '../../../../shared/items/inventorySystem.js';
 import { QuestSystem } from '../../../../shared/story/questSystem.js';
 import { BaseController } from '../../engine/baseController.js';
 import { TargetSelection } from './targetSelection.js';
+import { seedRandom, unseedRandom } from '../../../../shared/core/random.js';
+import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
+
+/* A shared multiplayer fight (a duel, or a party of several players): every player's browser plays the same battle from the same seed
+   (shared/core/random.js). Each player picks for their own characters only; the others' picks arrive as messages (MP_BATTLE_DECISION),
+   and the round plays out once every pick is in. The lead browser sends the true health of everyone at each round's start (MP_BATTLE_SYNC),
+   so a slip anywhere is put right. */
+const WAIT_REMOTE = 'WAIT_REMOTE';
 
 // The battle's own keys, on top of the shared ones (arrows / WASD, Enter / Space, Esc / Backspace / Tab)
 const BATTLE_KEYS = {
     'KeyP': 'SWAP',
     'KeyI': 'SUMMARY',
-    'KeyC': 'DEBUG',
     'ShiftLeft': 'TOGGLE_DETAILS', 'ShiftRight': 'TOGGLE_DETAILS',
     'KeyH': 'TOGGLE_DETAILS'
 };
@@ -40,6 +47,9 @@ export class BattleController extends BaseController {
         QuestSystem.init();
         this.lastHoveredHitboxId = null;
 
+        events.on('MP_BATTLE_DECISION', (d) => this._onRemoteDecision(d));
+        events.on('MP_BATTLE_SYNC', (d) => this._onRemoteSync(d));
+
         // Statuses announce themselves on the event bus (combatantModel.js); the ledger keeps them for the trait checks after a win
         events.on('ON_STATUS_APPLIED', (data) => {
             // Make sure we are currently in a battle with a ledger before recording
@@ -50,7 +60,12 @@ export class BattleController extends BaseController {
     }
 
     start(enemies, context = {}) {
+        if (context.mp) seedRandom(context.mp.seed); else unseedRandom();
         this.state = createBattleState(enemies, context);
+        this._mySwaps = [];   // a shared fight: my swaps this round, held until every pick is in (_settleSwaps)
+        this._awaitReinforce = null;   // a shared fight: waiting for another player's pick of who steps in for their fallen fighter
+        this._reinforceIn = new Map(); // ... and those picks as they come (one can come before this screen gets there)
+        if (context.mp) this._setupShared(context.mp);
 
         const preBattleActionsQueued = queueOpeningSequence(this.state);
 
@@ -143,13 +158,6 @@ export class BattleController extends BaseController {
 
         if (!this.state?.active || this.state.isPausedForUI) return;
 
-        if (intent === 'DEBUG') {
-            if (gameState.cheats !== true) return;   // the battle debugger is a cheat: only in a game created with Cheats on
-            console.log("Debug View Toggled!");
-            events.emit('TOGGLE_BATTLE_DEBUG');
-            return;
-        }
-
         const ignorePhases = [PHASE.INTRO, PHASE.RESOLVE, PHASE.VICTORY, PHASE.DEFEAT];
         if (ignorePhases.includes(this.state.phase)) return;
 
@@ -187,6 +195,11 @@ export class BattleController extends BaseController {
                 this.state.message = `${action.name} can't be used in battle!`;
                 return;
             }
+            if (this.state.noEscape && typeof action.isFlee === 'function' && action.isFlee()) {
+                this.playErrorSound();
+                this.state.message = noEscapeMessage(this.state);
+                return;
+            }
             if (!action.canPayCost(activeChar, InventorySystem)) {
                 this.playErrorSound();
                 this.state.message = `Not enough resources to use ${action.name}!`;
@@ -201,9 +214,37 @@ export class BattleController extends BaseController {
     }
 
     requestPartySwap(isForced = false, slotIndex = -1) {
+        const mp = this.state.mp;
+        if (!isForced && mp && mp.kind === 'duel') {   // a duel is fought with what is on the field
+            this.playErrorSound();
+            this.state.message = 'No swapping in a duel.';
+            return;
+        }
+        // a shared fight, a fighter has fallen: their owner picks who steps in; everyone else waits for that pick
+        if (isForced && mp) {
+            const fallen = this.state.activeParty[slotIndex];
+            const owner = fallen && fallen.netOwner;
+            if (owner !== mp.me) {
+                const key = `${slotIndex}:${fallen ? fallen.netId : ''}`;
+                this._awaitReinforce = { key, slotIndex, owner, t: 0 };
+                const here = multiplayerSocial.partyHere(mp.players);
+                if (!owner || !here.includes(owner)) { this._applyReinforce(null); return; }   // their owner has left: the first one standing
+                this.state.message = `Waiting for ${(mp.names || {})[owner] || 'your ally'} to choose who steps in…`;
+                const early = this._reinforceIn.get(key);
+                if (early) this._applyReinforce(early);
+                return;
+            }
+        }
         const activeIndices = this.state.activeParty
             .map(p => p ? this.state.partyRoster.indexOf(p) : -1)
             .filter(i => i !== -1);
+        // a shared fight: the reserves are the whole line-up (every player's characters); one another player (or I) already called in this
+        // round is taken
+        if (mp) {
+            const called = [...(this._mySwaps || []).map(x => x.d.replacement)];
+            for (const [key, d] of mp.decisions || []) if (key.startsWith(`${mp.round}:`) && d && d.kind === 'swap') called.push(d.replacement);
+            for (const id of called) { const i = this.state.partyRoster.indexOf(this.byNet.get(id)); if (i !== -1 && !activeIndices.includes(i)) activeIndices.push(i); }
+        }
 
         this.state.turnQueue.forEach(turn => {
             if (turn.type === TURN_TYPES.REINFORCEMENT && turn.team === 'party' && turn.replacement) {
@@ -219,6 +260,9 @@ export class BattleController extends BaseController {
         events.emit('REQUEST_PARTY_SWAP', { 
             mode: 'BATTLE_SELECT', 
             activeIndices: activeIndices, 
+            // the cards are the fight's roster (in a shared fight: the line-up, with whose each character is)
+            members: this.state.partyRoster.map(c => c.originalEntity),
+            owners: mp ? this.state.partyRoster.map(c => (mp.names || {})[c.netOwner] || '') : null,
             callback: (selectedRosterIndex) => {
                 // ---> THE FIX: Guard against UI double-clicks! <---
                 // If it's already false, this callback has already been handled.
@@ -235,8 +279,34 @@ export class BattleController extends BaseController {
         });
     }
 
+    /** A shared fight: the pick of who steps into a fallen fighter's place came from its owner (null: nobody answered, the first one standing). */
+    _applyReinforce(d) {
+        const s = this.state, w = this._awaitReinforce;
+        if (!s || !w) return;
+        this._awaitReinforce = null;
+        const free = (c) => c && !c.isDead() && !s.activeParty.includes(c) && !s.turnQueue.some(t => t.replacement === c);
+        let replacement = d ? this.byNet.get(d.replacement) : null;
+        if (!free(replacement)) replacement = s.partyRoster.find(free) || null;
+        s.isPausedForUI = false;
+        if (replacement) this._executeSwap(s.partyRoster.indexOf(replacement), true, w.slotIndex);
+    }
+
     _executeSwap(selectedRosterIndex, isForced, slotIndex) {
-        queueSwap(this.state, this.state.partyRoster[selectedRosterIndex], isForced, slotIndex);
+        const replacement = this.state.partyRoster[selectedRosterIndex];
+        // a shared fight: my pick for my fallen fighter's place goes to the others, who are waiting for it
+        if (this.state.mp && isForced) {
+            const fallen = this.state.activeParty[slotIndex];
+            multiplayerSocial.sendBattleDecision(this.state.mp, { round: this.state.mp.round, kind: 'reinforce', key: `${slotIndex}:${fallen ? fallen.netId : ''}`, replacement: replacement?.netId });
+        }
+        if (this.state.mp && !isForced) {
+            // a shared fight: sent, and kept until every pick is in, so every screen settles the swaps in the same order (_tryResolveShared)
+            const d = { round: this.state.mp.round, actor: this.state.activeParty[slotIndex]?.netId, kind: 'swap', replacement: replacement?.netId, slotIndex };
+            multiplayerSocial.sendBattleDecision(this.state.mp, d);
+            (this._mySwaps ||= []).push({ actor: this.state.activeParty[slotIndex], d });
+            this._advancePartyTurn();
+            return;
+        }
+        queueSwap(this.state, replacement, isForced, slotIndex);
         if (!isForced) this._advancePartyTurn();
     }
 
@@ -246,6 +316,13 @@ export class BattleController extends BaseController {
             return;
         }
         this.state.turnQueue.push({ actor: activeChar, action: this.state.selectedAction, target: primaryTarget });
+        if (this.state.mp) {
+            const action = this.state.selectedAction;
+            multiplayerSocial.sendBattleDecision(this.state.mp, {
+                round: this.state.mp.round, actor: activeChar.netId, kind: 'act', ability: action.id,
+                item: action.isItemAction && action.cost ? action.cost.item : null, target: this._encodeTarget(primaryTarget)
+            });
+        }
         this._advancePartyTurn();
     }
 
@@ -254,13 +331,15 @@ export class BattleController extends BaseController {
             this.state.activePartyIndex++;
         } while (
             this.state.activePartyIndex < this.state.activeParty.length &&
-            (!this.state.activeParty[this.state.activePartyIndex] || this.state.activeParty[this.state.activePartyIndex].isDead())
+            (!this.state.activeParty[this.state.activePartyIndex] || this.state.activeParty[this.state.activePartyIndex].isDead() || !this._isMine(this.state.activeParty[this.state.activePartyIndex]))
         );
 
         if (this.state.activePartyIndex < this.state.activeParty.length) {
             this.state.phase = PHASE.SELECT_ACTION;
             this.state.menuIndex = 0;
             this.state.selectedAction = null;
+        } else if (this.state.mp) {
+            this._waitForOthers();
         } else {
             queueEnemyActions(this.state);
             sortTurnQueue(this.state);
@@ -271,6 +350,14 @@ export class BattleController extends BaseController {
     }
 
     update(dt) {
+        // a shared fight waiting on another player's pick of who steps into a fallen fighter's place: if they leave the world before
+        // answering, the first one standing steps in by itself (every screen sees them go, so every screen does the same)
+        if (this._awaitReinforce && this.state?.active) {
+            const w = this._awaitReinforce;
+            w.t += dt;
+            if (w.t >= 1) { w.t = 0; if (!multiplayerSocial.partyHere(this.state.mp.players).includes(w.owner)) this._applyReinforce(null); }
+            return;
+        }
         if (!this.state?.active || this.state.isPausedForUI) return;
 
         this.state.timer = this.timer;
@@ -310,13 +397,19 @@ export class BattleController extends BaseController {
         this.timer = 0;
         this.state.showAbilityDetails = true;
 
+        if (this.state.mp) this._beginSharedRound();
+
         while (
             this.state.activePartyIndex < this.state.activeParty.length &&
-            (!this.state.activeParty[this.state.activePartyIndex] || this.state.activeParty[this.state.activePartyIndex].isDead())
+            (!this.state.activeParty[this.state.activePartyIndex] || this.state.activeParty[this.state.activePartyIndex].isDead() || !this._isMine(this.state.activeParty[this.state.activePartyIndex]))
         ) {
             this.state.activePartyIndex++;
         }
 
+        if (this.state.activePartyIndex >= this.state.activeParty.length && this.state.mp) {
+            this._waitForOthers();
+            return;
+        }
         if (this.state.activePartyIndex >= this.state.activeParty.length) {
             queueEnemyActions(this.state);
             sortTurnQueue(this.state);
@@ -355,7 +448,150 @@ export class BattleController extends BaseController {
     endBattle() {
         const victory = commitBattleResults(this.state);
         this.state.active = false;
-        events.emit('BATTLE_ENDED', { victory, fled: !!this.state.fled });
+        const mp = this.state.mp;
+        unseedRandom();
+        events.emit('BATTLE_ENDED', { victory, fled: !!this.state.fled, mp: mp ? { kind: mp.kind, bid: mp.bid, opponent: mp.opponent || null } : null });
+    }
+
+    // ================================================================ SHARED (MULTIPLAYER) FIGHTS
+    _setupShared(mp) {
+        const s = this.state;
+        s.mp = { ...mp, round: 0, decisions: new Map(), syncs: new Map() };
+        const tag = (c, meta) => { if (c && meta) { c.netId = meta.netId; c.netOwner = meta.owner || null; c.isPlayerCharacter = !!meta.owner; } };
+        s.partyRoster.forEach((c, i) => tag(c, mp.partyMeta[i]));
+        s.enemyRoster.forEach((c, i) => tag(c, (mp.enemyMeta || [])[i]));
+        this.byNet = new Map([...s.partyRoster, ...s.enemyRoster].filter(c => c.netId).map(c => [c.netId, c]));
+        multiplayerSocial.battleState = () => this.state;   // a look at the shared fight (the debug overlay, tests)
+        for (const d of mp.early || []) this._onRemoteDecision(d);   // picks that arrived before this screen was ready
+    }
+
+    _isMine(c) { return !this.state.mp || !c || c.netOwner === this.state.mp.me; }
+
+    /** The combatants whose picks come from other players this round: their characters on the field who can still act. */
+    _othersToWaitFor() {
+        const s = this.state;
+        const field = s.mp.kind === 'duel' ? [...s.activeParty, ...s.activeEnemies] : s.activeParty;
+        return field.filter(c => c && !c.isDead() && c.netOwner && c.netOwner !== s.mp.me);
+    }
+
+    _beginSharedRound() {
+        const s = this.state;
+        s.mp.round++;
+        if (s.mp.authority === s.mp.me) {
+            const vitals = {};
+            for (const c of this.byNet.values()) vitals[c.netId] = [c.hp, c.stamina, c.insight];
+            multiplayerSocial.sendBattleSync(s.mp, { round: s.mp.round, vitals });
+        } else if (s.mp.syncs.has(s.mp.round)) {
+            this._applySync(s.mp.syncs.get(s.mp.round));
+        }
+    }
+
+    _waitForOthers() {
+        this.state.phase = WAIT_REMOTE;
+        this.state.selectedAction = null;
+        this._tryResolveShared();
+    }
+
+    _tryResolveShared() {
+        const s = this.state;
+        if (!s || !s.mp || s.phase !== WAIT_REMOTE) return;
+        const others = this._othersToWaitFor();
+        const missing = others.filter(c => !s.mp.decisions.has(`${s.mp.round}:${c.netId}`));
+        if (missing.length) {
+            const names = [...new Set(missing.map(c => (s.mp.names || {})[c.netOwner] || 'the other player'))];
+            s.message = `Waiting for ${names.join(' and ')} to choose ${missing.length > 1 ? 'their actions' : 'an action'}…`;
+            return;
+        }
+        // every pick is in: the same order on every screen (sortTurnQueue settles ties by network id)
+        const swaps = this._mySwaps || [];
+        this._mySwaps = [];
+        for (const c of others.sort((a, b) => (a.netId < b.netId ? -1 : 1))) {
+            const d = s.mp.decisions.get(`${s.mp.round}:${c.netId}`);
+            if (d && d.kind === 'swap') swaps.push({ actor: c, d }); else this._applyDecision(c, d);
+        }
+        this._settleSwaps(swaps);
+        if (s.mp.kind !== 'duel') queueEnemyActions(s);
+        sortTurnQueue(s);
+        s.phase = PHASE.RESOLVE;
+        s.message = "Turns Processing...";
+        this.timer = 0;
+    }
+
+    /* The round's swaps, mine and the others', in network-id order on every screen: a reserve two players both called in goes to the first,
+       and the second stays on the field (the line-up is everyone's, so anyone can bring in anyone's character; its owner plays it). */
+    _settleSwaps(swaps) {
+        const s = this.state;
+        const taken = new Set(s.activeParty.filter(Boolean));
+        for (const { actor, d } of swaps.sort((a, b) => (a.d.actor < b.d.actor ? -1 : 1))) {
+            const replacement = this.byNet.get(d.replacement);
+            const slot = s.activeParty.indexOf(actor);
+            if (!replacement || replacement.isDead() || taken.has(replacement) || slot === -1) {
+                if (actor) s.turnQueue.push({ type: TURN_TYPES.MESSAGE_STATUS, message: `${actor.name} holds the line: ${replacement ? replacement.name : 'that fighter'} cannot step in.`, speedOverride: actor.stats?.speed ?? 10 });
+                continue;
+            }
+            taken.add(replacement);
+            queueSwap(s, replacement, false, slot);
+        }
+    }
+
+    _applyDecision(actor, d) {
+        const s = this.state;
+        if (!actor || !d) return;
+        if (d.kind === 'swap') {
+            const replacement = this.byNet.get(d.replacement);
+            if (replacement && !replacement.isDead()) queueSwap(s, replacement, false, d.slotIndex);
+            return;
+        }
+        let action = actor.abilities.find(a => a.id === d.ability) || null;
+        if (!action && d.ability) {
+            [action] = AbilityFactory.createAbilities([d.ability]);
+            if (action && d.item) { action.cost = { item: d.item, amount: 1 }; action.isItemAction = true; }
+        }
+        if (!action) return;
+        s.turnQueue.push({ actor, action, target: this._decodeTarget(d.target, actor) });
+    }
+
+    _encodeTarget(t) {
+        if (t === 'ALL') return 'ALL';
+        if (Array.isArray(t)) return t.map(x => (x && x.netId) || null);
+        return t && t.netId ? t.netId : null;
+    }
+
+    _decodeTarget(t, actor) {
+        if (t === 'ALL') return 'ALL';
+        if (Array.isArray(t)) return t.map(id => this.byNet.get(id)).filter(Boolean);
+        return this.byNet.get(t) || actor;
+    }
+
+    _onRemoteDecision(d) {
+        const s = this.state;
+        if (!s || !s.mp || !d || d.bid !== s.mp.bid) return;
+        if (d.kind === 'reinforce') {   // another player's pick of who steps into their fallen fighter's place
+            this._reinforceIn.set(d.key, d);
+            if (this._awaitReinforce && this._awaitReinforce.key === d.key) this._applyReinforce(d);
+            return;
+        }
+        s.mp.decisions.set(`${d.round}:${d.actor}`, d);
+        this._tryResolveShared();
+    }
+
+    /* The lead browser's health totals for the start of a round: put in at that round's start here (never in the middle of a round
+       that is still playing out, which would count its blows twice). */
+    _onRemoteSync(d) {
+        const s = this.state;
+        if (!s || !s.mp || !d || d.bid !== s.mp.bid || s.mp.authority === s.mp.me) return;
+        if (d.round === s.mp.round && s.phase !== PHASE.RESOLVE && s.phase !== PHASE.INTRO) this._applySync(d);
+        else if (d.round > s.mp.round) s.mp.syncs.set(d.round, d);
+    }
+
+    _applySync(d) {
+        for (const [netId, v] of Object.entries(d.vitals || {})) {
+            const c = this.byNet.get(netId);
+            if (!c || !Array.isArray(v)) continue;
+            if (c.isDead() !== (v[0] <= 0)) continue;   // never raise or fell anyone by a correction
+            const e = c.originalEntity;   // a combatant's health is its character's
+            e.hp = v[0]; e.stamina = v[1]; e.insight = v[2];
+        }
     }
 
     _openCharacterSummary() {
@@ -396,4 +632,4 @@ export class BattleController extends BaseController {
             onLayoutUpdate: (hitboxes) => this.updateHitboxes(hitboxes)
         };
     }
-}
+}

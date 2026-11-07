@@ -1,3 +1,5 @@
+/* A locked chest. The key always works; each other way in is open at only some chests (offerChance: 20% each, rolled once for each chest and
+   remembered, so a chest you leave and come back to offers the same choices). */
 export const treasureChest = {
     id: "treasure_chest",
     title: "Treasure Chest",
@@ -28,6 +30,7 @@ export const treasureChest = {
                 },
                 {
                     text: "[STR] Pry the chest open by force.",
+                    offerChance: 0.2,   // not every chest can be opened this way (rolled once per chest, see EncounterController._isOffered)
                     type: "skill_check",
                     attribute: "strength",
                     threshold: 12,
@@ -53,6 +56,7 @@ export const treasureChest = {
                 },
                 {
                     text: "[DEX] Pick the lock.",
+                    offerChance: 0.2,   // not every chest can be opened this way (rolled once per chest, see EncounterController._isOffered)
                     type: "skill_check",
                     attribute: "dexterity",
                     threshold: 12,
@@ -78,6 +82,7 @@ export const treasureChest = {
                 },
                 {
                     text: "[INT] Unlock with a spell.",
+                    offerChance: 0.2,   // not every chest can be opened this way (rolled once per chest, see EncounterController._isOffered)
                     corruption: 2,   // magic used or a cruel act: corruption goes up
                     type: "skill_check",
                     attribute: "intelligence",
@@ -105,6 +110,7 @@ export const treasureChest = {
                 },
                 {
                     text: "[ATN] Search the area for a hidden key.",
+                    offerChance: 0.2,   // not every chest can be opened this way (rolled once per chest, see EncounterController._isOffered)
                     type: "skill_check",
                     attribute: "attunement",
                     threshold: 12,
@@ -173,7 +179,6 @@ export const treasureChest = {
                             weight: 100,
                             results: [
                                 { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "biome_default", rolls: 2, exclude: "low_tier" } },
-                                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
@@ -227,8 +232,9 @@ export const treasureChest = {
                         {
                             weight: 100,
                             results: [
-                                { type: "MODIFY_VITALS", payload: { hp: -25, damageType: "fire", target: "active_character" } },
-                                { type: "APPLY_STATUS_EFFECT", payload: { effectId: "burn", charges: 3, target: "active_character" } },
+                                // party: 'all' -- in a party of players the blast catches everyone standing round the chest
+                                { type: "MODIFY_VITALS", payload: { hp: -25, damageType: "fire", target: "active_character", party: "all" } },
+                                { type: "APPLY_STATUS_EFFECT", payload: { effectId: "burn", charges: 3, target: "active_character", party: "all" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
@@ -251,9 +257,8 @@ export const treasureChest = {
                         {
                             weight: 100,
                             results: [
-                                { type: "APPLY_STATUS_EFFECT", payload: { effectId: "poison", charges: 3, target: "active_character" } },
+                                { type: "APPLY_STATUS_EFFECT", payload: { effectId: "poison", charges: 3, target: "active_character", party: "all" } },   // the cloud reaches everyone
                                 { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "biome_default", rolls: 2, exclude: "low_tier" } },
-                                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]

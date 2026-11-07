@@ -411,17 +411,13 @@ test('every enemy of the shackled faction is born at 100% corruption, as a stat 
     assert.equal(CorruptionSystem.cleanseNatural(plain), false);
 });
 
-test('the act 2 story explains corruption (the gauge stage) before the milestone is granted', () => {
+test('the act 2 story is short and leaves corruption for the player to find out: no stage names it or explains it', () => {
     const stages = encounterDefinitions.act_two.stages;
-    // a long beat is told over several short stages: gauge, gauge_2, gauge_3...
-    const beat = (id) => { const ids = [id]; while (stages[`${id}_${ids.length + 1}`]) ids.push(`${id}_${ids.length + 1}`); return ids; };
-    const text = (id) => beat(id).map(s => stages[s].text).join(' ');
-    const last = (id) => beat(id).at(-1);
-    assert.ok(stages.gauge, 'there is a stage that names it');
-    assert.match(text('gauge'), /Corruption/);
-    const next = (id) => stages[id].decisions.flatMap(d => d.outcomes.flatMap(o => o.results.map(r => r.payload?.stageId)));
-    assert.ok(next(last('you')).every(s => s === 'gauge'), 'what you carry leads into it');
-    assert.ok(next(last('gauge')).every(s => s === 'iron'), 'and on into the iron');
+    assert.ok(Object.keys(stages).length <= 5, 'a few short stages');
+    for (const [id, s] of Object.entries(stages)) {
+        assert.doesNotMatch(s.text, /corruption/i, `${id} does not name it`);
+        assert.ok(s.text.length <= 220, `${id}: short`);
+    }
 });
 
 test('the cursed portrait is used for exactly the shackled, and every portrait screen draws it', () => {
@@ -457,4 +453,54 @@ test('nothing is met by chance except in the caves; on the plains only the Shack
     } finally { Math.random = real; }
     // it comes up as often as it did when it shared the pool with the two old encounters: 0.005 x 80 / (80 + 40)
     assert.ok(Math.abs(BIOME_DEFINITIONS.PLAINS.encounters.rate - 0.005 * 80 / 120) < 0.0001);
+});
+
+test('in a party of players any player\'s shackled companion can turn, and is rebuilt as the enemy without touching this party', () => {
+    const lead = hero('Lead');
+    gameState.party.members = [lead];
+    const theirs = hero('Theirs');
+    CorruptionSystem.change(theirs, 100);
+    const saved = { ...theirs.state, name: theirs.name };
+    CorruptionSystem.groupParties = () => [{ owner: 'p2', members: [{ name: 'Mate', hp: 10 }, saved] }];
+    try {
+        assert.deepEqual(CorruptionSystem.pickAnyBetrayer(), { owner: 'p2', idx: 1, name: theirs.name });
+        lead.hp = 0;
+        assert.deepEqual(CorruptionSystem.pickAnyBetrayer(), { owner: 'p2', idx: 1, name: theirs.name }, 'their other companion still stands to fight');
+        CorruptionSystem.groupParties = () => [{ owner: 'p2', members: [saved] }];
+        assert.equal(CorruptionSystem.pickAnyBetrayer(), null, 'nobody unshackled left standing in the whole group');
+        lead.hp = lead.maxHp;
+        const foe = CorruptionSystem.turnFoe(theirs);
+        assert.equal(foe.shackled, false);
+        assert.equal(foe.hp, foe.maxHp);
+        assert.deepEqual(gameState.party.members, [lead], 'this player\'s party is untouched');
+    } finally { CorruptionSystem.groupParties = null; }
+});
+
+test('a shared encounter: what happens to the active character happens on its owner\'s screen, what happens to the entire party on every screen', () => {
+    const lead = hero('Lead');
+    const second = hero('Second');
+    gameState.party.members = [lead, second];
+    const model = { context: {} };
+    const corr = (c) => CorruptionSystem.valueOf(c);
+    const run = (results) => quiet(() => EncounterLogic.resolveResults(results, model, null));
+    try {
+        // the active character is another player's: my screen leaves their wounds alone (theirs applies them)
+        EncounterLogic.shared = { players: ['me', 'p2'], me: 'me', isLeader: true, roller: null, active: { owner: 'p2', idx: 0, entity: hero('Theirs') } };
+        const before = corr(lead);
+        run([{ type: 'MODIFY_CORRUPTION', payload: { amount: 7, target: 'active_character' } }]);
+        assert.equal(corr(lead), before, 'not my character, not my result');
+        assert.equal(EncounterLogic.activeMember(), null);
+        assert.equal(EncounterLogic.rollerEntity().name, 'Theirs', 'but it is who every screen shows and rolls for');
+        // my second character steps forward: their results are mine, even though I am not the leader
+        EncounterLogic.shared = { players: ['p2', 'me'], me: 'me', isLeader: false, roller: null, active: { owner: 'me', idx: 1, entity: second } };
+        const s0 = corr(second), l0 = corr(lead);
+        run([{ type: 'MODIFY_CORRUPTION', payload: { amount: 7, target: 'active_character' } }]);
+        assert.equal(corr(second), s0 + 7, 'my active character');
+        assert.equal(corr(lead), l0, 'and only them');
+        // XP for the whole party reaches a member's party too (it used to be the leader's alone)
+        const xp0 = second.xp || second.state?.xp || 0;
+        const r = run([{ type: 'AWARD_XP', payload: { amount: 5, exact: true, target: 'entire_party' } }]);
+        assert.ok((second.xp || second.state?.xp || 0) > xp0 || second.level > 1, 'a party member\'s party gets the XP');
+        assert.ok(r);
+    } finally { EncounterLogic.shared = null; }
 });

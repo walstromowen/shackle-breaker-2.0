@@ -62,12 +62,14 @@ test('the choice is saved and loaded with the game; old saves have cheats off', 
     assert.equal(gameState.cheats, false, 'a save from before the toggle has no cheats');
 });
 
-test('"/" only opens the console in a game with cheats on', () => {
+test('"/" opens the console in a game with cheats on (or as the chat in a multiplayer world), and commands still need cheats', () => {
     const src = read('frontend/src/engine/sceneManager.js');
     const line = src.split('\n').find(l => /e\.code === 'Slash'/.test(l));
     assert.ok(line, 'the "/" handler exists');
     assert.ok(/gameState\.cheats === true/.test(line), 'and it checks the game\'s cheats flag');
+    assert.ok(/multiplayerSession\.active/.test(line), 'or a multiplayer world (chat)');
     assert.ok(/this\.devConsole/.test(line));
+    assert.ok(/allowCommands: \(\) => gameState\.cheats === true/.test(src), 'a command needs cheats even when the box is open for chat');
 });
 
 test('the creator screen draws the Cheats row only when the console is available', () => {
@@ -75,14 +77,14 @@ test('the creator screen draws the Cheats row only when the console is available
     assert.ok(/'cheats'/.test(src) && /data\.CHEATS/.test(src));
 });
 
-test('the battle debugger (C in a battle) and the map debug key ("`") are cheats too', () => {
-    const bc = read('frontend/src/screens/battle/battleController.js');
-    assert.ok(/if \(intent === 'DEBUG'\) \{\s*if \(gameState\.cheats !== true\) return;/.test(bc), 'C does nothing without cheats');
-    const br = read('frontend/src/screens/battle/battleRenderer.js');
-    assert.ok(/this\.showDebug = gameState\.cheats === true && !this\.showDebug/.test(br), 'the toggle event cannot switch it on either');
-    assert.ok(/if \(this\.showDebug && gameState\.cheats === true\)/.test(br), 'and it is not drawn');
+test('"~" shows the debug overlay in every game, but its battle debugger only with cheats', () => {
     const sm = read('frontend/src/engine/sceneManager.js');
-    assert.ok(/e\.code === 'Backquote' && gameState\.cheats === true/.test(sm));
+    assert.ok(/e\.code === 'Backquote' && !e\.repeat/.test(sm), '"~" toggles the overlay on any screen');
+    assert.ok(/debugOverlay\.toggle\(\)/.test(sm));
+    const br = read('frontend/src/screens/battle/battleRenderer.js');
+    assert.ok(/if \(debugOverlay\.visible && gameState\.cheats === true\)/.test(br), 'the battle debugger is only drawn in a game with Cheats on');
+    const bc = read('frontend/src/screens/battle/battleController.js');
+    assert.ok(!/'KeyC': 'DEBUG'/.test(bc), 'C no longer opens it: "~" does');
 });
 
 test('the creator draws the Cheats row, with its own label and description', () => {

@@ -55,6 +55,7 @@ export class StatusEffectModel {
         this.maxStacks = definition.maxStacks || 1;
         this.inflictor = inflictor;
         this.stacks = 1;
+        this.turnsActive = 0;   // how many turn ends it has ticked through (an effect's `growth` makes it worse with every one)
     }
 
     addStack() {
@@ -83,6 +84,7 @@ export class StatusEffectModel {
         
         if (eventName === 'ON_TURN_END') {
             this.consumeCharge();
+            this.turnsActive++;
         }
         
         this.effects.forEach(effect => {
@@ -120,9 +122,32 @@ export class StatusEffectModel {
                     // at least 1. Poison and bleed use it, so they hurt a big pool and a small one by the same proportion.
                     const max = target['max' + effect.modify.charAt(0).toUpperCase() + effect.modify.slice(1)] || 0;
                     amount = -Math.max(1, Math.floor(max * effect.percentMax * this.stacks));
+                } else if (effect.healPercentMax !== undefined) {
+                    // `healPercentMax: 0.06` -- HEALS a share of the MAX of the resource `modify` names, per stack, at least 1 (Blessed). percentMax is the hurting kind.
+                    const max = target['max' + effect.modify.charAt(0).toUpperCase() + effect.modify.slice(1)] || 0;
+                    amount = Math.max(1, Math.floor(max * effect.healPercentMax * this.stacks));
                 } else if (effect.percentMaxHp !== undefined) {
                     // NEW: `percentMaxHp: 0.2` -- a share of the max HP of whoever `modify` hits (at least 1), whatever the hit that set it off did (the bear trap)
                     amount = -Math.max(1, Math.floor((target.maxHp || 0) * effect.percentMaxHp));
+                }
+
+                // NEW: `growth: 0.5` -- the longer it lasts the worse it gets: +50% of the first tick for every turn it has already ticked (bleed)
+                if (effect.growth && amount < 0 && eventName === 'ON_TURN_END') {
+                    amount = -Math.max(1, Math.floor(-amount * (1 + effect.growth * Math.max(0, this.turnsActive - 1))));
+                }
+
+                // NEW: `overflow: { modify: 'hp', battleMessage }` -- what the holder no longer has to lose comes out of another resource instead, as the same
+                // share of ITS max (a bleed that finds no stamina left takes HP: 12% of max stamina wanted, 4% there, 8% of max HP taken)
+                let overflow = 0;
+                if (effect.overflow && amount < 0) {
+                    const have = Math.max(0, Math.floor(target[effect.modify] || 0));
+                    const unpaid = -amount - have;
+                    if (unpaid > 0) {
+                        const cap = (r) => target['max' + r.charAt(0).toUpperCase() + r.slice(1)] || 0;
+                        const fromMax = cap(effect.modify) || 1;
+                        overflow = Math.max(1, Math.floor(unpaid / fromMax * cap(effect.overflow.modify) * (effect.overflow.ratio ?? 1)));
+                        amount = -have;
+                    }
                 }
                 
                 if (amount !== 0) {
@@ -135,6 +160,12 @@ export class StatusEffectModel {
                         .replace(/{resource}/g, effect.modify.toUpperCase())
                         .replace(/{status}/g, this.name);
                     result.messages.push(finalMessage);
+                }
+                if (overflow > 0) {
+                    target.modifyResource(effect.overflow.modify, -overflow);
+                    result.messages.push((effect.overflow.battleMessage || "{target} loses {amount} {resource} from {status}!")
+                        .replace(/{target}/g, target.name).replace(/{amount}/g, overflow)
+                        .replace(/{resource}/g, effect.overflow.modify.toUpperCase()).replace(/{status}/g, this.name));
                 }
                 
                 if (effect.consumeCharge) {

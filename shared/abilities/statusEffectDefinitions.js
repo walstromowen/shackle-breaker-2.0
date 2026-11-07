@@ -8,8 +8,8 @@ export const StatusEffectDefinitions = {
         maxStacks: 1,
         persistAfterCombat: true,
         effects: [
-            // 8% of max HP every turn (at least 1), whoever it is on
-            { trigger: 'ON_TURN_END', modify: 'hp', percentMax: 0.08, damageType: 'dark', battleMessage: "{target} suffers {amount} poison damage!" }
+            // 10% of max HP every turn (at least 1), whoever it is on
+            { trigger: 'ON_TURN_END', modify: 'hp', percentMax: 0.10, damageType: 'dark', battleMessage: "{target} suffers {amount} poison damage!" }
         ],
     },
     bleed: {
@@ -17,14 +17,15 @@ export const StatusEffectDefinitions = {
         name: 'Bleed',
         animationId: "bleed",
         icon: { col: 1, row: 0 },
-        defaultCharges: 3,
+        defaultCharges: 4,
         maxStacks: 2,            // every new cut makes it worse (value, drain and the penalties below all scale with the stacks)
         persistAfterCombat: true,
-        /* Bleeding is a slow wound, gentler than poison on purpose: each turn it takes a little HP (3% of max HP per stack, so 6% at the most, where poison takes 8%)
-           and a little stamina (4% of max stamina per stack), keeps the body from recovering between rounds, and a body that is already cut is easier to cut again. */
+        /* Bleeding gets worse the longer it is left: it drains stamina, 6% of max stamina per stack on the first turn and half as much again every turn after
+           (6%, 9%, 12%, 15%), and once there is no stamina left to drain it bleeds HP instead (the same share of max HP as the stamina it could not take).
+           It also keeps the body from recovering between rounds, and a body that is already cut is easier to cut again. A bandage stops it. */
         effects: [
-            { trigger: 'ON_TURN_END', modify: 'hp', percentMax: 0.03, damageType: 'slash', battleMessage: "{target} bleeds for {amount} damage!" },
-            { trigger: 'ON_TURN_END', modify: 'stamina', percentMax: 0.04, damageType: 'slash', battleMessage: "{target} loses {amount} stamina from bleeding!" }
+            { trigger: 'ON_TURN_END', modify: 'stamina', percentMax: 0.06, growth: 0.5, damageType: 'slash', battleMessage: "{target} loses {amount} stamina from bleeding!",
+              overflow: { modify: 'hp', battleMessage: "{target} has no strength left and bleeds for {amount} damage!" } }
         ],
         modifiers: [
             { type: 'percent', target: 'hpRecovery', value: -0.33 },
@@ -204,15 +205,16 @@ export const StatusEffectDefinitions = {
             { type: 'percent', target: 'attack.arcane', value: 0.5 }
         ]
     },
+    /* Blessed (the Bless ability): heals 6% of max HP at the end of each of the holder's turns, for 5 turns. */
     blessed: {
         id: 'blessed',
         name: 'Blessed',
-        animationId: "blessed",
+        animationId: "bless",
         icon: { col: 2, row: 2 },
-        defaultCharges: 3,
+        defaultCharges: 5,
         maxStacks: 1,
         effects: [
-            { trigger: 'ON_TURN_END', modify: 'hp', percent: 0.05, battleMessage: "{target} is blessed and recovers {amount} HP!" }
+            { trigger: 'ON_TURN_END', modify: 'hp', healPercentMax: 0.06, battleMessage: "{target} is blessed and recovers {amount} HP!" }
         ]
     },
     enraged: {
@@ -300,6 +302,20 @@ export const StatusEffectDefinitions = {
         maxStacks: 1,
         modifiers: [
             { type: 'percent', target: 'evasion', value: 0.5 }
+        ]
+    },
+    // Left open after an all-out attack (Leaping Slash): physical defense is halved for a short while.
+    vulnerable: {
+        id: 'vulnerable',
+        name: 'Vulnerable',
+        animationId: "vulnerable",
+        icon: { col: 8, row: 2 },
+        defaultCharges: 2,
+        maxStacks: 1,
+        modifiers: [
+            { type: 'percent', target: 'defense.slash', value: -0.5 },
+            { type: 'percent', target: 'defense.blunt', value: -0.5 },
+            { type: 'percent', target: 'defense.pierce', value: -0.5 }
         ]
     },
     exposed: {

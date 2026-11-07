@@ -107,7 +107,7 @@ export const suspiciousMerchant = {
                     type: "open_shop",
                     shopId: "black_market_shop",
                     lootTableId: "plains",
-                    rolls: 3,
+                    rolls: 7,   // eight things in all on his cloak (the herb and seven picks from the table)
                     wares: [
                         { id: "healing_herb", price: 150 }
                     ]
@@ -146,7 +146,6 @@ export const suspiciousMerchant = {
                             weight: 100,
                             results: [
                                 { type: "MODIFY_CURRENCY", payload: { amount: 50 } },
-                                { type: "AWARD_XP", payload: { amount: 10, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },   // he takes the quiet and is gone: the bribe cannot be collected twice
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
@@ -230,7 +229,6 @@ export const suspiciousMerchant = {
                             weight: 100,
                             results: [
                                 { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "biome_default", rolls: 2 } },
-                                { type: "AWARD_XP", payload: { amount: 15, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]

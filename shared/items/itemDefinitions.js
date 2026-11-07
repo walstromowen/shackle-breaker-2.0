@@ -14,18 +14,6 @@ const perPhysType = (n) => ({ blunt: n, slash: n, pierce: n });
 
 export const ItemDefinitions = {
   // --- WEAPONS ---
-  "wooden_stick": {
-    id: "wooden_stick",
-    name: "Wooden Stick",
-    slot: "oneHand",
-    type: "weapon",
-    description: "A sturdy branch found on the forest floor.",
-    value: 25,
-    icon: { col: 11, row: 0 },
-    attack: { blunt: 3 },
-    grantedAbilities: ["strike"]
-    // No upgrade data: cannot be upgraded.
-  },
   "wooden_club": {
     id: "wooden_club",
     name: "Wooden Club",
@@ -34,15 +22,17 @@ export const ItemDefinitions = {
     description: "A thick length of hardwood, studded with iron nails at the head. It has no edge to dull and nothing to break, and it hits harder the more it is trusted.",
     value: 60,
     icon: { col: 11, row: 0 },
-    attack: { blunt: 4 },                // a step above the stick (3), below the two-handed warhammer (5)
+    attack: { blunt: 4 },                // below the two-handed warhammer (5)
+    requirements: { strength: 8, vigor: 6 },
+    requirementGrowth: { strength: 2, vigor: 2 },
     grantedAbilities: ["strike"],
     maxLevel: 5,
     statGrowth: {
       attack: { blunt: 1 }
     },
-    abilityUnlocks: {                    // a club teaches its bearer as it is upgraded
+    abilityUnlocks: {
       2: ["rally"],
-      3: ["reckless_charge"],
+      3: ["reckless_charge", "guard_break"],
       4: ["wild_swing"]
     },
     upgradeCosts: {
@@ -61,6 +51,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 0, row: 0 },
     attack: { pierce: 3, slash: 2 },
+    requirements: { dexterity: 10, intelligence: 6 },
+    requirementGrowth: { dexterity: 2, intelligence: 2 },
     grantedAbilities: ["slash", "quick_stab"],
     maxLevel: 5,
     statGrowth: {
@@ -68,7 +60,7 @@ export const ItemDefinitions = {
     },
     abilityUnlocks: {
       2: ["eviscerate"],
-      3: ["throw_poison_dagger"],
+      3: ["throw_poison_dagger", "low_sweep"]
     },
     upgradeCosts: {
       2: { currency: 50, materials: { "hard_wood": 5, "stone": 10, "soft_wood": 10, "plant_fibers": 15 } },
@@ -86,14 +78,16 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 1, row: 0 },
     attack: { pierce: 3, slash: 3 },
+    requirements: { strength: 8, dexterity: 8 },
+    requirementGrowth: { strength: 2, dexterity: 2 },
     grantedAbilities: ["slash", "thrust"],
     maxLevel: 5,
     statGrowth: {
       attack: { pierce: 2, slash: 2 }
     },
     abilityUnlocks: {
-      2: ["cleave"],
-      3: ["flurry"]
+      2: ["cleave", "low_sweep"],
+      3: ["flurry", "leaping_slash"]
     },
     upgradeCosts: {
       2: { currency: 50, materials: { "hard_wood": 5, "stone": 10, "soft_wood": 10, "plant_fibers": 15 } },
@@ -111,6 +105,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 2, row: 0 },
     attack: { blunt: 2, slash: 2 },   // a tool first: clearly behind the shortsword (3 / 3, +2 / +2 per level)
+    requirements: { strength: 10, dexterity: 6 },
+    requirementGrowth: { strength: 2, dexterity: 2 },
     grantedAbilities: ["slash", "strike"],
     harvestTool: ["axe"],
     maxLevel: 5,
@@ -119,7 +115,7 @@ export const ItemDefinitions = {
     },
     abilityUnlocks: {
       2: ["cleave"],
-      3: ["wild_swing"]
+      3: ["wild_swing", "leaping_slash"]
     },
     upgradeCosts: {
       2: { currency: 50, materials: { "hard_wood": 5, "stone": 10, "soft_wood": 10, "plant_fibers": 15 } },
@@ -137,7 +133,12 @@ export const ItemDefinitions = {
     value: 90,
     icon: { col: 13, row: 0 },            // PLACEHOLDER: unused cell on the weapon sheet; draw a pickaxe here
     attack: { pierce: 2, blunt: 1 },     // deliberately weak: handaxe is 3/3, dagger 3/2
+    requirements: { strength: 7, vigor: 6 },
+    requirementGrowth: { strength: 2, vigor: 1 },
     grantedAbilities: ["strike"],
+    abilityUnlocks: {
+      2: ["guard_break"]
+    },
     harvestTool: ["pickaxe"],            // objects that need it use interaction.tool: 'pickaxe'; it must be equipped
     maxLevel: 3,
     statGrowth: {
@@ -156,11 +157,13 @@ export const ItemDefinitions = {
     description: 'A standard shortbow. Common bow used to hunt game and defend against threats. "Sometimes its better to end a fight from afar before it begins." - Commander Mentoras.',
     value: 100,
     icon: { col: 5, row: 0 },
-    attack: { pierce: 4, slash: 3 },
+    attack: { pierce: 7, slash: 4 },
+    requirements: { dexterity: 10, attunement: 6 },
+    requirementGrowth: { dexterity: 2, attunement: 2 },
     grantedAbilities: ["loose_arrow", "quick_draw"],
     maxLevel: 5,
     statGrowth: {
-      attack: { pierce: 3, slash: 2 }
+      attack: { pierce: 4, slash: 2 }
     },
     abilityUnlocks: {
       2: ["poisoned_arrow"],
@@ -181,11 +184,13 @@ export const ItemDefinitions = {
     description: 'A standard crossbow. Standard issue crossbow of the Alterian watchmen. "A crossbow is the bow of a lazy man, and the weapon of an efficient adversary." - Commander Mentoras.',
     value: 100,
     icon: { col: 6, row: 0 },
-    attack: { pierce: 4, slash: 3 },
+    attack: { pierce: 8, slash: 3 },
+    requirements: { dexterity: 8, intelligence: 8 },
+    requirementGrowth: { dexterity: 2, intelligence: 2 },
     grantedAbilities: ["loose_arrow", "quick_draw"],
     maxLevel: 5,
     statGrowth: {
-      attack: { pierce: 3, slash: 2 }
+      attack: { pierce: 4, slash: 1 }
     },
     abilityUnlocks: {
       2: ["poisoned_arrow"],
@@ -206,7 +211,9 @@ export const ItemDefinitions = {
     description: 'A standard warhammer. Heavy and crushing.',
     value: 100,
     icon: { col: 3, row: 0 },
-    attack: { blunt: 6 },
+    attack: { blunt: 9 },
+    requirements: { strength: 12, vigor: 10 },
+    requirementGrowth: { strength: 3, vigor: 2 },
     grantedAbilities: ["strike", "cleave"],
     harvestTool: ["hammer"],
     maxLevel: 5,
@@ -214,7 +221,8 @@ export const ItemDefinitions = {
       attack: { blunt: 4 }
     },
     abilityUnlocks: {
-      2: ["wild_swing"]
+      2: ["wild_swing"],
+      3: ["guard_break"]
     },
     upgradeCosts: {
       2: { currency: 50, materials: { "hard_wood": 5, "stone": 10, "soft_wood": 10, "plant_fibers": 15 } },
@@ -232,13 +240,16 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 4, row: 0 },
     attack: { pierce: 5},
+    requirements: { dexterity: 9, strength: 8 },
+    requirementGrowth: { dexterity: 2, strength: 2 },
     grantedAbilities: ["thrust"],
     maxLevel: 5,
     statGrowth: {
       attack: { pierce: 2 }
     },
     abilityUnlocks: {
-      2: ["execute"]
+      2: ["execute", "low_sweep"],
+      3: ["leaping_slash"]
     },
     upgradeCosts: {
       2: { currency: 50, materials: { "hard_wood": 5, "stone": 10, "soft_wood": 10, "plant_fibers": 15 } },
@@ -255,7 +266,9 @@ export const ItemDefinitions = {
     description: 'A repurposed farming tool with a wickedly curved blade. Originally forged to reap grain in the fertile valleys of Altus, it now harvests a far more grim crop. "The arc of a scythe is absolute. Do not swing at a single foe; swing to clear the field." - Commander Mentoras.',
     value: 125,
     icon: { col: 8, row: 0 },
-    attack: { slash: 6, pierce: 1 },
+    attack: { slash: 8, pierce: 2 },
+    requirements: { strength: 10, attunement: 6 },
+    requirementGrowth: { strength: 2, attunement: 2 },
     grantedAbilities: ["slash"],
     harvestTool: ["sickle"],
     maxLevel: 5,
@@ -263,7 +276,8 @@ export const ItemDefinitions = {
       attack: { slash: 4, pierce: 1 }
     },
     abilityUnlocks: {
-      2: ["execute"]
+      2: ["execute"],
+      3: ["low_sweep", "whirlwind_slash"]
     },
     upgradeCosts: {
       2: { currency: 50, materials: { "hard_wood": 5, "stone": 10, "soft_wood": 10, "plant_fibers": 15 } },
@@ -280,15 +294,17 @@ export const ItemDefinitions = {
     description: 'A polearm tipped with a sweeping blade. Standard issue for vanguard elite units tasked with holding back swarms. "A spear thrusts to kill one; a glaive sweeps to remind an army why they fear the front line." - Commander Mentoras.',
     value: 150,
     icon: { col: 7, row: 0 },
-    attack: { slash: 5, pierce: 3 },
+    attack: { slash: 7, pierce: 4 },
+    requirements: { strength: 10, dexterity: 10 },
+    requirementGrowth: { strength: 2, dexterity: 2 },
     grantedAbilities: ["slash", "thrust"],
     maxLevel: 5,
     statGrowth: {
-      attack: { slash: 3, pierce: 2 }
+      attack: { slash: 4, pierce: 2 }
     },
     abilityUnlocks: {
-      2: ["cleave"],
-      3: ["execute"]
+      2: ["cleave", "whirlwind_slash"],
+      3: ["execute", "leaping_slash"]
     },
     upgradeCosts: {
       2: { currency: 50, materials: { "hard_wood": 5, "stone": 10, "soft_wood": 10, "plant_fibers": 15 } },
@@ -334,6 +350,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 0, row: 1 },
     attack: { fire: 5},
+    requirements: { attunement: 9, intelligence: 7 },
+    requirementGrowth: { attunement: 2, intelligence: 2 },
     grantedAbilities: ["fireball"],
     maxLevel: 5,
     statGrowth: {
@@ -358,6 +376,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 1, row: 1 },
     attack: { water: 5},
+    requirements: { attunement: 9, intelligence: 7 },
+    requirementGrowth: { attunement: 2, intelligence: 2 },
     grantedAbilities: ["water_blast"],
     maxLevel: 5,
     statGrowth: {
@@ -382,6 +402,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 2, row: 1 },
     attack: { earth: 5},
+    requirements: { attunement: 9, intelligence: 7 },
+    requirementGrowth: { attunement: 2, intelligence: 2 },
     grantedAbilities: ["vine_lash"],
     maxLevel: 5,
     statGrowth: {
@@ -408,6 +430,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 3, row: 1 },
     attack: { lightning: 5},
+    requirements: { attunement: 9, intelligence: 7 },
+    requirementGrowth: { attunement: 2, intelligence: 2 },
     grantedAbilities: ["shock"],
     maxLevel: 5,
     statGrowth: {
@@ -432,6 +456,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 4, row: 1 },
     attack: { ice: 5},
+    requirements: { attunement: 9, intelligence: 7 },
+    requirementGrowth: { attunement: 2, intelligence: 2 },
     grantedAbilities: ["ice_shard"],
     maxLevel: 5,
     statGrowth: {
@@ -456,6 +482,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 5, row: 1 },
     attack: { wind: 5},
+    requirements: { attunement: 9, intelligence: 7 },
+    requirementGrowth: { attunement: 2, intelligence: 2 },
     grantedAbilities: ["strike"],
     maxLevel: 5,
     statGrowth: {
@@ -477,6 +505,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 6, row: 1 },
     attack: { arcane: 5},
+    requirements: { intelligence: 10, attunement: 7 },
+    requirementGrowth: { intelligence: 2, attunement: 2 },
     grantedAbilities: ["arcane_dart"],
     maxLevel: 5,
     statGrowth: {
@@ -502,6 +532,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 7, row: 1 },
     attack: { light: 5},
+    requirements: { intelligence: 10, attunement: 7 },
+    requirementGrowth: { intelligence: 2, attunement: 2 },
     grantedAbilities: ["spite"],
     maxLevel: 5,
     statGrowth: {
@@ -527,6 +559,8 @@ export const ItemDefinitions = {
     value: 100,
     icon: { col: 8, row: 1 },
     attack: { dark: 5},
+    requirements: { intelligence: 10, attunement: 7 },
+    requirementGrowth: { intelligence: 2, attunement: 2 },
     grantedAbilities: ["spirit_reap"],
     maxLevel: 5,
     statGrowth: {
@@ -1183,7 +1217,7 @@ export const ItemDefinitions = {
     name: "Kurtus's Brew of Madness",
     type: "consumable",
     useAbility: "brew_of_madness",
-    description: "Smells like ozone and bad decisions. Sets HP to 1, fills Insight.",
+    description: "Smells like ozone and bad decisions. Drops you to 1 HP and leaves you Enraged: physical attack +50% for 3 turns.",
     icon: { col: 1, row: 1 },
     stackable: true
   },
@@ -1191,7 +1225,7 @@ export const ItemDefinitions = {
     id: "healing_tonic",
     name: "Healing Tonic",
     type: "consumable",
-    description: "A concentrated, alchemically distilled brew that restores a moderate amount of health much faster than raw herbs.",
+    description: "A concentrated, alchemically distilled brew: as much healing as five Healing Herbs in a single draught.",
     value: 60,
     icon: { col: 0, row: 1 },
     useAbility: "moderate_heal",

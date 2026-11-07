@@ -225,13 +225,50 @@ export const SpawnTableDefinitions = {
     },
 
     // ==========================================
+    // CATACOMBS (under the mysterious altar): the shackled dead, in numbers, and the spiders that nest among them. A few levels deeper than a cave.
+    // ==========================================
+    "catacombs_battles": {
+        type: "faction_pool",
+        pools: [
+            {
+                factionId: "shackled",
+                weight: 85,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 2 },
+                    normal: { minSize: 1, maxSize: 3 },
+                    hard: { minSize: 2, maxSize: 3 },
+                    nightmare: { minSize: 2, maxSize: 4 }
+                },
+                members: [
+                    { id: 'SKELETAL_WARRIOR', weight: 50, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 3 }, equipment: [{ slot: 'mainHand', items: ['spear', 'warhammer', 'glaive'], chance: 0.6 }] } },
+                    { id: 'FLOATING_SKULL', weight: 35, modifiers: { levelOffset: { chance: 0.35, min: 1, max: 3 } } },
+                    { id: 'ANCIENT_CULTIST', weight: 25, modifiers: { levelOffset: { chance: 0.5, min: 1, max: 3 } } }
+                ]
+            },
+            {
+                factionId: "wildlife",
+                weight: 15,
+                difficultySettings: {
+                    easy: { minSize: 1, maxSize: 2 },
+                    normal: { minSize: 1, maxSize: 3 },
+                    hard: { minSize: 2, maxSize: 3 },
+                    nightmare: { minSize: 2, maxSize: 4 }
+                },
+                members: [
+                    { id: 'CAVE_SPIDER', weight: 100, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } }
+                ]
+            }
+        ]
+    },
+
+    // ==========================================
     // SNOWY MOUNTAINS BATTLES - DAY
     // ==========================================
     "snowy_mountains_battles_day": {
         type: "faction_pool",
         pools: [{
             factionId: "wildlife",
-            weight: 100,
+            weight: 50,
             difficultySettings: {
                 easy: { minSize: 1, maxSize: 1 },
                 normal: { minSize: 1, maxSize: 2 },
@@ -239,13 +276,13 @@ export const SpawnTableDefinitions = {
                 nightmare: { minSize: 2, maxSize: 4 }
             },
             members: [
-                { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } }
+                { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.2, min: 1, max: 2 } } },
+                { id: 'ICECOIL', weight: 56, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } }   // as common as the Dune Maw in the desert (18% of ambushes)
             ]
         }, {
-            // act 2: the trappers of the peaks hunt the roads
+            // the trappers of the peaks hunt the roads: about half of the mountain's ambushes
             factionId: "shackled",
-            weight: 45,
-            minAct: 2,
+            weight: 50,
             difficultySettings: {
                 easy: { minSize: 1, maxSize: 1 },
                 normal: { minSize: 1, maxSize: 2 },
@@ -265,7 +302,7 @@ export const SpawnTableDefinitions = {
         type: "faction_pool",
         pools: [{
             factionId: "cursedwildlife",
-            weight: 100,
+            weight: 50,
             difficultySettings: {
                 easy: { minSize: 1, maxSize: 2 },
                 normal: { minSize: 1, maxSize: 2 },
@@ -273,7 +310,21 @@ export const SpawnTableDefinitions = {
                 nightmare: { minSize: 2, maxSize: 4 }
             },
             members: [
-                { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } }
+                { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } },
+                { id: 'ICECOIL', weight: 56, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } }   // as common as the Dune Maw in the desert (18% of ambushes)
+            ]
+        }, {
+            // the trappers work by night too, half of the mountain's ambushes
+            factionId: "shackled",
+            weight: 50,
+            difficultySettings: {
+                easy: { minSize: 1, maxSize: 2 },
+                normal: { minSize: 1, maxSize: 2 },
+                hard: { minSize: 1, maxSize: 3 },
+                nightmare: { minSize: 2, maxSize: 4 }
+            },
+            members: [
+                { id: 'FROZEN_TRAPPER', weight: 100, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } }
             ]
         }]
     },
@@ -387,7 +438,7 @@ export const SpawnTableDefinitions = {
         pools: [
             {
                 factionId: "cursedwildlife",
-                weight: 45,
+                weight: 50,
                 difficultySettings: {
                     easy: { minSize: 1, maxSize: 2 },
                     normal: { minSize: 2, maxSize: 3 },
@@ -395,12 +446,13 @@ export const SpawnTableDefinitions = {
                     nightmare: { minSize: 3, maxSize: 5 }
                 },
                 members: [
-                    { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 2 } } }
+                    { id: 'SNOW_LEOPARD', weight: 100, modifiers: { levelOffset: { chance: 0.4, min: 1, max: 2 } } },
+                { id: 'ICECOIL', weight: 56, modifiers: { traits: [{ id: 'intimidating', chance: 0.25 }] } }   // as common as the Dune Maw in the desert (18% of ambushes)
                 ]
             },
             {
                 factionId: "shackled",
-                weight: 30,
+                weight: 25,
                 difficultySettings: {
                     easy: { minSize: 1, maxSize: 1 },
                     normal: { minSize: 1, maxSize: 2 },
@@ -630,6 +682,7 @@ export const SpawnTableDefinitions = {
     // Used by mysterious_altar: the boss fight that starts when a fallen meteorite is set on the altar. Darius the Groveler alone.
     "darius_boss": {
         type: "faction_pool",
+        fixedSize: true,   // one Darius, whatever the party (no party scaling)
         pools: [{
             factionId: "shackled",
             weight: 100,

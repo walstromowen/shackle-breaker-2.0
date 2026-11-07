@@ -4,6 +4,10 @@ import { ItemDefinitions } from '../../../../shared/items/itemDefinitions.js';
 import { ENTITY_DEFINITIONS } from '../../../../shared/characters/entityDefinitions.js';
 import { MinimapRenderer } from '../../ui/minimapRenderer.js';
 import { WorldStatusPlaque, plaqueRect } from './worldStatusPlaque.js';
+import { gameState } from '../../../../shared/core/gameState.js';
+import { DEV_FLAGS } from '../../../../shared/core/devCommands.js';
+import { PARTY_PULL_RADIUS } from '../../../../shared/core/multiplayerParty.js';
+import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
 
 // The hotbar: slot size, gap and the margin under it (the status plaque sits to its right, on the same line)
 const HOTBAR = { SIZE: 104, GAP: 8, MARGIN: 24 };
@@ -34,6 +38,9 @@ export class OverworldUIRenderer {
 
         const ui = new CanvasUI(ctx);
 
+        // the dev console's /radius: the party pull radius round the player (a party member inside it is pulled into a fight or encounter I start)
+        if (DEV_FLAGS.showPullRadius && camera) this.drawPullRadius(ctx, ui, camera);
+
         // --- Minimap (bottom-left). Needs state.worldManager and state.camera from the controller ---
         if (state && state.worldManager) {
             this.minimap.render(ctx, ui, state);
@@ -59,23 +66,59 @@ export class OverworldUIRenderer {
         if (isHarvesting && harvestTarget && camera) {
             // If actively harvesting, show the progress bar instead of standard interaction brackets
             this.drawHarvestProgressBar(ctx, ui, harvestTarget, harvestTimer, harvestDuration, camera);
-        } else if (facedObject && camera) {
-            // Standard interaction prompts
-            this.drawInteractionBrackets(ctx, ui, facedObject, camera);
-            this.drawInteractionTooltip(ctx, ui, ctx.canvas, facedObject);
         }
 
-        // the status plaque (biome, day, clock, weather), bottom right beside the hotbar; the item toasts rise from just above it
+        // the status plaque (biome, day, clock, weather), bottom right beside the hotbar; the key prompt sits on it and the item toasts rise above both
         const plaque = worldInfo ? this.statusPlaqueRect(ctx.canvas, hotbar) : null;
         if (plaque) this.statusPlaque.render(ctx, ui, worldInfo, plaque);
+        let floor = plaque ? plaque.y - 14 : ctx.canvas.height - HOTBAR.MARGIN;
+        if (!(isHarvesting && harvestTarget) && facedObject && camera) {
+            // what is in front of the player: an outline around it, and the key that uses it
+            this.drawInteractionBrackets(ctx, ui, facedObject, camera);
+            floor = this.drawInteractionTooltip(ctx, ui, ctx.canvas, facedObject, plaque ? plaque.y - 12 : null) - 12;
+        }
 
         if (toasts && toasts.length > 0) {
-            this.drawToasts(ctx, ui, toasts, plaque ? plaque.y - 14 : ctx.canvas.height - HOTBAR.MARGIN);
+            this.drawToasts(ctx, ui, toasts, floor);
         }
 
         if (hotbar && hotbar.length > 0) {
             this.drawHotbar(ctx, ui, hotbar, hoveredHitboxId, notice);
         }
+
+        if (state && state.mpMessages && state.mpMessages.length) this.drawMultiplayerMessages(ctx, ui, state.mpMessages);
+        if (state && state.mpParty) {
+            const p = state.mpParty;
+            ui.drawPanel(p.x, p.y, p.w, p.h, 'rgba(10, 11, 14, 0.85)');
+            ui.drawStateBox(p.x, p.y, p.w, p.h, ui.flags(p.id, hoveredHitboxId), { inset: true });
+            ui.drawText(p.text, p.x + p.w / 2, p.y + 31, UITheme.fonts.small, UITheme.colors.textHighlight, 'center', 'alphabetic', p.w - 30);
+        }
+        if (state && state.mpPrompt) this.drawMultiplayerPrompt(ctx, ui, state.mpPrompt);
+    }
+
+    /* Multiplayer: another player's request (Accept / Decline), or what to do with the player in front of you. */
+    drawMultiplayerPrompt(ctx, ui, p) {
+        ui.drawRect(0, 0, ctx.canvas.width, ctx.canvas.height, 'rgba(4, 4, 7, 0.45)', true);
+        ui.drawPanel(p.x, p.y, p.w, p.h, UITheme.colors.bgScale[0]);
+        ui.drawText(p.title, p.x + p.w / 2, p.y + 70, UITheme.fonts.sectionHeading, UITheme.colors.textHighlight, 'center', 'alphabetic', p.w - 60);
+        ui.drawText(p.text, p.x + p.w / 2, p.y + 118, UITheme.fonts.small, UITheme.colors.textMain, 'center', 'alphabetic', p.w - 60);
+        for (const o of p.options) ui.drawButton(o.x, o.y, o.w, o.h, o.label, ui.flags(o.hitId, p.focusId), { font: UITheme.fonts.medium });
+    }
+
+    /* Multiplayer: "Ann joined the world." and the like, top centre, fading out after a few seconds (engine/multiplayerSession.js). */
+    drawMultiplayerMessages(ctx, ui, messages) {
+        const cx = ctx.canvas.width / 2;
+        let y = 76;   // under the party plaque
+        ctx.save();
+        for (const m of messages) {
+            ctx.globalAlpha = Math.max(0, Math.min(1, m.alpha));
+            ctx.font = UITheme.fonts.body;
+            const w = ctx.measureText(m.text).width + 48;
+            ui.drawPanel(cx - w / 2, y, w, 48, 'rgba(10, 11, 14, 0.85)');
+            ui.drawText(m.text, cx, y + 33, UITheme.fonts.body, UITheme.colors.textHighlight, 'center');
+            y += 58;
+        }
+        ctx.restore();
     }
 
     /* Where the status plaque is: bottom right, to the right of the hotbar (its right edge is worked out from the same numbers the hotbar uses). */
@@ -224,6 +267,8 @@ export class OverworldUIRenderer {
     }
 
     drawInteractionBrackets(ctx, ui, facedObject, camera) {
+        // the map renderer measured what it drew (MapRenderer.screenRectOf): the outline follows the art itself, not its tiles or hitbox
+        if (facedObject._screenRect) return this._drawOutline(ctx, facedObject._screenRect);
         const { TILE_SIZE, GAME_SCALE, OBJECT_SIZE } = this.config;
         const objSize = OBJECT_SIZE || TILE_SIZE;
 
@@ -268,8 +313,55 @@ export class OverworldUIRenderer {
         ctx.restore();
     }
 
-    drawInteractionTooltip(ctx, ui, canvas, facedObject) {
-    if (!facedObject) return;
+    /* The breathing brass outline around a box on screen (x, y, w, h in canvas pixels). */
+    _drawOutline(ctx, r) {
+        const wave = (Math.sin(performance.now() / 350) + 1) / 2;
+        const pad = 6 + wave * 6;
+        ctx.save();
+        ctx.globalAlpha = 0.6 + (1 - wave) * 0.4;
+        ctx.strokeStyle = UITheme.colors.borderHighlight || "#C2A14F";
+        ctx.lineWidth = 2;
+        ctx.shadowColor = UITheme.colors.borderHighlight || "#C2A14F";
+        ctx.shadowBlur = 14;
+        ctx.beginPath();
+        ctx.roundRect(r.x - pad, r.y - pad, r.w + pad * 2, r.h + pad * 2, 8);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    /* /radius: a square of PARTY_PULL_RADIUS tiles each way round the player's tile (the same test as multiplayerSocial.nearbyParty), and who of
+       the party is inside it now. */
+    drawPullRadius(ctx, ui, camera) {
+        const { GAME_SCALE, TILE_SIZE: T } = this.config;
+        const scale = GAME_SCALE * (ctx.canvas.width / 800);
+        const W = ctx.canvas.width, H = ctx.canvas.height;
+        const col = gameState.player.col, row = gameState.player.row, R = PARTY_PULL_RADIUS;
+        const sx = (c) => (c * T - camera.x) * scale + W / 2 - T * scale / 2;
+        const sy = (r) => (r * T - camera.y) * scale + H / 2 - T * scale / 2;
+        const x0 = sx(col - R), y0 = sy(row - R), x1 = sx(col + R + 1), y1 = sy(row + R + 1);
+        const pulse = 0.6 + 0.4 * Math.sin(performance.now() * 0.004);
+        ctx.save();
+        ctx.fillStyle = 'rgba(89, 212, 255, 0.07)';
+        ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+        ctx.strokeStyle = `rgba(89, 212, 255, ${0.5 + 0.4 * pulse})`;
+        ctx.lineWidth = 3;
+        ctx.setLineDash([14, 8]);
+        ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
+        ctx.restore();
+        const near = multiplayerSocial.nearbyParty().map(id => multiplayerSocial.nameOf(id));
+        const all = multiplayerSocial.partyPlayers().length;
+        const text = `Party pull radius: ${R} tiles  ·  ${all ? (near.length ? `pulled in: ${near.join(', ')}` : 'no party member inside') : 'not in a party'}`;
+        // below the party plaque (top centre) when the square reaches past the top of the screen
+        const ly = Math.max(118, y0 - 14);
+        const tw = Math.min(W - 40, ctx.measureText ? (ctx.font = UITheme.fonts.bold, ctx.measureText(text).width + 40) : 900);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.fillRect(W / 2 - tw / 2, ly - 30, tw, 42);
+        ui.drawText(text, W / 2, ly, UITheme.fonts.bold, '#9fe6ff', 'center');
+    }
+
+    /* The key prompt ("SPACE  Enter"), bottom right; `bottom` is where its lower edge goes (on top of the status plaque). Returns its top edge. */
+    drawInteractionTooltip(ctx, ui, canvas, facedObject, bottom = null) {
+    if (!facedObject) return bottom ?? canvas.height;
 
     // --- NEW: Dynamic Interaction Text ---
     let text = "Interact"; // Default fallback
@@ -278,6 +370,9 @@ export class OverworldUIRenderer {
         case 'PICKUP': text = "Pick Up"; break;
         case 'HARVEST': text = "Harvest"; break;
         case 'WARP': text = "Enter"; break;
+        case 'GRAVE': text = "Dig Up"; break;
+        case 'SWITCH': text = "Pull"; break;
+        case 'PLAYER': text = "Trade, Party, Duel"; break;
         case 'CRAFTING_STATION':
         case 'WORKSHOP': text = "Craft"; break;
         default:
@@ -305,7 +400,7 @@ export class OverworldUIRenderer {
     const gap = 16;
     const width = padding + badgeWidth + gap + textWidth + padding + 8;
     const startX = canvas.width - width - margin;
-    const startY = canvas.height - height - margin;
+    const startY = (bottom ?? canvas.height - margin) - height;
 
     const bgColor = UITheme.messageBox.bg;
     ui.drawPanel(startX, startY, width, height, bgColor);
@@ -321,6 +416,7 @@ export class OverworldUIRenderer {
     ui.drawStyled('body', text, textX, startY + (height / 2), { baseline: 'middle' });
 
     ctx.restore();
+    return startY;
   }
 
     /* `floor` is the y the lowest toast's bottom edge starts from (just above the status plaque), and they float up from there. */
@@ -498,15 +594,6 @@ export class OverworldUIRenderer {
         ui.drawPanel(btn.x, drawY, btn.w, btn.h, "rgba(25, 23, 20, 0.4)");
         ui.drawStateBox(btn.x, drawY, btn.w, btn.h, flags, { inset: true });
 
-        if (btn.shortcut) {
-            const badgeSize = 22;
-            const badgeW = btn.shortcut.length > 1 ? 46 : badgeSize;   // "Esc" is wider than a letter
-            const bX = btn.x + 4;
-            const bY = drawY + 4;
-            ui.drawPanel(bX, bY, badgeW, badgeSize, "rgba(0, 0, 0, 0.7)");
-            ui.drawStyled('badge', btn.shortcut, bX + (badgeW / 2), bY + (badgeSize / 2), { color: UITheme.colors.textMuted });
-        }
-
         const centerX = btn.x + (btn.w / 2);
         const uiSheet = this.loader.get('ui_icons');
         if (uiSheet && btn.spriteCol !== undefined && btn.spriteRow !== undefined) {
@@ -524,6 +611,16 @@ export class OverworldUIRenderer {
 
         const textY = drawY + btn.h - 18;
         ui.drawStyled('badge', btn.label, centerX, textY, { color: textColor });
+
+        // the key's badge goes on last, over the icon (the wide "Esc" one reaches into it)
+        if (btn.shortcut) {
+            const badgeSize = 22;
+            const badgeW = btn.shortcut.length > 1 ? 46 : badgeSize;   // "Esc" is wider than a letter
+            const bX = btn.x + 4;
+            const bY = drawY + 4;
+            ui.drawPanel(bX, bY, badgeW, badgeSize, "rgba(0, 0, 0, 0.7)");
+            ui.drawStyled('badge', btn.shortcut, bX + (badgeW / 2), bY + (badgeSize / 2), { color: UITheme.colors.textMuted });
+        }
 
         if (badge) this.drawSkillPointBadge(ctx, btn.x + btn.w - 14, drawY + 14);
     }

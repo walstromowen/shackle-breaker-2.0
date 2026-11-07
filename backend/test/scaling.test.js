@@ -1,55 +1,80 @@
-// backend/test/scaling.test.js: `npm test`. Strength drives all physical damage, Intelligence all magical damage; Dexterity and Attunement feed the pools (DAMAGE_SCALING in core/constants.js).
+// backend/test/scaling.test.js: `npm test`. Strength: blunt and slash; Dexterity: slash and pierce (slash takes the higher of the two); Attunement: the six
+// elements; Intelligence: light, dark and arcane. The same attributes raise the matching defenses. Stamina recovery follows Dexterity and Strength, insight
+// recovery Intelligence and Attunement (DAMAGE_SCALING in core/constants.js, StatCalculator).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { StatCalculator } from '../../shared/characters/statCalculator.js';
-import { EntityFactory } from '../../shared/characters/entityFactory.js';
+import { EntityFactory, LEVEL_EDGE_ATTACK_PER_LEVEL } from '../../shared/characters/entityFactory.js';
 import { DAMAGE_SCALING, DAMAGE_TYPES } from '../../shared/core/constants.js';
 
-const PHYSICAL = ['blunt', 'slash', 'pierce'];
-const MAGIC = ['fire', 'ice', 'lightning', 'water', 'earth', 'wind', 'light', 'dark', 'arcane'];
+const ELEMENTS = ['fire', 'ice', 'lightning', 'water', 'earth', 'wind'];
+const ARCANE = ['light', 'dark', 'arcane'];
+const FEEDS = { strength: ['blunt', 'slash'], dexterity: ['slash', 'pierce'], attunement: ELEMENTS, intelligence: ARCANE, vigor: [] };
 const ZERO = { vigor: 0, strength: 0, dexterity: 0, intelligence: 0, attunement: 0 };
 const statsOf = (attributes) => StatCalculator.calculate({ level: 1, attributes: { ...ZERO, ...attributes }, baseStats: { maxHp: 10, maxStamina: 10, maxInsight: 10, baseAttack: {} } });
 const attackOf = (attributes) => statsOf(attributes).attack;
 
-test('every damage type has a scaling entry, and only Strength and Intelligence raise attack', () => {
+test('every damage type has a scaling entry, and each attribute raises exactly its own attack and defense types', () => {
     for (const t of DAMAGE_TYPES) assert.ok(DAMAGE_SCALING[t], `${t} has no scaling`);
-    const str = attackOf({ strength: 20 }), int = attackOf({ intelligence: 20 });
-    for (const t of PHYSICAL) { assert.equal(str[t], 20, `Strength raises ${t}`); assert.equal(int[t], 0, `Intelligence does not raise ${t}`); }
-    for (const t of MAGIC) { assert.equal(int[t], 20, `Intelligence raises ${t}`); assert.equal(str[t], 0, `Strength does not raise ${t}`); }
-    for (const attr of ['vigor', 'dexterity', 'attunement']) {
-        const a = attackOf({ [attr]: 20 });
-        for (const t of DAMAGE_TYPES) assert.equal(a[t], 0, `${attr} raises no attack (${t})`);
+    const base = statsOf({});
+    for (const [attr, types] of Object.entries(FEEDS)) {
+        const s = statsOf({ [attr]: 20 });
+        for (const t of DAMAGE_TYPES) {
+            const feeds = types.includes(t);
+            assert.equal(s.attack[t], feeds ? 20 : 0, `${attr} -> ${t} attack`);
+            assert.equal(s.defense[t] - base.defense[t], feeds ? 10 : 0, `${attr} -> ${t} defense (Vigor gives none: it is health)`);
+        }
     }
 });
 
-test('Dexterity and Attunement feed the pools: max, and recovery per round', () => {
-    const base = statsOf({}), dex = statsOf({ dexterity: 20 }), att = statsOf({ attunement: 20 });
-    assert.equal(dex.maxStamina - base.maxStamina, 40, '+2 max stamina per Dexterity');
-    assert.equal(dex.staminaRecovery - base.staminaRecovery, 10, '+0.5 stamina recovery per Dexterity');
-    assert.equal(att.maxInsight - base.maxInsight, 40, '+2 max insight per Attunement');
-    assert.equal(att.insightRecovery - base.insightRecovery, 10, '+0.5 insight recovery per Attunement');
-    for (const stat of [statsOf({ strength: 20 }), statsOf({ intelligence: 20 })]) {
-        assert.equal(stat.maxStamina, base.maxStamina); assert.equal(stat.maxInsight, base.maxInsight);
-        assert.equal(stat.staminaRecovery, base.staminaRecovery); assert.equal(stat.insightRecovery, base.insightRecovery);
+test('slash scales with the higher of Strength or Dexterity, never both', () => {
+    assert.equal(attackOf({ strength: 12, dexterity: 7 }).slash, 12);
+    assert.equal(attackOf({ strength: 7, dexterity: 12 }).slash, 12);
+    assert.equal(attackOf({ strength: 10, dexterity: 10 }).slash, 10);
+    const base = statsOf({});
+    assert.equal(statsOf({ strength: 10, dexterity: 20 }).defense.slash - base.defense.slash, 10, 'slash defense also takes the higher one');
+});
+
+test('Vigor gives +3 max HP per point to a new character', () => {
+    assert.equal(statsOf({ vigor: 20 }).maxHp - statsOf({}).maxHp, 60);
+});
+
+test('pools and recovery: Dexterity and Strength feed stamina, Attunement and Intelligence feed insight', () => {
+    const base = statsOf({});
+    for (const attr of ['dexterity', 'strength']) {
+        const s = statsOf({ [attr]: 20 });
+        assert.equal(s.maxStamina - base.maxStamina, 40, `+2 max stamina per ${attr}`);
+        assert.equal(s.staminaRecovery - base.staminaRecovery, 5, `+0.25 stamina recovery per ${attr}`);
+        assert.equal(s.maxInsight, base.maxInsight); assert.equal(s.insightRecovery, base.insightRecovery);
     }
+    for (const attr of ['attunement', 'intelligence']) {
+        const s = statsOf({ [attr]: 20 });
+        assert.equal(s.maxInsight - base.maxInsight, 40, `+2 max insight per ${attr}`);
+        assert.equal(s.insightRecovery - base.insightRecovery, 5, `+0.25 insight recovery per ${attr}`);
+        assert.equal(s.maxStamina, base.maxStamina); assert.equal(s.staminaRecovery, base.staminaRecovery);
+    }
+    assert.equal(statsOf({ dexterity: 10, strength: 10 }).maxStamina - base.maxStamina, 40, 'both add up');
+    assert.equal(statsOf({ vigor: 20 }).maxStamina, base.maxStamina, 'Vigor feeds no pool');
 });
 
 // the starting backgrounds (characterCreatorLogic.js): [vigor, strength, dexterity, intelligence, attunement]
 const BACKGROUNDS = { Warrior: [13, 15, 9, 7, 6], Thief: [9, 8, 16, 9, 8], Ranger: [10, 9, 15, 8, 8], Scholar: [8, 7, 9, 14, 12], Hermit: [10, 7, 9, 13, 11], Traveler: [11, 11, 10, 9, 9] };
 const at = ([vigor, strength, dexterity, intelligence, attunement]) => attackOf({ vigor, strength, dexterity, intelligence, attunement });
 
-test('every physical type hits with Strength alone, and every magic type with Intelligence alone', () => {
-    const warrior = at(BACKGROUNDS.Warrior), scholar = at(BACKGROUNDS.Scholar);
-    for (const t of PHYSICAL) assert.equal(warrior[t], 15, `Warrior ${t}`);
-    for (const t of MAGIC) assert.equal(scholar[t], 14, `Scholar ${t}`);
-    assert.ok(warrior.blunt > scholar.blunt && scholar.arcane > warrior.arcane);
+test('the backgrounds hit hardest with the types their best attributes feed', () => {
+    const warrior = at(BACKGROUNDS.Warrior), thief = at(BACKGROUNDS.Thief), scholar = at(BACKGROUNDS.Scholar);
+    assert.equal(warrior.blunt, 15); assert.equal(warrior.slash, 15); assert.equal(warrior.pierce, 9);
+    assert.equal(thief.pierce, 16); assert.equal(thief.slash, 16); assert.equal(thief.blunt, 8);
+    for (const t of ARCANE) assert.equal(scholar[t], 14, `Scholar ${t}`);
+    for (const t of ELEMENTS) assert.equal(scholar[t], 12, `Scholar ${t}`);
 });
 
-// Entities keep the attack they had before the 5da4655 experiment (baseAttack is back to the original numbers): anchors recorded from them, level 1
-// (the Legionary's is the one change: trained soldiers got +3 on every physical attack, 14 -> 17, when enemies were made hit harder)
-test('enemies and recruits hit as hard as they always did', () => {
-    const anchors = [['WOLF', 'pierce', 17], ['DOG', 'pierce', 8], ['DUNE_MAW', 'pierce', 20], ['MAD_MAN', 'slash', 10], ['THUNDER_LOCUST', 'lightning', 9],
-        ['THUNDER_LOCUST', 'pierce', 6], ['SCORCHED_VAGRANT', 'fire', 20], ['LEGIONARY', 'slash', 17], ['PANZERKAMFER', 'pierce', 24], ['SNOW_LEOPARD', 'slash', 19]];
+// Enemies play by the enemy rules (Strength for physical, Intelligence for magic: ENEMY_DAMAGE_SCALING), so they keep the attack they were balanced
+// with: anchors recorded from them, level 1 (the Legionary's is the one change: trained soldiers got +3 on every physical attack, 14 -> 17, when enemies
+// were made hit harder). Under the player's hybrid rules the agile ones would hit far harder (a Thunder Locust's lightning 9 -> 21).
+test('enemies and recruits hit as their attributes say (humanoids on the player rules, beasts on the enemy rules)', () => {
+    const anchors = [['WOLF', 'pierce', 17], ['DOG', 'pierce', 8], ['DUNE_MAW', 'pierce', 14], ['MAD_MAN', 'slash', 10], ['THUNDER_LOCUST', 'lightning', 9],
+        ['THUNDER_LOCUST', 'pierce', 6], ['SCORCHED_VAGRANT', 'fire', 17], ['LEGIONARY', 'slash', 16], ['PANZERKAMFER', 'pierce', 24], ['SNOW_LEOPARD', 'slash', 19]];
     for (const [id, type, old] of anchors) {
         const e = EntityFactory.create(id, 1);
         assert.ok(Math.abs(StatCalculator.calculate(e).attack[type] - old) <= 1, `${id} ${type}: ${StatCalculator.calculate(e).attack[type]} (was ${old})`);
@@ -86,9 +111,10 @@ test('leather armor gives a little stamina recovery, cloth armor a little insigh
 test('an enemy gains attack with its level in the attribute its best attack scales with, a recruit does not keep it, and an ally never gets it', () => {
     const atk = (e, t) => StatCalculator.calculate(e).attack[t];
     const wolf1 = EntityFactory.create('WOLF', 1), wolf9 = EntityFactory.create('WOLF', 9);
-    assert.equal(wolf9.state.levelEdgeAttr.attribute, 'strength');
-    assert.equal(wolf9.state.levelEdgeAttr.amount, 12, '8 levels x 1.5');
-    assert.ok(atk(wolf9, 'pierce') - atk(wolf1, 'pierce') >= 12, 'at least the edge, plus the one point per level spread over the attributes');
+    assert.equal(wolf9.state.levelEdgeAttr.attribute, 'strength', 'under the enemy rules a bite (pierce) scales with Strength');
+    assert.equal(wolf9.state.levelEdgeAttr.amount, Math.floor(8 * LEVEL_EDGE_ATTACK_PER_LEVEL), '8 levels x LEVEL_EDGE_ATTACK_PER_LEVEL');
+    const edge = wolf9.state.levelEdgeAttr.amount;
+    assert.ok(atk(wolf9, 'pierce') - atk(wolf1, 'pierce') >= edge, 'at least the edge, plus the one point per level spread over the attributes');
     const addict9 = EntityFactory.create('MAGIC_ADDICT', 9);
     assert.equal(addict9.state.levelEdgeAttr.attribute, 'intelligence', 'a mage grows in the attribute its spells scale with');
     assert.equal(EntityFactory.create('WOLF', 1).state.levelEdgeAttr, undefined, 'level 1 gets nothing');
@@ -98,7 +124,7 @@ test('an enemy gains attack with its level in the attribute its best attack scal
 
     const before = atk(wolf9, 'pierce');
     assert.equal(EntityFactory.removeLevelEdge(wolf9), true);
-    assert.equal(atk(wolf9, 'pierce'), before - 12);
+    assert.equal(atk(wolf9, 'pierce'), before - edge);
     assert.equal(EntityFactory.removeLevelEdge(wolf9), false, 'taking it off twice is harmless');
 });
 
@@ -125,7 +151,7 @@ test('XP: what an enemy is worth is close to the straight line the curve is buil
     }
 });
 
-test('XP: a level takes about 2 fights at the start and 6 at the end; level 20 comes after about 50 fights, level 150 after about 600', async () => {
+test('XP: a level takes about 1 fight at the start and 3 at the end; level 20 comes after about 25 fights, level 150 after about 300', async () => {
     const { ExperienceSystem, XP_CURVE, MAX_LEVEL } = await import('../../shared/characters/experienceSystem.js');
     assert.equal(MAX_LEVEL, 150);
     let fights = 0, at20 = 0;
@@ -136,9 +162,9 @@ test('XP: a level takes about 2 fights at the start and 6 at the end; level 20 c
         fights += need / perFight;
         if (level === 19) at20 = fights;
     }
-    assert.ok(at20 >= 40 && at20 <= 65, `level 20 after ${at20.toFixed(0)} fights`);
-    assert.ok(fights >= 450 && fights <= 750, `level 150 after ${fights.toFixed(0)} fights`);
-    assert.ok(Math.abs(ExperienceSystem.getMaxXP(1) / (ExperienceSystem.enemyXp(1) * 2) - 2) < 0.05);
+    assert.ok(at20 >= 20 && at20 <= 33, `level 20 after ${at20.toFixed(0)} fights`);
+    assert.ok(fights >= 225 && fights <= 375, `level 150 after ${fights.toFixed(0)} fights`);
+    assert.ok(Math.abs(ExperienceSystem.getMaxXP(1) / (ExperienceSystem.enemyXp(1) * 2) - 1) < 0.05);
 });
 
 test('XP: a reward written for the early game grows with the level, an old save adopts the new curve, and nobody passes level 150', async () => {
@@ -151,4 +177,154 @@ test('XP: a reward written for the early game grows with the level, an old save 
     const top = { level: 150, xp: 0, maxXp: 1, skillPoints: 0, baseStats: { maxHp: 10 } };
     ExperienceSystem.addXp(top, 10 ** 9);
     assert.equal(top.level, 150);
+});
+
+// ---- weapon attribute requirements ----
+test('weapon requirements rise with the upgrade level, and every starting background meets its own weapon', async () => {
+    const { requirementsAt, unmetRequirements } = await import('../../shared/items/weaponRequirements.js');
+    const { ItemDefinitions } = await import('../../shared/items/itemDefinitions.js');
+    assert.deepEqual(requirementsAt('shortsword', 1), { strength: 8, dexterity: 8 });
+    assert.deepEqual(requirementsAt('shortsword', 3), { strength: 12, dexterity: 12 });
+    assert.deepEqual(requirementsAt('shortsword', 99), requirementsAt('shortsword', 5), 'never past the max level');
+    for (const [id, def] of Object.entries(ItemDefinitions)) {
+        if (def.type !== 'weapon') continue;
+        assert.ok(def.requirements && Object.keys(def.requirements).length > 0, `${id} has requirements`);
+        if ((def.maxLevel || 1) > 1) assert.ok(Object.keys(def.requirementGrowth || {}).length >= 2, `${id} asks for two attributes as it grows`);
+    }
+    // characterCreatorLogic.js: [vigor, strength, dexterity, intelligence, attunement] and the weapon each starts with
+    const STARTS = { Traveler: [[11, 11, 10, 9, 9], 'shortsword'], Blacksmith: [[15, 13, 8, 7, 7], 'shortsword'], Ranger: [[10, 9, 15, 8, 8], 'shortbow'],
+        Scholar: [[8, 7, 9, 14, 12], 'insight_of_arcane'], Warrior: [[13, 15, 9, 7, 6], 'handaxe'], Thief: [[9, 8, 16, 9, 8], 'dagger'],
+        Hermit: [[10, 7, 9, 13, 11], 'insight_of_earth'], Farmer: [[15, 12, 9, 7, 7], 'scythe'], BountyHunter: [[12, 11, 14, 7, 6], 'shortsword'] };
+    for (const [name, [[vigor, strength, dexterity, intelligence, attunement], weapon]] of Object.entries(STARTS)) {
+        const unmet = unmetRequirements(requirementsAt(weapon, 1), { vigor, strength, dexterity, intelligence, attunement });
+        assert.deepEqual(unmet, [], `${name} can use the ${weapon} they start with`);
+        assert.deepEqual(unmetRequirements(requirementsAt('pickaxe', 1), { vigor, strength }), [], `${name} can use the miner's pickaxe`);
+    }
+});
+
+test('a weapon whose requirements are not met hits for less in its own damage types only', async () => {
+    const { ItemFactory } = await import('../../shared/items/itemFactory.js');
+    const { UNMET_REQUIREMENT_DAMAGE_SCALE } = await import('../../shared/items/weaponRequirements.js');
+    const sword = (level) => { const s = ItemFactory.createItem('shortsword'); s.level = level; return s; };
+    const wield = (attributes, item) => StatCalculator.calculateDetailed({ level: 1, attributes: { ...ZERO, ...attributes }, equipment: { mainHand: item }, baseStats: { maxHp: 10, baseAttack: {} } });
+    const ok = wield({ strength: 12, dexterity: 12 }, sword(3));
+    assert.equal(ok.unmetRequirements.length, 0);
+    assert.equal(ok.attack.slash, 12 + 3 + 2 * 2, 'attribute + the sword at level 3');
+    const weak = wield({ strength: 12, dexterity: 11 }, sword(3));
+    assert.equal(weak.unmetRequirements.length, 1);
+    assert.deepEqual(weak.unmetRequirements[0].unmet, [{ attr: 'dexterity', need: 12, have: 11 }]);
+    assert.equal(weak.attack.slash, Math.round((12 + 7) * UNMET_REQUIREMENT_DAMAGE_SCALE));
+    assert.equal(weak.attack.blunt, 12, 'blunt is not one of the sword\'s types, so it is untouched');
+    assert.equal(weak.attack.fire, 0);
+});
+
+test('a level 1 Traveler kills a level 1 Madman in 2 to 3 Slashes', async () => {
+    const { ItemFactory } = await import('../../shared/items/itemFactory.js');
+    const { CombatCalculator } = await import('../../shared/battle/combatCalculator.js');
+    const gear = { mainHand: 'shortsword', head: 'tattered_hood', arms: 'tattered_gloves', torso: 'tattered_shirt', legs: 'tattered_pants', feet: 'tattered_boots' };
+    const equipment = {};
+    for (const [slot, id] of Object.entries(gear)) equipment[slot] = ItemFactory.createItem(id);
+    const traveler = EntityFactory.create('HUMANOID', { attributes: { vigor: 11, strength: 11, dexterity: 10, intelligence: 9, attunement: 9 }, equipment, level: 1, traits: [] });
+    const madman = EntityFactory.create('MAD_MAN', 1);
+    const att = { stats: StatCalculator.calculate(traveler) }, def = { stats: StatCalculator.calculate(madman) };
+    const quiet = console.log; console.log = () => {};
+    const real = Math.random;
+    let seed = 7; Math.random = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const counts = [];
+    try {
+        for (let fight = 0; fight < 400; fight++) {
+            let hp = def.stats.maxHp, landed = 0;
+            for (let swing = 0; hp > 0 && swing < 50; swing++) {   // misses do not count: only Slashes that land
+                const r = CombatCalculator.calculateDamage(att, def, 1.25, 'slash', 1.0);
+                if (r.hit) { hp -= r.damage; landed++; }
+            }
+            counts.push(landed);
+        }
+    } finally { Math.random = real; console.log = quiet; }
+    const avg = counts.reduce((a, b) => a + b, 0) / counts.length;
+    assert.ok(avg >= 2 && avg <= 3, `average ${avg.toFixed(2)} Slashes`);
+    assert.ok(counts.every(n => n >= 2 && n <= 3), `always 2 or 3 landed Slashes (${Math.min(...counts)}-${Math.max(...counts)})`);
+});
+
+test('enemies use the enemy rules, the player the hybrid ones', () => {
+    const wolf = EntityFactory.create('WOLF', 1);
+    assert.equal(StatCalculator.usesEnemyScaling(wolf), true);
+    const hero = EntityFactory.create('HUMANOID', { attributes: { vigor: 10, strength: 10, dexterity: 10, intelligence: 10, attunement: 10 }, level: 1 });
+    assert.equal(StatCalculator.usesEnemyScaling(hero), false, 'the player is a HUMANOID');
+    assert.equal(StatCalculator.usesEnemyScaling({ attributes: {} }), false, 'a plain stat object uses the player rules');
+    // the same attributes, both rule sets
+    const attrs = { vigor: 10, strength: 4, dexterity: 20, intelligence: 6, attunement: 16 };
+    const asEnemy = StatCalculator.calculate({ templateId: 'WOLF', level: 1, attributes: attrs, baseStats: { maxHp: 10, baseAttack: {} } });
+    const asPlayer = StatCalculator.calculate({ templateId: 'HUMANOID', level: 1, attributes: attrs, baseStats: { maxHp: 10, baseAttack: {} } });
+    assert.equal(asEnemy.attack.pierce, 4, 'enemy pierce follows Strength');
+    assert.equal(asPlayer.attack.pierce, 20, 'player pierce follows Dexterity');
+    assert.equal(asEnemy.attack.fire, 6, 'enemy fire follows Intelligence');
+    assert.equal(asPlayer.attack.fire, 16, 'player fire follows Attunement');
+    assert.equal(asEnemy.defense.blunt, 5, 'enemy defense: +1 per 2 Vigor');
+});
+
+test('enemies and the party turn attack into damage by the same rule: no handicap for being hostile', async () => {
+    const CC = await import('../../shared/battle/combatCalculator.js');
+    assert.equal(CC.enemyDamageScale, undefined, 'the enemy damage multiplier is gone');
+    assert.equal(CC.ENEMY_DAMAGE, undefined);
+    const stats = { attack: { blunt: 100 }, defense: { blunt: 0 }, resistance: { blunt: 0 }, accuracy: 1000, evasion: 1, critChance: 0 };
+    const hit = (team, level) => {
+        const real = Math.random, log = console.log;
+        Math.random = () => 0.5; console.log = () => {};
+        try { return CC.CombatCalculator.calculateDamage({ team, stats, level }, { stats }, 1, 'blunt', 1).damage; } finally { Math.random = real; console.log = log; }
+    };
+    const party = hit('party', 30);
+    for (const lv of [1, 15, 40]) assert.equal(hit('enemy', lv), party, `a level ${lv} enemy hits like the party`);
+});
+
+test('humanoid enemies stand on the player rules: the same 50 attribute points and base HP as a new character', async () => {
+    const { ENTITY_DEFINITIONS } = await import('../../shared/characters/entityDefinitions.js');
+    for (const [id, def] of Object.entries(ENTITY_DEFINITIONS)) {
+        const tags = def.tags || [];
+        if (id === 'HUMANOID' || !tags.includes('HUMANOID') || tags.includes('BOSS') || tags.includes('ELITE')) continue;
+        const total = Object.values(def.attributes).reduce((a, b) => a + b, 0);
+        assert.equal(total, 50, `${id} has ${total} attribute points`);
+        assert.equal(def.baseStats.maxHp, 20, `${id} base HP`);
+        assert.equal(StatCalculator.usesEnemyScaling(EntityFactory.create(id, 1)), false, `${id} uses the player rules`);
+    }
+});
+
+test('encounters give XP only for a successful roll, and what a roll is worth grows with the level and the DC', async () => {
+    const { ExperienceSystem, ROLL_XP } = await import('../../shared/characters/experienceSystem.js');
+    const fs = await import('node:fs');
+    const share = (lv, dc) => ExperienceSystem.rollXp(lv, dc) / ExperienceSystem.getMaxXP(lv);
+    assert.ok(Math.abs(share(1, 12) - ROLL_XP.SHARE) < 0.01, 'a DC 12 success is ROLL_XP.SHARE of a level');
+    assert.ok(Math.abs(share(40, 12) - ROLL_XP.SHARE) < 0.01, '... at any level');
+    assert.ok(ExperienceSystem.rollXp(30, 12) > ExperienceSystem.rollXp(5, 12) * 5, 'the amount grows with the level');
+    assert.ok(ExperienceSystem.rollXp(10, 15) > ExperienceSystem.rollXp(10, 12) && ExperienceSystem.rollXp(10, 12) > ExperienceSystem.rollXp(10, 8));
+    assert.equal(ExperienceSystem.rollXp(10, 0), 0, 'a roll that cannot fail is worth nothing');
+    // no encounter hands out XP by itself
+    const dir = new URL('../../shared/story/encounters/', import.meta.url);
+    const files = fs.readdirSync(dir, { recursive: true }).filter(f => String(f).endsWith('.js'));
+    for (const f of files) assert.ok(!fs.readFileSync(new URL(String(f), dir), 'utf8').includes('AWARD_XP'), `${f} awards no XP of its own`);
+});
+
+test('a bigger party meets a bigger group, a lone fighter a smaller one, and more players do not add enemies (PARTY_SCALING)', async () => {
+    const { SpawnTableFactory, PARTY_SCALING } = await import('../../shared/battle/spawnTableFactory.js');
+    const sizes = (size) => { const out = new Set(); for (let i = 0; i < 300; i++) out.add(SpawnTableFactory.generateBattle('spider_nest', 'normal', size).enemies.length); return [...out].sort((a, b) => a - b); };
+    assert.deepEqual(sizes(undefined), [3, 4, 5], 'no party size: the table as written');
+    const shift = (n) => [3 + n, 4 + n, 5 + n];
+    assert.deepEqual(sizes({ fighters: 1 }), shift(PARTY_SCALING.EXTRA_ENEMIES[0]));
+    assert.deepEqual(sizes({ fighters: 2 }), shift(PARTY_SCALING.EXTRA_ENEMIES[1]));
+    assert.deepEqual(sizes({ fighters: 2, players: 3 }), sizes({ fighters: 2 }), 'more players, the same number of enemies as one player with as many fighters');
+    const three = sizes({ fighters: 3 });
+    assert.ok(three[0] === 3 + Math.floor(PARTY_SCALING.EXTRA_ENEMIES[2]) && three[three.length - 1] === 5 + Math.ceil(PARTY_SCALING.EXTRA_ENEMIES[2]), 'a fraction: sometimes one more');
+    assert.ok(PARTY_SCALING.EXTRA_ENEMIES[0] < 0 && PARTY_SCALING.EXTRA_ENEMIES[2] > PARTY_SCALING.EXTRA_ENEMIES[1]);
+});
+
+test('an ambush brings 1-3 enemies on easy and normal, 1-4 on hard, 2-4 on nightmare, whatever the table and the party size', async () => {
+    const { SpawnTableFactory, AMBUSH_SIZE } = await import('../../shared/battle/spawnTableFactory.js');
+    const { SpawnTableDefinitions } = await import('../../shared/battle/spawnTableDefinitions.js');
+    assert.deepEqual(AMBUSH_SIZE, { easy: [1, 3], normal: [1, 3], hard: [1, 4], nightmare: [2, 4] });
+    const tables = Object.keys(SpawnTableDefinitions).filter(t => /_battles_/.test(t));
+    for (const diff of Object.keys(AMBUSH_SIZE)) for (const t of tables) for (const fighters of [1, 3]) for (let i = 0; i < 20; i++) {
+        const n = SpawnTableFactory.generateBattle(t, diff, { fighters, ambush: true }).enemies.length;
+        if (!n) continue;
+        assert.ok(n >= AMBUSH_SIZE[diff][0] && n <= AMBUSH_SIZE[diff][1], `${t} on ${diff} with ${fighters} fighters: ${n}`);
+    }
 });

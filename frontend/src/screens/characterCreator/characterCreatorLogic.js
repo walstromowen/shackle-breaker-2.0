@@ -1,4 +1,4 @@
-import { gameState } from '../../../../shared/core/gameState.js';
+import { gameState, resetWorldForNewGame } from '../../../../shared/core/gameState.js';
 import { EntityFactory } from '../../../../shared/characters/entityFactory.js';
 import { ItemFactory } from '../../../../shared/items/itemFactory.js';
 import { events } from '../../../../shared/core/eventBus.js';
@@ -9,6 +9,7 @@ import { InventorySystem } from '../../../../shared/items/inventorySystem.js';
 import { PartyManager } from '../../../../shared/characters/partyManager.js';
 import { QuestModel } from '../../../../shared/story/questModel.js';
 import { CONFIG, DEV_CONSOLE } from '../../../../shared/core/constants.js';
+import { multiplayerSession } from '../../engine/multiplayerSession.js';
 const ALLOWED_TRAITS = ['quick', 'inquisitive', 'brawler', 'tough', 'stealthy'];
 const UI_TRAITS = ALLOWED_TRAITS.map(key => ({
     id: key,
@@ -93,12 +94,12 @@ export const CREATION_DATA = {
     TRAITS: UI_TRAITS,
     KEEPSAKES: [
         { label: "None", itemId: null, desc: "You carry nothing but your burden." },
-        { label: "Smith's stash", desc: "Start with a small supply of crafting materials.", items: [{ id: "torch", qty: 1 }, { id: "healing_herb", qty: 1 }, { id: "hard_wood", qty: 3 }, { id: "leather", qty: 3 }, { id: "stone", qty: 2 }, { id: "iron_ore", qty: 2 }] },
-        { label: "Healer's Pouch", desc: "Start with a healer's supplies: three of each herb, a healing tonic, and a bandage, an antidote and a piece of aloe to treat bleeding, poison and burns.", items: [{ id: "torch", qty: 1 }, { id: "healing_herb", qty: 3 }, { id: "invigorating_herb", qty: 3 }, { id: "illuminating_herb", qty: 3 }, { id: "healing_tonic", qty: 1 }, { id: "bandage", qty: 1 }, { id: "antidote", qty: 1 }, { id: "aloe", qty: 1 }] },
-        { label: "Drunkard", desc: "Start with a bottle of a strange ale.", items: [{ id: "torch", qty: 1 }, { id: "healing_herb", qty: 1 }, { id: "brew_of_madness", qty: 1 }] },
-        { label: "Assassin's Tools", desc: "Start with the tools of a quiet killer: throwing knives, a few dipped in poison, and smoke bombs to vanish behind.", items: [{ id: "torch", qty: 1 }, { id: "throwing_knife", qty: 5 }, { id: "poison_throwing_knife", qty: 3 }, { id: "smoke_bomb", qty: 2 }] },
-        { label: "Explorer's Bag", desc: "Start with what a delver packs for caves and long roads: torches, a bedroll, a map of the next place you enter, and a rope to haul you out of trouble.", items: [{ id: "torch", qty: 3 }, { id: "bedroll", qty: 2 }, { id: "interior_map", qty: 2 }, { id: "escape_rope", qty: 1 }] },
-        { label: "Miner's Supplies", desc: "Start with a pickaxe and a few torches: what it takes to break rock and see where you are breaking it. Equip the pickaxe to mine.", items: [{ id: "pickaxe", qty: 1 }, { id: "torch", qty: 3 }] },
+        { label: "Smith's stash", desc: "Start with a smith's stock: wood, leather, stone, ores and a few ingots ready for the forge, plus a torch and herbs for the road.", items: [{ id: "torch", qty: 2 }, { id: "healing_herb", qty: 3 }, { id: "hard_wood", qty: 8 }, { id: "soft_wood", qty: 6 }, { id: "leather", qty: 8 }, { id: "stone", qty: 6 }, { id: "iron_ore", qty: 6 }, { id: "copper_ore", qty: 4 }, { id: "tin_ore", qty: 4 }, { id: "coal", qty: 4 }, { id: "iron_ingot", qty: 2 }] },
+        { label: "Healer's Pouch", desc: "Start with a healer's supplies: five of each herb, a tonic of each kind, and bandages, antidotes and aloe to treat bleeding, poison and burns.", items: [{ id: "torch", qty: 2 }, { id: "healing_herb", qty: 5 }, { id: "invigorating_herb", qty: 5 }, { id: "illuminating_herb", qty: 5 }, { id: "healing_tonic", qty: 2 }, { id: "invigorating_tonic", qty: 1 }, { id: "illuminating_tonic", qty: 1 }, { id: "bandage", qty: 3 }, { id: "antidote", qty: 3 }, { id: "aloe", qty: 3 }] },
+        { label: "Drunkard", desc: "Start with a few bottles of a strange ale (Kurtus's Brew: one drop from death, but enraged), and something for the morning after.", items: [{ id: "torch", qty: 2 }, { id: "healing_herb", qty: 4 }, { id: "healing_tonic", qty: 1 }, { id: "kurtus_brew", qty: 3 }] },
+        { label: "Assassin's Tools", desc: "Start with the tools of a quiet killer: throwing knives, a bundle dipped in poison, smoke bombs to vanish behind and a trap to lay.", items: [{ id: "torch", qty: 2 }, { id: "healing_herb", qty: 2 }, { id: "throwing_knife", qty: 10 }, { id: "poison_throwing_knife", qty: 5 }, { id: "smoke_bomb", qty: 4 }, { id: "bear_trap", qty: 1 }, { id: "antidote", qty: 2 }] },
+        { label: "Explorer's Bag", desc: "Start with what a delver packs for caves and long roads: torches, bedrolls, maps of the next places you enter, ropes to haul you out of trouble, and a waypoint banner to plant and travel back to.", items: [{ id: "torch", qty: 5 }, { id: "healing_herb", qty: 2 }, { id: "bedroll", qty: 2 }, { id: "interior_map", qty: 3 }, { id: "escape_rope", qty: 2 }, { id: "waypoint", qty: 1 }] },
+        { label: "Miner's Supplies", desc: "Start with a pickaxe, plenty of torches to see where you are breaking rock, and some ore and coal already in the sack. Equip the pickaxe to mine.", items: [{ id: "pickaxe", qty: 1 }, { id: "torch", qty: 6 }, { id: "healing_herb", qty: 2 }, { id: "iron_ore", qty: 4 }, { id: "copper_ore", qty: 4 }, { id: "tin_ore", qty: 4 }, { id: "coal", qty: 4 }, { id: "stone", qty: 6 }] },
     ],
     COMPANIONS: [
         { label: "None", speciesId: null, desc: "Walk the path alone.", attributes: {}, equipment: {} },
@@ -136,7 +137,7 @@ export const CREATION_DATA = {
     // left out of the menu altogether when the console is switched off for a release (DEV_CONSOLE.ENABLED in constants.js).
     CHEATS: DEV_CONSOLE.ENABLED ? [
         { id: false, label: "Off", desc: "No cheats. The game is played as it was meant to be." },
-        { id: true, label: "On", desc: "Allows the developer console in this game: press / in the overworld to give yourself items, XP, party members and more, and C in a battle opens the battle debugger. It is saved with the game. Without it neither can be used." }
+        { id: true, label: "On", desc: "Allows the developer console in this game: press / in the overworld to give yourself items, XP, party members and more, and ~ in a battle shows the battle debugger. It is saved with the game. Without it neither can be used (~ still shows the frame rate panel)." }
     ] : null
 };
 
@@ -305,6 +306,7 @@ export class CharacterCreatorLogic {
         }
         
         gameState.seed = finalSeed;
+        resetWorldForNewGame();   // nothing of an earlier game in this session (its villages, roads, quests) may carry over onto the new world
 
         // Note: Make sure PartyManager.createMainCharacter NO LONGER injects the quest
         // if you previously added it there!
@@ -390,6 +392,9 @@ export class CharacterCreatorLogic {
             gameState.quests.trackedIds.push(backgroundQuestId);
         }
 
+        // a multiplayer guest's first visit: the party steps into the host's world instead of a new one (engine/multiplayerSession.js)
+        if (multiplayerSession.creatingCharacter) { multiplayerSession.characterCreated(); return; }
+
         events.emit('CHANGE_SCENE', { scene: 'overworld' });
     }
-}
+}

@@ -154,6 +154,10 @@ export function drawWeatherGlyph(ctx, id, x, y, night = false) {
             ctx.strokeStyle = '#a9b6c4'; ctx.translate(0, -3); cloud(ctx); ctx.stroke();
             ctx.strokeStyle = '#6f9bd0'; line(-6, 7, -8, 12); line(0, 7, -2, 12); line(6, 7, 4, 12);
             break;
+        case 'thunderstorm':
+            ctx.strokeStyle = '#8f9aa8'; ctx.translate(0, -3); cloud(ctx); ctx.stroke();
+            ctx.fillStyle = '#f2d75a'; ctx.beginPath(); ctx.moveTo(1, 4); ctx.lineTo(-4, 11); ctx.lineTo(0, 11); ctx.lineTo(-2, 16); ctx.lineTo(5, 8); ctx.lineTo(1, 8); ctx.lineTo(3, 4); ctx.closePath(); ctx.fill();
+            break;
         case 'fog':
             ctx.strokeStyle = '#a7a79f'; line(-10, -6, 8, -6); line(-7, 0, 11, 0); line(-10, 6, 6, 6);
             break;

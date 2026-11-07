@@ -34,9 +34,10 @@ export const CONFIG = {
     // feetPad = 'auto': the empty rows under the feet are read from the sheet's pixels, so any amount of empty space below the feet is fine.
     //           A number overrides that (empty rows between the feet and the bottom of the frame; 0 = feet on the last row).
     // shiftX = pixels to nudge a figure that is not centred in its frame (positive = right).
-    // Every character sheet has the same shadow, ending on row 56 of its 64-row frame, so feetPad is 7 for all of them: the same standing line, the same shadow, whoever it is
-    // (backend/test/charactersheets.test.js). 'auto' still works for a sheet that is different, but one stray pixel under the shadow then lifts that character off the ground.
-    CHARACTER_FRAME: { w: 64, h: 64, feetPad: 7, shiftX: 0 },
+    // Every character sheet has the same kind of shadow: a soft, see-through oval under the feet, rows 49..54 of its 64-row frame (the feet stand on row 51, inside it),
+    // so feetPad is 9 for all of them: the same standing line whoever it is (backend/test/charactersheets.test.js). 'auto' would read the lowest drawn pixel, which in a
+    // running frame can be a foot below the shadow, and lift that character off the ground.
+    CHARACTER_FRAME: { w: 64, h: 64, feetPad: 9, shiftX: 0 },
 
     // Lighting (see LightingRenderer): every light floods over the tile grid and loses a fixed amount of strength per tile.
     // LIGHT_DIAGONAL_COST = distance of a diagonal step: 1 = square pools of light, 1.41 = round (smooth, the default), 2 = diamond-shaped. 1.25 gives the
@@ -111,25 +112,61 @@ export const DAMAGE_TYPES = Object.keys(DAMAGE_TYPE_LABELS);
 export const PHYSICAL_DAMAGE_TYPES = ['blunt', 'slash', 'pierce'];
 export const MAGIC_DAMAGE_TYPES = DAMAGE_TYPES.filter(t => !PHYSICAL_DAMAGE_TYPES.includes(t));   // the elements, light, dark and arcane
 
-// BALANCE KNOB: which attributes raise the attack of each damage type, and by how much per point (StatCalculator adds attribute x weight to attack[type]).
-//   Strength       blunt, slash, pierce (all physical damage)
-//   Intelligence   fire, ice, lightning, water, earth, wind, light, dark, arcane (all magical damage)
-// Dexterity and Attunement raise no attack: they feed the pools instead (Dexterity: stamina and its recovery, Attunement: insight and its recovery; see
-// StatCalculator). A weight of 1 is one attack per point. backend/test/scaling.test.js keeps this table honest.
+// BALANCE KNOB: which attributes raise the attack AND the defense of each damage type, and by how much per point.
+//   Strength       blunt, slash
+//   Dexterity      slash, pierce
+//   Attunement     fire, ice, lightning, water, earth, wind (the six elements)
+//   Intelligence   light, dark, arcane (the three arcane types)
+// Slash is listed under both Strength and Dexterity but is in BEST_OF_SCALING: it takes the HIGHER of the two, never the sum.
+// A weight of 1 is one attack per point; defense gets weight x DEFENSE_PER_SCALING_POINT per point (StatCalculator).
+// Vigor raises no attack (it feeds max HP and a little defense against everything). backend/test/scaling.test.js keeps this table honest.
 export const DAMAGE_SCALING = {
     blunt:     { strength: 1 },
-    slash:     { strength: 1 },
-    pierce:    { strength: 1 },
-    fire:      { intelligence: 1 },
-    ice:       { intelligence: 1 },
-    lightning: { intelligence: 1 },
-    water:     { intelligence: 1 },
-    earth:     { intelligence: 1 },
-    wind:      { intelligence: 1 },
+    slash:     { strength: 1, dexterity: 1 },
+    pierce:    { dexterity: 1 },
+    fire:      { attunement: 1 },
+    ice:       { attunement: 1 },
+    lightning: { attunement: 1 },
+    water:     { attunement: 1 },
+    earth:     { attunement: 1 },
+    wind:      { attunement: 1 },
     light:     { intelligence: 1 },
     dark:      { intelligence: 1 },
     arcane:    { intelligence: 1 },
 };
+
+// ENEMY scaling: every enemy (anything not built from the player's HUMANOID template) keeps the rules its numbers were balanced for: Strength
+// raises all physical attack, Intelligence all magic attack, and defense comes from Vigor (StatCalculator.usesEnemyScaling). The hybrid rules above are
+// there to shape the player's build; under them the agile enemies (wolves, locusts, spiders, stalkers: high Dexterity / Attunement) suddenly hit
+// two to seven times as hard.
+export const ENEMY_DAMAGE_SCALING = {
+    blunt: { strength: 1 }, slash: { strength: 1 }, pierce: { strength: 1 },
+    fire: { intelligence: 1 }, ice: { intelligence: 1 }, lightning: { intelligence: 1 }, water: { intelligence: 1 }, earth: { intelligence: 1 }, wind: { intelligence: 1 },
+    light: { intelligence: 1 }, dark: { intelligence: 1 }, arcane: { intelligence: 1 },
+};
+
+// Damage types that scale with the best ONE of their attributes (the highest attribute x weight) instead of adding them all up.
+export const BEST_OF_SCALING = ['slash'];
+
+// BALANCE KNOB: defense per point of a damage type's scaling attribute (times its weight). 0.5 = +1 defense per 2 points, the same rate Vigor gives.
+export const DEFENSE_PER_SCALING_POINT = 0.5;
+
+/**
+ * How much a set of attributes adds to one damage type, per DAMAGE_SCALING (before the defense multiplier).
+ * @returns {{ value: number, attr: string|null }} the amount, and the attribute that supplies the most of it
+ */
+export function scalingFor(type, attributes = {}, table = DAMAGE_SCALING) {
+    const weights = table[type] || {};
+    const bestOf = BEST_OF_SCALING.includes(type);
+    let value = 0, attr = null, top = -Infinity;
+    for (const [a, w] of Object.entries(weights)) {
+        const part = (attributes[a] || 0) * w;
+        if (part > top) { top = part; attr = a; }
+        if (!bestOf) value += part;
+    }
+    if (bestOf) value = attr ? Math.max(0, top) : 0;
+    return { value, attr };
+}
 
 // ===============================================
 // CORRUPTION
@@ -181,4 +218,4 @@ export const DIFFICULTY_MODIFIERS = {
     [DIFFICULTY_LEVELS.NORMAL]: { rollBonus: 0, enemyLevelOffset: 0 },
     [DIFFICULTY_LEVELS.HARD]: { rollBonus: -2, enemyLevelOffset: 1 },
     [DIFFICULTY_LEVELS.NIGHTMARE]: { rollBonus: -3, enemyLevelOffset: 3 }
-};
+};

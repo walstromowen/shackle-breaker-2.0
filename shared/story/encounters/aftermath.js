@@ -73,7 +73,6 @@ export const aftermath = {
                             results: [
                                 // FIX: success now sets the flag too, so the XP can't be farmed by repeating the search
                                 { type: "SET_CONTEXT_FLAG", payload: { flagId: "searched_survivors" } },
-                                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "wounded_warrior" } }
                             ]
                         },
@@ -132,7 +131,6 @@ export const aftermath = {
                             weight: 100,
                             results: [
                                 { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "battlefield_loot", rolls: 1 } },
-                                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                                 // Removes the map object so re-entering can't farm the same loot
                                 { type: "DESTROY_OBJECT" },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "aftermath" } }
@@ -144,7 +142,7 @@ export const aftermath = {
         },
         loot_fail: {
             displayText: "Nothing of Value",
-            image: { col: 2, row: 0 },
+            image: { col: 0, row: 0 },   // the battlefield (cell 2,0 of the sheet is empty)
             text: "You search the area thoroughly, but see nothing worth taking.",
             decisions: [
                 {
@@ -155,7 +153,7 @@ export const aftermath = {
         },
         search_fail: {
             displayText: "No Life Signs",
-            image: { col: 2, row: 0 },
+            image: { col: 0, row: 0 },   // the battlefield (cell 2,0 of the sheet is empty)
             text: "You search high and low, but find no survivors.",
             decisions: [
                 {
@@ -215,7 +213,6 @@ export const aftermath = {
                             weight: 100,
                             results: [
                                 { type: "START_QUEST", payload: { questId: "alterian_sealed_orders", questName: "Sealed Orders" } },
-                                { type: "AWARD_XP", payload: { amount: 10, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
@@ -239,7 +236,6 @@ export const aftermath = {
                             weight: 100,
                             results: [
                                 { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "alterian_officer_loot", rolls: 1 } },
-                                { type: "AWARD_XP", payload: { amount: 10, target: "active_character" } },
                                 { type: "DESTROY_OBJECT" },
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
@@ -273,7 +269,6 @@ export const aftermath = {
                             results: [
                                 { type: "REMOVE_ITEM", payload: { itemId: "healing_herb", qty: 1 } },
                                 { type: "MODIFY_CORRUPTION", payload: { amount: -5, target: "active_character" } },
-                                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "battle_survivor" } }
                             ]
                         }
@@ -410,7 +405,6 @@ export const aftermath = {
                         {
                             weight: 100,
                             results: [
-                                { type: "AWARD_XP", payload: { amount: 5, target: "active_character" } },
                                 // FIX: RECRUIT_ENTITY -> RECRUIT_CHARACTER (the event the other encounters use)
                                 { type: "RECRUIT_CHARACTER", payload: { entityId: "LEGIONARY_COMPANION" } },
                                 { type: "DESTROY_OBJECT" },
@@ -430,7 +424,6 @@ export const aftermath = {
                             weight: 1,
                             results: [
                                 { type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_recruit" } },
-                                { type: "AWARD_XP", payload: { amount: 10, target: "active_character" } },
                                 { type: "ADVANCE_STAGE", payload: { stageId: "survivor_bribe_demand" } }
                             ]
                         }
@@ -605,7 +598,7 @@ export const aftermath = {
             effect: "blood",
             ambience: "none",
             ambienceFade: 0.4,
-            image: { col: 1, row: 3 },
+            image: { col: 3, row: 3 },   // the fallen rising to fight (cell 1,3 is a placeholder square)
             bgm: "plainsBattleBgm",
             text: "As you tend to the warrior's wounds, he violently grabs you and draws his weapon! Soon, other fallen warriors rise around you!",
             decisions: [

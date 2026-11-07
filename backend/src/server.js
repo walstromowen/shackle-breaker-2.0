@@ -4,6 +4,7 @@ import { loadConfig } from './config.js';
 import { createApp } from './app.js';
 import { createMemoryRepo } from './repos/memoryRepo.js';
 import { createMongoRepo } from './repos/mongoRepo.js';
+import { attachLobbyServer } from './multiplayer/lobbyServer.js';
 
 async function main() {
     const config = loadConfig();
@@ -18,9 +19,11 @@ async function main() {
         console.log(`[server] Listening on http://localhost:${config.port}${config.serveFrontend ? '  (the game is served at /)' : ''}`);
         if (config.inviteCode) console.log('[server] Sign-up needs the invite code.');
     });
+    const multiplayer = attachLobbyServer(server, { config });   // the multiplayer rooms: a WebSocket at /api/mp
 
     const shutdown = (signal) => {
         console.log(`[server] ${signal}: shutting down.`);
+        multiplayer.close();
         server.close(() => repo.close().finally(() => process.exit(0)));
         setTimeout(() => process.exit(1), 10000).unref();
     };

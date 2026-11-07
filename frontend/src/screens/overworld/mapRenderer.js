@@ -3,6 +3,37 @@ import { gameState } from '../../../../shared/core/gameState.js';
 import { BlobTerrainRenderer } from './blobTerrainRenderer.js';
 import { fenceFrame } from '../../../../shared/world/fenceConnections.js';
 import { PartyFollowers } from './partyFollowers.js';
+import { events } from '../../../../shared/core/eventBus.js';
+
+/* The light flash of a change of weather: a few quick, uneven flickers of pale light over the whole screen (TimeSystem.setWeather emits WEATHER_CHANGED).
+   Each pulse is [start s, length s, peak alpha]; drawn after the lighting, so it shows at night too. */
+const WEATHER_FLASH = [[0, 0.07, 0.34], [0.11, 0.05, 0.12], [0.19, 0.09, 0.26], [0.34, 0.05, 0.08], [0.42, 0.35, 0.16]];
+let weatherFlashAt = -Infinity;
+// at most one flash every few seconds, so pacing back and forth over a biome border does not strobe
+events.on('WEATHER_CHANGED', () => { const now = performance.now(); if (now - weatherFlashAt > 3000) weatherFlashAt = now; });
+/* Lightning (WeatherRenderer.updateLightning): no bolt is seen, only its light: a fast, hard white flash and a quick flicker after it, all over in a third of a
+   second; the nearer the strike, the brighter. */
+const LIGHTNING_FLASH = [[0, 0.05, 0.72], [0.08, 0.04, 0.4], [0.14, 0.16, 0.14]];
+let lightning = null;
+events.on('LIGHTNING_STRIKE', ({ distance = 0.5 } = {}) => {
+    lightning = { at: performance.now(), strength: 1 - distance * 0.7 };
+});
+export function lightningAlpha(seconds, strength) {
+    let a = 0;
+    for (const [start, len, peak] of LIGHTNING_FLASH) {
+        const t = seconds - start;
+        if (t >= 0 && t < len) a = Math.max(a, peak * strength * (1 - t / len));
+    }
+    return a;
+}
+export function weatherFlashAlpha(seconds) {
+    let a = 0;
+    for (const [start, len, peak] of WEATHER_FLASH) {
+        const t = seconds - start;
+        if (t >= 0 && t < len) a = Math.max(a, peak * (1 - t / len));
+    }
+    return a;
+}
 export class MapRenderer {
     constructor(canvas, loader, config) {
         this.canvas = canvas;
@@ -65,6 +96,28 @@ export class MapRenderer {
             const lightObjects = worldManager.getLightObjects(camera, this.canvas.width, this.canvas.height);
             lightingRenderer.render(this.ctx, ambientData, renderCamera, entities, lightObjects, worldManager, interpolationFactor);
         }
+        /* Pass 4: lightning, and the stutter of light when the weather turns */
+        if (lightning && !gameState.world.isInterior) this.drawLightning();
+        const flash = weatherFlashAlpha((performance.now() - weatherFlashAt) / 1000);
+        if (flash > 0) {
+            this.ctx.save();
+            this.ctx.globalCompositeOperation = 'lighter';
+            this.ctx.fillStyle = `rgba(225, 232, 255, ${flash.toFixed(3)})`;
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.restore();
+        }
+    }
+    drawLightning() {
+        const t = (performance.now() - lightning.at) / 1000;
+        const a = lightningAlpha(t, lightning.strength);
+        if (a <= 0 && t > 0.5) { lightning = null; return; }
+        if (a <= 0) return;
+        const ctx = this.ctx;
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.fillStyle = `rgba(215, 225, 255, ${a.toFixed(3)})`;
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        ctx.restore();
     }
     /* Natural darkness. The biome under the camera may carry `ambientLight: { r, g, b, a }` (biomeDefinitions.js). The result is the darker of that and the
        day / night colour (alpha = the larger of the two, colour = the two weighted by their alphas), so a cave is as dark as night by day and no darker than the
@@ -159,6 +212,7 @@ export class MapRenderer {
             if (!this.renderList[renderIdx]) this.renderList[renderIdx] = {};
             const item = this.renderList[renderIdx++];
             item.y = (renderY + entityHitboxBottom * TILE_SIZE) * scale;
+            if (entity.entering && entity.entering.above) item.y += TILE_SIZE * scale;   // stepping through a door: in front of it
             item.type = 'ENTITY';
             item.data = entity;
         }
@@ -212,6 +266,9 @@ export class MapRenderer {
             this.ctx.globalAlpha = Math.max(0, Math.min(1, obj.alpha));
         }
         this.ctx.drawImage(imageSource, sx, 0, wTiles * OBJECT_SIZE, hTiles * OBJECT_SIZE, dx, drawY, dW, dH);
+        // where the art actually is on screen (every frame of it), for the interaction outline (OverworldUIRenderer.drawInteractionBrackets)
+        const fw = wTiles * OBJECT_SIZE, fh = hTiles * OBJECT_SIZE;
+        obj._screenRect = this.screenRectOf(this.opaqueBounds(imageSource, fw, fh, Math.max(1, obj.frames || 1), 1), dx, drawY, dW / fw, dH / fh, dW, dH);
         if (obj.alpha !== undefined) {
             this.ctx.globalAlpha = prevAlpha;
         }
@@ -241,6 +298,67 @@ export class MapRenderer {
         if (obj.alpha !== undefined) this.ctx.globalAlpha = Math.max(0, Math.min(1, obj.alpha));
         this.ctx.drawImage(sprite, sx, sy, FW, FH, dx - offX, tileBottom - dH + Math.floor(feetPad * dH / FH), dW, dH);
         if (obj.alpha !== undefined) this.ctx.globalAlpha = prevAlpha;
+        obj._screenRect = this.screenRectOf(this.characterBounds(sprite, FW, FH), dx - offX, tileBottom - dH + Math.floor(feetPad * dH / FH), dW / FW, dH / FH, dW, dH);
+    }
+
+    /* The box around what is drawn of a sheet, in a frame's own pixels: { x0, y0, x1, y1 } over every frame (so the outline does not jump as
+       it animates), from the sheet's pixels; null when they cannot be read. `cols` x `rows` frames of fw x fh, laid out from the top left. */
+    opaqueBounds(image, fw, fh, cols = 1, rows = 1) {
+        if (!this._bounds) this._bounds = new WeakMap();
+        let perImage = this._bounds.get(image);
+        if (!perImage) { perImage = new Map(); this._bounds.set(image, perImage); }
+        const key = `${fw}x${fh}:${cols}x${rows}`;
+        if (perImage.has(key)) return perImage.get(key);
+        let b = null;
+        try {
+            const px = this._pixelsOf(image);
+            if (px) {
+                let x0 = fw, y0 = fh, x1 = -1, y1 = -1;
+                for (let fy = 0; fy < rows; fy++) for (let fx = 0; fx < cols; fx++) {
+                    for (let y = 0; y < fh; y++) {
+                        const gy = fy * fh + y;
+                        if (gy >= px.h) break;
+                        for (let x = 0; x < fw; x++) {
+                            const gx = fx * fw + x;
+                            if (gx >= px.w) break;
+                            if (px.data[(gy * px.w + gx) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+                        }
+                    }
+                }
+                if (x1 >= 0) b = { x0, y0, x1, y1 };
+            }
+        } catch (e) { b = null; }
+        perImage.set(key, b);
+        return b;
+    }
+
+    /* A character sheet's box: every frame of every row (walk, run, idle in all directions). */
+    characterBounds(sprite, FW, FH) {
+        const w = sprite.naturalWidth || sprite.width, h = sprite.naturalHeight || sprite.height;
+        return this.opaqueBounds(sprite, FW, FH, Math.max(1, Math.floor(w / FW)), Math.max(1, Math.floor(h / FH)));
+    }
+
+    /* A sheet's pixels, read once. */
+    _pixelsOf(image) {
+        if (!this._pixels) this._pixels = new WeakMap();
+        if (this._pixels.has(image)) return this._pixels.get(image);
+        let out = null;
+        const w = image.naturalWidth || image.width, h = image.naturalHeight || image.height;
+        if (w > 0 && h > 0 && typeof document !== 'undefined') {
+            const cv = document.createElement('canvas');
+            cv.width = w; cv.height = h;
+            const cx = cv.getContext('2d', { willReadFrequently: true });
+            cx.drawImage(image, 0, 0);
+            out = { w, h, data: cx.getImageData(0, 0, w, h).data };
+        }
+        this._pixels.set(image, out);
+        return out;
+    }
+
+    /* The on-screen box of a frame drawn at (x, y) scaled by (kx, ky); the whole frame (w x h) when its pixels could not be read. */
+    screenRectOf(b, x, y, kx, ky, w, h) {
+        if (!b) return { x, y, w, h };
+        return { x: x + b.x0 * kx, y: y + b.y0 * ky, w: (b.x1 - b.x0 + 1) * kx, h: (b.y1 - b.y0 + 1) * ky };
     }
     /* Number of empty rows between the lowest drawn pixel and the bottom of a character frame, read from the sheet's own pixels: the lowest opaque row
        of any frame in the sheet (so a lifted foot does not drag the ground line up). Found once per sheet and remembered. Returns null when the pixels
@@ -278,14 +396,15 @@ export class MapRenderer {
         // The party leader walks the map: the first member on their feet who has a sheet (this.lineup, worked out once a frame). A recruited creature has no walking sheet
         // (the snow leopard and wolf point at a sheet that does not exist), so it is skipped and the next member is drawn instead of the player vanishing. The two after the leader are the followers.
         const lineup = this.lineup || PartyFollowers.lineup(gameState.party.members, (key) => !!this.loader.get(key));
-        const walker = lineup[entity.followerSlot || 0];
-        const sprite = walker ? this.loader.get(walker.spriteOverworld) : null;
+        // another player in a multiplayer world (engine/multiplayerSession.js) walks with their own leader's sheet
+        const walker = entity.remote ? null : lineup[entity.followerSlot || 0];
+        const sprite = entity.remote ? (entity.spriteKey ? this.loader.get(entity.spriteKey) : null) : (walker ? this.loader.get(walker.spriteOverworld) : null);
         if (!sprite) return;
         const { TILE_SIZE, GAME_SCALE } = this.config;
         const scale = GAME_SCALE * this.resScale;
         const renderX = entity.prevX !== undefined ? entity.prevX + (entity.x - entity.prevX) * interpolationFactor : entity.x;
         const renderY = entity.prevY !== undefined ? entity.prevY + (entity.y - entity.prevY) * interpolationFactor : entity.y;
-        const dx = Math.floor((renderX - camera.x) * scale);
+        let dx = Math.floor((renderX - camera.x) * scale);
         const dy = Math.floor((renderY - camera.y) * scale);
         /* A character frame can be bigger than a tile (e.g. 64 x 64). entity.x / y stay the tile the character stands on, so collision, the hitbox and
            the depth sort do not change; the frame is only DRAWN around that tile: centred sideways, with the lowest drawn pixel of the sprite on the
@@ -311,8 +430,43 @@ export class MapRenderer {
         const sy = (A.firstRow[state] + dirIndex) * FH;
         const offX = Math.floor(((FW - TILE_SIZE) / 2 - shiftX) * scale);
         const dW = Math.ceil(FW * scale), dH = Math.ceil(FH * scale);
-        const tileBottom = dy + Math.ceil(TILE_SIZE * scale); // the same screen line drawObject puts the bottom of a 1-tile object on, at any scale
+        // going through a door or into a cave (OverworldController._startEntering): a little further up into the opening, standing in it, in its shadow
+        const ent = entity.entering;
+        const shiftY = ent ? Math.floor((ent.oy || 0) * scale) : 0;
+        if (ent) dx += Math.floor((ent.ox || 0) * scale);
+        const tileBottom = dy + Math.ceil(TILE_SIZE * scale) + shiftY; // the same screen line drawObject puts the bottom of a 1-tile object on, at any scale
+        if (ent && ent.fade > 0) {
+            this.ctx.save();
+            this.ctx.filter = `brightness(${Math.max(0.3, 1 - ent.fade * 0.7)})`;   // in the doorway's shadow, still there
+            this.ctx.drawImage(sprite, sx, sy, FW, FH, dx - offX, tileBottom - dH + Math.floor(feetPad * dH / FH), dW, dH);
+            this.ctx.restore();
+            entity._screenRect = null;
+            return;
+        }
         this.ctx.drawImage(sprite, sx, sy, FW, FH, dx - offX, tileBottom - dH + Math.floor(feetPad * dH / FH), dW, dH);
+        entity._screenRect = this.screenRectOf(this.characterBounds(sprite, FW, FH), dx - offX, tileBottom - dH + Math.floor(feetPad * dH / FH), dW / FW, dH / FH, dW, dH);
+        if (entity.label) this.drawNameTag(entity, dx + Math.floor(TILE_SIZE * scale / 2), tileBottom - dH + Math.floor(feetPad * dH / FH));
+    }
+
+    /* Another player's name over their head (and "In battle" under it while they fight), so friends can find each other on the map. */
+    drawNameTag(entity, cx, topY) {
+        const ctx = this.ctx;
+        ctx.save();
+        ctx.font = '600 22px "Barlow", system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        const w = ctx.measureText(entity.label).width + 18;
+        const y = topY - 4;
+        ctx.fillStyle = 'rgba(8, 9, 12, 0.72)';
+        ctx.fillRect(Math.round(cx - w / 2), y - 28, Math.round(w), 28);
+        ctx.fillStyle = '#c9a64f';
+        ctx.fillText(entity.label, cx, y - 3);
+        if (entity.busy) {
+            ctx.font = 'italic 400 18px "Barlow", system-ui, sans-serif';
+            ctx.fillStyle = '#e2dac8';
+            ctx.fillText(entity.busy, cx, y - 32);
+        }
+        ctx.restore();
     }
     updateViewBounds(camera) {
         const { TILE_SIZE, GAME_SCALE, WALL_HEIGHT } = this.config;

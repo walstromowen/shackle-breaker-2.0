@@ -74,12 +74,15 @@ test('the door of a front yard is on the bottom row of its house and has a footp
     }
 });
 
-test('every module of every village exists, the side houses stand only beside north-south streets, and the one workshop is required', () => {
+test('every module of every village exists, the side houses stand only beside north-south streets, and the one workshop (the stone house) is required', () => {
     for (const id of ['ABANDONED_VILLAGE', 'ABANDONED_VILLAGE_DESERT', 'ABANDONED_VILLAGE_SNOWY']) {
         const mods = STRUCTURES[id].modules;
         for (const m of mods) assert.ok(STRUCTURES[m.prefab], `${id}: ${m.prefab} exists`);
         const sides = mods.filter(m => /_SIDE_/.test(m.prefab));
-        assert.equal(sides.length, 8, `${id}: two modules of each of the four houses`);
+        assert.equal(sides.length, 4, `${id}: two modules of each of the plank house and the smithy (the stone house is the workshop now: no plain or side ones)`);
+        assert.ok(!mods.some(m => /^ABANDONED_STONE_HOUSE/.test(m.prefab)), `${id}: no plain stone house`);
+        const workshop = STRUCTURES[mods.find(m => m.required).prefab];
+        assert.ok(JSON.stringify(workshop).includes('ABANDONED_STONE_HOUSE'), `${id}: the workshop is the stone house`);
         for (const m of sides) assert.equal(m.horizontalWeight, 0, `${m.prefab} is never beside an east-west street`);
         for (const m of mods.filter(x => !/_SIDE_/.test(x.prefab))) assert.ok((m.horizontalWeight ?? m.weight) > 0, `${m.prefab} may stand beside an east-west street`);
         assert.equal(mods.filter(m => m.required).length, 1);

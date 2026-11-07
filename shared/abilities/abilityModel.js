@@ -1,5 +1,6 @@
 import { AbilityDefinitions } from './abilityDefinitions.js';
 import { StatCalculator } from '../characters/statCalculator.js';
+import { traitRewardsFor } from './abilityTraits.js';
 
 // BALANCE KNOBS: stamina, insight and hp costs grow with the user's max pool of that resource, so a bigger pool means more casts,
 // but not proportionally more. Authored costs in abilityDefinitions.js are what a character with the resource's `ref` pool pays
@@ -41,8 +42,9 @@ export class AbilityModel {
     get effects() { return this.config.effects || []; }
     get statusEffects() { return this.config.statusEffects || []; }
     
-    // ---> NEW: Expose traitRewards for the post-battle reward system <---
-    get traitRewards() { return this.config.traitRewards || []; }
+    // the traits it can teach after a fight (using it, killing with it, living through it): its own `traitRewards`, else the ones that fit it
+    // (abilities/abilityTraits.js), read by BattleRewardSystem._processTraitRewards
+    get traitRewards() { return traitRewardsFor(this.config); }
 
     set cost(newCost) { this._dynamicCost = newCost; }
     

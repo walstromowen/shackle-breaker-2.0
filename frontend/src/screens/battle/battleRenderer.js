@@ -5,6 +5,7 @@ import { gameState } from '../../../../shared/core/gameState.js';
 import { BattleCombatantRenderer } from './battleCombatantRenderer.js';
 import { BattleHUDRenderer } from './battleHUDRenderer.js';
 import { BattleDebuggerRenderer } from './battleDebuggerRenderer.js';
+import { debugOverlay } from '../../ui/debugOverlay.js';
 import { ParticleSystem } from '../../ui/particles/particleSystem.js';
 import { drawSmoke } from '../../ui/particles/smoke.js';
 
@@ -21,7 +22,6 @@ export class BattleRenderer {
         this.hudRenderer = new BattleHUDRenderer(ctx, config, loader, this.ui, this.combatantRenderer);
         this.debugRenderer = new BattleDebuggerRenderer(ctx, config);
 
-        this.showDebug = false;
         this.lastTime = performance.now();
         this.dt = 0;
         this.floatingTexts = [];
@@ -51,9 +51,6 @@ export class BattleRenderer {
             this.vfxRenderer.spawnBurst(x, y, count, config);
         });
 
-        events.on('TOGGLE_BATTLE_DEBUG', () => {
-            this.showDebug = gameState.cheats === true && !this.showDebug;
-        });
     }
 
     render(state) {
@@ -229,8 +226,9 @@ export class BattleRenderer {
         // 5. Draw Floating Combat Text
         this.drawFloatingTexts(this.dt);
 
-        // 6. Draw Debug Overlay
-        if (this.showDebug && gameState.cheats === true) {
+        // 6. The battle debugger: part of the debug overlay ("~" on any screen, see ui/debugOverlay.js). It shows the enemies' numbers, so it is a
+        // cheat: only in a game created with Cheats on (the performance panel of the overlay is for every game).
+        if (debugOverlay.visible && gameState.cheats === true) {
             this.debugRenderer.render(state);
         }
 
@@ -349,4 +347,4 @@ export class BattleRenderer {
             this.ctx.restore();
         }
     }
-}
+}
