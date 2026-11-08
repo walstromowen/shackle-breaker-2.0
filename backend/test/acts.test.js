@@ -270,3 +270,33 @@ test('skeletons and floating skulls only ever come in random fights in the catac
     assert.deepEqual([...cave].sort(), ['CAVE_SPIDER', 'MAD_MAN', 'MAGIC_ADDICT', 'ROTTER']);
     assert.ok(SpawnTableDefinitions.catacombs_battles.pools.some(p => p.members.some(m => m.id === 'SKELETAL_WARRIOR')));
 });
+
+test('act 2 makes every enemy possibly stronger: one more trait, better gear (never a boss), all from traits and items that exist', async () => {
+    const { EntityFactory } = await import('../../shared/characters/entityFactory.js');
+    const { ItemFactory } = await import('../../shared/items/itemFactory.js');
+    const { ItemDefinitions } = await import('../../shared/items/itemDefinitions.js');
+    const makeItem = (id, level) => ItemFactory.createItem(id, { level: Math.min(ItemDefinitions[id].maxLevel || 1, level) });
+    const b = ACT_DEFINITIONS[2].enemyBoosts;
+    for (const t of b.traits) assert.ok(TRAIT_DEFINITIONS[t], `${t} is a trait`);
+    const always = () => 0;   // every roll a success
+    assert.deepEqual(ActSystem.boostEnemy(EntityFactory.create('LEGIONARY', 10), { rand: always, makeItem }, { milestones: [] }), { trait: null, gear: 0 }, 'act 1: as made');
+    const legionary = EntityFactory.create('LEGIONARY', 10);
+    const done = ActSystem.boostEnemy(legionary, { rand: always, makeItem }, act2());
+    assert.ok(done.trait && legionary.state.traits.includes(done.trait), 'one more trait');
+    assert.ok(legionary.state.equipment.mainHand.level > 1, 'a better weapon');
+    const never = () => 0.999;
+    assert.deepEqual(ActSystem.boostEnemy(EntityFactory.create('LEGIONARY', 10), { rand: never, makeItem }, act2()), { trait: null, gear: 0 }, 'an unlucky roll: as made');
+    assert.deepEqual(ActSystem.boostEnemy(EntityFactory.create('DARIUS_THE_GROVELER', 10), { rand: always, makeItem }, act2()), { trait: null, gear: 0 }, 'a boss is never changed');
+});
+
+test('act 2: by day the night\'s enemies are sometimes abroad (nightByDay), in act 1 never', () => {
+    assert.ok(ACT_DEFINITIONS[2].nightByDay > 0 && ACT_DEFINITIONS[2].nightByDay < 1);
+    assert.equal(ActSystem.nightEnemiesByDay(0, { milestones: [] }), false);
+    assert.equal(ActSystem.nightEnemiesByDay(0, act2()), true);
+    assert.equal(ActSystem.nightEnemiesByDay(0.99, act2()), false);
+});
+
+test('the quest after Darius (A Dark Truth) asks for level 20', () => {
+    const q = QuestDefinitions.act2_red_moon;
+    assert.equal(q.objectives.find(o => o.type === 'party_level').targetLevel, 20);
+});

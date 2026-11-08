@@ -99,7 +99,10 @@ export class BiomeModel {
                 * (ActSystem.isBloodMoon(currentHour) ? ActSystem.getBattleRateMultiplier(currentHour) : 1);
         if (!(this.battles.rate > 0) || Math.random() > rate * rateScale) return null;
         // A blood moon night has a table of its own (`tables.bloodMoon`), the dead and the cursed that rise under it
+        // in act 2 the night's enemies are sometimes abroad by day too (actDefinitions.js nightByDay)
+        const nightByDay = timeOfDay !== 'night' && this.battles.tables.night && ActSystem.nightEnemiesByDay();
         const tableId = (ActSystem.isBloodMoon(currentHour) && this.battles.tables.bloodMoon)
+            || (nightByDay ? this.battles.tables.night : null)
             || this.battles.tables[timeOfDay] || this.battles.tables.day;
         if (!tableId) return null;
         const spawnModel = SpawnTableFactory.generateBattle(tableId, difficulty, { ...size, ambush: true });   // an ambush: AMBUSH_SIZE

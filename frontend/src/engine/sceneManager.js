@@ -65,6 +65,8 @@ import { WorldManager } from '../../../shared/world/worldManager.js';
 import { TimeSystem } from '../../../shared/world/timeSystem.js';
 import { placeWaypoint, frontTile, getWaypoints, findWaypoint, landingTile } from '../../../shared/world/waypoints.js';
 import { ActSystem } from '../../../shared/story/actSystem.js';
+import { ItemFactory } from '../../../shared/items/itemFactory.js';
+import { ItemDefinitions } from '../../../shared/items/itemDefinitions.js';
 import { gameState } from '../../../shared/core/gameState.js';
 import { AbilitySystem } from '../../../shared/abilities/abilitySystem.js';
 import { DIFFICULTY_MODIFIERS, DEV_CONSOLE } from '../../../shared/core/constants.js';
@@ -626,6 +628,11 @@ export class SceneManager {
                 }
 
                 const enemyEntity = EntityFactory.create(enemyId, factoryOverrides);
+                // the act may make it stronger still: one more trait, better gear (actDefinitions.js enemyBoosts; never a boss)
+                ActSystem.boostEnemy(enemyEntity, { makeItem: (defId, level) => {
+                    const def = ItemDefinitions[defId];
+                    return def ? ItemFactory.createItem(defId, { level: Math.min(def.maxLevel || 1, level) }) : null;
+                } });
                 scaledEnemies.push(enemyEntity);
             }
             

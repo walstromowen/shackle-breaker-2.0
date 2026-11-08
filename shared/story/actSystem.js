@@ -124,6 +124,42 @@ export const ActSystem = {
         return { abilities: [...(up.abilities || [])], traits: [...(up.traits || [])] };
     },
 
+    /** Does this ambush by day come from the night table (the act's nightByDay chance)? `roll` is a number in [0, 1). */
+    nightEnemiesByDay(roll = Math.random(), state = gameState) {
+        const chance = this.getActDefinition(state).nightByDay || 0;
+        return chance > 0 && roll < chance;
+    },
+
+    /**
+     * The act's enemyBoosts on a freshly made enemy: maybe one more trait, maybe better gear (each piece it carries 1 to gearLevels levels higher,
+     * up to the item's most). Bosses are left as they are made. `rand` gives numbers in [0, 1). Returns what it did: { trait, gear }.
+     */
+    boostEnemy(entity, { rand = Math.random, makeItem = null } = {}, state = gameState) {
+        const b = this.getActDefinition(state).enemyBoosts;
+        const done = { trait: null, gear: 0 };
+        if (!b || !entity || !entity.state) return done;
+        const tags = entity.state.tags || [];
+        if (tags.includes('BOSS')) return done;
+        const traits = entity.state.traits || (entity.state.traits = []);
+        if (b.traitChance && rand() < b.traitChance && Array.isArray(b.traits) && b.traits.length) {
+            const fresh = b.traits.filter(t => !traits.includes(t));
+            if (fresh.length) { done.trait = fresh[Math.floor(rand() * fresh.length) % fresh.length]; traits.push(done.trait); }
+        }
+        if (b.gearChance && makeItem && rand() < b.gearChance) {
+            const eq = entity.state.equipment || {};
+            for (const slot of Object.keys(eq)) {
+                const it = eq[slot];
+                if (!it) continue;
+                const defId = typeof it === 'string' ? it : (it.defId || it.id);
+                const level = (typeof it === 'object' && it.level) || 1;
+                const up = 1 + Math.floor(rand() * Math.max(1, b.gearLevels || 1));
+                const better = makeItem(defId, level + up);
+                if (better && better.level > level) { eq[slot] = better; done.gear++; }
+            }
+        }
+        return done;
+    },
+
     /** `minAct` / `maxAct` on a spawn pool, a spawn member or an encounter pool: true when it can be used in the current act. */
     isAvailable(entry, state = gameState) {
         if (!entry) return false;

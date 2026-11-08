@@ -99,7 +99,7 @@ export const QuestDefinitions = {
         name: "A Dark Truth",
         description: "Darius was not cursed by the stone. His own magic emptied him, one spell at a time, until only the kneeling was left. Every spell drains the one who casts it, and when nothing is left, the shackles take the rest. The moon rises red every night now, the dead walk the roads, and every enemy is a little stronger than before. Grow strong, cast with care, and keep your torch lit.",
         objectives: [
-            { id: "obj_reach_level_12", type: "party_level", targetLevel: 25, amount: 1 },
+            { id: "obj_reach_level_12", type: "party_level", targetLevel: 20, amount: 1 },
             { id: "obj_kill_risen", type: "kill_enemy", targetId: "SKELETAL_WARRIOR", amount: 5 }
         ],
         rewards: {

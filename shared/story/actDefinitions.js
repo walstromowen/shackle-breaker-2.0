@@ -22,6 +22,10 @@
  *   enemyLevelOffset     levels added to every enemy, on top of the difficulty's own offset
  *   enemies         extra abilities and traits for specific enemies:  { MAD_MAN: { abilities: ['reckless_charge'], traits: ['quick'] } }
  *                   (an enemy made with its own abilities keeps them: these are added)
+ *   nightByDay      the chance that an ambush by day (in any biome) comes from the biome's night table instead: the night's enemies abroad in daylight
+ *   enemyBoosts     every enemy of every fight may come stronger (bosses excepted, they are made as they are):
+ *                     traitChance  the chance of one more trait, picked from `traits`
+ *                     gearChance   the chance that its gear is better: each piece it carries 1 to gearLevels levels higher (up to the item's most)
  */
 export const ACT_DEFINITIONS = {
     1: {
@@ -50,6 +54,13 @@ export const ACT_DEFINITIONS = {
         battleRate: 1.25,
         bloodMoonBattleRate: 1.8,
         enemyLevelOffset: 1,
+        nightByDay: 0.25,
+        enemyBoosts: {
+            traitChance: 0.35,
+            traits: ['tough', 'quick', 'nimble', 'deadeye', 'brawler', 'ironhide', 'berserker', 'enduring', 'iron_willed', 'intimidating', 'athletic'],
+            gearChance: 0.4,
+            gearLevels: 2
+        },
 
         enemies: {
             // --- the shackled ---
