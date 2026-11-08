@@ -827,7 +827,7 @@ export const BattleAnimationDefinitions = {
     // Bless (and the Blessed status): purify's shape in gold, a warm light settling down onto the target.
     "bless": anim(2, {
         seconds: true,
-        audio: [sfx(0.1, 'healSfx', { volume: 1, pitch: 0.9 }), sfx(0.8, 'purifySfx', { volume: 0.6, pitch: 1.0 })],
+        audio: [sfx(0.05, 'lightShimmerSfx', { volume: 0.9, pitch: 1.0 }), sfx(0.35, 'lightBellSfx', { volume: 0.7, pitch: 1.1 })],   // the holy sounds
         actor: { flash: flash(0, 0.6, 'brightness(170%) sepia(80%) hue-rotate(5deg) saturate(220%)') },
         vfx: [
             spawn(0.35, 'purifyAnimation', { life: 1.3, move: 'float_up_and_pop', scale: 1.6 }),
@@ -963,13 +963,27 @@ export const BattleAnimationDefinitions = {
         target: { shake: shake(0.1, 0.5, 10), flash: flash(0.1, 0.8, 'brightness(60%) grayscale(60%) drop-shadow(0 10px 5px black)') }
     }),
     // Solar Beam: light gathers into the caster from every side, then a golden beam is driven into the target and the whole thing flares.
+    // Cleanse and Purify, the light's own: purify's picture with the holy sounds (the shimmer, then the bell). The healing items (bandage, antidote,
+    // aloe) keep plain "purify".
+    "holy_purify": anim(2, {
+        seconds: true,
+        audio: [sfx(0.05, 'lightShimmerSfx', { volume: 0.9, pitch: 1.1 }), sfx(0.4, 'lightBellSfx', { volume: 0.65, pitch: 1.25 })],
+        actor: { flash: flash(0, 0.6, 'brightness(180%) sepia(50%) hue-rotate(180deg) saturate(200%)') },
+        vfx: [
+            spawn(0.4, 'purifyAnimation', { life: 1.2, move: 'float_up_and_pop', scale: 1.5 }),
+            ...repeat(0.5, 8, 0.1, t => burst(t, { count: 3, color: '#d8f4ff', scale: 0.5, area: [100, 30], offsetY: 40, angle: 270, cone: 20, minSpeed: 90, maxSpeed: 180, minLife: 0.6, maxLife: 0.9, envelope: true })),
+            burst(1.0, { count: 14, color: '#ffffff', scale: 0.5, minSpeed: 40, maxSpeed: 140, minLife: 0.3, maxLife: 0.6, gravity: -50, offsetY: -30 })
+        ],
+        target: { flash: flash(0.4, 2.0, 'brightness(200%) sepia(30%) hue-rotate(180deg) saturate(150%) drop-shadow(0 0 10px white)') }
+    }),
     "solar_beam": anim(2.6, {
         seconds: true,
         hit: 1.35,
         audio: [
-            sfx(0.05, 'spiteCastSfx', { volume: 1, pitch: 0.8 }),
+            sfx(0.05, 'lightShimmerSfx', { volume: 1, pitch: 0.9 }),     // motes of sunlight gather (it borrowed Spite's cast before)
             sfx(0.95, 'fireballCastSfx', { volume: 1.2, pitch: 0.7 }),
-            sfx('hit', 'shockSfx', { volume: 0.7, pitch: 0.7 })
+            sfx('hit', 'lightBellSfx', { volume: 0.9, pitch: 0.85 }),      // the bell tolls as the beam strikes
+            sfx('hit', 'shockSfx', { volume: 0.45, pitch: 0.7 })
         ],
         actor: wobble(0, 1.0, 8, { flash: flash(0, 1.9, tint('gold', { bright: 260, sat: 400, glow: 'gold', glowSize: 15 })) }),
         vfx: [

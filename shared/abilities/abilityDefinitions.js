@@ -955,7 +955,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "self", select: "auto" },
         cost: { insight: 12 },
         accuracy: 1.0,
-        animationId: "purify",
+        animationId: "holy_purify",
         effects: [{ type: "dispel", tags: ["poison", "bleed", "burn", "frozen", "wet", "slowed", "knocked_down", "bound", "paralyzed", "dimmed", "weakened", "suppressed", "vulnerable", "exposed", "living_bomb"] }]
     },
     "purify": {
@@ -969,7 +969,7 @@ export const AbilityDefinitions = {
         targeting: { scope: "ally", select: "single" },
         cost: { insight: 10 },
         accuracy: 1.0,
-        animationId: "purify",
+        animationId: "holy_purify",
         effects: [
             { type: "dispel", tags: ["poison", "bleed", "burn", "frozen", "bound", "paralyzed", "knocked_down", "wet"] },
             { type: "recover", resource: "hp", calculation: "percent", power: 0.1 }

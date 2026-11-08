@@ -441,6 +441,8 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     cleaveSfx: './assets/audio/sfx/abilities/cleave.wav',
     wildSwingSfx: './assets/audio/sfx/abilities/wild_swing.wav',
     purifySfx: './assets/audio/sfx/abilities/purify.wav',
+    lightShimmerSfx: './assets/audio/sfx/abilities/light_shimmer.wav',   // glistening fairy dust: the holy abilities (Cleanse, Purify, Bless, Solar Beam)
+    lightBellSfx: './assets/audio/sfx/abilities/light_bell.wav',         // an ominous church bell: the same, as the light lands
     meteorShowerImpactSfx: './assets/audio/sfx/abilities/meteor_shower/meteor_shower_impact.wav',
     quickStabSfx: './assets/audio/sfx/abilities/quick_stab.wav',
     spiteCastSfx: './assets/audio/sfx/abilities/spite/spite_cast.wav',

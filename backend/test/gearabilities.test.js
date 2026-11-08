@@ -137,3 +137,16 @@ test('the Artifact of the Developer grants every ability there is', () => {
     assert.deepEqual(missing, []);
     assert.equal(granted.size, Object.keys(A).length);
 });
+
+test('the light abilities (not Spite) sound holy: the fairy-dust shimmer and the church bell; the healing items keep the plain purify', () => {
+    const sounds = (animId) => (B[animId].audio || B[animId].sounds || []).map(c => c.id || c.soundId || c.sound || c[1]).filter(Boolean);
+    const json = (animId) => JSON.stringify(B[animId]);
+    for (const ability of ['cleanse', 'purify', 'bless', 'solar_beam']) {
+        const anim = A[ability].animationId;
+        assert.match(json(anim), /lightShimmerSfx/, `${ability} shimmers`);
+        assert.match(json(anim), /lightBellSfx/, `${ability} tolls the bell`);
+    }
+    assert.doesNotMatch(json(A.spite.animationId), /lightShimmerSfx|lightBellSfx/, 'Spite keeps its own sound');
+    for (const item of ['item_bandage', 'item_antidote', 'item_aloe']) assert.equal(A[item].animationId, 'purify', `${item}: the plain purify`);
+    assert.doesNotMatch(json('purify'), /lightBellSfx/, 'no bell on a bandage');
+});
