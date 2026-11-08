@@ -391,7 +391,7 @@ export const SaveManager = {
             trackedIds: data.quests?.trackedIds || []
         };
         retireQuests(gameState);       // a save on a quest that was cut picks up from the one that replaced it
-        ActSystem.catchUp(gameState);   // a save that had already beaten Darius before the acts existed goes into act 2
+        ActSystem.catchUp(gameState);   // a save that beat Darius but never saw A Dark Truth: it plays on the map (SceneManager), and grants act 2 there
 
         replaceContents(gameState.player, {
             col: data.player.col,

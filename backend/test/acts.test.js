@@ -71,15 +71,17 @@ test('enemies are upgraded in act 2 only', () => {
     assert.equal(ActSystem.getEnemyUpgrade('NOT_AN_ENEMY', act2()), null);
 });
 
-test('a save that had already beaten Darius is moved into act 2 when it is loaded, any other is left alone', () => {
+test('a player who beat Darius but never saw A Dark Truth owes it (it plays on the map and grants act 2 there); any other does not', () => {
     const finished = { milestones: [], quests: { completed: ['shackled8'], active: {} } };
-    assert.equal(ActSystem.catchUp(finished), true);
-    assert.equal(ActSystem.getAct(finished), 2);
-    assert.equal(ActSystem.catchUp(finished), false, 'only once');
+    assert.equal(ActSystem.owesDarkTruth(finished), true);
+    assert.equal(ActSystem.catchUp(finished), true, 'loading notices it');
+    assert.equal(ActSystem.getAct(finished), 1, 'not moved into act 2 behind the player\'s back: the encounter does it');
+    finished.milestones.push('act2');
+    assert.equal(ActSystem.owesDarkTruth(finished), false, 'seen: nothing owed');
     const waiting = { milestones: [], quests: { completed: [], active: { shackled8: { progress: { obj_kill_darius: 1 } } } } };
-    assert.equal(ActSystem.catchUp(waiting), true);
+    assert.equal(ActSystem.owesDarkTruth(waiting), true);
     const notYet = { milestones: [], quests: { completed: ['shackled7'], active: { shackled8: { progress: { obj_reach_level_10: 1 } } } } };
-    assert.equal(ActSystem.catchUp(notYet), false);
+    assert.equal(ActSystem.owesDarkTruth(notYet), false);
     assert.equal(ActSystem.getAct(notYet), 1);
 });
 

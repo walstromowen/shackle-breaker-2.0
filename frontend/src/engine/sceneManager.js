@@ -862,6 +862,14 @@ export class SceneManager {
 
         // A tip card waits for the screen to be fully visible, then eases in. While it is up the screen underneath waits (no controller
         // update, no clock, no weather): only the fade and the card move on. When it has finished easing out, the screen takes over again.
+        // A player who has beaten Darius but never saw A Dark Truth (an old save, a party member before every screen played it) sees it now, on the
+        // map, once nothing else has the screen: it grants their act 2 and its quest (ActSystem.owesDarkTruth). Once per loaded game.
+        if (this.currentScene === 'overworld' && this._darkTruthFor !== gameState.quests && !this.transitionRenderer.isActive && !this.tutorial.blocking
+            && this.overworldController && !this.overworldController.isLocked && !multiplayerSocial.prompt && ActSystem.owesDarkTruth()) {
+            this._darkTruthFor = gameState.quests;
+            events.emit('START_ENCOUNTER', { encounterId: 'act_two', context: {} });
+        }
+
         const cardWasUp = this.tutorial.blocking;
         this.tutorial.update(dt, { sceneBusy: this.transitionRenderer.isActive });
         if (this.tutorial.blocking) {

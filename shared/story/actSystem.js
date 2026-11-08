@@ -69,21 +69,24 @@ export const ActSystem = {
     },
 
     /**
-     * A save made before the acts existed, by a player who has already beaten Darius the Groveler (the last Shackled quest, finished or waiting to be
-     * collected), would stay in act 1 for ever, because the encounter that grants act 2 only follows the fight itself. Such a save is moved into act 2
-     * when it is loaded. Returns true when it did.
+     * Has this player beaten Darius the Groveler (the last Shackled quest, finished or waiting to be collected) without having seen A Dark Truth,
+     * the encounter after the fight that grants act 2 and its quest? A save from before the acts existed, or a player of a party whose screen
+     * did not play it (before every player's screen did). SceneManager plays it for them as soon as they stand on the map, so every player sees it.
      */
-    catchUp(state = gameState) {
+    owesDarkTruth(state = gameState) {
         const def = ACT_DEFINITIONS[2];
         if (!def || !def.milestone || this.hasMilestone(def.milestone, state)) return false;
         const quests = state.quests || {};
         const done = Array.isArray(quests.completed) && quests.completed.includes('shackled8');
         const progress = quests.active && quests.active.shackled8 && quests.active.shackled8.progress;
-        const killedDarius = !!(progress && progress.obj_kill_darius >= 1);
-        if (!done && !killedDarius) return false;
-        this.getMilestones(state).push(def.milestone);
-        console.log(`[Act] This save had already beaten Darius: moved into ${def.name}.`);
-        return true;
+        return done || !!(progress && progress.obj_kill_darius >= 1);
+    },
+
+    /** On loading a save: true when it owes A Dark Truth (owesDarkTruth). It is not moved into act 2 here: the encounter does that when it plays. */
+    catchUp(state = gameState) {
+        const owed = this.owesDarkTruth(state);
+        if (owed) console.log('[Act] This save has beaten Darius but not seen A Dark Truth: it plays on the map.');
+        return owed;
     },
 
     /**
