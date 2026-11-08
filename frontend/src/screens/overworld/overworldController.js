@@ -177,10 +177,12 @@ export class OverworldController extends BaseController {
     /* The world map (screens/worldMap): the land the party has seen, with the party on it. Inside a house or cave there is no map to read (the overworld's
        coordinates do not apply there), so it says so instead. */
     openWorldMap() {
-        if (gameState.world.isInterior) {
+        // inside, the map screen shows this place once its map has been read here (an Interior Map: Read Map); without one, nothing
+        const w = gameState.world;
+        if (w.isInterior && !(w.interiorMapId && w.interiorMapId === w.interiorId)) {
             this.playErrorSound();
             this.isMenuOpen = false;
-            this.showNotice('There is no map of the world in here.', false);
+            this.showNotice('You have no map of this place. Read one first.', false);
             return;
         }
         this.executeMenuAction('world_map', { x: this.camera.x / this.config.TILE_SIZE + 0.5, y: this.camera.y / this.config.TILE_SIZE + 0.5, direction: this.player.direction });

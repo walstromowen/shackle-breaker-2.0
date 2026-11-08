@@ -430,13 +430,13 @@ export const craftingRecipeDefinitions = {
   "recipe_waypoint": {
     id: "recipe_waypoint",
     outputItemId: "waypoint",
-    station: "any",
+    station: "stone_banker",  // the cairn is mason's work: only at a Stone Banker (village workshops)
     materials: {
-      "stone": 100,           // the cairn
-      "soft_wood": 100,       // the frame and the stakes
-      "iron_ingot": 5,        // the fittings
-      "linen": 30,            // the banner
-      "hard_wood": 20         // the pole
+      "stone": 50,            // the cairn
+      "soft_wood": 50,        // the frame and the stakes
+      "iron_ingot": 2,        // the fittings
+      "linen": 5,             // the banner
+      "hard_wood": 10         // the pole
     }
   },
   "recipe_smoke_bomb": {

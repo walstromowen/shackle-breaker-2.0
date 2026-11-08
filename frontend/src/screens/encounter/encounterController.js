@@ -944,6 +944,12 @@ export class EncounterController extends BaseController {
       if (decision.corruption && resultsArray) {
         resultsArray = [{ type: 'MODIFY_CORRUPTION', payload: { amount: decision.corruption, target: 'active_character' } }, ...resultsArray];
       }
+      // A choice with its own music (Charge the stranger: the battle music starts the moment it is picked) carries that track into the fight
+      // it starts, unbroken, instead of the stage's theme coming back for the battle
+      const choiceBgm = decision.bgm || (selectedOutcome && selectedOutcome.bgm);
+      if (choiceBgm && choiceBgm !== 'none' && resultsArray) {
+        resultsArray = resultsArray.map(r => (r.type === 'START_BATTLE' && !(r.payload && r.payload.bgm)) ? { ...r, payload: { ...(r.payload || {}), bgm: choiceBgm } } : r);
+      }
       let isStartingBattle = false;
       let isGameOverTriggered = false;
       

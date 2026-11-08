@@ -1,6 +1,7 @@
 import { BaseController } from '../../engine/baseController.js';
 import { events } from '../../../../shared/core/eventBus.js';
-import { ExploredMap } from '../../../../shared/world/exploredMap.js';
+import { ExploredMap, BLOCK } from '../../../../shared/world/exploredMap.js';
+import { layerIndex } from '../../../../shared/world/biomeDefinitions.js';
 import { gameState } from '../../../../shared/core/gameState.js';
 import { allWaypoints, findWaypoint, planFastTravel, chargeFastTravel, waypointName } from '../../../../shared/world/waypoints.js';
 
@@ -20,6 +21,39 @@ const PAN_SPEED = 640;           // screen pixels per second while an arrow key 
 const PAN_FAST = 2.5;            // times faster with Shift
 const EASE = 12;                 // how fast the zoom catches up with its target (per second)
 const MARGIN_TILES = 24;         // how far past the seen land the middle of the map may go
+
+/* The name an interior's map is shown under: its type in words ("CAVE" -> "Cave", "ABANDONED_HOUSE" -> "Abandoned House"). */
+function interiorTitle(type) {
+    return String(type || 'Interior').toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/* What the map shows of an interior whose map has been read: all of it. Its floor is found once, round the player (level 0 is the void
+   between the rooms), and the map treats every block of that box as seen: the same shape as ExploredMap (has, hasBlock, bounds, version). */
+const INTERIOR_SCAN = 140;   // tiles each way round the player: the biggest cave or catacomb fits
+function interiorExtent(wm, player) {
+    let minCol = Infinity, maxCol = -Infinity, minRow = Infinity, maxRow = -Infinity;
+    const pc = Math.round(player.x), pr = Math.round(player.y);
+    if (wm && wm.getTileAt) {
+        for (let r = pr - INTERIOR_SCAN; r <= pr + INTERIOR_SCAN; r += 2) {
+            for (let c = pc - INTERIOR_SCAN; c <= pc + INTERIOR_SCAN; c += 2) {
+                let lv;
+                try { lv = layerIndex(wm.getTileAt(c, r)); } catch (e) { lv = 0; }
+                if (lv === 0) continue;   // the void
+                if (c < minCol) minCol = c; if (c > maxCol) maxCol = c;
+                if (r < minRow) minRow = r; if (r > maxRow) maxRow = r;
+            }
+        }
+    }
+    if (!Number.isFinite(minCol)) { minCol = maxCol = pc; minRow = maxRow = pr; }
+    const b = { minCol: minCol - 2, maxCol: maxCol + 2, minRow: minRow - 2, maxRow: maxRow + 2 };
+    const inBlock = (bx, by) => bx >= Math.floor(b.minCol / BLOCK) && bx <= Math.floor(b.maxCol / BLOCK) && by >= Math.floor(b.minRow / BLOCK) && by <= Math.floor(b.maxRow / BLOCK);
+    return {
+        version: 1,
+        bounds: () => b,
+        hasBlock: inBlock,
+        has: (col, row) => inBlock(Math.floor(col / BLOCK), Math.floor(row / BLOCK)),
+    };
+}
 
 const BUTTONS = [
     { id: 'btn_zoom_out', label: '−', w: 76 },
@@ -54,7 +88,10 @@ export class WorldMapController extends BaseController {
     init(data = {}) {
         this.worldManager = data.worldManager || null;
         this.player = { x: Number.isFinite(data.x) ? data.x : 0, y: Number.isFinite(data.y) ? data.y : 0, direction: data.direction || 'down' };
-        this.explored = ExploredMap.of();
+        // inside a cave or a house whose map has been read: that place's layout, all of it (it is on the map), in place of the world
+        this.interior = !!(gameState.world.isInterior && gameState.world.interiorMapId && gameState.world.interiorMapId === gameState.world.interiorId);
+        this.title = this.interior ? interiorTitle(gameState.world.interiorType) : 'World Map';
+        this.explored = this.interior ? interiorExtent(this.worldManager, this.player) : ExploredMap.of();
         this.scale = this.targetScale = DEFAULT_ZOOM;
         this.anchor = null;
         this.drag = null;
@@ -172,6 +209,7 @@ export class WorldMapController extends BaseController {
     // ---- waypoints -----------------------------------------------------------------------------------------------------------------------------
 
     selectedWaypoint() {
+        if (this.interior) return null;   // no waypoints underground or indoors
         return this.selectedId === null || this.selectedId === undefined ? null : findWaypoint(this.selectedId);   // (mine, or a party member's)
     }
 
@@ -182,7 +220,8 @@ export class WorldMapController extends BaseController {
     }
 
     nextWaypoint() {
-        const list = allWaypoints();
+        const list = this.interior ? [] : allWaypoints();
+        if (this.interior) { this.say('There are no waypoints in here.'); return false; }
         if (!list.length) { this.say('You have not planted a waypoint yet.'); return false; }
         const i = list.findIndex((w) => String(w.id) === String(this.selectedId));
         this.select(list[(i + 1) % list.length].id);
@@ -273,7 +312,7 @@ export class WorldMapController extends BaseController {
         // a hitbox on every banner in view, and the Fast Travel button while one is picked
         const sx = (col) => VIEW.x + VIEW.w / 2 + (col - this.cx) * this.scale, sy = (row) => VIEW.y + VIEW.h / 2 + (row - this.cy) * this.scale;
         const banners = [];
-        for (const wp of allWaypoints()) {
+        for (const wp of (this.interior ? [] : allWaypoints())) {
             const x = sx(wp.col + 0.5), y = sy(wp.row + 1);
             if (x < VIEW.x - 20 || x > VIEW.x + VIEW.w + 20 || y < VIEW.y || y > VIEW.y + VIEW.h + 50) continue;
             banners.push({ wp, x, y });
@@ -290,6 +329,8 @@ export class WorldMapController extends BaseController {
         return {
             worldManager: this.worldManager,
             explored: this.explored,
+            interior: this.interior,
+            title: this.title,
             cx: this.cx, cy: this.cy, scale: this.scale,
             player: this.player,
             hover,

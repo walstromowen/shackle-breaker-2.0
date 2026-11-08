@@ -34,3 +34,27 @@ test('every fight an encounter starts either names its own track, or sits in a s
     }
     assert.ok(special.has('dariusEncounterBgm'), 'the Darius scene keeps its own music into the fight');
 });
+
+test('a choice with its own music carries it into the fight it starts (Charge the stranger plays the battle music, not the stage theme)', async () => {
+    const { EncounterController } = await import('../../frontend/src/screens/encounter/encounterController.js');
+    const { events } = await import('../../shared/core/eventBus.js');
+    const { EntityFactory } = await import('../../shared/characters/entityFactory.js');
+    gameState.party.members = [EntityFactory.create('LEGIONARY', 5)];
+    const c = new EncounterController({ heldKeys: new Set(), isMouseDown: false, mouse: { x: 0, y: 0 } }, {}, { getBiomeAt: () => new BiomeModel(BIOME_DEFINITIONS.PLAINS) });
+    c.worldManager = { getBiomeAt: () => new BiomeModel(BIOME_DEFINITIONS.PLAINS) };
+    c.start('a_disturbing_sight', {});
+    const charge = c._getValidDecisions().findIndex(d => d.text === 'Charge the stranger.');
+    assert.ok(charge >= 0, 'the charge is offered');
+    const started = [];
+    const on = (d) => started.push(d);
+    events.on('START_BATTLE', on);
+    try {
+        c.selectedIndex = charge;
+        c.pendingDecision = c._getValidDecisions()[charge];
+        c.executeLogic();
+    } finally { events.off('START_BATTLE', on); }
+    assert.equal(started.length, 1, 'the fight starts');
+    const plains = new BiomeModel(BIOME_DEFINITIONS.PLAINS).getMusic(0, true);
+    assert.equal(started[0].bgm, plains, `the battle music (${plains}), not the stage's theme`);
+    assert.notEqual(started[0].bgm, 'aDisturbingSightBgm');
+});

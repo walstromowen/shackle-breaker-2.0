@@ -97,7 +97,7 @@ export class WorldMapRenderer {
         // the frame, the title and what the pointer is over
         const panel = { x: 48, y: 48, w: W - 96, h: VIEW.y + VIEW.h + 24 - 48 };
         ui.drawPanel(panel.x, panel.y, panel.w, panel.h, UITheme.colors.bgScale[0]);
-        ui.drawStyled('heading', 'World Map', VIEW.x, 100);
+        ui.drawStyled('heading', state.title || 'World Map', VIEW.x, 100);
         ui.drawLineWithGothicFlourish(VIEW.x, 114, VIEW.w, UITheme.colors.borderHighlight);
         ui.drawStyled('label', this._readout(state), VIEW.x + VIEW.w, 96, { align: 'right' });
 
@@ -115,6 +115,9 @@ export class WorldMapRenderer {
 
         if (wm && explored) {
             if (wm !== this._wm) this._reset(wm);
+            // a cave or a house: painted the way the minimap paints one (its floor and the void round it), never mixed with the world's chunks
+            const inside = !!state.interior;
+            if (this.painter._inside !== inside) { this.painter._inside = inside; this.painter._chunks.clear(); this._masked.clear(); }
             const ver = (wm.terrain && wm.terrain.overrideVersion) || 0;
             const c0 = Math.floor(left / CHUNK), c1 = Math.floor(right / CHUNK), r0 = Math.floor(top / CHUNK), r1 = Math.floor(bottom / CHUNK);
             const todo = [];
@@ -133,8 +136,8 @@ export class WorldMapRenderer {
             }
         }
 
-        // the buildings, on the land the party has seen
-        if (wm && explored) {
+        // the buildings, on the land the party has seen (the world's villages: not on a cave's or a house's map)
+        if (wm && explored && !state.interior) {
             ctx.fillStyle = this.painter.cfg.buildings || '#7a5a3c';
             ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)';
             ctx.lineWidth = 1;
@@ -170,7 +173,7 @@ export class WorldMapRenderer {
             const cantPay = b.id === 'btn_fast_travel' && state.travelPlan && !state.travelPlan.affordable;
             ui.drawButton(b.x, b.y, b.w, b.h, b.label, ui.flags(b.id, state.hoveredHitboxId, cantPay ? { disabled: true } : {}));
         }
-        ui.drawStyled('hint', 'Arrows pan  ·  Wheel zooms  ·  F fits all  ·  C centers  ·  T picks a waypoint', 820, H - 48 - 28, { maxWidth: 900 });
+        ui.drawStyled('hint', `Arrows pan  ·  Wheel zooms  ·  F fits all  ·  C centers${state.interior ? '' : '  ·  T picks a waypoint'}`, 820, H - 48 - 28, { maxWidth: 900 });
     }
 
     /* The waypoint banners: the banner sprite of the origin that planted it (its first frame) standing on its tile at any zoom; the picked one is bigger and ringed. */

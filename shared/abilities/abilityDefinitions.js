@@ -1410,7 +1410,7 @@ export const AbilityDefinitions = {
     "read_interior_map": {
         id: "read_interior_map",
         name: "Read Map",
-        description: "Unfold a map of the cave or building you are in. Its layout shows on the minimap until you leave.",
+        description: "Unfold a map of the cave or building you are in. Its layout shows on the minimap, and on the map screen (M), until you leave.",
         context: "overworld",                       // never offered in a battle
         range: "self",
         tags: ["utility", "item"],
@@ -1418,7 +1418,7 @@ export const AbilityDefinitions = {
         accuracy: 1.0,
         effects: [{
             type: "show_interior_map",               // AbilitySystem._world_show_interior_map: only works inside (nothing is spent otherwise)
-            message: "You unfold the map. The layout of this place appears on your minimap.",
+            message: "You unfold the map. The layout of this place appears on your minimap; press M to see all of it.",
             notInside: "There is nothing here to map.",
             alreadyOpen: "You already have this place mapped."
         }]

@@ -34,9 +34,10 @@ const openSpot = (wm) => {
     throw new Error('no open ground');
 };
 
-test('the recipe is 100 stone, 100 soft wood, 5 iron ingots, 30 linen and 20 hard wood, and makes the Waypoint item', () => {
+test('the recipe is 50 stone, 50 soft wood, 2 iron ingots, 5 linen and 10 hard wood, made at a Stone Banker, and makes the Waypoint item', () => {
     const r = craftingRecipeDefinitions.recipe_waypoint;
-    assert.deepEqual(r.materials, { stone: 100, soft_wood: 100, iron_ingot: 5, linen: 30, hard_wood: 20 });
+    assert.deepEqual(r.materials, { stone: 50, soft_wood: 50, iron_ingot: 2, linen: 5, hard_wood: 10 });
+    assert.equal(r.station, 'stone_banker');
     assert.equal(r.outputItemId, 'waypoint');
     const item = ITEM_DEFINITIONS.waypoint;
     assert.equal(item.useAbility, 'place_waypoint');
