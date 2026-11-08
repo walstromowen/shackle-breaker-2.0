@@ -680,6 +680,9 @@ export class SceneManager {
         // a shared multiplayer fight (a duel, or a party's fight) starts on this player's screen (engine/multiplayerSocial.js)
         events.on('MP_START_BATTLE', ({ enemies, context, bgm }) => {
             events.emit('PLAY_SFX', { id: 'battleStart', volume: 0.9 });
+            // a shared encounter that turned into this fight is over: its players, dice and vote must not outlive it (or every later fight and
+            // encounter would pull in only the players of this one: multiplayerSocial.nearbyParty)
+            if (this.encounterController && this.encounterController.mp) this.encounterController._leaveShared();
             if (this.overworldController) this.overworldController.isLocked = true;
             const fromOverworld = this.currentScene === 'overworld';
             this.transitionRenderer.start(() => {

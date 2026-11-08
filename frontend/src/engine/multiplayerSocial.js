@@ -4,8 +4,8 @@
  * What players in a shared world (engine/multiplayerSession.js) do with each other. Walk up to another player and press Space:
  *   Trade               the trade screen (screens/trade): each puts items and coin on the table; nothing changes hands until both accept the
  *                       same two offers
- *   Invite to Party     they join your party: they walk behind you, and your fights pull them in (shared/core/multiplayerParty.js says
- *                       who fights). Spoils are shared: coin split evenly, each item to one of you at random
+ *   Invite to Party     they join your party (up to 3 players; the leader or any member can invite): your fights and encounters pull in
+ *                       every player of the party standing near you (shared/core/multiplayerParty.js says who fights). Spoils are shared: coin split evenly, each item to one of you at random
  *   Challenge to a Duel your party against theirs, each of you choosing for your own side. Nothing is at stake: when it ends both parties are
  *                       put back exactly as they were
  * Every request is a question on the other player's screen (Accept / Decline), and nothing happens without a yes.
@@ -17,6 +17,8 @@
  *   tr_done / tr_cancel          the trade went through / was called off
  *   grp { leader, members }      a party leader's party, to everyone (members [] = no party)
  *   grp_leave                    a member leaves (to the leader)              grp_party { members }   a member's characters, to the leader
+ *   grp_add { id }               a member's invite was accepted: the leader adds them (any member can invite; the leader keeps the party)
+ *   grp_full { id }              the leader's answer when there was no room left
  *   bt_start { spec }            a shared fight begins                         bt_dec / bt_sync   picks and the lead's health totals
  */
 import { events } from '../../../shared/core/eventBus.js';
@@ -103,6 +105,16 @@ class MultiplayerSocial {
         for (const [l, m] of this.groups) if (l !== leader) this.groups.set(l, m.filter(id => !(members || []).includes(id) && id !== leader));
     }
 
+    /** The leader adds a player to their party (an invite of theirs or of a member's that was accepted). False when it is full. */
+    _addToGroup(id) {
+        const g = this.groups.get(this.me) || [];
+        if (g.includes(id)) return true;
+        if (g.length >= MAX_GROUP - 1) return false;
+        this._setGroup(this.me, [...g, id]);
+        this._broadcastGroup();
+        return true;
+    }
+
     _broadcastGroup() {
         const g = this.groups.get(this.me) || [];
         this._send({ k: 'grp', leader: this.me, members: g });
@@ -143,7 +155,7 @@ class MultiplayerSocial {
      *  characters I know (they send them every few seconds). */
     nearbyParty() {
         // in a shared encounter (and the fight it leads to), the players in it
-        if (this.encounterPlayers) return this.encounterPlayers.filter(id => id !== this.me && this.groupParties.has(id) && this.partyHere([id]).length);
+        if (this.encounterPlayers && this._scene() === 'encounter') return this.encounterPlayers.filter(id => id !== this.me && this.groupParties.has(id) && this.partyHere([id]).length);
         const here = gameState.world.isInterior ? `INT_${gameState.world.interiorId}` : 'world';
         const me = gameState.player;
         return this.partyPlayers().filter(id => {
@@ -165,7 +177,7 @@ class MultiplayerSocial {
         const together = mine && theirs && mine.leader === theirs.leader;
         if (together && mine.leader === this.me) options.push({ id: 'kick', label: 'Remove from Party' });
         else if (together) options.push({ id: 'leave', label: 'Leave Party' });
-        else if (!this.isMember && !theirs && (!mine || mine.members.length < MAX_GROUP - 1)) options.push({ id: 'party', label: 'Invite to Party' });
+        else if (!theirs && (!mine || mine.members.length < MAX_GROUP - 1)) options.push({ id: 'party', label: 'Invite to Party' });   // the leader or any member
         options.push({ id: 'duel', label: 'Challenge to a Duel' }, { id: 'cancel', label: 'Never mind' });
         this.prompt = {
             title: name, text: theirs && !together ? `${name} is in ${this.nameOf(theirs.leader)}'s party.` : 'What will you do?', options, focus: 0,
@@ -196,6 +208,7 @@ class MultiplayerSocial {
         if (why) { this._send({ k: 'rq_ans', rid: d.rid, ok: false, why }, from); return; }
         this.incoming = { rid: d.rid, kind, from };
         this.prompt = {
+            rid: d.rid,
             title: this.nameOf(from), text: `${this.nameOf(from)} ${KIND_TEXT[kind]}`,
             options: [{ id: 'yes', label: 'Accept' }, { id: 'no', label: 'Decline' }], focus: 0,
             until: performance.now() + REQUEST_SECONDS * 1000,
@@ -212,7 +225,7 @@ class MultiplayerSocial {
         this._send(ans, q.from);
         if (!ok) return;
         if (q.kind === 'trade') this.openTrade(q.from);
-        if (q.kind === 'party') { this._lastPartyJson = ''; this._say(`You joined ${this.nameOf(q.from)}'s party.`); }
+        if (q.kind === 'party') { this._lastPartyJson = ''; const g = this.groupOf(q.from); this._say(`You joined ${this.nameOf(g ? g.leader : q.from)}'s party.`); }
         if (q.kind === 'duel') this._say(`The duel with ${this.nameOf(q.from)} begins!`);
     }
 
@@ -227,10 +240,10 @@ class MultiplayerSocial {
         }
         if (out.kind === 'trade') this.openTrade(from);
         else if (out.kind === 'party') {
-            const g = this.groups.get(this.me) || [];
-            if (g.length >= MAX_GROUP - 1) { this._say('Your party is full.'); return; }
-            this._setGroup(this.me, [...g.filter(x => x !== from), from]);
-            this._broadcastGroup();
+            const mine = this.myGroup();
+            // a member's invite: the leader keeps the party, so the leader is asked to add them
+            if (mine && mine.leader !== this.me) { this._send({ k: 'grp_add', id: from }, mine.leader); this._say(`${name} joined the party.`); return; }
+            if (!this._addToGroup(from)) { this._say('Your party is full.'); return; }
             this._say(`${name} joined your party.`);
         } else if (out.kind === 'duel') this._startDuel(from, d.party || []);
     }
@@ -531,6 +544,14 @@ class MultiplayerSocial {
                 if (before && before.leader === from && !after) { this.groupParties.clear(); this._say(`You are no longer in ${this.nameOf(from)}'s party.`); }
                 break;
             }
+            case 'grp_add': {   // a member of my party invited someone, who said yes
+                const g = this.groups.get(this.me);
+                if (g && g.includes(from) && typeof d.id === 'string' && !this._addToGroup(d.id)) this._send({ k: 'grp_full', id: d.id }, from);
+                break;
+            }
+            case 'grp_full':
+                this._say(`The party is full, so ${this.nameOf(d.id)} could not join.`);
+                break;
             case 'grp_leave': {
                 const g = this.groups.get(this.me);
                 if (g && g.includes(from)) this.removeFromGroup(from);
@@ -587,6 +608,12 @@ class MultiplayerSocial {
         if (this.outgoing && now > this.outgoing.until) {
             this._say(`${this.nameOf(this.outgoing.to)} did not answer.`);
             this.outgoing = null;
+        }
+        if (this.incoming && !(this.prompt && this.prompt.rid === this.incoming.rid)) {
+            // the question was taken off the screen by something else (an encounter or a fight pulled this player in, a trade opened): answer
+            // it, or every later request would be refused as 'busy'
+            this._send({ k: 'rq_ans', rid: this.incoming.rid, ok: false, why: 'busy' }, this.incoming.from);
+            this.incoming = null;
         }
         if (this.prompt && this.prompt.until && now > this.prompt.until) {
             this.prompt = null;
