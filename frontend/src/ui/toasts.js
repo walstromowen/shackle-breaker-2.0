@@ -13,6 +13,7 @@ const now = () => (typeof performance !== 'undefined' ? performance.now() : Date
 /* Which icon sheet an item's icon is on (toasts and the hotbar). */
 export function iconSheetFor(itemDef) {
     let sheetName = 'items';
+    if (itemDef && itemDef.iconSheet) return itemDef.iconSheet;   // an item drawn from another sheet than its type's (the Fallen Meteorite: consumables)
     if (itemDef) {
         const type = (itemDef.type || '').toLowerCase();
         const slot = (itemDef.slot || '').toLowerCase();

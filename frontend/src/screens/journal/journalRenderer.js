@@ -328,6 +328,7 @@ export class JournalRenderer {
         } else if (type === 'material') {
             sheetName = 'materials';
         }
+        if (def.iconSheet) sheetName = def.iconSheet;   // an item drawn from another sheet than its type's (the Fallen Meteorite: consumables)
 
         const sheet = this.loader.get(sheetName) || this.loader.get('items') || this.loader.get('icons');
         if (!sheet) return false;

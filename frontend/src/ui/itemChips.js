@@ -76,7 +76,7 @@ export function drawItemChips(ui, ctx, loader, items, centerX, y, opts = {}) {
         row.chips.forEach(chip => {
             ui.drawPanel(x, rowY, chip.w, CHIP_H, 'rgba(25, 23, 20, 0.8)');
 
-            const found = ui.resolveItemSheet(loader, ui.getItemCategory(chip.def));
+            const found = ui.resolveItemSheet(loader, ui.getItemCategory(chip.def), chip.def.iconSheet || null);   // (its own sheet, when it names one)
             if (found) {
                 const src = found.cell || ICON_SRC_SIZE;
                 const icon = chip.def.icon || {};

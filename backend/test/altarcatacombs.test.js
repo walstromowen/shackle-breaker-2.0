@@ -17,3 +17,13 @@ test('touching the skull uncovers the catacombs, whichever light it gives, and s
 test('nothing takes the altar away without leaving the stair', () => {
     for (const [id, stage] of Object.entries(altar.stages)) assert.ok(!resultsOf(stage).some(r => r.type === 'DESTROY_OBJECT'), `${id} does not just remove it`);
 });
+
+test('the Fallen Meteorite is drawn from the consumables sheet (the cratered stone at 3, 1), and stays a material', async () => {
+    const { ItemDefinitions } = await import('../../shared/items/itemDefinitions.js');
+    const { iconSheetFor } = await import('../../frontend/src/ui/toasts.js');
+    const m = ItemDefinitions.meteorite;
+    assert.equal(m.type, 'material', 'still a material (crafting, quests)');
+    assert.equal(m.iconSheet, 'consumables');
+    assert.deepEqual(m.icon, { col: 3, row: 1 });
+    assert.equal(iconSheetFor(m), 'consumables', 'toasts and the hotbar use the same sheet');
+});
