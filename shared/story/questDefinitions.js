@@ -96,8 +96,8 @@ export const QuestDefinitions = {
     // ========================================================
     "act2_red_moon": {
         id: "act2_red_moon",
-        name: "The Red Moon",
-        description: "The moon rises red every night now, and the days are dim. The dead walk the roads, the cursed come in greater numbers, and every enemy is a little stronger than before. Darius did not curse the world, and neither did the stone. Magic itself is the curse, and every spell cast feeds it. You have cast many. Grow strong, and keep your torch lit.",
+        name: "A Dark Truth",
+        description: "Darius was not cursed by the stone. His own magic emptied him, one spell at a time, until only the kneeling was left. Every spell drains the one who casts it, and when nothing is left, the shackles take the rest. The moon rises red every night now, the dead walk the roads, and every enemy is a little stronger than before. Grow strong, cast with care, and keep your torch lit.",
         objectives: [
             { id: "obj_reach_level_12", type: "party_level", targetLevel: 25, amount: 1 },
             { id: "obj_kill_risen", type: "kill_enemy", targetId: "SKELETAL_WARRIOR", amount: 5 }

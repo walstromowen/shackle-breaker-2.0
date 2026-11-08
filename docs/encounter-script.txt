@@ -20,6 +20,47 @@ Write "you" for the player: a recorded voice cannot say a name the player chose.
 
 
 
+===== A DARK TRUTH (act_two) =====
+
+[silence]
+Darius the Groveler lies still. The hum in the stone has stopped. For the first time in this place, there is silence.
+  > Continue.
+
+[last_light]
+Then the altar flickers. One last time its light rises and fills the cave, and in it you see this place as it was, long ago.
+  > Continue.
+
+[the_mage]
+A young man in a clean blue robe kneels before the fallen stone. The king's own mage, with steady hands and a quick smile. His name is Darius. The king rests a hand on his shoulder and gives him one task: keep the light burning until I return.
+  > Continue.
+
+[first_winter]
+Every night Darius pours a spell into the stone, and every night the light answers him. It is beautiful. He does not notice what it takes. A name he once knew. The taste of bread. The sound of his mother's voice.
+  > Continue.
+
+[long_dark]
+Years pass. The king does not come back. Darius stops sleeping, then stops eating, and still he casts, because the light must not go out. He talks to it, and then it talks back.
+DARIUS: "Not yet, my king, not yet. I am still here."
+  > Continue.
+
+[groveler]
+The robe rots. His back bends until it will not straighten. The quick smile becomes a grin he cannot stop. Spell by spell the man runs out, until all that is left is the kneeling, and the light, and the waiting.
+  > Continue.
+
+[truth]
+The light gutters out, and you understand. The stone did not curse him. Neither did the war, or the king. His own magic did. Every spell is paid for with a piece of the one who casts it, and the price is never named. The ones who could work a spell went mad first because they cast the most.
+  > Continue.
+
+[iron]
+Your shackles are warm. They have never been warm. You think of every spell you have cast, and you feel what each one cost you, counted in the iron. Cast enough, and there will be nothing left of you either. Far above, through a mile of stone, many voices begin to laugh at once.
+  > Continue.
+
+[moon]
+The ground shudders once. Somewhere above, where you cannot see it, the moon turns red.
+  > Climb toward the light.
+      Behind the broken altar, worn steps lead down into a deeper dark. You climb the other way.
+
+
 ===== A DISTURBING SIGHT (a_disturbing_sight) =====
 
 [discovery]
@@ -881,26 +922,6 @@ Your companion falls, and the dark that wore them goes out like a blown flame. T
 [after_2]
 You do not know whether the one who knelt beneath that dark ever heard you call. They are gone, and they do not come back.
   > Bury what is left and move on.
-
-
-===== THE RED MOON (act_two) =====
-
-[silence]
-Darius the Groveler lies still. The hum in the stone has stopped. For the first time in this place, there is silence.
-  > Continue.
-
-[glimpse]
-The altar's last light shows a man in a clean robe, kneeling where Darius knelt. He is smiling. Each time the light answers him, a little of him goes out with it.
-  > Continue.
-
-[iron]
-Your shackles are warm. They have never been warm. Far above, through a mile of stone, many voices begin to laugh at once.
-  > Continue.
-
-[moon]
-The ground shudders once. Somewhere above, where you cannot see it, the moon turns red.
-  > Climb toward the light.
-      Behind the broken altar, worn steps lead down into a deeper dark. You climb the other way.
 
 
 ===== THE SUSPICIOUS MERCHANT (suspicious_merchant) =====

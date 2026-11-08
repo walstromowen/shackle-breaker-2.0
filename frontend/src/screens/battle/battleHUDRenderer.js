@@ -101,8 +101,12 @@ export class BattleHUDRenderer {
 
     // Draw the cinematic banner if it has any opacity
     if (this.bannerAlpha > 0.01) {
-      const text = (state.phase === 'DEFEAT') ? 'PARTY SLAIN' : 'ENEMY SLAIN';
-      const color = (state.phase === 'DEFEAT') ? (UITheme.colors.targetRed || '#cc0000') : (UITheme.colors.highlight || '#b89947');
+      // A boss (an enemy tagged BOSS, such as Darius the Groveler) falls under a red banner, as the party does; other foes under a gold one
+      const defeat = state.phase === 'DEFEAT';
+      const foes = [...(state.enemyRoster || []), ...(state.activeEnemies || [])];
+      const bossSlain = !defeat && foes.some(e => e && Array.isArray(e.tags) && e.tags.includes('BOSS'));
+      const text = defeat ? 'PARTY SLAIN' : 'ENEMY SLAIN';
+      const color = (defeat || bossSlain) ? (UITheme.colors.targetRed || '#cc0000') : (UITheme.colors.highlight || '#b89947');
       this.drawCinematicBanner(text, color, this.bannerAlpha);
     }
 

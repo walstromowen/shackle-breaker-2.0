@@ -1,5 +1,6 @@
 // backend/test/corruption.test.js: `npm test`. Corruption: what raises it, what it does at 50 and 100, the meteorite that frees a shackled character,
 // and the betrayal that follows if they are left shackled.
+import { QuestDefinitions } from '../../shared/story/questDefinitions.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -413,13 +414,16 @@ test('every enemy of the shackled faction is born at 100% corruption, as a stat 
     assert.equal(CorruptionSystem.cleanseNatural(plain), false);
 });
 
-test('the act 2 story is short and leaves corruption for the player to find out: no stage names it or explains it', () => {
-    const stages = encounterDefinitions.act_two.stages;
-    assert.ok(Object.keys(stages).length <= 5, 'a few short stages');
-    for (const [id, s] of Object.entries(stages)) {
-        assert.doesNotMatch(s.text, /corruption/i, `${id} does not name it`);
-        assert.ok(s.text.length <= 220, `${id}: short`);
-    }
+test('the act 2 story tells the dark truth: Darius was worn away by his own magic, and every spell drains the one who casts it', () => {
+    const enc = encounterDefinitions.act_two;
+    assert.equal(enc.title, 'A Dark Truth');
+    const all = Object.values(enc.stages).map(s => s.text).join(' ');
+    assert.match(all, /Darius/, 'it is his story');
+    assert.match(all, /own magic/i, 'his own magic did it');
+    assert.match(all, /every spell/i, 'every spell has a price');
+    for (const [id, s] of Object.entries(enc.stages)) assert.doesNotMatch(s.text, /corruption/i, `${id}: told as a story, the word is left to the screens`);
+    const quest = QuestDefinitions.act2_red_moon;
+    assert.equal(quest.name, 'A Dark Truth', 'the quest is not called the Red Moon');
 });
 
 test('the cursed portrait is used for exactly the shackled, and every portrait screen draws it', () => {

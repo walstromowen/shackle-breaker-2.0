@@ -16,13 +16,14 @@ export const VOICED = {
     prologue: [],
     hooded_stranger: [[/./, 'STRANGER']],
     mysterious_altar: [[/^darius_/, 'DARIUS']],
-    act_two: []
+    act_two: [[/^long_dark$/, 'DARIUS']]
 };
 
 /* Who speaks the quoted words of a stage (also used by tools/dialogueScript.mjs for the script's NAME: tags) */
 export const SPEAKERS = {
     hooded_stranger: [[/./, 'STRANGER']],
-    mysterious_altar: [[/^darius_/, 'DARIUS']]
+    mysterious_altar: [[/^darius_/, 'DARIUS']],
+    act_two: [[/^long_dark$/, 'DARIUS']]      // his own words, in the vision of his life
 };
 
 export function speakerOf(encounterId, stageId) {
