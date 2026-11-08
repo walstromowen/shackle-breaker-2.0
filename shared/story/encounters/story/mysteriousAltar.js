@@ -356,7 +356,7 @@ export const mysteriousAltar = {
             ambience: "none",
             bgm: "dariusEncounterBgm",   // his track, already playing since the pause, carries on into the fight
             image: { sheet: "encounter_darius_kneeling", col: 0, row: 0 },   // he turns: his face, his eyes, for the first time
-            text: "Darius turns around. \"No, no! That is not possible, I am the king's adviser! You thief, give it back! That stone is mine!\"",
+            text: "Darius turns around. \"No... no, that is not possible. I am the king's adviser, I kept it for him! You thief, you filthy thief! Give it back! That stone is mine!\"",
             decisions: [
                 {
                     text: "Draw your weapon.",

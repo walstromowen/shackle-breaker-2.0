@@ -408,7 +408,7 @@ DARIUS: "But he gave it to you. A stranger in chains."
 
 [darius_wrath]
 Darius turns around.
-DARIUS: "No, no! That is not possible, I am the king's adviser! You thief, give it back! That stone is mine!"
+DARIUS: "No... no, that is not possible. I am the king's adviser, I kept it for him! You thief, you filthy thief! Give it back! That stone is mine!"
   > Draw your weapon.
       You draw your weapon.
 

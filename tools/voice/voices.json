@@ -17,8 +17,8 @@
       "name": "Edward - British, Dark, Seductive, Low"
     },
     "DARIUS": {
-      "id": "HAvvFKatz0uu0Fv55Riy",
-      "name": "Matthew Schmitz - Ancient Sage Dragon Wizard",
+      "id": "isFTUs6SGGS0CJ3ZeJz5",
+      "name": "Darius the Groveler (Shackle Breaker): designed for him, a grotesque ancient lord with pompous grandeur",
       "model": "eleven_v3",
       "settings": {
         "stability": 0.0
@@ -32,7 +32,7 @@
         "It was no fault of my own, you see. But perhaps... you have seen it? For it is a matter of great importance.": "[defensive] It was no fault of my own, you see. But perhaps... [long pause] [hopeful, pleading] you have seen it? For it is a matter of great importance.",
         "You think he is not coming. I can hear it in your silence. And if anyone is found to have kept the stone from me, well... they shall be punished most severely.": "[muttering] You think he is not coming. I can hear it in your silence. [sinister, low] And if anyone is found to have kept the stone from me, well... [menacing] they shall be punished most severely.",
         "That light at my back... I can feel it. His sign, at last. But he gave it to you. A stranger in chains.": "[gasps, awed] That light at my back... I can feel it. [ecstatic whisper] His sign, at last. [long pause] [despair, voice breaking] But he gave it to you... A stranger in chains.",
-        "No, no! That is not possible, I am the king's adviser! You thief, give it back! That stone is mine!": "[low, disbelieving] No, no! [building in anger] That is not possible, I am the king's adviser! [furious shout] You THIEF, give it back! [screaming with rage] That stone is MINE!"
+        "No... no, that is not possible. I am the king's adviser, I kept it for him! You thief, you filthy thief! Give it back! That stone is mine!": "[quiet, trembling disbelief] No... no, that is not possible. [voice rising, indignant] I am the king's adviser, I kept it for him! [furious, shouting] You thief, you filthy THIEF! [screaming, unhinged] Give it back! [maniacal roar] That stone is MINE!"
       }
     }
   }
