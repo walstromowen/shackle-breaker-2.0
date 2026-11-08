@@ -206,6 +206,14 @@ export class EntityModel {
     // STATUS EFFECT MANAGEMENT
     // =========================================================
     applyStatusEffect(activeEffect) {
+        // A boss shrugs things off: a status someone else puts on it lasts half as long (rounded up, at least a turn). Not one with no end,
+        // not one for the whole fight (the weather's), and not what the boss casts on itself (Darius's own Bless lasts its full time).
+        if (activeEffect && (this.state.tags || []).includes('BOSS')) {
+            const by = activeEffect.inflictor;
+            const ownCast = !!by && (by === this || by.originalEntity === this);
+            const c = activeEffect.charges;
+            if (!ownCast && !activeEffect.isInfinite && Number.isFinite(c) && c > 1 && c < 99) activeEffect.charges = Math.max(1, Math.ceil(c / 2));
+        }
         const existingEffect = this.state.statusEffects.find(e => e.id === activeEffect.id);
         if (existingEffect) {
             existingEffect.charges = activeEffect.charges;
