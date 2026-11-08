@@ -33,12 +33,13 @@ fall, when the player breaks out of the king's chain line. This page is a living
 ## People
 
 - **Cornelius Mentoras**: commander of the royal guard, a royal adviser. Early 40s, observant, disciplined, blunt, guilt-stricken. Broadsword;
-  later a chained sword bound to his wrist. His refrain: **"Good enough"** / "Not good enough". Husband of Gwen, father of Jacob.
+  later a chained sword bound to his wrist. His refrain: **"Good enough"** / "Not good enough". Husband of Gwen, father of Jacob and a younger son.
   Friend of the king (once). Rival of Jaeger, friend of Nikolai.
   - **SECRET: he is the Hooded Stranger** of the game (to be revealed later). Shackled, further along, tired, gallows humour; he hears voices.
-- **Gwen Mentoras**: his wife. Joyful, wise, a hunter and healer, later a ranger; bow and arrows. After the Namuh attack she flees with their son
-  (the outline leaves which son open) to the rangers and searches for Cornelius.
-- **Jacob Mentoras**: their son, dead five years when the book opens. On the expedition that brought the artifact back, the artifact's dark power
+- **Gwen Mentoras**: his wife. Joyful, wise, a hunter and healer, later a ranger; bow and arrows. After the Namuh attack she flees with their
+  younger son to the rangers and searches for Cornelius.
+- **The Mentoras sons**: two. **Jacob** is the elder; the **younger son** has no name yet (he flees with Gwen to the rangers).
+- **Jacob Mentoras**: their elder son, dead five years when the book opens. On the expedition that brought the artifact back, the artifact's dark power
   raised the dead and killed him. Mentoras's last words to him were harsh: "Not good enough."
   - **SECRET: Dolos is Jacob** (revealed at the end).
 - **The king**: called **Saul** in the book's chapters and **Belshazzar Altus** in the outline (the game never names him yet). Kind at first, slowly
@@ -66,7 +67,7 @@ fall, when the player breaks out of the king's chain line. This page is a living
 3. The war. The Namuh appear and, with Panzeria, attack the capital ("the battle beneath no banner") to destroy the artifact. Mentoras and a
    nightblade fight to a standstill; the king breaks it up with the artifact's magic and binds the nightblade and a Panzerian general in magical
    chains. Mentoras scolds the king and tries to destroy the artifact; the king stops him and sends him to prison with them.
-4. The king sends Jaeger after Gwen and her son; they escape to the rangers.
+4. The king sends Jaeger after Gwen and her younger son; they escape to the rangers.
 5. **The fall of the Altus Kingdom**: the people go mad from gluttony and magic; the mad fill the prisons, then the kingdom becomes mindless
    hollows. Dolos rules through the king.
 6. Years later, Mentoras breaks out with Codey (the Shackle Breakers). Jaeger, now the Pursuer, hunts them. Nikolai joins them.
