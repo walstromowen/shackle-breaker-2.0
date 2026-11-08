@@ -16,6 +16,8 @@ const next = (stageId) => [{ text: "Continue.", outcomes: toStage(stageId) }];
 export const actTwo = {
     id: "act_two",
     title: "A Dark Truth",
+    // every player who beat Darius plays it for themselves: it grants their own act 2 and quest (in a party of players each sees it on their own screen)
+    personal: true,
     initialStage: "silence",
     tone: "blood",
     stages: {

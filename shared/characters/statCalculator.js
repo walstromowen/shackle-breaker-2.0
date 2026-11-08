@@ -265,6 +265,9 @@ export class StatCalculator {
         finalStats.critMultiplier = hundredths(finalStats.critMultiplier);
         finalStats.corruption = Math.max(0, Math.min(CORRUPTION.MAX, finalStats.corruption)); 
         
+        // `maxHpMultiplier` in a character's base stats (a boss: Darius the Groveler has 2): all of its max health, from every source, times that
+        if (Number.isFinite(baseSource.maxHpMultiplier) && baseSource.maxHpMultiplier > 0) finalStats.maxHp = Math.max(1, Math.round(finalStats.maxHp * baseSource.maxHpMultiplier)); 
+
         // Corruption tiers (core/constants.js): while it is high enough, max health shrinks and magical damage grows. Nothing is stored, so they end when it drops. 
         // (the shackled faction's natural corruption, set by SpawnTableFactory, is a stat only: those enemies are tuned already, so no tier applies to them) 
         // (and none is felt before the story reveals corruption: act 2, CORRUPTION.REVEAL_ACT) 

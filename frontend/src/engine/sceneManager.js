@@ -571,7 +571,9 @@ export class SceneManager {
         events.on('START_ENCOUNTER', (data) => {
             if (!data.quiet) events.emit('PLAY_SFX', { id: 'cinematicBoom', volume: 1.0 });   // quiet: an encounter the party walked up to (a chest...)
             // a party of players: an encounter I start pulls in the party near me (I lead it, everyone votes: engine/multiplayerSocial.js, EncounterController)
-            const mp = data.mp || (multiplayerSocial.sharesFights ? multiplayerSocial.startPartyEncounter(data) : null);
+            // (an encounter marked `personal` is this player's own, never shared: the quest giver, the end of act 1 that every player plays for themselves)
+            const personal = !!(encounterDefinitions[data.encounterId] && encounterDefinitions[data.encounterId].personal);
+            const mp = data.mp || (multiplayerSocial.sharesFights && !personal ? multiplayerSocial.startPartyEncounter(data) : null);
             if (this.overworldController) this.overworldController.isLocked = true;
             this.transitionRenderer.start(() => {
                 this.encounterController.start(data.encounterId, data.context || {}, mp);
@@ -632,7 +634,7 @@ export class SceneManager {
             const encMp = this.currentScene === 'encounter' && this.encounterController && this.encounterController.mp;
             const fromEncounter = encMp && encMp.players && encMp.players.length > 1 ? encMp.players : null;
             if (fromEncounter || multiplayerSocial.sharesFights) {
-                multiplayerSocial.startPartyBattle(scaledEnemies, { background: data.background, bgm: data.bgm || (data.context && data.context.bgm) || null, noEscape: !!data.noEscape, betrayal: data.betrayal || null, players: fromEncounter });
+                multiplayerSocial.startPartyBattle(scaledEnemies, { background: data.background, bgm: data.bgm || (data.context && data.context.bgm) || null, noEscape: !!data.noEscape, betrayal: data.betrayal || null, players: fromEncounter, afterVictory: this.pendingAfterVictory });
                 return;
             }
 
@@ -679,8 +681,10 @@ export class SceneManager {
         document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveOnLeave(); });
 
         // a shared multiplayer fight (a duel, or a party's fight) starts on this player's screen (engine/multiplayerSocial.js)
-        events.on('MP_START_BATTLE', ({ enemies, context, bgm }) => {
+        events.on('MP_START_BATTLE', ({ enemies, context, bgm, afterVictory }) => {
             events.emit('PLAY_SFX', { id: 'battleStart', volume: 0.9 });
+            // what plays when this fight is won (the end of Darius: A Dark Truth), on every player's screen, not only on the one who started it
+            if (afterVictory && afterVictory.encounterId) this.pendingAfterVictory = { encounterId: afterVictory.encounterId, context: { ...(afterVictory.context || {}) } };
             // a shared encounter that turned into this fight is over: its players, dice and vote must not outlive it (or every later fight and
             // encounter would pull in only the players of this one: multiplayerSocial.nearbyParty)
             if (this.encounterController && this.encounterController.mp) this.encounterController._leaveShared();

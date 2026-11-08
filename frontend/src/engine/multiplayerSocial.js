@@ -394,7 +394,7 @@ class MultiplayerSocial {
 
     /** A fight I start (sceneManager START_BATTLE) with my party near me (or `players`: the ones in the encounter it came out of): our
      *  line-up against these enemies, on every one of their screens too. I am its authority. */
-    startPartyBattle(enemies, { background = null, bgm = null, noEscape = false, betrayal = null, players = null } = {}) {
+    startPartyBattle(enemies, { background = null, bgm = null, noEscape = false, betrayal = null, players = null, afterVictory = null } = {}) {
         if (!players) this.declined.clear();   // (a fight out of a shared encounter keeps out whoever declined that encounter)
         const ids = [this.me, ...(players ? players.filter(id => id !== this.me && this.groupParties.has(id) && this.partyHere([id]).length) : this.nearbyParty())];
         const parties = { [this.me]: gameState.party.members.map(serializeEntity) };
@@ -405,6 +405,7 @@ class MultiplayerSocial {
             names: Object.fromEntries(ids.map(id => [id, this.nameOf(id)])),
             lineup: lineup.map(e => ({ ...e, data: parties[e.owner][e.idx] })),
             enemies: enemies.map(serializeEntity), background, bgm, noEscape, betrayal,
+            afterVictory: afterVictory && afterVictory.encounterId ? { encounterId: afterVictory.encounterId, context: afterVictory.context || {} } : null,
         };
         for (const id of ids) if (id !== this.me) this._send({ k: 'bt_start', spec }, id);
         this._beginBattle(spec);
@@ -462,7 +463,7 @@ class MultiplayerSocial {
             early: this.early.get(spec.bid) || [],
         };
         this.early.delete(spec.bid);
-        events.emit('MP_START_BATTLE', { enemies, context: { mp, partyEntities, backgroundId: spec.background || undefined, weather: null, noEscape: !!spec.noEscape }, bgm: spec.bgm || null });
+        events.emit('MP_START_BATTLE', { enemies, context: { mp, partyEntities, backgroundId: spec.background || undefined, weather: null, noEscape: !!spec.noEscape }, bgm: spec.bgm || null, afterVictory: spec.afterVictory || null });
     }
 
     /** In a fight, an encounter or a trade right now (a request to join another one is refused). */
