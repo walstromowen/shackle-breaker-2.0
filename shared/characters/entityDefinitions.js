@@ -923,7 +923,7 @@ export const ENTITY_DEFINITIONS = {
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
             maxHp: 84, maxStamina: 20, maxInsight: 60, speed: 8, critical: 0.1,
-            maxHpMultiplier: 2,   // twice the health his level and vigor give: the act 1 boss is a long fight (StatCalculator)
+            maxHpMultiplier: 2,   // twice the health his level and vigor give: tuned for three players (fewer get less: PARTY_SCALING.BOSS_HP_BY_PLAYERS)
             // A boss: blows glance off him. Every kind of attack loses a good share against him (resistance comes off before armour), so no single
             // hit takes a big bite. Light is still his weakness, and less so than it was.
             baseDefense: {

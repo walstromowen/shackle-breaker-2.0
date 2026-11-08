@@ -77,7 +77,8 @@ import { SaveManager, AUTOSAVE_SLOT } from './saveManager.js';
 import { debugOverlay, DebugOverlayRenderer } from '../ui/debugOverlay.js';
 import { multiplayerSession } from './multiplayerSession.js';
 import { multiplayerSocial } from './multiplayerSocial.js';
-import { PARTY_SCALING } from '../../../shared/battle/spawnTableFactory.js';
+import { PARTY_SCALING, bossHpFactor } from '../../../shared/battle/spawnTableFactory.js';
+import { ENTITY_DEFINITIONS } from '../../../shared/characters/entityDefinitions.js';
 import { dropGrave } from '../../../shared/world/graves.js';
 import { encounterDefinitions } from '../../../shared/story/encounterDefinitions.js';
 import { audioManager } from './audioManager.js';
@@ -616,6 +617,16 @@ export class SceneManager {
                     finalLevel = Math.max(1, baseLevel + specificOffset);
                     const { id, levelOffset, ...restOfProperties } = enemyData;
                     factoryOverrides = { level: finalLevel, ...restOfProperties };
+                }
+
+                // a boss is tuned for three players: with fewer it has a share of its health (PARTY_SCALING.BOSS_HP_BY_PLAYERS)
+                const enemyDef = ENTITY_DEFINITIONS[enemyId];
+                if (enemyDef && (enemyDef.tags || []).includes('BOSS')) {
+                    const factor = bossHpFactor(multiplayerSocial.playerCount());
+                    if (factor !== 1) {
+                        const base = { ...(enemyDef.baseStats || {}), ...(factoryOverrides.baseStats || {}) };
+                        factoryOverrides = { ...factoryOverrides, baseStats: { ...base, maxHpMultiplier: (base.maxHpMultiplier || 1) * factor } };
+                    }
                 }
 
                 const upgrade = ActSystem.getEnemyUpgrade(enemyId);

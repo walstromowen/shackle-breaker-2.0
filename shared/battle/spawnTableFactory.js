@@ -14,7 +14,16 @@ import { ActSystem } from '../story/actSystem.js';
    one to three on easy and normal, up to four on hard, and two to four on nightmare. Story and encounter fights keep their own sizes. */
 export const AMBUSH_SIZE = { easy: [1, 3], normal: [1, 3], hard: [1, 4], nightmare: [2, 4] };
 
-export const PARTY_SCALING = { EXTRA_ENEMIES: [-1, 0, 1.5], MAX_FIGHTERS: 3, EXTRA_ENEMIES_PER_PLAYER: 0, LEVELS_PER_PLAYER: 1 };
+export const PARTY_SCALING = { EXTRA_ENEMIES: [-1, 0, 1.5], MAX_FIGHTERS: 3, EXTRA_ENEMIES_PER_PLAYER: 0, LEVELS_PER_PLAYER: 1,
+    // A boss is tuned for a party of THREE players (Darius the Groveler was, playtested): with fewer it has this share of its health (1, 2, 3 players)
+    BOSS_HP_BY_PLAYERS: [0.5, 0.75, 1] };
+
+/** The share of its health a boss fights with when `players` players share the fight (PARTY_SCALING.BOSS_HP_BY_PLAYERS; 3 or more: all of it). */
+export function bossHpFactor(players = 1, scaling = PARTY_SCALING) {
+    const t = scaling.BOSS_HP_BY_PLAYERS || [];
+    const i = Math.max(1, Math.floor(players || 1)) - 1;
+    return t.length ? (i < t.length ? t[i] : t[t.length - 1]) : 1;
+}
 
 export class SpawnTableFactory {
     /* `fighters`: how many of the party can fight at once (1-3); `players`: how many players share the fight. See PARTY_SCALING.

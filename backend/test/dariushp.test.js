@@ -37,3 +37,19 @@ test('a status someone else puts on a boss lasts half as long; its own buffs, en
     // put on again while it is still there: the refreshed time is halved too
     assert.equal(put(darius, 'bleed', hero), 2);
 });
+
+test('bosses are tuned for three players: with two they have three quarters of their health, alone half (Darius solo is as before the doubling)', async () => {
+    const { bossHpFactor, PARTY_SCALING } = await import('../../shared/battle/spawnTableFactory.js');
+    assert.deepEqual([1, 2, 3, 4].map(n => bossHpFactor(n)), [0.5, 0.75, 1, 1]);
+    assert.equal(PARTY_SCALING.BOSS_HP_BY_PLAYERS.length, 3);
+    // built the way SceneManager builds a boss for a fight: its own maxHpMultiplier times the share for the players in it
+    const def = EntityDefinitions.DARIUS_THE_GROVELER;
+    const build = (players) => EntityFactory.create('DARIUS_THE_GROVELER', { level: 15, baseStats: { ...def.baseStats, maxHpMultiplier: def.baseStats.maxHpMultiplier * bossHpFactor(players) } });
+    const three = build(3).maxHp, two = build(2).maxHp, one = build(1).maxHp;
+    assert.equal(three, EntityFactory.create('DARIUS_THE_GROVELER', 15).maxHp, 'three players: as tuned');
+    assert.ok(Math.abs(two - three * 0.75) <= 1, `two players: ${two} of ${three}`);
+    assert.ok(Math.abs(one - three * 0.5) <= 1, `alone: ${one} of ${three}`);
+    const undoubled = EntityFactory.create('DARIUS_THE_GROVELER', { level: 15, baseStats: { ...def.baseStats, maxHpMultiplier: 1 } }).maxHp;
+    assert.ok(Math.abs(one - undoubled) <= 1, 'alone he has the health he had before it was doubled');
+    assert.equal(build(1).hp, one, 'full health at the start');
+});
