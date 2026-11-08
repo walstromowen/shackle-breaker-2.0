@@ -13,9 +13,10 @@
      every step handed in               after_darius .. after_darius_3
    Every conversation is three to five stages. He does not know what causes the curse: he notices things (the clever ones went first) and shrugs.
    The chain, in order: shackled_stranger, shackled1, shackled2, shackled3, shackled7, shackled8 (questDefinitions.js; every step has turnIn: "HOODED_STRANGER").
-   What he lets slip, visit by visit: the shackles count you; stones fell from the sky over the years of the war (not all at once), and the king called the brightest a gift; the ones
-   who could work a spell went strange first (he does not know why, and would rather not); the king gave that stone to Darius, his adviser, to keep
-   until he came back, and Darius lost it (his soldiers in the old colors search for it still); the red moon. (Act 2, story/encounters/story/actTwo.js, shows the rest.)
+   What he lets slip, visit by visit: the shackles count you; the brightest stone (the artifact) came before the war and the king called it a gift, the rest kept falling all through the war;
+   the ones who could work a spell went strange first (he does not know why, and would rather not); the king gave one of the stones to Darius, a
+   governor and one of his advisers, to keep until he came back, and Darius lost it (his soldiers in the old colors search for it still); the red moon.
+   He is Cornelius Mentoras, once commander of the royal guard (docs/story.md): never said, and nothing he says may give it away before the story does. (Act 2, story/encounters/story/actTwo.js, shows the rest.)
 
    Personal: in a party of players this is never shared or voted on, since it is about this player's own quests.
    Art: assets/icons/encounters/story/hooded_stranger.png registered as `encounter_hooded_stranger` (one 128 px picture). */
@@ -116,7 +117,7 @@ export const hoodedStranger = {
             "\"If it starts to sound like a tune, you've stayed too long.\"",
             "\"And if you catch yourself humming it on the way back, don't tell me. I'd rather not know.\""),
         turnin_shackled2: turnIn("shackled2", "\"Let me guess. Stones from the sky. They all say it.\"", "lore_shackled2"),
-        lore_shackled2: stage("\"I say it too, in my sleep, or so the walls tell me. They started falling in the war, back when Altus still had kings. Not all at once. One here, one there, year after year.\"", next("lore_shackled2_2")),
+        lore_shackled2: stage("\"I say it too, in my sleep, or so the walls tell me. The brightest came first, before the war, back when Altus still had kings. The rest kept falling all through it. One here, one there, year after year.\"", next("lore_shackled2_2")),
         lore_shackled2_2: stage("\"The king knelt before the brightest of them and called it a gift. Kings call anything a gift if someone else pays for it.\"", next("give_shackled3_pre")),
 
         // ---- shackled3: the spark-throwers (he does not know why they went first, and would rather not guess) ----
@@ -139,7 +140,7 @@ export const hoodedStranger = {
             "\"It'd be funny if it weren't so sad. It's a little funny.\"",
             "\"Bring back a stone. And try not to die. I'd have to find someone else to talk to, and the anvil's started sulking.\""),
         turnin_shackled7: turnIn("shackled7", "\"You found one. Don't hold it too long. Warm, isn't it? Stones shouldn't be warm. Neither should I, these days.\"", "lore_shackled7"),
-        lore_shackled7: stage("\"There was a man who served the king. Darius, his adviser. The king gave him the brightest stone to keep safe until he came back.\"", next("lore_shackled7_2")),
+        lore_shackled7: stage("\"There was a man who served the king. Darius, a governor with the king's ear. The king gave him one of the stones to keep safe until he came back.\"", next("lore_shackled7_2")),
         lore_shackled7_2: stage("\"Darius lost it. His soldiers have been searching ever since, while he kneels in the dark and waits for a king who isn't coming. Loyalty's a fine thing, right up until it isn't.\"", next("give_shackled8")),
 
         // ---- shackled8: Darius ----

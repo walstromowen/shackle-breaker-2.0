@@ -31,7 +31,7 @@ Then the altar flickers. One last time its light rises and fills the cave, and i
   > Continue.
 
 [the_mage]
-A young man in a clean blue robe kneels before the fallen stone. The king's own mage, with steady hands and a quick smile. His name is Darius. The king rests a hand on his shoulder and gives him one task: keep this stone safe until I return.
+A young man in a clean blue robe kneels before the fallen stone. A governor, one of the king's advisers, with steady hands and a quick smile. His name is Darius. The king rests a hand on his shoulder and gives him one task: keep this stone safe until I return.
   > Continue.
 
 [first_winter]
@@ -774,7 +774,7 @@ STRANGER: "Let me guess. Stones from the sky. They all say it."
   > Continue.
 
 [lore_shackled2]
-STRANGER: "I say it too, in my sleep, or so the walls tell me. They started falling in the war, back when Altus still had kings. Not all at once. One here, one there, year after year."
+STRANGER: "I say it too, in my sleep, or so the walls tell me. The brightest came first, before the war, back when Altus still had kings. The rest kept falling all through it. One here, one there, year after year."
   > Continue.
 
 [lore_shackled2_2]
@@ -850,7 +850,7 @@ STRANGER: "You found one. Don't hold it too long. Warm, isn't it? Stones shouldn
   > Continue.
 
 [lore_shackled7]
-STRANGER: "There was a man who served the king. Darius, his adviser. The king gave him the brightest stone to keep safe until he came back."
+STRANGER: "There was a man who served the king. Darius, a governor with the king's ear. The king gave him one of the stones to keep safe until he came back."
   > Continue.
 
 [lore_shackled7_2]

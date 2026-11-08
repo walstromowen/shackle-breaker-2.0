@@ -42,7 +42,7 @@ export const actTwo = {
         the_mage: {
             displayText: "The King's Mage",
             image: { sheet: "encounter_mysterious_altar", col: 0, row: 1 },
-            text: "A young man in a clean blue robe kneels before the fallen stone. The king's own mage, with steady hands and a quick smile. His name is Darius. The king rests a hand on his shoulder and gives him one task: keep this stone safe until I return.",
+            text: "A young man in a clean blue robe kneels before the fallen stone. A governor, one of the king's advisers, with steady hands and a quick smile. His name is Darius. The king rests a hand on his shoulder and gives him one task: keep this stone safe until I return.",
             decisions: next("first_winter")
         },
         first_winter: {
