@@ -145,6 +145,8 @@ export const MAP_OBJECTS_DEFINITIONS = {
     PLAYER_GRAVE: { ...GRAVESTONE, sheet: 'objCursedGrave', frames: 4, speed: 0.22, interaction: { type: 'GRAVE', isRepeatable: true },
         light: { hasLight: true, radius: 2.5, color: '150, 70, 255', maxAlpha: 0.55, flickerSpeed: 0.08, flickerAmp: 0.25 } },
     MYSTERIOUS_ALTAR: { sheet: 'objMysteriousAltar', spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 3, h: 2 }, interaction: { type: 'ENCOUNTER', id: 'mysterious_altar' } },
+    /* the same altar once the meteorite has been offered at it (story/encounters/story/mysteriousAltar.js): it opens on facing Darius, until he is beaten */
+    MYSTERIOUS_ALTAR_AWAKENED: { sheet: 'objMysteriousAltar', spriteX: 0, spriteY: 0, width: 3, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 3, h: 2 }, interaction: { type: 'ENCOUNTER', id: 'mysterious_altar' } },
     
     // --- HERBS --- (walk over them to pick them up, like the small rocks and the bones)
     HEALING_HERB: { sheet: 'objHealingHerb', spriteX: 9, spriteY: 1, width: 1, height: 1, isSolid: false, isGround: true, interaction: { type: 'PICKUP', itemId: 'healing_herb', amount: 1, maxAmount: 2 } },

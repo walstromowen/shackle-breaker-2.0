@@ -16,6 +16,9 @@
    lights, or Darius) uncovers the catacombs: the altar gives way to the hidden staircase down (CATACOMBS_STAIRS), so there is a catacomb under every altar. */
 
 const HUMANOID = { type: "has_tag", tag: "HUMANOID" };
+/* The altar once the meteorite has been offered at it: it looks the same, and opens on Darius every time until he is beaten (a lost fight costs no
+   second stone). Kept in the world's changes, so it is saved and every player of a shared world sees it. */
+const AWAKENED_ALTAR = "MYSTERIOUS_ALTAR_AWAKENED";
 const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
 /* The altar is spent: it gives way to the stair down into the catacombs beneath it. */
 const UNCOVER_CATACOMBS = { type: "REPLACE_OBJECT", payload: { objectId: "CATACOMBS_STAIRS" } };
@@ -31,11 +34,28 @@ export const mysteriousAltar = {
     id: "mysterious_altar",
     title: "Mysterious Altar",
     imageSheet: "encounter_mysterious_altar",
-    initialStage: "approach",
+    // an altar the meteorite has been offered at (MYSTERIOUS_ALTAR_AWAKENED) waits for Darius: it opens on facing him, no stone needed again
+    initialStage: (context) => (context && context.objectId === AWAKENED_ALTAR ? "awakened" : "approach"),
     // Cues: tone / ambience here apply to every stage; a stage sets its own tone, effect, sfx and ambience (see story/encounters/story/prologue.js)
     tone: "arcane",
     ambience: "altarDrone",
     stages: {
+        // the altar the meteorite was offered at: Darius is still there, and the stone is already his
+        awakened: {
+            displayText: "The Waiting Altar",
+            image: { col: 0, row: 0 },
+            text: "The altar of dark stone waits where you left it. Your meteorite rests in the hollow beneath the skull, still glowing. Somewhere in the dark, Darius is kneeling.",
+            decisions: [
+                { text: "Face Darius.", conditions: [HUMANOID], outcomes: toStage("darius_rises") },
+                {
+                    text: "[The Groveler is dead] Search behind the altar.",
+                    conditions: [{ type: "has_milestone", id: "act2" }, HUMANOID],
+                    customActionText: "You put your shoulder to the altar. Stone grinds on stone, and it slides aside.",
+                    outcomes: toStage("hidden_stair")
+                },
+                { text: "Leave the altar alone.", outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }] }
+            ]
+        },
         approach: {
             displayText: "A Mysterious Altar",
             image: { col: 0, row: 0 },
@@ -79,6 +99,7 @@ export const mysteriousAltar = {
                             results: [
                                 { type: "SET_CONTEXT_FLAG", payload: { flagId: "altar_approached" } },
                                 { type: "REMOVE_ITEM", payload: { itemId: "meteorite", qty: 1 } },
+                                { type: "REPLACE_OBJECT", payload: { objectId: AWAKENED_ALTAR } },   // the stone is spent here, once: the altar remembers it
                                 { type: "ADVANCE_STAGE", payload: { stageId: "darius_rises" } }
                             ]
                         }
@@ -342,7 +363,8 @@ export const mysteriousAltar = {
                     customActionText: "You draw your weapon.",
                     conditions: [HUMANOID],
                     // Winning plays the encounter that starts act 2 (story/encounters/story/actTwo.js) before the party is back on the map
-                    outcomes: fight("darius_boss", true, { encounterId: "act_two" }, "dariusEncounterBgm")
+                    // the altar stays through the fight (lose, and it still waits for you); A Dark Truth, after a win, uncovers the stair down
+                    outcomes: fight("darius_boss", false, { encounterId: "act_two" }, "dariusEncounterBgm")
                 }
             ]
         },

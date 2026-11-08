@@ -9,9 +9,26 @@ const altar = encounterDefinitions.mysterious_altar;
 const resultsOf = (stage) => (stage.decisions || []).flatMap(d => [...(d.outcomes || []), ...(d.successOutcomes || []), ...(d.failureOutcomes || [])]).flatMap(o => o.results || []);
 const uncovers = (stage) => resultsOf(stage).some(r => r.type === 'REPLACE_OBJECT' && r.payload && r.payload.objectId === 'CATACOMBS_STAIRS');
 
-test('touching the skull uncovers the catacombs, whichever light it gives, and so does waking Darius', () => {
-    for (const id of ['blue_glow', 'green_glow', 'red_glow', 'darius_wrath']) assert.ok(uncovers(altar.stages[id]), `${id} leaves the stair down`);
+test('touching the skull uncovers the catacombs, whichever light it gives, and so does beating Darius (A Dark Truth)', () => {
+    for (const id of ['blue_glow', 'green_glow', 'red_glow']) assert.ok(uncovers(altar.stages[id]), `${id} leaves the stair down`);
+    assert.ok(Object.values(encounterDefinitions.act_two.stages).some(uncovers), 'beating Darius uncovers it');
     assert.equal(MAP_OBJECTS_DEFINITIONS.CATACOMBS_STAIRS.interaction.roomType, 'CATACOMBS');
+});
+
+test('the meteorite is spent once, at the approach: the altar remembers it and opens on Darius again after a lost fight', () => {
+    const approach = altar.stages.approach.decisions.find(d => JSON.stringify(d.conditions || []).includes('meteorite'));
+    const results = approach.outcomes[0].results;
+    assert.ok(results.some(r => r.type === 'REMOVE_ITEM' && r.payload.itemId === 'meteorite'), 'the stone is spent');
+    assert.ok(results.some(r => r.type === 'REPLACE_OBJECT' && r.payload.objectId === 'MYSTERIOUS_ALTAR_AWAKENED'), 'the altar is awakened');
+    const awake = MAP_OBJECTS_DEFINITIONS.MYSTERIOUS_ALTAR_AWAKENED;
+    assert.ok(awake && awake.interaction.id === 'mysterious_altar' && awake.sheet === MAP_OBJECTS_DEFINITIONS.MYSTERIOUS_ALTAR.sheet, 'the same altar to look at');
+    assert.equal(altar.initialStage({ objectId: 'MYSTERIOUS_ALTAR_AWAKENED' }), 'awakened');
+    assert.equal(altar.initialStage({ objectId: 'MYSTERIOUS_ALTAR' }), 'approach');
+    const face = altar.stages.awakened.decisions.find(d => d.text === 'Face Darius.');
+    assert.ok(face && !JSON.stringify(face.conditions).includes('meteorite'), 'no second stone needed');
+    assert.ok(JSON.stringify(face.outcomes).includes('darius_rises'));
+    // the fight itself leaves the altar standing: losing it costs nothing more
+    assert.ok(!resultsOf(altar.stages.darius_wrath).some(r => r.type === 'REPLACE_OBJECT' || r.type === 'DESTROY_OBJECT'), 'the altar stays through the fight');
 });
 
 test('nothing takes the altar away without leaving the stair', () => {

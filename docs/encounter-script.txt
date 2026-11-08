@@ -370,41 +370,12 @@ The iron lid swings up on its hinges. Inside, packed tight in rotted cloth, lies
 
 ===== MYSTERIOUS ALTAR (mysterious_altar) =====
 
-[approach]
-Your party comes upon a mysterious altar of dark stone. Bones lie scattered across the ground around it, and an ominous chill fills the air.
-  > [VIG] Approach the altar.
-  > [Fallen Meteorite] Approach with the meteorite.
-      You hold the fallen meteorite out in front of you. The bones lie still, the air stays clear, and you walk up to the altar unchallenged.
+[awakened]
+The altar of dark stone waits where you left it. Your meteorite rests in the hollow beneath the skull, still glowing. Somewhere in the dark, Darius is kneeling.
+  > Face Darius.
   > [The Groveler is dead] Search behind the altar.
       You put your shoulder to the altar. Stone grinds on stone, and it slides aside.
-  > Step up to the altar again.
-  > Switch party member.
   > Leave the altar alone.
-
-[at_the_altar]
-You walk up to the altar and see a skull resting high above the bones on the ground. The skull almost feels as if it were placed there on purpose.
-  > [INT] Examine the skull.
-  > Back up.
-
-[blue_glow]
-As you reach to examine the skull, its eyes begin to glow blue, filling the whole area with a blinding light! When you can see again, the skull has disappeared, and a sense of newfound strength fills you.
-  > Feel the strength return.
-
-[green_glow]
-As you reach to examine the skull, its eyes begin to glow green. Suddenly, mysterious objects materialize on the altar, just waiting to be taken.
-  > Gather what the altar offers.
-
-[red_glow]
-As you reach to examine the skull, its eyes begin to glow red, filling the whole area with a blinding light! When you can see again, the skull has disappeared and a group of skeletons is quickly approaching!
-  > Ready your weapons!
-
-[bones_stir]
-As you approach the altar, the skeletons along the ground slowly begin to move. Before you realize what is happening, the skeletons are on top of you!
-  > Draw your weapons!
-
-[smoke_cloud]
-As you approach the altar, it releases a cloud of pale smoke. It sinks into your lungs and limbs, and you feel fatigued.
-  > Stagger the rest of the way to the altar.
 
 [darius_rises]
 DARIUS: "Footsteps... after so long. Is it you, my king? Have you come back so soon?!"
@@ -445,6 +416,42 @@ DARIUS: "No, no! That is not possible, I am the king's adviser! You thief, give 
 Under the altar, worn steps lead down into the dark. Cold air rises from below, and it smells of old bones.
   > Leave the way open.
       You leave the stair uncovered. Whatever lies below can wait for you.
+
+[approach]
+Your party comes upon a mysterious altar of dark stone. Bones lie scattered across the ground around it, and an ominous chill fills the air.
+  > [VIG] Approach the altar.
+  > [Fallen Meteorite] Approach with the meteorite.
+      You hold the fallen meteorite out in front of you. The bones lie still, the air stays clear, and you walk up to the altar unchallenged.
+  > [The Groveler is dead] Search behind the altar.
+      You put your shoulder to the altar. Stone grinds on stone, and it slides aside.
+  > Step up to the altar again.
+  > Switch party member.
+  > Leave the altar alone.
+
+[at_the_altar]
+You walk up to the altar and see a skull resting high above the bones on the ground. The skull almost feels as if it were placed there on purpose.
+  > [INT] Examine the skull.
+  > Back up.
+
+[blue_glow]
+As you reach to examine the skull, its eyes begin to glow blue, filling the whole area with a blinding light! When you can see again, the skull has disappeared, and a sense of newfound strength fills you.
+  > Feel the strength return.
+
+[green_glow]
+As you reach to examine the skull, its eyes begin to glow green. Suddenly, mysterious objects materialize on the altar, just waiting to be taken.
+  > Gather what the altar offers.
+
+[red_glow]
+As you reach to examine the skull, its eyes begin to glow red, filling the whole area with a blinding light! When you can see again, the skull has disappeared and a group of skeletons is quickly approaching!
+  > Ready your weapons!
+
+[bones_stir]
+As you approach the altar, the skeletons along the ground slowly begin to move. Before you realize what is happening, the skeletons are on top of you!
+  > Draw your weapons!
+
+[smoke_cloud]
+As you approach the altar, it releases a cloud of pale smoke. It sinks into your lungs and limbs, and you feel fatigued.
+  > Stagger the rest of the way to the altar.
 
 
 ===== OLD GRAVESTONE (old_gravestone) =====
