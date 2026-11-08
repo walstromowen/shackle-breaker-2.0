@@ -9,13 +9,13 @@ import { STRANGER_CHAIN } from '../../shared/story/encounters/story/hoodedStrang
 // the steps after "find him", in the order the Hooded Stranger hands them out
 const chain = () => STRANGER_CHAIN.slice(1);
 
-test('the chain: level 3, madmen, magic addicts, the old soldiers, then Darius', () => {
+test('the chain: level 4, madmen, magic addicts, the old soldiers, then Darius at level 15 (the end of act 1)', () => {
     assert.deepEqual(chain(), ['shackled1', 'shackled2', 'shackled3', 'shackled7', 'shackled8']);
     for (const cut of ['shackled4', 'shackled5', 'shackled6']) assert.equal(Q[cut], undefined, `${cut} is gone`);
     const targets = chain().flatMap(id => Q[id].objectives.filter(o => o.type === 'kill_enemy').map(o => o.targetId));
     for (const far of ['SAND_STALKER', 'MIRAGEWRIGHT', 'FROZEN_TRAPPER']) assert.ok(!targets.includes(far), `no ${far} hunt`);
     const level = (id) => Q[id].objectives.find(o => o.type === 'party_level').targetLevel;
-    assert.deepEqual(chain().map(level), [3, 5, 7, 9, 10]);
+    assert.deepEqual(chain().map(level), [4, 7, 10, 13, 15]);
     assert.ok(Q.shackled8.objectives.some(o => o.targetId === 'DARIUS_THE_GROVELER'));
     assert.ok(Q.shackled7.rewards.items.some(i => i.id === 'meteorite'), 'the legionaries still give up the meteorite');
 });

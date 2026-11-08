@@ -20,9 +20,9 @@ export const QuestDefinitions = {
         turnIn: "HOODED_STRANGER",
     description: "The Hooded Stranger will tell you nothing while you are this weak. Grow strong enough to survive the answer, then go back to him.",
     objectives: [
-        { id: "obj_reach_level_2", type: "party_level", targetLevel: 3, amount: 1 },
+        { id: "obj_reach_level_2", type: "party_level", targetLevel: 4, amount: 1 },
     ],
-    rewards: { exp: 60, currency: 50 }
+    rewards: { exp: 70, currency: 50 }
 },
     "shackled2": {
         id: "shackled2",
@@ -31,9 +31,9 @@ export const QuestDefinitions = {
         description: "The prisoners on the road were not the only ones. Others wear the same iron here, and they laugh in the streets, as though sharing a single dream. Whatever took them has not stopped at the road.",
         objectives: [
             { id: "obj_kill_madmen_part_2", type: "kill_enemy", targetId: "MAD_MAN", amount: 3 },
-            { id: "obj_reach_level_3", type: "party_level", targetLevel: 5, amount: 1 }
+            { id: "obj_reach_level_3", type: "party_level", targetLevel: 7, amount: 1 }
         ],
-        rewards: { exp: 140, currency: 100 }
+        rewards: { exp: 180, currency: 100 }
     },
     "shackled3": {
         id: "shackled3",
@@ -41,11 +41,11 @@ export const QuestDefinitions = {
         turnIn: "HOODED_STRANGER",
         description: "The shackles have no keyhole, and the weight on your spirit is as heavy as the iron. The ravings of the mad are not all nonsense: they speak of a stone fallen from the sky, and of soldiers in the old colors who carried it away. Many of the mad still conjure sparks and cannot stop. Listen closely, then put them down.",
         objectives: [
-            { id: "obj_reach_level_5", type: "party_level", targetLevel: 7, amount: 1 },
+            { id: "obj_reach_level_5", type: "party_level", targetLevel: 10, amount: 1 },
             { id: "obj_kill_magic_addicts", type: "kill_enemy", targetId: "MAGIC_ADDICT", amount: 3 }
         ],
         rewards: {
-            exp: 300,
+            exp: 410,
             currency: 200,
             items: [
                 { id: "healing_tonic", amount: 1 },
@@ -59,12 +59,12 @@ export const QuestDefinitions = {
         turnIn: "HOODED_STRANGER",
         description: "The stone went with those who still wear the old colors, and they have not given it up. Legionaries and watchmen still march the plains as if the war never ended. Whoever carried the stone home has the answer, if any of them can still be reasoned with.",
         objectives: [
-            { id: "obj_reach_level_9", type: "party_level", targetLevel: 9, amount: 1 },
+            { id: "obj_reach_level_9", type: "party_level", targetLevel: 13, amount: 1 },
             { id: "obj_kill_legionaries", type: "kill_enemy", targetId: "LEGIONARY", amount: 3 },
             { id: "obj_kill_watchmen", type: "kill_enemy", targetId: "WATCHMAN", amount: 2 }
         ],
         rewards: {
-            exp: 600,
+            exp: 850,
             currency: 350,
             items: [
                 { id: "meteorite", amount: 1 },
@@ -78,11 +78,11 @@ export const QuestDefinitions = {
         turnIn: "HOODED_STRANGER",
         description: "A stone altar waits in the dark below, though not every depth holds one. A skull rests above a hollow the size of a fallen star. The answer to what happened waits down there. Descend when you are strong.",
         objectives: [
-            { id: "obj_reach_level_10", type: "party_level", targetLevel: 10, amount: 1 },   // Darius is met around level 10
+            { id: "obj_reach_level_10", type: "party_level", targetLevel: 15, amount: 1 },   // Darius is met around level 15: the end of act 1
             { id: "obj_kill_darius", type: "kill_enemy", targetId: "DARIUS_THE_GROVELER", amount: 1 }
         ],
         rewards: {
-            exp: 720,
+            exp: 1070,
             currency: 400,
             items: [
                 { id: "healing_tonic", amount: 3 },
