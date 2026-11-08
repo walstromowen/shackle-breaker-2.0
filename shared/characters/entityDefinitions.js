@@ -960,8 +960,8 @@ export const ENTITY_DEFINITIONS = {
         name: "The Infernus Sentinel",
         level: 1,
         spritePortrait: "infernusSentinelPortrait",
-        // its overworld sheet (96 px frames, a still statue facing you: tools/art/overworldSheetFromFrame.py ... 96 --still --fit) is what its map object
-        // INFERNUS_SENTINEL draws, like the hooded stranger's
+        // its overworld sheet (128 px frames, a still statue facing you, the front frame of tools/art/sources/infernus_sentinel_rotations.png:
+        // tools/art/overworldSheetFromFrame.py ... 128 --still --feet) is what its map object INFERNUS_SENTINEL draws, like the hooded stranger's
         spriteOverworld: "infernusSentinelSprite",
         crySound: "calcifiedCrusaderCry",
         deathSound: "calcifiedCrusaderCry",

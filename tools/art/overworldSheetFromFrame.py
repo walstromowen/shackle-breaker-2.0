@@ -4,6 +4,7 @@
 #   python3 tools/art/overworldSheetFromFrame.py front.png frontend/src/assets/sprites/warlord_hero/warlord_hero_sprite.png out.png [size] [--still] [--fit]
 #     size     the frame size in px (default 64). A bigger character (the Infernus Sentinel: 96) is drawn with a matching `character.frame` in its map object.
 #     --still  no breathing (a statue)
+#     --feet   move the shadow oval to sit under the frame's own feet (for a frame drawn with its feet lower than a hero's, e.g. a full-height 128 px statue)
 #     --fit    the input is any size: its drawn pixels are scaled to stand in the frame the way a 64 px hero stands in its own (about 0.82 of the height,
 #              feet 9/64 of the way up from the bottom, centred)
 import sys
@@ -39,6 +40,18 @@ for y in range(C):
     for x in range(semi.min(), semi.max() + 1):
         a = wf[y, x, 3]
         shadow[y, x] = a if 0 < a < 255 else 92
+
+
+if '--feet' in flags:
+    # the shadow's place relative to the Warlord's feet, kept relative to this frame's feet
+    war_feet = int(np.where((war[:, :, 3] == 255).any(axis=1))[0].max())
+    our_feet = int(np.where((base[:, :, 3] > 0).any(axis=1))[0].max())
+    dy = our_feet - war_feet
+    if dy:
+        moved = np.zeros_like(shadow)
+        if dy > 0: moved[dy:] = shadow[:-dy]
+        else: moved[:dy] = shadow[-dy:]
+        shadow = moved
 
 
 def over(dst, part, dy=0):

@@ -5,7 +5,7 @@
                              from their niches and must be fought (the door is open either way).
      infernus_sentinel       INFERNUS_SENTINEL: the boss of the catacombs, a living statue of a cosmic knight that guards the doorway down to Infernus,
                              the ancient kingdom under Altus (docs/story.md). It stands in the dark round hall before the main chamber, in front of the
-                             lever that raises the last gate. Coming within 3 cells wakes it (triggerRadius). Backing away ends it; it wakes again when you come back.
+                             lever that raises the last gate. Coming within 3 cells wakes it (triggerRadius): the statue comes to life and the only answer is to draw your weapon.
      infernus_sentinel_fallen   after the Sentinel's fight is won (afterVictory): it breaks apart and is gone from the map, so the lever can be pulled.
 
    Art: assets/icons/encounters/catacomb_depths.png registered as `encounter_catacomb_depths`, a 4 x 4 grid of 128 px cells:
@@ -82,30 +82,23 @@ export const infernusSentinel = {
     id: "infernus_sentinel",
     title: "The Infernus Sentinel",
     imageSheet: "encounter_catacomb_depths",
-    initialStage: "stirs",
+    initialStage: "wakes",
     tone: "cold",
     stages: {
-        stirs: {
-            displayText: "Something in the Dark",
+        // walking up to the statue wakes it (triggerRadius): one stage, one choice, then the fight
+        wakes: {
+            displayText: "The Statue Wakes",
             image: { col: 2, row: 0 },
-            bgm: "none",
-            sfx: "heartbeat",
-            text: "The hall is round and utterly dark. Before a lever in the far wall stands a knight carved from black stone, taller than any man. Through the cracks in its armour there is no stone, only night sky, and the stars in it are moving.",
-            decisions: [
-                { text: "Hold your ground.", outcomes: toStage("challenge") },
-                { text: "Back away into the dark.", outcomes: [{ weight: 100, results: [END] }] }
-            ]
-        },
-        challenge: {
-            displayText: "The Infernus Sentinel",
-            image: { col: 2, row: 0 },
-            effect: "shake",
             bgm: "shackledMarchBgm",
             sfx: "rockThud",
-            text: "Stone grinds on stone as it lifts its sword. \"Children of Altus. Again you come down with that light in your hands. Infernus burned for it once. Behind me lies the way down to its ruin, and none of your blood shall pass.\"",
+            effect: "shake",
+            text: "A stone knight stands before the far lever, sword planted at its feet. As you draw near, dust sifts from its shoulders. The crowned head turns, stone grinding on stone, and the statue steps down from its plinth and lifts its sword.",
             decisions: [
-                { text: "Draw your weapon.", outcomes: [{ weight: 100, results: [SENTINEL_FIGHT] }] },
-                { text: "Back away into the dark.", outcomes: [{ weight: 100, results: [END] }] }
+                {
+                    text: "Draw your weapon.",
+                    customActionText: "\"Children of Altus. Again you come down with that light in your hands. Infernus burned for it once. None of your blood shall pass.\"",
+                    outcomes: [{ weight: 100, results: [SENTINEL_FIGHT] }]
+                }
             ]
         }
     }

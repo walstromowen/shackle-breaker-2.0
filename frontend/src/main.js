@@ -239,7 +239,7 @@ ui_icons: './assets/icons/ui_icons.png',
     nightbladeHeroSprite: './assets/sprites/nightblade_hero/nightblade_hero_sprite.png',
     madmanSprite: './assets/sprites/madman/madman_sprite.png',
     shadyMerchantSprite: './assets/sprites/shady_merchant/shady_merchant_spritesheet.png',
-    infernusSentinelSprite: './assets/sprites/infernus_sentinel/infernus_sentinel_sprite.png',   // the catacombs' boss as its map object draws it (96 px frames; a placeholder from the battle art)
+    infernusSentinelSprite: './assets/sprites/infernus_sentinel/infernus_sentinel_sprite.png',   // the catacombs' boss as its map object draws it (128 px frames, a still statue)
     hoodedStrangerSprite: './assets/sprites/hooded_stranger/hooded_stranger_sprite.png',   // the quest giver in a village workshop (one front frame; tools/art/overworldSheetFromFrame.py)
     snowLeopardSprite: './assets/sprites/snow_leopard/snow_leopard_sprite.png',
     artificerHeroPortrait: './assets/sprites/artificer_hero/artificer_hero_portrait.png',
