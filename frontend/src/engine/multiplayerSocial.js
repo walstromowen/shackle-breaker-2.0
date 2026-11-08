@@ -56,6 +56,7 @@ class MultiplayerSocial {
         this.battle = null;          // the shared fight this player is in: { bid, kind, players, ... }
         this.early = new Map();      // bid -> [picks] that came before the fight was set up
         this.duelBackup = null;      // my party as it was before a duel
+        this.declined = new Set();   // players who were already busy (in a fight or an encounter) when my shared fight or encounter began: left out of it
         this._t = { party: 0 };
         this._lastPartyJson = '';
         this._wired = false;
@@ -386,6 +387,7 @@ class MultiplayerSocial {
     /** A fight I start (sceneManager START_BATTLE) with my party near me (or `players`: the ones in the encounter it came out of): our
      *  line-up against these enemies, on every one of their screens too. I am its authority. */
     startPartyBattle(enemies, { background = null, bgm = null, noEscape = false, betrayal = null, players = null } = {}) {
+        if (!players) this.declined.clear();   // (a fight out of a shared encounter keeps out whoever declined that encounter)
         const ids = [this.me, ...(players ? players.filter(id => id !== this.me && this.groupParties.has(id) && this.partyHere([id]).length) : this.nearbyParty())];
         const parties = { [this.me]: gameState.party.members.map(serializeEntity) };
         for (const id of ids) if (id !== this.me) parties[id] = this.groupParties.get(id);
@@ -415,6 +417,7 @@ class MultiplayerSocial {
     _beginBattle(spec) {
         const me = this.me;
         this.prompt = null;
+        this.declined.clear();
         if (this.trade) this.cancelTrade();
         let partyEntities, partyMeta, enemies, enemyMeta, opponent = null;
         if (spec.kind === 'duel') {
@@ -454,16 +457,29 @@ class MultiplayerSocial {
         events.emit('MP_START_BATTLE', { enemies, context: { mp, partyEntities, backgroundId: spec.background || undefined, weather: null, noEscape: !!spec.noEscape }, bgm: spec.bgm || null });
     }
 
-    /** Of these players, the ones still in the world. */
+    /** In a fight, an encounter or a trade right now (a request to join another one is refused). */
+    _busy() {
+        const scene = this._scene();
+        return !!this.battle || !!this.trade || scene === 'battle' || scene === 'encounter' || scene === 'trade';
+    }
+
+    /** In a shared encounter that `id` is in too (the fight it turns into is ours). */
+    _inEncounterWith(id) {
+        const e = this.encounterState && this.encounterState();
+        return this._scene() === 'encounter' && !!(e && e.mp && e.mp.players && e.mp.players.includes(id));
+    }
+
+    /** Of these players, the ones still in the world (and not busy elsewhere: declined). */
     partyHere(players) {
         const room = multiplayer.room;
-        return (players || []).filter(id => room && room.players.some(p => p.id === id && p.connected));
+        return (players || []).filter(id => room && room.players.some(p => p.id === id && p.connected) && !this.declined.has(id));
     }
 
     /* ---- shared encounters: the leader's encounter, played on every member's screen, decided by vote (EncounterController) ---- */
     /** The leader opens an encounter: the members open it too. Returns the leader's own part of it, for EncounterController.start. */
     startPartyEncounter(data) {
         // the one who started it leads it (their roll, their tie-break); the party near them is pulled in and votes
+        this.declined.clear();
         const players = [this.me, ...this.nearbyParty()];
         const eid = newId(), seed = (Math.random() * 0xffffffff) >>> 0;
         // the line-up, as for a fight: every player's first characters (3 each for two players, 2 each for three), the leader's lead first.
@@ -500,6 +516,7 @@ class MultiplayerSocial {
     /** A shared fight is over (sceneManager BATTLE_ENDED). A duel puts my party back as it was. Returns true if it was a duel. */
     battleEnded(mp) {
         this.battle = null;
+        this.declined.clear();
         if (!mp || mp.kind !== 'duel') return false;
         const b = this.duelBackup;
         this.duelBackup = null;
@@ -568,6 +585,11 @@ class MultiplayerSocial {
                 break;
             }
             case 'enc_start':
+                if (d.mp && multiplayerSession.active && this._busy()) {
+                    // already in a fight or an encounter (or a trade): stay in it, and tell the encounter's players to go on without me
+                    for (const id of d.mp.players || []) if (id !== this.me) this._send({ k: 'enc_decline', eid: d.mp.eid }, id);
+                    break;
+                }
                 if (d.mp && multiplayerSession.active && !this.battle) {
                     this.prompt = null;
                     events.emit('START_ENCOUNTER', { encounterId: d.encounterId, context: d.context || {}, bgm: d.bgm || null, quiet: !!d.quiet, mp: { ...d.mp, me: this.me, isLeader: false } });
@@ -577,7 +599,21 @@ class MultiplayerSocial {
                 events.emit('MP_ENCOUNTER', { ...d, from });
                 break;
             case 'bt_start':
-                if (d.spec && multiplayerSession.active) this._beginBattle(d.spec);
+                if (!d.spec || !multiplayerSession.active) break;
+                // a party's fight while I am busy elsewhere: I stay where I am, and its players stop waiting for my fighters. The fight that comes
+                // out of the shared encounter I am in is mine, though.
+                if (d.spec.kind === 'party' && this._busy() && !this._inEncounterWith(d.spec.authority)) {
+                    for (const id of d.spec.players || []) if (id !== this.me) this._send({ k: 'bt_decline', bid: d.spec.bid }, id);
+                    break;
+                }
+                this._beginBattle(d.spec);
+                break;
+            case 'bt_decline':
+                if (this.battle && this.battle.bid === d.bid) { this.declined.add(from); events.emit('MP_BATTLE_DECLINE', { bid: d.bid, from }); }
+                break;
+            case 'enc_decline':
+                this.declined.add(from);
+                events.emit('MP_ENCOUNTER', { k: 'enc_decline', eid: d.eid, from });
                 break;
             case 'bt_dec':
                 if (this.battle && this.battle.bid === d.bid) events.emit('MP_BATTLE_DECISION', d);

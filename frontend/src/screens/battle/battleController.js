@@ -49,6 +49,8 @@ export class BattleController extends BaseController {
 
         events.on('MP_BATTLE_DECISION', (d) => this._onRemoteDecision(d));
         events.on('MP_BATTLE_SYNC', (d) => this._onRemoteSync(d));
+        // a player of this shared fight was busy elsewhere (or has left): stop waiting for their fighters' picks
+        events.on('MP_BATTLE_DECLINE', () => this._tryResolveShared());
 
         // Statuses announce themselves on the event bus (combatantModel.js); the ledger keeps them for the trait checks after a win
         events.on('ON_STATUS_APPLIED', (data) => {
@@ -471,7 +473,9 @@ export class BattleController extends BaseController {
     _othersToWaitFor() {
         const s = this.state;
         const field = s.mp.kind === 'duel' ? [...s.activeParty, ...s.activeEnemies] : s.activeParty;
-        return field.filter(c => c && !c.isDead() && c.netOwner && c.netOwner !== s.mp.me);
+        // (a fighter whose player is not in the fight, busy elsewhere or gone, has nobody to pick for it: it holds its ground)
+        const here = new Set(multiplayerSocial.partyHere(s.mp.players));
+        return field.filter(c => c && !c.isDead() && c.netOwner && c.netOwner !== s.mp.me && (s.mp.kind === 'duel' || here.has(c.netOwner)));
     }
 
     _beginSharedRound() {

@@ -130,6 +130,8 @@ export class EncounterController extends BaseController {
       EncounterLogic.shared.lineupSize = this.mp.lineup.length;
       EncounterLogic.onSharedTime = (minutes, players) => multiplayerSession.sharedTimePassed(minutes, players);
       this._setActive(0);
+      // a player who was busy elsewhere may have said so before this screen opened (the leader's opens after a transition)
+      for (const id of [...multiplayerSocial.declined]) this._dropPlayer(id);
     }
     else { unseedRandom(); EncounterLogic.shared = null; }
 
@@ -485,10 +487,27 @@ export class EncounterController extends BaseController {
   _onRemote(d) {
     const mp = this.mp;
     if (!mp || !d || d.eid !== mp.eid) return;
-    if (d.k === 'enc_vote') this._onVote(d);
+    if (d.k === 'enc_decline') this._dropPlayer(d.from);
+    else if (d.k === 'enc_vote') this._onVote(d);
     else if (d.k === 'enc_go') this._onGo(d);
     else if (d.k === 'enc_tally' && d.step === mp.step) mp.tally = d.tally || {};
     else if (d.k === 'enc_opts') mp.opts = { step: d.step, stage: d.stage, allowed: d.allowed || [] };
+  }
+
+  /** A player who was busy elsewhere when this shared encounter began: out of its players and its line-up (the one stepping forward stays). */
+  _dropPlayer(id) {
+    const mp = this.mp;
+    if (!mp || !id || id === mp.me || !mp.players.includes(id)) return;
+    mp.players = mp.players.filter(p => p !== id);
+    if (EncounterLogic.shared) EncounterLogic.shared.players = mp.players;
+    multiplayerSocial.encounterPlayers = mp.players;
+    if (mp.lineup) {
+      const active = mp.lineup[mp.active];
+      mp.lineup = mp.lineup.filter(e => e.owner !== id || e === active);
+      mp.active = Math.max(0, mp.lineup.indexOf(active));
+      if (EncounterLogic.shared) EncounterLogic.shared.lineupSize = mp.lineup.length;
+    }
+    mp.votes.delete(id);
   }
 
   // The mouse moved onto a decision: the keyboard cursor follows it (silent; UIInteractionManager adds the hover tick)
@@ -1118,6 +1137,7 @@ export class EncounterController extends BaseController {
     if (!this.mp) return;
     this.mp = null;
     multiplayerSocial.encounterPlayers = null;
+    multiplayerSocial.declined.clear();
     EncounterLogic.shared = null;
     unseedRandom();
   }
