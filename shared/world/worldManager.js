@@ -548,17 +548,46 @@ export class WorldManager {
             }
             return { col: 4, row: 4 };
         }
+        // every game starts in the plains, well inside them: the nearest such spot to the middle of the world, then the nearest free flat tile to it
+        const centre = this._plainsHeart();
         let radius = 0;
         while (radius < 500) {
             for (let r = -radius; r <= radius; r++) {
                 for (let c = -radius; c <= radius; c++) {
                     if (Math.abs(r) !== radius && Math.abs(c) !== radius) continue;
-                    if (this.isTileFree(c, r) && this.getElevation(c, r) === 1) {
-                        return { col: c, row: r };
+                    const col = centre.col + c, row = centre.row + r;
+                    if (this.isTileFree(col, row) && this.getElevation(col, row) === 1) {
+                        return { col, row };
                     }
                 }
             }
             radius++;
+        }
+        return { col: centre.col, row: centre.row };
+    }
+
+    /* The spot nearest the middle of the world (0, 0) that is plains and still plains 90 tiles away in every direction: the
+       middle of a stretch of plains, so a new game never opens on the edge of the desert or the snow. Searched in rings 16 tiles apart. */
+    _plainsHeart() {
+        const DEPTH = 90, STEP = 16, MAX = 4000;
+        const plains = (c, r) => { const b = this.terrain.getBiomeAt(c, r); return !!b && b.id === 'PLAINS'; };
+        const deep = (c, r) => {
+            if (!plains(c, r)) return false;
+            for (const dist of [DEPTH / 2, DEPTH]) {
+                for (let a = 0; a < 16; a++) {
+                    const ang = a * Math.PI / 8;
+                    if (!plains(c + Math.round(Math.cos(ang) * dist), r + Math.round(Math.sin(ang) * dist))) return false;
+                }
+            }
+            return true;
+        };
+        for (let ring = 0; ring <= MAX; ring += STEP) {
+            for (let r = -ring; r <= ring; r += STEP) {
+                for (let c = -ring; c <= ring; c += STEP) {
+                    if (Math.abs(r) !== ring && Math.abs(c) !== ring) continue;
+                    if (deep(c, r)) return { col: c, row: r };
+                }
+            }
         }
         return { col: 0, row: 0 };
     }

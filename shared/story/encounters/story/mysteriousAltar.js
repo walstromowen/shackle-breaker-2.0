@@ -11,15 +11,18 @@
                           as he understands, then envy and the boss fight. No music while he talks, only the altar's drone kept low; his music starts on the
                           pause, with his back still to you, and carries on through his turn into the fight.
    Every find or ambush is announced on its own stage first and the effect is handed out on the button after it. A fight that starts from the
-   approach leaves the altar standing (it can be tried again); anything that spends the skull or the meteorite destroys the altar. */
+   approach leaves the altar standing (it can be tried again); anything that spends the skull or the meteorite (touching the skull: any of the three
+   lights, or Darius) uncovers the catacombs: the altar gives way to the hidden staircase down (CATACOMBS_STAIRS), so there is a catacomb under every altar. */
 
 const HUMANOID = { type: "has_tag", tag: "HUMANOID" };
 const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
+/* The altar is spent: it gives way to the stair down into the catacombs beneath it. */
+const UNCOVER_CATACOMBS = { type: "REPLACE_OBJECT", payload: { objectId: "CATACOMBS_STAIRS" } };
 const fight = (tableId, spend, afterVictory, bgm) => [{
     weight: 100,
     results: [
         { type: "START_BATTLE", payload: { tableId, ...(afterVictory ? { afterVictory } : {}), ...(bgm ? { bgm } : {}) } },
-        ...(spend ? [{ type: "DESTROY_OBJECT" }] : [])
+        ...(spend ? [UNCOVER_CATACOMBS] : [])
     ]
 }];
 
@@ -206,7 +209,7 @@ export const mysteriousAltar = {
                             weight: 100,
                             results: [
                                 { type: "MODIFY_VITALS", payload: { hp: 9999, stamina: 9999, insight: 9999, damageType: "true", party: "all" } },   // the light fills the whole area
-                                { type: "DESTROY_OBJECT" },
+                                UNCOVER_CATACOMBS,   // the skull is gone: the stair down into the catacombs is uncovered
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
                         }
@@ -229,7 +232,7 @@ export const mysteriousAltar = {
                             weight: 100,
                             results: [
                                 { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "biome_default", rolls: 2 } },
-                                { type: "DESTROY_OBJECT" },
+                                UNCOVER_CATACOMBS,   // the skull is gone: the stair down into the catacombs is uncovered
                                 { type: "END_ENCOUNTER", payload: null }
                             ]
                         }
