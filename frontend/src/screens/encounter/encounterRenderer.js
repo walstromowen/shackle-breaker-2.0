@@ -12,6 +12,7 @@ import { drawStatTooltip } from '../../ui/statTooltip.js';
 import { isCursed, drawCursedPortrait } from '../../ui/curseOverlay.js';
 import { TONES, fxShake, fxFlash } from '../../ui/encounterFx.js';
 import { NARRATION, STAGE_START_TIMER, narrationPlan, textEndTimer, decisionAlpha } from '../../ui/narration.js';
+import { StatusTips } from '../../ui/statusTooltip.js';
 
 const BONE = [226, 218, 200];        // UITheme.colors.textMain
 const NARRATION_SIZES = [44, 40, 36, 32];   // largest first: the text takes the biggest one that fits the viewport
@@ -991,6 +992,7 @@ export class EncounterRenderer {
         let drawY = pY + pSize - drawSize - 5;
 
         member.statusEffects.forEach(effect => {
+            StatusTips.track(effect, drawX, drawY, drawSize);   // what it does, on hover (ui/statusTooltip.js)
             // Background Box
             ctx.fillStyle = this.getAlphaColor('rgba(0, 0, 0, 0.8)', alpha);
             ctx.fillRect(drawX, drawY, drawSize, drawSize);

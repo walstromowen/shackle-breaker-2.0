@@ -34,7 +34,7 @@ test('AFTERMATH_REMAINS starts the Aftermath when the party comes within 3 tiles
     assert.deepEqual([png.readUInt32BE(16), png.readUInt32BE(20)], [32, 32]);
 });
 
-test('the battlefield: the remains in the middle, 5 to 8 fallen soldiers around them (none touching the centre or each other), and bones among them', async () => {
+test('the battlefield: the remains in the middle, 4 to 8 solid fallen soldiers around them with a walkable gap around each, and bones among them', async () => {
     const { STRUCTURES } = await import('../../shared/world/structures.js');
     gameState.seed = 4242;
     gameState.world.isInterior = false;
@@ -43,22 +43,32 @@ test('the battlefield: the remains in the middle, 5 to 8 fallen soldiers around 
     let bonesSeen = 0;
     for (const [oc, or] of [[0, 0], [130, -40], [-77, 512]]) {
         const grid = wm._prefabObjects(oc, or, STRUCTURES.BATTLEFIELD);
-        assert.equal(grid[3][3], 'AFTERMATH_REMAINS', 'the remains are in the middle');
+        const N = grid.length, mid = Math.floor(N / 2);
+        assert.equal(grid[mid][mid], 'AFTERMATH_REMAINS', 'the remains in the middle');
         const bodies = [];
-        grid.forEach((row, r) => row.forEach((id, c) => { if (id && id.startsWith('FALLEN_SOLDIER_')) bodies.push({ c, r }); }));
-        assert.ok(bodies.length >= 5 && bodies.length <= 8, `${bodies.length} bodies`);
+        grid.forEach((row, r) => row.forEach((id, c) => { if (id && id.startsWith('FALLEN_SOLDIER_')) bodies.push({ c, r, id }); }));
+        assert.ok(bodies.length >= 4 && bodies.length <= 8, `${bodies.length} bodies`);
+        // every body blocks the 2 x 2 tiles its picture covers, and has a walkable ring around that footprint
+        const fp = (b) => [[b.c, b.r], [b.c + 1, b.r], [b.c, b.r - 1], [b.c + 1, b.r - 1]];
+        const solid = new Map([[`${mid},${mid}`, 'centre']]);
+        for (const b of bodies) {
+            const h = MAP_OBJECTS_DEFINITIONS[b.id].hitbox;
+            assert.ok(MAP_OBJECTS_DEFINITIONS[b.id].isSolid && h && h.w === 2 && h.h === 2 && h.yOffset === -1, `${b.id} is solid over 2 x 2`);
+            for (const [c, r] of fp(b)) { assert.ok(c < N && r >= 0, 'inside the box'); solid.set(`${c},${r}`, b); }
+        }
+        for (const b of bodies) for (const [c, r] of fp(b)) for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+            const o = solid.get(`${c + dc},${r + dr}`);
+            assert.ok(!o || o === b, `a walkable gap around ${b.id} at ${b.c},${b.r}`);
+        }
+        for (const [k] of solid) { const [c, r] = k.split(',').map(Number); if (k !== `${mid},${mid}`) assert.notEqual(grid[r][c] === 'BONE_PILE', true, 'no bones under a body'); }
         const bones = grid.flat().filter(id => id === 'BONE_PILE').length;
         assert.ok(bones >= 2, `${bones} bone piles`);
         bonesSeen += bones;
-        for (const b of bodies) {
-            assert.ok(Math.abs(b.c - 3) > 1 || Math.abs(b.r - 3) > 1, 'not beside the remains');
-            for (const o of bodies) if (o !== b) assert.ok(Math.abs(o.c - b.c) > 1 || Math.abs(o.r - b.r) > 1, 'bodies do not touch');
-        }
     }
     assert.ok(bonesSeen > 0, `bones lie among the dead (${bonesSeen})`);
     const main = fs.readFileSync(new URL('frontend/src/main.js', root), 'utf8');
     for (let i = 1; i <= 15; i++) {
-        assert.ok(MAP_OBJECTS_DEFINITIONS[`FALLEN_SOLDIER_${i}`] && MAP_OBJECTS_DEFINITIONS[`FALLEN_SOLDIER_${i}`].isSolid === false, `FALLEN_SOLDIER_${i} is walked over`);
+        assert.ok(MAP_OBJECTS_DEFINITIONS[`FALLEN_SOLDIER_${i}`] && MAP_OBJECTS_DEFINITIONS[`FALLEN_SOLDIER_${i}`].isSolid === true, `FALLEN_SOLDIER_${i} cannot be walked through`);
         assert.ok(fs.existsSync(new URL(`frontend/src/assets/mapObjects/fallen_soldiers/objFallenSoldier${i}.png`, root)) && main.includes(`objFallenSoldier${i}:`));
     }
 });

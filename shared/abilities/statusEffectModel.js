@@ -105,7 +105,10 @@ export class StatusEffectModel {
                     const raw = effect.value * this.stacks * scale;
                     amount = raw === 0 ? 0 : Math.sign(raw) * Math.max(1, Math.round(Math.abs(raw)));
                 } else if (effect.recovery) {
-                    const own = target[effect.modify + 'Recovery'] || 0;
+                    // the holder's recovery: in a fight the combatant keeps it under .stats (as the end-of-round recovery reads it), an entity has it itself
+                    const key = effect.modify + 'Recovery';
+                    const stats = target && target.stats;
+                    const own = (stats && Number.isFinite(stats[key]) ? stats[key] : target[key]) || 0;
                     amount = Math.max(1, Math.round(own * this.stacks));
                 } else if (effect.attackAverage) {
                     amount = Math.max(1, Math.round(averageAttack(this.inflictor || target, effect.attackAverage) * (effect.rate || 0) * this.stacks));

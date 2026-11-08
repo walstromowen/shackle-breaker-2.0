@@ -4,6 +4,7 @@ import { TRAIT_DEFINITIONS } from '../../../../../shared/abilities/traitDefiniti
 import { ItemDefinitions } from '../../../../../shared/items/itemDefinitions.js';
 import { Formatting } from '../../../../../shared/core/formatting.js';
 import { isCursed, drawCursedPortrait } from '../../../ui/curseOverlay.js';
+import { StatusTips } from '../../../ui/statusTooltip.js';
 
 export class EquipmentPanel {
   constructor(ui, loader) {
@@ -330,6 +331,7 @@ export class EquipmentPanel {
     let drawY = pY + pSize - drawSize - 5;
 
     member.statusEffects.forEach(effect => {
+      StatusTips.track(effect, drawX, drawY, drawSize);   // what it does, on hover (ui/statusTooltip.js)
       this.ui.ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
       this.ui.ctx.fillRect(drawX, drawY, drawSize, drawSize);
 

@@ -2,6 +2,7 @@ import { UITheme } from '../../ui/UITheme.js';
 import { TargetingResolver } from '../../../../shared/battle/targetingResolver.js';
 import { AbilityPreview } from '../../ui/abilityPreview.js';
 import { drawItemChips, itemChipsHeight } from '../../ui/itemChips.js';
+import { StatusTips } from '../../ui/statusTooltip.js';
 
 export class BattleHUDRenderer {
   constructor(ctx, config, loader, ui, combatantRenderer) {
@@ -859,6 +860,7 @@ export class BattleHUDRenderer {
 
     shown.forEach((effect, index) => {
       const x = firstX + (index * (iconSize + spacing));
+      StatusTips.track(effect, x, startY, iconSize);   // what it does, on hover (ui/statusTooltip.js)
       this.drawIcon(effect.icon || '✨', 'statusEffects', x, startY, iconSize);
       if ((effect.stacks || 1) > 1) {
         this.ctx.save();

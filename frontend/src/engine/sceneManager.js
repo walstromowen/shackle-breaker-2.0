@@ -79,6 +79,7 @@ import { PARTY_SCALING } from '../../../shared/battle/spawnTableFactory.js';
 import { dropGrave } from '../../../shared/world/graves.js';
 import { encounterDefinitions } from '../../../shared/story/encounterDefinitions.js';
 import { audioManager } from './audioManager.js';
+import { StatusTips } from '../ui/statusTooltip.js';
 
 export class SceneManager {
     constructor(canvas, assetLoader, config) {
@@ -1018,6 +1019,10 @@ export class SceneManager {
         this._drawSharedBackButton();
 
         this.tutorial.render(this.ctx);
+
+        // the status effect icon under the mouse, on whatever screen drew it this frame: what it does (ui/statusTooltip.js)
+        if (this.tutorial.active || this.transitionRenderer.isActive) StatusTips.clear();   // not over a tips card or a scene change
+        else StatusTips.drawHovered(this.ctx, this.input.getMousePosition());
 
         this.transitionRenderer.render(this.ctx);
 

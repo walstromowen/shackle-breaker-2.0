@@ -307,18 +307,24 @@ export class StructureSpawner {
         const cells = [];
         for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) cells.push({ c, r, k: rnd(c, r, 22) });
         cells.sort((a, b) => a.k - b.k);
-        const taken = [{ c: cx, r: cy }];
-        const near = (c, r) => taken.some(t => Math.abs(t.c - c) <= 1 && Math.abs(t.r - r) <= 1);
+        // what is solid: the remains' tile, and each body's 2 x 2 footprint (its anchor and the tiles right of and above it). Every body keeps a
+        // walkable tile between its footprint and any other, so the dead never wall off the grass between them.
+        const solid = new Set([`${cx},${cy}`]);
+        const footprint = (c, r) => [[c, r], [c + 1, r], [c, r - 1], [c + 1, r - 1]];
+        const clearAround = (c, r) => { for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) if (solid.has(`${c + dc},${r + dr}`)) return false; return true; };
         let placed = 0;
         for (const { c, r } of cells) {
             if (placed >= want) break;
-            if (grid[r][c] !== null || near(c, r) || c >= W - 1 || r < 1) continue;   // (2 x 2 art: keep it inside the box)
+            if (c >= W - 1 || r < 1) continue;   // (2 x 2 art: keep it inside the box)
+            const fp = footprint(c, r);
+            if (fp.some(([fc, fr]) => grid[fr][fc] !== null || !clearAround(fc, fr))) continue;
             const id = bf.pool[Math.floor(rnd(c, r, 23) * bf.pool.length) % bf.pool.length];
             if (!MAP_OBJECTS_DEFINITIONS[id]) continue;
             grid[r][c] = id;
-            taken.push({ c, r });
+            for (const [fc, fr] of fp) solid.add(`${fc},${fr}`);
             placed++;
         }
+        const near = (c, r) => solid.has(`${c},${r}`);   // (bones and stones only on open grass)
         // bones, then loose stones, in the free grass (not under the remains or a body)
         const strew = (spec, s1, s2) => {
             if (!spec || !spec.pool?.length) return;

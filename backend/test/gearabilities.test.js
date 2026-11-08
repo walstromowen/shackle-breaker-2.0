@@ -8,6 +8,8 @@ import { StatusEffectDefinitions as S } from '../../shared/abilities/statusEffec
 import { ItemModel } from '../../shared/items/itemModel.js';
 import { StatusEffectModel } from '../../shared/abilities/statusEffectModel.js';
 import { craftingRecipeDefinitions as R } from '../../shared/items/craftingRecipeDefinitions.js';
+import { EntityFactory } from '../../shared/characters/entityFactory.js';
+import { CombatantModel } from '../../shared/battle/combatantModel.js';
 
 const sumAttack = (o = {}) => Object.values(o).reduce((a, b) => a + b, 0);
 
@@ -46,6 +48,18 @@ test('the status ticks give back as much as the holder\'s own recovery value', (
     assert.equal(tick('second_wind', holder({ staminaRecovery: 11 })).stamina, 11, 'a stronger recovery gives back more');
     assert.equal(tick('drawing_insight', holder({ insightRecovery: 0 })).insight, 1, 'never less than 1');
     assert.equal(tick('second_wind', holder({ staminaRecovery: 4.6 })).stamina, 5, 'rounded, like the round-end recovery');
+});
+
+test('in a real fight Second Wind and Drawing Insight give back the fighter\'s full recovery, not 1', () => {
+    // a fighter keeps its recovery under .stats (it has no staminaRecovery of its own): the tick must read it there, as the round-end recovery does
+    for (const [status, res] of [['second_wind', 'stamina'], ['drawing_insight', 'insight']]) {
+        const fighter = new CombatantModel(EntityFactory.create('LEGIONARY', 10));
+        const recovery = Math.round(fighter.stats[res + 'Recovery']);
+        assert.ok(recovery > 1, `${res} recovery ${recovery}`);
+        fighter.modifyResource(res, -9999);
+        new StatusEffectModel(S[status]).onEvent('ON_TURN_END', fighter);
+        assert.equal(fighter[res], recovery, `${status} gives back ${recovery} ${res}`);
+    }
 });
 
 test('the handaxe costs no iron anywhere, and is weaker than the shortsword', () => {

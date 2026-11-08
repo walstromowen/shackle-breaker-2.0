@@ -1,6 +1,7 @@
 import { UITheme } from '../../ui/UITheme.js';
 import { CanvasUI } from '../../ui/canvasUI.js';
 import { isCursed, drawCursedPortrait } from '../../ui/curseOverlay.js';
+import { StatusTips } from '../../ui/statusTooltip.js';
 
 export class PartyRenderer {
     constructor(ctx, loader) {
@@ -307,6 +308,7 @@ export class PartyRenderer {
         let drawY = pY + pSize - drawSize - 5;
 
         member.statusEffects.forEach(effect => {
+            StatusTips.track(effect, drawX, drawY, drawSize);   // what it does, on hover (ui/statusTooltip.js)
             this.ui.drawRect(drawX, drawY, drawSize, drawSize, 'rgba(0, 0, 0, 0.8)', true);
             this.ui.drawRect(drawX, drawY, drawSize, drawSize, UITheme.colors.border, false);
 

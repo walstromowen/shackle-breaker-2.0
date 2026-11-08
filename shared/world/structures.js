@@ -599,21 +599,22 @@ function graveyard(spec) {
 /* =============================================================================================================
    BATTLEFIELD
    The remains of an old battle, a small landmark of the plains: the helmet with a sword through it (AFTERMATH_REMAINS, the Aftermath encounter, which
-   starts when the party comes within 3 tiles of it and is gone when the encounter is over) in the middle of a 7 x 7 box, and around it the dead:
-   `bodies` soldiers (FALLEN_SOLDIER_1..15, slumped or lying), each on its own cell, never right beside the centre or another body, and bones and loose
+   starts when the party comes within 3 tiles of it and is gone when the encounter is over) in the middle of a 9 x 9 box, and around it the dead:
+   `bodies` soldiers (FALLEN_SOLDIER_1..15, slumped or lying), each solid over the 2 x 2 tiles its picture covers, with a walkable tile kept between
+   any two bodies and around the centre (so they never wall anything off), and bones and loose
    stones in the grass between them (`bones`, `rocks`: a pool and a chance per free cell). Read by
    StructureSpawner._battlefieldObjects.
    ============================================================================================================= */
 const FALLEN_SOLDIERS = Array.from({ length: 15 }, (_, i) => `FALLEN_SOLDIER_${i + 1}`);
 function battlefield(spec) {
-    const N = 7;
+    const N = 9;   // room for 4 to 8 bodies with a walkable gap around each (they are solid, 2 x 2 tiles)
     return {
         type: 'PREFAB',
         width: N,
         height: N,
         terrain: grid(N, N),
         objects: grid(N, N),
-        battlefield: { centre: 'AFTERMATH_REMAINS', bodies: { min: 5, max: 8 }, pool: FALLEN_SOLDIERS, bones: { chance: 0.15, min: 2, pool: ['BONE_PILE'] }, rocks: { chance: 0.10, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] }, ...spec },
+        battlefield: { centre: 'AFTERMATH_REMAINS', bodies: { min: 4, max: 8 }, pool: FALLEN_SOLDIERS, bones: { chance: 0.15, min: 2, pool: ['BONE_PILE'] }, rocks: { chance: 0.10, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] }, ...spec },
     };
 }
 Object.assign(STRUCTURES, { BATTLEFIELD: battlefield({}) });
