@@ -2,7 +2,7 @@ import { BaseController } from '../../engine/baseController.js';
 import { events } from '../../../../shared/core/eventBus.js';
 import { ExploredMap } from '../../../../shared/world/exploredMap.js';
 import { gameState } from '../../../../shared/core/gameState.js';
-import { getWaypoints, planFastTravel, chargeFastTravel, waypointName } from '../../../../shared/world/waypoints.js';
+import { allWaypoints, findWaypoint, planFastTravel, chargeFastTravel, waypointName } from '../../../../shared/world/waypoints.js';
 
 /* WorldMapController - the world map screen (opened from the overworld menu, key N): the land the party has SEEN, north up, which can be panned and zoomed.
  * Nothing that has not been seen is on it (shared/world/exploredMap.js decides what has), the party's own spot is.
@@ -172,7 +172,7 @@ export class WorldMapController extends BaseController {
     // ---- waypoints -----------------------------------------------------------------------------------------------------------------------------
 
     selectedWaypoint() {
-        return getWaypoints().find((w) => w.id === this.selectedId) || null;
+        return this.selectedId === null || this.selectedId === undefined ? null : findWaypoint(this.selectedId);   // (mine, or a party member's)
     }
 
     select(id) {
@@ -182,9 +182,9 @@ export class WorldMapController extends BaseController {
     }
 
     nextWaypoint() {
-        const list = getWaypoints();
+        const list = allWaypoints();
         if (!list.length) { this.say('You have not planted a waypoint yet.'); return false; }
-        const i = list.findIndex((w) => w.id === this.selectedId);
+        const i = list.findIndex((w) => String(w.id) === String(this.selectedId));
         this.select(list[(i + 1) % list.length].id);
         return true;
     }
@@ -214,7 +214,12 @@ export class WorldMapController extends BaseController {
     }
 
     onClick(hitboxId) {
-        if (hitboxId && hitboxId.startsWith('wp_')) { this.playConfirmSound(); this.select(Number(hitboxId.slice(3))); return; }
+        if (hitboxId && hitboxId.startsWith('wp_')) {
+            this.playConfirmSound();
+            const id = hitboxId.slice(3);
+            this.select(/^\d+$/.test(id) ? Number(id) : id);   // mine are numbers, a party member's 'owner:n'
+            return;
+        }
         switch (hitboxId) {
             case 'btn_fast_travel': this.fastTravel(); break;
             case 'btn_zoom_in': if (this.zoomStep(1)) this.playConfirmSound(); else this.playErrorSound(); break;
@@ -268,7 +273,7 @@ export class WorldMapController extends BaseController {
         // a hitbox on every banner in view, and the Fast Travel button while one is picked
         const sx = (col) => VIEW.x + VIEW.w / 2 + (col - this.cx) * this.scale, sy = (row) => VIEW.y + VIEW.h / 2 + (row - this.cy) * this.scale;
         const banners = [];
-        for (const wp of getWaypoints()) {
+        for (const wp of allWaypoints()) {
             const x = sx(wp.col + 0.5), y = sy(wp.row + 1);
             if (x < VIEW.x - 20 || x > VIEW.x + VIEW.w + 20 || y < VIEW.y || y > VIEW.y + VIEW.h + 50) continue;
             banners.push({ wp, x, y });

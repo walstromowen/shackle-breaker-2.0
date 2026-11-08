@@ -55,6 +55,29 @@ export function getWaypoints(world = gameState.world) {
     return world.waypoints;
 }
 
+/* In a party of players, the others' waypoints can be travelled to as well: engine/multiplayerSocial.js sets `others` to a function giving
+   [{ owner, ownerName, waypoints: [...] }] (each player sends theirs to the rest of the party with their characters). */
+export const WAYPOINT_SHARING = { others: () => [] };
+
+/** Every waypoint the party can travel to: this player's own (ids as planted), then the other players' (ids 'owner:id', with owner and ownerName). */
+export function allWaypoints(world = gameState.world) {
+    const list = getWaypoints(world).slice();
+    let others = [];
+    try { others = WAYPOINT_SHARING.others() || []; } catch (e) { others = []; }
+    for (const o of others) {
+        for (const wp of o.waypoints || []) {
+            if (!wp || !Number.isFinite(wp.col) || !Number.isFinite(wp.row)) continue;
+            list.push({ ...wp, id: `${o.owner}:${wp.id}`, owner: o.owner, ownerName: o.ownerName });
+        }
+    }
+    return list;
+}
+
+/** A waypoint by id (own or another player's), or null. */
+export function findWaypoint(id) {
+    return allWaypoints().find((w) => String(w.id) === String(id)) || null;
+}
+
 /** Whole tiles between two spots, in a straight line. */
 export function tilesBetween(a, b) {
     return Math.round(Math.hypot((a.col ?? a.x) - (b.col ?? b.x), (a.row ?? a.y) - (b.row ?? b.y)));
@@ -131,7 +154,8 @@ export function placeWaypoint(wm, col, row, fromElevation) {
 /** A name for a waypoint on the map: "Waypoint 3 · Snowy Mountains". */
 export function waypointName(wp) {
     const biome = wp.biome ? String(wp.biome).toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '';
-    return `Waypoint ${wp.id}${biome ? ' · ' + biome : ''}`;
+    const num = wp.owner ? String(wp.id).split(':').pop() : wp.id;
+    return `${wp.ownerName ? wp.ownerName + "'s " : ''}Waypoint ${num}${biome ? ' · ' + biome : ''}`;
 }
 
 /** Pay for the fast travel and move the clock; returns the plan, or null when the party cannot pay. (Moving the party is the scene manager's job.) */

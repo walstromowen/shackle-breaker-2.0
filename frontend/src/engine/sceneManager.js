@@ -63,7 +63,7 @@ const SHARED_BACK_BUTTON = {
 import { PartyManager } from '../../../shared/characters/partyManager.js';
 import { WorldManager } from '../../../shared/world/worldManager.js';
 import { TimeSystem } from '../../../shared/world/timeSystem.js';
-import { placeWaypoint, frontTile, getWaypoints, landingTile } from '../../../shared/world/waypoints.js';
+import { placeWaypoint, frontTile, getWaypoints, findWaypoint, landingTile } from '../../../shared/world/waypoints.js';
 import { ActSystem } from '../../../shared/story/actSystem.js';
 import { gameState } from '../../../shared/core/gameState.js';
 import { AbilitySystem } from '../../../shared/abilities/abilitySystem.js';
@@ -376,7 +376,7 @@ export class SceneManager {
 
                     // Fast travel from the world map (WorldMapController.fastTravel): the party has paid; put it down beside the banner and move the clock by the tiles it crossed
                     if (data && data.fastTravel) {
-                        const wp = getWaypoints().find((w) => w.id === data.fastTravel.id);
+                        const wp = findWaypoint(data.fastTravel.id);   // mine, or a party member's (shared/world/waypoints.js)
                         if (wp && this.worldManager) {
                             const at = landingTile(this.worldManager, wp);
                             this.overworldController.warpTo(at.col, at.row);

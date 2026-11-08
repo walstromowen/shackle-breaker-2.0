@@ -29,6 +29,7 @@ import { buildLineup, PARTY_PULL_RADIUS } from '../../../shared/core/multiplayer
 import { PartyManager } from '../../../shared/characters/partyManager.js';
 import { CorruptionSystem } from '../../../shared/characters/corruptionSystem.js';
 import { multiplayer } from './multiplayerClient.js';
+import { WAYPOINT_SHARING, getWaypoints } from '../../../shared/world/waypoints.js';
 import { multiplayerSession } from './multiplayerSession.js';
 import { serializeEntity, hydrateEntity, hydrateItem } from './saveManager.js';
 
@@ -52,6 +53,7 @@ class MultiplayerSocial {
         // the betrayal encounter can pick another player's shackled companion while we share fights (CorruptionSystem.pickAnyBetrayer)
         CorruptionSystem.groupParties = () => this.nearbyParty().map(id => ({ owner: id, members: this.groupParties.get(id) }));
         this.groupParties = new Map();   // the other players of my party -> their characters (serialized), for building a shared fight
+        this.groupWaypoints = new Map(); // the other players of my party -> their waypoints (the world map offers them for fast travel too)
         this._partySentTo = new Set();   // who has my characters (a newcomer to the party gets them at once)
         this.battle = null;          // the shared fight this player is in: { bid, kind, players, ... }
         this.early = new Map();      // bid -> [picks] that came before the fight was set up
@@ -69,12 +71,18 @@ class MultiplayerSocial {
         multiplayer.on('room', (room) => this._onRoom(room));
         multiplayer.on('closed', () => this.reset());
         multiplayerSession.groupedProbe = () => false;   // a party of players walks freely, each with their own party behind them
+        // a party of players shares its waypoints: the world map lists the others' too (shared/world/waypoints.js allWaypoints)
+        WAYPOINT_SHARING.others = () => {
+            if (!multiplayerSession.active) return [];
+            const party = new Set(this.partyPlayers());
+            return [...this.groupWaypoints].filter(([id]) => party.has(id)).map(([owner, waypoints]) => ({ owner, ownerName: this.nameOf(owner), waypoints }));
+        };
     }
 
     reset() {
         if (this.trade) this._closeTrade('The world closed, so the trade was called off.');
         this.prompt = null; this.outgoing = null; this.incoming = null;
-        this.groups.clear(); this.groupParties.clear();
+        this.groups.clear(); this.groupParties.clear(); this.groupWaypoints.clear();
     }
 
     get me() { return multiplayer.you ? multiplayer.you.id : null; }
@@ -463,6 +471,17 @@ class MultiplayerSocial {
         return !!this.battle || !!this.trade || scene === 'battle' || scene === 'encounter' || scene === 'trade';
     }
 
+    /** Is the player `id` out of pulling range, as this screen sees them: on another map, or more than PARTY_PULL_RADIUS tiles away (2 more
+     *  for the moment their last step takes to arrive)? Their call to a fight or an encounter is then declined, as a busy player's is. */
+    _tooFar(id) {
+        const r = multiplayerSession.remotes.get(id);
+        if (!r || !r.placed) return false;   // not seen yet: their own check stands
+        const here = gameState.world.isInterior ? `INT_${gameState.world.interiorId}` : 'world';
+        if (r.map !== here) return true;
+        const me = gameState.player;
+        return Math.max(Math.abs(r.col - me.col), Math.abs(r.row - me.row)) > PARTY_PULL_RADIUS + 2;
+    }
+
     /** In a shared encounter that `id` is in too (the fight it turns into is ours). */
     _inEncounterWith(id) {
         const e = this.encounterState && this.encounterState();
@@ -577,7 +596,10 @@ class MultiplayerSocial {
             }
             case 'grp_party': {   // another player of my party's characters (every player of a party sends theirs to the others)
                 const g = this.myGroup();
-                if (g && (g.leader === from || g.members.includes(from)) && Array.isArray(d.members)) this.groupParties.set(from, d.members);
+                if (g && (g.leader === from || g.members.includes(from)) && Array.isArray(d.members)) {
+                    this.groupParties.set(from, d.members);
+                    if (Array.isArray(d.waypoints)) this.groupWaypoints.set(from, d.waypoints.slice(0, 60));
+                }
                 break;
             }
             case 'chat': {
@@ -586,7 +608,7 @@ class MultiplayerSocial {
                 break;
             }
             case 'enc_start':
-                if (d.mp && multiplayerSession.active && this._busy()) {
+                if (d.mp && multiplayerSession.active && (this._busy() || this._tooFar(from))) {
                     // already in a fight or an encounter (or a trade): stay in it, and tell the encounter's players to go on without me
                     for (const id of d.mp.players || []) if (id !== this.me) this._send({ k: 'enc_decline', eid: d.mp.eid }, id);
                     break;
@@ -603,7 +625,7 @@ class MultiplayerSocial {
                 if (!d.spec || !multiplayerSession.active) break;
                 // a party's fight while I am busy elsewhere: I stay where I am, and its players stop waiting for my fighters. The fight that comes
                 // out of the shared encounter I am in is mine, though.
-                if (d.spec.kind === 'party' && this._busy() && !this._inEncounterWith(d.spec.authority)) {
+                if (d.spec.kind === 'party' && !this._inEncounterWith(d.spec.authority) && (this._busy() || this._tooFar(from))) {
                     for (const id of d.spec.players || []) if (id !== this.me) this._send({ k: 'bt_decline', bid: d.spec.bid }, id);
                     break;
                 }
@@ -635,6 +657,7 @@ class MultiplayerSocial {
             this.groups.set(leader, members.filter(id => here.has(id)));
         }
         for (const id of [...this.groupParties.keys()]) if (!here.has(id)) this.groupParties.delete(id);
+        for (const id of [...this.groupWaypoints.keys()]) if (!here.has(id)) this.groupWaypoints.delete(id);
         if (this.trade && !here.has(this.trade.partner)) this._closeTrade(`${this.trade.partnerName} left, so the trade was called off.`);
         if (this.isLeader) this._broadcastGroup();   // a newcomer learns who is with whom
     }
@@ -663,12 +686,13 @@ class MultiplayerSocial {
             if (this._t.party >= PARTY_SEND_EVERY) {
                 this._t.party = 0;
                 const members = gameState.party.members.map(serializeEntity);
-                const json = JSON.stringify(members);
+                const waypoints = getWaypoints().map(w => ({ id: w.id, col: w.col, row: w.row, biome: w.biome, origin: w.origin }));
+                const json = JSON.stringify([members, waypoints]);
                 const newcomer = others.some(id => !this._partySentTo.has(id));
                 if (json !== this._lastPartyJson || newcomer) {
                     this._lastPartyJson = json;
                     this._partySentTo = new Set(others);
-                    for (const id of others) this._send({ k: 'grp_party', members }, id);
+                    for (const id of others) this._send({ k: 'grp_party', members, waypoints }, id);
                 }
             }
         }
