@@ -151,6 +151,7 @@ export class BattleController extends BaseController {
             this.targeting.handleIntent('CANCEL'); // plays the cancel sound
             return;
         }
+        if (this._canUndoPick()) { this.undoLastPick(); return; }
         return false; // nothing to back out of
     }
 
@@ -169,11 +170,73 @@ export class BattleController extends BaseController {
             return;
         }
 
+        if (intent === 'CANCEL' && this._canUndoPick()) { this.undoLastPick(); return; }
+
         if (this.state.phase === PHASE.SELECT_ACTION) {
             this._handleActionSelection(intent);
         } else if (this.state.phase === PHASE.SELECT_TARGET) {
             this.targeting.handleIntent(intent);
         }
+    }
+
+    // ================================================================ TAKING A PICK BACK
+    /* Until the round starts, a pick already made can be taken back (Escape / Backspace / right-click while choosing the next fighter's
+       action, or while waiting for the other players): the last one first, and that fighter chooses again. In a shared fight the others are
+       told (kind 'undo'); a screen that has already started the round with it answers 'undo_late', and the pick is put back here and sent
+       again, so every screen plays the same round. */
+    _canUndoPick() {
+        const s = this.state;
+        return !!(s && s.active && !s.isPausedForUI && (this._myPicks || []).length && (s.phase === PHASE.SELECT_ACTION || s.phase === WAIT_REMOTE));
+    }
+
+    _recordPick(index, actor, entries, d = null, swap = null) {
+        (this._myPicks ||= []).push({ index, actor, entries, d, swap, ability: this.state.selectedAction ? this.state.selectedAction.id : null, round: this.state.mp ? this.state.mp.round : 0 });
+    }
+
+    undoLastPick() {
+        const s = this.state;
+        const pick = (this._myPicks || []).pop();
+        if (!pick) return false;
+        s.turnQueue = s.turnQueue.filter(t => !pick.entries.includes(t));
+        if (pick.swap) this._mySwaps = (this._mySwaps || []).filter(x => x !== pick.swap);
+        if (s.mp && pick.d) {
+            (this._retracted ||= new Map()).set(`${pick.round}:${pick.d.actor}`, pick);
+            multiplayerSocial.sendBattleDecision(s.mp, { round: pick.round, actor: pick.d.actor, kind: 'undo' });
+        }
+        s.activePartyIndex = pick.index;
+        s.phase = PHASE.SELECT_ACTION;
+        s.selectedAction = null;
+        const again = pick.ability ? pick.actor.abilities.findIndex(a => a.id === pick.ability) : -1;
+        s.menuIndex = again >= 0 ? again : 0;
+        s.message = `${pick.actor.name} chooses again.`;
+        this.playCancelSound();
+        return true;
+    }
+
+    /** Another screen had already started the round with a pick I took back: it stands. Back in, and sent again (the screens that let it go
+     *  take it back), and the fighter's new pick, if one was made, is dropped. */
+    _restoreRetracted(round, actorNet) {
+        const s = this.state;
+        const key = `${round}:${actorNet}`;
+        const pick = this._retracted && this._retracted.get(key);
+        if (!pick || !s.mp || round !== s.mp.round || s.phase === PHASE.RESOLVE) return;
+        this._retracted.delete(key);
+        const newer = (this._myPicks || []).find(p => p.actor === pick.actor);
+        if (newer) {
+            this._myPicks = this._myPicks.filter(p => p !== newer);
+            s.turnQueue = s.turnQueue.filter(t => !newer.entries.includes(t));
+            if (newer.swap) this._mySwaps = (this._mySwaps || []).filter(x => x !== newer.swap);
+        }
+        s.turnQueue.push(...pick.entries);
+        if (pick.swap) (this._mySwaps ||= []).push(pick.swap);
+        this._myPicks.push(pick);
+        multiplayerSocial.sendBattleDecision(s.mp, pick.d);
+        s.message = `Too late to change ${pick.actor.name}'s action: the round had already begun.`;
+        // on to the first of my fighters still without a pick, or wait for the others
+        const picked = new Set(this._myPicks.map(p => p.actor));
+        const next = s.activeParty.findIndex(c => c && !c.isDead() && this._isMine(c) && !picked.has(c));
+        if (next >= 0) { s.activePartyIndex = next; s.phase = PHASE.SELECT_ACTION; s.selectedAction = null; }
+        else this._waitForOthers();
     }
 
     _handleActionSelection(intent) {
@@ -304,12 +367,21 @@ export class BattleController extends BaseController {
             // a shared fight: sent, and kept until every pick is in, so every screen settles the swaps in the same order (_tryResolveShared)
             const d = { round: this.state.mp.round, actor: this.state.activeParty[slotIndex]?.netId, kind: 'swap', replacement: replacement?.netId, slotIndex };
             multiplayerSocial.sendBattleDecision(this.state.mp, d);
-            (this._mySwaps ||= []).push({ actor: this.state.activeParty[slotIndex], d });
+            const swap = { actor: this.state.activeParty[slotIndex], d };
+            (this._mySwaps ||= []).push(swap);
+            this.state.selectedAction = null;
+            this._recordPick(slotIndex, this.state.activeParty[slotIndex], [], d, swap);
             this._advancePartyTurn();
             return;
         }
+        const before = new Set(this.state.turnQueue);
+        const actorBefore = this.state.activeParty[slotIndex];
         queueSwap(this.state, replacement, isForced, slotIndex);
-        if (!isForced) this._advancePartyTurn();
+        if (!isForced) {
+            this.state.selectedAction = null;
+            this._recordPick(slotIndex, actorBefore, this.state.turnQueue.filter(t => !before.has(t)));
+            this._advancePartyTurn();
+        }
     }
 
     commitAction(primaryTarget) {
@@ -317,14 +389,18 @@ export class BattleController extends BaseController {
         if (!this.state.selectedAction.canPayCost(activeChar, InventorySystem)) {
             return;
         }
-        this.state.turnQueue.push({ actor: activeChar, action: this.state.selectedAction, target: primaryTarget });
+        const entry = { actor: activeChar, action: this.state.selectedAction, target: primaryTarget };
+        this.state.turnQueue.push(entry);
+        let d = null;
         if (this.state.mp) {
             const action = this.state.selectedAction;
-            multiplayerSocial.sendBattleDecision(this.state.mp, {
+            d = {
                 round: this.state.mp.round, actor: activeChar.netId, kind: 'act', ability: action.id,
                 item: action.isItemAction && action.cost ? action.cost.item : null, target: this._encodeTarget(primaryTarget)
-            });
+            };
+            multiplayerSocial.sendBattleDecision(this.state.mp, d);
         }
+        this._recordPick(this.state.activePartyIndex, activeChar, [entry], d);
         this._advancePartyTurn();
     }
 
@@ -393,6 +469,8 @@ export class BattleController extends BaseController {
     }
 
     _startActionPhase() {
+        this._myPicks = [];
+        this._retracted = new Map();
         this.state.menuIndex = 0;
         this.state.activePartyIndex = 0;
         this.state.turnQueue = [];
@@ -503,7 +581,8 @@ export class BattleController extends BaseController {
         const missing = others.filter(c => !s.mp.decisions.has(`${s.mp.round}:${c.netId}`));
         if (missing.length) {
             const names = [...new Set(missing.map(c => (s.mp.names || {})[c.netOwner] || 'the other player'))];
-            s.message = `Waiting for ${names.join(' and ')} to choose ${missing.length > 1 ? 'their actions' : 'an action'}…`;
+            s.message = `Waiting for ${names.join(' and ')} to choose ${missing.length > 1 ? 'their actions' : 'an action'}…`
+                + (this._canUndoPick() ? ' (Esc or right-click to change your pick)' : '');
             return;
         }
         // every pick is in: the same order on every screen (sortTurnQueue settles ties by network id)
@@ -575,6 +654,13 @@ export class BattleController extends BaseController {
             if (this._awaitReinforce && this._awaitReinforce.key === d.key) this._applyReinforce(d);
             return;
         }
+        if (d.kind === 'undo') {   // another player took a pick back: let it go, unless this screen has already started the round with it
+            const started = d.round < s.mp.round || (d.round === s.mp.round && (s.phase === PHASE.RESOLVE || s.phase === PHASE.VICTORY || s.phase === PHASE.DEFEAT));
+            if (started) { if (d.from) multiplayerSocial.sendBattleDecision(s.mp, { round: d.round, actor: d.actor, kind: 'undo_late' }, d.from); }
+            else s.mp.decisions.delete(`${d.round}:${d.actor}`);
+            return;
+        }
+        if (d.kind === 'undo_late') { this._restoreRetracted(d.round, d.actor); return; }
         s.mp.decisions.set(`${d.round}:${d.actor}`, d);
         this._tryResolveShared();
     }
@@ -631,6 +717,8 @@ export class BattleController extends BaseController {
         return {
             ...this.state,
             mouse: this.mouse,
+            // the fighter whose pick Back would take back (null when there is none to take back)
+            undoName: this._canUndoPick() ? this._myPicks[this._myPicks.length - 1].actor.name : null,
             // The one lit element: what the mouse is over, or the keyboard cursor (ACTION_n / TARGET_...)
             hoveredElement: this.getFocusId() ? { id: this.getFocusId() } : null,
             onLayoutUpdate: (hitboxes) => this.updateHitboxes(hitboxes)

@@ -506,7 +506,8 @@ class MultiplayerSocial {
         return true;
     }
 
-    sendBattleDecision(mp, d) {
+    sendBattleDecision(mp, d, to = null) {
+        if (to) { this._send({ k: 'bt_dec', bid: mp.bid, ...d }, to); return; }
         for (const id of mp.players) if (id !== mp.me) this._send({ k: 'bt_dec', bid: mp.bid, ...d }, id);
     }
     sendBattleSync(mp, d) {
@@ -616,8 +617,8 @@ class MultiplayerSocial {
                 events.emit('MP_ENCOUNTER', { k: 'enc_decline', eid: d.eid, from });
                 break;
             case 'bt_dec':
-                if (this.battle && this.battle.bid === d.bid) events.emit('MP_BATTLE_DECISION', d);
-                else { const list = this.early.get(d.bid) || []; list.push(d); this.early.set(d.bid, list); }
+                if (this.battle && this.battle.bid === d.bid) events.emit('MP_BATTLE_DECISION', { ...d, from });
+                else { const list = this.early.get(d.bid) || []; list.push({ ...d, from }); this.early.set(d.bid, list); }
                 break;
             case 'bt_sync':
                 if (this.battle && this.battle.bid === d.bid) events.emit('MP_BATTLE_SYNC', d);

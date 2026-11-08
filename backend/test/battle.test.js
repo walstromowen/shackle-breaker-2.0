@@ -273,3 +273,34 @@ test('a recruit joins at the party\'s average level, rested, without the enemy l
     assert.equal(gameState.party.members.length, 4);
     assert.equal(PartyManager.recruit('DOG', { level: 2 }).level, 2, 'an encounter can still name a level');
 });
+
+test('a pick already made this round can be taken back: Escape (or right-click) goes back to that fighter, whose action leaves the queue', () => {
+    withSeed(7, () => {
+        party(['MAD_MAN', 10], ['DOG', 10], ['MAD_MAN', 10]);
+        const bc = newBattle([['WOLF', 10]]);
+        for (let i = 0; i < 20 && bc.state.phase !== PHASE.SELECT_ACTION; i++) bc.update(0.5);
+        assert.equal(bc.state.phase, PHASE.SELECT_ACTION);
+        assert.equal(bc._canUndoPick(), false, 'nothing to take back yet');
+        const pick = () => { key(bc, 'Enter'); for (let i = 0; i < 3 && bc.state.phase === PHASE.SELECT_TARGET; i++) key(bc, 'Enter'); };
+        const first = bc.state.activeParty[bc.state.activePartyIndex];
+        pick();
+        const second = bc.state.activeParty[bc.state.activePartyIndex];
+        assert.notEqual(first, second, 'on to the next fighter');
+        assert.equal(bc.state.turnQueue.filter(t => t.actor === first).length, 1, 'the first pick is queued');
+        assert.match(bc.getState().undoName, new RegExp(first.name));
+        key(bc, 'Escape');
+        assert.equal(bc.state.phase, PHASE.SELECT_ACTION);
+        assert.equal(bc.state.activeParty[bc.state.activePartyIndex], first, 'back to the first fighter');
+        assert.equal(bc.state.turnQueue.filter(t => t.actor === first).length, 0, 'their pick is out of the queue');
+        assert.equal(bc._canUndoPick(), false);
+        // pick again, then a right-click takes it back the same way
+        pick();
+        bc.onRightClick(null);
+        assert.equal(bc.state.activeParty[bc.state.activePartyIndex], first);
+        assert.equal(bc.state.turnQueue.filter(t => t.actor === first).length, 0);
+        // and once every pick is in, the round plays as usual
+        for (let i = 0; i < 6 && bc.state.phase !== PHASE.RESOLVE; i++) pick();
+        assert.equal(bc.state.phase, PHASE.RESOLVE);
+        assert.equal(bc._canUndoPick(), false, 'too late once the round has begun');
+    });
+});

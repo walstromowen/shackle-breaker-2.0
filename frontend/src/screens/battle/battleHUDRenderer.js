@@ -345,6 +345,8 @@ export class BattleHUDRenderer {
     this.ctx.stroke();
 
     this.ui.drawStyled('heading', `— ${activeChar.name} —`, w / 2, y + 53, { align: 'center' });
+    // a pick already made this round can still be taken back
+    if (state.undoName) this.ui.drawText(`Esc / right-click: change ${state.undoName}'s action`, w / 2, y + 80, UITheme.fonts.cardSmall, UITheme.colors.textMuted, 'center');
 
     const btnW = 160;
     const btnH = 48;
