@@ -267,16 +267,20 @@ export const MAP_OBJECTS_DEFINITIONS = {
     /* 3 cells wide, 2 tall; its bottom row closes the corridor into the main chamber. Raised, it can be walked under. */
     CATACOMB_GATE: { sheet: 'objCatacombGate', spriteX: 0, spriteY: 0, width: 3, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 3, h: 1 } },
     CATACOMB_GATE_OPEN: { sheet: 'objCatacombGateOpen', spriteX: 0, spriteY: 0, width: 3, height: 2, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 0, h: 0 } },
-    // THE BOSS'S HALL (world/catacombPuzzle.js): between the gate and the main chamber, a dark round hall where the Ossuary Warden stands guard in front of
-    // the lever that raises a second gate into the main chamber. Coming within 3 cells of it wakes it (story/encounters/catacombWarden.js). The lever does
-    // nothing while the Warden stands. 2 x 2 cells; a faint cold glow about it is all the light in the hall.
-    OSSUARY_WARDEN: {
-        sheet: 'objOssuaryWarden', spriteX: 0, spriteY: 0, width: 2, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 2, h: 1 },
-        interaction: { type: 'ENCOUNTER', id: 'ossuary_warden', triggerRadius: 3 },
-        light: { hasLight: true, radius: 3.2, color: '120, 190, 255', maxAlpha: 0.6, flickerSpeed: 0.04, flickerAmp: 0.3 }
+    // THE BOSS'S HALL (world/catacombPuzzle.js): between the gate and the main chamber, a dark round hall where the Infernus Sentinel, a living stone statue
+    // of a cosmic knight on its plinth, guards the doorway down to the Infernus kingdom: the lever behind it raises a second gate into the main chamber.
+    // Coming within 3 cells wakes it (story/encounters/catacombDepths.js). The lever does nothing while the Sentinel stands. Drawn like the hooded stranger,
+    // from its character's own overworld sheet (npcBody), only bigger: 96 px frames where a person has 64, standing on a base three cells wide centred on
+    // its cell. The faint violet starlight in its cracks is all the light in the hall.
+    INFERNUS_SENTINEL: {
+        ...npcBody('INFERNUS_SENTINEL'),
+        character: { ...npcBody('INFERNUS_SENTINEL').character, frame: { w: 96, h: 96, shiftX: 0 } },
+        hitbox: { xOffset: -1, yOffset: 0, w: 3, h: 1 },
+        interaction: { type: 'ENCOUNTER', id: 'infernus_sentinel', triggerRadius: 3 },
+        light: { hasLight: true, radius: 3.2, color: '165, 140, 255', maxAlpha: 0.6, flickerSpeed: 0.03, flickerAmp: 0.3 }
     },
     BOSS_LEVER: { sheet: 'objLever', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'SWITCH', isRepeatable: true }, light: { hasLight: true, radius: 1.4, color: '120, 200, 255', maxAlpha: 0.3, flickerSpeed: 0.05, flickerAmp: 0.3 } },
-    // THE VAULT (story/encounters/catacombVault.js): a side room of chests and crates behind a locked door of iron-bound oak; a small iron key opens it.
+    // THE VAULT (story/encounters/catacombDepths.js): a side room of chests and crates behind a locked door of iron-bound oak; a small iron key opens it.
     // 3 x 2 cells like the gate, its bottom row closing the passage in; open, it can be walked through.
     VAULT_DOOR: { sheet: 'objVaultDoor', spriteX: 0, spriteY: 0, width: 3, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 3, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'catacomb_vault_door' } },
     VAULT_DOOR_OPEN: { sheet: 'objVaultDoorOpen', spriteX: 0, spriteY: 0, width: 3, height: 2, isSolid: false, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 0, h: 0 } },

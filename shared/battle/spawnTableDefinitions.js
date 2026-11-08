@@ -695,10 +695,10 @@ export const SpawnTableDefinitions = {
         }]
     },
 
-    // Used by ossuary_warden: the boss of the catacombs, alone in its dark round hall.
-    "ossuary_warden_boss": {
+    // Used by infernus_sentinel: the boss of the catacombs, the living statue that guards the doorway to Infernus, alone in its dark round hall.
+    "infernus_sentinel_boss": {
         type: "faction_pool",
-        fixedSize: true,   // one Warden, whatever the party
+        fixedSize: true,   // one Sentinel, whatever the party
         pools: [{
             factionId: "shackled",
             weight: 100,
@@ -708,7 +708,7 @@ export const SpawnTableDefinitions = {
                 hard: { minSize: 1, maxSize: 1 },
                 nightmare: { minSize: 1, maxSize: 1 }
             },
-            members: [{ id: 'OSSUARY_WARDEN', weight: 100 }]
+            members: [{ id: 'INFERNUS_SENTINEL', weight: 100 }]
         }]
     },
 };

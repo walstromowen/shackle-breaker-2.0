@@ -3,17 +3,19 @@
      catacomb_vault_door     VAULT_DOOR: the locked door of a side room of chests and crates. A small iron key opens it (spent on the lock). As it opens
                              the warding rune over the lock flares: most often it only gutters out, but one time in three the vault's two guards rise
                              from their niches and must be fought (the door is open either way).
-     ossuary_warden          OSSUARY_WARDEN: the boss of the catacombs, in the dark round hall before the main chamber, guarding the lever that raises
-                             the last gate. Coming within 3 cells wakes it (triggerRadius). Backing away ends it; it wakes again when you come back.
-     ossuary_warden_fallen   after the Warden's fight is won (afterVictory): its bones fall apart and it is gone from the map, so the lever can be pulled.
+     infernus_sentinel       INFERNUS_SENTINEL: the boss of the catacombs, a living statue of a cosmic knight that guards the doorway down to Infernus,
+                             the ancient kingdom under Altus (docs/story.md). It stands in the dark round hall before the main chamber, in front of the
+                             lever that raises the last gate. Coming within 3 cells wakes it (triggerRadius). Backing away ends it; it wakes again when you come back.
+     infernus_sentinel_fallen   after the Sentinel's fight is won (afterVictory): it breaks apart and is gone from the map, so the lever can be pulled.
 
    Art: assets/icons/encounters/catacomb_depths.png registered as `encounter_catacomb_depths`, a 4 x 4 grid of 128 px cells:
-     (0,0) the locked door  (1,0) the vault open  (2,0) the Warden in the dark  (3,0) the Warden fallen, the lever behind */
+     (0,0) the locked door  (1,0) the vault open  (2,0) the Sentinel in the dark  (3,0) the Sentinel broken, the lever behind
+     (0,1) the vault's two guards rise */
 
 const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
 const END = { type: "END_ENCOUNTER", payload: null };
 const OPEN_DOOR = { type: "REPLACE_OBJECT", payload: { objectId: "VAULT_DOOR_OPEN" } };
-const WARDEN_FIGHT = { type: "START_BATTLE", payload: { tableId: "ossuary_warden_boss", afterVictory: { encounterId: "ossuary_warden_fallen" }, bgm: "shackledMarchBgm" } };
+const SENTINEL_FIGHT = { type: "START_BATTLE", payload: { tableId: "infernus_sentinel_boss", afterVictory: { encounterId: "infernus_sentinel_fallen" }, bgm: "shackledMarchBgm" } };
 
 export const catacombVaultDoor = {
     id: "catacomb_vault_door",
@@ -64,7 +66,7 @@ export const catacombVaultDoor = {
             displayText: "The Guards Wake",
             tone: "blood",
             effect: "jolt",
-            image: { col: 2, row: 0 },
+            image: { col: 0, row: 1 },
             sfx: "bonesRattle",
             bgm: "caveBattleBgm",
             text: "The rune flares and does not go out. The door swings wide, and in the niches on either side two shapes of bone lift their heads. The vault was never left unguarded.",
@@ -76,9 +78,9 @@ export const catacombVaultDoor = {
     }
 };
 
-export const ossuaryWarden = {
-    id: "ossuary_warden",
-    title: "The Ossuary Warden",
+export const infernusSentinel = {
+    id: "infernus_sentinel",
+    title: "The Infernus Sentinel",
     imageSheet: "encounter_catacomb_depths",
     initialStage: "stirs",
     tone: "cold",
@@ -88,29 +90,30 @@ export const ossuaryWarden = {
             image: { col: 2, row: 0 },
             bgm: "none",
             sfx: "heartbeat",
-            text: "The hall is round and utterly dark. In its middle, between you and a lever in the far wall, something tall stands with a sword grounded before it. Two points of cold blue light kindle where its eyes should be.",
+            text: "The hall is round and utterly dark. Before a lever in the far wall stands a knight carved from black stone, taller than any man. Through the cracks in its armour there is no stone, only night sky, and the stars in it are moving.",
             decisions: [
                 { text: "Hold your ground.", outcomes: toStage("challenge") },
                 { text: "Back away into the dark.", outcomes: [{ weight: 100, results: [END] }] }
             ]
         },
         challenge: {
-            displayText: "The Ossuary Warden",
+            displayText: "The Infernus Sentinel",
             image: { col: 2, row: 0 },
             effect: "shake",
             bgm: "shackledMarchBgm",
-            text: "Bone grinds on bone as it lifts the sword. A knight in the rags of the old colors, shackles still on its wrists. \"None pass. The king's dead sleep, and I keep them. Turn back, or lie down among them.\"",
+            sfx: "rockThud",
+            text: "Stone grinds on stone as it lifts its sword. \"Children of Altus. Again you come down with that light in your hands. Infernus burned for it once. Behind me lies the way down to its ruin, and none of your blood shall pass.\"",
             decisions: [
-                { text: "Draw your weapon.", outcomes: [{ weight: 100, results: [WARDEN_FIGHT] }] },
+                { text: "Draw your weapon.", outcomes: [{ weight: 100, results: [SENTINEL_FIGHT] }] },
                 { text: "Back away into the dark.", outcomes: [{ weight: 100, results: [END] }] }
             ]
         }
     }
 };
 
-export const ossuaryWardenFallen = {
-    id: "ossuary_warden_fallen",
-    title: "The Ossuary Warden",
+export const infernusSentinelFallen = {
+    id: "infernus_sentinel_fallen",
+    title: "The Infernus Sentinel",
     imageSheet: "encounter_catacomb_depths",
     initialStage: "fallen",
     tone: "cold",
@@ -120,8 +123,9 @@ export const ossuaryWardenFallen = {
             image: { col: 3, row: 0 },
             bgm: "none",
             sfx: "rockThud",
-            text: "The Warden staggers. Its sword slips from its fingers, and the bones that held together through all those years come apart at last, clattering into a heap at the foot of the lever. The blue light in its eyes goes out.",
-            decisions: [{ text: "Let it rest.", outcomes: [{ weight: 100, results: [{ type: "DESTROY_OBJECT" }, END] }] }]
+            effect: "shake",
+            text: "The Sentinel staggers, and the night inside it flickers. Cracks race across the stone, and with a sound like a mountain settling it breaks apart at the foot of the lever. One by one, the stars inside go dark.",
+            decisions: [{ text: "Leave the rubble to the dark.", outcomes: [{ weight: 100, results: [{ type: "DESTROY_OBJECT" }, END] }] }]
         }
     }
 };

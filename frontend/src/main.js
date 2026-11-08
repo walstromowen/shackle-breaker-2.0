@@ -171,9 +171,8 @@ ui_icons: './assets/icons/ui_icons.png',
     objBrazierUnlit: './assets/mapObjects/objBrazierUnlit.png',
     objCatacombGate: './assets/mapObjects/objCatacombGate.png',
     objCatacombGateOpen: './assets/mapObjects/objCatacombGateOpen.png',
-    objVaultDoor: './assets/mapObjects/objVaultDoor.png',               // the catacombs' locked vault (story/encounters/catacombVault.js)
+    objVaultDoor: './assets/mapObjects/objVaultDoor.png',               // the catacombs' locked vault (story/encounters/catacombDepths.js)
     objVaultDoorOpen: './assets/mapObjects/objVaultDoorOpen.png',
-    objOssuaryWarden: './assets/mapObjects/objOssuaryWarden.png',       // the catacombs' boss, waiting in its dark round hall
     objTrapArrow: './assets/mapObjects/objTrapArrow.png',               // the catacombs' traps (story/encounters/catacombTraps.js)
     objTrapArrowSprung: './assets/mapObjects/objTrapArrowSprung.png',
     objTrapPit: './assets/mapObjects/objTrapPit.png',
@@ -240,6 +239,7 @@ ui_icons: './assets/icons/ui_icons.png',
     nightbladeHeroSprite: './assets/sprites/nightblade_hero/nightblade_hero_sprite.png',
     madmanSprite: './assets/sprites/madman/madman_sprite.png',
     shadyMerchantSprite: './assets/sprites/shady_merchant/shady_merchant_spritesheet.png',
+    infernusSentinelSprite: './assets/sprites/infernus_sentinel/infernus_sentinel_sprite.png',   // the catacombs' boss as its map object draws it (96 px frames; a placeholder from the battle art)
     hoodedStrangerSprite: './assets/sprites/hooded_stranger/hooded_stranger_sprite.png',   // the quest giver in a village workshop (one front frame; tools/art/overworldSheetFromFrame.py)
     snowLeopardSprite: './assets/sprites/snow_leopard/snow_leopard_sprite.png',
     artificerHeroPortrait: './assets/sprites/artificer_hero/artificer_hero_portrait.png',
@@ -268,7 +268,7 @@ ui_icons: './assets/icons/ui_icons.png',
     floatingSkullPortrait: './assets/sprites/floating_skull/floating_skull_portrait.png',
     shackledSpiritPortrait: './assets/sprites/shackled_spirit/shackled_spirit_portrait.png',
     ancientCultistPortrait: './assets/sprites/ancient_cultist/ancient_cultist_portrait.png',
-    ossuaryWardenPortrait: './assets/sprites/ossuary_warden/ossuary_warden_portrait.png',
+    infernusSentinelPortrait: './assets/sprites/infernus_sentinel/infernus_sentinel_portrait.png',
     frozenTrapperPortrait: './assets/sprites/frozen_trapper/frozen_trapper_portrait.png',
     panzerkamferPortrait: './assets/sprites/panzerkamfer/panzerkamfer_portrait.png',
 duneMawPortrait: './assets/sprites/dune_maw/dune_maw_portrait.png',
@@ -409,7 +409,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     encounter_peculiar_scarecrow: './assets/icons/encounters/peculiar_scarecrow.png',
     encounter_cave_in: './assets/icons/encounters/cave_in.png',
     encounter_catacomb_traps: './assets/icons/encounters/catacomb_traps.png',
-    encounter_catacomb_depths: './assets/icons/encounters/catacomb_depths.png',   // the vault door and the Ossuary Warden (story/encounters/catacombDepths.js)
+    encounter_catacomb_depths: './assets/icons/encounters/catacomb_depths.png',   // the vault door and the Infernus Sentinel (story/encounters/catacombDepths.js)
     // --- 1:1 ABILITY AUDIO SFX ---
     earthquake1Sfx: './assets/audio/sfx/abilities/earthquake/earthquake_1.wav',
     earthquake2Sfx: './assets/audio/sfx/abilities/earthquake/earthquake_2.wav',

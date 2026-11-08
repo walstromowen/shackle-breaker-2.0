@@ -949,44 +949,49 @@ export const ENTITY_DEFINITIONS = {
         tags: [...HUMANOID_TEMPLATE.tags, "BOSS", "ELITE", "MAGICAL"]
     },
 
-    // The boss of the catacombs: a knight of the old colors laid to rest to guard the dead's hoard, who never stopped standing guard. It waits in the dark
-    // round hall before the main chamber, in front of the lever that raises the last gate (world/catacombPuzzle.js, story/encounters/catacombWarden.js).
+    // The boss of the catacombs: the Infernus Sentinel, a living statue of a cosmic knight carved in black stone, its cracks open onto a night sky. It guards
+    // the doorway down to the Infernus kingdom (the ancient kingdom under Altus, see docs/story.md) from the dark round hall before the main chamber, in
+    // front of the lever that raises the last gate (world/catacombPuzzle.js, story/encounters/catacombDepths.js).
     // Tuned like Darius for three players (BOSS: PARTY_SCALING.BOSS_HP_BY_PLAYERS gives fewer players less of its health). A fighter where Darius was a
-    // caster: heavy blade work, a shield, the grave's cold that drains the living. Bone: blunt and holy light break it, cuts and the dark glance off.
-    "OSSUARY_WARDEN": {
+    // caster, with the sky's own weight behind it: heavy blade work and a shield, Gravity and a rain of meteors. Stone: hammers and the earth break it,
+    // blades and arrows glance off; the cosmic light in it shrugs off the arcane and the dark.
+    "INFERNUS_SENTINEL": {
         ...HUMANOID_TEMPLATE,
-        name: "The Ossuary Warden",
+        name: "The Infernus Sentinel",
         level: 1,
-        spritePortrait: "ossuaryWardenPortrait",
-        crySound: "skeletalWarriorCry",
-        deathSound: "skeletalWarriorCry",
+        spritePortrait: "infernusSentinelPortrait",
+        // its overworld sheet (96 px frames, a still statue facing you: tools/art/overworldSheetFromFrame.py ... 96 --still --fit) is what its map object
+        // INFERNUS_SENTINEL draws, like the hooded stranger's
+        spriteOverworld: "infernusSentinelSprite",
+        crySound: "calcifiedCrusaderCry",
+        deathSound: "calcifiedCrusaderCry",
         attributes: {
             ...HUMANOID_TEMPLATE.attributes,
-            vigor: 20, strength: 20, dexterity: 10, intelligence: 8, attunement: 14
+            vigor: 22, strength: 20, dexterity: 6, intelligence: 14, attunement: 18
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 90, maxStamina: 30, maxInsight: 40, speed: 6, critical: 0.08,
+            maxHp: 90, maxStamina: 30, maxInsight: 50, speed: 5, critical: 0.08,
             maxHpMultiplier: 2,
             baseDefense: {
                 ...HUMANOID_TEMPLATE.baseStats.baseDefense,
-                blunt: 1, slash: 6, pierce: 7, arcane: 4,
-                fire: 2, ice: 5, lightning: 3, earth: 3, wind: 3, water: 3, dark: 6,
-                light: -3
+                blunt: -1, slash: 7, pierce: 8, arcane: 6,
+                fire: 5, ice: 4, lightning: 4, earth: 0, wind: 5, water: 2, dark: 5,
+                light: 2
             },
             baseResistance: {
-                blunt: 0.15, slash: 0.4, pierce: 0.45,
-                fire: 0.2, ice: 0.4, lightning: 0.3, earth: 0.3, wind: 0.3, water: 0.3,
-                arcane: 0.35, dark: 0.6, light: -0.3
+                blunt: -0.1, slash: 0.45, pierce: 0.5,
+                fire: 0.4, ice: 0.3, lightning: 0.35, earth: 0, wind: 0.4, water: 0.15,
+                arcane: 0.5, dark: 0.5, light: 0.2
             },
-            baseAttack: { blunt: 3, slash: 9, dark: 4 }
+            baseAttack: { blunt: 4, slash: 8, arcane: 5, earth: 3 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment },
         currencyReward: { min: 220, max: 520 },
-        lootTableId: "boss_warden_drops",
-        // Cleave and Whirlwind Slash cut the whole line, Guard Break answers a fortified party, Shield Bash, Intimidate blunts the strongest arm,
-        // Drain Life and Spirit Reap feed it on the living. ("rest" is only the AI's fallback when it can afford nothing.)
-        abilities: ["rest", "strike", "cleave", "whirlwind_slash", "guard_break", "shield_bash", "intimidate", "drain_life", "spirit_reap"],
-        tags: ["HUMANOID", "UNDEAD", "SKELETON", "SOLDIER", "BOSS", "ELITE"]
+        lootTableId: "boss_sentinel_drops",
+        // Cleave cuts the whole line, Guard Break answers a fortified party, Shield Bash and Boulder Throw knock heads down, Gravity crushes the
+        // healthiest to half, Meteor Shower rains the sky on them. ("rest" is only the AI's fallback when it can afford nothing.)
+        abilities: ["rest", "strike", "cleave", "guard_break", "shield_bash", "boulder_throw", "gravity", "meteor_shower"],
+        tags: ["HUMANOID", "CONSTRUCT", "MAGICAL", "BOSS", "ELITE"]
     }
 };

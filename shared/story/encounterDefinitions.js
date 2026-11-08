@@ -18,7 +18,7 @@ import { peculiarScarecrow } from './encounters/peculiarScarecrow.js';
 import { oldGravestone } from './encounters/oldGravestone.js';
 import { caveIn } from './encounters/caveIn.js';
 import { arrowTrap, pitTrap, swingingAxes } from './encounters/catacombTraps.js';
-import { catacombVaultDoor, ossuaryWarden, ossuaryWardenFallen } from './encounters/catacombDepths.js';
+import { catacombVaultDoor, infernusSentinel, infernusSentinelFallen } from './encounters/catacombDepths.js';
 import { shackledBetrayal, shackledBetrayalEnd } from './encounters/story/shackledBetrayal.js';
 
 // <-- Import your new encounter here
@@ -47,8 +47,8 @@ export const encounterDefinitions = {
     [pitTrap.id]: pitTrap,
     [swingingAxes.id]: swingingAxes,
     [catacombVaultDoor.id]: catacombVaultDoor,   // the catacombs' locked vault, its boss and the boss's end (story/encounters/catacombDepths.js)
-    [ossuaryWarden.id]: ossuaryWarden,
-    [ossuaryWardenFallen.id]: ossuaryWardenFallen,
+    [infernusSentinel.id]: infernusSentinel,
+    [infernusSentinelFallen.id]: infernusSentinelFallen,
     [shackledBetrayal.id]: shackledBetrayal,
     [shackledBetrayalEnd.id]: shackledBetrayalEnd,
 

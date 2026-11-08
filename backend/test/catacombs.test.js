@@ -74,7 +74,7 @@ test('the gate stays shut until every lever is down; each lever lights a brazier
     Object.assign(w, { isInterior: false, interiorType: null, interiorId: null, changes: {} });
 });
 
-test('north to south: the hoard, the boss gate, the dark round hall with the Warden before its lever, the puzzle gate, the antechamber; and a locked vault', () => {
+test('north to south: the hoard, the boss gate, the dark round hall with the Sentinel before its lever, the puzzle gate, the antechamber; and a locked vault', () => {
     for (let k = 0; k < 10; k++) {
         const a = InteriorFactory.create(777 + k * 4321, 'CATACOMBS', `${k}_2_9_${k}`);
         const M = a.rooms.find(r => r.role === 'chamber'), B = a.rooms.find(r => r.role === 'bosshall'), A = a.rooms.find(r => r.role === 'antechamber');
@@ -84,15 +84,15 @@ test('north to south: the hoard, the boss gate, the dark round hall with the War
         assert.ok(boss.gate.r > M.y1 && boss.gate.r < B.y0, 'the boss gate is between the chamber and the hall');
         assert.ok(gate.r > B.y1 && gate.r < A.y0, 'the puzzle gate is between the hall and the antechamber');
         assert.equal(a.getObjectIdAt(boss.gate.c, boss.gate.r), 'CATACOMB_GATE');
-        assert.equal(a.getObjectIdAt(boss.warden.c, boss.warden.r), 'OSSUARY_WARDEN');
+        assert.equal(a.getObjectIdAt(boss.sentinel.c, boss.sentinel.r), 'INFERNUS_SENTINEL');
         assert.equal(a.getObjectIdAt(boss.lever.c, boss.lever.r), 'BOSS_LEVER');
-        assert.ok(boss.lever.r < boss.warden.r, 'the lever is behind the Warden, on the north wall');
-        const radius = MAP_OBJECTS_DEFINITIONS.OSSUARY_WARDEN.interaction.triggerRadius;
-        assert.ok(Math.max(Math.abs(boss.lever.c - boss.warden.c), Math.abs(boss.lever.r + 1 - boss.warden.r)) <= radius, 'standing at the lever wakes the Warden');
-        // the hall is dark: nothing in it gives light but the Warden's own glow and the lever's rune
+        assert.ok(boss.lever.r < boss.sentinel.r, 'the lever is behind the Sentinel, on the north wall');
+        const radius = MAP_OBJECTS_DEFINITIONS.INFERNUS_SENTINEL.interaction.triggerRadius;
+        assert.ok(Math.max(Math.abs(boss.lever.c - boss.sentinel.c), Math.abs(boss.lever.r + 1 - boss.sentinel.r)) <= radius, 'standing at the lever wakes the Sentinel');
+        // the hall is dark: nothing in it gives light but the Sentinel's own glow and the lever's rune
         for (let r = B.y0; r <= B.y1; r++) for (let c = B.x0; c <= B.x1; c++) {
             const id = a.getObjectIdAt(c, r); const def = id && MAP_OBJECTS_DEFINITIONS[id];
-            if (def && def.light && def.light.hasLight) assert.ok(id === 'OSSUARY_WARDEN' || id === 'BOSS_LEVER', `${id} lights the hall`);
+            if (def && def.light && def.light.hasLight) assert.ok(id === 'INFERNUS_SENTINEL' || id === 'BOSS_LEVER', `${id} lights the hall`);
             if (id) assert.ok(!/^TRAP_/.test(id), 'no traps in the hall');
         }
         // the vault: two chests and many crates, and no way in but its door
@@ -124,7 +124,7 @@ test('north to south: the hoard, the boss gate, the dark round hall with the War
     }
 });
 
-test('the boss lever will not move while the Warden stands; once it is beaten the lever raises the gate into the main chamber', async () => {
+test('the boss lever will not move while the Sentinel stands; once it is beaten the lever raises the gate into the main chamber', async () => {
     const { gameState } = await import('../../shared/core/gameState.js');
     const { WorldManager } = await import('../../shared/world/worldManager.js');
     const { pullLever, bossState } = await import('../../shared/world/catacombPuzzle.js');
@@ -135,20 +135,20 @@ test('the boss lever will not move while the Warden stands; once it is beaten th
     const { boss } = wm.terrain.puzzle;
     wm.ensureChunkLoaded(boss.lever.c, boss.lever.r);
     const shut = () => !!wm.getSolidObjectAt(boss.gate.c + 1, boss.gate.r);
-    assert.deepEqual(bossState(wm), { wardenStands: true, open: false });
+    assert.deepEqual(bossState(wm), { sentinelStands: true, open: false });
     let r = pullLever(wm, boss.lever.c, boss.lever.r);
-    assert.equal(r.ok, false); assert.match(r.message, /Warden/);
+    assert.equal(r.ok, false); assert.match(r.message, /Sentinel/);
     assert.ok(shut());
-    wm.modifyWorld(boss.warden.c, boss.warden.r, null);   // what ossuary_warden_fallen's DESTROY_OBJECT does
+    wm.modifyWorld(boss.sentinel.c, boss.sentinel.r, null);   // what infernus_sentinel_fallen's DESTROY_OBJECT does
     r = pullLever(wm, boss.lever.c, boss.lever.r);
     assert.ok(r.ok && r.opened, r.message);
     assert.ok(!shut(), 'the gate is up');
-    assert.deepEqual(bossState(wm), { wardenStands: false, open: true });
+    assert.deepEqual(bossState(wm), { sentinelStands: false, open: true });
     assert.equal(pullLever(wm, boss.lever.c, boss.lever.r).ok, false, 'it stays down');
     Object.assign(w, { isInterior: false, interiorType: null, interiorId: null, changes: {} });
 });
 
-test('the vault door opens only with a small iron key, which it keeps; the Warden is a boss whose fight ends with it gone and the hoard key dropped', async () => {
+test('the vault door opens only with a small iron key, which it keeps; the Sentinel is a boss whose fight ends with it gone and the hoard key dropped', async () => {
     const { encounterDefinitions } = await import('../../shared/story/encounterDefinitions.js');
     const { ENTITY_DEFINITIONS } = await import('../../shared/characters/entityDefinitions.js');
     const { LootTableDefinitions } = await import('../../shared/items/lootTableDefinitions.js');
@@ -163,15 +163,18 @@ test('the vault door opens only with a small iron key, which it keeps; the Warde
         assert.ok(next.decisions.every(d => d.outcomes[0].results.some(r => r.type === 'REPLACE_OBJECT' && r.payload.objectId === 'VAULT_DOOR_OPEN')), 'the door opens either way');
     }
     assert.ok(door.stages[door.initialStage].decisions.length >= 2, 'it can be left shut');
-    const warden = MAP_OBJECTS_DEFINITIONS.OSSUARY_WARDEN;
-    assert.equal(warden.interaction.type, 'ENCOUNTER'); assert.ok(warden.interaction.triggerRadius >= 2, 'woken by coming near');
-    const enc = encounterDefinitions[warden.interaction.id];
+    const sentinel = MAP_OBJECTS_DEFINITIONS.INFERNUS_SENTINEL;
+    assert.equal(sentinel.character.entity, 'INFERNUS_SENTINEL', 'drawn from its own overworld sheet, like the hooded stranger');
+    assert.equal(sentinel.character.sheet, ENTITY_DEFINITIONS.INFERNUS_SENTINEL.spriteOverworld);
+    assert.ok(sentinel.character.frame.w > 64 && sentinel.character.frame.h > 64, 'bigger than a person');
+    assert.equal(sentinel.interaction.type, 'ENCOUNTER'); assert.ok(sentinel.interaction.triggerRadius >= 2, 'woken by coming near');
+    const enc = encounterDefinitions[sentinel.interaction.id];
     const fight = Object.values(enc.stages).flatMap(st => st.decisions).flatMap(d => d.outcomes || []).flatMap(o => o.results).find(r => r.type === 'START_BATTLE');
-    assert.equal(fight.payload.tableId, 'ossuary_warden_boss');
-    const table = SpawnTableDefinitions.ossuary_warden_boss;
+    assert.equal(fight.payload.tableId, 'infernus_sentinel_boss');
+    const table = SpawnTableDefinitions.infernus_sentinel_boss;
     assert.ok(table.fixedSize);
     const ent = ENTITY_DEFINITIONS[table.pools[0].members[0].id];
-    assert.ok(ent.tags.includes('BOSS') && ent.tags.includes('UNDEAD'));
+    assert.ok(ent.tags.includes('BOSS') && ent.tags.includes('CONSTRUCT'), 'a living statue');
     const fallen = encounterDefinitions[fight.payload.afterVictory.encounterId];
     assert.ok(fallen.stages[fallen.initialStage].decisions[0].outcomes[0].results.some(r => r.type === 'DESTROY_OBJECT'), 'beaten, it is gone from the map');
     assert.ok(LootTableDefinitions[ent.lootTableId].items.some(i => i.id === 'large_iron_key' && i.dropRate === 1), 'it always drops the key to the iron chest');

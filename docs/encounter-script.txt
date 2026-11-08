@@ -917,24 +917,24 @@ STRANGER: "Come back when you've seen what walks under the red moon. Or don't. I
   > Leave.
 
 
-===== THE OSSUARY WARDEN (ossuary_warden) =====
+===== THE INFERNUS SENTINEL (infernus_sentinel) =====
 
 [stirs]
-The hall is round and utterly dark. In its middle, between you and a lever in the far wall, something tall stands with a sword grounded before it. Two points of cold blue light kindle where its eyes should be.
+The hall is round and utterly dark. Before a lever in the far wall stands a knight carved from black stone, taller than any man. Through the cracks in its armour there is no stone, only night sky, and the stars in it are moving.
   > Hold your ground.
   > Back away into the dark.
 
 [challenge]
-Bone grinds on bone as it lifts the sword. A knight in the rags of the old colors, shackles still on its wrists. "None pass. The king's dead sleep, and I keep them. Turn back, or lie down among them."
+Stone grinds on stone as it lifts its sword. "Children of Altus. Again you come down with that light in your hands. Infernus burned for it once. Behind me lies the way down to its ruin, and none of your blood shall pass."
   > Draw your weapon.
   > Back away into the dark.
 
 
-===== THE OSSUARY WARDEN (ossuary_warden_fallen) =====
+===== THE INFERNUS SENTINEL (infernus_sentinel_fallen) =====
 
 [fallen]
-The Warden staggers. Its sword slips from its fingers, and the bones that held together through all those years come apart at last, clattering into a heap at the foot of the lever. The blue light in its eyes goes out.
-  > Let it rest.
+The Sentinel staggers, and the night inside it flickers. Cracks race across the stone, and with a sound like a mountain settling it breaks apart at the foot of the lever. One by one, the stars inside go dark.
+  > Leave the rubble to the dark.
 
 
 ===== THE QUIET AFTER (shackled_betrayal_end) =====

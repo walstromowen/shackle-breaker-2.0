@@ -71,7 +71,8 @@ export const INTERIOR_DEFINITIONS = {
     /* The catacombs under a mysterious altar: only reached from inside a cave, down the hidden staircase (CATACOMBS_STAIRS) that the altar gives way to once
        Darius the Groveler is beaten. A dungeon (generators/catacombGenerator.js): built rooms of stone brick and natural caverns joined by halls and tunnels, and a
        main chamber at the far end behind a gate that only opens once a lever has been pulled in each of the dungeon's farthest rooms (world/catacombPuzzle.js);
-       past that gate a dark round hall where the Ossuary Warden (the catacombs' boss) guards the lever of a second gate into the main chamber; and somewhere
+       past that gate a dark round hall where the Infernus Sentinel (the catacombs' boss, a living statue guarding the doorway to the Infernus kingdom) guards the
+       lever of a second gate into the main chamber; and somewhere
        off the halls a vault of chests and crates behind a door that a small iron key opens (story/encounters/catacombDepths.js).
        Like a cave it is the same every time and keeps what was done in it (its changes are keyed INT_<cave id>_<stair col>_<stair row>_...). */
     CATACOMBS: {

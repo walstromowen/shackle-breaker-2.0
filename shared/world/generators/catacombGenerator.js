@@ -428,17 +428,17 @@ export class CatacombGenerator {
         for (const p of braziers) { this._put(p.c, p.r, 'BRAZIER_UNLIT'); this._reserve(p.c, p.r - 1, p.c, p.r + 1); }
         this._put(this.gate.c, this.gate.r, 'CATACOMB_GATE');
         this._reserve(this.gate.c, this.gate.r - 1, this.gate.c + 2, this.gate.r + 1);
-        // the boss's hall: the Warden stands in the middle of its northern half, in front of its lever on the north wall beside the way out to the chamber
+        // the boss's hall: the Sentinel (a statue on its plinth) stands in the middle of its northern half, in front of its lever on the north wall beside the way out to the chamber
         const B = this.hall;
         const lever = this._hallLever(B);
         if (!lever) return this._fail('hall lever');
-        const warden = { c: B.cx, r: B.cy - 2 };
-        if (![0, 1].every((dc) => [0, -1].every((dr) => this._walkable(warden.c + dc, warden.r + dr)))) return this._fail('warden');
+        const sentinel = { c: B.cx, r: B.cy - 2 };
+        if (![-1, 0, 1].every((dc) => [0, -1, -2].every((dr) => this._walkable(sentinel.c + dc, sentinel.r + dr)))) return this._fail('sentinel');
         this._put(lever.c, lever.r, 'BOSS_LEVER'); this._reserve(lever.c - 1, lever.r, lever.c + 1, lever.r + 1);
-        this._put(warden.c, warden.r, 'OSSUARY_WARDEN'); this._reserve(warden.c - 1, warden.r - 2, warden.c + 2, warden.r + 1);
+        this._put(sentinel.c, sentinel.r, 'INFERNUS_SENTINEL'); this._reserve(sentinel.c - 2, sentinel.r - 2, sentinel.c + 2, sentinel.r + 1);
         this._put(this.bossGate.c, this.bossGate.r, 'CATACOMB_GATE');
         this._reserve(this.bossGate.c, this.bossGate.r - 1, this.bossGate.c + 2, this.bossGate.r + 1);
-        this.puzzle.boss = { lever, warden, gate: { ...this.bossGate } };
+        this.puzzle.boss = { lever, sentinel, gate: { ...this.bossGate } };
         // the vault's door
         const vd = this.vault.door;
         this._put(vd.c, vd.r, 'VAULT_DOOR');
@@ -519,7 +519,7 @@ export class CatacombGenerator {
         this._reserve(hx - 3, hy + 1, hx + 3, hy + 1);
         for (let r = M.y0 + 6; r <= M.y1 - 2; r += 2) for (const c of [M.x0 + 1, M.x1 - 1]) if (this._roomy(c, r)) this._put(c, r, 'TOMBSTONE');
         this._reserve(M.cx - 1, M.y0, M.cx + 1, M.y1);   // the way up the hall to the hoard
-        // the boss's hall: dark (not one torch), four cold braziers about the rim, bones heaped about the Warden's feet
+        // the boss's hall: dark (not one torch), four cold braziers about the rim, the bones of those who came before about the Sentinel's feet
         const B = this.hall;
         for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
             const c = B.cx + Math.round(dx * (B.x1 - B.x0) * 0.3), r = B.cy + Math.round(dy * (B.y1 - B.y0) * 0.3) + 1;
@@ -529,7 +529,7 @@ export class CatacombGenerator {
             const c = B.cx + dx, r = B.cy + dy;
             if (this._walkable(c, r) && this._free(c, r)) this._put(c, r, this._hash(c, r, 95) < 0.6 ? 'BONE_PILE' : 'DESERT_SKULL', false);
         }
-        this._reserve(B.cx - 1, B.cy - 1, B.cx + 1, B.y1);   // the way up the hall to the Warden
+        this._reserve(B.cx - 1, B.cy - 1, B.cx + 1, B.y1);   // the way up the hall to the Sentinel
         // the vault: two chests at the back, crates (and a few sacks and old barrels) packed along the walls, an aisle kept clear from the door
         const V = this.rooms[this.vault.room];
         const vc = V.cx, vr = V.y0 + 2;
