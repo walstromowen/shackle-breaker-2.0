@@ -677,4 +677,38 @@ export const SpawnTableDefinitions = {
             members: [{ id: 'DARIUS_THE_GROVELER', weight: 100 }]
         }]
     },
+
+    // Used by catacomb_vault_door: the two guards of a catacomb vault, who wake one time in three when its door is unlocked.
+    "vault_guardians": {
+        type: "faction_pool",
+        fixedSize: true,
+        pools: [{
+            factionId: "shackled",
+            weight: 100,
+            difficultySettings: {
+                easy: { minSize: 2, maxSize: 2 },
+                normal: { minSize: 2, maxSize: 2 },
+                hard: { minSize: 2, maxSize: 2 },
+                nightmare: { minSize: 2, maxSize: 3 }
+            },
+            members: [{ id: 'SKELETAL_WARRIOR', weight: 100, modifiers: { levelOffset: { chance: 0.5, min: 1, max: 2 }, equipment: [{ slot: 'mainHand', items: ['spear', 'warhammer', 'glaive'], chance: 0.6 }] } }]
+        }]
+    },
+
+    // Used by ossuary_warden: the boss of the catacombs, alone in its dark round hall.
+    "ossuary_warden_boss": {
+        type: "faction_pool",
+        fixedSize: true,   // one Warden, whatever the party
+        pools: [{
+            factionId: "shackled",
+            weight: 100,
+            difficultySettings: {
+                easy: { minSize: 1, maxSize: 1 },
+                normal: { minSize: 1, maxSize: 1 },
+                hard: { minSize: 1, maxSize: 1 },
+                nightmare: { minSize: 1, maxSize: 1 }
+            },
+            members: [{ id: 'OSSUARY_WARDEN', weight: 100 }]
+        }]
+    },
 };

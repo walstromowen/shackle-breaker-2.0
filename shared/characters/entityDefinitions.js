@@ -947,5 +947,46 @@ export const ENTITY_DEFINITIONS = {
         // Arcane Blast. ("rest" is only the AI's fallback when he can afford nothing.)
         abilities: ["rest", "acid_pool", "magic_missile", "bless", "cleanse", "arcane_blast"],
         tags: [...HUMANOID_TEMPLATE.tags, "BOSS", "ELITE", "MAGICAL"]
+    },
+
+    // The boss of the catacombs: a knight of the old colors laid to rest to guard the dead's hoard, who never stopped standing guard. It waits in the dark
+    // round hall before the main chamber, in front of the lever that raises the last gate (world/catacombPuzzle.js, story/encounters/catacombWarden.js).
+    // Tuned like Darius for three players (BOSS: PARTY_SCALING.BOSS_HP_BY_PLAYERS gives fewer players less of its health). A fighter where Darius was a
+    // caster: heavy blade work, a shield, the grave's cold that drains the living. Bone: blunt and holy light break it, cuts and the dark glance off.
+    "OSSUARY_WARDEN": {
+        ...HUMANOID_TEMPLATE,
+        name: "The Ossuary Warden",
+        level: 1,
+        spritePortrait: "ossuaryWardenPortrait",
+        crySound: "skeletalWarriorCry",
+        deathSound: "skeletalWarriorCry",
+        attributes: {
+            ...HUMANOID_TEMPLATE.attributes,
+            vigor: 20, strength: 20, dexterity: 10, intelligence: 8, attunement: 14
+        },
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 90, maxStamina: 30, maxInsight: 40, speed: 6, critical: 0.08,
+            maxHpMultiplier: 2,
+            baseDefense: {
+                ...HUMANOID_TEMPLATE.baseStats.baseDefense,
+                blunt: 1, slash: 6, pierce: 7, arcane: 4,
+                fire: 2, ice: 5, lightning: 3, earth: 3, wind: 3, water: 3, dark: 6,
+                light: -3
+            },
+            baseResistance: {
+                blunt: 0.15, slash: 0.4, pierce: 0.45,
+                fire: 0.2, ice: 0.4, lightning: 0.3, earth: 0.3, wind: 0.3, water: 0.3,
+                arcane: 0.35, dark: 0.6, light: -0.3
+            },
+            baseAttack: { blunt: 3, slash: 9, dark: 4 }
+        },
+        equipment: { ...HUMANOID_TEMPLATE.equipment },
+        currencyReward: { min: 220, max: 520 },
+        lootTableId: "boss_warden_drops",
+        // Cleave and Whirlwind Slash cut the whole line, Guard Break answers a fortified party, Shield Bash, Intimidate blunts the strongest arm,
+        // Drain Life and Spirit Reap feed it on the living. ("rest" is only the AI's fallback when it can afford nothing.)
+        abilities: ["rest", "strike", "cleave", "whirlwind_slash", "guard_break", "shield_bash", "intimidate", "drain_life", "spirit_reap"],
+        tags: ["HUMANOID", "UNDEAD", "SKELETON", "SOLDIER", "BOSS", "ELITE"]
     }
 };

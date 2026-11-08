@@ -94,6 +94,10 @@ export class CatacombGenerator {
         const rm = { kind, role, x0, y0, x1, y1, cx: Math.round((x0 + x1) / 2), cy: Math.round((y0 + y1) / 2), id: this.rooms.length };
         if (kind === 'built') {
             for (let r = y0; r <= y1; r++) for (let c = x0; c <= x1; c++) this._setFloor(c, r, BRICK);
+        } else if (kind === 'round') {
+            // a round hall of flagstones: every cell within the radius (a little over, so its rim is smooth rather than stepped)
+            const R = (x1 - x0) / 2;
+            for (let r = y0; r <= y1; r++) for (let c = x0; c <= x1; c++) if ((c - rm.cx) ** 2 + (r - rm.cy) ** 2 <= R * R + R * 0.8) this._setFloor(c, r, BRICK);
         } else {
             const rx = (x1 - x0) / 2, ry = (y1 - y0) / 2, salt = 300 + rm.id * 7;
             for (let r = y0; r <= y1; r++) for (let c = x0; c <= x1; c++) {
@@ -125,19 +129,28 @@ export class CatacombGenerator {
         const b = this.bounds;
         const mark = (arr, x0, y0, x1, y1) => { for (let r = y0; r <= y1; r++) for (let c = x0; c <= x1; c++) if (this._inside(c, r)) arr[this._idx(c, r)] = 1; };
 
-        /* 1. the main chamber at the north, the gate corridor and the antechamber below it */
-        const mw = this._int(7, 9) * 2 + 1, mh = this._int(10, 12);
+        /* 1. the spine, north to south: the main chamber (the hoard), the boss's gate, the boss's dark round hall, the puzzle's gate, the antechamber */
+        const mw = this._int(7, 9) * 2 + 1, mh = this._int(9, 11);
         const mcx = this._int(-Math.floor(half / 3), Math.floor(half / 3));
         const M = this._addRoom('built', mcx - (mw - 1) / 2, b.minR + 4, mcx + (mw - 1) / 2, b.minR + 3 + mh, 'chamber');
-        const aw = this._int(5, 6) * 2 + 1, ah = this._int(7, 9), gap = this._int(5, 7);
-        const ay0 = M.y1 + 1 + gap;
+        const R = this._int(6, 7), gap1 = this._int(4, 5);
+        const by = M.y1 + 1 + gap1 + R;
+        const B = this._addRoom('round', mcx - R, by - R, mcx + R, by + R, 'bosshall');
+        const aw = this._int(5, 6) * 2 + 1, ah = this._int(7, 9), gap2 = this._int(5, 6);
+        const ay0 = B.y1 + 1 + gap2;
         const A = this._addRoom('built', mcx - (aw - 1) / 2, ay0, mcx + (aw - 1) / 2, ay0 + ah - 1, 'antechamber');
-        for (let r = M.y1 + 1; r < ay0; r++) for (let c = mcx - 1; c <= mcx + 1; c++) this._setFloor(c, r, BRICK, true);
-        this.gate = { c: mcx - 1, r: M.y1 + 2 };   // the gate's anchor: the bottom-left of its 3 x 2 cells, one row into the corridor
+        for (let r = M.y1 + 1; r < B.y0 + 2; r++) for (let c = mcx - 1; c <= mcx + 1; c++) this._setFloor(c, r, BRICK, true);
+        for (let r = B.y1 - 1; r < ay0; r++) for (let c = mcx - 1; c <= mcx + 1; c++) this._setFloor(c, r, BRICK, true);
+        // the gates' anchors: the bottom-left of their 3 x 2 cells, one row into their corridors. `gate` is the puzzle's (antechamber to hall), `bossGate` the boss's (hall to chamber)
+        this.gate = { c: mcx - 1, r: B.y1 + 2 };
+        this.bossGate = { c: mcx - 1, r: M.y1 + 2 };
         mark(this.forbid, M.x0 - 3, M.y0 - 3, M.x1 + 3, M.y1 + 3);
+        mark(this.forbid, B.x0 - 3, B.y0 - 3, B.x1 + 3, B.y1 + 3);
         mark(this.forbid, mcx - 3, M.y1, mcx + 3, ay0 - 1);
         mark(this.protect, M.x0 - 1, M.y0 - 1, M.x1 + 1, M.y1 + 1);
+        mark(this.protect, B.x0 - 1, B.y0 - 1, B.x1 + 1, B.y1 + 1);
         mark(this.protect, mcx - 2, M.y1 + 1, mcx + 2, ay0 - 1);
+        this.hall = B;
 
         /* 2. the entrance at the south, the stairway up in its north wall */
         const ew = this._int(4, 5) * 2 + 1, eh = this._int(7, 8);
@@ -164,7 +177,7 @@ export class CatacombGenerator {
         if (others.length < 6) return this._fail('rooms ' + others.length);
 
         /* 4. corridors: a minimum spanning tree over every room but the chamber, from the entrance, plus a few loops */
-        const nodes = this.rooms.filter((rm) => rm.role !== 'chamber');
+        const nodes = this.rooms.filter((rm) => rm.role !== 'chamber' && rm.role !== 'bosshall');
         const dist = (p, q) => Math.hypot(p.cx - q.cx, p.cy - q.cy);
         const inTree = new Set([E.id]), edges = [];
         while (inTree.size < nodes.length) {
@@ -201,17 +214,54 @@ export class CatacombGenerator {
                 if (ns || ew2) { const j = ns ? this._idx(c, r - 1) : this._idx(c - 1, r); this.level[i] = this.floorN; this.style[i] = this.style[j] || BRICK; this.corridor[i] = this.corridor[j]; }
             }
 
-        /* 6. every room reachable from the stairway (the gate counts as open) */
+        /* 6. the vault: a side room of chests and crates cut off one of the halls or rooms, its only way in a short passage closed by a locked door */
+        this._reach = this._reachable();
+        if (!this._carveVault()) return this._fail('vault');
+
+        /* 7. every room reachable from the stairway (the gates and the vault's door count as open) */
         this._reach = this._reachable();
         for (const rm of this.rooms) if (!this._roomReached(rm)) return this._fail('unreached ' + rm.role + ' ' + rm.kind);
 
-        /* 7. the puzzle: levers in the farthest rooms (dead ends first), braziers in the antechamber */
+        /* 8. the puzzle: levers in the farthest rooms (dead ends first), braziers in the antechamber; the boss, its lever and its gate */
         if (!this._placePuzzle(E, A, M)) return this._fail('puzzle');
 
-        /* 8. the styles of the walls, then the furnishings */
+        /* 9. the styles of the walls, then the furnishings */
         this._wallStyles();
         this._furnish(E, A, M);
         this.entrance = E; this.antechamber = A; this.chamber = M;
+        return true;
+    }
+
+    /* The vault: north of a stretch of floor whose top edge is a straight wall at least three cells wide (a room's or a hall's), a passage four cells long
+       is cut up into the rock and the vault opens at its end; the door (VAULT_DOOR, 3 x 2 like the gate) closes the passage one row below the vault.
+       Everything it is cut into must be solid rock with two cells to spare all round, so the door is the only way in. Prefers places far from the stairway. */
+    _carveVault() {
+        const b = this.bounds;
+        const vw = this._int(4, 5) * 2 + 1, vh = this._int(6, 8), L = 4;
+        const rockAll = (x0, y0, x1, y1) => {
+            if (x0 < b.minC + 2 || x1 > b.maxC - 2 || y0 < b.minR + 2 || y1 > b.maxR - 2) return false;
+            for (let r = y0; r <= y1; r++) for (let c = x0; c <= x1; c++) { const i = this._idx(c, r); if (this.level[i] === this.floorN || this.forbid[i]) return false; }
+            return true;
+        };
+        let best = null;
+        for (let r = b.minR + 4; r <= b.maxR - 4; r++) for (let c = b.minC + 4; c <= b.maxC - 4; c++) {
+            // a floor edge: three floor cells side by side with rock above them, and floor to stand on below
+            let edge = true;
+            for (let dc = -1; dc <= 1 && edge; dc++) if (!this._floor(c + dc, r) || this._floor(c + dc, r - 1) || !this._floor(c + dc, r + 1)) edge = false;
+            if (!edge) continue;
+            const d = this._reach.distance[this._idx(c, r + 1)];
+            if (d < 25) continue;
+            const vy1 = r - L - 1, vy0 = vy1 - vh + 1, vx0 = c - (vw - 1) / 2, vx1 = c + (vw - 1) / 2;
+            if (!rockAll(vx0 - 2, vy0 - 2, vx1 + 2, vy1 + 1) || !rockAll(c - 3, vy1 + 1, c + 3, r - 2) || !rockAll(c - 1, r - 1, c + 1, r - 1)) continue;
+            const score = Math.min(d, 140) + this._hash(c, r, 91) * 40;
+            if (!best || score > best.score) best = { c, r, vx0, vy0, vx1, vy1, score };
+        }
+        if (!best) return false;
+        const { c, r, vx0, vy0, vx1, vy1 } = best;
+        const V = this._addRoom('built', vx0, vy0, vx1, vy1, 'vault');
+        for (let rr = vy1 + 1; rr <= r - 1; rr++) for (let cc = c - 1; cc <= c + 1; cc++) this._setFloor(cc, rr, BRICK, true);
+        for (let rr = vy0 - 1; rr <= r - 1; rr++) for (let cc = vx0 - 1; cc <= vx1 + 1; cc++) if (this._inside(cc, rr)) { this.protect[this._idx(cc, rr)] = 1; this.forbid[this._idx(cc, rr)] = 1; }
+        this.vault = { room: V.id, door: { c: c - 1, r: vy1 + 2 } };
         return true;
     }
 
@@ -311,7 +361,8 @@ export class CatacombGenerator {
 
     _reachable() {
         const seen = new Uint8Array(this.W * this.H);
-        const gateCells = new Set([0, 1, 2].map((k) => this._idx(this.gate.c + k, this.gate.r)));
+        const gateCells = new Set();
+        for (const g of [this.gate, this.bossGate, this.vault && this.vault.door]) if (g) for (const k of [0, 1, 2]) gateCells.add(this._idx(g.c + k, g.r));
         const sc = this.doorCol, sr = this.doorRow + 1;
         const queue = [[sc, sr]];
         seen[this._idx(sc, sr)] = 1;
@@ -377,7 +428,35 @@ export class CatacombGenerator {
         for (const p of braziers) { this._put(p.c, p.r, 'BRAZIER_UNLIT'); this._reserve(p.c, p.r - 1, p.c, p.r + 1); }
         this._put(this.gate.c, this.gate.r, 'CATACOMB_GATE');
         this._reserve(this.gate.c, this.gate.r - 1, this.gate.c + 2, this.gate.r + 1);
+        // the boss's hall: the Warden stands in the middle of its northern half, in front of its lever on the north wall beside the way out to the chamber
+        const B = this.hall;
+        const lever = this._hallLever(B);
+        if (!lever) return this._fail('hall lever');
+        const warden = { c: B.cx, r: B.cy - 2 };
+        if (![0, 1].every((dc) => [0, -1].every((dr) => this._walkable(warden.c + dc, warden.r + dr)))) return this._fail('warden');
+        this._put(lever.c, lever.r, 'BOSS_LEVER'); this._reserve(lever.c - 1, lever.r, lever.c + 1, lever.r + 1);
+        this._put(warden.c, warden.r, 'OSSUARY_WARDEN'); this._reserve(warden.c - 1, warden.r - 2, warden.c + 2, warden.r + 1);
+        this._put(this.bossGate.c, this.bossGate.r, 'CATACOMB_GATE');
+        this._reserve(this.bossGate.c, this.bossGate.r - 1, this.bossGate.c + 2, this.bossGate.r + 1);
+        this.puzzle.boss = { lever, warden, gate: { ...this.bossGate } };
+        // the vault's door
+        const vd = this.vault.door;
+        this._put(vd.c, vd.r, 'VAULT_DOOR');
+        this._reserve(vd.c, vd.r - 1, vd.c + 2, vd.r + 2);
+        this.puzzle.vault = { door: { ...vd } };
         return true;
+    }
+    /* the boss's lever: against the hall's north wall a few cells to one side of the passage north, where the wall is two rows up */
+    _hallLever(B) {
+        for (const dx of [3, -3, 4, -4, 2, -2]) {
+            const c = B.cx + dx;
+            for (let r = B.y0; r <= B.cy; r++) {
+                if (this._floor(c, r - 2) || !this._floor(c, r - 1) || !this._floor(c, r)) continue;
+                if (this._walkable(c, r) && this._walkable(c, r + 1)) return { c, r };
+                break;
+            }
+        }
+        return null;
     }
     /* a lever stands against a wall: the second row under a north wall (the face fills the first), with room to stand in front of it, as near the middle of the room as can be */
     _leverCell(rm) {
@@ -440,6 +519,34 @@ export class CatacombGenerator {
         this._reserve(hx - 3, hy + 1, hx + 3, hy + 1);
         for (let r = M.y0 + 6; r <= M.y1 - 2; r += 2) for (const c of [M.x0 + 1, M.x1 - 1]) if (this._roomy(c, r)) this._put(c, r, 'TOMBSTONE');
         this._reserve(M.cx - 1, M.y0, M.cx + 1, M.y1);   // the way up the hall to the hoard
+        // the boss's hall: dark (not one torch), four cold braziers about the rim, bones heaped about the Warden's feet
+        const B = this.hall;
+        for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+            const c = B.cx + Math.round(dx * (B.x1 - B.x0) * 0.3), r = B.cy + Math.round(dy * (B.y1 - B.y0) * 0.3) + 1;
+            if (this._roomy(c, r)) this._put(c, r, 'BRAZIER_UNLIT');
+        }
+        for (const [dx, dy] of [[-2, 0], [3, 1], [-1, 2], [2, -1], [-3, -2], [4, -1]]) {
+            const c = B.cx + dx, r = B.cy + dy;
+            if (this._walkable(c, r) && this._free(c, r)) this._put(c, r, this._hash(c, r, 95) < 0.6 ? 'BONE_PILE' : 'DESERT_SKULL', false);
+        }
+        this._reserve(B.cx - 1, B.cy - 1, B.cx + 1, B.y1);   // the way up the hall to the Warden
+        // the vault: two chests at the back, crates (and a few sacks and old barrels) packed along the walls, an aisle kept clear from the door
+        const V = this.rooms[this.vault.room];
+        const vc = V.cx, vr = V.y0 + 2;
+        this._put(vc - 2, vr, 'WOODEN_CHEST'); this._put(vc + 2, vr, 'WOODEN_CHEST');
+        for (const c of [V.x0 + 1, V.x1 - 1]) if (this._walkable(c, V.y0 + 1)) this._put(c, V.y0 + 1, 'STANDING_TORCH');
+        this._reserve(vc - 1, V.y0 + 1, vc + 1, V.y1);   // the aisle
+        this._reserve(vc - 2, vr + 1, vc + 2, vr + 1);   // room to stand at the chests
+        let crates = 0;
+        for (let r = V.y0 + 2; r <= V.y1; r++) for (let c = V.x0; c <= V.x1; c++) {
+            const byWall = c <= V.x0 + 1 || c >= V.x1 - 1 || r === V.y0 + 2;
+            if (!byWall || !this._walkable(c, r) || !this._free(c, r)) continue;
+            if (c === V.x0 + 1 || c === V.x1 - 1) if (this._hash(c, r, 96) < 0.25) continue;   // a gap here and there to squeeze between
+            const h = this._hash(c, r, 97);
+            this._put(c, r, h < 0.6 ? 'CRATE' : h < 0.8 ? 'CRATE_SACK' : 'ANCIENT_BARREL');
+            crates++;
+        }
+        this.vault.crates = crates;
         // the other rooms: crypt rows of graves in built rooms, fallen rock in caverns; torches here and there; chests now and then
         for (const rm of this.rooms) {
             if (rm.role !== 'room' && rm.role !== 'lever') continue;
@@ -494,6 +601,7 @@ export class CatacombGenerator {
         const cands = [];
         for (let r = this.bounds.minR; r <= this.bounds.maxR; r++) for (let c = this.bounds.minC; c <= this.bounds.maxC; c++) {
             if (!this._walkable(c, r) || !this._free(c, r) || this.style[this._idx(c, r)] !== BRICK) continue;
+            if (this.rooms.some((rm) => (rm.role === 'bosshall' || rm.role === 'vault' || rm.role === 'chamber') && c >= rm.x0 - 1 && c <= rm.x1 + 1 && r >= rm.y0 - 1 && r <= rm.y1 + 1)) continue;
             const d = this._reach.distance[this._idx(c, r)];
             if (d < MIN_FROM_STAIRS) continue;
             const hall = this.corridor[this._idx(c, r)];

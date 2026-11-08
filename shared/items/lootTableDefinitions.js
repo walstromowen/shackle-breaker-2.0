@@ -831,6 +831,25 @@ export const LootTableDefinitions = {
             { id: "large_iron_key", dropRate: 0.5 },
         ]
     },
+    // The Ossuary Warden (the catacombs' boss): it always carries the large iron key to the hoard's iron chest beyond the last gate.
+    "boss_warden_drops": {
+        type: "independent",
+        items: [
+            { id: "large_iron_key", dropRate: 1.0 },
+            { id: "bone", dropRate: 0.9, min: 2, max: 4 },
+            { id: "iron_ingot", dropRate: 0.6, min: 1, max: 3 },
+            { id: "iron_helmet", dropRate: 0.3 },
+            { id: "iron_armor", dropRate: 0.25 },
+            { id: "iron_gauntlets", dropRate: 0.3 },
+            { id: "glaive", dropRate: 0.2 },
+            { id: "warhammer", dropRate: 0.2 },
+            { id: "insight_of_darkness", dropRate: 0.15 },
+            { id: "kurtus_brew", dropRate: 0.5, min: 1, max: 2 },
+            { id: "healing_tonic", dropRate: 0.5, min: 1, max: 2 },
+            { id: "invigorating_tonic", dropRate: 0.4 },
+            { id: "small_iron_key", dropRate: 0.35 },
+        ]
+    },
 
     // ------------------------------------------
     // SNOW AND CAVE CREATURES

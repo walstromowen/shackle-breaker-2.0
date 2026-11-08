@@ -1,9 +1,9 @@
 /* The catacombs' traps (map objects TRAP_ARROW, TRAP_PIT, TRAP_AXES, placed in the halls by the CatacombGenerator). All three look the same: a raised stone
-   pressure plate with a few slight cracks, so which one it is is only found out by stepping on it. Each is a walk-in encounter: stepping onto it springs it. One Vigor saving throw decides how it goes; on a failure the one who rolled takes damage (a share of their max HP, of a real
+   pressure plate with a few slight cracks, so which one it is is only found out by stepping on it. Each is a walk-in encounter: stepping onto it springs it. One saving throw decides how it goes (Dexterity to dodge the arrows, Vigor for the pit and the blades); on a failure the one who rolled takes damage (a share of their max HP, of a real
    damage type, so armour takes the edge off it). Either way the trap is spent afterwards (REPLACE_OBJECT with its sprung look) and never fires again.
    A trap springs on whoever stepped on it: there is no time to send someone else (no "Switch party member").
 
-     arrow_trap      [VIG 12]  a pressure plate; arrows from the walls          fail: 40% of max HP, pierce
+     arrow_trap      [DEX 12]  a pressure plate; arrows from the walls          fail: 40% of max HP, pierce
      pit_trap        [VIG 13]  the floor drops into a pit of stakes            fail: 50% of max HP, pierce, and half an hour to climb out
      swinging_axes   [VIG 14]  blades swing down from the ceiling              fail: 60% of max HP, slash
 
@@ -30,9 +30,9 @@ export const arrowTrap = {
             text: "A stone plate sinks under your foot with a dry click. Dark holes stare out of the walls on either side.",
             decisions: [
                 {
-                    text: "[VIG] Throw yourself flat!",
+                    text: "[DEX] Throw yourself flat!",
                     type: "skill_check",
-                    attribute: "vigor",
+                    attribute: "dexterity",
                     threshold: 12,
                     successOutcomes: toStage("dodged"),
                     failureOutcomes: toStage("struck")

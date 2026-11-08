@@ -286,7 +286,7 @@ You search high and low, but find no survivors.
 
 [click]
 A stone plate sinks under your foot with a dry click. Dark holes stare out of the walls on either side.
-  > [VIG] Throw yourself flat!
+  > [DEX] Throw yourself flat!
 
 [dodged]
 A volley of arrows hisses over your back and shatters against the far wall.
@@ -917,6 +917,26 @@ STRANGER: "Come back when you've seen what walks under the red moon. Or don't. I
   > Leave.
 
 
+===== THE OSSUARY WARDEN (ossuary_warden) =====
+
+[stirs]
+The hall is round and utterly dark. In its middle, between you and a lever in the far wall, something tall stands with a sword grounded before it. Two points of cold blue light kindle where its eyes should be.
+  > Hold your ground.
+  > Back away into the dark.
+
+[challenge]
+Bone grinds on bone as it lifts the sword. A knight in the rags of the old colors, shackles still on its wrists. "None pass. The king's dead sleep, and I keep them. Turn back, or lie down among them."
+  > Draw your weapon.
+  > Back away into the dark.
+
+
+===== THE OSSUARY WARDEN (ossuary_warden_fallen) =====
+
+[fallen]
+The Warden staggers. Its sword slips from its fingers, and the bones that held together through all those years come apart at last, clattering into a heap at the foot of the lever. The blue light in its eyes goes out.
+  > Let it rest.
+
+
 ===== THE QUIET AFTER (shackled_betrayal_end) =====
 
 [after]
@@ -977,6 +997,24 @@ By the time you realize you've been robbed, the mad merchant has vanished into t
 [merchant_flees]
 The merchant's eyes bug out with terror. "The big ones! The scary ones! They eat the magic!" He shrieks, dropping his heavy sack and scuttling away on all fours.
   > Loot the abandoned sack.
+
+
+===== THE VAULT (catacomb_vault_door) =====
+
+[locked]
+A door of black oak bound in iron closes the passage. A padlock hangs from its hasp, small but stout, and above it a warding rune glows a faint, cold blue. Whatever the dead kept in there, they meant to keep it.
+  > [Small Iron Key] Unlock the door.
+      The small key turns stiffly, and the padlock drops open into your hand...
+  > Switch party member.
+  > Leave the door shut.
+
+[rune_fades]
+The rune flares once and gutters out. The door groans inward on rusted hinges, and your light falls on chests and crates stacked against the walls, untouched for longer than anyone can remember.
+  > Step inside.
+
+[guards_wake]
+The rune flares and does not go out. The door swings wide, and in the niches on either side two shapes of bone lift their heads. The vault was never left unguarded.
+  > Draw your weapon.
 
 
 ===== THE WOUNDED MUTT (wounded_mutt) =====
