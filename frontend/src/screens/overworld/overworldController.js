@@ -286,6 +286,16 @@ export class OverworldController extends BaseController {
             return false;
         };
 
+        // a harvesting tool: its key works the thing in front of the player that needs it (a tree for the axe, a rock for the pickaxe)
+        const tools = def ? this.getHarvestTools(defId) : [];
+        if (tools.length && !abilityId) {
+            if (!this._carries(defId)) return fail(`You have no ${def.name}.`);
+            const faced = this.getFacedObject();
+            const it = faced && faced.interaction;
+            if (it && it.type === 'HARVEST' && tools.includes(it.tool)) { this.startHarvest(faced); return true; }
+            return fail(`Face something to use the ${def.name} on.`);
+        }
+
         if (!def || !abilityId) return fail('Nothing happens.');
         if (!InventorySystem.hasItem(defId)) return fail(`You have no ${def.name}.`);
         if (!AbilitySystem.usableIn(abilityId, 'overworld')) return fail('That can only be used in battle.');
@@ -325,7 +335,9 @@ export class OverworldController extends BaseController {
         return InventorySystem.HOTBAR_KEYS.map((_, i) => {
             const defId = bar[i];
             const def = defId ? ItemDefinitions[defId] : null;
-            const qty = def ? InventorySystem.countItem(defId) : 0;
+            // (a tool in someone's hands still counts as carried: it works from the hotbar all the same)
+            let qty = def ? InventorySystem.countItem(defId) : 0;
+            if (def && !qty && this.getHarvestTools(defId).length && this._carries(defId)) qty = 1;
             const flashAge = this.hotbarFlash && this.hotbarFlash.index === i ? now - this.hotbarFlash.at : Infinity;
             return {
                 index: i,
@@ -620,21 +632,29 @@ export class OverworldController extends BaseController {
     }
 
    // --- NEW: Helper to check if party leader has required tool ---
+    /* A harvesting tool is used from the hotbar: one on it (and carried) works, it need not be equipped. One the leader has in hand works too. */
     hasRequiredTool(requiredTool) {
         if (!requiredTool) return true; // Always true if no tool is required
+        if (this.hotbarToolFor(requiredTool)) return true;
 
         const leader = PartyManager.getPlayer();
-        let hasTool = false;
-
         const checkTool = (item) => this.getHarvestTools(item).includes(requiredTool);
+        const eq = leader?.equipment;
+        return !!eq && (checkTool(eq.mainHand) || checkTool(eq.twoHand) || checkTool(eq.offHand));
+    }
 
-        if (leader?.equipment) {
-            if (checkTool(leader.equipment.mainHand)) hasTool = true;
-            if (checkTool(leader.equipment.twoHand)) hasTool = true;
-            if (checkTool(leader.equipment.offHand)) hasTool = true;
+    /** The item id of a tool of this kind ('axe', 'pickaxe'...) that is on the hotbar and carried, or null. */
+    hotbarToolFor(requiredTool) {
+        for (const defId of InventorySystem.getHotbar()) {
+            if (defId && this.getHarvestTools(defId).includes(requiredTool) && this._carries(defId)) return defId;
         }
+        return null;
+    }
 
-        return hasTool;
+    /** In the bag, or in someone's hands. */
+    _carries(defId) {
+        if (InventorySystem.hasItem(defId)) return true;
+        return (gameState.party.members || []).some(m => m && m.equipment && Object.values(m.equipment).some(it => it && (it.defId === defId || it === defId)));
     }
 
     /* The tools an equipped item works as ('axe', 'pickaxe', 'sickle'...). Reads the item's own harvestTool first, and if the item model does not expose it
@@ -652,11 +672,11 @@ export class OverworldController extends BaseController {
     // --- NEW: HARVESTING LOGIC ---
     startHarvest(targetObj) {
         const requiredTool = targetObj.interaction.tool;
-        // The party leader must have the required tool equipped (same check as the prompt in getState)
+        // the tool must be on the hotbar (or in the leader's hands): the same check as the prompt in getState
         const hasTool = this.hasRequiredTool(requiredTool);
 
         if (!hasTool) {
-            console.log(`[Overworld] Requires a ${requiredTool} to harvest this!`);
+            this.showNotice(`You need ${/^[aeiou]/i.test(requiredTool) ? 'an' : 'a'} ${requiredTool} on your hotbar.`, false);
             this.playErrorSound();
             return;
         }

@@ -554,10 +554,12 @@ export class CharacterSummaryController extends BaseController {
         this.notice = { text, until: performance.now() + ms };
     }
 
-    /* Can this item go on the hotbar? A consumable whose useAbility works in the overworld. */
+    /* Can this item go on the hotbar? A consumable whose useAbility works in the overworld, or a harvesting tool (an axe, a pickaxe...: on
+       the hotbar it works, it need not be equipped). */
     _canHotbar(item) {
         if (!item || !item.defId) return false;
         const def = ItemDefinitions[item.defId];
+        if (def && Array.isArray(def.harvestTool) && def.harvestTool.length && !def.noHotbar) return true;
         const abilityId = item.useAbility || (def && def.useAbility);
         if (!abilityId || (def && def.noHotbar)) return false;
         const consumable = item.usable || item.type === 'consumable' || (def && (def.usable || def.type === 'consumable'));

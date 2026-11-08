@@ -139,7 +139,7 @@ export const ItemDefinitions = {
     abilityUnlocks: {
       2: ["guard_break"]
     },
-    harvestTool: ["pickaxe"],            // objects that need it use interaction.tool: 'pickaxe'; it must be equipped
+    harvestTool: ["pickaxe"],            // objects that need it use interaction.tool: 'pickaxe'; it works from the hotbar (or in hand)
     maxLevel: 3,
     statGrowth: {
       attack: { pierce: 1 }
