@@ -3,9 +3,9 @@
    damage type, so armour takes the edge off it). Either way the trap is spent afterwards (REPLACE_OBJECT with its sprung look) and never fires again.
    A trap springs on whoever stepped on it: there is no time to send someone else (no "Switch party member").
 
-     arrow_trap      [VIG 12]  a pressure plate; arrows from the walls          fail: 20% of max HP, pierce
-     pit_trap        [VIG 13]  the floor drops into a pit of stakes            fail: 25% of max HP, pierce, and half an hour to climb out
-     swinging_axes   [VIG 14]  blades swing down from the ceiling              fail: 30% of max HP, slash
+     arrow_trap      [VIG 12]  a pressure plate; arrows from the walls          fail: 40% of max HP, pierce
+     pit_trap        [VIG 13]  the floor drops into a pit of stakes            fail: 50% of max HP, pierce, and half an hour to climb out
+     swinging_axes   [VIG 14]  blades swing down from the ceiling              fail: 60% of max HP, slash
 
    Art: assets/icons/encounters/catacomb_traps.png registered as `encounter_catacomb_traps`, a 4 x 4 grid of 128 px cells:
      (0,0) (1,0) (2,0) the arrow trap: the stone wall with its arrow slits loosing arrows (the same picture for the click, the dodge and the hit)
@@ -53,7 +53,7 @@ export const arrowTrap = {
             text: "The arrows are faster. You are hit before you can drop.",
             decisions: [{
                 text: "Pull the arrows out and press on.",
-                outcomes: spend("TRAP_ARROW_SPRUNG", [{ type: "MODIFY_VITALS", payload: { hp: -20, isPercentageOfMax: true, damageType: "pierce" } }])
+                outcomes: spend("TRAP_ARROW_SPRUNG", [{ type: "MODIFY_VITALS", payload: { hp: -40, isPercentageOfMax: true, damageType: "pierce" } }])
             }]
         }
     }
@@ -98,7 +98,7 @@ export const pitTrap = {
             decisions: [{
                 text: "Drag yourself out.",
                 outcomes: spend("TRAP_PIT_SPRUNG", [
-                    { type: "MODIFY_VITALS", payload: { hp: -25, isPercentageOfMax: true, damageType: "pierce" } },
+                    { type: "MODIFY_VITALS", payload: { hp: -50, isPercentageOfMax: true, damageType: "pierce" } },
                     { type: "ADVANCE_TIME", payload: { minutes: 30 } }
                 ])
             }]
@@ -143,7 +143,7 @@ export const swingingAxes = {
             text: "A blade catches you across the side and throws you to the floor. It bites into the stone and jams the rest.",
             decisions: [{
                 text: "Get up, holding the wound.",
-                outcomes: spend("TRAP_AXES_SPRUNG", [{ type: "MODIFY_VITALS", payload: { hp: -30, isPercentageOfMax: true, damageType: "slash" } }])
+                outcomes: spend("TRAP_AXES_SPRUNG", [{ type: "MODIFY_VITALS", payload: { hp: -60, isPercentageOfMax: true, damageType: "slash" } }])
             }]
         }
     }

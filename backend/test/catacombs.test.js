@@ -191,3 +191,33 @@ test('every encounter has a picture sheet that is registered and on disk, for ev
         }
     }
 });
+
+test('the catacombs are a maze: more passages than a tree needs (loops), passages that detour, and blind dead ends', async () => {
+    const { CatacombGenerator } = await import('../../shared/world/generators/catacombGenerator.js');
+    const { INTERIOR_DEFINITIONS } = await import('../../shared/world/interiorDefinitions.js');
+    for (const seed of [101, 202, 303]) {
+        const g = new CatacombGenerator(seed, 'CATACOMBS', INTERIOR_DEFINITIONS.CATACOMBS, `cat_${seed}`);
+        const linked = g.rooms.filter(rm => rm.role !== 'chamber').length;
+        assert.ok(g.edges.length > linked - 1, `seed ${seed}: loops (${g.edges.length} passages for ${linked} rooms)`);
+        assert.ok(g.deadEnds >= 5, `seed ${seed}: ${g.deadEnds} dead ends`);
+        let floor = 0, hall = 0;
+        for (let i = 0; i < g.level.length; i++) if (g.level[i] === g.floorN) { floor++; if (g.corridor[i]) hall++; }
+        assert.ok(hall / floor > 0.45, `seed ${seed}: mostly passages (${Math.round(100 * hall / floor)}%)`);
+    }
+});
+
+test('caves and catacombs have more fights than anywhere outside; traps hurt badly', async () => {
+    const { BIOME_DEFINITIONS } = await import('../../shared/world/biomeDefinitions.js');
+    const { OUTDOOR_BATTLE_RATE } = await import('../../shared/world/biomeModel.js');
+    const outside = Math.max(OUTDOOR_BATTLE_RATE.day, OUTDOOR_BATTLE_RATE.night);
+    assert.ok(BIOME_DEFINITIONS.CAVE_INTERIOR.battles.rate > outside, 'a cave: more than the open at night');
+    assert.ok(BIOME_DEFINITIONS.CATACOMBS_INTERIOR.battles.rate > BIOME_DEFINITIONS.CAVE_INTERIOR.battles.rate, 'the catacombs: more than a cave');
+    const { encounterDefinitions } = await import('../../shared/story/encounterDefinitions.js');
+    const hurt = [];
+    for (const id of ['arrow_trap', 'pit_trap', 'swinging_axes']) {
+        const json = JSON.stringify(encounterDefinitions[id]);
+        for (const m of json.matchAll(/"hp":-(\d+),"isPercentageOfMax":true/g)) hurt.push([id, Number(m[1])]);
+    }
+    assert.ok(hurt.length >= 3);
+    for (const [id, pct] of hurt) assert.ok(pct >= 40, `${id}: ${pct}% of max HP`);
+});

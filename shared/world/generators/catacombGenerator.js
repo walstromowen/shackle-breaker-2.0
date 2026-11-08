@@ -4,7 +4,9 @@
 //
 //   ENTRANCE     a built room at the south edge; the stairway up (doorObject) is in its north wall, like a cave mouth (isDoorway).
 //   ROOMS        built rooms (straight walls of stone brick, flagstone floors) and caverns (natural rock, rough floor), a dozen or so.
-//   CORRIDORS    3-wide passages routed between the rooms (a tree, plus a few loops): straight brick halls, or winding natural tunnels.
+//   CORRIDORS    3-wide passages routed between the rooms, a maze: a tree, plus many loops (more than one way round), each passage detouring through
+//                one or two points off its straight line, and blind passages (dead ends) branching off the halls. Straight-jogging brick halls, or
+//                winding natural tunnels.
 //   MAIN CHAMBER a large hall at the north edge. The ONLY way in is a short corridor from the ANTECHAMBER below it, closed by a gate (CATACOMB_GATE).
 //   THE PUZZLE   a lever (LEVER) in each of the farthest dead-end rooms. The antechamber holds one cold brazier (BRAZIER_UNLIT) per lever; every lever pulled
 //                lights one, and when every lever is down the gate rises (world/catacombPuzzle.js). `this.puzzle` = { levers, braziers, gate }.
@@ -176,15 +178,19 @@ export class CatacombGenerator {
         }
         const has = (p, q) => edges.some(([x, y]) => (x === p && y === q) || (x === q && y === p));
         for (const p of nodes) {
-            if (this._rng() > 0.3) continue;
+            if (this._rng() > 0.55) continue;   // a maze: many ways round
             const near = nodes.filter((q) => q !== p && !has(p, q)).sort((x, y) => dist(p, x) - dist(p, y))[0];
             if (near && dist(p, near) < half * 0.9) edges.push([p, near]);
         }
         this.edges = edges;
         for (const [p, q] of edges) {
             const natural = p.kind === 'cavern' && q.kind === 'cavern' ? true : (p.kind === 'built' && q.kind === 'built' ? false : this._rng() < 0.5);
-            if (!this._corridor(p, q, natural)) return this._fail('corridor');
+            // a maze: the passage detours through one or two points off its straight line, so it doubles back and runs the long way round
+            const legs = [p, ...this._detours(p, q), q];
+            for (let k = 0; k + 1 < legs.length; k++) if (!this._corridor(legs[k], legs[k + 1], natural)) return this._fail('corridor');
         }
+        // blind passages: dead ends branching off the halls, a wrong turn for every few rooms
+        this._deadEnds(Math.round(nodes.length * 0.9));
 
         /* 5. clean-up: no one-cell slivers of rock between two floors (they would only be a stray face) */
         for (let pass = 0; pass < 2; pass++)
@@ -253,6 +259,54 @@ export class CatacombGenerator {
             if (i === start) break;
         }
         return true;
+    }
+
+    /* Up to two points to route a passage from p to q through: off to one side of the straight line, by a share of its length, inside the map and out of
+       the rooms and the gated chamber. Each is a pseudo-room { cx, cy, id } for _corridor. */
+    _detours(p, q) {
+        const out = [];
+        const dx = q.cx - p.cx, dy = q.cy - p.cy, len = Math.hypot(dx, dy);
+        if (len < 12) return out;
+        const nx = -dy / len, ny = dx / len;
+        const n = len > 30 && this._rng() < 0.6 ? 2 : 1;
+        for (let k = 1; k <= n; k++) {
+            const t = k / (n + 1), side = this._rng() < 0.5 ? -1 : 1, off = len * (0.25 + this._rng() * 0.3) * side;
+            const cx = Math.round(p.cx + dx * t + nx * off), cy = Math.round(p.cy + dy * t + ny * off);
+            if (!this._openRock(cx, cy)) continue;
+            out.push({ cx, cy, id: 500 + (p.id * 37 + q.id * 11 + k) % 400 });
+        }
+        return out;
+    }
+
+    /* Rock a passage may be cut through at (c, r): inside the map with room for a 3-wide hall, out of the no-go zones, not in a room. */
+    _openRock(c, r) {
+        const b = this.bounds;
+        if (c - 2 <= b.minC + 1 || c + 2 >= b.maxC - 1 || r - 2 <= b.minR + 1 || r + 2 >= b.maxR - 1) return false;
+        for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++) if (this.forbid[this._idx(c + dc, r + dr)]) return false;
+        return !this.rooms.some((rm) => c >= rm.x0 - 2 && c <= rm.x1 + 2 && r >= rm.y0 - 2 && r <= rm.y1 + 2);
+    }
+
+    /* `count` dead ends: from a cell of an existing hall, a passage 8 to 18 cells out into solid rock that stops there (a wrong turn). */
+    _deadEnds(count) {
+        const b = this.bounds;
+        const halls = [];
+        for (let r = b.minR; r <= b.maxR; r++) for (let c = b.minC; c <= b.maxC; c++) {
+            const i = this._idx(c, r);
+            if (this.corridor[i] && this.level[i] === this.floorN && !this.forbid[i]) halls.push({ c, r, style: this.style[i] });
+        }
+        let made = 0;
+        for (let tries = 0; tries < count * 12 && made < count && halls.length; tries++) {
+            const from = halls[Math.floor(this._rng() * halls.length)];
+            const ang = this._rng() * Math.PI * 2, reach = this._int(8, 18);
+            const tc = Math.round(from.c + Math.cos(ang) * reach), tr = Math.round(from.r + Math.sin(ang) * reach);
+            if (!this._openRock(tc, tr) || this._floor(tc, tr)) continue;
+            // the blind end must be in rock: nothing already open within 4 cells of where it stops
+            let clear = true;
+            for (let dr = -4; dr <= 4 && clear; dr++) for (let dc = -4; dc <= 4; dc++) if (this._floor(tc + dc, tr + dr)) { clear = false; break; }
+            if (!clear) continue;
+            if (this._corridor({ cx: from.c, cy: from.r, id: 900 + made }, { cx: tc, cy: tr, id: 950 + made }, from.style === NATURAL)) made++;
+        }
+        this.deadEnds = made;
     }
 
     _reachable() {

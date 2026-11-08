@@ -999,7 +999,9 @@ export class OverworldController extends BaseController {
         const biome = this.worldManager.getBiomeAt(col, row);
         const currentHour = gameState.world.time / 60;
         // a party of players: every one of them rolls as they walk, so each roll is that much rarer (BiomeModel.getBattle)
-        const rateScale = 1 / (1 + multiplayerSocial.partyPlayers().length);
+        // a party walking together shares its fights (each player's chance is split among the players close enough to be pulled in); a player off on
+        // their own (in a cave while the rest are outside) meets the full rate of where they are
+        const rateScale = 1 / (1 + multiplayerSocial.nearbyParty().length);
         const encounterData = biome.getEncounter(currentHour, rateScale);
 
         if (encounterData) {
