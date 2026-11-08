@@ -774,7 +774,7 @@ STRANGER: "Let me guess. Stones from the sky. They all say it."
   > Continue.
 
 [lore_shackled2]
-STRANGER: "I say it too, in my sleep, or so the walls tell me. They fell in the war, back when Altus still had kings. The night went white, and the sky came down in pieces."
+STRANGER: "I say it too, in my sleep, or so the walls tell me. They started falling in the war, back when Altus still had kings. Not all at once. One here, one there, year after year."
   > Continue.
 
 [lore_shackled2_2]

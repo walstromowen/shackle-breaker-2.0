@@ -13,7 +13,7 @@
      every step handed in               after_darius .. after_darius_3
    Every conversation is three to five stages. He does not know what causes the curse: he notices things (the clever ones went first) and shrugs.
    The chain, in order: shackled_stranger, shackled1, shackled2, shackled3, shackled7, shackled8 (questDefinitions.js; every step has turnIn: "HOODED_STRANGER").
-   What he lets slip, visit by visit: the shackles count you; stones fell from the sky in the war, and the king called the brightest a gift; the ones
+   What he lets slip, visit by visit: the shackles count you; stones fell from the sky over the years of the war (not all at once), and the king called the brightest a gift; the ones
    who could work a spell went strange first (he does not know why, and would rather not); the king gave that stone to Darius, his adviser, to keep
    until he came back, and Darius lost it (his soldiers in the old colors search for it still); the red moon. (Act 2, story/encounters/story/actTwo.js, shows the rest.)
 
@@ -116,7 +116,7 @@ export const hoodedStranger = {
             "\"If it starts to sound like a tune, you've stayed too long.\"",
             "\"And if you catch yourself humming it on the way back, don't tell me. I'd rather not know.\""),
         turnin_shackled2: turnIn("shackled2", "\"Let me guess. Stones from the sky. They all say it.\"", "lore_shackled2"),
-        lore_shackled2: stage("\"I say it too, in my sleep, or so the walls tell me. They fell in the war, back when Altus still had kings. The night went white, and the sky came down in pieces.\"", next("lore_shackled2_2")),
+        lore_shackled2: stage("\"I say it too, in my sleep, or so the walls tell me. They started falling in the war, back when Altus still had kings. Not all at once. One here, one there, year after year.\"", next("lore_shackled2_2")),
         lore_shackled2_2: stage("\"The king knelt before the brightest of them and called it a gift. Kings call anything a gift if someone else pays for it.\"", next("give_shackled3_pre")),
 
         // ---- shackled3: the spark-throwers (he does not know why they went first, and would rather not guess) ----
