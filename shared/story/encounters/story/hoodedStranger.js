@@ -13,8 +13,9 @@
      every step handed in               after_darius .. after_darius_3
    Every conversation is three to five stages. He does not know what causes the curse: he notices things (the clever ones went first) and shrugs.
    The chain, in order: shackled_stranger, shackled1, shackled2, shackled3, shackled7, shackled8 (questDefinitions.js; every step has turnIn: "HOODED_STRANGER").
-   What he lets slip, visit by visit: the shackles count you; the stone fell in the war and the king called it a gift; the ones who could work a
-   spell went strange first (he does not know why, and would rather not); Darius kept the light for a king who never came back; the red moon. (Act 2, story/encounters/story/actTwo.js, shows the rest.)
+   What he lets slip, visit by visit: the shackles count you; stones fell from the sky in the war, and the king called the brightest a gift; the ones
+   who could work a spell went strange first (he does not know why, and would rather not); the king gave that stone to Darius, his adviser, to keep
+   until he came back, and Darius lost it (his soldiers in the old colors search for it still); the red moon. (Act 2, story/encounters/story/actTwo.js, shows the rest.)
 
    Personal: in a party of players this is never shared or voted on, since it is about this player's own quests.
    Art: assets/icons/encounters/story/hooded_stranger.png registered as `encounter_hooded_stranger` (one 128 px picture). */
@@ -114,9 +115,9 @@ export const hoodedStranger = {
             "\"Three madmen. Follow the laughing.\"",
             "\"If it starts to sound like a tune, you've stayed too long.\"",
             "\"And if you catch yourself humming it on the way back, don't tell me. I'd rather not know.\""),
-        turnin_shackled2: turnIn("shackled2", "\"Let me guess. A stone from the sky. They all say it.\"", "lore_shackled2"),
-        lore_shackled2: stage("\"I say it too, in my sleep, or so the walls tell me. It fell in the war, back when Altus still had kings. The night went white, they say.\"", next("lore_shackled2_2")),
-        lore_shackled2_2: stage("\"The king knelt before it and called it a gift. Kings call anything a gift if someone else pays for it.\"", next("give_shackled3_pre")),
+        turnin_shackled2: turnIn("shackled2", "\"Let me guess. Stones from the sky. They all say it.\"", "lore_shackled2"),
+        lore_shackled2: stage("\"I say it too, in my sleep, or so the walls tell me. They fell in the war, back when Altus still had kings. The night went white, and the sky came down in pieces.\"", next("lore_shackled2_2")),
+        lore_shackled2_2: stage("\"The king knelt before the brightest of them and called it a gift. Kings call anything a gift if someone else pays for it.\"", next("give_shackled3_pre")),
 
         // ---- shackled3: the spark-throwers (he does not know why they went first, and would rather not guess) ----
         ...offer('shackled3', 'give_shackled3_pre'),
@@ -132,18 +133,18 @@ export const hoodedStranger = {
 
         // ---- shackled7: the old soldiers, and the meteorite ----
         ...offer('shackled7'),
-        give_shackled7: give("shackled7", "\"The stone went with the soldiers who still wear the old colors. Legionaries, watchmen. They march like the war never ended. Nobody told them. Nobody ever tells soldiers anything. Take it back.\""),
+        give_shackled7: give("shackled7", "\"The soldiers who still wear the old colors are searching for a stone. Legionaries, watchmen. They march like the war never ended. Nobody told them. Nobody ever tells soldiers anything. Take one from them.\""),
         ...waiting('shackled7',
             "\"Three legionaries, two watchmen. They still salute each other.\"",
             "\"It'd be funny if it weren't so sad. It's a little funny.\"",
-            "\"Bring back the stone. And try not to die. I'd have to find someone else to talk to, and the anvil's started sulking.\""),
-        turnin_shackled7: turnIn("shackled7", "\"You have it. Don't hold it too long. Warm, isn't it? Stones shouldn't be warm. Neither should I, these days.\"", "lore_shackled7"),
-        lore_shackled7: stage("\"There was a man who served the king. Darius. He kept the light while the king was away.\"", next("lore_shackled7_2")),
-        lore_shackled7_2: stage("\"The king never came back, and Darius never stopped waiting. Loyalty's a fine thing, right up until it isn't.\"", next("give_shackled8")),
+            "\"Bring back a stone. And try not to die. I'd have to find someone else to talk to, and the anvil's started sulking.\""),
+        turnin_shackled7: turnIn("shackled7", "\"You found one. Don't hold it too long. Warm, isn't it? Stones shouldn't be warm. Neither should I, these days.\"", "lore_shackled7"),
+        lore_shackled7: stage("\"There was a man who served the king. Darius, his adviser. The king gave him the brightest stone to keep safe until he came back.\"", next("lore_shackled7_2")),
+        lore_shackled7_2: stage("\"Darius lost it. His soldiers have been searching ever since, while he kneels in the dark and waits for a king who isn't coming. Loyalty's a fine thing, right up until it isn't.\"", next("give_shackled8")),
 
         // ---- shackled8: Darius ----
         ...offer('shackled8'),
-        give_shackled8: give("shackled8", "\"There's an altar of dark stone deep in the caves, a skull above a hollow the size of a fallen star. He's still kneeling there. Bring him his stone. He won't thank you.\""),
+        give_shackled8: give("shackled8", "\"There's an altar of dark stone deep in the caves, a skull above a hollow the size of a fallen star. He's still kneeling there. Show him your stone, and see if he can tell it from his own. He won't thank you.\""),
         ...waiting('shackled8',
             "\"The altar, the Groveler, the stone.\"",
             "\"Go when you're strong. He's had a long time to get angry, and nothing else to do.\"",

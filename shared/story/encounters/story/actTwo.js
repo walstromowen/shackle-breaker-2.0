@@ -42,7 +42,7 @@ export const actTwo = {
         the_mage: {
             displayText: "The King's Mage",
             image: { sheet: "encounter_mysterious_altar", col: 0, row: 1 },
-            text: "A young man in a clean blue robe kneels before the fallen stone. The king's own mage, with steady hands and a quick smile. His name is Darius. The king rests a hand on his shoulder and gives him one task: keep the light burning until I return.",
+            text: "A young man in a clean blue robe kneels before the fallen stone. The king's own mage, with steady hands and a quick smile. His name is Darius. The king rests a hand on his shoulder and gives him one task: keep this stone safe until I return.",
             decisions: next("first_winter")
         },
         first_winter: {
@@ -56,7 +56,7 @@ export const actTwo = {
             image: { sheet: "encounter_mysterious_altar", col: 2, row: 1 },   // the altar's red glow
             sfx: "whispers",
             sfxVolume: 0.6,
-            text: "Years pass. The king does not come back. Darius stops sleeping, then stops eating, and still he casts, because the light must not go out. He talks to it, and then it talks back. \"Not yet, my king, not yet. I am still here.\"",
+            text: "Years pass. The king does not come back. Then one night the stone is gone. Darius sends every soldier he has to find it, and kneels, and casts into the empty hollow. \"Not yet, my king, not yet. I am still here.\"",
             decisions: next("groveler")
         },
         groveler: {

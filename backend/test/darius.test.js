@@ -72,7 +72,7 @@ test('his back is to you while he talks; a silent pause starts his music; you se
     assert.equal(stages.darius_wrath.bgm, 'dariusEncounterBgm', 'the same track carries on');
 });
 
-test('he talks to you: every stage is his own words, spoken to you, with no narration', () => {
+test('he talks to you: every stage is his own words, spoken to you, with no narration; the stone the king gave him, lost, and yours', () => {
     for (const id of walk().filter(id => id !== 'darius_wrath' && id !== 'darius_pause')) {
         const t = stages[id].text.trim();
         assert.ok(t.startsWith('"') && t.endsWith('"'), `${id}: only his words, in quotes`);
@@ -83,10 +83,15 @@ test('he talks to you: every stage is his own words, spoken to you, with no narr
     assert.ok(stages.darius_wrath.text.trim().endsWith('"'));
     const all = walk().map(id => stages[id].text).join(' ');
     assert.match(all, /\byou\b/, 'he speaks to the player');
+    // the story: the king gave him a stone to keep, he lost it, he asks you about it, he threatens whoever kept it, he sees yours, he breaks
     assert.match(stages.darius_rises.text, /king/i);
-    assert.match(stages.darius_speaks_2.text, /Groveler/);
-    assert.match(stages.darius_late.text, /late/i);
-    assert.match(stages.darius_sees.text, /loved/);
+    assert.match(stages.darius_speaks.text, /keep the stone safe/i);
+    assert.match(stages.darius_speaks.text, /or I did/i, 'he lost it');
+    assert.match(stages.darius_speaks_2.text, /seen it/i);
+    assert.match(stages.darius_late.text, /punished/i);
+    assert.match(stages.darius_sees.text, /gave it to you/i);
+    assert.match(stages.darius_wrath.text, /adviser/i);
+    assert.match(stages.darius_wrath.text, /thief/i);
     assert.match(stages.darius_wrath.text, /give it back/i);
 });
 

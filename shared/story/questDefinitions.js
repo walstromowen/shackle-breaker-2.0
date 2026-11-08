@@ -39,7 +39,7 @@ export const QuestDefinitions = {
         id: "shackled3",
         name: "Sparks of the Mad",
         turnIn: "HOODED_STRANGER",
-        description: "The shackles have no keyhole, and the weight on your spirit is as heavy as the iron. The ravings of the mad are not all nonsense: they speak of a stone fallen from the sky, and of soldiers in the old colors who carried it away. Many of the mad still conjure sparks and cannot stop. Listen closely, then put them down.",
+        description: "The shackles have no keyhole, and the weight on your spirit is as heavy as the iron. The ravings of the mad are not all nonsense: they speak of stones fallen from the sky, and of soldiers in the old colors who search for one still. Many of the mad still conjure sparks and cannot stop. Listen closely, then put them down.",
         objectives: [
             { id: "obj_reach_level_5", type: "party_level", targetLevel: 10, amount: 1 },
             { id: "obj_kill_magic_addicts", type: "kill_enemy", targetId: "MAGIC_ADDICT", amount: 3 }
@@ -57,7 +57,7 @@ export const QuestDefinitions = {
         id: "shackled7",
         name: "The Old Colors",
         turnIn: "HOODED_STRANGER",
-        description: "The stone went with those who still wear the old colors, and they have not given it up. Legionaries and watchmen still march the plains as if the war never ended. Whoever carried the stone home has the answer, if any of them can still be reasoned with.",
+        description: "Those who still wear the old colors are searching for a stone their master lost. Legionaries and watchmen still march the plains as if the war never ended, and some of them carry stones from the sky. Take one.",
         objectives: [
             { id: "obj_reach_level_9", type: "party_level", targetLevel: 13, amount: 1 },
             { id: "obj_kill_legionaries", type: "kill_enemy", targetId: "LEGIONARY", amount: 3 },

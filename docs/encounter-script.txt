@@ -31,7 +31,7 @@ Then the altar flickers. One last time its light rises and fills the cave, and i
   > Continue.
 
 [the_mage]
-A young man in a clean blue robe kneels before the fallen stone. The king's own mage, with steady hands and a quick smile. His name is Darius. The king rests a hand on his shoulder and gives him one task: keep the light burning until I return.
+A young man in a clean blue robe kneels before the fallen stone. The king's own mage, with steady hands and a quick smile. His name is Darius. The king rests a hand on his shoulder and gives him one task: keep this stone safe until I return.
   > Continue.
 
 [first_winter]
@@ -39,7 +39,7 @@ Every night Darius pours a spell into the stone, and every night the light answe
   > Continue.
 
 [long_dark]
-Years pass. The king does not come back. Darius stops sleeping, then stops eating, and still he casts, because the light must not go out. He talks to it, and then it talks back.
+Years pass. The king does not come back. Then one night the stone is gone. Darius sends every soldier he has to find it, and kneels, and casts into the empty hollow.
 DARIUS: "Not yet, my king, not yet. I am still here."
   > Continue.
 
@@ -407,30 +407,28 @@ As you approach the altar, it releases a cloud of pale smoke. It sinks into your
   > Stagger the rest of the way to the altar.
 
 [darius_rises]
-DARIUS: "Footsteps... after so long. Is it you, my king? Have you come back for the light?"
+DARIUS: "Footsteps... after so long. Is it you, my king? Have you come back so soon?!"
   > Continue.
 
 [darius_rises_2]
-DARIUS: "No. No, you are not him. Forgive an old man his hope."
+DARIUS: "No. No, you are not him. Forgive an old man."
   > Continue.
 
 [darius_speaks]
-DARIUS: "He told me, keep the light burning, Darius, and I shall return for it. So I kept it, every winter, every long dark."
+DARIUS: "He told me, keep the stone safe, Darius, and I shall return for it. So I kept it, every winter, every long dark... or I did."
   > Continue.
 
 [darius_speaks_2]
-DARIUS: "They call me the Groveler, for the kneeling. Let them. I knelt for a king."
+DARIUS: "It was no fault of my own, you see. But perhaps... you have seen it? For it is a matter of great importance."
   > Continue.
 
 [darius_late]
-DARIUS: "You think he is not coming. I can hear it in your silence."
-DARIUS: "He is only late, friend. Kings are never early."
+DARIUS: "You think he is not coming. I can hear it in your silence. And if anyone is found to have kept the stone from me, well... they shall be punished most severely."
   > Continue.
 
 [darius_sees]
 DARIUS: "That light at my back... I can feel it. His sign, at last."
 DARIUS: "But he gave it to you. A stranger in chains."
-DARIUS: "What did you do to be loved like that?"
   > Continue.
 
 [darius_pause]
@@ -439,8 +437,7 @@ DARIUS: "What did you do to be loved like that?"
 
 [darius_wrath]
 Darius turns around.
-DARIUS: "Give it to me."
-DARIUS: "Give it back! That stone is mine. It was always meant to be mine!"
+DARIUS: "No, no! That is not possible, I am the king's adviser! You thief, give it back! That stone is mine!"
   > Draw your weapon.
       You draw your weapon.
 
@@ -773,15 +770,15 @@ STRANGER: "And if you catch yourself humming it on the way back, don't tell me. 
   > Leave him to his work.
 
 [turnin_shackled2]
-STRANGER: "Let me guess. A stone from the sky. They all say it."
+STRANGER: "Let me guess. Stones from the sky. They all say it."
   > Continue.
 
 [lore_shackled2]
-STRANGER: "I say it too, in my sleep, or so the walls tell me. It fell in the war, back when Altus still had kings. The night went white, they say."
+STRANGER: "I say it too, in my sleep, or so the walls tell me. They fell in the war, back when Altus still had kings. The night went white, and the sky came down in pieces."
   > Continue.
 
 [lore_shackled2_2]
-STRANGER: "The king knelt before it and called it a gift. Kings call anything a gift if someone else pays for it."
+STRANGER: "The king knelt before the brightest of them and called it a gift. Kings call anything a gift if someone else pays for it."
   > Continue.
 
 [give_shackled3_pre]
@@ -825,7 +822,7 @@ STRANGER: "Probably nothing. I've been wrong before. About the war, about the ki
   > Continue.
 
 [give_shackled7]
-STRANGER: "The stone went with the soldiers who still wear the old colors. Legionaries, watchmen. They march like the war never ended. Nobody told them. Nobody ever tells soldiers anything. Take it back."
+STRANGER: "The soldiers who still wear the old colors are searching for a stone. Legionaries, watchmen. They march like the war never ended. Nobody told them. Nobody ever tells soldiers anything. Take one from them."
   > "I'll see it done."
 
 [offer_shackled7]
@@ -845,23 +842,23 @@ STRANGER: "It'd be funny if it weren't so sad. It's a little funny."
   > Continue.
 
 [waiting_shackled7_3]
-STRANGER: "Bring back the stone. And try not to die. I'd have to find someone else to talk to, and the anvil's started sulking."
+STRANGER: "Bring back a stone. And try not to die. I'd have to find someone else to talk to, and the anvil's started sulking."
   > Leave him to his work.
 
 [turnin_shackled7]
-STRANGER: "You have it. Don't hold it too long. Warm, isn't it? Stones shouldn't be warm. Neither should I, these days."
+STRANGER: "You found one. Don't hold it too long. Warm, isn't it? Stones shouldn't be warm. Neither should I, these days."
   > Continue.
 
 [lore_shackled7]
-STRANGER: "There was a man who served the king. Darius. He kept the light while the king was away."
+STRANGER: "There was a man who served the king. Darius, his adviser. The king gave him the brightest stone to keep safe until he came back."
   > Continue.
 
 [lore_shackled7_2]
-STRANGER: "The king never came back, and Darius never stopped waiting. Loyalty's a fine thing, right up until it isn't."
+STRANGER: "Darius lost it. His soldiers have been searching ever since, while he kneels in the dark and waits for a king who isn't coming. Loyalty's a fine thing, right up until it isn't."
   > Continue.
 
 [give_shackled8]
-STRANGER: "There's an altar of dark stone deep in the caves, a skull above a hollow the size of a fallen star. He's still kneeling there. Bring him his stone. He won't thank you."
+STRANGER: "There's an altar of dark stone deep in the caves, a skull above a hollow the size of a fallen star. He's still kneeling there. Show him your stone, and see if he can tell it from his own. He won't thank you."
   > "I'll see it done."
 
 [offer_shackled8]

@@ -25,14 +25,14 @@
       },
       "fx": "ghost",
       "directions": {
-        "Footsteps... after so long. Is it you, my king? Have you come back for the light?": "[whispering, hopeful] Footsteps... after so long. [trembling with hope] Is it you, my king? Have you come back for the light?",
-        "No. No, you are not him. Forgive an old man his hope.": "[long sigh] No... [voice breaking] No, you are not him. [sadly] Forgive an old man his hope.",
-        "He told me, keep the light burning, Darius, and I shall return for it. So I kept it, every winter, every long dark.": "[wistful, distant] He told me, keep the light burning, Darius, and I shall return for it. [quiet pride] So I kept it... every winter... every long dark.",
-        "They call me the Groveler, for the kneeling. Let them. I knelt for a king.": "[bitter laugh] They call me the Groveler, for the kneeling. [defiant] Let them. I knelt for a king.",
-        "You think he is not coming. I can hear it in your silence. He is only late, friend. Kings are never early.": "[muttering] You think he is not coming. I can hear it in your silence. [unhinged chuckle] He is only late, friend. Kings are never early.",
-        "That light at my back... I can feel it. His sign, at last. But he gave it to you. A stranger in chains. What did you do to be loved like that?": "[gasps, awed] That light at my back... I can feel it. [ecstatic whisper] His sign, at last. [long pause] [devastated, voice breaking] But he gave it to you... [crying] A stranger in chains. [sobbing] What did you do... to be loved like that?",
-        "Give it to me. Give it back! That stone is mine. It was always meant to be mine!": "[low, shaking with anger] Give it to me. [furious shout] GIVE IT BACK! [screaming with rage] That stone is MINE! [roaring] It was always meant to be MINE!",
-        "Not yet, my king, not yet. I am still here.": "[exhausted whisper] Not yet, my king... [desperate] not yet. [unhinged giggle] I am still here."
+        "Not yet, my king, not yet. I am still here.": "[exhausted whisper] Not yet, my king... [desperate] not yet. [unhinged giggle] I am still here.",
+        "Footsteps... after so long. Is it you, my king? Have you come back so soon?!": "[whispering] Footsteps... after so long. [nervously, eager to please] Is it you, my king? Have you come back so soon?!",
+        "No. No, you are not him. Forgive an old man.": "[relieved sigh] No... No, you are not him. [softly] Forgive an old man.",
+        "He told me, keep the stone safe, Darius, and I shall return for it. So I kept it, every winter, every long dark... or I did.": "[proud, far away] He told me, keep the stone safe, Darius, and I shall return for it. So I kept it, every winter, every long dark... [quietly, ashamed] or I did.",
+        "It was no fault of my own, you see. But perhaps... you have seen it? For it is a matter of great importance.": "[defensive] It was no fault of my own, you see. But perhaps... [long pause] [hopeful, pleading] you have seen it? For it is a matter of great importance.",
+        "You think he is not coming. I can hear it in your silence. And if anyone is found to have kept the stone from me, well... they shall be punished most severely.": "[muttering] You think he is not coming. I can hear it in your silence. [sinister, low] And if anyone is found to have kept the stone from me, well... [menacing] they shall be punished most severely.",
+        "That light at my back... I can feel it. His sign, at last. But he gave it to you. A stranger in chains.": "[gasps, awed] That light at my back... I can feel it. [ecstatic whisper] His sign, at last. [long pause] [despair, voice breaking] But he gave it to you... A stranger in chains.",
+        "No, no! That is not possible, I am the king's adviser! You thief, give it back! That stone is mine!": "[low, disbelieving] No, no! [building in anger] That is not possible, I am the king's adviser! [furious shout] You THIEF, give it back! [screaming with rage] That stone is MINE!"
       }
     }
   }

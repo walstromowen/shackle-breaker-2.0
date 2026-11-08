@@ -7,7 +7,8 @@
    Flow:  approach     -> [VIG] walk up to the altar (a miss: the bones stir, or a cloud of smoke drains stamina and insight)
           at_the_altar -> [INT] examine the skull: blue glow (full restore) / green glow (loot) on a success, red glow (skeleton fight) on a failure
    (approach)  [Fallen Meteorite] approach with it: no roll, and Darius the Groveler wakes at once (the meteorite is spent). Offered while the party carries one.
-                          darius_rises .. darius_wrath: Darius speaking to you (the king who never came, the light he kept, the star you carry), a silent pause
+                          darius_rises .. darius_wrath: Darius speaking to you (the king's adviser, given a fallen star to keep until the king came back; he lost it,
+                          his soldiers search for it still, and he waits; then he sees the glow of the star you carry and takes it for the king's sign), a silent pause
                           as he understands, then envy and the boss fight. No music while he talks, only the altar's drone kept low; his music starts on the
                           pause, with his back still to you, and carries on through his turn into the fight.
    Every find or ambush is announced on its own stage first and the effect is handed out on the button after it. A fight that starts from the
@@ -275,35 +276,35 @@ export const mysteriousAltar = {
             ambienceVolume: 0.35,
             ambienceFade: 1.5,
             image: { sheet: "encounter_darius_approach", col: 0, row: 0 },   // Darius bowed over the altar, as you find him
-            text: "\"Footsteps... after so long. Is it you, my king? Have you come back for the light?\"",
+            text: "\"Footsteps... after so long. Is it you, my king? Have you come back so soon?!\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_rises_2") }]
         },
         darius_rises_2: {
             displayText: "A Voice in the Dark",
             bgm: "none",
             image: { sheet: "encounter_darius_approach", col: 0, row: 0 },   // his back to you, bowed over the altar
-            text: "\"No. No, you are not him. Forgive an old man his hope.\"",
+            text: "\"No. No, you are not him. Forgive an old man.\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_speaks") }]
         },
         darius_speaks: {
             displayText: "Darius the Groveler",
             bgm: "none",
             image: { sheet: "encounter_darius_approach", col: 0, row: 0 },   // his back to you, bowed over the altar
-            text: "\"He told me, keep the light burning, Darius, and I shall return for it. So I kept it, every winter, every long dark.\"",
+            text: "\"He told me, keep the stone safe, Darius, and I shall return for it. So I kept it, every winter, every long dark... or I did.\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_speaks_2") }]
         },
         darius_speaks_2: {
             displayText: "Darius the Groveler",
             bgm: "none",
             image: { sheet: "encounter_darius_approach", col: 0, row: 0 },   // his back to you, bowed over the altar
-            text: "\"They call me the Groveler, for the kneeling. Let them. I knelt for a king.\"",
+            text: "\"It was no fault of my own, you see. But perhaps... you have seen it? For it is a matter of great importance.\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_late") }]
         },
         darius_late: {
             displayText: "Darius the Groveler",
             bgm: "none",
             image: { sheet: "encounter_darius_approach", col: 0, row: 0 },   // his back to you, bowed over the altar
-            text: "\"You think he is not coming. I can hear it in your silence.\" \"He is only late, friend. Kings are never early.\"",
+            text: "\"You think he is not coming. I can hear it in your silence. And if anyone is found to have kept the stone from me, well... they shall be punished most severely.\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_sees") }]
         },
         darius_sees: {
@@ -312,7 +313,7 @@ export const mysteriousAltar = {
             sfx: "heartbeat",
             bgm: "none",
             image: { sheet: "encounter_darius_approach", col: 0, row: 0 },   // his back to you, bowed over the altar
-            text: "\"That light at my back... I can feel it. His sign, at last.\" \"But he gave it to you. A stranger in chains.\" \"What did you do to be loved like that?\"",
+            text: "\"That light at my back... I can feel it. His sign, at last.\" \"But he gave it to you. A stranger in chains.\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_pause") }]
         },
         // He has understood: the light was given to you, not to him. He says nothing. This is where his music starts, still with his back to you.
@@ -334,7 +335,7 @@ export const mysteriousAltar = {
             ambience: "none",
             bgm: "dariusEncounterBgm",   // his track, already playing since the pause, carries on into the fight
             image: { sheet: "encounter_darius_kneeling", col: 0, row: 0 },   // he turns: his face, his eyes, for the first time
-            text: "Darius turns around. \"Give it to me.\" \"Give it back! That stone is mine. It was always meant to be mine!\"",
+            text: "Darius turns around. \"No, no! That is not possible, I am the king's adviser! You thief, give it back! That stone is mine!\"",
             decisions: [
                 {
                     text: "Draw your weapon.",
