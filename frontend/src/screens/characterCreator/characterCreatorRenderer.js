@@ -131,8 +131,8 @@ export class CharacterCreatorRenderer {
 
         if (appData) {
             ctx.save();
-            // the look in the chosen sex (its female sprites when the Male / Female button says Female)
-            const look = (selections.sex === 'female' && appData.female) || appData;
+            // the look in the chosen sex (its female sprites when the SEX row says Female)
+            const look = (data.SEXES?.[selections.sexIdx || 0]?.id === 'female' && appData.female) || appData;
             const masterSheet = this.loader.get(look.spritePortrait);
             const overworldSheet = this.loader.get(look.spriteOverworld);
             const spriteX = startVisualX + portraitSize + visualGap;
@@ -168,12 +168,6 @@ export class CharacterCreatorRenderer {
 
             ui.drawRect(startVisualX, portraitY, portraitSize, portraitSize, UITheme.colors.border, false);
             ui.drawRect(spriteX, spriteY, spriteBoxW, spriteBoxH, UITheme.colors.border, false);
-
-            // The Male / Female button, under the walking figure: switches every look between its male and female version
-            const sexBtn = { id: 'BTN_SEX', x: spriteX, y: spriteY + spriteBoxH + 14, w: spriteBoxW, h: 46 };
-            this.hotspots.push({ ...sexBtn, clickSfx: UI_SFX.step });
-            const sexLabel = (data.SEXES || []).find(s => s.id === (selections.sex || 'male'))?.label || 'Male';
-            ui.drawButton(sexBtn.x, sexBtn.y, sexBtn.w, sexBtn.h, sexLabel, ui.flags('BTN_SEX', focusId), { font: UITheme.fonts.small });
 
             ctx.restore();
         }
@@ -251,6 +245,7 @@ export class CharacterCreatorRenderer {
             background: "BACKGROUND",
             origin: "ORIGIN",
             appearance: "LOOK",
+            sex: "SEX",
             keepsake: "KEEPSAKE",
             companion: "COMPANION",
             trait: "TRAIT",
@@ -259,12 +254,13 @@ export class CharacterCreatorRenderer {
             seed: "WORLD SEED"
         };
 
-        // One row more (Cheats) and the rows get a little shorter, so the Start button still sits inside the panel
-        const MENU_ITEM_HEIGHT = data.CHEATS ? 64 : 68;
+        // One row more (Cheats) and the rows get a little shorter, so the Start button still sits inside the panel (the SEX row made them shorter again)
+        const MENU_ITEM_HEIGHT = data.CHEATS ? 57 : 61;
+        const ROW_LABEL_Y = Math.round(MENU_ITEM_HEIGHT * 0.32), ROW_VALUE_Y = Math.round(MENU_ITEM_HEIGHT * 0.83);   // were 22 and 56 in a 68 px row
         const START_GAP = data.CHEATS ? 16 : 24, START_EXTRA = data.CHEATS ? 16 : 20;
         const ROW_GAP = 4;
         // The Cheats row is only there while the developer console is switched on for this build (data.CHEATS is undefined otherwise)
-        const menuSteps = ['background', 'origin', 'appearance', 'keepsake', 'companion', 'trait', 'difficulty', ...(data.CHEATS ? ['cheats'] : []), 'seed', 'start'];
+        const menuSteps = ['background', 'origin', 'appearance', 'sex', 'keepsake', 'companion', 'trait', 'difficulty', ...(data.CHEATS ? ['cheats'] : []), 'seed', 'start'];
 
         menuSteps.forEach((key) => {
             const rowId = key === 'seed' ? "INPUT_SEED" : `ROW_${key}`;
@@ -316,7 +312,7 @@ export class CharacterCreatorRenderer {
                 ui.drawStateBox(menuStartX + 24, menuY, midW - 48, MENU_ITEM_HEIGHT, rowFlags, { inset: true });
 
                 // Draw normal label
-                const labelY = menuY + 22;
+                const labelY = menuY + ROW_LABEL_Y;
                 ui.drawStyled('cardLabel', labels[key], centerColX, labelY, { align: 'center' });
             }
 
@@ -326,6 +322,7 @@ export class CharacterCreatorRenderer {
             if (key === 'background') valStr = data.BACKGROUNDS?.[selections.backgroundIdx]?.label;
             else if (key === 'origin') valStr = data.ORIGINS?.[selections.originIdx]?.label;
             else if (key === 'appearance') valStr = data.APPEARANCES?.[selections.appearanceIdx]?.label;
+            else if (key === 'sex') valStr = data.SEXES?.[selections.sexIdx || 0]?.label;
             else if (key === 'keepsake') valStr = data.KEEPSAKES?.[selections.keepsakeIdx]?.label;
             else if (key === 'companion') valStr = data.COMPANIONS?.[selections.companionIdx]?.label;
             else if (key === 'trait') valStr = data.TRAITS?.[selections.traitIdx]?.label;
@@ -358,7 +355,7 @@ export class CharacterCreatorRenderer {
                     ui.drawText(valStr, centerColX, valY, UITheme.fonts.body, valColor, "center", "alphabetic", textMaxWidth);
                     ctx.restore();
                 } else {
-                    const valY = menuY + 56;
+                    const valY = menuY + ROW_VALUE_Y;
                     const textMaxWidth = midW - 336;
                     const leftArrowX = menuStartX + 72;
                     const rightArrowX = menuStartX + midW - 72;
@@ -469,7 +466,8 @@ export class CharacterCreatorRenderer {
 
         if (currentStep === 'background') return data.BACKGROUNDS?.[selections.backgroundIdx]?.desc;
         if (currentStep === 'origin') return data.ORIGINS?.[selections.originIdx]?.label ? data.ORIGINS[selections.originIdx].desc : "";
-        if (currentStep === 'appearance') return "Choose the physical form you shall take in this realm.\nThe button under the figure (or Enter) switches between male and female.";
+        if (currentStep === 'appearance') return "Choose the physical form you shall take in this realm.";
+        if (currentStep === 'sex') return "Male or female: every look has both.";
         if (currentStep === 'keepsake') return data.KEEPSAKES?.[selections.keepsakeIdx]?.desc;
         if (currentStep === 'companion') return data.COMPANIONS?.[selections.companionIdx]?.desc;
         if (currentStep === 'trait') return data.TRAITS?.[selections.traitIdx]?.desc;

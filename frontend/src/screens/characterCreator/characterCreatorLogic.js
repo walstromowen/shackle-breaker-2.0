@@ -86,8 +86,8 @@ export const CREATION_DATA = {
         { label: "Panzerian", tag: "LANG_PANZERIAN", desc: "Panzerians are a creative and powerful people from the icy mountains of Panzeria. They are master engineers who have acomplished a variety of impressive technolgical and architectural feats. Most notably being their weapons of war including cannons, genetically engineered beasts, and the famous Panzerian armor. All of which were eventually used against them." },
         { label: "Namuh", tag: "LANG_NAMUH", desc: "The Namuh are a silent and mysterious people who communicate only through a form sign language. Not much is known about the Namuh people except for rumors, many of which speaking of a great tragedy befalling the Namuh people and the becoming of a shadow of their former selves." }
     ],
-    // Each look has a male and a female version: the sprites on the entry are the male's, `female` holds the female's (the button under the preview, or
-    // Enter on the LOOK row, switches between them). The female sheets are blank placeholders for now, the same size as the male ones, to be painted.
+    // Each look has a male and a female version: the sprites on the entry are the male's, `female` holds the female's (the SEX row, under LOOK,
+    // picks between them). The female sheets are blank placeholders for now, the same size as the male ones, to be painted.
     APPEARANCES: [
         { label: "Legionary", spritePortrait: "legionaryHeroPortrait", spriteOverworld: "legionaryHeroSprite", female: { spritePortrait: "legionaryHeroFemalePortrait", spriteOverworld: "legionaryHeroFemaleSprite" } },
         { label: "Warlord", spritePortrait: "warlordHeroPortrait", spriteOverworld: "warlordHeroSprite", female: { spritePortrait: "warlordHeroFemalePortrait", spriteOverworld: "warlordHeroFemaleSprite" } },
@@ -156,7 +156,7 @@ export function appearanceSprites(app, sex = 'male') {
 
 export class CharacterCreatorLogic {
     constructor() {
-        this.menuOrder = ['name', 'background', 'origin', 'appearance', 'keepsake', 'companion', 'trait', 'difficulty', ...(CREATION_DATA.CHEATS ? ['cheats'] : []), 'seed', 'start'];
+        this.menuOrder = ['name', 'background', 'origin', 'appearance', 'sex', 'keepsake', 'companion', 'trait', 'difficulty', ...(CREATION_DATA.CHEATS ? ['cheats'] : []), 'seed', 'start'];
         this.currentRow = 0;
         this.nameInput = new TextEntry("Shackle Breaker", 16);
         this.seedInput = new TextEntry("", 16);
@@ -169,7 +169,7 @@ export class CharacterCreatorLogic {
             backgroundIdx: 0,
             originIdx: 0,
             appearanceIdx: 0,
-            sex: "male",
+            sexIdx: 0,
             keepsakeIdx: 0,
             companionIdx: 0,
             traitIdx: 0,
@@ -198,6 +198,7 @@ export class CharacterCreatorLogic {
             background: { key: 'backgroundIdx', max: d.BACKGROUNDS.length, triggersDirty: true },
             origin: { key: 'originIdx', max: d.ORIGINS.length, triggersDirty: true },
             appearance: { key: 'appearanceIdx', max: d.APPEARANCES.length, triggersDirty: false },
+            sex: { key: 'sexIdx', max: d.SEXES.length, triggersDirty: false },
             keepsake: { key: 'keepsakeIdx', max: d.KEEPSAKES.length, triggersDirty: true },
             companion: { key: 'companionIdx', max: d.COMPANIONS.length, triggersDirty: false },
             trait: { key: 'traitIdx', max: d.TRAITS.length, triggersDirty: true },
@@ -229,15 +230,12 @@ export class CharacterCreatorLogic {
         }
     }
 
-    /** Switch the look between its male and female version. */
-    toggleSex() {
-        this.state.sex = this.state.sex === 'female' ? 'male' : 'female';
-    }
+    /** 'male' or 'female': the SEX row's choice. */
+    get sex() { return CREATION_DATA.SEXES[this.state.sexIdx].id; }
 
     handleAction() {
         const step = this.menuOrder[this.currentRow];
         if (step === 'name') this.isEditingName = true;
-        else if (step === 'appearance') this.toggleSex();
         else if (step === 'seed') this.isEditingSeed = true;
         else if (step === 'start') this.finalizeCharacter();
     }
@@ -267,7 +265,7 @@ export class CharacterCreatorLogic {
     _buildPlayerOverrides() {
         const bg = CREATION_DATA.BACKGROUNDS[this.state.backgroundIdx];
         const origin = CREATION_DATA.ORIGINS[this.state.originIdx];
-        const app = appearanceSprites(CREATION_DATA.APPEARANCES[this.state.appearanceIdx], this.state.sex);
+        const app = appearanceSprites(CREATION_DATA.APPEARANCES[this.state.appearanceIdx], this.sex);
         const trait = CREATION_DATA.TRAITS[this.state.traitIdx];
 
         return {

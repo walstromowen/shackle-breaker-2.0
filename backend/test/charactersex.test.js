@@ -22,23 +22,26 @@ test('every look has a female version whose sheets are registered, on disk and t
     }
 });
 
-test('the creator starts male; the button (or Enter on LOOK) switches to female and back, and the character is made with those sprites', () => {
+test('the creator starts male; the SEX row (under LOOK) switches to female and back, and the character is made with those sprites', () => {
     const logic = new CharacterCreatorLogic();
-    assert.equal(logic.state.sex, 'male');
+    assert.equal(logic.sex, 'male');
+    assert.equal(logic.menuOrder[logic.menuOrder.indexOf('appearance') + 1], 'sex', 'the SEX row sits right under LOOK');
     const app = CREATION_DATA.APPEARANCES[logic.state.appearanceIdx];
     assert.equal(logic._buildPlayerOverrides().spritePortrait, app.spritePortrait);
-    logic.toggleSex();
-    assert.equal(logic.state.sex, 'female');
+    logic.setRowByStep('sex');
+    logic.modifyValue(1);
+    assert.equal(logic.sex, 'female');
     assert.equal(logic._buildPlayerOverrides().spritePortrait, app.female.spritePortrait);
     assert.equal(logic._buildPlayerOverrides().spriteOverworld, app.female.spriteOverworld);
-    logic.setRowByStep('appearance');
-    logic.handleAction();
-    assert.equal(logic.state.sex, 'male', 'Enter on the LOOK row switches it back');
+    logic.modifyValue(1);
+    assert.equal(logic.sex, 'male', 'and round again');
     assert.deepEqual(appearanceSprites(app, 'female'), app.female);
     assert.deepEqual(appearanceSprites({ spritePortrait: 'a', spriteOverworld: 'b' }, 'female'), { spritePortrait: 'a', spriteOverworld: 'b' }, 'a look with no female version keeps its own');
 });
 
-test('the creator draws the Male / Female button and handles its click', () => {
-    assert.match(read('frontend/src/screens/characterCreator/characterCreatorRenderer.js'), /id: 'BTN_SEX'/);
-    assert.match(read('frontend/src/screens/characterCreator/characterCreatorController.js'), /hitboxId === 'BTN_SEX'[\s\S]*toggleSex\(\)/);
+test('the creator draws a SEX row with its value, and no separate button', () => {
+    const r = read('frontend/src/screens/characterCreator/characterCreatorRenderer.js');
+    assert.match(r, /sex: "SEX"/);
+    assert.match(r, /key === 'sex'\) valStr = data\.SEXES/);
+    assert.doesNotMatch(r, /BTN_SEX/);
 });
