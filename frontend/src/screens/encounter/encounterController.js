@@ -853,6 +853,10 @@ export class EncounterController extends BaseController {
   }
 
   triggerRoll() {
+    // a fresh roll always plays out: a skip left over from holding through the stage's words (or, in a shared encounter, from waiting on the
+    // others' votes) must not land the dice at once. Holding during the roll still skips it.
+    this.skipMessageAnimation = false;
+    this._holdArmed = false;
     this.actionPhase = 'rolling';
     this.rollTicks = EncounterLogic.rollTickSchedule();
     this.rollTickIndex = 0;
