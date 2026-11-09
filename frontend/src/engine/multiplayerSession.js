@@ -275,6 +275,7 @@ class MultiplayerSession {
     end(notice, { toTitle = true } = {}) {
         const role = this.role;
         if (!role) return;
+        if (typeof this.beforeLeave === 'function') this.beforeLeave(role);   // (multiplayerSocial: a duel in progress is undone first)
         if (role === 'guest' && SaveManager.canSaveNow()) {
             try { multiplayer.relay({ k: 'player_save', data: playerPart(SaveManager.createSnapshot().data) }); } catch (e) { /* the host will have the last one */ }
         }

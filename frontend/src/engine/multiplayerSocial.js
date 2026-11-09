@@ -32,6 +32,17 @@ import { multiplayer } from './multiplayerClient.js';
 import { WAYPOINT_SHARING, getWaypoints } from '../../../shared/world/waypoints.js';
 import { multiplayerSession } from './multiplayerSession.js';
 import { serializeEntity, hydrateEntity, hydrateItem } from './saveManager.js';
+import { WeatherFactory } from '../../../shared/world/weatherFactory.js';
+
+const clone = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
+/* The weather a shared fight is fought in, as sent to the others ({ id, intensity }), and back as a weather of this build (null: clear). */
+const weatherSpec = (w) => (w && w.id ? { id: String(w.id), intensity: Number.isFinite(w.intensity) ? w.intensity : undefined } : null);
+function weatherFromSpec(spec) {
+    if (!spec || !spec.id) return null;
+    const w = WeatherFactory.createWeather(spec.id);
+    if (w && Number.isFinite(spec.intensity)) w.intensity = spec.intensity;
+    return w;
+}
 
 const REQUEST_SECONDS = 20;
 const CHAT_MAX = 200;   // characters in one chat line
@@ -70,6 +81,8 @@ class MultiplayerSocial {
         multiplayer.on('relay', (msg) => this._onRelay(msg.from, msg.data || {}));
         multiplayer.on('room', (room) => this._onRoom(room));
         multiplayer.on('closed', () => this.reset());
+        // leaving the world in the middle of a duel: my party goes back as it was before the duel, before the last save of it is sent
+        multiplayerSession.beforeLeave = () => { if (this.duelBackup) this.restoreDuelBackup(); };
         multiplayerSession.groupedProbe = () => false;   // a party of players walks freely, each with their own party behind them
         // a party of players shares its waypoints: the world map lists the others' too (shared/world/waypoints.js allWaypoints)
         WAYPOINT_SHARING.others = () => {
@@ -394,7 +407,7 @@ class MultiplayerSocial {
 
     /** A fight I start (sceneManager START_BATTLE) with my party near me (or `players`: the ones in the encounter it came out of): our
      *  line-up against these enemies, on every one of their screens too. I am its authority. */
-    startPartyBattle(enemies, { background = null, bgm = null, noEscape = false, betrayal = null, players = null, afterVictory = null } = {}) {
+    startPartyBattle(enemies, { background = null, weather = null, bgm = null, noEscape = false, betrayal = null, players = null, afterVictory = null } = {}) {
         if (!players) this.declined.clear();   // (a fight out of a shared encounter keeps out whoever declined that encounter)
         const ids = [this.me, ...(players ? players.filter(id => id !== this.me && this.groupParties.has(id) && this.partyHere([id]).length) : this.nearbyParty())];
         const parties = { [this.me]: gameState.party.members.map(serializeEntity) };
@@ -404,7 +417,7 @@ class MultiplayerSocial {
             bid: newId(), kind: 'party', seed: (Math.random() * 0xffffffff) >>> 0, authority: this.me, players: ids,
             names: Object.fromEntries(ids.map(id => [id, this.nameOf(id)])),
             lineup: lineup.map(e => ({ ...e, data: parties[e.owner][e.idx] })),
-            enemies: enemies.map(serializeEntity), background, bgm, noEscape, betrayal,
+            enemies: enemies.map(serializeEntity), background, weather: weatherSpec(weather), bgm, noEscape, betrayal,
             afterVictory: afterVictory && afterVictory.encounterId ? { encounterId: afterVictory.encounterId, context: afterVictory.context || {} } : null,
         };
         for (const id of ids) if (id !== this.me) this._send({ k: 'bt_start', spec }, id);
@@ -417,10 +430,54 @@ class MultiplayerSocial {
             bid: newId(), kind: 'duel', seed: (Math.random() * 0xffffffff) >>> 0, authority: this.me, players: ids,
             names: { [this.me]: this.nameOf(this.me), [opponent]: this.nameOf(opponent) },
             sides: { [this.me]: gameState.party.members.map(serializeEntity), [opponent]: theirParty },
-            background: null,
+            // fought where the challenger stands: that biome's battle background for the hour, and its weather (the same on both screens)
+            ...this._here(),
         };
         this._send({ k: 'bt_start', spec }, opponent);
         this._beginBattle(spec);
+    }
+
+    /** The battle background and weather where I stand: { background, weather } for a duel's spec. */
+    _here() {
+        const wm = multiplayerSession.env && multiplayerSession.env.getWorldManager && multiplayerSession.env.getWorldManager();
+        let background = null;
+        try {
+            const biome = wm && wm.getBiomeAt(gameState.player.col, gameState.player.row);
+            background = biome && biome.getBattleBackground ? biome.getBattleBackground(gameState.world.time / 60) : null;
+        } catch (e) { background = null; }
+        return { background, weather: weatherSpec(gameState.world.currentWeather) };
+    }
+
+    /** Everything a duel must give back afterwards, exactly as it is now: the whole party (characters with their health, corruption, status
+     *  effects, gear and levels; the inventory, the purse, the recipes), the hotbar and buffs, and the quests. */
+    _duelSnapshot() {
+        const party = gameState.party;
+        return {
+            members: party.members.map(serializeEntity),
+            inventory: (party.inventory || []).map(i => i.toJSON()),
+            currency: party.currency || 0,
+            partyRest: clone(Object.fromEntries(Object.entries(party).filter(([k]) => !['members', 'inventory', 'currency'].includes(k)))),
+            hotbar: clone(gameState.player.hotbar || []),
+            buffs: clone(gameState.player.buffs || {}),
+            quests: clone(gameState.quests || null),
+        };
+    }
+
+    /** Puts my party back as it was before the duel (and forgets the backup). Returns whether there was one. */
+    restoreDuelBackup() {
+        const b = this.duelBackup;
+        this.duelBackup = null;
+        if (!b) return false;
+        const party = gameState.party;
+        party.members.splice(0, party.members.length, ...b.members.map(hydrateEntity));
+        party.inventory.splice(0, party.inventory.length, ...b.inventory.map(hydrateItem).filter(Boolean));
+        party.currency = b.currency;
+        for (const k of Object.keys(party)) if (!['members', 'inventory', 'currency'].includes(k) && !(k in b.partyRest)) delete party[k];
+        Object.assign(party, clone(b.partyRest));
+        gameState.player.hotbar = clone(b.hotbar);
+        gameState.player.buffs = clone(b.buffs);
+        if (b.quests) gameState.quests = clone(b.quests);
+        return true;
     }
 
     _beginBattle(spec) {
@@ -432,11 +489,7 @@ class MultiplayerSocial {
         if (spec.kind === 'duel') {
             opponent = spec.players.find(id => id !== me);
             // a duel is for nothing: my party exactly as it is now comes back afterwards
-            this.duelBackup = {
-                members: gameState.party.members.map(serializeEntity),
-                inventory: (gameState.party.inventory || []).map(i => i.toJSON()),
-                currency: gameState.party.currency || 0,
-            };
+            this.duelBackup = this._duelSnapshot();
             partyEntities = gameState.party.members.slice();
             partyMeta = partyEntities.map((_, i) => ({ netId: `${me}#${i}`, owner: me }));
             enemies = (spec.sides[opponent] || []).map(hydrateEntity);
@@ -463,7 +516,7 @@ class MultiplayerSocial {
             early: this.early.get(spec.bid) || [],
         };
         this.early.delete(spec.bid);
-        events.emit('MP_START_BATTLE', { enemies, context: { mp, partyEntities, backgroundId: spec.background || undefined, weather: null, noEscape: !!spec.noEscape }, bgm: spec.bgm || null, afterVictory: spec.afterVictory || null });
+        events.emit('MP_START_BATTLE', { enemies, context: { mp, partyEntities, backgroundId: spec.background || undefined, weather: weatherFromSpec(spec.weather), noEscape: !!spec.noEscape }, bgm: spec.bgm || null, afterVictory: spec.afterVictory || null });
     }
 
     /** In a fight, an encounter or a trade right now (a request to join another one is refused). */
@@ -539,15 +592,7 @@ class MultiplayerSocial {
         this.battle = null;
         this.declined.clear();
         if (!mp || mp.kind !== 'duel') return false;
-        const b = this.duelBackup;
-        this.duelBackup = null;
-        if (b) {
-            const members = b.members.map(hydrateEntity);
-            gameState.party.members.splice(0, gameState.party.members.length, ...members);
-            const inv = b.inventory.map(hydrateItem).filter(Boolean);
-            gameState.party.inventory.splice(0, gameState.party.inventory.length, ...inv);
-            gameState.party.currency = b.currency;
-        }
+        this.restoreDuelBackup();
         return true;
     }
 

@@ -653,7 +653,7 @@ export class SceneManager {
             const encMp = this.currentScene === 'encounter' && this.encounterController && this.encounterController.mp;
             const fromEncounter = encMp && encMp.players && encMp.players.length > 1 ? encMp.players : null;
             if (fromEncounter || multiplayerSocial.sharesFights) {
-                multiplayerSocial.startPartyBattle(scaledEnemies, { background: data.background, bgm: data.bgm || (data.context && data.context.bgm) || null, noEscape: !!data.noEscape, betrayal: data.betrayal || null, players: fromEncounter, afterVictory: this.pendingAfterVictory });
+                multiplayerSocial.startPartyBattle(scaledEnemies, { background: data.background, weather: data.weather || null, bgm: data.bgm || (data.context && data.context.bgm) || null, noEscape: !!data.noEscape, betrayal: data.betrayal || null, players: fromEncounter, afterVictory: this.pendingAfterVictory });
                 return;
             }
 
