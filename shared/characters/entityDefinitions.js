@@ -959,6 +959,7 @@ export const ENTITY_DEFINITIONS = {
         ...HUMANOID_TEMPLATE,
         name: "The Infernus Sentinel",
         level: 1,
+        frameSize: 192,   // its battle sheet has 192 px frames (16 to a row, front-facing rows 0 and 1), like Darius's
         spritePortrait: "infernusSentinelPortrait",
         // its overworld sheet (128 px frames, a still statue facing you, the front frame of tools/art/sources/infernus_sentinel_rotations.png:
         // tools/art/overworldSheetFromFrame.py ... 128 --still --feet) is what its map object INFERNUS_SENTINEL draws, like the hooded stranger's

@@ -365,3 +365,14 @@ test("the Sentinel's lines are short and cryptic", async () => {
     const fall = encounterDefinitions.infernus_sentinel_fallen.stages.fallen.text.match(/"([^"]+)"/)[1];
     for (const line of [wake.replace(/"/g, ''), fall]) assert.ok(line.split(/\s+/).length <= 8, `"${line}" is short`);
 });
+
+test("the Sentinel's battle sheet is read in the frame size it is drawn in", async () => {
+    const { ENTITY_DEFINITIONS } = await import('../../shared/characters/entityDefinitions.js');
+    const S = ENTITY_DEFINITIONS.INFERNUS_SENTINEL;
+    const main = fs.readFileSync(new URL('../../frontend/src/main.js', import.meta.url), 'utf8');
+    const file = main.match(/infernusSentinelPortrait:\s*'\.\/([^']+)'/)[1];
+    const png = fs.readFileSync(new URL(`../../frontend/src/${file}`, import.meta.url));
+    const w = png.readUInt32BE(16), h = png.readUInt32BE(20), f = S.frameSize || 128;
+    assert.equal(w, f * 16, '16 frames to a row');
+    assert.ok(h >= f * 2, 'the two front-facing rows an enemy uses');
+});
