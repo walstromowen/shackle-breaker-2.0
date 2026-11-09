@@ -488,6 +488,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     aDisturbingSightBgm: './assets/audio/music/a_disturbing_sight.mp3',
     poachersNightmareBgm: './assets/audio/music/poachers_nightmare.mp3',
     apexPredatorBgm: './assets/audio/music/apex_predator.mp3',
+    choirOfTheDeadBgm: './assets/audio/music/choir_of_the_dead.mp3',   // the Infernus Sentinel: from the moment the statue wakes (catacombDepths.js, stage wakes) on into its fight
     dariusEncounterBgm: './assets/audio/music/darius-final-battle.mp3',   // Darius the Groveler: from the moment he turns on you (mysteriousAltar.js, stage darius_wrath) on into his fight
 
     // --- CREATURE CRIES & DEATHS ---

@@ -171,6 +171,11 @@ test('the vault door opens only with a small iron key, which it keeps; the Senti
     const enc = encounterDefinitions[sentinel.interaction.id];
     const fight = Object.values(enc.stages).flatMap(st => st.decisions).flatMap(d => d.outcomes || []).flatMap(o => o.results).find(r => r.type === 'START_BATTLE');
     assert.equal(fight.payload.tableId, 'infernus_sentinel_boss');
+    // Choir of the Dead starts as the statue wakes, right before the weapon is drawn, and the fight plays the same track so it never stops
+    assert.equal(enc.stages[enc.initialStage].bgm, 'choirOfTheDeadBgm');
+    assert.equal(fight.payload.bgm, 'choirOfTheDeadBgm');
+    assert.match(read('../../frontend/src/main.js'), /choirOfTheDeadBgm:\s*'\.\/assets\/audio\/music\/choir_of_the_dead\.mp3'/);
+    assert.ok(fs.existsSync(new URL('../../frontend/src/assets/audio/music/choir_of_the_dead.mp3', import.meta.url)));
     const table = SpawnTableDefinitions.infernus_sentinel_boss;
     assert.ok(table.fixedSize);
     const ent = ENTITY_DEFINITIONS[table.pools[0].members[0].id];

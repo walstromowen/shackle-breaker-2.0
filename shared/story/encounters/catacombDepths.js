@@ -15,7 +15,7 @@
 const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
 const END = { type: "END_ENCOUNTER", payload: null };
 const OPEN_DOOR = { type: "REPLACE_OBJECT", payload: { objectId: "VAULT_DOOR_OPEN" } };
-const SENTINEL_FIGHT = { type: "START_BATTLE", payload: { tableId: "infernus_sentinel_boss", afterVictory: { encounterId: "infernus_sentinel_fallen" }, bgm: "shackledMarchBgm" } };
+const SENTINEL_FIGHT = { type: "START_BATTLE", payload: { tableId: "infernus_sentinel_boss", afterVictory: { encounterId: "infernus_sentinel_fallen" }, bgm: "choirOfTheDeadBgm" } };   // the same track as the stage, so it never stops
 
 export const catacombVaultDoor = {
     id: "catacomb_vault_door",
@@ -89,7 +89,7 @@ export const infernusSentinel = {
         wakes: {
             displayText: "The Statue Wakes",
             image: { col: 2, row: 0 },
-            bgm: "shackledMarchBgm",
+            bgm: "choirOfTheDeadBgm",   // Choir of the Dead: starts as the statue wakes and carries on into the fight
             sfx: "rockThud",
             effect: "shake",
             text: "A stone knight stands before the far lever, sword planted at its feet. As you draw near, dust sifts from its shoulders. The crowned head turns, stone grinding on stone, and the statue steps down from its plinth and lifts its sword.",
