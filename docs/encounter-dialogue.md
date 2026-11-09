@@ -14,6 +14,8 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 - [Arrow Trap](#arrow-trap)
 - [Bonfire](#bonfire)
 - [Cave In](#cave-in)
+- [Infernus Sentinel](#infernus-sentinel)
+- [Infernus Sentinel](#infernus-sentinel)
 - [Iron Chest](#iron-chest)
 - [Mysterious Altar](#mysterious-altar)
 - [Old Gravestone](#old-gravestone)
@@ -23,8 +25,6 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 - [Shackling](#shackling)
 - [Swinging Axes](#swinging-axes)
 - [The Hooded Stranger](#the-hooded-stranger)
-- [The Infernus Sentinel](#the-infernus-sentinel)
-- [The Infernus Sentinel](#the-infernus-sentinel)
 - [The Quiet After](#the-quiet-after)
 - [The Suspicious Merchant](#the-suspicious-merchant)
 - [The Vault](#the-vault)
@@ -512,6 +512,27 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 > While digging, you break into a spider's nest!
 
 - **Defend yourselves!**  _(fight)_
+
+## Infernus Sentinel
+
+`infernus_sentinel`
+
+### The Statue Wakes  `wakes`
+
+> A stone knight stands before the far lever. As you draw near, dust sifts from its shoulders. The crowned head turns, and the statue steps down from its plinth.
+
+- **Draw your weapon.**  _(fight)_
+  - _spoken:_ "Again the light. Again the fall."
+
+## Infernus Sentinel
+
+`infernus_sentinel_fallen`
+
+### The Last Watch  `fallen`
+
+> Cracks race through the stone, and the Sentinel crumbles at the foot of the lever. From the rubble, one last whisper: "Below, they remember."
+
+- **Leave the rubble to the dark.**  _(ends)_
 
 ## Iron Chest
 
@@ -1320,27 +1341,6 @@ Choice labels and stage titles are on screen only. Edit the text in the encounte
 > "Come back when you've seen what walks under the red moon. Or don't. I'll be here regardless."
 
 - **Leave.**  _(ends)_
-
-## The Infernus Sentinel
-
-`infernus_sentinel`
-
-### The Statue Wakes  `wakes`
-
-> A stone knight stands before the far lever. As you draw near, dust sifts from its shoulders. The crowned head turns, and the statue steps down from its plinth.
-
-- **Draw your weapon.**  _(fight)_
-  - _spoken:_ "Again the light. Again the fall."
-
-## The Infernus Sentinel
-
-`infernus_sentinel_fallen`
-
-### The Last Watch  `fallen`
-
-> Cracks race through the stone, and the Sentinel crumbles at the foot of the lever. From the rubble, one last whisper: "Below, they remember."
-
-- **Leave the rubble to the dark.**  _(ends)_
 
 ## The Quiet After
 

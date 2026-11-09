@@ -310,7 +310,7 @@ export const AbilityDefinitions = {
         effects: [],
         statusEffects: [{ id: "enraged", chance: 1.0, duration: 3 }]
     },
-    // The Infernus Sentinel's (boss) cry: Intimidate on the whole enemy party at once.
+    // The Infernus Sentinels' (boss) cry: Intimidate on the whole enemy party at once.
     "mass_fear": {
         id: "mass_fear",
         name: "Mass Fear",
@@ -825,7 +825,7 @@ export const AbilityDefinitions = {
         effects: [{ type: "damage", damageType: "earth", power: 1.25 }],
         statusEffects: [{ id: "bound", chance: 0.15, duration: 2 }]
     },
-    // The Infernus Sentinel's (boss) blow: a stone fist that crushes (blunt) and grinds (earth) into the target's magic, sapping their insight into its own.
+    // The Infernus Sentinels' (boss) blow: a stone fist that crushes (blunt) and grinds (earth) into the target's magic, sapping their insight into its own.
     "sapping_slam": {
         id: "sapping_slam",
         name: "Sapping Slam",

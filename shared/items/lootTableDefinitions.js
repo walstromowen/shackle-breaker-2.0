@@ -831,7 +831,7 @@ export const LootTableDefinitions = {
             { id: "large_iron_key", dropRate: 0.5 },
         ]
     },
-    // The Infernus Sentinel (the catacombs' boss): the large iron key to the hoard's iron chest beyond the last gate is always found in its rubble, with stone,
+    // An Infernus Sentinel (the catacombs' boss): the large iron key to the hoard's iron chest beyond the last gate is always found in its rubble, with stone,
     // the arms of an older kingdom, and now and then a sliver of the night it was made of.
     "boss_sentinel_drops": {
         type: "independent",

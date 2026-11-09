@@ -967,7 +967,7 @@ export const ENTITY_DEFINITIONS = {
     // blades and arrows glance off; the cosmic light in it shrugs off the arcane and the dark.
     "INFERNUS_SENTINEL": {
         ...HUMANOID_TEMPLATE,
-        name: "The Infernus Sentinel",
+        name: "Infernus Sentinel",   // no "The": there is one in every catacomb
         level: 1,
         frameSize: 192,   // its battle sheet has 192 px frames (16 to a row, front-facing rows 0 and 1), like Darius's
         spritePortrait: "infernusSentinelPortrait",

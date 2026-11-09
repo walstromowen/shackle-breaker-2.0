@@ -1,4 +1,5 @@
 import { StatCalculator } from './statCalculator.js';
+import { isImmuneToStatus } from '../abilities/statusImmunity.js';
 import { AbilityFactory } from '../abilities/abilityFactory.js';
 
 export class EntityModel {
@@ -205,7 +206,9 @@ export class EntityModel {
     // =========================================================
     // STATUS EFFECT MANAGEMENT
     // =========================================================
+    /** Puts a status on this creature. Returns false (and puts nothing on) when it is immune to it (abilities/statusImmunity.js). */
     applyStatusEffect(activeEffect) {
+        if (activeEffect && isImmuneToStatus(this, activeEffect.id)) return false;
         // A boss shrugs things off: a status someone else puts on it lasts half as long (rounded up, at least a turn). Not one with no end,
         // not one for the whole fight (the weather's), and not what the boss casts on itself (Darius's own Bless lasts its full time).
         if (activeEffect && (this.state.tags || []).includes('BOSS')) {
@@ -220,6 +223,7 @@ export class EntityModel {
         } else {
             this.state.statusEffects.push(activeEffect);
         }
+        return true;
     }
 
     removeStatusEffect(effectId) {

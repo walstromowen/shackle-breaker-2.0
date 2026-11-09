@@ -1,4 +1,5 @@
 import { StatCalculator } from '../characters/statCalculator.js';
+import { isImmuneToStatus } from './statusImmunity.js';
 import { CombatCalculator } from '../battle/combatCalculator.js';
 import { StatusEffectFactory } from './statusEffectFactory.js';
 import { AbilityDefinitions } from './abilityDefinitions.js';
@@ -154,6 +155,12 @@ export class AbilitySystem {
                 const roll = rng();
                 const chance = statusDef.chance !== undefined ? statusDef.chance : 1.0;
                 if (roll <= chance) {
+                    // a creature that cannot have it (a skeleton does not bleed): said once, and nothing is put on
+                    if (isImmuneToStatus(target, statusDef.id)) {
+                        const def0 = StatusEffectFactory.createEffect(statusDef.id, 1, null);
+                        result.message = ((result.message || '') + ' ' + `${target.name || 'The target'} is immune to ${(def0 && def0.name) || statusDef.id}.`).trim();
+                        continue;
+                    }
                     const existingStatus = (target.statusEffects || []).find(s => s.id === statusDef.id);
                     if (existingStatus) {
                         // `skipIfActive: true` -- do not stack or refresh; nothing happens and (when nothing else worked) the item is kept. A bear trap that is already set.
@@ -308,7 +315,7 @@ export class AbilitySystem {
                 console.error(`[AbilitySystem] A status reacted by applying "${entry.id}", which StatusEffectFactory could not create.`);
                 continue;
             }
-            victim.applyStatusEffect(effect); // an existing one just has its charges reset
+            if (victim.applyStatusEffect(effect) === false) continue; // immune (an existing one just has its charges reset)
             if (entry.message) messages.push(entry.message.replace(/{target}/g, victim.name || 'the target').replace(/{status}/g, effect.name));
         }
         return messages.join(' ');

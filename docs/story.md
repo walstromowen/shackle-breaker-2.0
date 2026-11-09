@@ -20,7 +20,7 @@ fall, when the player breaks out of the king's chain line. This page is a living
   artifact before it frees Dolos, to prevent a great catastrophe they know of from a time long past. Their elite are the **nightblades**.
 - **The Infernus Kingdom**: an ancient kingdom **below the Altus Kingdom**, of the **ancestors of the Alterians**. Long before the book, it had the
   artifact too: its people went mad with it and the kingdom was destroyed. Altus is repeating its history without knowing it. The catacombs under the
-  mysterious altar lead down toward it, and the **Infernus Sentinel** guards the doorway (see below).
+  mysterious altar lead down toward it, and an **Infernus Sentinel** guards each doorway (see below).
   - *Likely link, to confirm:* the "great catastrophe from a time long past" the Namuh know of is the fall of Infernus.
   - *Open question:* how the artifact came back to the surface (the meteor shower) after Infernus fell with it.
 - **The Shackle Breakers**: runaways from the king's prisons, bound in magical chains. Rumoured to be a myth. The player is one.
@@ -84,7 +84,7 @@ fall, when the player breaks out of the king's chain line. This page is a living
 - The player is a nameless prisoner in the king's chain line who breaks free (the prologue): a Shackle Breaker, after the fall.
 - The madmen, magic addicts, rotters and hollows are the people of Altus gone mad; the legionaries and watchmen in "the old colors" still march as
   if the war never ended (Darius's soldiers, searching for his stone).
-- The catacombs (act 2) end in a dark round hall where the **Infernus Sentinel** stands: a living stone statue of a cosmic knight, cracks in its armour
+- The catacombs (act 2) end in a dark round hall where an **Infernus Sentinel** stands (one in every catacomb, so never "the"): a living stone statue of a cosmic knight, cracks in its armour
   open onto a moving night sky. It guards the doorway down to Infernus. What the game says so far is short and cryptic: waking, *"Again the light. Again the fall."*; broken, *"Below, they remember."* That Infernus were the Alterians' own ancestors, driven mad by the same
   artifact, is **not stated yet**: keep it for when the story goes down there.
 - Act 1 ends with Darius; act 2 is the blood moon. Corruption is the game's cost of magic; the shackles take those who cast too much.

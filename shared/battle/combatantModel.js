@@ -154,8 +154,9 @@ export class CombatantModel {
     }
 
     applyStatusEffect(effect) {
-        this.originalEntity.applyStatusEffect(effect);
+        if (this.originalEntity.applyStatusEffect(effect) === false) return false;   // immune (abilities/statusImmunity.js)
         events.emit('ON_STATUS_APPLIED', { status: effect, actor: effect.inflictor, target: this });
+        return true;
     }
 
     removeStatusEffect(effectId) {

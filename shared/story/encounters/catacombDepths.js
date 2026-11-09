@@ -80,7 +80,7 @@ export const catacombVaultDoor = {
 
 export const infernusSentinel = {
     id: "infernus_sentinel",
-    title: "The Infernus Sentinel",
+    title: "Infernus Sentinel",
     imageSheet: "encounter_catacomb_depths",
     initialStage: "wakes",
     tone: "cold",
@@ -106,7 +106,7 @@ export const infernusSentinel = {
 
 export const infernusSentinelFallen = {
     id: "infernus_sentinel_fallen",
-    title: "The Infernus Sentinel",
+    title: "Infernus Sentinel",
     imageSheet: "encounter_catacomb_depths",
     initialStage: "fallen",
     tone: "cold",
