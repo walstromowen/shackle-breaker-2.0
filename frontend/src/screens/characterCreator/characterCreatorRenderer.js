@@ -455,7 +455,8 @@ export class CharacterCreatorRenderer {
                 return mouse.x >= r.x && mouse.x <= r.x + r.w && mouse.y >= r.y && mouse.y <= r.y + r.h;
             });
             // The Details panel is empty-ish and the one thing nobody is aiming at, so the card goes there instead of over the menu
-            if (hit) drawStatTooltip(ui, hit, attrRects[hit], { at: { x: CANVAS_WIDTH - colW - p + 24, y: CONTENT_START_Y }, width: colW - 48 });
+            if (hit) drawStatTooltip(ui, hit, attrRects[hit], { at: { x: CANVAS_WIDTH - colW - p + 24, y: CONTENT_START_Y }, width: colW - 48,
+                rollAttributes: data.BACKGROUNDS?.[selections.backgroundIdx]?.attributes || null, difficulty: data.DIFFICULTIES?.[selections.difficultyIdx]?.id || 'normal' });
         }
 
         // A new world started together: this player's character is made, the others are still making theirs. The screen dims and says who is

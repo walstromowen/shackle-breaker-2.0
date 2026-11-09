@@ -4,11 +4,13 @@ import { UITheme } from '../../ui/UITheme.js';
 import { UI_SFX } from '../../ui/uiSfx.js';
 import { gameState } from "../../../../shared/core/gameState.js";
 import { DIFFICULTY_MODIFIERS } from '../../../../shared/core/constants.js';
+import { rollModifier, formatModifier } from '../../../../shared/story/encounterRolls.js';
 import { drawItemChips } from '../../ui/itemChips.js';
 import { drawToasts } from '../../ui/toasts.js';
 import { drawEmbers } from '../../ui/particles/embers.js';
 import { drawSmoke } from '../../ui/particles/smoke.js';
 import { drawStatTooltip } from '../../ui/statTooltip.js';
+import { helpOptionsFor } from '../../../../shared/characters/statDescriptions.js';
 import { isCursed, drawCursedPortrait } from '../../ui/curseOverlay.js';
 import { TONES, fxShake, fxFlash } from '../../ui/encounterFx.js';
 import { NARRATION, STAGE_START_TIMER, narrationPlan, textEndTimer, decisionAlpha } from '../../ui/narration.js';
@@ -587,23 +589,8 @@ export class EncounterRenderer {
             ctx.globalAlpha = colsAlpha;
 
             if (party && party.length > 0) {
-                const getModStr = (val) => {
-                    const difficulty = gameState.difficulty || 'normal';
-                    const globalConfig = DIFFICULTY_MODIFIERS[difficulty] || { rollBonus: 0 };
-                    const difficultyRollMod = globalConfig.rollBonus || 0;
-                    const attributeBonus = Math.floor((val - 10) / 3);
-                    let appliedAttributeBonus = attributeBonus;
-
-                    if (difficulty === 'easy' || difficulty === 'normal') {
-                        appliedAttributeBonus = Math.max(0, attributeBonus);
-                    }
-                    const finalAppliedMod = appliedAttributeBonus + difficultyRollMod;
-                    let finalizedNightmareMod = finalAppliedMod;
-                    if (difficulty === 'nightmare' && finalAppliedMod > 0) {
-                        finalizedNightmareMod = Math.floor(finalAppliedMod / 2);
-                    }
-                    return finalizedNightmareMod >= 0 ? `(+${finalizedNightmareMod})` : `(${finalizedNightmareMod})`;
-                };
+                // what each attribute adds to a roll (shared/story/encounterRolls.js)
+                const getModStr = (val) => { const m = rollModifier(val, gameState.difficulty || 'normal'); return m >= 0 ? `(+${m})` : `(${m})`; };
 
                 const member = party[0];
                 const attrs = member.attributes || {};
@@ -834,7 +821,7 @@ export class EncounterRenderer {
                 const r = attrCells[k];
                 return state.mouse.x >= r.x && state.mouse.x <= r.x + r.w && state.mouse.y >= r.y && state.mouse.y <= r.y + r.h;
             });
-            if (hit) drawStatTooltip(ui, hit, attrCells[hit], { placement: 'above', skillChecks: true, multipliers: party[0]?.statMultipliers || party[0]?.state?.statMultipliers });
+            if (hit) drawStatTooltip(ui, hit, attrCells[hit], { placement: 'above', ...helpOptionsFor(party[0], gameState.difficulty || 'normal') });
         }
 
         // XP, items and coin gained float up the right-hand column as toasts (ui/toasts.js), over the party, while the story goes on

@@ -5,6 +5,7 @@ import { PartyManager } from "../../../../shared/characters/partyManager.js";
 import { ExperienceSystem } from '../../../../shared/characters/experienceSystem.js';
 import { EncounterFactory } from "../../../../shared/story/encounterFactory.js";
 import { DIFFICULTY_MODIFIERS } from '../../../../shared/core/constants.js';
+import { rollModifier } from '../../../../shared/story/encounterRolls.js';
 import { LootTableFactory } from "../../../../shared/items/lootTableFactory.js";
 import { SpawnTableFactory } from "../../../../shared/battle/spawnTableFactory.js";
 import { ItemDefinitions } from '../../../../shared/items/itemDefinitions.js';
@@ -177,24 +178,9 @@ export class EncounterLogic {
         const roller = EncounterLogic.rollerEntity();
         const attributes = (EncounterLogic.shared && EncounterLogic.shared.roller) || roller?.attributes || {};
         const difficulty = gameState.difficulty || 'normal';
-        const globalConfig = DIFFICULTY_MODIFIERS[difficulty] || { rollBonus: 0 };
-        const difficultyRollMod = globalConfig.rollBonus || 0;
-        
-        let appliedAttributeBonus = 0;
-        if (decision.attribute && decision.attribute !== 'none') {
-            const statValue = attributes[decision.attribute] || 0;
-            const attributeBonus = Math.floor((statValue - 10) / 3);
-            appliedAttributeBonus = attributeBonus;
-            if (difficulty === 'easy' || difficulty === 'normal') {
-                appliedAttributeBonus = Math.max(0, attributeBonus);
-            }
-        }
-        
-        const finalAppliedMod = appliedAttributeBonus + difficultyRollMod;
-        let finalizedNightmareMod = finalAppliedMod;
-        if (difficulty === 'nightmare' && finalAppliedMod > 0) {
-            finalizedNightmareMod = Math.floor(finalAppliedMod / 2);
-        }
+        // the attribute's bonus and the difficulty's (shared/story/encounterRolls.js, the one place the rule lives)
+        const hasAttribute = !!(decision.attribute && decision.attribute !== 'none');
+        const finalizedNightmareMod = rollModifier(hasAttribute ? (attributes[decision.attribute] || 0) : 0, difficulty, { attribute: hasAttribute });
         
         const d20 = Math.floor(rng() * 20) + 1;
         const total = d20 + finalizedNightmareMod;
@@ -702,4 +688,4 @@ export class EncounterLogic {
         
         return response;
     }
-}
+}

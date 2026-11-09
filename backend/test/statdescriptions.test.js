@@ -62,11 +62,13 @@ test('each attribute lists the attacks and defenses it feeds; Dexterity and Attu
     assert.ok(labels('attunement').includes('Max insight') && labels('attunement').includes('Insight recovery'));
 });
 
-test('the text follows a character\'s own multipliers and the skill-check option', () => {
+test('the text follows a character\'s own multipliers, and every attribute card gives its encounter roll', () => {
     const tough = getStatDescription('vigor', { multipliers: { hpPerVigor: 4 } });
     assert.equal(tough.rows.find(r => r.label === 'Max HP').value, '+4 per point');
-    assert.ok(!getStatDescription('vigor').rows.some(r => r.label === 'Skill checks'));
-    assert.ok(getStatDescription('vigor', { skillChecks: true }).rows.some(r => r.label === 'Skill checks'));
+    // every attribute is rolled for in encounters, on every screen; with the character's own points the card says what it adds now
+    assert.ok(getStatDescription('vigor').rows.some(r => r.label === 'Encounter rolls'));
+    assert.ok(!getStatDescription('vigor').rows.some(r => r.label.startsWith('Your roll now')));
+    assert.equal(getStatDescription('vigor', { rollAttributes: { vigor: 13 } }).rows.find(r => r.label.startsWith('Your roll now')).value, 'd20 +1');
 });
 
 test('the six elements are listed in full, the smaller groups by name', () => {

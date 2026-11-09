@@ -10,6 +10,8 @@ import { EquipmentPanel } from './components/equipmentPanel.js';
 import { InventoryPanel } from './components/inventoryPanel.js';
 import { TooltipSystem } from '../../ui/tooltipSystem.js';
 import { drawStatTooltip, statAt } from '../../ui/statTooltip.js';
+import { helpOptionsFor } from '../../../../shared/characters/statDescriptions.js';
+import { gameState } from '../../../../shared/core/gameState.js';
 import { AbilitiesPanel } from './components/abilitiesPanel.js';
 
 export class CharacterSummaryRenderer {
@@ -175,7 +177,7 @@ export class CharacterSummaryRenderer {
       const hit = statAt(rects, state.mouse);
       // the Stats tab's cells take the card on their right; the level, vitals and currency sit in the middle of their columns, so theirs goes below
       const below = hit in this.equipPanel.statRects || hit in this.invPanel.statRects;
-      if (hit) drawStatTooltip(this.ui, hit, rects[hit], { placement: below ? 'below' : 'right', multipliers: member.statMultipliers || member.state?.statMultipliers });
+      if (hit) drawStatTooltip(this.ui, hit, rects[hit], { placement: below ? 'below' : 'right', ...helpOptionsFor(member, gameState.difficulty || 'normal') });
     }
 
     // I. "How many?" slider (Drop Multiple...): over everything, its hitboxes in front of the screen's own

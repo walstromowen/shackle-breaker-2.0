@@ -1,6 +1,9 @@
 import { CanvasUI } from '../../ui/canvasUI.js';
 import { UITheme } from '../../ui/UITheme.js';
 import { drawStatTooltip, statAt } from '../../ui/statTooltip.js';
+import { helpOptionsFor } from '../../../../shared/characters/statDescriptions.js';
+import { rollModifier, formatModifier } from '../../../../shared/story/encounterRolls.js';
+import { gameState } from '../../../../shared/core/gameState.js';
 import { Formatting } from '../../../../shared/core/formatting.js';
 import { isCursed, drawCursedPortrait } from '../../ui/curseOverlay.js';
 import { CorruptionSystem } from '../../../../shared/characters/corruptionSystem.js';
@@ -15,7 +18,7 @@ export class LevelUpRenderer {
 
         this.layout = {
             p: 48, startY: 48, titleOffsetY: 64, contentOffsetY: 72,
-            portraitSize: 224, attrRowHeight: 50, attrBlockWidth: 624,
+            portraitSize: 224, attrRowHeight: 50, attrBlockWidth: 724,
             btnWidth: 216, btnHeight: 76, btnSpacing: 36
         };
     }
@@ -77,10 +80,10 @@ export class LevelUpRenderer {
         if (!rect) {
             // not an attribute: one of the projected stats on the right (the card goes to its left, over the character column)
             const stat = !state.selectedElementId ? statAt(this._statRects, state.mouse) : null;
-            if (stat) drawStatTooltip(this.ui, stat, this._statRects[stat], { placement: 'left', multipliers: state.member?.statMultipliers || state.member?.state?.statMultipliers });
+            if (stat) drawStatTooltip(this.ui, stat, this._statRects[stat], { placement: 'left', ...helpOptionsFor(state.member, gameState.difficulty || 'normal') });
             return;
         }
-        drawStatTooltip(this.ui, attr, this._attrBlock, { placement: 'above', gap: 2, width: 800, multipliers: state.member?.statMultipliers || state.member?.state?.statMultipliers });
+        drawStatTooltip(this.ui, attr, this._attrBlock, { placement: 'above', gap: 2, width: 800, ...helpOptionsFor(state.member, gameState.difficulty || 'normal') });
     }
 
     _renderCharacterColumn(member, availablePoints, pendingAllocations, hoveredId, selectedId, x, y, w, h) {
@@ -127,6 +130,12 @@ export class LevelUpRenderer {
         // all five rows as one block: the help card sits above it, over the portrait, so it never hides the Projected Stats next door
         this._attrBlock = { x: startX - 24, y: currentY, w: this.layout.attrBlockWidth + 48, h: attributes.length * this.layout.attrRowHeight };
 
+        // The ROLL column: what each attribute adds to an encounter's d20 skill check on this difficulty (shared/story/encounterRolls.js), and what
+        // it will add with the points being spent (rolls use the character's own points, which is what this screen raises)
+        const difficulty = gameState.difficulty || 'normal';
+        const ROLL_X = startX + 444;
+        this.ui.drawText('ROLL', ROLL_X, currentY - 8, UITheme.fonts.small, UITheme.colors.textMuted, 'center');
+
         attributes.forEach((attr, index) => {
             const rowY = currentY + (index * this.layout.attrRowHeight);
             const textY = rowY + 32;
@@ -148,25 +157,39 @@ export class LevelUpRenderer {
                 this.ui.drawText(`+${pendingVal}`, startX + 312, textY, UITheme.fonts.mono, UITheme.colors.success, "left");
             }
 
+            // encounter roll: now, and (when the pending points change it) after
+            const rollNow = rollModifier(currentVal, difficulty), rollThen = rollModifier(currentVal + (pendingVal || 0), difficulty);
+            if (rollThen === rollNow) {
+                this.ui.drawText(formatModifier(rollNow), ROLL_X, textY, UITheme.fonts.mono, UITheme.colors.textMain, 'center');
+            } else {
+                const a = formatModifier(rollNow), b = formatModifier(rollThen);
+                this.ctx.font = UITheme.fonts.mono;
+                const aw = this.ctx.measureText(a).width, bw = this.ctx.measureText(b).width, gapW = 22;
+                const x0 = ROLL_X - (aw + gapW + bw) / 2;
+                this.ui.drawText(a, x0, textY, UITheme.fonts.mono, UITheme.colors.textMain, 'left');
+                this.ui.drawArrow(x0 + aw + gapW / 2, textY - 8, 5, 'right', rollThen > rollNow ? UITheme.colors.success : UITheme.colors.failure);
+                this.ui.drawText(b, x0 + aw + gapW, textY, UITheme.fonts.mono, rollThen > rollNow ? UITheme.colors.success : UITheme.colors.failure, 'left');
+            }
+
             // --- SUB BUTTON (-) ---
             const canSub = pendingVal > 0;
             const subId = `SUB_${attr.toUpperCase()}`;
-            this.ui.drawButton(startX + 456, rowY + 5, 40, 40, "-",
+            this.ui.drawButton(startX + 560, rowY + 5, 40, 40, "-",
                 this.ui.flags(subId, hoveredId, { disabled: !canSub }),
                 { font: UITheme.fonts.bold, bg: "rgba(0,0,0,0.4)", color: UITheme.colors.textMain, inset: true });
 
-            const subBox = { id: subId, x: startX + 456, y: rowY + 5, w: 40, h: 40 };
+            const subBox = { id: subId, x: startX + 560, y: rowY + 5, w: 40, h: 40 };
             if (!canSub) subBox.hoverSfx = 'none'; // no hover sound when it can't be used
             this.hitboxes.push(subBox);
 
             // --- ADD BUTTON (+) ---
             const canAdd = availablePoints > 0;
             const addId = `ADD_${attr.toUpperCase()}`;
-            this.ui.drawButton(startX + 540, rowY + 5, 40, 40, "+",
+            this.ui.drawButton(startX + 644, rowY + 5, 40, 40, "+",
                 this.ui.flags(addId, hoveredId, { disabled: !canAdd }),
                 { font: UITheme.fonts.bold, bg: "rgba(0,0,0,0.4)", color: UITheme.colors.success, inset: true });
 
-            const addBox = { id: addId, x: startX + 540, y: rowY + 5, w: 40, h: 40 };
+            const addBox = { id: addId, x: startX + 644, y: rowY + 5, w: 40, h: 40 };
             if (!canAdd) addBox.hoverSfx = 'none'; // no hover sound when it can't be used
             this.hitboxes.push(addBox);
         });
