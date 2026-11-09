@@ -34,6 +34,8 @@ export const SpawnTableDefinitions = {
                     { id: 'SHACKLED_STEED', weight: 20 },
                     { id: 'LEGIONARY', weight: 20, modifiers: { levelOffset: { chance: 0.3, min: -1, max: 2 }, equipment: [{ slot: 'mainHand', items: ['warhammer', 'spear'], chance: 0.5 }], traits: [{ id: 'iron_willed', chance: 0.15 }] } },
                     { id: 'MAGIC_ADDICT', weight: 30 },
+                    // a watchman of the old colors, now and then even by day (5 in 155 of the shackled: about 2% of the day's foes)
+                    { id: 'WATCHMAN', weight: 5 },
                     // act 2: the old soldiers walk the plains in daylight (the dead walk only in the catacombs)
                     { id: 'WATCHMAN', weight: 20, minAct: 2 },
                     { id: 'HOLLOW_HARVESTER', weight: 20, minAct: 2, modifiers: { levelOffset: { chance: 0.3, min: 1, max: 2 } } }
@@ -76,7 +78,9 @@ export const SpawnTableDefinitions = {
                     { id: 'SHACKLED_STEED', weight: 20 },
                     { id: 'HOLLOW_HARVESTER', weight: 80, modifiers: { levelOffset: { chance: 0.5, min: 1, max: 2 } } },
                     { id: 'LEGIONARY', weight: 70, modifiers: { levelOffset: { chance: 0.3, min: -1, max: 2 }, equipment: [{ slot: 'mainHand', items: ['warhammer', 'spear'], chance: 0.5 }], traits: [{ id: 'iron_willed', chance: 0.15 }] } },
-                    { id: 'MAGIC_ADDICT', weight: 30 }
+                    { id: 'MAGIC_ADDICT', weight: 30 },
+                    // the night watch still walks its rounds: a middling share (40 in 310 of the shackled: about 8% of the night's foes)
+                    { id: 'WATCHMAN', weight: 40 }
                 ]
             }
         ]
@@ -374,7 +378,9 @@ export const SpawnTableDefinitions = {
                     { id: 'HOLLOW_HARVESTER', weight: 50, modifiers: { levelOffset: { chance: 0.6, min: 1, max: 2 } } },
                     { id: 'LEGIONARY', weight: 40, modifiers: { levelOffset: { chance: 0.4, min: 0, max: 2 }, equipment: [{ slot: 'mainHand', items: ['warhammer', 'spear'], chance: 0.5 }], traits: [{ id: 'iron_willed', chance: 0.25 }] } },
                     { id: 'MAGIC_ADDICT', weight: 20 },
-                    { id: 'MAD_MAN', weight: 20, modifiers: { equipment: [{ slot: 'mainHand', items: ['dagger'], chance: 0.7 }] } }
+                    { id: 'MAD_MAN', weight: 20, modifiers: { equipment: [{ slot: 'mainHand', items: ['dagger'], chance: 0.7 }] } },
+                    // the night watch walks under the blood moon too (35 in 165 of this pool: about 8% of the blood moon's foes, as on any plains night)
+                    { id: 'WATCHMAN', weight: 35 }
                 ]
             }
         ]

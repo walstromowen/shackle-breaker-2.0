@@ -85,7 +85,7 @@ export const BIOME_DEFINITIONS = {
             return Math.min(0.99, ground + _lift(hill - 3 * _cut(c), HILL_TIERS.plains)); /* capped: plains hills stop at LAYER_5 */
         },
         structures: { rate: 0.1, pools: [{ chance: 1.0, id: 'ABANDONED_VILLAGE' }] },
-        landmarks: { rate: 0.12, pools: [{ chance: 0.5, id: 'GRAVEYARD' }, { chance: 0.5, id: 'BATTLEFIELD' }] } /* 12% of the chunks that have no village: half a graveyard, half an old battlefield with the Aftermath at its heart (GRAVEYARD / BATTLEFIELD in structures.js) */,
+        landmarks: { rate: 0.14, pools: [{ chance: 0.43, id: 'GRAVEYARD' }, { chance: 0.57, id: 'BATTLEFIELD' }] } /* 14% of the chunks that have no village: a graveyard in 6% of them (as before), an old battlefield (the Aftermath) in 8% (was 6%) with the Aftermath at its heart (GRAVEYARD / BATTLEFIELD in structures.js) */,
         mapObjects: {
             [CONFIG.TILE_TYPES.LAYER_3]: [
                 { chance: 0.003, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
@@ -111,6 +111,9 @@ export const BIOME_DEFINITIONS = {
             _ALTITUDE: [
                 { id: 'COAL_DEPOSIT', chance: 0.008, minLevel: 4 },
                 { id: 'COPPER_ORE_DEPOSIT', chance: 0.002, minLevel: 4 },
+                // the strange obelisks stand on the top layer of every exterior biome: here the highest hilltops (LAYER_5, about 0.6% of the plains).
+                // 0.01 per top cell: about one per 20,000 tiles of plains, rarer than on the mountains (one per 7,000), where they belong
+                { id: 'STRANGE_OBELISK', chance: 0.01, minLevel: 5, maxLevel: 5 },
             ],
             [CONFIG.TILE_TYPES.LAYER_1]: [
                 { chance: 0.01, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
@@ -174,6 +177,11 @@ export const BIOME_DEFINITIONS = {
         structures: { rate: 0.08, pools: [{ chance: 1.0, id: 'ABANDONED_VILLAGE_DESERT' }] },
         landmarks: { rate: 0.08, pools: [{ chance: 1.0, id: 'GRAVEYARD_DESERT' }] },
         mapObjects: {
+            /* `_ALTITUDE` (see the snowy mountains below): the strange obelisks stand on the top layer of every exterior biome: here the mesa tops (LAYER_4,
+               about 2.4% of the desert, though most are too narrow for one). 0.004 per top cell: about one per 50,000 tiles of desert. */
+            _ALTITUDE: [
+                { id: 'STRANGE_OBELISK', chance: 0.004, minLevel: 4, maxLevel: 4 },
+            ],
             [CONFIG.TILE_TYPES.LAYER_3]: [{ chance: 0.01, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] }],
             [CONFIG.TILE_TYPES.LAYER_2]: [
                 { chance: 0.001, id: 'DESERT_SKULL' },
@@ -246,8 +254,8 @@ export const BIOME_DEFINITIONS = {
             ],
             /* `_ALTITUDE`: rules for the plateau levels only (WorldManager._getRawProceduralId). Each rule has its OWN roll per cell and wins before the
                ordinary `_WALLS` list: { id, chance, minLevel, maxLevel } with the level a LAYER_n number (3 = the first cliff level, 7 = the summit).
-               Iron lies bare on the high slopes. The strange obelisks stand on the summits only (LAYER_7), and nowhere else in the world: raise their
-               chance for more of them. Keep new rules AFTER the existing ones: each rule's roll depends on its position in this list, so inserting one
+               Iron lies bare on the high slopes. The strange obelisks stand on the summits (LAYER_7), as they do on the top layer of every exterior
+               biome (the plains' highest hilltops, the desert's mesa tops): raise their chance for more of them. Keep new rules AFTER the existing ones: each rule's roll depends on its position in this list, so inserting one
                above would re-roll where the iron lies. */
             _ALTITUDE: [
                 { id: 'IRON_ORE_DEPOSIT', chance: 0.01, minLevel: 5 },
