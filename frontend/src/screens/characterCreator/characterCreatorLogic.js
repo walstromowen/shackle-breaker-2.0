@@ -112,6 +112,7 @@ export const CREATION_DATA = {
         { label: "None", speciesId: null, desc: "Walk the path alone.", attributes: {}, equipment: {} },
         { label: "War Dog", speciesId: "DOG", desc: "Loyal and sturdy.", attributes: { vigor: 12, strength: 10 } },
         { label: "Snow Leopard", speciesId: "SNOW_LEOPARD", desc: "A swift mountain hunter. Fast and deadly, but fragile.", attributes: { vigor: 10, strength: 12, dexterity: 16, intelligence: 3, attunement: 6 } },
+        { label: "Hunting Hawk", speciesId: "HAWK", desc: "Fast and watchful. The quickest and hardest to hit of the companions, with a keen eye for the weak spot, but it cannot take many blows. Strikes and darts back out of harm's way.", attributes: { vigor: 7, strength: 7, dexterity: 16, intelligence: 4, attunement: 6 } },
         { 
             label: "Mercenary", 
             speciesId: "HUMANOID", 

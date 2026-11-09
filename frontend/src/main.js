@@ -267,7 +267,8 @@ ui_icons: './assets/icons/ui_icons.png',
     rotterPortrait: './assets/sprites/rotter/rotter_portrait.png',
     germanSheepherdSprite: './assets/sprites/dogs/german_sheepherd_sprite.png',
     germanSheepherdPortrait: './assets/sprites/dogs/german_sheepherd_portrait.png',
-    hawkPortrait: './assets/sprites/hawk/hawk_portrait.png',
+    hawkPortrait: './assets/sprites/hawk/hawk_portrait.png',   // the hunting hawk companion: battle sheet (rows 0-1 facing left, 4-5 facing right)
+    hawkSprite: './assets/sprites/hawk/hawk_sprite.png',       // its map sheet: it hovers over its shadow
     shackledSteedPortrait: './assets/sprites/shackled_steed/shackled_steed_portrait.png',
     sandStalkerPortrait: './assets/sprites/sand_stalker/sand_stalker_portrait.png',
     grimStagPortrait: './assets/sprites/grim_stag/grim_stag_portrait.png',
@@ -504,6 +505,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     legionaryCry: './assets/audio/sfx/cries/legionary_cry.wav',
     wolfCry: './assets/audio/sfx/cries/wolf_cry.wav',
     snowLeopardCry: './assets/audio/sfx/cries/snow_leopard_cry.wav',
+    hawkCry: './assets/audio/sfx/cries/hawk_cry.wav',   // the hunting hawk companion: a falling scream, synthesized
     caveSpiderCry: './assets/audio/sfx/cries/cave_spider_cry.wav',
     dogCry: './assets/audio/sfx/cries/dog_cry.wav',
     shackledSteedCry: './assets/audio/sfx/cries/shackled_steed_cry.wav',

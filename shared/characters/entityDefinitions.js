@@ -719,22 +719,32 @@ export const ENTITY_DEFINITIONS = {
         tags: [...BEAST_TEMPLATE.tags]
     },
 
-    "AVIAN": {
-        ...BASE_ENTITY,
-        name: "Avian",
+    // A hunting hawk: a starting companion (character creator). The fastest and hardest to hit of the companions, and the most fragile: talons and a
+    // beak (slash and pierce), a sharp eye for the weak spot (critical hits), and Hit & Run to strike and swap out of harm's way. A beast (beast rules,
+    // StatCalculator.usesEnemyScaling). Wind carries it, lightning and ice ground it.
+    "HAWK": {
+        ...BEAST_TEMPLATE,
+        name: "Hawk",
+        level: 1,
+        spriteOverworld: "hawkSprite",
         spritePortrait: "hawkPortrait",
-        statMultipliers: { hpPerVigor: 2, staminaPerDex: 4, insightPerAtt: 1 },
-        attributes: { vigor: 6, strength: 4, dexterity: 16, intelligence: 6, attunement: 8 },
+        crySound: "hawkCry",
+        deathSound: "hawkCry",
+        statMultipliers: { hpPerVigor: 3, staminaPerDex: 3, insightPerAtt: 0.5 },
+        attributes: {
+            ...BEAST_TEMPLATE.attributes,
+            vigor: 7, strength: 7, dexterity: 16, intelligence: 4, attunement: 6
+        },
         baseStats: {
-            ...BASE_ENTITY.baseStats,
-            maxHp: 6, maxStamina: 15, maxInsight: 5, staminaRecovery: 3, speed: 10, critical: 0.15,
-            baseDefense: { earth: 3 },
-            baseResistance: { wind: 0.5, earth: 0.2 },
-            baseAttack: { slash: 4, pierce: 4 }
+            ...BEAST_TEMPLATE.baseStats,
+            maxHp: 10, maxStamina: 14, speed: 14, critical: 0.2, evasion: 115,
+            baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, blunt: 1, slash: 1, pierce: 1, wind: 3 },
+            baseResistance: { wind: 0.4, earth: 0.2, lightning: -0.25, ice: -0.15 },
+            baseAttack: { blunt: 0, slash: 5, pierce: 6 }
         },
         lootTableId: "mad_man_drops",
-        abilities: [...BASE_ENTITY.abilities],
-        tags: ["BIOLOGICAL", "AVIAN"]
+        abilities: [...BASE_ENTITY.abilities, "claw", "hit_and_run"],
+        tags: ["BIOLOGICAL", "BEAST", "AVIAN"]
     },
 
     "GRIM_STAG": {
