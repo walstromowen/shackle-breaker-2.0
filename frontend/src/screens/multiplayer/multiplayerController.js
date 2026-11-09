@@ -3,7 +3,8 @@
  *
  * The Multiplayer screen, opened from the title screen. Four views:
  *   menu    Host a World / Join a World
- *   pick    the host picks which of their saves to open (each save is one world; guests' characters will be kept in it)
+ *   pick    the host starts a New World (everyone makes a character and plays the prologue together) or picks which of their saves to open
+ *           (each save is one world; guests' characters will be kept in it)
  *   join    a guest types the host's code
  *   lobby   up to three players: the code to share, who is in, who is ready. Guests tick Ready; the host starts (and can remove a guest).
  *
@@ -22,7 +23,7 @@ import { TextEntry } from '../../../../shared/core/textEntry.js';
 import { UITheme } from '../../ui/UITheme.js';
 
 export const CODE_LENGTH = 5;
-const PICK_ROWS = 6;
+const PICK_ROWS = 5;
 
 export class MultiplayerController extends BaseController {
     constructor(input) {
@@ -101,6 +102,12 @@ export class MultiplayerController extends BaseController {
 
     _onStarted(room) {
         if (this.view !== 'lobby') return;
+        if (room && room.world && room.world.isNew) {   // a new world: everyone to their character creator (the host's decides the world)
+            this.playConfirmSound();
+            this.active = false;
+            multiplayerSession.startNewWorld();
+            return;
+        }
         if (multiplayer.isHost) {
             this.playConfirmSound();
             this.active = false;
@@ -130,7 +137,7 @@ export class MultiplayerController extends BaseController {
             const more = [];
             if (this.pickOffset > 0) more.push('btn_prev');
             if (this.saves && this.pickOffset + PICK_ROWS < this.saves.length) more.push('btn_next');
-            return [...rows, ...more, 'btn_back'];
+            return ['btn_new_world', ...rows, ...more, 'btn_back'];
         }
         if (this.view === 'join') return ['input_code', 'btn_do_join', 'btn_back'];
         // lobby
@@ -182,6 +189,7 @@ export class MultiplayerController extends BaseController {
         this.kbFocus = id;
         switch (id) {
             case 'btn_host': return this._openPick();
+            case 'btn_new_world': return this._hostNew();
             case 'btn_join': return this._openJoin();
             case 'btn_back': return this.onRightClick();
             case 'btn_prev': this.pickOffset = Math.max(0, this.pickOffset - PICK_ROWS); this.playNavSound(); return;
@@ -242,7 +250,7 @@ export class MultiplayerController extends BaseController {
         multiplayer.connect();   // opens while the player chooses
         try {
             this.saves = await SaveManager.list();
-            if (!this.saves.length) this.savesError = 'You have no saved game to host. Start a new game first, save it, then host it.';
+            if (!this.saves.length) this.savesError = 'You have no saved game yet: start a New World above.';
         } catch {
             this.saves = [];
             this.savesError = 'Your saves could not be read.';
@@ -277,6 +285,17 @@ export class MultiplayerController extends BaseController {
         await multiplayer.connect();
         if (multiplayer.status !== 'online') { this.waitingFor = null; return; }   // the error listener has said why
         multiplayer.host({ name: s.name || 'A world', day: s.day || 1, slot: row.slot });
+    }
+
+    /** A world made fresh for everyone: on Start, every player makes a character and they play the prologue together (engine/multiplayerSession.js). */
+    async _hostNew() {
+        if (this.waitingFor) return;
+        this.playConfirmSound();
+        this.waitingFor = 'host';
+        this.message = { text: 'Opening a new world…', kind: 'info' };
+        await multiplayer.connect();
+        if (multiplayer.status !== 'online') { this.waitingFor = null; return; }
+        multiplayer.host({ name: 'A new world', day: 1, slot: '', isNew: true });
     }
 
     async _join() {
@@ -337,7 +356,8 @@ export class MultiplayerController extends BaseController {
             add('btn_join', 'Join a World', cx - L.btnW / 2, L.panelY + 330 + L.btnH + 24);
             add('btn_back', 'Back', back.x, back.y, back.w, back.h);
         } else if (this.view === 'pick') {
-            const rowW = 860, rowH = 84, rowX = cx - rowW / 2, top = L.panelY + 250;
+            const rowW = 860, rowH = 84, rowX = cx - rowW / 2, top = L.panelY + 346;
+            add('btn_new_world', 'New World', rowX, L.panelY + 250, rowW, 72);
             state.rows = (this.saves || []).slice(this.pickOffset, this.pickOffset + PICK_ROWS).map((row, i) => {
                 const index = this.pickOffset + i;
                 const s = row.summary || {};

@@ -26,7 +26,7 @@ test('a host opens a room with a code; up to three players join it; a fourth is 
     const room = last('ann', 'room').room;
     assert.equal(room.code.length, CODE_LENGTH);
     assert.ok([...room.code].every(c => CODE_ALPHABET.includes(c)));
-    assert.deepEqual(room.world, { name: 'Hero', day: 4, slot: 'slot1' });
+    assert.deepEqual(room.world, { name: 'Hero', day: 4, slot: 'slot1', isNew: false });
     assert.equal(room.players[0].isHost, true);
 
     lobby.handle('bo', { t: 'join', code: room.code.toLowerCase() });   // codes are not case sensitive
@@ -53,6 +53,16 @@ test('only the host starts, and only when every guest is ready', () => {
     lobby.handle('ann', { t: 'start' });
     assert.ok(last('ann', 'started') && last('bo', 'started'));
     assert.equal(last('bo', 'room').room.state, 'playing');
+});
+
+test('a room can be a new world (Host a World > New World): every player is told, and only a real true counts', () => {
+    const { lobby, last } = setup();
+    lobby.handle('ann', { t: 'host', world: { name: 'A new world', day: 1, slot: '', isNew: true } });
+    const code = last('ann', 'room').room.code;
+    lobby.handle('bo', { t: 'join', code });
+    assert.equal(last('bo', 'room').room.world.isNew, true, 'the joining player knows it is a new world');
+    lobby.handle('cy', { t: 'host', world: { isNew: 'yes' } });
+    assert.equal(last('cy', 'room').room.world.isNew, false);
 });
 
 test('a guest leaving frees the place; the host leaving closes the room for everyone', () => {

@@ -366,7 +366,8 @@ export class SceneManager {
 
                 // A NEW game opens with the prologue, an encounter that plays on the fresh world and ends on the overworld (the encounter
                 // is started here, not by an object on the map, so it has no col / row to clear afterwards).
-                if (scene === 'overworld' && this.currentScene === 'character-creator' && !mpJoin) {
+                // (A multiplayer guest whose character was made for a world started new together, `prologue`, plays it too, in the host's world.)
+                if (scene === 'overworld' && ((this.currentScene === 'character-creator' && !mpJoin) || (mpJoin && data && data.prologue))) {
                     this.overworldController.isLocked = true;
                     this.activeEncounterBGM = null;
                     this.encounterController.start('prologue', {});

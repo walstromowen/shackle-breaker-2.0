@@ -65,9 +65,9 @@ export class MultiplayerRenderer {
 
     _pick(ui, state, cx, focus) {
         const L = state.layout;
-        ui.drawText('Choose the world to open. Your friends\' characters will be kept in this save.', cx, L.panelY + 210, F.italic, C.textMuted, 'center', 'alphabetic', L.panelW - 120);
-        if (state.loading) { ui.drawStyled('empty', 'Reading your saves', cx, L.panelY + 330); return; }
-        if (state.savesError) { ui.drawStyled('empty', state.savesError, cx, L.panelY + 330, { maxWidth: L.panelW - 160 }); return; }
+        ui.drawText('Start a new world together (everyone plays the prologue), or open a save. Friends\' characters are kept in it.', cx, L.panelY + 210, F.italic, C.textMuted, 'center', 'alphabetic', L.panelW - 120);
+        if (state.loading) { ui.drawStyled('empty', 'Reading your saves', cx, L.panelY + 430); return; }
+        if (state.savesError) { ui.drawStyled('empty', state.savesError, cx, L.panelY + 430, { maxWidth: L.panelW - 160 }); return; }
         for (const r of state.rows) {
             const flags = ui.flags(r.id, focus);
             ui.drawPanel(r.x, r.y, r.w, r.h, 'rgba(0, 0, 0, 0.35)');
@@ -103,7 +103,7 @@ export class MultiplayerRenderer {
         const L = state.layout;
         const room = state.room;
         if (!room) { ui.drawStyled('empty', 'Opening the world', cx, L.panelY + 330); return; }
-        ui.drawText(`${room.world.name}'s world  ·  Day ${room.world.day}`, cx, L.panelY + 200, F.bold, C.textMain, 'center');
+        ui.drawText(room.world.isNew ? 'A new world  ·  everyone plays the prologue together' : `${room.world.name}'s world  ·  Day ${room.world.day}`, cx, L.panelY + 200, F.bold, C.textMain, 'center');
         ui.drawText(state.isHost ? 'Share this code with your friends:' : 'World code:', cx, L.panelY + 246, F.small, C.textMuted, 'center');
         this._codeCells(ui, room.code, room.code.length, cx, L.panelY + 310, false);
 

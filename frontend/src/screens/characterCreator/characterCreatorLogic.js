@@ -190,8 +190,26 @@ export class CharacterCreatorLogic {
         this.currentRow = this._cycle(this.currentRow, this.menuOrder.length, dir);
     }
 
+    /** The rows a player joining someone's world may not change: the world's own settings, which are the host's. */
+    lockedSteps() {
+        return multiplayerSession.creatingCharacter ? ['difficulty', 'cheats', 'seed'] : [];
+    }
+
+    /** What a locked row shows: the host world's value when it is known, else that the host decides. */
+    hostSetting(step) {
+        const w = multiplayerSession.pending && multiplayerSession.pending.world;
+        if (step === 'difficulty') { const d = w && CREATION_DATA.DIFFICULTIES.find(x => x.id === w.difficulty); return d ? d.label : "Host's choice"; }
+        if (step === 'cheats') return w ? (w.cheats === true ? 'On' : 'Off') : "Host's choice";
+        if (step === 'seed') return "Host's world";
+        return '';
+    }
+
+    /** Waiting for the other players of a new world to make their characters: { ready, total, waitingFor } or null. */
+    waitingForOthers() { return multiplayerSession.newWorldWaiting(); }
+
     modifyValue(dir) {
         const step = this.menuOrder[this.currentRow];
+        if (this.lockedSteps().includes(step) || this.waitingForOthers()) return false;
         const d = CREATION_DATA;
 
         const stepConfig = {
@@ -235,6 +253,8 @@ export class CharacterCreatorLogic {
 
     handleAction() {
         const step = this.menuOrder[this.currentRow];
+        if (this.waitingForOthers()) return;
+        if (this.lockedSteps().includes(step)) return;
         if (step === 'name') this.isEditingName = true;
         else if (step === 'seed') this.isEditingSeed = true;
         else if (step === 'start') this.finalizeCharacter();
@@ -410,6 +430,8 @@ export class CharacterCreatorLogic {
             gameState.quests.trackedIds.push(backgroundQuestId);
         }
 
+        // a new world started together (Host a World > New World): wait for the others, then everyone plays the prologue (engine/multiplayerSession.js)
+        if (multiplayerSession.makingNewWorld) { multiplayerSession.characterReady(); return; }
         // a multiplayer guest's first visit: the party steps into the host's world instead of a new one (engine/multiplayerSession.js)
         if (multiplayerSession.creatingCharacter) { multiplayerSession.characterCreated(); return; }
 
