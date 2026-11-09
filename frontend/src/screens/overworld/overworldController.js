@@ -461,7 +461,7 @@ export class OverworldController extends BaseController {
         if (this.player.isMoving) {
             this.continueMoving(dt);
         } else {
-            this.checkForNewMove();
+            this.checkForNewMove(dt);
         }
 
         this.updateCamera();
@@ -786,10 +786,26 @@ export class OverworldController extends BaseController {
         }
     }
 
-    checkForNewMove() {
+    /* A step, from standing still or chained on from the last one (`chained`: a key still held as a step ends never pauses).
+       Standing still, a press towards a new direction only turns the character on the spot: a tap turns, it does not walk. Held on for
+       TURN_HOLD seconds, the walk starts that way. A press the way the character already faces walks at once. */
+    checkForNewMove(dt = 0, chained = false) {
         if (multiplayerSocial.prompt) return;
         const dir = this.input.direction;
-        if (!dir) return;
+        if (!dir) { this._turnHold = null; return; }
+        const TURN_HOLD = 0.12;
+        if (!chained) {
+            if (dir !== String(this.player.direction || '').toUpperCase()) {   // (a new character faces 'down')
+                this.player.direction = dir;          // turn to face it
+                this._turnHold = { dir, t: 0 };
+                return;
+            }
+            if (this._turnHold && this._turnHold.dir === dir) {
+                this._turnHold.t += dt;
+                if (this._turnHold.t < TURN_HOLD) return;   // still deciding: a tap stops here
+            }
+        }
+        this._turnHold = null;
 
         const { TILE_SIZE } = this.config;
         let nextX = this.player.x;
@@ -928,7 +944,7 @@ export class OverworldController extends BaseController {
         if (this.isLocked) return;
 
         if (this.input.direction) {
-            this.checkForNewMove();
+            this.checkForNewMove(0, true);   // walking on: no pause to turn
         } else {
             this.setAnimIdle();
         }
