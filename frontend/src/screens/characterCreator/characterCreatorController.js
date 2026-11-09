@@ -78,6 +78,8 @@ export class CharacterCreatorController extends BaseController {
             this.logic.setRowByStep('seed');
         } else if (hitboxId === 'BTN_START') {
             this.logic.setRowByStep('start');
+        } else if (hitboxId === 'BTN_SEX') {
+            this.logic.setRowByStep('appearance');
         } else if (hitboxId.startsWith('ROW_')) {
             this.logic.setRowByStep(hitboxId.replace('ROW_', ''));
         } else if (hitboxId.startsWith('BTN_PREV_')) {
@@ -106,6 +108,9 @@ export class CharacterCreatorController extends BaseController {
             this.logic.isEditingSeed = true;
         } else if (hitboxId === 'BTN_START') {
             this.logic.finalizeCharacter();
+        } else if (hitboxId === 'BTN_SEX') {
+            this.logic.setRowByStep('appearance');
+            this.logic.toggleSex();
         } else if (hitboxId.startsWith('BTN_NEXT_')) {
             this.logic.setRowByStep(hitboxId.replace('BTN_NEXT_', ''));
             return this._adjustValue(1);

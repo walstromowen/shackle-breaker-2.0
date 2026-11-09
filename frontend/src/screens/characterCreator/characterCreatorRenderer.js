@@ -131,8 +131,10 @@ export class CharacterCreatorRenderer {
 
         if (appData) {
             ctx.save();
-            const masterSheet = this.loader.get(appData.spritePortrait);
-            const overworldSheet = this.loader.get(appData.spriteOverworld);
+            // the look in the chosen sex (its female sprites when the Male / Female button says Female)
+            const look = (selections.sex === 'female' && appData.female) || appData;
+            const masterSheet = this.loader.get(look.spritePortrait);
+            const overworldSheet = this.loader.get(look.spriteOverworld);
             const spriteX = startVisualX + portraitSize + visualGap;
 
             ui.drawRect(startVisualX, portraitY, portraitSize, portraitSize, "rgba(0,0,0,0.6)", true);
@@ -166,6 +168,12 @@ export class CharacterCreatorRenderer {
 
             ui.drawRect(startVisualX, portraitY, portraitSize, portraitSize, UITheme.colors.border, false);
             ui.drawRect(spriteX, spriteY, spriteBoxW, spriteBoxH, UITheme.colors.border, false);
+
+            // The Male / Female button, under the walking figure: switches every look between its male and female version
+            const sexBtn = { id: 'BTN_SEX', x: spriteX, y: spriteY + spriteBoxH + 14, w: spriteBoxW, h: 46 };
+            this.hotspots.push({ ...sexBtn, clickSfx: UI_SFX.step });
+            const sexLabel = (data.SEXES || []).find(s => s.id === (selections.sex || 'male'))?.label || 'Male';
+            ui.drawButton(sexBtn.x, sexBtn.y, sexBtn.w, sexBtn.h, sexLabel, ui.flags('BTN_SEX', focusId), { font: UITheme.fonts.small });
 
             ctx.restore();
         }
@@ -461,7 +469,7 @@ export class CharacterCreatorRenderer {
 
         if (currentStep === 'background') return data.BACKGROUNDS?.[selections.backgroundIdx]?.desc;
         if (currentStep === 'origin') return data.ORIGINS?.[selections.originIdx]?.label ? data.ORIGINS[selections.originIdx].desc : "";
-        if (currentStep === 'appearance') return "Choose the physical form you shall take in this realm.";
+        if (currentStep === 'appearance') return "Choose the physical form you shall take in this realm.\nThe button under the figure (or Enter) switches between male and female.";
         if (currentStep === 'keepsake') return data.KEEPSAKES?.[selections.keepsakeIdx]?.desc;
         if (currentStep === 'companion') return data.COMPANIONS?.[selections.companionIdx]?.desc;
         if (currentStep === 'trait') return data.TRAITS?.[selections.traitIdx]?.desc;
@@ -470,4 +478,4 @@ export class CharacterCreatorRenderer {
 
         return "";
     }
-}
+}
