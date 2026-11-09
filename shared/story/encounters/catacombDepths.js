@@ -92,11 +92,11 @@ export const infernusSentinel = {
             bgm: "choirOfTheDeadBgm",   // Choir of the Dead: starts as the statue wakes and carries on into the fight
             sfx: "rockThud",
             effect: "shake",
-            text: "A stone knight stands before the far lever, sword planted at its feet. As you draw near, dust sifts from its shoulders. The crowned head turns, stone grinding on stone, and the statue steps down from its plinth and lifts its sword.",
+            text: "A stone knight stands before the far lever. As you draw near, dust sifts from its shoulders. The crowned head turns, and the statue steps down from its plinth.",
             decisions: [
                 {
                     text: "Draw your weapon.",
-                    customActionText: "\"Children of Altus. Again you come down with that light in your hands. Infernus burned for it once. None of your blood shall pass.\"",
+                    customActionText: "\"Again the light. Again the fall.\"",
                     outcomes: [{ weight: 100, results: [SENTINEL_FIGHT] }]
                 }
             ]
@@ -117,7 +117,7 @@ export const infernusSentinelFallen = {
             bgm: "none",
             sfx: "rockThud",
             effect: "shake",
-            text: "The Sentinel staggers, and the night inside it flickers. Cracks race across the stone, and with a sound like a mountain settling it breaks apart at the foot of the lever. One by one, the stars inside go dark.",
+            text: "Cracks race through the stone, and the Sentinel crumbles at the foot of the lever. From the rubble, one last whisper: \"Below, they remember.\"",
             decisions: [{ text: "Leave the rubble to the dark.", outcomes: [{ weight: 100, results: [{ type: "DESTROY_OBJECT" }, END] }] }]
         }
     }

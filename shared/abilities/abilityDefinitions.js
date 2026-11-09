@@ -310,6 +310,22 @@ export const AbilityDefinitions = {
         effects: [],
         statusEffects: [{ id: "enraged", chance: 1.0, duration: 3 }]
     },
+    // The Infernus Sentinel's (boss) cry: Intimidate on the whole enemy party at once.
+    "mass_fear": {
+        id: "mass_fear",
+        name: "Mass Fear",
+        description: "A dread that falls on every enemy at once, weakening each of their slash, blunt and pierce attacks by half for 3 turns.",
+        range: "ranged",
+        tags: ["support", "sound", "debuff", "fear", "aoe"],
+        battleMessage: "{user} turns its gaze on them all. Dread takes hold!",
+        icon: { col: 4, row: 11 },
+        targeting: { scope: "all_enemies", select: "auto" },
+        cost: { stamina: 22 },
+        accuracy: 1.0,
+        animationId: "mass_fear",
+        effects: [],
+        statusEffects: [{ id: "weakened", chance: 1.0, duration: 3 }]
+    },
     "intimidate": {
         id: "intimidate",
         name: "Intimidate",
@@ -808,6 +824,25 @@ export const AbilityDefinitions = {
         animationId: "vine_lash",
         effects: [{ type: "damage", damageType: "earth", power: 1.25 }],
         statusEffects: [{ id: "bound", chance: 0.15, duration: 2 }]
+    },
+    // The Infernus Sentinel's (boss) blow: a stone fist that crushes (blunt) and grinds (earth) into the target's magic, sapping their insight into its own.
+    "sapping_slam": {
+        id: "sapping_slam",
+        name: "Sapping Slam",
+        description: "A crushing blow of living stone. Deals blunt damage, then grinds earth into the target's magic, draining their insight; half of what it drains becomes its own stamina.",
+        range: "melee",
+        tags: ["physical", "contact", "blunt", "earth", "heavy", "leech"],
+        battleMessage: "{user} brings down a {ability} on {target}!",
+        icon: { col: 0, row: 6 },
+        targeting: { scope: "enemy", select: "single" },
+        cost: { stamina: 18 },
+        speedModifier: 0.9,
+        accuracy: 0.9,
+        animationId: "sapping_slam",
+        effects: [
+            { type: "damage", damageType: "blunt", power: 1.3 },
+            { type: "damage", damageType: "earth", resource: "insight", power: 1.6, drain: 0.5, drainResource: "stamina" }
+        ]
     },
     "boulder_throw": {
         id: "boulder_throw",

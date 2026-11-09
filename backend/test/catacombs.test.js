@@ -333,3 +333,35 @@ test('caves and catacombs have more fights than anywhere outside; traps hurt bad
     assert.ok(hurt.length >= 3);
     for (const [id, pct] of hurt) assert.ok(pct >= 40, `${id}: ${pct}% of max HP`);
 });
+
+test('the Infernus Sentinel: a stone wall of blunt and earth that saps magic, with Mass Fear, Bolster, Reckless Charge and Wild Swing', async () => {
+    const { ENTITY_DEFINITIONS } = await import('../../shared/characters/entityDefinitions.js');
+    const { AbilityDefinitions } = await import('../../shared/abilities/abilityDefinitions.js');
+    const { BattleAnimationDefinitions } = await import('../../shared/battle/animation/battleAnimationDefinition.js');
+    const S = ENTITY_DEFINITIONS.INFERNUS_SENTINEL, D = ENTITY_DEFINITIONS.DARIUS_THE_GROVELER;
+    assert.deepEqual(S.abilities.filter(id => id !== 'rest').sort(), ['bolster', 'mass_fear', 'reckless_charge', 'sapping_slam', 'wild_swing']);
+    for (const id of S.abilities) {
+        assert.ok(AbilityDefinitions[id], `${id} exists`);
+        assert.ok(BattleAnimationDefinitions[AbilityDefinitions[id].animationId], `${id} has its animation`);
+    }
+    // Mass Fear is Intimidate on every enemy at once
+    const fear = AbilityDefinitions.mass_fear, intim = AbilityDefinitions.intimidate;
+    assert.equal(fear.targeting.scope, 'all_enemies');
+    assert.deepEqual(fear.statusEffects, intim.statusEffects);
+    // Sapping Slam: blunt to health, then earth to insight, half of that drained into its own stamina
+    const slam = AbilityDefinitions.sapping_slam.effects;
+    assert.equal(slam[0].damageType, 'blunt');
+    assert.deepEqual([slam[1].damageType, slam[1].resource, slam[1].drain > 0], ['earth', 'insight', true]);
+    // it hits with blunt and earth only, and its armour beats Darius's against everything but blunt and earth
+    assert.deepEqual(Object.keys(S.baseStats.baseAttack).sort(), ['blunt', 'earth']);
+    for (const t of ['slash', 'pierce', 'fire', 'ice', 'lightning', 'wind'])
+        assert.ok(S.baseStats.baseDefense[t] + 10 * S.baseStats.baseResistance[t] >= D.baseStats.baseDefense[t] + 10 * D.baseStats.baseResistance[t] || S.baseStats.baseResistance[t] >= D.baseStats.baseResistance[t], `${t}: more defence than Darius`);
+    assert.ok(S.baseStats.baseResistance.blunt < S.baseStats.baseResistance.slash, 'hammers are its weakness');
+});
+
+test("the Sentinel's lines are short and cryptic", async () => {
+    const { encounterDefinitions } = await import('../../shared/story/encounterDefinitions.js');
+    const wake = encounterDefinitions.infernus_sentinel.stages.wakes.decisions[0].customActionText;
+    const fall = encounterDefinitions.infernus_sentinel_fallen.stages.fallen.text.match(/"([^"]+)"/)[1];
+    for (const line of [wake.replace(/"/g, ''), fall]) assert.ok(line.split(/\s+/).length <= 8, `"${line}" is short`);
+});
