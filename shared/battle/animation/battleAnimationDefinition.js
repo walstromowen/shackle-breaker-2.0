@@ -557,6 +557,18 @@ export const BattleAnimationDefinitions = {
         ],
         target: { shake: shake(0.6, 1.5, 45), flash: flash(0.6, 1.6, 'brightness(300%) sepia(100%) hue-rotate(350deg) saturate(600%) drop-shadow(0 0 15px red)') }
     }),
+    // Mass Fear (the Infernus Sentinel): the statue's eyes kindle violet, a low rumble, and a wave of dread rolls over every enemy at once.
+    "mass_fear": anim(2.4, {
+        seconds: true,
+        audio: [sfx(0.05, 'intimidateSfx', { volume: 1.1, pitch: 0.45 }), sfx(0.35, 'earthquake1Sfx', { volume: 0.5, pitch: 0.7 })],
+        actor: { flash: flash(0, 1.4, tint('purple', { bright: 70, sat: 400, glow: 'purple' })) },
+        vfx: [
+            spawn(0.4, 'intimidateAnimation', { life: 0.9, move: 'expand_and_fade', scale: 2.4, blend: 'multiply' }),
+            spawn(0.75, 'intimidateAnimation', { life: 0.7, move: 'expand_and_fade', scale: 1.6, blend: 'multiply', alpha: 0.6 }),
+            ...repeat(0.4, 6, 0.15, t => burst(t, { count: 4, color: '#7a4fd0', shape: 'puff', scale: 0.8, grow: 1.4, minSpeed: 20, maxSpeed: 80, minLife: 0.6, maxLife: 0.9, gravity: -20, glow: false, area: [160, 40], offsetY: 40, blend: 'normal', envelope: true }))
+        ],
+        target: { shake: shake(0.4, 1.6, 18), flash: flash(0.4, 1.8, 'brightness(55%) sepia(80%) hue-rotate(250deg) saturate(220%)') }
+    }),
     "intimidate": anim(2, {
         audio: [sfx(0.1, 'intimidateSfx', { volume: 1, pitch: 0.7 })],
         actor: lunge(0, 0.2, 40, { flash: flash(0, 0.5, 'brightness(50%) sepia(100%) hue-rotate(260deg) saturate(400%) drop-shadow(0 0 10px purple)') }),
@@ -928,6 +940,27 @@ export const BattleAnimationDefinitions = {
             burst(1.9, { count: 10, color: '#fff7d6', scale: 0.45, minSpeed: 20, maxSpeed: 70, minLife: 0.5, maxLife: 0.9, gravity: -40, offsetY: -30 })
         ],
         target: { flash: flash(0.1, 2.4, 'brightness(120%) sepia(40%) saturate(120%)') }
+    }),
+    // Sapping Slam (the Infernus Sentinel): a stone fist comes down (dust and grit thrown up), then the target's insight is pulled out of them in blue motes
+    // that stream back and gather around the statue.
+    "sapping_slam": anim(2.4, {
+        seconds: true,
+        hit: 0.35,
+        audio: [
+            sfx('hit-0.05', 'earthquake2Sfx', { volume: 0.9, pitch: 1.2 }),
+            sfx(0.9, 'spiritReapSfx', { volume: 0.6, pitch: 1.3 })
+        ],
+        actor: lunge(0.1, 0.5, 60, { flash: flash(1.2, 2.2, tint('blue', { bright: 140, sat: 300, glow: 'royalblue' })) }),
+        vfx: [
+            burst('hit', { count: 16, color: '#6b5a44', scale: 1.0, minSpeed: 160, maxSpeed: 380, minLife: 0.5, maxLife: 0.9, gravity: 800, angle: 270, cone: 70, blend: 'source-over', offsetY: 40 }),
+            ...repeat(0.35, 4, 0.12, t => burst(t, { count: 3, color: '#a08a6a', shape: 'puff', scale: 0.9, grow: 1.5, minSpeed: 20, maxSpeed: 80, minLife: 0.5, maxLife: 0.9, gravity: -30, glow: false, area: [140, 30], offsetY: 50, blend: 'normal', envelope: true })),
+            ...repeat(0.75, 6, 0.1, t => burst(t, { count: 3, color: '#4a7dff', scale: 0.6, area: [90, 50], offsetY: 0, angle: 270, cone: 25, minSpeed: 100, maxSpeed: 190, minLife: 0.6, maxLife: 0.9, gravity: -30, envelope: true })),
+            ...[0, 2.094, 4.189].map(phase => orbit(1.2, { at: 'source', life: 1.0, turns: 1.25, radius: 95, squash: 0.45, phase, scale: 0.45, color: '#6a9bff', offsetY: -30 }))
+        ],
+        target: {
+            shake: shake('hit', 1.0, 30),
+            flash: flash('hit', 1.6, 'brightness(70%) sepia(70%) hue-rotate(190deg) saturate(250%)')
+        }
     }),
     "shield_bash": anim(1.3, {
         audio: [sfx(0.15, 'strikeSfx', { volume: 1, pitch: 0.7 })],

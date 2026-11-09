@@ -919,21 +919,16 @@ STRANGER: "Come back when you've seen what walks under the red moon. Or don't. I
 
 ===== THE INFERNUS SENTINEL (infernus_sentinel) =====
 
-[stirs]
-The hall is round and utterly dark. Before a lever in the far wall stands a knight carved from black stone, taller than any man. Through the cracks in its armour there is no stone, only night sky, and the stars in it are moving.
-  > Hold your ground.
-  > Back away into the dark.
-
-[challenge]
-Stone grinds on stone as it lifts its sword. "Children of Altus. Again you come down with that light in your hands. Infernus burned for it once. Behind me lies the way down to its ruin, and none of your blood shall pass."
+[wakes]
+A stone knight stands before the far lever. As you draw near, dust sifts from its shoulders. The crowned head turns, and the statue steps down from its plinth.
   > Draw your weapon.
-  > Back away into the dark.
+      "Again the light. Again the fall."
 
 
 ===== THE INFERNUS SENTINEL (infernus_sentinel_fallen) =====
 
 [fallen]
-The Sentinel staggers, and the night inside it flickers. Cracks race across the stone, and with a sound like a mountain settling it breaks apart at the foot of the lever. One by one, the stars inside go dark.
+Cracks race through the stone, and the Sentinel crumbles at the foot of the lever. From the rubble, one last whisper: "Below, they remember."
   > Leave the rubble to the dark.
 
 

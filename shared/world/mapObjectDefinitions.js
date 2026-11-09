@@ -270,11 +270,11 @@ export const MAP_OBJECTS_DEFINITIONS = {
     // THE BOSS'S HALL (world/catacombPuzzle.js): between the gate and the main chamber, a dark round hall where the Infernus Sentinel, a living stone statue
     // of a cosmic knight on its plinth, guards the doorway down to the Infernus kingdom: the lever behind it raises a second gate into the main chamber.
     // Coming within 3 cells wakes it (story/encounters/catacombDepths.js). The lever does nothing while the Sentinel stands. Drawn like the hooded stranger,
-    // from its character's own overworld sheet (npcBody), only bigger: 96 px frames where a person has 64, standing on a base three cells wide centred on
+    // from its character's own overworld sheet (npcBody), only bigger: 128 px frames where a person has 64, standing on a base three cells wide centred on
     // its cell. The faint violet starlight in its cracks is all the light in the hall.
     INFERNUS_SENTINEL: {
         ...npcBody('INFERNUS_SENTINEL'),
-        character: { ...npcBody('INFERNUS_SENTINEL').character, frame: { w: 96, h: 96, shiftX: 0 } },
+        character: { ...npcBody('INFERNUS_SENTINEL').character, frame: { w: 128, h: 128, shiftX: 0 } },
         hitbox: { xOffset: -1, yOffset: 0, w: 3, h: 1 },
         interaction: { type: 'ENCOUNTER', id: 'infernus_sentinel', triggerRadius: 3 },
         light: { hasLight: true, radius: 3.2, color: '165, 140, 255', maxAlpha: 0.6, flickerSpeed: 0.03, flickerAmp: 0.3 }

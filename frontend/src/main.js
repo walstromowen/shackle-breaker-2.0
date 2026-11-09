@@ -230,6 +230,15 @@ ui_icons: './assets/icons/ui_icons.png',
     spritesheet: './assets/sprites/hero.png',
 
     legionaryHeroPortrait: './assets/sprites/legionary_hero/legionary_hero_portrait.png',
+    // the female version of each hero look (character creator: the Male / Female button). Blank placeholders for now, the same size as the male sheets.
+    legionaryHeroFemalePortrait: './assets/sprites/legionary_hero/legionary_hero_female_portrait.png',
+    legionaryHeroFemaleSprite: './assets/sprites/legionary_hero/legionary_hero_female_sprite.png',
+    warlordHeroFemalePortrait: './assets/sprites/warlord_hero/warlord_hero_female_portrait.png',
+    warlordHeroFemaleSprite: './assets/sprites/warlord_hero/warlord_hero_female_sprite.png',
+    nightbladeHeroFemalePortrait: './assets/sprites/nightblade_hero/nightblade_hero_female_portrait.png',
+    nightbladeHeroFemaleSprite: './assets/sprites/nightblade_hero/nightblade_hero_female_sprite.png',
+    avalancherHeroFemalePortrait: './assets/sprites/avalancher_hero/avalancher_hero_female_portrait.png',
+    avalancherHeroFemaleSprite: './assets/sprites/avalancher_hero/avalancher_hero_female_sprite.png',
     legionaryCompanionPortrait: './assets/sprites/legionary_companion/legionary_companion_portrait.png',
     warlordHeroPortrait: './assets/sprites/warlord_hero/warlord_hero_portrait.png',
     nightbladeHeroPortrait: './assets/sprites/nightblade_hero/nightblade_hero_portrait.png',
@@ -239,7 +248,7 @@ ui_icons: './assets/icons/ui_icons.png',
     nightbladeHeroSprite: './assets/sprites/nightblade_hero/nightblade_hero_sprite.png',
     madmanSprite: './assets/sprites/madman/madman_sprite.png',
     shadyMerchantSprite: './assets/sprites/shady_merchant/shady_merchant_spritesheet.png',
-    infernusSentinelSprite: './assets/sprites/infernus_sentinel/infernus_sentinel_sprite.png',   // the catacombs' boss as its map object draws it (96 px frames; a placeholder from the battle art)
+    infernusSentinelSprite: './assets/sprites/infernus_sentinel/infernus_sentinel_sprite.png',   // the catacombs' boss as its map object draws it (128 px frames, a still statue)
     hoodedStrangerSprite: './assets/sprites/hooded_stranger/hooded_stranger_sprite.png',   // the quest giver in a village workshop (one front frame; tools/art/overworldSheetFromFrame.py)
     snowLeopardSprite: './assets/sprites/snow_leopard/snow_leopard_sprite.png',
     artificerHeroPortrait: './assets/sprites/artificer_hero/artificer_hero_portrait.png',
@@ -488,6 +497,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     aDisturbingSightBgm: './assets/audio/music/a_disturbing_sight.mp3',
     poachersNightmareBgm: './assets/audio/music/poachers_nightmare.mp3',
     apexPredatorBgm: './assets/audio/music/apex_predator.mp3',
+    choirOfTheDeadBgm: './assets/audio/music/choir_of_the_dead.mp3',   // the Infernus Sentinel: from the moment the statue wakes (catacombDepths.js, stage wakes) on into its fight
     dariusEncounterBgm: './assets/audio/music/darius-final-battle.mp3',   // Darius the Groveler: from the moment he turns on you (mysteriousAltar.js, stage darius_wrath) on into his fight
 
     // --- CREATURE CRIES & DEATHS ---

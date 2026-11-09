@@ -5,7 +5,7 @@
                              from their niches and must be fought (the door is open either way).
      infernus_sentinel       INFERNUS_SENTINEL: the boss of the catacombs, a living statue of a cosmic knight that guards the doorway down to Infernus,
                              the ancient kingdom under Altus (docs/story.md). It stands in the dark round hall before the main chamber, in front of the
-                             lever that raises the last gate. Coming within 3 cells wakes it (triggerRadius). Backing away ends it; it wakes again when you come back.
+                             lever that raises the last gate. Coming within 3 cells wakes it (triggerRadius): the statue comes to life and the only answer is to draw your weapon.
      infernus_sentinel_fallen   after the Sentinel's fight is won (afterVictory): it breaks apart and is gone from the map, so the lever can be pulled.
 
    Art: assets/icons/encounters/catacomb_depths.png registered as `encounter_catacomb_depths`, a 4 x 4 grid of 128 px cells:
@@ -15,7 +15,7 @@
 const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
 const END = { type: "END_ENCOUNTER", payload: null };
 const OPEN_DOOR = { type: "REPLACE_OBJECT", payload: { objectId: "VAULT_DOOR_OPEN" } };
-const SENTINEL_FIGHT = { type: "START_BATTLE", payload: { tableId: "infernus_sentinel_boss", afterVictory: { encounterId: "infernus_sentinel_fallen" }, bgm: "shackledMarchBgm" } };
+const SENTINEL_FIGHT = { type: "START_BATTLE", payload: { tableId: "infernus_sentinel_boss", afterVictory: { encounterId: "infernus_sentinel_fallen" }, bgm: "choirOfTheDeadBgm" } };   // the same track as the stage, so it never stops
 
 export const catacombVaultDoor = {
     id: "catacomb_vault_door",
@@ -82,30 +82,23 @@ export const infernusSentinel = {
     id: "infernus_sentinel",
     title: "The Infernus Sentinel",
     imageSheet: "encounter_catacomb_depths",
-    initialStage: "stirs",
+    initialStage: "wakes",
     tone: "cold",
     stages: {
-        stirs: {
-            displayText: "Something in the Dark",
+        // walking up to the statue wakes it (triggerRadius): one stage, one choice, then the fight
+        wakes: {
+            displayText: "The Statue Wakes",
             image: { col: 2, row: 0 },
-            bgm: "none",
-            sfx: "heartbeat",
-            text: "The hall is round and utterly dark. Before a lever in the far wall stands a knight carved from black stone, taller than any man. Through the cracks in its armour there is no stone, only night sky, and the stars in it are moving.",
-            decisions: [
-                { text: "Hold your ground.", outcomes: toStage("challenge") },
-                { text: "Back away into the dark.", outcomes: [{ weight: 100, results: [END] }] }
-            ]
-        },
-        challenge: {
-            displayText: "The Infernus Sentinel",
-            image: { col: 2, row: 0 },
-            effect: "shake",
-            bgm: "shackledMarchBgm",
+            bgm: "choirOfTheDeadBgm",   // Choir of the Dead: starts as the statue wakes and carries on into the fight
             sfx: "rockThud",
-            text: "Stone grinds on stone as it lifts its sword. \"Children of Altus. Again you come down with that light in your hands. Infernus burned for it once. Behind me lies the way down to its ruin, and none of your blood shall pass.\"",
+            effect: "shake",
+            text: "A stone knight stands before the far lever. As you draw near, dust sifts from its shoulders. The crowned head turns, and the statue steps down from its plinth.",
             decisions: [
-                { text: "Draw your weapon.", outcomes: [{ weight: 100, results: [SENTINEL_FIGHT] }] },
-                { text: "Back away into the dark.", outcomes: [{ weight: 100, results: [END] }] }
+                {
+                    text: "Draw your weapon.",
+                    customActionText: "\"Again the light. Again the fall.\"",
+                    outcomes: [{ weight: 100, results: [SENTINEL_FIGHT] }]
+                }
             ]
         }
     }
@@ -124,7 +117,7 @@ export const infernusSentinelFallen = {
             bgm: "none",
             sfx: "rockThud",
             effect: "shake",
-            text: "The Sentinel staggers, and the night inside it flickers. Cracks race across the stone, and with a sound like a mountain settling it breaks apart at the foot of the lever. One by one, the stars inside go dark.",
+            text: "Cracks race through the stone, and the Sentinel crumbles at the foot of the lever. From the rubble, one last whisper: \"Below, they remember.\"",
             decisions: [{ text: "Leave the rubble to the dark.", outcomes: [{ weight: 100, results: [{ type: "DESTROY_OBJECT" }, END] }] }]
         }
     }

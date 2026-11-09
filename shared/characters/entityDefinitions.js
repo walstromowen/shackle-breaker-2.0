@@ -960,38 +960,39 @@ export const ENTITY_DEFINITIONS = {
         name: "The Infernus Sentinel",
         level: 1,
         spritePortrait: "infernusSentinelPortrait",
-        // its overworld sheet (96 px frames, a still statue facing you: tools/art/overworldSheetFromFrame.py ... 96 --still --fit) is what its map object
-        // INFERNUS_SENTINEL draws, like the hooded stranger's
+        // its overworld sheet (128 px frames, a still statue facing you, the front frame of tools/art/sources/infernus_sentinel_rotations.png:
+        // tools/art/overworldSheetFromFrame.py ... 128 --still --feet) is what its map object INFERNUS_SENTINEL draws, like the hooded stranger's
         spriteOverworld: "infernusSentinelSprite",
         crySound: "calcifiedCrusaderCry",
         deathSound: "calcifiedCrusaderCry",
         attributes: {
             ...HUMANOID_TEMPLATE.attributes,
-            vigor: 22, strength: 20, dexterity: 6, intelligence: 14, attunement: 18
+            vigor: 22, strength: 18, dexterity: 6, intelligence: 10, attunement: 16
         },
         baseStats: {
             ...HUMANOID_TEMPLATE.baseStats,
-            maxHp: 90, maxStamina: 30, maxInsight: 50, speed: 5, critical: 0.08,
+            maxHp: 90, maxStamina: 40, maxInsight: 30, speed: 5, critical: 0.06,
             maxHpMultiplier: 2,
+            // living stone: very hard to hurt with anything. Hammers (blunt) and the earth still crack it; blades, arrows and the elements barely mark it.
             baseDefense: {
                 ...HUMANOID_TEMPLATE.baseStats.baseDefense,
-                blunt: -1, slash: 7, pierce: 8, arcane: 6,
-                fire: 5, ice: 4, lightning: 4, earth: 0, wind: 5, water: 2, dark: 5,
-                light: 2
+                blunt: 4, slash: 5, pierce: 5, arcane: 8,
+                fire: 6, ice: 6, lightning: 6, earth: 3, wind: 6, water: 4, dark: 6,
+                light: 4
             },
             baseResistance: {
-                blunt: -0.1, slash: 0.45, pierce: 0.5,
-                fire: 0.4, ice: 0.3, lightning: 0.35, earth: 0, wind: 0.4, water: 0.15,
-                arcane: 0.5, dark: 0.5, light: 0.2
+                blunt: 0.15, slash: 0.35, pierce: 0.4,
+                fire: 0.4, ice: 0.35, lightning: 0.35, earth: 0.15, wind: 0.4, water: 0.25,
+                arcane: 0.5, dark: 0.45, light: 0.25
             },
-            baseAttack: { blunt: 4, slash: 8, arcane: 5, earth: 3 }
+            baseAttack: { blunt: 4, earth: 6 }
         },
         equipment: { ...HUMANOID_TEMPLATE.equipment },
         currencyReward: { min: 220, max: 520 },
         lootTableId: "boss_sentinel_drops",
-        // Cleave cuts the whole line, Guard Break answers a fortified party, Shield Bash and Boulder Throw knock heads down, Gravity crushes the
-        // healthiest to half, Meteor Shower rains the sky on them. ("rest" is only the AI's fallback when it can afford nothing.)
-        abilities: ["rest", "strike", "cleave", "guard_break", "shield_bash", "boulder_throw", "gravity", "meteor_shower"],
+        // Its moveset, exactly: Sapping Slam (blunt and earth, drains the target's insight into its own), Mass Fear (Intimidate on every enemy),
+        // Bolster (its stone hardens further), Reckless Charge, Wild Swing. ("rest" is only the AI's fallback when it can afford nothing.)
+        abilities: ["rest", "sapping_slam", "mass_fear", "bolster", "reckless_charge", "wild_swing"],
         tags: ["HUMANOID", "CONSTRUCT", "MAGICAL", "BOSS", "ELITE"]
     }
 };

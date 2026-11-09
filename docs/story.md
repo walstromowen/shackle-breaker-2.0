@@ -85,7 +85,6 @@ fall, when the player breaks out of the king's chain line. This page is a living
 - The madmen, magic addicts, rotters and hollows are the people of Altus gone mad; the legionaries and watchmen in "the old colors" still march as
   if the war never ended (Darius's soldiers, searching for his stone).
 - The catacombs (act 2) end in a dark round hall where the **Infernus Sentinel** stands: a living stone statue of a cosmic knight, cracks in its armour
-  open onto a moving night sky. It guards the doorway down to Infernus. What the game says so far is only its challenge: *"Children of Altus. Again you
-  come down with that light in your hands. Infernus burned for it once."* That Infernus were the Alterians' own ancestors, driven mad by the same
+  open onto a moving night sky. It guards the doorway down to Infernus. What the game says so far is short and cryptic: waking, *"Again the light. Again the fall."*; broken, *"Below, they remember."* That Infernus were the Alterians' own ancestors, driven mad by the same
   artifact, is **not stated yet**: keep it for when the story goes down there.
 - Act 1 ends with Darius; act 2 is the blood moon. Corruption is the game's cost of magic; the shackles take those who cast too much.
