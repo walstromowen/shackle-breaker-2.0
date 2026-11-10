@@ -493,7 +493,7 @@ The last of the cats lies still in the snow. The big man wipes his greatsword cl
   > Continue.
 
 [ask]
-"Old friend of Nikoli. He knows thing Nikoli must know. You have seen him? Tired eyes, sharp tongue, melancholic disposition, as professors in Altus would say. Hates to be looked at."
+"Old friend of Nikoli. Friends, not always agreeing. He knows thing Nikoli must know. You have seen him? Tired eyes, sharp tongue, melancholic disposition, as professors in Altus would say."
   > [Hooded Stranger] "There's a hooded man in a village workshop. He might be the one."
   > "I don't know anyone by that name."
 
@@ -511,11 +511,11 @@ He prods the fire. "Careful in high passes, my friend. Cats are not hungry for n
   > Leave him to the fire.
 
 [beast_2]
-"War beast of my people. Snow tiger raised on iron, bound in plate, bred to break shield walls. When our army broke, beasts went wild. Every winter, more wild."
+"War beast of my people. In war, Panzeria sent many into battle: snow tigers raised on iron, bound in plate, bred to break shield walls. When our army broke, they went wild. This is one of them."
   > Continue.
 
 [beast_3]
-"One hunts these peaks now. Follow tracks through snow, kill it, come back to Nikoli. Nikoli makes it worth your while. Is promise."
+"It hunts these peaks now, wilder every winter. Follow tracks through snow, kill it, come back to Nikoli. Nikoli makes it worth your while. Is promise."
   > "I'll hunt it."
   > "Not today."
 
@@ -564,7 +564,7 @@ The last of the cats lies still in the snow. The big man wipes his greatsword cl
   > Continue.
 
 [ask]
-"Old friend of Nikoli. He knows thing Nikoli must know. You have seen him? Tired eyes, sharp tongue, melancholic disposition, as professors in Altus would say. Hates to be looked at."
+"Old friend of Nikoli. Friends, not always agreeing. He knows thing Nikoli must know. You have seen him? Tired eyes, sharp tongue, melancholic disposition, as professors in Altus would say."
   > [Hooded Stranger] "There's a hooded man in a village workshop. He might be the one."
   > "I don't know anyone by that name."
 
@@ -582,11 +582,11 @@ He prods the fire. "Careful in high passes, my friend. Cats are not hungry for n
   > Leave him to the fire.
 
 [beast_2]
-"War beast of my people. Snow tiger raised on iron, bound in plate, bred to break shield walls. When our army broke, beasts went wild. Every winter, more wild."
+"War beast of my people. In war, Panzeria sent many into battle: snow tigers raised on iron, bound in plate, bred to break shield walls. When our army broke, they went wild. This is one of them."
   > Continue.
 
 [beast_3]
-"One hunts these peaks now. Follow tracks through snow, kill it, come back to Nikoli. Nikoli makes it worth your while. Is promise."
+"It hunts these peaks now, wilder every winter. Follow tracks through snow, kill it, come back to Nikoli. Nikoli makes it worth your while. Is promise."
   > "I'll hunt it."
   > "Not today."
 
@@ -898,14 +898,6 @@ STRANGER: "Those shackles have no lock. They were never meant to come off. I've 
 [meet_4]
 STRANGER: "You want answers. Everyone does, right up until they get them. Get stronger first. The truth is heavy, and you can barely lift your own arms."
   > "I'll be back."
-
-[heard_nikoli]
-STRANGER: "Someone came asking after me at the old place. A big Panzerian with a big sword, who talks about himself as if he were somebody else."
-  > Continue.
-
-[heard_nikoli_2]
-STRANGER: "Your doing? No. Don't answer that. I moved house anyway. The old place had too many visitors, and the anvil had stopped listening."
-  > Continue.
 
 [offer_shackled1]
 STRANGER: "You again. I lose track of who I've sent where. Faces blur after a while."

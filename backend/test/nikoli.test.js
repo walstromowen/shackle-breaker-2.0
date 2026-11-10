@@ -147,14 +147,19 @@ test('the workshops: act 1 the Stranger; act 2 he moves to the first desert work
     w.strangerHome = null; w.strangerDesertHome = null;
 });
 
-test('the Stranger, found again in act 2 after Nikoli was told, knows somebody came asking (once)', () => {
+test('the Stranger and Nikoli have not met: the Stranger never speaks of him, however far the player has taken Nikoli\'s story', () => {
     const S = encounterDefinitions.hooded_stranger;
-    story({ milestones: ['act2', 'nikoli_told'], completed: ['shackled_stranger', 'shackled1', 'shackled2', 'shackled3', 'shackled7', 'shackled8'] });
-    assert.equal(S.initialStage(), 'heard_nikoli');
-    assert.match(S.stages.heard_nikoli.text, /Panzerian/);
-    assert.ok(!/Mentoras/.test(S.stages.heard_nikoli.text + S.stages.heard_nikoli_2.text), 'his name is never said');
-    story({ milestones: ['act2', 'nikoli_told', 'stranger_heard_nikoli'], completed: ['shackled_stranger', 'shackled1', 'shackled2', 'shackled3', 'shackled7', 'shackled8'] });
+    story({ milestones: ['act2', 'nikoli_met', 'nikoli_told'], completed: ['shackled_stranger', 'shackled1', 'shackled2', 'shackled3', 'shackled7', 'shackled8'] });
     assert.equal(S.initialStage(), 'after_darius');
+    assert.ok(!/Nikoli|Panzerian/.test(JSON.stringify(S.stages)), 'not a word about him');
+});
+
+test('the Panzerkamfer is one of many war beasts from the war, and Mentoras an old friend he did not always agree with', () => {
+    assert.match(N.stages.beast_2.text, /many/);
+    assert.match(N.stages.beast_2.text, /one of them/);
+    assert.match(Q.panzerian_war_beast.description, /many Panzerkamfers/);
+    assert.match(N.stages.ask.text, /Old friend/);
+    assert.match(N.stages.ask.text, /not always agreeing/);
 });
 
 test('his camp: the first snowy campfire the world puts down is claimed, he stands just south of it, and he leaves it in act 2 once told', () => {

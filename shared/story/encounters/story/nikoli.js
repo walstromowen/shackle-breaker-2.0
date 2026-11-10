@@ -1,5 +1,6 @@
 /* Nikoli (object NIKOLI_NPC): a general of the Panzerians, the good one of two brothers (Ragnar, the cursed one, comes later). Both are hunting for
-   Commander Mentoras, who is the Hooded Stranger: nobody knows that, and nothing here may say it outright.
+   Commander Mentoras, who is the Hooded Stranger: nobody knows that, and nothing here may say it outright. Nikoli and Mentoras are old friends,
+   though they did not always agree (docs/story.md); they have not met again yet, and the Stranger does not know he is being looked for.
 
    Where he is (WorldManager and InteriorFactory put him there, from this player's milestones):
      act 1, or never told        beside the first campfire of the snowy mountains the player came upon (world.nikoliCampfire)
@@ -13,8 +14,8 @@
                                  hunt, and the question.
      ask                         "Have you seen Commander Mentoras?" Telling him about the hooded man in the workshop needs the Stranger met
                                  (quest shackled_stranger handed in); it earns an Insight of Ice. "I don't know" leaves the question open.
-     beast .. beast_3            either way he then mentions, in passing, why the cats are so hungry: a Panzerkamfer, a war beast of his
-                                 people gone wild, hunts the peaks. Asking about it starts the quest panzerian_war_beast (kill one, then come
+     beast .. beast_3            either way he then mentions, in passing, why the cats are so hungry: a Panzerkamfer, one of the many war
+                                 beasts Panzeria sent into the war, gone wild, hunts the peaks. Asking about it starts the quest panzerian_war_beast (kill one, then come
                                  back to him); it can also be asked about on any later visit, until it is taken.
      beast_done                  the beast is dead: he hears it, and the quest pays a second Insight of Ice (questDefinitions.js).
      beast_waiting               the quest taken, the beast still alive.
@@ -98,7 +99,7 @@ const STAGES = {
         [{ text: "Continue.", outcomes: [{ weight: 100, results: [{ type: "GRANT_MILESTONE", payload: { id: "nikoli_met" } }, { type: "ADVANCE_STAGE", payload: { stageId: "after_2" } }] }] }]),
     after_2: stage("\"Nikoli was general of Panzeria, when Panzeria still had armies worth the name. Now Nikoli walks long way south for one man: Commander Mentoras, of Altus royal guard.\"",
         next("ask")),
-    ask: stage("\"Old friend of Nikoli. He knows thing Nikoli must know. You have seen him? Tired eyes, sharp tongue, melancholic disposition, as professors in Altus would say. Hates to be looked at.\"",
+    ask: stage("\"Old friend of Nikoli. Friends, not always agreeing. He knows thing Nikoli must know. You have seen him? Tired eyes, sharp tongue, melancholic disposition, as professors in Altus would say.\"",
         [tellHim, { text: "\"I don't know anyone by that name.\"", outcomes: toStage("dunno") }]),
     told: stage("Nikoli is quiet for a long moment. \"A hood. Da. This is like him.\" He laughs once, without much in it.",
         next("told_2")),
@@ -114,9 +115,9 @@ const STAGES = {
     // ---- the war beast, mentioned in passing ----
     beast: stage("He prods the fire. \"Careful in high passes, my friend. Cats are not hungry for nothing. Something bigger eats their game. Panzerkamfer, if Nikoli knows tracks. And Nikoli knows tracks.\"",
         [{ text: "[Panzerkamfer] \"A Panzerkamfer?\"", conditions: [{ type: "quest_not_started", id: BEAST_QUEST }], outcomes: toStage("beast_2") }, { text: "Leave him to the fire.", outcomes: end() }]),
-    beast_2: stage("\"War beast of my people. Snow tiger raised on iron, bound in plate, bred to break shield walls. When our army broke, beasts went wild. Every winter, more wild.\"",
+    beast_2: stage("\"War beast of my people. In war, Panzeria sent many into battle: snow tigers raised on iron, bound in plate, bred to break shield walls. When our army broke, they went wild. This is one of them.\"",
         next("beast_3")),
-    beast_3: stage("\"One hunts these peaks now. Follow tracks through snow, kill it, come back to Nikoli. Nikoli makes it worth your while. Is promise.\"",
+    beast_3: stage("\"It hunts these peaks now, wilder every winter. Follow tracks through snow, kill it, come back to Nikoli. Nikoli makes it worth your while. Is promise.\"",
         [
             { text: "\"I'll hunt it.\"", conditions: [{ type: "quest_not_started", id: BEAST_QUEST }], outcomes: end([{ type: "START_QUEST", payload: { questId: BEAST_QUEST } }]) },
             { text: "\"Not today.\"", outcomes: end() }

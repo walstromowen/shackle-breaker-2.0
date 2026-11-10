@@ -38,9 +38,6 @@ function opening() {
     const active = (id) => !!(q.active && q.active[id]);
     const done = (id) => Array.isArray(q.completed) && q.completed.includes(id);
     if (active('shackled_stranger')) return 'meet';
-    // act 2, and the player told Nikoli where he was: he has moved, and he knows somebody came looking (once)
-    const ms = Array.isArray(gameState.milestones) ? gameState.milestones : [];
-    if (ms.includes('act2') && ms.includes('nikoli_told') && !ms.includes('stranger_heard_nikoli')) return 'heard_nikoli';
     for (const id of CHAIN.slice(1)) {
         if (done(id)) continue;
         if (active(id)) return QuestModel.checkCompletion(gameState, id) ? `turnin_${id}` : `waiting_${id}`;
@@ -101,10 +98,6 @@ export const hoodedStranger = {
                 ] }]
             }]),
 
-        // ---- act 2, after the player told Nikoli where to find him (story/encounters/story/nikoli.js): he has moved to the desert ----
-        heard_nikoli: stage("\"Someone came asking after me at the old place. A big Panzerian with a big sword, who talks about himself as if he were somebody else.\"", next("heard_nikoli_2")),
-        heard_nikoli_2: stage("\"Your doing? No. Don't answer that. I moved house anyway. The old place had too many visitors, and the anvil had stopped listening.\"",
-            [{ text: "Continue.", outcomes: [{ weight: 100, results: [{ type: "GRANT_MILESTONE", payload: { id: "stranger_heard_nikoli" } }, { type: "END_ENCOUNTER", payload: null }] }] }]),
 
         // ---- shackled1: get stronger ----
         ...offer('shackled1'),

@@ -608,7 +608,7 @@ export const QuestDefinitions = {
         id: "panzerian_war_beast",
         name: "Panzerian War Beast",
         turnIn: "NIKOLI",
-        description: "Nikoli says a Panzerkamfer hunts the snowy mountains: a snow tiger raised on iron and bound in plate, bred for the Panzerian army and gone wild when the army broke. Follow the great tracks through the high snow, kill the beast, and return to Nikoli.",
+        description: "Panzeria sent many Panzerkamfers into the war: snow tigers raised on iron and bound in plate, bred to break shield walls. When the Panzerian army broke, they went wild. Nikoli says one of them hunts the snowy mountains. Follow the great tracks through the high snow, kill the beast, and return to Nikoli.",
         objectives: [
             { id: "obj_kill_panzerkamfer", type: "kill_enemy", targetId: "PANZERKAMFER", amount: 1, description: "Kill the Panzerkamfer" }
         ],
