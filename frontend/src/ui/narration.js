@@ -68,7 +68,9 @@ function voicedPlan(key, parts) {
         const words = String(p.text).split(/\s+/).filter(Boolean);
         const letters = words.reduce((n, w) => n + w.length + 1, 0) || 1;
         let before = 0;
-        for (const w of words) { said.push({ w: bare(w), at: t + p.dur * 0.94 * (before / letters) }); before += w.length + 1; }
+        // each word when it is said: the clip's own word timings (forced alignment, tools/voice) when it has them, else spread evenly by letters
+        const timed = Array.isArray(p.w) && p.w.length === words.length;
+        words.forEach((w, i) => { said.push({ w: bare(w), at: t + (timed ? p.w[i] : p.dur * 0.94 * (before / letters)) }); before += w.length + 1; });
         t += p.dur;
     }
     total = t;

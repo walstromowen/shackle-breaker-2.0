@@ -297,35 +297,35 @@ export const mysteriousAltar = {
             ambienceVolume: 0.35,
             ambienceFade: 1.5,
             image: { sheet: "encounter_darius_approach", col: 0, row: 0 },   // Darius bowed over the altar, as you find him
-            text: "\"Footsteps... after so long. Is it you, my king? Have you come back so soon?!\"",
+            text: "\"Footsteps... after so long. Is it you, my king? Have you come back so soon?! Heh.\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_rises_2") }]
         },
         darius_rises_2: {
             displayText: "A Voice in the Dark",
             bgm: "none",
             image: { sheet: "encounter_darius_approach", col: 0, row: 0 },   // his back to you, bowed over the altar
-            text: "\"No. No, you are not him. Forgive an old man.\"",
+            text: "\"No. No, you are not him. Forgive an old man. Hm-hm.\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_speaks") }]
         },
         darius_speaks: {
             displayText: "Darius the Groveler",
             bgm: "none",
             image: { sheet: "encounter_darius_approach", col: 0, row: 0 },   // his back to you, bowed over the altar
-            text: "\"He told me, keep the stone safe, Darius, and I shall return for it. So I kept it, every winter, every long dark... or I did.\"",
+            text: "\"He told me, keep the stone safe, Darius, and I shall return for it. So I kept it, every winter, every long dark... or I did. Heh... heh... heh.\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_speaks_2") }]
         },
         darius_speaks_2: {
             displayText: "Darius the Groveler",
             bgm: "none",
             image: { sheet: "encounter_darius_approach", col: 0, row: 0 },   // his back to you, bowed over the altar
-            text: "\"It was no fault of my own, you see. But perhaps... you have seen it? For it is a matter of great importance.\"",
+            text: "\"It was no fault of my own, you see. But perhaps... you have seen it? For it is a matter of great importance. Heh heh.\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_late") }]
         },
         darius_late: {
             displayText: "Darius the Groveler",
             bgm: "none",
             image: { sheet: "encounter_darius_approach", col: 0, row: 0 },   // his back to you, bowed over the altar
-            text: "\"You think he is not coming. I can hear it in your silence. And if anyone is found to have kept the stone from me, well... they shall be punished most severely.\"",
+            text: "\"You think he is not coming. I can hear it in your silence. And if anyone is found to have kept the stone from me, well... they shall be punished most severely. Heh... heh. Heh heh.\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_sees") }]
         },
         darius_sees: {
@@ -334,7 +334,7 @@ export const mysteriousAltar = {
             sfx: "heartbeat",
             bgm: "none",
             image: { sheet: "encounter_darius_approach", col: 0, row: 0 },   // his back to you, bowed over the altar
-            text: "\"That light at my back... I can feel it. His sign, at last.\" \"But he gave it to you. A stranger in chains.\"",
+            text: "\"That light at my back... I can feel it. His sign, at last.\" \"But he gave it to you. A stranger in chains. Hah.\"",
             decisions: [{ text: "Continue.", outcomes: toStage("darius_pause") }]
         },
         // He has understood: the light was given to you, not to him. He says nothing. This is where his music starts, still with his back to you.

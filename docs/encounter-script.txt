@@ -40,7 +40,7 @@ Every night Darius pours a spell into the stone, and every night the light answe
 
 [long_dark]
 Years pass. The king does not come back. Then one night the stone is gone. Darius sends every soldier he has to find it, and kneels, and casts into the empty hollow.
-DARIUS: "Not yet, my king, not yet. I am still here."
+DARIUS: "Not yet, my king, not yet. I am still here. Heh... heh."
   > Continue.
 
 [groveler]
@@ -393,28 +393,28 @@ The altar of dark stone waits where you left it. Your meteorite rests in the hol
   > Leave the altar alone.
 
 [darius_rises]
-DARIUS: "Footsteps... after so long. Is it you, my king? Have you come back so soon?!"
+DARIUS: "Footsteps... after so long. Is it you, my king? Have you come back so soon?! Heh."
   > Continue.
 
 [darius_rises_2]
-DARIUS: "No. No, you are not him. Forgive an old man."
+DARIUS: "No. No, you are not him. Forgive an old man. Hm-hm."
   > Continue.
 
 [darius_speaks]
-DARIUS: "He told me, keep the stone safe, Darius, and I shall return for it. So I kept it, every winter, every long dark... or I did."
+DARIUS: "He told me, keep the stone safe, Darius, and I shall return for it. So I kept it, every winter, every long dark... or I did. Heh... heh... heh."
   > Continue.
 
 [darius_speaks_2]
-DARIUS: "It was no fault of my own, you see. But perhaps... you have seen it? For it is a matter of great importance."
+DARIUS: "It was no fault of my own, you see. But perhaps... you have seen it? For it is a matter of great importance. Heh heh."
   > Continue.
 
 [darius_late]
-DARIUS: "You think he is not coming. I can hear it in your silence. And if anyone is found to have kept the stone from me, well... they shall be punished most severely."
+DARIUS: "You think he is not coming. I can hear it in your silence. And if anyone is found to have kept the stone from me, well... they shall be punished most severely. Heh... heh. Heh heh."
   > Continue.
 
 [darius_sees]
 DARIUS: "That light at my back... I can feel it. His sign, at last."
-DARIUS: "But he gave it to you. A stranger in chains."
+DARIUS: "But he gave it to you. A stranger in chains. Hah."
   > Continue.
 
 [darius_pause]

@@ -3,6 +3,7 @@
 //   node tools/voice/generateVoices.mjs                 a dry run: what would be recorded, and how many characters it costs (nothing is sent)
 //   node tools/voice/generateVoices.mjs --generate      record the missing clips (and drop clips no line uses any more)
 //   node tools/voice/generateVoices.mjs --generate --only STRANGER     one voice only
+//   node tools/voice/generateVoices.mjs --align [--only DARIUS]      word timings for clips that have none (each new clip gets them as it is made)
 //   node tools/voice/generateVoices.mjs --generate --raw <dir>   use <dir>/<line key>.mp3 (an untreated take, e.g. downloaded from the
 //                                                    ElevenLabs history) instead of recording: re-treats a take without paying for it again
 //   node tools/voice/generateVoices.mjs --sample "Some words." --voice <voiceId> --out sample.mp3      try a voice on one line
@@ -60,6 +61,22 @@ function applyFx(name, audio) {
     const r = spawnSync('ffmpeg', ['-loglevel', 'error', '-f', 'mp3', '-i', 'pipe:0', '-af', FX[name], '-b:a', '128k', '-f', 'mp3', 'pipe:1'], { input: audio, maxBuffer: 64 << 20 });
     if (r.status !== 0) throw new Error(`ffmpeg (${name}): ${String(r.stderr || r.error).slice(0, 300)}`);
     return r.stdout;
+}
+
+/* When each word of a line is said in its clip: ElevenLabs' forced alignment of the words on screen to the finished clip. Returns the start times
+   (seconds) of the line's words, split at spaces as the screen splits them, or null when the words do not line up (the text reveal then
+   falls back to an even pace over the clip). A stage direction ("[Deep breathing]") has no words to time. */
+async function wordTimes(audio, text) {
+    if (/^\[[^\]]*\]$/.test(text.trim())) return null;
+    const form = new FormData();
+    form.append('file', new Blob([audio], { type: 'audio/mpeg' }), 'clip.mp3');
+    form.append('text', text);
+    const res = await fetch('https://api.elevenlabs.io/v1/forced-alignment', { method: 'POST', headers: { 'xi-api-key': KEY }, body: form });
+    if (!res.ok) { console.warn(`  (alignment failed: ${res.status} ${(await res.text()).slice(0, 160)})`); return null; }
+    const words = ((await res.json()).words || []).filter(w => w.text.trim());
+    const want = text.split(/\s+/).filter(Boolean);
+    if (words.length !== want.length) { console.warn(`  (alignment gave ${words.length} words for ${want.length}: left untimed)`); return null; }
+    return words.map(w => Math.round(w.start * 100) / 100);
 }
 
 async function tts(voiceId, text, settings, model = CONFIG.model) {
@@ -142,6 +159,18 @@ async function main() {
     for (const l of missing) bySpeaker[l.speaker] = (bySpeaker[l.speaker] || 0) + spokenText(l).length;
     console.log(`${lines.length} voiced lines in ${Object.keys(VOICED).join(', ')}; ${missing.length} need recording: ${chars} characters ${JSON.stringify(bySpeaker)}`);
 
+    if (flag('--align')) {
+        let n = 0;
+        for (const l of lines) {
+            const e = manifest[l.key];
+            if ((only && l.speaker !== only) || !e || typeof e !== 'object' || e.w || fileIn(e) !== fileOf(l)) continue;
+            const w = await wordTimes(fs.readFileSync(path.join(OUT_DIR, e.f)), l.text);
+            if (w) { e.w = w; n++; console.log(`  timed ${l.speaker}: ${l.text.slice(0, 60)}`); }
+        }
+        fs.writeFileSync(MANIFEST, JSON.stringify(manifest, null, 1));
+        console.log(`Word timings added to ${n} clips.`);
+        return;
+    }
     if (!flag('--generate')) {
         fs.writeFileSync(MANIFEST, JSON.stringify(manifest, null, 1));   // (only adds lengths to an older manifest)
         console.log('Dry run: nothing was sent. Add --generate to record them.');
@@ -156,6 +185,8 @@ async function main() {
         const audio = applyFx(v.fx, take);
         fs.writeFileSync(path.join(OUT_DIR, fileOf(l)), audio);
         manifest[l.key] = { f: fileOf(l), d: mp3Duration(audio) };   // the file, and its length in seconds (the words on screen keep time with it)
+        const w = await wordTimes(audio, l.text);
+        if (w) manifest[l.key].w = w;                                 // and when each word is said
         done++;
         console.log(`  [${done}/${missing.length}] ${l.speaker}: ${l.text.slice(0, 70)}${l.text.length > 70 ? '...' : ''}`);
         fs.writeFileSync(MANIFEST, JSON.stringify(manifest, null, 1));   // after every clip: an interrupted run keeps what it made
