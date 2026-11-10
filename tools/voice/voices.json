@@ -35,6 +35,23 @@
         "That light at my back... I can feel it. His sign, at last. But he gave it to you. A stranger in chains. Hah.": "[slow, flat] That light at my back... [long pause] I can feel it. [pause] His sign... at last. [long pause] [cold, serious] But he gave it to you. [pause] A stranger... in chains. [one hollow, humourless chuckle] Hah.",
         "No... no, that is not possible. I am the king's adviser, I kept it for him! You thief, you filthy thief! Give it back! That stone is mine!": "[quiet, cold] No... [long pause] no, that is not possible. [pause] [grave, voice hardening] I am the king's adviser. I kept it for him. [anger building, louder] You thief. [rising rage] You filthy thief! [furious, shouting] Give it back! [long pause] [solemn, flat, deadly determination] That stone... is mine."
       }
+    },
+    "NIKOLI": {
+      "id": "fEXlR8Hk8EmfbVSFpj4S",
+      "name": "Nikoli (Shackle Breaker): designed for him, a big, warm, gravelly Panzerian general with a thick Russian accent, jovial and weary",
+      "model": "eleven_v3",
+      "settings": {
+        "stability": 0.5
+      },
+      "directions": {
+        "Three cats, one Nikoli. Is bad arithmetic, even for general.": "[dry, amused] Three cats, one Nikoli. [chuckles] Is bad arithmetic, even for general.",
+        "You have weapon, da? Then stand with Nikoli.": "[urgent, grinning] You have weapon, da? [firm] Then stand with Nikoli.",
+        "Thank you, stranger. Without you, Nikoli is supper for cats.": "[out of breath, grinning] Thank you, stranger. [laughs] Without you, Nikoli is supper for cats.",
+        "A hood. Da. This is like him.": "[quiet, thoughtful] A hood. [pause] Da. This is like him.",
+        "You smell of iron and blood. Beast is dead, then. Good! Take, as Nikoli promised.": "[laughs heartily] You smell of iron and blood. Beast is dead, then. [delighted] Good! Take, as Nikoli promised.",
+        "Back again! Fire is free, company is poor. Any word of Commander Mentoras?": "[cheerful] Back again! Fire is free, company is poor. [more serious] Any word of Commander Mentoras?",
+        "Toward sand, Nikoli thinks. Always one step ahead of Nikoli, that one. Always he was.": "[rueful] Toward sand, Nikoli thinks. [sighs, half a laugh] Always one step ahead of Nikoli, that one. Always he was."
+      }
     }
   }
 }

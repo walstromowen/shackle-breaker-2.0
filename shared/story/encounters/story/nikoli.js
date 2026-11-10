@@ -1,4 +1,4 @@
-/* Nikoli (object NIKOLI_NPC): a general of the Panzerians, the good one of two brothers (Ragnar, the cursed one, comes later). Both are hunting for
+/* Nikoli (object NIKOLI_NPC): a general of the Panzerians, the good one of two brothers (Jaeger Ironson, "The Pursuer", the corrupted one, comes later: docs/story.md). Both are hunting for
    Commander Mentoras, who is the Hooded Stranger: nobody knows that, and nothing here may say it outright. Nikoli and Mentoras are old friends,
    though they did not always agree (docs/story.md); they have not met again yet, and the Stranger does not know he is being looked for.
 
@@ -97,7 +97,7 @@ const STAGES = {
     // (in a party of players everyone who fought beside him plays this on their own screen: they have met him now too)
     after: stage("The last of the cats lies still in the snow. The big man wipes his greatsword clean on a frozen sleeve and grins his gap-toothed grin at you. \"Thank you, stranger. Without you, Nikoli is supper for cats.\"",
         [{ text: "Continue.", outcomes: [{ weight: 100, results: [{ type: "GRANT_MILESTONE", payload: { id: "nikoli_met" } }, { type: "ADVANCE_STAGE", payload: { stageId: "after_2" } }] }] }]),
-    after_2: stage("\"Nikoli was general of Panzeria, when Panzeria still had armies worth the name. Now Nikoli walks long way south for one man: Commander Mentoras, of Altus royal guard.\"",
+    after_2: stage("\"Nikoli was general of Panzeria, when Panzeria still had armies worth the name. Now Nikoli walks long way for one man: Commander Mentoras, of Altus royal guard.\"",
         next("ask")),
     ask: stage("\"Old friend of Nikoli. Friends, not always agreeing. He knows thing Nikoli must know. You have seen him? Tired eyes, sharp tongue, melancholic disposition, as professors in Altus would say.\"",
         [tellHim, { text: "\"I don't know anyone by that name.\"", outcomes: toStage("dunno") }]),
@@ -136,7 +136,7 @@ const STAGES = {
     // ---- act 2: the Stranger's old workshop, a step too late ----
     workshop: stage("Nikoli stands at the cold forge where the hooded man used to wait, turning a length of broken chain over in his hands. \"He was here. Ashes still warm when Nikoli came.\"",
         next("workshop_2"), { ambience: "none" }),
-    workshop_2: stage("\"He leaves in hurry, and he leaves this.\" He holds up the chain. \"South, Nikoli thinks. Toward sand. Always one step ahead of Nikoli, that one. Always he was.\"",
+    workshop_2: stage("\"He leaves in hurry, and he leaves this.\" He holds up the chain. \"Toward sand, Nikoli thinks. Always one step ahead of Nikoli, that one. Always he was.\"",
         [askBeast, { text: "Leave him to his hunt.", outcomes: end() }])
 };
 

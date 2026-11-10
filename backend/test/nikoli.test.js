@@ -126,7 +126,9 @@ test('from visit to visit: by the fire until told; in act 2, told, he is in the 
     assert.equal(N.initialStage(), 'told_again');
     story({ milestones: ['nikoli_met', 'nikoli_told', 'act2'] });
     assert.equal(N.initialStage(), 'workshop');
-    assert.match(N.stages.workshop_2.text, /South|sand/, 'one step behind: the trail points to the desert');
+    assert.match(N.stages.workshop_2.text, /sand/, 'one step behind: the trail points to the desert');
+    // the biomes can lie in any direction, so nobody gives one
+    assert.ok(!/\b(north|south|east|west)\b/i.test(Object.values(N.stages).map(st => st.text).join(' ')), 'no compass directions');
 });
 
 test('the workshops: act 1 the Stranger; act 2 he moves to the first desert workshop entered, and Nikoli (if told) takes his old one', () => {

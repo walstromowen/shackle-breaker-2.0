@@ -202,7 +202,7 @@ export const ENTITY_DEFINITIONS = {
         tags: [...HUMANOID_TEMPLATE.tags]
     },
 
-    /* Nikoli: a general of the Panzerians, the good brother (his brother Ragnar is the cursed one). Never fought: he camps beside the first
+    /* Nikoli: a general of the Panzerians, the good brother (his brother Jaeger, "The Pursuer", is the corrupted one: docs/story.md). Never fought: he camps beside the first
        campfire of the snowy mountains the player comes upon (world.nikoliCampfire, WorldManager), fights beside the party against the frozen
        trappers when they first meet (an ally: battleState context.allies), and hunts for Commander Mentoras (story/encounters/story/nikoli.js).
        Placeholder art: the Panzerian warlord's sheets, until he has his own. */

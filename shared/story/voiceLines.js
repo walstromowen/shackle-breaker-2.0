@@ -18,14 +18,18 @@ export const VOICED = {
     prologue: [],
     hooded_stranger: [[/./, 'STRANGER']],
     mysterious_altar: [[/^darius_/, 'DARIUS']],
-    act_two: [[/^long_dark$/, 'DARIUS']]
+    act_two: [[/^long_dark$/, 'DARIUS']],
+    nikoli: [[/./, 'NIKOLI']],
+    nikoli_after_battle: [[/./, 'NIKOLI']]   // the same stages as nikoli: the same clips
 };
 
 /* Who speaks the quoted words of a stage (also used by tools/dialogueScript.mjs for the script's NAME: tags) */
 export const SPEAKERS = {
     hooded_stranger: [[/./, 'STRANGER']],
     mysterious_altar: [[/^darius_/, 'DARIUS']],
-    act_two: [[/^long_dark$/, 'DARIUS']]      // his own words, in the vision of his life
+    act_two: [[/^long_dark$/, 'DARIUS']],     // his own words, in the vision of his life
+    nikoli: [[/./, 'NIKOLI']],
+    nikoli_after_battle: [[/./, 'NIKOLI']]
 };
 
 export function speakerOf(encounterId, stageId) {

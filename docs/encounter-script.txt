@@ -476,7 +476,9 @@ A broad man in a battered Panzerian greatcoat stands with his back to the campfi
   > Continue.
 
 [meet_2]
-"Three cats, one Nikoli. Is bad arithmetic, even for general." He grins over his shoulder, and you count more gaps than teeth. "You have weapon, da? Then stand with Nikoli."
+NIKOLI: "Three cats, one Nikoli. Is bad arithmetic, even for general."
+He grins over his shoulder, and you count more gaps than teeth.
+NIKOLI: "You have weapon, da? Then stand with Nikoli."
   > Draw your weapon.
   > Walk away.
 
@@ -485,70 +487,81 @@ You back away from the light. Behind you a deep voice curses in Panzerian, and t
   > Keep walking.
 
 [after]
-The last of the cats lies still in the snow. The big man wipes his greatsword clean on a frozen sleeve and grins his gap-toothed grin at you. "Thank you, stranger. Without you, Nikoli is supper for cats."
+The last of the cats lies still in the snow. The big man wipes his greatsword clean on a frozen sleeve and grins his gap-toothed grin at you.
+NIKOLI: "Thank you, stranger. Without you, Nikoli is supper for cats."
   > Continue.
 
 [after_2]
-"Nikoli was general of Panzeria, when Panzeria still had armies worth the name. Now Nikoli walks long way south for one man: Commander Mentoras, of Altus royal guard."
+NIKOLI: "Nikoli was general of Panzeria, when Panzeria still had armies worth the name. Now Nikoli walks long way for one man: Commander Mentoras, of Altus royal guard."
   > Continue.
 
 [ask]
-"Old friend of Nikoli. Friends, not always agreeing. He knows thing Nikoli must know. You have seen him? Tired eyes, sharp tongue, melancholic disposition, as professors in Altus would say."
+NIKOLI: "Old friend of Nikoli. Friends, not always agreeing. He knows thing Nikoli must know. You have seen him? Tired eyes, sharp tongue, melancholic disposition, as professors in Altus would say."
   > [Hooded Stranger] "There's a hooded man in a village workshop. He might be the one."
   > "I don't know anyone by that name."
 
 [told]
-Nikoli is quiet for a long moment. "A hood. Da. This is like him." He laughs once, without much in it.
+Nikoli is quiet for a long moment.
+NIKOLI: "A hood. Da. This is like him."
+He laughs once, without much in it.
   > Continue.
 
 [told_2]
-"You do Nikoli great kindness, stranger. Take. Ice remembers what rest of us forget."
+NIKOLI: "You do Nikoli great kindness, stranger. Take. Ice remembers what rest of us forget."
   > Take it.
 
 [beast]
-He prods the fire. "Careful in high passes, my friend. Cats are not hungry for nothing. Something bigger eats their game. Panzerkamfer, if Nikoli knows tracks. And Nikoli knows tracks."
+He prods the fire.
+NIKOLI: "Careful in high passes, my friend. Cats are not hungry for nothing. Something bigger eats their game. Panzerkamfer, if Nikoli knows tracks. And Nikoli knows tracks."
   > [Panzerkamfer] "A Panzerkamfer?"
   > Leave him to the fire.
 
 [beast_2]
-"War beast of my people. In war, Panzeria sent many into battle: snow tigers raised on iron, bound in plate, bred to break shield walls. When our army broke, they went wild. This is one of them."
+NIKOLI: "War beast of my people. In war, Panzeria sent many into battle: snow tigers raised on iron, bound in plate, bred to break shield walls. When our army broke, they went wild. This is one of them."
   > Continue.
 
 [beast_3]
-"It hunts these peaks now, wilder every winter. Follow tracks through snow, kill it, come back to Nikoli. Nikoli makes it worth your while. Is promise."
+NIKOLI: "It hunts these peaks now, wilder every winter. Follow tracks through snow, kill it, come back to Nikoli. Nikoli makes it worth your while. Is promise."
   > "I'll hunt it."
   > "Not today."
 
 [dunno]
-"No? Few do, these days. If you hear name, come find Nikoli. Nikoli waits here, by fire, until he has reason to leave."
+NIKOLI: "No? Few do, these days. If you hear name, come find Nikoli. Nikoli waits here, by fire, until he has reason to leave."
   > Continue.
 
 [beast_waiting]
-Nikoli looks up from the fire. "Beast still lives. Nikoli smells it on wind. Follow tracks through high snow, my friend."
+Nikoli looks up from the fire.
+NIKOLI: "Beast still lives. Nikoli smells it on wind. Follow tracks through high snow, my friend."
   > [Hooded Stranger] "There's a hooded man in a village workshop. He might be the one."
   > Leave him to the fire.
 
 [beast_done]
-Nikoli takes one look at you and laughs, a big gap-toothed laugh, the first real one you have heard from him. "You smell of iron and blood. Beast is dead, then. Good! Take, as Nikoli promised."
+Nikoli takes one look at you and laughs, a big gap-toothed laugh, the first real one you have heard from him.
+NIKOLI: "You smell of iron and blood. Beast is dead, then. Good! Take, as Nikoli promised."
   > Take it.
 
 [again]
-Nikoli sits by the campfire with the greatsword across his knees. "Back again! Fire is free, company is poor. Any word of Commander Mentoras?"
+Nikoli sits by the campfire with the greatsword across his knees.
+NIKOLI: "Back again! Fire is free, company is poor. Any word of Commander Mentoras?"
   > [Hooded Stranger] "There's a hooded man in a village workshop. He might be the one."
   > [Panzerkamfer] "Tell me about that war beast."
   > "Not yet."
 
 [told_again]
-Nikoli is packing a worn saddlebag by the fire. "Nikoli leaves when snow lets him. Workshop, you said. Nikoli will find it."
+Nikoli is packing a worn saddlebag by the fire.
+NIKOLI: "Nikoli leaves when snow lets him. Workshop, you said. Nikoli will find it."
   > [Panzerkamfer] "Tell me about that war beast."
   > Leave him to his packing.
 
 [workshop]
-Nikoli stands at the cold forge where the hooded man used to wait, turning a length of broken chain over in his hands. "He was here. Ashes still warm when Nikoli came."
+Nikoli stands at the cold forge where the hooded man used to wait, turning a length of broken chain over in his hands.
+NIKOLI: "He was here. Ashes still warm when Nikoli came."
   > Continue.
 
 [workshop_2]
-"He leaves in hurry, and he leaves this." He holds up the chain. "South, Nikoli thinks. Toward sand. Always one step ahead of Nikoli, that one. Always he was."
+NIKOLI: "He leaves in hurry, and he leaves this."
+He holds up the chain.
+NIKOLI: "Toward sand, Nikoli thinks. Always one step ahead of Nikoli, that one. Always he was."
   > [Panzerkamfer] "Tell me about that war beast."
   > Leave him to his hunt.
 
@@ -556,42 +569,46 @@ Nikoli stands at the cold forge where the hooded man used to wait, turning a len
 ===== NIKOLI (nikoli_after_battle) =====
 
 [after]
-The last of the cats lies still in the snow. The big man wipes his greatsword clean on a frozen sleeve and grins his gap-toothed grin at you. "Thank you, stranger. Without you, Nikoli is supper for cats."
+The last of the cats lies still in the snow. The big man wipes his greatsword clean on a frozen sleeve and grins his gap-toothed grin at you.
+NIKOLI: "Thank you, stranger. Without you, Nikoli is supper for cats."
   > Continue.
 
 [after_2]
-"Nikoli was general of Panzeria, when Panzeria still had armies worth the name. Now Nikoli walks long way south for one man: Commander Mentoras, of Altus royal guard."
+NIKOLI: "Nikoli was general of Panzeria, when Panzeria still had armies worth the name. Now Nikoli walks long way for one man: Commander Mentoras, of Altus royal guard."
   > Continue.
 
 [ask]
-"Old friend of Nikoli. Friends, not always agreeing. He knows thing Nikoli must know. You have seen him? Tired eyes, sharp tongue, melancholic disposition, as professors in Altus would say."
+NIKOLI: "Old friend of Nikoli. Friends, not always agreeing. He knows thing Nikoli must know. You have seen him? Tired eyes, sharp tongue, melancholic disposition, as professors in Altus would say."
   > [Hooded Stranger] "There's a hooded man in a village workshop. He might be the one."
   > "I don't know anyone by that name."
 
 [told]
-Nikoli is quiet for a long moment. "A hood. Da. This is like him." He laughs once, without much in it.
+Nikoli is quiet for a long moment.
+NIKOLI: "A hood. Da. This is like him."
+He laughs once, without much in it.
   > Continue.
 
 [told_2]
-"You do Nikoli great kindness, stranger. Take. Ice remembers what rest of us forget."
+NIKOLI: "You do Nikoli great kindness, stranger. Take. Ice remembers what rest of us forget."
   > Take it.
 
 [beast]
-He prods the fire. "Careful in high passes, my friend. Cats are not hungry for nothing. Something bigger eats their game. Panzerkamfer, if Nikoli knows tracks. And Nikoli knows tracks."
+He prods the fire.
+NIKOLI: "Careful in high passes, my friend. Cats are not hungry for nothing. Something bigger eats their game. Panzerkamfer, if Nikoli knows tracks. And Nikoli knows tracks."
   > [Panzerkamfer] "A Panzerkamfer?"
   > Leave him to the fire.
 
 [beast_2]
-"War beast of my people. In war, Panzeria sent many into battle: snow tigers raised on iron, bound in plate, bred to break shield walls. When our army broke, they went wild. This is one of them."
+NIKOLI: "War beast of my people. In war, Panzeria sent many into battle: snow tigers raised on iron, bound in plate, bred to break shield walls. When our army broke, they went wild. This is one of them."
   > Continue.
 
 [beast_3]
-"It hunts these peaks now, wilder every winter. Follow tracks through snow, kill it, come back to Nikoli. Nikoli makes it worth your while. Is promise."
+NIKOLI: "It hunts these peaks now, wilder every winter. Follow tracks through snow, kill it, come back to Nikoli. Nikoli makes it worth your while. Is promise."
   > "I'll hunt it."
   > "Not today."
 
 [dunno]
-"No? Few do, these days. If you hear name, come find Nikoli. Nikoli waits here, by fire, until he has reason to leave."
+NIKOLI: "No? Few do, these days. If you hear name, come find Nikoli. Nikoli waits here, by fire, until he has reason to leave."
   > Continue.
 
 [meet]
@@ -599,7 +616,9 @@ A broad man in a battered Panzerian greatcoat stands with his back to the campfi
   > Continue.
 
 [meet_2]
-"Three cats, one Nikoli. Is bad arithmetic, even for general." He grins over his shoulder, and you count more gaps than teeth. "You have weapon, da? Then stand with Nikoli."
+NIKOLI: "Three cats, one Nikoli. Is bad arithmetic, even for general."
+He grins over his shoulder, and you count more gaps than teeth.
+NIKOLI: "You have weapon, da? Then stand with Nikoli."
   > Draw your weapon.
   > Walk away.
 
@@ -608,31 +627,38 @@ You back away from the light. Behind you a deep voice curses in Panzerian, and t
   > Keep walking.
 
 [beast_waiting]
-Nikoli looks up from the fire. "Beast still lives. Nikoli smells it on wind. Follow tracks through high snow, my friend."
+Nikoli looks up from the fire.
+NIKOLI: "Beast still lives. Nikoli smells it on wind. Follow tracks through high snow, my friend."
   > [Hooded Stranger] "There's a hooded man in a village workshop. He might be the one."
   > Leave him to the fire.
 
 [beast_done]
-Nikoli takes one look at you and laughs, a big gap-toothed laugh, the first real one you have heard from him. "You smell of iron and blood. Beast is dead, then. Good! Take, as Nikoli promised."
+Nikoli takes one look at you and laughs, a big gap-toothed laugh, the first real one you have heard from him.
+NIKOLI: "You smell of iron and blood. Beast is dead, then. Good! Take, as Nikoli promised."
   > Take it.
 
 [again]
-Nikoli sits by the campfire with the greatsword across his knees. "Back again! Fire is free, company is poor. Any word of Commander Mentoras?"
+Nikoli sits by the campfire with the greatsword across his knees.
+NIKOLI: "Back again! Fire is free, company is poor. Any word of Commander Mentoras?"
   > [Hooded Stranger] "There's a hooded man in a village workshop. He might be the one."
   > [Panzerkamfer] "Tell me about that war beast."
   > "Not yet."
 
 [told_again]
-Nikoli is packing a worn saddlebag by the fire. "Nikoli leaves when snow lets him. Workshop, you said. Nikoli will find it."
+Nikoli is packing a worn saddlebag by the fire.
+NIKOLI: "Nikoli leaves when snow lets him. Workshop, you said. Nikoli will find it."
   > [Panzerkamfer] "Tell me about that war beast."
   > Leave him to his packing.
 
 [workshop]
-Nikoli stands at the cold forge where the hooded man used to wait, turning a length of broken chain over in his hands. "He was here. Ashes still warm when Nikoli came."
+Nikoli stands at the cold forge where the hooded man used to wait, turning a length of broken chain over in his hands.
+NIKOLI: "He was here. Ashes still warm when Nikoli came."
   > Continue.
 
 [workshop_2]
-"He leaves in hurry, and he leaves this." He holds up the chain. "South, Nikoli thinks. Toward sand. Always one step ahead of Nikoli, that one. Always he was."
+NIKOLI: "He leaves in hurry, and he leaves this."
+He holds up the chain.
+NIKOLI: "Toward sand, Nikoli thinks. Always one step ahead of Nikoli, that one. Always he was."
   > [Panzerkamfer] "Tell me about that war beast."
   > Leave him to his hunt.
 

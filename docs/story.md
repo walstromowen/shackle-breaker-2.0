@@ -59,6 +59,9 @@ fall, when the player breaks out of the king's chain line. This page is a living
   Spring boots, gauntlets. Later corrupted, sent to hunt the escaped Mentoras.
 - **Nikolai Ironson**: Jaeger's brother, Panzerian general. Witty, boyish grin, missing teeth, speaks in the third person in broken Alterian, yet
   educated at both a Panzerian and an Alterian university. Mentoras's friend. Later joins him and Codey.
+  - *In the game* he is **Nikoli** (story/encounters/story/nikoli.js): he camps by the first campfire of the snowy mountains, hunting for Commander
+    Mentoras, an old friend he did not always agree with. They have **not met again yet**: the Hooded Stranger does not know he is being looked for.
+    In act 2, if the player told him about the hooded man, he waits in the Stranger's old workshop, one step behind. His brother is Jaeger.
 - **Elsali / El Shadi, "Codey"**: a Namuh nightblade, late teens. Mute, empathetic, quick, a scrapper. Fought Mentoras to a standstill in the attack on
   the capital; imprisoned with him; saves him in the escape; nicknamed "Codey" for his hand signs. Protagonist 2.
 - **General Sekrav**: general of the Alterian legion. Young, never defeated, popular.
