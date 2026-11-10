@@ -16,8 +16,17 @@ test('a character speaks their quoted words; the narrator reads the rest', () =>
 test('marks: [pause N] is a pause, (( )) and [stage directions] are shown but never read, and "......" is silence', () => {
     assert.deepEqual(segmentsOf('x', 'y', 'The door creaks. [pause 2] Nothing moves. ((not read))'),
         [{ speaker: 'NARRATOR', text: 'The door creaks.' }, { pause: 2 }, { speaker: 'NARRATOR', text: 'Nothing moves.' }]);
-    assert.deepEqual(segmentsOf('mysterious_altar', 'darius_pause', '[Deep breathing]'), []);
+    assert.deepEqual(segmentsOf('x', 'y', '[Deep breathing]'), [], 'a direction on the narrator\'s screen is not read');
+    assert.deepEqual(segmentsOf('mysterious_altar', 'darius_x', 'He turns. [Deep breathing]'), [{ speaker: 'NARRATOR', text: 'He turns.' }], 'nor one among other words');
     assert.deepEqual(segmentsOf('mysterious_altar', 'darius_x', '"......"'), []);
+});
+
+test('a speaker\'s screen that is only a direction is a sound they make, in their voice: Darius\'s deep breathing has a clip', () => {
+    assert.deepEqual(segmentsOf('mysterious_altar', 'darius_pause', '[Deep breathing]'), [{ speaker: 'DARIUS', text: '[Deep breathing]' }]);
+    assert.deepEqual(segmentsOf('mysterious_altar', 'darius_pause', '[pause 2]'), [{ pause: 2 }], 'a pause is still a pause');
+    const manifest = JSON.parse(fs.readFileSync(new URL('../../frontend/src/assets/audio/voice/manifest.json', import.meta.url), 'utf8'));
+    const clip = manifest[lineKey('DARIUS', '[Deep breathing]')];
+    assert.ok(clip && fs.existsSync(new URL('../../frontend/src/assets/audio/voice/' + clip.f, import.meta.url)), 'the breathing is recorded');
 });
 
 test('a clip\'s key changes with the words and the speaker, not with spacing or quote style', () => {

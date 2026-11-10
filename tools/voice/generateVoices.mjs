@@ -3,6 +3,8 @@
 //   node tools/voice/generateVoices.mjs                 a dry run: what would be recorded, and how many characters it costs (nothing is sent)
 //   node tools/voice/generateVoices.mjs --generate      record the missing clips (and drop clips no line uses any more)
 //   node tools/voice/generateVoices.mjs --generate --only STRANGER     one voice only
+//   node tools/voice/generateVoices.mjs --generate --raw <dir>   use <dir>/<line key>.mp3 (an untreated take, e.g. downloaded from the
+//                                                    ElevenLabs history) instead of recording: re-treats a take without paying for it again
 //   node tools/voice/generateVoices.mjs --sample "Some words." --voice <voiceId> --out sample.mp3      try a voice on one line
 //
 // Which encounters are voiced, and who speaks what: shared/story/voiceLines.js (VOICED, SPEAKERS). The voices: tools/voice/voices.json.
@@ -50,7 +52,7 @@ const FX = {
     hall: 'aecho=0.8:0.75:70|160|300:0.35|0.25|0.18,highpass=f=80,lowpass=f=9000,volume=1.1',
     // nightmare: the hall echo, darker, with a faint copy of the voice a fourth lower under it (same timing): the shrill mania stays on top,
     // something deeper speaks along beneath it
-    nightmare: 'asplit=2[v][d];[d]asetrate=44100*0.75,aresample=44100,atempo=1.3333,lowpass=f=2500,volume=0.3[low];[v][low]amix=inputs=2:normalize=0,aecho=0.8:0.8:80|190|340|520:0.4|0.3|0.22|0.14,highpass=f=60,lowpass=f=7000,volume=1.0'
+    nightmare: 'asplit=2[v][d];[d]asetrate=44100*0.75,aresample=44100,atempo=1.3333,lowpass=f=2500,volume=0.3[low];[v][low]amix=inputs=2:normalize=0,aecho=0.8:0.85:80|190|340|520:0.32|0.23|0.16|0.09,highpass=f=60,lowpass=f=7000,volume=1.0'
 };
 function applyFx(name, audio) {
     if (!name) return audio;
@@ -104,6 +106,7 @@ const voiceTag = (l) => {
     const parts = [v.id, v.model || CONFIG.model, v.settings || CONFIG.defaultSettings];
     const dir = (v.directions || {})[l.text];
     if (v.fx || dir) parts.push(v.fx || null, dir || null);
+    if (v.fx) parts.push(FX[v.fx] || null);   // the treatment itself: retuning it (less echo) makes new clips
     return crypto.createHash('sha1').update(JSON.stringify(parts)).digest('hex').slice(0, 8);
 };
 
@@ -147,7 +150,10 @@ async function main() {
     let done = 0;
     for (const l of missing) {
         const v = CONFIG.voices[l.speaker];
-        const audio = applyFx(v.fx, await tts(v.id, spokenText(l), v.settings || CONFIG.defaultSettings, v.model || CONFIG.model));
+        const rawFile = opt('--raw') && path.join(opt('--raw'), `${l.key}.mp3`);
+        const take = rawFile && fs.existsSync(rawFile) ? fs.readFileSync(rawFile)
+            : await tts(v.id, spokenText(l), v.settings || CONFIG.defaultSettings, v.model || CONFIG.model);
+        const audio = applyFx(v.fx, take);
         fs.writeFileSync(path.join(OUT_DIR, fileOf(l)), audio);
         manifest[l.key] = { f: fileOf(l), d: mp3Duration(audio) };   // the file, and its length in seconds (the words on screen keep time with it)
         done++;
