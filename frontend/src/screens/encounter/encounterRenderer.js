@@ -1066,8 +1066,12 @@ export class EncounterRenderer {
             ctx.save();
             ctx.globalAlpha = alpha * baseAlpha;
             ctx.imageSmoothingEnabled = false;
-            if (isCursed(charData)) drawCursedPortrait(ctx, sheet, 0, 0, nativeRes, nativeRes, imgX, imgY, drawSize, drawSize, alpha * baseAlpha);
-            else ctx.drawImage(sheet, 0, 0, nativeRes, nativeRes, imgX, imgY, drawSize, drawSize);
+            // the party stands on the left, so the portrait is mirrored to face right, toward the scene in the middle (the art faces left, as it
+            // does in battle where the party is seen from behind); the status icons drawn over it below are not mirrored
+            ctx.translate(imgX + drawSize, imgY);
+            ctx.scale(-1, 1);
+            if (isCursed(charData)) drawCursedPortrait(ctx, sheet, 0, 0, nativeRes, nativeRes, 0, 0, drawSize, drawSize, alpha * baseAlpha);
+            else ctx.drawImage(sheet, 0, 0, nativeRes, nativeRes, 0, 0, drawSize, drawSize);
             ctx.imageSmoothingEnabled = true;
             ctx.restore();
 

@@ -515,7 +515,7 @@ export class BattleController extends BaseController {
 
     checkBattleStatus() {
         const enemiesAlive = this.state.enemyRoster.some(e => !e.isDead());
-        const partyAlive = this.state.partyRoster.some(p => !p.isDead());
+        const partyAlive = this.state.partyRoster.some(p => !p.isAlly && !p.isDead());   // an ally left alone does not win the fight for you
 
         if (!enemiesAlive) this._handleVictory();
         else if (!partyAlive) this._handleDefeat();
@@ -565,7 +565,8 @@ export class BattleController extends BaseController {
         for (const d of mp.early || []) this._onRemoteDecision(d);   // picks that arrived before this screen was ready
     }
 
-    _isMine(c) { return !this.state.mp || !c || c.netOwner === this.state.mp.me; }
+    // (an ally who only joined for this fight, Nikoli, is nobody's: enemyAI.queueAllyActions picks for them)
+    _isMine(c) { if (c && c.isAlly) return false; return !this.state.mp || !c || c.netOwner === this.state.mp.me; }
 
     /** The combatants whose picks come from other players this round: their characters on the field who can still act. */
     _othersToWaitFor() {

@@ -299,6 +299,8 @@ export const SaveManager = {
                 levelPaths: clone(world.levelPaths || {}),
                 waypoints: clone(world.waypoints || []),
                 strangerHome: world.strangerHome || null,   // the workshop the Hooded Stranger lives in (InteriorFactory)
+                strangerDesertHome: world.strangerDesertHome || null,   // where he goes in act 2 (InteriorFactory.workshopResident)
+                nikoliCampfire: world.nikoliCampfire || null,           // Nikoli's camp, "col,row" of the campfire (WorldManager)
                 discoveredChunks: clone(world.discoveredChunks || []),
                 structureChunks: clone(world.structureChunks || {}),
                 weather: serializeWeather(world.currentWeather),
@@ -309,6 +311,7 @@ export const SaveManager = {
                     type: world.interiorType,
                     id: world.interiorId,
                     mapId: world.interiorMapId || null,
+                    biome: world.interiorBiome || null,   // the biome of the village the door is in
                     savedOverworld: world.savedOverworld,
                     ...((world.interiorStack || []).length ? { stack: world.interiorStack } : {})   // the cave above the catacombs, when saved down there
                 }) : null
@@ -408,7 +411,7 @@ export const SaveManager = {
             currentBiome: data.world.currentBiome || null,
             isInterior: !!interior,
             interiorType: interior ? interior.type : null,
-            ...(interior ? { interiorId: interior.id, interiorMapId: interior.mapId || null, savedOverworld: interior.savedOverworld } : {}),
+            ...(interior ? { interiorId: interior.id, interiorMapId: interior.mapId || null, savedOverworld: interior.savedOverworld, interiorBiome: interior.biome || null } : {}),
             interiorStack: interior && Array.isArray(interior.stack) ? interior.stack : [],
             time: data.world.time,
             day: data.world.day,
@@ -418,6 +421,8 @@ export const SaveManager = {
             levelPaths: data.world.levelPaths || {},
             waypoints: data.world.waypoints || [],
             strangerHome: data.world.strangerHome || null,
+            strangerDesertHome: data.world.strangerDesertHome || null,
+            nikoliCampfire: data.world.nikoliCampfire || null,
             discoveredChunks: data.world.discoveredChunks || [],
             // undefined in a save made before the record existed: WorldManager then works out which chunks already have their structure (see structureSpawner.js)
             structureChunks: data.world.structureChunks,

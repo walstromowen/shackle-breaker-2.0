@@ -231,6 +231,35 @@ export const ItemDefinitions = {
       5: { currency: 500, materials: { "steel_ingot": 5, "iron_ingot": 10, "bronze_ingot": 15 } }
     }
   },
+  // The greatsword of the Panzerian officers, forged in the cold: Nikoli carries one (entityDefinitions NIKOLI). A strength weapon whose steel bites
+  // with frost as well as edge. (Icon: a placeholder on the weapon sheet, col 14.)
+  "panzerian_greatsword": {
+    id: "panzerian_greatsword",
+    name: "Panzerian Greatsword",
+    slot: "twoHand",
+    type: "weapon",
+    description: 'A long, heavy blade of northern steel, forged in the cold and quenched in snowmelt. Its edge carries the frost of the Panzerian passes.',
+    value: 180,
+    icon: { col: 14, row: 0 },
+    attack: { slash: 7, blunt: 2, ice: 3 },
+    requirements: { strength: 13, vigor: 10 },
+    requirementGrowth: { strength: 3, vigor: 2 },
+    grantedAbilities: ["slash", "cleave"],
+    maxLevel: 5,
+    statGrowth: {
+      attack: { slash: 3, ice: 2 }
+    },
+    abilityUnlocks: {
+      2: ["wild_swing"],
+      3: ["leaping_slash"]
+    },
+    upgradeCosts: {
+      2: { currency: 75, materials: { "iron_ingot": 3, "leather": 2 } },
+      3: { currency: 200, materials: { "iron_ingot": 6, "leather": 3 } },
+      4: { currency: 400, materials: { "steel_ingot": 4, "iron_ingot": 6 } },
+      5: { currency: 650, materials: { "steel_ingot": 8, "iron_ingot": 10 } }
+    }
+  },
   "spear": {
     id: "spear",
     name: "Spear",

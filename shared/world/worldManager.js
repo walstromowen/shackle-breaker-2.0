@@ -114,6 +114,9 @@ export class WorldManager {
             for (let c = startCol; c < endCol; c++) {
                 const key = this._s(c, r);
                 if (this._collisionMap.has(key)) continue;
+                // a story character standing here because of this player's story (Nikoli by his campfire): before anything the map would put there
+                const story = this._storyObjectAt(c, r);
+                if (story) { this._placeObject(c, r, story); continue; }
                 const forcedObjId = gameState.world.changes?.[key];
                 if (forcedObjId !== undefined) {
                     /* nothing is ever placed on open water; a saved object there is left over from another world (see resetWorldForNewGame) */
@@ -245,6 +248,7 @@ export class WorldManager {
         const newObj = this.createObjectInstance(col, row, id);
         if (!newObj) return;
         this.objects.set(this._s(col, row), newObj);
+        if (id === 'CAMPFIRE') this._campfirePlaced(col, row);
         let activeHitboxes = [];
         if (newObj.hitboxes && Array.isArray(newObj.hitboxes)) {
             activeHitboxes = newObj.hitboxes;
@@ -261,6 +265,36 @@ export class WorldManager {
                 }
             }
         }
+    }
+    /* ---- story characters on the map ----
+       Nikoli makes camp beside the first campfire of the snowy mountains the world puts down near the player (claimed for the world:
+       InteriorFactory.claimHome 'nikoliCampfire'), on the cell just south of it, and stays there until this player's story sends him on
+       (act 2, once told where to look: then he is in the Hooded Stranger's old workshop, InteriorFactory.workshopResident). He is not written
+       into the world's changes: each player sees him where their own story has him. */
+    _campfirePlaced(col, row) {
+        const w = gameState.world;
+        if (w.isInterior) return;
+        if (!w.nikoliCampfire) {
+            const biome = this.getBiomeAt(col, row);
+            if (!biome || biome.id !== 'SNOWY_MOUNTAINS') return;
+            InteriorFactory.claimHome('nikoliCampfire', `${col},${row}`);
+        }
+        const spot = this._nikoliSpot();
+        if (spot && spot.fire === `${col},${row}`) this._placeObject(spot.col, spot.row, 'NIKOLI_NPC');
+    }
+    /* { col, row, fire } where Nikoli stands by his campfire, or null when he has no camp yet or has moved on. */
+    _nikoliSpot() {
+        const w = gameState.world;
+        if (!w.nikoliCampfire || w.isInterior) return null;
+        const ms = Array.isArray(gameState.milestones) ? gameState.milestones : [];
+        if (ms.includes('act2') && ms.includes('nikoli_told')) return null;
+        const [c, r] = String(w.nikoliCampfire).split(',').map(Number);
+        if (!Number.isFinite(c) || !Number.isFinite(r)) return null;
+        return { col: c, row: r + 1, fire: w.nikoliCampfire };
+    }
+    _storyObjectAt(col, row) {
+        const spot = this._nikoliSpot();
+        return spot && spot.col === col && spot.row === row ? 'NIKOLI_NPC' : null;
     }
     // what a cell of a stair piece is: { st, t } with t = 'W' walkway, 'F' / 'G' / 'T' open ground, 'R' rock (see STAIR_MASK in terrainGenerator.js);
     // null for a cell that is in no stair piece

@@ -202,6 +202,36 @@ export const ENTITY_DEFINITIONS = {
         tags: [...HUMANOID_TEMPLATE.tags]
     },
 
+    /* Nikoli: a general of the Panzerians, the good brother (his brother Ragnar is the cursed one). Never fought: he camps beside the first
+       campfire of the snowy mountains the player comes upon (world.nikoliCampfire, WorldManager), fights beside the party against the frozen
+       trappers when they first meet (an ally: battleState context.allies), and hunts for Commander Mentoras (story/encounters/story/nikoli.js).
+       Placeholder art: the Panzerian warlord's sheets, until he has his own. */
+    "NIKOLI": {
+        ...HUMANOID_TEMPLATE,
+        name: "Nikoli",
+        properName: true,   // "Return to Nikoli", not "the Nikoli" (a quest handed in to him)
+        level: 1,
+        spriteOverworld: "warlordHeroSprite",
+        spritePortrait: "warlordHeroPortrait",
+        crySound: "legionaryCry",
+        deathSound: "legionaryCry",
+        // a strength and ice build: the greatsword's weight, and the cold of the north in its edge and in his blood (the player rules: 50 points)
+        attributes: {
+            ...HUMANOID_TEMPLATE.attributes,
+            vigor: 12, strength: 15, dexterity: 7, intelligence: 6, attunement: 10
+        },
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 20, maxStamina: 14,
+            baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, blunt: 2, slash: 2, pierce: 1, ice: 4 },
+            baseResistance: { ice: 0.4, fire: -0.1 },          // a man of the snows: the cold bites him less, the fire more
+            baseAttack: { blunt: 2, slash: 3, pierce: 1, ice: 3 }
+        },
+        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "panzerian_greatsword", head: "iron_helmet", torso: "iron_armor" },
+        abilities: [...REGULAR_HUMANOID_ABILITIES, "frigid_gale", "intimidate", "bolster"],
+        tags: [...HUMANOID_TEMPLATE.tags, "SOLDIER", "PANZERIAN", "LANG_PANZERIAN"]
+    },
+
     "SHADY_MERCHANT": {
         ...HUMANOID_TEMPLATE,
         name: "Shady Merchant",

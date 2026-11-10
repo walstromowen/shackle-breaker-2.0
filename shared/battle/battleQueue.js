@@ -265,7 +265,7 @@ export function queueVictory(state) {
     }
 
     // Pass battleLedger so BattleRewardSystem can process trait conditions. A party of several players shares the spoils (state.mp.share).
-    const rewardMessages = BattleRewardSystem.processVictory(state.partyRoster, state.enemyRoster, state.battleLedger, state.mp ? state.mp.share : null);
+    const rewardMessages = BattleRewardSystem.processVictory(state.partyRoster.filter(c => !c.isAlly), state.enemyRoster, state.battleLedger, state.mp ? state.mp.share : null);
 
     rewardMessages.forEach(msg => {
         const items = (msg === rewardMessages.lootMessage) ? rewardMessages.lootItems : null;

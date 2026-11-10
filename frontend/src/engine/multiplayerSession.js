@@ -29,7 +29,7 @@ import { worldPart, playerPart, mergeParts, placeOnOverworld } from '../../../sh
 import { multiplayer } from './multiplayerClient.js';
 import { SaveManager } from './saveManager.js';
 import { TimeSystem } from '../../../shared/world/timeSystem.js';
-import { InteriorFactory } from '../../../shared/world/interiorFactory.js';
+import { InteriorFactory, STORY_HOMES } from '../../../shared/world/interiorFactory.js';
 
 const TIME_EVERY = 5;          // seconds between the host's clock messages
 const POS_HEARTBEAT = 2;       // seconds between position messages while standing still
@@ -99,6 +99,8 @@ class MultiplayerSession {
         worldSync.onLocalChange = (key, value) => multiplayer.relay({ k: 'change', key, value });
         // the host picks the Hooded Stranger's workshop for the whole world, and tells everyone
         InteriorFactory.onStrangerHome = (id) => { if (this.role === 'host') multiplayer.relay({ k: 'stranger_home', id }); };
+        // and the other story homes (Nikoli's campfire, the Stranger's act 2 workshop) the same way
+        InteriorFactory.onHomeClaim = (key, id) => { if (this.role === 'host') multiplayer.relay({ k: 'story_home', key, id }); };
         if (!gameState.multiplayer || !gameState.multiplayer.guests) gameState.multiplayer = { guests: {} };
         this._say('Your world is open to your friends.');
         this._sendTime();
@@ -261,6 +263,10 @@ class MultiplayerSession {
             const host = this.role === 'guest' && multiplayer.room && multiplayer.room.players.find(p => p.isHost);
             if (host) multiplayer.relay({ k: 'stranger_claim', id }, host.id);
         };
+        InteriorFactory.onHomeClaim = (key, id) => {
+            const host = this.role === 'guest' && multiplayer.room && multiplayer.room.players.find(p => p.isHost);
+            if (host) multiplayer.relay({ k: 'story_home_claim', key, id }, host.id);
+        };
         this._t.save = 0;
         const host = multiplayer.room && multiplayer.room.players.find(p => p.isHost);
         this._say(`You are in ${host ? host.username : 'the host'}'s world.`);
@@ -283,6 +289,7 @@ class MultiplayerSession {
         this.newWorld = null;
         this._hostWhenLoaded = false;
         InteriorFactory.onStrangerHome = null;   // alone again: this world decides the Hooded Stranger's workshop itself
+        InteriorFactory.onHomeClaim = null;
         this.pending = null;
         TimeSystem.followsWeather = false;
         TimeSystem.sharedWeather = null;
@@ -360,6 +367,15 @@ class MultiplayerSession {
                 break;
             case 'stranger_home':
                 if (this.role === 'guest' && typeof data.id === 'string') gameState.world.strangerHome = data.id;
+                break;
+            case 'story_home_claim':   // the other story homes (InteriorFactory.STORY_HOMES): the host keeps the first claim and tells everyone
+                if (this.role === 'host' && STORY_HOMES.includes(data.key) && data.key !== 'strangerHome') {
+                    if (!gameState.world[data.key] && typeof data.id === 'string') { gameState.world[data.key] = data.id; this._hostSaveSoon(5000); }
+                    multiplayer.relay({ k: 'story_home', key: data.key, id: gameState.world[data.key] });
+                }
+                break;
+            case 'story_home':
+                if (this.role === 'guest' && STORY_HOMES.includes(data.key) && typeof data.id === 'string') gameState.world[data.key] = data.id;
                 break;
         }
     }

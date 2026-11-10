@@ -407,7 +407,7 @@ class MultiplayerSocial {
 
     /** A fight I start (sceneManager START_BATTLE) with my party near me (or `players`: the ones in the encounter it came out of): our
      *  line-up against these enemies, on every one of their screens too. I am its authority. */
-    startPartyBattle(enemies, { background = null, weather = null, bgm = null, noEscape = false, betrayal = null, players = null, afterVictory = null } = {}) {
+    startPartyBattle(enemies, { background = null, weather = null, bgm = null, noEscape = false, betrayal = null, players = null, afterVictory = null, allies = [] } = {}) {
         if (!players) this.declined.clear();   // (a fight out of a shared encounter keeps out whoever declined that encounter)
         const ids = [this.me, ...(players ? players.filter(id => id !== this.me && this.groupParties.has(id) && this.partyHere([id]).length) : this.nearbyParty())];
         const parties = { [this.me]: gameState.party.members.map(serializeEntity) };
@@ -418,6 +418,7 @@ class MultiplayerSocial {
             names: Object.fromEntries(ids.map(id => [id, this.nameOf(id)])),
             lineup: lineup.map(e => ({ ...e, data: parties[e.owner][e.idx] })),
             enemies: enemies.map(serializeEntity), background, weather: weatherSpec(weather), bgm, noEscape, betrayal,
+            allies: (allies || []).map(serializeEntity),   // who fights beside the line-up this once (Nikoli): the same fighter on every screen
             afterVictory: afterVictory && afterVictory.encounterId ? { encounterId: afterVictory.encounterId, context: afterVictory.context || {} } : null,
         };
         for (const id of ids) if (id !== this.me) this._send({ k: 'bt_start', spec }, id);
@@ -507,6 +508,9 @@ class MultiplayerSocial {
             enemies = spec.enemies.map(hydrateEntity);
             enemyMeta = enemies.map((_, i) => ({ netId: `E#${i}` }));
         }
+        // the allies stand at the end of the line-up (battleState puts them there), nobody's to play: enemyAI picks for them on every screen
+        const allies = spec.kind === 'party' ? (spec.allies || []).map(hydrateEntity) : [];
+        if (allies.length) partyMeta = [...partyMeta, ...allies.map((_, i) => ({ netId: `A#${i}` }))];
         const players = spec.players.slice();
         this.battle = { bid: spec.bid, kind: spec.kind, players };
         const mp = {
@@ -516,7 +520,7 @@ class MultiplayerSocial {
             early: this.early.get(spec.bid) || [],
         };
         this.early.delete(spec.bid);
-        events.emit('MP_START_BATTLE', { enemies, context: { mp, partyEntities, backgroundId: spec.background || undefined, weather: weatherFromSpec(spec.weather), noEscape: !!spec.noEscape }, bgm: spec.bgm || null, afterVictory: spec.afterVictory || null });
+        events.emit('MP_START_BATTLE', { enemies, context: { mp, partyEntities, allies, backgroundId: spec.background || undefined, weather: weatherFromSpec(spec.weather), noEscape: !!spec.noEscape }, bgm: spec.bgm || null, afterVictory: spec.afterVictory || null });
     }
 
     /** In a fight, an encounter or a trade right now (a request to join another one is refused). */

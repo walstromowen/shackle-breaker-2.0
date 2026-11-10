@@ -138,7 +138,7 @@ test('a game saved inside a house comes back inside it, with the way out intact;
     gameState.world.interiorMapId = 'map_a';
     assert.equal(SaveManager.canSaveNow(), true, 'inside with a way out: allowed');
     const snap = JSON.parse(JSON.stringify(SaveManager.createSnapshot()));
-    assert.deepEqual(snap.data.world.interior, { type: 'HOUSE', id: 'h1', mapId: 'map_a', savedOverworld: { seed: 111, returnCol: 4, returnRow: 9 } });
+    assert.deepEqual(snap.data.world.interior, { type: 'HOUSE', id: 'h1', mapId: 'map_a', biome: null, savedOverworld: { seed: 111, returnCol: 4, returnRow: 9 } });
 
     gameState.world.isInterior = false;
     gameState.world.savedOverworld = null;

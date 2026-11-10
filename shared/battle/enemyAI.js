@@ -20,6 +20,12 @@ export function worthUsing(ability, caster) {
 }
 
 export function queueEnemyActions(state) {
+    queueFoeActions(state);
+    queueAllyActions(state);
+}
+
+/* The enemies' picks. */
+function queueFoeActions(state) {
     const livingParty = state.activeParty.filter(p => p && !p.isDead());
     if (livingParty.length === 0) return;
 
@@ -52,6 +58,45 @@ export function queueEnemyActions(state) {
  * ENEMY's side. (Scopes are written from the caster's point of view: 'ally' means the caster's own
  * team, so for an enemy that is another enemy, not a party member.)
  */
+/* The allies' picks (fighters on the party's side whom nobody controls, battleState `context.allies`): the same choices an enemy makes, aimed the
+   other way. Run right after the enemies' on every screen of a shared fight, with the same dice, so every screen has the same picks. */
+export function queueAllyActions(state) {
+    const foes = state.activeEnemies.filter(e => e && !e.isDead());
+    if (foes.length === 0) return;
+    const friends = state.activeParty.filter(p => p && !p.isDead());
+    for (const ally of state.activeParty) {
+        if (!ally || !ally.isAlly || ally.isDead()) continue;
+        const usable = ally.abilities.filter(a =>
+            a.canPayCost(ally, InventorySystem) && !['rest', 'punch'].includes(a.id) && (typeof a.usableIn !== 'function' || a.usableIn('battle')) && worthUsing(a, ally)
+        );
+        if (usable.length > 0) {
+            const action = usable[Math.floor(rng() * usable.length)];
+            state.turnQueue.push({ actor: ally, action, target: pickTarget(action, ally, foes, friends) });
+            continue;
+        }
+        state.turnQueue.push({ actor: ally, action: AbilityFactory.createAbilities(['rest'])[0], target: ally });
+    }
+}
+
+/* Who a fighter run by the dice aims at: `foes` are the other side, `friends` its own (scopes are written from the caster's side). */
+function pickTarget(action, caster, foes, friends) {
+    const scope = action.targeting?.scope || 'enemy';
+    const pick = list => list[Math.floor(rng() * list.length)];
+    if (scope === 'self') return caster;
+    const pool = scope === 'any' ? [...foes, ...friends] : ALLY_SCOPES.includes(scope) ? friends : foes;
+    if (needsDistinctTargets(action)) {
+        const wanted = Math.min(action.targeting?.count || 1, pool.length);
+        const shuffled = [...pool];
+        for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; }
+        return shuffled.slice(0, Math.max(1, wanted));
+    }
+    if (ALLY_SCOPES.includes(scope)) {
+        const others = pool.filter(c => c !== caster);
+        return pick(others.length > 0 ? others : pool);
+    }
+    return pick(pool);
+}
+
 export function pickEnemyTarget(state, enemy, action, livingParty) {
     const scope = action.targeting?.scope || 'enemy';
     const pick = list => list[Math.floor(rng() * list.length)];

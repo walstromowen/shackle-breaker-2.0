@@ -1141,8 +1141,9 @@ export class OverworldController extends BaseController {
                 });
                 // all done, and it is handed in to its giver: the tracker says where to go
                 if (def.turnIn && formattedObjectives.every(o => o.current >= o.required)) {
-                    const giver = ENTITY_DEFINITIONS[def.turnIn]?.name || 'the quest giver';
-                    formattedObjectives.push({ description: `Return to the ${giver}`, current: 0, required: 1 });
+                    const g = ENTITY_DEFINITIONS[def.turnIn];
+                    const giver = g ? (g.properName ? g.name : `the ${g.name}`) : 'the quest giver';   // "the Hooded Stranger", but "Nikoli"
+                    formattedObjectives.push({ description: `Return to ${giver}`, current: 0, required: 1 });
                 }
                 trackedQuests.push({ title: def.name, objectives: formattedObjectives });
             }
