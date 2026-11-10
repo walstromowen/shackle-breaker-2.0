@@ -23,16 +23,16 @@
       "settings": {
         "stability": 0.0
       },
-      "fx": "hall",
+      "fx": "nightmare",
       "directions": {
-        "Not yet, my king, not yet. I am still here.": "[exhausted whisper] Not yet, my king... [desperate] not yet. [unhinged giggle] I am still here.",
-        "Footsteps... after so long. Is it you, my king? Have you come back so soon?!": "[ecstatic whisper] Footsteps... after so long. [giddy, voice climbing] Is it you, my king? [shrill, delighted] Have you come back so soon?!",
-        "No. No, you are not him. Forgive an old man.": "[relieved sigh] No... No, you are not him. [softly] Forgive an old man.",
-        "He told me, keep the stone safe, Darius, and I shall return for it. So I kept it, every winter, every long dark... or I did.": "[proud, far away] He told me, keep the stone safe, Darius, and I shall return for it. So I kept it, every winter, every long dark... [quietly, ashamed] or I did.",
-        "It was no fault of my own, you see. But perhaps... you have seen it? For it is a matter of great importance.": "[defensive] It was no fault of my own, you see. But perhaps... [long pause] [hopeful, pleading] you have seen it? For it is a matter of great importance.",
-        "You think he is not coming. I can hear it in your silence. And if anyone is found to have kept the stone from me, well... they shall be punished most severely.": "[muttering] You think he is not coming. I can hear it in your silence. [sinister, low] And if anyone is found to have kept the stone from me, well... [menacing] they shall be punished most severely.",
-        "That light at my back... I can feel it. His sign, at last. But he gave it to you. A stranger in chains.": "[gasps, awed] That light at my back... I can feel it. [laughs ecstatically] His sign, at last! [long pause] [despair, voice breaking] But he gave it to you... A stranger in chains.",
-        "No... no, that is not possible. I am the king's adviser, I kept it for him! You thief, you filthy thief! Give it back! That stone is mine!": "[quiet, trembling disbelief] No... no, that is not possible. [voice rising, indignant] I am the king's adviser, I kept it for him! [furious, shouting] You thief, you filthy THIEF! [screaming, unhinged] Give it back! [maniacal roar] That stone is MINE!"
+        "Not yet, my king, not yet. I am still here.": "[low, ominous whisper] Not yet, my king... not yet. [slow, creeping laughter] [sinister whisper] I am still here.",
+        "Footsteps... after so long. Is it you, my king? Have you come back so soon?!": "[ominous whisper] Footsteps... after so long. [giggles softly] [voice climbing, giddy] Is it you, my king? [shrill, maniacal laughter] Have you come back so soon?!",
+        "No. No, you are not him. Forgive an old man.": "[laughter dying away] [cold, low] No. No, you are not him. [sinister, mocking] Forgive an old man.",
+        "He told me, keep the stone safe, Darius, and I shall return for it. So I kept it, every winter, every long dark... or I did.": "[dreamy, far away] He told me, keep the stone safe, Darius, and I shall return for it. [chuckles darkly] So I kept it, every winter, every long dark... [ominous whisper] or I did.",
+        "It was no fault of my own, you see. But perhaps... you have seen it? For it is a matter of great importance.": "[defensive, wheedling] It was no fault of my own, you see. [long pause] [low, menacing] But perhaps... you have seen it? [unsettling giggle] For it is a matter of great importance.",
+        "You think he is not coming. I can hear it in your silence. And if anyone is found to have kept the stone from me, well... they shall be punished most severely.": "[muttering darkly] You think he is not coming. I can hear it in your silence. [maniacal laughter] [sinister, low] And if anyone is found to have kept the stone from me, well... [menacing whisper] they shall be punished most severely.",
+        "That light at my back... I can feel it. His sign, at last. But he gave it to you. A stranger in chains.": "[gasps, awed] That light at my back... I can feel it. [ecstatic, maniacal laughter] His sign, at last! [long pause] [cold, ominous] But he gave it to you... A stranger in chains.",
+        "No... no, that is not possible. I am the king's adviser, I kept it for him! You thief, you filthy thief! Give it back! That stone is mine!": "[quiet, trembling disbelief] No... no, that is not possible. [voice rising, indignant] I am the king's adviser, I kept it for him! [furious, shouting] You thief, you filthy THIEF! [screaming, unhinged] Give it back! [maniacal laughter] [menacing roar] That stone is MINE!"
       }
     }
   }
