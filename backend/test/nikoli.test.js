@@ -67,7 +67,8 @@ test('the first meeting: snow leopards at his fire, and the fight is fought besi
     assert.equal(results(walk)[0].payload.stageId, 'walk_away');
     assert.ok(!JSON.stringify(N.stages.walk_away).includes('nikoli_met'), 'and meets him properly another night');
     assert.ok(battle.bgm && battle.noEscape);
-    assert.match(AFTER.stages.after.text, /thanks/i, 'he thanks you');
+    assert.match(AFTER.stages.after.text, /Thank you/, 'he thanks you');
+    assert.match(AFTER.stages.after_2.text, /Nikoli was general/, 'and speaks of himself as Nikoli, as he does in the story');
     assert.match(AFTER.stages.after_2.text, /Commander Mentoras/);
 });
 

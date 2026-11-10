@@ -22,6 +22,9 @@
      told_again                  told, still act 1: he is getting ready to leave.
      workshop .. workshop_3      act 2, told: he stands where the Stranger used to, and has just missed him.
 
+   How he talks (docs/story.md, Nikolai Ironson): witty, a boyish gap-toothed grin, speaks of himself in the third person in broken Alterian
+   (no articles, a northern cadence, "da", "my friend"), yet now and then a word from his two universities slips out.
+
    Personal: in a party of players this is each player's own (their milestones), never shared or voted on. The fight it starts may still pull
    in the players nearby; Nikoli then fights beside all of them.
    Art: the Panzerian warlord's portrait stands in for his own (entity NIKOLI). */
@@ -68,7 +71,7 @@ const STAGES = {
     // ---- the first meeting: starving snow leopards come for his fire ----
     meet: stage("A broad man in a battered Panzerian greatcoat stands with his back to the campfire, a greatsword in his hands. Beyond the light, pale shapes slink through the snow: snow leopards, starved thin, their eyes on the fire.",
         next("meet_2"), { image: LEOPARDS_IMG }),
-    meet_2: stage("\"Three of them, and one of me. I liked those odds better when I was younger.\" He glances at you, then back at the dark. \"You carry a weapon. Stand with me.\"",
+    meet_2: stage("\"Three cats, one Nikoli. Is bad arithmetic, even for general.\" He grins over his shoulder, and you count more gaps than teeth. \"You have weapon, da? Then stand with Nikoli.\"",
         [{
             text: "Draw your weapon.",
             outcomes: [{ weight: 100, results: [
@@ -91,48 +94,48 @@ const STAGES = {
 
     // ---- after the fight: thanks, who he is, and who he is looking for ----
     // (in a party of players everyone who fought beside him plays this on their own screen: they have met him now too)
-    after: stage("The last of the cats lies still in the snow. The big man wipes his greatsword clean on a frozen sleeve and looks you over. \"My thanks, stranger. I would have been their supper.\"",
+    after: stage("The last of the cats lies still in the snow. The big man wipes his greatsword clean on a frozen sleeve and grins his gap-toothed grin at you. \"Thank you, stranger. Without you, Nikoli is supper for cats.\"",
         [{ text: "Continue.", outcomes: [{ weight: 100, results: [{ type: "GRANT_MILESTONE", payload: { id: "nikoli_met" } }, { type: "ADVANCE_STAGE", payload: { stageId: "after_2" } }] }] }]),
-    after_2: stage("\"My name is Nikoli. I was a general of Panzeria, back when Panzeria had armies worth the name. I have come a long way south for one man: Commander Mentoras, of the Altus royal guard.\"",
+    after_2: stage("\"Nikoli was general of Panzeria, when Panzeria still had armies worth the name. Now Nikoli walks long way south for one man: Commander Mentoras, of Altus royal guard.\"",
         next("ask")),
-    ask: stage("\"We bled on the same field at the end of the war, and he knows something I need to know. Have you seen him? Tired eyes. A sharp tongue. He never could stand being looked at.\"",
+    ask: stage("\"Old friend of Nikoli. He knows thing Nikoli must know. You have seen him? Tired eyes, sharp tongue, melancholic disposition, as professors in Altus would say. Hates to be looked at.\"",
         [tellHim, { text: "\"I don't know anyone by that name.\"", outcomes: toStage("dunno") }]),
-    told: stage("Nikoli is quiet for a long moment. \"A hood. Yes. That would be like him.\" He laughs once, without much in it.",
+    told: stage("Nikoli is quiet for a long moment. \"A hood. Da. This is like him.\" He laughs once, without much in it.",
         next("told_2")),
-    told_2: stage("\"You have done me a kindness, stranger. Take this. The ice remembers what the rest of us forget.\"",
+    told_2: stage("\"You do Nikoli great kindness, stranger. Take. Ice remembers what rest of us forget.\"",
         [{ text: "Take it.", outcomes: [{ weight: 100, results: [
             { type: "GIVE_ITEM", payload: { itemId: "insight_of_ice", qty: 1 } },
             { type: "GRANT_MILESTONE", payload: { id: "nikoli_told" } },
             { type: "ADVANCE_STAGE", payload: { stageId: "beast" } }
         ] }] }]),
-    dunno: stage("\"No? Few do, these days. If you hear the name, come and find me. I will be here, by the fire, until I have a reason to leave.\"",
+    dunno: stage("\"No? Few do, these days. If you hear name, come find Nikoli. Nikoli waits here, by fire, until he has reason to leave.\"",
         next("beast")),
 
     // ---- the war beast, mentioned in passing ----
-    beast: stage("He prods the fire. \"Mind the high passes on your way. Those cats were not hungry for nothing. Something bigger has been eating their game. A Panzerkamfer, if I am any judge of tracks.\"",
+    beast: stage("He prods the fire. \"Careful in high passes, my friend. Cats are not hungry for nothing. Something bigger eats their game. Panzerkamfer, if Nikoli knows tracks. And Nikoli knows tracks.\"",
         [{ text: "[Panzerkamfer] \"A Panzerkamfer?\"", conditions: [{ type: "quest_not_started", id: BEAST_QUEST }], outcomes: toStage("beast_2") }, { text: "Leave him to the fire.", outcomes: end() }]),
-    beast_2: stage("\"A war beast of my people. A snow tiger raised on iron and bound in plate, bred to break shield walls. When our army broke, the beasts went wild, and wilder every winter.\"",
+    beast_2: stage("\"War beast of my people. Snow tiger raised on iron, bound in plate, bred to break shield walls. When our army broke, beasts went wild. Every winter, more wild.\"",
         next("beast_3")),
-    beast_3: stage("\"One hunts these peaks now. Follow its tracks through the snow and kill it, and come back to me. I will make it worth your while.\"",
+    beast_3: stage("\"One hunts these peaks now. Follow tracks through snow, kill it, come back to Nikoli. Nikoli makes it worth your while. Is promise.\"",
         [
             { text: "\"I'll hunt it.\"", conditions: [{ type: "quest_not_started", id: BEAST_QUEST }], outcomes: end([{ type: "START_QUEST", payload: { questId: BEAST_QUEST } }]) },
             { text: "\"Not today.\"", outcomes: end() }
         ]),
-    beast_waiting: stage("Nikoli looks up from the fire. \"The beast still lives. I can smell it on the wind. Follow the tracks through the high snow.\"",
+    beast_waiting: stage("Nikoli looks up from the fire. \"Beast still lives. Nikoli smells it on wind. Follow tracks through high snow, my friend.\"",
         [tellHim, { text: "Leave him to the fire.", outcomes: end() }], { ambience: "fireCrackle" }),
-    beast_done: stage("Nikoli takes one look at you and laughs, the first real laugh you have heard from him. \"You smell of iron and blood. The beast is dead, then. Good. Take this, as I promised.\"",
+    beast_done: stage("Nikoli takes one look at you and laughs, a big gap-toothed laugh, the first real one you have heard from him. \"You smell of iron and blood. Beast is dead, then. Good! Take, as Nikoli promised.\"",
         [{ text: "Take it.", outcomes: end([{ type: "COMPLETE_QUEST", payload: { questId: BEAST_QUEST } }]) }]),
 
     // ---- later visits by the fire ----
-    again: stage("Nikoli sits by the campfire with the greatsword across his knees. \"Back again. The fire is free, the company is poor. Any word of Commander Mentoras?\"",
+    again: stage("Nikoli sits by the campfire with the greatsword across his knees. \"Back again! Fire is free, company is poor. Any word of Commander Mentoras?\"",
         [tellHim, askBeast, { text: "\"Not yet.\"", outcomes: end() }], { ambience: "fireCrackle" }),
-    told_again: stage("Nikoli is packing a worn saddlebag by the fire. \"I leave when the snow lets me. A workshop, you said. I will find it.\"",
+    told_again: stage("Nikoli is packing a worn saddlebag by the fire. \"Nikoli leaves when snow lets him. Workshop, you said. Nikoli will find it.\"",
         [askBeast, { text: "Leave him to his packing.", outcomes: end() }], { ambience: "fireCrackle" }),
 
     // ---- act 2: the Stranger's old workshop, a step too late ----
-    workshop: stage("Nikoli stands at the cold forge where the hooded man used to wait, turning a length of broken chain over in his hands. \"He was here. The ashes were still warm when I came.\"",
+    workshop: stage("Nikoli stands at the cold forge where the hooded man used to wait, turning a length of broken chain over in his hands. \"He was here. Ashes still warm when Nikoli came.\"",
         next("workshop_2"), { ambience: "none" }),
-    workshop_2: stage("\"He left in a hurry, and he left this.\" He holds up the chain. \"South, I think. Toward the sand. Always one step ahead of me, that one. He always was.\"",
+    workshop_2: stage("\"He leaves in hurry, and he leaves this.\" He holds up the chain. \"South, Nikoli thinks. Toward sand. Always one step ahead of Nikoli, that one. Always he was.\"",
         [askBeast, { text: "Leave him to his hunt.", outcomes: end() }])
 };
 

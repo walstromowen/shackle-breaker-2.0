@@ -102,7 +102,7 @@ export const hoodedStranger = {
             }]),
 
         // ---- act 2, after the player told Nikoli where to find him (story/encounters/story/nikoli.js): he has moved to the desert ----
-        heard_nikoli: stage("\"Someone came asking after me at the old place. A big Panzerian with a big sword and a long memory.\"", next("heard_nikoli_2")),
+        heard_nikoli: stage("\"Someone came asking after me at the old place. A big Panzerian with a big sword, who talks about himself as if he were somebody else.\"", next("heard_nikoli_2")),
         heard_nikoli_2: stage("\"Your doing? No. Don't answer that. I moved house anyway. The old place had too many visitors, and the anvil had stopped listening.\"",
             [{ text: "Continue.", outcomes: [{ weight: 100, results: [{ type: "GRANT_MILESTONE", payload: { id: "stranger_heard_nikoli" } }, { type: "END_ENCOUNTER", payload: null }] }] }]),
 
