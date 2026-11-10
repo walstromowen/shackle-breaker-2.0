@@ -19,6 +19,7 @@
 //   "directions"  { "the line as it reads on screen": "what the voice is given instead" }: the same words with acting cues in square brackets
 //                 ("[voice breaking] No, you are not him."), for eleven_v3. Only the recording hears them; the screen shows the line as written.
 //                 Changing a line's direction records that line again.
+// voices.json can also have "pronounce": { "word": "how the voices should say it" } for every voice (Panzeria: "Pan-zeer-ia").
 //   "fx"          a sound treatment run on each clip with ffmpeg after recording (FX below, e.g. "ghost") The API key is read from ELEVENLABS_API_KEY (a cloud session's network proxy puts
 // it in for you: any value works there).
 import fs from 'node:fs';
@@ -113,8 +114,13 @@ export function mp3Duration(buf) {
     return Math.round(seconds * 1000) / 1000;
 }
 
-/** What the voice is given for a line: its direction (the words with acting cues), else the words. */
-const spokenText = (l) => ((CONFIG.voices[l.speaker].directions || {})[l.text]) || l.text;
+/* "pronounce" in voices.json: { "Panzeria": "Pan-zeer-ia" }: a word the voices would say wrong, respelled for them (whole words, any voice); the
+   screen still shows the real spelling. */
+const PRONOUNCE = Object.entries(CONFIG.pronounce || {}).sort((a, b) => b[0].length - a[0].length);
+const respell = (text) => PRONOUNCE.reduce((t, [word, said]) => t.replace(new RegExp(`\\b${word}\\b`, 'g'), said), text);
+
+/** What the voice is given for a line: its direction (the words with acting cues), else the words; with the respellings. */
+const spokenText = (l) => respell(((CONFIG.voices[l.speaker].directions || {})[l.text]) || l.text);
 
 /** A short tag for the voice and the way it reads the line: a clip made with another voice, model, settings, treatment or direction has another
     file name (and is recorded again). */
@@ -124,6 +130,8 @@ const voiceTag = (l) => {
     const dir = (v.directions || {})[l.text];
     if (v.fx || dir) parts.push(v.fx || null, dir || null);
     if (v.fx) parts.push(FX[v.fx] || null);   // the treatment itself: retuning it (less echo) makes new clips
+    const plain = (v.directions || {})[l.text] || l.text;
+    if (respell(plain) !== plain) parts.push(['say', respell(plain)]);   // a respelled word: a line it changes is recorded again
     return crypto.createHash('sha1').update(JSON.stringify(parts)).digest('hex').slice(0, 8);
 };
 
