@@ -17,21 +17,21 @@
       "name": "Edward - British, Dark, Seductive, Low"
     },
     "DARIUS": {
-      "id": "isFTUs6SGGS0CJ3ZeJz5",
-      "name": "Darius the Groveler (Shackle Breaker): designed for him, a grotesque ancient lord with pompous grandeur",
+      "id": "hlqfQBq23GmIBaLGn1OA",
+      "name": "Darius the Groveler (Shackle Breaker): designed for him, a manic, shrill, theatrical English scholar swinging between ecstatic whispers, cackling and shrieking",
       "model": "eleven_v3",
       "settings": {
         "stability": 0.0
       },
-      "fx": "ghost",
+      "fx": "hall",
       "directions": {
         "Not yet, my king, not yet. I am still here.": "[exhausted whisper] Not yet, my king... [desperate] not yet. [unhinged giggle] I am still here.",
-        "Footsteps... after so long. Is it you, my king? Have you come back so soon?!": "[whispering] Footsteps... after so long. [nervously, eager to please] Is it you, my king? Have you come back so soon?!",
+        "Footsteps... after so long. Is it you, my king? Have you come back so soon?!": "[ecstatic whisper] Footsteps... after so long. [giddy, voice climbing] Is it you, my king? [shrill, delighted] Have you come back so soon?!",
         "No. No, you are not him. Forgive an old man.": "[relieved sigh] No... No, you are not him. [softly] Forgive an old man.",
         "He told me, keep the stone safe, Darius, and I shall return for it. So I kept it, every winter, every long dark... or I did.": "[proud, far away] He told me, keep the stone safe, Darius, and I shall return for it. So I kept it, every winter, every long dark... [quietly, ashamed] or I did.",
         "It was no fault of my own, you see. But perhaps... you have seen it? For it is a matter of great importance.": "[defensive] It was no fault of my own, you see. But perhaps... [long pause] [hopeful, pleading] you have seen it? For it is a matter of great importance.",
         "You think he is not coming. I can hear it in your silence. And if anyone is found to have kept the stone from me, well... they shall be punished most severely.": "[muttering] You think he is not coming. I can hear it in your silence. [sinister, low] And if anyone is found to have kept the stone from me, well... [menacing] they shall be punished most severely.",
-        "That light at my back... I can feel it. His sign, at last. But he gave it to you. A stranger in chains.": "[gasps, awed] That light at my back... I can feel it. [ecstatic whisper] His sign, at last. [long pause] [despair, voice breaking] But he gave it to you... A stranger in chains.",
+        "That light at my back... I can feel it. His sign, at last. But he gave it to you. A stranger in chains.": "[gasps, awed] That light at my back... I can feel it. [laughs ecstatically] His sign, at last! [long pause] [despair, voice breaking] But he gave it to you... A stranger in chains.",
         "No... no, that is not possible. I am the king's adviser, I kept it for him! You thief, you filthy thief! Give it back! That stone is mine!": "[quiet, trembling disbelief] No... no, that is not possible. [voice rising, indignant] I am the king's adviser, I kept it for him! [furious, shouting] You thief, you filthy THIEF! [screaming, unhinged] Give it back! [maniacal roar] That stone is MINE!"
       }
     }

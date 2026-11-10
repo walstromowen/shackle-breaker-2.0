@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import zlib from 'node:zlib';
+import { decodePng } from './pngDecode.js';
 
 const { formatClock, periodOfDay, describeWorld, bodyPosition, skyColors, PLAQUE, plaqueRect } = await import('../../frontend/src/screens/overworld/worldStatusPlaque.js');
 const { BIOME_DEFINITIONS: BiomeDefinitions } = await import('../../shared/world/biomeDefinitions.js');
@@ -72,26 +72,7 @@ test('every biome has a name for the plaque, and the plaque sits right of the ho
 
 // --- the merchant's sheet: 8 frames across, rows in sets of four (idle / walk / run), South East North West -------------------------------------------
 function readPng(file) {
-    const buf = fs.readFileSync(file);
-    let pos = 8, w = 0, h = 0, idat = [];
-    while (pos < buf.length) {
-        const len = buf.readUInt32BE(pos), type = buf.toString('ascii', pos + 4, pos + 8);
-        if (type === 'IHDR') { w = buf.readUInt32BE(pos + 8); h = buf.readUInt32BE(pos + 12); assert.equal(buf[pos + 16], 8); assert.equal(buf[pos + 17], 6, 'RGBA'); }
-        if (type === 'IDAT') idat.push(buf.subarray(pos + 8, pos + 8 + len));
-        pos += 12 + len;
-    }
-    const raw = zlib.inflateSync(Buffer.concat(idat)), bpp = 4, stride = w * bpp, px = Buffer.alloc(h * stride);
-    for (let y = 0; y < h; y++) {
-        const f = raw[y * (stride + 1)], line = raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1));
-        for (let x = 0; x < stride; x++) {
-            const a = x >= bpp ? px[y * stride + x - bpp] : 0, b = y > 0 ? px[(y - 1) * stride + x] : 0, c = x >= bpp && y > 0 ? px[(y - 1) * stride + x - bpp] : 0;
-            let v = line[x];
-            if (f === 1) v += a; else if (f === 2) v += b; else if (f === 3) v += (a + b) >> 1;
-            else if (f === 4) { const p = a + b - c, pa = Math.abs(p - a), pb = Math.abs(p - b), pc = Math.abs(p - c); v += (pa <= pb && pa <= pc) ? a : (pb <= pc ? b : c); }
-            px[y * stride + x] = v & 255;
-        }
-    }
-    return { w, h, px };
+    return decodePng(file);
 }
 
 test('the shady merchant\'s sheet: 512 x 768, 12 rows of 8 frames, every frame drawn, and walking and running really move', () => {

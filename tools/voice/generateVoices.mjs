@@ -45,7 +45,9 @@ const opt = (name) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1
 
 /* Sound treatments (ffmpeg -af). ghost: a touch deeper and slower, a hollow stone-chamber echo, the top end softened. */
 const FX = {
-    ghost: 'asetrate=44100*0.94,aresample=44100,aecho=0.8:0.7:60|140|260:0.35|0.25|0.15,highpass=f=90,lowpass=f=7500,volume=1.1'
+    ghost: 'asetrate=44100*0.94,aresample=44100,aecho=0.8:0.7:60|140|260:0.35|0.25|0.15,highpass=f=90,lowpass=f=7500,volume=1.1',
+    // hall: the same stone-chamber echo with the voice's own pitch kept (a shrill voice stays shrill), a little longer, like a preacher in an empty nave
+    hall: 'aecho=0.8:0.75:70|160|300:0.35|0.25|0.18,highpass=f=80,lowpass=f=9000,volume=1.1'
 };
 function applyFx(name, audio) {
     if (!name) return audio;
