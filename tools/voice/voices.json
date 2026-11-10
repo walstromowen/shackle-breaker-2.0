@@ -17,22 +17,22 @@
       "name": "Edward - British, Dark, Seductive, Low"
     },
     "DARIUS": {
-      "id": "hlqfQBq23GmIBaLGn1OA",
-      "name": "Darius the Groveler (Shackle Breaker): designed for him, a manic, shrill, theatrical English scholar swinging between ecstatic whispers, cackling and shrieking",
+      "id": "yWBMH8XJkFyWWZnXFRbX",
+      "name": "Darius the Groveler (Shackle Breaker): designed for him, a cold, measured, emotionless English scholar, mad but utterly calm, with short joyless chuckles",
       "model": "eleven_v3",
       "settings": {
-        "stability": 0.0
+        "stability": 0.5
       },
       "fx": "nightmare",
       "directions": {
-        "Not yet, my king, not yet. I am still here.": "[low, ominous whisper] Not yet, my king... not yet. [slow, creeping laughter] [sinister whisper] I am still here.",
-        "Footsteps... after so long. Is it you, my king? Have you come back so soon?!": "[ominous whisper] Footsteps... after so long. [giggles softly] [voice climbing, giddy] Is it you, my king? [shrill, maniacal laughter] Have you come back so soon?!",
-        "No. No, you are not him. Forgive an old man.": "[laughter dying away] [cold, low] No. No, you are not him. [sinister, mocking] Forgive an old man.",
-        "He told me, keep the stone safe, Darius, and I shall return for it. So I kept it, every winter, every long dark... or I did.": "[dreamy, far away] He told me, keep the stone safe, Darius, and I shall return for it. [chuckles darkly] So I kept it, every winter, every long dark... [ominous whisper] or I did.",
-        "It was no fault of my own, you see. But perhaps... you have seen it? For it is a matter of great importance.": "[defensive, wheedling] It was no fault of my own, you see. [long pause] [low, menacing] But perhaps... you have seen it? [unsettling giggle] For it is a matter of great importance.",
-        "You think he is not coming. I can hear it in your silence. And if anyone is found to have kept the stone from me, well... they shall be punished most severely.": "[muttering darkly] You think he is not coming. I can hear it in your silence. [maniacal laughter] [sinister, low] And if anyone is found to have kept the stone from me, well... [menacing whisper] they shall be punished most severely.",
-        "That light at my back... I can feel it. His sign, at last. But he gave it to you. A stranger in chains.": "[gasps, awed] That light at my back... I can feel it. [ecstatic, maniacal laughter] His sign, at last! [long pause] [cold, ominous] But he gave it to you... A stranger in chains.",
-        "No... no, that is not possible. I am the king's adviser, I kept it for him! You thief, you filthy thief! Give it back! That stone is mine!": "[quiet, trembling disbelief] No... no, that is not possible. [voice rising, indignant] I am the king's adviser, I kept it for him! [furious, shouting] You thief, you filthy THIEF! [screaming, unhinged] Give it back! [maniacal laughter] [menacing roar] That stone is MINE!"
+        "Not yet, my king, not yet. I am still here.": "[cold, flat, emotionless] Not yet, my king. Not yet. [quietly] I am still here. [several short, dry, joyless chuckles under his breath] Heh... heh. Heh heh.",
+        "Footsteps... after so long. Is it you, my king? Have you come back so soon?!": "[flat, measured, emotionless] Footsteps... after so long. Is it you, my king? Have you come back so soon? [several short, dry, joyless chuckles under his breath] Heh... heh. Heh heh.",
+        "No. No, you are not him. Forgive an old man.": "[cold, serious] No. No, you are not him. [flat] Forgive an old man. [several short, dry, joyless chuckles under his breath] Heh... heh. Heh heh.",
+        "He told me, keep the stone safe, Darius, and I shall return for it. So I kept it, every winter, every long dark... or I did.": "[grave, slow, emotionless] He told me, keep the stone safe, Darius, and I shall return for it. So I kept it, every winter, every long dark... [pause] or I did. [several short, dry, joyless chuckles under his breath] Heh... heh. Heh heh.",
+        "It was no fault of my own, you see. But perhaps... you have seen it? For it is a matter of great importance.": "[flat, matter-of-fact] It was no fault of my own, you see. [pause] But perhaps... you have seen it? [cold, serious] For it is a matter of great importance. [several short, dry, joyless chuckles under his breath] Heh... heh. Heh heh.",
+        "You think he is not coming. I can hear it in your silence. And if anyone is found to have kept the stone from me, well... they shall be punished most severely.": "[cold, measured] You think he is not coming. I can hear it in your silence. [low, grave, emotionless] And if anyone is found to have kept the stone from me, well... they shall be punished most severely. [several short, dry, joyless chuckles under his breath] Heh... heh. Heh heh.",
+        "That light at my back... I can feel it. His sign, at last. But he gave it to you. A stranger in chains.": "[slow, flat] That light at my back... I can feel it. His sign, at last. [long pause] [cold, serious] But he gave it to you. A stranger in chains. [several short, dry, joyless chuckles under his breath] Heh... heh. Heh heh.",
+        "No... no, that is not possible. I am the king's adviser, I kept it for him! You thief, you filthy thief! Give it back! That stone is mine!": "[quiet, cold] No... no, that is not possible. [grave, controlled] I am the king's adviser. I kept it for him. [cold fury, low and deliberate] You thief. You filthy thief. Give it back. [flat, final] That stone is mine. [several short, dry, joyless chuckles under his breath] Heh... heh. Heh heh."
       }
     }
   }

@@ -48,9 +48,9 @@ const FX = {
     ghost: 'asetrate=44100*0.94,aresample=44100,aecho=0.8:0.7:60|140|260:0.35|0.25|0.15,highpass=f=90,lowpass=f=7500,volume=1.1',
     // hall: the same stone-chamber echo with the voice's own pitch kept (a shrill voice stays shrill), a little longer, like a preacher in an empty nave
     hall: 'aecho=0.8:0.75:70|160|300:0.35|0.25|0.18,highpass=f=80,lowpass=f=9000,volume=1.1',
-    // nightmare: the hall echo, darker, with a quiet copy of the voice a fourth lower under it (same timing): the shrill mania stays on top,
+    // nightmare: the hall echo, darker, with a faint copy of the voice a fourth lower under it (same timing): the shrill mania stays on top,
     // something deeper speaks along beneath it
-    nightmare: 'asplit=2[v][d];[d]asetrate=44100*0.75,aresample=44100,atempo=1.3333,lowpass=f=2500,volume=0.45[low];[v][low]amix=inputs=2:normalize=0,aecho=0.8:0.8:80|190|340|520:0.4|0.3|0.22|0.14,highpass=f=60,lowpass=f=7000,volume=1.0'
+    nightmare: 'asplit=2[v][d];[d]asetrate=44100*0.75,aresample=44100,atempo=1.3333,lowpass=f=2500,volume=0.3[low];[v][low]amix=inputs=2:normalize=0,aecho=0.8:0.8:80|190|340|520:0.4|0.3|0.22|0.14,highpass=f=60,lowpass=f=7000,volume=1.0'
 };
 function applyFx(name, audio) {
     if (!name) return audio;
