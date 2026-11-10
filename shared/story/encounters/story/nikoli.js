@@ -90,8 +90,9 @@ const STAGES = {
         [{ text: "Keep walking.", outcomes: end() }]),
 
     // ---- after the fight: thanks, who he is, and who he is looking for ----
+    // (in a party of players everyone who fought beside him plays this on their own screen: they have met him now too)
     after: stage("The last of the cats lies still in the snow. The big man wipes his greatsword clean on a frozen sleeve and looks you over. \"My thanks, stranger. I would have been their supper.\"",
-        next("after_2")),
+        [{ text: "Continue.", outcomes: [{ weight: 100, results: [{ type: "GRANT_MILESTONE", payload: { id: "nikoli_met" } }, { type: "ADVANCE_STAGE", payload: { stageId: "after_2" } }] }] }]),
     after_2: stage("\"My name is Nikoli. I was a general of Panzeria, back when Panzeria had armies worth the name. I have come a long way south for one man: Commander Mentoras, of the Altus royal guard.\"",
         next("ask")),
     ask: stage("\"We bled on the same field at the end of the war, and he knows something I need to know. Have you seen him? Tired eyes. A sharp tongue. He never could stand being looked at.\"",
@@ -109,12 +110,12 @@ const STAGES = {
 
     // ---- the war beast, mentioned in passing ----
     beast: stage("He prods the fire. \"Mind the high passes on your way. Those cats were not hungry for nothing. Something bigger has been eating their game. A Panzerkamfer, if I am any judge of tracks.\"",
-        [{ text: "[Panzerkamfer] \"A Panzerkamfer?\"", outcomes: toStage("beast_2") }, { text: "Leave him to the fire.", outcomes: end() }]),
+        [{ text: "[Panzerkamfer] \"A Panzerkamfer?\"", conditions: [{ type: "quest_not_started", id: BEAST_QUEST }], outcomes: toStage("beast_2") }, { text: "Leave him to the fire.", outcomes: end() }]),
     beast_2: stage("\"A war beast of my people. A snow tiger raised on iron and bound in plate, bred to break shield walls. When our army broke, the beasts went wild, and wilder every winter.\"",
         next("beast_3")),
     beast_3: stage("\"One hunts these peaks now. Follow its tracks through the snow and kill it, and come back to me. I will make it worth your while.\"",
         [
-            { text: "\"I'll hunt it.\"", outcomes: end([{ type: "START_QUEST", payload: { questId: BEAST_QUEST } }]) },
+            { text: "\"I'll hunt it.\"", conditions: [{ type: "quest_not_started", id: BEAST_QUEST }], outcomes: end([{ type: "START_QUEST", payload: { questId: BEAST_QUEST } }]) },
             { text: "\"Not today.\"", outcomes: end() }
         ]),
     beast_waiting: stage("Nikoli looks up from the fire. \"The beast still lives. I can smell it on the wind. Follow the tracks through the high snow.\"",

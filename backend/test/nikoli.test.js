@@ -107,6 +107,17 @@ test('the Panzerian War Beast: asking starts it, killing a Panzerkamfer complete
     assert.equal(ENTITY_DEFINITIONS.NIKOLI.properName, true, '"Return to Nikoli"');
 });
 
+test('in a party of players: everyone who fought beside him has met him, and nobody is offered a quest they already have', () => {
+    const go = results(AFTER.stages.after.decisions[0]);
+    assert.ok(go.some(x => x.type === 'GRANT_MILESTONE' && x.payload.id === 'nikoli_met'), 'the after-fight talk marks him met on every screen');
+    story({ milestones: ['nikoli_met'], active: { panzerian_war_beast: { progress: {} } } });
+    assert.ok(!offered(N.stages.beast).some(t => /Panzerkamfer\?/.test(t)), 'already hunting it: not asked again');
+    assert.ok(!offered(N.stages.beast_3).some(t => /hunt it/.test(t)));
+    story({ milestones: ['nikoli_met'], completed: ['panzerian_war_beast'] });
+    assert.ok(!offered(N.stages.beast).some(t => /Panzerkamfer\?/.test(t)), 'nor once it is done');
+    assert.deepEqual(offered(N.stages.beast), ['Leave him to the fire.'], 'there is always a way out');
+});
+
 test('from visit to visit: by the fire until told; in act 2, told, he is in the Stranger\'s old workshop', () => {
     story({ milestones: ['nikoli_met'] });
     assert.equal(N.initialStage(), 'again');
