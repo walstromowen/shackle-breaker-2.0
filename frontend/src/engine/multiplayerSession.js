@@ -14,6 +14,9 @@
  *   any -> all      pos { col, row, dir, moving, run, map, sprite, scene }   where a player is, for drawing them
  *   guest -> host   stranger_claim { id }    a guest walked into a workshop before the Hooded Stranger had one: the host keeps the first claim
  *   host -> all     stranger_home { id }     the Hooded Stranger's workshop, as the host's world has it (there is only one, for everyone)
+ *   any -> all      char_ready               a new world (Host a World > New World): this player has made their character
+ *   host -> all     begin                    a new world: everyone has a character; play the prologue (the guests then ask to be let in)
+ *   host -> guest   founding                 a new world still being made: the guest makes a character too, and waits with the others
  *
  * Players come and go at any time while the host is on. A join or leave shows as a message on the overworld and nobody else is
  * interrupted. The host leaving (quitting to the title) closes the world: the guests go back to their title screen, their characters
@@ -26,7 +29,7 @@ import { worldPart, playerPart, mergeParts, placeOnOverworld } from '../../../sh
 import { multiplayer } from './multiplayerClient.js';
 import { SaveManager } from './saveManager.js';
 import { TimeSystem } from '../../../shared/world/timeSystem.js';
-import { InteriorFactory } from '../../../shared/world/interiorFactory.js';
+import { InteriorFactory, STORY_HOMES } from '../../../shared/world/interiorFactory.js';
 
 const TIME_EVERY = 5;          // seconds between the host's clock messages
 const POS_HEARTBEAT = 2;       // seconds between position messages while standing still
@@ -47,7 +50,8 @@ const followerSprites = () => (gameState.party.members || []).filter(x => x && x
 
 class MultiplayerSession {
     constructor() {
-        this.role = null;            // null | 'host' | 'joining' | 'creating' | 'guest'
+        this.role = null;            // null | 'founding' (the host of a new world, making a character) | 'host' | 'joining' | 'creating' | 'guest'
+        this.newWorld = null;        // a new world being started: { ready: Set of player ids with a character, began, myParty (a guest's) }
         this.remotes = new Map();    // playerId -> { id, username, col, row, dir, moving, run, map, sprite, scene, entity }
         this.messages = [];          // [{ text, at }] the join / leave lines on the overworld
         this.env = null;             // set by SceneManager: { config, getWorldManager(), getLocalPlayer(), getScene() }
@@ -95,6 +99,8 @@ class MultiplayerSession {
         worldSync.onLocalChange = (key, value) => multiplayer.relay({ k: 'change', key, value });
         // the host picks the Hooded Stranger's workshop for the whole world, and tells everyone
         InteriorFactory.onStrangerHome = (id) => { if (this.role === 'host') multiplayer.relay({ k: 'stranger_home', id }); };
+        // and the other story homes (Nikoli's campfire, the Stranger's act 2 workshop) the same way
+        InteriorFactory.onHomeClaim = (key, id) => { if (this.role === 'host') multiplayer.relay({ k: 'story_home', key, id }); };
         if (!gameState.multiplayer || !gameState.multiplayer.guests) gameState.multiplayer = { guests: {} };
         this._say('Your world is open to your friends.');
         this._sendTime();
@@ -137,6 +143,64 @@ class MultiplayerSession {
         this._sentWeatherId = w ? w.id : null;
     }
 
+    // ================================================================ A NEW WORLD
+    /* Host a World > New World: on Start, every player makes a character at once (the host's character creator decides the world: seed, difficulty,
+       cheats; a guest's cannot change them). Whoever finishes waits in the creator until everyone has a character; then the host says `begin`, and
+       everyone plays the prologue together and wakes in the same new world: the host's world is built as for a new game, the guests are let in
+       with the character they made, beside the host. */
+    startNewWorld() {
+        this.newWorld = { ready: new Set(), began: false, myParty: null };
+        if (multiplayer.isHost) { this.role = 'founding'; this._hostWhenLoaded = true; }
+        else this.role = 'creating';
+        events.emit('CHANGE_SCENE', { scene: 'character-creator', data: { mpGuest: !multiplayer.isHost, mpNewWorld: true } });
+    }
+
+    /** Whether the character creator should hand its character to this flow (not start a game of its own). */
+    get makingNewWorld() { return !!(this.newWorld && !this.newWorld.began); }
+
+    /** This player has made their character: tell everyone, and wait for the others. */
+    characterReady() {
+        if (!this.makingNewWorld) return false;
+        const me = multiplayer.you && multiplayer.you.id;
+        if (this.role === 'creating') this.newWorld.myParty = playerPart(SaveManager.createSnapshot().data);
+        if (me) this.newWorld.ready.add(me);
+        multiplayer.relay({ k: 'char_ready' });
+        this._checkBegin();
+        return true;
+    }
+
+    /** Waiting in the creator for the others: { ready, total } (null when not waiting). */
+    newWorldWaiting() {
+        const me = multiplayer.you && multiplayer.you.id;
+        if (!this.makingNewWorld || !me || !this.newWorld.ready.has(me)) return null;
+        const players = (multiplayer.room ? multiplayer.room.players : []).filter(p => p.connected !== false);
+        return { ready: players.filter(p => this.newWorld.ready.has(p.id)).length, total: players.length,
+            waitingFor: players.filter(p => !this.newWorld.ready.has(p.id)).map(p => p.username) };
+    }
+
+    /* The host: once every player still in the room has a character, everyone begins. */
+    _checkBegin() {
+        if (!multiplayer.isHost || !this.makingNewWorld || !multiplayer.room) return;
+        const players = multiplayer.room.players.filter(p => p.connected !== false);
+        if (!players.every(p => this.newWorld.ready.has(p.id))) return;
+        multiplayer.relay({ k: 'begin' });
+        this._begin();
+    }
+
+    _begin() {
+        if (!this.makingNewWorld) return;
+        this.newWorld.began = true;
+        if (this.role === 'founding') {
+            // the host: the new world is built from their creator's choices and the prologue plays (SceneManager); hosting starts with it
+            events.emit('CHANGE_SCENE', { scene: 'overworld' });
+            return;
+        }
+        // a guest: ask to be let into the host's new world with the character just made (_onWorld), and play the prologue there
+        this.role = 'joining';
+        this._t.join = JOIN_RETRY;
+        this._t.joinFor = 0;
+    }
+
     // ================================================================ GUEST
     /** The lobby: this player is a guest in a room whose world is open. Asks the host to be let in. */
     requestJoin() {
@@ -149,6 +213,13 @@ class MultiplayerSession {
     _onWorld(msg) {
         if (this.role !== 'joining') return;
         const spawn = msg.spawn || { col: 0, row: 0 };
+        if (this.newWorld && this.newWorld.myParty) {
+            // the character made for the new world, beside the host, and the prologue
+            const mine = this.newWorld.myParty;
+            this.newWorld = null;
+            this._enter(msg.world, placeOnOverworld(mine, spawn.col, spawn.row), { prologue: true });
+            return;
+        }
         if (msg.player) {
             this._enter(msg.world, msg.player);
         } else {
@@ -167,11 +238,13 @@ class MultiplayerSession {
         const { world, spawn } = this.pending;
         this.pending = null;
         const mine = playerPart(SaveManager.createSnapshot().data);
-        this._enter(world, placeOnOverworld(mine, spawn.col, spawn.row));
+        // a first character in a world started new together plays the prologue too
+        const fresh = !!(multiplayer.room && multiplayer.room.world && multiplayer.room.world.isNew);
+        this._enter(world, placeOnOverworld(mine, spawn.col, spawn.row), { prologue: fresh });
         return true;
     }
 
-    _enter(world, player) {
+    _enter(world, player, { prologue = false } = {}) {
         try {
             SaveManager.applySnapshot(SaveManager.wrapData(mergeParts(world, player)));
         } catch (e) {
@@ -190,10 +263,14 @@ class MultiplayerSession {
             const host = this.role === 'guest' && multiplayer.room && multiplayer.room.players.find(p => p.isHost);
             if (host) multiplayer.relay({ k: 'stranger_claim', id }, host.id);
         };
+        InteriorFactory.onHomeClaim = (key, id) => {
+            const host = this.role === 'guest' && multiplayer.room && multiplayer.room.players.find(p => p.isHost);
+            if (host) multiplayer.relay({ k: 'story_home_claim', key, id }, host.id);
+        };
         this._t.save = 0;
         const host = multiplayer.room && multiplayer.room.players.find(p => p.isHost);
         this._say(`You are in ${host ? host.username : 'the host'}'s world.`);
-        events.emit('CHANGE_SCENE', { scene: 'overworld', data: { buildWorld: true, mpJoin: true } });
+        events.emit('CHANGE_SCENE', { scene: 'overworld', data: { buildWorld: true, mpJoin: true, prologue } });
     }
 
     // ================================================================ BOTH
@@ -204,11 +281,15 @@ class MultiplayerSession {
     end(notice, { toTitle = true } = {}) {
         const role = this.role;
         if (!role) return;
+        if (typeof this.beforeLeave === 'function') this.beforeLeave(role);   // (multiplayerSocial: a duel in progress is undone first)
         if (role === 'guest' && SaveManager.canSaveNow()) {
             try { multiplayer.relay({ k: 'player_save', data: playerPart(SaveManager.createSnapshot().data) }); } catch (e) { /* the host will have the last one */ }
         }
         this.role = null;
+        this.newWorld = null;
+        this._hostWhenLoaded = false;
         InteriorFactory.onStrangerHome = null;   // alone again: this world decides the Hooded Stranger's workshop itself
+        InteriorFactory.onHomeClaim = null;
         this.pending = null;
         TimeSystem.followsWeather = false;
         TimeSystem.sharedWeather = null;
@@ -233,7 +314,24 @@ class MultiplayerSession {
 
     _onRelay(from, data) {
         switch (data.k) {
-            case 'join_req': if (this.role === 'host') this._welcomeGuest(from); break;
+            case 'join_req':
+                if (this.role === 'host') this._welcomeGuest(from);
+                else if (this.role === 'founding' && this.makingNewWorld) multiplayer.relay({ k: 'founding' }, from);   // still being made: make a character too
+                break;
+            case 'founding':   // a guest who arrived while the new world is still being made: into the creator with the others
+                if (this.role === 'joining' && !this.newWorld) {
+                    this.role = null;
+                    this.startNewWorld();
+                }
+                break;
+            case 'char_ready':
+                if (this.newWorld) { this.newWorld.ready.add(from); this._checkBegin(); }
+                break;
+            case 'begin': {
+                const host = multiplayer.room && multiplayer.room.players.find(p => p.isHost);
+                if (host && from === host.id) this._begin();
+                break;
+            }
             case 'world': this._onWorld(data); break;
             case 'player_save':
                 if (this.role === 'host') { this._keepGuest(from, data.data); this._hostSaveSoon(30000); }
@@ -270,10 +368,20 @@ class MultiplayerSession {
             case 'stranger_home':
                 if (this.role === 'guest' && typeof data.id === 'string') gameState.world.strangerHome = data.id;
                 break;
+            case 'story_home_claim':   // the other story homes (InteriorFactory.STORY_HOMES): the host keeps the first claim and tells everyone
+                if (this.role === 'host' && STORY_HOMES.includes(data.key) && data.key !== 'strangerHome') {
+                    if (!gameState.world[data.key] && typeof data.id === 'string') { gameState.world[data.key] = data.id; this._hostSaveSoon(5000); }
+                    multiplayer.relay({ k: 'story_home', key: data.key, id: gameState.world[data.key] });
+                }
+                break;
+            case 'story_home':
+                if (this.role === 'guest' && STORY_HOMES.includes(data.key) && typeof data.id === 'string') gameState.world[data.key] = data.id;
+                break;
         }
     }
 
     _onRoom(room) {
+        if (room && this.makingNewWorld) this._checkBegin();   // someone left while the others waited: begin without them
         if (!this.active || !room) return;
         const me = multiplayer.you && multiplayer.you.id;
         const now = new Map(room.players.map(p => [p.id, p]));

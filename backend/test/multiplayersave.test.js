@@ -79,3 +79,11 @@ test('a change made on the map is reported to the other players; one that arrive
         worldSync.onLocalChange = null;
     }
 });
+
+test("a guest gets the host world's Cheats setting, so the developer console works for everyone in a world made with Cheats on", async () => {
+    const { worldPart, playerPart, mergeParts } = await import('../../shared/core/multiplayerSave.js');
+    const host = { seed: 7, difficulty: 'normal', cheats: true, world: { changes: {} }, party: { members: [] }, player: { col: 0, row: 0 } };
+    const guestOwn = { seed: 9, cheats: false, world: {}, party: { members: [] }, player: { col: 1, row: 1 } };   // the guest's creator said Off
+    assert.equal(mergeParts(worldPart(host), playerPart(guestOwn)).cheats, true, 'the world decides');
+    assert.equal(mergeParts(worldPart({ ...host, cheats: false }), playerPart({ ...guestOwn, cheats: true })).cheats, false, 'a guest cannot turn it on in a world without it');
+});

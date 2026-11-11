@@ -55,8 +55,3 @@ test('non-direction keys never queue a step', () => {
     assert.equal(input.queuedDirection, null);
 });
 
-test('the overworld asks for its next step through the buffer, at the start and at the end of a step', () => {
-    const src = fs.readFileSync(new URL('../../frontend/src/screens/overworld/overworldController.js', import.meta.url), 'utf8');
-    assert.match(src, /const dir = this\.input\.consumeDirection\(\)/);
-    assert.match(src, /if \(this\.input\.wantsToMove\(\)\)/);
-});

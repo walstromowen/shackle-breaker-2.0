@@ -112,6 +112,7 @@ export const CREATION_DATA = {
         { label: "None", speciesId: null, desc: "Walk the path alone.", attributes: {}, equipment: {} },
         { label: "War Dog", speciesId: "DOG", desc: "Loyal and sturdy.", attributes: { vigor: 12, strength: 10 } },
         { label: "Snow Leopard", speciesId: "SNOW_LEOPARD", desc: "A swift mountain hunter. Fast and deadly, but fragile.", attributes: { vigor: 10, strength: 12, dexterity: 16, intelligence: 3, attunement: 6 } },
+        { label: "Hunting Hawk", speciesId: "HAWK", desc: "Fast and watchful. The quickest and hardest to hit of the companions, with a keen eye for the weak spot, but it cannot take many blows. Starts every fight in the air for 2 turns, out of reach of blades and blows, and strikes and darts back out of harm's way.", attributes: { vigor: 7, strength: 7, dexterity: 16, intelligence: 4, attunement: 6 } },
         { 
             label: "Mercenary", 
             speciesId: "HUMANOID", 
@@ -190,8 +191,26 @@ export class CharacterCreatorLogic {
         this.currentRow = this._cycle(this.currentRow, this.menuOrder.length, dir);
     }
 
+    /** The rows a player joining someone's world may not change: the world's own settings, which are the host's. */
+    lockedSteps() {
+        return multiplayerSession.creatingCharacter ? ['difficulty', 'cheats', 'seed'] : [];
+    }
+
+    /** What a locked row shows: the host world's value when it is known, else that the host decides. */
+    hostSetting(step) {
+        const w = multiplayerSession.pending && multiplayerSession.pending.world;
+        if (step === 'difficulty') { const d = w && CREATION_DATA.DIFFICULTIES.find(x => x.id === w.difficulty); return d ? d.label : "Host's choice"; }
+        if (step === 'cheats') return w ? (w.cheats === true ? 'On' : 'Off') : "Host's choice";
+        if (step === 'seed') return "Host's world";
+        return '';
+    }
+
+    /** Waiting for the other players of a new world to make their characters: { ready, total, waitingFor } or null. */
+    waitingForOthers() { return multiplayerSession.newWorldWaiting(); }
+
     modifyValue(dir) {
         const step = this.menuOrder[this.currentRow];
+        if (this.lockedSteps().includes(step) || this.waitingForOthers()) return false;
         const d = CREATION_DATA;
 
         const stepConfig = {
@@ -235,6 +254,8 @@ export class CharacterCreatorLogic {
 
     handleAction() {
         const step = this.menuOrder[this.currentRow];
+        if (this.waitingForOthers()) return;
+        if (this.lockedSteps().includes(step)) return;
         if (step === 'name') this.isEditingName = true;
         else if (step === 'seed') this.isEditingSeed = true;
         else if (step === 'start') this.finalizeCharacter();
@@ -410,6 +431,8 @@ export class CharacterCreatorLogic {
             gameState.quests.trackedIds.push(backgroundQuestId);
         }
 
+        // a new world started together (Host a World > New World): wait for the others, then everyone plays the prologue (engine/multiplayerSession.js)
+        if (multiplayerSession.makingNewWorld) { multiplayerSession.characterReady(); return; }
         // a multiplayer guest's first visit: the party steps into the host's world instead of a new one (engine/multiplayerSession.js)
         if (multiplayerSession.creatingCharacter) { multiplayerSession.characterCreated(); return; }
 

@@ -2,12 +2,30 @@
 #   rows 0-3 idle, 4-7 walk, 8-11 run; within each block the facings DOWN, RIGHT, UP, LEFT; 8 frames per row.
 # The source has one still frame per direction (8 rotations: S SE E NE N NW W SW); the motion is made procedurally from those four facings,
 # and every frame gets the soft shadow oval the other hero sheets have, taken from the Warlord's sheet.
+#   python3 tools/art/overworldSheetFromRotations.py rotations.png frontend/src/assets/sprites/warlord_hero/warlord_hero_sprite.png out.png [--feet Y] [--rows N]
+#     --feet Y   first move each rotation up or down so its feet (lowest solid row) stand on row Y of the 64 px cell, where the hero sheets' feet and
+#                shadow are (51); for a source drawn lower or higher in its cells
+#     --rows N   pad the sheet with empty rows to N rows (the Legionary, Warlord and Nightblade sheets are 15 rows, 512 x 960; the last 3 empty)
 import sys, math
 import numpy as np
 from PIL import Image
 
-src_path, warlord_path, out_path = sys.argv[1:4]
-src = np.asarray(Image.open(src_path).convert('RGBA'))
+args = sys.argv[1:]
+opt = lambda name, d: int(args[args.index(name) + 1]) if name in args else d
+src_path, warlord_path, out_path = [a for i, a in enumerate(args) if not a.startswith('--') and (i == 0 or not args[i - 1].startswith('--'))][:3]
+FEET, ROWS = opt('--feet', None), opt('--rows', 12)
+src = np.asarray(Image.open(src_path).convert('RGBA')).copy()
+if FEET is not None:
+    for k in range(src.shape[1] // 64):
+        cell = src[:, k * 64:(k + 1) * 64].copy()
+        ys = np.where((cell[:, :, 3] == 255).any(axis=1))[0]
+        if len(ys) == 0: continue
+        dy = FEET - int(ys.max())
+        moved = np.zeros_like(cell)
+        if dy > 0: moved[dy:] = cell[:-dy]
+        elif dy < 0: moved[:dy] = cell[-dy:]
+        else: moved = cell
+        src[:, k * 64:(k + 1) * 64] = moved
 war = np.asarray(Image.open(warlord_path).convert('RGBA'))
 C = 64
 
@@ -85,7 +103,7 @@ def make_frame(base, facing, bob=0, breathe=0, lift_l=0, lift_r=0, swing=0, lean
     return out
 
 
-sheet = np.zeros((C * 12, C * 8, 4), np.uint8)
+sheet = np.zeros((C * max(12, ROWS), C * 8, 4), np.uint8)
 order = ['DOWN', 'RIGHT', 'UP', 'LEFT']
 for d, facing in enumerate(order):
     base = figure(FACINGS[facing])

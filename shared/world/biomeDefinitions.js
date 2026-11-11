@@ -85,7 +85,7 @@ export const BIOME_DEFINITIONS = {
             return Math.min(0.99, ground + _lift(hill - 3 * _cut(c), HILL_TIERS.plains)); /* capped: plains hills stop at LAYER_5 */
         },
         structures: { rate: 0.1, pools: [{ chance: 1.0, id: 'ABANDONED_VILLAGE' }] },
-        landmarks: { rate: 0.12, pools: [{ chance: 0.5, id: 'GRAVEYARD' }, { chance: 0.5, id: 'BATTLEFIELD' }] } /* 12% of the chunks that have no village: half a graveyard, half an old battlefield with the Aftermath at its heart (GRAVEYARD / BATTLEFIELD in structures.js) */,
+        landmarks: { rate: 0.14, pools: [{ chance: 0.43, id: 'GRAVEYARD' }, { chance: 0.57, id: 'BATTLEFIELD' }] } /* 14% of the chunks that have no village: a graveyard in 6% of them (as before), an old battlefield (the Aftermath) in 8% (was 6%) with the Aftermath at its heart (GRAVEYARD / BATTLEFIELD in structures.js) */,
         mapObjects: {
             [CONFIG.TILE_TYPES.LAYER_3]: [
                 { chance: 0.003, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
@@ -98,6 +98,7 @@ export const BIOME_DEFINITIONS = {
                 { chance: 0.012, id: 'STICK' } /* a little more common than before (was 0.008): 1.2% of the ground, and of every plateau top (this list is copied to them as _WALLS, see the loop at the bottom) */,
                 { chance: 0.2, rangeStart: 0.128, pool: ['TULIPS_RED', 'TULIPS_WHITE', 'TULIPS_ORANGE'] },
                 { chance: 0.206, rangeStart: 0.2, pool: ['BOULDER_1', 'BOULDER_2'] } /* grey boulders, 0.6% of the ground: their own band [0.2, 0.206), in the free gap between the tulips and the grass, so no other rule's share moves */,
+                { chance: 0.2603, rangeStart: 0.26, id: 'RUINED_CARRIAGE' } /* a ruined carriage, 0.03% of the ground (a 2 x 3 footprint that must be free, so a little rarer in practice): its own band [0.26, 0.2603), in the free gap between the shady merchant and the grass (story/encounters/ruinedCarriage.js) */,
                 { chance: 0.25035, rangeStart: 0.25, id: 'SHADY_MERCHANT_NPC' } /* the shady merchant, 0.035% of the ground (one in ~2850 cells; was 0.05%): his own band [0.25, 0.25035), in the free gap between the tin and the grass. He used to be a random encounter; now he is found standing in the world */,
                 { chance: 0.211, rangeStart: 0.206, id: 'TIN_ORE_DEPOSIT' } /* tin: 0.5% of the ground, its own band [0.206, 0.211) in the same gap. Mined with a pickaxe */,
                 { chance: 0.22035, rangeStart: 0.22, id: 'DOG_NPC' } /* a wounded dog lying by the road, 0.035% of the ground (was 0.05%): its own band [0.22, 0.22035), in the free gap between the tin and the grass. It used to be the "wounded mutt" random encounter; now it is found in the world (mapObjectDefinitions.js NPCS) */,
@@ -111,6 +112,9 @@ export const BIOME_DEFINITIONS = {
             _ALTITUDE: [
                 { id: 'COAL_DEPOSIT', chance: 0.008, minLevel: 4 },
                 { id: 'COPPER_ORE_DEPOSIT', chance: 0.002, minLevel: 4 },
+                // the strange obelisks stand on the top layer of every exterior biome: here the highest hilltops (LAYER_5, about 0.6% of the plains).
+                // 0.01 per top cell: about one per 20,000 tiles of plains, rarer than on the mountains (one per 7,000), where they belong
+                { id: 'STRANGE_OBELISK', chance: 0.01, minLevel: 5, maxLevel: 5 },
             ],
             [CONFIG.TILE_TYPES.LAYER_1]: [
                 { chance: 0.01, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] },
@@ -174,6 +178,11 @@ export const BIOME_DEFINITIONS = {
         structures: { rate: 0.08, pools: [{ chance: 1.0, id: 'ABANDONED_VILLAGE_DESERT' }] },
         landmarks: { rate: 0.08, pools: [{ chance: 1.0, id: 'GRAVEYARD_DESERT' }] },
         mapObjects: {
+            /* `_ALTITUDE` (see the snowy mountains below): the strange obelisks stand on the top layer of every exterior biome: here the mesa tops (LAYER_4,
+               about 2.4% of the desert, though most are too narrow for one). 0.004 per top cell: about one per 50,000 tiles of desert. */
+            _ALTITUDE: [
+                { id: 'STRANGE_OBELISK', chance: 0.004, minLevel: 4, maxLevel: 4 },
+            ],
             [CONFIG.TILE_TYPES.LAYER_3]: [{ chance: 0.01, pool: ['SMALL_ROCKS_1', 'SMALL_ROCKS_2', 'SMALL_ROCKS_3'] }],
             [CONFIG.TILE_TYPES.LAYER_2]: [
                 { chance: 0.001, id: 'DESERT_SKULL' },
@@ -246,8 +255,8 @@ export const BIOME_DEFINITIONS = {
             ],
             /* `_ALTITUDE`: rules for the plateau levels only (WorldManager._getRawProceduralId). Each rule has its OWN roll per cell and wins before the
                ordinary `_WALLS` list: { id, chance, minLevel, maxLevel } with the level a LAYER_n number (3 = the first cliff level, 7 = the summit).
-               Iron lies bare on the high slopes. The strange obelisks stand on the summits only (LAYER_7), and nowhere else in the world: raise their
-               chance for more of them. Keep new rules AFTER the existing ones: each rule's roll depends on its position in this list, so inserting one
+               Iron lies bare on the high slopes. The strange obelisks stand on the summits (LAYER_7), as they do on the top layer of every exterior
+               biome (the plains' highest hilltops, the desert's mesa tops): raise their chance for more of them. Keep new rules AFTER the existing ones: each rule's roll depends on its position in this list, so inserting one
                above would re-roll where the iron lies. */
             _ALTITUDE: [
                 { id: 'IRON_ORE_DEPOSIT', chance: 0.01, minLevel: 5 },

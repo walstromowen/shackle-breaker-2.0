@@ -193,6 +193,11 @@ const COMMANDS = {
         complete: (i, typed) => (i === 0 ? starting(LISTABLE.entities(), typed) : []),
     },
 
+    // /recruit: the same as /addentity, under the name you would look for
+    get recruit() {
+        return { ...this.addentity, usage: '/recruit <entityId> [level]', summary: 'The same as /addentity: add any character or creature to the party.' };
+    },
+
     awardxp: {
         usage: '/awardxp <amount> [member|all]',
         summary: 'Give XP to the leader, a member (a number, or part of the name) or everyone.',

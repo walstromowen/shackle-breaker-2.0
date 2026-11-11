@@ -207,7 +207,7 @@ export class JournalRenderer {
 
         // a quest handed in to the one who gave it: say so once its objectives are done (it has no Collect button)
         if (def.turnIn && state.activeTab === 'active' && questState && def.objectives.every(o => (questState.progress[o.id] || 0) >= (o.amount || 1))) {
-            ui.drawText(`Return to the ${ENTITY_DEFINITIONS[def.turnIn]?.name || 'quest giver'} to hand this in.`, descStartX + 8, currentY, UITheme.fonts.body, UITheme.colors.textHighlight, "left");
+            ui.drawText(`Return to ${ENTITY_DEFINITIONS[def.turnIn] ? (ENTITY_DEFINITIONS[def.turnIn].properName ? ENTITY_DEFINITIONS[def.turnIn].name : `the ${ENTITY_DEFINITIONS[def.turnIn].name}`) : 'the quest giver'} to hand this in.`, descStartX + 8, currentY, UITheme.fonts.body, UITheme.colors.textHighlight, "left");
             currentY += 40;
         }
 

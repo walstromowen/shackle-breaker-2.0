@@ -83,7 +83,7 @@ export class EncounterController extends BaseController {
       if (s.pause) { parts.push({ pause: s.pause }); items.push({ pause: s.pause }); continue; }
       const clip = audioManager.voiceClip(lineKey(s.speaker, s.text));
       if (!clip) { complete = false; continue; }
-      parts.push({ text: s.text, dur: clip.d || 0 });
+      parts.push({ text: s.text, dur: clip.d || 0, w: clip.w });   // w: when each word is said, if the clip was timed
       items.push({ file: clip.f });
     }
     if (items.some(i => i.file)) {
@@ -853,6 +853,10 @@ export class EncounterController extends BaseController {
   }
 
   triggerRoll() {
+    // a fresh roll always plays out: a skip left over from holding through the stage's words (or, in a shared encounter, from waiting on the
+    // others' votes) must not land the dice at once. Holding during the roll still skips it.
+    this.skipMessageAnimation = false;
+    this._holdArmed = false;
     this.actionPhase = 'rolling';
     this.rollTicks = EncounterLogic.rollTickSchedule();
     this.rollTickIndex = 0;

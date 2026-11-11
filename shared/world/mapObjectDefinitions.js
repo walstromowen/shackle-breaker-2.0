@@ -121,6 +121,11 @@ export const MAP_OBJECTS_DEFINITIONS = {
     TOMBSTONE: { ...GRAVESTONE },
     /* AFTERMATH_REMAINS: a helmet on the ground with a sword through it, what an old battle left behind. Face it and interact to start the Aftermath encounter (biomeDefinitions.js PLAINS, its own band). */
     AFTERMATH_REMAINS: { sheet: 'objAftermath', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'aftermath', triggerRadius: 3 } },
+    /* RUINED_CARRIAGE: a covered wagon abandoned in the plains grass, seen from above, 2 x 3 tiles (64 x 96 px: the anchor's row and the two rows above
+       it, the anchor at the left), from the wagon asset tools/art/sources/coveredWagon.png (tools/art/ruinedCarriage.py). Face it and interact to start the Ruined Carriage encounter (biomeDefinitions.js PLAINS, its own band). Once looted it stays where it is, empty
+       (RUINED_CARRIAGE_LOOTED: the same wagon, nothing more to do). */
+    RUINED_CARRIAGE: { sheet: 'objRuinedCarriage', spriteX: 0, spriteY: 0, width: 2, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -2, w: 2, h: 3 }, interaction: { type: 'ENCOUNTER', id: 'ruined_carriage' } },
+    RUINED_CARRIAGE_LOOTED: { sheet: 'objRuinedCarriageLooted', spriteX: 0, spriteY: 0, width: 2, height: 3, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -2, w: 2, h: 3 } },
     /* the battlefield's dead (BATTLEFIELD in structures.js): soldiers in dark armour, slumped (1-8) or lying (9-15). 64 px, so 2 x 2 tiles, drawn up and
        right of the anchor; the body fills most of that, so all four tiles are solid (walked around, never through). */
     FALLEN_SOLDIER_1: { sheet: 'objFallenSoldier1', width: 2, height: 2, isSolid: true, isGround: false, hitbox: BODY_HITBOX },
@@ -176,6 +181,12 @@ export const MAP_OBJECTS_DEFINITIONS = {
     MADMAN_NPC: { ...npcBody('MAD_MAN', 'UP'), interaction: { type: 'ENCOUNTER', id: 'a_disturbing_sight', triggerRadius: 2 } },
     // the quest giver: only ever one, in one village workshop (InteriorFactory picks it: world.strangerHome); talking to him hands out the Shackled questline
     HOODED_STRANGER_NPC: { ...npcBody('HOODED_STRANGER'), interaction: { type: 'ENCOUNTER', id: 'hooded_stranger' } },
+    // Nikoli, the Panzerian general: by the first snowy campfire, later in the Hooded Stranger's old workshop (WorldManager / InteriorFactory put him there)
+    NIKOLI_NPC: { ...npcBody('NIKOLI'), interaction: { type: 'ENCOUNTER', id: 'nikoli' } },
+    // before the player has met him: he stands just north of his campfire facing up, at the snow leopards stalking down toward him; coming within 3 tiles
+    // of him or of a cat starts the meeting (WorldManager._storyObjects puts the scene there, and takes it away once he has been met)
+    NIKOLI_NPC_WATCHING: { ...npcBody('NIKOLI', 'UP'), interaction: { type: 'ENCOUNTER', id: 'nikoli', triggerRadius: 3 } },
+    SNOW_LEOPARD_STALKING: { ...npcBody('SNOW_LEOPARD', 'DOWN'), interaction: { type: 'ENCOUNTER', id: 'nikoli', triggerRadius: 3 } },
 
     // --- ANIMATED ---
     CAMPFIRE: { sheet: 'objCampfire', spriteX: 0, spriteY: 6, frames: 32, speed: 0.1, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'bonfire' }, light: { hasLight: true, radius: 5.5, color: '255, 100, 0', maxAlpha: 0.8, flickerSpeed: 0.1, flickerAmp: 0.5 } },

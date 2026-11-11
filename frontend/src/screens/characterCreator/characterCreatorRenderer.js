@@ -301,8 +301,9 @@ export class CharacterCreatorRenderer {
                 ui.drawStateBox(menuStartX + 24, seedBoxY, midW - 48, seedBoxH,
                     ui.flags(rowId, isEditingSeed ? rowId : focusId), { inset: true });
 
-                // Draw label above the actual input box
-                ui.drawStyled('cardLabel', labels[key], centerColX, menuY + 22, { align: 'center' });
+                // Draw label above the actual input box (a joining player's world is the host's)
+                const hostSeed = controllerState.locked && controllerState.locked.seed !== undefined;
+                ui.drawStyled('cardLabel', hostSeed ? `${labels[key]}  ·  SET BY THE HOST` : labels[key], centerColX, menuY + 22, { align: 'center' });
             } else {
                 this.hotspots.push({
                     id: rowId, x: menuStartX + 24, y: menuY, w: midW - 48, h: MENU_ITEM_HEIGHT
@@ -311,13 +312,15 @@ export class CharacterCreatorRenderer {
                 // Stacked rows: the shared state look, brackets inside so they stay clear of the neighbours
                 ui.drawStateBox(menuStartX + 24, menuY, midW - 48, MENU_ITEM_HEIGHT, rowFlags, { inset: true });
 
-                // Draw normal label
+                // Draw normal label (a row the host decides says so)
                 const labelY = menuY + ROW_LABEL_Y;
-                ui.drawStyled('cardLabel', labels[key], centerColX, labelY, { align: 'center' });
+                const hostRow = controllerState.locked && controllerState.locked[key] !== undefined;
+                ui.drawStyled('cardLabel', hostRow ? `${labels[key]}  ·  SET BY THE HOST` : labels[key], centerColX, labelY, { align: 'center' });
             }
 
             let valStr = "";
             let valColor = ui.stateTextColor(rowFlags, UITheme.colors.textMain);
+            const lockedVal = controllerState.locked ? controllerState.locked[key] : undefined;   // a joining player: the host's world setting
 
             if (key === 'background') valStr = data.BACKGROUNDS?.[selections.backgroundIdx]?.label;
             else if (key === 'origin') valStr = data.ORIGINS?.[selections.originIdx]?.label;
@@ -333,6 +336,9 @@ export class CharacterCreatorRenderer {
                 const c = data.CHEATS?.[selections.cheatsIdx];
                 valStr = c?.label;
                 if (c?.id === true) valColor = UITheme.colors.textHighlight;
+            } else if (key === 'seed' && lockedVal !== undefined) {
+                valStr = lockedVal;
+                valColor = UITheme.colors.textMuted;
             } else if (key === 'seed') {
                 valStr = selections.seed;
                 if (isEditingSeed) {
@@ -354,6 +360,9 @@ export class CharacterCreatorRenderer {
                     ctx.clip();
                     ui.drawText(valStr, centerColX, valY, UITheme.fonts.body, valColor, "center", "alphabetic", textMaxWidth);
                     ctx.restore();
+                } else if (lockedVal !== undefined) {
+                    // set by the host: shown, with no arrows to change it
+                    ui.drawText(lockedVal, centerColX, menuY + ROW_VALUE_Y, UITheme.fonts.body, UITheme.colors.textMuted, "center", "alphabetic", midW - 96);
                 } else {
                     const valY = menuY + ROW_VALUE_Y;
                     const textMaxWidth = midW - 336;
@@ -446,7 +455,24 @@ export class CharacterCreatorRenderer {
                 return mouse.x >= r.x && mouse.x <= r.x + r.w && mouse.y >= r.y && mouse.y <= r.y + r.h;
             });
             // The Details panel is empty-ish and the one thing nobody is aiming at, so the card goes there instead of over the menu
-            if (hit) drawStatTooltip(ui, hit, attrRects[hit], { at: { x: CANVAS_WIDTH - colW - p + 24, y: CONTENT_START_Y }, width: colW - 48 });
+            if (hit) drawStatTooltip(ui, hit, attrRects[hit], { at: { x: CANVAS_WIDTH - colW - p + 24, y: CONTENT_START_Y }, width: colW - 48,
+                rollAttributes: data.BACKGROUNDS?.[selections.backgroundIdx]?.attributes || null, difficulty: data.DIFFICULTIES?.[selections.difficultyIdx]?.id || 'normal' });
+        }
+
+        // A new world started together: this player's character is made, the others are still making theirs. The screen dims and says who is
+        // left; nothing can be clicked (Esc leaves the world).
+        const waiting = controllerState.waiting;
+        if (waiting) {
+            this.hotspots = [];
+            ctx.save();
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.72)';
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            ctx.restore();
+            const cy = CANVAS_HEIGHT / 2;
+            ui.drawStyled('columnLabel', 'Your character is ready', CANVAS_WIDTH / 2, cy - 60);
+            const who = waiting.waitingFor && waiting.waitingFor.length ? `Waiting for ${waiting.waitingFor.join(', ')} (${waiting.ready} of ${waiting.total} ready)` : 'Everyone is ready…';
+            ui.drawText(who, CANVAS_WIDTH / 2, cy + 10, UITheme.fonts.body, UITheme.colors.textMain, 'center');
+            ui.drawText('When everyone has made a character, you will all play the prologue together.', CANVAS_WIDTH / 2, cy + 64, UITheme.fonts.small, UITheme.colors.textMuted, 'center');
         }
 
         // ========================================================
@@ -457,8 +483,9 @@ export class CharacterCreatorRenderer {
         }
     }
 
-    getDescription({ currentStep, selections, data, isEditingName, isEditingSeed }) {
+    getDescription({ currentStep, selections, data, isEditingName, isEditingSeed, locked }) {
         if (!data) return "";
+        if (locked && locked[currentStep] !== undefined) return "You are joining someone else's world: its difficulty, cheats and seed are the host's, the same for everyone in it.";
 
         if (currentStep === 'name') return isEditingName ? "Type your name using the keyboard.\nPress Enter to confirm." : "Select to edit your character's name.";
         if (currentStep === 'seed') return isEditingSeed ? "Type a custom world seed.\nPress Enter to confirm." : "Leave blank to spawn in a completely random world, or set a seed to share layouts with friends.";

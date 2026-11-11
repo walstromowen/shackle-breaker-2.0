@@ -220,3 +220,18 @@ test('/seed changes nothing, so it runs without Cheats; the other commands do no
     assert.equal(DevCommands.isFree('seed'), true);
     assert.equal(DevCommands.isFree('/additem meteorite 2'), false);
 });
+
+test('any entity in the game can be added to the party, by /addentity or its alias /recruit', async () => {
+    const { ENTITY_DEFINITIONS } = await import('../../shared/characters/entityDefinitions.js');
+    for (const id of Object.keys(ENTITY_DEFINITIONS)) {
+        for (const cmd of ['addentity', 'recruit']) {
+            freshParty('Hero');
+            const r = run(`/${cmd} ${id} 10`);
+            assert.deepEqual(kinds(r), ['ok'], `${cmd} ${id}: ${text(r)}`);
+            const m = gameState.party.members[1];
+            assert.equal(m.level, 10, `${id} at level 10`);
+            assert.equal(m.hp, m.maxHp, `${id} arrives rested`);
+        }
+    }
+    assert.match(text(run('/help recruit')), /\/recruit <entityId> \[level\]/);
+});

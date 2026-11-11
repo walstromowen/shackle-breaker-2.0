@@ -599,5 +599,19 @@ export const QuestDefinitions = {
                 { id: "large_iron_key", amount: 1 }
             ]
         }
+    },
+
+    // Nikoli's hunt (story/encounters/story/nikoli.js): he mentions the beast after the snow leopards, and asking about it starts this. Handed in
+    // to him wherever he is (by his campfire, or in act 2 the Hooded Stranger's old workshop). The Panzerkamfer is found by following the great
+    // tracks in the snow of the mountains (story/encounters/tracksInTheSnow.js).
+    "panzerian_war_beast": {
+        id: "panzerian_war_beast",
+        name: "Panzerian War Beast",
+        turnIn: "NIKOLI",
+        description: "Panzeria sent many Panzerkamfers into the war: snow tigers raised on iron and bound in plate, bred to break shield walls. When the Panzerian army broke, they went wild. Nikoli says one of them hunts the snowy mountains. Follow the great tracks through the high snow, kill the beast, and return to Nikoli.",
+        objectives: [
+            { id: "obj_kill_panzerkamfer", type: "kill_enemy", targetId: "PANZERKAMFER", amount: 1, description: "Kill the Panzerkamfer" }
+        ],
+        rewards: { exp: 400, currency: 100, items: [{ id: "insight_of_ice", amount: 1 }] }
     }
 };

@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import path from 'node:path';
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { authRoutes } from './routes/auth.js';
 import { saveRoutes } from './routes/saves.js';
@@ -12,6 +13,18 @@ import { saveRoutes } from './routes/saves.js';
 const hostOf = (req) => String(req.headers.host || 'localhost').replace(/[^A-Za-z0-9.:\-\[\]]/g, '');
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+
+// A file's ETag from its contents, hashed once and kept until the file's size or modified time changes (a file replaced
+// while the server runs is hashed again). Unchanged bytes give the same tag on every server and after every deploy.
+const etagCache = new Map();
+export function contentEtag(filePath, stat) {
+    const cached = etagCache.get(filePath);
+    if (cached && cached.size === stat.size && cached.mtimeMs === stat.mtimeMs) return cached.etag;
+    const hash = crypto.createHash('sha1').update(fs.readFileSync(filePath)).digest('base64url');
+    const etag = `"${stat.size.toString(16)}-${hash}"`;
+    etagCache.set(filePath, { size: stat.size, mtimeMs: stat.mtimeMs, etag });
+    return etag;
+}
 
 export function createApp({ repo, config }) {
     const app = express();
@@ -65,10 +78,15 @@ export function createApp({ repo, config }) {
         if (fs.existsSync(frontendSrc) && fs.existsSync(sharedDir)) {
             // Every file is revalidated on each load (no-cache + ETag): an unchanged one costs a 304, and art or sound that was replaced
             // (a new portrait at the same path) shows on the next refresh instead of the browser's old copy for up to an hour.
+            // The ETag is a hash of the file's bytes, not express's default of size + modified time: every deploy checks the repo out
+            // afresh, so every file's modified time changes and the default tags made each player download the whole game again
+            // (~130 MB) after each push. Last-Modified is off for the same reason (a newer date would also count as changed).
             const staticOptions = {
-                etag: true,
-                setHeaders(res) {
+                etag: false,
+                lastModified: false,
+                setHeaders(res, filePath, stat) {
                     res.setHeader('Cache-Control', 'no-cache');
+                    res.setHeader('ETag', contentEtag(filePath, stat));
                 }
             };
             // The same layout a dev server (Live Server...) gives when it is started in the repo root: the code climbs between

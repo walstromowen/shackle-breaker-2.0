@@ -98,6 +98,7 @@ export const hoodedStranger = {
                 ] }]
             }]),
 
+
         // ---- shackled1: get stronger ----
         ...offer('shackled1'),
         give_shackled1: give("shackled1", "\"Get stronger, then come back. The truth is heavy, and you can barely lift your own arms.\""),

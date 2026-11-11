@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import zlib from 'node:zlib';
+import { decodePng } from './pngDecode.js';
 import { MAP_OBJECTS_DEFINITIONS } from '../../shared/world/mapObjectDefinitions.js';
 import { mapObjectFactory } from '../../shared/world/mapObjectsFactory.js';
 import { BIOME_DEFINITIONS } from '../../shared/world/biomeDefinitions.js';
@@ -17,22 +17,8 @@ const mainJs = fs.readFileSync(new URL('../../frontend/src/main.js', import.meta
 
 /* A tiny PNG reader (8-bit RGBA, not interlaced: what the sprite sheets are) so the sheets' pixels can be checked. */
 function readPng(rel) {
-    const b = fs.readFileSync(new URL('../../frontend/src/assets/' + rel, import.meta.url));
-    const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
-    assert.equal(b[24], 8); assert.equal(b[25], 6, `${rel} is 8-bit RGBA`);
-    const idat = []; let p = 8;
-    while (p < b.length) { const len = b.readUInt32BE(p), type = b.toString('ascii', p + 4, p + 8); if (type === 'IDAT') idat.push(b.subarray(p + 8, p + 8 + len)); p += 12 + len; }
-    const raw = zlib.inflateSync(Buffer.concat(idat)), stride = w * 4, px = Buffer.alloc(h * stride);
-    for (let y = 0; y < h; y++) {
-        const f = raw[y * (stride + 1)], line = raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1));
-        for (let x = 0; x < stride; x++) {
-            const a = x >= 4 ? px[y * stride + x - 4] : 0, up = y ? px[(y - 1) * stride + x] : 0, c = x >= 4 && y ? px[(y - 1) * stride + x - 4] : 0;
-            let v = line[x];
-            if (f === 1) v += a; else if (f === 2) v += up; else if (f === 3) v += (a + up) >> 1;
-            else if (f === 4) { const pa = Math.abs(up - c), pb = Math.abs(a - c), pc = Math.abs(a + up - 2 * c); v += (pa <= pb && pa <= pc) ? a : (pb <= pc ? up : c); }
-            px[y * stride + x] = v & 255;
-        }
-    }
+    const { w, h, px } = decodePng(new URL('../../frontend/src/assets/' + rel, import.meta.url));
+    const stride = w * 4;
     return { w, h, alpha: (x, y) => px[y * stride + x * 4 + 3], at: (x, y) => px.subarray(y * stride + x * 4, y * stride + x * 4 + 4) };
 }
 /* How many opaque pixels each of the rows 48..58 of one 64 x 64 frame has (the feet and the shadow they stand on). */

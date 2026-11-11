@@ -32,8 +32,8 @@ const sumOf = (stats, attrs) => attrs.reduce((sum, a) => sum + (stats[a] || 0), 
 
 // ENEMY RULES (see ENEMY_DAMAGE_SCALING in core/constants.js): an enemy's defense is Vigor's, +1 against everything per 2 points, and its pools come
 // from Dexterity / Attunement alone, at the recovery rate it was balanced with.
-const ENEMY_VIGOR_DEFENSE_PER_POINT = 0.5;
-const ENEMY_RECOVERY_PER_POINT = 0.5;
+export const ENEMY_VIGOR_DEFENSE_PER_POINT = 0.5;
+export const ENEMY_RECOVERY_PER_POINT = 0.5;
 const whole = (n) => Math.round(n);
 const hundredths = (n) => Math.round(n * 100) / 100;
 

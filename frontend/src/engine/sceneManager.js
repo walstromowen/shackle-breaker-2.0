@@ -257,6 +257,8 @@ export class SceneManager {
         // Every arrival on the overworld (a new game, after a battle, an encounter, a shop, the menus) is a safe moment to save.
         // Saves from inside a house or cave too (SaveManager keeps the way back out), so loading returns to the same room.
         if (sceneName === 'overworld') SaveManager.autosave();
+        // story characters on the map follow the player's story: after meeting Nikoli the cats are gone and he turns to face you (WorldManager)
+        if (sceneName === 'overworld' && this.worldManager && this.worldManager.refreshStoryObjects) this.worldManager.refreshStoryObjects();
 
         const targetBGM = this.resolveTargetBGM(sceneName, sceneContext);
         if (targetBGM !== null) {
@@ -366,7 +368,8 @@ export class SceneManager {
 
                 // A NEW game opens with the prologue, an encounter that plays on the fresh world and ends on the overworld (the encounter
                 // is started here, not by an object on the map, so it has no col / row to clear afterwards).
-                if (scene === 'overworld' && this.currentScene === 'character-creator' && !mpJoin) {
+                // (A multiplayer guest whose character was made for a world started new together, `prologue`, plays it too, in the host's world.)
+                if (scene === 'overworld' && ((this.currentScene === 'character-creator' && !mpJoin) || (mpJoin && data && data.prologue))) {
                     this.overworldController.isLocked = true;
                     this.activeEncounterBGM = null;
                     this.encounterController.start('prologue', {});
@@ -525,6 +528,9 @@ export class SceneManager {
                             gameState.seed = gameState.seed + (data.context.col * 73856) + (data.context.row * 19349) + 104729;
                             w.interiorId = `${w.interiorId}_${data.context.col}_${data.context.row}`;
                         } else {
+                            // the biome of the village the door stands in (a workshop's resident can depend on it: InteriorFactory.workshopResident)
+                            try { const biome = this.worldManager && this.worldManager.getBiomeAt(data.context.col, data.context.row); w.interiorBiome = (biome && biome.id) || null; }
+                            catch (e) { w.interiorBiome = null; }
                             // Save Overworld state
                             w.savedOverworld = {
                                 seed: gameState.seed,
@@ -647,12 +653,21 @@ export class SceneManager {
                 scaledEnemies.push(enemyEntity);
             }
             
+            // `allies: [{ id, levelOffset }]`: fighters who stand with the party this once (Nikoli against the trappers), at the party's own level
+            // (no difficulty or act offset: those make the enemies harder, not the friends)
+            const allies = (data.allies || []).map(a => {
+                const id = typeof a === 'string' ? a : a.id;
+                if (!ENTITY_DEFINITIONS[id]) { console.warn(`[SceneManager] no entity "${id}" to fight beside the party`); return null; }
+                const level = Math.max(1, PartyManager.getHighestLevel() + ((a && a.levelOffset) || 0));
+                return EntityFactory.create(id, { level });
+            }).filter(Boolean);
+
             // a party of players: a fight I start pulls in the party near me (a fight out of a shared encounter: that encounter's players), played on
             // every one of their screens (engine/multiplayerSocial.js)
             const encMp = this.currentScene === 'encounter' && this.encounterController && this.encounterController.mp;
             const fromEncounter = encMp && encMp.players && encMp.players.length > 1 ? encMp.players : null;
             if (fromEncounter || multiplayerSocial.sharesFights) {
-                multiplayerSocial.startPartyBattle(scaledEnemies, { background: data.background, bgm: data.bgm || (data.context && data.context.bgm) || null, noEscape: !!data.noEscape, betrayal: data.betrayal || null, players: fromEncounter, afterVictory: this.pendingAfterVictory });
+                multiplayerSocial.startPartyBattle(scaledEnemies, { background: data.background, weather: data.weather || null, bgm: data.bgm || (data.context && data.context.bgm) || null, noEscape: !!data.noEscape, betrayal: data.betrayal || null, players: fromEncounter, afterVictory: this.pendingAfterVictory, allies });
                 return;
             }
 
@@ -666,6 +681,7 @@ export class SceneManager {
                 context.backgroundId = data.background;
                 context.weather = data.weather;
                 if (data.noEscape) context.noEscape = true;   // a betrayal (or a story fight that says so): no Retreat
+                context.allies = allies;
                 this.battleController.start(scaledEnemies, context);
                 
                 // --- FIX: Fallback to currently playing encounter music if no explicit BGM was passed ---

@@ -12,7 +12,12 @@ export function createBattleState(enemies, context = {}) {
     // a shared multiplayer fight brings its own line-up (several players' characters); otherwise the party is this player's own
     const party = (context.partyEntities || gameState.party.members).map(member => new CombatantModel(member, 'party'));
     const preparedEnemies = enemies.map(enemy => new CombatantModel(enemy, 'enemy'));
-    [...party, ...preparedEnemies].forEach(c => stripNonBattleAbilities(c)); // overworld-only abilities (a torch...) never show up in a fight
+    // `context.allies`: fighters who stand with the party for this one fight (Nikoli against the trappers). They fight on the party's side but
+    // nobody picks for them (enemyAI.queueAllyActions does), they earn nothing, and the fight is lost when only they are left. They take the last
+    // places on the field; the party's own members fill the rest, and the others wait in reserve as usual.
+    const allies = (context.allies || []).map(a => { const c = new CombatantModel(a, 'party'); c.isAlly = true; return c; });
+    [...party, ...allies, ...preparedEnemies].forEach(c => stripNonBattleAbilities(c)); // overworld-only abilities (a torch...) never show up in a fight
+    const ownSlots = Math.max(1, maxActive - allies.length);
 
     return {
         active: true,
@@ -20,9 +25,9 @@ export function createBattleState(enemies, context = {}) {
         phase: PHASE.INTRO,
         backgroundId: context.backgroundId,
         weather: context.weather || null,
-        partyRoster: party,
+        partyRoster: [...party, ...allies],
         enemyRoster: preparedEnemies,
-        activeParty: party.slice(0, maxActive),
+        activeParty: [...party.slice(0, ownSlots), ...allies],
         activeEnemies: preparedEnemies.slice(0, maxActive),
         activePartyIndex: 0,
         selectedAction: null,
@@ -83,6 +88,7 @@ export function applyRoundEndRecovery(state) {
    party members. Returns true if somebody is still standing. */
 export function commitBattleResults(state) {
     state.partyRoster.forEach(combatant => {
+        if (combatant.isAlly) return;   // a fighter who only stood with the party for this fight: nothing of theirs is kept
         combatant.originalEntity.hp = combatant.hp;
         combatant.originalEntity.stamina = combatant.stamina;
         combatant.originalEntity.insight = combatant.insight;
@@ -100,7 +106,12 @@ export function commitBattleResults(state) {
         effectsToRemove.forEach(effectId => combatant.originalEntity.removeStatusEffect(effectId));
     });
 
-    return state.partyRoster.some(p => !p.isDead());
+    return state.partyRoster.some(p => !p.isAlly && !p.isDead());
+}
+
+/* The party's own fighters, without the allies who only joined for this fight (who neither win it alone nor share its rewards). */
+export function ownParty(state) {
+    return state.partyRoster.filter(c => !c.isAlly);
 }
 
 // --- THE LEDGER: events kept for the end-of-battle trait checks (BattleRewardSystem.processVictory) ---

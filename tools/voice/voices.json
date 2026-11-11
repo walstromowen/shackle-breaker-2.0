@@ -1,6 +1,10 @@
 {
   "model": "eleven_multilingual_v2",
   "outputFormat": "mp3_44100_128",
+  "pronounce": {
+    "Panzeria": "Panzeeria",
+    "Panzerian": "Panzeerian"
+  },
   "defaultSettings": {
     "stability": 0.5,
     "similarity_boost": 0.75,
@@ -17,23 +21,53 @@
       "name": "Edward - British, Dark, Seductive, Low"
     },
     "DARIUS": {
-      "id": "isFTUs6SGGS0CJ3ZeJz5",
-      "name": "Darius the Groveler (Shackle Breaker): designed for him, a grotesque ancient lord with pompous grandeur",
+      "id": "yWBMH8XJkFyWWZnXFRbX",
+      "name": "Darius the Groveler (Shackle Breaker): designed for him, a cold, measured, emotionless English scholar, mad but utterly calm, with short joyless chuckles",
       "model": "eleven_v3",
       "settings": {
-        "stability": 0.0
+        "stability": 0.5
       },
-      "fx": "ghost",
+      "fx": "nightmare",
       "directions": {
-        "Not yet, my king, not yet. I am still here.": "[exhausted whisper] Not yet, my king... [desperate] not yet. [unhinged giggle] I am still here.",
-        "Footsteps... after so long. Is it you, my king? Have you come back so soon?!": "[whispering] Footsteps... after so long. [nervously, eager to please] Is it you, my king? Have you come back so soon?!",
-        "No. No, you are not him. Forgive an old man.": "[relieved sigh] No... No, you are not him. [softly] Forgive an old man.",
-        "He told me, keep the stone safe, Darius, and I shall return for it. So I kept it, every winter, every long dark... or I did.": "[proud, far away] He told me, keep the stone safe, Darius, and I shall return for it. So I kept it, every winter, every long dark... [quietly, ashamed] or I did.",
-        "It was no fault of my own, you see. But perhaps... you have seen it? For it is a matter of great importance.": "[defensive] It was no fault of my own, you see. But perhaps... [long pause] [hopeful, pleading] you have seen it? For it is a matter of great importance.",
-        "You think he is not coming. I can hear it in your silence. And if anyone is found to have kept the stone from me, well... they shall be punished most severely.": "[muttering] You think he is not coming. I can hear it in your silence. [sinister, low] And if anyone is found to have kept the stone from me, well... [menacing] they shall be punished most severely.",
-        "That light at my back... I can feel it. His sign, at last. But he gave it to you. A stranger in chains.": "[gasps, awed] That light at my back... I can feel it. [ecstatic whisper] His sign, at last. [long pause] [despair, voice breaking] But he gave it to you... A stranger in chains.",
-        "No... no, that is not possible. I am the king's adviser, I kept it for him! You thief, you filthy thief! Give it back! That stone is mine!": "[quiet, trembling disbelief] No... no, that is not possible. [voice rising, indignant] I am the king's adviser, I kept it for him! [furious, shouting] You thief, you filthy THIEF! [screaming, unhinged] Give it back! [maniacal roar] That stone is MINE!"
+        "[Deep breathing]": "[deep, slow, heavy, labored breathing through the nose and mouth, close to the microphone, no words] Hhhhhhh... [inhales slowly] ...hhhhhhhhh. [long, heavy exhale] Hhhhhhh... [deep, shaky inhale] ...hhhhhhhhh.",
+        "Not yet, my king, not yet. I am still here. Heh... heh.": "[dying, labored breathing] [weak, rasping, struggling for air] Not yet... [wheezing breath] my king. [long pause] [labored breathing] Not yet. [pause] [faint, strained, cold] I am... [gasping breath] still here. [a faint, weary, rasping chuckle, then a rattling breath] Heh... heh.",
+        "Footsteps... after so long. Is it you, my king? Have you come back so soon?! Heh.": "[flat, measured, emotionless] Footsteps... [long pause] after so long. [pause] Is it you, my king? [long pause] Have you come back so soon? [pause] [a single dry chuckle] Heh.",
+        "No. No, you are not him. Forgive an old man. Hm-hm.": "[cold, serious] No. [long pause] No... you are not him. [pause] [flat] Forgive an old man. [two short, joyless chuckles through the nose] Hm-hm.",
+        "He told me, keep the stone safe, Darius, and I shall return for it. So I kept it, every winter, every long dark... or I did. Heh... heh... heh.": "[grave, slow, emotionless] He told me... [pause] keep the stone safe, Darius, and I shall return for it. [long pause] So I kept it. Every winter. Every long dark... [long pause] or I did. [low, slow chuckles, trailing off] Heh... heh... heh.",
+        "It was no fault of my own, you see. But perhaps... you have seen it? For it is a matter of great importance. Heh heh.": "[flat, matter-of-fact] It was no fault of my own, you see. [long pause] But perhaps... [pause] you have seen it? [cold, serious] For it is a matter of great importance. [a quick, quiet chuckle, almost a breath] Heh heh.",
+        "You think he is not coming. I can hear it in your silence. And if anyone is found to have kept the stone from me, well... they shall be punished most severely. Heh... heh. Heh heh.": "[cold, measured] You think he is not coming. [pause] I can hear it in your silence. [long pause] [low, grave, emotionless] And if anyone is found to have kept the stone from me, well... [long pause] they shall be punished most severely. [several dry, joyless chuckles under his breath] Heh... heh. Heh heh.",
+        "That light at my back... I can feel it. His sign, at last. But he gave it to you. A stranger in chains. Hah.": "[slow, flat] That light at my back... [long pause] I can feel it. [pause] His sign... at last. [long pause] [cold, serious] But he gave it to you. [pause] A stranger... in chains. [one hollow, humourless chuckle] Hah.",
+        "No... no, that is not possible. I am the king's adviser, I kept it for him! You thief, you filthy thief! Give it back! That stone is mine!": "[quiet, cold] No... [long pause] no, that is not possible. [pause] [grave, voice hardening] I am the king's adviser. I kept it for him. [anger building, louder] You thief. [rising rage] You filthy thief! [furious, shouting] Give it back! [long pause] [solemn, flat, deadly determination] That stone... is mine."
       }
+    },
+    "NIKOLI": {
+      "id": "I4zfeEHVWMxTnepd6Zot",
+      "name": "Nikoli (Shackle Breaker): designed for him, a loud, boisterous, hard-drinking soldier: gruff, raspy, booming, a very thick Russian accent, raucous laughs",
+      "model": "eleven_v3",
+      "settings": {
+        "stability": 0.5
+      },
+      "directions": {
+        "Three cats, one Nikoli. Is bad arithmetic, even for general.": "[low, dry, amused, half under his breath] Three cats, one Nikoli. [quiet chuckle] Is bad arithmetic, even for general.",
+        "You have weapon, da? Then stand with Nikoli.": "[low and steady] You have weapon, da? Then stand with Nikoli.",
+        "Thank you, stranger. Without you, Nikoli is supper for cats.": "[catching his breath, warm] Thank you, stranger. [low chuckle] Without you, Nikoli is supper for cats.",
+        "Nikoli was general of Panzeria, when Panzeria still had armies worth the name. Now Nikoli walks long way for one man: Commander Mentoras, of Altus royal guard.": "[calm, conversational, a little proud] Nikoli was general of Panzeria, when Panzeria still had armies worth the name. [more serious] Now Nikoli walks long way for one man: Commander Mentoras, of Altus royal guard.",
+        "Old friend of Nikoli. Friends, not always agreeing. He knows thing Nikoli must know. You have seen him? Tired eyes, sharp tongue, melancholic disposition, as professors in Altus would say.": "[low, conversational] Old friend of Nikoli. [wry] Friends, not always agreeing. [serious] He knows thing Nikoli must know. You have seen him? Tired eyes, sharp tongue, melancholic disposition, as professors in Altus would say.",
+        "A hood. Da. This is like him.": "[quiet, thoughtful] A hood. [pause] Da. This is like him.",
+        "You do Nikoli great kindness, stranger. Take. Ice remembers what rest of us forget.": "[warm, sincere, softly] You do Nikoli great kindness, stranger. Take. Ice remembers what rest of us forget.",
+        "No? Few do, these days. If you hear name, come find Nikoli. Nikoli waits here, by fire, until he has reason to leave.": "[easy-going, conversational] No? Few do, these days. If you hear name, come find Nikoli. Nikoli waits here, by fire, until he has reason to leave.",
+        "Careful in high passes, my friend. Cats are not hungry for nothing. Something bigger eats their game. Panzerkamfer, if Nikoli knows tracks. And Nikoli knows tracks.": "[low, conversational, a touch of warning] Careful in high passes, my friend. Cats are not hungry for nothing. Something bigger eats their game. Panzerkamfer, if Nikoli knows tracks. [small chuckle] And Nikoli knows tracks.",
+        "War beast of my people. In war, Panzeria sent many into battle: snow tigers raised on iron, bound in plate, bred to break shield walls. When our army broke, they went wild. This is one of them.": "[low, grave, remembering] War beast of my people. In war, Panzeria sent many into battle: snow tigers raised on iron, bound in plate, bred to break shield walls. When our army broke, they went wild. This is one of them.",
+        "It hunts these peaks now, wilder every winter. Follow tracks through snow, kill it, come back to Nikoli. Nikoli makes it worth your while. Is promise.": "[steady, matter-of-fact] It hunts these peaks now, wilder every winter. Follow tracks through snow, kill it, come back to Nikoli. [warm] Nikoli makes it worth your while. Is promise.",
+        "Beast still lives. Nikoli smells it on wind. Follow tracks through high snow, my friend.": "[low, calm] Beast still lives. Nikoli smells it on wind. Follow tracks through high snow, my friend.",
+        "You smell of iron and blood. Beast is dead, then. Good! Take, as Nikoli promised.": "[laughs warmly] You smell of iron and blood. Beast is dead, then. [pleased] Good! Take, as Nikoli promised.",
+        "Back again! Fire is free, company is poor. Any word of Commander Mentoras?": "[warm, relaxed] Back again! Fire is free, company is poor. [more serious, quietly] Any word of Commander Mentoras?",
+        "Nikoli leaves when snow lets him. Workshop, you said. Nikoli will find it.": "[calm, busy packing] Nikoli leaves when snow lets him. Workshop, you said. Nikoli will find it.",
+        "He was here. Ashes still warm when Nikoli came.": "[low, quiet] He was here. Ashes still warm when Nikoli came.",
+        "He leaves in hurry, and he leaves this.": "[quiet] He leaves in hurry, and he leaves this.",
+        "Toward sand, Nikoli thinks. Always one step ahead of Nikoli, that one. Always he was.": "[rueful, low] Toward sand, Nikoli thinks. [soft half-laugh] Always one step ahead of Nikoli, that one. Always he was."
+      },
+      "fx": "deeper"
     }
   }
 }

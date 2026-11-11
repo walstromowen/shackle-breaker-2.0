@@ -20,7 +20,7 @@ fall, when the player breaks out of the king's chain line. This page is a living
   artifact before it frees Dolos, to prevent a great catastrophe they know of from a time long past. Their elite are the **nightblades**.
 - **The Infernus Kingdom**: an ancient kingdom **below the Altus Kingdom**, of the **ancestors of the Alterians**. Long before the book, it had the
   artifact too: its people went mad with it and the kingdom was destroyed. Altus is repeating its history without knowing it. The catacombs under the
-  mysterious altar lead down toward it, and the **Infernus Sentinel** guards the doorway (see below).
+  mysterious altar lead down toward it, and an **Infernus Sentinel** guards each doorway (see below).
   - *Likely link, to confirm:* the "great catastrophe from a time long past" the Namuh know of is the fall of Infernus.
   - *Open question:* how the artifact came back to the surface (the meteor shower) after Infernus fell with it.
 - **The Shackle Breakers**: runaways from the king's prisons, bound in magical chains. Rumoured to be a myth. The player is one.
@@ -59,11 +59,14 @@ fall, when the player breaks out of the king's chain line. This page is a living
   Spring boots, gauntlets. Later corrupted, sent to hunt the escaped Mentoras.
 - **Nikolai Ironson**: Jaeger's brother, Panzerian general. Witty, boyish grin, missing teeth, speaks in the third person in broken Alterian, yet
   educated at both a Panzerian and an Alterian university. Mentoras's friend. Later joins him and Codey.
+  - *In the game* he is **Nikoli** (story/encounters/story/nikoli.js): he camps by the first campfire of the snowy mountains, hunting for Commander
+    Mentoras, an old friend he did not always agree with. They have **not met again yet**: the Hooded Stranger does not know he is being looked for.
+    In act 2, if the player told him about the hooded man, he waits in the Stranger's old workshop, one step behind. His brother is Jaeger.
 - **Elsali / El Shadi, "Codey"**: a Namuh nightblade, late teens. Mute, empathetic, quick, a scrapper. Fought Mentoras to a standstill in the attack on
   the capital; imprisoned with him; saves him in the escape; nicknamed "Codey" for his hand signs. Protagonist 2.
 - **General Sekrav**: general of the Alterian legion. Young, never defeated, popular.
 - **Director Kokul**: director of Artifact Affairs.
-- **Shmindolyn** and **Kurtucus**: legends. (The game's Kurtus' Brew can nod to Kurtucus.)
+- **Shmindolyn** and **Kurtucus**: legends. (The game's Kurtus' Brew nods to Kurtucus; Shmindolyn's Draught, which cures a bad trait, to Shmindolyn.)
 
 ## The story, in order
 
@@ -84,7 +87,7 @@ fall, when the player breaks out of the king's chain line. This page is a living
 - The player is a nameless prisoner in the king's chain line who breaks free (the prologue): a Shackle Breaker, after the fall.
 - The madmen, magic addicts, rotters and hollows are the people of Altus gone mad; the legionaries and watchmen in "the old colors" still march as
   if the war never ended (Darius's soldiers, searching for his stone).
-- The catacombs (act 2) end in a dark round hall where the **Infernus Sentinel** stands: a living stone statue of a cosmic knight, cracks in its armour
+- The catacombs (act 2) end in a dark round hall where an **Infernus Sentinel** stands (one in every catacomb, so never "the"): a living stone statue of a cosmic knight, cracks in its armour
   open onto a moving night sky. It guards the doorway down to Infernus. What the game says so far is short and cryptic: waking, *"Again the light. Again the fall."*; broken, *"Below, they remember."* That Infernus were the Alterians' own ancestors, driven mad by the same
   artifact, is **not stated yet**: keep it for when the story goes down there.
 - Act 1 ends with Darius; act 2 is the blood moon. Corruption is the game's cost of magic; the shackles take those who cast too much.

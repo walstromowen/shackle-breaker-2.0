@@ -40,7 +40,7 @@ Every night Darius pours a spell into the stone, and every night the light answe
 
 [long_dark]
 Years pass. The king does not come back. Then one night the stone is gone. Darius sends every soldier he has to find it, and kneels, and casts into the empty hollow.
-DARIUS: "Not yet, my king, not yet. I am still here."
+DARIUS: "Not yet, my king, not yet. I am still here. Heh... heh."
   > Continue.
 
 [groveler]
@@ -354,6 +354,21 @@ While digging, you break into a spider's nest!
   > Defend yourselves!
 
 
+===== INFERNUS SENTINEL (infernus_sentinel) =====
+
+[wakes]
+A stone knight stands before the far lever. As you draw near, dust sifts from its shoulders. The crowned head turns, and the statue steps down from its plinth.
+  > Draw your weapon.
+      "Again the light. Again the fall."
+
+
+===== INFERNUS SENTINEL (infernus_sentinel_fallen) =====
+
+[fallen]
+Cracks race through the stone, and the Sentinel crumbles at the foot of the lever. From the rubble, one last whisper: "Below, they remember."
+  > Leave the rubble to the dark.
+
+
 ===== IRON CHEST (iron_chest) =====
 
 [discovery]
@@ -378,28 +393,28 @@ The altar of dark stone waits where you left it. Your meteorite rests in the hol
   > Leave the altar alone.
 
 [darius_rises]
-DARIUS: "Footsteps... after so long. Is it you, my king? Have you come back so soon?!"
+DARIUS: "Footsteps... after so long. Is it you, my king? Have you come back so soon?! Heh."
   > Continue.
 
 [darius_rises_2]
-DARIUS: "No. No, you are not him. Forgive an old man."
+DARIUS: "No. No, you are not him. Forgive an old man. Hm-hm."
   > Continue.
 
 [darius_speaks]
-DARIUS: "He told me, keep the stone safe, Darius, and I shall return for it. So I kept it, every winter, every long dark... or I did."
+DARIUS: "He told me, keep the stone safe, Darius, and I shall return for it. So I kept it, every winter, every long dark... or I did. Heh... heh... heh."
   > Continue.
 
 [darius_speaks_2]
-DARIUS: "It was no fault of my own, you see. But perhaps... you have seen it? For it is a matter of great importance."
+DARIUS: "It was no fault of my own, you see. But perhaps... you have seen it? For it is a matter of great importance. Heh heh."
   > Continue.
 
 [darius_late]
-DARIUS: "You think he is not coming. I can hear it in your silence. And if anyone is found to have kept the stone from me, well... they shall be punished most severely."
+DARIUS: "You think he is not coming. I can hear it in your silence. And if anyone is found to have kept the stone from me, well... they shall be punished most severely. Heh... heh. Heh heh."
   > Continue.
 
 [darius_sees]
 DARIUS: "That light at my back... I can feel it. His sign, at last."
-DARIUS: "But he gave it to you. A stranger in chains."
+DARIUS: "But he gave it to you. A stranger in chains. Hah."
   > Continue.
 
 [darius_pause]
@@ -452,6 +467,200 @@ As you approach the altar, the skeletons along the ground slowly begin to move. 
 [smoke_cloud]
 As you approach the altar, it releases a cloud of pale smoke. It sinks into your lungs and limbs, and you feel fatigued.
   > Stagger the rest of the way to the altar.
+
+
+===== NIKOLI (nikoli) =====
+
+[meet]
+A broad man in a battered Panzerian greatcoat stands with his back to the campfire, a greatsword in his hands. Beyond the light, pale shapes slink through the snow: snow leopards, starved thin, their eyes on the fire.
+  > Continue.
+
+[meet_2]
+NIKOLI: "Three cats, one Nikoli. Is bad arithmetic, even for general."
+He grins over his shoulder, and you count more gaps than teeth.
+NIKOLI: "You have weapon, da? Then stand with Nikoli."
+  > Draw your weapon.
+  > Walk away.
+
+[walk_away]
+You back away from the light. Behind you a deep voice curses in Panzerian, and the cats scream, and then the night is quiet again.
+  > Keep walking.
+
+[after]
+The last of the cats lies still in the snow. The big man wipes his greatsword clean on a frozen sleeve and grins his gap-toothed grin at you.
+NIKOLI: "Thank you, stranger. Without you, Nikoli is supper for cats."
+  > Continue.
+
+[after_2]
+NIKOLI: "Nikoli was general of Panzeria, when Panzeria still had armies worth the name. Now Nikoli walks long way for one man: Commander Mentoras, of Altus royal guard."
+  > Continue.
+
+[ask]
+NIKOLI: "Old friend of Nikoli. Friends, not always agreeing. He knows thing Nikoli must know. You have seen him? Tired eyes, sharp tongue, melancholic disposition, as professors in Altus would say."
+  > [Hooded Stranger] "There's a hooded man in a village workshop. He might be the one."
+  > "I don't know anyone by that name."
+
+[told]
+Nikoli is quiet for a long moment.
+NIKOLI: "A hood. Da. This is like him."
+He laughs once, without much in it.
+  > Continue.
+
+[told_2]
+NIKOLI: "You do Nikoli great kindness, stranger. Take. Ice remembers what rest of us forget."
+  > Take it.
+
+[beast]
+He prods the fire.
+NIKOLI: "Careful in high passes, my friend. Cats are not hungry for nothing. Something bigger eats their game. Panzerkamfer, if Nikoli knows tracks. And Nikoli knows tracks."
+  > [Panzerkamfer] "A Panzerkamfer?"
+  > Leave him to the fire.
+
+[beast_2]
+NIKOLI: "War beast of my people. In war, Panzeria sent many into battle: snow tigers raised on iron, bound in plate, bred to break shield walls. When our army broke, they went wild. This is one of them."
+  > Continue.
+
+[beast_3]
+NIKOLI: "It hunts these peaks now, wilder every winter. Follow tracks through snow, kill it, come back to Nikoli. Nikoli makes it worth your while. Is promise."
+  > "I'll hunt it."
+  > "Not today."
+
+[dunno]
+NIKOLI: "No? Few do, these days. If you hear name, come find Nikoli. Nikoli waits here, by fire, until he has reason to leave."
+  > Continue.
+
+[beast_waiting]
+Nikoli looks up from the fire.
+NIKOLI: "Beast still lives. Nikoli smells it on wind. Follow tracks through high snow, my friend."
+  > [Hooded Stranger] "There's a hooded man in a village workshop. He might be the one."
+  > Leave him to the fire.
+
+[beast_done]
+Nikoli takes one look at you and laughs, a big gap-toothed laugh, the first real one you have heard from him.
+NIKOLI: "You smell of iron and blood. Beast is dead, then. Good! Take, as Nikoli promised."
+  > Take it.
+
+[again]
+Nikoli sits by the campfire with the greatsword across his knees.
+NIKOLI: "Back again! Fire is free, company is poor. Any word of Commander Mentoras?"
+  > [Hooded Stranger] "There's a hooded man in a village workshop. He might be the one."
+  > [Panzerkamfer] "Tell me about that war beast."
+  > "Not yet."
+
+[told_again]
+Nikoli is packing a worn saddlebag by the fire.
+NIKOLI: "Nikoli leaves when snow lets him. Workshop, you said. Nikoli will find it."
+  > [Panzerkamfer] "Tell me about that war beast."
+  > Leave him to his packing.
+
+[workshop]
+Nikoli stands at the cold forge where the hooded man used to wait, turning a length of broken chain over in his hands.
+NIKOLI: "He was here. Ashes still warm when Nikoli came."
+  > Continue.
+
+[workshop_2]
+NIKOLI: "He leaves in hurry, and he leaves this."
+He holds up the chain.
+NIKOLI: "Toward sand, Nikoli thinks. Always one step ahead of Nikoli, that one. Always he was."
+  > [Panzerkamfer] "Tell me about that war beast."
+  > Leave him to his hunt.
+
+
+===== NIKOLI (nikoli_after_battle) =====
+
+[after]
+The last of the cats lies still in the snow. The big man wipes his greatsword clean on a frozen sleeve and grins his gap-toothed grin at you.
+NIKOLI: "Thank you, stranger. Without you, Nikoli is supper for cats."
+  > Continue.
+
+[after_2]
+NIKOLI: "Nikoli was general of Panzeria, when Panzeria still had armies worth the name. Now Nikoli walks long way for one man: Commander Mentoras, of Altus royal guard."
+  > Continue.
+
+[ask]
+NIKOLI: "Old friend of Nikoli. Friends, not always agreeing. He knows thing Nikoli must know. You have seen him? Tired eyes, sharp tongue, melancholic disposition, as professors in Altus would say."
+  > [Hooded Stranger] "There's a hooded man in a village workshop. He might be the one."
+  > "I don't know anyone by that name."
+
+[told]
+Nikoli is quiet for a long moment.
+NIKOLI: "A hood. Da. This is like him."
+He laughs once, without much in it.
+  > Continue.
+
+[told_2]
+NIKOLI: "You do Nikoli great kindness, stranger. Take. Ice remembers what rest of us forget."
+  > Take it.
+
+[beast]
+He prods the fire.
+NIKOLI: "Careful in high passes, my friend. Cats are not hungry for nothing. Something bigger eats their game. Panzerkamfer, if Nikoli knows tracks. And Nikoli knows tracks."
+  > [Panzerkamfer] "A Panzerkamfer?"
+  > Leave him to the fire.
+
+[beast_2]
+NIKOLI: "War beast of my people. In war, Panzeria sent many into battle: snow tigers raised on iron, bound in plate, bred to break shield walls. When our army broke, they went wild. This is one of them."
+  > Continue.
+
+[beast_3]
+NIKOLI: "It hunts these peaks now, wilder every winter. Follow tracks through snow, kill it, come back to Nikoli. Nikoli makes it worth your while. Is promise."
+  > "I'll hunt it."
+  > "Not today."
+
+[dunno]
+NIKOLI: "No? Few do, these days. If you hear name, come find Nikoli. Nikoli waits here, by fire, until he has reason to leave."
+  > Continue.
+
+[meet]
+A broad man in a battered Panzerian greatcoat stands with his back to the campfire, a greatsword in his hands. Beyond the light, pale shapes slink through the snow: snow leopards, starved thin, their eyes on the fire.
+  > Continue.
+
+[meet_2]
+NIKOLI: "Three cats, one Nikoli. Is bad arithmetic, even for general."
+He grins over his shoulder, and you count more gaps than teeth.
+NIKOLI: "You have weapon, da? Then stand with Nikoli."
+  > Draw your weapon.
+  > Walk away.
+
+[walk_away]
+You back away from the light. Behind you a deep voice curses in Panzerian, and the cats scream, and then the night is quiet again.
+  > Keep walking.
+
+[beast_waiting]
+Nikoli looks up from the fire.
+NIKOLI: "Beast still lives. Nikoli smells it on wind. Follow tracks through high snow, my friend."
+  > [Hooded Stranger] "There's a hooded man in a village workshop. He might be the one."
+  > Leave him to the fire.
+
+[beast_done]
+Nikoli takes one look at you and laughs, a big gap-toothed laugh, the first real one you have heard from him.
+NIKOLI: "You smell of iron and blood. Beast is dead, then. Good! Take, as Nikoli promised."
+  > Take it.
+
+[again]
+Nikoli sits by the campfire with the greatsword across his knees.
+NIKOLI: "Back again! Fire is free, company is poor. Any word of Commander Mentoras?"
+  > [Hooded Stranger] "There's a hooded man in a village workshop. He might be the one."
+  > [Panzerkamfer] "Tell me about that war beast."
+  > "Not yet."
+
+[told_again]
+Nikoli is packing a worn saddlebag by the fire.
+NIKOLI: "Nikoli leaves when snow lets him. Workshop, you said. Nikoli will find it."
+  > [Panzerkamfer] "Tell me about that war beast."
+  > Leave him to his packing.
+
+[workshop]
+Nikoli stands at the cold forge where the hooded man used to wait, turning a length of broken chain over in his hands.
+NIKOLI: "He was here. Ashes still warm when Nikoli came."
+  > Continue.
+
+[workshop_2]
+NIKOLI: "He leaves in hurry, and he leaves this."
+He holds up the chain.
+NIKOLI: "Toward sand, Nikoli thinks. Always one step ahead of Nikoli, that one. Always he was."
+  > [Panzerkamfer] "Tell me about that war beast."
+  > Leave him to his hunt.
 
 
 ===== OLD GRAVESTONE (old_gravestone) =====
@@ -596,6 +805,53 @@ Your fingers find the lip of the pit. You haul yourself up as the last loose sto
 [fell]
 You drop onto the stakes. Climbing back out of the pit takes a long, painful while.
   > Drag yourself out.
+
+
+===== RUINED CARRIAGE (ruined_carriage) =====
+
+[discovery]
+A covered wagon stands abandoned in the tall grass, its canvas stained and its team long gone. The traces hang empty, ending in links of black iron, and fresh hoofprints circle it.
+  > [DEX] Search the carriage.
+  > [DEX] Search the carriage quietly, one eye on the grass.
+  > [STR] Pry open the strongbox.
+  > [INT] Study the hoofprints.
+  > Leave it be.
+
+[found_gold]
+Under the seat, behind a loose board, sits a heavy purse sewn shut against thieves. Somebody's whole fortune, by the weight of it.
+  > Take it.
+
+[found_valuables]
+Crates stacked under the canvas held a merchant's best, wrapped in oilcloth and untouched by the rain.
+  > Take what you can carry.
+
+[steeds]
+A board splits with a crack like a whip. Out in the grass something answers: a scream that is not quite a horse's. Black iron rattles as the shackled steeds come back for their wagon.
+  > Draw your weapons!
+
+[splinters]
+A rotten board gives way under your hand, and splinters drive deep into your palm. Whatever was in there, the rain has had it.
+  > Leave it be.
+
+[slip_away]
+You find nothing worth the risk, and something heavy is moving out in the grass. You back away from the wagon before it finds you.
+  > Leave quietly.
+
+[strongbox_open]
+The lock gives with a crack. The strongbox is full: coin to the brim, a sealed draught glowing amber in its straw, Shmindolyn's mark on the wax, and a merchant's papers wrapped around something heavier.
+  > Empty it.
+
+[strongbox_noise]
+The lid holds, but the iron bands ring out across the plain like a bell. Out in the grass, heads come up. Chains rattle, and the shackled steeds come running.
+  > Draw your weapons!
+
+[tracks_read]
+The prints are deep and unshod, and between them run the drag-marks of chains. Shackled steeds: whatever took the people took the horses too. They graze close by, and they will come back to the wagon. Work quietly.
+  > Back to the carriage.
+
+[tracks_lost]
+The prints cross and recross until they mean nothing at all. Whatever made them could be anywhere.
+  > Back to the carriage.
 
 
 ===== SHACKLED (prologue) =====
@@ -915,21 +1171,6 @@ STRANGER: "The voices are louder since the moon turned. One of them does a good 
 [after_darius_3]
 STRANGER: "Come back when you've seen what walks under the red moon. Or don't. I'll be here regardless."
   > Leave.
-
-
-===== THE INFERNUS SENTINEL (infernus_sentinel) =====
-
-[wakes]
-A stone knight stands before the far lever. As you draw near, dust sifts from its shoulders. The crowned head turns, and the statue steps down from its plinth.
-  > Draw your weapon.
-      "Again the light. Again the fall."
-
-
-===== THE INFERNUS SENTINEL (infernus_sentinel_fallen) =====
-
-[fallen]
-Cracks race through the stone, and the Sentinel crumbles at the foot of the lever. From the rubble, one last whisper: "Below, they remember."
-  > Leave the rubble to the dark.
 
 
 ===== THE QUIET AFTER (shackled_betrayal_end) =====

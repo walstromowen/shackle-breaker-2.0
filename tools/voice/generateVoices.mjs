@@ -3,6 +3,9 @@
 //   node tools/voice/generateVoices.mjs                 a dry run: what would be recorded, and how many characters it costs (nothing is sent)
 //   node tools/voice/generateVoices.mjs --generate      record the missing clips (and drop clips no line uses any more)
 //   node tools/voice/generateVoices.mjs --generate --only STRANGER     one voice only
+//   node tools/voice/generateVoices.mjs --align [--only DARIUS]      word timings for clips that have none (each new clip gets them as it is made)
+//   node tools/voice/generateVoices.mjs --generate --raw <dir>   use <dir>/<line key>.mp3 (an untreated take, e.g. downloaded from the
+//                                                    ElevenLabs history) instead of recording: re-treats a take without paying for it again
 //   node tools/voice/generateVoices.mjs --sample "Some words." --voice <voiceId> --out sample.mp3      try a voice on one line
 //
 // Which encounters are voiced, and who speaks what: shared/story/voiceLines.js (VOICED, SPEAKERS). The voices: tools/voice/voices.json.
@@ -16,6 +19,7 @@
 //   "directions"  { "the line as it reads on screen": "what the voice is given instead" }: the same words with acting cues in square brackets
 //                 ("[voice breaking] No, you are not him."), for eleven_v3. Only the recording hears them; the screen shows the line as written.
 //                 Changing a line's direction records that line again.
+// voices.json can also have "pronounce": { "word": "how the voices should say it" } for every voice (Panzeria: "Panzeeria": one word, said like Algeria).
 //   "fx"          a sound treatment run on each clip with ffmpeg after recording (FX below, e.g. "ghost") The API key is read from ELEVENLABS_API_KEY (a cloud session's network proxy puts
 // it in for you: any value works there).
 import fs from 'node:fs';
@@ -45,7 +49,14 @@ const opt = (name) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1
 
 /* Sound treatments (ffmpeg -af). ghost: a touch deeper and slower, a hollow stone-chamber echo, the top end softened. */
 const FX = {
-    ghost: 'asetrate=44100*0.94,aresample=44100,aecho=0.8:0.7:60|140|260:0.35|0.25|0.15,highpass=f=90,lowpass=f=7500,volume=1.1'
+    ghost: 'asetrate=44100*0.94,aresample=44100,aecho=0.8:0.7:60|140|260:0.35|0.25|0.15,highpass=f=90,lowpass=f=7500,volume=1.1',
+    // hall: the same stone-chamber echo with the voice's own pitch kept (a shrill voice stays shrill), a little longer, like a preacher in an empty nave
+    // deeper: the voice a semitone or so lower at the same speed (asetrate lowers the pitch and slows it, atempo brings the speed back)
+    deeper: 'asetrate=44100*0.94,aresample=44100,atempo=1.0638',
+    hall: 'aecho=0.8:0.75:70|160|300:0.35|0.25|0.18,highpass=f=80,lowpass=f=9000,volume=1.1',
+    // nightmare: the hall echo, darker, with a faint copy of the voice a fourth lower under it (same timing): the shrill mania stays on top,
+    // something deeper speaks along beneath it
+    nightmare: 'asplit=2[v][d];[d]asetrate=44100*0.75,aresample=44100,atempo=1.3333,lowpass=f=2500,volume=0.3[low];[v][low]amix=inputs=2:normalize=0,aecho=0.8:0.85:80|190|340|520:0.32|0.23|0.16|0.09,highpass=f=60,lowpass=f=7000,volume=1.0'
 };
 function applyFx(name, audio) {
     if (!name) return audio;
@@ -53,6 +64,22 @@ function applyFx(name, audio) {
     const r = spawnSync('ffmpeg', ['-loglevel', 'error', '-f', 'mp3', '-i', 'pipe:0', '-af', FX[name], '-b:a', '128k', '-f', 'mp3', 'pipe:1'], { input: audio, maxBuffer: 64 << 20 });
     if (r.status !== 0) throw new Error(`ffmpeg (${name}): ${String(r.stderr || r.error).slice(0, 300)}`);
     return r.stdout;
+}
+
+/* When each word of a line is said in its clip: ElevenLabs' forced alignment of the words on screen to the finished clip. Returns the start times
+   (seconds) of the line's words, split at spaces as the screen splits them, or null when the words do not line up (the text reveal then
+   falls back to an even pace over the clip). A stage direction ("[Deep breathing]") has no words to time. */
+async function wordTimes(audio, text) {
+    if (/^\[[^\]]*\]$/.test(text.trim())) return null;
+    const form = new FormData();
+    form.append('file', new Blob([audio], { type: 'audio/mpeg' }), 'clip.mp3');
+    form.append('text', text);
+    const res = await fetch('https://api.elevenlabs.io/v1/forced-alignment', { method: 'POST', headers: { 'xi-api-key': KEY }, body: form });
+    if (!res.ok) { console.warn(`  (alignment failed: ${res.status} ${(await res.text()).slice(0, 160)})`); return null; }
+    const words = ((await res.json()).words || []).filter(w => w.text.trim());
+    const want = text.split(/\s+/).filter(Boolean);
+    if (words.length !== want.length) { console.warn(`  (alignment gave ${words.length} words for ${want.length}: left untimed)`); return null; }
+    return words.map(w => Math.round(w.start * 100) / 100);
 }
 
 async function tts(voiceId, text, settings, model = CONFIG.model) {
@@ -89,8 +116,13 @@ export function mp3Duration(buf) {
     return Math.round(seconds * 1000) / 1000;
 }
 
-/** What the voice is given for a line: its direction (the words with acting cues), else the words. */
-const spokenText = (l) => ((CONFIG.voices[l.speaker].directions || {})[l.text]) || l.text;
+/* "pronounce" in voices.json: { "Panzeria": "Panzeeria" }: a word the voices would say wrong, respelled for them (whole words, any voice); the
+   screen still shows the real spelling. */
+const PRONOUNCE = Object.entries(CONFIG.pronounce || {}).sort((a, b) => b[0].length - a[0].length);
+const respell = (text) => PRONOUNCE.reduce((t, [word, said]) => t.replace(new RegExp(`\\b${word}\\b`, 'g'), said), text);
+
+/** What the voice is given for a line: its direction (the words with acting cues), else the words; with the respellings. */
+const spokenText = (l) => respell(((CONFIG.voices[l.speaker].directions || {})[l.text]) || l.text);
 
 /** A short tag for the voice and the way it reads the line: a clip made with another voice, model, settings, treatment or direction has another
     file name (and is recorded again). */
@@ -99,6 +131,9 @@ const voiceTag = (l) => {
     const parts = [v.id, v.model || CONFIG.model, v.settings || CONFIG.defaultSettings];
     const dir = (v.directions || {})[l.text];
     if (v.fx || dir) parts.push(v.fx || null, dir || null);
+    if (v.fx) parts.push(FX[v.fx] || null);   // the treatment itself: retuning it (less echo) makes new clips
+    const plain = (v.directions || {})[l.text] || l.text;
+    if (respell(plain) !== plain) parts.push(['say', respell(plain)]);   // a respelled word: a line it changes is recorded again
     return crypto.createHash('sha1').update(JSON.stringify(parts)).digest('hex').slice(0, 8);
 };
 
@@ -134,6 +169,18 @@ async function main() {
     for (const l of missing) bySpeaker[l.speaker] = (bySpeaker[l.speaker] || 0) + spokenText(l).length;
     console.log(`${lines.length} voiced lines in ${Object.keys(VOICED).join(', ')}; ${missing.length} need recording: ${chars} characters ${JSON.stringify(bySpeaker)}`);
 
+    if (flag('--align')) {
+        let n = 0;
+        for (const l of lines) {
+            const e = manifest[l.key];
+            if ((only && l.speaker !== only) || !e || typeof e !== 'object' || e.w || fileIn(e) !== fileOf(l)) continue;
+            const w = await wordTimes(fs.readFileSync(path.join(OUT_DIR, e.f)), l.text);
+            if (w) { e.w = w; n++; console.log(`  timed ${l.speaker}: ${l.text.slice(0, 60)}`); }
+        }
+        fs.writeFileSync(MANIFEST, JSON.stringify(manifest, null, 1));
+        console.log(`Word timings added to ${n} clips.`);
+        return;
+    }
     if (!flag('--generate')) {
         fs.writeFileSync(MANIFEST, JSON.stringify(manifest, null, 1));   // (only adds lengths to an older manifest)
         console.log('Dry run: nothing was sent. Add --generate to record them.');
@@ -142,9 +189,14 @@ async function main() {
     let done = 0;
     for (const l of missing) {
         const v = CONFIG.voices[l.speaker];
-        const audio = applyFx(v.fx, await tts(v.id, spokenText(l), v.settings || CONFIG.defaultSettings, v.model || CONFIG.model));
+        const rawFile = opt('--raw') && path.join(opt('--raw'), `${l.key}.mp3`);
+        const take = rawFile && fs.existsSync(rawFile) ? fs.readFileSync(rawFile)
+            : await tts(v.id, spokenText(l), v.settings || CONFIG.defaultSettings, v.model || CONFIG.model);
+        const audio = applyFx(v.fx, take);
         fs.writeFileSync(path.join(OUT_DIR, fileOf(l)), audio);
         manifest[l.key] = { f: fileOf(l), d: mp3Duration(audio) };   // the file, and its length in seconds (the words on screen keep time with it)
+        const w = await wordTimes(audio, l.text);
+        if (w) manifest[l.key].w = w;                                 // and when each word is said
         done++;
         console.log(`  [${done}/${missing.length}] ${l.speaker}: ${l.text.slice(0, 70)}${l.text.length > 70 ? '...' : ''}`);
         fs.writeFileSync(MANIFEST, JSON.stringify(manifest, null, 1));   // after every clip: an interrupted run keeps what it made

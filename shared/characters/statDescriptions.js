@@ -1,5 +1,7 @@
-import { DAMAGE_SCALING, BEST_OF_SCALING, DEFENSE_PER_SCALING_POINT, CORRUPTION } from '../core/constants.js';
-import { HP_PER_VIGOR_SCALE, VIGOR_DEFENSE_PER_POINT, STAMINA_RECOVERY_PER_DEX, INSIGHT_RECOVERY_PER_ATT, STAMINA_ATTRIBUTES, INSIGHT_ATTRIBUTES } from './statCalculator.js';
+import { DAMAGE_SCALING, ENEMY_DAMAGE_SCALING, BEST_OF_SCALING, DEFENSE_PER_SCALING_POINT, CORRUPTION } from '../core/constants.js';
+import { HP_PER_VIGOR_SCALE, VIGOR_DEFENSE_PER_POINT, STAMINA_RECOVERY_PER_DEX, INSIGHT_RECOVERY_PER_ATT, STAMINA_ATTRIBUTES, INSIGHT_ATTRIBUTES,
+    ENEMY_VIGOR_DEFENSE_PER_POINT, ENEMY_RECOVERY_PER_POINT, StatCalculator } from './statCalculator.js';
+import { rollModifier, formatModifier, rollRuleText } from '../story/encounterRolls.js';
 
 // What each attribute and stat does, for the in-game help (hover / select one on the level-up, character creator, character summary and
 // encounter screens). The words are the game's own: the descriptions come from the first version of the game's stat help, brought up to date.
@@ -52,10 +54,35 @@ export const trimNumber = (n) => String(Math.round(n * 100) / 100);
 
 const perPoint = (n) => `+${trimNumber(n)} per point`;
 
+/* A beast (a dog, a snow leopard: anything not built like a person, StatCalculator.usesEnemyScaling) plays by other rules, and its help says so:
+   Strength feeds every physical attack and Intelligence every magical one (ENEMY_DAMAGE_SCALING); its attributes give no defense, Vigor does
+   (ENEMY_VIGOR_DEFENSE_PER_POINT against everything); stamina comes from Dexterity alone and insight from Attunement alone, recovering
+   ENEMY_RECOVERY_PER_POINT per point. */
+const BEAST_STAMINA = ['dexterity'], BEAST_INSIGHT = ['attunement'];
+const BEAST_NOTES = {
+    vigor: 'A beast: Vigor is its health and its hide, against every kind of attack.',
+    strength: 'A beast: Strength drives all of its physical attacks (blunt, slash and pierce), but gives it no defense and no stamina.',
+    dexterity: 'A beast: Dexterity is all of its stamina, but no attack or defense.',
+    intelligence: 'A beast: Intelligence drives all of its magic, the elements too, but gives it no defense and no insight.',
+    attunement: 'A beast: Attunement is all of its insight, but no attack or defense.',
+};
+
+/** The options a screen hands the help cards for one character: its multipliers, whether it is a beast, its own attribute points (for the
+ *  encounter roll each one gives) and the game's difficulty. */
+export function helpOptionsFor(character, difficulty = 'normal') {
+    if (!character) return { difficulty };
+    return {
+        multipliers: character.statMultipliers || character.state?.statMultipliers,
+        enemyRules: StatCalculator.usesEnemyScaling(character),
+        rollAttributes: character.attributes || character.state?.attributes || null,
+        difficulty,
+    };
+}
+
 // Damage types an attribute feeds, grouped by weight: [{ types: ['blunt', 'slash', 'pierce'], weight: 1 }, ...]
-export function damageTypesFor(attr) {
+export function damageTypesFor(attr, table = DAMAGE_SCALING) {
     const groups = new Map();
-    for (const [type, weights] of Object.entries(DAMAGE_SCALING)) {
+    for (const [type, weights] of Object.entries(table)) {
         const w = weights[attr];
         if (!w) continue;
         if (!groups.has(w)) groups.set(w, { types: [], weight: w });
@@ -68,6 +95,8 @@ const ELEMENTS = ['fire', 'ice', 'lightning', 'water', 'earth', 'wind'];
 // 'Blunt / Slash attack', or 'Every elemental attack' for the six elements (the card's detail line names them)
 const groupLabel = (types, stat) => {
     if (types.length === ELEMENTS.length && ELEMENTS.every(t => types.includes(t))) return `Every elemental ${stat}`;
+    const MAGIC = [...ELEMENTS, 'light', 'dark', 'arcane'];
+    if (types.length === MAGIC.length && MAGIC.every(t => types.includes(t))) return `Every magical ${stat}`;   // a beast's Intelligence
     if (types.length <= 3) return `${types.map(cap).join(' / ')} ${stat}`;
     return `${types.length} damage types (${stat})`;
 };
@@ -162,6 +191,7 @@ const bestOfNote = (type) => {
 
 function describeStat(key, type, opts) {
     const mults = multipliersOf(opts);
+    const beast = !!opts.enemyRules;
     const rows = [];
     let name = STAT_NAMES[key] || cap(key), description = STAT_DESCRIPTIONS[key] || '', note = '';
 
@@ -176,16 +206,18 @@ function describeStat(key, type, opts) {
         rows.push({ label: 'Skill points', value: '+1 per level', kind: 'check' });
     } else if (key === 'maxHp') {
         rows.push({ label: NAMES.vigor, value: perPoint(mults.hpPerVigor * HP_PER_VIGOR_SCALE), kind: 'hp' });
+        const hpTier = CORRUPTION.TIERS.find(t => t.maxHpMultiplier !== undefined);
+        if (hpTier) note = `Gear and traits add to it. From act ${CORRUPTION.REVEAL_ACT}, corruption of ${hpTier.at}% or more ${hpTier.maxHpMultiplier === 0.5 ? 'halves it' : `multiplies it by ${trimNumber(hpTier.maxHpMultiplier)}`}.`;
     } else if (key === 'maxStamina') {
-        for (const a of STAMINA_ATTRIBUTES) rows.push({ label: NAMES[a], value: perPoint(mults.staminaPerDex), kind: 'stamina' });
+        for (const a of (beast ? BEAST_STAMINA : STAMINA_ATTRIBUTES)) rows.push({ label: NAMES[a], value: perPoint(mults.staminaPerDex), kind: 'stamina' });
         note = 'Stamina pays for physical abilities.';
     } else if (key === 'maxInsight') {
-        for (const a of INSIGHT_ATTRIBUTES) rows.push({ label: NAMES[a], value: perPoint(mults.insightPerAtt), kind: 'insight' });
+        for (const a of (beast ? BEAST_INSIGHT : INSIGHT_ATTRIBUTES)) rows.push({ label: NAMES[a], value: perPoint(mults.insightPerAtt), kind: 'insight' });
         note = 'Insight pays for spells.';
     } else if (key === 'staminaRecovery') {
-        for (const a of STAMINA_ATTRIBUTES) rows.push({ label: NAMES[a], value: perPoint(STAMINA_RECOVERY_PER_DEX), kind: 'stamina' });
+        for (const a of (beast ? BEAST_STAMINA : STAMINA_ATTRIBUTES)) rows.push({ label: NAMES[a], value: perPoint(beast ? ENEMY_RECOVERY_PER_POINT : STAMINA_RECOVERY_PER_DEX), kind: 'stamina' });
     } else if (key === 'insightRecovery') {
-        for (const a of INSIGHT_ATTRIBUTES) rows.push({ label: NAMES[a], value: perPoint(INSIGHT_RECOVERY_PER_ATT), kind: 'insight' });
+        for (const a of (beast ? BEAST_INSIGHT : INSIGHT_ATTRIBUTES)) rows.push({ label: NAMES[a], value: perPoint(beast ? ENEMY_RECOVERY_PER_POINT : INSIGHT_RECOVERY_PER_ATT), kind: 'insight' });
     } else if (key === 'corruption') {
         // What it does comes from the same table the game plays by (CORRUPTION in core/constants.js)
         rows.push({ label: 'Each magical ability used', value: `+${CORRUPTION.PER_MAGIC_USE}%`, kind: 'attack' });
@@ -193,13 +225,14 @@ function describeStat(key, type, opts) {
         rows.push({ label: `At ${CORRUPTION.SHACKLE_AT}%`, value: 'Shackled', kind: 'defense' });
         note = 'Cruel choices raise it and kind ones lower it. A shackled member is down until a fallen meteorite breaks the chains, and may turn on the party first.';
     } else if (key === 'attack') {
-        rows.push(...feederRows(type));
-        note = bestOfNote(type) + "A weapon adds to it, and each ability multiplies it by its power.";
+        rows.push(...(beast ? Object.entries(ENEMY_DAMAGE_SCALING[type] || {}).map(([a, w]) => ({ label: NAMES[a], value: perPoint(w), kind: 'attack' })) : feederRows(type)));
+        note = (beast ? '' : bestOfNote(type)) + "A weapon adds to it, and each ability multiplies it by its power.";
     } else if (key === 'defense') {
-        rows.push(...feederRows(type, 'defense'));
-        if (VIGOR_DEFENSE_PER_POINT) rows.push({ label: NAMES.vigor, value: halfRate(VIGOR_DEFENSE_PER_POINT / DEFENSE_PER_SCALING_POINT), kind: 'defense' });
+        if (!beast) rows.push(...feederRows(type, 'defense'));
+        const vigorDef = beast ? ENEMY_VIGOR_DEFENSE_PER_POINT : VIGOR_DEFENSE_PER_POINT;
+        if (vigorDef) rows.push({ label: NAMES.vigor, value: halfRate(vigorDef / DEFENSE_PER_SCALING_POINT), kind: 'defense' });
         rows.push({ label: 'Level', value: '+1 per 2 levels', kind: 'defense' });
-        note = bestOfNote(type) + 'Taken off every hit of this type, after resistance.';
+        note = (beast ? '' : bestOfNote(type)) + 'Taken off every hit of this type, after resistance.';
     } else if (key === 'resistance') {
         note = 'A share of the damage, taken off before defense.';
     } else if (key === 'speed') {
@@ -216,33 +249,38 @@ function describeStat(key, type, opts) {
 function describeAttribute(key, opts) {
     const mults = multipliersOf(opts);
     const rows = [];
+    const beast = !!opts.enemyRules;
+    const table = beast ? ENEMY_DAMAGE_SCALING : DAMAGE_SCALING;
 
     if (key === 'vigor') {
         rows.push({ label: 'Max HP', value: perPoint(mults.hpPerVigor * HP_PER_VIGOR_SCALE), kind: 'hp' });
-        if (VIGOR_DEFENSE_PER_POINT) rows.push({ label: 'Defense (all types)', value: halfRate(VIGOR_DEFENSE_PER_POINT / DEFENSE_PER_SCALING_POINT), kind: 'defense' });
+        const vigorDef = beast ? ENEMY_VIGOR_DEFENSE_PER_POINT : VIGOR_DEFENSE_PER_POINT;
+        if (vigorDef) rows.push({ label: 'Defense (all types)', value: halfRate(vigorDef / DEFENSE_PER_SCALING_POINT), kind: 'defense' });
     }
 
-    // Attack and defense rows come straight from the scaling table
-    for (const { types, weight } of damageTypesFor(key)) {
+    // Attack and defense rows come straight from the scaling table the character plays by (a beast's attributes give no defense)
+    for (const { types, weight } of damageTypesFor(key, table)) {
         rows.push({ label: groupLabel(types, 'attack'), value: perPoint(weight), kind: 'attack' });
-        rows.push({ label: groupLabel(types, 'defense'), value: halfRate(weight), kind: 'defense' });
+        if (!beast) rows.push({ label: groupLabel(types, 'defense'), value: halfRate(weight), kind: 'defense' });
     }
 
-    if (STAMINA_ATTRIBUTES.includes(key)) {
+    if ((beast ? BEAST_STAMINA : STAMINA_ATTRIBUTES).includes(key)) {
         rows.push({ label: 'Max stamina', value: perPoint(mults.staminaPerDex), kind: 'stamina' });
-        rows.push({ label: 'Stamina recovery', value: perPoint(STAMINA_RECOVERY_PER_DEX), kind: 'stamina' });
+        rows.push({ label: 'Stamina recovery', value: perPoint(beast ? ENEMY_RECOVERY_PER_POINT : STAMINA_RECOVERY_PER_DEX), kind: 'stamina' });
     }
-    if (INSIGHT_ATTRIBUTES.includes(key)) {
+    if ((beast ? BEAST_INSIGHT : INSIGHT_ATTRIBUTES).includes(key)) {
         rows.push({ label: 'Max insight', value: perPoint(mults.insightPerAtt), kind: 'insight' });
-        rows.push({ label: 'Insight recovery', value: perPoint(INSIGHT_RECOVERY_PER_ATT), kind: 'insight' });
+        rows.push({ label: 'Insight recovery', value: perPoint(beast ? ENEMY_RECOVERY_PER_POINT : INSIGHT_RECOVERY_PER_ATT), kind: 'insight' });
     }
 
-    if (opts.skillChecks) {
-        rows.push({ label: 'Skill checks', value: '+1 per 3 above 10', kind: 'check' });
-    }
+    // Encounters: every attribute is rolled for in skill checks (shared/story/encounterRolls.js). With the character's own points, what it adds now.
+    const difficulty = opts.difficulty || 'normal';
+    rows.push({ label: 'Encounter rolls', value: '+1 per 3 above 10', kind: 'check' });
+    const own = opts.rollAttributes && opts.rollAttributes[key];
+    if (Number.isFinite(own)) rows.push({ label: `Your roll now (${own})`, value: `d20 ${formatModifier(rollModifier(own, difficulty))}`, kind: 'check' });
 
     // For the elements, say which ones (the row label can only say "Every elemental attack")
-    const wide = damageTypesFor(key).find(g => g.types.length > 3);
+    const wide = damageTypesFor(key, table).find(g => g.types.length > 3);
     const detail = wide ? `${joinNames(wide.types)}.` : '';
 
     return {
@@ -251,7 +289,7 @@ function describeAttribute(key, opts) {
         description: DESCRIPTIONS[key],
         rows,
         detail,
-        note: NOTES[key] || '',
+        note: [beast ? BEAST_NOTES[key] : NOTES[key], rollRuleText(difficulty)].filter(Boolean).join(' '),
         flavor: FLAVOR[key] || '',
     };
 }

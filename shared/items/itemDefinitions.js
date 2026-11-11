@@ -231,6 +231,35 @@ export const ItemDefinitions = {
       5: { currency: 500, materials: { "steel_ingot": 5, "iron_ingot": 10, "bronze_ingot": 15 } }
     }
   },
+  // The greatsword of the Panzerian officers, forged in the cold: Nikoli carries one (entityDefinitions NIKOLI). A strength weapon whose steel bites
+  // with frost as well as edge. (Icon: a placeholder on the weapon sheet, col 14.)
+  "panzerian_greatsword": {
+    id: "panzerian_greatsword",
+    name: "Panzerian Greatsword",
+    slot: "twoHand",
+    type: "weapon",
+    description: 'A long, heavy blade of northern steel, forged in the cold and quenched in snowmelt. Its edge carries the frost of the Panzerian passes.',
+    value: 180,
+    icon: { col: 14, row: 0 },
+    attack: { slash: 7, blunt: 2, ice: 3 },
+    requirements: { strength: 13, vigor: 10 },
+    requirementGrowth: { strength: 3, vigor: 2 },
+    grantedAbilities: ["slash", "cleave"],
+    maxLevel: 5,
+    statGrowth: {
+      attack: { slash: 3, ice: 2 }
+    },
+    abilityUnlocks: {
+      2: ["wild_swing"],
+      3: ["leaping_slash"]
+    },
+    upgradeCosts: {
+      2: { currency: 75, materials: { "iron_ingot": 3, "leather": 2 } },
+      3: { currency: 200, materials: { "iron_ingot": 6, "leather": 3 } },
+      4: { currency: 400, materials: { "steel_ingot": 4, "iron_ingot": 6 } },
+      5: { currency: 650, materials: { "steel_ingot": 8, "iron_ingot": 10 } }
+    }
+  },
   "spear": {
     id: "spear",
     name: "Spear",
@@ -1219,8 +1248,23 @@ export const ItemDefinitions = {
     type: "consumable",
     useAbility: "brew_of_madness",
     description: "Smells like ozone and bad decisions. Drops you to 1 HP and leaves you Enraged: physical attack +50% for 3 turns.",
-    icon: { col: 1, row: 1 },
+    icon: { col: 11, row: 1 },   // a sealed bottle of strange ale (its own cell: it used to borrow the invigorating tonic's jar)
     stackable: true
+  },
+  // Shmindolyn's Draught (Shmindolyn: a legend of the story, docs/story.md), a physician's rarest tincture: it mends the character it is used on of the bad trait they gained last (a scar from a fight, a flaw they were born
+  // with: Clumsy, Frail, Myopic, Superstitious, Lazy, Dull, Sluggish). Found in the ruined carriage on the plains (story/encounters/ruinedCarriage.js).
+  // Used from the character's page, outside a fight; on someone with no bad trait it does nothing and is kept.
+  "shmindolyns_draught": {
+    id: "shmindolyns_draught",
+    name: "Shmindolyn's Draught",
+    type: "consumable",
+    description: "A frothing draught brewed to the recipe of Shmindolyn, a healer of legend: it tastes of honey and woodsmoke. Cures the one who drinks it of their most recent bad trait (Clumsy, Frail, Myopic, Superstitious, Lazy, Dull or Sluggish).",
+    value: 300,
+    icon: { col: 10, row: 1 },   // a foaming tankard
+    useAbility: "shmindolyns_draught",
+    usability: ['overworld'],
+    stackable: true,
+    maxStack: 5
   },
   "healing_tonic": {
     id: "healing_tonic",

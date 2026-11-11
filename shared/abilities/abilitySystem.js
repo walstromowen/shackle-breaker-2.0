@@ -1,10 +1,13 @@
 import { StatCalculator } from '../characters/statCalculator.js';
+import { isImmuneToStatus } from './statusImmunity.js';
 import { CombatCalculator } from '../battle/combatCalculator.js';
 import { StatusEffectFactory } from './statusEffectFactory.js';
 import { AbilityDefinitions } from './abilityDefinitions.js';
 import { AbilityModel } from './abilityModel.js';
 import { gameState } from '../core/gameState.js';
 import { CorruptionSystem } from '../characters/corruptionSystem.js';
+import { SCAR_TRAITS } from './abilityTraits.js';
+import { TRAIT_DEFINITIONS } from './traitDefinitions.js';
 import { rng } from '../core/random.js';
 
 /* Effect types that are real but resolved by the battle code itself, not here: they must not trigger the "unknown effect type" warning. */
@@ -154,6 +157,12 @@ export class AbilitySystem {
                 const roll = rng();
                 const chance = statusDef.chance !== undefined ? statusDef.chance : 1.0;
                 if (roll <= chance) {
+                    // a creature that cannot have it (a skeleton does not bleed): said once, and nothing is put on
+                    if (isImmuneToStatus(target, statusDef.id)) {
+                        const def0 = StatusEffectFactory.createEffect(statusDef.id, 1, null);
+                        result.message = ((result.message || '') + ' ' + `${target.name || 'The target'} is immune to ${(def0 && def0.name) || statusDef.id}.`).trim();
+                        continue;
+                    }
                     const existingStatus = (target.statusEffects || []).find(s => s.id === statusDef.id);
                     if (existingStatus) {
                         // `skipIfActive: true` -- do not stack or refresh; nothing happens and (when nothing else worked) the item is kept. A bear trap that is already set.
@@ -308,7 +317,7 @@ export class AbilitySystem {
                 console.error(`[AbilitySystem] A status reacted by applying "${entry.id}", which StatusEffectFactory could not create.`);
                 continue;
             }
-            victim.applyStatusEffect(effect); // an existing one just has its charges reset
+            if (victim.applyStatusEffect(effect) === false) continue; // immune (an existing one just has its charges reset)
             if (entry.message) messages.push(entry.message.replace(/{target}/g, victim.name || 'the target').replace(/{status}/g, effect.name));
         }
         return messages.join(' ');
@@ -394,6 +403,19 @@ export class AbilitySystem {
             return { success: false, message: this._fillTemplate(effect.notShackled || '{target} is not shackled.', { target: entity?.name || 'They' }) };
         }
         return { success: true, message: this._fillTemplate(effect.message || '{target} is free.', { target: entity.name }) };
+    }
+
+    /* { type: 'cure_trait', message?, nothingToCure? }
+       The Shmindolyn's Draught: takes the bad trait the character gained last (the negative traits, abilityTraits.SCAR_TRAITS: what a fall in battle can
+       leave, and the flaws a character can be made with) off them. With none, nothing happens and the draught is kept. */
+    static _world_cure_trait(effect, source, target) {
+        const entity = target && (target.originalEntity || target);
+        const traits = (entity && Array.isArray(entity.traits)) ? entity.traits : [];
+        const bad = [...traits].reverse().find(id => SCAR_TRAITS.includes(id));
+        if (!bad) return { success: false, message: this._fillTemplate(effect.nothingToCure || '{target} has no bad trait to mend.', { target: entity?.name || 'They' }) };
+        entity.removeTrait(bad);
+        const trait = (TRAIT_DEFINITIONS[bad] && TRAIT_DEFINITIONS[bad].name) || bad;
+        return { success: true, message: this._fillTemplate(effect.message || '{target} is no longer {trait}.', { target: entity.name, trait }) };
     }
 
     /* { type: 'show_interior_map', message?, notInside?, alreadyOpen? }

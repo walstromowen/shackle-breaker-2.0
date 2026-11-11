@@ -8,6 +8,8 @@
 //   [pause] [pause 3] a pause of about a second / that many seconds
 //   (( words ))      shown on screen, never read
 //   [Anything else]  a stage direction ("[Deep breathing]"): shown, never read
+//                    except on a speaker's screen whose whole text is one direction: that is a sound the speaker makes (Darius's
+//                    "[Deep breathing]"), recorded in their voice like a line (voices.json gives the recording its acting)
 // Quoted runs with no letters ("......") are silence.
 
 /* Which encounters are voiced (the generation script records only these, so a draft is never paid for), and who speaks the quoted words of
@@ -16,14 +18,18 @@ export const VOICED = {
     prologue: [],
     hooded_stranger: [[/./, 'STRANGER']],
     mysterious_altar: [[/^darius_/, 'DARIUS']],
-    act_two: [[/^long_dark$/, 'DARIUS']]
+    act_two: [[/^long_dark$/, 'DARIUS']],
+    nikoli: [[/./, 'NIKOLI']],
+    nikoli_after_battle: [[/./, 'NIKOLI']]   // the same stages as nikoli: the same clips
 };
 
 /* Who speaks the quoted words of a stage (also used by tools/dialogueScript.mjs for the script's NAME: tags) */
 export const SPEAKERS = {
     hooded_stranger: [[/./, 'STRANGER']],
     mysterious_altar: [[/^darius_/, 'DARIUS']],
-    act_two: [[/^long_dark$/, 'DARIUS']]      // his own words, in the vision of his life
+    act_two: [[/^long_dark$/, 'DARIUS']],     // his own words, in the vision of his life
+    nikoli: [[/./, 'NIKOLI']],
+    nikoli_after_battle: [[/./, 'NIKOLI']]
 };
 
 export function speakerOf(encounterId, stageId) {
@@ -43,6 +49,9 @@ export function normalize(text) {
 export function segmentsOf(encounterId, stageId, text) {
     const speaker = speakerOf(encounterId, stageId);
     const out = [];
+    // a speaker's screen that is nothing but a direction ("[Deep breathing]"): a sound they make, voiced as they are
+    const only = String(text || '').trim();
+    if (speaker && /^\[[^\]]*\]$/.test(only) && !/^\[\s*pause\b/i.test(only)) return [{ speaker, text: normalize(only) }];
     let t = String(text || '').replace(/\(\([\s\S]*?\)\)/g, ' ');            // shown, not read
     const push = (who, words) => {
         const w = normalize(words);

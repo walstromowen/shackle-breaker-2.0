@@ -310,7 +310,7 @@ export const AbilityDefinitions = {
         effects: [],
         statusEffects: [{ id: "enraged", chance: 1.0, duration: 3 }]
     },
-    // The Infernus Sentinel's (boss) cry: Intimidate on the whole enemy party at once.
+    // The Infernus Sentinels' (boss) cry: Intimidate on the whole enemy party at once.
     "mass_fear": {
         id: "mass_fear",
         name: "Mass Fear",
@@ -825,7 +825,7 @@ export const AbilityDefinitions = {
         effects: [{ type: "damage", damageType: "earth", power: 1.25 }],
         statusEffects: [{ id: "bound", chance: 0.15, duration: 2 }]
     },
-    // The Infernus Sentinel's (boss) blow: a stone fist that crushes (blunt) and grinds (earth) into the target's magic, sapping their insight into its own.
+    // The Infernus Sentinels' (boss) blow: a stone fist that crushes (blunt) and grinds (earth) into the target's magic, sapping their insight into its own.
     "sapping_slam": {
         id: "sapping_slam",
         name: "Sapping Slam",
@@ -1327,7 +1327,7 @@ export const AbilityDefinitions = {
     "take_flight": {
       id: "take_flight",
       name: "Take Flight",
-      description: "The user launches into the sky, gaining an aerial advantage.",
+      description: "Launches into the sky for 2 turns: slash, blunt and pierce attacks cannot reach it until it lands.",
       range: "self",
       tags: ["utility", "buff", "movement", "trait_trigger"],
       // Note: The trait's onBattleStart logic will likely override this message, 
@@ -1335,14 +1335,15 @@ export const AbilityDefinitions = {
       battleMessage: "{user} launches into the air!", 
       icon: { col: 4, row: 2 }, 
       targeting: { scope: "self", select: "auto" },
-      cost: {}, // Kept empty so it doesn't drain stamina/insight when auto-triggered
+      // a trait that casts it at the start of a fight (Airborne) pays nothing (battleQueue: ignoreCost); taking off again later costs stamina
+      cost: { stamina: 15 },
       accuracy: 1.0,
       animationId: "trait_activate",
       effects: [],
       // This applies the mechanical buff. You'll need a corresponding "flying" 
       // or "airborne" status in your StatusDefinitions to handle the actual 
       // stat changes (like evasion up or ground immunity).
-      statusEffects: [{ id: "flying", chance: 1.0, duration: -1 }] 
+      statusEffects: [{ id: "flying", chance: 1.0, duration: 2 }]   // 2 turns in the air, then it lands 
     },
     "item_bear_trap": {
         id: "item_bear_trap",
@@ -1423,6 +1424,22 @@ export const AbilityDefinitions = {
             type: "unshackle",                       // AbilitySystem._world_unshackle
             message: "The meteorite flares and the iron falls away. {target} gasps and wakes.",
             notShackled: "{target} is not shackled."
+        }]
+    },
+    // The Shmindolyn's Draught (item shmindolyns_draught): cures the character it is used on of the bad trait they gained last.
+    "shmindolyns_draught": {
+        id: "shmindolyns_draught",
+        name: "Shmindolyn's Draught",
+        description: "Cures the drinker of their most recent bad trait.",
+        context: "overworld",                       // never offered in a battle
+        range: "self",
+        tags: ["utility", "item"],
+        targeting: { scope: "self", select: "auto" },
+        accuracy: 1.0,
+        effects: [{
+            type: "cure_trait",                      // AbilitySystem._world_cure_trait
+            message: "Warmth spreads through {target}. {target} is no longer {trait}.",
+            nothingToCure: "{target} has no bad trait to mend."
         }]
     },
     // Paste into AbilityDefinitions next to "torchlight". Carried by the "escape_rope" item.

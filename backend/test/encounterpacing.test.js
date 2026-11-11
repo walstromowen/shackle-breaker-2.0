@@ -4,7 +4,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { encounterDefinitions } from '../../shared/story/encounterDefinitions.js';
 
-const sentences = (t) => t.split(/(?<=[.!?]["]?)\s+(?=["{A-Z])/).length;
+// a chuckle written out at the end of a line ("Heh... heh.", "Hm-hm.") is not a sentence of the story
+const LAUGHS = /\s+(?:(?:Heh|heh|Hah|hah|Hm-hm)[.!]*(?:\.\.\.)?\s*)+(?=["]?$|["]\s)/g;
+const sentences = (t) => t.replace(LAUGHS, '').split(/(?<=[.!?]["]?)\s+(?=["{A-Z])/).length;
 const targets = (o, acc = []) => {
     if (Array.isArray(o)) o.forEach(x => targets(x, acc));
     else if (o && typeof o === 'object') {

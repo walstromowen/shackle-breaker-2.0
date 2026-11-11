@@ -16,8 +16,37 @@ test('a character speaks their quoted words; the narrator reads the rest', () =>
 test('marks: [pause N] is a pause, (( )) and [stage directions] are shown but never read, and "......" is silence', () => {
     assert.deepEqual(segmentsOf('x', 'y', 'The door creaks. [pause 2] Nothing moves. ((not read))'),
         [{ speaker: 'NARRATOR', text: 'The door creaks.' }, { pause: 2 }, { speaker: 'NARRATOR', text: 'Nothing moves.' }]);
-    assert.deepEqual(segmentsOf('mysterious_altar', 'darius_pause', '[Deep breathing]'), []);
+    assert.deepEqual(segmentsOf('x', 'y', '[Deep breathing]'), [], 'a direction on the narrator\'s screen is not read');
+    assert.deepEqual(segmentsOf('mysterious_altar', 'darius_x', 'He turns. [Deep breathing]'), [{ speaker: 'NARRATOR', text: 'He turns.' }], 'nor one among other words');
     assert.deepEqual(segmentsOf('mysterious_altar', 'darius_x', '"......"'), []);
+});
+
+test('a clip with word timings shows each word when it is said; the chuckles at the end of Darius\'s lines are on screen too', async () => {
+    const n = await import('../../frontend/src/ui/narration.js');
+    const text = '"No. No, you are not him. Hm-hm."';
+    n.setVoiceTiming(text, [{ text: 'No. No, you are not him. Hm-hm.', dur: 8, w: [0.3, 2.4, 3.5, 3.6, 3.8, 4.1, 7.6] }]);
+    const plan = n.narrationPlan(text);
+    assert.deepEqual(plan.starts, [0.3, 2.4, 3.5, 3.6, 3.8, 4.1, 7.6], 'the long pause before the second "No," and the chuckle at the end');
+    n.setVoiceTiming(text, [{ text: 'No. No, you are not him. Hm-hm.', dur: 8, w: [0.3, 2.4] }]);
+    assert.ok(n.narrationPlan(text).starts[1] < 2, 'timings that do not fit the words are ignored: an even pace');
+    n.clearVoiceTiming(text);
+    const manifest = JSON.parse(fs.readFileSync(new URL('../../frontend/src/assets/audio/voice/manifest.json', import.meta.url), 'utf8'));
+    const darius = linesOf('mysterious_altar', E.mysterious_altar).filter(l => l.speaker === 'DARIUS' && !l.text.startsWith('['));
+    assert.ok(darius.length >= 7);
+    for (const l of darius) {
+        const e = manifest[l.key];
+        assert.ok(e && Array.isArray(e.w) && e.w.length === l.text.split(/\s+/).length, `"${l.text.slice(0, 30)}" is timed word by word`);
+    }
+    assert.ok(darius.some(l => / Hm-hm\.$/.test(l.text)) && darius.some(l => / Heh\.\.\. heh\. Heh heh\.$/.test(l.text)), 'his chuckles are written out');
+    assert.ok(darius.some(l => /is mine!$/.test(l.text)), 'and his last words before the fight end without one');
+});
+
+test('a speaker\'s screen that is only a direction is a sound they make, in their voice: Darius\'s deep breathing has a clip', () => {
+    assert.deepEqual(segmentsOf('mysterious_altar', 'darius_pause', '[Deep breathing]'), [{ speaker: 'DARIUS', text: '[Deep breathing]' }]);
+    assert.deepEqual(segmentsOf('mysterious_altar', 'darius_pause', '[pause 2]'), [{ pause: 2 }], 'a pause is still a pause');
+    const manifest = JSON.parse(fs.readFileSync(new URL('../../frontend/src/assets/audio/voice/manifest.json', import.meta.url), 'utf8'));
+    const clip = manifest[lineKey('DARIUS', '[Deep breathing]')];
+    assert.ok(clip && fs.existsSync(new URL('../../frontend/src/assets/audio/voice/' + clip.f, import.meta.url)), 'the breathing is recorded');
 });
 
 test('a clip\'s key changes with the words and the speaker, not with spacing or quote style', () => {

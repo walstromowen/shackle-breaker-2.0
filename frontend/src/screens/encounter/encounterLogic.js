@@ -5,6 +5,7 @@ import { PartyManager } from "../../../../shared/characters/partyManager.js";
 import { ExperienceSystem } from '../../../../shared/characters/experienceSystem.js';
 import { EncounterFactory } from "../../../../shared/story/encounterFactory.js";
 import { DIFFICULTY_MODIFIERS } from '../../../../shared/core/constants.js';
+import { rollModifier } from '../../../../shared/story/encounterRolls.js';
 import { LootTableFactory } from "../../../../shared/items/lootTableFactory.js";
 import { SpawnTableFactory } from "../../../../shared/battle/spawnTableFactory.js";
 import { ItemDefinitions } from '../../../../shared/items/itemDefinitions.js';
@@ -91,6 +92,16 @@ export class EncounterLogic {
                     return ActSystem.getAct() < (cond.act || 1);
                 case "has_milestone":
                     return ActSystem.hasMilestone(cond.id);
+                // a quest this player has handed in (the Hooded Stranger met: `shackled_stranger`), or not yet
+                case "quest_completed":
+                    return Array.isArray(gameState.quests?.completed) && gameState.quests.completed.includes(cond.id);
+                // a quest neither taken nor handed in (a giver offers it), or one being done right now
+                case "quest_not_started":
+                    return !(gameState.quests?.active && gameState.quests.active[cond.id]) && !(Array.isArray(gameState.quests?.completed) && gameState.quests.completed.includes(cond.id));
+                case "quest_active":
+                    return !!(gameState.quests?.active && gameState.quests.active[cond.id]);
+                case "quest_not_completed":
+                    return !(Array.isArray(gameState.quests?.completed) && gameState.quests.completed.includes(cond.id));
                 case "lacks_milestone":
                     return !ActSystem.hasMilestone(cond.id);
                 case "has_tag":
@@ -177,24 +188,9 @@ export class EncounterLogic {
         const roller = EncounterLogic.rollerEntity();
         const attributes = (EncounterLogic.shared && EncounterLogic.shared.roller) || roller?.attributes || {};
         const difficulty = gameState.difficulty || 'normal';
-        const globalConfig = DIFFICULTY_MODIFIERS[difficulty] || { rollBonus: 0 };
-        const difficultyRollMod = globalConfig.rollBonus || 0;
-        
-        let appliedAttributeBonus = 0;
-        if (decision.attribute && decision.attribute !== 'none') {
-            const statValue = attributes[decision.attribute] || 0;
-            const attributeBonus = Math.floor((statValue - 10) / 3);
-            appliedAttributeBonus = attributeBonus;
-            if (difficulty === 'easy' || difficulty === 'normal') {
-                appliedAttributeBonus = Math.max(0, attributeBonus);
-            }
-        }
-        
-        const finalAppliedMod = appliedAttributeBonus + difficultyRollMod;
-        let finalizedNightmareMod = finalAppliedMod;
-        if (difficulty === 'nightmare' && finalAppliedMod > 0) {
-            finalizedNightmareMod = Math.floor(finalAppliedMod / 2);
-        }
+        // the attribute's bonus and the difficulty's (shared/story/encounterRolls.js, the one place the rule lives)
+        const hasAttribute = !!(decision.attribute && decision.attribute !== 'none');
+        const finalizedNightmareMod = rollModifier(hasAttribute ? (attributes[decision.attribute] || 0) : 0, difficulty, { attribute: hasAttribute });
         
         const d20 = Math.floor(rng() * 20) + 1;
         const total = d20 + finalizedNightmareMod;
@@ -588,6 +584,8 @@ export class EncounterLogic {
                         context: model.context, bgm: EncounterLogic.resolveBattleBgm(payload.bgm || EncounterLogic.stageBattleBgm(model) || GENERIC_BATTLE_BGM, worldManager),   // the fight's own track, else the music already playing on the stage that led here (so it carries into the battle unbroken), else the biome's battle music
                         // `afterVictory: { encounterId }` plays that encounter when the fight is won, before the overworld (the end of Darius)
                         afterVictory: payload.afterVictory || null,
+                        // `allies: [{ id, levelOffset }]`: who fights beside the party this once (Nikoli), built by the SceneManager at the party's level
+                        allies: Array.isArray(payload.allies) ? payload.allies : null,
                         noEscape: !!(payload.betrayer || payload.noEscape), betrayal,
                     });
                     break;
@@ -702,4 +700,4 @@ export class EncounterLogic {
         
         return response;
     }
-}
+}

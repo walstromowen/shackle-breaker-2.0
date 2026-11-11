@@ -34,6 +34,8 @@ export class CharacterCreatorController extends BaseController {
             // NEW: Export to renderer
             data: CREATION_DATA,
             selections: this.logic.state,
+            locked: Object.fromEntries(this.logic.lockedSteps().map(k => [k, this.logic.hostSetting(k)])),   // a joining player: the host's world settings, shown, not changed
+            waiting: this.logic.waitingForOthers(),
             previewStats: this.logic.getPreviewStats(),
             mouse: this.mouse,
             inputMode: this.inputMode,
@@ -88,6 +90,8 @@ export class CharacterCreatorController extends BaseController {
     }
 
     onClick(hitboxId, fromKeyboard = false) {
+        if (this.logic.waitingForOthers()) return;   // a new world: the character is made, the others are still making theirs
+        if (hitboxId === 'INPUT_SEED' && this.logic.lockedSteps().includes('seed')) { this.logic.setRowByStep('seed'); return; }
         // --- CHANGED: Check each input's focus state individually ---
         if (this.logic.isEditingName && hitboxId !== 'INPUT_NAME') {
             this.logic.validateActiveInput();
@@ -188,6 +192,7 @@ export class CharacterCreatorController extends BaseController {
 
         const intent = this.resolveIntent(keyCode, e);
         if (!intent) return;
+        if (this.logic.waitingForOthers() && intent !== 'CANCEL') return;   // only Esc (leave) while waiting for the others
 
         // Track state to see if a sound should fire
         const prevRow = this.logic.currentRow;

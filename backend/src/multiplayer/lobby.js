@@ -5,7 +5,8 @@
 // players with `relay`; the server does not read them.
 //
 // Messages from a player (`t` is the type):
-//   host  { world: { name, day, slot } }    open a room for this save; the player becomes its host
+//   host  { world: { name, day, slot, isNew } }   open a room for this save (or, isNew, for a world not made yet: everyone makes a character and plays
+//                                           the prologue together); the player becomes its host
 //   join  { code }                          join a room
 //   leave                                   leave the room (the host leaving closes it)
 //   ready { ready }                         tick / untick Ready in the lobby
@@ -126,7 +127,7 @@ export class Lobby {
             code: this._newCode(),
             hostId: userId,
             state: 'lobby',
-            world: { name: clean(w.name, 40) || 'A world', day: Math.max(1, Math.floor(Number(w.day) || 1)), slot: clean(w.slot, 60) },
+            world: { name: clean(w.name, 40) || 'A world', day: Math.max(1, Math.floor(Number(w.day) || 1)), slot: clean(w.slot, 60), isNew: w.isNew === true },
             players: [this._player(userId, true)],
             createdAt: this.now(),
         };

@@ -12,6 +12,7 @@ import { BaseController } from '../../engine/baseController.js';
 import { TargetSelection } from './targetSelection.js';
 import { seedRandom, unseedRandom } from '../../../../shared/core/random.js';
 import { multiplayerSocial } from '../../engine/multiplayerSocial.js';
+import { multiplayer } from '../../engine/multiplayerClient.js';
 
 /* A shared multiplayer fight (a duel, or a party of several players): every player's browser plays the same battle from the same seed
    (shared/core/random.js). Each player picks for their own characters only; the others' picks arrive as messages (MP_BATTLE_DECISION),
@@ -428,6 +429,16 @@ export class BattleController extends BaseController {
     }
 
     update(dt) {
+        // a duel whose opponent has left the world (or lost their connection) cannot go on: it is called off, and (like every duel) both
+        // parties are put back exactly as they were before it
+        if (this.state?.active && this.state.mp && this.state.mp.kind === 'duel') {
+            this._duelCheck = (this._duelCheck || 0) + dt;
+            if (this._duelCheck >= 1) {
+                this._duelCheck = 0;
+                const opp = this.state.mp.opponent, room = multiplayer.room;
+                if (!(room && room.players.some(p => p.id === opp && p.connected))) { this._callOffDuel(); return; }
+            }
+        }
         // a shared fight waiting on another player's pick of who steps into a fallen fighter's place: if they leave the world before
         // answering, the first one standing steps in by itself (every screen sees them go, so every screen does the same)
         if (this._awaitReinforce && this.state?.active) {
@@ -504,7 +515,7 @@ export class BattleController extends BaseController {
 
     checkBattleStatus() {
         const enemiesAlive = this.state.enemyRoster.some(e => !e.isDead());
-        const partyAlive = this.state.partyRoster.some(p => !p.isDead());
+        const partyAlive = this.state.partyRoster.some(p => !p.isAlly && !p.isDead());   // an ally left alone does not win the fight for you
 
         if (!enemiesAlive) this._handleVictory();
         else if (!partyAlive) this._handleDefeat();
@@ -523,6 +534,15 @@ export class BattleController extends BaseController {
     _handleDefeat() {
         this.state.phase = PHASE.DEFEAT;
         queueDefeat(this.state);
+    }
+
+    /** The duel's opponent is gone: end it at once, with nothing gained or lost (multiplayerSocial.battleEnded restores the party). */
+    _callOffDuel() {
+        const mp = this.state.mp;
+        this.state.active = false;
+        unseedRandom();
+        multiplayerSocial._say(`${(mp.names || {})[mp.opponent] || 'Your opponent'} left, so the duel was called off.`);
+        events.emit('BATTLE_ENDED', { victory: false, fled: false, mp: { kind: mp.kind, bid: mp.bid, opponent: mp.opponent || null } });
     }
 
     endBattle() {
@@ -545,7 +565,8 @@ export class BattleController extends BaseController {
         for (const d of mp.early || []) this._onRemoteDecision(d);   // picks that arrived before this screen was ready
     }
 
-    _isMine(c) { return !this.state.mp || !c || c.netOwner === this.state.mp.me; }
+    // (an ally who only joined for this fight, Nikoli, is nobody's: enemyAI.queueAllyActions picks for them)
+    _isMine(c) { if (c && c.isAlly) return false; return !this.state.mp || !c || c.netOwner === this.state.mp.me; }
 
     /** The combatants whose picks come from other players this round: their characters on the field who can still act. */
     _othersToWaitFor() {

@@ -12,6 +12,8 @@ import { ironChest } from './encounters/ironChest.js';
 import { tracksInTheSnow } from './encounters/tracksInTheSnow.js';
 import { mysteriousAltar } from './encounters/story/mysteriousAltar.js';
 import { hoodedStranger } from './encounters/story/hoodedStranger.js';
+import { nikoli, nikoliAfterBattle } from './encounters/story/nikoli.js';
+import { ruinedCarriage } from './encounters/ruinedCarriage.js';
 import { prologue } from './encounters/story/prologue.js';
 import { actTwo } from './encounters/story/actTwo.js';
 import { peculiarScarecrow } from './encounters/peculiarScarecrow.js';
@@ -38,6 +40,9 @@ export const encounterDefinitions = {
     [tracksInTheSnow.id]: tracksInTheSnow,
     [mysteriousAltar.id]: mysteriousAltar,
     [hoodedStranger.id]: hoodedStranger,   // the Shackled quest giver, in one village workshop
+    [nikoli.id]: nikoli,   // Nikoli, the Panzerian general, hunting for Commander Mentoras (story/encounters/story/nikoli.js)
+    [nikoliAfterBattle.id]: nikoliAfterBattle,
+    [ruinedCarriage.id]: ruinedCarriage,   // a broken merchant carriage on the plains: loot, or the shackled steeds (encounters/ruinedCarriage.js)
     [prologue.id]: prologue,
     [actTwo.id]: actTwo,
     [peculiarScarecrow.id]: peculiarScarecrow,

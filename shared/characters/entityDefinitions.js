@@ -202,6 +202,36 @@ export const ENTITY_DEFINITIONS = {
         tags: [...HUMANOID_TEMPLATE.tags]
     },
 
+    /* Nikoli: a general of the Panzerians, the good brother (his brother Jaeger, "The Pursuer", is the corrupted one: docs/story.md). Never fought: he camps beside the first
+       campfire of the snowy mountains the player comes upon (world.nikoliCampfire, WorldManager), fights beside the party against the frozen
+       trappers when they first meet (an ally: battleState context.allies), and hunts for Commander Mentoras (story/encounters/story/nikoli.js).
+       Placeholder art: the Panzerian warlord's sheets, until he has his own. */
+    "NIKOLI": {
+        ...HUMANOID_TEMPLATE,
+        name: "Nikoli",
+        properName: true,   // "Return to Nikoli", not "the Nikoli" (a quest handed in to him)
+        level: 1,
+        spriteOverworld: "warlordHeroSprite",
+        spritePortrait: "warlordHeroPortrait",
+        crySound: "legionaryCry",
+        deathSound: "legionaryCry",
+        // a strength and ice build: the greatsword's weight, and the cold of the north in its edge and in his blood (the player rules: 50 points)
+        attributes: {
+            ...HUMANOID_TEMPLATE.attributes,
+            vigor: 12, strength: 15, dexterity: 7, intelligence: 6, attunement: 10
+        },
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 20, maxStamina: 14,
+            baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, blunt: 2, slash: 2, pierce: 1, ice: 4 },
+            baseResistance: { ice: 0.4, fire: -0.1 },          // a man of the snows: the cold bites him less, the fire more
+            baseAttack: { blunt: 2, slash: 3, pierce: 1, ice: 3 }
+        },
+        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "panzerian_greatsword", head: "iron_helmet", torso: "iron_armor" },
+        abilities: [...REGULAR_HUMANOID_ABILITIES, "frigid_gale", "intimidate", "bolster"],
+        tags: [...HUMANOID_TEMPLATE.tags, "SOLDIER", "PANZERIAN", "LANG_PANZERIAN"]
+    },
+
     "SHADY_MERCHANT": {
         ...HUMANOID_TEMPLATE,
         name: "Shady Merchant",
@@ -564,12 +594,12 @@ export const ENTITY_DEFINITIONS = {
         deathSound: "dogDeath",
         attributes: {
             ...BEAST_TEMPLATE.attributes,
-            vigor: 6, dexterity: 12, strength: 6
+            vigor: 7, dexterity: 12, strength: 7
         },
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
-            maxHp: 4, maxStamina: 8, speed: 7, critical: 0.08,
-            baseAttack: { blunt: 2, slash: 4, pierce: 2 }
+            maxHp: 7, maxStamina: 9, speed: 7, critical: 0.08,
+            baseAttack: { blunt: 2, slash: 5, pierce: 3 }
         },
         lootTableId: "canine_drops",
         abilities: [...BEAST_TEMPLATE.abilities, 'howl'],
@@ -618,10 +648,10 @@ export const ENTITY_DEFINITIONS = {
         },
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
-            maxHp: 16,
+            maxHp: 14,
             maxStamina: 20,
             speed: 12,
-            critical: 0.18,
+            critical: 0.15,
             baseDefense: {
                 ...BEAST_TEMPLATE.baseStats.baseDefense,
                 ice: 5,
@@ -637,8 +667,8 @@ export const ENTITY_DEFINITIONS = {
             },
             baseAttack: {
                 blunt: 2,
-                slash: 7,
-                pierce: 5,
+                slash: 6,
+                pierce: 4,
                 ice: 2
             }
         },
@@ -719,22 +749,34 @@ export const ENTITY_DEFINITIONS = {
         tags: [...BEAST_TEMPLATE.tags]
     },
 
-    "AVIAN": {
-        ...BASE_ENTITY,
-        name: "Avian",
+    // A hunting hawk: a starting companion (character creator). The fastest and hardest to hit of the companions, and the most fragile: talons and a
+    // beak (slash and pierce), a sharp eye for the weak spot (critical hits), and Hit & Run to strike and swap out of harm's way. A beast (beast rules,
+    // StatCalculator.usesEnemyScaling). Wind carries it, lightning and ice ground it.
+    "HAWK": {
+        ...BEAST_TEMPLATE,
+        name: "Hawk",
+        level: 1,
+        spriteOverworld: "hawkSprite",
         spritePortrait: "hawkPortrait",
-        statMultipliers: { hpPerVigor: 2, staminaPerDex: 4, insightPerAtt: 1 },
-        attributes: { vigor: 6, strength: 4, dexterity: 16, intelligence: 6, attunement: 8 },
+        crySound: "hawkCry",
+        deathSound: "hawkCry",
+        statMultipliers: { hpPerVigor: 3, staminaPerDex: 3, insightPerAtt: 0.5 },
+        attributes: {
+            ...BEAST_TEMPLATE.attributes,
+            vigor: 7, strength: 7, dexterity: 16, intelligence: 4, attunement: 6
+        },
         baseStats: {
-            ...BASE_ENTITY.baseStats,
-            maxHp: 6, maxStamina: 15, maxInsight: 5, staminaRecovery: 3, speed: 10, critical: 0.15,
-            baseDefense: { earth: 3 },
-            baseResistance: { wind: 0.5, earth: 0.2 },
-            baseAttack: { slash: 4, pierce: 4 }
+            ...BEAST_TEMPLATE.baseStats,
+            maxHp: 10, maxStamina: 14, speed: 14, critical: 0.2, evasion: 115,
+            baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, blunt: 1, slash: 1, pierce: 1, wind: 3 },
+            baseResistance: { wind: 0.4, earth: 0.2, lightning: -0.25, ice: -0.15 },
+            baseAttack: { blunt: 0, slash: 5, pierce: 6 }
         },
         lootTableId: "mad_man_drops",
-        abilities: [...BASE_ENTITY.abilities],
-        tags: ["BIOLOGICAL", "AVIAN"]
+        // a talon slash, Take Flight (it starts every fight in the air for 2 turns: the Airborne trait), and Hit & Run to strike and dart back out
+        abilities: [...BASE_ENTITY.abilities, "slash", "take_flight", "hit_and_run"],
+        traits: ["airborne"],
+        tags: ["BIOLOGICAL", "BEAST", "AVIAN"]
     },
 
     "GRIM_STAG": {
@@ -957,8 +999,9 @@ export const ENTITY_DEFINITIONS = {
     // blades and arrows glance off; the cosmic light in it shrugs off the arcane and the dark.
     "INFERNUS_SENTINEL": {
         ...HUMANOID_TEMPLATE,
-        name: "The Infernus Sentinel",
+        name: "Infernus Sentinel",   // no "The": there is one in every catacomb
         level: 1,
+        frameSize: 192,   // its battle sheet has 192 px frames (16 to a row, front-facing rows 0 and 1), like Darius's
         spritePortrait: "infernusSentinelPortrait",
         // its overworld sheet (128 px frames, a still statue facing you, the front frame of tools/art/sources/infernus_sentinel_rotations.png:
         // tools/art/overworldSheetFromFrame.py ... 128 --still --feet) is what its map object INFERNUS_SENTINEL draws, like the hooded stranger's

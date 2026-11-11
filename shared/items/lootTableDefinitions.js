@@ -409,6 +409,26 @@ export const LootTableDefinitions = {
 
     // The big iron chest: the best the game hands out. Quality over quantity, so roll it only 2 to 3 times.
     // Iron armor and the heavy weapons lead, then the tonics and rare brews, then bronze and iron stock, with a sliver of meteorite.
+    // a merchant's cargo in the ruined carriage on the plains (story/encounters/ruinedCarriage.js): the valuable things a carriage carried
+    "ruined_carriage_valuables": {
+        type: "weighted",
+        items: [
+            { id: "shmindolyns_draught", weight: 8, min: 1, max: 1 },   // cures a bad trait (itemDefinitions.js)
+            { id: "bronze_ingot", weight: 10, min: 3, max: 5 },
+            { id: "iron_ingot", weight: 12, min: 3, max: 6 },
+            { id: "healing_tonic", weight: 12, min: 2, max: 3 },
+            { id: "invigorating_tonic", weight: 8, min: 1, max: 2 },
+            { id: "illuminating_tonic", weight: 8, min: 1, max: 2 },
+            { id: "kurtus_brew", weight: 6, min: 1, max: 2 },
+            { id: "waypoint", weight: 5, min: 1, max: 1 },
+            { id: "iron_helmet", weight: 5, min: 1, max: 1 },
+            { id: "iron_armor", weight: 4, min: 1, max: 1 },
+            { id: "crossbow", weight: 4, min: 1, max: 1 },
+            { id: "insight_of_fire", weight: 2, min: 1, max: 1 },
+            { id: "insight_of_lightning", weight: 2, min: 1, max: 1 },
+            { id: "insight_of_light", weight: 2, min: 1, max: 1 }
+        ]
+    },
     "iron_chest_loot": {
         type: "weighted",
         items: [
@@ -831,7 +851,7 @@ export const LootTableDefinitions = {
             { id: "large_iron_key", dropRate: 0.5 },
         ]
     },
-    // The Infernus Sentinel (the catacombs' boss): the large iron key to the hoard's iron chest beyond the last gate is always found in its rubble, with stone,
+    // An Infernus Sentinel (the catacombs' boss): the large iron key to the hoard's iron chest beyond the last gate is always found in its rubble, with stone,
     // the arms of an older kingdom, and now and then a sliver of the night it was made of.
     "boss_sentinel_drops": {
         type: "independent",

@@ -56,7 +56,7 @@ export const actTwo = {
             image: { sheet: "encounter_mysterious_altar", col: 2, row: 1 },   // the altar's red glow
             sfx: "whispers",
             sfxVolume: 0.6,
-            text: "Years pass. The king does not come back. Then one night the stone is gone. Darius sends every soldier he has to find it, and kneels, and casts into the empty hollow. \"Not yet, my king, not yet. I am still here.\"",
+            text: "Years pass. The king does not come back. Then one night the stone is gone. Darius sends every soldier he has to find it, and kneels, and casts into the empty hollow. \"Not yet, my king, not yet. I am still here. Heh... heh.\"",
             decisions: next("groveler")
         },
         groveler: {

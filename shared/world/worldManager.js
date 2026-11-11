@@ -110,10 +110,14 @@ export class WorldManager {
             }
         }
         /* Phase 2: Object Population */
+        const storyObjects = this._storyObjects();
         for (let r = startRow; r < endRow; r++) {
             for (let c = startCol; c < endCol; c++) {
                 const key = this._s(c, r);
                 if (this._collisionMap.has(key)) continue;
+                // a story character standing here because of this player's story (Nikoli by his campfire): before anything the map would put there
+                const story = storyObjects.get(`${c},${r}`);
+                if (story) { this._placeStory(c, r, story); continue; }
                 const forcedObjId = gameState.world.changes?.[key];
                 if (forcedObjId !== undefined) {
                     /* nothing is ever placed on open water; a saved object there is left over from another world (see resetWorldForNewGame) */
@@ -245,6 +249,7 @@ export class WorldManager {
         const newObj = this.createObjectInstance(col, row, id);
         if (!newObj) return;
         this.objects.set(this._s(col, row), newObj);
+        if (id === 'CAMPFIRE') this._campfirePlaced(col, row);
         let activeHitboxes = [];
         if (newObj.hitboxes && Array.isArray(newObj.hitboxes)) {
             activeHitboxes = newObj.hitboxes;
@@ -260,6 +265,78 @@ export class WorldManager {
                     this._collisionMap.set(targetKey, newObj);
                 }
             }
+        }
+    }
+    /* ---- story characters on the map ----
+       Nikoli makes camp beside the first campfire of the snowy mountains the world puts down near the player (claimed for the world:
+       InteriorFactory.claimHome 'nikoliCampfire'). Until this player has met him, the scene of the meeting stands there: Nikoli just north of the
+       fire facing up, and three snow leopards further north stalking down toward him (both start the meeting when the player comes near). Once met,
+       the cats are gone and he stands there facing the player, until this player's story sends him on (act 2, once told where to look: then he is in
+       the Hooded Stranger's old workshop, InteriorFactory.workshopResident). None of it is written into the world's changes: each player sees the
+       scene where their own story has it, and refreshStoryObjects brings the loaded world up to date (SceneManager, on every return to the overworld). */
+    _storyObjects() {
+        const out = new Map();
+        const w = gameState.world;
+        if (!w.nikoliCampfire || w.isInterior) return out;
+        const ms = Array.isArray(gameState.milestones) ? gameState.milestones : [];
+        if (ms.includes('act2') && ms.includes('nikoli_told')) return out;
+        const [c, r] = String(w.nikoliCampfire).split(',').map(Number);
+        if (!Number.isFinite(c) || !Number.isFinite(r)) return out;
+        const met = ms.includes('nikoli_met');
+        out.set(`${c},${r - 1}`, met ? 'NIKOLI_NPC' : 'NIKOLI_NPC_WATCHING');
+        // the cats on the village's north road (the hub's road cells, which hold no objects), the middle one a step further back
+        if (!met) for (const [dc, dr] of [[-1, -4], [0, -5], [1, -4]]) out.set(`${c + dc},${r + dr}`, 'SNOW_LEOPARD_STALKING');
+        return out;
+    }
+    _storyObjectAt(col, row) {
+        return this._storyObjects().get(`${col},${row}`) || null;
+    }
+    _placeStory(col, row, id) {
+        if (!this._storyPlaced) this._storyPlaced = new Map();
+        this._storyPlaced.set(`${col},${row}`, id);
+        this._placeObject(col, row, id);
+    }
+    /* takes an object off the loaded map (and its collision cells), without writing anything into the world's changes */
+    _unplaceObject(col, row) {
+        const key = this._s(col, row);
+        const obj = this.objects.get(key);
+        if (!obj) return;
+        const boxes = obj.hitboxes && Array.isArray(obj.hitboxes) ? obj.hitboxes : (obj.hitbox ? [obj.hitbox] : []);
+        for (const hb of boxes) for (let hr = 0; hr < hb.h; hr++) for (let hc = 0; hc < hb.w; hc++) {
+            const k = this._s(col + hb.xOffset + hc, row + hb.yOffset + hr);
+            if (this._collisionMap.get(k) === obj) this._collisionMap.delete(k);
+        }
+        this.objects.delete(key);
+    }
+    /* The story characters as this player's story has them now: what changed since they were put down (met, told, act 2) is swapped in place. */
+    refreshStoryObjects() {
+        if (gameState.world.isInterior) return;
+        const want = this._storyObjects();
+        const had = this._storyPlaced || new Map();
+        for (const [key, id] of [...had]) {
+            if (want.get(key) === id) continue;
+            const [c, r] = key.split(',').map(Number);
+            this._unplaceObject(c, r);
+            had.delete(key);
+        }
+        for (const [key, id] of want) {
+            if (had.get(key) === id) continue;
+            const [c, r] = key.split(',').map(Number);
+            this._placeStory(c, r, id);
+        }
+    }
+    _campfirePlaced(col, row) {
+        const w = gameState.world;
+        if (w.isInterior) return;
+        if (!w.nikoliCampfire) {
+            const biome = this.getBiomeAt(col, row);
+            if (!biome || biome.id !== 'SNOWY_MOUNTAINS') return;
+            InteriorFactory.claimHome('nikoliCampfire', `${col},${row}`);
+        }
+        if (w.nikoliCampfire !== `${col},${row}`) return;
+        for (const [key, id] of this._storyObjects()) {
+            const [c, r] = key.split(',').map(Number);
+            this._placeStory(c, r, id);
         }
     }
     // what a cell of a stair piece is: { st, t } with t = 'W' walkway, 'F' / 'G' / 'T' open ground, 'R' rock (see STAIR_MASK in terrainGenerator.js);
@@ -337,7 +414,19 @@ export class WorldManager {
         const def = MAP_OBJECTS_DEFINITIONS[spawnData.id] || {};
         const w = def.w || def.width || 1;
         const h = def.h || def.height || 1;
-        if (!this.isFootprintValid(col, row, w, h)) return null;
+        // an object that stands UP from its anchor (a hitbox with a negative yOffset: the ruined carriage, 2 x 3) is checked where it really stands,
+        // and the rows above its anchor (generated before it) must hold nothing standing (ground cover is fine)
+        const up = Math.min(0, (def.hitbox && def.hitbox.yOffset) || 0);
+        if (!this.isFootprintValid(col, row + up, w, h)) return null;
+        if (up < 0 && !this._probingAbove) {
+            this._probingAbove = true;
+            try {
+                for (let r = row + up; r < row; r++) for (let c = col; c < col + w; c++) {
+                    const above = this._getRawProceduralId(c, r);
+                    if (above && !(MAP_OBJECTS_DEFINITIONS[above] && MAP_OBJECTS_DEFINITIONS[above].isGround)) return null;   // (grass and flowers lie under it)
+                }
+            } finally { this._probingAbove = false; }
+        }
         return spawnData.id;
     }
     /* Cave mouths: a CAVE_ENTRANCE (3 x 3 cells) is painted into a straight, south-facing cliff face. `col, row` is its anchor, the left cell of the ground row

@@ -33,6 +33,8 @@ export function worldPart(data) {
             structureChunks: w.structureChunks,
             weather: w.weather || null,
             strangerHome: w.strangerHome || null,   // the one workshop the Hooded Stranger lives in: the host's world decides it for everyone
+            strangerDesertHome: w.strangerDesertHome || null,   // and the others of InteriorFactory.STORY_HOMES
+            nikoliCampfire: w.nikoliCampfire || null,
         },
     });
 }

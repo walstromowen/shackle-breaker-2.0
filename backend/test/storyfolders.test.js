@@ -24,8 +24,8 @@ test('the story art and sounds are in story folders, and every path the manifest
         encounter_mysterious_altar: 'assets/icons/encounters/story/mysterious_altar.png',
         prologueMarch: 'assets/audio/sfx/encounters/story/prologue/prologue_march.wav',
         prologueWind: 'assets/audio/sfx/encounters/story/prologue/prologue_wind.wav',
-        chainSnap: 'assets/audio/sfx/encounters/story/prologue/chain_snap.wav',
-        heartbeat: 'assets/audio/sfx/encounters/story/prologue/heartbeat.wav',
+        chainSnap: 'assets/audio/sfx/encounters/story/prologue/chain_snap.mp3',
+        heartbeat: 'assets/audio/sfx/encounters/story/prologue/heartbeat.mp3',
         altarDrone: 'assets/audio/sfx/encounters/story/altar_drone.wav'
     };
     for (const [key, path] of Object.entries(wanted)) {
