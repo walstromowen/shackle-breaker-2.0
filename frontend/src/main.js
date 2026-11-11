@@ -100,7 +100,7 @@ ui_icons: './assets/icons/ui_icons.png',
     objSmallRocks3Snow: './assets/mapObjects/objSmallRocks3Snow.png',
     objStick: './assets/mapObjects/objStick.png',
     objAftermath: './assets/mapObjects/objAftermath.png',
-    objRuinedCarriage: './assets/mapObjects/objRuinedCarriage.png',               // the ruined carriage on the plains (3 x 2 tiles): story/encounters/ruinedCarriage.js
+    objRuinedCarriage: './assets/mapObjects/objRuinedCarriage.png',               // the ruined carriage on the plains (2 x 3 tiles, seen from above): story/encounters/ruinedCarriage.js
     objRuinedCarriageLooted: './assets/mapObjects/objRuinedCarriageLooted.png',   // ... once its strongbox and coins are gone
     objFallenSoldier1: './assets/mapObjects/fallen_soldiers/objFallenSoldier1.png',   // the battlefield's dead (BATTLEFIELD in structures.js): 1-8 slumped, 9-15 lying
     objFallenSoldier2: './assets/mapObjects/fallen_soldiers/objFallenSoldier2.png',

@@ -810,7 +810,7 @@ You drop onto the stakes. Climbing back out of the pit takes a long, painful whi
 ===== RUINED CARRIAGE (ruined_carriage) =====
 
 [discovery]
-A carriage lies broken in the tall grass, one wheel snapped from its axle and the other split through. Its door hangs from one hinge. The horses are gone, but the harness ends in links of black iron, and fresh hoofprints circle the wreck.
+A covered wagon stands abandoned in the tall grass, its canvas stained and its team long gone. The traces hang empty, ending in links of black iron, and fresh hoofprints circle it.
   > [DEX] Search the carriage.
   > [DEX] Search the carriage quietly, one eye on the grass.
   > [STR] Pry open the strongbox.
@@ -822,11 +822,11 @@ Under the seat, behind a loose board, sits a heavy purse sewn shut against thiev
   > Take it.
 
 [found_valuables]
-Crates lashed to the roof held a merchant's best, wrapped in oilcloth and untouched by the rain.
+Crates stacked under the canvas held a merchant's best, wrapped in oilcloth and untouched by the rain.
   > Take what you can carry.
 
 [steeds]
-A board splits with a crack like a whip. Out in the grass something answers: a scream that is not quite a horse's. Black iron rattles as the shackled steeds come back for their carriage.
+A board splits with a crack like a whip. Out in the grass something answers: a scream that is not quite a horse's. Black iron rattles as the shackled steeds come back for their wagon.
   > Draw your weapons!
 
 [splinters]
@@ -834,7 +834,7 @@ A rotten board gives way under your hand, and splinters drive deep into your pal
   > Leave it be.
 
 [slip_away]
-You find nothing worth the risk, and something heavy is moving out in the grass. You back away from the wreck before it finds you.
+You find nothing worth the risk, and something heavy is moving out in the grass. You back away from the wagon before it finds you.
   > Leave quietly.
 
 [strongbox_open]
@@ -846,7 +846,7 @@ The lid holds, but the iron bands ring out across the plain like a bell. Out in 
   > Draw your weapons!
 
 [tracks_read]
-The prints are deep and unshod, and between them run the drag-marks of chains. Shackled steeds: whatever took the people took the horses too. They graze close by, and they will come back to the wreck. Work quietly.
+The prints are deep and unshod, and between them run the drag-marks of chains. Shackled steeds: whatever took the people took the horses too. They graze close by, and they will come back to the wagon. Work quietly.
   > Back to the carriage.
 
 [tracks_lost]

@@ -1,6 +1,6 @@
-/* The Ruined Carriage (map object RUINED_CARRIAGE, 3 x 2 tiles, on the plains: biomeDefinitions.js PLAINS, its own band).
+/* The Ruined Carriage (map object RUINED_CARRIAGE, 2 x 3 tiles, on the plains: biomeDefinitions.js PLAINS, its own band).
 
-   A merchant's carriage broken in the grass, one wheel snapped flat, its strongbox spilled. Its horses went mad and broke their traces: they are shackled
+   A merchant's covered wagon abandoned in the grass, its strongbox still aboard. Its horses went mad and broke their traces: they are shackled
    steeds now, and they graze close by. Whoever searches it may come away rich, or bring the herd down on the party.
 
      discovery        Search it [DEX 12], pry open the strongbox [STR 14], study the hoofprints [INT 10], or leave.
@@ -47,7 +47,7 @@ export const ruinedCarriage = {
     initialStage: "discovery",
     ambience: "battlefieldWind",
     stages: {
-        discovery: stage("A carriage lies broken in the tall grass, one wheel snapped from its axle and the other split through. Its door hangs from one hinge. The horses are gone, but the harness ends in links of black iron, and fresh hoofprints circle the wreck.", [
+        discovery: stage("A covered wagon stands abandoned in the tall grass, its canvas stained and its team long gone. The traces hang empty, ending in links of black iron, and fresh hoofprints circle it.", [
             {
                 text: "[DEX] Search the carriage.",
                 type: "skill_check", attribute: "dexterity", threshold: 12,
@@ -90,7 +90,7 @@ export const ruinedCarriage = {
         ]),
 
         // ---- the hoofprints ----
-        tracks_read: stage("The prints are deep and unshod, and between them run the drag-marks of chains. Shackled steeds: whatever took the people took the horses too. They graze close by, and they will come back to the wreck. Work quietly.",
+        tracks_read: stage("The prints are deep and unshod, and between them run the drag-marks of chains. Shackled steeds: whatever took the people took the horses too. They graze close by, and they will come back to the wagon. Work quietly.",
             [{ text: "Back to the carriage.", outcomes: toStage("discovery") }]),
         tracks_lost: stage("The prints cross and recross until they mean nothing at all. Whatever made them could be anywhere.",
             [{ text: "Back to the carriage.", outcomes: toStage("discovery") }]),
@@ -103,7 +103,7 @@ export const ruinedCarriage = {
                 { weight: 1, results: [{ type: "MODIFY_CURRENCY", payload: { amount: 450 } }, LOOTED, END] }
             ]
         }]),
-        found_valuables: stage("Crates lashed to the roof held a merchant's best, wrapped in oilcloth and untouched by the rain.", [{
+        found_valuables: stage("Crates stacked under the canvas held a merchant's best, wrapped in oilcloth and untouched by the rain.", [{
             text: "Take what you can carry.",
             outcomes: [{ weight: 1, results: [{ type: "ROLL_LOOT_TABLE", payload: { lootTableId: "ruined_carriage_valuables", minRolls: 2, maxRolls: 3 } }, LOOTED, END] }]
         }]),
@@ -116,7 +116,7 @@ export const ruinedCarriage = {
                 LOOTED, END
             ] }]
         }]),
-        slip_away: stage("You find nothing worth the risk, and something heavy is moving out in the grass. You back away from the wreck before it finds you.",
+        slip_away: stage("You find nothing worth the risk, and something heavy is moving out in the grass. You back away from the wagon before it finds you.",
             [{ text: "Leave quietly.", outcomes: [{ weight: 100, results: [END] }] }]),
 
         // ---- what goes wrong ----
@@ -124,7 +124,7 @@ export const ruinedCarriage = {
             text: "Leave it be.",
             outcomes: [{ weight: 1, results: [{ type: "MODIFY_VITALS", payload: { hp: -15, isPercentageOfMax: true, damageType: "pierce" } }, END] }]
         }]),
-        steeds: stage("A board splits with a crack like a whip. Out in the grass something answers: a scream that is not quite a horse's. Black iron rattles as the shackled steeds come back for their carriage.",
+        steeds: stage("A board splits with a crack like a whip. Out in the grass something answers: a scream that is not quite a horse's. Black iron rattles as the shackled steeds come back for their wagon.",
             fightTheHerd, { image: STEEDS_IMG, bgm: "plainsBattleBgm" }),
         strongbox_noise: stage("The lid holds, but the iron bands ring out across the plain like a bell. Out in the grass, heads come up. Chains rattle, and the shackled steeds come running.",
             fightTheHerd, { image: STEEDS_IMG, bgm: "plainsBattleBgm" })

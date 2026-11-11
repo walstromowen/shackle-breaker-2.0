@@ -414,7 +414,19 @@ export class WorldManager {
         const def = MAP_OBJECTS_DEFINITIONS[spawnData.id] || {};
         const w = def.w || def.width || 1;
         const h = def.h || def.height || 1;
-        if (!this.isFootprintValid(col, row, w, h)) return null;
+        // an object that stands UP from its anchor (a hitbox with a negative yOffset: the ruined carriage, 2 x 3) is checked where it really stands,
+        // and the rows above its anchor (generated before it) must hold nothing standing (ground cover is fine)
+        const up = Math.min(0, (def.hitbox && def.hitbox.yOffset) || 0);
+        if (!this.isFootprintValid(col, row + up, w, h)) return null;
+        if (up < 0 && !this._probingAbove) {
+            this._probingAbove = true;
+            try {
+                for (let r = row + up; r < row; r++) for (let c = col; c < col + w; c++) {
+                    const above = this._getRawProceduralId(c, r);
+                    if (above && !(MAP_OBJECTS_DEFINITIONS[above] && MAP_OBJECTS_DEFINITIONS[above].isGround)) return null;   // (grass and flowers lie under it)
+                }
+            } finally { this._probingAbove = false; }
+        }
         return spawnData.id;
     }
     /* Cave mouths: a CAVE_ENTRANCE (3 x 3 cells) is painted into a straight, south-facing cliff face. `col, row` is its anchor, the left cell of the ground row
