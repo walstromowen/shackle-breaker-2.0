@@ -1251,17 +1251,17 @@ export const ItemDefinitions = {
     icon: { col: 1, row: 1 },
     stackable: true
   },
-  // A physician's rarest tincture: it mends the character it is used on of the bad trait they gained last (a scar from a fight, a flaw they were born
+  // Shmindolyn's Draught (Shmindolyn: a legend of the story, docs/story.md), a physician's rarest tincture: it mends the character it is used on of the bad trait they gained last (a scar from a fight, a flaw they were born
   // with: Clumsy, Frail, Myopic, Superstitious, Lazy, Dull, Sluggish). Found in the ruined carriage on the plains (story/encounters/ruinedCarriage.js).
   // Used from the character's page, outside a fight; on someone with no bad trait it does nothing and is kept.
-  "menders_draught": {
-    id: "menders_draught",
-    name: "Mender's Draught",
+  "shmindolyns_draught": {
+    id: "shmindolyns_draught",
+    name: "Shmindolyn's Draught",
     type: "consumable",
-    description: "A physician's rarest tincture, warm as sunlight through the glass. Cures the one who drinks it of their most recent bad trait (Clumsy, Frail, Myopic, Superstitious, Lazy, Dull or Sluggish).",
+    description: "A tincture made to the recipe of Shmindolyn, a healer of legend, warm as sunlight through the glass. Cures the one who drinks it of their most recent bad trait (Clumsy, Frail, Myopic, Superstitious, Lazy, Dull or Sluggish).",
     value: 300,
     icon: { col: 10, row: 1 },
-    useAbility: "menders_draught",
+    useAbility: "shmindolyns_draught",
     usability: ['overworld'],
     stackable: true,
     maxStack: 5

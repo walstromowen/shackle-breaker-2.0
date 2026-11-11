@@ -838,7 +838,7 @@ You find nothing worth the risk, and something heavy is moving out in the grass.
   > Leave quietly.
 
 [strongbox_open]
-The lock gives with a crack. The strongbox is full: coin to the brim, a physician's sealed draught glowing amber in its straw, and a merchant's papers wrapped around something heavier.
+The lock gives with a crack. The strongbox is full: coin to the brim, a sealed draught glowing amber in its straw, Shmindolyn's mark on the wax, and a merchant's papers wrapped around something heavier.
   > Empty it.
 
 [strongbox_noise]

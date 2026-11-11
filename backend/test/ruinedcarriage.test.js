@@ -1,6 +1,6 @@
 // backend/test/ruinedcarriage.test.js: `npm test`. The Ruined Carriage on the plains: a 2 x 2 wreck with its own band in the plains' spawn list, an
 // encounter that can make the party rich (a large purse, the strongbox, a merchant's goods) or bring a herd of shackled steeds down on it, and the
-// Mender's Draught found in it, which cures a character of their last bad trait.
+// Shmindolyn's Draught found in it, which cures a character of their last bad trait.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -80,17 +80,17 @@ test('a bad search or a noisy strongbox brings a herd of shackled steeds; readin
     assert.ok(all(E.stages.slip_away).every(r => r.type !== 'START_BATTLE'));
 });
 
-test('the Mender\'s Draught: found in the carriage, it cures the last bad trait, leaves the good ones, and is kept when there is nothing to cure', () => {
-    const item = I.menders_draught;
+test('the Shmindolyn\'s Draught: found in the carriage, it cures the last bad trait, leaves the good ones, and is kept when there is nothing to cure', () => {
+    const item = I.shmindolyns_draught;
     assert.equal(item.type, 'consumable');
-    assert.equal(item.useAbility, 'menders_draught');
+    assert.equal(item.useAbility, 'shmindolyns_draught');
     assert.deepEqual(item.usability, ['overworld']);
-    assert.equal(A.menders_draught.context, 'overworld');
-    assert.ok(all(E.stages.strongbox_open).some(r => r.type === 'GIVE_ITEM' && r.payload.itemId === 'menders_draught'), 'always in the strongbox');
-    assert.ok(L.ruined_carriage_valuables.items.some(i => i.id === 'menders_draught'), 'and among the merchant\'s goods');
+    assert.equal(A.shmindolyns_draught.context, 'overworld');
+    assert.ok(all(E.stages.strongbox_open).some(r => r.type === 'GIVE_ITEM' && r.payload.itemId === 'shmindolyns_draught'), 'always in the strongbox');
+    assert.ok(L.ruined_carriage_valuables.items.some(i => i.id === 'shmindolyns_draught'), 'and among the merchant\'s goods');
 
     const hero = quiet(() => EntityFactory.create('HUMANOID', { name: 'Aldric', traits: ['quick', 'frail', 'tough', 'myopic'] }));
-    const drink = () => quiet(() => AbilitySystem.execute('menders_draught', hero, hero, { context: 'overworld' }));
+    const drink = () => quiet(() => AbilitySystem.execute('shmindolyns_draught', hero, hero, { context: 'overworld' }));
     let r = drink();
     assert.ok(r.success);
     assert.match(r.message, /no longer Myopic/, 'the most recent bad trait goes first');

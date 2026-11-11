@@ -1426,10 +1426,10 @@ export const AbilityDefinitions = {
             notShackled: "{target} is not shackled."
         }]
     },
-    // The Mender's Draught (item menders_draught): cures the character it is used on of the bad trait they gained last.
-    "menders_draught": {
-        id: "menders_draught",
-        name: "Mender's Draught",
+    // The Shmindolyn's Draught (item shmindolyns_draught): cures the character it is used on of the bad trait they gained last.
+    "shmindolyns_draught": {
+        id: "shmindolyns_draught",
+        name: "Shmindolyn's Draught",
         description: "Cures the drinker of their most recent bad trait.",
         context: "overworld",                       // never offered in a battle
         range: "self",

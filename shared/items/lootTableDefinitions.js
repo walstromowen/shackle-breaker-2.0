@@ -413,7 +413,7 @@ export const LootTableDefinitions = {
     "ruined_carriage_valuables": {
         type: "weighted",
         items: [
-            { id: "menders_draught", weight: 8, min: 1, max: 1 },   // cures a bad trait (itemDefinitions.js)
+            { id: "shmindolyns_draught", weight: 8, min: 1, max: 1 },   // cures a bad trait (itemDefinitions.js)
             { id: "bronze_ingot", weight: 10, min: 3, max: 5 },
             { id: "iron_ingot", weight: 12, min: 3, max: 6 },
             { id: "healing_tonic", weight: 12, min: 2, max: 3 },

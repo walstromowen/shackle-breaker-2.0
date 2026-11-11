@@ -66,7 +66,7 @@ fall, when the player breaks out of the king's chain line. This page is a living
   the capital; imprisoned with him; saves him in the escape; nicknamed "Codey" for his hand signs. Protagonist 2.
 - **General Sekrav**: general of the Alterian legion. Young, never defeated, popular.
 - **Director Kokul**: director of Artifact Affairs.
-- **Shmindolyn** and **Kurtucus**: legends. (The game's Kurtus' Brew can nod to Kurtucus.)
+- **Shmindolyn** and **Kurtucus**: legends. (The game's Kurtus' Brew nods to Kurtucus; Shmindolyn's Draught, which cures a bad trait, to Shmindolyn.)
 
 ## The story, in order
 

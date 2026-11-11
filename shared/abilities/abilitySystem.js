@@ -406,7 +406,7 @@ export class AbilitySystem {
     }
 
     /* { type: 'cure_trait', message?, nothingToCure? }
-       The Mender's Draught: takes the bad trait the character gained last (the negative traits, abilityTraits.SCAR_TRAITS: what a fall in battle can
+       The Shmindolyn's Draught: takes the bad trait the character gained last (the negative traits, abilityTraits.SCAR_TRAITS: what a fall in battle can
        leave, and the flaws a character can be made with) off them. With none, nothing happens and the draught is kept. */
     static _world_cure_trait(effect, source, target) {
         const entity = target && (target.originalEntity || target);

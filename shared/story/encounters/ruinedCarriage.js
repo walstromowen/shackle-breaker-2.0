@@ -9,7 +9,7 @@
      strongbox        success: the biggest haul, coin and a merchant's goods (strongbox_open). Failure: the iron bands ring out, and the herd comes (steeds).
      hoofprints       success: you know what made them, and can search quietly [DEX 12]: a failed quiet search finds nothing, but you slip away unseen.
                       Failure: the prints mean nothing (tracks_lost).
-   The haul is large on purpose: 250 to 450 coin in the purse; 350 coin, a Mender's Draught (cures a bad trait) and more in the strongbox; or two or
+   The haul is large on purpose: 250 to 450 coin in the purse; 350 coin, a Shmindolyn's Draught (cures a bad trait) and more in the strongbox; or two or
    three rolls of ruined_carriage_valuables (lootTableDefinitions.js), where the draught can turn up too. Once looted the carriage stays where it is, empty (REPLACE_OBJECT: RUINED_CARRIAGE_LOOTED). A fight leaves it as it was, so
    the survivors can search again.
    Art: assets/icons/encounters/ruined_carriage.png registered as `encounter_ruined_carriage` (one 128 px picture). */
@@ -107,11 +107,11 @@ export const ruinedCarriage = {
             text: "Take what you can carry.",
             outcomes: [{ weight: 1, results: [{ type: "ROLL_LOOT_TABLE", payload: { lootTableId: "ruined_carriage_valuables", minRolls: 2, maxRolls: 3 } }, LOOTED, END] }]
         }]),
-        strongbox_open: stage("The lock gives with a crack. The strongbox is full: coin to the brim, a physician's sealed draught glowing amber in its straw, and a merchant's papers wrapped around something heavier.", [{
+        strongbox_open: stage("The lock gives with a crack. The strongbox is full: coin to the brim, a sealed draught glowing amber in its straw, Shmindolyn's mark on the wax, and a merchant's papers wrapped around something heavier.", [{
             text: "Empty it.",
             outcomes: [{ weight: 1, results: [
                 { type: "MODIFY_CURRENCY", payload: { amount: 350 } },
-                { type: "GIVE_ITEM", payload: { itemId: "menders_draught", qty: 1 } },   // cures a bad trait
+                { type: "GIVE_ITEM", payload: { itemId: "shmindolyns_draught", qty: 1 } },   // cures a bad trait
                 { type: "ROLL_LOOT_TABLE", payload: { lootTableId: "ruined_carriage_valuables", rolls: 1 } },
                 LOOTED, END
             ] }]
