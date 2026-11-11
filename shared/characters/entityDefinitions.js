@@ -750,7 +750,7 @@ export const ENTITY_DEFINITIONS = {
     },
 
     // A hunting hawk: a starting companion (character creator). The fastest and hardest to hit of the companions, and the most fragile: talons and a
-    // beak (slash and pierce), a sharp eye for the weak spot (critical hits), and Hit & Run to strike and swap out of harm's way. A beast (beast rules,
+    // beak (slash and pierce), a sharp eye for the weak spot (critical hits), and the Airborne trait: it starts every fight in the air. A beast (beast rules,
     // StatCalculator.usesEnemyScaling). Wind carries it, lightning and ice ground it.
     "HAWK": {
         ...BEAST_TEMPLATE,
@@ -773,8 +773,8 @@ export const ENTITY_DEFINITIONS = {
             baseAttack: { blunt: 0, slash: 5, pierce: 6 }
         },
         lootTableId: "mad_man_drops",
-        // a talon slash, Take Flight (it starts every fight in the air for 2 turns: the Airborne trait), and Hit & Run to strike and dart back out
-        abilities: [...BASE_ENTITY.abilities, "slash", "take_flight", "hit_and_run"],
+        // a talon slash, Take Flight (it starts every fight in the air for 2 turns: the Airborne trait), and its claws
+        abilities: [...BASE_ENTITY.abilities, "slash", "take_flight", "claw"],
         traits: ["airborne"],
         tags: ["BIOLOGICAL", "BEAST", "AVIAN"]
     },

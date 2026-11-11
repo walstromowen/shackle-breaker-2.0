@@ -227,6 +227,8 @@ test('an ally fights on the party\'s side, picked for by the dice, earns nothing
         assert.equal(s.activeParty.length, 3);
         const ally = s.activeParty[2];
         assert.equal(ally.isAlly, true);
+        assert.ok(!ally.abilities.some(a => a.isFlee && a.isFlee()), 'an ally has no Retreat: he stands and fights');
+        for (let i = 0; i < 40; i++) { s.turnQueue = []; queueEnemyActions(s); assert.ok(!s.turnQueue.some(t => t.actor === ally && t.action.isFlee && t.action.isFlee())); }
         assert.equal(ally.originalEntity, nikoli);
         assert.equal(s.partyRoster.filter(c => !c.isAlly).length, 3, 'the third party member waits in reserve');
         assert.ok(!s.activeParty.includes(s.partyRoster[2]));

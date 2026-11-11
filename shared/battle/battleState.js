@@ -15,7 +15,12 @@ export function createBattleState(enemies, context = {}) {
     // `context.allies`: fighters who stand with the party for this one fight (Nikoli against the trappers). They fight on the party's side but
     // nobody picks for them (enemyAI.queueAllyActions does), they earn nothing, and the fight is lost when only they are left. They take the last
     // places on the field; the party's own members fill the rest, and the others wait in reserve as usual.
-    const allies = (context.allies || []).map(a => { const c = new CombatantModel(a, 'party'); c.isAlly = true; return c; });
+    const allies = (context.allies || []).map(a => {
+        const c = new CombatantModel(a, 'party'); c.isAlly = true;
+        // an ally stands and fights: Retreat (or any other way out of the fight) is not theirs to take
+        if (Array.isArray(c.abilities)) for (let i = c.abilities.length - 1; i >= 0; i--) if (c.abilities[i] && typeof c.abilities[i].isFlee === 'function' && c.abilities[i].isFlee()) c.abilities.splice(i, 1);
+        return c;
+    });
     [...party, ...allies, ...preparedEnemies].forEach(c => stripNonBattleAbilities(c)); // overworld-only abilities (a torch...) never show up in a fight
     const ownSlots = Math.max(1, maxActive - allies.length);
 

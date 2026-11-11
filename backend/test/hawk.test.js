@@ -18,7 +18,8 @@ test('the hawk is offered as a starting companion and joins as a beast with its 
     assert.ok(offer, 'Hunting Hawk is in the character creator');
     const H = ENTITY_DEFINITIONS.HAWK;
     for (const id of H.abilities) assert.ok(AbilityDefinitions[id], `${id} exists`);
-    assert.ok(['slash', 'take_flight', 'hit_and_run'].every(a => H.abilities.includes(a)), 'slash, take flight and hit and run');
+    assert.ok(['slash', 'take_flight', 'claw'].every(a => H.abilities.includes(a)), 'slash, take flight and claw');
+    assert.ok(!H.abilities.includes('hit_and_run'), 'Hit & Run is not finished: not the hawk\'s yet');
     assert.deepEqual(H.traits, ['airborne'], 'it starts every fight in the air');
     const hawk = EntityFactory.create('HAWK', { name: offer.label, attributes: { ...offer.attributes } });
     assert.equal(StatCalculator.usesEnemyScaling(hawk), true, 'beast rules, like the dog and the snow leopard');
@@ -31,8 +32,22 @@ test('the hawk is offered as a starting companion and joins as a beast with its 
 test("the hawk's sheets are registered, on disk and laid out like the others", () => {
     const H = ENTITY_DEFINITIONS.HAWK;
     assert.deepEqual(pngSize(fileOf(H.spritePortrait)), [2048, 1024], 'battle sheet: 16 frames of 128 to a row, rows 0-1 and 4-5 used');
-    assert.deepEqual(pngSize(fileOf(H.spriteOverworld)), [512, 960], 'map sheet: like the heroes');
+    assert.deepEqual(pngSize(fileOf(H.spriteOverworld)), [512, 768], 'map sheet: 12 rows of 8 frames, like the dog and the snow leopard');
     assert.ok(fileOf(H.crySound) && fs.existsSync(fileOf(H.crySound)), 'its cry');
+});
+
+test('on the map the hawk is small: about a third of a tile across the wings, flying over a shadow on the ground', async () => {
+    const { decodePng } = await import('./pngDecode.js');
+    const { w, px } = decodePng(fileOf(ENTITY_DEFINITIONS.HAWK.spriteOverworld));
+    for (const [col, row] of [[0, 0], [3, 1], [5, 6], [7, 11]]) {
+        let x0 = 64, x1 = -1, y1 = -1;
+        for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) {
+            if (px[((row * 64 + y) * w + col * 64 + x) * 4 + 3] === 0) continue;
+            x0 = Math.min(x0, x); x1 = Math.max(x1, x); y1 = Math.max(y1, y);
+        }
+        assert.ok(x1 - x0 + 1 <= 28, `frame ${col},${row}: ${x1 - x0 + 1} px wide`);
+        assert.ok(y1 >= 53 && y1 <= 56, `frame ${col},${row}: its shadow on the ground row (${y1})`);
+    }
 });
 
 test('the hawk starts every fight in the air: Airborne casts Take Flight for free, and it flies for 2 turns, then lands', async () => {

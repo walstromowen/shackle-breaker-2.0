@@ -67,7 +67,7 @@ export function queueAllyActions(state) {
     for (const ally of state.activeParty) {
         if (!ally || !ally.isAlly || ally.isDead()) continue;
         const usable = ally.abilities.filter(a =>
-            a.canPayCost(ally, InventorySystem) && !['rest', 'punch'].includes(a.id) && (typeof a.usableIn !== 'function' || a.usableIn('battle')) && worthUsing(a, ally)
+            a.canPayCost(ally, InventorySystem) && !['rest', 'punch'].includes(a.id) && !(typeof a.isFlee === 'function' && a.isFlee())   // an ally never runs && (typeof a.usableIn !== 'function' || a.usableIn('battle')) && worthUsing(a, ally)
         );
         if (usable.length > 0) {
             const action = usable[Math.floor(rng() * usable.length)];
