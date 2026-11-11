@@ -1248,7 +1248,7 @@ export const ItemDefinitions = {
     type: "consumable",
     useAbility: "brew_of_madness",
     description: "Smells like ozone and bad decisions. Drops you to 1 HP and leaves you Enraged: physical attack +50% for 3 turns.",
-    icon: { col: 1, row: 1 },
+    icon: { col: 11, row: 1 },   // a sealed bottle of strange ale (its own cell: it used to borrow the invigorating tonic's jar)
     stackable: true
   },
   // Shmindolyn's Draught (Shmindolyn: a legend of the story, docs/story.md), a physician's rarest tincture: it mends the character it is used on of the bad trait they gained last (a scar from a fight, a flaw they were born
@@ -1258,9 +1258,9 @@ export const ItemDefinitions = {
     id: "shmindolyns_draught",
     name: "Shmindolyn's Draught",
     type: "consumable",
-    description: "A tincture made to the recipe of Shmindolyn, a healer of legend, warm as sunlight through the glass. Cures the one who drinks it of their most recent bad trait (Clumsy, Frail, Myopic, Superstitious, Lazy, Dull or Sluggish).",
+    description: "A frothing draught brewed to the recipe of Shmindolyn, a healer of legend: it tastes of honey and woodsmoke. Cures the one who drinks it of their most recent bad trait (Clumsy, Frail, Myopic, Superstitious, Lazy, Dull or Sluggish).",
     value: 300,
-    icon: { col: 10, row: 1 },
+    icon: { col: 10, row: 1 },   // a foaming tankard
     useAbility: "shmindolyns_draught",
     usability: ['overworld'],
     stackable: true,
