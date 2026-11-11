@@ -19,7 +19,7 @@
 //   "directions"  { "the line as it reads on screen": "what the voice is given instead" }: the same words with acting cues in square brackets
 //                 ("[voice breaking] No, you are not him."), for eleven_v3. Only the recording hears them; the screen shows the line as written.
 //                 Changing a line's direction records that line again.
-// voices.json can also have "pronounce": { "word": "how the voices should say it" } for every voice (Panzeria: "Panz-eer-ia").
+// voices.json can also have "pronounce": { "word": "how the voices should say it" } for every voice (Panzeria: "Panzeeria": one word, said like Algeria).
 //   "fx"          a sound treatment run on each clip with ffmpeg after recording (FX below, e.g. "ghost") The API key is read from ELEVENLABS_API_KEY (a cloud session's network proxy puts
 // it in for you: any value works there).
 import fs from 'node:fs';
@@ -116,7 +116,7 @@ export function mp3Duration(buf) {
     return Math.round(seconds * 1000) / 1000;
 }
 
-/* "pronounce" in voices.json: { "Panzeria": "Panz-eer-ia" }: a word the voices would say wrong, respelled for them (whole words, any voice); the
+/* "pronounce" in voices.json: { "Panzeria": "Panzeeria" }: a word the voices would say wrong, respelled for them (whole words, any voice); the
    screen still shows the real spelling. */
 const PRONOUNCE = Object.entries(CONFIG.pronounce || {}).sort((a, b) => b[0].length - a[0].length);
 const respell = (text) => PRONOUNCE.reduce((t, [word, said]) => t.replace(new RegExp(`\\b${word}\\b`, 'g'), said), text);

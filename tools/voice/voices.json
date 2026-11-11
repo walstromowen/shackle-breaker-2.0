@@ -2,8 +2,8 @@
   "model": "eleven_multilingual_v2",
   "outputFormat": "mp3_44100_128",
   "pronounce": {
-    "Panzeria": "Panz-eer-ia",
-    "Panzerian": "Panz-eer-ian"
+    "Panzeria": "Panzeeria",
+    "Panzerian": "Panzeerian"
   },
   "defaultSettings": {
     "stability": 0.5,

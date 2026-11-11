@@ -178,6 +178,10 @@ export const MAP_OBJECTS_DEFINITIONS = {
     HOODED_STRANGER_NPC: { ...npcBody('HOODED_STRANGER'), interaction: { type: 'ENCOUNTER', id: 'hooded_stranger' } },
     // Nikoli, the Panzerian general: by the first snowy campfire, later in the Hooded Stranger's old workshop (WorldManager / InteriorFactory put him there)
     NIKOLI_NPC: { ...npcBody('NIKOLI'), interaction: { type: 'ENCOUNTER', id: 'nikoli' } },
+    // before the player has met him: he stands just north of his campfire facing up, at the snow leopards stalking down toward him; coming within 3 tiles
+    // of him or of a cat starts the meeting (WorldManager._storyObjects puts the scene there, and takes it away once he has been met)
+    NIKOLI_NPC_WATCHING: { ...npcBody('NIKOLI', 'UP'), interaction: { type: 'ENCOUNTER', id: 'nikoli', triggerRadius: 3 } },
+    SNOW_LEOPARD_STALKING: { ...npcBody('SNOW_LEOPARD', 'DOWN'), interaction: { type: 'ENCOUNTER', id: 'nikoli', triggerRadius: 3 } },
 
     // --- ANIMATED ---
     CAMPFIRE: { sheet: 'objCampfire', spriteX: 0, spriteY: 6, frames: 32, speed: 0.1, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'bonfire' }, light: { hasLight: true, radius: 5.5, color: '255, 100, 0', maxAlpha: 0.8, flickerSpeed: 0.1, flickerAmp: 0.5 } },

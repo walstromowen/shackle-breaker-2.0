@@ -36,6 +36,8 @@ const TITLE = "Nikoli";
 const IMG = { col: 0, row: 0 };
 const LEOPARDS_IMG = { sheet: "snowLeopardPortrait", col: 0, row: 0 };
 const BEAST_QUEST = "panzerian_war_beast";
+// the snowy mountains' battle music, from the moment the scene opens (he only ever meets you there) and on into the fight, unbroken
+const BATTLE_BGM = "snowyMountainsBattleBgm";
 
 const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
 const end = (results = []) => [{ weight: 100, results: [...results, { type: "END_ENCOUNTER", payload: null }] }];
@@ -71,7 +73,7 @@ const askBeast = {
 const STAGES = {
     // ---- the first meeting: starving snow leopards come for his fire ----
     meet: stage("A broad man in a battered Panzerian greatcoat stands with his back to the campfire, a greatsword in his hands. Beyond the light, pale shapes slink through the snow: snow leopards, starved thin, their eyes on the fire.",
-        next("meet_2"), { image: LEOPARDS_IMG }),
+        next("meet_2"), { image: LEOPARDS_IMG, bgm: BATTLE_BGM }),
     meet_2: stage("\"Three cats, one Nikoli. Is bad arithmetic, even for general.\" He grins over his shoulder, and you count more gaps than teeth. \"You have weapon, da? Then stand with Nikoli.\"",
         [{
             text: "Draw your weapon.",
@@ -80,7 +82,7 @@ const STAGES = {
                 { type: "START_BATTLE", payload: {
                     enemies: ["SNOW_LEOPARD", "SNOW_LEOPARD", "SNOW_LEOPARD"],
                     allies: [{ id: "NIKOLI" }],
-                    bgm: "snowyMountainsBattleBgm",
+                    bgm: BATTLE_BGM,
                     noEscape: true,
                     afterVictory: { encounterId: "nikoli_after_battle" }
                 } }
@@ -89,9 +91,9 @@ const STAGES = {
             // walking away: he holds the fire alone, and the meeting waits for another night (no milestone, so the next visit starts here again)
             text: "Walk away.",
             outcomes: toStage("walk_away")
-        }]),
+        }], { bgm: BATTLE_BGM }),
     walk_away: stage("You back away from the light. Behind you a deep voice curses in Panzerian, and the cats scream, and then the night is quiet again.",
-        [{ text: "Keep walking.", outcomes: end() }]),
+        [{ text: "Keep walking.", outcomes: end() }], { bgm: "none" }),
 
     // ---- after the fight: thanks, who he is, and who he is looking for ----
     // (in a party of players everyone who fought beside him plays this on their own screen: they have met him now too)

@@ -164,26 +164,59 @@ test('the Panzerkamfer is one of many war beasts from the war, and Mentoras an o
     assert.match(N.stages.ask.text, /not always agreeing/);
 });
 
-test('his camp: the first snowy campfire the world puts down is claimed, he stands just south of it, and he leaves it in act 2 once told', () => {
+test('his camp: the first snowy campfire is claimed; before the meeting he stands north of it facing the cats, and the scene follows the story', () => {
     const w = gameState.world;
     w.nikoliCampfire = null; w.isInterior = false;
     story();
     const placed = [];
-    const fake = (biomeId) => ({ getBiomeAt: () => ({ id: biomeId }), _placeObject: (c, r, id) => placed.push([c, r, id]), _nikoliSpot: WorldManager.prototype._nikoliSpot });
+    const fake = (biomeId) => ({ getBiomeAt: () => ({ id: biomeId }), _placeStory: (c, r, id) => placed.push([c, r, id]), _storyObjects: WorldManager.prototype._storyObjects });
     WorldManager.prototype._campfirePlaced.call(fake('PLAINS'), 5, 5);
     assert.equal(w.nikoliCampfire, null, 'a plains campfire is not his');
     WorldManager.prototype._campfirePlaced.call(fake('SNOWY_MOUNTAINS'), 40, 60);
     assert.equal(w.nikoliCampfire, '40,60');
-    assert.deepEqual(placed, [[40, 61, 'NIKOLI_NPC']]);
+    assert.deepEqual(placed.sort(), [[39, 56, 'SNOW_LEOPARD_STALKING'], [40, 55, 'SNOW_LEOPARD_STALKING'], [40, 59, 'NIKOLI_NPC_WATCHING'], [41, 56, 'SNOW_LEOPARD_STALKING']],
+        'Nikoli just north of the fire, three cats further north');
+    assert.equal(M.NIKOLI_NPC_WATCHING.character.facing, 'UP', 'he faces up, at the cats');
+    assert.equal(M.SNOW_LEOPARD_STALKING.character.facing, 'DOWN', 'they face down, at him');
+    for (const id of ['NIKOLI_NPC_WATCHING', 'SNOW_LEOPARD_STALKING']) assert.deepEqual(M[id].interaction, { type: 'ENCOUNTER', id: 'nikoli', triggerRadius: 3 }, `${id}: coming near starts it`);
     WorldManager.prototype._campfirePlaced.call(fake('SNOWY_MOUNTAINS'), 90, 90);
     assert.equal(w.nikoliCampfire, '40,60', 'only the first one');
-    const at = (c, r) => WorldManager.prototype._storyObjectAt.call({ _nikoliSpot: WorldManager.prototype._nikoliSpot }, c, r);
-    assert.equal(at(40, 61), 'NIKOLI_NPC');
-    story({ milestones: ['act2'] });
-    assert.equal(at(40, 61), 'NIKOLI_NPC', 'act 2 but never told: he stays');
-    story({ milestones: ['act2', 'nikoli_told'] });
-    assert.equal(at(40, 61), null, 'told, act 2: gone to the workshop');
+    const at = (c, r) => WorldManager.prototype._storyObjectAt.call({ _storyObjects: WorldManager.prototype._storyObjects }, c, r);
+    story({ milestones: ['nikoli_met'] });
+    assert.equal(at(40, 59), 'NIKOLI_NPC', 'met: he faces you, nothing starts by itself');
+    assert.equal(at(40, 55), null, 'and the cats are gone');
+    story({ milestones: ['nikoli_met', 'act2'] });
+    assert.equal(at(40, 59), 'NIKOLI_NPC', 'act 2 but never told: he stays');
+    story({ milestones: ['nikoli_met', 'act2', 'nikoli_told'] });
+    assert.equal(at(40, 59), null, 'told, act 2: gone to the workshop');
     w.nikoliCampfire = null;
+});
+
+test('the loaded world swaps the scene when the story moves on: the cats leave and Nikoli turns once he has been met', () => {
+    const w = gameState.world;
+    w.nikoliCampfire = '10,20'; w.isInterior = false;
+    story();
+    const objects = new Map(), collision = new Map();
+    const host = {
+        objects, _collisionMap: collision, _s: (c, r) => `${c},${r}`,
+        _placeObject(c, r, id) { const o = { id, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 } }; objects.set(`${c},${r}`, o); collision.set(`${c},${r}`, o); },
+        _storyObjects: WorldManager.prototype._storyObjects, _placeStory: WorldManager.prototype._placeStory,
+        _unplaceObject: WorldManager.prototype._unplaceObject, refreshStoryObjects: WorldManager.prototype.refreshStoryObjects
+    };
+    host.refreshStoryObjects();
+    assert.equal(objects.get('10,19').id, 'NIKOLI_NPC_WATCHING');
+    assert.equal(objects.get('10,15').id, 'SNOW_LEOPARD_STALKING');
+    story({ milestones: ['nikoli_met'] });
+    host.refreshStoryObjects();
+    assert.equal(objects.get('10,19').id, 'NIKOLI_NPC');
+    assert.ok(!objects.has('10,15') && !objects.has('9,16') && !objects.has('11,16') && !collision.has('10,15'), 'the cats and their footprint are gone');
+    w.nikoliCampfire = null;
+});
+
+test('the snowy mountains\' battle music plays from the moment the scene opens, on into the fight', () => {
+    assert.equal(N.stages.meet.bgm, 'snowyMountainsBattleBgm');
+    assert.equal(N.stages.meet_2.bgm, 'snowyMountainsBattleBgm');
+    assert.equal(results(N.stages.meet_2.decisions[0]).find(x => x.type === 'START_BATTLE').payload.bgm, 'snowyMountainsBattleBgm');
 });
 
 test('an ally fights on the party\'s side, picked for by the dice, earns nothing, and cannot win the fight alone', () => {
