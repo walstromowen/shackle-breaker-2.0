@@ -1,4 +1,4 @@
-/* The Ruined Carriage (map object RUINED_CARRIAGE, 2 x 2 tiles, on the plains: biomeDefinitions.js PLAINS, its own band).
+/* The Ruined Carriage (map object RUINED_CARRIAGE, 3 x 2 tiles, on the plains: biomeDefinitions.js PLAINS, its own band).
 
    A merchant's carriage broken in the grass, one wheel snapped flat, its strongbox spilled. Its horses went mad and broke their traces: they are shackled
    steeds now, and they graze close by. Whoever searches it may come away rich, or bring the herd down on the party.

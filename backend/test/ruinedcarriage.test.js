@@ -1,4 +1,4 @@
-// backend/test/ruinedcarriage.test.js: `npm test`. The Ruined Carriage on the plains: a 2 x 2 wreck with its own band in the plains' spawn list, an
+// backend/test/ruinedcarriage.test.js: `npm test`. The Ruined Carriage on the plains: a 3 x 2 wreck with its own band in the plains' spawn list, an
 // encounter that can make the party rich (a large purse, the strongbox, a merchant's goods) or bring a herd of shackled steeds down on it, and the
 // Shmindolyn's Draught found in it, which cures a character of their last bad trait.
 import { test } from 'node:test';
@@ -23,11 +23,13 @@ const quiet = (fn) => { const l = console.log, w = console.warn; console.log = c
 const all = (o, acc = []) => { if (Array.isArray(o)) o.forEach(x => all(x, acc)); else if (o && typeof o === 'object') { if (o.type) acc.push(o); Object.values(o).forEach(v => all(v, acc)); } return acc; };
 const decision = (stage, re) => E.stages[stage].decisions.find(d => re.test(d.text));
 
-test('a 2 x 2 wreck with broken wheels: its art, a looted look, and its own band on the plains', () => {
+test('a 3 x 2 wreck with broken wheels: its art, a looted look, and its own band on the plains', async () => {
     for (const id of ['RUINED_CARRIAGE', 'RUINED_CARRIAGE_LOOTED']) {
-        assert.equal(M[id].width, 2); assert.equal(M[id].height, 2);
-        assert.deepEqual(M[id].hitbox, { xOffset: 0, yOffset: -1, w: 2, h: 2 }, `${id}: solid over both tiles of both rows`);
+        assert.equal(M[id].width, 3); assert.equal(M[id].height, 2);
+        assert.deepEqual(M[id].hitbox, { xOffset: 0, yOffset: -1, w: 3, h: 2 }, `${id}: solid over all three tiles of both rows`);
         assert.ok(fs.existsSync(fileOf(M[id].sheet)), `${id}: its picture is a real file`);
+        const png = fs.readFileSync(fileOf(M[id].sheet));
+        assert.deepEqual([png.readUInt32BE(16), png.readUInt32BE(20)], [96, 64], `${id}: 3 x 2 tiles of 32 px`);
     }
     assert.deepEqual(M.RUINED_CARRIAGE.interaction, { type: 'ENCOUNTER', id: 'ruined_carriage' });
     assert.ok(!M.RUINED_CARRIAGE_LOOTED.interaction, 'an emptied wreck has nothing more to give');

@@ -1,122 +1,180 @@
-# The ruined carriage, after the reference stagecoach, in the style of the abandoned houses (their palette, wood grain, straw-like canvas, moss).
-# Drawn as flat materials on a 64 grid at scale s, then each material is textured pixel by pixel at the final size, and every edge darkened.
+# The ruined carriage, 3 x 2 tiles (96 x 64): a side-on stagecoach after the reference, in the abandoned houses' style and palette.
+# Flat materials are laid down (a label map), then textured pixel by pixel: wood grain, top-lit shading, dithered canvas, glass glints; every outer edge is
+# darkened as the houses' are. The encounter picture is the same carriage, unscaled, on a patch of grass in a 128 px square.
 import sys, math, random
 from PIL import Image, ImageDraw
-PAL = {   # from objAbandonedHouse1.png
- 'wood':   [(55,40,33),(75,58,42),(88,68,47),(101,79,55),(126,104,73)],
- 'wood_d': [(34,25,22),(48,37,25),(55,40,33),(63,48,33)],
- 'trim':   [(60,44,25),(78,60,31),(89,69,36),(117,101,65)],
- 'canvas': [(101,79,55),(117,101,65),(128,108,71),(134,115,74),(146,127,89),(166,145,102)],
- 'glass':  [(6,6,10),(10,8,7),(20,16,14)],
- 'iron':   [(34,25,22),(48,44,44),(66,64,66),(90,88,90)],
- 'moss':   [(40,56,32),(52,70,38),(66,88,46)],
- 'board':  [(78,60,31),(89,69,36),(101,79,55),(126,104,73)],
- 'gold':   [(117,101,65),(166,145,102),(200,176,110)],
+W, H = 96, 64
+PAL = {
+ 'wood':    [(63,48,33),(75,58,42),(88,68,47),(101,79,55),(116,92,63),(126,104,73),(140,116,82)],
+ 'panel':   [(52,40,29),(63,48,33),(75,58,42),(88,68,47),(101,79,55)],
+ 'trim':    [(89,69,36),(117,101,65),(134,115,74),(146,127,89),(166,145,102)],
+ 'canvas':  [(101,79,55),(117,101,65),(128,108,71),(134,115,74),(146,127,89),(166,145,102)],
+ 'leather': [(34,25,22),(44,33,26),(55,40,33),(66,50,38)],
+ 'glass':   [(6,6,10),(10,8,7),(16,14,18)],
+ 'shard':   [(110,116,126),(150,156,166),(190,196,204)],
+ 'curtain': [(70,34,30),(92,46,38),(112,60,48)],
+ 'iron':    [(26,24,26),(40,38,40),(58,56,58),(82,80,82),(110,108,110)],
+ 'moss':    [(40,56,32),(52,70,38),(66,88,46),(80,104,54)],
+ 'board':   [(78,60,31),(89,69,36),(101,79,55),(126,104,73)],
+ 'gold':    [(117,101,65),(166,145,102),(212,186,118)],
+ 'hole':    [(14,10,9),(20,16,14)],
 }
-OUTLINE=(20,16,14,255)
-KEYS={}
-def key(name):
-    if name not in KEYS: KEYS[name]=(len(KEYS)*9+7, 3, 200, 255)
-    return KEYS[name]
-def draw(s, ground=False, looted=False, seed=7):
-    rnd=random.Random(seed*1000+s)
-    N=64*s; lab=Image.new('RGBA',(N,N),(0,0,0,0)); d=ImageDraw.Draw(lab)
-    P=lambda pts:[(x*s,y*s) for x,y in pts]
-    def poly(pts,m): d.polygon(P(pts), fill=key(m))
-    def line(a,b,m,w=1): d.line(P([a,b]), fill=key(m), width=max(1,int(w*s)))
-    def ell(box,m,w=None):
-        if w: d.ellipse(P(box), outline=key(m), width=max(1,int(w*s)))
-        else: d.ellipse(P(box), fill=key(m))
-    def wheel(cx,cy,r,spokes,missing=(),squash=1.0):
-        d.ellipse(P([(cx-r,cy-r*squash),(cx+r,cy+r*squash)]), outline=key('wood_d'), width=max(2,int(1.6*s)))
+def make(looted=False, seed=11):
+    rnd = random.Random(seed)
+    lab = {}                                   # (x, y) -> material, the last one drawn wins
+    order = []
+    def put(x, y, m):
+        if 0 <= x < W and 0 <= y < H: lab[(x, y)] = m
+    def poly(pts, m):
+        img = Image.new('L', (W, H), 0); ImageDraw.Draw(img).polygon(pts, fill=1)
+        for y in range(H):
+            for x in range(W):
+                if img.getpixel((x, y)): put(x, y, m)
+    def line(a, b, m, w=1):
+        img = Image.new('L', (W, H), 0); ImageDraw.Draw(img).line([a, b], fill=1, width=w)
+        for y in range(H):
+            for x in range(W):
+                if img.getpixel((x, y)): put(x, y, m)
+    def ellipse(box, m, width=None):
+        img = Image.new('L', (W, H), 0); d = ImageDraw.Draw(img)
+        if width: d.ellipse(box, outline=1, width=width)
+        else: d.ellipse(box, fill=1)
+        for y in range(H):
+            for x in range(W):
+                if img.getpixel((x, y)): put(x, y, m)
+    def wheel(cx, cy, rx, ry, spokes, missing=(), rimw=2, gap=None):
+        ellipse([cx-rx, cy-ry, cx+rx, cy+ry], 'wood', width=rimw)
+        ellipse([cx-rx+rimw, cy-ry+rimw*ry/rx, cx+rx-rimw, cy+ry-rimw*ry/rx], 'trim', width=1)    # the felloe's inner edge
         for i in range(spokes):
             if i in missing: continue
-            a=2*math.pi*i/spokes; line((cx,cy),(cx+(r-1)*math.cos(a),cy+(r-1)*squash*math.sin(a)),'trim',0.8)
-        ell([(cx-1.6,cy-1.6*squash),(cx+1.6,cy+1.6*squash)],'iron')
-    # --- the front wheel, broken off and lying flat in the grass (left), half its rim gone
-    wheel(13,55,10.5,8,missing=(1,2),squash=0.38)
-    line((21,51),(24,48.5),'trim',0.8)   # a spoke torn loose, sticking up
-    # --- the perch: the beam under the body, its front end down in the grass where the wheel went
-    line((47,44),(8,49),'wood_d',1.6)
-    # --- the body: boat-bottomed, the front (left) sagging low
-    body=[(12,21),(50,15),(53,17),(53,33),(51,37),(45,40),(22,44.5),(15,43),(12,39)]   # a coach's body: the underside curves up at both ends
-    poly(body,'wood')
-    for x in range(16,53,5): line((x,21-(x-12)*0.15+1),(x,43.5-(x-12)*0.1),'wood_d',0.5)
-    line((12,21),(50,15),'trim',1); line((13,37),(53,31),'trim',1)   # the beading along the top and the waist
-    # the roof rail, and the canvas load on top, torn open in the middle
-    line((11,20),(51,14),'wood_d',1.2)
-    poly([(15,19),(17,12),(24,9),(34,8),(44,7),(49,10),(50,14)],'canvas')
-    poly([(28,10),(33,9),(32,13),(28,14)],'glass')                     # the tear
-    line((22,10),(23,18),'wood_d',0.5); line((40,8),(41,15),'wood_d',0.5)   # the ropes
-    # the driver's bench and footboard, out front
-    poly([(5,23),(12,22),(12,26),(6,27)],'wood_d')                      # the seat, against the coach's front
-    line((6,27),(11,34),'wood_d',0.9); line((4,26),(4,31),'trim',0.6)   # its brace, and the broken lamp-iron
-    poly([(2,32),(11,31),(11,34),(2,35)],'wood')                        # the footboard
-    # windows: the front one boarded up, the rear one black, the door between them hanging open
-    poly([(16,25),(24,23.8),(24,31),(16,32.2)],'glass')
-    for y in (25.5,28,30.5): line((15.5,y+0.5),(24.5,y-0.8),'board',0.9)
-    poly([(39,21.6),(48,20.3),(48,28),(39,29.3)],'glass')
-    poly([(27,23.5),(36,22),(36,41),(27,43)],'wood_d')                  # the doorway, dark inside
-    poly([(36,22),(41,24),(41,42),(36,41)],'wood')                      # the door, swung out on one hinge
-    line((38,30),(39,30.5),'trim',0.8)
-    # --- the rear wheel, still on, a spoke snapped
-    wheel(47,45,10,10,missing=(3,))
-    line((50,40),(53,36),'trim',0.6)
-    # moss on the canvas and along the sill
-    for (x,y,w,h) in [(18,11,5,3),(43,8,5,3),(14,40,7,3),(30,42,4,2)]: ell([(x,y),(x+w,y+h)],'moss')
-    # splinters in the grass
-    line((24,53),(30,51.5),'wood',0.6); line((33,56),(37,54),'wood_d',0.6)
+            a = 2*math.pi*i/spokes + 0.2
+            line((cx, cy), (cx+(rx-2)*math.cos(a), cy+(ry-2)*math.sin(a)), 'trim', 1)
+        ellipse([cx-2.5, cy-2.5*ry/rx, cx+2.5, cy+2.5*ry/rx], 'iron')
+        put(int(cx)-1, int(cy-ry/rx), 'gold')
+        if gap:   # a broken piece of the rim gone
+            for (x, y) in list(lab):
+                if lab[(x, y)] in ('wood', 'trim') and gap[0] <= x <= gap[2] and gap[1] <= y <= gap[3]: del lab[(x, y)]
+    # ---------------------------------------------------------------- the broken front wheel, flat in the grass, and its snapped spoke
+    wheel(15, 56, 13, 4.6, 10, missing=(2, 3), rimw=2, gap=(22, 51, 28, 54))
+    line((24, 52), (28, 47), 'trim', 1); put(28, 46, 'wood')
+    # ---------------------------------------------------------------- the perch (the beam under the body), its front end down in the grass
+    line((74, 46), (14, 52), 'leather', 2)
+    # the rear leaf springs, under the back of the body
+    for k in range(3): line((62+k, 41-k), (84-k, 38-k), 'iron', 1)
+    # ---------------------------------------------------------------- the body: a coach with a curved belly, sagging at the front where its wheel went
+    top = lambda x: 18 - (x-22) * 5/60                       # the roof line falls 5 px from back to front
+    belly = []
+    for i in range(0, 31):
+        t = i/30; x = 24 + t*58
+        belly.append((x, top(x) + 22 + 6*math.sin(math.pi*t) - 2*t))
+    body = [(22, top(22)), (82, top(82)), (84, top(84)+4), (84, top(84)+20)] + belly[::-1] + [(22, top(22)+20)]
+    poly(body, 'wood')
+    # panels: the front quarter, the door, the back quarter, each a raised moulding with a darker field
+    def panel(x0, x1, y0off, y1off, m='panel'):
+        pts = [(x0, top(x0)+y0off), (x1, top(x1)+y0off), (x1, top(x1)+y1off), (x0, top(x0)+y1off)]
+        poly(pts, m)
+        line(pts[0], pts[1], 'trim'); line(pts[1], pts[2], 'trim'); line(pts[3], pts[2], 'trim'); line(pts[0], pts[3], 'trim')
+    panel(25, 35, 3, 19)
+    panel(61, 81, 3, 19)
+    # the door: it hangs from its lower hinge, swung out and tilted, a dark gap where it used to sit
+    poly([(39, top(39)+2), (58, top(58)+2), (58, top(58)+5), (39, top(39)+5)], 'hole')
+    door = [(39, top(39)+4), (58, top(58)+3), (59, top(58)+24), (40, top(39)+24)]
+    poly(door, 'wood'); line(door[0], door[1], 'trim'); line(door[1], door[2], 'trim'); line(door[0], door[3], 'trim'); line(door[3], door[2], 'trim')
+    # the door's window: the glass broken, a few shards still in the frame
+    dw = [(43, top(43)+8), (54, top(54)+7), (55, top(54)+15), (44, top(43)+16)]
+    poly(dw, 'glass'); line(dw[0], dw[1], 'trim'); line(dw[3], dw[2], 'trim')
+    for (x, y) in [(44, 16+int(top(44)-18)+9), (45, 16+int(top(44)-18)+9), (53, 16+int(top(53)-18)+9), (44, 16+int(top(44)-18)+14)]: put(x, y, 'shard')
+    put(55, int(top(55))+18, 'gold'); put(56, int(top(55))+18, 'gold')       # the handle
+    # the front window, boarded over
+    fw = [(27, top(27)+5), (33, top(33)+5), (33, top(33)+12), (27, top(27)+12)]
+    poly(fw, 'glass')
+    for dy in (6, 9): line((26, top(26)+dy+1), (34, top(34)+dy-1), 'board', 2)
+    # the back window, a torn curtain hanging in it
+    bw = [(64, top(64)+5), (78, top(78)+5), (78, top(78)+13), (64, top(64)+13)]
+    poly(bw, 'glass')
+    poly([(64, top(64)+5), (70, top(70)+5), (68, top(68)+10), (66, top(66)+13), (64, top(64)+12)], 'curtain')
+    put(74, int(top(74))+8, 'shard')
+    # a smashed board low in the back quarter
+    poly([(66, top(66)+15), (68, top(68)+14), (70, top(70)+16), (73, top(73)+14.5), (75, top(75)+16), (74, top(74)+19), (66, top(66)+19)], 'hole')
+    # the beading: along the roof line, the waist, and the belly
+    line((22, top(22)), (84, top(84)), 'trim'); line((22, top(22)+20), (84, top(84)+20), 'trim')
+    # the roof: a curved top, the luggage rack with its rail, a torn canvas bundle and a trunk sliding off the back
+    poly([(21, top(21)), (25, top(25)-3), (82, top(82)-3), (86, top(86)), (84, top(84)+1), (22, top(22)+1)], 'leather')
+    for x in range(28, 80, 7): line((x, top(x)-3), (x, top(x)-7), 'iron')
+    line((26, top(26)-7), (80, top(80)-7), 'iron')
+    poly([(30, top(30)-4), (33, top(33)-10), (44, top(44)-13), (56, top(56)-12), (60, top(60)-5)], 'canvas')
+    poly([(43, top(43)-11), (48, top(48)-12), (47, top(47)-7), (43, top(43)-7)], 'hole')            # the tear in the canvas
+    line((38, top(38)-11), (38, top(38)-4), 'leather'); line((52, top(52)-12), (53, top(53)-4), 'leather')   # ropes
+    poly([(66, top(66)-4), (77, top(77)-4), (80, top(80)-11), (69, top(69)-11)], 'leather')         # the trunk, tipping
+    line((66, top(66)-4), (69, top(69)-11), 'gold'); line((77, top(77)-4), (80, top(80)-11), 'gold')
+    # the leather boot at the back
+    poly([(84, top(84)+2), (90, top(84)+5), (91, top(84)+16), (84, top(84)+19)], 'leather')
+    line((85, top(84)+9), (90, top(84)+10), 'iron')
+    # the driver's box at the front: the seat, its back, the footboard, a broken lamp
+    poly([(11, 17), (23, top(23)), (23, top(23)+12), (15, top(23)+12)], 'wood')   # the front boot, under the seat
+    line((12, 18), (23, top(23)+1), 'trim'); line((15, top(23)+12), (23, top(23)+12), 'trim')
+    poly([(8, 13), (21, 12), (22, 17), (9, 18)], 'leather')               # the seat cushion
+    poly([(19, 7), (22, 7), (22, 14), (20, 14)], 'wood')                 # the seat's back
+    poly([(5, 28), (16, 27), (16, 30), (5, 31)], 'wood')                 # the footboard, hanging off its iron
+    line((15, top(23)+11), (13, 28), 'iron')
+    line((23, top(23)+3), (19, top(23)+3), 'iron'); poly([(17, top(23)+1), (19, top(23)+1), (19, top(23)+6), (17, top(23)+6)], 'glass')   # the lamp
+    put(17, int(top(23))+2, 'shard')
+    # ---------------------------------------------------------------- the rear wheel, still on, a spoke snapped
+    wheel(72, 47, 13, 13, 12, missing=(4,), rimw=2)
+    line((74, 41), (79, 35), 'trim', 1)
+    # moss on the roof edge and the belly, grass tufts round the wheels, splinters
+    for (x, y, w, h) in [(24, 13, 7, 3), (56, 9, 6, 3), (30, 38, 8, 3), (50, 41, 7, 2), (82, 32, 4, 3), (12, 25, 4, 2)]: ellipse([x, y, x+w, y+h], 'moss')
+    for (x, y) in [(60, 58), (62, 57), (85, 58), (87, 56), (4, 58), (30, 60), (33, 59)]: line((x, y), (x+1, y-3), 'moss')
+    line((36, 55), (42, 53), 'board'); line((44, 58), (48, 56), 'wood')
     if not looted:
-        # the strongbox spilled in the grass, and coins
-        poly([(53,49),(61,48.5),(61,55),(53,55.5)],'wood_d'); line((53,51),(61,50.5),'trim',0.7); line((53,53.5),(61,53),'trim',0.7)
-        for (x,y) in [(4,58),(7,60),(26,58),(57,58)]: ell([(x,y),(x+1.4,y+1)],'gold')
-    # --- texture every material at the final resolution
-    img=Image.new('RGBA',(N,N),(0,0,0,0)); src=lab.load(); dst=img.load()
-    inv={v:k for k,v in KEYS.items()}
-    col_shift=[rnd.choice([-1,0,0,1]) for _ in range(N)]
-    for y in range(N):
-        for x in range(N):
-            k=src[x,y]
-            if k[3]==0: continue
-            m=inv.get(k)
-            if m is None: continue
-            p=PAL[m]; n=len(p)
-            if m in ('wood','wood_d','board','trim'):
-                i=min(n-1,max(0,n//2+col_shift[x//max(1,s//1)]+(1 if rnd.random()<0.10 else 0)-(1 if rnd.random()<0.12 else 0)))
-            elif m=='canvas':
-                i=min(n-1,max(0,int(rnd.random()*n*0.9)+(1 if (x+y)%3==0 else 0)))
-            elif m=='glass':
-                i=0; 
-                if rnd.random()<0.02: dst[x,y]=(150,150,170,255); continue   # a glint, as in the houses' windows
-            elif m=='moss':
-                if rnd.random()<0.35: continue                               # moss is patchy
-                i=rnd.randrange(n)
-            else:
-                i=min(n-1,max(0,n//2+rnd.choice([-1,0,1])))
-            dst[x,y]=p[i]+(255,)
-    # light from above: the top rows of each shape a little lighter is already in the palette; now the edges, darkened as the houses' are
-    px=img.load(); edge=[]
-    for y in range(N):
-        for x in range(N):
-            if px[x,y][3]==0: continue
-            if any(not(0<=x+dx<N and 0<=y+dy<N) or px[x+dx,y+dy][3]==0 for dx,dy in ((1,0),(-1,0),(0,1),(0,-1))): edge.append((x,y))
-    for x,y in edge:
-        r,g,b,a=px[x,y]; px[x,y]=(int(r*0.45),int(g*0.42),int(b*0.4),255) if (x+y)%5 else OUTLINE
-    # the ground: a soft shadow (and for the encounter picture, a patch of grass and earth)
-    base=Image.new('RGBA',(N,N),(0,0,0,0)); bd=ImageDraw.Draw(base)
-    if ground:
-        bd.ellipse(P([(0,42),(64,64)]), fill=(52,70,38,255)); bd.ellipse(P([(3,44),(61,62)]), fill=(66,88,46,255))
-        bp=base.load()
-        for y in range(N):
-            for x in range(N):
-                if bp[x,y][3] and rnd.random()<0.18: bp[x,y]=PAL['moss'][rnd.randrange(3)]+(255,)
-    sh=Image.new('RGBA',(N,N),(0,0,0,0)); ImageDraw.Draw(sh).ellipse(P([(3,47),(63,61)]), fill=(0,0,0,85))
-    base.alpha_composite(sh); base.alpha_composite(img)
-    return base
-out=sys.argv[1]
-draw(1).save(out+'/objRuinedCarriage.png'); draw(1,looted=True).save(out+'/objRuinedCarriageLooted.png'); draw(2,ground=True).save(out+'/ruined_carriage.png')
-prev=Image.new('RGBA',(256+16+256+16+160,256),(92,124,70,255))
-prev.alpha_composite(draw(1).resize((256,256),Image.NEAREST),(0,0)); prev.alpha_composite(draw(2,True).resize((256,256),Image.NEAREST),(272,0))
-h=Image.open('/home/user/shackle-breaker-2.0/frontend/src/assets/mapObjects/objAbandonedHouse1.png').convert('RGBA').crop((0,40,160,160)).resize((160,120),Image.NEAREST)
-prev.alpha_composite(h,(544,70)); prev.alpha_composite(draw(1),(544+40,190))
-prev.save(out+'/preview2.png')
+        # the strongbox, burst open in the grass, and coins
+        poly([(84, 50), (93, 49), (93, 57), (84, 58)], 'leather'); line((84, 52), (93, 51), 'gold'); line((84, 55), (93, 54), 'gold')
+        poly([(84, 49), (93, 48), (91, 45), (83, 46)], 'wood')
+        for (x, y) in [(80, 59), (82, 60), (88, 60), (40, 60), (8, 61)]: put(x, y, 'gold'); put(x+1, y, 'gold')
+    # ---------------------------------------------------------------- texture
+    img = Image.new('RGBA', (W, H), (0, 0, 0, 0)); px = img.load()
+    grain = [rnd.choice([-1, 0, 0, 0, 1]) for _ in range(W)]
+    for (x, y), m in lab.items():
+        p = PAL[m]; n = len(p)
+        if m in ('wood', 'board', 'panel'):
+            light = 1 if y < top(x) + 6 else (-1 if y > top(x) + 17 else 0)      # lit from above
+            i = n//2 + grain[x] + light + (1 if rnd.random() < 0.07 else 0) - (1 if rnd.random() < 0.10 else 0)
+        elif m == 'trim':
+            i = n//2 + (1 if rnd.random() < 0.3 else 0) - (1 if rnd.random() < 0.15 else 0)
+        elif m == 'canvas':
+            i = int(rnd.random()*n*0.8) + (1 if (x+y) % 3 == 0 else 0) + (1 if y < 8 else 0)
+        elif m == 'glass':
+            i = 0
+            if rnd.random() < 0.03: px[x, y] = (150, 150, 170, 255); continue
+        elif m == 'moss':
+            if rnd.random() < 0.3: continue
+            i = rnd.randrange(n)
+        elif m == 'iron':
+            i = n//2 + (1 if rnd.random() < 0.25 else 0)
+        else:
+            i = n//2 + rnd.choice([-1, 0, 0, 1])
+        px[x, y] = p[max(0, min(n-1, i))] + (255,)
+    # every outer edge darkened, as the houses' are; and a soft shadow under it all
+    edges = [(x, y) for (x, y) in lab if any(not (0 <= x+dx < W and 0 <= y+dy < H) or px[x+dx, y+dy][3] == 0 for dx, dy in ((1,0),(-1,0),(0,1),(0,-1)))]
+    for x, y in edges:
+        r, g, b, a = px[x, y]
+        if a: px[x, y] = (int(r*0.42), int(g*0.38), int(b*0.36), 255)
+    out = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    sh = Image.new('RGBA', (W, H), (0, 0, 0, 0)); ImageDraw.Draw(sh).ellipse([5, 50, 94, 63], fill=(0, 0, 0, 80))
+    out.alpha_composite(sh); out.alpha_composite(img)
+    return out
+def picture(car):
+    rnd = random.Random(5)
+    pic = Image.new('RGBA', (128, 128), (0, 0, 0, 0)); d = ImageDraw.Draw(pic)
+    d.ellipse([2, 70, 126, 124], fill=(52, 70, 38, 255)); d.ellipse([6, 73, 122, 120], fill=(66, 88, 46, 255))
+    p = pic.load()
+    for y in range(128):
+        for x in range(128):
+            if p[x, y][3] and rnd.random() < 0.22: p[x, y] = PAL['moss'][rnd.randrange(4)] + (255,)
+    pic.alpha_composite(car, (16, 40))
+    return pic
+out = sys.argv[1]
+car = make(); car.save(out+'/objRuinedCarriage.png'); make(looted=True).save(out+'/objRuinedCarriageLooted.png'); picture(car).save(out+'/ruined_carriage.png')
+prev = Image.new('RGBA', (96*4+20+256, 256), (92, 124, 70, 255))
+prev.alpha_composite(car.resize((384, 256), Image.NEAREST), (0, 0)); prev.alpha_composite(picture(car).resize((256, 256), Image.NEAREST), (404, 0))
+prev.save(out+'/preview.png')
