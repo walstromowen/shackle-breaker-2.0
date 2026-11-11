@@ -1,15 +1,15 @@
-# The hunting hawk's overworld sheet, from its battle sheet (frontend/src/assets/sprites/hawk/hawk_portrait.png, 128 px frames; row 4 faces right, its
-# 8 wingbeat poses each drawn twice):
+# The hunting hawk's overworld sheet, from its battle sheet (frontend/src/assets/sprites/hawk/hawk_portrait.png, 128 px frames; row 0 is its hover,
+# facing left, 16 frames of which every other one is used):
 #   python3 tools/art/hawkOverworldSheet.py frontend/src/assets/sprites/hawk/hawk_portrait.png frontend/src/assets/sprites/hawk/hawk_sprite.png
 # The layout every character sheet has (512 x 768: 8 frames of 64 px, 12 rows: idle, walk, run, each facing S, E, N, W). The hawk is small, about 22 px
 # across the wings, and flies above a small shadow on the ground (its bottom on row 54, where everyone's feet are). It bobs with its wingbeat. It has no
-# head-on drawing: east is the battle sheet's own right-facing hawk, west the same mirrored, south and north reuse them (a bird is seen side-on
+# head-on drawing: west is the battle sheet's own left-facing hover, east the same mirrored, south and north reuse them (a bird is seen side-on
 # whichever way it flies).
 import sys, math
 from PIL import Image, ImageDraw, ImageOps
 src, out = sys.argv[1], sys.argv[2]
 battle = Image.open(src).convert('RGBA')
-F, ROW, SCALE = 128, 4, 0.36
+F, ROW, SCALE = 128, 0, 0.36
 poses = []
 for k in range(8):
     fr = battle.crop((k * 2 * F, ROW * F, k * 2 * F + F, ROW * F + F))
@@ -35,7 +35,7 @@ def cell(col, row, pose, mirror, lift):
     ImageDraw.Draw(shadow).ellipse([CX - 6, BASE - 2, CX + 6, BASE + 1], fill=(0, 0, 0, 70))
     sheet.alpha_composite(shadow, (x0, y0))
     sheet.alpha_composite(img, (x0 + CX - img.width // 2, y0 + BASE - 12 - lift - img.height))
-FACING = {0: False, 1: False, 2: True, 3: True}         # S, E, N, W: mirrored for north and west
+FACING = {0: True, 1: True, 2: False, 3: False}         # S, E, N, W: mirrored to face right for south and east
 for block, bob in ((0, 1.0), (1, 1.5), (2, 2.0)):        # idle, walk, run: the wingbeat lifts it a little more the faster it goes
     for d in range(4):
         for f in range(8):

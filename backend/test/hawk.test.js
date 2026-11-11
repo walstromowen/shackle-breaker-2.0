@@ -31,7 +31,7 @@ test('the hawk is offered as a starting companion and joins as a beast with its 
 
 test("the hawk's sheets are registered, on disk and laid out like the others", () => {
     const H = ENTITY_DEFINITIONS.HAWK;
-    assert.deepEqual(pngSize(fileOf(H.spritePortrait)), [2048, 1024], 'battle sheet: 16 frames of 128 to a row, rows 0-1 and 4-5 used');
+    assert.deepEqual(pngSize(fileOf(H.spritePortrait)), [2048, 768], 'battle sheet: 16 frames of 128 to a row, rows 0-1 and 4-5 used');
     assert.deepEqual(pngSize(fileOf(H.spriteOverworld)), [512, 768], 'map sheet: 12 rows of 8 frames, like the dog and the snow leopard');
     assert.ok(fileOf(H.crySound) && fs.existsSync(fileOf(H.crySound)), 'its cry');
 });
