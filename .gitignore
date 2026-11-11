@@ -1,2 +1,4 @@
 .env
 node_modules
+# Python bytecode caches (tools/art scripts)
+__pycache__/
