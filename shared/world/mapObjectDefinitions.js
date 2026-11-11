@@ -121,6 +121,11 @@ export const MAP_OBJECTS_DEFINITIONS = {
     TOMBSTONE: { ...GRAVESTONE },
     /* AFTERMATH_REMAINS: a helmet on the ground with a sword through it, what an old battle left behind. Face it and interact to start the Aftermath encounter (biomeDefinitions.js PLAINS, its own band). */
     AFTERMATH_REMAINS: { sheet: 'objAftermath', spriteX: 0, spriteY: 0, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'aftermath', triggerRadius: 3 } },
+    /* RUINED_CARRIAGE: a carriage broken in the plains grass, 2 x 2 tiles (64 px: the anchor's row and the row above it), one wheel snapped flat, a strongbox
+       spilled. Face it and interact to start the Ruined Carriage encounter (biomeDefinitions.js PLAINS, its own band). Once looted it stays where it is, empty
+       (RUINED_CARRIAGE_LOOTED, no strongbox, nothing to do). */
+    RUINED_CARRIAGE: { sheet: 'objRuinedCarriage', spriteX: 0, spriteY: 0, width: 2, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 2, h: 2 }, interaction: { type: 'ENCOUNTER', id: 'ruined_carriage' } },
+    RUINED_CARRIAGE_LOOTED: { sheet: 'objRuinedCarriageLooted', spriteX: 0, spriteY: 0, width: 2, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: -1, w: 2, h: 2 } },
     /* the battlefield's dead (BATTLEFIELD in structures.js): soldiers in dark armour, slumped (1-8) or lying (9-15). 64 px, so 2 x 2 tiles, drawn up and
        right of the anchor; the body fills most of that, so all four tiles are solid (walked around, never through). */
     FALLEN_SOLDIER_1: { sheet: 'objFallenSoldier1', width: 2, height: 2, isSolid: true, isGround: false, hitbox: BODY_HITBOX },

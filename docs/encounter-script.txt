@@ -807,6 +807,53 @@ You drop onto the stakes. Climbing back out of the pit takes a long, painful whi
   > Drag yourself out.
 
 
+===== RUINED CARRIAGE (ruined_carriage) =====
+
+[discovery]
+A carriage lies broken in the tall grass, one wheel snapped from its axle and the other split through. Its door hangs from one hinge. The horses are gone, but the harness ends in links of black iron, and fresh hoofprints circle the wreck.
+  > [DEX] Search the carriage.
+  > [DEX] Search the carriage quietly, one eye on the grass.
+  > [STR] Pry open the strongbox.
+  > [INT] Study the hoofprints.
+  > Leave it be.
+
+[found_gold]
+Under the seat, behind a loose board, sits a heavy purse sewn shut against thieves. Somebody's whole fortune, by the weight of it.
+  > Take it.
+
+[found_valuables]
+Crates lashed to the roof held a merchant's best, wrapped in oilcloth and untouched by the rain.
+  > Take what you can carry.
+
+[steeds]
+A board splits with a crack like a whip. Out in the grass something answers: a scream that is not quite a horse's. Black iron rattles as the shackled steeds come back for their carriage.
+  > Draw your weapons!
+
+[splinters]
+A rotten board gives way under your hand, and splinters drive deep into your palm. Whatever was in there, the rain has had it.
+  > Leave it be.
+
+[slip_away]
+You find nothing worth the risk, and something heavy is moving out in the grass. You back away from the wreck before it finds you.
+  > Leave quietly.
+
+[strongbox_open]
+The lock gives with a crack. The strongbox is full: coin to the brim, a physician's sealed draught glowing amber in its straw, and a merchant's papers wrapped around something heavier.
+  > Empty it.
+
+[strongbox_noise]
+The lid holds, but the iron bands ring out across the plain like a bell. Out in the grass, heads come up. Chains rattle, and the shackled steeds come running.
+  > Draw your weapons!
+
+[tracks_read]
+The prints are deep and unshod, and between them run the drag-marks of chains. Shackled steeds: whatever took the people took the horses too. They graze close by, and they will come back to the wreck. Work quietly.
+  > Back to the carriage.
+
+[tracks_lost]
+The prints cross and recross until they mean nothing at all. Whatever made them could be anywhere.
+  > Back to the carriage.
+
+
 ===== SHACKLED (prologue) =====
 
 [iron]

@@ -100,6 +100,8 @@ ui_icons: './assets/icons/ui_icons.png',
     objSmallRocks3Snow: './assets/mapObjects/objSmallRocks3Snow.png',
     objStick: './assets/mapObjects/objStick.png',
     objAftermath: './assets/mapObjects/objAftermath.png',
+    objRuinedCarriage: './assets/mapObjects/objRuinedCarriage.png',               // the ruined carriage on the plains (2 x 2 tiles): story/encounters/ruinedCarriage.js
+    objRuinedCarriageLooted: './assets/mapObjects/objRuinedCarriageLooted.png',   // ... once its strongbox and coins are gone
     objFallenSoldier1: './assets/mapObjects/fallen_soldiers/objFallenSoldier1.png',   // the battlefield's dead (BATTLEFIELD in structures.js): 1-8 slumped, 9-15 lying
     objFallenSoldier2: './assets/mapObjects/fallen_soldiers/objFallenSoldier2.png',
     objFallenSoldier3: './assets/mapObjects/fallen_soldiers/objFallenSoldier3.png',
@@ -414,6 +416,7 @@ dariusTheGrovelerPortrait:'./assets/sprites/darius_the_groveler/darius_the_grove
     encounter_old_gravestone: './assets/icons/encounters/old_gravestone.png',
     encounter_suspicious_merchant: './assets/icons/encounters/suspicious_merchant.png',
     encounter_aftermath: './assets/icons/encounters/aftermath.png',
+    encounter_ruined_carriage: './assets/icons/encounters/ruined_carriage.png',   // one 128 px picture
     encounter_tracks_in_the_snow: './assets/icons/encounters/tracks_in_the_snow.png',
     encounter_prologue: './assets/icons/encounters/story/prologue.png',
     encounter_peculiar_scarecrow: './assets/icons/encounters/peculiar_scarecrow.png',

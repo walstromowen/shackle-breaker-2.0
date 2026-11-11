@@ -6,6 +6,8 @@ import { AbilityDefinitions } from './abilityDefinitions.js';
 import { AbilityModel } from './abilityModel.js';
 import { gameState } from '../core/gameState.js';
 import { CorruptionSystem } from '../characters/corruptionSystem.js';
+import { SCAR_TRAITS } from './abilityTraits.js';
+import { TRAIT_DEFINITIONS } from './traitDefinitions.js';
 import { rng } from '../core/random.js';
 
 /* Effect types that are real but resolved by the battle code itself, not here: they must not trigger the "unknown effect type" warning. */
@@ -401,6 +403,19 @@ export class AbilitySystem {
             return { success: false, message: this._fillTemplate(effect.notShackled || '{target} is not shackled.', { target: entity?.name || 'They' }) };
         }
         return { success: true, message: this._fillTemplate(effect.message || '{target} is free.', { target: entity.name }) };
+    }
+
+    /* { type: 'cure_trait', message?, nothingToCure? }
+       The Mender's Draught: takes the bad trait the character gained last (the negative traits, abilityTraits.SCAR_TRAITS: what a fall in battle can
+       leave, and the flaws a character can be made with) off them. With none, nothing happens and the draught is kept. */
+    static _world_cure_trait(effect, source, target) {
+        const entity = target && (target.originalEntity || target);
+        const traits = (entity && Array.isArray(entity.traits)) ? entity.traits : [];
+        const bad = [...traits].reverse().find(id => SCAR_TRAITS.includes(id));
+        if (!bad) return { success: false, message: this._fillTemplate(effect.nothingToCure || '{target} has no bad trait to mend.', { target: entity?.name || 'They' }) };
+        entity.removeTrait(bad);
+        const trait = (TRAIT_DEFINITIONS[bad] && TRAIT_DEFINITIONS[bad].name) || bad;
+        return { success: true, message: this._fillTemplate(effect.message || '{target} is no longer {trait}.', { target: entity.name, trait }) };
     }
 
     /* { type: 'show_interior_map', message?, notInside?, alreadyOpen? }

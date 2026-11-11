@@ -1426,6 +1426,22 @@ export const AbilityDefinitions = {
             notShackled: "{target} is not shackled."
         }]
     },
+    // The Mender's Draught (item menders_draught): cures the character it is used on of the bad trait they gained last.
+    "menders_draught": {
+        id: "menders_draught",
+        name: "Mender's Draught",
+        description: "Cures the drinker of their most recent bad trait.",
+        context: "overworld",                       // never offered in a battle
+        range: "self",
+        tags: ["utility", "item"],
+        targeting: { scope: "self", select: "auto" },
+        accuracy: 1.0,
+        effects: [{
+            type: "cure_trait",                      // AbilitySystem._world_cure_trait
+            message: "Warmth spreads through {target}. {target} is no longer {trait}.",
+            nothingToCure: "{target} has no bad trait to mend."
+        }]
+    },
     // Paste into AbilityDefinitions next to "torchlight". Carried by the "escape_rope" item.
     "escape_rope": {
         id: "escape_rope",
