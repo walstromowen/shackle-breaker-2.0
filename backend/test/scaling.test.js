@@ -73,7 +73,7 @@ test('the backgrounds hit hardest with the types their best attributes feed', ()
 // with: anchors recorded from them, level 1 (the Legionary's is the one change: trained soldiers got +3 on every physical attack, 14 -> 17, when enemies
 // were made hit harder). Under the player's hybrid rules the agile ones would hit far harder (a Thunder Locust's lightning 9 -> 21).
 test('enemies and recruits hit as their attributes say (humanoids on the player rules, beasts on the enemy rules)', () => {
-    const anchors = [['WOLF', 'pierce', 17], ['DOG', 'pierce', 8], ['DUNE_MAW', 'pierce', 14], ['MAD_MAN', 'slash', 10], ['THUNDER_LOCUST', 'lightning', 9],
+    const anchors = [['WOLF', 'pierce', 17], ['DOG', 'pierce', 10], ['DUNE_MAW', 'pierce', 14], ['MAD_MAN', 'slash', 10], ['THUNDER_LOCUST', 'lightning', 9],
         ['THUNDER_LOCUST', 'pierce', 6], ['SCORCHED_VAGRANT', 'fire', 17], ['LEGIONARY', 'slash', 16], ['PANZERKAMFER', 'pierce', 24], ['SNOW_LEOPARD', 'slash', 19]];
     for (const [id, type, old] of anchors) {
         const e = EntityFactory.create(id, 1);

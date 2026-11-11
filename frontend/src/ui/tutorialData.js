@@ -31,7 +31,7 @@ export const TIPS = {
         rows: [
             { keys: ['Click'], text: 'Choose an option (Space or Enter picks the highlighted one)' },
             { keys: ['W', 'S'], text: 'Move between options (the up and down arrows work too)' },
-            { keys: ['Space'], text: 'Tap to finish the text as it types out, tap again to move on' },
+            { keys: ['Space'], text: 'Hold to skip the text as it types out; once it has all appeared, tap to choose' },
             { keys: ['Hover'], text: 'Point at an attribute shown on an option to see what it does' },
             { keys: ['Wheel'], text: 'Scroll long text' }
         ]

@@ -1327,7 +1327,7 @@ export const AbilityDefinitions = {
     "take_flight": {
       id: "take_flight",
       name: "Take Flight",
-      description: "The user launches into the sky, gaining an aerial advantage.",
+      description: "Launches into the sky for 2 turns: slash, blunt and pierce attacks cannot reach it until it lands.",
       range: "self",
       tags: ["utility", "buff", "movement", "trait_trigger"],
       // Note: The trait's onBattleStart logic will likely override this message, 
@@ -1335,14 +1335,15 @@ export const AbilityDefinitions = {
       battleMessage: "{user} launches into the air!", 
       icon: { col: 4, row: 2 }, 
       targeting: { scope: "self", select: "auto" },
-      cost: {}, // Kept empty so it doesn't drain stamina/insight when auto-triggered
+      // a trait that casts it at the start of a fight (Airborne) pays nothing (battleQueue: ignoreCost); taking off again later costs stamina
+      cost: { stamina: 15 },
       accuracy: 1.0,
       animationId: "trait_activate",
       effects: [],
       // This applies the mechanical buff. You'll need a corresponding "flying" 
       // or "airborne" status in your StatusDefinitions to handle the actual 
       // stat changes (like evasion up or ground immunity).
-      statusEffects: [{ id: "flying", chance: 1.0, duration: -1 }] 
+      statusEffects: [{ id: "flying", chance: 1.0, duration: 2 }]   // 2 turns in the air, then it lands 
     },
     "item_bear_trap": {
         id: "item_bear_trap",

@@ -594,12 +594,12 @@ export const ENTITY_DEFINITIONS = {
         deathSound: "dogDeath",
         attributes: {
             ...BEAST_TEMPLATE.attributes,
-            vigor: 6, dexterity: 12, strength: 6
+            vigor: 7, dexterity: 12, strength: 7
         },
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
-            maxHp: 4, maxStamina: 8, speed: 7, critical: 0.08,
-            baseAttack: { blunt: 2, slash: 4, pierce: 2 }
+            maxHp: 7, maxStamina: 9, speed: 7, critical: 0.08,
+            baseAttack: { blunt: 2, slash: 5, pierce: 3 }
         },
         lootTableId: "canine_drops",
         abilities: [...BEAST_TEMPLATE.abilities, 'howl'],
@@ -648,10 +648,10 @@ export const ENTITY_DEFINITIONS = {
         },
         baseStats: {
             ...BEAST_TEMPLATE.baseStats,
-            maxHp: 16,
+            maxHp: 14,
             maxStamina: 20,
             speed: 12,
-            critical: 0.18,
+            critical: 0.15,
             baseDefense: {
                 ...BEAST_TEMPLATE.baseStats.baseDefense,
                 ice: 5,
@@ -667,8 +667,8 @@ export const ENTITY_DEFINITIONS = {
             },
             baseAttack: {
                 blunt: 2,
-                slash: 7,
-                pierce: 5,
+                slash: 6,
+                pierce: 4,
                 ice: 2
             }
         },
@@ -773,7 +773,9 @@ export const ENTITY_DEFINITIONS = {
             baseAttack: { blunt: 0, slash: 5, pierce: 6 }
         },
         lootTableId: "mad_man_drops",
-        abilities: [...BASE_ENTITY.abilities, "claw", "hit_and_run"],
+        // a talon slash, Take Flight (it starts every fight in the air for 2 turns: the Airborne trait), and Hit & Run to strike and dart back out
+        abilities: [...BASE_ENTITY.abilities, "slash", "take_flight", "hit_and_run"],
+        traits: ["airborne"],
         tags: ["BIOLOGICAL", "BEAST", "AVIAN"]
     },
 

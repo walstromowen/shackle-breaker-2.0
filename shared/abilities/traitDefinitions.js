@@ -192,8 +192,8 @@ export const TRAIT_DEFINITIONS = {
         }
     },
     'airborne': {
-        name: "Airborn",
-        description: "Takes to the skies at the start of battle.",
+        name: "Airborne",
+        description: "Takes to the skies at the start of battle and flies for 2 turns, out of reach of slash, blunt and pierce attacks.",
         triggers: {
             onBattleStart: { ability: "take_flight", battleMessage: "{actor} takes to the air!", animationId: "trait_activate" }
         }

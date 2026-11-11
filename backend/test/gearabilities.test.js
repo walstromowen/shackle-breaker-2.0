@@ -62,9 +62,8 @@ test('in a real fight Second Wind and Drawing Insight give back the fighter\'s f
     }
 });
 
-test('the handaxe costs no iron anywhere, and is weaker than the shortsword', () => {
-    const recipe = Object.values(R).find(r => r.outputItemId === 'handaxe');
-    assert.ok(recipe && !Object.keys(recipe.materials).some(m => /iron|steel/.test(m)), 'recipe');
+test('the handaxe needs no iron to upgrade, and is weaker than the shortsword', () => {
+    // (its recipe does take two iron ingots, the head: craftingRecipeDefinitions.js)
     for (const [lvl, cost] of Object.entries(I.handaxe.upgradeCosts)) assert.ok(!Object.keys(cost.materials).some(m => /iron|steel/.test(m)), `upgrade ${lvl}`);
     assert.ok(sumAttack(I.handaxe.attack) < sumAttack(I.shortsword.attack));
     assert.ok(sumAttack(I.handaxe.statGrowth.attack) < sumAttack(I.shortsword.statGrowth.attack));
