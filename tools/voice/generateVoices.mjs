@@ -19,7 +19,7 @@
 //   "directions"  { "the line as it reads on screen": "what the voice is given instead" }: the same words with acting cues in square brackets
 //                 ("[voice breaking] No, you are not him."), for eleven_v3. Only the recording hears them; the screen shows the line as written.
 //                 Changing a line's direction records that line again.
-// voices.json can also have "pronounce": { "word": "how the voices should say it" } for every voice (Panzeria: "Pan-zeer-ia").
+// voices.json can also have "pronounce": { "word": "how the voices should say it" } for every voice (Panzeria: "Panz-eer-ia").
 //   "fx"          a sound treatment run on each clip with ffmpeg after recording (FX below, e.g. "ghost") The API key is read from ELEVENLABS_API_KEY (a cloud session's network proxy puts
 // it in for you: any value works there).
 import fs from 'node:fs';
@@ -51,6 +51,8 @@ const opt = (name) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1
 const FX = {
     ghost: 'asetrate=44100*0.94,aresample=44100,aecho=0.8:0.7:60|140|260:0.35|0.25|0.15,highpass=f=90,lowpass=f=7500,volume=1.1',
     // hall: the same stone-chamber echo with the voice's own pitch kept (a shrill voice stays shrill), a little longer, like a preacher in an empty nave
+    // deeper: the voice a semitone or so lower at the same speed (asetrate lowers the pitch and slows it, atempo brings the speed back)
+    deeper: 'asetrate=44100*0.94,aresample=44100,atempo=1.0638',
     hall: 'aecho=0.8:0.75:70|160|300:0.35|0.25|0.18,highpass=f=80,lowpass=f=9000,volume=1.1',
     // nightmare: the hall echo, darker, with a faint copy of the voice a fourth lower under it (same timing): the shrill mania stays on top,
     // something deeper speaks along beneath it
@@ -114,7 +116,7 @@ export function mp3Duration(buf) {
     return Math.round(seconds * 1000) / 1000;
 }
 
-/* "pronounce" in voices.json: { "Panzeria": "Pan-zeer-ia" }: a word the voices would say wrong, respelled for them (whole words, any voice); the
+/* "pronounce" in voices.json: { "Panzeria": "Panz-eer-ia" }: a word the voices would say wrong, respelled for them (whole words, any voice); the
    screen still shows the real spelling. */
 const PRONOUNCE = Object.entries(CONFIG.pronounce || {}).sort((a, b) => b[0].length - a[0].length);
 const respell = (text) => PRONOUNCE.reduce((t, [word, said]) => t.replace(new RegExp(`\\b${word}\\b`, 'g'), said), text);
