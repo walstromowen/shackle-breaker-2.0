@@ -205,14 +205,14 @@ export const ENTITY_DEFINITIONS = {
     /* Nikoli: a general of the Panzerians, the good brother (his brother Jaeger, "The Pursuer", is the corrupted one: docs/story.md). Never fought: he camps beside the first
        campfire of the snowy mountains the player comes upon (world.nikoliCampfire, WorldManager), fights beside the party against the frozen
        trappers when they first meet (an ally: battleState context.allies), and hunts for Commander Mentoras (story/encounters/story/nikoli.js).
-       Placeholder art: the Panzerian warlord's sheets, until he has his own. */
+       Art: his own portrait (nikoliPortrait); on the map he still walks as the Panzerian warlord. */
     "NIKOLI": {
         ...HUMANOID_TEMPLATE,
         name: "Nikoli",
         properName: true,   // "Return to Nikoli", not "the Nikoli" (a quest handed in to him)
         level: 1,
         spriteOverworld: "warlordHeroSprite",
-        spritePortrait: "warlordHeroPortrait",
+        spritePortrait: "nikoliPortrait",
         crySound: "legionaryCry",
         deathSound: "legionaryCry",
         // a strength and ice build: the greatsword's weight, and the cold of the north in its edge and in his blood (the player rules: 50 points)
