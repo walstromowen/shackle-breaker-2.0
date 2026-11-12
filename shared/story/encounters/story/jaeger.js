@@ -7,24 +7,33 @@
 
    Where: among the hoard of the first catacombs the player walks into (InteriorFactory: world.jaegerCatacomb, CatacombGenerator config.storyNpc), until
    met. The player is never offered "you're not Nikoli": seeing through him means answering that they do not know the name, keeping Mentoras hidden
-   on purpose. Either way he is gone from the map (DESTROY_OBJECT), and the milestone jaeger_met keeps him from coming back; jaeger_told remembers that
+   on purpose. He never vanishes in front of the player: he stays where he sat for the rest of the visit (talked to again, he has nothing more to say:
+   again / again_told), and the next time the player walks into the catacombs he has moved on (the milestone jaeger_met keeps InteriorFactory from
+   putting him back; it is this player's own, so in a party each player meets him in their own time, and nothing goes into the shared world); jaeger_told remembers that
    the player told him of the hooded man in the workshop.
 
    Voiced in Nikoli's voice, played cold (tools/voice/voices.json JAEGER). Personal: this player's own meeting.
    Art: the Panzerian warlord's portrait, the same as Nikoli's. */
+import { gameState } from '../../../core/gameState.js';
+
 const TITLE = "Nikoli";   // the name he gives
 const IMG = { col: 0, row: 0 };
 
 const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
 const stage = (text, decisions, extra = {}) => ({ displayText: TITLE, image: IMG, text, decisions, ...extra });
 const next = (stageId) => [{ text: "Continue.", outcomes: toStage(stageId) }];
-// he is gone: the meeting is over for good (and what the player did, remembered)
-const gone = (text, milestones = []) => [{ text, outcomes: [{ weight: 100, results: [
+// the meeting is over (and what the player did, remembered); he stays where he is until the player has gone, and is not there when they come back
+const done = (text, milestones = []) => [{ text, outcomes: [{ weight: 100, results: [
     { type: "GRANT_MILESTONE", payload: { id: "jaeger_met" } },
     ...milestones.map(id => ({ type: "GRANT_MILESTONE", payload: { id } })),
-    { type: "DESTROY_OBJECT" },
     { type: "END_ENCOUNTER", payload: null }
 ] }] }];
+const has = (id) => Array.isArray(gameState.milestones) && gameState.milestones.includes(id);
+/** The first meeting, or (talked to again before the player leaves) a word to say he is finished with them. */
+function opening() {
+    if (!has('jaeger_met')) return 'waiting';
+    return has('jaeger_told') ? 'again_told' : 'again';
+}
 
 export const jaeger = {
     id: "jaeger",
@@ -33,7 +42,7 @@ export const jaeger = {
     personal: true,
     tone: "cold",
     ambience: "none",
-    initialStage: "waiting",
+    initialStage: opening,
     stages: {
         // ---- before the question: the clues ----
         waiting: stage("Among the hoard, a broad man in dark Panzerian armour sits on a burial chest, a greatsword across his knees. He does not rise. He has been watching the door.",
@@ -69,14 +78,20 @@ export const jaeger = {
             next("told_2")),
         told_2: stage("\"Thank you, my friend. You have been more helpful than you know.\"",
             next("told_3")),
-        told_3: stage("He rises, and is gone into the dark between the graves before you think to ask how he knew the way.",
-            gone("Leave.", ["jaeger_told"])),
+        told_3: stage("He rises and takes up his greatsword. He does not ask you where the workshop is. He does not look at you again.",
+            done("Leave.", ["jaeger_told"])),
 
         // ---- not told ----
         dunno: stage("\"No? Pity.\" He studies you a long moment, the way a man studies a lock.",
             next("dunno_2")),
         // the one slip of his own name, caught at once: never named, by him or by the narrator
         dunno_2: stage("\"Jae... Nikoli will find you. [pause] Nikoli always finds people.\"",
-            gone("Leave him to the dark."))
+            done("Leave him to the dark.")),
+
+        // ---- talked to again, before the player has gone ----
+        again: stage("He does not look up from the greatsword across his knees. \"Nikoli has nothing more to ask you.\"",
+            [{ text: "Leave.", outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }] }]),
+        again_told: stage("He is buckling on his gauntlets. \"Nikoli has what he came for. Go, my friend.\"",
+            [{ text: "Leave.", outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }] }])
     }
 };

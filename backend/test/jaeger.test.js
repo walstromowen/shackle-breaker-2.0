@@ -44,7 +44,7 @@ test('he waits in the hoard of the first catacombs entered, in no other, and not
 });
 
 test('the clues come before the question: the even smile, the cold, no laughter, the slip into "I", and no memory of a player Nikoli fought beside', () => {
-    const order = []; let id = J.initialStage;
+    const order = []; let id = 'waiting';
     while (id && id !== 'debt') { order.push(id); id = nexts(J.stages[id]).find(s => s !== 'remember') || null; }
     assert.ok(order.indexOf('ask') > order.indexOf('host'), 'he asks only after the clues');
     assert.match(J.stages.smile.text, /straight, white, even smile/);
@@ -71,12 +71,23 @@ test('two answers: tell him of the hooded man (only once the Stranger is met), o
     for (const [stageId, flag] of Object.entries(ends)) {
         const r = results(stageId);
         assert.ok(r.some(x => x.type === 'GRANT_MILESTONE' && x.payload.id === 'jaeger_met'), stageId);
-        assert.ok(r.some(x => x.type === 'DESTROY_OBJECT'), `${stageId}: he leaves the map`);
+        assert.ok(!r.some(x => ['DESTROY_OBJECT', 'UNPLACE_OBJECT', 'REPLACE_OBJECT'].includes(x.type)), `${stageId}: he does not vanish in front of the player`);
         if (flag) assert.ok(r.some(x => x.type === 'GRANT_MILESTONE' && x.payload.id === flag), `${stageId}: ${flag}`);
     }
     assert.ok(!results('dunno_2').some(r => r.type === 'GRANT_MILESTONE' && r.payload.id === 'jaeger_told'), 'not telling him tells him nothing');
     assert.match(J.stages.dunno_2.text, /Jae\.\.\. Nikoli will find you/, 'told nothing, he nearly gives his own name');
     assert.doesNotMatch(JSON.stringify(J.stages), /Jaeger/, 'never named, by him or the narrator');
+});
+
+test('he never vanishes: talked to again before the player leaves, he has nothing more to say; on the next visit he has moved on', () => {
+    gameState.milestones = [];
+    assert.equal(J.initialStage(), 'waiting');
+    gameState.milestones = ['jaeger_met'];
+    assert.equal(J.initialStage(), 'again');
+    gameState.milestones = ['jaeger_met', 'jaeger_told'];
+    assert.equal(J.initialStage(), 'again_told');
+    gameState.milestones = [];
+    assert.doesNotMatch(J.stages.told_3.text, /gone|vanish/i);
 });
 
 test('voiced: his lines in Nikoli\'s voice, played cold', async () => {

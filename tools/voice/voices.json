@@ -97,8 +97,10 @@
         "He smiles. It is a straight, white, even smile. It does not reach his eyes.": "[slow, quiet, unsettling] He smiles. It is a straight, white, even smile. It does not reach his eyes.",
         "He does not laugh. He does not move at all, except his eyes.": "[quiet, uneasy] He does not laugh. He does not move at all, except his eyes.",
         "For a moment nothing in his face moves at all.": "[hushed] For a moment nothing in his face moves at all.",
-        "He rises, and is gone into the dark between the graves before you think to ask how he knew the way.": "[low, a chill of realisation] He rises, and is gone into the dark between the graves before you think to ask how he knew the way.",
-        "He studies you a long moment, the way a man studies a lock.": "[quiet, wary] He studies you a long moment, the way a man studies a lock."
+        "He studies you a long moment, the way a man studies a lock.": "[quiet, wary] He studies you a long moment, the way a man studies a lock.",
+        "He rises and takes up his greatsword. He does not ask you where the workshop is. He does not look at you again.": "[low, a chill of realisation] He rises and takes up his greatsword. He does not ask you where the workshop is. He does not look at you again.",
+        "He does not look up from the greatsword across his knees.": "[quiet, cold] He does not look up from the greatsword across his knees.",
+        "He is buckling on his gauntlets.": "[quiet, uneasy] He is buckling on his gauntlets."
       }
     },
     "STRANGER": {
@@ -244,7 +246,9 @@
         "Thank you, my friend. You have been more helpful than you know.": "[smooth, precise, almost no accent, chilling] Thank you, my friend. [pause] You have been more helpful than you know.",
         "No? Pity.": "[flat, cold] No? [pause] Pity.",
         "Jae... Nikoli will find you.": "[cold, then a slip, cut short] Jae... [correcting himself at once, quiet menace] Nikoli will find you.",
-        "Nikoli always finds people.": "[low, cold threat] Nikoli always finds people."
+        "Nikoli always finds people.": "[low, cold threat] Nikoli always finds people.",
+        "Nikoli has nothing more to ask you.": "[flat, cold, dismissive] Nikoli has nothing more to ask you.",
+        "Nikoli has what he came for. Go, my friend.": "[quiet, cold satisfaction] Nikoli has what he came for. [pause] Go, my friend."
       }
     }
   }

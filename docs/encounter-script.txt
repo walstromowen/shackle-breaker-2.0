@@ -725,7 +725,7 @@ JAEGER: "Thank you, my friend. You have been more helpful than you know."
   > Continue.
 
 [told_3]
-He rises, and is gone into the dark between the graves before you think to ask how he knew the way.
+He rises and takes up his greatsword. He does not ask you where the workshop is. He does not look at you again.
   > Leave.
 
 [dunno]
@@ -736,6 +736,16 @@ He studies you a long moment, the way a man studies a lock.
 [dunno_2]
 JAEGER: "Jae... Nikoli will find you. [pause] Nikoli always finds people."
   > Leave him to the dark.
+
+[again]
+He does not look up from the greatsword across his knees.
+JAEGER: "Nikoli has nothing more to ask you."
+  > Leave.
+
+[again_told]
+He is buckling on his gauntlets.
+JAEGER: "Nikoli has what he came for. Go, my friend."
+  > Leave.
 
 
 ===== OLD GRAVESTONE (old_gravestone) =====
