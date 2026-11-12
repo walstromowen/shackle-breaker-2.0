@@ -56,11 +56,11 @@ export const prologue = {
             displayText: "The Prisoners",
             tone: "cold",
             image: { sheet: "encounter_prologue", col: 1, row: 0 },
-            text: "The prisoners ahead laugh and mutter to themselves, their laughter has no joy in it, and it never stops..",
+            text: "The prisoners ahead laugh and mutter to themselves, their laughter has no joy in it, and it never stops.",
             decisions: [
                 {
                     text: "Listen to them.",
-                    customActionText: "The prisoners' words make no sense, yet they laugh as if remenicing over a shared memory.",
+                    customActionText: "The prisoners' words make no sense, yet they laugh as if reminiscing over a shared memory.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_guards" } }] }]
                 },
                 {
@@ -74,7 +74,7 @@ export const prologue = {
             displayText: "The Guards",
             tone: "cold",
             image: { sheet: "encounter_prologue", col: 2, row: 0 },
-            text: "A guard in dark armor walks beside you, his faces hidden beneath his helmet. You try to catch a glimpse of his expression, but it remains obscured.",
+            text: "A guard in dark armor walks beside you, his face hidden beneath his helmet. You try to catch a glimpse of his expression, but it remains obscured.",
             decisions: [
                 {
                     text: "Look closer.",
@@ -83,7 +83,7 @@ export const prologue = {
                 },
                 {
                     text: "Keep your eyes on the ground.",
-                    customActionText: "You count your steps and do not look up. hoping the guard did not notice your gaze.",
+                    customActionText: "You count your steps and do not look up, hoping the guard did not notice your gaze.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "the_road" } }] }]
                 }
             ]
@@ -101,7 +101,7 @@ export const prologue = {
                 },
                 {
                     text: "Ask where you are going.",
-                    customActionText: "You sheepishly ask where you are going to anyone who is listing. After a short pause, the prisoners around you burst out in a chorus of laughter.",
+                    customActionText: "You sheepishly ask where you are going to anyone who is listening. After a short pause, the prisoners around you burst out in a chorus of laughter.",
                     outcomes: [{ weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "slack" } }] }]
                 }
             ]
@@ -165,7 +165,7 @@ export const prologue = {
         awake_2: {
             displayText: "Awake",
             image: { sheet: "encounter_prologue", col: 2, row: 1 },
-            text: "Memories flick in and out of focus making it difficult to discern what is real and what is illusion.",
+            text: "Memories flicker in and out of focus making it difficult to discern what is real and what is illusion.",
             decisions: [
                 {
                     text: "Continue.",

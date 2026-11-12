@@ -881,25 +881,25 @@ It pulls, and you follow. You don't remember how you got here, or how long you h
       You walk forward, as you have done for so long.
 
 [the_others]
-The prisoners ahead laugh and mutter to themselves, their laughter has no joy in it, and it never stops..
+The prisoners ahead laugh and mutter to themselves, their laughter has no joy in it, and it never stops.
   > Listen to them.
-      The prisoners' words make no sense, yet they laugh as if remenicing over a shared memory.
+      The prisoners' words make no sense, yet they laugh as if reminiscing over a shared memory.
   > Ignore them.
       You stare at the ground and keep walking, hoping to drown out their endless laughter.
 
 [the_guards]
-A guard in dark armor walks beside you, his faces hidden beneath his helmet. You try to catch a glimpse of his expression, but it remains obscured.
+A guard in dark armor walks beside you, his face hidden beneath his helmet. You try to catch a glimpse of his expression, but it remains obscured.
   > Look closer.
       The guard's expression is neutral, revealing nothing of his thoughts.
   > Keep your eyes on the ground.
-      You count your steps and do not look up. hoping the guard did not notice your gaze.
+      You count your steps and do not look up, hoping the guard did not notice your gaze.
 
 [the_road]
 The road stretches endlessly ahead. Where this road ends, and why you walk it, you do not know.
   > Walk.
       You continue walking, your labored steps sinking into the mud.
   > Ask where you are going.
-      You sheepishly ask where you are going to anyone who is listing. After a short pause, the prisoners around you burst out in a chorus of laughter.
+      You sheepishly ask where you are going to anyone who is listening. After a short pause, the prisoners around you burst out in a chorus of laughter.
 
 [slack]
 In an instant, a sound like a bell struck underwater fills your ears. The chain that binds you to the line breaks, and goes slack.
@@ -919,7 +919,7 @@ You draw a steadying breath as reality grounds you. Before you stretches a silen
   > Continue.
 
 [awake_2]
-Memories flick in and out of focus making it difficult to discern what is real and what is illusion.
+Memories flicker in and out of focus making it difficult to discern what is real and what is illusion.
   > Continue.
 
 [awake_3]
