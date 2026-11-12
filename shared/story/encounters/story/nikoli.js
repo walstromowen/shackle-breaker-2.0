@@ -28,7 +28,7 @@
 
    Personal: in a party of players this is each player's own (their milestones), never shared or voted on. The fight it starts may still pull
    in the players nearby; Nikoli then fights beside all of them.
-   Art: his own portrait (nikoliPortrait, entity NIKOLI). */
+   Art: the Panzerian warlord's portrait for now (entity NIKOLI); his brother Jaeger looks the same (story/encounters/story/jaeger.js). */
 import { gameState } from '../../../core/gameState.js';
 import { QuestModel } from '../../questModel.js';
 
@@ -145,7 +145,7 @@ const STAGES = {
 export const nikoli = {
     id: "nikoli",
     title: TITLE,
-    imageSheet: "nikoliPortrait",
+    imageSheet: "warlordHeroPortrait",
     personal: true,
     tone: "cold",
     ambience: "fireCrackle",

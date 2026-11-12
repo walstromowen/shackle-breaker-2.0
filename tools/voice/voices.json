@@ -91,7 +91,16 @@
         "Seeing you, he frees one hand and signs a single word, sharp and plain: Now.": "[sharp, urgent] Seeing you, he frees one hand and signs a single word, sharp and plain: Now.",
         "The Dry Kraken sinks back into the sand it came from, and the desert closes over it like water.": "[slow, quiet relief] The Dry Kraken sinks back into the sand it came from, and the desert closes over it like water.",
         "The nightblade lands on his feet. Of course he does. He cleans his blade before he looks at you, then studies you a long while with strange, patient eyes.": "[wry, then quiet] The nightblade lands on his feet. Of course he does. He cleans his blade before he looks at you, then studies you a long while with strange, patient eyes.",
-        "He raises his hands and signs slowly, so that even you can follow: a hood, drawn low over the face. Then a question.": "[gentle, quiet] He raises his hands and signs slowly, so that even you can follow: a hood, drawn low over the face. Then a question."
+        "He raises his hands and signs slowly, so that even you can follow: a hood, drawn low over the face. Then a question.": "[gentle, quiet] He raises his hands and signs slowly, so that even you can follow: a hood, drawn low over the face. Then a question.",
+        "Among the hoard, a broad man in dark Panzerian armour sits on a burial chest, a greatsword across his knees. He does not rise. He has been watching the door.": "[low, measured, wary narration] Among the hoard, a broad man in dark Panzerian armour sits on a burial chest, a greatsword across his knees. He does not rise. He has been watching the door.",
+        "The torches burn low on his side of the hall. Frost rims his gauntlets, though the air is still and warm.": "[quiet, uneasy] The torches burn low on his side of the hall. Frost rims his gauntlets, though the air is still and warm.",
+        "He smiles. It is a straight, white, even smile. It does not reach his eyes.": "[slow, quiet, unsettling] He smiles. It is a straight, white, even smile. It does not reach his eyes.",
+        "He does not laugh. He does not move at all, except his eyes.": "[quiet, uneasy] He does not laugh. He does not move at all, except his eyes.",
+        "For a moment nothing in his face moves at all.": "[hushed] For a moment nothing in his face moves at all.",
+        "He rises, and is gone into the dark between the graves before you think to ask how he knew the way.": "[low, a chill of realisation] He rises, and is gone into the dark between the graves before you think to ask how he knew the way.",
+        "He studies you a long moment, the way a man studies a lock.": "[quiet, wary] He studies you a long moment, the way a man studies a lock.",
+        "The smile stays exactly where it is. Only his eyes change.": "[slow, chilling] The smile stays exactly where it is. Only his eyes change.",
+        "Frost creeps across the gold where he sat. When you look up, he is gone.": "[hushed, eerie] Frost creeps across the gold where he sat. When you look up, he is gone."
       }
     },
     "STRANGER": {
@@ -218,6 +227,28 @@
         "Toward sand, Nikoli thinks. Always one step ahead of Nikoli, that one. Always he was.": "[rueful, low] Toward sand, Nikoli thinks. [soft half-laugh] Always one step ahead of Nikoli, that one. Always he was."
       },
       "fx": "deeper"
+    },
+    "JAEGER": {
+      "id": "I4zfeEHVWMxTnepd6Zot",
+      "name": "Jaeger (Shackle Breaker): Nikoli's own voice, played cold, serious and measured: Nikoli's brother, posing as him",
+      "model": "eleven_v3",
+      "settings": {
+        "stability": 0.5
+      },
+      "fx": "deeper",
+      "directions": {
+        "Ah. You are one who killed statue. Is good. Nikoli was tired of waiting for it to fall over.": "[cold, measured, a flat imitation of warmth] Ah. [pause] You are one who killed statue. Is good. [no humour in it] Nikoli was tired of waiting for it to fall over.",
+        "You look at Nikoli as if you know him. Many people know Nikoli. Few remember him correctly.": "[quiet, still, faintly menacing] You look at Nikoli as if you know him. [pause] Many people know Nikoli. [slow] Few remember him correctly.",
+        "Nikoli would offer you drink, but I... Nikoli has none. Tombs are poor hosts.": "[cold, measured] Nikoli would offer you drink, but I... [a brief catch, correcting himself] Nikoli has none. [flat] Tombs are poor hosts.",
+        "Nikoli searches for old friend. Commander Mentoras, of Altus royal guard. Tired eyes. Sharp tongue. You have seen him, da?": "[serious, deliberate, every word weighed] Nikoli searches for old friend. Commander Mentoras, of Altus royal guard. [pause] Tired eyes. Sharp tongue. [low, watching closely] You have seen him, da?",
+        "He owes Nikoli a debt. Nikoli intends to collect it. In full.": "[quiet, cold menace] He owes Nikoli a debt. [pause] Nikoli intends to collect it. [long pause] In full.",
+        "A workshop. Of course. He always did like to be near a fire.": "[very quiet, cold satisfaction] A workshop. [pause] Of course. He always did like to be near a fire.",
+        "Thank you, my friend. You have been more helpful than you know.": "[smooth, precise, almost no accent, chilling] Thank you, my friend. [pause] You have been more helpful than you know.",
+        "No? Pity.": "[flat, cold] No? [pause] Pity.",
+        "If you remember, Nikoli will find you. Nikoli always finds people.": "[low, quiet threat] If you remember, Nikoli will find you. [pause] Nikoli always finds people.",
+        "Clever. My brother always did keep clever company. It is the worst of his habits.": "[the act dropped, cold, precise, faintly amused] Clever. [pause] My brother always did keep clever company. [dry, cold] It is the worst of his habits.",
+        "Tell him Jaeger sends his regards. Tell the Commander nothing. I would rather surprise him.": "[cold, measured, quiet menace] Tell him Jaeger sends his regards. [pause] Tell the Commander nothing. [slow, chilling] I would rather surprise him."
+      }
     }
   }
 }

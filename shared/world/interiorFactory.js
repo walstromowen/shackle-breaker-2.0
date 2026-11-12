@@ -12,8 +12,9 @@ const GENERATORS = { HOUSE: HouseGenerator, CRAFTING_HOUSE: CraftingHouseGenerat
    the host's world decides, see multiplayerSession):
      strangerHome          the Hooded Stranger's workshop: the first workshop the player walks into (an interior id, the door's cell "col_row")
      strangerDesertHome    where he goes in act 2: the first workshop in a desert village the player walks into in act 2
-     nikoliCampfire        Nikoli's camp: the first campfire of the snowy mountains the world puts down near the player ("col,row", WorldManager) */
-export const STORY_HOMES = ['strangerHome', 'strangerDesertHome', 'nikoliCampfire'];
+     nikoliCampfire        Nikoli's camp: the first campfire of the snowy mountains the world puts down near the player ("col,row", WorldManager)
+     jaegerCatacomb        where Jaeger waits, posing as Nikoli: the first catacombs the player walks into (an interior id); he stands in its hoard until met */
+export const STORY_HOMES = ['strangerHome', 'strangerDesertHome', 'nikoliCampfire', 'jaegerCatacomb'];
 
 const hasMilestone = (id) => Array.isArray(gameState.milestones) && gameState.milestones.includes(id);
 
@@ -77,6 +78,12 @@ export class InteriorFactory {
         if (type === 'ABANDONED_WORKSHOP' && interiorId) {
             const resident = InteriorFactory.workshopResident(interiorId, gameState.world && gameState.world.interiorBiome);
             if (resident) config = { ...config, questGiver: resident };
+        }
+
+        // Jaeger waits in the hoard of the first catacombs entered, for each player until they have met him (milestone jaeger_met)
+        if (config.generatorType === 'CATACOMBS' && interiorId) {
+            InteriorFactory.claimHome('jaegerCatacomb', interiorId);
+            if (gameState.world && gameState.world.jaegerCatacomb === interiorId && !hasMilestone('jaeger_met')) config = { ...config, storyNpc: 'JAEGER_NPC' };
         }
 
         const Generator = GENERATORS[config.generatorType];

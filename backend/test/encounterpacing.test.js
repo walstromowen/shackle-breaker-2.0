@@ -51,7 +51,7 @@ test('no beat is chopped into crumbs: a bare "Continue." stage is never followed
     const outs = (d) => [...(d.outcomes || []), ...(d.successOutcomes || []), ...(d.failureOutcomes || [])];
     const exempt = new Set(['prologue', 'act_two', 'shackled_betrayal', 'shackled_betrayal_end']);   // told slowly on purpose
     // Darius, and the Hooded Stranger, speak one line at a time, on purpose
-    const slowStage = (id, sid) => (id === 'mysterious_altar' && sid.startsWith('darius_')) || id === 'hooded_stranger';
+    const slowStage = (id, sid) => (id === 'mysterious_altar' && sid.startsWith('darius_')) || id === 'hooded_stranger' || id === 'jaeger';
     for (const [id, enc] of Object.entries(encounterDefinitions)) {
         if (exempt.has(id)) continue;
         const inbound = {};

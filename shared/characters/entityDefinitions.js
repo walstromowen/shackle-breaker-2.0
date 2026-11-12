@@ -205,14 +205,14 @@ export const ENTITY_DEFINITIONS = {
     /* Nikoli: a general of the Panzerians, the good brother (his brother Jaeger, "The Pursuer", is the corrupted one: docs/story.md). Never fought: he camps beside the first
        campfire of the snowy mountains the player comes upon (world.nikoliCampfire, WorldManager), fights beside the party against the frozen
        trappers when they first meet (an ally: battleState context.allies), and hunts for Commander Mentoras (story/encounters/story/nikoli.js).
-       Art: his own portrait (nikoliPortrait); on the map he still walks as the Panzerian warlord. */
+       Art: the Panzerian warlord's sheets for now (his brother Jaeger, JAEGER below, wears the same: they look alike on purpose). */
     "NIKOLI": {
         ...HUMANOID_TEMPLATE,
         name: "Nikoli",
         properName: true,   // "Return to Nikoli", not "the Nikoli" (a quest handed in to him)
         level: 1,
         spriteOverworld: "warlordHeroSprite",
-        spritePortrait: "nikoliPortrait",
+        spritePortrait: "warlordHeroPortrait",
         crySound: "legionaryCry",
         deathSound: "legionaryCry",
         // a strength and ice build: the greatsword's weight, and the cold of the north in its edge and in his blood (the player rules: 50 points)
@@ -1037,6 +1037,21 @@ export const ENTITY_DEFINITIONS = {
         // Bolster (its stone hardens further), Reckless Charge, Wild Swing. ("rest" is only the AI's fallback when it can afford nothing.)
         abilities: ["rest", "sapping_slam", "mass_fear", "bolster", "reckless_charge", "wild_swing"],
         tags: ["HUMANOID", "CONSTRUCT", "MAGICAL", "BOSS", "ELITE"]
+    },
+
+    /* Jaeger Ironson, "The Pursuer": Nikoli's brother, a Panzerian general corrupted by the artifact (docs/story.md), hunting Commander Mentoras to kill
+       him. He passes himself off as Nikoli (story/encounters/story/jaeger.js). Not fought yet: only met, in the hoard of the first catacombs.
+       Art: the Panzerian warlord's sheets, the same as Nikoli's: the player has to tell them apart by what they say. */
+    "JAEGER": {
+        ...HUMANOID_TEMPLATE,
+        name: "Jaeger",
+        properName: true,
+        level: 1,
+        spriteOverworld: "warlordHeroSprite",
+        spritePortrait: "warlordHeroPortrait",
+        crySound: "legionaryCry",
+        deathSound: "legionaryCry",
+        tags: [...HUMANOID_TEMPLATE.tags, "PANZERIAN"]
     },
 
     // The Dry Kraken: a world boss of the desert. A kraken that the sea left behind, gone to ground under the dunes, where it waits for whatever walks

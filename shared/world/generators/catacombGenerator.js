@@ -519,6 +519,13 @@ export class CatacombGenerator {
         this._reserve(hx - 3, hy + 1, hx + 3, hy + 1);
         for (let r = M.y0 + 6; r <= M.y1 - 2; r += 2) for (const c of [M.x0 + 1, M.x1 - 1]) if (this._roomy(c, r)) this._put(c, r, 'TOMBSTONE');
         this._reserve(M.cx - 1, M.y0, M.cx + 1, M.y1);   // the way up the hall to the hoard
+        // a story character waiting among the hoard (config.storyNpc: Jaeger, InteriorFactory), just beside the chests
+        if (this.config.storyNpc) {
+            for (const [dx, dy] of [[-3, 1], [3, 1], [-3, 2], [3, 2], [-2, 3], [2, 3]]) {
+                const c = hx + dx, r = hy + dy;
+                if (this._walkable(c, r) && this._free(c, r)) { this._put(c, r, this.config.storyNpc); this.storyNpcPos = [c, r]; break; }
+            }
+        }
         // the boss's hall: dark (not one torch), four cold braziers about the rim, the bones of those who came before about the Sentinel's feet
         const B = this.hall;
         for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {

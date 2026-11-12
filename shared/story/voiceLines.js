@@ -22,7 +22,8 @@ export const VOICED = {
     nikoli: [[/./, 'NIKOLI']],
     nikoli_after_battle: [[/./, 'NIKOLI']],   // the same stages as nikoli: the same clips
     dry_kraken_ambush: [],   // the narrator only: Codey speaks with his hands
-    codey_freed: []
+    codey_freed: [],
+    jaeger: [[/./, 'JAEGER']]   // Nikoli's brother, posing as him: Nikoli's voice, played cold
 };
 
 /* Who speaks the quoted words of a stage (also used by tools/dialogueScript.mjs for the script's NAME: tags) */
@@ -31,7 +32,8 @@ export const SPEAKERS = {
     mysterious_altar: [[/^darius_/, 'DARIUS']],
     act_two: [[/^long_dark$/, 'DARIUS']],     // his own words, in the vision of his life
     nikoli: [[/./, 'NIKOLI']],
-    nikoli_after_battle: [[/./, 'NIKOLI']]
+    nikoli_after_battle: [[/./, 'NIKOLI']],
+    jaeger: [[/./, 'JAEGER']]
 };
 
 export function speakerOf(encounterId, stageId) {

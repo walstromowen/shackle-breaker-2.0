@@ -678,6 +678,83 @@ NIKOLI: "Toward sand, Nikoli thinks. Always one step ahead of Nikoli, that one. 
   > Leave him to his hunt.
 
 
+===== NIKOLI (jaeger) =====
+
+[waiting]
+Among the hoard, a broad man in dark Panzerian armour sits on a burial chest, a greatsword across his knees. He does not rise. He has been watching the door.
+  > Continue.
+
+[cold]
+The torches burn low on his side of the hall. Frost rims his gauntlets, though the air is still and warm.
+  > Continue.
+
+[greet]
+JAEGER: "Ah. You are one who killed statue. Is good. Nikoli was tired of waiting for it to fall over."
+  > Continue.
+
+[smile]
+He smiles. It is a straight, white, even smile. It does not reach his eyes.
+  > Continue.
+  > Continue.
+
+[remember]
+JAEGER: "You look at Nikoli as if you know him. Many people know Nikoli. Few remember him correctly."
+  > Continue.
+
+[host]
+JAEGER: "Nikoli would offer you drink, but I... Nikoli has none. Tombs are poor hosts."
+He does not laugh. He does not move at all, except his eyes.
+  > Continue.
+
+[ask]
+JAEGER: "Nikoli searches for old friend. Commander Mentoras, of Altus royal guard. Tired eyes. Sharp tongue. You have seen him, da?"
+  > Continue.
+
+[debt]
+JAEGER: "He owes Nikoli a debt. Nikoli intends to collect it. In full."
+  > [Hooded Stranger] "There's a hooded man in a village workshop. He might be the one."
+  > "I don't know anyone by that name."
+  > "You're not Nikoli."
+
+[told]
+For a moment nothing in his face moves at all.
+JAEGER: "A workshop. Of course. He always did like to be near a fire."
+  > Continue.
+
+[told_2]
+JAEGER: "Thank you, my friend. You have been more helpful than you know."
+  > Continue.
+
+[told_3]
+He rises, and is gone into the dark between the graves before you think to ask how he knew the way.
+  > Leave.
+
+[dunno]
+JAEGER: "No? Pity."
+He studies you a long moment, the way a man studies a lock.
+  > Continue.
+
+[dunno_2]
+JAEGER: "If you remember, Nikoli will find you. Nikoli always finds people."
+  > Leave him to the dark.
+
+[unmasked]
+The smile stays exactly where it is. Only his eyes change.
+  > Continue.
+
+[unmasked_2]
+JAEGER: "Clever. My brother always did keep clever company. It is the worst of his habits."
+  > Continue.
+
+[unmasked_3]
+JAEGER: "Tell him Jaeger sends his regards. Tell the Commander nothing. I would rather surprise him."
+  > Continue.
+
+[unmasked_4]
+Frost creeps across the gold where he sat. When you look up, he is gone.
+  > Leave.
+
+
 ===== OLD GRAVESTONE (old_gravestone) =====
 
 [approach]

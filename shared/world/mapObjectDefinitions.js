@@ -186,6 +186,8 @@ export const MAP_OBJECTS_DEFINITIONS = {
     // before the player has met him: he stands just north of his campfire facing up, at the snow leopards stalking down toward him; coming within 3 tiles
     // of him or of a cat starts the meeting (WorldManager._storyObjects puts the scene there, and takes it away once he has been met)
     NIKOLI_NPC_WATCHING: { ...npcBody('NIKOLI', 'UP'), interaction: { type: 'ENCOUNTER', id: 'nikoli', triggerRadius: 3 } },
+    // Jaeger, posing as his brother Nikoli: in the hoard of the first catacombs the player walks into, until he has been met (InteriorFactory, CatacombGenerator)
+    JAEGER_NPC: { ...npcBody('JAEGER'), interaction: { type: 'ENCOUNTER', id: 'jaeger' } },
     SNOW_LEOPARD_STALKING: { ...npcBody('SNOW_LEOPARD', 'DOWN'), interaction: { type: 'ENCOUNTER', id: 'nikoli', triggerRadius: 3 } },
 
     // --- ANIMATED ---

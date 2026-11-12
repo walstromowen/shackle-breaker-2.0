@@ -34,7 +34,7 @@ const offered = (stage) => stage.decisions.filter(d => EncounterLogic.checkCondi
 test('Nikoli is a character with the Panzerian warlord\'s art for now, a map object, and two personal encounters', async () => {
     const def = ENTITY_DEFINITIONS.NIKOLI;
     assert.equal(def.spriteOverworld, 'warlordHeroSprite');
-    assert.equal(def.spritePortrait, 'nikoliPortrait');
+    assert.equal(def.spritePortrait, 'warlordHeroPortrait');
     assert.ok(def.tags.includes('PANZERIAN') && def.tags.includes('HUMANOID'));
     // a strength and ice build with a greatsword
     assert.equal(def.equipment.mainHand, 'panzerian_greatsword');
@@ -49,7 +49,7 @@ test('Nikoli is a character with the Panzerian warlord\'s art for now, a map obj
     assert.equal(N.personal, true, 'each player\'s own story, never shared or voted on');
     assert.equal(AFTER.initialStage, 'after');
     const main = fs.readFileSync(new URL('../../frontend/src/main.js', import.meta.url), 'utf8');
-    for (const key of ['warlordHeroSprite', 'nikoliPortrait', 'snowLeopardPortrait']) assert.match(main, new RegExp(`${key}: '`), `${key} is loaded`);
+    for (const key of ['warlordHeroSprite', 'warlordHeroPortrait', 'snowLeopardPortrait']) assert.match(main, new RegExp(`${key}: '`), `${key} is loaded`);
 });
 
 test('the first meeting: snow leopards at his fire, and the fight is fought beside him, with his thanks and his question after it', () => {

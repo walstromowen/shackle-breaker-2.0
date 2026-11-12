@@ -35,6 +35,7 @@ export function worldPart(data) {
             strangerHome: w.strangerHome || null,   // the one workshop the Hooded Stranger lives in: the host's world decides it for everyone
             strangerDesertHome: w.strangerDesertHome || null,   // and the others of InteriorFactory.STORY_HOMES
             nikoliCampfire: w.nikoliCampfire || null,
+            jaegerCatacomb: w.jaegerCatacomb || null,
         },
     });
 }

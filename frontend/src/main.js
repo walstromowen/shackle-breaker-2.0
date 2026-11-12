@@ -243,7 +243,6 @@ ui_icons: './assets/icons/ui_icons.png',
     avalancherHeroFemaleSprite: './assets/sprites/avalancher_hero/avalancher_hero_female_sprite.png',
     legionaryCompanionPortrait: './assets/sprites/legionary_companion/legionary_companion_portrait.png',
     warlordHeroPortrait: './assets/sprites/warlord_hero/warlord_hero_portrait.png',
-    nikoliPortrait: './assets/sprites/warlord_hero/nikoli_portrait.png',   // Nikoli's own: the artist's portrait (nikolai.png) laid out as a battle sheet (tools/art/nikoliPortraitSheet.py)
     nightbladeHeroPortrait: './assets/sprites/nightblade_hero/nightblade_hero_portrait.png',
     legionaryHeroSprite: './assets/sprites/legionary_hero/legionary_hero_sprite.png',
     legionaryCompanionSprite: './assets/sprites/legionary_companion/legionary_companion_sprite.png',
