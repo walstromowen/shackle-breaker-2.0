@@ -72,7 +72,7 @@ test('the first meeting hands in "find him" and gives the first step; a hand-in 
     assert.equal(gameState.party.currency, coins + Q.shackled1.rewards.currency, 'its rewards are paid');
     assert.equal(r.newStageId, 'lore_shackled1', 'a piece of the story first');
     const nextOf = (id) => E.stages[id].decisions[0].outcomes[0].results.find(x => x.type === 'ADVANCE_STAGE')?.payload.stageId;
-    assert.equal(nextOf(nextOf('lore_shackled1')), 'give_shackled2', 'then the next step');
+    assert.equal(nextOf(nextOf(nextOf('lore_shackled1'))), 'give_shackled2', 'then the next step');
     quiet(() => EncounterLogic.resolveResults(results('give_shackled2'), model, null));
     assert.ok(gameState.quests.active.shackled2);
 });

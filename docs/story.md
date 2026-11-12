@@ -40,7 +40,9 @@ fall, when the player breaks out of the king's chain line. This page is a living
 - **Cornelius Mentoras**: commander of the royal guard, a royal adviser. Early 40s, observant, disciplined, blunt, guilt-stricken. Broadsword;
   later a chained sword bound to his wrist. His refrain: **"Good enough"** / "Not good enough". Husband of Gwen, father of Jacob and a younger son.
   Friend of the king (once). Rival of Jaeger, friend of Nikolai.
-  - **SECRET: he is the Hooded Stranger** of the game (to be revealed later). Shackled, further along, tired, gallows humour; he hears voices.
+  - **SECRET: he is the Hooded Stranger** of the game (to be revealed later). Shackled, further along, slowly losing his mind; he hears voices.
+    Genuine, never cruel, very hard on himself; tells only what is needed and nothing of his own story outright (the player pieces it together).
+    Not overconfident. A dry, dark humour, always at his own expense. His grief for Jacob stays hidden until the very end of the desert questline.
 - **Gwen Mentoras**: his wife. Joyful, wise, a hunter and healer, later a ranger; bow and arrows. After the Namuh attack she flees with their
   younger son to the rangers and searches for Cornelius.
 - **The Mentoras sons**: two. **Jacob** is the elder; the **younger son** has no name yet (he flees with Gwen to the rangers).
@@ -62,8 +64,14 @@ fall, when the player breaks out of the king's chain line. This page is a living
   - *In the game* he is **Nikoli** (story/encounters/story/nikoli.js): he camps by the first campfire of the snowy mountains, hunting for Commander
     Mentoras, an old friend he did not always agree with. They have **not met again yet**: the Hooded Stranger does not know he is being looked for.
     In act 2, if the player told him about the hooded man, he waits in the Stranger's old workshop, one step behind. His brother is Jaeger.
-- **Elsali / El Shadi, "Codey"**: a Namuh nightblade, late teens. Mute, empathetic, quick, a scrapper. Fought Mentoras to a standstill in the attack on
-  the capital; imprisoned with him; saves him in the escape; nicknamed "Codey" for his hand signs. Protagonist 2.
+- **Elsali / El Shadi, "Codey"**: a Namuh nightblade, about the age Jacob would be now had he lived. Mute, empathetic, quick, and a formidable
+  warrior: he was sent to attack Mentoras in the attack on the capital and fought him to a standstill. The king imprisoned them together; after many
+  years they were forced to work together to escape. A cautious, hesitant bond built on necessity and respect: they slowly learn to talk (his hand
+  signs; Mentoras nicknamed him "Codey" for them) and earn each other's respect. At the very end, in one of the few words he ever speaks, he calls
+  Mentoras "Dad", and heals his grief. Protagonist 2.
+  - *In the game* (act 2, "The Hands That Speak": questDefinitions.js codey1 to codey3, story/encounters/story/hoodedStranger.js and codey.js): the
+    Hooded Stranger, now in a desert workshop, sends the player after Codey (sand stalkers, the old road's calcified crusaders, the miragewrights),
+    until the Dry Kraken rises out of the sand with Codey in its grip. The reunion is the only time Mentoras's grief slips out ("One of you did.").
 - **General Sekrav**: general of the Alterian legion. Young, never defeated, popular.
 - **Director Kokul**: director of Artifact Affairs.
 - **Shmindolyn** and **Kurtucus**: legends. (The game's Kurtus' Brew nods to Kurtucus; Shmindolyn's Draught, which cures a bad trait, to Shmindolyn.)

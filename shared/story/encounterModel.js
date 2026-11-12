@@ -41,7 +41,8 @@ export class EncounterModel {
                 x: stage.image.x,
                 y: stage.image.y,
                 w: stage.image.w,
-                h: stage.image.h
+                h: stage.image.h,
+                size: stage.image.size   // a picture whose cells are not 128 px (the Dry Kraken's 192): EncounterRenderer reads it
             };
         }
         return { sheet: 'bg_default_black', col: 0, row: 0 };

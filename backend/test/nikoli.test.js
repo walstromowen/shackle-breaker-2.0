@@ -152,7 +152,7 @@ test('the workshops: act 1 the Stranger; act 2 he moves to the first desert work
 test('the Stranger and Nikoli have not met: the Stranger never speaks of him, however far the player has taken Nikoli\'s story', () => {
     const S = encounterDefinitions.hooded_stranger;
     story({ milestones: ['act2', 'nikoli_met', 'nikoli_told'], completed: ['shackled_stranger', 'shackled1', 'shackled2', 'shackled3', 'shackled7', 'shackled8'] });
-    assert.equal(S.initialStage(), 'after_darius');
+    assert.equal(S.initialStage(), 'desert_meet', 'in act 2 he is in the desert, after someone else');
     assert.ok(!/Nikoli|Panzerian/.test(JSON.stringify(S.stages)), 'not a word about him');
 });
 

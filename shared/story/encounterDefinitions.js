@@ -13,6 +13,7 @@ import { tracksInTheSnow } from './encounters/tracksInTheSnow.js';
 import { mysteriousAltar } from './encounters/story/mysteriousAltar.js';
 import { hoodedStranger } from './encounters/story/hoodedStranger.js';
 import { nikoli, nikoliAfterBattle } from './encounters/story/nikoli.js';
+import { dryKrakenAmbush, codeyFreed } from './encounters/story/codey.js';
 import { ruinedCarriage } from './encounters/ruinedCarriage.js';
 import { prologue } from './encounters/story/prologue.js';
 import { actTwo } from './encounters/story/actTwo.js';
@@ -42,6 +43,8 @@ export const encounterDefinitions = {
     [hoodedStranger.id]: hoodedStranger,   // the Shackled quest giver, in one village workshop
     [nikoli.id]: nikoli,   // Nikoli, the Panzerian general, hunting for Commander Mentoras (story/encounters/story/nikoli.js)
     [nikoliAfterBattle.id]: nikoliAfterBattle,
+    [dryKrakenAmbush.id]: dryKrakenAmbush,   // act 2: the Dry Kraken rises out of the desert, holding Codey (story/encounters/story/codey.js, story/storyAmbush.js)
+    [codeyFreed.id]: codeyFreed,
     [ruinedCarriage.id]: ruinedCarriage,   // a broken merchant carriage on the plains: loot, or the shackled steeds (encounters/ruinedCarriage.js)
     [prologue.id]: prologue,
     [actTwo.id]: actTwo,

@@ -16,9 +16,9 @@ export const QuestDefinitions = {
     },
     "shackled1": {
     id: "shackled1",
-    name: "Stronger Than Iron",
+    name: "Not Good Enough",
         turnIn: "HOODED_STRANGER",
-    description: "The Hooded Stranger will tell you nothing while you are this weak. Grow strong enough to survive the answer, then go back to him.",
+    description: "The hooded stranger would not help you. Not out of cruelty: he has watched too many like you fall, and blames himself for each of them. Survive. Grow stronger. Show him you are still yourself.",
     objectives: [
         { id: "obj_reach_level_2", type: "party_level", targetLevel: 4, amount: 1 },
     ],
@@ -604,6 +604,43 @@ export const QuestDefinitions = {
     // Nikoli's hunt (story/encounters/story/nikoli.js): he mentions the beast after the snow leopards, and asking about it starts this. Handed in
     // to him wherever he is (by his campfire, or in act 2 the Hooded Stranger's old workshop). The Panzerkamfer is found by following the great
     // tracks in the snow of the mountains (story/encounters/tracksInTheSnow.js).
+    // ========================================================
+    // ACT 2, THE DESERT: "The Hands That Speak" (the Hooded Stranger, in his desert workshop: story/encounters/story/hoodedStranger.js)
+    // He is searching for Codey, a Namuh nightblade. The last step's last objective is the Dry Kraken, which holds Codey: it rises out of the open
+    // desert once the miragewrights are dead (story/storyAmbush.js), and its objective reads only "Find Codey".
+    // ========================================================
+    "codey1": {
+        id: "codey1",
+        name: "The Hands That Speak",
+        turnIn: "HOODED_STRANGER",
+        description: "The hooded stranger has come to the desert after someone: a Namuh named Codey, who walked into the sand and did not walk out. The sand stalkers drag what they kill into the dunes. If Codey fell, they will know where.",
+        objectives: [
+            { id: "obj_codey_stalkers", type: "kill_enemy", targetId: "SAND_STALKER", amount: 4, description: "Kill sand stalkers" }
+        ],
+        rewards: { exp: 600, currency: 150 }
+    },
+    "codey2": {
+        id: "codey2",
+        name: "The Old Road",
+        turnIn: "HOODED_STRANGER",
+        description: "A strip of black cloth, and blood that was not Codey's. An old road runs under the sand, walked by calcified crusaders. The stranger thinks Codey took it. Clear the road.",
+        objectives: [
+            { id: "obj_codey_crusaders", type: "kill_enemy", targetId: "CALCIFIED_CRUSADER", amount: 3, description: "Clear the old road of calcified crusaders" }
+        ],
+        rewards: { exp: 800, currency: 200 }
+    },
+    "codey3": {
+        id: "codey3",
+        name: "Behind the Mirage",
+        turnIn: "HOODED_STRANGER",
+        description: "Codey's mark, cut into a road-stone: a hand, spread, then closed. The miragewrights hide what they find. Break their illusions, and see what they were hiding.",
+        objectives: [
+            { id: "obj_codey_miragewrights", type: "kill_enemy", targetId: "MIRAGEWRIGHT", amount: 3, description: "Break the miragewrights' illusions" },
+            { id: "obj_codey_found", type: "kill_enemy", targetId: "DRY_KRAKEN", amount: 1, description: "Find Codey" }
+        ],
+        rewards: { exp: 2000, currency: 800, items: [{ id: "shmindolyns_draught", amount: 1 }, { id: "healing_tonic", amount: 3 }] }
+    },
+
     "panzerian_war_beast": {
         id: "panzerian_war_beast",
         name: "Panzerian War Beast",

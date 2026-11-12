@@ -20,7 +20,9 @@ export const VOICED = {
     mysterious_altar: [[/^darius_/, 'DARIUS']],
     act_two: [[/^long_dark$/, 'DARIUS']],
     nikoli: [[/./, 'NIKOLI']],
-    nikoli_after_battle: [[/./, 'NIKOLI']]   // the same stages as nikoli: the same clips
+    nikoli_after_battle: [[/./, 'NIKOLI']],   // the same stages as nikoli: the same clips
+    dry_kraken_ambush: [],   // the narrator only: Codey speaks with his hands
+    codey_freed: []
 };
 
 /* Who speaks the quoted words of a stage (also used by tools/dialogueScript.mjs for the script's NAME: tags) */

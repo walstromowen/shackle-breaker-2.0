@@ -3,6 +3,7 @@ import { gameState } from '../core/gameState.js';
 import { SpawnTableFactory } from '../battle/spawnTableFactory.js';
 import { ActSystem } from '../story/actSystem.js';
 import { CorruptionSystem } from '../characters/corruptionSystem.js';
+import { storyAmbush } from '../story/storyAmbush.js';
 
 /* How often a step out in the open starts an ambush, in every outdoor biome: 1 in 200 by day (dusk counts as day), 1 in 100 at night. */
 export const OUTDOOR_BATTLE_RATE = { day: 1 / 200, night: 1 / 100 };
@@ -116,6 +117,9 @@ export class BiomeModel {
     }
 
     getEncounter(currentHour, rateScale = 1) {   // rateScale: as for getBattle
+        // a story scene whose time has come (the Dry Kraken, story/storyAmbush.js) springs before any roll of the biome's own
+        const story = storyAmbush(this.id);
+        if (story) return story;
         // Updated to read directly from the biome's inline encounter pools
         if (!this.encounters || !(this.encounters.rate > 0)) return null;
         if (Math.random() > this.encounters.rate * rateScale) return null;
