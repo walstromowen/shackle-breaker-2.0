@@ -75,6 +75,8 @@ test('two answers: tell him of the hooded man (only once the Stranger is met), o
         if (flag) assert.ok(r.some(x => x.type === 'GRANT_MILESTONE' && x.payload.id === flag), `${stageId}: ${flag}`);
     }
     assert.ok(!results('dunno_2').some(r => r.type === 'GRANT_MILESTONE' && r.payload.id === 'jaeger_told'), 'not telling him tells him nothing');
+    assert.match(J.stages.dunno_2.text, /Jae\.\.\. Nikoli will find you/, 'told nothing, he nearly gives his own name');
+    assert.doesNotMatch(JSON.stringify(J.stages), /Jaeger/, 'never named, by him or the narrator');
 });
 
 test('voiced: his lines in Nikoli\'s voice, played cold', async () => {

@@ -734,7 +734,7 @@ He studies you a long moment, the way a man studies a lock.
   > Continue.
 
 [dunno_2]
-JAEGER: "If you remember, Nikoli will find you. Nikoli always finds people."
+JAEGER: "Jae... Nikoli will find you. [pause] Nikoli always finds people."
   > Leave him to the dark.
 
 

@@ -3,7 +3,7 @@
    seriously: the player has to see through him themselves. Nothing points it out; the clues are all there before he asks:
      his smile is straight and even (Nikoli has more gaps than teeth), and cold; the torches burn low and frost rims his gauntlets; he does not laugh or
      move; he slips into "I" before catching himself (Nikoli never forgets his third person); and a player who has met Nikoli gets no sign that he
-     remembers them (remember).
+     remembers them (remember). Told nothing, he nearly says his own name ("Jae... Nikoli will find you"). Neither he nor the narrator ever names him.
 
    Where: among the hoard of the first catacombs the player walks into (InteriorFactory: world.jaegerCatacomb, CatacombGenerator config.storyNpc), until
    met. The player is never offered "you're not Nikoli": seeing through him means answering that they do not know the name, keeping Mentoras hidden
@@ -75,7 +75,8 @@ export const jaeger = {
         // ---- not told ----
         dunno: stage("\"No? Pity.\" He studies you a long moment, the way a man studies a lock.",
             next("dunno_2")),
-        dunno_2: stage("\"If you remember, Nikoli will find you. Nikoli always finds people.\"",
+        // the one slip of his own name, caught at once: never named, by him or by the narrator
+        dunno_2: stage("\"Jae... Nikoli will find you. [pause] Nikoli always finds people.\"",
             gone("Leave him to the dark."))
     }
 };
