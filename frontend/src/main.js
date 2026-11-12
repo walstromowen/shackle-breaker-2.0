@@ -270,6 +270,8 @@ ui_icons: './assets/icons/ui_icons.png',
     rotterPortrait: './assets/sprites/rotter/rotter_portrait.png',
     germanSheepherdSprite: './assets/sprites/dogs/german_sheepherd_sprite.png',
     germanSheepherdPortrait: './assets/sprites/dogs/german_sheepherd_portrait.png',
+    dryKrakenPortrait: './assets/sprites/dry_kraken/dry_kraken_portrait.png',   // the Dry Kraken's head: battle sheet, 192 px frames (placeholder shapes: tools/art/dryKrakenPlaceholder.py)
+    dryKrakenTentaclePortrait: './assets/sprites/dry_kraken/dry_kraken_tentacle_portrait.png',   // one of its eight tentacles: battle sheet, 128 px frames (placeholder)
     hawkPortrait: './assets/sprites/hawk/hawk_portrait.png',   // the hunting hawk companion: battle sheet (rows 0-1 facing left, 4-5 facing right)
     hawkSprite: './assets/sprites/hawk/hawk_sprite.png',       // its map sheet: it hovers over its shadow
     shackledSteedPortrait: './assets/sprites/shackled_steed/shackled_steed_portrait.png',

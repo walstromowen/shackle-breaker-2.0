@@ -827,6 +827,23 @@ export const LootTableDefinitions = {
             { id: "large_iron_key", dropRate: 0.5 },
         ]
     },
+    // The Dry Kraken: salt and hide from the deep, what it swallowed on the sea floor and under the dunes, and the insights of earth and water.
+    "boss_dry_kraken_drops": {
+        type: "independent",
+        items: [
+            { id: "leather", dropRate: 1.0, min: 4, max: 7 },
+            { id: "bone", dropRate: 0.8, min: 2, max: 4 },
+            { id: "healing_tonic", dropRate: 0.6, min: 1, max: 3 },
+            { id: "invigorating_tonic", dropRate: 0.4, min: 1, max: 2 },
+            { id: "kurtus_brew", dropRate: 0.4, min: 1, max: 2 },
+            { id: "insight_of_earth", dropRate: 0.3 },
+            { id: "insight_of_water", dropRate: 0.3 },
+            { id: "iron_ingot", dropRate: 0.5, min: 2, max: 4 },
+            { id: "bronze_ingot", dropRate: 0.4, min: 1, max: 3 },
+            { id: "shmindolyns_draught", dropRate: 0.15 },
+            { id: "large_iron_key", dropRate: 0.5 },
+        ]
+    },
     "boss_darius_drops": {
         type: "independent",
         items: [

@@ -139,11 +139,30 @@ export function queueDeathTraits(state, deadCombatant) {
     });
 }
 
+/* What an enemy dies with (entityDefinitions.js `fallsWith`), if anything. */
+function fallsWithOf(c) {
+    const e = c && c.originalEntity;
+    return (e && ((e.state && e.state.fallsWith) || e.fallsWith)) || null;
+}
+
 /* Someone just died: drop their pending turns, bring in a reserve if there is one (the party is asked, the enemies simply send the next one),
    and queue the faint animation, the death traits and the "has been slain" line, all at the front of the queue. */
 export function queueDeath(state, combatant) {
     if (combatant._deathHandled) return;
     combatant._deathHandled = true;
+
+    // A limb dies with its body (an enemy's `fallsWith`: the template id of the one it dies with): when the Dry Kraken's head falls, every one of its
+    // tentacles still in the fight falls too. Those on the field faint after it; those still waiting under the sand simply never come up (their
+    // kills still count). They are struck down first, so no reserve steps in for any of them, nor for the head.
+    if (combatant.team === 'enemy') {
+        const limbs = (state.enemyRoster || []).filter(e => e !== combatant && !e.isDead() && fallsWithOf(e) === combatant.templateId);
+        limbs.forEach(l => { l.originalEntity.hp = 0; });
+        for (const l of limbs) {
+            if (state.activeEnemies.includes(l)) { queueDeath(state, l); continue; }
+            l._deathHandled = true;
+            events.emit('ENEMY_KILLED', { enemyId: l.templateId || l.definitionKey || l.name });
+        }
+    }
 
     if (combatant.team === 'enemy') {
         // Shout to the event bus! Let the QuestSystem (or achievements system) handle the tracking.

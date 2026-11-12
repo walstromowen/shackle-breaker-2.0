@@ -1037,5 +1037,70 @@ export const ENTITY_DEFINITIONS = {
         // Bolster (its stone hardens further), Reckless Charge, Wild Swing. ("rest" is only the AI's fallback when it can afford nothing.)
         abilities: ["rest", "sapping_slam", "mass_fear", "bolster", "reckless_charge", "wild_swing"],
         tags: ["HUMANOID", "CONSTRUCT", "MAGICAL", "BOSS", "ELITE"]
+    },
+
+    // The Dry Kraken: a world boss of the desert. A kraken that the sea left behind, gone to ground under the dunes, where it waits for whatever walks
+    // over it. It fights as a head (DRY_KRAKEN, 192 px frames) and eight tentacles (DRY_KRAKEN_TENTACLE) that come up out of the sand two at a time,
+    // a new one rising whenever one is cut down: START_BATTLE { enemies: ["DRY_KRAKEN", ...8 x "DRY_KRAKEN_TENTACLE"] }. Kill the head and every
+    // tentacle goes limp with it (`fallsWith`, battleQueue.queueDeath). Placeholder art: simple shapes (tools/art/dryKrakenPlaceholder.py).
+    // Tuned like the other bosses for three players (BOSS: PARTY_SCALING.BOSS_HP_BY_PLAYERS). A beast of sand and salt water: the earth and the
+    // water cannot hurt it much, blades bite deep into its soft hide, and fire dries it out.
+    "DRY_KRAKEN": {
+        ...BEAST_TEMPLATE,
+        name: "Dry Kraken",   // no "The": the desert may hold more than one
+        level: 1,
+        frameSize: 192,
+        spritePortrait: "dryKrakenPortrait",
+        crySound: "panzerkamferCry",   // placeholder sounds: a deep roar
+        deathSound: "panzerkamferCry",
+        attributes: {
+            ...BEAST_TEMPLATE.attributes,
+            vigor: 22, strength: 20, dexterity: 6, intelligence: 8, attunement: 12
+        },
+        baseStats: {
+            ...BEAST_TEMPLATE.baseStats,
+            maxHp: 80, maxStamina: 40, maxInsight: 20, speed: 5, critical: 0.08,
+            maxHpMultiplier: 2,
+            baseDefense: {
+                ...BEAST_TEMPLATE.baseStats.baseDefense,
+                blunt: 6, slash: 1, pierce: 2, earth: 8, water: 8, fire: -2, lightning: 0
+            },
+            baseResistance: {
+                ...BEAST_TEMPLATE.baseStats.baseResistance,
+                blunt: 0.3, earth: 0.5, water: 0.5, slash: -0.1, fire: -0.3
+            },
+            baseAttack: { blunt: 6, pierce: 8, earth: 6, water: 4 }
+        },
+        currencyReward: { min: 300, max: 700 },
+        lootTableId: "boss_dry_kraken_drops",
+        // its hooked beak (Bite), the dune heaving under the party (Earthquake), the acid of its gut (Acid Pool), and the sight of it (Mass Fear)
+        abilities: [...BEAST_TEMPLATE.abilities, "earthquake", "acid_pool", "mass_fear"],
+        tags: [...BEAST_TEMPLATE.tags, "BOSS", "ELITE", "DESERT", "AQUATIC"]
+    },
+
+    // One of the Dry Kraken's eight tentacles (see DRY_KRAKEN). Weaker alone, but they keep coming, and one that wraps round you holds you fast.
+    "DRY_KRAKEN_TENTACLE": {
+        ...BEAST_TEMPLATE,
+        name: "Kraken Tentacle",
+        level: 1,
+        spritePortrait: "dryKrakenTentaclePortrait",
+        crySound: "sandStalkerCry",
+        deathSound: "sandStalkerCry",
+        fallsWith: "DRY_KRAKEN",   // the head dies, the tentacle dies (battleQueue.queueDeath)
+        attributes: {
+            ...BEAST_TEMPLATE.attributes,
+            vigor: 10, strength: 14, dexterity: 10, intelligence: 2, attunement: 4
+        },
+        baseStats: {
+            ...BEAST_TEMPLATE.baseStats,
+            maxHp: 18, maxStamina: 24, maxInsight: 0, speed: 8, critical: 0.05,
+            baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, blunt: 5, slash: 0, pierce: 2, earth: 6, water: 6 },
+            baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, blunt: 0.25, earth: 0.4, water: 0.4, fire: -0.3 },
+            baseAttack: { blunt: 7, earth: 2 }
+        },
+        currencyReward: { min: 0, max: 0 },
+        lootTableId: null,
+        abilities: ["rest", "constrict", "wild_swing"],
+        tags: ["BIOLOGICAL", "BEAST", "DESERT", "AQUATIC"]
     }
 };
