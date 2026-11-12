@@ -354,6 +354,21 @@ While digging, you break into a spider's nest!
   > Defend yourselves!
 
 
+===== CODEY (codey_freed) =====
+
+[sinks]
+The Dry Kraken sinks back into the sand it came from, and the desert closes over it like water.
+  > Continue.
+
+[landed]
+The nightblade lands on his feet. Of course he does. He cleans his blade before he looks at you, then studies you a long while with strange, patient eyes.
+  > Continue.
+
+[signs]
+He raises his hands and signs slowly, so that even you can follow: a hood, drawn low over the face. Then a question.
+  > "He's waiting for you."
+
+
 ===== INFERNUS SENTINEL (infernus_sentinel) =====
 
 [wakes]
@@ -954,222 +969,371 @@ A blade catches you across the side and throws you to the floor. It bites into t
   > Get up, holding the wound.
 
 
+===== THE DRY KRAKEN (dry_kraken_ambush) =====
+
+[stillness]
+The wind dies. Every grain of sand around you stops moving at once.
+  > Continue.
+
+[breath]
+Then the dune ahead breathes in.
+  > Continue.
+
+[rises]
+It rises out of the desert like a sunken ship: a vast head crusted in salt and sand, eyes like old gold. The sea left this thing behind an age ago. It never forgave the land for it.
+  > Continue.
+
+[captive]
+One tentacle hangs half-severed, bleeding grey. Another holds a man in torn black high above the sand, a curved blade still in his fist. He is not struggling. He is waiting for his moment.
+  > Continue.
+
+[signal]
+Seeing you, he frees one hand and signs a single word, sharp and plain: Now.
+  > Draw your weapons.
+
+
 ===== THE HOODED STRANGER (hooded_stranger) =====
 
 [meet]
-A hooded man leans against the workbench with his arms folded, as if he has been waiting a long time. He looks at your wrists before he looks at your face.
+A hooded man leans against the workbench. He looks at your wrists before he looks at your face, and something in his own face closes.
+STRANGER: "Another one."
   > Continue.
 
 [meet_2]
-STRANGER: "So the line broke. Lucky you. Or not. It's hard to tell the difference anymore."
+STRANGER: "Those shackles have no lock. They were never meant to come off. I have watched many wear them. I tried to help some. It ended the same way, every time."
   > Continue.
 
 [meet_3]
-STRANGER: "Those shackles have no lock. They were never meant to come off. I've seen a lot of wrists like yours. Most of them laugh now. Some days I catch myself humming along."
+STRANGER: "I am sorry. I was not good enough for them. I do not think I would be for you."
   > Continue.
 
 [meet_4]
-STRANGER: "You want answers. Everyone does, right up until they get them. Get stronger first. The truth is heavy, and you can barely lift your own arms."
+STRANGER: "Stay alive. If you can. ...I say the same to myself every morning. So far it has worked. Mostly."
   > "I'll be back."
 
 [offer_shackled1]
-STRANGER: "You again. I lose track of who I've sent where. Faces blur after a while."
+STRANGER: "You. I wondered when you would come back."
   > Continue.
 
 [offer_shackled1_2]
-STRANGER: "Right. Yes. I remember now. Mostly."
+STRANGER: "Listen."
   > Continue.
 
 [give_shackled1]
-STRANGER: "Get stronger, then come back. The truth is heavy, and you can barely lift your own arms."
-  > "I'll see it done."
+STRANGER: "Stay alive. If you can. ...I say the same to myself every morning. So far it has worked. Mostly."
+  > "I'll be back."
 
 [waiting_shackled1]
-STRANGER: "Not yet. You still walk like a prisoner."
+STRANGER: "You came back. ...Not yet. Not like this."
   > Continue.
 
 [waiting_shackled1_2]
-STRANGER: "Don't take it badly. I walked like that for a year. Then I stopped walking much at all."
+STRANGER: "The last one who stood where you are stood there only once."
   > Continue.
 
 [waiting_shackled1_3]
-STRANGER: "Go. Come back when the iron feels lighter. It won't, but you'll stop noticing."
+STRANGER: "Stay alive. That is all I ask."
   > Leave him to his work.
 
 [turnin_shackled1]
-STRANGER: "Still sane? Good. Enjoy it. It doesn't keep."
+He looks at your wrists, then at your face. Longer, this time.
+STRANGER: "...You are still yourself. Most are not, by now."
   > Continue.
 
 [lore_shackled1]
-STRANGER: "The iron isn't there to hold you. It's there to count you. Every one of us in chains was being kept for something."
+STRANGER: "I was wrong about you. ...I am glad of it. Good enough."
   > Continue.
 
 [lore_shackled1_2]
-STRANGER: "I never found out what. I stopped asking when the voices started answering. They're no help. They mostly want to talk about the weather."
+STRANGER: "The iron is not there to hold you. It counts you. Everyone in chains is being kept for something."
+  > Continue.
+
+[lore_shackled1_3]
+STRANGER: "I have my suspicions. You do not need them yet. The voices have theories too. They mostly want to talk about the weather."
   > Continue.
 
 [give_shackled2]
-STRANGER: "The madmen in the grass wear the same iron. Put three of them down, and listen before you swing. The mad say true things sometimes. They just say them very loudly."
+STRANGER: "The madmen in the grass wear the same iron. Put three of them down. Listen before you swing. The mad say true things. ...Try not to agree with them. That is how it starts."
   > "I'll see it done."
 
 [offer_shackled2]
-STRANGER: "You again. I lose track of who I've sent where. Faces blur after a while."
+STRANGER: "You. I wondered when you would come back."
   > Continue.
 
 [offer_shackled2_2]
-STRANGER: "Right. Yes. I remember now. Mostly."
+STRANGER: "Listen."
   > Continue.
 
 [waiting_shackled2]
-STRANGER: "Three madmen. Follow the laughing."
+STRANGER: "Three madmen."
   > Continue.
 
 [waiting_shackled2_2]
-STRANGER: "If it starts to sound like a tune, you've stayed too long."
+STRANGER: "Follow the laughter."
   > Continue.
 
 [waiting_shackled2_3]
-STRANGER: "And if you catch yourself humming it on the way back, don't tell me. I'd rather not know."
+STRANGER: "If it starts to sound like a tune, you have stayed too long. ...And if you catch yourself humming it on the way back, do not tell me. I would rather not know."
   > Leave him to his work.
 
 [turnin_shackled2]
-STRANGER: "Let me guess. Stones from the sky. They all say it."
+STRANGER: "Stones from the sky. They all say it."
   > Continue.
 
 [lore_shackled2]
-STRANGER: "I say it too, in my sleep, or so the walls tell me. The brightest came first, before the war, back when Altus still had kings. The rest kept falling all through it. One here, one there, year after year."
+STRANGER: "They are right. The brightest fell first, before the war. The rest kept falling all through it."
   > Continue.
 
 [lore_shackled2_2]
-STRANGER: "The king knelt before the brightest of them and called it a gift. Kings call anything a gift if someone else pays for it."
+STRANGER: "The king knelt before the brightest and called it a gift. It was not."
   > Continue.
 
 [give_shackled3_pre]
-STRANGER: "There are others. The ones who can't stop throwing sparks. Healers, scholars, soldiers with pretty blades. The clever ones went strange first. Make of that what you like. I try not to."
+STRANGER: "There are others. The ones who cannot stop casting. Healers, scholars, soldiers with bright blades. The clever went strange first. Make of that what you will."
   > Continue.
 
 [give_shackled3]
-STRANGER: "Put three of them down. Call it mercy. I'd want somebody to do it for me."
+STRANGER: "Put three of them down. It is a mercy. I would want the same. ...Remind me I said that, when the time comes. I may not take it well."
   > "I'll see it done."
 
 [offer_shackled3]
-STRANGER: "You again. I lose track of who I've sent where. Faces blur after a while."
+STRANGER: "You. I wondered when you would come back."
   > Continue.
 
 [offer_shackled3_2]
-STRANGER: "Right. Yes. I remember now. Mostly."
+STRANGER: "Listen."
   > Continue.
 
 [waiting_shackled3]
-STRANGER: "Three of the spark-throwers. They'll be the ones setting the grass on fire."
+STRANGER: "Three of the spellcasters."
   > Continue.
 
 [waiting_shackled3_2]
-STRANGER: "Don't let them show you a trick. Don't ask me why. Call it a feeling. I get a lot of those lately."
+STRANGER: "Do not let them show you a trick."
   > Continue.
 
 [waiting_shackled3_3]
-STRANGER: "Go on. I'll be here, talking to the anvil. It's a good listener. Better than most."
+STRANGER: "Go. I will be here, talking to the anvil. It is a good listener. Better than most."
   > Leave him to his work.
 
 [turnin_shackled3]
-STRANGER: "Done? Don't look at me like that. I'd have done it myself, but my hands shake these days."
+STRANGER: "It is done. ...I should have been the one to do it."
   > Continue.
 
 [lore_shackled3]
-STRANGER: "Strange thing. Every one of them could work a spell, before. The ones who never could seem to laugh less. Or later. I can't tell which."
+STRANGER: "Every one of them could work a spell. Those who never could laugh later. Or not at all."
   > Continue.
 
 [lore_shackled3_2]
-STRANGER: "Probably nothing. I've been wrong before. About the war, about the king, about the weather. Mostly the weather."
+STRANGER: "I do not know why. Perhaps I never will. I have given up on the weather entirely."
+  > Continue.
+
+[give_shackled7_pre]
+STRANGER: "Soldiers in the old colours still search for a stone. Legionaries, watchmen. They march as if the war never ended. Nobody told them."
   > Continue.
 
 [give_shackled7]
-STRANGER: "The soldiers who still wear the old colors are searching for a stone. Legionaries, watchmen. They march like the war never ended. Nobody told them. Nobody ever tells soldiers anything. Take one from them."
+STRANGER: "Take one from them. ...If you find one who knows the war is over, bring him back. I have questions. So do the voices."
   > "I'll see it done."
 
 [offer_shackled7]
-STRANGER: "You again. I lose track of who I've sent where. Faces blur after a while."
+STRANGER: "You. I wondered when you would come back."
   > Continue.
 
 [offer_shackled7_2]
-STRANGER: "Right. Yes. I remember now. Mostly."
+STRANGER: "Listen."
   > Continue.
 
 [waiting_shackled7]
-STRANGER: "Three legionaries, two watchmen. They still salute each other."
+STRANGER: "Three legionaries. Two watchmen."
   > Continue.
 
 [waiting_shackled7_2]
-STRANGER: "It'd be funny if it weren't so sad. It's a little funny."
+STRANGER: "They still salute each other."
   > Continue.
 
 [waiting_shackled7_3]
-STRANGER: "Bring back a stone. And try not to die. I'd have to find someone else to talk to, and the anvil's started sulking."
+STRANGER: "Bring back a stone. And try not to die. I would have to find someone else to talk to, and the anvil has started sulking."
   > Leave him to his work.
 
 [turnin_shackled7]
-STRANGER: "You found one. Don't hold it too long. Warm, isn't it? Stones shouldn't be warm. Neither should I, these days."
+STRANGER: "You found one. Do not hold it long. It should not be warm."
   > Continue.
 
 [lore_shackled7]
-STRANGER: "There was a man who served the king. Darius, a governor with the king's ear. The king gave him one of the stones to keep safe until he came back."
+STRANGER: "A governor named Darius had the king's ear. The king gave him one of the stones to keep until he returned."
   > Continue.
 
 [lore_shackled7_2]
-STRANGER: "Darius lost it. His soldiers have been searching ever since, while he kneels in the dark and waits for a king who isn't coming. Loyalty's a fine thing, right up until it isn't."
+STRANGER: "Darius lost it. His soldiers still search. He waits in the dark for a king who is not coming."
   > Continue.
 
 [give_shackled8]
-STRANGER: "There's an altar of dark stone deep in the caves, a skull above a hollow the size of a fallen star. He's still kneeling there. Show him your stone, and see if he can tell it from his own. He won't thank you."
+STRANGER: "There is an altar of dark stone deep in the caves, above a hollow the size of a fallen star. He kneels there still. Show him your stone. He will not take it well. ...I suppose it serves him right."
   > "I'll see it done."
 
 [offer_shackled8]
-STRANGER: "You again. I lose track of who I've sent where. Faces blur after a while."
+STRANGER: "You. I wondered when you would come back."
   > Continue.
 
 [offer_shackled8_2]
-STRANGER: "Right. Yes. I remember now. Mostly."
+STRANGER: "Listen."
   > Continue.
 
 [waiting_shackled8]
-STRANGER: "The altar, the Groveler, the stone."
+STRANGER: "The altar. The Groveler. The stone."
   > Continue.
 
 [waiting_shackled8_2]
-STRANGER: "Go when you're strong. He's had a long time to get angry, and nothing else to do."
+STRANGER: "Go when you are strong."
   > Continue.
 
 [waiting_shackled8_3]
-STRANGER: "Or go now, and save me the trouble of remembering your name. I'm already losing mine."
+STRANGER: "He has had a long time to grow angry."
   > Leave him to his work.
 
 [turnin_shackled8]
-STRANGER: "So the Groveler is dead. Poor bastard. Waited his whole life for a king, and he got you."
+STRANGER: "The Groveler is dead. He waited his whole life for a king. Nobody came. ...Nobody ever comes."
   > Continue.
 
 [lore_shackled8]
-STRANGER: "Whatever that stone was holding back, it isn't now. I can feel it in the iron. You can too, can't you?"
+STRANGER: "Whatever that stone held back, it is loose now. You feel it in the iron."
   > Continue.
 
 [lore_shackled8_2]
-STRANGER: "Look up tonight. If the moon's red, it's begun. If it isn't, I've finally lost it."
+STRANGER: "I do not know what comes next. ...I rarely do. I simply hide it better than most."
   > Continue.
 
 [lore_shackled8_3]
-STRANGER: "Either way, come back. Where else would I go?"
+STRANGER: "Go carefully."
   > Leave.
 
 [after_darius]
-STRANGER: "Still here. Still mostly me."
+STRANGER: "Whatever that stone held back, it is loose now. You feel it in the iron."
   > Continue.
 
 [after_darius_2]
-STRANGER: "The voices are louder since the moon turned. One of them does a good impression of my mother. I didn't like her either."
+STRANGER: "I do not know what comes next. ...I rarely do. I simply hide it better than most."
   > Continue.
 
 [after_darius_3]
-STRANGER: "Come back when you've seen what walks under the red moon. Or don't. I'll be here regardless."
+STRANGER: "Go carefully."
+  > Leave.
+
+[desert_meet]
+The workshop is cold. The hooded man sits against a dead forge, the broken chain across his knees. He does not look surprised to see you.
+STRANGER: "You have seen the moon."
+  > Continue.
+
+[desert_meet_2]
+STRANGER: "In all my years I have never seen it that colour. Neither have the voices. They have gone very quiet. ...I do not like it when they are quiet."
+  > Continue.
+
+[desert_meet_3]
+STRANGER: "I need someone found. A Namuh. ...They are not from here. They see in the dark, and they speak with their hands. You will not mistake him."
+  > Continue.
+
+[desert_meet_4]
+STRANGER: "His name is Codey. He went into this desert. He has not come out."
+  > Continue.
+  > "Who is he to you?"
+
+[give_codey1]
+STRANGER: "The sand stalkers drag what they kill into the dunes. Start there. If he fell, they will know where. ...He will not have fallen easily. Neither will you, I hope. I am running short of people to send."
+  > "I'll find him."
+
+[desert_who]
+STRANGER: "Someone I owe. More than I can repay."
+  > Continue.
+
+[waiting_codey1]
+STRANGER: "The stalkers. Go."
+  > Continue.
+
+[waiting_codey1_2]
+STRANGER: "Look for black cloth. He wears black. He always has."
+  > Continue.
+
+[waiting_codey1_3]
+STRANGER: "The voices say he is close. The voices say a great many things. Twice now, they have been right. That worries me more than the rest."
+  > Leave him to his work.
+
+[turnin_codey1]
+You lay a strip of black cloth before him, stiff with dried blood. He studies it, then sets it down.
+  > Continue.
+
+[lore_codey1]
+STRANGER: "His. Not his blood."
+  > Continue.
+
+[give_codey2]
+STRANGER: "There is an old road under the sand. Calcified crusaders walk it. He would have gone that way. Clear it. ...They have been dead for years, and they still keep better order than I do."
+  > "I'll see it done."
+
+[offer_codey2]
+STRANGER: "You. I wondered when you would come back."
+  > Continue.
+
+[offer_codey2_2]
+STRANGER: "Listen."
+  > Continue.
+
+[waiting_codey2]
+STRANGER: "The road. The crusaders will not step aside for you. Do not ask them to."
+  > Leave him to his work.
+
+[turnin_codey2]
+Among the shattered crusaders you found a mark cut into a road-stone: a hand, fingers spread, then closed into a fist.
+  > Continue.
+
+[lore_codey2]
+STRANGER: "His mark. He was alive when he made it."
+  > Continue.
+
+[give_codey3]
+STRANGER: "The miragewrights hide what they find. If he is anywhere, he is behind one of their illusions. Break them. ...And if you see me out there, it is not me. Probably."
+  > "I'll see it done."
+
+[offer_codey3]
+STRANGER: "You. I wondered when you would come back."
+  > Continue.
+
+[offer_codey3_2]
+STRANGER: "Listen."
+  > Continue.
+
+[waiting_codey3]
+STRANGER: "Do not trust what you see out there. I stopped trusting my eyes years ago. They have yet to notice."
+  > Leave him to his work.
+
+[turnin_codey3]
+He is on his feet before you are through the door. He does not go to Codey. Codey does not go to him. They stand across the room like two soldiers deciding whether to salute.
+  > Continue.
+
+[codey_back]
+Codey strikes his fist twice against his chest. The old man returns it, stiffly, as if his arm has forgotten how.
+STRANGER: "You took your time."
+  > Continue.
+
+[codey_back_2]
+STRANGER: "...You came back. [pause] One of you did."
+  > Continue.
+
+[codey_back_3]
+The words seem to surprise him. He turns to the forge at once.
+STRANGER: "That will be all."
+  > Leave them to it.
+
+[after_codey]
+STRANGER: "...You again. Good."
+  > Continue.
+
+[after_codey_2]
+STRANGER: "He keeps watch at the door. So do I. Between the two of us and the voices, it is getting crowded in here."
+  > Continue.
+
+[after_codey_3]
+STRANGER: "The voices are louder since the moon turned. One of them sounds like me. It is more optimistic. I do not trust it."
   > Leave.
 
 
