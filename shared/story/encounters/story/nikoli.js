@@ -72,7 +72,7 @@ const askBeast = {
 
 const STAGES = {
     // ---- the first meeting: starving snow leopards come for his fire ----
-    meet: stage("A broad man in a battered Panzerian greatcoat stands with his back to the campfire, a greatsword in his hands. Beyond the light, pale shapes slink through the snow: snow leopards, starved thin, their eyes on the fire.",
+    meet: stage("A broad man in dark Panzerian armour stands with his back to the campfire, a greatsword in his hands. Beyond the light, pale shapes slink through the snow: snow leopards, starved thin, their eyes on the fire.",
         next("meet_2"), { image: LEOPARDS_IMG, bgm: BATTLE_BGM }),
     meet_2: stage("\"Three cats, one Nikoli. Is bad arithmetic, even for general.\" He grins over his shoulder, and you count more gaps than teeth. \"You have weapon, da? Then stand with Nikoli.\"",
         [{

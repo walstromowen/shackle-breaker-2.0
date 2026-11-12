@@ -487,7 +487,7 @@ As you approach the altar, it releases a cloud of pale smoke. It sinks into your
 ===== NIKOLI (nikoli) =====
 
 [meet]
-A broad man in a battered Panzerian greatcoat stands with his back to the campfire, a greatsword in his hands. Beyond the light, pale shapes slink through the snow: snow leopards, starved thin, their eyes on the fire.
+A broad man in dark Panzerian armour stands with his back to the campfire, a greatsword in his hands. Beyond the light, pale shapes slink through the snow: snow leopards, starved thin, their eyes on the fire.
   > Continue.
 
 [meet_2]
@@ -627,7 +627,7 @@ NIKOLI: "No? Few do, these days. If you hear name, come find Nikoli. Nikoli wait
   > Continue.
 
 [meet]
-A broad man in a battered Panzerian greatcoat stands with his back to the campfire, a greatsword in his hands. Beyond the light, pale shapes slink through the snow: snow leopards, starved thin, their eyes on the fire.
+A broad man in dark Panzerian armour stands with his back to the campfire, a greatsword in his hands. Beyond the light, pale shapes slink through the snow: snow leopards, starved thin, their eyes on the fire.
   > Continue.
 
 [meet_2]
