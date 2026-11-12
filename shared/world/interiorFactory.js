@@ -5,6 +5,7 @@ import { CaveGenerator } from './generators/caveGenerator.js';
 import { CraftingHouseGenerator } from './generators/craftingHouseGenerator.js';
 import { CatacombGenerator } from './generators/catacombGenerator.js';
 import { gameState } from '../core/gameState.js';
+import { movedNorth, snowHouseResidents, catacombResidents } from '../story/heroes.js';
 
 const GENERATORS = { HOUSE: HouseGenerator, CRAFTING_HOUSE: CraftingHouseGenerator, CAVE: CaveGenerator, CATACOMBS: CatacombGenerator };
 
@@ -13,8 +14,9 @@ const GENERATORS = { HOUSE: HouseGenerator, CRAFTING_HOUSE: CraftingHouseGenerat
      strangerHome          the Hooded Stranger's workshop: the first workshop the player walks into (an interior id, the door's cell "col_row")
      strangerDesertHome    where he goes in act 2: the first workshop in a desert village the player walks into in act 2
      nikoliCampfire        Nikoli's camp: the first campfire of the snowy mountains the world puts down near the player ("col,row", WorldManager)
-     jaegerCatacomb        where Jaeger waits, posing as Nikoli: the first catacombs the player walks into (an interior id); he stands in its hoard until met */
-export const STORY_HOMES = ['strangerHome', 'strangerDesertHome', 'nikoliCampfire', 'jaegerCatacomb'];
+     jaegerCatacomb        where Jaeger waits, posing as Nikoli: the first catacombs the player walks into (an interior id); he stands in its hoard until met
+     strangerSnowHome      act 3: the first snowy-mountain crafting house entered once Codey is back, where Mentoras and Codey go (story/heroes.js) */
+export const STORY_HOMES = ['strangerHome', 'strangerDesertHome', 'nikoliCampfire', 'jaegerCatacomb', 'strangerSnowHome'];
 
 const hasMilestone = (id) => Array.isArray(gameState.milestones) && gameState.milestones.includes(id);
 
@@ -55,9 +57,15 @@ export class InteriorFactory {
             InteriorFactory.claimStrangerHome(interiorId);
             return w.strangerHome === interiorId ? 'HOODED_STRANGER_NPC' : null;
         }
-        if (w.strangerHome === interiorId) return hasMilestone('nikoli_told') ? 'NIKOLI_NPC' : null;
+        // his old workshop: Nikoli waits there once told, until he goes north to find Mentoras (act 3)
+        if (w.strangerHome === interiorId) return hasMilestone('nikoli_told') && !movedNorth() ? 'NIKOLI_NPC' : null;
+        // act 3, Codey back: the snowy house, and whoever this player's story has there (story/heroes.js); a list, placed side by side
+        if (movedNorth() && biomeId === 'SNOWY_MOUNTAINS' && w.strangerDesertHome !== interiorId) InteriorFactory.claimHome('strangerSnowHome', interiorId);
+        if (w.strangerSnowHome === interiorId) { const who = snowHouseResidents(); return who.length ? who : null; }
         if (biomeId === 'DESERT') InteriorFactory.claimHome('strangerDesertHome', interiorId);
-        return w.strangerDesertHome === interiorId ? 'HOODED_STRANGER_NPC' : null;
+        // the desert workshop: Mentoras, until he has gone north; then only the mark he scratched into the anvil
+        if (w.strangerDesertHome === interiorId) return movedNorth() ? 'STRANGER_MARK' : 'HOODED_STRANGER_NPC';
+        return null;
     }
 
     static create(seed, interiorType, interiorId) {
@@ -83,7 +91,8 @@ export class InteriorFactory {
         // Jaeger waits in the hoard of the first catacombs entered, for each player until they have met him (milestone jaeger_met)
         if (config.generatorType === 'CATACOMBS' && interiorId) {
             InteriorFactory.claimHome('jaegerCatacomb', interiorId);
-            if (gameState.world && gameState.world.jaegerCatacomb === interiorId && !hasMilestone('jaeger_met')) config = { ...config, storyNpc: 'JAEGER_NPC' };
+            const who = gameState.world && gameState.world.jaegerCatacomb === interiorId ? catacombResidents() : [];
+            if (who.length) config = { ...config, storyNpc: who };
         }
 
         const Generator = GENERATORS[config.generatorType];

@@ -641,6 +641,18 @@ export const QuestDefinitions = {
         rewards: { exp: 2000, currency: 800, items: [{ id: "shmindolyns_draught", amount: 1 }, { id: "healing_tonic", amount: 3 }] }
     },
 
+    // Act 3, "Jaeger only" (story/heroes.js): the snowy workshop wrecked, the hooded man taken. Codey's signs point to the catacombs where the player
+    // met "Nikoli". Won when the fight there is won (story/encounters/story/heroesNorth.js hands it in itself).
+    "the_pursuer": {
+        id: "the_pursuer",
+        name: "The Pursuer",
+        description: "The snowy workshop is wrecked and white with frost, and the hooded man is gone. Codey, wounded, signed a big man with a greatsword, a hood, hands bound at the wrist, and then a skull, and steps going down into the dark. Bring him back.",
+        objectives: [
+            { id: "obj_pursuer_free", type: "kill_enemy", targetId: "JAEGER_BOSS", amount: 1, description: "Free the hooded man" }
+        ],
+        rewards: { exp: 2500, currency: 600, items: [{ id: "healing_tonic", amount: 3 }] }
+    },
+
     "panzerian_war_beast": {
         id: "panzerian_war_beast",
         name: "Panzerian War Beast",

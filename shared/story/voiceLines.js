@@ -19,8 +19,12 @@ export const VOICED = {
     hooded_stranger: [[/./, 'STRANGER']],
     mysterious_altar: [[/^darius_/, 'DARIUS']],
     act_two: [[/^long_dark$/, 'DARIUS']],
-    nikoli: [[/./, 'NIKOLI']],
-    nikoli_after_battle: [[/./, 'NIKOLI']],   // the same stages as nikoli: the same clips
+    nikoli: [[/_m\d$/, 'STRANGER'], [/_j\d$/, 'JAEGER'], [/./, 'NIKOLI']],   // act 3: _m1 / _m2 stages are Mentoras, _j1 / _j2 Jaeger
+    nikoli_after_battle: [[/_m\d$/, 'STRANGER'], [/_j\d$/, 'JAEGER'], [/./, 'NIKOLI']],   // the same stages as nikoli: the same clips
+    brothers_won: [[/_m\d$/, 'STRANGER'], [/_j\d$/, 'JAEGER'], [/./, 'NIKOLI']],
+    codey: [], stranger_mark: [], brothers_sword: [],   // the narrator only
+    pursuer: [[/^captive_3$|^freed/, 'STRANGER'], [/./, 'JAEGER']],
+    pursuer_won: [[/./, 'STRANGER']],
     dry_kraken_ambush: [],   // the narrator only: Codey speaks with his hands
     codey_freed: [],
     jaeger: [[/./, 'JAEGER']]   // Nikoli's brother, posing as him: Nikoli's voice, played cold
@@ -31,8 +35,11 @@ export const SPEAKERS = {
     hooded_stranger: [[/./, 'STRANGER']],
     mysterious_altar: [[/^darius_/, 'DARIUS']],
     act_two: [[/^long_dark$/, 'DARIUS']],     // his own words, in the vision of his life
-    nikoli: [[/./, 'NIKOLI']],
-    nikoli_after_battle: [[/./, 'NIKOLI']],
+    nikoli: [[/_m\d$/, 'STRANGER'], [/_j\d$/, 'JAEGER'], [/./, 'NIKOLI']],
+    nikoli_after_battle: [[/_m\d$/, 'STRANGER'], [/_j\d$/, 'JAEGER'], [/./, 'NIKOLI']],
+    brothers_won: [[/_m\d$/, 'STRANGER'], [/_j\d$/, 'JAEGER'], [/./, 'NIKOLI']],
+    pursuer: [[/^captive_3$|^freed/, 'STRANGER'], [/./, 'JAEGER']],
+    pursuer_won: [[/./, 'STRANGER']],
     jaeger: [[/./, 'JAEGER']]
 };
 

@@ -302,6 +302,7 @@ export const SaveManager = {
                 strangerDesertHome: world.strangerDesertHome || null,   // where he goes in act 2 (InteriorFactory.workshopResident)
                 nikoliCampfire: world.nikoliCampfire || null,           // Nikoli's camp, "col,row" of the campfire (WorldManager)
                 jaegerCatacomb: world.jaegerCatacomb || null,           // the catacombs Jaeger waits in (InteriorFactory)
+                strangerSnowHome: world.strangerSnowHome || null,       // act 3: the snowy house Mentoras and Codey go to (story/heroes.js)
                 discoveredChunks: clone(world.discoveredChunks || []),
                 structureChunks: clone(world.structureChunks || {}),
                 weather: serializeWeather(world.currentWeather),
@@ -425,6 +426,7 @@ export const SaveManager = {
             strangerDesertHome: data.world.strangerDesertHome || null,
             nikoliCampfire: data.world.nikoliCampfire || null,
             jaegerCatacomb: data.world.jaegerCatacomb || null,
+            strangerSnowHome: data.world.strangerSnowHome || null,
             discoveredChunks: data.world.discoveredChunks || [],
             // undefined in a save made before the record existed: WorldManager then works out which chunks already have their structure (see structureSpawner.js)
             structureChunks: data.world.structureChunks,

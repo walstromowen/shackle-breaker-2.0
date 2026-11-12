@@ -31,6 +31,7 @@
    Art: the Panzerian warlord's portrait for now (entity NIKOLI); his brother Jaeger looks the same (story/encounters/story/jaeger.js). */
 import { gameState } from '../../../core/gameState.js';
 import { QuestModel } from '../../questModel.js';
+import { movedNorth, heroesOutcome } from '../../heroes.js';
 
 const TITLE = "Nikoli";
 const IMG = { col: 0, row: 0 };
@@ -38,6 +39,8 @@ const LEOPARDS_IMG = { sheet: "snowLeopardPortrait", col: 0, row: 0 };
 const BEAST_QUEST = "panzerian_war_beast";
 // the snowy mountains' battle music, from the moment the scene opens (he only ever meets you there) and on into the fight, unbroken
 const BATTLE_BGM = "snowyMountainsBattleBgm";
+const STRANGER_IMG = { sheet: "encounter_hooded_stranger", col: 0, row: 0 };
+const CODEY_IMG = { sheet: "nightbladeHeroPortrait", col: 0, row: 0 };
 
 const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
 const end = (results = []) => [{ weight: 100, results: [...results, { type: "END_ENCOUNTER", payload: null }] }];
@@ -49,6 +52,12 @@ const has = (id) => milestones().includes(id);
 
 /** The stage he opens with, from this player's milestones and quests. */
 function opening() {
+    // act 3, told: he has found Mentoras, in the snowy house (story/heroes.js): the reunion, or his brother's arrival, then the old friends
+    if (movedNorth() && has('nikoli_told')) {
+        if (heroesOutcome() === 'brothers' && !has('brothers_done')) return 'brothers';
+        if (heroesOutcome() === 'friends' && !has('friends_met')) return 'reunion';
+        return 'friends_after';
+    }
     if (!has('nikoli_met')) return 'meet';
     const q = gameState.quests || {};
     if (q.active && q.active[BEAST_QUEST] && QuestModel.checkCompletion(gameState, BEAST_QUEST)) return 'beast_done';
@@ -139,7 +148,56 @@ const STAGES = {
     workshop: stage("Nikoli stands at the cold forge where the hooded man used to wait, turning a length of broken chain over in his hands. \"He was here. Ashes still warm when Nikoli came.\"",
         next("workshop_2"), { ambience: "none" }),
     workshop_2: stage("\"He leaves in hurry, and he leaves this.\" He holds up the chain. \"Toward sand, Nikoli thinks. Always one step ahead of Nikoli, that one. Always he was.\"",
-        [askBeast, { text: "Leave him to his hunt.", outcomes: end() }])
+        [askBeast, { text: "Leave him to his hunt.", outcomes: end() }]),
+
+    // ==== act 3, the snowy house (story/heroes.js). A stage id ending _m1 / _m2 is Mentoras speaking, _j1 / _j2 Jaeger (voiceLines.js SPEAKERS) ====
+    // ---- "Old Friends": only Nikoli was told ----
+    reunion: stage("There is a third man in the workshop tonight. A broad Panzerian sits on an upturned crate by the forge, a greatsword across his knees, and he is talking. By the look of things, he has been talking for some time.",
+        next("reunion_2"), { ambience: "fireCrackle" }),
+    reunion_2: stage("\"...and Nikoli says to colonel, is not bad arithmetic, is Panzerian arithmetic. Ah! Is you!\"", next("reunion_3")),
+    reunion_3: stage("He grins his gap-toothed grin. Across the forge, the hooded man has his hood down. For the first time, you see him almost smile.", next("reunion_4")),
+    reunion_4: stage("\"You find him for Nikoli. Tired eyes, sharp tongue, da? Exactly as Nikoli said.\"", next("reunion_m1")),
+    reunion_m1: stage("\"He has not stopped talking since he arrived. I had forgotten. ...I had not forgotten. I had hoped.\"", next("reunion_5"), { displayText: "The Hooded Stranger", image: STRANGER_IMG }),
+    reunion_5: stage("\"Nikoli and Commander walk together now. Old friends, old arguments. Nikoli is right about all of them.\"", next("reunion_m2")),
+    reunion_m2: stage("\"He is not.\"", next("reunion_6"), { displayText: "The Hooded Stranger", image: STRANGER_IMG }),
+    reunion_6: stage("In the corner, Codey watches them both, and signs something you cannot follow. Whatever it was, it makes the old man look away.", next("reunion_7"), { image: CODEY_IMG }),
+    reunion_7: stage("\"Take. For finding him. Ice remembers what rest of us forget.\"", [{ text: "Take it.", outcomes: end([
+        { type: "GIVE_ITEM", payload: { itemId: "insight_of_ice", qty: 1 } },
+        { type: "GRANT_MILESTONE", payload: { id: "friends_met" } }
+    ]) }]),
+    friends_after: stage("Nikoli is at the forge, mid-argument with the hooded man. \"Nikoli and Commander argue about everything. Is wonderful.\"",
+        [{ text: "Leave them to it.", outcomes: end() }], { ambience: "fireCrackle" }),
+
+    // ---- "Brothers": both were told. Jaeger followed Nikoli here ----
+    brothers: stage("There is a third man in the workshop tonight: a broad Panzerian with a gap-toothed grin, a greatsword across his knees. He is mid-story, and the hooded man is almost smiling.",
+        next("brothers_2"), { ambience: "fireCrackle" }),
+    brothers_2: stage("\"Ah! Is you! You find him for Nikoli. Tired eyes, sharp tongue, exactly as Nikoli...\"", next("brothers_door")),
+    brothers_door: stage("The door opens behind you. The torches gutter. Frost creeps in across the floor.", next("brothers_door_2"), { effect: "shake", sfx: "whispers", sfxVolume: 0.5, ambience: "none", bgm: "none" }),
+    brothers_door_2: stage("A second broad man in dark Panzerian armour stands in the doorway. The same face. The same greatsword. A straight, white, even smile.", next("brothers_3")),
+    brothers_3: stage("\"...Jaeger.\"", next("brothers_j1")),
+    brothers_j1: stage("\"Brother. You always did leave a trail a child could follow.\"", next("brothers_4"), { displayText: "Jaeger" }),
+    brothers_4: stage("\"Nikoli led you here.\"", next("brothers_m1")),
+    brothers_m1: stage("\"Not your fault. It never is, with him.\"", next("brothers_j2"), { displayText: "The Hooded Stranger", image: STRANGER_IMG }),
+    brothers_j2: stage("\"Commander. You look tired.\"", [{
+        text: "Draw your weapon.",
+        outcomes: [{ weight: 100, results: [{ type: "START_BATTLE", payload: {
+            enemies: ["JAEGER_BOSS"], allies: [{ id: "NIKOLI" }], bgm: "apexPredatorBgm", noEscape: true,
+            afterVictory: { encounterId: "brothers_won" }
+        } }] }]
+    }], { displayText: "Jaeger", bgm: "apexPredatorBgm" }),
+    // after the fight (brothers_won): Jaeger beaten, gone into the night; the old friends
+    won: stage("Jaeger falls back against the door frame, frost bleeding from his wounds. For a moment the brothers only look at each other.", next("won_j1"), { bgm: "none" }),
+    won_j1: stage("\"This is not finished, brother.\"", next("won_2"), { displayText: "Jaeger" }),
+    won_2: stage("Then he is through the door and gone into the night.", next("won_3")),
+    won_3: stage("\"No. Is not.\"", next("won_4")),
+    won_4: stage("Nikoli sits down heavily by the forge. After a while, the hooded man sits beside him.", next("won_m1")),
+    won_m1: stage("\"We leave at first light. Both of us.\"", next("won_5"), { displayText: "The Hooded Stranger", image: STRANGER_IMG }),
+    won_5: stage("\"Old friends, old arguments. Nikoli is right about all of them.\"", next("won_m2")),
+    won_m2: stage("\"He is not.\"", next("won_6"), { displayText: "The Hooded Stranger", image: STRANGER_IMG }),
+    won_6: stage("\"Take. For finding him.\"", [{ text: "Take it.", outcomes: end([
+        { type: "GIVE_ITEM", payload: { itemId: "insight_of_ice", qty: 1 } },
+        { type: "GRANT_MILESTONE", payload: { id: "brothers_done" } }
+    ]) }])
 };
 
 export const nikoli = {
@@ -151,6 +209,13 @@ export const nikoli = {
     ambience: "fireCrackle",
     initialStage: opening,
     stages: STAGES
+};
+
+/* Played when the fight against his brother is won (act 3, "Brothers"): the same conversation, from after that fight. */
+export const nikoliBrothersWon = {
+    ...nikoli,
+    id: "brothers_won",
+    initialStage: "won"
 };
 
 /* Played when the fight beside him is won (START_BATTLE afterVictory): the same conversation, from after the fight. */

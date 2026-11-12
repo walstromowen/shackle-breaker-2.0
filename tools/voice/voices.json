@@ -100,7 +100,30 @@
         "He studies you a long moment, the way a man studies a lock.": "[quiet, wary] He studies you a long moment, the way a man studies a lock.",
         "He rises and takes up his greatsword. He does not ask you where the workshop is. He does not look at you again.": "[low, a chill of realisation] He rises and takes up his greatsword. He does not ask you where the workshop is. He does not look at you again.",
         "He does not look up from the greatsword across his knees.": "[quiet, cold] He does not look up from the greatsword across his knees.",
-        "He is buckling on his gauntlets.": "[quiet, uneasy] He is buckling on his gauntlets."
+        "He is buckling on his gauntlets.": "[quiet, uneasy] He is buckling on his gauntlets.",
+        "He takes it from you and turns it over in his hands, slowly, the way he turned the black cloth.": "[quiet, slow] He takes it from you and turns it over in his hands, slowly, the way he turned the black cloth.",
+        "He does not wait for an answer. For a long while he only looks at it. Then he holds it out to you, hilt first.": "[quiet, heavy, restrained] He does not wait for an answer. For a long while he only looks at it. Then he holds it out to you, hilt first.",
+        "There is a third man in the workshop tonight. A broad Panzerian sits on an upturned crate by the forge, a greatsword across his knees, and he is talking. By the look of things, he has been talking for some time.": "[warm, wry narration] There is a third man in the workshop tonight. A broad Panzerian sits on an upturned crate by the forge, a greatsword across his knees, and he is talking. By the look of things, he has been talking for some time.",
+        "He grins his gap-toothed grin. Across the forge, the hooded man has his hood down. For the first time, you see him almost smile.": "[warm, quiet wonder] He grins his gap-toothed grin. Across the forge, the hooded man has his hood down. For the first time, you see him almost smile.",
+        "In the corner, Codey watches them both, and signs something you cannot follow. Whatever it was, it makes the old man look away.": "[gentle, quiet] In the corner, Codey watches them both, and signs something you cannot follow. Whatever it was, it makes the old man look away.",
+        "Nikoli is at the forge, mid-argument with the hooded man.": "[wry, warm] Nikoli is at the forge, mid-argument with the hooded man.",
+        "There is a third man in the workshop tonight: a broad Panzerian with a gap-toothed grin, a greatsword across his knees. He is mid-story, and the hooded man is almost smiling.": "[warm, easy narration] There is a third man in the workshop tonight: a broad Panzerian with a gap-toothed grin, a greatsword across his knees. He is mid-story, and the hooded man is almost smiling.",
+        "The door opens behind you. The torches gutter. Frost creeps in across the floor.": "[sudden hush, ominous] The door opens behind you. The torches gutter. Frost creeps in across the floor.",
+        "A second broad man in dark Panzerian armour stands in the doorway. The same face. The same greatsword. A straight, white, even smile.": "[slow, chilling] A second broad man in dark Panzerian armour stands in the doorway. The same face. The same greatsword. A straight, white, even smile.",
+        "Jaeger falls back against the door frame, frost bleeding from his wounds. For a moment the brothers only look at each other.": "[low, heavy] Jaeger falls back against the door frame, frost bleeding from his wounds. For a moment the brothers only look at each other.",
+        "Then he is through the door and gone into the night.": "[quiet] Then he is through the door and gone into the night.",
+        "Nikoli sits down heavily by the forge. After a while, the hooded man sits beside him.": "[slow, quiet, tender] Nikoli sits down heavily by the forge. After a while, the hooded man sits beside him.",
+        "Codey sits with his back to the wall, facing the door. He gives you a short nod, and goes back to watching it.": "[quiet, dry] Codey sits with his back to the wall, facing the door. He gives you a short nod, and goes back to watching it.",
+        "The door hangs from one hinge. Inside, frost has crept over everything: the anvil, the tools, the walls. The forge is dead and white with frost.": "[hushed, dread] The door hangs from one hinge. Inside, frost has crept over everything: the anvil, the tools, the walls. The forge is dead and white with frost.",
+        "Codey sits against the far wall, one arm held tight to his side. He is bleeding, and does not seem to care. He raises his hands as you come in.": "[low, tense] Codey sits against the far wall, one arm held tight to his side. He is bleeding, and does not seem to care. He raises his hands as you come in.",
+        "He signs slowly. A big man. A greatsword. A hood, drawn low. Hands bound at the wrist. Then a skull, and steps going down into the dark.": "[slow, deliberate, grim] He signs slowly. A big man. A greatsword. A hood, drawn low. Hands bound at the wrist. Then a skull, and steps going down into the dark.",
+        "Codey has not moved from the wall. When he sees you, he signs the skull and the steps again, slower.": "[quiet, urgent] Codey has not moved from the wall. When he sees you, he signs the skull and the steps again, slower.",
+        "The forge is cold. Scratched into the anvil is a mark you have seen before: a hand, fingers spread, then closed into a fist. Beneath it, a crude drawing of mountains under snow.": "[quiet, intrigued] The forge is cold. Scratched into the anvil is a mark you have seen before: a hand, fingers spread, then closed into a fist. Beneath it, a crude drawing of mountains under snow.",
+        "The campfire is cold. Snow has drifted into the ashes, and no one has sat here for many nights.": "[hushed, mournful] The campfire is cold. Snow has drifted into the ashes, and no one has sat here for many nights.",
+        "A greatsword stands planted in the snow beside it, rimed with frost. A length of broken chain hangs from its hilt.": "[slow, mournful] A greatsword stands planted in the snow beside it, rimed with frost. A length of broken chain hangs from its hilt.",
+        "Among the hoard, a broad man in dark Panzerian armour stands waiting, a greatsword in his hands. At his feet, chained and silent, kneels the hooded man.": "[low, tense, ominous] Among the hoard, a broad man in dark Panzerian armour stands waiting, a greatsword in his hands. At his feet, chained and silent, kneels the hooded man.",
+        "He staggers back between the graves, frost bleeding from his wounds, and is gone into the dark.": "[low, tense] He staggers back between the graves, frost bleeding from his wounds, and is gone into the dark.",
+        "You break the chains. The hooded man rises slowly, rubbing his wrists.": "[quiet, relieved] You break the chains. The hooded man rises slowly, rubbing his wrists."
       }
     },
     "STRANGER": {
@@ -176,7 +199,20 @@
         "That will be all.": "[abrupt, composing himself] That will be all.",
         "...You again. Good.": "[tired, quietly glad] ...You again. Good.",
         "He keeps watch at the door. So do I. Between the two of us and the voices, it is getting crowded in here.": "[dry, deadpan] He keeps watch at the door. So do I. Between the two of us and the voices, it is getting crowded in here.",
-        "The voices are louder since the moon turned. One of them sounds like me. It is more optimistic. I do not trust it.": "[dry, darkly amused] The voices are louder since the moon turned. One of them sounds like me. It is more optimistic. [short pause] I do not trust it."
+        "The voices are louder since the moon turned. One of them sounds like me. It is more optimistic. I do not trust it.": "[dry, darkly amused] The voices are louder since the moon turned. One of them sounds like me. It is more optimistic. [short pause] I do not trust it.",
+        "...Panzerian steel.": "[very quiet, recognising it] ...Panzerian steel.",
+        "He was looking for me. Wasn't he.": "[quiet, hollow, not really a question] He was looking for me. Wasn't he.",
+        "Keep it. He would want it used.": "[quiet, steady, grief held down] Keep it. He would want it used.",
+        "He cheats at cards. In three languages.": "[dry, deadpan, fond] He cheats at cards. In three languages.",
+        "Codey has forgiven me for being caught. I have not.": "[dry, hard on himself] Codey has forgiven me for being caught. I have not.",
+        "He has not stopped talking since he arrived. I had forgotten. ...I had not forgotten. I had hoped.": "[dry, weary, secretly glad] He has not stopped talking since he arrived. I had forgotten. [pause] ...I had not forgotten. [quieter] I had hoped.",
+        "He is not.": "[flat, deadpan] He is not.",
+        "Not your fault. It never is, with him.": "[quiet, steady, cold toward Jaeger] Not your fault. It never is, with him.",
+        "We leave at first light. Both of us.": "[quiet, resolute] We leave at first light. Both of us.",
+        "That is not Nikoli. ...Nikoli has fewer teeth.": "[weary, defiant] That is not Nikoli. [pause] [dry, deadpan] ...Nikoli has fewer teeth.",
+        "Go on. I know the way back. I usually do.": "[tired, dry] Go on. I know the way back. I usually do.",
+        "You came. ...I did not expect anyone to.": "[quiet, surprised, moved] You came. ...I did not expect anyone to.",
+        "Thank you.": "[quiet, sincere] Thank you."
       }
     },
     "DARIUS": {
@@ -224,7 +260,18 @@
         "Nikoli leaves when snow lets him. Workshop, you said. Nikoli will find it.": "[calm, busy packing] Nikoli leaves when snow lets him. Workshop, you said. Nikoli will find it.",
         "He was here. Ashes still warm when Nikoli came.": "[low, quiet] He was here. Ashes still warm when Nikoli came.",
         "He leaves in hurry, and he leaves this.": "[quiet] He leaves in hurry, and he leaves this.",
-        "Toward sand, Nikoli thinks. Always one step ahead of Nikoli, that one. Always he was.": "[rueful, low] Toward sand, Nikoli thinks. [soft half-laugh] Always one step ahead of Nikoli, that one. Always he was."
+        "Toward sand, Nikoli thinks. Always one step ahead of Nikoli, that one. Always he was.": "[rueful, low] Toward sand, Nikoli thinks. [soft half-laugh] Always one step ahead of Nikoli, that one. Always he was.",
+        "...and Nikoli says to colonel, is not bad arithmetic, is Panzerian arithmetic. Ah! Is you!": "[mid-story, booming, then delighted] ...and Nikoli says to colonel, is not bad arithmetic, is Panzerian arithmetic. Ah! Is you!",
+        "You find him for Nikoli. Tired eyes, sharp tongue, da? Exactly as Nikoli said.": "[warm, laughing] You find him for Nikoli. Tired eyes, sharp tongue, da? Exactly as Nikoli said.",
+        "Nikoli and Commander walk together now. Old friends, old arguments. Nikoli is right about all of them.": "[warm, teasing] Nikoli and Commander walk together now. Old friends, old arguments. [grinning] Nikoli is right about all of them.",
+        "Take. For finding him. Ice remembers what rest of us forget.": "[warm, sincere] Take. For finding him. Ice remembers what rest of us forget.",
+        "Nikoli and Commander argue about everything. Is wonderful.": "[cheerful, booming] Nikoli and Commander argue about everything. Is wonderful.",
+        "Ah! Is you! You find him for Nikoli. Tired eyes, sharp tongue, exactly as Nikoli...": "[delighted, then cut off] Ah! Is you! You find him for Nikoli. Tired eyes, sharp tongue, exactly as Nikoli...",
+        "...Jaeger.": "[shocked, low, the joy gone] ...Jaeger.",
+        "Nikoli led you here.": "[quiet, stricken] Nikoli led you here.",
+        "No. Is not.": "[quiet, sad, serious] No. Is not.",
+        "Old friends, old arguments. Nikoli is right about all of them.": "[tired, the grin coming back] Old friends, old arguments. Nikoli is right about all of them.",
+        "Take. For finding him.": "[quiet, warm] Take. For finding him."
       },
       "fx": "deeper"
     },
@@ -248,7 +295,12 @@
         "Jae... Nikoli will find you.": "[cold, then a slip, cut short] Jae... [correcting himself at once, quiet menace] Nikoli will find you.",
         "Nikoli always finds people.": "[low, cold threat] Nikoli always finds people.",
         "Nikoli has nothing more to ask you.": "[flat, cold, dismissive] Nikoli has nothing more to ask you.",
-        "Nikoli has what he came for. Go, my friend.": "[quiet, cold satisfaction] Nikoli has what he came for. [pause] Go, my friend."
+        "Nikoli has what he came for. Go, my friend.": "[quiet, cold satisfaction] Nikoli has what he came for. [pause] Go, my friend.",
+        "Brother. You always did leave a trail a child could follow.": "[cold, quiet contempt] Brother. You always did leave a trail a child could follow.",
+        "Commander. You look tired.": "[cold, measured menace] Commander. You look tired.",
+        "This is not finished, brother.": "[wounded, cold, quiet fury] This is not finished, brother.",
+        "You came. Good. Nikoli hates to wait.": "[cold, flat imitation of warmth] You came. Good. Nikoli hates to wait.",
+        "Quiet, Commander.": "[cold, sharp] Quiet, Commander."
       }
     }
   }

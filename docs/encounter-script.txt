@@ -20,6 +20,17 @@ Write "you" for the player: a recorded voice cannot say a name the player chose.
 
 
 
+===== A COLD FIRE (brothers_sword) =====
+
+[cold]
+The campfire is cold. Snow has drifted into the ashes, and no one has sat here for many nights.
+  > Continue.
+
+[sword]
+A greatsword stands planted in the snow beside it, rimed with frost. A length of broken chain hangs from its hilt.
+  > Take the sword.
+
+
 ===== A DARK TRUTH (act_two) =====
 
 [silence]
@@ -369,6 +380,29 @@ He raises his hands and signs slowly, so that even you can follow: a hood, drawn
   > "He's waiting for you."
 
 
+===== CODEY (codey) =====
+
+[idle]
+Codey sits with his back to the wall, facing the door. He gives you a short nod, and goes back to watching it.
+  > Leave.
+
+[taken]
+The door hangs from one hinge. Inside, frost has crept over everything: the anvil, the tools, the walls. The forge is dead and white with frost.
+  > Continue.
+
+[taken_2]
+Codey sits against the far wall, one arm held tight to his side. He is bleeding, and does not seem to care. He raises his hands as you come in.
+  > Continue.
+
+[taken_3]
+He signs slowly. A big man. A greatsword. A hood, drawn low. Hands bound at the wrist. Then a skull, and steps going down into the dark.
+  > "I'll bring him back."
+
+[taken_waiting]
+Codey has not moved from the wall. When he sees you, he signs the skull and the steps again, slower.
+  > Leave.
+
+
 ===== INFERNUS SENTINEL (infernus_sentinel) =====
 
 [wakes]
@@ -580,6 +614,119 @@ NIKOLI: "Toward sand, Nikoli thinks. Always one step ahead of Nikoli, that one. 
   > [Panzerkamfer] "Tell me about that war beast."
   > Leave him to his hunt.
 
+[reunion]
+There is a third man in the workshop tonight. A broad Panzerian sits on an upturned crate by the forge, a greatsword across his knees, and he is talking. By the look of things, he has been talking for some time.
+  > Continue.
+
+[reunion_2]
+NIKOLI: "...and Nikoli says to colonel, is not bad arithmetic, is Panzerian arithmetic. Ah! Is you!"
+  > Continue.
+
+[reunion_3]
+He grins his gap-toothed grin. Across the forge, the hooded man has his hood down. For the first time, you see him almost smile.
+  > Continue.
+
+[reunion_4]
+NIKOLI: "You find him for Nikoli. Tired eyes, sharp tongue, da? Exactly as Nikoli said."
+  > Continue.
+
+[reunion_m1]
+STRANGER: "He has not stopped talking since he arrived. I had forgotten. ...I had not forgotten. I had hoped."
+  > Continue.
+
+[reunion_5]
+NIKOLI: "Nikoli and Commander walk together now. Old friends, old arguments. Nikoli is right about all of them."
+  > Continue.
+
+[reunion_m2]
+STRANGER: "He is not."
+  > Continue.
+
+[reunion_6]
+In the corner, Codey watches them both, and signs something you cannot follow. Whatever it was, it makes the old man look away.
+  > Continue.
+
+[reunion_7]
+NIKOLI: "Take. For finding him. Ice remembers what rest of us forget."
+  > Take it.
+
+[friends_after]
+Nikoli is at the forge, mid-argument with the hooded man.
+NIKOLI: "Nikoli and Commander argue about everything. Is wonderful."
+  > Leave them to it.
+
+[brothers]
+There is a third man in the workshop tonight: a broad Panzerian with a gap-toothed grin, a greatsword across his knees. He is mid-story, and the hooded man is almost smiling.
+  > Continue.
+
+[brothers_2]
+NIKOLI: "Ah! Is you! You find him for Nikoli. Tired eyes, sharp tongue, exactly as Nikoli..."
+  > Continue.
+
+[brothers_door]
+The door opens behind you. The torches gutter. Frost creeps in across the floor.
+  > Continue.
+
+[brothers_door_2]
+A second broad man in dark Panzerian armour stands in the doorway. The same face. The same greatsword. A straight, white, even smile.
+  > Continue.
+
+[brothers_3]
+NIKOLI: "...Jaeger."
+  > Continue.
+
+[brothers_j1]
+JAEGER: "Brother. You always did leave a trail a child could follow."
+  > Continue.
+
+[brothers_4]
+NIKOLI: "Nikoli led you here."
+  > Continue.
+
+[brothers_m1]
+STRANGER: "Not your fault. It never is, with him."
+  > Continue.
+
+[brothers_j2]
+JAEGER: "Commander. You look tired."
+  > Draw your weapon.
+
+[won]
+Jaeger falls back against the door frame, frost bleeding from his wounds. For a moment the brothers only look at each other.
+  > Continue.
+
+[won_j1]
+JAEGER: "This is not finished, brother."
+  > Continue.
+
+[won_2]
+Then he is through the door and gone into the night.
+  > Continue.
+
+[won_3]
+NIKOLI: "No. Is not."
+  > Continue.
+
+[won_4]
+Nikoli sits down heavily by the forge. After a while, the hooded man sits beside him.
+  > Continue.
+
+[won_m1]
+STRANGER: "We leave at first light. Both of us."
+  > Continue.
+
+[won_5]
+NIKOLI: "Old friends, old arguments. Nikoli is right about all of them."
+  > Continue.
+
+[won_m2]
+STRANGER: "He is not."
+  > Continue.
+
+[won_6]
+NIKOLI: "Take. For finding him."
+  > Take it.
+
 
 ===== NIKOLI (nikoli_after_battle) =====
 
@@ -677,6 +824,119 @@ NIKOLI: "Toward sand, Nikoli thinks. Always one step ahead of Nikoli, that one. 
   > [Panzerkamfer] "Tell me about that war beast."
   > Leave him to his hunt.
 
+[reunion]
+There is a third man in the workshop tonight. A broad Panzerian sits on an upturned crate by the forge, a greatsword across his knees, and he is talking. By the look of things, he has been talking for some time.
+  > Continue.
+
+[reunion_2]
+NIKOLI: "...and Nikoli says to colonel, is not bad arithmetic, is Panzerian arithmetic. Ah! Is you!"
+  > Continue.
+
+[reunion_3]
+He grins his gap-toothed grin. Across the forge, the hooded man has his hood down. For the first time, you see him almost smile.
+  > Continue.
+
+[reunion_4]
+NIKOLI: "You find him for Nikoli. Tired eyes, sharp tongue, da? Exactly as Nikoli said."
+  > Continue.
+
+[reunion_m1]
+STRANGER: "He has not stopped talking since he arrived. I had forgotten. ...I had not forgotten. I had hoped."
+  > Continue.
+
+[reunion_5]
+NIKOLI: "Nikoli and Commander walk together now. Old friends, old arguments. Nikoli is right about all of them."
+  > Continue.
+
+[reunion_m2]
+STRANGER: "He is not."
+  > Continue.
+
+[reunion_6]
+In the corner, Codey watches them both, and signs something you cannot follow. Whatever it was, it makes the old man look away.
+  > Continue.
+
+[reunion_7]
+NIKOLI: "Take. For finding him. Ice remembers what rest of us forget."
+  > Take it.
+
+[friends_after]
+Nikoli is at the forge, mid-argument with the hooded man.
+NIKOLI: "Nikoli and Commander argue about everything. Is wonderful."
+  > Leave them to it.
+
+[brothers]
+There is a third man in the workshop tonight: a broad Panzerian with a gap-toothed grin, a greatsword across his knees. He is mid-story, and the hooded man is almost smiling.
+  > Continue.
+
+[brothers_2]
+NIKOLI: "Ah! Is you! You find him for Nikoli. Tired eyes, sharp tongue, exactly as Nikoli..."
+  > Continue.
+
+[brothers_door]
+The door opens behind you. The torches gutter. Frost creeps in across the floor.
+  > Continue.
+
+[brothers_door_2]
+A second broad man in dark Panzerian armour stands in the doorway. The same face. The same greatsword. A straight, white, even smile.
+  > Continue.
+
+[brothers_3]
+NIKOLI: "...Jaeger."
+  > Continue.
+
+[brothers_j1]
+JAEGER: "Brother. You always did leave a trail a child could follow."
+  > Continue.
+
+[brothers_4]
+NIKOLI: "Nikoli led you here."
+  > Continue.
+
+[brothers_m1]
+STRANGER: "Not your fault. It never is, with him."
+  > Continue.
+
+[brothers_j2]
+JAEGER: "Commander. You look tired."
+  > Draw your weapon.
+
+[won]
+Jaeger falls back against the door frame, frost bleeding from his wounds. For a moment the brothers only look at each other.
+  > Continue.
+
+[won_j1]
+JAEGER: "This is not finished, brother."
+  > Continue.
+
+[won_2]
+Then he is through the door and gone into the night.
+  > Continue.
+
+[won_3]
+NIKOLI: "No. Is not."
+  > Continue.
+
+[won_4]
+Nikoli sits down heavily by the forge. After a while, the hooded man sits beside him.
+  > Continue.
+
+[won_m1]
+STRANGER: "We leave at first light. Both of us."
+  > Continue.
+
+[won_5]
+NIKOLI: "Old friends, old arguments. Nikoli is right about all of them."
+  > Continue.
+
+[won_m2]
+STRANGER: "He is not."
+  > Continue.
+
+[won_6]
+NIKOLI: "Take. For finding him."
+  > Take it.
+
 
 ===== NIKOLI (jaeger) =====
 
@@ -746,6 +1006,216 @@ JAEGER: "Nikoli has nothing more to ask you."
 He is buckling on his gauntlets.
 JAEGER: "Nikoli has what he came for. Go, my friend."
   > Leave.
+
+
+===== NIKOLI (brothers_won) =====
+
+[won]
+Jaeger falls back against the door frame, frost bleeding from his wounds. For a moment the brothers only look at each other.
+  > Continue.
+
+[won_j1]
+JAEGER: "This is not finished, brother."
+  > Continue.
+
+[won_2]
+Then he is through the door and gone into the night.
+  > Continue.
+
+[won_3]
+NIKOLI: "No. Is not."
+  > Continue.
+
+[won_4]
+Nikoli sits down heavily by the forge. After a while, the hooded man sits beside him.
+  > Continue.
+
+[won_m1]
+STRANGER: "We leave at first light. Both of us."
+  > Continue.
+
+[won_5]
+NIKOLI: "Old friends, old arguments. Nikoli is right about all of them."
+  > Continue.
+
+[won_m2]
+STRANGER: "He is not."
+  > Continue.
+
+[won_6]
+NIKOLI: "Take. For finding him."
+  > Take it.
+
+[meet]
+A broad man in dark Panzerian armour stands with his back to the campfire, a greatsword in his hands. Beyond the light, pale shapes slink through the snow: snow leopards, starved thin, their eyes on the fire.
+  > Continue.
+
+[meet_2]
+NIKOLI: "Three cats, one Nikoli. Is bad arithmetic, even for general."
+He grins over his shoulder, and you count more gaps than teeth.
+NIKOLI: "You have weapon, da? Then stand with Nikoli."
+  > Draw your weapon.
+  > Walk away.
+
+[walk_away]
+You back away from the light. Behind you a deep voice curses in Panzerian, and the cats scream, and then the night is quiet again.
+  > Keep walking.
+
+[after]
+The last of the cats lies still in the snow. The big man wipes his greatsword clean on a frozen sleeve and grins his gap-toothed grin at you.
+NIKOLI: "Thank you, stranger. Without you, Nikoli is supper for cats."
+  > Continue.
+
+[after_2]
+NIKOLI: "Nikoli was general of Panzeria, when Panzeria still had armies worth the name. Now Nikoli walks long way for one man: Commander Mentoras, of Altus royal guard."
+  > Continue.
+
+[ask]
+NIKOLI: "Old friend of Nikoli. Friends, not always agreeing. He knows thing Nikoli must know. You have seen him? Tired eyes, sharp tongue, melancholic disposition, as professors in Altus would say."
+  > [Hooded Stranger] "There's a hooded man in a village workshop. He might be the one."
+  > "I don't know anyone by that name."
+
+[told]
+Nikoli is quiet for a long moment.
+NIKOLI: "A hood. Da. This is like him."
+He laughs once, without much in it.
+  > Continue.
+
+[told_2]
+NIKOLI: "You do Nikoli great kindness, stranger. Take. Ice remembers what rest of us forget."
+  > Take it.
+
+[beast]
+He prods the fire.
+NIKOLI: "Careful in high passes, my friend. Cats are not hungry for nothing. Something bigger eats their game. Panzerkamfer, if Nikoli knows tracks. And Nikoli knows tracks."
+  > [Panzerkamfer] "A Panzerkamfer?"
+  > Leave him to the fire.
+
+[beast_2]
+NIKOLI: "War beast of my people. In war, Panzeria sent many into battle: snow tigers raised on iron, bound in plate, bred to break shield walls. When our army broke, they went wild. This is one of them."
+  > Continue.
+
+[beast_3]
+NIKOLI: "It hunts these peaks now, wilder every winter. Follow tracks through snow, kill it, come back to Nikoli. Nikoli makes it worth your while. Is promise."
+  > "I'll hunt it."
+  > "Not today."
+
+[dunno]
+NIKOLI: "No? Few do, these days. If you hear name, come find Nikoli. Nikoli waits here, by fire, until he has reason to leave."
+  > Continue.
+
+[beast_waiting]
+Nikoli looks up from the fire.
+NIKOLI: "Beast still lives. Nikoli smells it on wind. Follow tracks through high snow, my friend."
+  > [Hooded Stranger] "There's a hooded man in a village workshop. He might be the one."
+  > Leave him to the fire.
+
+[beast_done]
+Nikoli takes one look at you and laughs, a big gap-toothed laugh, the first real one you have heard from him.
+NIKOLI: "You smell of iron and blood. Beast is dead, then. Good! Take, as Nikoli promised."
+  > Take it.
+
+[again]
+Nikoli sits by the campfire with the greatsword across his knees.
+NIKOLI: "Back again! Fire is free, company is poor. Any word of Commander Mentoras?"
+  > [Hooded Stranger] "There's a hooded man in a village workshop. He might be the one."
+  > [Panzerkamfer] "Tell me about that war beast."
+  > "Not yet."
+
+[told_again]
+Nikoli is packing a worn saddlebag by the fire.
+NIKOLI: "Nikoli leaves when snow lets him. Workshop, you said. Nikoli will find it."
+  > [Panzerkamfer] "Tell me about that war beast."
+  > Leave him to his packing.
+
+[workshop]
+Nikoli stands at the cold forge where the hooded man used to wait, turning a length of broken chain over in his hands.
+NIKOLI: "He was here. Ashes still warm when Nikoli came."
+  > Continue.
+
+[workshop_2]
+NIKOLI: "He leaves in hurry, and he leaves this."
+He holds up the chain.
+NIKOLI: "Toward sand, Nikoli thinks. Always one step ahead of Nikoli, that one. Always he was."
+  > [Panzerkamfer] "Tell me about that war beast."
+  > Leave him to his hunt.
+
+[reunion]
+There is a third man in the workshop tonight. A broad Panzerian sits on an upturned crate by the forge, a greatsword across his knees, and he is talking. By the look of things, he has been talking for some time.
+  > Continue.
+
+[reunion_2]
+NIKOLI: "...and Nikoli says to colonel, is not bad arithmetic, is Panzerian arithmetic. Ah! Is you!"
+  > Continue.
+
+[reunion_3]
+He grins his gap-toothed grin. Across the forge, the hooded man has his hood down. For the first time, you see him almost smile.
+  > Continue.
+
+[reunion_4]
+NIKOLI: "You find him for Nikoli. Tired eyes, sharp tongue, da? Exactly as Nikoli said."
+  > Continue.
+
+[reunion_m1]
+STRANGER: "He has not stopped talking since he arrived. I had forgotten. ...I had not forgotten. I had hoped."
+  > Continue.
+
+[reunion_5]
+NIKOLI: "Nikoli and Commander walk together now. Old friends, old arguments. Nikoli is right about all of them."
+  > Continue.
+
+[reunion_m2]
+STRANGER: "He is not."
+  > Continue.
+
+[reunion_6]
+In the corner, Codey watches them both, and signs something you cannot follow. Whatever it was, it makes the old man look away.
+  > Continue.
+
+[reunion_7]
+NIKOLI: "Take. For finding him. Ice remembers what rest of us forget."
+  > Take it.
+
+[friends_after]
+Nikoli is at the forge, mid-argument with the hooded man.
+NIKOLI: "Nikoli and Commander argue about everything. Is wonderful."
+  > Leave them to it.
+
+[brothers]
+There is a third man in the workshop tonight: a broad Panzerian with a gap-toothed grin, a greatsword across his knees. He is mid-story, and the hooded man is almost smiling.
+  > Continue.
+
+[brothers_2]
+NIKOLI: "Ah! Is you! You find him for Nikoli. Tired eyes, sharp tongue, exactly as Nikoli..."
+  > Continue.
+
+[brothers_door]
+The door opens behind you. The torches gutter. Frost creeps in across the floor.
+  > Continue.
+
+[brothers_door_2]
+A second broad man in dark Panzerian armour stands in the doorway. The same face. The same greatsword. A straight, white, even smile.
+  > Continue.
+
+[brothers_3]
+NIKOLI: "...Jaeger."
+  > Continue.
+
+[brothers_j1]
+JAEGER: "Brother. You always did leave a trail a child could follow."
+  > Continue.
+
+[brothers_4]
+NIKOLI: "Nikoli led you here."
+  > Continue.
+
+[brothers_m1]
+STRANGER: "Not your fault. It never is, with him."
+  > Continue.
+
+[brothers_j2]
+JAEGER: "Commander. You look tired."
+  > Draw your weapon.
 
 
 ===== OLD GRAVESTONE (old_gravestone) =====
@@ -1037,6 +1507,13 @@ You slip between the blades, close enough to feel the wind of them. Behind you o
 [cut]
 A blade catches you across the side and throws you to the floor. It bites into the stone and jams the rest.
   > Get up, holding the wound.
+
+
+===== THE ANVIL (stranger_mark) =====
+
+[mark]
+The forge is cold. Scratched into the anvil is a mark you have seen before: a hand, fingers spread, then closed into a fist. Beneath it, a crude drawing of mountains under snow.
+  > Leave.
 
 
 ===== THE DRY KRAKEN (dry_kraken_ambush) =====
@@ -1397,6 +1874,7 @@ STRANGER: "That will be all."
 [after_codey]
 STRANGER: "...You again. Good."
   > Continue.
+  > [Brother's Sword] Show him the sword.
 
 [after_codey_2]
 STRANGER: "He keeps watch at the door. So do I. Between the two of us and the voices, it is getting crowded in here."
@@ -1404,6 +1882,65 @@ STRANGER: "He keeps watch at the door. So do I. Between the two of us and the vo
 
 [after_codey_3]
 STRANGER: "The voices are louder since the moon turned. One of them sounds like me. It is more optimistic. I do not trust it."
+  > Leave.
+
+[sword]
+He takes it from you and turns it over in his hands, slowly, the way he turned the black cloth.
+STRANGER: "...Panzerian steel."
+  > Continue.
+
+[sword_2]
+STRANGER: "He was looking for me. Wasn't he."
+  > Continue.
+
+[sword_3]
+He does not wait for an answer. For a long while he only looks at it. Then he holds it out to you, hilt first.
+STRANGER: "Keep it. He would want it used."
+  > Take it back.
+
+[friends_m]
+STRANGER: "He cheats at cards. In three languages."
+  > Leave.
+
+[rescued_m]
+STRANGER: "Codey has forgiven me for being caught. I have not."
+  > Leave.
+
+
+===== THE PURSUER (pursuer) =====
+
+[captive]
+Among the hoard, a broad man in dark Panzerian armour stands waiting, a greatsword in his hands. At his feet, chained and silent, kneels the hooded man.
+  > Continue.
+
+[captive_2]
+JAEGER: "You came. Good. Nikoli hates to wait."
+  > Continue.
+
+[captive_3]
+STRANGER: "That is not Nikoli. ...Nikoli has fewer teeth."
+  > Continue.
+
+[captive_4]
+JAEGER: "Quiet, Commander."
+  > Draw your weapon.
+
+[freed_again]
+STRANGER: "Go on. I know the way back. I usually do."
+  > Leave.
+
+
+===== THE PURSUER (pursuer_won) =====
+
+[fled]
+He staggers back between the graves, frost bleeding from his wounds, and is gone into the dark.
+  > Continue.
+
+[chains]
+You break the chains. The hooded man rises slowly, rubbing his wrists.
+STRANGER: "You came. ...I did not expect anyone to."
+[pause]
+STRANGER: "Thank you."
   > Leave.
 
 

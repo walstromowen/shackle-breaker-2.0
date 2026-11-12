@@ -73,10 +73,14 @@ export class CraftingHouseGenerator {
             if (this.stationPositions.length) this.stationPos = this.stationPositions[Math.floor(this.stationPositions.length / 2)];
         }
         const sc = this.stationPos ? this.stationPos[0] : 0;
-        // the quest giver (config.questGiver: the one workshop he lives in): standing beside the work table, facing the door
+        // the quest giver (config.questGiver: the one workshop he lives in, or a list of those who are there: the snowy house of act 3, story/heroes.js),
+        // standing beside the work table, facing the door; each in the next free place
         if (this.config.questGiver) {
-            for (const [c, r] of [[a.c1 - 1, a.r0 + 2], [a.c0 + 1, a.r0 + 2], [a.c1 - 1, a.r0 + 3], [a.c0 + 1, a.r0 + 3], [a.c1, a.r0 + 2], [a.c0, a.r0 + 2]]) {
-                if (F.place(this.config.questGiver, c, r)) { this.questGiverPos = [c, r]; break; }
+            const spots = [[a.c1 - 1, a.r0 + 2], [a.c0 + 1, a.r0 + 2], [a.c1 - 1, a.r0 + 3], [a.c0 + 1, a.r0 + 3], [a.c1, a.r0 + 2], [a.c0, a.r0 + 2], [a.c1 - 2, a.r0 + 3], [a.c0 + 2, a.r0 + 3]];
+            for (const id of [].concat(this.config.questGiver)) {
+                for (const [c, r] of spots) {
+                    if (F.place(id, c, r)) { if (!this.questGiverPos) this.questGiverPos = [c, r]; break; }
+                }
             }
         }
         // what the trade has around it

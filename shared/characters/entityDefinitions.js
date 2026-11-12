@@ -1054,6 +1054,50 @@ export const ENTITY_DEFINITIONS = {
         tags: [...HUMANOID_TEMPLATE.tags, "PANZERIAN"]
     },
 
+    /* Jaeger as he fights (act 3, story/heroes.js: "The Pursuer" in the catacombs, "Brothers" in the snowy house, where Nikoli fights beside the player).
+       A boss: Nikoli's own strength-and-ice build, crueller. He is never killed: beaten, he flees, and comes back later in the story. */
+    "JAEGER_BOSS": {
+        ...HUMANOID_TEMPLATE,
+        name: "Jaeger",
+        properName: true,
+        level: 1,
+        spriteOverworld: "warlordHeroSprite",
+        spritePortrait: "warlordHeroPortrait",
+        crySound: "legionaryCry",
+        deathSound: "legionaryCry",
+        attributes: {
+            ...HUMANOID_TEMPLATE.attributes,
+            vigor: 20, strength: 20, dexterity: 9, intelligence: 10, attunement: 14
+        },
+        baseStats: {
+            ...HUMANOID_TEMPLATE.baseStats,
+            maxHp: 80, maxStamina: 40, maxInsight: 30, speed: 7, critical: 0.1,
+            maxHpMultiplier: 2,
+            baseDefense: { ...HUMANOID_TEMPLATE.baseStats.baseDefense, slash: 4, pierce: 4, blunt: 3, ice: 8, fire: -1 },
+            baseResistance: { ice: 0.6, slash: 0.15, pierce: 0.15, fire: -0.2 },
+            baseAttack: { slash: 8, blunt: 2, ice: 6 }
+        },
+        equipment: { ...HUMANOID_TEMPLATE.equipment, mainHand: "panzerian_greatsword" },
+        currencyReward: { min: 250, max: 600 },
+        lootTableId: "boss_panzerkamfer_drops",
+        abilities: ["rest", "cleave", "guard_break", "leaping_slash", "ice_shard", "frigid_gale", "intimidate"],
+        tags: [...HUMANOID_TEMPLATE.tags, "PANZERIAN", "BOSS", "ELITE"]
+    },
+
+    // Codey (Elsali), the Namuh nightblade (docs/story.md): with Mentoras in the snowy house in act 3 (story/heroes.js). Only ever met, never fought.
+    // Art: the male Namuh nightblade's sheets.
+    "CODEY": {
+        ...HUMANOID_TEMPLATE,
+        name: "Codey",
+        properName: true,
+        level: 1,
+        spriteOverworld: "nightbladeHeroSprite",
+        spritePortrait: "nightbladeHeroPortrait",
+        crySound: "unsheathSwordSfx",
+        deathSound: "unsheathSwordSfx",
+        tags: [...HUMANOID_TEMPLATE.tags, "NAMUH"]
+    },
+
     // The Dry Kraken: a world boss of the desert. A kraken that the sea left behind, gone to ground under the dunes, where it waits for whatever walks
     // over it. It fights as a head (DRY_KRAKEN, 192 px frames) and eight tentacles (DRY_KRAKEN_TENTACLE) that come up out of the sand two at a time,
     // a new one rising whenever one is cut down: START_BATTLE { enemies: ["DRY_KRAKEN", ...8 x "DRY_KRAKEN_TENTACLE"] }. Kill the head and every

@@ -90,5 +90,12 @@ export const ACT_DEFINITIONS = {
             SNOW_LEOPARD:     { abilities: ['flurry'], traits: ['quick'] },
             FROZEN_TRAPPER:   { traits: ['quick'] }
         }
+    },
+
+    // Act III begins when the Dry Kraken dies (story/encounters/story/codey.js): Mentoras and Codey go north to the snowy mountains, and what the player
+    // told Nikoli and Jaeger comes to bear (story/heroes.js). The world stays as act II left it (everything not set here comes from the acts before).
+    3: {
+        name: 'Act III',
+        milestone: 'act3'
     }
 };

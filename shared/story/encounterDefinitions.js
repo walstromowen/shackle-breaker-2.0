@@ -12,9 +12,10 @@ import { ironChest } from './encounters/ironChest.js';
 import { tracksInTheSnow } from './encounters/tracksInTheSnow.js';
 import { mysteriousAltar } from './encounters/story/mysteriousAltar.js';
 import { hoodedStranger } from './encounters/story/hoodedStranger.js';
-import { nikoli, nikoliAfterBattle } from './encounters/story/nikoli.js';
+import { nikoli, nikoliAfterBattle, nikoliBrothersWon } from './encounters/story/nikoli.js';
 import { dryKrakenAmbush, codeyFreed } from './encounters/story/codey.js';
 import { jaeger } from './encounters/story/jaeger.js';
+import { codey, strangerMark, brothersSword, pursuer, pursuerWon } from './encounters/story/heroesNorth.js';
 import { ruinedCarriage } from './encounters/ruinedCarriage.js';
 import { prologue } from './encounters/story/prologue.js';
 import { actTwo } from './encounters/story/actTwo.js';
@@ -46,7 +47,14 @@ export const encounterDefinitions = {
     [nikoliAfterBattle.id]: nikoliAfterBattle,
     [dryKrakenAmbush.id]: dryKrakenAmbush,   // act 2: the Dry Kraken rises out of the desert, holding Codey (story/encounters/story/codey.js, story/storyAmbush.js)
     [codeyFreed.id]: codeyFreed,
-    [jaeger.id]: jaeger,   // Jaeger, posing as his brother Nikoli, in the hoard of the first catacombs (story/encounters/story/jaeger.js)
+    [jaeger.id]: jaeger,
+    // act 3: the three heroes' stories come together (story/heroes.js, story/encounters/story/heroesNorth.js)
+    [codey.id]: codey,
+    [strangerMark.id]: strangerMark,
+    [brothersSword.id]: brothersSword,
+    [pursuer.id]: pursuer,
+    [pursuerWon.id]: pursuerWon,
+    [nikoliBrothersWon.id]: nikoliBrothersWon,   // Jaeger, posing as his brother Nikoli, in the hoard of the first catacombs (story/encounters/story/jaeger.js)
     [ruinedCarriage.id]: ruinedCarriage,   // a broken merchant carriage on the plains: loot, or the shackled steeds (encounters/ruinedCarriage.js)
     [prologue.id]: prologue,
     [actTwo.id]: actTwo,

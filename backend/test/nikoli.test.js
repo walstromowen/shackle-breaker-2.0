@@ -153,7 +153,10 @@ test('the Stranger and Nikoli have not met: the Stranger never speaks of him, ho
     const S = encounterDefinitions.hooded_stranger;
     story({ milestones: ['act2', 'nikoli_met', 'nikoli_told'], completed: ['shackled_stranger', 'shackled1', 'shackled2', 'shackled3', 'shackled7', 'shackled8'] });
     assert.equal(S.initialStage(), 'desert_meet', 'in act 2 he is in the desert, after someone else');
-    assert.ok(!/Nikoli|Panzerian/.test(JSON.stringify(S.stages)), 'not a word about him');
+    assert.ok(!/Nikoli/.test(JSON.stringify(S.stages)), 'not a word about him');
+    // the one exception is act 3's cold campfire (story/heroes.js "ashes"): shown the sword, he knows the steel, and still does not say the name
+    const panz = Object.entries(S.stages).filter(([, s]) => /Panzerian/.test(s.text)).map(([id]) => id);
+    assert.deepEqual(panz, ['sword'], 'only the sword is Panzerian to him');
 });
 
 test('the Panzerkamfer is one of many war beasts from the war, and Mentoras an old friend he did not always agree with', () => {

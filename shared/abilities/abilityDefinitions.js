@@ -825,6 +825,24 @@ export const AbilityDefinitions = {
         effects: [{ type: "damage", damageType: "earth", power: 1.25 }],
         statusEffects: [{ id: "bound", chance: 0.15, duration: 2 }]
     },
+    // The Brother's Sword's own move (items: brothers_sword): a heavy cleave of steel and frost; for a while after, the wielder is braced as if someone
+    // still stood guard over them (fortified: slash, blunt and pierce barely hurt).
+    "last_watch": {
+        id: "last_watch",
+        name: "Last Watch",
+        description: "A heavy cleave of frost-rimed steel through two enemies. Afterwards you stand braced, as if someone still kept watch over you: slash, blunt and pierce barely hurt for a while.",
+        range: "melee",
+        tags: ["physical", "contact", "blade", "slash", "ice", "aoe", "heavy"],
+        battleMessage: "{user} brings the Brother's Sword round in a {ability}!",
+        icon: { col: 1, row: 0 },
+        animationId: "cleave",
+        targeting: { scope: "enemy", select: "multiple", count: 2 },
+        cost: { stamina: 22 },
+        speedModifier: 0.9,
+        accuracy: 0.9,
+        effects: [{ type: "damage", damageType: "slash", power: 1.2 }, { type: "damage", damageType: "ice", power: 0.6 }],
+        selfStatusEffects: [{ id: "fortified", chance: 1.0, duration: 2 }]
+    },
     // The Dry Kraken's tentacles (entityDefinitions.js DRY_KRAKEN_TENTACLE): a sand-crusted arm wraps round the target and squeezes, and may hold them fast.
     "constrict": {
         id: "constrict",

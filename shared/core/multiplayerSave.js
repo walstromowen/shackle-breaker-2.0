@@ -36,6 +36,7 @@ export function worldPart(data) {
             strangerDesertHome: w.strangerDesertHome || null,   // and the others of InteriorFactory.STORY_HOMES
             nikoliCampfire: w.nikoliCampfire || null,
             jaegerCatacomb: w.jaegerCatacomb || null,
+            strangerSnowHome: w.strangerSnowHome || null,
         },
     });
 }

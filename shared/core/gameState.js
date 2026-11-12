@@ -95,6 +95,7 @@ export function resetWorldForNewGame() {
     w.strangerDesertHome = null;   // nor where he goes in act 2
     w.nikoliCampfire = null;       // and Nikoli has not made camp
     w.jaegerCatacomb = null;       // nor has Jaeger found his catacombs
+    w.strangerSnowHome = null;     // nor have Mentoras and Codey gone north (act 3)
     w.structureChunks = {};
     w.currentWeather = null;
     w.biomeWeather = {};

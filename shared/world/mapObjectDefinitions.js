@@ -188,6 +188,19 @@ export const MAP_OBJECTS_DEFINITIONS = {
     NIKOLI_NPC_WATCHING: { ...npcBody('NIKOLI', 'UP'), interaction: { type: 'ENCOUNTER', id: 'nikoli', triggerRadius: 3 } },
     // Jaeger, posing as his brother Nikoli: in the hoard of the first catacombs the player walks into, until he has been met (InteriorFactory, CatacombGenerator)
     JAEGER_NPC: { ...npcBody('JAEGER'), interaction: { type: 'ENCOUNTER', id: 'jaeger' } },
+    // ---- act 3 (story/heroes.js, story/encounters/story/heroesNorth.js): each player's own story puts these where they are ----
+    // Codey, with Mentoras in the snowy house; wounded, the house wrecked, when Jaeger has taken Mentoras (coming near starts it)
+    CODEY_NPC: { ...npcBody('CODEY'), interaction: { type: 'ENCOUNTER', id: 'codey' } },
+    CODEY_NPC_WOUNDED: { ...npcBody('CODEY'), interaction: { type: 'ENCOUNTER', id: 'codey', triggerRadius: 3 } },
+    // Nikoli in the snowy house before the reunion (or his brother's arrival) has played: coming near starts it
+    NIKOLI_NPC_REUNION: { ...npcBody('NIKOLI'), interaction: { type: 'ENCOUNTER', id: 'nikoli', triggerRadius: 3 } },
+    // Jaeger in the catacombs' hoard with his prisoner: coming near starts the fight; Mentoras in chains beside him
+    JAEGER_CAPTOR: { ...npcBody('JAEGER'), interaction: { type: 'ENCOUNTER', id: 'pursuer', triggerRadius: 3 } },
+    MENTORAS_CHAINED: { ...npcBody('HOODED_STRANGER'), interaction: { type: 'ENCOUNTER', id: 'pursuer' } },
+    // the desert workshop once Mentoras has gone north: an anvil with Codey's mark scratched into it, and a drawing of mountains under snow
+    STRANGER_MARK: { sheet: 'objAnvil', spriteX: 6, spriteY: 5, width: 1, height: 1, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 0, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'stranger_mark' } },
+    // Nikoli's greatsword planted in the snow by his cold campfire ("ashes"): take it
+    BROTHERS_SWORD: { sheet: 'objBrothersSword', spriteX: 0, spriteY: 0, width: 1, height: 2, isSolid: true, isGround: false, isAnchor: true, hitbox: { xOffset: 0, yOffset: 1, w: 1, h: 1 }, interaction: { type: 'ENCOUNTER', id: 'brothers_sword' } },
     SNOW_LEOPARD_STALKING: { ...npcBody('SNOW_LEOPARD', 'DOWN'), interaction: { type: 'ENCOUNTER', id: 'nikoli', triggerRadius: 3 } },
 
     // --- ANIMATED ---

@@ -77,7 +77,8 @@ export const codeyFreed = {
             image: KRAKEN_IMG,
             bgm: "none",
             text: "The Dry Kraken sinks back into the sand it came from, and the desert closes over it like water.",
-            decisions: next("landed")
+            // its death begins act 3 (story/actDefinitions.js, story/heroes.js)
+            decisions: [{ text: "Continue.", outcomes: [{ weight: 100, results: [{ type: "GRANT_MILESTONE", payload: { id: "act3" } }, { type: "ADVANCE_STAGE", payload: { stageId: "landed" } }] }] }]
         },
         landed: {
             displayText: "Codey",

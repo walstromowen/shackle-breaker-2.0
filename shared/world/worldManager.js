@@ -1,4 +1,5 @@
 import { CONFIG, BITMASK } from '../core/constants.js';
+import { movedNorth, heroesOutcome } from '../story/heroes.js';
 import { MAP_OBJECTS_DEFINITIONS } from './mapObjectDefinitions.js';
 import { isPlateau, layerIndex } from './biomeDefinitions.js';
 import { gameState } from '../core/gameState.js';
@@ -282,6 +283,11 @@ export class WorldManager {
         if (ms.includes('act2') && ms.includes('nikoli_told')) return out;
         const [c, r] = String(w.nikoliCampfire).split(',').map(Number);
         if (!Number.isFinite(c) || !Number.isFinite(r)) return out;
+        // act 3, neither brother told ("ashes", story/heroes.js): his camp is cold, and his greatsword stands planted in the snow where he stood
+        if (movedNorth() && heroesOutcome() === 'ashes') {
+            if (!ms.includes('brothers_sword_taken')) out.set(`${c},${r - 1}`, 'BROTHERS_SWORD');
+            return out;
+        }
         const met = ms.includes('nikoli_met');
         out.set(`${c},${r - 1}`, met ? 'NIKOLI_NPC' : 'NIKOLI_NPC_WATCHING');
         // the cats on the village's north road (the hub's road cells, which hold no objects), the middle one a step further back

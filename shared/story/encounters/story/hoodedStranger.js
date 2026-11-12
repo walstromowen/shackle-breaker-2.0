@@ -28,6 +28,7 @@
    Art: assets/icons/encounters/story/hooded_stranger.png registered as `encounter_hooded_stranger` (one 128 px picture). */
 import { gameState } from '../../../core/gameState.js';
 import { QuestModel } from '../../questModel.js';
+import { movedNorth, heroesOutcome, has as hasMilestone } from '../../heroes.js';
 
 const CHAIN = ['shackled_stranger', 'shackled1', 'shackled2', 'shackled3', 'shackled7', 'shackled8'];
 const DESERT = ['codey1', 'codey2', 'codey3'];   // act 2: the search for Codey
@@ -56,6 +57,12 @@ function opening() {
         if (done(id)) continue;
         if (active(id)) return QuestModel.checkCompletion(gameState, id) ? `turnin_${id}` : `waiting_${id}`;
         return id === 'codey1' ? 'desert_meet' : `offer_${id}`;
+    }
+    // act 3, in the snowy house (story/heroes.js)
+    if (movedNorth()) {
+        const o = heroesOutcome();
+        if (o === 'friends' || o === 'brothers') return 'friends_m';
+        if (o === 'pursuer' && hasMilestone('pursuer_done')) return 'rescued_m';
     }
     return 'after_codey';
 }
@@ -221,7 +228,18 @@ export const hoodedStranger = {
         codey_back_3: stage("The words seem to surprise him. He turns to the forge at once. \"That will be all.\"", [leave("Leave them to it.")]),
 
         // ---- afterwards ----
-        after_codey: stage("\"...You again. Good.\"", next("after_codey_2")),
+        after_codey: stage("\"...You again. Good.\"", [
+            { text: "Continue.", outcomes: toStage("after_codey_2") },
+            // "ashes" (story/heroes.js): show him the sword found by the cold campfire
+            { text: "[Brother's Sword] Show him the sword.", conditions: [{ type: "has_item", itemId: "brothers_sword", qty: 1 }, { type: "lacks_milestone", id: "brothers_sword_shown" }], outcomes: toStage("sword") }
+        ]),
+        sword: stage("He takes it from you and turns it over in his hands, slowly, the way he turned the black cloth. \"...Panzerian steel.\"", next("sword_2")),
+        sword_2: stage("\"He was looking for me. Wasn't he.\"", next("sword_3")),
+        sword_3: stage("He does not wait for an answer. For a long while he only looks at it. Then he holds it out to you, hilt first. \"Keep it. He would want it used.\"",
+            [leave("Take it back.")].map(d => ({ ...d, outcomes: [{ weight: 100, results: [{ type: "GRANT_MILESTONE", payload: { id: "brothers_sword_shown" } }, { type: "END_ENCOUNTER", payload: null }] }] }))),
+        // act 3: with Nikoli there ("friends", "brothers"); back from the catacombs ("pursuer")
+        friends_m: stage("\"He cheats at cards. In three languages.\"", [leave("Leave.")]),
+        rescued_m: stage("\"Codey has forgiven me for being caught. I have not.\"", [leave("Leave.")]),
         after_codey_2: stage("\"He keeps watch at the door. So do I. Between the two of us and the voices, it is getting crowded in here.\"", next("after_codey_3")),
         after_codey_3: stage("\"The voices are louder since the moon turned. One of them sounds like me. It is more optimistic. I do not trust it.\"", [leave("Leave.")])
     }

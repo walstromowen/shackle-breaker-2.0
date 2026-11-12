@@ -122,6 +122,7 @@ ui_icons: './assets/icons/ui_icons.png',
     objSandDune3: './assets/mapObjects/objSandDune3.png',
     objDesertSkull: './assets/mapObjects/objDesertSkull.png',
     objBonePile: './assets/mapObjects/objBonePile.png',
+    objBrothersSword: './assets/mapObjects/objBrothersSword.png',   // Nikoli's greatsword planted in the snow (act 3: tools/art/brothersSwordObject.py)
     objAbandonedHouse1: './assets/mapObjects/objAbandonedHouse1.png',
     objAbandonedStoneHouse: './assets/mapObjects/objAbandonedStoneHouse.png',
     objStoneWorkshop: './assets/mapObjects/objStoneWorkshop.png',   // the stone house as the workshop: lit windows, a smouldering chimney

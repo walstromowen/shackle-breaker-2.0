@@ -260,6 +260,37 @@ export const ItemDefinitions = {
       5: { currency: 650, materials: { "steel_ingot": 8, "iron_ingot": 10 } }
     }
   },
+  // Nikoli's own greatsword, the Brother's Sword: found planted in the snow beside his cold campfire when neither brother was told where Mentoras is
+  // (story/heroes.js "ashes", story/encounters/story/heroesNorth.js). One of a kind: a better Panzerian greatsword, and its own move, Last Watch.
+  // Icon: col 15 of the weapon sheet (tools/art/brothersSwordIcon.py).
+  "brothers_sword": {
+    id: "brothers_sword",
+    name: "Brother's Sword",
+    slot: "twoHand",
+    type: "weapon",
+    unique: true,
+    description: "A Panzerian greatsword, found planted in the snow beside a cold fire. A length of broken chain hangs from its hilt. Its owner never came back for it.",
+    value: 400,
+    icon: { col: 15, row: 0 },
+    attack: { slash: 10, blunt: 2, ice: 6 },
+    requirements: { strength: 13, vigor: 10 },
+    requirementGrowth: { strength: 3, vigor: 2 },
+    grantedAbilities: ["slash", "last_watch"],
+    maxLevel: 5,
+    statGrowth: {
+      attack: { slash: 4, ice: 3 }
+    },
+    abilityUnlocks: {
+      2: ["cleave"],
+      3: ["leaping_slash"]
+    },
+    upgradeCosts: {
+      2: { currency: 100, materials: { "iron_ingot": 4, "leather": 2 } },
+      3: { currency: 250, materials: { "iron_ingot": 8, "leather": 3 } },
+      4: { currency: 450, materials: { "steel_ingot": 5, "iron_ingot": 6 } },
+      5: { currency: 700, materials: { "steel_ingot": 9, "iron_ingot": 10 } }
+    }
+  },
   "spear": {
     id: "spear",
     name: "Spear",

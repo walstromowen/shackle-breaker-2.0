@@ -309,6 +309,13 @@ export class EncounterLogic {
                     }
                     break;
                 }
+                // a story character leaves, or a thing is taken, as the scene tells it: every object of that kind on this player's map goes, and nothing is
+                // written into the shared world (in a party, the others' stories keep theirs). `{ objectId }` (story/encounters/story/heroesNorth.js)
+                case "REMOVE_STORY_NPC": {
+                    const objs = worldManager && worldManager.objects ? [...worldManager.objects.values()] : [];
+                    for (const o of objs) if (o && o.type === payload.objectId && worldManager._unplaceObject) worldManager._unplaceObject(o.col, o.row);
+                    break;
+                }
                 case "DESTROY_OBJECT":
                     const ctx = model.context;
                     if (ctx && ctx.col !== undefined && ctx.row !== undefined) {
