@@ -714,7 +714,6 @@ JAEGER: "Nikoli searches for old friend. Commander Mentoras, of Altus royal guar
 JAEGER: "He owes Nikoli a debt. Nikoli intends to collect it. In full."
   > [Hooded Stranger] "There's a hooded man in a village workshop. He might be the one."
   > "I don't know anyone by that name."
-  > "You're not Nikoli."
 
 [told]
 For a moment nothing in his face moves at all.
@@ -737,22 +736,6 @@ He studies you a long moment, the way a man studies a lock.
 [dunno_2]
 JAEGER: "If you remember, Nikoli will find you. Nikoli always finds people."
   > Leave him to the dark.
-
-[unmasked]
-The smile stays exactly where it is. Only his eyes change.
-  > Continue.
-
-[unmasked_2]
-JAEGER: "Clever. My brother always did keep clever company. It is the worst of his habits."
-  > Continue.
-
-[unmasked_3]
-JAEGER: "Tell him Jaeger sends his regards. Tell the Commander nothing. I would rather surprise him."
-  > Continue.
-
-[unmasked_4]
-Frost creeps across the gold where he sat. When you look up, he is gone.
-  > Leave.
 
 
 ===== OLD GRAVESTONE (old_gravestone) =====

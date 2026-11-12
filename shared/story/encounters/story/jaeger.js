@@ -6,8 +6,9 @@
      remembers them (remember).
 
    Where: among the hoard of the first catacombs the player walks into (InteriorFactory: world.jaegerCatacomb, CatacombGenerator config.storyNpc), until
-   met. However it ends he is gone from the map (DESTROY_OBJECT), and the milestone jaeger_met keeps him from coming back. What the player did is kept for
-   later: jaeger_told (told him of the hooded man in the workshop), jaeger_unmasked (called him out: he drops the act and leaves), or neither.
+   met. The player is never offered "you're not Nikoli": seeing through him means answering that they do not know the name, keeping Mentoras hidden
+   on purpose. Either way he is gone from the map (DESTROY_OBJECT), and the milestone jaeger_met keeps him from coming back; jaeger_told remembers that
+   the player told him of the hooded man in the workshop.
 
    Voiced in Nikoli's voice, played cold (tools/voice/voices.json JAEGER). Personal: this player's own meeting.
    Art: the Panzerian warlord's portrait, the same as Nikoli's. */
@@ -60,8 +61,7 @@ export const jaeger = {
                 conditions: [{ type: "quest_completed", id: "shackled_stranger" }],
                 outcomes: toStage("told")
             },
-            { text: "\"I don't know anyone by that name.\"", outcomes: toStage("dunno") },
-            { text: "\"You're not Nikoli.\"", outcomes: toStage("unmasked") }
+            { text: "\"I don't know anyone by that name.\"", outcomes: toStage("dunno") }
         ]),
 
         // ---- told: he has what he came for ----
@@ -76,16 +76,6 @@ export const jaeger = {
         dunno: stage("\"No? Pity.\" He studies you a long moment, the way a man studies a lock.",
             next("dunno_2")),
         dunno_2: stage("\"If you remember, Nikoli will find you. Nikoli always finds people.\"",
-            gone("Leave him to the dark.")),
-
-        // ---- unmasked: he drops the act, and leaves ----
-        unmasked: stage("The smile stays exactly where it is. Only his eyes change.",
-            next("unmasked_2")),
-        unmasked_2: stage("\"Clever. My brother always did keep clever company. It is the worst of his habits.\"",
-            next("unmasked_3")),
-        unmasked_3: stage("\"Tell him Jaeger sends his regards. Tell the Commander nothing. I would rather surprise him.\"",
-            next("unmasked_4")),
-        unmasked_4: stage("Frost creeps across the gold where he sat. When you look up, he is gone.",
-            gone("Leave.", ["jaeger_unmasked"]))
+            gone("Leave him to the dark."))
     }
 };

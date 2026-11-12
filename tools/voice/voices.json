@@ -98,9 +98,7 @@
         "He does not laugh. He does not move at all, except his eyes.": "[quiet, uneasy] He does not laugh. He does not move at all, except his eyes.",
         "For a moment nothing in his face moves at all.": "[hushed] For a moment nothing in his face moves at all.",
         "He rises, and is gone into the dark between the graves before you think to ask how he knew the way.": "[low, a chill of realisation] He rises, and is gone into the dark between the graves before you think to ask how he knew the way.",
-        "He studies you a long moment, the way a man studies a lock.": "[quiet, wary] He studies you a long moment, the way a man studies a lock.",
-        "The smile stays exactly where it is. Only his eyes change.": "[slow, chilling] The smile stays exactly where it is. Only his eyes change.",
-        "Frost creeps across the gold where he sat. When you look up, he is gone.": "[hushed, eerie] Frost creeps across the gold where he sat. When you look up, he is gone."
+        "He studies you a long moment, the way a man studies a lock.": "[quiet, wary] He studies you a long moment, the way a man studies a lock."
       }
     },
     "STRANGER": {
@@ -245,9 +243,7 @@
         "A workshop. Of course. He always did like to be near a fire.": "[very quiet, cold satisfaction] A workshop. [pause] Of course. He always did like to be near a fire.",
         "Thank you, my friend. You have been more helpful than you know.": "[smooth, precise, almost no accent, chilling] Thank you, my friend. [pause] You have been more helpful than you know.",
         "No? Pity.": "[flat, cold] No? [pause] Pity.",
-        "If you remember, Nikoli will find you. Nikoli always finds people.": "[low, quiet threat] If you remember, Nikoli will find you. [pause] Nikoli always finds people.",
-        "Clever. My brother always did keep clever company. It is the worst of his habits.": "[the act dropped, cold, precise, faintly amused] Clever. [pause] My brother always did keep clever company. [dry, cold] It is the worst of his habits.",
-        "Tell him Jaeger sends his regards. Tell the Commander nothing. I would rather surprise him.": "[cold, measured, quiet menace] Tell him Jaeger sends his regards. [pause] Tell the Commander nothing. [slow, chilling] I would rather surprise him."
+        "If you remember, Nikoli will find you. Nikoli always finds people.": "[low, quiet threat] If you remember, Nikoli will find you. [pause] Nikoli always finds people."
       }
     }
   }

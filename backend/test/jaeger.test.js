@@ -62,18 +62,19 @@ test('the clues come before the question: the even smile, the cold, no laughter,
     for (const s of Object.values(J.stages)) for (const d of s.decisions) assert.doesNotMatch(d.text, /Jaeger|brother|teeth|smile/i);
 });
 
-test('three answers: tell him of the hooded man (only once met), say nothing, or call him out; however it ends he is gone and it is remembered', () => {
+test('two answers: tell him of the hooded man (only once the Stranger is met), or say you do not know the name; never "you are not Nikoli"', () => {
     const tell = J.stages.debt.decisions[0];
     assert.deepEqual(tell.conditions, [{ type: 'quest_completed', id: 'shackled_stranger' }]);
-    const ends = { told_3: 'jaeger_told', dunno_2: null, unmasked_4: 'jaeger_unmasked' };
+    assert.deepEqual(J.stages.debt.decisions.map(d => d.text.replace(/^\[[^\]]*\] /, '')), ['"There\'s a hooded man in a village workshop. He might be the one."', '"I don\'t know anyone by that name."']);
+    assert.ok(!J.stages.unmasked, 'he is never unmasked to his face');
+    const ends = { told_3: 'jaeger_told', dunno_2: null };
     for (const [stageId, flag] of Object.entries(ends)) {
         const r = results(stageId);
         assert.ok(r.some(x => x.type === 'GRANT_MILESTONE' && x.payload.id === 'jaeger_met'), stageId);
         assert.ok(r.some(x => x.type === 'DESTROY_OBJECT'), `${stageId}: he leaves the map`);
         if (flag) assert.ok(r.some(x => x.type === 'GRANT_MILESTONE' && x.payload.id === flag), `${stageId}: ${flag}`);
     }
-    assert.match(J.stages.unmasked_3.text, /Jaeger sends his regards/);
-    assert.ok(!results('unmasked_4').some(r => r.type === 'START_BATTLE'), 'unmasked, he leaves: no fight');
+    assert.ok(!results('dunno_2').some(r => r.type === 'GRANT_MILESTONE' && r.payload.id === 'jaeger_told'), 'not telling him tells him nothing');
 });
 
 test('voiced: his lines in Nikoli\'s voice, played cold', async () => {
@@ -82,6 +83,6 @@ test('voiced: his lines in Nikoli\'s voice, played cold', async () => {
     const voices = JSON.parse(fs.readFileSync(new URL('../../tools/voice/voices.json', import.meta.url), 'utf8')).voices;
     assert.equal(voices.JAEGER.id, voices.NIKOLI.id, 'the same voice');
     const lines = linesOf('jaeger', J).filter(l => l.speaker === 'JAEGER');
-    assert.ok(lines.length >= 10);
+    assert.ok(lines.length >= 8);
     for (const l of lines) assert.ok(voices.JAEGER.directions[l.text], `a cue for "${l.text.slice(0, 40)}"`);
 });
