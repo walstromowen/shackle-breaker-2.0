@@ -71,7 +71,8 @@ test('each drops somewhere, and rarely: from the enemy or chest it belongs to', 
     assert.ok(from('nobles_ring', 'ruined_carriage_valuables') && from('nobles_ring', 'boss_darius_drops'));
     assert.ok(from('madmans_tooth_necklace', 'madman_drops'));
     assert.ok(from('jar_of_shifting_sands', 'miragewright_drops') && from('jar_of_shifting_sands', 'boss_dry_kraken_drops'));
-    assert.ok(from('quiver', 'frozen_trapper_drops'));
+    assert.ok(from('quiver', 'frozen_trapper_drops') && from('quiver', 'watchman_drops'));
+    assert.ok(!I.jar_of_shifting_sands.grantedAbilities && !I.grim_stag_antler.grantedAbilities, 'the jar and the antler grant no ability');
     assert.ok(from('grim_stag_antler', 'grim_stag_drops'));
     for (const id of RARE) for (const [t, rate] of where[id]) if (!t.startsWith('boss_') && L[t].type === 'independent') assert.ok(rate <= 0.05, `${id} from ${t} is rare (${rate})`);
 });

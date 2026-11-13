@@ -1032,6 +1032,7 @@ export const LootTableDefinitions = {
             { id: "glaive", dropRate: 0.03 },
             { id: "small_iron_key", dropRate: 0.1 },
             { id: "large_iron_key", dropRate: 0.04 },
+            { id: "quiver", dropRate: 0.03 },   // rare
         ]
     },
     "deer_drops": {

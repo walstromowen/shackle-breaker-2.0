@@ -1555,8 +1555,7 @@ export const ItemDefinitions = {
     description: "A corked glass jar of desert sand that never settles. Hold it up to your eye and the room seems to slide aside.",
     value: 280, icon: { col: 5, row: 6 },
     attributes: { attunement: 2 }, evasion: 0.05,
-    resistance: { earth: 0.2, wind: 0.2 },
-    grantedAbilities: ["hide"]
+    resistance: { earth: 0.2, wind: 0.2 }
   },
   "quiver": {
     id: "quiver", name: "Quiver", slot: "accessory", type: "accessory", wornBy: "humanoid", rarity: "rare",
@@ -1566,10 +1565,9 @@ export const ItemDefinitions = {
   },
   "grim_stag_antler": {
     id: "grim_stag_antler", name: "Grim Stag's Antler", slot: "accessory", type: "accessory", wornBy: "humanoid", rarity: "rare",
-    description: "A pale, branching antler from a grim stag, its base wrapped in a leather thong. It still remembers how to charge.",
+    description: "A pale, branching antler from a grim stag, its base wrapped in a leather thong. Whoever carries it stands a little steadier.",
     value: 200, icon: { col: 7, row: 6 },
-    attributes: { vigor: 2 }, attack: { blunt: 3 },
-    grantedAbilities: ["reckless_charge"]
+    attributes: { vigor: 2 }, attack: { blunt: 3 }
   },
 
   // --- ACCESSORIES ---
