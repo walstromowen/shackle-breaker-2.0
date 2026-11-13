@@ -11,11 +11,11 @@ import { EntityFactory } from '../../shared/characters/entityFactory.js';
 import { StatCalculator } from '../../shared/characters/statCalculator.js';
 import { canWear, wearRefusal } from '../../shared/items/equipRules.js';
 
-const RARE = ['elbow_blade', 'panzerian_spring_inserts', 'panzerkamfer_saddle', 'nobles_ring', 'madmans_tooth_necklace', 'jar_of_shifting_sands', 'quiver', 'grim_stag_antler'];
+const RARE = ['elbow_blade', 'panzerian_spring_inserts', 'panzerkamfer_saddle', 'nobles_ring', 'madmans_tooth_necklace', 'jar_of_shifting_sands', 'quiver', 'grim_stag_antler', 'royal_guards_signet', 'namuh_charm'];
 const quiet = (fn) => { const l = console.log, w = console.warn; console.log = console.warn = () => {}; try { return fn(); } finally { console.log = l; console.warn = w; } };
 const make = (id) => quiet(() => EntityFactory.create(id, { name: id }));
 
-test('eight rare accessories, each with a placeholder icon of its own on the armor sheet', () => {
+test('ten rare accessories, each with a placeholder icon of its own on the armor sheet', () => {
     const cells = new Set();
     for (const id of RARE) {
         const d = I[id];
@@ -74,5 +74,7 @@ test('each drops somewhere, and rarely: from the enemy or chest it belongs to', 
     assert.ok(from('quiver', 'frozen_trapper_drops') && from('quiver', 'watchman_drops'));
     assert.ok(!I.jar_of_shifting_sands.grantedAbilities && !I.grim_stag_antler.grantedAbilities, 'the jar and the antler grant no ability');
     assert.ok(from('grim_stag_antler', 'grim_stag_drops'));
+    assert.ok(from('royal_guards_signet', 'alterian_officer_loot') && from('royal_guards_signet', 'iron_chest_loot'));
+    assert.ok(from('namuh_charm', 'battlefield_loot') && from('namuh_charm', 'old_grave_loot'));
     for (const id of RARE) for (const [t, rate] of where[id]) if (!t.startsWith('boss_') && L[t].type === 'independent') assert.ok(rate <= 0.05, `${id} from ${t} is rare (${rate})`);
 });

@@ -1570,6 +1570,21 @@ export const ItemDefinitions = {
     attributes: { vigor: 2 }, attack: { blunt: 3 }
   },
 
+  "royal_guards_signet": {
+    id: "royal_guards_signet", name: "Royal Guard's Signet", slot: "accessory", type: "accessory", wornBy: "humanoid", rarity: "rare",
+    description: "A heavy iron signet stamped with the crest of the Royal Guard of Altus. Its wearer swore to stand between the king and harm.",
+    value: 320, icon: { col: 8, row: 6 },
+    attributes: { vigor: 2 },
+    defense: { slash: 2, pierce: 2, blunt: 2 }
+  },
+  "namuh_charm": {
+    id: "namuh_charm", name: "Namuh Charm", slot: "accessory", type: "accessory", wornBy: "humanoid", rarity: "rare",
+    description: "Braided cord, river stones, a sliver of dark wood and two black feathers, made by hand: a gift from the family of a Namuh nightblade, to find their way home.",
+    value: 260, icon: { col: 9, row: 6 },
+    attributes: { dexterity: 2 }, evasion: 0.04,
+    resistance: { dark: 0.2 }
+  },
+
   // --- ACCESSORIES ---
   "artifact_of_the_dev": {
     id: "artifact_of_the_dev",

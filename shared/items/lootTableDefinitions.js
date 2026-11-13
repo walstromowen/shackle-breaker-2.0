@@ -349,7 +349,8 @@ export const LootTableDefinitions = {
             { id: "insight_of_wind", weight: 2, min: 1, max: 1 },
             { id: "insight_of_arcane", weight: 2, min: 1, max: 1 },
             { id: "insight_of_light", weight: 2, min: 1, max: 1 },
-            { id: "insight_of_darkness", weight: 2, min: 1, max: 1 }
+            { id: "insight_of_darkness", weight: 2, min: 1, max: 1 },
+            { id: "namuh_charm", weight: 10, min: 1, max: 1 },   // rare (about 1 in 60): the Namuh fell here too
         ]
     },
 
@@ -384,7 +385,8 @@ export const LootTableDefinitions = {
             { id: "iron_boots", weight: 15, min: 1, max: 1 },
 
             { id: "insight_of_light", weight: 8, min: 1, max: 1 },
-            { id: "insight_of_earth", weight: 6, min: 1, max: 1 }
+            { id: "insight_of_earth", weight: 6, min: 1, max: 1 },
+            { id: "royal_guards_signet", weight: 8, min: 1, max: 1 },   // rare (about 1 in 40): an officer of the Royal Guard
         ]
     },
 
@@ -403,7 +405,8 @@ export const LootTableDefinitions = {
             { id: "bronze_ingot", weight: 10, min: 1, max: 2 },
             { id: "iron_ingot", weight: 8, min: 1, max: 2 },
             { id: "small_iron_key", weight: 8, min: 1, max: 1 },
-            { id: "throwing_knife", weight: 6, min: 2, max: 3 }
+            { id: "throwing_knife", weight: 6, min: 2, max: 3 },
+            { id: "namuh_charm", weight: 3, min: 1, max: 1 },   // rare: left with someone who did not make it home
         ]
     },
 
@@ -473,7 +476,8 @@ export const LootTableDefinitions = {
             { id: "bear_trap", weight: 8, min: 1, max: 2 },
             { id: "smoke_bomb", weight: 8, min: 1, max: 3 },
             { id: "poison_throwing_knife", weight: 8, min: 3, max: 6 },
-            { id: "escape_rope", weight: 5, min: 1, max: 1 }
+            { id: "escape_rope", weight: 5, min: 1, max: 1 },
+            { id: "royal_guards_signet", weight: 3, min: 1, max: 1 },   // rare: the Royal Guard kept these chests
         ]
     },
 

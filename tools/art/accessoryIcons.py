@@ -1,7 +1,7 @@
 # Placeholder icons for the rare accessories (itemDefinitions.js, "RARE ACCESSORIES"), drawn into row 6 of the armor sheet, cols 0 to 7 (64 px cells):
 #   python3 tools/art/accessoryIcons.py frontend/src/assets/icons/armor.png
 # Simple shapes with a dark outline, until they have real art. In order: elbow blade, Panzerian spring inserts, Panzerkamfer saddle, noble's ring,
-# madman's tooth necklace, jar of shifting sands, quiver, grim stag's antler. Each cell is cleared first (the empty part of the sheet is opaque white).
+# madman's tooth necklace, jar of shifting sands, quiver, grim stag's antler, the Royal Guard's signet, a Namuh charm. Each cell is cleared first (the empty part of the sheet is opaque white).
 import sys, math
 from PIL import Image, ImageDraw
 path = sys.argv[1]
@@ -80,7 +80,27 @@ def antler(d, im):
         d.line([x0, y0, x1, y1], fill=OUT, width=6); d.line([x0, y0, x1, y1], fill=(220, 206, 176, 255), width=3)
     d.rectangle([13, 50, 23, 56], fill=(120, 80, 46, 255), outline=OUT, width=1)
 
-for col, fn in enumerate([elbow_blade, spring_inserts, saddle, ring, tooth_necklace, sand_jar, quiver, antler]):
+def guard_signet(d, im):
+    # a heavy iron signet ring, its flat face stamped with the Royal Guard's crest (a shield and a crown)
+    d.ellipse([14, 24, 50, 58], outline=OUT, width=10)
+    d.ellipse([16, 26, 48, 56], outline=(132, 138, 150, 255), width=6)
+    d.rounded_rectangle([20, 6, 44, 28], 4, fill=(150, 156, 168, 255), outline=OUT, width=2)
+    d.polygon([(26, 12), (38, 12), (38, 20), (32, 25), (26, 20)], fill=(176, 40, 44, 255), outline=OUT)
+    d.polygon([(27, 10), (29, 7), (32, 10), (35, 7), (37, 10)], fill=(222, 176, 64, 255))
+
+def namuh_charm(d, im):
+    # a handmade charm: a loop of braided cord, river stones, a sliver of dark wood, two black feathers
+    d.ellipse([22, 4, 42, 24], outline=OUT, width=4)
+    d.ellipse([23, 5, 41, 23], outline=(150, 120, 86, 255), width=2)
+    d.line([32, 23, 32, 33], fill=OUT, width=4)
+    d.line([32, 23, 32, 33], fill=(150, 120, 86, 255), width=2)
+    for (x, y, c) in [(32, 36, (110, 140, 150, 255)), (32, 45, (170, 150, 120, 255))]:
+        d.ellipse([x - 5, y - 4, x + 5, y + 4], fill=c, outline=OUT, width=2)
+    d.polygon([(29, 50), (35, 50), (34, 60), (30, 60)], fill=(70, 44, 34, 255), outline=OUT)
+    for dx in (-10, 10):
+        d.polygon([(32 + dx // 2, 40), (32 + dx, 52), (32 + dx + (2 if dx > 0 else -2), 44)], fill=(28, 28, 36, 255), outline=OUT)
+
+for col, fn in enumerate([elbow_blade, spring_inserts, saddle, ring, tooth_necklace, sand_jar, quiver, antler, guard_signet, namuh_charm]):
     sheet.paste(Image.new('RGBA', (C, C), (0, 0, 0, 0)), (col * C, ROW * C))
     sheet.alpha_composite(cell(fn), (col * C, ROW * C))
 sheet.save(path)
