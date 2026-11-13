@@ -12,15 +12,13 @@
 // When: act 3 begins when the Dry Kraken dies (act3). Mentoras waits in the desert until Codey is brought back (codey3 handed in); after that, between
 // visits, he and Codey are in the first snowy-mountain crafting house the player walks into (world.strangerSnowHome), the desert workshop left empty
 // but for a mark scratched into its anvil. Nobody ever vanishes in front of the player: they are simply somewhere else the next time.
-import { gameState } from '../core/gameState.js';
+import { ActSystem } from './actSystem.js';
 
-const ms = () => (Array.isArray(gameState.milestones) ? gameState.milestones : []);
-export const has = (id) => ms().includes(id);
-const done = (q) => Array.isArray(gameState.quests?.completed) && gameState.quests.completed.includes(q);
-const active = (q) => !!(gameState.quests?.active && gameState.quests.active[q]);
+// every flag here belongs to the WORLD (story/worldStory.js): in a party everyone sees the same people in the same places
+export const has = (id) => ActSystem.hasMilestone(id);
 
-/** Codey is back with Mentoras (the reunion handed in): from now on they are in the snowy house. */
-export const movedNorth = () => has('act3') && done('codey3');
+/** Codey is back with Mentoras (the reunion handed in, by anyone in this world): from now on they are in the snowy house. */
+export const movedNorth = () => has('act3') && has('codey_back');
 
 /** 'ashes' | 'friends' | 'pursuer' | 'brothers': what the player's answers to the two brothers have made of it. */
 export function heroesOutcome() {
@@ -43,7 +41,7 @@ export function snowHouseResidents() {
 
 /** Who is in the hoard of Jaeger's catacombs: Jaeger (until met), or, while Mentoras is his prisoner, Jaeger and the chained Mentoras. */
 export function catacombResidents() {
-    if (active('the_pursuer') && !has('pursuer_done')) return ['JAEGER_CAPTOR', 'MENTORAS_CHAINED'];
+    if (has('mentoras_taken') && !has('pursuer_done')) return ['JAEGER_CAPTOR', 'MENTORAS_CHAINED'];
     if (!has('jaeger_met')) return ['JAEGER_NPC'];
     return [];
 }

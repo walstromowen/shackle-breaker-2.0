@@ -21,6 +21,8 @@ function freshParty(...names) {
     gameState.party.inventory.length = 0;
     gameState.party.currency = 0;
     gameState.milestones = [];
+    // the story's world flags (story/worldStory.js) live in the world's changes: a fresh start has none
+    for (const k of Object.keys(gameState.world.changes || {})) if (k.startsWith('story:')) delete gameState.world.changes[k];
 }
 
 test('words are split on spaces, and "quotes" keep a name together', () => {

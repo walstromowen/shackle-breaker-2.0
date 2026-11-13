@@ -31,7 +31,7 @@ const story = ({ milestones = [], completed = [], active = {} } = {}) => {
 const results = (decision) => decision.outcomes[0].results;
 const offered = (stage) => stage.decisions.filter(d => EncounterLogic.checkConditions(d, {})).map(d => d.text);
 
-test('Nikoli is a character with the Panzerian warlord\'s art for now, a map object, and two personal encounters', async () => {
+test('Nikoli is a character with the Panzerian warlord\'s art for now, a map object, and two encounters that are the world\'s', async () => {
     const def = ENTITY_DEFINITIONS.NIKOLI;
     assert.equal(def.spriteOverworld, 'warlordHeroSprite');
     assert.equal(def.spritePortrait, 'warlordHeroPortrait');
@@ -46,7 +46,7 @@ test('Nikoli is a character with the Panzerian warlord\'s art for now, a map obj
     assert.ok(def.baseStats.baseAttack.ice > 0 && def.baseStats.baseResistance.ice > 0 && def.abilities.includes('frigid_gale'));
     assert.equal(M.NIKOLI_NPC.interaction.id, 'nikoli');
     assert.equal(M.NIKOLI_NPC.character.entity, 'NIKOLI');
-    assert.equal(N.personal, true, 'each player\'s own story, never shared or voted on');
+    assert.equal(N.personal, false, 'the world\'s story (story/worldStory.js): shared with the party near you, who vote');
     assert.equal(AFTER.initialStage, 'after');
     const main = fs.readFileSync(new URL('../../frontend/src/main.js', import.meta.url), 'utf8');
     for (const key of ['warlordHeroSprite', 'warlordHeroPortrait', 'snowLeopardPortrait']) assert.match(main, new RegExp(`${key}: '`), `${key} is loaded`);

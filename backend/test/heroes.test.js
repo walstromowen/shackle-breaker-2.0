@@ -48,7 +48,7 @@ test('who is in the snowy house, outcome by outcome; Mentoras is always there un
     story(['nikoli_told', 'friends_met']); assert.deepEqual(snowHouseResidents(), ['NIKOLI_NPC', 'HOODED_STRANGER_NPC', 'CODEY_NPC']);
     story(['nikoli_told', 'jaeger_told']); assert.deepEqual(snowHouseResidents(), ['NIKOLI_NPC_REUNION', 'HOODED_STRANGER_NPC', 'CODEY_NPC']);
     story(['jaeger_told']); assert.deepEqual(snowHouseResidents(), ['CODEY_NPC_WOUNDED']); assert.equal(mentorasTaken(), true);
-    story(['jaeger_told', 'jaeger_met'], { active: { the_pursuer: { progress: {} } } });
+    story(['jaeger_told', 'jaeger_met', 'mentoras_taken']);   // the wrecked house found (by anyone in this world)
     assert.deepEqual(catacombResidents(), ['JAEGER_CAPTOR', 'MENTORAS_CHAINED'], 'Jaeger holds him in the catacombs');
     story(['jaeger_told', 'jaeger_met', 'pursuer_done'], { completed: [...DESERT_DONE, 'the_pursuer'] });
     assert.deepEqual(snowHouseResidents(), ['HOODED_STRANGER_NPC', 'CODEY_NPC'], 'freed, he is back');

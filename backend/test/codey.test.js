@@ -112,7 +112,7 @@ test('the Dry Kraken waits on the open sand once the miragewrights are dead, and
 });
 
 test('the ambush: the desert goes still, the kraken rises with Codey in its grip, and the fight (no escape) leads to his freeing', () => {
-    assert.equal(AMBUSH.personal, true);
+    assert.equal(AMBUSH.personal, false, 'the world\'s story: the party near you is pulled in');
     const path = walk(AMBUSH, AMBUSH.initialStage);
     assert.deepEqual(path, ['stillness', 'breath', 'rises', 'captive', 'signal']);
     const battle = results(AMBUSH, 'signal').find(r => r.type === 'START_BATTLE');

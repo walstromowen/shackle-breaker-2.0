@@ -12,9 +12,10 @@
    putting him back; it is this player's own, so in a party each player meets him in their own time, and nothing goes into the shared world); jaeger_told remembers that
    the player told him of the hooded man in the workshop.
 
-   Voiced in Nikoli's voice, played cold (tools/voice/voices.json JAEGER). Personal: this player's own meeting.
+   Voiced in Nikoli's voice, played cold (tools/voice/voices.json JAEGER). The world's: shared with the party near you, who vote on what
+   he is told (story/worldStory.js).
    Art: the Panzerian warlord's portrait, the same as Nikoli's. */
-import { gameState } from '../../../core/gameState.js';
+import { ActSystem } from '../../actSystem.js';
 
 const TITLE = "Nikoli";   // the name he gives
 const IMG = { col: 0, row: 0 };
@@ -28,7 +29,8 @@ const done = (text, milestones = []) => [{ text, outcomes: [{ weight: 100, resul
     ...milestones.map(id => ({ type: "GRANT_MILESTONE", payload: { id } })),
     { type: "END_ENCOUNTER", payload: null }
 ] }] }];
-const has = (id) => Array.isArray(gameState.milestones) && gameState.milestones.includes(id);
+// his story belongs to the world (story/worldStory.js)
+const has = (id) => ActSystem.hasMilestone(id);
 /** The first meeting, or (talked to again before the player leaves) a word to say he is finished with them. */
 function opening() {
     if (!has('jaeger_met')) return 'waiting';
@@ -39,7 +41,7 @@ export const jaeger = {
     id: "jaeger",
     title: TITLE,
     imageSheet: "warlordHeroPortrait",
-    personal: true,
+    personal: false,   // the world's story (story/worldStory.js): in a party, the players near you are pulled in and vote on what is said
     tone: "cold",
     ambience: "none",
     initialStage: opening,
@@ -67,7 +69,7 @@ export const jaeger = {
         debt: stage("\"He owes Nikoli a debt. Nikoli intends to collect it. In full.\"", [
             {
                 text: "[Hooded Stranger] \"There's a hooded man in a village workshop. He might be the one.\"",
-                conditions: [{ type: "quest_completed", id: "shackled_stranger" }],
+                conditions: [{ type: "has_milestone", id: "stranger_met" }],   // someone in this world has met the Stranger
                 outcomes: toStage("told")
             },
             { text: "\"I don't know anyone by that name.\"", outcomes: toStage("dunno") }

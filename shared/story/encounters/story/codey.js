@@ -7,7 +7,7 @@
                        The kraken's death has already counted for the quest ("Find Codey"); the player takes him back to the workshop.
 
    Codey: a Namuh nightblade, mute; he speaks with his hands (the narrator tells the signs). The Namuh nightblade's portrait stands in for his.
-   Narrated (shared/story/voiceLines.js VOICED: no speakers). Personal, like the Stranger's: it is this player's story (the fight may still pull in
+   Narrated (shared/story/voiceLines.js VOICED: no speakers). The world's (story/worldStory.js): the party near you is pulled in, and the fight is theirs too (the fight may still pull in
    the players nearby). */
 const TITLE = "The Dry Kraken";
 const KRAKEN_IMG = { sheet: "dryKrakenPortrait", col: 0, row: 0, size: 192 };
@@ -20,7 +20,7 @@ const next = (stageId) => [{ text: "Continue.", outcomes: toStage(stageId) }];
 export const dryKrakenAmbush = {
     id: "dry_kraken_ambush",
     title: TITLE,
-    personal: true,
+    personal: false,   // the world's story: shared with the party near you
     tone: "blood",
     initialStage: "stillness",
     stages: {
@@ -68,7 +68,7 @@ export const dryKrakenAmbush = {
 export const codeyFreed = {
     id: "codey_freed",
     title: "Codey",
-    personal: true,
+    personal: false,   // the world's story: shared with the party near you
     tone: "cold",
     initialStage: "sinks",
     stages: {

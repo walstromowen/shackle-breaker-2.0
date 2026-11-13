@@ -5,6 +5,7 @@ import { CaveGenerator } from './generators/caveGenerator.js';
 import { CraftingHouseGenerator } from './generators/craftingHouseGenerator.js';
 import { CatacombGenerator } from './generators/catacombGenerator.js';
 import { gameState } from '../core/gameState.js';
+import { ActSystem } from '../story/actSystem.js';
 import { movedNorth, snowHouseResidents, catacombResidents } from '../story/heroes.js';
 
 const GENERATORS = { HOUSE: HouseGenerator, CRAFTING_HOUSE: CraftingHouseGenerator, CAVE: CaveGenerator, CATACOMBS: CatacombGenerator };
@@ -18,7 +19,8 @@ const GENERATORS = { HOUSE: HouseGenerator, CRAFTING_HOUSE: CraftingHouseGenerat
      strangerSnowHome      act 3: the first snowy-mountain crafting house entered once Codey is back, where Mentoras and Codey go (story/heroes.js) */
 export const STORY_HOMES = ['strangerHome', 'strangerDesertHome', 'nikoliCampfire', 'jaegerCatacomb', 'strangerSnowHome'];
 
-const hasMilestone = (id) => Array.isArray(gameState.milestones) && gameState.milestones.includes(id);
+// the story's flags belong to the world being played (story/worldStory.js): ActSystem routes them there
+const hasMilestone = (id) => ActSystem.hasMilestone(id);
 
 export class InteriorFactory {
     /** Called with the interior id when this browser picks the Hooded Stranger's workshop (multiplayerSession sends it to the host). */

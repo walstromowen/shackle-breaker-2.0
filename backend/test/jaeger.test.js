@@ -24,7 +24,7 @@ test('the two brothers wear the same art: the Panzerian warlord\'s', () => {
     assert.equal(encounterDefinitions.nikoli.imageSheet, J.imageSheet);
     assert.equal(J.title, 'Nikoli', 'he gives his brother\'s name');
     assert.equal(M.JAEGER_NPC.interaction.id, 'jaeger');
-    assert.equal(J.personal, true);
+    assert.equal(J.personal, false, 'the world\'s story: the party near you votes on what he is told');
 });
 
 test('he waits in the hoard of the first catacombs entered, in no other, and not once he has been met', () => {
@@ -64,7 +64,7 @@ test('the clues come before the question: the even smile, the cold, no laughter,
 
 test('two answers: tell him of the hooded man (only once the Stranger is met), or say you do not know the name; never "you are not Nikoli"', () => {
     const tell = J.stages.debt.decisions[0];
-    assert.deepEqual(tell.conditions, [{ type: 'quest_completed', id: 'shackled_stranger' }]);
+    assert.deepEqual(tell.conditions, [{ type: 'has_milestone', id: 'stranger_met' }], 'someone in this world has met the Stranger');
     assert.deepEqual(J.stages.debt.decisions.map(d => d.text.replace(/^\[[^\]]*\] /, '')), ['"There\'s a hooded man in a village workshop. He might be the one."', '"I don\'t know anyone by that name."']);
     assert.ok(!J.stages.unmasked, 'he is never unmasked to his face');
     const ends = { told_3: 'jaeger_told', dunno_2: null };

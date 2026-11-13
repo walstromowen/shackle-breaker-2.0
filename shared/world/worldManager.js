@@ -1,5 +1,5 @@
 import { CONFIG, BITMASK } from '../core/constants.js';
-import { movedNorth, heroesOutcome } from '../story/heroes.js';
+import { movedNorth, heroesOutcome, has as storyHas } from '../story/heroes.js';
 import { MAP_OBJECTS_DEFINITIONS } from './mapObjectDefinitions.js';
 import { isPlateau, layerIndex } from './biomeDefinitions.js';
 import { gameState } from '../core/gameState.js';
@@ -14,7 +14,8 @@ import { StructureSpawner } from './structureSpawner.js';
    reported through worldSync.onLocalChange(key, value) so it can be sent to the others; a change that arrives from another player is put in
    with WorldManager.applyRemoteChange, which is not reported again. Null when nobody is listening (single player). Generated structures
    are not reported: every player's browser builds the same villages from the same seed. */
-export const worldSync = { onLocalChange: null };
+export { worldSync } from '../core/worldSync.js';   // (it lives in core so the story can use it: shared/story/worldStory.js)
+import { worldSync } from '../core/worldSync.js';
 const reportChange = (key, value) => { if (worldSync.onLocalChange) worldSync.onLocalChange(key, value); };
 
 const MASK_DIRECTIONS = [
@@ -279,7 +280,8 @@ export class WorldManager {
         const out = new Map();
         const w = gameState.world;
         if (!w.nikoliCampfire || w.isInterior) return out;
-        const ms = Array.isArray(gameState.milestones) ? gameState.milestones : [];
+        // the story's flags belong to the world (story/worldStory.js): everyone in it sees the same scene
+        const ms = { includes: (id) => storyHas(id) };
         if (ms.includes('act2') && ms.includes('nikoli_told')) return out;
         const [c, r] = String(w.nikoliCampfire).split(',').map(Number);
         if (!Number.isFinite(c) || !Number.isFinite(r)) return out;

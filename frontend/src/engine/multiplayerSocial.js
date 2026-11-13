@@ -33,6 +33,7 @@ import { WAYPOINT_SHARING, getWaypoints } from '../../../shared/world/waypoints.
 import { multiplayerSession } from './multiplayerSession.js';
 import { serializeEntity, hydrateEntity, hydrateItem } from './saveManager.js';
 import { WeatherFactory } from '../../../shared/world/weatherFactory.js';
+import { QuestDefinitions, STORY_QUESTS } from '../../../shared/story/questDefinitions.js';
 
 const clone = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
 /* The weather a shared fight is fought in, as sent to the others ({ id, intensity }), and back as a weather of this build (null: clear). */
@@ -81,6 +82,11 @@ class MultiplayerSocial {
         multiplayer.on('relay', (msg) => this._onRelay(msg.from, msg.data || {}));
         multiplayer.on('room', (room) => this._onRoom(room));
         multiplayer.on('closed', () => this.reset());
+        // a story quest I start is started for my party too (story/questDefinitions.js STORY_QUESTS): we go through the story together
+        events.on('QUEST_STARTED', ({ questId }) => {
+            if (!STORY_QUESTS.has(questId) || this._sharingQuest === questId || !multiplayerSession.active) return;
+            for (const id of this.partyPlayers()) this._send({ k: 'q_share', questId }, id);
+        });
         // leaving the world in the middle of a duel: my party goes back as it was before the duel, before the last save of it is sent
         multiplayerSession.beforeLeave = () => { if (this.duelBackup) this.restoreDuelBackup(); };
         multiplayerSession.groupedProbe = () => false;   // a party of players walks freely, each with their own party behind them
@@ -650,6 +656,16 @@ class MultiplayerSocial {
                     this.groupParties.set(from, d.members);
                     if (Array.isArray(d.waypoints)) this.groupWaypoints.set(from, d.waypoints.slice(0, 60));
                 }
+                break;
+            }
+            case 'q_share': {   // a player of my party started a story quest: it is mine too (unless I have it, or have finished it)
+                const g = this.myGroup();
+                if (!g || !(g.leader === from || g.members.includes(from)) || !STORY_QUESTS.has(d.questId)) break;
+                const q = gameState.quests || {};
+                if ((q.active && q.active[d.questId]) || (Array.isArray(q.completed) && q.completed.includes(d.questId))) break;
+                this._sharingQuest = d.questId;   // (not sent on again: it came from the party)
+                try { events.emit('START_QUEST', { questId: d.questId }); } finally { this._sharingQuest = null; }
+                if (q.active && q.active[d.questId]) this._say(`${this.nameOf(from)} shared a quest: ${QuestDefinitions[d.questId].name}.`);
                 break;
             }
             case 'chat': {

@@ -4,6 +4,7 @@
 import { gameState } from '../core/gameState.js';
 import { events } from '../core/eventBus.js';
 import { ACT_DEFINITIONS } from './actDefinitions.js';
+import { isWorldFlag, hasWorldFlag, setWorldFlag } from './worldStory.js';
 
 const ACT_NUMBERS = Object.keys(ACT_DEFINITIONS).map(Number).sort((a, b) => a - b);
 
@@ -18,13 +19,16 @@ export const ActSystem = {
     },
 
     hasMilestone(id, state = gameState) {
+        // the story's world flags (the acts, who has met or been told what) belong to the world being played (story/worldStory.js)
+        if (isWorldFlag(id)) return hasWorldFlag(id, state);
         return this.getMilestones(state).includes(id);
     },
 
     /** Records a milestone. Returns true the first time, false if the player already had it. Tells everything that cares (MILESTONE_GRANTED). */
     grantMilestone(id, state = gameState) {
         if (!id || this.hasMilestone(id, state)) return false;
-        this.getMilestones(state).push(id);
+        if (isWorldFlag(id)) setWorldFlag(id, state);
+        else this.getMilestones(state).push(id);
         events.emit('MILESTONE_GRANTED', { id, act: this.getAct(state) });
         console.log(`[Act] Milestone '${id}' reached: now ${this.getActDefinition(state).name}.`);
         return true;

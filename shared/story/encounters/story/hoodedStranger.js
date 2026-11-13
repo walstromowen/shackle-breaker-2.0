@@ -51,7 +51,7 @@ function opening() {
         if (active(id)) return QuestModel.checkCompletion(gameState, id) ? `turnin_${id}` : `waiting_${id}`;
         return `offer_${id}`;
     }
-    if (!(Array.isArray(gameState.milestones) && gameState.milestones.includes('act2'))) return 'after_darius';
+    if (!hasMilestone('act2')) return 'after_darius';
     // act 2: the desert
     for (const id of DESERT) {
         if (done(id)) continue;
@@ -118,6 +118,7 @@ export const hoodedStranger = {
                 text: "\"I'll be back.\"",
                 outcomes: [{ weight: 100, results: [
                     { type: "COMPLETE_QUEST", payload: { questId: "shackled_stranger", force: true } },
+                    { type: "GRANT_MILESTONE", payload: { id: "stranger_met" } },   // the world's: Nikoli and Jaeger can be told of him now
                     { type: "START_QUEST", payload: { questId: "shackled1" } },
                     { type: "END_ENCOUNTER", payload: null }
                 ] }]
@@ -222,8 +223,10 @@ export const hoodedStranger = {
         give_codey3: give("codey3", "\"The miragewrights hide what they find. If he is anywhere, he is behind one of their illusions. Break them. ...And if you see me out there, it is not me. Probably.\""),
         ...waiting('codey3', "\"Do not trust what you see out there. I stopped trusting my eyes years ago. They have yet to notice.\""),
         // the reunion: Codey is back (the Dry Kraken is dead). The one time his grief slips out.
+        // (handing it in also tells the world Codey is back: codey_back, below in codey_back's button)
         turnin_codey3: turnIn("codey3", "He is on his feet before you are through the door. He does not go to Codey. Codey does not go to him. They stand across the room like two soldiers deciding whether to salute.", "codey_back", { image: CODEY_IMG, ambience: "none" }),
-        codey_back: stage("Codey strikes his fist twice against his chest. The old man returns it, stiffly, as if his arm has forgotten how. \"You took your time.\"", next("codey_back_2"), { image: CODEY_IMG }),
+        codey_back: stage("Codey strikes his fist twice against his chest. The old man returns it, stiffly, as if his arm has forgotten how. \"You took your time.\"",
+            [{ text: "Continue.", outcomes: [{ weight: 100, results: [{ type: "GRANT_MILESTONE", payload: { id: "codey_back" } }, { type: "ADVANCE_STAGE", payload: { stageId: "codey_back_2" } }] }] }], { image: CODEY_IMG }),
         codey_back_2: stage("\"...You came back. [pause] One of you did.\"", next("codey_back_3")),
         codey_back_3: stage("The words seem to surprise him. He turns to the forge at once. \"That will be all.\"", [leave("Leave them to it.")]),
 

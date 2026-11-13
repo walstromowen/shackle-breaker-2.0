@@ -253,6 +253,7 @@ class MultiplayerSession {
             return;
         }
         this.role = 'guest';
+        worldSync.ownsWorld = false;        // the host's world: this player's own saved story does not count in it (story/worldStory.js)
         TimeSystem.followsWeather = true;   // the host's weather from now on
         this.remotes.clear();
         this._remember(multiplayer.room);
@@ -295,6 +296,7 @@ class MultiplayerSession {
         TimeSystem.sharedWeather = null;
         this._outdoorWeather = null;
         worldSync.onLocalChange = null;
+        worldSync.ownsWorld = true;   // back in a world of one's own
         this.remotes.clear();
         this._known.clear();
         this.messages = [];

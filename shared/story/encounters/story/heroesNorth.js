@@ -8,8 +8,8 @@
      pursuer_won      Jaeger flees into the dark; the chains broken; Mentoras's thanks. He never blames the player: he does not know.
 
    Nobody ever vanishes in front of the player: whoever leaves does it as the scene tells it (REMOVE_STORY_NPC takes them off this player's map only).
-   Voiced (shared/story/voiceLines.js): the narrator, the Stranger, and Jaeger. Personal: each player's own story. */
-import { gameState } from '../../../core/gameState.js';
+   Voiced (shared/story/voiceLines.js): the narrator, the Stranger, and Jaeger. The world's: their story belongs to the world being played (story/worldStory.js);
+   in a party the players near you are pulled in and vote. */
 import { mentorasTaken, has } from '../../heroes.js';
 
 const toStage = (stageId) => [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId } }] }];
@@ -18,15 +18,15 @@ const end = (text = "Leave.", results = []) => [{ text, outcomes: [{ weight: 100
 const CODEY_IMG = { sheet: "nightbladeHeroPortrait", col: 0, row: 0 };
 const JAEGER_IMG = { sheet: "warlordHeroPortrait", col: 0, row: 0 };
 const STRANGER_IMG = { sheet: "encounter_hooded_stranger", col: 0, row: 0 };
-const questActive = (id) => !!(gameState.quests && gameState.quests.active && gameState.quests.active[id]);
 
 export const codey = {
     id: "codey",
     title: "Codey",
     imageSheet: "nightbladeHeroPortrait",
-    personal: true,
+    personal: false,   // the world's story: shared with the party near you, who vote
     tone: "cold",
-    initialStage: () => (mentorasTaken() ? (questActive('the_pursuer') ? 'taken_waiting' : 'taken') : 'idle'),
+    // the wrecked house is found once, for the world (mentoras_taken); after that Codey only points the way again
+    initialStage: () => (mentorasTaken() ? (has('mentoras_taken') ? 'taken_waiting' : 'taken') : 'idle'),
     stages: {
         idle: { displayText: "Codey", image: CODEY_IMG, text: "Codey sits with his back to the wall, facing the door. He gives you a short nod, and goes back to watching it.", decisions: end() },
         taken: { displayText: "The Workshop", image: CODEY_IMG, ambience: "none", sfx: "whispers", sfxVolume: 0.4,
@@ -37,7 +37,7 @@ export const codey = {
             decisions: next("taken_3") },
         taken_3: { displayText: "Codey", image: CODEY_IMG,
             text: "He signs slowly. A big man. A greatsword. A hood, drawn low. Hands bound at the wrist. Then a skull, and steps going down into the dark.",
-            decisions: end("\"I'll bring him back.\"", [{ type: "START_QUEST", payload: { questId: "the_pursuer" } }]) },
+            decisions: end("\"I'll bring him back.\"", [{ type: "START_QUEST", payload: { questId: "the_pursuer" } }, { type: "GRANT_MILESTONE", payload: { id: "mentoras_taken" } }]) },
         taken_waiting: { displayText: "Codey", image: CODEY_IMG,
             text: "Codey has not moved from the wall. When he sees you, he signs the skull and the steps again, slower.",
             decisions: end() }
@@ -48,7 +48,7 @@ export const strangerMark = {
     id: "stranger_mark",
     title: "The Anvil",
     imageSheet: "encounter_hooded_stranger",
-    personal: true,
+    personal: false,   // the world's story: shared with the party near you, who vote
     tone: "cold",
     initialStage: "mark",
     stages: {
@@ -62,7 +62,7 @@ export const brothersSword = {
     id: "brothers_sword",
     title: "A Cold Fire",
     imageSheet: "warlordHeroPortrait",
-    personal: true,
+    personal: false,   // the world's story: shared with the party near you, who vote
     tone: "cold",
     initialStage: "cold",
     stages: {
@@ -83,7 +83,7 @@ export const pursuer = {
     id: "pursuer",
     title: "The Pursuer",
     imageSheet: "warlordHeroPortrait",
-    personal: true,
+    personal: false,   // the world's story: shared with the party near you, who vote
     tone: "cold",
     initialStage: () => (has('pursuer_done') ? 'freed_again' : 'captive'),
     stages: {
@@ -105,7 +105,7 @@ export const pursuerWon = {
     id: "pursuer_won",
     title: "The Pursuer",
     imageSheet: "encounter_hooded_stranger",
-    personal: true,
+    personal: false,   // the world's story: shared with the party near you, who vote
     tone: "cold",
     initialStage: "fled",
     stages: {

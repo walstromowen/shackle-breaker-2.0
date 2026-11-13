@@ -663,4 +663,11 @@ export const QuestDefinitions = {
         ],
         rewards: { exp: 400, currency: 100, items: [{ id: "insight_of_ice", amount: 1 }] }
     }
-};
+};
+
+/* The story's quests. In a party of players, one of these started by any player is started for the whole party too (MultiplayerSocial), so
+   the party goes through the story together; each player still hands in their own and gets their own rewards (story/worldStory.js). */
+export const STORY_QUESTS = new Set([
+    'shackled1', 'shackled2', 'shackled3', 'shackled7', 'shackled8', 'act2_red_moon',
+    'codey1', 'codey2', 'codey3', 'the_pursuer', 'panzerian_war_beast'
+]);

@@ -26,11 +26,12 @@
    How he talks (docs/story.md, Nikolai Ironson): witty, a boyish gap-toothed grin, speaks of himself in the third person in broken Alterian
    (no articles, a northern cadence, "da", "my friend"), yet now and then a word from his two universities slips out.
 
-   Personal: in a party of players this is each player's own (their milestones), never shared or voted on. The fight it starts may still pull
-   in the players nearby; Nikoli then fights beside all of them.
+   The world's: his story belongs to the world being played (story/worldStory.js), so in a party everyone meets the same Nikoli in the same
+   place, the players near the one who talks to him are pulled in, and what he is told is voted on. A guest's choices change the host's world.
    Art: the Panzerian warlord's portrait for now (entity NIKOLI); his brother Jaeger looks the same (story/encounters/story/jaeger.js). */
 import { gameState } from '../../../core/gameState.js';
 import { QuestModel } from '../../questModel.js';
+import { ActSystem } from '../../actSystem.js';
 import { movedNorth, heroesOutcome } from '../../heroes.js';
 
 const TITLE = "Nikoli";
@@ -47,8 +48,8 @@ const end = (results = []) => [{ weight: 100, results: [...results, { type: "END
 const stage = (text, decisions, extra = {}) => ({ displayText: TITLE, image: IMG, text, decisions, ...extra });
 const next = (stageId) => [{ text: "Continue.", outcomes: toStage(stageId) }];
 
-const milestones = () => (Array.isArray(gameState.milestones) ? gameState.milestones : []);
-const has = (id) => milestones().includes(id);
+// his story belongs to the world (story/worldStory.js): in a party everyone meets the same Nikoli
+const has = (id) => ActSystem.hasMilestone(id);
 
 /** The stage he opens with, from this player's milestones and quests. */
 function opening() {
@@ -69,7 +70,7 @@ function opening() {
 /* The answer that tells him: only once the player has met the Hooded Stranger, and only while he has not been told. */
 const tellHim = {
     text: "[Hooded Stranger] \"There's a hooded man in a village workshop. He might be the one.\"",
-    conditions: [{ type: "quest_completed", id: "shackled_stranger" }, { type: "lacks_milestone", id: "nikoli_told" }],
+    conditions: [{ type: "has_milestone", id: "stranger_met" }, { type: "lacks_milestone", id: "nikoli_told" }],   // someone in this world has met the Stranger
     outcomes: toStage("told")
 };
 /* Asking about the war beast he mentioned, on a later visit: until the quest is taken. */
@@ -204,7 +205,7 @@ export const nikoli = {
     id: "nikoli",
     title: TITLE,
     imageSheet: "warlordHeroPortrait",
-    personal: true,
+    personal: false,   // the world's story (story/worldStory.js): in a party, the players near you are pulled in and vote on what is said
     tone: "cold",
     ambience: "fireCrackle",
     initialStage: opening,
