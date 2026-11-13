@@ -1511,6 +1511,67 @@ export const ItemDefinitions = {
     maxStack: 20
   },
 
+  // --- RARE ACCESSORIES ---
+  // Rare drops (lootTableDefinitions.js). `wornBy` says who can wear one (shared/items/equipRules.js): 'humanoid' (people), or 'medium_beast'
+  // (a dog, a wolf, a snow leopard: an animal companion of that size). Icons: row 6 of the armor sheet, placeholders (tools/art/accessoryIcons.py).
+  "elbow_blade": {
+    id: "elbow_blade", name: "Elbow Blade", slot: "accessory", type: "accessory", wornBy: "humanoid", rarity: "rare",
+    description: "A leather bracer with a short, hooked blade riding along the forearm, edge out past the elbow. A sand stalker's last surprise.",
+    value: 220, icon: { col: 0, row: 6 },
+    attack: { slash: 3 }, critChance: 0.05,
+    grantedAbilities: ["quick_stab"]
+  },
+  "panzerian_spring_inserts": {
+    id: "panzerian_spring_inserts", name: "Panzerian Spring Inserts", slot: "accessory", type: "accessory", wornBy: "humanoid", rarity: "rare",
+    description: "Steel coil springs set into iron plates, made to be fitted into a pair of boots. Panzerian officers leapt walls with these.",
+    value: 300, icon: { col: 1, row: 6 },
+    speed: 2, evasion: 0.03,
+    grantedAbilities: ["leaping_slash"]
+  },
+  "panzerkamfer_saddle": {
+    id: "panzerkamfer_saddle", name: "Panzerkamfer Saddle", slot: "accessory", type: "accessory", wornBy: "medium_beast", rarity: "rare",
+    description: "A war beast's saddle of iron plate over thick leather, cut down to fit a smaller animal. Only a dog, a wolf or a leopard can bear it.",
+    value: 320, icon: { col: 2, row: 6 },
+    resources: { maxHp: 25 },
+    defense: { slash: 3, pierce: 3, blunt: 2 },
+    resistance: { ice: 0.2 }
+  },
+  "nobles_ring": {
+    id: "nobles_ring", name: "Noble's Ring", slot: "accessory", type: "accessory", wornBy: "humanoid", rarity: "rare",
+    description: "A gold signet ring set with a blue stone. Whoever wore it was taught to think before they spoke.",
+    value: 350, icon: { col: 3, row: 6 },
+    attributes: { intelligence: 4 },
+    resources: { maxInsight: 10 }
+  },
+  "madmans_tooth_necklace": {
+    id: "madmans_tooth_necklace", name: "Madman's Tooth Necklace", slot: "accessory", type: "accessory", wornBy: "humanoid", rarity: "rare",
+    description: "Crooked teeth strung on a greasy cord. Not all of them are human. Wear it, and people give you room.",
+    value: 160, icon: { col: 4, row: 6 },
+    attributes: { strength: 2 }, critChance: 0.08,
+    grantedAbilities: ["intimidate"]
+  },
+  "jar_of_shifting_sands": {
+    id: "jar_of_shifting_sands", name: "Jar of Shifting Sands", slot: "accessory", type: "accessory", wornBy: "humanoid", rarity: "rare",
+    description: "A corked glass jar of desert sand that never settles. Hold it up to your eye and the room seems to slide aside.",
+    value: 280, icon: { col: 5, row: 6 },
+    attributes: { attunement: 2 }, evasion: 0.05,
+    resistance: { earth: 0.2, wind: 0.2 },
+    grantedAbilities: ["hide"]
+  },
+  "quiver": {
+    id: "quiver", name: "Quiver", slot: "accessory", type: "accessory", wornBy: "humanoid", rarity: "rare",
+    description: "A well-worn leather quiver, still holding a few good arrows. Every shot comes quicker from a quiver than from a belt.",
+    value: 180, icon: { col: 6, row: 6 },
+    attributes: { dexterity: 2 }, attack: { pierce: 4 }
+  },
+  "grim_stag_antler": {
+    id: "grim_stag_antler", name: "Grim Stag's Antler", slot: "accessory", type: "accessory", wornBy: "humanoid", rarity: "rare",
+    description: "A pale, branching antler from a grim stag, its base wrapped in a leather thong. It still remembers how to charge.",
+    value: 200, icon: { col: 7, row: 6 },
+    attributes: { vigor: 2 }, attack: { blunt: 3 },
+    grantedAbilities: ["reckless_charge"]
+  },
+
   // --- ACCESSORIES ---
   "artifact_of_the_dev": {
     id: "artifact_of_the_dev",

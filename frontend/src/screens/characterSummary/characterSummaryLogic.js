@@ -1,4 +1,5 @@
 import { StatCalculator } from '../../../../shared/characters/statCalculator.js';
+import { canWear } from '../../../../shared/items/equipRules.js';
 import { ItemDefinitions } from '../../../../shared/items/itemDefinitions.js';
 import { AbilitySystem } from '../../../../shared/abilities/abilitySystem.js';
 import { TextEntry } from '../../../../shared/core/textEntry.js';
@@ -91,6 +92,7 @@ export class CharacterSummaryLogic {
     canEquipToSlot(item, targetSlotRaw) {
         const def = ItemDefinitions[item.defId];
         if (!def) return false;
+        if (!canWear(def, this.currentMember)) return false;   // a ring is for a person, a saddle for a dog or a leopard (shared/items/equipRules.js)
         const itemSlot = (def.slot || def.type || '').toLowerCase().replace(/\s/g, '');
         const slotKey = targetSlotRaw.toLowerCase().replace(/\s/g, '');
         return (itemSlot === slotKey) ||
@@ -103,6 +105,7 @@ export class CharacterSummaryLogic {
         const member = this.currentMember;
         let slotName = targetSlotOverride;
         const def = ItemDefinitions[inventoryItem.defId];
+        if (def && !canWear(def, member)) return null;   // not for this one to wear (shared/items/equipRules.js)
         const rawItemType = def ? (def.slot || def.type || '').toLowerCase() : '';
         const itemTypeNormalized = rawItemType.replace(/\s/g, '');
         

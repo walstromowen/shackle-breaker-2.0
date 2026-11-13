@@ -426,7 +426,8 @@ export const LootTableDefinitions = {
             { id: "crossbow", weight: 4, min: 1, max: 1 },
             { id: "insight_of_fire", weight: 2, min: 1, max: 1 },
             { id: "insight_of_lightning", weight: 2, min: 1, max: 1 },
-            { id: "insight_of_light", weight: 2, min: 1, max: 1 }
+            { id: "insight_of_light", weight: 2, min: 1, max: 1 },
+            { id: "nobles_ring", weight: 2, min: 1, max: 1 }   // rare: a merchant's best
         ]
     },
     "iron_chest_loot": {
@@ -589,6 +590,7 @@ export const LootTableDefinitions = {
             { id: "leather_bracers", dropRate: 0.01 },
             { id: "leather_leggings", dropRate: 0.01 },
             { id: "leather_boots", dropRate: 0.01 },
+            { id: "madmans_tooth_necklace", dropRate: 0.02 },   // rare
         ]
     },
     // The rotter's own table: the same drops plus a very rare piece of iron armor (0.5% each)
@@ -686,6 +688,7 @@ export const LootTableDefinitions = {
             { id: "smoke_bomb", dropRate: 0.05 },
             { id: "salt", dropRate: 0.08 },
             { id: "bone", dropRate: 0.1 },
+            { id: "elbow_blade", dropRate: 0.03 },   // rare
         ]
     },
     "miragewright_drops": {
@@ -702,6 +705,7 @@ export const LootTableDefinitions = {
             { id: "illuminating_tonic", dropRate: 0.06 },
             { id: "linen", dropRate: 0.1 },
             { id: "smoke_bomb", dropRate: 0.06 },
+            { id: "jar_of_shifting_sands", dropRate: 0.03 },   // rare
         ]
     },
     "calcified_crusader_drops": {
@@ -737,6 +741,7 @@ export const LootTableDefinitions = {
             { id: "insight_of_darkness", dropRate: 0.04 },
             { id: "fur", dropRate: 0.3, min: 1, max: 2 },
             { id: "bone", dropRate: 0.4, min: 1, max: 3 },
+            { id: "grim_stag_antler", dropRate: 0.04 },   // rare
         ]
     },
     "dune_maw_drops": {
@@ -825,6 +830,8 @@ export const LootTableDefinitions = {
             { id: "warhammer", dropRate: 0.1 },
             { id: "glaive", dropRate: 0.08 },
             { id: "large_iron_key", dropRate: 0.5 },
+            { id: "panzerkamfer_saddle", dropRate: 0.35 },        // the war beast's own saddle, cut down
+            { id: "panzerian_spring_inserts", dropRate: 0.15 },   // (Jaeger fights from this table too)
         ]
     },
     // The Dry Kraken: salt and hide from the deep, what it swallowed on the sea floor and under the dunes, and the insights of earth and water.
@@ -842,6 +849,7 @@ export const LootTableDefinitions = {
             { id: "bronze_ingot", dropRate: 0.4, min: 1, max: 3 },
             { id: "shmindolyns_draught", dropRate: 0.15 },
             { id: "large_iron_key", dropRate: 0.5 },
+            { id: "jar_of_shifting_sands", dropRate: 0.25 },
         ]
     },
     "boss_darius_drops": {
@@ -866,6 +874,7 @@ export const LootTableDefinitions = {
             { id: "linen", dropRate: 0.5, min: 2, max: 3 },
             { id: "small_iron_key", dropRate: 0.4 },
             { id: "large_iron_key", dropRate: 0.5 },
+            { id: "nobles_ring", dropRate: 0.25 },   // a governor's ring
         ]
     },
     // An Infernus Sentinel (the catacombs' boss): the large iron key to the hoard's iron chest beyond the last gate is always found in its rubble, with stone,
@@ -945,6 +954,7 @@ export const LootTableDefinitions = {
             { id: "shortbow", dropRate: 0.05 },
             { id: "small_iron_key", dropRate: 0.06 },
             { id: "large_iron_key", dropRate: 0.02 },
+            { id: "quiver", dropRate: 0.03 },   // rare
         ]
     },
     // ------------------------------------------
