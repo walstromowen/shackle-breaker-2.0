@@ -18,7 +18,13 @@ test('the hawk is offered as a starting companion and joins as a beast with its 
     assert.ok(offer, 'Hunting Hawk is in the character creator');
     const H = ENTITY_DEFINITIONS.HAWK;
     for (const id of H.abilities) assert.ok(AbilityDefinitions[id], `${id} exists`);
-    assert.ok(['slash', 'take_flight', 'claw'].every(a => H.abilities.includes(a)), 'slash, take flight and claw');
+    assert.ok(['slash', 'take_flight', 'talon_strike'].every(a => H.abilities.includes(a)), 'slash, take flight and talon strike');
+    // it hits like a hunter, not for 1: Talon Strike is pierce (armour stops it less than slash), stronger than a plain bite, and can make bleed
+    const t = AbilityDefinitions.talon_strike;
+    assert.equal(t.effects[0].damageType, 'pierce');
+    assert.ok(t.effects[0].power > AbilityDefinitions.bite.effects[0].power);
+    assert.ok(t.statusEffects.some(s => s.id === 'bleed'));
+    assert.ok(H.baseStats.baseAttack.pierce >= 7 && H.baseStats.baseAttack.slash >= 6);
     assert.ok(!H.abilities.includes('hit_and_run'), 'Hit & Run is not finished: not the hawk\'s yet');
     assert.deepEqual(H.traits, ['airborne'], 'it starts every fight in the air');
     const hawk = EntityFactory.create('HAWK', { name: offer.label, attributes: { ...offer.attributes } });
@@ -72,4 +78,11 @@ test('dogs a little sturdier, snow leopards a little softer', () => {
     const D = ENTITY_DEFINITIONS.DOG, L = ENTITY_DEFINITIONS.SNOW_LEOPARD;
     assert.equal(D.baseStats.maxHp, 7); assert.equal(D.baseStats.baseAttack.slash, 5); assert.equal(D.attributes.vigor, 7);
     assert.equal(L.baseStats.maxHp, 14); assert.equal(L.baseStats.critical, 0.15); assert.equal(L.baseStats.baseAttack.slash, 6);
+});
+
+test('Flying has its own icon (wings over wind), not the speed buff\'s', async () => {
+    const { StatusEffectDefinitions: SD } = await import('../../shared/abilities/statusEffectDefinitions.js');
+    assert.deepEqual(SD.flying.icon, { col: 0, row: 3 });
+    const sameCell = Object.values(SD).filter(s => s.icon && s.icon.col === 0 && s.icon.row === 3).map(s => s.id);
+    assert.deepEqual(sameCell, ['flying']);
 });

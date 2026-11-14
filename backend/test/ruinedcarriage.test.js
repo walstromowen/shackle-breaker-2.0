@@ -59,27 +59,63 @@ test('searching or prying can make the party rich: a large purse, the strongbox,
     }
 });
 
-test('a bad search or a noisy strongbox brings a herd of shackled steeds; reading the hoofprints first lets a failed search slip away', () => {
-    const search = decision('discovery', /^\[DEX\] Search the carriage\.$/);
+test('a bad search, a noisy strongbox or a snapped finger brings the herd, and so does hunting it; beaten, the wagon is searched at leisure', () => {
+    const search = decision('discovery', /Search the wagon bed/);
+    assert.equal(search.attribute, 'dexterity');
     assert.ok(search.failureOutcomes.some(o => o.results.some(r => r.payload && r.payload.stageId === 'steeds')));
     const pry = decision('discovery', /Pry open the strongbox/);
     assert.equal(pry.attribute, 'strength');
     assert.equal(pry.failureOutcomes[0].results[0].payload.stageId, 'strongbox_noise');
-    for (const s of ['steeds', 'strongbox_noise']) {
+    assert.equal(decision('discovery', /Hunt down the herd/).outcomes[0].results[0].payload.stageId, 'hunt');
+    for (const s of ['steeds', 'strongbox_noise', 'bone_snap', 'hunt']) {
         const fights = all(E.stages[s]).filter(r => r.type === 'START_BATTLE');
         assert.ok(fights.length >= 2, `${s}: the herd's size varies`);
         for (const f of fights) {
             assert.ok(f.payload.enemies.length >= 2 && f.payload.enemies.every(e => e === 'SHACKLED_STEED'), `${s}: a party of shackled steeds`);
             assert.ok(f.payload.bgm);
+            assert.equal(f.payload.afterVictory.encounterId, 'ruined_carriage_cleared', `${s}: won, the wagon is the party's`);
         }
     }
-    // the quiet search is only offered once the prints have been read, and its failure is no fight
-    const quietly = decision('discovery', /quietly/);
-    assert.equal(EncounterLogic.checkConditions(quietly, {}), false);
-    assert.equal(EncounterLogic.checkConditions(quietly, { knows_steeds: true }), true);
-    assert.equal(EncounterLogic.checkConditions(search, { knows_steeds: true }), false, 'the loud search gives way to it');
-    assert.ok(!all(quietly.failureOutcomes).some(r => r.type === 'START_BATTLE'));
-    assert.ok(all(E.stages.slip_away).every(r => r.type !== 'START_BATTLE'));
+    const cleared = encounterDefinitions.ruined_carriage_cleared;
+    assert.equal(cleared.initialStage, 'cleared');
+    assert.ok(cleared.stages.cleared.decisions.every(d => d.type !== 'skill_check'), 'nobody left to hear: no rolls');
+    assert.ok(!all(cleared.stages.cleared).some(r => r.type === 'START_BATTLE'));
+});
+
+test('the dead man: a Noble\'s Ring or a Royal Guard\'s Signet (the carriage is then empty), and a journal that starts Cursed Populace', () => {
+    const ring = decision('body', /ring off his hand/);
+    assert.equal(ring.attribute, 'dexterity');
+    const finds = ring.successOutcomes.map(o => o.results[0].payload.stageId).sort();
+    assert.deepEqual(finds, ['ring_noble', 'ring_signet']);
+    for (const [stage, item] of [['ring_noble', 'nobles_ring'], ['ring_signet', 'royal_guards_signet']]) {
+        const rs = all(E.stages[stage]);
+        assert.ok(I[item] && rs.some(r => r.type === 'GIVE_ITEM' && r.payload.itemId === item), `${stage}: ${item}`);
+        assert.ok(rs.some(r => r.type === 'REPLACE_OBJECT' && r.payload.objectId === 'RUINED_CARRIAGE_LOOTED'), `${stage}: picked clean`);
+    }
+    assert.equal(ring.failureOutcomes[0].results[0].payload.stageId, 'bone_snap');
+    const journal = decision('body', /journal/);
+    assert.deepEqual(journal.conditions, [{ type: 'quest_not_started', id: 'cursed_populace' }], 'only until the quest is taken up');
+    assert.equal(EncounterLogic.checkConditions(journal, {}), true);
+    const starts = all(E.stages.journal).filter(r => r.type === 'START_QUEST');
+    assert.deepEqual(starts.map(r => r.payload.questId), ['cursed_populace']);
+    assert.ok(!all(E.stages.journal).some(r => r.type === 'REPLACE_OBJECT'), 'the journal is a bonus: the carriage keeps its loot');
+});
+
+test('a carriage visited again and again: no stage only informs and sends the party back, and nothing that failed takes a choice away', () => {
+    for (const [id, s] of Object.entries(E.stages)) {
+        const leads = all(s).filter(r => r.type === 'ADVANCE_STAGE').map(r => r.payload.stageId);
+        assert.ok(!leads.includes('discovery'), `${id}: never back to the start`);
+        assert.ok(!all(s).some(r => r.type === 'SET_CONTEXT_FLAG'), `${id}: no flags that hide a choice later`);
+        for (const d of s.decisions) for (const c of d.conditions || []) assert.ok(!/^context_flag/.test(c.type), `${id}: "${d.text}" is never blocked by a flag`);
+    }
+    // the same rule at the treasure chest: a failure ends the visit (or springs a trap), a key found nearby opens it there and then
+    const chest = encounterDefinitions.treasure_chest;
+    for (const [id, s] of Object.entries(chest.stages)) {
+        if (id === 'discovery') continue;
+        assert.ok(!all(s).some(r => r.type === 'ADVANCE_STAGE' && r.payload.stageId === 'discovery'), `chest ${id}: never back to a shorter list`);
+    }
+    assert.ok(!all(chest).some(r => r.type === 'SET_CONTEXT_FLAG'));
+    assert.ok(all(chest.stages.found_key).some(r => r.type === 'ADVANCE_STAGE' && r.payload.stageId === 'opened_chest'));
 });
 
 test('the Shmindolyn\'s Draught: found in the carriage, it cures the last bad trait, leaves the good ones, and is kept when there is nothing to cure', () => {

@@ -140,7 +140,7 @@ export const QuestDefinitions = {
     "cursed_populace": {
         id: "cursed_populace",
         name: "Cursed Populace",
-        description: "The entire town seems to be afflicted with a strange madness. The people here are not themselves, are they even still human?",
+        description: "A dead man's journal, left in a ruined carriage on the plains: a whole town gone mad. \"They were not themselves. I am no longer sure they are still men.\" The madmen who wander the plains came from somewhere. Find out what they have become.",   // started from the Ruined Carriage (encounters/ruinedCarriage.js)
         objectives: [
             { id: "obj_kill_madmen", type: "kill_enemy", targetId: "MAD_MAN", amount: 3 }
         ],

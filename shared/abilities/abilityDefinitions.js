@@ -422,6 +422,22 @@ export const AbilityDefinitions = {
         effects: [{ type: "damage", damageType: "pierce", power: 1.0 }],
         statusEffects: [{ id: "bleed", chance: 0.15, duration: 3 }]
     },
+    // A bird of prey's attack (the Hawk): it drops out of the sky talons first. Pierce, which armour stops less well than slash.
+    "talon_strike": {
+        id: "talon_strike",
+        name: "Talon Strike",
+        description: "Drop on the target talons first. Pierce damage, with a chance to make them bleed.",
+        range: "melee",
+        tags: ["physical", "contact", "beast", "pierce"],
+        battleMessage: "{user} drops on {target} talons first!",
+        icon: { col: 4, row: 2 },   // Bite's: the same tearing wound
+        targeting: { scope: "enemy", select: "single" },
+        cost: { stamina: 10 },
+        accuracy: 0.95,
+        animationId: "bite",
+        effects: [{ type: "damage", damageType: "pierce", power: 1.1 }],
+        statusEffects: [{ id: "bleed", chance: 0.25, duration: 3 }]
+    },
     "quick_stab": {
         id: "quick_stab",
         name: "Quick Stab",

@@ -376,7 +376,7 @@ export const StatusEffectDefinitions = {
         id: 'flying',
         name: 'Flying',
         description: "In the air: slash, blunt and pierce attacks cannot reach it. Knock it down or bind it to bring it to the ground.",
-        icon: { col: 3, row: 1 },
+        icon: { col: 0, row: 3 },   // its own: wings over wind (tools/art/flyingIcon.py), no longer the speed buff's
         defaultCharges: 3, // -1 for Infinite duration
         maxStacks: 1,
         immunities: {

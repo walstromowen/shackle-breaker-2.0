@@ -1,5 +1,6 @@
 /* A locked chest. The key always works; each other way in is open at only some chests (offerChance: 20% each, rolled once for each chest and
-   remembered, so a chest you leave and come back to offers the same choices). */
+   remembered, so a chest you leave and come back to offers the same choices). A failed attempt never sends the party back to a shorter list:
+   it ends the visit (or springs a trap), and the next visit offers every choice again. A key found nearby opens the chest there and then. */
 export const treasureChest = {
     id: "treasure_chest",
     title: "Treasure Chest",
@@ -35,7 +36,6 @@ export const treasureChest = {
                     attribute: "strength",
                     threshold: 12,
                     conditions: [
-                        { type: "context_flag_not_set", flagId: "failed_str" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
                     successOutcomes: [
@@ -48,7 +48,7 @@ export const treasureChest = {
                     ],
                     failureOutcomes: [
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "ambush" } }] },
-                        { weight: 1, results: [{ type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_str" } }, { type: "ADVANCE_STAGE", payload: { stageId: "wont_budge" } }] },
+                        { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "wont_budge" } }] },
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "chest_explosion" } }] },
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "poison_mist" } }] }
                     ]
@@ -60,7 +60,6 @@ export const treasureChest = {
                     attribute: "dexterity",
                     threshold: 12,
                     conditions: [
-                        { type: "context_flag_not_set", flagId: "failed_dex" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
                     successOutcomes: [
@@ -73,7 +72,7 @@ export const treasureChest = {
                     ],
                     failureOutcomes: [
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "ambush" } }] },
-                        { weight: 1, results: [{ type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_dex" } }, { type: "ADVANCE_STAGE", payload: { stageId: "jammed_lock" } }] },
+                        { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "jammed_lock" } }] },
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "chest_explosion" } }] },
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "poison_mist" } }] }
                     ]
@@ -86,7 +85,6 @@ export const treasureChest = {
                     attribute: "intelligence",
                     threshold: 12,
                     conditions: [
-                        { type: "context_flag_not_set", flagId: "failed_int" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
                     successOutcomes: [
@@ -99,7 +97,7 @@ export const treasureChest = {
                     ],
                     failureOutcomes: [
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "ambush" } }] },
-                        { weight: 1, results: [{ type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_int" } }, { type: "ADVANCE_STAGE", payload: { stageId: "spell_fail" } }] },
+                        { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "spell_fail" } }] },
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "summon_evil" } }] },
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "chest_explosion" } }] },
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "poison_mist" } }] }
@@ -112,16 +110,14 @@ export const treasureChest = {
                     attribute: "attunement",
                     threshold: 12,
                     conditions: [
-                        { type: "context_flag_not_set", flagId: "failed_atn" },
-                        { type: "context_flag_not_set", flagId: "found_key" },
                         { type: "has_tag", tag: "HUMANOID" }
                     ],
                     successOutcomes: [
-                        { weight: 100, results: [{ type: "SET_CONTEXT_FLAG", payload: { flagId: "found_key" } }, { type: "ADVANCE_STAGE", payload: { stageId: "found_key" } }] }
+                        { weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "found_key" } }] }
                     ],
                     failureOutcomes: [
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "ambush" } }] },
-                        { weight: 1, results: [{ type: "SET_CONTEXT_FLAG", payload: { flagId: "failed_atn" } }, { type: "ADVANCE_STAGE", payload: { stageId: "no_key" } }] },
+                        { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "no_key" } }] },
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "chest_explosion" } }] },
                         { weight: 1, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "poison_mist" } }] }
                     ]
@@ -146,14 +142,12 @@ export const treasureChest = {
             text: "You spot a glint of metal partially buried in the dirt nearby. It's a small iron key!",
             decisions: [
                 {
-                    text: "Take the key and return.",
-                    conditions: [{ type: "has_tag", tag: "HUMANOID" }],
+                    text: "Unlock the chest with it.",
                     outcomes: [
                         {
                             weight: 100,
                             results: [
-                                { type: "GIVE_ITEM", payload: { items: [{ id: "small_iron_key", qty: 1 }] } },
-                                { type: "ADVANCE_STAGE", payload: { stageId: "discovery" } }
+                                { type: "ADVANCE_STAGE", payload: { stageId: "opened_chest" } }
                             ]
                         }
                     ]
@@ -189,15 +183,15 @@ export const treasureChest = {
             sfxVolume: 0.6,
             image: { col: 0, row: 0 },
             text: "You pull and pry with all your might, but the chest won't budge an inch.",
-            decisions: [{ text: "Reassess the situation.", outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery" } }] }] }]
+            decisions: [{ text: "Leave it for now.", outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }] }]
         },
         jammed_lock: {
             displayText: "Jammed Mechanism",
             effect: "jolt",
             sfx: "lockClick",
             image: { col: 0, row: 0 },
-            text: "You twist the tool slightly too hard, jamming the lock temporarily.",
-            decisions: [{ text: "Rethink the approach.", outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery" } }] }] }]
+            text: "You twist the tool slightly too hard, and the lock jams. It will take time to work loose.",
+            decisions: [{ text: "Leave it for now.", outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }] }]
         },
         spell_fail: {
             displayText: "Fizzled Magic",
@@ -206,13 +200,13 @@ export const treasureChest = {
             sfxVolume: 0.6,
             image: { col: 0, row: 0 },
             text: "Your spell sparks against the metal bindings and quietly fizzles out into nothingness.",
-            decisions: [{ text: "Consider another option.", outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery" } }] }] }]
+            decisions: [{ text: "Leave it for now.", outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }] }]
         },
         no_key: {
             displayText: "Fruitless Search",
             image: { col: 0, row: 0 },
             text: "You search every nook and cranny nearby, but the key is nowhere to be found.",
-            decisions: [{ text: "Give up the search.", outcomes: [{ weight: 100, results: [{ type: "ADVANCE_STAGE", payload: { stageId: "discovery" } }] }] }]
+            decisions: [{ text: "Give up for now.", outcomes: [{ weight: 100, results: [{ type: "END_ENCOUNTER", payload: null }] }] }]
         },
         chest_explosion: {
             displayText: "A Trap Triggered!",

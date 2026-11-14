@@ -16,7 +16,7 @@ import { nikoli, nikoliAfterBattle, nikoliBrothersWon } from './encounters/story
 import { dryKrakenAmbush, codeyFreed } from './encounters/story/codey.js';
 import { jaeger } from './encounters/story/jaeger.js';
 import { codey, strangerMark, brothersSword, pursuer, pursuerWon } from './encounters/story/heroesNorth.js';
-import { ruinedCarriage } from './encounters/ruinedCarriage.js';
+import { ruinedCarriage, ruinedCarriageCleared } from './encounters/ruinedCarriage.js';
 import { quicksand, cyclone, cycloneHeart } from './encounters/desertHazards.js';
 import { prologue } from './encounters/story/prologue.js';
 import { actTwo } from './encounters/story/actTwo.js';
@@ -60,6 +60,7 @@ export const encounterDefinitions = {
     [cyclone.id]: cyclone,
     [cycloneHeart.id]: cycloneHeart,
     [ruinedCarriage.id]: ruinedCarriage,   // a broken merchant carriage on the plains: loot, or the shackled steeds (encounters/ruinedCarriage.js)
+    [ruinedCarriageCleared.id]: ruinedCarriageCleared,   // ... and searched at leisure once its herd is beaten
     [prologue.id]: prologue,
     [actTwo.id]: actTwo,
     [peculiarScarecrow.id]: peculiarScarecrow,

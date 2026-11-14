@@ -770,11 +770,11 @@ export const ENTITY_DEFINITIONS = {
             maxHp: 10, maxStamina: 14, speed: 14, critical: 0.2, evasion: 115,
             baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, blunt: 1, slash: 1, pierce: 1, wind: 3 },
             baseResistance: { wind: 0.4, earth: 0.2, lightning: -0.25, ice: -0.15 },
-            baseAttack: { blunt: 0, slash: 5, pierce: 6 }
+            baseAttack: { blunt: 0, slash: 6, pierce: 7 }   // talons and beak: it hit for 1 against any armour before (slash only, little attack)
         },
         lootTableId: "mad_man_drops",
-        // a talon slash, Take Flight (it starts every fight in the air for 2 turns: the Airborne trait), and its claws
-        abilities: [...BASE_ENTITY.abilities, "slash", "take_flight", "claw"],
+        // a talon slash, Take Flight (it starts every fight in the air for 2 turns: the Airborne trait), and Talon Strike (pierce, can make bleed)
+        abilities: [...BASE_ENTITY.abilities, "slash", "take_flight", "talon_strike"],
         traits: ["airborne"],
         tags: ["BIOLOGICAL", "BEAST", "AVIAN"]
     },
