@@ -343,6 +343,19 @@ export const StatusEffectDefinitions = {
             { type: 'percent', target: 'defense.pierce', value: -0.5 }
         ]
     },
+    // The Dry Kraken's head, a tentacle cut away (battleQueue.queueDeath, a dying enemy's `weakens`): 8% off every resistance it has, for each
+    // tentacle lost (up to eight). It lasts the whole fight.
+    severed: {
+        id: 'severed',
+        name: 'Severed',
+        description: "A tentacle cut away: 8% less resistance to every kind of harm, for each one lost. Lasts the whole fight.",
+        icon: { col: 2, row: 2 },
+        defaultCharges: -1,
+        maxStacks: 8,
+        persistAfterCombat: false,
+        modifiers: ['blunt', 'slash', 'pierce', 'fire', 'ice', 'lightning', 'earth', 'water', 'wind', 'arcane', 'dark', 'light']
+            .map(type => ({ type: 'flat', target: `resistance.${type}`, value: -0.08 }))
+    },
     exposed: {
         id: 'exposed',
         name: 'Exposed',

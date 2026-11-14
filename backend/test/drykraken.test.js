@@ -36,7 +36,11 @@ test('a boss head with 192 px frames, eight tentacles that die with it, placehol
         for (const a of E[id].abilities) assert.ok(A[a], `${id}: ${a} is a real ability`);
         for (const s of [E[id].crySound, E[id].deathSound]) assert.match(main, new RegExp(`${s}: '`), `${id}: ${s} is loaded`);
     }
-    assert.ok(A.constrict.statusEffects.some(s => s.id === 'bound'));
+    const trap = A.wrap.statusEffects.find(s => s.id === 'bound');
+    assert.ok(trap && trap.chance >= 0.4, 'Wrap: a good chance to trap');
+    assert.ok(A.wrap.effects.some(e => e.type === 'damage'), 'and it hurts');
+    assert.ok(E.DRY_KRAKEN_TENTACLE.abilities.includes('wrap'));
+    assert.ok(!A.constrict, 'Wrap took Constrict\'s place');
     for (const it of L.boss_dry_kraken_drops.items) assert.ok(I[it.id], `${it.id} is a real item`);
 });
 
@@ -138,4 +142,26 @@ test('whole fights end once, won or lost; strike the head down and the fight is 
             assert.equal(ended[0].victory, true, 'won');
         });
     } finally { Math.random = real; }
+});
+
+test('every tentacle cut down tears the head open: 8% off each of its resistances, stacking; the head alone ends the fight', async () => {
+    const { StatCalculator } = await import('../../shared/characters/statCalculator.js');
+    const s = battle();
+    s.turnQueue = [];
+    const head = s.enemyRoster[0];
+    const res = () => StatCalculator.calculateDetailed(head.originalEntity).resistance;
+    const before = res();
+    assert.ok(before.slash >= 0.4 && before.blunt >= 0.5, 'hard to hurt at first');
+    for (const t of s.enemyRoster.filter(e => e.templateId === 'DRY_KRAKEN_TENTACLE')) assert.ok(StatCalculator.calculateDetailed(t.originalEntity).resistance.slash >= 0.4, 'the tentacles shrug off most blows');
+    const cut = (n) => { for (const t of s.enemyRoster.filter(e => e.templateId === 'DRY_KRAKEN_TENTACLE' && !e.isDead()).slice(0, n)) { t.modifyResource('hp', -99999); queueDeath(s, t); } };
+    cut(1);
+    const sev = () => head.statusEffects.find(e => e.id === 'severed');
+    assert.equal(sev().stacks, 1);
+    assert.ok(Math.abs((before.slash - res().slash) - 0.08) < 1e-9, 'one tentacle: 8% less');
+    assert.ok(s.turnQueue.some(q => /easier to hurt/.test(q.message || '')), 'the player is told');
+    cut(7);
+    assert.equal(sev().stacks, 8);
+    assert.ok(res().slash < 0 && res().blunt < 0, 'all eight: the head takes more than full damage');
+    assert.ok(sev().isInfinite, 'it lasts the whole fight');
+    assert.ok(!head.isDead(), 'the tentacles gone, the head fights on: only its death ends it');
 });

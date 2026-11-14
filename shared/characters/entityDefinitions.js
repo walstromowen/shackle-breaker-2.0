@@ -1100,8 +1100,9 @@ export const ENTITY_DEFINITIONS = {
 
     // The Dry Kraken: a world boss of the desert. A kraken that the sea left behind, gone to ground under the dunes, where it waits for whatever walks
     // over it. It fights as a head (DRY_KRAKEN, 192 px frames) and eight tentacles (DRY_KRAKEN_TENTACLE) that come up out of the sand two at a time,
-    // a new one rising whenever one is cut down: START_BATTLE { enemies: ["DRY_KRAKEN", ...8 x "DRY_KRAKEN_TENTACLE"] }. Kill the head and every
-    // tentacle goes limp with it (`fallsWith`, battleQueue.queueDeath). Placeholder art: simple shapes (tools/art/dryKrakenPlaceholder.py).
+    // a new one rising whenever one is cut down: START_BATTLE { enemies: ["DRY_KRAKEN", ...8 x "DRY_KRAKEN_TENTACLE"] }. Kill the head and the
+    // fight is won: every tentacle goes limp with it (`fallsWith`, battleQueue.queueDeath). Two ways to win: go straight for the head through
+    // its heavy resistances, or cut the tentacles down one by one, each of which tears the head open a little more (`weakens`: status severed). Placeholder art: simple shapes (tools/art/dryKrakenPlaceholder.py).
     // Tuned like the other bosses for three players (BOSS: PARTY_SCALING.BOSS_HP_BY_PLAYERS). A beast of sand and salt water: the earth and the
     // water cannot hurt it much, blades bite deep into its soft hide, and fire dries it out.
     "DRY_KRAKEN": {
@@ -1124,9 +1125,12 @@ export const ENTITY_DEFINITIONS = {
                 ...BEAST_TEMPLATE.baseStats.baseDefense,
                 blunt: 6, slash: 1, pierce: 2, earth: 8, water: 8, fire: -2, lightning: 0
             },
+            // hard to hurt while its tentacles guard it: every one cut down takes 8% off each of these (status `severed`, battleQueue.queueDeath),
+            // so after all eight it is softer than most beasts. Fire, which dries it out, was always its weakest point.
             baseResistance: {
                 ...BEAST_TEMPLATE.baseStats.baseResistance,
-                blunt: 0.3, earth: 0.5, water: 0.5, slash: -0.1, fire: -0.3
+                blunt: 0.5, slash: 0.4, pierce: 0.5, fire: 0.2, ice: 0.5, lightning: 0.4, earth: 0.7, water: 0.7,
+                wind: 0.5, arcane: 0.5, dark: 0.5, light: 0.4
             },
             baseAttack: { blunt: 6, pierce: 8, earth: 6, water: 4 }
         },
@@ -1137,7 +1141,8 @@ export const ENTITY_DEFINITIONS = {
         tags: [...BEAST_TEMPLATE.tags, "BOSS", "ELITE", "DESERT", "AQUATIC"]
     },
 
-    // One of the Dry Kraken's eight tentacles (see DRY_KRAKEN). Weaker alone, but they keep coming, and one that wraps round you holds you fast.
+    // One of the Dry Kraken's eight tentacles (see DRY_KRAKEN). Weaker alone, but they keep coming, they shrug off most blows, and one that wraps round
+    // you (Wrap) may hold you fast.
     "DRY_KRAKEN_TENTACLE": {
         ...BEAST_TEMPLATE,
         name: "Kraken Tentacle",
@@ -1146,6 +1151,7 @@ export const ENTITY_DEFINITIONS = {
         crySound: "sandStalkerCry",
         deathSound: "sandStalkerCry",
         fallsWith: "DRY_KRAKEN",   // the head dies, the tentacle dies (battleQueue.queueDeath)
+        weakens: "severed",        // and when the tentacle dies first, the head it belongs to takes a stack of this (battleQueue.queueDeath)
         attributes: {
             ...BEAST_TEMPLATE.attributes,
             vigor: 10, strength: 14, dexterity: 10, intelligence: 2, attunement: 4
@@ -1154,12 +1160,17 @@ export const ENTITY_DEFINITIONS = {
             ...BEAST_TEMPLATE.baseStats,
             maxHp: 18, maxStamina: 24, maxInsight: 0, speed: 8, critical: 0.05,
             baseDefense: { ...BEAST_TEMPLATE.baseStats.baseDefense, blunt: 5, slash: 0, pierce: 2, earth: 6, water: 6 },
-            baseResistance: { ...BEAST_TEMPLATE.baseStats.baseResistance, blunt: 0.25, earth: 0.4, water: 0.4, fire: -0.3 },
+            // heavily resistant to everything: cutting them down is the slow, safe way to open the head up
+            baseResistance: {
+                ...BEAST_TEMPLATE.baseStats.baseResistance,
+                blunt: 0.5, slash: 0.4, pierce: 0.5, fire: 0.3, ice: 0.5, lightning: 0.5, earth: 0.6, water: 0.6,
+                wind: 0.5, arcane: 0.5, dark: 0.5, light: 0.5
+            },
             baseAttack: { blunt: 7, earth: 2 }
         },
         currencyReward: { min: 0, max: 0 },
         lootTableId: null,
-        abilities: ["rest", "constrict", "wild_swing"],
+        abilities: ["rest", "wrap", "wild_swing"],
         tags: ["BIOLOGICAL", "BEAST", "DESERT", "AQUATIC"]
     }
 };

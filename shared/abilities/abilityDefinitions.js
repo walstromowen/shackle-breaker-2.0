@@ -843,22 +843,23 @@ export const AbilityDefinitions = {
         effects: [{ type: "damage", damageType: "slash", power: 1.2 }, { type: "damage", damageType: "ice", power: 0.6 }],
         selfStatusEffects: [{ id: "fortified", chance: 1.0, duration: 2 }]
     },
-    // The Dry Kraken's tentacles (entityDefinitions.js DRY_KRAKEN_TENTACLE): a sand-crusted arm wraps round the target and squeezes, and may hold them fast.
-    "constrict": {
-        id: "constrict",
-        name: "Constrict",
-        description: "Wrap round the target and squeeze. Deals blunt damage, and may hold them fast for a turn.",
+    // The Dry Kraken's tentacles (entityDefinitions.js DRY_KRAKEN_TENTACLE): a sand-crusted arm coils round the target and crushes, and as often as
+    // not holds them fast (bound: they lose their next turn and cannot dodge; a flier is dragged down).
+    "wrap": {
+        id: "wrap",
+        name: "Wrap",
+        description: "Coil round the target and crush. Deals blunt damage, with a good chance to trap them, so they lose their next turn.",
         range: "melee",
         tags: ["physical", "contact", "blunt", "beast"],
-        battleMessage: "{user} wraps round {target} and squeezes!",
+        battleMessage: "{user} wraps round {target} and crushes!",
         icon: { col: 3, row: 6 },
         speedModifier: 1.0,
         targeting: { scope: "enemy", select: "single" },
-        cost: { stamina: 10 },
+        cost: { stamina: 12 },
         accuracy: 0.9,
         animationId: "vine_lash",
-        effects: [{ type: "damage", damageType: "blunt", power: 1.1 }],
-        statusEffects: [{ id: "bound", chance: 0.25, duration: 1 }]
+        effects: [{ type: "damage", damageType: "blunt", power: 1.2 }],
+        statusEffects: [{ id: "bound", chance: 0.45, duration: 1 }]
     },
     // The Infernus Sentinels' (boss) blow: a stone fist that crushes (blunt) and grinds (earth) into the target's magic, sapping their insight into its own.
     "sapping_slam": {

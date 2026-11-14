@@ -6,6 +6,7 @@ import { events } from '../core/eventBus.js';
 import { AbilityFactory } from '../abilities/abilityFactory.js';
 import { BattleRewardSystem } from './battleRewardSystem.js';
 import { TURN_TYPES } from './battleConstants.js';
+import { StatusEffectFactory } from '../abilities/statusEffectFactory.js';
 
 const ENTER_BATTLE = (actor) => ({
     type: TURN_TYPES.ANIMATION,
@@ -139,10 +140,14 @@ export function queueDeathTraits(state, deadCombatant) {
     });
 }
 
+/* An enemy's own definition fields (entityDefinitions.js), wherever the entity keeps them. */
+function defOf(c) {
+    const e = c && c.originalEntity;
+    return (e && (e.state || e)) || {};
+}
 /* What an enemy dies with (entityDefinitions.js `fallsWith`), if anything. */
 function fallsWithOf(c) {
-    const e = c && c.originalEntity;
-    return (e && ((e.state && e.state.fallsWith) || e.fallsWith)) || null;
+    return defOf(c).fallsWith || null;
 }
 
 /* Someone just died: drop their pending turns, bring in a reserve if there is one (the party is asked, the enemies simply send the next one),
@@ -154,6 +159,18 @@ export function queueDeath(state, combatant) {
     // A limb dies with its body (an enemy's `fallsWith`: the template id of the one it dies with): when the Dry Kraken's head falls, every one of its
     // tentacles still in the fight falls too. Those on the field faint after it; those still waiting under the sand simply never come up (their
     // kills still count). They are struck down first, so no reserve steps in for any of them, nor for the head.
+    // A limb cut down while its body still stands weakens the body (an enemy's `weakens`: a status, one stack per limb lost): a Dry Kraken tentacle
+    // takes 8% off every resistance of the head (statusEffectDefinitions.js severed), so cutting tentacles down is the long way to the head.
+    if (combatant.team === 'enemy' && fallsWithOf(combatant)) {
+        const weakens = defOf(combatant).weakens;
+        const body = weakens && (state.enemyRoster || []).find(e => !e.isDead() && e.templateId === fallsWithOf(combatant));
+        if (body) {
+            const had = (body.statusEffects || body.originalEntity?.statusEffects || []).find(e => e.id === weakens);
+            if (had && had.addStack) had.addStack();
+            else body.applyStatusEffect(StatusEffectFactory.createEffect(weakens, null, combatant));
+            state.turnQueue.unshift({ type: TURN_TYPES.MESSAGE_STATUS, message: `${body.name} shudders as the tentacle falls: it is easier to hurt now!` });
+        }
+    }
     if (combatant.team === 'enemy') {
         const limbs = (state.enemyRoster || []).filter(e => e !== combatant && !e.isDead() && fallsWithOf(e) === combatant.templateId);
         limbs.forEach(l => { l.originalEntity.hp = 0; });
