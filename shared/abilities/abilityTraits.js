@@ -65,6 +65,8 @@ export function traitRewardsFor(def) {
         // living through a blow toughens you: a physical one makes the hide thicker, any one makes you harder
         const physical = (def.tags || []).includes('physical');
         out.push({ id: physical ? 'ironhide' : 'tough', condition: 'hit_by_ability', chance: ABILITY_TRAIT_CHANCE.hit_by_ability });
+        // pinned, wrapped, netted and lived: cornered once, they fight desperately when cornered again (Claustrophobic)
+        if (statuses(def).has('bound')) out.push({ id: 'claustrophobic', condition: 'hit_by_ability', chance: ABILITY_TRAIT_CHANCE.hit_by_ability * 5 });
     }
     return out;
 }

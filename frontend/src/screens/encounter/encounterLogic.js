@@ -512,6 +512,8 @@ export class EncounterLogic {
                     break;
                 }
                 case "ADD_TRAIT": {
+                    // `chance` (0..1): only sometimes (encounterTraits.js). The seeded dice, so every screen in a party rolls the same
+                    if (payload.chance !== undefined && payload.chance < 1 && rng() >= payload.chance) break;
                     const traitTargets = payload.target === "entire_party" ? (gameState.party?.members || []) : [EncounterLogic.subject(payload)].filter(Boolean);
                     traitTargets.forEach(char => {
                         const alreadyHasTrait = char.traits && char.traits.includes(payload.traitId);

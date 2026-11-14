@@ -1,4 +1,5 @@
 // 1. Directly import the individual encounters
+import { applyEncounterTraits } from './encounterTraits.js';
 import { aDisturbingSight } from './encounters/aDisturbingSight.js';
 import { woundedMutt } from './encounters/woundedMutt.js';
 import { bonfire } from './encounters/bonfire.js';
@@ -82,3 +83,6 @@ export const encounterDefinitions = {
     // 1. Import it at the top.
     // 2. Add `[yourEncounter.id]: yourEncounter,` right here.
 };
+
+// The moments that sometimes teach a trait, good or bad (story/encounterTraits.js): put into the stages above, once.
+export const MISSING_TRAIT_STAGES = applyEncounterTraits(encounterDefinitions);
